@@ -25,8 +25,10 @@ from harnessix.domain.models import (
     ActionSnapshot,
     ActionStatus,
     ApprovalRecord,
+    JournalOperationalStats,
     PolicyDecision,
     ToolDescriptor,
+    TraceContext,
     utc_now,
 )
 
@@ -61,25 +63,43 @@ class PostgresEffectJournal:
                         min_size=1,
                         max_size=self.pool_size,
                     )
-                migration = (
-                    files("harnessix.storage.migrations.postgresql")
-                    .joinpath("0001_initial.sql")
-                    .read_text()
-                )
                 async with self._pool.acquire() as connection:
                     async with connection.transaction():
                         await connection.execute(
                             "SELECT pg_advisory_xact_lock($1)", _MIGRATION_LOCK_ID
                         )
-                        await connection.execute(migration)
                         await connection.execute(
                             """
-                            INSERT INTO schema_migrations(version, applied_at)
-                            VALUES(1, $1)
-                            ON CONFLICT (version) DO NOTHING
+                            CREATE TABLE IF NOT EXISTS schema_migrations (
+                                version INTEGER PRIMARY KEY,
+                                applied_at TIMESTAMPTZ NOT NULL
+                            )
                             """,
-                            utc_now(),
                         )
+                        rows = await connection.fetch("SELECT version FROM schema_migrations")
+                        applied_versions = {int(row["version"]) for row in rows}
+                        migration_root = files("harnessix.storage.migrations.postgresql")
+                        migrations = sorted(
+                            (
+                                migration
+                                for migration in migration_root.iterdir()
+                                if migration.name.endswith(".sql")
+                            ),
+                            key=lambda migration: migration.name,
+                        )
+                        for migration in migrations:
+                            version = int(migration.name.split("_", maxsplit=1)[0])
+                            if version in applied_versions:
+                                continue
+                            await connection.execute(migration.read_text())
+                            await connection.execute(
+                                """
+                                INSERT INTO schema_migrations(version, applied_at)
+                                VALUES($1, $2)
+                                """,
+                                version,
+                                utc_now(),
+                            )
             except BaseException:
                 await self.close()
                 raise
@@ -90,11 +110,46 @@ class PostgresEffectJournal:
         if pool is not None:
             await pool.close()
 
+    async def ping(self) -> bool:
+        pool = self._pool
+        if pool is None:
+            return False
+        try:
+            async with pool.acquire() as connection:
+                return bool(await connection.fetchval("SELECT 1"))
+        except (asyncpg.PostgresError, OSError):
+            return False
+
+    async def operational_stats(self) -> JournalOperationalStats:
+        pool = self._require_pool()
+        async with pool.acquire() as connection:
+            row = await connection.fetchrow(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE status = $1) AS ready_count,
+                    COUNT(*) FILTER (WHERE status = $2) AS pending_approval_count,
+                    COUNT(*) FILTER (WHERE status = $3) AS unknown_count,
+                    MIN(created_at) FILTER (WHERE status = $1) AS oldest_ready_at
+                FROM actions
+                """,
+                ActionStatus.READY.value,
+                ActionStatus.PENDING_APPROVAL.value,
+                ActionStatus.UNKNOWN.value,
+            )
+            assert row is not None
+            return JournalOperationalStats(
+                ready_count=int(row["ready_count"]),
+                pending_approval_count=int(row["pending_approval_count"]),
+                unknown_count=int(row["unknown_count"]),
+                oldest_ready_at=row["oldest_ready_at"],
+            )
+
     async def create_action(
         self,
         request: ActionRequest,
         tool: ToolDescriptor,
         request_fingerprint: str,
+        trace_context: TraceContext | None = None,
     ) -> tuple[ActionSnapshot, bool]:
         pool = self._require_pool()
         now = utc_now()
@@ -104,8 +159,9 @@ class PostgresEffectJournal:
                     """
                     INSERT INTO actions(
                         action_id, tenant_id, idempotency_key, request_fingerprint,
-                        request_json, tool_json, status, created_at, updated_at, version
-                    ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $8, 1)
+                        request_json, tool_json, trace_context_json, status,
+                        created_at, updated_at, version
+                    ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, 1)
                     ON CONFLICT DO NOTHING
                     RETURNING *
                     """,
@@ -115,6 +171,7 @@ class PostgresEffectJournal:
                     request_fingerprint,
                     _json_dump(request),
                     _json_dump(tool),
+                    _json_dump(trace_context) if trace_context is not None else None,
                     ActionStatus.RECEIVED.value,
                     now,
                 )
@@ -444,6 +501,11 @@ class PostgresEffectJournal:
             request_fingerprint=row["request_fingerprint"],
             tool=ToolDescriptor.model_validate_json(row["tool_json"]),
             status=ActionStatus(row["status"]),
+            trace_context=(
+                TraceContext.model_validate_json(row["trace_context_json"])
+                if row["trace_context_json"]
+                else None
+            ),
             policy=(
                 PolicyDecision.model_validate_json(row["policy_json"])
                 if row["policy_json"]

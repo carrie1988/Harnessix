@@ -10,6 +10,7 @@ from harnessix.executors import (
     EchoExecutor,
     EchoInput,
 )
+from harnessix.observability import Observability, build_observability
 from harnessix.policy import DefaultPolicyEngine
 from harnessix.runtime import ActionService
 from harnessix.settings import Settings
@@ -53,7 +54,13 @@ def build_journal(settings: Settings) -> EffectJournal:
     return SQLiteEffectJournal(settings.database_path)
 
 
-def build_service(settings: Settings, *, worker_id: str | None = None) -> ActionService:
+def build_service(
+    settings: Settings,
+    *,
+    worker_id: str | None = None,
+    observability: Observability | None = None,
+) -> ActionService:
+    component = "worker" if worker_id is not None else "api"
     return ActionService(
         journal=build_journal(settings),
         registry=build_registry(settings),
@@ -61,4 +68,13 @@ def build_service(settings: Settings, *, worker_id: str | None = None) -> Action
         lease_seconds=settings.lease_seconds,
         worker_id=worker_id,
         auto_execute=settings.execution_mode == "inline",
+        observability=(
+            observability
+            if observability is not None
+            else build_observability(
+                service_name=f"{settings.service_name}.{component}",
+                endpoint=settings.otel_endpoint,
+                export_interval_millis=settings.otel_export_interval_millis,
+            )
+        ),
     )

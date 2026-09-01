@@ -77,3 +77,9 @@ Agent 提交的 `effect_hint` 不是授权事实。ToolDefinition 由 Harnessix 
 - Executor 绑定。
 
 调用方提示与运行时定义不一致时，Action 在执行前失败。
+
+## 6. 运行时 Trace Context
+
+`ActionSnapshot` 可以包含运行时生成的 `trace_context`，使用 W3C `traceparent` 和 `tracestate`。它用于 API、持久队列和 Worker 之间的链路延续，不属于调用方的 `ActionRequest`，也不参与业务幂等指纹。
+
+同一个 `action_id` 重复提交时返回首次创建的 Trace Context，不用新的网络请求上下文覆盖原记录。详细决策见 [ADR-0004](adr/0004-durable-trace-context.md)。

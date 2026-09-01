@@ -31,6 +31,25 @@
         }
       }
     },
+    "/readyz": {
+      "get": {
+        "tags": [
+          "系统"
+        ],
+        "summary": "Readiness",
+        "operationId": "readiness_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools": {
       "get": {
         "tags": [
@@ -618,6 +637,16 @@
           "status": {
             "$ref": "#/components/schemas/ActionStatus"
           },
+          "trace_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraceContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "policy": {
             "anyOf": [
               {
@@ -1112,6 +1141,37 @@
           "tools"
         ],
         "title": "ToolListResponse"
+      },
+      "TraceContext": {
+        "properties": {
+          "traceparent": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Traceparent",
+            "description": "W3C traceparent"
+          },
+          "tracestate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracestate",
+            "description": "W3C tracestate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "traceparent"
+        ],
+        "title": "TraceContext",
+        "description": "跨进程持久化的 W3C Trace Context。"
       },
       "ValidationError": {
         "properties": {

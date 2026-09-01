@@ -33,6 +33,8 @@ Harnessix 是 Framework-agnostic Agent Action Plane。它从结构化 Action 边
                 MCP / HTTP / DB / Shell
 ```
 
+OpenTelemetry 作为横切适配器接入 API、ActionService 和 Worker，但不进入领域模型端口；唯一持久化的观测数据是运行时拥有的 W3C Trace Context。
+
 ## 3. 核心模块
 
 ### 3.1 Domain
@@ -74,6 +76,7 @@ Harnessix 是 Framework-agnostic Agent Action Plane。它从结构化 Action 边
 - `version` 用于快照演进和后续乐观并发控制；
 - `lease_owner`、`lease_expires_at` 表示执行所有权；
 - `READY` Action 本身就是持久队列，不依赖额外消息中间件。
+- `trace_context_json` 保存首次提交的 W3C 上下文，使 Worker 跨进程延续 Trace。
 
 PostgreSQL 使用 `FOR UPDATE SKIP LOCKED` 让多个 Worker 原子 Claim 不同 Action；SQLite 使用 `BEGIN IMMEDIATE` 保持单 Writer Claim 语义。
 
@@ -115,6 +118,7 @@ Trace 解释模型和工具调用过程；Effect Journal 是执行事实来源�
 10. 明文凭据不得进入参数、元数据、Journal 或 Trace。
 11. 只有当前且未过期租约的 Owner 可以开始执行和提交结果。
 12. Heartbeat 更新租约但不追加事件，避免长任务产生事件风暴。
+13. Metric 标签不得包含 Action、Tenant、Worker 等高基数身份字段。
 
 ## 6. 当前权衡
 

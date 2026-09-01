@@ -15,9 +15,11 @@ from harnessix.domain.models import (
     ActionStatus,
     ApprovalRecord,
     ExecutionOutcome,
+    JournalOperationalStats,
     PolicyDecision,
     ReconciliationOutcome,
     ToolDescriptor,
+    TraceContext,
 )
 
 
@@ -36,11 +38,16 @@ class EffectJournal(Protocol):
 
     async def close(self) -> None: ...
 
+    async def ping(self) -> bool: ...
+
+    async def operational_stats(self) -> JournalOperationalStats: ...
+
     async def create_action(
         self,
         request: ActionRequest,
         tool: ToolDescriptor,
         request_fingerprint: str,
+        trace_context: TraceContext | None = None,
     ) -> tuple[ActionSnapshot, bool]: ...
 
     async def get_action(self, action_id: UUID | str) -> ActionSnapshot: ...

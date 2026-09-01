@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import httpx
+import pytest
 
 from harnessix.api import create_app
 from harnessix.bootstrap import build_service
@@ -83,3 +84,25 @@ async def test_queued_http_api_returns_202_and_worker_completes(tmp_path: Path) 
     assert response.json()["status"] == ActionStatus.READY
     assert completed is not None
     assert completed.status is ActionStatus.SUCCEEDED
+
+
+async def test_readiness_checks_journal(
+    service: ActionService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = create_app(service=service)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            healthy = await client.get("/readyz")
+
+            async def unavailable() -> bool:
+                return False
+
+            monkeypatch.setattr(service.journal, "ping", unavailable)
+            unhealthy = await client.get("/readyz")
+
+    assert healthy.status_code == 200
+    assert healthy.json() == {"status": "ready"}
+    assert unhealthy.status_code == 503
+    assert unhealthy.json()["reason"] == "journal_unavailable"

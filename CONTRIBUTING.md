@@ -7,6 +7,8 @@
 3. 生命周期变更必须补充不变量测试，尤其是重复提交、租约过期和不确定结果路径。
 4. Action Contract 发生变化时，代码模型、JSON Schema、OpenAPI 和中文文档必须同步更新。
 5. 不把无关重构与行为变更混入同一次提交。
+6. Metric 标签不得使用 `action_id`、`tenant_id`、`worker_id` 等高基数字段。
+7. 日志不得记录 Action 参数、Header、数据库 URL、凭据或外部响应正文。
 
 ## 本地验证
 

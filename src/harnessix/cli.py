@@ -13,6 +13,7 @@ from uuid import uuid4
 import uvicorn
 
 from harnessix.bootstrap import build_service
+from harnessix.observability import configure_logging
 from harnessix.settings import Settings
 from harnessix.worker import ActionWorker
 
@@ -41,7 +42,6 @@ async def _run_worker(settings: Settings, *, once: bool) -> None:
         heartbeat_seconds=settings.worker_heartbeat_seconds,
         recovery_interval_seconds=settings.recovery_interval_seconds,
     )
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.info("Harnessix Worker 已启动：%s", worker_id)
     try:
         if once:
@@ -55,6 +55,7 @@ async def _run_worker(settings: Settings, *, once: bool) -> None:
 def main(argv: Sequence[str] | None = None) -> None:
     arguments = _parser().parse_args(argv)
     settings = Settings.from_environment()
+    configure_logging(level=settings.log_level, log_format=settings.log_format)
     if arguments.command == "serve":
         host = arguments.host or settings.host
         port = arguments.port or settings.port
@@ -62,7 +63,13 @@ def main(argv: Sequence[str] | None = None) -> None:
             os.environ["HARNESSIX_DATABASE_PATH"] = arguments.database_path
         if arguments.execution_mode:
             os.environ["HARNESSIX_EXECUTION_MODE"] = arguments.execution_mode
-        uvicorn.run("harnessix.api.app:app", host=host, port=port, factory=False)
+        uvicorn.run(
+            "harnessix.api.app:app",
+            host=host,
+            port=port,
+            factory=False,
+            log_config=None,
+        )
     elif arguments.command == "worker":
         if arguments.database_path:
             settings = replace(settings, database_path=Path(arguments.database_path))

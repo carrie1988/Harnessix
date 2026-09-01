@@ -17,6 +17,7 @@ from harnessix.domain.models import (
     RiskLevel,
     SecretRef,
     ToolDescriptor,
+    TraceContext,
 )
 from harnessix.sdk.client import HarnessixAPIError, HarnessixAsyncClient, HarnessixClient
 
@@ -39,5 +40,6 @@ __all__ = [
     "Principal",
     "RiskLevel",
     "SecretRef",
+    "TraceContext",
     "ToolDescriptor",
 ]

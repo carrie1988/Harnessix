@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+import logging
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from time import perf_counter
 from typing import Any
 from uuid import UUID
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from harnessix.bootstrap import build_service
 from harnessix.domain.errors import HarnessixError
@@ -18,9 +20,13 @@ from harnessix.domain.models import (
     ActionStatus,
     ApprovalDecision,
     ToolDescriptor,
+    TraceContext,
 )
+from harnessix.observability import SpanKind, bind_log_context, trace_log_fields
 from harnessix.runtime import ActionService
 from harnessix.settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorBody(BaseModel):
@@ -84,6 +90,62 @@ def create_app(
         lifespan=lifespan,
     )
 
+    @app.middleware("http")
+    async def observe_http(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        incoming = None
+        traceparent = request.headers.get("traceparent")
+        if traceparent is not None:
+            try:
+                incoming = TraceContext(
+                    traceparent=traceparent,
+                    tracestate=request.headers.get("tracestate"),
+                )
+            except ValidationError:
+                logger.info("忽略格式或长度不合法的 W3C Trace Context 请求头")
+        started_at = perf_counter()
+        attributes = {"http.request.method": request.method}
+        with resolved_service.observability.span(
+            "harnessix.http.request",
+            kind=SpanKind.SERVER,
+            trace_context=incoming,
+            attributes=attributes,
+        ) as span:
+            current = resolved_service.observability.current_trace_context()
+            log_fields = trace_log_fields(current.traceparent if current is not None else None)
+            with bind_log_context(**log_fields):
+                try:
+                    response = await call_next(request)
+                except Exception:
+                    resolved_service.observability.increment(
+                        "harnessix.http.requests",
+                        attributes={"method": request.method, "status": "exception"},
+                    )
+                    logger.exception("HTTP 请求处理失败")
+                    raise
+
+                route = request.scope.get("route")
+                route_path = getattr(route, "path", "unmatched")
+                status = str(response.status_code)
+                span.set_attribute("http.response.status_code", response.status_code)
+                span.set_attribute("http.route", route_path)
+                metric_attributes = {
+                    "method": request.method,
+                    "route": route_path,
+                    "status": status,
+                }
+                resolved_service.observability.increment(
+                    "harnessix.http.requests", attributes=metric_attributes
+                )
+                resolved_service.observability.record(
+                    "harnessix.http.duration",
+                    perf_counter() - started_at,
+                    attributes=metric_attributes,
+                )
+                logger.info("HTTP %s %s -> %s", request.method, route_path, status)
+                return response
+
     @app.exception_handler(HarnessixError)
     async def handle_harnessix_error(_: Request, error: HarnessixError) -> JSONResponse:
         return JSONResponse(
@@ -94,6 +156,15 @@ def create_app(
     @app.get("/healthz", tags=["系统"])
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/readyz", tags=["系统"])
+    async def readiness(request: Request) -> Response:
+        if await _service(request).ready():
+            return JSONResponse(status_code=200, content={"status": "ready"})
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready", "reason": "journal_unavailable"},
+        )
 
     @app.get("/v1/tools", response_model=ToolListResponse, tags=["工具"])
     async def list_tools(request: Request) -> ToolListResponse:

@@ -77,6 +77,7 @@ API 健康检查：
 
 ```bash
 curl http://127.0.0.1:8787/healthz
+curl http://127.0.0.1:8787/readyz
 ```
 
 运行 PostgreSQL 集成测试：
@@ -93,3 +94,38 @@ HARNESSIX_TEST_POSTGRES_URL='postgresql://...' \
 3. 两个 Worker 竞争一个 Action 时只有一个获得租约；
 4. 长任务跨越原始租约截止时间后仍能通过心跳完成；
 5. `RUNNING` 租约过期后进入 `UNKNOWN`，不会自动重放写操作。
+
+## 8. OpenTelemetry Collector 验收
+
+Harnessix 使用 OTLP/HTTP 导出 Trace 和 Metrics。仓库提供只输出到 Collector 自身日志的验收配置：
+
+```bash
+docker run --rm \
+  -p 4317:4317 \
+  -p 4318:4318 \
+  -v "$PWD/deploy/otel-collector.debug.yaml:/etc/otelcol/config.yaml" \
+  otel/opentelemetry-collector
+```
+
+应用进程配置：
+
+```bash
+export HARNESSIX_OTEL_ENDPOINT='http://127.0.0.1:4318'
+export HARNESSIX_SERVICE_NAME='harnessix'
+uv run harnessix serve
+```
+
+API 和 Worker 的 `service.name` 分别为 `harnessix.api`、`harnessix.worker`。Collector 日志应同时出现 Trace 与 Metrics 数据。
+
+`deploy/otel-collector.debug.yaml` 只用于连通性验收，不保存历史数据。正式环境应把 `debug` exporter 替换为团队已有的 Trace/Metrics 后端，并在 Collector 前配置私网访问控制、TLS 或 mTLS；不把后端 Token 写入仓库。
+
+## 9. 远程中间件落地顺序
+
+远程服务器已有 PostgreSQL 时，建议按以下顺序扩展，避免一次引入过多组件：
+
+1. 先部署 OpenTelemetry Collector，并仅绑定受控私网地址；
+2. 用本仓库 debug 配置验证 API、Worker 两种服务数据都能到达；
+3. 再选择现有公司的 Grafana/Tempo/Prometheus 或云观测后端；
+4. 最后固化 Dashboard、SLO 和告警阈值。
+
+当前代码不依赖特定可视化后端，因此更换后端只修改 Collector，不修改 Action 领域逻辑。

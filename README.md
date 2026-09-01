@@ -44,6 +44,9 @@ Harnessix 专注所有 Agent 框架共同面对的执行边界：外部副作用
 - API 与独立 Worker 进程解耦；
 - Worker 心跳续租、Owner 校验和过期恢复；
 - PostgreSQL `FOR UPDATE SKIP LOCKED` 多 Worker 原子 Claim；
+- W3C Trace Context 经 Journal 跨进程持久传播；
+- OpenTelemetry Trace/Metrics 可选适配器与 NoOp 默认实现；
+- JSON 结构化日志、队列指标和 `/readyz` 就绪检查；
 - 显式 `UNKNOWN`，写操作异常默认不盲目重试；
 - Executor 专用 `reconcile()` 对账契约；
 - FastAPI、同步/异步 Python SDK；
@@ -107,6 +110,9 @@ uv run harnessix worker
 | `HARNESSIX_WORKER_POLL_SECONDS` | `0.5` | 空队列轮询间隔 |
 | `HARNESSIX_WORKER_HEARTBEAT_SECONDS` | `10` | Worker 续租间隔，必须小于租约时长 |
 | `HARNESSIX_RECOVERY_INTERVAL_SECONDS` | `5` | 过期租约扫描间隔 |
+| `HARNESSIX_LOG_FORMAT` | `json` | `json` 或 `console` |
+| `HARNESSIX_LOG_LEVEL` | `INFO` | 日志级别 |
+| `HARNESSIX_OTEL_ENDPOINT` | 空 | OTLP/HTTP Collector 基础地址 |
 
 ## LangGraph 适配
 
@@ -167,6 +173,7 @@ examples/                   可运行演示
 - [自研与复用边界](docs/build-vs-buy.md)
 - [开发路线图](docs/roadmap.md)
 - [M1 Worker 与 PostgreSQL 设计](docs/m1-worker-postgresql.md)
+- [M1.2 可观测性设计](docs/m1-observability.md)
 - [部署与运行](docs/deployment.md)
 
 ## 重要语义

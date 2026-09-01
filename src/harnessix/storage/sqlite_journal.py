@@ -26,8 +26,10 @@ from harnessix.domain.models import (
     ActionSnapshot,
     ActionStatus,
     ApprovalRecord,
+    JournalOperationalStats,
     PolicyDecision,
     ToolDescriptor,
+    TraceContext,
     utc_now,
 )
 
@@ -50,17 +52,81 @@ class SQLiteEffectJournal:
 
     async def initialize(self) -> None:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        migration = files("harnessix.storage.migrations").joinpath("0001_initial.sql").read_text()
         async with self._connection() as database:
-            await database.executescript(migration)
             await database.execute(
-                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(1, ?)",
-                (_iso(utc_now()),),
+                """
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT NOT NULL
+                )
+                """
             )
+            migration_root = files("harnessix.storage.migrations")
+            migrations = sorted(
+                (
+                    migration
+                    for migration in migration_root.iterdir()
+                    if migration.name.endswith(".sql")
+                ),
+                key=lambda migration: migration.name,
+            )
+            for migration in migrations:
+                version = int(migration.name.split("_", maxsplit=1)[0])
+                applied = await self._fetch_one(
+                    database,
+                    "SELECT version FROM schema_migrations WHERE version = ?",
+                    (version,),
+                )
+                if applied is not None:
+                    continue
+                await database.executescript(migration.read_text())
+                await database.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES(?, ?)",
+                    (version, _iso(utc_now())),
+                )
             await database.commit()
 
     async def close(self) -> None:
         """SQLite 实现按操作创建连接，无常驻资源需要释放。"""
+
+    async def ping(self) -> bool:
+        try:
+            async with self._connection() as database:
+                row = await self._fetch_one(database, "SELECT 1 AS ok", ())
+                return row is not None and int(row["ok"]) == 1
+        except aiosqlite.Error:
+            return False
+
+    async def operational_stats(self) -> JournalOperationalStats:
+        async with self._connection() as database:
+            row = await self._fetch_one(
+                database,
+                """
+                SELECT
+                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS ready_count,
+                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS pending_approval_count,
+                    SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS unknown_count,
+                    MIN(CASE WHEN status = ? THEN created_at END) AS oldest_ready_at
+                FROM actions
+                """,
+                (
+                    ActionStatus.READY.value,
+                    ActionStatus.PENDING_APPROVAL.value,
+                    ActionStatus.UNKNOWN.value,
+                    ActionStatus.READY.value,
+                ),
+            )
+            assert row is not None
+            return JournalOperationalStats(
+                ready_count=int(row["ready_count"] or 0),
+                pending_approval_count=int(row["pending_approval_count"] or 0),
+                unknown_count=int(row["unknown_count"] or 0),
+                oldest_ready_at=(
+                    datetime.fromisoformat(row["oldest_ready_at"])
+                    if row["oldest_ready_at"]
+                    else None
+                ),
+            )
 
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
@@ -78,6 +144,7 @@ class SQLiteEffectJournal:
         request: ActionRequest,
         tool: ToolDescriptor,
         request_fingerprint: str,
+        trace_context: TraceContext | None = None,
     ) -> tuple[ActionSnapshot, bool]:
         now = utc_now()
         async with self._connection() as database:
@@ -108,8 +175,9 @@ class SQLiteEffectJournal:
                 """
                 INSERT INTO actions(
                     action_id, tenant_id, idempotency_key, request_fingerprint,
-                    request_json, tool_json, status, created_at, updated_at, version
-                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    request_json, tool_json, trace_context_json, status,
+                    created_at, updated_at, version
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 """,
                 (
                     str(request.action_id),
@@ -118,6 +186,7 @@ class SQLiteEffectJournal:
                     request_fingerprint,
                     _json_dump(request),
                     _json_dump(tool),
+                    _json_dump(trace_context) if trace_context is not None else None,
                     ActionStatus.RECEIVED.value,
                     _iso(now),
                     _iso(now),
@@ -404,6 +473,11 @@ class SQLiteEffectJournal:
             request_fingerprint=row["request_fingerprint"],
             tool=ToolDescriptor.model_validate_json(row["tool_json"]),
             status=ActionStatus(row["status"]),
+            trace_context=(
+                TraceContext.model_validate_json(row["trace_context_json"])
+                if row["trace_context_json"]
+                else None
+            ),
             policy=(
                 PolicyDecision.model_validate_json(row["policy_json"])
                 if row["policy_json"]

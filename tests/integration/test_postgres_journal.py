@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 from harnessix.bootstrap import build_service
-from harnessix.domain.models import ActionStatus
+from harnessix.domain.models import ActionStatus, TraceContext
+from harnessix.runtime import action_fingerprint
 from harnessix.settings import Settings
 from harnessix.worker import ActionWorker
 from tests.helpers import action_request
@@ -50,5 +51,18 @@ async def test_postgres_workers_claim_action_without_duplication(tmp_path: Path)
         assert stored.status is ActionStatus.SUCCEEDED
         assert [event.sequence for event in events] == list(range(1, len(events) + 1))
         assert sum(event.event_type == "execution_leased" for event in events) == 1
+
+        traced_request = action_request("system.echo", {"message": "postgres-trace"})
+        trace_context = TraceContext(
+            traceparent="00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+        )
+        traced, created = await first_service.journal.create_action(
+            traced_request,
+            first_service.registry.get(traced_request.tool).descriptor(),
+            action_fingerprint(traced_request),
+            trace_context,
+        )
+        assert created is True
+        assert traced.trace_context == trace_context
     finally:
         await asyncio.gather(first_service.close(), second_service.close())

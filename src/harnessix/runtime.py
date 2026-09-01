@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import timedelta
+from time import perf_counter
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -10,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 from harnessix.domain.errors import UncertainEffectError
 from harnessix.domain.models import (
+    TERMINAL_ACTION_STATUSES,
     ActionEvent,
     ActionFailure,
     ActionRequest,
@@ -24,10 +27,19 @@ from harnessix.domain.models import (
     PolicyDecisionKind,
     ReconciliationOutcomeKind,
     ToolDescriptor,
+    TraceContext,
     utc_now,
 )
 from harnessix.domain.ports import EffectJournal, PolicyEngine
 from harnessix.domain.registry import ToolDefinition, ToolRegistry
+from harnessix.observability import (
+    NoOpObservability,
+    Observability,
+    bind_log_context,
+    trace_log_fields,
+)
+
+logger = logging.getLogger(__name__)
 
 _SENSITIVE_KEYS = frozenset(
     {
@@ -89,6 +101,7 @@ class ActionService:
         lease_seconds: int = 30,
         worker_id: str | None = None,
         auto_execute: bool = True,
+        observability: Observability | None = None,
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds 必须大于 0")
@@ -98,25 +111,82 @@ class ActionService:
         self.lease_seconds = lease_seconds
         self.worker_id = worker_id or f"worker-{uuid4()}"
         self.auto_execute = auto_execute
+        self.observability = observability or NoOpObservability()
 
     async def initialize(self) -> list[UUID]:
         await self.journal.initialize()
-        return await self.journal.recover_expired()
+        recovered = await self.journal.recover_expired()
+        if recovered:
+            self.observability.increment("harnessix.lease.recoveries", len(recovered))
+        return recovered
 
     async def close(self) -> None:
-        await self.journal.close()
+        try:
+            await self.journal.close()
+        finally:
+            self.observability.close()
+
+    async def ready(self) -> bool:
+        return await self.journal.ping()
 
     async def submit(self, request: ActionRequest) -> ActionSnapshot:
         tool = self.registry.get(request.tool)
+        attributes = {"tool": request.tool, "effect_class": tool.effect_class.value}
+        started_at = perf_counter()
+        with self.observability.span("harnessix.action.submit", attributes=attributes) as span:
+            trace_context = self.observability.current_trace_context()
+            log_fields = trace_log_fields(
+                trace_context.traceparent if trace_context is not None else None
+            )
+            with bind_log_context(
+                action_id=request.action_id,
+                tenant_id=request.principal.tenant_id,
+                tool=request.tool,
+                **log_fields,
+            ):
+                logger.info("开始接收 Action")
+                self.observability.increment("harnessix.actions.submitted", attributes=attributes)
+                try:
+                    snapshot, should_count_completion = await self._submit(
+                        request, tool, trace_context
+                    )
+                except Exception:
+                    span.set_attribute("harnessix.outcome", "error")
+                    self.observability.increment(
+                        "harnessix.actions.submit_errors", attributes=attributes
+                    )
+                    logger.exception("Action 提交失败")
+                    raise
+                span.set_attribute("harnessix.action.status", snapshot.status.value)
+                if should_count_completion:
+                    self._record_action_completion(snapshot)
+                self.observability.record(
+                    "harnessix.action.duration",
+                    perf_counter() - started_at,
+                    attributes={"tool": request.tool, "status": snapshot.status.value},
+                )
+                logger.info("Action 当前状态：%s", snapshot.status.value)
+                return snapshot
+        raise AssertionError("Observability span 未正常进入")
+
+    async def _submit(
+        self,
+        request: ActionRequest,
+        tool: ToolDefinition,
+        trace_context: TraceContext | None,
+    ) -> tuple[ActionSnapshot, bool]:
         snapshot, created = await self.journal.create_action(
-            request, tool.descriptor(), action_fingerprint(request)
+            request,
+            tool.descriptor(),
+            action_fingerprint(request),
+            trace_context,
         )
         if not created:
-            return snapshot
+            return snapshot, False
 
         validation_error = self._validate_request(request, tool)
         if validation_error is not None:
-            return await self._fail_validation(snapshot, validation_error)
+            return await self._fail_validation(snapshot, validation_error), True
 
         snapshot = await self.journal.transition(
             request.action_id,
@@ -125,17 +195,25 @@ class ActionService:
             event_type="action_validated",
         )
         try:
-            policy = await self.policy_engine.evaluate(snapshot, tool.descriptor())
+            with self.observability.span(
+                "harnessix.policy.evaluate", attributes={"tool": request.tool}
+            ):
+                policy = await self.policy_engine.evaluate(snapshot, tool.descriptor())
         except Exception as error:
-            return await self.journal.transition(
-                request.action_id,
-                expected={ActionStatus.VALIDATED},
-                target=ActionStatus.FAILED,
-                event_type="policy_evaluation_failed",
-                result=ActionResult(
-                    status=ActionStatus.FAILED,
-                    error=ActionFailure(code="policy_error", message=str(error), retriable=True),
+            return (
+                await self.journal.transition(
+                    request.action_id,
+                    expected={ActionStatus.VALIDATED},
+                    target=ActionStatus.FAILED,
+                    event_type="policy_evaluation_failed",
+                    result=ActionResult(
+                        status=ActionStatus.FAILED,
+                        error=ActionFailure(
+                            code="policy_error", message=str(error), retriable=True
+                        ),
+                    ),
                 ),
+                True,
             )
         snapshot = await self.journal.transition(
             request.action_id,
@@ -146,24 +224,30 @@ class ActionService:
             data={"policy_id": policy.policy_id, "decision": policy.kind.value},
         )
         if policy.kind is PolicyDecisionKind.DENY:
-            return await self.journal.transition(
-                request.action_id,
-                expected={ActionStatus.POLICY_EVALUATED},
-                target=ActionStatus.DENIED,
-                event_type="action_denied",
-                result=ActionResult(
-                    status=ActionStatus.DENIED,
-                    error=ActionFailure(
-                        code="policy_denied", message=policy.reason, retriable=False
+            return (
+                await self.journal.transition(
+                    request.action_id,
+                    expected={ActionStatus.POLICY_EVALUATED},
+                    target=ActionStatus.DENIED,
+                    event_type="action_denied",
+                    result=ActionResult(
+                        status=ActionStatus.DENIED,
+                        error=ActionFailure(
+                            code="policy_denied", message=policy.reason, retriable=False
+                        ),
                     ),
                 ),
+                True,
             )
         if policy.kind is PolicyDecisionKind.REQUIRE_APPROVAL:
-            return await self.journal.transition(
-                request.action_id,
-                expected={ActionStatus.POLICY_EVALUATED},
-                target=ActionStatus.PENDING_APPROVAL,
-                event_type="approval_requested",
+            return (
+                await self.journal.transition(
+                    request.action_id,
+                    expected={ActionStatus.POLICY_EVALUATED},
+                    target=ActionStatus.PENDING_APPROVAL,
+                    event_type="approval_requested",
+                ),
+                False,
             )
         snapshot = await self.journal.transition(
             request.action_id,
@@ -172,13 +256,17 @@ class ActionService:
             event_type="action_ready",
         )
         if not self.auto_execute:
-            return snapshot
-        return await self._claim_and_execute(snapshot)
+            return snapshot, False
+        return await self._claim_and_execute(snapshot), False
 
     async def decide_approval(
         self, action_id: UUID | str, decision: ApprovalDecision
     ) -> ActionSnapshot:
         snapshot = await self.journal.get_action(action_id)
+        self.observability.increment(
+            "harnessix.approvals.decisions",
+            attributes={"outcome": decision.outcome.value, "tool": snapshot.request.tool},
+        )
         approval = ApprovalRecord(
             outcome=decision.outcome,
             actor=decision.actor,
@@ -186,7 +274,7 @@ class ActionService:
             request_fingerprint=snapshot.request_fingerprint,
         )
         if decision.outcome is ApprovalOutcome.REJECTED:
-            return await self.journal.transition(
+            completed = await self.journal.transition(
                 action_id,
                 expected={ActionStatus.PENDING_APPROVAL},
                 target=ActionStatus.DENIED,
@@ -201,6 +289,8 @@ class ActionService:
                     ),
                 ),
             )
+            self._record_action_completion(completed)
+            return completed
 
         snapshot = await self.journal.transition(
             action_id,
@@ -217,7 +307,7 @@ class ActionService:
         snapshot = await self.journal.get_action(action_id)
         tool = self.registry.get(snapshot.request.tool)
         if not tool.supports_reconciliation:
-            return await self.journal.transition(
+            completed = await self.journal.transition(
                 action_id,
                 expected={ActionStatus.UNKNOWN},
                 target=ActionStatus.MANUAL_INTERVENTION,
@@ -232,6 +322,8 @@ class ActionService:
                 ),
                 clear_lease=True,
             )
+            self._record_action_completion(completed)
+            return completed
 
         snapshot = await self.journal.transition(
             action_id,
@@ -242,8 +334,17 @@ class ActionService:
             lease_expires_at=utc_now() + timedelta(seconds=self.lease_seconds),
         )
         try:
-            outcome = await tool.executor.reconcile(snapshot)
+            started_at = perf_counter()
+            with self.observability.span(
+                "harnessix.action.reconcile",
+                attributes={"tool": snapshot.request.tool},
+            ):
+                outcome = await tool.executor.reconcile(snapshot)
         except Exception as error:  # 对账异常仍然不能证明原副作用失败
+            self.observability.increment(
+                "harnessix.reconciliation",
+                attributes={"tool": snapshot.request.tool, "outcome": "error"},
+            )
             return await self.journal.transition(
                 action_id,
                 expected={ActionStatus.RECONCILING},
@@ -259,6 +360,16 @@ class ActionService:
                 required_lease_owner=self.worker_id,
             )
 
+        self.observability.increment(
+            "harnessix.reconciliation",
+            attributes={"tool": snapshot.request.tool, "outcome": outcome.kind.value},
+        )
+        self.observability.record(
+            "harnessix.reconciliation.duration",
+            perf_counter() - started_at,
+            attributes={"tool": snapshot.request.tool, "outcome": outcome.kind.value},
+        )
+
         if outcome.kind is ReconciliationOutcomeKind.SUCCEEDED:
             target = ActionStatus.SUCCEEDED
         elif outcome.kind is ReconciliationOutcomeKind.FAILED:
@@ -267,7 +378,7 @@ class ActionService:
             target = ActionStatus.MANUAL_INTERVENTION
         else:
             target = ActionStatus.UNKNOWN
-        return await self.journal.transition(
+        completed = await self.journal.transition(
             action_id,
             expected={ActionStatus.RECONCILING},
             target=target,
@@ -282,6 +393,8 @@ class ActionService:
             clear_lease=True,
             required_lease_owner=self.worker_id,
         )
+        self._record_action_completion(completed)
+        return completed
 
     async def get(self, action_id: UUID | str) -> ActionSnapshot:
         return await self.journal.get_action(action_id)
@@ -351,6 +464,44 @@ class ActionService:
 
     async def execute_leased(self, snapshot: ActionSnapshot) -> ActionSnapshot:
         """执行已经由当前 Worker Claim 的 Action。"""
+        attributes = {
+            "tool": snapshot.request.tool,
+            "effect_class": snapshot.tool.effect_class.value,
+        }
+        started_at = perf_counter()
+        with self.observability.span("harnessix.action.execute", attributes=attributes) as span:
+            trace_context = self.observability.current_trace_context()
+            log_fields = trace_log_fields(
+                trace_context.traceparent if trace_context is not None else None
+            )
+            with bind_log_context(
+                action_id=snapshot.request.action_id,
+                tenant_id=snapshot.request.principal.tenant_id,
+                tool=snapshot.request.tool,
+                worker_id=self.worker_id,
+                **log_fields,
+            ):
+                logger.info("Worker 开始执行 Action")
+                completed = await self._execute_leased(snapshot)
+                span.set_attribute("harnessix.action.status", completed.status.value)
+                metric_attributes = {
+                    "tool": snapshot.request.tool,
+                    "status": completed.status.value,
+                }
+                self.observability.increment(
+                    "harnessix.executions.completed", attributes=metric_attributes
+                )
+                self._record_action_completion(completed)
+                self.observability.record(
+                    "harnessix.executor.duration",
+                    perf_counter() - started_at,
+                    attributes=metric_attributes,
+                )
+                logger.info("Worker 执行完成：%s", completed.status.value)
+                return completed
+        raise AssertionError("Observability span 未正常进入")
+
+    async def _execute_leased(self, snapshot: ActionSnapshot) -> ActionSnapshot:
         action_id = snapshot.request.action_id
         tool = self.registry.get(snapshot.request.tool)
         snapshot = await self.journal.transition(
@@ -414,4 +565,12 @@ class ActionService:
             result=result,
             clear_lease=True,
             required_lease_owner=self.worker_id,
+        )
+
+    def _record_action_completion(self, snapshot: ActionSnapshot) -> None:
+        if snapshot.status not in TERMINAL_ACTION_STATUSES:
+            return
+        self.observability.increment(
+            "harnessix.actions.completed",
+            attributes={"tool": snapshot.request.tool, "status": snapshot.status.value},
         )

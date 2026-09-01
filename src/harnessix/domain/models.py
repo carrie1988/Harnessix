@@ -122,6 +122,13 @@ class ActionContext(ContractModel):
     trace_id: str | None = Field(default=None, max_length=256, description="链路追踪标识")
 
 
+class TraceContext(ContractModel):
+    """跨进程持久化的 W3C Trace Context。"""
+
+    traceparent: str = Field(min_length=1, max_length=128, description="W3C traceparent")
+    tracestate: str | None = Field(default=None, max_length=512, description="W3C tracestate")
+
+
 class SecretRef(ContractModel):
     name: str = Field(min_length=1, max_length=256, description="凭据引用名称")
     version: str | None = Field(default=None, max_length=128, description="凭据版本")
@@ -218,6 +225,7 @@ class ActionSnapshot(ContractModel):
     request_fingerprint: str
     tool: ToolDescriptor
     status: ActionStatus
+    trace_context: TraceContext | None = None
     policy: PolicyDecision | None = None
     approval: ApprovalRecord | None = None
     result: ActionResult | None = None
@@ -226,6 +234,15 @@ class ActionSnapshot(ContractModel):
     created_at: datetime
     updated_at: datetime
     version: int = Field(ge=1)
+
+
+class JournalOperationalStats(ContractModel):
+    """Journal 对运维层暴露的低基数队列快照。"""
+
+    ready_count: int = Field(ge=0)
+    pending_approval_count: int = Field(ge=0)
+    unknown_count: int = Field(ge=0)
+    oldest_ready_at: datetime | None = None
 
 
 class ActionEvent(ContractModel):

@@ -194,3 +194,41 @@ async def test_heartbeat_keeps_long_action_lease_alive(queued_service: ActionSer
     assert completed.status is ActionStatus.SUCCEEDED
     assert completed.version > 6
     assert "lease_renewed" not in {event.event_type for event in events}
+
+
+async def test_operational_stats_report_queue_state(queued_service: ActionService) -> None:
+    ready_request = action_request("system.echo", {"message": "stats"})
+    pending_request = action_request(
+        "demo.issue.create",
+        {"title": "等待审批"},
+        idempotency_key="stats:approval",
+    )
+    await queued_service.submit(ready_request)
+    await queued_service.submit(pending_request)
+
+    before = await queued_service.journal.operational_stats()
+    await _worker(queued_service).run_once()
+    after = await queued_service.journal.operational_stats()
+
+    assert before.ready_count == 1
+    assert before.pending_approval_count == 1
+    assert before.oldest_ready_at is not None
+    assert after.ready_count == 0
+    assert after.pending_approval_count == 1
+
+
+async def test_metrics_collection_failure_does_not_change_execution_result(
+    queued_service: ActionService,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = action_request("system.echo", {"message": "best-effort-metrics"})
+    await queued_service.submit(request)
+
+    async def unavailable_stats() -> None:
+        raise RuntimeError("metrics query unavailable")
+
+    monkeypatch.setattr(queued_service.journal, "operational_stats", unavailable_stats)
+    completed = await _worker(queued_service).run_once()
+
+    assert completed is not None
+    assert completed.status is ActionStatus.SUCCEEDED
