@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -43,6 +44,32 @@ class DemoIssueRepository:
 
     def __init__(self, database_path: str | Path) -> None:
         self.database_path = Path(database_path)
+        self._initialized = False
+        self._initialize_lock = asyncio.Lock()
+
+    async def initialize(self) -> None:
+        if self._initialized:
+            return
+        async with self._initialize_lock:
+            if self._initialized:
+                return
+            self.database_path.parent.mkdir(parents=True, exist_ok=True)
+            async with self._connection() as database:
+                await database.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS demo_issues (
+                        issue_id TEXT PRIMARY KEY,
+                        tenant_id TEXT NOT NULL,
+                        idempotency_key TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        body TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        UNIQUE (tenant_id, idempotency_key)
+                    )
+                    """
+                )
+                await database.commit()
+            self._initialized = True
 
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
@@ -62,6 +89,7 @@ class DemoIssueRepository:
         title: str,
         body: str,
     ) -> DemoIssue:
+        await self.initialize()
         existing = await self.find(tenant_id=tenant_id, idempotency_key=idempotency_key)
         if existing is not None:
             return existing
@@ -96,6 +124,7 @@ class DemoIssueRepository:
         return found
 
     async def find(self, *, tenant_id: str, idempotency_key: str) -> DemoIssue | None:
+        await self.initialize()
         async with self._connection() as database:
             cursor = await database.execute(
                 """

@@ -15,9 +15,9 @@
 
 ## M1：生产单节点
 
-- [ ] 独立 Worker 和持久化队列；
-- [ ] 周期性租约续期与恢复任务；
-- [ ] PostgreSQL Journal；
+- [x] 独立 Worker 和持久化队列；
+- [x] 周期性租约续期与恢复任务；
+- [x] PostgreSQL Journal；
 - [ ] OpenTelemetry Metrics、Trace 和结构化日志；
 - [ ] OIDC Principal 认证；
 - [ ] Secret Provider 与一次性注入；

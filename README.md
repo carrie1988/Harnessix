@@ -31,15 +31,19 @@ Harnessix 是 Action Plane，不是完整 Agent 框架。以下能力复用现�
 
 Harnessix 专注所有 Agent 框架共同面对的执行边界：外部副作用是否安全、是否可审计、发生不确定性后能否不重放原操作而完成对账。
 
-## MVP 已实现能力
+## 当前已实现能力
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
 - 版本化且框架无关的 `ActionRequest`；
 - 运行时拥有的 Tool Schema、副作用类型和风险等级；
 - `allow`、`deny`、`require_approval` 策略结果；
-- SQLite 当前快照与追加式 Effect Journal；
+- SQLite 与 PostgreSQL 当前快照、追加式 Effect Journal；
 - 租户范围幂等键和载荷冲突检测；
 - `READY → LEASED → RUNNING` 执行租约；
+- 基于 Journal `READY` 状态的持久队列；
+- API 与独立 Worker 进程解耦；
+- Worker 心跳续租、Owner 校验和过期恢复；
+- PostgreSQL `FOR UPDATE SKIP LOCKED` 多 Worker 原子 Claim；
 - 显式 `UNKNOWN`，写操作异常默认不盲目重试；
 - Executor 专用 `reconcile()` 对账契约；
 - FastAPI、同步/异步 Python SDK；
@@ -73,6 +77,36 @@ make demo
 4. Action 进入 `UNKNOWN`；
 5. 对账器按业务幂等键查到既有 Issue；
 6. Action 变为 `SUCCEEDED`，不重复创建 Issue。
+
+上述演示使用默认 `inline` 模式，适合本地调试。
+
+## 队列执行模式
+
+生产形态使用 PostgreSQL，并将 API 与 Worker 分开启动：
+
+```bash
+export HARNESSIX_DATABASE_URL='postgresql://harnessix:***@数据库地址:5432/harnessix'
+export HARNESSIX_EXECUTION_MODE=queued
+
+# 终端一：只负责接收、校验、策略和审批
+uv run harnessix serve
+
+# 终端二：Claim READY Action 并执行
+uv run harnessix worker
+```
+
+在 `queued` 模式下，提交或批准 Action 后，HTTP API 返回 `202` 和 `READY` 快照；独立 Worker 完成执行后，可通过 `GET /v1/actions/{action_id}` 查询最终状态。
+
+| 环境变量 | 默认值 | 说明 |
+|---|---:|---|
+| `HARNESSIX_DATABASE_URL` | 空 | 配置后使用 PostgreSQL Journal |
+| `HARNESSIX_DATABASE_PATH` | `.harnessix/harnessix.db` | 未配置 PostgreSQL 时使用的 SQLite Journal |
+| `HARNESSIX_DEMO_DATABASE_PATH` | `.harnessix/demo-external.db` | 模拟外部 Issue 系统的独立 SQLite 文件 |
+| `HARNESSIX_EXECUTION_MODE` | `inline` | `inline` 或 `queued` |
+| `HARNESSIX_LEASE_SECONDS` | `30` | 执行租约时长 |
+| `HARNESSIX_WORKER_POLL_SECONDS` | `0.5` | 空队列轮询间隔 |
+| `HARNESSIX_WORKER_HEARTBEAT_SECONDS` | `10` | Worker 续租间隔，必须小于租约时长 |
+| `HARNESSIX_RECOVERY_INTERVAL_SECONDS` | `5` | 过期租约扫描间隔 |
 
 ## LangGraph 适配
 
@@ -113,7 +147,7 @@ issue_tool = create_harnessix_tool(
 
 ```text
 src/harnessix/domain/       Action Contract、状态和端口
-src/harnessix/storage/      SQLite Effect Journal 与迁移
+src/harnessix/storage/      SQLite/PostgreSQL Effect Journal 与迁移
 src/harnessix/policy/       Policy Engine 实现
 src/harnessix/executors/    内置和演示 Executor
 src/harnessix/api/          FastAPI HTTP 边界
@@ -132,6 +166,8 @@ examples/                   可运行演示
 - [Action 生命周期](docs/action-lifecycle.md)
 - [自研与复用边界](docs/build-vs-buy.md)
 - [开发路线图](docs/roadmap.md)
+- [M1 Worker 与 PostgreSQL 设计](docs/m1-worker-postgresql.md)
+- [部署与运行](docs/deployment.md)
 
 ## 重要语义
 

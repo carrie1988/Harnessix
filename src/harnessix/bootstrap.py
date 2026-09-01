@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from harnessix.domain.models import EffectClass, RiskLevel
+from harnessix.domain.ports import EffectJournal
 from harnessix.domain.registry import ToolDefinition, ToolRegistry
 from harnessix.executors import (
     DemoIssueCreateInput,
@@ -12,7 +13,7 @@ from harnessix.executors import (
 from harnessix.policy import DefaultPolicyEngine
 from harnessix.runtime import ActionService
 from harnessix.settings import Settings
-from harnessix.storage import SQLiteEffectJournal
+from harnessix.storage import PostgresEffectJournal, SQLiteEffectJournal
 
 
 def build_registry(settings: Settings) -> ToolRegistry:
@@ -28,7 +29,7 @@ def build_registry(settings: Settings) -> ToolRegistry:
             executor=EchoExecutor(),
         )
     )
-    issue_repository = DemoIssueRepository(settings.database_path)
+    issue_repository = DemoIssueRepository(settings.demo_database_path)
     registry.register(
         ToolDefinition(
             name="demo.issue.create",
@@ -46,10 +47,18 @@ def build_registry(settings: Settings) -> ToolRegistry:
     return registry
 
 
-def build_service(settings: Settings) -> ActionService:
+def build_journal(settings: Settings) -> EffectJournal:
+    if settings.database_url is not None:
+        return PostgresEffectJournal(settings.database_url)
+    return SQLiteEffectJournal(settings.database_path)
+
+
+def build_service(settings: Settings, *, worker_id: str | None = None) -> ActionService:
     return ActionService(
-        journal=SQLiteEffectJournal(settings.database_path),
+        journal=build_journal(settings),
         registry=build_registry(settings),
         policy_engine=DefaultPolicyEngine(),
         lease_seconds=settings.lease_seconds,
+        worker_id=worker_id,
+        auto_execute=settings.execution_mode == "inline",
     )

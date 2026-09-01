@@ -1,4 +1,4 @@
-.PHONY: install format lint typecheck test check run spec demo
+.PHONY: install format lint typecheck test check run worker spec demo
 
 install:
 	uv sync --all-extras --dev
@@ -21,6 +21,9 @@ check: lint typecheck test
 
 run:
 	uv run harnessix serve
+
+worker:
+	uv run harnessix worker
 
 spec:
 	uv run python scripts/generate_specs.py

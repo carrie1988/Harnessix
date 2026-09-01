@@ -48,11 +48,15 @@ RUNNING
 
 `READY → LEASED` 表示 Worker 获得执行权，`LEASED → RUNNING` 表示外部调用已经开始。
 
+`LEASED → RUNNING` 和 `RUNNING → 最终状态` 都校验租约 Owner 与截止时间。长任务由 Worker 周期性续租；续租只更新快照，不追加事件。失去租约的旧 Worker 即使稍后返回，也不能覆盖新状态。
+
 租约过期恢复规则：
 
 - `LEASED` 过期：外部调用尚未开始，可以回到 `READY`；
 - `RUNNING` 过期：外部调用可能已经提交，进入 `UNKNOWN`；
 - `RECONCILING` 过期：对账未得到确定结果，回到 `UNKNOWN`。
+
+在 `queued` 模式中，`READY` 是持久队列状态，由独立 Worker 原子 Claim；在 `inline` 模式中，API 进程直接完成 Claim 和执行，便于本地调试。
 
 ## 4. 审批语义
 

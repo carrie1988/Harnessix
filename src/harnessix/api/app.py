@@ -72,7 +72,10 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await resolved_service.initialize()
         app.state.action_service = resolved_service
-        yield
+        try:
+            yield
+        finally:
+            await resolved_service.close()
 
     app = FastAPI(
         title="Harnessix Action API",

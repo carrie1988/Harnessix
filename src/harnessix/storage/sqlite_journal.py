@@ -59,6 +59,9 @@ class SQLiteEffectJournal:
             )
             await database.commit()
 
+    async def close(self) -> None:
+        """SQLite 实现按操作创建连接，无常驻资源需要释放。"""
+
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
         database = await aiosqlite.connect(self.database_path)
@@ -161,17 +164,22 @@ class SQLiteEffectJournal:
         lease_owner: str | None = None,
         lease_expires_at: datetime | None = None,
         clear_lease: bool = False,
+        required_lease_owner: str | None = None,
     ) -> ActionSnapshot:
         expected_set = frozenset(expected)
-        now = utc_now()
         async with self._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
             row = await self._require_row(database, action_id)
+            now = utc_now()
             current = ActionStatus(row["status"])
             if current not in expected_set:
                 raise IllegalTransitionError(current, target)
             if target not in ALLOWED_ACTION_TRANSITIONS[current]:
                 raise IllegalTransitionError(current, target)
+            if required_lease_owner is not None and not self._has_valid_lease(
+                row, required_lease_owner, now
+            ):
+                raise ActionConflictError("执行租约所有者不匹配或租约已经过期")
 
             assignments = ["status = ?", "updated_at = ?", "version = version + 1"]
             values: list[object] = [target.value, _iso(now)]
@@ -208,6 +216,86 @@ class SQLiteEffectJournal:
             )
             await database.commit()
             return self._snapshot(await self._require_row(database, action_id))
+
+    async def claim_next_ready(
+        self, *, worker_id: str, lease_expires_at: datetime
+    ) -> ActionSnapshot | None:
+        async with self._connection() as database:
+            await database.execute("BEGIN IMMEDIATE")
+            row = await self._fetch_one(
+                database,
+                """
+                SELECT * FROM actions
+                WHERE status = ?
+                ORDER BY created_at, action_id
+                LIMIT 1
+                """,
+                (ActionStatus.READY.value,),
+            )
+            if row is None:
+                await database.commit()
+                return None
+
+            now = utc_now()
+            action_id = UUID(row["action_id"])
+            await database.execute(
+                """
+                UPDATE actions
+                SET status = ?, lease_owner = ?, lease_expires_at = ?,
+                    updated_at = ?, version = version + 1
+                WHERE action_id = ?
+                """,
+                (
+                    ActionStatus.LEASED.value,
+                    worker_id,
+                    _iso(lease_expires_at),
+                    _iso(now),
+                    str(action_id),
+                ),
+            )
+            await self._insert_event(
+                database,
+                action_id=action_id,
+                event_type="execution_leased",
+                from_status=ActionStatus.READY,
+                to_status=ActionStatus.LEASED,
+                data={"worker_id": worker_id},
+                created_at=now,
+            )
+            await database.commit()
+            return self._snapshot(await self._require_row(database, action_id))
+
+    async def renew_lease(
+        self,
+        action_id: UUID | str,
+        *,
+        worker_id: str,
+        lease_expires_at: datetime,
+    ) -> bool:
+        async with self._connection() as database:
+            now = utc_now()
+            cursor = await database.execute(
+                """
+                UPDATE actions
+                SET lease_expires_at = ?, updated_at = ?, version = version + 1
+                WHERE action_id = ?
+                  AND lease_owner = ?
+                  AND lease_expires_at > ?
+                  AND status IN (?, ?, ?)
+                """,
+                (
+                    _iso(lease_expires_at),
+                    _iso(now),
+                    str(action_id),
+                    worker_id,
+                    _iso(now),
+                    ActionStatus.LEASED.value,
+                    ActionStatus.RUNNING.value,
+                    ActionStatus.RECONCILING.value,
+                ),
+            )
+            await database.commit()
+            return cursor.rowcount == 1
 
     async def recover_expired(self, now: datetime | None = None) -> list[UUID]:
         recovery_time = now or utc_now()
@@ -348,4 +436,13 @@ class SQLiteEffectJournal:
             to_status=ActionStatus(row["to_status"]),
             data=json.loads(row["data_json"]),
             created_at=datetime.fromisoformat(row["created_at"]),
+        )
+
+    @staticmethod
+    def _has_valid_lease(row: aiosqlite.Row, worker_id: str, now: datetime) -> bool:
+        expires_at = row["lease_expires_at"]
+        return bool(
+            row["lease_owner"] == worker_id
+            and expires_at
+            and datetime.fromisoformat(expires_at) > now
         )

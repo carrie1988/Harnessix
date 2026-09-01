@@ -8,6 +8,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "Harnessix Contributors" }]
 dependencies = [
     "aiosqlite>=0.21,<1",
+    "asyncpg>=0.30,<1",
     "fastapi>=0.116,<1",
     "httpx>=0.28,<1",
     "pydantic>=2.11,<3",
@@ -53,5 +54,5 @@ strict = true
 packages = ["harnessix"]
 
 [[tool.mypy.overrides]]
-module = ["aiosqlite.*", "langchain_core.*"]
+module = ["aiosqlite.*", "asyncpg.*", "langchain_core.*"]
 ignore_missing_imports = true

@@ -19,12 +19,12 @@ Harnessix 是 Framework-agnostic Agent Action Plane。它从结构化 Action 边
                        │
 ┌──────────────────────▼────────────────────────┐
 │ 应用服务层                                    │
-│ ActionService / 状态机 / 租约 / 恢复 / 对账   │
+│ ActionService / Worker / 状态机 / 租约 / 对账 │
 └───────────────┬──────────────────┬────────────┘
                 │                  │
 ┌───────────────▼──────────┐ ┌─────▼─────────────┐
 │ 领域层                   │ │ 基础设施层        │
-│ Contract / Policy Port   │ │ SQLite Journal    │
+│ Contract / Policy Port   │ │ SQLite/PostgreSQL │
 │ Tool / Executor Port     │ │ Demo External DB  │
 └───────────────┬──────────┘ └─────┬─────────────┘
                 │                  │
@@ -53,23 +53,40 @@ Harnessix 是 Framework-agnostic Agent Action Plane。它从结构化 Action 边
 3. 校验参数、副作用提示、幂等键和明文凭据；
 4. 调用 Policy Engine；
 5. 持久化审批；
-6. 获取执行租约；
-7. 调用 Executor；
+6. 在 `inline` 模式获取执行租约，或在 `queued` 模式停留于 `READY`；
+7. 调用 Executor 或等待 Worker Claim；
 8. 将写操作异常保守地归类为 `UNKNOWN`；
 9. 调用 Executor 的对账能力。
 
-### 3.3 SQLiteEffectJournal
+### 3.3 EffectJournal
 
-MVP 使用 SQLite 单节点存储：
+`EffectJournal` 是领域端口，当前有两个实现：
+
+- `SQLiteEffectJournal`：本地开发和单节点运行；
+- `PostgresEffectJournal`：生产单节点和多 Worker 并发 Claim。
+
+两个实现共享以下存储语义：
 
 - `actions` 保存当前物化快照；
 - `action_events` 保存不可更新的追加式事件；
 - 状态更新与事件写入位于同一个事务；
 - `(tenant_id, idempotency_key)` 建立条件唯一索引；
 - `version` 用于快照演进和后续乐观并发控制；
-- `lease_owner`、`lease_expires_at` 表示执行所有权。
+- `lease_owner`、`lease_expires_at` 表示执行所有权；
+- `READY` Action 本身就是持久队列，不依赖额外消息中间件。
 
-SQLite 只承担第一阶段单节点 MVP。PostgreSQL 后端将在不改变领域契约的情况下替换 Journal 实现。
+PostgreSQL 使用 `FOR UPDATE SKIP LOCKED` 让多个 Worker 原子 Claim 不同 Action；SQLite 使用 `BEGIN IMMEDIATE` 保持单 Writer Claim 语义。
+
+### 3.4 ActionWorker
+
+独立 Worker 负责：
+
+1. Claim 最早的 `READY` Action；
+2. 在同一事务中写入 `LEASED` 快照和事件；
+3. 转换到 `RUNNING` 后调用 Executor；
+4. 长任务周期性续租；
+5. 丢失租约后停止提交结果；
+6. 周期性恢复过期租约。
 
 ## 4. Effect Journal 与 Trace 的区别
 
@@ -96,11 +113,13 @@ Trace 解释模型和工具调用过程；Effect Journal 是执行事实来源�
 8. `UNKNOWN` 不自动重放原 Action。
 9. 对账只能观察外部系统，不能重复执行原操作。
 10. 明文凭据不得进入参数、元数据、Journal 或 Trace。
+11. 只有当前且未过期租约的 Owner 可以开始执行和提交结果。
+12. Heartbeat 更新租约但不追加事件，避免长任务产生事件风暴。
 
 ## 6. 当前权衡
 
-- MVP 在 API 请求内执行 Action，尚未拆分独立 Worker Queue；
-- 租约模型已建立，但 SQLite 只支持单节点开发形态；
+- 默认 `inline` 模式仍在 API 请求内执行，`queued` 模式已拆分独立 Worker；
+- SQLite 只支持单节点开发形态，生产队列使用 PostgreSQL；
 - 默认 Policy 是确定性静态规则，后续接入 OPA/Cedar；
 - `demo.issue.create` 用独立 SQLite 事务模拟外部系统，不代表真实 SaaS 集成；
 - 沙箱、Secret 解析和身份认证暂不属于第一阶段验收。

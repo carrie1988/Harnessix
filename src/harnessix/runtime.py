@@ -26,9 +26,8 @@ from harnessix.domain.models import (
     ToolDescriptor,
     utc_now,
 )
-from harnessix.domain.ports import PolicyEngine
+from harnessix.domain.ports import EffectJournal, PolicyEngine
 from harnessix.domain.registry import ToolDefinition, ToolRegistry
-from harnessix.storage.sqlite_journal import SQLiteEffectJournal
 
 _SENSITIVE_KEYS = frozenset(
     {
@@ -84,11 +83,12 @@ class ActionService:
     def __init__(
         self,
         *,
-        journal: SQLiteEffectJournal,
+        journal: EffectJournal,
         registry: ToolRegistry,
         policy_engine: PolicyEngine,
         lease_seconds: int = 30,
         worker_id: str | None = None,
+        auto_execute: bool = True,
     ) -> None:
         if lease_seconds <= 0:
             raise ValueError("lease_seconds 必须大于 0")
@@ -97,10 +97,14 @@ class ActionService:
         self.policy_engine = policy_engine
         self.lease_seconds = lease_seconds
         self.worker_id = worker_id or f"worker-{uuid4()}"
+        self.auto_execute = auto_execute
 
     async def initialize(self) -> list[UUID]:
         await self.journal.initialize()
         return await self.journal.recover_expired()
+
+    async def close(self) -> None:
+        await self.journal.close()
 
     async def submit(self, request: ActionRequest) -> ActionSnapshot:
         tool = self.registry.get(request.tool)
@@ -167,7 +171,9 @@ class ActionService:
             target=ActionStatus.READY,
             event_type="action_ready",
         )
-        return await self._execute(snapshot, tool)
+        if not self.auto_execute:
+            return snapshot
+        return await self._claim_and_execute(snapshot)
 
     async def decide_approval(
         self, action_id: UUID | str, decision: ApprovalDecision
@@ -203,7 +209,9 @@ class ActionService:
             event_type="approval_granted",
             approval=approval,
         )
-        return await self._execute(snapshot, self.registry.get(snapshot.request.tool))
+        if not self.auto_execute:
+            return snapshot
+        return await self._claim_and_execute(snapshot)
 
     async def reconcile(self, action_id: UUID | str) -> ActionSnapshot:
         snapshot = await self.journal.get_action(action_id)
@@ -248,6 +256,7 @@ class ActionService:
                     ),
                 ),
                 clear_lease=True,
+                required_lease_owner=self.worker_id,
             )
 
         if outcome.kind is ReconciliationOutcomeKind.SUCCEEDED:
@@ -271,6 +280,7 @@ class ActionService:
             ),
             data={"outcome": outcome.kind.value},
             clear_lease=True,
+            required_lease_owner=self.worker_id,
         )
 
     async def get(self, action_id: UUID | str) -> ActionSnapshot:
@@ -327,25 +337,31 @@ class ActionService:
             result=ActionResult(status=ActionStatus.FAILED, error=failure),
         )
 
-    async def _execute(self, snapshot: ActionSnapshot, tool: ToolDefinition) -> ActionSnapshot:
+    async def _claim_and_execute(self, snapshot: ActionSnapshot) -> ActionSnapshot:
         action_id = snapshot.request.action_id
-        lease_expires_at = utc_now() + timedelta(seconds=self.lease_seconds)
         snapshot = await self.journal.transition(
             action_id,
             expected={ActionStatus.READY},
             target=ActionStatus.LEASED,
             event_type="execution_leased",
             lease_owner=self.worker_id,
-            lease_expires_at=lease_expires_at,
+            lease_expires_at=utc_now() + timedelta(seconds=self.lease_seconds),
         )
+        return await self.execute_leased(snapshot)
+
+    async def execute_leased(self, snapshot: ActionSnapshot) -> ActionSnapshot:
+        """执行已经由当前 Worker Claim 的 Action。"""
+        action_id = snapshot.request.action_id
+        tool = self.registry.get(snapshot.request.tool)
         snapshot = await self.journal.transition(
             action_id,
             expected={ActionStatus.LEASED},
             target=ActionStatus.RUNNING,
             event_type="execution_started",
+            required_lease_owner=self.worker_id,
         )
-        arguments: BaseModel = tool.input_model.model_validate(snapshot.request.arguments)
         try:
+            arguments: BaseModel = tool.input_model.model_validate(snapshot.request.arguments)
             outcome = await tool.executor.execute(snapshot, arguments)
         except UncertainEffectError as error:
             outcome_kind = ExecutionOutcomeKind.UNKNOWN
@@ -397,4 +413,5 @@ class ActionService:
             data={"outcome": outcome_kind.value},
             result=result,
             clear_lease=True,
+            required_lease_owner=self.worker_id,
         )
