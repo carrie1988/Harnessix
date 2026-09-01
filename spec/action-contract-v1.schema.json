@@ -1,0 +1,209 @@
+{
+  "$defs": {
+    "ActionContext": {
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "description": "上游会话标识",
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Session Id",
+          "type": "string"
+        },
+        "run_id": {
+          "description": "上游运行标识",
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "链路追踪标识",
+          "title": "Trace Id"
+        }
+      },
+      "required": [
+        "session_id",
+        "run_id"
+      ],
+      "title": "ActionContext",
+      "type": "object"
+    },
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "Principal": {
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": {
+          "description": "租户标识",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "subject_id": {
+          "description": "请求主体标识",
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "framework": {
+          "description": "上游 Agent 框架",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Framework",
+          "type": "string"
+        },
+        "roles": {
+          "description": "主体角色",
+          "items": {
+            "type": "string"
+          },
+          "title": "Roles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "subject_id",
+        "framework"
+      ],
+      "title": "Principal",
+      "type": "object"
+    },
+    "SecretRef": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "凭据引用名称",
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "凭据版本",
+          "title": "Version"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SecretRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action/v1",
+      "default": "harnessix.action/v1",
+      "description": "Action Contract 版本",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "action_id": {
+      "description": "Action 全局唯一标识",
+      "format": "uuid",
+      "title": "Action Id",
+      "type": "string"
+    },
+    "tool": {
+      "description": "运行时注册的工具名称",
+      "maxLength": 256,
+      "minLength": 1,
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$",
+      "title": "Tool",
+      "type": "string"
+    },
+    "arguments": {
+      "additionalProperties": true,
+      "description": "工具参数",
+      "title": "Arguments",
+      "type": "object"
+    },
+    "principal": {
+      "$ref": "#/$defs/Principal"
+    },
+    "context": {
+      "$ref": "#/$defs/ActionContext"
+    },
+    "effect_hint": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EffectClass"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "调用方预期副作用；最终分类由运行时定义"
+    },
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "租户范围业务幂等键",
+      "title": "Idempotency Key"
+    },
+    "secret_refs": {
+      "description": "凭据引用",
+      "items": {
+        "$ref": "#/$defs/SecretRef"
+      },
+      "title": "Secret Refs",
+      "type": "array"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "description": "非敏感扩展元数据",
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "tool",
+    "principal",
+    "context"
+  ],
+  "title": "ActionRequest",
+  "type": "object"
+}
