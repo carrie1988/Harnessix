@@ -4,7 +4,7 @@
 - 日期：2026-09-02
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-0.3.1 实施说明：当前 Kernel 已实现单宿主锁、事件 CAS/幂等、只读工具准入、输出边界、保守恢复和数据库文件权限。真实 Sandbox、网络隔离、完整 Secret Redactor、MCP/Hook 和持久审批等待仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见 [Kernel 支持边界](m03-runtime-kernel.md)。
+0.3.1/0.3.2 实施说明：当前 Kernel 已实现单宿主锁、事件 CAS/幂等、可信只读工具准入、输出边界、保守恢复、持久审批检查点与数据库文件权限。审批绑定当前工具契约/参数/Workspace 路径，但不提供 OS 隔离、actor 身份认证、文件内容或环境完整性保证。真实 Sandbox、网络隔离、完整 Secret Redactor 和 MCP/Hook 仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见 [Kernel 支持边界](m03-runtime-kernel.md)。
 
 ## 1. 安全目标
 

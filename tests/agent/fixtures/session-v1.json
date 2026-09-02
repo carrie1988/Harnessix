@@ -1,0 +1,401 @@
+{
+  "source_commit": "7c9443f0c6a3e50157ebdd7d31b8104bd2f26745",
+  "snapshot": {
+    "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+    "workspace": "/workspace/legacy",
+    "sequence": 19,
+    "active_turn_id": null,
+    "turns": [
+      {
+        "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+        "request_id": "legacy",
+        "request_fingerprint": "ca309d07e83e5879184daa47cdb291ff6877de598876aef08febb67df744e03c",
+        "status": "completed",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 120.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null,
+        "items": [
+          {
+            "item_id": "01a0635d-fd49-73b8-84d3-649f349b42a6",
+            "status": "completed",
+            "content": {
+              "kind": "user_message",
+              "text": "旧版本兼容性夹具"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a0635d-fd4e-734b-970c-adbe5ef21136",
+            "status": "completed",
+            "content": {
+              "kind": "tool_call",
+              "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+              "provider_call_id": "call-0",
+              "tool": "test.read",
+              "tool_version": "1",
+              "effect_class": "read_only",
+              "arguments": {}
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a0635d-fd54-766a-8538-2cad93da92c1",
+            "status": "completed",
+            "content": {
+              "kind": "tool_result",
+              "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+              "outcome": "succeeded",
+              "output": {
+                "value": 1
+              },
+              "error": null,
+              "action_id": null
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a0635d-fd5a-7ab2-a0e8-8f6c7099548c",
+            "status": "completed",
+            "content": {
+              "kind": "assistant_message",
+              "text": "完成"
+            },
+            "error": null
+          }
+        ],
+        "model_steps": 2,
+        "usage_step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "error": null,
+        "created_at": "2026-09-02T18:24:59.209092Z",
+        "completed_at": "2026-09-02T18:24:59.235165Z"
+      }
+    ],
+    "created_at": "2026-09-02T18:24:59.207041Z",
+    "updated_at": "2026-09-02T18:24:59.235165Z"
+  },
+  "events": [
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd47-75aa-9256-cbca73fbe178",
+      "turn_id": null,
+      "occurred_at": "2026-09-02T18:24:59.207041Z",
+      "payload": {
+        "type": "thread_created",
+        "workspace": "/workspace/legacy"
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 1
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd49-712e-b12f-8313fb9146dc",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.209092Z",
+      "payload": {
+        "type": "turn_started",
+        "request_id": "legacy",
+        "request_fingerprint": "ca309d07e83e5879184daa47cdb291ff6877de598876aef08febb67df744e03c",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 120.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 2
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd49-70c1-a112-0b4f5d3f87a3",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.209104Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a0635d-fd49-73b8-84d3-649f349b42a6",
+        "content": {
+          "kind": "user_message",
+          "text": "旧版本兼容性夹具"
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 3
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd49-73ee-a19d-004992948c3e",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.209114Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a0635d-fd49-73b8-84d3-649f349b42a6",
+        "status": "completed",
+        "content": {
+          "kind": "user_message",
+          "text": "旧版本兼容性夹具"
+        },
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 4
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd4b-75e5-a43a-651f381e0d21",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.211269Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 5
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd4d-7701-83ff-f5ce2f29d282",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.213051Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 6
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd4f-713b-b8d7-2d54b8773072",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.215142Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a0635d-fd4e-734b-970c-adbe5ef21136",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+          "provider_call_id": "call-0",
+          "tool": "test.read",
+          "tool_version": "1",
+          "effect_class": "read_only",
+          "arguments": {}
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 7
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd4f-7f9c-8c2b-c8e88ff4bec8",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.215148Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a0635d-fd4e-734b-970c-adbe5ef21136",
+        "status": "completed",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+          "provider_call_id": "call-0",
+          "tool": "test.read",
+          "tool_version": "1",
+          "effect_class": "read_only",
+          "arguments": {}
+        },
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 8
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd51-71ab-a768-0f927b385b61",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.217189Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 1,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 9
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd53-7f50-a1fc-f1b38845f931",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.219741Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "executing_tools",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 10
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd55-72e7-ba1e-5848939376db",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.221622Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a0635d-fd54-766a-8538-2cad93da92c1",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+          "outcome": "succeeded",
+          "output": {
+            "value": 1
+          },
+          "error": null,
+          "action_id": null
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 11
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd55-70ef-ac0e-8948b39d543e",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.221629Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a0635d-fd54-766a-8538-2cad93da92c1",
+        "status": "completed",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a0635d-fd4e-7957-9799-3a4152dca8a6",
+          "outcome": "succeeded",
+          "output": {
+            "value": 1
+          },
+          "error": null,
+          "action_id": null
+        },
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 12
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd57-7344-9e67-9b9fadba8bd1",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.223479Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 13
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd59-7137-beef-eec9fb394541",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.225142Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 14
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd5b-72d3-842a-c7815cb340f8",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.227123Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a0635d-fd5a-7ab2-a0e8-8f6c7099548c",
+        "content": {
+          "kind": "assistant_message",
+          "text": ""
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 15
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd5d-7f64-a6fa-a589c6b00563",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.229126Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a0635d-fd5a-7ab2-a0e8-8f6c7099548c",
+        "status": "completed",
+        "content": {
+          "kind": "assistant_message",
+          "text": "完成"
+        },
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 16
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd5f-756f-b9e4-e2e02fcbe6db",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.231018Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 17
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd61-750b-ad50-6df1f6a57798",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.233421Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "finalizing",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 18
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01a0635d-fd63-7189-b4e2-c7c819199933",
+      "turn_id": "01a0635d-fd48-71e7-afb1-30197cd4dccd",
+      "occurred_at": "2026-09-02T18:24:59.235165Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "completed",
+        "error": null
+      },
+      "thread_id": "01a0635d-fd47-7d0e-b5ef-a9f7ee4ed005",
+      "sequence": 19
+    }
+  ]
+}

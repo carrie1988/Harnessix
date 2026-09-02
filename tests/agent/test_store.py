@@ -169,13 +169,13 @@ async def test_migration_idempotent_future_and_checksum(tmp_path: Path) -> None:
     await asyncio.gather(store.initialize(), SQLiteSessionStore(store.path).initialize())
     assert store.path.stat().st_mode & 0o777 == 0o600
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 1
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 2
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        database.execute("INSERT INTO agent_migrations VALUES (2, 'future')")
+        database.execute("INSERT INTO agent_migrations VALUES (3, 'future')")
     with pytest.raises(KernelError, match="高于"):
         await store.initialize()
     with sqlite3.connect(store.path) as database:
-        database.execute("DELETE FROM agent_migrations WHERE version = 2")
+        database.execute("DELETE FROM agent_migrations WHERE version = 3")
         database.execute("UPDATE agent_migrations SET checksum = 'changed'")
     with pytest.raises(KernelError, match="发生变化"):
         await store.initialize()

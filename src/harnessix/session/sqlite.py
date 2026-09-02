@@ -104,6 +104,7 @@ class SQLiteSessionStore:
     @asynccontextmanager
     async def runtime_owner(self) -> AsyncIterator[None]:
         """本地 macOS/Linux 宿主锁；进程退出由 OS 释放，禁止第二宿主接管活跃 Turn。"""
+        self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         descriptor = os.open(
             str(self.path) + ".runtime.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600
         )
@@ -133,6 +134,8 @@ class SQLiteSessionStore:
                 raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
             return None
         encoded: str = row["snapshot_json"]
+        if row["projection_version"] not in (1, 2):
+            raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
         if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
             raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
         thread = Thread.model_validate_json(encoded)
@@ -162,9 +165,12 @@ class SQLiteSessionStore:
     async def _save(self, database: aiosqlite.Connection, thread: Thread) -> None:
         encoded = thread.model_dump_json()
         await database.execute(
-            "INSERT INTO agent_threads VALUES (?, ?, ?, ?) "
+            "INSERT INTO agent_threads "
+            "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
+            "VALUES (?, ?, ?, ?, 2) "
             "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
-            "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256",
+            "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
+            "projection_version = excluded.projection_version",
             (
                 str(thread.thread_id),
                 thread.sequence,

@@ -3,13 +3,27 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, JsonValue, field_validator
+from pydantic import (
+    AwareDatetime,
+    Field,
+    JsonValue,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from harnessix.agent.ids import new_id
-from harnessix.domain.models import ContractModel, EffectClass, TraceContext, utc_now
+from harnessix.domain.models import (
+    ApprovalRecord,
+    ContractModel,
+    EffectClass,
+    TraceContext,
+    utc_now,
+)
 
 
 class AgentFailure(ContractModel):
@@ -40,6 +54,7 @@ class TurnStatus(StrEnum):
     PREPARING_CONTEXT = "preparing_context"
     CALLING_MODEL = "calling_model"
     EXECUTING_TOOLS = "executing_tools"
+    WAITING_APPROVAL = "waiting_approval"
     FINALIZING = "finalizing"
     CANCELLING = "cancelling"
     COMPLETED = "completed"
@@ -56,7 +71,8 @@ TURN_TRANSITIONS = {
     TurnStatus.ACCEPTED: {TurnStatus.PREPARING_CONTEXT},
     TurnStatus.PREPARING_CONTEXT: {TurnStatus.CALLING_MODEL},
     TurnStatus.CALLING_MODEL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.FINALIZING},
-    TurnStatus.EXECUTING_TOOLS: {TurnStatus.PREPARING_CONTEXT},
+    TurnStatus.EXECUTING_TOOLS: {TurnStatus.PREPARING_CONTEXT, TurnStatus.WAITING_APPROVAL},
+    TurnStatus.WAITING_APPROVAL: {TurnStatus.EXECUTING_TOOLS},
     TurnStatus.FINALIZING: {TurnStatus.COMPLETED},
     TurnStatus.CANCELLING: {TurnStatus.CANCELLED, TurnStatus.INTERRUPTED},
 }
@@ -82,6 +98,8 @@ class ToolCallContent(ContractModel):
     tool_version: str = Field(min_length=1, max_length=128)
     effect_class: EffectClass
     arguments: dict[str, JsonValue] = Field(default_factory=dict)
+    requires_approval: bool = False
+    tool_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class ToolResultContent(ContractModel):
@@ -93,8 +111,18 @@ class ToolResultContent(ContractModel):
     action_id: UUID | None = None
 
 
+class ApprovalRequestContent(ContractModel):
+    kind: Literal["approval_request"] = "approval_request"
+    approval_id: UUID
+    call_id: UUID
+    request_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    decision: ApprovalRecord | None = None
+    policy_version: Literal["kernel-read-only/v1"] = "kernel-read-only/v1"
+
+
 ItemContent = Annotated[
-    TextContent | ToolCallContent | ToolResultContent, Field(discriminator="kind")
+    TextContent | ToolCallContent | ToolResultContent | ApprovalRequestContent,
+    Field(discriminator="kind"),
 ]
 
 
@@ -184,11 +212,40 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 2
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
     payload: EventPayload
+
+    @model_serializer(mode="wrap")
+    def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if self.schema_version == 1:
+            content = data.get("payload", {}).get("content", {})
+            if content.get("kind") == "tool_call":
+                # 旧事件导出仍符合冻结的 v1 Schema，不泄漏兼容读取时补上的 v2 默认字段。
+                content.pop("requires_approval", None)
+                content.pop("tool_fingerprint", None)
+        return data
+
+    @model_validator(mode="after")
+    def legacy_event_boundary(self) -> Self:
+        if self.schema_version == 1:
+            payload = self.payload
+            if (
+                isinstance(payload, TurnStateChanged)
+                and payload.status == TurnStatus.WAITING_APPROVAL
+            ):
+                raise ValueError("审批状态需要 Agent Event v2")
+            if isinstance(payload, ItemStarted | ItemFinished):
+                content = payload.content
+                if isinstance(content, ApprovalRequestContent) or (
+                    isinstance(content, ToolCallContent)
+                    and (content.requires_approval or content.tool_fingerprint is not None)
+                ):
+                    raise ValueError("审批契约需要 Agent Event v2")
+        return self
 
 
 class AgentEvent(EventDraft):

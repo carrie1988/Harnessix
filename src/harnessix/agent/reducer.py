@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import timedelta
 from uuid import UUID
 
+from harnessix.agent.approvals import approval_for, request_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     TURN_TRANSITIONS,
     AgentEvent,
+    ApprovalRequestContent,
     Item,
     ItemFinished,
     ItemStarted,
@@ -24,6 +27,7 @@ from harnessix.agent.models import (
     Usage,
     UsageRecorded,
 )
+from harnessix.domain.models import ApprovalOutcome, EffectClass
 
 
 def require(condition: bool, message: str) -> None:
@@ -53,7 +57,7 @@ def pending_calls(turn: Turn) -> list[ToolCallContent]:
     ]
 
 
-def _start_item(turn: Turn, payload: ItemStarted) -> Turn:
+def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
     require(all(i.item_id != payload.item_id for i in turn.items), "Item ID 已存在")
     content = payload.content
     if isinstance(content, TextContent):
@@ -71,6 +75,31 @@ def _start_item(turn: Turn, payload: ItemStarted) -> Turn:
             ),
             "Tool Call ID 重复",
         )
+    elif isinstance(content, ApprovalRequestContent):
+        calls = pending_calls(turn)
+        require(turn.status == TurnStatus.EXECUTING_TOOLS, "审批请求只能在执行边界生成")
+        require(bool(calls) and calls[0].call_id == content.call_id, "审批与当前调用不匹配")
+        call = calls[0]
+        require(
+            call.requires_approval and call.effect_class == EffectClass.READ_ONLY,
+            "当前只支持可信只读工具审批",
+        )
+        require(call.tool_fingerprint is not None, "审批缺少工具契约指纹")
+        require(approval_for(turn, call) is None, "调用已存在审批请求")
+        require(
+            all(
+                not isinstance(i.content, ApprovalRequestContent)
+                or i.content.approval_id != content.approval_id
+                for i in turn.items
+            ),
+            "审批 ID 重复",
+        )
+        require(content.decision is None, "审批请求不能预置决定")
+        require(
+            content.request_fingerprint
+            == request_fingerprint(thread, turn, call, policy_version=content.policy_version),
+            "审批指纹不匹配",
+        )
     else:
         calls = pending_calls(turn)
         require(bool(calls) and calls[0].call_id == content.call_id, "Tool Result 缺失、重复或乱序")
@@ -83,17 +112,54 @@ def _start_item(turn: Turn, payload: ItemStarted) -> Turn:
         )
         if content.outcome == "succeeded":
             require(turn.status == TurnStatus.EXECUTING_TOOLS, "执行阶段之外不能记录成功结果")
+            if calls[0].requires_approval:
+                approval = approval_for(turn, calls[0])
+                require(
+                    approval is not None and approval.status == ItemStatus.COMPLETED,
+                    "成功结果之前必须持久记录审批决定",
+                )
+                assert approval is not None and isinstance(approval.content, ApprovalRequestContent)
+                require(
+                    approval.content.decision is not None
+                    and approval.content.decision.outcome == ApprovalOutcome.APPROVED,
+                    "未经批准的调用不能成功",
+                )
     item = Item(item_id=payload.item_id, status=ItemStatus.STARTED, content=content)
     return turn.model_copy(update={"items": (*turn.items, item)})
 
 
-def _finish_item(turn: Turn, payload: ItemFinished) -> Turn:
+def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
     original = next((i for i in turn.items if i.item_id == payload.item_id), None)
     require(original is not None, "Item 必须先开始")
     assert original is not None
     require(original.status == ItemStatus.STARTED, "Item 终态不可改写")
     require(original.content.kind == payload.content.kind, "Item 类型不可改变")
-    if not isinstance(original.content, TextContent):
+    if isinstance(original.content, ApprovalRequestContent):
+        require(isinstance(payload.content, ApprovalRequestContent), "审批 Item 类型不可改变")
+        assert isinstance(payload.content, ApprovalRequestContent)
+        require(
+            original.content == payload.content.model_copy(update={"decision": None}),
+            "审批请求身份与指纹不可变",
+        )
+        decision = payload.content.decision
+        if payload.status == ItemStatus.COMPLETED:
+            require(turn.status == TurnStatus.WAITING_APPROVAL, "审批答复只能在等待状态提交")
+            require(decision is not None, "审批答复缺少决定")
+            assert decision is not None
+            require(
+                decision.request_fingerprint == original.content.request_fingerprint,
+                "审批决定指纹不匹配",
+            )
+            require(decision.decided_at == event.occurred_at, "审批决定时间必须与事件一致")
+            require(
+                turn.created_at
+                <= event.occurred_at
+                < turn.created_at + timedelta(seconds=turn.budget.timeout_seconds),
+                "审批答复超过 Turn 时间预算",
+            )
+        else:
+            require(decision is None, "取消或失败不能伪造审批决定")
+    elif not isinstance(original.content, TextContent):
         require(original.content == payload.content, "Tool Call/Result 身份与内容不可变")
     finished = Item(
         item_id=payload.item_id,
@@ -146,6 +212,30 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
     if target in {TurnStatus.EXECUTING_TOOLS, TurnStatus.FINALIZING}:
         require(turn.usage_step == turn.model_steps, "模型响应未完整结束")
         require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
+    if target == TurnStatus.WAITING_APPROVAL:
+        calls = pending_calls(turn)
+        require(bool(calls), "等待审批必须有未结算调用")
+        approval = approval_for(turn, calls[0])
+        require(
+            approval is not None and approval.status == ItemStatus.STARTED,
+            "等待审批必须先持久记录请求",
+        )
+        require(
+            all(i.status != ItemStatus.STARTED or i == approval for i in turn.items),
+            "等待审批时存在其他未完成 Item",
+        )
+    if turn.status == TurnStatus.WAITING_APPROVAL and target == TurnStatus.EXECUTING_TOOLS:
+        calls = pending_calls(turn)
+        require(bool(calls), "审批之后缺少当前调用")
+        approval = approval_for(turn, calls[0])
+        require(
+            approval is not None and approval.status == ItemStatus.COMPLETED,
+            "审批决定持久化前不能离开等待状态",
+        )
+        require(
+            event.occurred_at < turn.created_at + timedelta(seconds=turn.budget.timeout_seconds),
+            "Turn 时间预算已耗尽",
+        )
     if target == TurnStatus.CALLING_MODEL:
         require(turn.model_steps < turn.budget.max_steps, "模型步骤预算耗尽")
         require(turn.usage.total_tokens < turn.budget.max_tokens, "Token 预算耗尽")
@@ -203,9 +293,9 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                 all(i.item_id != payload.item_id for t in thread.turns for i in t.items),
                 "Item ID 在 Thread 内重复",
             )
-            turn = _start_item(turn, payload)
+            turn = _start_item(thread, turn, payload)
         elif isinstance(payload, ItemFinished):
-            turn = _finish_item(turn, payload)
+            turn = _finish_item(turn, event, payload)
         elif isinstance(payload, UsageRecorded):
             require(turn.status == TurnStatus.CALLING_MODEL, "用量只能在模型步骤内记录")
             require(payload.step == turn.model_steps, "用量不属于当前模型步骤")

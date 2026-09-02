@@ -100,7 +100,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 5. 0.3：Agent Runtime Kernel
 
-状态：**进行中**。0.3.1 核心切片已实现，0.3.2 和整体验收未完成。具体支持边界见 [Kernel 实施设计](m03-runtime-kernel.md)。
+状态：**进行中**。0.3.1 核心与 0.3.2 持久审批切片已实现；0.3.3（剩余契约、可观测性和存储门禁）及整体验收未完成。具体支持边界见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
 ### 目标
 
@@ -112,12 +112,12 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] 基础 Item 的 `started/delta/completed/failed/cancelled` 生命周期；
 - [x] Agent Loop 状态机和步数、报告 Token、时间、输出预算；
 - [x] `ModelProvider` 与只读 `ToolRuntime` 端口；
-- [x] SQLite Session Store、Schema v1 和事务迁移框架；
+- [x] SQLite Session Store、Schema v2 和 v1→v2 事务迁移；
 - [x] 单调事件序列、CAS 和初始聚合快照；
 - [x] Fake Provider、Scripted Provider、Transcript Replay；
 - [x] Turn Cancel Token 和基础结构化错误；
 - [x] Agent/Action TraceContext 与关联 ID 映射；
-- [ ] 持久审批等待、答复、取消和恢复；
+- [x] 持久审批等待、答复、取消和恢复（可信只读工具）；
 - [ ] 剩余 Item 类型与统一错误契约；
 - [ ] 完整 Agent OTel Trace/Metrics；
 - [ ] Session Store 共享契约套件与更多存储故障场景。
@@ -129,10 +129,11 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] 重复、缺失、乱序 Tool Result 被拒绝；
 - [x] 达到最大步数和预算后确定性终止；
 - [x] 模型流和只读工具执行阶段取消、清理；
-- [ ] 等待审批阶段取消；
+- [x] 等待审批阶段取消；
 - [x] 7 个关键边界的真实子进程退出与无重复恢复；
-- [ ] 完整持久化边界矩阵（包含待实现审批）；
-- [ ] 旧 Schema 数据迁移测试。
+- [x] 审批请求/决定事务、消费边界、执行前后等 10 个真实进程退出场景；
+- [ ] 剩余 Item 与存储故障的完整边界矩阵；
+- [x] 真实 0.3.1 Transcript 的旧 Schema 迁移与混合版本 Replay。
 
 ### 验收标准
 

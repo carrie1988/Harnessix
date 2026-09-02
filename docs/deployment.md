@@ -129,3 +129,26 @@ API 和 Worker 的 `service.name` 分别为 `harnessix.api`、`harnessix.worker`
 4. 最后固化 Dashboard、SLO 和告警阈值。
 
 当前代码不依赖特定可视化后端，因此更换后端只修改 Collector，不修改 Action 领域逻辑。
+
+## Agent Kernel Session 升级（0.3.2）
+
+以上 API/Worker 部署属于 0.1 Action Plane，不是 Agent App Server。当前 Kernel 仍通过进程内 AgentRuntime 和离线示例运行，不需要安装远程中间件。
+
+0.3.2 的 Session 数据库升级与 Effect Journal 分开：
+
+1. 停止该 Session 数据库的旧 Runtime 宿主；
+2. 使用 SQLite Backup API 制作一致备份，或确认所有连接已关闭后备份数据库及其相关文件，不要只复制运行中 WAL 数据库的主文件；
+3. 由新 AgentRuntime 取得唯一宿主锁，然后自动应用 Migration 0002；
+4. 原 v1 事件保持不变；新事件和更新后的投影为 v2；
+5. 升级后旧程序会因 Migration 版本超前而拒绝启动；回退需恢复升级前备份，不能删除迁移记录绕过检查。
+
+数据库只支持本地单宿主，不在 NFS、硬链接别名或不同锁路径之间共享。不要在另一个活动 Runtime 之外直接调用 SessionStore.initialize 做迁移；迁移应由受宿主锁保护的启动路径执行。
+
+验收命令：
+
+~~~bash
+uv run pytest tests/agent/test_session_upgrade.py
+uv run python examples/kernel_approval.py
+~~~
+
+完整语义见 [持久审批 ADR](adr/0012-durable-approval-checkpoint.md)。

@@ -111,10 +111,10 @@ async def test_multiple_steps_and_calls_are_persisted_before_execution(tmp_path:
     [
         (EffectClass.READ_ONLY, False, "missing", "unknown_tool"),
         (EffectClass.IDEMPOTENT_WRITE, False, "test.read", "tool_not_enabled"),
-        (EffectClass.READ_ONLY, True, "test.read", "tool_not_enabled"),
+        (EffectClass.IDEMPOTENT_WRITE, True, "test.read", "tool_not_enabled"),
     ],
 )
-async def test_unregistered_write_and_approval_tools_never_execute(
+async def test_unregistered_and_write_tools_never_execute(
     tmp_path: Path, effect: EffectClass, approval: bool, tool_name: str, code: str
 ) -> None:
     tools = RecordingTools(effect=effect, approval=approval)

@@ -9,7 +9,8 @@
 - 已实现：Action Plane、HTTP API、SDK、Worker、SQLite/PostgreSQL Journal、基础 Policy/Approval、OpenTelemetry；
 - 已完成设计：Thread/Turn/Item/Event、Agent Loop 与取消、Provider Event、App Server Protocol、Session Store 与恢复、威胁模型和测试/Eval 规范；
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
-- 下一切片 0.3.2：持久审批等待、剩余 Item/错误契约、Store Contract 和 Agent 可观测性；0.3 尚未整体验收；
+- 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
+- 下一切片 0.3.3：剩余 Item/错误契约、Store Contract 和 Agent 可观测性；0.3 尚未整体验收；
 - 后续规划：真实 Model Provider、Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
@@ -372,6 +373,7 @@ src/harnessix/
 - Provider 使用供应商中立的流式事件和结构化错误；
 - Agent Protocol 使用标准 JSON-RPC 2.0，第一版传输为 stdio JSONL；
 - 0.3 Kernel 先提供进程内宿主，使用本地单宿主锁和初始聚合快照，见 [ADR 0011](adr/0011-kernel-host-and-initial-projection.md)；
+- 持久审批采用暂停返回、答复仅落库、显式继续；仅开放可信只读工具，见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
 

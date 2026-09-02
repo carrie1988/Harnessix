@@ -3,7 +3,7 @@
 - 状态：0.2 架构基线
 - 日期：2026-09-02
 
-实施进展（2026-09-03）：0.3.1 已在 tests/agent 中落地 Kernel 契约、SQLite 事务与 Replay、取消和 7 个真实进程退出场景。完整 0.3 门禁仍包含未实现的审批恢复、完整 Item 和存储契约扩展；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
+实施进展（2026-09-03）：tests/agent 已覆盖 0.3.1/0.3.2 Kernel、持久审批、SQLite 事务、取消、混合版本 Replay 和真实 v1→v2 升级；进程故障矩阵包含原 7 个边界与新增 10 个审批边界。完整 0.3 门禁仍需剩余 Item、统一错误、Agent OTel 和共享存储契约扩展；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
 ## 1. 目标
 
