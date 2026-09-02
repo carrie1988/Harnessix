@@ -113,7 +113,7 @@ Runtime 校验：
 - 没有语义内容的响应不是成功；
 - response_failed 可在 response_started 之前报告认证、传输等失败。
 
-Provider 自动重试尚未启用。失败 category 与 retryable 声明保留；retryable 只是诊断提示，不等于允许重放 Tool。非成功终态与 Error Item 原子提交，底层异常原文不默认持久化。
+Kernel 不自动重试 Provider。0.4.1 的 OpenAI Adapter 只在首事件前执行有界重试，见 ADR 0014。失败 category 与 retryable 声明保留；retryable 只是诊断提示，不等于允许重放 Tool。非成功终态与 Error Item 原子提交，底层异常原文不默认持久化。
 
 ### ToolRuntime
 

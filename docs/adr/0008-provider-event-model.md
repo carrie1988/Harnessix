@@ -11,6 +11,8 @@ OpenAI-compatible、Anthropic 和其他 Provider 对文本、Reasoning、Tool Ca
 
 ## 决策
 
+实施状态（2026-09-03）：下列是目标契约范围，不等于所有事件和能力已经实现。0.3/0.4.1 实际支持的 Provider Event v1 以 `spec/provider-event-v1.schema.json` 为准；首个 Chat Adapter、有限能力和完整 Usage 边界见 ADR 0014。推理摘要、用量明细和成本继续按 0.4 迭代。
+
 ### 1. ModelProvider 端口
 
 Runtime 只依赖：

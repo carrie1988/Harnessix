@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线和 0.3 Agent Runtime Kernel（核心、持久审批、语义契约与可观测性）。进程内 Agent Loop、SQLite Session Store、Fake/Scripted Provider、取消和保守恢复已实现；下一阶段为 0.4 Model Runtime。真实模型、Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel，以及 0.4.1 首个 OpenAI-compatible Adapter 的离线验收。真实 SDK 已接入，真实平台验证、Anthropic Adapter 和成本统计仍待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -94,6 +94,23 @@ uv run --extra observability python -m examples.kernel_observability
 Plan/Compaction 当前支持可信宿主记录与 Replay，不包含自动规划或压缩算法。
 
 这些入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
+
+## 当前已实现：0.4.1 首个 Model Provider
+
+- 可选官方 OpenAI Python SDK，Kernel 不导入供应商类型；
+- Chat Completions 文本/工具分片、真实 Usage 和 Stop Reason 归一化；
+- 工具名称别名、跨步骤 Call UUID 配对与审批重启继续；
+- 显式能力、Secret 环境引用、HTTPS/无重定向/无环境代理；
+- 首事件前有界重试，中途断流不重放；取消和错误 body 均关闭响应；
+- 请求/响应/帧大小、输出和超时边界；默认 CI 无真实凭据。
+
+~~~bash
+uv sync --locked --all-extras --dev
+uv run pytest tests/models
+uv run --extra openai python examples/kernel_openai_offline.py
+~~~
+
+以上使用真实 SDK + HTTP 替身，**不是已通过真实百炼/OpenAI 平台测试**。只支持显式配置的 Chat 兼容协议，不声称支持所有模型、Responses 或原生推理功能。API 使用、能力边界和后续验收见 [Model Runtime](docs/m04-model-runtime.md) 与 [ADR 0014](docs/adr/0014-openai-compatible-provider.md)。
 
 ## 当前 Action Plane 快速开始
 

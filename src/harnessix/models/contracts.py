@@ -18,6 +18,7 @@ class ModelRequest(ContractModel):
     history: tuple[Item, ...]
     tools: tuple[ToolDescriptor, ...]
     budget: Budget
+    remaining_tokens: int | None = Field(default=None, ge=1)
 
 
 class ResponseStarted(ContractModel):

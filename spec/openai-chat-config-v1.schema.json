@@ -1,0 +1,129 @@
+{
+  "$defs": {
+    "ChatCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "tool_calls": {
+          "default": true,
+          "title": "Tool Calls",
+          "type": "boolean"
+        },
+        "parallel_tool_calls": {
+          "default": true,
+          "title": "Parallel Tool Calls",
+          "type": "boolean"
+        },
+        "streaming_usage": {
+          "const": true,
+          "default": true,
+          "title": "Streaming Usage",
+          "type": "boolean"
+        }
+      },
+      "title": "ChatCapabilities",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "base_url": {
+      "default": "https://api.openai.com/v1",
+      "maxLength": 2048,
+      "title": "Base Url",
+      "type": "string"
+    },
+    "model": {
+      "maxLength": 256,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:/-]+$",
+      "title": "Model",
+      "type": "string"
+    },
+    "api_key_env": {
+      "default": "OPENAI_API_KEY",
+      "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+      "title": "Api Key Env",
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/ChatCapabilities"
+    },
+    "output_token_parameter": {
+      "default": "max_completion_tokens",
+      "enum": [
+        "max_completion_tokens",
+        "max_tokens"
+      ],
+      "title": "Output Token Parameter",
+      "type": "string"
+    },
+    "max_output_tokens": {
+      "default": 1024,
+      "maximum": 1000000,
+      "minimum": 1,
+      "title": "Max Output Tokens",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "default": 60,
+      "exclusiveMinimum": 0,
+      "maximum": 3600,
+      "title": "Timeout Seconds",
+      "type": "number"
+    },
+    "io_timeout_seconds": {
+      "default": 30,
+      "exclusiveMinimum": 0,
+      "maximum": 300,
+      "title": "Io Timeout Seconds",
+      "type": "number"
+    },
+    "max_attempts": {
+      "default": 2,
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Max Attempts",
+      "type": "integer"
+    },
+    "retry_delay_seconds": {
+      "default": 0.5,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Retry Delay Seconds",
+      "type": "number"
+    },
+    "max_request_bytes": {
+      "default": 2097152,
+      "maximum": 16777216,
+      "minimum": 1024,
+      "title": "Max Request Bytes",
+      "type": "integer"
+    },
+    "max_response_bytes": {
+      "default": 2097152,
+      "maximum": 16777216,
+      "minimum": 1024,
+      "title": "Max Response Bytes",
+      "type": "integer"
+    },
+    "max_frame_bytes": {
+      "default": 262144,
+      "maximum": 1048576,
+      "minimum": 128,
+      "title": "Max Frame Bytes",
+      "type": "integer"
+    },
+    "max_chunks": {
+      "default": 10000,
+      "maximum": 100000,
+      "minimum": 1,
+      "title": "Max Chunks",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "model"
+  ],
+  "title": "OpenAIChatConfig",
+  "type": "object"
+}

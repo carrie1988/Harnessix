@@ -144,7 +144,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 6. 0.4：Model Runtime
 
-状态：**下一阶段，实施计划已建立**；真实 Adapter 尚未实现。见 [0.4 实施计划](m04-model-runtime.md)。
+状态：**0.4.1 已完成离线验收，整体 0.4 进行中**。首个 OpenAI-compatible Adapter 已实现；Anthropic、用量明细/成本和真实平台验证待完成。见 [0.4 实施计划](m04-model-runtime.md)。
 
 ### 目标
 
@@ -152,7 +152,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ### 核心交付
 
-- [ ] OpenAI-compatible Provider；
+- [x] OpenAI-compatible Provider（Chat Completions；离线 SDK/HTTP 契约通过）；
 - [ ] Anthropic Provider；
 - [ ] 文本、Tool Call、Usage、Stop Reason 流式事件归一化；
 - [ ] Provider Capability 描述；

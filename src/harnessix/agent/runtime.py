@@ -552,6 +552,7 @@ class AgentRuntime:
                         if d.effect_class == EffectClass.READ_ONLY
                     ),
                     budget=turn.budget,
+                    remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
                 )
                 await self._sample(request, token)
                 turn = get_turn(await self.store.get_thread(thread_id), turn_id)
@@ -830,6 +831,11 @@ class AgentRuntime:
                 elif isinstance(event, ResponseCompleted):
                     if any(not part[2] for part in text_items.values()):
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
+                    await self._commit(
+                        request.thread_id,
+                        request.turn_id,
+                        [UsageRecorded(step=request.step, usage=event.usage)],
+                    )
                     if event.finish_reason not in {"completed", "tool_calls"}:
                         raise KernelError("provider_" + event.finish_reason, "模型未正常完成")
                     if bool(call_ids) != (event.finish_reason == "tool_calls"):
@@ -837,11 +843,6 @@ class AgentRuntime:
                     if not call_ids and not any(part[1] for part in text_items.values()):
                         raise KernelError("invalid_provider_output", "模型响应没有语义内容")
                     completed = event
-                    await self._commit(
-                        request.thread_id,
-                        request.turn_id,
-                        [UsageRecorded(step=request.step, usage=event.usage)],
-                    )
                 else:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:

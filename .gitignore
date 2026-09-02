@@ -2,6 +2,9 @@
 .idea/
 .vscode/
 .venv/
+.env
+.env.*
+!.env.example
 .harnessix/
 .pytest_cache/
 .ruff_cache/
