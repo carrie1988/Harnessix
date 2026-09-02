@@ -4,6 +4,20 @@
 
 研究 Codex、OpenCode 和 Claude Code 的目的不是复制功能列表，而是理解它们在以下问题上的边界、数据模型、不变量和工程权衡，并为 Harnessix Code 的 ADR 提供证据。
 
+### 0.2 执行状态
+
+首批六个主题已于 2026-09-02 完成并进入架构基线：
+
+- [研究提交与证据等级](research/baselines.md)；
+- [Agent Loop](research/agent-loop.md)；
+- [Session 模型](research/session-model.md)；
+- [App Server Protocol 与 Provider Event](research/protocol.md)；
+- [Tool Runtime](research/tool-runtime.md)；
+- [Context Engine](research/context-engine.md)；
+- [Permission、Approval 与 Sandbox](research/security.md)。
+
+后续主题继续按本文方法执行；参考仓库分支发生变化时不静默改写 0.2 结论。
+
 本地参考源码：
 
 | 项目 | 建议目录 | 主要价值 | 使用限制 |

@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：仓库已完成 0.1 Action Plane 基线，正在进入 Coding Agent Runtime 的架构与开发阶段。当前版本尚不是完整 Coding Agent；README 会明确区分“已实现”和“规划中”能力。
+> 当前状态：仓库已完成 0.1 Action Plane 和 0.2 Coding Agent 架构基线，下一阶段是 0.3 Agent Runtime Kernel。Agent Loop、Session Store 和 Provider 尚未实现，当前版本仍不是可用的完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -184,7 +184,21 @@ examples/                   可运行演示
 - [产品章程](docs/product-charter.md)
 - [总体架构](docs/architecture.md)
 - [主流 Coding Agent 源码研究计划](docs/research-plan.md)
+- [0.2 源码研究基线](docs/research/baselines.md)
+- [Agent Loop 研究](docs/research/agent-loop.md)
+- [Session 模型研究](docs/research/session-model.md)
+- [协议与 Provider Event 研究](docs/research/protocol.md)
+- [Tool Runtime 研究](docs/research/tool-runtime.md)
+- [Context Engine 研究](docs/research/context-engine.md)
+- [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
 - [演进为 Harnessix Code 的架构决策](docs/adr/0005-evolve-to-harnessix-code.md)
+- [Thread/Turn/Item/Event 决策](docs/adr/0006-thread-turn-item-event-model.md)
+- [Agent Loop 与取消决策](docs/adr/0007-agent-loop-and-cancellation.md)
+- [Provider Event 决策](docs/adr/0008-provider-event-model.md)
+- [App Server Protocol 决策](docs/adr/0009-app-server-protocol.md)
+- [Session Store 与恢复决策](docs/adr/0010-session-store-and-recovery.md)
+- [威胁模型 v1](docs/threat-model.md)
+- [测试与 Eval 规范 v1](docs/testing-and-evals.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
 - [自研与复用边界](docs/build-vs-buy.md)

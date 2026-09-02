@@ -7,7 +7,9 @@
 当前状态：
 
 - 已实现：Action Plane、HTTP API、SDK、Worker、SQLite/PostgreSQL Journal、基础 Policy/Approval、OpenTelemetry；
-- 正在规划：Agent Runtime、Model Runtime、Context Engine、Coding Tools、Session Store、App Server Protocol、Sandbox、MCP/Skills 和 Evals；
+- 已完成设计：Thread/Turn/Item/Event、Agent Loop 与取消、Provider Event、App Server Protocol、Session Store 与恢复、威胁模型和测试/Eval 规范；
+- 下一阶段：0.3 Agent Runtime Kernel，实现确定性 Loop、SQLite Session Store、Fake/Scripted Provider 和故障注入；
+- 后续规划：真实 Model Provider、Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -65,7 +67,7 @@ Harnessix Code 的目标是成为生产级、本地优先、模型无关的 Codi
 
 职责：
 
-- 提供版本化、双向的 Agent Protocol；
+- 提供基于标准 JSON-RPC 2.0、默认 stdio JSONL 的版本化双向 Agent Protocol；
 - 管理 Client Session 与 Thread 的绑定；
 - 将命令路由到 Agent Runtime；
 - 推送 Item 生命周期、文本增量、工具进度和审批请求；
@@ -165,8 +167,9 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 - Session Store 保存 Agent 对话和运行生命周期；
 - Effect Journal 保存外部副作用事实；
 - 两者通过稳定的 `thread_id`、`turn_id`、`item_id`、`action_id` 关联；
-- 不把模型流式 token 全部当作业务事实无限保存；
-- 持久事件和物化快照必须有 Schema 版本及迁移。
+- Session Store 使用追加式 AgentEvent 和事务内物化投影；
+- 不把模型流式 token 全部当作业务事实无限保存，Item 终值才是默认恢复事实；
+- 持久事件、物化快照和 Compaction 必须有 Schema 版本及迁移。
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
@@ -363,15 +366,20 @@ src/harnessix/
 - 自研 Agent Loop；
 - 本地优先、CLI + Headless App Server；
 - SQLite 为本地 Session Store；
+- Session Store 采用 Thread 内单调 AgentEvent 与事务投影；
+- Agent Loop 采用持久边界驱动的状态机和分层 Cancel Token；
+- Provider 使用供应商中立的流式事件和结构化错误；
+- Agent Protocol 使用标准 JSON-RPC 2.0，第一版传输为 stdio JSONL；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
 
+已确认事项分别由 [ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md) 和 [ADR 0010](adr/0010-session-store-and-recovery.md) 固化。
+
 ### 必须通过 ADR 决定
 
-- Protocol 使用标准 JSON-RPC 2.0 还是自定义版本化 Envelope；
-- CLI 与 Runtime 第一版采用进程内调用还是统一经过 App Server；
 - Patch 的原子提交和回滚模型；
 - Host/Container Sandbox 的默认策略；
+- App Server 进入 0.8 前，0.3 Runtime 的进程内宿主边界；
 - TUI 技术栈；
 - 是否以及何时引入 Rust Process/Sandbox Sidecar；
 - Subagent 的状态隔离、预算和权限继承模型。

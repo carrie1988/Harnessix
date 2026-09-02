@@ -56,6 +56,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 4. 0.2：产品与架构基线
 
+状态：**已完成（2026-09-02）**。本阶段只完成研究与架构决策，没有实现或宣称 Agent Runtime 能力。
+
 ### 目标
 
 通过源码研究和 ADR 固化 Coding Agent 的核心边界，避免一边编码一边猜测主流实现。
@@ -65,15 +67,23 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] 更新产品名称为 Harnessix Code；
 - [x] 将 Action Plane 调整为内部治理子系统；
 - [x] 建立目标架构和源码研究计划；
-- [ ] 固化 Codex、OpenCode、Claude Code 的研究提交号；
-- [ ] 完成 Agent Loop、Session、Protocol、Tool、Context、安全六个首要主题研究；
-- [ ] ADR：Thread/Turn/Item 数据模型；
-- [ ] ADR：Agent Loop 状态机和取消语义；
-- [ ] ADR：Provider 统一事件模型；
-- [ ] ADR：App Server Protocol 与传输；
-- [ ] ADR：Session Store 和恢复模型；
-- [ ] 威胁模型 v1；
-- [ ] 测试策略和 Eval 规范 v1。
+- [x] 固化 Codex、OpenCode、Claude Code 的研究提交号；
+- [x] 完成 Agent Loop、Session、Protocol、Tool、Context、安全六个首要主题研究；
+- [x] ADR：Thread/Turn/Item 数据模型；
+- [x] ADR：Agent Loop 状态机和取消语义；
+- [x] ADR：Provider 统一事件模型；
+- [x] ADR：App Server Protocol 与传输；
+- [x] ADR：Session Store 和恢复模型；
+- [x] 威胁模型 v1；
+- [x] 测试策略和 Eval 规范 v1。
+
+### 阶段产出
+
+- [研究基线](research/baselines.md)；
+- [Agent Loop](research/agent-loop.md)、[Session](research/session-model.md)、[Protocol](research/protocol.md)、[Tool](research/tool-runtime.md)、[Context](research/context-engine.md)、[安全](research/security.md)；
+- [ADR 0006](adr/0006-thread-turn-item-event-model.md) 至 [ADR 0010](adr/0010-session-store-and-recovery.md)；
+- [威胁模型 v1](threat-model.md)；
+- [测试与 Eval 规范 v1](testing-and-evals.md)。
 
 ### 验收标准
 
