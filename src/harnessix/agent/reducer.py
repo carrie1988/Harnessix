@@ -30,6 +30,12 @@ from harnessix.agent.models import (
     Usage,
     UsageRecorded,
 )
+from harnessix.agent.usage import (
+    ModelAttempt,
+    ModelAttemptFinished,
+    ModelAttemptStarted,
+    ModelUsageObserved,
+)
 from harnessix.domain.models import ApprovalOutcome, EffectClass
 
 
@@ -219,6 +225,7 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
         allowed.update({TurnStatus.CANCELLING, TurnStatus.FAILED, TurnStatus.INTERRUPTED})
     require(target in allowed, f"非法 Turn 状态转换：{turn.status} → {target}")
     if target in TERMINAL_TURNS:
+        require(all(a.status != "running" for a in turn.model_attempts), "存在未结算模型尝试")
         require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
         require(not pending_calls(turn), "存在未配对 Tool Call")
         if target == TurnStatus.COMPLETED:
@@ -297,6 +304,78 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
     return turn.model_copy(update={"status": target})
 
 
+def _model_attempt(turn: Turn, event: AgentEvent) -> Turn:
+    payload = event.payload
+    if isinstance(payload, ModelAttemptStarted):
+        require(turn.status == TurnStatus.CALLING_MODEL, "模型尝试只能在调用状态开始")
+        require(
+            payload.step == turn.model_steps and payload.step > turn.usage_step,
+            "尝试不属于当前开放步骤",
+        )
+        require(all(a.status != "running" for a in turn.model_attempts), "上一尝试尚未结束")
+        previous = [a for a in turn.model_attempts if a.step == payload.step]
+        require(payload.index == len(previous) + 1, "尝试序号不连续")
+        require(not previous or previous[-1].status == "failed", "只能在失败尝试后开始重试")
+        require(turn.usage.total_tokens < turn.budget.max_tokens, "模型尝试的已知 Token 预算耗尽")
+        created = ModelAttempt(**payload.model_dump(exclude={"type"}), started_at=event.occurred_at)
+        return turn.model_copy(update={"model_attempts": (*turn.model_attempts, created)})
+    assert isinstance(payload, ModelUsageObserved | ModelAttemptFinished)
+    require(
+        turn.status in {TurnStatus.CALLING_MODEL, TurnStatus.CANCELLING}, "不在模型尝试结算状态"
+    )
+    attempt = next((a for a in turn.model_attempts if a.attempt_id == payload.attempt_id), None)
+    require(attempt is not None, "模型尝试尚未开始")
+    assert attempt is not None
+    require(attempt.status == "running", "模型尝试已结算")
+    require(attempt.step == turn.model_steps, "尝试不属于当前模型步骤")
+    usage = turn.usage
+    if isinstance(payload, ModelUsageObserved):
+        try:
+            payload.usage.validate_successor(attempt.usage)
+        except ValueError:
+            raise KernelError("invalid_event", "模型累计用量回退或修改了终值") from None
+        for field in ("actual_model", "response_id"):
+            before, after = getattr(attempt, field), getattr(payload, field)
+            require(before is None or after is None or before == after, "尝试响应身份发生变化")
+        usage = Usage(
+            input_tokens=turn.usage.input_tokens
+            + (payload.usage.input_tokens or 0)
+            - (attempt.usage.input_tokens or 0),
+            output_tokens=turn.usage.output_tokens
+            + (payload.usage.output_tokens or 0)
+            - (attempt.usage.output_tokens or 0),
+        )
+        attempt = attempt.model_copy(
+            update={
+                "usage": payload.usage,
+                "actual_model": payload.actual_model or attempt.actual_model,
+                "response_id": payload.response_id or attempt.response_id,
+            }
+        )
+    else:
+        if payload.outcome == "completed":
+            require(attempt.usage.completeness == "complete", "成功尝试需要完整用量")
+            require(
+                attempt.actual_model is not None and attempt.response_id is not None,
+                "成功尝试缺少响应身份",
+            )
+        attempt = attempt.model_copy(
+            update={
+                "status": payload.outcome,
+                "error": payload.error,
+                "finished_at": event.occurred_at,
+            }
+        )
+    return turn.model_copy(
+        update={
+            "usage": usage,
+            "model_attempts": tuple(
+                attempt if a.attempt_id == attempt.attempt_id else a for a in turn.model_attempts
+            ),
+        }
+    )
+
+
 def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
     """唯一的状态投影器；在线提交和离线 Replay 使用相同校验。"""
     payload = event.payload
@@ -347,14 +426,36 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             turn = _start_item(thread, turn, payload)
         elif isinstance(payload, ItemFinished):
             turn = _finish_item(turn, event, payload)
+        elif isinstance(payload, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished):
+            if isinstance(payload, ModelAttemptStarted):
+                require(
+                    all(
+                        a.attempt_id != payload.attempt_id
+                        for t in thread.turns
+                        for a in t.model_attempts
+                    ),
+                    "尝试 ID 在 Thread 内重复",
+                )
+            turn = _model_attempt(turn, event)
         elif isinstance(payload, UsageRecorded):
             require(turn.status == TurnStatus.CALLING_MODEL, "用量只能在模型步骤内记录")
             require(payload.step == turn.model_steps, "用量不属于当前模型步骤")
             require(payload.step > turn.usage_step, "用量重复记账")
+            attempts = [a for a in turn.model_attempts if a.step == payload.step]
+            if attempts:
+                last = attempts[-1]
+                require(last.status == "completed", "模型响应完成前必须结算成功尝试")
+                require(
+                    payload.usage.input_tokens == last.usage.input_tokens
+                    and payload.usage.output_tokens == last.usage.output_tokens,
+                    "响应用量与尝试事实不一致",
+                )
             turn = turn.model_copy(
                 update={
                     "usage_step": payload.step,
-                    "usage": Usage(
+                    "usage": turn.usage
+                    if attempts
+                    else Usage(
                         input_tokens=turn.usage.input_tokens + payload.usage.input_tokens,
                         output_tokens=turn.usage.output_tokens + payload.usage.output_tokens,
                     ),

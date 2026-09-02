@@ -146,7 +146,7 @@ class SQLiteSessionStore:
                 raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
             return None
         encoded: str = row["snapshot_json"]
-        if row["projection_version"] not in (1, 2, 3):
+        if row["projection_version"] not in (1, 2, 3, 4):
             raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
         if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
             raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
@@ -186,7 +186,7 @@ class SQLiteSessionStore:
         await database.execute(
             "INSERT INTO agent_threads "
             "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-            "VALUES (?, ?, ?, ?, 3) "
+            "VALUES (?, ?, ?, ?, 4) "
             "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
             "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
             "projection_version = excluded.projection_version",

@@ -1,7 +1,7 @@
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
-- 状态：0.4.1 与 0.4.2a 已完成离线验收；0.4.2b/0.4.3 待实施，真实平台未验证
+- 状态：0.4.1、0.4.2a、0.4.2b1 已完成离线验收；0.4.2b2/0.4.3 待实施，真实平台未验证
 - 依据：ADR 0008、当前 ModelProvider/ProviderEvent 契约与主路线图
 
 ## 1. 目标与边界
@@ -35,7 +35,8 @@
 分为两个可验收切片，见 [ADR 0015](adr/0015-anthropic-provider.md)：
 
 - **0.4.2a 已完成**：Anthropic Messages Adapter、HTTPX2 类型隔离、共享 Provider 契约、缓存计数纳入输入总量、跨 Provider 继续与审批重启；
-- **0.4.2b 待实施**：Model Attempt 身份、完整/部分/未知用量、缓存/推理明细、失败 Usage 和版本化持久记录。不把本次双 Adapter 通过写成 0.4.2 全部完成。
+- **0.4.2b1 已完成**：Model Attempt 身份、完整/部分/未知累计用量、明细包含关系、失败结算与版本化持久记录，归一化 Provider 验收通过；
+- **0.4.2b2 待实施**：两个实际 SDK 的尝试元数据、缓存/推理/失败用量映射与共享契约。不把账本通过写成真实 SDK 完整记账已完成；设计见 [ADR 0016](adr/0016-model-attempt-ledger.md)。
 
 整体交付要求：
 
@@ -89,7 +90,7 @@ config = OpenAIChatConfig(
 | 认证与错误 | Secret 环境引用；闭集 code/retryable，不输出原始异常 |
 | 取消与超时 | 建连、读流、错误 body、退避和调用方 Task；响应关闭 |
 | Reasoning / 多模态 / 内置工具 | 未开放；不透传私有推理，公开摘要 Item 暂不接受 |
-| 缓存/推理 Token、价格、失败请求费用 | 待 0.4.2/0.4.3；不能把当前计数当作供应商账单 |
+| 缓存/推理 Token、价格、失败请求费用 | 账本契约已实现；SDK 明细映射待 b2，价格/成本待 0.4.3；当前计数不是供应商账单 |
 | Anthropic | 0.4.2a 已通过离线验收，具体严格配置见下节 |
 | 真实平台 Smoke | 未完成，不以离线测试替代 |
 
@@ -107,7 +108,7 @@ config = OpenAIChatConfig(
 
 实现时复现并修复了 SDK 在“HTTP 错误响应尚未返回 AsyncStream、读取 body 失败或取消”路径的资源清理缺口：关闭责任下沉到有界 Transport，不只依赖 Adapter 的 `finally`。回归同时覆盖正常流和错误 body。
 
-上述数字为 0.4.1 收口快照，0.4.2a 最新结果如下。
+上述数字为 0.4.1 收口快照，0.4.2a 收口结果如下，最新 b1 状态见第 9 节。
 
 ## 8. 0.4.2a：Anthropic 支持边界与验收
 
@@ -149,4 +150,24 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 - 五个离线入口、sdist/wheel 构建通过；独立 Python 3.12 环境验证基础包无模型 SDK/HTTPX2 依赖，Anthropic-only 与 OpenAI-only 两种安装分别完成 SDK→Kernel→SQLite 闭环；
 - 真实 Anthropic/百炼 API 调用：0，仍待受控验证。
 
-下一切片按 ADR 0015 的 0.4.2b 方案实施用量事实与跨版本迁移。真实验证需要宿主中可读取的凭据、地域和模型配置；这一外部条件不阻塞离线开发。
+以上为 0.4.2a 收口快照。真实验证需要宿主中可读取的凭据、地域和模型配置；这一外部条件不阻塞离线开发。
+
+## 9. 0.4.2b1：模型尝试账本
+
+已实现 [ADR 0016](adr/0016-model-attempt-ledger.md) 的 Kernel、领域、迁移切片。关键规则：先提交 Started 才继续 Provider；同一尝试只按累计输入/输出差额记账；ResponseCompleted 只校验对应总量并推进原有完成门禁，不能再加一次；失败/取消/中断保留最后观测。
+
+新公共 Schema：`agent-event-v4`、`agent-thread-v4`、`provider-event-v2`。Migration 0004 不重写历史；旧 Schema 哈希冻结；从真实旧代码生成的 v3 样本与既有 v1/v2 样本一起通过混合升级。
+
+`Turn.usage` 是已知总量下界，不是价格或账单。`Turn.usage_is_complete` 明确是否每个已开始的模型步骤都有已结算且完整的尝试记录；旧 Provider 内部尝试不可见时为 false。分项只用于明细，不能再次累加到已包含它们的总量上。
+
+新增子进程矩阵 15 个切点：Started/Observed/Finished × 事务三切点，共 9 个；运行时提交后的 3 个；恢复结算事务 3 个。与既有 26 个切点合计 41 个。取消覆盖 CancelToken、Task Cancel、超时、异常和 EOF。
+
+本地验收（2026-09-03）：
+
+- `make check`：474 passed、1 skipped（PostgreSQL 本地未配置），Ruff/Mypy 通过；
+- `PYTHONASYNCIODEBUG=1 uv run pytest tests/agent tests/models -W error`：438 passed；
+- 五个既有离线示例通过，未调用真实 API；
+- sdist/wheel 构建、Base-only / OpenAI-only / Anthropic-only 独立安装验收通过；
+- 从原提交导出真实 v3 程序，确认其初始化 v4 数据库时返回 `schema_too_new`。
+
+下一步 0.4.2b2：求证并接入两个 SDK 的实际模型 ID、缓存/推理计数、累计 Usage 和错误/取消路径。特别验证元数据不意外禁用首语义事件前重试，且请求意图不会被解释为已发送或已收费。现有两个 SDK 仍使用兼容响应记账，完整失败用量接入尚未完成。

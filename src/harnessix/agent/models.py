@@ -18,6 +18,12 @@ from pydantic import (
 
 from harnessix.agent.errors import AgentFailure as AgentFailure
 from harnessix.agent.ids import new_id
+from harnessix.agent.usage import (
+    ModelAttempt,
+    ModelAttemptFinished,
+    ModelAttemptStarted,
+    ModelUsageObserved,
+)
 from harnessix.domain.models import (
     ApprovalRecord,
     ContractModel,
@@ -187,9 +193,22 @@ class Turn(ContractModel):
     model_steps: int = 0
     usage_step: int = 0
     usage: Usage = Field(default_factory=Usage)
+    model_attempts: tuple[ModelAttempt, ...] = ()
     error: AgentFailure | None = None
     created_at: datetime
     completed_at: datetime | None = None
+
+    @property
+    def usage_is_complete(self) -> bool:
+        # 旧 Provider 未上报内部尝试，不能据成功响应的总量断言账目完整。
+        return (
+            self.model_steps > 0
+            and {a.step for a in self.model_attempts} == set(range(1, self.model_steps + 1))
+            and all(
+                a.status != "running" and a.usage.completeness == "complete"
+                for a in self.model_attempts
+            )
+        )
 
 
 class Thread(ContractModel):
@@ -249,13 +268,21 @@ class UsageRecorded(ContractModel):
 
 
 EventPayload = Annotated[
-    ThreadCreated | TurnStarted | TurnStateChanged | ItemStarted | ItemFinished | UsageRecorded,
+    ThreadCreated
+    | TurnStarted
+    | TurnStateChanged
+    | ItemStarted
+    | ItemFinished
+    | UsageRecorded
+    | ModelAttemptStarted
+    | ModelUsageObserved
+    | ModelAttemptFinished,
     Field(discriminator="type"),
 ]
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3] = 3
+    schema_version: Literal[1, 2, 3, 4] = 4
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -279,6 +306,10 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 4 and isinstance(
+            self.payload, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
+        ):
+            raise ValueError("模型尝试和用量观测需要 Agent Event v4")
         if self.schema_version < 3 and isinstance(self.payload, ItemStarted | ItemFinished):
             if isinstance(self.payload.content, PlanContent | CompactionContent | ErrorContent):
                 raise ValueError("Plan/Compaction/Error Item 需要 Agent Event v3")

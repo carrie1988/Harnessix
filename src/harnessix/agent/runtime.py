@@ -45,6 +45,7 @@ from harnessix.agent.models import (
 from harnessix.agent.ports import NoTools, ToolRuntime
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -701,10 +702,9 @@ class AgentRuntime:
             turn_id=request.turn_id,
             step=request.step,
         ):
-            usage = await self._sample_events(request, token)
-            self._telemetry.usage(usage)
+            await self._sample_events(request, token)
 
-    async def _sample_events(self, request: ModelRequest, token: CancelToken) -> Usage:
+    async def _sample_events(self, request: ModelRequest, token: CancelToken) -> None:
         started = False
         completed: ResponseCompleted | None = None
         text_items: dict[str, tuple[UUID, str, bool]] = {}
@@ -712,6 +712,23 @@ class AgentRuntime:
         characters = 0
         stream_sequence = 0
         event_count = 0
+        attempt_mode = False
+        open_attempt: UUID | None = None
+        attempt_response_id: str | None = None
+        response_id: str | None = None
+        accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
+
+        def record_usage(thread: Thread) -> None:
+            nonlocal accounted
+            current = get_turn(thread, request.turn_id).usage
+            self._telemetry.usage(
+                Usage(
+                    input_tokens=current.input_tokens - accounted.input_tokens,
+                    output_tokens=current.output_tokens - accounted.output_tokens,
+                )
+            )
+            accounted = current
+
         async with aclosing(self.provider.stream(request, token)) as stream:
             while True:
                 token.checkpoint()
@@ -724,6 +741,44 @@ class AgentRuntime:
                 event_count += 1
                 if event_count > 10000:
                     raise KernelError("provider_event_limit", "模型步骤事件数超过上限")
+                if isinstance(
+                    event, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
+                ):
+                    if isinstance(event, ModelAttemptStarted):
+                        if started:
+                            raise KernelError(
+                                "invalid_provider_output", "响应开始后不得重试模型请求"
+                            )
+                        if accounted.total_tokens >= request.budget.max_tokens:
+                            raise KernelError("budget_exceeded", "模型尝试的已知 Token 预算耗尽")
+                    if isinstance(event, ModelUsageObserved) and (
+                        response_id is not None
+                        and event.response_id is not None
+                        and event.response_id != response_id
+                    ):
+                        raise KernelError("invalid_provider_output", "用量响应身份与当前响应不一致")
+                    try:
+                        snapshot = await self._commit(request.thread_id, request.turn_id, [event])
+                    except KernelError as error:
+                        if error.code == "invalid_event":
+                            raise KernelError(
+                                "invalid_provider_output", "模型尝试事实不符合契约"
+                            ) from None
+                        raise
+                    if isinstance(event, ModelAttemptStarted):
+                        attempt_mode = True
+                        open_attempt = event.attempt_id
+                        attempt_response_id = None
+                        # 提交后才继续消费：Provider 必须在下次 anext 才发起 HTTP。
+                        self._fault("runtime.after_model_attempt_started")
+                    elif isinstance(event, ModelUsageObserved):
+                        attempt_response_id = event.response_id or attempt_response_id
+                        record_usage(snapshot)
+                        self._fault("runtime.after_model_usage_observed")
+                    else:
+                        open_attempt = None
+                        self._fault("runtime.after_model_attempt_finished")
+                    continue
                 if isinstance(event, ResponseFailed):
                     raise KernelError(
                         "provider_" + event.code,
@@ -731,8 +786,11 @@ class AgentRuntime:
                         retryable=event.retryable,
                     )
                 if isinstance(event, ResponseStarted):
-                    if started:
+                    if started or (attempt_mode and open_attempt is None):
                         raise KernelError("invalid_provider_output", "Provider 重复开始响应")
+                    if attempt_response_id is not None and event.response_id != attempt_response_id:
+                        raise KernelError("invalid_provider_output", "当前响应与尝试身份不一致")
+                    response_id = event.response_id
                     started = True
                     continue
                 if not started:
@@ -831,11 +889,20 @@ class AgentRuntime:
                 elif isinstance(event, ResponseCompleted):
                     if any(not part[2] for part in text_items.values()):
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
-                    await self._commit(
-                        request.thread_id,
-                        request.turn_id,
-                        [UsageRecorded(step=request.step, usage=event.usage)],
-                    )
+                    try:
+                        snapshot = await self._commit(
+                            request.thread_id,
+                            request.turn_id,
+                            [UsageRecorded(step=request.step, usage=event.usage)],
+                        )
+                    except KernelError as error:
+                        if attempt_mode and error.code == "invalid_event":
+                            raise KernelError(
+                                "invalid_provider_output", "响应用量与尝试事实不一致"
+                            ) from None
+                        raise
+                    if not attempt_mode:
+                        record_usage(snapshot)
                     if event.finish_reason not in {"completed", "tool_calls"}:
                         raise KernelError("provider_" + event.finish_reason, "模型未正常完成")
                     if bool(call_ids) != (event.finish_reason == "tool_calls"):
@@ -847,7 +914,6 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
-        return completed.usage
 
     async def _finish(
         self,
@@ -871,6 +937,22 @@ class AgentRuntime:
                 status = TurnStatus.INTERRUPTED
                 error = AgentFailure(code="uncertain_effect", message="存在未知效果，禁止自动重放")
             payloads: list[EventPayload] = []
+            for attempt in turn.model_attempts:
+                if attempt.status == "running":
+                    payloads.append(
+                        ModelAttemptFinished(
+                            attempt_id=attempt.attempt_id,
+                            outcome="cancelled"
+                            if status == TurnStatus.CANCELLED
+                            else "interrupted"
+                            if status == TurnStatus.INTERRUPTED
+                            else "failed",
+                            error=error
+                            or AgentFailure(
+                                code="provider_stream_incomplete", message="模型尝试未结束"
+                            ),
+                        )
+                    )
             for item in turn.items:
                 if item.status == ItemStatus.STARTED:
                     payloads.append(

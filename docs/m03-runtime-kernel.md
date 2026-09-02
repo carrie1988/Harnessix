@@ -3,6 +3,8 @@
 - 更新日期：2026-09-03
 - 当前交付：0.3.1 核心 + 0.3.2 持久审批 + 0.3.3 契约/可观测性/存储验收
 - 状态：0.3 范围实现与本地验收完成；后续进入 0.4
+
+后续演进：0.4.2b1 已将当前 Event/Thread 推进到 v4，加入模型尝试账本与累计用量。本文保留 0.3 验收范围；最新用量/迁移语义见 [ADR 0016](adr/0016-model-attempt-ledger.md)。
 - 依赖：[ADR 0006](adr/0006-thread-turn-item-event-model.md) 至 [ADR 0013](adr/0013-kernel-contracts-and-telemetry.md)
 
 ## 1. 范围
@@ -154,8 +156,8 @@ COMMIT
 - 部分重复批次、载荷冲突或旧 sequence 被拒绝；
 - 数据库 Schema 高于当前版本、Migration 校验变化时拒绝启动；
 - 投影损坏可从 Event Log 重建；事件本身损坏则拒绝猜测；
-- 支持空数据库初始化到 v3、幂等初始化和真实 0.3.1/0.3.2 Transcript 的 v1/v2→v3 升级；历史事件不重写；
-- 原 v1/v2 Schema 文件冻结，新写事件默认 v3；旧程序遇到 Migration 3 会拒绝启动，不支持原地降级。
+- 0.3 收口时支持初始化到 v3 和真实 v1/v2→v3 升级；0.4.2b1 当前支持 v1/v2/v3→v4，历史事件不重写；
+- 原 v1/v2/v3 Schema 文件冻结，当前新写事件默认 v4；旧程序遇到 Migration 4 会拒绝启动，不支持原地降级。
 
 当前使用完整聚合快照，而不是最终的 Thread/Turn/Item 分页查询表。它保持事务和 Replay 语义，但读写成本随历史增长；长会话产品化前必须完成规范化投影、分页和体积基准，不能据此宣称支持无限长历史。
 
@@ -283,7 +285,7 @@ observer 由宿主构造并负责关闭，默认使用 NoOp。自定义 Observab
 | harnessix.agent.approval / cancel / recovery | 控制命令与启动恢复 |
 | harnessix.agent.operations | 操作次数，按 operation/outcome/category 分类 |
 | harnessix.agent.operation.duration | 操作耗时，单位秒 |
-| harnessix.agent.tokens.input / output | 完整响应报告的 Token 增量 |
+| harnessix.agent.tokens.input / output | 已提交用量的差额（v2 尝试观测含失败前已知量；旧 Provider 使用响应总量） |
 | harnessix.agent.turns.finished | 本进程确认的新终态提交次数 |
 
 Thread/Turn/Call ID 只进入 Trace；指标无用户、会话、参数或任意工具名标签。暂停的 Span 已结束，重启后的片段以持久 TraceContext 关联。幂等重试不重复统计终态。

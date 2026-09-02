@@ -11,7 +11,7 @@
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
-- 0.4 进行中：OpenAI-compatible / Anthropic Adapter 已通过离线验收；用量明细、成本与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.4 进行中：双 Adapter 与 0.4.2b1 模型尝试账本已通过离线验收；实际 SDK 的尝试/失败用量接入、成本与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -104,6 +104,8 @@ Model Runtime 包含：
 
 Provider Adapter 不决定 Agent 是否重试写操作，也不直接调用本地工具。
 
+0.4.2b1 已提供 ModelAttemptStarted/ModelUsageObserved/ModelAttemptFinished 的 Provider v2 元数据契约。Kernel 先提交尝试意图再继续消费，累计观测按差额计入唯一的 Turn 预算，取消/恢复结算开放尝试而不伪造未知用量。两类 SDK 尚待 0.4.2b2 接入；当前使用兼容的 v1 响应记账。成本与自动能力发现仍是目标能力。详见 [ADR 0016](adr/0016-model-attempt-ledger.md)。
+
 ### 4.5 Context Engine
 
 Context Engine 负责：
@@ -174,6 +176,8 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 - 持久事件、物化快照和 Compaction 必须有 Schema 版本及迁移。
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
+
+当前 Agent Event/Thread 为 v4，最低读者由 Migration 0004 约束；v1/v2/v3 事件与旧 Schema 保持原文。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
 
 ### 4.9 Harnessix Action Plane
 

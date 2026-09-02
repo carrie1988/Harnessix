@@ -8,6 +8,7 @@ from pydantic import Field, JsonValue
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import Budget, Item, Usage
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.domain.models import ContractModel, ToolDescriptor
 
 
@@ -83,7 +84,10 @@ ProviderEvent = Annotated[
     | TextCompleted
     | ToolCallCompleted
     | ResponseCompleted
-    | ResponseFailed,
+    | ResponseFailed
+    | ModelAttemptStarted
+    | ModelUsageObserved
+    | ModelAttemptFinished,
     Field(discriminator="type"),
 ]
 

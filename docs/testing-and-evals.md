@@ -5,9 +5,11 @@
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
+0.4.2b1 增量（2026-09-03）：尝试账本领域/Kernel、累计用量去重、未知值与完整性、身份绑定、失败/取消结算、预算与 OTel 差额、v1/v2/v3→v4 混合升级及历史 Schema 冻结。新增 15 个模型尝试子进程崩溃切点，总计 41 个；实际 SDK 元数据映射与真实平台验证尚未完成。
+
 ## 1. 目标
 
-0.4.1 增量（2026-09-03）：新增 `tests/contracts/provider.py` 共享行为契约与 `tests/models/` 的实际 OpenAI SDK + MockTransport 测试，覆盖流分片、协议错误、重试/取消、错误 body 清理、凭据边界、Kernel 多步骤与审批重启。默认测试不访问真实平台；真实模型有效性、Anthropic 和成本验收尚未完成。具体状态见 [Model Runtime](m04-model-runtime.md)。
+0.4.1 增量（2026-09-03）：新增 `tests/contracts/provider.py` 共享行为契约与 `tests/models/` 的实际 OpenAI SDK + MockTransport 测试，覆盖流分片、协议错误、重试/取消、错误 body 清理、凭据边界、Kernel 多步骤与审批重启。默认测试不访问真实平台；真实模型有效性和成本验收尚未完成（Anthropic 已在 0.4.2a 完成离线验收）。具体状态见 [Model Runtime](m04-model-runtime.md)。
 
 Harnessix Code 的测试必须回答两类不同问题：
 

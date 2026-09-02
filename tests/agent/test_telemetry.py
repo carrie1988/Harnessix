@@ -17,10 +17,44 @@ from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.observability.core import NoOpObservability
 from harnessix.observability.opentelemetry import OpenTelemetryObservability
 from harnessix.session.sqlite import SQLiteSessionStore
+from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed
 from tests.agent.helpers import RecordingTools, answer, tool_step
 from tests.agent.test_approvals import reply
 
 CANARY = "private-canary-not-for-telemetry"
+
+
+@pytest.mark.parametrize("succeeded", [False, True])
+async def test_attempt_usage_metrics_follow_committed_deltas(tmp_path: Path, succeeded) -> None:
+    start = attempt_start()
+    partial = observed(start, completeness="partial", input_tokens=10, output_tokens=1)
+    events = (
+        accounted_answer(start=start) if succeeded else [start, ResponseFailed(code="transport")]
+    )
+    events[1:1] = [partial, partial]
+    observer, exporter, reader = instrumented()
+    try:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "s.db"),
+            ScriptedProvider([events]),
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "用量指标", request_id="r")
+        values = {
+            metric.name: sum(point.value for point in metric.data.data_points)
+            for metric in metrics(reader)
+            if metric.name.startswith("harnessix.agent.tokens.")
+        }
+        assert values == {
+            "harnessix.agent.tokens.input": 10,
+            "harnessix.agent.tokens.output": 3 if succeeded else 1,
+        }
+        assert sum(values.values()) == turn.usage.total_tokens
+        assert str(start.attempt_id) not in reader.get_metrics_data().to_json()
+        assert "fixture-model" not in reader.get_metrics_data().to_json()
+    finally:
+        observer.close()
 
 
 def instrumented():

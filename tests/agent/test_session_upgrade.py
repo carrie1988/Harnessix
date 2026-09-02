@@ -13,11 +13,12 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.models.scripted import FakeProvider
+from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
+from tests.agent.attempt_helpers import accounted_answer
 
 
-@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize("version", [1, 2, 3])
 async def test_old_transcript_migrates_without_rewriting_history(
     tmp_path: Path, version: int
 ) -> None:
@@ -58,7 +59,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
                 for event, encoded in zip(fixture["events"], originals, strict=True)
             ],
         )
-    if version == 2:
+    if version >= 2:
         sql2 = (
             files("harnessix.session.migrations")
             .joinpath("0002_projection_version.sql")
@@ -71,6 +72,17 @@ async def test_old_transcript_migrates_without_rewriting_history(
                 (hashlib.sha256(sql2.encode()).hexdigest(),),
             )
             database.execute("UPDATE agent_threads SET projection_version = 2")
+    if version == 3:
+        sql3 = (
+            files("harnessix.session.migrations").joinpath("0003_semantic_contract.sql").read_text()
+        )
+        with sqlite3.connect(store.path) as database:
+            database.executescript(sql3)
+            database.execute(
+                "INSERT INTO agent_migrations VALUES (3, ?)",
+                (hashlib.sha256(sql3.encode()).hexdigest(),),
+            )
+            database.execute("UPDATE agent_threads SET projection_version = 3")
     await store.initialize()
     assert await store.get_thread(thread_id) == Thread.model_validate(fixture["snapshot"])
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))
@@ -82,19 +94,20 @@ async def test_old_transcript_migrates_without_rewriting_history(
             database.execute("SELECT projection_version FROM agent_threads").fetchone()[0]
             == version
         )
-    async with AgentRuntime(store, FakeProvider()) as runtime:
-        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v3")
+    async with AgentRuntime(store, ScriptedProvider([accounted_answer()])) as runtime:
+        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v4")
     assert completed.status == "completed"
+    assert completed.usage.total_tokens == 13 and completed.usage_is_complete
     with sqlite3.connect(store.path) as database:
         assert database.execute(
             "SELECT version FROM agent_migrations ORDER BY version"
-        ).fetchall() == [(1,), (2,), (3,)]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 3
+        ).fetchall() == [(1,), (2,), (3,), (4,)]
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 4
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 3 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 4 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -103,7 +116,7 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 4")
+        database.execute("UPDATE agent_threads SET projection_version = 5")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"
