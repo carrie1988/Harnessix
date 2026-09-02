@@ -100,30 +100,38 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 5. 0.3：Agent Runtime Kernel
 
+状态：**进行中**。0.3.1 核心切片已实现，0.3.2 和整体验收未完成。具体支持边界见 [Kernel 实施设计](m03-runtime-kernel.md)。
+
 ### 目标
 
 实现不依赖真实模型的确定性 Agent Runtime，使生命周期、持久化和故障语义先于 Provider 复杂度稳定下来。
 
 ### 核心交付
 
-- [ ] `Thread`、`Turn`、`Item`、`AgentEvent` 领域模型；
-- [ ] Item 的 `started/delta/completed/failed/cancelled` 生命周期；
-- [ ] Agent Loop 状态机和最大步数/预算终止；
-- [ ] `ModelProvider` 与 `ToolRuntime` 端口；
-- [ ] SQLite Session Store、Schema 版本和迁移；
-- [ ] 单调事件序列和物化快照；
-- [ ] Fake Provider、Scripted Provider、Transcript Replay；
-- [ ] Turn Cancel Token 和结构化错误分类；
-- [ ] Agent/Action Trace 关联标识。
+- [x] `Thread`、`Turn`、`Item`、`AgentEvent` 基础领域模型；
+- [x] 基础 Item 的 `started/delta/completed/failed/cancelled` 生命周期；
+- [x] Agent Loop 状态机和步数、报告 Token、时间、输出预算；
+- [x] `ModelProvider` 与只读 `ToolRuntime` 端口；
+- [x] SQLite Session Store、Schema v1 和事务迁移框架；
+- [x] 单调事件序列、CAS 和初始聚合快照；
+- [x] Fake Provider、Scripted Provider、Transcript Replay；
+- [x] Turn Cancel Token 和基础结构化错误；
+- [x] Agent/Action TraceContext 与关联 ID 映射；
+- [ ] 持久审批等待、答复、取消和恢复；
+- [ ] 剩余 Item 类型与统一错误契约；
+- [ ] 完整 Agent OTel Trace/Metrics；
+- [ ] Session Store 共享契约套件与更多存储故障场景。
 
 ### 关键测试
 
-- [ ] 单轮无工具响应；
-- [ ] 多次工具调用后完成；
-- [ ] 重复、缺失、乱序 Tool Result 被拒绝；
-- [ ] 达到最大步数和预算后确定性终止；
-- [ ] 模型流、工具执行和等待审批阶段分别取消；
-- [ ] 在每个持久化边界模拟进程退出并恢复；
+- [x] 单轮无工具响应；
+- [x] 多次只读工具调用后完成；
+- [x] 重复、缺失、乱序 Tool Result 被拒绝；
+- [x] 达到最大步数和预算后确定性终止；
+- [x] 模型流和只读工具执行阶段取消、清理；
+- [ ] 等待审批阶段取消；
+- [x] 7 个关键边界的真实子进程退出与无重复恢复；
+- [ ] 完整持久化边界矩阵（包含待实现审批）；
 - [ ] 旧 Schema 数据迁移测试。
 
 ### 验收标准

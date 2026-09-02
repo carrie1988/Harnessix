@@ -8,7 +8,8 @@
 
 - 已实现：Action Plane、HTTP API、SDK、Worker、SQLite/PostgreSQL Journal、基础 Policy/Approval、OpenTelemetry；
 - 已完成设计：Thread/Turn/Item/Event、Agent Loop 与取消、Provider Event、App Server Protocol、Session Store 与恢复、威胁模型和测试/Eval 规范；
-- 下一阶段：0.3 Agent Runtime Kernel，实现确定性 Loop、SQLite Session Store、Fake/Scripted Provider 和故障注入；
+- 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
+- 下一切片 0.3.2：持久审批等待、剩余 Item/错误契约、Store Contract 和 Agent 可观测性；0.3 尚未整体验收；
 - 后续规划：真实 Model Provider、Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
@@ -334,13 +335,13 @@ Client Cancel
 
 ```text
 src/harnessix/
-├── agent/             # 规划：Loop、Thread/Turn/Item、运行状态
-├── models/            # 规划：Provider 端口和适配器
+├── agent/             # 已实现基础切片：Loop、领域模型、Reducer、取消
+├── models/            # 已实现端口和离线 Provider；真实 Adapter 待实现
 ├── context/           # 规划：指令、预算、裁剪、压缩
 ├── tools/             # 规划：Coding Tool Runtime
 ├── workspace/         # 规划：文件、Git、进程、Sandbox
 ├── protocol/          # 规划：App Server Protocol
-├── session/           # 规划：Session Store 和迁移
+├── session/           # 已实现 SQLite Event Log、聚合投影、迁移和宿主锁
 ├── extensions/        # 规划：MCP、Skills、Hooks
 ├── evals/             # 规划：Replay、任务评测、故障注入
 ├── domain/            # 已实现：Action Plane 领域模型
@@ -370,6 +371,7 @@ src/harnessix/
 - Agent Loop 采用持久边界驱动的状态机和分层 Cancel Token；
 - Provider 使用供应商中立的流式事件和结构化错误；
 - Agent Protocol 使用标准 JSON-RPC 2.0，第一版传输为 stdio JSONL；
+- 0.3 Kernel 先提供进程内宿主，使用本地单宿主锁和初始聚合快照，见 [ADR 0011](adr/0011-kernel-host-and-initial-projection.md)；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
 
@@ -379,7 +381,6 @@ src/harnessix/
 
 - Patch 的原子提交和回滚模型；
 - Host/Container Sandbox 的默认策略；
-- App Server 进入 0.8 前，0.3 Runtime 的进程内宿主边界；
 - TUI 技术栈；
 - 是否以及何时引入 Rust Process/Sandbox Sidecar；
 - Subagent 的状态隔离、预算和权限继承模型。

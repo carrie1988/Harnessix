@@ -1,0 +1,604 @@
+{
+  "$defs": {
+    "AgentFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "AgentFailure",
+      "type": "object"
+    },
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_steps": {
+          "default": 16,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 100000,
+          "minimum": 1,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "max_output_chars": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Chars",
+          "type": "integer"
+        },
+        "max_tool_calls_per_step": {
+          "default": 32,
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Max Tool Calls Per Step",
+          "type": "integer"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "ItemFinished": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "item_finished",
+          "default": "item_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "assistant_message": "#/$defs/TextContent",
+              "reasoning_summary": "#/$defs/TextContent",
+              "tool_call": "#/$defs/ToolCallContent",
+              "tool_result": "#/$defs/ToolResultContent",
+              "user_message": "#/$defs/TextContent"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextContent"
+            },
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "$ref": "#/$defs/ToolResultContent"
+            }
+          ],
+          "title": "Content"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "item_id",
+        "status",
+        "content"
+      ],
+      "title": "ItemFinished",
+      "type": "object"
+    },
+    "ItemStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "item_started",
+          "default": "item_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "assistant_message": "#/$defs/TextContent",
+              "reasoning_summary": "#/$defs/TextContent",
+              "tool_call": "#/$defs/ToolCallContent",
+              "tool_result": "#/$defs/ToolResultContent",
+              "user_message": "#/$defs/TextContent"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextContent"
+            },
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "$ref": "#/$defs/ToolResultContent"
+            }
+          ],
+          "title": "Content"
+        }
+      },
+      "required": [
+        "item_id",
+        "content"
+      ],
+      "title": "ItemStarted",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "TextContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "user_message",
+            "assistant_message",
+            "reasoning_summary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "TextContent",
+      "type": "object"
+    },
+    "ThreadCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "thread_created",
+          "default": "thread_created",
+          "title": "Type",
+          "type": "string"
+        },
+        "workspace": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Workspace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspace"
+      ],
+      "title": "ThreadCreated",
+      "type": "object"
+    },
+    "ToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "provider_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Provider Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "call_id",
+        "provider_call_id",
+        "tool",
+        "tool_version",
+        "effect_class"
+      ],
+      "title": "ToolCallContent",
+      "type": "object"
+    },
+    "ToolResultContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_result",
+          "default": "tool_result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        }
+      },
+      "required": [
+        "call_id",
+        "outcome"
+      ],
+      "title": "ToolResultContent",
+      "type": "object"
+    },
+    "TraceContext": {
+      "additionalProperties": false,
+      "description": "跨进程持久化的 W3C Trace Context。",
+      "properties": {
+        "traceparent": {
+          "description": "W3C traceparent",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Traceparent",
+          "type": "string"
+        },
+        "tracestate": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "W3C tracestate",
+          "title": "Tracestate"
+        }
+      },
+      "required": [
+        "traceparent"
+      ],
+      "title": "TraceContext",
+      "type": "object"
+    },
+    "TurnStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_started",
+          "default": "turn_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "trace_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "request_id",
+        "request_fingerprint",
+        "budget"
+      ],
+      "title": "TurnStarted",
+      "type": "object"
+    },
+    "TurnStateChanged": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_state_changed",
+          "default": "turn_state_changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TurnStatus"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "TurnStateChanged",
+      "type": "object"
+    },
+    "TurnStatus": {
+      "enum": [
+        "accepted",
+        "preparing_context",
+        "calling_model",
+        "executing_tools",
+        "finalizing",
+        "cancelling",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "TurnStatus",
+      "type": "string"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "UsageRecorded": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "usage_recorded",
+          "default": "usage_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "required": [
+        "step",
+        "usage"
+      ],
+      "title": "UsageRecorded",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turn Id"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "payload": {
+      "discriminator": {
+        "mapping": {
+          "item_finished": "#/$defs/ItemFinished",
+          "item_started": "#/$defs/ItemStarted",
+          "thread_created": "#/$defs/ThreadCreated",
+          "turn_started": "#/$defs/TurnStarted",
+          "turn_state_changed": "#/$defs/TurnStateChanged",
+          "usage_recorded": "#/$defs/UsageRecorded"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ThreadCreated"
+        },
+        {
+          "$ref": "#/$defs/TurnStarted"
+        },
+        {
+          "$ref": "#/$defs/TurnStateChanged"
+        },
+        {
+          "$ref": "#/$defs/ItemStarted"
+        },
+        {
+          "$ref": "#/$defs/ItemFinished"
+        },
+        {
+          "$ref": "#/$defs/UsageRecorded"
+        }
+      ],
+      "title": "Payload"
+    },
+    "thread_id": {
+      "format": "uuid",
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "payload",
+    "thread_id",
+    "sequence"
+  ],
+  "title": "AgentEvent",
+  "type": "object"
+}

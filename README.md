@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：仓库已完成 0.1 Action Plane 和 0.2 Coding Agent 架构基线，下一阶段是 0.3 Agent Runtime Kernel。Agent Loop、Session Store 和 Provider 尚未实现，当前版本仍不是可用的完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线和 0.3.1 Kernel 核心切片。进程内 Agent Loop、SQLite Session Store、Fake/Scripted Provider、取消和保守恢复已实现；0.3 整体仍在进行，真实模型、Coding Tools、审批等待和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -65,6 +65,26 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - LangGraph/LangChain `StructuredTool` 适配器；
 - `system.echo` 与 `demo.issue.create` 两个可运行 Executor；
 - 不确定副作用注入和无重复对账测试。
+
+## 当前已实现：0.3.1 Kernel 核心切片
+
+- Thread/Turn/Item/AgentEvent、纯 Reducer 和版本化 JSON Schema；
+- Event Log 与聚合快照原子提交、sequence CAS 和请求幂等；
+- 供应商中立的 ModelProvider/ToolRuntime 端口；
+- Fake/Scripted Provider、多步骤只读工具循环；
+- 步数、报告 Token 用量、时间和输出大小边界；
+- 用户取消、Task 取消、流清理和单 Runtime 宿主锁；
+- 进程重启后显式 INTERRUPTED，不自动重放工具；
+- Transcript Replay、投影重建和真实进程故障注入。
+
+离线验收：
+
+~~~bash
+uv run pytest tests/agent
+uv run python examples/kernel_replay.py
+~~~
+
+该入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。0.3.1 当前仅允许可信、无审批的只读 Tool 端口；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
 
 ## 当前 Action Plane 快速开始
 
@@ -171,13 +191,16 @@ src/harnessix/executors/    内置和演示 Executor
 src/harnessix/api/          FastAPI HTTP 边界
 src/harnessix/sdk/          Python 同步/异步客户端
 src/harnessix/adapters/     Agent 框架适配器
+src/harnessix/agent/        Kernel 领域模型、Reducer、Loop、取消
+src/harnessix/models/       Provider 契约、Fake/Scripted Provider
+src/harnessix/session/      SQLite Session Store、迁移与宿主锁
 tests/                      单元和集成测试
 docs/                       中文架构与决策文档
 spec/                       生成的 JSON Schema 和 OpenAPI
 examples/                   可运行演示
 ```
 
-后续按里程碑增量加入 `agent/`、`models/`、`context/`、`tools/`、`workspace/`、`protocol/`、`session/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
+后续按里程碑增量加入 `context/`、`tools/`、`workspace/`、`protocol/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
 
 ## 设计资料
 
@@ -199,6 +222,8 @@ examples/                   可运行演示
 - [Session Store 与恢复决策](docs/adr/0010-session-store-and-recovery.md)
 - [威胁模型 v1](docs/threat-model.md)
 - [测试与 Eval 规范 v1](docs/testing-and-evals.md)
+- [0.3 Kernel 实施设计](docs/m03-runtime-kernel.md)
+- [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
 - [自研与复用边界](docs/build-vs-buy.md)

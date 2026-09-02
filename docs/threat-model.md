@@ -4,6 +4,8 @@
 - 日期：2026-09-02
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
+0.3.1 实施说明：当前 Kernel 已实现单宿主锁、事件 CAS/幂等、只读工具准入、输出边界、保守恢复和数据库文件权限。真实 Sandbox、网络隔离、完整 Secret Redactor、MCP/Hook 和持久审批等待仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见 [Kernel 支持边界](m03-runtime-kernel.md)。
+
 ## 1. 安全目标
 
 Harnessix Code 必须保证：

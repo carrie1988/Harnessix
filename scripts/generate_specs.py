@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
+from harnessix.agent.models import AgentEvent, Thread
 from harnessix.api import create_app
 from harnessix.domain.models import ActionRequest
+from harnessix.models.contracts import ProviderEvent
 
 
 def write_json(path: Path, value: object) -> None:
@@ -16,7 +20,10 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    print("已更新 spec/action-contract-v1.schema.json 和 spec/openapi.json")
+    write_json(output / "agent-event-v1.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v1.schema.json", Thread.model_json_schema())
+    write_json(output / "provider-event-v1.schema.json", TypeAdapter(ProviderEvent).json_schema())
+    print("已更新 Action、Agent Event、Thread、Provider Event 和 OpenAPI Schema")
 
 
 if __name__ == "__main__":

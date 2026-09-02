@@ -1,0 +1,262 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "ResponseCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_completed",
+          "default": "response_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "finish_reason": {
+          "default": "completed",
+          "enum": [
+            "completed",
+            "tool_calls",
+            "max_output_tokens",
+            "content_filter",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Finish Reason",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "title": "ResponseCompleted",
+      "type": "object"
+    },
+    "ResponseFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_failed",
+          "default": "response_failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "invalid_request",
+            "authentication",
+            "rate_limit",
+            "quota",
+            "content_policy",
+            "provider_internal",
+            "transport",
+            "invalid_provider_output",
+            "context_overflow",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "ResponseFailed",
+      "type": "object"
+    },
+    "ResponseStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_started",
+          "default": "response_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "response_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Response Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "response_id"
+      ],
+      "title": "ResponseStarted",
+      "type": "object"
+    },
+    "TextCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_completed",
+          "default": "text_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id",
+        "text"
+      ],
+      "title": "TextCompleted",
+      "type": "object"
+    },
+    "TextDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_delta",
+          "default": "text_delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        },
+        "delta": {
+          "maxLength": 1000000,
+          "title": "Delta",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id",
+        "delta"
+      ],
+      "title": "TextDelta",
+      "type": "object"
+    },
+    "TextStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_started",
+          "default": "text_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id"
+      ],
+      "title": "TextStarted",
+      "type": "object"
+    },
+    "ToolCallCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tool_call_completed",
+          "default": "tool_call_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "call_id",
+        "tool"
+      ],
+      "title": "ToolCallCompleted",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "response_completed": "#/$defs/ResponseCompleted",
+      "response_failed": "#/$defs/ResponseFailed",
+      "response_started": "#/$defs/ResponseStarted",
+      "text_completed": "#/$defs/TextCompleted",
+      "text_delta": "#/$defs/TextDelta",
+      "text_started": "#/$defs/TextStarted",
+      "tool_call_completed": "#/$defs/ToolCallCompleted"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ResponseStarted"
+    },
+    {
+      "$ref": "#/$defs/TextStarted"
+    },
+    {
+      "$ref": "#/$defs/TextDelta"
+    },
+    {
+      "$ref": "#/$defs/TextCompleted"
+    },
+    {
+      "$ref": "#/$defs/ToolCallCompleted"
+    },
+    {
+      "$ref": "#/$defs/ResponseCompleted"
+    },
+    {
+      "$ref": "#/$defs/ResponseFailed"
+    }
+  ]
+}
