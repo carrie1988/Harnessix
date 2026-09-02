@@ -100,7 +100,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 5. 0.3：Agent Runtime Kernel
 
-状态：**进行中**。0.3.1 核心与 0.3.2 持久审批切片已实现；0.3.3（剩余契约、可观测性和存储门禁）及整体验收未完成。具体支持边界见 [Kernel 实施设计](m03-runtime-kernel.md)。
+状态：**已完成 0.3 范围内实现与本地验收**。0.3.1 核心、0.3.2 持久审批、0.3.3 语义契约/可观测性/存储门禁均已落地；自动规划、自动压缩、真实模型和真实写工具不属于本阶段。具体支持边界见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
 ### 目标
 
@@ -112,15 +112,15 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] 基础 Item 的 `started/delta/completed/failed/cancelled` 生命周期；
 - [x] Agent Loop 状态机和步数、报告 Token、时间、输出预算；
 - [x] `ModelProvider` 与只读 `ToolRuntime` 端口；
-- [x] SQLite Session Store、Schema v2 和 v1→v2 事务迁移；
+- [x] SQLite Session Store、Schema v3 和 v1/v2→v3 事务迁移；
 - [x] 单调事件序列、CAS 和初始聚合快照；
 - [x] Fake Provider、Scripted Provider、Transcript Replay；
 - [x] Turn Cancel Token 和基础结构化错误；
 - [x] Agent/Action TraceContext 与关联 ID 映射；
 - [x] 持久审批等待、答复、取消和恢复（可信只读工具）；
-- [ ] 剩余 Item 类型与统一错误契约；
-- [ ] 完整 Agent OTel Trace/Metrics；
-- [ ] Session Store 共享契约套件与更多存储故障场景。
+- [x] Plan/Compaction/Error 语义 Item、生命周期与统一错误契约；
+- [x] 0.3 范围 Agent OTel Trace/Metrics、跨暂停片段关联和导出故障隔离；
+- [x] SessionStore 共享契约套件与损坏、不可写、磁盘满等存储故障场景。
 
 ### 关键测试
 
@@ -132,8 +132,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] 等待审批阶段取消；
 - [x] 7 个关键边界的真实子进程退出与无重复恢复；
 - [x] 审批请求/决定事务、消费边界、执行前后等 10 个真实进程退出场景；
-- [ ] 剩余 Item 与存储故障的完整边界矩阵；
-- [x] 真实 0.3.1 Transcript 的旧 Schema 迁移与混合版本 Replay。
+- [x] 9 个语义 Item 提交崩溃边界与存储故障矩阵；
+- [x] 真实 0.3.1/0.3.2 Transcript 的旧 Schema 迁移与混合版本 Replay。
 
 ### 验收标准
 
@@ -143,6 +143,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - Runtime 不导入任何具体 Provider SDK。
 
 ## 6. 0.4：Model Runtime
+
+状态：**下一阶段，实施计划已建立**；真实 Adapter 尚未实现。见 [0.4 实施计划](m04-model-runtime.md)。
 
 ### 目标
 

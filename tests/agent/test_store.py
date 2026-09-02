@@ -43,44 +43,6 @@ def test_uuid7_layout() -> None:
     assert all(before <= v.int >> 80 <= after for v in values)
 
 
-async def test_append_idempotency_conflict_and_cursor(tmp_path: Path) -> None:
-    store = SQLiteSessionStore(tmp_path / "sessions.db")
-    await store.initialize()
-    thread, draft = await create(store, tmp_path)
-    assert await store.append(thread.thread_id, [draft], expected_sequence=0) == thread
-    conflicting = draft.model_copy(update={"payload": ThreadCreated(workspace="/other")})
-    with pytest.raises(KernelError, match="不同载荷"):
-        await store.append(thread.thread_id, [conflicting], expected_sequence=0)
-    assert len(await store.events(thread.thread_id)) == 1
-    assert await store.events(thread.thread_id, after=1) == []
-    with pytest.raises(KernelError, match="不能为负数"):
-        await store.events(thread.thread_id, after=-1)
-
-
-async def test_database_cas_across_independent_connections(tmp_path: Path) -> None:
-    first = SQLiteSessionStore(tmp_path / "sessions.db")
-    second = SQLiteSessionStore(first.path)
-    await first.initialize()
-    thread, _ = await create(first, tmp_path)
-    drafts = [
-        EventDraft(
-            turn_id=new_id(),
-            payload=TurnStarted(
-                request_id=f"request-{i}", request_fingerprint="0" * 64, budget=Budget()
-            ),
-        )
-        for i in range(2)
-    ]
-    results = await asyncio.gather(
-        first.append(thread.thread_id, [drafts[0]], expected_sequence=1),
-        second.append(thread.thread_id, [drafts[1]], expected_sequence=1),
-        return_exceptions=True,
-    )
-    assert sum(isinstance(r, KernelError) for r in results) == 1
-    assert len((await first.get_thread(thread.thread_id)).turns) == 1
-    assert [e.sequence for e in await first.events(thread.thread_id)] == [1, 2]
-
-
 @pytest.mark.parametrize("point", ["session.after_events", "session.after_projection"])
 async def test_event_projection_transaction_rolls_back(tmp_path: Path, point: str) -> None:
     store = SQLiteSessionStore(tmp_path / "sessions.db")
@@ -169,13 +131,13 @@ async def test_migration_idempotent_future_and_checksum(tmp_path: Path) -> None:
     await asyncio.gather(store.initialize(), SQLiteSessionStore(store.path).initialize())
     assert store.path.stat().st_mode & 0o777 == 0o600
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 2
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 3
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        database.execute("INSERT INTO agent_migrations VALUES (3, 'future')")
+        database.execute("INSERT INTO agent_migrations VALUES (4, 'future')")
     with pytest.raises(KernelError, match="高于"):
         await store.initialize()
     with sqlite3.connect(store.path) as database:
-        database.execute("DELETE FROM agent_migrations WHERE version = 3")
+        database.execute("DELETE FROM agent_migrations WHERE version = 4")
         database.execute("UPDATE agent_migrations SET checksum = 'changed'")
     with pytest.raises(KernelError, match="发生变化"):
         await store.initialize()

@@ -11,10 +11,13 @@ from harnessix.agent.models import (
     TURN_TRANSITIONS,
     AgentEvent,
     ApprovalRequestContent,
+    CompactionContent,
+    ErrorContent,
     Item,
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    PlanContent,
     TextContent,
     Thread,
     ThreadCreated,
@@ -100,6 +103,41 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             == request_fingerprint(thread, turn, call, policy_version=content.policy_version),
             "审批指纹不匹配",
         )
+    elif isinstance(content, PlanContent | CompactionContent):
+        require(
+            turn.status == TurnStatus.PREPARING_CONTEXT, "Plan/Compaction 只能在准备上下文时记录"
+        )
+        require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
+        if isinstance(content, PlanContent):
+            plans = [
+                i
+                for t in thread.turns
+                for i in t.items
+                if isinstance(i.content, PlanContent) and i.status == ItemStatus.COMPLETED
+            ]
+            require(
+                content.supersedes == (plans[-1].item_id if plans else None),
+                "Plan 必须引用最新完成的计划",
+            )
+        else:
+            sources = {
+                i.item_id: i
+                for t in thread.turns
+                if t.status in TERMINAL_TURNS
+                for i in t.items
+                if i.status == ItemStatus.COMPLETED
+                and isinstance(i.content, TextContent | ToolCallContent | ToolResultContent)
+            }
+            require(
+                all(item_id in sources for item_id in content.source_item_ids),
+                "Compaction 来源必须属于已终结 Turn 的完成消息或工具 Item",
+            )
+            selected = [sources[item_id].content for item_id in content.source_item_ids]
+            selected_calls = {c.call_id for c in selected if isinstance(c, ToolCallContent)}
+            results = {c.call_id for c in selected if isinstance(c, ToolResultContent)}
+            require(selected_calls == results, "Compaction 不能拆散工具调用与结果")
+    elif isinstance(content, ErrorContent):
+        pass  # 失败可发生于任意活跃阶段；终态校验要求错误事实与终态一致。
     else:
         calls = pending_calls(turn)
         require(bool(calls) and calls[0].call_id == content.call_id, "Tool Result 缺失、重复或乱序")
@@ -195,6 +233,19 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
             )
         if target != TurnStatus.COMPLETED:
             require(payload.error is not None, "非成功终态必须携带结构化错误")
+        if event.schema_version >= 3:
+            errors = [
+                i.content
+                for i in turn.items
+                if isinstance(i.content, ErrorContent) and i.status == ItemStatus.COMPLETED
+            ]
+            if target == TurnStatus.COMPLETED:
+                require(not errors, "存在终止错误事实的 Turn 不能成功完成")
+            else:
+                require(
+                    bool(errors) and errors[-1].failure == payload.error,
+                    "非成功终态必须先记录一致的 Error Item",
+                )
         return turn.model_copy(
             update={"status": target, "error": payload.error, "completed_at": event.occurred_at}
         )

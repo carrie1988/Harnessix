@@ -478,7 +478,7 @@ async def test_reply_commit_failure_rolls_back_and_can_be_retried(tmp_path: Path
         turn = await runtime.run_turn(thread.thread_id, "任务", request_id="r")
         before = await store.get_thread(thread.thread_id)
         fail = True
-        with pytest.raises(OSError):
+        with pytest.raises(KernelError, match="文件系统"):
             await reply(runtime, thread.thread_id, turn)
         fail = False
         assert await store.get_thread(thread.thread_id) == before

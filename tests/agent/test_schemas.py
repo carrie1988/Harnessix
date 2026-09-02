@@ -11,8 +11,8 @@ from harnessix.models.contracts import ProviderEvent
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
-        "agent-event-v2.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v2.schema.json": Thread.model_json_schema(),
+        "agent-event-v3.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v3.schema.json": Thread.model_json_schema(),
         "provider-event-v1.schema.json": TypeAdapter(ProviderEvent).json_schema(),
     }
     for name, schema in expected.items():
@@ -23,7 +23,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 3,
+                "schema_version": 4,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -57,4 +57,4 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 2
+        assert EventDraft(payload=payload).schema_version == 3

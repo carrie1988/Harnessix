@@ -1,13 +1,13 @@
 # 0.3 Agent Runtime Kernel 实施设计
 
 - 更新日期：2026-09-03
-- 当前交付：0.3.1 核心 + 0.3.2 持久审批
-- 状态：两个切片已实现；0.3 整体尚未完成
-- 依赖：[ADR 0006](adr/0006-thread-turn-item-event-model.md) 至 [ADR 0012](adr/0012-durable-approval-checkpoint.md)
+- 当前交付：0.3.1 核心 + 0.3.2 持久审批 + 0.3.3 契约/可观测性/存储验收
+- 状态：0.3 范围实现与本地验收完成；后续进入 0.4
+- 依赖：[ADR 0006](adr/0006-thread-turn-item-event-model.md) 至 [ADR 0013](adr/0013-kernel-contracts-and-telemetry.md)
 
 ## 1. 范围
 
-0.3.1/0.3.2 不接真实模型，不执行 Shell、不修改 Workspace，也不开放 MCP 或项目 Hook。它提供正式的进程内 Kernel，用离线 Provider 先验证持久化和生命周期。
+0.3 不接真实模型，不执行 Shell、不修改 Workspace，也不开放 MCP 或项目 Hook。它提供正式的进程内 Kernel，用离线 Provider 先验证持久化和生命周期。
 
 已实现：
 
@@ -21,22 +21,24 @@
 - 用户 Cancel、调用方 Task Cancel 与宿主关闭；
 - 进程重启后的保守恢复，以及审批检查点的持久保留；
 - ApprovalRequest、答复、取消、显式继续与工具契约指纹；
-- Agent Event v2、新旧事件混合 Replay 和 Session v1→v2 升级；
+- Agent Event v3、新旧事件混合 Replay 和 Session v1/v2→v3 升级；
+- Plan/Compaction/Error 持久语义 Item 与统一错误 category；
+- Turn/Model/Tool/Approval/Cancel/Recovery Trace、低基数 Metrics 与可观测性故障隔离；
+- SessionStore 共享契约与损坏/只读/磁盘满等存储故障测试；
 - Thread/Turn 到既有 ActionContext 的关联映射；
 - 独立 Schema 和离线验收脚本。
 
 未实现：
 
-- Plan/Compaction 等完整 Item 生命周期；
+- 自动规划、自动 Context Compaction、Compaction 对 Model View 的替换；
 - Provider 原始 Chunk、Tool Arguments Delta 和完整 Usage 归一化；
 - Provider 自动重试、缓存/推理 Token 明细和成本预算；
 - 自主重跑中断 Turn、Fork、Archive（审批检查点外不可 resume 原 Turn）；
 - 真正的 Coding Tool、Process、Sandbox 或外部 Action 路由；
 - App Server 和 CLI/TUI 的 Agent 命令；
 - Context 压缩、分页投影、Artifact 存储和完整 Secret Redactor；
-- 完整 Agent OTel Spans/Metrics；当前只提供持久 TraceContext 与关联 ID。
 
-这些能力仍按路线图进入 0.3.3 及后续版本，不能从当前 Kernel 的测试结果推导为已经具备。
+这些能力仍按路线图进入 0.4 及后续版本，不能从当前 Kernel 的测试结果推导为已经具备。
 
 ## 2. 模块
 
@@ -46,11 +48,14 @@ harnessix.agent.reducer       纯函数事件投影与不变量
 harnessix.agent.runtime       进程内 Loop、取消、恢复
 harnessix.agent.cancellation  可协作取消的异步 I/O
 harnessix.agent.approvals     审批指纹、查询与持久截止时间
+harnessix.agent.errors        统一失败类别、KernelError 与 AgentFailure
+harnessix.agent.telemetry     安全遥测包装与运行片段诊断
 harnessix.agent.ports         ToolRuntime 端口
 harnessix.models.contracts    ModelProvider 端口和归一化事件子集
 harnessix.models.scripted     Fake / Scripted Provider
 harnessix.session.ports       SessionStore 端口
 harnessix.session.sqlite      SQLite 事务、迁移与宿主锁
+harnessix.session.errors      存储驱动错误归一化
 ~~~
 
 复用现有 ContractModel、EffectClass、ToolDescriptor、TraceContext 和 ActionContext，不重定义第二套 Action Plane 契约。
@@ -108,7 +113,7 @@ Runtime 校验：
 - 没有语义内容的响应不是成功；
 - response_failed 可在 response_started 之前报告认证、传输等失败。
 
-Provider 自动重试尚未启用。失败类别保留，原始异常文本不默认持久化。
+Provider 自动重试尚未启用。失败 category 与 retryable 声明保留；retryable 只是诊断提示，不等于允许重放 Tool。非成功终态与 Error Item 原子提交，底层异常原文不默认持久化。
 
 ### ToolRuntime
 
@@ -149,8 +154,8 @@ COMMIT
 - 部分重复批次、载荷冲突或旧 sequence 被拒绝；
 - 数据库 Schema 高于当前版本、Migration 校验变化时拒绝启动；
 - 投影损坏可从 Event Log 重建；事件本身损坏则拒绝猜测；
-- 支持空数据库初始化到 v2、幂等初始化和真实 0.3.1 Transcript 的 v1→v2 升级；历史事件不重写；
-- 原 v1 Schema 文件冻结，新写事件默认 v2；旧程序遇到 Migration 2 会拒绝启动，不支持原地降级。
+- 支持空数据库初始化到 v3、幂等初始化和真实 0.3.1/0.3.2 Transcript 的 v1/v2→v3 升级；历史事件不重写；
+- 原 v1/v2 Schema 文件冻结，新写事件默认 v3；旧程序遇到 Migration 3 会拒绝启动，不支持原地降级。
 
 当前使用完整聚合快照，而不是最终的 Thread/Turn/Item 分页查询表。它保持事务和 Replay 语义，但读写成本随历史增长；长会话产品化前必须完成规范化投影、分页和体积基准，不能据此宣称支持无限长历史。
 
@@ -218,6 +223,8 @@ make spec
 
 0.3.2 新增 10 个审批边界：请求事务 Event 后/投影后、请求提交后、决定事务 Event 后/投影后、决定提交后、决定消费后、执行前、执行后和终态前。
 
+0.3.3 新增 Plan、Compaction、Error 各 3 个边界：Event 后、投影后、Commit 后；另外验证真实 SQLite query_only 和 SQLITE_FULL、事件缺口/坏 JSON/索引错配/孤儿投影、导出器接口异常等路径。
+
 测试断言数据库事实、工具调用计数、缺失结果结算和宿主锁释放，而不只检查日志或最终文本。
 
 UUIDv7 使用标准库实现 [RFC 9562 的 UUIDv7 布局](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7)，不依赖 Python 3.14；排序权威仍是 Thread sequence。
@@ -249,21 +256,69 @@ turn = await runtime.resume_turn(thread_id, turn.turn_id)
 
 指纹、答复幂等、预算、拒绝语义、迁移和崩溃消费边界详见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)。本接口不替代 0.8 App Server 的用户认证与双向审批协议。
 
-## 10. 下一切片：0.3.3 契约补齐与整体验收
+## 10. 0.3.3 契约与可观测性
 
-按以下顺序实施，不提前接入真实写工具：
+### 语义 Item
 
-1. **Item/错误契约**：依据 ADR 0006 增加 plan、context_compaction、error 的语义模型和生命周期，区分“支持记录”与“已能自动规划/压缩”；统一 Provider、Kernel、Tool 的错误分类和可重试声明。
-2. **可观测性**：复用现有 Observability/NoOp/OTel 端口；覆盖 Turn 执行片段、Model Step、Tool、审批命令和恢复；持久暂停不得悬挂跨进程 Span。指标使用低基数标签，不包含 prompt、arguments、审批 reason 或凭据。
-3. **存储契约**：抽取 SessionStore 共享契约套件，保留 SQLite 特有迁移/锁/事务注入测试；补足 event_id 冲突、缺口、投影损坏、不可写存储和取消提交边界。
-4. **统一门禁**：新旧 Schema、Replay、失败矩阵、取消清理、离线示例、构建产物与文档一致性通过后，才能标记 0.3 完成并进入 0.4 Model Runtime。
+Plan/Compaction 只能在 PREPARING_CONTEXT 开始，内容在开始和终值之间不可改写。Plan 修订通过新 Item 引用最新完成的计划。Compaction 只引用已终结旧 Turn 的完成消息/工具 Item，并验证工具调用和结果成对引用。
 
-边界：0.3.3 不实现 Context Engine 的自动压缩算法（0.6），也不以添加 Item 类型宣称已有自动规划或真实编码能力。0.4 的真实模型验证需要单独受控 Smoke Test，不能用当前离线测试代替。
+这些是可信宿主提交的语义事实，不是自动规划器或压缩算法；Kernel 当前不以 Compaction 摘要替换模型 History。自动驱动与 Token 数量实测在 Context Engine 阶段落实。
 
-当前风险/待办：
+Error Item 与 v3 非成功终态的 error 必须一致；恢复时不覆盖已有错误事实。存储损坏、不可写、磁盘满和忙状态统一返回公开 KernelError；无法提交终态时仍向调用方抛出存储失败。
 
-- 聚合快照和启动扫描随历史增长，分页与体积基准留待 0.6；
-- 本地 Python Tool 仍是可信代码，硬进程取消与 OS 隔离尚未实现；
+### Trace 与指标
+
+~~~python
+async with AgentRuntime(store, provider, tools, observability=observer) as runtime:
+    turn = await runtime.run_turn(thread_id, prompt, request_id="stable-id")
+~~~
+
+observer 由宿主构造并负责关闭，默认使用 NoOp。自定义 ObservabilitySpan 需提供 set_attribute 和 set_error；set_error 的输入为受控错误类别。
+
+| 信号 | 范围 |
+|---|---|
+| harnessix.agent.turn | 每次 run/resume 的有限时长执行片段 |
+| harnessix.agent.model | 单个模型步骤 |
+| harnessix.agent.tool | Handler 执行与返回值校验；Result 持久提交由 Turn 负责 |
+| harnessix.agent.approval / cancel / recovery | 控制命令与启动恢复 |
+| harnessix.agent.operations | 操作次数，按 operation/outcome/category 分类 |
+| harnessix.agent.operation.duration | 操作耗时，单位秒 |
+| harnessix.agent.tokens.input / output | 完整响应报告的 Token 增量 |
+| harnessix.agent.turns.finished | 本进程确认的新终态提交次数 |
+
+Thread/Turn/Call ID 只进入 Trace；指标无用户、会话、参数或任意工具名标签。暂停的 Span 已结束，重启后的片段以持久 TraceContext 关联。幂等重试不重复统计终态。
+
+Kernel 不将业务异常传入第三方 Span 的 exit，不发送 prompt、Workspace、工具内容、审批 actor/reason 或异常堆栈。可观测性接口异常只产生一次固定降级日志，不掩盖业务错误，也不重新执行工具。
+
+这不是通用 Secret Redactor：第三方导出器自身的内部日志不由 Kernel 字段过滤器控制；真实 Provider/系统级日志脱敏仍须后续安全验收。指标是尽力而为的诊断数据，不能代替 Event Log 审计和计费。
+
+离线 OTel 集成验收：
+
+~~~bash
+uv run --extra observability python -m examples.kernel_observability
+~~~
+
+该入口在真实 OTel 内存导出器中验证 7 个已结束 Span、一次工具调用、一个跨重启 Trace 和 5 类低基数指标，不连接 Collector 或模型 API。
+
+### 0.3.3 本地验收记录（2026-09-03）
+
+- make check：179 passed，1 skipped（未配置 PostgreSQL 测试连接）；
+- 异步调试模式、warnings 视为错误：143 项 Kernel 测试通过；
+- 26 个真实子进程强制退出场景，覆盖核心、审批和语义 Item 提交边界；
+- v1/v2 真正旧版本生成的 Transcript 可升级、混合重放与原格式导出；旧 JSON 不改写；
+- OTel 内存导出验证关联、取消、错误分类与内容隔离；
+- 三个离线示例通过；真实模型请求为 0；
+- sdist/wheel 构建通过；解包后的独立 Wheel 验证 Migration 3、OTel 可选依赖隔离、旧事件导出/Replay 和真实内存 OTel 集成；
+- 当前本地验证为 macOS / Python 3.12；GitHub Actions 独立验证 Linux/Python 3.12、3.13 与 PostgreSQL，状态以对应提交的运行记录为准。
+
+## 11. 0.3 收口与下一阶段
+
+0.3 的 Kernel 验收已完成，下一阶段进入 [0.4 Model Runtime](m04-model-runtime.md)，先求证官方接口、SDK 与秘密配置方式，再开发 Provider Adapter 和共享契约。
+
+持续边界：
+
+- 聚合快照和启动扫描随历史增长，分页与体积基准在 0.6；
+- Python Tool 仍是可信代码；硬进程取消与 OS 隔离尚未实现；
 - 审批墙钟预算包含人工等待，暂未拆分独立审批 TTL；
-- Kernel 到 Action Plane 的正式写执行路由尚未实现；
-- 完整 Agent OTel、共享 Store 契约和剩余 Item 尚未通过整体验收。
+- 正式写执行路由、Sandbox 和端到端凭据脱敏尚未完成；
+- 本里程碑完成不代表已具备真实代码修改或生产发布资格。

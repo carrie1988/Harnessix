@@ -17,14 +17,17 @@ from harnessix.models.scripted import FakeProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
-async def test_real_v1_transcript_migrates_without_rewriting_history(tmp_path: Path) -> None:
-    fixture = json.loads((Path(__file__).parent / "fixtures/session-v1.json").read_text())
+@pytest.mark.parametrize("version", [1, 2])
+async def test_old_transcript_migrates_without_rewriting_history(
+    tmp_path: Path, version: int
+) -> None:
+    fixture = json.loads((Path(__file__).parent / f"fixtures/session-v{version}.json").read_text())
     store = SQLiteSessionStore(tmp_path / "session.db")
     sql = files("harnessix.session.migrations").joinpath("0001_initial.sql").read_text()
     thread_id = UUID(fixture["snapshot"]["thread_id"])
     snapshot = json.dumps(fixture["snapshot"], ensure_ascii=False)
     originals = [json.dumps(event, ensure_ascii=False) for event in fixture["events"]]
-    assert all(event["schema_version"] == 1 for event in fixture["events"])
+    assert all(event["schema_version"] == version for event in fixture["events"])
     assert any(
         event["payload"].get("content", {}).get("kind") == "tool_call"
         for event in fixture["events"]
@@ -55,6 +58,19 @@ async def test_real_v1_transcript_migrates_without_rewriting_history(tmp_path: P
                 for event, encoded in zip(fixture["events"], originals, strict=True)
             ],
         )
+    if version == 2:
+        sql2 = (
+            files("harnessix.session.migrations")
+            .joinpath("0002_projection_version.sql")
+            .read_text()
+        )
+        with sqlite3.connect(store.path) as database:
+            database.executescript(sql2)
+            database.execute(
+                "INSERT INTO agent_migrations VALUES (2, ?)",
+                (hashlib.sha256(sql2.encode()).hexdigest(),),
+            )
+            database.execute("UPDATE agent_threads SET projection_version = 2")
     await store.initialize()
     assert await store.get_thread(thread_id) == Thread.model_validate(fixture["snapshot"])
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))
@@ -62,20 +78,23 @@ async def test_real_v1_transcript_migrates_without_rewriting_history(tmp_path: P
         "events"
     ]
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 1
+        assert (
+            database.execute("SELECT projection_version FROM agent_threads").fetchone()[0]
+            == version
+        )
     async with AgentRuntime(store, FakeProvider()) as runtime:
-        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v2")
+        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v3")
     assert completed.status == "completed"
     with sqlite3.connect(store.path) as database:
         assert database.execute(
             "SELECT version FROM agent_migrations ORDER BY version"
-        ).fetchall() == [(1,), (2,)]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 2
+        ).fetchall() == [(1,), (2,), (3,)]
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 3
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 2 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 3 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -84,7 +103,7 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 3")
+        database.execute("UPDATE agent_threads SET projection_version = 4")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"

@@ -10,8 +10,8 @@
 - 已完成设计：Thread/Turn/Item/Event、Agent Loop 与取消、Provider Event、App Server Protocol、Session Store 与恢复、威胁模型和测试/Eval 规范；
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
-- 下一切片 0.3.3：剩余 Item/错误契约、Store Contract 和 Agent 可观测性；0.3 尚未整体验收；
-- 后续规划：真实 Model Provider、Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
+- 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
+- 下一阶段 0.4：真实 Model Provider；其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

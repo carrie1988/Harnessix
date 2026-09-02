@@ -10,10 +10,12 @@ from pathlib import Path
 from uuid import UUID
 
 import aiosqlite
+from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
 from harnessix.agent.reducer import apply_event, replay
+from harnessix.session.errors import storage_errors
 
 _APPLICATION_ID = 0x4858534B
 
@@ -27,18 +29,23 @@ class SQLiteSessionStore:
 
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
-        async with aiosqlite.connect(self.path) as database:
-            database.row_factory = aiosqlite.Row
-            await database.execute("PRAGMA foreign_keys = ON")
-            await database.execute("PRAGMA busy_timeout = 5000")
-            await database.execute("PRAGMA synchronous = FULL")
-            try:
-                yield database
-            except BaseException:
-                await database.rollback()
-                raise
+        with storage_errors():
+            async with aiosqlite.connect(self.path) as database:
+                database.row_factory = aiosqlite.Row
+                await database.execute("PRAGMA foreign_keys = ON")
+                await database.execute("PRAGMA busy_timeout = 5000")
+                await database.execute("PRAGMA synchronous = FULL")
+                try:
+                    yield database
+                except BaseException:
+                    await database.rollback()
+                    raise
 
     async def initialize(self) -> None:
+        with storage_errors():
+            await self._initialize()
+
+    async def _initialize(self) -> None:
         self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         try:
             descriptor = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -104,18 +111,21 @@ class SQLiteSessionStore:
     @asynccontextmanager
     async def runtime_owner(self) -> AsyncIterator[None]:
         """本地 macOS/Linux 宿主锁；进程退出由 OS 释放，禁止第二宿主接管活跃 Turn。"""
-        self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        descriptor = os.open(
-            str(self.path) + ".runtime.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600
-        )
-        try:
+        with storage_errors():
+            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            descriptor = os.open(
+                str(self.path) + ".runtime.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600
+            )
             try:
-                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError as exc:
-                raise KernelError("runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主") from exc
-            yield
-        finally:
-            os.close(descriptor)
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError as exc:
+                    raise KernelError(
+                        "runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主"
+                    ) from exc
+                yield
+            finally:
+                os.close(descriptor)
 
     async def _snapshot(self, database: aiosqlite.Connection, thread_id: UUID) -> Thread | None:
         cursor = await database.execute(
@@ -123,22 +133,27 @@ class SQLiteSessionStore:
         )
         row = await cursor.fetchone()
         cursor = await database.execute(
-            "SELECT COALESCE(MAX(sequence), 0) FROM agent_events WHERE thread_id = ?",
+            "SELECT COALESCE(MAX(sequence), 0), COUNT(*) FROM agent_events WHERE thread_id = ?",
             (str(thread_id),),
         )
         last_row = await cursor.fetchone()
         assert last_row is not None
         last = last_row[0]
+        if last != last_row[1]:
+            raise KernelError("event_corrupt", "事件日志存在序号缺口")
         if row is None:
             if last:
                 raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
             return None
         encoded: str = row["snapshot_json"]
-        if row["projection_version"] not in (1, 2):
+        if row["projection_version"] not in (1, 2, 3):
             raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
         if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
             raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
-        thread = Thread.model_validate_json(encoded)
+        try:
+            thread = Thread.model_validate_json(encoded)
+        except ValidationError:
+            raise KernelError("projection_corrupt", "快照结构损坏，请重建投影") from None
         if (
             thread.thread_id != thread_id
             or thread.sequence != row["sequence"]
@@ -158,16 +173,20 @@ class SQLiteSessionStore:
     async def thread_ids(self) -> list[UUID]:
         async with self._connection() as database:
             cursor = await database.execute(
-                "SELECT DISTINCT thread_id FROM agent_events ORDER BY thread_id"
+                "SELECT thread_id FROM agent_events UNION "
+                "SELECT thread_id FROM agent_threads ORDER BY thread_id"
             )
-            return [UUID(row[0]) for row in await cursor.fetchall()]
+            try:
+                return [UUID(row[0]) for row in await cursor.fetchall()]
+            except ValueError:
+                raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
 
     async def _save(self, database: aiosqlite.Connection, thread: Thread) -> None:
         encoded = thread.model_dump_json()
         await database.execute(
             "INSERT INTO agent_threads "
             "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-            "VALUES (?, ?, ?, ?, 2) "
+            "VALUES (?, ?, ?, ?, 3) "
             "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
             "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
             "projection_version = excluded.projection_version",
@@ -187,7 +206,12 @@ class SQLiteSessionStore:
         expected_sequence: int,
     ) -> Thread:
         # 先做值拷贝，冻结调用方可能持有的嵌套 arguments。
-        batch = tuple(EventDraft.model_validate_json(d.model_dump_json()) for d in drafts)
+        try:
+            batch = tuple(
+                EventDraft.model_validate_json(d.model_dump_json(warnings="error")) for d in drafts
+            )
+        except ValueError:
+            raise KernelError("invalid_batch", "事件批次不符合契约") from None
         if not batch or len({d.event_id for d in batch}) != len(batch):
             raise KernelError("invalid_batch", "事件批次为空或包含重复 ID")
         async with self._connection() as database:
@@ -195,12 +219,12 @@ class SQLiteSessionStore:
             matched: list[AgentEvent] = []
             for draft in batch:
                 cursor = await database.execute(
-                    "SELECT event_json FROM agent_events WHERE event_id = ?",
+                    "SELECT * FROM agent_events WHERE event_id = ?",
                     (str(draft.event_id),),
                 )
                 row = await cursor.fetchone()
                 if row is not None:
-                    event = AgentEvent.model_validate_json(row[0])
+                    event = self._parse_event(row)
                     stored = EventDraft.model_validate(
                         event.model_dump(exclude={"thread_id", "sequence"})
                     )
@@ -233,7 +257,22 @@ class SQLiteSessionStore:
             await self._save(database, thread)
             self._fault("session.after_projection")
             await database.commit()
+            self._fault("session.after_commit")
             return thread
+
+    @staticmethod
+    def _parse_event(row: aiosqlite.Row) -> AgentEvent:
+        try:
+            event = AgentEvent.model_validate_json(row["event_json"])
+        except ValidationError:
+            raise KernelError("event_corrupt", "事件结构损坏或版本不支持") from None
+        if (
+            str(event.thread_id) != row["thread_id"]
+            or event.sequence != row["sequence"]
+            or str(event.event_id) != row["event_id"]
+        ):
+            raise KernelError("event_corrupt", "事件载荷与索引不一致")
+        return event
 
     async def _events(
         self, database: aiosqlite.Connection, thread_id: UUID, after: int
@@ -243,14 +282,10 @@ class SQLiteSessionStore:
             (str(thread_id), after),
         )
         events = []
-        for row in await cursor.fetchall():
-            event = AgentEvent.model_validate_json(row["event_json"])
-            if (
-                str(event.thread_id) != row["thread_id"]
-                or event.sequence != row["sequence"]
-                or str(event.event_id) != row["event_id"]
-            ):
-                raise KernelError("event_corrupt", "事件载荷与索引不一致")
+        for expected, row in enumerate(await cursor.fetchall(), after + 1):
+            event = self._parse_event(row)
+            if row["sequence"] != expected:
+                raise KernelError("event_corrupt", "事件日志存在序号缺口")
             events.append(event)
         return events
 

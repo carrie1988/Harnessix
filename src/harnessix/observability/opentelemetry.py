@@ -9,13 +9,13 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.metrics import Meter
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.export import MetricReader, PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor, SpanExporter
 from opentelemetry.trace import Span as OtelSpan
 from opentelemetry.trace import SpanKind as OtelSpanKind
-from opentelemetry.trace import Tracer
+from opentelemetry.trace import StatusCode, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from harnessix.domain.models import TraceContext
@@ -40,6 +40,10 @@ class _OpenTelemetrySpan:
     def set_attribute(self, name: str, value: AttributeValue) -> None:
         self._span.set_attribute(name, value)
 
+    def set_error(self, category: str) -> None:
+        self._span.set_attribute("error.type", category)
+        self._span.set_status(StatusCode.ERROR)
+
 
 class OpenTelemetryObservability:
     """不侵入领域层的 OpenTelemetry Trace 与 Metrics 适配器。"""
@@ -50,6 +54,8 @@ class OpenTelemetryObservability:
         service_name: str,
         endpoint: str | None = None,
         export_interval_millis: int = 10_000,
+        span_exporter: SpanExporter | None = None,
+        metric_reader: MetricReader | None = None,
     ) -> None:
         if not service_name:
             raise ValueError("service_name 不能为空")
@@ -58,7 +64,9 @@ class OpenTelemetryObservability:
 
         resource = Resource.create({"service.name": service_name})
         self._tracer_provider = TracerProvider(resource=resource)
-        metric_readers = []
+        if span_exporter is not None:
+            self._tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        metric_readers: list[MetricReader] = [metric_reader] if metric_reader is not None else []
         if endpoint is not None:
             base_endpoint = endpoint.rstrip("/")
             self._tracer_provider.add_span_processor(

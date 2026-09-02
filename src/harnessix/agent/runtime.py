@@ -23,6 +23,7 @@ from harnessix.agent.models import (
     AgentFailure,
     ApprovalRequestContent,
     Budget,
+    ErrorContent,
     EventDraft,
     EventPayload,
     ItemDelta,
@@ -38,10 +39,12 @@ from harnessix.agent.models import (
     TurnStarted,
     TurnStateChanged,
     TurnStatus,
+    Usage,
     UsageRecorded,
 )
 from harnessix.agent.ports import NoTools, ToolRuntime
 from harnessix.agent.reducer import get_turn, pending_calls
+from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -62,6 +65,7 @@ from harnessix.models.contracts import (
     TextStarted,
     ToolCallCompleted,
 )
+from harnessix.observability.core import NoOpObservability, Observability
 from harnessix.session.ports import SessionStore
 
 
@@ -75,9 +79,11 @@ class AgentRuntime:
         tools: ToolRuntime | None = None,
         *,
         on_delta: Callable[[ItemDelta], None] | None = None,
+        observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
     ) -> None:
         self.store = store
+        self._telemetry = KernelTelemetry(observability or NoOpObservability())
         self.provider = provider
         self.tools = tools or NoTools()
         definitions = self.tools.definitions()
@@ -103,31 +109,41 @@ class AgentRuntime:
             for thread_id in await self.store.thread_ids():
                 thread = await self.store.get_thread(thread_id)
                 if thread.active_turn_id is not None:
-                    turn = get_turn(thread, thread.active_turn_id)
-                    if turn.status == TurnStatus.WAITING_APPROVAL:
-                        if remaining_seconds(turn) > 0:
-                            continue
-                        await self._finish(
-                            thread_id,
-                            turn.turn_id,
-                            TurnStatus.FAILED,
-                            AgentFailure(code="time_budget_exceeded", message="Turn 时间预算耗尽"),
-                        )
-                        continue
-                    await self._finish(
-                        thread_id,
-                        thread.active_turn_id,
-                        TurnStatus.INTERRUPTED,
-                        AgentFailure(
-                            code="process_interrupted", message="上次进程中断，未自动重放"
-                        ),
-                    )
+                    await self._recover(thread)
         except BaseException:
             self._open = False
             self._owner = None
             await owner.__aexit__(None, None, None)
             raise
         return self
+
+    async def _recover(self, thread: Thread) -> None:
+        assert thread.active_turn_id is not None
+        turn = get_turn(thread, thread.active_turn_id)
+        with self._telemetry.operation(
+            "recovery",
+            thread_id=thread.thread_id,
+            turn_id=turn.turn_id,
+            trace_context=turn.trace_context,
+        ) as operation:
+            if turn.status == TurnStatus.WAITING_APPROVAL:
+                if remaining_seconds(turn) > 0:
+                    operation.finish(turn.status.value)
+                    return
+                recovered = await self._finish(
+                    thread.thread_id,
+                    turn.turn_id,
+                    TurnStatus.FAILED,
+                    AgentFailure(code="time_budget_exceeded", message="Turn 时间预算耗尽"),
+                )
+            else:
+                recovered = await self._finish(
+                    thread.thread_id,
+                    turn.turn_id,
+                    TurnStatus.INTERRUPTED,
+                    AgentFailure(code="process_interrupted", message="上次进程中断，未自动重放"),
+                )
+            operation.finish(recovered.status.value, recovered.error)
 
     async def __aexit__(
         self,
@@ -236,12 +252,24 @@ class AgentRuntime:
         assert task is not None
         self._active[turn_id] = (thread_id, token, task)
         try:
-            turn, accepted = await self._accept(
-                thread_id, turn_id, prompt, request_id, limits, trace_context
-            )
-            if not accepted:
-                return turn
-            return await self._continue(thread_id, turn_id, token)
+            with self._telemetry.operation(
+                "turn",
+                thread_id=thread_id,
+                turn_id=turn_id,
+                trace_context=trace_context,
+            ) as operation:
+                turn, accepted = await self._accept(
+                    thread_id,
+                    turn_id,
+                    prompt,
+                    request_id,
+                    limits,
+                    self._telemetry.trace_context() or trace_context,
+                )
+                operation.bind_turn(turn.turn_id)
+                result = await self._continue(thread_id, turn_id, token) if accepted else turn
+                operation.finish(result.status.value, result.error)
+                return result
         except asyncio.CancelledError:
             # 接受事务的 commit 可能已经成功；取消后重新读取持久事实。
             await self._cancel_task(thread_id, turn_id)
@@ -264,7 +292,15 @@ class AgentRuntime:
                 raise KernelError("turn_busy", "Turn 已在执行")
             self._active[turn_id] = (thread_id, token, task)
         try:
-            return await self._continue(thread_id, turn_id, token)
+            with self._telemetry.operation(
+                "turn",
+                thread_id=thread_id,
+                turn_id=turn_id,
+                trace_context=turn.trace_context,
+            ) as operation:
+                result = await self._continue(thread_id, turn_id, token)
+                operation.finish(result.status.value, result.error)
+                return result
         finally:
             self._active.pop(turn_id, None)
 
@@ -319,7 +355,7 @@ class AgentRuntime:
                     AgentFailure(code="cancelled", message="用户取消了当前 Turn"),
                 )
             failure = (
-                AgentFailure(code=exc.code, message=exc.message)
+                exc.to_failure()
                 if isinstance(exc, KernelError)
                 else AgentFailure(
                     code="runtime_error", message="Runtime 执行失败；原始异常未持久化"
@@ -346,6 +382,19 @@ class AgentRuntime:
 
     async def cancel(self, thread_id: UUID, turn_id: UUID) -> Turn:
         self._ensure_open()
+        turn = get_turn(await self.store.get_thread(thread_id), turn_id)
+        with self._telemetry.operation(
+            "cancel",
+            thread_id=thread_id,
+            turn_id=turn_id,
+            trace_context=turn.trace_context,
+        ) as operation:
+            result = await self._cancel(thread_id, turn_id)
+            operation.finish(result.status.value, result.error)
+            return result
+
+    async def _cancel(self, thread_id: UUID, turn_id: UUID) -> Turn:
+        self._ensure_open()
         turn = await self._record_cancel(thread_id, turn_id)
         active = self._active.get(turn_id)
         if active is not None:
@@ -360,6 +409,33 @@ class AgentRuntime:
         return turn
 
     async def reply_approval(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        approval_id: UUID,
+        *,
+        fingerprint: str,
+        decision: ApprovalDecision,
+    ) -> Turn:
+        self._ensure_open()
+        turn = get_turn(await self.store.get_thread(thread_id), turn_id)
+        with self._telemetry.operation(
+            "approval",
+            thread_id=thread_id,
+            turn_id=turn_id,
+            trace_context=turn.trace_context,
+        ) as operation:
+            result = await self._reply_approval(
+                thread_id,
+                turn_id,
+                approval_id,
+                fingerprint=fingerprint,
+                decision=decision,
+            )
+            operation.finish(decision.outcome.value)
+            return result
+
+    async def _reply_approval(
         self,
         thread_id: UUID,
         turn_id: UUID,
@@ -466,7 +542,9 @@ class AgentRuntime:
                         for previous in thread.turns
                         for item in previous.items
                         if item.status == ItemStatus.COMPLETED
-                        and not isinstance(item.content, ApprovalRequestContent)
+                        and isinstance(
+                            item.content, TextContent | ToolCallContent | ToolResultContent
+                        )
                     ),
                     tools=tuple(
                         d
@@ -543,14 +621,13 @@ class AgentRuntime:
                     error=AgentFailure(code="approval_rejected", message="用户拒绝了工具调用"),
                 )
                 if rejected
-                else await self._execute(call, token)
+                else await self._execute(
+                    thread_id, turn_id, call, token, turn.budget.max_output_chars
+                )
             )
             token.checkpoint()
-            result = ToolResultContent.model_validate_json(result.model_dump_json())
-            if result.call_id != call.call_id:
-                raise KernelError("tool_result_mismatch", "工具结果与调用 ID 不匹配")
-            if len(result.model_dump_json()) > turn.budget.max_output_chars:
-                raise KernelError("tool_output_too_large", "工具输出超过当前 Kernel 上限")
+            if rejected:
+                result = self._validate_result(result, call, turn.budget.max_output_chars)
             item_id = new_id()
             thread = await self._commit(
                 thread_id,
@@ -565,7 +642,37 @@ class AgentRuntime:
                 raise KernelError("uncertain_effect", "工具结果未知，禁止继续模型循环")
         return None
 
-    async def _execute(self, call: ToolCallContent, token: CancelToken) -> ToolResultContent:
+    async def _execute(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        call: ToolCallContent,
+        token: CancelToken,
+        max_output_chars: int,
+    ) -> ToolResultContent:
+        with self._telemetry.operation(
+            "tool",
+            thread_id=thread_id,
+            turn_id=turn_id,
+            call_id=call.call_id,
+        ) as operation:
+            result = await self._execute_tool(call, token)
+            result = self._validate_result(result, call, max_output_chars)
+            operation.finish(result.outcome, result.error)
+            return result
+
+    @staticmethod
+    def _validate_result(
+        result: ToolResultContent, call: ToolCallContent, max_chars: int
+    ) -> ToolResultContent:
+        content = ToolResultContent.model_validate_json(result.model_dump_json())
+        if content.call_id != call.call_id:
+            raise KernelError("tool_result_mismatch", "工具结果与调用 ID 不匹配")
+        if len(content.model_dump_json()) > max_chars:
+            raise KernelError("tool_output_too_large", "工具输出超过当前 Kernel 上限")
+        return content
+
+    async def _execute_tool(self, call: ToolCallContent, token: CancelToken) -> ToolResultContent:
         definition = self._definitions.get(call.tool)
         if definition is None:
             return ToolResultContent(
@@ -587,6 +694,16 @@ class AgentRuntime:
         return result
 
     async def _sample(self, request: ModelRequest, token: CancelToken) -> None:
+        with self._telemetry.operation(
+            "model",
+            thread_id=request.thread_id,
+            turn_id=request.turn_id,
+            step=request.step,
+        ):
+            usage = await self._sample_events(request, token)
+            self._telemetry.usage(usage)
+
+    async def _sample_events(self, request: ModelRequest, token: CancelToken) -> Usage:
         started = False
         completed: ResponseCompleted | None = None
         text_items: dict[str, tuple[UUID, str, bool]] = {}
@@ -607,7 +724,11 @@ class AgentRuntime:
                 if event_count > 10000:
                     raise KernelError("provider_event_limit", "模型步骤事件数超过上限")
                 if isinstance(event, ResponseFailed):
-                    raise KernelError("provider_" + event.code, "Provider 返回结构化失败")
+                    raise KernelError(
+                        "provider_" + event.code,
+                        "Provider 返回结构化失败",
+                        retryable=event.retryable,
+                    )
                 if isinstance(event, ResponseStarted):
                     if started:
                         raise KernelError("invalid_provider_output", "Provider 重复开始响应")
@@ -725,6 +846,7 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        return completed.usage
 
     async def _finish(
         self,
@@ -785,6 +907,19 @@ class AgentRuntime:
                         ItemFinished(item_id=item_id, status=ItemStatus.COMPLETED, content=result),
                     ]
                 )
+            if error is not None:
+                error_content = ErrorContent(failure=error)
+                error_item_id = new_id()
+                payloads.extend(
+                    [
+                        ItemStarted(item_id=error_item_id, content=error_content),
+                        ItemFinished(
+                            item_id=error_item_id,
+                            content=error_content,
+                            status=ItemStatus.COMPLETED,
+                        ),
+                    ]
+                )
             payloads.append(TurnStateChanged(status=status, error=error))
             self._fault("runtime.before_terminal")
             thread = await self.store.append(
@@ -792,7 +927,9 @@ class AgentRuntime:
                 [EventDraft(turn_id=turn_id, payload=p) for p in payloads],
                 expected_sequence=thread.sequence,
             )
-            return get_turn(thread, turn_id)
+            completed = get_turn(thread, turn_id)
+            self._telemetry.finished(completed)
+            return completed
 
     async def action_context(self, thread_id: UUID, turn_id: UUID) -> ActionContext:
         turn = get_turn(await self.store.get_thread(thread_id), turn_id)

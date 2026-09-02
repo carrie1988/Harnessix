@@ -16,6 +16,7 @@ from pydantic import (
     model_validator,
 )
 
+from harnessix.agent.errors import AgentFailure as AgentFailure
 from harnessix.agent.ids import new_id
 from harnessix.domain.models import (
     ApprovalRecord,
@@ -24,12 +25,6 @@ from harnessix.domain.models import (
     TraceContext,
     utc_now,
 )
-
-
-class AgentFailure(ContractModel):
-    code: str = Field(min_length=1, max_length=128)
-    message: str = Field(max_length=2000)
-    retryable: bool = False
 
 
 class Budget(ContractModel):
@@ -120,8 +115,56 @@ class ApprovalRequestContent(ContractModel):
     policy_version: Literal["kernel-read-only/v1"] = "kernel-read-only/v1"
 
 
+class PlanStep(ContractModel):
+    step_id: str = Field(min_length=1, max_length=128)
+    description: str = Field(min_length=1, max_length=2000)
+    status: Literal["pending", "in_progress", "completed"] = "pending"
+
+
+class PlanContent(ContractModel):
+    kind: Literal["plan"] = "plan"
+    steps: tuple[PlanStep, ...] = Field(min_length=1, max_length=32)
+    supersedes: UUID | None = None
+
+    @model_validator(mode="after")
+    def unique_steps(self) -> Self:
+        if len({step.step_id for step in self.steps}) != len(self.steps):
+            raise ValueError("Plan 步骤 ID 必须唯一")
+        if sum(step.status == "in_progress" for step in self.steps) > 1:
+            raise ValueError("Plan 最多有一个进行中步骤")
+        return self
+
+
+class CompactionContent(ContractModel):
+    kind: Literal["context_compaction"] = "context_compaction"
+    source_item_ids: tuple[UUID, ...] = Field(min_length=1, max_length=4096)
+    summary: str = Field(min_length=1, max_length=1_000_000)
+    tokens_before: int = Field(ge=1)
+    tokens_after: int = Field(ge=0)
+    tokenizer: str = Field(min_length=1, max_length=128)
+
+    @model_validator(mode="after")
+    def validate_compression(self) -> Self:
+        if len(set(self.source_item_ids)) != len(self.source_item_ids):
+            raise ValueError("Compaction 来源 Item 不可重复")
+        if self.tokens_after >= self.tokens_before:
+            raise ValueError("Compaction 记录必须减少报告的 Token 数量")
+        return self
+
+
+class ErrorContent(ContractModel):
+    kind: Literal["error"] = "error"
+    failure: AgentFailure
+
+
 ItemContent = Annotated[
-    TextContent | ToolCallContent | ToolResultContent | ApprovalRequestContent,
+    TextContent
+    | ToolCallContent
+    | ToolResultContent
+    | ApprovalRequestContent
+    | PlanContent
+    | CompactionContent
+    | ErrorContent,
     Field(discriminator="kind"),
 ]
 
@@ -212,7 +255,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2] = 2
+    schema_version: Literal[1, 2, 3] = 3
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -221,6 +264,11 @@ class EventDraft(ContractModel):
     @model_serializer(mode="wrap")
     def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
+        if self.schema_version < 3:
+            payload = data.get("payload", {})
+            for failure in (payload.get("error"), payload.get("content", {}).get("error")):
+                if isinstance(failure, dict):
+                    failure.pop("category", None)
         if self.schema_version == 1:
             content = data.get("payload", {}).get("content", {})
             if content.get("kind") == "tool_call":
@@ -231,6 +279,9 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 3 and isinstance(self.payload, ItemStarted | ItemFinished):
+            if isinstance(self.payload.content, PlanContent | CompactionContent | ErrorContent):
+                raise ValueError("Plan/Compaction/Error Item 需要 Agent Event v3")
         if self.schema_version == 1:
             payload = self.payload
             if (

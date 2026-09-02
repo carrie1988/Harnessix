@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线和 0.3.1/0.3.2 Kernel 核心与持久审批切片。进程内 Agent Loop、SQLite Session Store、Fake/Scripted Provider、取消和保守恢复已实现；0.3 整体仍在进行，真实模型、Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线和 0.3 Agent Runtime Kernel（核心、持久审批、语义契约与可观测性）。进程内 Agent Loop、SQLite Session Store、Fake/Scripted Provider、取消和保守恢复已实现；下一阶段为 0.4 Model Runtime。真实模型、Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -66,7 +66,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - `system.echo` 与 `demo.issue.create` 两个可运行 Executor；
 - 不确定副作用注入和无重复对账测试。
 
-## 当前已实现：0.3.1/0.3.2 Kernel
+## 当前已实现：0.3 Agent Runtime Kernel
 
 - Thread/Turn/Item/AgentEvent、纯 Reducer 和版本化 JSON Schema；
 - Event Log 与聚合快照原子提交、sequence CAS 和请求幂等；
@@ -76,7 +76,10 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - 用户取消、Task 取消、流清理和单 Runtime 宿主锁；
 - 持久审批暂停、答复、取消、指纹校验与显式继续；
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
-- Agent Event v2、Session v1→v2 迁移，旧事件不改写；
+- Plan/Compaction/Error 语义 Item 和统一错误分类；
+- Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
+- Agent Event v3、Session v1/v2→v3 迁移，旧事件不改写；
+- SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
 离线验收：
@@ -85,9 +88,12 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 uv run pytest tests/agent
 uv run python examples/kernel_replay.py
 uv run python examples/kernel_approval.py
+uv run --extra observability python -m examples.kernel_observability
 ~~~
 
-该入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
+Plan/Compaction 当前支持可信宿主记录与 Replay，不包含自动规划或压缩算法。
+
+这些入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
 
 ## 当前 Action Plane 快速开始
 
@@ -227,6 +233,8 @@ examples/                   可运行演示
 - [测试与 Eval 规范 v1](docs/testing-and-evals.md)
 - [0.3 Kernel 实施设计](docs/m03-runtime-kernel.md)
 - [持久审批与恢复设计](docs/adr/0012-durable-approval-checkpoint.md)
+- [Kernel 契约与诊断设计](docs/adr/0013-kernel-contracts-and-telemetry.md)
+- [0.4 Model Runtime 实施计划](docs/m04-model-runtime.md)
 - [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)

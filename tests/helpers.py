@@ -22,6 +22,9 @@ class RecordingSpan:
     def set_attribute(self, name: str, value: AttributeValue) -> None:
         self.attributes[name] = value
 
+    def set_error(self, category: str) -> None:
+        self.attributes["error.type"] = category
+
 
 class RecordingObservability:
     def __init__(self, trace_context: TraceContext | None = None) -> None:

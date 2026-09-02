@@ -20,8 +20,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v2.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v2.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v3.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v3.schema.json", Thread.model_json_schema())
     write_json(output / "provider-event-v1.schema.json", TypeAdapter(ProviderEvent).json_schema())
     print("已更新 Action、Agent Event、Thread、Provider Event 和 OpenAPI Schema")
 

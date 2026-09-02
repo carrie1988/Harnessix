@@ -20,6 +20,8 @@ class SpanKind(StrEnum):
 class ObservabilitySpan(Protocol):
     def set_attribute(self, name: str, value: AttributeValue) -> None: ...
 
+    def set_error(self, category: str) -> None: ...
+
 
 class Observability(Protocol):
     def span(
@@ -63,6 +65,9 @@ class Observability(Protocol):
 class _NoOpSpan:
     def set_attribute(self, name: str, value: AttributeValue) -> None:
         del name, value
+
+    def set_error(self, category: str) -> None:
+        del category
 
 
 _NOOP_SPAN = _NoOpSpan()
