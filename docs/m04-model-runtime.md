@@ -142,9 +142,9 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 
 验收结果：
 
-- `tests/models/`：218 passed，其中原有 101 项保留，新增 117 项；两类 Adapter 分别实例化同一组 11 条核心契约；
-- `make check`：397 passed、1 skipped（本地未配置 PostgreSQL）；Ruff/Mypy 通过；
-- 异步调试下 Kernel + Provider：361 passed，警告作为错误处理；
+- `tests/models/`：219 passed，其中原有 101 项保留，新增 118 项；两类 Adapter 分别实例化同一组 11 条核心契约；
+- `make check`：398 passed、1 skipped（本地未配置 PostgreSQL）；Ruff/Mypy 通过；
+- 异步调试下 Kernel + Provider：362 passed，警告作为错误处理；
 - 验证包含 Anthropic→OpenAI 会话切换、审批暂停后换 Provider 继续、Usage/配对/Replay、SDK 隐式类型转换、错误 body 关闭与单网络块 Ping 上限；
 - 五个离线入口、sdist/wheel 构建通过；独立 Python 3.12 环境验证基础包无模型 SDK/HTTPX2 依赖，Anthropic-only 与 OpenAI-only 两种安装分别完成 SDK→Kernel→SQLite 闭环；
 - 真实 Anthropic/百炼 API 调用：0，仍待受控验证。

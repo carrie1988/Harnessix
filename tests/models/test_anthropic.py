@@ -272,6 +272,7 @@ async def test_ping_and_arbitrary_utf8_fragmentation(newline: bytes) -> None:
         (302, "x", "invalid_request", 1),
         (200, "overloaded_error", "provider_internal", 2),
         (200, "billing_error", "quota", 1),
+        (200, "future_error", "unknown", 1),
     ],
 )
 async def test_http_and_sse_errors_are_bounded_and_redacted(

@@ -39,6 +39,13 @@ def _failure(error: Exception) -> ResponseFailed:
             return ResponseFailed(code="transport", retryable=True)
         if kind in ("overloaded_error", "api_error") or error.status_code >= 500:
             return ResponseFailed(code="provider_internal", retryable=True)
+        if 200 <= error.status_code < 300 and kind not in (
+            "invalid_request_error",
+            "not_found_error",
+            "request_too_large",
+            "conflict_error",
+        ):
+            return ResponseFailed(code="unknown")
         return ResponseFailed(code="invalid_request")
     return ResponseFailed(code="invalid_provider_output")
 
