@@ -1,43 +1,380 @@
-# 开发路线图
+# Harnessix Code 设计与开发路线图
 
-## M0：可运行 MVP
+## 1. 路线图原则
 
-- [x] Python 3.12+ 仓库骨架；
-- [x] Action Contract v1；
-- [x] Tool Registry 和运行时副作用分类；
-- [x] 默认 Policy 与持久化 Approval；
-- [x] SQLite Effect Journal；
-- [x] 执行租约和过期恢复；
-- [x] 显式 `UNKNOWN` 与 Executor 对账；
-- [x] FastAPI、Python SDK、LangGraph Adapter；
-- [x] `system.echo`、`demo.issue.create`；
-- [x] 不确定副作用与无重复恢复测试。
+Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示。路线图采用“可发布的纵向切片”，但每个切片都必须包含正式契约、失败语义、持久化、可观测性、测试和文档。
 
-## M1：生产单节点
+开发顺序遵循：
 
-- [x] 独立 Worker 和持久化队列；
-- [x] 周期性租约续期与恢复任务；
-- [x] PostgreSQL Journal；
-- [x] OpenTelemetry Metrics、Trace 和结构化日志；
-- [ ] OIDC Principal 认证；
-- [ ] Secret Provider 与一次性注入；
-- [ ] MCP Executor；
-- [ ] OpenAI Agents SDK Adapter；
-- [ ] 更完整的 Policy 规则和 OPA/Cedar Adapter。
+```text
+源码求证 → 架构决策 → 领域契约 → 最小正式实现
+→ 失败与恢复测试 → 真实场景验证 → 文档同步
+```
 
-## M2：安全执行与多节点
+不按功能数量判断完成度。没有取消、超时、恢复、安全边界和回归测试的功能，不得标记为生产完成。
 
-- [ ] Docker/gVisor 沙箱执行器；
-- [ ] 网络出口策略；
-- [ ] 多节点租约、背压和限流；
-- [ ] Temporal Durable Backend；
-- [ ] Compensation Contract；
-- [ ] 管理员人工处置接口。
+## 2. 当前基线：0.1 Action Plane
 
-## M3：参考 Agent 平台
+### 已完成
 
-- [ ] LangGraph Supervisor；
-- [ ] Planner、Knowledge、Operation、Reviewer Agent；
-- [ ] RAG、Memory 和 Eval；
-- [ ] 同一 Policy 治理 LangGraph、OpenAI 和 MCP Action；
-- [ ] 故障注入与可靠性基准报告。
+- [x] Python 3.12+ 工程骨架；
+- [x] Action Contract v1 和 Tool Registry；
+- [x] 运行时副作用分类；
+- [x] Policy、持久化 Approval 和请求指纹；
+- [x] SQLite/PostgreSQL Effect Journal；
+- [x] 幂等键和载荷冲突检测；
+- [x] 独立 Worker、持久队列、租约、心跳和过期恢复；
+- [x] PostgreSQL 多 Worker 原子 Claim；
+- [x] 显式 `UNKNOWN` 和 Executor 对账；
+- [x] FastAPI、Python SDK 和 LangGraph Action Adapter；
+- [x] OpenTelemetry Trace/Metrics 和结构化日志；
+- [x] 不确定副作用和无重复恢复测试。
+
+### 现状限制
+
+- [ ] 没有 Agent Loop、Model Provider 和流式模型事件；
+- [ ] 没有 Thread/Turn/Item 会话模型；
+- [ ] 没有 Coding Tools、Context Engine 和 Sandbox；
+- [ ] 没有 Agent CLI/TUI、App Server Protocol 和 Coding Eval；
+- [ ] 当前版本不能称为完整 Coding Agent。
+
+## 3. 里程碑总览
+
+| 版本 | 里程碑 | 核心结果 | 依赖 |
+|---|---|---|---|
+| 0.2 | 产品与架构基线 | 研究框架、目标架构、协议和状态机决策 | 0.1 |
+| 0.3 | Agent Runtime Kernel | 可恢复的 Thread/Turn/Item 与确定性 Agent Loop | 0.2 |
+| 0.4 | Model Runtime | 两类 Provider、流式事件、错误和用量归一化 | 0.3 |
+| 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 |
+| 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
+| 0.7 | 安全执行 | Workspace 边界、权限、Sandbox、网络和 Secret | 0.6 |
+| 0.8 | App Server 与扩展 | 双向协议、Headless、MCP、Skills、Hooks | 0.7 |
+| 0.9 | 产品硬化与 Evals | CLI/TUI、故障注入、质量/成本基线、跨平台 CI | 0.8 |
+| 1.0 | 生产发布 | 稳定协议、安装升级、安全文档和发布保障 | 0.9 |
+
+版本号代表能力成熟度，不承诺固定日期。每个里程碑完成后根据 Eval、风险和实际投入重新估算后续计划。
+
+## 4. 0.2：产品与架构基线
+
+### 目标
+
+通过源码研究和 ADR 固化 Coding Agent 的核心边界，避免一边编码一边猜测主流实现。
+
+### 设计任务
+
+- [x] 更新产品名称为 Harnessix Code；
+- [x] 将 Action Plane 调整为内部治理子系统；
+- [x] 建立目标架构和源码研究计划；
+- [ ] 固化 Codex、OpenCode、Claude Code 的研究提交号；
+- [ ] 完成 Agent Loop、Session、Protocol、Tool、Context、安全六个首要主题研究；
+- [ ] ADR：Thread/Turn/Item 数据模型；
+- [ ] ADR：Agent Loop 状态机和取消语义；
+- [ ] ADR：Provider 统一事件模型；
+- [ ] ADR：App Server Protocol 与传输；
+- [ ] ADR：Session Store 和恢复模型；
+- [ ] 威胁模型 v1；
+- [ ] 测试策略和 Eval 规范 v1。
+
+### 验收标准
+
+- 每个首要主题包含源码调用链、失败路径和 Harnessix 决策；
+- 核心状态图和 Protocol 草案能够覆盖正常、审批、取消和崩溃恢复；
+- 所有规划能力明确标记，README 不把目标能力写成当前能力；
+- `make check` 继续通过。
+
+### 非目标
+
+- 不实现真实模型 Agent Loop；
+- 不重构现有 Action Plane 目录；
+- 不选择 TUI 外观和 IDE 集成。
+
+## 5. 0.3：Agent Runtime Kernel
+
+### 目标
+
+实现不依赖真实模型的确定性 Agent Runtime，使生命周期、持久化和故障语义先于 Provider 复杂度稳定下来。
+
+### 核心交付
+
+- [ ] `Thread`、`Turn`、`Item`、`AgentEvent` 领域模型；
+- [ ] Item 的 `started/delta/completed/failed/cancelled` 生命周期；
+- [ ] Agent Loop 状态机和最大步数/预算终止；
+- [ ] `ModelProvider` 与 `ToolRuntime` 端口；
+- [ ] SQLite Session Store、Schema 版本和迁移；
+- [ ] 单调事件序列和物化快照；
+- [ ] Fake Provider、Scripted Provider、Transcript Replay；
+- [ ] Turn Cancel Token 和结构化错误分类；
+- [ ] Agent/Action Trace 关联标识。
+
+### 关键测试
+
+- [ ] 单轮无工具响应；
+- [ ] 多次工具调用后完成；
+- [ ] 重复、缺失、乱序 Tool Result 被拒绝；
+- [ ] 达到最大步数和预算后确定性终止；
+- [ ] 模型流、工具执行和等待审批阶段分别取消；
+- [ ] 在每个持久化边界模拟进程退出并恢复；
+- [ ] 旧 Schema 数据迁移测试。
+
+### 验收标准
+
+- 不连接外部 API 即可重放完整 Turn；
+- 进程异常退出后不存在无法解释的“仍在运行”状态；
+- 同一 Transcript 重放得到相同的状态和客户端事件序列；
+- Runtime 不导入任何具体 Provider SDK。
+
+## 6. 0.4：Model Runtime
+
+### 目标
+
+接入真实模型，但不让供应商协议污染 Agent Runtime。
+
+### 核心交付
+
+- [ ] OpenAI-compatible Provider；
+- [ ] Anthropic Provider；
+- [ ] 文本、Tool Call、Usage、Stop Reason 流式事件归一化；
+- [ ] Provider Capability 描述；
+- [ ] 模型配置、认证和 Secret 引用；
+- [ ] 限流、超时、可重试错误、不可重试错误和退避；
+- [ ] 请求取消与连接清理；
+- [ ] Token 和成本统计；
+- [ ] 脱敏的请求诊断信息。
+
+### 关键测试
+
+- [ ] 两类 Provider 共用一套 Contract Test；
+- [ ] 分段 Tool Call 参数正确组装；
+- [ ] 流中断、限流、认证失败、上下文超限分类正确；
+- [ ] Retry 不重复提交已经交给 Tool Runtime 的调用；
+- [ ] API Key 不进入 Session、日志和 Trace；
+- [ ] 可选真实 API Smoke Test 与默认 CI 分离。
+
+### 验收标准
+
+- 同一个 Agent Runtime 测试场景可以切换 Provider；
+- Provider 退出、超时和取消不泄漏连接与任务；
+- CI 不依赖真实 API Key。
+
+## 7. 0.5：Coding Tool Runtime
+
+### 目标
+
+形成第一个完整的真实编码闭环，而不是添加互不关联的工具 Demo。
+
+### 核心交付
+
+- [ ] Tool Contract、Registry、风险和并发元数据；
+- [ ] `list_files`、`glob`、`grep`、`read_file`；
+- [ ] `apply_patch` 和结构化 Patch Result；
+- [ ] `shell` 的非交互执行；
+- [ ] `git_status`、`git_diff`；
+- [ ] `run_tests`；
+- [ ] Tool 输出截断、完整输出落盘引用和过期清理；
+- [ ] 只读并发、写操作互斥和 Turn 取消；
+- [ ] 统一 Tool Error Taxonomy；
+- [ ] 变更摘要和最终 Diff 交付。
+
+### 关键测试
+
+- [ ] UTF-8、二进制、大文件、长行、空文件和符号链接；
+- [ ] Patch 上下文漂移、部分失败和重复应用；
+- [ ] Shell 超时、超大输出、非零退出和进程树终止；
+- [ ] 脏工作区中不覆盖用户已有修改；
+- [ ] 并发读与写互斥行为确定；
+- [ ] 从失败测试到修复通过的端到端任务。
+
+### 验收标准
+
+- Agent 能在一个非示例仓库中自主定位并修复受控缺陷；
+- 最终回答与实际 Git Diff、测试结果一致；
+- 失败不会留下半写文件或孤儿进程；
+- 所有工具都有参数、结果、错误和取消契约。
+
+## 8. 0.6：Context Engine 与持久会话
+
+### 目标
+
+支持长任务、多轮会话和可解释的上下文管理。
+
+### 核心交付
+
+- [ ] 系统指令、用户指令、项目指令的优先级；
+- [ ] Workspace/Git/环境 Context Fragment；
+- [ ] Token Budget；
+- [ ] Tool Result 裁剪和完整结果引用；
+- [ ] 自动 Compaction；
+- [ ] Compaction Summary 的版本和持久化；
+- [ ] Session Resume、Fork 和 Archive；
+- [ ] Turn Retry 与 Interrupted Recovery；
+- [ ] Context Inspect 诊断输出；
+- [ ] 历史规范化和 Provider 切换兼容。
+
+### 关键测试
+
+- [ ] 指令优先级和冲突；
+- [ ] 接近模型上下文上限时自动压缩；
+- [ ] 压缩前后关键任务约束不丢失；
+- [ ] 恢复后 Tool Call/Result 仍正确配对；
+- [ ] Provider 切换后的历史格式正确；
+- [ ] 长输出不会无限增长 Session 数据库。
+
+### 验收标准
+
+- 长任务不依赖手工清理上下文；
+- 用户能够查看 Context 主要来源和压缩记录；
+- Resume/Fork 不重复已完成的副作用。
+
+## 9. 0.7：安全执行与 Action Plane 集成
+
+### 目标
+
+把“提示模型谨慎”升级为可执行的权限、隔离和副作用治理边界。
+
+### 核心交付
+
+- [ ] Workspace 路径、符号链接和外部目录策略；
+- [ ] Permission Rule 与命令风险分类；
+- [ ] 审批指纹绑定 Tool、参数、cwd、环境摘要和策略版本；
+- [ ] Host Executor 安全级别；
+- [ ] Container Sandbox Executor；
+- [ ] 网络出口域名/IP/端口策略；
+- [ ] Secret Provider 与最小化注入；
+- [ ] 文件和命令审计记录；
+- [ ] Coding Tool 与 Action Plane 风险路由；
+- [ ] 外部副作用 `UNKNOWN → reconcile`；
+- [ ] Threat Model v2。
+
+### 关键测试
+
+- [ ] `..`、绝对路径、符号链接和竞态路径逃逸；
+- [ ] 审批后参数、cwd 或环境变化导致指纹失效；
+- [ ] 子进程、后台进程和进程树不能逃逸取消；
+- [ ] 禁止网络时 DNS、IPv4/IPv6 和代理路径都受控；
+- [ ] Secret 不出现在模型 Context、日志、Trace、Diff；
+- [ ] 外部写操作结果丢失时不重复执行；
+- [ ] Host 和 Container 模式安全声明准确。
+
+### 验收标准
+
+- 未授权工具不能通过扩展、Shell 或路径技巧绕过边界；
+- 隔离后端不可用时默认策略明确，不能静默降级；
+- 高风险外部 Action 可以恢复和对账。
+
+## 10. 0.8：App Server、MCP 与扩展
+
+### 目标
+
+将 Runtime 从单一 CLI 中解耦，形成可供 TUI、SDK、IDE 和自动化调用的稳定服务边界。
+
+### 核心交付
+
+- [ ] Agent Protocol v1；
+- [ ] Thread/Turn/Item 请求、响应和通知；
+- [ ] 双向审批、提问和取消；
+- [ ] Headless App Server；
+- [ ] Python Agent SDK；
+- [ ] MCP Client；
+- [ ] 可选 MCP Server；
+- [ ] 项目指令发现；
+- [ ] Skills 渐进加载；
+- [ ] 生命周期 Hooks；
+- [ ] 扩展 Tool 的 Permission/Sandbox 强制接入。
+
+### 关键测试
+
+- [ ] Protocol Schema 兼容性和未知字段处理；
+- [ ] 客户端断线重连和事件续传；
+- [ ] 审批请求与对应 Tool Call 不错配；
+- [ ] MCP Server 崩溃、超时和 Schema 变化；
+- [ ] 恶意 Skill/Hook 不能绕过安全边界；
+- [ ] CLI 进程内模式与 App Server 模式行为一致。
+
+### 验收标准
+
+- Headless 客户端能够完整驱动 Coding Turn；
+- 客户端断线不导致 Agent 状态损坏；
+- 核心 Runtime 不依赖具体 UI。
+
+## 11. 0.9：产品硬化、TUI 与 Evals
+
+### 目标
+
+从“功能完整”进入“可长期使用、可回归、可公开证明质量”的发布候选状态。
+
+### 核心交付
+
+- [ ] 交互式 CLI/TUI；
+- [ ] 流式消息、工具进度、Diff、审批和成本展示；
+- [ ] 配置诊断、环境检查和错误自助信息；
+- [ ] macOS/Linux CI；
+- [ ] Unit、Contract、Integration、E2E、Failure Injection 分层；
+- [ ] 受控真实仓库 Eval 数据集；
+- [ ] 任务成功率、测试通过率、Token、成本、延迟基线；
+- [ ] Transcript Regression；
+- [ ] 性能和数据库增长基准；
+- [ ] 安全测试与依赖扫描；
+- [ ] Dogfooding 记录和缺陷清单。
+
+### 验收标准
+
+- 至少覆盖 Bug Fix、Feature、Refactor、Test、Review 五类任务；
+- 每次关键变更能够输出与基线对比的 Eval 报告；
+- 连续故障注入运行后无 Session 损坏、孤儿进程和重复外部副作用；
+- 新用户根据文档可以安装并完成首个真实任务。
+
+## 12. 1.0：生产发布
+
+### 发布范围
+
+- [ ] 稳定的 Agent/Tool/Provider/Protocol v1 契约；
+- [ ] OpenAI-compatible 与 Anthropic Provider；
+- [ ] 完整 Coding Tool 闭环；
+- [ ] 持久 Session、Resume/Fork、Context Compaction；
+- [ ] Host/Container 执行、安全策略、审批和 Secret；
+- [ ] MCP、项目指令、Skills 和 Hooks；
+- [ ] CLI/TUI 与 Headless App Server；
+- [ ] Action Plane 外部副作用治理；
+- [ ] 可复现 Eval 和质量报告。
+
+### 发布门禁
+
+- [ ] 所有公共 Schema 有版本和兼容策略；
+- [ ] 所有数据库变更有向前迁移和回滚说明；
+- [ ] macOS/Linux 安装、升级和卸载验证通过；
+- [ ] 安全文档、威胁模型和 Secret 处理完成审查；
+- [ ] 默认 CI 不依赖外部模型和不稳定网络；
+- [ ] 真实 Provider Smoke Test 在受控环境通过；
+- [ ] 不存在未分类的高优先级故障恢复缺陷；
+- [ ] README 中的功能声明全部有可运行证据；
+- [ ] 发布包可复现，包含 Changelog 和迁移说明。
+
+## 13. 1.0 之后
+
+只有 1.0 单 Agent Runtime 稳定后，才评估：
+
+- Subagent、Reviewer 和并行任务；
+- IDE/桌面客户端；
+- 远程 Sandbox 与云任务；
+- 团队策略、多租户和集中审计；
+- LSP、代码索引和大型 Monorepo 优化；
+- Windows 原生支持；
+- Rust Process/Sandbox Sidecar；
+- 分布式 Session 和 Agent Worker。
+
+这些能力不能提前侵入 1.0 核心，除非已有真实用户场景和评测数据证明必要。
+
+## 14. 每个迭代的统一完成定义
+
+每个开发项只有同时满足以下条件才能勾选：
+
+1. 需求、边界和失败语义已写入设计或 ADR；
+2. 公共输入输出有类型和版本化 Schema；
+3. 实现没有绕过既有分层和安全端口；
+4. 正常、失败、取消、超时和恢复路径按风险完成测试；
+5. 日志、Trace 和指标不包含明文凭据；
+6. 数据库变更包含迁移和兼容测试；
+7. `make check` 通过；
+8. 相关 README、架构、部署和安全文档同步；
+9. 至少有一个跨组件集成验证；涉及模型或编码行为的里程碑还需真实 Provider 或真实仓库验证；
+10. Git Diff 仅包含该迭代必要变更。

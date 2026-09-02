@@ -1,37 +1,49 @@
-# Harnessix
+# Harnessix Code
 
-**跨 Agent 框架的副作用安全执行与治理平面。**
+**面向生产级、本地优先、模型无关的 Coding Agent。**
 
-Harnessix 不决定 Agent 如何思考，而是治理 Agent Action 如何进入真实世界：契约校验、运行时副作用分类、策略、审批、幂等、Effect Journal、执行租约、不确定结果和外部对账。
+Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
+
+> 当前状态：仓库已完成 0.1 Action Plane 基线，正在进入 Coding Agent Runtime 的架构与开发阶段。当前版本尚不是完整 Coding Agent；README 会明确区分“已实现”和“规划中”能力。
 
 ```text
-LangGraph / OpenAI Agents SDK / 自研 Agent
-                     │
-                Action Contract
-                     │
-        ┌────────────▼────────────┐
-        │        Harnessix         │
-        │ 校验 → 策略 → 审批       │
-        │ Journal → 租约 → 执行    │
-        │ UNKNOWN → Reconcile      │
-        └────────────┬────────────┘
-                     │
-              MCP / API / DB / Shell
+              CLI / TUI / SDK / IDE
+                       │
+             Versioned Agent Protocol
+                       │
+    ┌──────────────────▼──────────────────┐
+    │           Harnessix Code             │
+    │ Agent Runtime / Model / Context      │
+    │ Coding Tools / Session / Sandbox     │
+    └──────────────────┬──────────────────┘
+                       │
+    ┌──────────────────▼──────────────────┐
+    │       Harnessix Action Plane         │
+    │ Policy / Approval / Effect Journal  │
+    │ Idempotency / UNKNOWN / Reconcile   │
+    └──────────────────┬──────────────────┘
+                       │
+               Local OS / MCP / SaaS / DB
 ```
 
 ## 项目边界
 
-Harnessix 是 Action Plane，不是完整 Agent 框架。以下能力复用现有生态：
+Harnessix Code 自研 Coding Agent 的关键运行语义：
 
-- Agent Loop、Planning、Graph 和 Multi-Agent；
-- Prompt、Memory 和 RAG；
-- 模型 SDK 与模型路由；
-- 通用 Durable Workflow；
-- 容器或微虚拟机沙箱。
+- Agent Loop 与 Thread/Turn/Item 生命周期；
+- Provider 无关的流式模型事件；
+- Context 构建、Token Budget、裁剪和 Compaction；
+- Coding Tool Runtime、Process Runtime 和 Workspace 边界；
+- Session 持久化、取消、恢复和双向客户端协议；
+- Permission、Approval 与 Action Plane；
+- MCP、项目指令、Skills 和 Hooks；
+- Coding Evals、故障注入和质量回归。
 
-Harnessix 专注所有 Agent 框架共同面对的执行边界：外部副作用是否安全、是否可审计、发生不确定性后能否不重放原操作而完成对账。
+Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-## 当前已实现能力
+第一版目标是 macOS/Linux、本地优先、CLI + Headless App Server。IDE、Web、多租户云平台和分布式 Agent Worker 在 1.0 之后评估。
+
+## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
 - 版本化且框架无关的 `ActionRequest`；
@@ -54,7 +66,7 @@ Harnessix 专注所有 Agent 框架共同面对的执行边界：外部副作用
 - `system.echo` 与 `demo.issue.create` 两个可运行 Executor；
 - 不确定副作用注入和无重复对账测试。
 
-## 快速开始
+## 当前 Action Plane 快速开始
 
 环境要求：Python 3.12+ 和 [uv](https://docs.astral.sh/uv/)。
 
@@ -66,7 +78,7 @@ make run
 
 服务默认监听 `http://127.0.0.1:8787`，交互式接口文档位于 `http://127.0.0.1:8787/docs`。
 
-在另一个终端运行完整 MVP：
+在另一个终端运行 Action Plane 可靠性演示：
 
 ```bash
 make demo
@@ -149,7 +161,7 @@ issue_tool = create_harnessix_tool(
 
 返回的对象是标准 LangChain Tool，可直接交给 LangGraph `ToolNode`。Policy、Approval、Journal 和 Executor 仍位于 Harnessix 边界之后。
 
-## 仓库结构
+## 当前仓库结构
 
 ```text
 src/harnessix/domain/       Action Contract、状态和端口
@@ -165,16 +177,35 @@ spec/                       生成的 JSON Schema 和 OpenAPI
 examples/                   可运行演示
 ```
 
+后续按里程碑增量加入 `agent/`、`models/`、`context/`、`tools/`、`workspace/`、`protocol/`、`session/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
+
 ## 设计资料
 
+- [产品章程](docs/product-charter.md)
 - [总体架构](docs/architecture.md)
+- [主流 Coding Agent 源码研究计划](docs/research-plan.md)
+- [演进为 Harnessix Code 的架构决策](docs/adr/0005-evolve-to-harnessix-code.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
 - [自研与复用边界](docs/build-vs-buy.md)
-- [开发路线图](docs/roadmap.md)
+- [设计与开发路线图](docs/roadmap.md)
 - [M1 Worker 与 PostgreSQL 设计](docs/m1-worker-postgresql.md)
 - [M1.2 可观测性设计](docs/m1-observability.md)
 - [部署与运行](docs/deployment.md)
+
+## 目标里程碑
+
+| 版本 | 结果 |
+|---|---|
+| 0.2 | 产品、源码研究与架构基线 |
+| 0.3 | 可恢复 Agent Runtime Kernel |
+| 0.4 | OpenAI-compatible / Anthropic Model Runtime |
+| 0.5 | Read/Search/Patch/Shell/Git/Test 编码闭环 |
+| 0.6 | Context Compaction 与持久会话 |
+| 0.7 | Workspace、Permission、Sandbox、Action Plane 集成 |
+| 0.8 | App Server、MCP、Skills、Hooks |
+| 0.9 | CLI/TUI、故障注入与 Coding Evals |
+| 1.0 | 生产发布 |
 
 ## 重要语义
 

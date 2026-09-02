@@ -1,6 +1,6 @@
 # ADR 0001：采用 Python-first Runtime
 
-- 状态：已接受
+- 状态：已接受（由 ADR 0005 扩展到 Harnessix Code）
 - 日期：2026-09-01
 
 ## 背景

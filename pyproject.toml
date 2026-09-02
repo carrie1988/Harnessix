@@ -1,7 +1,7 @@
 [project]
 name = "harnessix"
 version = "0.1.0"
-description = "跨 Agent 框架的副作用安全执行与治理平面"
+description = "面向生产级 Coding Agent 的本地优先运行时与安全执行基础设施"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
