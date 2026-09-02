@@ -18,6 +18,8 @@ Harnessix Code 的测试必须回答两类不同问题：
 
 ## 2. 质量属性
 
+0.4.2a 增量（2026-09-03）：两类 Adapter 分别通过同一 Provider 契约。Anthropic 使用实际 SDK + HTTPX2 Transport，覆盖原始 SSE 强类型校验、未知事件、缓存总量、取消/错误 body，以及会话和审批边界切换 Provider。明细/失败用量和真实 API 验收仍在后续切片，不以 Mock 通过替代。
+
 优先级：
 
 1. 副作用安全；

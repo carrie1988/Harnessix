@@ -118,7 +118,9 @@ class ProviderContract:
             events = [
                 event async for event in probe.provider.stream(model_request(), CancelToken())
             ]
-            assert events == [ResponseFailed(code=code, retryable=retryable)]
+            # 同一种错误可在 HTTP 阶段或流开始后出现；两种都不得释放工具/成功终态。
+            assert events[-1] == ResponseFailed(code=code, retryable=retryable)
+            assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
             assert probe.attempts() == attempts
 
     async def test_midstream_failure_not_retried(self, provider_factory: ProviderFactory) -> None:

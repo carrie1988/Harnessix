@@ -1,11 +1,20 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from contextlib import aclosing
+from typing import Protocol
 
 import httpx
 
-from harnessix.models.config import OpenAIChatConfig
+from harnessix.models.config import ModelHTTPConfig
+
+
+class ByteStream(Protocol):
+    def __aiter__(self) -> AsyncIterator[bytes]: ...
+    async def aclose(self) -> None: ...
+
+
+FrameValidator = Callable[[bytes, bytes], None]
 
 
 class InvalidWireData(ValueError):
@@ -13,11 +22,18 @@ class InvalidWireData(ValueError):
 
 
 class BoundedStream(httpx.AsyncByteStream):
-    def __init__(self, source: httpx.AsyncByteStream, config: OpenAIChatConfig) -> None:
+    def __init__(
+        self,
+        source: ByteStream,
+        config: ModelHTTPConfig,
+        *,
+        validate_frame: FrameValidator | None = None,
+    ) -> None:
         self._source = source
         self._config = config
         self.seen_done = False
         self._closed = False
+        self._validate_frame = validate_frame
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         try:
@@ -29,9 +45,10 @@ class BoundedStream(httpx.AsyncByteStream):
             await self.aclose()
 
     async def _iterate(self) -> AsyncGenerator[bytes, None]:
-        total = chunks = frame_size = 0
+        total = chunks = frames = frame_size = 0
         line = bytearray()
         data_lines: list[bytes] = []
+        event_name = b""
         previous_cr = False
         async for chunk in self._source:
             total += len(chunk)
@@ -51,7 +68,12 @@ class BoundedStream(httpx.AsyncByteStream):
                     line.append(byte)
                     continue
                 if not line:
+                    frames += 1
+                    if frames > self._config.max_chunks:
+                        raise InvalidWireData("SSE frame 数超过上限")
                     data = b"\n".join(data_lines)
+                    if self._validate_frame is not None and data:
+                        self._validate_frame(event_name, data)
                     if data and self.seen_done:
                         raise InvalidWireData("传输终结符之后出现额外数据")
                     if data.startswith(b"[DONE]") and data != b"[DONE]":
@@ -59,10 +81,14 @@ class BoundedStream(httpx.AsyncByteStream):
                     if data == b"[DONE]":
                         self.seen_done = True
                     data_lines.clear()
+                    event_name = b""
                     frame_size = 0
                 elif line.startswith(b"data:"):
                     value = bytes(line[5:])
                     data_lines.append(value[1:] if value.startswith(b" ") else value)
+                elif line.startswith(b"event:"):
+                    value = bytes(line[6:])
+                    event_name = value[1:] if value.startswith(b" ") else value
                 line.clear()
             yield chunk
 
@@ -73,7 +99,7 @@ class BoundedStream(httpx.AsyncByteStream):
 
 
 class BoundedTransport(httpx.AsyncBaseTransport):
-    def __init__(self, inner: httpx.AsyncBaseTransport, config: OpenAIChatConfig) -> None:
+    def __init__(self, inner: httpx.AsyncBaseTransport, config: ModelHTTPConfig) -> None:
         self._inner = inner
         self._config = config
 

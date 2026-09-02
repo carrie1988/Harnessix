@@ -5,75 +5,63 @@ from collections.abc import AsyncGenerator
 from types import TracebackType
 from typing import Self, cast
 
-import httpx
-from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI, AsyncStream
-from openai.types.chat import ChatCompletionChunk
-from openai.types.chat.completion_create_params import CompletionCreateParamsStreaming
+import httpx2
+from anthropic import APIConnectionError, APIError, APIStatusError, AsyncAnthropic, AsyncStream
+from anthropic.types import RawMessageStreamEvent
+from anthropic.types.message_create_params import MessageCreateParamsStreaming
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
-from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
-from harnessix.models._chat_mapping import build_request
-from harnessix.models._chat_stream import ChatStream, ContentRefused
-from harnessix.models._history import InvalidModelRequest
+from harnessix.models._anthropic_http import AnthropicTransport
+from harnessix.models._anthropic_mapping import build_request
+from harnessix.models._anthropic_stream import AnthropicStream
+from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._provider_io import read_key, wait_for_io
-from harnessix.models.config import OpenAIChatConfig
+from harnessix.models.config import AnthropicConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
 
 def _failure(error: Exception) -> ResponseFailed:
-    if isinstance(error, InvalidModelRequest):
-        return ResponseFailed(code="invalid_request")
-    if isinstance(error, ContentRefused):
-        return ResponseFailed(code="content_policy")
-    if isinstance(error, APIError):
-        if isinstance(error.__cause__, InvalidWireData):
-            return ResponseFailed(code="invalid_provider_output")
-        if error.code in ("insufficient_quota", "quota_exceeded"):
-            return ResponseFailed(code="quota")
-        if error.code == "context_length_exceeded":
-            return ResponseFailed(code="context_overflow")
-        if error.code in ("content_policy_violation", "content_filter"):
-            return ResponseFailed(code="content_policy")
-    if isinstance(error, APIStatusError):
-        status = error.status_code
-        if status in (401, 403):
-            return ResponseFailed(code="authentication")
-        if status == 429:
-            return ResponseFailed(code="rate_limit", retryable=True)
-        if status >= 500:
-            return ResponseFailed(code="provider_internal", retryable=True)
-        if status in (408, 409):
-            return ResponseFailed(code="transport", retryable=True)
-        return ResponseFailed(code="invalid_request")
-    if isinstance(error, APIConnectionError | httpx.TransportError | TimeoutError):
+    if isinstance(error, APIError) and isinstance(error.__cause__, InvalidWireData):
+        return ResponseFailed(code="invalid_provider_output")
+    if isinstance(error, APIConnectionError | httpx2.TransportError | TimeoutError):
         return ResponseFailed(code="transport", retryable=True)
-    if isinstance(error, APIError):
-        return ResponseFailed(code="provider_internal", retryable=True)
+    if isinstance(error, APIStatusError):
+        body = error.body
+        detail = body.get("error") if isinstance(body, dict) else None
+        kind = detail.get("type") if isinstance(detail, dict) else None
+        if kind in ("authentication_error", "permission_error") or error.status_code in (401, 403):
+            return ResponseFailed(code="authentication")
+        if kind == "billing_error" or error.status_code == 402:
+            return ResponseFailed(code="quota")
+        if kind == "rate_limit_error" or error.status_code == 429:
+            return ResponseFailed(code="rate_limit", retryable=True)
+        if kind == "timeout_error" or error.status_code in (408, 504):
+            return ResponseFailed(code="transport", retryable=True)
+        if kind in ("overloaded_error", "api_error") or error.status_code >= 500:
+            return ResponseFailed(code="provider_internal", retryable=True)
+        return ResponseFailed(code="invalid_request")
     return ResponseFailed(code="invalid_provider_output")
 
 
-class OpenAIChatProvider:
-    """拥有 HTTP Client 的 Chat Completions Adapter；通过环境引用读取认证。"""
+class AnthropicProvider:
+    """仅支持非 Thinking 的 Messages 配置；拥有独立 SDK 和 HTTPX2 Client。"""
 
     def __init__(
-        self, config: OpenAIChatConfig, *, transport: httpx.AsyncBaseTransport | None = None
+        self, config: AnthropicConfig, *, transport: httpx2.AsyncBaseTransport | None = None
     ) -> None:
-        self.config = OpenAIChatConfig.model_validate_json(config.model_dump_json())
-        key = read_key(self.config, headers_env="OPENAI_CUSTOM_HEADERS")
-        client = httpx.AsyncClient(
-            transport=BoundedTransport(
-                transport or httpx.AsyncHTTPTransport(trust_env=False), self.config
+        self.config = AnthropicConfig.model_validate_json(config.model_dump_json())
+        key = read_key(self.config, headers_env="ANTHROPIC_CUSTOM_HEADERS")
+        client = httpx2.AsyncClient(
+            transport=AnthropicTransport(
+                transport or httpx2.AsyncHTTPTransport(trust_env=False), self.config
             ),
             trust_env=False,
             follow_redirects=False,
             timeout=config.io_timeout_seconds,
         )
-        self._client = AsyncOpenAI(
+        self._client = AsyncAnthropic(
             api_key=key,
-            admin_api_key="",
-            organization="",
-            project="",
-            webhook_secret="",
+            webhook_key="",
             base_url=config.base_url,
             max_retries=0,
             http_client=client,
@@ -114,21 +102,19 @@ class OpenAIChatProvider:
         deadline = asyncio.get_running_loop().time() + self.config.timeout_seconds
         exposed = False
         for attempt in range(self.config.max_attempts):
-            stream: AsyncStream[ChatCompletionChunk] | None = None
+            stream: AsyncStream[RawMessageStreamEvent] | None = None
             failure: ResponseFailed | None = None
             try:
                 cancel.checkpoint()
                 stream = await wait_for_io(
-                    self._client.chat.completions.create(
-                        **cast(CompletionCreateParamsStreaming, body)
-                    ),
+                    self._client.messages.create(**cast(MessageCreateParamsStreaming, body)),
                     cancel,
                     deadline,
                 )
                 content_type = stream.response.headers.get("content-type", "").split(";")[0]
                 if content_type.strip().lower() != "text/event-stream":
                     raise InvalidWireData("响应不是 SSE")
-                state = ChatStream(
+                state = AnthropicStream(
                     request, names, parallel=self.config.capabilities.parallel_tool_calls
                 )
                 while True:
@@ -140,10 +126,7 @@ class OpenAIChatProvider:
                         cancel.checkpoint()
                         exposed = True
                         yield event
-                bounded = stream.response.extensions.get("harnessix_stream")
-                if not isinstance(bounded, BoundedStream):
-                    raise InvalidWireData("响应缺少传输预算")
-                for event in state.finish(seen_done=bounded.seen_done):
+                for event in state.finish():
                     cancel.checkpoint()
                     exposed = True
                     yield event
@@ -158,7 +141,6 @@ class OpenAIChatProvider:
                         async with asyncio.timeout(min(5, self.config.io_timeout_seconds)):
                             await stream.close()
                     except Exception:
-                        # 清理故障不能泄露原始异常或覆盖取消；SDK/HTTPX 本身仍负责关闭连接池。
                         pass
             if (
                 failure is None

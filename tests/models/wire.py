@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from harnessix.models._chat_mapping import tool_alias
+from harnessix.models._history import tool_alias
 
 
 def frame(value: object) -> bytes:

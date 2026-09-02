@@ -144,7 +144,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 6. 0.4：Model Runtime
 
-状态：**0.4.1 已完成离线验收，整体 0.4 进行中**。首个 OpenAI-compatible Adapter 已实现；Anthropic、用量明细/成本和真实平台验证待完成。见 [0.4 实施计划](m04-model-runtime.md)。
+状态：**0.4.1 / 0.4.2a 已完成离线验收，整体 0.4 进行中**。OpenAI-compatible 与 Anthropic Adapter 已实现；0.4.2b 用量明细及 0.4.3 成本/真实平台验证待完成。见 [0.4 实施计划](m04-model-runtime.md)。
 
 ### 目标
 
@@ -153,21 +153,21 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 ### 核心交付
 
 - [x] OpenAI-compatible Provider（Chat Completions；离线 SDK/HTTP 契约通过）；
-- [ ] Anthropic Provider；
-- [ ] 文本、Tool Call、Usage、Stop Reason 流式事件归一化；
-- [ ] Provider Capability 描述；
-- [ ] 模型配置、认证和 Secret 引用；
-- [ ] 限流、超时、可重试错误、不可重试错误和退避；
-- [ ] 请求取消与连接清理；
+- [x] Anthropic Provider（非 Thinking 的 Messages 配置，离线验收）；
+- [x] 文本、Tool Call、Usage 总量、Stop Reason 流式事件归一化（明细与失败 Usage 待续）；
+- [x] 当前支持配置的工具/并行/流式 Usage 能力描述；
+- [x] 模型配置、认证和 Secret 环境引用；
+- [x] 限流、超时、错误归一化和首事件前有限退避；
+- [x] 请求取消与连接清理（含 HTTP 错误 body）；
 - [ ] Token 和成本统计；
 - [ ] 脱敏的请求诊断信息。
 
 ### 关键测试
 
-- [ ] 两类 Provider 共用一套 Contract Test；
-- [ ] 分段 Tool Call 参数正确组装；
-- [ ] 流中断、限流、认证失败、上下文超限分类正确；
-- [ ] Retry 不重复提交已经交给 Tool Runtime 的调用；
+- [x] 两类 Provider 共用一套 Contract Test；
+- [x] 分段 Tool Call 参数正确组装；
+- [x] 流中断、限流、认证失败、上下文超限分类正确（普通 400 不猜测为超限）；
+- [x] Retry 不重复提交已经交给 Tool Runtime 的调用；
 - [ ] API Key 不进入 Session、日志和 Trace；
 - [ ] 可选真实 API Smoke Test 与默认 CI 分离。
 

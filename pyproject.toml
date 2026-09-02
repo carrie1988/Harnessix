@@ -25,6 +25,9 @@ observability = [
 openai = [
     "openai>=2.54,<3",
 ]
+anthropic = [
+    "anthropic>=1.3,<2",
+]
 
 [dependency-groups]
 dev = [

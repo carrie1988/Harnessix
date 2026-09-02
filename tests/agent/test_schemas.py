@@ -5,7 +5,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
-from harnessix.models.config import OpenAIChatConfig
+from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 
 
@@ -16,6 +16,7 @@ def test_generated_schemas_match_code() -> None:
         "agent-thread-v3.schema.json": Thread.model_json_schema(),
         "provider-event-v1.schema.json": TypeAdapter(ProviderEvent).json_schema(),
         "openai-chat-config-v1.schema.json": OpenAIChatConfig.model_json_schema(),
+        "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
     }
     for name, schema in expected.items():
         assert json.loads((root / name).read_text()) == schema

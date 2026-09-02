@@ -13,12 +13,8 @@ from harnessix.agent.models import (
     ToolResultContent,
 )
 from harnessix.domain.models import EffectClass
-from harnessix.models._chat_mapping import (
-    InvalidModelRequest,
-    build_request,
-    messages_for,
-    tool_alias,
-)
+from harnessix.models._chat_mapping import build_request
+from harnessix.models._history import InvalidModelRequest, messages_for, tool_alias
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from tests.contracts.provider import model_request
 

@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.api import create_app
 from harnessix.domain.models import ActionRequest
-from harnessix.models.config import OpenAIChatConfig
+from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 
 
@@ -25,6 +25,7 @@ def main() -> None:
     write_json(output / "agent-thread-v3.schema.json", Thread.model_json_schema())
     write_json(output / "provider-event-v1.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
+    write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
     print("已更新 Action、Agent、Provider Event/Config 和 OpenAPI Schema")
 
 

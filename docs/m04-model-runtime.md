@@ -1,7 +1,7 @@
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
-- 状态：0.4.1 已实现并完成离线验收；0.4.2/0.4.3 待实施，真实平台未验证
+- 状态：0.4.1 与 0.4.2a 已完成离线验收；0.4.2b/0.4.3 待实施，真实平台未验证
 - 依据：ADR 0008、当前 ModelProvider/ProviderEvent 契约与主路线图
 
 ## 1. 目标与边界
@@ -31,6 +31,13 @@
 - 不将 API Key、HTTP Header 或原始 SDK 异常写入 Session/Trace。
 
 ## 3. 0.4.2：第二类 Provider 与能力差异
+
+分为两个可验收切片，见 [ADR 0015](adr/0015-anthropic-provider.md)：
+
+- **0.4.2a 已完成**：Anthropic Messages Adapter、HTTPX2 类型隔离、共享 Provider 契约、缓存计数纳入输入总量、跨 Provider 继续与审批重启；
+- **0.4.2b 待实施**：Model Attempt 身份、完整/部分/未知用量、缓存/推理明细、失败 Usage 和版本化持久记录。不把本次双 Adapter 通过写成 0.4.2 全部完成。
+
+整体交付要求：
 
 - Anthropic Adapter 接入同一契约；
 - 明确 capability 不支持时的行为，不静默丢弃不支持的 Item 或伪造 Usage；
@@ -83,7 +90,8 @@ config = OpenAIChatConfig(
 | 取消与超时 | 建连、读流、错误 body、退避和调用方 Task；响应关闭 |
 | Reasoning / 多模态 / 内置工具 | 未开放；不透传私有推理，公开摘要 Item 暂不接受 |
 | 缓存/推理 Token、价格、失败请求费用 | 待 0.4.2/0.4.3；不能把当前计数当作供应商账单 |
-| Anthropic、真实平台 Smoke | 未完成，不以离线测试替代 |
+| Anthropic | 0.4.2a 已通过离线验收，具体严格配置见下节 |
+| 真实平台 Smoke | 未完成，不以离线测试替代 |
 
 流式成功要求 finish reason、Usage 和 `[DONE]`，不支持缺失流式 Usage 的兼容服务。SDK 在终结符后停止读取；同一已读块中的额外终结数据会拒绝，不承诺读取终结符后所有网络字节。
 
@@ -99,4 +107,46 @@ config = OpenAIChatConfig(
 
 实现时复现并修复了 SDK 在“HTTP 错误响应尚未返回 AsyncStream、读取 body 失败或取消”路径的资源清理缺口：关闭责任下沉到有界 Transport，不只依赖 Adapter 的 `finally`。回归同时覆盖正常流和错误 body。
 
-下一切片 0.4.2 先核对 Anthropic 官方协议/SDK，再添加第二工厂复用契约；设计用量明细的版本化兼容，不修改历史 Schema 或假装未知用量为零。真实验证需要宿主中可读取的凭据、地域和模型配置；这一外部条件不阻塞当前离线开发。
+上述数字为 0.4.1 收口快照，0.4.2a 最新结果如下。
+
+## 8. 0.4.2a：Anthropic 支持边界与验收
+
+使用可选依赖 `harnessix[anthropic]`（`anthropic>=1.3,<2`，锁定 1.3.0，HTTPX2 2.12.0）。Kernel 不导入 SDK；仅安装 Anthropic extra 不要求 OpenAI SDK，反之亦然。
+
+~~~python
+from harnessix.models.anthropic import AnthropicProvider
+from harnessix.models.config import AnthropicConfig
+
+config = AnthropicConfig(
+    model="configured-model-id",  # 替换为支持非 Thinking 配置的已核对模型
+    base_url="https://api.anthropic.com",
+    api_key_env="ANTHROPIC_API_KEY",
+    max_output_tokens=1024,
+)
+# async with AnthropicProvider(config) as provider:
+#     ...  # 注入现有 AgentRuntime，无须修改 Kernel
+~~~
+
+~~~bash
+uv sync --locked --all-extras --dev
+uv run pytest tests/models
+uv run --extra anthropic python examples/kernel_anthropic_offline.py
+~~~
+
+- 支持文本、客户端工具、并行工具组、稳定 UUID 配对、取消与有限重试；不发送 assistant prefill；
+- 显式 `thinking=disabled`；强制 Thinking 模型、签名块回传、服务器工具、Fallback、图片、Citations 与 Beta 功能未开放，不能任意删除这些内容后继续；
+- 要求最终可确定普通输入、缓存读取/创建和输出计数；缺失缓存计数不补零，因此不支持省略这些计数的兼容响应；
+- 累计 Usage 更新取最后值，不逐块相加；输入总量包含两个缓存计数；子项明细尚未持久化；
+- context_overflow 和中途异常当前仅保留失败分类，失败用量完整性将在 0.4.2b 处理；
+- 配置 Schema 为 `spec/anthropic-config-v1.schema.json`；OpenAI 配置 Schema 语义保持相同（仅字段排列变化），历史事件 Schema 和 Migration 不变。
+
+验收结果：
+
+- `tests/models/`：218 passed，其中原有 101 项保留，新增 117 项；两类 Adapter 分别实例化同一组 11 条核心契约；
+- `make check`：397 passed、1 skipped（本地未配置 PostgreSQL）；Ruff/Mypy 通过；
+- 异步调试下 Kernel + Provider：361 passed，警告作为错误处理；
+- 验证包含 Anthropic→OpenAI 会话切换、审批暂停后换 Provider 继续、Usage/配对/Replay、SDK 隐式类型转换、错误 body 关闭与单网络块 Ping 上限；
+- 五个离线入口、sdist/wheel 构建通过；独立 Python 3.12 环境验证基础包无模型 SDK/HTTPX2 依赖，Anthropic-only 与 OpenAI-only 两种安装分别完成 SDK→Kernel→SQLite 闭环；
+- 真实 Anthropic/百炼 API 调用：0，仍待受控验证。
+
+下一切片按 ADR 0015 的 0.4.2b 方案实施用量事实与跨版本迁移。真实验证需要宿主中可读取的凭据、地域和模型配置；这一外部条件不阻塞离线开发。

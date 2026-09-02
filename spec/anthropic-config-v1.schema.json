@@ -27,7 +27,7 @@
   "additionalProperties": false,
   "properties": {
     "base_url": {
-      "default": "https://api.openai.com/v1",
+      "default": "https://api.anthropic.com",
       "maxLength": 2048,
       "title": "Base Url",
       "type": "string"
@@ -40,7 +40,7 @@
       "type": "string"
     },
     "api_key_env": {
-      "default": "OPENAI_API_KEY",
+      "default": "ANTHROPIC_API_KEY",
       "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
       "title": "Api Key Env",
       "type": "string"
@@ -110,20 +110,11 @@
       "minimum": 1,
       "title": "Max Chunks",
       "type": "integer"
-    },
-    "output_token_parameter": {
-      "default": "max_completion_tokens",
-      "enum": [
-        "max_completion_tokens",
-        "max_tokens"
-      ],
-      "title": "Output Token Parameter",
-      "type": "string"
     }
   },
   "required": [
     "model"
   ],
-  "title": "OpenAIChatConfig",
+  "title": "AnthropicConfig",
   "type": "object"
 }

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 
 from openai.types.chat import ChatCompletionChunk
-from pydantic import JsonValue
 
 from harnessix.agent.models import Usage
 from harnessix.models._bounded_http import InvalidWireData
+from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -18,19 +17,6 @@ from harnessix.models.contracts import (
     TextStarted,
     ToolCallCompleted,
 )
-
-
-def _object(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
-    result: dict[str, JsonValue] = {}
-    for key, value in pairs:
-        if key in result:
-            raise InvalidWireData("工具参数含重复 JSON key")
-        result[key] = value
-    return result
-
-
-def _non_finite(value: str) -> None:
-    raise InvalidWireData("工具参数含非有限数值")
 
 
 @dataclass
@@ -153,12 +139,9 @@ class ChatStream:
                 ):
                     raise InvalidWireData("工具身份或名称无效")
                 ids.add(call.call_id)
-                arguments = json.loads(
-                    call.arguments, object_pairs_hook=_object, parse_constant=_non_finite
-                )
+                arguments = strict_json(call.arguments)
                 if not isinstance(arguments, dict):
                     raise InvalidWireData("工具参数必须为 JSON object")
-                json.dumps(arguments, allow_nan=False)
                 events.append(
                     ToolCallCompleted(
                         call_id=call.call_id,
