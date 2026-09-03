@@ -1,11 +1,13 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2 架构基线
-- 日期：2026-09-02
+- 状态：0.2 架构基线，随 0.4 实现持续更新
+- 更新日期：2026-09-03
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
-0.4.2b1 增量（2026-09-03）：尝试账本领域/Kernel、累计用量去重、未知值与完整性、身份绑定、失败/取消结算、预算与 OTel 差额、v1/v2/v3→v4 混合升级及历史 Schema 冻结。新增 15 个模型尝试子进程崩溃切点，总计 41 个；实际 SDK 元数据映射与真实平台验证尚未完成。
+0.4.2b1 收口快照（2026-09-03）：尝试账本领域/Kernel、累计用量去重、未知值与完整性、身份绑定、失败/取消结算、预算与 OTel 差额、v1/v2/v3→v4 混合升级及历史 Schema 冻结。当时新增 15 个模型尝试子进程崩溃切点，共 41 个。
+
+0.4.2b2 当前增量（2026-09-03）：两个真实 SDK 的尝试/缓存/推理/失败用量映射、HTTP 前持久意图、累计值与迟到分项、取消和合法观测保留。新增 8 个 SDK 子进程切点，全项目合计 49 个；每次恢复均验证不重发请求。`make check` 为 546 passed、1 skipped（本地 PostgreSQL 未配置）；异步调试下 Kernel + Provider 为 510 passed。真实平台与成本验证仍待完成，详见 [ADR 0017](adr/0017-provider-attempt-usage.md)。
 
 ## 1. 目标
 
@@ -20,7 +22,7 @@ Harnessix Code 的测试必须回答两类不同问题：
 
 ## 2. 质量属性
 
-0.4.2a 增量（2026-09-03）：两类 Adapter 分别通过同一 Provider 契约。Anthropic 使用实际 SDK + HTTPX2 Transport，覆盖原始 SSE 强类型校验、未知事件、缓存总量、取消/错误 body，以及会话和审批边界切换 Provider。明细/失败用量和真实 API 验收仍在后续切片，不以 Mock 通过替代。
+0.4.2a 收口快照（2026-09-03）：两类 Adapter 分别通过同一 Provider 契约。Anthropic 使用实际 SDK + HTTPX2 Transport，覆盖原始 SSE 强类型校验、未知事件、缓存总量、取消/错误 body，以及会话和审批边界切换 Provider。其后明细/失败用量已在 b2 补齐离线验收；真实 API 未验收，不以 Mock 通过替代。
 
 优先级：
 

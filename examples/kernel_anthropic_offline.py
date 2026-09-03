@@ -54,7 +54,7 @@ class OfflineStream(httpx2.AsyncByteStream):
             {
                 "type": "message_delta",
                 "delta": {"stop_reason": "end_turn", "stop_sequence": None},
-                "usage": {"output_tokens": 8},
+                "usage": {"output_tokens": 8, "output_tokens_details": {"thinking_tokens": 1}},
             },
             {"type": "message_stop"},
         ]
@@ -88,12 +88,18 @@ async def main() -> None:
                 )
                 assert turn.status == TurnStatus.COMPLETED
                 assert turn.usage.input_tokens == 15 and turn.usage.output_tokens == 8
+                assert turn.usage_is_complete and len(turn.model_attempts) == 1
+                attempt = turn.model_attempts[0]
+                assert attempt.status == "completed" and attempt.actual_model == "offline-fixture"
+                assert attempt.usage.cache_read_input_tokens == 3
+                assert attempt.usage.cache_creation_input_tokens == 2
+                assert attempt.usage.reasoning_output_tokens == 1
                 assert replay(await store.events(thread.thread_id)) == await store.get_thread(
                     thread.thread_id
                 )
     print(
         "Anthropic SDK：真实；HTTPX2：离线替身；Turn：completed；"
-        "含缓存输入：15；输出：8；Replay：一致；真实 API 调用：0"
+        "含缓存输入：15；输出：8；尝试：1/完整；推理子集：1；Replay：一致；真实 API 调用：0"
     )
 
 

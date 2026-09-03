@@ -1,7 +1,7 @@
 # ADR 0015：第二类 Provider 与用量演进边界
 
 - 日期：2026-09-03
-- 状态：已接受；0.4.2a 已验收；后续 b1 账本已实现，b2 SDK 用量接入待完成（ADR 0016）
+- 状态：已接受；0.4.2a 已验收，后续 b1/b2 账本与 SDK 用量接入也已离线验收（ADR 0016/0017）
 - 范围：0.4.2a Anthropic Adapter；0.4.2b 用量明细独立验收
 
 ## 1. 接口求证
@@ -32,9 +32,9 @@
 - 当前显式禁用 thinking，不接收/过滤后重放签名 Thinking Block；强制 Thinking 的模型不在此配置范围。未开放服务器工具、Fallback、Citations、图片、原生压缩和 Beta 控制。
 - 未知语义事件返回固定 invalid_provider_output，而不是默默遗漏。Ping/注释允许且受传输预算约束。
 - Tool Call 只在 Block 完整、消息终态、Usage 校验和 EOF 确认后交给 Kernel。EOF 前的错误或重复终态不能触发工具。
-- 首事件前有界重试；已向 Kernel 暴露事件后不重发请求。取消覆盖建连、读流、错误 body 和退避，且不依赖同一个 asyncio Task 持续消费。
+- 首语义事件前有界重试；已向 Kernel 暴露语义响应后不重发请求，b2 尝试元数据不关闭此边界。取消覆盖建连、读流、错误 body 和退避，且不依赖同一个 asyncio Task 持续消费。
 
-## 4. 用量及失败语义
+## 4. 0.4.2a 收口时的用量及失败语义（历史快照）
 
 message_delta 的 Usage 是累计值，不能把每次值相加。输入总量是 input_tokens + cache_creation_input_tokens + cache_read_input_tokens；输出取最后累计值。显式字段必须非负且累计不回退。
 
@@ -46,7 +46,7 @@ max_tokens/refusal/pause_turn 不触发工具调用或自动续跑；可获得�
 
 ## 5. 0.4.2b 后续验收方案
 
-进展：下述账本/迁移已在 0.4.2b1 验收，两类实际 SDK 的用量映射尚待 0.4.2b2。本 ADR 第 4 节记录的是 0.4.2a 收口行为；最新设计见 [ADR 0016](0016-model-attempt-ledger.md)。
+进展：下述账本/迁移已在 0.4.2b1 验收，两类实际 SDK 的用量映射也已在 0.4.2b2 完成离线验收。本 ADR 第 4 节记录的是 0.4.2a 收口行为；最新设计见 [ADR 0016](0016-model-attempt-ledger.md) 与 [ADR 0017](0017-provider-attempt-usage.md)。
 
 用量明细应记录在每次 Model Attempt 的不可变事实中：明确供应商/请求模型/实际模型、计数包含关系、完整/部分/未知状态及可选缓存、推理明细。未知是 null，不是 0；总量不能重复包含缓存或推理子集。
 

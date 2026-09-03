@@ -11,11 +11,13 @@ from openai.types.chat import ChatCompletionChunk
 from openai.types.chat.completion_create_params import CompletionCreateParamsStreaming
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.ids import new_id
+from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
 from harnessix.models._chat_mapping import build_request
-from harnessix.models._chat_stream import ChatStream, ContentRefused
+from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest
-from harnessix.models._provider_io import read_key, wait_for_io
+from harnessix.models._provider_io import finish_attempt, read_key, wait_for_io
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
@@ -62,7 +64,9 @@ class OpenAIChatProvider:
         key = read_key(self.config, headers_env="OPENAI_CUSTOM_HEADERS")
         client = httpx.AsyncClient(
             transport=BoundedTransport(
-                transport or httpx.AsyncHTTPTransport(trust_env=False), self.config
+                transport or httpx.AsyncHTTPTransport(trust_env=False),
+                self.config,
+                validate_frame=validate_frame,
             ),
             trust_env=False,
             follow_redirects=False,
@@ -114,6 +118,15 @@ class OpenAIChatProvider:
         deadline = asyncio.get_running_loop().time() + self.config.timeout_seconds
         exposed = False
         for attempt in range(self.config.max_attempts):
+            cancel.checkpoint()
+            attempt_id = new_id()
+            yield ModelAttemptStarted(
+                attempt_id=attempt_id,
+                step=request.step,
+                index=attempt + 1,
+                provider="openai_chat",
+                requested_model=self.config.model,
+            )
             stream: AsyncStream[ChatCompletionChunk] | None = None
             failure: ResponseFailed | None = None
             try:
@@ -129,7 +142,10 @@ class OpenAIChatProvider:
                 if content_type.strip().lower() != "text/event-stream":
                     raise InvalidWireData("响应不是 SSE")
                 state = ChatStream(
-                    request, names, parallel=self.config.capabilities.parallel_tool_calls
+                    request,
+                    names,
+                    parallel=self.config.capabilities.parallel_tool_calls,
+                    attempt_id=attempt_id,
                 )
                 while True:
                     try:
@@ -138,12 +154,14 @@ class OpenAIChatProvider:
                         break
                     for event in state.feed(chunk):
                         cancel.checkpoint()
-                        exposed = True
+                        exposed = exposed or not isinstance(event, ModelUsageObserved)
                         yield event
                 bounded = stream.response.extensions.get("harnessix_stream")
                 if not isinstance(bounded, BoundedStream):
                     raise InvalidWireData("响应缺少传输预算")
-                for event in state.finish(seen_done=bounded.seen_done):
+                completed = state.finish(seen_done=bounded.seen_done)
+                yield finish_attempt(attempt_id)
+                for event in completed:
                     cancel.checkpoint()
                     exposed = True
                     yield event
@@ -160,6 +178,7 @@ class OpenAIChatProvider:
                     except Exception:
                         # 清理故障不能泄露原始异常或覆盖取消；SDK/HTTPX 本身仍负责关闭连接池。
                         pass
+            yield finish_attempt(attempt_id, failure or ResponseFailed(code="unknown"))
             if (
                 failure is None
                 or exposed

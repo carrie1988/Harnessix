@@ -20,7 +20,7 @@ from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ToolCa
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
-from tests.contracts.provider import model_request
+from tests.contracts.provider import assert_failed_attempts, model_request
 from tests.models.wire import WireStream, call, chunk, frame, response, text_frames, tool_frames
 
 CANARY = "fixture-SECRET-CANARY"
@@ -210,7 +210,7 @@ async def test_status_mapping_and_no_sdk_retries(
     with caplog.at_level(logging.INFO):
         async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
             events = [e async for e in provider.stream(model_request(), CancelToken())]
-    assert events == [ResponseFailed(code=expected, retryable=attempts > 1)]
+    assert_failed_attempts(events, ResponseFailed(code=expected, retryable=attempts > 1), attempts)
     assert len(requests) == attempts
     assert CANARY not in repr(events) + caplog.text
 
@@ -315,7 +315,7 @@ async def test_compressed_response_rejected(encoding: str) -> None:
 
     async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
         events = [e async for e in provider.stream(model_request(), CancelToken())]
-    assert events == [ResponseFailed(code="invalid_provider_output")]
+    assert_failed_attempts(events, ResponseFailed(code="invalid_provider_output"))
     assert wire.closed
 
 
@@ -339,6 +339,12 @@ async def test_kernel_tool_loop_pairing_usage_and_replay(tmp_path: Path) -> None
             )
     assert turn.status == TurnStatus.COMPLETED
     assert turn.usage == Usage(input_tokens=30, output_tokens=6)
+    assert turn.usage_is_complete
+    assert [(a.step, a.index, a.status) for a in turn.model_attempts] == [
+        (1, 1, "completed"),
+        (2, 1, "completed"),
+        (3, 1, "completed"),
+    ]
     assert len(tools.calls) == 2
     assert tools.calls[0].provider_call_id == tools.calls[1].provider_call_id
     messages = requests[-1]["messages"]
@@ -436,7 +442,7 @@ async def test_error_response_body_is_bounded_and_closed(cancel_body: bool) -> N
             with pytest.raises(TurnCancelled):
                 await task
         else:
-            assert await consume() == [ResponseFailed(code="invalid_provider_output")]
+            assert_failed_attempts(await consume(), ResponseFailed(code="invalid_provider_output"))
         assert wire.closed
 
 
@@ -479,15 +485,16 @@ async def test_other_protocol_errors(kind: str) -> None:
 
     async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
         events = [e async for e in provider.stream(model_request(), CancelToken())]
-    assert events == [
+    assert_failed_attempts(
+        events,
         ResponseFailed(
             code={
                 "refusal": "content_policy",
                 "sse_error": "quota",
                 "not_sse": "invalid_provider_output",
             }[kind]
-        )
-    ]
+        ),
+    )
     assert CANARY not in repr(events) and wire.closed
 
 

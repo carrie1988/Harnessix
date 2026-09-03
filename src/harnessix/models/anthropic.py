@@ -11,11 +11,13 @@ from anthropic.types import RawMessageStreamEvent
 from anthropic.types.message_create_params import MessageCreateParamsStreaming
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.ids import new_id
+from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._anthropic_http import AnthropicTransport
 from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._anthropic_stream import AnthropicStream
 from harnessix.models._bounded_http import InvalidWireData
-from harnessix.models._provider_io import read_key, wait_for_io
+from harnessix.models._provider_io import finish_attempt, read_key, wait_for_io
 from harnessix.models.config import AnthropicConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
@@ -109,6 +111,15 @@ class AnthropicProvider:
         deadline = asyncio.get_running_loop().time() + self.config.timeout_seconds
         exposed = False
         for attempt in range(self.config.max_attempts):
+            cancel.checkpoint()
+            attempt_id = new_id()
+            yield ModelAttemptStarted(
+                attempt_id=attempt_id,
+                step=request.step,
+                index=attempt + 1,
+                provider="anthropic",
+                requested_model=self.config.model,
+            )
             stream: AsyncStream[RawMessageStreamEvent] | None = None
             failure: ResponseFailed | None = None
             try:
@@ -122,7 +133,10 @@ class AnthropicProvider:
                 if content_type.strip().lower() != "text/event-stream":
                     raise InvalidWireData("响应不是 SSE")
                 state = AnthropicStream(
-                    request, names, parallel=self.config.capabilities.parallel_tool_calls
+                    request,
+                    names,
+                    parallel=self.config.capabilities.parallel_tool_calls,
+                    attempt_id=attempt_id,
                 )
                 while True:
                     try:
@@ -131,9 +145,14 @@ class AnthropicProvider:
                         break
                     for event in state.feed(chunk):
                         cancel.checkpoint()
-                        exposed = True
+                        exposed = exposed or not isinstance(event, ModelUsageObserved)
                         yield event
-                for event in state.finish():
+                completed = state.finish()
+                terminal = completed[-1]
+                yield finish_attempt(
+                    attempt_id, terminal if isinstance(terminal, ResponseFailed) else None
+                )
+                for event in completed:
                     cancel.checkpoint()
                     exposed = True
                     yield event
@@ -149,6 +168,7 @@ class AnthropicProvider:
                             await stream.close()
                     except Exception:
                         pass
+            yield finish_attempt(attempt_id, failure or ResponseFailed(code="unknown"))
             if (
                 failure is None
                 or exposed

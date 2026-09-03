@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from openai.types.chat import ChatCompletionChunk
+from pydantic import ValidationError
 
 from harnessix.agent.models import Usage
+from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
@@ -27,12 +30,30 @@ class CallParts:
     type: str | None = None
 
 
+def validate_frame(name: bytes, data: bytes) -> None:
+    if data == b"[DONE]":
+        return
+    if name not in {b"", b"message", b"error"}:
+        raise InvalidWireData("不支持的 Chat SSE 事件")
+    value = strict_json(data)
+    if isinstance(value, dict) and value.get("error"):
+        return  # 错误类型交给 SDK 分类，不保存原始错误内容。
+    try:
+        ChatCompletionChunk.model_validate(value, strict=True)
+    except ValidationError:
+        raise InvalidWireData("Chat SSE 结构或计数类型无效") from None
+
+
 class ChatStream:
-    def __init__(self, request: ModelRequest, names: dict[str, str], *, parallel: bool) -> None:
+    def __init__(
+        self, request: ModelRequest, names: dict[str, str], *, parallel: bool, attempt_id: UUID
+    ) -> None:
         self._request = request
         self._names = names
         self._parallel = parallel
         self._response_id: str | None = None
+        self._model: str | None = None
+        self._attempt_id = attempt_id
         self._text = ""
         self._text_started = False
         self._characters = 0
@@ -45,9 +66,20 @@ class ChatStream:
         events: list[ProviderEvent] = []
         if self._response_id is None:
             self._response_id = chunk.id
-            events.append(ResponseStarted(response_id=chunk.id))
-        elif chunk.id != self._response_id:
-            raise InvalidWireData("响应 ID 不一致")
+            self._model = chunk.model
+            events.extend(
+                [
+                    ResponseStarted(response_id=chunk.id),
+                    ModelUsageObserved(
+                        attempt_id=self._attempt_id,
+                        response_id=chunk.id,
+                        actual_model=chunk.model,
+                        usage=UsageObservation(),
+                    ),
+                ]
+            )
+        elif chunk.id != self._response_id or chunk.model != self._model:
+            raise InvalidWireData("响应 ID 或实际模型不一致")
         if self._usage is not None:
             raise InvalidWireData("Usage 之后出现额外 chunk")
         if chunk.usage is not None:
@@ -60,8 +92,30 @@ class ChatStream:
                 or usage.total_tokens != usage.prompt_tokens + usage.completion_tokens
             ):
                 raise InvalidWireData("Usage 结构或顺序无效")
+            inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
+            cached = inputs.cached_tokens if inputs else None
+            written = inputs.cache_write_tokens if inputs else None
+            observation = UsageObservation(
+                completeness="complete",
+                input_tokens=usage.prompt_tokens,
+                output_tokens=usage.completion_tokens,
+                cache_read_input_tokens=cached,
+                cache_creation_input_tokens=written,
+                uncached_input_tokens=usage.prompt_tokens - cached - written
+                if cached is not None and written is not None
+                else None,
+                reasoning_output_tokens=outputs.reasoning_tokens if outputs else None,
+            )
             self._usage = Usage(
                 input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens
+            )
+            events.append(
+                ModelUsageObserved(
+                    attempt_id=self._attempt_id,
+                    response_id=chunk.id,
+                    actual_model=chunk.model,
+                    usage=observation,
+                )
             )
             return events
         if self._finish is not None or len(chunk.choices) != 1 or chunk.choices[0].index != 0:

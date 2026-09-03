@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter，以及 0.4.2b1 模型尝试账本的离线验收。两个实际 SDK 的尝试/失败用量映射、成本和真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter，以及 0.4.2b1/b2 模型尝试账本与实际 SDK 用量映射的离线验收。成本和真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -101,7 +101,7 @@ Plan/Compaction 当前支持可信宿主记录与 Replay，不包含自动规划
 - Chat Completions 文本/工具分片、真实 Usage 和 Stop Reason 归一化；
 - 工具名称别名、跨步骤 Call UUID 配对与审批重启继续；
 - 显式能力、Secret 环境引用、HTTPS/无重定向/无环境代理；
-- 首事件前有界重试，中途断流不重放；取消和错误 body 均关闭响应；
+- 首语义事件前有界重试，中途断流不重放；取消和错误 body 均关闭响应；
 - 请求/响应/帧大小、输出和超时边界；默认 CI 无真实凭据。
 - 可选 Anthropic SDK/HTTPX2 Adapter，共享契约、缓存计数合入输入总量及跨 Provider 会话/审批继续。
 
@@ -116,16 +116,18 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 
 Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数，不开放签名推理块、服务器工具或 Fallback；同样尚未做真实平台验证。设计与限制见 [ADR 0015](docs/adr/0015-anthropic-provider.md)。
 
-## 当前已实现：0.4.2b1 模型尝试账本
+## 当前已实现：0.4.2b1/b2 模型尝试账本与 SDK 接入
 
 - 每次尝试的持久意图、响应身份、累计用量观测和完成/失败/取消/中断事实；
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
 - Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema；
-- 15 个新增子进程崩溃切点及差额 Token 指标。
+- 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
+- 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
+- 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；差额 Token 指标。
 
-本切片由归一化 Provider 测试验证；**两个 SDK 尚未发出 v2 尝试元数据**，仍走兼容的响应总量路径。后续 0.4.2b2 接入实际 SDK，0.4.3 完成价格/成本与真实验证。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md)。
+两个 SDK 均已使用 Provider v2 尝试元数据；旧自定义 Provider 的响应记账路径保持兼容。`Turn.usage` 只是已知消费下界，需同时查看 `usage_is_complete`，缺失分项仍为 null；它不是成本或供应商账单。0.4.3 将完成价格/成本与受控真实验证。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md) 与 [ADR 0017](docs/adr/0017-provider-attempt-usage.md)。
 
 ## 当前 Action Plane 快速开始
 

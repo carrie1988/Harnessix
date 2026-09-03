@@ -22,7 +22,7 @@ from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ToolCa
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
-from tests.contracts.provider import model_request
+from tests.contracts.provider import assert_failed_attempts, model_request
 from tests.models import wire as openai_wire
 from tests.models.anthropic_wire import (
     WireStream,
@@ -296,7 +296,7 @@ async def test_http_and_sse_errors_are_bounded_and_redacted(
     with caplog.at_level(logging.INFO):
         async with AnthropicProvider(config(), transport=httpx2.MockTransport(handle)) as provider:
             events = [e async for e in provider.stream(model_request(), CancelToken())]
-    assert events == [ResponseFailed(code=expected, retryable=attempts > 1)]
+    assert_failed_attempts(events, ResponseFailed(code=expected, retryable=attempts > 1), attempts)
     assert len(requests) == attempts and all(w.closed for w in wires)
     assert CANARY not in repr(events) + caplog.text
 
@@ -581,4 +581,9 @@ async def test_switch_provider_at_durable_approval_boundary(tmp_path: Path) -> N
             completed = await runtime.resume_turn(thread.thread_id, turn.turn_id)
     assert completed.status == TurnStatus.COMPLETED and len(tools.calls) == 1
     assert completed.usage == Usage(input_tokens=20, output_tokens=4)
+    assert completed.usage_is_complete
+    assert [(a.provider, a.step, a.index, a.status) for a in completed.model_attempts] == [
+        ("anthropic", 1, 1, "completed"),
+        ("openai_chat", 2, 1, "completed"),
+    ]
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)

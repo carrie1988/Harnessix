@@ -30,7 +30,13 @@ class OfflineStream(httpx.AsyncByteStream):
             {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
             {
                 "choices": [],
-                "usage": {"prompt_tokens": 10, "completion_tokens": 8, "total_tokens": 18},
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 8,
+                    "total_tokens": 18,
+                    "prompt_tokens_details": {"cached_tokens": 3, "cache_write_tokens": 2},
+                    "completion_tokens_details": {"reasoning_tokens": 1},
+                },
             },
         ]
         for chunk in chunks:
@@ -69,10 +75,18 @@ async def main() -> None:
                 )
                 assert turn.status == TurnStatus.COMPLETED
                 assert turn.usage.total_tokens == 18
+                assert turn.usage_is_complete and len(turn.model_attempts) == 1
+                attempt = turn.model_attempts[0]
+                assert attempt.status == "completed" and attempt.actual_model == "offline-fixture"
+                assert attempt.usage.uncached_input_tokens == 5
+                assert attempt.usage.reasoning_output_tokens == 1
                 assert replay(await store.events(thread.thread_id)) == await store.get_thread(
                     thread.thread_id
                 )
-    print("SDK：真实；HTTP：离线替身；Turn：completed；Usage：18；Replay：一致；真实 API 调用：0")
+    print(
+        "SDK：真实；HTTP：离线替身；Turn：completed；Usage：18；"
+        "尝试：1/完整；缓存读/写：3/2；推理子集：1；Replay：一致；真实 API 调用：0"
+    )
 
 
 if __name__ == "__main__":

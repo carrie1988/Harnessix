@@ -99,9 +99,16 @@ class BoundedStream(httpx.AsyncByteStream):
 
 
 class BoundedTransport(httpx.AsyncBaseTransport):
-    def __init__(self, inner: httpx.AsyncBaseTransport, config: ModelHTTPConfig) -> None:
+    def __init__(
+        self,
+        inner: httpx.AsyncBaseTransport,
+        config: ModelHTTPConfig,
+        *,
+        validate_frame: FrameValidator | None = None,
+    ) -> None:
         self._inner = inner
         self._config = config
+        self._validate_frame = validate_frame
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         response = await self._inner.handle_async_request(request)
@@ -111,7 +118,14 @@ class BoundedTransport(httpx.AsyncBaseTransport):
         if not isinstance(response.stream, httpx.AsyncByteStream):
             await response.aclose()
             raise InvalidWireData("响应不是异步流")
-        bounded = BoundedStream(response.stream, self._config)
+        bounded = BoundedStream(
+            response.stream,
+            self._config,
+            validate_frame=self._validate_frame
+            if response.headers.get("content-type", "").split(";")[0].strip().lower()
+            == "text/event-stream"
+            else None,
+        )
         response.stream = bounded
         response.extensions["harnessix_stream"] = bounded
         return response

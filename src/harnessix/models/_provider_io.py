@@ -3,9 +3,27 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Awaitable
+from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.errors import AgentFailure
+from harnessix.agent.usage import ModelAttemptFinished
 from harnessix.models.config import ModelHTTPConfig
+from harnessix.models.contracts import ResponseFailed
+
+
+def finish_attempt(attempt_id: UUID, failure: ResponseFailed | None = None) -> ModelAttemptFinished:
+    return ModelAttemptFinished(
+        attempt_id=attempt_id,
+        outcome="failed" if failure else "completed",
+        error=AgentFailure(
+            code="provider_" + failure.code,
+            message="Provider 返回结构化失败",
+            retryable=failure.retryable,
+        )
+        if failure
+        else None,
+    )
 
 
 async def wait_for_io[T](operation: Awaitable[T], cancel: CancelToken, deadline: float) -> T:

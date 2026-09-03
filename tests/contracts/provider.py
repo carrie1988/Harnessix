@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import dataclass
 from uuid import uuid4
@@ -12,9 +12,11 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.models import Budget, Item, ItemStatus, TextContent, Usage
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models.contracts import (
     ModelProvider,
     ModelRequest,
+    ProviderEvent,
     ResponseCompleted,
     ResponseFailed,
     ResponseStarted,
@@ -53,17 +55,50 @@ class ProviderProbe:
 ProviderFactory = Callable[[str], AbstractAsyncContextManager[ProviderProbe]]
 
 
+def assert_failed_attempts(
+    events: Sequence[ProviderEvent], failure: ResponseFailed, count: int = 1
+) -> None:
+    """没有语义响应/用量的失败，也必须完整记录每次尝试，不能仅滤掉元数据。"""
+    assert events[-1] == failure
+    assert len(events) == count * 2 + 1
+    identities = set()
+    for index in range(count):
+        start, end = events[index * 2 : index * 2 + 2]
+        assert isinstance(start, ModelAttemptStarted)
+        assert start.index == index + 1 and start.step == 1
+        assert start.attempt_id not in identities
+        identities.add(start.attempt_id)
+        assert isinstance(end, ModelAttemptFinished)
+        assert end.attempt_id == start.attempt_id and end.outcome == "failed"
+        assert end.error.code == "provider_" + failure.code
+        assert end.error.retryable == failure.retryable
+
+
 class ProviderContract:
     async def test_text_and_usage(self, provider_factory: ProviderFactory) -> None:
         async with provider_factory("text") as probe:
             events = [
                 event async for event in probe.provider.stream(model_request(), CancelToken())
             ]
-            assert isinstance(events[0], ResponseStarted)
+            assert isinstance(events[0], ModelAttemptStarted)
+            assert isinstance(events[1], ResponseStarted)
             assert isinstance(events[-1], ResponseCompleted)
             assert events[-1].usage == Usage(input_tokens=10, output_tokens=2)
             assert "".join(e.delta for e in events if isinstance(e, TextDelta)) == "你好"
             assert [e.text for e in events if isinstance(e, TextCompleted)] == ["你好"]
+            observations = [e for e in events if isinstance(e, ModelUsageObserved)]
+            assert observations[-1].usage.completeness == "complete"
+            assert (
+                observations[-1].usage.input_tokens == 10
+                and observations[-1].usage.output_tokens == 2
+            )
+            assert observations[-1].actual_model == "test-model"
+            assert observations[-1].response_id == events[1].response_id
+            assert all(e.attempt_id == events[0].attempt_id for e in observations)
+            ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
+            assert len(ends) == 1 and ends[0].outcome == "completed"
+            assert ends[0].attempt_id == events[0].attempt_id
+            assert events.index(ends[0]) < len(events) - 1
             assert probe.closed()
 
     async def test_tool_fragments(self, provider_factory: ProviderFactory) -> None:
@@ -122,6 +157,13 @@ class ProviderContract:
             assert events[-1] == ResponseFailed(code=code, retryable=retryable)
             assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
             assert probe.attempts() == attempts
+            starts = [e for e in events if isinstance(e, ModelAttemptStarted)]
+            ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
+            assert len(starts) == len(ends) == attempts
+            assert [e.index for e in starts] == list(range(1, attempts + 1))
+            assert len({e.attempt_id for e in starts}) == attempts
+            assert [e.attempt_id for e in starts] == [e.attempt_id for e in ends]
+            assert all(e.outcome == "failed" for e in ends)
 
     async def test_midstream_failure_not_retried(self, provider_factory: ProviderFactory) -> None:
         async with provider_factory("midstream") as probe:
@@ -149,8 +191,18 @@ class ProviderContract:
                 await asyncio.wait_for(task, timeout=2)
             assert probe.closed()
 
-    async def test_consumer_exit_closes_stream(self, provider_factory: ProviderFactory) -> None:
+    @pytest.mark.parametrize("after_response", [False, True])
+    async def test_consumer_exit_closes_stream(
+        self, provider_factory: ProviderFactory, after_response: bool
+    ) -> None:
         async with provider_factory("text") as probe:
             async with aclosing(probe.provider.stream(model_request(), CancelToken())) as stream:
-                assert isinstance(await anext(stream), ResponseStarted)
-            assert probe.closed()
+                assert isinstance(await anext(stream), ModelAttemptStarted)
+                assert probe.attempts() == 0
+                if after_response:
+                    assert isinstance(await anext(stream), ResponseStarted)
+                    assert probe.attempts() == 1
+            if after_response:
+                assert probe.closed()
+            else:
+                assert probe.attempts() == 0

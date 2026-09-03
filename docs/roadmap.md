@@ -30,7 +30,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [x] OpenTelemetry Trace/Metrics 和结构化日志；
 - [x] 不确定副作用和无重复恢复测试。
 
-### 现状限制
+### 0.1 当时的限制（当前实现状态见后续里程碑）
 
 - [ ] 没有 Agent Loop、Model Provider 和流式模型事件；
 - [ ] 没有 Thread/Turn/Item 会话模型；
@@ -144,7 +144,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 6. 0.4：Model Runtime
 
-状态：**0.4.1 / 0.4.2a / 0.4.2b1 已完成离线验收，整体 0.4 进行中**。双 Adapter 与尝试账本已实现；0.4.2b2 实际 SDK 的尝试/明细/失败用量映射及 0.4.3 成本/真实平台验证待完成。见 [0.4 实施计划](m04-model-runtime.md)。
+状态：**0.4.1 / 0.4.2a / 0.4.2b1 / 0.4.2b2 已完成离线验收，整体 0.4 进行中**。双 Adapter、尝试账本和实际 SDK 的明细/失败用量映射已实现；下一步为 0.4.3 成本与受控真实平台验证。见 [0.4 实施计划](m04-model-runtime.md)。
 
 ### 目标
 
@@ -154,13 +154,13 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 - [x] OpenAI-compatible Provider（Chat Completions；离线 SDK/HTTP 契约通过）；
 - [x] Anthropic Provider（非 Thinking 的 Messages 配置，离线验收）；
-- [x] 文本、Tool Call、Usage 总量、Stop Reason 流式事件归一化（明细与失败 Usage 待续）；
+- [x] 文本、Tool Call、Usage 总量/明细/失败观测、Stop Reason 流式事件归一化；
 - [x] 当前支持配置的工具/并行/流式 Usage 能力描述；
 - [x] 模型配置、认证和 Secret 环境引用；
 - [x] 限流、超时、错误归一化和首事件前有限退避；
 - [x] 请求取消与连接清理（含 HTTP 错误 body）；
 - [x] 0.4.2b1：尝试账本、未知/部分/完整累计用量、预算去重、取消/恢复和 v4 迁移；
-- [ ] 0.4.2b2：两个实际 SDK 发出尝试元数据，映射缓存/推理明细及失败用量；
+- [x] 0.4.2b2：两个实际 SDK 发出尝试元数据，映射缓存/推理明细及失败用量；
 - [ ] Token 和成本统计；
 - [ ] 脱敏的请求诊断信息。
 

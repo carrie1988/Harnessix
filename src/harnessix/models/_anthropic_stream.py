@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from anthropic.types import (
     InputJSONDelta,
@@ -20,6 +21,7 @@ from anthropic.types import (
 from pydantic import TypeAdapter
 
 from harnessix.agent.models import Usage
+from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
@@ -58,7 +60,9 @@ class Block:
 
 
 class AnthropicStream:
-    def __init__(self, request: ModelRequest, names: dict[str, str], *, parallel: bool) -> None:
+    def __init__(
+        self, request: ModelRequest, names: dict[str, str], *, parallel: bool, attempt_id: UUID
+    ) -> None:
         self._request = request
         self._names = names
         self._parallel = parallel
@@ -70,6 +74,11 @@ class AnthropicStream:
         self._counts: dict[str, int] = {}
         self._characters = 0
         self._call_ids: set[str] = set()
+        self._attempt_id = attempt_id
+        self._response_id: str | None = None
+        self._model: str | None = None
+        self._usage = UsageObservation()
+        self._last_observed: UsageObservation | None = None
 
     def feed(self, value: RawMessageStreamEvent) -> list[ProviderEvent]:
         event = validate_event(value.model_dump(warnings="error"))
@@ -85,8 +94,9 @@ class AnthropicStream:
             ):
                 raise InvalidWireData("消息起始状态无效")
             self._started = True
+            self._response_id, self._model = message.id, message.model
             self._update_counts(message.usage.model_dump())
-            return [ResponseStarted(response_id=message.id)]
+            return [ResponseStarted(response_id=message.id), *self._observe()]
         if not self._started:
             raise InvalidWireData("消息尚未开始")
         if isinstance(event, RawContentBlockStartEvent):
@@ -150,25 +160,56 @@ class AnthropicStream:
                 self._finish = event.delta.stop_reason
             self._delta_seen = True
             self._update_counts(event.usage.model_dump())
-            return []
+            return self._observe()
         if isinstance(event, RawMessageStopEvent):
             if not self._delta_seen or self._finish is None:
                 raise InvalidWireData("消息结束缺少终态原因或最终 Usage")
             self._stopped = True
-            return []
+            if all(key in self._counts for key in _COUNTS):
+                self._usage = self._usage.model_copy(update={"completeness": "complete"})
+            return self._observe()
         raise InvalidWireData("不支持的流事件")
 
     def _update_counts(self, values: dict[str, object]) -> None:
-        for key in _COUNTS:
-            value = values.get(key)
+        candidate = dict(self._counts)
+        details = values.get("output_tokens_details")
+        fields = {key: values.get(key) for key in _COUNTS}
+        if isinstance(details, dict):
+            fields["reasoning_output_tokens"] = details.get("thinking_tokens")
+        for key, value in fields.items():
             if value is None:
                 continue
             if type(value) is not int or value < self._counts.get(key, 0):
                 raise InvalidWireData("Usage 非整数、负数或累计回退")
-            self._counts[key] = value
+            candidate[key] = value
         server = values.get("server_tool_use")
         if isinstance(server, dict) and any(server.values()):
             raise InvalidWireData("未开启服务器工具计费")
+        usage = UsageObservation(
+            completeness="partial",
+            input_tokens=sum(candidate[key] for key in _COUNTS if key != "output_tokens")
+            if all(key in candidate for key in _COUNTS)
+            else None,
+            output_tokens=candidate.get("output_tokens"),
+            uncached_input_tokens=candidate.get("input_tokens"),
+            cache_read_input_tokens=candidate.get("cache_read_input_tokens"),
+            cache_creation_input_tokens=candidate.get("cache_creation_input_tokens"),
+            reasoning_output_tokens=candidate.get("reasoning_output_tokens"),
+        )
+        usage.validate_successor(self._usage)
+        self._counts, self._usage = candidate, usage
+
+    def _observe(self) -> list[ProviderEvent]:
+        if self._usage == self._last_observed:
+            return []
+        event = ModelUsageObserved(
+            attempt_id=self._attempt_id,
+            response_id=self._response_id,
+            actual_model=self._model,
+            usage=self._usage,
+        )
+        self._last_observed = self._usage
+        return [event]
 
     def _add_characters(self, count: int) -> None:
         self._characters += count

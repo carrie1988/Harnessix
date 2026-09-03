@@ -1,7 +1,7 @@
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
-- 状态：0.4.1、0.4.2a、0.4.2b1 已完成离线验收；0.4.2b2/0.4.3 待实施，真实平台未验证
+- 状态：0.4.1、0.4.2a、0.4.2b1/b2 已完成离线验收；下一步 0.4.3，真实平台未验证
 - 依据：ADR 0008、当前 ModelProvider/ProviderEvent 契约与主路线图
 
 ## 1. 目标与边界
@@ -32,11 +32,11 @@
 
 ## 3. 0.4.2：第二类 Provider 与能力差异
 
-分为两个可验收切片，见 [ADR 0015](adr/0015-anthropic-provider.md)：
+按 Adapter 与账本/SDK 接入分片验收，见 [ADR 0015](adr/0015-anthropic-provider.md)：
 
 - **0.4.2a 已完成**：Anthropic Messages Adapter、HTTPX2 类型隔离、共享 Provider 契约、缓存计数纳入输入总量、跨 Provider 继续与审批重启；
 - **0.4.2b1 已完成**：Model Attempt 身份、完整/部分/未知累计用量、明细包含关系、失败结算与版本化持久记录，归一化 Provider 验收通过；
-- **0.4.2b2 待实施**：两个实际 SDK 的尝试元数据、缓存/推理/失败用量映射与共享契约。不把账本通过写成真实 SDK 完整记账已完成；设计见 [ADR 0016](adr/0016-model-attempt-ledger.md)。
+- **0.4.2b2 已完成离线验收**：两个实际 SDK 的尝试元数据、缓存/推理/失败用量映射、共享契约、取消与 8 个进程崩溃切点；设计见 [ADR 0017](adr/0017-provider-attempt-usage.md)。不把 SDK + HTTP 替身通过写成真实平台已验收。
 
 整体交付要求：
 
@@ -86,17 +86,18 @@ config = OpenAIChatConfig(
 | Chat 文本、工具调用、并行参数组装 | 已实现，离线契约通过；可禁用工具/并行能力 |
 | History 配对、工具别名、审批继续 | 已实现，实际 SDK + Kernel/SQLite 测试通过 |
 | 输入/输出总 Token | 完整 Usage 归一化；length/filter 等失败终态保留已知 Usage |
+| 尝试与失败用量 | 两个 SDK 接入 v2 元数据；意图先持久化，重试独立记录；失败/取消/恢复不清零 |
 | 请求输出预算 | min(剩余 Turn Token、配置输出上限)；不能精确预扣输入 Token |
 | 认证与错误 | Secret 环境引用；闭集 code/retryable，不输出原始异常 |
 | 取消与超时 | 建连、读流、错误 body、退避和调用方 Task；响应关闭 |
 | Reasoning / 多模态 / 内置工具 | 未开放；不透传私有推理，公开摘要 Item 暂不接受 |
-| 缓存/推理 Token、价格、失败请求费用 | 账本契约已实现；SDK 明细映射待 b2，价格/成本待 0.4.3；当前计数不是供应商账单 |
+| 缓存/推理 Token、价格、失败请求费用 | 明细映射已实现，缺失为 null；价格/成本待 0.4.3；当前计数不是供应商账单 |
 | Anthropic | 0.4.2a 已通过离线验收，具体严格配置见下节 |
 | 真实平台 Smoke | 未完成，不以离线测试替代 |
 
 流式成功要求 finish reason、Usage 和 `[DONE]`，不支持缺失流式 Usage 的兼容服务。SDK 在终结符后停止读取；同一已读块中的额外终结数据会拒绝，不承诺读取终结符后所有网络字节。
 
-## 7. 离线验收与下一切片
+## 7. 0.4.1 离线验收快照
 
 - `tests/contracts/provider.py`：供应商中立的 11 条共享行为契约，目前由 OpenAI Adapter 工厂实例化；
 - `tests/models/`：101 条测试，包含真实 SDK、MockTransport、坏 JSON/尾包、资源边界、HTTP 错误 body 清理、认证隔离和 Kernel 多步骤/审批/Replay；
@@ -108,7 +109,7 @@ config = OpenAIChatConfig(
 
 实现时复现并修复了 SDK 在“HTTP 错误响应尚未返回 AsyncStream、读取 body 失败或取消”路径的资源清理缺口：关闭责任下沉到有界 Transport，不只依赖 Adapter 的 `finally`。回归同时覆盖正常流和错误 body。
 
-上述数字为 0.4.1 收口快照，0.4.2a 收口结果如下，最新 b1 状态见第 9 节。
+上述数字为 0.4.1 收口快照，后续收口结果如下，最新 b2 状态见第 10 节。
 
 ## 8. 0.4.2a：Anthropic 支持边界与验收
 
@@ -137,8 +138,8 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 - 支持文本、客户端工具、并行工具组、稳定 UUID 配对、取消与有限重试；不发送 assistant prefill；
 - 显式 `thinking=disabled`；强制 Thinking 模型、签名块回传、服务器工具、Fallback、图片、Citations 与 Beta 功能未开放，不能任意删除这些内容后继续；
 - 要求最终可确定普通输入、缓存读取/创建和输出计数；缺失缓存计数不补零，因此不支持省略这些计数的兼容响应；
-- 累计 Usage 更新取最后值，不逐块相加；输入总量包含两个缓存计数；子项明细尚未持久化；
-- context_overflow 和中途异常当前仅保留失败分类，失败用量完整性将在 0.4.2b 处理；
+- 累计 Usage 更新取最后值，不逐块相加；输入总量包含两个缓存计数；子项明细已由后续 b2 持久化；
+- b2 已补充 context_overflow 和中途异常的已知用量保留；未知分项不补零；
 - 配置 Schema 为 `spec/anthropic-config-v1.schema.json`；OpenAI 配置 Schema 语义保持相同（仅字段排列变化），历史事件 Schema 和 Migration 不变。
 
 验收结果：
@@ -170,4 +171,32 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 - sdist/wheel 构建、Base-only / OpenAI-only / Anthropic-only 独立安装验收通过；
 - 从原提交导出真实 v3 程序，确认其初始化 v4 数据库时返回 `schema_too_new`。
 
-下一步 0.4.2b2：求证并接入两个 SDK 的实际模型 ID、缓存/推理计数、累计 Usage 和错误/取消路径。特别验证元数据不意外禁用首语义事件前重试，且请求意图不会被解释为已发送或已收费。现有两个 SDK 仍使用兼容响应记账，完整失败用量接入尚未完成。
+以上是 b1 收口快照；后续 SDK 接入已完成，见下节。
+
+## 10. 0.4.2b2：实际 SDK 用量账本接入
+
+沿用 OpenAI 2.54.0 / Anthropic 1.3.0 的锁定依赖，不改变 Kernel、Migration 或公共 Schema。两个 Adapter 发出 Started/Observed/Finished；HTTP 处理器测试断言请求前已能读取持久化的运行中尝试。重试仅在尚未发布语义响应时允许，元数据本身不关闭此边界。
+
+- OpenAI：最终 Usage Chunk 校验后立即发布完整计数，缺失 DONE、坏工具参数或后续传输失败不丢弃此前合法观测；额外校验实际模型稳定与原始 JSON 严格类型。
+- Anthropic：开始/累计更新为 partial，message_stop 时按可确定计数提升 complete；迟到缓存分项允许补齐，累计值只按差额记账。
+- 两者映射缓存读/写和公开推理计数；推理计数是输出子集，不代表已开放 Thinking 内容。
+- 取消/生成器关闭时不额外 yield，由 Kernel 结算已提交尝试。直接消费 Provider 的调用者也需承担结算责任。
+- 只记录已校验并交付 Kernel 的快照；不能据此保证已捕获远端全部消费。Adapter 类型不是计费平台标识。
+
+本地验收（2026-09-03）：
+
+- `make check`：**546 passed、1 skipped**（PostgreSQL 本地未配置），Ruff/Mypy 通过；较 b1 新增 72 项。
+- `tests/models/`：291 项，其中两个 Adapter 各实例化同一组 12 项核心契约。
+- `PYTHONASYNCIODEBUG=1 uv run pytest tests/agent tests/models -W error`：**510 passed**。
+- 新增实际 SDK 子进程切点：两类 Adapter × 意图/首用量/完整用量/完成收据，共 8 个；与既有切点合计 **49 个**，恢复不重发请求、不重复记账。
+- 五个离线入口通过（统一以 `uv run python -m examples.<模块名>` 运行）；两个 SDK 入口直接验证持久尝试及缓存/推理明细。
+- sdist/wheel 构建通过；独立 Base-only / OpenAI-only / Anthropic-only 环境通过，使用 `python -I` 验证实际安装包而非工作区源码。
+- 真实 API 调用：**0**；没有向仓库写入真实凭据，没有新增远程中间件。
+
+## 11. 下一步：0.4.3 分片计划
+
+1. **价格与成本事实设计/离线实现**：明确计费平台、模型、价格快照版本、币种与精度；缺失 Usage、缓存 TTL 或必要费率时返回未知，不用 Adapter 类型猜平台，也不向历史事件回填今日价格。成本预算的可保证边界须与 Token 下界分开描述。
+2. **受控 Smoke 入口与脱敏诊断**：显式启用，固定请求次数、输出/时间上限，默认不重试；凭据仅引用环境变量。先文本，再可信只读工具与审批继续；默认 CI 始终离线。
+3. **真实平台验收**：运行前核对凭据环境引用、端点地域、模型能力和价格来源，保存脱敏证据。条件缺失时继续独立离线工作，不把外部阻塞误报为已完成。
+
+本阶段不需要远程数据库。0.4 整体验收通过后再进入 0.5 的真实读写工具、Shell/Git/测试闭环；当前不能据用量测试数量宣称生产级 Coding Agent 已完成。
