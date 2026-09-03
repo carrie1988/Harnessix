@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本，以及 0.4.3a 显式价格绑定与成本报告的离线验收。自动计费上下文采集、受控 Smoke 与真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1 受控 Smoke/白名单诊断的离线验收。自动计费上下文采集与真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -142,6 +142,20 @@ uv run --extra openai python -m examples.kernel_cost_offline
 ~~~
 
 入口使用真实 SDK/Kernel 与 HTTP、价格、计费上下文夹具。当前是**事后 Token 估算**，不是自动采集的计费账本、实时费用硬上限或实际账单；真实平台费率没有内置。详见 [ADR 0018](docs/adr/0018-versioned-token-cost.md)。
+
+## 当前已实现：0.4.3b1 受控模型 Smoke
+
+- 显式启用才创建 SDK/读取凭据；固定文本、内存工具、审批重开三场景；
+- 复用真实 Kernel/SQLite/Replay，不读取业务工作区，不执行 Shell 或文件修改；
+- 最多两个模型步骤、不重试，配置受限；JSON 报告不复制端点、Prompt、模型/响应 ID 或错误原文；
+- 两个真实 SDK 的离线传输验收、失败/超时/取消和诊断 canary 已覆盖；不等同于真实平台验证。
+
+~~~bash
+uv run harnessix model-smoke --help
+uv run pytest tests/smoke
+~~~
+
+操作说明、退出码、凭据引用和隐私边界见 [Smoke 使用说明](docs/model-smoke.md)。Token 检查不等于金额硬上限；实际计费上下文自动采集仍待 0.4.3b2。
 
 ## 当前 Action Plane 快速开始
 

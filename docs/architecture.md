@@ -11,7 +11,7 @@
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
-- 0.4 进行中：双 Adapter、尝试/失败用量账本与 0.4.3a 显式价格绑定的成本报告已通过离线验收；自动计费上下文采集、受控 Smoke 与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告与 0.4.3b1 受控 Smoke/白名单诊断已通过离线验收；自动计费上下文采集与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

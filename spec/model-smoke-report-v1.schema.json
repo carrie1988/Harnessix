@@ -1,0 +1,251 @@
+{
+  "$defs": {
+    "FailureCategory": {
+      "enum": [
+        "input",
+        "provider",
+        "tool",
+        "approval",
+        "budget",
+        "cancelled",
+        "interrupted",
+        "storage",
+        "conflict",
+        "internal"
+      ],
+      "title": "FailureCategory",
+      "type": "string"
+    },
+    "ResponseFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_failed",
+          "default": "response_failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "invalid_request",
+            "authentication",
+            "rate_limit",
+            "quota",
+            "content_policy",
+            "provider_internal",
+            "transport",
+            "invalid_provider_output",
+            "context_overflow",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "ResponseFailed",
+      "type": "object"
+    },
+    "TurnStatus": {
+      "enum": [
+        "accepted",
+        "preparing_context",
+        "calling_model",
+        "executing_tools",
+        "waiting_approval",
+        "finalizing",
+        "cancelling",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "TurnStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "仅输出固定枚举与计数，不接受供应商任意字符串。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.model-smoke-report/v1",
+      "default": "harnessix.model-smoke-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "enum": [
+            "openai_chat",
+            "anthropic"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    },
+    "scenario": {
+      "anyOf": [
+        {
+          "enum": [
+            "text",
+            "tool",
+            "approval"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scenario"
+    },
+    "execution": {
+      "default": "sdk_default",
+      "enum": [
+        "sdk_default",
+        "injected"
+      ],
+      "title": "Execution",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "passed",
+        "network_not_enabled",
+        "configuration_invalid",
+        "dependency_missing",
+        "runtime_failed",
+        "check_failed",
+        "internal_error",
+        "cancelled"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "turn_status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TurnStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "failure_category": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FailureCategory"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "provider_failure": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResponseFailed"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "attempts_started": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attempts Started"
+    },
+    "known_input_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Input Tokens"
+    },
+    "known_output_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Output Tokens"
+    },
+    "usage_complete": {
+      "default": false,
+      "title": "Usage Complete",
+      "type": "boolean"
+    },
+    "tool_calls": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tool Calls"
+    },
+    "content_verified": {
+      "default": false,
+      "title": "Content Verified",
+      "type": "boolean"
+    },
+    "approval_restart_verified": {
+      "default": false,
+      "title": "Approval Restart Verified",
+      "type": "boolean"
+    },
+    "replay_verified": {
+      "default": false,
+      "title": "Replay Verified",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "SmokeReport",
+  "type": "object"
+}

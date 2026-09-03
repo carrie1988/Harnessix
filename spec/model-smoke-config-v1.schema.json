@@ -1,0 +1,91 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.model-smoke-config/v1",
+      "default": "harnessix.model-smoke-config/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "provider": {
+      "enum": [
+        "openai_chat",
+        "anthropic"
+      ],
+      "title": "Provider",
+      "type": "string"
+    },
+    "base_url": {
+      "maxLength": 2048,
+      "title": "Base Url",
+      "type": "string"
+    },
+    "model": {
+      "maxLength": 256,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:/-]+$",
+      "title": "Model",
+      "type": "string"
+    },
+    "api_key_env": {
+      "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+      "title": "Api Key Env",
+      "type": "string"
+    },
+    "scenario": {
+      "default": "text",
+      "enum": [
+        "text",
+        "tool",
+        "approval"
+      ],
+      "title": "Scenario",
+      "type": "string"
+    },
+    "max_output_tokens": {
+      "default": 128,
+      "maximum": 512,
+      "minimum": 1,
+      "title": "Max Output Tokens",
+      "type": "integer"
+    },
+    "max_tokens": {
+      "default": 2048,
+      "maximum": 8192,
+      "minimum": 1,
+      "title": "Max Tokens",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "default": 30,
+      "exclusiveMinimum": 0,
+      "maximum": 60,
+      "title": "Timeout Seconds",
+      "type": "number"
+    },
+    "output_token_parameter": {
+      "anyOf": [
+        {
+          "enum": [
+            "max_completion_tokens",
+            "max_tokens"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Token Parameter"
+    }
+  },
+  "required": [
+    "provider",
+    "base_url",
+    "model",
+    "api_key_env"
+  ],
+  "title": "SmokeConfig",
+  "type": "object"
+}

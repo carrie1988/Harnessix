@@ -5,6 +5,7 @@ import asyncio
 import logging
 import os
 import socket
+import sys
 from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
@@ -29,6 +30,7 @@ def _parser() -> argparse.ArgumentParser:
     worker = subcommands.add_parser("worker", help="启动独立 Action Worker")
     worker.add_argument("--database-path")
     worker.add_argument("--once", action="store_true", help="最多执行一个 READY Action 后退出")
+    subcommands.add_parser("model-smoke", help="运行显式启用的固定场景模型验收")
     return parser
 
 
@@ -53,7 +55,13 @@ async def _run_worker(settings: Settings, *, once: bool) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> None:
-    arguments = _parser().parse_args(argv)
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] == "model-smoke":
+        from harnessix.smoke.cli import main as smoke_main
+
+        smoke_main(args[1:])
+        return
+    arguments = _parser().parse_args(args)
     settings = Settings.from_environment()
     configure_logging(level=settings.log_level, log_format=settings.log_format)
     if arguments.command == "serve":

@@ -9,7 +9,9 @@
 
 0.4.2b2 收口快照（2026-09-03）：两个真实 SDK 的尝试/缓存/推理/失败用量映射、HTTP 前持久意图、累计值与迟到分项、取消和合法观测保留。新增 8 个 SDK 子进程切点，全项目合计 49 个；每次恢复均验证不重发请求。当时 `make check` 为 546 passed、1 skipped；异步调试下 Kernel + Provider 为 510 passed，详见 [ADR 0017](adr/0017-provider-attempt-usage.md)。
 
-0.4.3a 当前增量（2026-09-03）：新增 96 项价格/成本测试，覆盖严格十进制字符串、整数定点精度、未知与显式零、计费上下文/模式/TTL/生效期/输入阶梯、失败尝试与重试去重、跨币种、旧步骤、JSON 重算与内容错绑、双 SDK → Kernel/SQLite → 报告 Replay。`make check` 为 **642 passed、1 skipped**（本地 PostgreSQL 未配置），异步调试回归 **606 passed**；新增两个独立 Schema，不改变历史 Agent/Provider Schema。真实价格、计费上下文自动采集与平台验证未验收，见 [ADR 0018](adr/0018-versioned-token-cost.md)。
+0.4.3a 收口快照（2026-09-03）：新增 96 项价格/成本测试，覆盖严格十进制字符串、整数定点精度、未知与显式零、计费上下文/模式/TTL/生效期/输入阶梯、失败尝试与重试去重、跨币种、旧步骤、JSON 重算与内容错绑、双 SDK → Kernel/SQLite → 报告 Replay。`make check` 为 **642 passed、1 skipped**（本地 PostgreSQL 未配置），异步调试回归 **606 passed**；新增两个独立 Schema，不改变历史 Agent/Provider Schema。真实价格、计费上下文自动采集与平台验证未验收，见 [ADR 0018](adr/0018-versioned-token-cost.md)。
+
+0.4.3b1 当前增量（2026-09-03）：`tests/smoke/` 新增 **94 项**，包括两个实际 SDK × 三场景、私有临时 Session、Kernel 重开/审批/Replay、默认门禁、配置/预算、错误/不重试、超时/Task 取消、CLI 参数/正文 canary 和真实 SIGINT 子进程。全量 **736 passed、1 skipped**；异步调试下 Kernel + Provider + Smoke **700 passed**。注入传输验收不代表真实平台通过；报告白名单不承诺对不可信语义内容做通用 DLP。详情见 [ADR 0019](adr/0019-controlled-model-smoke.md)。
 
 ## 1. 目标
 

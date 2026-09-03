@@ -1,7 +1,7 @@
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
-- 状态：0.4.1、0.4.2a、0.4.2b1/b2、0.4.3a 已完成离线验收；下一步受控 Smoke/脱敏诊断，真实平台未验证
+- 状态：0.4.1、0.4.2a、0.4.2b1/b2、0.4.3a/b1 已完成离线验收；下一步实际计费上下文采集，真实平台未验证
 - 依据：ADR 0008、当前 ModelProvider/ProviderEvent 契约与主路线图
 
 ## 1. 目标与边界
@@ -93,7 +93,7 @@ config = OpenAIChatConfig(
 | Reasoning / 多模态 / 内置工具 | 未开放；不透传私有推理，公开摘要 Item 暂不接受 |
 | 缓存/推理 Token、价格、失败请求费用 | 明细映射与显式价格绑定的事后估算已实现；缺失信息保持未知，不等同于供应商账单 |
 | Anthropic | 0.4.2a 已通过离线验收，具体严格配置见下节 |
-| 真实平台 Smoke | 未完成，不以离线测试替代 |
+| 受控 Smoke / 白名单诊断 | 0.4.3b1 已实现，实际 SDK + 离线传输验收；真实平台未验证 |
 
 流式成功要求 finish reason、Usage 和 `[DONE]`，不支持缺失流式 Usage 的兼容服务。SDK 在终结符后停止读取；同一已读块中的额外终结数据会拒绝，不承诺读取终结符后所有网络字节。
 
@@ -109,7 +109,7 @@ config = OpenAIChatConfig(
 
 实现时复现并修复了 SDK 在“HTTP 错误响应尚未返回 AsyncStream、读取 body 失败或取消”路径的资源清理缺口：关闭责任下沉到有界 Transport，不只依赖 Adapter 的 `finally`。回归同时覆盖正常流和错误 body。
 
-上述数字为 0.4.1 收口快照，后续收口结果如下，最新 b2 状态见第 10 节。
+上述数字为 0.4.1 收口快照，后续收口结果如下，最新状态见第 13 节。
 
 ## 8. 0.4.2a：Anthropic 支持边界与验收
 
@@ -196,7 +196,7 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 ## 11. 0.4.3 分片计划
 
 1. **0.4.3a 已完成：价格与成本事实设计/离线实现**。显式绑定快照和宿主核对的上下文，未知信息不补零；事后估算不等于实时预算硬上限，详见下节。
-2. **0.4.3b 待实施：受控 Smoke 入口与脱敏诊断**。显式启用，固定请求次数、输出/时间上限，默认不重试；凭据仅引用环境变量。先文本，再可信只读工具与审批继续；默认 CI 始终离线。求证并记录可确定的实际计费上下文，未采集字段保留未知，不套用默认地域/服务等级/模式。
+2. **0.4.3b 分两片交付**：**b1 已完成离线验收**，受控 Smoke/白名单诊断、文本/内存工具/审批重开三场景，默认 CI 离线；**b2 待实施**，实际计费上下文的来源、尝试绑定与持久化。未采集字段保留未知，不套用默认地域/服务等级/模式；请求值不能替代响应实际值。
 3. **0.4.3c 待验收：真实平台验证**。运行前核对凭据环境引用、端点地域、模型能力和价格来源，保存脱敏证据。条件缺失时继续独立离线工作，不把外部阻塞误报为已完成。
 
 本阶段不需要远程数据库。0.4 整体验收通过后再进入 0.5 的真实读写工具、Shell/Git/测试闭环；当前不能据用量测试数量宣称生产级 Coding Agent 已完成。
@@ -231,3 +231,24 @@ assert restored == report
 - 六个离线入口与 sdist/wheel 构建通过；新增 `uv run --extra openai python -m examples.kernel_cost_offline`，费率和上下文全部为虚构夹具。
 - 独立基础 wheel 在未安装任何模型 SDK 时完成失败尝试计价与 JSON 重算；OpenAI-only/Anthropic-only 环境通过既有链路，OpenAI-only 额外通过新成本入口。
 - 真实 API 调用：**0**；下一步为 0.4.3b 的 Smoke、脱敏诊断和可验证计费上下文边界。
+
+## 13. 0.4.3b1：受控模型 Smoke 与白名单诊断
+
+实现 [ADR 0019](adr/0019-controlled-model-smoke.md)；操作说明见 [Smoke 使用说明](model-smoke.md)。新增 `smoke.contracts`、`smoke.runner`、`smoke.cli`，只在原有 CLI 中增加提前分流，不改变 Kernel、SDK Adapter、迁移、依赖或历史 Schema。
+
+- `harnessix model-smoke --config ...` 默认禁用；CLI 不读配置文件，库不创建工厂。显式启用后只发送固定文本/内存工具请求；凭据仅使用环境引用。
+- 三场景均经过真实 Kernel、私有 SQLite、关闭/重开与 Replay；approval 只自动批准内存夹具，并验证审批前执行数为 0。不是进程崩溃恢复测试或 Coding Eval。
+- 默认 128 输出 Token/请求、30 秒 Turn，最大两个模型步骤，SDK/Adapter 零重试；固定正文/帧/块预算。Token 阈值不等于实际消费或金额硬上限。
+- 报告仅枚举/计数/布尔值，不复制任何供应商任意字符串。CLI 不回显非法参数/JSON/异常，并在执行期间禁用标准 logging；库不修改宿主日志。
+- 完整用量、内容、工具数、审批和 Replay 均满足才通过。未知计数保持 null；尝试意图不是计费成功。注入工厂明确标记 injected，不冒充真实平台证据。
+
+验收（2026-09-03）：
+
+- `make check`：**736 passed、1 skipped**（本地 PostgreSQL 未配置），Ruff/Mypy 通过；新增 **94 项 Smoke 测试**。
+- `PYTHONASYNCIODEBUG=1 uv run pytest tests/agent tests/models tests/smoke -W error`：**700 passed**。
+- 双 SDK × 三场景的库/CLI 验收，以及认证/限流/服务错误、无重试、断流/缺 Usage、错误标记/参数/重复工具、Token/超时/取消、重开 Replay 与 canary 覆盖。
+- 新增两个真实 SIGINT 子进程测试：CLI 退出码 130、Turn 已结算 cancelled、无 stderr 原文、临时目录已清理；既有 **49 个事务/进程崩溃切点**保留，不把 SIGINT 计入这 49 个。
+- 六个既有离线入口、sdist/wheel 构建通过。独立 Base-only 安装验证帮助/默认门禁/依赖缺失；OpenAI-only、Anthropic-only 安装各通过三个新 Smoke 场景，使用 `python -I` 与 MockTransport。
+- 新增配置/报告 v1 Schema，历史 Agent/Provider Schema 与 Migration 不变；没有真实 API 调用或远程中间件变更。
+
+下一步 **0.4.3b2**：为响应实际计费等级、地域和 TTL 等建立可求证的元数据与尝试绑定，缺失保持未知。**0.4.3c** 仍待真实验证；当前宿主中常用凭据变量未配置，模型/地域/价格基线未确定，不从旧对话复制 Key 到文件。该条件不阻塞 b2 的离线设计开发。
