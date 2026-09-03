@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import fcntl
 import hashlib
 import os
+import sqlite3
 from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from importlib.resources import files
@@ -18,6 +20,7 @@ from harnessix.agent.reducer import apply_event, replay
 from harnessix.session.errors import storage_errors
 
 _APPLICATION_ID = 0x4858534B
+_WAL_TIMEOUT_SECONDS = 5.0
 
 
 class SQLiteSessionStore:
@@ -106,7 +109,31 @@ class SQLiteSessionStore:
                 raise KernelError("database_corrupt", "Session 数据库完整性检查失败")
             await database.commit()
             self.path.chmod(0o600)
-            await database.execute("PRAGMA journal_mode = WAL")
+        # 先释放迁移连接的全部游标/锁，避免与另一初始化连接的模式切换形成锁升级冲突。
+        await self._enable_wal()
+
+    async def _enable_wal(self) -> None:
+        async with self._connection() as database:
+            # 模式切换遇到锁升级冲突时 SQLite 可跳过 busy handler；只重试这一幂等操作。
+            await database.execute("PRAGMA busy_timeout = 0")
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + _WAL_TIMEOUT_SECONDS
+            while True:
+                try:
+                    cursor = await database.execute("PRAGMA journal_mode = WAL")
+                    try:
+                        row = await cursor.fetchone()
+                    finally:
+                        await cursor.close()
+                    if row is None or row[0] != "wal":
+                        raise KernelError("storage_unavailable", "Session 无法启用 WAL 模式")
+                    return
+                except sqlite3.OperationalError as error:
+                    remaining = deadline - loop.time()
+                    code = getattr(error, "sqlite_errorcode", 0) & 0xFF
+                    if code != sqlite3.SQLITE_BUSY or remaining <= 0:
+                        raise
+                    await asyncio.sleep(min(0.05, remaining))
 
     @asynccontextmanager
     async def runtime_owner(self) -> AsyncIterator[None]:

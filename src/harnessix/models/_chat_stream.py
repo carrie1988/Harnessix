@@ -132,7 +132,8 @@ class ChatStream:
             call = self._calls.setdefault(part.index, CallParts())
             if len(self._calls) > 1 and not self._parallel:
                 raise InvalidWireData("Provider 不支持并行工具")
-            if part.id is not None:
+            # 兼容服务可用空字符串表示本分片不再提供 ID；非空身份仍不可漂移。
+            if part.id not in (None, ""):
                 if call.call_id is not None and call.call_id != part.id:
                     raise InvalidWireData("工具调用 ID 漂移")
                 call.call_id = part.id
