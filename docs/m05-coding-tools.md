@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a 只读 Patch 准备已实现；0.5.3b/c–0.5.5 仍待实施
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1 计划及受管单文件写后端已实现；0.5.3b2/c–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -32,7 +32,8 @@
 | 0.5.2b1 | 可信执行作用域、旧端口兼容 | 已实现；明确注入调用归属、校验工作区；不新增 Artifact 或改变旧持久契约 |
 | 0.5.2b2 | 输出 Artifact | 已实现；同一 Session 事务发布、归属/配额/分页/清理、取消及 14 个进程崩溃切点通过 |
 | 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
-| 0.5.3b | 单文件 Patch 与本地效果记录 | 待实施；独占工作副本准入、持久意图/计划审批、效果/冲突/崩溃核对 |
+| 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
+| 0.5.3b2 | Kernel 模型写工具闭环 | 待实施；版本化写审批、Scoped 准入、双账本边界与恢复 |
 | 0.5.3c | 多文件效果与 Diff | 待实施；部分效果、结构化交付与兼容，不能假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
@@ -52,11 +53,11 @@ search.py          搜索适配及明确的忽略/资源限制
 search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 ../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
-../patches/        已有精确计划与复核；效果证据/写执行/恢复待后续
+../patches/        已有精确计划、受管副本及持久写执行；模型接入待 b2
 processes.py       argv、进程组、并发排水、取消与清理
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。Patch 执行/Process 尚未实现。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；模型写工具/Process 尚未实现。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -102,7 +103,7 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 
 ## 8. 本地写与 Patch 准入
 
-0.5.3a 已交付无工作区写入的计划准备/复核；写入仍未开放，详见第 16 节与 [ADR 0027](adr/0027-prepared-patch-and-write-admission.md)。
+0.5.3a 的准备器仍只读；0.5.3b1 仅对工厂创建的私有副本开放宿主写 API，见第 17 节与 [ADR 0028](adr/0028-managed-patch-execution.md)。Kernel/模型写入仍未开放。
 
 Patch 不是简单字符串替换。实施前必须明确本地效果类型如何与现有 Action/Agent 契约兼容，不把本地修改伪装为 READ_ONLY，也不宣称所有 Patch 天然幂等。
 
@@ -282,7 +283,7 @@ async with CodingToolRuntime(root, artifacts=artifacts) as tools:
 
 ## 16. 0.5.3a 当前交付：只读准备与复核
 
-新增 `patches/contracts.py`、`planner.py`，提供宿主同步 API `prepare_patch(workspace, proposal, operation)` 和 `verify_prepared(workspace, prepared, operation)`。新增两份独立 v1 Schema，不改变 Kernel、旧工具定义、Action/Agent Schema 或 migration 6。尚不向模型广告 Patch 工具，没有持久计划、写审批或文件提交。
+新增 `patches/contracts.py`、`planner.py`，提供宿主同步 API `prepare_patch(workspace, proposal, operation)` 和 `verify_prepared(workspace, prepared, operation)`。新增两份独立 v1 Schema，不改变 Kernel、旧工具定义、Action/Agent Schema 或 migration 6。该准备器不向模型广告 Patch 工具，不自行持久化或执行；受管执行见第 17 节。
 
 ~~~python
 from harnessix.patches.contracts import ExactEdit, PatchProposal
@@ -309,4 +310,62 @@ with Workspace(root) as workspace:
 
 复核会再次读取并比较完整源文件、revision 与权限位。它不能锁住未来写入前的间隙，更不是跨进程 CAS。线程中运行时由宿主使用 ReadOperation 协作停止并等待线程退出后再关闭 Workspace；本片没有增加另一套异步调度器或声称能中止不可中断的内核 I/O。
 
-`examples.patch_plan` 验证真实 CRLF 文件的目标内容计算、源文件保持不变，以及模拟外部编辑后的复核拒绝。它不执行 Patch，也不属于自主编码 Eval。下一片必须先落实独占工作副本准入与持久意图，再添加计划审批、单文件提交和不重复写的恢复；源目录并发编辑的无覆盖保证不能由 hash+rename 推导。
+`examples.patch_plan` 验证真实 CRLF 文件的目标内容计算、源文件保持不变，以及模拟外部编辑后的复核拒绝。它不执行 Patch，也不属于自主编码 Eval。上述宿主写前置条件现由 b1 受管后端实现；模型接入仍待 b2。源目录并发编辑的无覆盖保证不能由 hash+rename 推导。
+
+
+## 17. 0.5.3b1 当前交付：受管单文件执行
+
+设计决策见 [ADR 0028](adr/0028-managed-patch-execution.md)。新增模块只依赖现有契约和 Python 标准库，未修改 Agent v5、Action v1、Session migration 6、默认工具定义或 Kernel READ_ONLY 门禁。
+
+### 宿主 API 与生命周期
+
+| API | 含义 |
+| --- | --- |
+| `PatchWorkspaces(private_root)` | 管理根为当前 UID 的 0700 私有目录，必须位于源工作区之外 |
+| `create(source, paths, operation)` | 明确选择文件，建立 UUID 副本；逐文件快照，不是完整 Git worktree |
+| `open(workspace_id)` | 核对目录/锁/数据库/工作区身份，取得单宿主锁；building 副本拒绝重开 |
+| `save(prepared, request_id, operation)` | 在副本上准备后保存完整计划；同请求同载荷幂等，不同载荷冲突 |
+| `reply(plan_id, approval_fingerprint, decision)` | 批准/拒绝只记账；指纹绑定副本/计划/请求/内容，答复重试不执行 |
+| `execute(plan_id, approval_fingerprint, operation)` | 只接受 approved；先消费写意图，再写临时文件和替换，最多执行一次 |
+| `get(plan_id)` | 读取校验后的持久状态，不重新执行 |
+| `reconcile(plan_id, operation)` | 对 started/uncertain 作只读效果观察；不生成重新执行许可 |
+| `close()` / 上下文管理器 | 等待当前同步操作结束，关闭数据库/锁/FD；不删除副本 |
+
+`create` 返回的 `copy.workspace` 可交给已有只读工具和 `prepare_patch`。计划必须基于**副本**的 revision，而不是源文件 revision。宿主不得把该副本交给不受管的并发编辑器/进程。API 是同步且协作取消的；在线程中调用时必须等待后台操作清理完成。b1 不提供 asyncio Task 的取消封装，b2 接入时另行验证。
+
+### 状态与不确定性
+
+~~~text
+pending → rejected
+pending → approved → started → applied
+                         ├──→ failed      （替换尚未尝试）
+                         └──→ uncertain   （替换已尝试，但结果未获充分确认）
+started / uncertain → observed_before / observed_after / diverged / missing / unavailable
+~~~
+
+`started` 的第二条事件可补充持久临时 inode。后镜像字节/权限和临时 dev/inode 全部吻合才形成 observed_after；仅后镜像字节相同仍为 uncertain。已记录的终态观察不会自动刷新为新事实，get 返回的是历史观察；若仍 uncertain，可再次显式核对。根/账本/锁身份失效直接拒绝操作，不在不可信账本里补写 unavailable。父目录/目标不可读取可记录 unavailable。即使 observed_before，要重新尝试也必须新 request_id、新计划和新批准。
+
+替换之后收到协作停止信号时先完成效果落盘与记账，不假报回滚。文件已变而结果账本写失败时保留 started/uncertain，宿主重开核对，不重复应用。`os._exit` 验证进程崩溃，不代表断电/存储控制器故障测试。
+
+### 文件、配额与保留
+
+- 布局：`<private_root>/<UUID>/workspace/` 为可读副本；同级 `owner.lock`、`ledger.sqlite` 与 `<plan_id>.patch` 不暴露给模型。
+- 只导入普通单链接 UTF-8 文件；最多 256 个、单个 1 MiB、合计 32 MiB。来源仅存摘要/revision 和私有基线字节，不依赖源目录后续存活。
+- 只复制内容/普通权限位，不复制源 ACL/xattr/所有权/Git 元数据。目标拒绝特殊权限、非当前 UID、用户扩展属性和扩展 ACL；Darwin 允许私有新文件上的 `com.apple.provenance` 系统标记重新生成，不声称保留它的值。检查不可用时拒绝写，不静默跳过。
+- 每副本最多 64 个计划，前后镜像合计 32 MiB；来源基线另受 32 MiB 限制。不是整个 SQLite/journal 或文件系统物理大小上限。
+- SQLite 使用独立 application_id、schema v1 和同步事务，追加状态事件校验归属/迁移/载荷。不是对同 UID 攻击者防篡改的日志，也不新增租户/远程认证。
+- 正常失败只清理本次已知 inode 的临时文件；硬崩溃可能留有私有临时文件或 building 副本。当前不自动回收整个副本；宿主在关闭所有持有者并确认交付/保留要求后管理其目录，不自动删除未知内容。
+- b1 不创建/删除/移动目标文件，不多文件提交、不运行源码、不导出/自动合并到源目录。
+
+运行 `uv run python -m examples.managed_patch` 可验证完整宿主链路。它是执行后端的可运行验收，不是自主编码能力或 0.5.5 Eval。
+
+### 下一片 0.5.3b2 的实施顺序
+
+1. 固化 Agent 写审批/结果契约与兼容迁移；不改义 kernel-read-only/v1。
+2. 在受信 Scoped 入口绑定 Thread/Turn/Call、受管副本和持久 plan_id；模型参数不得注入授权或归属。
+3. 明确模型提交提案、生成宿主计划、等待审批、消费计划、发布结果的顺序；旧只读审批仍按旧规则运行。
+4. 以稳定请求 ID 连接 Session 与副本账本；覆盖“计划已保存/Session 未提交”“文件已写/ToolResult 未提交”等非原子窗口。
+5. 接入最小模型 Patch 工具；专用非幂等写准入，不放开任意 NON_IDEMPOTENT_WRITE 工具。
+6. Kernel 取消/超时必须回收后台写线程；重启只加载/核对已有计划，不把历史 Call 再执行。
+7. 增加真实 SDK 离线读→提案→审批重开→写→读回→回答集成、跨版本旧审批，以及 Kernel × 文件替换真实崩溃矩阵。
+8. 通过全量回归、独立 wheel 与 Linux/macOS CI 后，才关闭 0.5.3b；真实 API 仍需独立预算授权。

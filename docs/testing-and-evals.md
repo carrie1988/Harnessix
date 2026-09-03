@@ -420,4 +420,23 @@ Agent Runtime Kernel 合并前：
 
 本片没有修改 Kernel、默认工具定义、Action/Agent Schema 或 Session migration 6，没有新增依赖、真实模型请求或服务器操作。原 **86 个硬崩溃切点、2 个 SIGINT** 保持，不把本片只读测试虚报为新的写崩溃恢复测试。
 
-**尚未交付**：模型可调用的 apply_patch、持久计划/写意图、写审批、文件提交、单文件写恢复及多文件效果。0.5.3a 的 manifest/私有字节不是授权凭据；verify_prepared 不会把计划变成已批准或已提交的状态。下一片 0.5.3b 的独占工作副本、持久意图、计划审批和效果核对通过后才开放写入，0.5.3 整体仍未完成。
+**0.5.3a 当时未交付（后续见第 19 节）**：模型可调用的 apply_patch、持久计划/写意图、写审批、文件提交、单文件写恢复及多文件效果。0.5.3a 的 manifest/私有字节不是授权凭据；verify_prepared 不会把计划变成已批准或已提交的状态。下一片 0.5.3b 的独占工作副本、持久意图、计划审批和效果核对通过后才开放写入，0.5.3 整体仍未完成。
+
+## 19. 0.5.3b1 受管单文件 Patch 执行验收（2026-09-04）
+
+在 `b0622cb` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33762318938) 全绿和远程基线同步后实施。进一步核对固定的 kernel-read-only/v1 审批契约，将 b 拆为宿主执行后端 b1 与 Kernel 模型接入 b2，见 [ADR 0028](adr/0028-managed-patch-execution.md) 和 [下一片实施顺序](m05-coding-tools.md#下一片-053b2-的实施顺序)。
+
+- 本片新增 **87 项**测试，Patch 套件累计 **156 项**；新增两份独立 v1 Schema，旧 Schema 字节不变。
+- 本地 `make check`：Ruff/Mypy（92 个源文件）通过，**1274 passed、1 skipped**；本地无 PostgreSQL，真实 PostgreSQL 作业保留在 CI。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1238 passed**。
+- 完整宿主链路：真实文件导入→副本读取/计划→保存→批准→写入→重开/核对；副本内容与预期一致，源文件始终不变，重复执行拒绝。
+- 覆盖拒绝/错绑/幂等冲突、计划和导入预算、非登记路径、特殊文件/链接/编码、根/锁/数据库替换、前镜像/目录/权限漂移、损坏私有载荷/来源基线/事件/版本、查询只读库和结果写库失败。
+- 替换前各阶段取消进入 failed 并消费审批；替换后取消先完成效果与 applied 记账。两个线程只能消费一次审批，close 必须等待活动写结束；不是 Kernel/asyncio Task 写取消验收。
+- 验证短写循环、零写、注入 ENOSPC/EIO、实际 fsync 调用抛错和临时文件清理；错误不携带原始路径/SQL。属于故障注入，未灌满真实磁盘或进行断电测试。
+- 原生元数据检查覆盖可见扩展属性；Darwin 额外建立实际扩展 ACL 验证拒绝，不通过忽略属性接口错误兼容平台。允许系统 provenance 标记的窄策略有明确文档，不声称通用元数据保留。
+- `test_managed_crash.py`：根级/嵌套目标各 9 个真实 os._exit 切点（started、临时创建、临时刷盘、临时证据、替换前/后、目录刷盘、结果前/后），另有 building 导入的 2 个切点，共 **20 个**。重开不重写；恢复前后 inode/mtime/ctime 不变，源文件不变，building 拒绝执行。全项目累计 **106 个硬崩溃场景及 2 个 SIGINT 用例**。
+- 后镜像相同但临时 inode 不符仍 uncertain，不能仅凭字节归因；前镜像、第三种内容、缺失和不可读分别观察。observed_before 后只有新请求/新计划/新审批才可再次尝试。
+
+**独立交付**：新建仓库外基础 wheel 环境，确认没有 OpenAI/Anthropic SDK，以 `python -I` 运行 managed_patch、patch_plan 和 kernel_artifacts 三个示例通过。未新增依赖、真实 API 请求或服务器操作。默认 CI 已增加 Linux Python 3.12/3.13 和 macOS 的 managed_patch 示例及新测试，PostgreSQL 服务作业保留；远端结果以本片对应提交为准。
+
+**仍未完成**：模型可调用的写工具、Agent 写审批/结果兼容、Session 与副本账本组合恢复、源目录 Diff 合入、多文件部分效果、Process 与自主编码 Eval。Kernel/Agent v5/Action v1/Session migration 6 和默认工具清单未修改。b1 的宿主审批不是 kernel-read-only/v1 的写授权，不能据此勾选整体 0.5.3b/0.5 完成。

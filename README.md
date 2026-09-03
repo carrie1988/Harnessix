@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a 已实现只读 Patch 准备和复核。实际写入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对。模型写工具接入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -63,14 +63,14 @@ uv run python -m examples.kernel_artifacts
 uv run pytest tests/tools tests/artifacts
 ~~~
 
-仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不支持正则搜索、完整 gitignore、Patch 执行、Shell、测试执行或完整 Coding Eval。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
+上述 CodingToolRuntime 仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不支持正则搜索、完整 gitignore、模型调用 Patch、Shell、测试执行或完整 Coding Eval。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
 
 ## 当前已实现：只读 Patch 计划准备
 
 - 完整前镜像读取与 SHA-256、工作区/来源 revision 绑定；
 - 唯一精确锚点、同一原文的非重叠编辑；保留未涉及字节、换行和 BOM；
 - 计划完整性校验与来源漂移复核；不创建临时文件或修改工作区；
-- 仅宿主调用，不向模型广告 `apply_patch`，尚未接入写意图/审批/提交恢复。
+- 准备器仅宿主调用，不向模型广告 `apply_patch`；实际执行须转入下述受管副本协议。
 
 ~~~bash
 uv run python -m examples.patch_plan
@@ -78,6 +78,22 @@ uv run pytest tests/patches
 ~~~
 
 写执行门禁和当前限制见 [Patch ADR](docs/adr/0027-prepared-patch-and-write-admission.md)。
+
+## 当前已实现：受管副本单文件 Patch（0.5.3b1）
+
+- 明确选择源文件，导入源目录外的私有副本；只改变副本，不覆盖用户源目录；
+- 私有 SQLite 持久保存计划/前后镜像、指纹绑定的批准或拒绝、写意图和结果；
+- 审批答复不执行；写意图先落库，后镜像刷盘、保存临时 inode 证据后再原子替换；
+- 重开只核对前镜像、归因后镜像、第三种内容、缺失或不可读取，不盲目重写；
+- 单宿主锁、线程串行、来源/元数据漂移拒绝、协作取消和效果不确定分类；
+- 新增 20 个真实进程退出场景，验证源文件不变和恢复不重复应用。
+
+~~~bash
+uv run python -m examples.managed_patch
+uv run pytest tests/patches
+~~~
+
+**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。下一片 0.5.3b2 将单独升级 Kernel 写审批契约并接入模型工具。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
 
 ## 当前已实现：0.1 Action Plane
 

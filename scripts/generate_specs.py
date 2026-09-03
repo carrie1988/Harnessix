@@ -19,6 +19,7 @@ from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.patches.contracts import PatchManifest, PatchProposal
+from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
 from harnessix.tools.search_contracts import (
@@ -66,6 +67,8 @@ def main() -> None:
         ("archived-grep-output", ArchivedGrepOutput),
         ("patch-proposal", PatchProposal),
         ("patch-manifest", PatchManifest),
+        ("managed-copy-manifest", CopyManifest),
+        ("managed-patch-record", PatchRecord),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

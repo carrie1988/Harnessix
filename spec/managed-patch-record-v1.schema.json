@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "ApprovalDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/ApprovalOutcome"
+        },
+        "actor": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor"
+      ],
+      "title": "ApprovalDecision",
+      "type": "object"
+    },
+    "ApprovalOutcome": {
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "title": "ApprovalOutcome",
+      "type": "string"
+    },
+    "PatchManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "patch-plan/v1",
+          "default": "patch-plan/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "workspace_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Scope",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "source_mode": {
+          "maximum": 511,
+          "minimum": 0,
+          "title": "Source Mode",
+          "type": "integer"
+        },
+        "proposal_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Proposal Sha256",
+          "type": "string"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "before_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Before Bytes",
+          "type": "integer"
+        },
+        "after_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "After Bytes",
+          "type": "integer"
+        },
+        "edit_count": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Edit Count",
+          "type": "integer"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "workspace_scope",
+        "source_revision",
+        "source_mode",
+        "proposal_sha256",
+        "before_sha256",
+        "after_sha256",
+        "before_bytes",
+        "after_bytes",
+        "edit_count",
+        "fingerprint"
+      ],
+      "title": "PatchManifest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "managed-patch-record/v1",
+      "default": "managed-patch-record/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "plan_id": {
+      "format": "uuid",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "format": "uuid",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "manifest": {
+      "$ref": "#/$defs/PatchManifest"
+    },
+    "approval_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Approval Fingerprint",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "started",
+        "applied",
+        "failed",
+        "uncertain",
+        "observed_before",
+        "observed_after",
+        "diverged",
+        "missing",
+        "unavailable"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalDecision"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9_]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    }
+  },
+  "required": [
+    "plan_id",
+    "workspace_id",
+    "request_id",
+    "manifest",
+    "approval_fingerprint",
+    "state"
+  ],
+  "title": "PatchRecord",
+  "type": "object"
+}

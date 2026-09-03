@@ -128,10 +128,10 @@ def prepare_patch(
     )
 
 
-def verify_prepared(
+def validate_prepared(
     workspace: Workspace, prepared: PreparedPatch, operation: ReadOperation
 ) -> None:
-    """只读复核，不是与未来文件提交原子关联的 compare-and-swap。"""
+    """只核对计划内部内容与工作区绑定，不观察当前文件。"""
     _checkpoint(operation)
     try:
         proposal = PatchProposal.model_validate_json(prepared.proposal.model_dump_json())
@@ -160,6 +160,14 @@ def verify_prepared(
         raise KernelError("patch_plan_corrupt", "Patch 提案、正文或 manifest 不一致") from None
     except (ValueError, ReadToolError):
         raise KernelError("patch_plan_corrupt", "Patch 提案、正文或 manifest 不一致") from None
+
+
+def verify_prepared(
+    workspace: Workspace, prepared: PreparedPatch, operation: ReadOperation
+) -> None:
+    """只读复核，不是与未来文件提交原子关联的 compare-and-swap。"""
+    validate_prepared(workspace, prepared, operation)
+    manifest = prepared.manifest
     current, revision, mode = _read_image(
         workspace, manifest.path, operation, manifest.source_revision
     )

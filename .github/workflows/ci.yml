@@ -26,6 +26,7 @@ jobs:
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
       - run: uv run python -m examples.patch_plan
+      - run: uv run python -m examples.managed_patch
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -40,6 +41,7 @@ jobs:
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
       - run: uv run python -m examples.patch_plan
+      - run: uv run python -m examples.managed_patch
 
   postgres:
     runs-on: ubuntu-latest

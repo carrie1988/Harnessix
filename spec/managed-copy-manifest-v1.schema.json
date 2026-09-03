@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "CopyFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "mode": {
+          "maximum": 511,
+          "minimum": 0,
+          "title": "Mode",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "source_revision",
+        "sha256",
+        "size_bytes",
+        "mode"
+      ],
+      "title": "CopyFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "managed-patch/v1",
+      "default": "managed-patch/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "format": "uuid",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "source_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Scope",
+      "type": "string"
+    },
+    "workspace_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Scope",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/CopyFile"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "workspace_id",
+    "source_scope",
+    "workspace_scope",
+    "files"
+  ],
+  "title": "CopyManifest",
+  "type": "object"
+}
