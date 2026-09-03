@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 只读切片已实现；0.5.2–0.5.5 仍是设计，尚未实现
+- 状态：0.5.1 / 0.5.2a 只读与搜索已实现；0.5.2b–0.5.5 仍是设计，整体 0.5.2 未完成
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -28,7 +28,8 @@
 | 切片 | 交付 | 准入/完成条件 |
 | --- | --- | --- |
 | 0.5.1 | Workspace、工具绑定、list_files/read_file | 已实现；独立离线验收，0.4.3c 计价保留待办，不再作为本片前置阻塞 |
-| 0.5.2 | glob/grep、输出 Artifact | 有界遍历、明确忽略规则、输出上限、Artifact 归属与过期行为通过 |
+| 0.5.2a | glob/字面量 grep | 已实现；有界遍历、忽略/权限分离、输出上限、审批、revision 读取与中断不重搜 |
+| 0.5.2b | 可信执行作用域、输出 Artifact | 待实施；归属隔离、配额/原子发布、过期与孤儿恢复通过后，0.5.2 才完成 |
 | 0.5.3 | Patch 与本地效果记录 | 写工具准入 ADR、预期内容校验、持久意图/效果证据、冲突/崩溃恢复通过 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
@@ -45,25 +46,27 @@ runtime.py         实现现有 ToolRuntime；不另建 Agent Loop
 workspace.py       Workspace 身份、路径分解、实际对象边界
 files.py           目录分页与有界文本读取
 search.py          搜索适配及明确的忽略/资源限制
+search_contracts.py 搜索输入/输出、完整性与预算
+patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 artifacts.py       私有完整输出、摘要和受控引用
 patches.py         预期内容、补丁计划、效果证据与恢复
 processes.py       argv、进程组、并发排水、取消与清理
 ~~~
 
-不预建空壳文件。0.5.1 只需要前四项；后续分片再增加后四项。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块；Artifact/Patch/Process 尚未实现。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
 ## 5. 首批只读工具契约
 
-`list_files` / `read_file` 的已实现参数以 [ADR 0023](adr/0023-workspace-read-tools.md) 和生成 Schema 为准；`glob` / `grep` 仍为设计：
+`list_files` / `read_file` 的已实现参数以 [ADR 0023](adr/0023-workspace-read-tools.md) 和生成 Schema 为准；`glob` / `grep` 以 [ADR 0024](adr/0024-bounded-search-and-artifact-scope.md) 和独立 v1 Schema 为准：
 
 | 工具 | 参数要点 | 结果要点 |
 | --- | --- | --- |
 | list_files | 相对目录、页大小、受校验的继续位置 | 相对路径、条目类型、truncated、下一位置 |
 | read_file | 相对文件路径、1 起始行号、行数上限 | 文本、实际行区间、UTF-8 字节数、截断原因、下一位置 |
 | glob | 相对搜索根、模式、结果上限 | 排序后的匹配路径、遍历是否完整、截断原因 |
-| grep | 相对根/文件集合、查询、字面量或受限正则 | 文件/行号/有界匹配片段、计数与截断信息 |
+| grep | 相对目录、include 通配、大小写敏感字面量 query | 文件/行号/有界片段、revision、计数与完整性/截断信息 |
 
 - 0.5.1 实际限制：单页最多 24 KiB 文本、目录最多 200 项；读取最多 2000 行、单行最多 4 KiB、扫描最多 2 MiB（文件缓冲最多额外预读 8 KiB）；最终输出 JSON 最多 60000 字节。
 - 字节上限针对 UTF-8 编码，不以字符数冒充；中文、组合字符和跨块 UTF-8 均测试。
@@ -71,7 +74,7 @@ processes.py       argv、进程组、并发排水、取消与清理
 - 不把片段 SHA 当作完整文件 SHA；完整前镜像只在 Patch 准备阶段按独立上限获取。
 - 分页不是一致性快照。目录/文件变更时返回明确失效/重读提示，不隐式跳过或重复结果。
 - 行偏移很大、深目录、超多小文件和超长正则也必须有扫描/时间/结果预算，不能只限制最终输出。
-- 复用成熟搜索组件，不自行实现正则引擎；具体依赖与版本在 0.5.2 专项核对。不宣称初始固定排除规则等价于完整 gitignore。
+- 0.5.2a 复用标准库 fnmatchcase，不增加外部进程或正则引擎。不宣称固定排除规则等价于完整 gitignore。
 
 ## 6. Workspace 与路径能力
 
@@ -86,7 +89,7 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 
 ## 7. 输出与 Artifact
 
-小结果保留在现有 ToolResult.output 中，模型可见内容必须有界。较大命令/搜索输出写入宿主拥有的私有 Artifact Store，Session 仅保存受校验的引用、大小、摘要及截断信息。
+**本节是 0.5.2b 设计，尚未实现。** 小结果已经保留在现有 ToolResult.output 中；当前搜索仅返回有界结果，截断不代表全文已保存。后续较大输出才写入宿主拥有的私有 Artifact Store，Session 保存受校验的引用、大小、摘要及截断信息。现有 execute(call, cancel) 没有可信 Thread/Turn 信息，实施前必须先固化宿主 Execution Scope 与旧端口兼容方案；不得用模型参数证明归属。
 
 - 引用是受控标识，不是任意绝对路径；按 Thread/Workspace 归属校验读取。
 - 限制单 Artifact、单 Turn 和总磁盘用量；落盘失败返回明确结果，不能声称完整日志已保存。
@@ -168,4 +171,39 @@ PYTHONASYNCIODEBUG=1 uv run pytest tests/tools -W error
 
 本地验收：新增 70 项通过；全量 `make check` **890 passed、1 skipped**，独立基础 wheel/无供应商 SDK 的只读入口通过。全项目硬崩溃切点从 54 增至 57，原 2 个 SIGINT 用例保留。异步调试和远端 CI 结果见 [测试验收记录](testing-and-evals.md#14-051-只读编码工具验收2026-09-03)。CI 新增 macOS 只读回归，Linux 完整套件保持；不把待运行的远端 CI 提前标记成功。
 
-下一片为 0.5.2：先求证有界搜索组件、明确忽略策略和 Artifact 生命周期，再实现 glob/grep。写工具仍须经过 0.5.3 的效果与恢复门禁。
+后续 0.5.2 已拆成 a/b，搜索交付见下节；Artifact 与写工具仍分别经过 0.5.2b/0.5.3 门禁。
+
+## 13. 0.5.2a 当前交付与使用
+
+`CodingToolRuntime` 固定广告四个只读工具，仍经原有 Kernel、持久审批、顺序执行与取消回收。新搜索预算/语义进入自身工具版本；旧 list/read v1 Schema 和版本未改写。实际 os.open 权限不足保留 PermissionError，用于报告不可读扫描缺口；原 read_file 同时得到更准确的 tool_path_denied，而非将权限不足误报为 workspace_changed。
+
+~~~bash
+uv run python -m examples.kernel_search
+uv run pytest tests/tools
+~~~
+
+调用参数示例（模型参数，不是另一个执行 API）：
+
+~~~json
+{"tool":"glob","arguments":{"path":"src","pattern":"**/*.py","max_results":100}}
+{"tool":"grep","arguments":{"path":"src","query":"ModelAttempt","include":"**/*.py","max_results":50}}
+~~~
+
+结果中的路径始终相对 Workspace；模式相对 path。grep 每行至多一条命中，包含 line、最多 384 UTF-8 字节 text、text_truncated 与 revision；用它构造 read_file 的 path/start_line/expected_revision，即可校验后续读取。按 LF 分行，去除末尾 LF/CRLF；未终止行的单独 CR 不改写。
+
+| 边界 | 当前行为 |
+| --- | --- |
+| 查询与模式 | ≤256 UTF-8 字节；模式 ≤32 段；不支持任意正则、花括号或绝对路径 |
+| 候选发现 | ≤10000 项、2 MiB 名称、32 级相对深度；先收集后全路径排序 |
+| 内容读取 | 单文件 ≤2 MiB、合计 ≤16 MiB；严格 UTF-8/二进制检测，单行 ≤4 KiB |
+| 返回 | ≤200 项、记录 ≤24 KiB、总 JSON ≤60000 字节 |
+| 完整性 | 数量/输出截断返回 truncated/reason；不可读/超大/非法编码/二进制/长行计数，并设 scan_complete=false |
+| 硬预算/变更 | 枚举或总读取超限、超时、观察到对象替换时失败，不把此前片段当作完整成功 |
+| 忽略 | 固定性能目录可用 include_ignored 放宽；宿主拒绝路径、链接和敏感名称不能放宽；不解析 gitignore |
+| 恢复 | 审批重开验证工具/工作区版本；中断后不自动重搜；搜索无分页游标或隐藏的完整输出 |
+
+scan_complete 只针对本次定义的可搜索范围，不是全树原子快照。计数说明观察到的缺口，并非对截断后未读范围的统计；空命中且 scan_complete=false 不能解释为不存在。字符片段裁剪与结果截断是两件事：前者仍可能扫描完整，后者一定不完整。
+
+新增四份 `glob/grep-input/output-v1.schema.json`，不修改 Agent v5、Action v1 或旧工具 Schema。搜索示例使用固定离线 Provider 消费真实文件输出，不是自主编码 Eval；默认测试不使用真实模型或服务器。验收记录见 [测试文档](testing-and-evals.md#15-052a-有界搜索验收2026-09-03)。
+
+下一片 0.5.2b：先确定可信 Execution Scope、端口兼容和归属，再实现不可变 Artifact/manifest、会话隔离、配额/原子发布、过期/清理与孤儿恢复。该片完成前，不勾选 0.5.2 整体。

@@ -18,7 +18,8 @@ from harnessix.tools.runtime import CodingToolRuntime
     "point,count",
     [("runtime.before_tool", 0), ("runtime.after_tool", 1), ("runtime.before_terminal", 1)],
 )
-async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count):
+@pytest.mark.parametrize("tool", ["read_file", "glob", "grep"])
+async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, tool):
     root = tmp_path / "repo"
     root.mkdir()
     (root / "main.py").write_text("读取夹具")
@@ -35,6 +36,7 @@ async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count):
         str(root),
         point,
         str(counter),
+        tool,
         cwd=Path(__file__).parents[2],
     )
     try:

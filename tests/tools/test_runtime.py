@@ -36,7 +36,7 @@ async def test_definitions_are_isolated_and_unknown_tools_fail(tmp_path):
         before = tools.definitions()
         before[0].input_schema.clear()
         assert tools.definitions()[0].input_schema
-        assert {d.name for d in tools.definitions()} == {"list_files", "read_file"}
+        assert {d.name for d in tools.definitions()} == {"list_files", "read_file", "glob", "grep"}
         forged = call(tools, path="x").model_copy(update={"tool": "shell"})
         assert (await tools.execute(forged, CancelToken())).error.code == "unknown_tool"
     with pytest.raises(KernelError, match="已关闭"):

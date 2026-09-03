@@ -14,6 +14,7 @@ from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
+from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
 
 
 def write_json(path: Path, value: object) -> None:
@@ -39,6 +40,10 @@ def main() -> None:
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),
         ("read-file-output", ReadFileOutput),
+        ("glob-input", GlobInput),
+        ("glob-output", GlobOutput),
+        ("grep-input", GrepInput),
+        ("grep-output", GrepOutput),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print("已更新 Action、Agent、Provider、价格/成本、Smoke、只读工具和 OpenAPI Schema")

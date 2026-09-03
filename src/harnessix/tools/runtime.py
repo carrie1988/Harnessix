@@ -14,7 +14,7 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
-from harnessix.tools import files
+from harnessix.tools import files, search
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
     MAX_LINE_BYTES,
@@ -28,6 +28,13 @@ from harnessix.tools.contracts import (
     ReadFileInput,
     ReadFileOutput,
     ReadToolError,
+)
+from harnessix.tools.search_contracts import (
+    GlobInput,
+    GlobOutput,
+    GrepInput,
+    GrepOutput,
+    SearchInput,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest
 
@@ -49,8 +56,8 @@ async def _drain[T](task: asyncio.Task[T]) -> None:
 class _ReadBinding:
     name: str
     description: str
-    input_model: type[ListFilesInput] | type[ReadFileInput]
-    output_model: type[ListFilesOutput] | type[ReadFileOutput]
+    input_model: type[ListFilesInput] | type[ReadFileInput] | type[GlobInput] | type[GrepInput]
+    output_model: type[ListFilesOutput] | type[ReadFileOutput] | type[GlobOutput] | type[GrepOutput]
 
 
 _BINDINGS = (
@@ -66,6 +73,18 @@ _BINDINGS = (
         ReadFileInput,
         ReadFileOutput,
     ),
+    _ReadBinding(
+        "glob",
+        "在工作区目录内有界定位文件；支持 * ? [] 和 ** 路径段，显式报告截断",
+        GlobInput,
+        GlobOutput,
+    ),
+    _ReadBinding(
+        "grep",
+        "工作区目录内按大小写敏感字面量查找命中行，不支持正则；返回片段和 revision",
+        GrepInput,
+        GrepOutput,
+    ),
 )
 
 
@@ -80,21 +99,22 @@ class CodingToolRuntime:
         self._closed = False
         self._definitions: dict[str, ToolDescriptor] = {}
         for binding in _BINDINGS:
-            contract = digest(
-                {
-                    "implementation": "coding-read/v1",
-                    "scope": self._workspace.scope,
-                    "input": binding.input_model.model_json_schema(),
-                    "output": binding.output_model.model_json_schema(),
-                    "concurrency": "serial",
-                    "max_text_bytes": MAX_TEXT_BYTES,
-                    "max_line_bytes": MAX_LINE_BYTES,
-                    "max_scan_bytes": MAX_SCAN_BYTES,
-                    "max_directory_entries": MAX_DIRECTORY_ENTRIES,
-                    "max_result_bytes": MAX_RESULT_BYTES,
-                    "timeout": READ_TIMEOUT_SECONDS,
-                }
-            )
+            rules: dict[str, object] = {
+                "implementation": "coding-read/v1",
+                "scope": self._workspace.scope,
+                "input": binding.input_model.model_json_schema(),
+                "output": binding.output_model.model_json_schema(),
+                "concurrency": "serial",
+                "max_text_bytes": MAX_TEXT_BYTES,
+                "max_line_bytes": MAX_LINE_BYTES,
+                "max_scan_bytes": MAX_SCAN_BYTES,
+                "max_directory_entries": MAX_DIRECTORY_ENTRIES,
+                "max_result_bytes": MAX_RESULT_BYTES,
+                "timeout": READ_TIMEOUT_SECONDS,
+            }
+            if issubclass(binding.input_model, SearchInput):
+                rules["search"] = search.execution_contract()
+            contract = digest(rules)
             self._definitions[binding.name] = ToolDescriptor(
                 name=binding.name,
                 version=f"1.{contract}",
@@ -149,7 +169,9 @@ class CodingToolRuntime:
         payload: JsonValue = checked.model_dump(mode="json")
         return ToolResultContent(call_id=call.call_id, outcome="succeeded", output=payload)
 
-    async def _execute_read(self, args: ListFilesInput | ReadFileInput) -> ReadContract:
+    async def _execute_read(
+        self, args: ListFilesInput | ReadFileInput | GlobInput | GrepInput
+    ) -> ReadContract:
         async with self._lock:
             if self._closed:
                 raise KernelError("tool_runtime_closed", "工具运行时已关闭")
@@ -158,6 +180,10 @@ class CodingToolRuntime:
             def read() -> ReadContract:
                 if isinstance(args, ListFilesInput):
                     return files.list_files(self._workspace, args, operation)
+                if isinstance(args, GlobInput):
+                    return search.glob(self._workspace, args, operation)
+                if isinstance(args, GrepInput):
+                    return search.grep(self._workspace, args, operation)
                 return files.read_file(self._workspace, args, operation)
 
             worker = asyncio.create_task(asyncio.to_thread(read))

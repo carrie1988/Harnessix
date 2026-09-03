@@ -351,3 +351,22 @@ Agent Runtime Kernel 合并前：
 新增 3 个进程崩溃切点后全项目为 **57 个**，另有 2 个 SIGINT 用例。`uv build`、独立基础 wheel 和无供应商 SDK 的 `examples.kernel_files` 入口通过；仅验证只读能力，不属于 0.5.5 自主编码 Eval。Linux 完整测试与新增 macOS 只读 CI 的最终结果应查看对应提交，默认 CI 不使用真实模型凭据。
 
 初始实现 `0a0f68f` 的 [CI](https://github.com/carrie1988/Harnessix/actions/runs/33742500047) 已通过 Linux Python 3.12/3.13、macOS 只读套件与 PostgreSQL。之后的关闭取消硬化增加 1 项回归，已重新完成上述本地全量、异步调试与独立 wheel 验收；其远端结果以最新提交 CI 为准。
+
+## 15. 0.5.2a 有界搜索验收（2026-09-03）
+
+基线 `993720b` 的 [CI](https://github.com/carrie1988/Harnessix/actions/runs/33742942261) 已通过后，再增量实施搜索。0.5.2a 交付 glob/字面量 grep，**不包含 Artifact、写入、Shell、自主编码 Eval 或新的真实模型调用**。
+
+本片新增 **80 项**测试，只读工具套件累计 **150 项**。本地 `make check`：Ruff/Mypy 通过、**970 passed、1 skipped**（未配置本地 PostgreSQL）；`PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools`：**934 passed**。基线阶段的旧测试数字保留历史含义。
+
+- `test_search.py`：路径段通配/globstar、大小写/点文件、严格参数、排序与数量截断、grep→revision 读取；负向验证完整性、截断原因、排序、去重和空截断输出契约；
+- `test_search_boundaries.py`：链接/FIFO/拒绝路径、性能忽略与权限区分、字面量而非正则、CRLF/未终止 CR 原文、非法 UTF-8/二进制/超大文件/长行缺口、Unicode 片段边界、枚举/深度/名称/累计读取硬预算、输出字节截断、对象替换/读取中变更、I/O 脱敏、取消等待 FD 释放与期限；
+- `test_search_kernel.py`：真实 OpenAI SDK + MockTransport → glob → grep → revision 读取 → 回答；四个 HTTP 替身请求全部关闭，SQLite 重开/Replay 一致；新旧四工具的审批重开、搜索规则变化与版本隔离；四份新 v1 Schema 的内容/哈希冻结；
+- `test_recovery.py`：复用只读故障夹具，为 glob/grep 增加执行前、效果完成/结果提交前、终态前共 **6 个真实进程崩溃切点**，恢复不重搜、不请求模型；全项目硬崩溃切点累计 **63 个**，原 2 个 SIGINT 用例保留。
+
+独立安装/兼容证据：
+
+1. `uv build` 成功；新建基础依赖环境安装 wheel，以 `python -I` 从仓库外运行 `examples/kernel_search.py`，无 OpenAI/Anthropic SDK 也可完成固定搜索闭环和 Replay。
+2. 用上一片独立安装的 `993720b` wheel 创建真实 list_files/read_file 待审批会话；用新 wheel、同一工作区和 SQLite 重开，旧工具完整定义相同，两项旧审批均可批准、执行、完成和 Replay。不是仅比较同一新进程的哈希。
+3. 在 Harnessix 自身 `src`（不是临时示例仓库）执行独立 wheel 只读探测：glob 找到 **80 个 Python 文件**；grep `ModelAttempt` 得到 **40 个命中行**，读取 80 文件、393287 字节，两次 scan_complete=true。该次 macOS 观测约 0.024/0.067 秒，仅为离线可用性证据，不是性能 SLA 或完整 Coding Eval。
+
+新搜索示例已加入 Linux Python 3.12/3.13 与 macOS CI；macOS 工具回归和 PostgreSQL 独立 Job 保留。推送后的具体远端结果以对应提交 CI 为准，不用基线成功替代新提交验收。

@@ -1,0 +1,33 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "default": ".",
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "max_results": {
+      "default": 100,
+      "maximum": 200,
+      "minimum": 1,
+      "title": "Max Results",
+      "type": "integer"
+    },
+    "include_ignored": {
+      "default": false,
+      "title": "Include Ignored",
+      "type": "boolean"
+    },
+    "pattern": {
+      "default": "**/*",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Pattern",
+      "type": "string"
+    }
+  },
+  "title": "GlobInput",
+  "type": "object"
+}

@@ -162,6 +162,8 @@ class Workspace:
                     flags |= os.O_DIRECTORY
                 try:
                     fd = os.open(part, flags, dir_fd=parent)
+                except PermissionError:
+                    raise
                 except OSError:
                     raise ReadToolError("workspace_changed") from None
                 stack.callback(os.close, fd)

@@ -23,6 +23,7 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy src
       - run: uv run pytest
+      - run: uv run python -m examples.kernel_search
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -34,6 +35,7 @@ jobs:
       - run: uv sync --locked --all-extras --dev
       - run: uv run pytest tests/tools
       - run: uv run python -m examples.kernel_files
+      - run: uv run python -m examples.kernel_search
 
   postgres:
     runs-on: ubuntu-latest

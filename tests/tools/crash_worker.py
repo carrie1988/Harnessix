@@ -13,11 +13,11 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.helpers import answer
-from tests.tools.test_kernel import read_step
+from tests.tools.test_search_kernel import tool_step
 
 
 async def main():
-    database, thread, root, point, count = sys.argv[1:]
+    database, thread, root, point, count, tool = sys.argv[1:]
 
     class ObservedTools(CodingToolRuntime):
         async def execute(self, call, cancel):
@@ -33,7 +33,7 @@ async def main():
     async with ObservedTools(Path(root)) as tools:
         async with AgentRuntime(
             SQLiteSessionStore(database),
-            ScriptedProvider([read_step(), answer()]),
+            ScriptedProvider([tool_step(tool), answer()]),
             tools,
             fault=crash,
         ) as runtime:
