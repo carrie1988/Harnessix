@@ -18,6 +18,7 @@ from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
+from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
 from harnessix.tools.search_contracts import (
@@ -63,9 +64,13 @@ def main() -> None:
         ("read-artifact-output", ArtifactPage),
         ("archived-glob-output", ArchivedGlobOutput),
         ("archived-grep-output", ArchivedGrepOutput),
+        ("patch-proposal", PatchProposal),
+        ("patch-manifest", PatchManifest),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
-    print("已更新 Action、Agent、Provider、成本、Smoke、只读工具、Artifact 和 OpenAPI Schema")
+    print(
+        "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch 计划与 OpenAPI Schema"
+    )
 
 
 if __name__ == "__main__":

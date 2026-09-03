@@ -87,6 +87,8 @@ Effect Class 首版复用并扩展 Action Plane 语义：
 | IDEMPOTENT_EXTERNAL_WRITE | 带业务幂等键的 API | 复用键或对账 |
 | NON_IDEMPOTENT_EXTERNAL_WRITE | 无幂等能力的外部操作 | 失败不自动重放 |
 
+上表是 0.2 的目标分类，并非当前冻结 Action v1 枚举。0.5.3a 已实现只读 Patch 准备，实际写拟复用 NON_IDEMPOTENT_WRITE；不新增 LOCAL_WRITE 或把修改伪装为 READ_ONLY，见 [ADR 0027](../adr/0027-prepared-patch-and-write-admission.md)。
+
 ### 4.2 ToolCall
 
 ToolCall 持久字段：

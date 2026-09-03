@@ -1,0 +1,56 @@
+{
+  "$defs": {
+    "ExactEdit": {
+      "additionalProperties": false,
+      "properties": {
+        "old_text": {
+          "maxLength": 131072,
+          "minLength": 1,
+          "title": "Old Text",
+          "type": "string"
+        },
+        "new_text": {
+          "maxLength": 131072,
+          "title": "New Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "old_text",
+        "new_text"
+      ],
+      "title": "ExactEdit",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "expected_revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Expected Revision",
+      "type": "string"
+    },
+    "edits": {
+      "items": {
+        "$ref": "#/$defs/ExactEdit"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Edits",
+      "type": "array"
+    }
+  },
+  "required": [
+    "path",
+    "expected_revision",
+    "edits"
+  ],
+  "title": "PatchProposal",
+  "type": "object"
+}

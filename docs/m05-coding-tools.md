@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3–0.5.5 仍待实施
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a 只读 Patch 准备已实现；0.5.3b/c–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -31,7 +31,9 @@
 | 0.5.2a | glob/字面量 grep | 已实现；有界遍历、忽略/权限分离、输出上限、审批、revision 读取与中断不重搜 |
 | 0.5.2b1 | 可信执行作用域、旧端口兼容 | 已实现；明确注入调用归属、校验工作区；不新增 Artifact 或改变旧持久契约 |
 | 0.5.2b2 | 输出 Artifact | 已实现；同一 Session 事务发布、归属/配额/分页/清理、取消及 14 个进程崩溃切点通过 |
-| 0.5.3 | Patch 与本地效果记录 | 写工具准入 ADR、预期内容校验、持久意图/效果证据、冲突/崩溃恢复通过 |
+| 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
+| 0.5.3b | 单文件 Patch 与本地效果记录 | 待实施；独占工作副本准入、持久意图/计划审批、效果/冲突/崩溃核对 |
+| 0.5.3c | 多文件效果与 Diff | 待实施；部分效果、结构化交付与兼容，不能假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
@@ -50,11 +52,11 @@ search.py          搜索适配及明确的忽略/资源限制
 search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 ../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
-patches.py         预期内容、补丁计划、效果证据与恢复
+../patches/        已有精确计划与复核；效果证据/写执行/恢复待后续
 processes.py       argv、进程组、并发排水、取消与清理
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；Patch/Process 尚未实现。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。Patch 执行/Process 尚未实现。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -99,6 +101,8 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 - Artifact 不是通用 DLP。凭据文件默认不读，环境不透传秘密，日志不复制参数/原始异常；后续导出需单独授权。
 
 ## 8. 本地写与 Patch 准入
+
+0.5.3a 已交付无工作区写入的计划准备/复核；写入仍未开放，详见第 16 节与 [ADR 0027](adr/0027-prepared-patch-and-write-admission.md)。
 
 Patch 不是简单字符串替换。实施前必须明确本地效果类型如何与现有 Action/Agent 契约兼容，不把本地修改伪装为 READ_ONLY，也不宣称所有 Patch 天然幂等。
 
@@ -274,4 +278,35 @@ async with CodingToolRuntime(root, artifacts=artifacts) as tools:
 
 `uv run python -m examples.kernel_artifacts` 在临时真实文件中搜索 300 条中文命中，模型预览只有 2 条，随后读取第 299/300 条，重开 SQLite 并核对 Replay；固定离线决策不等于自主编码 Eval。质量证据见 [第 17 节验收](testing-and-evals.md#17-052b2-事务-artifact-验收2026-09-03)。
 
-**下一阶段 0.5.3**：先完成本地写准入 ADR，复用既有 Call/Result 与效果分类，明确完整前镜像、目标计划审批、持久写意图、文件系统与 Session 非原子的核对边界。首先交付单文件 Patch，逐一验证脏工作区、编辑器竞争、提交前后崩溃及第三种内容冲突；多文件效果和 Process 必须分别验收，不能以简单替换或删除 READ_ONLY 门禁代替。
+**0.5.3 演进**：已完成只读计划及写准入 ADR 基线，复用既有 Call/Result 与效果分类，明确完整前镜像、目标计划审批、持久写意图、文件系统与 Session 非原子的核对边界。首先交付单文件 Patch，逐一验证脏工作区、编辑器竞争、提交前后崩溃及第三种内容冲突；多文件效果和 Process 必须分别验收，不能以简单替换或删除 READ_ONLY 门禁代替。
+
+## 16. 0.5.3a 当前交付：只读准备与复核
+
+新增 `patches/contracts.py`、`planner.py`，提供宿主同步 API `prepare_patch(workspace, proposal, operation)` 和 `verify_prepared(workspace, prepared, operation)`。新增两份独立 v1 Schema，不改变 Kernel、旧工具定义、Action/Agent Schema 或 migration 6。尚不向模型广告 Patch 工具，没有持久计划、写审批或文件提交。
+
+~~~python
+from harnessix.patches.contracts import ExactEdit, PatchProposal
+from harnessix.patches.planner import prepare_patch, verify_prepared
+from harnessix.tools.contracts import ReadFileInput
+from harnessix.tools.files import read_file
+from harnessix.tools.workspace import ReadOperation, Workspace
+
+with Workspace(root) as workspace:
+    page = read_file(workspace, ReadFileInput(path="main.py"), ReadOperation())
+    proposal = PatchProposal(
+        path="main.py",
+        expected_revision=page.revision,
+        edits=(ExactEdit(old_text="return a - b", new_text="return a + b"),),
+    )
+    prepared = prepare_patch(workspace, proposal, ReadOperation())
+    verify_prepared(workspace, prepared, ReadOperation())
+    # 仅得到 before/after 私有字节及 manifest，不会修改 main.py。
+~~~
+
+限制：单文件前后内容各最多 1 MiB，1–32 个非空唯一锚点，单编辑 UTF-8 合计 128 KiB，全部编辑 256 KiB。不支持创建/删除/移动、空文件插入、统一 Diff 解析、模糊替换或全局替换。可以将一个非空精确锚点替换为空字符串；未涉及的字节保持不变。多个编辑定位在同一前镜像，输入顺序不改变目标内容；指纹仍绑定具体提案顺序。
+
+完整前镜像包含预览外内容；SHA 是全文件内容 SHA，不等于 read_file 的状态 revision。manifest 为宿主契约，含 Workspace 摘要，不作为模型参数或授权凭证；before/after 不出现在 PreparedPatch 的 repr，私有内容仍需宿主按保留/保密规则管理。JSON manifest 可重开校验，但没有正文就不能恢复整个 PreparedPatch。
+
+复核会再次读取并比较完整源文件、revision 与权限位。它不能锁住未来写入前的间隙，更不是跨进程 CAS。线程中运行时由宿主使用 ReadOperation 协作停止并等待线程退出后再关闭 Workspace；本片没有增加另一套异步调度器或声称能中止不可中断的内核 I/O。
+
+`examples.patch_plan` 验证真实 CRLF 文件的目标内容计算、源文件保持不变，以及模拟外部编辑后的复核拒绝。它不执行 Patch，也不属于自主编码 Eval。下一片必须先落实独占工作副本准入与持久意图，再添加计划审批、单文件提交和不重复写的恢复；源目录并发编辑的无覆盖保证不能由 hash+rename 推导。

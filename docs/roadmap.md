@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2 已完成范围内验收，整体 0.5 进行中**。包括工作区绑定、四个只读工具、可信执行作用域与事务 Artifact；不含写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md) 与 [执行作用域 ADR](adr/0025-trusted-tool-execution-scope.md) 和 [事务 Artifact ADR](adr/0026-transactional-artifacts.md)。下一片为 0.5.3 Patch：先研究写准入/完整前镜像/效果证据及冲突恢复，再实现单文件修改；不能直接移除只读门禁。
+状态：**0.5.1 / 0.5.2 已完成范围内验收，0.5.3a 只读 Patch 准备已实现，整体 0.5 进行中**。包括工作区绑定、四个只读工具、可信执行作用域与事务 Artifact；不含写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md) 与 [执行作用域 ADR](adr/0025-trusted-tool-execution-scope.md) 和 [事务 Artifact ADR](adr/0026-transactional-artifacts.md)。Patch 已按 [ADR 0027](adr/0027-prepared-patch-and-write-admission.md) 拆为 a/b/c；下一片为 0.5.3b：受控工作副本、持久意图/计划审批、单文件写与效果核对，不能直接移除只读门禁。
 
 ### 目标
 
@@ -200,6 +200,9 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
       - [x] 0.5.2b1：显式 Scoped 端口、持久调用归属、严格工作区绑定、旧审批兼容与并发/取消/恢复验证；
       - [x] 0.5.2b2：同库正文/manifest/ToolResult 原子提交，受控分页、配额、过期清理、未提交回滚与崩溃不重搜；
 - [ ] `apply_patch` 和结构化 Patch Result；
+  - [x] 0.5.3a：宿主只读准备、完整前后镜像摘要、精确非重叠编辑、来源漂移复核；
+  - [ ] 0.5.3b：独占工作副本准入、持久意图、计划审批、单文件写及取消/崩溃核对；
+  - [ ] 0.5.3c：多文件部分效果与结构化 Diff 交付；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；

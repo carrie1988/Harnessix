@@ -405,3 +405,19 @@ Agent Runtime Kernel 合并前：
 **兼容与 CI**：仅新增 migration 6，事件/投影仍为 Agent v5；未改写旧 migration 或八份默认工具 Schema。Linux Python 3.12/3.13 全量 CI 和 macOS 工具 CI 已纳入新 Artifact 测试与示例，PostgreSQL 作业沿用。CI 结果以本片对应提交为准。
 
 范围内 0.5.2b/0.5.2 已完成。当前上限为单件 1 MiB/10000 条 JSONL，不是任意 blob 服务；逻辑内容/manifest 配额不限制整个 Session/WAL 物理大小，保留的墓碑最终需要宿主按保留策略轮换 Session。具体组合与生命周期见 [0.5 设计](m05-coding-tools.md#15-052b2-当前交付与使用)、[ADR 0026](adr/0026-transactional-artifacts.md)。
+
+## 18. 0.5.3a 只读 Patch 准备验收（2026-09-03）
+
+在 `4054e1d` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33760516486) 全绿后开始。专项核对冻结 Codex/OpenCode 的 Patch 入口、实际文件写操作和失败证据；明确用户态内容复核不等于跨进程 CAS，见 [专项研究](research/patch-runtime.md) 和 [ADR 0027](adr/0027-prepared-patch-and-write-admission.md)。
+
+- `tests/patches/` 新增 **69 项**：精确/非唯一/重叠锚点、同一前镜像坐标、顺序绑定、无实际变化、严格参数与字节/编辑数限制、完整 SHA、JSON manifest、私有载荷篡改、根/文件/拒绝策略/权限漂移、链接/特殊文件、完整尾部编码检查及两份冻结 Schema。
+- 完整前后镜像各最多 1 MiB；边界测试包含正好上限、超限哨兵、读取期间增长及后镜像超限，不把预览前缀作为完整内容。
+- UTF-8 中文、组合字符不归一化、BOM、CRLF、混合换行与无末尾换行均测试；未涉及字节保持不变。关闭并重开同一 Workspace 后仍可复核计划。
+- 读取期间文件/根替换、I/O 异常和协作取消均验证 FD 回收；宿主线程被停止后等待其退出，不把“取消 asyncio 等待”当作停止底层文件 I/O。超时不会误报为计划损坏。
+- 本地 `make check`：Ruff/Mypy（88 个源文件）通过，**1187 passed、1 skipped**；本地无 PostgreSQL，沿用 CI 实库作业。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1151 passed**。
+- 从新 wheel 建立仓库外基础环境，无 OpenAI/Anthropic SDK，以 `python -I` 运行 `examples/patch_plan.py` 和既有 Artifact 示例通过；默认 CI 同时运行 Linux Python 3.12/3.13 和 macOS Patch 测试/示例。
+
+本片没有修改 Kernel、默认工具定义、Action/Agent Schema 或 Session migration 6，没有新增依赖、真实模型请求或服务器操作。原 **86 个硬崩溃切点、2 个 SIGINT** 保持，不把本片只读测试虚报为新的写崩溃恢复测试。
+
+**尚未交付**：模型可调用的 apply_patch、持久计划/写意图、写审批、文件提交、单文件写恢复及多文件效果。0.5.3a 的 manifest/私有字节不是授权凭据；verify_prepared 不会把计划变成已批准或已提交的状态。下一片 0.5.3b 的独占工作副本、持久意图、计划审批和效果核对通过后才开放写入，0.5.3 整体仍未完成。
