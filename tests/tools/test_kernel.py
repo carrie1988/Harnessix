@@ -188,7 +188,8 @@ def test_input_output_schemas_match_frozen_files():
 
 
 @pytest.mark.parametrize("kind", ["user", "task"])
-async def test_kernel_cancel_during_file_read_is_durable(tmp_path, monkeypatch, kind):
+@pytest.mark.parametrize("scoped", [False, True])
+async def test_kernel_cancel_during_file_read_is_durable(tmp_path, monkeypatch, kind, scoped):
     root = tmp_path / "repo"
     root.mkdir()
     (root / "main.py").write_text("未完成的读取\n")
@@ -206,8 +207,9 @@ async def test_kernel_cancel_during_file_read_is_durable(tmp_path, monkeypatch, 
     store = SQLiteSessionStore(tmp_path / "session.db")
     provider = ScriptedProvider([read_step(), answer()])
     async with CodingToolRuntime(root) as tools:
-        async with AgentRuntime(store, provider, tools) as runtime:
-            thread = await runtime.create_thread(str(root))
+        options = {"scoped_tools": tools} if scoped else {"tools": tools}
+        async with AgentRuntime(store, provider, **options) as runtime:
+            thread = await runtime.create_thread(str(tools.workspace_root))
             task = asyncio.create_task(
                 runtime.run_turn(thread.thread_id, "读取中取消", request_id="cancel")
             )

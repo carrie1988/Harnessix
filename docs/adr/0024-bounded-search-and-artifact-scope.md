@@ -1,13 +1,13 @@
 # ADR 0024：有界搜索与 Artifact 归属拆片
 
 - 日期：2026-09-03
-- 状态：0.5.2a 已实现；0.5.2b 待实施，整体 0.5.2 未完成
+- 状态：0.5.2a 与 0.5.2b1 上下文已实现；0.5.2b2 Artifact 待实施，整体 0.5.2 未完成
 
 ## 1. 拆片与实际接口约束
 
 0.5.1 已通过 Linux Python 3.12/3.13、macOS 和 PostgreSQL CI。本次先交付可独立验收的文件定位/内容搜索，不把搜索与 Artifact 一次性塞进现有只读接口。
 
-现有 `ToolRuntime.execute(call, cancel)` 没有可信 Thread/Turn 上下文。将 Thread ID 放进模型参数不能证明归属，把 Artifact 简单绑定到 Workspace 又会混淆同根下的多个会话。因此 0.5.2b 须先设计宿主注入的执行作用域、兼容旧 ToolRuntime 的调用方式，再实现 Artifact 持久化与读取/回收。当前不新增伪归属字段或共享全局输出目录。
+0.5.2a 时的 `ToolRuntime.execute(call, cancel)` 没有可信 Thread/Turn 上下文。将 Thread ID 放进模型参数不能证明归属，把 Artifact 简单绑定到 Workspace 又会混淆同根下的多个会话。因此先设计宿主注入的执行作用域、兼容旧 ToolRuntime 的调用方式，再实现 Artifact 持久化与读取/回收。后续 0.5.2b1 已落地显式 Scoped 入口，见 [ADR 0025](0025-trusted-tool-execution-scope.md)；Artifact 仍未实现，当前不新增伪归属字段或共享全局输出目录。
 
 ## 2. 组件求证与选择
 

@@ -370,3 +370,20 @@ Agent Runtime Kernel 合并前：
 3. 在 Harnessix 自身 `src`（不是临时示例仓库）执行独立 wheel 只读探测：glob 找到 **80 个 Python 文件**；grep `ModelAttempt` 得到 **40 个命中行**，读取 80 文件、393287 字节，两次 scan_complete=true。该次 macOS 观测约 0.024/0.067 秒，仅为离线可用性证据，不是性能 SLA 或完整 Coding Eval。
 
 新搜索示例已加入 Linux Python 3.12/3.13 与 macOS CI；macOS 工具回归和 PostgreSQL 独立 Job 保留。推送后的具体远端结果以对应提交 CI 为准，不用基线成功替代新提交验收。
+
+## 16. 0.5.2b1 可信执行作用域验收（2026-09-03）
+
+基线 `9a70ce4` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33748311220) 通过后继续实施。本片新增 **46 项**测试：24 项 Kernel 作用域测试、10 项 Coding Scoped 测试和 12 项既有集成/恢复路径扩展；工具套件累计 **172 项**。
+
+- 本地 `make check`：Ruff/Mypy 通过，**1016 passed、1 skipped**（本地未配置 PostgreSQL）。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools`：**980 passed**。
+- `test_execution_scope.py`：入口互斥、不自动发现新签名、持久归属而非模型参数、不可变性、完整调用摘要漂移、活跃/未完成调用工厂、TypeError 不降级/不重试、审批等待/拒绝/重开、未知/写工具/版本门禁、跨 Thread 并发/连续 Turn/多 Call 隔离。
+- `test_scoped_runtime.py`：四工具旧入口待审批会话切换 Scoped 入口继续，定义完全相同；规范根/别名/参数/摘要不匹配时不进行目标 I/O；Coding 参数不能注入 Thread 归属。
+- 实际 SDK 离线 glob→grep→revision 读取同时测试旧/新入口，作用域摘要不出现在 HTTP 请求中；实际文件读取消同样覆盖两种入口。
+- 真实子进程故障夹具新增 Scoped read/glob/grep 的 9 个切点，总计 **72 个硬崩溃切点**，原 2 个 SIGINT 用例保留；中断恢复不调用 Provider 或重新执行工具。
+
+独立兼容验收从 `git archive 9a70ce4` 构建旧 wheel，在无 OpenAI/Anthropic SDK 的基础环境中创建四个真实待审批会话，再安装新 wheel，以 Scoped 入口重开同一 SQLite/规范工作区：工具完整定义一致，四项旧审批均可批准、执行、完成并 Replay。该流程实际跨版本安装，不是仅在同一新版本内计算两个相等摘要。随后以 `python -I` 从仓库外运行新 Scoped 搜索和旧只读两个示例均通过。
+
+未修改旧输入/输出、Agent/Action Schema 或 Session Migration，也未新增依赖、真实 API 请求或远程中间件。现有 Linux 全量、macOS 工具/示例及 PostgreSQL CI 继续运行，新提交结果以对应 CI 为准。
+
+**未交付**：Artifact 内容/manifest、引用发布、配额、过期和孤儿回收。作用域不是发布租约；终态后的历史 scope 不能单独证明仍有发布权限。0.5.2b2 必须补齐持久事务及故障验证，才能关闭 0.5.2b/0.5.2。

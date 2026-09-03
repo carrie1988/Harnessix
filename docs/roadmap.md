@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2a 只读与有界搜索已实现，整体 0.5 进行中**。包括工作区身份/路径规则绑定、可信工具定义、目录分页、文件读取及 glob/字面量 grep；不含 Artifact、写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0023](adr/0023-workspace-read-tools.md) 与 [搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md)。
+状态：**0.5.1 / 0.5.2a 只读与搜索、0.5.2b1 可信执行上下文已实现，整体 0.5 进行中**。包括工作区身份/路径规则绑定、可信工具定义、目录分页、文件读取及 glob/字面量 grep；不含 Artifact、写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md) 与 [执行作用域 ADR](adr/0025-trusted-tool-execution-scope.md)。
 
 ### 目标
 
@@ -197,6 +197,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
   - [ ] 0.5.2：`glob` / `grep` 与输出 Artifact；
     - [x] 0.5.2a：有界通配/字面量搜索、显式缺口、搜索→revision 读取、审批和中断恢复；
     - [ ] 0.5.2b：可信执行作用域、私有 Artifact 归属/配额/原子发布/过期及孤儿恢复；
+      - [x] 0.5.2b1：显式 Scoped 端口、持久调用归属、严格工作区绑定、旧审批兼容与并发/取消/恢复验证；
+      - [ ] 0.5.2b2：Artifact 内容/manifest、提交一致性、受控读取、配额、过期与孤儿回收；
 - [ ] `apply_patch` 和结构化 Patch Result；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；

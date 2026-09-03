@@ -12,6 +12,7 @@ from pydantic import JsonValue, ValidationError
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure, KernelError
+from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.tools import files, search
@@ -129,6 +130,20 @@ class CodingToolRuntime:
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
         return tuple(d.model_copy(deep=True) for d in self._definitions.values())
+
+    @property
+    def workspace_root(self) -> Path:
+        """宿主创建 Thread 时使用的规范根；访问能力仍由 Workspace 持有。"""
+        return self._workspace.root
+
+    async def execute_scoped(
+        self, call: ToolCallContent, scope: ToolExecutionScope, cancel: CancelToken
+    ) -> ToolResultContent:
+        cancel.checkpoint()
+        scope.validate_call(call)
+        if scope.workspace != str(self.workspace_root):
+            raise KernelError("tool_workspace_mismatch", "执行作用域与已绑定工作区不匹配")
+        return await self.execute(call, cancel)
 
     async def execute(self, call: ToolCallContent, cancel: CancelToken) -> ToolResultContent:
         cancel.checkpoint()

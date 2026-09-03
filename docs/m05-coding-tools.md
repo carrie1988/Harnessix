@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2a 只读与搜索已实现；0.5.2b–0.5.5 仍是设计，整体 0.5.2 未完成
+- 状态：0.5.1 / 0.5.2a 只读与搜索、0.5.2b1 执行上下文已实现；0.5.2b2–0.5.5 仍是设计，整体 0.5.2 未完成
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -29,7 +29,8 @@
 | --- | --- | --- |
 | 0.5.1 | Workspace、工具绑定、list_files/read_file | 已实现；独立离线验收，0.4.3c 计价保留待办，不再作为本片前置阻塞 |
 | 0.5.2a | glob/字面量 grep | 已实现；有界遍历、忽略/权限分离、输出上限、审批、revision 读取与中断不重搜 |
-| 0.5.2b | 可信执行作用域、输出 Artifact | 待实施；归属隔离、配额/原子发布、过期与孤儿恢复通过后，0.5.2 才完成 |
+| 0.5.2b1 | 可信执行作用域、旧端口兼容 | 已实现；明确注入调用归属、校验工作区；不新增 Artifact 或改变旧持久契约 |
+| 0.5.2b2 | 输出 Artifact | 待实施；内容/manifest、提交一致性、归属隔离、配额/过期与孤儿恢复通过后，0.5.2 才完成 |
 | 0.5.3 | Patch 与本地效果记录 | 写工具准入 ADR、预期内容校验、持久意图/效果证据、冲突/崩溃恢复通过 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
@@ -89,7 +90,7 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 
 ## 7. 输出与 Artifact
 
-**本节是 0.5.2b 设计，尚未实现。** 小结果已经保留在现有 ToolResult.output 中；当前搜索仅返回有界结果，截断不代表全文已保存。后续较大输出才写入宿主拥有的私有 Artifact Store，Session 保存受校验的引用、大小、摘要及截断信息。现有 execute(call, cancel) 没有可信 Thread/Turn 信息，实施前必须先固化宿主 Execution Scope 与旧端口兼容方案；不得用模型参数证明归属。
+**本节的 Artifact 能力属于 0.5.2b2，尚未实现。** 小结果已经保留在现有 ToolResult.output 中；当前搜索仅返回有界结果，截断不代表全文已保存。后续较大输出才写入宿主拥有的私有 Artifact Store，Session 保存受校验的引用、大小、摘要及截断信息。0.5.2b1 已新增显式 Scoped 端口和宿主 Execution Scope（见第 14 节）；旧 execute(call, cancel) 保留。不得用模型参数或仅一个可构造的 scope 对象证明发布授权。
 
 - 引用是受控标识，不是任意绝对路径；按 Thread/Workspace 归属校验读取。
 - 限制单 Artifact、单 Turn 和总磁盘用量；落盘失败返回明确结果，不能声称完整日志已保存。
@@ -206,4 +207,28 @@ scan_complete 只针对本次定义的可搜索范围，不是全树原子快照
 
 新增四份 `glob/grep-input/output-v1.schema.json`，不修改 Agent v5、Action v1 或旧工具 Schema。搜索示例使用固定离线 Provider 消费真实文件输出，不是自主编码 Eval；默认测试不使用真实模型或服务器。验收记录见 [测试文档](testing-and-evals.md#15-052a-有界搜索验收2026-09-03)。
 
-下一片 0.5.2b：先确定可信 Execution Scope、端口兼容和归属，再实现不可变 Artifact/manifest、会话隔离、配额/原子发布、过期/清理与孤儿恢复。该片完成前，不勾选 0.5.2 整体。
+后续 0.5.2b 已拆为 b1/b2，上下文交付见下节；Artifact 完成前，不勾选 0.5.2 整体。
+
+## 14. 0.5.2b1 当前交付与使用
+
+新增 `agent/execution.py` 的 `ToolExecutionScope` 和 `agent/ports.py` 的 `ScopedToolRuntime`，不新建 Registry、Agent Loop 或 ContextVar。两个宿主入口互斥：
+
+~~~python
+# 旧接入保持原样：execute(call, cancel)
+async with AgentRuntime(store, provider, tools) as runtime:
+    ...
+
+# 显式选择新接入：execute_scoped(call, scope, cancel)
+async with CodingToolRuntime(root) as tools:
+    async with AgentRuntime(store, provider, scoped_tools=tools) as runtime:
+        thread = await runtime.create_thread(str(tools.workspace_root))
+        turn = await runtime.run_turn(thread.thread_id, "搜索目标函数", request_id="search-1")
+~~~
+
+Kernel 在只读/版本/审批门禁之后，从最新持久投影核对活跃 Turn 和未完成调用，再注入不可变上下文。作用域包含真实 Thread/Turn/Call、宿主 Workspace 标签及复用既有审批算法的完整调用摘要。模型参数不能覆盖这些字段；通用工具仍负责自身参数校验，CodingToolRuntime 的严格模型拒绝额外归属字段。
+
+CodingToolRuntime 的新入口还要求 workspace 严格匹配其规范根，随后复用原有根身份、策略、输入/输出、取消和 FD 检查。宿主应使用 workspace_root 创建 Thread；不匹配报 tool_workspace_mismatch，不通过别名重新 resolve 悄悄修正。旧工具定义、八份 list/read/glob/grep Schema、Agent v5、审批指纹与 Migration 均保持不变。
+
+`examples.kernel_search` 已切换到显式 Scoped 入口，`examples.kernel_files` 保留旧入口，独立 wheel 和跨平台 CI 同时验证二者。作用域不自动给用户开放 Artifact、文件写入或 Shell，也不是在 Turn 结束后仍有效的发布租约。详细边界见 [ADR 0025](adr/0025-trusted-tool-execution-scope.md)，验收见 [测试记录](testing-and-evals.md#16-052b1-可信执行作用域验收2026-09-03)。
+
+下一片 0.5.2b2 必须先解决内容/manifest 与 ToolResult 发布的一致性：选择同一 Session 事务，或可恢复的独立 blob 发布协议；不能把文件 rename 与数据库提交当成一个事务。再完成受控读取、归属/配额、活跃引用保护、过期/孤儿回收及真实故障注入。

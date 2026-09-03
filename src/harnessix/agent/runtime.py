@@ -17,6 +17,7 @@ from harnessix.agent.approvals import (
 )
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import (
     TERMINAL_TURNS,
@@ -42,7 +43,7 @@ from harnessix.agent.models import (
     Usage,
     UsageRecorded,
 )
-from harnessix.agent.ports import NoTools, ToolRuntime
+from harnessix.agent.ports import NoTools, ScopedToolRuntime, ToolRuntime
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
@@ -79,14 +80,19 @@ class AgentRuntime:
         provider: ModelProvider,
         tools: ToolRuntime | None = None,
         *,
+        scoped_tools: ScopedToolRuntime | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
     ) -> None:
+        if tools is not None and scoped_tools is not None:
+            raise KernelError("tool_runtime_conflict", "旧工具入口与 Scoped 入口不能同时配置")
         self.store = store
         self._telemetry = KernelTelemetry(observability or NoOpObservability())
         self.provider = provider
-        self.tools = tools or NoTools()
+        self._legacy_tools = tools if tools is not None else NoTools()
+        self._scoped_tools = scoped_tools
+        self.tools = scoped_tools if scoped_tools is not None else self._legacy_tools
         definitions = self.tools.definitions()
         if len({d.name for d in definitions}) != len(definitions):
             raise KernelError("duplicate_tool", "Tool 名称重复")
@@ -658,7 +664,7 @@ class AgentRuntime:
             turn_id=turn_id,
             call_id=call.call_id,
         ) as operation:
-            result = await self._execute_tool(call, token)
+            result = await self._execute_tool(thread_id, turn_id, call, token)
             result = self._validate_result(result, call, max_output_chars)
             operation.finish(result.outcome, result.error)
             return result
@@ -674,7 +680,9 @@ class AgentRuntime:
             raise KernelError("tool_output_too_large", "工具输出超过当前 Kernel 上限")
         return content
 
-    async def _execute_tool(self, call: ToolCallContent, token: CancelToken) -> ToolResultContent:
+    async def _execute_tool(
+        self, thread_id: UUID, turn_id: UUID, call: ToolCallContent, token: CancelToken
+    ) -> ToolResultContent:
         definition = self._definitions.get(call.tool)
         if definition is None:
             return ToolResultContent(
@@ -689,9 +697,22 @@ class AgentRuntime:
                 error=AgentFailure(code="tool_not_enabled", message="当前 Kernel 切片未开放写工具"),
             )
         self._validate_tool_contract(call)
+        scope = (
+            ToolExecutionScope.for_pending_call(
+                await self.store.get_thread(thread_id), turn_id, call
+            )
+            if self._scoped_tools is not None
+            else None
+        )
         token.checkpoint()
         self._fault("runtime.before_tool")
-        result = await token.run(self.tools.execute(call.model_copy(deep=True), token))
+        if self._scoped_tools is not None:
+            assert scope is not None
+            result = await token.run(
+                self._scoped_tools.execute_scoped(call.model_copy(deep=True), scope, token)
+            )
+        else:
+            result = await token.run(self._legacy_tools.execute(call.model_copy(deep=True), token))
         self._fault("runtime.after_tool")
         return result
 

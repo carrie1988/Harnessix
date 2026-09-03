@@ -39,7 +39,8 @@ def tool_step(tool):
     ]
 
 
-async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch):
+@pytest.mark.parametrize("scoped", [False, True])
+async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch, scoped):
     monkeypatch.setenv("HARNESSIX_SEARCH_FIXTURE_KEY", "not-a-real-credential")
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     root = tmp_path / "repo"
@@ -49,6 +50,7 @@ async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch):
 
     def handle(request):
         body = json.loads(request.content)
+        assert "request_fingerprint" not in request.content.decode()
         requests.append(body)
         outputs = [json.loads(m["content"]) for m in body["messages"] if m["role"] == "tool"]
         assert all(o["outcome"] == "succeeded" for o in outputs)
@@ -111,8 +113,9 @@ async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch):
     store = SQLiteSessionStore(tmp_path / "session.db")
     async with CodingToolRuntime(root) as tools:
         async with OpenAIChatProvider(config, transport=httpx.MockTransport(handle)) as provider:
-            async with AgentRuntime(store, provider, tools) as runtime:
-                thread = await runtime.create_thread(str(root))
+            options = {"scoped_tools": tools} if scoped else {"tools": tools}
+            async with AgentRuntime(store, provider, **options) as runtime:
+                thread = await runtime.create_thread(str(tools.workspace_root))
                 turn = await runtime.run_turn(
                     thread.thread_id, "定位并读取函数", request_id="search"
                 )

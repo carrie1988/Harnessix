@@ -68,8 +68,8 @@ async def exercise(directory: Path) -> None:
     root = await asyncio.to_thread(prepare, directory)
     store = SQLiteSessionStore(directory / "session.db")
     async with CodingToolRuntime(root) as tools:
-        async with AgentRuntime(store, SearchFixtureProvider(), tools) as runtime:
-            thread = await runtime.create_thread(str(root))
+        async with AgentRuntime(store, SearchFixtureProvider(), scoped_tools=tools) as runtime:
+            thread = await runtime.create_thread(str(tools.workspace_root))
             turn = await runtime.run_turn(thread.thread_id, "搜索后读取函数", request_id="search")
     assert turn.status == TurnStatus.COMPLETED
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]

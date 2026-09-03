@@ -17,7 +17,7 @@ from tests.tools.test_search_kernel import tool_step
 
 
 async def main():
-    database, thread, root, point, count, tool = sys.argv[1:]
+    database, thread, root, point, count, tool, mode = sys.argv[1:]
 
     class ObservedTools(CodingToolRuntime):
         async def execute(self, call, cancel):
@@ -31,11 +31,12 @@ async def main():
             os._exit(77)
 
     async with ObservedTools(Path(root)) as tools:
+        options = {"scoped_tools": tools} if mode == "scoped" else {"tools": tools}
         async with AgentRuntime(
             SQLiteSessionStore(database),
             ScriptedProvider([tool_step(tool), answer()]),
-            tools,
             fault=crash,
+            **options,
         ) as runtime:
             await runtime.run_turn(UUID(thread), "只读进程故障", request_id="crash")
     raise AssertionError("故障点未触发")

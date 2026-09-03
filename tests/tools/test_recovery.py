@@ -19,13 +19,14 @@ from harnessix.tools.runtime import CodingToolRuntime
     [("runtime.before_tool", 0), ("runtime.after_tool", 1), ("runtime.before_terminal", 1)],
 )
 @pytest.mark.parametrize("tool", ["read_file", "glob", "grep"])
-async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, tool):
+@pytest.mark.parametrize("scoped", [False, True])
+async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, tool, scoped):
     root = tmp_path / "repo"
     root.mkdir()
     (root / "main.py").write_text("读取夹具")
     store = SQLiteSessionStore(tmp_path / "session.db")
     async with AgentRuntime(store, FakeProvider()) as runtime:
-        thread = await runtime.create_thread(str(root))
+        thread = await runtime.create_thread(str(root.resolve()))
     counter = tmp_path / "count"
     process = await asyncio.create_subprocess_exec(
         sys.executable,
@@ -37,6 +38,7 @@ async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, t
         point,
         str(counter),
         tool,
+        "scoped" if scoped else "legacy",
         cwd=Path(__file__).parents[2],
     )
     try:
@@ -55,7 +57,8 @@ async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, t
             return await super().execute(call, cancel)
 
     async with RecoveredTools(root) as tools:
-        async with AgentRuntime(store, provider, tools) as runtime:
+        options = {"scoped_tools": tools} if scoped else {"tools": tools}
+        async with AgentRuntime(store, provider, **options) as runtime:
             turn = (await store.get_thread(thread.thread_id)).turns[-1]
             assert turn.status == TurnStatus.INTERRUPTED
             assert await runtime.resume_turn(thread.thread_id, turn.turn_id) == turn
