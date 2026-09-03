@@ -335,3 +335,12 @@ Agent Runtime                │
 - 0.8：为 MCP、Hooks 和 WebSocket 增加独立边界；
 - 0.9：引入自动化红队 Eval、依赖扫描和发布 SBOM；
 - 1.0：完成安装更新、安全响应和数据删除策略。
+
+## 0.5.2 实施补充（2026-09-03）
+
+- 已实现 Workspace 根对象/拒绝策略绑定、FD/no-follow 读取、有界搜索和 Kernel 注入的真实调用归属；不从模型参数采信 Thread/Turn 身份。
+- 已实现私有 Session 内有界 JSONL Artifact：载荷绑定实际发布器，发布重新检查活跃宿主/调用/审批；正文、manifest 和结果同事务提交，跨 Thread/重绑定 Workspace 不能读取。
+- SHA/长度/记录数及结果关联检测损坏；清理保留 tombstone，保护活跃 Thread，不把过期、缺失或损坏伪装成空页。逻辑配额不是整个磁盘的硬隔离。
+- 宿主 Python 端口、数据库文件和同进程工具仍在受信边界内；scope/UUID 不是网络身份凭据。普通代码中的秘密或恶意指令仍可能进入 Session/Artifact，默认敏感路径拒绝不是通用 DLP。未实现 Secret 全文检测、OS Sandbox、导出授权或写/进程工具。
+
+详细实现与可验证边界见 [ADR 0026](adr/0026-transactional-artifacts.md)。

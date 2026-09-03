@@ -47,4 +47,4 @@ request_fingerprint 复用既有审批摘要算法，绑定 policy、Thread、Tu
 - 旧端口回归及旧独立 wheel 待审批会话跨版本继续；所有旧 Schema/工具定义不变。
 - Scoped 路由互斥、来源/参数绑定、不可变性、并发隔离、连续 Turn、多 Call；不存在 TypeError 降级或双执行。
 - 实际 SDK 离线搜索链路、严格工作区绑定、审批等待/拒绝/恢复、读取中的取消和进程崩溃恢复。
-- make check、异步调试、基础 wheel、Linux/macOS CI；不调用真实模型。0.5.2b1 完成后，0.5.2b 与 0.5.2 整体仍保持未完成。
+- make check、异步调试、基础 wheel、Linux/macOS CI；不调用真实模型。0.5.2b1 单片不代表 0.5.2b/0.5.2 完成；后续 b2 已完成，见 [ADR 0026](0026-transactional-artifacts.md)。

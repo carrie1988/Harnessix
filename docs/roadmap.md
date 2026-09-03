@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2a 只读与搜索、0.5.2b1 可信执行上下文已实现，整体 0.5 进行中**。包括工作区身份/路径规则绑定、可信工具定义、目录分页、文件读取及 glob/字面量 grep；不含 Artifact、写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md) 与 [执行作用域 ADR](adr/0025-trusted-tool-execution-scope.md)。
+状态：**0.5.1 / 0.5.2 已完成范围内验收，整体 0.5 进行中**。包括工作区绑定、四个只读工具、可信执行作用域与事务 Artifact；不含写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md)、[搜索/Artifact 拆片 ADR](adr/0024-bounded-search-and-artifact-scope.md) 与 [执行作用域 ADR](adr/0025-trusted-tool-execution-scope.md) 和 [事务 Artifact ADR](adr/0026-transactional-artifacts.md)。下一片为 0.5.3 Patch：先研究写准入/完整前镜像/效果证据及冲突恢复，再实现单文件修改；不能直接移除只读门禁。
 
 ### 目标
 
@@ -192,18 +192,18 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 ### 核心交付
 
 - [ ] Tool Contract、Registry、风险和并发元数据；
-- [ ] 文件读取、搜索与完整输出管理；
+- [x] 文件读取、搜索与有界 JSONL 输出管理（进程日志留到 0.5.4）；
   - [x] 0.5.1：`list_files` / `read_file`，根/规则持久绑定、严格参数/输出、分页失效、取消回收；
-  - [ ] 0.5.2：`glob` / `grep` 与输出 Artifact；
+  - [x] 0.5.2：`glob` / `grep` 与输出 Artifact；
     - [x] 0.5.2a：有界通配/字面量搜索、显式缺口、搜索→revision 读取、审批和中断恢复；
-    - [ ] 0.5.2b：可信执行作用域、私有 Artifact 归属/配额/原子发布/过期及孤儿恢复；
+    - [x] 0.5.2b：可信执行作用域、私有 Artifact 归属/配额/原子发布/过期及孤儿恢复；
       - [x] 0.5.2b1：显式 Scoped 端口、持久调用归属、严格工作区绑定、旧审批兼容与并发/取消/恢复验证；
-      - [ ] 0.5.2b2：Artifact 内容/manifest、提交一致性、受控读取、配额、过期与孤儿回收；
+      - [x] 0.5.2b2：同库正文/manifest/ToolResult 原子提交，受控分页、配额、过期清理、未提交回滚与崩溃不重搜；
 - [ ] `apply_patch` 和结构化 Patch Result；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；
-- [ ] Tool 输出截断、完整输出落盘引用和过期清理；
+- [x] 有界搜索输出截断、事务归档引用和过期清理；Process 双流捕获尚未实现；
 - [ ] 只读并发、写操作互斥和 Turn 取消；
 - [ ] 统一 Tool Error Taxonomy；
 - [ ] 变更摘要和最终 Diff 交付。

@@ -110,7 +110,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
     with sqlite3.connect(store.path) as database:
         assert database.execute(
             "SELECT version FROM agent_migrations ORDER BY version"
-        ).fetchall() == [(1,), (2,), (3,), (4,), (5,)]
+        ).fetchall() == [(1,), (2,), (3,), (4,), (5,), (6,)]
         assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 5
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"

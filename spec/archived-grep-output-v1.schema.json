@@ -1,0 +1,228 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "records": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Records",
+          "type": "integer"
+        },
+        "format": {
+          "const": "jsonl/v1",
+          "default": "jsonl/v1",
+          "title": "Format",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "sha256",
+        "size_bytes",
+        "records",
+        "complete",
+        "expires_at"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "GrepMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "line": {
+          "minimum": 1,
+          "title": "Line",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "text_truncated": {
+          "title": "Text Truncated",
+          "type": "boolean"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "line",
+        "text",
+        "text_truncated",
+        "revision"
+      ],
+      "title": "GrepMatch",
+      "type": "object"
+    },
+    "GrepOutput": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/$defs/SearchStats"
+        },
+        "scan_complete": {
+          "title": "Scan Complete",
+          "type": "boolean"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "truncation_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "result_limit",
+                "output_limit"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Truncation Reason"
+        },
+        "matches": {
+          "items": {
+            "$ref": "#/$defs/GrepMatch"
+          },
+          "maxItems": 200,
+          "title": "Matches",
+          "type": "array"
+        }
+      },
+      "required": [
+        "path",
+        "stats",
+        "scan_complete",
+        "truncated",
+        "truncation_reason",
+        "matches"
+      ],
+      "title": "GrepOutput",
+      "type": "object"
+    },
+    "SearchStats": {
+      "additionalProperties": false,
+      "properties": {
+        "entries_scanned": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Entries Scanned",
+          "type": "integer"
+        },
+        "files_read": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Files Read",
+          "type": "integer"
+        },
+        "bytes_read": {
+          "maximum": 16777216,
+          "minimum": 0,
+          "title": "Bytes Read",
+          "type": "integer"
+        },
+        "ignored_entries": {
+          "minimum": 0,
+          "title": "Ignored Entries",
+          "type": "integer"
+        },
+        "unreadable_entries": {
+          "minimum": 0,
+          "title": "Unreadable Entries",
+          "type": "integer"
+        },
+        "oversized_files": {
+          "minimum": 0,
+          "title": "Oversized Files",
+          "type": "integer"
+        },
+        "invalid_utf8_files": {
+          "minimum": 0,
+          "title": "Invalid Utf8 Files",
+          "type": "integer"
+        },
+        "binary_files": {
+          "minimum": 0,
+          "title": "Binary Files",
+          "type": "integer"
+        },
+        "long_lines": {
+          "minimum": 0,
+          "title": "Long Lines",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "entries_scanned",
+        "files_read",
+        "bytes_read",
+        "ignored_entries",
+        "unreadable_entries",
+        "oversized_files",
+        "invalid_utf8_files",
+        "binary_files",
+        "long_lines"
+      ],
+      "title": "SearchStats",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "preview": {
+      "$ref": "#/$defs/GrepOutput"
+    },
+    "artifact": {
+      "$ref": "#/$defs/ArtifactRef"
+    }
+  },
+  "required": [
+    "preview",
+    "artifact"
+  ],
+  "title": "ArchivedGrepOutput",
+  "type": "object"
+}

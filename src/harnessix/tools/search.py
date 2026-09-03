@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Literal
 
+from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_ARTIFACT_RECORDS
 from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
 from harnessix.tools.files import _decode
 from harnessix.tools.patterns import PathPattern
@@ -46,6 +47,22 @@ def execution_contract() -> dict[str, object]:
         "max_record_bytes": MAX_SEARCH_RECORD_BYTES,
         "max_match_bytes": MAX_MATCH_BYTES,
     }
+
+
+class SearchCapture:
+    """预览之外的记录仍有硬上限；不将超过预算的前缀当作完整正文。"""
+
+    def __init__(self) -> None:
+        self.body = bytearray()
+        self.records = 0
+        self.complete = False
+
+    def append(self, encoded: str) -> None:
+        data = (encoded + "\n").encode("utf-8")
+        if len(self.body) + len(data) > MAX_ARTIFACT_BYTES or self.records >= MAX_ARTIFACT_RECORDS:
+            raise ReadToolError("limit_exceeded")
+        self.body.extend(data)
+        self.records += 1
 
 
 @dataclass
@@ -170,7 +187,13 @@ def _relative(path: str, root: str) -> str:
     return path if root == "." else path[len(root) + 1 :]
 
 
-def glob(workspace: Workspace, args: GlobInput, operation: ReadOperation) -> GlobOutput:
+def glob(
+    workspace: Workspace,
+    args: GlobInput,
+    operation: ReadOperation,
+    *,
+    capture: SearchCapture | None = None,
+) -> GlobOutput:
     scan, pattern, records = _Scan(), PathPattern(args.pattern), _Records(args.max_results)
     paths = []
     for node in _collect(workspace, args, operation, scan):
@@ -183,10 +206,16 @@ def glob(workspace: Workspace, args: GlobInput, operation: ReadOperation) -> Glo
         except PermissionError:
             scan.unreadable_entries += 1
             continue
-        if not records.accept(json.dumps(node.path, ensure_ascii=False)):
+        encoded = json.dumps(node.path, ensure_ascii=False)
+        if capture is not None:
+            capture.append(encoded)
+        if records.accept(encoded):
+            paths.append(node.path)
+        elif capture is None:
             break
-        paths.append(node.path)
     stats = scan.snapshot()
+    if capture is not None:
+        capture.complete = not stats.has_gaps
     return GlobOutput(
         path=args.path,
         paths=tuple(paths),
@@ -232,7 +261,13 @@ def _preview(text: str, index: int) -> tuple[str, bool]:
     return snippet, start > 0 or len(snippet) < len(text)
 
 
-def grep(workspace: Workspace, args: GrepInput, operation: ReadOperation) -> GrepOutput:
+def grep(
+    workspace: Workspace,
+    args: GrepInput,
+    operation: ReadOperation,
+    *,
+    capture: SearchCapture | None = None,
+) -> GrepOutput:
     scan, pattern, records = _Scan(), PathPattern(args.include), _Records(args.max_results)
     matches: list[GrepMatch] = []
     for node in _collect(workspace, args, operation, scan):
@@ -264,14 +299,20 @@ def grep(workspace: Workspace, args: GrepInput, operation: ReadOperation) -> Gre
                             text_truncated=truncated,
                             revision=revision,
                         )
-                        if not records.accept(hit.model_dump_json()):
+                        encoded = hit.model_dump_json()
+                        if capture is not None:
+                            capture.append(encoded)
+                        if records.accept(encoded):
+                            matches.append(hit)
+                        elif capture is None:
                             break
-                        matches.append(hit)
         except PermissionError:
             scan.unreadable_entries += 1
-        if records.reason is not None:
+        if records.reason is not None and capture is None:
             break
     stats = scan.snapshot()
+    if capture is not None:
+        capture.complete = not stats.has_gaps
     return GrepOutput(
         path=args.path,
         matches=tuple(matches),

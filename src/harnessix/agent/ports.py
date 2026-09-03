@@ -3,6 +3,7 @@ from typing import Protocol
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import ToolCallContent, ToolResultContent
+from harnessix.artifacts.contracts import ArtifactToolResult
 from harnessix.domain.models import ToolDescriptor
 
 
@@ -17,7 +18,7 @@ class ScopedToolRuntime(Protocol):
 
     async def execute_scoped(
         self, call: ToolCallContent, scope: ToolExecutionScope, cancel: CancelToken
-    ) -> ToolResultContent: ...
+    ) -> ToolResultContent | ArtifactToolResult: ...
 
 
 class NoTools:

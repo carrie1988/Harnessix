@@ -4,6 +4,7 @@ from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
+from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.tools.contracts import ReadContract, Revision
 
 MAX_SEARCH_ENTRIES = 10000
@@ -148,3 +149,13 @@ class GrepOutput(SearchOutput):
         if positions != sorted(set(positions)) or (self.truncated and not positions):
             raise ValueError("命中行必须有序、无重复且截断时非空")
         return self
+
+
+class ArchivedGlobOutput(ReadContract):
+    preview: GlobOutput
+    artifact: ArtifactRef
+
+
+class ArchivedGrepOutput(ReadContract):
+    preview: GrepOutput
+    artifact: ArtifactRef

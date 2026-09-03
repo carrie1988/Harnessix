@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "records": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Records",
+          "type": "integer"
+        },
+        "format": {
+          "const": "jsonl/v1",
+          "default": "jsonl/v1",
+          "title": "Format",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "sha256",
+        "size_bytes",
+        "records",
+        "complete",
+        "expires_at"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "artifact": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "offset": {
+      "maximum": 10000,
+      "minimum": 0,
+      "title": "Offset",
+      "type": "integer"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "next_offset": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Offset"
+    }
+  },
+  "required": [
+    "artifact",
+    "offset",
+    "text",
+    "next_offset"
+  ],
+  "title": "ArtifactPage",
+  "type": "object"
+}

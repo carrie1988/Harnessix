@@ -1,13 +1,13 @@
 # ADR 0024：有界搜索与 Artifact 归属拆片
 
 - 日期：2026-09-03
-- 状态：0.5.2a 与 0.5.2b1 上下文已实现；0.5.2b2 Artifact 待实施，整体 0.5.2 未完成
+- 状态：0.5.2a、0.5.2b1/b2 均已实现；本 ADR 保留拆片时的搜索默认语义
 
 ## 1. 拆片与实际接口约束
 
 0.5.1 已通过 Linux Python 3.12/3.13、macOS 和 PostgreSQL CI。本次先交付可独立验收的文件定位/内容搜索，不把搜索与 Artifact 一次性塞进现有只读接口。
 
-0.5.2a 时的 `ToolRuntime.execute(call, cancel)` 没有可信 Thread/Turn 上下文。将 Thread ID 放进模型参数不能证明归属，把 Artifact 简单绑定到 Workspace 又会混淆同根下的多个会话。因此先设计宿主注入的执行作用域、兼容旧 ToolRuntime 的调用方式，再实现 Artifact 持久化与读取/回收。后续 0.5.2b1 已落地显式 Scoped 入口，见 [ADR 0025](0025-trusted-tool-execution-scope.md)；Artifact 仍未实现，当前不新增伪归属字段或共享全局输出目录。
+0.5.2a 时的 `ToolRuntime.execute(call, cancel)` 没有可信 Thread/Turn 上下文。将 Thread ID 放进模型参数不能证明归属，把 Artifact 简单绑定到 Workspace 又会混淆同根下的多个会话。因此先设计宿主注入的执行作用域、兼容旧 ToolRuntime 的调用方式，再实现 Artifact 持久化与读取/回收。后续 0.5.2b1 已落地显式 Scoped 入口，见 [ADR 0025](0025-trusted-tool-execution-scope.md)；随后 Artifact 已按 [ADR 0026](0026-transactional-artifacts.md) 完成同库事务发布，不新增伪归属字段或共享全局输出目录。
 
 ## 2. 组件求证与选择
 
@@ -23,7 +23,7 @@
 
 `grep(path='.', query, include='**/*', max_results=100, include_ignored=False)`：只搜索目录下匹配 include 的文件；query 最多 256 UTF-8 字节、非空、无控制字符/换行。每个命中行返回一条记录，包含相对路径、1 起始行号、包含首次命中的有界原文片段、片段是否裁剪及文件 revision；此 revision 可直接传给 read_file 的 expected_revision，不是内容哈希。
 
-两工具最多返回 200 项。先有界发现候选，再按完整相对路径排序；grep 同文件按行号排序。达到结果数量或 24 KiB 记录预算时返回显式 truncated/reason，scan_complete=false；没有搜索分页游标或自动保留的完整输出，调用方应缩小路径/模式。
+默认未启用 Artifact 时，两工具最多返回 200 项。先有界发现候选，再按完整相对路径排序；grep 同文件按行号排序。达到结果数量或 24 KiB 记录预算时返回显式 truncated/reason，scan_complete=false；没有搜索分页游标或自动保留的完整输出，调用方应缩小路径/模式。
 
 ## 4. 权限、忽略与扫描预算
 

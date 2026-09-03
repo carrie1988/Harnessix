@@ -5,6 +5,7 @@ import hashlib
 import json
 from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
+from dataclasses import replace
 from types import TracebackType
 from typing import Self
 from uuid import UUID
@@ -47,6 +48,8 @@ from harnessix.agent.ports import NoTools, ScopedToolRuntime, ToolRuntime
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
+from harnessix.artifacts.contracts import ArtifactToolResult
+from harnessix.artifacts.ports import ArtifactPublisher
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -81,12 +84,18 @@ class AgentRuntime:
         tools: ToolRuntime | None = None,
         *,
         scoped_tools: ScopedToolRuntime | None = None,
+        artifacts: ArtifactPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
     ) -> None:
         if tools is not None and scoped_tools is not None:
             raise KernelError("tool_runtime_conflict", "旧工具入口与 Scoped 入口不能同时配置")
+        if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
+            raise KernelError(
+                "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
+            )
+        self._artifacts = artifacts
         self.store = store
         self._telemetry = KernelTelemetry(observability or NoOpObservability())
         self.provider = provider
@@ -634,19 +643,35 @@ class AgentRuntime:
                 )
             )
             token.checkpoint()
-            if rejected:
-                result = self._validate_result(result, call, turn.budget.max_output_chars)
-            item_id = new_id()
-            thread = await self._commit(
-                thread_id,
-                turn_id,
-                [
-                    ItemStarted(item_id=item_id, content=result),
-                    ItemFinished(item_id=item_id, content=result, status=ItemStatus.COMPLETED),
-                ],
-            )
+            if isinstance(result, ArtifactToolResult):
+                if self._artifacts is None:
+                    raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
+                async with self._lock(thread_id):
+                    current = await self.store.get_thread(thread_id)
+                    thread = await self._artifacts.publish(
+                        thread_id,
+                        turn_id,
+                        call,
+                        result,
+                        expected_sequence=current.sequence,
+                        max_output_chars=turn.budget.max_output_chars,
+                    )
+                settled_result = result.result
+            else:
+                if rejected:
+                    result = self._validate_result(result, call, turn.budget.max_output_chars)
+                item_id = new_id()
+                thread = await self._commit(
+                    thread_id,
+                    turn_id,
+                    [
+                        ItemStarted(item_id=item_id, content=result),
+                        ItemFinished(item_id=item_id, content=result, status=ItemStatus.COMPLETED),
+                    ],
+                )
+                settled_result = result
             turn = get_turn(thread, turn_id)
-            if result.outcome == "unknown":
+            if settled_result.outcome == "unknown":
                 raise KernelError("uncertain_effect", "工具结果未知，禁止继续模型循环")
         return None
 
@@ -657,7 +682,7 @@ class AgentRuntime:
         call: ToolCallContent,
         token: CancelToken,
         max_output_chars: int,
-    ) -> ToolResultContent:
+    ) -> ToolResultContent | ArtifactToolResult:
         with self._telemetry.operation(
             "tool",
             thread_id=thread_id,
@@ -665,6 +690,14 @@ class AgentRuntime:
             call_id=call.call_id,
         ) as operation:
             result = await self._execute_tool(thread_id, turn_id, call, token)
+            if isinstance(result, ArtifactToolResult):
+                if self._artifacts is None:
+                    raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
+                if result.publisher is not self._artifacts:
+                    raise KernelError("artifact_store_mismatch", "Artifact 载荷没有匹配的发布器")
+                checked = self._validate_result(result.result, call, max_output_chars)
+                operation.finish(checked.outcome, checked.error)
+                return replace(result, result=checked)
             result = self._validate_result(result, call, max_output_chars)
             operation.finish(result.outcome, result.error)
             return result
@@ -682,7 +715,7 @@ class AgentRuntime:
 
     async def _execute_tool(
         self, thread_id: UUID, turn_id: UUID, call: ToolCallContent, token: CancelToken
-    ) -> ToolResultContent:
+    ) -> ToolResultContent | ArtifactToolResult:
         definition = self._definitions.get(call.tool)
         if definition is None:
             return ToolResultContent(
@@ -713,6 +746,8 @@ class AgentRuntime:
             )
         else:
             result = await token.run(self._legacy_tools.execute(call.model_copy(deep=True), token))
+            if isinstance(result, ArtifactToolResult):
+                raise KernelError("artifact_scope_required", "Artifact 只能由 Scoped 入口返回")
         self._fault("runtime.after_tool")
         return result
 

@@ -7,6 +7,12 @@ from pydantic import TypeAdapter
 
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.api import create_app
+from harnessix.artifacts.contracts import (
+    ArtifactPage,
+    ArtifactPolicy,
+    ArtifactRef,
+    ReadArtifactInput,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
@@ -14,7 +20,14 @@ from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
-from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
+from harnessix.tools.search_contracts import (
+    ArchivedGlobOutput,
+    ArchivedGrepOutput,
+    GlobInput,
+    GlobOutput,
+    GrepInput,
+    GrepOutput,
+)
 
 
 def write_json(path: Path, value: object) -> None:
@@ -44,9 +57,15 @@ def main() -> None:
         ("glob-output", GlobOutput),
         ("grep-input", GrepInput),
         ("grep-output", GrepOutput),
+        ("artifact-ref", ArtifactRef),
+        ("artifact-policy", ArtifactPolicy),
+        ("read-artifact-input", ReadArtifactInput),
+        ("read-artifact-output", ArtifactPage),
+        ("archived-glob-output", ArchivedGlobOutput),
+        ("archived-grep-output", ArchivedGrepOutput),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
-    print("已更新 Action、Agent、Provider、价格/成本、Smoke、只读工具和 OpenAPI Schema")
+    print("已更新 Action、Agent、Provider、成本、Smoke、只读工具、Artifact 和 OpenAPI Schema")
 
 
 if __name__ == "__main__":

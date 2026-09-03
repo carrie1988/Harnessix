@@ -1,0 +1,42 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "ttl_seconds": {
+      "default": 86400,
+      "maximum": 604800,
+      "minimum": 60,
+      "title": "Ttl Seconds",
+      "type": "integer"
+    },
+    "max_turn_bytes": {
+      "default": 4194304,
+      "maximum": 33554432,
+      "minimum": 1,
+      "title": "Max Turn Bytes",
+      "type": "integer"
+    },
+    "max_turn_count": {
+      "default": 128,
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Max Turn Count",
+      "type": "integer"
+    },
+    "max_live_bytes": {
+      "default": 33554432,
+      "maximum": 268435456,
+      "minimum": 1,
+      "title": "Max Live Bytes",
+      "type": "integer"
+    },
+    "max_manifests": {
+      "default": 10000,
+      "maximum": 100000,
+      "minimum": 1,
+      "title": "Max Manifests",
+      "type": "integer"
+    }
+  },
+  "title": "ArtifactPolicy",
+  "type": "object"
+}

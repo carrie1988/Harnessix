@@ -15,7 +15,7 @@
 
 0.4.3b2 收口快照（2026-09-03）：新增 **69 项**，覆盖原生响应计费元数据、迟到/去重/漂移、严格 TTL 分项、原子提交、直接平台映射与价格绑定冲突、真实 v4 升级；全量 **805 passed、1 skipped**，异步调试 **769 passed**。新增 5 个硬崩溃切点，全项目 **54 个**，另有 2 个 SIGINT 用例。旧 Schema 冻结、旧读者拒绝、独立 wheel 与六个离线入口通过。设计见 [ADR 0020](adr/0020-observed-billing-context.md)。
 
-真实验证与默认 CI 分开：百炼北京首次工具解析失败，定位确认空 ID 增量兼容问题；修复后文本/内存工具/审批重开均有真实通过证据。兼容修复新增 6 项回归（先复现 2 failed，再全部通过），随后并发初始化暴露 WAL 忙锁并完成根因修复，另补 8 项存储回归（见 [ADR 0021](adr/0021-session-wal-initialization.md)）；当前全量 **819 passed、1 skipped**，异步调试 **783 passed**；不将固定场景通过等同于全模型兼容或 Coding Eval，见 [验证记录](validation/bailian-2026-09-03.md)。
+真实验证与默认 CI 分开：百炼北京首次工具解析失败，定位确认空 ID 增量兼容问题；修复后文本/内存工具/审批重开均有真实通过证据。兼容修复新增 6 项回归（先复现 2 failed，再全部通过），随后并发初始化暴露 WAL 忙锁并完成根因修复，另补 8 项存储回归（见 [ADR 0021](adr/0021-session-wal-initialization.md)）；该次全量 **819 passed、1 skipped**，异步调试 **783 passed**；不将固定场景通过等同于全模型兼容或 Coding Eval，见 [验证记录](validation/bailian-2026-09-03.md)。
 
 ## 1. 目标
 
@@ -386,4 +386,22 @@ Agent Runtime Kernel 合并前：
 
 未修改旧输入/输出、Agent/Action Schema 或 Session Migration，也未新增依赖、真实 API 请求或远程中间件。现有 Linux 全量、macOS 工具/示例及 PostgreSQL CI 继续运行，新提交结果以对应 CI 为准。
 
-**未交付**：Artifact 内容/manifest、引用发布、配额、过期和孤儿回收。作用域不是发布租约；终态后的历史 scope 不能单独证明仍有发布权限。0.5.2b2 必须补齐持久事务及故障验证，才能关闭 0.5.2b/0.5.2。
+**0.5.2b1 本片未交付**：Artifact 内容/manifest、引用发布、配额、过期和孤儿回收。后续交付见第 17 节。作用域不是发布租约；终态后的历史 scope 不能单独证明仍有发布权限。0.5.2b2 必须补齐持久事务及故障验证，才能关闭 0.5.2b/0.5.2。
+
+## 17. 0.5.2b2 事务 Artifact 验收（2026-09-03）
+
+基线 `0c39c39` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33755778266) 通过后实施。本片交付有界 JSONL Artifact，不包括 Patch、进程日志或真实编码 Eval；未调用真实模型 API、使用凭据或部署中间件。
+
+- `tests/artifacts/` 新增 **102 项**：严格契约/六份冻结 Schema、300 条中文搜索预览外读取、完整性与缺口、跨归属/策略/根身份、配置错绑、配额及并发竞争、过期/损坏/清理游标与活跃引用保护、审批漂移/拒绝/重开、取消与故障恢复。
+- 本地 `make check`：Ruff/Mypy（85 个源文件）及 **1118 passed、1 skipped**；本地未配置 PostgreSQL，真实 PostgreSQL 由现有 CI 服务验证。
+- 异步调试 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts`：**1082 passed**。
+- 真实 OpenAI SDK + MockTransport 三次离线请求完成 grep→read_artifact→回答；原始 300 条正文不回灌 HTTP，宿主归属字段不进入模型参数/请求，流均关闭。
+- 新增 glob/grep × 7 个真实 `os._exit(77)` 切点：捕获后、Artifact 插入后、Session 事件后/投影后、提交前/后、Turn 终态前。全项目累计 **86 个硬崩溃切点**及原有 **2 个 SIGINT 用例**；不把进程退出当作所有断电/磁盘故障模拟。
+- 提交前硬崩溃、异常或 Task 取消：正文/引用同时缺席；提交后失败：正文/引用同时保留。重开均 INTERRUPTED、不重新调用工具或 Provider、SQLite 完整性检查及 Replay 通过。用户取消与发布在 Thread 锁上线性化，允许先原子提交再取消。
+- 注入 SQLITE_FULL 映射为 storage_full 并回滚；清理事务失败可重试，过期墓碑不变成缺失。该项是驱动错误注入，不宣称真实灌满磁盘验证。
+
+**独立安装与升级**：从 `git archive 0c39c39` 构建旧 wheel，仓库外无 OpenAI/Anthropic SDK 的基础环境创建四个真实待审批会话（migration 5）。新 wheel 升级到 migration 6，以 Scoped 入口批准并继续四工具；旧工具完整定义和历史事件原始字节不变，Replay 一致。旧 wheel 再次打开升级库明确报 schema_too_new。新 wheel 以 `python -I` 在仓库外运行 files/search/artifacts 三个离线示例通过。
+
+**兼容与 CI**：仅新增 migration 6，事件/投影仍为 Agent v5；未改写旧 migration 或八份默认工具 Schema。Linux Python 3.12/3.13 全量 CI 和 macOS 工具 CI 已纳入新 Artifact 测试与示例，PostgreSQL 作业沿用。CI 结果以本片对应提交为准。
+
+范围内 0.5.2b/0.5.2 已完成。当前上限为单件 1 MiB/10000 条 JSONL，不是任意 blob 服务；逻辑内容/manifest 配额不限制整个 Session/WAL 物理大小，保留的墓碑最终需要宿主按保留策略轮换 Session。具体组合与生命周期见 [0.5 设计](m05-coding-tools.md#15-052b2-当前交付与使用)、[ADR 0026](adr/0026-transactional-artifacts.md)。

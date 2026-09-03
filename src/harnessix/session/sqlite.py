@@ -29,6 +29,7 @@ class SQLiteSessionStore:
     def __init__(self, path: str | Path, *, fault: Callable[[str], None] | None = None) -> None:
         self.path = Path(path).resolve()
         self._fault = fault or (lambda _: None)
+        self._runtime_owner_token: object | None = None
 
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
@@ -150,7 +151,13 @@ class SQLiteSessionStore:
                     raise KernelError(
                         "runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主"
                     ) from exc
-                yield
+                owner = object()
+                self._runtime_owner_token = owner
+                try:
+                    yield
+                finally:
+                    if self._runtime_owner_token is owner:
+                        self._runtime_owner_token = None
             finally:
                 os.close(descriptor)
 
@@ -232,6 +239,19 @@ class SQLiteSessionStore:
         *,
         expected_sequence: int,
     ) -> Thread:
+        batch = self._freeze_batch(drafts)
+        async with self._connection() as database:
+            await database.execute("BEGIN IMMEDIATE")
+            thread, changed = await self._append_in_transaction(
+                database, thread_id, batch, expected_sequence=expected_sequence
+            )
+            await database.commit()
+            if changed:
+                self._fault("session.after_commit")
+            return thread
+
+    @staticmethod
+    def _freeze_batch(drafts: Sequence[EventDraft]) -> tuple[EventDraft, ...]:
         # 先做值拷贝，冻结调用方可能持有的嵌套 arguments。
         try:
             batch = tuple(
@@ -241,51 +261,58 @@ class SQLiteSessionStore:
             raise KernelError("invalid_batch", "事件批次不符合契约") from None
         if not batch or len({d.event_id for d in batch}) != len(batch):
             raise KernelError("invalid_batch", "事件批次为空或包含重复 ID")
-        async with self._connection() as database:
-            await database.execute("BEGIN IMMEDIATE")
-            matched: list[AgentEvent] = []
-            for draft in batch:
-                cursor = await database.execute(
-                    "SELECT * FROM agent_events WHERE event_id = ?",
-                    (str(draft.event_id),),
+        return batch
+
+    async def _append_in_transaction(
+        self,
+        database: aiosqlite.Connection,
+        thread_id: UUID,
+        batch: tuple[EventDraft, ...],
+        *,
+        expected_sequence: int,
+    ) -> tuple[Thread, bool]:
+        """接收私有冻结批次；调用方负责 BEGIN、COMMIT 和回滚。"""
+        matched: list[AgentEvent] = []
+        for draft in batch:
+            cursor = await database.execute(
+                "SELECT * FROM agent_events WHERE event_id = ?",
+                (str(draft.event_id),),
+            )
+            row = await cursor.fetchone()
+            if row is not None:
+                event = self._parse_event(row)
+                stored = EventDraft.model_validate(
+                    event.model_dump(exclude={"thread_id", "sequence"})
                 )
-                row = await cursor.fetchone()
-                if row is not None:
-                    event = self._parse_event(row)
-                    stored = EventDraft.model_validate(
-                        event.model_dump(exclude={"thread_id", "sequence"})
-                    )
-                    if stored != draft or event.thread_id != thread_id:
-                        raise KernelError("event_conflict", "同一事件 ID 已绑定不同载荷")
-                    matched.append(event)
-            if matched:
-                if len(matched) != len(batch) or any(
-                    event.sequence != expected_sequence + index
-                    for index, event in enumerate(matched, 1)
-                ):
-                    raise KernelError("event_conflict", "事件批次部分重复或顺序冲突")
-                thread = await self._snapshot(database, thread_id)
-                assert thread is not None
-                return thread
+                if stored != draft or event.thread_id != thread_id:
+                    raise KernelError("event_conflict", "同一事件 ID 已绑定不同载荷")
+                matched.append(event)
+        if matched:
+            if len(matched) != len(batch) or any(
+                event.sequence != expected_sequence + index
+                for index, event in enumerate(matched, 1)
+            ):
+                raise KernelError("event_conflict", "事件批次部分重复或顺序冲突")
             thread = await self._snapshot(database, thread_id)
-            sequence = thread.sequence if thread else 0
-            if sequence != expected_sequence:
-                raise KernelError("sequence_conflict", "Thread 已更新，请重新读取 sequence")
-            for draft in batch:
-                sequence += 1
-                event = AgentEvent(**draft.model_dump(), thread_id=thread_id, sequence=sequence)
-                thread = apply_event(thread, event)
-                await database.execute(
-                    "INSERT INTO agent_events VALUES (?, ?, ?, ?)",
-                    (str(thread_id), sequence, str(event.event_id), event.model_dump_json()),
-                )
             assert thread is not None
-            self._fault("session.after_events")
-            await self._save(database, thread)
-            self._fault("session.after_projection")
-            await database.commit()
-            self._fault("session.after_commit")
-            return thread
+            return thread, False
+        thread = await self._snapshot(database, thread_id)
+        sequence = thread.sequence if thread else 0
+        if sequence != expected_sequence:
+            raise KernelError("sequence_conflict", "Thread 已更新，请重新读取 sequence")
+        for draft in batch:
+            sequence += 1
+            event = AgentEvent(**draft.model_dump(), thread_id=thread_id, sequence=sequence)
+            thread = apply_event(thread, event)
+            await database.execute(
+                "INSERT INTO agent_events VALUES (?, ?, ?, ?)",
+                (str(thread_id), sequence, str(event.event_id), event.model_dump_json()),
+            )
+        assert thread is not None
+        self._fault("session.after_events")
+        await self._save(database, thread)
+        self._fault("session.after_projection")
+        return thread, True
 
     @staticmethod
     def _parse_event(row: aiosqlite.Row) -> AgentEvent:

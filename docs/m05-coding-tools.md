@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2a 只读与搜索、0.5.2b1 执行上下文已实现；0.5.2b2–0.5.5 仍是设计，整体 0.5.2 未完成
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -30,7 +30,7 @@
 | 0.5.1 | Workspace、工具绑定、list_files/read_file | 已实现；独立离线验收，0.4.3c 计价保留待办，不再作为本片前置阻塞 |
 | 0.5.2a | glob/字面量 grep | 已实现；有界遍历、忽略/权限分离、输出上限、审批、revision 读取与中断不重搜 |
 | 0.5.2b1 | 可信执行作用域、旧端口兼容 | 已实现；明确注入调用归属、校验工作区；不新增 Artifact 或改变旧持久契约 |
-| 0.5.2b2 | 输出 Artifact | 待实施；内容/manifest、提交一致性、归属隔离、配额/过期与孤儿恢复通过后，0.5.2 才完成 |
+| 0.5.2b2 | 输出 Artifact | 已实现；同一 Session 事务发布、归属/配额/分页/清理、取消及 14 个进程崩溃切点通过 |
 | 0.5.3 | Patch 与本地效果记录 | 写工具准入 ADR、预期内容校验、持久意图/效果证据、冲突/崩溃恢复通过 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
@@ -49,12 +49,12 @@ files.py           目录分页与有界文本读取
 search.py          搜索适配及明确的忽略/资源限制
 search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
-artifacts.py       私有完整输出、摘要和受控引用
+../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
 patches.py         预期内容、补丁计划、效果证据与恢复
 processes.py       argv、进程组、并发排水、取消与清理
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块；Artifact/Patch/Process 尚未实现。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；Patch/Process 尚未实现。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -90,10 +90,10 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 
 ## 7. 输出与 Artifact
 
-**本节的 Artifact 能力属于 0.5.2b2，尚未实现。** 小结果已经保留在现有 ToolResult.output 中；当前搜索仅返回有界结果，截断不代表全文已保存。后续较大输出才写入宿主拥有的私有 Artifact Store，Session 保存受校验的引用、大小、摘要及截断信息。0.5.2b1 已新增显式 Scoped 端口和宿主 Execution Scope（见第 14 节）；旧 execute(call, cancel) 保留。不得用模型参数或仅一个可构造的 scope 对象证明发布授权。
+**0.5.2b2 已实现有界搜索 Artifact。** 默认搜索仍只有预览；宿主同时为 Kernel 与 Scoped CodingToolRuntime 配置同一 `SQLiteArtifactStore(session)` 后，才启用 JSONL 捕获与 `read_artifact`。正文、manifest、引用结果的事件/投影同库原子提交，没有外部 blob 文件双写。发布还校验活跃宿主、最新调用及审批，不接受历史 scope 作为持续租约。详细契约见 [ADR 0026](adr/0026-transactional-artifacts.md)，组合示例见第 15 节。
 
 - 引用是受控标识，不是任意绝对路径；按 Thread/Workspace 归属校验读取。
-- 限制单 Artifact、单 Turn 和总磁盘用量；落盘失败返回明确结果，不能声称完整日志已保存。
+- 单件最多 1 MiB/10000 记录，限制单 Turn 和总保留正文/manifest；这是逻辑配额，不是整个 Session/WAL 的物理磁盘上限。
 - 完整输出与模型片段的摘要分别标记；部分写入不能标记完整。
 - 过期返回 artifact_expired；默认禁止删除仍在执行中的引用。
 - Artifact 不是通用 DLP。凭据文件默认不读，环境不透传秘密，日志不复制参数/原始异常；后续导出需单独授权。
@@ -207,7 +207,7 @@ scan_complete 只针对本次定义的可搜索范围，不是全树原子快照
 
 新增四份 `glob/grep-input/output-v1.schema.json`，不修改 Agent v5、Action v1 或旧工具 Schema。搜索示例使用固定离线 Provider 消费真实文件输出，不是自主编码 Eval；默认测试不使用真实模型或服务器。验收记录见 [测试文档](testing-and-evals.md#15-052a-有界搜索验收2026-09-03)。
 
-后续 0.5.2b 已拆为 b1/b2，上下文交付见下节；Artifact 完成前，不勾选 0.5.2 整体。
+0.5.2b 拆为 b1/b2，上下文和 Artifact 分别见以下两节；两片现均已实现，0.5.2 范围闭环。
 
 ## 14. 0.5.2b1 当前交付与使用
 
@@ -227,8 +227,51 @@ async with CodingToolRuntime(root) as tools:
 
 Kernel 在只读/版本/审批门禁之后，从最新持久投影核对活跃 Turn 和未完成调用，再注入不可变上下文。作用域包含真实 Thread/Turn/Call、宿主 Workspace 标签及复用既有审批算法的完整调用摘要。模型参数不能覆盖这些字段；通用工具仍负责自身参数校验，CodingToolRuntime 的严格模型拒绝额外归属字段。
 
-CodingToolRuntime 的新入口还要求 workspace 严格匹配其规范根，随后复用原有根身份、策略、输入/输出、取消和 FD 检查。宿主应使用 workspace_root 创建 Thread；不匹配报 tool_workspace_mismatch，不通过别名重新 resolve 悄悄修正。旧工具定义、八份 list/read/glob/grep Schema、Agent v5、审批指纹与 Migration 均保持不变。
+CodingToolRuntime 的新入口还要求 workspace 严格匹配其规范根，随后复用原有根身份、策略、输入/输出、取消和 FD 检查。宿主应使用 workspace_root 创建 Thread；不匹配报 tool_workspace_mismatch，不通过别名重新 resolve 悄悄修正。0.5.2b1 当时保持旧定义、八份 list/read/glob/grep Schema、Agent v5、审批指纹与 Migration 不变；后续 b2 新增 migration 6，默认工具定义仍不变。
 
 `examples.kernel_search` 已切换到显式 Scoped 入口，`examples.kernel_files` 保留旧入口，独立 wheel 和跨平台 CI 同时验证二者。作用域不自动给用户开放 Artifact、文件写入或 Shell，也不是在 Turn 结束后仍有效的发布租约。详细边界见 [ADR 0025](adr/0025-trusted-tool-execution-scope.md)，验收见 [测试记录](testing-and-evals.md#16-052b1-可信执行作用域验收2026-09-03)。
 
-下一片 0.5.2b2 必须先解决内容/manifest 与 ToolResult 发布的一致性：选择同一 Session 事务，或可恢复的独立 blob 发布协议；不能把文件 rename 与数据库提交当成一个事务。再完成受控读取、归属/配额、活跃引用保护、过期/孤儿回收及真实故障注入。
+0.5.2b2 已选择同一 Session 事务，避免外部 blob 的双写与孤儿协议，交付见下节。
+
+## 15. 0.5.2b2 当前交付与使用
+
+本片新增 `artifacts/contracts.py`、`ports.py`、`sqlite.py` 和 migration `0006_artifacts.sql`，以及六份独立 Artifact/归档输出 v1 Schema。事件和投影仍为 Agent v5，旧 migration 与八份默认只读 Schema 原样保留；**数据库 migration 6 与 Agent Schema 5 不是同一个版本号**。旧程序拒绝新库；不是可降级升级。
+
+~~~python
+from pathlib import Path
+from harnessix.agent.runtime import AgentRuntime
+from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.tools.runtime import CodingToolRuntime
+
+# provider 沿用现有 Provider 端口；Session 放在工作区外或被拒绝的私有目录。
+session = SQLiteSessionStore(Path("/宿主私有目录/session.db"))
+artifacts = SQLiteArtifactStore(session)
+async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+    async with AgentRuntime(session, provider, scoped_tools=tools, artifacts=artifacts) as runtime:
+        thread = await runtime.create_thread(str(tools.workspace_root))
+        turn = await runtime.run_turn(
+            thread.thread_id, "搜索并读取更多命中", request_id="archive-1"
+        )
+~~~
+
+启用后搜索输出变为 `{preview, artifact}`；preview 仍受原有行/字节限制，artifact 为 `ArtifactRef`，无内部数据库路径/Thread 身份字段。`glob` JSONL 每行是路径字符串，`grep` 每行是含路径、行号、片段和 revision 的对象。`read_artifact(artifact_id, offset=0, limit=100)` 使用 **0 起始记录偏移**，单页最多 200 条/24 KiB UTF-8，返回 `text` 与 `next_offset`；结束为 null。原始片段里的转义换行不被误当作记录边界。
+
+| 边界 | 当前行为 |
+| --- | --- |
+| 完整性 | `preview.truncated=true` 可与 `artifact.complete=true` 同时成立；后者指定义范围扫描完成，不是无限日志、全仓快照或完整源码行 |
+| 捕获预算 | 单件最多 1 MiB/10000 记录；任一硬上限触发即失败，不保存伪完整前缀；扫描/权限预算不放宽 |
+| 默认配额 | 单 Turn 累计 4 MiB/128 件；保留正文 32 MiB；累计 10000 份 manifest（含 tombstone） |
+| TTL | 默认 24 小时，可配置 60 秒至 7 天；过期读取明确失败，读取不续期 |
+| 归属 | 真正的 Thread 与 Workspace capability 由宿主提供；跨 Thread 或重开根/拒绝策略变化不返回内容 |
+| 事务 | 内容、manifest 与 ToolResult 的事件/投影共用一个 SQLite 事务；回滚没有孤儿，提交后有成对事实 |
+| 清理 | 宿主显式 `await artifacts.collect(limit=100, after=cursor)`；返回 `next_after`，全批可能需再读空批确认结束；下一轮从无 cursor 开始 |
+| 活跃引用 | 活跃 Turn 的整个 Thread 保守保护，跳过正文清理但不延长读取有效期 |
+| 失败 | not_found / expired / corrupt / invalid_cursor / quota_exceeded 等明确区分；缺失与跨归属统一为 artifact_not_found |
+| 恢复 | 进程中断不重新搜索；Replay 可恢复历史引用，不重新生成缺失/过期正文 |
+
+清理只释放正文并保留 tombstone，不立即缩小数据库文件；配额不覆盖历史事件、SQLite 空闲页或 WAL 的物理大小。达到 manifest 累计上限后需要宿主轮换/保留管理，不自动删除用户会话。进程标准输出、任意二进制/流式 blob 和导出尚不在本片支持范围。
+
+`uv run python -m examples.kernel_artifacts` 在临时真实文件中搜索 300 条中文命中，模型预览只有 2 条，随后读取第 299/300 条，重开 SQLite 并核对 Replay；固定离线决策不等于自主编码 Eval。质量证据见 [第 17 节验收](testing-and-evals.md#17-052b2-事务-artifact-验收2026-09-03)。
+
+**下一阶段 0.5.3**：先完成本地写准入 ADR，复用既有 Call/Result 与效果分类，明确完整前镜像、目标计划审批、持久写意图、文件系统与 Session 非原子的核对边界。首先交付单文件 Patch，逐一验证脏工作区、编辑器竞争、提交前后崩溃及第三种内容冲突；多文件效果和 Process 必须分别验收，不能以简单替换或删除 READ_ONLY 门禁代替。

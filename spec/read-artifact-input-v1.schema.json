@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifact_id": {
+      "format": "uuid",
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "offset": {
+      "default": 0,
+      "maximum": 10000,
+      "minimum": 0,
+      "title": "Offset",
+      "type": "integer"
+    },
+    "limit": {
+      "default": 100,
+      "maximum": 200,
+      "minimum": 1,
+      "title": "Limit",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "artifact_id"
+  ],
+  "title": "ReadArtifactInput",
+  "type": "object"
+}
