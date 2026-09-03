@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "start_line": {
+      "default": 1,
+      "maximum": 2097152,
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "max_lines": {
+      "default": 200,
+      "maximum": 2000,
+      "minimum": 1,
+      "title": "Max Lines",
+      "type": "integer"
+    },
+    "expected_revision": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Revision"
+    }
+  },
+  "required": [
+    "path"
+  ],
+  "title": "ReadFileInput",
+  "type": "object"
+}

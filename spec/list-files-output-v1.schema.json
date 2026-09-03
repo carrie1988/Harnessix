@@ -1,0 +1,76 @@
+{
+  "$defs": {
+    "DirectoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "symlink",
+            "special"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "kind"
+      ],
+      "title": "DirectoryEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "title": "Path",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/DirectoryEntry"
+      },
+      "maxItems": 200,
+      "title": "Entries",
+      "type": "array"
+    },
+    "revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Revision",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "next_offset": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Offset"
+    }
+  },
+  "required": [
+    "path",
+    "entries",
+    "revision",
+    "truncated",
+    "next_offset"
+  ],
+  "title": "ListFilesOutput",
+  "type": "object"
+}

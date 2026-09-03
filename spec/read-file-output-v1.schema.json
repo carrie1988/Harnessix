@@ -1,0 +1,85 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "title": "Path",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "start_line": {
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "end_line": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End Line"
+    },
+    "utf8_bytes": {
+      "maximum": 24576,
+      "minimum": 0,
+      "title": "Utf8 Bytes",
+      "type": "integer"
+    },
+    "revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Revision",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "truncation_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "line_limit",
+            "byte_limit"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Truncation Reason"
+    },
+    "next_line": {
+      "anyOf": [
+        {
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Line"
+    }
+  },
+  "required": [
+    "path",
+    "text",
+    "start_line",
+    "end_line",
+    "utf8_bytes",
+    "revision",
+    "truncated",
+    "truncation_reason",
+    "next_line"
+  ],
+  "title": "ReadFileOutput",
+  "type": "object"
+}

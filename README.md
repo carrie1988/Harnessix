@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京的文本、内存工具、审批重开三个固定场景已实测通过，计费适用性仍待验收；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1 已实现工作区绑定、目录分页和文件读取；搜索、写入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -42,6 +42,22 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
 第一版目标是 macOS/Linux、本地优先、CLI + Headless App Server。IDE、Web、多租户云平台和分布式 Agent Worker 在 1.0 之后评估。
+
+## 当前已实现：0.5.1 只读编码工具
+
+- `CodingToolRuntime` 对接既有 Kernel，提供 `list_files` / `read_file`；
+- 根身份、拒绝路径和工具契约绑定到持久版本/审批指纹；
+- 目录 FD/no-follow、普通文件类型检查、链接拒绝与读取前后漂移检测；
+- 严格 UTF-8、行/字节/扫描上限、分页 revision 与显式截断；
+- 顺序执行、协作取消、线程与 FD 回收、SQLite 重开/Replay；
+- 真实 SDK + 离线 HTTP 的工具闭环，3 个新增进程崩溃切点；不调用真实 API。
+
+~~~bash
+uv run python -m examples.kernel_files
+uv run pytest tests/tools
+~~~
+
+仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不包含搜索、Patch、Shell、测试执行或完整 Coding Eval。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
 
 ## 当前已实现：0.1 Action Plane
 

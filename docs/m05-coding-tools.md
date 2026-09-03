@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：设计预备稿；尚未实现，0.4.3c 验收后按切片实施
+- 状态：0.5.1 只读切片已实现；0.5.2–0.5.5 仍是设计，尚未实现
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -27,7 +27,7 @@
 
 | 切片 | 交付 | 准入/完成条件 |
 | --- | --- | --- |
-| 0.5.1 | Workspace、工具绑定、list_files/read_file | 0.4 通过；路径/类型/大小/取消契约和真实 Kernel 只读闭环通过 |
+| 0.5.1 | Workspace、工具绑定、list_files/read_file | 已实现；独立离线验收，0.4.3c 计价保留待办，不再作为本片前置阻塞 |
 | 0.5.2 | glob/grep、输出 Artifact | 有界遍历、明确忽略规则、输出上限、Artifact 归属与过期行为通过 |
 | 0.5.3 | Patch 与本地效果记录 | 写工具准入 ADR、预期内容校验、持久意图/效果证据、冲突/崩溃恢复通过 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
@@ -56,7 +56,7 @@ processes.py       argv、进程组、并发排水、取消与清理
 
 ## 5. 首批只读工具契约
 
-以下参数/限制为待测试确认的设计值，不是现有 API 承诺：
+`list_files` / `read_file` 的已实现参数以 [ADR 0023](adr/0023-workspace-read-tools.md) 和生成 Schema 为准；`glob` / `grep` 仍为设计：
 
 | 工具 | 参数要点 | 结果要点 |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ processes.py       argv、进程组、并发排水、取消与清理
 | glob | 相对搜索根、模式、结果上限 | 排序后的匹配路径、遍历是否完整、截断原因 |
 | grep | 相对根/文件集合、查询、字面量或受限正则 | 文件/行号/有界匹配片段、计数与截断信息 |
 
-- 初始建议：单结果最多 32 KiB 文本、目录单页最多 200 项；读取最多 2000 行，长行单独限制，不仅限制行数。
+- 0.5.1 实际限制：单页最多 24 KiB 文本、目录最多 200 项；读取最多 2000 行、单行最多 4 KiB、扫描最多 2 MiB（文件缓冲最多额外预读 8 KiB）；最终输出 JSON 最多 60000 字节。
 - 字节上限针对 UTF-8 编码，不以字符数冒充；中文、组合字符和跨块 UTF-8 均测试。
 - 拒绝二进制/非法 UTF-8，不自动转码或返回替换字符伪装原文。
 - 不把片段 SHA 当作完整文件 SHA；完整前镜像只在 Patch 准备阶段按独立上限获取。
@@ -135,3 +135,37 @@ Patch 不是简单字符串替换。实施前必须明确本地效果类型如�
 - 编码 Eval：固定受控缺陷、独立隐藏验收测试、实际 Git Diff、无意外文件修改、最终报告与真实命令结果一致。
 
 每片运行 make check、异步调试及对应的跨平台/安装验证，文档同时更新。只有 0.5.5 的真实缺陷修复闭环通过，才可以宣称已具备该范围内的编码能力；不能用读取一个文件的成功代替完整 Coding Agent 验收。
+
+## 12. 0.5.1 当前交付与使用
+
+本片新增 `tools/contracts.py`、`workspace.py`、`files.py`、`runtime.py`，未修改 Kernel、Action Contract 或 Session Schema。固定受信绑定表只包含 `list_files` / `read_file`；输入/输出 Schema 已生成到 `spec/list-files-*-v1.schema.json` 与 `spec/read-file-*-v1.schema.json`。工具版本包含根身份、路径策略和执行契约摘要，模型不能提交或降低权限。
+
+~~~python
+from pathlib import Path
+from harnessix.agent.runtime import AgentRuntime
+from harnessix.tools.runtime import CodingToolRuntime
+
+# store/provider 由宿主按已有接口构造；Session 应放根外或被拒绝的目录中。
+async with CodingToolRuntime(
+    Path("/由宿主确认的项目目录"),
+    denied_paths=("private",),
+    require_approval=True,
+) as tools:
+    async with AgentRuntime(store, provider, tools) as runtime:
+        # 使用既有 create_thread/run_turn/reply_approval/resume_turn。
+        ...
+~~~
+
+只读验收入口（不调用模型，不运行仓库代码）：
+
+~~~bash
+uv run python -m examples.kernel_files
+uv run pytest tests/tools
+PYTHONASYNCIODEBUG=1 uv run pytest tests/tools -W error
+~~~
+
+当前新增测试覆盖固定工具契约、真实文件与目录、严格输入、权限/链接/替换竞争、扫描/编码/分页、两个取消入口与 FD 回收、真实 SDK 离线闭环、审批重开及根/规则漂移、3 个真实进程退出边界。CLI 中尚无交互编码命令；该入口是可复查的只读验收，不是编码 Demo 冒充生产完成。
+
+本地验收：新增 69 项通过；全量 `make check` **889 passed、1 skipped**，独立基础 wheel/无供应商 SDK 的只读入口通过。全项目硬崩溃切点从 54 增至 57，原 2 个 SIGINT 用例保留。异步调试和远端 CI 结果见 [测试验收记录](testing-and-evals.md#14-051-只读编码工具验收2026-09-03)。CI 新增 macOS 只读回归，Linux 完整套件保持；不把待运行的远端 CI 提前标记成功。
+
+下一片为 0.5.2：先求证有界搜索组件、明确忽略策略和 Artifact 生命周期，再实现 glob/grep。写工具仍须经过 0.5.3 的效果与恢复门禁。

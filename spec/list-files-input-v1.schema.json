@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "default": ".",
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "limit": {
+      "default": 100,
+      "maximum": 200,
+      "minimum": 1,
+      "title": "Limit",
+      "type": "integer"
+    },
+    "offset": {
+      "default": 0,
+      "maximum": 10000,
+      "minimum": 0,
+      "title": "Offset",
+      "type": "integer"
+    },
+    "expected_revision": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Revision"
+    }
+  },
+  "title": "ListFilesInput",
+  "type": "object"
+}

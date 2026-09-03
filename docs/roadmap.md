@@ -45,7 +45,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 | 0.2 | 产品与架构基线 | 研究框架、目标架构、协议和状态机决策 | 0.1 |
 | 0.3 | Agent Runtime Kernel | 可恢复的 Thread/Turn/Item 与确定性 Agent Loop | 0.2 |
 | 0.4 | Model Runtime | 两类 Provider、流式事件、错误和用量归一化 | 0.3 |
-| 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 |
+| 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 运行基线；计价证据独立跟踪 |
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
 | 0.7 | 安全执行 | Workspace 边界、权限、Sandbox、网络和 Secret | 0.6 |
 | 0.8 | App Server 与扩展 | 双向协议、Headless、MCP、Skills、Hooks | 0.7 |
@@ -144,7 +144,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 6. 0.4：Model Runtime
 
-状态：**0.4.1 / 0.4.2a / 0.4.2b1/b2 / 0.4.3a/b1/b2 已完成离线验收，整体 0.4 进行中**。已实现双 Adapter、尝试账本、SDK 用量/计费元数据映射、显式价格绑定的成本报告和受控 Smoke/白名单诊断；百炼文本/内存工具/审批重开已实测通过，下一步完成计价适用性证据，再进入 0.5。见 [0.4 实施计划](m04-model-runtime.md)。
+状态：**0.4.1 / 0.4.2a / 0.4.2b1/b2 / 0.4.3a/b1/b2 已完成离线验收，整体 0.4 进行中**。已实现双 Adapter、尝试账本、SDK 用量/计费元数据映射、显式价格绑定的成本报告和受控 Smoke/白名单诊断；百炼文本/内存工具/审批重开已实测通过，计价适用性仍待单次授权。按用户继续后续阶段的要求，独立推进 0.5 离线开发，不将 0.4 标记完成。见 [0.4 实施计划](m04-model-runtime.md)。
 
 ### 目标
 
@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**设计预备中，尚未实现**。详细切片、Workspace/写入/进程边界与验收矩阵见 [0.5 实施设计](m05-coding-tools.md)；0.4.3c 通过后开始代码实施。
+状态：**0.5.1 只读切片已实现，整体 0.5 进行中**。包括工作区身份/路径规则绑定、可信工具定义、目录分页和文件读取；不含搜索、写、Shell 或完整编码 Eval。0.4.3c 计价证据独立待验收，不阻塞本片；详细边界见 [0.5 实施设计](m05-coding-tools.md) 与 [ADR 0023](adr/0023-workspace-read-tools.md)。
 
 ### 目标
 
@@ -193,6 +193,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 - [ ] Tool Contract、Registry、风险和并发元数据；
 - [ ] `list_files`、`glob`、`grep`、`read_file`；
+  - [x] 0.5.1：`list_files` / `read_file`，根/规则持久绑定、严格参数/输出、分页失效、取消回收；
+  - [ ] 0.5.2：`glob` / `grep` 与输出 Artifact；
 - [ ] `apply_patch` 和结构化 Patch Result；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；

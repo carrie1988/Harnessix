@@ -337,3 +337,15 @@ Agent Runtime Kernel 合并前：
 随后 Python 3.13 暴露同类的 Kernel 测试假设：给整个 Turn 0.1 秒，却要求已打开模型流。现已统一按执行阶段驱动超时测试：通过局部测试代理捕获真正的 `asyncio.Timeout`，等待模型流/用量持久化检查点后调用 `reschedule()` 推进期限，再验证真实取消与清理。没有替换全局时钟或生产实现。同步排查并修复尝试账本的 0.3 秒以及 SDK 用量收据的 1 秒前置速度假设；保留 Provider 原有真实总 deadline 测试。
 
 另增加“进入 Provider 前预算已耗尽”的独立用例，明确零请求/未开流不需要关闭不存在的流。最终本地全量 **820 passed、1 skipped**，异步调试 **784 passed**；原 819 项阶段快照保持历史含义。
+
+## 14. 0.5.1 只读编码工具验收（2026-09-03）
+
+本片新增 **69 项**测试，全量 `make check` **889 passed、1 skipped**，Ruff/Mypy 通过；Agent/Model/Smoke/Tools 开启 `PYTHONASYNCIODEBUG=1`、`-W error` 共 **853 passed**。本地 PostgreSQL 未配置而跳过的测试保留，远端 PostgreSQL Job 独立执行。
+
+- `tests/tools/test_files.py`：严格参数、真实目录/文件、UTF-8、控制字符/二进制、长行/扫描/字节限制、分页漂移、路径拒绝和错误脱敏；
+- `test_workspace.py`：根/中间目录/目标替换、同 inode 修改、stat/open 竞争、链接与 FIFO、停止/期限、FD 释放；
+- `test_runtime.py`：固定工具契约校验、输出模型、关闭、Token/Task 取消、重复取消及排队调用不启动；
+- `test_kernel.py`：实际 SDK + HTTP 替身 → Kernel → 真实文件 → SQLite 重开/Replay，审批重开与根/策略变化失效，文件读取中的用户/Task 取消持久化，生成 Schema 校验；
+- `test_recovery.py`：真实子进程分别在工具执行前、读取后/结果提交前、终态前退出，重开不重新调用工具或 Provider。
+
+新增 3 个进程崩溃切点后全项目为 **57 个**，另有 2 个 SIGINT 用例。`uv build`、独立基础 wheel 和无供应商 SDK 的 `examples.kernel_files` 入口通过；仅验证只读能力，不属于 0.5.5 自主编码 Eval。Linux 完整测试与新增 macOS 只读 CI 的最终结果应查看对应提交，默认 CI 不使用真实模型凭据。
