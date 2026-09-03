@@ -38,4 +38,6 @@ Kernel 继续负责审批、持久调用/结果和中断恢复。工具结果未
 
 接口求证：[Python os](https://docs.python.org/3.12/library/os.html#files-and-directories)、[asyncio shield/to_thread](https://docs.python.org/3.12/library/asyncio-task.html#asyncio.shield)。参考机制见 [Tool Runtime 研究](../research/tool-runtime.md)，未复制参考项目实现。
 
-本地结果：新增 **69 项**测试通过；`make check` 为 **889 passed、1 skipped**（未配置本地 PostgreSQL），Ruff/Mypy 通过。基础 wheel 在独立环境中确认没有 OpenAI/Anthropic SDK，仍可运行只读 Kernel 验收。异步调试和远端 CI 结果见 [测试验收记录](../testing-and-evals.md#14-051-只读编码工具验收2026-09-03)。CI 增加 macOS 只读套件，Linux 继续完整回归；远端运行结果以相应提交的 CI 为准。
+本地结果：新增 **70 项**测试通过；`make check` 为 **890 passed、1 skipped**（未配置本地 PostgreSQL），Ruff/Mypy 通过。基础 wheel 在独立环境中确认没有 OpenAI/Anthropic SDK，仍可运行只读 Kernel 验收。异步调试和远端 CI 结果见 [测试验收记录](../testing-and-evals.md#14-051-只读编码工具验收2026-09-03)。CI 增加 macOS 只读套件，Linux 继续完整回归；远端运行结果以相应提交的 CI 为准。
+
+生命周期复核补充：`aclose` 等待活跃执行时也必须屏蔽中途取消，先完成根 FD 回收，再传播原始取消。新增回归在未硬化实现上明确失败；硬化复用同一清理等待逻辑，不增加权限或修改持久契约。

@@ -340,12 +340,14 @@ Agent Runtime Kernel 合并前：
 
 ## 14. 0.5.1 只读编码工具验收（2026-09-03）
 
-本片新增 **69 项**测试，全量 `make check` **889 passed、1 skipped**，Ruff/Mypy 通过；Agent/Model/Smoke/Tools 开启 `PYTHONASYNCIODEBUG=1`、`-W error` 共 **853 passed**。本地 PostgreSQL 未配置而跳过的测试保留，远端 PostgreSQL Job 独立执行。
+本片新增 **70 项**测试，全量 `make check` **890 passed、1 skipped**，Ruff/Mypy 通过；Agent/Model/Smoke/Tools 开启 `PYTHONASYNCIODEBUG=1`、`-W error` 共 **854 passed**。本地 PostgreSQL 未配置而跳过的测试保留，远端 PostgreSQL Job 独立执行。
 
 - `tests/tools/test_files.py`：严格参数、真实目录/文件、UTF-8、控制字符/二进制、长行/扫描/字节限制、分页漂移、路径拒绝和错误脱敏；
 - `test_workspace.py`：根/中间目录/目标替换、同 inode 修改、stat/open 竞争、链接与 FIFO、停止/期限、FD 释放；
-- `test_runtime.py`：固定工具契约校验、输出模型、关闭、Token/Task 取消、重复取消及排队调用不启动；
+- `test_runtime.py`：固定工具契约校验、输出模型、关闭、Token/Task 取消、重复取消及排队调用不启动；额外覆盖关闭等待中重复取消也必须回收根 FD（修复前明确失败）；
 - `test_kernel.py`：实际 SDK + HTTP 替身 → Kernel → 真实文件 → SQLite 重开/Replay，审批重开与根/策略变化失效，文件读取中的用户/Task 取消持久化，生成 Schema 校验；
 - `test_recovery.py`：真实子进程分别在工具执行前、读取后/结果提交前、终态前退出，重开不重新调用工具或 Provider。
 
 新增 3 个进程崩溃切点后全项目为 **57 个**，另有 2 个 SIGINT 用例。`uv build`、独立基础 wheel 和无供应商 SDK 的 `examples.kernel_files` 入口通过；仅验证只读能力，不属于 0.5.5 自主编码 Eval。Linux 完整测试与新增 macOS 只读 CI 的最终结果应查看对应提交，默认 CI 不使用真实模型凭据。
+
+初始实现 `0a0f68f` 的 [CI](https://github.com/carrie1988/Harnessix/actions/runs/33742500047) 已通过 Linux Python 3.12/3.13、macOS 只读套件与 PostgreSQL。之后的关闭取消硬化增加 1 项回归，已重新完成上述本地全量、异步调试与独立 wheel 验收；其远端结果以最新提交 CI 为准。

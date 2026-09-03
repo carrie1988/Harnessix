@@ -150,3 +150,27 @@ async def test_precancelled_token_does_not_execute(tmp_path, monkeypatch):
         token.cancel()
         with pytest.raises(TurnCancelled):
             await tools.execute(call(tools, path="x"), token)
+
+
+async def test_cancel_close_still_waits_for_active_scope_and_releases_root(tmp_path):
+    tools = CodingToolRuntime(tmp_path)
+    fd = tools._workspace._root_fd
+    await tools._lock.acquire()
+    closing = asyncio.create_task(tools.aclose())
+    try:
+        await asyncio.sleep(0)
+        assert tools._closed and not closing.done()
+        closing.cancel()
+        await asyncio.sleep(0)
+        assert not closing.done(), "关闭取消不得遗留根 FD 或跳过活跃执行的清理"
+        closing.cancel()
+        tools._lock.release()
+        with pytest.raises(asyncio.CancelledError):
+            await closing
+        with pytest.raises(OSError):
+            os.fstat(fd)
+    finally:
+        if tools._lock.locked():
+            tools._lock.release()
+        await asyncio.gather(closing, return_exceptions=True)
+        tools._workspace.close()

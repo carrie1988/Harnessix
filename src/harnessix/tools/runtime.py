@@ -32,6 +32,19 @@ from harnessix.tools.contracts import (
 from harnessix.tools.workspace import ReadOperation, Workspace, digest
 
 
+async def _drain[T](task: asyncio.Task[T]) -> None:
+    """取消已发生后仍回收资源任务；其错误不覆盖原始取消信号。"""
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            continue
+        except Exception:
+            break
+    if not task.cancelled():
+        task.exception()
+
+
 @dataclass(frozen=True)
 class _ReadBinding:
     name: str
@@ -153,15 +166,7 @@ class CodingToolRuntime:
             except asyncio.CancelledError:
                 operation.stopped.set()
                 # 即便父任务再次取消，也先等待线程释放 FD，不能把清理变成后台工作。
-                while not worker.done():
-                    try:
-                        await asyncio.shield(worker)
-                    except asyncio.CancelledError:
-                        continue
-                    except Exception:
-                        break
-                if not worker.cancelled():
-                    worker.exception()
+                await _drain(worker)
                 raise
 
     @staticmethod
@@ -172,8 +177,17 @@ class CodingToolRuntime:
 
     async def aclose(self) -> None:
         self._closed = True
-        async with self._lock:
-            self._workspace.close()
+
+        async def close_scope() -> None:
+            async with self._lock:
+                self._workspace.close()
+
+        closing = asyncio.create_task(close_scope())
+        try:
+            await asyncio.shield(closing)
+        except asyncio.CancelledError:
+            await _drain(closing)
+            raise
 
     async def __aenter__(self) -> Self:
         if self._closed:
