@@ -7,6 +7,7 @@ from uuid import UUID
 
 import pytest
 
+from harnessix.agent import runtime as runtime_module
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
@@ -38,6 +39,7 @@ from harnessix.models.contracts import (
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer, tool_step
+from tests.deadlines import capture_deadlines
 
 
 def assert_settled(turn: Turn) -> None:
@@ -267,16 +269,30 @@ async def test_task_cancel_persists_terminal_and_cleans_stream(tmp_path: Path) -
     assert_settled(snapshot.turns[-1])
 
 
-async def test_time_budget_closes_stream(tmp_path: Path) -> None:
+async def test_time_budget_closes_stream(tmp_path: Path, monkeypatch) -> None:
+    deadlines = capture_deadlines(monkeypatch, runtime_module)
     provider = WaitingProvider()
     store = SQLiteSessionStore(tmp_path / "session.db")
     async with AgentRuntime(store, provider) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
-        turn = await runtime.run_turn(
-            thread.thread_id, "任务", request_id="r", budget=Budget(timeout_seconds=0.1)
-        )
+        task = asyncio.create_task(runtime.run_turn(thread.thread_id, "任务", request_id="r"))
+        await asyncio.wait_for(provider.waiting.wait(), 5)
+        deadlines[-1].reschedule(asyncio.get_running_loop().time())
+        turn = await asyncio.wait_for(task, 5)
     assert turn.error is not None and turn.error.code == "time_budget_exceeded"
-    assert provider.closed.is_set()
+    assert provider.closed.is_set() and deadlines[-1].expired()
+    assert_settled(turn)
+
+
+async def test_expired_before_provider_does_not_open_a_stream(tmp_path: Path, monkeypatch) -> None:
+    provider = WaitingProvider()
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    monkeypatch.setattr(runtime_module, "remaining_seconds", lambda turn: 0)
+    async with AgentRuntime(store, provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "任务", request_id="r")
+    assert turn.error is not None and turn.error.code == "time_budget_exceeded"
+    assert not provider.waiting.is_set() and not provider.closed.is_set()
     assert_settled(turn)
 
 

@@ -333,3 +333,7 @@ Agent Runtime Kernel 合并前：
 代码提交 `1c11449` 的 Python 3.12/3.13 与 PostgreSQL CI 均通过。后续纯文档提交在较慢的 Python 3.12 Runner 上暴露 Smoke 测试假设：测试给整个 Turn 0.4 秒，却断言必然已经产生一个 HTTP 请求；实际上预算可能在持久化/准备期间耗尽，正确结果是零请求。
 
 测试改为在真实 SDK 使用的 MockTransport 响应流读完有效分片后，确定性抛出对应 HTTP 库的 ReadTimeout，使用正常 Turn 预算，严格验证 provider/transport 分类、一次请求、零重试、连接关闭和 Replay。没有放宽运行时预算，也不是简单增加 0.4 秒阈值。真实 deadline 行为继续由 Kernel 和双 Provider 的原有超时测试覆盖；测试总数仍为 819，默认 CI 不访问模型 API。
+
+随后 Python 3.13 暴露同类的 Kernel 测试假设：给整个 Turn 0.1 秒，却要求已打开模型流。现已统一按执行阶段驱动超时测试：通过局部测试代理捕获真正的 `asyncio.Timeout`，等待模型流/用量持久化检查点后调用 `reschedule()` 推进期限，再验证真实取消与清理。没有替换全局时钟或生产实现。同步排查并修复尝试账本的 0.3 秒以及 SDK 用量收据的 1 秒前置速度假设；保留 Provider 原有真实总 deadline 测试。
+
+另增加“进入 Provider 前预算已耗尽”的独立用例，明确零请求/未开流不需要关闭不存在的流。最终本地全量 **820 passed、1 skipped**，异步调试 **784 passed**；原 819 项阶段快照保持历史含义。

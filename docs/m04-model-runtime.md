@@ -295,3 +295,7 @@ assert restored == report
 完整回归发现既有 SQLite 并发初始化的 WAL 切换偶发忙锁：最初全量为 810 passed、1 failed、1 skipped，不能以重跑碰巧通过交付。已通过真实 SQLite 竞争与旧提交故障注入确认根因，并按 [ADR 0021](adr/0021-session-wal-initialization.md) 修复。
 
 迁移连接先关闭，仅在新连接中有界重试 WAL 切换的 SQLITE_BUSY；不重跑迁移或任何模型/工具，不放宽未知版本/外部数据库拒绝。新增 8 项存储测试，覆盖真实竞争、耗尽、取消清理、非忙锁错误与模式结果校验。加上空 ID 的 6 项，当前总量 **819 passed、1 skipped**，异步调试 **783 passed**。三个真实 Smoke 通过于 WAL 硬化前；硬化后不追加模型消费，使用相同 Kernel/SQLite 路径的离线回归验证。
+
+### 15.3 CI 超时测试确定性收口
+
+低速 Runner 暴露两个把短预算与“必然已进入请求/模型流”混为一谈的测试假设，运行时提前终止本身正确。已按 [测试规范第 13 节](testing-and-evals.md#13-ci-低速-runner-的超时测试边界2026-09-03) 将传输超时与 Kernel 期限到期拆开验证：前者在响应读取阶段注入 HTTP ReadTimeout，后者在明确检查点推进真实 asyncio.Timeout；同时覆盖进入 Provider 前已过期。未改变生产预算或追加 API 调用。当前全量 **820 passed、1 skipped**，异步调试 **784 passed**。

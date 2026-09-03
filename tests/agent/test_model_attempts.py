@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.agent import runtime as runtime_module
 from harnessix.agent.errors import AgentFailure
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import Budget, EventDraft, Usage
@@ -16,6 +17,7 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed, prepare_attempt
 from tests.agent.helpers import RecordingTools, answer, tool_step
+from tests.deadlines import capture_deadlines
 
 
 def failed(start):
@@ -129,8 +131,9 @@ async def test_failed_stream_keeps_usage_and_settles_open_attempt(
 
 @pytest.mark.parametrize("cause", ["cancel_token", "task_cancel", "timeout", "exception", "eof"])
 async def test_interrupted_stream_is_settled_by_kernel_not_generator_cleanup(
-    tmp_path: Path, cause
+    tmp_path: Path, cause, monkeypatch
 ) -> None:
+    deadlines = capture_deadlines(monkeypatch, runtime_module)
     store = SQLiteSessionStore(tmp_path / "s.db")
     entered, closed = asyncio.Event(), asyncio.Event()
     start = attempt_start()
@@ -156,10 +159,12 @@ async def test_interrupted_stream_is_settled_by_kernel_not_generator_cleanup(
                 thread.thread_id,
                 "停止测试",
                 request_id="r",
-                budget=Budget(timeout_seconds=0.3 if cause == "timeout" else 10),
+                budget=Budget(timeout_seconds=10),
             )
         )
         await asyncio.wait_for(entered.wait(), 2)
+        if cause == "timeout":
+            deadlines[-1].reschedule(asyncio.get_running_loop().time())
         if cause == "cancel_token":
             turn_id = (await store.get_thread(thread.thread_id)).active_turn_id
             await runtime.cancel(thread.thread_id, turn_id)

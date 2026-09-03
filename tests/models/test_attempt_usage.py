@@ -11,8 +11,10 @@ from harnessix.agent.models import Budget, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelUsageObserved
+from harnessix.models import _provider_io
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
+from tests.deadlines import capture_deadlines
 from tests.models.attempt_helpers import CANARY, KEY_ENV, Adapter
 
 
@@ -24,9 +26,9 @@ def adapter(request, monkeypatch):
     return Adapter(request.param)
 
 
-async def execute(adapter, tmp_path, parts, *, fail=False, block=False, **options):
+async def execute(adapter, tmp_path, parts, *, fail=False, block=False, wire=None, **options):
     store = SQLiteSessionStore(tmp_path / "s.db")
-    wire = adapter.wire.WireStream(parts, fail=fail, block=block)
+    wire = wire if wire is not None else adapter.wire.WireStream(parts, fail=fail, block=block)
     tools = RecordingTools()
     requests = []
 
@@ -244,11 +246,19 @@ async def test_invalid_detail_cannot_overwrite_prior_usage(
         assert turn.model_attempts[0].usage.reasoning_output_tokens is None
 
 
-async def test_sdk_timeout_after_usage_does_not_erase_receipt(adapter, tmp_path: Path) -> None:
+async def test_sdk_timeout_after_usage_does_not_erase_receipt(
+    adapter, tmp_path: Path, monkeypatch
+) -> None:
+    deadlines = capture_deadlines(monkeypatch, _provider_io)
     parts = adapter.wire.text_frames()
     if adapter.kind == "openai":
         parts.pop()
-    turn, _, _ = await execute(adapter, tmp_path, parts, block=True, timeout_seconds=1)
+    wire = adapter.wire.WireStream(parts, block=True)
+    task = asyncio.create_task(execute(adapter, tmp_path, parts, wire=wire, timeout_seconds=10))
+    await asyncio.wait_for(wire.entered.wait(), 5)
+    deadlines[-1].reschedule(asyncio.get_running_loop().time())
+    turn, _, _ = await asyncio.wait_for(task, 5)
+    assert deadlines[-1].expired()
     assert turn.status == "failed" and turn.error.code == "provider_transport"
     assert turn.usage_is_complete and turn.usage.total_tokens == 12
 
