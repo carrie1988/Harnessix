@@ -327,3 +327,9 @@ Agent Runtime Kernel 合并前：
 - 0.5 建立第一个真实 Coding Eval 集；
 - 0.7 增加安全红队与隔离后端 Contract；
 - 0.9 增加跨平台、长时间 Soak、性能和版本回归 Dashboard。
+
+## 13. CI 低速 Runner 的超时测试边界（2026-09-03）
+
+代码提交 `1c11449` 的 Python 3.12/3.13 与 PostgreSQL CI 均通过。后续纯文档提交在较慢的 Python 3.12 Runner 上暴露 Smoke 测试假设：测试给整个 Turn 0.4 秒，却断言必然已经产生一个 HTTP 请求；实际上预算可能在持久化/准备期间耗尽，正确结果是零请求。
+
+测试改为在真实 SDK 使用的 MockTransport 响应流读完有效分片后，确定性抛出对应 HTTP 库的 ReadTimeout，使用正常 Turn 预算，严格验证 provider/transport 分类、一次请求、零重试、连接关闭和 Replay。没有放宽运行时预算，也不是简单增加 0.4 秒阈值。真实 deadline 行为继续由 Kernel 和双 Provider 的原有超时测试覆盖；测试总数仍为 819，默认 CI 不访问模型 API。

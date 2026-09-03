@@ -111,6 +111,12 @@ class WireFactory:
         wire_module = ow if cfg.provider == "openai_chat" else aw
         http_module = httpx if cfg.provider == "openai_chat" else httpx2
 
+        class TimeoutStream(wire_module.WireStream):
+            async def __aiter__(self):
+                async for part in super().__aiter__():
+                    yield part
+                raise http_module.ReadTimeout(CANARY)
+
         def handle(request):
             self.request_entered.set()
             assert CANARY not in request.content.decode()
@@ -121,7 +127,8 @@ class WireFactory:
             parts = self._parts(cfg, request)
             if isinstance(self.fault, int):
                 parts = [json.dumps({"error": {"message": CANARY}}).encode()]
-            wire = wire_module.WireStream(parts, block=self.fault in ("cancel", "timeout"))
+            stream_type = TimeoutStream if self.fault == "timeout" else wire_module.WireStream
+            wire = stream_type(parts, block=self.fault == "cancel")
             self.wires.append(wire)
             if isinstance(self.fault, int):
                 return http_module.Response(

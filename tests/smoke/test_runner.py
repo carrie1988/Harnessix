@@ -154,13 +154,12 @@ async def test_token_budget_stops_followup_request(provider):
     assert factory.closed and all(w.closed for w in factory.wires)
 
 
-async def test_timeout_closes_without_retries(provider):
+async def test_transport_timeout_closes_without_retries(provider):
     factory = WireFactory(fault="timeout")
-    report = await runner.run_smoke(
-        config(provider, timeout_seconds=0.4), allow_network=True, provider_factory=factory
-    )
+    report = await runner.run_smoke(config(provider), allow_network=True, provider_factory=factory)
     assert report.reason == "runtime_failed", report
-    assert report.failure_category in ("budget", "provider")
+    assert report.failure_category == "provider"
+    assert report.provider_failure is not None and report.provider_failure.code == "transport"
     assert len(factory.requests) == 1 and factory.wires[0].closed and factory.closed
     assert report.replay_verified
 
