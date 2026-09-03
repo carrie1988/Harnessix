@@ -1,0 +1,775 @@
+{
+  "$defs": {
+    "AttemptCost": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "$ref": "#/$defs/CostAttempt"
+        },
+        "binding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PriceBinding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "$ref": "#/$defs/CostResult"
+        }
+      },
+      "required": [
+        "attempt",
+        "binding",
+        "result"
+      ],
+      "title": "AttemptCost",
+      "type": "object"
+    },
+    "BillingContext": {
+      "additionalProperties": false,
+      "description": "可信宿主核对的计费上下文；不是从 Adapter 类型或请求模型猜测。",
+      "properties": {
+        "billing_provider": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Billing Provider"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "service_tier": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Tier"
+        },
+        "inference_mode": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Mode"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Write Ttl"
+        }
+      },
+      "title": "BillingContext",
+      "type": "object"
+    },
+    "CostAttempt": {
+      "additionalProperties": false,
+      "description": "只保留重算所需尝试事实；不复制错误原文、Prompt 或 HTTP 信息。",
+      "properties": {
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "step": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "index": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "actual_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Actual Model"
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageObservation"
+        },
+        "status": {
+          "enum": [
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "interrupted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Finished At"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "step",
+        "index",
+        "actual_model",
+        "usage",
+        "status",
+        "started_at",
+        "finished_at"
+      ],
+      "title": "CostAttempt",
+      "type": "object"
+    },
+    "CostLine": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": [
+            "input",
+            "uncached_input",
+            "cache_read_input",
+            "cache_creation_input",
+            "output"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "tokens": {
+          "minimum": 0,
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Per Million",
+          "type": "string"
+        },
+        "amount": {
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+          "title": "Amount",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "tokens",
+        "per_million",
+        "amount"
+      ],
+      "title": "CostLine",
+      "type": "object"
+    },
+    "CostResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "estimated",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "price_unbound",
+                "attempt_running",
+                "usage_incomplete",
+                "model_unknown",
+                "context_missing",
+                "scope_mismatch",
+                "outside_price_period",
+                "outside_input_band",
+                "usage_details_missing",
+                "cache_ttl_missing",
+                "cache_ttl_mismatch"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "enum": [
+                "USD",
+                "CNY"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount"
+        },
+        "lines": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CostLine"
+          },
+          "title": "Lines",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "CostResult",
+      "type": "object"
+    },
+    "CostSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "uncovered_steps": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Uncovered Steps",
+          "type": "array"
+        },
+        "totals": {
+          "items": {
+            "$ref": "#/$defs/CurrencySubtotal"
+          },
+          "title": "Totals",
+          "type": "array"
+        }
+      },
+      "required": [
+        "completeness",
+        "uncovered_steps",
+        "totals"
+      ],
+      "title": "CostSummary",
+      "type": "object"
+    },
+    "CurrencySubtotal": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "title": "Currency",
+          "type": "string"
+        },
+        "known_amount": {
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+          "title": "Known Amount",
+          "type": "string"
+        }
+      },
+      "required": [
+        "currency",
+        "known_amount"
+      ],
+      "title": "CurrencySubtotal",
+      "type": "object"
+    },
+    "FlatInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "flat",
+          "default": "flat",
+          "title": "Kind",
+          "type": "string"
+        },
+        "per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "per_million"
+      ],
+      "title": "FlatInputPrice",
+      "type": "object"
+    },
+    "PartitionedInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "partitioned",
+          "default": "partitioned",
+          "title": "Kind",
+          "type": "string"
+        },
+        "uncached_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Uncached Per Million",
+          "type": "string"
+        },
+        "cache_read_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Read Per Million",
+          "type": "string"
+        },
+        "cache_creation_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Creation Per Million",
+          "type": "string"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cache Write Ttl"
+        }
+      },
+      "required": [
+        "uncached_per_million",
+        "cache_read_per_million",
+        "cache_creation_per_million",
+        "cache_write_ttl"
+      ],
+      "title": "PartitionedInputPrice",
+      "type": "object"
+    },
+    "PriceBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "attempt_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Attempt Sha256",
+          "type": "string"
+        },
+        "price_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Price Sha256",
+          "type": "string"
+        },
+        "price": {
+          "$ref": "#/$defs/PriceSnapshot"
+        },
+        "context": {
+          "$ref": "#/$defs/BillingContext"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "attempt_sha256",
+        "price_sha256",
+        "price",
+        "context"
+      ],
+      "title": "PriceBinding",
+      "type": "object"
+    },
+    "PriceSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.price/v1",
+          "default": "harnessix.price/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "source_url": {
+          "maxLength": 2048,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "billing_provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Billing Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Model",
+          "type": "string"
+        },
+        "region": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Region",
+          "type": "string"
+        },
+        "service_tier": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Service Tier",
+          "type": "string"
+        },
+        "inference_mode": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Inference Mode",
+          "type": "string"
+        },
+        "currency": {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "title": "Currency",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "input_tokens_min": {
+          "minimum": 0,
+          "title": "Input Tokens Min",
+          "type": "integer"
+        },
+        "input_tokens_max": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens Max"
+        },
+        "input_price": {
+          "discriminator": {
+            "mapping": {
+              "flat": "#/$defs/FlatInputPrice",
+              "partitioned": "#/$defs/PartitionedInputPrice"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FlatInputPrice"
+            },
+            {
+              "$ref": "#/$defs/PartitionedInputPrice"
+            }
+          ],
+          "title": "Input Price"
+        },
+        "output_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Output Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "source_url",
+        "billing_provider",
+        "model",
+        "region",
+        "service_tier",
+        "inference_mode",
+        "currency",
+        "valid_from",
+        "valid_until",
+        "input_tokens_min",
+        "input_tokens_max",
+        "input_price",
+        "output_per_million"
+      ],
+      "title": "PriceSnapshot",
+      "type": "object"
+    },
+    "TurnStatus": {
+      "enum": [
+        "accepted",
+        "preparing_context",
+        "calling_model",
+        "executing_tools",
+        "waiting_approval",
+        "finalizing",
+        "cancelling",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "TurnStatus",
+      "type": "string"
+    },
+    "UsageObservation": {
+      "additionalProperties": false,
+      "description": "一次尝试的累计观测；输入含缓存、输出含推理，不是本次增量。",
+      "properties": {
+        "completeness": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "partial",
+            "complete"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "uncached_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncached Input Tokens"
+        },
+        "cache_read_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Read Input Tokens"
+        },
+        "cache_creation_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation Input Tokens"
+        },
+        "reasoning_output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Output Tokens"
+        }
+      },
+      "title": "UsageObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.cost-report/v1",
+      "default": "harnessix.cost-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "turn_id": {
+      "format": "uuid",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "turn_status": {
+      "$ref": "#/$defs/TurnStatus"
+    },
+    "model_steps": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Model Steps",
+      "type": "integer"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/AttemptCost"
+      },
+      "maxItems": 32000,
+      "title": "Entries",
+      "type": "array"
+    },
+    "summary": {
+      "$ref": "#/$defs/CostSummary"
+    }
+  },
+  "required": [
+    "turn_id",
+    "turn_status",
+    "model_steps",
+    "entries",
+    "summary"
+  ],
+  "title": "CostReport",
+  "type": "object"
+}

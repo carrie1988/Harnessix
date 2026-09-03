@@ -69,4 +69,4 @@ Provider 在 CancelledError/GeneratorExit 清理期间不能额外 yield 收据�
 
 0.4.2b2 已完成离线验收：两个实际 SDK 发出上述元数据；核对锁定 SDK 与官方用量字段，映射缓存/推理子集及部分用量；覆盖 HTTP/SSE 失败、重试、取消、未知用量、跨 Provider 共享契约及独立可选安装。实现细节与边界见 [ADR 0017](0017-provider-attempt-usage.md)，仍不能声称真实平台兼容性已经验收。
 
-真实 API、版本化价格与成本测试仍在 0.4.3；本切片不需要模型 Key 或远程中间件。
+后续 0.4.3a 已完成版本化价格与事后成本报告的离线验收，见 [ADR 0018](0018-versioned-token-cost.md)；真实 API 尚未验收。本切片不需要模型 Key 或远程中间件。

@@ -11,7 +11,7 @@
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
-- 0.4 进行中：双 Adapter、0.4.2b1 模型尝试账本与 b2 实际 SDK 的尝试/失败用量接入已通过离线验收；成本与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.4 进行中：双 Adapter、尝试/失败用量账本与 0.4.3a 显式价格绑定的成本报告已通过离线验收；自动计费上下文采集、受控 Smoke 与真实平台验证待完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -104,7 +104,9 @@ Model Runtime 包含：
 
 Provider Adapter 不决定 Agent 是否重试写操作，也不直接调用本地工具。
 
-0.4.2b1 提供 ModelAttemptStarted/ModelUsageObserved/ModelAttemptFinished 的 Provider v2 元数据契约，b2 已接入两个实际 SDK。Kernel 先提交尝试意图再继续消费，累计观测按差额计入唯一的 Turn 预算，取消/恢复结算开放尝试而不伪造未知用量。缓存和推理为总量子集；旧自定义 Provider 仍可使用 v1 响应记账。Adapter 类型不等于计费平台；成本与自动能力发现仍是目标能力。详见 [ADR 0016](adr/0016-model-attempt-ledger.md) 与 [ADR 0017](adr/0017-provider-attempt-usage.md)。
+0.4.2b1 提供 ModelAttemptStarted/ModelUsageObserved/ModelAttemptFinished 的 Provider v2 元数据契约，b2 已接入两个实际 SDK。Kernel 先提交尝试意图再继续消费，累计观测按差额计入唯一的 Turn 预算，取消/恢复结算开放尝试而不伪造未知用量。缓存和推理为总量子集；旧自定义 Provider 仍可使用 v1 响应记账。Adapter 类型不等于计费平台。详见 [ADR 0016](adr/0016-model-attempt-ledger.md) 与 [ADR 0017](adr/0017-provider-attempt-usage.md)。
+
+0.4.3a 的价格与成本报告为独立纯函数模块：可信宿主显式绑定快照和计费上下文，按已结束尝试的完整用量计算 Token 成本；未计价尝试和旧步骤保持未知，不与已知小计混成总账单。JSON 重新加载会重算价格/用量/金额，历史会话不回填当前价格。自动计费上下文采集、实时费用硬上限、账单核对与自动能力发现仍未实现，见 [ADR 0018](adr/0018-versioned-token-cost.md)。
 
 ### 4.5 Context Engine
 

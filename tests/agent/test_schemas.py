@@ -7,6 +7,8 @@ from pydantic import TypeAdapter, ValidationError
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
+from harnessix.models.costs import CostReport
+from harnessix.models.pricing import PriceSnapshot
 
 
 def test_generated_schemas_match_code() -> None:
@@ -17,6 +19,8 @@ def test_generated_schemas_match_code() -> None:
         "provider-event-v2.schema.json": TypeAdapter(ProviderEvent).json_schema(),
         "openai-chat-config-v1.schema.json": OpenAIChatConfig.model_json_schema(),
         "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
+        "price-snapshot-v1.schema.json": PriceSnapshot.model_json_schema(),
+        "cost-report-v1.schema.json": CostReport.model_json_schema(),
     }
     for name, schema in expected.items():
         assert json.loads((root / name).read_text()) == schema

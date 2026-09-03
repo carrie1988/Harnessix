@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter，以及 0.4.2b1/b2 模型尝试账本与实际 SDK 用量映射的离线验收。成本和真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本，以及 0.4.3a 显式价格绑定与成本报告的离线验收。自动计费上下文采集、受控 Smoke 与真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -127,7 +127,21 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；差额 Token 指标。
 
-两个 SDK 均已使用 Provider v2 尝试元数据；旧自定义 Provider 的响应记账路径保持兼容。`Turn.usage` 只是已知消费下界，需同时查看 `usage_is_complete`，缺失分项仍为 null；它不是成本或供应商账单。0.4.3 将完成价格/成本与受控真实验证。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md) 与 [ADR 0017](docs/adr/0017-provider-attempt-usage.md)。
+两个 SDK 均已使用 Provider v2 尝试元数据；旧自定义 Provider 的响应记账路径保持兼容。`Turn.usage` 只是已知消费下界，需同时查看 `usage_is_complete`，缺失分项仍为 null；它不是成本或供应商账单。价格估算已在 0.4.3a 实现，真实验证待续。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md) 与 [ADR 0017](docs/adr/0017-provider-attempt-usage.md)。
+
+## 当前已实现：0.4.3a 版本化 Token 成本报告
+
+- 显式绑定价格快照、实际模型和宿主核对的计费上下文，不按 Adapter 类型猜平台；
+- 支持同价/缓存分项输入、包含推理的输出、输入长度阶梯、生效区间与 TTL 条件；
+- 采用整数定点运算，不用浮点金额，不把缺失用量或上下文算作零费用；
+- 失败尝试的完整用量可计价；跨重试只计一次，USD/CNY 分开汇总，不隐式换汇；
+- 独立报告保存价格与必要用量事实，JSON 重载重算；不修改会话历史或复制 Prompt/错误原文。
+
+~~~bash
+uv run --extra openai python -m examples.kernel_cost_offline
+~~~
+
+入口使用真实 SDK/Kernel 与 HTTP、价格、计费上下文夹具。当前是**事后 Token 估算**，不是自动采集的计费账本、实时费用硬上限或实际账单；真实平台费率没有内置。详见 [ADR 0018](docs/adr/0018-versioned-token-cost.md)。
 
 ## 当前 Action Plane 快速开始
 

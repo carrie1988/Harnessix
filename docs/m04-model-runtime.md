@@ -1,7 +1,7 @@
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
-- 状态：0.4.1、0.4.2a、0.4.2b1/b2 已完成离线验收；下一步 0.4.3，真实平台未验证
+- 状态：0.4.1、0.4.2a、0.4.2b1/b2、0.4.3a 已完成离线验收；下一步受控 Smoke/脱敏诊断，真实平台未验证
 - 依据：ADR 0008、当前 ModelProvider/ProviderEvent 契约与主路线图
 
 ## 1. 目标与边界
@@ -91,7 +91,7 @@ config = OpenAIChatConfig(
 | 认证与错误 | Secret 环境引用；闭集 code/retryable，不输出原始异常 |
 | 取消与超时 | 建连、读流、错误 body、退避和调用方 Task；响应关闭 |
 | Reasoning / 多模态 / 内置工具 | 未开放；不透传私有推理，公开摘要 Item 暂不接受 |
-| 缓存/推理 Token、价格、失败请求费用 | 明细映射已实现，缺失为 null；价格/成本待 0.4.3；当前计数不是供应商账单 |
+| 缓存/推理 Token、价格、失败请求费用 | 明细映射与显式价格绑定的事后估算已实现；缺失信息保持未知，不等同于供应商账单 |
 | Anthropic | 0.4.2a 已通过离线验收，具体严格配置见下节 |
 | 真实平台 Smoke | 未完成，不以离线测试替代 |
 
@@ -193,10 +193,41 @@ uv run --extra anthropic python examples/kernel_anthropic_offline.py
 - sdist/wheel 构建通过；独立 Base-only / OpenAI-only / Anthropic-only 环境通过，使用 `python -I` 验证实际安装包而非工作区源码。
 - 真实 API 调用：**0**；没有向仓库写入真实凭据，没有新增远程中间件。
 
-## 11. 下一步：0.4.3 分片计划
+## 11. 0.4.3 分片计划
 
-1. **价格与成本事实设计/离线实现**：明确计费平台、模型、价格快照版本、币种与精度；缺失 Usage、缓存 TTL 或必要费率时返回未知，不用 Adapter 类型猜平台，也不向历史事件回填今日价格。成本预算的可保证边界须与 Token 下界分开描述。
-2. **受控 Smoke 入口与脱敏诊断**：显式启用，固定请求次数、输出/时间上限，默认不重试；凭据仅引用环境变量。先文本，再可信只读工具与审批继续；默认 CI 始终离线。
-3. **真实平台验收**：运行前核对凭据环境引用、端点地域、模型能力和价格来源，保存脱敏证据。条件缺失时继续独立离线工作，不把外部阻塞误报为已完成。
+1. **0.4.3a 已完成：价格与成本事实设计/离线实现**。显式绑定快照和宿主核对的上下文，未知信息不补零；事后估算不等于实时预算硬上限，详见下节。
+2. **0.4.3b 待实施：受控 Smoke 入口与脱敏诊断**。显式启用，固定请求次数、输出/时间上限，默认不重试；凭据仅引用环境变量。先文本，再可信只读工具与审批继续；默认 CI 始终离线。求证并记录可确定的实际计费上下文，未采集字段保留未知，不套用默认地域/服务等级/模式。
+3. **0.4.3c 待验收：真实平台验证**。运行前核对凭据环境引用、端点地域、模型能力和价格来源，保存脱敏证据。条件缺失时继续独立离线工作，不把外部阻塞误报为已完成。
 
 本阶段不需要远程数据库。0.4 整体验收通过后再进入 0.5 的真实读写工具、Shell/Git/测试闭环；当前不能据用量测试数量宣称生产级 Coding Agent 已完成。
+
+## 12. 0.4.3a：版本化 Token 成本报告
+
+新增 `models.pricing` / `models.costs` 纯函数模块与 [ADR 0018](adr/0018-versioned-token-cost.md)。不修改 Kernel、SDK 或 Session Migration，不新增依赖。PriceSnapshot / CostReport 各有独立 v1 JSON Schema；报告不是新的会话事件，宿主决定是否保存其 JSON。
+
+~~~python
+from harnessix.models.costs import CostReport, bind_price, build_cost_report
+
+# turn 来自 Kernel；verified_price / verified_context 由可信宿主预先核对。
+# 每次尝试独立选择适用价格。这里只绑定最后一次，其余保持未定价。
+binding = bind_price(turn.model_attempts[-1], verified_price, verified_context)
+report = build_cost_report(turn, (binding,))
+restored = CostReport.model_validate_json(report.model_dump_json())
+assert restored == report
+~~~
+
+- 单价是每百万 Token 的严格十进制字符串；整数定点计算保留精度，不在每次尝试按分舍入。
+- 平台、实际模型、地域、服务等级和推理模式必须明确匹配。输入阶梯作用于完整请求，支持同价或未缓存/缓存读/缓存写分项；输出包含推理，不重复收费。
+- 必要计数或 TTL 缺失、尝试仍运行、用量非 complete、窗口不覆盖时金额为 null。失败但完整观测的尝试仍可计算，不把失败当免费。
+- 已知小计分币种输出；未知尝试、旧 Provider 未覆盖步骤或未终结 Turn 都使报告不完整。无尝试时保持 unknown。
+- 每份报告嵌入计算必需的价格与用量快照；JSON 重载重算、哈希错绑拒绝，不复制 Prompt、错误原文、供应商响应 ID。哈希不是签名，也不证明价格来源真实。
+- 当前是显式绑定后的事后 Token 估算；不支持汇率、税、折扣、缓存存储或服务器工具费，不承诺账单精确一致、实时费用硬上限或自动计费上下文采集。没有内置真实平台费率。
+
+验收（2026-09-03）：
+
+- `make check`：**642 passed、1 skipped**（本地 PostgreSQL 未配置），Ruff/Mypy 通过；新增 96 项价格/成本测试。
+- `PYTHONASYNCIODEBUG=1 uv run pytest tests/agent tests/models -W error`：**606 passed**；Provider/价格/成本合计 387 项。
+- 两类实际 SDK 的成功、重试和 Usage 后断流均通过 Kernel/SQLite → CostReport → JSON/Replay 重算；此前 49 个崩溃切点全部保留。
+- 六个离线入口与 sdist/wheel 构建通过；新增 `uv run --extra openai python -m examples.kernel_cost_offline`，费率和上下文全部为虚构夹具。
+- 独立基础 wheel 在未安装任何模型 SDK 时完成失败尝试计价与 JSON 重算；OpenAI-only/Anthropic-only 环境通过既有链路，OpenAI-only 额外通过新成本入口。
+- 真实 API 调用：**0**；下一步为 0.4.3b 的 Smoke、脱敏诊断和可验证计费上下文边界。
