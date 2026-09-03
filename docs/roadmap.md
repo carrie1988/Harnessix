@@ -183,6 +183,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
+状态：**设计预备中，尚未实现**。详细切片、Workspace/写入/进程边界与验收矩阵见 [0.5 实施设计](m05-coding-tools.md)；0.4.3c 通过后开始代码实施。
+
 ### 目标
 
 形成第一个完整的真实编码闭环，而不是添加互不关联的工具 Demo。
