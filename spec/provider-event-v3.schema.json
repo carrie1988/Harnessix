@@ -1,0 +1,640 @@
+{
+  "$defs": {
+    "AgentFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "category": {
+          "$ref": "#/$defs/FailureCategory",
+          "default": "internal"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "AgentFailure",
+      "type": "object"
+    },
+    "FailureCategory": {
+      "enum": [
+        "input",
+        "provider",
+        "tool",
+        "approval",
+        "budget",
+        "cancelled",
+        "interrupted",
+        "storage",
+        "conflict",
+        "internal"
+      ],
+      "title": "FailureCategory",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "ModelAttemptFinished": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_attempt_finished",
+          "default": "model_attempt_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "interrupted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "attempt_id",
+        "outcome"
+      ],
+      "title": "ModelAttemptFinished",
+      "type": "object"
+    },
+    "ModelAttemptStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_attempt_started",
+          "default": "model_attempt_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "index": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "provider": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Provider",
+          "type": "string"
+        },
+        "requested_model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Requested Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "step",
+        "index",
+        "provider",
+        "requested_model"
+      ],
+      "title": "ModelAttemptStarted",
+      "type": "object"
+    },
+    "ModelUsageObserved": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_usage_observed",
+          "default": "model_usage_observed",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageObservation"
+        },
+        "actual_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Model"
+        },
+        "response_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response Id"
+        },
+        "billing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResponseBillingMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "attempt_id",
+        "usage"
+      ],
+      "title": "ModelUsageObserved",
+      "type": "object"
+    },
+    "ResponseBillingMetadata": {
+      "additionalProperties": false,
+      "description": "响应中观测到的原生事实，不推断平台/价格，不代表实际账单。",
+      "properties": {
+        "service_tier": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Tier"
+        },
+        "inference_geo": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Geo"
+        },
+        "cache_creation_5m_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation 5M Tokens"
+        },
+        "cache_creation_1h_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation 1H Tokens"
+        }
+      },
+      "title": "ResponseBillingMetadata",
+      "type": "object"
+    },
+    "ResponseCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_completed",
+          "default": "response_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "finish_reason": {
+          "default": "completed",
+          "enum": [
+            "completed",
+            "tool_calls",
+            "max_output_tokens",
+            "content_filter",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Finish Reason",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "title": "ResponseCompleted",
+      "type": "object"
+    },
+    "ResponseFailed": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_failed",
+          "default": "response_failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "invalid_request",
+            "authentication",
+            "rate_limit",
+            "quota",
+            "content_policy",
+            "provider_internal",
+            "transport",
+            "invalid_provider_output",
+            "context_overflow",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "ResponseFailed",
+      "type": "object"
+    },
+    "ResponseStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "response_started",
+          "default": "response_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "response_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Response Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "response_id"
+      ],
+      "title": "ResponseStarted",
+      "type": "object"
+    },
+    "TextCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_completed",
+          "default": "text_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id",
+        "text"
+      ],
+      "title": "TextCompleted",
+      "type": "object"
+    },
+    "TextDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_delta",
+          "default": "text_delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        },
+        "delta": {
+          "maxLength": 1000000,
+          "title": "Delta",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id",
+        "delta"
+      ],
+      "title": "TextDelta",
+      "type": "object"
+    },
+    "TextStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text_started",
+          "default": "text_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "content_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Content Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_id"
+      ],
+      "title": "TextStarted",
+      "type": "object"
+    },
+    "ToolCallCompleted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tool_call_completed",
+          "default": "tool_call_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "call_id",
+        "tool"
+      ],
+      "title": "ToolCallCompleted",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "UsageObservation": {
+      "additionalProperties": false,
+      "description": "一次尝试的累计观测；输入含缓存、输出含推理，不是本次增量。",
+      "properties": {
+        "completeness": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "partial",
+            "complete"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "uncached_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncached Input Tokens"
+        },
+        "cache_read_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Read Input Tokens"
+        },
+        "cache_creation_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation Input Tokens"
+        },
+        "reasoning_output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Output Tokens"
+        }
+      },
+      "title": "UsageObservation",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "model_attempt_finished": "#/$defs/ModelAttemptFinished",
+      "model_attempt_started": "#/$defs/ModelAttemptStarted",
+      "model_usage_observed": "#/$defs/ModelUsageObserved",
+      "response_completed": "#/$defs/ResponseCompleted",
+      "response_failed": "#/$defs/ResponseFailed",
+      "response_started": "#/$defs/ResponseStarted",
+      "text_completed": "#/$defs/TextCompleted",
+      "text_delta": "#/$defs/TextDelta",
+      "text_started": "#/$defs/TextStarted",
+      "tool_call_completed": "#/$defs/ToolCallCompleted"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ResponseStarted"
+    },
+    {
+      "$ref": "#/$defs/TextStarted"
+    },
+    {
+      "$ref": "#/$defs/TextDelta"
+    },
+    {
+      "$ref": "#/$defs/TextCompleted"
+    },
+    {
+      "$ref": "#/$defs/ToolCallCompleted"
+    },
+    {
+      "$ref": "#/$defs/ResponseCompleted"
+    },
+    {
+      "$ref": "#/$defs/ResponseFailed"
+    },
+    {
+      "$ref": "#/$defs/ModelAttemptStarted"
+    },
+    {
+      "$ref": "#/$defs/ModelUsageObserved"
+    },
+    {
+      "$ref": "#/$defs/ModelAttemptFinished"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ from uuid import UUID
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.models.attempt_helpers import CANARY, KEY_ENV, Adapter
+from tests.models.billing_helpers import billing_frames
 
 
 async def main() -> None:
@@ -17,7 +18,8 @@ async def main() -> None:
     for name in ("OPENAI_CUSTOM_HEADERS", "ANTHROPIC_CUSTOM_HEADERS"):
         os.environ.pop(name, None)
     adapter = Adapter(kind)
-    wire = adapter.wire.WireStream(adapter.wire.text_frames())
+    parts = billing_frames(adapter) if point == "billing" else adapter.wire.text_frames()
+    wire = adapter.wire.WireStream(parts)
     observations = 0
 
     def crash(name):
@@ -27,6 +29,7 @@ async def main() -> None:
         target = {
             "started": name == "runtime.after_model_attempt_started",
             "initial_usage": name == "runtime.after_model_usage_observed" and observations == 1,
+            "billing": name == "runtime.after_model_usage_observed" and observations == 1,
             "complete_usage": name == "runtime.after_model_usage_observed"
             and observations == (2 if kind == "openai" else 3),
             "finished": name == "runtime.after_model_attempt_finished",

@@ -282,7 +282,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4] = 4
+    schema_version: Literal[1, 2, 3, 4, 5] = 5
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -291,6 +291,8 @@ class EventDraft(ContractModel):
     @model_serializer(mode="wrap")
     def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
+        if self.schema_version < 5 and isinstance(self.payload, ModelUsageObserved):
+            data.get("payload", {}).pop("billing", None)
         if self.schema_version < 3:
             payload = data.get("payload", {})
             for failure in (payload.get("error"), payload.get("content", {}).get("error")):
@@ -306,6 +308,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if (
+            self.schema_version < 5
+            and isinstance(self.payload, ModelUsageObserved)
+            and self.payload.billing is not None
+        ):
+            raise ValueError("响应计费元数据需要 Agent Event v5")
         if self.schema_version < 4 and isinstance(
             self.payload, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
         ):

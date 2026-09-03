@@ -332,8 +332,11 @@ def _model_attempt(turn: Turn, event: AgentEvent) -> Turn:
     if isinstance(payload, ModelUsageObserved):
         try:
             payload.usage.validate_successor(attempt.usage)
+            billing = payload.billing if payload.billing is not None else attempt.billing
+            billing.validate_successor(attempt.billing)
+            billing.validate_usage(payload.usage)
         except ValueError:
-            raise KernelError("invalid_event", "模型累计用量回退或修改了终值") from None
+            raise KernelError("invalid_event", "模型用量或计费元数据冲突") from None
         for field in ("actual_model", "response_id"):
             before, after = getattr(attempt, field), getattr(payload, field)
             require(before is None or after is None or before == after, "尝试响应身份发生变化")
@@ -348,6 +351,7 @@ def _model_attempt(turn: Turn, event: AgentEvent) -> Turn:
         attempt = attempt.model_copy(
             update={
                 "usage": payload.usage,
+                "billing": billing,
                 "actual_model": payload.actual_model or attempt.actual_model,
                 "response_id": payload.response_id or attempt.response_id,
             }

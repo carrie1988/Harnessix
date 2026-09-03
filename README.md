@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1 受控 Smoke/白名单诊断的离线验收。自动计费上下文采集与真实平台验证待完成；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本已实测通过，工具流兼容问题修复中，审批与计费适用性待验收；Coding Tools 和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -78,7 +78,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v4，见下节）；
+- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v5，见下节）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -112,7 +112,7 @@ uv run --extra openai python examples/kernel_openai_offline.py
 uv run --extra anthropic python examples/kernel_anthropic_offline.py
 ~~~
 
-以上使用真实 SDK + HTTP 替身，**不是已通过真实百炼/OpenAI 平台测试**。OpenAI Adapter 仅支持显式配置的 Chat 兼容协议，不声称支持所有模型、Responses 或原生推理功能。API 使用、能力边界和后续验收见 [Model Runtime](docs/m04-model-runtime.md) 与 [ADR 0014](docs/adr/0014-openai-compatible-provider.md)。
+以上命令使用真实 SDK + HTTP 替身。另行完成的百炼北京文本实测与工具失败记录见 [真实验证记录](docs/validation/bailian-2026-09-03.md)，**不代表所有平台或工具场景均通过**。OpenAI Adapter 仅支持显式配置的 Chat 兼容协议，不声称支持所有模型、Responses 或原生推理功能。API 使用、能力边界和后续验收见 [Model Runtime](docs/m04-model-runtime.md) 与 [ADR 0014](docs/adr/0014-openai-compatible-provider.md)。
 
 Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数，不开放签名推理块、服务器工具或 Fallback；同样尚未做真实平台验证。设计与限制见 [ADR 0015](docs/adr/0015-anthropic-provider.md)。
 
@@ -122,12 +122,12 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema；
+- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前已升级 v5/v3，见 0.4.3b2）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
-- 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；差额 Token 指标。
+- 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。
 
-两个 SDK 均已使用 Provider v2 尝试元数据；旧自定义 Provider 的响应记账路径保持兼容。`Turn.usage` 只是已知消费下界，需同时查看 `usage_is_complete`，缺失分项仍为 null；它不是成本或供应商账单。价格估算已在 0.4.3a 实现，真实验证待续。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md) 与 [ADR 0017](docs/adr/0017-provider-attempt-usage.md)。
+两个 SDK 均已使用当前 Provider v3 尝试元数据（兼容原 v2 尝试语义）；旧自定义 Provider 的响应记账路径保持兼容。`Turn.usage` 只是已知消费下界，需同时查看 `usage_is_complete`，缺失分项仍为 null；它不是成本或供应商账单。价格估算已在 0.4.3a 实现，真实验证待续。设计见 [ADR 0016](docs/adr/0016-model-attempt-ledger.md) 与 [ADR 0017](docs/adr/0017-provider-attempt-usage.md)。
 
 ## 当前已实现：0.4.3a 版本化 Token 成本报告
 
@@ -155,7 +155,17 @@ uv run harnessix model-smoke --help
 uv run pytest tests/smoke
 ~~~
 
-操作说明、退出码、凭据引用和隐私边界见 [Smoke 使用说明](docs/model-smoke.md)。Token 检查不等于金额硬上限；实际计费上下文自动采集仍待 0.4.3b2。
+操作说明、退出码、凭据引用和隐私边界见 [Smoke 使用说明](docs/model-smoke.md)。Token 检查不等于金额硬上限；响应计费元数据已在 0.4.3b2 接入，但不自动识别平台计价规则。
+
+## 当前已实现：0.4.3b2 响应计费元数据
+
+- 服务等级、推理地域、5m/1h 缓存写入分项与 Usage 原子持久化；缺失保持未知，重复不重计、漂移拒绝；
+- OpenAI/Anthropic SDK 映射、失败/取消/崩溃保留与 Replay；
+- Agent Event/Thread v5、Provider Event v3，真实 v1–v4 混合升级，旧 Schema 不改写；
+- 仅对宿主明确声明的匹配直连平台映射计价上下文；代理/百炼不自动套用原生价格；
+- 混合/不完整 TTL 不强行选单一费率，价格绑定拒绝与已观测事实冲突；CostReport v1 保持重算兼容。
+
+设计见 [ADR 0020](docs/adr/0020-observed-billing-context.md)。0.4 整体验收和真实编码工具仍未完成。
 
 ## 当前 Action Plane 快速开始
 

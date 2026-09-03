@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, Field, model_validator
 
+from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.errors import AgentFailure
 from harnessix.domain.models import ContractModel
 
@@ -92,6 +93,13 @@ class ModelUsageObserved(ContractModel):
     usage: UsageObservation
     actual_model: ModelIdentifier | None = None
     response_id: ModelIdentifier | None = None
+    billing: ResponseBillingMetadata | None = None
+
+    @model_validator(mode="after")
+    def validate_billing(self) -> Self:
+        if self.billing is not None:
+            self.billing.validate_usage(self.usage)
+        return self
 
 
 class ModelAttemptFinished(ContractModel):
@@ -116,6 +124,7 @@ class ModelAttempt(ContractModel):
     actual_model: ModelIdentifier | None = None
     response_id: ModelIdentifier | None = None
     usage: UsageObservation = Field(default_factory=UsageObservation)
+    billing: ResponseBillingMetadata = Field(default_factory=ResponseBillingMetadata)
     status: Literal["running", "completed", "failed", "cancelled", "interrupted"] = "running"
     error: AgentFailure | None = None
     started_at: AwareDatetime
@@ -123,6 +132,7 @@ class ModelAttempt(ContractModel):
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:
+        self.billing.validate_usage(self.usage)
         if self.status == "running":
             if self.error is not None or self.finished_at is not None:
                 raise ValueError("运行中尝试不能预置终态")

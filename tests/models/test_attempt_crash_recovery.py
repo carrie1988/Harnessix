@@ -14,7 +14,9 @@ from harnessix.session.sqlite import SQLiteSessionStore
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
-@pytest.mark.parametrize("point", ["started", "initial_usage", "complete_usage", "finished"])
+@pytest.mark.parametrize(
+    "point", ["started", "initial_usage", "complete_usage", "finished", "billing"]
+)
 async def test_sdk_crash_preserves_attempt_and_never_reissues_request(
     tmp_path: Path, kind, point
 ) -> None:
@@ -47,12 +49,17 @@ async def test_sdk_crash_preserves_attempt_and_never_reissues_request(
     attempt = turn.model_attempts[0]
     assert attempt.status == ("completed" if point == "finished" else "interrupted")
     complete = point in {"complete_usage", "finished"}
-    partial = point == "initial_usage" and kind == "anthropic"
+    partial = point in {"initial_usage", "billing"} and kind == "anthropic"
     assert attempt.usage.completeness == (
         "complete" if complete else "partial" if partial else "unknown"
     )
     assert turn.usage.total_tokens == (12 if complete else 11 if partial else 0)
     assert turn.usage_is_complete == complete
+    assert attempt.billing.observed == (point == "billing")
+    if point == "billing":
+        assert attempt.billing.service_tier == ("default" if kind == "openai" else "standard")
+        if kind == "anthropic":
+            assert attempt.billing.cache_creation_5m_tokens == 3
     assert sum(isinstance(e.payload, ModelAttemptFinished) for e in events) == 1
     marker = Path(str(store.path) + ".requests")
     assert await asyncio.to_thread(marker.exists) == (point != "started")

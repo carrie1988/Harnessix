@@ -1,0 +1,188 @@
+{
+  "started_at": "2026-09-03T02:57:15.120616+00:00",
+  "frames": [
+    {
+      "choices": [
+        {
+          "delta": {
+            "content": {
+              "type": "NoneType",
+              "empty": true
+            },
+            "tool_calls": [
+              {
+                "index": {
+                  "type": "int",
+                  "empty": false
+                },
+                "id": {
+                  "type": "str",
+                  "empty": false
+                },
+                "type": {
+                  "type": "str",
+                  "empty": false
+                },
+                "function": {
+                  "name": {
+                    "type": "str",
+                    "empty": false
+                  },
+                  "arguments": {
+                    "type": "str",
+                    "empty": false
+                  }
+                }
+              }
+            ],
+            "role": {
+              "type": "str",
+              "empty": false
+            }
+          },
+          "finish_reason": {
+            "type": "NoneType",
+            "empty": true
+          },
+          "index": {
+            "type": "int",
+            "empty": false
+          },
+          "logprobs": {
+            "type": "NoneType",
+            "empty": true
+          }
+        }
+      ],
+      "object": {
+        "type": "str",
+        "empty": false
+      },
+      "usage": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "created": {
+        "type": "int",
+        "empty": false
+      },
+      "system_fingerprint": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "model": {
+        "type": "str",
+        "empty": false
+      },
+      "id": {
+        "type": "str",
+        "empty": false
+      }
+    },
+    {
+      "choices": [
+        {
+          "delta": {
+            "tool_calls": [
+              {
+                "function": {
+                  "arguments": {
+                    "type": "NoneType",
+                    "empty": true
+                  }
+                },
+                "index": {
+                  "type": "int",
+                  "empty": false
+                },
+                "id": {
+                  "type": "str",
+                  "empty": true
+                },
+                "type": {
+                  "type": "str",
+                  "empty": false
+                }
+              }
+            ]
+          },
+          "index": {
+            "type": "int",
+            "empty": false
+          }
+        }
+      ],
+      "object": {
+        "type": "str",
+        "empty": false
+      },
+      "usage": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "created": {
+        "type": "int",
+        "empty": false
+      },
+      "system_fingerprint": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "model": {
+        "type": "str",
+        "empty": false
+      },
+      "id": {
+        "type": "str",
+        "empty": false
+      }
+    },
+    {
+      "choices": [
+        {
+          "finish_reason": {
+            "type": "str",
+            "empty": false
+          },
+          "delta": {},
+          "index": {
+            "type": "int",
+            "empty": false
+          },
+          "logprobs": {
+            "type": "NoneType",
+            "empty": true
+          }
+        }
+      ],
+      "object": {
+        "type": "str",
+        "empty": false
+      },
+      "usage": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "created": {
+        "type": "int",
+        "empty": false
+      },
+      "system_fingerprint": {
+        "type": "NoneType",
+        "empty": true
+      },
+      "model": {
+        "type": "str",
+        "empty": false
+      },
+      "id": {
+        "type": "str",
+        "empty": false
+      }
+    }
+  ],
+  "failure_site": "tool_call_id_drift",
+  "tool_executed": false,
+  "provider_failure": "invalid_provider_output",
+  "finished_at": "2026-09-03T02:57:17.671297+00:00"
+}

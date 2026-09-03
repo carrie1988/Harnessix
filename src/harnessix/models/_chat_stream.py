@@ -6,8 +6,10 @@ from uuid import UUID
 from openai.types.chat import ChatCompletionChunk
 from pydantic import ValidationError
 
+from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
+from harnessix.models._billing import merge_billing
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
@@ -60,6 +62,9 @@ class ChatStream:
         self._finish: str | None = None
         self._usage: Usage | None = None
         self._calls: dict[int, CallParts] = {}
+        self._billing = ResponseBillingMetadata()
+        self._observation = UsageObservation()
+        self._last_observed: tuple[UsageObservation, ResponseBillingMetadata] | None = None
 
     def feed(self, value: ChatCompletionChunk) -> list[ProviderEvent]:
         chunk = ChatCompletionChunk.model_validate(value.model_dump(warnings="error"), strict=True)
@@ -67,21 +72,15 @@ class ChatStream:
         if self._response_id is None:
             self._response_id = chunk.id
             self._model = chunk.model
-            events.extend(
-                [
-                    ResponseStarted(response_id=chunk.id),
-                    ModelUsageObserved(
-                        attempt_id=self._attempt_id,
-                        response_id=chunk.id,
-                        actual_model=chunk.model,
-                        usage=UsageObservation(),
-                    ),
-                ]
-            )
+            events.append(ResponseStarted(response_id=chunk.id))
         elif chunk.id != self._response_id or chunk.model != self._model:
             raise InvalidWireData("响应 ID 或实际模型不一致")
         if self._usage is not None:
             raise InvalidWireData("Usage 之后出现额外 chunk")
+        self._billing = merge_billing(
+            self._billing,
+            service_tier=None if chunk.service_tier == "auto" else chunk.service_tier,
+        )
         if chunk.usage is not None:
             usage = chunk.usage
             if (
@@ -109,15 +108,9 @@ class ChatStream:
             self._usage = Usage(
                 input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens
             )
-            events.append(
-                ModelUsageObserved(
-                    attempt_id=self._attempt_id,
-                    response_id=chunk.id,
-                    actual_model=chunk.model,
-                    usage=observation,
-                )
-            )
-            return events
+            self._observation = observation
+            return [*events, *self._observe()]
+        events.extend(self._observe())
         if self._finish is not None or len(chunk.choices) != 1 or chunk.choices[0].index != 0:
             raise InvalidWireData("choices 或结束顺序无效")
         choice = chunk.choices[0]
@@ -160,6 +153,20 @@ class ChatStream:
         if choice.finish_reason is not None:
             self._finish = choice.finish_reason
         return events
+
+    def _observe(self) -> list[ProviderEvent]:
+        snapshot = (self._observation, self._billing)
+        if snapshot == self._last_observed:
+            return []
+        event = ModelUsageObserved(
+            attempt_id=self._attempt_id,
+            response_id=self._response_id,
+            actual_model=self._model,
+            usage=self._observation,
+            billing=self._billing if self._billing.observed else None,
+        )
+        self._last_observed = snapshot
+        return [event]
 
     def finish(self, *, seen_done: bool) -> list[ProviderEvent]:
         if not seen_done or self._finish is None or self._usage is None:

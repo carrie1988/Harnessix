@@ -1,0 +1,22 @@
+{
+  "spec_version": "harnessix.model-smoke-report/v1",
+  "provider": "openai_chat",
+  "scenario": "tool",
+  "execution": "sdk_default",
+  "reason": "runtime_failed",
+  "turn_status": "failed",
+  "failure_category": "provider",
+  "provider_failure": {
+    "type": "response_failed",
+    "code": "invalid_provider_output",
+    "retryable": false
+  },
+  "attempts_started": 1,
+  "known_input_tokens": 0,
+  "known_output_tokens": 0,
+  "usage_complete": false,
+  "tool_calls": 0,
+  "content_verified": false,
+  "approval_restart_verified": false,
+  "replay_verified": true
+}

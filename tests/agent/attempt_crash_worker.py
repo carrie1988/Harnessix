@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from uuid import UUID
 
+from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import EventDraft
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
@@ -47,6 +48,21 @@ async def main() -> None:
         payload = {
             "start": start,
             "usage": observed(start, completeness="complete", input_tokens=10, output_tokens=3),
+            "billing": observed(
+                start,
+                completeness="complete",
+                input_tokens=10,
+                output_tokens=3,
+                cache_creation_input_tokens=3,
+            ).model_copy(
+                update={
+                    "billing": ResponseBillingMetadata(
+                        service_tier="standard",
+                        cache_creation_5m_tokens=3,
+                        cache_creation_1h_tokens=0,
+                    )
+                }
+            ),
             "finish": ModelAttemptFinished(attempt_id=start.attempt_id, outcome="completed"),
         }[mode]
         await store.append(

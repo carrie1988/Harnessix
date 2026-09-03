@@ -1,6 +1,6 @@
 # 受控模型 Smoke 使用说明
 
-本入口验证 **SDK → Adapter → Kernel → SQLite → Replay** 的固定闭环，不是交互式 Coding Agent，不读取业务仓库或执行 Shell。当前离线验证通过；真实平台兼容性仍待 0.4.3c 验收。
+本入口验证 **SDK → Adapter → Kernel → SQLite → Replay** 的固定闭环，不是交互式 Coding Agent，不读取业务仓库或执行 Shell。当前离线验证通过；百炼北京文本已实测通过，工具流失败、审批未运行，整体平台兼容性尚未通过 0.4.3c 验收，见 [真实验证记录](validation/bailian-2026-09-03.md)。
 
 ## 1. 默认不开启网络
 

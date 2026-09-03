@@ -20,8 +20,10 @@ from anthropic.types import (
 )
 from pydantic import TypeAdapter
 
+from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
+from harnessix.models._billing import merge_billing
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
@@ -78,7 +80,8 @@ class AnthropicStream:
         self._response_id: str | None = None
         self._model: str | None = None
         self._usage = UsageObservation()
-        self._last_observed: UsageObservation | None = None
+        self._billing = ResponseBillingMetadata()
+        self._last_observed: tuple[UsageObservation, ResponseBillingMetadata] | None = None
 
     def feed(self, value: RawMessageStreamEvent) -> list[ProviderEvent]:
         event = validate_event(value.model_dump(warnings="error"))
@@ -197,18 +200,27 @@ class AnthropicStream:
             reasoning_output_tokens=candidate.get("reasoning_output_tokens"),
         )
         usage.validate_successor(self._usage)
-        self._counts, self._usage = candidate, usage
+        billing = merge_billing(
+            self._billing,
+            service_tier=values.get("service_tier"),
+            inference_geo=values.get("inference_geo"),
+            cache_creation=values.get("cache_creation"),
+        )
+        billing.validate_usage(usage)
+        self._counts, self._usage, self._billing = candidate, usage, billing
 
     def _observe(self) -> list[ProviderEvent]:
-        if self._usage == self._last_observed:
+        snapshot = (self._usage, self._billing)
+        if snapshot == self._last_observed:
             return []
         event = ModelUsageObserved(
             attempt_id=self._attempt_id,
             response_id=self._response_id,
             actual_model=self._model,
             usage=self._usage,
+            billing=self._billing if self._billing.observed else None,
         )
-        self._last_observed = self._usage
+        self._last_observed = snapshot
         return [event]
 
     def _add_characters(self, count: int) -> None:

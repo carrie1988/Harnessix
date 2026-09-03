@@ -15,9 +15,9 @@ from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
-        "agent-event-v4.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v4.schema.json": Thread.model_json_schema(),
-        "provider-event-v2.schema.json": TypeAdapter(ProviderEvent).json_schema(),
+        "agent-event-v5.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v5.schema.json": Thread.model_json_schema(),
+        "provider-event-v3.schema.json": TypeAdapter(ProviderEvent).json_schema(),
         "openai-chat-config-v1.schema.json": OpenAIChatConfig.model_json_schema(),
         "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
         "price-snapshot-v1.schema.json": PriceSnapshot.model_json_schema(),
@@ -33,7 +33,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 5,
+                "schema_version": 6,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -67,7 +67,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 4
+        assert EventDraft(payload=payload).schema_version == 5
 
 
 def test_historical_schemas_are_frozen() -> None:
@@ -97,5 +97,18 @@ def test_historical_schemas_are_frozen() -> None:
             "50f9652a58b75137240b8fd8d955d077947cd02a989b79dc94939c1b09905537"
         ),
     }
+    expected.update(
+        {
+            "agent-event-v4.schema.json": (
+                "132e0cfe50e55639ac1ef5facfaff44525e404d09ff0c2c800a6a49aeee25b81"
+            ),
+            "agent-thread-v4.schema.json": (
+                "51758f5c23dac2295bc8ca80d4a2ffad916227c02738d0986fc4bbc32974a60f"
+            ),
+            "provider-event-v2.schema.json": (
+                "278d5032650328c24e0939011864e8928cddce5c0106b81bae1554bc9c9f0eb5"
+            ),
+        }
+    )
     for name, digest in expected.items():
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest

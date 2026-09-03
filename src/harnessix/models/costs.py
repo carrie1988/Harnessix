@@ -8,6 +8,7 @@ from pydantic import AwareDatetime, Field, model_validator
 from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatus
 from harnessix.agent.usage import ModelAttempt, ModelIdentifier, TokenCount, UsageObservation
 from harnessix.domain.models import ContractModel
+from harnessix.models.billing import resolve_billing_context
 from harnessix.models.pricing import (
     Amount,
     BillingContext,
@@ -71,7 +72,7 @@ def bind_price(
     attempt: ModelAttempt, price: PriceSnapshot, context: BillingContext
 ) -> PriceBinding:
     price = PriceSnapshot.model_validate_json(price.model_dump_json())
-    context = BillingContext.model_validate_json(context.model_dump_json())
+    context = resolve_billing_context(attempt, context)
     return PriceBinding(
         attempt_id=attempt.attempt_id,
         attempt_sha256=content_digest(CostAttempt.from_attempt(attempt)),
@@ -201,6 +202,8 @@ def estimate_attempt(attempt: ModelAttempt, binding: PriceBinding | None = None)
     source = CostAttempt.from_attempt(attempt)
     if binding is not None:
         binding = PriceBinding.model_validate_json(binding.model_dump_json())
+        if resolve_billing_context(attempt, binding.context) != binding.context:
+            raise ValueError("价格绑定未纳入已观测的计费上下文")
     return AttemptCost(attempt=source, binding=binding, result=_calculate(source, binding))
 
 

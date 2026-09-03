@@ -45,7 +45,7 @@ async def recover(store, thread):
     return snapshot.turns[-1]
 
 
-@pytest.mark.parametrize("mode", ["start", "usage", "finish"])
+@pytest.mark.parametrize("mode", ["start", "usage", "finish", "billing"])
 @pytest.mark.parametrize(
     "point", ["session.after_events", "session.after_projection", "session.after_commit"]
 )
@@ -54,7 +54,7 @@ async def test_attempt_transaction_crash_matrix(tmp_path: Path, mode, point) -> 
     thread = await prepare_attempt(store, tmp_path)
     start = attempt_start()
     payloads = []
-    if mode in {"usage", "finish"}:
+    if mode in {"usage", "finish", "billing"}:
         payloads.append(start)
     if mode == "finish":
         payloads.append(observed(start, completeness="complete", input_tokens=10, output_tokens=3))
@@ -71,10 +71,14 @@ async def test_attempt_transaction_crash_matrix(tmp_path: Path, mode, point) -> 
     if turn.model_attempts:
         attempt = turn.model_attempts[0]
         assert attempt.status == ("completed" if mode == "finish" and committed else "interrupted")
-        has_usage = mode == "finish" or (mode == "usage" and committed)
+        has_usage = mode == "finish" or (mode in {"usage", "billing"} and committed)
         assert attempt.usage.completeness == ("complete" if has_usage else "unknown")
         assert attempt.usage.input_tokens == (10 if has_usage else None)
         assert turn.usage.total_tokens == (13 if has_usage else 0)
+        assert attempt.billing.observed == (mode == "billing" and committed)
+        if mode == "billing" and committed:
+            assert attempt.billing.cache_creation_5m_tokens == 3
+            assert attempt.billing.service_tier == "standard"
 
 
 @pytest.mark.parametrize(
