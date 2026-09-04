@@ -37,6 +37,7 @@ from harnessix.patches.diff_document_contracts import (
     BatchDiffRecord,
 )
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
+from harnessix.processes.bridge_contracts import AgentProcessCallPlan
 from harnessix.processes.contracts import (
     ProcessLimits,
     ProcessRequest,
@@ -77,6 +78,7 @@ def main() -> None:
         output / "batch-diff-record-v1.schema.json", TypeAdapter(BatchDiffRecord).json_schema()
     )
     for name, model in (
+        ("agent-process-call-plan", AgentProcessCallPlan),
         ("process-request", ProcessRequest),
         ("process-limits", ProcessLimits),
         ("process-stream", ProcessStream),

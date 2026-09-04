@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "description": "可进入Agent事件的有界计划；完整argv仍由ToolCall和Action保存。",
+  "properties": {
+    "version": {
+      "const": "agent-host-process/v1",
+      "default": "agent-host-process/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "thread_id": {
+      "format": "uuid",
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "format": "uuid",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "call_id": {
+      "format": "uuid",
+      "title": "Call Id",
+      "type": "string"
+    },
+    "workspace": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Workspace",
+      "type": "string"
+    },
+    "call_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Call Fingerprint",
+      "type": "string"
+    },
+    "request_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "action_id": {
+      "format": "uuid",
+      "title": "Action Id",
+      "type": "string"
+    },
+    "action_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Action Fingerprint",
+      "type": "string"
+    },
+    "action_tool_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Action Tool Version",
+      "type": "string"
+    },
+    "binding_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Binding Fingerprint",
+      "type": "string"
+    },
+    "principal_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Principal Fingerprint",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "program": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+      "title": "Program",
+      "type": "string"
+    },
+    "arguments_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Arguments Sha256",
+      "type": "string"
+    },
+    "timeout_seconds": {
+      "exclusiveMinimum": 0,
+      "maximum": 3600,
+      "title": "Timeout Seconds",
+      "type": "number"
+    },
+    "approval_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Approval Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "thread_id",
+    "turn_id",
+    "call_id",
+    "workspace",
+    "call_fingerprint",
+    "request_id",
+    "action_id",
+    "action_fingerprint",
+    "action_tool_version",
+    "binding_fingerprint",
+    "principal_fingerprint",
+    "idempotency_key",
+    "program",
+    "arguments_sha256",
+    "timeout_seconds",
+    "approval_fingerprint"
+  ],
+  "title": "AgentProcessCallPlan",
+  "type": "object"
+}

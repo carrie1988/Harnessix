@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.3、0.5.4a与0.5.4b1已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成 c1 只读整组计划与有界结构化 Diff；c2a/c2b 已交付整组事务预留/审批、顺序一次性执行和部分/未知效果核对，c3a/c3b 已实现宿主整组桥接、Kernel/模型持久审批和双账本恢复（Agent v7 / migration8），c3c1/c3c2 已交付有界差异报告和事务归档（Agent v8 / migration9），0.5.4a已实现受信宿主进程生命周期，0.5.4b1已接入Action Plane持久准入，下一片为 **0.5.4b2 Agent绑定与运维处置**，见 [ADR 0038](adr/0038-host-process-lifecycle.md)。整组方案见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)和 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md)。不把逐文件替换冒充整体原子提交，不提前接入 Shell 或源目录自动合入。
+状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1与0.5.4b2b1已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成 c1 只读整组计划与有界结构化 Diff；c2a/c2b 已交付整组事务预留/审批、顺序一次性执行和部分/未知效果核对，c3a/c3b 已实现宿主整组桥接、Kernel/模型持久审批和双账本恢复（Agent v7 / migration8），c3c1/c3c2 已交付有界差异报告和事务归档（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b1已固化Agent调用与唯一Action的确定性绑定；下一片补齐Agent Event v9、Session migration10与旧reader兼容。见 [ADR 0038](adr/0038-host-process-lifecycle.md)和 [ADR 0040](adr/0040-agent-process-action-saga.md)。不把桥接请求构造冒充模型进程工具，不提前接入Shell或源目录自动合入。
 
 ### 目标
 
@@ -225,6 +225,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
     - [ ] b2：Agent Session与Action Plane的单一审批绑定、长输出Artifact及宿主死亡运维处置；
       - [x] b2a：冻结Action审批唯一权威、稳定Action身份、跨库恢复Saga、WAITING_ACTION与Process Artifact边界；
       - [ ] b2b：桥接契约、Agent事件/Session迁移及旧reader兼容；
+        - [x] b2b1：稳定调用/Action身份、确定性Action ID与幂等键、持久ToolDescriptor/宿主绑定核对及冻结计划Schema；不接Session或执行；
+        - [ ] b2b2：Agent审批/等待/结果投影事件、Session migration10及真实v8旧reader升级；
       - [ ] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
   - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；

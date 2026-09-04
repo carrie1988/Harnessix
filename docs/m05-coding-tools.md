@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-05
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层及0.5.4b1 Action Plane持久准入已实现，0.5.4b2 Agent绑定/0.5.4c Git与测试工具及0.5.5 Eval待实施
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入及0.5.4b2b1稳定Agent/Action身份已实现，b2b2事件迁移、b2c运行时、0.5.4c Git与测试工具及0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -660,3 +660,11 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 跨库不伪装原子事务：Action已决定而Session未投影时只读取并补投影；Action运行或终态而Session无结果时只观察原Action；UNKNOWN绝不回READY。持久WAITING_ACTION用于已批准但尚未终态的Worker执行，不能在审批答复中无限轮询。
 
 Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b再做事件/迁移/旧reader，b2c实现运行时和Artifact。当前Agent v8/Session migration9不变，不能把本设计写成已接模型。
+
+## 31. 0.5.4b2b1：稳定Agent调用与Process Action身份
+
+`processes/bridge_contracts.py`定义无Agent运行时依赖的持久计划，`processes/agent_bridge.py`实现纯准备/核对边界；二者都不写Session、Journal或审批，也不启动进程。宿主传入当前Process Action的持久`ToolDescriptor`和受信`Principal`；桥接先核对完整模型ToolCall、作用域、严格Process JSON及高风险非幂等策略，再构造唯一Action请求。
+
+`AgentProcessCallPlan`绑定Thread/Turn/Call、绝对工作区、完整调用指纹、Action请求指纹、工具版本、宿主绑定摘要、主体摘要、程序、argv摘要和超时。Action ID由固定命名空间及上述身份生成，租户范围幂等键使用同一身份；同一调用重做prepare得到完全相同请求，不同主体、命令或宿主绑定得到不同Action。完整argv只保留在原ToolCall与ActionRequest，计划只保存摘要。
+
+`process_snapshot_matches`重新生成并逐项比较计划、ActionRequest、Action请求指纹、持久ToolDescriptor及Action Approval指纹。Session后续只能投影通过该核对的Journal快照；本片不接受Session审批作为Executor输入。计划已冻结独立v1 Schema。下一片b2b2新增Agent Event v9、WAITING_ACTION和最低Session reader升级；在此之前默认Agent仍不暴露`host.process`。

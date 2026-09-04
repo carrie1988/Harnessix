@@ -2,7 +2,7 @@
 
 - 日期：2026-09-05
 - 基线：`81c76f6`，CI33921498948四项通过，开工fetch一致
-- 状态：架构已采纳，契约/迁移/运行时尚未实现
+- 状态：架构已采纳；b2b1稳定调用/Action身份契约已实现，事件迁移与运行时尚未实现
 
 ## 1. 必须解决的问题
 
@@ -67,7 +67,7 @@ b2实现会新增Agent审批/等待/结果投影，需升级Agent Event/Thread r
 实施拆分：
 
 1. b2a（本ADR）：冻结唯一权威、计划身份、Saga矩阵、等待状态和Artifact边界；
-2. b2b：实现桥接契约、Agent事件/迁移及旧reader真实兼容；
+2. b2b：实现桥接契约、Agent事件/迁移及旧reader真实兼容；其中b2b1已交付确定性Action身份、请求构造/快照核对与冻结计划Schema，b2b2继续事件和迁移；
 3. b2c：实现Agent Runtime执行/恢复、Process Artifact及双SDK离线闭环；
 4. 0.5.4c：在同一准入上增加固定Git/run_tests，最后才评估受控Shell。
 

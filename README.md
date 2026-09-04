@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a/c3b 已实现整组调用绑定、显式 Kernel 批量工具、持久审批重开、双 SDK 离线写闭环和双账本恢复；c3c1/c3c2 已实现真实账本绑定的计划/历史效果报告及 Diff Artifact 事务发布，0.5.3范围完成。0.5.4a 已实现受信宿主进程生命周期和双流有界捕获，0.5.4b1已复用Action Plane实现宿主持久命令准入；Agent模型Shell、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a/c3b 已实现整组调用绑定、显式 Kernel 批量工具、持久审批重开、双 SDK 离线写闭环和双账本恢复；c3c1/c3c2 已实现真实账本绑定的计划/历史效果报告及 Diff Artifact 事务发布，0.5.3范围完成。0.5.4a 已实现受信宿主进程生命周期和双流有界捕获，0.5.4b1已复用Action Plane实现宿主持久命令准入，0.5.4b2b1已实现Agent调用到Process Action的稳定身份契约；Agent事件/Session迁移、模型进程运行时、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -245,7 +245,7 @@ uv run pytest tests/processes
 
 该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定、Process Artifact、Git/run_tests、硬退出后的自动清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
 
-Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结；契约、Session迁移和运行时尚未实现，当前Agent v8/migration9不变。
+Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1已新增`AgentProcessCallPlan`：稳定绑定Thread/Turn/Call、绝对工作区、完整调用指纹、Action请求指纹、宿主版本/绑定、主体、程序、argv摘要和超时，并确定性生成Action ID与幂等键；桥接只构造/核对请求，不写审批、不执行进程。Agent事件/Session迁移及运行时仍未实现，当前Agent v8/migration9不变。
 
 ## 当前已实现：0.1 Action Plane
 

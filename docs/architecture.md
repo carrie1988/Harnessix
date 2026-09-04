@@ -423,4 +423,6 @@ src/harnessix/
 
 0.5.4a的 `HostProcessRuntime` 是显式受信宿主API，依赖既有取消/错误模型而不修改Kernel或引入新Agent Loop。二流使用公开SubprocessProtocol/Transport区分退出、EOF与强制关闭；这里只保证声明范围内的执行/回收，不是权限审批、进程树容器或跨重启恢复，详见 [ADR 0038](adr/0038-host-process-lifecycle.md)。
 
-0.5.4b1通过`ProcessActionExecutor`把上述API接入0.1 Action Plane，而不是增加进程专用账本。Effect Journal保管命令意图、ToolDescriptor、审批、租约和UNKNOWN事实；Executor只负责比较持久工具版本/宿主绑定并执行。Agent Session尚未接入，因此不存在两套审批同步问题。宿主硬退出只能把过期RUNNING恢复UNKNOWN，不能证明操作系统进程已终止，详见 [ADR 0039](adr/0039-process-action-plane-admission.md)。
+0.5.4b1通过`ProcessActionExecutor`把上述API接入0.1 Action Plane，而不是增加进程专用账本。Effect Journal保管命令意图、ToolDescriptor、审批、租约和UNKNOWN事实；Executor只负责比较持久工具版本/宿主绑定并执行。宿主硬退出只能把过期RUNNING恢复UNKNOWN，不能证明操作系统进程已终止，详见 [ADR 0039](adr/0039-process-action-plane-admission.md)。
+
+0.5.4b2b1新增`AgentProcessCallPlan`和纯桥接准备/核对函数。Thread/Turn/Call、工作区、完整ToolCall、Action请求、主体、持久工具版本和宿主绑定共同确定Action ID与幂等键；重新准备只能得到同一Action。Session尚未新增投影事件，也不能据自身审批驱动进程；b2b2完成事件/迁移后，b2c才把此身份契约接入Agent Runtime。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。

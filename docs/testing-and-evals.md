@@ -672,3 +672,16 @@ Agent Runtime Kernel 合并前：
 文档链接、格式、敏感信息扫描均通过；`make check` **2392 passed、1 skipped**，Mypy仍为118源文件；异步调试与警告转错误 **2356 passed**。基础wheel无供应商SDK，仓库外`python -I`运行15个示例通过，SHA256为`6c7528ed16dee578f446a652a27e646599ae2f1343b38edec57c8f55276eb22a`。跨平台CI以最终提交为准。
 
 Agent v8、Session migration9、Action/Process Schema、依赖和示例行为不变。下一片b2b才实现契约、事件与迁移，不能把本ADR称为Agent进程工具完成。无模型请求、SSH或中间件部署。
+
+## 33. 0.5.4b2b1 稳定Agent/Process Action身份验收（2026-09-05）
+
+基于`3ee2cea`及CI33925461337四项成功实施。新增纯契约`AgentProcessCallPlan`和受信准备/快照核对桥接；没有修改Agent Event/Thread v8、Session migration9、Action/Process v1、Provider v3或依赖。
+
+- 同一Thread/Turn/Call、绝对工作区、完整ToolCall、Principal和宿主ToolDescriptor重复准备，得到逐字段相同的ActionRequest、Action ID、幂等键与计划；主体、argv或宿主环境绑定变化均生成不同身份。
+- 严格核对`host.process`名称、Process Action输入Schema、高风险非幂等分类、强制审批/幂等、禁止自动对账、工具版本和完整描述指纹。额外字段、类型强转、伪造计划、工作区/调用作用域或宿主绑定错配在提交或投影前拒绝。
+- 真实SQLite Effect Journal提交后停在PENDING_APPROVAL；相同请求返回原Action。测试再由Action Service写入唯一批准并停在READY，不启动进程。只有原ActionRequest、持久ToolDescriptor、Action请求指纹、Action状态以及已有Action Approval指纹全部匹配时，快照才可作为后续Session投影来源；伪造未批准READY或在PENDING挂拒绝决定均被拒绝。
+- 新增独立`agent-process-call-plan-v1`冻结Schema；完整argv仍只在原ToolCall和ActionRequest，计划仅保存摘要。契约模块不依赖Agent模型，避免b2b2把计划加入事件时形成循环导入。
+
+新增 **5项** 契约/Journal测试。`make check`通过：Ruff、Mypy（120源文件）、**2397 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2361项全部通过**。没有新增硬崩溃场景，前序数量不变。
+
+基础wheel未安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。无真实模型请求、SSH或中间件。下一片b2b2升级Agent事件/等待/结果投影与Session reader，并用真实v8旧wheel验证升级和拒绝降级；当前默认Agent仍不暴露或执行`host.process`。

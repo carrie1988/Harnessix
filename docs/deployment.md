@@ -280,3 +280,11 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 命令请求必须带幂等键并等待审批。argv、程序别名和超时属于持久Action正文，禁止在其中放凭据；本片遇到SecretRef会在不启动进程的前提下失败。退出码非零仍是已观察到的进程结果，运维判断测试成败必须读取ProcessResult。UNKNOWN和MANUAL_INTERVENTION不得投入READY队列或由Worker重试。
 
 宿主硬退出时Journal可以在租约过期后恢复UNKNOWN，但0.5.4b1没有外部进程监督器，子进程仍可能存活。运维只能按部署环境核查，不能对持久PID/PGID直接发信号。示例`python -m examples.process_action`验证持久准入闭环，不验证Sandbox或Agent模型调用。
+
+## Agent/Process稳定身份部署（0.5.4b2b1）
+
+本片增加`AgentProcessCallPlan`和受信准备/快照核对API，没有Session或Effect Journal迁移；当前最低reader仍是Agent v8 / migration9。安装新wheel不会创建Action、批准请求、启动进程或改写旧Session。包版本仍为0.1.0，部署必须记录具体Git提交和wheel摘要。
+
+宿主只能把同一Process Action `ToolDescriptor`同时用于模型ToolCall构造和桥接，并提供稳定、受信的`Principal`。API与Worker宿主绑定不同会产生不同工具版本，旧计划不能继续。Action请求提交后的状态、决定和结果只从原Effect Journal读取；Session接入尚未交付，不得自行把计划或普通Session `ApprovalRecord`传给Executor。
+
+独立Schema`agent-process-call-plan-v1`用于持久兼容检查。b2b2升级Agent事件和Session最低reader前，不需要运行旧wheel迁移探针；也不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。

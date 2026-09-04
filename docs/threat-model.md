@@ -342,7 +342,7 @@ Agent Runtime                │
 - 已实现私有 Session 内有界 JSONL Artifact：载荷绑定实际发布器，发布重新检查活跃宿主/调用/审批；正文、manifest 和结果同事务提交，跨 Thread/重绑定 Workspace 不能读取。
 - SHA/长度/记录数及结果关联检测损坏；清理保留 tombstone，保护活跃 Thread，不把过期、缺失或损坏伪装成空页。逻辑配额不是整个磁盘的硬隔离。
 - 宿主 Python 端口、数据库文件和同进程工具仍在受信边界内；scope/UUID 不是网络身份凭据。普通代码中的秘密或恶意指令仍可能进入 Session/Artifact，默认敏感路径拒绝不是通用 DLP。未实现 Secret 全文检测、OS Sandbox、导出授权或写/进程工具。
-- 0.5.4b1的进程Action只由宿主显式注册，argv会持久化到Effect Journal，因此禁止携带凭据；SecretRef尚未解析并在启动前拒绝。审批、幂等键和UNKNOWN恢复不构成文件/网络/进程树隔离，宿主硬退出后也不能根据历史PID安全清理。模型工具接入、Sandbox和宿主死亡监督仍未实现。
+- 0.5.4b1的进程Action只由宿主显式注册，argv会持久化到Effect Journal，因此禁止携带凭据；SecretRef尚未解析并在启动前拒绝。b2b1新增的Agent/Action稳定身份绑定和快照核对可阻止跨调用、主体、工具版本或宿主绑定复用，但摘要不是签名，受信Python宿主仍在边界内。审批、幂等键和UNKNOWN恢复不构成文件/网络/进程树隔离，宿主硬退出后也不能根据历史PID安全清理。Agent事件/运行时接入、Sandbox和宿主死亡监督仍未实现。
 
 详细实现与可验证边界见 [ADR 0026](adr/0026-transactional-artifacts.md)。
 
