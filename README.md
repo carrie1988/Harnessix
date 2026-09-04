@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a 已实现整组调用绑定与宿主异步桥接；模型批量工具、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a/c3b 已实现整组调用绑定、显式 Kernel 批量工具、持久审批重开、双 SDK 离线写闭环和双账本恢复；Diff Artifact、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -117,14 +117,14 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- Agent Event/Thread v6、Session migration 7；旧 v1–v5 原文兼容，旧 wheel 的真实只读等待审批可升级继续。
+- 本节交付时为 Agent v6 / Session migration7；当前为 v7 / migration8，兼容 v1–v6 原文和真实旧只读/单文件等待审批。
 
 ~~~bash
 uv run python -m examples.kernel_patch
 uv run pytest tests/patches/test_kernel_patch*.py
 ~~~
 
-范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；c3a 已实现宿主整组调用桥接；c3b/c3c 再接入 Kernel、模型和 Diff Artifact。
+范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；c3a/c3b 已实现宿主桥接与 Kernel/模型批量闭环；c3c 再交付 Diff Artifact。
 
 ## 当前已实现：多文件计划与结构化 Diff（0.5.3c1）
 
@@ -167,7 +167,7 @@ uv run python -m examples.managed_batch
 uv run pytest tests/patches/test_batch_execution.py tests/patches/test_batch_execution_crash.py
 ~~~
 
-**边界**：仅宿主显式调用、仅私有受管副本内的已有普通文件。不承诺跨文件原子提交、内容 CAS 或自动回滚；不合入源目录，不运行 Shell。模型仍只有原单文件 Patch，批量 Kernel 接入和 Diff Artifact 留到 c3。设计见 [ADR 0033](docs/adr/0033-batch-consumption-and-effect-recovery.md)，迁移见 [部署说明](docs/deployment.md#副本账本-v3-升级053c2b)。
+**边界**：仅宿主显式调用、仅私有受管副本内的已有普通文件。不承诺跨文件原子提交、内容 CAS 或自动回滚；不合入源目录，不运行 Shell。c2 本身不开放模型写工具；当前批量 Kernel 接入见 c3b，Diff Artifact 仍待 c3c。设计见 [ADR 0033](docs/adr/0033-batch-consumption-and-effect-recovery.md)，迁移见 [部署说明](docs/deployment.md#副本账本-v3-升级053c2b)。
 
 ## 当前已实现：整组调用绑定与异步桥接（0.5.3c3a）
 
@@ -181,7 +181,22 @@ uv run python -m examples.batch_patch_bridge
 uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge_cancel.py tests/patches/test_batch_bridge_crash.py
 ~~~
 
-**边界**：这是受信宿主 API，不是已开放的模型批量工具。桥接不验证 Session 活跃性或持久消费；宿主必须使用原 Turn 截止时间和取消机制。Kernel 仍默认只读，仅显式单文件 Patch 已接入；c3b 的整组持久审批/SDK 闭环及 c3c 的 Diff Artifact 尚未实现。详见 [ADR 0034](docs/adr/0034-batch-call-bridge-and-kernel-integration.md)。
+**边界**：这是受信宿主 API，本身不验证 Session 活跃性或持久消费；宿主必须使用原 Turn 截止时间和取消机制。当前通过下节 c3b 的专用端口接入 Kernel；默认仍不开放写工具，c3c 的 Diff Artifact 尚未实现。详见 [ADR 0034](docs/adr/0034-batch-call-bridge-and-kernel-integration.md)。
+
+## 当前已实现：Kernel 整组持久审批与写闭环（0.5.3c3b）
+
+- 宿主显式注入 `AgentRuntime(..., patch_batches=ManagedPatchBatchBridge(copy))` 才广告/执行 `apply_patch_batch`；与原 `patches` 单文件端口可共存，不开放任意写注册；
+- Session 保存完整调用计划、独立组审批与决定；持久离开等待后才镜像后端决定并一次性顺序执行。答复审批不会修改文件；
+- 两个实际供应商 SDK 均通过离线 HTTP 完成“两文件读取→整组提案→审批重开→真实副本写入→逐文件读回”；没有新增真实模型调用；
+- 私有 `ToolResult.patch_batch` 保留有界效果与运行原因，不进模型 wire，也不因公开结果超限丢失。部分效果停止当前 Turn；未知效果禁止自动继续；
+- Agent Event/Thread **v7**、Session **migration8**；真实旧 v6 wheel 的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧 reader 明确拒绝新库。副本账本保持 **v3**。
+
+~~~bash
+uv run python -m examples.kernel_batch
+uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
+~~~
+
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。下一片为 **c3c：计划与历史效果 Diff Artifact**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -218,7 +233,7 @@ uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v6，见上述写工具接入）；
+- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v7，见上述整组写工具接入）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -262,7 +277,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v6/Provider v3，见 0.5.3b2b 与 0.4.3b2）；
+- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v7/Provider v3，见 0.5.3c3b 与 0.4.3b2）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。

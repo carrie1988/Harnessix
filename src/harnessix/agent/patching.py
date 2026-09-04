@@ -63,7 +63,11 @@ def execution_approval(
 def result_content(
     result: PatchCallResult, call: ToolCallContent, origin: Literal["execution", "recovery"]
 ) -> ToolResultContent:
-    if result.result.call_id != call.call_id or result.result.patch is not None:
+    if (
+        result.result.call_id != call.call_id
+        or result.result.patch is not None
+        or result.result.patch_batch is not None
+    ):
         raise KernelError("tool_result_mismatch", "桥接结果归属错误或预置了 Kernel 证据")
     plan, record = result.plan, result.record
     effect = None

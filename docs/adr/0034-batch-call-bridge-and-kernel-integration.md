@@ -2,18 +2,18 @@
 
 - 日期：2026-09-04
 - 基线：`6a7cc65`，CI `33867929295` 四项通过
-- 状态：c3a 已实现并通过本地/独立 wheel 验收，跨平台以本片 CI 为准；c3b/c3c 尚未实现，不将桥接完成称为模型批量闭环
+- 状态：c3a 已实现并通过本地/独立 wheel 验收，跨平台以本片 CI 为准；c3b 已按 ADR0035 实现，c3c 仍待交付；下文保留 c3a 实施时边界
 
 ## 1. 源码求证与分片
 
-已检查 `agent/runtime.py`、`agent/approvals.py`、`agent/patching.py`、`agent/execution.py`、`agent/ports.py`、`patches/agent_bridge.py`、`managed_batches.py`、`batch_execution.py` 与 `artifacts/sqlite.py`。当前 Kernel v6 只接受单文件 `apply_patch` 专用端口；通用写工具即使注册也不会向模型广告或执行。现有 Artifact 发布器强制只读成功调用，并要求同一 Session 与 Scoped 入口；不能通过伪造只读调用把写效果归档。
+已检查 `agent/runtime.py`、`agent/approvals.py`、`agent/patching.py`、`agent/execution.py`、`agent/ports.py`、`patches/agent_bridge.py`、`managed_batches.py`、`batch_execution.py` 与 `artifacts/sqlite.py`。c3a 基线 Kernel v6 只接受单文件 `apply_patch` 专用端口；通用写工具即使注册也不会向模型广告或执行。现有 Artifact 发布器强制只读成功调用，并要求同一 Session 与 Scoped 入口；不能通过伪造只读调用把写效果归档。
 
 为保持旧单文件路径不变，c3 分为三片，必须全部验收才能完成 c3：
 
 | 切片 | 内容 | 当前范围 |
 | --- | --- | --- |
 | c3a | 独立整组调用契约、宿主异步桥接、完整调用/计划绑定、取消排空与只核对恢复 | 本片实现 |
-| c3b | Kernel 专用整组端口、持久组审批/消费/结果、Session reader 升级、两个 SDK 离线闭环和组合崩溃 | 待实现 |
+| c3b | Kernel 专用整组端口、持久组审批/消费/结果、Session reader 升级、两个 SDK 离线闭环和组合崩溃 | 已按 ADR0035 实现 |
 | c3c | 基于实际调用的计划/历史效果 Diff Artifact、分页/预算/过期、事务发布及恢复 | 待实现 |
 
 c3a 不改变 Agent v6、Provider v3、Session migration7、副本账本 v3、既有 Schema 或单文件工具定义。它不读取 Session，因此受信作用域只能证明调用字段一致，不能证明当前调用活跃、宿主已持久消费等待边界或 Turn 尚未过期。宿主仍承担这些前置条件。
@@ -37,7 +37,7 @@ c3a 不改变 Agent v6、Provider v3、Session migration7、副本账本 v3、�
 
 Token 或 Task 取消置位线程停止信号，排空真实工作线程后才返回；取消后的后端内部预算仅用于已开始效果记账。关闭立即拒绝新任务并等待活动线程，重复关闭和关闭自身遭多次取消仍不得把写线程遗留后台。桥接不拥有副本，宿主先排空桥接再关闭副本。
 
-## 4. c3b 持久化设计门禁（待实现）
+## 4. c3b 持久化设计门禁（已按 ADR0035 验收）
 
 独立整组审批 Item 绑定完整调用计划，旧只读/单文件审批不能升级为整组授权。顺序为 Session 调用 → 副本整组计划 → Session WAITING 审批 → Session 决定 → Session 持久离开 WAITING → 后端镜像组决定/一次执行 → Session 有界私有效果与公开结果。两个库非原子，各提交窗口均需恢复证据。
 

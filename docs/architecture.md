@@ -182,7 +182,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
-当前 Agent Event/Thread 为 v6，最低读者由 Migration 0007 约束；v1–v5 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
+当前 Agent Event/Thread 为 v7，最低读者由 Migration 0008 约束；v1–v6 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
 
 ### 4.9 Harnessix Action Plane
 
@@ -398,11 +398,17 @@ src/harnessix/
 
 ### 整组宿主审批与执行的当前落点（0.5.3c2）
 
-`ManagedPatchBatches` 借用单个 ManagedPatchWorkspace 的连接、所有权和锁，复用单文件计划/镜像/事件校验与事务，而非新增副本管理器或替换引擎。副本账本 v2 将整组计划和所有成员在同一事务预留；独立组审批记录只代表完整计划的宿主决定，审批阶段成员保持 pending，旧单文件写入口拒绝拆分消费。组请求暂为宿主稳定身份，不冒充已验证的 Kernel Call。c2b 在账本 v3 增加独立运行记录并按顺序调用原单文件引擎，部分/未知效果与终止原因分开，见 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)；Agent/Session 批量契约仍留到 c3。
+`ManagedPatchBatches` 借用单个 ManagedPatchWorkspace 的连接、所有权和锁，复用单文件计划/镜像/事件校验与事务，而非新增副本管理器或替换引擎。副本账本 v2 将整组计划和所有成员在同一事务预留；独立组审批记录只代表完整计划的宿主决定，审批阶段成员保持 pending，旧单文件写入口拒绝拆分消费。组请求暂为宿主稳定身份，不冒充已验证的 Kernel Call。c2b 在账本 v3 增加独立运行记录并按顺序调用原单文件引擎，部分/未知效果与终止原因分开，见 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)；Agent/Session 批量契约由下述 c3b 接入。
 
 
 ### 整组宿主调用桥接的当前落点（0.5.3c3a）
 
 `ManagedPatchBatchBridge` 在 `ManagedPatchBatches` 上校验宿主调用与完整组计划，使用独立调用审批指纹；不继承旧单文件审批，也不复用旧单文件工具名。工作线程复用既有组执行/核对，串行锁、操作停止信号和排空保障异步生命周期。它只借用副本，不读取 Session，也不能替代 Kernel 的活跃调用/原时限/等待状态持久消费。
 
-`BatchCallResult` 分离公开有界路径/效果摘要与私有计划、后端审批、实际运行事实。Agent v6、Session migration7、Provider v3、副本v3和旧单文件定义不变。c3b 才新增 Kernel 组端口与持久事件；c3c 才新增基于实际调用的 Diff Artifact 准入，不能放松现有只读发布器。详细分片见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)。
+`BatchCallResult` 分离公开有界路径/效果摘要与私有计划、后端审批、实际运行事实。c3a 当时未改变 Agent/Session/Provider/副本版本和旧单文件定义。c3b 已新增 Kernel 组端口与持久事件，见下节；c3c 才新增基于实际调用的 Diff Artifact 准入，不能放松现有只读发布器。详细分片见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)。
+
+### Kernel 整组调用的当前落点（0.5.3c3b）
+
+`AgentRuntime.patch_batches` 是独立显式端口，仍复用原循环、审批事务与 Reducer；不在通用写注册表开放权限。`agent/batch_patching.py` 只校验完整授权与私有效果，不持有存储或后台任务；文件效果继续由 c3a 桥接和 c2 组引擎负责。Session v7 Item 保存完整审批计划及有界私有组效果，migration8 不重写旧历史或新增未来空表，副本仍为v3。
+
+执行准入为当前活跃调用、完整匹配决定、原 Turn 时限和已持久消费等待；复核上下文不是执行许可。恢复只查原记录/观察已开始成员，任一证明不足为 unknown，不跨两个账本补批/重放。结果超预算也保留已发生效果，非正常组运行不能冒充完成 Turn。模型历史仍按原白名单转换，不传私有组计划/批准/效果。Diff Artifact 仍需后续专用事务发布，不修改只读发布器，见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。

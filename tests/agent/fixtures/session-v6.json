@@ -1,0 +1,641 @@
+{
+  "snapshot": {
+    "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+    "workspace": "/private/tmp/harnessix-c3b-upgrade.47uJ1i/fixture/private/59f5584d-cbc5-4ea9-a83b-d97be8dbecfc/workspace",
+    "sequence": 23,
+    "active_turn_id": null,
+    "turns": [
+      {
+        "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+        "request_id": "apply_patch",
+        "request_fingerprint": "b25e33c2c48bb711eef25ee12e95a451edd0fcb56bfaa85b10660a972ee24018",
+        "status": "completed",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 3600.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null,
+        "items": [
+          {
+            "item_id": "01a06c7d-41bf-72b6-86c7-14be41d735cb",
+            "status": "completed",
+            "content": {
+              "kind": "user_message",
+              "text": "真实旧审批"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06c7d-41c6-704b-8cd7-d944c51dfd8a",
+            "status": "completed",
+            "content": {
+              "kind": "tool_call",
+              "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+              "provider_call_id": "old",
+              "tool": "apply_patch",
+              "tool_version": "1.e04f5f4d0cb6da03c22fe3bb8e7b5d2fd270614445cc7a898b314ca3f2056710",
+              "effect_class": "non_idempotent_write",
+              "arguments": {
+                "path": "main.py",
+                "expected_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+                "edits": [
+                  {
+                    "old_text": "before",
+                    "new_text": "after"
+                  }
+                ]
+              },
+              "requires_approval": true,
+              "tool_fingerprint": "5ef044d7a7eb9a1fed39f15b56baccc95eb5a1da52fa87744d4b759f4e9d3010"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06c7d-41d0-71d2-9a3a-c07ffc65278e",
+            "status": "completed",
+            "content": {
+              "kind": "patch_approval_request",
+              "policy_version": "kernel-managed-patch/v1",
+              "approval_id": "01a06c7d-41d0-7575-95cb-eb9b48f70ce6",
+              "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+              "plan": {
+                "version": "managed-patch-call/v1",
+                "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+                "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+                "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+                "call_fingerprint": "f4f2b7181978ac1fb0f5ecd8a91af22c6daf8230bf299976f44fd43ffebec18d",
+                "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+                "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+                "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+                "manifest": {
+                  "version": "patch-plan/v1",
+                  "path": "main.py",
+                  "workspace_scope": "07fb229a5c13e27ef76eb842c8fae84e264de7fe5e52c73421b62b60a63b3f9f",
+                  "source_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+                  "source_mode": 420,
+                  "proposal_sha256": "71b6d8515f8bf1870269cd5914b47bc408ed3c5b2fd1bee5d658536624cff271",
+                  "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+                  "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da",
+                  "before_bytes": 8,
+                  "after_bytes": 7,
+                  "edit_count": 1,
+                  "fingerprint": "851f3b81e10f3393ce3a49074b574b0d4db5ae60b791b55e90913b0d2a7ef84c"
+                },
+                "backend_fingerprint": "294b28ac4666400a6b6b2801c4cc52a1484810901ac1494996265361fd703284",
+                "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5"
+              },
+              "request_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+              "decision": {
+                "outcome": "approved",
+                "actor": "旧包升级验收宿主",
+                "reason": null,
+                "request_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+                "decided_at": "2026-09-04T12:55:43.508944Z"
+              }
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06c7d-42a1-74f2-835e-ba6906fa647e",
+            "status": "completed",
+            "content": {
+              "kind": "tool_result",
+              "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+              "outcome": "succeeded",
+              "output": {
+                "version": "managed-patch-output/v1",
+                "path": "main.py",
+                "state": "applied",
+                "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+                "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da"
+              },
+              "error": null,
+              "action_id": null,
+              "patch": {
+                "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+                "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+                "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+                "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+                "state": "applied",
+                "origin": "execution"
+              }
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06c7d-42a9-7bb1-acb8-03cf407054ed",
+            "status": "completed",
+            "content": {
+              "kind": "assistant_message",
+              "text": "升级验收完成"
+            },
+            "error": null
+          }
+        ],
+        "model_steps": 2,
+        "usage_step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "model_attempts": [],
+        "error": null,
+        "created_at": "2026-09-04T12:55:43.295884Z",
+        "completed_at": "2026-09-04T12:55:43.539199Z"
+      }
+    ],
+    "created_at": "2026-09-04T12:55:43.294201Z",
+    "updated_at": "2026-09-04T12:55:43.539199Z"
+  },
+  "events": [
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41be-7c6f-a6cd-01fab3b2e4d3",
+      "turn_id": null,
+      "occurred_at": "2026-09-04T12:55:43.294201Z",
+      "payload": {
+        "type": "thread_created",
+        "workspace": "/private/tmp/harnessix-c3b-upgrade.47uJ1i/fixture/private/59f5584d-cbc5-4ea9-a83b-d97be8dbecfc/workspace"
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 1
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41bf-7798-84e2-09333c17853d",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.295884Z",
+      "payload": {
+        "type": "turn_started",
+        "request_id": "apply_patch",
+        "request_fingerprint": "b25e33c2c48bb711eef25ee12e95a451edd0fcb56bfaa85b10660a972ee24018",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 3600.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 2
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41bf-7251-965f-853399438ea3",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.295889Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06c7d-41bf-72b6-86c7-14be41d735cb",
+        "content": {
+          "kind": "user_message",
+          "text": "真实旧审批"
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 3
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41bf-7501-a0b0-a70dadc1a3a4",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.295894Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06c7d-41bf-72b6-86c7-14be41d735cb",
+        "status": "completed",
+        "content": {
+          "kind": "user_message",
+          "text": "真实旧审批"
+        },
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 4
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41c3-7f8f-b010-909b9e416407",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.299139Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 5
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41c4-7348-a13e-8e3a4629e567",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.300947Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 6
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41c7-7c21-b73d-f100d955d176",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.303697Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06c7d-41c6-704b-8cd7-d944c51dfd8a",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "provider_call_id": "old",
+          "tool": "apply_patch",
+          "tool_version": "1.e04f5f4d0cb6da03c22fe3bb8e7b5d2fd270614445cc7a898b314ca3f2056710",
+          "effect_class": "non_idempotent_write",
+          "arguments": {
+            "path": "main.py",
+            "expected_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+            "edits": [
+              {
+                "old_text": "before",
+                "new_text": "after"
+              }
+            ]
+          },
+          "requires_approval": true,
+          "tool_fingerprint": "5ef044d7a7eb9a1fed39f15b56baccc95eb5a1da52fa87744d4b759f4e9d3010"
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 7
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41c7-71c4-96d4-a9c2eedabc34",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.303703Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06c7d-41c6-704b-8cd7-d944c51dfd8a",
+        "status": "completed",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "provider_call_id": "old",
+          "tool": "apply_patch",
+          "tool_version": "1.e04f5f4d0cb6da03c22fe3bb8e7b5d2fd270614445cc7a898b314ca3f2056710",
+          "effect_class": "non_idempotent_write",
+          "arguments": {
+            "path": "main.py",
+            "expected_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+            "edits": [
+              {
+                "old_text": "before",
+                "new_text": "after"
+              }
+            ]
+          },
+          "requires_approval": true,
+          "tool_fingerprint": "5ef044d7a7eb9a1fed39f15b56baccc95eb5a1da52fa87744d4b759f4e9d3010"
+        },
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 8
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41c9-714e-8f11-4ff06751769d",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.305749Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 1,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 9
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41cc-7851-a994-3e9427173c4e",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.308320Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "executing_tools",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 10
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41d1-719d-8cdf-47b1cddd76fb",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.313670Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06c7d-41d0-71d2-9a3a-c07ffc65278e",
+        "content": {
+          "kind": "patch_approval_request",
+          "policy_version": "kernel-managed-patch/v1",
+          "approval_id": "01a06c7d-41d0-7575-95cb-eb9b48f70ce6",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "plan": {
+            "version": "managed-patch-call/v1",
+            "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+            "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+            "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+            "call_fingerprint": "f4f2b7181978ac1fb0f5ecd8a91af22c6daf8230bf299976f44fd43ffebec18d",
+            "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+            "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+            "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+            "manifest": {
+              "version": "patch-plan/v1",
+              "path": "main.py",
+              "workspace_scope": "07fb229a5c13e27ef76eb842c8fae84e264de7fe5e52c73421b62b60a63b3f9f",
+              "source_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+              "source_mode": 420,
+              "proposal_sha256": "71b6d8515f8bf1870269cd5914b47bc408ed3c5b2fd1bee5d658536624cff271",
+              "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+              "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da",
+              "before_bytes": 8,
+              "after_bytes": 7,
+              "edit_count": 1,
+              "fingerprint": "851f3b81e10f3393ce3a49074b574b0d4db5ae60b791b55e90913b0d2a7ef84c"
+            },
+            "backend_fingerprint": "294b28ac4666400a6b6b2801c4cc52a1484810901ac1494996265361fd703284",
+            "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5"
+          },
+          "request_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+          "decision": null
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 11
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-41d1-7e51-b83f-5ca00b2015b9",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.313677Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "waiting_approval",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 12
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-4294-7136-9e4d-13d80232d769",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.508944Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06c7d-41d0-71d2-9a3a-c07ffc65278e",
+        "status": "completed",
+        "content": {
+          "kind": "patch_approval_request",
+          "policy_version": "kernel-managed-patch/v1",
+          "approval_id": "01a06c7d-41d0-7575-95cb-eb9b48f70ce6",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "plan": {
+            "version": "managed-patch-call/v1",
+            "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+            "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+            "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+            "call_fingerprint": "f4f2b7181978ac1fb0f5ecd8a91af22c6daf8230bf299976f44fd43ffebec18d",
+            "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+            "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+            "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+            "manifest": {
+              "version": "patch-plan/v1",
+              "path": "main.py",
+              "workspace_scope": "07fb229a5c13e27ef76eb842c8fae84e264de7fe5e52c73421b62b60a63b3f9f",
+              "source_revision": "ef6bb3fb34cf225837e9497003c60a6690aff0f5803c983aed7f48db29c99f5c",
+              "source_mode": 420,
+              "proposal_sha256": "71b6d8515f8bf1870269cd5914b47bc408ed3c5b2fd1bee5d658536624cff271",
+              "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+              "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da",
+              "before_bytes": 8,
+              "after_bytes": 7,
+              "edit_count": 1,
+              "fingerprint": "851f3b81e10f3393ce3a49074b574b0d4db5ae60b791b55e90913b0d2a7ef84c"
+            },
+            "backend_fingerprint": "294b28ac4666400a6b6b2801c4cc52a1484810901ac1494996265361fd703284",
+            "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5"
+          },
+          "request_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+          "decision": {
+            "outcome": "approved",
+            "actor": "旧包升级验收宿主",
+            "reason": null,
+            "request_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+            "decided_at": "2026-09-04T12:55:43.508944Z"
+          }
+        },
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 13
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-429a-75f3-b628-c9ccbdf96fbf",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.514100Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "executing_tools",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 14
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42a2-76a2-9284-a5e1200e49dc",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.522076Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06c7d-42a1-74f2-835e-ba6906fa647e",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "outcome": "succeeded",
+          "output": {
+            "version": "managed-patch-output/v1",
+            "path": "main.py",
+            "state": "applied",
+            "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+            "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da"
+          },
+          "error": null,
+          "action_id": null,
+          "patch": {
+            "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+            "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+            "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+            "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+            "state": "applied",
+            "origin": "execution"
+          }
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 15
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42a2-79d5-b687-a936c6ac67b0",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.522082Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06c7d-42a1-74f2-835e-ba6906fa647e",
+        "status": "completed",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a06c7d-41c6-709f-980a-14cf962d9d59",
+          "outcome": "succeeded",
+          "output": {
+            "version": "managed-patch-output/v1",
+            "path": "main.py",
+            "state": "applied",
+            "before_sha256": "a6456ed3bde94789512c42c563637b929da22b9b5611962bd2c8ff63343d8195",
+            "after_sha256": "1235f8f435b1d16f7aac442351f2e29ff1bd2b74652392c4accb5ec5565973da"
+          },
+          "error": null,
+          "action_id": null,
+          "patch": {
+            "workspace_id": "59f5584d-cbc5-4ea9-a83b-d97be8dbecfc",
+            "plan_id": "000fbc90-9e7a-4ca0-99f2-ce39aec6b232",
+            "request_id": "75f0c3438a87acdd5a61bdf4bec1d526b653b9e3f8dd9dc86c69e0b7af347023",
+            "approval_fingerprint": "d1bd5d527f4e79462f7a6a9e3d673c3f54ee2ac1c6dadf692bffe120185c61c5",
+            "state": "applied",
+            "origin": "execution"
+          }
+        },
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 16
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42a5-71a1-b54a-a666c5e30ca3",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.525126Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 17
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42a7-770c-b676-295496afc7a6",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.527138Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 18
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42aa-7fc3-8b30-40f8f62e4269",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.530177Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06c7d-42a9-7bb1-acb8-03cf407054ed",
+        "content": {
+          "kind": "assistant_message",
+          "text": ""
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 19
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42ac-7e18-a3c0-486b9b861ae4",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.532379Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06c7d-42a9-7bb1-acb8-03cf407054ed",
+        "status": "completed",
+        "content": {
+          "kind": "assistant_message",
+          "text": "升级验收完成"
+        },
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 20
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42ae-7eb6-bd42-fbe44a4100a3",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.534529Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 21
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42b1-75ad-b76b-89dd96ca1667",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.537272Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "finalizing",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 22
+    },
+    {
+      "schema_version": 6,
+      "event_id": "01a06c7d-42b3-7f3e-837f-4dc1b0fcae8e",
+      "turn_id": "01a06c7d-41bf-7518-941e-432c05297616",
+      "occurred_at": "2026-09-04T12:55:43.539199Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "completed",
+        "error": null
+      },
+      "thread_id": "01a06c7d-41be-780b-bf92-ac380ea3ecff",
+      "sequence": 23
+    }
+  ]
+}

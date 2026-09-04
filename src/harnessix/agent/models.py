@@ -31,6 +31,8 @@ from harnessix.domain.models import (
     TraceContext,
     utc_now,
 )
+from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
+from harnessix.patches.batch_run_contracts import BatchExecutionResult
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.managed_contracts import PatchState
 from harnessix.tools.contracts import Revision
@@ -117,6 +119,29 @@ class PatchEffect(ContractModel):
     origin: Literal["execution", "recovery"]
 
 
+class PatchBatchEffect(ContractModel):
+    """有界组效果证据；完整批准留在审批 Item，不回灌模型。"""
+
+    workspace_id: UUID
+    batch_id: UUID
+    request_id: Revision
+    approval_fingerprint: Revision
+    origin: Literal["execution", "recovery"]
+    execution: BatchExecutionResult | None = None
+
+    @model_validator(mode="after")
+    def bound_execution(self) -> Self:
+        if self.execution is not None and (
+            self.execution.run.phase != "finished"
+            or self.execution.run.workspace_id != self.workspace_id
+            or self.execution.run.batch_id != self.batch_id
+        ):
+            raise ValueError("组效果与终止运行身份不一致")
+        if len(self.model_dump_json().encode()) > 8192:
+            raise ValueError("私有组效果超过字节上限")
+        return self
+
+
 class ToolResultContent(ContractModel):
     kind: Literal["tool_result"] = "tool_result"
     call_id: UUID
@@ -125,13 +150,22 @@ class ToolResultContent(ContractModel):
     error: AgentFailure | None = None
     action_id: UUID | None = None
     patch: PatchEffect | None = None
+    patch_batch: PatchBatchEffect | None = None
 
     @model_serializer(mode="wrap")
     def serialize_result(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
         if self.patch is None:
             data.pop("patch", None)
+        if self.patch_batch is None:
+            data.pop("patch_batch", None)
         return data
+
+    @model_validator(mode="after")
+    def independent_effects(self) -> Self:
+        if self.patch is not None and self.patch_batch is not None:
+            raise ValueError("单文件和整组证据不能混用")
+        return self
 
 
 class ApprovalRequestContent(ContractModel):
@@ -160,6 +194,30 @@ class PatchApprovalRequestContent(ContractModel):
         ):
             raise ValueError("写审批必须绑定完整调用计划")
         return self
+
+
+class PatchBatchApprovalRequestContent(ContractModel):
+    kind: Literal["patch_batch_approval_request"] = "patch_batch_approval_request"
+    policy_version: Literal["kernel-managed-patch-batch/v1"] = "kernel-managed-patch-batch/v1"
+    approval_id: UUID
+    call_id: UUID
+    plan: ManagedPatchBatchCallPlan
+    request_fingerprint: Revision
+    decision: ApprovalRecord | None = None
+
+    @model_validator(mode="after")
+    def bound_plan(self) -> Self:
+        if (
+            self.call_id != self.plan.call_id
+            or self.request_fingerprint != self.plan.approval_fingerprint
+        ):
+            raise ValueError("整组审批必须绑定完整调用计划")
+        return self
+
+
+ApprovalContent = (
+    ApprovalRequestContent | PatchApprovalRequestContent | PatchBatchApprovalRequestContent
+)
 
 
 class PlanStep(ContractModel):
@@ -210,6 +268,7 @@ ItemContent = Annotated[
     | ToolResultContent
     | ApprovalRequestContent
     | PatchApprovalRequestContent
+    | PatchBatchApprovalRequestContent
     | PlanContent
     | CompactionContent
     | ErrorContent,
@@ -324,7 +383,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6] = 6
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7] = 7
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -350,6 +409,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 7 and isinstance(self.payload, ItemStarted | ItemFinished):
+            content = self.payload.content
+            if isinstance(content, PatchBatchApprovalRequestContent) or (
+                isinstance(content, ToolResultContent) and content.patch_batch is not None
+            ):
+                raise ValueError("整组审批与效果需要 Agent Event v7")
         if self.schema_version < 6 and isinstance(self.payload, ItemStarted | ItemFinished):
             content = self.payload.content
             if isinstance(content, PatchApprovalRequestContent) or (

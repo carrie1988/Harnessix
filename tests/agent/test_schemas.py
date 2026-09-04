@@ -15,8 +15,8 @@ from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
-        "agent-event-v6.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v6.schema.json": Thread.model_json_schema(),
+        "agent-event-v7.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v7.schema.json": Thread.model_json_schema(),
         "provider-event-v3.schema.json": TypeAdapter(ProviderEvent).json_schema(),
         "openai-chat-config-v1.schema.json": OpenAIChatConfig.model_json_schema(),
         "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
@@ -33,7 +33,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 7,
+                "schema_version": 8,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -67,7 +67,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 6
+        assert EventDraft(payload=payload).schema_version == 7
 
 
 def test_historical_schemas_are_frozen() -> None:
@@ -97,6 +97,16 @@ def test_historical_schemas_are_frozen() -> None:
             "50f9652a58b75137240b8fd8d955d077947cd02a989b79dc94939c1b09905537"
         ),
     }
+    expected.update(
+        {
+            "agent-event-v6.schema.json": (
+                "5e4151227b4d47f952953058b358d673ff6721a8fd298d0a91c578771f78ab50"
+            ),
+            "agent-thread-v6.schema.json": (
+                "a480fac71fa5f1542536c0b6507fd320016893e353047d6fd2bd8bc0246d83a1"
+            ),
+        }
+    )
     expected.update(
         {
             "agent-event-v5.schema.json": (

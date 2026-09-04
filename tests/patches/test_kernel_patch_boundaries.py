@@ -200,3 +200,22 @@ async def test_runtime_close_drains_write_and_approval_review_despite_repeated_c
         assert replay(await store.events(thread.thread_id)) == await store.get_thread(
             thread.thread_id
         )
+
+
+async def test_missing_single_port_cannot_settle_call_inside_waiting_and_spin(case, tmp_path):
+    _, _, copy = case
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    async with ManagedPatchBridge(copy) as bridge:
+        async with AgentRuntime(
+            store, ScriptedProvider([patch_step(copy, bridge)]), patches=bridge
+        ) as runtime:
+            thread = await runtime.create_thread(str(copy.workspace.root))
+            turn = await runtime.run_turn(thread.thread_id, "旧端口丢失", request_id="missing-port")
+            await decide(runtime, thread.thread_id, turn)
+        provider = ScriptedProvider([])
+        async with AgentRuntime(store, provider) as runtime:
+            async with asyncio.timeout(2):
+                finished = await runtime.resume_turn(thread.thread_id, turn.turn_id)
+            assert finished.status == TurnStatus.INTERRUPTED
+            assert results(finished)[0].outcome == "unknown"
+            assert not provider.requests

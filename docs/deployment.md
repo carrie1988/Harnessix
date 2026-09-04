@@ -161,9 +161,9 @@ Kernel 可通过 AgentRuntime 的 observability 参数注入现有导出器，�
 uv run --extra observability python -m examples.kernel_observability
 ~~~
 
-## 当前 Session v6 / migration 7 升级（0.5.3b2b）
+## 历史 Session v6 / migration 7 升级（0.5.3b2b）
 
-0.3.3 的步骤是历史记录；当前启动会依次应用到 `0007_managed_patch.sql`。事件版本与迁移编号不同：Agent v6、Session migration 7；副本账本现为 v3，v1→v2 与 v2→v3 的独立升级步骤见下文。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
+本节记录 b2b 的升级验收；当时启动应用到 `0007_managed_patch.sql`，当前 migration8 的步骤见文末。事件版本与迁移编号不同：Agent v6、Session migration 7；副本账本现为 v3，v1→v2 与 v2→v3 的独立升级步骤见下文。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
 
 升级前停止旧宿主，并以 SQLite backup 或完整停机备份保存 Session；写会话还必须一起保留受管副本（包括账本、私有镜像和目标文件）。两库不是一个事务，不应只恢复其中一个并假定另一边没有效果。恢复到旧版本应使用一致的升级前备份，不将新事件交给旧 reader。
 
@@ -212,8 +212,27 @@ v2→v3 在副本独占锁、metadata/baseline、旧单文件记录、外键和�
 
 ## 整组调用桥接安装（0.5.3c3a）
 
-本片只有新宿主契约/桥接，不改变 Agent v6、Session migration7、副本账本v3或依赖。已有单文件与组账本不因安装新 wheel 而迁移、批准或执行；包版本仍为0.1.0，部署应记录具体 Git 提交和 wheel 文件摘要。旧 Schema 和单文件实现保持不变。
+c3a 本片只有新宿主契约/桥接，当时未改变 Agent v6、Session migration7、副本账本v3或依赖。已有单文件与组账本不因安装新 wheel 而迁移、批准或执行；包版本仍为0.1.0，部署应记录具体 Git 提交和 wheel 文件摘要。旧 Schema 和单文件实现保持不变。
 
 基础 wheel 无需 OpenAI/Anthropic SDK 即可运行 `examples/batch_patch_bridge.py`；将示例复制到仓库外，用安装环境 `python -I batch_patch_bridge.py` 验收，避免误从源目录导入。新入口是宿主 API，不是模型批量写开关；不能传入旧 Kernel 的 `patches` 参数冒充单文件端口。先关闭/排空桥接，再关闭副本，原 Session 宿主仍负责持久准入。
 
-c3b 才需要新增 Agent/Session 契约和最低 reader 的实际升级验证。c3c 才对接 Diff Artifact，当前只读 Artifact 发布器不接受写调用。无需新数据库、模型请求或远程部署。
+c3b 已新增 Agent/Session 契约及最低 reader 的实际升级验证，见下节。c3c 才对接 Diff Artifact，当前只读 Artifact 发布器不接受写调用。无需新数据库、模型请求或远程部署。
+
+## 当前 Session v7 / migration8 升级（0.5.3c3b）
+
+当前新 wheel 启动应用到 `0008_managed_patch_batch.sql`，只增加最低 reader 标记，不重写既有 v1–v6 事件/投影；新追加或显式 rebuild 的投影为7。受管副本账本保持v3，旧组/单文件工具定义及依赖不变。包版本仍0.1.0，部署须记录具体提交与 wheel 摘要，不凭包版本识别能力。
+
+停机并一致备份 Session 和完整受管副本后升级。旧 reader 必须拒绝 migration8；回退仅使用升级前一致备份，不删迁移记录或修改版本号降级。升级本身不会消费旧 WAITING、批准或写文件；过期按原 Turn 时限处理。
+
+独立可复现探针 `scripts/kernel_batch_upgrade_probe.py`（不依赖测试包）已验收：
+
+1. 从真实 `git archive 6a7cc65` 构建旧 wheel，并为旧/新 wheel 分别建立仅基础依赖环境；复制探针至仓库外；
+2. 旧环境：`python -I kernel_batch_upgrade_probe.py create <新目录>`，生成真实 v6 只读与单文件两类 WAITING；
+3. 新环境：`python -I kernel_batch_upgrade_probe.py upgrade <同目录>`，验证旧事件、原投影字节、源/副本 inode/mtime/ctime 不变，不答复审批；
+4. 旧环境：`python -I kernel_batch_upgrade_probe.py old-reader <同目录>`，明确 schema_too_new 且不改历史；
+5. 新环境：`python -I kernel_batch_upgrade_probe.py resume <同目录>`，显式批准并实际完成两类旧审批，新事件为v7，原事件字节和源目录不变，Replay 一致；
+6. 旧 reader 再次拒绝新库。`upgrade` 模式检查初始投影原文，须在 `resume` 前使用，不用于已继续会话。
+
+另由旧 wheel 在独立目录完成单文件任务并导出 `tests/agent/fixtures/session-v6.json`；CI 的升级/事务故障夹具基于该真实 transcript 和冻结迁移。两个真实迁移进程退出分别覆盖 marker8 插入未提交与事务提交后，重开只见完整7或8，不混合/重写旧数据；夹具不替代真实 wheel 验收。
+
+新示例 `examples/kernel_batch.py` 可以复制到仓库外用基础 wheel 的 `python -I` 执行，无 OpenAI/Anthropic SDK、API Key 或新中间件。它使用显式专用端口；不要将桥接传给旧单文件 `patches` 或通用写注册表。取消等待或证明缺失时 unknown 是保守恢复结果，不通过重放降低不确定性。

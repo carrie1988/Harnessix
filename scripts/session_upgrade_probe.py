@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import ApprovalRequestContent, Budget, ToolResultContent
+from harnessix.agent.models import ApprovalRequestContent, Budget, EventDraft, ToolResultContent
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import (
@@ -70,7 +70,7 @@ async def main(mode, directory):
         except KernelError as error:
             assert error.code == "schema_too_new"
         assert rows(store.path) == before
-        print("旧 reader 明确拒绝 migration 7，未修改新库")
+        print("旧 reader 明确拒绝新 migration，未修改新库")
         return
     script = [
         [
@@ -136,8 +136,11 @@ async def main(mode, directory):
             )
         else:
             assert mode == "upgrade"
-            assert all(e.schema_version == 6 for e in events[len(data["events"]) :])
-            print("新 v6 wheel 完成旧审批；原事件字节不变、Replay 一致")
+            assert all(
+                e.schema_version == EventDraft.model_fields["schema_version"].default
+                for e in events[len(data["events"]) :]
+            )
+            print("新 wheel 完成旧审批；原事件字节不变、Replay 一致")
 
 
 if __name__ == "__main__":

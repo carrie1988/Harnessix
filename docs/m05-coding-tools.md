@@ -537,8 +537,42 @@ BatchRunRecord 只保存完整组审批指纹/副本/组身份，以及 started/
 
 `ManagedPatchBatchCallPlan` 嵌入完整后端组计划，外层绑定 Thread/Turn/Call、完整调用指纹和自身审批指纹。独立请求标签避免与单文件或只读批准混用。模型不能提供作用域、计划 ID 或批准人。计划上限65 KiB（后端64 KiB加绑定1 KiB）；公开输出上限48 KiB，包含有序路径、前后摘要、成员状态/效果和运行阶段/原因，不包含原文、成员 ID、宿主身份或私有根目录。
 
-`BatchCallResult.result` 为公开 ToolResult，其余 plan/approval/execution 是宿主私有事实，不进入模型 wire 或 repr。partial 返回 failed，含未知返回 unknown；全部已应用可以 succeeded，同时仍带 cancelled/timeout/interrupted 后端终止原因。结果不能覆盖 Turn 的终止原因，c3b 须另行持久化私有效果。
+`BatchCallResult.result` 为公开 ToolResult，其余 plan/approval/execution 是宿主私有事实，不进入模型 wire 或 repr。partial 返回 failed，含未知返回 unknown；全部已应用可以 succeeded，同时仍带 cancelled/timeout/interrupted 后端终止原因。结果不能覆盖 Turn 的终止原因；c3b 已另行持久化私有效果，见下一节。
 
-每次方法的5秒读操作预算在等待锁前建立，不在入锁后刷新。**这不是 Turn 截止时间**；c3b 必须从原持久 Turn 计算剩余时间，外层取消/超时排空桥接线程后结算。准备过程中取消可留下已持久的 pending 整组；批准镜像后、组开始前取消可留下批准但尚未运行的组。恢复只读事实，不据此授予重试许可。宿主未持久消费 Session 等待的场景不属于本片提供的执行授权。
+每次方法的5秒读操作预算在等待锁前建立，不在入锁后刷新。**这不是 Turn 截止时间**；c3b 已从原持久 Turn 计算剩余时间，外层取消/超时排空桥接线程后结算。准备过程中取消可留下已持久的 pending 整组；批准镜像后、组开始前取消可留下批准但尚未运行的组。恢复只读事实，不据此授予重试许可。宿主未持久消费 Session 等待的场景不属于本片提供的执行授权。
 
-Agent v6/Session migration7/Provider v3/副本v3保持不变；全部旧 Schema 与单文件实现不改。运行 `uv run python -m examples.batch_patch_bridge` 可验证真实两文件修改与重开核对。设计及 c3b/c3c 门禁见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)，本片不宣称 c3 或 0.5 完成。
+c3a 当时保持 Agent v6/Session migration7/Provider v3/副本v3不变；当前 c3b 的 Session 升级见下一节，旧 Schema 与单文件后端不改。运行 `uv run python -m examples.batch_patch_bridge` 可验证真实两文件修改与重开核对。设计及 c3b/c3c 门禁见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)，本片不宣称 c3 或 0.5 完成。
+
+## 25. 0.5.3c3b 当前交付：Kernel 整组持久审批与恢复
+
+### 接入和所有权
+
+宿主显式注入 `patch_batches=ManagedPatchBatchBridge(copy)`，复用同一 AgentRuntime、模型循环与 Session。`patches` 单文件端口不变，二者可共存，不能彼此替代或重复注册；默认模型仍只有只读工具。先关闭 Runtime，再关闭桥接/只读工具，最后关闭副本；等待写入或审批复核的线程排空后才释放 Session 所有权。
+
+`examples/kernel_batch.py` 提供两文件读取、整组提案、关闭/重开审批、真实修改、读回与 Replay。实际 SDK 集成由 MockTransport 驱动，每个供应商6次离线 HTTP 交互，不代表真实模型的自主编码能力。
+
+### 持久事实与准入顺序
+
+Agent v7 增加 `PatchBatchApprovalRequestContent`，完整嵌入 c3a 调用计划，独立策略 `kernel-managed-patch-batch/v1`。`PatchBatchRuntime` 的 prepare/review/execute/recover 复用原桥接；Kernel 在执行前验证真实活跃 Thread/Turn、首个待结算调用、原工具定义、完整计划/批准及原截止时间。
+
+1. 保存模型调用，再向副本准备/预留完整组计划；
+2. 同一 Session 事务记录整组请求与 WAITING；
+3. 宿主 review 后仅保存 Session 决定，成员仍 pending，后端无决定；
+4. 持久离开 WAITING，再镜像后端决定并执行一次性组运行；
+5. 保存公开结果与私有 `patch_batch`，成功才继续模型。
+
+两库不原子；Session migration8 只是最低 reader 标记，保留旧事件/投影原字节，副本账本v3不迁移。旧 v1–v6 Schema 保持冻结，新批量 Item/效果不得使用旧版本标签。
+
+### 效果、失败与时限
+
+`patch_batch` 限8 KiB，包含组身份、外层调用批准指纹、execution/recovery 来源及可空的已终止组运行/有序成员证据；与单文件 `patch` 互斥。它不占公开结果预算、不进模型 wire；所有身份、成员顺序、公开摘要和真实结果的对应关系由同一规则在线及 Replay 校验。运行原因与效果独立：全部已写仍可能因取消或超时终止；partial 停止当前 Turn，unknown 进入 interrupted。拒绝组无运行，可让模型解释拒绝。
+
+准备/执行沿用原 Turn 超时，review 也受持久剩余时间约束，提交审批前再检查。暂停、重开和恢复不刷新时限。结果超限、返回错误或 Session 存储故障不能抹除副本已发生效果；回滚或丢失提交确认均按持久事实结算，不能据异常认定未写。
+
+### 重开与已知限制
+
+未过期 WAITING 保留供宿主决定；已消费状态只核对原组，不 prepare/save/reply/execute，不自动继续模型。既有 ToolResult 不重复观察。缺失端口、原完整计划、匹配后端决定、存储事实或归因不足保持 unknown。取消 WAITING（即使已有 Session 决定但后端未镜像）也可能为 interrupted/unknown，不自动补批以获得“未应用”结论。
+
+修复了重开缺少原单文件/整组专用端口时，在 WAITING 内用 unknown_tool 反复尝试结算直到超时的问题；现在立即走保守恢复。旧单文件专用准入、工具定义和后端未扩大权限。
+
+c3b 不放宽只读 Artifact 发布器；下一片 c3c 才增加基于完整计划与历史效果的专用 Diff 准入。Shell、源目录合入、创建/删除/重命名及自主 Coding Eval 均不在本片。决策见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。

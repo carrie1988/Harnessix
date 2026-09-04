@@ -71,7 +71,7 @@ async def main() -> None:
                         outcome=ApprovalOutcome.APPROVED,
                         actor="示例宿主",
                     )
-                    # 仅宿主夹具授权；真实 Session 持久消费由后续 c3b 接入。
+                    # 仅宿主夹具授权；真实 Session 持久消费示例见 kernel_batch.py。
                     result = await bridge.execute(call, scope, plan, decision, CancelToken())
                     assert result.execution is not None and result.execution.effect == "applied"
             with factory.open(workspace_id) as reopened:

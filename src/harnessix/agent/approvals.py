@@ -8,14 +8,17 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from harnessix.agent.models import (
-    ApprovalRequestContent,
+    ApprovalContent,
     Item,
     PatchApprovalRequestContent,
+    PatchBatchApprovalRequestContent,
     Thread,
     ToolCallContent,
     Turn,
 )
 from harnessix.domain.models import EffectClass, ToolDescriptor, utc_now
+from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
+from harnessix.patches.batch_contracts import PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.contracts import PatchProposal
 
@@ -72,8 +75,7 @@ def approval_for(turn: Turn, call: ToolCallContent) -> Item | None:
         (
             item
             for item in turn.items
-            if isinstance(item.content, ApprovalRequestContent | PatchApprovalRequestContent)
-            and item.content.call_id == call.call_id
+            if isinstance(item.content, ApprovalContent) and item.content.call_id == call.call_id
         ),
         None,
     )
@@ -100,12 +102,40 @@ def validate_patch_plan(
     )
 
 
+def validate_batch_plan(
+    thread: Thread, turn: Turn, call: ToolCallContent, plan: ManagedPatchBatchCallPlan
+) -> bool:
+    try:
+        checked = ManagedPatchBatchCallPlan.model_validate_json(plan.model_dump_json())
+        proposal = PatchBatchProposal.model_validate_json(
+            json.dumps(call.arguments, allow_nan=False)
+        )
+    except (ValidationError, ValueError, TypeError):
+        return False
+    return (
+        call.tool == "apply_patch_batch"
+        and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+        and call.requires_approval
+        and call.tool_fingerprint is not None
+        and (checked.thread_id, checked.turn_id, checked.call_id)
+        == (thread.thread_id, turn.turn_id, call.call_id)
+        and checked.call_fingerprint == request_fingerprint(thread, turn, call)
+        and checked.backend.manifest.proposal_sha256
+        == _fingerprint(proposal.model_dump(mode="json"))
+    )
+
+
 def approval_matches(
     thread: Thread,
     turn: Turn,
     call: ToolCallContent,
-    content: ApprovalRequestContent | PatchApprovalRequestContent,
+    content: ApprovalContent,
 ) -> bool:
+    if isinstance(content, PatchBatchApprovalRequestContent):
+        return (
+            validate_batch_plan(thread, turn, call, content.plan)
+            and content.request_fingerprint == content.plan.approval_fingerprint
+        )
     if isinstance(content, PatchApprovalRequestContent):
         return (
             validate_patch_plan(thread, turn, call, content.plan)

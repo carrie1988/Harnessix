@@ -5,11 +5,13 @@ from datetime import timedelta
 from uuid import UUID
 
 from harnessix.agent.approvals import approval_for, approval_matches, request_fingerprint
+from harnessix.agent.batch_patching import validate_effect
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     TURN_TRANSITIONS,
     AgentEvent,
+    ApprovalContent,
     ApprovalRequestContent,
     CompactionContent,
     ErrorContent,
@@ -18,6 +20,7 @@ from harnessix.agent.models import (
     ItemStarted,
     ItemStatus,
     PatchApprovalRequestContent,
+    PatchBatchApprovalRequestContent,
     PlanContent,
     TextContent,
     Thread,
@@ -86,7 +89,7 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             ),
             "Tool Call ID 重复",
         )
-    elif isinstance(content, ApprovalRequestContent | PatchApprovalRequestContent):
+    elif isinstance(content, ApprovalContent):
         calls = pending_calls(turn)
         require(turn.status == TurnStatus.EXECUTING_TOOLS, "审批请求只能在执行边界生成")
         require(bool(calls) and calls[0].call_id == content.call_id, "审批与当前调用不匹配")
@@ -96,7 +99,12 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             and (
                 call.effect_class == EffectClass.READ_ONLY
                 if isinstance(content, ApprovalRequestContent)
-                else call.tool == "apply_patch"
+                else call.tool
+                == (
+                    "apply_patch_batch"
+                    if isinstance(content, PatchBatchApprovalRequestContent)
+                    else "apply_patch"
+                )
                 and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
             ),
             "审批类型与工具效果不匹配",
@@ -105,7 +113,7 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         require(approval_for(turn, call) is None, "调用已存在审批请求")
         require(
             all(
-                not isinstance(i.content, ApprovalRequestContent | PatchApprovalRequestContent)
+                not isinstance(i.content, ApprovalContent)
                 or i.content.approval_id != content.approval_id
                 for i in turn.items
             ),
@@ -161,6 +169,8 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             ),
             "Tool Result 已开始",
         )
+        if content.patch_batch is not None:
+            validate_effect(thread, turn, calls[0], content)
         if content.patch is not None:
             effect, call = content.patch, calls[0]
             require(
@@ -223,7 +233,8 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         if content.outcome == "succeeded":
             require(
                 turn.status == TurnStatus.EXECUTING_TOOLS
-                or (content.patch is not None and content.patch.origin == "recovery"),
+                or (content.patch is not None and content.patch.origin == "recovery")
+                or (content.patch_batch is not None and content.patch_batch.origin == "recovery"),
                 "执行阶段之外不能记录普通成功结果",
             )
             if calls[0].requires_approval:
@@ -232,9 +243,9 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
                     approval is not None and approval.status == ItemStatus.COMPLETED,
                     "成功结果之前必须持久记录审批决定",
                 )
-                assert approval is not None and isinstance(
-                    approval.content, ApprovalRequestContent | PatchApprovalRequestContent
-                )
+                assert approval is not None and isinstance(approval.content, ApprovalContent)
+                if isinstance(approval.content, PatchBatchApprovalRequestContent):
+                    require(content.patch_batch is not None, "整组成功必须有类型化效果证据")
                 if isinstance(approval.content, PatchApprovalRequestContent):
                     require(content.patch is not None, "Patch 成功必须有类型化效果证据")
                 require(
@@ -252,12 +263,12 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
     assert original is not None
     require(original.status == ItemStatus.STARTED, "Item 终态不可改写")
     require(original.content.kind == payload.content.kind, "Item 类型不可改变")
-    if isinstance(original.content, ApprovalRequestContent | PatchApprovalRequestContent):
+    if isinstance(original.content, ApprovalContent):
         require(
-            isinstance(payload.content, ApprovalRequestContent | PatchApprovalRequestContent),
+            isinstance(payload.content, ApprovalContent),
             "审批 Item 类型不可改变",
         )
-        assert isinstance(payload.content, ApprovalRequestContent | PatchApprovalRequestContent)
+        assert isinstance(payload.content, ApprovalContent)
         require(
             original.content == payload.content.model_copy(update={"decision": None}),
             "审批请求身份与指纹不可变",
@@ -310,8 +321,23 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
             require(
                 not any(
                     isinstance(i.content, ToolResultContent)
-                    and i.content.patch is not None
-                    and i.content.patch.origin == "recovery"
+                    and i.content.patch_batch is not None
+                    and i.content.patch_batch.execution is not None
+                    and i.content.patch_batch.execution.run.stop_reason != "completed"
+                    for i in turn.items
+                ),
+                "组运行非正常终止不能冒充成功 Turn",
+            )
+            require(
+                not any(
+                    isinstance(i.content, ToolResultContent)
+                    and (
+                        (i.content.patch is not None and i.content.patch.origin == "recovery")
+                        or (
+                            i.content.patch_batch is not None
+                            and i.content.patch_batch.origin == "recovery"
+                        )
+                    )
                     for i in turn.items
                 ),
                 "恢复效果不能把中断执行冒充成功 Turn",
