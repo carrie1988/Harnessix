@@ -1,11 +1,12 @@
-"""借用受管副本锁的宿主整组预留/审批；当前不提供整组执行。"""
+"""借用受管副本锁的宿主整组预留、审批、一次性消费与核对。"""
 
 from uuid import UUID
 
 from harnessix.domain.models import ApprovalDecision
-from harnessix.patches import batch_ledger, ledger
+from harnessix.patches import batch_execution, batch_ledger, ledger
 from harnessix.patches.batch_approval_contracts import ManagedPatchBatchApproval
 from harnessix.patches.batch_contracts import PreparedPatchBatch
+from harnessix.patches.batch_run_contracts import BatchExecutionResult
 from harnessix.patches.batches import validate_patch_batch, verify_patch_batch
 from harnessix.patches.managed import ManagedPatchWorkspace
 from harnessix.patches.managed_io import fail
@@ -24,6 +25,20 @@ def _request(request_id: str) -> None:
 class ManagedPatchBatches:
     def __init__(self, copy: ManagedPatchWorkspace) -> None:
         self.copy = copy
+
+    def execute(
+        self, batch_id: UUID, approval_fingerprint: str, operation: ReadOperation
+    ) -> BatchExecutionResult:
+        return batch_execution.execute(self, batch_id, approval_fingerprint, operation)
+
+    def get_execution(
+        self, batch_id: UUID, operation: ReadOperation
+    ) -> BatchExecutionResult | None:
+        with self.copy._guard():
+            return batch_execution.inspect(self, batch_id, operation)
+
+    def reconcile(self, batch_id: UUID, operation: ReadOperation) -> BatchExecutionResult | None:
+        return batch_execution.reconcile(self, batch_id, operation)
 
     def _load(
         self, batch_id: UUID, operation: ReadOperation

@@ -529,3 +529,24 @@ Agent Runtime Kernel 合并前：
 **基础发行包**：独立环境安装锁定默认依赖，未安装 OpenAI/Anthropic SDK；`python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval 共九个入口通过。新示例仅预留、审批、重开和验证旧接口拒绝；Linux Python 3.12/3.13 与 macOS CI 均增加该入口。新增两份独立 Schema，全部旧 Schema 字节不变；Agent v6、Session migration7、Provider v3、依赖与单文件工具定义不变。副本账本独立升级为 v2。
 
 全项目累计 **152 个真实硬崩溃场景及2个 SIGINT 用例**。新增11个场景只证明组持久事务/迁移，不冒充多文件写效果恢复。本片没有真实模型请求、服务器操作或中间件部署。c2a 范围完成，下一片 c2b 实现顺序一次性消费、部分/未知效果和每成员写前后崩溃核对；c2/c3/0.5 均未标记完成。远端跨平台结果以本片提交 CI 为准。
+
+## 25. 0.5.3c2b 顺序执行与部分效果恢复验收（2026-09-04）
+
+在 `f0adddc` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33860637921) 基础上实现 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)。新增独立组运行/效果契约、真实顺序消费和只核对恢复，副本账本升级 v3；不改变模型工具入口。
+
+- 新增 **182项**：执行/故障边界131项、崩溃/迁移49项（44个真实退出场景及5项旧数据拒绝）、冻结 Schema 2项。Patch 套件累计 **669项**。
+- `make check`：Ruff/Mypy（107源文件）通过，**1788 passed、1 skipped**；本地缺 PostgreSQL，仅该项跳过，远程实库 CI 保留。
+- 异步调试全范围 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1752 passed**。
+- 三文件成功闭环和最大16成员严格有序执行、重复执行拒绝、未批准/拒绝/错指纹、取消/超时前置检查、组消费/结果事务失败均覆盖。源目录始终不变，审批完成本身不写文件，升级也不消费旧批准。
+- 三个成员位置 × 九个单文件切点 × 存储/取消/超时共81项：检查实际成功前缀、失败或未知的当前成员、pending 后缀。取消发生在最后文件替换之后时可以 all-applied + cancelled/timeout，不能伪装未写入；恢复保留既有终止原因。
+- 全部成员位置的整组来源/元数据漂移均在首次文件修改前拒绝，批准仍消费。两个后续成员位置在前一成员完成后发生来源变化时停止，当前成员可保持 approved/未启动意图，不伪装执行失败。
+- 单独注入替换前/后 fsync 调用失败6项、成员意图/应用/不确定结果记账失败6项；记账失败导致成员仍 started 时返回 unknown，恢复只观察归因，不调度后续文件。另验证相同后镜像但不同 inode 的三个成员位置始终 unknown，以及 missing/diverged/unavailable 不谎称未发生效果。
+- 查询和恢复校验组运行事件、完整审批绑定、成员决定与顺序；覆盖校验和/指纹/副本错绑、开始事件缺失、成员越序、审批被替换、虚假效果摘要。恢复中途取消/超时保留已落库观察，之后仍只核对，不解锁批准。
+
+**44个真实进程退出场景**：38个组/文件执行窗口（组提交前后、整组复核后、每成员批准/完成、每成员九个替换/结果切点、组终态提交前后）；3个观察/终态提交中再退出场景；3个 v2→v3 迁移版本标记/提交切点。核对阶段禁止调用执行/保存/批准入口；恢复前后目标文件 inode、mtime、ctime 与源目录一致。全部文件已应用但组终态未提交时，恢复为 applied + interrupted，不自动补跑或改称正常完成。另有5项损坏旧组/成员/外键/组ID/DDL冲突拒绝，失败保持v2。
+
+**真实旧包与两级升级**：从 `git archive f0adddc` 构建实际旧 v2 wheel，在隔离基础环境创建 pending/approved/rejected 三类组。新 wheel 升 v3，旧 metadata/baseline/plans/events/batches/batch_approvals 原字节、文件时间/inode、源目录及数据库 inode 保留，所有运行记录仍不存在；旧 v2 reader 明确拒绝 v3。随后只在新环境显式执行原 approved 组并只核对，旧 reader 再次拒绝。另用 `09cb6d6` 的真实 v1 wheel 创建单文件 pending/approved/applied，验证 v1→v2→v3 和旧 reader 拒绝。步骤见 [部署说明](deployment.md#副本账本-v3-升级053c2b)，不以修改版本标记的单元夹具代替旧 wheel 证据。
+
+**复用与基础发行包**：归一化 AST 审查确认原单文件 execute/reconcile 核心与 `f0adddc` 一致，仅提取内部方法并维持公开组成员拒绝。旧 Schema、原 v1→v2 迁移实现、Agent v6/Session migration7/Provider v3、模型工具定义和依赖不变；新增 run/result 两份 Schema。基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch/managed_batch_approval/managed_batch 共十个示例通过；Linux 3.12/3.13 和 macOS CI 增加新多文件示例。
+
+全项目累计 **196个真实硬崩溃场景及2个 SIGINT 用例**，不宣称覆盖全部硬件断电。c2 范围完成，c3 的 Kernel 批量审批/结果、模型闭环与 Diff Artifact 尚未实现；当前效果报告是历史归因，不是实时文件完整性证明，也未新增实际效果 Diff 自动发布。本片无真实模型请求、SSH 或中间件部署。远端结果以本片提交 CI 为准。

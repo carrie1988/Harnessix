@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ApprovalDecision
-from harnessix.patches import batch_ledger, ledger, ledger_migrations
+from harnessix.patches import batch_ledger, batch_run_migrations, ledger, ledger_migrations
 from harnessix.patches.contracts import PreparedPatch
 from harnessix.patches.managed_contracts import (
     MAX_COPY_BYTES,
@@ -205,7 +205,11 @@ class ManagedPatchWorkspace:
             self._db.execute("PRAGMA foreign_keys=ON")
             version = self._db.execute("PRAGMA user_version").fetchone()[0]
             application_id = self._db.execute("PRAGMA application_id").fetchone()[0]
-            if application_id != ledger.APPLICATION_ID or version not in {1, ledger.SCHEMA_VERSION}:
+            if application_id != ledger.APPLICATION_ID or version not in {
+                1,
+                2,
+                ledger.SCHEMA_VERSION,
+            }:
                 raise fail("wrong_database")
             try:
                 rows = self._db.execute("SELECT payload FROM metadata LIMIT 2").fetchall()
@@ -253,6 +257,32 @@ class ManagedPatchWorkspace:
                         self._load(parsed, operation)
                     ledger_migrations.add_batches(self._db)
                 ledger_migrations._fault("migration_committed")
+                version = 2
+            if version == 2:
+                with ledger.transaction(self._db):
+                    operation = ReadOperation()
+                    ledger.capacity(self._db, 0, 0)
+                    for (plan_id,) in self._db.execute("SELECT id FROM plans LIMIT 65"):
+                        try:
+                            parsed = UUID(plan_id)
+                        except (ValueError, TypeError, AttributeError):
+                            raise fail("ledger_corrupt") from None
+                        self._load(parsed, operation)
+                    if self._db.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                        raise fail("ledger_corrupt")
+                    groups = self._db.execute("SELECT id FROM batches LIMIT 65").fetchall()
+                    if len(groups) > 64:
+                        raise fail("ledger_corrupt")
+                    for (batch_id,) in groups:
+                        try:
+                            parsed = UUID(batch_id)
+                        except (ValueError, TypeError, AttributeError):
+                            raise fail("ledger_corrupt") from None
+                        batch_ledger.load(
+                            self._db, self.workspace, self.workspace_id, parsed, operation
+                        )
+                    batch_run_migrations.add_runs(self._db)
+                batch_run_migrations._fault("runs_committed")
             self._resources = stack.pop_all()
 
     def _validate(self) -> None:
@@ -407,90 +437,96 @@ class ManagedPatchWorkspace:
     ) -> PatchRecord:
         with self._guard():
             batch_ledger.require_single(self._db, plan_id)
-            record, prepared, _ = self._load(plan_id, operation)
-            self._authorize(record, approval_fingerprint)
-            if record.state != "approved":
-                raise fail("not_executable")
-            verify_prepared(self.workspace, prepared, operation)
-            writable_target(self.workspace, record.manifest.path, operation)
-            record = self._append(record, "started", None)
-            attempted = False
-            temporary: tuple[int, int] | None = None
-            temp_name = f"{plan_id}.patch"
-            try:
-                _fault("started")
-                with write_parent(self.workspace, record.manifest.path) as parent:
-                    if os.fstat(parent.fd).st_dev != os.fstat(self._bundle_fd).st_dev:
-                        raise fail("cross_device")
-                    fd = create_file(self._bundle_fd, temp_name)
-                    try:
-                        temporary = identity(os.fstat(fd))
-                        _fault("temp_created")
-                        write_all(fd, prepared.after, operation)
-                        os.fchmod(fd, record.manifest.source_mode)
-                        plain_metadata(fd)
-                        os.fsync(fd)
-                        _fault("temp_synced")
-                        # 临时 inode 归因证据先于 rename 持久化。
-                        record = self._append(record, "started", temporary)
-                        _fault("temp_recorded")
-                        _fault("before_replace")
-                        operation.checkpoint()
-                        # 最终核对持有的目录链、当前前镜像与写准入条件。
-                        parent.verify()
-                        verify_prepared(self.workspace, prepared, operation)
-                        writable_target(self.workspace, record.manifest.path, operation)
-                        self._validate()
-                        attempted = True
-                        os.replace(
-                            temp_name,
-                            self.workspace.parts(record.manifest.path)[-1],
-                            src_dir_fd=self._bundle_fd,
-                            dst_dir_fd=parent.fd,
-                        )
-                        _fault("after_replace")
-                        # 此后不响应调用方取消，先完成已发起效果的落盘与记账。
-                        os.fsync(fd)
-                        os.fsync(parent.fd)
-                        os.fsync(self._bundle_fd)
-                        _fault("directories_synced")
-                        parent.verify()
-                        self._validate()
-                        if self._observe(prepared, temporary, ReadOperation()) != "observed_after":
-                            raise fail("postimage_unverified")
-                    finally:
-                        os.close(fd)
-                _fault("before_result")
-                result = self._append(record, "applied", temporary)
-            except BaseException as error:
-                code = (
-                    error.code
-                    if isinstance(error, (KernelError, ReadToolError))
-                    else "cancelled"
-                    if isinstance(error, TurnCancelled)
-                    else "patch_execution_failed"
-                )
-                # 未持久化临时证据时不能在结果中凭空增加证据；恢复仅依赖已落库事实。
-                persisted, _, persisted_temporary = self._load(plan_id, ReadOperation())
-                if persisted.state == "applied":
-                    if not isinstance(error, (KernelError, OSError, sqlite3.Error)):
-                        raise
-                    return persisted
-                result = self._append(
-                    persisted,
-                    "uncertain" if attempted else "failed",
-                    persisted_temporary,
-                    error_code=code,
-                )
-                if not isinstance(
-                    error, (KernelError, ReadToolError, OSError, sqlite3.Error, TurnCancelled)
-                ):
+            return self._execute(plan_id, approval_fingerprint, operation)
+
+    def _execute(
+        self, plan_id: UUID, approval_fingerprint: str, operation: ReadOperation
+    ) -> PatchRecord:
+        """调用者必须持有副本锁并完成单文件或整组准入；共用原写引擎。"""
+        record, prepared, _ = self._load(plan_id, operation)
+        self._authorize(record, approval_fingerprint)
+        if record.state != "approved":
+            raise fail("not_executable")
+        verify_prepared(self.workspace, prepared, operation)
+        writable_target(self.workspace, record.manifest.path, operation)
+        record = self._append(record, "started", None)
+        attempted = False
+        temporary: tuple[int, int] | None = None
+        temp_name = f"{plan_id}.patch"
+        try:
+            _fault("started")
+            with write_parent(self.workspace, record.manifest.path) as parent:
+                if os.fstat(parent.fd).st_dev != os.fstat(self._bundle_fd).st_dev:
+                    raise fail("cross_device")
+                fd = create_file(self._bundle_fd, temp_name)
+                try:
+                    temporary = identity(os.fstat(fd))
+                    _fault("temp_created")
+                    write_all(fd, prepared.after, operation)
+                    os.fchmod(fd, record.manifest.source_mode)
+                    plain_metadata(fd)
+                    os.fsync(fd)
+                    _fault("temp_synced")
+                    # 临时 inode 归因证据先于 rename 持久化。
+                    record = self._append(record, "started", temporary)
+                    _fault("temp_recorded")
+                    _fault("before_replace")
+                    operation.checkpoint()
+                    # 最终核对持有的目录链、当前前镜像与写准入条件。
+                    parent.verify()
+                    verify_prepared(self.workspace, prepared, operation)
+                    writable_target(self.workspace, record.manifest.path, operation)
+                    self._validate()
+                    attempted = True
+                    os.replace(
+                        temp_name,
+                        self.workspace.parts(record.manifest.path)[-1],
+                        src_dir_fd=self._bundle_fd,
+                        dst_dir_fd=parent.fd,
+                    )
+                    _fault("after_replace")
+                    # 此后不响应调用方取消，先完成已发起效果的落盘与记账。
+                    os.fsync(fd)
+                    os.fsync(parent.fd)
+                    os.fsync(self._bundle_fd)
+                    _fault("directories_synced")
+                    parent.verify()
+                    self._validate()
+                    if self._observe(prepared, temporary, ReadOperation()) != "observed_after":
+                        raise fail("postimage_unverified")
+                finally:
+                    os.close(fd)
+            _fault("before_result")
+            result = self._append(record, "applied", temporary)
+        except BaseException as error:
+            code = (
+                error.code
+                if isinstance(error, (KernelError, ReadToolError))
+                else "cancelled"
+                if isinstance(error, TurnCancelled)
+                else "patch_execution_failed"
+            )
+            # 未持久化临时证据时不能在结果中凭空增加证据；恢复仅依赖已落库事实。
+            persisted, _, persisted_temporary = self._load(plan_id, ReadOperation())
+            if persisted.state == "applied":
+                if not isinstance(error, (KernelError, OSError, sqlite3.Error)):
                     raise
-            finally:
-                if temporary is not None:
-                    self._cleanup(temp_name, temporary)
-            _fault("result_recorded")
-            return result
+                return persisted
+            result = self._append(
+                persisted,
+                "uncertain" if attempted else "failed",
+                persisted_temporary,
+                error_code=code,
+            )
+            if not isinstance(
+                error, (KernelError, ReadToolError, OSError, sqlite3.Error, TurnCancelled)
+            ):
+                raise
+        finally:
+            if temporary is not None:
+                self._cleanup(temp_name, temporary)
+        _fault("result_recorded")
+        return result
 
     def _cleanup(self, name: str, temporary: tuple[int, int]) -> None:
         try:
@@ -531,13 +567,18 @@ class ManagedPatchWorkspace:
 
     def reconcile(self, plan_id: UUID, operation: ReadOperation) -> PatchRecord:
         with self._guard():
-            record, prepared, temporary = self._load(plan_id, operation)
-            if record.state not in {"started", "uncertain"}:
-                return record
-            observed = self._observe(prepared, temporary, operation)
-            if observed == "uncertain" and record.state == "uncertain":
-                return record
-            return self._append(record, observed, temporary)
+            batch_ledger.require_single(self._db, plan_id)
+            return self._reconcile(plan_id, operation)
+
+    def _reconcile(self, plan_id: UUID, operation: ReadOperation) -> PatchRecord:
+        """调用者持锁并验证归属；这里只观察，不恢复执行。"""
+        record, prepared, temporary = self._load(plan_id, operation)
+        if record.state not in {"started", "uncertain"}:
+            return record
+        observed = self._observe(prepared, temporary, operation)
+        if observed == "uncertain" and record.state == "uncertain":
+            return record
+        return self._append(record, observed, temporary)
 
     def close(self) -> None:
         with self._mutex:

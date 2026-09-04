@@ -8,8 +8,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID
 
+from harnessix.patches.batch_run_migrations import SCHEMA_VERSION as SCHEMA_VERSION
+from harnessix.patches.batch_run_migrations import add_runs
 from harnessix.patches.contracts import PatchProposal, PreparedPatch
-from harnessix.patches.ledger_migrations import SCHEMA_VERSION as SCHEMA_VERSION
 from harnessix.patches.ledger_migrations import add_batches
 from harnessix.patches.managed_contracts import MAX_COPY_PLANS, MAX_PLAN_BYTES, PatchRecord
 from harnessix.patches.managed_io import fail
@@ -38,6 +39,7 @@ def initialize(db: sqlite3.Connection, metadata: dict[str, object]) -> None:
     db.execute("INSERT INTO metadata VALUES (1, ?)", (json.dumps(metadata),))
     with transaction(db):
         add_batches(db)
+        add_runs(db)
 
 
 @contextmanager

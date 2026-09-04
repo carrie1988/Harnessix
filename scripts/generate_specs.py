@@ -23,6 +23,7 @@ from harnessix.patches.batch_approval_contracts import (
     ManagedPatchBatchPlan,
 )
 from harnessix.patches.batch_contracts import PatchBatchManifest, PatchBatchProposal
+from harnessix.patches.batch_run_contracts import BatchExecutionResult, BatchRunRecord
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.patches.diff_contracts import PatchBatchDiff, PatchDiffOptions
@@ -84,6 +85,8 @@ def main() -> None:
         ("patch-diff-options", PatchDiffOptions),
         ("managed-patch-batch-plan", ManagedPatchBatchPlan),
         ("managed-patch-batch-approval", ManagedPatchBatchApproval),
+        ("managed-patch-batch-run", BatchRunRecord),
+        ("managed-patch-batch-result", BatchExecutionResult),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

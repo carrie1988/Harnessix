@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from harnessix.agent.errors import KernelError
+from harnessix.patches import ledger
 from harnessix.patches.managed_batches import ManagedPatchBatches
 from harnessix.tools.workspace import ReadOperation
 from tests.patches.test_managed import APPROVE
@@ -123,6 +124,7 @@ def legacy_fixture(copy, batch):
         if index == 2:
             record = copy.execute(record.plan_id, record.approval_fingerprint, ReadOperation())
         expected.append(record)
+    copy._db.execute("DROP TABLE batch_run_events")
     copy._db.execute("DROP INDEX plans_owner_batch")
     copy._db.execute("ALTER TABLE plans DROP COLUMN owner_batch_id")
     copy._db.execute("DROP TABLE batch_approvals")
@@ -169,7 +171,7 @@ def test_real_exit_migration_is_atomic_and_preserves_old_events(group_case, tmp_
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert ("batches" in tables) == (cut == "migration_committed")
     with factory.open(workspace_id) as reopened:
-        assert reopened._db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert reopened._db.execute("PRAGMA user_version").fetchone()[0] == ledger.SCHEMA_VERSION
         assert ledger_bytes(reopened._db) == before
         for record in expected:
             assert reopened.get(record.plan_id) == record

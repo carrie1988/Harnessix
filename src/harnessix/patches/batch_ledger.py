@@ -5,7 +5,7 @@ import sqlite3
 from uuid import UUID, uuid4
 
 from harnessix.domain.models import ApprovalDecision
-from harnessix.patches import ledger
+from harnessix.patches import batch_runs, ledger
 from harnessix.patches.batch_approval_contracts import (
     MAX_BATCH_DECISION_BYTES,
     MAX_BATCH_METADATA_BYTES,
@@ -130,6 +130,7 @@ def load(
         if {row[0] for row in owned} != {str(member.plan_id) for member in stored.members}:
             raise ValueError
         patches = []
+        records = []
         for member, manifest in zip(stored.members, stored.manifest.files, strict=True):
             record, prepared, _ = ledger.load(
                 db, workspace, workspace_id, member.plan_id, operation
@@ -138,11 +139,10 @@ def load(
                 record.request_id != member.request_id
                 or record.approval_fingerprint != member.approval_fingerprint
                 or record.manifest != manifest
-                or record.state != "pending"
-                or record.decision is not None
             ):
                 raise ValueError
             patches.append(prepared)
+            records.append(record)
         batch = PreparedPatchBatch(
             stored.manifest,
             PatchBatchProposal(files=tuple(p.proposal for p in patches)),
@@ -162,6 +162,8 @@ def load(
                 raise ValueError
             decision = ApprovalDecision.model_validate_json(row[0])
         operation.checkpoint()
-        return ManagedPatchBatchApproval(plan=stored, decision=decision), batch
+        approval = ManagedPatchBatchApproval(plan=stored, decision=decision)
+        batch_runs.validate_members(approval, batch_runs.load(db, approval), tuple(records))
+        return approval, batch
     except (ValueError, TypeError):
         raise fail("ledger_corrupt") from None

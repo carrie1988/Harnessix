@@ -481,7 +481,7 @@ Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号
 
 ## 22. 0.5.3c2a 当前交付：整组事务预留与持久审批
 
-设计见 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。使用 `ManagedPatchBatches(copy)` 借用现有受管副本、互斥锁和生命周期，宿主需在 copy 关闭前使用。当前没有组 execute/reconcile，不广告新模型工具；单文件 Kernel 路径保持原有行为。
+设计见 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。使用 `ManagedPatchBatches(copy)` 借用现有受管副本、互斥锁和生命周期，宿主需在 copy 关闭前使用。c2a 当时没有组 execute/reconcile；c2b 的显式宿主入口见下一节。模型工具仍不广告批量写，单文件 Kernel 路径保持原有行为。
 
 | 宿主入口 | 行为 |
 | --- | --- |
@@ -491,8 +491,33 @@ Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号
 | `verify(batch_id, operation)` | 只读复核持久计划及当前所有前镜像，不更新状态 |
 | `reply(batch_id, approval_fingerprint, decision, operation)` | 验证组指纹，持久保存唯一决定；相同决定幂等，不同决定冲突 |
 
-返回 `ManagedPatchBatchApproval`：plan 为不可变完整 `ManagedPatchBatchPlan`，decision 为 None/批准/拒绝。批准不执行、不镜像成员批准，所有成员仍 pending。旧单文件 save 的幂等命中、reply、execute 拒绝组成员；归属列被清空时还会检查完整组计划，不能据此重新开启单文件写入。
+返回 `ManagedPatchBatchApproval`：plan 为不可变完整 `ManagedPatchBatchPlan`，decision 为 None/批准/拒绝。批准答复不执行、不镜像成员批准，尚未显式执行时所有成员仍 pending。旧单文件 save 的幂等命中、reply、execute 拒绝组成员；归属列被清空时还会检查完整组计划，不能据此重新开启单文件写入。
 
 组计划最多64 KiB UTF-8 JSON，元数据逻辑预留合计1 MiB，每组按计划实际字节加16 KiB决定空间计算。成员占用原64计划/32 MiB前后镜像配额，检查和插入均在同一事务。批准后的文件漂移不改写原批准；后续执行必须重新复核，当前 verify 会拒绝陈旧前镜像。超时/取消可能发生在提交确认之前或之后，调用方应 lookup 已有请求，不因返回异常就断言没有持久记录。
 
-副本账本升级为 v2，Agent v6/Session migration 7/Provider v3/旧单文件 Schema 不变。新旧 wheel 升级证据与11个真实提交/迁移退出切点见 [测试第24节](testing-and-evals.md#24-053c2a-整组预留持久审批及迁移验收2026-09-04)。下一片 c2b 才实现顺序消费、部分/未知效果和只核对恢复；组事务预留并不承诺文件修改的组原子性。
+副本账本升级为 v2，Agent v6/Session migration 7/Provider v3/旧单文件 Schema 不变。新旧 wheel 升级证据与11个真实提交/迁移退出切点见 [测试第24节](testing-and-evals.md#24-053c2a-整组预留持久审批及迁移验收2026-09-04)。后续 c2b 已按 ADR 0033 实现顺序消费、部分/未知效果和只核对恢复；组事务预留仍不承诺文件修改的组原子性。
+
+## 23. 0.5.3c2b 当前交付：顺序消费、部分效果与只核对恢复
+
+见 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)。新增独立运行/效果契约、组运行事件表与 v2→v3 迁移；不改变原组计划/审批 Schema，不改变 Kernel 模型工具定义。原单文件 execute/reconcile 的内部核心只作提取；审查时与 `f0adddc` 的归一化 AST 对比完全一致，公开入口仍拒绝组成员。
+
+| API | 含义 |
+| --- | --- |
+| `execute(batch_id, fingerprint, operation)` | 只消费已批准且未开始的组；返回终止原因与已知效果 |
+| `get_execution(batch_id, operation)` | 只读运行与成员事实；未消费返回 None，组缺失仍报错 |
+| `reconcile(batch_id, operation)` | 只观察已开始/未知成员，不重新执行；未消费不创建运行记录 |
+
+BatchRunRecord 只保存完整组审批指纹/副本/组身份，以及 started/finished 和终止原因；每组最多开始、终止两个事件。BatchExecutionResult 从已校验的单文件事件组合有序成员状态和 not_applied/applied/partial/unknown，不在组表重复缓存可能过时的成员效果快照。每事件最大1 KiB，64计划上限下运行载荷最多128 KiB，非真实磁盘预分配。
+
+执行顺序是：完整批准与未消费检查→持久组开始→整组前镜像/写准入复核→每成员组顺序检查→仅该成员镜像批准→原单文件意图/临时 inode 证据/替换/归因→组终止。整组复核失败也会消费批准，成员仍 pending；中途来源漂移可停在该成员 approved 而未进入文件意图，不将其记成执行失败。再次尝试须新请求/计划/审批。
+
+| 情况 | 文件效果与终止原因 |
+| --- | --- |
+| 全部执行成功 | applied + completed |
+| 最后一次替换后取消/超时 | 可以是 applied + cancelled/timeout，不抹去写入事实 |
+| 成功前缀之后失败 | partial 或 unknown + failed，后缀 pending |
+| 文件已改完、组终态未提交时崩溃 | 查询仍 started；只核对后 applied + interrupted |
+| 后镜像字节相同但 inode 无法归因 | unknown，不补写、不按字节推断成功 |
+| 存储异常导致结果不可发布 | 调用可能失败；通过已有开始/成员记录只核对，不能盲目重试 execute |
+
+恢复中断后可再次只核对。仍 started 的组结束为 interrupted；已有 finished 保留原原因，未知成员观察可更新已知效果，但不追加新的组终止原因。结果是历史归因而不是实时文件完整性证明；已应用文件以后被外部修改，不会凭空抹去曾发生的效果。源目录、目标文件 inode/mtime/ctime 的恢复不写入证据及真实旧 wheel 升级见 [测试第25节](testing-and-evals.md#25-053c2b-顺序执行与部分效果恢复验收2026-09-04)。

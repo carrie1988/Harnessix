@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "BatchMemberEffect": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "format": "uuid",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "started",
+            "applied",
+            "failed",
+            "uncertain",
+            "observed_before",
+            "observed_after",
+            "diverged",
+            "missing",
+            "unavailable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "effect": {
+          "enum": [
+            "not_applied",
+            "applied",
+            "unknown"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^[a-z0-9_]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "plan_id",
+        "state",
+        "effect"
+      ],
+      "title": "BatchMemberEffect",
+      "type": "object"
+    },
+    "BatchRunRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "managed-patch-batch-run/v1",
+          "default": "managed-patch-batch-run/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "batch_id": {
+          "format": "uuid",
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "format": "uuid",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "approval_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Approval Fingerprint",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "started",
+            "finished"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "completed",
+                "cancelled",
+                "timeout",
+                "failed",
+                "interrupted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Reason"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^[a-z0-9_]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "batch_id",
+        "workspace_id",
+        "approval_fingerprint",
+        "phase"
+      ],
+      "title": "BatchRunRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "managed-patch-batch-result/v1",
+      "default": "managed-patch-batch-result/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "run": {
+      "$ref": "#/$defs/BatchRunRecord"
+    },
+    "members": {
+      "items": {
+        "$ref": "#/$defs/BatchMemberEffect"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Members",
+      "type": "array"
+    },
+    "effect": {
+      "enum": [
+        "not_applied",
+        "applied",
+        "partial",
+        "unknown"
+      ],
+      "title": "Effect",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run",
+    "members",
+    "effect"
+  ],
+  "title": "BatchExecutionResult",
+  "type": "object"
+}

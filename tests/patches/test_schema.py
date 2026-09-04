@@ -9,6 +9,7 @@ from harnessix.patches.batch_approval_contracts import (
     ManagedPatchBatchPlan,
 )
 from harnessix.patches.batch_contracts import PatchBatchManifest, PatchBatchProposal
+from harnessix.patches.batch_run_contracts import BatchExecutionResult, BatchRunRecord
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.patches.diff_contracts import PatchBatchDiff, PatchDiffOptions
@@ -18,6 +19,16 @@ from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 @pytest.mark.parametrize(
     "name,model,frozen",
     [
+        (
+            "managed-patch-batch-run",
+            BatchRunRecord,
+            "ba8333292fefb9798faceb1d3c6e53d50ba2076fea92c6f5f95fd05a2efded20",
+        ),
+        (
+            "managed-patch-batch-result",
+            BatchExecutionResult,
+            "fa81e299344e970de00c3d9dcd495ae532459c51877ad6c3e6b1089aae7b5f10",
+        ),
         (
             "managed-patch-batch-plan",
             ManagedPatchBatchPlan,

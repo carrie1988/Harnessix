@@ -7,6 +7,7 @@ from uuid import UUID
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+from harnessix.patches import ledger
 from harnessix.patches.contracts import ExactEdit, PatchProposal
 from harnessix.patches.managed import PatchWorkspaces
 from harnessix.patches.planner import prepare_patch
@@ -89,11 +90,11 @@ def verify(root: Path, *, old_reader: bool) -> None:
         copy = factory.open(UUID(payload["workspace_id"]))
     except KernelError as error:
         assert old_reader and error.code == "patch_wrong_database"
-        print("旧 wheel 明确拒绝 v2 副本，没有降级或执行。")
+        print("旧 wheel 明确拒绝升级后的副本，没有降级或执行。")
         return
     with copy:
         assert not old_reader, "旧 reader 未拒绝新版本"
-        assert copy._db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert copy._db.execute("PRAGMA user_version").fetchone()[0] == ledger.SCHEMA_VERSION
         assert json.loads(json.dumps(archive(copy))) == payload["archive"]
         assert files(root / "source") == payload["source"]
         for expected in payload["plans"]:
