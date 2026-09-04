@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久执行、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果与宿主调用桥接已实现；Kernel 批量工具、Diff Artifact、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -399,3 +399,10 @@ src/harnessix/
 ### 整组宿主审批与执行的当前落点（0.5.3c2）
 
 `ManagedPatchBatches` 借用单个 ManagedPatchWorkspace 的连接、所有权和锁，复用单文件计划/镜像/事件校验与事务，而非新增副本管理器或替换引擎。副本账本 v2 将整组计划和所有成员在同一事务预留；独立组审批记录只代表完整计划的宿主决定，审批阶段成员保持 pending，旧单文件写入口拒绝拆分消费。组请求暂为宿主稳定身份，不冒充已验证的 Kernel Call。c2b 在账本 v3 增加独立运行记录并按顺序调用原单文件引擎，部分/未知效果与终止原因分开，见 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)；Agent/Session 批量契约仍留到 c3。
+
+
+### 整组宿主调用桥接的当前落点（0.5.3c3a）
+
+`ManagedPatchBatchBridge` 在 `ManagedPatchBatches` 上校验宿主调用与完整组计划，使用独立调用审批指纹；不继承旧单文件审批，也不复用旧单文件工具名。工作线程复用既有组执行/核对，串行锁、操作停止信号和排空保障异步生命周期。它只借用副本，不读取 Session，也不能替代 Kernel 的活跃调用/原时限/等待状态持久消费。
+
+`BatchCallResult` 分离公开有界路径/效果摘要与私有计划、后端审批、实际运行事实。Agent v6、Session migration7、Provider v3、副本v3和旧单文件定义不变。c3b 才新增 Kernel 组端口与持久事件；c3c 才新增基于实际调用的 Diff Artifact 准入，不能放松现有只读发布器。详细分片见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)。

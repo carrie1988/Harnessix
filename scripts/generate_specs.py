@@ -22,6 +22,10 @@ from harnessix.patches.batch_approval_contracts import (
     ManagedPatchBatchApproval,
     ManagedPatchBatchPlan,
 )
+from harnessix.patches.batch_bridge_contracts import (
+    ManagedPatchBatchCallPlan,
+    ManagedPatchBatchOutput,
+)
 from harnessix.patches.batch_contracts import PatchBatchManifest, PatchBatchProposal
 from harnessix.patches.batch_run_contracts import BatchExecutionResult, BatchRunRecord
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
@@ -85,6 +89,8 @@ def main() -> None:
         ("patch-diff-options", PatchDiffOptions),
         ("managed-patch-batch-plan", ManagedPatchBatchPlan),
         ("managed-patch-batch-approval", ManagedPatchBatchApproval),
+        ("managed-patch-batch-call-plan", ManagedPatchBatchCallPlan),
+        ("managed-patch-batch-output", ManagedPatchBatchOutput),
         ("managed-patch-batch-run", BatchRunRecord),
         ("managed-patch-batch-result", BatchExecutionResult),
     ):

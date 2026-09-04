@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "BatchFileOutput": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "started",
+            "applied",
+            "failed",
+            "uncertain",
+            "observed_before",
+            "observed_after",
+            "diverged",
+            "missing",
+            "unavailable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "effect": {
+          "enum": [
+            "not_applied",
+            "applied",
+            "unknown"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "state",
+        "effect",
+        "before_sha256",
+        "after_sha256"
+      ],
+      "title": "BatchFileOutput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "managed-patch-batch-output/v1",
+      "default": "managed-patch-batch-output/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "phase": {
+      "enum": [
+        "not_started",
+        "started",
+        "finished"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "completed",
+            "cancelled",
+            "timeout",
+            "failed",
+            "interrupted"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "effect": {
+      "enum": [
+        "not_applied",
+        "applied",
+        "partial",
+        "unknown"
+      ],
+      "title": "Effect",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/BatchFileOutput"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "phase",
+    "effect",
+    "files"
+  ],
+  "title": "ManagedPatchBatchOutput",
+  "type": "object"
+}

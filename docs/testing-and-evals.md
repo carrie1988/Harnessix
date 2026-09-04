@@ -550,3 +550,24 @@ Agent Runtime Kernel 合并前：
 **复用与基础发行包**：归一化 AST 审查确认原单文件 execute/reconcile 核心与 `f0adddc` 一致，仅提取内部方法并维持公开组成员拒绝。旧 Schema、原 v1→v2 迁移实现、Agent v6/Session migration7/Provider v3、模型工具定义和依赖不变；新增 run/result 两份 Schema。基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch/managed_batch_approval/managed_batch 共十个示例通过；Linux 3.12/3.13 和 macOS CI 增加新多文件示例。
 
 全项目累计 **196个真实硬崩溃场景及2个 SIGINT 用例**，不宣称覆盖全部硬件断电。c2 范围完成，c3 的 Kernel 批量审批/结果、模型闭环与 Diff Artifact 尚未实现；当前效果报告是历史归因，不是实时文件完整性证明，也未新增实际效果 Diff 自动发布。本片无真实模型请求、SSH 或中间件部署。远端结果以本片提交 CI 为准。
+
+
+## 26. 0.5.3c3a 整组调用桥接验收（2026-09-04）
+
+在 `6a7cc65` 和 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33867929295) 基础上实现 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)。本片是完整宿主调用桥接，不是 Kernel 模型批量工具或 Session 组审批。
+
+- 新增 **159项**：调用/契约/结果边界98项、生命周期40项、真实崩溃19项、冻结 Schema2项；Patch 套件累计 **828项**。
+- `make check`：Ruff、Mypy（109源文件）通过；**1947 passed、1 skipped**。本地缺 PostgreSQL，仅该项跳过，远程实库 CI 保留。
+- 异步调试 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1911 passed**。
+- 三文件准备/复核/完整批准/执行/重开，最大16文件执行与重开；定义深拷贝、幂等准备、并发重复消费拒绝；公开结果不包含原文、成员 ID、宿主身份或私有根，极限转义路径结果仍在48 KiB内。
+- Thread/Turn/Call/工作区/工具/版本/效果类别/审批要求错绑；顶层及每文件输入注入宿主字段均拒绝；完整计划篡改、成员重排、其他调用或副本、只读/后端/成员批准指纹替代均拒绝。重算外层哈希不能修复原稳定请求错绑。
+- 三成员位置的陈旧计划批准/拒绝及写前/写后故障：准确保留部分或未知效果和 pending 后缀；拒绝不制造运行，已批准陈旧组仍消费原许可。恢复只核对，后端 failed 原因不被“后来全部归因成功”改写。
+- pending/approved/rejected/applied × 原完整证明/缺计划/缺批准/错批准人/错摘要20组合；缺事实、损坏计划、丢失组开始事件均 unknown，不返回伪造成功或补批。结果层也拒绝别组/别调用/重排成员事实与虚假公开摘要。
+- 24项每成员写前后 × Token/Task/外层超时/重复 Task 取消；两个重复关闭场景、八项操作前取消/截止、排队截止不刷新、决定镜像与组开始间取消，以及准备/复核活动线程取消。所有父任务等待线程退出后返回，不遗留写线程。最后文件写后取消可以 applied + cancelled，不能用 succeeded 覆盖 Turn 中断事实。
+- 旧 Kernel 即使被通用注册器告知新定义也不广告或执行批量写，返回 tool_not_enabled；旧单文件定义和实现未改。
+
+**19个真实崩溃场景**：16个宿主组计划预留、决定镜像、组消费提交前后、三个成员批准及替换前后、组终态和桥接返回窗口；3个在各成员 after_replace 退出后，核对该成员时再次退出的场景。原计划夹具丢失保持 unknown，不伪造 Session 审批；有证明则只查询/核对原组，禁止准备/保存/批准/执行和旧单文件内部执行。恢复前后实际源目录、目标文件字节/inode/mtime/ctime 不变，重复恢复一致。全项目累计 **215个真实硬崩溃场景及2个 SIGINT 用例**；不是 Session×组组合矩阵或硬件断电证明。
+
+**兼容与基础包**：新增 managed-patch-batch-call-plan/output 两份 v1 Schema，所有既有 Schema 字节不变。Agent v6、Session migration7、Provider v3、副本账本v3、旧单文件路径、依赖及包版本均不变，不新增数据库迁移。独立基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 下此前十个示例及新 `batch_patch_bridge` 共十一个入口通过；Linux 3.12/3.13 与 macOS CI 加入新示例。
+
+本片未调用真实模型、SSH 或部署中间件。**c3a 范围完成，c3b/c3c 尚未实现**：下一片完成 Kernel 持久组审批/消费/效果、原时限和双 SDK/双账本恢复；再实现实际调用归属的 Diff Artifact。桥接的5秒排队/线程预算不能替代持久 Turn 预算，宿主仍需先持久消费等待边界。跨平台结果以本片提交 CI 为准。

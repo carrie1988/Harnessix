@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-04
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c1 只读整组计划/Diff 已实现，c2/c3–0.5.5 仍待实施
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c1/c2/c3a 的整组计划、持久顺序执行及宿主调用桥接已实现；c3b/c3c–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -34,7 +34,7 @@
 | 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
-| 0.5.3c | 多文件效果与 Diff | c1 只读整组准备/Diff 已实现；c2 持久部分效果、c3 Kernel/Artifact 接入待实施，不假报整体原子 |
+| 0.5.3c | 多文件效果与 Diff | c1/c2/c3a 已实现整组准备、顺序效果及宿主调用桥接；c3b Kernel/c3c Artifact 接入待实施，不假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
@@ -521,3 +521,24 @@ BatchRunRecord 只保存完整组审批指纹/副本/组身份，以及 started/
 | 存储异常导致结果不可发布 | 调用可能失败；通过已有开始/成员记录只核对，不能盲目重试 execute |
 
 恢复中断后可再次只核对。仍 started 的组结束为 interrupted；已有 finished 保留原原因，未知成员观察可更新已知效果，但不追加新的组终止原因。结果是历史归因而不是实时文件完整性证明；已应用文件以后被外部修改，不会凭空抹去曾发生的效果。源目录、目标文件 inode/mtime/ctime 的恢复不写入证据及真实旧 wheel 升级见 [测试第25节](testing-and-evals.md#25-053c2b-顺序执行与部分效果恢复验收2026-09-04)。
+
+
+## 24. 0.5.3c3a 当前交付：完整整组调用与宿主异步桥接
+
+`ManagedPatchBatchBridge(copy)` 为宿主 API。它不实现通用 ToolRuntime，也不能传给 Kernel 的旧 `patches` 单文件端口。独立 `apply_patch_batch` 定义只供宿主检查，当前 Kernel 不向模型广告或执行它。
+
+| 异步方法 | 实际语义 |
+| --- | --- |
+| `prepare(call, scope, cancel)` | 按完整调用稳定请求查找或准备/预留整组；已有计划不重建，所有来源复核 |
+| `review(call, scope, plan, cancel, verify_source=True)` | 比较全部绑定且要求尚未决定；拒绝时可不检查当前来源，不记录批准 |
+| `execute(call, scope, plan, approval, cancel)` | 宿主先持久消费等待；镜像整组决定，批准则调用既有一次性执行器，拒绝不创建运行 |
+| `recover(call, scope, cancel, plan=..., approval=...)` | 只加载/核对原整组；缺完整宿主批准、事实丢失或错绑返回 unknown，不补批或重放 |
+| `aclose()` | 拒绝新任务、排空活动线程，不关闭宿主副本 |
+
+`ManagedPatchBatchCallPlan` 嵌入完整后端组计划，外层绑定 Thread/Turn/Call、完整调用指纹和自身审批指纹。独立请求标签避免与单文件或只读批准混用。模型不能提供作用域、计划 ID 或批准人。计划上限65 KiB（后端64 KiB加绑定1 KiB）；公开输出上限48 KiB，包含有序路径、前后摘要、成员状态/效果和运行阶段/原因，不包含原文、成员 ID、宿主身份或私有根目录。
+
+`BatchCallResult.result` 为公开 ToolResult，其余 plan/approval/execution 是宿主私有事实，不进入模型 wire 或 repr。partial 返回 failed，含未知返回 unknown；全部已应用可以 succeeded，同时仍带 cancelled/timeout/interrupted 后端终止原因。结果不能覆盖 Turn 的终止原因，c3b 须另行持久化私有效果。
+
+每次方法的5秒读操作预算在等待锁前建立，不在入锁后刷新。**这不是 Turn 截止时间**；c3b 必须从原持久 Turn 计算剩余时间，外层取消/超时排空桥接线程后结算。准备过程中取消可留下已持久的 pending 整组；批准镜像后、组开始前取消可留下批准但尚未运行的组。恢复只读事实，不据此授予重试许可。宿主未持久消费 Session 等待的场景不属于本片提供的执行授权。
+
+Agent v6/Session migration7/Provider v3/副本v3保持不变；全部旧 Schema 与单文件实现不改。运行 `uv run python -m examples.batch_patch_bridge` 可验证真实两文件修改与重开核对。设计及 c3b/c3c 门禁见 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)，本片不宣称 c3 或 0.5 完成。

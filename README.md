@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。模型批量工具、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a 已实现整组调用绑定与宿主异步桥接；模型批量工具、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -124,7 +124,7 @@ uv run python -m examples.kernel_patch
 uv run pytest tests/patches/test_kernel_patch*.py
 ~~~
 
-范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；下一片 c3 接入 Kernel、模型和 Diff Artifact。
+范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；c3a 已实现宿主整组调用桥接；c3b/c3c 再接入 Kernel、模型和 Diff Artifact。
 
 ## 当前已实现：多文件计划与结构化 Diff（0.5.3c1）
 
@@ -168,6 +168,20 @@ uv run pytest tests/patches/test_batch_execution.py tests/patches/test_batch_exe
 ~~~
 
 **边界**：仅宿主显式调用、仅私有受管副本内的已有普通文件。不承诺跨文件原子提交、内容 CAS 或自动回滚；不合入源目录，不运行 Shell。模型仍只有原单文件 Patch，批量 Kernel 接入和 Diff Artifact 留到 c3。设计见 [ADR 0033](docs/adr/0033-batch-consumption-and-effect-recovery.md)，迁移见 [部署说明](docs/deployment.md#副本账本-v3-升级053c2b)。
+
+## 当前已实现：整组调用绑定与异步桥接（0.5.3c3a）
+
+- 独立完整调用计划绑定 Thread/Turn/Call、工具/提案、副本和全部有序成员；旧单文件或后端批准不能替代调用批准；
+- `ManagedPatchBatchBridge` 提供 prepare/review/execute/recover，复用现有组后端，不新增替换器或数据库格式；
+- 取消、超时、排队和重复关闭均排空活动线程；公开效果与私有批准/运行证据分离；
+- 重开必须核对原完整计划和宿主决定，缺少或损坏证据保持 unknown，不自动补跑。
+
+~~~bash
+uv run python -m examples.batch_patch_bridge
+uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge_cancel.py tests/patches/test_batch_bridge_crash.py
+~~~
+
+**边界**：这是受信宿主 API，不是已开放的模型批量工具。桥接不验证 Session 活跃性或持久消费；宿主必须使用原 Turn 截止时间和取消机制。Kernel 仍默认只读，仅显式单文件 Patch 已接入；c3b 的整组持久审批/SDK 闭环及 c3c 的 Diff Artifact 尚未实现。详见 [ADR 0034](docs/adr/0034-batch-call-bridge-and-kernel-integration.md)。
 
 ## 当前已实现：0.1 Action Plane
 
