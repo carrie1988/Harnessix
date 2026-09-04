@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 
@@ -30,6 +31,16 @@ from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
             "managed-patch-record",
             PatchRecord,
             "d9f281f110cb51a770c3eb87b88a2f96ec4a70f6f2ae6e33a55ed03ca2a576fc",
+        ),
+        (
+            "managed-patch-call-plan",
+            ManagedPatchCallPlan,
+            "9004dc1128e5f9245e45297598d63fc38dc6a7392be713718b6cdce78f8ee444",
+        ),
+        (
+            "managed-patch-output",
+            ManagedPatchOutput,
+            "eda2efd9a6f6b21b183d6229a12726afd5602bfc072d95cd4be29dcbadc486f7",
         ),
     ],
 )

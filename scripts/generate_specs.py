@@ -18,6 +18,7 @@ from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
+from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
@@ -69,6 +70,8 @@ def main() -> None:
         ("patch-manifest", PatchManifest),
         ("managed-copy-manifest", CopyManifest),
         ("managed-patch-record", PatchRecord),
+        ("managed-patch-call-plan", ManagedPatchCallPlan),
+        ("managed-patch-output", ManagedPatchOutput),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

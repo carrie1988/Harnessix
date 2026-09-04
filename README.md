@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对。模型写工具接入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。模型写工具接入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -93,7 +93,22 @@ uv run python -m examples.managed_patch
 uv run pytest tests/patches
 ~~~
 
-**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。下一片 0.5.3b2 将单独升级 Kernel 写审批契约并接入模型工具。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
+**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。b2 进一步拆为下述宿主桥接 b2a 和待实现的 Kernel 写审批/模型工具 b2b。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
+
+## 当前已实现：Patch 调用绑定桥接（0.5.3b2a）
+
+- 复用 ToolCall/执行作用域，将 Thread/Turn/Call、提案、受管副本和不可变计划绑定；
+- 稳定请求找回原计划，不在恢复时重新计算前后镜像；写审批指纹与旧只读指纹分离；
+- `ManagedPatchBridge` 提供 prepare/review/execute/recover，私有计划证据与模型结果分离；
+- 协作取消、Task.cancel、外层超时和重复取消均等待后台写收尾；取消不假报文件回滚；
+- 新增 12 个桥接真实进程退出场景：恢复只加载/观察，不准备、批准或再次写入。
+
+~~~bash
+uv run python -m examples.patch_bridge
+uv run pytest tests/patches
+~~~
+
+**尚未接通**：桥接不读取 Session、不验证活跃 Turn 或审批时限，不实现通用 ToolRuntime，也未注册模型工具；本片示例由宿主构造调用并批准，不是自主编码 Eval。下一片 **0.5.3b2b** 增加 Agent 写审批/恢复结果事件、兼容迁移、专用 Kernel 准入及真实 SDK 离线闭环。详见 [ADR 0029](docs/adr/0029-managed-patch-agent-bridge.md)。
 
 ## 当前已实现：0.1 Action Plane
 

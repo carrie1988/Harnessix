@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "managed-patch-output/v1",
+      "default": "managed-patch-output/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "started",
+        "applied",
+        "failed",
+        "uncertain",
+        "observed_before",
+        "observed_after",
+        "diverged",
+        "missing",
+        "unavailable"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "before_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Before Sha256",
+      "type": "string"
+    },
+    "after_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "After Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "state",
+    "before_sha256",
+    "after_sha256"
+  ],
+  "title": "ManagedPatchOutput",
+  "type": "object"
+}

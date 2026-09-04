@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2 与 0.5.3a/b1 已完成范围内验收，整体 0.5 进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划以及受管私有副本中的持久审批/写意图/单文件真实修改/崩溃核对。仍无模型写工具、Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md) 和 [ADR 0028](adr/0028-managed-patch-execution.md)。下一片为 0.5.3b2：升级 Agent 写审批/结果契约，以显式 Scoped 准入接入模型 Patch 工具和 Kernel 恢复；不能删除只读门禁或复用只读审批冒充写授权。
+状态：**0.5.1 / 0.5.2 与 0.5.3a/b1/b2a 已完成范围内验收，整体 0.5 进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。仍无模型写工具、Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。下一片为 **0.5.3b2b**：升级 Agent 写审批/结果契约，经专用准入接入模型 Patch 工具和 Kernel 恢复；不能删除只读门禁或复用只读审批冒充写授权。
 
 ### 目标
 
@@ -204,6 +204,8 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
   - [ ] 0.5.3b：受管单文件 Patch 的模型调用闭环；
     - [x] 0.5.3b1：私有副本工厂、持久计划/审批/意图、单文件替换、取消/崩溃观察和源目录只读；
     - [ ] 0.5.3b2：Agent 写审批契约升级、Scoped 准入、模型工具接入、双账本边界和 Kernel 恢复；
+      - [x] 0.5.3b2a：稳定调用/计划绑定、宿主审批桥接、私有证据分离、异步取消排空、只读恢复和桥接崩溃矩阵；
+      - [ ] 0.5.3b2b：版本化写审批/恢复事件、最低 reader 迁移、专用 Kernel 端口、SDK 离线闭环与 Session × 副本组合恢复；
   - [ ] 0.5.3c：多文件部分效果与结构化 Diff 交付；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；

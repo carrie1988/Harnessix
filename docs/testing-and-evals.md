@@ -440,3 +440,21 @@ Agent Runtime Kernel 合并前：
 **独立交付**：新建仓库外基础 wheel 环境，确认没有 OpenAI/Anthropic SDK，以 `python -I` 运行 managed_patch、patch_plan 和 kernel_artifacts 三个示例通过。未新增依赖、真实 API 请求或服务器操作。默认 CI 已增加 Linux Python 3.12/3.13 和 macOS 的 managed_patch 示例及新测试，PostgreSQL 服务作业保留；远端结果以本片对应提交为准。
 
 **仍未完成**：模型可调用的写工具、Agent 写审批/结果兼容、Session 与副本账本组合恢复、源目录 Diff 合入、多文件部分效果、Process 与自主编码 Eval。Kernel/Agent v5/Action v1/Session migration 6 和默认工具清单未修改。b1 的宿主审批不是 kernel-read-only/v1 的写授权，不能据此勾选整体 0.5.3b/0.5 完成。
+
+## 20. 0.5.3b2a 调用绑定桥接验收（2026-09-04）
+
+在 `20b28d2` 与远端同步、[四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33779154455) 全绿后，按 [ADR 0029](adr/0029-managed-patch-agent-bridge.md) 交付宿主桥接，不提前放开模型写工具。
+
+- 新增 **95 项**测试，Patch 套件累计 **251 项**。本地 `make check`：Ruff/Mypy（94 个源文件）通过，**1369 passed、1 skipped**；跳过项为本地未配置 PostgreSQL，沿用 CI 实库作业。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1333 passed**。Patch 单独的异步调试模式 **251 passed**。
+- 新增 ManagedPatchCallPlan、ManagedPatchOutput 两份冻结 v1 Schema；运行 Schema 生成器后，全部旧 Schema 字节不变。未修改 Agent v5、Action v1、Session migration 6、副本账本 schema v1 或既有默认工具契约。
+- 调用/计划归属：Thread/Turn/Call、工作区、工具版本/指纹、提案、后端及桥接指纹的错绑/篡改均覆盖；模型注入授权字段拒绝；相同请求找回原计划，不再 prepare；已有请求的不同提案不能借壳使用。
+- 宿主批准/拒绝、只读和后端指纹混用、无效 actor/reason、持久审批冲突、旧 revision、重复/并发执行、两个桥接共享副本等路径覆盖；最多一次应用，源文件不变。拒绝不要求旧前镜像仍存在。
+- 协作取消、Task.cancel、外层 timeout、重复取消分别覆盖替换前/后；后台写收尾后才完成取消。关闭（含重复取消关闭）等待活动线程并拒绝排队调用，但不关闭宿主副本。批准镜像后、写意图前取消保留 approved，恢复报告未成功，不自动写入。
+- 恢复覆盖无计划/孤立计划、已知计划丢失、损坏计划/索引、根身份失效、缺少批准/批准不匹配；后镜像、第三种内容、缺失、不可读、相同字节不同 inode 分别归类。不把执行抛错当作没有效果，不把缺证据当作成功。
+- `test_bridge_crash.py` 新增 **12 个真实 os._exit 场景**：计划保存后、后端答复后、9 个既有执行切点以及桥接返回后。以宿主文件夹具保存调用归属，重开找回原计划并核对；恢复禁用 prepare/save/reply/execute，目标 inode/mtime/ctime 和源文件保持不变。累计 **118 个硬崩溃场景及 2 个 SIGINT 用例**。这是桥接崩溃证据，不是尚未实现的 Session 写审批组合恢复或断电测试。
+- Kernel 集成边界反向验证：即使宿主误把该写定义放入旧通用注册表，模型请求仍不广告它，Kernel 仍返回 tool_not_enabled，不执行桥接。没有将通用 NON_IDEMPOTENT_WRITE 放行。
+
+**独立 wheel**：在仓库外新建基础环境，安装当前 wheel 与锁定的默认依赖（无 OpenAI/Anthropic SDK），以 `python -I` 运行 patch_bridge、managed_patch、kernel_artifacts 通过。新示例串联真实只读工具→精确提案→原计划找回→宿主批准→副本写入→读回→重开不重写。Linux Python 3.12/3.13 与 macOS CI 均增加该示例；远端验收结果以对应提交为准。
+
+**下一片 b2b**：版本化 Agent 写审批/恢复结果、最低 reader 迁移、专用 Kernel 准入、真实 SDK 离线 HTTP 闭环及 Session × 副本账本崩溃矩阵。本片 ApprovalRecord 是受信宿主声明，未核验活跃 Turn、预算或 Session 审批消费；宿主夹具不等于自主编码 Eval。无新增依赖、真实模型请求、服务器登录或中间件部署，不关闭整体 0.5.3b/0.5。

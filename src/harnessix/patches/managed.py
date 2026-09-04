@@ -322,6 +322,30 @@ class ManagedPatchWorkspace:
         with self._guard():
             return self._load(plan_id, ReadOperation())[0]
 
+    def lookup(self, request_id: str, operation: ReadOperation) -> PatchRecord | None:
+        """按稳定请求加载已有计划；缺失不隐式准备或创建。"""
+        with self._guard():
+            operation.checkpoint()
+            if not isinstance(request_id, str) or not 1 <= len(request_id) <= 128:
+                raise fail("invalid_request")
+            row = self._db.execute(
+                "SELECT id FROM plans WHERE request_id=?", (request_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            try:
+                plan_id = UUID(row[0])
+            except (ValueError, TypeError, AttributeError):
+                raise fail("ledger_corrupt") from None
+            return self._load(plan_id, operation)[0]
+
+    def verify(self, plan_id: UUID, operation: ReadOperation) -> PatchRecord:
+        """复核保存的完整计划和当前前镜像，不改变审批或执行状态。"""
+        with self._guard():
+            record, prepared, _ = self._load(plan_id, operation)
+            verify_prepared(self.workspace, prepared, operation)
+            return record
+
     def reply(
         self, plan_id: UUID, approval_fingerprint: str, decision: ApprovalDecision
     ) -> PatchRecord:

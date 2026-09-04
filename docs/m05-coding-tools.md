@@ -361,6 +361,8 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 
 ### 下一片 0.5.3b2 的实施顺序
 
+实施进展：已先交付 **b2a 宿主桥接**（第 18 节），完成稳定调用绑定及异步收尾前置条件；以下完整 Agent 事件/审批/模型接入归入 **b2b**，未因桥接可运行而提前勾选完成。
+
 1. 固化 Agent 写审批/结果契约与兼容迁移；不改义 kernel-read-only/v1。
 2. 在受信 Scoped 入口绑定 Thread/Turn/Call、受管副本和持久 plan_id；模型参数不得注入授权或归属。
 3. 明确模型提交提案、生成宿主计划、等待审批、消费计划、发布结果的顺序；旧只读审批仍按旧规则运行。
@@ -369,3 +371,39 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 6. Kernel 取消/超时必须回收后台写线程；重启只加载/核对已有计划，不把历史 Call 再执行。
 7. 增加真实 SDK 离线读→提案→审批重开→写→读回→回答集成、跨版本旧审批，以及 Kernel × 文件替换真实崩溃矩阵。
 8. 通过全量回归、独立 wheel 与 Linux/macOS CI 后，才关闭 0.5.3b；真实 API 仍需独立预算授权。
+
+## 18. 0.5.3b2a 当前交付：宿主调用绑定桥接
+
+设计见 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。新增 `patches/agent_bridge.py`、`bridge_contracts.py`，复用既有只读调用归属、提案准备器和 b1 受管后端。只新增两个独立 v1 Schema，**Agent v5 / Action v1 / Session migration 6 / 副本账本 schema v1 和默认工具清单不变**。`ManagedPatchBridge.definition()` 返回单一待接入写定义，不是通用 ToolRuntime；Kernel 仍拒绝该非只读调用。
+
+### 宿主 API
+
+| API | 本片语义 |
+| --- | --- |
+| `ManagedPatchBridge(copy)` | 绑定宿主已取得所有权的一个受管副本，不接受任意可写目录 |
+| `definition()` | 固定 apply_patch 提案契约，non_idempotent_write、高风险、必须审批、可核对；不自动注册 |
+| `prepare(call, scope, cancel)` | 验证调用/副本/严格提案；按稳定 request_id 查找原计划，仅缺失时准备并保存；返回 ManagedPatchCallPlan |
+| `review(call, scope, plan, cancel)` | 仅 pending 可复核；验证保存的计划与当前完整前镜像，不记录决定、不写文件 |
+| `execute(call, scope, plan, approval, cancel)` | 验证桥接审批指纹，镜像宿主决定到后端；批准走一次性执行，拒绝不改文件；已消费计划不重试 |
+| `recover(call, scope, cancel, plan=None, approval=None)` | 只查找/读取/reconcile；不 prepare/save/reply/execute；可找回保存后尚未发布给 Session 的计划 |
+| `aclose()` / `async with` | 排空本桥接的后台操作，拒绝后续操作；不关闭或删除宿主副本 |
+
+后端新增 `lookup(request_id, operation)` 和 `verify(plan_id, operation)`，分别只加载既有计划及复核完整前镜像；不修改旧 get/save/execute 契约，不迁移已有副本数据库。
+
+### 调用与私有证据
+
+`ManagedPatchCallPlan` 包含 Thread/Turn/Call、调用摘要、稳定请求、副本/计划身份、完整 manifest、后端指纹与桥接审批指纹。最后者绑定整份计划，不等于后端指纹或 kernel-read-only/v1 的执行摘要。模型参数仅是 PatchProposal：相对路径、expected_revision、精确 edits；注入 actor、plan_id、scope、批准标志等全部拒绝。
+
+`PatchCallResult.result` 是现有 ToolResultContent；output 仅含版本、相对路径、历史状态、前后内容 SHA。`plan` / `record` 单独留给宿主，不进入模型结果。原提案仍可能含用户代码，副本私有账本仍持有前后镜像；本片不声称代码从未进入模型/日志，宿主需保留既有数据处理边界。
+
+### 恢复、取消与授权边界
+
+- 缺少计划且调用方也未提供持久计划时报告未成功；提供了计划而磁盘找不到时为 unknown，不假定未执行。
+- pending/approved 没有消费写意图，rejected/failed/observed_before 已知未成功；恢复不会据此自动重试。
+- started/uncertain 先做归因观察。applied/observed_after 还须匹配宿主批准才能报告 succeeded；缺批准、错绑定、第三种内容、缺失、不可读、账本异常为 unknown。
+- 调用契约、参数或执行作用域本身无效时直接抛出结构化错误；上条 unknown 指进入账本核对后发现的不一致，不能把入口异常自动解释为未产生效果。
+- 已应用状态是历史事实；不能据此断言文件此刻未被外部编辑。执行抛错不等价于无效果，调用方必须核对，不能统一转成失败。
+- 桥接使用串行线程和 ReadOperation；协作取消、Task.cancel、外层超时或重复取消必须等待写线程退出。替换前停止可未应用；替换后先完成效果与记账。close 同样等待；没有不可中断 I/O 的硬实时终止保证。
+- **尚无 Session 授权核验**：ApprovalRecord 是宿主声明，本层不验证当前 Turn、截止时间或是否已消费审批。完整 Kernel 接入必须先持久审批并消费恢复边界，再调用 execute；不能把旧 READ_ONLY 审批当作写授权。
+
+`uv run python -m examples.patch_bridge` 串联真实只读工具→精确提案→持久计划找回→宿主批准→写入→读回→重开核对。它证明桥接与既有组件互通，不是模型驱动的编码 Eval。b2b 将复用这一桥接，不另写文件替换器或恢复执行器。
