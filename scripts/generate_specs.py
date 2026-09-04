@@ -18,6 +18,10 @@ from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
 from harnessix.models.pricing import PriceSnapshot
+from harnessix.patches.batch_approval_contracts import (
+    ManagedPatchBatchApproval,
+    ManagedPatchBatchPlan,
+)
 from harnessix.patches.batch_contracts import PatchBatchManifest, PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
@@ -78,6 +82,8 @@ def main() -> None:
         ("patch-batch-manifest", PatchBatchManifest),
         ("patch-batch-diff", PatchBatchDiff),
         ("patch-diff-options", PatchDiffOptions),
+        ("managed-patch-batch-plan", ManagedPatchBatchPlan),
+        ("managed-patch-batch-approval", ManagedPatchBatchApproval),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

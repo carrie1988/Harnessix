@@ -9,19 +9,20 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from harnessix.patches.contracts import PatchProposal, PreparedPatch
+from harnessix.patches.ledger_migrations import SCHEMA_VERSION as SCHEMA_VERSION
+from harnessix.patches.ledger_migrations import add_batches
 from harnessix.patches.managed_contracts import MAX_COPY_PLANS, MAX_PLAN_BYTES, PatchRecord
 from harnessix.patches.managed_io import fail
 from harnessix.patches.planner import validate_prepared
 from harnessix.tools.workspace import ReadOperation, Workspace, digest
 
 APPLICATION_ID = 0x48585057
-SCHEMA_VERSION = 1
 
 
 def initialize(db: sqlite3.Connection, metadata: dict[str, object]) -> None:
     db.executescript(f"""
         PRAGMA application_id={APPLICATION_ID};
-        PRAGMA user_version={SCHEMA_VERSION};
+        PRAGMA user_version=1;
         CREATE TABLE metadata (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL);
         CREATE TABLE baseline (path TEXT PRIMARY KEY, body BLOB NOT NULL);
         CREATE TABLE plans (
@@ -35,6 +36,8 @@ def initialize(db: sqlite3.Connection, metadata: dict[str, object]) -> None:
         );
     """)
     db.execute("INSERT INTO metadata VALUES (1, ?)", (json.dumps(metadata),))
+    with transaction(db):
+        add_batches(db)
 
 
 @contextmanager
@@ -69,27 +72,39 @@ def append(db: sqlite3.Connection, record: PatchRecord, temporary: tuple[int, in
     )
 
 
-def save(db: sqlite3.Connection, record: PatchRecord, prepared: PreparedPatch) -> None:
+def capacity(db: sqlite3.Connection, plans: int, image_bytes: int) -> None:
     count, size = db.execute(
         "SELECT count(*),coalesce(sum(length(before_image)+length(after_image)),0) FROM plans"
     ).fetchone()
-    if (
-        count >= MAX_COPY_PLANS
-        or size + len(prepared.before) + len(prepared.after) > MAX_PLAN_BYTES
-    ):
+    if count + plans > MAX_COPY_PLANS or size + image_bytes > MAX_PLAN_BYTES:
         raise fail("limit_exceeded")
+
+
+def insert(
+    db: sqlite3.Connection,
+    record: PatchRecord,
+    prepared: PreparedPatch,
+    owner_batch_id: UUID | None = None,
+) -> None:
+    db.execute(
+        "INSERT INTO plans(id,request_id,proposal,before_image,after_image,owner_batch_id) "
+        "VALUES(?,?,?,?,?,?)",
+        (
+            str(record.plan_id),
+            record.request_id,
+            prepared.proposal.model_dump_json(),
+            prepared.before,
+            prepared.after,
+            str(owner_batch_id) if owner_batch_id is not None else None,
+        ),
+    )
+    append(db, record, None)
+
+
+def save(db: sqlite3.Connection, record: PatchRecord, prepared: PreparedPatch) -> None:
     with transaction(db):
-        db.execute(
-            "INSERT INTO plans VALUES(?,?,?,?,?)",
-            (
-                str(record.plan_id),
-                record.request_id,
-                prepared.proposal.model_dump_json(),
-                prepared.before,
-                prepared.after,
-            ),
-        )
-        append(db, record, None)
+        capacity(db, 1, len(prepared.before) + len(prepared.after))
+        insert(db, record, prepared)
 
 
 def load(

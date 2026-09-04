@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ApprovalDecision
-from harnessix.patches import ledger
+from harnessix.patches import batch_ledger, ledger, ledger_migrations
 from harnessix.patches.contracts import PreparedPatch
 from harnessix.patches.managed_contracts import (
     MAX_COPY_BYTES,
@@ -203,10 +203,9 @@ class ManagedPatchWorkspace:
             stack.callback(self._db.close)
             self._db.execute("PRAGMA synchronous=FULL")
             self._db.execute("PRAGMA foreign_keys=ON")
-            if (
-                self._db.execute("PRAGMA application_id").fetchone()[0] != ledger.APPLICATION_ID
-                or self._db.execute("PRAGMA user_version").fetchone()[0] != ledger.SCHEMA_VERSION
-            ):
+            version = self._db.execute("PRAGMA user_version").fetchone()[0]
+            application_id = self._db.execute("PRAGMA application_id").fetchone()[0]
+            if application_id != ledger.APPLICATION_ID or version not in {1, ledger.SCHEMA_VERSION}:
                 raise fail("wrong_database")
             try:
                 rows = self._db.execute("SELECT payload FROM metadata LIMIT 2").fetchall()
@@ -239,6 +238,21 @@ class ManagedPatchWorkspace:
                         raise ValueError
             except (KeyError, ValueError, TypeError):
                 raise fail("ledger_corrupt") from None
+            if version == 1:
+                with ledger.transaction(self._db):
+                    ledger.capacity(self._db, 0, 0)
+                    plans = self._db.execute("SELECT id FROM plans LIMIT 65").fetchall()
+                    if len(plans) > 64:
+                        raise fail("ledger_corrupt")
+                    operation = ReadOperation()
+                    for (plan_id,) in plans:
+                        try:
+                            parsed = UUID(plan_id)
+                        except (ValueError, TypeError, AttributeError):
+                            raise fail("ledger_corrupt") from None
+                        self._load(parsed, operation)
+                    ledger_migrations.add_batches(self._db)
+                ledger_migrations._fault("migration_committed")
             self._resources = stack.pop_all()
 
     def _validate(self) -> None:
@@ -299,6 +313,7 @@ class ManagedPatchWorkspace:
                 "SELECT id FROM plans WHERE request_id=?", (request_id,)
             ).fetchone()
             if row is not None:
+                batch_ledger.require_single(self._db, UUID(row[0]))
                 record, existing, _ = self._load(UUID(row[0]), operation)
                 if existing != prepared:
                     raise fail("request_conflict")
@@ -350,6 +365,7 @@ class ManagedPatchWorkspace:
         self, plan_id: UUID, approval_fingerprint: str, decision: ApprovalDecision
     ) -> PatchRecord:
         with self._guard():
+            batch_ledger.require_single(self._db, plan_id)
             record, _, temporary = self._load(plan_id, ReadOperation())
             self._authorize(record, approval_fingerprint)
             decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
@@ -390,6 +406,7 @@ class ManagedPatchWorkspace:
         self, plan_id: UUID, approval_fingerprint: str, operation: ReadOperation
     ) -> PatchRecord:
         with self._guard():
+            batch_ledger.require_single(self._db, plan_id)
             record, prepared, _ = self._load(plan_id, operation)
             self._authorize(record, approval_fingerprint)
             if record.state != "approved":

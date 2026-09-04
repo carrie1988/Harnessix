@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 已实现只读整组计划及有界结构化 Diff。多文件执行、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 已实现只读整组计划及有界结构化 Diff；0.5.3c2a 已实现整组事务预留、持久审批和副本账本升级。多文件执行、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -124,7 +124,7 @@ uv run python -m examples.kernel_patch
 uv run pytest tests/patches/test_kernel_patch*.py
 ~~~
 
-范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；下一片 c2 将实现持久多文件部分效果。
+范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a 已交付整组预留与审批；下一片 c2b 实现顺序消费与部分效果。
 
 ## 当前已实现：多文件计划与结构化 Diff（0.5.3c1）
 
@@ -139,6 +139,20 @@ uv run pytest tests/patches/test_batches.py tests/patches/test_diff.py
 ~~~
 
 **边界**：仅宿主只读计划与展示，不是整组批准/执行或 git apply 补丁；不自动发布 Artifact、回灌模型或合入源目录。首版最多16文件、提案文本合计512 KiB、完整前后镜像合计8 MiB。原模型 apply_patch 仍为受管单文件。设计及后续 c2/c3 门禁见 [ADR 0031](docs/adr/0031-patch-batches-and-structured-diff.md)。
+
+## 当前已实现：整组预留与持久审批（0.5.3c2a）
+
+- 一次事务保存整组及全部成员，统一检查既有计划/镜像配额和组元数据预留；
+- 批准绑定副本、宿主稳定请求、有序完整计划及组指纹；相同请求/决定幂等，内容冲突拒绝；
+- 副本账本 v1→v2 事务升级保留旧事件/镜像，旧 reader 拒绝新格式；
+- 组批准不转换成成员单独批准，旧单文件入口不能拆分消费；重开仅查询，无补丁写入。
+
+~~~bash
+uv run python -m examples.managed_batch_approval
+uv run pytest tests/patches/test_managed_batches.py tests/patches/test_batch_crash.py
+~~~
+
+**尚未实现**：c2b 的组执行、部分/未知效果与写后恢复；c3 的 Kernel 批量工具和 Diff Artifact。当前宿主入口只有 save/get/lookup/verify/reply，没有 execute。设计见 [ADR 0032](docs/adr/0032-durable-batch-reservation-and-approval.md)，升级见 [部署说明](docs/deployment.md#副本账本-v2-升级053c2a)。
 
 ## 当前已实现：0.1 Action Plane
 

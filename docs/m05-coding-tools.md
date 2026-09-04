@@ -478,3 +478,21 @@ Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号
 `uv run python -m examples.patch_batch` 在两个真实文件上验证 BOM/CRLF 保留、坐标重建、256字节截断、重开整体复核且磁盘无修改。四份独立 v1 Schema 覆盖整组提案/manifest、Diff 和预算；旧 Schema、Agent v6/Session migration 7/副本账本 v1/模型工具清单保持不变。
 
 本片没有组审批、组效果状态、组账本、自动 Artifact 发布或新模型工具。下一片 c2 先固化实际账本事务/成员预留和逐文件部分效果；c3 再升级 Kernel 并对接模型/Artifact。整组计划或截断 Diff 不能拿来绕过旧单文件审批，不能把当前准备器称作已完成多文件写入。具体测试记录见 [第23节](testing-and-evals.md#23-053c1-只读整组计划与结构化-diff-验收2026-09-04)。
+
+## 22. 0.5.3c2a 当前交付：整组事务预留与持久审批
+
+设计见 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。使用 `ManagedPatchBatches(copy)` 借用现有受管副本、互斥锁和生命周期，宿主需在 copy 关闭前使用。当前没有组 execute/reconcile，不广告新模型工具；单文件 Kernel 路径保持原有行为。
+
+| 宿主入口 | 行为 |
+| --- | --- |
+| `save(batch, request_id, operation)` | 验证完整私有计划；同请求同内容返回原记录，新组整组复核后在单事务预留所有成员 |
+| `get(batch_id, operation)` | 只读加载完整绑定、成员镜像/事件和审批决定，缺失报错 |
+| `lookup(request_id, operation)` | 只查已有组，缺失返回 None，不准备或创建 |
+| `verify(batch_id, operation)` | 只读复核持久计划及当前所有前镜像，不更新状态 |
+| `reply(batch_id, approval_fingerprint, decision, operation)` | 验证组指纹，持久保存唯一决定；相同决定幂等，不同决定冲突 |
+
+返回 `ManagedPatchBatchApproval`：plan 为不可变完整 `ManagedPatchBatchPlan`，decision 为 None/批准/拒绝。批准不执行、不镜像成员批准，所有成员仍 pending。旧单文件 save 的幂等命中、reply、execute 拒绝组成员；归属列被清空时还会检查完整组计划，不能据此重新开启单文件写入。
+
+组计划最多64 KiB UTF-8 JSON，元数据逻辑预留合计1 MiB，每组按计划实际字节加16 KiB决定空间计算。成员占用原64计划/32 MiB前后镜像配额，检查和插入均在同一事务。批准后的文件漂移不改写原批准；后续执行必须重新复核，当前 verify 会拒绝陈旧前镜像。超时/取消可能发生在提交确认之前或之后，调用方应 lookup 已有请求，不因返回异常就断言没有持久记录。
+
+副本账本升级为 v2，Agent v6/Session migration 7/Provider v3/旧单文件 Schema 不变。新旧 wheel 升级证据与11个真实提交/迁移退出切点见 [测试第24节](testing-and-evals.md#24-053c2a-整组预留持久审批及迁移验收2026-09-04)。下一片 c2b 才实现顺序消费、部分/未知效果和只核对恢复；组事务预留并不承诺文件修改的组原子性。

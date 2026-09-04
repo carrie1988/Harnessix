@@ -163,7 +163,7 @@ uv run --extra observability python -m examples.kernel_observability
 
 ## 当前 Session v6 / migration 7 升级（0.5.3b2b）
 
-0.3.3 的步骤是历史记录；当前启动会依次应用到 `0007_managed_patch.sql`。事件版本与迁移编号不同：Agent v6、Session migration 7、副本账本 v1。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
+0.3.3 的步骤是历史记录；当前启动会依次应用到 `0007_managed_patch.sql`。事件版本与迁移编号不同：Agent v6、Session migration 7；副本账本现为 v2，独立升级步骤见下节。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
 
 升级前停止旧宿主，并以 SQLite backup 或完整停机备份保存 Session；写会话还必须一起保留受管副本（包括账本、私有镜像和目标文件）。两库不是一个事务，不应只恢复其中一个并假定另一边没有效果。恢复到旧版本应使用一致的升级前备份，不将新事件交给旧 reader。
 
@@ -175,3 +175,19 @@ uv run --extra observability python -m examples.kernel_observability
 4. 以旧环境运行 `python -I session_upgrade_probe.py old-reader <目录>`，验证明确拒绝新库且不修改历史。
 
 探针不调用模型 API，不依赖源码测试包；旧环境生成的 v5 完整 transcript 已作为冻结夹具纳入 CI。新写接入运行 `python -I kernel_patch.py`（先复制 examples 中该文件至仓库外），同样只需基础 wheel，无供应商 SDK。
+
+## 副本账本 v2 升级（0.5.3c2a）
+
+这是每个私有受管副本的 `ledger.sqlite` 升级，不是 Session migration 8，也不改变 Action Plane 数据库。关闭旧宿主后整体备份副本目录及相应 Session；不要仅复制账本而遗漏 workspace、owner.lock 或仍可能存在的临时文件。
+
+新宿主取得独占 owner.lock 后，先验证副本身份、metadata、baseline 和全部旧单文件计划，再在单个 SQLite 事务中新增组计划/审批表和成员归属外键并推进 user_version。错误数据库、未来版本或校验失败不升级；DDL 中断保持 v1，提交后为完整 v2。升级保留旧事件/镜像原字节和数据库 inode，不应用或重放补丁。
+
+真实旧 wheel 探针为 `scripts/patch_ledger_upgrade_probe.py`，复制至仓库外，分别用两个基础安装环境运行：
+
+1. `git archive 09cb6d665933076e29699974dfeb0d31fd6e6b4e` 导出旧源码并构建 wheel，另构建本片新 wheel，分别安装到独立环境；
+2. 旧环境：`python -I patch_ledger_upgrade_probe.py create <新目录>`，生成真正 v1 的 pending/approved/applied 三类计划；
+3. 新环境：`python -I patch_ledger_upgrade_probe.py upgrade <同目录>`，验证全部旧状态、事件/镜像字节、文件 inode/mtime/ctime 和源目录不变；
+4. 旧环境：`python -I patch_ledger_upgrade_probe.py reject <同目录>`，应明确返回 patch_wrong_database；
+5. 再运行新环境 upgrade，确认拒绝旧 reader 后仍可重开且没有重复写。
+
+旧 v1 reader 拒绝 v2 是预期行为。不要手动降低 user_version 或删表降级；回退只能恢复一致的升级前完整备份，并接受该备份之后状态不可用。基础发行版本仍为0.1.0，能力切片编号与包版本/数据库格式分别管理。当前新增宿主组审批不提供多文件执行；不需要真实模型、远程服务器或新中间件。

@@ -395,3 +395,7 @@ src/harnessix/
 - TUI 技术栈；
 - 是否以及何时引入 Rust Process/Sandbox Sidecar；
 - Subagent 的状态隔离、预算和权限继承模型。
+
+### 整组宿主审批的当前落点（0.5.3c2a）
+
+`ManagedPatchBatches` 借用单个 ManagedPatchWorkspace 的连接、所有权和锁，复用单文件计划/镜像/事件校验与事务，而非新增副本管理器或替换引擎。副本账本 v2 将整组计划和所有成员在同一事务预留；独立组审批记录只代表完整计划的宿主决定，成员保持 pending，旧单文件写入口拒绝拆分消费。组请求暂为宿主稳定身份，不冒充已验证的 Kernel Call。Agent/Session 的批量契约在 c3 才接入，c2b 的执行/部分效果记录尚未实现。详见 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。

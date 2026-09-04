@@ -510,3 +510,22 @@ Agent Runtime Kernel 合并前：
 **独立基础 wheel**：仓库外新环境安装锁定默认依赖，确认无 OpenAI/Anthropic SDK，以 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch 共八个入口通过。新示例只准备和展示两个真实文件，校验磁盘字节不变，没有批准/执行整组写入或发布 Artifact。Linux Python 3.12/3.13 与 macOS CI 均增加新示例；远端结果以本片对应提交为准。
 
 本片未新增真实模型请求、服务器操作、数据库迁移或硬崩溃场景；全项目仍为 **141 个真实硬崩溃场景及2个 SIGINT用例**，不将只读计划回归计为多文件写崩溃验收。c1 范围完成，c2 的持久组预留/批准/部分效果及 c3 的 Kernel/模型/Artifact 仍待开发；整体0.5.3c/0.5尚未完成。
+
+## 24. 0.5.3c2a 整组预留、持久审批及迁移验收（2026-09-04）
+
+基于 `09cb6d6` 及 [四项通过的 CI](https://github.com/carrie1988/Harnessix/actions/runs/33842477262) 实施 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。c2a 是 c2 的预留/审批切片，不包含组文件写入。
+
+- 新增 **99 项**：整组宿主与边界81项，真实崩溃/迁移16项（其中11个真实退出），冻结 Schema 2项；Patch 套件累计 **487 项**。
+- `make check`：格式/Ruff/Mypy（103源文件）通过，**1606 passed、1 skipped**；跳过项为本地无 PostgreSQL，远程实库 CI 保留。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1570 passed**。
+- 真实三个文件按顺序整组保存/批准/拒绝/重开，源与副本字节、inode、mtime、ctime 不变；相同请求/载荷幂等、内容/顺序冲突、组/成员指纹错绑、无效字段/决定、来源漂移、未登记路径、错误副本与关闭句柄均覆盖。
+- 待审批/批准/拒绝 × 三个成员位置：旧单文件 save/reply/execute 全部拒绝拆分消费；额外覆盖清空 owner 列后的旧接口拒绝。组成员始终 pending，批准不隐式产生单文件批准事件。四线程八次同请求保存只产生一组，竞争批准/拒绝只有一个持久决定。
+- 与旧单文件双向共享计划数量和镜像配额，容量检查在写事务中完成；组元数据 UTF-8 实际预算恰好可用、少1字节拒绝。决定预留覆盖最长 actor/reason 的 JSON 转义，其他组不能挤占已预留决定空间；超长持久载荷拒绝。
+- 组行、三个成员插入位置及提交前的存储/取消/超时共15种异常均完整回滚；决定提交前/后丢失确认共6种异常通过只读 lookup 判断是否已提交，不凭异常推断没有持久事实。所有公开入口共用操作预算，未知/缺失/损坏记录不默默新建或修复。
+- **11 个真实 os._exit 场景**：预留组行/三个成员/提交前后共6个，决定提交前后2个，迁移版本标记前/提交前/提交后3个。未提交时无半组成员或决定，已提交时全量可见；迁移中断只有完整 v1 或完整 v2，旧 metadata/baseline/镜像/事件字节及目标文件状态不变，数据库 inode 不变。另有5项旧账本损坏/未来版本/DDL冲突拒绝，失败不先推进版本。
+
+**真实旧 wheel 验收**：从 `git archive 09cb6d6` 单独构建旧 wheel，不从当前源码伪造旧版本；仓库外旧基础环境实际创建 pending/approved/applied 三类 v1 计划。新基础 wheel 升级至 v2，旧事件/镜像原字节、三类状态、副本文件字节/inode/mtime/ctime、源目录与数据库 inode 全部保留；旧 wheel 再次打开明确返回 patch_wrong_database，新 wheel 随后再次重开仍一致。可复现探针与步骤见 [部署说明](deployment.md#副本账本-v2-升级053c2a)。单元测试中的 v1 表形夹具仅用于故障注入，不替代上述旧包证据。
+
+**基础发行包**：独立环境安装锁定默认依赖，未安装 OpenAI/Anthropic SDK；`python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval 共九个入口通过。新示例仅预留、审批、重开和验证旧接口拒绝；Linux Python 3.12/3.13 与 macOS CI 均增加该入口。新增两份独立 Schema，全部旧 Schema 字节不变；Agent v6、Session migration7、Provider v3、依赖与单文件工具定义不变。副本账本独立升级为 v2。
+
+全项目累计 **152 个真实硬崩溃场景及2个 SIGINT 用例**。新增11个场景只证明组持久事务/迁移，不冒充多文件写效果恢复。本片没有真实模型请求、服务器操作或中间件部署。c2a 范围完成，下一片 c2b 实现顺序一次性消费、部分/未知效果和每成员写前后崩溃核对；c2/c3/0.5 均未标记完成。远端跨平台结果以本片提交 CI 为准。
