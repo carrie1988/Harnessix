@@ -4,14 +4,36 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.patches.batch_contracts import PatchBatchManifest, PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
+from harnessix.patches.diff_contracts import PatchBatchDiff, PatchDiffOptions
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 
 
 @pytest.mark.parametrize(
     "name,model,frozen",
     [
+        (
+            "patch-batch-proposal",
+            PatchBatchProposal,
+            "25ec75edf9019b1527509e7f37934ed509615137e414842a80461f43a4142bb5",
+        ),
+        (
+            "patch-batch-manifest",
+            PatchBatchManifest,
+            "01bf8b7827f67f9ae175c9745fba16a470282f64dafaa6f8395ecedb2d39dd8b",
+        ),
+        (
+            "patch-batch-diff",
+            PatchBatchDiff,
+            "2503ec39a29357c4fa903cd9d5ea0d108bf5b1276bab11820a1484306278ede9",
+        ),
+        (
+            "patch-diff-options",
+            PatchDiffOptions,
+            "092ead1868e05e12c372a50c2fba0070b0fda6f0e4187e3c751b9c736d608d22",
+        ),
         (
             "patch-proposal",
             PatchProposal,

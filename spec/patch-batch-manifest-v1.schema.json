@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "PatchManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "patch-plan/v1",
+          "default": "patch-plan/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "workspace_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Scope",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "source_mode": {
+          "maximum": 511,
+          "minimum": 0,
+          "title": "Source Mode",
+          "type": "integer"
+        },
+        "proposal_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Proposal Sha256",
+          "type": "string"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "before_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Before Bytes",
+          "type": "integer"
+        },
+        "after_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "After Bytes",
+          "type": "integer"
+        },
+        "edit_count": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Edit Count",
+          "type": "integer"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "workspace_scope",
+        "source_revision",
+        "source_mode",
+        "proposal_sha256",
+        "before_sha256",
+        "after_sha256",
+        "before_bytes",
+        "after_bytes",
+        "edit_count",
+        "fingerprint"
+      ],
+      "title": "PatchManifest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "patch-batch-plan/v1",
+      "default": "patch-batch-plan/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "workspace_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Scope",
+      "type": "string"
+    },
+    "proposal_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Proposal Sha256",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/PatchManifest"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    },
+    "fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "workspace_scope",
+    "proposal_sha256",
+    "files",
+    "fingerprint"
+  ],
+  "title": "PatchBatchManifest",
+  "type": "object"
+}

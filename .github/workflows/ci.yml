@@ -29,6 +29,7 @@ jobs:
       - run: uv run python -m examples.managed_patch
       - run: uv run python -m examples.patch_bridge
       - run: uv run python -m examples.kernel_patch
+      - run: uv run python -m examples.patch_batch
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -46,6 +47,7 @@ jobs:
       - run: uv run python -m examples.managed_patch
       - run: uv run python -m examples.patch_bridge
       - run: uv run python -m examples.kernel_patch
+      - run: uv run python -m examples.patch_batch
 
   postgres:
     runs-on: ubuntu-latest

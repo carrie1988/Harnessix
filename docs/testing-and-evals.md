@@ -492,3 +492,21 @@ Agent Runtime Kernel 合并前：
 **包外交付**：仓库外基础 wheel 环境确认未安装 OpenAI/Anthropic SDK，以 `python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch 共七个示例通过。新 Kernel 示例是真实文件/数据库与离线决策，不是自主编码 Eval。Linux Python 3.12/3.13 全量和 macOS Patch CI 均增加该入口；PostgreSQL 作业保留，远端结果以本片对应提交为准。
 
 未新增依赖、真实模型请求、服务器登录或中间件。b2b/0.5.3b 的受管单文件范围完成；多文件部分效果、结构化 Diff、Process、源目录合入、Agent CLI 与自主 Coding Eval 仍未交付，整个 0.5.3/0.5 不标记完成。
+
+## 23. 0.5.3c1 只读整组计划与结构化 Diff 验收（2026-09-04）
+
+基于 `3f42130` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33840907282) 全绿与远程同步结果，按 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md) 实施 c1，不把准备/展示视作已完成多文件写入。
+
+- 新增 **79 项**：整组准备24项、Diff 51项、冻结 Schema 4项；Patch 套件累计 **388 项**。
+- `make check`：Ruff/Mypy（99个源文件）通过，**1507 passed、1 skipped**；本地 PostgreSQL 跳过，CI 实库作业保留。
+- 异步调试全范围 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1471 passed**。
+- 真实多文件只读准备/重开复核：路径唯一和顺序绑定、严格参数/授权字段注入、不同工作区、提案重排、成员/镜像/manifest 篡改均拒绝。准备晚文件时更改早文件，最终整组复核拒绝；缺失/链接/来源漂移不修改前面的文件。共享操作取消/截止时间不因下一个文件重置。
+- 预算边界使用真实内容：提案 UTF-8 合计恰好512 KiB及多1字节；4个各1 MiB文件的完整前后镜像恰好8 MiB，再加一个文件即拒绝。原单文件完整读取、长行、编码、链接/FD、取消、审批和写恢复测试保持通过。
+- BOM、中文、多字节 emoji、组合字符、CRLF/混合前缀/无末尾换行均覆盖；反向提案顺序、长度变化和删除片段的前/后字节坐标配合前镜像可重建目标，不按字符索引替代字节索引。
+- Diff 预览0/1/2/3/4/1024/4096字节不切断 UTF-8 码点，完整长度/SHA与截断独立校验。JSON 引号、反斜杠、换行/制表符转义计入总量，恰好预算可返回、少1字节则截断前缀；256字节可只保留摘要/总量和 truncated。16文件×32编辑的512项报告在1 MiB内完整返回，默认64 KiB明确返回前缀。
+- Diff 只校验计划内部事实；来源随后改变时仍可以展示原计划，但 verify 拒绝陈旧来源。测试禁止 Diff 重新 open 文件，避免将展示误写成实时工作区或已提交结果。
+- 仅提取既有精确区间解析供准备器/Diff共用；新增四份独立 v1 Schema，生成后全部旧 Schema 字节不变。Agent v6、Session migration 7、副本账本 v1、既有 apply_patch 定义与依赖均未修改。
+
+**独立基础 wheel**：仓库外新环境安装锁定默认依赖，确认无 OpenAI/Anthropic SDK，以 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch 共八个入口通过。新示例只准备和展示两个真实文件，校验磁盘字节不变，没有批准/执行整组写入或发布 Artifact。Linux Python 3.12/3.13 与 macOS CI 均增加新示例；远端结果以本片对应提交为准。
+
+本片未新增真实模型请求、服务器操作、数据库迁移或硬崩溃场景；全项目仍为 **141 个真实硬崩溃场景及2个 SIGINT用例**，不将只读计划回归计为多文件写崩溃验收。c1 范围完成，c2 的持久组预留/批准/部分效果及 c3 的 Kernel/模型/Artifact 仍待开发；整体0.5.3c/0.5尚未完成。

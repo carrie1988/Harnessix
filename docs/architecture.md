@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；多文件、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久执行、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "max_output_bytes": {
+      "default": 65536,
+      "maximum": 1048576,
+      "minimum": 256,
+      "title": "Max Output Bytes",
+      "type": "integer"
+    },
+    "preview_bytes": {
+      "default": 1024,
+      "maximum": 4096,
+      "minimum": 0,
+      "title": "Preview Bytes",
+      "type": "integer"
+    }
+  },
+  "title": "PatchDiffOptions",
+  "type": "object"
+}

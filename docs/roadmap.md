@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2 与 0.5.3a/b1/b2a/b2b 已完成范围内验收，整体 0.5 进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。下一片为 **0.5.3c**：多文件部分效果与结构化 Diff；不把逐文件替换冒充整体原子提交，不提前接入 Shell 或源目录自动合入。
+状态：**0.5.1 / 0.5.2 与 0.5.3a/b1/b2a/b2b 已完成范围内验收，整体 0.5 进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成 c1 只读整组计划与有界结构化 Diff；下一片为 **c2 受管多文件持久执行与部分效果核对**，然后 c3 接入 Kernel/模型及 Diff Artifact。见 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md)。不把逐文件替换冒充整体原子提交，不提前接入 Shell 或源目录自动合入。
 
 ### 目标
 
@@ -208,6 +208,9 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
       - [x] 0.5.3b2b：版本化写审批/恢复事件、最低 reader 迁移、专用 Kernel 端口、SDK 离线闭环与 Session × 副本组合恢复；
         - KWP-01～10 对应实现与证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 和 [验收记录第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)；默认仍只读，显式开启后仅受管副本单文件可写。
   - [ ] 0.5.3c：多文件部分效果与结构化 Diff 交付；
+    - [x] 0.5.3c1：有序唯一整组提案、不可变计划/整体复核、有界 UTF-8 字节坐标 Diff、四份独立 Schema；仅宿主只读；
+    - [ ] 0.5.3c2：整组持久预留/审批、逐文件一次性消费、部分/未知效果、取消与崩溃只核对；
+    - [ ] 0.5.3c3：Kernel 整组审批/结果兼容、模型工具闭环、Diff Artifact 归属与旧会话升级；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；

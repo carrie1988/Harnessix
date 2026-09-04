@@ -62,7 +62,9 @@ def _read_image(
         raise KernelError(f"patch_{code}", "Patch 前镜像读取未完成") from None
 
 
-def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) -> bytes:
+def _edit_ranges(
+    before: bytes, proposal: PatchProposal, operation: ReadOperation
+) -> list[tuple[int, int, bytes]]:
     ranges: list[tuple[int, int, bytes]] = []
     for edit in proposal.edits:
         _checkpoint(operation)
@@ -82,6 +84,11 @@ def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) ->
         size += len(new) - (stop - start)
     if size > MAX_PATCH_BYTES:
         raise KernelError("patch_limit_exceeded", "Patch 完整后镜像超限")
+    return ranges
+
+
+def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) -> bytes:
+    ranges = _edit_ranges(before, proposal, operation)
     chunks: list[bytes] = []
     offset = 0
     for start, stop, new in ranges:

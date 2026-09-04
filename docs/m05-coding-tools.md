@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
-- 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c–0.5.5 仍待实施
+- 日期：2026-09-04
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c1 只读整组计划/Diff 已实现，c2/c3–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -34,7 +34,7 @@
 | 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
-| 0.5.3c | 多文件效果与 Diff | 待实施；部分效果、结构化交付与兼容，不能假报整体原子 |
+| 0.5.3c | 多文件效果与 Diff | c1 只读整组准备/Diff 已实现；c2 持久部分效果、c3 Kernel/Artifact 接入待实施，不假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
@@ -446,4 +446,35 @@ uv run python -m examples.kernel_patch
 
 恢复只查找/核对，已知未应用也不重新 execute；需要再尝试时必须新的调用/计划/审批。公开结果受模型正文预算限制，私有证据不占公开预算。写入后结果超限终止 Turn，核对并保存效果；必要时丢弃公开 output，绝不丢弃绑定字段或重新写。
 
-测试覆盖两个实际 SDK 的离线 HTTP 全链路、审批/绑定/严格参数、替换前后四类取消、关闭/迟到答复、输出预算、旧 wheel 升级以及 Session × Patch 的真实进程退出。详见 [验收第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。b2/b 的受管单文件范围已交付；下一片 0.5.3c 将另行设计多文件部分效果和结构化 Diff，不承诺跨文件原子或自动回滚。
+测试覆盖两个实际 SDK 的离线 HTTP 全链路、审批/绑定/严格参数、替换前后四类取消、关闭/迟到答复、输出预算、旧 wheel 升级以及 Session × Patch 的真实进程退出。详见 [验收第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。b2/b 的受管单文件范围已交付；多文件部分效果和结构化 Diff 现按 ADR 0031 分为 c1/c2/c3；c1 交付见下节，不承诺跨文件原子或自动回滚。
+
+## 21. 0.5.3c1 当前交付：只读整组计划与结构化 Diff
+
+设计见 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md)。新增 `batch_contracts/batches/diff_contracts/diff`，只将原准备器的精确区间解析提取为共享函数；没有另建替换器、写账本或审批入口。
+
+### 宿主 API
+
+| API | 当前语义 |
+| --- | --- |
+| `PatchBatchProposal(files=(...))` | 复用单文件 PatchProposal，有序且路径唯一，不自动重排/合并 |
+| `prepare_patch_batch(workspace, proposal, operation)` | 先验证整组，逐文件只读准备，累计完整镜像预算，最后复核所有来源；失败不返回半组计划 |
+| `validate_patch_batch(workspace, batch, operation)` | 只核对内部载荷/提案/manifest/共同工作区，不读取当前文件 |
+| `verify_patch_batch(workspace, batch, operation)` | 内部核对后逐项读取当前来源；不是跨文件同时刻快照或提交 CAS |
+| `patch_batch_diff(workspace, batch, operation, options=None)` | 基于已验证计划生成结构化编辑预览，不观察当前工作区或证明已写入 |
+| `PatchDiffOptions(max_output_bytes=65536, preview_bytes=1024)` | 宿主显式预算；序列化 JSON 总量256字节–1 MiB，片段0–4096 UTF-8字节 |
+
+以上同步 API 使用同一个协作取消/截止时间；在线程中调用时宿主必须等工作线程退出，不因取消外层等待就释放 Workspace。
+
+### 计划与 Diff 契约
+
+最多16文件；编辑旧/新文本合计512 KiB；完整前后镜像合计8 MiB，原单文件1 MiB限制保留。整组 manifest 绑定有序单文件 manifest、提案与工作区；重排改变整组指纹，私有正文不进入 repr。准备较晚文件期间较早文件漂移会被最终复核拒绝，仍不承诺全组原子快照。
+
+Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号、前/后字节位置以及片段长度、完整 SHA、文本前缀/截断标记。后坐标累计此前编辑长度差，不是字符或行坐标；删除的后片段可为空。完整报告配合计划前镜像可按坐标重建目标内容；预览截断时不能据此重建完整结果。
+
+报告 total_files/total_edits 总是整组数量，edits 是预算内前缀，truncated 同时覆盖未返回编辑与文本前缀。按真实 UTF-8 JSON 序列化长度限额，包含引号、反斜杠、制表符等转义成本。预算不足容纳首项时允许空 edits，但保留总量/指纹且明确 truncated。这不是统一补丁或完整 Git Diff。
+
+### 验收与后续
+
+`uv run python -m examples.patch_batch` 在两个真实文件上验证 BOM/CRLF 保留、坐标重建、256字节截断、重开整体复核且磁盘无修改。四份独立 v1 Schema 覆盖整组提案/manifest、Diff 和预算；旧 Schema、Agent v6/Session migration 7/副本账本 v1/模型工具清单保持不变。
+
+本片没有组审批、组效果状态、组账本、自动 Artifact 发布或新模型工具。下一片 c2 先固化实际账本事务/成员预留和逐文件部分效果；c3 再升级 Kernel 并对接模型/Artifact。整组计划或截断 Diff 不能拿来绕过旧单文件审批，不能把当前准备器称作已完成多文件写入。具体测试记录见 [第23节](testing-and-evals.md#23-053c1-只读整组计划与结构化-diff-验收2026-09-04)。

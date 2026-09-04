@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "DiffText": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 4096,
+          "title": "Text",
+          "type": "string"
+        },
+        "total_bytes": {
+          "maximum": 131072,
+          "minimum": 0,
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "total_bytes",
+        "sha256",
+        "truncated"
+      ],
+      "title": "DiffText",
+      "type": "object"
+    },
+    "PatchEditDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "patch_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Patch Fingerprint",
+          "type": "string"
+        },
+        "edit_index": {
+          "exclusiveMaximum": 32,
+          "minimum": 0,
+          "title": "Edit Index",
+          "type": "integer"
+        },
+        "before_start": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Before Start",
+          "type": "integer"
+        },
+        "after_start": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "After Start",
+          "type": "integer"
+        },
+        "before": {
+          "$ref": "#/$defs/DiffText"
+        },
+        "after": {
+          "$ref": "#/$defs/DiffText"
+        }
+      },
+      "required": [
+        "path",
+        "patch_fingerprint",
+        "edit_index",
+        "before_start",
+        "after_start",
+        "before",
+        "after"
+      ],
+      "title": "PatchEditDiff",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "patch-batch-diff/v1",
+      "default": "patch-batch-diff/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "batch_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Batch Fingerprint",
+      "type": "string"
+    },
+    "total_files": {
+      "maximum": 16,
+      "minimum": 1,
+      "title": "Total Files",
+      "type": "integer"
+    },
+    "total_edits": {
+      "maximum": 512,
+      "minimum": 1,
+      "title": "Total Edits",
+      "type": "integer"
+    },
+    "edits": {
+      "items": {
+        "$ref": "#/$defs/PatchEditDiff"
+      },
+      "maxItems": 512,
+      "title": "Edits",
+      "type": "array"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "batch_fingerprint",
+    "total_files",
+    "total_edits",
+    "edits",
+    "truncated"
+  ],
+  "title": "PatchBatchDiff",
+  "type": "object"
+}
