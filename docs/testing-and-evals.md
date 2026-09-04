@@ -576,13 +576,13 @@ Agent Runtime Kernel 合并前：
 
 在 `5a09dd0` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33869981047) 基础上实现 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。本片交付显式 Kernel 整组端口、持久审批与双账本效果恢复；Diff Artifact 仍待 c3c，不把本片视作整个0.5或生产 Coding Agent 完成。
 
-- 新增 **157项**：整组 Kernel27、边界22、生命周期30、双 SDK2、组合崩溃67、Session 存储故障4、旧单文件缺端口回归1；真实 v6 transcript 升级1、migration8 故障3。Patch 套件累计 **981项**。
-- `make check`：格式/Ruff/Mypy（110源文件）通过，**2104 passed、1 skipped**。唯一跳过为本地未配置 PostgreSQL，远端实库作业保留。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**2068 passed**。
+- 新增 **158项**：整组 Kernel27、边界23、生命周期30、双 SDK2、组合崩溃67、Session 存储故障4、旧单文件缺端口回归1；真实 v6 transcript 升级1、migration8 故障3。Patch 套件累计 **982项**。
+- `make check`：格式/Ruff/Mypy（110源文件）通过，**2105 passed、1 skipped**。唯一跳过为本地未配置 PostgreSQL，远端实库作业保留。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**2069 passed**。
 - 显式组端口和默认关闭、错误名称/效果/幂等/审批/核对声明、重复定义、单文件端口不能代替组端口均覆盖。真实三文件等待/重开、Session 决定幂等/冲突、拒绝与严格参数、3个位置来源漂移、工具/副本/完整计划错绑有回归。
 - 两个实际 SDK 各用离线 MockTransport 完成6次 HTTP：读取两文件→组提案→关闭/重开审批→真实顺序写→逐文件读回→回答。所有流关闭，源目录 bytes/inode/mtime/ctime 不变；模型 wire 不含私有组证据、审批指纹/身份/组与成员 ID。不是新真实模型调用或自主 Coding Eval。
 - 3成员×替换前/后×Token/Task/重复取消/原超时共24项，另验证 Runtime 写/审批复核期间关闭及关闭反复取消、review 超时与复核后过期、等待中取消的保守结算。所有路径排空线程，Turn 取消/失败不抹去已归因写入。
-- 700/800字符结果预算下丢弃公开 output，保留 applied 私有效果并终止当前 Turn；准备前输出/Token预算耗尽不预留组。伪造宿主结果经拒绝后只恢复真实效果；Replay 拒绝组身份/批准/有序成员/输出错绑、私有内层模型绕过构造校验、审批类型升级及恢复假完成。
+- 700/800字符结果预算下丢弃公开 output，保留 applied 私有效果并终止当前 Turn；准备前输出/Token预算耗尽不预留组。伪造宿主结果经拒绝后只恢复真实效果；已发生写入后丢弃全部证据、仅报告 failed 的宿主返回也不能冒充已知未应用，缺证据只允许 unknown；Replay 拒绝组身份/批准/有序成员/输出错绑、私有内层模型绕过构造校验、审批类型升级及恢复假完成。
 - Session 决定/结果分别覆盖事务投影后未提交、已提交丢失确认4项；决定故障不提前批准后端，结果故障不重复写或重复追加结果，旧事件 Replay 一致。新测试发现并修复了缺少原写端口重开时在 WAITING 中反复结算 unknown_tool 直到超时的问题，旧单文件同根因回归一并覆盖。
 
 **真实硬崩溃**：`test_kernel_batch_crash.py` 新增67个 os._exit 场景：11个 Session 调用/计划/请求/决定/消费/结果/终态窗口，15个组预留/审批/开始/预检/成员调度/结果窗口，3成员×9单文件意图/临时文件/替换/结果窗口，6个观察结算再次退出，以及8个真实写后退出结合端口/契约/计划/批准/运行缺失或相同字节异inode/文件丢失/内容偏离的重启场景。恢复禁用 Provider 和 prepare/save/reply/execute，未消费 WAITING 保留，其他只核对原组；缺后端匹配批准则 unknown。核对后源目录与目标 bytes/inode/mtime/ctime 不变，已持久 ToolResult 不再观察。另有2个真实 migration8 提交前/后退出；全项目累计 **284个硬崩溃场景及2个 SIGINT用例**，不是全部硬件故障覆盖。

@@ -29,6 +29,7 @@ Event/Thread 新 Schema v7，投影写入7、兼容读取1–7。migration8 仅�
 - 任一未知效果终止为 interrupted，禁止自动继续模型。公开输出超限也通过专用恢复结算真实私有效果，不能抹去已写前缀。
 - 重开保留未过期 WAITING；其他未终态只核对原组，不能 prepare/save/reply/execute。原完整计划、宿主决定、后端批准或存储事实缺失/错绑，保持 unknown。
 - 因 c3a 保守证明策略，取消 WAITING 或 Session 决定已存在但后端未镜像时，可结束为 interrupted/unknown；这不表示已写入，而表示没有完整匹配的后端批准证据。不得为了得到 cancelled 而补批或伪造未应用。
+- 缺少整组计划/批准的宿主返回只允许 unknown；不得以无证据 failed/cancelled 冒充已知未应用。
 - 已持久 ToolResult 不再次核对；恢复产生的结果不能把 Turn 改称正常完成。结果与批准/运行/成员顺序错绑在在线提交与 Replay 统一拒绝。
 
 ## 5. 验收门禁

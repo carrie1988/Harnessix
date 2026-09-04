@@ -167,7 +167,9 @@ async def test_approval_or_resume_drift_does_not_execute(group_case, tmp_path, m
         assert snapshot(copy.workspace.root) == before
 
 
-@pytest.mark.parametrize("kind", ["prepopulated", "wrong_plan", "wrong_decision", "missing_run"])
+@pytest.mark.parametrize(
+    "kind", ["prepopulated", "wrong_plan", "wrong_decision", "missing_run", "no_evidence"]
+)
 async def test_bad_host_result_cannot_be_published_but_recovery_keeps_real_effect(
     group_case, tmp_path, monkeypatch, kind
 ):
@@ -177,6 +179,14 @@ async def test_bad_host_result_cannot_be_published_but_recovery_keeps_real_effec
 
         async def tamper(*args):
             result = await original(*args)
+            if kind == "no_evidence":
+                return replace(
+                    result,
+                    result=result.result.model_copy(update={"outcome": "failed", "output": None}),
+                    plan=None,
+                    approval=None,
+                    execution=None,
+                )
             if kind == "prepopulated":
                 effect = batch_patching.PatchBatchEffect(
                     workspace_id=result.plan.backend.workspace_id,

@@ -158,7 +158,7 @@ def result_content(
             plan is not None
             or approval is not None
             or execution is not None
-            or result.result.outcome == "succeeded"
+            or result.result.outcome != "unknown"
         ):
             raise KernelError("patch_batch_result_mismatch", "整组结果缺少完整证据")
         return result.result
