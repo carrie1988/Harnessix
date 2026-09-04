@@ -223,6 +223,9 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
   - [ ] 0.5.4b：持久命令意图/审批/结果、宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
     - [x] b1：复用Action Plane持久意图/审批/租约/UNKNOWN，绑定宿主执行权限，硬退出不杀旧PID或重放；不接模型；
     - [ ] b2：Agent Session与Action Plane的单一审批绑定、长输出Artifact及宿主死亡运维处置；
+      - [x] b2a：冻结Action审批唯一权威、稳定Action身份、跨库恢复Saga、WAITING_ACTION与Process Artifact边界；
+      - [ ] b2b：桥接契约、Agent事件/Session迁移及旧reader兼容；
+      - [ ] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
   - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；

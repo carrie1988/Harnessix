@@ -245,6 +245,8 @@ uv run pytest tests/processes
 
 该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定、Process Artifact、Git/run_tests、硬退出后的自动清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
 
+Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结；契约、Session迁移和运行时尚未实现，当前Agent v8/migration9不变。
+
 ## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；

@@ -658,3 +658,17 @@ Agent Runtime Kernel 合并前：
 阶段针对性进程测试 **114 passed**，Ruff和Mypy（118源文件）通过。`make check`为 **2392 passed、1 skipped**，唯一跳过仍是本地无PostgreSQL的实库项；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2356 passed**。
 
 基础wheel无供应商SDK，仓库外`python -I`运行原14个及`process_action`共 **15个示例**通过；最终wheel SHA256为`f5724f7dd070194b28817d70419eb91558a1226ae7f7777d414488ab9766bbd2`。Linux3.12/3.13、macOS与PostgreSQL以本片最终提交CI为准，不能用`adfe267`旧CI代替。本片完成0.5.4b1，不代表Agent进程工具、b2、0.5.4c或生产Coding Agent完成。无模型请求、SSH或中间件部署。
+
+## 32. 0.5.4b2a 单一审批Saga设计验收（2026-09-05）
+
+基线`81c76f6`及CI33921498948四项成功；设计见 [ADR 0040](adr/0040-agent-process-action-saga.md)。本片只冻结跨账本协议，不新增代码能力或更改版本。
+
+- 对照现有Agent审批、Action审批、Action租约恢复和Artifact事务发布，确认原样串联会产生双执行许可；明确Action Approval为唯一权威，Session只存可核验投影。
+- 列出Action创建、Session等待、Action决定、执行、结果投影各提交边界的8类崩溃窗口；每类恢复均只重取稳定Action或补Session投影，不再次批准/执行。
+- 明确需要持久WAITING_ACTION，避免批准后把Worker运行塞入同步答复；取消不撤销已提交决定，UNKNOWN不回READY。
+- 区分Action Result效果事实和Process Artifact展示材料；后续Artifact必须绑定Action/Call/流摘要并与Session ToolResult同事务。
+- Codex/OpenCode使用实际冻结源码路径求证；Claude辅助仓库只观察前后台需求，不作为安全规范。
+
+文档链接、格式、敏感信息扫描均通过；`make check` **2392 passed、1 skipped**，Mypy仍为118源文件；异步调试与警告转错误 **2356 passed**。基础wheel无供应商SDK，仓库外`python -I`运行15个示例通过，SHA256为`6c7528ed16dee578f446a652a27e646599ae2f1343b38edec57c8f55276eb22a`。跨平台CI以最终提交为准。
+
+Agent v8、Session migration9、Action/Process Schema、依赖和示例行为不变。下一片b2b才实现契约、事件与迁移，不能把本ADR称为Agent进程工具完成。无模型请求、SSH或中间件部署。

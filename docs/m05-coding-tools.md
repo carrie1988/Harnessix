@@ -652,3 +652,11 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 工具版本绑定cwd、程序身份、环境和资源策略摘要；每次执行前复核持久描述、当前Executor和新Runtime，配置漂移不消费旧权限。确定结果保存完整ProcessResult及摘要Receipt；非零退出不是传输失败。管道证据不完整或清理失败保守UNKNOWN。Task取消先回收再传播，未写终态的RUNNING由租约恢复UNKNOWN；宿主硬退出同样不自动重放、不按历史PID发信号，对账只转人工处置。
 
 本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：Agent Session绑定、Process Artifact、硬退出自动清理与OS隔离待b2/0.7，Git/run_tests待0.5.4c。
+
+## 30. 0.5.4b2a：Agent与Action单一审批Saga设计
+
+决策见 [ADR 0040](adr/0040-agent-process-action-saga.md)。进程执行只认Action Journal的ApprovalRecord；Agent审批Item是绑定Thread/Turn/Call和Action身份的只读投影，不能成为第二份执行许可。稳定Action ID/幂等键确保prepare崩溃后只取得原意图。
+
+跨库不伪装原子事务：Action已决定而Session未投影时只读取并补投影；Action运行或终态而Session无结果时只观察原Action；UNKNOWN绝不回READY。持久WAITING_ACTION用于已批准但尚未终态的Worker执行，不能在审批答复中无限轮询。
+
+Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b再做事件/迁移/旧reader，b2c实现运行时和Artifact。当前Agent v8/Session migration9不变，不能把本设计写成已接模型。
