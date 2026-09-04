@@ -150,6 +150,7 @@ def result_content(
         result.result.call_id != call.call_id
         or result.result.patch is not None
         or result.result.patch_batch is not None
+        or result.result.diff_artifact is not None
     ):
         raise KernelError("tool_result_mismatch", "整组结果归属错误或预置了私有效果")
     plan, approval, execution = result.plan, result.approval, result.execution

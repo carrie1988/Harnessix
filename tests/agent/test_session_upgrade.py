@@ -18,7 +18,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer
 
 
-@pytest.mark.parametrize("version", [1, 2, 3, 4, 5, 6])
+@pytest.mark.parametrize("version", [1, 2, 3, 4, 5, 6, 7])
 async def test_old_transcript_migrates_without_rewriting_history(
     tmp_path: Path, version: int
 ) -> None:
@@ -102,7 +102,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
                     (number, hashlib.sha256(sql.encode()).hexdigest()),
                 )
                 database.execute("UPDATE agent_threads SET projection_version = 5")
-    if version == 6:
+    if version >= 6:
         sql = files("harnessix.session.migrations").joinpath("0007_managed_patch.sql").read_text()
         with sqlite3.connect(store.path) as database:
             database.executescript(sql)
@@ -111,6 +111,19 @@ async def test_old_transcript_migrates_without_rewriting_history(
                 (hashlib.sha256(sql.encode()).hexdigest(),),
             )
             database.execute("UPDATE agent_threads SET projection_version = 6")
+    if version >= 7:
+        sql = (
+            files("harnessix.session.migrations")
+            .joinpath("0008_managed_patch_batch.sql")
+            .read_text()
+        )
+        with sqlite3.connect(store.path) as database:
+            database.executescript(sql)
+            database.execute(
+                "INSERT INTO agent_migrations VALUES (8, ?)",
+                (hashlib.sha256(sql.encode()).hexdigest(),),
+            )
+            database.execute("UPDATE agent_threads SET projection_version = 7")
     await store.initialize()
     assert await store.get_thread(thread_id) == Thread.model_validate_json(snapshot)
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))
@@ -123,19 +136,19 @@ async def test_old_transcript_migrates_without_rewriting_history(
             == version
         )
     async with AgentRuntime(store, ScriptedProvider([accounted_answer()])) as runtime:
-        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v7")
+        completed = await runtime.run_turn(thread_id, "升级后继续", request_id="v8")
     assert completed.status == "completed"
     assert completed.usage.total_tokens == 13 and completed.usage_is_complete
     with sqlite3.connect(store.path) as database:
         assert database.execute(
             "SELECT version FROM agent_migrations ORDER BY version"
-        ).fetchall() == [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,)]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 7
+        ).fetchall() == [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,)]
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 8
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 7 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 8 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -144,7 +157,7 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 8")
+        database.execute("UPDATE agent_threads SET projection_version = 9")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"

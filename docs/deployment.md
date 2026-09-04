@@ -163,7 +163,7 @@ uv run --extra observability python -m examples.kernel_observability
 
 ## 历史 Session v6 / migration 7 升级（0.5.3b2b）
 
-本节记录 b2b 的升级验收；当时启动应用到 `0007_managed_patch.sql`，当前 migration8 的步骤见文末。事件版本与迁移编号不同：Agent v6、Session migration 7；副本账本现为 v3，v1→v2 与 v2→v3 的独立升级步骤见下文。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
+本节记录 b2b 的升级验收；当时启动应用到 `0007_managed_patch.sql`，当前 migration9 的步骤见文末。事件版本与迁移编号不同：Agent v6、Session migration 7；副本账本现为 v3，v1→v2 与 v2→v3 的独立升级步骤见下文。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
 
 升级前停止旧宿主，并以 SQLite backup 或完整停机备份保存 Session；写会话还必须一起保留受管副本（包括账本、私有镜像和目标文件）。两库不是一个事务，不应只恢复其中一个并假定另一边没有效果。恢复到旧版本应使用一致的升级前备份，不将新事件交给旧 reader。
 
@@ -216,11 +216,11 @@ c3a 本片只有新宿主契约/桥接，当时未改变 Agent v6、Session migr
 
 基础 wheel 无需 OpenAI/Anthropic SDK 即可运行 `examples/batch_patch_bridge.py`；将示例复制到仓库外，用安装环境 `python -I batch_patch_bridge.py` 验收，避免误从源目录导入。新入口是宿主 API，不是模型批量写开关；不能传入旧 Kernel 的 `patches` 参数冒充单文件端口。先关闭/排空桥接，再关闭副本，原 Session 宿主仍负责持久准入。
 
-c3b 已新增 Agent/Session 契约及最低 reader 的实际升级验证，见下节。c3c 才对接 Diff Artifact，当前只读 Artifact 发布器不接受写调用。无需新数据库、模型请求或远程部署。
+c3b 已新增 Agent/Session 契约及最低 reader 的实际升级验证，见下节。c3c2 已通过独立端口对接 Diff Artifact；原只读 Artifact 发布器仍不接受写调用。无需新数据库、模型请求或远程部署。
 
-## 当前 Session v7 / migration8 升级（0.5.3c3b）
+## 历史 Session v7 / migration8 升级（0.5.3c3b）
 
-当前新 wheel 启动应用到 `0008_managed_patch_batch.sql`，只增加最低 reader 标记，不重写既有 v1–v6 事件/投影；新追加或显式 rebuild 的投影为7。受管副本账本保持v3，旧组/单文件工具定义及依赖不变。包版本仍0.1.0，部署须记录具体提交与 wheel 摘要，不凭包版本识别能力。
+本节交付时新 wheel 启动应用到 `0008_managed_patch_batch.sql`，只增加最低 reader 标记，不重写既有 v1–v6 事件/投影；新追加或显式 rebuild 的投影为7。受管副本账本保持v3，旧组/单文件工具定义及依赖不变。包版本仍0.1.0，部署须记录具体提交与 wheel 摘要，不凭包版本识别能力。
 
 停机并一致备份 Session 和完整受管副本后升级。旧 reader 必须拒绝 migration8；回退仅使用升级前一致备份，不删迁移记录或修改版本号降级。升级本身不会消费旧 WAITING、批准或写文件；过期按原 Turn 时限处理。
 
@@ -239,8 +239,26 @@ c3b 已新增 Agent/Session 契约及最低 reader 的实际升级验证，见�
 
 ## 差异报告准备安装（0.5.3c3c1）
 
-本片仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁移、供应商依赖或模型工具变更。Agent v7、Session migration8、Provider v3、副本账本v3及旧工具定义不变；包版本仍0.1.0，请继续记录 Git 提交和 wheel 摘要。
+c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁移、供应商依赖或模型工具变更。Agent v7、Session migration8、Provider v3、副本账本v3及旧工具定义不变；包版本仍0.1.0，请继续记录 Git 提交和 wheel 摘要。
 
-基础 wheel 安装后，将 `examples/batch_diff.py` 复制到仓库外，可直接运行 `python -I batch_diff.py`。示例使用真实本地 Session 和受管副本、离线决策，未调用模型 API；无需新数据库、服务器登录或中间件。报告通过 `to_jsonl()` 返回 bytes，尚未持久化为 Artifact，不提供发布后的引用、TTL 或读取游标。
+基础 wheel 安装后，将 `examples/batch_diff.py` 复制到仓库外，可直接运行 `python -I batch_diff.py`。示例使用真实本地 Session 和受管副本、离线决策，未调用模型 API；无需新数据库、服务器登录或中间件。当时报告通过 `to_jsonl()` 返回 bytes，不提供归档引用；当前示例已按 c3c2 更新为事务归档与读取，见下节。
 
 历史报告需要一致保留完整副本镜像/账本和原调用/批准/效果。缺失事实或快照不匹配时拒绝生成，不对当前文件猜测效果，也不自动 reconcile。取消/超时/关闭须等报告线程排空；报告生成失败不回滚此前真实写入。c3c2 才新增事务发布及其实际 reader 升级步骤。
+
+## 当前 Session v8 / migration9 升级（0.5.3c3c2）
+
+本节取代上文“当前 v7”的版本说明；历史段落保留当时的验收事实。停宿主并一致备份 Session 与完整受管副本后升级。migration9 同事务复制旧 Artifact 行、替换表并增加用途唯一约束；旧行用途为 `tool_result`，正文/manifest/引用与历史事件、投影原字节不改。新引用需要 Agent v8，新写或 rebuild 的投影为8。最低 reader 不允许旧 wheel 接管新库；不通过删 migration 降级。
+
+`SQLiteBatchDiffPublisher` 为显式宿主配置，不自动打开写端口；旧只读发布器的成功只读限制保持。升级本身不生成报告、不消费等待审批、不执行文件写入。旧整组 WAITING 可以显式决定/恢复执行并取得新的效果引用，但不会回填或修改过去的计划审批事件。
+
+独立基础安装环境的实际探针为 `scripts/batch_diff_upgrade_probe.py`：
+
+1. 从 `33e690e33395876b2d5357071d947e08f765c23e` 导出旧源码构建 wheel，另构建当前 wheel，各自安装到仓库外环境；
+2. 旧环境运行 `python -I batch_diff_upgrade_probe.py create <新目录>`，实际创建只读/单文件/整组三类 WAITING 和已归档只读结果；
+3. 新环境运行 `upgrade <同目录>`：旧事件、投影、Artifact manifest/正文、目标文件身份/时间不变；旧引用仍可读；
+4. 旧环境运行 `old-reader <同目录>`，确认 `schema_too_new` 且不改变旧事件；
+5. 新环境运行 `resume <同目录>`，显式批准/完成三类旧调用，整组真实效果附带引用，旧事件原字节不变，Replay 一致；旧环境再次 `old-reader` 仍拒绝。
+
+另由旧 wheel 在独立目录执行 create/fixture 导出真实 v7 整组 transcript，以及旧只读 Artifact 的原事件/投影/表行夹具纳入 CI，非手改版本号。migration9 的复制、删除旧表、重命名及提交后四个真实进程退出均验收为完整旧库或完整新库。
+
+当前 `examples/batch_diff.py` 已更新为计划/效果双引用归档闭环，仍可用基础 wheel 在仓库外 `python -I` 运行，无供应商 SDK 或模型请求。包版本仍0.1.0，安装时记录 Git 提交和 wheel 摘要；无需远程服务器或新中间件。

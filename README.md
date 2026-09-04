@@ -117,7 +117,7 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- 本节交付时为 Agent v6 / Session migration7；当前为 v7 / migration8，兼容 v1–v6 原文和真实旧只读/单文件等待审批。
+- 本节交付时为 Agent v6 / Session migration7；当前为 v8 / migration9，兼容 v1–v7 原文和真实旧只读/单文件/整组等待审批。
 
 ~~~bash
 uv run python -m examples.kernel_patch
@@ -181,7 +181,7 @@ uv run python -m examples.batch_patch_bridge
 uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge_cancel.py tests/patches/test_batch_bridge_crash.py
 ~~~
 
-**边界**：这是受信宿主 API，本身不验证 Session 活跃性或持久消费；宿主必须使用原 Turn 截止时间和取消机制。当前通过下节 c3b 的专用端口接入 Kernel；默认仍不开放写工具，c3c 的 Diff Artifact 尚未实现。详见 [ADR 0034](docs/adr/0034-batch-call-bridge-and-kernel-integration.md)。
+**边界**：这是受信宿主 API，本身不验证 Session 活跃性或持久消费；宿主必须使用原 Turn 截止时间和取消机制。当前通过下节 c3b 的专用端口接入 Kernel；默认仍不开放写工具，c3c 的 Diff Artifact 已通过独立发布端口接入（见下节）。详见 [ADR 0034](docs/adr/0034-batch-call-bridge-and-kernel-integration.md)。
 
 ## 当前已实现：Kernel 整组持久审批与写闭环（0.5.3c3b）
 
@@ -189,28 +189,42 @@ uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge
 - Session 保存完整调用计划、独立组审批与决定；持久离开等待后才镜像后端决定并一次性顺序执行。答复审批不会修改文件；
 - 两个实际供应商 SDK 均通过离线 HTTP 完成“两文件读取→整组提案→审批重开→真实副本写入→逐文件读回”；没有新增真实模型调用；
 - 私有 `ToolResult.patch_batch` 保留有界效果与运行原因，不进模型 wire，也不因公开结果超限丢失。部分效果停止当前 Turn；未知效果禁止自动继续；
-- Agent Event/Thread **v7**、Session **migration8**；真实旧 v6 wheel 的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧 reader 明确拒绝新库。副本账本保持 **v3**。
+- 本节交付时为 Agent Event/Thread **v7**、Session **migration8**（当前 v8/migration9）；真实旧 v6 wheel 的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧 reader 明确拒绝新库。副本账本保持 **v3**。
 
 ~~~bash
 uv run python -m examples.kernel_batch
 uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
 ~~~
 
-这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 的差异报告准备已交付，下一片为 **c3c2：Diff Artifact 事务发布**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，下一阶段为 **0.5.4：Process / Git / 测试执行**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：真实计划/历史效果差异报告（0.5.3c3c1）
 
 - `ManagedPatchBatchBridge.diff(...)` 绑定完整原调用、计划与真实组账本，生成未发布的宿主报告；效果视图还必须匹配原批准与已结算运行快照；
 - 计划视图展示原提案；历史效果只为已归因成员展示编辑，未知和未执行成员保留独立说明，不冒充已经修改；
 - JSONL 顺序为摘要、全部成员、编辑前缀；每记录24 KiB、整体最多1 MiB，默认64 KiB。预算不足以容纳全部成员时明确失败；文本与编辑截断不会隐藏；
-- 只读取私有计划/历史证据，不读取当前目标、不追加观察、不补批、不重放；兼容原工具定义、Agent v7、Session migration8 和副本v3。
+- 只读取私有计划/历史证据，不读取当前目标、不追加观察、不补批、不重放；报告准备时未改变原工具定义、Agent v7、Session migration8 和副本v3；当前归档升级见下节。
 
 ~~~bash
 uv run python -m examples.batch_diff
 uv run pytest tests/patches/test_diff_document.py tests/patches/test_batch_diff_*.py
 ~~~
 
-**尚未完成**：报告没有 ArtifactRef，未接入会话事务发布、引用读取或过期清理；不能通过旧只读发布器把报告变成写调用归档。`complete` 只表示所选视图完整，不表示执行成功或已批准。c3c2 再接这些持久化能力，见 [ADR 0036](docs/adr/0036-batch-diff-documents-and-artifact-admission.md)。
+`complete` 只表示所选视图完整，不表示执行成功或已批准。原报告准备接口仍不写 Session；下节的独立发布器负责归档。
+
+## 当前已实现：Diff Artifact 事务归档（0.5.3c3c2）
+
+- 显式注入 `SQLiteBatchDiffPublisher`，计划引用与真实审批同事务，效果引用与真实 ToolResult/私有效果同事务；同一调用两用途互不覆盖。
+- 失败、部分、未知效果不伪造成功；归档或预算失败可省略引用，不丢弃真实写效果。重开只核对，不重新执行；提交后丢确认不会重复归档。
+- 复用分页、配额、TTL 和活跃会话保护；两个 SDK 的离线闭环可从效果引用继续调用 `read_artifact`。旧只读发布限制不变。
+- Agent **v8** / Session **migration9**；真实旧 v7 wheel 的三类审批、已有 Artifact 升级通过，旧 Schema/事件原字节保留，旧 reader 拒绝新库。Provider v3、副本v3、工具定义及依赖不变。
+
+```bash
+uv run python -m examples.batch_diff
+uv run pytest tests/artifacts/test_batch_diff*.py
+```
+
+设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；**Shell、Git/测试执行、源目录合入和完整 Coding Eval 尚未完成**，项目仍在0.5阶段，不是已完工的生产 Coding Agent。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -247,7 +261,7 @@ uv run pytest tests/patches/test_diff_document.py tests/patches/test_batch_diff_
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v7，见上述整组写工具接入）；
+- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v8，见上述差异事务归档）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -291,7 +305,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v7/Provider v3，见 0.5.3c3b 与 0.4.3b2）；
+- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v8/Provider v3，见 0.5.3c3c2 与 0.4.3b2）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。

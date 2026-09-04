@@ -45,7 +45,9 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
                     "role": "tool",
                     "tool_call_id": "call_" + content.call_id.hex,
                     "content": encode_json(
-                        content.model_dump(mode="json", include={"outcome", "output", "error"})
+                        content.model_dump(
+                            mode="json", include={"outcome", "output", "error", "diff_artifact"}
+                        )
                     ),
                 }
             )

@@ -61,7 +61,7 @@ from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.artifacts.contracts import ArtifactToolResult
-from harnessix.artifacts.ports import ArtifactPublisher
+from harnessix.artifacts.ports import ArtifactPublisher, BatchDiffPublisher
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -100,6 +100,7 @@ class AgentRuntime:
         patches: PatchRuntime | None = None,
         patch_batches: PatchBatchRuntime | None = None,
         artifacts: ArtifactPublisher | None = None,
+        batch_diffs: BatchDiffPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
@@ -110,6 +111,11 @@ class AgentRuntime:
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
             )
+        if batch_diffs is not None and (
+            batch_diffs.session is not store or batch_diffs.bridge is not patch_batches
+        ):
+            raise KernelError("artifact_store_mismatch", "差异发布必须绑定原 Session 和整组端口")
+        self._batch_diffs = batch_diffs
         self._artifacts = artifacts
         self.store = store
         self._telemetry = KernelTelemetry(observability or NoOpObservability())
@@ -258,7 +264,7 @@ class AgentRuntime:
     ) -> Thread:
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
-            return await self.store.append(
+            return await (self._batch_diffs or self.store).append(
                 thread_id,
                 [EventDraft(turn_id=turn_id, payload=p) for p in payloads],
                 expected_sequence=thread.sequence,
@@ -1364,7 +1370,7 @@ class AgentRuntime:
                 )
             payloads.append(TurnStateChanged(status=status, error=error))
             self._fault("runtime.before_terminal")
-            thread = await self.store.append(
+            thread = await (self._batch_diffs or self.store).append(
                 thread_id,
                 [EventDraft(turn_id=turn_id, payload=p) for p in payloads],
                 expected_sequence=thread.sequence,

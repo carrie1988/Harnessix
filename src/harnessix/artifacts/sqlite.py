@@ -19,6 +19,7 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    PatchBatchApprovalRequestContent,
     Thread,
     ToolCallContent,
     ToolResultContent,
@@ -168,7 +169,8 @@ class SQLiteArtifactStore:
                     raise KernelError("approval_mismatch", "Artifact 发布缺少匹配的批准")
             await self._check_quota(database, thread_id, turn_id, ref.size_bytes)
             await database.execute(
-                "INSERT INTO agent_artifacts VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)",
+                "INSERT INTO agent_artifacts VALUES "
+                "(?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, 'tool_result')",
                 (
                     str(ref.artifact_id),
                     str(thread_id),
@@ -223,6 +225,33 @@ class SQLiteArtifactStore:
             ):
                 raise ValueError("索引不匹配")
             turn = get_turn(thread, UUID(row["turn_id"]))
+            if row["purpose"] not in {"tool_result", "batch_plan", "batch_effect"}:
+                raise ValueError("未知归档用途")
+            if row["purpose"] != "tool_result":
+                contents = [
+                    i.content
+                    for i in turn.items
+                    if isinstance(i.content, PatchBatchApprovalRequestContent | ToolResultContent)
+                    and (
+                        isinstance(i.content, PatchBatchApprovalRequestContent)
+                        if row["purpose"] == "batch_plan"
+                        else isinstance(i.content, ToolResultContent)
+                        and i.status == ItemStatus.COMPLETED
+                        and i.content.patch_batch is not None
+                    )
+                    and str(i.content.call_id) == row["call_id"]
+                ]
+                if len(contents) != 1 or contents[0].diff_artifact != ref:
+                    raise ValueError("差异引用不匹配")
+                request = next(
+                    i.content
+                    for i in turn.items
+                    if isinstance(i.content, PatchBatchApprovalRequestContent)
+                    and str(i.content.call_id) == row["call_id"]
+                )
+                if request.plan.backend.manifest.workspace_scope != row["workspace_scope"]:
+                    raise ValueError("差异工作区错绑")
+                return ref
             results = [
                 i.content
                 for i in turn.items
@@ -238,7 +267,7 @@ class SQLiteArtifactStore:
             ):
                 raise ValueError("缺少结果引用")
             return ref
-        except (ValueError, KernelError):
+        except (ValueError, KernelError, StopIteration):
             raise KernelError("artifact_corrupt", "Artifact manifest 或结果引用不一致") from None
 
     async def read(

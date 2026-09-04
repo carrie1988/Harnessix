@@ -1,4 +1,4 @@
-"""真实 Session 审批与写效果的只读差异报告；尚不发布 Artifact。"""
+"""真实 Session 审批、写效果及同事务归档的差异报告。"""
 
 import asyncio
 from pathlib import Path
@@ -13,7 +13,8 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.artifacts.sqlite import records
+from harnessix.artifacts.batch_diff import SQLiteBatchDiffPublisher
+from harnessix.artifacts.sqlite import SQLiteArtifactStore, records
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.models.contracts import (
     ResponseCompleted,
@@ -41,6 +42,7 @@ async def exercise(root):
         (source_path / path).write_text("before\n")
     factory = PatchWorkspaces(root / "private")
     store = SQLiteSessionStore(root / "session.db")
+    artifacts = SQLiteArtifactStore(store)
     with Workspace(source_path) as source, factory.create(source, paths, ReadOperation()) as copy:
         async with ManagedPatchBatchBridge(copy) as bridge:
             proposal = PatchBatchProposal(
@@ -74,7 +76,12 @@ async def exercise(root):
                     ],
                 ]
             )
-            async with AgentRuntime(store, provider, patch_batches=bridge) as runtime:
+            async with AgentRuntime(
+                store,
+                provider,
+                patch_batches=bridge,
+                batch_diffs=SQLiteBatchDiffPublisher(artifacts, bridge),
+            ) as runtime:
                 thread = await runtime.create_thread(str(copy.workspace.root))
                 waiting = await runtime.run_turn(
                     thread.thread_id, "修改并展示两文件", request_id="diff"
@@ -114,11 +121,12 @@ async def exercise(root):
                 )
                 completed = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
                 assert completed.status == "completed"
-                effect = next(
-                    i.content.patch_batch
-                    for i in completed.items
-                    if isinstance(i.content, ToolResultContent)
+                result = next(
+                    i.content for i in completed.items if isinstance(i.content, ToolResultContent)
                 )
+                effect = result.patch_batch
+                assert request.diff_artifact and result.diff_artifact
+                assert request.diff_artifact != result.diff_artifact
                 events = await store.events(thread.thread_id)
                 history = await bridge.diff(
                     call,
@@ -133,13 +141,20 @@ async def exercise(root):
                 assert planned.document.edits == history.document.edits
                 assert await store.events(thread.thread_id) == events
                 assert replay(events) == await store.get_thread(thread.thread_id)
-                for report in (planned, history):
+                for report, ref in (
+                    (planned, request.diff_artifact),
+                    (history, result.diff_artifact),
+                ):
+                    page = await artifacts.read(
+                        thread.thread_id, copy.workspace.scope, ref.artifact_id
+                    )
+                    assert page.text.encode() == report.document.to_jsonl()
                     assert report.document.summary.complete
                     assert len(records(report.document.to_jsonl())) == 5
                 assert all((copy.workspace.root / p).read_text() == "after\n" for p in paths)
     assert all((source_path / p).read_text() == "before\n" for p in paths)
-    print("真实 Session 计划/审批/两文件写入与历史差异报告通过；JSONL 有界且不改变事件或源目录。")
-    print("报告尚未发布为 Artifact；未调用真实模型 API。")
+    print("真实审批/两文件写入及计划、效果双引用事务归档通过；分页正文与原报告一致，源目录未改变。")
+    print("重建会话与事件一致，公开组输出结构不变；未调用真实模型 API。")
 
 
 def main():

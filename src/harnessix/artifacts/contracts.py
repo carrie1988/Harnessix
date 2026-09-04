@@ -7,10 +7,10 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 
-from harnessix.agent.models import ToolResultContent
 from harnessix.domain.models import ContractModel
 
 if TYPE_CHECKING:
+    from harnessix.agent.models import ToolResultContent
     from harnessix.artifacts.ports import ArtifactPublisher
 
 MAX_ARTIFACT_BYTES = 1024 * 1024

@@ -182,7 +182,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
-当前 Agent Event/Thread 为 v7，最低读者由 Migration 0008 约束；v1–v6 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
+当前 Agent Event/Thread 为 v8，最低读者由 Migration 0009 约束；v1–v7 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
 
 ### 4.9 Harnessix Action Plane
 
@@ -418,3 +418,5 @@ src/harnessix/
 `diff_document_contracts` 定义文档及 JSONL 行契约；`diff_document` 复用原精确编辑迭代器，生成计划或已归因历史视图。`ManagedPatchBatchBridge.diff` 在副本锁内核对完整调用/组计划/批准和当前已结算运行，再读取私有镜像准备文档；不读取当前目标、不新增观察或执行。
 
 公共报告与完整宿主证据分离，生成报告不授予发布权。现有 Artifact 仅接受成功只读 ToolResult，表中每调用仅一条，引用也只认 `output.artifact`；c3c2 必须对计划和效果分别绑定真实 Session 事实并保持同事务，不能伪造只读调用或成功结果。本片不提前修改 Session 格式，见 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。
+
+整组 Diff 采用独立事务发布端口：审批/结果的 `diff_artifact` 绑定 Artifact 表的用途，不改变组公开结果或私有效果。计划/效果正文与对应 Session 事实同事务；归档失败可省略展示引用，但不能丢失真实效果。详见 [ADR 0037](adr/0037-batch-diff-transaction-publication.md)。

@@ -587,13 +587,13 @@ Agent Runtime Kernel 合并前：
 
 **真实硬崩溃**：`test_kernel_batch_crash.py` 新增67个 os._exit 场景：11个 Session 调用/计划/请求/决定/消费/结果/终态窗口，15个组预留/审批/开始/预检/成员调度/结果窗口，3成员×9单文件意图/临时文件/替换/结果窗口，6个观察结算再次退出，以及8个真实写后退出结合端口/契约/计划/批准/运行缺失或相同字节异inode/文件丢失/内容偏离的重启场景。恢复禁用 Provider 和 prepare/save/reply/execute，未消费 WAITING 保留，其他只核对原组；缺后端匹配批准则 unknown。核对后源目录与目标 bytes/inode/mtime/ctime 不变，已持久 ToolResult 不再观察。另有2个真实 migration8 提交前/后退出；全项目累计 **284个硬崩溃场景及2个 SIGINT用例**，不是全部硬件故障覆盖。
 
-**版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment.md#当前-session-v7--migration8-升级053c3b)。
+**版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment.md#历史-session-v7--migration8-升级053c3b)。
 
 **基础发行包**：仓库外独立环境只安装锁定基础依赖，确认无 OpenAI/Anthropic SDK；`python -I` 下 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval、managed_batch、batch_patch_bridge、kernel_batch 共 **12个示例**通过。Linux Python3.12/3.13 与 macOS CI 增加新示例，PostgreSQL 作业保留，远端状态以本片对应提交为准。包版本仍0.1.0，没有新模型请求、远程登录或中间件部署。
 
 ## 28. 0.5.3c3c1 真实差异报告与 JSONL 验收（2026-09-04）
 
-在 `1c02c22` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33885067939) 基础上实现 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。本片是报告准备，不是 Session Artifact 发布；c3c2 仍待实施，不将 c3c/0.5 标记完成。
+在 `1c02c22` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33885067939) 基础上实现 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。本节记录 c3c1 当时的报告准备验收，不是 Session Artifact 发布；c3c2 的后续验收见第29节，不将 c3c/0.5 标记完成。
 
 - 新增 **108项**：文档/预算/契约56、真实桥接与只读发布门禁30、异步生命周期12、真实退出7、冻结 Schema3。Patch 套件累计 **1090项**。
 - `make check`：Ruff/Mypy（112源文件）通过，**2213 passed、1 skipped**；本地未配置 PostgreSQL，实库回归继续由远端 CI 承担。
@@ -609,3 +609,21 @@ Agent Runtime Kernel 合并前：
 **兼容/发行**：新文档、选项与 JSONL 记录三份独立v1 Schema，所有既有 Schema 字节不变。Agent v7、Session migration8、Provider v3、副本v3、旧工具定义与依赖不变，没有新迁移。仓库外基础 wheel 环境未安装供应商 SDK，以 `python -I` 运行原12个示例加 `batch_diff` 共 **13个示例**通过；新示例从真实 Kernel 审批取得计划/决定/效果，但报告没有 ArtifactRef，不伪造发布。Linux Python3.12/3.13 与 macOS CI 增加新入口，PostgreSQL 作业保留，远端验收以本片提交为准。
 
 无新模型请求、SSH、数据库或中间件部署。下一片 c3c2 必须单独验证计划/效果双用途的事务引用、真实 Session 准入、reader 兼容、分页/配额/过期、发布失败后的效果保留及真退出；不得简单取消旧只读限制或单调用唯一约束。
+
+## 29. 0.5.3c3c2 差异事务归档验收（2026-09-05）
+
+基线 `33e690e`，实现见 [ADR 0037](adr/0037-batch-diff-transaction-publication.md)。本次交付计划/效果双用途的真实 Session 归档，完成0.5.3c范围，不把0.5、Shell或完整生产 Coding Agent标记完成。
+
+- 新增 **65项**：事务/结果语义/预算/配额/作用域/生命周期52、真实发布退出6、真实migration9退出与旧归档4、双SDK归档分页2、真实v7 transcript升级1。
+- `make check`：Ruff及Mypy（113源文件）通过，**2278 passed、1 skipped**；唯一跳过为本地无PostgreSQL的实库项，远端CI继续验收。
+- 原组工具定义、全部旧Schema字节和副本账本v3不变；新增Agent Event/Thread v8及migration9。Provider v3、供应商依赖、包版本0.1.0不变。
+
+**发布与失败**：真实Kernel等待审批保有计划引用，批准不改变该引用或完整计划指纹。正常、拒绝、陈旧计划、三成员各位置的替换前失败/替换后未知，均把原真实效果和独立引用一起保存；只为已归因前缀返回编辑，不把unknown或未执行后缀变成修改。报告预算、公开引用预算、四类配额耗尽均不丢弃真实效果。两用途的插入/提交前/提交后故障分别验证回滚后原事实结算或提交后确认，不重复模型/文件执行。
+
+**恢复和取消**：计划/效果×插入后/提交前/提交后共6个真实 `os._exit` 窗口，重开禁止prepare/execute/Provider，保留WAITING或核对原效果；目标bytes/inode/mtime/ctime和源目录不变。任务取消在计划/效果的提交前/后共4种组合下验证正文/引用/结果一致；有完整已写证据的恢复结果可生成历史报告，已提交结果不重新观察。分页、跨Thread/工作区、用途/调用错绑、正文损坏、TTL、活跃Thread保护及清理均覆盖。
+
+**迁移**：实际旧 `33e690e` wheel 在独立基础环境生成三类WAITING与一个只读Artifact，新wheel初始化保持旧事件/投影/manifest/正文原字节和文件身份不变，再显式完成旧三类审批，整组效果取得新引用；旧reader在升级和执行后均拒绝。实际旧wheel完成的v7整组transcript与旧只读归档原文夹具纳入CI。migration9在复制、删除旧表、重命名和提交后共4个真实退出，重开只有完整旧库或完整新库，旧引用可读且可过期清理。全项目累计 **301个硬崩溃场景及2个SIGINT用例**，不代表硬件故障全覆盖。
+
+**模型和发行**：两个真实SDK通过MockTransport完成读取、整组提案、审批重开、实际副本修改、读回，再根据公开效果引用分页读取一条报告；wire不泄漏私有批准/组/成员身份，不把写输出包装成只读结果。基础wheel无供应商SDK，仓库外`python -I`执行13个示例，`batch_diff`已更新为双引用事务归档验收。全部验证无新模型请求、SSH或中间件部署。
+
+`PYTHONASYNCIODEBUG=1`、`-W error` 的 Agent/Models/Smoke/Tools/Artifacts/Patches 回归 **2242 passed**；未关闭流、后台任务或异步警告不被忽略。最终基础 wheel SHA256 为 `8ea716bd22ee7021d822a21e4e580ed24a8bffe82f9e3f2e7764c6aabad7e0bc`。跨平台验收以本片最新提交 CI 为准，不使用旧提交结果冒充本片通过。下一阶段0.5.4先完成Process的执行/输出/进程组生命周期与审批边界设计，再实现Git/测试反馈，详见阶段文档第27节。

@@ -7,6 +7,8 @@ import pytest
 from harnessix.agent.models import TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.artifacts.batch_diff import SQLiteBatchDiffPublisher
+from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.models._history import tool_alias
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
@@ -24,9 +26,10 @@ from tests.patches.test_managed_batches import PATHS, snapshot
 from tests.patches.test_managed_batches import group_case as group_case
 
 
+@pytest.mark.parametrize("archive", [False, True])
 @pytest.mark.parametrize("vendor", ["openai", "anthropic"])
 async def test_sdk_reads_batch_reopen_approve_write_readback_and_private_wire(
-    group_case, tmp_path, monkeypatch, vendor
+    group_case, tmp_path, monkeypatch, vendor, archive
 ):
     source, factory, copy, groups, _ = group_case
     original = snapshot(source.root)
@@ -74,6 +77,22 @@ async def test_sdk_reads_batch_reopen_approve_write_readback_and_private_wire(
                     ]
                 },
             )
+        elif archive and index == 6:
+            reference = previous[2]["diff_artifact"]
+            assert reference["complete"] and previous[2]["output"]["effect"] == "applied"
+            name, args = (
+                "read_artifact",
+                {
+                    "artifact_id": reference["artifact_id"],
+                    "offset": 1,
+                    "limit": 1,
+                },
+            )
+        elif archive and index == 7:
+            page = previous[-1]["output"]
+            assert json.loads(page["text"])["path"] == PATHS[0]
+            assert page["next_offset"] == 2
+            name, args = None, None
         else:
             assert index == 6 and all(o["output"]["text"] == "after\r\n" for o in previous[-2:])
             name, args = None, None
@@ -150,12 +169,20 @@ async def test_sdk_reads_batch_reopen_approve_write_readback_and_private_wire(
         )
 
     store = SQLiteSessionStore(tmp_path / "s.db")
+    artifacts = SQLiteArtifactStore(store) if archive else None
     async with (
         ManagedPatchBatchBridge(copy) as bridge,
-        CodingToolRuntime(copy.workspace.root) as reads,
+        CodingToolRuntime(copy.workspace.root, artifacts=artifacts) as reads,
         provider() as model,
     ):
-        async with AgentRuntime(store, model, scoped_tools=reads, patch_batches=bridge) as runtime:
+        async with AgentRuntime(
+            store,
+            model,
+            scoped_tools=reads,
+            patch_batches=bridge,
+            artifacts=artifacts,
+            batch_diffs=SQLiteBatchDiffPublisher(artifacts, bridge) if archive else None,
+        ) as runtime:
             thread = await runtime.create_thread(str(copy.workspace.root))
             waiting = await runtime.run_turn(
                 thread.thread_id, "修改两个文件并读回", request_id="sdk-batch"
@@ -167,11 +194,16 @@ async def test_sdk_reads_batch_reopen_approve_write_readback_and_private_wire(
     with factory.open(request.plan.backend.workspace_id) as reopened:
         async with (
             ManagedPatchBatchBridge(reopened) as bridge,
-            CodingToolRuntime(reopened.workspace.root) as reads,
+            CodingToolRuntime(reopened.workspace.root, artifacts=artifacts) as reads,
             provider() as model,
         ):
             async with AgentRuntime(
-                store, model, scoped_tools=reads, patch_batches=bridge
+                store,
+                model,
+                scoped_tools=reads,
+                patch_batches=bridge,
+                artifacts=artifacts,
+                batch_diffs=SQLiteBatchDiffPublisher(artifacts, bridge) if archive else None,
             ) as runtime:
                 assert len(requests) == 3
                 await decide(runtime, thread.thread_id, waiting)
@@ -183,8 +215,9 @@ async def test_sdk_reads_batch_reopen_approve_write_readback_and_private_wire(
                 )
                 turn = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
                 assert turn.status == TurnStatus.COMPLETED
-    assert len(requests) == 6 and all(s.closed for s in streams)
-    assert len(results(turn)) == 5
+    assert len(requests) == (7 if archive else 6) and all(s.closed for s in streams)
+    assert len(results(turn)) == (6 if archive else 5)
+    assert (approval_of(turn).diff_artifact is not None) == archive
     assert results(turn)[2].patch_batch.execution.effect == "applied"
     public = json.dumps(requests)
     for private in (

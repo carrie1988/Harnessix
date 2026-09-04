@@ -24,6 +24,7 @@ from harnessix.agent.usage import (
     ModelAttemptStarted,
     ModelUsageObserved,
 )
+from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.domain.models import (
     ApprovalRecord,
     ContractModel,
@@ -151,6 +152,7 @@ class ToolResultContent(ContractModel):
     action_id: UUID | None = None
     patch: PatchEffect | None = None
     patch_batch: PatchBatchEffect | None = None
+    diff_artifact: ArtifactRef | None = None
 
     @model_serializer(mode="wrap")
     def serialize_result(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
@@ -159,10 +161,14 @@ class ToolResultContent(ContractModel):
             data.pop("patch", None)
         if self.patch_batch is None:
             data.pop("patch_batch", None)
+        if self.diff_artifact is None:
+            data.pop("diff_artifact", None)
         return data
 
     @model_validator(mode="after")
     def independent_effects(self) -> Self:
+        if self.diff_artifact is not None and self.patch_batch is None:
+            raise ValueError("差异效果引用必须附属于整组证据")
         if self.patch is not None and self.patch_batch is not None:
             raise ValueError("单文件和整组证据不能混用")
         return self
@@ -204,6 +210,15 @@ class PatchBatchApprovalRequestContent(ContractModel):
     plan: ManagedPatchBatchCallPlan
     request_fingerprint: Revision
     decision: ApprovalRecord | None = None
+
+    diff_artifact: ArtifactRef | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_request(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if self.diff_artifact is None:
+            data.pop("diff_artifact", None)
+        return data
 
     @model_validator(mode="after")
     def bound_plan(self) -> Self:
@@ -383,7 +398,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7] = 7
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8] = 8
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -409,6 +424,11 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 8 and isinstance(self.payload, ItemStarted | ItemFinished):
+            content = self.payload.content
+            if isinstance(content, ToolResultContent | PatchBatchApprovalRequestContent):
+                if content.diff_artifact is not None:
+                    raise ValueError("差异归档引用需要 Agent Event v8")
         if self.schema_version < 7 and isinstance(self.payload, ItemStarted | ItemFinished):
             content = self.payload.content
             if isinstance(content, PatchBatchApprovalRequestContent) or (

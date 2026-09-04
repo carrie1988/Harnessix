@@ -589,4 +589,28 @@ JSONL 三种记录：一个 summary、全部有序 file、所选编辑前缀 edi
 
 生成复用原精确编辑区间迭代器，不重跑新的匹配算法，不读取目标或写观察事件；目标后来变化仍可展示此前已归因历史。异步入口继续使用原桥接锁、操作时限和排空规则。新示例 `examples/batch_diff.py` 从真实 Kernel 审批取得计划/决定/效果，验证计划展示不写、实际批准写入后展示历史、Session 事件与源目录不因报告改变。
 
-本片不变更 Agent v7、Session migration8、副本v3、Provider v3 或旧工具定义/Schema。c3c2 再按 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md) 接入独立计划/效果引用与事务发布。当前只读 Artifact 的成功结果准入、单调用唯一归档、引用校验不能直接放宽。
+本片不变更 Agent v7、Session migration8、副本v3、Provider v3 或旧工具定义/Schema。后续 c3c2 按 ADR0037 接入独立计划/效果引用与事务发布（见第27节）。原只读 Artifact 的成功结果准入和用途内唯一性保持，不直接放宽只读发布器。
+
+## 27. 0.5.3c3c2：计划与效果报告事务归档
+
+实现与边界见 [ADR 0037](adr/0037-batch-diff-transaction-publication.md)。宿主显式配置：
+
+```python
+artifacts = SQLiteArtifactStore(session)
+batch_diffs = SQLiteBatchDiffPublisher(artifacts, bridge)
+# bridge 是同一受管副本的 ManagedPatchBatchBridge；不是模型提供的计划。
+runtime = AgentRuntime(session, provider, patch_batches=bridge, batch_diffs=batch_diffs)
+```
+
+若模型需要分页读取，同一工作区的 `CodingToolRuntime(..., artifacts=artifacts)` 通过原 `scoped_tools` 接入。归档和读取独立启用；不开放通用写发布或任意 Shell。
+
+- 发布器只接受真实事件批次，先验证完整原批次、实际未结算调用及原批准，再通过原桥接读取历史镜像；没有接收任意正文的公开发布参数。
+- 整组审批的 `diff_artifact` 与审批请求/WAITING 同事务；ToolResult 的独立 `diff_artifact` 与原结果/私有效果同事务，包括恢复的终态批次。
+- `ToolResult.output` 仍是原 `ManagedPatchBatchOutput`。引用进入公开输出预算和供应商历史；`patch_batch`、批准人和私有身份不进 wire。拒绝/失败/部分/未知保留原 outcome，报告不等于执行成功。
+- 报告正文或引用预算不足、配额耗尽、历史报告不可用时省略引用，保留原事实；事务失败回滚正文，再结算原事实。提交后丢确认按原事件身份认领已提交结果，不重复归档。若 Session 自身不可用仍明确失败。
+- 重启不执行写工具；已提交引用不重新生成。未提交效果引用可随原效果只读核对结果归档；没有完整证据时仍 unknown，不为报告补批或伪造运行。
+- 同调用两个用途各自唯一；旧只读 `tool_result` 用途仍唯一。读取、清理核对用途对应的真实引用/工作区，复用原页限制、TTL、逻辑配额和活跃 Thread 保护。
+
+当前 Agent Event/Thread **v8**、Session **migration9**。旧 v1–v7 Schema/事件字节不变，缺引用的老 Item 不增加 null 字段；旧等待审批的原完整指纹不变。原工具定义、Provider v3、副本v3及依赖不变，包版本仍0.1.0。
+
+这完成 0.5.3c 范围的多文件报告交付，不代表整个0.5或完整生产 Coding Agent。下一阶段 **0.5.4 Process / Git / 测试执行**：先验证受管副本内非交互进程的 cwd/argv/环境准入、独立双流预算、取消/超时和进程组回收，再接入有持久准入的工具与测试反馈。POSIX 进程组不是 OS Sandbox，不能把命令执行当只读，也不能因 PID 消失推断外部副作用未发生。源码合入、完整仓库修复 Eval 仍待独立验收。
