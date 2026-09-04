@@ -1,14 +1,14 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-03
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1 计划及受管单文件写后端已实现；0.5.3b2/c–0.5.5 仍待实施
+- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c–0.5.5 仍待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
 
 当前 Kernel 已有 `ToolRuntime.definitions/execute`、`ToolDescriptor`、持久 ToolCall/ToolResult、工具版本/指纹、审批和恢复语义。`ToolCallContent` 已包含版本、Effect Class、参数及审批绑定；`ToolResultContent` 已有 succeeded/failed/cancelled/unknown 和 Action ID。不要重新命名或并行建设另一套 Call/Result。
 
-当前 `_execute_tool` 明确拒绝非 READ_ONLY，恢复逻辑也据此判断结果。不允许仅删除这一检查就开放 Patch/Shell。0.5 分片先接入真实只读工具；本地写必须先补齐效果、并发与恢复设计。
+默认 `_execute_tool` 仍拒绝非 READ_ONLY；0.5.3b2b 仅通过显式 `patches` 专用端口接入受管单文件写入和核对。不删除通用门禁，不让任意写工具或 Shell 获得执行权限。写审批、效果证据和双账本恢复见第 20 节。
 
 本阶段不建设新 Agent Loop、TUI、向量库、分布式队列、Web 产品或长期记忆。0.1 Action Plane 不改成每个文件读取都经过 HTTP/Worker 的旁路。0.6/0.7/0.8 的规划不能被写成已经具备的能力。
 
@@ -33,7 +33,7 @@
 | 0.5.2b2 | 输出 Artifact | 已实现；同一 Session 事务发布、归属/配额/分页/清理、取消及 14 个进程崩溃切点通过 |
 | 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
-| 0.5.3b2 | Kernel 模型写工具闭环 | 待实施；版本化写审批、Scoped 准入、双账本边界与恢复 |
+| 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
 | 0.5.3c | 多文件效果与 Diff | 待实施；部分效果、结构化交付与兼容，不能假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
@@ -53,11 +53,11 @@ search.py          搜索适配及明确的忽略/资源限制
 search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 ../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
-../patches/        已有精确计划、受管副本及持久写执行；模型接入待 b2
+../patches/        已有精确计划、受管副本、持久写执行及专用 Kernel 桥接
 processes.py       argv、进程组、并发排水、取消与清理
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；模型写工具/Process 尚未实现。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；b2 新增 agent_bridge/bridge_contracts 与 Kernel patching，Process 尚未实现。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -103,7 +103,7 @@ Workspace 由宿主选择，模型只提交相对路径。默认不跨根，不�
 
 ## 8. 本地写与 Patch 准入
 
-0.5.3a 的准备器仍只读；0.5.3b1 仅对工厂创建的私有副本开放宿主写 API，见第 17 节与 [ADR 0028](adr/0028-managed-patch-execution.md)。Kernel/模型写入仍未开放。
+0.5.3a 的准备器仍只读；0.5.3b1 仅对工厂创建的私有副本开放宿主写 API，见第 17 节与 [ADR 0028](adr/0028-managed-patch-execution.md)。Kernel/模型写入已由 b2b 的专用端口开放，默认仍只读，见第 20 节。
 
 Patch 不是简单字符串替换。实施前必须明确本地效果类型如何与现有 Action/Agent 契约兼容，不把本地修改伪装为 READ_ONLY，也不宣称所有 Patch 天然幂等。
 
@@ -240,7 +240,7 @@ CodingToolRuntime 的新入口还要求 workspace 严格匹配其规范根，随
 
 ## 15. 0.5.2b2 当前交付与使用
 
-本片新增 `artifacts/contracts.py`、`ports.py`、`sqlite.py` 和 migration `0006_artifacts.sql`，以及六份独立 Artifact/归档输出 v1 Schema。事件和投影仍为 Agent v5，旧 migration 与八份默认只读 Schema 原样保留；**数据库 migration 6 与 Agent Schema 5 不是同一个版本号**。旧程序拒绝新库；不是可降级升级。
+本片新增 `artifacts/contracts.py`、`ports.py`、`sqlite.py` 和 migration `0006_artifacts.sql`，以及六份独立 Artifact/归档输出 v1 Schema。该片当时事件和投影仍为 Agent v5，旧 migration 与八份默认只读 Schema 原样保留；**数据库 migration 6 与 Agent Schema 5 不是同一个版本号**。旧程序拒绝新库；不是可降级升级。
 
 ~~~python
 from pathlib import Path
@@ -310,7 +310,7 @@ with Workspace(root) as workspace:
 
 复核会再次读取并比较完整源文件、revision 与权限位。它不能锁住未来写入前的间隙，更不是跨进程 CAS。线程中运行时由宿主使用 ReadOperation 协作停止并等待线程退出后再关闭 Workspace；本片没有增加另一套异步调度器或声称能中止不可中断的内核 I/O。
 
-`examples.patch_plan` 验证真实 CRLF 文件的目标内容计算、源文件保持不变，以及模拟外部编辑后的复核拒绝。它不执行 Patch，也不属于自主编码 Eval。上述宿主写前置条件现由 b1 受管后端实现；模型接入仍待 b2。源目录并发编辑的无覆盖保证不能由 hash+rename 推导。
+`examples.patch_plan` 验证真实 CRLF 文件的目标内容计算、源文件保持不变，以及模拟外部编辑后的复核拒绝。它不执行 Patch，也不属于自主编码 Eval。上述宿主写前置条件现由 b1 受管后端实现；模型接入现见 b2b（第 20 节）。源目录并发编辑的无覆盖保证不能由 hash+rename 推导。
 
 
 ## 17. 0.5.3b1 当前交付：受管单文件执行
@@ -359,9 +359,9 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 
 运行 `uv run python -m examples.managed_patch` 可验证完整宿主链路。它是执行后端的可运行验收，不是自主编码能力或 0.5.5 Eval。
 
-### 下一片 0.5.3b2 的实施顺序
+### 0.5.3b2 的实施顺序（已交付）
 
-实施进展：已先交付 **b2a 宿主桥接**（第 18 节），完成稳定调用绑定及异步收尾前置条件；以下完整 Agent 事件/审批/模型接入归入 **b2b**，未因桥接可运行而提前勾选完成。
+实施进展：已先交付 **b2a 宿主桥接**（第 18 节），完成稳定调用绑定及异步收尾前置条件；以下完整 Agent 事件/审批/模型接入归入 **b2b**，已独立完成第 20 节的组合验收，不以宿主桥接验收抵扣。
 
 1. 固化 Agent 写审批/结果契约与兼容迁移；不改义 kernel-read-only/v1。
 2. 在受信 Scoped 入口绑定 Thread/Turn/Call、受管副本和持久 plan_id；模型参数不得注入授权或归属。
@@ -374,7 +374,7 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 
 ## 18. 0.5.3b2a 当前交付：宿主调用绑定桥接
 
-设计见 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。新增 `patches/agent_bridge.py`、`bridge_contracts.py`，复用既有只读调用归属、提案准备器和 b1 受管后端。只新增两个独立 v1 Schema，**Agent v5 / Action v1 / Session migration 6 / 副本账本 schema v1 和默认工具清单不变**。`ManagedPatchBridge.definition()` 返回单一待接入写定义，不是通用 ToolRuntime；Kernel 仍拒绝该非只读调用。
+设计见 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。新增 `patches/agent_bridge.py`、`bridge_contracts.py`，复用既有只读调用归属、提案准备器和 b1 受管后端。只新增两个独立 v1 Schema，**该片当时 Agent v5 / Action v1 / Session migration 6 / 副本账本 schema v1 和默认工具清单不变**。`ManagedPatchBridge.definition()` 返回单一写定义，不是通用 ToolRuntime；通用注册表仍拒绝该非只读调用，b2b 使用专用端口接入。
 
 ### 宿主 API
 
@@ -383,7 +383,7 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 | `ManagedPatchBridge(copy)` | 绑定宿主已取得所有权的一个受管副本，不接受任意可写目录 |
 | `definition()` | 固定 apply_patch 提案契约，non_idempotent_write、高风险、必须审批、可核对；不自动注册 |
 | `prepare(call, scope, cancel)` | 验证调用/副本/严格提案；按稳定 request_id 查找原计划，仅缺失时准备并保存；返回 ManagedPatchCallPlan |
-| `review(call, scope, plan, cancel)` | 仅 pending 可复核；验证保存的计划与当前完整前镜像，不记录决定、不写文件 |
+| `review(call, scope, plan, cancel, verify_source=True)` | 仅 pending 可复核；验证保存计划，默认复核完整前镜像；b2b 拒绝路径可显式跳过来源复核，不记录决定、不写文件 |
 | `execute(call, scope, plan, approval, cancel)` | 验证桥接审批指纹，镜像宿主决定到后端；批准走一次性执行，拒绝不改文件；已消费计划不重试 |
 | `recover(call, scope, cancel, plan=None, approval=None)` | 只查找/读取/reconcile；不 prepare/save/reply/execute；可找回保存后尚未发布给 Session 的计划 |
 | `aclose()` / `async with` | 排空本桥接的后台操作，拒绝后续操作；不关闭或删除宿主副本 |
@@ -404,14 +404,46 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 - 调用契约、参数或执行作用域本身无效时直接抛出结构化错误；上条 unknown 指进入账本核对后发现的不一致，不能把入口异常自动解释为未产生效果。
 - 已应用状态是历史事实；不能据此断言文件此刻未被外部编辑。执行抛错不等价于无效果，调用方必须核对，不能统一转成失败。
 - 桥接使用串行线程和 ReadOperation；协作取消、Task.cancel、外层超时或重复取消必须等待写线程退出。替换前停止可未应用；替换后先完成效果与记账。close 同样等待；没有不可中断 I/O 的硬实时终止保证。
-- **尚无 Session 授权核验**：ApprovalRecord 是宿主声明，本层不验证当前 Turn、截止时间或是否已消费审批。完整 Kernel 接入必须先持久审批并消费恢复边界，再调用 execute；不能把旧 READ_ONLY 审批当作写授权。
+- **桥接层不承担 Session 授权核验**：ApprovalRecord 是宿主声明，本层不验证当前 Turn、截止时间或是否已消费审批。完整 Kernel 接入必须先持久审批并消费恢复边界，再调用 execute；不能把旧 READ_ONLY 审批当作写授权。
 
-`uv run python -m examples.patch_bridge` 串联真实只读工具→精确提案→持久计划找回→宿主批准→写入→读回→重开核对。它证明桥接与既有组件互通，不是模型驱动的编码 Eval。b2b 将复用这一桥接，不另写文件替换器或恢复执行器。
+`uv run python -m examples.patch_bridge` 串联真实只读工具→精确提案→持久计划找回→宿主批准→写入→读回→重开核对。它证明桥接与既有组件互通，不是模型驱动的编码 Eval。b2b 已复用这一桥接，不另写文件替换器或恢复执行器。
 
-## 19. 0.5.3b2b 详细设计：待实现 Kernel 接入
+## 19. 0.5.3b2b 设计审查记录（实施前）
 
 已核对 Runtime、Reducer、Scope、Session 与模型消息白名单，形成 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。设计覆盖独立写审批、拟定 Agent v6/migration 7、显式 Patch 端口、审批答复与消费时序、工具效果和 Turn 状态分开结算，以及 KWP-01 至 KWP-10 验收矩阵。
 
 设计审查时补齐现有桥接的一个恢复分支：只传 ApprovalRecord、未传 plan 且账本缺失时必须 unknown，不能误报为已知失败。新增无证据/批准/拒绝三项回归，先复现后修正；不改变公开 Schema、既有 migration、默认工具或 Kernel。
 
-下一步按 ADR 0030 的四步顺序实施；当前 Agent 仍为 v5、Session migration 到 6。**不得将拟定的 v6/migration 7、Kernel 写审批、SDK 写工具闭环或组合崩溃矩阵写成已完成能力。**
+设计提交 `45b2b10` 当时仍为 Agent v5/migration 6；实际实现和验收见下节，不追溯修改该设计提交的能力声明。
+
+## 20. 0.5.3b2b 当前交付：Kernel 受管写闭环
+
+### 接入与所有权
+
+`AgentRuntime(..., patches=bridge)` 接受专用 `PatchRuntime`，当前实现为既有 `ManagedPatchBridge(copy)`。同一受管副本根交给 `CodingToolRuntime` 和 `create_thread`；必须使用副本的 read_file revision。写定义必须为 apply_patch、NON_IDEMPOTENT_WRITE、强制审批/幂等绑定且支持核对；重名拒绝。不配置 patches 时与旧行为一致，通用注册表的写定义不能绕过门禁。
+
+宿主进入顺序为受管副本→桥接/读取工具→Kernel，逆序退出。Kernel 关闭先排空活动 Turn 和审批复核，重复取消不提前释放 Session 所有权；桥接排空线程，最后释放副本。这里没有增加 OS Sandbox、源目录写入或模型身份认证。
+
+完整可执行宿主组合见 `examples/kernel_patch.py`：
+
+~~~bash
+uv run python -m examples.kernel_patch
+~~~
+
+它使用真实文件、真实 Session/副本账本和离线 Provider，读取旧 revision 后提案，停在 WAITING_APPROVAL，关闭再打开原副本与 Session，宿主批准后显式 resume，最后读取新内容和 Replay。模型不构造计划 ID、审批决定或作用域。
+
+### 新持久契约与顺序
+
+- Agent Event/Thread **v6**、Session **migration 7**；Action v1、副本账本 v1、既有工具/桥接 Schema 不变。
+- 新 `PatchApprovalRequestContent` 的 kind/策略与旧只读审批分离，保存完整不可变调用计划；只读审批原语义不变。
+- `ToolResultContent.patch` 是固定有界的私有效果证据，包含副本/计划/请求/审批指纹、状态和 execution/recovery 来源；不含完整镜像。无 patch 时序列化不增加 null 字段，旧事件原文和导出形状保持兼容。
+- Session Call→副本计划→Session 审批等待→Session 决定→Session 消费等待边界→后端镜像决定/一次性执行→Session 结果。答复不执行；重复答复相同内容幂等，冲突拒绝；拒绝不要求旧来源仍存在，但归属/计划必须有效。
+- 复核后再次检查原始截止时间，决定时间在复核后生成。审批等待、关闭重开和 resume 均不刷新预算。
+
+### 结果与恢复
+
+已应用事实与 Turn 结果分开：替换后取消可以是工具 succeeded、Turn cancelled；进程重启核对出成功仍为 interrupted，不自动完成 Turn 或继续模型。来源漂移、错误工作区、失去原桥接、契约变化或无法充分归因都不能自动退回通用写入/新计划。
+
+恢复只查找/核对，已知未应用也不重新 execute；需要再尝试时必须新的调用/计划/审批。公开结果受模型正文预算限制，私有证据不占公开预算。写入后结果超限终止 Turn，核对并保存效果；必要时丢弃公开 output，绝不丢弃绑定字段或重新写。
+
+测试覆盖两个实际 SDK 的离线 HTTP 全链路、审批/绑定/严格参数、替换前后四类取消、关闭/迟到答复、输出预算、旧 wheel 升级以及 Session × Patch 的真实进程退出。详见 [验收第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。b2/b 的受管单文件范围已交付；下一片 0.5.3c 将另行设计多文件部分效果和结构化 Diff，不承诺跨文件原子或自动回滚。

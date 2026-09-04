@@ -5,8 +5,19 @@ import json
 from datetime import timedelta
 from uuid import UUID
 
-from harnessix.agent.models import ApprovalRequestContent, Item, Thread, ToolCallContent, Turn
-from harnessix.domain.models import ToolDescriptor, utc_now
+from pydantic import ValidationError
+
+from harnessix.agent.models import (
+    ApprovalRequestContent,
+    Item,
+    PatchApprovalRequestContent,
+    Thread,
+    ToolCallContent,
+    Turn,
+)
+from harnessix.domain.models import EffectClass, ToolDescriptor, utc_now
+from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
+from harnessix.patches.contracts import PatchProposal
 
 READ_ONLY_POLICY_VERSION = "kernel-read-only/v1"
 
@@ -61,10 +72,47 @@ def approval_for(turn: Turn, call: ToolCallContent) -> Item | None:
         (
             item
             for item in turn.items
-            if isinstance(item.content, ApprovalRequestContent)
+            if isinstance(item.content, ApprovalRequestContent | PatchApprovalRequestContent)
             and item.content.call_id == call.call_id
         ),
         None,
+    )
+
+
+def validate_patch_plan(
+    thread: Thread, turn: Turn, call: ToolCallContent, plan: ManagedPatchCallPlan
+) -> bool:
+    """只校验事件归属和提案一致性；磁盘事实由受管桥接核对。"""
+    try:
+        checked = ManagedPatchCallPlan.model_validate_json(plan.model_dump_json())
+        proposal = PatchProposal.model_validate_json(json.dumps(call.arguments, allow_nan=False))
+    except (ValidationError, ValueError, TypeError):
+        return False
+    return (
+        call.tool == "apply_patch"
+        and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+        and call.requires_approval
+        and call.tool_fingerprint is not None
+        and (checked.thread_id, checked.turn_id, checked.call_id)
+        == (thread.thread_id, turn.turn_id, call.call_id)
+        and checked.call_fingerprint == request_fingerprint(thread, turn, call)
+        and checked.manifest.proposal_sha256 == _fingerprint(proposal.model_dump(mode="json"))
+    )
+
+
+def approval_matches(
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    content: ApprovalRequestContent | PatchApprovalRequestContent,
+) -> bool:
+    if isinstance(content, PatchApprovalRequestContent):
+        return (
+            validate_patch_plan(thread, turn, call, content.plan)
+            and content.request_fingerprint == content.plan.approval_fingerprint
+        )
+    return content.request_fingerprint == request_fingerprint(
+        thread, turn, call, policy_version=content.policy_version
     )
 
 

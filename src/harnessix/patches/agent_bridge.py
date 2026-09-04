@@ -192,6 +192,8 @@ class ManagedPatchBridge:
         scope: ToolExecutionScope,
         plan: ManagedPatchCallPlan,
         cancel: CancelToken,
+        *,
+        verify_source: bool = True,
     ) -> PatchRecord:
         """写审批答复前复核；不记录答复，不赋予执行许可。"""
         proposal = self._validate(call, scope)
@@ -200,7 +202,7 @@ class ManagedPatchBridge:
             record = self._load(scope, proposal, plan, operation)
             if record.state != "pending":
                 raise fail("approval_closed")
-            return self._copy.verify(record.plan_id, operation)
+            return self._copy.verify(record.plan_id, operation) if verify_source else record
 
         return await self._run(review, cancel)
 

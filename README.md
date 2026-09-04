@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。模型写工具接入、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。多文件效果、Shell、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -63,7 +63,7 @@ uv run python -m examples.kernel_artifacts
 uv run pytest tests/tools tests/artifacts
 ~~~
 
-上述 CodingToolRuntime 仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不支持正则搜索、完整 gitignore、模型调用 Patch、Shell、测试执行或完整 Coding Eval。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
+上述 CodingToolRuntime 仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不支持正则搜索、完整 gitignore、Shell、测试执行或完整 Coding Eval；模型 Patch 通过独立专用端口启用，不属于只读工具注册表。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
 
 ## 当前已实现：只读 Patch 计划准备
 
@@ -93,7 +93,7 @@ uv run python -m examples.managed_patch
 uv run pytest tests/patches
 ~~~
 
-**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。b2 进一步拆为下述宿主桥接 b2a 和待实现的 Kernel 写审批/模型工具 b2b。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
+**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。b2 已进一步交付下述宿主桥接 b2a 和 Kernel 写审批/模型工具 b2b。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
 
 ## 当前已实现：Patch 调用绑定桥接（0.5.3b2a）
 
@@ -108,7 +108,23 @@ uv run python -m examples.patch_bridge
 uv run pytest tests/patches
 ~~~
 
-**尚未接通**：桥接不读取 Session、不验证活跃 Turn 或审批时限，不实现通用 ToolRuntime，也未注册模型工具；本片示例由宿主构造调用并批准，不是自主编码 Eval。下一片 **0.5.3b2b** 增加 Agent 写审批/恢复结果事件、兼容迁移、专用 Kernel 准入及真实 SDK 离线闭环。桥接见 [ADR 0029](docs/adr/0029-managed-patch-agent-bridge.md)，已固化的 Kernel 接入设计与验收矩阵见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)；设计中的 Agent v6/migration 7 尚未实现。
+**分层边界**：桥接本身不读取 Session，不验证活跃 Turn 或审批时限，也不实现通用 ToolRuntime；这些责任由下述专用 Kernel 接入承担。宿主桥接示例不是自主编码 Eval。见 [ADR 0029](docs/adr/0029-managed-patch-agent-bridge.md)。
+
+## 当前已实现：Kernel 受管写闭环（0.5.3b2b）
+
+- 宿主显式配置 `AgentRuntime(..., patches=bridge)` 才开放 `apply_patch`；默认仍只读，任意通用写工具仍拒绝；
+- 独立写审批绑定调用、提案、副本和不可变计划；答复仅落库，显式继续且持久消费等待边界后才写入；
+- 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
+- Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
+- 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
+- Agent Event/Thread v6、Session migration 7；旧 v1–v5 原文兼容，旧 wheel 的真实只读等待审批可升级继续。
+
+~~~bash
+uv run python -m examples.kernel_patch
+uv run pytest tests/patches/test_kernel_patch*.py
+~~~
+
+范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。下一阶段为 0.5.3c 多文件部分效果与结构化 Diff。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -145,7 +161,7 @@ uv run pytest tests/patches
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v5，见下节）；
+- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v6，见上述写工具接入）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -189,7 +205,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前已升级 v5/v3，见 0.4.3b2）；
+- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v6/Provider v3，见 0.5.3b2b 与 0.4.3b2）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。

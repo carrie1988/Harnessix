@@ -31,6 +31,9 @@ from harnessix.domain.models import (
     TraceContext,
     utc_now,
 )
+from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
+from harnessix.patches.managed_contracts import PatchState
+from harnessix.tools.contracts import Revision
 
 
 class Budget(ContractModel):
@@ -103,6 +106,17 @@ class ToolCallContent(ContractModel):
     tool_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
+class PatchEffect(ContractModel):
+    """Session 私有的有界效果事实；模型不可注入，不是执行许可。"""
+
+    workspace_id: UUID
+    plan_id: UUID
+    request_id: Revision
+    approval_fingerprint: Revision
+    state: PatchState
+    origin: Literal["execution", "recovery"]
+
+
 class ToolResultContent(ContractModel):
     kind: Literal["tool_result"] = "tool_result"
     call_id: UUID
@@ -110,6 +124,14 @@ class ToolResultContent(ContractModel):
     output: JsonValue = None
     error: AgentFailure | None = None
     action_id: UUID | None = None
+    patch: PatchEffect | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_result(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if self.patch is None:
+            data.pop("patch", None)
+        return data
 
 
 class ApprovalRequestContent(ContractModel):
@@ -119,6 +141,25 @@ class ApprovalRequestContent(ContractModel):
     request_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     decision: ApprovalRecord | None = None
     policy_version: Literal["kernel-read-only/v1"] = "kernel-read-only/v1"
+
+
+class PatchApprovalRequestContent(ContractModel):
+    kind: Literal["patch_approval_request"] = "patch_approval_request"
+    policy_version: Literal["kernel-managed-patch/v1"] = "kernel-managed-patch/v1"
+    approval_id: UUID
+    call_id: UUID
+    plan: ManagedPatchCallPlan
+    request_fingerprint: Revision
+    decision: ApprovalRecord | None = None
+
+    @model_validator(mode="after")
+    def bound_plan(self) -> Self:
+        if (
+            self.call_id != self.plan.call_id
+            or self.request_fingerprint != self.plan.approval_fingerprint
+        ):
+            raise ValueError("写审批必须绑定完整调用计划")
+        return self
 
 
 class PlanStep(ContractModel):
@@ -168,6 +209,7 @@ ItemContent = Annotated[
     | ToolCallContent
     | ToolResultContent
     | ApprovalRequestContent
+    | PatchApprovalRequestContent
     | PlanContent
     | CompactionContent
     | ErrorContent,
@@ -282,7 +324,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5] = 5
+    schema_version: Literal[1, 2, 3, 4, 5, 6] = 6
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -308,6 +350,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 6 and isinstance(self.payload, ItemStarted | ItemFinished):
+            content = self.payload.content
+            if isinstance(content, PatchApprovalRequestContent) or (
+                isinstance(content, ToolResultContent) and content.patch is not None
+            ):
+                raise ValueError("写审批和效果证据需要 Agent Event v6")
         if (
             self.schema_version < 5
             and isinstance(self.payload, ModelUsageObserved)

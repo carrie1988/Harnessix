@@ -119,9 +119,9 @@ Kernel 不自动重试 Provider。0.4.1 的 OpenAI Adapter 只在首事件前执
 
 ### ToolRuntime
 
-Tool 元数据由宿主注册表提供，不取信于模型。只有 READ_ONLY Tool 才会向模型公开。requires_approval 的只读 Tool 在持久批准并显式继续后才能执行。
+Tool 元数据由宿主注册表提供，不取信于模型。默认只有 READ_ONLY Tool 才会向模型公开；0.5.3b2b 已增加显式 Patch 端口，见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。requires_approval 的只读 Tool 在持久批准并显式继续后才能执行。
 
-未知或写入 Tool 即使被模型调用，也只产生模型可见失败，不进入 Handler。需要审批的只读调用会暂停 Turn；拒绝审批产生 approval_rejected 结果，不执行 Handler。
+未知或通用注册表中的写入 Tool 即使被模型调用，也只产生模型可见失败，不进入 Handler；专用 Patch 端口按独立持久写审批执行，不复用旧只读授权。需要审批的只读调用会暂停 Turn；拒绝审批产生 approval_rejected 结果，不执行 Handler。
 
 本切片信任进程内 Tool 实现遵守其声明，并不提供 OS 隔离。不能把任意第三方函数标成 READ_ONLY 后当作受限执行；真正的能力隔离在 0.5/0.7 落地。
 
@@ -179,7 +179,7 @@ COMMIT
   → 接受新请求或显式继续审批检查点
 ~~~
 
-恢复不调用 Provider 或 ToolRuntime。已有结果保留；缺失的只读 Result 标记中断；可能涉及外部写的未决结果标记 UNKNOWN。审批检查点使用 resume_turn 继续；其他已中断状态应以新 request_id 提交新 Turn，而不是重新打开原终态。
+恢复不调用 Provider 或 ToolRuntime.execute；专用 Patch 恢复仅调用 bridge.recover 查找/核对，不创建计划或执行写入。已有结果保留；缺失的只读 Result 标记中断；可能涉及外部写的未决结果标记 UNKNOWN。审批检查点使用 resume_turn 继续；其他已中断状态应以新 request_id 提交新 Turn，而不是重新打开原终态。
 
 若存储不可写，Runtime 不能伪造已经持久化的终态：错误向调用方传播，进程退出后通过已提交事实恢复。
 

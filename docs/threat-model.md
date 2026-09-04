@@ -344,3 +344,13 @@ Agent Runtime                │
 - 宿主 Python 端口、数据库文件和同进程工具仍在受信边界内；scope/UUID 不是网络身份凭据。普通代码中的秘密或恶意指令仍可能进入 Session/Artifact，默认敏感路径拒绝不是通用 DLP。未实现 Secret 全文检测、OS Sandbox、导出授权或写/进程工具。
 
 详细实现与可验证边界见 [ADR 0026](adr/0026-transactional-artifacts.md)。
+
+## 0.5.3b2b 受管写实施补充（2026-09-04）
+
+- 只有宿主显式配置专用 Patch 端口才开放模型单文件写；模型仅提交严格提案，不能提供 actor/approved/scope/plan_id。写审批绑定真实调用、提案、副本和持久计划，与只读审批分开。
+- 源目录只用于明确选择文件的导入；写入仅发生在持锁受管副本。普通文件/no-follow/根身份/来源及元数据检查沿用后端，不把 hash+rename 说成对源目录并发编辑的 CAS。
+- Session 持久消费审批边界后才进入写后端。取消、超时和关闭等待后台线程，已经发生的效果不假报回滚；双账本缺证据时保持 unknown，不自动补写或重放模型。
+- 模型 wire 使用结果白名单，私有计划与效果证据不回灌；这不意味着原始提案代码、读取内容或完整 Session 无敏感信息。私有 Python 端口和本地数据库仍属于受信宿主边界，摘要不是签名，actor 不是身份认证。
+- 目前仍不是 OS Sandbox、任意进程隔离、网络策略或通用 Secret Redactor；不支持跨文件原子事务、源目录自动合入或安全执行任意仓库代码。多文件/Process 必须分别补充威胁分析。
+
+可复查证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 与 [测试记录](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。

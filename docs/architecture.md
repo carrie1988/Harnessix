@@ -11,7 +11,8 @@
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
-- 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Coding Tools、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；多文件、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -181,7 +182,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
-当前 Agent Event/Thread 为 v5，最低读者由 Migration 0005 约束；v1–v4 事件与旧 Schema 保持原文。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
+当前 Agent Event/Thread 为 v6，最低读者由 Migration 0007 约束；v1–v5 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
 
 ### 4.9 Harnessix Action Plane
 
@@ -381,7 +382,7 @@ src/harnessix/
 - Provider 使用供应商中立的流式事件和结构化错误；
 - Agent Protocol 使用标准 JSON-RPC 2.0，第一版传输为 stdio JSONL；
 - 0.3 Kernel 先提供进程内宿主，使用本地单宿主锁和初始聚合快照，见 [ADR 0011](adr/0011-kernel-host-and-initial-projection.md)；
-- 持久审批采用暂停返回、答复仅落库、显式继续；仅开放可信只读工具，见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)；
+- 持久审批采用暂停返回、答复仅落库、显式继续；默认仅开放可信只读工具，见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)；受管单文件 Patch 通过独立写审批与专用端口开放，见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
 

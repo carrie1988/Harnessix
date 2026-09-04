@@ -12,6 +12,7 @@ from uuid import UUID
 
 from harnessix.agent.approvals import (
     approval_for,
+    approval_matches,
     remaining_seconds,
     request_fingerprint,
     tool_fingerprint,
@@ -32,6 +33,7 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    PatchApprovalRequestContent,
     TextContent,
     Thread,
     ThreadCreated,
@@ -44,7 +46,8 @@ from harnessix.agent.models import (
     Usage,
     UsageRecorded,
 )
-from harnessix.agent.ports import NoTools, ScopedToolRuntime, ToolRuntime
+from harnessix.agent.patching import execution_approval, inspection_scope, result_content
+from harnessix.agent.ports import NoTools, PatchRuntime, ScopedToolRuntime, ToolRuntime
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
@@ -72,6 +75,7 @@ from harnessix.models.contracts import (
 )
 from harnessix.observability.core import NoOpObservability, Observability
 from harnessix.session.ports import SessionStore
+from harnessix.tools.runtime import _drain
 
 
 class AgentRuntime:
@@ -84,6 +88,7 @@ class AgentRuntime:
         tools: ToolRuntime | None = None,
         *,
         scoped_tools: ScopedToolRuntime | None = None,
+        patches: PatchRuntime | None = None,
         artifacts: ArtifactPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
@@ -103,6 +108,20 @@ class AgentRuntime:
         self._scoped_tools = scoped_tools
         self.tools = scoped_tools if scoped_tools is not None else self._legacy_tools
         definitions = self.tools.definitions()
+        self._patches = patches
+        if patches is not None:
+            definition = patches.definition()
+            if (
+                definition.name != "apply_patch"
+                or definition.effect_class != EffectClass.NON_IDEMPOTENT_WRITE
+                or not definition.requires_approval
+                or not definition.requires_idempotency
+                or not definition.supports_reconciliation
+            ):
+                raise KernelError(
+                    "patch_contract_invalid", "专用 Patch 入口必须声明一次性写入、审批和核对"
+                )
+            definitions = (*definitions, definition)
         if len({d.name for d in definitions}) != len(definitions):
             raise KernelError("duplicate_tool", "Tool 名称重复")
         self._definitions = {d.name: d.model_copy(deep=True) for d in definitions}
@@ -168,12 +187,29 @@ class AgentRuntime:
         traceback: TracebackType | None,
     ) -> None:
         self._open = False
+        closing = asyncio.create_task(self._close_runtime(exc_type, exc, traceback))
+        try:
+            await asyncio.shield(closing)
+        except asyncio.CancelledError:
+            await _drain(closing)
+            raise
+
+    async def _close_runtime(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         tasks = []
         for _, token, task in tuple(self._active.values()):
             token.cancel()
             tasks.append(task)
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+        # 答复审批不占用模型运行槽；关闭仍须等待持有 Thread 锁的复核/决定提交。
+        for lock in tuple(self._locks.values()):
+            async with lock:
+                pass
         if self._owner is not None:
             await self._owner.__aexit__(exc_type, exc, traceback)
             self._owner = None
@@ -321,6 +357,14 @@ class AgentRuntime:
             self._active.pop(turn_id, None)
 
     async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
+        settling = asyncio.create_task(self._settle_cancel_task(thread_id, turn_id))
+        try:
+            await asyncio.shield(settling)
+        except asyncio.CancelledError:
+            await _drain(settling)
+            raise
+
+    async def _settle_cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
         thread = await self.store.get_thread(thread_id)
         if thread.active_turn_id == turn_id:
             await self._record_cancel(thread_id, turn_id)
@@ -469,14 +513,14 @@ class AgentRuntime:
                 (
                     i
                     for i in turn.items
-                    if isinstance(i.content, ApprovalRequestContent)
+                    if isinstance(i.content, ApprovalRequestContent | PatchApprovalRequestContent)
                     and i.content.approval_id == approval_id
                 ),
                 None,
             )
             if item is None:
                 raise KernelError("approval_not_found", "审批请求不存在")
-            assert isinstance(item.content, ApprovalRequestContent)
+            assert isinstance(item.content, ApprovalRequestContent | PatchApprovalRequestContent)
             content = item.content
             if fingerprint != content.request_fingerprint:
                 raise KernelError("approval_mismatch", "审批指纹不匹配")
@@ -494,12 +538,21 @@ class AgentRuntime:
             if remaining_seconds(turn) <= 0:
                 raise KernelError("approval_expired", "审批已超过 Turn 时间预算")
             call = pending_calls(turn)[0]
-            if (
-                call.call_id != content.call_id
-                or request_fingerprint(thread, turn, call) != fingerprint
-            ):
+            if call.call_id != content.call_id or not approval_matches(thread, turn, call, content):
                 raise KernelError("approval_mismatch", "审批与当前调用不匹配")
             self._validate_tool_contract(call)
+            if isinstance(content, PatchApprovalRequestContent):
+                if self._patches is None:
+                    raise KernelError("patch_not_enabled", "未配置原 Patch 专用入口")
+                await self._patches.review(
+                    call,
+                    inspection_scope(thread, turn, call),
+                    content.plan,
+                    CancelToken(),
+                    verify_source=decision.outcome == ApprovalOutcome.APPROVED,
+                )
+                if remaining_seconds(turn) <= 0:
+                    raise KernelError("approval_expired", "审批复核后 Turn 时间预算已耗尽")
             record = ApprovalRecord(
                 **decision.model_dump(),
                 request_fingerprint=fingerprint,
@@ -566,6 +619,7 @@ class AgentRuntime:
                         d
                         for d in self._definitions.values()
                         if d.effect_class == EffectClass.READ_ONLY
+                        or (self._patches is not None and d.name == "apply_patch")
                     ),
                     budget=turn.budget,
                     remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
@@ -598,40 +652,79 @@ class AgentRuntime:
         for call in pending_calls(turn):
             token.checkpoint()
             rejected = False
-            if call.requires_approval and call.effect_class == EffectClass.READ_ONLY:
+            early_result: ToolResultContent | None = None
+            is_patch = self._patches is not None and call.tool == "apply_patch"
+            if is_patch or (call.requires_approval and call.effect_class == EffectClass.READ_ONLY):
                 self._validate_tool_contract(call)
                 item = approval_for(turn, call)
                 if item is None:
-                    content = ApprovalRequestContent(
-                        approval_id=new_id(),
-                        call_id=call.call_id,
-                        request_fingerprint=request_fingerprint(thread, turn, call),
-                    )
-                    self._fault("runtime.before_approval_request")
-                    thread = await self._commit(
-                        thread_id,
-                        turn_id,
-                        [
-                            ItemStarted(item_id=new_id(), content=content),
-                            TurnStateChanged(status=TurnStatus.WAITING_APPROVAL),
-                        ],
-                    )
-                    self._fault("runtime.after_approval_request")
-                    return get_turn(thread, turn_id)
-                if item.status == ItemStatus.STARTED:
+                    content: ApprovalRequestContent | PatchApprovalRequestContent | None = None
+                    if is_patch:
+                        assert self._patches is not None
+                        try:
+                            plan = await self._patches.prepare(
+                                call,
+                                ToolExecutionScope.for_pending_call(thread, turn_id, call),
+                                token,
+                            )
+                        except KernelError as error:
+                            if error.code not in {
+                                "tool_invalid_arguments",
+                                "patch_source_changed",
+                                "patch_context_not_found",
+                                "patch_ambiguous_context",
+                                "patch_overlapping_edits",
+                                "patch_no_change",
+                                "patch_limit_exceeded",
+                                "patch_path_denied",
+                                "patch_not_found",
+                            }:
+                                raise
+                            early_result = ToolResultContent(
+                                call_id=call.call_id, outcome="failed", error=error.to_failure()
+                            )
+                        else:
+                            self._fault("runtime.after_patch_plan")
+                            content = PatchApprovalRequestContent(
+                                approval_id=new_id(),
+                                call_id=call.call_id,
+                                plan=plan,
+                                request_fingerprint=plan.approval_fingerprint,
+                            )
+                    else:
+                        content = ApprovalRequestContent(
+                            approval_id=new_id(),
+                            call_id=call.call_id,
+                            request_fingerprint=request_fingerprint(thread, turn, call),
+                        )
+                    if content is not None:
+                        self._fault("runtime.before_approval_request")
+                        thread = await self._commit(
+                            thread_id,
+                            turn_id,
+                            [
+                                ItemStarted(item_id=new_id(), content=content),
+                                TurnStateChanged(status=TurnStatus.WAITING_APPROVAL),
+                            ],
+                        )
+                        self._fault("runtime.after_approval_request")
+                        return get_turn(thread, turn_id)
+                elif item.status == ItemStatus.STARTED:
                     return turn
-                assert isinstance(item.content, ApprovalRequestContent)
-                decision = item.content.decision
-                if decision is None or item.content.request_fingerprint != request_fingerprint(
-                    thread, turn, call
-                ):
-                    raise KernelError("approval_mismatch", "持久审批与当前调用不匹配")
-                rejected = decision.outcome == ApprovalOutcome.REJECTED
-                # 持久离开等待状态即消费恢复边界；之后崩溃只能中断，不能再次执行。
-                await self._state(thread_id, turn_id, TurnStatus.EXECUTING_TOOLS)
-                self._fault("runtime.after_approval_consumed")
+                else:
+                    assert isinstance(
+                        item.content, ApprovalRequestContent | PatchApprovalRequestContent
+                    )
+                    decision = item.content.decision
+                    if decision is None or not approval_matches(thread, turn, call, item.content):
+                        raise KernelError("approval_mismatch", "持久审批与当前调用不匹配")
+                    rejected = not is_patch and decision.outcome == ApprovalOutcome.REJECTED
+                    # 持久离开等待状态即消费恢复边界；之后崩溃只能核对，不能再次执行。
+                    thread = await self._state(thread_id, turn_id, TurnStatus.EXECUTING_TOOLS)
+                    turn = get_turn(thread, turn_id)
+                    self._fault("runtime.after_approval_consumed")
             token.checkpoint()
-            result = (
+            result = early_result or (
                 ToolResultContent(
                     call_id=call.call_id,
                     outcome="failed",
@@ -658,7 +751,7 @@ class AgentRuntime:
                     )
                 settled_result = result.result
             else:
-                if rejected:
+                if rejected or early_result is not None:
                     result = self._validate_result(result, call, turn.budget.max_output_chars)
                 item_id = new_id()
                 thread = await self._commit(
@@ -670,6 +763,7 @@ class AgentRuntime:
                     ],
                 )
                 settled_result = result
+                self._fault("runtime.after_tool_result")
             turn = get_turn(thread, turn_id)
             if settled_result.outcome == "unknown":
                 raise KernelError("uncertain_effect", "工具结果未知，禁止继续模型循环")
@@ -709,7 +803,8 @@ class AgentRuntime:
         content = ToolResultContent.model_validate_json(result.model_dump_json())
         if content.call_id != call.call_id:
             raise KernelError("tool_result_mismatch", "工具结果与调用 ID 不匹配")
-        if len(content.model_dump_json()) > max_chars:
+        # Patch 证据是固定有界的 Session 元数据，不挤占模型公开结果预算。
+        if len(content.model_dump_json(exclude={"patch"})) > max_chars:
             raise KernelError("tool_output_too_large", "工具输出超过当前 Kernel 上限")
         return content
 
@@ -723,6 +818,20 @@ class AgentRuntime:
                 outcome="failed",
                 error=AgentFailure(code="unknown_tool", message="工具未注册"),
             )
+        if self._patches is not None and call.tool == "apply_patch":
+            self._validate_tool_contract(call)
+            thread = await self.store.get_thread(thread_id)
+            turn = get_turn(thread, turn_id)
+            approval = execution_approval(thread, turn, call)
+            assert approval.decision is not None
+            patch_scope = ToolExecutionScope.for_pending_call(thread, turn_id, call)
+            token.checkpoint()
+            self._fault("runtime.before_tool")
+            settled = await self._patches.execute(
+                call, patch_scope, approval.plan, approval.decision, token
+            )
+            self._fault("runtime.after_tool")
+            return result_content(settled, call, "execution")
         if definition.effect_class != EffectClass.READ_ONLY:
             return ToolResultContent(
                 call_id=call.call_id,
@@ -971,6 +1080,40 @@ class AgentRuntime:
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
 
+    async def _recover_patch(
+        self, thread: Thread, turn: Turn, call: ToolCallContent
+    ) -> ToolResultContent:
+        try:
+            if self._patches is None:
+                raise KernelError("patch_not_enabled", "原 Patch 核对入口不可用")
+            self._validate_tool_contract(call)
+            item = approval_for(turn, call)
+            content = item.content if item is not None else None
+            if content is not None and not isinstance(content, PatchApprovalRequestContent):
+                raise KernelError("approval_mismatch", "写调用不匹配写审批")
+            if content is not None and not approval_matches(thread, turn, call, content):
+                raise KernelError("approval_mismatch", "写调用与持久计划不一致")
+            settled = await self._patches.recover(
+                call,
+                inspection_scope(thread, turn, call),
+                CancelToken(),
+                plan=content.plan if content else None,
+                approval=content.decision if content else None,
+            )
+            result = result_content(settled, call, "recovery")
+            if len(result.model_dump_json(exclude={"patch"})) > turn.budget.max_output_chars:
+                result = result.model_copy(update={"output": None})
+            return result
+        except Exception as error:
+            failure = (
+                error.to_failure()
+                if isinstance(error, KernelError)
+                else AgentFailure(
+                    code="patch_recovery_failed", message="Patch 核对失败；原始错误未持久化"
+                )
+            )
+            return ToolResultContent(call_id=call.call_id, outcome="unknown", error=failure)
+
     async def _finish(
         self,
         thread_id: UUID,
@@ -983,13 +1126,28 @@ class AgentRuntime:
             turn = get_turn(thread, turn_id)
             if turn.status in TERMINAL_TURNS:
                 return turn
+            recorded_results = {
+                i.content.call_id for i in turn.items if isinstance(i.content, ToolResultContent)
+            }
+            recovered = {}
+            for call in pending_calls(turn):
+                if (
+                    call.call_id not in recorded_results
+                    and call.tool == "apply_patch"
+                    and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+                ):
+                    recovered[call.call_id] = await self._recover_patch(thread, turn, call)
             if turn.status == TurnStatus.CANCELLING and status != TurnStatus.INTERRUPTED:
                 status = TurnStatus.CANCELLED
                 error = AgentFailure(code="cancelled", message="取消已生效")
             if any(
                 isinstance(i.content, ToolResultContent) and i.content.outcome == "unknown"
                 for i in turn.items
-            ) or any(c.effect_class != EffectClass.READ_ONLY for c in pending_calls(turn)):
+            ) or any(
+                c.effect_class != EffectClass.READ_ONLY
+                and (c.call_id not in recovered or recovered[c.call_id].outcome == "unknown")
+                for c in pending_calls(turn)
+            ):
                 status = TurnStatus.INTERRUPTED
                 error = AgentFailure(code="uncertain_effect", message="存在未知效果，禁止自动重放")
             payloads: list[EventPayload] = []
@@ -1027,8 +1185,8 @@ class AgentRuntime:
             for call in pending_calls(turn):
                 if call.call_id in recorded_results:
                     continue
-                # 恢复只结算事实，不调用 ToolRuntime，也不声称未知写操作已取消。
-                result = ToolResultContent(
+                # Patch 只允许上面的专用核对；不调用通用 ToolRuntime 或重放写入。
+                result = recovered.get(call.call_id) or ToolResultContent(
                     call_id=call.call_id,
                     outcome=(
                         "unknown"

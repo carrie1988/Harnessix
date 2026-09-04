@@ -1,0 +1,501 @@
+{
+  "source_commit": "45b2b1043b1aed9dd53800c89b69252cb90e2eb8",
+  "snapshot": {
+    "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+    "workspace": "/fixture/harnessix-v5",
+    "sequence": 23,
+    "active_turn_id": null,
+    "turns": [
+      {
+        "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+        "request_id": "upgrade",
+        "request_fingerprint": "428ecc3f1c9309efb361906d59da68f137edc025f90a83cbd0505ae078fa6dee",
+        "status": "completed",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 3600.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null,
+        "items": [
+          {
+            "item_id": "01a06adf-9130-730d-a8e1-d4fc215a389e",
+            "status": "completed",
+            "content": {
+              "kind": "user_message",
+              "text": "旧版审批"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06adf-9138-7ed4-802b-b888481c8f54",
+            "status": "completed",
+            "content": {
+              "kind": "tool_call",
+              "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+              "provider_call_id": "read",
+              "tool": "upgrade.read",
+              "tool_version": "1",
+              "effect_class": "read_only",
+              "arguments": {},
+              "requires_approval": true,
+              "tool_fingerprint": "c99db0d3fd064b9640c9f767f5e253dd2bc2a86a79aacadb69b7fa35f0dcb751"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06adf-913e-778d-a2bc-e3064015d4f3",
+            "status": "completed",
+            "content": {
+              "kind": "approval_request",
+              "approval_id": "01a06adf-913e-70b6-933d-30a5e0d02574",
+              "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+              "request_fingerprint": "005978683eaf1436630d3015c80c8f661f3ea327e55325e816e6c36571bd36d4",
+              "decision": {
+                "outcome": "approved",
+                "actor": "升级验收宿主",
+                "reason": null,
+                "request_fingerprint": "005978683eaf1436630d3015c80c8f661f3ea327e55325e816e6c36571bd36d4",
+                "decided_at": "2026-09-04T05:23:51.887640Z"
+              },
+              "policy_version": "kernel-read-only/v1"
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06adf-91d5-750c-a202-e662abe060a2",
+            "status": "completed",
+            "content": {
+              "kind": "tool_result",
+              "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+              "outcome": "succeeded",
+              "output": {
+                "value": 1
+              },
+              "error": null,
+              "action_id": null
+            },
+            "error": null
+          },
+          {
+            "item_id": "01a06adf-91dc-70e7-a75a-5e501a13fb76",
+            "status": "completed",
+            "content": {
+              "kind": "assistant_message",
+              "text": "升级后完成"
+            },
+            "error": null
+          }
+        ],
+        "model_steps": 2,
+        "usage_step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "model_attempts": [],
+        "error": null,
+        "created_at": "2026-09-04T05:23:51.729012Z",
+        "completed_at": "2026-09-04T05:23:51.909656Z"
+      }
+    ],
+    "created_at": "2026-09-04T05:23:51.726826Z",
+    "updated_at": "2026-09-04T05:23:51.909656Z"
+  },
+  "events": [
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-912e-7e65-944d-96af06d0bf41",
+      "turn_id": null,
+      "occurred_at": "2026-09-04T05:23:51.726826Z",
+      "payload": {
+        "type": "thread_created",
+        "workspace": "/fixture/harnessix-v5"
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 1
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9131-705e-86a7-595067e4ece4",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.729012Z",
+      "payload": {
+        "type": "turn_started",
+        "request_id": "upgrade",
+        "request_fingerprint": "428ecc3f1c9309efb361906d59da68f137edc025f90a83cbd0505ae078fa6dee",
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 100000,
+          "timeout_seconds": 3600.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 32
+        },
+        "trace_context": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 2
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9131-7105-b93e-272f8cbf249a",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.729025Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06adf-9130-730d-a8e1-d4fc215a389e",
+        "content": {
+          "kind": "user_message",
+          "text": "旧版审批"
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 3
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9131-7f66-91d2-6d132e14f8a6",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.729036Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06adf-9130-730d-a8e1-d4fc215a389e",
+        "status": "completed",
+        "content": {
+          "kind": "user_message",
+          "text": "旧版审批"
+        },
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 4
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9134-793a-b51a-1a9e237d2d5c",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.732363Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 5
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9136-7408-8aeb-5819ef88cc00",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.734054Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 6
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9138-705f-b3fe-78e1bfd41968",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.736855Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06adf-9138-7ed4-802b-b888481c8f54",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "provider_call_id": "read",
+          "tool": "upgrade.read",
+          "tool_version": "1",
+          "effect_class": "read_only",
+          "arguments": {},
+          "requires_approval": true,
+          "tool_fingerprint": "c99db0d3fd064b9640c9f767f5e253dd2bc2a86a79aacadb69b7fa35f0dcb751"
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 7
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-9138-71f0-9f42-0051f6deedc8",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.736861Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06adf-9138-7ed4-802b-b888481c8f54",
+        "status": "completed",
+        "content": {
+          "kind": "tool_call",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "provider_call_id": "read",
+          "tool": "upgrade.read",
+          "tool_version": "1",
+          "effect_class": "read_only",
+          "arguments": {},
+          "requires_approval": true,
+          "tool_fingerprint": "c99db0d3fd064b9640c9f767f5e253dd2bc2a86a79aacadb69b7fa35f0dcb751"
+        },
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 8
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-913a-7b5e-a2ea-bbb017ac4ad2",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.738905Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 1,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 9
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-913d-7879-8454-5a30887b342e",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.741274Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "executing_tools",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 10
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-913f-7cc7-8be3-cd1a4b94bf39",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.743575Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06adf-913e-778d-a2bc-e3064015d4f3",
+        "content": {
+          "kind": "approval_request",
+          "approval_id": "01a06adf-913e-70b6-933d-30a5e0d02574",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "request_fingerprint": "005978683eaf1436630d3015c80c8f661f3ea327e55325e816e6c36571bd36d4",
+          "decision": null,
+          "policy_version": "kernel-read-only/v1"
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 11
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-913f-71b2-aebb-cdd4b8a937e6",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.743581Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "waiting_approval",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 12
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91cf-7d5f-8ce1-d75cb586d6bd",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.887640Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06adf-913e-778d-a2bc-e3064015d4f3",
+        "status": "completed",
+        "content": {
+          "kind": "approval_request",
+          "approval_id": "01a06adf-913e-70b6-933d-30a5e0d02574",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "request_fingerprint": "005978683eaf1436630d3015c80c8f661f3ea327e55325e816e6c36571bd36d4",
+          "decision": {
+            "outcome": "approved",
+            "actor": "升级验收宿主",
+            "reason": null,
+            "request_fingerprint": "005978683eaf1436630d3015c80c8f661f3ea327e55325e816e6c36571bd36d4",
+            "decided_at": "2026-09-04T05:23:51.887640Z"
+          },
+          "policy_version": "kernel-read-only/v1"
+        },
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 13
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91d4-76e1-9816-cfe067b6b4a2",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.892202Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "executing_tools",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 14
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91d6-7e22-8ca4-d91d3bcd1642",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.894281Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06adf-91d5-750c-a202-e662abe060a2",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "outcome": "succeeded",
+          "output": {
+            "value": 1
+          },
+          "error": null,
+          "action_id": null
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 15
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91d6-7558-9212-88de80970ac8",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.894295Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06adf-91d5-750c-a202-e662abe060a2",
+        "status": "completed",
+        "content": {
+          "kind": "tool_result",
+          "call_id": "01a06adf-9138-72de-aa7a-9aa331a9df69",
+          "outcome": "succeeded",
+          "output": {
+            "value": 1
+          },
+          "error": null,
+          "action_id": null
+        },
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 16
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91d8-79df-8cbb-efab471c7f4d",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.896959Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "preparing_context",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 17
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91da-78bd-b479-36e150038683",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.898733Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "calling_model",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 18
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91dd-7940-a407-97b4c4662a94",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.901532Z",
+      "payload": {
+        "type": "item_started",
+        "item_id": "01a06adf-91dc-70e7-a75a-5e501a13fb76",
+        "content": {
+          "kind": "assistant_message",
+          "text": ""
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 19
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91df-738a-b55b-8ca1ee849c1b",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.903453Z",
+      "payload": {
+        "type": "item_finished",
+        "item_id": "01a06adf-91dc-70e7-a75a-5e501a13fb76",
+        "status": "completed",
+        "content": {
+          "kind": "assistant_message",
+          "text": "升级后完成"
+        },
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 20
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91e1-7003-bd06-e61fb18c200d",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.905404Z",
+      "payload": {
+        "type": "usage_recorded",
+        "step": 2,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 21
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91e3-7379-ab07-e95308934f86",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.907920Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "finalizing",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 22
+    },
+    {
+      "schema_version": 5,
+      "event_id": "01a06adf-91e5-7e69-90bf-244709bf4b4f",
+      "turn_id": "01a06adf-9130-761c-a15b-20a20c9e96ce",
+      "occurred_at": "2026-09-04T05:23:51.909656Z",
+      "payload": {
+        "type": "turn_state_changed",
+        "status": "completed",
+        "error": null
+      },
+      "thread_id": "01a06adf-912e-72b4-94a0-b86fa69c4c96",
+      "sequence": 23
+    }
+  ]
+}

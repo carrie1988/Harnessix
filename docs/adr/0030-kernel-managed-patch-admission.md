@@ -1,10 +1,10 @@
 # ADR 0030：Kernel 写准入、持久审批与双账本恢复
 
 - 日期：2026-09-04
-- 状态：0.5.3b2b 详细设计已固化；下述 Kernel 接入、Agent v6 与 migration 7 **尚未实现**
-- 代码核对基线：`8832dd7`，CI `33836437879` 四项通过
+- 状态：0.5.3b2b 已实现并完成本地验收；远端跨平台结果以对应提交 CI 为准
+- 设计基线：`8832dd7`；实施基线：`45b2b10`，CI `33838299601` 四项通过
 
-## 1. 本次源码核对结论
+## 1. 实施前源码核对结论（历史基线）
 
 | 已有代码 | 现行约束 | 集成必须解决的问题 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 | `models/_history.py::messages_for` | ToolResult 只传 outcome/output/error | 私有写证据须保持在白名单之外，并做两个 SDK 的实际 wire 检查 |
 | `patches/agent_bridge.py` | 宿主级绑定、取消排空、历史核对 | Kernel 才负责活跃状态、持久审批、原始时限与消费恢复边界 |
 
-本次核对还发现一个现有恢复遗漏：仅提供 ApprovalRecord 而未提供 plan 时，如果账本缺失，原桥接返回 failed。这个分支忽略了先前审批证据，不能证明未发生效果。本次先增加失败复现，再修复为 unknown；不借此宣称 Kernel 集成完成。
+本次核对还发现一个现有恢复遗漏：仅提供 ApprovalRecord 而未提供 plan 时，如果账本缺失，原桥接返回 failed。这个分支忽略了先前审批证据，不能证明未发生效果。该问题已在 `45b2b10` 增加失败复现并修复为 unknown；本 ADR 后续的 Kernel 集成是独立实施和验收。
 
 ## 2. 专用端口与生命周期
 
@@ -31,7 +31,7 @@
 
 ## 3. 持久契约：计划态与效果态分开
 
-拟新增 `PatchApprovalRequestContent`：
+已新增 `PatchApprovalRequestContent`：
 
 ~~~text
 kind = "patch_approval_request"
@@ -44,7 +44,7 @@ decision: ApprovalRecord | None
 
 新 kind/策略和计划整体校验共同构成准入规则。计划中的 Thread/Turn/Call 必须与事件归属完全一致，call_fingerprint 必须匹配原调用，manifest.proposal_sha256 必须匹配严格提案。不能只比较表面的 call_id 或一个传入哈希。旧 ApprovalRequestContent 与 kernel-read-only/v1 不改义。
 
-拟给 ToolResultContent 增加可选私有证据 `patch`：计划引用/调用绑定、后端状态以及 `origin = execution | recovery`。最终字段在实现时按最小可回放事实定稿；不能保存完整 before/after，不以重复整份账本替代最小事实。它不是模型输出，也不是签名或文件系统授权能力。
+ToolResultContent 已增加可选私有证据 `patch`：workspace_id、plan_id、request_id、approval_fingerprint、state，以及 `origin = execution | recovery`。字段为固定有界 UUID/摘要/枚举；不保存完整 before/after，不复制整份账本。它不是模型输出，也不是签名或文件系统授权能力。
 
 Reducer 必须验证：证据绑定当前未配对 Call、状态与 outcome 一致、成功对应已持久完成且批准的新写审批。未开始的孤立计划可以结算未成功，不凭空补一份已批准请求。普通只读成功仍仅允许 EXECUTING_TOOLS；只有类型化的 Patch 恢复成功可以在取消/恢复状态记录，且绝不能因此把 Turn 改成 completed。
 
@@ -97,17 +97,17 @@ Kernel 先持久 CANCELLING，再触发 token；桥接负责线程排空。取�
 - 线程已返回但 Session 尚未发布：走同样的只读核对路径，不再次 execute。
 - 重复 Task.cancel、超时、Runtime.__aexit__：都不得在写线程仍运行时释放副本/Session 所有权。
 
-新证据会增加 ToolResult 序列化长度。预算很小时，不能把“文件已写，但结果太大”转换成未应用。优先保留最小私有事实、限制公开 output；如果预算规则无法容纳证据，终止 Turn 并明确结果发布失败，保留后端事实供核对，不截断授权/归因字段或重新写入。
+预算只计不含 patch 的公开 ToolResult 序列化长度；固定有界的 patch 是 Session 元数据。若公开结果超限，终止 Turn 为 tool_output_too_large，核对真实效果后保留私有证据；核对结果也超限时舍弃 output，不截断授权/归因字段、不重新写入。极小预算若连模型提案都容纳不了，则在准备/审批前停止。系统生成的最小错误/结算元数据不受模型正文预算裁剪。
 
 ## 7. 版本与升级门禁
 
-拟新增 Agent Event/Thread v6 与 `0007_managed_patch.sql` 最低 reader 标记。旧 v1–v5 Schema、旧 migration 校验和不改动，副本账本 schema v1 和 b2a 计划/输出 Schema 不因 Kernel 集成被覆写。
+已新增 Agent Event/Thread v6 与 `0007_managed_patch.sql` 最低 reader 标记。旧 v1–v5 Schema、旧 migration 校验和不改动，副本账本 schema v1 和 b2a 计划/输出 Schema 不因 Kernel 集成被覆写。
 
 新代码继续读取旧事件；旧事件导出必须删除新字段的默认空值，保持原 JSON 形状，不能把 patch 证据或新审批标成 v5。旧快照保持原始存储字节，直到新事件追加或显式 rebuild 才升级投影；缺失新字段只补兼容默认值。
 
 旧 wheel 必须在看到 migration 7 时明确拒绝打开，而不是误解新写审批。升级验证包括旧 wheel 创建真实 WAITING_APPROVAL → 新 wheel 重开旧只读审批并完成 → Replay 一致 → 旧 wheel 再开升级库拒绝。升级备份使用 SQLite backup 或停机一致备份，不能只拷贝仍有 WAL 的主文件。
 
-## 8. 必须实现的验收矩阵
+## 8. 已落实的验收矩阵
 
 | 编号 | 测试范围 | 必须证明 |
 | --- | --- | --- |
@@ -131,4 +131,4 @@ KWP-09 至少包括：Call 提交后、计划保存后/Session 请求前、审�
 3. Kernel 取消/恢复结算、组合崩溃、旧 wheel 升级和输出预算门禁。
 4. 全量回归、包外验证、中文文档、提交推送和跨平台 CI。
 
-本次只固化以上详细设计并修复桥接的缺证据误判；**Agent 仍为 v5、migration 仍到 6，模型尚不可调用写工具**。上述四步全部验收后才关闭 b2b/0.5.3b。多文件、Process、源目录合入和自主 Coding Eval 仍按后续路线图交付。
+上述四步已实现：`agent/patching.py` 分离核对上下文、执行准入与最小结果证据；Runtime 复用既有 Bridge，不另建执行器。Schema v6 与 migration 7 已加入，旧 Schema/migration 字节保持不变。验收入口包括 `test_kernel_patch*.py`、`test_session_upgrade.py`、独立 wheel 探针 `scripts/session_upgrade_probe.py` 和 `examples/kernel_patch.py`；具体数量与环境见 [测试记录第 22 节](../testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。本片关闭 b2b/0.5.3b 的受管单文件范围，不关闭整个 0.5.3/0.5。多文件、Process、源目录合入和自主 Coding Eval 仍未实现。

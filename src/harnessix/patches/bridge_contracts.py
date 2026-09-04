@@ -1,4 +1,4 @@
-"""宿主调用绑定契约；不属于 Agent v5 事件，也不是模型输入。"""
+"""宿主调用绑定契约；可由 Agent v6 写审批引用，不是模型输入。"""
 
 from typing import Literal, Self
 from uuid import UUID

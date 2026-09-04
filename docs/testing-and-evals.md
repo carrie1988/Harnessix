@@ -472,3 +472,23 @@ Agent Runtime Kernel 合并前：
 - 全部旧公开 Schema、Agent v5、Session migration 6、副本账本 schema v1、默认 Kernel 工具及依赖保持不变。无真实模型请求或远程服务器操作。
 
 本次交付是 b2b 的设计基线和一处现有桥接修正，不标记 b2b/0.5.3b 完成。下一步按 ADR 0030 开始契约/Reducer/最低 reader 迁移，再接通专用端口与 SDK 离线闭环。
+
+## 22. 0.5.3b2b Kernel 受管写闭环验收（2026-09-04）
+
+基于 `45b2b10` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33838299601) 全绿和远端同步结果，实际实现 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)，不再停留在设计或宿主桥接夹具。
+
+- 本片新增 **56 项**测试：Kernel Patch 套件 **55 项**，旧 wheel 导出的 v5 transcript 升级 **1 项**；Patch 套件累计 **309 项**。
+- `make check`：Ruff/Mypy（95 个源文件）通过，**1428 passed、1 skipped**；本地未配置 PostgreSQL，该跳过项继续由 CI 的真实 PostgreSQL 服务验证。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1392 passed**。
+- 专用端口拒绝错误名称/效果/审批/幂等/核对属性和定义重名；旧通用注册表写门禁回归保留。错误工作区不降级执行，严格参数拒绝模型注入批准标志。
+- Session 持久写审批暂停、重开、同答复幂等、冲突拒绝、陈旧来源、拒绝不复核旧来源、复核中预算过期均覆盖；答复不调用后端决定或修改文件。Reducer 验证归属/审批/效果，旧事件标签拒绝新字段。
+- 真实 OpenAI SDK 与 Anthropic SDK 各以 MockTransport 完成四次离线模型 HTTP 交互：读文件→提案→持久审批重开→写入→读回→回答。目标副本确实改变、源目录保持不变，所有流关闭，两个模型 wire 均不含计划/副本 ID、审批摘要或私有 patch 证据。
+- 替换前/后分别覆盖 token、Task.cancel、重复取消和 deadline；另验证 Runtime 关闭在写线程/审批复核阻塞时保持 Session 所有权，重复取消关闭也必须等排空。替换后的工具成功与 Turn cancelled/failed 分别结算，不把取消描述为文件回滚。
+- 文件写完但 Kernel 回调失败或公开结果超限：不再执行，核对并保留私有成功事实，Turn 失败而非假完成。250 字符预算时核对后的公开 output 被舍弃，归因字段完整；1 字符预算在模型提案阶段停止，尚未准备/审批。
+- `test_kernel_patch_crash.py` 新增 **23 个真实 os._exit 场景**：20 个 Session × Patch 组合切点（Call、计划、请求、决定、消费、后端批准、9 个文件执行窗口、工具返回、Session 结果和终态前），另有缺失端口/定义变化/第三种内容三个重启场景。恢复禁用 Provider/prepare/save/reply/execute，已知效果诚实结算，不充分证据为 unknown；重复打开幂等，恢复前后 inode/mtime/ctime 与源文件不变。全项目累计 **141 个硬崩溃场景及 2 个 SIGINT 用例**，不声称模拟所有断电/硬盘故障。
+
+**版本/升级**：只新增 Agent Event/Thread v6、migration 7；旧 v1–v5 Schema、旧 migration 校验和、Action/Provider/工具/桥接 Schema 和副本账本 v1 不变。无 patch 的旧结果序列化不增加 null 字段。使用 `git archive 45b2b10` 在隔离源码目录构建真正旧 wheel，旧基础环境创建真实 WAITING_APPROVAL；新基础 wheel 重开、答复并完成旧只读审批，旧事件原始字节不变、Replay 一致；旧 wheel 再开新库明确报 schema_too_new。旧 wheel 完成的 v5 transcript 冻结到 `tests/agent/fixtures/session-v5.json`，持续覆盖 v1–v5 升级；包外探针和步骤见 [部署文档](deployment.md#当前-session-v6--migration-7-升级053b2b)。
+
+**包外交付**：仓库外基础 wheel 环境确认未安装 OpenAI/Anthropic SDK，以 `python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch 共七个示例通过。新 Kernel 示例是真实文件/数据库与离线决策，不是自主编码 Eval。Linux Python 3.12/3.13 全量和 macOS Patch CI 均增加该入口；PostgreSQL 作业保留，远端结果以本片对应提交为准。
+
+未新增依赖、真实模型请求、服务器登录或中间件。b2b/0.5.3b 的受管单文件范围完成；多文件部分效果、结构化 Diff、Process、源目录合入、Agent CLI 与自主 Coding Eval 仍未交付，整个 0.5.3/0.5 不标记完成。

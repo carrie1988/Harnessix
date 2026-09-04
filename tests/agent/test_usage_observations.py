@@ -98,7 +98,7 @@ def test_attempt_payloads_require_event_v4(version) -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=version, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 5
+        assert EventDraft(payload=payload).schema_version == 6
 
 
 def test_attempt_snapshot_cannot_claim_success_without_receipt() -> None:

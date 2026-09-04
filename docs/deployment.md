@@ -160,3 +160,18 @@ Kernel 可通过 AgentRuntime 的 observability 参数注入现有导出器，�
 ~~~bash
 uv run --extra observability python -m examples.kernel_observability
 ~~~
+
+## 当前 Session v6 / migration 7 升级（0.5.3b2b）
+
+0.3.3 的步骤是历史记录；当前启动会依次应用到 `0007_managed_patch.sql`。事件版本与迁移编号不同：Agent v6、Session migration 7、副本账本 v1。旧 v1–v5 事件不改写；只有新追加或显式 rebuild 的投影升级。最低 reader 标记使旧 wheel 明确返回 schema_too_new，不能删除迁移记录强行降级。
+
+升级前停止旧宿主，并以 SQLite backup 或完整停机备份保存 Session；写会话还必须一起保留受管副本（包括账本、私有镜像和目标文件）。两库不是一个事务，不应只恢复其中一个并假定另一边没有效果。恢复到旧版本应使用一致的升级前备份，不将新事件交给旧 reader。
+
+包外可复现升级探针为 `scripts/session_upgrade_probe.py`：
+
+1. 从 `git archive 45b2b1043b1aed9dd53800c89b69252cb90e2eb8` 构建旧 wheel，并为旧/新 wheel 分别创建基础依赖环境；
+2. 在仓库外以旧环境运行 `python -I session_upgrade_probe.py create <空目录>`，生成真实 WAITING_APPROVAL；
+3. 同目录以新环境运行 `python -I session_upgrade_probe.py upgrade <目录>`，批准旧只读请求、继续、检查旧事件字节和 Replay；
+4. 以旧环境运行 `python -I session_upgrade_probe.py old-reader <目录>`，验证明确拒绝新库且不修改历史。
+
+探针不调用模型 API，不依赖源码测试包；旧环境生成的 v5 完整 transcript 已作为冻结夹具纳入 CI。新写接入运行 `python -I kernel_patch.py`（先复制 examples 中该文件至仓库外），同样只需基础 wheel，无供应商 SDK。

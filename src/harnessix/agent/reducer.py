@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import timedelta
 from uuid import UUID
 
-from harnessix.agent.approvals import approval_for, request_fingerprint
+from harnessix.agent.approvals import approval_for, approval_matches, request_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     TERMINAL_TURNS,
@@ -17,6 +17,7 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    PatchApprovalRequestContent,
     PlanContent,
     TextContent,
     Thread,
@@ -37,6 +38,7 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.domain.models import ApprovalOutcome, EffectClass
+from harnessix.patches.bridge_contracts import call_request_id
 
 
 def require(condition: bool, message: str) -> None:
@@ -84,20 +86,26 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             ),
             "Tool Call ID 重复",
         )
-    elif isinstance(content, ApprovalRequestContent):
+    elif isinstance(content, ApprovalRequestContent | PatchApprovalRequestContent):
         calls = pending_calls(turn)
         require(turn.status == TurnStatus.EXECUTING_TOOLS, "审批请求只能在执行边界生成")
         require(bool(calls) and calls[0].call_id == content.call_id, "审批与当前调用不匹配")
         call = calls[0]
         require(
-            call.requires_approval and call.effect_class == EffectClass.READ_ONLY,
-            "当前只支持可信只读工具审批",
+            call.requires_approval
+            and (
+                call.effect_class == EffectClass.READ_ONLY
+                if isinstance(content, ApprovalRequestContent)
+                else call.tool == "apply_patch"
+                and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+            ),
+            "审批类型与工具效果不匹配",
         )
         require(call.tool_fingerprint is not None, "审批缺少工具契约指纹")
         require(approval_for(turn, call) is None, "调用已存在审批请求")
         require(
             all(
-                not isinstance(i.content, ApprovalRequestContent)
+                not isinstance(i.content, ApprovalRequestContent | PatchApprovalRequestContent)
                 or i.content.approval_id != content.approval_id
                 for i in turn.items
             ),
@@ -105,8 +113,7 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         )
         require(content.decision is None, "审批请求不能预置决定")
         require(
-            content.request_fingerprint
-            == request_fingerprint(thread, turn, call, policy_version=content.policy_version),
+            approval_matches(thread, turn, call, content),
             "审批指纹不匹配",
         )
     elif isinstance(content, PlanContent | CompactionContent):
@@ -154,15 +161,82 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             ),
             "Tool Result 已开始",
         )
+        if content.patch is not None:
+            effect, call = content.patch, calls[0]
+            require(
+                call.tool == "apply_patch"
+                and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+                and call.requires_approval
+                and call.tool_fingerprint is not None,
+                "效果证据仅适用于强制审批的 Patch 调用",
+            )
+            require(
+                effect.request_id
+                == call_request_id(
+                    thread.thread_id,
+                    turn.turn_id,
+                    call.call_id,
+                    request_fingerprint(thread, turn, call),
+                ),
+                "效果证据调用归属错误",
+            )
+            approval = approval_for(turn, call)
+            if approval is not None:
+                require(
+                    isinstance(approval.content, PatchApprovalRequestContent),
+                    "Patch 证据不能复用只读审批",
+                )
+                assert isinstance(approval.content, PatchApprovalRequestContent)
+                plan = approval.content.plan
+                require(
+                    (
+                        effect.workspace_id,
+                        effect.plan_id,
+                        effect.request_id,
+                        effect.approval_fingerprint,
+                    )
+                    == (
+                        plan.workspace_id,
+                        plan.plan_id,
+                        plan.request_id,
+                        plan.approval_fingerprint,
+                    ),
+                    "效果证据与审批计划不匹配",
+                )
+            require(
+                effect.origin == "recovery" or turn.status == TurnStatus.EXECUTING_TOOLS,
+                "执行证据只能在执行状态发布",
+            )
+            if content.outcome == "succeeded":
+                require(effect.state in {"applied", "observed_after"}, "成功结果缺少已应用证据")
+                require(
+                    effect.origin == "recovery" or effect.state == "applied", "执行不能伪造恢复观察"
+                )
+            elif content.outcome == "failed":
+                require(
+                    effect.state
+                    in {"pending", "approved", "rejected", "failed", "observed_before"},
+                    "已知失败与效果状态不一致",
+                )
+            else:
+                require(content.outcome == "unknown", "Patch 取消不等于文件效果取消")
         if content.outcome == "succeeded":
-            require(turn.status == TurnStatus.EXECUTING_TOOLS, "执行阶段之外不能记录成功结果")
+            require(
+                turn.status == TurnStatus.EXECUTING_TOOLS
+                or (content.patch is not None and content.patch.origin == "recovery"),
+                "执行阶段之外不能记录普通成功结果",
+            )
             if calls[0].requires_approval:
                 approval = approval_for(turn, calls[0])
                 require(
                     approval is not None and approval.status == ItemStatus.COMPLETED,
                     "成功结果之前必须持久记录审批决定",
                 )
-                assert approval is not None and isinstance(approval.content, ApprovalRequestContent)
+                assert approval is not None and isinstance(
+                    approval.content, ApprovalRequestContent | PatchApprovalRequestContent
+                )
+                if isinstance(approval.content, PatchApprovalRequestContent):
+                    require(content.patch is not None, "Patch 成功必须有类型化效果证据")
                 require(
                     approval.content.decision is not None
                     and approval.content.decision.outcome == ApprovalOutcome.APPROVED,
@@ -178,9 +252,12 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
     assert original is not None
     require(original.status == ItemStatus.STARTED, "Item 终态不可改写")
     require(original.content.kind == payload.content.kind, "Item 类型不可改变")
-    if isinstance(original.content, ApprovalRequestContent):
-        require(isinstance(payload.content, ApprovalRequestContent), "审批 Item 类型不可改变")
-        assert isinstance(payload.content, ApprovalRequestContent)
+    if isinstance(original.content, ApprovalRequestContent | PatchApprovalRequestContent):
+        require(
+            isinstance(payload.content, ApprovalRequestContent | PatchApprovalRequestContent),
+            "审批 Item 类型不可改变",
+        )
+        assert isinstance(payload.content, ApprovalRequestContent | PatchApprovalRequestContent)
         require(
             original.content == payload.content.model_copy(update={"decision": None}),
             "审批请求身份与指纹不可变",
@@ -230,6 +307,15 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
         require(not pending_calls(turn), "存在未配对 Tool Call")
         if target == TurnStatus.COMPLETED:
             require(payload.error is None, "成功终态不能携带错误")
+            require(
+                not any(
+                    isinstance(i.content, ToolResultContent)
+                    and i.content.patch is not None
+                    and i.content.patch.origin == "recovery"
+                    for i in turn.items
+                ),
+                "恢复效果不能把中断执行冒充成功 Turn",
+            )
         if target in {TurnStatus.COMPLETED, TurnStatus.CANCELLED}:
             require(
                 not any(

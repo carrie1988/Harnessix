@@ -1,0 +1,1547 @@
+{
+  "$defs": {
+    "AgentFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "category": {
+          "$ref": "#/$defs/FailureCategory",
+          "default": "internal"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "AgentFailure",
+      "type": "object"
+    },
+    "ApprovalOutcome": {
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "title": "ApprovalOutcome",
+      "type": "string"
+    },
+    "ApprovalRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/ApprovalOutcome"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "request_fingerprint": {
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor",
+        "request_fingerprint"
+      ],
+      "title": "ApprovalRecord",
+      "type": "object"
+    },
+    "ApprovalRequestContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "approval_request",
+          "default": "approval_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "approval_id": {
+          "format": "uuid",
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "request_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "policy_version": {
+          "const": "kernel-read-only/v1",
+          "default": "kernel-read-only/v1",
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approval_id",
+        "call_id",
+        "request_fingerprint"
+      ],
+      "title": "ApprovalRequestContent",
+      "type": "object"
+    },
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_steps": {
+          "default": 16,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 100000,
+          "minimum": 1,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "max_output_chars": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Chars",
+          "type": "integer"
+        },
+        "max_tool_calls_per_step": {
+          "default": 32,
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Max Tool Calls Per Step",
+          "type": "integer"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "CompactionContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "context_compaction",
+          "default": "context_compaction",
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_item_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 4096,
+          "minItems": 1,
+          "title": "Source Item Ids",
+          "type": "array"
+        },
+        "summary": {
+          "maxLength": 1000000,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "tokens_before": {
+          "minimum": 1,
+          "title": "Tokens Before",
+          "type": "integer"
+        },
+        "tokens_after": {
+          "minimum": 0,
+          "title": "Tokens After",
+          "type": "integer"
+        },
+        "tokenizer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tokenizer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_item_ids",
+        "summary",
+        "tokens_before",
+        "tokens_after",
+        "tokenizer"
+      ],
+      "title": "CompactionContent",
+      "type": "object"
+    },
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "ErrorContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "error",
+          "default": "error",
+          "title": "Kind",
+          "type": "string"
+        },
+        "failure": {
+          "$ref": "#/$defs/AgentFailure"
+        }
+      },
+      "required": [
+        "failure"
+      ],
+      "title": "ErrorContent",
+      "type": "object"
+    },
+    "FailureCategory": {
+      "enum": [
+        "input",
+        "provider",
+        "tool",
+        "approval",
+        "budget",
+        "cancelled",
+        "interrupted",
+        "storage",
+        "conflict",
+        "internal"
+      ],
+      "title": "FailureCategory",
+      "type": "string"
+    },
+    "ItemFinished": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "item_finished",
+          "default": "item_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "approval_request": "#/$defs/ApprovalRequestContent",
+              "assistant_message": "#/$defs/TextContent",
+              "context_compaction": "#/$defs/CompactionContent",
+              "error": "#/$defs/ErrorContent",
+              "patch_approval_request": "#/$defs/PatchApprovalRequestContent",
+              "plan": "#/$defs/PlanContent",
+              "reasoning_summary": "#/$defs/TextContent",
+              "tool_call": "#/$defs/ToolCallContent",
+              "tool_result": "#/$defs/ToolResultContent",
+              "user_message": "#/$defs/TextContent"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextContent"
+            },
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "$ref": "#/$defs/ToolResultContent"
+            },
+            {
+              "$ref": "#/$defs/ApprovalRequestContent"
+            },
+            {
+              "$ref": "#/$defs/PatchApprovalRequestContent"
+            },
+            {
+              "$ref": "#/$defs/PlanContent"
+            },
+            {
+              "$ref": "#/$defs/CompactionContent"
+            },
+            {
+              "$ref": "#/$defs/ErrorContent"
+            }
+          ],
+          "title": "Content"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "item_id",
+        "status",
+        "content"
+      ],
+      "title": "ItemFinished",
+      "type": "object"
+    },
+    "ItemStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "item_started",
+          "default": "item_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "approval_request": "#/$defs/ApprovalRequestContent",
+              "assistant_message": "#/$defs/TextContent",
+              "context_compaction": "#/$defs/CompactionContent",
+              "error": "#/$defs/ErrorContent",
+              "patch_approval_request": "#/$defs/PatchApprovalRequestContent",
+              "plan": "#/$defs/PlanContent",
+              "reasoning_summary": "#/$defs/TextContent",
+              "tool_call": "#/$defs/ToolCallContent",
+              "tool_result": "#/$defs/ToolResultContent",
+              "user_message": "#/$defs/TextContent"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextContent"
+            },
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "$ref": "#/$defs/ToolResultContent"
+            },
+            {
+              "$ref": "#/$defs/ApprovalRequestContent"
+            },
+            {
+              "$ref": "#/$defs/PatchApprovalRequestContent"
+            },
+            {
+              "$ref": "#/$defs/PlanContent"
+            },
+            {
+              "$ref": "#/$defs/CompactionContent"
+            },
+            {
+              "$ref": "#/$defs/ErrorContent"
+            }
+          ],
+          "title": "Content"
+        }
+      },
+      "required": [
+        "item_id",
+        "content"
+      ],
+      "title": "ItemStarted",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "ManagedPatchCallPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "managed-patch-call/v1",
+          "default": "managed-patch-call/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "thread_id": {
+          "format": "uuid",
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "turn_id": {
+          "format": "uuid",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "call_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Call Fingerprint",
+          "type": "string"
+        },
+        "request_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "format": "uuid",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "format": "uuid",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "manifest": {
+          "$ref": "#/$defs/PatchManifest"
+        },
+        "backend_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Backend Fingerprint",
+          "type": "string"
+        },
+        "approval_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Approval Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "thread_id",
+        "turn_id",
+        "call_id",
+        "call_fingerprint",
+        "request_id",
+        "workspace_id",
+        "plan_id",
+        "manifest",
+        "backend_fingerprint",
+        "approval_fingerprint"
+      ],
+      "title": "ManagedPatchCallPlan",
+      "type": "object"
+    },
+    "ModelAttemptFinished": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_attempt_finished",
+          "default": "model_attempt_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "interrupted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "attempt_id",
+        "outcome"
+      ],
+      "title": "ModelAttemptFinished",
+      "type": "object"
+    },
+    "ModelAttemptStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_attempt_started",
+          "default": "model_attempt_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "index": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "provider": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Provider",
+          "type": "string"
+        },
+        "requested_model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Requested Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "step",
+        "index",
+        "provider",
+        "requested_model"
+      ],
+      "title": "ModelAttemptStarted",
+      "type": "object"
+    },
+    "ModelUsageObserved": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "model_usage_observed",
+          "default": "model_usage_observed",
+          "title": "Type",
+          "type": "string"
+        },
+        "attempt_id": {
+          "format": "uuid",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageObservation"
+        },
+        "actual_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Model"
+        },
+        "response_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response Id"
+        },
+        "billing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResponseBillingMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "attempt_id",
+        "usage"
+      ],
+      "title": "ModelUsageObserved",
+      "type": "object"
+    },
+    "PatchApprovalRequestContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "patch_approval_request",
+          "default": "patch_approval_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "policy_version": {
+          "const": "kernel-managed-patch/v1",
+          "default": "kernel-managed-patch/v1",
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "approval_id": {
+          "format": "uuid",
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/ManagedPatchCallPlan"
+        },
+        "request_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApprovalRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "approval_id",
+        "call_id",
+        "plan",
+        "request_fingerprint"
+      ],
+      "title": "PatchApprovalRequestContent",
+      "type": "object"
+    },
+    "PatchEffect": {
+      "additionalProperties": false,
+      "description": "Session 私有的有界效果事实；模型不可注入，不是执行许可。",
+      "properties": {
+        "workspace_id": {
+          "format": "uuid",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "format": "uuid",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "request_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "approval_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Approval Fingerprint",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "started",
+            "applied",
+            "failed",
+            "uncertain",
+            "observed_before",
+            "observed_after",
+            "diverged",
+            "missing",
+            "unavailable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "execution",
+            "recovery"
+          ],
+          "title": "Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspace_id",
+        "plan_id",
+        "request_id",
+        "approval_fingerprint",
+        "state",
+        "origin"
+      ],
+      "title": "PatchEffect",
+      "type": "object"
+    },
+    "PatchManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "patch-plan/v1",
+          "default": "patch-plan/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "workspace_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Scope",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "source_mode": {
+          "maximum": 511,
+          "minimum": 0,
+          "title": "Source Mode",
+          "type": "integer"
+        },
+        "proposal_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Proposal Sha256",
+          "type": "string"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "before_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Before Bytes",
+          "type": "integer"
+        },
+        "after_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "After Bytes",
+          "type": "integer"
+        },
+        "edit_count": {
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Edit Count",
+          "type": "integer"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "workspace_scope",
+        "source_revision",
+        "source_mode",
+        "proposal_sha256",
+        "before_sha256",
+        "after_sha256",
+        "before_bytes",
+        "after_bytes",
+        "edit_count",
+        "fingerprint"
+      ],
+      "title": "PatchManifest",
+      "type": "object"
+    },
+    "PlanContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "plan",
+          "default": "plan",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/PlanStep"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        },
+        "supersedes": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supersedes"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "title": "PlanContent",
+      "type": "object"
+    },
+    "PlanStep": {
+      "additionalProperties": false,
+      "properties": {
+        "step_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Step Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "status": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "description"
+      ],
+      "title": "PlanStep",
+      "type": "object"
+    },
+    "ResponseBillingMetadata": {
+      "additionalProperties": false,
+      "description": "响应中观测到的原生事实，不推断平台/价格，不代表实际账单。",
+      "properties": {
+        "service_tier": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Tier"
+        },
+        "inference_geo": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Geo"
+        },
+        "cache_creation_5m_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation 5M Tokens"
+        },
+        "cache_creation_1h_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation 1H Tokens"
+        }
+      },
+      "title": "ResponseBillingMetadata",
+      "type": "object"
+    },
+    "TextContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "user_message",
+            "assistant_message",
+            "reasoning_summary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "TextContent",
+      "type": "object"
+    },
+    "ThreadCreated": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "thread_created",
+          "default": "thread_created",
+          "title": "Type",
+          "type": "string"
+        },
+        "workspace": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Workspace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspace"
+      ],
+      "title": "ThreadCreated",
+      "type": "object"
+    },
+    "ToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "provider_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Provider Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "requires_approval": {
+          "default": false,
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "tool_fingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Fingerprint"
+        }
+      },
+      "required": [
+        "call_id",
+        "provider_call_id",
+        "tool",
+        "tool_version",
+        "effect_class"
+      ],
+      "title": "ToolCallContent",
+      "type": "object"
+    },
+    "ToolResultContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_result",
+          "default": "tool_result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        },
+        "patch": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PatchEffect"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "call_id",
+        "outcome"
+      ],
+      "title": "ToolResultContent",
+      "type": "object"
+    },
+    "TraceContext": {
+      "additionalProperties": false,
+      "description": "跨进程持久化的 W3C Trace Context。",
+      "properties": {
+        "traceparent": {
+          "description": "W3C traceparent",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Traceparent",
+          "type": "string"
+        },
+        "tracestate": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "W3C tracestate",
+          "title": "Tracestate"
+        }
+      },
+      "required": [
+        "traceparent"
+      ],
+      "title": "TraceContext",
+      "type": "object"
+    },
+    "TurnStarted": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_started",
+          "default": "turn_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "trace_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "request_id",
+        "request_fingerprint",
+        "budget"
+      ],
+      "title": "TurnStarted",
+      "type": "object"
+    },
+    "TurnStateChanged": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_state_changed",
+          "default": "turn_state_changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TurnStatus"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "TurnStateChanged",
+      "type": "object"
+    },
+    "TurnStatus": {
+      "enum": [
+        "accepted",
+        "preparing_context",
+        "calling_model",
+        "executing_tools",
+        "waiting_approval",
+        "finalizing",
+        "cancelling",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "TurnStatus",
+      "type": "string"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "UsageObservation": {
+      "additionalProperties": false,
+      "description": "一次尝试的累计观测；输入含缓存、输出含推理，不是本次增量。",
+      "properties": {
+        "completeness": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "partial",
+            "complete"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "uncached_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncached Input Tokens"
+        },
+        "cache_read_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Read Input Tokens"
+        },
+        "cache_creation_input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Creation Input Tokens"
+        },
+        "reasoning_output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Output Tokens"
+        }
+      },
+      "title": "UsageObservation",
+      "type": "object"
+    },
+    "UsageRecorded": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "usage_recorded",
+          "default": "usage_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "required": [
+        "step",
+        "usage"
+      ],
+      "title": "UsageRecorded",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": 6,
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turn Id"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "payload": {
+      "discriminator": {
+        "mapping": {
+          "item_finished": "#/$defs/ItemFinished",
+          "item_started": "#/$defs/ItemStarted",
+          "model_attempt_finished": "#/$defs/ModelAttemptFinished",
+          "model_attempt_started": "#/$defs/ModelAttemptStarted",
+          "model_usage_observed": "#/$defs/ModelUsageObserved",
+          "thread_created": "#/$defs/ThreadCreated",
+          "turn_started": "#/$defs/TurnStarted",
+          "turn_state_changed": "#/$defs/TurnStateChanged",
+          "usage_recorded": "#/$defs/UsageRecorded"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ThreadCreated"
+        },
+        {
+          "$ref": "#/$defs/TurnStarted"
+        },
+        {
+          "$ref": "#/$defs/TurnStateChanged"
+        },
+        {
+          "$ref": "#/$defs/ItemStarted"
+        },
+        {
+          "$ref": "#/$defs/ItemFinished"
+        },
+        {
+          "$ref": "#/$defs/UsageRecorded"
+        },
+        {
+          "$ref": "#/$defs/ModelAttemptStarted"
+        },
+        {
+          "$ref": "#/$defs/ModelUsageObserved"
+        },
+        {
+          "$ref": "#/$defs/ModelAttemptFinished"
+        }
+      ],
+      "title": "Payload"
+    },
+    "thread_id": {
+      "format": "uuid",
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "payload",
+    "thread_id",
+    "sequence"
+  ],
+  "title": "AgentEvent",
+  "type": "object"
+}

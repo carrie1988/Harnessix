@@ -4,7 +4,10 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.artifacts.contracts import ArtifactToolResult
-from harnessix.domain.models import ToolDescriptor
+from harnessix.domain.models import ApprovalRecord, ToolDescriptor
+from harnessix.patches.agent_bridge import PatchCallResult
+from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
+from harnessix.patches.managed_contracts import PatchRecord
 
 
 class ToolRuntime(Protocol):
@@ -28,3 +31,42 @@ class NoTools:
     async def execute(self, call: ToolCallContent, cancel: CancelToken) -> ToolResultContent:
         cancel.checkpoint()
         return ToolResultContent(call_id=call.call_id, outcome="failed")
+
+
+class PatchRuntime(Protocol):
+    """显式受信 Patch 端口，不是任意写工具注册表。"""
+
+    def definition(self) -> ToolDescriptor: ...
+
+    async def prepare(
+        self, call: ToolCallContent, scope: ToolExecutionScope, cancel: CancelToken
+    ) -> ManagedPatchCallPlan: ...
+
+    async def review(
+        self,
+        call: ToolCallContent,
+        scope: ToolExecutionScope,
+        plan: ManagedPatchCallPlan,
+        cancel: CancelToken,
+        *,
+        verify_source: bool = True,
+    ) -> PatchRecord: ...
+
+    async def execute(
+        self,
+        call: ToolCallContent,
+        scope: ToolExecutionScope,
+        plan: ManagedPatchCallPlan,
+        approval: ApprovalRecord,
+        cancel: CancelToken,
+    ) -> PatchCallResult: ...
+
+    async def recover(
+        self,
+        call: ToolCallContent,
+        scope: ToolExecutionScope,
+        cancel: CancelToken,
+        *,
+        plan: ManagedPatchCallPlan | None = None,
+        approval: ApprovalRecord | None = None,
+    ) -> PatchCallResult: ...
