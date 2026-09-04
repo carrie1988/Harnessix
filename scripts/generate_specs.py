@@ -37,6 +37,12 @@ from harnessix.patches.diff_document_contracts import (
     BatchDiffRecord,
 )
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
+from harnessix.processes.contracts import (
+    ProcessLimits,
+    ProcessRequest,
+    ProcessResult,
+    ProcessStream,
+)
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
 from harnessix.tools.search_contracts import (
@@ -71,6 +77,10 @@ def main() -> None:
         output / "batch-diff-record-v1.schema.json", TypeAdapter(BatchDiffRecord).json_schema()
     )
     for name, model in (
+        ("process-request", ProcessRequest),
+        ("process-limits", ProcessLimits),
+        ("process-stream", ProcessStream),
+        ("process-result", ProcessResult),
         ("list-files-input", ListFilesInput),
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),
@@ -106,7 +116,8 @@ def main() -> None:
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(
-        "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch 计划与 OpenAPI Schema"
+        "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
+        "Process 与 OpenAPI Schema"
     )
 
 

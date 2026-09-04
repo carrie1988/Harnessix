@@ -627,3 +627,19 @@ Agent Runtime Kernel 合并前：
 **模型和发行**：两个真实SDK通过MockTransport完成读取、整组提案、审批重开、实际副本修改、读回，再根据公开效果引用分页读取一条报告；wire不泄漏私有批准/组/成员身份，不把写输出包装成只读结果。基础wheel无供应商SDK，仓库外`python -I`执行13个示例，`batch_diff`已更新为双引用事务归档验收。全部验证无新模型请求、SSH或中间件部署。
 
 `PYTHONASYNCIODEBUG=1`、`-W error` 的 Agent/Models/Smoke/Tools/Artifacts/Patches 回归 **2242 passed**；未关闭流、后台任务或异步警告不被忽略。最终基础 wheel SHA256 为 `8ea716bd22ee7021d822a21e4e580ed24a8bffe82f9e3f2e7764c6aabad7e0bc`。跨平台验收以本片最新提交 CI 为准，不使用旧提交结果冒充本片通过。下一阶段0.5.4先完成Process的执行/输出/进程组生命周期与审批边界设计，再实现Git/测试反馈，详见阶段文档第27节。
+
+## 30. 0.5.4a 宿主进程生命周期验收（2026-09-05）
+
+基线 `76dae11` 与CI33893001258四项成功；设计见 [ADR 0038](adr/0038-host-process-lifecycle.md)。新增 **96项**：契约/准入/Schema60，运行/输出/取消/绑定24，后代/启动窗口/关闭/错误生命周期11，宿主硬退出能力边界1。
+
+- 实际OS进程验证双流各2MiB的并发输出，捕获0/1/1024/24576字节仍完整排水，独立观察长度/摘要正确；二进制、跨块UTF-8和截断多字节字符不被替换成伪原文。
+- 输出停止阈值与展示预算独立，达到阈值关闭仍打开的管道并终止，非EOF不冒充完整；stdin EOF、环境不继承、额外FD关闭、argv不解释Shell、非零/信号退出均验收。
+- 实际Token/Task/多次Task取消、外部超时、close、取消close、启动成功但句柄交付前取消，均先回收直接子进程；忙时不排队，正常结束或取消后可再次执行，关闭后拒绝新请求。
+- 主进程先退出而同组后代继续持管道/已关管道、忽略TERM的孙进程、管道先EOF但主进程仍活，均验证独立事件和组清理。组信号失败明确cleanup_failed并拒绝后续执行。
+- 脱组子进程持有管道的例子验证有界关闭与非EOF；子进程仍活，不伪称containment。另一个宿主 `os._exit(84)` 真退出后仍有存活子进程，测试父进程负责清理。本片新增的是已知缺口的真退出反例，不宣称已经实现宿主硬崩溃恢复；前序301个硬崩溃验收及2个SIGINT的口径不被该反例混淆。
+
+仅新增四份Process v1 Schema；Agent v8/Session migration9/Provider v3/副本v3、旧Schema、工具定义和依赖不变。所有新进程运行固定测试夹具，未运行不可信仓库代码、真实模型、SSH或中间件。本片完成0.5.4a基础层，不是整个0.5.4或生产Coding Agent完工。
+
+`make check`：Ruff及Mypy（117源文件）通过，**2374 passed、1 skipped**；唯一跳过仍为本地无PostgreSQL的实库项，由远端PostgreSQL作业单独验收。`PYTHONASYNCIODEBUG=1`、`-W error`的Agent/Models/Smoke/Tools/Artifacts/Patches/Processes回归 **2338 passed**，不忽略未关闭流、后台任务和异步警告。
+
+基础wheel重新构建并安装到独立环境，无供应商SDK；仓库外`python -I`执行原13个示例及`host_process`共 **14个示例**通过。最终wheel SHA256为 `7ec1043a222fe800aeaf7c495b391e146e35eed1095d76601c72dba86d47f309`。Linux Python3.12/3.13全回归和macOS工具回归纳入本片进程测试/示例，PostgreSQL作业保留；跨平台结论以本片最终提交CI为准，不能使用旧提交结果。下一片0.5.4b实施持久命令准入与宿主死亡处理，再接Git/run_tests。

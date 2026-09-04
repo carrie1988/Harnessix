@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix 0.1 的**当前实现**和 Harnessix Code 1.0 的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4a已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果与宿主调用桥接已实现；Kernel 批量工具、Diff Artifact、Process/Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果与宿主调用桥接已实现；Kernel 批量工具、计划/效果Diff Artifact及0.5.4a受信宿主Process已实现；持久命令准入、模型Shell与Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -420,3 +420,5 @@ src/harnessix/
 公共报告与完整宿主证据分离，生成报告不授予发布权。现有 Artifact 仅接受成功只读 ToolResult，表中每调用仅一条，引用也只认 `output.artifact`；c3c2 必须对计划和效果分别绑定真实 Session 事实并保持同事务，不能伪造只读调用或成功结果。本片不提前修改 Session 格式，见 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。
 
 整组 Diff 采用独立事务发布端口：审批/结果的 `diff_artifact` 绑定 Artifact 表的用途，不改变组公开结果或私有效果。计划/效果正文与对应 Session 事实同事务；归档失败可省略展示引用，但不能丢失真实效果。详见 [ADR 0037](adr/0037-batch-diff-transaction-publication.md)。
+
+0.5.4a的 `HostProcessRuntime` 是显式受信宿主API，依赖既有取消/错误模型而不修改Kernel或引入新Agent Loop。二流使用公开SubprocessProtocol/Transport区分退出、EOF与强制关闭；这里只保证声明范围内的执行/回收，不是权限审批、进程树容器或跨重启恢复，详见 [ADR 0038](adr/0038-host-process-lifecycle.md)。

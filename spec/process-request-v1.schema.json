@@ -1,0 +1,31 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "program": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+      "title": "Program",
+      "type": "string"
+    },
+    "arguments": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Arguments",
+      "type": "array"
+    },
+    "timeout_seconds": {
+      "default": 30.0,
+      "exclusiveMinimum": 0,
+      "maximum": 3600,
+      "title": "Timeout Seconds",
+      "type": "number"
+    }
+  },
+  "required": [
+    "program"
+  ],
+  "title": "ProcessRequest",
+  "type": "object"
+}

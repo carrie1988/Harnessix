@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1 / 0.5.2 与 0.5.3a/b1/b2a/b2b 已完成范围内验收，整体 0.5 进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成 c1 只读整组计划与有界结构化 Diff；c2a/c2b 已交付整组事务预留/审批、顺序一次性执行和部分/未知效果核对，c3a/c3b 已实现宿主整组桥接、Kernel/模型持久审批和双账本恢复（Agent v7 / migration8），c3c1/c3c2 已交付有界差异报告和事务归档（Agent v8 / migration9），下一阶段为 **0.5.4 Process / Git / 测试执行**，见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。见 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md)。不把逐文件替换冒充整体原子提交，不提前接入 Shell 或源目录自动合入。
+状态：**0.5.1–0.5.3与0.5.4a已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成 c1 只读整组计划与有界结构化 Diff；c2a/c2b 已交付整组事务预留/审批、顺序一次性执行和部分/未知效果核对，c3a/c3b 已实现宿主整组桥接、Kernel/模型持久审批和双账本恢复（Agent v7 / migration8），c3c1/c3c2 已交付有界差异报告和事务归档（Agent v8 / migration9），0.5.4a 已实现受信宿主进程生命周期，下一片为 **0.5.4b 持久命令准入与宿主死亡处理**，见 [ADR 0038](adr/0038-host-process-lifecycle.md)。整组方案见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)和 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md)。不把逐文件替换冒充整体原子提交，不提前接入 Shell 或源目录自动合入。
 
 ### 目标
 
@@ -219,9 +219,12 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
         - [x] c3c1：完整调用/组账本绑定的计划与历史效果报告，有界 JSONL、全部成员说明、取消排空及只读重开；
         - [x] c3c2：计划/效果独立引用与真实 Session 事实同事务发布、reader 兼容升级、分页/配额/过期及失败恢复；
 - [ ] `shell` 的非交互执行；
+  - [x] 0.5.4a：受信宿主程序绑定、argv/环境准入、双流有界捕获、组终止、取消/关闭与管道回收；不注册模型工具；
+  - [ ] 0.5.4b：持久命令意图/审批/结果、宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
+  - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；
-- [x] 有界搜索输出截断、事务归档引用和过期清理；Process 双流捕获尚未实现；
+- [x] 有界搜索输出截断、事务归档引用和过期清理；0.5.4a已支持Process双流有界前缀，Process事务归档仍待实施；
 - [ ] 只读并发、写操作互斥和 Turn 取消；
 - [ ] 统一 Tool Error Taxonomy；
 - [ ] 变更摘要和最终 Diff 交付。

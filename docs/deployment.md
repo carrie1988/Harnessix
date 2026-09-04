@@ -262,3 +262,13 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 另由旧 wheel 在独立目录执行 create/fixture 导出真实 v7 整组 transcript，以及旧只读 Artifact 的原事件/投影/表行夹具纳入 CI，非手改版本号。migration9 的复制、删除旧表、重命名及提交后四个真实进程退出均验收为完整旧库或完整新库。
 
 当前 `examples/batch_diff.py` 已更新为计划/效果双引用归档闭环，仍可用基础 wheel 在仓库外 `python -I` 运行，无供应商 SDK 或模型请求。包版本仍0.1.0，安装时记录 Git 提交和 wheel 摘要；无需远程服务器或新中间件。
+
+## 受信宿主进程层安装（0.5.4a）
+
+基础wheel新增 `harnessix.processes`，不需要额外依赖、模型API、服务器或中间件。仅验证macOS/Linux的本地文件系统及Python3.12/3.13对应CI；Windows明确拒绝，不静默降级。包版本仍0.1.0，记录具体Git提交与wheel摘要。
+
+新示例 `examples/host_process.py` 可复制到仓库外，安装基础wheel后用 `python -I host_process.py` 运行。它只启动脚本内固定的受信Python命令，验证双流捕获/完整排水、超时和直接子进程回收，不运行用户仓库的测试或安装脚本。
+
+宿主必须显式选择cwd、可执行文件表和环境；无隐式shell、stdin或父进程环境透传。关闭事件循环前调用并等待 `aclose()`，或使用异步上下文管理器。进程组不能隔离文件/网络访问，也不能保证脱组后代、宿主硬崩溃或不可中断内核状态的整体清理。不要将本层直接注册为免审批模型工具；持久准入与更强containment后续单独验收。
+
+此片无Agent/Session/副本迁移，旧Schema与既有工具定义保持。无需因安装本片对旧Session进行降级、重建或执行等待审批。

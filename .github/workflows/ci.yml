@@ -35,6 +35,7 @@ jobs:
       - run: uv run python -m examples.batch_patch_bridge
       - run: uv run python -m examples.kernel_batch
       - run: uv run python -m examples.batch_diff
+      - run: uv run python -m examples.host_process
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -44,7 +45,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
-      - run: uv run pytest tests/tools tests/artifacts tests/patches
+      - run: uv run pytest tests/tools tests/artifacts tests/patches tests/processes
       - run: uv run python -m examples.kernel_files
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
@@ -58,6 +59,7 @@ jobs:
       - run: uv run python -m examples.batch_patch_bridge
       - run: uv run python -m examples.kernel_batch
       - run: uv run python -m examples.batch_diff
+      - run: uv run python -m examples.host_process
 
   postgres:
     runs-on: ubuntu-latest

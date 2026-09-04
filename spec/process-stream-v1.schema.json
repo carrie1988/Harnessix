@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "data_base64": {
+      "maxLength": 1398104,
+      "title": "Data Base64",
+      "type": "string"
+    },
+    "captured_bytes": {
+      "maximum": 1048576,
+      "minimum": 0,
+      "title": "Captured Bytes",
+      "type": "integer"
+    },
+    "observed_bytes": {
+      "minimum": 0,
+      "title": "Observed Bytes",
+      "type": "integer"
+    },
+    "observed_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Observed Sha256",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "eof": {
+      "title": "Eof",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "data_base64",
+    "captured_bytes",
+    "observed_bytes",
+    "observed_sha256",
+    "truncated",
+    "eof"
+  ],
+  "title": "ProcessStream",
+  "type": "object"
+}

@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "max_timeout_seconds": {
+      "default": 300.0,
+      "exclusiveMinimum": 0,
+      "maximum": 3600,
+      "title": "Max Timeout Seconds",
+      "type": "number"
+    },
+    "stdout_bytes": {
+      "default": 24576,
+      "maximum": 1048576,
+      "minimum": 0,
+      "title": "Stdout Bytes",
+      "type": "integer"
+    },
+    "stderr_bytes": {
+      "default": 24576,
+      "maximum": 1048576,
+      "minimum": 0,
+      "title": "Stderr Bytes",
+      "type": "integer"
+    },
+    "stop_output_bytes": {
+      "default": 8388608,
+      "maximum": 67108864,
+      "minimum": 1,
+      "title": "Stop Output Bytes",
+      "type": "integer"
+    },
+    "terminate_grace_seconds": {
+      "default": 0.2,
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Terminate Grace Seconds",
+      "type": "number"
+    },
+    "pipe_drain_seconds": {
+      "default": 0.5,
+      "exclusiveMinimum": 0,
+      "maximum": 5,
+      "title": "Pipe Drain Seconds",
+      "type": "number"
+    }
+  },
+  "title": "ProcessLimits",
+  "type": "object"
+}

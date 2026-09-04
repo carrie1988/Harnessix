@@ -1,14 +1,14 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
-- 日期：2026-09-04
-- 状态：0.5.1 / 0.5.2 只读、搜索、可信作用域及有界 Artifact 已实现；0.5.3a/b1/b2 已实现受管单文件 Kernel 写闭环；0.5.3c1/c2/c3a 的整组计划、持久顺序执行及宿主调用桥接已实现；c3b/c3c–0.5.5 仍待实施
+- 日期：2026-09-05
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层已实现，0.5.4b持久准入/0.5.4c Git与测试工具及0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
 
 当前 Kernel 已有 `ToolRuntime.definitions/execute`、`ToolDescriptor`、持久 ToolCall/ToolResult、工具版本/指纹、审批和恢复语义。`ToolCallContent` 已包含版本、Effect Class、参数及审批绑定；`ToolResultContent` 已有 succeeded/failed/cancelled/unknown 和 Action ID。不要重新命名或并行建设另一套 Call/Result。
 
-默认 `_execute_tool` 仍拒绝非 READ_ONLY；0.5.3b2b 仅通过显式 `patches` 专用端口接入受管单文件写入和核对。不删除通用门禁，不让任意写工具或 Shell 获得执行权限。写审批、效果证据和双账本恢复见第 20 节。
+默认 `_execute_tool` 仍拒绝非 READ_ONLY；0.5.3仅通过显式 `patches` / `patch_batches` 专用端口接入受管单文件/整组写入和核对。不删除通用门禁，不让任意写工具或 Shell 获得执行权限。写审批、效果证据和双账本恢复见第 20 节。
 
 本阶段不建设新 Agent Loop、TUI、向量库、分布式队列、Web 产品或长期记忆。0.1 Action Plane 不改成每个文件读取都经过 HTTP/Worker 的旁路。0.6/0.7/0.8 的规划不能被写成已经具备的能力。
 
@@ -34,8 +34,8 @@
 | 0.5.3a | 只读 Patch 计划准备 | 已实现；完整镜像、唯一精确编辑、来源/计划复核，不执行写入 |
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
-| 0.5.3c | 多文件效果与 Diff | c1/c2/c3a 已实现整组准备、顺序效果及宿主调用桥接；c3b Kernel/c3c Artifact 接入待实施，不假报整体原子 |
-| 0.5.4 | Process、Git、run_tests、受控 Shell | 子进程树、输出管道、取消/超时、环境和审批边界通过 |
+| 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
+| 0.5.4 | Process、Git、run_tests、受控 Shell | a宿主进程基础层已实现；b持久准入/死亡处理与c工具接入待实施 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
@@ -54,10 +54,10 @@ search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 ../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
 ../patches/        已有精确计划、受管副本、持久写执行及专用 Kernel 桥接
-processes.py       argv、进程组、并发排水、取消与清理
+../processes/      argv、公开协议双流捕获、进程组、取消与直接子进程回收
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；b2 新增 agent_bridge/bridge_contracts 与 Kernel patching，Process 尚未实现。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；b2 新增 agent_bridge/bridge_contracts 与 Kernel patching，0.5.4a新增processes/contracts/capture/runtime宿主基础层，不注册模型工具。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -614,3 +614,33 @@ runtime = AgentRuntime(session, provider, patch_batches=bridge, batch_diffs=batc
 当前 Agent Event/Thread **v8**、Session **migration9**。旧 v1–v7 Schema/事件字节不变，缺引用的老 Item 不增加 null 字段；旧等待审批的原完整指纹不变。原工具定义、Provider v3、副本v3及依赖不变，包版本仍0.1.0。
 
 这完成 0.5.3c 范围的多文件报告交付，不代表整个0.5或完整生产 Coding Agent。下一阶段 **0.5.4 Process / Git / 测试执行**：先验证受管副本内非交互进程的 cwd/argv/环境准入、独立双流预算、取消/超时和进程组回收，再接入有持久准入的工具与测试反馈。POSIX 进程组不是 OS Sandbox，不能把命令执行当只读，也不能因 PID 消失推断外部副作用未发生。源码合入、完整仓库修复 Eval 仍待独立验收。
+
+## 28. 0.5.4a：受信宿主进程运行层
+
+实现见 [ADR 0038](adr/0038-host-process-lifecycle.md)。`processes/contracts.py` 定义独立v1请求、资源策略、二进制流和结果，`capture.py` 区分退出/管道终止，`runtime.py` 管理单事件循环内的一次执行。没有新模型工具、审批事件或数据库表。
+
+```python
+async with HostProcessRuntime(
+    trusted_cwd,
+    {"python": trusted_python_executable},
+    limits=ProcessLimits(stdout_bytes=24576, stderr_bytes=24576),
+) as host:
+    result = await host.run(
+        ProcessRequest(program="python", arguments=("-I", "-c", "print('hello')")),
+        CancelToken(),
+    )
+```
+
+构造时由宿主选择绝对cwd和可执行文件，并记录身份；请求只选择固定程序名、argv和可缩短的超时。这里的信任包括完整参数与执行代码，不是“登记Python就允许模型执行任何Python”。复核是变化检测，不是OS隔离/原子exec。只验证本地文件系统上的macOS/Linux；创建或不可中断内核回收不宣称硬实时截止保证。
+
+默认请求30秒、宿主上限300秒，每流捕获24KiB，合计观察到8MiB触发关闭管道并终止，TERM宽限0.2秒、退出后管道排水0.5秒。阈值最后一个已交付块可能越过上限；不是内核写出配额。忙时立即 `process_busy`，不隐藏排队。主程序不搜索PATH，stdin为DEVNULL，额外FD关闭，新POSIX会话/进程组；环境只取固定默认或完整显式允许列表，不合并父环境。
+
+`ProcessStream.data_base64`是精确保留的原始字节前缀，`data()`解码bytes，`text()`严格UTF-8；截断在多字节字符中间时明确解码失败，不悄悄替换。`observed_bytes/observed_sha256`描述已观察字节，`truncated`描述前缀丢弃，`eof`只在自然结束时为真。未EOF不宣称摘要覆盖整条输出；二流没有全局顺序。
+
+`ProcessResult.returncode`、`stop_reason`、`termination`分别描述直接子进程返回码、停止原因、组信号阶段。非零/信号退出不吞输出；退出码0也不证明测试通过或没有后代。即使主进程已退出、后代关闭了输出，也清理原组；忽略TERM的组成员升级KILL。直接子进程由asyncio回收；脱组后代持有管道时只在排水上限后关闭读端，保留非EOF标记。
+
+Token取消返回已启动进程的cancelled结果；Task取消/外部超时必须排空后传播。启动中取消不丢失句柄；重复取消/关闭均回收直接子进程。组信号失败返回cleanup_failed并关闭后续准入，不声称所有后代已清理。
+
+**仍待完成**：宿主SIGKILL/硬崩溃后的自动清理、脱组后代containment、持久命令意图/审批/结果和恢复、模型工具接入、Git/run_tests与Process Artifact。96个基础验收包含一项真硬退出的反例：没有parent-death/外部容器时子进程仍活，测试自身负责清理。这是边界证明，不是恢复成功。本片不提升Agent v8、Session migration9、Provider v3或副本v3。
+
+后续0.5.4b先研究持久准入与宿主死亡处理，再实现命令状态和安全恢复；0.5.4c接Git/测试工具，不将测试或Shell变成READ_ONLY。0.5.5仍须独立真实缺陷修复Eval，之后才可对完整编码闭环作验收声明。

@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "ProcessStream": {
+      "additionalProperties": false,
+      "properties": {
+        "data_base64": {
+          "maxLength": 1398104,
+          "title": "Data Base64",
+          "type": "string"
+        },
+        "captured_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Captured Bytes",
+          "type": "integer"
+        },
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "observed_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Observed Sha256",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data_base64",
+        "captured_bytes",
+        "observed_bytes",
+        "observed_sha256",
+        "truncated",
+        "eof"
+      ],
+      "title": "ProcessStream",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "host-process-result/v1",
+      "default": "host-process-result/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "pid": {
+      "minimum": 2,
+      "title": "Pid",
+      "type": "integer"
+    },
+    "returncode": {
+      "maximum": 255,
+      "minimum": -128,
+      "title": "Returncode",
+      "type": "integer"
+    },
+    "stop_reason": {
+      "enum": [
+        "exited",
+        "timeout",
+        "cancelled",
+        "closed",
+        "output_limit",
+        "io_error",
+        "cleanup_failed"
+      ],
+      "title": "Stop Reason",
+      "type": "string"
+    },
+    "termination": {
+      "enum": [
+        "none",
+        "term",
+        "kill",
+        "failed"
+      ],
+      "title": "Termination",
+      "type": "string"
+    },
+    "stdout": {
+      "$ref": "#/$defs/ProcessStream"
+    },
+    "stderr": {
+      "$ref": "#/$defs/ProcessStream"
+    },
+    "elapsed_seconds": {
+      "minimum": 0,
+      "title": "Elapsed Seconds",
+      "type": "number"
+    }
+  },
+  "required": [
+    "pid",
+    "returncode",
+    "stop_reason",
+    "termination",
+    "stdout",
+    "stderr",
+    "elapsed_seconds"
+  ],
+  "title": "ProcessResult",
+  "type": "object"
+}
