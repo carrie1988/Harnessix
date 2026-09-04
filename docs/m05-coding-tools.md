@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-05
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层已实现，0.5.4b持久准入/0.5.4c Git与测试工具及0.5.5 Eval待实施
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层及0.5.4b1 Action Plane持久准入已实现，0.5.4b2 Agent绑定/0.5.4c Git与测试工具及0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -641,6 +641,14 @@ async with HostProcessRuntime(
 
 Token取消返回已启动进程的cancelled结果；Task取消/外部超时必须排空后传播。启动中取消不丢失句柄；重复取消/关闭均回收直接子进程。组信号失败返回cleanup_failed并关闭后续准入，不声称所有后代已清理。
 
-**仍待完成**：宿主SIGKILL/硬崩溃后的自动清理、脱组后代containment、持久命令意图/审批/结果和恢复、模型工具接入、Git/run_tests与Process Artifact。100个基础验收包含一项真硬退出的反例：没有parent-death/外部容器时子进程仍活，测试自身负责清理。这是边界证明，不是恢复成功。本片不提升Agent v8、Session migration9、Provider v3或副本v3。
+**本切片当时仍待完成**：宿主SIGKILL/硬崩溃后的自动清理、脱组后代containment、持久命令准入、模型工具接入、Git/run_tests与Process Artifact。下节b1已交付Action Plane准入，其余边界未变。100个基础验收包含一项真硬退出的反例：没有parent-death/外部容器时子进程仍活，测试自身负责清理。这是边界证明，不是恢复成功。本片不提升Agent v8、Session migration9、Provider v3或副本v3。
 
-后续0.5.4b先研究持久准入与宿主死亡处理，再实现命令状态和安全恢复；0.5.4c接Git/测试工具，不将测试或Shell变成READ_ONLY。0.5.5仍须独立真实缺陷修复Eval，之后才可对完整编码闭环作验收声明。
+0.5.4b1已接Action Plane持久命令状态；后续b2设计Agent绑定及宿主死亡运维处置，0.5.4c接Git/测试工具，不将测试或Shell变成READ_ONLY。0.5.5仍须独立真实缺陷修复Eval，之后才可对完整编码闭环作验收声明。
+
+## 29. 0.5.4b1：Action Plane持久命令准入
+
+实现见 [ADR 0039](adr/0039-process-action-plane-admission.md)。宿主用`process_action_tool(factory)`显式注册高风险、非幂等写Action；默认Bootstrap和Agent工具清单不注册。命名程序/argv/超时进入已有Action请求和Effect Journal，必须带幂等键并经过Policy/Approval，批准后才执行。
+
+工具版本绑定cwd、程序身份、环境和资源策略摘要；每次执行前复核持久描述、当前Executor和新Runtime，配置漂移不消费旧权限。确定结果保存完整ProcessResult及摘要Receipt；非零退出不是传输失败。管道证据不完整或清理失败保守UNKNOWN。Task取消先回收再传播，未写终态的RUNNING由租约恢复UNKNOWN；宿主硬退出同样不自动重放、不按历史PID发信号，对账只转人工处置。
+
+本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：Agent Session绑定、Process Artifact、硬退出自动清理与OS隔离待b2/0.7，Git/run_tests待0.5.4c。

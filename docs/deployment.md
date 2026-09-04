@@ -272,3 +272,11 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 宿主必须显式选择cwd、可执行文件表和环境；无隐式shell、stdin或父进程环境透传。关闭事件循环前调用并等待 `aclose()`，或使用异步上下文管理器。进程组不能隔离文件/网络访问，也不能保证脱组后代、宿主硬崩溃或不可中断内核状态的整体清理。不要将本层直接注册为免审批模型工具；持久准入与更强containment后续单独验收。
 
 此片无Agent/Session/副本迁移，旧Schema与既有工具定义保持。无需因安装本片对旧Session进行降级、重建或执行等待审批。
+
+## 持久进程Action部署（0.5.4b1）
+
+`process_action_tool(factory)`仅由宿主显式加入自己的ToolRegistry；默认`build_registry`不注册。工厂必须每次创建绑定一致的全新`HostProcessRuntime`，工具版本会包含其权限摘要。SQLite/PostgreSQL Effect Journal、Policy和Worker配置沿用0.1，无新表、迁移或中间件；API与Worker必须部署相同工具版本和宿主绑定，否则批准后的执行会在启动前失败。
+
+命令请求必须带幂等键并等待审批。argv、程序别名和超时属于持久Action正文，禁止在其中放凭据；本片遇到SecretRef会在不启动进程的前提下失败。退出码非零仍是已观察到的进程结果，运维判断测试成败必须读取ProcessResult。UNKNOWN和MANUAL_INTERVENTION不得投入READY队列或由Worker重试。
+
+宿主硬退出时Journal可以在租约过期后恢复UNKNOWN，但0.5.4b1没有外部进程监督器，子进程仍可能存活。运维只能按部署环境核查，不能对持久PID/PGID直接发信号。示例`python -m examples.process_action`验证持久准入闭环，不验证Sandbox或Agent模型调用。

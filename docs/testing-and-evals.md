@@ -642,6 +642,19 @@ Agent Runtime Kernel 合并前：
 
 `make check`：Ruff及Mypy（117源文件）通过，**2378 passed、1 skipped**；唯一跳过仍为本地无PostgreSQL的实库项，由远端PostgreSQL作业单独验收。`PYTHONASYNCIODEBUG=1`、`-W error`的Agent/Models/Smoke/Tools/Artifacts/Patches/Processes回归 **2342 passed**，不忽略未关闭流、后台任务和异步警告。
 
-基础wheel重新构建并安装到独立环境，无供应商SDK；仓库外`python -I`执行原13个示例及`host_process`共 **14个示例**通过。最终wheel SHA256为 `7ec1043a222fe800aeaf7c495b391e146e35eed1095d76601c72dba86d47f309`。Linux Python3.12/3.13全回归和macOS工具回归纳入本片进程测试/示例，PostgreSQL作业保留；跨平台结论以本片最终提交CI为准，不能使用旧提交结果。下一片0.5.4b实施持久命令准入与宿主死亡处理，再接Git/run_tests。
+基础wheel重新构建并安装到独立环境，无供应商SDK；仓库外`python -I`执行原13个示例及`host_process`共 **14个示例**通过。最终wheel SHA256为 `7ec1043a222fe800aeaf7c495b391e146e35eed1095d76601c72dba86d47f309`。Linux Python3.12/3.13全回归和macOS工具回归纳入本片进程测试/示例，PostgreSQL作业保留；跨平台结论以本片最终提交CI为准，不能使用旧提交结果。后续b1已实施Action Plane持久准入；下一片b2处理Agent绑定与宿主死亡运维处置，再接Git/run_tests。
 
 **跨平台根因修复**：首个提交`ab02373`的CI33897979250中，Linux3.12/3.13与PostgreSQL成功，macOS只有环境键集合断言失败（1523通过、1失败）。在本地Python Framework 3.12.8的全新环境复现出系统编码变量，而Anaconda 3.12.7没有，排除简单重跑。执行层及允许列表不改；补充默认/空/显式三种真实启动映射、父变量哨兵与配置防变更回归，并明确拒绝宿主传入CF编码变量。子进程初始化可自设变量，不能以其完整键集合反推exec继承情况；该事实和求证来源见ADR0038。独立Framework 3.12.8环境在异步调试与警告转错误下100项进程测试通过，最终精确环境用例4项再验通过；执行包内容未变化，基础wheel及14示例验收仍对应相同字节。最终结论必须核对修复提交CI，不沿用首次失败结果。
+
+## 31. 0.5.4b1 Action Plane持久进程准入验收（2026-09-05）
+
+基线`adfe267`及CI33899008420四项成功；设计见 [ADR 0039](adr/0039-process-action-plane-admission.md)。新增 **14项**：Action输入/工具描述/绑定摘要5，持久审批/幂等/结果/拒绝/配置漂移/非零与未知效果6，Task取消与租约恢复1，凭据引用拒绝1，Action执行宿主真硬退出边界1。
+
+- 批准前命令不运行；批准后真实进程只执行一次，相同幂等请求返回原Action/Result。拒绝、当前绑定漂移及跨重启工具版本漂移均在启动前失败。
+- 二进制ProcessResult和Effect Receipt进入原SQLite Effect Journal；退出0/7都是确定的调用结果。输出强制关闭保留证据并归为UNKNOWN，对账只到MANUAL_INTERVENTION，不重放。
+- Task取消先回收直接子进程；未写终态的RUNNING租约过期后恢复UNKNOWN。真`os._exit(84)`后重开亦恢复UNKNOWN，原测试子进程仍活且不被历史PID终止，父测试负责清理。
+- 严格Action JSON拒绝类型强转/NUL/额外Shell字段，SecretRef未解析时批准后仍在启动前失败。工具不加入默认Bootstrap或模型清单。
+
+阶段针对性进程测试 **114 passed**，Ruff和Mypy（118源文件）通过。`make check`为 **2392 passed、1 skipped**，唯一跳过仍是本地无PostgreSQL的实库项；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2356 passed**。
+
+基础wheel无供应商SDK，仓库外`python -I`运行原14个及`process_action`共 **15个示例**通过；最终wheel SHA256为`f5724f7dd070194b28817d70419eb91558a1226ae7f7777d414488ab9766bbd2`。Linux3.12/3.13、macOS与PostgreSQL以本片最终提交CI为准，不能用`adfe267`旧CI代替。本片完成0.5.4b1，不代表Agent进程工具、b2、0.5.4c或生产Coding Agent完成。无模型请求、SSH或中间件部署。

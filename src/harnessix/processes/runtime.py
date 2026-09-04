@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import os
 import signal
 import stat
@@ -99,6 +101,26 @@ class HostProcessRuntime:
             raise KernelError("process_binding_invalid", "cwd或可执行文件绑定无效") from None
         self._closed = False
         self._active: tuple[_Operation, asyncio.Task[ProcessResult]] | None = None
+        payload = {
+            "implementation": "host-process-runtime/v1",
+            "cwd": str(self._cwd),
+            "cwd_identity": self._cwd_identity,
+            "programs": {
+                name: {"path": str(path), "identity": identity}
+                for name, (path, identity) in sorted(self._programs.items())
+            },
+            "environment": self._environment,
+            "limits": self._limits.model_dump(mode="json"),
+        }
+        canonical = json.dumps(
+            payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+        self._binding_fingerprint = hashlib.sha256(canonical.encode()).hexdigest()
+
+    @property
+    def binding_fingerprint(self) -> str:
+        """审批工具版本使用的宿主绑定摘要；不暴露环境值或可执行参数。"""
+        return self._binding_fingerprint
 
     async def __aenter__(self) -> Self:
         if self._closed:
