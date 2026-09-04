@@ -17,6 +17,8 @@
 
 新增宿主专用 `HostProcessRuntime`，构造时绑定绝对cwd、命名可执行文件表、显式环境与资源策略。调用只给出已注册程序名、argv和可缩短的超时；不接受shell字符串、任意cwd或模型提供的环境。不搜索PATH选择主程序，不继承父进程环境或stdin，关闭额外FD，POSIX新会话/进程组。一次仅一个执行，忙时明确拒绝，不隐藏排队或刷新截止时间。
 
+启动环境允许列表约束传给exec的映射，不约束程序初始化后的自改环境。本片macOS CI曾因把子进程环境键集当作启动映射而失败；本地CPython 3.12.8 Framework以仅NO_COLOR的环境启动仍生成`__CF_USER_TEXT_ENCODING`，3.12.7 Anaconda未生成。Apple公开 [CFRuntime初始化](https://github.com/apple-oss-distributions/CF/blob/main/CFRuntime.c)调用默认编码初始化并注明可能设置环境。修正验收为真实启动边界的精确映射断言、敏感哨兵不继承和子进程初始化行为分别校验，不将该变量加入宿主可配置环境列表。
+
 可执行文件和cwd记录身份并在运行前复核。这是变化检测，不是原子exec/CAS或路径隔离；程序、解释器、参数和仓库代码仍须受宿主信任。进程可访问宿主权限范围，不把cwd当Sandbox，不运行用户未批准的不可信仓库代码。不新增模型工具、Kernel/Session审批事实、Process Journal、Artifact或迁移；Agent v8、Session migration9、Provider v3、副本v3及原工具定义不变。
 
 ## 3. 输出与终态

@@ -630,7 +630,7 @@ Agent Runtime Kernel 合并前：
 
 ## 30. 0.5.4a 宿主进程生命周期验收（2026-09-05）
 
-基线 `76dae11` 与CI33893001258四项成功；设计见 [ADR 0038](adr/0038-host-process-lifecycle.md)。新增 **96项**：契约/准入/Schema60，运行/输出/取消/绑定24，后代/启动窗口/关闭/错误生命周期11，宿主硬退出能力边界1。
+基线 `76dae11` 与CI33893001258四项成功；设计见 [ADR 0038](adr/0038-host-process-lifecycle.md)。新增 **100项**：契约/准入/Schema61，运行/输出/取消/绑定27，后代/启动窗口/关闭/错误生命周期11，宿主硬退出能力边界1。
 
 - 实际OS进程验证双流各2MiB的并发输出，捕获0/1/1024/24576字节仍完整排水，独立观察长度/摘要正确；二进制、跨块UTF-8和截断多字节字符不被替换成伪原文。
 - 输出停止阈值与展示预算独立，达到阈值关闭仍打开的管道并终止，非EOF不冒充完整；stdin EOF、环境不继承、额外FD关闭、argv不解释Shell、非零/信号退出均验收。
@@ -640,6 +640,8 @@ Agent Runtime Kernel 合并前：
 
 仅新增四份Process v1 Schema；Agent v8/Session migration9/Provider v3/副本v3、旧Schema、工具定义和依赖不变。所有新进程运行固定测试夹具，未运行不可信仓库代码、真实模型、SSH或中间件。本片完成0.5.4a基础层，不是整个0.5.4或生产Coding Agent完工。
 
-`make check`：Ruff及Mypy（117源文件）通过，**2374 passed、1 skipped**；唯一跳过仍为本地无PostgreSQL的实库项，由远端PostgreSQL作业单独验收。`PYTHONASYNCIODEBUG=1`、`-W error`的Agent/Models/Smoke/Tools/Artifacts/Patches/Processes回归 **2338 passed**，不忽略未关闭流、后台任务和异步警告。
+`make check`：Ruff及Mypy（117源文件）通过，**2378 passed、1 skipped**；唯一跳过仍为本地无PostgreSQL的实库项，由远端PostgreSQL作业单独验收。`PYTHONASYNCIODEBUG=1`、`-W error`的Agent/Models/Smoke/Tools/Artifacts/Patches/Processes回归 **2342 passed**，不忽略未关闭流、后台任务和异步警告。
 
 基础wheel重新构建并安装到独立环境，无供应商SDK；仓库外`python -I`执行原13个示例及`host_process`共 **14个示例**通过。最终wheel SHA256为 `7ec1043a222fe800aeaf7c495b391e146e35eed1095d76601c72dba86d47f309`。Linux Python3.12/3.13全回归和macOS工具回归纳入本片进程测试/示例，PostgreSQL作业保留；跨平台结论以本片最终提交CI为准，不能使用旧提交结果。下一片0.5.4b实施持久命令准入与宿主死亡处理，再接Git/run_tests。
+
+**跨平台根因修复**：首个提交`ab02373`的CI33897979250中，Linux3.12/3.13与PostgreSQL成功，macOS只有环境键集合断言失败（1523通过、1失败）。在本地Python Framework 3.12.8的全新环境复现出系统编码变量，而Anaconda 3.12.7没有，排除简单重跑。执行层及允许列表不改；补充默认/空/显式三种真实启动映射、父变量哨兵与配置防变更回归，并明确拒绝宿主传入CF编码变量。子进程初始化可自设变量，不能以其完整键集合反推exec继承情况；该事实和求证来源见ADR0038。独立Framework 3.12.8环境在异步调试与警告转错误下100项进程测试通过，最终精确环境用例4项再验通过；执行包内容未变化，基础wheel及14示例验收仍对应相同字节。最终结论必须核对修复提交CI，不沿用首次失败结果。

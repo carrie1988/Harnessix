@@ -104,9 +104,46 @@ async def test_argv_is_not_shell_and_environment_is_not_inherited(tmp_path, monk
         )
     cwd, arg, env = json.loads(result.stdout.text())
     assert cwd == str(tmp_path.resolve()) and arg == payload
-    assert set(env) <= {"NO_COLOR", "LC_CTYPE"} and env["NO_COLOR"] == "1"
+    # Python可生成LC_CTYPE；链接CoreFoundation的macOS构建还可初始化其编码变量。
+    generated = {"LC_CTYPE"}
+    if sys.platform == "darwin":
+        generated.add("__CF_USER_TEXT_ENCODING")
+    assert set(env) <= {"NO_COLOR", *generated} and env["NO_COLOR"] == "1"
     assert not (tmp_path / "injected").exists()
     assert "must-not-reach-child" not in result.model_dump_json()
+
+
+@pytest.mark.parametrize("environment", [None, {}, {"NO_COLOR": "1"}])
+async def test_exact_launch_environment_does_not_merge_parent(tmp_path, monkeypatch, environment):
+    environment = None if environment is None else dict(environment)
+    monkeypatch.setenv("HARNESSIX_PROCESS_SECRET_CANARY", "parent-env-canary")
+    monkeypatch.setenv("__CF_USER_TEXT_ENCODING", "parent-encoding-canary")
+    monkeypatch.setenv("PYTHONPATH", "parent-loader-canary")
+    expected = (
+        {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}
+        if environment is None
+        else dict(environment)
+    )
+    loop = asyncio.get_running_loop()
+    original = loop.subprocess_exec
+    observed = []
+
+    async def observe(*args, **kwargs):
+        # 在真实OS启动边界验证，不用子进程初始化后的环境推断exec输入。
+        observed.append(dict(kwargs["env"]))
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(loop, "subprocess_exec", observe)
+    async with runtime(tmp_path, environment=environment) as host:
+        if environment is not None:
+            environment["NO_COLOR"] = "later-mutation"
+        result = await host.run(
+            request("import os,json; print(json.dumps(dict(os.environ)))"), CancelToken()
+        )
+    assert observed == [expected]
+    assert result.returncode == 0
+    assert "canary" not in result.stdout.text()
+    assert "later-mutation" not in result.stdout.text()
 
 
 async def test_extra_inheritable_fd_is_closed(tmp_path):

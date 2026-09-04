@@ -641,6 +641,6 @@ async with HostProcessRuntime(
 
 Token取消返回已启动进程的cancelled结果；Task取消/外部超时必须排空后传播。启动中取消不丢失句柄；重复取消/关闭均回收直接子进程。组信号失败返回cleanup_failed并关闭后续准入，不声称所有后代已清理。
 
-**仍待完成**：宿主SIGKILL/硬崩溃后的自动清理、脱组后代containment、持久命令意图/审批/结果和恢复、模型工具接入、Git/run_tests与Process Artifact。96个基础验收包含一项真硬退出的反例：没有parent-death/外部容器时子进程仍活，测试自身负责清理。这是边界证明，不是恢复成功。本片不提升Agent v8、Session migration9、Provider v3或副本v3。
+**仍待完成**：宿主SIGKILL/硬崩溃后的自动清理、脱组后代containment、持久命令意图/审批/结果和恢复、模型工具接入、Git/run_tests与Process Artifact。100个基础验收包含一项真硬退出的反例：没有parent-death/外部容器时子进程仍活，测试自身负责清理。这是边界证明，不是恢复成功。本片不提升Agent v8、Session migration9、Provider v3或副本v3。
 
 后续0.5.4b先研究持久准入与宿主死亡处理，再实现命令状态和安全恢复；0.5.4c接Git/测试工具，不将测试或Shell变成READ_ONLY。0.5.5仍须独立真实缺陷修复Eval，之后才可对完整编码闭环作验收声明。

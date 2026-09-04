@@ -80,6 +80,7 @@ def test_limits_are_finite_and_bounded(field, value):
         "PYTHONPATH",
         "LD_PRELOAD",
         "DYLD_INSERT_LIBRARIES",
+        "__CF_USER_TEXT_ENCODING",
     ],
 )
 def test_secret_or_loader_environment_keys_are_denied(tmp_path, name):
