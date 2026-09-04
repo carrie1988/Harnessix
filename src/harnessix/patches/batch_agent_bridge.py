@@ -7,7 +7,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import ValidationError
 
@@ -35,6 +35,8 @@ from harnessix.patches.batch_bridge_contracts import (
 from harnessix.patches.batch_contracts import PatchBatchProposal
 from harnessix.patches.batch_run_contracts import BatchExecutionResult
 from harnessix.patches.batches import prepare_patch_batch
+from harnessix.patches.diff_document import PreparedBatchDiffDocument, batch_diff_document
+from harnessix.patches.diff_document_contracts import BatchDiffDocumentOptions
 from harnessix.patches.managed import ManagedPatchWorkspace
 from harnessix.patches.managed_batches import ManagedPatchBatches
 from harnessix.patches.managed_io import fail
@@ -296,6 +298,64 @@ class ManagedPatchBatchBridge:
                 )
 
         return await self._run(recover, cancel)
+
+    async def diff(
+        self,
+        call: ToolCallContent,
+        scope: ToolExecutionScope,
+        plan: ManagedPatchBatchCallPlan,
+        cancel: CancelToken,
+        *,
+        view: Literal["plan", "effect"] = "plan",
+        approval: ApprovalRecord | None = None,
+        execution: BatchExecutionResult | None = None,
+        options: BatchDiffDocumentOptions | None = None,
+    ) -> PreparedBatchDiffDocument:
+        """只生成未发布报告；不核对目标、不消费批准，也不替代 Session 发布准入。"""
+        proposal = self._validate(call, scope)
+        plan = ManagedPatchBatchCallPlan.model_validate_json(plan.model_dump_json())
+        if (
+            view not in {"plan", "effect"}
+            or (view == "plan" and (approval is not None or execution is not None))
+            or (view == "effect" and approval is None)
+        ):
+            raise KernelError("patch_diff_view_invalid", "计划与效果报告的证据参数不一致")
+        approval = (
+            ApprovalRecord.model_validate_json(approval.model_dump_json()) if approval else None
+        )
+        execution = (
+            BatchExecutionResult.model_validate_json(execution.model_dump_json())
+            if execution
+            else None
+        )
+
+        def render(operation: ReadOperation) -> PreparedBatchDiffDocument:
+            with self._copy._guard():
+                backend, prepared = self._groups._load(plan.backend.batch_id, operation)
+                if self._plan(scope, proposal, backend) != plan:
+                    raise fail("call_mismatch")
+                output = None
+                if view == "effect":
+                    assert approval is not None
+                    if self._decision(plan, approval) != backend.decision:
+                        raise fail("approval_unverified")
+                    actual = self._groups.get_execution(plan.backend.batch_id, operation)
+                    if actual != execution:
+                        raise KernelError("patch_diff_effect_mismatch", "报告运行快照与账本不一致")
+                    if actual is not None and actual.run.phase != "finished":
+                        raise KernelError(
+                            "patch_diff_effect_unsettled", "运行未结算，不能生成历史效果"
+                        )
+                    result = self._result(call, plan, backend, actual)
+                    output = ManagedPatchBatchOutput.model_validate_json(
+                        json.dumps(result.result.output, allow_nan=False)
+                    )
+                document = batch_diff_document(
+                    self._copy.workspace, prepared, operation, output=output, options=options
+                )
+                return PreparedBatchDiffDocument(plan, approval, execution, document)
+
+        return await self._run(render, cancel)
 
     @staticmethod
     def _result(

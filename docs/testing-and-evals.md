@@ -590,3 +590,22 @@ Agent Runtime Kernel 合并前：
 **版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment.md#当前-session-v7--migration8-升级053c3b)。
 
 **基础发行包**：仓库外独立环境只安装锁定基础依赖，确认无 OpenAI/Anthropic SDK；`python -I` 下 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval、managed_batch、batch_patch_bridge、kernel_batch 共 **12个示例**通过。Linux Python3.12/3.13 与 macOS CI 增加新示例，PostgreSQL 作业保留，远端状态以本片对应提交为准。包版本仍0.1.0，没有新模型请求、远程登录或中间件部署。
+
+## 28. 0.5.3c3c1 真实差异报告与 JSONL 验收（2026-09-04）
+
+在 `1c02c22` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33885067939) 基础上实现 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。本片是报告准备，不是 Session Artifact 发布；c3c2 仍待实施，不将 c3c/0.5 标记完成。
+
+- 新增 **108项**：文档/预算/契约56、真实桥接与只读发布门禁30、异步生命周期12、真实退出7、冻结 Schema3。Patch 套件累计 **1090项**。
+- `make check`：Ruff/Mypy（112源文件）通过，**2213 passed、1 skipped**；本地未配置 PostgreSQL，实库回归继续由远端 CI 承担。
+- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**2177 passed**。
+- 计划 JSONL 与既有 Diff 的编辑、坐标和文本摘要完全一致；仅提取共用精确区间迭代器，没有新文本匹配器。历史选择 applied/observed_after；failed、observed_before、pending、approved、started、uncertain、diverged、missing、unavailable 分别验证，未知/未执行成员不隐藏或伪造编辑。全部应用也保留 completed/cancelled/timeout/failed/interrupted 原因。
+- 字节预算1024/1600/2000/2400/4000/65536/1048576覆盖拒绝与编辑前缀。完整预算恰好可用、少1字节明确截断，换行和 JSON 转义计入。预览0/1/2/3/4/1024/4096字节不切断 UTF-8 码点，完整摘要/长度与 c1 一致。16文件×32编辑的512行大报告在1 MiB内完整、默认64 KiB为显式前缀；4096字节两侧最大转义预览配合长路径仍在24 KiB单记录上限内。每份报告均由原 Artifact JSONL 校验器解析，但不进行发布。
+- 文档契约拒绝伪造完整性、计数、成员/编辑重排、丢成员、计划伪装效果、错误指纹及坐标。真实宿主桥接拒绝 Thread/Turn/Call/工作区/工具/计划/批准/运行错绑、证据缺失、镜像损坏、预算不足与非法视图；报告未改变账本/目标状态。
+- 实际三文件写后重开并改变当前目标，报告仍只展示原计划与已归因历史；禁用所有 prepare/save/reply/execute/reconcile/verify 和目标 open 后生成成功，数据库逻辑原文、源目录及目标 bytes/inode/mtime/ctime 不因生成改变。3成员×替换前/后异常覆盖部分/未知报告；显式恢复后的新快照才可显示 observed_after，旧快照拒绝，不隐式采用新事实。
+- 计划/效果两种视图各覆盖 Token/Task/重复取消/外层超时/重复取消关闭，线程结束前任务或关闭不会提前返回；已停止操作不加载账本。真实 Kernel 宿主的计划与效果文档均不能绕过旧只读发布器，失败不改变 Session 事件。
+
+**真实退出**：两种视图在加载后/编辑中/报告返回前共6个 os._exit 场景，重开报告不追加任何账本观察或改变文件；另有1个真实组开始后退出，确认 started 运行不能被报告器冒充已结算历史，也不自动 reconcile。全项目累计 **291个硬崩溃场景及2个 SIGINT用例**。这7项不代表未来 Session 归档事务已验收，也不模拟全部断电故障。
+
+**兼容/发行**：新文档、选项与 JSONL 记录三份独立v1 Schema，所有既有 Schema 字节不变。Agent v7、Session migration8、Provider v3、副本v3、旧工具定义与依赖不变，没有新迁移。仓库外基础 wheel 环境未安装供应商 SDK，以 `python -I` 运行原12个示例加 `batch_diff` 共 **13个示例**通过；新示例从真实 Kernel 审批取得计划/决定/效果，但报告没有 ArtifactRef，不伪造发布。Linux Python3.12/3.13 与 macOS CI 增加新入口，PostgreSQL 作业保留，远端验收以本片提交为准。
+
+无新模型请求、SSH、数据库或中间件部署。下一片 c3c2 必须单独验证计划/效果双用途的事务引用、真实 Session 准入、reader 兼容、分页/配额/过期、发布失败后的效果保留及真退出；不得简单取消旧只读限制或单调用唯一约束。

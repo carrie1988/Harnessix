@@ -38,4 +38,4 @@ Event/Thread 新 Schema v7，投影写入7、兼容读取1–7。migration8 仅�
 
 ## 6. 实施结果与后续
 
-实现专用端口、完整组审批、Agent v7 私有效果和 migration8；没有新增副本表或重写后端。额外修复旧/新写端口缺失时 WAITING 结算循环，补充旧单文件回归。真实旧 wheel 升级与旧 reader 拒绝、迁移事务退出、Session 存储回滚/丢失确认、双 SDK 离线以及每成员崩溃/取消均有证据，见 [测试第27节](../testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。c3b 范围完成不代表 c3/0.5 完成，下一片 c3c 单独实现 Diff Artifact，不扩大当前写路径。
+实现专用端口、完整组审批、Agent v7 私有效果和 migration8；没有新增副本表或重写后端。额外修复旧/新写端口缺失时 WAITING 结算循环，补充旧单文件回归。真实旧 wheel 升级与旧 reader 拒绝、迁移事务退出、Session 存储回滚/丢失确认、双 SDK 离线以及每成员崩溃/取消均有证据，见 [测试第27节](../testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。c3b 范围完成不代表 c3/0.5 完成，后续 c3c1 已实现差异报告准备，c3c2 再接事务归档，见 ADR0036；不扩大当前写路径。

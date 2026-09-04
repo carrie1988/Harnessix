@@ -1,9 +1,11 @@
 """直接使用精确编辑区间生成有界预览，不重新运行通用文本匹配算法。"""
 
 import hashlib
+from collections.abc import Iterator
 
 from harnessix.patches.batch_contracts import PreparedPatchBatch
 from harnessix.patches.batches import validate_patch_batch
+from harnessix.patches.contracts import PreparedPatch
 from harnessix.patches.diff_contracts import (
     DiffText,
     PatchBatchDiff,
@@ -25,6 +27,27 @@ def _preview(body: bytes, limit: int) -> DiffText:
     )
 
 
+def _patch_edits(
+    patches: tuple[PreparedPatch, ...], operation: ReadOperation, preview_bytes: int
+) -> Iterator[PatchEditDiff]:
+    for patch in patches:
+        shift = 0
+        for index, (start, stop, replacement) in enumerate(
+            _edit_ranges(patch.before, patch.proposal, operation)
+        ):
+            _checkpoint(operation)
+            yield PatchEditDiff(
+                path=patch.manifest.path,
+                patch_fingerprint=patch.manifest.fingerprint,
+                edit_index=index,
+                before_start=start,
+                after_start=start + shift,
+                before=_preview(patch.before[start:stop], preview_bytes),
+                after=_preview(replacement, preview_bytes),
+            )
+            shift += len(replacement) - (stop - start)
+
+
 def patch_batch_diff(
     workspace: Workspace,
     batch: PreparedPatchBatch,
@@ -42,33 +65,18 @@ def patch_batch_diff(
         edits=(),
         truncated=True,
     )
-    for patch in batch.patches:
-        shift = 0
-        for index, (start, stop, replacement) in enumerate(
-            _edit_ranges(patch.before, patch.proposal, operation)
-        ):
+    for edit in _patch_edits(batch.patches, operation, options.preview_bytes):
+        edits = (*report.edits, edit)
+        candidate = report.model_copy(
+            update={
+                "edits": edits,
+                "truncated": len(edits) < report.total_edits
+                or any(e.before.truncated or e.after.truncated for e in edits),
+            }
+        )
+        if len(candidate.model_dump_json().encode()) > options.max_output_bytes:
             _checkpoint(operation)
-            edit = PatchEditDiff(
-                path=patch.manifest.path,
-                patch_fingerprint=patch.manifest.fingerprint,
-                edit_index=index,
-                before_start=start,
-                after_start=start + shift,
-                before=_preview(patch.before[start:stop], options.preview_bytes),
-                after=_preview(replacement, options.preview_bytes),
-            )
-            edits = (*report.edits, edit)
-            candidate = report.model_copy(
-                update={
-                    "edits": edits,
-                    "truncated": len(edits) < report.total_edits
-                    or any(e.before.truncated or e.after.truncated for e in edits),
-                }
-            )
-            if len(candidate.model_dump_json().encode()) > options.max_output_bytes:
-                _checkpoint(operation)
-                return report
-            report = candidate
-            shift += len(replacement) - (stop - start)
+            return report
+        report = candidate
     _checkpoint(operation)
     return report

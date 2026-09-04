@@ -412,3 +412,9 @@ src/harnessix/
 `AgentRuntime.patch_batches` 是独立显式端口，仍复用原循环、审批事务与 Reducer；不在通用写注册表开放权限。`agent/batch_patching.py` 只校验完整授权与私有效果，不持有存储或后台任务；文件效果继续由 c3a 桥接和 c2 组引擎负责。Session v7 Item 保存完整审批计划及有界私有组效果，migration8 不重写旧历史或新增未来空表，副本仍为v3。
 
 执行准入为当前活跃调用、完整匹配决定、原 Turn 时限和已持久消费等待；复核上下文不是执行许可。恢复只查原记录/观察已开始成员，任一证明不足为 unknown，不跨两个账本补批/重放。结果超预算也保留已发生效果，非正常组运行不能冒充完成 Turn。模型历史仍按原白名单转换，不传私有组计划/批准/效果。Diff Artifact 仍需后续专用事务发布，不修改只读发布器，见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。
+
+### 差异报告准备的当前落点（0.5.3c3c1）
+
+`diff_document_contracts` 定义文档及 JSONL 行契约；`diff_document` 复用原精确编辑迭代器，生成计划或已归因历史视图。`ManagedPatchBatchBridge.diff` 在副本锁内核对完整调用/组计划/批准和当前已结算运行，再读取私有镜像准备文档；不读取当前目标、不新增观察或执行。
+
+公共报告与完整宿主证据分离，生成报告不授予发布权。现有 Artifact 仅接受成功只读 ToolResult，表中每调用仅一条，引用也只认 `output.artifact`；c3c2 必须对计划和效果分别绑定真实 Session 事实并保持同事务，不能伪造只读调用或成功结果。本片不提前修改 Session 格式，见 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。

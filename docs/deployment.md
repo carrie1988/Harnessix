@@ -236,3 +236,11 @@ c3b 已新增 Agent/Session 契约及最低 reader 的实际升级验证，见�
 另由旧 wheel 在独立目录完成单文件任务并导出 `tests/agent/fixtures/session-v6.json`；CI 的升级/事务故障夹具基于该真实 transcript 和冻结迁移。两个真实迁移进程退出分别覆盖 marker8 插入未提交与事务提交后，重开只见完整7或8，不混合/重写旧数据；夹具不替代真实 wheel 验收。
 
 新示例 `examples/kernel_batch.py` 可以复制到仓库外用基础 wheel 的 `python -I` 执行，无 OpenAI/Anthropic SDK、API Key 或新中间件。它使用显式专用端口；不要将桥接传给旧单文件 `patches` 或通用写注册表。取消等待或证明缺失时 unknown 是保守恢复结果，不通过重放降低不确定性。
+
+## 差异报告准备安装（0.5.3c3c1）
+
+本片仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁移、供应商依赖或模型工具变更。Agent v7、Session migration8、Provider v3、副本账本v3及旧工具定义不变；包版本仍0.1.0，请继续记录 Git 提交和 wheel 摘要。
+
+基础 wheel 安装后，将 `examples/batch_diff.py` 复制到仓库外，可直接运行 `python -I batch_diff.py`。示例使用真实本地 Session 和受管副本、离线决策，未调用模型 API；无需新数据库、服务器登录或中间件。报告通过 `to_jsonl()` 返回 bytes，尚未持久化为 Artifact，不提供发布后的引用、TTL 或读取游标。
+
+历史报告需要一致保留完整副本镜像/账本和原调用/批准/效果。缺失事实或快照不匹配时拒绝生成，不对当前文件猜测效果，也不自动 reconcile。取消/超时/关闭须等报告线程排空；报告生成失败不回滚此前真实写入。c3c2 才新增事务发布及其实际 reader 升级步骤。

@@ -576,3 +576,17 @@ Agent v7 增加 `PatchBatchApprovalRequestContent`，完整嵌入 c3a 调用计�
 修复了重开缺少原单文件/整组专用端口时，在 WAITING 内用 unknown_tool 反复尝试结算直到超时的问题；现在立即走保守恢复。旧单文件专用准入、工具定义和后端未扩大权限。
 
 c3b 不放宽只读 Artifact 发布器；下一片 c3c 才增加基于完整计划与历史效果的专用 Diff 准入。Shell、源目录合入、创建/删除/重命名及自主 Coding Eval 均不在本片。决策见 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。
+
+## 26. 0.5.3c3c1 当前交付：真实账本绑定的差异报告
+
+`batch_diff_document(workspace, prepared, operation, output=None, options=None)` 是纯展示器，校验私有完整镜像与输出路径/摘要对应关系；`output=None` 为计划视图，提供已结算公开效果为历史视图。它本身不能认证调用或批准，不能直接作发布准入。
+
+`ManagedPatchBatchBridge.diff(call, scope, plan, cancel, *, view="plan", approval=None, execution=None, options=None)` 是受信宿主报告入口。plan 视图不允许混入批准或运行；effect 视图必须有完整原计划、匹配后端镜像的宿主批准，以及精确匹配 `get_execution` 的快照。运行 started 拒绝，不自动 reconcile。effect 无运行仅在批准/拒绝已镜像且账本确实未开始时成立；证明不足、镜像损坏或运行变化均明确拒绝，不新建计划或自动选择更新后的事实。
+
+返回 `PreparedBatchDiffDocument`：完整 plan/approval/execution 与 `BatchDiffDocument`，默认 repr 隐藏全部载荷。正文通过 `document.to_jsonl()` 获取，尚不是 ArtifactRef。报告正文不含私有调用/成员 ID 或批准身份，但包含所选代码片段；不能将“未泄露凭据”理解成代码内容已脱敏。
+
+JSONL 三种记录：一个 summary、全部有序 file、所选编辑前缀 edit。计划选择全部成员，历史效果只选择 applied/observed_after；unknown 和未执行成员只有独立文件说明。每条≤24 KiB、整体≤1 MiB，默认64 KiB；预览0–4096 UTF-8字节、默认1024。预算至少要容纳全部成员说明，不能把未知后缀截掉；编辑可按前缀截断，保留完整长度/SHA及截断标记。`complete` 是该视图编辑和文本的完整性，不是效果已知、组运行成功或批准凭证。
+
+生成复用原精确编辑区间迭代器，不重跑新的匹配算法，不读取目标或写观察事件；目标后来变化仍可展示此前已归因历史。异步入口继续使用原桥接锁、操作时限和排空规则。新示例 `examples/batch_diff.py` 从真实 Kernel 审批取得计划/决定/效果，验证计划展示不写、实际批准写入后展示历史、Session 事件与源目录不因报告改变。
+
+本片不变更 Agent v7、Session migration8、副本v3、Provider v3 或旧工具定义/Schema。c3c2 再按 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md) 接入独立计划/效果引用与事务发布。当前只读 Artifact 的成功结果准入、单调用唯一归档、引用校验不能直接放宽。

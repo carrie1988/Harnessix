@@ -31,6 +31,11 @@ from harnessix.patches.batch_run_contracts import BatchExecutionResult, BatchRun
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan, ManagedPatchOutput
 from harnessix.patches.contracts import PatchManifest, PatchProposal
 from harnessix.patches.diff_contracts import PatchBatchDiff, PatchDiffOptions
+from harnessix.patches.diff_document_contracts import (
+    BatchDiffDocument,
+    BatchDiffDocumentOptions,
+    BatchDiffRecord,
+)
 from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
@@ -62,6 +67,9 @@ def main() -> None:
     write_json(output / "cost-report-v1.schema.json", CostReport.model_json_schema())
     write_json(output / "model-smoke-config-v1.schema.json", SmokeConfig.model_json_schema())
     write_json(output / "model-smoke-report-v1.schema.json", SmokeReport.model_json_schema())
+    write_json(
+        output / "batch-diff-record-v1.schema.json", TypeAdapter(BatchDiffRecord).json_schema()
+    )
     for name, model in (
         ("list-files-input", ListFilesInput),
         ("list-files-output", ListFilesOutput),
@@ -87,6 +95,8 @@ def main() -> None:
         ("patch-batch-manifest", PatchBatchManifest),
         ("patch-batch-diff", PatchBatchDiff),
         ("patch-diff-options", PatchDiffOptions),
+        ("batch-diff-document", BatchDiffDocument),
+        ("batch-diff-document-options", BatchDiffDocumentOptions),
         ("managed-patch-batch-plan", ManagedPatchBatchPlan),
         ("managed-patch-batch-approval", ManagedPatchBatchApproval),
         ("managed-patch-batch-call-plan", ManagedPatchBatchCallPlan),
