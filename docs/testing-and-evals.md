@@ -458,3 +458,17 @@ Agent Runtime Kernel 合并前：
 **独立 wheel**：在仓库外新建基础环境，安装当前 wheel 与锁定的默认依赖（无 OpenAI/Anthropic SDK），以 `python -I` 运行 patch_bridge、managed_patch、kernel_artifacts 通过。新示例串联真实只读工具→精确提案→原计划找回→宿主批准→副本写入→读回→重开不重写。Linux Python 3.12/3.13 与 macOS CI 均增加该示例；远端验收结果以对应提交为准。
 
 **下一片 b2b**：版本化 Agent 写审批/恢复结果、最低 reader 迁移、专用 Kernel 准入、真实 SDK 离线 HTTP 闭环及 Session × 副本账本崩溃矩阵。本片 ApprovalRecord 是受信宿主声明，未核验活跃 Turn、预算或 Session 审批消费；宿主夹具不等于自主编码 Eval。无新增依赖、真实模型请求、服务器登录或中间件部署，不关闭整体 0.5.3b/0.5。
+
+## 21. b2b 设计审查与桥接恢复修正（2026-09-04）
+
+基于 `8832dd7` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33836437879) 全绿结果，完成 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)：逐项核对 Runtime、Reducer、作用域、Session 投影/迁移和模型结果白名单，明确拟定 v6 写审批、专用准入、持久答复/消费顺序、取消后的效果结算及 KWP-01～10 组合验收矩阵。上述 Kernel 接入仍待实现，未写入新 Schema 或 migration。
+
+设计审查发现：恢复只带 ApprovalRecord、未带 plan，而账本计划缺失时，旧桥接忽略了审批证据并返回 failed。增加无证据/批准/拒绝 **3 项回归**，修改前批准和拒绝两项稳定失败；修改后只要 plan 或 approval 任一证据存在就返回 unknown，避免把缺证据解释为未发生效果。恢复仍不 prepare/save/reply/execute，也不新增重试权限。
+
+- `make check`：Ruff/Mypy（94 个源文件）通过，**1372 passed、1 skipped**；本地 PostgreSQL 跳过项仍由 CI 实库作业验证。
+- 异步调试全范围：`PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`，**1336 passed**。
+- Patch 测试累计 **254 项**；真实硬崩溃仍为 **118 个场景及 2 个 SIGINT**，不把这次普通回归计为新增崩溃场景。
+- 仓库外建立基础 wheel 环境，使用锁定的默认依赖，不安装 OpenAI/Anthropic SDK，`python -I patch_bridge.py` 通过。
+- 全部旧公开 Schema、Agent v5、Session migration 6、副本账本 schema v1、默认 Kernel 工具及依赖保持不变。无真实模型请求或远程服务器操作。
+
+本次交付是 b2b 的设计基线和一处现有桥接修正，不标记 b2b/0.5.3b 完成。下一步按 ADR 0030 开始契约/Reducer/最低 reader 迁移，再接通专用端口与 SDK 离线闭环。

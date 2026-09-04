@@ -108,7 +108,7 @@ uv run python -m examples.patch_bridge
 uv run pytest tests/patches
 ~~~
 
-**尚未接通**：桥接不读取 Session、不验证活跃 Turn 或审批时限，不实现通用 ToolRuntime，也未注册模型工具；本片示例由宿主构造调用并批准，不是自主编码 Eval。下一片 **0.5.3b2b** 增加 Agent 写审批/恢复结果事件、兼容迁移、专用 Kernel 准入及真实 SDK 离线闭环。详见 [ADR 0029](docs/adr/0029-managed-patch-agent-bridge.md)。
+**尚未接通**：桥接不读取 Session、不验证活跃 Turn 或审批时限，不实现通用 ToolRuntime，也未注册模型工具；本片示例由宿主构造调用并批准，不是自主编码 Eval。下一片 **0.5.3b2b** 增加 Agent 写审批/恢复结果事件、兼容迁移、专用 Kernel 准入及真实 SDK 离线闭环。桥接见 [ADR 0029](docs/adr/0029-managed-patch-agent-bridge.md)，已固化的 Kernel 接入设计与验收矩阵见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)；设计中的 Agent v6/migration 7 尚未实现。
 
 ## 当前已实现：0.1 Action Plane
 

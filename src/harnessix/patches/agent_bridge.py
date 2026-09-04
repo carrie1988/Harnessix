@@ -260,9 +260,11 @@ class ManagedPatchBridge:
             try:
                 record = self._copy.lookup(self._request(scope), operation)
                 if record is None:
-                    # Session 若已有计划而账本缺失，不能证明效果未发生。
+                    # 任一先前计划/审批证据存在时，账本缺失都不能证明效果未发生。
                     return self._failure(
-                        call, "unknown" if plan is not None else "failed", "patch_plan_not_found"
+                        call,
+                        "unknown" if plan is not None or approval is not None else "failed",
+                        "patch_plan_not_found",
                     )
                 found = self._plan(scope, proposal, record)
                 if plan is not None and found != plan:

@@ -206,6 +206,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
     - [ ] 0.5.3b2：Agent 写审批契约升级、Scoped 准入、模型工具接入、双账本边界和 Kernel 恢复；
       - [x] 0.5.3b2a：稳定调用/计划绑定、宿主审批桥接、私有证据分离、异步取消排空、只读恢复和桥接崩溃矩阵；
       - [ ] 0.5.3b2b：版本化写审批/恢复事件、最低 reader 迁移、专用 Kernel 端口、SDK 离线闭环与 Session × 副本组合恢复；
+        - 详细设计与 KWP-01～10 验收矩阵已固化至 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)，并修正桥接缺少计划但有审批证据时的恢复误判；Kernel/Agent v6 接入尚未实现，不勾选本片完成。
   - [ ] 0.5.3c：多文件部分效果与结构化 Diff 交付；
 - [ ] `shell` 的非交互执行；
 - [ ] `git_status`、`git_diff`；

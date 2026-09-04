@@ -398,7 +398,7 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 
 ### 恢复、取消与授权边界
 
-- 缺少计划且调用方也未提供持久计划时报告未成功；提供了计划而磁盘找不到时为 unknown，不假定未执行。
+- 缺少计划且调用方也未提供持久计划或审批时报告未成功；提供了 plan 或 approval 任一证据而磁盘找不到时为 unknown，不假定未执行。
 - pending/approved 没有消费写意图，rejected/failed/observed_before 已知未成功；恢复不会据此自动重试。
 - started/uncertain 先做归因观察。applied/observed_after 还须匹配宿主批准才能报告 succeeded；缺批准、错绑定、第三种内容、缺失、不可读、账本异常为 unknown。
 - 调用契约、参数或执行作用域本身无效时直接抛出结构化错误；上条 unknown 指进入账本核对后发现的不一致，不能把入口异常自动解释为未产生效果。
@@ -407,3 +407,11 @@ started / uncertain → observed_before / observed_after / diverged / missing / 
 - **尚无 Session 授权核验**：ApprovalRecord 是宿主声明，本层不验证当前 Turn、截止时间或是否已消费审批。完整 Kernel 接入必须先持久审批并消费恢复边界，再调用 execute；不能把旧 READ_ONLY 审批当作写授权。
 
 `uv run python -m examples.patch_bridge` 串联真实只读工具→精确提案→持久计划找回→宿主批准→写入→读回→重开核对。它证明桥接与既有组件互通，不是模型驱动的编码 Eval。b2b 将复用这一桥接，不另写文件替换器或恢复执行器。
+
+## 19. 0.5.3b2b 详细设计：待实现 Kernel 接入
+
+已核对 Runtime、Reducer、Scope、Session 与模型消息白名单，形成 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。设计覆盖独立写审批、拟定 Agent v6/migration 7、显式 Patch 端口、审批答复与消费时序、工具效果和 Turn 状态分开结算，以及 KWP-01 至 KWP-10 验收矩阵。
+
+设计审查时补齐现有桥接的一个恢复分支：只传 ApprovalRecord、未传 plan 且账本缺失时必须 unknown，不能误报为已知失败。新增无证据/批准/拒绝三项回归，先复现后修正；不改变公开 Schema、既有 migration、默认工具或 Kernel。
+
+下一步按 ADR 0030 的四步顺序实施；当前 Agent 仍为 v5、Session migration 到 6。**不得将拟定的 v6/migration 7、Kernel 写审批、SDK 写工具闭环或组合崩溃矩阵写成已完成能力。**

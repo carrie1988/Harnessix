@@ -35,7 +35,7 @@
 
 桥接所有磁盘操作在串行后台线程中运行。CancelToken、Task.cancel 和外层 timeout 均通过 ReadOperation 请求停止，等待线程收尾后才返回；重复取消也不能遗留正在写的线程。桥接关闭等待本桥接活动操作，但不关闭或删除宿主拥有的副本；宿主必须先退出桥接再关闭副本。不可中断的系统 I/O 不承诺硬实时退出。
 
-`recover` 只查找、读取与 reconcile 已有计划，绝不 prepare/save/reply/execute。核对可能追加观察账本事件，但不修改目标文件。未找到计划或 pending/approved 说明尚未消费写意图；failed/rejected/observed_before 为已知未成功；started/uncertain 必须先核对。applied/observed_after 只有与宿主批准和调用计划匹配才返回 succeeded，否则 unknown。第三种内容、缺失、不可读、无充分归因或账本不可用均保持 unknown。执行抛错不等于无效果，宿主必须走恢复路径，不能一概转换为 failed。
+`recover` 只查找、读取与 reconcile 已有计划，绝不 prepare/save/reply/execute。核对可能追加观察账本事件，但不修改目标文件。未找到计划且没有传入既有计划/审批证据时报告未成功；有 plan 或 approval 任一证据却找不到账本计划时保持 unknown。pending/approved 说明尚未消费写意图；failed/rejected/observed_before 为已知未成功；started/uncertain 必须先核对。applied/observed_after 只有与宿主批准和调用计划匹配才返回 succeeded，否则 unknown。第三种内容、缺失、不可读、无充分归因或账本不可用均保持 unknown。执行抛错不等于无效果，宿主必须走恢复路径，不能一概转换为 failed。
 
 桥接返回的是历史账本事实，不承诺已 applied 的文件后来没有外部变化。取消后文件可能已成功修改；取消不是回滚。恢复得到 observed_before 也不产生重试许可。实际活跃 Session/时限检查属于 Kernel，不能把本片宿主声明的 ApprovalRecord 当作已完成持久授权验证。
 
@@ -56,3 +56,5 @@
 - Session × 副本账本的真实崩溃矩阵、旧只读审批升级、Kernel 取消与副作用结果结算。
 
 只有 b2b 通过全量回归、独立 wheel 和 Linux/macOS CI，才标记模型 Patch 接入完成。Process、多文件修改和自主 Coding Eval 不在本 ADR 的完成声明中。
+
+b2b 的 Kernel 源码约束、拟定事件/迁移、取消状态结算和组合验收矩阵已细化至 [ADR 0030](0030-kernel-managed-patch-admission.md)；该设计不代表这些接入能力已经实现。

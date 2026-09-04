@@ -183,3 +183,19 @@ async def test_lost_workspace_identity_is_unknown_not_no_effect(case):
         )
         assert result.result.outcome == "unknown"
         assert result.result.error.code == "patch_workspace_changed"
+
+
+@pytest.mark.parametrize("proof", ["absent", "approved", "rejected"])
+async def test_approval_without_plan_is_not_evidence_of_no_effect(case, proof):
+    """恢复入口允许只带 ApprovalRecord；账本缺失时不能丢掉这份先前审批证据。"""
+    _, _, copy = case
+    async with ManagedPatchBridge(copy) as bridge:
+        call, scope = make_call(copy, bridge)
+        plan = await bridge.prepare(call, scope, CancelToken())
+        decision = None if proof == "absent" else approval(plan, ApprovalOutcome(proof))
+        # 模拟计划证据丢失；这不是合法执行状态，更不能被修复为可重试。
+        with sqlite3.connect(copy.workspace.root.parent / "ledger.sqlite") as db:
+            db.execute("DELETE FROM plans")
+        result = await bridge.recover(call, scope, CancelToken(), approval=decision)
+        assert result.result.outcome == ("failed" if proof == "absent" else "unknown")
+        assert result.result.error.code == "patch_plan_not_found"
