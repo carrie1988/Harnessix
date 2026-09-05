@@ -287,12 +287,22 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 
 宿主只能把同一Process Action `ToolDescriptor`同时用于模型ToolCall构造和桥接，并提供稳定、受信的`Principal`。API与Worker宿主绑定不同会产生不同工具版本，旧计划不能继续。Action请求提交后的状态、决定和结果只从原Effect Journal读取；Session接入尚未交付，不得自行把计划或普通Session `ApprovalRecord`传给Executor。
 
-独立Schema`agent-process-call-plan-v1`用于持久兼容检查。后续b2b2a已升级Agent事件和Session最低reader，见下节；仍不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
+独立Schema`agent-process-call-plan-v1`用于持久兼容检查。b2b2已升级Agent事件和Session最低reader并完成真实旧包验收，见下节；仍不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
 
-## 当前Session v9 / migration10进程投影升级（0.5.4b2b2a）
+## 当前Session v9 / migration10进程投影升级（0.5.4b2b2）
 
 本片新增Agent Event/Thread v9和`0010_agent_process_projection.sql`。migration10只推进最低reader标记，不新增表、索引或列，也不重写旧事件、快照或Effect Journal。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration10伪装降级。
 
 Runtime重开v9的WAITING_ACTION只保留原等待，不会创建、批准、执行或轮询Process Action。运维不得通过`resume_turn`、普通Session审批或手写`ToolResult.process`绕过；只有`session_projection`根据匹配ActionSnapshot构造的投影才可写入。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
 
-本片已完成同版本迁移、Replay、重启保留等待和冻结v8 Schema回归。真实`e0e8498` v8 wheel创建会话、新wheel升级、旧reader拒绝及migration10提交前后`os._exit`将在b2b2b独立验收；完成前不把“源码模型可读取v8”表述成真实跨安装兼容结论。b2c之前也不部署模型进程工具或Process Artifact。基础wheel无需供应商SDK、远程数据库或新中间件。
+真实跨安装验收使用`scripts/process_session_upgrade_probe.py`，探针不依赖测试包：
+
+1. 从`git archive e0e849813942b21452ba1943d5cca3a5f936e5f6`构建真实v8 wheel，并与当前wheel分别安装到仓库外基础环境；
+2. 旧环境执行`python -I process_session_upgrade_probe.py create <空目录>`，创建包含真实只读工具调用的v8完成会话、migration1–9及冻结fixture；
+3. 新环境执行`upgrade <同目录>`，确认migration10只追加marker，旧事件、投影、前九个校验和及数据库inode不变；
+4. 旧环境执行`old-reader <同目录>`，确认`schema_too_new`且整个可见数据库状态不变；
+5. 新环境执行`resume <同目录>`，追加v9完成Turn，确认旧v8事件原字节、Replay和projection version 9；旧环境再次拒绝。
+
+实际旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`，b2b2a基础wheel为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`，本片最终基础wheel为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。旧wheel直接导出的`tests/agent/fixtures/session-v8.json`纳入回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`。migration10提交前后另以真实`os._exit`验证，重启只看到完整v8或完整v9 migration集合，不重写历史。
+
+b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c之前仍不部署模型进程工具或Process Artifact；默认Agent不暴露`host.process`。基础wheel无需供应商SDK、远程数据库或新中间件。

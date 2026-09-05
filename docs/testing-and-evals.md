@@ -701,3 +701,19 @@ Agent v8、Session migration9、Action/Process Schema、依赖和示例行为不
 Agent v8/Thread v8冻结摘要分别为`d83381b4dffa5854ad4c5997a775e617800c3304481c88f10e3b7b9021a23fa3`和`5874c0d4eef02d0cc473ed12bbf5cf7f529eff6508087c9f7ac1a2a7f57f4608`；migration10摘要为`fbcda6a8f05001fb1834aae2c75ed8e96d052632c8627777b62dabd5edb5b3fa`。基础wheel不安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`。
 
 无真实模型请求、SSH或中间件部署。下一片b2b2b使用真实`e0e8498` v8 wheel验证跨安装升级、旧reader拒绝和migration10提交前后硬退出；b2c再实现Agent Runtime创建/批准/执行/观察、Process Artifact及双SDK离线闭环。默认Agent仍不暴露`host.process`。
+
+## 35. 0.5.4b2b2b 真实v8升级与migration10恢复验收（2026-09-05）
+
+基线`bc2006c`及CI33949877646四项成功。本片不修改运行时领域契约，只补齐b2b2a明确保留的真实跨安装和迁移硬退出证据。
+
+- 从`e0e849813942b21452ba1943d5cca3a5f936e5f6`实际导出并构建v8 wheel，安装到独立基础环境；旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。旧环境真实执行两步离线模型脚本和只读工具，生成Event/Thread v8及migration1–9，不从当前源码改版本号。
+- `process_session_upgrade_probe.py`以当前v9 wheel升级同一数据库。初始化只追加migration10；旧事件JSON、旧投影JSON/摘要/projection version 8、前九个migration及数据库inode保持不变。升级后可追加v9 Turn，原v8事件仍逐字节一致，Replay等于持久投影。
+- migration10升级后及追加v9事件后两次由真实v8环境重开，均明确返回`schema_too_new`；拒绝前后的migration、事件和投影行及数据库inode一致。旧reader未执行降级、重建或工具调用。
+- 真实旧wheel导出的`session-v8.json`纳入历史transcript回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`；v1–v8均可由当前reader升级、继续并保持旧事件原字节。
+- migration10 marker插入后未提交、事务提交后启用WAL前两个窗口使用真实子进程`os._exit(85)`。重开只看到完整migration1–9或1–10；旧v8事件/投影与projection version 8不变，再次初始化幂等。按既有事务/恢复口径，硬崩溃场景由301增至303；进程宿主存活后代反例不混入该计数。
+
+新增 **3项** 自动回归：1项真实v8 transcript历史参数和2项migration10硬退出。`make check`通过：Ruff、Mypy（121源文件）、**2404 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2368项全部通过**。
+
+最终基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行15个示例和真实旧/新升级探针通过，SHA256为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。无真实模型请求、SSH或中间件部署；Linux3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
+
+b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.process`，`reply_approval`、`resume_turn`和取消也不会越过b2b2a门禁。下一片b2c实现Action创建/唯一批准、Worker执行/有界观察、跨库恢复、Process Artifact及双SDK离线闭环。

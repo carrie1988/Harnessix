@@ -659,7 +659,7 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 
 跨库不伪装原子事务：Action已决定而Session未投影时只读取并补投影；Action运行或终态而Session无结果时只观察原Action；UNKNOWN绝不回READY。持久WAITING_ACTION用于已批准但尚未终态的Worker执行，不能在审批答复中无限轮询。
 
-Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b再做事件/迁移/旧reader，b2c实现运行时和Artifact。本片设计时Agent v8/Session migration9不变；当前b2b2a已推进到v9/migration10，但仍不能写成已接模型。
+Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b现已完成事件/迁移/旧reader兼容，b2c实现运行时和Artifact。本片设计时Agent v8/Session migration9不变；当前已推进到v9/migration10，但仍不能写成已接模型。
 
 ## 31. 0.5.4b2b1：稳定Agent调用与Process Action身份
 
@@ -667,7 +667,7 @@ Process Artifact只负责模型展示，Action Result才是效果事实；发布
 
 `AgentProcessCallPlan`绑定Thread/Turn/Call、绝对工作区、完整调用指纹、Action请求指纹、工具版本、宿主绑定摘要、主体摘要、程序、argv摘要和超时。Action ID由固定命名空间及上述身份生成，租户范围幂等键使用同一身份；同一调用重做prepare得到完全相同请求，不同主体、命令或宿主绑定得到不同Action。完整argv只保留在原ToolCall与ActionRequest，计划只保存摘要。
 
-`process_snapshot_matches`重新生成并逐项比较计划、ActionRequest、Action请求指纹、持久ToolDescriptor及Action Approval指纹。Session后续只能投影通过该核对的Journal快照；本片不接受Session审批作为Executor输入。计划已冻结独立v1 Schema。后续b2b2a已新增Agent Event v9、WAITING_ACTION和最低Session reader升级，见下节；默认Agent仍不暴露`host.process`。
+`process_snapshot_matches`重新生成并逐项比较计划、ActionRequest、Action请求指纹、持久ToolDescriptor及Action Approval指纹。Session只能投影通过该核对的Journal快照；本片不接受Session审批作为Executor输入。计划已冻结独立v1 Schema。b2b2已新增Agent Event v9、WAITING_ACTION、最低Session reader升级及真实旧包兼容，见下两节；默认Agent仍不暴露`host.process`。
 
 ## 32. 0.5.4b2b2a：Agent进程投影与持久等待边界
 
@@ -677,4 +677,12 @@ Agent Event/Thread升级到 **v9**，Session最低reader升级到 **migration10*
 
 状态顺序固定为：`EXECUTING_TOOLS → WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`。Action处于READY/LEASED/RUNNING/RECONCILING时只能继续等待；DENIED/SUCCEEDED/FAILED/UNKNOWN/MANUAL_INTERVENTION及结果摘要持久化后才可离开。Reducer允许跳过中间观察，但拒绝倒退、重复终止、批准与DENIED矛盾、结果结论错配及跨Action证据。Runtime启动只保留WAITING_ACTION，不将其误判为进程中断；resume、执行、轮询、取消处置和Artifact留给b2c。
 
-v1–v8 Agent Schema文件冻结，v9新Schema独立生成；migration10只记录最低reader，不改表、不重写旧事件或投影。当前单元回归证明Replay、事务回滚、模型历史白名单和重启保留等待。真实`e0e8498` v8 wheel的跨安装升级、旧reader拒绝及migration10硬退出证据在b2b2b完成，因此整个b2b2仍未关闭。
+v1–v8 Agent Schema文件冻结，v9新Schema独立生成；migration10只记录最低reader，不改表、不重写旧事件或投影。单元回归证明Replay、事务回滚、模型历史白名单和重启保留等待；下节b2b2b已补齐真实旧包和migration10硬退出证据，b2b2范围关闭。
+
+## 33. 0.5.4b2b2b：真实v8升级与migration10恢复证据
+
+从`e0e849813942b21452ba1943d5cca3a5f936e5f6`导出并构建真实v8 wheel，在仓库外独立基础环境创建包含只读工具调用的v8完成会话和migration1–9。当前v9 wheel只追加migration10，初始化后旧事件、旧投影、前九个migration校验和及数据库inode不变；随后追加的新事件为v9，Replay与持久投影一致。真实v8 reader在升级前后均以`schema_too_new`拒绝接管且不改变数据库。
+
+`scripts/process_session_upgrade_probe.py`提供create/upgrade/resume/old-reader四个独立模式；`tests/agent/fixtures/session-v8.json`由上述旧wheel直接导出，不以手改版本号伪造。历史升级回归现覆盖v1–v8 transcript。migration10故障注入从该真实transcript重建冻结v8数据库形状，分别在marker插入未提交和事务提交后执行真实`os._exit`；重开只能观察完整migration1–9或1–10，旧事件/投影原文与projection_version 8不变，初始化幂等。
+
+本片没有新增Agent Runtime进程执行、Action决定、Process Artifact或模型工具。它只关闭b2b的格式与恢复证据缺口；b2c仍须实现跨Session/Action Journal的运行时Saga、取消/恢复和双SDK离线闭环。进程宿主退出后的存活后代、UNKNOWN处置及OS Sandbox边界没有因数据库升级验收而改善。

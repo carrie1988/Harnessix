@@ -18,7 +18,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer
 
 
-@pytest.mark.parametrize("version", [1, 2, 3, 4, 5, 6, 7])
+@pytest.mark.parametrize("version", [1, 2, 3, 4, 5, 6, 7, 8])
 async def test_old_transcript_migrates_without_rewriting_history(
     tmp_path: Path, version: int
 ) -> None:
@@ -124,6 +124,19 @@ async def test_old_transcript_migrates_without_rewriting_history(
                 (hashlib.sha256(sql.encode()).hexdigest(),),
             )
             database.execute("UPDATE agent_threads SET projection_version = 7")
+    if version >= 8:
+        sql = (
+            files("harnessix.session.migrations")
+            .joinpath("0009_batch_diff_artifacts.sql")
+            .read_text()
+        )
+        with sqlite3.connect(store.path) as database:
+            database.executescript(sql)
+            database.execute(
+                "INSERT INTO agent_migrations VALUES (9, ?)",
+                (hashlib.sha256(sql.encode()).hexdigest(),),
+            )
+            database.execute("UPDATE agent_threads SET projection_version = 8")
     await store.initialize()
     assert await store.get_thread(thread_id) == Thread.model_validate_json(snapshot)
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))

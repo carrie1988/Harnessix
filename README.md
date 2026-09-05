@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计费适用性仍待验收。0.5.1/0.5.2a 已实现工作区绑定、目录分页、文件读取和有界搜索；0.5.2b1/b2 已接通可信执行上下文和事务 Artifact，0.5.2 范围完成。0.5.3a/b1 已实现只读计划及受管副本内的持久审批、单文件真实写入和崩溃核对；0.5.3b2a 已增加调用绑定、宿主审批桥接和异步取消/恢复。0.5.3b2b 已接通显式 Kernel Patch 端口、持久写审批、SDK 离线写闭环与双账本恢复。0.5.3c1 与 c2 已实现整组计划、结构化 Diff、事务预留/审批、顺序一次性执行和部分/未知效果恢复。0.5.3c3a/c3b 已实现整组调用绑定、显式 Kernel 批量工具、持久审批重开、双 SDK 离线写闭环和双账本恢复；c3c1/c3c2 已实现真实账本绑定的计划/历史效果报告及 Diff Artifact 事务发布，0.5.3范围完成。0.5.4a 已实现受信宿主进程生命周期和双流有界捕获，0.5.4b1已复用Action Plane实现宿主持久命令准入，0.5.4b2b1已实现Agent调用到Process Action的稳定身份契约，b2b2a已交付Agent v9进程审批/等待/结果投影与Session migration10；真实v8旧wheel兼容、模型进程运行时、Process Artifact、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2b1 已实现 Agent 调用到 Process Action 的稳定身份，b2b2 已完成 Agent v9 进程投影、WAITING_ACTION、Session migration10 及真实 v8 旧 wheel 兼容验收；模型进程运行时、Process Artifact、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -117,7 +117,7 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- 本节交付时为 Agent v6 / Session migration7；当前为 v9 / migration10，兼容 v1–v8 原文，真实旧v8 wheel验收仍列在b2b2b。
+- 本节交付时为 Agent v6 / Session migration7；当前为 v9 / migration10，兼容 v1–v8 原文，真实`e0e8498` v8 wheel升级与旧reader拒绝已通过。
 
 ~~~bash
 uv run python -m examples.kernel_patch
@@ -245,9 +245,9 @@ uv run pytest tests/processes
 
 该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定、Process Artifact、Git/run_tests、硬退出后的自动清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
 
-Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1新增`AgentProcessCallPlan`并确定性绑定调用与Action身份；b2b2a新增Agent Event/Thread v9、Session migration10、`ProcessApprovalRequestContent`、`ProcessActionStateContent`及`ToolResult.process`。Session决定只能从已核对的ActionSnapshot投影，Action Journal仍是唯一执行许可；READY/LEASED/RUNNING/RECONCILING保持持久WAITING_ACTION，只有终止观察可恢复工具循环。私有计划、批准与Action证据不会进入模型历史。
+Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1新增`AgentProcessCallPlan`并确定性绑定调用与Action身份；b2b2新增Agent Event/Thread v9、Session migration10、`ProcessApprovalRequestContent`、`ProcessActionStateContent`及`ToolResult.process`。Session决定只能从已核对的ActionSnapshot投影，Action Journal仍是唯一执行许可；READY/LEASED/RUNNING/RECONCILING保持持久WAITING_ACTION，只有终止观察可恢复工具循环。私有计划、批准与Action证据不会进入模型历史。
 
-本片只实现契约、纯投影构造、Reducer和最低reader迁移。Runtime重开会保留WAITING_ACTION，但尚不创建、批准、执行或轮询Process Action，也不发布Process Artifact；默认Agent仍不暴露`host.process`。真实v8旧wheel升级/旧reader拒绝在b2b2b验收，完整运行时闭环在b2c实施。
+b2b2已用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧事件/投影原字节保持以及migration10提交前后硬退出验收。Runtime重开会保留WAITING_ACTION，但尚不创建、批准、执行或轮询Process Action，也不发布Process Artifact；默认Agent仍不暴露`host.process`。完整运行时闭环在b2c实施。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -284,7 +284,7 @@ Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process A
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v9；v8真实旧包升级待b2b2b补齐）；
+- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v9；真实 v1–v8 transcript 回归及 v8 旧包升级已通过）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 

@@ -2,7 +2,7 @@
 
 - 日期：2026-09-05
 - 基线：`81c76f6`，CI33921498948四项通过，开工fetch一致
-- 状态：架构已采纳；b2b1身份契约与b2b2a事件/Reducer/migration10已实现；真实v8旧包兼容与运行时尚未实现
+- 状态：架构已采纳；b2b身份、事件、migration10与真实v8旧包兼容已完成；运行时尚未实现
 
 ## 1. 必须解决的问题
 
@@ -62,13 +62,13 @@ Artifact至少绑定Action ID/指纹、Call ID、流名、observed字节数/摘�
 
 ## 7. 版本与实施切片
 
-b2b2a已新增Agent Event/Thread v9与Session migration10。Process审批Item只接受Action Approval指纹，Action状态Item和Tool Result仅保存固定摘要；旧v1–v8 Agent Schema文件不改。migration10是最低reader标记，不改表或历史字节。真实v8 wheel跨安装兼容和旧reader拒绝仍由b2b2b验收。Action Contract/Journal、Process v1 Schema和0.5.4b1工具保持不变。
+b2b2已新增Agent Event/Thread v9与Session migration10。Process审批Item只接受Action Approval指纹，Action状态Item和Tool Result仅保存固定摘要；旧v1–v8 Agent Schema文件不改。migration10是最低reader标记，不改表或历史字节。b2b2b已用真实`e0e8498` v8 wheel验证跨安装升级、旧reader拒绝、旧事件/投影原字节保持及migration10提交前后硬退出。Action Contract/Journal、Process v1 Schema和0.5.4b1工具保持不变。
 
 实施拆分：
 
 1. b2a（本ADR）：冻结唯一权威、计划身份、Saga矩阵、等待状态和Artifact边界；
-2. b2b：实现桥接契约、Agent事件/迁移及旧reader真实兼容；b2b1已交付确定性Action身份，b2b2a已交付v9投影/WAITING_ACTION/migration10，b2b2b继续真实v8旧包兼容与迁移崩溃验收；
+2. b2b：已实现桥接契约、确定性Action身份、v9投影/WAITING_ACTION/migration10，以及真实v8旧包兼容与迁移崩溃验收；
 3. b2c：实现Agent Runtime执行/恢复、Process Artifact及双SDK离线闭环；
 4. 0.5.4c：在同一准入上增加固定Git/run_tests，最后才评估受控Shell。
 
-本ADR不宣称已实现Agent进程工具、跨库原子提交、宿主死亡自动清理或OS Sandbox。b2b2a的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`。
+本ADR不宣称已实现Agent进程工具、跨库原子提交、宿主死亡自动清理或OS Sandbox。b2b2的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`。

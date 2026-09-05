@@ -415,4 +415,4 @@ Agent Runtime                │
 - Agent v9把READY/LEASED/RUNNING/RECONCILING保持为WAITING_ACTION。只有绑定同一计划、Action ID/指纹和结果摘要的终止观察才可产生Tool Result；Reducer拒绝状态倒退、重复终止、结论错配和跨调用证据。
 - Process计划、审批和状态Item是Session私有事实，模型历史仍只映射完成的消息、ToolCall和白名单ToolResult字段。完整argv仍存在原ToolCall/ActionRequest；摘要不是内容脱敏，也不是抗同UID恶意篡改的签名。
 - Runtime本片只在重启时保留WAITING_ACTION，不执行、轮询、取消或回收Action。宿主硬退出、逃逸后代、Process Artifact正文、Sandbox和跨账本自动恢复仍是b2c/0.7边界。
-- migration10仅阻止旧reader接管，不改变数据库隔离。真实v8旧wheel与硬退出迁移矩阵待b2b2b；在该证据完成前，兼容结论限于冻结Schema和当前代码回归。
+- migration10仅阻止旧reader接管，不改变数据库隔离。真实`e0e8498` v8 wheel升级、旧reader拒绝和提交前后硬退出已通过；这只证明SQLite迁移事务与历史字节兼容，不证明防同UID篡改、硬件断电或跨账本原子性。
