@@ -1,4 +1,4 @@
-"""真实 Agent v8/v9 wheel 的 Session migration10 升级探针。"""
+"""真实 Agent v8 与当前 wheel 的 Session migration10/11 升级探针。"""
 
 import asyncio
 import json
@@ -86,10 +86,10 @@ async def main(mode: str, root: Path) -> None:
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("真实 v8 reader 意外接受 migration10")
+            raise AssertionError("真实 v8 reader 意外接受 migration10/11")
         assert store.path.stat().st_ino == inode
         assert database_state(store.path) == before
-        print("真实 v8 reader 明确拒绝 migration10，数据库未改变")
+        print("真实 v8 reader 明确拒绝 migration10/11，数据库未改变")
         return
 
     if mode == "create":
@@ -149,13 +149,13 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:9] == before["migrations"][:9]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 11))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 12))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
         assert EventDraft.model_fields["schema_version"].default == 9
-        print("v9 wheel 已原字节升级真实 v8 会话；migration10 未重写事件或投影")
+        print("当前wheel已原字节升级真实v8会话；migration10/11未重写事件或投影")
         return
 
     assert EventDraft.model_fields["schema_version"].default == 9

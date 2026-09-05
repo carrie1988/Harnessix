@@ -1,0 +1,150 @@
+{
+  "$defs": {
+    "ProcessOutputChunk": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "chunk",
+          "default": "chunk",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stream": {
+          "enum": [
+            "stdout",
+            "stderr"
+          ],
+          "title": "Stream",
+          "type": "string"
+        },
+        "offset": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "size_bytes": {
+          "maximum": 12288,
+          "minimum": 1,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "data_base64": {
+          "maxLength": 16384,
+          "title": "Data Base64",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stream",
+        "offset",
+        "size_bytes",
+        "data_base64"
+      ],
+      "title": "ProcessOutputChunk",
+      "type": "object"
+    },
+    "ProcessOutputStreamSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "stream": {
+          "enum": [
+            "stdout",
+            "stderr"
+          ],
+          "title": "Stream",
+          "type": "string"
+        },
+        "captured_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Captured Bytes",
+          "type": "integer"
+        },
+        "captured_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Captured Sha256",
+          "type": "string"
+        },
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "observed_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Observed Sha256",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "stream",
+        "captured_bytes",
+        "captured_sha256",
+        "observed_bytes",
+        "observed_sha256",
+        "truncated",
+        "eof"
+      ],
+      "title": "ProcessOutputStreamSummary",
+      "type": "object"
+    },
+    "ProcessOutputSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "summary",
+          "default": "summary",
+          "title": "Kind",
+          "type": "string"
+        },
+        "version": {
+          "const": "process-output/v1",
+          "default": "process-output/v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "stdout": {
+          "$ref": "#/$defs/ProcessOutputStreamSummary"
+        },
+        "stderr": {
+          "$ref": "#/$defs/ProcessOutputStreamSummary"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "stdout",
+        "stderr",
+        "complete"
+      ],
+      "title": "ProcessOutputSummary",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "chunk": "#/$defs/ProcessOutputChunk",
+      "summary": "#/$defs/ProcessOutputSummary"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ProcessOutputSummary"
+    },
+    {
+      "$ref": "#/$defs/ProcessOutputChunk"
+    }
+  ]
+}

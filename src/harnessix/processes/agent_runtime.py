@@ -192,10 +192,13 @@ class ProcessAgentBridge:
             snapshot,
             origin="recovery",
         )
+        process = self._process_result(snapshot)
         result = (
-            self._terminal_result(call, snapshot, state) if snapshot.result is not None else None
+            self._terminal_result(call, snapshot, state, process)
+            if snapshot.result is not None
+            else None
         )
-        return ProcessObservation(state=state, result=result)
+        return ProcessObservation(state=state, result=result, process=process)
 
     def _require_snapshot(
         self,
@@ -239,12 +242,26 @@ class ProcessAgentBridge:
             action_id=snapshot.request.action_id,
         )
 
+    @staticmethod
+    def _process_result(snapshot: ActionSnapshot) -> ProcessResult | None:
+        if snapshot.result is None or snapshot.result.output is None:
+            return None
+        try:
+            return ProcessResult.model_validate(snapshot.result.output)
+        except ValidationError:
+            if snapshot.status in {ActionStatus.SUCCEEDED, ActionStatus.UNKNOWN}:
+                raise KernelError(
+                    "process_result_invalid", "Action结果不是有效的ProcessResult"
+                ) from None
+            return None
+
     @classmethod
     def _terminal_result(
         cls,
         call: ToolCallContent,
         snapshot: ActionSnapshot,
         state: ProcessActionStateContent,
+        process: ProcessResult | None,
     ) -> ToolResultContent:
         assert snapshot.result is not None
         status = snapshot.status
@@ -259,35 +276,27 @@ class ProcessAgentBridge:
             }[status],
         )
         output: Any = None
-        if snapshot.result.output is not None:
-            try:
-                process = ProcessResult.model_validate(snapshot.result.output)
-            except ValidationError:
-                if status in {ActionStatus.SUCCEEDED, ActionStatus.UNKNOWN}:
-                    raise KernelError(
-                        "process_result_invalid", "Action结果不是有效的ProcessResult"
-                    ) from None
-            else:
-                output = {
-                    "action_status": status.value,
-                    "returncode": process.returncode,
-                    "stop_reason": process.stop_reason,
-                    "termination": process.termination,
-                    "stdout": {
-                        "captured_bytes": process.stdout.captured_bytes,
-                        "observed_bytes": process.stdout.observed_bytes,
-                        "observed_sha256": process.stdout.observed_sha256,
-                        "truncated": process.stdout.truncated,
-                        "eof": process.stdout.eof,
-                    },
-                    "stderr": {
-                        "captured_bytes": process.stderr.captured_bytes,
-                        "observed_bytes": process.stderr.observed_bytes,
-                        "observed_sha256": process.stderr.observed_sha256,
-                        "truncated": process.stderr.truncated,
-                        "eof": process.stderr.eof,
-                    },
-                }
+        if process is not None:
+            output = {
+                "action_status": status.value,
+                "returncode": process.returncode,
+                "stop_reason": process.stop_reason,
+                "termination": process.termination,
+                "stdout": {
+                    "captured_bytes": process.stdout.captured_bytes,
+                    "observed_bytes": process.stdout.observed_bytes,
+                    "observed_sha256": process.stdout.observed_sha256,
+                    "truncated": process.stdout.truncated,
+                    "eof": process.stdout.eof,
+                },
+                "stderr": {
+                    "captured_bytes": process.stderr.captured_bytes,
+                    "observed_bytes": process.stderr.observed_bytes,
+                    "observed_sha256": process.stderr.observed_sha256,
+                    "truncated": process.stderr.truncated,
+                    "eof": process.stderr.eof,
+                },
+            }
         return ToolResultContent(
             call_id=call.call_id,
             outcome=outcome,

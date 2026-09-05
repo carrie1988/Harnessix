@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4b1已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4b2c2已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果与宿主调用桥接已实现；Kernel 批量工具、计划/效果Diff Artifact、0.5.4a宿主Process及0.5.4b1 Action Plane持久准入已实现；Agent模型Shell与Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果、Kernel批量工具和计划/效果Diff Artifact已实现；0.5.4a宿主Process、b1 Action Plane准入、b2 Agent稳定身份/投影/显式运行时及Process Artifact已实现；完整恢复、Agent模型Shell与Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -429,4 +429,6 @@ src/harnessix/
 
 0.5.4b2b2把已核对的Action事实投影到Agent v9。进程审批、Action状态和Tool Result效果使用独立类型；Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`，活跃Action不能产生结果或恢复模型循环，终止结果必须绑定最后观察。Session私有计划、决定和效果不进入模型历史。真实v8旧wheel、旧reader拒绝及migration10硬退出已验证事件/投影原字节兼容。
 
-0.5.4b2c1增加显式`ProcessRuntime`端口和`ProcessAgentBridge`。Agent Runtime只负责稳定Action提交、唯一决定协调与单次观察；`ActionWorker`仍是唯一执行调度方。审批答复不运行命令，决定已写Action而Session未提交时按相同决定补投影；WAITING_ACTION恢复每次最多读取一个快照，活跃快照去重，终态状态与Tool Result同批提交。公开结果只有生命周期和流摘要，不含Base64正文；Process Artifact及完整硬退出矩阵仍属b2c2/b2c3。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
+0.5.4b2c1增加显式`ProcessRuntime`端口和`ProcessAgentBridge`。Agent Runtime只负责稳定Action提交、唯一决定协调与单次观察；`ActionWorker`仍是唯一执行调度方。审批答复不运行命令，决定已写Action而Session未提交时按相同决定补投影；WAITING_ACTION恢复每次最多读取一个快照，活跃快照去重，终态状态与Tool Result同批提交。公开结果只有生命周期和流摘要，不含Base64正文。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
+
+0.5.4b2c2增加`ProcessArtifactPublisher`端口和SQLite实现。已核对的完整`ProcessResult`只在宿主私有观察中传递，生成summary+双流Base64 chunk的`process-output/v1`文档；正文、manifest、结果引用和Process终态事件同Session事务。`process_output`用途由migration11显式加入白名单，读取时重新绑定批准/Action/Call和流摘要。发布失败降级保留无引用终态，提交前崩溃可从原Action重建，提交后不重放；Effect Journal与Session仍非原子。详见 [ADR 0041](adr/0041-process-output-artifact.md)。

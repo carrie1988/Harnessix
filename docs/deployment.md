@@ -289,9 +289,9 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 
 独立Schema`agent-process-call-plan-v1`用于持久兼容检查。b2b2已升级Agent事件和Session最低reader并完成真实旧包验收，见下节；仍不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
 
-## 当前Session v9 / migration10进程投影升级（0.5.4b2b2）
+## 当前Session v9 / migration10–11进程投影与Artifact升级（0.5.4b2b2–b2c2）
 
-本片新增Agent Event/Thread v9和`0010_agent_process_projection.sql`。migration10只推进最低reader标记，不新增表、索引或列，也不重写旧事件、快照或Effect Journal。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration10伪装降级。
+Agent Event/Thread v9由`0010_agent_process_projection.sql`推进最低reader标记；migration10不新增表、索引或列。b2c2的`0011_process_output_artifacts.sql`事务复制Artifact表，仅把`process_output`加入purpose白名单。两次迁移都不重写旧事件、快照或Effect Journal；旧Artifact正文、manifest和purpose保持原字节。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration marker伪装降级。
 
 Runtime重开v9的WAITING_ACTION仍只保留原等待，不会在启动时创建、批准、执行或轮询Process Action。b2c1配置原专用端口后，调用方可显式`resume_turn`单次读取匹配Action并投影；普通Session审批或手写`ToolResult.process`仍不可绕过。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
 
@@ -299,13 +299,13 @@ Runtime重开v9的WAITING_ACTION仍只保留原等待，不会在启动时创建
 
 1. 从`git archive e0e849813942b21452ba1943d5cca3a5f936e5f6`构建真实v8 wheel，并与当前wheel分别安装到仓库外基础环境；
 2. 旧环境执行`python -I process_session_upgrade_probe.py create <空目录>`，创建包含真实只读工具调用的v8完成会话、migration1–9及冻结fixture；
-3. 新环境执行`upgrade <同目录>`，确认migration10只追加marker，旧事件、投影、前九个校验和及数据库inode不变；
+3. 新环境执行`upgrade <同目录>`，确认migration10/11只追加兼容迁移，旧事件、投影、前九个校验和及数据库inode不变；
 4. 旧环境执行`old-reader <同目录>`，确认`schema_too_new`且整个可见数据库状态不变；
 5. 新环境执行`resume <同目录>`，追加v9完成Turn，确认旧v8事件原字节、Replay和projection version 9；旧环境再次拒绝。
 
-实际旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`，b2b2a基础wheel为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`，本片最终基础wheel为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。旧wheel直接导出的`tests/agent/fixtures/session-v8.json`纳入回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`。migration10提交前后另以真实`os._exit`验证，重启只看到完整v8或完整v9 migration集合，不重写历史。
+实际旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`，b2b2a基础wheel为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`，b2b2b基础wheel为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。旧wheel直接导出的`tests/agent/fixtures/session-v8.json`纳入回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`。migration10提交前后及migration11复制/删表/重命名/提交后均以真实`os._exit`验证，重启只看到完整旧库或完整新库，不重写历史。
 
-b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c1现已提供显式模型进程端口；默认Agent仍不暴露`host.process`，Process Artifact仍未部署。基础wheel无需供应商SDK、远程数据库或新中间件。
+b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c1现已提供显式模型进程端口；b2c2已提供Process Artifact和migration11。默认Agent仍不暴露`host.process`。基础wheel无需供应商SDK、远程数据库或新中间件。
 
 
 ## 显式Process Agent运行时部署（0.5.4b2c1）
@@ -318,8 +318,37 @@ API/Agent宿主必须显式构造`ProcessAgentBridge(actions, principal)`并以`
 2. Action Worker从Journal领取READY并执行固定程序；
 3. 客户端或上层调度器在收到状态变化后显式调用`resume_turn`一次。b2c1不提供后台轮询器，不能用紧循环调用resume替代队列通知。
 
-审批接口返回WAITING_ACTION不表示命令完成。只有Action终态被再次读取并写入Session结果后，Agent才继续模型循环；UNKNOWN/MANUAL_INTERVENTION会中断Turn。公开模型结果当前只有流计数/摘要和生命周期，不含完整stdout/stderr。运维查看完整正文仍需读取受控Action Result；b2c2交付前不要自行把Base64正文注入模型或伪造Artifact引用。
+审批接口返回WAITING_ACTION不表示命令完成。只有Action终态被再次读取并写入Session结果后，Agent才继续模型循环；UNKNOWN/MANUAL_INTERVENTION会中断Turn。公开模型结果只有流计数/摘要和生命周期，不直接包含完整stdout/stderr。b2c2配置正确时结果会附带受作用域保护的Artifact引用；运维仍应把Effect Journal中的Action Result视为效果事实，不能用Artifact替代。
 
 同一决定重答可修复Action已决定、Session未投影的窗口；不同actor/outcome/reason会冲突。重启后的WAITING_APPROVAL可由`resume_turn`只读同步已有Action决定，WAITING_ACTION可单次观察。若Action由外部入口在Turn超时后形成决定，Session仍按Action真实决定时间补投影，但原Turn预算不会复活。Action创建后而Session审批请求尚未提交的真硬退出、等待取消和完整跨库退出矩阵尚未验收，不应配置自动重试或修改Journal状态绕过。
 
-基础wheel可在仓库外执行`python -I kernel_process.py`（复制自`examples/kernel_process.py`）验证离线闭环。该示例不需要供应商SDK、API Key、远程数据库或新中间件；不是任意Shell、仓库测试执行或OS Sandbox。包版本仍为0.1.0，生产记录必须使用具体提交和wheel摘要。
+基础wheel可在仓库外执行`python -I kernel_process.py`（复制自`examples/kernel_process.py`）验证离线闭环和Process Artifact。该示例不需要供应商SDK、API Key、远程数据库或新中间件；不是任意Shell、仓库测试执行或OS Sandbox。包版本仍为0.1.0，生产记录必须使用具体提交和wheel摘要。
+
+## Process Artifact部署（0.5.4b2c2）
+
+Agent宿主在同一个Session对象上创建`SQLiteArtifactStore`，并把同一个`ProcessAgentBridge`与`CodingToolRuntime.workspace_scope`传给`SQLiteProcessArtifactPublisher`：
+
+```python
+artifacts = SQLiteArtifactStore(sessions)
+async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
+    process_artifacts = SQLiteProcessArtifactPublisher(
+        artifacts,
+        processes,
+        workspace_scope=tools.workspace_scope,
+    )
+    async with AgentRuntime(
+        sessions,
+        provider,
+        scoped_tools=tools,
+        artifacts=artifacts,
+        processes=processes,
+        process_artifacts=process_artifacts,
+    ):
+        ...
+```
+
+三个对象必须共享原Session/桥接/scope；不要从模型参数接受数据库路径或scope。未配置发布器时保留b2c1行为，只产生有界摘要。达到Artifact配额、正文编码后超过1 MiB或发布失败时，结果可以没有引用；这不是Action失败。若业务必须长期保留完整日志，应从Effect Journal建立独立受控导出/保留流程，不能放宽Session Artifact上限或TTL后仍宣称上下文有界。
+
+`process-output/v1`正文可能包含源码、测试输出和秘密；SQLite文件、备份与导出按源代码资产保护。现有Artifact不加密，过期清理保留tombstone且不保证立即缩小数据库文件。工作区scope不是访问令牌；网络API暴露`read_artifact`前仍需上层认证授权。迁移11后旧wheel必须拒绝数据库，回滚只能恢复一致备份。
+
+migration11 SHA256为`12295e83c718c367ae0da730ea39395663728752d33cc24b620d3ee5c70104e2`。本片基础wheel SHA256为`2ec6c89e2be650cd01654e8567dd44775d6ef52c0825d42cb481d63189b4a4ee`；实际部署仍必须记录最终Git提交和CI结果，不能只依赖包内仍为0.1.0的版本号。

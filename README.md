@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2b1 已实现 Agent 调用到 Process Action 的稳定身份，b2b2 已完成 Agent v9 进程投影、WAITING_ACTION、Session migration10 及真实 v8 旧 wheel 兼容验收，b2c1 已显式接通模型调用、唯一 Action 审批、外部 Worker 和有界终态观察；Process Artifact、完整跨库崩溃矩阵、双 SDK 离线闭环、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2b1 已实现 Agent 调用到 Process Action 的稳定身份，b2b2 已完成 Agent v9 进程投影、WAITING_ACTION、Session migration10 及真实 v8 旧 wheel 兼容验收，b2c1 已显式接通模型调用、唯一 Action 审批、外部 Worker 和有界终态观察，b2c2 已完成二进制安全 Process Artifact、Session migration11、配额/分页/TTL/损坏检测和事务崩溃恢复；完整跨库崩溃矩阵、双 SDK 离线闭环、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -243,18 +243,20 @@ uv run pytest tests/processes
 
 宿主现在可以用`process_action_tool(factory)`将固定进程绑定显式注册到现有Action Plane。命令先持久化，必须提供幂等键并通过Policy/Approval，再进入租约执行；工具版本绑定cwd、程序身份、环境和资源预算。确定结果保存ProcessResult和Effect Receipt，证据不足则UNKNOWN。Task/宿主退出后不自动重放，也不根据历史PID杀进程。
 
-该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定、Process Artifact、Git/run_tests、硬退出后的自动清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
+该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定和Process Artifact现已通过b2b/b2c2实现；Git/run_tests、宿主硬退出后的自动进程清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
 
 Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1新增`AgentProcessCallPlan`并确定性绑定调用与Action身份；b2b2新增Agent Event/Thread v9、Session migration10、`ProcessApprovalRequestContent`、`ProcessActionStateContent`及`ToolResult.process`。Session决定只能从已核对的ActionSnapshot投影，Action Journal仍是唯一执行许可；READY/LEASED/RUNNING/RECONCILING保持持久WAITING_ACTION，只有终止观察可恢复工具循环。私有计划、批准与Action证据不会进入模型历史。
 
-b2b2已用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧事件/投影原字节保持以及migration10提交前后硬退出验收。b2c1 新增显式 `ProcessAgentBridge` / `ProcessRuntime`：模型调用只在宿主注入端口后可见，准备只提交稳定 Action，答复只写 Action 的唯一决定并立即进入 WAITING_ACTION，独立 `ActionWorker` 执行后由 `resume_turn` 单次读取并投影 READY/RUNNING/终态。相同决定重试和 Action 已决定但 Session 未投影的窗口只读原事实补齐；重复等待观察不追加事件。模型只取得不含 Base64 正文的流摘要，完整 Process Artifact 仍待 b2c2。
+b2b2已用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧事件/投影原字节保持以及migration10提交前后硬退出验收。b2c1 新增显式 `ProcessAgentBridge` / `ProcessRuntime`：模型调用只在宿主注入端口后可见，准备只提交稳定 Action，答复只写 Action 的唯一决定并立即进入 WAITING_ACTION，独立 `ActionWorker` 执行后由 `resume_turn` 单次读取并投影 READY/RUNNING/终态。相同决定重试和 Action 已决定但 Session 未投影的窗口只读原事实补齐；重复等待观察不追加事件。模型只取得不含 Base64 正文的流摘要。
+
+b2c2 新增显式 `SQLiteProcessArtifactPublisher`。终态Action已捕获的stdout/stderr以`process-output/v1`规范JSONL保存：唯一摘要和二进制安全Base64分片，正文/manifest/Tool Result引用/终态Session事实同事务。读取复用`read_artifact`的Thread/工作区归属、分页、配额、TTL和清理，并额外核对Process批准、Action身份、双流摘要、分片偏移与正文哈希。单个Artifact无法容纳全部已捕获前缀时省略引用，不二次隐藏截断；归档失败不改变或重放Action。Agent Event仍为v9，Session migration11仅扩展Artifact用途白名单。详见 [ADR 0041](docs/adr/0041-process-output-artifact.md)。
 
 ```bash
 uv run python -m examples.kernel_process
-uv run pytest tests/agent/test_process_agent_runtime.py
+uv run pytest tests/agent/test_process_agent_runtime.py tests/artifacts/test_process_output*.py
 ```
 
-默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。b2c1 未开放 WAITING_ACTION 取消、创建 Action 前后硬退出恢复、Process Artifact 或双 SDK 离线闭环；这些分别留给 b2c2/b2c3。
+默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。WAITING_ACTION取消、Action创建前后和完整跨库退出矩阵及双SDK离线闭环仍留给b2c3；Git/run_tests进入0.5.4c。Process Artifact不是执行许可、OS Sandbox、DLP或同UID防篡改边界。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -488,13 +490,17 @@ src/harnessix/adapters/     Agent 框架适配器
 src/harnessix/agent/        Kernel 领域模型、Reducer、Loop、取消
 src/harnessix/models/       Provider 契约、Fake/Scripted Provider
 src/harnessix/session/      SQLite Session Store、迁移与宿主锁
+src/harnessix/tools/        工作区只读工具、作用域与Artifact读取入口
+src/harnessix/artifacts/    有界正文、事务发布、分页、配额与清理
+src/harnessix/patches/      受管单文件/整组Patch及差异报告
+src/harnessix/processes/    宿主进程、Action桥接与输出文档
 tests/                      单元和集成测试
 docs/                       中文架构与决策文档
 spec/                       生成的 JSON Schema 和 OpenAPI
 examples/                   可运行演示
 ```
 
-后续按里程碑增量加入 `context/`、`tools/`、`workspace/`、`protocol/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
+后续按里程碑增量加入 `context/`、`protocol/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
 
 ## 设计资料
 
@@ -528,6 +534,7 @@ examples/                   可运行演示
 - [M1 Worker 与 PostgreSQL 设计](docs/m1-worker-postgresql.md)
 - [M1.2 可观测性设计](docs/m1-observability.md)
 - [部署与运行](docs/deployment.md)
+- [Process输出Artifact决策](docs/adr/0041-process-output-artifact.md)
 
 ## 目标里程碑
 

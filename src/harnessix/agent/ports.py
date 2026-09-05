@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import UUID
 
@@ -18,6 +18,7 @@ from harnessix.patches.batch_approval_contracts import ManagedPatchBatchApproval
 from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.managed_contracts import PatchRecord
+from harnessix.processes.contracts import ProcessResult
 
 
 class ToolRuntime(Protocol):
@@ -127,6 +128,7 @@ class ProcessObservation:
 
     state: ProcessActionStateContent
     result: ToolResultContent | None
+    process: ProcessResult | None = field(default=None, repr=False)
 
 
 class ProcessRuntime(Protocol):

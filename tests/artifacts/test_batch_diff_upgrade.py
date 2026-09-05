@@ -89,7 +89,7 @@ raise AssertionError("未到达退出点")
     assert child.returncode == 83, child.stderr
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            10 if point == "after_commit" else 8
+            11 if point == "after_commit" else 8
         )
         assert list(db.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
         assert [

@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1、0.5.4b2b与0.5.4b2c1已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成整组计划、持久执行、模型闭环和 Diff Artifact（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10、真实v8旧wheel升级/旧reader拒绝和迁移硬退出；b2c1已显式接入稳定Action准备、唯一决定、外部Worker与有界终态观察，下一片b2c2实现Process Artifact，b2c3补完整恢复与双SDK离线闭环。见 [ADR 0038](adr/0038-host-process-lifecycle.md)和 [ADR 0040](adr/0040-agent-process-action-saga.md)。不把Session投影冒充执行许可，不提前接入Shell或源目录自动合入。
+状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1、0.5.4b2b与0.5.4b2c1/b2c2已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成整组计划、持久执行、模型闭环和 Diff Artifact（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10、真实v8旧wheel升级/旧reader拒绝和迁移硬退出；b2c1已接入稳定Action准备、唯一决定、外部Worker与有界终态观察，b2c2已完成二进制安全Process Artifact、Session migration11和事务/恢复验收；下一片b2c3补完整跨库恢复与双SDK离线闭环。见 [ADR 0038](adr/0038-host-process-lifecycle.md)、[ADR 0040](adr/0040-agent-process-action-saga.md)和[ADR 0041](adr/0041-process-output-artifact.md)。不把Session投影或Artifact冒充执行许可，不提前接入Shell或源目录自动合入。
 
 ### 目标
 
@@ -192,7 +192,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 ### 核心交付
 
 - [ ] Tool Contract、Registry、风险和并发元数据；
-- [x] 文件读取、搜索与有界 JSONL 输出管理（进程日志留到 0.5.4）；
+- [x] 文件读取、搜索与有界 JSONL 输出管理（Process已捕获日志由0.5.4b2c2补齐）；
   - [x] 0.5.1：`list_files` / `read_file`，根/规则持久绑定、严格参数/输出、分页失效、取消回收；
   - [x] 0.5.2：`glob` / `grep` 与输出 Artifact；
     - [x] 0.5.2a：有界通配/字面量搜索、显式缺口、搜索→revision 读取、审批和中断恢复；
@@ -231,12 +231,12 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
           - [x] b2b2b：用真实`e0e8498` v8 wheel生成/升级会话，验证旧事件原字节、旧reader拒绝及migration10提交前后硬退出；
       - [ ] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
         - [x] b2c1：显式Process Agent端口、稳定Action准备/唯一决定、外部Worker、WAITING_ACTION单次观察与有界模型结果；
-        - [ ] b2c2：Process stdout/stderr Artifact事务发布、配额/分页/TTL及损坏恢复；
+        - [x] b2c2：Process stdout/stderr Artifact事务发布、配额/分页/TTL、损坏恢复、migration11及提交窗口硬退出；
         - [ ] b2c3：Session×Action真硬退出矩阵、等待取消/时限/关闭和双SDK离线闭环；
   - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；
-- [x] 有界搜索输出截断、事务归档引用和过期清理；0.5.4a已支持Process双流有界前缀，Process事务归档仍待实施；
+- [x] 有界搜索/Process输出截断、事务归档引用和过期清理；Process Artifact不对Action已捕获前缀做第二次隐藏截断；
 - [ ] 只读并发、写操作互斥和 Turn 取消；
 - [ ] 统一 Tool Error Taxonomy；
 - [ ] 变更摘要和最终 Diff 交付。

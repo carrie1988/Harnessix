@@ -1,7 +1,7 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2 架构基线，随 0.4 实现持续更新
-- 更新日期：2026-09-03
+- 状态：0.2架构基线，已随实现更新至0.5.4b2c2
+- 更新日期：2026-09-06
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
@@ -739,3 +739,25 @@ b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.
 新示例使用脚本化Provider、本地Session/Effect Journal和固定Python程序，串联模型调用、唯一Action审批、外部Worker、结果观察、第二模型步骤与Replay。没有真实模型请求、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
 
 本片不计入新的真硬退出场景。Action提交后而Session审批请求尚未落库、跨进程并发决定、WAITING_ACTION取消、租约UNKNOWN和Session终态提交窗口留给b2c3；Process Artifact、分页/配额/TTL/损坏恢复留给b2c2。默认Agent仍不暴露`host.process`，当前仍不是任意Shell或OS Sandbox。
+
+## 37. 0.5.4b2c2 Process输出Artifact验收（2026-09-06）
+
+基线`8387741`及CI33972815446四项成功；开工前fetch确认本地与`origin/main`一致。本片只实现b2c2，不提前把b2c3跨库恢复或0.5.4c Git/测试工具标记完成。
+
+新增 **24项** 自动回归：
+
+- `process-output/v1`保存唯一summary及stdout/stderr有序Base64分片；二进制、NUL、无效UTF-8和中文原字节往返一致，规范JSONL、连续offset、捕获摘要、观察摘要、EOF/truncated和`complete`均严格校验；
+- 文档保留Action已经捕获的完整前缀，编码后超过1 MiB则不发布，不进行第二次隐藏截断；两份独立v1 Schema与代码生成结果一致；
+- 正常模型→Action审批→外部Worker→终态观察链路同时提交正文、manifest、`output.artifact`和Session终态，按每页1条实际遍历后可重建双流；模型历史不包含Base64、PID或私有Action ID；
+- 正文插入后/提交前异常与配额不足均降级保留无引用真实效果，提交后确认丢失识别原Event ID且只有一个引用；正文、manifest、Call、引用和purpose五类篡改均为`artifact_corrupt`；跨Thread/scope不可见，TTL后明确过期并清理；
+- 三个真实`os._exit(87)`覆盖正文插入后、Session提交前和提交后。提交前恢复只读原SUCCEEDED Action并发布，不调用Worker；提交后恢复不观察或重放。三种路径均为一个Action、进程标记一次和至多一个Artifact；
+- migration11的复制、删除旧表、重命名和提交后四个真实`os._exit(86)`只留下完整migration10或11，旧Artifact/事件/投影原字节、读取、TTL清理、外键和Replay保持。按既有统计口径，真实持久边界硬退出场景由303增至 **310**。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**124源文件**）通过，**2435 passed、1 skipped**；唯一跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2399项全部通过**；
+- 基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行 **16个** 基础离线示例通过；`kernel_process`现额外验证Process Artifact读取，wheel SHA256为`2ec6c89e2be650cd01654e8567dd44775d6ef52c0825d42cb481d63189b4a4ee`；
+- 真实`e0e8498` v8 wheel（SHA256 `d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`）创建migration1–9会话；当前wheel原字节升级到migration11、继续追加v9事件，旧reader在升级及继续后均`schema_too_new`且不改变数据库。
+
+没有真实模型请求、API Key、SSH或中间件部署。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。本片仍不提供WAITING_ACTION取消、Action创建前后完整恢复、跨进程并发决定、后台命令、OS Sandbox、Git/run_tests或自主Coding Eval；下一片为b2c3。

@@ -21,7 +21,7 @@ def busy_error(code=sqlite3.SQLITE_BUSY):
 def assert_initialized(path):
     with sqlite3.connect(path) as database:
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 10
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 11
         assert database.execute("PRAGMA quick_check").fetchone()[0] == "ok"
 
 
@@ -47,7 +47,7 @@ async def test_only_wal_transition_is_retried_not_migrations(tmp_path, monkeypat
     await SQLiteSessionStore(path).initialize()
     assert statements.count(WAL) == 3
     assert statements.count("BEGIN IMMEDIATE") == 1
-    assert sum(s.startswith("INSERT INTO agent_migrations") for s in statements) == 10
+    assert sum(s.startswith("INSERT INTO agent_migrations") for s in statements) == 11
     assert_initialized(path)
 
 
@@ -73,7 +73,7 @@ async def test_busy_deadline_is_bounded_and_does_not_hide_committed_migrations(
     assert caught.value.code == "storage_busy" and caught.value.retryable and calls == 1
     assert CANARY not in str(caught.value)
     with sqlite3.connect(path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 10
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 11
     await SQLiteSessionStore(path).initialize()
     assert_initialized(path)
 

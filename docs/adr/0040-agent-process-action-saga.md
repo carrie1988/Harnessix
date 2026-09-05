@@ -2,7 +2,7 @@
 
 - 日期：2026-09-05
 - 基线：`81c76f6`，CI33921498948四项通过，开工fetch一致
-- 状态：架构已采纳；b2b身份/事件/升级已完成；b2c1显式运行时Saga已实现；Artifact与完整恢复待b2c2/b2c3
+- 状态：架构已采纳；b2b身份/事件/升级、b2c1运行时Saga及b2c2 Process Artifact已实现；完整恢复待b2c3
 
 ## 1. 必须解决的问题
 
@@ -56,7 +56,7 @@ Agent Event v9现已新增WAITING_ACTION，表达“Action已决定、仍由Work
 
 ## 6. Process Artifact
 
-Action Result是效果事实，Session Artifact是模型展示材料，两者不可互相冒充。桥接先读取终态Action和完整ProcessResult，再生成有界公开预览；完整二进制双流使用独立`process_output`用途发布。Artifact正文、manifest、引用与Agent ToolResult应在Session/Artifact库同事务，发布失败只能省略展示引用或在恢复时重建，不能改写Action终态。
+Action Result是效果事实，Session Artifact是模型展示材料，两者不可互相冒充。桥接先读取终态Action和完整ProcessResult，再生成有界公开预览；完整二进制双流现已使用独立`process_output`用途发布。Artifact正文、manifest、引用与Agent ToolResult在Session/Artifact库同事务，发布失败只省略展示引用或在未提交恢复时重建，不能改写Action终态。
 
 Artifact至少绑定Action ID/指纹、Call ID、流名、observed字节数/摘要、EOF和捕获正文摘要。stdout/stderr用途或分片必须唯一，分页/总配额/TTL/活跃Thread保护沿用现有Artifact规则。argv可能包含源码或敏感值，不进入输出Artifact；当前SecretRef未实现，命令仍禁止承载凭据。
 
@@ -68,10 +68,10 @@ b2b2已新增Agent Event/Thread v9与Session migration10。Process审批Item只�
 
 1. b2a（本ADR）：冻结唯一权威、计划身份、Saga矩阵、等待状态和Artifact边界；
 2. b2b：已实现桥接契约、确定性Action身份、v9投影/WAITING_ACTION/migration10，以及真实v8旧包兼容与迁移崩溃验收；
-3. b2c：分为b2c1显式运行时Saga（已完成）、b2c2 Process Artifact、b2c3完整崩溃恢复与双SDK离线闭环；
+3. b2c：分为b2c1显式运行时Saga（已完成）、b2c2 Process Artifact（已完成）、b2c3完整崩溃恢复与双SDK离线闭环；
 4. 0.5.4c：在同一准入上增加固定Git/run_tests，最后才评估受控Shell。
 
-本ADR不宣称已完成Process Artifact、完整跨库恢复、宿主死亡自动清理或OS Sandbox。b2c1的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`；只有显式专用端口可广告该工具。
+本ADR不宣称已完成完整跨库恢复、宿主死亡自动清理或OS Sandbox。b2c1/b2c2的Session投影和Artifact都不是Executor准入，默认Agent工具清单仍无`host.process`；只有显式专用端口可广告该工具。Process Artifact实施细节见[ADR 0041](0041-process-output-artifact.md)。
 
 
 ## 8. b2c1实施结果
@@ -80,6 +80,6 @@ b2b2已新增Agent Event/Thread v9与Session migration10。Process审批Item只�
 
 运行流程落实本ADR第3节：prepare提交确定性Action并从PENDING快照构造Session请求；reply先在Action Journal写决定，再把同一ApprovalRecord与WAITING_ACTION同批提交Session。相同决定在Session提交失败后可重答，不再调用状态转换；冲突决定拒绝。`resume_turn`在Session仍WAITING_APPROVAL时可镜像后端已存在决定，在WAITING_ACTION时只作一次Action读取。Process决定时间来自Action事实；即使外部决定晚于Turn截止时间也必须投影，投影本身不会刷新Turn预算或成为新许可。活跃状态不产生结果，终态状态/结果/离开等待使用一个Session append；重复活跃观察不增加sequence。
 
-终态公开结果只保留生命周期和双流长度/摘要/EOF元数据，完整Base64正文仍属于Action Result，尚未发布Artifact。UNKNOWN/MANUAL_INTERVENTION不会恢复模型循环。拒绝Action不进入Worker队列。上述行为没有修改v9 Schema或migration10。
+终态公开结果只保留生命周期和双流长度/摘要/EOF元数据，完整Base64正文仍属于Action Result；b2c2现将已捕获前缀转存为有界Process Artifact。UNKNOWN/MANUAL_INTERVENTION不会恢复模型循环。拒绝Action不进入Worker队列。上述运行时行为没有修改v9事件Schema。
 
-本片刻意不完成两项：一是Action已创建而Session尚无审批Item时的真硬退出恢复及WAITING_ACTION取消，二是Process Artifact与两个实际SDK离线HTTP闭环。前者连同跨进程并发、租约UNKNOWN和Session终态提交窗口进入b2c3；后者按正文和SDK边界分别进入b2c2/b2c3。当前实现仍不提供宿主硬退出后的OS进程监督或Sandbox。
+本片刻意不完成两项：一是Action已创建而Session尚无审批Item时的真硬退出恢复及WAITING_ACTION取消，二是两个实际SDK离线HTTP闭环。前者连同跨进程并发、租约UNKNOWN和更完整的跨库矩阵进入b2c3；SDK闭环也进入b2c3。Process Artifact已由b2c2完成，当前实现仍不提供宿主硬退出后的OS进程监督或Sandbox。

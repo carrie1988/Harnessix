@@ -64,7 +64,11 @@ from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.artifacts.contracts import ArtifactToolResult
-from harnessix.artifacts.ports import ArtifactPublisher, BatchDiffPublisher
+from harnessix.artifacts.ports import (
+    ArtifactPublisher,
+    BatchDiffPublisher,
+    ProcessArtifactPublisher,
+)
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -104,6 +108,7 @@ class AgentRuntime:
         patches: PatchRuntime | None = None,
         patch_batches: PatchBatchRuntime | None = None,
         processes: ProcessRuntime | None = None,
+        process_artifacts: ProcessArtifactPublisher | None = None,
         artifacts: ArtifactPublisher | None = None,
         batch_diffs: BatchDiffPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
@@ -173,6 +178,16 @@ class AgentRuntime:
                     "进程专用端口必须声明高风险、非幂等、审批且不可自动核对",
                 )
             definitions = (*definitions, definition)
+        if process_artifacts is not None and (
+            processes is None
+            or process_artifacts.session is not store
+            or process_artifacts.bridge is not processes
+        ):
+            raise KernelError(
+                "artifact_store_mismatch",
+                "Process Artifact发布器必须绑定同一Session和原进程端口",
+            )
+        self._process_artifacts = process_artifacts
         if len({d.name for d in definitions}) != len(definitions):
             raise KernelError("duplicate_tool", "Tool 名称重复")
         self._definitions = {d.name: d.model_copy(deep=True) for d in definitions}
@@ -535,6 +550,11 @@ class AgentRuntime:
                 if result is None:
                     return turn, None
                 result = result.model_copy(update={"process": persisted})
+                observed = replace(
+                    observed,
+                    state=observed.state.model_copy(update={"effect": persisted}),
+                    result=result,
+                )
             else:
                 state_item_id = new_id()
                 payloads.extend(
@@ -562,11 +582,27 @@ class AgentRuntime:
                         ),
                     ]
                 )
-            updated = await self.store.append(
-                thread_id,
-                [EventDraft(turn_id=turn_id, payload=payload) for payload in payloads],
-                expected_sequence=thread.sequence,
-            )
+            drafts = [EventDraft(turn_id=turn_id, payload=payload) for payload in payloads]
+            if (
+                result is not None
+                and observed.process is not None
+                and self._process_artifacts is not None
+            ):
+                updated = await self._process_artifacts.append(
+                    thread_id,
+                    turn_id,
+                    call,
+                    observed,
+                    drafts,
+                    expected_sequence=thread.sequence,
+                    max_output_chars=turn.budget.max_output_chars,
+                )
+            else:
+                updated = await self.store.append(
+                    thread_id,
+                    drafts,
+                    expected_sequence=thread.sequence,
+                )
             return get_turn(updated, turn_id), settled
 
     async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
@@ -1146,8 +1182,8 @@ class AgentRuntime:
         content = ToolResultContent.model_validate_json(result.model_dump_json())
         if content.call_id != call.call_id:
             raise KernelError("tool_result_mismatch", "工具结果与调用 ID 不匹配")
-        # Patch 证据是固定有界的 Session 元数据，不挤占模型公开结果预算。
-        if len(content.model_dump_json(exclude={"patch", "patch_batch"})) > max_chars:
+        # 类型化效果是固定有界的 Session 私有元数据，不挤占模型公开结果预算。
+        if len(content.model_dump_json(exclude={"patch", "patch_batch", "process"})) > max_chars:
             raise KernelError("tool_output_too_large", "工具输出超过当前 Kernel 上限")
         return content
 

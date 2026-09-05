@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
-- 日期：2026-09-05
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、0.5.4b2b稳定身份/事件迁移及b2c1显式运行时Saga已实现，b2c2 Process Artifact、b2c3完整恢复/双SDK、0.5.4c Git与测试工具及0.5.5 Eval待实施
+- 更新日期：2026-09-06
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、0.5.4b2b稳定身份/事件迁移、b2c1显式运行时Saga及b2c2 Process Artifact已实现，b2c3完整恢复/双SDK、0.5.4c Git与测试工具及0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -35,7 +35,7 @@
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
 | 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
-| 0.5.4 | Process、Git、run_tests、受控 Shell | a宿主进程基础层已实现；b持久准入/死亡处理与c工具接入待实施 |
+| 0.5.4 | Process、Git、run_tests、受控 Shell | a、b1、b2身份/投影/运行时/输出归档已实现；b2c3完整恢复与c工具接入待实施 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
@@ -651,7 +651,7 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 
 工具版本绑定cwd、程序身份、环境和资源策略摘要；每次执行前复核持久描述、当前Executor和新Runtime，配置漂移不消费旧权限。确定结果保存完整ProcessResult及摘要Receipt；非零退出不是传输失败。管道证据不完整或清理失败保守UNKNOWN。Task取消先回收再传播，未写终态的RUNNING由租约恢复UNKNOWN；宿主硬退出同样不自动重放、不按历史PID发信号，对账只转人工处置。
 
-本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：Agent Session绑定、Process Artifact、硬退出自动清理与OS隔离待b2/0.7，Git/run_tests待0.5.4c。
+本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：本节交付时Agent Session绑定与Process Artifact尚待b2，现已分别由b2b/b2c2完成；宿主硬退出自动清理与OS隔离仍待0.7，Git/run_tests待0.5.4c。
 
 ## 30. 0.5.4b2a：Agent与Action单一审批Saga设计
 
@@ -707,7 +707,7 @@ b2c拆为三个可独立验收的子片：
 
 宿主显式传入`AgentRuntime(..., processes=bridge)`后，模型清单才包含高风险`host.process`。模型ToolCall提交稳定Action和Session审批请求；`reply_approval`先写唯一Action决定，再把该决定和WAITING_ACTION同批写入Session并立即返回。批准本身不执行命令。独立Worker运行后，调用方显式`resume_turn`进行一次有界观察：READY/LEASED/RUNNING/RECONCILING保持等待；DENIED/FAILED/SUCCEEDED形成结果并继续模型；UNKNOWN/MANUAL_INTERVENTION形成unknown并终止当前Turn。相同等待快照不追加重复事件。
 
-公开结果只含Action状态、returncode、stop reason、termination，以及双流的captured/observed字节数、SHA256、truncated和EOF；不含PID、Base64正文、Action ID或私有投影。Action ID和效果只保留在Session私有字段，现有模型wire白名单继续排除。完整输出即使已在Action Result中存在，也要等b2c2专用Artifact发布，不能塞进模型上下文。
+公开结果只含Action状态、returncode、stop reason、termination，以及双流的captured/observed字节数、SHA256、truncated和EOF；不含PID、Base64正文、Action ID或私有投影。Action ID和效果只保留在Session私有字段，现有模型wire白名单继续排除。b2c2现已通过专用Artifact发布已捕获正文，仍不把Base64正文直接塞进模型上下文。
 
 本片覆盖以下已实现窗口：
 
@@ -721,7 +721,7 @@ b2c拆为三个可独立验收的子片：
 | 重复等待观察 | sequence不变，不追加重复状态 |
 | 用户拒绝 | Action为DENIED，Worker无READY任务；终态结果可供模型处理 |
 
-未完成窗口不作已交付声明：Action提交后、Session审批请求前的真硬退出目前仍会由既有中断逻辑保守结束；WAITING_ACTION取消尚未开放；跨进程并发决定、所有Action状态跳转、租约过期UNKNOWN、Session终态提交窗口和两个实际SDK留给b2c3。Process Artifact、正文恢复及配额留给b2c2。无外部监督器时宿主硬退出后的子进程仍可能存活。
+未完成窗口不作已交付声明：Action提交后、Session审批请求前的真硬退出目前仍会由既有中断逻辑保守结束；WAITING_ACTION取消尚未开放；跨进程并发决定、所有Action状态跳转、租约过期UNKNOWN、更完整的跨库窗口和两个实际SDK留给b2c3。Process Artifact、正文事务及配额已由b2c2交付。无外部监督器时宿主硬退出后的子进程仍可能存活。
 
 离线可运行入口：
 
@@ -730,4 +730,30 @@ uv run python -m examples.kernel_process
 uv run pytest tests/agent/test_process_agent_runtime.py
 ```
 
-示例使用脚本化Provider和本地SQLite，完整走模型调用、唯一Action审批、外部Worker、结果观察、第二模型步骤与Replay；不使用API Key、SSH或中间件，也不是任意Shell、OS Sandbox或自主编码Eval。
+示例使用脚本化Provider和本地SQLite，完整走模型调用、唯一Action审批、外部Worker、结果观察、事务输出归档、第二模型步骤与Replay；不使用API Key、SSH或中间件，也不是任意Shell、OS Sandbox或自主编码Eval。
+
+## 35. 0.5.4b2c2：Process输出Artifact
+
+实现决策见[ADR 0041](adr/0041-process-output-artifact.md)。`ProcessObservation`在宿主私有内存中携带已核对的完整`ProcessResult`；模型结果仍只有流摘要。宿主显式注入`SQLiteProcessArtifactPublisher`后，Runtime才会为终态结果尝试发布正文。发布器必须绑定同一个Session、原`ProcessAgentBridge`和读取端使用的工作区scope，不能替代或包装新的Action执行路径。
+
+正文采用`process-output/v1`规范JSONL：唯一summary后依次排列stdout、stderr的12 KiB Base64分片。摘要同时保存捕获前缀和观察总量证据；stdout/stderr各自有序，不虚构跨流全局时序。`complete`只在双流EOF且均未截断时为真。文档保存Action已捕获的全部前缀；若编码后超过单Artifact 1 MiB上限则省略引用，不做第二次隐藏截断。
+
+`process_output`是Artifact表的独立用途。正文、manifest、Tool Result引用、Process终态状态与离开WAITING_ACTION使用同一Session事务：
+
+- 配额、文档边界或普通发布异常只降级为无引用的真实终态，不改变Action结论；
+- 提交前崩溃保持WAITING_ACTION和零正文，重开只读原Action后重建，不调用Worker；
+- 提交后丢确认通过Event ID识别已提交批次；真实硬退出后正文与引用同时存在，Kernel不重放命令；
+- reader重新核对Thread/Turn/Call、Process批准、Action身份、流摘要、正文SHA/记录数、规范Base64/offset和`complete`，损坏不是空成功。
+
+Session migration11只扩展用途白名单，不改Agent Event/Thread v9或Effect Journal。旧Artifact行原字节保留；复制、删表、重命名及提交后退出均验证只留下完整v10或v11数据库。冻结Schema为`process-output-record-v1`和`process-output-document-v1`。
+
+读取沿用`read_artifact`的每页最多200条、每页24 KiB、Thread/工作区归属、TTL、活跃Turn保护和清理语义。正文可能含源码、测试日志或其他敏感数据；scope与SHA只提供归属和完整性，不是DLP、加密或同UID防篡改。
+
+离线验收入口：
+
+```bash
+uv run python -m examples.kernel_process
+uv run pytest tests/artifacts/test_process_output*.py
+```
+
+本片不新增依赖、模型请求或远程中间件。b2c3继续补Action创建/决定/租约/等待取消等跨库恢复矩阵和两个实际SDK离线HTTP闭环；0.5.4c再增加Git与测试执行。

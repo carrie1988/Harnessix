@@ -44,6 +44,7 @@ from harnessix.processes.contracts import (
     ProcessResult,
     ProcessStream,
 )
+from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
 from harnessix.tools.search_contracts import (
@@ -77,12 +78,17 @@ def main() -> None:
     write_json(
         output / "batch-diff-record-v1.schema.json", TypeAdapter(BatchDiffRecord).json_schema()
     )
+    write_json(
+        output / "process-output-record-v1.schema.json",
+        TypeAdapter(ProcessOutputRecord).json_schema(),
+    )
     for name, model in (
         ("agent-process-call-plan", AgentProcessCallPlan),
         ("process-request", ProcessRequest),
         ("process-limits", ProcessLimits),
         ("process-stream", ProcessStream),
         ("process-result", ProcessResult),
+        ("process-output-document", ProcessOutputDocument),
         ("list-files-input", ListFilesInput),
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),

@@ -20,6 +20,7 @@ from harnessix.agent.models import (
     ItemStarted,
     ItemStatus,
     PatchBatchApprovalRequestContent,
+    ProcessApprovalRequestContent,
     Thread,
     ToolCallContent,
     ToolResultContent,
@@ -36,6 +37,7 @@ from harnessix.artifacts.contracts import (
     CollectionReport,
 )
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
+from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
@@ -225,8 +227,42 @@ class SQLiteArtifactStore:
             ):
                 raise ValueError("索引不匹配")
             turn = get_turn(thread, UUID(row["turn_id"]))
-            if row["purpose"] not in {"tool_result", "batch_plan", "batch_effect"}:
+            if row["purpose"] not in {
+                "tool_result",
+                "batch_plan",
+                "batch_effect",
+                "process_output",
+            }:
                 raise ValueError("未知归档用途")
+            if row["purpose"] == "process_output":
+                results = [
+                    i.content
+                    for i in turn.items
+                    if isinstance(i.content, ToolResultContent)
+                    and i.status == ItemStatus.COMPLETED
+                    and str(i.content.call_id) == row["call_id"]
+                    and i.content.process is not None
+                ]
+                requests = [
+                    i.content
+                    for i in turn.items
+                    if isinstance(i.content, ProcessApprovalRequestContent)
+                    and i.status == ItemStatus.COMPLETED
+                    and str(i.content.call_id) == row["call_id"]
+                ]
+                if (
+                    len(results) != 1
+                    or len(requests) != 1
+                    or not isinstance(results[0].output, dict)
+                    or results[0].output.get("artifact") != ref.model_dump(mode="json")
+                    or results[0].process is None
+                    or results[0].action_id != requests[0].plan.action_id
+                    or results[0].process.action_id != requests[0].plan.action_id
+                    or results[0].process.action_fingerprint != requests[0].plan.action_fingerprint
+                    or results[0].process.plan_fingerprint != requests[0].plan.approval_fingerprint
+                ):
+                    raise ValueError("Process输出引用不匹配")
+                return ref
             if row["purpose"] != "tool_result":
                 contents = [
                     i.content
@@ -262,6 +298,7 @@ class SQLiteArtifactStore:
             if (
                 len(results) != 1
                 or results[0].outcome != "succeeded"
+                or results[0].process is not None
                 or not isinstance(results[0].output, dict)
                 or results[0].output.get("artifact") != ref.model_dump(mode="json")
             ):
@@ -315,6 +352,36 @@ class SQLiteArtifactStore:
                 raise KernelError("artifact_corrupt", "Artifact 记录损坏") from None
             if len(lines) != ref.records:
                 raise KernelError("artifact_corrupt", "Artifact 记录数不一致")
+            if row["purpose"] == "process_output":
+                try:
+                    document = parse_process_output_document(body)
+                    turn = get_turn(thread, UUID(row["turn_id"]))
+                    result = next(
+                        i.content
+                        for i in turn.items
+                        if isinstance(i.content, ToolResultContent)
+                        and i.status == ItemStatus.COMPLETED
+                        and str(i.content.call_id) == row["call_id"]
+                        and i.content.process is not None
+                    )
+                    assert isinstance(result.output, dict)
+                    for name in ("stdout", "stderr"):
+                        public = result.output[name]
+                        stream = getattr(document.summary, name)
+                        if not isinstance(public, dict) or public != {
+                            "captured_bytes": stream.captured_bytes,
+                            "observed_bytes": stream.observed_bytes,
+                            "observed_sha256": stream.observed_sha256,
+                            "truncated": stream.truncated,
+                            "eof": stream.eof,
+                        }:
+                            raise ValueError("流摘要不匹配")
+                    if document.summary.complete != ref.complete:
+                        raise ValueError("完整性不匹配")
+                except (AssertionError, KeyError, StopIteration, ValueError):
+                    raise KernelError(
+                        "artifact_corrupt", "Process Artifact正文与结果不一致"
+                    ) from None
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
         selected, size = [], 0
