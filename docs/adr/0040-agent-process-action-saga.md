@@ -2,7 +2,7 @@
 
 - 日期：2026-09-05
 - 基线：`81c76f6`，CI33921498948四项通过，开工fetch一致
-- 状态：架构已采纳；b2b1稳定调用/Action身份契约已实现，事件迁移与运行时尚未实现
+- 状态：架构已采纳；b2b1身份契约与b2b2a事件/Reducer/migration10已实现；真实v8旧包兼容与运行时尚未实现
 
 ## 1. 必须解决的问题
 
@@ -50,7 +50,7 @@ Agent的用户答复流程调整为：
 
 ## 5. 等待状态和取消
 
-当前Turn只有WAITING_APPROVAL，没有“Action已批准但仍由Worker运行”的持久等待状态。b2实现不能用长轮询阻塞`reply_approval`，也不能把RUNNING当UNKNOWN。下一契约片应新增明确的WAITING_ACTION状态/事件，保持原Turn墙钟预算不刷新；前台取消只停止等待并请求当前本机生命周期清理，不能撤销已提交Action决定或宣称远端Worker/逃逸后代已终止。
+Agent Event v9现已新增WAITING_ACTION，表达“Action已决定、仍由Worker运行”的持久等待边界。它不以长轮询阻塞普通审批答复，也不把RUNNING当UNKNOWN。Runtime重开会原样保留该状态；b2c接入执行/观察后仍须保持原Turn墙钟预算不刷新。前台取消只能停止等待并请求当前本机生命周期清理，不能撤销已提交Action决定或宣称远端Worker/逃逸后代已终止。
 
 恢复流程仅观察Action快照：PENDING继续审批，READY/LEASED/RUNNING继续等待，SUCCEEDED/FAILED生成结果，UNKNOWN/MANUAL_INTERVENTION生成unknown并终止Agent循环。自动观察必须有界；后台通知、无限轮询和会话级永久放行均非本片范围。
 
@@ -62,13 +62,13 @@ Artifact至少绑定Action ID/指纹、Call ID、流名、observed字节数/摘�
 
 ## 7. 版本与实施切片
 
-b2实现会新增Agent审批/等待/结果投影，需升级Agent Event/Thread reader和Session migration；具体版本号只在兼容夹具和迁移方案完成时确定，不能先手改标签。Action Contract/Journal、Process v1 Schema和0.5.4b1工具保持不变。
+b2b2a已新增Agent Event/Thread v9与Session migration10。Process审批Item只接受Action Approval指纹，Action状态Item和Tool Result仅保存固定摘要；旧v1–v8 Agent Schema文件不改。migration10是最低reader标记，不改表或历史字节。真实v8 wheel跨安装兼容和旧reader拒绝仍由b2b2b验收。Action Contract/Journal、Process v1 Schema和0.5.4b1工具保持不变。
 
 实施拆分：
 
 1. b2a（本ADR）：冻结唯一权威、计划身份、Saga矩阵、等待状态和Artifact边界；
-2. b2b：实现桥接契约、Agent事件/迁移及旧reader真实兼容；其中b2b1已交付确定性Action身份、请求构造/快照核对与冻结计划Schema，b2b2继续事件和迁移；
+2. b2b：实现桥接契约、Agent事件/迁移及旧reader真实兼容；b2b1已交付确定性Action身份，b2b2a已交付v9投影/WAITING_ACTION/migration10，b2b2b继续真实v8旧包兼容与迁移崩溃验收；
 3. b2c：实现Agent Runtime执行/恢复、Process Artifact及双SDK离线闭环；
 4. 0.5.4c：在同一准入上增加固定Git/run_tests，最后才评估受控Shell。
 
-本ADR不宣称已实现Agent进程工具、跨库原子提交、宿主死亡自动清理或OS Sandbox。
+本ADR不宣称已实现Agent进程工具、跨库原子提交、宿主死亡自动清理或OS Sandbox。b2b2a的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`。

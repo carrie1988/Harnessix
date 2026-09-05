@@ -408,3 +408,11 @@ Agent Runtime                │
 - 只读取原私有镜像/账本，不调用 prepare/save/reply/execute/reconcile，不写目标或追加事件。取消/超时和反复关闭排空报告线程，真实退出后生成重试不产生新授权或副作用。
 - 宿主载荷默认 repr 不输出私有身份或代码，但报告正文含工作区路径、摘要与代码预览，需按源码信息保护；未声称通用脱敏。
 - 原只读发布器明确拒绝将这些报告作为写调用 Artifact 发布；当前没有新引用或 Session 事件，事务发布/读取/配额/过期仍待 c3c2。不得将报告准备的退出测试计为未来归档事务已验收。
+
+## 0.5.4b2b2a Agent进程投影补充（2026-09-05）
+
+- Action Approval仍是唯一执行许可。Session中的Process审批决定只能由受信投影函数从已核对ActionSnapshot生成；普通Session ApprovalRecord、计划摘要或Reducer通过本身都不授予Executor能力。
+- Agent v9把READY/LEASED/RUNNING/RECONCILING保持为WAITING_ACTION。只有绑定同一计划、Action ID/指纹和结果摘要的终止观察才可产生Tool Result；Reducer拒绝状态倒退、重复终止、结论错配和跨调用证据。
+- Process计划、审批和状态Item是Session私有事实，模型历史仍只映射完成的消息、ToolCall和白名单ToolResult字段。完整argv仍存在原ToolCall/ActionRequest；摘要不是内容脱敏，也不是抗同UID恶意篡改的签名。
+- Runtime本片只在重启时保留WAITING_ACTION，不执行、轮询、取消或回收Action。宿主硬退出、逃逸后代、Process Artifact正文、Sandbox和跨账本自动恢复仍是b2c/0.7边界。
+- migration10仅阻止旧reader接管，不改变数据库隔离。真实v8旧wheel与硬退出迁移矩阵待b2b2b；在该证据完成前，兼容结论限于冻结Schema和当前代码回归。

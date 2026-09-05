@@ -8,6 +8,7 @@ from harnessix.agent.approvals import approval_for, approval_matches, request_fi
 from harnessix.agent.batch_patching import validate_effect
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
+    PROCESS_RESOLVED_STATUSES,
     TERMINAL_TURNS,
     TURN_TRANSITIONS,
     AgentEvent,
@@ -22,6 +23,9 @@ from harnessix.agent.models import (
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
     PlanContent,
+    ProcessActionEffect,
+    ProcessActionStateContent,
+    ProcessApprovalRequestContent,
     TextContent,
     Thread,
     ThreadCreated,
@@ -40,7 +44,12 @@ from harnessix.agent.usage import (
     ModelAttemptStarted,
     ModelUsageObserved,
 )
-from harnessix.domain.models import ApprovalOutcome, EffectClass
+from harnessix.domain.models import (
+    ALLOWED_ACTION_TRANSITIONS,
+    ActionStatus,
+    ApprovalOutcome,
+    EffectClass,
+)
 from harnessix.patches.bridge_contracts import call_request_id
 
 
@@ -69,6 +78,125 @@ def pending_calls(turn: Turn) -> list[ToolCallContent]:
         and item.status == ItemStatus.COMPLETED
         and item.content.call_id not in settled
     ]
+
+
+def _process_approval(turn: Turn, call: ToolCallContent) -> Item | None:
+    item = approval_for(turn, call)
+    return (
+        item
+        if item is not None and isinstance(item.content, ProcessApprovalRequestContent)
+        else None
+    )
+
+
+def _process_effects(turn: Turn, call: ToolCallContent) -> list[ProcessActionEffect]:
+    return [
+        item.content.effect
+        for item in turn.items
+        if isinstance(item.content, ProcessActionStateContent)
+        and item.content.call_id == call.call_id
+        and item.status == ItemStatus.COMPLETED
+    ]
+
+
+def _action_status_reachable(source: ActionStatus, target: ActionStatus) -> bool:
+    pending = list(ALLOWED_ACTION_TRANSITIONS.get(source, frozenset()))
+    visited = set(pending)
+    while pending:
+        current = pending.pop()
+        if current == target:
+            return True
+        for following in ALLOWED_ACTION_TRANSITIONS.get(current, frozenset()):
+            if following not in visited:
+                visited.add(following)
+                pending.append(following)
+    return False
+
+
+def _validate_process_state(
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    content: ProcessActionStateContent,
+) -> None:
+    approval = _process_approval(turn, call)
+    require(
+        turn.status == TurnStatus.WAITING_ACTION
+        and approval is not None
+        and approval.status == ItemStatus.COMPLETED,
+        "Process状态只能观察已决定的等待Action",
+    )
+    assert approval is not None and isinstance(approval.content, ProcessApprovalRequestContent)
+    projection = approval.content
+    require(
+        projection.decision is not None and approval_matches(thread, turn, call, projection),
+        "Process状态缺少匹配的Action审批投影",
+    )
+    effect = content.effect
+    require(
+        content.call_id == call.call_id
+        and (
+            effect.plan_fingerprint,
+            effect.action_id,
+            effect.action_fingerprint,
+        )
+        == (
+            projection.plan.approval_fingerprint,
+            projection.plan.action_id,
+            projection.plan.action_fingerprint,
+        ),
+        "Process状态与调用计划不匹配",
+    )
+    assert projection.decision is not None
+    require(
+        (projection.decision.outcome == ApprovalOutcome.REJECTED)
+        == (effect.status is ActionStatus.DENIED),
+        "Process状态与Action审批决定不一致",
+    )
+    previous = _process_effects(turn, call)
+    require(
+        not previous or previous[-1].status not in PROCESS_RESOLVED_STATUSES,
+        "Process终止状态不可追加观察",
+    )
+    source = previous[-1].status if previous else projection.action_status
+    require(
+        _action_status_reachable(source, effect.status)
+        or (
+            not previous and source == effect.status and effect.status in PROCESS_RESOLVED_STATUSES
+        ),
+        "Process状态观察倒退、重复或不属于原Action生命周期",
+    )
+
+
+def _validate_process_result(turn: Turn, call: ToolCallContent, content: ToolResultContent) -> None:
+    approval = _process_approval(turn, call)
+    if approval is None and content.process is None:
+        return
+    require(
+        approval is not None
+        and approval.status == ItemStatus.COMPLETED
+        and isinstance(approval.content, ProcessApprovalRequestContent)
+        and approval.content.decision is not None,
+        "Process结果缺少已决定的Action审批投影",
+    )
+    effects = _process_effects(turn, call)
+    require(
+        bool(effects) and effects[-1].status in PROCESS_RESOLVED_STATUSES, "Process结果缺少终止观察"
+    )
+    require(content.process is not None, "Process结果缺少Action终止证据")
+    assert effects and content.process is not None
+    require(
+        content.process == effects[-1] and content.action_id == effects[-1].action_id,
+        "Process结果与Action终止观察不一致",
+    )
+    expected = {
+        "denied": "failed",
+        "succeeded": "succeeded",
+        "failed": "failed",
+        "unknown": "unknown",
+        "manual_intervention": "unknown",
+    }[effects[-1].status.value]
+    require(content.outcome == expected, "Process结果结论与Action状态不一致")
 
 
 def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
@@ -101,9 +229,13 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
                 if isinstance(content, ApprovalRequestContent)
                 else call.tool
                 == (
-                    "apply_patch_batch"
-                    if isinstance(content, PatchBatchApprovalRequestContent)
-                    else "apply_patch"
+                    "host.process"
+                    if isinstance(content, ProcessApprovalRequestContent)
+                    else (
+                        "apply_patch_batch"
+                        if isinstance(content, PatchBatchApprovalRequestContent)
+                        else "apply_patch"
+                    )
                 )
                 and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
             ),
@@ -124,6 +256,11 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             approval_matches(thread, turn, call, content),
             "审批指纹不匹配",
         )
+    elif isinstance(content, ProcessActionStateContent):
+        calls = pending_calls(turn)
+        require(bool(calls) and calls[0].call_id == content.call_id, "Process状态与当前调用不匹配")
+        require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
+        _validate_process_state(thread, turn, calls[0], content)
     elif isinstance(content, PlanContent | CompactionContent):
         require(
             turn.status == TurnStatus.PREPARING_CONTEXT, "Plan/Compaction 只能在准备上下文时记录"
@@ -171,6 +308,7 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         )
         if content.patch_batch is not None:
             validate_effect(thread, turn, calls[0], content)
+        _validate_process_result(turn, calls[0], content)
         if content.patch is not None:
             effect, call = content.patch, calls[0]
             require(
@@ -248,6 +386,8 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
                     require(content.patch_batch is not None, "整组成功必须有类型化效果证据")
                 if isinstance(approval.content, PatchApprovalRequestContent):
                     require(content.patch is not None, "Patch 成功必须有类型化效果证据")
+                if isinstance(approval.content, ProcessApprovalRequestContent):
+                    require(content.process is not None, "Process成功必须有Action终止证据")
                 require(
                     approval.content.decision is not None
                     and approval.content.decision.outcome == ApprovalOutcome.APPROVED,
@@ -269,8 +409,11 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
             "审批 Item 类型不可改变",
         )
         assert isinstance(payload.content, ApprovalContent)
+        cleared: dict[str, object] = {"decision": None}
+        if isinstance(original.content, ProcessApprovalRequestContent):
+            cleared["action_status"] = original.content.action_status
         require(
-            original.content == payload.content.model_copy(update={"decision": None}),
+            original.content == payload.content.model_copy(update=cleared),
             "审批请求身份与指纹不可变",
         )
         decision = payload.content.decision
@@ -278,10 +421,12 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
             require(turn.status == TurnStatus.WAITING_APPROVAL, "审批答复只能在等待状态提交")
             require(decision is not None, "审批答复缺少决定")
             assert decision is not None
-            require(
-                decision.request_fingerprint == original.content.request_fingerprint,
-                "审批决定指纹不匹配",
+            expected_fingerprint = (
+                original.content.plan.action_fingerprint
+                if isinstance(original.content, ProcessApprovalRequestContent)
+                else original.content.request_fingerprint
             )
+            require(decision.request_fingerprint == expected_fingerprint, "审批决定指纹不匹配")
             require(decision.decided_at == event.occurred_at, "审批决定时间必须与事件一致")
             require(
                 turn.created_at
@@ -394,6 +539,20 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
             all(i.status != ItemStatus.STARTED or i == approval for i in turn.items),
             "等待审批时存在其他未完成 Item",
         )
+    if target == TurnStatus.WAITING_ACTION:
+        calls = pending_calls(turn)
+        require(bool(calls), "等待Action必须有未结算调用")
+        approval = _process_approval(turn, calls[0])
+        require(
+            approval is not None
+            and approval.status == ItemStatus.COMPLETED
+            and isinstance(approval.content, ProcessApprovalRequestContent)
+            and approval.content.decision is not None,
+            "等待Action必须先投影唯一Action审批决定",
+        )
+        require(
+            all(i.status != ItemStatus.STARTED for i in turn.items), "等待Action时存在未完成 Item"
+        )
     if turn.status == TurnStatus.WAITING_APPROVAL and target == TurnStatus.EXECUTING_TOOLS:
         calls = pending_calls(turn)
         require(bool(calls), "审批之后缺少当前调用")
@@ -402,9 +561,22 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
             approval is not None and approval.status == ItemStatus.COMPLETED,
             "审批决定持久化前不能离开等待状态",
         )
+        assert approval is not None
+        require(
+            not isinstance(approval.content, ProcessApprovalRequestContent),
+            "Process审批后必须先进入持久Action等待",
+        )
         require(
             event.occurred_at < turn.created_at + timedelta(seconds=turn.budget.timeout_seconds),
             "Turn 时间预算已耗尽",
+        )
+    if turn.status == TurnStatus.WAITING_ACTION and target == TurnStatus.EXECUTING_TOOLS:
+        calls = pending_calls(turn)
+        require(bool(calls), "Action终止后缺少当前调用")
+        effects = _process_effects(turn, calls[0])
+        require(
+            bool(effects) and effects[-1].status in PROCESS_RESOLVED_STATUSES,
+            "Action终止事实持久化前不能离开等待状态",
         )
     if target == TurnStatus.CALLING_MODEL:
         require(turn.model_steps < turn.budget.max_steps, "模型步骤预算耗尽")

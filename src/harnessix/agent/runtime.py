@@ -37,6 +37,7 @@ from harnessix.agent.models import (
     ItemStatus,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
+    ProcessApprovalRequestContent,
     TextContent,
     Thread,
     ThreadCreated,
@@ -191,6 +192,11 @@ class AgentRuntime:
             turn_id=turn.turn_id,
             trace_context=turn.trace_context,
         ) as operation:
+            # Process Action 的Effect Journal仍是唯一执行事实；b2b2只负责保存等待边界，
+            # 在b2c接入核对驱动前，启动恢复不得把仍在运行的Action误判为进程中断。
+            if turn.status == TurnStatus.WAITING_ACTION:
+                operation.finish(turn.status.value)
+                return
             if turn.status == TurnStatus.WAITING_APPROVAL:
                 if remaining_seconds(turn) > 0:
                     operation.finish(turn.status.value)
@@ -459,6 +465,10 @@ class AgentRuntime:
             turn = get_turn(thread, turn_id)
             if turn.status in TERMINAL_TURNS or turn.status == TurnStatus.CANCELLING:
                 return turn
+            if turn.status == TurnStatus.WAITING_ACTION:
+                raise KernelError(
+                    "process_action_not_enabled", "Process Action等待取消将在运行时接线后开放"
+                )
             updated = await self.store.append(
                 thread_id,
                 [
@@ -554,6 +564,10 @@ class AgentRuntime:
             content = item.content
             if fingerprint != content.request_fingerprint:
                 raise KernelError("approval_mismatch", "审批指纹不匹配")
+            if isinstance(content, ProcessApprovalRequestContent):
+                raise KernelError(
+                    "process_action_not_enabled", "Process审批必须由Action事实投影，普通答复未开放"
+                )
             if content.decision is not None:
                 recorded = content.decision
                 if (recorded.outcome, recorded.actor, recorded.reason) != (

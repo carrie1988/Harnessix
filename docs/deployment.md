@@ -283,8 +283,16 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 
 ## Agent/Process稳定身份部署（0.5.4b2b1）
 
-本片增加`AgentProcessCallPlan`和受信准备/快照核对API，没有Session或Effect Journal迁移；当前最低reader仍是Agent v8 / migration9。安装新wheel不会创建Action、批准请求、启动进程或改写旧Session。包版本仍为0.1.0，部署必须记录具体Git提交和wheel摘要。
+本片增加`AgentProcessCallPlan`和受信准备/快照核对API，没有Session或Effect Journal迁移；该片交付时最低reader仍是Agent v8 / migration9。安装新wheel不会创建Action、批准请求、启动进程或改写旧Session。包版本仍为0.1.0，部署必须记录具体Git提交和wheel摘要。
 
 宿主只能把同一Process Action `ToolDescriptor`同时用于模型ToolCall构造和桥接，并提供稳定、受信的`Principal`。API与Worker宿主绑定不同会产生不同工具版本，旧计划不能继续。Action请求提交后的状态、决定和结果只从原Effect Journal读取；Session接入尚未交付，不得自行把计划或普通Session `ApprovalRecord`传给Executor。
 
-独立Schema`agent-process-call-plan-v1`用于持久兼容检查。b2b2升级Agent事件和Session最低reader前，不需要运行旧wheel迁移探针；也不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
+独立Schema`agent-process-call-plan-v1`用于持久兼容检查。后续b2b2a已升级Agent事件和Session最低reader，见下节；仍不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
+
+## 当前Session v9 / migration10进程投影升级（0.5.4b2b2a）
+
+本片新增Agent Event/Thread v9和`0010_agent_process_projection.sql`。migration10只推进最低reader标记，不新增表、索引或列，也不重写旧事件、快照或Effect Journal。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration10伪装降级。
+
+Runtime重开v9的WAITING_ACTION只保留原等待，不会创建、批准、执行或轮询Process Action。运维不得通过`resume_turn`、普通Session审批或手写`ToolResult.process`绕过；只有`session_projection`根据匹配ActionSnapshot构造的投影才可写入。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
+
+本片已完成同版本迁移、Replay、重启保留等待和冻结v8 Schema回归。真实`e0e8498` v8 wheel创建会话、新wheel升级、旧reader拒绝及migration10提交前后`os._exit`将在b2b2b独立验收；完成前不把“源码模型可读取v8”表述成真实跨安装兼容结论。b2c之前也不部署模型进程工具或Process Artifact。基础wheel无需供应商SDK、远程数据库或新中间件。

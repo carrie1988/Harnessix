@@ -26,6 +26,8 @@ from harnessix.agent.usage import (
 )
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.domain.models import (
+    ActionStatus,
+    ApprovalOutcome,
     ApprovalRecord,
     ContractModel,
     EffectClass,
@@ -36,6 +38,7 @@ from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.batch_run_contracts import BatchExecutionResult
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.managed_contracts import PatchState
+from harnessix.processes.bridge_contracts import AgentProcessCallPlan
 from harnessix.tools.contracts import Revision
 
 
@@ -62,6 +65,7 @@ class TurnStatus(StrEnum):
     CALLING_MODEL = "calling_model"
     EXECUTING_TOOLS = "executing_tools"
     WAITING_APPROVAL = "waiting_approval"
+    WAITING_ACTION = "waiting_action"
     FINALIZING = "finalizing"
     CANCELLING = "cancelling"
     COMPLETED = "completed"
@@ -79,7 +83,8 @@ TURN_TRANSITIONS = {
     TurnStatus.PREPARING_CONTEXT: {TurnStatus.CALLING_MODEL},
     TurnStatus.CALLING_MODEL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.FINALIZING},
     TurnStatus.EXECUTING_TOOLS: {TurnStatus.PREPARING_CONTEXT, TurnStatus.WAITING_APPROVAL},
-    TurnStatus.WAITING_APPROVAL: {TurnStatus.EXECUTING_TOOLS},
+    TurnStatus.WAITING_APPROVAL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.WAITING_ACTION},
+    TurnStatus.WAITING_ACTION: {TurnStatus.EXECUTING_TOOLS},
     TurnStatus.FINALIZING: {TurnStatus.COMPLETED},
     TurnStatus.CANCELLING: {TurnStatus.CANCELLED, TurnStatus.INTERRUPTED},
 }
@@ -143,6 +148,45 @@ class PatchBatchEffect(ContractModel):
         return self
 
 
+PROCESS_WAITING_STATUSES = frozenset(
+    {ActionStatus.READY, ActionStatus.LEASED, ActionStatus.RUNNING, ActionStatus.RECONCILING}
+)
+PROCESS_RESOLVED_STATUSES = frozenset(
+    {
+        ActionStatus.DENIED,
+        ActionStatus.SUCCEEDED,
+        ActionStatus.FAILED,
+        ActionStatus.UNKNOWN,
+        ActionStatus.MANUAL_INTERVENTION,
+    }
+)
+
+
+class ProcessActionEffect(ContractModel):
+    """Session私有Action投影；不包含argv、输出或执行许可。"""
+
+    plan_fingerprint: Revision
+    action_id: UUID
+    action_fingerprint: Revision
+    status: ActionStatus
+    result_fingerprint: Revision | None = None
+    origin: Literal["execution", "recovery"]
+
+    @model_validator(mode="after")
+    def resolved_result(self) -> Self:
+        if self.status not in PROCESS_WAITING_STATUSES | PROCESS_RESOLVED_STATUSES:
+            raise ValueError("Process Action状态不可投影到等待边界")
+        if self.status in PROCESS_RESOLVED_STATUSES and self.result_fingerprint is None:
+            raise ValueError("Process终止投影缺少Action Result指纹")
+        return self
+
+
+class ProcessActionStateContent(ContractModel):
+    kind: Literal["process_action_state"] = "process_action_state"
+    call_id: UUID
+    effect: ProcessActionEffect
+
+
 class ToolResultContent(ContractModel):
     kind: Literal["tool_result"] = "tool_result"
     call_id: UUID
@@ -152,6 +196,7 @@ class ToolResultContent(ContractModel):
     action_id: UUID | None = None
     patch: PatchEffect | None = None
     patch_batch: PatchBatchEffect | None = None
+    process: ProcessActionEffect | None = None
     diff_artifact: ArtifactRef | None = None
 
     @model_serializer(mode="wrap")
@@ -161,6 +206,8 @@ class ToolResultContent(ContractModel):
             data.pop("patch", None)
         if self.patch_batch is None:
             data.pop("patch_batch", None)
+        if self.process is None:
+            data.pop("process", None)
         if self.diff_artifact is None:
             data.pop("diff_artifact", None)
         return data
@@ -169,8 +216,10 @@ class ToolResultContent(ContractModel):
     def independent_effects(self) -> Self:
         if self.diff_artifact is not None and self.patch_batch is None:
             raise ValueError("差异效果引用必须附属于整组证据")
-        if self.patch is not None and self.patch_batch is not None:
-            raise ValueError("单文件和整组证据不能混用")
+        if sum(effect is not None for effect in (self.patch, self.patch_batch, self.process)) > 1:
+            raise ValueError("单文件、整组和进程证据不能混用")
+        if self.process is not None and self.action_id != self.process.action_id:
+            raise ValueError("Process效果与Tool Result Action ID不一致")
         return self
 
 
@@ -230,8 +279,44 @@ class PatchBatchApprovalRequestContent(ContractModel):
         return self
 
 
+class ProcessApprovalRequestContent(ContractModel):
+    kind: Literal["process_approval_request"] = "process_approval_request"
+    policy_version: Literal["kernel-process-action/v1"] = "kernel-process-action/v1"
+    approval_id: UUID
+    call_id: UUID
+    plan: AgentProcessCallPlan
+    request_fingerprint: Revision
+    action_status: ActionStatus = ActionStatus.PENDING_APPROVAL
+    decision: ApprovalRecord | None = None
+
+    @model_validator(mode="after")
+    def bound_action(self) -> Self:
+        if (
+            self.call_id != self.plan.call_id
+            or self.request_fingerprint != self.plan.approval_fingerprint
+        ):
+            raise ValueError("Process审批必须绑定完整Action计划")
+        if self.decision is None:
+            if self.action_status is not ActionStatus.PENDING_APPROVAL:
+                raise ValueError("未决定的Process审批只能投影PENDING_APPROVAL")
+            return self
+        if self.decision.request_fingerprint != self.plan.action_fingerprint:
+            raise ValueError("Process决定必须来自原Action审批事实")
+        if self.decision.outcome is ApprovalOutcome.REJECTED:
+            if self.action_status is not ActionStatus.DENIED:
+                raise ValueError("拒绝决定必须投影DENIED Action")
+        elif self.action_status not in PROCESS_WAITING_STATUSES | (
+            PROCESS_RESOLVED_STATUSES - {ActionStatus.DENIED}
+        ):
+            raise ValueError("批准决定与Process Action状态不一致")
+        return self
+
+
 ApprovalContent = (
-    ApprovalRequestContent | PatchApprovalRequestContent | PatchBatchApprovalRequestContent
+    ApprovalRequestContent
+    | PatchApprovalRequestContent
+    | PatchBatchApprovalRequestContent
+    | ProcessApprovalRequestContent
 )
 
 
@@ -284,6 +369,8 @@ ItemContent = Annotated[
     | ApprovalRequestContent
     | PatchApprovalRequestContent
     | PatchBatchApprovalRequestContent
+    | ProcessApprovalRequestContent
+    | ProcessActionStateContent
     | PlanContent
     | CompactionContent
     | ErrorContent,
@@ -398,7 +485,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8] = 8
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9] = 9
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -424,6 +511,18 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 9:
+            if (
+                isinstance(self.payload, TurnStateChanged)
+                and self.payload.status == TurnStatus.WAITING_ACTION
+            ):
+                raise ValueError("Process Action等待状态需要Agent Event v9")
+            if isinstance(self.payload, ItemStarted | ItemFinished):
+                content = self.payload.content
+                if isinstance(
+                    content, ProcessApprovalRequestContent | ProcessActionStateContent
+                ) or (isinstance(content, ToolResultContent) and content.process is not None):
+                    raise ValueError("Process Action投影需要Agent Event v9")
         if self.schema_version < 8 and isinstance(self.payload, ItemStarted | ItemFinished):
             content = self.payload.content
             if isinstance(content, ToolResultContent | PatchBatchApprovalRequestContent):

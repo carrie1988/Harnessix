@@ -74,7 +74,7 @@ def test_metadata_requires_v5_but_old_event_export_unchanged():
                 update={"billing": ResponseBillingMetadata(service_tier="default")}
             ),
         )
-    assert EventDraft(payload=payload).schema_version == 8
+    assert EventDraft(payload=payload).schema_version == 9
 
 
 def test_legacy_event_projection_can_exclude_payload():

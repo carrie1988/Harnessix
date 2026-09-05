@@ -221,7 +221,7 @@ async def test_old_events_cannot_carry_new_refs(group_case, tmp_path, schema, vi
             turn_id=waiting.turn_id,
             payload=ItemStarted(item_id=uuid4(), content=content),
         )
-    assert EventDraft(payload=ItemStarted(item_id=uuid4(), content=content)).schema_version == 8
+    assert EventDraft(payload=ItemStarted(item_id=uuid4(), content=content)).schema_version == 9
     stripped = content.model_copy(update={"diff_artifact": None})
     if schema == 7:
         assert (

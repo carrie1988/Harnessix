@@ -611,7 +611,7 @@ runtime = AgentRuntime(session, provider, patch_batches=bridge, batch_diffs=batc
 - 重启不执行写工具；已提交引用不重新生成。未提交效果引用可随原效果只读核对结果归档；没有完整证据时仍 unknown，不为报告补批或伪造运行。
 - 同调用两个用途各自唯一；旧只读 `tool_result` 用途仍唯一。读取、清理核对用途对应的真实引用/工作区，复用原页限制、TTL、逻辑配额和活跃 Thread 保护。
 
-当前 Agent Event/Thread **v8**、Session **migration9**。旧 v1–v7 Schema/事件字节不变，缺引用的老 Item 不增加 null 字段；旧等待审批的原完整指纹不变。原工具定义、Provider v3、副本v3及依赖不变，包版本仍0.1.0。
+本切片交付时 Agent Event/Thread 为 **v8**、Session 为 **migration9**。旧 v1–v7 Schema/事件字节不变，缺引用的老 Item 不增加 null 字段；旧等待审批的原完整指纹不变。当前最低reader已推进到v9/migration10。
 
 这完成 0.5.3c 范围的多文件报告交付，不代表整个0.5或完整生产 Coding Agent。下一阶段 **0.5.4 Process / Git / 测试执行**：先验证受管副本内非交互进程的 cwd/argv/环境准入、独立双流预算、取消/超时和进程组回收，再接入有持久准入的工具与测试反馈。POSIX 进程组不是 OS Sandbox，不能把命令执行当只读，也不能因 PID 消失推断外部副作用未发生。源码合入、完整仓库修复 Eval 仍待独立验收。
 
@@ -659,7 +659,7 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 
 跨库不伪装原子事务：Action已决定而Session未投影时只读取并补投影；Action运行或终态而Session无结果时只观察原Action；UNKNOWN绝不回READY。持久WAITING_ACTION用于已批准但尚未终态的Worker执行，不能在审批答复中无限轮询。
 
-Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b再做事件/迁移/旧reader，b2c实现运行时和Artifact。当前Agent v8/Session migration9不变，不能把本设计写成已接模型。
+Process Artifact只负责模型展示，Action Result才是效果事实；发布失败不能改写执行终态。b2a仅冻结设计，b2b再做事件/迁移/旧reader，b2c实现运行时和Artifact。本片设计时Agent v8/Session migration9不变；当前b2b2a已推进到v9/migration10，但仍不能写成已接模型。
 
 ## 31. 0.5.4b2b1：稳定Agent调用与Process Action身份
 
@@ -667,4 +667,14 @@ Process Artifact只负责模型展示，Action Result才是效果事实；发布
 
 `AgentProcessCallPlan`绑定Thread/Turn/Call、绝对工作区、完整调用指纹、Action请求指纹、工具版本、宿主绑定摘要、主体摘要、程序、argv摘要和超时。Action ID由固定命名空间及上述身份生成，租户范围幂等键使用同一身份；同一调用重做prepare得到完全相同请求，不同主体、命令或宿主绑定得到不同Action。完整argv只保留在原ToolCall与ActionRequest，计划只保存摘要。
 
-`process_snapshot_matches`重新生成并逐项比较计划、ActionRequest、Action请求指纹、持久ToolDescriptor及Action Approval指纹。Session后续只能投影通过该核对的Journal快照；本片不接受Session审批作为Executor输入。计划已冻结独立v1 Schema。下一片b2b2新增Agent Event v9、WAITING_ACTION和最低Session reader升级；在此之前默认Agent仍不暴露`host.process`。
+`process_snapshot_matches`重新生成并逐项比较计划、ActionRequest、Action请求指纹、持久ToolDescriptor及Action Approval指纹。Session后续只能投影通过该核对的Journal快照；本片不接受Session审批作为Executor输入。计划已冻结独立v1 Schema。后续b2b2a已新增Agent Event v9、WAITING_ACTION和最低Session reader升级，见下节；默认Agent仍不暴露`host.process`。
+
+## 32. 0.5.4b2b2a：Agent进程投影与持久等待边界
+
+Agent Event/Thread升级到 **v9**，Session最低reader升级到 **migration10**。`ProcessApprovalRequestContent`保存不可变调用计划和Action决定投影；决定指纹必须等于原Action请求指纹，而不是Session展示计划指纹。`ProcessActionStateContent`只保存Action ID、计划/Action/结果摘要、状态和观察来源，不保存argv、stdout/stderr或执行许可。`ToolResult.process`必须逐字段等于最后一个终止观察；无Process证据的旧结果序列化形状不变。
+
+`processes/session_projection.py`是唯一公开构造边界：每次先以b2b1契约重新核对ToolCall、作用域、持久ToolDescriptor、Principal、计划和原`ActionSnapshot`，再生成审批请求、决定或状态观察。客户端自行构造的普通`ApprovalRecord`不能通过Process决定契约。Action Journal仍是唯一审批与结果事实；Session Store和Reducer不调用Executor，也不读取或修改Effect Journal。
+
+状态顺序固定为：`EXECUTING_TOOLS → WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`。Action处于READY/LEASED/RUNNING/RECONCILING时只能继续等待；DENIED/SUCCEEDED/FAILED/UNKNOWN/MANUAL_INTERVENTION及结果摘要持久化后才可离开。Reducer允许跳过中间观察，但拒绝倒退、重复终止、批准与DENIED矛盾、结果结论错配及跨Action证据。Runtime启动只保留WAITING_ACTION，不将其误判为进程中断；resume、执行、轮询、取消处置和Artifact留给b2c。
+
+v1–v8 Agent Schema文件冻结，v9新Schema独立生成；migration10只记录最低reader，不改表、不重写旧事件或投影。当前单元回归证明Replay、事务回滚、模型历史白名单和重启保留等待。真实`e0e8498` v8 wheel的跨安装升级、旧reader拒绝及migration10硬退出证据在b2b2b完成，因此整个b2b2仍未关闭。

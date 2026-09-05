@@ -21,11 +21,10 @@ from harnessix.domain.models import (
     RiskLevel,
 )
 from harnessix.domain.registry import ToolDefinition
+from harnessix.processes.bridge_contracts import PROCESS_ACTION_POLICY
 from harnessix.processes.contracts import ProcessRequest, ProcessResult
 from harnessix.processes.runtime import HostProcessRuntime
 from harnessix.tools.workspace import digest
-
-PROCESS_ACTION_POLICY = "host-process-action/v1"
 
 
 class ProcessActionInput(ProcessRequest):

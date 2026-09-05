@@ -61,6 +61,7 @@
         "calling_model",
         "executing_tools",
         "waiting_approval",
+        "waiting_action",
         "finalizing",
         "cancelling",
         "completed",

@@ -685,3 +685,19 @@ Agent v8、Session migration9、Action/Process Schema、依赖和示例行为不
 新增 **5项** 契约/Journal测试。`make check`通过：Ruff、Mypy（120源文件）、**2397 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2361项全部通过**。没有新增硬崩溃场景，前序数量不变。
 
 基础wheel未安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。无真实模型请求、SSH或中间件。下一片b2b2升级Agent事件/等待/结果投影与Session reader，并用真实v8旧wheel验证升级和拒绝降级；当前默认Agent仍不暴露或执行`host.process`。
+
+## 34. 0.5.4b2b2a Agent进程投影与持久等待验收（2026-09-05）
+
+基线`e0e8498`及CI33930667562四项成功；本片实现b2b2的事件/Reducer/最低reader子片，不把真实旧wheel和运行时工作提前标记完成。
+
+- 新增Agent Event/Thread v9、WAITING_ACTION、Process审批/Action状态/Tool Result私有证据和Session migration10。v1–v8 Agent Schema文件摘要冻结；无Process证据的旧Tool Result仍不序列化空字段。
+- 投影构造只接受通过b2b1完整身份核对的ActionSnapshot。Session决定的指纹来自Action请求，不接受普通Session展示指纹；批准与DENIED矛盾、伪造Action请求或跨调用快照均在构造层拒绝。
+- Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`。RUNNING观察不能提前离开或生成结果；FAILED终止观察及结果摘要持久化后才可结算。伪造摘要、结论错配、倒退或终态后追加均失败，失败批次原子回滚。
+- Runtime重开保留WAITING_ACTION，不误记INTERRUPTED；现有`resume_turn`明确拒绝该尚未接线的状态。模型历史仅包含Tool Result的`outcome/output/error/diff_artifact`白名单，不暴露Process计划、批准、Action ID或私有效果。
+- CostReport与SmokeReport继续使用原v1数据契约，只在共享TurnStatus枚举中加入WAITING_ACTION；当前已实现的成本和Smoke场景输出形状不变。
+
+新增 **4项** Agent投影/边界测试。`make check`通过：Ruff、Mypy（121源文件）、**2401 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2365项全部通过**。本片未新增硬崩溃场景；真实migration10提交窗口留给b2b2b。
+
+Agent v8/Thread v8冻结摘要分别为`d83381b4dffa5854ad4c5997a775e617800c3304481c88f10e3b7b9021a23fa3`和`5874c0d4eef02d0cc473ed12bbf5cf7f529eff6508087c9f7ac1a2a7f57f4608`；migration10摘要为`fbcda6a8f05001fb1834aae2c75ed8e96d052632c8627777b62dabd5edb5b3fa`。基础wheel不安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`。
+
+无真实模型请求、SSH或中间件部署。下一片b2b2b使用真实`e0e8498` v8 wheel验证跨安装升级、旧reader拒绝和migration10提交前后硬退出；b2c再实现Agent Runtime创建/批准/执行/观察、Process Artifact及双SDK离线闭环。默认Agent仍不暴露`host.process`。

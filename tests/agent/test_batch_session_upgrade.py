@@ -91,7 +91,7 @@ raise AssertionError("未到达迁移退出点")
     assert child.returncode == 80, child.stderr
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            7 if point == "before_commit" else 9
+            7 if point == "before_commit" else 10
         )
         assert [
             r[0] for r in db.execute("SELECT event_json FROM agent_events ORDER BY sequence")
@@ -102,7 +102,7 @@ raise AssertionError("未到达迁移退出点")
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 6
-        assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 9
+        assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 10
         assert db.execute("SELECT snapshot_json FROM agent_threads").fetchone()[0] == snapshot
 
 

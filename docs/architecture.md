@@ -182,7 +182,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
-当前 Agent Event/Thread 为 v8，最低读者由 Migration 0009 约束；v1–v7 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
+当前 Agent Event/Thread 为 v9，最低读者由 Migration 0010 约束；v1–v8 事件与旧 Schema 保持原文。受管 Patch 的完整计划/镜像/意图留在副本账本，Session 保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用 ID 只读核对，不重放写入。尝试用量属于 Session 事实，不放入对话 Item 或外部副作用 Journal。
 
 ### 4.9 Harnessix Action Plane
 
@@ -425,4 +425,6 @@ src/harnessix/
 
 0.5.4b1通过`ProcessActionExecutor`把上述API接入0.1 Action Plane，而不是增加进程专用账本。Effect Journal保管命令意图、ToolDescriptor、审批、租约和UNKNOWN事实；Executor只负责比较持久工具版本/宿主绑定并执行。宿主硬退出只能把过期RUNNING恢复UNKNOWN，不能证明操作系统进程已终止，详见 [ADR 0039](adr/0039-process-action-plane-admission.md)。
 
-0.5.4b2b1新增`AgentProcessCallPlan`和纯桥接准备/核对函数。Thread/Turn/Call、工作区、完整ToolCall、Action请求、主体、持久工具版本和宿主绑定共同确定Action ID与幂等键；重新准备只能得到同一Action。Session尚未新增投影事件，也不能据自身审批驱动进程；b2b2完成事件/迁移后，b2c才把此身份契约接入Agent Runtime。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
+0.5.4b2b1新增`AgentProcessCallPlan`和纯桥接准备/核对函数。Thread/Turn/Call、工作区、完整ToolCall、Action请求、主体、持久工具版本和宿主绑定共同确定Action ID与幂等键；重新准备只能得到同一Action。
+
+0.5.4b2b2a进一步把已核对的Action事实投影到Agent v9。进程审批、Action状态和Tool Result效果使用独立类型；Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`，活跃Action不能产生结果或恢复模型循环，终止结果必须绑定最后观察。Session私有计划、决定和效果不进入模型历史。Runtime重开仅保留等待，不创建、批准、轮询或执行Action；b2c才接入这些行为和Process Artifact。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
