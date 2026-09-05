@@ -196,7 +196,7 @@ uv run python -m examples.kernel_batch
 uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
 ~~~
 
-这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，当前还已交付0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、b2b绑定/投影及b2c1显式运行时Saga；下一片为 **0.5.4b2c2：Process Artifact**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，当前还已交付0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、b2b绑定/投影、b2c1显式运行时Saga及b2c2 Process Artifact；下一片为 **0.5.4b2c3：完整跨库恢复与双 SDK 离线闭环**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：真实计划/历史效果差异报告（0.5.3c3c1）
 
