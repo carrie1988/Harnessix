@@ -293,7 +293,7 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 
 本片新增Agent Event/Thread v9和`0010_agent_process_projection.sql`。migration10只推进最低reader标记，不新增表、索引或列，也不重写旧事件、快照或Effect Journal。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration10伪装降级。
 
-Runtime重开v9的WAITING_ACTION只保留原等待，不会创建、批准、执行或轮询Process Action。运维不得通过`resume_turn`、普通Session审批或手写`ToolResult.process`绕过；只有`session_projection`根据匹配ActionSnapshot构造的投影才可写入。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
+Runtime重开v9的WAITING_ACTION仍只保留原等待，不会在启动时创建、批准、执行或轮询Process Action。b2c1配置原专用端口后，调用方可显式`resume_turn`单次读取匹配Action并投影；普通Session审批或手写`ToolResult.process`仍不可绕过。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
 
 真实跨安装验收使用`scripts/process_session_upgrade_probe.py`，探针不依赖测试包：
 
@@ -305,4 +305,21 @@ Runtime重开v9的WAITING_ACTION只保留原等待，不会创建、批准、执
 
 实际旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`，b2b2a基础wheel为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`，本片最终基础wheel为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。旧wheel直接导出的`tests/agent/fixtures/session-v8.json`纳入回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`。migration10提交前后另以真实`os._exit`验证，重启只看到完整v8或完整v9 migration集合，不重写历史。
 
-b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c之前仍不部署模型进程工具或Process Artifact；默认Agent不暴露`host.process`。基础wheel无需供应商SDK、远程数据库或新中间件。
+b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c1现已提供显式模型进程端口；默认Agent仍不暴露`host.process`，Process Artifact仍未部署。基础wheel无需供应商SDK、远程数据库或新中间件。
+
+
+## 显式Process Agent运行时部署（0.5.4b2c1）
+
+API/Agent宿主必须显式构造`ProcessAgentBridge(actions, principal)`并以`processes=`注入`AgentRuntime`。传入的ActionService必须设置`auto_execute=False`，且Registry中唯一的`host.process`定义、Principal、cwd/程序表/环境/资源绑定必须与独立Worker完全一致。桥接不拥有ActionService生命周期；宿主先初始化Effect Journal，关闭时在Agent Runtime退出后再关闭ActionService。
+
+推荐部署角色保持分离：
+
+1. Agent/API进程写Session、提交Action和写唯一审批决定；
+2. Action Worker从Journal领取READY并执行固定程序；
+3. 客户端或上层调度器在收到状态变化后显式调用`resume_turn`一次。b2c1不提供后台轮询器，不能用紧循环调用resume替代队列通知。
+
+审批接口返回WAITING_ACTION不表示命令完成。只有Action终态被再次读取并写入Session结果后，Agent才继续模型循环；UNKNOWN/MANUAL_INTERVENTION会中断Turn。公开模型结果当前只有流计数/摘要和生命周期，不含完整stdout/stderr。运维查看完整正文仍需读取受控Action Result；b2c2交付前不要自行把Base64正文注入模型或伪造Artifact引用。
+
+同一决定重答可修复Action已决定、Session未投影的窗口；不同actor/outcome/reason会冲突。重启后的WAITING_APPROVAL可由`resume_turn`只读同步已有Action决定，WAITING_ACTION可单次观察。若Action由外部入口在Turn超时后形成决定，Session仍按Action真实决定时间补投影，但原Turn预算不会复活。Action创建后而Session审批请求尚未提交的真硬退出、等待取消和完整跨库退出矩阵尚未验收，不应配置自动重试或修改Journal状态绕过。
+
+基础wheel可在仓库外执行`python -I kernel_process.py`（复制自`examples/kernel_process.py`）验证离线闭环。该示例不需要供应商SDK、API Key、远程数据库或新中间件；不是任意Shell、仓库测试执行或OS Sandbox。包版本仍为0.1.0，生产记录必须使用具体提交和wheel摘要。

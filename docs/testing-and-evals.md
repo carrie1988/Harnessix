@@ -717,3 +717,25 @@ Agent v8/Thread v8冻结摘要分别为`d83381b4dffa5854ad4c5997a775e617800c3304
 最终基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行15个示例和真实旧/新升级探针通过，SHA256为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。无真实模型请求、SSH或中间件部署；Linux3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
 
 b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.process`，`reply_approval`、`resume_turn`和取消也不会越过b2b2a门禁。下一片b2c实现Action创建/唯一批准、Worker执行/有界观察、跨库恢复、Process Artifact及双SDK离线闭环。
+
+## 36. 0.5.4b2c1 Process Agent运行时Saga验收（2026-09-05）
+
+基线`57a49e2`及CI33953770189四项成功。本片在冻结的Agent v9/Session migration10和Action/Process v1契约上接入运行时行为，没有修改Schema、数据库迁移、依赖或包版本。
+
+新增 **7项** Agent/Action组合测试：
+
+- 显式端口后模型才看到`host.process`；模型调用先形成PENDING Action和Session审批，批准只进入WAITING_ACTION，标记文件证明审批答复没有执行命令；
+- Action Worker独立领取READY并真实执行一次；`resume_turn`对READY只追加一次有界状态，相同快照不增加Session sequence，对SUCCEEDED一次提交终态状态/结果并继续第二模型步骤；
+- Action决定已写、Session决定提交前注入失败后，相同决定可重答补投影，不再执行Action状态转换；不同actor/outcome/reason明确`approval_conflict`；
+- 外部Action审批已完成而Session仍WAITING_APPROVAL时，`resume_turn`只读镜像原ApprovalRecord并进入WAITING_ACTION，Action事件中只有一次`approval_granted`；
+- 用户拒绝后Action为DENIED且Worker队列为空，终态失败结果可供模型处理；桥接拒绝`auto_execute=True`，防止审批调用内同步执行；
+- 未决定的Process审批即使原Turn已超时，重开和resume也保留原PENDING事实，不走既有通用终结路径伪造结果；外部Action后来形成决定时仍按其真实时间补投影，但不会刷新Turn预算；等待取消协议留给b2c3；
+- 输出证据不完整的真实Worker结果为UNKNOWN；Agent投影unknown后直接INTERRUPTED，未发起第二模型步骤，也未把Action放回READY。
+
+模型公开结果验证只含Action状态、returncode、stop reason、termination和双流计数/摘要/EOF，不含`data_base64`；模型wire继续只含`outcome/output/error`，Action ID和Process效果留在Session私有证据。完整输出Artifact尚未实现。
+
+`make check`通过：Ruff、Mypy（**122源文件**）、**2411 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2375项全部通过**。基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行原15个示例及新`kernel_process`共 **16个示例**通过，wheel SHA256为`7dc4ef2fdaef33b02b0746fa701303c158dfacde3db0069b655948e3e9fd3fa3`。
+
+新示例使用脚本化Provider、本地Session/Effect Journal和固定Python程序，串联模型调用、唯一Action审批、外部Worker、结果观察、第二模型步骤与Replay。没有真实模型请求、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
+
+本片不计入新的真硬退出场景。Action提交后而Session审批请求尚未落库、跨进程并发决定、WAITING_ACTION取消、租约UNKNOWN和Session终态提交窗口留给b2c3；Process Artifact、分页/配额/TTL/损坏恢复留给b2c2。默认Agent仍不暴露`host.process`，当前仍不是任意Shell或OS Sandbox。

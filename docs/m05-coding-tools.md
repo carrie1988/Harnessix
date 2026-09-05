@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 日期：2026-09-05
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入及0.5.4b2b1稳定Agent/Action身份已实现，b2b2事件迁移、b2c运行时、0.5.4c Git与测试工具及0.5.5 Eval待实施
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、0.5.4b2b稳定身份/事件迁移及b2c1显式运行时Saga已实现，b2c2 Process Artifact、b2c3完整恢复/双SDK、0.5.4c Git与测试工具及0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -686,3 +686,48 @@ v1–v8 Agent Schema文件冻结，v9新Schema独立生成；migration10只记�
 `scripts/process_session_upgrade_probe.py`提供create/upgrade/resume/old-reader四个独立模式；`tests/agent/fixtures/session-v8.json`由上述旧wheel直接导出，不以手改版本号伪造。历史升级回归现覆盖v1–v8 transcript。migration10故障注入从该真实transcript重建冻结v8数据库形状，分别在marker插入未提交和事务提交后执行真实`os._exit`；重开只能观察完整migration1–9或1–10，旧事件/投影原文与projection_version 8不变，初始化幂等。
 
 本片没有新增Agent Runtime进程执行、Action决定、Process Artifact或模型工具。它只关闭b2b的格式与恢复证据缺口；b2c仍须实现跨Session/Action Journal的运行时Saga、取消/恢复和双SDK离线闭环。进程宿主退出后的存活后代、UNKNOWN处置及OS Sandbox边界没有因数据库升级验收而改善。
+
+
+## 34. 0.5.4b2c1：显式Process Agent端口与有界Runtime Saga
+
+本片在b2b冻结的v9事件上接入行为，不升级Agent/Session/Action/Process Schema。源码边界重新核对如下：`ActionService.submit/decide_approval/get`拥有Action事实，`ActionWorker.run_once`独立消费READY；`AgentRuntime`只协调Session，`session_projection`仍是Action快照到Session事实的构造边界。两库没有分布式事务，因而本片没有增加“跨库原子提交”的虚假抽象。
+
+b2c拆为三个可独立验收的子片：
+
+1. **b2c1（本片）**：显式Process端口、稳定Action准备、唯一Action决定、WAITING_ACTION单次观察与有界公开结果；
+2. **b2c2**：stdout/stderr `process_output` Artifact、正文/manifest/引用同Session事务、配额/分页/TTL/损坏恢复；
+3. **b2c3**：Session×Action Journal真硬退出矩阵、WAITING_ACTION取消/时限/关闭、OpenAI与Anthropic实际SDK离线HTTP闭环及旧会话继续。
+
+`ProcessAgentBridge`只接受`auto_execute=False`的既有`ActionService`和受信`Principal`。它从Action Registry取得唯一`host.process`描述，重新使用b2b1完整身份核对，并实现四个窄操作：
+
+- `prepare`：确定性构造并提交原Action；正常只接受PENDING_APPROVAL，策略在启动前DENIED/FAILED可形成普通失败结果，其他状态fail closed；
+- `decide`：先读原Action，相同决定直接投影，不同决定报冲突；只有仍为PENDING的Action调用一次决定接口；
+- `sync_decision`：处理Action决定已提交而Session仍等待的窗口，只读并补投影，不再次决定；
+- `observe`：每次只读一次Action，不执行、不回READY、不按PID发信号。等待状态没有Tool Result，终态才返回与最后效果完全相同的结果。
+
+宿主显式传入`AgentRuntime(..., processes=bridge)`后，模型清单才包含高风险`host.process`。模型ToolCall提交稳定Action和Session审批请求；`reply_approval`先写唯一Action决定，再把该决定和WAITING_ACTION同批写入Session并立即返回。批准本身不执行命令。独立Worker运行后，调用方显式`resume_turn`进行一次有界观察：READY/LEASED/RUNNING/RECONCILING保持等待；DENIED/FAILED/SUCCEEDED形成结果并继续模型；UNKNOWN/MANUAL_INTERVENTION形成unknown并终止当前Turn。相同等待快照不追加重复事件。
+
+公开结果只含Action状态、returncode、stop reason、termination，以及双流的captured/observed字节数、SHA256、truncated和EOF；不含PID、Base64正文、Action ID或私有投影。Action ID和效果只保留在Session私有字段，现有模型wire白名单继续排除。完整输出即使已在Action Result中存在，也要等b2c2专用Artifact发布，不能塞进模型上下文。
+
+本片覆盖以下已实现窗口：
+
+| 窗口 | b2c1行为 |
+|---|---|
+| 正常准备 | 稳定Action为PENDING，Session进入WAITING_APPROVAL |
+| Action决定后、Session提交前失败 | 同决定重答只读确认并补投影；不同决定冲突 |
+| 外部已决定、Session仍等待 | `resume_turn`只读Action并按真实时间补决定/WAITING_ACTION；不刷新Turn预算 |
+| Worker尚未领取或运行中 | 单次观察后仍WAITING_ACTION，不循环轮询 |
+| Worker终态 | 状态、结果和离开WAITING_ACTION在一个Session批次提交 |
+| 重复等待观察 | sequence不变，不追加重复状态 |
+| 用户拒绝 | Action为DENIED，Worker无READY任务；终态结果可供模型处理 |
+
+未完成窗口不作已交付声明：Action提交后、Session审批请求前的真硬退出目前仍会由既有中断逻辑保守结束；WAITING_ACTION取消尚未开放；跨进程并发决定、所有Action状态跳转、租约过期UNKNOWN、Session终态提交窗口和两个实际SDK留给b2c3。Process Artifact、正文恢复及配额留给b2c2。无外部监督器时宿主硬退出后的子进程仍可能存活。
+
+离线可运行入口：
+
+```bash
+uv run python -m examples.kernel_process
+uv run pytest tests/agent/test_process_agent_runtime.py
+```
+
+示例使用脚本化Provider和本地SQLite，完整走模型调用、唯一Action审批、外部Worker、结果观察、第二模型步骤与Replay；不使用API Key、SSH或中间件，也不是任意Shell、OS Sandbox或自主编码Eval。

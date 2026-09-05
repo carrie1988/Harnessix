@@ -2,7 +2,7 @@
 
 - 日期：2026-09-05
 - 基线：`81c76f6`，CI33921498948四项通过，开工fetch一致
-- 状态：架构已采纳；b2b身份、事件、migration10与真实v8旧包兼容已完成；运行时尚未实现
+- 状态：架构已采纳；b2b身份/事件/升级已完成；b2c1显式运行时Saga已实现；Artifact与完整恢复待b2c2/b2c3
 
 ## 1. 必须解决的问题
 
@@ -50,7 +50,7 @@ Agent的用户答复流程调整为：
 
 ## 5. 等待状态和取消
 
-Agent Event v9现已新增WAITING_ACTION，表达“Action已决定、仍由Worker运行”的持久等待边界。它不以长轮询阻塞普通审批答复，也不把RUNNING当UNKNOWN。Runtime重开会原样保留该状态；b2c接入执行/观察后仍须保持原Turn墙钟预算不刷新。前台取消只能停止等待并请求当前本机生命周期清理，不能撤销已提交Action决定或宣称远端Worker/逃逸后代已终止。
+Agent Event v9现已新增WAITING_ACTION，表达“Action已决定、仍由Worker运行”的持久等待边界。它不以长轮询阻塞普通审批答复，也不把RUNNING当UNKNOWN。b2c1已接入显式单次观察，Runtime重开仍原样保留该状态；每次`resume_turn`最多读取一次Action，原Turn墙钟预算不刷新。设计上的前台取消最多只能停止等待并请求当前本机生命周期清理，不能撤销已提交Action决定或宣称远端Worker/逃逸后代已终止；b2c1尚未开放该取消路径。
 
 恢复流程仅观察Action快照：PENDING继续审批，READY/LEASED/RUNNING继续等待，SUCCEEDED/FAILED生成结果，UNKNOWN/MANUAL_INTERVENTION生成unknown并终止Agent循环。自动观察必须有界；后台通知、无限轮询和会话级永久放行均非本片范围。
 
@@ -68,7 +68,18 @@ b2b2已新增Agent Event/Thread v9与Session migration10。Process审批Item只�
 
 1. b2a（本ADR）：冻结唯一权威、计划身份、Saga矩阵、等待状态和Artifact边界；
 2. b2b：已实现桥接契约、确定性Action身份、v9投影/WAITING_ACTION/migration10，以及真实v8旧包兼容与迁移崩溃验收；
-3. b2c：实现Agent Runtime执行/恢复、Process Artifact及双SDK离线闭环；
+3. b2c：分为b2c1显式运行时Saga（已完成）、b2c2 Process Artifact、b2c3完整崩溃恢复与双SDK离线闭环；
 4. 0.5.4c：在同一准入上增加固定Git/run_tests，最后才评估受控Shell。
 
-本ADR不宣称已实现Agent进程工具、跨库原子提交、宿主死亡自动清理或OS Sandbox。b2b2的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`。
+本ADR不宣称已完成Process Artifact、完整跨库恢复、宿主死亡自动清理或OS Sandbox。b2c1的Session投影不是Executor准入，默认Agent工具清单仍无`host.process`；只有显式专用端口可广告该工具。
+
+
+## 8. b2c1实施结果
+
+新增`ProcessRuntime`专用端口和`ProcessAgentBridge`受信实现。桥接要求ActionService关闭`auto_execute`，防止审批请求内同步运行进程；宿主未显式注入端口时，模型工具清单和原有Runtime行为均不扩大。Action Worker仍由独立宿主调度，Agent层不持有执行器或后台轮询任务。
+
+运行流程落实本ADR第3节：prepare提交确定性Action并从PENDING快照构造Session请求；reply先在Action Journal写决定，再把同一ApprovalRecord与WAITING_ACTION同批提交Session。相同决定在Session提交失败后可重答，不再调用状态转换；冲突决定拒绝。`resume_turn`在Session仍WAITING_APPROVAL时可镜像后端已存在决定，在WAITING_ACTION时只作一次Action读取。Process决定时间来自Action事实；即使外部决定晚于Turn截止时间也必须投影，投影本身不会刷新Turn预算或成为新许可。活跃状态不产生结果，终态状态/结果/离开等待使用一个Session append；重复活跃观察不增加sequence。
+
+终态公开结果只保留生命周期和双流长度/摘要/EOF元数据，完整Base64正文仍属于Action Result，尚未发布Artifact。UNKNOWN/MANUAL_INTERVENTION不会恢复模型循环。拒绝Action不进入Worker队列。上述行为没有修改v9 Schema或migration10。
+
+本片刻意不完成两项：一是Action已创建而Session尚无审批Item时的真硬退出恢复及WAITING_ACTION取消，二是Process Artifact与两个实际SDK离线HTTP闭环。前者连同跨进程并发、租约UNKNOWN和Session终态提交窗口进入b2c3；后者按正文和SDK边界分别进入b2c2/b2c3。当前实现仍不提供宿主硬退出后的OS进程监督或Sandbox。

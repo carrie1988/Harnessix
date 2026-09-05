@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1与0.5.4b2b已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成整组计划、持久执行、模型闭环和 Diff Artifact（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10、真实v8旧wheel升级/旧reader拒绝和迁移硬退出；下一片b2c接入Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环。见 [ADR 0038](adr/0038-host-process-lifecycle.md)和 [ADR 0040](adr/0040-agent-process-action-saga.md)。不把Session投影冒充执行许可，不提前接入Shell或源目录自动合入。
+状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1、0.5.4b2b与0.5.4b2c1已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成整组计划、持久执行、模型闭环和 Diff Artifact（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10、真实v8旧wheel升级/旧reader拒绝和迁移硬退出；b2c1已显式接入稳定Action准备、唯一决定、外部Worker与有界终态观察，下一片b2c2实现Process Artifact，b2c3补完整恢复与双SDK离线闭环。见 [ADR 0038](adr/0038-host-process-lifecycle.md)和 [ADR 0040](adr/0040-agent-process-action-saga.md)。不把Session投影冒充执行许可，不提前接入Shell或源目录自动合入。
 
 ### 目标
 
@@ -230,6 +230,9 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
           - [x] b2b2a：Agent Event/Thread v9、Process审批/状态/结果私有投影、持久WAITING_ACTION、纯Reducer/Replay与migration10；Runtime只保留等待，不执行Action；
           - [x] b2b2b：用真实`e0e8498` v8 wheel生成/升级会话，验证旧事件原字节、旧reader拒绝及migration10提交前后硬退出；
       - [ ] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
+        - [x] b2c1：显式Process Agent端口、稳定Action准备/唯一决定、外部Worker、WAITING_ACTION单次观察与有界模型结果；
+        - [ ] b2c2：Process stdout/stderr Artifact事务发布、配额/分页/TTL及损坏恢复；
+        - [ ] b2c3：Session×Action真硬退出矩阵、等待取消/时限/关闭和双SDK离线闭环；
   - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；

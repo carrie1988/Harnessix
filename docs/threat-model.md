@@ -416,3 +416,11 @@ Agent Runtime                │
 - Process计划、审批和状态Item是Session私有事实，模型历史仍只映射完成的消息、ToolCall和白名单ToolResult字段。完整argv仍存在原ToolCall/ActionRequest；摘要不是内容脱敏，也不是抗同UID恶意篡改的签名。
 - Runtime本片只在重启时保留WAITING_ACTION，不执行、轮询、取消或回收Action。宿主硬退出、逃逸后代、Process Artifact正文、Sandbox和跨账本自动恢复仍是b2c/0.7边界。
 - migration10仅阻止旧reader接管，不改变数据库隔离。真实`e0e8498` v8 wheel升级、旧reader拒绝和提交前后硬退出已通过；这只证明SQLite迁移事务与历史字节兼容，不证明防同UID篡改、硬件断电或跨账本原子性。
+
+## 0.5.4b2c1 Process Agent运行时补充（2026-09-05）
+
+- `ProcessAgentBridge`是宿主受信能力，不是模型可构造的通用执行器。只有显式注入才广告`host.process`；工具必须为HIGH/NON_IDEMPOTENT_WRITE、强制审批/幂等且禁止自动对账。桥接拒绝`auto_execute=True`，审批答复内不执行命令。
+- Action Journal ApprovalRecord仍是唯一许可。Session决定只由已核对快照按真实决定时间投影；外部决定晚于Turn截止也必须留存事实，但不刷新预算。相同决定补投影不重复状态转换，不同actor/outcome/reason冲突。摘要、Reducer通过或Session数据库可写性都不能直接授权Executor。
+- `resume_turn`每次至多读取一次Action。活跃状态保持WAITING_ACTION，相同快照不追加；终态效果、结果摘要和离开等待同批提交。UNKNOWN/MANUAL_INTERVENTION停止模型循环，不回READY、不重放、不按持久PID/PGID发信号。
+- 模型公开结果省略PID和Base64正文，只显示生命周期及双流字节数/SHA256/truncated/EOF。摘要不是脱敏：字节数、退出码和哈希仍可能泄露侧信道；完整argv继续持久在ToolCall/ActionRequest，禁止承载凭据。b2c2前完整输出不进入Artifact或模型。
+- b2c1没有解决Action提交后Session审批请求前的硬退出、WAITING_ACTION取消、跨进程并发决定及完整租约/终态提交矩阵。没有外部监督器时Agent/Worker宿主死亡后子进程仍可能存活；当前能力不是Shell、容器、OS Sandbox、网络隔离或同UID防篡改边界。

@@ -427,4 +427,6 @@ src/harnessix/
 
 0.5.4b2b1新增`AgentProcessCallPlan`和纯桥接准备/核对函数。Thread/Turn/Call、工作区、完整ToolCall、Action请求、主体、持久工具版本和宿主绑定共同确定Action ID与幂等键；重新准备只能得到同一Action。
 
-0.5.4b2b2把已核对的Action事实投影到Agent v9。进程审批、Action状态和Tool Result效果使用独立类型；Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`，活跃Action不能产生结果或恢复模型循环，终止结果必须绑定最后观察。Session私有计划、决定和效果不进入模型历史。真实v8旧wheel、旧reader拒绝及migration10硬退出已验证事件/投影原字节兼容。Runtime重开仍仅保留等待，不创建、批准、轮询或执行Action；b2c才接入这些行为和Process Artifact。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
+0.5.4b2b2把已核对的Action事实投影到Agent v9。进程审批、Action状态和Tool Result效果使用独立类型；Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`，活跃Action不能产生结果或恢复模型循环，终止结果必须绑定最后观察。Session私有计划、决定和效果不进入模型历史。真实v8旧wheel、旧reader拒绝及migration10硬退出已验证事件/投影原字节兼容。
+
+0.5.4b2c1增加显式`ProcessRuntime`端口和`ProcessAgentBridge`。Agent Runtime只负责稳定Action提交、唯一决定协调与单次观察；`ActionWorker`仍是唯一执行调度方。审批答复不运行命令，决定已写Action而Session未提交时按相同决定补投影；WAITING_ACTION恢复每次最多读取一个快照，活跃快照去重，终态状态与Tool Result同批提交。公开结果只有生命周期和流摘要，不含Base64正文；Process Artifact及完整硬退出矩阵仍属b2c2/b2c3。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。

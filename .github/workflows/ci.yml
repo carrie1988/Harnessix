@@ -37,6 +37,7 @@ jobs:
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
       - run: uv run python -m examples.process_action
+      - run: uv run python -m examples.kernel_process
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -62,6 +63,7 @@ jobs:
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
       - run: uv run python -m examples.process_action
+      - run: uv run python -m examples.kernel_process
 
   postgres:
     runs-on: ubuntu-latest

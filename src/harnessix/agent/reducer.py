@@ -429,11 +429,15 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
             require(decision.request_fingerprint == expected_fingerprint, "审批决定指纹不匹配")
             require(decision.decided_at == event.occurred_at, "审批决定时间必须与事件一致")
             require(
-                turn.created_at
-                <= event.occurred_at
-                < turn.created_at + timedelta(seconds=turn.budget.timeout_seconds),
-                "审批答复超过 Turn 时间预算",
+                turn.created_at <= event.occurred_at,
+                "审批决定早于 Turn 创建时间",
             )
+            if not isinstance(original.content, ProcessApprovalRequestContent):
+                require(
+                    event.occurred_at
+                    < turn.created_at + timedelta(seconds=turn.budget.timeout_seconds),
+                    "审批答复超过 Turn 时间预算",
+                )
         else:
             require(decision is None, "取消或失败不能伪造审批决定")
     elif not isinstance(original.content, TextContent):
