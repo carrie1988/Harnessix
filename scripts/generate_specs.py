@@ -14,6 +14,7 @@ from harnessix.artifacts.contracts import (
     ReadArtifactInput,
 )
 from harnessix.domain.models import ActionRequest
+from harnessix.evals.contracts import CodingEvalReport, CodingEvalTask, EvalFinalAnswer
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
@@ -121,11 +122,14 @@ def main() -> None:
         ("managed-patch-batch-output", ManagedPatchBatchOutput),
         ("managed-patch-batch-run", BatchRunRecord),
         ("managed-patch-batch-result", BatchExecutionResult),
+        ("coding-eval-task", CodingEvalTask),
+        ("coding-eval-final-answer", EvalFinalAnswer),
+        ("coding-eval-report", CodingEvalReport),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
-        "Process 与 OpenAPI Schema"
+        "Process、Coding Eval 与 OpenAPI Schema"
     )
 
 

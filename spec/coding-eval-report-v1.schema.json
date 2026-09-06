@@ -1,0 +1,483 @@
+{
+  "$defs": {
+    "CodingEvalEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "harnessix_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Harnessix Revision",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "isolation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Isolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "harnessix_revision",
+        "provider",
+        "model",
+        "platform",
+        "isolation"
+      ],
+      "title": "CodingEvalEnvironment",
+      "type": "object"
+    },
+    "EvalCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "enum": [
+            "task_repository_matched",
+            "baseline_checks_failed",
+            "final_check_set_matched",
+            "turn_completed",
+            "behavior_checks_passed",
+            "regression_checks_passed",
+            "head_unchanged",
+            "allowed_changes",
+            "change_count",
+            "clean_index",
+            "test_feedback_order",
+            "git_feedback_order",
+            "final_answer_consistent",
+            "budget_respected"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "category": {
+          "enum": [
+            "eval_infrastructure",
+            "runtime",
+            "correctness",
+            "regression",
+            "forbidden_edit",
+            "final_answer",
+            "budget"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "passed",
+        "category",
+        "message"
+      ],
+      "title": "EvalCheck",
+      "type": "object"
+    },
+    "EvalFinalAnswerEvidence": {
+      "additionalProperties": false,
+      "description": "最终回答的脱敏证据；不把模型语义摘要写入报告。",
+      "properties": {
+        "parsed": {
+          "title": "Parsed",
+          "type": "boolean"
+        },
+        "response_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Response Sha256",
+          "type": "string"
+        },
+        "response_utf8_bytes": {
+          "maximum": 1000000,
+          "minimum": 0,
+          "title": "Response Utf8 Bytes",
+          "type": "integer"
+        },
+        "changed_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Changed Paths",
+          "type": "array"
+        },
+        "tests": {
+          "items": {
+            "$ref": "#/$defs/EvalFinalTest"
+          },
+          "maxItems": 32,
+          "title": "Tests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parsed",
+        "response_sha256",
+        "response_utf8_bytes",
+        "changed_paths",
+        "tests"
+      ],
+      "title": "EvalFinalAnswerEvidence",
+      "type": "object"
+    },
+    "EvalFinalTest": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Profile",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "profile",
+        "passed"
+      ],
+      "title": "EvalFinalTest",
+      "type": "object"
+    },
+    "EvalGitEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Baseline Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        },
+        "head_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Head Revision",
+          "type": "string"
+        },
+        "changed_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Changed Paths",
+          "type": "array"
+        },
+        "staged_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Staged Paths",
+          "type": "array"
+        },
+        "untracked_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Untracked Paths",
+          "type": "array"
+        },
+        "unsupported_change_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Unsupported Change Paths",
+          "type": "array"
+        },
+        "status_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Status Sha256",
+          "type": "string"
+        },
+        "diff_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Diff Sha256",
+          "type": "string"
+        },
+        "diff_observed_bytes": {
+          "minimum": 0,
+          "title": "Diff Observed Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "baseline_revision",
+        "baseline_tree_sha256",
+        "head_revision",
+        "changed_paths",
+        "staged_paths",
+        "untracked_paths",
+        "unsupported_change_paths",
+        "status_sha256",
+        "diff_sha256",
+        "diff_observed_bytes"
+      ],
+      "title": "EvalGitEvidence",
+      "type": "object"
+    },
+    "EvalMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "elapsed_seconds": {
+          "maximum": 86400,
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        },
+        "model_steps": {
+          "minimum": 0,
+          "title": "Model Steps",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "minimum": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        },
+        "approvals": {
+          "minimum": 0,
+          "title": "Approvals",
+          "type": "integer"
+        },
+        "changed_files": {
+          "minimum": 0,
+          "title": "Changed Files",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "elapsed_seconds",
+        "model_steps",
+        "input_tokens",
+        "output_tokens",
+        "tool_calls",
+        "approvals",
+        "changed_files"
+      ],
+      "title": "EvalMetrics",
+      "type": "object"
+    },
+    "EvalTestObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "check_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Check Id",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "baseline",
+            "final"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "returncode": {
+          "maximum": 255,
+          "minimum": -128,
+          "title": "Returncode",
+          "type": "integer"
+        },
+        "output_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Output Sha256",
+          "type": "string"
+        },
+        "elapsed_seconds": {
+          "maximum": 86400,
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "check_id",
+        "phase",
+        "passed",
+        "returncode",
+        "output_sha256",
+        "elapsed_seconds"
+      ],
+      "title": "EvalTestObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-report/v1",
+      "default": "harnessix.coding-eval-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "task_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Task Fingerprint",
+      "type": "string"
+    },
+    "grader_version": {
+      "const": "coding-eval-grader/v1",
+      "default": "coding-eval-grader/v1",
+      "title": "Grader Version",
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "failed",
+        "invalid"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "failure_categories": {
+      "items": {
+        "enum": [
+          "eval_infrastructure",
+          "runtime",
+          "correctness",
+          "regression",
+          "forbidden_edit",
+          "final_answer",
+          "budget"
+        ],
+        "type": "string"
+      },
+      "title": "Failure Categories",
+      "type": "array"
+    },
+    "environment": {
+      "$ref": "#/$defs/CodingEvalEnvironment"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/EvalCheck"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "baseline_observations": {
+      "items": {
+        "$ref": "#/$defs/EvalTestObservation"
+      },
+      "title": "Baseline Observations",
+      "type": "array"
+    },
+    "final_observations": {
+      "items": {
+        "$ref": "#/$defs/EvalTestObservation"
+      },
+      "title": "Final Observations",
+      "type": "array"
+    },
+    "git": {
+      "$ref": "#/$defs/EvalGitEvidence"
+    },
+    "final_answer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvalFinalAnswerEvidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metrics": {
+      "$ref": "#/$defs/EvalMetrics"
+    }
+  },
+  "required": [
+    "run_id",
+    "task_id",
+    "task_version",
+    "task_fingerprint",
+    "outcome",
+    "failure_categories",
+    "environment",
+    "started_at",
+    "completed_at",
+    "checks",
+    "baseline_observations",
+    "final_observations",
+    "git",
+    "metrics"
+  ],
+  "title": "CodingEvalReport",
+  "type": "object"
+}

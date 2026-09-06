@@ -438,3 +438,15 @@ python -I coding_feedback.py
 ```
 
 将`examples/coding_feedback.py`复制到仓库外，以只安装基础wheel的Python运行；需要系统Git，不需要OpenAI/Anthropic SDK、API Key、SSH或数据库中间件。示例在临时目录运行固定Python测试并修改私有受管副本，源目录保持不变。生产上线前仍须在目标OS、实际Git版本、隔离后端和组织审批策略上单独验收。
+
+## Coding Eval评分与报告部署（0.5.5a）
+
+本片不增加数据库迁移、第三方依赖、远程服务或中间件。安装新wheel只提供`harnessix.evals`契约、评分器、Git证据采集和报告读写函数，不会自行发现仓库、运行测试、调用模型、批准Action或修改文件。
+
+宿主接入顺序必须是：加载并校验固定任务→由0.5.5b编排器物化私有缺陷基线→运行基线检查→驱动同一个`AgentRuntime`/Action Worker→运行最终隐藏检查→`collect_git_evidence`→`grade_coding_eval`→`write_eval_report`。不得从模型参数接受任务文件、隐藏检查、Git路径、报告路径、Provider标识或基线摘要。
+
+报告目录由宿主预先创建并置于被评工作区之外。写入使用同目录0600临时文件、文件和目录`fsync`及原子替换；父目录缺失等I/O异常统一返回`eval_report_write_failed`，目标符号链接返回`eval_report_path_denied`。读取拒绝符号链接、非普通文件、超过1 MiB或Schema损坏的内容。报告仍包含仓库内相对路径、模型名和平台摘要，应按内部质量记录控制访问、备份和保留期限。它不包含Prompt、Diff、测试输出、Session正文或模型summary，但不提供通用DLP或加密。
+
+0.5.5a没有隐藏检查执行器。调用方自行构造`EvalTestObservation`只能用于测试或可信内嵌编排，不能作为远程第三方提交的证明。后续运行器必须把检查命令和输出留在宿主边界，只将退出码、耗时和SHA-256交给评分器；检查输出若可能包含Secret，应按Process Artifact同等级保护，不写入Eval报告。
+
+`invalid`表示任务树、缺陷基线或最终检查集合不可用于统计，不能计入模型失败率；`failed`才表示任务可运行但Agent未满足要求。任何报告写入失败都应让本次发布记录失败，不能仅根据内存中的`passed`结论更新基线。当前未实现报告聚合、签名、远端上传、多次试验统计或源目录交付。

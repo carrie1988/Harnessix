@@ -805,3 +805,24 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 - Linux Python3.12/3.13和macOS CI均新增`coding_feedback`入口；PostgreSQL作业保持。最终跨平台状态以本片提交后的CI为准。
 
 本片未新增真实硬退出场景，累计仍为319。示例中的临时Git仓库由受信宿主在私有受管副本中初始化，不把所有副本冒充Git worktree。没有使用API Key、SSH、远程服务器或中间件。0.5.4c当前定义范围完成，但仍不提供任意Shell、容器/网络隔离、源目录自动合入、Git提交/推送或非示例真实缺陷Coding Eval；下一阶段为0.5.5。
+
+## 40. 0.5.5a Coding Eval契约与评分器验收（2026-09-06）
+
+基线`f6df900`及CI34018653102四项成功；开工前读取项目规范并fetch确认本地与`origin/main`一致。本片只实现[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)的任务/证据/评分/报告层，不把脚本Provider、测试夹具或单次真实请求冒充模型自主能力。
+
+新增 **15项** 专项自动回归：
+
+- 严格任务版本、来源revision/树摘要、受限相对路径、行为/回归集合、预算类型、HTTP来源凭据拒绝与完整任务指纹；
+- 成功报告必须同时通过固定14项检查，不比较Golden Patch；缺陷基线意外通过或最终检查集合被增删归为`invalid`，反馈顺序、越界修改和回答不一致归入对应`failed`类别；
+- 最终回答只接受严格JSON，路径和测试声明与真实证据精确一致；报告只保存回答SHA-256、字节数和解析声明，不保存模型summary；
+- 真实临时Git仓库验证普通修改、已暂存rename、untracked及原路径分类，HEAD不变，状态与Diff摘要来自0.5.4c固定Git端口；
+- 报告以0600临时文件原子往返，读取拒绝符号链接和损坏内容，缺失父目录统一映射为公开写入失败；三份公共v1 Schema由生成器和测试锁定。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**133个源文件**）通过，**2479 passed、2 skipped**；两项跳过仍是本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2443项全部通过**；
+- sdist/wheel构建成功；仓库外基础wheel未安装OpenAI/Anthropic SDK，Eval契约/评分入口/Schema可导入，既有 **17个** 基础离线入口全部通过；wheel SHA-256为`37d6e3e82bb3ee0d286c3afa8069ee7c94199925e3ea5dc81bedabf56fc250bc`；
+- 没有新增Agent/Session/Action/Patch/Process/Artifact Schema或数据库迁移，没有模型请求、API Key、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。
+
+0.5.5a不执行隐藏检查或真实任务，不新增硬崩溃场景，累计仍为319。下一片0.5.5b固定Harnessix历史真实缺陷来源、可复现缺陷物化、宿主隐藏检查和同一Runtime/Worker驱动；完成前仍不宣称非示例仓库Coding Eval通过。

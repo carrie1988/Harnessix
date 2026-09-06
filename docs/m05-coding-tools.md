@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 更新日期：2026-09-06
-- 状态：0.5.1—0.5.4c当前定义范围已交付；固定Git读取、宿主测试Profile及失败→修复→通过→Diff闭环已实现，任意Shell仍关闭，0.5.5真实缺陷Eval待实施
+- 状态：0.5.1—0.5.4c及0.5.5a当前定义范围已交付；已有版本化Eval任务/证据/报告和确定性评分器，首个真实缺陷运行器、真实模型基线及变更交付仍待0.5.5b—d
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -36,7 +36,7 @@
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
 | 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | a/b进程与恢复、c固定Git和测试Profile已实现；任意Shell不开放 |
-| 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
+| 0.5.5 | 真实编码任务 Eval与交付 | a任务/证据/评分契约；b历史真实缺陷运行器；c真实模型多次基线；d受控变更交付 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
 
@@ -830,3 +830,21 @@ uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_f
 两个测试调用对应两个Action和两次审批；Patch批准不能替代测试批准。源目录保持不变，示例不调用真实模型、API Key、SSH或中间件。OpenAI/Anthropic官方SDK另以离线Mock HTTP验证相同公开工具调用和模型wire边界。
 
 本片完成0.5.4c当前范围，但不开放任意命令或模型argv。测试进程仍拥有宿主权限；容器/网络/CPU/内存隔离、孤儿监督、源目录合入、Git提交/推送和非示例真实缺陷Eval分别留给后续Sandbox、交付与0.5.5工作。
+
+## 38. 0.5.5a：Coding Eval任务、证据与评分基线
+
+完整决策见[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)。本片新增`harnessix.evals`，不修改Agent/Session/Action/Patch/Process/Artifact协议或数据库。
+
+- `CodingEvalTask`固定仓库来源revision/基线树摘要、Prompt、允许路径、行为/回归检查、测试Profile、预算和评分器版本；完整任务生成稳定指纹；
+- `collect_git_evidence`复用0.5.4c固定Git端口，状态必须在200项内完整读取，记录HEAD、普通/rename/untracked/staged分类和完整Diff观察摘要；
+- `grade_coding_eval`从真实Turn顺序证明失败测试→已归因Patch→测试通过→Git状态→Git差异→最终回答，不比较Golden Patch；
+- 最终回答使用严格JSON协议并与实际变更路径、必跑Profile精确核对；报告只保存回答SHA-256、字节数与结构化声明，不保存模型summary；
+- `passed/failed/invalid`分离任务成功、Agent失败和数据集不可复现，固定14项检查及7类失败原因不能由报告调用方删改；
+- 报告最多1 MiB，以0600临时文件、文件/目录`fsync`和同目录原子替换写入；读取拒绝符号链接、非普通文件和损坏契约。
+
+```bash
+uv run pytest tests/evals
+uv run python scripts/generate_specs.py
+```
+
+新增`coding-eval-task-v1`、`coding-eval-final-answer-v1`和`coding-eval-report-v1`三份Schema。0.5.5a只交付评分基础设施，不包含任务物化/隐藏检查执行器、真实Provider调用、源目录合入或成功率结论。下一片0.5.5b将固定首个Harnessix历史真实缺陷，在私有受管副本中接入同一Agent Runtime和外部Worker。

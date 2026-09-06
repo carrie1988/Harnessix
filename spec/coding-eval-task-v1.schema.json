@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_steps": {
+          "default": 16,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 100000,
+          "minimum": 1,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "max_output_chars": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Chars",
+          "type": "integer"
+        },
+        "max_tool_calls_per_step": {
+          "default": 32,
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Max Tool Calls Per Step",
+          "type": "integer"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval/v1",
+      "default": "harnessix.coding-eval/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "repository": {
+      "$ref": "#/$defs/EvalRepository"
+    },
+    "prompt": {
+      "maxLength": 16384,
+      "minLength": 1,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "allowed_changed_paths": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Allowed Changed Paths",
+      "type": "array"
+    },
+    "required_test_profiles": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Required Test Profiles",
+      "type": "array"
+    },
+    "baseline_checks": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Baseline Checks",
+      "type": "array"
+    },
+    "behavior_checks": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Behavior Checks",
+      "type": "array"
+    },
+    "regression_checks": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Regression Checks",
+      "type": "array"
+    },
+    "max_changed_files": {
+      "default": 8,
+      "maximum": 64,
+      "minimum": 1,
+      "title": "Max Changed Files",
+      "type": "integer"
+    },
+    "budget": {
+      "$ref": "#/$defs/Budget"
+    },
+    "grader_version": {
+      "const": "coding-eval-grader/v1",
+      "default": "coding-eval-grader/v1",
+      "title": "Grader Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "task_version",
+    "repository",
+    "prompt",
+    "allowed_changed_paths",
+    "required_test_profiles",
+    "baseline_checks",
+    "behavior_checks"
+  ],
+  "title": "CodingEvalTask",
+  "type": "object"
+}

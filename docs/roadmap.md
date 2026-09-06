@@ -2,7 +2,8 @@
 
 ## 1. 路线图原则
 
-Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示。路线图采用“可发布的纵向切片”，但每个切片都必须包含正式契约、失败语义、持久化、可观测性、测试和文档。
+Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，包括claude code（泄密版）、codex、 opencode，
+自研设计并实现生产级Coding Agent，非POC或功能演示版本，目标能够支撑大量真实C端用户AI软件开发需求，路线图采用“可发布的纵向切片”，但每个切片都必须包含正式契约、失败语义、持久化、可观测性、完整测试和完整的总体及详细设计文档。
 
 开发顺序遵循：
 
@@ -183,7 +184,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异和宿主预注册测试Profile。单文件/整组Patch、Process及Git/测试反馈均已接通确定性闭环；0.5.4c不开放任意Shell，测试命令仍由Action Journal唯一审批和外部Worker执行。0.4.3c计价证据独立待验收，不阻塞离线开发。下一主片为0.5.5真实缺陷集Coding Eval和变更交付基线。见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)和[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。不把Session投影、Artifact或测试意图冒充执行许可，不提前宣称OS Sandbox、任意Shell或源目录自动合入。
+状态：**0.5.1–0.5.4c及0.5.5a均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告和确定性评分器。0.5.5a不把脚本闭环冒充模型能力；下一主片为0.5.5b首个Harnessix历史真实缺陷运行器，随后才进行真实模型多次基线和受控变更交付。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)和[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)。不提前宣称OS Sandbox、任意Shell、真实模型成功率或源目录自动合入。
 
 ### 目标
 
@@ -240,6 +241,11 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 - [ ] 只读并发、写操作互斥和 Turn 取消；
 - [ ] 统一 Tool Error Taxonomy；
 - [x] 0.5.4c闭环中的变更摘要和最终Diff读取；源目录合入、提交和产品交付仍待后续。
+- [ ] 0.5.5真实缺陷Coding Eval与变更交付；
+  - [x] 0.5.5a：版本化任务/检查/Git/最终回答/报告契约、无Golden Patch评分器及原子脱敏报告；
+  - [ ] 0.5.5b：首个Harnessix历史真实缺陷物化、隐藏检查和同一Runtime/Worker驱动；
+  - [ ] 0.5.5c：显式真实Provider多次试验、成本/时延和失败分类基线；
+  - [ ] 0.5.5d：受控变更包、来源漂移/脏工作区冲突和显式合入。
 
 ### 关键测试
 

@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "EvalFinalTest": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Profile",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "profile",
+        "passed"
+      ],
+      "title": "EvalFinalTest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "summary": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    },
+    "changed_paths": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Changed Paths",
+      "type": "array"
+    },
+    "tests": {
+      "items": {
+        "$ref": "#/$defs/EvalFinalTest"
+      },
+      "maxItems": 32,
+      "title": "Tests",
+      "type": "array"
+    }
+  },
+  "required": [
+    "summary",
+    "changed_paths",
+    "tests"
+  ],
+  "title": "EvalFinalAnswer",
+  "type": "object"
+}
