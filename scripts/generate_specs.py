@@ -14,6 +14,10 @@ from harnessix.artifacts.contracts import (
     ReadArtifactInput,
 )
 from harnessix.domain.models import ActionRequest
+from harnessix.evals.campaign_contracts import (
+    CodingEvalCampaignPlan,
+    CodingEvalCampaignReport,
+)
 from harnessix.evals.contracts import (
     CodingEvalMaterialization,
     CodingEvalReport,
@@ -133,6 +137,8 @@ def main() -> None:
         ("coding-eval-report", CodingEvalReport),
         ("coding-eval-materialization", CodingEvalMaterialization),
         ("coding-eval-run-state", CodingEvalRunState),
+        ("coding-eval-campaign-plan", CodingEvalCampaignPlan),
+        ("coding-eval-campaign-report", CodingEvalCampaignReport),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

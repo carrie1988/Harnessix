@@ -506,3 +506,13 @@ baseline = await run_historical_checks(task, materialized, Path(sys.executable),
 内置自动审批只覆盖任务声明的唯一测试Profile和允许路径单文件Patch。Process批准仍由Effect Journal持久化且只由外部`ActionWorker`执行；运行服务账户必须能写运行目录并执行固定Python，但不需要数据库服务器或远程中间件。现阶段不得将该宿主模式开放给任意上传仓库或第三方测试。
 
 运行状态为`completed`只表示评分报告已原子发布，报告本身可能是`passed`、`failed`或`invalid`。监控应分别统计报告结论、失败分类、Provider/模型标识、耗时、步骤、Token、工具调用和审批数，不得把基础设施`invalid`计入模型失败率。真实Provider多次基线及费用告警在0.5.5c定义。
+
+## Coding Eval Campaign证据部署（0.5.5c1）
+
+Campaign计划必须存放在独立0700目录，并在任何真实请求前调用`write_eval_campaign_plan`发布为0600文件。计划固定任务指纹、Harnessix revision、Provider/精确模型、有序run ID、价格快照和计费上下文；不得在计划旁保存API Key值、Authorization Header或供应商响应正文。
+
+每个run ID仍指向0.5.5b2的独立运行目录。聚合进程只读取completed运行状态、Eval报告、Session中的原Turn及由固定价格绑定生成的CostReport，再调用`build_coding_eval_campaign_report`。缺失任何试验、交叉目录、报告摘要不匹配或成本无法重算时必须停止，不得手工拼接部分报告。最终`write_eval_campaign_report`以0600原子文件发布聚合结果。
+
+Campaign报告包含内部run/turn身份、模型名、失败分类、Token、时延和成本小计，应按内部质量记录限制访问与保留。`partial/unknown`表示存在无法计价尝试，不能解释为零费用；价格快照是估算依据，不是供应商账单。P50/P95在2—20个小样本上只用于版本回归，不构成统计显著性声明。
+
+0.5.5c1没有网络入口和费用停止策略，不应使用临时脚本直接循环真实Provider。0.5.5c2需在显式费用授权后补充默认禁网CLI、请求/试验上限、每次运行后的停止检查和中断恢复，再执行真实基线。

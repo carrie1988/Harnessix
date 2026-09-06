@@ -1,0 +1,407 @@
+{
+  "$defs": {
+    "BillingContext": {
+      "additionalProperties": false,
+      "description": "可信宿主核对的计费上下文；不是从 Adapter 类型或请求模型猜测。",
+      "properties": {
+        "billing_provider": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Billing Provider"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "service_tier": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Tier"
+        },
+        "inference_mode": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Mode"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Write Ttl"
+        }
+      },
+      "title": "BillingContext",
+      "type": "object"
+    },
+    "CodingEvalEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "harnessix_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Harnessix Revision",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "isolation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Isolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "harnessix_revision",
+        "provider",
+        "model",
+        "platform",
+        "isolation"
+      ],
+      "title": "CodingEvalEnvironment",
+      "type": "object"
+    },
+    "FlatInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "flat",
+          "default": "flat",
+          "title": "Kind",
+          "type": "string"
+        },
+        "per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "per_million"
+      ],
+      "title": "FlatInputPrice",
+      "type": "object"
+    },
+    "PartitionedInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "partitioned",
+          "default": "partitioned",
+          "title": "Kind",
+          "type": "string"
+        },
+        "uncached_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Uncached Per Million",
+          "type": "string"
+        },
+        "cache_read_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Read Per Million",
+          "type": "string"
+        },
+        "cache_creation_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Creation Per Million",
+          "type": "string"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cache Write Ttl"
+        }
+      },
+      "required": [
+        "uncached_per_million",
+        "cache_read_per_million",
+        "cache_creation_per_million",
+        "cache_write_ttl"
+      ],
+      "title": "PartitionedInputPrice",
+      "type": "object"
+    },
+    "PriceSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.price/v1",
+          "default": "harnessix.price/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "source_url": {
+          "maxLength": 2048,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "billing_provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Billing Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Model",
+          "type": "string"
+        },
+        "region": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Region",
+          "type": "string"
+        },
+        "service_tier": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Service Tier",
+          "type": "string"
+        },
+        "inference_mode": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Inference Mode",
+          "type": "string"
+        },
+        "currency": {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "title": "Currency",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "input_tokens_min": {
+          "minimum": 0,
+          "title": "Input Tokens Min",
+          "type": "integer"
+        },
+        "input_tokens_max": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens Max"
+        },
+        "input_price": {
+          "discriminator": {
+            "mapping": {
+              "flat": "#/$defs/FlatInputPrice",
+              "partitioned": "#/$defs/PartitionedInputPrice"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FlatInputPrice"
+            },
+            {
+              "$ref": "#/$defs/PartitionedInputPrice"
+            }
+          ],
+          "title": "Input Price"
+        },
+        "output_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Output Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "source_url",
+        "billing_provider",
+        "model",
+        "region",
+        "service_tier",
+        "inference_mode",
+        "currency",
+        "valid_from",
+        "valid_until",
+        "input_tokens_min",
+        "input_tokens_max",
+        "input_price",
+        "output_per_million"
+      ],
+      "title": "PriceSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "在任何真实请求前固定的可比较试验集合与计价上下文。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-campaign-plan/v1",
+      "default": "harnessix.coding-eval-campaign-plan/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "campaign_id": {
+      "format": "uuid",
+      "title": "Campaign Id",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "task_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Task Fingerprint",
+      "type": "string"
+    },
+    "environment": {
+      "$ref": "#/$defs/CodingEvalEnvironment"
+    },
+    "run_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 2,
+      "title": "Run Ids",
+      "type": "array"
+    },
+    "price": {
+      "$ref": "#/$defs/PriceSnapshot"
+    },
+    "billing_context": {
+      "$ref": "#/$defs/BillingContext"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "task_id",
+    "task_version",
+    "task_fingerprint",
+    "environment",
+    "run_ids",
+    "price",
+    "billing_context",
+    "created_at"
+  ],
+  "title": "CodingEvalCampaignPlan",
+  "type": "object"
+}

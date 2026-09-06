@@ -877,4 +877,28 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 - sdist/wheel构建成功；仓库外基础依赖环境确认没有OpenAI/Anthropic SDK，可导入运行器/运行状态契约，wheel包含隐藏检查程序，既有 **17个** 基础离线示例全部通过；wheel SHA-256为`e1a6566478d031e0aa710d433e4b94af42deb6cd37451b13e3d9e49dd21c83d3`；
 - 本片没有修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，没有使用真实模型、API Key、SSH、远程服务器或中间件。
 
-本片测试直接使用Harnessix固定历史对象和真实本地Git，不使用人工临时缺陷代替数据集。确定性Provider仍不是模型能力证据；0.5.5c必须对显式授权的真实Provider执行多次试验并分别记录成功率、Runtime/Provider失败、Token、时延和费用。宿主检查仍没有OS Sandbox，不能接入任意第三方仓库。
+本片测试直接使用Harnessix固定历史对象和真实本地Git，不使用人工临时缺陷代替数据集。确定性Provider仍不是模型能力证据；0.5.5c2必须对显式授权的真实Provider执行多次试验并分别记录成功率、Runtime/Provider失败、Token、时延和费用。宿主检查仍没有OS Sandbox，不能接入任意第三方仓库。
+
+## 43. 0.5.5c1 多试验计划与证据聚合验收（2026-09-06）
+
+本片基于[多试验源码研究](research/eval-campaign.md)和[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)，新增请求前Campaign计划、完整运行证据核对、失败分类、Token/时延/成本聚合及私有原子报告。没有调用真实Provider或读取API Key。
+
+新增 **9项** 自动回归：
+
+- 四个独立run分别构造通过、Provider失败、Runtime失败和任务失败，聚合准确得到分类数量、14次模型尝试、140输入/28输出Token、nearest-rank P50/P95和同币种已知成本；
+- Provider失败只保留规范`transport`及retryable，供应商错误原文不进入Campaign报告；
+- 失败尝试Usage未知时单次成本为`unknown`，整体保留其他试验已知小计并标记`partial`及对应run ID，不填零；
+- 缺失计划试验、交叉run状态/报告、不同价格快照、计费上下文漂移、重复run ID和模型/价格不一致均拒绝；
+- CostReport必须由原Turn和Campaign固定价格绑定逐字段重算，不能信任调用方提供的金额或汇总；
+- 计划指纹、试验顺序及汇总字段在Schema反序列化时重新计算，删除、替换或篡改不能通过；
+- `coding-eval-campaign-plan-v1`和`coding-eval-campaign-report-v1`两份公共Schema由生成器与冻结测试核对；
+- 计划与报告使用0600临时文件、文件/目录`fsync`和同目录原子替换，读取拒绝权限放宽、符号链接、损坏和超限内容。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**141个源文件**）通过，**2504 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2468项全部通过**；
+- sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign计划、报告、构建与读写入口，既有 **17个** 离线示例全部通过；wheel SHA-256为`91970cd74774932bf32785a51ffd695979328834b97a1f5610e1a89eee49e633`；
+- 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，也未使用网络、SSH、远程服务器或中间件。
+
+0.5.5c1只证明多个已完成运行能够形成一致、可重算且不掩盖未知成本的报告，不形成真实模型成功率。0.5.5c2仍需默认禁网执行入口、请求与费用停止策略，以及显式授权后的同模型多次真实运行。

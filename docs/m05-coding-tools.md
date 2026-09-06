@@ -881,3 +881,15 @@ uv run python scripts/generate_specs.py
 恢复覆盖Process审批提交后退出、Worker终态后投影、Turn接受后状态绑定、取消持久终态以及报告发布后状态提交。既有解释器启动器重开时只验证正文和0700权限，不再重复`chmod`改变身份；权限、正文或链接漂移直接拒绝。当前内置运行器要求唯一可见Profile和唯一行为检查，多任务扩展必须新增契约而不是隐式选择第一项。
 
 本片使用确定性脚本Provider验收真实历史缺陷，因此只证明正式基础设施闭环，不提供真实模型成功率。0.5.5c在显式费用授权下执行多次真实Provider基线；0.5.5d再实现变更包、来源漂移检查、脏工作区冲突和显式合入。当前仍没有OS Sandbox、任意Shell或第三方仓库安全执行能力。
+
+## 41. 0.5.5c1：多试验计划与可重算质量/成本证据
+
+源码事实和详细取舍见[多试验研究](research/eval-campaign.md)与[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)。本片只处理已完成运行的离线证据，不调用Provider、不读取API Key，也不增加第二套Session或计费实现。
+
+`CodingEvalCampaignPlan`必须在首个请求前固定任务版本/指纹、Harnessix revision、Provider、精确模型、2—20个有序唯一run ID、价格快照和宿主计费上下文。模型、平台、地域、服务等级、推理模式、缓存TTL和价格有效期必须一致；完整计划有稳定指纹，并可用0600原子文件单独发布。
+
+每个试验仍由0.5.5b2独立运行目录承担。`build_coding_eval_campaign_report`要求完整计划中的每项都提供completed运行状态、Eval报告、原Turn和CostReport，逐项核对run/task/environment/Turn/报告摘要、模型步骤、Token以及价格绑定。CostReport必须能从原Turn和固定绑定完整重算；交叉run、缺失试验、价格/上下文漂移或币种混用均拒绝发布。
+
+报告把主结果分为`passed/provider/eval_infrastructure/runtime/task/budget`，同时保留原Eval细分失败集合。Provider只公开固定`ResponseFailed`码和retryable，不保存错误原文。聚合保存分类数量、尝试数、Token、端到端时延min/P50/P95/max、已知成本小计和成本不完整run ID；P50/P95使用nearest-rank。任一尝试Usage未知时成本只能是`partial`或`unknown`，不能补零。
+
+Campaign计划与报告新增两份v1 Schema；报告同样以0600原子文件发布，读取拒绝权限放宽、符号链接、损坏和超限内容。0.5.5c1不包含执行CLI、Campaign运行状态或费用停止策略。0.5.5c2必须默认禁网、先发布计划、顺序执行固定run ID、在每次运行后核对成本，并在显式授权预算内形成真实Provider基线。

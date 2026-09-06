@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、隐藏检查，以及同一Runtime、Process/Patch审批和外部Worker的端到端评分与恢复；真实模型多次基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分，以及多试验计划、失败分类和Token/时延/成本证据聚合；真实模型多次基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -554,6 +554,7 @@ examples/                   可运行演示
 - [Tool Runtime 研究](docs/research/tool-runtime.md)
 - [Context Engine 研究](docs/research/context-engine.md)
 - [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
+- [Coding Agent多试验质量与成本研究](docs/research/eval-campaign.md)
 - [演进为 Harnessix Code 的架构决策](docs/adr/0005-evolve-to-harnessix-code.md)
 - [Thread/Turn/Item/Event 决策](docs/adr/0006-thread-turn-item-event-model.md)
 - [Agent Loop 与取消决策](docs/adr/0007-agent-loop-and-cancellation.md)
@@ -576,6 +577,7 @@ examples/                   可运行演示
 - [部署与运行](docs/deployment.md)
 - [Process输出Artifact决策](docs/adr/0041-process-output-artifact.md)
 - [Git与受控测试反馈决策](docs/adr/0043-git-and-controlled-test-feedback.md)
+- [Coding Eval多试验证据决策](docs/adr/0047-coding-eval-campaign-evidence.md)
 
 ## 目标里程碑
 
