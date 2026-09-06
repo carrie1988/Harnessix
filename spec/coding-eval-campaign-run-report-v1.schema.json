@@ -1,0 +1,93 @@
+{
+  "additionalProperties": false,
+  "description": "CLI仅输出固定枚举、计数和已知金额，不回显配置、路径或第三方正文。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-campaign-run-report/v1",
+      "default": "harnessix.coding-eval-campaign-run-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "completed",
+        "network_not_enabled",
+        "configuration_invalid",
+        "dependency_missing",
+        "fee_limit_reached",
+        "cost_unknown",
+        "runtime_failed",
+        "internal_error",
+        "cancelled"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "campaign_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Campaign Id"
+    },
+    "scheduled_trials": {
+      "default": 0,
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Scheduled Trials",
+      "type": "integer"
+    },
+    "completed_trials": {
+      "default": 0,
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Completed Trials",
+      "type": "integer"
+    },
+    "report_published": {
+      "default": false,
+      "title": "Report Published",
+      "type": "boolean"
+    },
+    "known_cost_currency": {
+      "anyOf": [
+        {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Cost Currency"
+    },
+    "known_cost_amount": {
+      "anyOf": [
+        {
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Cost Amount"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "CodingEvalCampaignRunReport",
+  "type": "object"
+}

@@ -13,14 +13,21 @@ from pydantic import ValidationError
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan, CodingEvalCampaignReport
+from harnessix.evals.campaign_execution_contracts import CodingEvalCampaignExecutionState
 from harnessix.evals.contracts import CodingEvalReport
 
 MAX_EVAL_REPORT_BYTES = 1024 * 1024
 MAX_EVAL_CAMPAIGN_PLAN_BYTES = 256 * 1024
 MAX_EVAL_CAMPAIGN_REPORT_BYTES = 1024 * 1024
+MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES = 256 * 1024
 
 
 def eval_report_sha256(report: CodingEvalReport) -> str:
+    body = (report.model_dump_json(indent=2) + "\n").encode("utf-8")
+    return hashlib.sha256(body).hexdigest()
+
+
+def eval_campaign_report_sha256(report: CodingEvalCampaignReport) -> str:
     body = (report.model_dump_json(indent=2) + "\n").encode("utf-8")
     return hashlib.sha256(body).hexdigest()
 
@@ -195,5 +202,36 @@ def read_eval_campaign_report(path: Path) -> CodingEvalCampaignReport:
         MAX_EVAL_CAMPAIGN_REPORT_BYTES,
         invalid_code="eval_campaign_report_invalid",
         label="Campaign报告",
+        require_private_mode=True,
+    )
+
+
+def write_eval_campaign_execution_state(
+    path: Path, state: CodingEvalCampaignExecutionState
+) -> None:
+    try:
+        state = CodingEvalCampaignExecutionState.model_validate_json(
+            state.model_dump_json(), strict=True
+        )
+    except ValueError:
+        raise KernelError("eval_campaign_execution_state_invalid", "Campaign执行状态无效") from None
+    _write_report(
+        path,
+        state,
+        MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES,
+        too_large_code="eval_campaign_execution_state_too_large",
+        path_denied_code="eval_campaign_execution_state_path_denied",
+        write_failed_code="eval_campaign_execution_state_write_failed",
+        label="Campaign执行状态",
+    )
+
+
+def read_eval_campaign_execution_state(path: Path) -> CodingEvalCampaignExecutionState:
+    return _read_report(
+        path,
+        CodingEvalCampaignExecutionState,
+        MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES,
+        invalid_code="eval_campaign_execution_state_invalid",
+        label="Campaign执行状态",
         require_private_mode=True,
     )

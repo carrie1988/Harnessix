@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c、0.5.5a–b及0.5.5c1均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷的固定物化、同一Agent Runtime/Action Worker评分和多试验计划/证据聚合。下一子片0.5.5c2在显式授权后执行真实模型多次基线，随后0.5.5d交付受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)、[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)和[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)。不提前宣称OS Sandbox、任意Shell、真实模型成功率或源目录自动合入。
+状态：**0.5.1–0.5.4c、0.5.5a–b、0.5.5c1及0.5.5c2a均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷的固定物化、同一Agent Runtime/Action Worker评分、多试验证据聚合和默认禁网的可恢复Campaign执行基础设施。0.5.5c2b仍需在已授权边界内形成三次真实模型基线，随后0.5.5d交付受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)、[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)、[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)和[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)。不提前宣称OS Sandbox、任意Shell、真实模型成功率或源目录自动合入。
 
 ### 目标
 
@@ -248,7 +248,9 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
     - [x] 0.5.5b2：复用同一Agent Runtime、Process/Patch审批和外部Worker完成端到端运行与评分；
   - [ ] 0.5.5c：显式真实Provider多次试验、成本/时延和失败分类基线；
     - [x] 0.5.5c1：请求前Campaign计划、独立运行证据核对、失败分类及Token/时延/成本聚合；
-    - [ ] 0.5.5c2：默认禁网执行入口、费用停止策略和显式授权的真实Provider多次基线；
+    - [ ] 0.5.5c2：受控真实Campaign执行与多次基线；
+      - [x] 0.5.5c2a：默认禁网CLI、私有配置、单宿主锁、持久进度、试验间费用停止及崩溃恢复；
+      - [ ] 0.5.5c2b：百炼北京精确模型三次独立试验、人民币10元停止线及脱敏基线归档；
   - [ ] 0.5.5d：受控变更包、来源漂移/脏工作区冲突和显式合入。
 
 ### 关键测试

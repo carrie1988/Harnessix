@@ -515,4 +515,30 @@ Campaign计划必须存放在独立0700目录，并在任何真实请求前调�
 
 Campaign报告包含内部run/turn身份、模型名、失败分类、Token、时延和成本小计，应按内部质量记录限制访问与保留。`partial/unknown`表示存在无法计价尝试，不能解释为零费用；价格快照是估算依据，不是供应商账单。P50/P95在2—20个小样本上只用于版本回归，不构成统计显著性声明。
 
-0.5.5c1没有网络入口和费用停止策略，不应使用临时脚本直接循环真实Provider。0.5.5c2需在显式费用授权后补充默认禁网CLI、请求/试验上限、每次运行后的停止检查和中断恢复，再执行真实基线。
+0.5.5c1自身没有网络入口和费用停止策略，不应使用临时脚本直接循环真实Provider；后续c2a入口及部署要求见下一节。
+
+## 受控Coding Eval Campaign执行部署（0.5.5c2a）
+
+本入口只用于受信运维宿主运行内置历史任务，不是面向终端用户的任意仓库执行服务。安装对应源码revision的Harnessix及所选Provider可选依赖，使用同一专用服务账户，并确保Git、Python和源码仓库路径固定。无需数据库服务器、SSH或远程中间件。
+
+Campaign配置必须位于受限目录内、权限为0600且不是符号链接。配置内只写`api_key_env`名称；API Key值由进程环境或正式Secret Provider注入，禁止出现在JSON、Shell参数、仓库、服务日志和进程标题中。运行根必须位于源码根之外，预先创建时权限为0700；执行器也会核对Campaign根、`runs/`和锁文件权限。
+
+默认禁网检查：
+
+```bash
+uv run harnessix coding-eval-campaign --config /private/campaign.json
+```
+
+该命令应以JSON返回`network_not_enabled`，且不读取配置。只有完成模型、地域、价格有效期、运行ID、源码revision、最大输出、请求/响应预算和费用授权复核后，才显式执行：
+
+```bash
+uv run harnessix coding-eval-campaign \
+  --config /private/campaign.json \
+  --allow-network
+```
+
+同一Campaign同一时刻只能有一个宿主；锁冲突必须停止，不能复制配置到第二目录并并发运行相同run ID。中断后使用完全相同配置重启，执行器会核对计划、配置指纹、完成前缀、单次报告、Session成本和源码HEAD，再决定只读返回、继续固定run或保持停止。不要编辑`campaign-state.json`金额、删除单次账本或用新run ID替换失败试验。
+
+退出结果仅包含固定原因和计数：`completed`表示全部试验及聚合报告发布；`fee_limit_reached`或`cost_unknown`表示持久停止；`runtime_failed`需要离线检查受限运行目录中的正式证据。供应商错误正文不会打印到CLI。`campaign-report.json`和各run目录包含内部身份、代码、Session及账本，应纳入敏感工程数据访问控制。
+
+费用停止线仅在完整试验之间核对。已开始试验可能超过阈值，供应商仍可能收费；生产运维还应独立配置云账户预算告警并对账。当前没有请求级硬费用中止或OS Sandbox，不得把本入口暴露为接收不受信仓库的多租户服务。

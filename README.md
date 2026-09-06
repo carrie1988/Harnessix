@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分，以及多试验计划、失败分类和Token/时延/成本证据聚合；真实模型多次基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2a 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合，以及默认禁网、无自动重试、带费用停止和崩溃恢复的Campaign执行基础设施；三次真实模型基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -298,6 +298,22 @@ uv run python scripts/generate_specs.py
 
 0.5.5b2的确定性脚本Provider只证明正式运行基础设施能够完成真实历史缺陷，不代表真实模型已经稳定完成该修复。真实Provider需要0.5.5c多次受控试验。设计见[ADR 0044](docs/adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](docs/adr/0045-historical-eval-materialization-and-checks.md)和[ADR 0046](docs/adr/0046-historical-eval-runtime-orchestration.md)。
 
+## 当前已实现：多试验证据与受控执行基础设施（0.5.5c1/c2a）
+
+- Campaign在首个请求前固定任务、源码revision、精确模型、有序run ID、价格快照和计费上下文；每次试验仍拥有独立工作区、Session和账本；
+- 从原Turn逐尝试重算Token和成本，汇总`passed/provider/eval_infrastructure/runtime/task/budget`、端到端时延及成本完整性，未知Usage不填零；
+- `harnessix coding-eval-campaign`默认禁网且不读配置，只有显式`--allow-network`才读取0600私有配置并创建Provider；
+- Provider自动重试固定关闭，工具调用串行；0600非阻塞锁、持久完成前缀和报告摘要支持崩溃后只读核对或按固定run继续；
+- 每个试验完成后重算累计已知费用；成本未知或试验间达到停止线时持久停止，不启动下一试验；
+- CLI只输出白名单原因、计数、报告状态和已知金额，不回显配置、路径、供应商正文、响应ID或凭据。
+
+```bash
+uv run harnessix coding-eval-campaign --help
+uv run pytest tests/evals/test_campaign*.py
+```
+
+费用停止线不是供应商账户硬额度：一个已开始试验可能越过停止线，达线只保证不再启动下一试验。c2a仅完成离线执行基础设施验收；百炼北京精确模型三次独立真实基线属于c2b，尚未计入成功率。设计见[ADR 0047](docs/adr/0047-coding-eval-campaign-evidence.md)和[ADR 0048](docs/adr/0048-controlled-real-eval-campaign-execution.md)。
+
 ## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
@@ -578,6 +594,7 @@ examples/                   可运行演示
 - [Process输出Artifact决策](docs/adr/0041-process-output-artifact.md)
 - [Git与受控测试反馈决策](docs/adr/0043-git-and-controlled-test-feedback.md)
 - [Coding Eval多试验证据决策](docs/adr/0047-coding-eval-campaign-evidence.md)
+- [受控真实Coding Eval Campaign执行决策](docs/adr/0048-controlled-real-eval-campaign-execution.md)
 
 ## 目标里程碑
 

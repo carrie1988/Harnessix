@@ -10,6 +10,12 @@ from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignSummary,
     CodingEvalCampaignTrial,
 )
+from harnessix.evals.campaign_execution import run_coding_eval_campaign
+from harnessix.evals.campaign_execution_contracts import (
+    CodingEvalCampaignExecutionState,
+    CodingEvalCampaignRunConfig,
+    CodingEvalCampaignRunReport,
+)
 from harnessix.evals.catalog import (
     HistoricalCodingEval,
     historical_coding_eval,
@@ -43,9 +49,11 @@ from harnessix.evals.materializer import (
     materialize_historical_coding_eval,
 )
 from harnessix.evals.report import (
+    read_eval_campaign_execution_state,
     read_eval_campaign_plan,
     read_eval_campaign_report,
     read_eval_report,
+    write_eval_campaign_execution_state,
     write_eval_campaign_plan,
     write_eval_campaign_report,
     write_eval_report,
@@ -59,6 +67,9 @@ __all__ = [
     "CODING_EVAL_SPEC_VERSION",
     "CodingEvalCampaignPlan",
     "CodingEvalCampaignReport",
+    "CodingEvalCampaignExecutionState",
+    "CodingEvalCampaignRunConfig",
+    "CodingEvalCampaignRunReport",
     "CodingEvalCampaignSummary",
     "CodingEvalCampaignTrial",
     "CodingEvalEnvironment",
@@ -87,11 +98,14 @@ __all__ = [
     "read_eval_report",
     "read_eval_campaign_plan",
     "read_eval_campaign_report",
+    "read_eval_campaign_execution_state",
     "read_eval_run_state",
     "run_historical_checks",
     "run_historical_coding_eval",
+    "run_coding_eval_campaign",
     "write_eval_report",
     "write_eval_campaign_plan",
     "write_eval_campaign_report",
+    "write_eval_campaign_execution_state",
     "write_eval_run_state",
 ]

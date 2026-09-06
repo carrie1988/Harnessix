@@ -1,0 +1,111 @@
+{
+  "additionalProperties": false,
+  "description": "Campaign进度账本；完成前缀之外的运行不得被视为已结算。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-campaign-execution-state/v1",
+      "default": "harnessix.coding-eval-campaign-execution-state/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "campaign_id": {
+      "format": "uuid",
+      "title": "Campaign Id",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "execution_config_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Execution Config Fingerprint",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "running",
+        "stopped",
+        "completed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "completed_run_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Completed Run Ids",
+      "type": "array"
+    },
+    "known_cost_currency": {
+      "enum": [
+        "USD",
+        "CNY"
+      ],
+      "title": "Known Cost Currency",
+      "type": "string"
+    },
+    "known_cost_amount": {
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+      "title": "Known Cost Amount",
+      "type": "string"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "fee_limit_reached",
+            "cost_unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "report_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Report Sha256"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "plan_fingerprint",
+    "execution_config_fingerprint",
+    "status",
+    "completed_run_ids",
+    "known_cost_currency",
+    "known_cost_amount",
+    "started_at",
+    "updated_at"
+  ],
+  "title": "CodingEvalCampaignExecutionState",
+  "type": "object"
+}

@@ -18,6 +18,11 @@ from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
     CodingEvalCampaignReport,
 )
+from harnessix.evals.campaign_execution_contracts import (
+    CodingEvalCampaignExecutionState,
+    CodingEvalCampaignRunConfig,
+    CodingEvalCampaignRunReport,
+)
 from harnessix.evals.contracts import (
     CodingEvalMaterialization,
     CodingEvalReport,
@@ -139,6 +144,9 @@ def main() -> None:
         ("coding-eval-run-state", CodingEvalRunState),
         ("coding-eval-campaign-plan", CodingEvalCampaignPlan),
         ("coding-eval-campaign-report", CodingEvalCampaignReport),
+        ("coding-eval-campaign-run-config", CodingEvalCampaignRunConfig),
+        ("coding-eval-campaign-execution-state", CodingEvalCampaignExecutionState),
+        ("coding-eval-campaign-run-report", CodingEvalCampaignRunReport),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

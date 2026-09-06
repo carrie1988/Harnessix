@@ -901,4 +901,37 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 - sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign计划、报告、构建与读写入口，既有 **17个** 离线示例全部通过；wheel SHA-256为`91970cd74774932bf32785a51ffd695979328834b97a1f5610e1a89eee49e633`；
 - 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，也未使用网络、SSH、远程服务器或中间件。
 
-0.5.5c1只证明多个已完成运行能够形成一致、可重算且不掩盖未知成本的报告，不形成真实模型成功率。0.5.5c2仍需默认禁网执行入口、请求与费用停止策略，以及显式授权后的同模型多次真实运行。
+0.5.5c1只证明多个已完成运行能够形成一致、可重算且不掩盖未知成本的报告，不形成真实模型成功率。默认禁网执行入口与费用停止策略已由下一节c2a补齐；真实模型多次运行仍属于c2b。
+
+## 44. 0.5.5c2a 受控Campaign执行基础设施验收（2026-09-06）
+
+本片基于[执行与费用研究](research/eval-campaign-execution.md)和[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)，增加默认禁网CLI、固定执行配置、单宿主锁、持久进度、试验间费用停止及聚合报告恢复。真实三次基线单列为c2b，不混入离线实现结论。
+
+新增 **30项** 定向自动回归：
+
+- 两个独立run通过正式0.5.5b2运行器完成物化、Agent Runtime、Patch/Process审批、外部Worker、隐藏检查和Campaign报告；每次拥有独立Session与工作区；
+- 计划在Provider创建前原子发布，Provider创建失败不丢失请求前固定证据；
+- 已知累计金额达到停止线后不创建下一试验，费用未知时持久`cost_unknown`并在重开时保持停止；
+- 单次完成后Campaign提交前退出时沿用同一run ID恢复，Campaign报告发布后状态提交前退出时核对完整报告并补写终态，不重开Provider；
+- 同一Campaign并发锁和源码revision漂移均在Provider创建前拒绝；完成状态、报告摘要、成本金额、完成顺序或停止原因漂移均fail closed；
+- 默认禁网不读取配置、不触碰文件、不创建Provider；CLI参数错误不回显输入；
+- 配置只接受0600普通文件，拒绝缺失、目录、FIFO、符号链接、权限放宽/只读、空文件、超过512 KiB、非法UTF-8、重复键及NaN；
+- 三份公共Schema由生成器与冻结测试核对，执行状态使用0600原子替换，读取拒绝链接、权限漂移和内容篡改；
+- CLI成功和失败输出均只能通过`CodingEvalCampaignRunReport`白名单契约反序列化，不含配置canary。
+
+定向入口：
+
+```bash
+uv run pytest \
+  tests/evals/test_campaign_execution.py \
+  tests/evals/test_campaign_cli.py
+```
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**144个源文件**）通过，**2534 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2498项全部通过**；
+- sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign执行契约与入口，默认禁网CLI不读取不存在的配置，wheel SHA-256为`bfc78d6681d37dfd5f4f7d67745cdf856a0a5bede3cc7b7c50e4902b45ff98e4`；
+- 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema。
+
+c2a测试全部使用可计价确定性Provider或故障替身，不使用网络、真实API Key、SSH、远程服务器或中间件。费用门禁只在完整试验之间生效，不证明单请求实时硬额度；c2b必须在实现提交和CI通过后，使用固定百炼北京精确模型、三个独立run、Provider不自动重试及人民币10元停止线生成脱敏真实证据。

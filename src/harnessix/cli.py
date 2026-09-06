@@ -31,6 +31,9 @@ def _parser() -> argparse.ArgumentParser:
     worker.add_argument("--database-path")
     worker.add_argument("--once", action="store_true", help="最多执行一个 READY Action 后退出")
     subcommands.add_parser("model-smoke", help="运行显式启用的固定场景模型验收")
+    subcommands.add_parser(
+        "coding-eval-campaign", help="运行显式启用的固定历史任务真实模型Campaign"
+    )
     return parser
 
 
@@ -60,6 +63,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         from harnessix.smoke.cli import main as smoke_main
 
         smoke_main(args[1:])
+        return
+    if args and args[0] == "coding-eval-campaign":
+        from harnessix.evals.campaign_cli import main as campaign_main
+
+        campaign_main(args[1:])
         return
     arguments = _parser().parse_args(args)
     settings = Settings.from_environment()

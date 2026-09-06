@@ -892,4 +892,50 @@ uv run python scripts/generate_specs.py
 
 报告把主结果分为`passed/provider/eval_infrastructure/runtime/task/budget`，同时保留原Eval细分失败集合。Provider只公开固定`ResponseFailed`码和retryable，不保存错误原文。聚合保存分类数量、尝试数、Token、端到端时延min/P50/P95/max、已知成本小计和成本不完整run ID；P50/P95使用nearest-rank。任一尝试Usage未知时成本只能是`partial`或`unknown`，不能补零。
 
-Campaign计划与报告新增两份v1 Schema；报告同样以0600原子文件发布，读取拒绝权限放宽、符号链接、损坏和超限内容。0.5.5c1不包含执行CLI、Campaign运行状态或费用停止策略。0.5.5c2必须默认禁网、先发布计划、顺序执行固定run ID、在每次运行后核对成本，并在显式授权预算内形成真实Provider基线。
+Campaign计划与报告新增两份v1 Schema；报告同样以0600原子文件发布，读取拒绝权限放宽、符号链接、损坏和超限内容。0.5.5c1自身不包含执行CLI、Campaign运行状态或费用停止策略；这些能力已由下一节c2a补齐，真实Provider基线仍属于c2b。
+
+## 42. 0.5.5c2a：默认禁网的可恢复Campaign执行
+
+完整决策见[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)。本片在c1证据聚合之上增加低层执行器和独立CLI，不修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema。
+
+### 42.1 配置与准入
+
+`CodingEvalCampaignRunConfig`内嵌c1不可变计划，同时绑定源码根、私有运行根、Git/Python程序、OpenAI Chat兼容Provider和费用停止线。源码根与运行根使用规范绝对路径，运行根不得位于源码内；程序路径必须绝对且在执行时核对为可执行普通文件，保留Python虚拟环境符号链接拼写，避免解析后丢失虚拟环境语义。
+
+Provider模型必须与计划精确相同，开启工具调用、关闭并行工具调用，并固定`max_attempts=1`和零重试延迟。执行前核对内置任务版本/指纹、平台、隔离声明及当前源码HEAD。配置文件只允许API Key环境变量名，不接受Key值字段。
+
+CLI调用：
+
+```bash
+uv run harnessix coding-eval-campaign \
+  --config /绝对路径/campaign-config.json \
+  --allow-network
+```
+
+缺少`--allow-network`时不读取配置、不创建目录、不导入Provider SDK并返回`network_not_enabled`。配置必须是0600普通文件，最大512 KiB；符号链接、目录、FIFO、空文件、非法UTF-8、重复键、NaN/Infinity和额外字段均拒绝。参数与运行错误只输出固定白名单结果。
+
+### 42.2 持久状态与顺序执行
+
+0700 Campaign根包含：
+
+```text
+.campaign.lock
+campaign-plan.json
+campaign-state.json
+campaign-report.json       # 仅全部试验完成后存在
+runs/<run-id>/...          # 每次试验的0.5.5b2完整事实
+```
+
+执行器先取得0600非阻塞锁，再发布或核对计划。`campaign-state.json`保存配置指纹、有序完成run前缀、已知金额、状态、停止原因及最终报告摘要。每次打开都从run状态、Eval报告和Session Turn重新绑定固定价格并重算金额；状态汇总不作为费用权威。
+
+运行严格消费计划顺序。一个Provider上下文只复用SDK连接生命周期，不共享各run的工作区、Thread、Session或模型上下文。每个run仍由`run_historical_coding_eval`驱动正式Agent Runtime、Patch审批、Process Action和外部Worker。
+
+### 42.3 停止与恢复
+
+每次试验完整终结后，执行器先持久化完成前缀和已知成本，再决定是否继续。CostReport不完整时写入`stopped/cost_unknown`；累计已知成本达到费用停止线时写入`stopped/fee_limit_reached`。二者重开均只核对证据，不创建Provider。
+
+费用门禁位于试验之间，不是请求内硬额度。单次试验可能含多个模型步骤，并可能使累计金额越线；停止只保证不再启动后续试验。Provider错误或断流导致Usage未知时不以零成本继续。
+
+若单次报告完成后Campaign尚未登记该run，重用原run ID进入b2运行器的completed只读路径，再补完成前缀。若Campaign报告已发布但状态尚未completed，重开会重算全部试验、重建期望报告并核对相等后补写摘要。计划、状态、报告、金额或源码revision漂移均fail closed。
+
+新增`coding-eval-campaign-run-config-v1`、`coding-eval-campaign-execution-state-v1`和`coding-eval-campaign-run-report-v1`三份Schema。c2a只完成离线正式基础设施，c2b再在授权的三次试验和人民币10元停止线内形成百炼真实基线；当前不提供OS Sandbox、供应商账单对账或实时费用硬上限。
