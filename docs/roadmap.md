@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1、0.5.4b2b与0.5.4b2c1/b2c2已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件模型 Patch 的离线 SDK 闭环，仍无 Shell 或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。具体边界见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0027](adr/0027-prepared-patch-and-write-admission.md)、[ADR 0028](adr/0028-managed-patch-execution.md) 和 [ADR 0029](adr/0029-managed-patch-agent-bridge.md)。0.5.3b2b 的 Agent v6 / migration 7、独立写审批、专用端口与双账本恢复见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)。0.5.3c 已完成整组计划、持久执行、模型闭环和 Diff Artifact（Agent v8 / migration9）。0.5.4a已实现受信宿主进程生命周期，b1已接入Action Plane持久准入，b2b已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10、真实v8旧wheel升级/旧reader拒绝和迁移硬退出；b2c1已接入稳定Action准备、唯一决定、外部Worker与有界终态观察，b2c2已完成二进制安全Process Artifact、Session migration11和事务/恢复验收；下一片b2c3补完整跨库恢复与双SDK离线闭环。见 [ADR 0038](adr/0038-host-process-lifecycle.md)、[ADR 0040](adr/0040-agent-process-action-saga.md)和[ADR 0041](adr/0041-process-output-artifact.md)。不把Session投影或Artifact冒充执行许可，不提前接入Shell或源目录自动合入。
+状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1和0.5.4b2均已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件/整组Patch与Process的双SDK离线闭环，仍无Git/run_tests、受控Shell或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。0.5.4b现已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10–11、Process Artifact、单一审批、外部Worker、等待取消、租约UNKNOWN、完整跨库硬退出恢复和跨进程决定竞态；下一片为0.5.4c Git与测试反馈工具。见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0040](adr/0040-agent-process-action-saga.md)、[ADR 0041](adr/0041-process-output-artifact.md)和[ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。不把Session投影或Artifact冒充执行许可，不提前开放任意Shell或源目录自动合入。
 
 ### 目标
 
@@ -222,17 +222,17 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
   - [x] 0.5.4a：受信宿主程序绑定、argv/环境准入、双流有界捕获、组终止、取消/关闭与管道回收；不注册模型工具；
   - [ ] 0.5.4b：持久命令意图/审批/结果、宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
     - [x] b1：复用Action Plane持久意图/审批/租约/UNKNOWN，绑定宿主执行权限，硬退出不杀旧PID或重放；不接模型；
-    - [ ] b2：Agent Session与Action Plane的单一审批绑定、长输出Artifact及宿主死亡运维处置；
+    - [x] b2：Agent Session与Action Plane的单一审批绑定、长输出Artifact及当前范围宿主死亡恢复；
       - [x] b2a：冻结Action审批唯一权威、稳定Action身份、跨库恢复Saga、WAITING_ACTION与Process Artifact边界；
       - [x] b2b：桥接契约、Agent事件/Session迁移及旧reader兼容；
         - [x] b2b1：稳定调用/Action身份、确定性Action ID与幂等键、持久ToolDescriptor/宿主绑定核对及冻结计划Schema；不接Session或执行；
         - [x] b2b2：Agent审批/等待/结果投影事件、Session migration10及真实v8旧reader升级；
           - [x] b2b2a：Agent Event/Thread v9、Process审批/状态/结果私有投影、持久WAITING_ACTION、纯Reducer/Replay与migration10；Runtime只保留等待，不执行Action；
           - [x] b2b2b：用真实`e0e8498` v8 wheel生成/升级会话，验证旧事件原字节、旧reader拒绝及migration10提交前后硬退出；
-      - [ ] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
+      - [x] b2c：Agent Runtime执行/恢复、Process Artifact与双SDK离线闭环；
         - [x] b2c1：显式Process Agent端口、稳定Action准备/唯一决定、外部Worker、WAITING_ACTION单次观察与有界模型结果；
         - [x] b2c2：Process stdout/stderr Artifact事务发布、配额/分页/TTL、损坏恢复、migration11及提交窗口硬退出；
-        - [ ] b2c3：Session×Action真硬退出矩阵、等待取消/时限/关闭和双SDK离线闭环；
+        - [x] b2c3：Session×Action真硬退出矩阵、等待取消/时限/关闭、跨进程决定、租约UNKNOWN和双SDK离线闭环；
   - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
 - [ ] `git_status`、`git_diff`；
 - [ ] `run_tests`；

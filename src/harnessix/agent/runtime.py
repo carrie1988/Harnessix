@@ -227,6 +227,28 @@ class AgentRuntime:
             turn_id=turn.turn_id,
             trace_context=turn.trace_context,
         ) as operation:
+            calls = pending_calls(turn)
+            if (
+                turn.status == TurnStatus.EXECUTING_TOOLS
+                and calls
+                and calls[0].tool == "host.process"
+                and calls[0].effect_class == EffectClass.NON_IDEMPOTENT_WRITE
+                and approval_for(turn, calls[0]) is None
+            ):
+                # 模型调用已提交，但Action创建或Session审批请求提交时宿主退出。
+                # 有原专用端口时按稳定身份重取/创建同一Action；缺端口则保留
+                # 原事实，避免把一个仍可恢复的调用错误终结为“未执行”。
+                if self._processes is None:
+                    operation.finish(turn.status.value)
+                    return
+                recovered = await self._execute_calls(thread.thread_id, turn.turn_id, CancelToken())
+                current = recovered or get_turn(
+                    await self.store.get_thread(thread.thread_id), turn.turn_id
+                )
+                if recovered is not None:
+                    operation.finish(current.status.value)
+                    return
+                turn = current
             # Process Action 的Effect Journal仍是唯一执行事实；启动只保留等待，
             # b2c1要求调用方显式resume作一次有界观察，不能在重开时后台轮询或执行。
             if turn.status == TurnStatus.WAITING_ACTION:
@@ -530,6 +552,7 @@ class AgentRuntime:
                 item.content,
                 token,
             )
+            self._fault("runtime.after_process_action_observe")
             previous = [
                 candidate.content
                 for candidate in turn.items
@@ -603,6 +626,7 @@ class AgentRuntime:
                     drafts,
                     expected_sequence=thread.sequence,
                 )
+            self._fault("runtime.after_process_action_result")
             return get_turn(updated, turn_id), settled
 
     async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
@@ -678,16 +702,6 @@ class AgentRuntime:
             turn = get_turn(thread, turn_id)
             if turn.status in TERMINAL_TURNS or turn.status == TurnStatus.CANCELLING:
                 return turn
-            calls = pending_calls(turn)
-            process_approval = approval_for(turn, calls[0]) if calls else None
-            if turn.status == TurnStatus.WAITING_ACTION or (
-                turn.status == TurnStatus.WAITING_APPROVAL
-                and process_approval is not None
-                and isinstance(process_approval.content, ProcessApprovalRequestContent)
-            ):
-                raise KernelError(
-                    "process_action_not_enabled", "Process Action等待取消将在b2c3恢复协议后开放"
-                )
             updated = await self.store.append(
                 thread_id,
                 [
@@ -999,6 +1013,7 @@ class AgentRuntime:
                     content: ApprovalContent | None = None
                     if is_process:
                         assert self._processes is not None
+                        self._fault("runtime.before_process_action_prepare")
                         prepared = await self._processes.prepare(
                             call,
                             ToolExecutionScope.for_pending_call(thread, turn_id, call),
@@ -1637,6 +1652,14 @@ class AgentRuntime:
                         else "failed"
                     ),
                     error=error,
+                    action_id=(
+                        process_approval.content.plan.action_id
+                        if (
+                            (process_approval := approval_for(turn, call)) is not None
+                            and isinstance(process_approval.content, ProcessApprovalRequestContent)
+                        )
+                        else None
+                    ),
                 )
                 item_id = new_id()
                 payloads.extend(

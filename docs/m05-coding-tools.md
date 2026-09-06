@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 更新日期：2026-09-06
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、0.5.4b2b稳定身份/事件迁移、b2c1显式运行时Saga及b2c2 Process Artifact已实现，b2c3完整恢复/双SDK、0.5.4c Git与测试工具及0.5.5 Eval待实施
+- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入和0.5.4b2完整Agent/Process Saga均已实现，下一片0.5.4c Git与测试工具，0.5.5 Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -35,7 +35,7 @@
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
 | 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
-| 0.5.4 | Process、Git、run_tests、受控 Shell | a、b1、b2身份/投影/运行时/输出归档已实现；b2c3完整恢复与c工具接入待实施 |
+| 0.5.4 | Process、Git、run_tests、受控 Shell | a、b1、b2身份/投影/运行时/输出归档/完整恢复已实现；c工具接入待实施 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
@@ -696,7 +696,7 @@ b2c拆为三个可独立验收的子片：
 
 1. **b2c1（本片）**：显式Process端口、稳定Action准备、唯一Action决定、WAITING_ACTION单次观察与有界公开结果；
 2. **b2c2**：stdout/stderr `process_output` Artifact、正文/manifest/引用同Session事务、配额/分页/TTL/损坏恢复；
-3. **b2c3**：Session×Action Journal真硬退出矩阵、WAITING_ACTION取消/时限/关闭、OpenAI与Anthropic实际SDK离线HTTP闭环及旧会话继续。
+3. **b2c3（已完成）**：Session×Action Journal真硬退出矩阵、WAITING_ACTION取消/时限/关闭、跨进程决定、租约UNKNOWN、OpenAI与Anthropic实际SDK离线HTTP闭环及旧会话继续。
 
 `ProcessAgentBridge`只接受`auto_execute=False`的既有`ActionService`和受信`Principal`。它从Action Registry取得唯一`host.process`描述，重新使用b2b1完整身份核对，并实现四个窄操作：
 
@@ -721,7 +721,7 @@ b2c拆为三个可独立验收的子片：
 | 重复等待观察 | sequence不变，不追加重复状态 |
 | 用户拒绝 | Action为DENIED，Worker无READY任务；终态结果可供模型处理 |
 
-未完成窗口不作已交付声明：Action提交后、Session审批请求前的真硬退出目前仍会由既有中断逻辑保守结束；WAITING_ACTION取消尚未开放；跨进程并发决定、所有Action状态跳转、租约过期UNKNOWN、更完整的跨库窗口和两个实际SDK留给b2c3。Process Artifact、正文事务及配额已由b2c2交付。无外部监督器时宿主硬退出后的子进程仍可能存活。
+本节是b2c1交付记录；当时保留的Action提交后Session审批前退出、WAITING_ACTION取消、跨进程决定、租约UNKNOWN和双SDK缺口现已由第36节b2c3完成。Process Artifact、正文事务及配额由b2c2交付。无外部监督器时宿主硬退出后的子进程仍可能存活。
 
 离线可运行入口：
 
@@ -756,4 +756,30 @@ uv run python -m examples.kernel_process
 uv run pytest tests/artifacts/test_process_output*.py
 ```
 
-本片不新增依赖、模型请求或远程中间件。b2c3继续补Action创建/决定/租约/等待取消等跨库恢复矩阵和两个实际SDK离线HTTP闭环；0.5.4c再增加Git与测试执行。
+本片不新增依赖、模型请求或远程中间件。其后b2c3已经补齐Action创建/决定/租约/等待取消等跨库恢复矩阵和两个实际SDK离线HTTP闭环；0.5.4c再增加Git与测试执行。
+
+## 36. 0.5.4b2c3：完整Process Saga恢复与双SDK闭环
+
+完整决策见[ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。本片保持Agent Event/Thread v9、Session migration11、Action/Process/Artifact v1和现有依赖不变，只补行为、Journal终态结果和组合验收。
+
+Runtime启动现在识别`EXECUTING_TOOLS`中的首个未结算`host.process`调用且Session尚无审批Item的缺口。没有原Process端口时原样保留，不把非幂等调用错误终结；显式端口恢复后按Thread/Turn/Call、工作区、工具版本、Principal和参数摘要重新取得同一Action，再补Session请求。Action若已经由其他进程决定，也只重建未决定请求，随后由`sync_decision`读取唯一Action决定，不制造第二份许可。
+
+八个真实退出点覆盖准备前后、审批请求、Action决定、Session决定、终态观察和终态结果提交窗口。重开后始终只有一个Action、一次命令效果和至多一个Artifact；Session结果已经提交但第二模型步骤尚未提交时保守INTERRUPTED，不自动重发模型请求。缺端口恢复、跨作用域/版本/身份核对和Replay保持既有fail-closed规则。
+
+WAITING_APPROVAL和WAITING_ACTION现在可取消。取消只结束Agent等待：写入与原Action ID绑定、没有伪造Process效果的unknown结果，并以`uncertain_effect`/INTERRUPTED结算。它不撤销Action Approval、不删除PENDING、不阻止READY Worker，也不宣称RUNNING进程终止；测试证明Session取消后原READY Action仍可执行一次。Turn超时不刷新，过期审批拒绝新决定，正常关闭保持持久等待供重开处理。
+
+Effect Journal恢复补齐终态结果：LEASED过期仍回READY且无结果；RUNNING/RECONCILING过期在SQLite/PostgreSQL中同事务转UNKNOWN并写`ActionResult(error.code=lease_expired, retriable=false)`。真实Worker在子进程启动后退出，重开投影UNKNOWN并中断Agent，不调用第二模型步骤，也不按历史PID清理仍存活进程。
+
+跨进程竞态由Journal事务裁决。相同outcome/actor/reason的两个决定均幂等返回同一事实，不重复审批事件；不同决定一方成功、另一方`approval_conflict`，Session随后只镜像获胜决定。
+
+OpenAI `AsyncOpenAI`和Anthropic `AsyncAnthropic`使用各自真实SDK与离线Mock HTTP完成相同流程：模型发起Process调用、Runtime关闭/重开、唯一审批、外部Worker、再次重开观察、读取Process Artifact summary并回答。每种供应商固定三次HTTP请求且所有SSE流关闭；模型wire不包含Action ID、私有指纹/效果、幂等键或`data_base64`。测试不使用网络、真实Key、SSH或中间件。
+
+离线验收入口：
+
+```bash
+uv run pytest tests/agent/test_process_agent_runtime.py
+uv run pytest tests/agent/test_process_agent_crash.py
+uv run pytest tests/agent/test_process_agent_sdk.py
+```
+
+0.5.4b至此完成。下一片0.5.4c在同一持久准入上增加固定Git状态/差异和测试执行能力；当前仍不是任意Shell、PTY、后台任务、OS Sandbox、网络隔离或自主Coding Eval。宿主死亡后的孤儿进程监督属于0.7，不得把租约UNKNOWN误解为进程已经停止。

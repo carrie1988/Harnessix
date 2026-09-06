@@ -20,6 +20,7 @@ from harnessix.domain.errors import (
 from harnessix.domain.models import (
     ALLOWED_ACTION_TRANSITIONS,
     ActionEvent,
+    ActionFailure,
     ActionRequest,
     ActionResult,
     ActionSnapshot,
@@ -413,15 +414,29 @@ class PostgresEffectJournal:
                         if current is ActionStatus.LEASED
                         else ActionStatus.UNKNOWN
                     )
+                    result = (
+                        None
+                        if target is ActionStatus.READY
+                        else ActionResult(
+                            status=ActionStatus.UNKNOWN,
+                            error=ActionFailure(
+                                code="lease_expired",
+                                message="执行租约过期，外部副作用状态未知",
+                                retriable=False,
+                            ),
+                        )
+                    )
                     await connection.execute(
                         """
                         UPDATE actions
                         SET status = $2, lease_owner = NULL, lease_expires_at = NULL,
-                            updated_at = $3, version = version + 1
+                            result_json = COALESCE($3, result_json),
+                            updated_at = $4, version = version + 1
                         WHERE action_id = $1
                         """,
                         action_id,
                         target.value,
+                        _json_dump(result) if result is not None else None,
                         recovery_time,
                     )
                     await self._insert_event(

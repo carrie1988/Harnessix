@@ -432,3 +432,5 @@ src/harnessix/
 0.5.4b2c1增加显式`ProcessRuntime`端口和`ProcessAgentBridge`。Agent Runtime只负责稳定Action提交、唯一决定协调与单次观察；`ActionWorker`仍是唯一执行调度方。审批答复不运行命令，决定已写Action而Session未提交时按相同决定补投影；WAITING_ACTION恢复每次最多读取一个快照，活跃快照去重，终态状态与Tool Result同批提交。公开结果只有生命周期和流摘要，不含Base64正文。单一审批与跨库恢复边界见 [ADR 0040](adr/0040-agent-process-action-saga.md)。
 
 0.5.4b2c2增加`ProcessArtifactPublisher`端口和SQLite实现。已核对的完整`ProcessResult`只在宿主私有观察中传递，生成summary+双流Base64 chunk的`process-output/v1`文档；正文、manifest、结果引用和Process终态事件同Session事务。`process_output`用途由migration11显式加入白名单，读取时重新绑定批准/Action/Call和流摘要。发布失败降级保留无引用终态，提交前崩溃可从原Action重建，提交后不重放；Effect Journal与Session仍非原子。详见 [ADR 0041](adr/0041-process-output-artifact.md)。
+
+0.5.4b2c3完成当前Process Saga恢复矩阵。Runtime可从Session已有ToolCall但无审批Item的窗口按稳定身份找回同一Action；缺少原端口时保持事实。WAITING取消只结束Session观察并以unknown/INTERRUPTED结算，不撤销Action决定或队列状态。SQLite/PostgreSQL把RUNNING/RECONCILING租约过期与`UNKNOWN/lease_expired`结果同事务保存；跨进程相同审批幂等、不同审批冲突。八个跨库边界和一个Worker租约边界以真实退出验证，双SDK离线HTTP完成审批重开、外部Worker和Artifact摘要读取。详见 [ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。

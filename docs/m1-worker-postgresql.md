@@ -79,8 +79,8 @@ LIMIT 1;
 | 过期状态 | 恢复状态 | 原因 |
 |---|---|---|
 | `LEASED` | `READY` | 尚未进入外部调用，可重新 Claim |
-| `RUNNING` | `UNKNOWN` | 外部副作用可能已经提交 |
-| `RECONCILING` | `UNKNOWN` | 对账过程没有形成确定结论 |
+| `RUNNING` | `UNKNOWN` | 外部副作用可能已经提交；同事务写入`lease_expired`结果 |
+| `RECONCILING` | `UNKNOWN` | 对账过程没有形成确定结论；同事务写入`lease_expired`结果 |
 
 ## 8. 部署模式
 

@@ -761,3 +761,27 @@ b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.
 - 真实`e0e8498` v8 wheel（SHA256 `d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`）创建migration1–9会话；当前wheel原字节升级到migration11、继续追加v9事件，旧reader在升级及继续后均`schema_too_new`且不改变数据库。
 
 没有真实模型请求、API Key、SSH或中间件部署。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。本片仍不提供WAITING_ACTION取消、Action创建前后完整恢复、跨进程并发决定、后台命令、OS Sandbox、Git/run_tests或自主Coding Eval；下一片为b2c3。
+
+## 38. 0.5.4b2c3 Process完整恢复与双SDK验收（2026-09-06）
+
+基线`048a231`及CI 33987803502四项成功；开工前`fetch`确认本地与`origin/main`一致。本片完成b2c3，不修改Agent/Session/Action/Process/Artifact Schema，不增加迁移、依赖、真实模型请求或中间件。
+
+新增 **15项** 自动回归，其中本地14项通过、1项PostgreSQL实库测试按环境跳过：
+
+- 八个Session×Action真实`os._exit(88)`边界覆盖Action准备前后、审批请求前后、Action决定、Session决定、终态观察和结果提交。恢复后均为一个Action、一次进程标记、至多一个Artifact及Replay一致；结果已提交但模型续跑未提交时保守INTERRUPTED；
+- Action准备前退出后，先用未配置Process端口的Runtime重开，证明`EXECUTING_TOOLS`事实与零Action保持；随后配置原端口，只创建稳定Action并补请求。Action决定先于Session请求时由只读同步修复；
+- WAITING_APPROVAL在原Turn过期后拒绝新决定，取消可幂等结算为unknown/INTERRUPTED；WAITING_ACTION取消保留原Action ID且不伪造Process效果，原READY许可仍能被独立Worker执行一次；
+- 真实Worker在进程启动后`os._exit(89)`，租约恢复在SQLite中持久保存`UNKNOWN/lease_expired`结果；Agent投影后中断且不发第二模型请求。PostgreSQL新增同语义实库用例，由CI服务作业执行；
+- 两个独立Python进程同时决定同一Action：相同决定双方幂等成功且仅一个决定事件，不同决定一胜一`approval_conflict`；Session只镜像权威获胜事实；
+- OpenAI `AsyncOpenAI`和Anthropic `AsyncAnthropic`分别通过真实SDK与离线Mock HTTP完成Process调用、Runtime关闭/重开、审批、外部Worker、终态Artifact发布、`read_artifact`读取summary及最终回答。每种供应商固定三次请求、所有SSE流关闭；wire无Action ID、私有指纹/效果、幂等键和`data_base64`。
+
+本片新增九个真实硬退出场景，按既有统计口径由310增至 **319**；其中八个是跨库提交窗口，一个是RUNNING Worker租约丢失。跨进程审批测试是并发裁决，不计入硬退出数量。父测试清理仍存活的夹具进程组不代表生产Runtime具备孤儿监督。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**124源文件**）通过，**2449 passed、2 skipped**；两项跳过均为本机未配置PostgreSQL实库，其中新增项会在PostgreSQL CI执行；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2413项全部通过**，没有忽略未关闭流、后台任务或异步警告；
+- 当前基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行 **16个** 基础离线示例通过；wheel SHA256为`c203275f39014ea3869f6771400767850f0981ae7d12f5230d9d4295a9c2e59b`；
+- README/docs本地链接、格式、`git diff --check`及凭据模式扫描通过。实际SDK测试只使用离线夹具环境引用，不使用用户Key、SSH或网络。
+
+Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。0.5.4b范围至此完成；下一片是0.5.4c固定Git状态/差异、run_tests和受控命令反馈，不提前宣称任意Shell、OS Sandbox或自主Coding Eval完成。

@@ -231,7 +231,10 @@ async def test_task_cancel_reaps_process_then_lease_recovers_unknown(tmp_path):
         assert (await value.get(request.action_id)).status is ActionStatus.RUNNING
         recovered = await value.journal.recover_expired(utc_now() + timedelta(seconds=2))
         assert recovered == [request.action_id]
-        assert (await value.get(request.action_id)).status is ActionStatus.UNKNOWN
+        snapshot = await value.get(request.action_id)
+        assert snapshot.status is ActionStatus.UNKNOWN
+        assert snapshot.result is not None and snapshot.result.status is ActionStatus.UNKNOWN
+        assert snapshot.result.error is not None and snapshot.result.error.code == "lease_expired"
     finally:
         if task is not None:
             await asyncio.gather(task, return_exceptions=True)

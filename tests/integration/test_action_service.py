@@ -197,6 +197,23 @@ async def test_expired_running_lease_becomes_unknown(service: ActionService) -> 
 
     assert recovered == [request.action_id]
     assert snapshot.status is ActionStatus.UNKNOWN
+    assert snapshot.result is not None and snapshot.result.status is ActionStatus.UNKNOWN
+    assert snapshot.result.error is not None
+    assert snapshot.result.error.code == "lease_expired"
+
+    await service.journal.transition(
+        request.action_id,
+        expected={ActionStatus.UNKNOWN},
+        target=ActionStatus.RECONCILING,
+        event_type="test_reconciling",
+        lease_owner="dead-reconciler",
+        lease_expires_at=utc_now() - timedelta(seconds=1),
+    )
+    assert await service.journal.recover_expired() == [request.action_id]
+    reconciled = await service.get(request.action_id)
+    assert reconciled.status is ActionStatus.UNKNOWN
+    assert reconciled.result is not None and reconciled.result.status is ActionStatus.UNKNOWN
+    assert reconciled.result.error is not None and reconciled.result.error.code == "lease_expired"
 
 
 async def test_journal_rejects_illegal_state_transition(service: ActionService) -> None:

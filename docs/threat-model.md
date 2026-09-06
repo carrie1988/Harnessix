@@ -432,4 +432,13 @@ Agent Runtime                │
 - `process_output`行与Tool Result引用/终态Session事件同事务。提交前失败不留孤儿正文，提交后确认丢失不重复插入；配额或普通发布故障仅省略展示引用。Effect Journal与Session仍为两个事务资源，Action终态不能被Artifact事务回滚。
 - reader同时验证manifest/body、Thread/Turn/Call、Process批准、Action ID/指纹、双流摘要、规范Base64和连续offset；用途改写、正文/引用/摘要篡改返回`artifact_corrupt`。这些校验面向意外损坏和宿主错绑，不抵抗能同时重写数据库与摘要的同UID攻击者。
 - 读取要求原Thread和工作区scope，过期后正文清空并保留tombstone。scope不是身份令牌，SQLite未加密；日志可能包含源码、测试数据或秘密，上层API仍需认证、导出授权、备份保护和保留策略。当前没有通用DLP或内容级Redactor。
-- migration11只扩展Artifact用途白名单；迁移原子与旧reader拒绝不等于硬件断电、恶意数据库修改或网络多租户隔离。b2c3仍负责更完整跨库恢复、WAITING_ACTION取消和SDK闭环；0.7仍负责Sandbox与外部监督。
+- migration11只扩展Artifact用途白名单；迁移原子与旧reader拒绝不等于硬件断电、恶意数据库修改或网络多租户隔离。更完整跨库恢复、WAITING_ACTION取消和SDK闭环现由b2c3补齐；0.7仍负责Sandbox与外部监督。
+
+## 0.5.4b2c3 跨库恢复与取消补充（2026-09-06）
+
+- Runtime只在持久ToolCall明确为`host.process`、NON_IDEMPOTENT_WRITE且缺少Session审批时进入恢复分支；缺少原专用端口时保留事实，不降级到通用工具执行。稳定Action ID/幂等键用于防重复，不是授权令牌或加密签名。
+- Action已决定但Session请求/决定缺失时，只能从匹配Action快照补投影。跨调用、Thread/Turn、工作区、Principal、工具版本、宿主绑定或请求指纹漂移继续fail closed；两个数据库可同时被恶意修改时这些摘要不能提供防篡改保证。
+- WAITING取消仅终止Session观察并保守记为unknown。它不撤销PENDING/READY/RUNNING Action、不回滚副作用、不终止进程，也不构成“用户取消命令”的证明；UI和API不得误报。
+- RUNNING/RECONCILING租约过期同事务保存`UNKNOWN/lease_expired`，避免终态无结果导致投影失败。UNKNOWN不得自动重试，但仍不能证明进程停止；外部监督和孤儿进程回收继续属于0.7。
+- 跨进程审批由数据库事务裁决，相同决定幂等、不同决定冲突。该规则防止应用层重复授权事件，不替代API认证、RBAC、审计actor真实性或多租户隔离。
+- 双SDK测试证明当前历史白名单不发送Action ID、私有Process效果、绑定指纹、幂等键和未读取的Base64正文。模型主动调用`read_artifact`后会获得授权页内容；这是显式数据流，不是DLP，Artifact仍可能包含源码或秘密。

@@ -34,7 +34,7 @@ from harnessix.agent.models import (
     Usage,
     UsageRecorded,
 )
-from harnessix.agent.reducer import get_turn, replay
+from harnessix.agent.reducer import apply_event, get_turn, replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import (
     ActionFailure,
@@ -513,15 +513,54 @@ async def test_agent_v9_boundary_and_restart_preserve_waiting_action(tmp_path: P
     after = await case.store.get_thread(case.thread_id)
     assert get_turn(after, case.turn_id).status is TurnStatus.WAITING_ACTION
     assert turn == get_turn(after, case.turn_id)
+    cancelling = apply_event(
+        before,
+        AgentEvent(
+            thread_id=case.thread_id,
+            sequence=before.sequence + 1,
+            turn_id=case.turn_id,
+            payload=TurnStateChanged(status=TurnStatus.CANCELLING),
+        ),
+    )
+    for forged in (
+        ToolResultContent(
+            call_id=case.call.call_id,
+            outcome="unknown",
+            output={"forged": True},
+            error=AgentFailure(code="uncertain_effect", message="未知"),
+            action_id=case.request.plan.action_id,
+        ),
+        ToolResultContent(
+            call_id=case.call.call_id,
+            outcome="unknown",
+            error=AgentFailure(code="cancelled", message="取消"),
+            action_id=case.request.plan.action_id,
+        ),
+    ):
+        with pytest.raises(KernelError):
+            apply_event(
+                cancelling,
+                AgentEvent(
+                    thread_id=case.thread_id,
+                    sequence=cancelling.sequence + 1,
+                    turn_id=case.turn_id,
+                    payload=ItemStarted(item_id=new_id(), content=forged),
+                ),
+            )
     with pytest.raises(KernelError) as error:
         async with AgentRuntime(case.store, FakeProvider()) as runtime:
             await runtime.resume_turn(case.thread_id, case.turn_id)
     assert error.value.code == "turn_not_resumable"
-    with pytest.raises(KernelError) as error:
-        async with AgentRuntime(case.store, FakeProvider()) as runtime:
-            await runtime.cancel(case.thread_id, case.turn_id)
-    assert error.value.code == "process_action_not_enabled"
-    assert await case.store.get_thread(case.thread_id) == before
+    async with AgentRuntime(case.store, FakeProvider()) as runtime:
+        cancelled = await runtime.cancel(case.thread_id, case.turn_id)
+    assert cancelled.status is TurnStatus.INTERRUPTED
+    result = next(
+        item.content for item in cancelled.items if isinstance(item.content, ToolResultContent)
+    )
+    assert result.outcome == "unknown" and result.action_id == case.request.plan.action_id
+    assert result.process is None
+    persisted = await case.store.get_thread(case.thread_id)
+    assert get_turn(persisted, case.turn_id) == cancelled
 
 
 def test_v8_event_schema_remains_frozen() -> None:

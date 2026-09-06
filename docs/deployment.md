@@ -305,7 +305,7 @@ Runtime重开v9的WAITING_ACTION仍只保留原等待，不会在启动时创建
 
 实际旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`，b2b2a基础wheel为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`，b2b2b基础wheel为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。旧wheel直接导出的`tests/agent/fixtures/session-v8.json`纳入回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`。migration10提交前后及migration11复制/删表/重命名/提交后均以真实`os._exit`验证，重启只看到完整旧库或完整新库，不重写历史。
 
-b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c1现已提供显式模型进程端口；b2c2已提供Process Artifact和migration11。默认Agent仍不暴露`host.process`。基础wheel无需供应商SDK、远程数据库或新中间件。
+b2b2已完成同版本Replay、重启保留等待、冻结Schema、真实旧wheel升级和迁移硬退出验收。b2c1提供显式模型进程端口，b2c2提供Process Artifact和migration11，b2c3补齐跨库恢复、取消、租约UNKNOWN和双SDK闭环。默认Agent仍不暴露`host.process`。基础wheel无需供应商SDK、远程数据库或新中间件。
 
 
 ## 显式Process Agent运行时部署（0.5.4b2c1）
@@ -320,7 +320,7 @@ API/Agent宿主必须显式构造`ProcessAgentBridge(actions, principal)`并以`
 
 审批接口返回WAITING_ACTION不表示命令完成。只有Action终态被再次读取并写入Session结果后，Agent才继续模型循环；UNKNOWN/MANUAL_INTERVENTION会中断Turn。公开模型结果只有流计数/摘要和生命周期，不直接包含完整stdout/stderr。b2c2配置正确时结果会附带受作用域保护的Artifact引用；运维仍应把Effect Journal中的Action Result视为效果事实，不能用Artifact替代。
 
-同一决定重答可修复Action已决定、Session未投影的窗口；不同actor/outcome/reason会冲突。重启后的WAITING_APPROVAL可由`resume_turn`只读同步已有Action决定，WAITING_ACTION可单次观察。若Action由外部入口在Turn超时后形成决定，Session仍按Action真实决定时间补投影，但原Turn预算不会复活。Action创建后而Session审批请求尚未提交的真硬退出、等待取消和完整跨库退出矩阵尚未验收，不应配置自动重试或修改Journal状态绕过。
+同一决定重答可修复Action已决定、Session未投影的窗口；不同actor/outcome/reason会冲突。重启后的WAITING_APPROVAL可由`resume_turn`只读同步已有Action决定，WAITING_ACTION可单次观察。若Action由外部入口在Turn超时后形成决定，Session仍按Action真实决定时间补投影，但原Turn预算不会复活。Action创建后而Session审批请求尚未提交、等待取消和完整跨库退出矩阵现已由b2c3验收；仍不得配置自动重放非幂等命令或手改Journal状态绕过。
 
 基础wheel可在仓库外执行`python -I kernel_process.py`（复制自`examples/kernel_process.py`）验证离线闭环和Process Artifact。该示例不需要供应商SDK、API Key、远程数据库或新中间件；不是任意Shell、仓库测试执行或OS Sandbox。包版本仍为0.1.0，生产记录必须使用具体提交和wheel摘要。
 
@@ -352,3 +352,15 @@ async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
 `process-output/v1`正文可能包含源码、测试输出和秘密；SQLite文件、备份与导出按源代码资产保护。现有Artifact不加密，过期清理保留tombstone且不保证立即缩小数据库文件。工作区scope不是访问令牌；网络API暴露`read_artifact`前仍需上层认证授权。迁移11后旧wheel必须拒绝数据库，回滚只能恢复一致备份。
 
 migration11 SHA256为`12295e83c718c367ae0da730ea39395663728752d33cc24b620d3ee5c70104e2`。本片基础wheel SHA256为`2ec6c89e2be650cd01654e8567dd44775d6ef52c0825d42cb481d63189b4a4ee`；实际部署仍必须记录最终Git提交和CI结果，不能只依赖包内仍为0.1.0的版本号。
+
+## Process Saga恢复与取消部署（0.5.4b2c3）
+
+b2c3不需要数据库迁移或新中间件。升级前仍应保证Agent/API和Worker使用相同代码版本、`host.process`工具描述、Principal、工作目录、程序允许表、环境与资源限制。Runtime启动遇到“Process ToolCall已提交但Session审批Item缺失”时，只有配置匹配的`ProcessAgentBridge`才会按稳定身份补Action/审批请求；未配置时保持原事实，交由正确宿主接管。
+
+WAITING审批或Action的Session取消不是队列撤销。客户端应显示“已停止等待，外部效果未知”，不能显示“命令已终止”。PENDING、READY或RUNNING Action仍由Effect Journal和Worker管理；若业务要求撤销READY，当前版本没有该协议，不能删除行、修改状态或只取消Session。正常关闭Runtime也会保留等待供重开，不会隐式决定审批。
+
+Worker的RUNNING/RECONCILING租约过期会写入`UNKNOWN`结果和`lease_expired`错误。监控至少告警`unknown_count`和`lease_recovered -> UNKNOWN`；不得把此状态重投READY。该结果只说明执行所有权丢失，不说明OS进程已经退出。生产部署应通过容器、systemd/launchd或独立监督器约束Worker及其进程组；Harnessix当前不会依据持久PID清理孤儿。
+
+多API实例可以竞争同一Action审批，数据库事务保证只有一个权威决定。调用方收到`approval_conflict`后应读取并展示已存在决定，不得改actor/reason后自动重试。SQLite适合单机多进程；多主机部署使用PostgreSQL，并在发布门禁运行实库租约UNKNOWN与并发测试。
+
+OpenAI/Anthropic SDK闭环测试使用离线Mock传输，不需要生产Key。线上Secret仍只能通过Provider配置的环境引用提供；Process argv不支持SecretRef解析，禁止把API Key、密码或令牌作为命令参数持久化。Process Artifact只受Session/工作区作用域保护，备份、导出和API读取仍需上层认证授权。

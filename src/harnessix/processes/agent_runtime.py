@@ -106,6 +106,16 @@ class ProcessAgentBridge:
                 snapshot,
                 approval_id=approval_id,
             )
+        if snapshot.approval is not None:
+            # Action决定可能由另一进程先提交，或发生在Action提交成功而Session请求
+            # 尚未落库的崩溃窗口。先重建未决定的Session请求；后续sync_decision
+            # 只读原Action决定并完成投影，不能在这里制造第二份许可。
+            return ProcessApprovalRequestContent(
+                approval_id=approval_id,
+                call_id=call.call_id,
+                plan=prepared.plan,
+                request_fingerprint=prepared.plan.approval_fingerprint,
+            )
         if (
             snapshot.status in {ActionStatus.DENIED, ActionStatus.FAILED}
             and snapshot.approval is None

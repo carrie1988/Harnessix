@@ -53,8 +53,8 @@ RUNNING
 租约过期恢复规则：
 
 - `LEASED` 过期：外部调用尚未开始，可以回到 `READY`；
-- `RUNNING` 过期：外部调用可能已经提交，进入 `UNKNOWN`；
-- `RECONCILING` 过期：对账未得到确定结果，回到 `UNKNOWN`。
+- `RUNNING` 过期：外部调用可能已经提交，进入 `UNKNOWN`，同事务保存`lease_expired`终态结果；
+- `RECONCILING` 过期：对账未得到确定结果，回到 `UNKNOWN`，同事务保存`lease_expired`终态结果。
 
 在 `queued` 模式中，`READY` 是持久队列状态，由独立 Worker 原子 Claim；在 `inline` 模式中，API 进程直接完成 Claim 和执行，便于本地调试。
 

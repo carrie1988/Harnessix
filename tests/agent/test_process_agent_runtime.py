@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,6 +43,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.storage import SQLiteEffectJournal
 from harnessix.worker import ActionWorker
 from tests.agent.helpers import answer
+from tests.processes.helpers import cleanup, ready
 
 
 def _process_step(code: str, *arguments: str) -> list[ProviderEvent]:
@@ -319,7 +321,7 @@ async def test_rejected_process_never_enters_worker_queue(tmp_path: Path) -> Non
     assert result.error is not None and result.error.code == "approval_rejected"
 
 
-async def test_expired_pending_is_preserved_and_late_action_decision_is_mirrored(
+async def test_expired_pending_cancel_is_conservatively_interrupted(
     tmp_path: Path,
 ) -> None:
     provider = ScriptedProvider([_process_step("print('not-run')"), answer()])
@@ -335,28 +337,169 @@ async def test_expired_pending_is_preserved_and_late_action_decision_is_mirrored
                 budget=Budget(timeout_seconds=1),
             )
             assert pending.status is TurnStatus.WAITING_APPROVAL
-            with pytest.raises(KernelError) as error:
-                await runtime.cancel(thread.thread_id, pending.turn_id)
-            assert error.value.code == "process_action_not_enabled"
-        await asyncio.sleep(1.01)
-        before = await store.get_thread(thread.thread_id)
-        async with AgentRuntime(store, provider, processes=bridge) as runtime:
-            assert await store.get_thread(thread.thread_id) == before
-            resumed = await runtime.resume_turn(thread.thread_id, pending.turn_id)
-            assert resumed.status is TurnStatus.WAITING_APPROVAL
-            assert await store.get_thread(thread.thread_id) == before
-        approval = _approval(pending)
-        assert (await service.get(approval.plan.action_id)).status is ActionStatus.PENDING_APPROVAL
-        action = await service.decide_approval(
-            approval.plan.action_id,
-            ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="external-reviewer"),
+            await asyncio.sleep(1.1)
+            approval = _approval(pending)
+            with pytest.raises(KernelError) as expired:
+                await runtime.reply_approval(
+                    thread.thread_id,
+                    pending.turn_id,
+                    approval.approval_id,
+                    fingerprint=approval.request_fingerprint,
+                    decision=ApprovalDecision(
+                        outcome=ApprovalOutcome.APPROVED,
+                        actor="late-reviewer",
+                    ),
+                )
+            assert expired.value.code == "approval_expired"
+            cancelled = await runtime.cancel(thread.thread_id, pending.turn_id)
+            assert cancelled.status is TurnStatus.INTERRUPTED
+            assert await runtime.cancel(thread.thread_id, pending.turn_id) == cancelled
+            assert await runtime.resume_turn(thread.thread_id, pending.turn_id) == cancelled
+        action = await service.get(approval.plan.action_id)
+        assert action.status is ActionStatus.PENDING_APPROVAL and action.approval is None
+        result = next(
+            item.content for item in cancelled.items if isinstance(item.content, ToolResultContent)
         )
-        async with AgentRuntime(store, provider, processes=bridge) as runtime:
-            synchronized = await runtime.resume_turn(thread.thread_id, pending.turn_id)
-            assert synchronized.status is TurnStatus.WAITING_ACTION
-            assert _approval(synchronized).decision == action.approval
+        assert result.outcome == "unknown"
+        assert result.action_id == approval.plan.action_id and result.process is None
+        assert result.error is not None and result.error.code == "uncertain_effect"
+        assert len(provider.requests) == 1
     finally:
         await service.close()
+
+
+async def test_waiting_action_cancel_does_not_revoke_action_permit(tmp_path: Path) -> None:
+    marker = tmp_path / "executed-after-session-cancel"
+    provider = ScriptedProvider(
+        [
+            _process_step(
+                "from pathlib import Path; import sys; Path(sys.argv[1]).write_text('once')",
+                str(marker),
+            )
+        ]
+    )
+    service, bridge = await _service_and_bridge(tmp_path)
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    try:
+        async with AgentRuntime(store, provider, processes=bridge) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            pending = await runtime.run_turn(
+                thread.thread_id, "执行任务", request_id="cancel-ready"
+            )
+            approval = _approval(pending)
+            waiting = await runtime.reply_approval(
+                thread.thread_id,
+                pending.turn_id,
+                approval.approval_id,
+                fingerprint=approval.request_fingerprint,
+                decision=ApprovalDecision(
+                    outcome=ApprovalOutcome.APPROVED,
+                    actor="reviewer-a",
+                ),
+            )
+            assert waiting.status is TurnStatus.WAITING_ACTION
+            cancelled = await runtime.cancel(thread.thread_id, pending.turn_id)
+            assert cancelled.status is TurnStatus.INTERRUPTED
+            result = next(
+                item.content
+                for item in cancelled.items
+                if isinstance(item.content, ToolResultContent)
+            )
+            assert result.outcome == "unknown" and result.action_id == approval.plan.action_id
+            assert result.process is None
+        assert (await service.get(approval.plan.action_id)).status is ActionStatus.READY
+        completed = await ActionWorker(
+            service,
+            poll_seconds=0.01,
+            heartbeat_seconds=1,
+            recovery_interval_seconds=1,
+        ).run_once()
+        assert completed is not None and completed.status is ActionStatus.SUCCEEDED
+        assert marker.read_text() == "once"
+        assert len(provider.requests) == 1
+    finally:
+        await service.close()
+
+
+async def test_hard_exit_running_lease_projects_unknown_and_interrupts_agent(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    marker = tmp_path / "owned-process"
+    provider = ScriptedProvider(
+        [
+            _process_step(
+                "import os,sys,time; open(sys.argv[1],'w').write(str(os.getpid())); time.sleep(30)",
+                str(marker),
+            )
+        ]
+    )
+    service, bridge = await _service_and_bridge(root)
+    store = SQLiteSessionStore(root / "session.db")
+    pid = None
+    try:
+        async with AgentRuntime(store, provider, processes=bridge) as runtime:
+            thread = await runtime.create_thread(str(root))
+            pending = await runtime.run_turn(
+                thread.thread_id, "执行任务", request_id="lease-unknown"
+            )
+            approval = _approval(pending)
+            waiting = await runtime.reply_approval(
+                thread.thread_id,
+                pending.turn_id,
+                approval.approval_id,
+                fingerprint=approval.request_fingerprint,
+                decision=ApprovalDecision(
+                    outcome=ApprovalOutcome.APPROVED,
+                    actor="reviewer-a",
+                ),
+            )
+            assert waiting.status is TurnStatus.WAITING_ACTION
+    finally:
+        await service.close()
+
+    child = await asyncio.to_thread(
+        subprocess.run,
+        [
+            sys.executable,
+            "-m",
+            "tests.agent.process_action_running_worker",
+            str(root / "effects.db"),
+            str(root),
+            str(marker),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=Path(__file__).parents[2],
+    )
+    assert child.returncode == 89, child.stderr
+    pid = await ready(marker)
+    recovered_service = recovered_bridge = None
+    try:
+        await asyncio.sleep(1.1)
+        recovered_service, recovered_bridge = await _service_and_bridge(root)
+        snapshot = await recovered_service.get(approval.plan.action_id)
+        assert snapshot.status is ActionStatus.UNKNOWN
+        assert snapshot.result is not None and snapshot.result.status is ActionStatus.UNKNOWN
+        assert snapshot.result.error is not None and snapshot.result.error.code == "lease_expired"
+        async with AgentRuntime(store, provider, processes=recovered_bridge) as runtime:
+            interrupted = await runtime.resume_turn(thread.thread_id, pending.turn_id)
+        assert interrupted.status is TurnStatus.INTERRUPTED
+        result = next(
+            item.content
+            for item in interrupted.items
+            if isinstance(item.content, ToolResultContent)
+        )
+        assert result.outcome == "unknown"
+        assert result.process is not None and result.process.status is ActionStatus.UNKNOWN
+        assert result.error is not None and result.error.code == "lease_expired"
+        assert len(provider.requests) == 1
+    finally:
+        if recovered_service is not None:
+            await recovered_service.close()
+        await cleanup(pid, group=True)
 
 
 async def test_unknown_process_effect_interrupts_without_second_model_step(tmp_path: Path) -> None:

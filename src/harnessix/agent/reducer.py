@@ -172,6 +172,20 @@ def _validate_process_result(turn: Turn, call: ToolCallContent, content: ToolRes
     approval = _process_approval(turn, call)
     if approval is None and content.process is None:
         return
+    if approval is not None and turn.status == TurnStatus.CANCELLING and content.process is None:
+        assert isinstance(approval.content, ProcessApprovalRequestContent)
+        require(
+            content.outcome == "unknown"
+            and content.action_id == approval.content.plan.action_id
+            and content.error is not None
+            and content.error.code == "uncertain_effect"
+            and content.output is None
+            and content.patch is None
+            and content.patch_batch is None
+            and content.diff_artifact is None,
+            "取消Process等待必须保留原Action身份并保守标记未知效果",
+        )
+        return
     require(
         approval is not None
         and approval.status == ItemStatus.COMPLETED

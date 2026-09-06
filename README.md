@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2b1 已实现 Agent 调用到 Process Action 的稳定身份，b2b2 已完成 Agent v9 进程投影、WAITING_ACTION、Session migration10 及真实 v8 旧 wheel 兼容验收，b2c1 已显式接通模型调用、唯一 Action 审批、外部 Worker 和有界终态观察，b2c2 已完成二进制安全 Process Artifact、Session migration11、配额/分页/TTL/损坏检测和事务崩溃恢复；完整跨库崩溃矩阵、双 SDK 离线闭环、Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2 已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10–11、唯一审批、外部Worker、Process Artifact、完整跨库硬退出恢复、等待取消、租约UNKNOWN、跨进程决定和双SDK离线闭环；Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -196,7 +196,7 @@ uv run python -m examples.kernel_batch
 uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
 ~~~
 
-这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，当前还已交付0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入、b2b绑定/投影、b2c1显式运行时Saga及b2c2 Process Artifact；下一片为 **0.5.4b2c3：完整跨库恢复与双 SDK 离线闭环**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，当前还已交付0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入及完整0.5.4b2 Agent/Process Saga；下一片为 **0.5.4c：Git、run_tests与受控命令反馈闭环**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：真实计划/历史效果差异报告（0.5.3c3c1）
 
@@ -251,12 +251,15 @@ b2b2已用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧�
 
 b2c2 新增显式 `SQLiteProcessArtifactPublisher`。终态Action已捕获的stdout/stderr以`process-output/v1`规范JSONL保存：唯一摘要和二进制安全Base64分片，正文/manifest/Tool Result引用/终态Session事实同事务。读取复用`read_artifact`的Thread/工作区归属、分页、配额、TTL和清理，并额外核对Process批准、Action身份、双流摘要、分片偏移与正文哈希。单个Artifact无法容纳全部已捕获前缀时省略引用，不二次隐藏截断；归档失败不改变或重放Action。Agent Event仍为v9，Session migration11仅扩展Artifact用途白名单。详见 [ADR 0041](docs/adr/0041-process-output-artifact.md)。
 
+b2c3 补齐完整恢复与取消：Runtime可从“ToolCall已提交但Session审批缺失”的窗口按稳定身份重取同一Action；八个跨库提交边界真实退出后不重复建Action或执行命令。WAITING_APPROVAL/WAITING_ACTION取消只停止Session等待并保守标记unknown，不撤销Action许可；RUNNING租约过期在SQLite/PostgreSQL中保存`UNKNOWN/lease_expired`结果供Agent投影。两个独立进程竞争审批时相同决定幂等、不同决定一胜一冲突。OpenAI与Anthropic实际SDK均通过离线HTTP完成审批重开、外部Worker、Artifact摘要读取和最终回答，私有Action证据与Base64正文不进入模型wire。详见 [ADR 0042](docs/adr/0042-process-saga-recovery-and-cancellation.md)。
+
 ```bash
 uv run python -m examples.kernel_process
-uv run pytest tests/agent/test_process_agent_runtime.py tests/artifacts/test_process_output*.py
+uv run pytest tests/agent/test_process_agent_runtime.py tests/agent/test_process_agent_crash.py
+uv run pytest tests/agent/test_process_agent_sdk.py tests/artifacts/test_process_output*.py
 ```
 
-默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。WAITING_ACTION取消、Action创建前后和完整跨库退出矩阵及双SDK离线闭环仍留给b2c3；Git/run_tests进入0.5.4c。Process Artifact不是执行许可、OS Sandbox、DLP或同UID防篡改边界。
+默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。0.5.4b2范围现已完成；Git/run_tests进入0.5.4c。Process Artifact和Session取消都不是执行许可撤销、OS Sandbox、DLP、孤儿进程监督或同UID防篡改边界。
 
 ## 当前已实现：0.1 Action Plane
 

@@ -73,12 +73,12 @@ Agent Event/Thread继续为v9；Artifact引用复用现有`ArtifactRef`，不新
 
 真实v8升级探针现允许当前wheel连续追加migration10/11。旧v8 reader仍以`schema_too_new`拒绝，不能删除marker伪装降级。
 
-## 7. 不在本片完成的能力
+## 7. b2c2交付时不在本片完成的能力
 
 - 不把`host.process`加入默认Agent工具表；
-- 不实现WAITING_ACTION取消、跨进程并发决定或完整Session×Action崩溃矩阵；
+- b2c2本身不实现WAITING_ACTION取消、跨进程并发决定或完整Session×Action崩溃矩阵；这些能力现已由b2c3完成；
 - 不实现后台进程、PTY、OS Sandbox、网络隔离或宿主死亡后的外部监督；
 - 不实现Git、`run_tests`、任意Shell、源目录合入或真实编码Eval；
 - 不把SHA256、UUID、SQLite文件权限或工作区scope宣称为同UID恶意进程防护。
 
-上述运行时恢复与双SDK离线HTTP闭环进入b2c3；Git/测试执行进入0.5.4c。
+上述运行时恢复与双SDK离线HTTP闭环现已由[ADR 0042](0042-process-saga-recovery-and-cancellation.md)落地；Git/测试执行进入0.5.4c。
