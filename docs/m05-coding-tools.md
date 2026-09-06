@@ -965,7 +965,7 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 
 临界可观测性复用既有持久事实而不增加重复Schema：Session保存原预算、实际Usage与尝试；Eval报告保存实际输入/输出、步骤及`budget_respected`；Campaign保存单次实际Token和`budget`主分类。离线回归证明恰好达到上限时预算检查通过，超过一个Token时失败且报告仍保存真实超出值；v1/v2均能执行、发布报告并只读重开。
 
-本片不使用网络、API Key、SSH或中间件，不修改Agent v9、Session migration11、Provider v3、Action/Process/Patch/Artifact协议或数据库。0.5.5c3b需要新授权的新Campaign；只有v2真实基线不再被错误预算截断，才进入0.5.5d。
+本片不使用网络、API Key、SSH或中间件，不修改Agent v9、Session migration11、Provider v3、Action/Process/Patch/Artifact协议或数据库。后续c3b已按新授权执行任务v2 Campaign并形成下一节证据。
 
 ## 45. 0.5.5c3b：任务v2三次真实复测与新根因
 
@@ -986,3 +986,5 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 错误沿既有`ToolResultContent`事务写入Session。OpenAI-compatible使用`role=tool`保留规范error，Anthropic使用`tool_result`并设置`is_error=true`；重开与Replay读取原事实，不重新格式化或执行失败调用。确定性Provider以及两个实际SDK的离线HTTP链路均覆盖“首页成功→遗漏revision失败→读取错误→显式复制上一页revision→后续页成功→最终回答”。
 
 本片不修改工具输入/输出Schema、定义指纹、Agent v9、Provider v3、Session migration11、Action/Patch/Process/Artifact协议或数据库，也不发起真实API、SSH和中间件操作。它关闭的是运行时纠正协议，真实模型采用率和最终修复质量仍由c3d新Campaign验证。
+
+质量门禁为本地2546 passed、2 skipped，2510项异步严格回归，Schema无变化，隔离wheel SHA-256为`fc5b96e20734a5d51fd4b832091ab1dc4855f96dbaf21d895dfc7d36fb91cb33`；远端CI [34039025440](https://github.com/carrie1988/Harnessix/actions/runs/34039025440)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL均通过。

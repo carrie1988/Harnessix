@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a/c3b 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行、累计Token预算版本升级和任务v2真实复测。v2三次复测均在分页工具参数不可自纠正后耗尽100000累计Token，尚未形成有效模型成功率；任意Shell、OS Sandbox、源目录交付和Agent CLI也尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a/c3b/c3c 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行、累计Token预算版本升级、任务v2真实复测及分页参数可纠正反馈。真实c3d复测、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE

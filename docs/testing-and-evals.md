@@ -969,7 +969,7 @@ c2a测试全部使用可计价确定性Provider或故障替身，不使用网络
 - Schema生成器运行后无公共Schema变化；本片未修改Agent v9、Session migration11、Provider v3、Action/Process/Artifact/Patch协议或数据库Schema；
 - 本片没有真实Provider网络请求、API Key读取、SSH、远程服务器或中间件操作。
 
-当前只完成c3a离线门禁。v2的100000累计Token预算是否足够覆盖真实定位、修改、测试、Git核对和最终回答，仍需c3b在新授权Campaign中验证；在此之前不计算有效模型成功率，也不开始0.5.5d源目录交付。
+c3a交付时只完成离线预算门禁；后续c3b已执行任务v2真实Campaign并形成第47节证据。
 
 ## 47. 0.5.5c3b 任务v2三次真实Campaign验收（2026-09-06）
 
@@ -1002,5 +1002,8 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - Schema生成器运行后无公共Schema变化；
 - sdist/wheel构建成功，仓库外基础依赖环境未安装OpenAI/Anthropic SDK时专用错误行为和默认禁网CLI均通过；wheel SHA-256为`fc5b96e20734a5d51fd4b832091ab1dc4855f96dbaf21d895dfc7d36fb91cb33`；
 - 本片没有真实API请求、API Key读取、SSH、远程服务器或中间件操作。
+- 远端CI [34039025440](https://github.com/carrie1988/Harnessix/actions/runs/34039025440)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。
 
 以上只验证实现和协议，不构成真实模型质量结论。c3d必须使用新Campaign和独立费用授权，不得复用或修改c3b证据。
+
+补充CI风险记录：c3b纯文档提交的首次CI在macOS出现一次`asyncio`子进程回收返回255、在Python 3.13低速运行中出现七项受管副本5秒操作超时；同一提交不改代码的失败任务重跑全部通过，随后c3c当前提交四项任务首轮通过。该现象不归因于本片功能，但保留为后续慢速Runner与进程回收稳定性风险，不用重跑结果删除首次失败事实。
