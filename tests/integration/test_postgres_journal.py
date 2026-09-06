@@ -77,6 +77,7 @@ async def test_postgres_expired_running_lease_persists_unknown_result(tmp_path: 
             demo_database_path=tmp_path / "demo-lease.db",
             execution_mode="queued",
             lease_seconds=2,
+            worker_heartbeat_seconds=0.2,
         ),
         worker_id="postgres-expired-worker",
     )
