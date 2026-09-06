@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行，以及旧任务可恢复的累计Token预算版本升级；首轮百炼三次基线均因任务v1预算不适配而失败，v2真实重基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a/c3b 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行、累计Token预算版本升级和任务v2真实复测。v2三次复测均在分页工具参数不可自纠正后耗尽100000累计Token，尚未形成有效模型成功率；任意Shell、OS Sandbox、源目录交付和Agent CLI也尚未完成，当前仍不是完整Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -321,7 +321,16 @@ uv run pytest tests/evals/test_campaign*.py
 - Catalog按任务ID与版本精确索引，无版本查询返回最新版本；旧Campaign按计划版本恢复，不会漂移到v2；
 - Eval报告继续保存实际Token而非截断值，离线回归覆盖恰好到限与超过一个Token，以及v1/v2各自执行和只读重开。
 
-c3a没有调用真实API。下一步c3b必须取得新的次数/费用授权，创建新Campaign并用相同精确模型完成三次v2独立试验；在此之前仍不能声明有效模型成功率。研究与决策见[Token预算适用性研究](docs/research/eval-token-budget-applicability.md)和[ADR 0049](docs/adr/0049-versioned-eval-token-budget.md)。
+c3a没有调用真实API。后续c3b已在新的独立Campaign中用相同精确模型完成三次任务v2试验；结果见下一节。研究与决策见[Token预算适用性研究](docs/research/eval-token-budget-applicability.md)和[ADR 0049](docs/adr/0049-versioned-eval-token-budget.md)。
+
+## 当前真实证据：任务v2三次复测（0.5.5c3b）
+
+- 固定提交`3975429`、任务v2、百炼北京`qwen3-coder-plus-2025-09-23`和三个独立run；41个模型步骤全部只有一次Provider尝试；
+- 三次终态均为`budget`，合计324142输入、3717输出Token，完整已知估算费用¥1.35604；Provider、Eval基础设施和一般Runtime失败均为0；
+- 三个模型都能执行初始测试并读取文件首页，但后续分页调用遗漏`expected_revision`；通用`tool_invalid_arguments`没有提供跨字段修正方法，模型连续重试并因完整历史增长耗尽100000累计Token；
+- 三个工作区均无变更、无最终回答，因此0/3仍不是有效模型编码成功率。继续提高预算不能关闭该缺口，必须先交付有界、可操作且不回显参数值的工具校验反馈，再以新Campaign验证。
+
+完整脱敏计划、报告、逐run指标和根因见[任务v2真实基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)。该Campaign已经完成，禁止修改或追加试验。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -607,6 +616,7 @@ examples/                   可运行演示
 - [受控真实Coding Eval Campaign执行决策](docs/adr/0048-controlled-real-eval-campaign-execution.md)
 - [版本化Coding Eval Token预算决策](docs/adr/0049-versioned-eval-token-budget.md)
 - [百炼北京三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval/README.md)
+- [百炼北京任务v2三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)
 
 ## 目标里程碑
 

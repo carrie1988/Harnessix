@@ -966,3 +966,11 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 临界可观测性复用既有持久事实而不增加重复Schema：Session保存原预算、实际Usage与尝试；Eval报告保存实际输入/输出、步骤及`budget_respected`；Campaign保存单次实际Token和`budget`主分类。离线回归证明恰好达到上限时预算检查通过，超过一个Token时失败且报告仍保存真实超出值；v1/v2均能执行、发布报告并只读重开。
 
 本片不使用网络、API Key、SSH或中间件，不修改Agent v9、Session migration11、Provider v3、Action/Process/Patch/Artifact协议或数据库。0.5.5c3b需要新授权的新Campaign；只有v2真实基线不再被错误预算截断，才进入0.5.5d。
+
+## 45. 0.5.5c3b：任务v2三次真实复测与新根因
+
+正式脱敏证据见[任务v2验证报告](validation/bailian-2026-09-06-coding-eval-v2/README.md)。Campaign固定实现提交`3975429`、任务v2指纹、百炼北京`qwen3-coder-plus-2025-09-23`、三个独立run、单步骤最多一次Provider尝试、4096单次输出和人民币10元试验间费用停止线。三个run全部完成证据收集，合计41个模型步骤、324142输入Token、3717输出Token和¥1.35604完整已知估算费用；不存在SDK自动重试、Provider失败、Eval基础设施失败或未知成本。
+
+三次终态均为`budget`，但与任务v1失败位置不同。v2允许模型执行初始失败测试、读取Artifact及文件首页；模型随后以`start_line`或`offset`请求后续页，却没有携带上一成功结果的`expected_revision`。`ReadFileInput`和`ListFilesInput`的跨字段校验拒绝调用，Runtime只返回通用`tool_invalid_arguments`，模型无法获知具体修正动作并连续重试。每次新步骤重新发送增长后的完整历史和工具Schema，最终在第13—14步达到105435—114860累计Token。
+
+三个工作区均无修改且没有最终回答。因此本片仍不能产出有效模型成功率，也不能以继续提高Token上限解决。c3b关闭了原20000预算错误的定位阶段，同时把后续门禁改为：先在c3c保留严格校验并增加稳定、有界、不回显参数值的模型可纠正错误，再在c3d的新Campaign中验证纠正行为和任务质量；既有Campaign不可改写或追加run。

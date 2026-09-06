@@ -970,3 +970,17 @@ c2a测试全部使用可计价确定性Provider或故障替身，不使用网络
 - 本片没有真实Provider网络请求、API Key读取、SSH、远程服务器或中间件操作。
 
 当前只完成c3a离线门禁。v2的100000累计Token预算是否足够覆盖真实定位、修改、测试、Git核对和最终回答，仍需c3b在新授权Campaign中验证；在此之前不计算有效模型成功率，也不开始0.5.5d源目录交付。
+
+## 47. 0.5.5c3b 任务v2三次真实Campaign验收（2026-09-06）
+
+执行提交`397542942be8474d99feb190a901e8b336a19bdd`已经通过本地2538 passed、2 skipped、2502项异步严格回归、隔离wheel验证及远端CI [34036786555](https://github.com/carrie1988/Harnessix/actions/runs/34036786555)四项任务。真实Campaign使用百炼北京`qwen3-coder-plus-2025-09-23`、任务v2、三个独立run、单步骤一次Provider尝试、4096输出上限、100000 Turn累计Token和人民币10元试验间停止线。
+
+验收事实：
+
+- Campaign完成3/3并原子发布报告；41个模型步骤全部为attempt index 1，模型身份和Usage完整；
+- 合计324142输入、3717输出Token和¥1.35604完整已知估算费用，未触发试验间费用停止；
+- 三次主分类均为`budget`；Provider、Eval基础设施、一般Runtime、任务主失败和未知成本均为0；
+- 三个Turn分别使用107564、114860和105435累计Token，在第13—14步记账后停止；
+- 三个工作区均无变更、没有最终回答，行为检查失败而身份回归检查通过。
+
+Session行为分析显示，三个模型在首次分页成功后均遗漏后续页所需的`expected_revision`，至少连续出现3、4和8次相同类型的无效读取。通用`tool_invalid_arguments`没有暴露参数值或内部异常，但也没有告诉模型跨字段要求，导致错误无法自纠正且完整历史持续增长。该Campaign证明任务v2消除了原20000预算的过早停止，却没有形成可解释编码质量基线。后续必须先以离线测试证明有界错误能经OpenAI-compatible和Anthropic映射进入模型历史并被纠正，再申请新Campaign；禁止在本Campaign上追加付费试验。完整证据见[验证记录](validation/bailian-2026-09-06-coding-eval-v2/README.md)。

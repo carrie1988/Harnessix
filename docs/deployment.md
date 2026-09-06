@@ -579,4 +579,10 @@ assert definition.task.fingerprint == (
 
 生产变更检查应同时记录任务ID、版本、指纹、步骤/累计Token/时间/输出限制、Provider单步输出上限和费用停止线。100000是Turn累计报告Token上限，不得写入模型上下文窗口配置，也不得据此提高自动重试、工具并发或工作区权限。
 
-升级验收至少执行一次v1和v2离线Campaign并重开completed状态，确认没有再次创建Provider。未知版本或计划指纹漂移必须在Provider创建前失败。真实v2 Campaign仍需独立授权、新Campaign/run ID和私有0600配置；不得复制旧状态、复用旧run或把新结果追加到首轮报告。
+升级验收至少执行一次v1和v2离线Campaign并重开completed状态，确认没有再次创建Provider。未知版本或计划指纹漂移必须在Provider创建前失败。真实v2 Campaign必须使用独立授权、新Campaign/run ID和私有0600配置；不得复制旧状态、复用旧run或把新结果追加到首轮报告。
+
+## 任务v2真实Campaign归档（0.5.5c3b）
+
+任务v2 Campaign `ee2ccba3-20da-46c0-9e99-8b8597a461c3`已经完成并发布报告。该运行目录和0600配置只能用于审计与只读恢复；不得编辑状态、删除单次证据、替换run ID或继续发送请求。仓库仅保存脱敏计划、聚合报告和正式分析，见[任务v2验证记录](validation/bailian-2026-09-06-coding-eval-v2/README.md)。
+
+本次三个run均在分页工具校验错误连续重试后达到100000累计Token。运维侧不得通过复制配置并提高任务预算绕过该失败：费用停止位于完整试验之间，无法控制单个失控Turn；重复运行只会扩大输入历史和费用。后续部署顺序固定为先安装有界工具校验反馈实现并完成离线回归，再创建全新Campaign配置、Campaign ID和run ID。新的真实运行仍须单独复核模型、地域、价格有效期、请求次数和费用停止线。
