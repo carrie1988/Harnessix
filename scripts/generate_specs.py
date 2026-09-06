@@ -17,6 +17,7 @@ from harnessix.domain.models import ActionRequest
 from harnessix.evals.contracts import (
     CodingEvalMaterialization,
     CodingEvalReport,
+    CodingEvalRunState,
     CodingEvalTask,
     EvalFinalAnswer,
 )
@@ -131,6 +132,7 @@ def main() -> None:
         ("coding-eval-final-answer", EvalFinalAnswer),
         ("coding-eval-report", CodingEvalReport),
         ("coding-eval-materialization", CodingEvalMaterialization),
+        ("coding-eval-run-state", CodingEvalRunState),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

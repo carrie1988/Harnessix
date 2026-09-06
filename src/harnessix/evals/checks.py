@@ -73,9 +73,13 @@ def historical_python_launcher(
         else:
             host.mkdir(mode=0o700)
         if launcher.exists() or launcher.is_symlink():
-            if _read_launcher(launcher, len(body)) != body:
+            info = launcher.lstat()
+            if (
+                not stat.S_ISREG(info.st_mode)
+                or info.st_mode & 0o777 != 0o700
+                or _read_launcher(launcher, len(body)) != body
+            ):
                 raise OSError
-            launcher.chmod(0o700)
             return launcher
         descriptor = os.open(
             temporary,
@@ -125,6 +129,8 @@ async def run_historical_checks(
     python_executable: Path,
     phase: CheckPhase,
     cancel: CancelToken | None = None,
+    *,
+    workspace: Path | None = None,
 ) -> tuple[EvalTestObservation, ...]:
     """运行任务固定检查；退出码0/1是行为事实，其他终态属于基础设施失败。"""
 
@@ -135,6 +141,14 @@ async def run_historical_checks(
         or manifest.baseline_tree_sha256 != task.repository.baseline_tree_sha256
     ):
         raise KernelError("eval_materialization_mismatch", "Eval检查工作区与任务身份不一致")
+    checked_workspace = materialized.workspace if workspace is None else workspace
+    try:
+        checked_workspace = checked_workspace.resolve(strict=True)
+        run_root = materialized.run_root.resolve(strict=True)
+    except (OSError, RuntimeError):
+        raise KernelError("eval_check_workspace_invalid", "Eval检查工作区绑定无效") from None
+    if not checked_workspace.is_dir() or not checked_workspace.is_relative_to(run_root):
+        raise KernelError("eval_check_workspace_invalid", "Eval检查工作区绑定无效")
     names = (
         task.baseline_checks
         if phase == "baseline"
@@ -150,7 +164,7 @@ async def run_historical_checks(
         stop_output_bytes=128 * 1024,
     )
     async with HostProcessRuntime(
-        materialized.workspace,
+        checked_workspace,
         {"python": launcher},
         limits=limits,
     ) as runtime:
@@ -159,7 +173,7 @@ async def run_historical_checks(
             result = await runtime.run(
                 ProcessRequest(
                     program="python",
-                    arguments=historical_check_arguments(materialized.workspace, check.mode),
+                    arguments=historical_check_arguments(checked_workspace, check.mode),
                     timeout_seconds=60,
                 ),
                 token,

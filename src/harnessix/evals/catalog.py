@@ -20,6 +20,7 @@ class HistoricalCheck:
 class HistoricalCodingEval:
     task: CodingEvalTask
     source_tree_oid: str
+    host_only_paths: tuple[str, ...]
     checks: tuple[HistoricalCheck, ...]
 
     def check(self, check_id: str) -> HistoricalCheck:
@@ -62,6 +63,7 @@ _EMPTY_INCREMENTAL_CALL_ID = HistoricalCodingEval(
         ),
     ),
     source_tree_oid="c3df320a023537c1e0a6931a758ac67940279658",
+    host_only_paths=(".env.example",),
     checks=(
         HistoricalCheck("empty-id-behavior", "empty_id_behavior"),
         HistoricalCheck("identity-guards", "identity_guards"),

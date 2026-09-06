@@ -493,4 +493,16 @@ baseline = await run_historical_checks(task, materialized, Path(sys.executable),
 
 隐藏检查固定为独立进程、60秒时限和有界双流。退出码1是确定的行为不通过，不应触发基础设施告警；其他退出码、超时、清理失败或不完整输出证据应记录`eval_check_infrastructure_failed`并停止评分；取消传播为Turn取消。日志和指标至少记录任务ID/版本/指纹、运行ID、物化错误码、来源与基线摘要、检查ID/阶段/退出码/耗时/输出摘要，不记录隐藏检查正文、原始测试输出或工作区文件。
 
-当前检查在宿主用户权限下执行，没有容器、网络或文件系统隔离，只允许Catalog中经过评审的Harnessix历史任务。动态仓库、第三方PR和不可信测试必须等待0.7 Sandbox/网络策略后接入。0.5.5b1不创建Session、Action或Worker；生产Agent闭环仍以0.5.5b2为准。
+当前检查在宿主用户权限下执行，没有容器、网络或文件系统隔离，只允许Catalog中经过评审的Harnessix历史任务。动态仓库、第三方PR和不可信测试必须等待0.7 Sandbox/网络策略后接入。0.5.5b1只负责物化和检查；0.5.5b2的正式编排部署要求见下一节。
+
+## 历史Eval Runtime编排部署（0.5.5b2）
+
+`run_historical_coding_eval`要求调用方提供完整来源仓库、位于来源仓库之外的0700运行根、固定Git/Python绝对路径、内置任务、UUID运行ID、已打开的Provider和不含凭据的环境标识。Provider生命周期及真实费用由调用方控制；运行器不读取环境Key、不打开网络连接或自动重试。
+
+每个运行ID目录同时保存物化清单、0600运行状态/报告、只读物化工作区、受管执行副本及Patch账本、Session SQLite、Effect Journal和宿主启动器。整个目录必须只允许同一服务账户访问，不应放入Web静态目录、通用日志采集或共享卷。备份时必须保持文件权限、SQLite WAL/SHM一致性和目录原子快照；不得只复制`run-state.json`后删除账本。
+
+恢复时使用相同任务版本、Provider/Model环境标识、Git/Python绑定和运行ID再次调用。运行器会核对任务指纹、基线、执行副本、Session索引和报告摘要；不匹配时拒绝接管。状态缺失但`managed/`已经存在表示副本构建未形成发布点，当前不自动删除或覆盖，应隔离该运行目录后由新运行ID重试。
+
+内置自动审批只覆盖任务声明的唯一测试Profile和允许路径单文件Patch。Process批准仍由Effect Journal持久化且只由外部`ActionWorker`执行；运行服务账户必须能写运行目录并执行固定Python，但不需要数据库服务器或远程中间件。现阶段不得将该宿主模式开放给任意上传仓库或第三方测试。
+
+运行状态为`completed`只表示评分报告已原子发布，报告本身可能是`passed`、`failed`或`invalid`。监控应分别统计报告结论、失败分类、Provider/模型标识、耗时、步骤、Token、工具调用和审批数，不得把基础设施`invalid`计入模型失败率。真实Provider多次基线及费用告警在0.5.5c定义。

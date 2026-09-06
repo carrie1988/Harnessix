@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "CodingEvalEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "harnessix_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Harnessix Revision",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "isolation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Isolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "harnessix_revision",
+        "provider",
+        "model",
+        "platform",
+        "isolation"
+      ],
+      "title": "CodingEvalEnvironment",
+      "type": "object"
+    },
+    "EvalTestObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "check_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Check Id",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "baseline",
+            "final"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "returncode": {
+          "maximum": 255,
+          "minimum": -128,
+          "title": "Returncode",
+          "type": "integer"
+        },
+        "output_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Output Sha256",
+          "type": "string"
+        },
+        "elapsed_seconds": {
+          "maximum": 86400,
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "check_id",
+        "phase",
+        "passed",
+        "returncode",
+        "output_sha256",
+        "elapsed_seconds"
+      ],
+      "title": "EvalTestObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "历史任务编排的恢复锚点；路径由固定运行目录决定，不进入契约。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-run-state/v1",
+      "default": "harnessix.coding-eval-run-state/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "task_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Task Fingerprint",
+      "type": "string"
+    },
+    "baseline_revision": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Baseline Revision",
+      "type": "string"
+    },
+    "baseline_tree_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Baseline Tree Sha256",
+      "type": "string"
+    },
+    "execution_workspace_id": {
+      "format": "uuid",
+      "title": "Execution Workspace Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "running",
+        "completed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "thread_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Thread Id"
+    },
+    "turn_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turn Id"
+    },
+    "baseline_observations": {
+      "items": {
+        "$ref": "#/$defs/EvalTestObservation"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Baseline Observations",
+      "type": "array"
+    },
+    "environment": {
+      "$ref": "#/$defs/CodingEvalEnvironment"
+    },
+    "report_file": {
+      "const": "report.json",
+      "default": "report.json",
+      "title": "Report File",
+      "type": "string"
+    },
+    "report_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Report Sha256"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "task_id",
+    "task_version",
+    "task_fingerprint",
+    "baseline_revision",
+    "baseline_tree_sha256",
+    "execution_workspace_id",
+    "status",
+    "baseline_observations",
+    "environment",
+    "started_at",
+    "updated_at"
+  ],
+  "title": "CodingEvalRunState",
+  "type": "object"
+}

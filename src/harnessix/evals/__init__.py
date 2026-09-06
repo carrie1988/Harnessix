@@ -17,6 +17,7 @@ from harnessix.evals.contracts import (
     CodingEvalEnvironment,
     CodingEvalMaterialization,
     CodingEvalReport,
+    CodingEvalRunState,
     CodingEvalTask,
     EvalFinalAnswer,
     EvalFinalAnswerEvidence,
@@ -32,6 +33,8 @@ from harnessix.evals.materializer import (
     materialize_historical_coding_eval,
 )
 from harnessix.evals.report import read_eval_report, write_eval_report
+from harnessix.evals.run_state import read_eval_run_state, write_eval_run_state
+from harnessix.evals.runner import HistoricalCodingEvalResult, run_historical_coding_eval
 
 __all__ = [
     "CODING_EVAL_GRADER_VERSION",
@@ -40,6 +43,7 @@ __all__ = [
     "CodingEvalEnvironment",
     "CodingEvalMaterialization",
     "CodingEvalReport",
+    "CodingEvalRunState",
     "CodingEvalTask",
     "EvalFinalAnswer",
     "EvalFinalAnswerEvidence",
@@ -47,6 +51,7 @@ __all__ = [
     "EvalGitEvidence",
     "EvalTestObservation",
     "HistoricalCodingEval",
+    "HistoricalCodingEvalResult",
     "MaterializedCodingEval",
     "collect_git_evidence",
     "grade_coding_eval",
@@ -57,6 +62,9 @@ __all__ = [
     "load_materialized_coding_eval",
     "materialize_historical_coding_eval",
     "read_eval_report",
+    "read_eval_run_state",
     "run_historical_checks",
+    "run_historical_coding_eval",
     "write_eval_report",
+    "write_eval_run_state",
 ]

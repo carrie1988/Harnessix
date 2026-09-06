@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 更新日期：2026-09-06
-- 状态：0.5.1—0.5.4c及0.5.5a当前定义范围已交付；已有版本化Eval任务/证据/报告和确定性评分器，首个真实缺陷运行器、真实模型基线及变更交付仍待0.5.5b—d
+- 状态：0.5.1—0.5.4c及0.5.5a—b当前定义范围已交付；首个历史真实缺陷已通过同一Agent Runtime、审批、外部Worker和确定性评分，真实模型多次基线及变更交付仍待0.5.5c—d
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -867,3 +867,17 @@ uv run python scripts/generate_specs.py
 ```
 
 历史物化测试要求本地仓库包含固定提交；CI的Python和macOS checkout因此显式使用完整历史。检查仍以宿主权限运行，不是OS Sandbox，也不接受任意第三方仓库。0.5.5b1没有模型调用、Session、Action或Worker，不把确定性最小修复测试称为Agent能力；下一片0.5.5b2必须用同一`AgentRuntime`、Process/Patch审批和外部Worker完成运行、恢复、证据与评分闭环。
+
+## 40. 0.5.5b2：历史任务正式Runtime与评分闭环
+
+完整决策见[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)。本片不增加Eval专用Agent、写工具或进程执行器，而是组合现有`AgentRuntime`、`CodingToolRuntime`、`ManagedPatchBridge`、`RunTestsAgentBridge`、`ActionService(auto_execute=False)`、`ActionWorker`、Session/Artifact/Effect/Patch账本和0.5.5a评分器。
+
+执行采用两层私有目录：`run/workspace`只负责固定来源、单提交物化和基线隐藏检查；`run/managed/<id>/workspace`由`PatchWorkspaces`登记，作为唯一Agent执行副本。全部受支持tracked文件进入Managed Patch清单；工具作用域拒绝的固定隐藏普通文件只在初始化时由宿主复制，以保持Git树一致，但不能被Agent只读端口或Patch修改。私有Git元数据复制后必须证明HEAD等于物化基线且状态完全干净。
+
+新增`coding-eval-run-state-v1`，以0600原子文件保存任务/基线/执行副本、基线观察、环境、Thread/Turn和报告摘要。`ready → running → completed`不复制Agent失败状态：Turn失败、取消或中断仍可形成`failed`报告并完成评测运行。任务、物化、状态、Session、环境和报告任一身份不一致均拒绝恢复。
+
+编排器只自动批准任务声明的测试Profile和允许路径单文件Patch。Process批准仍先进入唯一Action Journal，随后由外部Worker领取；非零测试退出形成模型可见失败反馈，未知效果不重放。确定性端到端路径为失败测试、读取实现、Patch审批、通过测试、Git状态/差异和严格JSON回答；最终隐藏行为/回归、Git实况及持久Turn共同评分。
+
+恢复覆盖Process审批提交后退出、Worker终态后投影、Turn接受后状态绑定、取消持久终态以及报告发布后状态提交。既有解释器启动器重开时只验证正文和0700权限，不再重复`chmod`改变身份；权限、正文或链接漂移直接拒绝。当前内置运行器要求唯一可见Profile和唯一行为检查，多任务扩展必须新增契约而不是隐式选择第一项。
+
+本片使用确定性脚本Provider验收真实历史缺陷，因此只证明正式基础设施闭环，不提供真实模型成功率。0.5.5c在显式费用授权下执行多次真实Provider基线；0.5.5d再实现变更包、来源漂移检查、脏工作区冲突和显式合入。当前仍没有OS Sandbox、任意Shell或第三方仓库安全执行能力。

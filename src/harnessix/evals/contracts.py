@@ -21,6 +21,7 @@ CODING_EVAL_MATERIALIZER_VERSION: Literal["coding-eval-materializer/v1"] = (
 
 Revision = str
 EvalOutcome = Literal["passed", "failed", "invalid"]
+EvalRunStatus = Literal["ready", "running", "completed"]
 EvalFailureCategory = Literal[
     "eval_infrastructure",
     "runtime",
@@ -341,6 +342,51 @@ class CodingEvalMaterialization(EvalContract):
     workspace_directory: Literal["workspace"] = "workspace"
     status: Literal["ready"] = "ready"
     created_at: AwareDatetime
+
+
+class CodingEvalRunState(EvalContract):
+    """历史任务编排的恢复锚点；路径由固定运行目录决定，不进入契约。"""
+
+    spec_version: Literal["harnessix.coding-eval-run-state/v1"] = (
+        "harnessix.coding-eval-run-state/v1"
+    )
+    run_id: UUID
+    task_id: str = Field(min_length=1, max_length=128)
+    task_version: int = Field(ge=1)
+    task_fingerprint: Revision = Field(pattern=r"^[0-9a-f]{64}$")
+    baseline_revision: Revision = Field(pattern=r"^[0-9a-f]{40,64}$")
+    baseline_tree_sha256: Revision = Field(pattern=r"^[0-9a-f]{64}$")
+    execution_workspace_id: UUID
+    status: EvalRunStatus
+    thread_id: UUID | None = None
+    turn_id: UUID | None = None
+    baseline_observations: tuple[EvalTestObservation, ...] = Field(min_length=1, max_length=32)
+    environment: CodingEvalEnvironment
+    report_file: Literal["report.json"] = "report.json"
+    report_sha256: Revision | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    started_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def lifecycle_is_consistent(self) -> Self:
+        names = [item.check_id for item in self.baseline_observations]
+        if (
+            names != sorted(set(names))
+            or any(item.phase != "baseline" for item in self.baseline_observations)
+            or self.updated_at < self.started_at
+        ):
+            raise ValueError("Eval运行状态中的基线观察或时间无效")
+        if self.status == "ready":
+            if self.thread_id is not None or self.turn_id is not None or self.report_sha256:
+                raise ValueError("ready运行不能提前绑定Session或报告")
+        elif self.status == "running":
+            if self.thread_id is None or self.report_sha256 is not None:
+                raise ValueError("running运行必须绑定Thread且尚未发布报告")
+        elif self.thread_id is None or self.turn_id is None or self.report_sha256 is None:
+            raise ValueError("completed运行必须绑定Turn和报告摘要")
+        if self.turn_id is not None and self.thread_id is None:
+            raise ValueError("Turn必须归属于已绑定Thread")
+        return self
 
 
 class EvalCheck(EvalContract):

@@ -25,6 +25,7 @@ from harnessix.evals.contracts import (
     CodingEvalEnvironment,
     CodingEvalMaterialization,
     CodingEvalReport,
+    CodingEvalRunState,
     CodingEvalTask,
     EvalFinalAnswer,
     EvalGitEvidence,
@@ -261,6 +262,7 @@ def test_task_contract_is_versioned_strict_and_fingerprinted() -> None:
         ("coding-eval-final-answer", EvalFinalAnswer),
         ("coding-eval-report", CodingEvalReport),
         ("coding-eval-materialization", CodingEvalMaterialization),
+        ("coding-eval-run-state", CodingEvalRunState),
     ],
 )
 def test_public_schema_is_frozen(name: str, model: type[ContractModel]) -> None:

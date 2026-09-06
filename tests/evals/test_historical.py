@@ -16,7 +16,7 @@ from harnessix.evals.catalog import (
     historical_coding_eval,
     historical_coding_eval_ids,
 )
-from harnessix.evals.checks import run_historical_checks
+from harnessix.evals.checks import historical_python_launcher, run_historical_checks
 from harnessix.evals.git_evidence import collect_git_evidence
 from harnessix.evals.materializer import (
     MaterializedCodingEval,
@@ -75,6 +75,7 @@ def test_catalog_pins_source_contract_and_checks() -> None:
     assert item.task.repository.baseline_tree_sha256 == SOURCE_TREE_SHA256
     assert item.task.allowed_changed_paths == (CHANGED_PATH.as_posix(),)
     assert item.task.required_test_profiles == ("focused",)
+    assert item.host_only_paths == (".env.example",)
     assert item.task.baseline_checks == item.task.behavior_checks == ("empty-id-behavior",)
     assert item.task.regression_checks == ("identity-guards",)
     assert item.check("empty-id-behavior").mode == "empty_id_behavior"
@@ -251,4 +252,18 @@ async def test_relative_python_binding_is_rejected(tmp_path: Path) -> None:
         await run_historical_checks(
             definition(), materialized, Path(sys.executable), "baseline", CancelToken()
         )
+    assert error.value.code == "eval_python_launcher_failed"
+
+
+def test_existing_python_launcher_is_verified_without_changing_identity(tmp_path: Path) -> None:
+    materialized = materialize(tmp_path)
+    first = historical_python_launcher(materialized, Path(sys.executable))
+    identity = first.stat().st_ctime_ns
+
+    assert historical_python_launcher(materialized, Path(sys.executable)) == first
+    assert first.stat().st_ctime_ns == identity
+
+    first.chmod(0o744)
+    with pytest.raises(KernelError) as error:
+        historical_python_launcher(materialized, Path(sys.executable))
     assert error.value.code == "eval_python_launcher_failed"

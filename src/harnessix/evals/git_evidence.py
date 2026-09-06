@@ -22,13 +22,14 @@ async def collect_git_evidence(
     *,
     baseline_revision: str,
     baseline_tree_sha256: str,
+    cancel: CancelToken | None = None,
 ) -> EvalGitEvidence:
     """读取完整状态和工作区 Diff 摘要；状态超过上限时拒绝评分。"""
 
     runtime = GitReadRuntime(root, git_executable)
-    cancel = CancelToken()
-    status = await runtime.execute(GitStatusInput(limit=200), cancel)
-    diff = await runtime.execute(GitDiffInput(target="worktree", context_lines=3), cancel)
+    token = cancel or CancelToken()
+    status = await runtime.execute(GitStatusInput(limit=200), token)
+    diff = await runtime.execute(GitDiffInput(target="worktree", context_lines=3), token)
     if not isinstance(status, GitStatusOutput) or not isinstance(diff, GitDiffOutput):
         raise KernelError("eval_git_evidence_invalid", "Git 证据端口返回了错误类型")
     if status.truncated or len(status.entries) != status.total_entries:

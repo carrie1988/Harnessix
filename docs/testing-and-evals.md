@@ -852,3 +852,29 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 本片没有新增真实硬退出场景，累计仍为319；没有模型请求、API Key、SSH、网络下载或中间件。宿主检查未提供OS Sandbox，仅允许内置Harnessix历史任务。0.5.5b2将复用现有Agent Runtime、Process/Patch审批和外部Worker形成端到端运行与评分；完成前不把确定性最小修复验收称为模型自主能力。
 
 最终全量复跑暴露一项既有Worker测试的1秒墙钟假设：测试要求1.2秒动作跨过初始1秒租约，同时假定本机调度不会让任意0.1秒心跳延迟超过租约；高负载下曾在续租前过期。该用例现使用5秒测试租约并按实际版本增长证明执行期间发生多次续租，不再把测试机调度及时性当作Worker功能前提；租约过期、过期恢复和过期Owner拒绝仍由独立测试覆盖。该用例连续10轮通过后重新执行全量门禁。
+
+## 42. 0.5.5b2 历史任务正式Runtime与评分验收（2026-09-06）
+
+本片按[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)把0.5.5b1固定的真实历史缺陷接入现有Agent Runtime、受管Patch、Process Action审批、外部Worker、隐藏检查、Git证据和0.5.5a评分器。使用确定性脚本Provider隔离模型方差，不访问网络或API Key。
+
+新增 **8项** 自动回归：`tests/evals/test_runner.py`新增6项，历史启动器身份新增1项，公共运行状态Schema冻结新增1项：
+
+- 真实历史revision先证明行为基线失败，再在第二层受管执行副本完成`run_tests(fail) → read_file → apply_patch → run_tests(pass) → git_status → git_diff → JSON answer`；最终行为及身份回归检查通过，HEAD/暂存区不变，只有允许文件产生Diff；
+- Session中实际形成三个批准事实，两次测试均由`ActionService(auto_execute=False)`后的独立`ActionWorker`消费，Effect Journal只有两个Action；Patch经过原Managed Patch账本，当前源仓库和只读物化层字节不变；
+- 完成报告保存7个模型步骤、6个工具调用、3次审批和1个修改文件；再次以同一运行ID调用只读取原状态/报告，不调用Provider；
+- Process批准持久化后注入宿主退出，重开保持原Thread/Turn、Action身份和批准事实，Worker只执行原READY Action，最终仍只有两个预期测试Action；
+- 外部取消在Session持久化CANCELLED，本次不强行执行最终检查；新进程重开不调用Provider，读取持久终态并生成`runtime`失败报告；
+- 报告原子发布后、运行状态提交前退出时，重开核对已有报告并只补`completed`与报告摘要，不重跑模型、测试或评分；
+- Agent尝试修改受管副本中任务允许范围之外的已有文件时，Patch计划可以形成但编排审批明确拒绝，文件不变、Effect Journal零Action且不发布报告；
+- 受管副本创建前要求工具隐藏路径与Catalog固定清单精确一致，新增或遗漏隐藏路径均拒绝，且不发布副本和运行状态；
+- 解释器启动器的正文与0700权限相同则重开不修改`ctime`，从而保持Process绑定指纹；权限被放宽时拒绝，不在旧审批身份下就地修复；
+- `coding-eval-run-state-v1`要求`ready/running/completed`字段组合一致，以0600原子文件持久化，读取拒绝权限放宽、符号链接、损坏和超限内容。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**139个源文件**）通过，**2495 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2459项全部通过**，没有忽略异步资源或警告；
+- sdist/wheel构建成功；仓库外基础依赖环境确认没有OpenAI/Anthropic SDK，可导入运行器/运行状态契约，wheel包含隐藏检查程序，既有 **17个** 基础离线示例全部通过；wheel SHA-256为`e1a6566478d031e0aa710d433e4b94af42deb6cd37451b13e3d9e49dd21c83d3`；
+- 本片没有修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，没有使用真实模型、API Key、SSH、远程服务器或中间件。
+
+本片测试直接使用Harnessix固定历史对象和真实本地Git，不使用人工临时缺陷代替数据集。确定性Provider仍不是模型能力证据；0.5.5c必须对显式授权的真实Provider执行多次试验并分别记录成功率、Runtime/Provider失败、Token、时延和费用。宿主检查仍没有OS Sandbox，不能接入任意第三方仓库。
