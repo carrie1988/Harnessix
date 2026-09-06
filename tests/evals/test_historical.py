@@ -70,14 +70,24 @@ def materialize(tmp_path: Path, run_id: UUID | None = None) -> MaterializedCodin
 def test_catalog_pins_source_contract_and_checks() -> None:
     item = definition()
     original = historical_coding_eval(TASK_ID, 1)
+    previous = historical_coding_eval(TASK_ID, 2)
 
     assert historical_coding_eval_ids() == (TASK_ID,)
-    assert historical_coding_eval_versions(TASK_ID) == (1, 2)
-    assert item.task.task_version == 2 and item.task.budget.max_tokens == 100_000
+    assert historical_coding_eval_versions(TASK_ID) == (1, 2, 3)
+    assert item.task.task_version == 3 and item.task.budget.max_tokens == 100_000
+    assert previous.task.task_version == 2 and previous.task.budget.max_tokens == 100_000
     assert original.task.task_version == 1 and original.task.budget.max_tokens == 20_000
-    assert original.task.fingerprint != item.task.fingerprint
+    assert len({original.task.fingerprint, previous.task.fingerprint, item.task.fingerprint}) == 3
     assert original.task.repository == item.task.repository
-    assert original.task.prompt == item.task.prompt
+    assert original.task.prompt == previous.task.prompt
+    assert previous.task.prompt != item.task.prompt
+    assert "最终回答正文必须且只能是一个JSON对象" in item.task.prompt
+    assert "不得包含Markdown围栏或其他文字" in item.task.prompt
+    assert (
+        '{"summary":"修复说明","changed_paths":'
+        '["src/harnessix/models/_chat_stream.py"],'
+        '"tests":[{"profile":"focused","passed":true}]}'
+    ) in item.task.prompt
     assert item.task.repository.source_revision == SOURCE_REVISION
     assert item.source_tree_oid == SOURCE_TREE_OID
     assert item.task.repository.baseline_tree_sha256 == SOURCE_TREE_SHA256
@@ -91,7 +101,7 @@ def test_catalog_pins_source_contract_and_checks() -> None:
         historical_coding_eval("missing")
     assert error.value.code == "eval_task_not_found"
     with pytest.raises(KernelError) as error:
-        historical_coding_eval(TASK_ID, 3)
+        historical_coding_eval(TASK_ID, 4)
     assert error.value.code == "eval_task_not_found"
     with pytest.raises(KernelError) as error:
         historical_coding_eval_versions("missing")

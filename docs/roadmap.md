@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c、0.5.5a–b、0.5.5c1/c2及0.5.5c3a/c3b/c3c均已完成当前定义范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷的固定物化、同一Agent Runtime/Action Worker评分、多试验证据聚合和默认禁网的可恢复Campaign执行。首轮任务v1真实试验暴露20000累计Token预算不适配；任务v2三次复测进一步暴露分页工具跨字段校验反馈不可自纠正。c3c已在不放宽Schema或分页身份的前提下交付有界修正错误、持久化/Replay和双SDK离线纠正闭环；c3d仍须在新授权下形成可比较真实质量基线，关闭后才进入0.5.5d受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)、[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)、[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)、[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)、[ADR 0049](adr/0049-versioned-eval-token-budget.md)、[ADR 0050](adr/0050-model-correctable-tool-validation.md)、[任务v1基线](validation/bailian-2026-09-06-coding-eval/README.md)和[任务v2基线](validation/bailian-2026-09-06-coding-eval-v2/README.md)。不提前宣称OS Sandbox、任意Shell、有效模型成功率或源目录自动合入。
+状态：**0.5.1–0.5.4c、0.5.5a–b、0.5.5c1/c2及0.5.5c3a—c3d均已完成当前定义范围内验收，整体0.5进行中**。分页纠正后的任务v2真实Campaign证明三个run均能自纠正，两个完成正确代码/测试/Git闭环；同时求证出严格最终回答Schema没有进入模型可见上下文。c3e1已将完整裸JSON协议版本化为任务v3，保持评分器、预算、权限和旧Campaign不变；c3e2须形成公平的真实v3质量基线，之后进入0.5.5d受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0050](adr/0050-model-correctable-tool-validation.md)、[ADR 0051](adr/0051-versioned-eval-final-answer-contract.md)、[分页纠正后真实基线](validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)。不提前宣称OS Sandbox、任意Shell或源目录自动合入。
 
 ### 目标
 
@@ -255,7 +255,10 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
       - [x] 0.5.5c3a：源码求证、真实Token开销分析、任务版本升级、预算临界可观测性及离线回归；
       - [x] 0.5.5c3b：新授权边界内完成同模型任务v2三次独立Campaign；结果0/3均为预算终态，定位到分页缺少`expected_revision`时的通用错误不可自纠正；
       - [x] 0.5.5c3c：源码求证、稳定校验错误契约、有界模型反馈、持久化/双SDK/恢复回归和离线模型纠正闭环；
-      - [ ] 0.5.5c3d：在新授权下执行修复后的同模型独立Campaign，形成不被已知预算或工具反馈缺陷截断的质量基线；
+      - [x] 0.5.5c3d：完成分页纠正后同模型三次独立Campaign；纠正采用率3/3、代码闭环2/3，同时定位最终回答Schema未进入模型上下文；
+      - [ ] 0.5.5c3e：公开最终回答契约并形成可比较任务v3基线；
+        - [x] 0.5.5c3e1：任务v3显式裸JSON Schema、旧版本兼容、严格评分与离线回归；
+        - [ ] 0.5.5c3e2：使用新Campaign完成任务v3真实多次试验并归档质量/成本证据；
   - [ ] 0.5.5d：受控变更包、来源漂移/脏工作区冲突和显式合入。
 
 ### 关键测试

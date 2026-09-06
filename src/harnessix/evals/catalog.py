@@ -87,9 +87,30 @@ _EMPTY_INCREMENTAL_CALL_ID_V2 = replace(
     ),
 )
 
+_EMPTY_INCREMENTAL_CALL_ID_V3 = replace(
+    _EMPTY_INCREMENTAL_CALL_ID_V2,
+    task=CodingEvalTask.model_validate(
+        {
+            **_EMPTY_INCREMENTAL_CALL_ID_V2.task.model_dump(),
+            "task_version": 3,
+            "prompt": (
+                _EMPTY_INCREMENTAL_CALL_ID_V2.task.prompt
+                + "最终回答正文必须且只能是一个JSON对象，不得包含Markdown围栏或其他文字，"
+                '格式为：{"summary":"修复说明","changed_paths":'
+                '["src/harnessix/models/_chat_stream.py"],'
+                '"tests":[{"profile":"focused","passed":true}]}。'
+            ),
+        }
+    ),
+)
+
 _TASKS = {
     (item.task.task_id, item.task.task_version): item
-    for item in (_EMPTY_INCREMENTAL_CALL_ID_V1, _EMPTY_INCREMENTAL_CALL_ID_V2)
+    for item in (
+        _EMPTY_INCREMENTAL_CALL_ID_V1,
+        _EMPTY_INCREMENTAL_CALL_ID_V2,
+        _EMPTY_INCREMENTAL_CALL_ID_V3,
+    )
 }
 _TASK_VERSIONS = {
     task_id: tuple(sorted(version for candidate, version in _TASKS if candidate == task_id))

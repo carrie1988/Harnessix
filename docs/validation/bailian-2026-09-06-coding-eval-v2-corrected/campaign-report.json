@@ -1,0 +1,153 @@
+{
+  "spec_version": "harnessix.coding-eval-campaign-report/v1",
+  "plan": {
+    "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+    "campaign_id": "0a0ee9f3-8d4d-46cb-8e38-b1956a7068d8",
+    "task_id": "harnessix-openai-empty-incremental-call-id",
+    "task_version": 2,
+    "task_fingerprint": "011268310f3aac1b3025d643aaf8361b807bd9d9b55a19436caa05507d122bfb",
+    "environment": {
+      "harnessix_revision": "7e58c15a4be9780de5837c9706f986a8613b1420",
+      "provider": "openai_chat",
+      "model": "qwen3-coder-plus-2025-09-23",
+      "platform": "darwin",
+      "isolation": "private-managed-copy-no-os-sandbox"
+    },
+    "run_ids": [
+      "49bfa8c7-3463-4993-bf59-1dcac7cc1a89",
+      "8cca3113-f2b8-48d7-8d09-e376b79eb10c",
+      "18b1f7fc-9815-41e8-bdab-a7759b7df637"
+    ],
+    "price": {
+      "spec_version": "harnessix.price/v1",
+      "version": "aliyun-bailian-2026-09-06-qwen3-coder-plus-32k",
+      "source_url": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "billing_provider": "aliyun_bailian",
+      "model": "qwen3-coder-plus-2025-09-23",
+      "region": "cn-beijing",
+      "service_tier": "payg",
+      "inference_mode": "non-thinking",
+      "currency": "CNY",
+      "valid_from": "2026-09-06T00:00:00Z",
+      "valid_until": "2026-09-07T00:00:00Z",
+      "input_tokens_min": 1,
+      "input_tokens_max": 32000,
+      "input_price": {
+        "kind": "flat",
+        "per_million": "4"
+      },
+      "output_per_million": "16"
+    },
+    "billing_context": {
+      "billing_provider": "aliyun_bailian",
+      "region": "cn-beijing",
+      "service_tier": "payg",
+      "inference_mode": "non-thinking",
+      "cache_write_ttl": null
+    },
+    "created_at": "2026-09-06T15:11:15.664231Z"
+  },
+  "plan_fingerprint": "88300d00e9919f3cb33d045391c4aedd44be2964744619d4f7a2d1122154cebe",
+  "trials": [
+    {
+      "run_id": "49bfa8c7-3463-4993-bf59-1dcac7cc1a89",
+      "eval_report_sha256": "52d91302b318a9f3d49d951be2e5b258fe69aaa4ca84626a58a769266ee9d3bf",
+      "turn_id": "01a07746-b7f3-79fe-85b6-03c787829103",
+      "turn_status": "failed",
+      "classification": "budget",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "final_answer",
+        "forbidden_edit",
+        "runtime"
+      ],
+      "agent_failure_category": "budget",
+      "provider_failure": null,
+      "actual_models": [
+        "qwen3-coder-plus-2025-09-23"
+      ],
+      "model_attempts": 14,
+      "input_tokens": 116905,
+      "output_tokens": 1425,
+      "elapsed_seconds": 30.645999,
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.49042",
+      "started_at": "2026-09-06T15:11:54.934578Z",
+      "completed_at": "2026-09-06T15:12:25.580577Z"
+    },
+    {
+      "run_id": "8cca3113-f2b8-48d7-8d09-e376b79eb10c",
+      "eval_report_sha256": "b50c0b37a74cffd5f63f03709d8136f073dccc60f0549722794c7d6600d12f93",
+      "turn_id": "01a07747-2a33-75ee-b8dd-5b51802d569a",
+      "turn_status": "completed",
+      "classification": "task",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "final_answer"
+      ],
+      "agent_failure_category": null,
+      "provider_failure": null,
+      "actual_models": [
+        "qwen3-coder-plus-2025-09-23"
+      ],
+      "model_attempts": 12,
+      "input_tokens": 88936,
+      "output_tokens": 1766,
+      "elapsed_seconds": 29.680875,
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.384",
+      "started_at": "2026-09-06T15:12:25.587657Z",
+      "completed_at": "2026-09-06T15:12:55.268532Z"
+    },
+    {
+      "run_id": "18b1f7fc-9815-41e8-bdab-a7759b7df637",
+      "eval_report_sha256": "5524887dc20a087d4861f60862dc76d5fd0c1a02b2e4f22b74fe3dcd3551211e",
+      "turn_id": "01a07747-a132-7af2-8058-2aaeac477d9f",
+      "turn_status": "completed",
+      "classification": "task",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "final_answer"
+      ],
+      "agent_failure_category": null,
+      "provider_failure": null,
+      "actual_models": [
+        "qwen3-coder-plus-2025-09-23"
+      ],
+      "model_attempts": 12,
+      "input_tokens": 88821,
+      "output_tokens": 1612,
+      "elapsed_seconds": 28.148674,
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.381076",
+      "started_at": "2026-09-06T15:12:55.274877Z",
+      "completed_at": "2026-09-06T15:13:23.423551Z"
+    }
+  ],
+  "summary": {
+    "scheduled_trials": 3,
+    "passed_trials": 0,
+    "provider_failed_trials": 0,
+    "eval_infrastructure_failed_trials": 0,
+    "runtime_failed_trials": 0,
+    "task_failed_trials": 2,
+    "budget_failed_trials": 1,
+    "model_attempts": 38,
+    "input_tokens": 294662,
+    "output_tokens": 4803,
+    "elapsed_min_seconds": 28.148674,
+    "elapsed_p50_seconds": 29.680875,
+    "elapsed_p95_seconds": 30.645999,
+    "elapsed_max_seconds": 30.645999,
+    "cost_completeness": "complete",
+    "known_cost_currency": "CNY",
+    "known_cost_amount": "1.255496",
+    "incomplete_cost_run_ids": []
+  },
+  "completed_at": "2026-09-06T15:13:23.423551Z"
+}

@@ -1007,3 +1007,24 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 以上只验证实现和协议，不构成真实模型质量结论。c3d必须使用新Campaign和独立费用授权，不得复用或修改c3b证据。
 
 补充CI风险记录：c3b纯文档提交的首次CI在macOS出现一次`asyncio`子进程回收返回255、在Python 3.13低速运行中出现七项受管副本5秒操作超时；同一提交不改代码的失败任务重跑全部通过，随后c3c当前提交四项任务首轮通过。该现象不归因于本片功能，但保留为后续慢速Runner与进程回收稳定性风险，不用重跑结果删除首次失败事实。
+
+## 49. 0.5.5c3d 分页纠正后百炼真实Campaign验收（2026-09-06）
+
+实现提交`7e58c15`及CI [34039563970](https://github.com/carrie1988/Harnessix/actions/runs/34039563970)四项任务通过后，使用任务v2、百炼北京`qwen3-coder-plus-2025-09-23`、三个独立run、单步骤一次Provider尝试、100000累计Token和人民币10元试验间停止线完成新Campaign。
+
+- Campaign `0a0ee9f3-8d4d-46cb-8e38-b1956a7068d8`完成3/3，报告原子发布；
+- 38次尝试全部为`index=1`，无Provider、Eval基础设施、一般Runtime或未知成本失败；
+- 总输入294662、输出4803 Token，费用¥1.255496，时延P50 29.680875秒；
+- 三个run都在一次`tool_expected_revision_required`后复制上一页revision并成功分页，纠正采用率3/3；
+- 两个run正确修改唯一允许文件，行为/回归检查、测试反馈和Git核对均通过；一个run因错误探索在第14步超过Token预算，未执行Patch；
+- 两个完成run的最终回答带Markdown围栏且字段结构不符，严格结果仍为0/3。
+
+评分器只接受裸`EvalFinalAnswer` JSON，但任务v2 Prompt未公开字段与围栏要求，`AgentRuntime`也没有注入该约定。该输入/评分不闭合使严格0/3不可作为公平成功率。完整脱敏证据见[验证记录](validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)。
+
+## 50. 0.5.5c3e1 最终回答契约版本化验收（2026-09-06）
+
+任务Catalog新增v3并保持v1/v2不可变。v3预算仍为100000，只追加模型可见的裸JSON、禁止Markdown围栏及`summary/changed_paths/tests`精确结构。评分器、Runtime、Provider、Session、工具和数据库契约均不变化。
+
+自动回归核对版本集合、三个唯一指纹、v1/v2 Prompt相等、v3继承预算/仓库/检查/权限以及未知v4拒绝；历史物化、正式Runtime和Campaign执行定向套件通过。
+
+本地质量门禁：`make check`的Ruff、Mypy（144个源文件）通过，2546 passed、2 skipped；异步调试与警告严格套件2510项通过；Schema生成无差异；sdist/wheel和仓库外基础依赖环境通过，wheel SHA-256为`64a790d38faa3186357c83dd3243ebca5c36309f90598215a761ae73a8725c7c`。真实v3质量由独立c3e2 Campaign验证。

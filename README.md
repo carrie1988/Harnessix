@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a/c3b/c3c 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行、累计Token预算版本升级、任务v2真实复测及分页参数可纠正反馈。真实c3d复测、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a—c3d 已实现版本化Coding Eval、历史真实缺陷物化、同一Runtime/Worker评分、多试验证据聚合、受控真实Campaign、预算版本化及分页纠正真实验证。c3d进一步暴露最终回答Schema未进入模型上下文，任务v3已版本化公开严格JSON契约，真实v3基线和0.5.5d显式交付仍待完成。任意Shell、OS Sandbox和Agent CLI不属于当前已交付范围。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -340,6 +340,24 @@ c3a没有调用真实API。后续c3b已在新的独立Campaign中用相同精确
 - 错误作为普通Tool Result持久化并Replay，OpenAI-compatible与Anthropic实际SDK离线链路都能接收错误、提交新调用、复制前页revision并完成分页。
 
 本片只证明纠正协议可运行，不证明真实模型稳定采用反馈。有效质量基线仍需0.5.5c3d在新授权、新Campaign和独立run中验证。设计见[参数校验反馈研究](docs/research/tool-validation-feedback-applicability.md)和[ADR 0050](docs/adr/0050-model-correctable-tool-validation.md)。
+
+## 当前真实证据：分页纠正后三次复测（0.5.5c3d）
+
+- 固定提交`7e58c15`、任务v2和三个独立run，38个模型步骤全部只有一次Provider尝试；
+- 三个run均在一次`tool_expected_revision_required`后显式携带上一页revision并成功继续，真实纠正采用率3/3；
+- 两个run完成允许文件修改、行为/回归检查、测试和Git核对，另一个因前期错误探索在Patch执行前超过100000累计Token；
+- 严格结果为0/3：两个完成run的最终回答带Markdown围栏且字段结构错误。任务Prompt只写“按约定输出JSON”，当前模型请求未提供评分器要求的`summary/changed_paths/tests`契约，不能把该结果当作公平端到端成功率。
+
+Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.255496。完整脱敏证据见[分页纠正后真实基线](docs/validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)。既有Campaign保持不可变。
+
+## 当前已实现：最终回答契约版本化（0.5.5c3e1）
+
+- 保留任务v1/v2 Prompt和指纹，新增任务v3；
+- v3继承v2全部仓库、检查、权限、步骤、时间和100000累计Token边界，只在模型可见Prompt中给出严格裸JSON结构并禁止Markdown围栏；
+- 评分器保持严格，不剥离围栏、不猜字段，Git与测试机器事实仍是权威；
+- Catalog默认返回最新v3，旧Campaign继续按计划中的精确版本恢复。
+
+设计见[最终回答契约研究](docs/research/eval-final-answer-contract-applicability.md)和[ADR 0051](docs/adr/0051-versioned-eval-final-answer-contract.md)。0.5.5c须在独立v3 Campaign形成可比较基线后关闭。
 
 ## 当前已实现：0.1 Action Plane
 

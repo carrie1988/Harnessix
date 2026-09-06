@@ -597,3 +597,13 @@ assert definition.task.fingerprint == (
 - OpenAI-compatible和Anthropic配置、Provider尝试策略、工作区权限与审批策略无需变更。
 
 部署验收应在禁网环境运行直接工具、SQLite重开/Replay和两个SDK离线HTTP纠正闭环，并确认Schema生成无差异。不要在网关或客户端把`retryable=false`改写为基础设施重试；模型若修正参数，必须产生新的工具调用身份。真实c3d Campaign应从安装并验收该wheel的新进程启动，使用全新Campaign/run ID和独立费用授权。
+
+## 分页纠正后任务v2归档（0.5.5c3d）
+
+Campaign `0a0ee9f3-8d4d-46cb-8e38-b1956a7068d8`已完成并发布报告，只允许审计和只读恢复。三个run均采用专用分页错误并成功纠正；不得继续追加run、替换最终回答或把两个正确Patch的私有工作区直接视作源目录合入授权。脱敏计划与报告见[验证记录](validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)。
+
+## 最终回答契约任务v3升级（0.5.5c3e1）
+
+安装本片wheel不迁移数据库。Catalog包含v1、v2和v3；省略版本时选择最新v3，所有恢复和报告重算仍必须从持久计划读取精确版本与指纹。v3只改变任务Prompt，运行边界与v2一致。
+
+部署方不得在Provider网关剥离Markdown围栏或把自然语言转换为JSON，这会让线上请求与评测证据分叉。新Campaign必须在请求前固定v3指纹`6e7408ce04696ecdf7e72a6ea035504732e4cbdae03b663475a69b5cddd56724`，使用新Campaign/run ID和有效价格快照。已有v1/v2 Campaign继续使用原版本，不得升级原地恢复。

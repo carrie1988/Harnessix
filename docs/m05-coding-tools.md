@@ -988,3 +988,23 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 本片不修改工具输入/输出Schema、定义指纹、Agent v9、Provider v3、Session migration11、Action/Patch/Process/Artifact协议或数据库，也不发起真实API、SSH和中间件操作。它关闭的是运行时纠正协议，真实模型采用率和最终修复质量仍由c3d新Campaign验证。
 
 质量门禁为本地2546 passed、2 skipped，2510项异步严格回归，Schema无变化，隔离wheel SHA-256为`fc5b96e20734a5d51fd4b832091ab1dc4855f96dbaf21d895dfc7d36fb91cb33`；远端CI [34039025440](https://github.com/carrie1988/Harnessix/actions/runs/34039025440)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL均通过。
+
+## 47. 0.5.5c3d：分页纠正后真实Campaign
+
+[脱敏验证记录](validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)归档实现提交`7e58c15`上的任务v2三次独立试验。38个模型步骤全部只有一次Provider尝试，模型身份与Usage完整，总输入294662、输出4803 Token，已知估算成本¥1.255496。
+
+三个run都先遗漏分页revision、收到`tool_expected_revision_required`，随后用新调用显式携带上一成功结果的revision并读取成功。该序列证明c3c协议的真实采用率为3/3，已知不可纠正分页缺口关闭。
+
+其中两个run应用允许路径Patch、通过行为和身份检查、保持索引干净并读取Git状态/差异；另一个因前期错误探索在第14个响应记账后超过100000累计Token，Patch尚未准备，Runtime按预算停止并保留无变更工作区。该预算失败是正式资源边界下的模型路径结果，不通过隐式提高上限改写。
+
+两个代码闭环run均以Markdown围栏和自定义结构输出最终回答，严格`EvalFinalAnswer`解析失败。源码核对确认v1/v2 Prompt只写“按约定输出JSON”，而当前`ModelRequest`没有独立系统指令携带评分Schema。因此c3d完成工具纠正适用性验证，但0/3不是公平的端到端协议成功率。
+
+## 48. 0.5.5c3e1：版本化公开最终回答契约
+
+详细求证与决策见[最终回答契约研究](research/eval-final-answer-contract-applicability.md)和[ADR 0051](adr/0051-versioned-eval-final-answer-contract.md)。任务v3继承v2的固定来源、允许路径、隐藏检查、`focused` Profile、16步、100000累计Token、600秒和工具权限，只在Prompt追加：正文必须且只能是裸JSON对象、禁止Markdown围栏或其他文字，并给出`summary/changed_paths/tests`完整结构。
+
+评分器继续严格解析，不容忍围栏、不猜测字段；Git、测试和Session顺序仍是机器权威。任务v1/v2定义、Prompt和指纹不变，Catalog保存1/2/3三个版本并默认返回v3；恢复必须按计划精确版本执行。
+
+该变更不增加Eval专用系统消息，不修改Agent v9、Provider v3、Session migration11、工具Schema/指纹、数据库、审批、效果或费用契约。c3e2必须使用新Campaign与独立run形成真实v3基线，完成前不关闭0.5.5c。
+
+本地门禁为`make check` 2546 passed、2 skipped，2510项异步严格回归，Schema生成无差异；sdist/wheel构建及仓库外基础依赖安装通过，wheel SHA-256为`64a790d38faa3186357c83dd3243ebca5c36309f90598215a761ae73a8725c7c`。隔离环境未安装OpenAI/Anthropic SDK，仍可读取v1/v2/v3 Catalog并证明默认禁网入口不读取缺失配置。
