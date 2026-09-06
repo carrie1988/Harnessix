@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from harnessix.agent import runtime as runtime_module
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Budget,
@@ -24,6 +25,7 @@ from harnessix.patches import managed
 from harnessix.patches.agent_bridge import ManagedPatchBridge
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import answer
+from tests.deadlines import capture_deadlines
 from tests.patches.bridge_helpers import make_call
 from tests.patches.test_agent_bridge import case as case
 
@@ -249,16 +251,18 @@ async def test_kernel_cancel_drains_then_keeps_actual_effect(
                 thread.thread_id,
                 "取消写入",
                 request_id="cancel",
-                budget=Budget(timeout_seconds=0.4 if mode == "timeout" else 120),
+                budget=Budget(timeout_seconds=120),
             )
             await decide(runtime, thread.thread_id, turn)
+            deadlines = capture_deadlines(monkeypatch, runtime_module) if mode == "timeout" else []
             task = asyncio.create_task(runtime.resume_turn(thread.thread_id, turn.turn_id))
             try:
                 assert await asyncio.to_thread(blocked.wait, 4)
                 if mode == "token":
                     await runtime.cancel(thread.thread_id, turn.turn_id)
                 elif mode == "timeout":
-                    await asyncio.sleep(0.45)
+                    assert len(deadlines) == 1
+                    deadlines[0].reschedule(asyncio.get_running_loop().time())
                 else:
                     task.cancel()
                 for _ in range(15):
@@ -275,6 +279,8 @@ async def test_kernel_cancel_drains_then_keeps_actual_effect(
                     await task
             else:
                 await task
+            if mode == "timeout":
+                assert deadlines[0].expired()
             snapshot = await store.get_thread(thread.thread_id)
             settled = snapshot.turns[-1]
             assert finished.is_set()

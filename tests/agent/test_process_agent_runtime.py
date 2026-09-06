@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.agent import runtime as runtime_module
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Budget,
@@ -323,6 +324,7 @@ async def test_rejected_process_never_enters_worker_queue(tmp_path: Path) -> Non
 
 async def test_expired_pending_cancel_is_conservatively_interrupted(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     provider = ScriptedProvider([_process_step("print('not-run')"), answer()])
     service, bridge = await _service_and_bridge(tmp_path)
@@ -334,10 +336,10 @@ async def test_expired_pending_cancel_is_conservatively_interrupted(
                 thread.thread_id,
                 "执行任务",
                 request_id="process-expired",
-                budget=Budget(timeout_seconds=1),
+                budget=Budget(timeout_seconds=120),
             )
             assert pending.status is TurnStatus.WAITING_APPROVAL
-            await asyncio.sleep(1.1)
+            monkeypatch.setattr(runtime_module, "remaining_seconds", lambda turn: -1)
             approval = _approval(pending)
             with pytest.raises(KernelError) as expired:
                 await runtime.reply_approval(

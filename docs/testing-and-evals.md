@@ -825,4 +825,6 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 - sdist/wheel构建成功；仓库外基础wheel未安装OpenAI/Anthropic SDK，Eval契约/评分入口/Schema可导入，既有 **17个** 基础离线入口全部通过；wheel SHA-256为`37d6e3e82bb3ee0d286c3afa8069ee7c94199925e3ea5dc81bedabf56fc250bc`；
 - 没有新增Agent/Session/Action/Patch/Process/Artifact Schema或数据库迁移，没有模型请求、API Key、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。
 
+首轮提交`d6990eb`的CI 34021247915中，PostgreSQL、macOS和Python3.13通过，慢速Python3.12 Runner暴露两个既有Patch生命周期测试的墙钟假设：测试把整个Turn预算写死为0.4秒或1秒，却断言审批、持久化和多成员执行一定先到达故障注入点。该Runner分别在到达单文件审批前和整组第二成员前耗尽预算；不是Eval代码失败。测试现复用仓库既有`capture_deadlines`，先用正常120秒预算到达明确执行点，再推进真实`asyncio.Timeout`上下文；同类整组审批和Process审批过期用例也不再等待墙钟。34个相关参数场景在asyncio debug与warnings-as-error下连续5轮通过，随后全量`make check`再次得到 **2479 passed、2 skipped**。
+
 0.5.5a不执行隐藏检查或真实任务，不新增硬崩溃场景，累计仍为319。下一片0.5.5b固定Harnessix历史真实缺陷来源、可复现缺陷物化、宿主隐藏检查和同一Runtime/Worker驱动；完成前仍不宣称非示例仓库Coding Eval通过。

@@ -3,6 +3,7 @@ from threading import Event
 
 import pytest
 
+from harnessix.agent import runtime as runtime_module
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Budget, TurnStatus
 from harnessix.agent.reducer import replay
@@ -12,6 +13,7 @@ from harnessix.patches import managed
 from harnessix.patches.batch_agent_bridge import ManagedPatchBatchBridge
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.workspace import ReadOperation
+from tests.deadlines import capture_deadlines
 from tests.patches.kernel_batch_helpers import approval_of, batch_step, decide
 from tests.patches.test_kernel_patch import results
 from tests.patches.test_managed_batches import group_case as group_case
@@ -48,17 +50,19 @@ async def test_kernel_group_cancel_drains_and_preserves_prefix(
                 thread.thread_id,
                 "取消整组",
                 request_id="cancel",
-                budget=Budget(timeout_seconds=1 if mode == "timeout" else 120),
+                budget=Budget(timeout_seconds=120),
             )
             await decide(runtime, thread.thread_id, waiting)
             monkeypatch.setattr(managed, "_fault", hold)
+            deadlines = capture_deadlines(monkeypatch, runtime_module) if mode == "timeout" else []
             task = asyncio.create_task(runtime.resume_turn(thread.thread_id, waiting.turn_id))
             try:
                 assert await asyncio.to_thread(blocked.wait, 4)
                 if mode == "token":
                     await runtime.cancel(thread.thread_id, waiting.turn_id)
                 elif mode == "timeout":
-                    await asyncio.sleep(1.05)
+                    assert len(deadlines) == 1
+                    deadlines[0].reschedule(asyncio.get_running_loop().time())
                 else:
                     task.cancel()
                 for _ in range(15):
@@ -75,6 +79,8 @@ async def test_kernel_group_cancel_drains_and_preserves_prefix(
                     await task
             else:
                 await task
+            if mode == "timeout":
+                assert deadlines[0].expired()
             saved = await store.get_thread(thread.thread_id)
             turn = saved.turns[-1]
             assert done.is_set() and len(provider.requests) == 1
@@ -172,7 +178,10 @@ async def test_review_deadline_drains_without_persisting_decision(
         ) as runtime:
             thread = await runtime.create_thread(str(copy.workspace.root))
             waiting = await runtime.run_turn(
-                thread.thread_id, "复核超时", request_id="review", budget=Budget(timeout_seconds=1)
+                thread.thread_id,
+                "复核超时",
+                request_id="review",
+                budget=Budget(timeout_seconds=120),
             )
             original = bridge._groups.verify
 
@@ -185,16 +194,21 @@ async def test_review_deadline_drains_without_persisting_decision(
                     done.set()
 
             monkeypatch.setattr(bridge._groups, "verify", hold)
+            deadlines = capture_deadlines(monkeypatch, runtime_module)
             task = asyncio.create_task(decide(runtime, thread.thread_id, waiting))
             try:
                 assert await asyncio.to_thread(blocked.wait, 4)
-                await asyncio.sleep(1.05)
+                assert len(deadlines) == 1
+                deadlines[0].reschedule(asyncio.get_running_loop().time())
+                for _ in range(15):
+                    await asyncio.sleep(0)
                 assert not task.done() and not done.is_set()
             finally:
                 release.set()
             with pytest.raises(KernelError) as error:
                 await task
             assert error.value.code == "approval_expired" and done.is_set()
+            assert deadlines[0].expired()
             saved = (await runtime.store.get_thread(thread.thread_id)).turns[-1]
             assert approval_of(saved).decision is None
             assert (
