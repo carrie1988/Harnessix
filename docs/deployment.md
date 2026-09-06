@@ -586,3 +586,14 @@ assert definition.task.fingerprint == (
 任务v2 Campaign `ee2ccba3-20da-46c0-9e99-8b8597a461c3`已经完成并发布报告。该运行目录和0600配置只能用于审计与只读恢复；不得编辑状态、删除单次证据、替换run ID或继续发送请求。仓库仅保存脱敏计划、聚合报告和正式分析，见[任务v2验证记录](validation/bailian-2026-09-06-coding-eval-v2/README.md)。
 
 本次三个run均在分页工具校验错误连续重试后达到100000累计Token。运维侧不得通过复制配置并提高任务预算绕过该失败：费用停止位于完整试验之间，无法控制单个失控Turn；重复运行只会扩大输入历史和费用。后续部署顺序固定为先安装有界工具校验反馈实现并完成离线回归，再创建全新Campaign配置、Campaign ID和run ID。新的真实运行仍须单独复核模型、地域、价格有效期、请求次数和费用停止线。
+
+## 分页工具可纠正校验反馈升级（0.5.5c3c）
+
+本片是兼容行为修正，不执行数据库迁移，也不改变工具输入/输出Schema或定义指纹。安装新wheel后：
+
+- 尚未执行且满足专用条件的分页调用会得到`tool_expected_revision_required`；
+- 已持久化的旧`tool_invalid_arguments`结果保持原字节，不回写或重新分类；
+- Session重开继续从既有结果恢复，不重放失败工具；
+- OpenAI-compatible和Anthropic配置、Provider尝试策略、工作区权限与审批策略无需变更。
+
+部署验收应在禁网环境运行直接工具、SQLite重开/Replay和两个SDK离线HTTP纠正闭环，并确认Schema生成无差异。不要在网关或客户端把`retryable=false`改写为基础设施重试；模型若修正参数，必须产生新的工具调用身份。真实c3d Campaign应从安装并验收该wheel的新进程启动，使用全新Campaign/run ID和独立费用授权。

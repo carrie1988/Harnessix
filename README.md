@@ -332,6 +332,15 @@ c3a没有调用真实API。后续c3b已在新的独立Campaign中用相同精确
 
 完整脱敏计划、报告、逐run指标和根因见[任务v2真实基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)。该Campaign已经完成，禁止修改或追加试验。
 
+## 当前已实现：分页工具参数可纠正反馈（0.5.5c3c）
+
+- `read_file(start_line > 1)`和`list_files(offset > 0)`缺少`expected_revision`时，在其他参数全部有效的前提下返回稳定`tool_expected_revision_required`；
+- 消息只包含受信工具名和固定字段名，不回显路径、参数值、底层Pydantic错误或工作区内容；复合无效输入继续返回通用错误；
+- 严格分页并发身份、输入/输出Schema、工具定义指纹和副作用边界均未放宽，不从历史隐藏注入revision；
+- 错误作为普通Tool Result持久化并Replay，OpenAI-compatible与Anthropic实际SDK离线链路都能接收错误、提交新调用、复制前页revision并完成分页。
+
+本片只证明纠正协议可运行，不证明真实模型稳定采用反馈。有效质量基线仍需0.5.5c3d在新授权、新Campaign和独立run中验证。设计见[参数校验反馈研究](docs/research/tool-validation-feedback-applicability.md)和[ADR 0050](docs/adr/0050-model-correctable-tool-validation.md)。
+
 ## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
@@ -590,6 +599,7 @@ examples/                   可运行演示
 - [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
 - [Coding Agent多试验质量与成本研究](docs/research/eval-campaign.md)
 - [Coding Eval Token预算适用性研究](docs/research/eval-token-budget-applicability.md)
+- [Coding Tool参数校验反馈适用性研究](docs/research/tool-validation-feedback-applicability.md)
 - [演进为 Harnessix Code 的架构决策](docs/adr/0005-evolve-to-harnessix-code.md)
 - [Thread/Turn/Item/Event 决策](docs/adr/0006-thread-turn-item-event-model.md)
 - [Agent Loop 与取消决策](docs/adr/0007-agent-loop-and-cancellation.md)
@@ -615,6 +625,7 @@ examples/                   可运行演示
 - [Coding Eval多试验证据决策](docs/adr/0047-coding-eval-campaign-evidence.md)
 - [受控真实Coding Eval Campaign执行决策](docs/adr/0048-controlled-real-eval-campaign-execution.md)
 - [版本化Coding Eval Token预算决策](docs/adr/0049-versioned-eval-token-budget.md)
+- [模型可纠正工具参数校验反馈决策](docs/adr/0050-model-correctable-tool-validation.md)
 - [百炼北京三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval/README.md)
 - [百炼北京任务v2三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)
 

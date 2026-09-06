@@ -129,7 +129,7 @@ Patch 不是简单字符串替换。实施前必须明确本地效果类型如�
 
 复用 CancelToken 与现有错误分类。预期业务错误转换为有界 ToolResult；内部 Schema/运行时不变量破坏不能伪装成正常结果。
 
-初始错误包括 invalid_arguments、path_denied、not_found、wrong_file_type、invalid_utf8、limit_exceeded、workspace_changed、patch_conflict、process_timeout、output_unavailable；具体稳定代码在各切片契约测试中冻结。
+初始错误包括 invalid_arguments、path_denied、not_found、wrong_file_type、invalid_utf8、limit_exceeded、workspace_changed、patch_conflict、process_timeout、output_unavailable；c3c新增已知跨字段分页错误`tool_expected_revision_required`，其他参数错误仍使用通用代码。具体稳定代码在各切片契约测试中冻结。
 
 取消 asyncio.to_thread 不会停止底层线程。不能提前发布 cancelled 后让后台写继续发生；读写实现必须定义可观察的回收边界，无法确认效果时使用 unknown，而不是编造回滚成功。
 
@@ -974,3 +974,15 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 三次终态均为`budget`，但与任务v1失败位置不同。v2允许模型执行初始失败测试、读取Artifact及文件首页；模型随后以`start_line`或`offset`请求后续页，却没有携带上一成功结果的`expected_revision`。`ReadFileInput`和`ListFilesInput`的跨字段校验拒绝调用，Runtime只返回通用`tool_invalid_arguments`，模型无法获知具体修正动作并连续重试。每次新步骤重新发送增长后的完整历史和工具Schema，最终在第13—14步达到105435—114860累计Token。
 
 三个工作区均无修改且没有最终回答。因此本片仍不能产出有效模型成功率，也不能以继续提高Token上限解决。c3b关闭了原20000预算错误的定位阶段，同时把后续门禁改为：先在c3c保留严格校验并增加稳定、有界、不回显参数值的模型可纠正错误，再在c3d的新Campaign中验证纠正行为和任务质量；既有Campaign不可改写或追加run。
+
+## 46. 0.5.5c3c：模型可纠正的分页校验反馈
+
+完整源码研究与决策见[工具校验反馈研究](research/tool-validation-feedback-applicability.md)和[ADR 0050](adr/0050-model-correctable-tool-validation.md)。本片不建立通用错误反射器，只修复c3b三个独立run共同证明的跨字段缺口。
+
+`CodingToolRuntime`在原Pydantic输入校验失败后执行窄范围分类：`read_file.start_line > 1`或`list_files.offset > 0`、`expected_revision`缺失/null，并且用固定64位占位revision替换后其他字段可通过同一输入模型，才返回`tool_expected_revision_required`。缺少path、额外字段、错误类型、越界位置或非法非空revision仍返回`tool_invalid_arguments`。该二次校验只分类内存参数，不读取工作区或执行工具。
+
+公开消息固定为“`<tool>`后续页必须携带上一成功结果的revision作为expected_revision”。工具名来自宿主固定绑定，错误不包含参数值、路径、底层ValidationError或调用栈。`tool_`前缀经既有分类得到`FailureCategory.TOOL`；`retryable=false`禁止基础设施用相同输入自动重试，模型必须创建新调用。
+
+错误沿既有`ToolResultContent`事务写入Session。OpenAI-compatible使用`role=tool`保留规范error，Anthropic使用`tool_result`并设置`is_error=true`；重开与Replay读取原事实，不重新格式化或执行失败调用。确定性Provider以及两个实际SDK的离线HTTP链路均覆盖“首页成功→遗漏revision失败→读取错误→显式复制上一页revision→后续页成功→最终回答”。
+
+本片不修改工具输入/输出Schema、定义指纹、Agent v9、Provider v3、Session migration11、Action/Patch/Process/Artifact协议或数据库，也不发起真实API、SSH和中间件操作。它关闭的是运行时纠正协议，真实模型采用率和最终修复质量仍由c3d新Campaign验证。

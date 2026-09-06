@@ -984,3 +984,23 @@ c2a测试全部使用可计价确定性Provider或故障替身，不使用网络
 - 三个工作区均无变更、没有最终回答，行为检查失败而身份回归检查通过。
 
 Session行为分析显示，三个模型在首次分页成功后均遗漏后续页所需的`expected_revision`，至少连续出现3、4和8次相同类型的无效读取。通用`tool_invalid_arguments`没有暴露参数值或内部异常，但也没有告诉模型跨字段要求，导致错误无法自纠正且完整历史持续增长。该Campaign证明任务v2消除了原20000预算的过早停止，却没有形成可解释编码质量基线。后续必须先以离线测试证明有界错误能经OpenAI-compatible和Anthropic映射进入模型历史并被纠正，再申请新Campaign；禁止在本Campaign上追加付费试验。完整证据见[验证记录](validation/bailian-2026-09-06-coding-eval-v2/README.md)。
+
+## 48. 0.5.5c3c 分页工具可纠正校验反馈验收（2026-09-06）
+
+本片净增 **8项** 自动回归，并强化已有Anthropic映射断言：
+
+- `read_file`缺少/null revision和`list_files`缺少revision返回稳定专用错误；消息不回显路径canary；
+- 缺少path、额外字段等复合无效输入仍返回通用错误，避免误报单一修正；
+- 确定性Agent循环持久化失败结果，从首个成功结果复制revision后完成第二页读取；SQLite重开与Replay一致；
+- OpenAI-compatible与Anthropic规范映射都保留code/message/category，Anthropic同时标记`is_error=true`；
+- 两个实际Provider SDK通过离线HTTP各完成四个模型步骤的纠正闭环，`max_attempts=1`且所有流均关闭；不访问真实Provider。
+
+本地质量门禁：
+
+- `make check`：Ruff、Mypy（**144个源文件**）通过，**2546 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2510项全部通过**；
+- Schema生成器运行后无公共Schema变化；
+- sdist/wheel构建成功，仓库外基础依赖环境未安装OpenAI/Anthropic SDK时专用错误行为和默认禁网CLI均通过；wheel SHA-256为`fc5b96e20734a5d51fd4b832091ab1dc4855f96dbaf21d895dfc7d36fb91cb33`；
+- 本片没有真实API请求、API Key读取、SSH、远程服务器或中间件操作。
+
+以上只验证实现和协议，不构成真实模型质量结论。c3d必须使用新Campaign和独立费用授权，不得复用或修改c3b证据。

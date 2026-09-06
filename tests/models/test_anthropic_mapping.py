@@ -4,6 +4,7 @@ from uuid import uuid4
 import httpx2
 import pytest
 
+from harnessix.agent.errors import AgentFailure, FailureCategory
 from harnessix.agent.models import Item, ItemStatus, TextContent, ToolResultContent
 from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._history import InvalidModelRequest
@@ -16,6 +17,10 @@ from tests.models.test_chat_mapping import call, item
 def test_parallel_results_form_one_user_message() -> None:
     request = model_request(with_tools=True)
     first, second = call(), call()
+    failure = AgentFailure(
+        code="tool_expected_revision_required",
+        message="read_file后续页必须携带上一成功结果的revision作为expected_revision",
+    )
     request = request.model_copy(
         update={
             "history": (
@@ -24,7 +29,7 @@ def test_parallel_results_form_one_user_message() -> None:
                 item(first),
                 item(second),
                 item(ToolResultContent(call_id=first.call_id, outcome="succeeded", output=1)),
-                item(ToolResultContent(call_id=second.call_id, outcome="failed")),
+                item(ToolResultContent(call_id=second.call_id, outcome="failed", error=failure)),
             )
         }
     )
@@ -37,6 +42,12 @@ def test_parallel_results_form_one_user_message() -> None:
     assert len({b["id"] for b in uses}) == 2
     assert [b["is_error"] for b in results] == [False, True]
     assert json.loads(results[0]["content"])["output"] == 1
+    assert json.loads(results[1]["content"])["error"] == {
+        "code": failure.code,
+        "message": failure.message,
+        "retryable": False,
+        "category": FailureCategory.TOOL.value,
+    }
     assert names[body["tools"][0]["name"]] == "test.read"
     assert body["tool_choice"] == {"type": "auto", "disable_parallel_tool_use": False}
 

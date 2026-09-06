@@ -106,13 +106,32 @@ async def test_denied_paths(tmp_path, path):
         {"path": "x", "start_line": True},
         {"path": "x", "max_lines": "2"},
         {"path": "x", "unknown": 1},
-        {"path": "x", "start_line": 2},
+        {"start_line": 2},
+        {"path": "x", "start_line": 2, "unknown": 1},
         {},
     ],
 )
 async def test_strict_arguments(tmp_path, arguments):
     async with CodingToolRuntime(tmp_path) as tools:
         assert (await execute(tools, **arguments)).error.code == "tool_invalid_arguments"
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        ("read_file", {"path": "private-canary.py", "start_line": 2}),
+        ("read_file", {"path": "private-canary.py", "start_line": 2, "expected_revision": None}),
+        ("list_files", {"path": "private-canary", "offset": 1}),
+    ],
+)
+async def test_page_without_revision_returns_bounded_correction(tmp_path, name, arguments):
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, name, **arguments)
+    assert result.error.code == "tool_expected_revision_required"
+    assert result.error.message == (
+        f"{name}后续页必须携带上一成功结果的revision作为expected_revision"
+    )
+    assert "private-canary" not in result.model_dump_json()
 
 
 @pytest.mark.parametrize("kind", ["symlink", "parent_symlink", "hardlink", "fifo", "directory"])

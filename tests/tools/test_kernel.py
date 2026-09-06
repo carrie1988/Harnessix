@@ -34,6 +34,65 @@ def read_step():
     ]
 
 
+class PagingCorrectionProvider:
+    def __init__(self) -> None:
+        self.requests = []
+
+    async def stream(self, request, cancel):
+        self.requests.append(request)
+        results = [
+            item.content for item in request.history if isinstance(item.content, ToolResultContent)
+        ]
+        if len(self.requests) == 1:
+            arguments = {"path": "main.py", "max_lines": 1}
+        elif len(self.requests) == 2:
+            assert results[-1].outcome == "succeeded"
+            arguments = {"path": "main.py", "start_line": 2}
+        elif len(self.requests) == 3:
+            assert results[-1].error is not None
+            assert results[-1].error.code == "tool_expected_revision_required"
+            assert "expected_revision" in results[-1].error.message
+            arguments = {
+                "path": "main.py",
+                "start_line": 2,
+                "expected_revision": results[0].output["revision"],
+            }
+        else:
+            for event in answer("分页读取完成"):
+                yield event
+            return
+        yield ResponseStarted(response_id=f"paging-{len(self.requests)}")
+        yield ToolCallCompleted(
+            call_id=f"paging-{len(self.requests)}",
+            tool="read_file",
+            arguments=arguments,
+        )
+        yield ResponseCompleted(finish_reason="tool_calls")
+
+
+async def test_kernel_persists_actionable_paging_error_and_model_can_correct(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "main.py").write_text("第一行\n第二行\n", encoding="utf-8")
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    provider = PagingCorrectionProvider()
+    async with CodingToolRuntime(root) as tools:
+        async with AgentRuntime(store, provider, tools) as runtime:
+            thread = await runtime.create_thread(str(root))
+            turn = await runtime.run_turn(thread.thread_id, "分页读取", request_id="paging")
+    results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
+    assert turn.status == TurnStatus.COMPLETED
+    assert [result.outcome for result in results] == ["succeeded", "failed", "succeeded"]
+    assert results[1].error is not None
+    assert results[1].error.code == "tool_expected_revision_required"
+    assert results[2].output["text"] == "第二行\n"
+    reopened = SQLiteSessionStore(store.path)
+    await reopened.initialize()
+    snapshot = await reopened.get_thread(thread.thread_id)
+    assert snapshot.turns[-1] == turn
+    assert replay(await reopened.events(thread.thread_id)) == snapshot
+
+
 async def test_sdk_kernel_real_files_reopen_and_replay(tmp_path, monkeypatch):
     monkeypatch.setenv("HARNESSIX_READ_FIXTURE_KEY", "not-a-real-credential")
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)

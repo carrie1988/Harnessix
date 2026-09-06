@@ -1,7 +1,9 @@
+import json
 from uuid import uuid4
 
 import pytest
 
+from harnessix.agent.errors import AgentFailure, FailureCategory
 from harnessix.agent.models import (
     Item,
     ItemContent,
@@ -61,6 +63,36 @@ def test_parallel_history_and_stable_aliases() -> None:
     assert "max_tokens" in body and "max_completion_tokens" not in body
     assert tool_alias("test.read") != tool_alias("test_read")
     assert len(tool_alias("工具名" * 50)) <= 64
+
+
+def test_failed_tool_result_keeps_actionable_error_on_openai_wire() -> None:
+    invoked = call()
+    failure = AgentFailure(
+        code="tool_expected_revision_required",
+        message="read_file后续页必须携带上一成功结果的revision作为expected_revision",
+    )
+    request = model_request(with_tools=True)
+    request = request.model_copy(
+        update={
+            "history": (
+                *request.history,
+                item(invoked),
+                item(ToolResultContent(call_id=invoked.call_id, outcome="failed", error=failure)),
+            )
+        }
+    )
+    body, _ = build_request(
+        request, OpenAIChatConfig(model="test", output_token_parameter="max_tokens")
+    )
+    result = body["messages"][-1]
+    content = json.loads(result["content"])
+    assert result["role"] == "tool"
+    assert content["error"] == {
+        "code": failure.code,
+        "message": failure.message,
+        "retryable": False,
+        "category": FailureCategory.TOOL.value,
+    }
 
 
 @pytest.mark.parametrize(

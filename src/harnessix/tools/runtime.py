@@ -129,6 +129,31 @@ _GIT_BINDINGS = (
 )
 
 
+def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) -> tuple[str, str]:
+    if binding.input_model is ReadFileInput:
+        position = arguments.get("start_line", 1)
+        first_position = 1
+    elif binding.input_model is ListFilesInput:
+        position = arguments.get("offset", 0)
+        first_position = 0
+    else:
+        return "tool_invalid_arguments", "工具参数不符合契约"
+    if (
+        type(position) is not int
+        or position <= first_position
+        or arguments.get("expected_revision") is not None
+    ):
+        return "tool_invalid_arguments", "工具参数不符合契约"
+    try:
+        binding.input_model.model_validate({**arguments, "expected_revision": "0" * 64})
+    except ValidationError:
+        return "tool_invalid_arguments", "工具参数不符合契约"
+    return (
+        "tool_expected_revision_required",
+        f"{binding.name}后续页必须携带上一成功结果的revision作为expected_revision",
+    )
+
+
 class CodingToolRuntime:
     """固定只读绑定；宿主拥有能力选择，Kernel 拥有审批与调度。"""
 
@@ -305,7 +330,8 @@ class CodingToolRuntime:
         try:
             args = binding.input_model.model_validate(call.arguments)
         except ValidationError:
-            return self._failure(call, "tool_invalid_arguments", "工具参数不符合契约")
+            code, message = _argument_failure(binding, call.arguments)
+            return self._failure(call, code, message)
         try:
             if isinstance(args, GitStatusInput | GitDiffInput):
                 output = await cancel.run(self._execute_git(args, cancel))
