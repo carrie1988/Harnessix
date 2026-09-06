@@ -542,3 +542,5 @@ uv run harnessix coding-eval-campaign \
 退出结果仅包含固定原因和计数：`completed`表示全部试验及聚合报告发布；`fee_limit_reached`或`cost_unknown`表示持久停止；`runtime_failed`需要离线检查受限运行目录中的正式证据。供应商错误正文不会打印到CLI。`campaign-report.json`和各run目录包含内部身份、代码、Session及账本，应纳入敏感工程数据访问控制。
 
 费用停止线仅在完整试验之间核对。已开始试验可能超过阈值，供应商仍可能收费；生产运维还应独立配置云账户预算告警并对账。当前没有请求级硬费用中止或OS Sandbox，不得把本入口暴露为接收不受信仓库的多租户服务。
+
+首轮百炼北京三次运行的配置边界、脱敏报告、费用和预算失败根因见[验证记录](validation/bailian-2026-09-06-coding-eval/README.md)。该Campaign已经完成，禁止通过编辑状态或追加run改写基线；预算修复必须提升任务版本并创建新Campaign。

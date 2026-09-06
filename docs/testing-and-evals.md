@@ -934,4 +934,19 @@ uv run pytest \
 - sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign执行契约与入口，默认禁网CLI不读取不存在的配置，wheel SHA-256为`bfc78d6681d37dfd5f4f7d67745cdf856a0a5bede3cc7b7c50e4902b45ff98e4`；
 - 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema。
 
-c2a测试全部使用可计价确定性Provider或故障替身，不使用网络、真实API Key、SSH、远程服务器或中间件。费用门禁只在完整试验之间生效，不证明单请求实时硬额度；c2b必须在实现提交和CI通过后，使用固定百炼北京精确模型、三个独立run、Provider不自动重试及人民币10元停止线生成脱敏真实证据。
+c2a测试全部使用可计价确定性Provider或故障替身，不使用网络、真实API Key、SSH、远程服务器或中间件。费用门禁只在完整试验之间生效，不证明单请求实时硬额度；随后c2b已在实现提交和CI通过后，使用固定百炼北京精确模型、三个独立run、Provider不自动重试及人民币10元停止线生成脱敏真实证据，见下一节。
+
+## 45. 0.5.5c2b 百炼北京三次真实Campaign验收（2026-09-06）
+
+执行前置门禁：实现提交`bbfd446`本地`make check`为2534 passed、2 skipped，异步调试套件2498项通过，基础wheel隔离导入通过；远端CI [34034578492](https://github.com/carrie1988/Harnessix/actions/runs/34034578492)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务全部通过。
+
+真实Campaign固定百炼北京`qwen3-coder-plus-2025-09-23`、3个独立run、单步骤最多1次Provider尝试、4096输出上限和人民币10元试验间停止线。执行结果：
+
+- Campaign状态completed，计划3次、实际完成3次、聚合报告原子发布；
+- 15个模型步骤均只有attempt index 1，没有自动重试；实际模型身份和Usage全部完整；
+- 总输入63129、输出1327 Token，已知估算成本¥0.273748，费用门禁未触发；
+- 三次主分类均为budget，Provider、Eval基础设施、一般Runtime和未知成本均为0；
+- 各run在第5步累计Token达到21429—21567，超过任务v1的20000预算，均在目标实现读取工具执行前终结；
+- 三个工作区均无变更，目标行为检查失败、身份回归检查通过，没有最终结构化回答。
+
+因此0/3不能解释为模型编码失败率，只能作为预算错误基线。Campaign基础设施、真实Function Calling、Usage映射、模型身份核对和费用聚合通过实测；任务预算适用性未通过。完整脱敏证据见[验证记录](validation/bailian-2026-09-06-coding-eval/README.md)。后续0.5.5c3需要任务版本升级和新Campaign，追加付费试验必须重新授权。

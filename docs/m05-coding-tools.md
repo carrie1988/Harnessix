@@ -938,4 +938,14 @@ runs/<run-id>/...          # 每次试验的0.5.5b2完整事实
 
 若单次报告完成后Campaign尚未登记该run，重用原run ID进入b2运行器的completed只读路径，再补完成前缀。若Campaign报告已发布但状态尚未completed，重开会重算全部试验、重建期望报告并核对相等后补写摘要。计划、状态、报告、金额或源码revision漂移均fail closed。
 
-新增`coding-eval-campaign-run-config-v1`、`coding-eval-campaign-execution-state-v1`和`coding-eval-campaign-run-report-v1`三份Schema。c2a只完成离线正式基础设施，c2b再在授权的三次试验和人民币10元停止线内形成百炼真实基线；当前不提供OS Sandbox、供应商账单对账或实时费用硬上限。
+新增`coding-eval-campaign-run-config-v1`、`coding-eval-campaign-execution-state-v1`和`coding-eval-campaign-run-report-v1`三份Schema。c2a只完成离线正式基础设施；随后c2b已在授权的三次试验和人民币10元停止线内形成百炼真实基线，结果见下一节。当前不提供OS Sandbox、供应商账单对账或实时费用硬上限。
+
+## 43. 0.5.5c2b：百炼北京首轮三次真实基线
+
+正式记录见[验证报告](validation/bailian-2026-09-06-coding-eval/README.md)。实现提交`bbfd446`的四项CI通过后，Campaign固定`qwen3-coder-plus-2025-09-23`、三个独立run、单Provider尝试、4096单次输出上限和人民币10元试验间停止线。计划与报告已脱敏归档，配置及凭据没有进入仓库。
+
+三个run均完成证据收集，但主分类全部为`budget`，成功率0/3。合计15次模型调用、63129输入Token、1327输出Token、完整已知费用¥0.273748；没有SDK重试、Provider失败、未知Usage或费用停止。
+
+三次模型行为高度一致：运行focused测试、读取失败Artifact、定位OpenAI模块并读取`openai_chat.py`，随后请求读取真正的`_chat_stream.py`。第五次模型响应计入后，Turn累计报告Token达到21429—21567，超过任务v1固定的20000上限，Runtime在执行该读取前确定失败。工作区无变更，最终行为检查失败、身份回归通过且无最终回答。
+
+该结果暴露的是任务预算与真实工具Schema/消息历史开销不适配。确定性Provider每步只报告夹具Token，原离线测试不能证明真实预算足够。不得通过提高现有Campaign状态金额、修改原任务指纹或追加run掩盖失败；0.5.5c3先研究主流Agent预算/上下文处理，版本化升级任务预算并补临界测试，再在新的明确费用授权下重跑可比较Campaign。0.5.5d在该门禁关闭后继续。

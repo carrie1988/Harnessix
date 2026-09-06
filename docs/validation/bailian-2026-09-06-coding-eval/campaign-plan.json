@@ -1,0 +1,47 @@
+{
+  "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+  "campaign_id": "765d1c97-75fe-4e37-baa3-8db4950ad57b",
+  "task_id": "harnessix-openai-empty-incremental-call-id",
+  "task_version": 1,
+  "task_fingerprint": "ea75be4219574ff398cc252d3b5a8f870cea2f7cbb20cbe51e12e7997e921297",
+  "environment": {
+    "harnessix_revision": "bbfd446707acbd9f945657ad96a6556d24af5df5",
+    "provider": "openai_chat",
+    "model": "qwen3-coder-plus-2025-09-23",
+    "platform": "darwin",
+    "isolation": "private-managed-copy-no-os-sandbox"
+  },
+  "run_ids": [
+    "6be6506a-d9fc-4448-9cc7-9bbc0d8765d3",
+    "196e4e63-c83b-415d-8513-e52c959721ca",
+    "f863e2df-e616-4809-b5f3-e594dc5ed37c"
+  ],
+  "price": {
+    "spec_version": "harnessix.price/v1",
+    "version": "aliyun-bailian-2026-09-06-qwen3-coder-plus-32k",
+    "source_url": "https://help.aliyun.com/zh/model-studio/model-pricing",
+    "billing_provider": "aliyun_bailian",
+    "model": "qwen3-coder-plus-2025-09-23",
+    "region": "cn-beijing",
+    "service_tier": "payg",
+    "inference_mode": "non-thinking",
+    "currency": "CNY",
+    "valid_from": "2026-09-06T00:00:00Z",
+    "valid_until": "2026-09-07T00:00:00Z",
+    "input_tokens_min": 1,
+    "input_tokens_max": 32000,
+    "input_price": {
+      "kind": "flat",
+      "per_million": "4"
+    },
+    "output_per_million": "16"
+  },
+  "billing_context": {
+    "billing_provider": "aliyun_bailian",
+    "region": "cn-beijing",
+    "service_tier": "payg",
+    "inference_mode": "non-thinking",
+    "cache_write_ttl": null
+  },
+  "created_at": "2026-09-06T13:00:41.337104Z"
+}
