@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a—c3d 已实现版本化Coding Eval、历史真实缺陷物化、同一Runtime/Worker评分、多试验证据聚合、受控真实Campaign、预算版本化及分页纠正真实验证。c3d进一步暴露最终回答Schema未进入模型上下文，任务v3已版本化公开严格JSON契约，真实v3基线和0.5.5d显式交付仍待完成。任意Shell、OS Sandbox和Agent CLI不属于当前已交付范围。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5.1—0.5.4c Coding Tool纵向切片。0.5.5已完成版本化真实缺陷Eval、同一Runtime/Worker评分、真实Provider多试验、质量/成本基线和受控显式交付：任务v3百炼北京3/3严格通过；通过结果可生成私有单文件变更包，经来源、树、干净状态、前镜像和批准指纹复核后原子写入目标工作树，并支持崩溃核对。整体0.5仍未完成任意Shell、统一Tool Error、读写并发治理等其他路线图项目；OS Sandbox、通用多文件交付、自动commit/push和Agent CLI也不属于当前范围。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -357,7 +357,27 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 评分器保持严格，不剥离围栏、不猜字段，Git与测试机器事实仍是权威；
 - Catalog默认返回最新v3，旧Campaign继续按计划中的精确版本恢复。
 
-设计见[最终回答契约研究](docs/research/eval-final-answer-contract-applicability.md)和[ADR 0051](docs/adr/0051-versioned-eval-final-answer-contract.md)。0.5.5c须在独立v3 Campaign形成可比较基线后关闭。
+设计见[最终回答契约研究](docs/research/eval-final-answer-contract-applicability.md)和[ADR 0051](docs/adr/0051-versioned-eval-final-answer-contract.md)。独立v3 Campaign结果见下一节。
+
+## 当前真实证据：任务v3三次严格通过（0.5.5c3e2）
+
+- 固定提交`9d0be66`、任务v3与三个独立run，31次模型尝试全部为各步骤`index=1`；
+- 三个run均采用`tool_expected_revision_required`完成分页纠正，只修改唯一允许文件，并通过行为、身份回归、测试反馈、Git反馈及裸JSON最终回答检查；
+- 严格结果3/3，输入193539、输出3392 Token，P50 23.431778秒，完整已知估算费用¥0.828428；
+- Provider、Eval基础设施、Runtime、任务和预算失败均为0，没有SDK自动重试或未知成本。
+
+完整计划、聚合报告、单次指标和脱敏边界见[任务v3真实质量基线](docs/validation/bailian-2026-09-06-coding-eval-v3/README.md)。该结果只适用于固定历史任务，不外推为任意仓库成功率。
+
+## 当前已实现：受控变更包与显式工作树合入（0.5.5d）
+
+- `build_coding_eval_change_package`只接受`completed + passed`运行，重算状态、报告摘要、Git实况、受管Copy Manifest与前后完整镜像；当前只支持一个允许的已有UTF-8普通文件；
+- `CodingEvalChangePackage`绑定任务、run、来源commit/tree、报告、路径、0644/0755权限、前后SHA-256和完整镜像；相同证据重复构建得到相同指纹，0600私有包不进入模型或脱敏报告；
+- `CodingEvalDeliveryStore.prepare`要求目标origin、HEAD、tree OID、规范树摘要、Workspace scope和前镜像精确匹配，且staged、unstaged、untracked全部为空；
+- 计划完整字段形成`approval_fingerprint`，只有匹配的显式`ApprovalRecord(APPROVED)`可执行；拒绝、错误指纹或脏工作区均不写目标；
+- 执行采用同目录临时文件、文件`fsync`、持久临时inode意图、最终复核、原子替换与目录`fsync`，只修改工作树，不改index、不创建commit、不运行Hook；
+- 重开通过前镜像、后镜像与临时inode区分安全重试、已应用、冲突和未知，不自动覆盖第三镜像或归因外部同内容写入。
+
+真实历史通过run已生成稳定包，并在精确历史checkout上完成“脏工作区拒绝→显式批准→一次合入→幂等重开→Diff摘要一致→行为与身份隐藏检查通过”的离线验收。设计见[源码求证](docs/research/eval-change-delivery.md)与[ADR 0052](docs/adr/0052-controlled-eval-change-delivery.md)。该能力不是三方合并、自动commit/push、通用多文件发布或跨主机仓库锁。
 
 ## 当前已实现：0.1 Action Plane
 

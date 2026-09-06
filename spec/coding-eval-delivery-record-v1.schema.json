@@ -1,0 +1,355 @@
+{
+  "$defs": {
+    "ApprovalOutcome": {
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "title": "ApprovalOutcome",
+      "type": "string"
+    },
+    "ApprovalRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/ApprovalOutcome"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "request_fingerprint": {
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor",
+        "request_fingerprint"
+      ],
+      "title": "ApprovalRecord",
+      "type": "object"
+    },
+    "CodingEvalDeliveryPlan": {
+      "additionalProperties": false,
+      "description": "目标仓库无副作用预检产生、供人工批准绑定的不可变计划。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval-delivery-plan/v1",
+          "default": "harnessix.coding-eval-delivery-plan/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "delivery_id": {
+          "format": "uuid",
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "package_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Package Fingerprint",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "task_version": {
+          "minimum": 1,
+          "title": "Task Version",
+          "type": "integer"
+        },
+        "target_repository": {
+          "$ref": "#/$defs/EvalRepository"
+        },
+        "target_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Target Scope",
+          "type": "string"
+        },
+        "target_tree_oid": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Target Tree Oid",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "source_mode": {
+          "title": "Source Mode",
+          "type": "integer"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "approval_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Approval Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "package_fingerprint",
+        "task_id",
+        "task_version",
+        "target_repository",
+        "target_scope",
+        "target_tree_oid",
+        "path",
+        "source_mode",
+        "before_sha256",
+        "after_sha256",
+        "created_at",
+        "approval_fingerprint"
+      ],
+      "title": "CodingEvalDeliveryPlan",
+      "type": "object"
+    },
+    "CodingEvalDeliveryTransition": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "from_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "pending_approval",
+                "approved",
+                "rejected",
+                "applying",
+                "applied",
+                "conflicted",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "From Status"
+        },
+        "to_status": {
+          "enum": [
+            "pending_approval",
+            "approved",
+            "rejected",
+            "applying",
+            "applied",
+            "conflicted",
+            "unknown"
+          ],
+          "title": "To Status",
+          "type": "string"
+        },
+        "reason": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "from_status",
+        "to_status",
+        "reason",
+        "occurred_at"
+      ],
+      "title": "CodingEvalDeliveryTransition",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "原子重写的完整交付状态与转换历史，不保存目标绝对路径。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-delivery-record/v1",
+      "default": "harnessix.coding-eval-delivery-record/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "delivery_id": {
+      "format": "uuid",
+      "title": "Delivery Id",
+      "type": "string"
+    },
+    "plan": {
+      "$ref": "#/$defs/CodingEvalDeliveryPlan"
+    },
+    "status": {
+      "enum": [
+        "pending_approval",
+        "approved",
+        "rejected",
+        "applying",
+        "applied",
+        "conflicted",
+        "unknown"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "approval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalRecord"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "temporary_identity": {
+      "anyOf": [
+        {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Temporary Identity"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "transitions": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalDeliveryTransition"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Transitions",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "record_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "delivery_id",
+    "plan",
+    "status",
+    "transitions",
+    "created_at",
+    "updated_at",
+    "record_fingerprint"
+  ],
+  "title": "CodingEvalDeliveryRecord",
+  "type": "object"
+}

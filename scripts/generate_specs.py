@@ -30,6 +30,11 @@ from harnessix.evals.contracts import (
     CodingEvalTask,
     EvalFinalAnswer,
 )
+from harnessix.evals.delivery_contracts import (
+    CodingEvalChangePackage,
+    CodingEvalDeliveryPlan,
+    CodingEvalDeliveryRecord,
+)
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
@@ -147,6 +152,9 @@ def main() -> None:
         ("coding-eval-campaign-run-config", CodingEvalCampaignRunConfig),
         ("coding-eval-campaign-execution-state", CodingEvalCampaignExecutionState),
         ("coding-eval-campaign-run-report", CodingEvalCampaignRunReport),
+        ("coding-eval-change-package", CodingEvalChangePackage),
+        ("coding-eval-delivery-plan", CodingEvalDeliveryPlan),
+        ("coding-eval-delivery-record", CodingEvalDeliveryRecord),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

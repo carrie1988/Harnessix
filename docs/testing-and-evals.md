@@ -1028,3 +1028,34 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 自动回归核对版本集合、三个唯一指纹、v1/v2 Prompt相等、v3继承预算/仓库/检查/权限以及未知v4拒绝；历史物化、正式Runtime和Campaign执行定向套件通过。
 
 本地质量门禁：`make check`的Ruff、Mypy（144个源文件）通过，2546 passed、2 skipped；异步调试与警告严格套件2510项通过；Schema生成无差异；sdist/wheel和仓库外基础依赖环境通过，wheel SHA-256为`64a790d38faa3186357c83dd3243ebca5c36309f90598215a761ae73a8725c7c`。真实v3质量由独立c3e2 Campaign验证。
+
+## 51. 0.5.5c3e2 任务v3百炼真实Campaign验收（2026-09-06）
+
+实现提交`9d0be66`及CI [34042784117](https://github.com/carrie1988/Harnessix/actions/runs/34042784117)四项任务通过后，使用任务v3、百炼北京`qwen3-coder-plus-2025-09-23`、三个独立run、单步骤一次Provider尝试、100000累计Token和人民币10元试验间停止线完成新Campaign。
+
+- Campaign `b98a76ad-a586-4b98-aa95-fd62276380f6`完成3/3，报告原子发布；
+- 31次模型尝试全部为`index=1`，无SDK自动重试、Provider、Eval基础设施、Runtime、任务、预算或未知成本失败；
+- 总输入193539、输出3392 Token，费用¥0.828428，时延min/P50/P95/max为23.217640/23.431778/25.270868/25.270868秒；
+- 三个run均完成分页纠正、允许文件Patch、行为/回归检查、测试和Git核对；
+- 三个最终回答均为裸JSON，严格字段、路径和focused结果与机器事实一致。
+
+私有Session字段级审计进一步确认：三个run都先收到一次`tool_expected_revision_required`，随后携带上一成功页revision；全部尝试index为1。仓库只归档脱敏计划和聚合报告，见[验证记录](validation/bailian-2026-09-06-coding-eval-v3/README.md)。任务v3相对c3d只公开最终回答结构，没有放宽评分器或修改代码检查，因此本结果关闭0.5.5c真实质量门禁。
+
+## 52. 0.5.5d 受控变更交付验收（2026-09-07）
+
+新增`delivery_contracts.py`、`delivery.py`、三份公开Schema和专用测试套件。测试覆盖：
+
+- 只有completed、passed、14项检查完整、报告摘要匹配且工作区未漂移的单文件运行能生成包；
+- 私有包0600原子读写、确定性指纹、正文/摘要篡改拒绝；
+- origin、HEAD、tree OID、规范树摘要、前镜像、权限和Workspace scope绑定；
+- staged、unstaged、untracked、符号链接、来源漂移和批准后新增脏项均在写入前拒绝；
+- 错批准指纹、用户拒绝、不同重复决定、重复执行和单交付跨进程锁；
+- 意图落盘后、替换前、替换后和目录fsync后的退出恢复；
+- 第三镜像进入conflicted，同内容但非本次临时inode进入unknown，均不覆盖或错误归因；
+- 真实任务v3通过run生成包，在精确历史checkout完成脏工作区拒绝、显式批准、一次写入、幂等重开、Diff摘要一致和两项隐藏检查通过。
+
+真实交付验证使用run `d904e7b1-ed3e-4ee7-9168-2921b9a8d420`，确定性包指纹为`2bedacc33dea0e98ae956ab5c292a27c5de4d8672fa337f9ca34bc44802669df`。目标最终只有`src/harnessix/models/_chat_stream.py`变化，Git Diff摘要等于原Eval报告，`empty_id_behavior`和`identity_guards`返回码均为0。
+
+0.5.5d专用套件16项通过。最终本地`make check`完成Ruff、Mypy（146个源文件）及2562 passed、2 skipped；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下2526项全部通过。Schema连续生成摘要不变；sdist/wheel构建成功，wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`。
+
+仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入三份交付契约与Store，读取最新任务v3，并验证Campaign CLI默认禁网时不读取缺失配置。0.5.5d没有使用模型API、SSH、远程服务器或中间件；完整设计和边界见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。远端跨平台结果以本片最终提交CI为准。

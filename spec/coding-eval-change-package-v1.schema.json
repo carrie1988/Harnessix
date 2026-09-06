@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "CodingEvalChangeImage": {
+      "additionalProperties": false,
+      "description": "单个已有UTF-8普通文件的完整镜像。",
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "utf8_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Utf8 Bytes",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha256",
+        "utf8_bytes",
+        "text"
+      ],
+      "title": "CodingEvalChangeImage",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "由严格通过的单文件Eval报告及工作区实况生成的私有交付包。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-change-package/v1",
+      "default": "harnessix.coding-eval-change-package/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "task_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Task Fingerprint",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    },
+    "repository": {
+      "$ref": "#/$defs/EvalRepository"
+    },
+    "source_tree_oid": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Source Tree Oid",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "source_mode": {
+      "title": "Source Mode",
+      "type": "integer"
+    },
+    "before": {
+      "$ref": "#/$defs/CodingEvalChangeImage"
+    },
+    "after": {
+      "$ref": "#/$defs/CodingEvalChangeImage"
+    },
+    "workspace_diff_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Diff Sha256",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "package_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Package Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "task_id",
+    "task_version",
+    "task_fingerprint",
+    "report_sha256",
+    "repository",
+    "source_tree_oid",
+    "path",
+    "source_mode",
+    "before",
+    "after",
+    "workspace_diff_sha256",
+    "created_at",
+    "package_fingerprint"
+  ],
+  "title": "CodingEvalChangePackage",
+  "type": "object"
+}

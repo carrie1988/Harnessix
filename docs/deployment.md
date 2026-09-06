@@ -607,3 +607,40 @@ Campaign `0a0ee9f3-8d4d-46cb-8e38-b1956a7068d8`已完成并发布报告，只允
 安装本片wheel不迁移数据库。Catalog包含v1、v2和v3；省略版本时选择最新v3，所有恢复和报告重算仍必须从持久计划读取精确版本与指纹。v3只改变任务Prompt，运行边界与v2一致。
 
 部署方不得在Provider网关剥离Markdown围栏或把自然语言转换为JSON，这会让线上请求与评测证据分叉。新Campaign必须在请求前固定v3指纹`6e7408ce04696ecdf7e72a6ea035504732e4cbdae03b663475a69b5cddd56724`，使用新Campaign/run ID和有效价格快照。已有v1/v2 Campaign继续使用原版本，不得升级原地恢复。
+
+## 任务v3真实Campaign归档（0.5.5c3e2）
+
+Campaign `b98a76ad-a586-4b98-aa95-fd62276380f6`已经完成3/3严格通过并发布报告。运行目录、0600配置、Session、受管副本和Provider响应只用于私有审计；不得追加run、替换回答或从私有工作区直接覆盖源目录。仓库只保存脱敏计划、聚合报告和正式分析，见[任务v3验证记录](validation/bailian-2026-09-06-coding-eval-v3/README.md)。
+
+该Campaign完整已知估算成本为¥0.828428；与分页纠正后任务v2诊断Campaign合计¥2.083924。价格快照估算不替代供应商账单对账，部署监控仍须区分实际账单、未知Usage和试验间停止线。
+
+## 受控Eval变更交付安装（0.5.5d）
+
+本片新增纯库API与三份JSON Schema，不新增数据库迁移、守护进程、网络入口、模型请求或中间件：
+
+```python
+from harnessix.domain.models import ApprovalOutcome, ApprovalRecord
+from harnessix.evals import CodingEvalDeliveryStore, build_coding_eval_change_package
+
+package = await build_coding_eval_change_package(runs_root, git, definition, run_id)
+deliveries = CodingEvalDeliveryStore(private_state_root, git)
+pending = deliveries.prepare(package, target_repository_root)
+
+# 宿主展示并审核pending.plan后，保存与计划指纹绑定的决定。
+deliveries.decide(
+    pending.delivery_id,
+    ApprovalRecord(
+        outcome=ApprovalOutcome.APPROVED,
+        actor="release-owner",
+        reason="已核对来源、路径和前后镜像",
+        request_fingerprint=pending.plan.approval_fingerprint,
+    ),
+)
+result = deliveries.execute(pending.delivery_id, target_repository_root)
+```
+
+`private_state_root`必须是当前用户0700目录，并位于目标仓库之外；其下每个交付目录为0700，`owner.lock`、`package.json`和`state.json`为0600。服务升级或进程退出后，以相同状态根、Git绑定、交付ID和目标根创建Store并先调用`reconcile`。不得删除临时文件、手改state或仅凭目标内容相同把unknown改成applied。
+
+目标仓库必须停在变更包的精确source commit，配置相同origin，且index、工作树和untracked全部为空。`prepare`通过后到`execute`之间的任何来源、状态、路径、权限、inode或前镜像变化都会拒绝写入。若业务允许用户同时编辑同一仓库，宿主必须先获取仓库级独占任务租约；本地`flock`只串行同一交付ID，不是跨主机分布式锁。
+
+`applied`只表示工作树后镜像已原子写入并完成inode归因。部署方仍需在外层执行代码评审、完整测试、commit、签名、push和发布；不得把这些动作拼进本片批准。多文件、创建/删除、rename、二进制、三方合并和自动回滚必须等待新版本契约。

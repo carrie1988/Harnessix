@@ -42,6 +42,22 @@ from harnessix.evals.contracts import (
     EvalGitEvidence,
     EvalTestObservation,
 )
+from harnessix.evals.delivery import (
+    CodingEvalDeliveryStore,
+    build_coding_eval_change_package,
+    read_coding_eval_change_package,
+    write_coding_eval_change_package,
+)
+from harnessix.evals.delivery_contracts import (
+    CHANGE_PACKAGE_SPEC_VERSION,
+    DELIVERY_PLAN_SPEC_VERSION,
+    DELIVERY_RECORD_SPEC_VERSION,
+    CodingEvalChangeImage,
+    CodingEvalChangePackage,
+    CodingEvalDeliveryPlan,
+    CodingEvalDeliveryRecord,
+    CodingEvalDeliveryTransition,
+)
 from harnessix.evals.git_evidence import collect_git_evidence
 from harnessix.evals.grader import grade_coding_eval
 from harnessix.evals.materializer import (
@@ -66,6 +82,11 @@ __all__ = [
     "CODING_EVAL_GRADER_VERSION",
     "CODING_EVAL_MATERIALIZER_VERSION",
     "CODING_EVAL_SPEC_VERSION",
+    "CHANGE_PACKAGE_SPEC_VERSION",
+    "DELIVERY_PLAN_SPEC_VERSION",
+    "DELIVERY_RECORD_SPEC_VERSION",
+    "CodingEvalChangeImage",
+    "CodingEvalChangePackage",
     "CodingEvalCampaignPlan",
     "CodingEvalCampaignReport",
     "CodingEvalCampaignExecutionState",
@@ -74,6 +95,10 @@ __all__ = [
     "CodingEvalCampaignSummary",
     "CodingEvalCampaignTrial",
     "CodingEvalEnvironment",
+    "CodingEvalDeliveryPlan",
+    "CodingEvalDeliveryRecord",
+    "CodingEvalDeliveryStore",
+    "CodingEvalDeliveryTransition",
     "CodingEvalMaterialization",
     "CodingEvalReport",
     "CodingEvalRunState",
@@ -89,6 +114,7 @@ __all__ = [
     "MaterializedCodingEval",
     "collect_git_evidence",
     "build_coding_eval_campaign_report",
+    "build_coding_eval_change_package",
     "grade_coding_eval",
     "historical_check_arguments",
     "historical_python_launcher",
@@ -102,6 +128,7 @@ __all__ = [
     "read_eval_campaign_report",
     "read_eval_campaign_execution_state",
     "read_eval_run_state",
+    "read_coding_eval_change_package",
     "run_historical_checks",
     "run_historical_coding_eval",
     "run_coding_eval_campaign",
@@ -110,4 +137,5 @@ __all__ = [
     "write_eval_campaign_report",
     "write_eval_campaign_execution_state",
     "write_eval_run_state",
+    "write_coding_eval_change_package",
 ]

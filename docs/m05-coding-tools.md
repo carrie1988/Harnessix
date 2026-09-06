@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
-- 更新日期：2026-09-06
-- 状态：0.5.1—0.5.4c及0.5.5a—b当前定义范围已交付；首个历史真实缺陷已通过同一Agent Runtime、审批、外部Worker和确定性评分，真实模型多次基线及变更交付仍待0.5.5c—d
+- 更新日期：2026-09-07
+- 状态：0.5.1—0.5.4c及0.5.5当前定义范围已交付；任务v3真实Provider基线3/3严格通过，严格通过结果可形成私有单文件变更包并经显式批准合入精确历史工作树；整体0.5的任意Shell、统一Tool Error和读写并发治理仍待后续切片
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -1005,6 +1005,44 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 
 评分器继续严格解析，不容忍围栏、不猜测字段；Git、测试和Session顺序仍是机器权威。任务v1/v2定义、Prompt和指纹不变，Catalog保存1/2/3三个版本并默认返回v3；恢复必须按计划精确版本执行。
 
-该变更不增加Eval专用系统消息，不修改Agent v9、Provider v3、Session migration11、工具Schema/指纹、数据库、审批、效果或费用契约。c3e2必须使用新Campaign与独立run形成真实v3基线，完成前不关闭0.5.5c。
+该变更不增加Eval专用系统消息，不修改Agent v9、Provider v3、Session migration11、工具Schema/指纹、数据库、审批、效果或费用契约。c3e2已经使用新Campaign与独立run形成真实v3基线，结果见下一节。
 
 本地门禁为`make check` 2546 passed、2 skipped，2510项异步严格回归，Schema生成无差异；sdist/wheel构建及仓库外基础依赖安装通过，wheel SHA-256为`64a790d38faa3186357c83dd3243ebca5c36309f90598215a761ae73a8725c7c`。隔离环境未安装OpenAI/Anthropic SDK，仍可读取v1/v2/v3 Catalog并证明默认禁网入口不读取缺失配置。
+
+## 49. 0.5.5c3e2：任务v3真实Provider质量基线
+
+[脱敏验证记录](validation/bailian-2026-09-06-coding-eval-v3/README.md)归档实现提交`9d0be66`上的任务v3三次独立试验。31次模型尝试全部为各步骤`index=1`，实际模型身份和Usage完整，总输入193539、输出3392 Token，已知估算成本¥0.828428，时延P50为23.431778秒。
+
+三个run均完成分页纠正、唯一允许文件Patch、focused测试、行为与身份回归、Git状态/差异核对及严格最终回答。最终正文均为单个裸JSON对象，只包含`summary/changed_paths/tests`且与机器事实一致，因此严格结果为3/3；Provider、Eval基础设施、Runtime、任务、预算和未知成本失败均为0。
+
+任务v3只增加模型可见最终回答契约，仓库、检查、权限、评分器、预算和模型均与c3d保持一致。这一结果关闭c3d的测量缺口并完成0.5.5c，但只代表固定历史任务当前三次样本，不是通用Coding Agent成功率或供应商SLA。
+
+## 50. 0.5.5d：受控变更包与显式工作树合入
+
+完整求证与决策见[交付研究](research/eval-change-delivery.md)和[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。本片复用0.5.5报告、物化清单、受管副本、固定Git读取和0.5.3单文件原子替换思路，不把私有副本直接复制回源目录。
+
+### 50.1 通过结果准入
+
+`build_coding_eval_change_package`重开completed运行并重新核对任务、环境、报告摘要、14项检查、Git实况、最终回答、物化基线和Copy Manifest。当前只接受一个允许的已有UTF-8普通文件，前后镜像各不超过1 MiB，权限只能是0644/0755。staged、untracked、rename、文件创建/删除、符号链接、硬链接和内容漂移全部拒绝。
+
+`CodingEvalChangePackage`保存run/task/report、origin、source commit、tree OID、规范树摘要、路径、权限、前后镜像及摘要、原工作区Diff摘要。包创建时间固定取原报告完成时间，相同证据重复生成同一指纹。完整源码只写入0600私有包，不进入模型wire、普通日志或脱敏Campaign报告。
+
+### 50.2 目标预检与批准
+
+`CodingEvalDeliveryStore.prepare`对宿主明确选择的目标根执行固定Git命令，要求它是精确仓库根，origin、HEAD、tree OID和规范树摘要等于任务来源，Git状态为空，目标文件前镜像与权限等于包。状态根不得和目标仓库重叠。
+
+不可变`CodingEvalDeliveryPlan`只保存目标Workspace scope而不保存绝对路径，完整字段形成`approval_fingerprint`。`decide`只接受绑定该指纹的`ApprovalRecord`；拒绝成为持久终态，错指纹和不同重复决定失败。批准不等于写入，`execute`会再次核对全部仓库、状态、路径、内容、权限和inode。
+
+### 50.3 原子效果与恢复
+
+执行器把后镜像写入目标同目录唯一临时文件，设置原权限并`fsync`；临时inode与`applying`意图先在0600状态中原子落盘，最终复核只允许该临时文件成为唯一Git脏项。随后使用同目录`os.replace`，完成文件与目录`fsync`，并同时验证后镜像摘要和inode归因。它只写工作树，不写index、不创建commit、不运行Hook。
+
+`CodingEvalDeliveryRecord`保存最多64步完整转换历史、原因、错误码、时间和记录指纹。重开`applying`时：前镜像表示效果未发生，清理本次临时inode并回到approved；后镜像且inode匹配表示applied；第三镜像进入conflicted；同内容但inode不同或无法核对进入unknown。后两者不覆盖、不回滚、不重放。
+
+状态根/交付目录为0700，锁/包/状态为0600，`flock`阻止同一交付被两个Harnessix进程并发消费。目录FD、`O_NOFOLLOW`、单链接检查和最终inode复核覆盖本片路径边界；跨主机仓库租约和非协作外部写者治理仍属于后续安全执行阶段。
+
+真实任务v3通过run `d904e7b1-ed3e-4ee7-9168-2921b9a8d420`已生成稳定包指纹`2bedacc33dea0e98ae956ab5c292a27c5de4d8672fa337f9ca34bc44802669df`。独立精确历史checkout先验证untracked拒绝，再经批准完成一次写入和幂等重开；最终Diff摘要、后镜像以及`empty_id_behavior`、`identity_guards`两项隐藏检查均与原报告一致。
+
+本片新增`coding-eval-change-package-v1`、`coding-eval-delivery-plan-v1`和`coding-eval-delivery-record-v1`三份Schema，不修改Agent、Session、Action、Patch、Process、Artifact或数据库Schema。0.5.5至此完成当前定义范围；通用多文件交付、三方合并、自动commit/push和OS Sandbox不在v1能力声明内。
+
+本地最终门禁为Ruff、Mypy（146个源文件）、2562 passed、2 skipped；异步调试与警告转错误套件2526项通过，Schema重复生成稳定。基础wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`，仓库外基础依赖安装未包含OpenAI/Anthropic SDK，仍可导入交付API并验证Campaign默认禁网入口。
