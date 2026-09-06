@@ -14,7 +14,12 @@ from harnessix.artifacts.contracts import (
     ReadArtifactInput,
 )
 from harnessix.domain.models import ActionRequest
-from harnessix.evals.contracts import CodingEvalReport, CodingEvalTask, EvalFinalAnswer
+from harnessix.evals.contracts import (
+    CodingEvalMaterialization,
+    CodingEvalReport,
+    CodingEvalTask,
+    EvalFinalAnswer,
+)
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
@@ -125,6 +130,7 @@ def main() -> None:
         ("coding-eval-task", CodingEvalTask),
         ("coding-eval-final-answer", EvalFinalAnswer),
         ("coding-eval-report", CodingEvalReport),
+        ("coding-eval-materialization", CodingEvalMaterialization),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     print(

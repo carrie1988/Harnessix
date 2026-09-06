@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c及0.5.5a均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告和确定性评分器。0.5.5a不把脚本闭环冒充模型能力；下一主片为0.5.5b首个Harnessix历史真实缺陷运行器，随后才进行真实模型多次基线和受控变更交付。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)和[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)。不提前宣称OS Sandbox、任意Shell、真实模型成功率或源目录自动合入。
+状态：**0.5.1–0.5.4c、0.5.5a及0.5.5b1均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷目录、私有物化和隐藏检查。下一主片0.5.5b2把该任务接入同一Agent Runtime/Action Worker；随后才进行真实模型多次基线和受控变更交付。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)和[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)。不提前宣称OS Sandbox、任意Shell、真实模型成功率或源目录自动合入。
 
 ### 目标
 
@@ -244,6 +244,8 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [ ] 0.5.5真实缺陷Coding Eval与变更交付；
   - [x] 0.5.5a：版本化任务/检查/Git/最终回答/报告契约、无Golden Patch评分器及原子脱敏报告；
   - [ ] 0.5.5b：首个Harnessix历史真实缺陷物化、隐藏检查和同一Runtime/Worker驱动；
+    - [x] 0.5.5b1：固定真实历史来源、单提交私有物化、ready清单和宿主隐藏检查；
+    - [ ] 0.5.5b2：复用同一Agent Runtime、Process/Patch审批和外部Worker完成端到端运行与评分；
   - [ ] 0.5.5c：显式真实Provider多次试验、成本/时延和失败分类基线；
   - [ ] 0.5.5d：受控变更包、来源漂移/脏工作区冲突和显式合入。
 

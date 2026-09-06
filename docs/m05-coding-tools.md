@@ -848,3 +848,22 @@ uv run python scripts/generate_specs.py
 ```
 
 新增`coding-eval-task-v1`、`coding-eval-final-answer-v1`和`coding-eval-report-v1`三份Schema。0.5.5a只交付评分基础设施，不包含任务物化/隐藏检查执行器、真实Provider调用、源目录合入或成功率结论。下一片0.5.5b将固定首个Harnessix历史真实缺陷，在私有受管副本中接入同一Agent Runtime和外部Worker。
+
+## 39. 0.5.5b1：首个历史真实缺陷物化与隐藏检查
+
+完整决策见[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)。首个内置任务来自Harnessix提交`1c11449`修复前的真实OpenAI-compatible工具调用分片缺陷，基线固定为`9f24961840fa704e7c7a344c648164d8afe793b7`，并同时绑定Git tree OID和规范化`ls-tree` SHA-256。
+
+- `historical_coding_eval()`返回受信Catalog中的任务和检查映射；模型不能提供revision、命令、检查模式或允许路径；
+- `materialize_historical_coding_eval()`从固定Git对象导出不超过64 MiB的受限Tar，在0700运行目录内创建不含remote和后续历史的单提交私有仓库；
+- `materialization.json`使用新`harnessix.coding-eval-materialization/v1`契约，记录来源/私有基线身份、归档摘要、文件数和Git版本，以0600文件最后原子发布`ready`；
+- 相同运行ID只重开已发布事实，核对任务指纹、HEAD和基线树，同时保留Agent未提交修改；已有不完整目录、损坏/符号链接清单和来源不匹配均拒绝且不覆盖；
+- 宿主检查程序在工作区外通过既有`HostProcessRuntime`和固定`python -I -B`执行，只返回退出码、耗时和输出摘要；行为失败使用退出码1，异常终态归类为基础设施错误，取消传播`TurnCancelled`；
+- 基线证明空ID行为失败而其他身份保护通过；只修改允许文件中的一处判断后，空ID行为和初始身份缺失/真实ID漂移/名称漂移/类型非法回归均通过，Git证据只有一个允许路径。
+
+```bash
+uv sync --locked --all-extras --dev
+uv run pytest tests/evals/test_historical.py
+uv run python scripts/generate_specs.py
+```
+
+历史物化测试要求本地仓库包含固定提交；CI的Python和macOS checkout因此显式使用完整历史。检查仍以宿主权限运行，不是OS Sandbox，也不接受任意第三方仓库。0.5.5b1没有模型调用、Session、Action或Worker，不把确定性最小修复测试称为Agent能力；下一片0.5.5b2必须用同一`AgentRuntime`、Process/Patch审批和外部Worker完成运行、恢复、证据与评分闭环。

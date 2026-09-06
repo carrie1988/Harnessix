@@ -23,6 +23,7 @@ from harnessix.agent.models import (
 from harnessix.domain.models import ContractModel, EffectClass
 from harnessix.evals.contracts import (
     CodingEvalEnvironment,
+    CodingEvalMaterialization,
     CodingEvalReport,
     CodingEvalTask,
     EvalFinalAnswer,
@@ -259,6 +260,7 @@ def test_task_contract_is_versioned_strict_and_fingerprinted() -> None:
         ("coding-eval-task", CodingEvalTask),
         ("coding-eval-final-answer", EvalFinalAnswer),
         ("coding-eval-report", CodingEvalReport),
+        ("coding-eval-materialization", CodingEvalMaterialization),
     ],
 )
 def test_public_schema_is_frozen(name: str, model: type[ContractModel]) -> None:

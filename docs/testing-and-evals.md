@@ -828,3 +828,27 @@ Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为
 首轮提交`d6990eb`的CI 34021247915中，PostgreSQL、macOS和Python3.13通过，慢速Python3.12 Runner暴露两个既有Patch生命周期测试的墙钟假设：测试把整个Turn预算写死为0.4秒或1秒，却断言审批、持久化和多成员执行一定先到达故障注入点。该Runner分别在到达单文件审批前和整组第二成员前耗尽预算；不是Eval代码失败。测试现复用仓库既有`capture_deadlines`，先用正常120秒预算到达明确执行点，再推进真实`asyncio.Timeout`上下文；同类整组审批和Process审批过期用例也不再等待墙钟。34个相关参数场景在asyncio debug与warnings-as-error下连续5轮通过，随后全量`make check`再次得到 **2479 passed、2 skipped**。
 
 0.5.5a不执行隐藏检查或真实任务，不新增硬崩溃场景，累计仍为319。下一片0.5.5b固定Harnessix历史真实缺陷来源、可复现缺陷物化、宿主隐藏检查和同一Runtime/Worker驱动；完成前仍不宣称非示例仓库Coding Eval通过。
+
+## 41. 0.5.5b1 历史真实缺陷物化与隐藏检查验收（2026-09-06）
+
+基线`a7770ef`及[CI 34022467264](https://github.com/carrie1988/Harnessix/actions/runs/34022467264)四项成功；开工前读取项目规范并fetch确认本地与`origin/main`一致。本片按[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)只实现历史任务Catalog、私有物化、ready清单和宿主隐藏检查，不接模型、Session、Action或Worker。
+
+新增 **8项** 自动回归，其中`tests/evals/test_historical.py`新增7项，公共物化Schema冻结新增1项：
+
+- Catalog固定真实来源revision、tree OID、`ls-tree` SHA-256、240个文件、允许路径、行为/回归检查和focused Profile；未知任务/检查有稳定错误码；
+- 从真实历史提交导出0700私有运行目录和单提交Git基线，0600 `ready`清单记录来源归档与基线身份；工作区不包含后续修复提交新增的测试，来源历史不进入私有仓库；
+- 相同运行ID保留未提交修改并重开；不完整目录不覆盖，清单权限放宽、符号链接、来源树不匹配均拒绝，物化失败不残留新运行目录；
+- 基线空ID行为检查确定失败、身份回归检查通过；只修改允许文件的一处判断后，行为和四类身份回归全部通过，Git证据只有允许路径且HEAD/暂存区不变；
+- 预取消传播`TurnCancelled`；解释器相对路径、宿主入口符号链接和非0/1退出分别形成绑定、发布或检查基础设施错误，不伪造行为失败；
+- 新`coding-eval-materialization-v1` Schema由生成器和冻结测试核对。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**137个源文件**）通过，**2487 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2451项全部通过**，没有忽略未关闭流、后台任务或异步警告；
+- sdist/wheel构建成功；仓库外基础wheel不安装OpenAI/Anthropic SDK，可完成真实历史物化，wheel包含宿主检查程序，既有 **17个** 基础离线示例全部通过；wheel SHA-256为`9c2f914c9b7ffaf3228e98a23c0b5cb204e26259f83996a900fb5dd593e54baa`；
+- Python3.12/3.13和macOS CI的Eval测试需要固定历史对象，checkout已改为`fetch-depth: 0`；PostgreSQL作业不运行历史物化，保持浅检出即可。最终跨平台状态以本片提交后的CI为准。
+
+本片没有新增真实硬退出场景，累计仍为319；没有模型请求、API Key、SSH、网络下载或中间件。宿主检查未提供OS Sandbox，仅允许内置Harnessix历史任务。0.5.5b2将复用现有Agent Runtime、Process/Patch审批和外部Worker形成端到端运行与评分；完成前不把确定性最小修复验收称为模型自主能力。
+
+最终全量复跑暴露一项既有Worker测试的1秒墙钟假设：测试要求1.2秒动作跨过初始1秒租约，同时假定本机调度不会让任意0.1秒心跳延迟超过租约；高负载下曾在续租前过期。该用例现使用5秒测试租约并按实际版本增长证明执行期间发生多次续租，不再把测试机调度及时性当作Worker功能前提；租约过期、过期恢复和过期Owner拒绝仍由独立测试覆盖。该用例连续10轮通过后重新执行全量门禁。

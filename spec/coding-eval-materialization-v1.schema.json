@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "description": "发布在运行目录外层的历史任务工作区身份，不包含宿主绝对路径。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-materialization/v1",
+      "default": "harnessix.coding-eval-materialization/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "materializer_version": {
+      "const": "coding-eval-materializer/v1",
+      "default": "coding-eval-materializer/v1",
+      "title": "Materializer Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "minimum": 1,
+      "title": "Task Version",
+      "type": "integer"
+    },
+    "task_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Task Fingerprint",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "source_tree_oid": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Source Tree Oid",
+      "type": "string"
+    },
+    "source_archive_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Archive Sha256",
+      "type": "string"
+    },
+    "baseline_revision": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Baseline Revision",
+      "type": "string"
+    },
+    "baseline_tree_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Baseline Tree Sha256",
+      "type": "string"
+    },
+    "tracked_files": {
+      "maximum": 100000,
+      "minimum": 1,
+      "title": "Tracked Files",
+      "type": "integer"
+    },
+    "archive_bytes": {
+      "maximum": 67108864,
+      "minimum": 1,
+      "title": "Archive Bytes",
+      "type": "integer"
+    },
+    "git_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Git Version",
+      "type": "string"
+    },
+    "workspace_directory": {
+      "const": "workspace",
+      "default": "workspace",
+      "title": "Workspace Directory",
+      "type": "string"
+    },
+    "status": {
+      "const": "ready",
+      "default": "ready",
+      "title": "Status",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "task_id",
+    "task_version",
+    "task_fingerprint",
+    "source_revision",
+    "source_tree_oid",
+    "source_archive_sha256",
+    "baseline_revision",
+    "baseline_tree_sha256",
+    "tracked_files",
+    "archive_bytes",
+    "git_version",
+    "created_at"
+  ],
+  "title": "CodingEvalMaterialization",
+  "type": "object"
+}

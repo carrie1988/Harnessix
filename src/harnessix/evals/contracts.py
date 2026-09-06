@@ -15,6 +15,9 @@ from harnessix.tools.workspace import digest
 
 CODING_EVAL_SPEC_VERSION: Literal["harnessix.coding-eval/v1"] = "harnessix.coding-eval/v1"
 CODING_EVAL_GRADER_VERSION: Literal["coding-eval-grader/v1"] = "coding-eval-grader/v1"
+CODING_EVAL_MATERIALIZER_VERSION: Literal["coding-eval-materializer/v1"] = (
+    "coding-eval-materializer/v1"
+)
 
 Revision = str
 EvalOutcome = Literal["passed", "failed", "invalid"]
@@ -314,6 +317,30 @@ class CodingEvalEnvironment(EvalContract):
     model: str = Field(min_length=1, max_length=256)
     platform: str = Field(min_length=1, max_length=256)
     isolation: str = Field(min_length=1, max_length=256)
+
+
+class CodingEvalMaterialization(EvalContract):
+    """发布在运行目录外层的历史任务工作区身份，不包含宿主绝对路径。"""
+
+    spec_version: Literal["harnessix.coding-eval-materialization/v1"] = (
+        "harnessix.coding-eval-materialization/v1"
+    )
+    materializer_version: Literal["coding-eval-materializer/v1"] = CODING_EVAL_MATERIALIZER_VERSION
+    run_id: UUID
+    task_id: str = Field(min_length=1, max_length=128)
+    task_version: int = Field(ge=1)
+    task_fingerprint: Revision = Field(pattern=r"^[0-9a-f]{64}$")
+    source_revision: Revision = Field(pattern=r"^[0-9a-f]{40,64}$")
+    source_tree_oid: Revision = Field(pattern=r"^[0-9a-f]{40,64}$")
+    source_archive_sha256: Revision = Field(pattern=r"^[0-9a-f]{64}$")
+    baseline_revision: Revision = Field(pattern=r"^[0-9a-f]{40,64}$")
+    baseline_tree_sha256: Revision = Field(pattern=r"^[0-9a-f]{64}$")
+    tracked_files: int = Field(ge=1, le=100_000)
+    archive_bytes: int = Field(ge=1, le=64 * 1024 * 1024)
+    git_version: str = Field(min_length=1, max_length=128)
+    workspace_directory: Literal["workspace"] = "workspace"
+    status: Literal["ready"] = "ready"
+    created_at: AwareDatetime
 
 
 class EvalCheck(EvalContract):

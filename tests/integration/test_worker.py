@@ -172,7 +172,8 @@ async def test_expired_unstarted_lease_returns_to_ready(queued_service: ActionSe
     assert snapshot.status is ActionStatus.READY
 
 
-async def test_heartbeat_keeps_long_action_lease_alive(queued_service: ActionService) -> None:
+async def test_heartbeat_renews_lease_during_action(queued_service: ActionService) -> None:
+    queued_service.lease_seconds = 5
     queued_service.registry.register(
         ToolDefinition(
             name="test.slow",

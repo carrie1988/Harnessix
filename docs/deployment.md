@@ -450,3 +450,47 @@ python -I coding_feedback.py
 0.5.5a没有隐藏检查执行器。调用方自行构造`EvalTestObservation`只能用于测试或可信内嵌编排，不能作为远程第三方提交的证明。后续运行器必须把检查命令和输出留在宿主边界，只将退出码、耗时和SHA-256交给评分器；检查输出若可能包含Secret，应按Process Artifact同等级保护，不写入Eval报告。
 
 `invalid`表示任务树、缺陷基线或最终检查集合不可用于统计，不能计入模型失败率；`failed`才表示任务可运行但Agent未满足要求。任何报告写入失败都应让本次发布记录失败，不能仅根据内存中的`passed`结论更新基线。当前未实现报告聚合、签名、远端上传、多次试验统计或源目录交付。
+
+## 历史Eval物化与隐藏检查部署（0.5.5b1）
+
+本片不增加数据库迁移、远程服务或中间件。运行前必须具备：包含固定revision的Harnessix完整Git历史、受控Git绝对路径、预先创建且仅服务账户可访问的运行根，以及安装任务测试依赖的Python词法绝对路径。仅安装基础wheel足以导入Catalog和物化器，但本任务隐藏检查会复用历史树中的OpenAI测试夹具，推荐使用：
+
+```bash
+uv sync --locked --all-extras --dev
+git cat-file -e 9f24961840fa704e7c7a344c648164d8afe793b7^{commit}
+```
+
+浅克隆缺少固定对象时应让运行失败，不允许从可变分支或网络临时下载内容补齐。CI的Python和macOS Eval作业使用`fetch-depth: 0`；PostgreSQL作业不运行历史Eval，无需完整历史。
+
+受信宿主按以下顺序准备工作区：
+
+```python
+import shutil
+import sys
+from pathlib import Path
+from uuid import uuid4
+
+from harnessix.evals import (
+    historical_coding_eval,
+    materialize_historical_coding_eval,
+    run_historical_checks,
+)
+
+task = historical_coding_eval("harnessix-openai-empty-incremental-call-id")
+materialized = materialize_historical_coding_eval(
+    Path("/srv/harnessix/source"),
+    Path("/var/lib/harnessix/evals"),
+    Path(shutil.which("git") or ""),
+    task,
+    uuid4(),
+)
+baseline = await run_historical_checks(task, materialized, Path(sys.executable), "baseline")
+```
+
+不要对`sys.executable`调用`resolve()`：venv入口的词法路径用于保留虚拟环境包发现语义。物化器会验证其最终目标是可执行普通文件，并在运行目录的`host/`内发布固定0700入口；模型不能提供该路径。
+
+运行根不得位于被评工作区内。每个UUID目录权限为0700，`materialization.json`权限为0600且最后发布；只有存在有效`ready`清单的目录可以重开。相同运行ID重开会保留未提交修改并核对HEAD/基线树，不会重新物化。没有清单、清单损坏、符号链接或身份不匹配时，应隔离目录供诊断后由运维显式清理，不能自动覆盖或改用新任务身份。
+
+隐藏检查固定为独立进程、60秒时限和有界双流。退出码1是确定的行为不通过，不应触发基础设施告警；其他退出码、超时、清理失败或不完整输出证据应记录`eval_check_infrastructure_failed`并停止评分；取消传播为Turn取消。日志和指标至少记录任务ID/版本/指纹、运行ID、物化错误码、来源与基线摘要、检查ID/阶段/退出码/耗时/输出摘要，不记录隐藏检查正文、原始测试输出或工作区文件。
+
+当前检查在宿主用户权限下执行，没有容器、网络或文件系统隔离，只允许Catalog中经过评审的Harnessix历史任务。动态仓库、第三方PR和不可信测试必须等待0.7 Sandbox/网络策略后接入。0.5.5b1不创建Session、Action或Worker；生产Agent闭环仍以0.5.5b2为准。
