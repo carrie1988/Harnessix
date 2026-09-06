@@ -1045,4 +1045,4 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 
 本片新增`coding-eval-change-package-v1`、`coding-eval-delivery-plan-v1`和`coding-eval-delivery-record-v1`三份Schema，不修改Agent、Session、Action、Patch、Process、Artifact或数据库Schema。0.5.5至此完成当前定义范围；通用多文件交付、三方合并、自动commit/push和OS Sandbox不在v1能力声明内。
 
-本地最终门禁为Ruff、Mypy（146个源文件）、2562 passed、2 skipped；异步调试与警告转错误套件2526项通过，Schema重复生成稳定。基础wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`，仓库外基础依赖安装未包含OpenAI/Anthropic SDK，仍可导入交付API并验证Campaign默认禁网入口。
+本地最终门禁为Ruff、Mypy（146个源文件）、2562 passed、2 skipped；异步调试与警告转错误套件2526项通过，Schema重复生成稳定。基础wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`，仓库外基础依赖安装未包含OpenAI/Anthropic SDK，仍可导入交付API并验证Campaign默认禁网入口。实现提交`83b6085`的[CI 34046477484](https://github.com/carrie1988/Harnessix/actions/runs/34046477484)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。

@@ -1058,4 +1058,4 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 0.5.5d专用套件16项通过。最终本地`make check`完成Ruff、Mypy（146个源文件）及2562 passed、2 skipped；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下2526项全部通过。Schema连续生成摘要不变；sdist/wheel构建成功，wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`。
 
-仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入三份交付契约与Store，读取最新任务v3，并验证Campaign CLI默认禁网时不读取缺失配置。0.5.5d没有使用模型API、SSH、远程服务器或中间件；完整设计和边界见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。远端跨平台结果以本片最终提交CI为准。
+仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入三份交付契约与Store，读取最新任务v3，并验证Campaign CLI默认禁网时不读取缺失配置。0.5.5d没有使用模型API、SSH、远程服务器或中间件；完整设计和边界见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。实现提交`83b6085`的[CI 34046477484](https://github.com/carrie1988/Harnessix/actions/runs/34046477484)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过，0.5.5当前定义范围关闭。
