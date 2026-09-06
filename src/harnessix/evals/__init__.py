@@ -20,6 +20,7 @@ from harnessix.evals.catalog import (
     HistoricalCodingEval,
     historical_coding_eval,
     historical_coding_eval_ids,
+    historical_coding_eval_versions,
 )
 from harnessix.evals.checks import (
     historical_check_arguments,
@@ -93,6 +94,7 @@ __all__ = [
     "historical_python_launcher",
     "historical_coding_eval",
     "historical_coding_eval_ids",
+    "historical_coding_eval_versions",
     "load_materialized_coding_eval",
     "materialize_historical_coding_eval",
     "read_eval_report",

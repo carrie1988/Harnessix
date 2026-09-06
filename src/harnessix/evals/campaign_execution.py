@@ -163,7 +163,7 @@ def _source_revision(config: CodingEvalCampaignRunConfig) -> str:
 
 
 def _require_scope(config: CodingEvalCampaignRunConfig) -> None:
-    definition = historical_coding_eval(config.plan.task_id)
+    definition = historical_coding_eval(config.plan.task_id, config.plan.task_version)
     task = definition.task
     if (
         task.task_version != config.plan.task_version
@@ -402,7 +402,7 @@ async def run_coding_eval_campaign(
                     root / _RUNS_DIRECTORY,
                     Path(config.git_executable),
                     Path(config.python_executable),
-                    historical_coding_eval(config.plan.task_id),
+                    historical_coding_eval(config.plan.task_id, config.plan.task_version),
                     run_id,
                     provider,
                     config.plan.environment,

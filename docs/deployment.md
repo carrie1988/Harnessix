@@ -544,3 +544,39 @@ uv run harnessix coding-eval-campaign \
 费用停止线仅在完整试验之间核对。已开始试验可能超过阈值，供应商仍可能收费；生产运维还应独立配置云账户预算告警并对账。当前没有请求级硬费用中止或OS Sandbox，不得把本入口暴露为接收不受信仓库的多租户服务。
 
 首轮百炼北京三次运行的配置边界、脱敏报告、费用和预算失败根因见[验证记录](validation/bailian-2026-09-06-coding-eval/README.md)。该Campaign已经完成，禁止通过编辑状态或追加run改写基线；预算修复必须提升任务版本并创建新Campaign。
+
+## Coding Eval任务预算版本升级（0.5.5c3a）
+
+安装本片wheel不修改数据库或已有运行目录。内置任务Catalog同时包含v1和v2：省略版本的受信调用方将选择最新v2；任何恢复、审计或报告重算都必须从已持久计划/状态读取精确`task_version`和`task_fingerprint`，不得再次调用“最新版本”替代原身份。
+
+旧v1 Campaign保持只读：
+
+```python
+from harnessix.evals import historical_coding_eval
+
+definition = historical_coding_eval(
+    "harnessix-openai-empty-incremental-call-id",
+    1,
+)
+assert definition.task.budget.max_tokens == 20_000
+assert definition.task.fingerprint == (
+    "ea75be4219574ff398cc252d3b5a8f870cea2f7cbb20cbe51e12e7997e921297"
+)
+```
+
+新Campaign显式选择v2并在首个请求前固定其新指纹：
+
+```python
+definition = historical_coding_eval(
+    "harnessix-openai-empty-incremental-call-id",
+    2,
+)
+assert definition.task.budget.max_tokens == 100_000
+assert definition.task.fingerprint == (
+    "011268310f3aac1b3025d643aaf8361b807bd9d9b55a19436caa05507d122bfb"
+)
+```
+
+生产变更检查应同时记录任务ID、版本、指纹、步骤/累计Token/时间/输出限制、Provider单步输出上限和费用停止线。100000是Turn累计报告Token上限，不得写入模型上下文窗口配置，也不得据此提高自动重试、工具并发或工作区权限。
+
+升级验收至少执行一次v1和v2离线Campaign并重开completed状态，确认没有再次创建Provider。未知版本或计划指纹漂移必须在Provider创建前失败。真实v2 Campaign仍需独立授权、新Campaign/run ID和私有0600配置；不得复制旧状态、复用旧run或把新结果追加到首轮报告。

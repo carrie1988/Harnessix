@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合，以及默认禁网、无自动重试、带费用停止和崩溃恢复的真实Campaign执行；首轮百炼三次基线均因任务累计Token预算不适配而失败，预算修复重基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待账单对账。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b/c 已实现受信进程、唯一Action审批、外部Worker、Process Artifact、固定Git状态/差异和测试Profile反馈闭环。0.5.5a/b/c1/c2/c3a 已实现版本化Coding Eval、首个Harnessix历史真实缺陷的单提交物化、同一Runtime/Worker端到端评分、多试验证据聚合、受控真实Campaign执行，以及旧任务可恢复的累计Token预算版本升级；首轮百炼三次基线均因任务v1预算不适配而失败，v2真实重基线、任意Shell、OS Sandbox、源目录交付和Agent CLI尚未完成，当前仍不是完整Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -314,6 +314,15 @@ uv run pytest tests/evals/test_campaign*.py
 
 费用停止线不是供应商账户硬额度：一个已开始试验可能越过停止线，达线只保证不再启动下一试验。c2b已使用百炼北京精确模型完成三次独立试验，累计费用估算¥0.273748；三次均在读取目标实现前触发任务20000累计Token预算，因此0/3不能解释为模型编码能力。完整结果和后续门禁见[真实基线记录](docs/validation/bailian-2026-09-06-coding-eval/README.md)，设计见[ADR 0047](docs/adr/0047-coding-eval-campaign-evidence.md)和[ADR 0048](docs/adr/0048-controlled-real-eval-campaign-execution.md)。
 
+## 当前已实现：真实Eval预算版本化（0.5.5c3a）
+
+- 固定源码研究区分当前上下文窗口、单响应输出限制和Turn累计消费预算，不改变Kernel已有预算语义；
+- 历史任务v1及20000预算保持可复现，新增v2并把累计Token上限提升为100000；
+- Catalog按任务ID与版本精确索引，无版本查询返回最新版本；旧Campaign按计划版本恢复，不会漂移到v2；
+- Eval报告继续保存实际Token而非截断值，离线回归覆盖恰好到限与超过一个Token，以及v1/v2各自执行和只读重开。
+
+c3a没有调用真实API。下一步c3b必须取得新的次数/费用授权，创建新Campaign并用相同精确模型完成三次v2独立试验；在此之前仍不能声明有效模型成功率。研究与决策见[Token预算适用性研究](docs/research/eval-token-budget-applicability.md)和[ADR 0049](docs/adr/0049-versioned-eval-token-budget.md)。
+
 ## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
@@ -571,6 +580,7 @@ examples/                   可运行演示
 - [Context Engine 研究](docs/research/context-engine.md)
 - [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
 - [Coding Agent多试验质量与成本研究](docs/research/eval-campaign.md)
+- [Coding Eval Token预算适用性研究](docs/research/eval-token-budget-applicability.md)
 - [演进为 Harnessix Code 的架构决策](docs/adr/0005-evolve-to-harnessix-code.md)
 - [Thread/Turn/Item/Event 决策](docs/adr/0006-thread-turn-item-event-model.md)
 - [Agent Loop 与取消决策](docs/adr/0007-agent-loop-and-cancellation.md)
@@ -595,6 +605,7 @@ examples/                   可运行演示
 - [Git与受控测试反馈决策](docs/adr/0043-git-and-controlled-test-feedback.md)
 - [Coding Eval多试验证据决策](docs/adr/0047-coding-eval-campaign-evidence.md)
 - [受控真实Coding Eval Campaign执行决策](docs/adr/0048-controlled-real-eval-campaign-execution.md)
+- [版本化Coding Eval Token预算决策](docs/adr/0049-versioned-eval-token-budget.md)
 - [百炼北京三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval/README.md)
 
 ## 目标里程碑

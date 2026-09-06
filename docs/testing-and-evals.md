@@ -950,3 +950,23 @@ c2a测试全部使用可计价确定性Provider或故障替身，不使用网络
 - 三个工作区均无变更，目标行为检查失败、身份回归检查通过，没有最终结构化回答。
 
 因此0/3不能解释为模型编码失败率，只能作为预算错误基线。Campaign基础设施、真实Function Calling、Usage映射、模型身份核对和费用聚合通过实测；任务预算适用性未通过。完整脱敏证据见[验证记录](validation/bailian-2026-09-06-coding-eval/README.md)。后续0.5.5c3需要任务版本升级和新Campaign，追加付费试验必须重新授权。
+
+## 46. 0.5.5c3a Eval累计Token预算版本化验收（2026-09-06）
+
+本片依据[Token预算适用性研究](research/eval-token-budget-applicability.md)和[ADR 0049](adr/0049-versioned-eval-token-budget.md)，不改变Runtime累计Token语义。新增 **4项** 自动回归增量：
+
+- 历史任务Catalog同时列出v1/v2，无版本查询返回v2；v1/v2仓库与Prompt相同、预算和指纹不同，未知任务/版本拒绝；
+- 同一正式Campaign测试分别以v1和v2完成两个独立run、发布聚合报告并只读重开，确认计划版本和指纹精确绑定；
+- Agent Runtime最终回答在100/100 Token时完成，在101/100时以`budget_exceeded`失败，两种终态均保留Provider实际报告Usage；
+- Eval评分在140/140时通过预算检查，在141/140时分类为`budget`，报告指标保存141而不是截断或清零。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**144个源文件**）通过，**2538 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2502项全部通过**；
+- sdist/wheel构建成功；仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入v1/v2 Catalog和Campaign入口，默认禁网CLI不读取不存在的配置；wheel SHA-256为`c31c3de92c17a82ee832236bda9f2e1411cf9a0e4b370212d34890c3089b03ca`；
+- 仓库内首轮百炼v1计划和报告可由当前严格契约重新加载，计划指纹仍精确匹配Catalog v1的20000预算定义；
+- Schema生成器运行后无公共Schema变化；本片未修改Agent v9、Session migration11、Provider v3、Action/Process/Artifact/Patch协议或数据库Schema；
+- 本片没有真实Provider网络请求、API Key读取、SSH、远程服务器或中间件操作。
+
+当前只完成c3a离线门禁。v2的100000累计Token预算是否足够覆盖真实定位、修改、测试、Git核对和最终回答，仍需c3b在新授权Campaign中验证；在此之前不计算有效模型成功率，也不开始0.5.5d源目录交付。

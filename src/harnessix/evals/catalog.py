@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from harnessix.agent.errors import KernelError
@@ -30,7 +30,7 @@ class HistoricalCodingEval:
         raise KernelError("eval_check_not_found", "历史任务检查定义不存在")
 
 
-_EMPTY_INCREMENTAL_CALL_ID = HistoricalCodingEval(
+_EMPTY_INCREMENTAL_CALL_ID_V1 = HistoricalCodingEval(
     task=CodingEvalTask(
         task_id="harnessix-openai-empty-incremental-call-id",
         task_version=1,
@@ -70,15 +70,47 @@ _EMPTY_INCREMENTAL_CALL_ID = HistoricalCodingEval(
     ),
 )
 
-_TASKS = {_EMPTY_INCREMENTAL_CALL_ID.task.task_id: _EMPTY_INCREMENTAL_CALL_ID}
+_EMPTY_INCREMENTAL_CALL_ID_V2 = replace(
+    _EMPTY_INCREMENTAL_CALL_ID_V1,
+    task=CodingEvalTask.model_validate(
+        {
+            **_EMPTY_INCREMENTAL_CALL_ID_V1.task.model_dump(),
+            "task_version": 2,
+            "budget": Budget(
+                max_steps=16,
+                max_tokens=100_000,
+                max_output_chars=65_536,
+                max_tool_calls_per_step=8,
+                timeout_seconds=600,
+            ),
+        }
+    ),
+)
+
+_TASKS = {
+    (item.task.task_id, item.task.task_version): item
+    for item in (_EMPTY_INCREMENTAL_CALL_ID_V1, _EMPTY_INCREMENTAL_CALL_ID_V2)
+}
+_TASK_VERSIONS = {
+    task_id: tuple(sorted(version for candidate, version in _TASKS if candidate == task_id))
+    for task_id in {candidate for candidate, _ in _TASKS}
+}
 
 
-def historical_coding_eval(task_id: str) -> HistoricalCodingEval:
+def historical_coding_eval(task_id: str, task_version: int | None = None) -> HistoricalCodingEval:
     try:
-        return _TASKS[task_id]
+        versions = _TASK_VERSIONS[task_id]
+        return _TASKS[(task_id, versions[-1] if task_version is None else task_version)]
     except (KeyError, TypeError):
         raise KernelError("eval_task_not_found", "历史 Coding Eval 任务不存在") from None
 
 
 def historical_coding_eval_ids() -> tuple[str, ...]:
-    return tuple(sorted(_TASKS))
+    return tuple(sorted(_TASK_VERSIONS))
+
+
+def historical_coding_eval_versions(task_id: str) -> tuple[int, ...]:
+    try:
+        return _TASK_VERSIONS[task_id]
+    except (KeyError, TypeError):
+        raise KernelError("eval_task_not_found", "历史 Coding Eval 任务不存在") from None

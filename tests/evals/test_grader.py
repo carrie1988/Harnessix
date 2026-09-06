@@ -279,6 +279,27 @@ def test_success_requires_behavior_regression_git_and_answer_evidence() -> None:
     assert report.metrics == report.metrics.model_copy(update={"tool_calls": 5, "changed_files": 1})
 
 
+def test_budget_boundary_preserves_actual_usage_in_report() -> None:
+    current_task = task(budget=Budget(max_steps=6, max_tokens=140))
+    at_limit = completed_turn().model_copy(
+        update={"budget": current_task.budget, "usage": Usage(input_tokens=100, output_tokens=40)}
+    )
+    at_limit_report = grade(current_task=current_task, turn=at_limit)
+    assert next(
+        check for check in at_limit_report.checks if check.code == "budget_respected"
+    ).passed
+    assert at_limit_report.metrics.input_tokens + at_limit_report.metrics.output_tokens == 140
+
+    exceeded = at_limit.model_copy(update={"usage": Usage(input_tokens=101, output_tokens=40)})
+    exceeded_report = grade(current_task=current_task, turn=exceeded)
+    assert exceeded_report.outcome == "failed"
+    assert "budget" in exceeded_report.failure_categories
+    assert not next(
+        check for check in exceeded_report.checks if check.code == "budget_respected"
+    ).passed
+    assert exceeded_report.metrics.input_tokens + exceeded_report.metrics.output_tokens == 141
+
+
 def test_report_rejects_removed_checks_or_reclassified_failures() -> None:
     payload = grade().model_dump(mode="json")
     payload["checks"] = payload["checks"][:-1]

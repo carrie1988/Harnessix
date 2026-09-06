@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c、0.5.5a–b及0.5.5c1/c2均已完成当前定义范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷的固定物化、同一Agent Runtime/Action Worker评分、多试验证据聚合和默认禁网的可恢复Campaign执行。首轮百炼北京三次真实试验已形成0/3预算失败基线，暴露任务20000累计Token预算与真实上下文开销不适配；0.5.5c3必须先版本化修复预算适用性并重新基线，再进入0.5.5d受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)、[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)、[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)、[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)和[真实基线](validation/bailian-2026-09-06-coding-eval/README.md)。不提前宣称OS Sandbox、任意Shell、有效模型成功率或源目录自动合入。
+状态：**0.5.1–0.5.4c、0.5.5a–b、0.5.5c1/c2及0.5.5c3a均已完成当前定义范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异、宿主预注册测试Profile，以及版本化Coding Eval任务/证据/报告、确定性评分器、首个历史真实缺陷的固定物化、同一Agent Runtime/Action Worker评分、多试验证据聚合和默认禁网的可恢复Campaign执行。首轮百炼北京三次真实试验已形成0/3预算失败基线；c3a已分离上下文、单响应与累计消费语义，保留v1并发布100000累计Token的任务v2。0.5.5c3b仍须在新授权下重新基线，关闭预算错误门禁后才能进入0.5.5d受控变更包与显式合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)、[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)、[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)、[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)、[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)、[ADR 0049](adr/0049-versioned-eval-token-budget.md)和[真实基线](validation/bailian-2026-09-06-coding-eval/README.md)。不提前宣称OS Sandbox、任意Shell、有效模型成功率或源目录自动合入。
 
 ### 目标
 
@@ -252,7 +252,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
       - [x] 0.5.5c2a：默认禁网CLI、私有配置、单宿主锁、持久进度、试验间费用停止及崩溃恢复；
       - [x] 0.5.5c2b：百炼北京精确模型三次独立试验、人民币10元停止线及脱敏基线归档；结果0/3，主分类均为预算失败；
     - [ ] 0.5.5c3：真实上下文预算适用性与可比较重基线；
-      - [ ] 0.5.5c3a：源码求证、真实Token开销分析、任务版本升级、预算临界可观测性及离线回归；
+      - [x] 0.5.5c3a：源码求证、真实Token开销分析、任务版本升级、预算临界可观测性及离线回归；
       - [ ] 0.5.5c3b：新授权边界内重新执行同模型独立Campaign，形成不被错误预算截断的质量基线；
   - [ ] 0.5.5d：受控变更包、来源漂移/脏工作区冲突和显式合入。
 

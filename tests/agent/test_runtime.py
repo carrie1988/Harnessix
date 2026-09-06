@@ -164,6 +164,32 @@ async def test_token_budget_prevents_tool_dispatch(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("reported_tokens", "expected_status"),
+    [(100, TurnStatus.COMPLETED), (101, TurnStatus.FAILED)],
+)
+async def test_final_response_token_budget_boundary_keeps_reported_usage(
+    tmp_path: Path,
+    reported_tokens: int,
+    expected_status: TurnStatus,
+) -> None:
+    events = answer()
+    events[-1] = ResponseCompleted(usage=Usage(input_tokens=reported_tokens))
+    provider = ScriptedProvider([events])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id, "任务", request_id="r", budget=Budget(max_tokens=100)
+        )
+    assert turn.status == expected_status
+    assert turn.usage.total_tokens == reported_tokens
+    assert (turn.error.code if turn.error else None) == (
+        "budget_exceeded" if expected_status == TurnStatus.FAILED else None
+    )
+    assert_settled(turn)
+
+
+@pytest.mark.parametrize(
     "events",
     [
         [],

@@ -949,3 +949,20 @@ runs/<run-id>/...          # 每次试验的0.5.5b2完整事实
 三次模型行为高度一致：运行focused测试、读取失败Artifact、定位OpenAI模块并读取`openai_chat.py`，随后请求读取真正的`_chat_stream.py`。第五次模型响应计入后，Turn累计报告Token达到21429—21567，超过任务v1固定的20000上限，Runtime在执行该读取前确定失败。工作区无变更，最终行为检查失败、身份回归通过且无最终回答。
 
 该结果暴露的是任务预算与真实工具Schema/消息历史开销不适配。确定性Provider每步只报告夹具Token，原离线测试不能证明真实预算足够。不得通过提高现有Campaign状态金额、修改原任务指纹或追加run掩盖失败；0.5.5c3先研究主流Agent预算/上下文处理，版本化升级任务预算并补临界测试，再在新的明确费用授权下重跑可比较Campaign。0.5.5d在该门禁关闭后继续。
+
+## 44. 0.5.5c3a：累计Token预算版本化与旧基线兼容
+
+完整研究和决策见[Token预算适用性研究](research/eval-token-budget-applicability.md)与[ADR 0049](adr/0049-versioned-eval-token-budget.md)。Codex、OpenCode和Claude Code本地研究样本均把当前上下文窗口/压缩阈值与Turn累计Usage或费用预算分开处理。因此本片不修改Agent Runtime：`Budget.max_tokens`仍是同一Turn内所有Provider已报告输入与输出Token的累计上限，单响应输出仍由Provider `max_output_tokens`和字符边界控制，Campaign费用停止仍只在完整试验之间生效。
+
+首个历史任务现在同时保留：
+
+- v1：`max_tokens=20000`，用于重放首轮错误预算基线；
+- v2：`max_tokens=100000`，其余仓库、Prompt、允许路径、检查、步骤、时间和工具边界不变。
+
+Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返回最新v2，显式传入版本返回精确历史定义，`historical_coding_eval_versions()`提供有序版本列表。Campaign执行器在准入和实际运行两处都读取计划版本，已完成v1 Campaign即使在安装新wheel后重开也不会转用v2。
+
+100000与Kernel正式默认值一致，是首轮读取目标文件前最高21567累计Token的4.6倍以上；它用于移除已证实的错误截断，不是模型上下文窗口、供应商硬费用上限或成功保证。16步、600秒、输出字符、单步4096输出、无Provider自动重试和Campaign费用停止均保持独立生效。
+
+临界可观测性复用既有持久事实而不增加重复Schema：Session保存原预算、实际Usage与尝试；Eval报告保存实际输入/输出、步骤及`budget_respected`；Campaign保存单次实际Token和`budget`主分类。离线回归证明恰好达到上限时预算检查通过，超过一个Token时失败且报告仍保存真实超出值；v1/v2均能执行、发布报告并只读重开。
+
+本片不使用网络、API Key、SSH或中间件，不修改Agent v9、Session migration11、Provider v3、Action/Process/Patch/Artifact协议或数据库。0.5.5c3b需要新授权的新Campaign；只有v2真实基线不再被错误预算截断，才进入0.5.5d。

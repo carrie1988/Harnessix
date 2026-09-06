@@ -15,6 +15,7 @@ from harnessix.evals.catalog import (
     HistoricalCodingEval,
     historical_coding_eval,
     historical_coding_eval_ids,
+    historical_coding_eval_versions,
 )
 from harnessix.evals.checks import historical_python_launcher, run_historical_checks
 from harnessix.evals.git_evidence import collect_git_evidence
@@ -68,8 +69,15 @@ def materialize(tmp_path: Path, run_id: UUID | None = None) -> MaterializedCodin
 
 def test_catalog_pins_source_contract_and_checks() -> None:
     item = definition()
+    original = historical_coding_eval(TASK_ID, 1)
 
     assert historical_coding_eval_ids() == (TASK_ID,)
+    assert historical_coding_eval_versions(TASK_ID) == (1, 2)
+    assert item.task.task_version == 2 and item.task.budget.max_tokens == 100_000
+    assert original.task.task_version == 1 and original.task.budget.max_tokens == 20_000
+    assert original.task.fingerprint != item.task.fingerprint
+    assert original.task.repository == item.task.repository
+    assert original.task.prompt == item.task.prompt
     assert item.task.repository.source_revision == SOURCE_REVISION
     assert item.source_tree_oid == SOURCE_TREE_OID
     assert item.task.repository.baseline_tree_sha256 == SOURCE_TREE_SHA256
@@ -81,6 +89,12 @@ def test_catalog_pins_source_contract_and_checks() -> None:
     assert item.check("empty-id-behavior").mode == "empty_id_behavior"
     with pytest.raises(KernelError) as error:
         historical_coding_eval("missing")
+    assert error.value.code == "eval_task_not_found"
+    with pytest.raises(KernelError) as error:
+        historical_coding_eval(TASK_ID, 3)
+    assert error.value.code == "eval_task_not_found"
+    with pytest.raises(KernelError) as error:
+        historical_coding_eval_versions("missing")
     assert error.value.code == "eval_task_not_found"
     with pytest.raises(KernelError) as error:
         item.check("missing")

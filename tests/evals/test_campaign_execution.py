@@ -83,8 +83,9 @@ def execution_config(
     *,
     runs: int = 2,
     fee_stop_amount: str = "1",
+    task_version: int | None = None,
 ) -> CodingEvalCampaignRunConfig:
-    task = historical_coding_eval(TASK_ID).task
+    task = historical_coding_eval(TASK_ID, task_version).task
     now = utc_now()
     price = PriceSnapshot(
         version="fixture-2026-09-06",
@@ -185,10 +186,12 @@ def provider_context(provider):
     return context
 
 
+@pytest.mark.parametrize("task_version", [1, 2])
 async def test_campaign_runs_two_isolated_trials_persists_report_and_reopens(
     tmp_path: Path,
+    task_version: int,
 ) -> None:
-    config = execution_config(tmp_path)
+    config = execution_config(tmp_path, task_version=task_version)
     provider = CostedHistoricalFixProvider()
 
     result = await run_coding_eval_campaign(
@@ -207,6 +210,11 @@ async def test_campaign_runs_two_isolated_trials_persists_report_and_reopens(
     assert report.summary.passed_trials == 2
     assert report.summary.model_attempts == 14
     assert report.summary.known_cost_amount == "0.00154"
+    assert report.plan.task_version == task_version
+    assert (
+        report.plan.task_fingerprint
+        == historical_coding_eval(TASK_ID, task_version).task.fingerprint
+    )
     assert read_eval_campaign_plan(root / "campaign-plan.json") == config.plan
     assert mode(root) == 0o700
     for name in ("campaign-plan.json", "campaign-state.json", "campaign-report.json"):
