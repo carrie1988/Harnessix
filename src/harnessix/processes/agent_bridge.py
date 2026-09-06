@@ -32,6 +32,7 @@ from harnessix.processes.bridge_contracts import (
     process_binding_from_version,
     process_call_request_id,
 )
+from harnessix.processes.contracts import ProcessRequest
 from harnessix.tools.workspace import digest
 
 _METADATA_KEY = "harnessix.agent_process"
@@ -102,14 +103,61 @@ def _validate_tool_call(
         raise KernelError("tool_invalid_arguments", "Process参数不符合严格JSON契约") from None
 
 
+def _validate_process_definition(definition: ToolDescriptor) -> None:
+    _process_binding(definition.version)
+    if (
+        definition.name != "host.process"
+        or definition.input_schema != ProcessActionInput.model_json_schema()
+        or definition.effect_class is not EffectClass.NON_IDEMPOTENT_WRITE
+        or definition.risk_level is not RiskLevel.HIGH
+        or not definition.requires_idempotency
+        or not definition.requires_approval
+        or definition.supports_reconciliation
+    ):
+        raise KernelError("tool_contract_changed", "持久Process Action工具契约不一致")
+
+
+def _validate_frontend_call(
+    call: ToolCallContent,
+    scope: ToolExecutionScope,
+    definition: ToolDescriptor,
+) -> None:
+    scope.validate_call(call)
+    if (
+        definition.effect_class is not EffectClass.NON_IDEMPOTENT_WRITE
+        or definition.risk_level is not RiskLevel.HIGH
+        or not definition.requires_idempotency
+        or not definition.requires_approval
+        or definition.supports_reconciliation
+        or call.tool != definition.name
+        or call.tool_version != definition.version
+        or call.effect_class is not definition.effect_class
+        or call.requires_approval is not True
+        or call.tool_fingerprint != tool_fingerprint(definition)
+    ):
+        raise KernelError("tool_contract_changed", "Agent进程调用与公开工具契约不一致")
+
+
 def prepare_process_action(
     call: ToolCallContent,
     scope: ToolExecutionScope,
     definition: ToolDescriptor,
     principal: Principal,
+    *,
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> PreparedProcessAction:
     """确定性构造唯一Action；本函数不写Journal，也不产生执行许可。"""
-    process = _validate_tool_call(call, scope, definition)
+    backend = action_definition or definition
+    if process is None:
+        process = _validate_tool_call(call, scope, definition)
+    else:
+        _validate_frontend_call(call, scope, definition)
+        _validate_process_definition(backend)
+        try:
+            process = ProcessRequest.model_validate_json(process.model_dump_json())
+        except (ValidationError, ValueError):
+            raise KernelError("tool_invalid_arguments", "Process参数不符合严格契约") from None
     request_id = process_call_request_id(
         scope.thread_id,
         scope.turn_id,
@@ -120,7 +168,7 @@ def prepare_process_action(
     principal_fingerprint = digest(principal.model_dump(mode="json"))
     base = ActionRequest(
         action_id=UUID(int=0),
-        tool=definition.name,
+        tool=backend.name,
         arguments=process.model_dump(mode="json"),
         principal=principal,
         context=ActionContext(session_id=str(scope.thread_id), run_id=str(scope.turn_id)),
@@ -131,11 +179,11 @@ def prepare_process_action(
     from harnessix.runtime import action_fingerprint
 
     action_request_fingerprint = action_fingerprint(base)
-    binding_fingerprint = _process_binding(definition.version)
+    binding_fingerprint = _process_binding(backend.version)
     identity = process_action_identity(
         request_id,
         action_request_fingerprint,
-        definition.version,
+        backend.version,
         binding_fingerprint,
         principal_fingerprint,
     )
@@ -171,7 +219,7 @@ def prepare_process_action(
         "request_id": request_id,
         "action_id": str(action_id),
         "action_fingerprint": action_request_fingerprint,
-        "action_tool_version": definition.version,
+        "action_tool_version": backend.version,
         "binding_fingerprint": binding_fingerprint,
         "principal_fingerprint": principal_fingerprint,
         "idempotency_key": idempotency_key,
@@ -192,11 +240,21 @@ def process_snapshot_matches(
     principal: Principal,
     plan: AgentProcessCallPlan,
     snapshot: ActionSnapshot,
+    *,
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> bool:
     """核对跨库投影；只接受Effect Journal中原Action，不根据Session猜测状态。"""
     try:
         checked_plan = AgentProcessCallPlan.model_validate_json(plan.model_dump_json())
-        prepared = prepare_process_action(call, scope, definition, principal)
+        prepared = prepare_process_action(
+            call,
+            scope,
+            definition,
+            principal,
+            action_definition=action_definition,
+            process=process,
+        )
     except (KernelError, ValidationError, ValueError, TypeError):
         return False
     approval = snapshot.approval
@@ -210,7 +268,7 @@ def process_snapshot_matches(
         checked_plan == prepared.plan
         and snapshot.request == prepared.request
         and snapshot.request_fingerprint == prepared.plan.action_fingerprint
-        and snapshot.tool == definition
+        and snapshot.tool == (action_definition or definition)
         and approval_matches
         and (approval is None or approval.request_fingerprint == prepared.plan.action_fingerprint)
     )

@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.4b2c2
+- 状态：0.2架构基线，已随实现更新至0.5.4c
 - 更新日期：2026-09-06
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -785,3 +785,23 @@ b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.
 - README/docs本地链接、格式、`git diff --check`及凭据模式扫描通过。实际SDK测试只使用离线夹具环境引用，不使用用户Key、SSH或网络。
 
 Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。0.5.4b范围至此完成；下一片是0.5.4c固定Git状态/差异、run_tests和受控命令反馈，不提前宣称任意Shell、OS Sandbox或自主Coding Eval完成。
+
+## 39. 0.5.4c Git与受控测试反馈验收（2026-09-06）
+
+基线`5e9efc`及[CI 34015620562](https://github.com/carrie1988/Harnessix/actions/runs/34015620562)四项成功；开工前fetch确认本地与`origin/main`一致。本片复用Agent v9、Session migration11、Action/Process/Artifact v1和副本账本v3，不增加数据库迁移、依赖、真实模型请求或中间件。
+
+新增 **15项** 自动回归：
+
+- 7项Git测试：工具必须显式绑定可执行文件才注册；porcelain v2结构化解析普通/rename/untracked及条目上限；worktree/staged差异严格分开；48 KiB完整UTF-8前缀、观察字节和完整观察摘要一致；恶意`diff.external`与`core.fsmonitor`辅助程序未执行；父仓库子目录、非仓库和类型强转均有界拒绝；
+- 5项测试Profile用例：公开Schema只有`profile`，程序/固定argv不进入模型工具描述但完整进入唯一`host.process` Action；批准前不执行、独立Worker只执行一次；非零退出形成`passed=false`并继续模型；未知Profile和参数注入在零Action时失败，工作区/程序/时限绑定漂移在工具广告前拒绝；Thread工作区错配保持零Action并保守中断；
+- 1项完整脚本Provider闭环：第一次测试失败，读取真实Process Artifact stderr，读取源码并经Patch审批修改私有副本，第二次测试通过，再读取Git状态/差异并形成一致回答；源目录字节不变；
+- 2项官方SDK离线HTTP闭环：OpenAI和Anthropic分别完成`run_tests → git_status → git_diff → 回答`。每种供应商固定4次请求且流全部关闭；wire不包含固定测试代码/argv、Action ID、审批/绑定指纹、幂等键或`data_base64`。
+
+质量门禁结果：
+
+- `make check`：Ruff、Mypy（**128个源文件**）通过，**2464 passed、2 skipped**；跳过项均为本机未配置PostgreSQL实库，CI实库作业继续覆盖；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2428项全部通过**，没有忽略未关闭流、后台任务或异步警告；
+- 构建sdist/wheel成功。基础wheel不安装OpenAI/Anthropic SDK，仓库外`python -I`运行原16个及新`coding_feedback`共 **17个** 离线示例通过，wheel SHA256为`01a1a26091a5756e151ee88b960f8c6f3aa6e401204bd422e5ecdaa4a394cc53`；
+- Linux Python3.12/3.13和macOS CI均新增`coding_feedback`入口；PostgreSQL作业保持。最终跨平台状态以本片提交后的CI为准。
+
+本片未新增真实硬退出场景，累计仍为319。示例中的临时Git仓库由受信宿主在私有受管副本中初始化，不把所有副本冒充Git worktree。没有使用API Key、SSH、远程服务器或中间件。0.5.4c当前定义范围完成，但仍不提供任意Shell、容器/网络隔离、源目录自动合入、Git提交/推送或非示例真实缺陷Coding Eval；下一阶段为0.5.5。

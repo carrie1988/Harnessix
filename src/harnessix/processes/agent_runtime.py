@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from typing import Any, Literal, cast
 from uuid import UUID
 
@@ -33,10 +35,11 @@ from harnessix.domain.models import (
 from harnessix.processes.action_executor import ProcessActionInput
 from harnessix.processes.agent_bridge import prepare_process_action, process_snapshot_matches
 from harnessix.processes.bridge_contracts import (
+    PROCESS_AGENT_FRONTENDS,
     AgentProcessCallPlan,
     process_binding_from_version,
 )
-from harnessix.processes.contracts import ProcessResult
+from harnessix.processes.contracts import ProcessRequest, ProcessResult
 from harnessix.processes.session_projection import (
     process_action_state,
     process_approval_decision,
@@ -48,7 +51,14 @@ from harnessix.runtime import ActionService
 class ProcessAgentBridge:
     """把Agent调用映射到唯一Action；Action Worker必须由宿主独立运行。"""
 
-    def __init__(self, service: ActionService, principal: Principal) -> None:
+    def __init__(
+        self,
+        service: ActionService,
+        principal: Principal,
+        *,
+        _definition: ToolDescriptor | None = None,
+        _resolve: Callable[[ToolCallContent, ToolExecutionScope], ProcessRequest] | None = None,
+    ) -> None:
         if service.auto_execute:
             raise KernelError(
                 "process_auto_execute_forbidden", "Agent进程桥必须使用独立Worker，禁止审批内执行"
@@ -58,26 +68,38 @@ class ProcessAgentBridge:
         ]
         if len(definitions) != 1:
             raise KernelError("process_tool_not_found", "Action Plane必须唯一注册host.process")
-        definition = definitions[0]
+        action_definition = definitions[0]
         try:
-            process_binding_from_version(definition.version)
+            process_binding_from_version(action_definition.version)
         except ValueError:
             raise KernelError(
                 "process_contract_invalid", "Action Plane的host.process缺少有效宿主绑定"
             ) from None
         if (
-            definition.input_schema != ProcessActionInput.model_json_schema()
+            action_definition.input_schema != ProcessActionInput.model_json_schema()
+            or action_definition.effect_class is not EffectClass.NON_IDEMPOTENT_WRITE
+            or action_definition.risk_level is not RiskLevel.HIGH
+            or not action_definition.requires_idempotency
+            or not action_definition.requires_approval
+            or action_definition.supports_reconciliation
+        ):
+            raise KernelError(
+                "process_contract_invalid", "Action Plane的host.process不符合强制审批契约"
+            )
+        definition = _definition or action_definition
+        if (
+            definition.name not in PROCESS_AGENT_FRONTENDS
             or definition.effect_class is not EffectClass.NON_IDEMPOTENT_WRITE
             or definition.risk_level is not RiskLevel.HIGH
             or not definition.requires_idempotency
             or not definition.requires_approval
             or definition.supports_reconciliation
         ):
-            raise KernelError(
-                "process_contract_invalid", "Action Plane的host.process不符合强制审批契约"
-            )
+            raise KernelError("process_contract_invalid", "模型进程入口不符合强制审批契约")
         self._service = service
         self._definition = definition.model_copy(deep=True)
+        self._action_definition = action_definition.model_copy(deep=True)
+        self._resolve = _resolve
         self._principal = Principal.model_validate_json(principal.model_dump_json())
 
     def definition(self) -> ToolDescriptor:
@@ -92,7 +114,15 @@ class ProcessAgentBridge:
         approval_id: UUID,
     ) -> ProcessApprovalRequestContent | ToolResultContent:
         cancel.checkpoint()
-        prepared = prepare_process_action(call, scope, self._definition, self._principal)
+        process = self._resolve_process(call, scope)
+        prepared = prepare_process_action(
+            call,
+            scope,
+            self._definition,
+            self._principal,
+            action_definition=self._action_definition,
+            process=process,
+        )
         snapshot = await self._service.submit(prepared.request)
         cancel.checkpoint()
         self._require_snapshot(call, scope, prepared.plan, snapshot)
@@ -105,6 +135,8 @@ class ProcessAgentBridge:
                 prepared.plan,
                 snapshot,
                 approval_id=approval_id,
+                action_definition=self._action_definition,
+                process=process,
             )
         if snapshot.approval is not None:
             # Action决定可能由另一进程先提交，或发生在Action提交成功而Session请求
@@ -150,7 +182,14 @@ class ProcessAgentBridge:
         self._require_snapshot(call, scope, approval.plan, snapshot)
         self._require_decision(snapshot, decision)
         return process_approval_decision(
-            approval, call, scope, self._definition, self._principal, snapshot
+            approval,
+            call,
+            scope,
+            self._definition,
+            self._principal,
+            snapshot,
+            action_definition=self._action_definition,
+            process=self._resolve_process(call, scope),
         )
 
     async def sync_decision(
@@ -169,7 +208,14 @@ class ProcessAgentBridge:
                 return None
             raise KernelError("process_projection_closed", "Action审批已关闭但缺少决定事实")
         return process_approval_decision(
-            approval, call, scope, self._definition, self._principal, snapshot
+            approval,
+            call,
+            scope,
+            self._definition,
+            self._principal,
+            snapshot,
+            action_definition=self._action_definition,
+            process=self._resolve_process(call, scope),
         )
 
     async def observe(
@@ -201,6 +247,8 @@ class ProcessAgentBridge:
             self._principal,
             snapshot,
             origin="recovery",
+            action_definition=self._action_definition,
+            process=self._resolve_process(call, scope),
         )
         process = self._process_result(snapshot)
         result = (
@@ -218,9 +266,30 @@ class ProcessAgentBridge:
         snapshot: ActionSnapshot,
     ) -> None:
         if not process_snapshot_matches(
-            call, scope, self._definition, self._principal, plan, snapshot
+            call,
+            scope,
+            self._definition,
+            self._principal,
+            plan,
+            snapshot,
+            action_definition=self._action_definition,
+            process=self._resolve_process(call, scope),
         ):
             raise KernelError("process_projection_mismatch", "Action事实与Agent进程计划不匹配")
+
+    def _resolve_process(self, call: ToolCallContent, scope: ToolExecutionScope) -> ProcessRequest:
+        if self._resolve is not None:
+            resolved = self._resolve(call, scope)
+            try:
+                return ProcessRequest.model_validate_json(resolved.model_dump_json())
+            except (AttributeError, ValidationError, ValueError):
+                raise KernelError("tool_invalid_arguments", "进程解析器返回无效请求") from None
+        try:
+            return ProcessActionInput.model_validate_json(
+                json.dumps(call.arguments, ensure_ascii=False, allow_nan=False)
+            )
+        except (ValidationError, ValueError, TypeError):
+            raise KernelError("tool_invalid_arguments", "Process参数不符合严格JSON契约") from None
 
     @staticmethod
     def _require_decision(snapshot: ActionSnapshot, decision: ApprovalDecision) -> None:
@@ -265,9 +334,8 @@ class ProcessAgentBridge:
                 ) from None
             return None
 
-    @classmethod
     def _terminal_result(
-        cls,
+        self,
         call: ToolCallContent,
         snapshot: ActionSnapshot,
         state: ProcessActionStateContent,
@@ -285,28 +353,7 @@ class ProcessAgentBridge:
                 ActionStatus.MANUAL_INTERVENTION: "unknown",
             }[status],
         )
-        output: Any = None
-        if process is not None:
-            output = {
-                "action_status": status.value,
-                "returncode": process.returncode,
-                "stop_reason": process.stop_reason,
-                "termination": process.termination,
-                "stdout": {
-                    "captured_bytes": process.stdout.captured_bytes,
-                    "observed_bytes": process.stdout.observed_bytes,
-                    "observed_sha256": process.stdout.observed_sha256,
-                    "truncated": process.stdout.truncated,
-                    "eof": process.stdout.eof,
-                },
-                "stderr": {
-                    "captured_bytes": process.stderr.captured_bytes,
-                    "observed_bytes": process.stderr.observed_bytes,
-                    "observed_sha256": process.stderr.observed_sha256,
-                    "truncated": process.stderr.truncated,
-                    "eof": process.stderr.eof,
-                },
-            }
+        output = self.result_output(call, snapshot, process)
         return ToolResultContent(
             call_id=call.call_id,
             outcome=outcome,
@@ -314,8 +361,37 @@ class ProcessAgentBridge:
             error=(
                 None
                 if outcome == "succeeded"
-                else cls._failure(snapshot.result.error, f"process_{status.value}")
+                else self._failure(snapshot.result.error, f"process_{status.value}")
             ),
             action_id=snapshot.request.action_id,
             process=state.effect,
         )
+
+    def result_output(
+        self,
+        call: ToolCallContent,
+        snapshot: ActionSnapshot,
+        process: ProcessResult | None,
+    ) -> Any:
+        if process is None:
+            return None
+        return {
+            "action_status": snapshot.status.value,
+            "returncode": process.returncode,
+            "stop_reason": process.stop_reason,
+            "termination": process.termination,
+            "stdout": {
+                "captured_bytes": process.stdout.captured_bytes,
+                "observed_bytes": process.stdout.observed_bytes,
+                "observed_sha256": process.stdout.observed_sha256,
+                "truncated": process.stdout.truncated,
+                "eof": process.stdout.eof,
+            },
+            "stderr": {
+                "captured_bytes": process.stderr.captured_bytes,
+                "observed_bytes": process.stderr.observed_bytes,
+                "observed_sha256": process.stderr.observed_sha256,
+                "truncated": process.stderr.truncated,
+                "eof": process.stderr.eof,
+            },
+        }

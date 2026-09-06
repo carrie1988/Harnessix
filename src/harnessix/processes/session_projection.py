@@ -16,6 +16,7 @@ from harnessix.agent.models import (
 from harnessix.domain.models import ActionSnapshot, ActionStatus, Principal, ToolDescriptor
 from harnessix.processes.agent_bridge import process_snapshot_matches
 from harnessix.processes.bridge_contracts import AgentProcessCallPlan
+from harnessix.processes.contracts import ProcessRequest
 from harnessix.tools.workspace import digest
 
 
@@ -26,8 +27,20 @@ def _require_snapshot(
     principal: Principal,
     plan: AgentProcessCallPlan,
     snapshot: ActionSnapshot,
+    *,
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> None:
-    if not process_snapshot_matches(call, scope, definition, principal, plan, snapshot):
+    if not process_snapshot_matches(
+        call,
+        scope,
+        definition,
+        principal,
+        plan,
+        snapshot,
+        action_definition=action_definition,
+        process=process,
+    ):
         raise KernelError("process_projection_mismatch", "Action事实与Agent进程计划不匹配")
 
 
@@ -40,9 +53,20 @@ def process_approval_request(
     snapshot: ActionSnapshot,
     *,
     approval_id: UUID,
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> ProcessApprovalRequestContent:
     """只允许原Action的PENDING_APPROVAL形成Session等待请求。"""
-    _require_snapshot(call, scope, definition, principal, plan, snapshot)
+    _require_snapshot(
+        call,
+        scope,
+        definition,
+        principal,
+        plan,
+        snapshot,
+        action_definition=action_definition,
+        process=process,
+    )
     if snapshot.status is not ActionStatus.PENDING_APPROVAL or snapshot.approval is not None:
         raise KernelError("process_projection_closed", "Action不处于待审批状态")
     return ProcessApprovalRequestContent(
@@ -60,9 +84,21 @@ def process_approval_decision(
     definition: ToolDescriptor,
     principal: Principal,
     snapshot: ActionSnapshot,
+    *,
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> ProcessApprovalRequestContent:
     """镜像Action Journal决定；不接受客户端构造的ApprovalRecord。"""
-    _require_snapshot(call, scope, definition, principal, original.plan, snapshot)
+    _require_snapshot(
+        call,
+        scope,
+        definition,
+        principal,
+        original.plan,
+        snapshot,
+        action_definition=action_definition,
+        process=process,
+    )
     if original.decision is not None:
         raise KernelError("process_projection_closed", "Session进程审批已完成")
     if snapshot.approval is None:
@@ -83,9 +119,20 @@ def process_action_state(
     snapshot: ActionSnapshot,
     *,
     origin: Literal["execution", "recovery"],
+    action_definition: ToolDescriptor | None = None,
+    process: ProcessRequest | None = None,
 ) -> ProcessActionStateContent:
     """投影Action状态和结果摘要；完整结果仍只属于Effect Journal。"""
-    _require_snapshot(call, scope, definition, principal, approval.plan, snapshot)
+    _require_snapshot(
+        call,
+        scope,
+        definition,
+        principal,
+        approval.plan,
+        snapshot,
+        action_definition=action_definition,
+        process=process,
+    )
     if approval.decision is None or snapshot.approval != approval.decision:
         raise KernelError("process_projection_mismatch", "Session决定与Action审批事实不一致")
     result_fingerprint = (

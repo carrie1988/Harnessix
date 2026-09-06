@@ -364,3 +364,77 @@ Worker的RUNNING/RECONCILING租约过期会写入`UNKNOWN`结果和`lease_expire
 多API实例可以竞争同一Action审批，数据库事务保证只有一个权威决定。调用方收到`approval_conflict`后应读取并展示已存在决定，不得改actor/reason后自动重试。SQLite适合单机多进程；多主机部署使用PostgreSQL，并在发布门禁运行实库租约UNKNOWN与并发测试。
 
 OpenAI/Anthropic SDK闭环测试使用离线Mock传输，不需要生产Key。线上Secret仍只能通过Provider配置的环境引用提供；Process argv不支持SecretRef解析，禁止把API Key、密码或令牌作为命令参数持久化。Process Artifact只受Session/工作区作用域保护，备份、导出和API读取仍需上层认证授权。
+
+## Git与测试Profile部署（0.5.4c）
+
+本片不增加数据库迁移、第三方Python依赖或远程中间件。它复用当前Agent v9、Session migration11、Action/Process/Artifact v1和副本账本v3；升级wheel本身不会启用Git、注册测试命令、创建Action或执行仓库代码。包版本仍为0.1.0，部署必须记录精确Git提交和wheel SHA-256。
+
+### Git能力
+
+Git工具是opt-in配置。宿主应从受控安装中解析一次绝对可执行文件并传入：
+
+```python
+from pathlib import Path
+from harnessix.tools.runtime import CodingToolRuntime
+
+tools = CodingToolRuntime(workspace, git_executable=Path("/usr/bin/git"))
+```
+
+路径必须是当前平台实际存在且可执行的普通文件；运行时会绑定文件身份，替换或升级可执行文件后应重建Runtime并视为新工具版本。不要接受模型、仓库配置或请求参数提供该路径。工作区必须是精确Git顶层目录，不能把父仓库的任意子目录当作独立授权范围。
+
+当前固定环境会关闭全局/系统Git配置、交互、分页器和可选锁，固定参数会关闭Hook、fsmonitor、external diff和textconv。部署不应通过包装脚本恢复这些能力；如需公司级配置，应作为新策略版本经过威胁建模、测试和审批。Git读取使用5秒时限、有限进程捕获、状态最多200项和Diff 48 KiB公开前缀，不适合把巨型生成目录当作无限查询接口。
+
+### 测试Profile
+
+测试能力必须在同一规范工作区中同时绑定Process Action和受限前端：
+
+```python
+import sys
+
+from harnessix.domain.models import Principal
+from harnessix.domain.registry import ToolRegistry
+from harnessix.processes.action_executor import process_action_tool
+from harnessix.processes.runtime import HostProcessRuntime
+from harnessix.processes.test_contracts import TestProfile
+from harnessix.processes.test_profiles import RunTestsAgentBridge
+
+registry = ToolRegistry()
+registry.register(
+    process_action_tool(lambda: HostProcessRuntime(workspace, {"python": sys.executable}))
+)
+# service必须auto_execute=False，并由独立ActionWorker消费。
+tests = RunTestsAgentBridge(
+    service,
+    Principal(tenant_id="tenant", subject_id="agent", framework="harnessix-agent"),
+    workspace,
+    (
+        TestProfile(
+            name="unit",
+            description="项目单元测试",
+            program="python",
+            arguments=("-I", "-m", "pytest", "-q", "tests/unit"),
+            timeout_seconds=300,
+        ),
+    ),
+)
+```
+
+生产配置要求：
+
+1. Profile名称、说明、程序、argv和超时进入代码评审与配置变更审计；
+2. 程序别名必须存在于`HostProcessRuntime`固定表，Profile时限不能超过进程上限；
+3. 不在argv中放置Token、密码或其他凭据，完整argv会持久化到Effect Journal；
+4. `ActionService(auto_execute=False)`与独立Worker保持，审批接口不能兼任命令执行；
+5. 若需要完整日志，显式绑定`SQLiteProcessArtifactPublisher`并按既有Artifact配额、TTL和访问控制部署；
+6. 工作区、程序文件、Profile或Process资源策略改变后创建新Runtime，不能尝试让旧调用沿用新配置；
+7. 不可信仓库测试应在后续容器/网络隔离后再进入生产；当前宿主进程边界不限制文件和网络权限。
+
+测试断言失败表现为`ActionStatus.SUCCEEDED`且Tool Result `passed=false`，因为执行生命周期已确定；运维告警不能把它和启动失败、超时、清理失败或UNKNOWN混为一类。Session等待取消只停止Agent观察，不撤销已经批准的Action，沿用ADR 0042处置流程。
+
+离线安装验收：
+
+```bash
+python -I coding_feedback.py
+```
+
+将`examples/coding_feedback.py`复制到仓库外，以只安装基础wheel的Python运行；需要系统Git，不需要OpenAI/Anthropic SDK、API Key、SSH或数据库中间件。示例在临时目录运行固定Python测试并修改私有受管副本，源目录保持不变。生产上线前仍须在目标OS、实际Git版本、隔离后端和组织审批策略上单独验收。

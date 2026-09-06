@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 更新日期：2026-09-06
-- 状态：0.5.1/0.5.2及0.5.3范围已交付；0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入和0.5.4b2完整Agent/Process Saga均已实现，下一片0.5.4c Git与测试工具，0.5.5 Eval待实施
+- 状态：0.5.1—0.5.4c当前定义范围已交付；固定Git读取、宿主测试Profile及失败→修复→通过→Diff闭环已实现，任意Shell仍关闭，0.5.5真实缺陷Eval待实施
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -35,7 +35,7 @@
 | 0.5.3b1 | 受管单文件执行后端 | 已实现；私有副本、持久意图/审批、实际写与崩溃核对，宿主 API |
 | 0.5.3b2 | Kernel 模型写工具闭环 | 已实现；Agent v6/migration 7、独立写审批、专用准入、SDK 离线闭环与双账本恢复 |
 | 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
-| 0.5.4 | Process、Git、run_tests、受控 Shell | a、b1、b2身份/投影/运行时/输出归档/完整恢复已实现；c工具接入待实施 |
+| 0.5.4 | Process、Git、run_tests、受控 Shell | a/b进程与恢复、c固定Git和测试Profile已实现；任意Shell不开放 |
 | 0.5.5 | 真实编码任务 Eval | 在非示例仓库完成受控缺陷修复，实际 Diff/测试/最终报告一致 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
@@ -54,10 +54,12 @@ search_contracts.py 搜索输入/输出、完整性与预算
 patterns.py        fnmatchcase 单段通配 + 有界 globstar 状态表
 ../artifacts/      有界 JSONL、manifest、同库发布与分页/清理
 ../patches/        已有精确计划、受管副本、持久写执行及专用 Kernel 桥接
-../processes/      argv、公开协议双流捕获、进程组、取消与直接子进程回收
+git.py             固定Git status/diff、精确仓库根、受控环境与输出边界
+git_contracts.py   Git状态/差异的严格公开契约
+../processes/      argv/双流/进程组，以及测试Profile与Process前端
 ~~~
 
-不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；b2 新增 agent_bridge/bridge_contracts 与 Kernel patching，0.5.4a新增processes/contracts/capture/runtime宿主基础层，不注册模型工具。
+不预建空壳文件。0.5.1 已有前四项，0.5.2a 新增三个搜索模块，0.5.2b2 新增 artifacts 包；0.5.3a 新增 patches/contracts.py 与 planner.py。0.5.3b1 新增 managed/managed_io/ledger/managed_contracts；b2 新增 agent_bridge/bridge_contracts 与 Kernel patching；0.5.4a新增processes/contracts/capture/runtime宿主基础层，b接入Action/Agent，c新增Git契约/运行时与test_contracts/test_profiles。
 
 输入输出采用 Pydantic 严格模型，JSON Schema 从模型生成；复用 `ToolDescriptor` 给 Provider 广告。输出 Schema、权限和并发元数据保留在受信绑定中，不能由模型上送。影响执行/审批的元数据必须进入版本/指纹契约；若需要新增持久字段，单独升级 Agent Schema 与迁移，不能修改旧 Schema。
 
@@ -651,7 +653,7 @@ Token取消返回已启动进程的cancelled结果；Task取消/外部超时必�
 
 工具版本绑定cwd、程序身份、环境和资源策略摘要；每次执行前复核持久描述、当前Executor和新Runtime，配置漂移不消费旧权限。确定结果保存完整ProcessResult及摘要Receipt；非零退出不是传输失败。管道证据不完整或清理失败保守UNKNOWN。Task取消先回收再传播，未写终态的RUNNING由租约恢复UNKNOWN；宿主硬退出同样不自动重放、不按历史PID发信号，对账只转人工处置。
 
-本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：本节交付时Agent Session绑定与Process Artifact尚待b2，现已分别由b2b/b2c2完成；宿主硬退出自动清理与OS隔离仍待0.7，Git/run_tests待0.5.4c。
+本片复用0.1 Action Plane，没有新命令账本、数据库迁移或第二审批真相。它仍不是模型Shell：本节交付时Agent Session绑定与Process Artifact尚待b2，现已分别由b2b/b2c2完成；Git/run_tests现由0.5.4c完成，宿主硬退出自动清理与OS隔离仍待0.7。
 
 ## 30. 0.5.4b2a：Agent与Action单一审批Saga设计
 
@@ -782,4 +784,49 @@ uv run pytest tests/agent/test_process_agent_crash.py
 uv run pytest tests/agent/test_process_agent_sdk.py
 ```
 
-0.5.4b至此完成。下一片0.5.4c在同一持久准入上增加固定Git状态/差异和测试执行能力；当前仍不是任意Shell、PTY、后台任务、OS Sandbox、网络隔离或自主Coding Eval。宿主死亡后的孤儿进程监督属于0.7，不得把租约UNKNOWN误解为进程已经停止。
+0.5.4b至此完成。下一节记录已交付的0.5.4c固定Git状态/差异和测试Profile；当前仍不是任意Shell、PTY、后台任务、OS Sandbox、网络隔离或自主Coding Eval。宿主死亡后的孤儿进程监督属于0.7，不得把租约UNKNOWN误解为进程已经停止。
+
+## 37. 0.5.4c：Git与受控测试反馈闭环
+
+完整决策见[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。本片复用Agent v9、Session migration11、Action/Process/Artifact v1与副本账本v3，不增加数据库迁移、供应商依赖、执行队列或审批权威。
+
+### 37.1 Git只读端口
+
+`CodingToolRuntime`新增可选`git_executable`。未配置时工具集合和版本保持原只读范围，不探测PATH或自动获得Git能力；配置后，程序文件身份、工作区、最小环境、固定命令和资源预算进入`git_status`/`git_diff`各自ToolDescriptor版本。
+
+`git_status`固定使用porcelain v2、分支元数据、全部untracked和NUL分隔输出，解析为普通/重命名/冲突/未跟踪条目；最多返回200项并给出完整条目数、截断和原始输出摘要。`git_diff`只允许`worktree|staged`及0—20上下文行，固定禁用外部Diff和textconv；最多返回48 KiB完整UTF-8前缀及已观察字节数/摘要。结构化状态的底层输出不完整时直接失败，不能解析一个看似完整的前缀。
+
+每次调用先以同一固定运行层执行`rev-parse --show-toplevel`，结果必须等于规范工作区根。父仓库中的子目录、非仓库、非法UTF-8、超时和进程证据异常均形成有界Tool错误。用户级/系统级Git配置、分页器、可选锁、交互提示、Hook、fsmonitor、external diff和textconv均在当前固定命令范围内禁用。新增其他Git子命令必须重新设计，不能继承本片安全声明。
+
+### 37.2 测试Profile与Process前端
+
+宿主先按原方式把`HostProcessRuntime`包装为`process_action_tool`并注册唯一`host.process`，再创建`RunTestsAgentBridge(service, principal, workspace, profiles)`。构造时核对真实`ProcessActionExecutor`的工作区、允许程序和最大时限；公开工具仅接受：
+
+```json
+{"profile": "unit"}
+```
+
+最多32个Profile，必须按名称唯一排序；每项保存宿主固定程序别名、argv和超时。公开工具描述只展示名称与说明，不展示argv。工具版本摘要绑定Profile全集、规范工作区、公开Schema和后端Action ToolDescriptor；任一配置漂移都会更换工具版本。
+
+模型调用经严格公开参数校验后解析为固定`ProcessRequest`，再复用`ProcessAgentBridge`完成稳定Action准备、唯一Action决定、外部Worker、单次观察和Process Artifact。Session中的ToolCall名为`run_tests`，Effect Journal中的Action工具仍为`host.process`。两侧通过完整ToolCall、Action请求、Principal、工作区、工具版本、固定参数摘要、Action ID和幂等键交叉核对。Action Journal仍是唯一执行许可。
+
+未知Profile或额外字段在Action创建前返回失败ToolResult，模型可以修正选择。Thread工作区错配属于宿主集成错误，在零Action时仍按`uncertain_effect`保守中断Turn，不把已持久化的非幂等ToolCall冒充确定结果。测试进程完整退出时，Action执行生命周期已确定；退出码0返回`passed=true`，非零返回`passed=false`，两者都可继续Agent Loop。启动、超时、取消、输出或清理证据不完整沿用Process failed/unknown语义，不被误报为普通测试失败。
+
+### 37.3 组合闭环与使用
+
+离线示例在宿主创建的临时私有受管副本中初始化Git基线，并完成：
+
+```text
+run_tests失败 → read_artifact → read_file → apply_patch审批
+→ run_tests再次审批并通过 → git_status → git_diff → 最终回答
+```
+
+```bash
+uv run python -m examples.coding_feedback
+uv run pytest tests/tools/test_git.py tests/processes/test_test_profiles.py
+uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_feedback_sdk.py
+```
+
+两个测试调用对应两个Action和两次审批；Patch批准不能替代测试批准。源目录保持不变，示例不调用真实模型、API Key、SSH或中间件。OpenAI/Anthropic官方SDK另以离线Mock HTTP验证相同公开工具调用和模型wire边界。
+
+本片完成0.5.4c当前范围，但不开放任意命令或模型argv。测试进程仍拥有宿主权限；容器/网络/CPU/内存隔离、孤儿监督、源目录合入、Git提交/推送和非示例真实缺陷Eval分别留给后续Sandbox、交付与0.5.5工作。

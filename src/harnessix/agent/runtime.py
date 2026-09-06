@@ -91,6 +91,7 @@ from harnessix.models.contracts import (
     ToolCallCompleted,
 )
 from harnessix.observability.core import NoOpObservability, Observability
+from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS
 from harnessix.session.ports import SessionStore
 from harnessix.tools.runtime import _drain
 
@@ -163,11 +164,11 @@ class AgentRuntime:
                 )
             definitions = (*definitions, definition)
         self._processes = processes
+        self._process_tool_name: str | None = None
         if processes is not None:
             definition = processes.definition()
             if (
-                definition.name != "host.process"
-                or definition.effect_class != EffectClass.NON_IDEMPOTENT_WRITE
+                definition.effect_class != EffectClass.NON_IDEMPOTENT_WRITE
                 or definition.risk_level != RiskLevel.HIGH
                 or not definition.requires_approval
                 or not definition.requires_idempotency
@@ -177,6 +178,7 @@ class AgentRuntime:
                     "process_contract_invalid",
                     "进程专用端口必须声明高风险、非幂等、审批且不可自动核对",
                 )
+            self._process_tool_name = definition.name
             definitions = (*definitions, definition)
         if process_artifacts is not None and (
             processes is None
@@ -231,7 +233,10 @@ class AgentRuntime:
             if (
                 turn.status == TurnStatus.EXECUTING_TOOLS
                 and calls
-                and calls[0].tool == "host.process"
+                and (
+                    calls[0].tool == self._process_tool_name
+                    or (self._processes is None and calls[0].tool in PROCESS_AGENT_FRONTENDS)
+                )
                 and calls[0].effect_class == EffectClass.NON_IDEMPOTENT_WRITE
                 and approval_for(turn, calls[0]) is None
             ):
@@ -947,7 +952,10 @@ class AgentRuntime:
                         if d.effect_class == EffectClass.READ_ONLY
                         or (self._patches is not None and d.name == "apply_patch")
                         or (self._patch_batches is not None and d.name == "apply_patch_batch")
-                        or (self._processes is not None and d.name == "host.process")
+                        or (
+                            self._process_tool_name is not None
+                            and d.name == self._process_tool_name
+                        )
                     ),
                     budget=turn.budget,
                     remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
@@ -1000,7 +1008,7 @@ class AgentRuntime:
                     raise KernelError("process_not_enabled", "持久Process审批缺少原专用端口")
             is_patch = self._patches is not None and call.tool == "apply_patch"
             is_batch = self._patch_batches is not None and call.tool == "apply_patch_batch"
-            is_process = self._processes is not None and call.tool == "host.process"
+            is_process = self._processes is not None and call.tool == self._process_tool_name
             if (
                 is_process
                 or is_patch
@@ -1014,16 +1022,29 @@ class AgentRuntime:
                     if is_process:
                         assert self._processes is not None
                         self._fault("runtime.before_process_action_prepare")
-                        prepared = await self._processes.prepare(
-                            call,
-                            ToolExecutionScope.for_pending_call(thread, turn_id, call),
-                            token,
-                            approval_id=new_id(),
-                        )
-                        if isinstance(prepared, ToolResultContent):
-                            early_result = prepared
+                        try:
+                            prepared = await self._processes.prepare(
+                                call,
+                                ToolExecutionScope.for_pending_call(thread, turn_id, call),
+                                token,
+                                approval_id=new_id(),
+                            )
+                        except KernelError as error:
+                            if error.code not in {
+                                "tool_invalid_arguments",
+                                "test_profile_not_found",
+                            }:
+                                raise
+                            early_result = ToolResultContent(
+                                call_id=call.call_id,
+                                outcome="failed",
+                                error=error.to_failure(),
+                            )
                         else:
-                            content = prepared
+                            if isinstance(prepared, ToolResultContent):
+                                early_result = prepared
+                            else:
+                                content = prepared
                         self._fault("runtime.after_process_action_prepare")
                     elif is_patch or is_batch:
                         try:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -53,10 +54,25 @@ class ProcessActionExecutor:
         self._factory = factory
         sample = factory()
         self._binding_fingerprint = sample.binding_fingerprint
+        self._workspace_root = sample.workspace_root
+        self._program_names = sample.program_names
+        self._max_timeout_seconds = sample.max_timeout_seconds
 
     @property
     def version(self) -> str:
         return f"{PROCESS_ACTION_POLICY}.{self._binding_fingerprint}"
+
+    @property
+    def workspace_root(self) -> Path:
+        return self._workspace_root
+
+    @property
+    def program_names(self) -> frozenset[str]:
+        return self._program_names
+
+    @property
+    def max_timeout_seconds(self) -> float:
+        return self._max_timeout_seconds
 
     async def execute(self, action: ActionSnapshot, arguments: BaseModel) -> ExecutionOutcome:
         request = ProcessRequest.model_validate_json(arguments.model_dump_json())

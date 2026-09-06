@@ -51,6 +51,7 @@ from harnessix.domain.models import (
     EffectClass,
 )
 from harnessix.patches.bridge_contracts import call_request_id
+from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS
 
 
 def require(condition: bool, message: str) -> None:
@@ -241,11 +242,11 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
             and (
                 call.effect_class == EffectClass.READ_ONLY
                 if isinstance(content, ApprovalRequestContent)
-                else call.tool
-                == (
-                    "host.process"
+                else (
+                    call.tool in PROCESS_AGENT_FRONTENDS
                     if isinstance(content, ProcessApprovalRequestContent)
-                    else (
+                    else call.tool
+                    == (
                         "apply_patch_batch"
                         if isinstance(content, PatchBatchApprovalRequestContent)
                         else "apply_patch"

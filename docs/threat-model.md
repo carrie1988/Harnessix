@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.4b2c2
+- 状态：0.2架构基线，已随实现更新至0.5.4c
 - 更新日期：2026-09-06
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -442,3 +442,16 @@ Agent Runtime                │
 - RUNNING/RECONCILING租约过期同事务保存`UNKNOWN/lease_expired`，避免终态无结果导致投影失败。UNKNOWN不得自动重试，但仍不能证明进程停止；外部监督和孤儿进程回收继续属于0.7。
 - 跨进程审批由数据库事务裁决，相同决定幂等、不同决定冲突。该规则防止应用层重复授权事件，不替代API认证、RBAC、审计actor真实性或多租户隔离。
 - 双SDK测试证明当前历史白名单不发送Action ID、私有Process效果、绑定指纹、幂等键和未读取的Base64正文。模型主动调用`read_artifact`后会获得授权页内容；这是显式数据流，不是DLP，Artifact仍可能包含源码或秘密。
+
+## 0.5.4c Git与测试Profile补充（2026-09-06）
+
+- Git能力默认不存在，只有受信宿主提供绝对可执行文件才注册。模型不能选择cwd、仓库、子命令、revision、pathspec或config；工具版本绑定程序/cwd身份、固定环境和资源策略。摘要用于漂移检测，不抵抗同UID同时替换文件和篡改进程内事实。
+- 每次Git读取都要求`rev-parse --show-toplevel`严格等于授权根，防止子目录借用父仓库越过工作区意图。固定环境/参数关闭用户和系统配置、分页器、交互、可选锁、Hook、fsmonitor、external diff与textconv；恶意仓库仍可能用超大索引/对象消耗有限资源，因此保留5秒、捕获和结果上限。
+- `git_status`只有结构化条目上限；底层输出截断时整体失败。`git_diff`只返回48 KiB完整UTF-8前缀及观察摘要；达到更高的进程输出停止阈值时失败，不把部分观察伪装成完整差异。Git工具不执行提交、checkout、clean、merge、push或任意alias。
+- `run_tests`公开输入只有Profile名称。程序、argv、工作区和超时由宿主固定，Profile全集与后端Process绑定进入公开工具版本。额外字段、类型强转、未知名称及绑定漂移在Action启动前拒绝；工作区错配直接结束Turn，模型无法用名称拼接命令参数。
+- 测试并非只读：解析后的固定命令仍创建`host.process` Action，由Action Journal唯一批准并由外部Worker执行。Session中的`run_tests`审批投影、公开Schema或`passed`结果均不能替代Action许可；每次观察重新核对公开调用和后端Action完整身份。
+- 非零退出仅表示已确定测试失败，`passed=false`允许修复循环；启动、清理和输出证据不完整仍是failed/unknown。将二者混淆会导致错误自动重试或掩盖孤儿进程风险，因此状态、退出码与测试结论保持独立。
+- Profile完整argv会进入Effect Journal，不得包含凭据。Process Artifact可能包含源码、断言数据或秘密；模型显式读取后会得到正文。当前没有DLP、加密、容器、网络出口控制、CPU/内存强配额或同UID防篡改。
+- 私有受管副本不是自动Git worktree。测试示例中的Git初始化是受信宿主夹具，不意味着任意副本可提交/合并或自动交付源目录。0.5.4c闭环也不是非示例缺陷集Eval或生产容量证明。
+
+完整命令、错误、恢复与替代方案见[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。

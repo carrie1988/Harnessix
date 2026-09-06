@@ -18,7 +18,7 @@ from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.artifacts.contracts import ArtifactPage, ArtifactToolResult, ReadArtifactInput
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
-from harnessix.tools import files, search
+from harnessix.tools import files, git, search
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
     MAX_LINE_BYTES,
@@ -32,6 +32,12 @@ from harnessix.tools.contracts import (
     ReadFileInput,
     ReadFileOutput,
     ReadToolError,
+)
+from harnessix.tools.git_contracts import (
+    GitDiffInput,
+    GitDiffOutput,
+    GitStatusInput,
+    GitStatusOutput,
 )
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
@@ -62,8 +68,22 @@ async def _drain[T](task: asyncio.Task[T]) -> None:
 class _ReadBinding:
     name: str
     description: str
-    input_model: type[ListFilesInput] | type[ReadFileInput] | type[GlobInput] | type[GrepInput]
-    output_model: type[ListFilesOutput] | type[ReadFileOutput] | type[GlobOutput] | type[GrepOutput]
+    input_model: (
+        type[ListFilesInput]
+        | type[ReadFileInput]
+        | type[GlobInput]
+        | type[GrepInput]
+        | type[GitStatusInput]
+        | type[GitDiffInput]
+    )
+    output_model: (
+        type[ListFilesOutput]
+        | type[ReadFileOutput]
+        | type[GlobOutput]
+        | type[GrepOutput]
+        | type[GitStatusOutput]
+        | type[GitDiffOutput]
+    )
 
 
 _BINDINGS = (
@@ -93,6 +113,21 @@ _BINDINGS = (
     ),
 )
 
+_GIT_BINDINGS = (
+    _ReadBinding(
+        "git_status",
+        "读取当前仓库的分支和结构化变更状态；不刷新索引、不执行Hook",
+        GitStatusInput,
+        GitStatusOutput,
+    ),
+    _ReadBinding(
+        "git_diff",
+        "读取当前仓库有界工作区或暂存区差异；禁用外部Diff和textconv",
+        GitDiffInput,
+        GitDiffOutput,
+    ),
+)
+
 
 class CodingToolRuntime:
     """固定只读绑定；宿主拥有能力选择，Kernel 拥有审批与调度。"""
@@ -104,13 +139,18 @@ class CodingToolRuntime:
         denied_paths: tuple[str, ...] = (),
         require_approval: bool = False,
         artifacts: SQLiteArtifactStore | None = None,
+        git_executable: Path | None = None,
     ) -> None:
         self._workspace = Workspace(root, denied_paths=denied_paths)
         self._lock = asyncio.Lock()
         self._closed = False
         self._artifacts = artifacts
+        self._git = (
+            git.GitReadRuntime(self._workspace.root, git_executable) if git_executable else None
+        )
         self._definitions: dict[str, ToolDescriptor] = {}
-        for binding in _BINDINGS:
+        bindings = (*_BINDINGS, *(_GIT_BINDINGS if self._git is not None else ()))
+        for binding in bindings:
             rules: dict[str, object] = {
                 "implementation": "coding-read/v1",
                 "scope": self._workspace.scope,
@@ -132,6 +172,13 @@ class CodingToolRuntime:
                         ArchivedGlobOutput if binding.name == "glob" else ArchivedGrepOutput
                     )
                     rules["output"] = output_model.model_json_schema()
+            if binding in _GIT_BINDINGS:
+                assert self._git is not None
+                rules = {
+                    **rules,
+                    "implementation": "git-read/v1",
+                    "git": self._git.contract(),
+                }
             contract = digest(rules)
             self._definitions[binding.name] = ToolDescriptor(
                 name=binding.name,
@@ -250,13 +297,20 @@ class CodingToolRuntime:
         if definition is None:
             return self._failure(call, "unknown_tool", "工具未注册")
         self._validate_definition(call)
-        binding = next(b for b in _BINDINGS if b.name == call.tool)
+        binding = next(
+            b
+            for b in (*_BINDINGS, *(_GIT_BINDINGS if self._git is not None else ()))
+            if b.name == call.tool
+        )
         try:
             args = binding.input_model.model_validate(call.arguments)
         except ValidationError:
             return self._failure(call, "tool_invalid_arguments", "工具参数不符合契约")
         try:
-            output = await cancel.run(self._execute_read(args, capture=capture))
+            if isinstance(args, GitStatusInput | GitDiffInput):
+                output = await cancel.run(self._execute_git(args, cancel))
+            else:
+                output = await cancel.run(self._execute_read(args, capture=capture))
         except ReadToolError as error:
             return self._failure(call, f"tool_{error.code}", "工作区读取未完成")
         except OSError as error:
@@ -305,6 +359,16 @@ class CodingToolRuntime:
                 # 即便父任务再次取消，也先等待线程释放 FD，不能把清理变成后台工作。
                 await _drain(worker)
                 raise
+
+    async def _execute_git(
+        self, args: GitStatusInput | GitDiffInput, cancel: CancelToken
+    ) -> ReadContract:
+        async with self._lock:
+            if self._closed:
+                raise KernelError("tool_runtime_closed", "工具运行时已关闭")
+            if self._git is None:
+                raise KernelError("tool_contract_changed", "Git只读能力未绑定")
+            return await self._git.execute(args, cancel)
 
     @staticmethod
     def _failure(call: ToolCallContent, code: str, message: str) -> ToolResultContent:

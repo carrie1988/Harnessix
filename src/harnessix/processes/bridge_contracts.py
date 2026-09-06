@@ -11,6 +11,7 @@ from harnessix.tools.workspace import digest
 
 PROCESS_ACTION_POLICY: Literal["host-process-action/v1"] = "host-process-action/v1"
 PROCESS_AGENT_POLICY: Literal["agent-host-process/v1"] = "agent-host-process/v1"
+PROCESS_AGENT_FRONTENDS = frozenset({"host.process", "run_tests"})
 PROCESS_ACTION_NAMESPACE = UUID("6bdd9f7c-58cf-56ba-9561-45aa4030bf71")
 
 

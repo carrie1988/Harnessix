@@ -23,7 +23,25 @@ from harnessix.processes.capture import CaptureProtocol
 from harnessix.processes.contracts import ProcessLimits, ProcessRequest, ProcessResult, StopReason
 from harnessix.tools.runtime import _drain
 
-_ENV_NAMES = frozenset({"PATH", "LANG", "LC_ALL", "LC_CTYPE", "TZ", "TERM", "NO_COLOR"})
+_ENV_NAMES = frozenset(
+    {
+        "PATH",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "TZ",
+        "TERM",
+        "NO_COLOR",
+        # 仅由宿主绑定，不接受模型值；Git只读端口用来关闭用户级配置、
+        # 可选锁、分页器和交互提示。
+        "GIT_CONFIG_GLOBAL",
+        "GIT_CONFIG_NOSYSTEM",
+        "GIT_LITERAL_PATHSPECS",
+        "GIT_OPTIONAL_LOCKS",
+        "GIT_PAGER",
+        "GIT_TERMINAL_PROMPT",
+    }
+)
 _DEFAULT_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}
 
 
@@ -121,6 +139,18 @@ class HostProcessRuntime:
     def binding_fingerprint(self) -> str:
         """审批工具版本使用的宿主绑定摘要；不暴露环境值或可执行参数。"""
         return self._binding_fingerprint
+
+    @property
+    def workspace_root(self) -> Path:
+        return self._cwd
+
+    @property
+    def program_names(self) -> frozenset[str]:
+        return frozenset(self._programs)
+
+    @property
+    def max_timeout_seconds(self) -> float:
+        return self._limits.max_timeout_seconds
 
     async def __aenter__(self) -> Self:
         if self._closed:

@@ -183,7 +183,7 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.3、0.5.4a、0.5.4b1和0.5.4b2均已完成范围内验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、完整 Patch 计划、受管私有副本中的持久审批/写意图/单文件修改/崩溃核对，以及调用绑定的宿主异步桥接。已接通单文件/整组Patch与Process的双SDK离线闭环，仍无Git/run_tests、受控Shell或完整 Coding Eval。0.4.3c 计价证据独立待验收，不阻塞离线开发。0.5.4b现已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10–11、Process Artifact、单一审批、外部Worker、等待取消、租约UNKNOWN、完整跨库硬退出恢复和跨进程决定竞态；下一片为0.5.4c Git与测试反馈工具。见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0040](adr/0040-agent-process-action-saga.md)、[ADR 0041](adr/0041-process-output-artifact.md)和[ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。不把Session投影或Artifact冒充执行许可，不提前开放任意Shell或源目录自动合入。
+状态：**0.5.1–0.5.4c均已完成当前定义范围内的本地验收，整体0.5进行中**。已有只读工具、可信作用域、事务 Artifact、受管私有副本Patch、持久审批/效果核对、受信进程、Process Artifact、固定Git状态/差异和宿主预注册测试Profile。单文件/整组Patch、Process及Git/测试反馈均已接通确定性闭环；0.5.4c不开放任意Shell，测试命令仍由Action Journal唯一审批和外部Worker执行。0.4.3c计价证据独立待验收，不阻塞离线开发。下一主片为0.5.5真实缺陷集Coding Eval和变更交付基线。见 [0.5 实施设计](m05-coding-tools.md)、[ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)和[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。不把Session投影、Artifact或测试意图冒充执行许可，不提前宣称OS Sandbox、任意Shell或源目录自动合入。
 
 ### 目标
 
@@ -218,9 +218,9 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
       - [x] 0.5.3c3c：真实调用归属的计划/历史效果 Diff Artifact、事务发布、预算/分页/过期及恢复；
         - [x] c3c1：完整调用/组账本绑定的计划与历史效果报告，有界 JSONL、全部成员说明、取消排空及只读重开；
         - [x] c3c2：计划/效果独立引用与真实 Session 事实同事务发布、reader 兼容升级、分页/配额/过期及失败恢复；
-- [ ] `shell` 的非交互执行；
+- [ ] `shell` 的非交互执行（当前只开放固定测试Profile，不开放模型任意argv）；
   - [x] 0.5.4a：受信宿主程序绑定、argv/环境准入、双流有界捕获、组终止、取消/关闭与管道回收；不注册模型工具；
-  - [ ] 0.5.4b：持久命令意图/审批/结果、宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
+  - [x] 0.5.4b：持久命令意图/审批/结果、当前范围宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
     - [x] b1：复用Action Plane持久意图/审批/租约/UNKNOWN，绑定宿主执行权限，硬退出不杀旧PID或重放；不接模型；
     - [x] b2：Agent Session与Action Plane的单一审批绑定、长输出Artifact及当前范围宿主死亡恢复；
       - [x] b2a：冻结Action审批唯一权威、稳定Action身份、跨库恢复Saga、WAITING_ACTION与Process Artifact边界；
@@ -233,13 +233,13 @@ Harnessix Code 的目标是生产级 Coding Agent，不是 POC 或功能演示�
         - [x] b2c1：显式Process Agent端口、稳定Action准备/唯一决定、外部Worker、WAITING_ACTION单次观察与有界模型结果；
         - [x] b2c2：Process stdout/stderr Artifact事务发布、配额/分页/TTL、损坏恢复、migration11及提交窗口硬退出；
         - [x] b2c3：Session×Action真硬退出矩阵、等待取消/时限/关闭、跨进程决定、租约UNKNOWN和双SDK离线闭环；
-  - [ ] 0.5.4c：在上述准入上接入Git/run_tests与受控Shell，完成真实测试反馈闭环；
-- [ ] `git_status`、`git_diff`；
-- [ ] `run_tests`；
+  - [x] 0.5.4c：在上述准入上接入固定Git读取和宿主预注册`run_tests`，完成失败→修复→通过→Diff反馈；任意Shell仍关闭；
+- [x] `git_status`、`git_diff`（显式Git绑定、固定命令/config、精确仓库根和有界UTF-8结果）；
+- [x] `run_tests`（模型只选Profile，固定argv进入原Process Action审批/Worker链路）；
 - [x] 有界搜索/Process输出截断、事务归档引用和过期清理；Process Artifact不对Action已捕获前缀做第二次隐藏截断；
 - [ ] 只读并发、写操作互斥和 Turn 取消；
 - [ ] 统一 Tool Error Taxonomy；
-- [ ] 变更摘要和最终 Diff 交付。
+- [x] 0.5.4c闭环中的变更摘要和最终Diff读取；源目录合入、提交和产品交付仍待后续。
 
 ### 关键测试
 

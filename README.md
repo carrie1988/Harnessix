@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a 已实现受信宿主进程生命周期，0.5.4b1 已复用 Action Plane 实现持久命令准入，0.5.4b2 已完成稳定Action身份、Agent v9投影、WAITING_ACTION、Session migration10–11、唯一审批、外部Worker、Process Artifact、完整跨库硬退出恢复、等待取消、租约UNKNOWN、跨进程决定和双SDK离线闭环；Git/测试执行、编码 Eval 与 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4.1/0.4.2a 双 Adapter、0.4.2b1/b2 尝试账本、0.4.3a 成本报告，以及 0.4.3b1/b2 受控 Smoke、白名单诊断与响应计费元数据的离线验收。百炼北京文本、内存工具、审批重开实测通过，计价适用性仍待验收。0.5.1/0.5.2 已实现工作区绑定、目录分页、文件读取、有界搜索与事务 Artifact。0.5.3 已实现受管副本内的单文件/整组 Patch、持久审批、双账本恢复和 Diff Artifact。0.5.4a/b 已实现受信进程、Action Plane 持久准入、Agent v9投影、WAITING_ACTION、Session migration10–11、唯一审批、外部Worker、Process Artifact及完整恢复。0.5.4c 已新增显式启用的`git_status`/`git_diff`和宿主预注册`run_tests`，并完成失败测试→受管Patch→测试通过→Git反馈及双SDK离线闭环；任意Shell、OS Sandbox、真实编码 Eval、源目录交付和 Agent CLI 尚未完成，当前仍不是完整 Coding Agent。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -63,7 +63,7 @@ uv run python -m examples.kernel_artifacts
 uv run pytest tests/tools tests/artifacts
 ~~~
 
-上述 CodingToolRuntime 仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；不支持正则搜索、完整 gitignore、Shell、测试执行或完整 Coding Eval；模型 Patch 通过独立专用端口启用，不属于只读工具注册表。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
+上述 CodingToolRuntime 仅支持本地 macOS/Linux 只读范围，不是 OS Sandbox；仍不支持正则搜索、完整 gitignore、任意Shell或完整 Coding Eval。Git只在宿主显式提供固定可执行文件时注册；`run_tests`和模型 Patch 分别通过独立Process/Patch专用端口启用，不属于默认只读工具注册表。默认搜索仍只返回有界预览；Artifact 必须由宿主显式启用，单份最多 1 MiB/10000 记录，不是无限日志存储。详细输入输出、使用方式和下一阶段见 [0.5 实施设计](docs/m05-coding-tools.md)。
 
 ## 当前已实现：只读 Patch 计划准备
 
@@ -196,7 +196,7 @@ uv run python -m examples.kernel_batch
 uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
 ~~~
 
-这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，当前还已交付0.5.4a宿主进程基础层、0.5.4b1 Action Plane持久准入及完整0.5.4b2 Agent/Process Saga；下一片为 **0.5.4c：Git、run_tests与受控命令反馈闭环**。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，0.5.4a/b宿主进程与完整Agent/Process Saga及0.5.4c Git/测试反馈也已交付。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：真实计划/历史效果差异报告（0.5.3c3c1）
 
@@ -224,7 +224,7 @@ uv run python -m examples.batch_diff
 uv run pytest tests/artifacts/test_batch_diff*.py
 ```
 
-设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；**Shell、Git/测试执行、源目录合入和完整 Coding Eval 尚未完成**，项目仍在0.5阶段，不是已完工的生产 Coding Agent。
+设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈现由0.5.4c提供，**任意Shell、源目录合入和完整 Coding Eval 尚未完成**，项目仍在0.5阶段，不是已完工的生产 Coding Agent。
 
 ## 当前已实现：受信宿主进程运行层（0.5.4a）
 
@@ -237,13 +237,13 @@ uv run python -m examples.host_process
 uv run pytest tests/processes
 ```
 
-**边界**：这是受信宿主基础API，不是模型Shell工具或OS Sandbox。脱组后代、宿主硬崩溃和不可中断内核等待仍需后续设计；测试明确验证缺口并清理夹具。下节0.5.4b1已接Action Plane持久准入；b2处理Agent绑定/死亡运维，0.5.4c再接Git和run_tests。设计见 [ADR 0038](docs/adr/0038-host-process-lifecycle.md)，Agent/Session格式及原工具定义不变。
+**边界**：这是受信宿主基础API，不是模型Shell工具或OS Sandbox。脱组后代、宿主硬崩溃和不可中断内核等待仍需后续设计；测试明确验证缺口并清理夹具。下节0.5.4b1已接Action Plane持久准入，b2已完成Agent绑定/当前范围恢复，0.5.4c已在同一链路上接入固定Git读取和测试Profile。设计见 [ADR 0038](docs/adr/0038-host-process-lifecycle.md)，Agent/Session格式及原工具定义不变。
 
 ### 持久命令准入（0.5.4b1）
 
 宿主现在可以用`process_action_tool(factory)`将固定进程绑定显式注册到现有Action Plane。命令先持久化，必须提供幂等键并通过Policy/Approval，再进入租约执行；工具版本绑定cwd、程序身份、环境和资源预算。确定结果保存ProcessResult和Effect Receipt，证据不足则UNKNOWN。Task/宿主退出后不自动重放，也不根据历史PID杀进程。
 
-该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定和Process Artifact现已通过b2b/b2c2实现；Git/run_tests、宿主硬退出后的自动进程清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
+该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定和Process Artifact现已通过b2b/b2c2实现；0.5.4c已提供不接受模型argv的`run_tests`，宿主硬退出后的自动进程清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
 
 Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1新增`AgentProcessCallPlan`并确定性绑定调用与Action身份；b2b2新增Agent Event/Thread v9、Session migration10、`ProcessApprovalRequestContent`、`ProcessActionStateContent`及`ToolResult.process`。Session决定只能从已核对的ActionSnapshot投影，Action Journal仍是唯一执行许可；READY/LEASED/RUNNING/RECONCILING保持持久WAITING_ACTION，只有终止观察可恢复工具循环。私有计划、批准与Action证据不会进入模型历史。
 
@@ -259,7 +259,23 @@ uv run pytest tests/agent/test_process_agent_runtime.py tests/agent/test_process
 uv run pytest tests/agent/test_process_agent_sdk.py tests/artifacts/test_process_output*.py
 ```
 
-默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。0.5.4b2范围现已完成；Git/run_tests进入0.5.4c。Process Artifact和Session取消都不是执行许可撤销、OS Sandbox、DLP、孤儿进程监督或同UID防篡改边界。
+默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。Process Artifact和Session取消都不是执行许可撤销、OS Sandbox、DLP、孤儿进程监督或同UID防篡改边界。
+
+## 当前已实现：Git与受控测试反馈（0.5.4c）
+
+- `CodingToolRuntime(..., git_executable=<绝对路径>)`才注册`git_status`和`git_diff`；模型不能提交仓库路径、revision、pathspec、Git配置或任意子命令；
+- Git固定禁用分页器、可选锁、Hook、fsmonitor、外部Diff和textconv，并要求工作区就是精确仓库根；状态最多200项，Diff返回最多48 KiB完整UTF-8前缀及已观察流摘要；
+- `RunTestsAgentBridge`只向模型公开`{"profile": "unit"}`，宿主固定程序、argv、工作区和超时；完整命令仍写入原`host.process` Action，经过唯一审批和外部Worker；
+- 测试非零退出是确定的执行结果，返回`passed=false`供模型继续修复；启动/清理或输出证据不完整仍按Process failed/unknown语义处理；
+- 离线闭环已覆盖失败测试→读取Process Artifact→受管Patch审批→测试通过→Git状态/差异→最终回答；OpenAI与Anthropic官方SDK路径均不向模型wire泄漏固定argv和私有Action证据。
+
+```bash
+uv run python -m examples.coding_feedback
+uv run pytest tests/tools/test_git.py tests/processes/test_test_profiles.py
+uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_feedback_sdk.py
+```
+
+这是受控测试Profile，不是任意Shell。测试代码仍在宿主权限下运行；当前没有容器/网络隔离、CPU/内存强配额、源目录自动合入、Git提交/推送或真实缺陷集Coding Eval。配置、数据、错误、恢复和取舍见 [ADR 0043](docs/adr/0043-git-and-controlled-test-feedback.md)。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -493,10 +509,10 @@ src/harnessix/adapters/     Agent 框架适配器
 src/harnessix/agent/        Kernel 领域模型、Reducer、Loop、取消
 src/harnessix/models/       Provider 契约、Fake/Scripted Provider
 src/harnessix/session/      SQLite Session Store、迁移与宿主锁
-src/harnessix/tools/        工作区只读工具、作用域与Artifact读取入口
+src/harnessix/tools/        工作区只读/Git工具、作用域与Artifact读取入口
 src/harnessix/artifacts/    有界正文、事务发布、分页、配额与清理
 src/harnessix/patches/      受管单文件/整组Patch及差异报告
-src/harnessix/processes/    宿主进程、Action桥接与输出文档
+src/harnessix/processes/    宿主进程、Action桥接、测试Profile与输出文档
 tests/                      单元和集成测试
 docs/                       中文架构与决策文档
 spec/                       生成的 JSON Schema 和 OpenAPI
@@ -538,6 +554,7 @@ examples/                   可运行演示
 - [M1.2 可观测性设计](docs/m1-observability.md)
 - [部署与运行](docs/deployment.md)
 - [Process输出Artifact决策](docs/adr/0041-process-output-artifact.md)
+- [Git与受控测试反馈决策](docs/adr/0043-git-and-controlled-test-feedback.md)
 
 ## 目标里程碑
 

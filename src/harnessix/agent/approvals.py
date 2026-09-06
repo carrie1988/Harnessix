@@ -22,8 +22,9 @@ from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.batch_contracts import PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.contracts import PatchProposal
-from harnessix.processes.bridge_contracts import AgentProcessCallPlan
+from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS, AgentProcessCallPlan
 from harnessix.processes.contracts import ProcessRequest
+from harnessix.processes.test_contracts import RunTestsInput
 from harnessix.tools.workspace import digest
 
 READ_ONLY_POLICY_VERSION = "kernel-read-only/v1"
@@ -135,11 +136,10 @@ def validate_process_plan(
     """校验Session调用归属和公开命令摘要；Action事实由宿主桥接另行核对。"""
     try:
         checked = AgentProcessCallPlan.model_validate_json(plan.model_dump_json())
-        process = ProcessRequest.model_validate_json(json.dumps(call.arguments, allow_nan=False))
     except (ValidationError, ValueError, TypeError):
         return False
-    return (
-        call.tool == "host.process"
+    common = (
+        call.tool in PROCESS_AGENT_FRONTENDS
         and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
         and call.requires_approval
         and call.tool_fingerprint is not None
@@ -147,7 +147,21 @@ def validate_process_plan(
         == (thread.thread_id, turn.turn_id, call.call_id)
         and checked.workspace == thread.workspace
         and checked.call_fingerprint == request_fingerprint(thread, turn, call)
-        and checked.action_tool_version == call.tool_version
+    )
+    if not common:
+        return False
+    if call.tool == "run_tests":
+        try:
+            RunTestsInput.model_validate_json(json.dumps(call.arguments, allow_nan=False))
+        except (ValidationError, ValueError, TypeError):
+            return False
+        return True
+    try:
+        process = ProcessRequest.model_validate_json(json.dumps(call.arguments, allow_nan=False))
+    except (ValidationError, ValueError, TypeError):
+        return False
+    return (
+        checked.action_tool_version == call.tool_version
         and checked.program == process.program
         and checked.arguments_sha256 == digest(process.arguments)
         and checked.timeout_seconds == process.timeout_seconds

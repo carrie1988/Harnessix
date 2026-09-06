@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4b2c2已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4c已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件 Patch 专用 Kernel 端口与持久写审批/效果核对；另已实现只读多文件计划和有界结构化 Diff；整组持久顺序执行、部分/未知效果、Kernel批量工具和计划/效果Diff Artifact已实现；0.5.4a宿主Process、b1 Action Plane准入、b2 Agent稳定身份/投影/显式运行时及Process Artifact已实现；完整恢复、Agent模型Shell与Git/测试执行仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界 Artifact、受管单文件/整组Patch及计划/效果Diff；0.5.4a/b已完成宿主Process、Action Plane准入、Agent稳定身份/投影、Process Artifact和当前恢复边界；0.5.4c已实现显式Git状态/差异和宿主预注册测试Profile，并完成失败→修复→通过→Diff组合闭环。任意Shell、OS隔离、源目录交付与真实Coding Eval仍待完成，见 [实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -434,3 +434,5 @@ src/harnessix/
 0.5.4b2c2增加`ProcessArtifactPublisher`端口和SQLite实现。已核对的完整`ProcessResult`只在宿主私有观察中传递，生成summary+双流Base64 chunk的`process-output/v1`文档；正文、manifest、结果引用和Process终态事件同Session事务。`process_output`用途由migration11显式加入白名单，读取时重新绑定批准/Action/Call和流摘要。发布失败降级保留无引用终态，提交前崩溃可从原Action重建，提交后不重放；Effect Journal与Session仍非原子。详见 [ADR 0041](adr/0041-process-output-artifact.md)。
 
 0.5.4b2c3完成当前Process Saga恢复矩阵。Runtime可从Session已有ToolCall但无审批Item的窗口按稳定身份找回同一Action；缺少原端口时保持事实。WAITING取消只结束Session观察并以unknown/INTERRUPTED结算，不撤销Action决定或队列状态。SQLite/PostgreSQL把RUNNING/RECONCILING租约过期与`UNKNOWN/lease_expired`结果同事务保存；跨进程相同审批幂等、不同审批冲突。八个跨库边界和一个Worker租约边界以真实退出验证，双SDK离线HTTP完成审批重开、外部Worker和Artifact摘要读取。详见 [ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。
+
+0.5.4c在不新增执行权威的前提下增加两个窄入口。`GitReadRuntime`只由宿主显式绑定绝对Git可执行文件，固定status/diff子命令、环境、config、精确仓库根和输出预算，经`CodingToolRuntime`原串行只读端口暴露`git_status`/`git_diff`。`RunTestsAgentBridge`把公开`run_tests(profile)`解析成宿主固定`ProcessRequest`；公开工具版本绑定Profile全集、工作区和后端Process工具，实际Action仍为`host.process`，继续由原Journal审批、Worker执行和Artifact归档。非零测试退出映射`passed=false`而不伪装基础设施失败。组合闭环在三个权威事实域之间只读核对，不引入跨库超级事务或自动重放。详见 [ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。
