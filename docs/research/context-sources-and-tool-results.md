@@ -1,8 +1,8 @@
 # Context Source、项目指令与 Tool Result 模型视图源码研究
 
-- 更新日期：2026-09-07
+- 更新日期：2026-09-08
 - 适用范围：Harnessix Code 0.6.2
-- 研究状态：0.6.2a 项目指令 Source 与 freshness、0.6.2b Workspace/Git/环境 Source 与跨来源一致性均已实现；Tool Result 模型视图结论作为后续切片输入
+- 研究状态：0.6.2a、0.6.2b已实现；0.6.2c Tool Result模型视图源码研究与架构决策已冻结
 
 ## 1. 研究问题
 
@@ -64,19 +64,25 @@ Harnessix 0.6.2a尚未持久化来源正文，因而没有足够证据在刷新�
 
 ### 4.1 Codex
 
-`codex-rs/utils/output-truncation/src/lib.rs:14-31`提供带原始规模提示的中间截断；`34-107`在裁剪文本时保留媒体和加密内容；`109-197`按总预算处理多个内容块并显式报告省略项。`codex-rs/core/src/context_manager/history.rs:223-280`表明进入模型历史的工具输出会经过有界处理。
+`codex-rs/utils/output-truncation/src/lib.rs:14-31`提供带原始规模提示的中间截断；`35-49`按文本或内容块分别处理函数结果；`52-107`合并文本预算但保留图片、音频和加密内容的结构与顺序；`109-178`按一个总预算逐项处理内容块，并对省略的文本、音频显式生成计数标记。`codex-rs/core/src/context_manager/history.rs:224-280`在历史入栈时复制Response Item，再对函数结果施加模型配置预算；原调用对象不被就地修改，后续`for_prompt`另做模态规范化。
+
+该实现证明Tool Result必须在进入模型历史前有界，且不同模态不能统一按字符串处理。它没有提供Harnessix所需的完整结果Artifact、跨重启替换决策和引用归属校验，因此不能直接作为恢复契约。
 
 ### 4.2 OpenCode
 
-`packages/core/src/session/compaction.ts:12-15`设定摘要缓冲、保留量、Tool输出和摘要输出上限；`83-120`只在构造Compaction输入时把工具/命令输出裁至2000字符，原Session消息不因此原地改写。
+`packages/core/src/session/compaction.ts:12-15`设定摘要缓冲、保留量、Tool输出和摘要输出上限；`83-120`只在构造Compaction输入时把工具/命令输出裁至2000字符。`packages/core/src/session/runner/to-llm-message.ts:26-62`从持久Tool状态构造Provider结果，`64-107`生成新的LLM消息数组；两条路径都没有反向改写Session消息。Tool输出在Compaction输入中的简化与正常模型历史投影是两个不同阶段。
+
+该分离可避免摘要预算策略污染事实历史，但OpenCode此处的`slice(0, 2000)`只适用于面向摘要器的文本序列化，不足以定义结构化JSON、媒体或可取回完整证据的生产契约。
 
 ### 4.3 Claude Code 逆向整理源码镜像
 
-`src/utils/toolResultStorage.ts:131-199`先持久完整大结果，再返回预览和文件引用；`367-470`保存按Tool Use ID冻结的替换决策；`680-908`在消息级预算内选择大结果、持久化、替换，并保证后续请求字节一致。该实现强调两点：先有完整证据再裁模型视图；同一历史项的替换决策需要可恢复且稳定。
+`src/utils/toolResultStorage.ts:137-183`使用Tool Use ID确定文件名并以排他创建保存完整正文，已存在时复用；`189-199`构造预览和文件引用。`272-334`先判断类型和规模，完整持久化成功后才替换模型结果，图片块保持原结构。`367-412`维护每会话冻结状态并为共享缓存的分支复制；`465-479`把模型实际看到的替换字符串写入Transcript，而不是恢复时按新代码重新生成。`641-667`区分必须重放、已见未替换和首次出现的结果；`694-725`构造新消息而不修改原消息；`739-908`只选择首次出现的大结果，持久失败则保留原文并冻结该决定；`938-987`从Transcript恢复替换状态。
 
-### 4.4 Harnessix 后续约束
+该镜像揭示了Prompt Cache前缀稳定性的实际约束：同一结果第一次进入模型后的命运不可在后续轮次改变。其本地绝对路径引用、持久失败后继续发送可能超限原文和基于字符的规模估算不适合Harnessix；材料仍只作交叉验证。
 
-0.6.2a不修改`ToolResultContent`或历史投影。后续Tool Result切片必须同时满足：
+### 4.4 Harnessix 0.6.2c约束
+
+Tool Result切片必须同时满足：
 
 - Session原始完成Item不可被模型视图裁剪反向改写；
 - 只有已成功提交的完整Artifact才能生成“预览+引用”；
@@ -84,6 +90,18 @@ Harnessix 0.6.2a尚未持久化来源正文，因而没有足够证据在刷新�
 - 相同Item在Resume/Fork和重复规划时得到相同模型视图；
 - Artifact发布失败不得静默丢弃完整结果后继续调用模型；
 - 文本、结构化JSON、媒体、Patch/Process专用证据需分别定义，不能用字符串切片覆盖所有类型。
+
+### 4.5 结论与取舍
+
+1. Session中完成的`Item`是事实源。模型历史只由其深拷贝构造，任何预算处理都不得追加`ItemFinished`覆盖旧结果，也不得更新旧事件。
+2. 以Provider可见的`outcome/output/error/diff_artifact`规范JSON UTF-8字节数作为单结果边界；默认上限64 KiB。字符数、Token估算和Session接收上限不能替代该边界。
+3. 结果首次进入模型历史时冻结`inline`或`artifact_reference`决定。决定记录来源Item/Call、来源和视图摘要、字节数、当时上限、Artifact绑定及精确替换`output`。恢复和后续步骤复用已记录决定；更小的新上限若容不下旧视图则失败，不允许重写历史前缀。
+4. 未超限结果保持完整结构。超限结果不做头部、尾部或中间字符串切片；只有`output={preview, artifact}`且Artifact用途为`tool_result`、`complete=true`时，才把整个preview替换为固定省略元数据并保留原引用。Artifact正文必须已与结果同事务提交。
+5. 每次模型步骤在`PREPARING_CONTEXT`阶段先校验全部可见Artifact，再持久化`ModelHistoryPrepared`。检查记录只保存计数、字节数和摘要；替换决定只保存有界替换元数据，不复制工具正文。
+6. Process输出Artifact只证明已捕获stdout/stderr文档，Batch Diff只证明计划或效果差异；二者都不能授权删除任意Tool Result字段。Patch/Process结果若异常超过边界则失败关闭。
+7. 当前`ToolResultContent.output`仅为JSON值，不具备媒体类型、MIME、尺寸和Blob引用契约。媒体不得伪装成大字符串后由通用逻辑裁剪；正式媒体结果留待专用契约。
+8. 任何模型可见Artifact引用在发网前校验Thread、Call、用途、Session关联、manifest、状态、TTL、正文长度、SHA-256和记录数。缺少验证器、跨归属、过期、损坏或不完整引用均不调用Provider。
+9. 0.6.2c采用单结果边界，不追溯改变已见结果以满足后来增长的聚合预算。历史总预算继续由Context Engine拒绝，并在0.6.3通过版本化Compaction解决。
 
 ## 5. 0.6.2a 决策结论
 
@@ -102,9 +120,9 @@ Harnessix 0.6.2a尚未持久化来源正文，因而没有足够证据在刷新�
 - 项目根自动探测、配置化fallback文件名、全局用户指令文件；
 - 针对被编辑文件所在子目录的按Tool目标规则再发现；
 - 暂时不可用时的持久旧正文回退；
-- Tool Result模型视图、Artifact自动归档和Compaction。
+- Compaction及超限结果的通用自动归档。
 
-这些能力分别进入0.6.2b、0.6.2c和0.6.3，未实现前不得描述为生产完成。
+这些能力分别进入后续0.6.3及更晚切片，未实现前不得描述为生产完成。
 
 ## 7. 0.6.2b Workspace、Git与环境上下文研究
 

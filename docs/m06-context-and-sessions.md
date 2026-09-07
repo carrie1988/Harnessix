@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
-- 更新日期：2026-09-07
-- 状态：0.6.1、0.6.2a、0.6.2b已完成；整体0.6进行中
+- 更新日期：2026-09-08
+- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c设计已冻结、实现中；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -13,7 +13,7 @@
 | 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
-| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 未开始 |
+| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 设计已冻结、实现中 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
@@ -343,7 +343,9 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 ### 28.1 0.6.2c
 
-在不改写Session原始Item的前提下构造有界Tool Result模型视图；超大正文必须先成功发布完整Artifact，再形成稳定预览和引用。需要单独处理结构化JSON、文本、媒体、Patch、Process和Artifact过期/失败，不能直接对任意JSON字符串切片。
+采用Session事实历史与瞬时模型历史双层结构。Tool Result首次进入模型历史时，按Provider可见规范JSON的UTF-8字节数冻结`inline`或`artifact_reference`决定；后续步骤和恢复复用精确决定。每步先验证所有可见Artifact并提交`ModelHistoryPrepared`，再让Context与Provider共同使用准备后历史。
+
+超限结果不切割任意JSON。只有完整、已发布、未过期且与Thread/Call/`tool_result`用途双向绑定的Artifact，才能把整个preview替换为固定省略元数据并保留引用。Process和Batch Diff Artifact仅验证各自证据，不为任意结果字段兜底；当前JSON结果不声明媒体支持。正式契约、失败语义和迁移见[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
 
 ### 28.2 0.6.3
 
