@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-07
-- 状态：0.6.1、0.6.2a已完成；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b已完成；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -12,7 +12,7 @@
 |---|---|---|
 | 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
-| 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 未开始 |
+| 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 未开始 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
@@ -47,7 +47,7 @@ Context Planner 只决定模型输入视图。它不能执行工具、授予权�
 
 `ContextFragment`包含`kind/source/content`。`kind`固定映射 trust、priority 和 required，正文不能提升自身权限。契约单片正文上限256 KiB，静态Engine把全部来源与正文进一步限制为128 KiB，单次最多128片；无效UTF-8、NUL和空白正文拒绝。
 
-当前静态实现支持六类 Fragment，但0.6.1仅正式完成调用方显式提供的 Runtime/User/Project 指令。Workspace/Git/Environment 的自动收集、时效和来源失败仍属于0.6.2。
+静态实现支持六类Fragment，但0.6.1仅正式完成调用方显式提供的Runtime/User/Project指令。Workspace/Git/Environment自动收集、时效和来源失败已由0.6.2a/0.6.2b完成。
 
 ### 3.2 ContextBuildInput
 
@@ -85,7 +85,7 @@ Context Planner 只决定模型输入视图。它不能执行工具、授予权�
 
 ## 6. 0.6.1数据与迁移
 
-- 0.6.1 Agent Event/Thread版本：v10；当前动态Source实现已推进至v11，见第13节；
+- 0.6.1 Agent Event/Thread版本：v10；当前多Source实现已推进至v12，见第21节；
 - Session Migration：`0012_context_inspection.sql`；
 - `Turn.context_inspections`按模型步骤保存；
 - v1-v9事件继续按原Schema解析和导出；
@@ -221,7 +221,7 @@ AgentRuntime PREPARING_CONTEXT
 - Context Source Snapshot：v1；
 - Session Migration：`0013_context_sources.sql`，只增加最低reader标记；
 - v1-v10事件和投影继续读取，历史Schema文件冻结；
-- v2检查记录只能写入Event v11；静态v1检查事实最低仍为v10，但当前程序新写统一使用v11；
+- v2检查记录只能写入Event v11及以上；静态v1检查事实最低仍为v10。该切片程序新写统一使用v11，当前0.6.2b程序统一写v12；
 - Migration 13不改写旧Event、投影或Artifact。
 
 ## 18. 可观测性与安全
@@ -245,16 +245,106 @@ AgentRuntime PREPARING_CONTEXT
 
 默认测试不需要模型API Key、网络、SSH、远程服务器或新中间件。全量回归、严格异步、Schema、wheel及远端四矩阵CI关闭数据见[测试与Eval规范第55节](testing-and-evals.md#55-062a-受控项目指令source与freshness验收2026-09-07)。
 
-## 20. 后续切片
+## 20. 0.6.2b总体方案
 
-### 20.1 0.6.2b
+~~~text
+AgentRuntime PREPARING_CONTEXT
+        │
+        ▼
+SourcedContextEngine
+        │
+        ├── 第一轮：Project / Workspace / Git / Environment
+        ├── 第二轮：Project / Workspace / Git / Environment
+        ├── scope、source revision、完整观测逐项核对
+        │
+        ├── ContextFragment（瞬时正文）
+        └── ContextSourceSnapshot + ContextConsistencySnapshot（无正文）
+                                      │
+                                      ▼
+                              ContextInspection v3
+                                      │
+                         Event v12 → Session migration 14
+                                      │
+                                      ▼
+                                   Provider
+~~~
 
-实现Workspace、Git和环境Source，并明确同一次规划的跨来源一致性、Git非仓库语义、状态输出边界、环境白名单和刷新策略。不得读取任意环境变量或Secret。
+一个Source保持0.6.2a单次观测和Context Inspection v2，避免改变已有宿主的读取次数与序列化。两个及以上Source才启用双观测并生成v3；多来源结果不满足一致性契约时不得降级为v2继续发网。
 
-### 20.2 0.6.2c
+## 21. WorkspaceContextSource详细设计
+
+Source由宿主绑定规范根、相对工作目录、deny-path、每目录条目上限和正文上限。默认只列Workspace根和当前工作目录的一级条目，二者相同时去重；不递归读取代码内容。
+
+每个目录先调用一次`list_files`，随后携带首次revision复核相同页。底层Workspace继续执行路径分段、拒绝名/后缀、no-follow、单链接、根身份与目录链TOCTOU核对。模型文档`workspace/layout.json`包含固定schema、相对工作目录、目录路径、名称/类型和`truncated`；按名称稳定排序。
+
+默认每目录64项、正文12 KiB。目录本身超过页边界或正文放不下时，从稳定排序末尾省略模型展示项并设置`truncated=true`；底层扫描超过10000项、2 MiB名称或五秒截止时间时整次失败，不把未完成扫描视为正常截断。source revision绑定契约、工作目录、条目/正文上限、目录revision和文档revision。
+
+## 22. GitContextSource详细设计
+
+Git Source绑定相同Workspace根、受信绝对Git可执行文件和既有`GitReadRuntime`。只调用固定`git status --porcelain=v2 --branch --untracked-files=all -z`路径；模型、仓库文件和环境不能提供命令、参数、cwd、配置或可执行文件。
+
+`git/status.json`包含`repository`、branch、HEAD、upstream、ahead/behind、状态条目、`total_entries`和`truncated`。默认请求100项、正文16 KiB。正文越界时从返回条目末尾省略并显式截断；底层完整status摘要仍参与source revision。非Git目录返回`repository=false`文档；初始仓库HEAD为`null`，detached HEAD的branch为`null`。
+
+Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook/fsmonitor/外部diff、禁止交互/分页/可选锁、五秒超时和有界捕获。Workspace绑定在Git调用前后核对。状态项还通过Workspace路径策略过滤：`.env`、`.git`、密钥后缀或宿主deny-path不会借Git状态绕过文件Source边界；被过滤数量只反映为`total_entries`与`truncated`，路径正文不进入模型。
+
+远端URL、Git用户、提交日志、diff和任意Git配置不采集。Git Context是External trust提示，不是仓库可信证明或写权限。
+
+## 23. EnvironmentContextSource详细设计
+
+环境Source接收宿主提供的值映射和显式allowlist，只按排序后的allowlist逐项取值，不遍历映射，不自动读取`os.environ`。allowlist最多32个唯一大写环境键；包含token、secret、password、passwd、key、credential、cookie、auth、authorization、private、jwt或session语义的名称在构造阶段拒绝。
+
+值必须为UTF-8字符串，不含NUL及控制字符，单值最多1024字节。`environment/runtime.json`包含固定schema、`os.name`、`sys.platform`、相对工作目录和当次存在的准入值，正文最多4 KiB；缺失allowlist键被省略，总量越界失败而非静默删除。映射值在模型步骤之间变化会产生新文档/source revision。
+
+名称过滤不能判断值本身是否敏感。生产宿主只能准入低敏环境事实，例如CI模式或构建标签；不能把凭据换成无害名称后传入。
+
+## 24. 跨Source一致性契约
+
+`optimistic-double-observation/v1`按稳定注册顺序执行两轮完整观测。每轮全部Source必须返回同一个`workspace_scope`；同一Source两轮revision必须一致；revision一致时完整Observation也必须相等。验证成功后只使用第二轮正文与快照规划。
+
+该策略证明两轮有界窗口内没有检测到状态变化，不提供文件系统、Git和环境的事务原子性。第二轮完成后到Provider请求之间仍可能有外部变化。模型后续操作必须重新通过工具自己的revision、Policy、Approval和效果核对，不能凭Context快照执行写入。
+
+`ContextConsistencySnapshot v1`只记录固定strategy、`passes=2`、来源数量和共同scope，不保存正文或时间戳。`ContextInspection v3`要求至少两个唯一Source、全部scope等于一致性scope、Source Fragment归属唯一且文档字节数/路径/kind与Fragment决策一致。
+
+## 25. 失败、取消与恢复
+
+| 场景 | code | retryable | Provider请求 |
+|---|---|---:|---:|
+| Source绑定根或scope不一致 | `context_source_workspace_mismatch` | 否 | 不发送 |
+| 两轮source revision变化 | `context_sources_changed` | 是 | 不发送 |
+| 同revision正文变化、非法返回、链接/路径/环境值 | `context_source_invalid` | 否 | 不发送 |
+| 目录、Git捕获、环境值或组合正文超限 | `context_source_too_large` | 否 | 不发送 |
+| Workspace/Git超时、绑定漂移或暂时I/O失败 | `context_source_unavailable` | 是 | 不发送 |
+| 非Git目录 | 无错误，`repository=false` | 不适用 | 继续规划 |
+| Turn取消 | 既有`cancelled` | 不适用 | 不发送下一请求 |
+
+任一第一轮或第二轮失败都会停止整个模型步骤，不提交部分Context事实。Session没有Source正文，重启后重新观测；旧revision不能作为正文回退。已提交的v3检查记录可Replay和诊断，但不授权工具。
+
+文件与环境读取沿用`run_read_operation`取消后通知并join线程。Git沿用`HostProcessRuntime`进程组终止、等待和关闭语义；Source不吞掉`TurnCancelled`。
+
+## 26. 数据、兼容与可观测性
+
+- Agent Event/Thread：v12；
+- Context Inspection：v1、v2继续读取，多Source写v3；
+- Context Source Snapshot：v1不变；
+- Context Consistency Snapshot：v1；
+- Session Migration：`0014_context_source_consistency.sql`，只推进最低reader标记；
+- v1-v11 Event/Thread及Context Inspection v1/v2 Schema冻结；
+- migration 14不改写Event、投影、Artifact或Effect Journal。应用后旧reader必须拒绝，回退只能恢复一致备份。
+
+`harnessix.agent.context.sources`继续只带固定kind/status。新增`harnessix.agent.context.consistency`只带固定strategy/result。Source ID、路径、变量名、正文、revision、scope和任意Git stderr不得进入Metric标签或Span事件。
+
+## 27. 0.6.2b测试矩阵
+
+自动测试覆盖Workspace排序/过滤/截断/revision竞态，Git普通/脏/非仓库/初始/detached/状态截断/超时，环境allowlist/Secret名称/非法值/总量和每步骤刷新，多Source scope错配/revision漂移/同revision正文漂移，以及v3持久化、Event v12、migration 14、Replay、Schema冻结和Telemetry脱敏。
+
+真实场景使用临时Git仓库执行实际`git init/add/commit/checkout/status`，并通过真实v11 wheel创建Context Inspection v2会话，再由v12 wheel原字节升级、追加v3事件和验证旧reader拒绝。默认验收不需要模型API、SSH、远程服务器或新中间件。关闭数据见[测试与Eval规范第56节](testing-and-evals.md#56-062b-workspacegit环境source与跨来源一致性验收2026-09-07)。
+
+## 28. 后续切片
+
+### 28.1 0.6.2c
 
 在不改写Session原始Item的前提下构造有界Tool Result模型视图；超大正文必须先成功发布完整Artifact，再形成稳定预览和引用。需要单独处理结构化JSON、文本、媒体、Patch、Process和Artifact过期/失败，不能直接对任意JSON字符串切片。
 
-### 20.3 0.6.3
+### 28.2 0.6.3
 
 在来源和工具模型视图稳定后实现Compaction。Summary必须版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不能删除原始Event事实。

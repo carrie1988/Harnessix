@@ -12,7 +12,11 @@ from uuid import UUID
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import AgentFailure, FailureCategory, KernelError
 from harnessix.agent.models import Turn, Usage
-from harnessix.context.contracts import ContextInspectionRecord, ContextInspectionV2
+from harnessix.context.contracts import (
+    ContextInspectionRecord,
+    ContextInspectionV2,
+    ContextInspectionV3,
+)
 from harnessix.domain.models import TraceContext
 from harnessix.observability.core import Observability, ObservabilitySpan
 
@@ -211,7 +215,7 @@ class KernelTelemetry:
                     },
                 )
             )
-        if isinstance(inspection, ContextInspectionV2):
+        if isinstance(inspection, ContextInspectionV2 | ContextInspectionV3):
             for source in inspection.sources:
                 self._send(
                     partial(
@@ -220,6 +224,17 @@ class KernelTelemetry:
                         attributes={"kind": source.kind.value, "status": source.status},
                     )
                 )
+        if isinstance(inspection, ContextInspectionV3):
+            self._send(
+                partial(
+                    self.observability.increment,
+                    "harnessix.agent.context.consistency",
+                    attributes={
+                        "strategy": inspection.consistency.strategy,
+                        "result": "stable",
+                    },
+                )
+            )
 
     def finished(self, turn: Turn) -> None:
         labels = {"status": turn.status.value}

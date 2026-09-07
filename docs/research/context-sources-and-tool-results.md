@@ -2,7 +2,7 @@
 
 - 更新日期：2026-09-07
 - 适用范围：Harnessix Code 0.6.2
-- 研究状态：0.6.2a 项目指令 Source 与 freshness 已实现；0.6.2b Workspace/Git/环境 Source 与跨来源一致性已形成实现依据；Tool Result 模型视图结论作为后续切片输入
+- 研究状态：0.6.2a 项目指令 Source 与 freshness、0.6.2b Workspace/Git/环境 Source 与跨来源一致性均已实现；Tool Result 模型视图结论作为后续切片输入
 
 ## 1. 研究问题
 

@@ -1,4 +1,4 @@
-"""真实 Agent v7/v11 wheel 升级探针；独立运行，不依赖测试包。"""
+"""真实 Agent v7/v12 wheel 升级探针；独立运行，不依赖测试包。"""
 
 import asyncio
 import json
@@ -248,7 +248,7 @@ async def main(mode, root):
     await store.initialize()
     assert all(records(store.path)[key] == value for key, value in data["events"].items())
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 11
+        assert EventDraft.model_fields["schema_version"].default == 12
         assert json.loads(json.dumps(snapshots(store.path))) == data["snapshots"]
         with factory.open(UUID(data["workspace_id"])) as copy:
             assert files_state(copy.workspace.root / "main.py") == data["copy"]
@@ -265,9 +265,9 @@ async def main(mode, root):
             assert replay(await store.events(UUID(thread_id))) == await store.get_thread(
                 UUID(thread_id)
             )
-        print("v11/migration13 升级保留旧事件与投影原字节，不消费旧批准或改文件")
+        print("v12/migration14 升级保留旧事件与投影原字节，不消费旧批准或改文件")
         return
-    expected_version = 7 if mode == "fixture" else 11
+    expected_version = 7 if mode == "fixture" else 12
     assert EventDraft.model_fields["schema_version"].default == expected_version
     with factory.open(UUID(data["workspace_id"])) as copy:
         async with (

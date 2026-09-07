@@ -16,8 +16,14 @@ CONTEXT_INSPECTION_VERSION: Literal["harnessix.context-inspection/v1"] = (
 CONTEXT_INSPECTION_V2: Literal["harnessix.context-inspection/v2"] = (
     "harnessix.context-inspection/v2"
 )
+CONTEXT_INSPECTION_V3: Literal["harnessix.context-inspection/v3"] = (
+    "harnessix.context-inspection/v3"
+)
 CONTEXT_SOURCE_SNAPSHOT_VERSION: Literal["harnessix.context-source-snapshot/v1"] = (
     "harnessix.context-source-snapshot/v1"
+)
+CONTEXT_CONSISTENCY_VERSION: Literal["harnessix.context-consistency/v1"] = (
+    "harnessix.context-consistency/v1"
 )
 CONTEXT_ESTIMATOR: Literal["utf8-bytes/v1"] = "utf8-bytes/v1"
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
@@ -150,6 +156,16 @@ class ContextSourceSnapshot(ContractModel):
         if len(set(fragment_ids)) != len(fragment_ids):
             raise ValueError("Context Source 快照 Fragment 重复")
         return self
+
+
+class ContextConsistencySnapshot(ContractModel):
+    """多来源规划在一个有界窗口内完成稳定性复核的无正文证据。"""
+
+    spec_version: Literal["harnessix.context-consistency/v1"] = CONTEXT_CONSISTENCY_VERSION
+    strategy: Literal["optimistic-double-observation/v1"] = "optimistic-double-observation/v1"
+    passes: Literal[2] = 2
+    source_count: int = Field(ge=2, le=16)
+    workspace_scope: Digest
 
 
 class ContextLimits(ContractModel):
@@ -299,8 +315,68 @@ class ContextInspectionV2(ContractModel):
         return self
 
 
+class ContextInspectionV3(ContractModel):
+    spec_version: Literal["harnessix.context-inspection/v3"] = CONTEXT_INSPECTION_V3
+    model_step: int = Field(ge=1, le=1000)
+    estimator: Literal["utf8-bytes/v1"] = CONTEXT_ESTIMATOR
+    limits: ContextLimits
+    available_input_tokens: int = Field(ge=1)
+    history_tokens: int = Field(ge=0)
+    tool_tokens: int = Field(ge=0)
+    instruction_tokens: int = Field(ge=0)
+    estimated_input_tokens: int = Field(ge=0)
+    instruction_fingerprint: Digest
+    fragments: tuple[ContextFragmentDecision, ...] = Field(default_factory=tuple, max_length=128)
+    sources: tuple[ContextSourceSnapshot, ...] = Field(min_length=2, max_length=16)
+    consistency: ContextConsistencySnapshot
+
+    @model_validator(mode="after")
+    def internally_consistent(self) -> Self:
+        if self.available_input_tokens != self.limits.available_input_tokens:
+            raise ValueError("Context 可用预算与 Limits 不一致")
+        expected = self.history_tokens + self.tool_tokens + self.instruction_tokens
+        if self.estimated_input_tokens != expected:
+            raise ValueError("Context 输入估算分项与总量不一致")
+        if self.estimated_input_tokens > self.available_input_tokens:
+            raise ValueError("Context 检查记录超过可用输入预算")
+        decisions = {fragment.fragment_id: fragment for fragment in self.fragments}
+        if len(decisions) != len(self.fragments):
+            raise ValueError("Context Fragment 决策身份重复")
+        if len({source.source_id for source in self.sources}) != len(self.sources):
+            raise ValueError("Context Source 身份重复")
+        source_fragments = [
+            document.fragment_id
+            for source in self.sources
+            for document in source.documents
+            if document.fragment_id is not None
+        ]
+        if len(set(source_fragments)) != len(source_fragments):
+            raise ValueError("Context Fragment 不可属于多个 Source")
+        if not set(source_fragments).issubset(decisions):
+            raise ValueError("Context Source 快照引用了未知 Fragment")
+        for source in self.sources:
+            for document in source.documents:
+                if document.fragment_id is None:
+                    continue
+                decision = decisions[document.fragment_id]
+                if (
+                    decision.kind != source.kind
+                    or decision.source != document.source
+                    or decision.estimated_tokens != max(1, document.utf8_bytes)
+                ):
+                    raise ValueError("Context Source 文档快照与 Fragment 决策不一致")
+        if self.consistency.source_count != len(self.sources):
+            raise ValueError("Context 一致性来源数量不匹配")
+        if any(
+            source.workspace_scope != self.consistency.workspace_scope for source in self.sources
+        ):
+            raise ValueError("Context Source Workspace scope不一致")
+        return self
+
+
 ContextInspectionRecord = Annotated[
-    ContextInspection | ContextInspectionV2, Field(discriminator="spec_version")
+    ContextInspection | ContextInspectionV2 | ContextInspectionV3,
+    Field(discriminator="spec_version"),
 ]
 
 

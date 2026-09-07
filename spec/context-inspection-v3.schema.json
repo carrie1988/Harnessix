@@ -1,0 +1,347 @@
+{
+  "$defs": {
+    "ContextConsistencySnapshot": {
+      "additionalProperties": false,
+      "description": "多来源规划在一个有界窗口内完成稳定性复核的无正文证据。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.context-consistency/v1",
+          "default": "harnessix.context-consistency/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "strategy": {
+          "const": "optimistic-double-observation/v1",
+          "default": "optimistic-double-observation/v1",
+          "title": "Strategy",
+          "type": "string"
+        },
+        "passes": {
+          "const": 2,
+          "default": 2,
+          "title": "Passes",
+          "type": "integer"
+        },
+        "source_count": {
+          "maximum": 16,
+          "minimum": 2,
+          "title": "Source Count",
+          "type": "integer"
+        },
+        "workspace_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_count",
+        "workspace_scope"
+      ],
+      "title": "ContextConsistencySnapshot",
+      "type": "object"
+    },
+    "ContextFragmentDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "fragment_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fragment Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ContextFragmentKind"
+        },
+        "source": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "trust": {
+          "$ref": "#/$defs/ContextTrust"
+        },
+        "priority": {
+          "maximum": 600,
+          "minimum": 100,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "estimated_tokens": {
+          "minimum": 1,
+          "title": "Estimated Tokens",
+          "type": "integer"
+        },
+        "disposition": {
+          "enum": [
+            "included",
+            "omitted_budget"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fragment_id",
+        "kind",
+        "source",
+        "trust",
+        "priority",
+        "required",
+        "estimated_tokens",
+        "disposition"
+      ],
+      "title": "ContextFragmentDecision",
+      "type": "object"
+    },
+    "ContextFragmentKind": {
+      "enum": [
+        "runtime_instruction",
+        "user_instruction",
+        "project_instruction",
+        "workspace",
+        "git",
+        "environment"
+      ],
+      "title": "ContextFragmentKind",
+      "type": "string"
+    },
+    "ContextLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "context_window_tokens": {
+          "maximum": 10000000,
+          "minimum": 1024,
+          "title": "Context Window Tokens",
+          "type": "integer"
+        },
+        "reserved_output_tokens": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Reserved Output Tokens",
+          "type": "integer"
+        },
+        "provider_overhead_tokens": {
+          "default": 512,
+          "maximum": 1000000,
+          "minimum": 0,
+          "title": "Provider Overhead Tokens",
+          "type": "integer"
+        },
+        "safety_margin_tokens": {
+          "default": 1024,
+          "maximum": 1000000,
+          "minimum": 0,
+          "title": "Safety Margin Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "context_window_tokens",
+        "reserved_output_tokens"
+      ],
+      "title": "ContextLimits",
+      "type": "object"
+    },
+    "ContextSourceDocumentSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "utf8_bytes": {
+          "maximum": 262144,
+          "minimum": 0,
+          "title": "Utf8 Bytes",
+          "type": "integer"
+        },
+        "fragment_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fragment Id"
+        }
+      },
+      "required": [
+        "source",
+        "revision",
+        "utf8_bytes"
+      ],
+      "title": "ContextSourceDocumentSnapshot",
+      "type": "object"
+    },
+    "ContextSourceSnapshot": {
+      "additionalProperties": false,
+      "description": "持久化的无正文来源快照，用于解释每个模型步骤实际观察了什么。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.context-source-snapshot/v1",
+          "default": "harnessix.context-source-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ContextFragmentKind"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "empty"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "workspace_scope": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Scope",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/ContextSourceDocumentSnapshot"
+          },
+          "maxItems": 64,
+          "title": "Documents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_id",
+        "kind",
+        "status",
+        "workspace_scope",
+        "source_revision"
+      ],
+      "title": "ContextSourceSnapshot",
+      "type": "object"
+    },
+    "ContextTrust": {
+      "enum": [
+        "runtime",
+        "user",
+        "project",
+        "external"
+      ],
+      "title": "ContextTrust",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.context-inspection/v3",
+      "default": "harnessix.context-inspection/v3",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "model_step": {
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Model Step",
+      "type": "integer"
+    },
+    "estimator": {
+      "const": "utf8-bytes/v1",
+      "default": "utf8-bytes/v1",
+      "title": "Estimator",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/ContextLimits"
+    },
+    "available_input_tokens": {
+      "minimum": 1,
+      "title": "Available Input Tokens",
+      "type": "integer"
+    },
+    "history_tokens": {
+      "minimum": 0,
+      "title": "History Tokens",
+      "type": "integer"
+    },
+    "tool_tokens": {
+      "minimum": 0,
+      "title": "Tool Tokens",
+      "type": "integer"
+    },
+    "instruction_tokens": {
+      "minimum": 0,
+      "title": "Instruction Tokens",
+      "type": "integer"
+    },
+    "estimated_input_tokens": {
+      "minimum": 0,
+      "title": "Estimated Input Tokens",
+      "type": "integer"
+    },
+    "instruction_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Instruction Fingerprint",
+      "type": "string"
+    },
+    "fragments": {
+      "items": {
+        "$ref": "#/$defs/ContextFragmentDecision"
+      },
+      "maxItems": 128,
+      "title": "Fragments",
+      "type": "array"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/ContextSourceSnapshot"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "title": "Sources",
+      "type": "array"
+    },
+    "consistency": {
+      "$ref": "#/$defs/ContextConsistencySnapshot"
+    }
+  },
+  "required": [
+    "model_step",
+    "limits",
+    "available_input_tokens",
+    "history_tokens",
+    "tool_tokens",
+    "instruction_tokens",
+    "estimated_input_tokens",
+    "instruction_fingerprint",
+    "sources",
+    "consistency"
+  ],
+  "title": "ContextInspectionV3",
+  "type": "object"
+}

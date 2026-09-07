@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划及0.6.2a受控项目指令Source。0.6.2a新增每模型步骤刷新、无正文freshness、Event/Thread v11和取消回收；Workspace/Git/环境Source、Tool Result模型视图、自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source及0.6.2b Workspace/Git/环境Source。0.6.2b新增多来源乐观双观测、Context Inspection v3、Event/Thread v12和Session migration 14；Tool Result模型视图、自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -401,7 +401,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
 - `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
 
-以上是0.6.1静态规划基线；0.6.2a已在下一节增加项目指令动态Source。Workspace/Git/环境Source、Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source。Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
 
 ## 当前已实现：受控项目指令Source与freshness（0.6.2a）
 
@@ -412,7 +412,19 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - `ContextInspection v2`持久source/document revision、scope、字节数和Fragment绑定但不复制正文；Agent Event/Thread升级至v11，Session migration 13不改写旧事实；
 - `harnessix.agent.context.sources`只输出固定kind/status标签，不输出路径、正文、scope或revision。
 
-当前只完成Project Instruction Source。Workspace/Git/环境Source和跨来源一致性属于0.6.2b；Tool Result裁剪、稳定模型视图和完整Artifact引用属于0.6.2c。完整源码依据、失败语义和部署边界见[专项研究](docs/research/context-sources-and-tool-results.md)、[ADR 0055](docs/adr/0055-project-instruction-source-and-freshness.md)及[0.6实施设计](docs/m06-context-and-sessions.md)。
+该切片只完成Project Instruction Source；0.6.2b已在下一节补齐Workspace/Git/环境Source和跨来源一致性。完整源码依据、失败语义和部署边界见[专项研究](docs/research/context-sources-and-tool-results.md)、[ADR 0055](docs/adr/0055-project-instruction-source-and-freshness.md)及[0.6实施设计](docs/m06-context-and-sessions.md)。
+
+## 当前已实现：Workspace/Git/环境Source与跨来源一致性（0.6.2b）
+
+- `WorkspaceContextSource`通过既有Workspace与`list_files`列出根和工作目录的有界一级概览，不递归读取代码正文；deny-path、no-follow、revision、扫描上限和取消边界保持有效；
+- `GitContextSource`只复用固定`GitReadRuntime.status`，提供仓库标志、分支/HEAD/upstream/ahead/behind和有界脏状态；远端URL、Git用户、日志和配置不进入Context，deny-path状态项不会泄漏；
+- `EnvironmentContextSource`只按宿主显式allowlist逐项取值，不枚举进程环境；Secret类名称、控制字符、异常类型和字节越界在发网前拒绝；
+- 单Source保持Context Inspection v2的一次观测语义；两个及以上Source执行固定两轮顺序观测，scope或revision漂移失败关闭，同revision正文漂移视为来源契约错误；
+- 多Source使用`ContextConsistencySnapshot v1`与Context Inspection v3；Agent Event/Thread升级至v12，Session migration 14不改写历史事实；
+- Context一致性只证明两轮有界窗口内未检测到变化，不是文件系统/Git事务，也不替代工具revision、Policy、Approval和效果核对；
+- Workspace默认每目录64项/12 KiB，Git默认100项/16 KiB，环境最多32个allowlist键/4 KiB，所有截断均显式记录。
+
+0.6.2c继续实现Tool Result裁剪、稳定模型视图和完整Artifact引用；当前Session原始Item不会被0.6.2b改写。设计与安全边界见[ADR 0056](docs/adr/0056-workspace-git-environment-sources-and-consistency.md)和[0.6实施设计](docs/m06-context-and-sessions.md)。
 
 ## 当前已实现：0.1 Action Plane
 

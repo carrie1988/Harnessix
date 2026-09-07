@@ -2,12 +2,14 @@
 
 from harnessix.context.contracts import (
     ContextBuildInput,
+    ContextConsistencySnapshot,
     ContextFragment,
     ContextFragmentDecision,
     ContextFragmentKind,
     ContextInspection,
     ContextInspectionRecord,
     ContextInspectionV2,
+    ContextInspectionV3,
     ContextLimits,
     ContextPrepared,
     ContextSourceDocument,
@@ -22,13 +24,17 @@ from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
 from harnessix.context.sources import (
     ContextSource,
     ContextSourceError,
+    EnvironmentContextSource,
+    GitContextSource,
     ProjectInstructionSource,
     SourcedContextEngine,
+    WorkspaceContextSource,
 )
 
 __all__ = [
     "AsyncContextPlanner",
     "ContextBuildInput",
+    "ContextConsistencySnapshot",
     "ContextEngine",
     "ContextFragment",
     "ContextFragmentDecision",
@@ -36,6 +42,7 @@ __all__ = [
     "ContextInspection",
     "ContextInspectionRecord",
     "ContextInspectionV2",
+    "ContextInspectionV3",
     "ContextLimits",
     "ContextPlanner",
     "ContextPreparationError",
@@ -47,8 +54,11 @@ __all__ = [
     "ContextSourceObservation",
     "ContextSourceSnapshot",
     "ContextTrust",
+    "EnvironmentContextSource",
+    "GitContextSource",
     "PreparedContext",
     "ProjectInstructionSource",
     "SourcedContextEngine",
+    "WorkspaceContextSource",
     "estimate_tokens",
 ]

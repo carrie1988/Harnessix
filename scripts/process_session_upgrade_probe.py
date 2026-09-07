@@ -1,4 +1,4 @@
-"""真实 Agent v8 与当前 wheel 的 Session migration10-13 升级探针。"""
+"""真实 Agent v8 与当前 wheel 的 Session migration10-14 升级探针。"""
 
 import asyncio
 import json
@@ -149,16 +149,16 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:9] == before["migrations"][:9]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 14))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 15))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 11
-        print("当前wheel已原字节升级真实v8会话；migration10-13未重写事件或投影")
+        assert EventDraft.model_fields["schema_version"].default == 12
+        print("当前wheel已原字节升级真实v8会话；migration10-14未重写事件或投影")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 11
+    assert EventDraft.model_fields["schema_version"].default == 12
     old_event_count = len(before["events"])
     async with AgentRuntime(
         store, ScriptedProvider([answer("v9-answer", "migration10 后继续")])
@@ -172,11 +172,11 @@ async def main(mode: str, root: Path) -> None:
     resumed = database_state(store.path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 11 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 12 for row in resumed["events"][old_event_count:]
     )
-    assert resumed["threads"][0][4] == 11
+    assert resumed["threads"][0][4] == 12
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
-    print("v11 wheel 已在升级会话追加新事件；旧 v8 事件原字节保留且 Replay 一致")
+    print("v12 wheel 已在升级会话追加新事件；旧 v8 事件原字节保留且 Replay 一致")
 
 
 if __name__ == "__main__":

@@ -14,9 +14,10 @@ from harnessix.artifacts.contracts import (
     ReadArtifactInput,
 )
 from harnessix.context.contracts import (
+    ContextConsistencySnapshot,
     ContextFragment,
     ContextInspection,
-    ContextInspectionV2,
+    ContextInspectionV3,
     ContextLimits,
     ContextSourceDocument,
     ContextSourceObservation,
@@ -96,10 +97,10 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v11.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v11.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v12.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v12.schema.json", Thread.model_json_schema())
     write_json(
-        output / "context-inspection-v2.schema.json", ContextInspectionV2.model_json_schema()
+        output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
     write_json(output / "provider-event-v3.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
@@ -119,6 +120,7 @@ def main() -> None:
         ("context-fragment", ContextFragment),
         ("context-limits", ContextLimits),
         ("context-inspection", ContextInspection),
+        ("context-consistency", ContextConsistencySnapshot),
         ("context-source-document", ContextSourceDocument),
         ("context-source-observation", ContextSourceObservation),
         ("context-source-snapshot", ContextSourceSnapshot),

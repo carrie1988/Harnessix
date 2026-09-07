@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.2a受控项目指令Source切片
+- 状态：0.2架构基线，已随实现更新至0.6.2b Workspace/Git/环境Source与跨来源一致性切片
 - 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1109,7 +1109,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 实现提交`16c5838`的[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)最终在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务通过。首次Python 3.12尝试在异常低速Runner上运行12分38秒，七项既有Eval在Context进入前的受管副本创建阶段触发固定5秒操作超时；同一提交不改代码重跑后2591项、2项跳过及全部示例通过。首次失败作为既有慢速Runner风险保留，不归因于0.6.1，也不以重跑记录删除。
 
-0.6.1正式关闭。该时点尚未实现的项目指令自动发现已由0.6.2a补齐；动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期仍由后续0.6切片继续完成。
+0.6.1正式关闭。该时点尚未实现的项目指令自动发现已由0.6.2a补齐，动态Workspace/Git/环境Source与跨来源一致性已由0.6.2b补齐；Tool Result裁剪、Compaction和Session生命周期仍由后续0.6切片继续完成。
 
 ## 55. 0.6.2a 受控项目指令Source与freshness验收（2026-09-07）
 
@@ -1139,3 +1139,33 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
 
 实现提交`bfd7087`的[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、失败与恢复矩阵、独立发布物验证和同步设计文档，0.6.2a正式关闭；0.6.2b继续实现Workspace/Git/环境Source及跨来源一致性。
+
+## 56. 0.6.2b Workspace/Git/环境Source与跨来源一致性验收（2026-09-07）
+
+本片依据[Context Source专项研究](research/context-sources-and-tool-results.md)、[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)和[ADR 0056](adr/0056-workspace-git-environment-sources-and-consistency.md)，在0.6.2a异步Source端口上增加三个受控内建Source，并以两轮乐观观测建立跨来源一致性边界。Workspace Source只输出根目录与工作目录的有界目录项；Git Source只输出仓库状态、分支、HEAD、upstream及ahead/behind，不读取日志、Diff、远端地址、用户配置或文件正文；环境Source只按显式白名单索引宿主提供的映射，不枚举进程环境，并拒绝敏感名称和无界值。
+
+新增 **16项** 自动回归，覆盖：
+
+- Workspace、Git和环境三个Source在同一规范工作区形成Context Inspection v3，正文只进入瞬时Context，Session仅保存来源摘要与一致性事实；
+- Workspace根目录/工作目录列表稳定排序、显式截断、拒绝`.git`、`.env`、密钥后缀和自定义deny路径，并在目录观测竞态时失败关闭；
+- Git非仓库显式`repository=false`，初始仓库、detached HEAD、脏状态数量和正文预算语义稳定，超时映射为可重试且不泄漏宿主路径；
+- Git状态中的当前路径和rename原路径都复用Workspace路径策略，敏感路径不进入模型Context，同时保留原始总数并以`truncated=true`声明过滤；
+- 环境Source不枚举映射，只读取白名单键；未授权值、敏感名称、超长值、NUL和控制字符均不能进入Context；
+- 多Source按固定注册顺序观测两轮；工作区scope变化或revision漂移返回可重试`context_sources_changed`，同revision而完整观测变化返回不可重试`context_source_invalid`；
+- Source工作区不一致在Provider调用前返回`context_source_workspace_mismatch`；直接调用纯规划引擎不能绕过多Source一致性快照；
+- 每个模型步骤重新观测环境值，Context Inspection v3通过Event v12持久化和Replay，历史v1-v11事件与Context Inspection v1/v2保持兼容；
+- 一致性遥测只包含固定`strategy/result`标签，Source指标仍只包含`kind/status`，不记录路径、revision、变量名或正文。
+
+本地质量门禁：
+
+- `make check`完成Ruff、Mypy（**151个源文件**）和 **2623 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2586项全部通过**；
+- Schema连续生成两次聚合摘要均为`6b503e8af2ad14b371bb8e3a1caeb827d93e6f4da38b80391badf0fec44faa89`；Agent Event v12、Thread v12、Context Inspection v3和Context Consistency v1摘要分别为`11d1ebecece86e2cc279dffd6b6adfa3f5154bfb537e26b86ec1b150146effa7`、`bb0a7d079bd9e04de337cdcb0e3c5609205cc470328c7c3cc2f3ee33fc808d5d`、`5e743ba5c1d57417baee557bb4809399ea751b1630b164f5c89dec66bdfe5d8b`和`96717d290ebafe522097401b918d515b2f124aa616d353eac585b0e79f931d91`；历史Event/Thread v11与Context Inspection v2摘要保持冻结；
+- CI覆盖的 **17个** 既有示例全部通过，未破坏静态Context、工具、Patch、Process和Eval路径；
+- sdist/wheel构建成功，SHA-256分别为`0449a8b0dab7515e19fb07a6efeda06965f456e5b6422bcf4008098e5d9382e4`和`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`；仓库外Python 3.12基础依赖环境实际组合三个新Source，生成Context Inspection v3，确认敏感环境值未读取、Agent Event默认v12且Migration 0014完整安装；
+- 使用从0.6.2a源码提交`120f57f`构建的真实v11 wheel创建Event v11、Context Inspection v2、Projection v11和Migration 1—13数据库；当前wheel只追加Migration 0014和新的v12事件，不改写历史事件或投影；真实v11 reader对Migration 0014返回`schema_too_new`且数据库业务状态不变；
+- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
+
+实现过程中发现仅过滤Workspace目录项不足以阻止Git状态泄漏敏感文件名。根因是Git返回路径未经过同一Workspace能力策略。修复后，当前路径与rename原路径统一通过`Workspace.parts`校验，过滤不改变Git底层事实总数并强制标记截断；对应回归覆盖`.env`与`.git`边界。
+
+本地实现、失败恢复、发布物和真实跨版本升级验收已经完成。远端CI通过并回填不可变提交与运行链接后，0.6.2b方可正式关闭；后续0.6.2c继续Tool Result有界裁剪与持久化语义。

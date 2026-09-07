@@ -8,11 +8,14 @@ from typing import Literal
 from harnessix.context.contracts import (
     CONTEXT_ESTIMATOR,
     ContextBuildInput,
+    ContextConsistencySnapshot,
     ContextFragment,
     ContextFragmentDecision,
     ContextFragmentKind,
     ContextInspection,
+    ContextInspectionRecord,
     ContextInspectionV2,
+    ContextInspectionV3,
     ContextLimits,
     ContextSourceSnapshot,
     ContextTrust,
@@ -99,18 +102,29 @@ class ContextEngine:
         request: ContextBuildInput,
         fragments: Sequence[ContextFragment],
         snapshots: Sequence[ContextSourceSnapshot],
+        consistency: ContextConsistencySnapshot | None = None,
     ) -> PreparedContext:
         copied_snapshots = tuple(snapshot.model_copy(deep=True) for snapshot in snapshots)
         if not copied_snapshots:
             raise ValueError("动态 Context 规划必须包含 Source 快照")
+        if len(copied_snapshots) > 1 and consistency is None:
+            raise ValueError("多动态 Context Source规划必须包含一致性快照")
         ordered = _copy_and_order((*self._fragments, *fragments))
-        return self._prepare(request, ordered, copied_snapshots)
+        if consistency is not None and consistency.source_count != len(copied_snapshots):
+            raise ValueError("Context 一致性来源数量不匹配")
+        return self._prepare(
+            request,
+            ordered,
+            copied_snapshots,
+            consistency.model_copy(deep=True) if consistency is not None else None,
+        )
 
     def _prepare(
         self,
         request: ContextBuildInput,
         fragments: Sequence[ContextFragment],
         snapshots: tuple[ContextSourceSnapshot, ...] | None = None,
+        consistency: ContextConsistencySnapshot | None = None,
     ) -> PreparedContext:
         if snapshots is not None:
             decision_ids = {fragment.fragment_id for fragment in fragments}
@@ -170,8 +184,9 @@ class ContextEngine:
             for fragment in fragments
         )
         fingerprint = hashlib.sha256((instructions or "").encode()).hexdigest()
-        inspection = (
-            ContextInspection(
+        inspection: ContextInspectionRecord
+        if snapshots is None:
+            inspection = ContextInspection(
                 model_step=request.model_step,
                 estimator=CONTEXT_ESTIMATOR,
                 limits=self._limits,
@@ -183,8 +198,23 @@ class ContextEngine:
                 instruction_fingerprint=fingerprint,
                 fragments=decisions,
             )
-            if snapshots is None
-            else ContextInspectionV2(
+        elif consistency is not None:
+            inspection = ContextInspectionV3(
+                model_step=request.model_step,
+                estimator=CONTEXT_ESTIMATOR,
+                limits=self._limits,
+                available_input_tokens=available,
+                history_tokens=history_tokens,
+                tool_tokens=tool_tokens,
+                instruction_tokens=instruction_tokens,
+                estimated_input_tokens=fixed_tokens + instruction_tokens,
+                instruction_fingerprint=fingerprint,
+                fragments=decisions,
+                sources=snapshots,
+                consistency=consistency,
+            )
+        else:
+            inspection = ContextInspectionV2(
                 model_step=request.model_step,
                 estimator=CONTEXT_ESTIMATOR,
                 limits=self._limits,
@@ -197,5 +227,4 @@ class ContextEngine:
                 fragments=decisions,
                 sources=snapshots,
             )
-        )
         return PreparedContext(instructions=instructions, inspection=inspection)

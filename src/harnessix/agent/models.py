@@ -28,6 +28,7 @@ from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.context.contracts import (
     ContextInspectionRecord,
     ContextInspectionV2,
+    ContextInspectionV3,
     ContextPrepared,
 )
 from harnessix.domain.models import (
@@ -492,7 +493,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] = 11
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] = 12
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -518,6 +519,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if (
+            self.schema_version < 12
+            and isinstance(self.payload, ContextPrepared)
+            and isinstance(self.payload.inspection, ContextInspectionV3)
+        ):
+            raise ValueError("Context 多来源一致性快照需要 Agent Event v12")
         if (
             self.schema_version < 11
             and isinstance(self.payload, ContextPrepared)

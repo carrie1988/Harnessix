@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.2a受控项目指令Source切片
+- 状态：0.2架构基线，已随实现更新至0.6.2b多Context Source切片
 - 更新日期：2026-09-07
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -121,12 +121,14 @@ Agent Runtime                │
 - 项目指令记录来源和 trust；0.6.1固定Runtime > User > Project > Workspace > Git > Environment，正文不能自报更高优先级；
 - 0.6.1使用结构化JSON编码Fragment，检查记录只持久来源元数据、选择结果与正文指纹，不重复保存正文；
 - 0.6.2a把项目文件固定为Project trust，只在宿主绑定Workspace祖先链通过no-follow、单硬链接、revision和总量边界读取；失败或竞态在Provider请求前关闭；
+- 0.6.2b把Workspace/Git/环境固定为External trust；Workspace只给有界一级概览，Git复用关闭Hook/配置扩展的固定只读运行时并再次过滤deny-path，环境只读取宿主allowlist且拒绝Secret类名称；
+- 多Source执行两轮乐观观测并持久一致性算法/scope，不一致在发网前失败；该证据不替代工具revision、审批或效果核对；
 - 权限由 Runtime Registry 和 Policy 决定，不信任模型自报；
 - Secret 默认不进入 Context；
 - 高风险 Tool 需要绑定效果的审批；
 - Security Eval 使用间接注入语料。
 
-**剩余风险**：结构化编码和受控发现不能保证模型拒绝恶意正文，Secret Redactor和OS Sandbox尚未实现；当前只发现活动工作目录祖先链规则，不会在编辑任意子目录文件前自动加载该子树规则。用户仍可能批准具有欺骗性的合法命令，需要可解释审批 UI 和最小效果展示。
+**剩余风险**：结构化编码和受控发现不能保证模型拒绝恶意正文，Secret Redactor和OS Sandbox尚未实现；环境名称过滤不能判断被错误命名的敏感值，生产宿主仍须严格选择allowlist；双观测不提供跨来源事务原子性；当前只发现活动工作目录祖先链规则，不会在编辑任意子目录文件前自动加载该子树规则。用户仍可能批准具有欺骗性的合法命令，需要可解释审批UI和最小效果展示。
 
 ### TM-02：路径穿越和符号链接逃逸
 

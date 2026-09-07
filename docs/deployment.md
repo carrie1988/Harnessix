@@ -712,7 +712,7 @@ runtime = AgentRuntime(session_store, provider, context=context)
 
 窗口值必须来自已核对的模型能力资料或受控平台配置。`utf8-bytes/v1`按UTF-8字节保守估算，不是Provider账单Token；生产仪表盘应比较Context估算、真实input usage和`context_budget_exceeded`比例，再决定是否引入新版本Tokenizer，不得原地修改v1算法。
 
-当前`ContextEngine`只接受宿主显式提供的静态Fragment。不得直接遍历不受信仓库并把文件内容标成`runtime_instruction`；项目说明文件发现、路径作用域、读取缺口、revision和更新语义属于0.6.2。Fragment正文会发送给Provider，但不会复制进`ContextPrepared`检查记录；`source`会进入Session诊断，禁止写入凭据、Token或用户隐私值。
+纯`ContextEngine`只接受宿主显式提供的静态Fragment；动态文件、Git和环境读取必须通过0.6.2的`SourcedContextEngine`及内建Source。不得直接遍历不受信仓库并把文件内容标成`runtime_instruction`。Fragment正文会发送给Provider，但不会复制进`ContextPrepared`检查记录；`source`会进入Session诊断，禁止写入凭据、Token或用户隐私值。
 
 部署后至少验证：两个Provider离线system映射、超预算发网前失败、Event Replay、旧Session迁移、`inspect_context`以及Context指标无正文。0.6.1不需要真实模型API、远程服务器、数据库服务或新增中间件。
 
@@ -767,3 +767,84 @@ runtime = AgentRuntime(session_store, provider, async_context=context)
 - Event v11写入、投影重建和migration 13结果。
 
 指标标签不得加入source ID、文件路径、revision、workspace scope或正文。部署后应在隔离测试仓库验证根/子目录规则顺序、override、空白、文件更新、链接拒绝、取消回收、SQLite重开和Replay。0.6.2a不要求真实模型API、SSH、远程服务器或新增中间件；Provider映射继续使用0.6.1离线测试覆盖。
+
+## Workspace/Git/环境Source安装与升级（0.6.2b）
+
+0.6.2b把Agent Event/Thread推进到v12，并追加Session Migration 0014。Migration只记录最低reader版本，不新增表、索引或列，也不改写v1-v11 Event、投影、Artifact或Effect Journal。升级前必须排空活跃Turn并备份Session数据库；migration 14应用后，v11及更早wheel必须拒绝接管，回退只能恢复升级前一致备份。
+
+生产宿主应从同一规范根、工作目录和deny-path配置构造全部Source：
+
+```python
+from pathlib import Path
+
+from harnessix.context import (
+    ContextEngine,
+    ContextLimits,
+    EnvironmentContextSource,
+    GitContextSource,
+    ProjectInstructionSource,
+    SourcedContextEngine,
+    WorkspaceContextSource,
+)
+
+workspace = Path("/srv/harnessix/workspaces/example").resolve(strict=True)
+working_directory = "."
+denied_paths = ("internal-secrets",)
+environment_facts = {"CI": "true", "NODE_ENV": "production"}
+
+context = SourcedContextEngine(
+    ContextEngine(
+        ContextLimits(
+            context_window_tokens=131_072,
+            reserved_output_tokens=8_192,
+            provider_overhead_tokens=1_024,
+            safety_margin_tokens=2_048,
+        )
+    ),
+    (
+        ProjectInstructionSource(
+            workspace,
+            working_directory=working_directory,
+            denied_paths=denied_paths,
+        ),
+        WorkspaceContextSource(
+            workspace,
+            working_directory=working_directory,
+            denied_paths=denied_paths,
+        ),
+        GitContextSource(
+            workspace,
+            Path("/usr/bin/git"),
+            working_directory=working_directory,
+            denied_paths=denied_paths,
+        ),
+        EnvironmentContextSource(
+            workspace,
+            values=environment_facts,
+            allowlist=("CI", "NODE_ENV"),
+            working_directory=working_directory,
+            denied_paths=denied_paths,
+        ),
+    ),
+)
+```
+
+部署约束：
+
+- Source数量大于一时每模型步骤执行两轮顺序观测。容量评估必须按两倍读取和Git状态开销测量；不要以并发改写一致性算法；
+- 所有Source的`workspace_scope`必须相同。不同deny-path策略会失败关闭，不能为通过检查而移除敏感路径；
+- Git可执行文件必须是宿主预安装、绝对且受信的普通可执行文件。不得从仓库、请求参数或`PATH`动态选择；
+- Git状态不包含远端、用户或日志，且会过滤Workspace拒绝路径。非Git目录返回正常`repository=false`；
+- 环境值映射应来自部署配置中的低敏事实，不得直接把完整`os.environ`当成产品配置。Source虽然只按allowlist取值，宿主仍需审查值内容；
+- 默认Workspace 12 KiB、Git 16 KiB、环境4 KiB和项目指令64 KiB都计入原Context Fragment总量；超限应调整正式配置或减少输入，不得删除失败门禁；
+- `context_sources_changed`与`context_source_unavailable`可由上层在新Turn重试；同一Provider尝试内不得静默重用第一轮或历史正文；
+- 一致性快照只解释模型请求观察到的状态，不允许替代写工具revision、审批或执行后核对。
+
+监控至少增加：
+
+- `harnessix.agent.context.consistency{strategy="optimistic-double-observation/v1",result="stable"}`；
+- `context_sources_changed`、Workspace scope错配、Git超时、环境值拒绝和各Source正文超限比例；
+- Context两轮观测时延与Provider发网前失败数；
+- Event v12写入、v3 Replay、migration 14和旧reader拒绝结果。
+
+标签不得包含路径、环境变量名/值、Git分支/文件名、source ID、revision或scope。部署验收应覆盖真实Git普通/非仓库/初始/detached状态、deny-path过滤、环境allowlist、两轮漂移、取消、SQLite重开和旧v11升级。该切片不要求真实模型API、SSH、远程服务器或新增中间件。

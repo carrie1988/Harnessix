@@ -16,8 +16,10 @@ from harnessix.context import (
     ContextFragment,
     ContextFragmentKind,
     ContextLimits,
+    EnvironmentContextSource,
     ProjectInstructionSource,
     SourcedContextEngine,
+    WorkspaceContextSource,
 )
 from harnessix.domain.models import TraceContext
 from harnessix.models.contracts import ResponseFailed
@@ -280,6 +282,53 @@ async def test_context_source_metric_excludes_identity_path_and_revision(tmp_pat
         assert CANARY not in exported and CANARY not in diagnostic
         assert str(tmp_path) not in exported and str(tmp_path) not in diagnostic
         assert turn.context_inspections[0].sources[0].source_revision not in diagnostic
+    finally:
+        observer.close()
+
+
+async def test_multi_source_consistency_metric_has_only_fixed_labels(tmp_path: Path) -> None:
+    observer, exporter, reader = instrumented()
+    planner = SourcedContextEngine(
+        ContextEngine(
+            ContextLimits(
+                context_window_tokens=8192,
+                reserved_output_tokens=1024,
+                provider_overhead_tokens=0,
+                safety_margin_tokens=0,
+            )
+        ),
+        (
+            WorkspaceContextSource(tmp_path),
+            EnvironmentContextSource(
+                tmp_path,
+                values={"BUILD_LABEL": CANARY},
+                allowlist=("BUILD_LABEL",),
+            ),
+        ),
+    )
+    try:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "context-consistency.db"),
+            FakeProvider(),
+            async_context=planner,
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "任务", request_id="consistency")
+        assert turn.status is TurnStatus.COMPLETED
+        consistency = next(
+            metric
+            for metric in metrics(reader)
+            if metric.name == "harnessix.agent.context.consistency"
+        )
+        assert len(consistency.data.data_points) == 1
+        assert consistency.data.data_points[0].attributes == {
+            "strategy": "optimistic-double-observation/v1",
+            "result": "stable",
+        }
+        diagnostic = reader.get_metrics_data().to_json()
+        assert CANARY not in diagnostic and str(tmp_path) not in diagnostic
+        assert turn.context_inspections[0].consistency.workspace_scope not in diagnostic
     finally:
         observer.close()
 

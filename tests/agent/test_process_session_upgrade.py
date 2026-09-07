@@ -29,6 +29,7 @@ _SESSION_MIGRATION_SHA256 = (
     "12295e83c718c367ae0da730ea39395663728752d33cc24b620d3ee5c70104e2",
     "bb8961f08bc15171001340df72140984aec2889b279243c08be34ef4ae04f918",
     "e1e5af67ccd809c8587b24ae962c22bf9eb18b2eb81ae13617fc1f74395c8b09",
+    "42d2530f4bc718c3cfea3ede22c220d04e7aafb0990e2404039cde87ed8a6157",
 )
 
 
@@ -119,7 +120,7 @@ raise AssertionError("未到达 migration10 退出点")
     assert child.returncode == 85, child.stderr
     assert path.stat().st_ino == inode
     with sqlite3.connect(path) as database:
-        migration_count = 9 if point == "before_commit" else 13
+        migration_count = 9 if point == "before_commit" else 14
         assert database.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert (
             database.execute(

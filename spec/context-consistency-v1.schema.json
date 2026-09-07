@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "多来源规划在一个有界窗口内完成稳定性复核的无正文证据。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.context-consistency/v1",
+      "default": "harnessix.context-consistency/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "strategy": {
+      "const": "optimistic-double-observation/v1",
+      "default": "optimistic-double-observation/v1",
+      "title": "Strategy",
+      "type": "string"
+    },
+    "passes": {
+      "const": 2,
+      "default": 2,
+      "title": "Passes",
+      "type": "integer"
+    },
+    "source_count": {
+      "maximum": 16,
+      "minimum": 2,
+      "title": "Source Count",
+      "type": "integer"
+    },
+    "workspace_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_count",
+    "workspace_scope"
+  ],
+  "title": "ContextConsistencySnapshot",
+  "type": "object"
+}
