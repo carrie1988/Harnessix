@@ -715,3 +715,55 @@ runtime = AgentRuntime(session_store, provider, context=context)
 当前`ContextEngine`只接受宿主显式提供的静态Fragment。不得直接遍历不受信仓库并把文件内容标成`runtime_instruction`；项目说明文件发现、路径作用域、读取缺口、revision和更新语义属于0.6.2。Fragment正文会发送给Provider，但不会复制进`ContextPrepared`检查记录；`source`会进入Session诊断，禁止写入凭据、Token或用户隐私值。
 
 部署后至少验证：两个Provider离线system映射、超预算发网前失败、Event Replay、旧Session迁移、`inspect_context`以及Context指标无正文。0.6.1不需要真实模型API、远程服务器、数据库服务或新增中间件。
+
+## 受控项目指令Source安装与升级（0.6.2a）
+
+0.6.2a把Agent Event/Thread推进到v11，并追加Session Migration 0013。Migration只记录最低reader版本，不新增表、索引或列，也不改写v1-v10 Event、快照、Artifact或Effect Journal。升级前必须排空活跃Turn并对Session数据库做一致备份；新程序一旦追加v11事件，旧wheel不能读取该投影，回退只能恢复升级前备份，禁止删除migration marker或手工下调`projection_version`。
+
+动态项目指令入口必须由宿主显式绑定与Thread相同的能力根：
+
+```python
+from pathlib import Path
+
+from harnessix.agent.runtime import AgentRuntime
+from harnessix.context import (
+    ContextEngine,
+    ContextLimits,
+    ProjectInstructionSource,
+    SourcedContextEngine,
+)
+
+workspace = Path("/srv/harnessix/workspaces/example").resolve(strict=True)
+context = SourcedContextEngine(
+    ContextEngine(
+        ContextLimits(
+            context_window_tokens=131_072,
+            reserved_output_tokens=8_192,
+            provider_overhead_tokens=1_024,
+            safety_margin_tokens=2_048,
+        )
+    ),
+    (ProjectInstructionSource(workspace, working_directory="."),),
+)
+runtime = AgentRuntime(session_store, provider, async_context=context)
+```
+
+生产宿主应保证：
+
+- `create_thread()`使用受信仓库映射；路径别名必须严格解析到同一绑定目录，不能让请求方选择其他或不存在的绝对目录；
+- `working_directory`是Workspace内相对路径，不得使用绝对路径、`..`或拒绝目录；
+- 默认只发现祖先链上的`AGENTS.override.md`和`AGENTS.md`，不会递归加载其他目录；
+- 默认项目指令总量64 KiB，单文件通过既有24 KiB分页读取并绑定revision；超限失败，不发送截断规则；
+- Project Instruction正文会发送给模型，但不进入Context检查记录和指标；文件内不得存放API Key或其他不应发送给Provider的Secret；
+- 当前没有stale正文回退。文件暂时不可读、观测期间变化或超时会以`context_source_unavailable`在Provider请求前失败；宿主可在外层按retryable策略重新启动一个新Turn，但不得在同一模型尝试内静默忽略；
+- 符号链接、硬链接、非法UTF-8、二进制、错类型和deny-path形成不可重试`context_source_invalid`，应修复仓库或部署配置；
+- 同步`context`与异步`async_context`不能同时传入。
+
+监控至少增加：
+
+- `harnessix.agent.context.sources{kind,status}`数量；
+- `context_source_unavailable`、`context_source_invalid`、`context_source_too_large`和`context_source_workspace_mismatch`比例；
+- Context操作时延、取消完成时延和Provider发网前失败数；
+- Event v11写入、投影重建和migration 13结果。
+
+指标标签不得加入source ID、文件路径、revision、workspace scope或正文。部署后应在隔离测试仓库验证根/子目录规则顺序、override、空白、文件更新、链接拒绝、取消回收、SQLite重开和Replay。0.6.2a不要求真实模型API、SSH、远程服务器或新增中间件；Provider映射继续使用0.6.1离线测试覆盖。

@@ -48,7 +48,7 @@ from harnessix.tools.search_contracts import (
     GrepOutput,
     SearchInput,
 )
-from harnessix.tools.workspace import ReadOperation, Workspace, digest
+from harnessix.tools.workspace import ReadOperation, Workspace, digest, run_read_operation
 
 
 async def _drain[T](task: asyncio.Task[T]) -> None:
@@ -375,9 +375,8 @@ class CodingToolRuntime:
         async with self._lock:
             if self._closed:
                 raise KernelError("tool_runtime_closed", "工具运行时已关闭")
-            operation = ReadOperation()
 
-            def read() -> ReadContract:
+            def read(operation: ReadOperation) -> ReadContract:
                 if isinstance(args, ListFilesInput):
                     return files.list_files(self._workspace, args, operation)
                 if isinstance(args, GlobInput):
@@ -386,14 +385,7 @@ class CodingToolRuntime:
                     return search.grep(self._workspace, args, operation, capture=capture)
                 return files.read_file(self._workspace, args, operation)
 
-            worker = asyncio.create_task(asyncio.to_thread(read))
-            try:
-                return await asyncio.shield(worker)
-            except asyncio.CancelledError:
-                operation.stopped.set()
-                # 即便父任务再次取消，也先等待线程释放 FD，不能把清理变成后台工作。
-                await _drain(worker)
-                raise
+            return await run_read_operation(read)
 
     async def _execute_git(
         self, args: GitStatusInput | GitDiffInput, cancel: CancelToken

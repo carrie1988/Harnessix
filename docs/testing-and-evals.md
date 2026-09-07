@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至已完成的0.6.1 Context规划切片
+- 状态：0.2架构基线，已随实现更新至0.6.2a受控项目指令Source切片
 - 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1102,11 +1102,40 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 - `make check`完成Ruff、Mypy（**150个源文件**）和 **2591 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
 - Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2554项全部通过**；
-- Schema连续生成两次聚合摘要均为`941b3bea8a1d289621dc1a7ab14ec6a7dbc9606c362d17ad4065d69dc14bce43`；Agent Event v10、Thread v10和Context Inspection v1摘要分别为`6f2d2c5c85b3af1ce6f2fe52b71927417063f467c2c56ef9c5b4ad73310ea`、`6fd70473fce49d6ad0f9190c90d674543d908eb3f0463adc97697e8b022dbbc5`和`a89b5c2f8b99b0975c7339e08ea0d43dfeedfb218de7304cf3f8874f281fdf97`；
+- Schema连续生成两次聚合摘要均为`941b3bea8a1d289621dc1a7ab14ec6a7dbc9606c362d17ad4065d69dc14bce43`；Agent Event v10、Thread v10和Context Inspection v1摘要分别为`6f2d2c5c85b3af1ce6f2fe2fe52b71927417063f467c2c56ef9c5b4ad73310ea`、`6fd70473fce49d6ad0f9190c90d674543d908eb3f0463adc97697e8b022dbbc5`和`a89b5c2f8b99b0975c7339e08ea0d43dfeedfb218de7304cf3f8874f281fdf97`；
 - sdist/wheel构建成功，wheel SHA-256为`6deb16de1a20a2597b507e7606d015912e902193759df22dd11c4db1f81d8ba1`；
 - 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，可导入Context公开契约，完成确定性规划并确认Agent Event默认版本为v10；
 - 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
 
 实现提交`16c5838`的[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)最终在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务通过。首次Python 3.12尝试在异常低速Runner上运行12分38秒，七项既有Eval在Context进入前的受管副本创建阶段触发固定5秒操作超时；同一提交不改代码重跑后2591项、2项跳过及全部示例通过。首次失败作为既有慢速Runner风险保留，不归因于0.6.1，也不以重跑记录删除。
 
-0.6.1正式关闭。项目指令自动发现、动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期由后续0.6切片继续完成。
+0.6.1正式关闭。该时点尚未实现的项目指令自动发现已由0.6.2a补齐；动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期仍由后续0.6切片继续完成。
+
+## 55. 0.6.2a 受控项目指令Source与freshness验收（2026-09-07）
+
+本片依据[Context Source专项研究](research/context-sources-and-tool-results.md)和[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)，建立异步Source端口、受控项目指令发现、每模型步骤freshness、Context Inspection v2及Agent Event/Thread v11。实现保持正文只存在于瞬时Fragment，Session只持久化来源状态、revision、字节数和Fragment引用。
+
+新增 **16项** 自动回归，覆盖：
+
+- 根目录到工作目录的祖先顺序、同目录`AGENTS.override.md`优先、缺失/空白语义和正文结构化转义；
+- Thread工作区规范路径别名接受、越界或不存在路径拒绝、相对工作目录约束；
+- 符号链接、硬链接、非法文件状态和总量上限拒绝；
+- 目录revision、分页文件revision和观测前后revision竞态检测，不把混合版本正文发送给Provider；
+- 每模型步骤重新观测、Source更新后revision变化、SQLite重开、Event Replay和无正文Context检查；
+- 读取超时、Source不可用、Provider调用前失败及`retryable`持久化；
+- CancelToken通知、阻塞读取线程停止并join、Runtime关闭不遗留后台读取；
+- 动态Source不能声明Runtime/User权限，同步与异步Context配置互斥；
+- Source快照的kind、路径、字节数与Fragment决定一致，指标只包含低基数`kind/status`；
+- Event v10拒绝Context Inspection v2，Event/Thread v11、Migration 0013和历史Schema冻结边界。
+
+本地质量门禁：
+
+- `make check`完成Ruff、Mypy（**151个源文件**）和 **2607 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2570项全部通过**；
+- Schema连续生成两次聚合摘要均为`5616e34d8fa33679914567c6dab30e027b4a8091dd12848d0d046ceb9f53c86b`；Event v10、Thread v10与Context Inspection v1冻结摘要保持不变；
+- 16个既有示例全部通过，未因异步Context端口破坏静态0.6.1或0.5工具路径；
+- sdist/wheel构建成功，SHA-256分别为`3a9a68d3b9e9509d44072804868c9524ffa217918ca071e9cfe42fab07ffe51d`和`defb1b546918d9ab830177b0595097aa757991543d088a75cd06768e86a839af`；仓库外Python 3.12基础依赖环境没有OpenAI/Anthropic SDK，实际读取临时`AGENTS.md`后生成Context Inspection v2和Event v11，检查记录不含正文；
+- 独立wheel验证发现macOS临时目录的`/var`到`/private/var`规范路径别名会被原始字符串比较误拒绝。实现改为在可取消读取Worker内严格解析Thread路径，再与绑定能力根比较；规范别名接受、越界路径拒绝已加入回归；
+- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
+
+远端Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵CI是0.6.2a正式关闭门禁；实现提交、CI链接和最终发布物摘要随关闭记录登记。

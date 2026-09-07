@@ -11,7 +11,14 @@ from opentelemetry.trace import StatusCode
 
 from harnessix.agent.models import TurnStatus
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.context import ContextEngine, ContextFragment, ContextFragmentKind, ContextLimits
+from harnessix.context import (
+    ContextEngine,
+    ContextFragment,
+    ContextFragmentKind,
+    ContextLimits,
+    ProjectInstructionSource,
+    SourcedContextEngine,
+)
 from harnessix.domain.models import TraceContext
 from harnessix.models.contracts import ResponseFailed
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
@@ -232,6 +239,47 @@ async def test_context_telemetry_has_only_bounded_metadata(tmp_path: Path) -> No
         }
         exported = "\n".join(span.to_json() for span in exporter.get_finished_spans())
         assert CANARY not in exported and CANARY not in reader.get_metrics_data().to_json()
+    finally:
+        observer.close()
+
+
+async def test_context_source_metric_excludes_identity_path_and_revision(tmp_path: Path) -> None:
+    (tmp_path / "AGENTS.md").write_text(CANARY)
+    observer, exporter, reader = instrumented()
+    planner = SourcedContextEngine(
+        ContextEngine(
+            ContextLimits(
+                context_window_tokens=8192,
+                reserved_output_tokens=1024,
+                provider_overhead_tokens=0,
+                safety_margin_tokens=0,
+            )
+        ),
+        (ProjectInstructionSource(tmp_path),),
+    )
+    try:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "context-source.db"),
+            FakeProvider(),
+            async_context=planner,
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "任务", request_id="context-source")
+        assert turn.status is TurnStatus.COMPLETED
+        source_metric = next(
+            metric for metric in metrics(reader) if metric.name == "harnessix.agent.context.sources"
+        )
+        assert len(source_metric.data.data_points) == 1
+        assert source_metric.data.data_points[0].attributes == {
+            "kind": "project_instruction",
+            "status": "available",
+        }
+        exported = "\n".join(span.to_json() for span in exporter.get_finished_spans())
+        diagnostic = reader.get_metrics_data().to_json()
+        assert CANARY not in exported and CANARY not in diagnostic
+        assert str(tmp_path) not in exported and str(tmp_path) not in diagnostic
+        assert turn.context_inspections[0].sources[0].source_revision not in diagnostic
     finally:
         observer.close()
 

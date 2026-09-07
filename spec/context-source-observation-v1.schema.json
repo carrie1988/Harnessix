@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "ContextSourceDocument": {
+      "additionalProperties": false,
+      "description": "动态来源的一份瞬时正文；仅其无正文快照进入 Session。",
+      "properties": {
+        "source": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "content": {
+          "maxLength": 262144,
+          "title": "Content",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "content",
+        "revision"
+      ],
+      "title": "ContextSourceDocument",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "一次受控来源观测结果，不包含来源身份和信任级别。",
+  "properties": {
+    "workspace_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Scope",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/ContextSourceDocument"
+      },
+      "maxItems": 64,
+      "title": "Documents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "workspace_scope",
+    "source_revision"
+  ],
+  "title": "ContextSourceObservation",
+  "type": "object"
+}

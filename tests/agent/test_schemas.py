@@ -11,8 +11,12 @@ from harnessix.context import (
     ContextEngine,
     ContextFragment,
     ContextInspection,
+    ContextInspectionV2,
     ContextLimits,
     ContextPrepared,
+    ContextSourceDocument,
+    ContextSourceObservation,
+    ContextSourceSnapshot,
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
@@ -24,11 +28,15 @@ from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
-        "agent-event-v10.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v10.schema.json": Thread.model_json_schema(),
+        "agent-event-v11.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v11.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
+        "context-inspection-v2.schema.json": ContextInspectionV2.model_json_schema(),
+        "context-source-document-v1.schema.json": ContextSourceDocument.model_json_schema(),
+        "context-source-observation-v1.schema.json": ContextSourceObservation.model_json_schema(),
+        "context-source-snapshot-v1.schema.json": ContextSourceSnapshot.model_json_schema(),
         "provider-event-v3.schema.json": TypeAdapter(ProviderEvent).json_schema(),
         "openai-chat-config-v1.schema.json": OpenAIChatConfig.model_json_schema(),
         "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
@@ -45,7 +53,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 11,
+                "schema_version": 12,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -79,7 +87,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 10
+        assert EventDraft(payload=payload).schema_version == 11
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -97,7 +105,38 @@ def test_context_inspection_requires_v10() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 10
+    assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 11
+
+
+def test_context_source_snapshot_requires_v11() -> None:
+    legacy = (
+        ContextEngine(ContextLimits(context_window_tokens=4096, reserved_output_tokens=1024))
+        .prepare(
+            ContextBuildInput(
+                thread_id=uuid4(),
+                turn_id=uuid4(),
+                model_step=1,
+                workspace="/tmp",
+            )
+        )
+        .inspection
+    )
+    current = ContextInspectionV2(
+        **legacy.model_dump(exclude={"spec_version"}),
+        sources=(
+            ContextSourceSnapshot(
+                source_id="project/instructions",
+                kind="project_instruction",
+                status="empty",
+                workspace_scope="0" * 64,
+                source_revision="1" * 64,
+            ),
+        ),
+    )
+    with pytest.raises(ValidationError):
+        EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 11
 
 
 def test_historical_schemas_are_frozen() -> None:
@@ -129,6 +168,21 @@ def test_historical_schemas_are_frozen() -> None:
     }
     expected.update(
         {
+            "agent-event-v10.schema.json": (
+                "6f2d2c5c85b3af1ce6f2fe2fe52b71927417063f467c2c56ef9c5b4ad73310ea"
+            ),
+            "agent-thread-v10.schema.json": (
+                "6fd70473fce49d6ad0f9190c90d674543d908eb3f0463adc97697e8b022dbbc5"
+            ),
+            "context-fragment-v1.schema.json": (
+                "7be23065910b021658379b6273e96bf8c31fca9ac630dc49745823ba42a7e48c"
+            ),
+            "context-limits-v1.schema.json": (
+                "e5723af0c49ce8673477e074602e1018edbe8a78f7b584f2855df7d8808758da"
+            ),
+            "context-inspection-v1.schema.json": (
+                "a89b5c2f8b99b0975c7339e08ea0d43dfeedfb218de7304cf3f8874f281fdf97"
+            ),
             "agent-event-v9.schema.json": (
                 "48256f8dd49f9feaaf8125f96febac334a767903eb426307588d83933d4aedea"
             ),

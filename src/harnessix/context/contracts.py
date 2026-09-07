@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -13,7 +13,14 @@ from harnessix.domain.models import ContractModel
 CONTEXT_INSPECTION_VERSION: Literal["harnessix.context-inspection/v1"] = (
     "harnessix.context-inspection/v1"
 )
+CONTEXT_INSPECTION_V2: Literal["harnessix.context-inspection/v2"] = (
+    "harnessix.context-inspection/v2"
+)
+CONTEXT_SOURCE_SNAPSHOT_VERSION: Literal["harnessix.context-source-snapshot/v1"] = (
+    "harnessix.context-source-snapshot/v1"
+)
 CONTEXT_ESTIMATOR: Literal["utf8-bytes/v1"] = "utf8-bytes/v1"
+Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
 
 class ContextFragmentKind(StrEnum):
@@ -52,6 +59,97 @@ class ContextFragment(ContractModel):
     def fragment_id(self) -> str:
         encoded = f"{self.kind.value}\x00{self.source}\x00{self.content}".encode()
         return hashlib.sha256(encoded).hexdigest()
+
+
+class ContextSourceDocument(ContractModel):
+    """动态来源的一份瞬时正文；仅其无正文快照进入 Session。"""
+
+    source: str = Field(min_length=1, max_length=4096)
+    content: str = Field(max_length=262_144)
+    revision: Digest
+
+    @field_validator("source")
+    @classmethod
+    def valid_source(cls, value: str) -> str:
+        if "\x00" in value or not value.strip():
+            raise ValueError("Context Source 文档来源不允许空白或 NUL")
+        try:
+            value.encode()
+        except UnicodeEncodeError:
+            raise ValueError("Context Source 文档来源必须是有效 UTF-8 文本") from None
+        return value
+
+    @field_validator("content")
+    @classmethod
+    def valid_content(cls, value: str) -> str:
+        if "\x00" in value:
+            raise ValueError("Context Source 文档正文不允许 NUL")
+        try:
+            value.encode()
+        except UnicodeEncodeError:
+            raise ValueError("Context Source 文档正文必须是有效 UTF-8 文本") from None
+        return value
+
+
+class ContextSourceObservation(ContractModel):
+    """一次受控来源观测结果，不包含来源身份和信任级别。"""
+
+    workspace_scope: Digest
+    source_revision: Digest
+    documents: tuple[ContextSourceDocument, ...] = Field(default_factory=tuple, max_length=64)
+
+    @model_validator(mode="after")
+    def unique_and_bounded(self) -> Self:
+        if len({document.source for document in self.documents}) != len(self.documents):
+            raise ValueError("Context Source 文档来源重复")
+        if sum(len(document.content.encode()) for document in self.documents) > 131_072:
+            raise ValueError("Context Source 文档正文总量超过 128 KiB")
+        return self
+
+
+class ContextSourceDocumentSnapshot(ContractModel):
+    source: str = Field(min_length=1, max_length=4096)
+    revision: Digest
+    utf8_bytes: int = Field(ge=0, le=262_144)
+    fragment_id: Digest | None = None
+
+    @field_validator("source")
+    @classmethod
+    def valid_source(cls, value: str) -> str:
+        if "\x00" in value or not value.strip():
+            raise ValueError("Context Source 快照来源不允许空白或 NUL")
+        try:
+            value.encode()
+        except UnicodeEncodeError:
+            raise ValueError("Context Source 快照来源必须是有效 UTF-8 文本") from None
+        return value
+
+
+class ContextSourceSnapshot(ContractModel):
+    """持久化的无正文来源快照，用于解释每个模型步骤实际观察了什么。"""
+
+    spec_version: Literal["harnessix.context-source-snapshot/v1"] = CONTEXT_SOURCE_SNAPSHOT_VERSION
+    source_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*$", max_length=128)
+    kind: ContextFragmentKind
+    status: Literal["available", "empty"]
+    workspace_scope: Digest
+    source_revision: Digest
+    documents: tuple[ContextSourceDocumentSnapshot, ...] = Field(
+        default_factory=tuple, max_length=64
+    )
+
+    @model_validator(mode="after")
+    def status_matches_documents(self) -> Self:
+        fragment_ids = [document.fragment_id for document in self.documents if document.fragment_id]
+        if self.status == "available" and not fragment_ids:
+            raise ValueError("available Context Source 必须包含非空 Fragment")
+        if self.status == "empty" and fragment_ids:
+            raise ValueError("empty Context Source 不可包含 Fragment")
+        if len({document.source for document in self.documents}) != len(self.documents):
+            raise ValueError("Context Source 快照文档来源重复")
+        if len(set(fragment_ids)) != len(fragment_ids):
+            raise ValueError("Context Source 快照 Fragment 重复")
+        return self
 
 
 class ContextLimits(ContractModel):
@@ -149,9 +247,66 @@ class ContextInspection(ContractModel):
         return self
 
 
+class ContextInspectionV2(ContractModel):
+    spec_version: Literal["harnessix.context-inspection/v2"] = CONTEXT_INSPECTION_V2
+    model_step: int = Field(ge=1, le=1000)
+    estimator: Literal["utf8-bytes/v1"] = CONTEXT_ESTIMATOR
+    limits: ContextLimits
+    available_input_tokens: int = Field(ge=1)
+    history_tokens: int = Field(ge=0)
+    tool_tokens: int = Field(ge=0)
+    instruction_tokens: int = Field(ge=0)
+    estimated_input_tokens: int = Field(ge=0)
+    instruction_fingerprint: Digest
+    fragments: tuple[ContextFragmentDecision, ...] = Field(default_factory=tuple, max_length=128)
+    sources: tuple[ContextSourceSnapshot, ...] = Field(min_length=1, max_length=16)
+
+    @model_validator(mode="after")
+    def internally_consistent(self) -> Self:
+        if self.available_input_tokens != self.limits.available_input_tokens:
+            raise ValueError("Context 可用预算与 Limits 不一致")
+        expected = self.history_tokens + self.tool_tokens + self.instruction_tokens
+        if self.estimated_input_tokens != expected:
+            raise ValueError("Context 输入估算分项与总量不一致")
+        if self.estimated_input_tokens > self.available_input_tokens:
+            raise ValueError("Context 检查记录超过可用输入预算")
+        decisions = {fragment.fragment_id: fragment for fragment in self.fragments}
+        if len(decisions) != len(self.fragments):
+            raise ValueError("Context Fragment 决策身份重复")
+        if len({source.source_id for source in self.sources}) != len(self.sources):
+            raise ValueError("Context Source 身份重复")
+        source_fragments = [
+            document.fragment_id
+            for source in self.sources
+            for document in source.documents
+            if document.fragment_id is not None
+        ]
+        if len(set(source_fragments)) != len(source_fragments):
+            raise ValueError("Context Fragment 不可属于多个 Source")
+        if not set(source_fragments).issubset(decisions):
+            raise ValueError("Context Source 快照引用了未知 Fragment")
+        for source in self.sources:
+            for document in source.documents:
+                if document.fragment_id is None:
+                    continue
+                decision = decisions[document.fragment_id]
+                if (
+                    decision.kind != source.kind
+                    or decision.source != document.source
+                    or decision.estimated_tokens != max(1, document.utf8_bytes)
+                ):
+                    raise ValueError("Context Source 文档快照与 Fragment 决策不一致")
+        return self
+
+
+ContextInspectionRecord = Annotated[
+    ContextInspection | ContextInspectionV2, Field(discriminator="spec_version")
+]
+
+
 class PreparedContext(ContractModel):
     instructions: str | None = Field(default=None, max_length=1_000_000)
-    inspection: ContextInspection
+    inspection: ContextInspectionRecord
 
     @model_validator(mode="after")
     def fingerprint_matches(self) -> Self:
@@ -165,4 +320,4 @@ class PreparedContext(ContractModel):
 
 class ContextPrepared(ContractModel):
     type: Literal["context_prepared"] = "context_prepared"
-    inspection: ContextInspection
+    inspection: ContextInspectionRecord

@@ -1,0 +1,112 @@
+{
+  "$defs": {
+    "ContextFragmentKind": {
+      "enum": [
+        "runtime_instruction",
+        "user_instruction",
+        "project_instruction",
+        "workspace",
+        "git",
+        "environment"
+      ],
+      "title": "ContextFragmentKind",
+      "type": "string"
+    },
+    "ContextSourceDocumentSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "utf8_bytes": {
+          "maximum": 262144,
+          "minimum": 0,
+          "title": "Utf8 Bytes",
+          "type": "integer"
+        },
+        "fragment_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fragment Id"
+        }
+      },
+      "required": [
+        "source",
+        "revision",
+        "utf8_bytes"
+      ],
+      "title": "ContextSourceDocumentSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "持久化的无正文来源快照，用于解释每个模型步骤实际观察了什么。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.context-source-snapshot/v1",
+      "default": "harnessix.context-source-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._/-]*$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/ContextFragmentKind"
+    },
+    "status": {
+      "enum": [
+        "available",
+        "empty"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "workspace_scope": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Scope",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/ContextSourceDocumentSnapshot"
+      },
+      "maxItems": 64,
+      "title": "Documents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_id",
+    "kind",
+    "status",
+    "workspace_scope",
+    "source_revision"
+  ],
+  "title": "ContextSourceSnapshot",
+  "type": "object"
+}

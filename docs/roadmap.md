@@ -279,7 +279,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**进行中**。0.6.1已完成源码求证、ADR、领域契约、实现、发布物验证及远端[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)四任务验收，提供固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect。项目指令自动发现、动态Source、Tool Result裁剪、Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[专项研究](research/context-planning-and-instructions.md)和[ADR 0054](adr/0054-context-planning-and-inspection.md)。
+状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已实现受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，正在完成关闭验收。Workspace/Git/环境Source、Tool Result模型视图、Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source专项研究](research/context-sources-and-tool-results.md)和[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)。
 
 ### 目标
 
@@ -288,6 +288,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 ### 核心交付
 
 - [x] 系统指令、用户指令、项目指令的优先级；
+- [x] 受控项目指令发现、Source freshness和无正文持久快照；
 - [ ] Workspace/Git/环境 Context Fragment；
 - [x] Token Budget（0.6.1供应商中立输入门禁；精确Tokenizer与自动压缩后续完成）；
 - [ ] Tool Result 裁剪和完整结果引用；
@@ -301,6 +302,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 ### 关键测试
 
 - [x] 指令优先级、稳定排序和结构边界冲突；
+- [x] 项目指令层级/override、缺失/失败、超时/取消、更新和Replay；
 - [ ] 接近模型上下文上限时自动压缩；
 - [ ] 压缩前后关键任务约束不丢失；
 - [ ] 恢复后 Tool Call/Result 仍正确配对；
@@ -364,7 +366,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [ ] Python Agent SDK；
 - [ ] MCP Client；
 - [ ] 可选 MCP Server；
-- [ ] 项目指令发现；
+- [ ] 项目指令Source的Protocol诊断和刷新通知；
 - [ ] Skills 渐进加载；
 - [ ] 生命周期 Hooks；
 - [ ] 扩展 Tool 的 Permission/Sandbox 强制接入。

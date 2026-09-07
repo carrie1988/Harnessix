@@ -13,7 +13,15 @@ from harnessix.artifacts.contracts import (
     ArtifactRef,
     ReadArtifactInput,
 )
-from harnessix.context.contracts import ContextFragment, ContextInspection, ContextLimits
+from harnessix.context.contracts import (
+    ContextFragment,
+    ContextInspection,
+    ContextInspectionV2,
+    ContextLimits,
+    ContextSourceDocument,
+    ContextSourceObservation,
+    ContextSourceSnapshot,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
@@ -88,8 +96,11 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v10.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v10.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v11.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v11.schema.json", Thread.model_json_schema())
+    write_json(
+        output / "context-inspection-v2.schema.json", ContextInspectionV2.model_json_schema()
+    )
     write_json(output / "provider-event-v3.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
@@ -108,6 +119,9 @@ def main() -> None:
         ("context-fragment", ContextFragment),
         ("context-limits", ContextLimits),
         ("context-inspection", ContextInspection),
+        ("context-source-document", ContextSourceDocument),
+        ("context-source-observation", ContextSourceObservation),
+        ("context-source-snapshot", ContextSourceSnapshot),
         ("agent-process-call-plan", AgentProcessCallPlan),
         ("process-request", ProcessRequest),
         ("process-limits", ProcessLimits),

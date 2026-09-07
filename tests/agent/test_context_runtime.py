@@ -60,7 +60,7 @@ async def test_context_is_sent_persisted_inspectable_and_replayable(tmp_path: Pa
     assert canary not in turn.context_inspections[0].model_dump_json()
     events = await store.events(thread.thread_id)
     prepared = [event for event in events if event.payload.type == "context_prepared"]
-    assert len(prepared) == 1 and prepared[0].schema_version == 10
+    assert len(prepared) == 1 and prepared[0].schema_version == 11
     assert replay(events) == await store.get_thread(thread.thread_id)
 
 

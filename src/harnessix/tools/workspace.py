@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import os
 import stat
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from threading import Event
@@ -64,6 +65,27 @@ class ReadOperation:
             raise TurnCancelled
         if time.monotonic() >= self.deadline:
             raise ReadToolError("timeout")
+
+
+async def run_read_operation[T](reader: Callable[[ReadOperation], T]) -> T:
+    """在线程中执行受限读取；调用方取消时先通知并回收线程。"""
+
+    operation = ReadOperation()
+    worker = asyncio.create_task(asyncio.to_thread(reader, operation))
+    try:
+        return await asyncio.shield(worker)
+    except asyncio.CancelledError:
+        operation.stopped.set()
+        while not worker.done():
+            try:
+                await asyncio.shield(worker)
+            except asyncio.CancelledError:
+                continue
+            except Exception:
+                break
+        if not worker.cancelled():
+            worker.exception()
+        raise
 
 
 def _parts(path: str) -> tuple[str, ...]:

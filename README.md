@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围及0.6.1 Context规划切片。0.6.1提供供应商中立Context Fragment、固定指令优先级、输入预算、双Provider system映射、Event v10持久检查记录和Context Inspect；[关闭CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)四项任务全部通过。任务v3百炼北京在固定历史缺陷上3/3严格通过。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划及0.6.2a受控项目指令Source。0.6.2a新增每模型步骤刷新、无正文freshness、Event/Thread v11和取消回收；Workspace/Git/环境Source、Tool Result模型视图、自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -401,7 +401,18 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
 - `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
 
-当前只实现宿主显式提供的静态Fragment。项目指令自动发现、Workspace/Git/环境动态Source、Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive属于后续0.6切片。完整边界见[0.6实施设计](docs/m06-context-and-sessions.md)与[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+以上是0.6.1静态规划基线；0.6.2a已在下一节增加项目指令动态Source。Workspace/Git/环境Source、Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+
+## 当前已实现：受控项目指令Source与freshness（0.6.2a）
+
+- `ContextSource`/`AsyncContextPlanner`把外部I/O与纯`ContextEngine`分离；同步静态入口保持兼容；
+- `ProjectInstructionSource`绑定一个规范Workspace根，按根到工作目录逐层发现，同目录`AGENTS.override.md`优先于`AGENTS.md`；
+- 读取复用Workspace no-follow、单硬链接、deny-path、分页revision、5秒截止时间和取消后线程回收；默认总量64 KiB，超限失败而非截断；
+- 未发现和空白形成`empty`，非法文件、超限、暂时不可用和Workspace错配具有独立稳定错误；所有失败均发生在Provider请求前；
+- `ContextInspection v2`持久source/document revision、scope、字节数和Fragment绑定但不复制正文；Agent Event/Thread升级至v11，Session migration 13不改写旧事实；
+- `harnessix.agent.context.sources`只输出固定kind/status标签，不输出路径、正文、scope或revision。
+
+当前只完成Project Instruction Source。Workspace/Git/环境Source和跨来源一致性属于0.6.2b；Tool Result裁剪、稳定模型视图和完整Artifact引用属于0.6.2c。完整源码依据、失败语义和部署边界见[专项研究](docs/research/context-sources-and-tool-results.md)、[ADR 0055](docs/adr/0055-project-instruction-source-and-freshness.md)及[0.6实施设计](docs/m06-context-and-sessions.md)。
 
 ## 当前已实现：0.1 Action Plane
 

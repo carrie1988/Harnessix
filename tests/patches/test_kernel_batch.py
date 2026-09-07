@@ -303,4 +303,4 @@ async def test_new_event_tags_and_forged_effect_rejected(group_case, tmp_path):
         with pytest.raises(KernelError):
             replay([changed if e == target else e for e in events])
     dumped = json.dumps([e.model_dump(mode="json") for e in events])
-    assert '"schema_version": 10' in dumped
+    assert '"schema_version": 11' in dumped

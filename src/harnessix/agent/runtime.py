@@ -69,9 +69,10 @@ from harnessix.artifacts.ports import (
     BatchDiffPublisher,
     ProcessArtifactPublisher,
 )
-from harnessix.context.contracts import ContextBuildInput, ContextInspection, ContextPrepared
+from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
 from harnessix.context.engine import ContextPreparationError
-from harnessix.context.ports import ContextPlanner
+from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
+from harnessix.context.sources import ContextSourceError
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -120,11 +121,14 @@ class AgentRuntime:
         fault: Callable[[str], None] | None = None,
         max_parallel_tools: int = 4,
         context: ContextPlanner | None = None,
+        async_context: AsyncContextPlanner | None = None,
     ) -> None:
         if type(max_parallel_tools) is not int or not 1 <= max_parallel_tools <= 16:
             raise KernelError("tool_concurrency_invalid", "并行工具上限必须在1到16之间")
         if tools is not None and scoped_tools is not None:
             raise KernelError("tool_runtime_conflict", "旧工具入口与 Scoped 入口不能同时配置")
+        if context is not None and async_context is not None:
+            raise KernelError("context_runtime_conflict", "同步与异步 Context 入口不能同时配置")
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -208,6 +212,7 @@ class AgentRuntime:
         self._active: dict[UUID, tuple[UUID, CancelToken, asyncio.Task[object]]] = {}
         self._max_parallel_tools = max_parallel_tools
         self._context = context
+        self._async_context = async_context
 
     async def __aenter__(self) -> Self:
         if self._owner is not None:
@@ -956,7 +961,7 @@ class AgentRuntime:
                     or (self._process_tool_name is not None and d.name == self._process_tool_name)
                 )
                 instructions: str | None = None
-                if self._context is not None:
+                if self._context is not None or self._async_context is not None:
                     with self._telemetry.operation(
                         "context",
                         thread_id=thread_id,
@@ -965,34 +970,41 @@ class AgentRuntime:
                     ) as operation:
                         token.checkpoint()
                         try:
-                            prepared = self._context.prepare(
-                                ContextBuildInput(
-                                    thread_id=thread_id,
-                                    turn_id=turn_id,
-                                    model_step=turn.model_steps + 1,
-                                    workspace=thread.workspace,
-                                    history_documents=tuple(
-                                        json.dumps(
-                                            item.model_dump(mode="json"),
-                                            ensure_ascii=False,
-                                            sort_keys=True,
-                                            separators=(",", ":"),
-                                        )
-                                        for item in history
-                                    ),
-                                    tool_documents=tuple(
-                                        json.dumps(
-                                            definition.model_dump(mode="json"),
-                                            ensure_ascii=False,
-                                            sort_keys=True,
-                                            separators=(",", ":"),
-                                        )
-                                        for definition in tools
-                                    ),
-                                )
+                            context_request = ContextBuildInput(
+                                thread_id=thread_id,
+                                turn_id=turn_id,
+                                model_step=turn.model_steps + 1,
+                                workspace=thread.workspace,
+                                history_documents=tuple(
+                                    json.dumps(
+                                        item.model_dump(mode="json"),
+                                        ensure_ascii=False,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                    )
+                                    for item in history
+                                ),
+                                tool_documents=tuple(
+                                    json.dumps(
+                                        definition.model_dump(mode="json"),
+                                        ensure_ascii=False,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                    )
+                                    for definition in tools
+                                ),
                             )
+                            if self._async_context is not None:
+                                prepared = await self._async_context.prepare(context_request, token)
+                            else:
+                                assert self._context is not None
+                                prepared = self._context.prepare(context_request)
                         except ContextPreparationError as error:
                             raise KernelError(error.code, error.message) from None
+                        except ContextSourceError as error:
+                            raise KernelError(
+                                error.code, error.message, retryable=error.retryable
+                            ) from None
                         token.checkpoint()
                         thread = await self._commit(
                             thread_id,
@@ -1869,7 +1881,7 @@ class AgentRuntime:
 
     async def inspect_context(
         self, thread_id: UUID, turn_id: UUID, *, model_step: int | None = None
-    ) -> ContextInspection:
+    ) -> ContextInspectionRecord:
         turn = get_turn(await self.store.get_thread(thread_id), turn_id)
         inspections = turn.context_inspections
         if model_step is not None:

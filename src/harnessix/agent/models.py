@@ -25,7 +25,11 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.artifacts.contracts import ArtifactRef
-from harnessix.context.contracts import ContextInspection, ContextPrepared
+from harnessix.context.contracts import (
+    ContextInspectionRecord,
+    ContextInspectionV2,
+    ContextPrepared,
+)
 from harnessix.domain.models import (
     ActionStatus,
     ApprovalOutcome,
@@ -398,7 +402,7 @@ class Turn(ContractModel):
     usage_step: int = 0
     usage: Usage = Field(default_factory=Usage)
     model_attempts: tuple[ModelAttempt, ...] = ()
-    context_inspections: tuple[ContextInspection, ...] = ()
+    context_inspections: tuple[ContextInspectionRecord, ...] = ()
     error: AgentFailure | None = None
     created_at: datetime
     completed_at: datetime | None = None
@@ -488,7 +492,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] = 10
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] = 11
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -514,6 +518,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if (
+            self.schema_version < 11
+            and isinstance(self.payload, ContextPrepared)
+            and isinstance(self.payload.inspection, ContextInspectionV2)
+        ):
+            raise ValueError("Context Source 快照需要 Agent Event v11")
         if self.schema_version < 10 and isinstance(self.payload, ContextPrepared):
             raise ValueError("Context 检查记录需要 Agent Event v10")
         if self.schema_version < 9:

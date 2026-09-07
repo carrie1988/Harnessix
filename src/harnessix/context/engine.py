@@ -12,7 +12,9 @@ from harnessix.context.contracts import (
     ContextFragmentDecision,
     ContextFragmentKind,
     ContextInspection,
+    ContextInspectionV2,
     ContextLimits,
+    ContextSourceSnapshot,
     ContextTrust,
     PreparedContext,
 )
@@ -62,30 +64,64 @@ def _render(fragments: Sequence[ContextFragment]) -> str | None:
     return json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _copy_and_order(fragments: Sequence[ContextFragment]) -> tuple[ContextFragment, ...]:
+    copied = tuple(fragment.model_copy(deep=True) for fragment in fragments)
+    if len(copied) > 128:
+        raise ValueError("Context Fragment 数量超过 128")
+    if len({fragment.fragment_id for fragment in copied}) != len(copied):
+        raise ValueError("Context Fragment 重复")
+    if sum(len((fragment.source + fragment.content).encode()) for fragment in copied) > 131_072:
+        raise ValueError("Context Fragment 来源与正文总量超过 128 KiB")
+    return tuple(
+        sorted(
+            copied,
+            key=lambda fragment: (
+                -_METADATA[fragment.kind][1],
+                fragment.source,
+                fragment.fragment_id,
+            ),
+        )
+    )
+
+
 class ContextEngine:
     """只生成模型视图和无正文检查记录；不读取文件、环境或 Provider SDK。"""
 
     def __init__(self, limits: ContextLimits, fragments: Sequence[ContextFragment] = ()) -> None:
-        copied = tuple(fragment.model_copy(deep=True) for fragment in fragments)
-        if len(copied) > 128:
-            raise ValueError("Context Fragment 数量超过 128")
-        if len({fragment.fragment_id for fragment in copied}) != len(copied):
-            raise ValueError("Context Fragment 重复")
-        if sum(len((fragment.source + fragment.content).encode()) for fragment in copied) > 131_072:
-            raise ValueError("Context Fragment 来源与正文总量超过 128 KiB")
         self._limits = limits.model_copy(deep=True)
-        self._fragments = tuple(
-            sorted(
-                copied,
-                key=lambda fragment: (
-                    -_METADATA[fragment.kind][1],
-                    fragment.source,
-                    fragment.fragment_id,
-                ),
-            )
-        )
+        self._fragments = _copy_and_order(fragments)
 
     def prepare(self, request: ContextBuildInput) -> PreparedContext:
+        return self._prepare(request, self._fragments)
+
+    def prepare_sourced(
+        self,
+        request: ContextBuildInput,
+        fragments: Sequence[ContextFragment],
+        snapshots: Sequence[ContextSourceSnapshot],
+    ) -> PreparedContext:
+        copied_snapshots = tuple(snapshot.model_copy(deep=True) for snapshot in snapshots)
+        if not copied_snapshots:
+            raise ValueError("动态 Context 规划必须包含 Source 快照")
+        ordered = _copy_and_order((*self._fragments, *fragments))
+        return self._prepare(request, ordered, copied_snapshots)
+
+    def _prepare(
+        self,
+        request: ContextBuildInput,
+        fragments: Sequence[ContextFragment],
+        snapshots: tuple[ContextSourceSnapshot, ...] | None = None,
+    ) -> PreparedContext:
+        if snapshots is not None:
+            decision_ids = {fragment.fragment_id for fragment in fragments}
+            snapshot_ids = {
+                document.fragment_id
+                for snapshot in snapshots
+                for document in snapshot.documents
+                if document.fragment_id is not None
+            }
+            if not snapshot_ids.issubset(decision_ids):
+                raise ValueError("Context Source 快照与动态 Fragment 不一致")
         history_tokens = sum(estimate_tokens(document) for document in request.history_documents)
         tool_tokens = sum(estimate_tokens(document) for document in request.tool_documents)
         fixed_tokens = history_tokens + tool_tokens
@@ -96,8 +132,8 @@ class ContextEngine:
                 "历史与工具定义超过可用 Context 输入预算，当前切片尚未启用自动压缩",
             )
 
-        required = [fragment for fragment in self._fragments if _METADATA[fragment.kind][2]]
-        optional = [fragment for fragment in self._fragments if not _METADATA[fragment.kind][2]]
+        required = [fragment for fragment in fragments if _METADATA[fragment.kind][2]]
+        optional = [fragment for fragment in fragments if not _METADATA[fragment.kind][2]]
         included = list(required)
         instructions = _render(included)
         instruction_tokens = estimate_tokens(instructions or "")
@@ -131,19 +167,35 @@ class ContextEngine:
                 estimated_tokens=max(1, estimate_tokens(fragment.content)),
                 disposition=dispositions[fragment.fragment_id],
             )
-            for fragment in self._fragments
+            for fragment in fragments
         )
         fingerprint = hashlib.sha256((instructions or "").encode()).hexdigest()
-        inspection = ContextInspection(
-            model_step=request.model_step,
-            estimator=CONTEXT_ESTIMATOR,
-            limits=self._limits,
-            available_input_tokens=available,
-            history_tokens=history_tokens,
-            tool_tokens=tool_tokens,
-            instruction_tokens=instruction_tokens,
-            estimated_input_tokens=fixed_tokens + instruction_tokens,
-            instruction_fingerprint=fingerprint,
-            fragments=decisions,
+        inspection = (
+            ContextInspection(
+                model_step=request.model_step,
+                estimator=CONTEXT_ESTIMATOR,
+                limits=self._limits,
+                available_input_tokens=available,
+                history_tokens=history_tokens,
+                tool_tokens=tool_tokens,
+                instruction_tokens=instruction_tokens,
+                estimated_input_tokens=fixed_tokens + instruction_tokens,
+                instruction_fingerprint=fingerprint,
+                fragments=decisions,
+            )
+            if snapshots is None
+            else ContextInspectionV2(
+                model_step=request.model_step,
+                estimator=CONTEXT_ESTIMATOR,
+                limits=self._limits,
+                available_input_tokens=available,
+                history_tokens=history_tokens,
+                tool_tokens=tool_tokens,
+                instruction_tokens=instruction_tokens,
+                estimated_input_tokens=fixed_tokens + instruction_tokens,
+                instruction_fingerprint=fingerprint,
+                fragments=decisions,
+                sources=snapshots,
+            )
         )
         return PreparedContext(instructions=instructions, inspection=inspection)

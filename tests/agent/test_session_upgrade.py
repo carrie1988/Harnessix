@@ -168,13 +168,14 @@ async def test_old_transcript_migrates_without_rewriting_history(
             (10,),
             (11,),
             (12,),
+            (13,),
         ]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 10
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 11
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 10 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 11 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -183,7 +184,7 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 11")
+        database.execute("UPDATE agent_threads SET projection_version = 12")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"
