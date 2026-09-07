@@ -1168,4 +1168,4 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 实现过程中发现仅过滤Workspace目录项不足以阻止Git状态泄漏敏感文件名。根因是Git返回路径未经过同一Workspace能力策略。修复后，当前路径与rename原路径统一通过`Workspace.parts`校验，过滤不改变Git底层事实总数并强制标记截断；对应回归覆盖`.env`与`.git`边界。
 
-本地实现、失败恢复、发布物和真实跨版本升级验收已经完成。远端CI通过并回填不可变提交与运行链接后，0.6.2b方可正式关闭；后续0.6.2c继续Tool Result有界裁剪与持久化语义。
+实现提交`26dbfc3`的[CI 34134867832](https://github.com/carrie1988/Harnessix/actions/runs/34134867832)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、敏感路径回归、失败恢复、独立发布物和真实v11→v12升级证据，0.6.2b正式关闭；后续0.6.2c继续Tool Result有界裁剪与持久化语义。
