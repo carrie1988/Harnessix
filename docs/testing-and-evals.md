@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.1 Context规划本地关闭候选
+- 状态：0.2架构基线，已随实现更新至已完成的0.6.1 Context规划切片
 - 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1107,4 +1107,6 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，可导入Context公开契约，完成确定性规划并确认Agent Event默认版本为v10；
 - 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
 
-0.6.1的本地实现与发布物门禁已通过；远端CI通过前保持关闭候选状态。项目指令自动发现、动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期由后续0.6切片继续完成。
+实现提交`16c5838`的[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)最终在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务通过。首次Python 3.12尝试在异常低速Runner上运行12分38秒，七项既有Eval在Context进入前的受管副本创建阶段触发固定5秒操作超时；同一提交不改代码重跑后2591项、2项跳过及全部示例通过。首次失败作为既有慢速Runner风险保留，不归因于0.6.1，也不以重跑记录删除。
+
+0.6.1正式关闭。项目指令自动发现、动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期由后续0.6切片继续完成。

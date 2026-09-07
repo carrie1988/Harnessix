@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-07
-- 状态：0.6.1 已完成实现，等待本提交远端CI；整体0.6进行中
+- 状态：0.6.1 已完成；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -10,7 +10,7 @@
 
 | 切片 | 内容 | 状态 |
 |---|---|---|
-| 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已实现，等待CI |
+| 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
 | 0.6.2 | 项目指令发现、Workspace/Git/环境 Source、freshness、Tool Result裁剪与完整Artifact引用 | 未开始 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
@@ -139,4 +139,4 @@ Context Planner是同步纯计算，不持有线程、文件描述符或网络�
 
 ## 12. 0.6.2 入口条件
 
-开始0.6.2前，0.6.1必须满足：完整`make check`、严格异步回归、Schema连续生成一致、独立wheel导入与远端四任务CI通过。0.6.2不得直接用`Path.read_text`绕过0.5 Workspace边界，也不得让项目文件控制Fragment trust或required。
+0.6.1实现提交`16c5838`已完成完整`make check`、严格异步回归、Schema连续生成、独立wheel导入及远端[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)四任务验收。0.6.2不得直接用`Path.read_text`绕过0.5 Workspace边界，也不得让项目文件控制Fragment trust或required。

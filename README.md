@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5 Coding Tool Runtime全部路线图范围。0.6.1已实现供应商中立Context Fragment、固定指令优先级、输入预算、双Provider system映射、Event v10持久检查记录和Context Inspect，整体0.6仍在进行。任务v3百炼北京在固定历史缺陷上3/3严格通过；[0.5关闭CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)四项任务全部通过。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围及0.6.1 Context规划切片。0.6.1提供供应商中立Context Fragment、固定指令优先级、输入预算、双Provider system映射、Event v10持久检查记录和Context Inspect；[关闭CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)四项任务全部通过。任务v3百炼北京在固定历史缺陷上3/3严格通过。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
 
 ```text
               CLI / TUI / SDK / IDE
