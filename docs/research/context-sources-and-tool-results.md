@@ -2,7 +2,7 @@
 
 - 更新日期：2026-09-07
 - 适用范围：Harnessix Code 0.6.2
-- 研究状态：0.6.2a 项目指令 Source 与 freshness 已形成实现依据；Workspace/Git/环境 Source 和 Tool Result 模型视图结论作为后续切片输入
+- 研究状态：0.6.2a 项目指令 Source 与 freshness 已实现；0.6.2b Workspace/Git/环境 Source 与跨来源一致性已形成实现依据；Tool Result 模型视图结论作为后续切片输入
 
 ## 1. 研究问题
 
@@ -105,3 +105,61 @@ Harnessix 0.6.2a尚未持久化来源正文，因而没有足够证据在刷新�
 - Tool Result模型视图、Artifact自动归档和Compaction。
 
 这些能力分别进入0.6.2b、0.6.2c和0.6.3，未实现前不得描述为生产完成。
+
+## 7. 0.6.2b Workspace、Git与环境上下文研究
+
+### 7.1 Codex
+
+`codex-rs/core/src/context/environment_context.rs:32-70`从已生效的Workspace根和文件权限配置构造文件系统上下文，`193-208`对动态文本执行结构转义。`codex-rs/core/src/context/world_state/environment.rs:27-69`只组合明确的环境状态、日期、时区、网络和文件系统能力；`102-190`持久比较快照并只渲染变化；`315-383`把工作目录、状态和Shell建模为结构化字段。该实现说明模型需要的是宿主选定的环境事实和权限视图，而不是整个进程环境变量表。
+
+`codex-rs/git-utils/src/info.rs:39-41`为Git命令设置五秒超时并关闭Hook路径；`62-118`先判断仓库，再并行读取提交、分支和经清洗的远端，非仓库或失败返回空值。`codex-rs/core/src/git_info_tests.rs:343-466`覆盖非Git目录、普通仓库、远端、detached HEAD和分支。该模块主要提供应用元数据，不能直接证明其全部字段进入模型上下文；可借鉴的是有界执行和非仓库显式语义。
+
+Harnessix不采集远端URL。即使清洗凭据，远端仍可能暴露内部主机名、组织名和仓库路径；Coding Agent完成当前工作区任务并不需要该字段。
+
+### 7.2 OpenCode
+
+`packages/core/src/system-context/builtins.ts:12-42`把工作目录、Workspace根、是否Git仓库、平台和日期注册为独立上下文来源。`packages/core/src/system-context/registry.ts:24-43`拒绝重复键、按键稳定排序并并发加载来源。`packages/core/src/system-context/index.ts:5-17`明确来源可独立刷新，`48-80`定义持久快照，`182-205`以一次组合观测建立完整基线，`217-290`对更新、删除和暂时不可用执行reconcile。
+
+可借鉴点是稳定来源身份、完整基线和可比较快照。并发加载并不自动提供文件系统级原子快照；Harnessix不能把“同一批协程完成”表述为“同一时刻状态”。
+
+### 7.3 Claude Code逆向整理源码镜像
+
+`src/context.ts:20,36-111`把Git状态限制为2000字符并明确标注为会话启动时快照；`113-189`把系统和用户上下文按会话缓存。`src/tools/AgentTool/runAgent.ts:400-410`对Explore/Plan子Agent删除陈旧Git快照，需要时由工具重新读取。该证据进一步说明Git时效必须显式定义，启动缓存和每模型步骤刷新不能混称为当前状态。
+
+`src/main.tsx:354-379`明确指出Git命令可能经Hook和配置执行代码，因此只在建立信任后预取。`src/utils/git.ts:123-179`又对攻击者可控的`.git`、`commondir`和worktree反向引用进行校验。Harnessix据此不新增裸`subprocess git`路径，而是复用已有的固定可执行文件、固定参数、空全局配置、关闭系统配置/Hook/fsmonitor/外部diff、无交互、无分页、五秒超时和有界捕获的`GitReadRuntime`。
+
+该镜像不是官方源码，只用于交叉验证风险，不作为单一契约依据。
+
+## 8. 0.6.2b 设计结论
+
+### 8.1 三类内建Source
+
+1. `WorkspaceContextSource`只列出Workspace根和配置工作目录的一级可见条目，不递归读取文件正文；复用`Workspace`与`list_files`，保留deny-path、no-follow、单链接、目录revision、扫描上限和取消语义。输出为稳定JSON，条目、正文和截断标记均有界。
+2. `GitContextSource`只复用`GitReadRuntime.status`，输出仓库标志、分支、HEAD、upstream、ahead/behind及有界状态条目；不读取远端URL、Git用户名、提交日志或任意Git配置。非Git目录成功输出`repository=false`，不是错误，也不伪装成未知。
+3. `EnvironmentContextSource`只读取宿主显式allowlist中的键，并先拒绝Secret类名称、控制字符、异常类型、单值/总量越界；不枚举`os.environ`。平台与Workspace相对工作目录由实现生成，全部作为External trust数据进入结构化JSON。
+
+三类Source每个模型步骤重新观测，不使用启动缓存。正文只存在于瞬时模型请求；Session仍仅保存revision、字节数、fragment ID和组合指纹。
+
+### 8.2 跨来源一致性
+
+单Source沿用0.6.2a的`ContextInspection v2`和单次观测。两个及以上Source采用`optimistic-double-observation/v1`：按固定注册顺序完成第一轮全部观测，再完成第二轮全部观测；只有每个Source的`workspace_scope`一致、两轮`source_revision`一致且同revision的完整观测正文一致时，才使用第二轮结果规划模型请求。
+
+该算法证明一个有界观测窗口内没有被检测到的变化，不承诺跨文件系统与Git的事务原子快照。第二轮完成后外部状态仍可能变化；后续副作用继续依赖工具自己的revision、审批和效果核对，不能把Context freshness当成写入授权。
+
+多Source结果使用`ContextInspection v3`并持久化`ContextConsistencySnapshot v1`，记录算法版本、两轮观测、来源数量和共同Workspace scope。来源revision变化报可重试`context_sources_changed`；同revision却返回不同观测视为来源违反契约，报不可重试`context_source_invalid`；Workspace scope不一致报不可重试`context_source_workspace_mismatch`。所有失败均发生在Provider请求之前。
+
+### 8.3 数据与边界
+
+- Workspace模型视图默认最多列出根和工作目录各64项，正文上限12 KiB；超出正文边界时从稳定排序尾部省略并显式标记截断。
+- Git模型视图默认请求100项状态，正文上限16 KiB；保留Git运行时返回的真实`total_entries`并显式标记截断。
+- 环境allowlist最多32项，单值最多1024字节，模型视图总量最多4 KiB。
+- 三类Source都绑定宿主规范Workspace根和相同deny-path策略；配置不一致产生不同`workspace_scope`并失败关闭。
+- 组合Fragment继续受Context Engine总片数和总字节边界约束。可选来源按Project、Workspace、Git、Environment优先级依次装入；预算不足只省略完整Fragment，不切断结构化JSON。
+
+### 8.4 明确不采用
+
+- 不递归生成完整目录树；大仓库会放大延迟和Context，已有`list_files/glob/grep`承担按需发现。
+- 不把任意环境变量、Secret值、远端URL、Git用户名和提交历史放入模型上下文。
+- 不并发观测后宣称原子一致；跨来源缺少共同事务边界。
+- 不在来源暂时不可用时回退旧正文；当前Session没有持久化可验证正文。
+- 不在0.6.2b修改Tool Result历史视图；该能力仍由0.6.2c单独完成。
