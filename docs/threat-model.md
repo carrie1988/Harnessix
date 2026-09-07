@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至已完成的0.5 Coding Tool Runtime
+- 状态：0.2架构基线，已随实现更新至0.6.1 Context规划本地关闭候选
 - 更新日期：2026-09-07
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -118,13 +118,14 @@ Agent Runtime                │
 **控制**
 
 - Runtime hard rules 与项目内容分层；
-- 项目指令记录来源和 trust；
+- 项目指令记录来源和 trust；0.6.1固定Runtime > User > Project > Workspace > Git > Environment，正文不能自报更高优先级；
+- 0.6.1使用结构化JSON编码Fragment，检查记录只持久来源元数据、选择结果与正文指纹，不重复保存正文；
 - 权限由 Runtime Registry 和 Policy 决定，不信任模型自报；
 - Secret 默认不进入 Context；
 - 高风险 Tool 需要绑定效果的审批；
 - Security Eval 使用间接注入语料。
 
-**剩余风险**：用户可能批准具有欺骗性的合法命令；需要可解释审批 UI 和最小效果展示。
+**剩余风险**：结构化编码不能保证模型拒绝恶意正文，项目指令自动发现、Secret Redactor和OS Sandbox尚未实现；用户仍可能批准具有欺骗性的合法命令，需要可解释审批 UI 和最小效果展示。
 
 ### TM-02：路径穿越和符号链接逃逸
 

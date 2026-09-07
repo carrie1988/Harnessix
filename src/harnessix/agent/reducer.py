@@ -44,6 +44,7 @@ from harnessix.agent.usage import (
     ModelAttemptStarted,
     ModelUsageObserved,
 )
+from harnessix.context.contracts import ContextPrepared
 from harnessix.domain.models import (
     ALLOWED_ACTION_TRANSITIONS,
     ActionStatus,
@@ -683,6 +684,17 @@ def _model_attempt(turn: Turn, event: AgentEvent) -> Turn:
     )
 
 
+def _prepare_context(turn: Turn, payload: ContextPrepared) -> Turn:
+    inspection = payload.inspection
+    require(turn.status == TurnStatus.PREPARING_CONTEXT, "Context 只能在准备阶段记录")
+    require(inspection.model_step == turn.model_steps + 1, "Context 不属于下一个模型步骤")
+    require(
+        all(existing.model_step != inspection.model_step for existing in turn.context_inspections),
+        "同一模型步骤只能记录一份 Context",
+    )
+    return turn.model_copy(update={"context_inspections": (*turn.context_inspections, inspection)})
+
+
 def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
     """唯一的状态投影器；在线提交和离线 Replay 使用相同校验。"""
     payload = event.payload
@@ -744,6 +756,8 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                     "尝试 ID 在 Thread 内重复",
                 )
             turn = _model_attempt(turn, event)
+        elif isinstance(payload, ContextPrepared):
+            turn = _prepare_context(turn, payload)
         elif isinstance(payload, UsageRecorded):
             require(turn.status == TurnStatus.CALLING_MODEL, "用量只能在模型步骤内记录")
             require(payload.step == turn.model_steps, "用量不属于当前模型步骤")

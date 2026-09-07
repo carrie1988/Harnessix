@@ -32,6 +32,7 @@ def failure_category(code: str) -> FailureCategory:
         "time_budget_exceeded",
         "model_output_too_large",
         "tool_output_too_large",
+        "context_budget_exceeded",
     }:
         return FailureCategory.BUDGET
     if code in {
@@ -50,6 +51,8 @@ def failure_category(code: str) -> FailureCategory:
         return FailureCategory.APPROVAL
     if code.startswith("provider_") or code == "invalid_provider_output":
         return FailureCategory.PROVIDER
+    if code.startswith("context_"):
+        return FailureCategory.INPUT
     if code.startswith(
         ("tool_", "patch_", "process_", "artifact_", "test_", "git_", "workspace_")
     ) or code in {"unknown_tool", "duplicate_tool"}:

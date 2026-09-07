@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "ContextFragmentKind": {
+      "enum": [
+        "runtime_instruction",
+        "user_instruction",
+        "project_instruction",
+        "workspace",
+        "git",
+        "environment"
+      ],
+      "title": "ContextFragmentKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "$ref": "#/$defs/ContextFragmentKind"
+    },
+    "source": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    },
+    "content": {
+      "maxLength": 262144,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "source",
+    "content"
+  ],
+  "title": "ContextFragment",
+  "type": "object"
+}

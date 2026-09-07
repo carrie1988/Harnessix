@@ -69,6 +69,9 @@ from harnessix.artifacts.ports import (
     BatchDiffPublisher,
     ProcessArtifactPublisher,
 )
+from harnessix.context.contracts import ContextBuildInput, ContextInspection, ContextPrepared
+from harnessix.context.engine import ContextPreparationError
+from harnessix.context.ports import ContextPlanner
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -116,6 +119,7 @@ class AgentRuntime:
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
         max_parallel_tools: int = 4,
+        context: ContextPlanner | None = None,
     ) -> None:
         if type(max_parallel_tools) is not int or not 1 <= max_parallel_tools <= 16:
             raise KernelError("tool_concurrency_invalid", "并行工具上限必须在1到16之间")
@@ -203,6 +207,7 @@ class AgentRuntime:
         self._locks: dict[UUID, asyncio.Lock] = {}
         self._active: dict[UUID, tuple[UUID, CancelToken, asyncio.Task[object]]] = {}
         self._max_parallel_tools = max_parallel_tools
+        self._context = context
 
     async def __aenter__(self) -> Self:
         if self._owner is not None:
@@ -935,32 +940,79 @@ class AgentRuntime:
                     or turn.usage.total_tokens >= turn.budget.max_tokens
                 ):
                     raise KernelError("budget_exceeded", "模型步骤或 Token 预算耗尽")
+                history = tuple(
+                    item
+                    for previous in thread.turns
+                    for item in previous.items
+                    if item.status == ItemStatus.COMPLETED
+                    and isinstance(item.content, TextContent | ToolCallContent | ToolResultContent)
+                )
+                tools = tuple(
+                    d
+                    for d in self._definitions.values()
+                    if d.effect_class == EffectClass.READ_ONLY
+                    or (self._patches is not None and d.name == "apply_patch")
+                    or (self._patch_batches is not None and d.name == "apply_patch_batch")
+                    or (self._process_tool_name is not None and d.name == self._process_tool_name)
+                )
+                instructions: str | None = None
+                if self._context is not None:
+                    with self._telemetry.operation(
+                        "context",
+                        thread_id=thread_id,
+                        turn_id=turn_id,
+                        step=turn.model_steps + 1,
+                    ) as operation:
+                        token.checkpoint()
+                        try:
+                            prepared = self._context.prepare(
+                                ContextBuildInput(
+                                    thread_id=thread_id,
+                                    turn_id=turn_id,
+                                    model_step=turn.model_steps + 1,
+                                    workspace=thread.workspace,
+                                    history_documents=tuple(
+                                        json.dumps(
+                                            item.model_dump(mode="json"),
+                                            ensure_ascii=False,
+                                            sort_keys=True,
+                                            separators=(",", ":"),
+                                        )
+                                        for item in history
+                                    ),
+                                    tool_documents=tuple(
+                                        json.dumps(
+                                            definition.model_dump(mode="json"),
+                                            ensure_ascii=False,
+                                            sort_keys=True,
+                                            separators=(",", ":"),
+                                        )
+                                        for definition in tools
+                                    ),
+                                )
+                            )
+                        except ContextPreparationError as error:
+                            raise KernelError(error.code, error.message) from None
+                        token.checkpoint()
+                        thread = await self._commit(
+                            thread_id,
+                            turn_id,
+                            [ContextPrepared(inspection=prepared.inspection)],
+                        )
+                        self._fault("runtime.after_context_prepared")
+                        self._telemetry.context(prepared.inspection)
+                        operation.finish("ok")
+                        instructions = prepared.instructions
+                        turn = get_turn(thread, turn_id)
                 thread = await self._state(thread_id, turn_id, TurnStatus.CALLING_MODEL)
                 turn = get_turn(thread, turn_id)
                 request = ModelRequest(
                     thread_id=thread_id,
                     turn_id=turn_id,
                     step=turn.model_steps,
-                    history=tuple(
-                        item
-                        for previous in thread.turns
-                        for item in previous.items
-                        if item.status == ItemStatus.COMPLETED
-                        and isinstance(
-                            item.content, TextContent | ToolCallContent | ToolResultContent
-                        )
-                    ),
-                    tools=tuple(
-                        d
-                        for d in self._definitions.values()
-                        if d.effect_class == EffectClass.READ_ONLY
-                        or (self._patches is not None and d.name == "apply_patch")
-                        or (self._patch_batches is not None and d.name == "apply_patch_batch")
-                        or (
-                            self._process_tool_name is not None
-                            and d.name == self._process_tool_name
-                        )
-                    ),
+                    history=history,
+                    tools=tools,
+                    instructions=instructions,
                     budget=turn.budget,
                     remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
                 )
@@ -1814,3 +1866,16 @@ class AgentRuntime:
         parts = turn.trace_context.traceparent.split("-") if turn.trace_context else []
         trace_id = parts[1] if len(parts) == 4 else None
         return ActionContext(session_id=str(thread_id), run_id=str(turn_id), trace_id=trace_id)
+
+    async def inspect_context(
+        self, thread_id: UUID, turn_id: UUID, *, model_step: int | None = None
+    ) -> ContextInspection:
+        turn = get_turn(await self.store.get_thread(thread_id), turn_id)
+        inspections = turn.context_inspections
+        if model_step is not None:
+            inspections = tuple(
+                inspection for inspection in inspections if inspection.model_step == model_step
+            )
+        if not inspections:
+            raise KernelError("context_not_found", "指定 Turn 或模型步骤没有 Context 检查记录")
+        return inspections[-1].model_copy(deep=True)

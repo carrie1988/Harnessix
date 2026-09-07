@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from functools import partial
 from time import monotonic
 from typing import Literal
 from uuid import UUID
@@ -11,11 +12,12 @@ from uuid import UUID
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import AgentFailure, FailureCategory, KernelError
 from harnessix.agent.models import Turn, Usage
+from harnessix.context.contracts import ContextInspection
 from harnessix.domain.models import TraceContext
 from harnessix.observability.core import Observability, ObservabilitySpan
 
 _LOGGER = logging.getLogger(__name__)
-OperationName = Literal["turn", "model", "tool", "approval", "cancel", "recovery"]
+OperationName = Literal["turn", "model", "tool", "approval", "cancel", "recovery", "context"]
 _OUTCOMES = frozenset(
     {
         "ok",
@@ -180,6 +182,35 @@ class KernelTelemetry:
                 "harnessix.agent.tokens.output", usage.output_tokens
             )
         )
+
+    def context(self, inspection: ContextInspection) -> None:
+        values = {
+            "available": inspection.available_input_tokens,
+            "history": inspection.history_tokens,
+            "tools": inspection.tool_tokens,
+            "instructions": inspection.instruction_tokens,
+            "estimated_input": inspection.estimated_input_tokens,
+        }
+        for component, value in values.items():
+            self._send(
+                partial(
+                    self.observability.record,
+                    "harnessix.agent.context.tokens",
+                    value,
+                    attributes={"component": component},
+                )
+            )
+        for fragment in inspection.fragments:
+            self._send(
+                partial(
+                    self.observability.increment,
+                    "harnessix.agent.context.fragments",
+                    attributes={
+                        "kind": fragment.kind.value,
+                        "disposition": fragment.disposition,
+                    },
+                )
+            )
 
     def finished(self, turn: Turn) -> None:
         labels = {"status": turn.status.value}

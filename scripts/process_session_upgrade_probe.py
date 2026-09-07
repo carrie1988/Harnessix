@@ -1,4 +1,4 @@
-"""真实 Agent v8 与当前 wheel 的 Session migration10/11 升级探针。"""
+"""真实 Agent v8 与当前 wheel 的 Session migration10-12 升级探针。"""
 
 import asyncio
 import json
@@ -86,10 +86,10 @@ async def main(mode: str, root: Path) -> None:
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("真实 v8 reader 意外接受 migration10/11")
+            raise AssertionError("真实 v8 reader 意外接受后续 migration")
         assert store.path.stat().st_ino == inode
         assert database_state(store.path) == before
-        print("真实 v8 reader 明确拒绝 migration10/11，数据库未改变")
+        print("真实 v8 reader 明确拒绝后续 migration，数据库未改变")
         return
 
     if mode == "create":
@@ -149,16 +149,16 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:9] == before["migrations"][:9]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 12))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 13))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 9
-        print("当前wheel已原字节升级真实v8会话；migration10/11未重写事件或投影")
+        assert EventDraft.model_fields["schema_version"].default == 10
+        print("当前wheel已原字节升级真实v8会话；migration10-12未重写事件或投影")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 9
+    assert EventDraft.model_fields["schema_version"].default == 10
     old_event_count = len(before["events"])
     async with AgentRuntime(
         store, ScriptedProvider([answer("v9-answer", "migration10 后继续")])
@@ -166,17 +166,17 @@ async def main(mode: str, root: Path) -> None:
         completed = await runtime.run_turn(
             thread_id,
             "升级后继续",
-            request_id="process-session-v9",
+            request_id="process-session-v10",
         )
         assert completed.status == "completed"
     resumed = database_state(store.path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 9 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 10 for row in resumed["events"][old_event_count:]
     )
-    assert resumed["threads"][0][4] == 9
+    assert resumed["threads"][0][4] == 10
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
-    print("v9 wheel 已在升级会话追加新事件；旧 v8 事件原字节保留且 Replay 一致")
+    print("v10 wheel 已在升级会话追加新事件；旧 v8 事件原字节保留且 Replay 一致")
 
 
 if __name__ == "__main__":

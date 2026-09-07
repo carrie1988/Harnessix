@@ -95,6 +95,18 @@ def test_failed_tool_result_keeps_actionable_error_on_openai_wire() -> None:
     }
 
 
+def test_instructions_are_a_separate_leading_system_message() -> None:
+    request = model_request().model_copy(update={"instructions": "runtime > user > project"})
+    body, _ = build_request(
+        request, OpenAIChatConfig(model="test", output_token_parameter="max_tokens")
+    )
+    assert body["messages"][0] == {
+        "role": "system",
+        "content": "runtime > user > project",
+    }
+    assert body["messages"][1]["role"] == "user"
+
+
 @pytest.mark.parametrize(
     "case",
     [

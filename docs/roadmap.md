@@ -280,26 +280,28 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
+状态：**进行中**。0.6.1已完成源码求证、ADR、领域契约和本地实现，提供固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；远端CI通过前不标记0.6.1最终关闭。项目指令自动发现、动态Source、Tool Result裁剪、Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[专项研究](research/context-planning-and-instructions.md)和[ADR 0054](adr/0054-context-planning-and-inspection.md)。
+
 ### 目标
 
 支持长任务、多轮会话和可解释的上下文管理。
 
 ### 核心交付
 
-- [ ] 系统指令、用户指令、项目指令的优先级；
+- [x] 系统指令、用户指令、项目指令的优先级；
 - [ ] Workspace/Git/环境 Context Fragment；
-- [ ] Token Budget；
+- [x] Token Budget（0.6.1供应商中立输入门禁；精确Tokenizer与自动压缩后续完成）；
 - [ ] Tool Result 裁剪和完整结果引用；
 - [ ] 自动 Compaction；
 - [ ] Compaction Summary 的版本和持久化；
 - [ ] Session Resume、Fork 和 Archive；
 - [ ] Turn Retry 与 Interrupted Recovery；
-- [ ] Context Inspect 诊断输出；
+- [x] Context Inspect 诊断输出；
 - [ ] 历史规范化和 Provider 切换兼容。
 
 ### 关键测试
 
-- [ ] 指令优先级和冲突；
+- [x] 指令优先级、稳定排序和结构边界冲突；
 - [ ] 接近模型上下文上限时自动压缩；
 - [ ] 压缩前后关键任务约束不丢失；
 - [ ] 恢复后 Tool Call/Result 仍正确配对；

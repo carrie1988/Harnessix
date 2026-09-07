@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5 Coding Tool Runtime全部路线图范围。任务v3百炼北京在固定历史缺陷上3/3严格通过；通过结果可生成私有单文件变更包，经来源、树、干净状态、前镜像和批准指纹复核后原子写入目标工作树。0.5.6补齐显式Tool并发能力、连续只读有界调度、写/审批屏障、失败快停和统一Tool Error类别；[CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)四项任务全部通过。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5 Coding Tool Runtime全部路线图范围。0.6.1已实现供应商中立Context Fragment、固定指令优先级、输入预算、双Provider system映射、Event v10持久检查记录和Context Inspect，整体0.6仍在进行。任务v3百炼北京在固定历史缺陷上3/3严格通过；[0.5关闭CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)四项任务全部通过。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -391,6 +391,18 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 
 完整源码依据、失败语义、兼容和边界见[专项研究](docs/research/tool-scheduling-and-errors.md)与[ADR 0053](docs/adr/0053-tool-concurrency-and-error-taxonomy.md)。本次并发是单Runtime进程边界，不是跨进程Workspace锁或OS Sandbox。
 
+## 当前已实现：Context规划、指令与检查记录（0.6.1）
+
+- `harnessix.context`提供供应商中立`ContextFragment`、`ContextLimits`、`ContextPlanner`与`ContextInspection`契约；
+- 固定Runtime > User > Project > Workspace > Git > Environment优先级，Runtime/User指令为必选，正文不能自报trust或priority；
+- `utf8-bytes/v1`在模型调用前对历史、Tool Definition和指令分项估算，并预留输出、Provider开销和安全余量；
+- 可选Fragment按稳定顺序装入，超限决策显式记录；历史/工具或必选指令超限时不发送Provider请求；
+- OpenAI-compatible使用首个`system` message，Anthropic使用顶层`system`字段；
+- 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
+- `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
+
+当前只实现宿主显式提供的静态Fragment。项目指令自动发现、Workspace/Git/环境动态Source、Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive属于后续0.6切片。完整边界见[0.6实施设计](docs/m06-context-and-sessions.md)与[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+
 ## 当前已实现：0.1 Action Plane
 
 - Python 3.12+、asyncio、Pydantic v2、FastAPI；
@@ -648,6 +660,7 @@ examples/                   可运行演示
 - [Tool Runtime 研究](docs/research/tool-runtime.md)
 - [Tool调度与错误分类专项研究](docs/research/tool-scheduling-and-errors.md)
 - [Context Engine 研究](docs/research/context-engine.md)
+- [Context规划、指令与预算源码研究](docs/research/context-planning-and-instructions.md)
 - [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
 - [Coding Agent多试验质量与成本研究](docs/research/eval-campaign.md)
 - [Coding Eval Token预算适用性研究](docs/research/eval-token-budget-applicability.md)
@@ -664,6 +677,7 @@ examples/                   可运行演示
 - [持久审批与恢复设计](docs/adr/0012-durable-approval-checkpoint.md)
 - [Kernel 契约与诊断设计](docs/adr/0013-kernel-contracts-and-telemetry.md)
 - [0.4 Model Runtime 实施计划](docs/m04-model-runtime.md)
+- [0.6 Context Engine与持久会话实施设计](docs/m06-context-and-sessions.md)
 - [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
@@ -680,6 +694,7 @@ examples/                   可运行演示
 - [模型可纠正工具参数校验反馈决策](docs/adr/0050-model-correctable-tool-validation.md)
 - [受控Eval变更交付决策](docs/adr/0052-controlled-eval-change-delivery.md)
 - [Tool有界并发与错误分类决策](docs/adr/0053-tool-concurrency-and-error-taxonomy.md)
+- [Context规划、指令优先级与检查记录决策](docs/adr/0054-context-planning-and-inspection.md)
 - [百炼北京三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval/README.md)
 - [百炼北京任务v2三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)
 

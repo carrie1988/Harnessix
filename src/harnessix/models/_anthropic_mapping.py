@@ -81,6 +81,8 @@ def build_request(
         "stream": True,
         "thinking": {"type": "disabled"},
     }
+    if request.instructions is not None:
+        body["system"] = request.instructions
     if tools:
         body["tools"] = tools
         body["tool_choice"] = {

@@ -52,6 +52,13 @@ def test_parallel_results_form_one_user_message() -> None:
     assert body["tool_choice"] == {"type": "auto", "disable_parallel_tool_use": False}
 
 
+def test_instructions_use_anthropic_system_field() -> None:
+    request = model_request().model_copy(update={"instructions": "runtime > user > project"})
+    body, _ = build_request(request, AnthropicConfig(model="test"))
+    assert body["system"] == "runtime > user > project"
+    assert body["messages"][0]["role"] == "user"
+
+
 @pytest.mark.parametrize(
     "case",
     [

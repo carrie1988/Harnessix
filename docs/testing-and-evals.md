@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至已完成的0.5 Coding Tool Runtime
+- 状态：0.2架构基线，已随实现更新至0.6.1 Context规划本地关闭候选
 - 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1084,3 +1084,27 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 本片没有模型API请求、API Key读取、SSH、远程服务器、数据库迁移或中间件操作。
 
 实现提交`113980f`的[CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合既有0.5.1—0.5.5验收，本片关闭整体0.5 Coding Tool Runtime路线图范围。
+
+## 54. 0.6.1 Context规划、指令与检查记录验收（2026-09-07）
+
+本片依据[Context规划专项研究](research/context-planning-and-instructions.md)和[ADR 0054](adr/0054-context-planning-and-inspection.md)，建立供应商中立的Fragment、输入预算、Provider system映射和Event v10检查记录。新增 **12项** 定向自动回归：
+
+- 固定Runtime/User/Project/Workspace/Git/Environment优先级、稳定排序、Fragment去重和结构化JSON转义；
+- Runtime/User必选指令保留，大型可选Fragment省略后较小低优先级Fragment仍可装入；
+- 历史、Tool Definition或必选指令超预算时以`context_budget_exceeded`在Provider调用前失败；
+- 每个模型步骤唯一Context记录，SQLite重开、Event Replay和`inspect_context`结果一致；
+- Context记录提交后、模型调用前故障时保留无正文检查事实且不调用Provider；
+- OpenAI-compatible首个`system` message和Anthropic顶层`system`映射；
+- Context Span、固定Token分项及低基数Fragment指标不携带正文、source或Fragment ID；
+- Event v9拒绝v10 Context事实，历史v1-v9 Schema冻结，Migration 0012与v10投影升级连续。
+
+本地质量门禁：
+
+- `make check`完成Ruff、Mypy（**150个源文件**）和 **2591 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2554项全部通过**；
+- Schema连续生成两次聚合摘要均为`941b3bea8a1d289621dc1a7ab14ec6a7dbc9606c362d17ad4065d69dc14bce43`；Agent Event v10、Thread v10和Context Inspection v1摘要分别为`6f2d2c5c85b3af1ce6f2fe52b71927417063f467c2c56ef9c5b4ad73310ea`、`6fd70473fce49d6ad0f9190c90d674543d908eb3f0463adc97697e8b022dbbc5`和`a89b5c2f8b99b0975c7339e08ea0d43dfeedfb218de7304cf3f8874f281fdf97`；
+- sdist/wheel构建成功，wheel SHA-256为`6deb16de1a20a2597b507e7606d015912e902193759df22dd11c4db1f81d8ba1`；
+- 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，可导入Context公开契约，完成确定性规划并确认Agent Event默认版本为v10；
+- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
+
+0.6.1的本地实现与发布物门禁已通过；远端CI通过前保持关闭候选状态。项目指令自动发现、动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和Session生命周期由后续0.6切片继续完成。

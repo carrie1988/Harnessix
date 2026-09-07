@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至已完成的0.5 Coding Tool Runtime）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.1 Context规划切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -13,6 +13,7 @@
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
+- 0.6.1 已实现静态Context Fragment、固定指令优先级、保守输入预算、OpenAI-compatible/Anthropic system映射、Event v10无正文检查记录、诊断API及OTel；项目指令自动发现、动态Workspace/Git/环境Source、Tool Result裁剪、Compaction和会话生命周期仍未实现，见[实施设计](m06-context-and-sessions.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -126,6 +127,8 @@ Context Engine 负责：
 - Context 来源与决策的诊断输出。
 
 Context Engine 不负责全文代码索引。只有真实 Eval 证明必要时才引入索引或向量检索。
+
+0.6.1当前实现位于`harnessix.context`。`ContextPlanner`接收Runtime生成的确定性历史/Tool文档，按Runtime > User > Project > Workspace > Git > Environment排序并在明确窗口内选择；Runtime/User为必选，超限在发网前失败。每次启用Planner的模型步骤先持久`ContextPrepared`，再调用Provider。检查记录只含来源元数据、估算、选择结果和指纹，不复制正文。`utf8-bytes/v1`是确定性的保守估算，不等同于Provider Usage或精确Tokenizer。
 
 ### 4.6 Coding Tool Runtime
 
@@ -347,7 +350,7 @@ Client Cancel
 src/harnessix/
 ├── agent/             # 已实现基础切片：Loop、领域模型、Reducer、取消
 ├── models/            # 中立端口、离线 Provider、OpenAI/Anthropic Adapter 与有界传输
-├── context/           # 规划：指令、预算、裁剪、压缩
+├── context/           # 已实现0.6.1：指令、预算、检查；规划：Source、裁剪、压缩
 ├── tools/             # 已实现：Workspace只读、搜索、Git与Artifact读取入口
 ├── artifacts/         # 已实现：事务正文、分页、配额、TTL与清理
 ├── patches/           # 已实现：单文件/整组计划、执行、恢复与Diff

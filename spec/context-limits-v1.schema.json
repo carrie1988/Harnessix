@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "context_window_tokens": {
+      "maximum": 10000000,
+      "minimum": 1024,
+      "title": "Context Window Tokens",
+      "type": "integer"
+    },
+    "reserved_output_tokens": {
+      "maximum": 1000000,
+      "minimum": 1,
+      "title": "Reserved Output Tokens",
+      "type": "integer"
+    },
+    "provider_overhead_tokens": {
+      "default": 512,
+      "maximum": 1000000,
+      "minimum": 0,
+      "title": "Provider Overhead Tokens",
+      "type": "integer"
+    },
+    "safety_margin_tokens": {
+      "default": 1024,
+      "maximum": 1000000,
+      "minimum": 0,
+      "title": "Safety Margin Tokens",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "context_window_tokens",
+    "reserved_output_tokens"
+  ],
+  "title": "ContextLimits",
+  "type": "object"
+}

@@ -11,6 +11,7 @@ from opentelemetry.trace import StatusCode
 
 from harnessix.agent.models import TurnStatus
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.context import ContextEngine, ContextFragment, ContextFragmentKind, ContextLimits
 from harnessix.domain.models import TraceContext
 from harnessix.models.contracts import ResponseFailed
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
@@ -178,6 +179,60 @@ async def test_parallel_reads_keep_individual_tool_spans_and_metrics(tmp_path: P
         assert tool_count == 2
     finally:
         tools.release.set()
+        observer.close()
+
+
+async def test_context_telemetry_has_only_bounded_metadata(tmp_path: Path) -> None:
+    observer, exporter, reader = instrumented()
+    planner = ContextEngine(
+        ContextLimits(
+            context_window_tokens=8192,
+            reserved_output_tokens=1024,
+            provider_overhead_tokens=0,
+            safety_margin_tokens=0,
+        ),
+        (
+            ContextFragment(
+                kind=ContextFragmentKind.PROJECT_INSTRUCTION,
+                source="AGENTS.md",
+                content=CANARY,
+            ),
+        ),
+    )
+    try:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "context.db"),
+            FakeProvider(),
+            context=planner,
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "任务", request_id="context")
+        assert turn.status is TurnStatus.COMPLETED
+        spans = [
+            span for span in exporter.get_finished_spans() if span.name == "harnessix.agent.context"
+        ]
+        assert len(spans) == 1 and spans[0].attributes["model_step"] == 1
+        context_metrics = {
+            metric.name: metric for metric in metrics(reader) if ".context." in metric.name
+        }
+        assert set(context_metrics) == {
+            "harnessix.agent.context.tokens",
+            "harnessix.agent.context.fragments",
+        }
+        assert {
+            point.attributes["component"]
+            for point in context_metrics["harnessix.agent.context.tokens"].data.data_points
+        } == {"available", "history", "tools", "instructions", "estimated_input"}
+        fragment_points = context_metrics["harnessix.agent.context.fragments"].data.data_points
+        assert len(fragment_points) == 1
+        assert fragment_points[0].attributes == {
+            "kind": "project_instruction",
+            "disposition": "included",
+        }
+        exported = "\n".join(span.to_json() for span in exporter.get_finished_spans())
+        assert CANARY not in exported and CANARY not in reader.get_metrics_data().to_json()
+    finally:
         observer.close()
 
 

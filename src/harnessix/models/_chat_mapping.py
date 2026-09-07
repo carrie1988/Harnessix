@@ -39,9 +39,12 @@ def build_request(
             }
         )
     remaining = request.remaining_tokens or request.budget.max_tokens
+    messages = messages_for(request)
+    if request.instructions is not None:
+        messages.insert(0, {"role": "system", "content": request.instructions})
     body: dict[str, Any] = {
         "model": config.model,
-        "messages": messages_for(request),
+        "messages": messages,
         "stream": True,
         "stream_options": {"include_usage": True},
         config.output_token_parameter: min(config.max_output_tokens, remaining),

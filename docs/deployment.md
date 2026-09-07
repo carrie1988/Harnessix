@@ -289,9 +289,9 @@ c3c1 当时仅新增宿主报告 API 与独立 JSONL 契约，没有数据库迁
 
 独立Schema`agent-process-call-plan-v1`用于持久兼容检查。b2b2已升级Agent事件和Session最低reader并完成真实旧包验收，见下节；仍不能删除既有migration记录、手写事件或把`host.process`加入默认Agent工具表来提前开放能力。
 
-## 当前Session v9 / migration10–11进程投影与Artifact升级（0.5.4b2b2–b2c2）
+## Session v9 / migration10–11进程投影与Artifact历史升级（0.5.4b2b2–b2c2）
 
-Agent Event/Thread v9由`0010_agent_process_projection.sql`推进最低reader标记；migration10不新增表、索引或列。b2c2的`0011_process_output_artifacts.sql`事务复制Artifact表，仅把`process_output`加入purpose白名单。两次迁移都不重写旧事件、快照或Effect Journal；旧Artifact正文、manifest和purpose保持原字节。新写或显式rebuild的Session投影版本为9；v1–v8 Schema文件保持原字节。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration marker伪装降级。
+b2b2由`0010_agent_process_projection.sql`把最低reader推进到Agent Event/Thread v9；migration10不新增表、索引或列。b2c2的`0011_process_output_artifacts.sql`事务复制Artifact表，仅把`process_output`加入purpose白名单。两次迁移都不重写旧事件、快照或Effect Journal；旧Artifact正文、manifest和purpose保持原字节。0.6.1之后的新写或显式rebuild投影为v10，并追加不改表的migration12；v1–v9 Schema文件保持冻结。升级前仍应停止Session宿主并做一致备份，回退只能恢复备份，不能删除migration marker或下调投影版本伪装降级。
 
 Runtime重开v9的WAITING_ACTION仍只保留原等待，不会在启动时创建、批准、执行或轮询Process Action。b2c1配置原专用端口后，调用方可显式`resume_turn`单次读取匹配Action并投影；普通Session审批或手写`ToolResult.process`仍不可绕过。Effect Journal、Worker、API的Process ToolDescriptor和Principal必须继续一致，Action Approval仍是唯一许可。
 
@@ -682,3 +682,36 @@ runtime = AgentRuntime(
 监控至少区分Turn状态、`FailureCategory.TOOL`、稳定错误码、工具时延、取消和Runtime关闭时长。0.5.6会把此前误归为`internal`的`patch_*`、`process_*`、`artifact_*`、`test_*`、`git_*`和`workspace_*`错误计入`tool`；告警仪表盘应同步调整，但历史事件不回写。
 
 出现资源压力时先把两个上限降为1，即恢复等价串行调度，不需要数据库回滚。回退旧wheel前也必须排空在途Turn；旧代码读取带新字段的严格Descriptor可能失败，因此回退不承诺跨版本未完成调用继续执行，终态历史仍作为审计事实保留。
+
+## Context规划切片安装（0.6.1）
+
+0.6.1新增Agent Event/Thread v10与Session Migration 0012。迁移只写最低reader版本标记，不改写旧Event、Thread JSON或Artifact。滚动升级仍应先排空活跃Turn；旧wheel不能读取v10投影，回退前必须确认数据库尚未由新版本追加事件，禁止手工下调`projection_version`。
+
+Context Engine必须使用对应模型和端点的显式窗口配置，不能把`Budget.max_tokens`累计消费上限当成上下文窗口：
+
+```python
+from harnessix.context import ContextEngine, ContextFragment, ContextFragmentKind, ContextLimits
+
+context = ContextEngine(
+    ContextLimits(
+        context_window_tokens=131_072,
+        reserved_output_tokens=8_192,
+        provider_overhead_tokens=1_024,
+        safety_margin_tokens=2_048,
+    ),
+    (
+        ContextFragment(
+            kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+            source="runtime-policy/v1",
+            content="这里应由受信部署配置提供运行时基础指令",
+        ),
+    ),
+)
+runtime = AgentRuntime(session_store, provider, context=context)
+```
+
+窗口值必须来自已核对的模型能力资料或受控平台配置。`utf8-bytes/v1`按UTF-8字节保守估算，不是Provider账单Token；生产仪表盘应比较Context估算、真实input usage和`context_budget_exceeded`比例，再决定是否引入新版本Tokenizer，不得原地修改v1算法。
+
+当前`ContextEngine`只接受宿主显式提供的静态Fragment。不得直接遍历不受信仓库并把文件内容标成`runtime_instruction`；项目说明文件发现、路径作用域、读取缺口、revision和更新语义属于0.6.2。Fragment正文会发送给Provider，但不会复制进`ContextPrepared`检查记录；`source`会进入Session诊断，禁止写入凭据、Token或用户隐私值。
+
+部署后至少验证：两个Provider离线system映射、超预算发网前失败、Event Replay、旧Session迁移、`inspect_context`以及Context指标无正文。0.6.1不需要真实模型API、远程服务器、数据库服务或新增中间件。
