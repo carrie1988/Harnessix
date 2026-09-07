@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-07
-- 状态：0.6.1已完成；0.6.2a已实现、关闭验收进行中；整体0.6进行中
+- 状态：0.6.1、0.6.2a已完成；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -11,7 +11,7 @@
 | 切片 | 内容 | 状态 |
 |---|---|---|
 | 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
-| 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 关闭验收进行中 |
+| 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 未开始 |
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 未开始 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
@@ -243,7 +243,7 @@ AgentRuntime PREPARING_CONTEXT
 - Event v11、Context v2最低版本、Migration 13、历史Schema冻结、SQLite Replay与升级硬退出；
 - Source指标只有kind/status且不泄漏路径、正文、scope或revision。
 
-默认测试不需要模型API Key、网络、SSH、远程服务器或新中间件。最终关闭数据在全量回归、严格异步、Schema和wheel验证后补入测试文档。
+默认测试不需要模型API Key、网络、SSH、远程服务器或新中间件。全量回归、严格异步、Schema、wheel及远端四矩阵CI关闭数据见[测试与Eval规范第55节](testing-and-evals.md#55-062a-受控项目指令source与freshness验收2026-09-07)。
 
 ## 20. 后续切片
 

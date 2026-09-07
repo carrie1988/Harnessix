@@ -279,7 +279,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已实现受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，正在完成关闭验收。Workspace/Git/环境Source、Tool Result模型视图、Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source专项研究](research/context-sources-and-tool-results.md)和[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)。
+状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过本地完整门禁及远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收。Workspace/Git/环境Source、Tool Result模型视图、Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source专项研究](research/context-sources-and-tool-results.md)和[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)。
 
 ### 目标
 

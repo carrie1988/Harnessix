@@ -1138,4 +1138,4 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 独立wheel验证发现macOS临时目录的`/var`到`/private/var`规范路径别名会被原始字符串比较误拒绝。实现改为在可取消读取Worker内严格解析Thread路径，再与绑定能力根比较；规范别名接受、越界路径拒绝已加入回归；
 - 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
 
-远端Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵CI是0.6.2a正式关闭门禁；实现提交、CI链接和最终发布物摘要随关闭记录登记。
+实现提交`bfd7087`的[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、失败与恢复矩阵、独立发布物验证和同步设计文档，0.6.2a正式关闭；0.6.2b继续实现Workspace/Git/环境Source及跨来源一致性。
