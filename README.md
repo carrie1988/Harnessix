@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5.1—0.5.4c Coding Tool纵向切片。0.5.5已完成版本化真实缺陷Eval、同一Runtime/Worker评分、真实Provider多试验、质量/成本基线和受控显式交付：任务v3百炼北京3/3严格通过；通过结果可生成私有单文件变更包，经来源、树、干净状态、前镜像和批准指纹复核后原子写入目标工作树，并支持崩溃核对。整体0.5仍未完成任意Shell、统一Tool Error、读写并发治理等其他路线图项目；OS Sandbox、通用多文件交付、自动commit/push和Agent CLI也不属于当前范围。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础，以及0.5.1—0.5.6 Coding Tool纵向切片的本地实现与验收。任务v3百炼北京在固定历史缺陷上3/3严格通过；通过结果可生成私有单文件变更包，经来源、树、干净状态、前镜像和批准指纹复核后原子写入目标工作树。0.5.6补齐显式Tool并发能力、连续只读有界调度、写/审批屏障、失败快停和统一Tool Error类别；0.5最终关闭以远端CI通过为准。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -53,7 +53,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - 大小写敏感的路径通配与字面量搜索，固定忽略规则不放宽权限；扫描缺口显式计数；
 - 显式开启 Artifact 后，搜索预览外记录以有界 JSONL 归档；正文、manifest 与 ToolResult 同一 SQLite 事务提交；
 - `read_artifact` 按真实会话/工作区分页读取，具备 SHA 校验、配额、TTL、活跃会话保护和过期清理；
-- 顺序执行、协作取消、线程与 FD 回收、SQLite 重开/Replay；
+- 显式opt-in的连续只读有界并发、确定性结果提交、协作取消、线程与 FD 回收、SQLite 重开/Replay；
 - 真实 SDK + 离线 HTTP 的搜索→revision 读取闭环，旧/Scoped 入口累计 18 个真实只读进程崩溃切点；不调用真实 API。
 
 ~~~bash
@@ -224,7 +224,7 @@ uv run python -m examples.batch_diff
 uv run pytest tests/artifacts/test_batch_diff*.py
 ```
 
-设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈现由0.5.4c提供，**任意Shell、源目录合入和完整 Coding Eval 尚未完成**，项目仍在0.5阶段，不是已完工的生产 Coding Agent。
+设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈、真实Coding Eval和受控单文件合入已由后续0.5.4c/0.5.5交付。任意Shell字符串被正式排除，非交互命令由受控`host.process`承担；OS Sandbox仍属于后续版本。
 
 ## 当前已实现：受信宿主进程运行层（0.5.4a）
 
@@ -275,7 +275,7 @@ uv run pytest tests/tools/test_git.py tests/processes/test_test_profiles.py
 uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_feedback_sdk.py
 ```
 
-这是受控测试Profile，不是任意Shell。测试代码仍在宿主权限下运行；当前没有容器/网络隔离、CPU/内存强配额、源目录自动合入、Git提交/推送或真实Provider多次Coding Eval基线。配置、数据、错误、恢复和取舍见 [ADR 0043](docs/adr/0043-git-and-controlled-test-feedback.md)。
+这是受控测试Profile，不是任意Shell。测试代码仍在宿主权限下运行；当前没有容器/网络隔离、CPU/内存强配额或Git提交/推送。真实Provider多次Coding Eval与显式单文件工作树合入已由0.5.5交付。配置、数据、错误、恢复和取舍见 [ADR 0043](docs/adr/0043-git-and-controlled-test-feedback.md)。
 
 ## 当前已实现：Coding Eval评分与历史任务闭环（0.5.5a/b）
 
@@ -378,6 +378,18 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 重开通过前镜像、后镜像与临时inode区分安全重试、已应用、冲突和未知，不自动覆盖第三镜像或归因外部同内容写入。
 
 真实历史通过run已生成稳定包，并在精确历史checkout上完成“脏工作区拒绝→显式批准→一次合入→幂等重开→Diff摘要一致→行为与身份隐藏检查通过”的离线验收。设计见[源码求证](docs/research/eval-change-delivery.md)与[ADR 0052](docs/adr/0052-controlled-eval-change-delivery.md)。该能力不是三方合并、自动commit/push、通用多文件发布或跨主机仓库锁。
+
+## 当前已实现：Tool Contract与有界调度收口（0.5.6）
+
+- `ToolDescriptor`/`ToolDefinition`新增默认关闭的`supports_parallel_calls`；只有只读工具可以声明，非法写能力在注册前失败；
+- Kernel只并行同一响应开头连续、无需审批、契约匹配且显式opt-in的只读调用，默认上限4、范围1—16；
+- 审批、Patch、Process、未知和未声明工具均为顺序屏障，屏障后的调用不能提前执行；
+- 并发执行结果按Provider顺序持久化；任一异常立即取消并排空兄弟任务，Turn取消和Runtime关闭不遗留后台读取；
+- `CodingToolRuntime`再以有界信号量限制文件、搜索、Git和Artifact读取，避免外部调用形成无界线程/FD占用；
+- Patch、Process、Artifact、Test、Git和Workspace稳定错误统一归为`tool`类别，更具体的中断、审批、冲突和存储分类保持不变；
+- 非交互命令由现有结构化`host.process`承担：宿主预绑定程序/cwd/env，模型提交argv并经过持久审批与Worker；不新增任意Shell字符串入口。
+
+完整源码依据、失败语义、兼容和边界见[专项研究](docs/research/tool-scheduling-and-errors.md)与[ADR 0053](docs/adr/0053-tool-concurrency-and-error-taxonomy.md)。本次并发是单Runtime进程边界，不是跨进程Workspace锁或OS Sandbox。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -615,13 +627,14 @@ src/harnessix/tools/        工作区只读/Git工具、作用域与Artifact读�
 src/harnessix/artifacts/    有界正文、事务发布、分页、配额与清理
 src/harnessix/patches/      受管单文件/整组Patch及差异报告
 src/harnessix/processes/    宿主进程、Action桥接、测试Profile与输出文档
+src/harnessix/evals/        版本化编码任务、运行、评分、Campaign与受控交付
 tests/                      单元和集成测试
 docs/                       中文架构与决策文档
 spec/                       生成的 JSON Schema 和 OpenAPI
 examples/                   可运行演示
 ```
 
-后续按里程碑增量加入 `context/`、`protocol/`、`extensions/` 和 `evals/`，不进行一次性目录重写。
+后续按里程碑增量加入 `context/`、`protocol/` 和 `extensions/`，不进行一次性目录重写。
 
 ## 设计资料
 
@@ -633,6 +646,7 @@ examples/                   可运行演示
 - [Session 模型研究](docs/research/session-model.md)
 - [协议与 Provider Event 研究](docs/research/protocol.md)
 - [Tool Runtime 研究](docs/research/tool-runtime.md)
+- [Tool调度与错误分类专项研究](docs/research/tool-scheduling-and-errors.md)
 - [Context Engine 研究](docs/research/context-engine.md)
 - [Permission、Approval 与 Sandbox 研究](docs/research/security.md)
 - [Coding Agent多试验质量与成本研究](docs/research/eval-campaign.md)
@@ -664,6 +678,8 @@ examples/                   可运行演示
 - [受控真实Coding Eval Campaign执行决策](docs/adr/0048-controlled-real-eval-campaign-execution.md)
 - [版本化Coding Eval Token预算决策](docs/adr/0049-versioned-eval-token-budget.md)
 - [模型可纠正工具参数校验反馈决策](docs/adr/0050-model-correctable-tool-validation.md)
+- [受控Eval变更交付决策](docs/adr/0052-controlled-eval-change-delivery.md)
+- [Tool有界并发与错误分类决策](docs/adr/0053-tool-concurrency-and-error-taxonomy.md)
 - [百炼北京三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval/README.md)
 - [百炼北京任务v2三次Coding Eval基线](docs/validation/bailian-2026-09-06-coding-eval-v2/README.md)
 
@@ -674,7 +690,7 @@ examples/                   可运行演示
 | 0.2 | 产品、源码研究与架构基线 |
 | 0.3 | 可恢复 Agent Runtime Kernel |
 | 0.4 | OpenAI-compatible / Anthropic Model Runtime |
-| 0.5 | Read/Search/Patch/Shell/Git/Test 编码闭环 |
+| 0.5 | Read/Search/Patch/Process/Git/Test 编码闭环 |
 | 0.6 | Context Compaction 与持久会话 |
 | 0.7 | Workspace、Permission、Sandbox、Action Plane 集成 |
 | 0.8 | App Server、MCP、Skills、Hooks |

@@ -644,3 +644,41 @@ result = deliveries.execute(pending.delivery_id, target_repository_root)
 目标仓库必须停在变更包的精确source commit，配置相同origin，且index、工作树和untracked全部为空。`prepare`通过后到`execute`之间的任何来源、状态、路径、权限、inode或前镜像变化都会拒绝写入。若业务允许用户同时编辑同一仓库，宿主必须先获取仓库级独占任务租约；本地`flock`只串行同一交付ID，不是跨主机分布式锁。
 
 `applied`只表示工作树后镜像已原子写入并完成inode归因。部署方仍需在外层执行代码评审、完整测试、commit、签名、push和发布；不得把这些动作拼进本片批准。多文件、创建/删除、rename、二进制、三方合并和自动回滚必须等待新版本契约。
+
+## Tool并发契约升级（0.5.6）
+
+本片不新增数据库迁移、后台服务、API Key、网络或中间件。公开OpenAPI的`ToolDescriptor`新增非必填`supports_parallel_calls`，旧载荷缺失时读取为`false`。该字段属于受信工具定义且进入完整工具指纹，不能由客户端或模型调用参数设置。
+
+### 滚动升级顺序
+
+1. 停止向待升级实例分配新Turn；
+2. 等待在途Turn完成、取消或到达持久审批/Action边界；
+3. 关闭Agent/Coding Tool Runtime，确认Workspace目录FD与后台任务已回收；
+4. 部署新wheel并重新生成/发布OpenAPI；
+5. 使用默认并发上限启动，完成离线双读取、串行屏障、取消和关闭检查后再恢复流量。
+
+终态Session无需迁移。升级前尚未完成的Tool Call保存的是旧Descriptor指纹，新Runtime会以`tool_contract_changed`失败关闭，不会在新并发语义下重放；部署方不得编辑Session指纹绕过门禁。若业务必须保留等待审批的旧Turn，应先由旧实例完成或取消，再升级。
+
+### 宿主配置
+
+Kernel和只读工具层分别有独立上限：
+
+```python
+tools = CodingToolRuntime(workspace, max_concurrent_reads=4)
+runtime = AgentRuntime(
+    session_store,
+    provider,
+    scoped_tools=tools,
+    max_parallel_tools=4,
+)
+```
+
+两项都必须是严格整数且位于1—16。Kernel限制同一Provider批次，Coding Tool限制单实例实际读取资源；有效并发不会超过较小值。生产首发保持默认4，只在文件描述符、线程池和存储延迟指标证明有余量后调整，不能把上限改成无限。
+
+`host.process`、Patch及审批调用不会因该配置并行。非交互命令继续要求宿主显式装配预绑定程序、Process Agent Bridge、Action Worker和唯一审批；默认Bootstrap不广告Process。跨进程Workspace锁、容器隔离、网络/Secret策略仍须等待0.7，不能把单进程信号量作为多租户安全边界。
+
+### 监控与回退
+
+监控至少区分Turn状态、`FailureCategory.TOOL`、稳定错误码、工具时延、取消和Runtime关闭时长。0.5.6会把此前误归为`internal`的`patch_*`、`process_*`、`artifact_*`、`test_*`、`git_*`和`workspace_*`错误计入`tool`；告警仪表盘应同步调整，但历史事件不回写。
+
+出现资源压力时先把两个上限降为1，即恢复等价串行调度，不需要数据库回滚。回退旧wheel前也必须排空在途Turn；旧代码读取带新字段的严格Descriptor可能失败，因此回退不承诺跨版本未完成调用继续执行，终态历史仍作为审计事实保留。

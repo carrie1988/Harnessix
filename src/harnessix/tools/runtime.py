@@ -165,9 +165,13 @@ class CodingToolRuntime:
         require_approval: bool = False,
         artifacts: SQLiteArtifactStore | None = None,
         git_executable: Path | None = None,
+        max_concurrent_reads: int = 4,
     ) -> None:
+        if type(max_concurrent_reads) is not int or not 1 <= max_concurrent_reads <= 16:
+            raise KernelError("tool_concurrency_invalid", "只读工具并发上限必须在1到16之间")
         self._workspace = Workspace(root, denied_paths=denied_paths)
-        self._lock = asyncio.Lock()
+        self._max_concurrent_reads = max_concurrent_reads
+        self._lock = asyncio.BoundedSemaphore(max_concurrent_reads)
         self._closed = False
         self._artifacts = artifacts
         self._git = (
@@ -181,7 +185,8 @@ class CodingToolRuntime:
                 "scope": self._workspace.scope,
                 "input": binding.input_model.model_json_schema(),
                 "output": binding.output_model.model_json_schema(),
-                "concurrency": "serial",
+                "concurrency": "parallel_read",
+                "max_concurrent_reads": max_concurrent_reads,
                 "max_text_bytes": MAX_TEXT_BYTES,
                 "max_line_bytes": MAX_LINE_BYTES,
                 "max_scan_bytes": MAX_SCAN_BYTES,
@@ -215,6 +220,7 @@ class CodingToolRuntime:
                 requires_idempotency=False,
                 requires_approval=require_approval,
                 supports_reconciliation=False,
+                supports_parallel_calls=True,
             )
         if artifacts is not None:
             contract = digest(
@@ -223,6 +229,8 @@ class CodingToolRuntime:
                     "artifacts": artifacts.contract(),
                     "input": ReadArtifactInput.model_json_schema(),
                     "output": ArtifactPage.model_json_schema(),
+                    "concurrency": "parallel_read",
+                    "max_concurrent_reads": max_concurrent_reads,
                 }
             )
             self._definitions["read_artifact"] = ToolDescriptor(
@@ -235,6 +243,7 @@ class CodingToolRuntime:
                 requires_idempotency=False,
                 requires_approval=require_approval,
                 supports_reconciliation=False,
+                supports_parallel_calls=True,
             )
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
@@ -406,8 +415,15 @@ class CodingToolRuntime:
         self._closed = True
 
         async def close_scope() -> None:
-            async with self._lock:
+            acquired = 0
+            try:
+                for _ in range(self._max_concurrent_reads):
+                    await self._lock.acquire()
+                    acquired += 1
                 self._workspace.close()
+            finally:
+                for _ in range(acquired):
+                    self._lock.release()
 
         closing = asyncio.create_task(close_scope())
         try:

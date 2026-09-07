@@ -21,6 +21,7 @@ class ToolDefinition:
     requires_idempotency: bool = False
     requires_approval: bool = False
     supports_reconciliation: bool = False
+    supports_parallel_calls: bool = False
 
     def descriptor(self) -> ToolDescriptor:
         return ToolDescriptor(
@@ -33,6 +34,7 @@ class ToolDefinition:
             requires_idempotency=self.requires_idempotency,
             requires_approval=self.requires_approval,
             supports_reconciliation=self.supports_reconciliation,
+            supports_parallel_calls=self.supports_parallel_calls,
         )
 
 
@@ -41,6 +43,7 @@ class ToolRegistry:
         self._tools: dict[str, ToolDefinition] = {}
 
     def register(self, tool: ToolDefinition) -> None:
+        tool.descriptor()
         if tool.name in self._tools:
             raise ValueError(f"工具重复注册：{tool.name}")
         self._tools[tool.name] = tool

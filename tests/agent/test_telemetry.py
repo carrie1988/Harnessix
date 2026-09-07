@@ -20,6 +20,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed
 from tests.agent.helpers import RecordingTools, answer, tool_step
 from tests.agent.test_approvals import reply
+from tests.agent.test_tool_scheduling import ParallelReads, _parallel_step
 
 CANARY = "private-canary-not-for-telemetry"
 
@@ -140,6 +141,43 @@ async def test_durable_trace_segments_and_low_cardinality_metrics(tmp_path: Path
         assert "harnessix.agent.operation.duration" in {m.name for m in metric_data}
         assert CANARY not in reader.get_metrics_data().to_json()
     finally:
+        observer.close()
+
+
+async def test_parallel_reads_keep_individual_tool_spans_and_metrics(tmp_path: Path) -> None:
+    observer, exporter, reader = instrumented()
+    tools = ParallelReads(expected=2)
+    try:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "s.db"),
+            ScriptedProvider([_parallel_step(1, 2), answer()]),
+            tools,
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            running = asyncio.create_task(
+                runtime.run_turn(thread.thread_id, "并发观测", request_id="parallel-observed")
+            )
+            await asyncio.wait_for(tools.entered.wait(), 10)
+            tools.release.set()
+            turn = await running
+        assert turn.status is TurnStatus.COMPLETED
+        spans = [
+            span for span in exporter.get_finished_spans() if span.name == "harnessix.agent.tool"
+        ]
+        assert len(spans) == 2
+        assert len({span.attributes["call_id"] for span in spans}) == 2
+        operations = next(
+            metric for metric in metrics(reader) if metric.name == "harnessix.agent.operations"
+        )
+        tool_count = sum(
+            point.value
+            for point in operations.data.data_points
+            if point.attributes.get("operation") == "tool"
+        )
+        assert tool_count == 2
+    finally:
+        tools.release.set()
         observer.close()
 
 

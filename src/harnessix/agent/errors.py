@@ -50,7 +50,9 @@ def failure_category(code: str) -> FailureCategory:
         return FailureCategory.APPROVAL
     if code.startswith("provider_") or code == "invalid_provider_output":
         return FailureCategory.PROVIDER
-    if code.startswith("tool_") or code in {"unknown_tool", "duplicate_tool"}:
+    if code.startswith(
+        ("tool_", "patch_", "process_", "artifact_", "test_", "git_", "workspace_")
+    ) or code in {"unknown_tool", "duplicate_tool"}:
         return FailureCategory.TOOL
     if code in {
         "invalid_event",

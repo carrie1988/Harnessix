@@ -115,7 +115,10 @@ class AgentRuntime:
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
+        max_parallel_tools: int = 4,
     ) -> None:
+        if type(max_parallel_tools) is not int or not 1 <= max_parallel_tools <= 16:
+            raise KernelError("tool_concurrency_invalid", "并行工具上限必须在1到16之间")
         if tools is not None and scoped_tools is not None:
             raise KernelError("tool_runtime_conflict", "旧工具入口与 Scoped 入口不能同时配置")
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -199,6 +202,7 @@ class AgentRuntime:
         self._open = False
         self._locks: dict[UUID, asyncio.Lock] = {}
         self._active: dict[UUID, tuple[UUID, CancelToken, asyncio.Task[object]]] = {}
+        self._max_parallel_tools = max_parallel_tools
 
     async def __aenter__(self) -> Self:
         if self._owner is not None:
@@ -985,7 +989,29 @@ class AgentRuntime:
     ) -> Turn | None:
         thread = await self.store.get_thread(thread_id)
         turn = get_turn(thread, turn_id)
-        for call in pending_calls(turn):
+        calls = pending_calls(turn)
+        parallel_calls = self._parallel_read_prefix(calls)
+        if len(parallel_calls) > 1:
+            results = await self._execute_parallel_reads(
+                thread_id,
+                turn_id,
+                parallel_calls,
+                token,
+                turn.budget.max_output_chars,
+            )
+            for call, result in zip(parallel_calls, results, strict=True):
+                token.checkpoint()
+                thread, settled = await self._record_tool_result(
+                    thread_id,
+                    turn_id,
+                    call,
+                    result,
+                    max_output_chars=turn.budget.max_output_chars,
+                )
+                if settled.outcome == "unknown":
+                    raise KernelError("uncertain_effect", "工具结果未知，禁止继续模型循环")
+            return await self._execute_calls(thread_id, turn_id, token)
+        for call in calls:
             token.checkpoint()
             rejected = False
             early_result: ToolResultContent | None = None
@@ -1139,34 +1165,13 @@ class AgentRuntime:
                 )
             )
             token.checkpoint()
-            if isinstance(result, ArtifactToolResult):
-                if self._artifacts is None:
-                    raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
-                async with self._lock(thread_id):
-                    current = await self.store.get_thread(thread_id)
-                    thread = await self._artifacts.publish(
-                        thread_id,
-                        turn_id,
-                        call,
-                        result,
-                        expected_sequence=current.sequence,
-                        max_output_chars=turn.budget.max_output_chars,
-                    )
-                settled_result = result.result
-            else:
-                if rejected or early_result is not None:
-                    result = self._validate_result(result, call, turn.budget.max_output_chars)
-                item_id = new_id()
-                thread = await self._commit(
-                    thread_id,
-                    turn_id,
-                    [
-                        ItemStarted(item_id=item_id, content=result),
-                        ItemFinished(item_id=item_id, content=result, status=ItemStatus.COMPLETED),
-                    ],
-                )
-                settled_result = result
-                self._fault("runtime.after_tool_result")
+            thread, settled_result = await self._record_tool_result(
+                thread_id,
+                turn_id,
+                call,
+                result,
+                max_output_chars=turn.budget.max_output_chars,
+            )
             turn = get_turn(thread, turn_id)
             if settled_result.outcome == "unknown":
                 raise KernelError("uncertain_effect", "工具结果未知，禁止继续模型循环")
@@ -1183,6 +1188,97 @@ class AgentRuntime:
                         "整组运行未正常完成；已归因效果仍保留",
                     )
         return None
+
+    def _parallel_read_prefix(
+        self, calls: Sequence[ToolCallContent]
+    ) -> tuple[ToolCallContent, ...]:
+        selected: list[ToolCallContent] = []
+        for call in calls:
+            if len(selected) == self._max_parallel_tools:
+                break
+            definition = self._definitions.get(call.tool)
+            if (
+                definition is None
+                or definition.effect_class is not EffectClass.READ_ONLY
+                or call.effect_class is not EffectClass.READ_ONLY
+                or call.requires_approval
+                or not definition.supports_parallel_calls
+            ):
+                break
+            self._validate_tool_contract(call)
+            selected.append(call)
+        return tuple(selected)
+
+    async def _execute_parallel_reads(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        calls: Sequence[ToolCallContent],
+        token: CancelToken,
+        max_output_chars: int,
+    ) -> tuple[ToolResultContent | ArtifactToolResult, ...]:
+        tasks = tuple(
+            asyncio.create_task(self._execute(thread_id, turn_id, call, token, max_output_chars))
+            for call in calls
+        )
+        try:
+            pending = set(tasks)
+            while pending:
+                done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                if any(task.cancelled() or task.exception() is not None for task in done):
+                    break
+            if pending:
+                for task in pending:
+                    task.cancel()
+            completed = await asyncio.gather(*tasks, return_exceptions=True)
+        except BaseException:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            raise
+        results: list[ToolResultContent | ArtifactToolResult] = []
+        for result in completed:
+            if isinstance(result, BaseException):
+                raise result
+            results.append(result)
+        return tuple(results)
+
+    async def _record_tool_result(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        call: ToolCallContent,
+        result: ToolResultContent | ArtifactToolResult,
+        *,
+        max_output_chars: int,
+    ) -> tuple[Thread, ToolResultContent]:
+        if isinstance(result, ArtifactToolResult):
+            if self._artifacts is None:
+                raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
+            async with self._lock(thread_id):
+                current = await self.store.get_thread(thread_id)
+                thread = await self._artifacts.publish(
+                    thread_id,
+                    turn_id,
+                    call,
+                    result,
+                    expected_sequence=current.sequence,
+                    max_output_chars=max_output_chars,
+                )
+            return thread, result.result
+        checked = self._validate_result(result, call, max_output_chars)
+        item_id = new_id()
+        thread = await self._commit(
+            thread_id,
+            turn_id,
+            [
+                ItemStarted(item_id=item_id, content=checked),
+                ItemFinished(item_id=item_id, content=checked, status=ItemStatus.COMPLETED),
+            ],
+        )
+        self._fault("runtime.after_tool_result")
+        return thread, checked
 
     async def _execute(
         self,

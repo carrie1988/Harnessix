@@ -1109,6 +1109,11 @@
           "supports_reconciliation": {
             "type": "boolean",
             "title": "Supports Reconciliation"
+          },
+          "supports_parallel_calls": {
+            "type": "boolean",
+            "title": "Supports Parallel Calls",
+            "default": false
           }
         },
         "additionalProperties": false,

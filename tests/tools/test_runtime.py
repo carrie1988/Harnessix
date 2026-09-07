@@ -127,7 +127,7 @@ async def test_cancel_queued_read_never_starts_second_worker(tmp_path, monkeypat
         return original(*args)
 
     monkeypatch.setattr(files, "read_file", block)
-    async with CodingToolRuntime(tmp_path) as tools:
+    async with CodingToolRuntime(tmp_path, max_concurrent_reads=1) as tools:
         first = asyncio.create_task(execute(tools, path="x"))
         second = None
         try:
@@ -150,6 +150,50 @@ async def test_precancelled_token_does_not_execute(tmp_path, monkeypatch):
         token.cancel()
         with pytest.raises(TurnCancelled):
             await tools.execute(call(tools, path="x"), token)
+
+
+async def test_bounded_reads_run_in_parallel_and_descriptor_declares_capability(
+    tmp_path, monkeypatch
+):
+    (tmp_path / "x").write_text("测试")
+    entered = asyncio.Event()
+    release = Event()
+    loop = asyncio.get_running_loop()
+    active = 0
+    peak = 0
+    original = files.read_file
+
+    def block(*args):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        if active == 2:
+            loop.call_soon_threadsafe(entered.set)
+        try:
+            assert release.wait(10)
+            return original(*args)
+        finally:
+            active -= 1
+
+    monkeypatch.setattr(files, "read_file", block)
+    async with CodingToolRuntime(tmp_path, max_concurrent_reads=2) as tools:
+        assert all(definition.supports_parallel_calls for definition in tools.definitions())
+        tasks = [asyncio.create_task(execute(tools, path="x")) for _ in range(3)]
+        try:
+            await asyncio.wait_for(entered.wait(), 10)
+            await asyncio.sleep(0.05)
+            assert peak == 2
+        finally:
+            release.set()
+            results = await asyncio.gather(*tasks)
+    assert all(result.outcome == "succeeded" for result in results)
+
+
+@pytest.mark.parametrize("limit", [0, 17, True, 1.5])
+def test_read_concurrency_limit_is_bounded(tmp_path, limit):
+    with pytest.raises(KernelError) as error:
+        CodingToolRuntime(tmp_path, max_concurrent_reads=limit)
+    assert error.value.code == "tool_concurrency_invalid"
 
 
 async def test_cancel_close_still_waits_for_active_scope_and_releases_root(tmp_path):

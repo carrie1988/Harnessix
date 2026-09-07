@@ -174,6 +174,13 @@ class ToolDescriptor(ContractModel):
     requires_idempotency: bool
     requires_approval: bool
     supports_reconciliation: bool
+    supports_parallel_calls: bool = False
+
+    @model_validator(mode="after")
+    def parallel_calls_are_read_only(self) -> Self:
+        if self.supports_parallel_calls and self.effect_class is not EffectClass.READ_ONLY:
+            raise ValueError("只有只读工具可以声明并行调用")
+        return self
 
 
 class PolicyDecision(ContractModel):

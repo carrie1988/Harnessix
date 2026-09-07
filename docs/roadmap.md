@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.4c与0.5.5当前定义范围均已完成验收，整体0.5仍进行中**。任务v3真实Campaign在固定历史缺陷上3/3严格通过，0.5.5d进一步把通过结果转换为私有单文件变更包，并以来源/干净状态/前镜像复核、批准指纹、原子替换和崩溃核对完成显式工作树合入。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0051](adr/0051-versioned-eval-final-answer-contract.md)、[ADR 0052](adr/0052-controlled-eval-change-delivery.md)和[任务v3真实基线](validation/bailian-2026-09-06-coding-eval-v3/README.md)。任意Shell、通用多文件交付、自动commit/push和OS Sandbox仍不属于已交付范围。
+状态：**0.5.1–0.5.6均已完成实现与本地验收，0.5最终关闭等待远端CI**。任务v3真实Campaign在固定历史缺陷上3/3严格通过，0.5.5d把通过结果转换为私有单文件变更包，并以来源/干净状态/前镜像复核、批准指纹、原子替换和崩溃核对完成显式工作树合入；0.5.6补齐Tool并发契约、连续只读有界调度、写/审批屏障、失败排空和统一错误类别。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0052](adr/0052-controlled-eval-change-delivery.md)、[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)和[任务v3真实基线](validation/bailian-2026-09-06-coding-eval-v3/README.md)。非交互命令由结构化`host.process`实现，不开放任意Shell字符串；通用多文件交付、自动commit/push和OS Sandbox属于后续版本。
 
 ### 目标
 
@@ -192,7 +192,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ### 核心交付
 
-- [ ] Tool Contract、Registry、风险和并发元数据；
+- [x] Tool Contract、Registry、风险和并发元数据；
 - [x] 文件读取、搜索与有界 JSONL 输出管理（Process已捕获日志由0.5.4b2c2补齐）；
   - [x] 0.5.1：`list_files` / `read_file`，根/规则持久绑定、严格参数/输出、分页失效、取消回收；
   - [x] 0.5.2：`glob` / `grep` 与输出 Artifact；
@@ -200,7 +200,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
     - [x] 0.5.2b：可信执行作用域、私有 Artifact 归属/配额/原子发布/过期及孤儿恢复；
       - [x] 0.5.2b1：显式 Scoped 端口、持久调用归属、严格工作区绑定、旧审批兼容与并发/取消/恢复验证；
       - [x] 0.5.2b2：同库正文/manifest/ToolResult 原子提交，受控分页、配额、过期清理、未提交回滚与崩溃不重搜；
-- [ ] `apply_patch` 和结构化 Patch Result；
+- [x] `apply_patch` 和结构化 Patch Result；
   - [x] 0.5.3a：宿主只读准备、完整前后镜像摘要、精确非重叠编辑、来源漂移复核；
   - [x] 0.5.3b：受管单文件 Patch 的模型调用闭环；
     - [x] 0.5.3b1：私有副本工厂、持久计划/审批/意图、单文件替换、取消/崩溃观察和源目录只读；
@@ -219,7 +219,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
       - [x] 0.5.3c3c：真实调用归属的计划/历史效果 Diff Artifact、事务发布、预算/分页/过期及恢复；
         - [x] c3c1：完整调用/组账本绑定的计划与历史效果报告，有界 JSONL、全部成员说明、取消排空及只读重开；
         - [x] c3c2：计划/效果独立引用与真实 Session 事实同事务发布、reader 兼容升级、分页/配额/过期及失败恢复；
-- [ ] `shell` 的非交互执行（当前只开放固定测试Profile，不开放模型任意argv）；
+- [x] 非交互命令执行（结构化`host.process`支持宿主预绑定程序与模型argv；默认不开放，拒绝任意Shell字符串）；
   - [x] 0.5.4a：受信宿主程序绑定、argv/环境准入、双流有界捕获、组终止、取消/关闭与管道回收；不注册模型工具；
   - [x] 0.5.4b：持久命令意图/审批/结果、当前范围宿主死亡处理及安全恢复，不按历史PID自动杀进程或重放命令；
     - [x] b1：复用Action Plane持久意图/审批/租约/UNKNOWN，绑定宿主执行权限，硬退出不杀旧PID或重放；不接模型；
@@ -238,9 +238,9 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [x] `git_status`、`git_diff`（显式Git绑定、固定命令/config、精确仓库根和有界UTF-8结果）；
 - [x] `run_tests`（模型只选Profile，固定argv进入原Process Action审批/Worker链路）；
 - [x] 有界搜索/Process输出截断、事务归档引用和过期清理；Process Artifact不对Action已捕获前缀做第二次隐藏截断；
-- [ ] 只读并发、写操作互斥和 Turn 取消；
-- [ ] 统一 Tool Error Taxonomy；
-- [x] 0.5.4c闭环中的变更摘要和最终Diff读取；源目录合入、提交和产品交付仍待后续。
+- [x] 只读并发、写/审批顺序屏障和 Turn 取消（单Runtime范围；跨进程锁属于0.7）；
+- [x] 统一 Tool Error Taxonomy；
+- [x] 0.5.4c闭环中的变更摘要和最终Diff读取；0.5.5d已补显式单文件工作树合入，commit/push和通用发布仍待后续。
 - [x] 0.5.5真实缺陷Coding Eval与变更交付；
   - [x] 0.5.5a：版本化任务/检查/Git/最终回答/报告契约、无Golden Patch评分器及原子脱敏报告；
   - [x] 0.5.5b：首个Harnessix历史真实缺陷物化、隐藏检查和同一Runtime/Worker驱动；
@@ -260,21 +260,22 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
         - [x] 0.5.5c3e1：任务v3显式裸JSON Schema、旧版本兼容、严格评分与离线回归；
         - [x] 0.5.5c3e2：使用新Campaign完成任务v3三次真实试验；严格通过3/3，费用¥0.828428，完整脱敏证据已归档；
   - [x] 0.5.5d：受控单文件变更包、来源漂移/脏工作区冲突、批准绑定、崩溃核对和显式工作树合入。
+- [x] 0.5.6 Tool Contract收口：并发能力默认关闭且仅限只读，连续安全前缀有界执行、Provider顺序提交、失败快停/排空、工具域错误统一分类和兼容部署。
 
 ### 关键测试
 
-- [ ] UTF-8、二进制、大文件、长行、空文件和符号链接；
-- [ ] Patch 上下文漂移、部分失败和重复应用；
-- [ ] Shell 超时、超大输出、非零退出和进程树终止；
-- [ ] 脏工作区中不覆盖用户已有修改；
-- [ ] 并发读与写互斥行为确定；
-- [ ] 从失败测试到修复通过的端到端任务。
+- [x] UTF-8、二进制、大文件、长行、空文件和符号链接；
+- [x] Patch 上下文漂移、部分失败和重复应用；
+- [x] Process超时、超大输出、非零退出和进程树终止；
+- [x] 脏工作区中不覆盖用户已有修改；
+- [x] 并发读与写/审批屏障行为确定；
+- [x] 从失败测试到修复通过的端到端任务。
 
 ### 验收标准
 
 - Agent 能在一个非示例仓库中自主定位并修复受控缺陷；
 - 最终回答与实际 Git Diff、测试结果一致；
-- 失败不会留下半写文件或孤儿进程；
+- 已承诺的写入、超时、取消和关闭路径不会留下半写文件或同组孤儿进程；宿主硬退出进入`unknown`且不误报已停止，跨宿主监督属于0.7；
 - 所有工具都有参数、结果、错误和取消契约。
 
 ## 8. 0.6：Context Engine 与持久会话

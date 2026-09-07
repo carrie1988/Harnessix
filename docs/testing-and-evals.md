@@ -1,7 +1,7 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.4c
-- 更新日期：2026-09-06
+- 状态：0.2架构基线，已随实现更新至0.5.6本地关闭候选
+- 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
@@ -1059,3 +1059,28 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 0.5.5d专用套件16项通过。最终本地`make check`完成Ruff、Mypy（146个源文件）及2562 passed、2 skipped；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下2526项全部通过。Schema连续生成摘要不变；sdist/wheel构建成功，wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`。
 
 仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入三份交付契约与Store，读取最新任务v3，并验证Campaign CLI默认禁网时不读取缺失配置。0.5.5d没有使用模型API、SSH、远程服务器或中间件；完整设计和边界见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。实现提交`83b6085`的[CI 34046477484](https://github.com/carrie1988/Harnessix/actions/runs/34046477484)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过，0.5.5当前定义范围关闭。
+
+## 53. 0.5.6 Tool Contract与有界调度验收（2026-09-07）
+
+完整源码证据与决策见[调度专项研究](research/tool-scheduling-and-errors.md)和[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。本片新增 **17项** 自动回归：
+
+- 两个显式opt-in只读调用真实重叠，三个调用受Kernel上限分批，结果仍按Provider顺序持久化；
+- 未opt-in读取保持串行屏障，写Descriptor不能声明并行；
+- 并发任务单项失败时立即取消并排空阻塞兄弟任务，Turn保存原工具错误和`tool`类别；
+- Turn取消排空全部并发读取，CodingToolRuntime关闭等待所有读取许可后再关闭Workspace；
+- 工具层最多两个读取实际进入线程工作区，第三个排队；原排队取消测试固定上限1后继续证明未启动第二Worker；
+- Kernel和工具层对0、17、布尔及浮点上限均以`tool_concurrency_invalid`失败；
+- 旧Descriptor缺失`supports_parallel_calls`时按`false`读取，公开Schema包含非必填字段；非法写定义注册失败且不污染Registry；
+- `tool_`、`patch_`、`process_`、`artifact_`、`test_`、`git_`、`workspace_`统一归为`FailureCategory.TOOL`；
+- 两个并发调用分别生成`call_id` Span和低基数`tool`操作指标，不把业务参数写入Metric标签。
+
+本地质量门禁：
+
+- `make check`完成Ruff、Mypy（**146个源文件**）和 **2579 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
+- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2542项全部通过**；
+- Schema连续生成摘要均为`04d218d53e5f7e5aa3f9ad0d7d2f43ac5535369585e16eb660811339600d611e`，公开变更仅为OpenAPI新增并发能力属性；
+- sdist/wheel构建成功，wheel SHA-256为`f09351fcb04ec47f908f5a2d888a8bec761538b5043d77453cd963fdbb5ae1cb`；
+- 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，旧Descriptor兼容、只读能力、并发配置及Campaign默认禁网入口均通过；
+- 本片没有模型API请求、API Key读取、SSH、远程服务器、数据库迁移或中间件操作。
+
+远端CI通过前，本节只证明本地关闭候选，不将整体0.5标记为最终完成。CI必须覆盖Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务；结果随最终关闭提交补充。

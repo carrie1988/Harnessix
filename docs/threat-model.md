@@ -1,7 +1,7 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.4c
-- 更新日期：2026-09-06
+- 状态：0.2架构基线，已随实现更新至0.5.6本地关闭候选
+- 更新日期：2026-09-07
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
 0.3 实施说明：当前 Kernel 已实现单宿主锁、事件 CAS/幂等、可信只读工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误和 Kernel 遥测字段隔离。审批绑定当前工具契约/参数/Workspace 路径，但不提供 OS 隔离、actor 身份认证、文件内容或环境完整性保证。真实 Sandbox、网络隔离、完整 Secret Redactor 和 MCP/Hook 仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见 [Kernel 支持边界](m03-runtime-kernel.md)。
@@ -330,7 +330,7 @@ Agent Runtime                │
 
 ## 9. 后续工作
 
-- 0.5：为 Patch/Shell 补专项威胁分析；
+- 0.5：Patch、Process、交付和Tool调度专项威胁分析已随纵向切片补齐；
 - 0.7：根据真实执行后端更新 Threat Model v2；
 - 0.8：为 MCP、Hooks 和 WebSocket 增加独立边界；
 - 0.9：引入自动化红队 Eval、依赖扫描和发布 SBOM；
@@ -455,3 +455,15 @@ Agent Runtime                │
 - 私有受管副本不是自动Git worktree。测试示例中的Git初始化是受信宿主夹具，不意味着任意副本可提交/合并或自动交付源目录。0.5.4c闭环也不是非示例缺陷集Eval或生产容量证明。
 
 完整命令、错误、恢复与替代方案见[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。
+
+## 0.5.6 Tool并发补充（2026-09-07）
+
+- 并发资格只来自受信`ToolDescriptor`且默认关闭；只有`READ_ONLY`可显式开启。模型参数、提示词或工具名称不能授予并发能力，非法写声明在注册前失败。
+- Kernel只合并同一响应中连续、无需审批、调用/定义Effect一致且指纹匹配的安全读取。审批、Patch、Process、未知和未声明工具都是屏障，后续读取不能越过；因此并发不会扩大写权限或改变批准对象。
+- Kernel和Coding Tool分别使用1—16的有界批次/信号量，默认4。该限制控制单进程任务、线程和FD压力，不限制同UID其他进程，也不是跨主机Workspace锁。
+- 并发完成顺序不写入Session；结果仍按Provider顺序校验和提交，避免竞态改变Replay。任一异常、Turn取消、父Task取消或Runtime关闭都会取消并排空未完成任务后再结算。
+- 新字段进入完整工具指纹。旧终态历史可读；旧未完成调用不能静默切换调度语义，必须`tool_contract_changed`失败关闭。滚动升级应先排空在途Turn。
+- 工具错误类别统一只影响诊断聚合，不改变稳定错误码或授权语义。`process_interrupted`、审批、冲突、存储和取消仍按更具体规则分类，避免`process_*`前缀覆盖UNKNOWN/中断事实。
+- 剩余风险包括第三方只读工具错误声明、CPU密集读取争抢线程池、同UID进程并发改写Workspace及跨进程TOCTOU。生产宿主只应给经过并发测试的内置工具opt-in；0.7必须提供跨进程锁、Sandbox和资源配额。
+
+完整证据和取舍见[调度专项研究](research/tool-scheduling-and-errors.md)与[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。

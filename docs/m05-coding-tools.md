@@ -1,7 +1,7 @@
 # 0.5 Coding Tool Runtime 详细实施设计
 
 - 更新日期：2026-09-07
-- 状态：0.5.1—0.5.4c及0.5.5当前定义范围已交付；任务v3真实Provider基线3/3严格通过，严格通过结果可形成私有单文件变更包并经显式批准合入精确历史工作树；整体0.5的任意Shell、统一Tool Error和读写并发治理仍待后续切片
+- 状态：0.5.1—0.5.6范围均已实现并完成本地验收；任务v3真实Provider基线3/3严格通过，严格通过结果可形成私有单文件变更包并经显式批准合入精确历史工作树；0.5最终关闭以远端CI通过为准
 - 目标：从“模型调用正确”推进到“能够在真实仓库中可靠定位、修改、验证并交付”
 
 ## 1. 实际基线与不扩大的边界
@@ -16,12 +16,12 @@
 
 研究仍使用 [冻结基线](research/baselines.md)，本次核对本地 HEAD 与基线相同：Codex `a0dcfe2`、OpenCode `69c172e`。参考机制，不复制实现。
 
-- **事实**：Codex Registry 按工具声明查询并行能力；OpenCode Read Filesystem 同时限制行数、字节、长行，严格处理 UTF-8，并显式返回分页/截断。
+- **事实**：Codex Registry 按工具声明查询并行能力，并用读写锁实现安全调用共享、其他调用独占；Claude Code只合并连续并发安全调用，输入或能力判断失败时保守串行；OpenCode Read Filesystem 同时限制行数、字节、长行，严格处理 UTF-8，并显式返回分页/截断。
 - **决策**：能力来自受信 Registry，不来自模型参数；返回内容要明确读到了哪一段，不能把截断当作完整文件。
-- **决策**：先保持 Kernel 顺序调度，真实只读链路稳定后才增加有界并发；不以 asyncio.gather 一次性并发所有调用。
+- **决策**：0.5.6只并行连续、无需审批且定义显式opt-in的只读调用；默认上限4、允许范围1—16。结果按Provider顺序持久化，任意其他调用是顺序屏障，不一次性并发全部调用。
 - **决策**：路径校验不能只做字符串前缀或先 realpath 再直接 open。普通文件读写以 Workspace 能力和实际打开对象为边界；Shell 不能继承“只读工具”的安全声明。
 
-具体索引见 [Tool Runtime 研究](research/tool-runtime.md)。已有研究中新增 PURE/LOCAL_WRITE 等概念是设计意图，不是当前 Action Contract 枚举；本阶段不原地扩展冻结的 Action v1。
+具体索引见 [Tool Runtime 研究](research/tool-runtime.md)和[调度与错误专项研究](research/tool-scheduling-and-errors.md)。已有研究中新增 PURE/LOCAL_WRITE 等概念是设计意图，不是当前 Action Contract 枚举；本阶段不扩展冻结的Effect Class。
 
 ## 3. 分片与准入条件
 
@@ -37,6 +37,7 @@
 | 0.5.3c | 多文件效果与 Diff | 已实现整组准备/顺序效果、Kernel持久审批、双SDK离线闭环与计划/效果Artifact；不假报整体原子 |
 | 0.5.4 | Process、Git、run_tests、受控 Shell | a/b进程与恢复、c固定Git和测试Profile已实现；任意Shell不开放 |
 | 0.5.5 | 真实编码任务 Eval与交付 | a任务/证据/评分契约；b历史真实缺陷运行器；c真实模型多次基线；d受控变更交付 |
+| 0.5.6 | Tool Contract收口 | 已实现显式只读并发能力、有界调度、写/审批屏障、失败快停、统一工具错误类别和兼容部署 |
 
 这些是实现顺序，不是发布为生产可用的自动批准。写/Shell 在对应分片门禁前不出现在模型可见清单中，执行时仍再次检查；安全隔离能力不足的模式不能默认启用。
 
@@ -183,7 +184,7 @@ PYTHONASYNCIODEBUG=1 uv run pytest tests/tools -W error
 
 ## 13. 0.5.2a 当前交付与使用
 
-`CodingToolRuntime` 固定广告四个只读工具，仍经原有 Kernel、持久审批、顺序执行与取消回收。新搜索预算/语义进入自身工具版本；旧 list/read v1 Schema 和版本未改写。实际 os.open 权限不足保留 PermissionError，用于报告不可读扫描缺口；原 read_file 同时得到更准确的 tool_path_denied，而非将权限不足误报为 workspace_changed。
+0.5.2a交付时`CodingToolRuntime`固定广告四个只读工具，并经原有Kernel、持久审批、顺序执行与取消回收；0.5.6已在不修改输入/输出Schema的前提下增加显式有界并发。搜索预算/语义进入自身工具版本；旧 list/read v1 Schema 和版本未改写。实际 os.open 权限不足保留 PermissionError，用于报告不可读扫描缺口；原 read_file 同时得到更准确的 tool_path_denied，而非将权限不足误报为 workspace_changed。
 
 ~~~bash
 uv run python -m examples.kernel_search
@@ -1046,3 +1047,51 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 本片新增`coding-eval-change-package-v1`、`coding-eval-delivery-plan-v1`和`coding-eval-delivery-record-v1`三份Schema，不修改Agent、Session、Action、Patch、Process、Artifact或数据库Schema。0.5.5至此完成当前定义范围；通用多文件交付、三方合并、自动commit/push和OS Sandbox不在v1能力声明内。
 
 本地最终门禁为Ruff、Mypy（146个源文件）、2562 passed、2 skipped；异步调试与警告转错误套件2526项通过，Schema重复生成稳定。基础wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`，仓库外基础依赖安装未包含OpenAI/Anthropic SDK，仍可导入交付API并验证Campaign默认禁网入口。实现提交`83b6085`的[CI 34046477484](https://github.com/carrie1988/Harnessix/actions/runs/34046477484)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。
+
+## 51. 0.5.6：Tool Contract、调度与错误语义收口
+
+### 51.1 正式Tool Contract
+
+`ToolDescriptor`现在完整承载名称/版本、输入Schema、Effect Class、风险、幂等、审批、核对与`supports_parallel_calls`。并发字段默认`false`，只有`READ_ONLY`可以显式开启；`ToolRegistry.register`先构造并校验Descriptor，再改变注册表，非法写能力不会留下部分注册状态。
+
+公开OpenAPI新增非必填布尔属性。旧Descriptor缺失字段时按`false`读取；字段参与完整工具指纹，因此升级前未完成调用不会被新Runtime静默并发，而会沿用`tool_contract_changed`失败关闭。
+
+### 51.2 连续只读并发与写屏障
+
+同一模型响应中的调用按Provider顺序扫描。只有连续、无需审批、调用与定义均为只读、定义显式支持并行且指纹匹配的前缀可组成批次。Kernel默认最多并行4项，宿主可在1—16内收紧；不足两项时不创建并发批次。
+
+`CodingToolRuntime`对`list_files`、`read_file`、`glob`、`grep`、显式Git读取及`read_artifact`声明能力，并使用独立的有界读取信号量限制线程和FD占用。审批、Patch、Process、未知工具、未声明工具和任意写调用都是串行屏障；屏障后的读取不能提前执行。并发执行完成后，Kernel仍按Provider原顺序校验、发布Artifact和提交Session，完成时序不进入Replay事实。
+
+一个并发读取异常时，Kernel立即取消并排空未完成兄弟任务；多个调用同时失败时按Provider顺序选择第一个错误。Turn协作取消、父Task取消和Runtime关闭也等待全部子任务/许可回收，不遗留后台访问已关闭Workspace的任务。
+
+并发调用继续生成独立`harnessix.agent.tool` Span和操作/时延指标，以`call_id`关联；低基数指标不记录工具名、路径和参数。Span完成时序用于诊断，不改变Session提交顺序。
+
+该边界只覆盖单个Agent Runtime内同一响应和单个CodingToolRuntime实例。跨进程、跨宿主Workspace互斥以及容器/网络隔离属于0.7，当前不得宣称为全局读写锁。
+
+### 51.3 非交互命令执行的最终边界
+
+0.5路线图中的非交互`shell`由现有`host.process`正式实现，而不是新增接受任意命令字符串的Shell解释器：
+
+- 宿主预绑定绝对可执行程序、cwd与环境允许列表；模型只提交结构化argv；
+- stdin固定EOF，额外FD关闭，stdout/stderr有界捕获，超时/取消终止进程组；
+- 模型入口为高风险、非幂等、必须审批且不可自动重放的Process专用端口；
+- Action Journal先持久化意图与唯一审批，再由外部Worker执行；宿主死亡后只观察已知事实，不按历史PID猜测杀进程；
+- `run_tests`进一步只允许模型选择宿主预注册Profile，不接受argv。
+
+默认Bootstrap仍不广告`host.process`，宿主必须显式装配Process Agent Bridge和Worker。拒绝任意Shell字符串是0.5的正式安全取舍，不再作为“实现缺失”；OS Sandbox前不能把宿主Process暴露给不受信多租户。
+
+### 51.4 `apply_patch`与错误分类收口
+
+`apply_patch`和`apply_patch_batch`均已通过专用模型端口提供结构化计划、审批、结果、Diff Artifact和只核对恢复，不进入通用只读注册表。单文件原子替换、多文件逐成员效果、部分/未知状态和来源漂移均有持久证据；多文件不假报整体原子。
+
+顶层`FailureCategory`现在把`tool_`、`patch_`、`process_`、`artifact_`、`test_`、`git_`、`workspace_`错误统一归为`tool`。`process_interrupted`、审批、冲突、Provider、存储、预算与取消等更具体分类保持原优先级。稳定错误码、消息、`retryable`和持久Schema均未改写。
+
+### 51.5 关闭判据与边界
+
+0.5的正式完成范围是读取/搜索、结构化Patch、受控非交互Process、Git/测试反馈、事务Artifact、取消/恢复、真实缺陷Eval、显式单文件交付以及本节Tool Contract收口。完整源码证据与取舍见[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。
+
+以下能力不用于否定0.5完成，但仍是后续版本硬门禁：
+
+- 0.6：长上下文构建、自动压缩、Resume/Fork/Archive产品语义；
+- 0.7：OS Sandbox、网络/Secret策略、跨进程Workspace锁和不受信代码隔离；
+- 0.8以后：App Server、MCP/Skills/Hooks、CLI/TUI产品化、通用多文件交付和自动commit/push。

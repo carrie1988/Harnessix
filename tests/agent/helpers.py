@@ -35,10 +35,15 @@ def tool_step(*names: str) -> list[ProviderEvent]:
 
 class RecordingTools:
     def __init__(
-        self, *, effect: EffectClass = EffectClass.READ_ONLY, approval: bool = False
+        self,
+        *,
+        effect: EffectClass = EffectClass.READ_ONLY,
+        approval: bool = False,
+        parallel: bool = False,
     ) -> None:
         self.effect = effect
         self.approval = approval
+        self.parallel = parallel
         self.calls: list[ToolCallContent] = []
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
@@ -53,6 +58,7 @@ class RecordingTools:
                 requires_idempotency=False,
                 requires_approval=self.approval,
                 supports_reconciliation=False,
+                supports_parallel_calls=self.parallel,
             ),
         )
 

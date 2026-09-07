@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.4c已交付范围）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.5.6本地关闭候选）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -12,7 +12,7 @@
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
-- 0.5 已实现只读工具、有界 Artifact、受管单文件/整组Patch及计划/效果Diff；0.5.4a/b已完成宿主Process、Action Plane准入、Agent稳定身份/投影、Process Artifact和当前恢复边界；0.5.4c已实现显式Git状态/差异和宿主预注册测试Profile，并完成失败→修复→通过→Diff组合闭环。任意Shell、OS隔离、源目录交付与真实Coding Eval仍待完成，见 [实施设计](m05-coding-tools.md)；
+- 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -133,7 +133,7 @@ Context Engine 不负责全文代码索引。只有真实 Eval 证明必要时�
 
 ```text
 read_file       list_files       glob           grep
-apply_patch     shell            git_status     git_diff
+apply_patch     host.process     git_status     git_diff
 run_tests       ask_user         mcp_call
 ```
 
@@ -147,7 +147,7 @@ Tool Runtime 负责：
 - 权限判定和审批请求；
 - 结构化错误和可观测性。
 
-只读工具可以并发。文件写入、Shell 和其他有副作用工具默认串行，除非工具明确声明安全并发语义。
+当前实现只有受信定义显式opt-in的连续只读调用可以有界并发。文件写入、Process、审批和其他调用是顺序屏障；未来有副作用工具不得仅凭名称或模型声明开启并发。
 
 ### 4.7 Workspace、Process 与 Sandbox
 
@@ -348,12 +348,15 @@ src/harnessix/
 ├── agent/             # 已实现基础切片：Loop、领域模型、Reducer、取消
 ├── models/            # 中立端口、离线 Provider、OpenAI/Anthropic Adapter 与有界传输
 ├── context/           # 规划：指令、预算、裁剪、压缩
-├── tools/             # 规划：Coding Tool Runtime
-├── workspace/         # 规划：文件、Git、进程、Sandbox
+├── tools/             # 已实现：Workspace只读、搜索、Git与Artifact读取入口
+├── artifacts/         # 已实现：事务正文、分页、配额、TTL与清理
+├── patches/           # 已实现：单文件/整组计划、执行、恢复与Diff
+├── processes/         # 已实现：宿主进程、Action桥接、测试Profile与输出
+├── workspace/         # 规划：统一Workspace锁与Sandbox后端
 ├── protocol/          # 规划：App Server Protocol
 ├── session/           # 已实现 SQLite Event Log、聚合投影、迁移和宿主锁
 ├── extensions/        # 规划：MCP、Skills、Hooks
-├── evals/             # 规划：Replay、任务评测、故障注入
+├── evals/             # 已实现：历史任务、评分、Campaign与受控交付
 ├── domain/            # 已实现：Action Plane 领域模型
 ├── storage/           # 已实现：Effect Journal
 ├── policy/            # 已实现：Action Policy
@@ -435,4 +438,8 @@ src/harnessix/
 
 0.5.4b2c3完成当前Process Saga恢复矩阵。Runtime可从Session已有ToolCall但无审批Item的窗口按稳定身份找回同一Action；缺少原端口时保持事实。WAITING取消只结束Session观察并以unknown/INTERRUPTED结算，不撤销Action决定或队列状态。SQLite/PostgreSQL把RUNNING/RECONCILING租约过期与`UNKNOWN/lease_expired`结果同事务保存；跨进程相同审批幂等、不同审批冲突。八个跨库边界和一个Worker租约边界以真实退出验证，双SDK离线HTTP完成审批重开、外部Worker和Artifact摘要读取。详见 [ADR 0042](adr/0042-process-saga-recovery-and-cancellation.md)。
 
-0.5.4c在不新增执行权威的前提下增加两个窄入口。`GitReadRuntime`只由宿主显式绑定绝对Git可执行文件，固定status/diff子命令、环境、config、精确仓库根和输出预算，经`CodingToolRuntime`原串行只读端口暴露`git_status`/`git_diff`。`RunTestsAgentBridge`把公开`run_tests(profile)`解析成宿主固定`ProcessRequest`；公开工具版本绑定Profile全集、工作区和后端Process工具，实际Action仍为`host.process`，继续由原Journal审批、Worker执行和Artifact归档。非零测试退出映射`passed=false`而不伪装基础设施失败。组合闭环在三个权威事实域之间只读核对，不引入跨库超级事务或自动重放。详见 [ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。
+0.5.4c在不新增执行权威的前提下增加两个窄入口。`GitReadRuntime`只由宿主显式绑定绝对Git可执行文件，固定status/diff子命令、环境、config、精确仓库根和输出预算，经`CodingToolRuntime`只读端口暴露`git_status`/`git_diff`。`RunTestsAgentBridge`把公开`run_tests(profile)`解析成宿主固定`ProcessRequest`；公开工具版本绑定Profile全集、工作区和后端Process工具，实际Action仍为`host.process`，继续由原Journal审批、Worker执行和Artifact归档。非零测试退出映射`passed=false`而不伪装基础设施失败。组合闭环在三个权威事实域之间只读核对，不引入跨库超级事务或自动重放。详见 [ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。
+
+0.5.5在上述正式Runtime上增加版本化历史任务、隐藏检查、无Golden Patch评分、可恢复真实Provider Campaign和显式单文件交付。任务v3在固定历史缺陷上三次严格通过；交付层重新核对来源、工作树、前后镜像和批准指纹后原子修改目标工作树，恢复只观察已持久证据。它不提供三方合并、通用多文件发布或自动commit/push，见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。
+
+0.5.6在现有`ToolDescriptor`增加默认关闭且只允许`READ_ONLY`的并发能力。Agent Runtime只并发连续安全前缀，默认上限4；执行完成后仍按Provider顺序写Session，任一异常或取消先排空兄弟任务。`CodingToolRuntime`以独立有界信号量限制实际读取；审批、Patch和Process保持屏障。工具域稳定错误统一归类但不改错误码。该设计是单进程调度，不替代0.7的跨进程锁和Sandbox，见[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。
