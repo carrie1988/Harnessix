@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.6本地关闭候选
+- 状态：0.2架构基线，已随实现更新至已完成的0.5 Coding Tool Runtime
 - 更新日期：2026-09-07
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 

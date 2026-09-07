@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.5.6本地关闭候选
+- 状态：0.2架构基线，已随实现更新至已完成的0.5 Coding Tool Runtime
 - 更新日期：2026-09-07
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1079,8 +1079,8 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - `make check`完成Ruff、Mypy（**146个源文件**）和 **2579 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
 - Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2542项全部通过**；
 - Schema连续生成摘要均为`04d218d53e5f7e5aa3f9ad0d7d2f43ac5535369585e16eb660811339600d611e`，公开变更仅为OpenAPI新增并发能力属性；
-- sdist/wheel构建成功，wheel SHA-256为`f09351fcb04ec47f908f5a2d888a8bec761538b5043d77453cd963fdbb5ae1cb`；
+- sdist/wheel构建成功，最终关闭工作树的wheel SHA-256为`eb7578abdab760a785e22a7ae870e610c1cb0d7a65e2f674f8f941e9dfb866b1`；
 - 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，旧Descriptor兼容、只读能力、并发配置及Campaign默认禁网入口均通过；
 - 本片没有模型API请求、API Key读取、SSH、远程服务器、数据库迁移或中间件操作。
 
-远端CI通过前，本节只证明本地关闭候选，不将整体0.5标记为最终完成。CI必须覆盖Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务；结果随最终关闭提交补充。
+实现提交`113980f`的[CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合既有0.5.1—0.5.5验收，本片关闭整体0.5 Coding Tool Runtime路线图范围。

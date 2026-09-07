@@ -184,7 +184,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 7. 0.5：Coding Tool Runtime
 
-状态：**0.5.1–0.5.6均已完成实现与本地验收，0.5最终关闭等待远端CI**。任务v3真实Campaign在固定历史缺陷上3/3严格通过，0.5.5d把通过结果转换为私有单文件变更包，并以来源/干净状态/前镜像复核、批准指纹、原子替换和崩溃核对完成显式工作树合入；0.5.6补齐Tool并发契约、连续只读有界调度、写/审批屏障、失败排空和统一错误类别。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0052](adr/0052-controlled-eval-change-delivery.md)、[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)和[任务v3真实基线](validation/bailian-2026-09-06-coding-eval-v3/README.md)。非交互命令由结构化`host.process`实现，不开放任意Shell字符串；通用多文件交付、自动commit/push和OS Sandbox属于后续版本。
+状态：**已完成（2026-09-07）**。0.5.1–0.5.6的实现、本地验收和[CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)均通过。任务v3真实Campaign在固定历史缺陷上3/3严格通过，0.5.5d把通过结果转换为私有单文件变更包，并以来源/干净状态/前镜像复核、批准指纹、原子替换和崩溃核对完成显式工作树合入；0.5.6补齐Tool并发契约、连续只读有界调度、写/审批屏障、失败排空和统一错误类别。见[0.5 实施设计](m05-coding-tools.md)、[ADR 0052](adr/0052-controlled-eval-change-delivery.md)、[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)和[任务v3真实基线](validation/bailian-2026-09-06-coding-eval-v3/README.md)。非交互命令由结构化`host.process`实现，不开放任意Shell字符串；通用多文件交付、自动commit/push和OS Sandbox属于后续版本。
 
 ### 目标
 
