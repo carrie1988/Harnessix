@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source及0.6.2b Workspace/Git/环境Source。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，发布验收中。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source、0.6.2b Workspace/Git/环境Source及0.6.2c稳定Tool Result模型视图。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，并通过完整本地与远端CI验收。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -741,7 +741,7 @@ Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是
 
 > Action 身份稳定、可幂等时安全复用、结果不确定时停止盲目重试，并通过外部观察和对账尽量实现业务级 Effectively Once。
 
-## 当前已实现：Tool Result稳定模型视图（0.6.2c，发布验收中）
+## 当前已实现：Tool Result稳定模型视图（0.6.2c）
 
 - Session原始结果保持不变，Context预算和Provider使用同一份深拷贝视图；
 - 每个结果默认64 KiB。首次进入模型历史时冻结策略、规范JSON摘要和精确替换，后续步骤复用；

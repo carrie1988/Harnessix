@@ -1172,7 +1172,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 57. 0.6.2c Tool Result稳定模型视图验收（2026-09-08）
 
-状态：本地验收通过，远端CI待验收。依据ADR 0057、Context源码研究和实施设计第29节。
+状态：本地与远端CI验收通过，0.6.2c关闭。依据ADR 0057、Context源码研究和实施设计第29节。
 
 专项测试覆盖以下契约：
 
@@ -1196,4 +1196,4 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - sdist/wheel构建与仓库外Python 3.12基础环境安装通过。验收wheel SHA256为`55fb2ca488a6026d3c06271e7812ddbe9e51f832f2c96b9289a5f15bafcc408a`；真实旧v12 wheel SHA256为`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`。两个基础环境分别执行完整升级四步骤，不依赖OpenAI/Anthropic SDK。
 - migration15 SHA256为`304f1bf9e5c0170a9a3703c11d655ef8aae98438884ab80d2e4f098b6db22835`；真实进程退出与旧迁移回归均保持旧事件/投影/Artifact原字节。
 
-远端Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵通过后关闭本片。
+实现提交`5e283ff`的[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)已通过Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务，0.6.2c正式关闭。此结论仅针对本切片，不代表Compaction、完整会话生命周期或整体V1.0商用版本完成。

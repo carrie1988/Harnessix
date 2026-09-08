@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c实现完成、验收中；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c已完成；0.6.3源码研究完成、架构设计中；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -13,8 +13,8 @@
 | 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
-| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 实现完成、验收中 |
-| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
+| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 已完成 |
+| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 源码研究完成、架构设计中 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
 
@@ -339,7 +339,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 真实场景使用临时Git仓库执行实际`git init/add/commit/checkout/status`，并通过真实v11 wheel创建Context Inspection v2会话，再由v12 wheel原字节升级、追加v3事件和验证旧reader拒绝。默认验收不需要模型API、SSH、远程服务器或新中间件。关闭数据见[测试与Eval规范第56节](testing-and-evals.md#56-062b-workspacegit环境source与跨来源一致性验收2026-09-07)。
 
-## 28. 后续切片
+## 28. 工具视图与后续切片
 
 ### 28.1 0.6.2c
 
@@ -349,7 +349,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 ### 28.2 0.6.3
 
-在来源和工具模型视图稳定后实现Compaction。Summary必须版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不能删除原始Event事实。
+在来源和工具模型视图稳定后实现Compaction。Summary必须版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不能删除原始Event事实。源码证据见[Compaction研究](research/compaction-and-context-windows.md)，窗口、独立摘要尝试、计费与发布边界见[ADR 0058草案](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。草案尚未成为已发布API；接受前须完成闭合组、预算分摊和恢复反例的契约评审。
 
 ## 29. 0.6.2c实现边界
 
@@ -371,3 +371,5 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 已提交决定通过`Turn.tool_result_view_decisions`读取；每步统计通过`Turn.model_history_inspections`读取。决定可能包含Artifact manifest及残留查询元数据，应按Session本身权限保护。Metrics仅输出固定strategy/component和数量；不输出正文、路径、ID或摘要标签。完整失败代码与退出窗口见ADR 0057。
 
 当前能力不包含自动补归档、任意文件结果截断、图片/音频、Compaction或总历史Token预算压缩。超限且无完整归档的结果明确失败，不能把成功执行事实改成失败工具结果，也不能自动重试有副作用的调用。
+
+0.6.2c实现提交`5e283ff`通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务。结合测试规范第57节的完整本地、发布物与恢复门禁，本片关闭；整体0.6与V1.0商用目标仍未完成。
