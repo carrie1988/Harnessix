@@ -520,6 +520,7 @@ class Turn(ContractModel):
     turn_id: UUID
     request_id: str
     request_fingerprint: str
+    retry_of_turn_id: UUID | None = None
     status: TurnStatus = TurnStatus.ACCEPTED
     budget: Budget
     trace_context: TraceContext | None = None
@@ -591,6 +592,21 @@ class Thread(ContractModel):
             raise ValueError("Thread不能Fork自身")
         if self.archive is not None and self.archive.archived_event_sequence != self.sequence:
             raise ValueError("归档记录必须位于Thread当前序号")
+        for index, turn in enumerate(self.turns):
+            if turn.retry_of_turn_id is None:
+                continue
+            if index == 0 or self.turns[index - 1].turn_id != turn.retry_of_turn_id:
+                raise ValueError("Retry来源必须是直接前序Turn")
+            source = self.turns[index - 1]
+            if source.status not in {
+                TurnStatus.FAILED,
+                TurnStatus.CANCELLED,
+                TurnStatus.INTERRUPTED,
+            } or any(
+                isinstance(item.content, ToolResultContent) and item.content.outcome == "unknown"
+                for item in source.items
+            ):
+                raise ValueError("Retry来源状态或工具效果不安全")
         return self
 
 
@@ -628,6 +644,7 @@ class TurnStarted(ContractModel):
     type: Literal["turn_started"] = "turn_started"
     request_id: str = Field(min_length=1, max_length=256)
     request_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    retry_of_turn_id: UUID | None = None
     budget: Budget
     trace_context: TraceContext | None = None
 
@@ -690,7 +707,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] = 16
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17] = 17
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -699,6 +716,8 @@ class EventDraft(ContractModel):
     @model_serializer(mode="wrap")
     def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
+        if self.schema_version < 17 and isinstance(self.payload, TurnStarted):
+            data.get("payload", {}).pop("retry_of_turn_id", None)
         if self.schema_version < 5 and isinstance(self.payload, ModelUsageObserved):
             data.get("payload", {}).pop("billing", None)
         if self.schema_version < 3:
@@ -716,6 +735,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if (
+            self.schema_version < 17
+            and isinstance(self.payload, TurnStarted)
+            and self.payload.retry_of_turn_id is not None
+        ):
+            raise ValueError("Turn Retry来源需要Agent Event v17")
         if self.schema_version < 16 and isinstance(self.payload, ThreadForked | ThreadArchived):
             raise ValueError("Thread生命周期事件需要Agent Event v16")
         if self.schema_version < 15 and (

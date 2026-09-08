@@ -1,4 +1,4 @@
-"""在独立v15与当前wheel间验证Thread生命周期升级及旧reader拒绝。"""
+"""在独立v16与v17 wheel间验证Turn Retry升级及旧reader拒绝。"""
 
 from __future__ import annotations
 
@@ -10,10 +10,11 @@ from pathlib import Path
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import EventDraft
+from harnessix.agent.models import EventDraft, TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.models.scripted import FakeProvider
+from harnessix.models.contracts import ResponseFailed
+from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
@@ -28,43 +29,48 @@ def state(path: Path) -> dict[str, list[list[object]]]:
         }
 
 
-async def create_v15(store: SQLiteSessionStore, root: Path) -> None:
-    assert EventDraft.model_fields["schema_version"].default == 15
-    async with AgentRuntime(store, FakeProvider("旧版本完成")) as runtime:
+async def create_v16(store: SQLiteSessionStore, root: Path) -> None:
+    assert EventDraft.model_fields["schema_version"].default == 16
+    async with AgentRuntime(
+        store, ScriptedProvider([[ResponseFailed(code="authentication")]])
+    ) as runtime:
         thread = await runtime.create_thread(str(root))
-        await runtime.run_turn(thread.thread_id, "旧版本任务", request_id="source")
+        source = await runtime.run_turn(thread.thread_id, "旧版本失败任务", request_id="source")
+    assert source.status is TurnStatus.FAILED
     (root / "metadata.json").write_text(
         json.dumps(
-            {"thread_id": str(thread.thread_id), "state": state(store.path)},
+            {
+                "thread_id": str(thread.thread_id),
+                "source_turn_id": str(source.turn_id),
+                "state": state(store.path),
+            },
             ensure_ascii=False,
         ),
         encoding="utf-8",
     )
-    print("v15 wheel已创建可Fork的终结Thread")
+    print("v16 wheel已创建可重试的失败Turn")
 
 
 async def main(mode: str, root: Path) -> None:
     await asyncio.to_thread(root.mkdir, parents=True, exist_ok=True)
     store = SQLiteSessionStore(root / "session.sqlite")
     if mode == "create":
-        await create_v15(store, root)
+        await create_v16(store, root)
         return
     before = state(store.path)
     if mode == "old-reader":
-        assert EventDraft.model_fields["schema_version"].default == 15
+        assert EventDraft.model_fields["schema_version"].default == 16
         try:
             await store.initialize()
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("v15 reader错误接受新迁移")
+            raise AssertionError("v16 reader错误接受migration19")
         assert state(store.path) == before
-        print("v15 reader拒绝新迁移且未修改数据库")
+        print("v16 reader拒绝migration19且未修改数据库")
         return
 
     assert mode == "upgrade"
-    from harnessix.agent.models import ThreadArchived, ThreadForked
-
     assert EventDraft.model_fields["schema_version"].default == 17
     metadata = json.loads((root / "metadata.json").read_text(encoding="utf-8"))
     original = metadata["state"]
@@ -72,27 +78,31 @@ async def main(mode: str, root: Path) -> None:
     migrated = state(store.path)
     assert migrated["agent_events"] == original["agent_events"]
     assert migrated["agent_threads"] == original["agent_threads"]
-    assert migrated["agent_migrations"][:17] == original["agent_migrations"]
+    assert migrated["agent_migrations"][:18] == original["agent_migrations"]
     assert len(migrated["agent_migrations"]) == 19
 
     thread_id = UUID(metadata["thread_id"])
-    provider = FakeProvider()
+    source_turn_id = UUID(metadata["source_turn_id"])
+    provider = FakeProvider("升级后重试完成")
     async with AgentRuntime(store, provider) as runtime:
-        resumed = await runtime.resume_thread(thread_id)
-        child = await runtime.fork_thread(thread_id, request_id="upgrade-fork")
-        archived = await runtime.archive_thread(thread_id, reason="升级验收")
-    assert not provider.requests
-    assert resumed.archive is None and archived.archive is not None
-    assert child.fork_snapshot is not None
-    assert child.fork_snapshot.source_thread_id == thread_id
-    assert await store.rebuild(child.thread_id) == child
-    assert await store.rebuild(thread_id) == archived
-    assert replay(await store.events(child.thread_id)) == child
-    assert isinstance((await store.events(child.thread_id))[0].payload, ThreadForked)
-    assert isinstance((await store.events(thread_id))[-1].payload, ThreadArchived)
+        retried = await runtime.retry_turn(
+            thread_id,
+            source_turn_id,
+            request_id="upgrade-retry",
+        )
+    assert retried.status is TurnStatus.COMPLETED
+    assert retried.retry_of_turn_id == source_turn_id
+    assert len(provider.requests) == 1
+    current = await store.get_thread(thread_id)
+    assert replay(await store.events(thread_id)) == current
+    assert await store.rebuild(thread_id) == current
     after = state(store.path)
     assert after["agent_events"][: len(original["agent_events"])] == original["agent_events"]
-    print("v17仅追加migration18-19；Resume零请求，Fork与Archive可重放且旧字节不变")
+    assert all(
+        json.loads(row[3])["schema_version"] == 17
+        for row in after["agent_events"][len(original["agent_events"]) :]
+    )
+    print("v17仅追加migration19；旧字节不变且新Retry可重放、重建")
 
 
 if __name__ == "__main__":

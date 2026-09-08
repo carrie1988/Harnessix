@@ -851,7 +851,7 @@ context = SourcedContextEngine(
 
 ## 0.6.2c稳定Tool Result视图部署
 
-Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，仓库当前写入版本已推进至v16/migration18。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，仓库当前写入版本已推进至v17/migration19。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
 
 ### 宿主配置与限制
 
@@ -928,3 +928,24 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 - 监控`harnessix.agent.thread.lifecycle{action,outcome}`和`harnessix.agent.thread.fork.inherited_items`，不得把Thread ID、路径、请求ID、Artifact ID或正文写入Metric标签。
 
 独立wheel验收使用`scripts/thread_lifecycle_upgrade_probe.py`：旧环境由`97c667a`构建v15 wheel，当前环境构建v16 wheel。按`create → upgrade → old-reader`顺序执行：v15创建终结Thread；v16只追加migration18并以零Provider请求完成Resume、Fork和Archive Replay/Rebuild；v15 reader必须以`schema_too_new`拒绝且不修改数据库。升级前停止旧Runtime并制作SQLite一致备份；产生migration18或v16事件后，回退只能恢复该备份。
+
+## 0.6.5 Turn Retry与Provider切换部署
+
+`0019_turn_retry.sql`将最低reader推进至Agent Event/Thread v17，SHA256为`926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a`。迁移只追加版本marker，不改写v1-v16 Event、Projection、Artifact、Compaction窗口、模型尝试或Effect Journal，不需要新增中间件。
+
+运行边界：
+
+- `retry_turn`只接受最新`failed/cancelled/interrupted` Turn；来源存在UNKNOWN工具效果时拒绝。客户端不得把失败码转换为普通`run_turn`来绕过对账；
+- Retry接受事务提交后、Provider请求前发生退出时，重开会把新Turn收敛为Interrupted且不自动请求。客户端使用原`request_id`只会取回同一Turn；要继续该中断Turn，必须以其为来源发起新的Retry request；
+- 更换Provider时停止旧Runtime，使用同一SessionStore创建新Runtime。历史由规范Item重新映射，不迁移供应商SDK客户端、HTTP流、原生Tool Call ID、Thinking签名或请求metadata；
+- 同一Thread仍由单Runtime宿主锁保护。0.6.5没有引入跨节点租约或抢占，服务端多实例调度必须等待后续持久任务所有权设计；
+- 监控`harnessix.agent.operations{operation="retry",outcome,category?}`、Retry失败码及各`ModelAttempt.provider`分布。Prompt、request ID、Thread/Turn ID、路径和供应商原生ID不得进入Metric标签；
+- migration19或v17事件写入后，降级必须恢复升级前一致备份；禁止删除migration记录、手工删除`retry_of_turn_id`或下调projection version。
+
+独立wheel验收使用`scripts/turn_retry_upgrade_probe.py`。旧环境由`24e0899`构建v16 wheel，当前环境构建v17 wheel，按以下顺序执行：
+
+1. v16：`python -I turn_retry_upgrade_probe.py create <验证目录>`，创建真实失败Turn；
+2. v17：`python -I turn_retry_upgrade_probe.py upgrade <验证目录>`，只追加migration19、保持旧字节并执行唯一新Retry；
+3. v16：`python -I turn_retry_upgrade_probe.py old-reader <验证目录>`，必须返回`schema_too_new`且数据库字节不变。
+
+验收wheel SHA256分别为v16 `e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`、v17 `40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`。该验证不调用真实模型平台，也不需要API Key。

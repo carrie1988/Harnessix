@@ -25,7 +25,7 @@ class FailureCategory(StrEnum):
 def failure_category(code: str) -> FailureCategory:
     if code in {"cancelled", "provider_cancelled"}:
         return FailureCategory.CANCELLED
-    if code in {"process_interrupted", "uncertain_effect"}:
+    if code in {"process_interrupted", "uncertain_effect", "retry_unsafe_effect"}:
         return FailureCategory.INTERRUPTED
     if code in {
         "budget_exceeded",
@@ -45,6 +45,7 @@ def failure_category(code: str) -> FailureCategory:
         "event_conflict",
         "runtime_busy",
         "turn_busy",
+        "turn_retry_not_latest",
         "context_compaction_source_changed",
     }:
         return FailureCategory.CONFLICT
@@ -68,6 +69,7 @@ def failure_category(code: str) -> FailureCategory:
         "invalid_cursor",
         "thread_not_found",
         "turn_not_found",
+        "turn_not_retryable",
         "empty_transcript",
     }:
         return FailureCategory.INPUT

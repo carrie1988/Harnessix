@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围，以及0.6.1至0.6.3 Context、Tool Result模型视图与自动Compaction；0.6.3已通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验、Event/Thread v16和Session migration18，本地严格验收通过，远端CI待实现提交确认。通用Turn Retry、Provider切换、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围。0.6.1至0.6.4已完成Context、Tool Result模型视图、自动Compaction和Thread生命周期，其中0.6.4通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复，Event/Thread为v17、Session migration为19，本地严格验收通过，远端CI待本次提交确认。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -117,7 +117,7 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- 本节交付时为Agent v6/Session migration7；当前为v16/migration18，兼容v1–v15原文，真实旧wheel升级与旧reader拒绝持续验证。
+- 本节交付时为Agent v6/Session migration7；当前为v17/migration19，兼容v1–v16原文，真实旧wheel升级与旧reader拒绝持续验证。
 
 ~~~bash
 uv run python -m examples.kernel_patch
@@ -189,7 +189,7 @@ uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge
 - Session 保存完整调用计划、独立组审批与决定；持久离开等待后才镜像后端决定并一次性顺序执行。答复审批不会修改文件；
 - 两个实际供应商 SDK 均通过离线 HTTP 完成“两文件读取→整组提案→审批重开→真实副本写入→逐文件读回”；没有新增真实模型调用；
 - 私有 `ToolResult.patch_batch` 保留有界效果与运行原因，不进模型 wire，也不因公开结果超限丢失。部分效果停止当前 Turn；未知效果禁止自动继续；
-- 本节交付时为Agent Event/Thread **v7**、Session **migration8**（当前v16/migration18）；真实旧v6 wheel的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧reader明确拒绝新库。副本账本保持 **v3**。
+- 本节交付时为Agent Event/Thread **v7**、Session **migration8**（当前v17/migration19）；真实旧v6 wheel的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧reader明确拒绝新库。副本账本保持 **v3**。
 
 ~~~bash
 uv run python -m examples.kernel_batch
@@ -217,7 +217,7 @@ uv run pytest tests/patches/test_diff_document.py tests/patches/test_batch_diff_
 - 显式注入 `SQLiteBatchDiffPublisher`，计划引用与真实审批同事务，效果引用与真实 ToolResult/私有效果同事务；同一调用两用途互不覆盖。
 - 失败、部分、未知效果不伪造成功；归档或预算失败可省略引用，不丢弃真实写效果。重开只核对，不重新执行；提交后丢确认不会重复归档。
 - 复用分页、配额、TTL 和活跃会话保护；两个 SDK 的离线闭环可从效果引用继续调用 `read_artifact`。旧只读发布限制不变。
-- 该片交付Agent **v8**/Session **migration9**；真实旧v7 wheel的三类审批、已有Artifact升级通过，旧Schema/事件原字节保留，旧reader拒绝新库。当前最低reader已推进到v16/migration18。
+- 该片交付Agent **v8**/Session **migration9**；真实旧v7 wheel的三类审批、已有Artifact升级通过，旧Schema/事件原字节保留，旧reader拒绝新库。当前最低reader已推进到v17/migration19。
 
 ```bash
 uv run python -m examples.batch_diff
@@ -401,7 +401,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
 - `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
 
-以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source，0.6.2c已增加Tool Result稳定模型视图，0.6.3已增加自动Compaction与活动窗口。精确Tokenizer和Session Fork/Archive仍属于后续切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)，压缩边界见[ADR 0058](docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
+以上是0.6.1静态规划基线；0.6.2a和0.6.2b增加受控动态Source，0.6.2c增加Tool Result稳定模型视图，0.6.3增加自动Compaction与活动窗口，0.6.4和0.6.5完成Thread生命周期、终态Retry及Provider切换。精确Tokenizer仍属于后续优化。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)，压缩边界见[ADR 0058](docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
 
 ## 当前已实现：受控项目指令Source与freshness（0.6.2a）
 
@@ -461,7 +461,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化Agent Event、Session历史迁移，旧事件不改写（当前v16；真实v1–v15回归及多代旧包升级已通过）；
+- 版本化Agent Event、Session历史迁移，旧事件不改写（当前v17；真实v1–v16回归及多代旧包升级已通过）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -505,7 +505,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付Agent Event/Thread v4、Provider Event v2、真实v1/v2/v3会话升级与冻结Schema（当前为Agent v16/Provider v3）；
+- 当时交付Agent Event/Thread v4、Provider Event v2、真实v1/v2/v3会话升级与冻结Schema（当前为Agent v17/Provider v3）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。
@@ -701,6 +701,9 @@ examples/                   可运行演示
 - [Kernel 契约与诊断设计](docs/adr/0013-kernel-contracts-and-telemetry.md)
 - [0.4 Model Runtime 实施计划](docs/m04-model-runtime.md)
 - [0.6 Context Engine与持久会话实施设计](docs/m06-context-and-sessions.md)
+- [Thread Resume、Fork与Archive详细设计](docs/thread-lifecycle.md)
+- [Turn Retry与Provider切换详细设计](docs/turn-retry-and-provider-switch.md)
+- [终态Turn Retry与Provider中立历史决策](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)
 - [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
@@ -753,3 +756,25 @@ Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是
 宿主可通过`AgentRuntime(tool_result_view_policy=ToolResultViewPolicy(max_inline_utf8_bytes=65536))`配置单结果预算。`ToolResultViewPolicy`从`harnessix.context`导入；归档验证默认复用绑定同一Session的SQLite发布器，访问能力来自Coding Tool Runtime或原Batch Diff桥接。无归档且超限时明确失败，不自动补写旧结果或重试工具。
 
 正式接口、失败代码、数据版本和恢复语义见[ADR 0057](docs/adr/0057-tool-result-model-view-and-artifact-binding.md)、[实施设计](docs/m06-context-and-sessions.md#29-062c实现边界)和[部署规范](docs/deployment.md)。本能力不等于Compaction，也不代表整体生产商用版本完成。
+
+## 当前已实现：Thread生命周期（0.6.4）
+
+- `resume_thread`只读返回同一Thread，不调用Provider或Tool；
+- `fork_thread`在终结Turn边界冻结有界模型历史，继承事实固定`authority=none`，不继承审批或执行权；
+- Fork保留Artifact真实父级或祖先所有者，并以当前Workspace能力在发网前重新验证；
+- `archive_thread`在无活跃Turn时将Thread原子转为不可变只读状态；
+- 来源CAS、确定性子身份、七个进程退出切点及v15→v16 wheel升级已经验收；
+- 实现提交通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵。
+
+设计见[ADR 0060](docs/adr/0060-thread-lifecycle-and-authority-free-forks.md)与[Thread生命周期详设](docs/thread-lifecycle.md)。
+
+## 当前已实现：终态Turn Retry与Provider切换（0.6.5）
+
+- `retry_turn`只从最新`failed/cancelled/interrupted`来源创建新Turn，来源终态永不重开；
+- 新Turn持久记录`retry_of_turn_id`并使用固定续作输入，普通Turn请求指纹保持兼容；
+- 来源存在`ToolResult.outcome=unknown`时失败关闭，Retry不能代替外部效果对账；
+- OpenAI-compatible与Anthropic双向切换时，由规范Item重建目标协议，历史原生Tool Call ID和模型绑定metadata不跨Provider发送；
+- 三个接受事务硬退出窗口、取消/中断续作、双向真实Adapter和压缩→恢复→重试→Fork→Archive长会话已经本地验收；
+- 当前Agent Event/Thread为v17，Session migration19；v16→v17独立wheel升级保持旧字节，旧reader失败关闭。
+
+源码依据、决策和接口见[专项研究](docs/research/turn-retry-and-provider-switch.md)、[ADR 0061](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](docs/turn-retry-and-provider-switch.md)。0.6.5远端发布矩阵待本次实现提交确认；0.7及后续生产能力仍按路线图推进。

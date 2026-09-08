@@ -2,7 +2,7 @@
 
 - 版本：0.6.4
 - 更新日期：2026-09-08
-- 状态：实现与本地完整验收完成，远端CI待确认
+- 状态：实现、本地完整验收及远端CI完成
 
 ## 1. 目标与边界
 
@@ -126,3 +126,5 @@ Fork不复制Artifact表记录。模型历史准备为每个引用解析`owner_t
 9. 全量严格回归、Schema生成和静态检查。
 
 本地严格全量结果为2914 passed、2 skipped；两个skip仅因未配置`HARNESSIX_TEST_POSTGRES_URL`。Ruff格式与规则、Mypy严格检查164个源文件均通过。Schema连续生成两次聚合SHA256均为`e9e54ad0afd92c0d9de41477d32e2c52a43cdc0ec0b2e38bd2764c7a59d0004a`。
+
+实现提交`24e0899`通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)的Python 3.12、Python 3.13、macOS Coding Tools与PostgreSQL四项任务。

@@ -32,6 +32,7 @@ OperationName = Literal[
     "context",
     "history",
     "compaction",
+    "retry",
 ]
 ThreadLifecycleAction = Literal["resume", "fork", "archive"]
 ThreadLifecycleOutcome = Literal["completed", "idempotent", "rejected"]

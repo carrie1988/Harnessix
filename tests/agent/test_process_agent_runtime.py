@@ -535,6 +535,13 @@ async def test_unknown_process_effect_interrupts_without_second_model_step(tmp_p
             assert action is not None and action.status is ActionStatus.UNKNOWN
             interrupted = await runtime.resume_turn(thread.thread_id, pending.turn_id)
             assert interrupted.status is TurnStatus.INTERRUPTED
+            with pytest.raises(KernelError) as error:
+                await runtime.retry_turn(
+                    thread.thread_id,
+                    interrupted.turn_id,
+                    request_id="unsafe-retry",
+                )
+            assert error.value.code == "retry_unsafe_effect"
     finally:
         await service.close()
     assert len(provider.requests) == 1

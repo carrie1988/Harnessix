@@ -12,6 +12,7 @@ from harnessix.agent.models import (
     Thread,
     ThreadArchiveRecord,
     ThreadForkSnapshot,
+    TurnStarted,
 )
 from harnessix.context import (
     ContextBuildInput,
@@ -66,8 +67,8 @@ def test_generated_schemas_match_code() -> None:
         "thread-archive-v1.schema.json": ThreadArchiveRecord.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v16.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v16.schema.json": Thread.model_json_schema(),
+        "agent-event-v17.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v17.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -100,7 +101,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 17,
+                "schema_version": 18,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -134,7 +135,26 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 16
+        assert EventDraft(payload=payload).schema_version == 17
+
+
+def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
+    source_turn_id = uuid4()
+    payload = TurnStarted(
+        request_id="retry",
+        request_fingerprint="0" * 64,
+        retry_of_turn_id=source_turn_id,
+        budget={"max_steps": 1},
+    )
+    with pytest.raises(ValidationError):
+        EventDraft(schema_version=16, payload=payload)
+    assert EventDraft(payload=payload).schema_version == 17
+
+    legacy = EventDraft(
+        schema_version=16,
+        payload=payload.model_copy(update={"retry_of_turn_id": None}),
+    ).model_dump(mode="json")
+    assert "retry_of_turn_id" not in legacy["payload"]
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -153,7 +173,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 16
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 17
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -183,7 +203,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 16
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 17
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -347,6 +367,18 @@ def test_historical_schemas_are_frozen() -> None:
             ),
             "agent-thread-v14.schema.json": (
                 "074f8ff7c08a0e917ed163b641e588b19f018afe3b89162d2caf83356464d51b"
+            ),
+            "agent-event-v15.schema.json": (
+                "b3fde60c5f7f822763c2bea7ae3c2249dfbbc4e790a6e39e0d6a8d43c3ba193a"
+            ),
+            "agent-thread-v15.schema.json": (
+                "b5948c85e37a145ac5bc2b796f1f7700b604e2684d799698232922769c02b4ab"
+            ),
+            "agent-event-v16.schema.json": (
+                "0529b81c8766f6159f5558f06b64b22dadfa5a6738c855ef07a4c25437cea2f2"
+            ),
+            "agent-thread-v16.schema.json": (
+                "f986f75ffd9dd3416a84d022ed8982523e2ac599ec2d5e79835d9b811b226bda"
             ),
             "model-history-inspection-v1.schema.json": (
                 "86c210a0e49e77a2fb45e5db1b1d9c8f8392e217115034db33f0a54c40a8852a"

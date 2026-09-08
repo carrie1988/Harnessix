@@ -162,6 +162,50 @@ async def test_durable_trace_segments_and_low_cardinality_metrics(tmp_path: Path
         observer.close()
 
 
+async def test_retry_has_dedicated_low_cardinality_operation(tmp_path: Path) -> None:
+    observer, exporter, reader = instrumented()
+    store = SQLiteSessionStore(tmp_path / "retry.db")
+    try:
+        async with AgentRuntime(
+            store,
+            ScriptedProvider([[ResponseFailed(code="authentication")]]),
+            observability=observer,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            source = await runtime.run_turn(
+                thread.thread_id,
+                "失败任务",
+                request_id="private-retry-request-canary",
+            )
+        async with AgentRuntime(store, FakeProvider(), observability=observer) as runtime:
+            retried = await runtime.retry_turn(
+                thread.thread_id,
+                source.turn_id,
+                request_id="retry",
+            )
+
+        spans = [
+            span for span in exporter.get_finished_spans() if span.name == "harnessix.agent.retry"
+        ]
+        assert len(spans) == 1
+        assert spans[0].attributes["outcome"] == "completed"
+        operations = next(
+            metric for metric in metrics(reader) if metric.name == "harnessix.agent.operations"
+        )
+        retry_points = [
+            point
+            for point in operations.data.data_points
+            if point.attributes.get("operation") == "retry"
+        ]
+        assert len(retry_points) == 1 and retry_points[0].value == 1
+        exported = spans[0].to_json() + reader.get_metrics_data().to_json()
+        assert source.request_id not in exported
+        assert str(source.turn_id) not in reader.get_metrics_data().to_json()
+        assert retried.status is TurnStatus.COMPLETED
+    finally:
+        observer.close()
+
+
 async def test_parallel_reads_keep_individual_tool_spans_and_metrics(tmp_path: Path) -> None:
     observer, exporter, reader = instrumented()
     tools = ParallelReads(expected=2)

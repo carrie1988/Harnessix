@@ -775,10 +775,28 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             all(t.request_id != payload.request_id for t in thread.turns),
             "request_id 已绑定其他 Turn",
         )
+        if payload.retry_of_turn_id is not None:
+            require(event.schema_version >= 17, "Turn Retry来源需要Agent Event v17")
+            require(bool(thread.turns), "Turn Retry来源不存在")
+            source = thread.turns[-1]
+            require(source.turn_id == payload.retry_of_turn_id, "只能重试最新Turn")
+            require(
+                source.status in {TurnStatus.FAILED, TurnStatus.CANCELLED, TurnStatus.INTERRUPTED},
+                "Turn Retry来源状态不可重试",
+            )
+            require(
+                not any(
+                    isinstance(item.content, ToolResultContent)
+                    and item.content.outcome == "unknown"
+                    for item in source.items
+                ),
+                "存在未知工具效果，禁止Turn Retry",
+            )
         turn = Turn(
             turn_id=event.turn_id,
             request_id=payload.request_id,
             request_fingerprint=payload.request_fingerprint,
+            retry_of_turn_id=payload.retry_of_turn_id,
             budget=payload.budget,
             trace_context=payload.trace_context,
             created_at=event.occurred_at,

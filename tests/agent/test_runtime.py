@@ -13,17 +13,20 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     Budget,
+    EventDraft,
     ItemDelta,
     ItemStatus,
     TextContent,
+    Thread,
     ToolCallContent,
     ToolResultContent,
     Turn,
+    TurnStarted,
     TurnStatus,
     Usage,
 )
 from harnessix.agent.reducer import pending_calls, replay
-from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.runtime import RETRY_INSTRUCTIONS, AgentRuntime
 from harnessix.domain.models import EffectClass, TraceContext
 from harnessix.models.contracts import (
     ModelRequest,
@@ -72,6 +75,88 @@ async def test_text_deltas_idempotency_and_trace_context(tmp_path: Path) -> None
     events = await store.events(thread.thread_id)
     assert "delta" not in {e.payload.type for e in events}
     assert replay(events) == await store.get_thread(thread.thread_id)
+
+
+async def test_terminal_turn_retry_creates_new_turn_and_is_idempotent(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    failed_provider = ScriptedProvider([[ResponseFailed(code="authentication")]])
+    async with AgentRuntime(store, failed_provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        source = await runtime.run_turn(thread.thread_id, "修复失败任务", request_id="source")
+    assert source.status is TurnStatus.FAILED
+
+    provider = FakeProvider("续作完成")
+    async with AgentRuntime(store, provider) as runtime:
+        retried = await runtime.retry_turn(
+            thread.thread_id,
+            source.turn_id,
+            request_id="retry-1",
+        )
+        duplicate = await runtime.retry_turn(
+            thread.thread_id,
+            source.turn_id,
+            request_id="retry-1",
+        )
+        with pytest.raises(KernelError) as conflict:
+            await runtime.run_turn(thread.thread_id, RETRY_INSTRUCTIONS, request_id="retry-1")
+
+    assert retried.status is TurnStatus.COMPLETED
+    assert retried.turn_id != source.turn_id
+    assert retried.retry_of_turn_id == source.turn_id
+    assert duplicate == retried
+    assert conflict.value.code == "request_conflict"
+    assert len(provider.requests) == 1
+    assert isinstance(provider.requests[0].history[-1].content, TextContent)
+    assert provider.requests[0].history[-1].content.text == RETRY_INSTRUCTIONS
+    persisted = await store.get_thread(thread.thread_id)
+    assert persisted.turns[0] == source
+    assert persisted.turns[1] == retried
+    assert replay(await store.events(thread.thread_id)) == persisted
+
+
+async def test_retry_rejects_completed_and_non_latest_turns(tmp_path: Path) -> None:
+    completed_store = SQLiteSessionStore(tmp_path / "completed.db")
+    async with AgentRuntime(completed_store, FakeProvider()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        completed = await runtime.run_turn(thread.thread_id, "任务", request_id="completed")
+        with pytest.raises(KernelError) as error:
+            await runtime.retry_turn(thread.thread_id, completed.turn_id, request_id="retry")
+    assert error.value.code == "turn_not_retryable"
+
+    store = SQLiteSessionStore(tmp_path / "non-latest.db")
+    async with AgentRuntime(
+        store, ScriptedProvider([[ResponseFailed(code="authentication")]])
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        failed = await runtime.run_turn(thread.thread_id, "失败任务", request_id="failed")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        await runtime.run_turn(thread.thread_id, "后续任务", request_id="later")
+        with pytest.raises(KernelError) as error:
+            await runtime.retry_turn(thread.thread_id, failed.turn_id, request_id="late-retry")
+    assert error.value.code == "turn_retry_not_latest"
+
+    snapshot = await store.get_thread(thread.thread_id)
+    with pytest.raises(KernelError) as forged:
+        await store.append(
+            thread.thread_id,
+            [
+                EventDraft(
+                    turn_id=UUID(int=42),
+                    payload=TurnStarted(
+                        request_id="forged-retry",
+                        request_fingerprint="0" * 64,
+                        retry_of_turn_id=failed.turn_id,
+                        budget=Budget(),
+                    ),
+                )
+            ],
+            expected_sequence=snapshot.sequence,
+        )
+    assert forged.value.code == "invalid_event"
+    invalid_projection = snapshot.model_dump(mode="json")
+    invalid_projection["turns"][0]["retry_of_turn_id"] = str(failed.turn_id)
+    with pytest.raises(ValueError, match="Retry来源"):
+        Thread.model_validate(invalid_projection)
 
 
 async def test_multiple_steps_and_calls_are_persisted_before_execution(tmp_path: Path) -> None:
@@ -277,6 +362,16 @@ async def test_user_cancel_during_provider_and_active_turn_conflict(tmp_path: Pa
     assert turn.status == TurnStatus.CANCELLED
     assert provider.closed.is_set()
     assert_settled(turn)
+    retry_provider = FakeProvider()
+    async with AgentRuntime(store, retry_provider) as runtime:
+        retried = await runtime.retry_turn(
+            thread.thread_id,
+            turn.turn_id,
+            request_id="cancelled-retry",
+        )
+    assert retried.status is TurnStatus.COMPLETED
+    assert retried.retry_of_turn_id == turn.turn_id
+    assert len(retry_provider.requests) == 1
 
 
 async def test_task_cancel_persists_terminal_and_cleans_stream(tmp_path: Path) -> None:

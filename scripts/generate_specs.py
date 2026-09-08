@@ -120,8 +120,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v16.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v16.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v17.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v17.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )

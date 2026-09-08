@@ -61,7 +61,8 @@ async def test_process_crash_recovers_without_replaying_tool(
             process.kill()
             await process.wait()
 
-    async with AgentRuntime(SQLiteSessionStore(database), FakeProvider()) as runtime:
+    provider = FakeProvider()
+    async with AgentRuntime(SQLiteSessionStore(database), provider) as runtime:
         recovered = await runtime.store.get_thread(thread.thread_id)
         assert len(recovered.turns) == turns
         if recovered.turns:
@@ -77,5 +78,14 @@ async def test_process_crash_recovers_without_replaying_tool(
                 ]
                 assert len(results) == 1
                 assert results[0].outcome == "failed"
+            if point == "runtime.after_turn_started":
+                retried = await runtime.retry_turn(
+                    thread.thread_id,
+                    turn.turn_id,
+                    request_id="interrupted-retry",
+                )
+                assert retried.status is TurnStatus.COMPLETED
+                assert retried.retry_of_turn_id == turn.turn_id
 
     assert (int(counter.read_text()) if counter.exists() else 0) == count
+    assert len(provider.requests) == (1 if point == "runtime.after_turn_started" else 0)

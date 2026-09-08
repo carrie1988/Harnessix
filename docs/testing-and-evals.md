@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：已随实现更新至0.6.4 Thread生命周期本地完整验收
+- 状态：已随实现更新至0.6.5终态Turn Retry、Provider切换与长会话本地完整验收
 - 更新日期：2026-09-08
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1255,11 +1255,11 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 真实独立wheel升级使用`b20948e`构建的v14 wheel和该切片v15 wheel，SHA256分别为`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`与`b7f2832bc35c2043969bf31a543d51c1aaeaedea8dcfa67543e4ec94d1c53747`。`scripts/compaction_window_upgrade_probe.py`验证v14创建长历史及已结算候选，v15只追加migration17且保持旧事件/投影原字节，首次重开零Provider请求发布唯一窗口，随后v14 reader明确拒绝新库且不修改数据库。
 
-本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。远端[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。0.6.4会话生命周期已进入下一节，0.6.5综合恢复仍需继续实施。
+本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。远端[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。0.6.4会话生命周期与0.6.5综合恢复验收分别见后续章节。
 
 ## 61. 0.6.4 Thread生命周期验收（2026-09-08）
 
-状态：Resume、无授权Fork、Archive、跨代Artifact所有者和来源CAS实现及本地完整门禁通过；远端矩阵待实现提交确认。设计见[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)与[Thread生命周期详细设计](thread-lifecycle.md)。
+状态：Resume、无授权Fork、Archive、跨代Artifact所有者和来源CAS实现通过本地完整门禁及远端[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵。设计见[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)与[Thread生命周期详细设计](thread-lifecycle.md)。
 
 验收覆盖：
 
@@ -1273,3 +1273,31 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - v15→v16独立wheel升级：旧wheel SHA256为`63a8592bd3f49063bb354dc62079be2fb79ab66f36b4bd4887d1bf5cb076e133`，v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`；migration18只追加marker，旧事件和投影原字节不变，v15 reader拒绝新库且不修改数据库。
 
 完整质量结果：严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为**2914 passed、2 skipped，266.43秒**；Ruff格式与规则通过；Mypy严格检查164个源文件通过；Schema连续生成两次聚合SHA256均为`e9e54ad0afd92c0d9de41477d32e2c52a43cdc0ec0b2e38bd2764c7a59d0004a`；migration18 SHA256为`4cbe8c146e4ed71f021e9be45b63da3b5b691115307412dd61e4ffcb277a2f9c`。验证未使用模型凭据、SSH、远程服务器或新增中间件。
+
+远端实现提交`24e0899`的Python 3.12、Python 3.13、macOS Coding Tools与PostgreSQL四项任务均通过，完整证据见[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)。
+
+## 62. 0.6.5终态Turn Retry、Provider切换与长会话验收（2026-09-08）
+
+状态：实现及本地完整发布门禁通过；远端矩阵待本次实现提交确认。设计见[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](turn-retry-and-provider-switch.md)。
+
+验收覆盖：
+
+- `failed`、`cancelled`、`interrupted`最新Turn以新身份续作，来源终态和错误事实保持不变；`completed`、非最新、活跃、归档和不存在来源失败关闭；
+- `retry_of_turn_id`进入Event v17与Thread投影；相同request幂等返回，普通Turn、不同预算或不同来源占用相同request时冲突；Reducer独立拒绝伪造来源；
+- 真实Process Action进入UNKNOWN后，`retry_unsafe_effect`在接受前阻断，零第二模型步骤、零旧Action重放；
+- SQLite `session.after_events`、`session.after_projection`、`session.after_commit`三个真实子进程硬退出切点；重开只恢复持久事实，不调用Provider；
+- OpenAI-compatible→Anthropic与Anthropic→OpenAI双向实际SDK + MockTransport：历史Tool Call/Result使用稳定内部ID配对，原生`wire-call-0`/`toolu_0`不出现在新请求，工具执行次数保持一次；
+- 独立Retry Operation Span/Counter只使用有限`operation/outcome/category`标签，不包含Prompt、request ID或来源Turn ID；
+- 长会话串联Tool、Compaction摘要账本、活动窗口、接受后进程中断、启动恢复、Provider切换Retry、Fork和Archive；原Event前缀、模型历史边界、Usage、Cost、Replay和Rebuild全部核对；
+- Agent Event/Thread v17、Session migration19和v1-v16 Schema冻结。v16→v17 wheel升级保持旧Event/Projection原字节，新Retry可Replay/Rebuild，旧reader以`schema_too_new`拒绝且不修改数据库。
+
+完整质量结果：
+
+- `make check`的格式、规则、类型及2924项测试门禁全部通过；
+- 最终严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为**2924 passed、2 skipped，270.46秒**；两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`；
+- Ruff格式与规则通过，Mypy严格检查164个源文件通过；
+- Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`；冻结v15 Event/Thread SHA256分别为`b3fde60c5f7f822763c2bea7ae3c2249dfbbc4e790a6e39e0d6a8d43c3ba193a`、`b5948c85e37a145ac5bc2b796f1f7700b604e2684d799698232922769c02b4ab`，冻结v16分别为`0529b81c8766f6159f5558f06b64b22dadfa5a6738c855ef07a4c25437cea2f2`、`f986f75ffd9dd3416a84d022ed8982523e2ac599ec2d5e79835d9b811b226bda`；
+- migration19 SHA256为`926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a`；
+- 真实v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`，v17 wheel SHA256为`40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`。`scripts/turn_retry_upgrade_probe.py`按`create → upgrade → old-reader`完整通过。
+
+默认验收没有使用真实模型凭据、SSH、远程服务器或新增中间件。Provider切换验证使用实际SDK协议栈和进程内受控HTTP传输，不把MockTransport通过描述为真实收费平台模型质量验收。

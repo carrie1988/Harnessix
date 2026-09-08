@@ -97,7 +97,7 @@ raise AssertionError("未到达 migration11 退出点")
     with sqlite3.connect(path) as database:
         assert database.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            18 if point == "after_commit" else 10
+            19 if point == "after_commit" else 10
         )
         assert (
             list(database.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
