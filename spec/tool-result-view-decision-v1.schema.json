@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "records": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Records",
+          "type": "integer"
+        },
+        "format": {
+          "const": "jsonl/v1",
+          "default": "jsonl/v1",
+          "title": "Format",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "sha256",
+        "size_bytes",
+        "records",
+        "complete",
+        "expires_at"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "ToolResultArtifactBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "enum": [
+            "tool_result",
+            "process_output",
+            "batch_effect",
+            "artifact_page"
+          ],
+          "title": "Purpose",
+          "type": "string"
+        },
+        "artifact": {
+          "$ref": "#/$defs/ArtifactRef"
+        }
+      },
+      "required": [
+        "purpose",
+        "artifact"
+      ],
+      "title": "ToolResultArtifactBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.tool-result-model-view/v1",
+      "default": "harnessix.tool-result-model-view/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "item_id": {
+      "format": "uuid",
+      "title": "Item Id",
+      "type": "string"
+    },
+    "call_id": {
+      "format": "uuid",
+      "title": "Call Id",
+      "type": "string"
+    },
+    "strategy": {
+      "enum": [
+        "inline",
+        "artifact_reference"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    },
+    "limit_utf8_bytes": {
+      "maximum": 1000000,
+      "minimum": 1024,
+      "title": "Limit Utf8 Bytes",
+      "type": "integer"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "source_utf8_bytes": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Source Utf8 Bytes",
+      "type": "integer"
+    },
+    "view_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "View Sha256",
+      "type": "string"
+    },
+    "view_utf8_bytes": {
+      "maximum": 1000000,
+      "minimum": 1,
+      "title": "View Utf8 Bytes",
+      "type": "integer"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/ToolResultArtifactBinding"
+      },
+      "maxItems": 2,
+      "title": "References",
+      "type": "array"
+    },
+    "replacement_output": {
+      "$ref": "#/$defs/JsonValue",
+      "default": null
+    }
+  },
+  "required": [
+    "item_id",
+    "call_id",
+    "strategy",
+    "limit_utf8_bytes",
+    "source_sha256",
+    "source_utf8_bytes",
+    "view_sha256",
+    "view_utf8_bytes"
+  ],
+  "title": "ToolResultViewDecision",
+  "type": "object"
+}

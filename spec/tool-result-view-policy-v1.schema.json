@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.tool-result-model-view/v1",
+      "default": "harnessix.tool-result-model-view/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "max_inline_utf8_bytes": {
+      "default": 65536,
+      "maximum": 1000000,
+      "minimum": 1024,
+      "title": "Max Inline Utf8 Bytes",
+      "type": "integer"
+    }
+  },
+  "title": "ToolResultViewPolicy",
+  "type": "object"
+}

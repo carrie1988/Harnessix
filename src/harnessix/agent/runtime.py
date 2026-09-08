@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import replace
 from types import TracebackType
-from typing import Self
+from typing import Self, cast
 from uuid import UUID
 
 from harnessix.agent import batch_patching
@@ -35,6 +35,7 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    ModelHistoryPrepared,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
     ProcessActionStateContent,
@@ -65,7 +66,9 @@ from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.artifacts.contracts import ArtifactToolResult
 from harnessix.artifacts.ports import (
+    ArtifactAccessScope,
     ArtifactPublisher,
+    ArtifactReferenceVerifier,
     BatchDiffPublisher,
     ProcessArtifactPublisher,
 )
@@ -73,6 +76,12 @@ from harnessix.context.contracts import ContextBuildInput, ContextInspectionReco
 from harnessix.context.engine import ContextPreparationError
 from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
 from harnessix.context.sources import ContextSourceError
+from harnessix.context.tool_result_contracts import ToolResultViewPolicy
+from harnessix.context.tool_result_view import (
+    PreparedModelHistory,
+    history_document,
+    prepare_model_history,
+)
 from harnessix.domain.models import (
     ActionContext,
     ApprovalDecision,
@@ -99,6 +108,8 @@ from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS
 from harnessix.session.ports import SessionStore
 from harnessix.tools.runtime import _drain
 
+HISTORY_ARTIFACT_TIMEOUT_SECONDS = 5.0
+
 
 class AgentRuntime:
     """进程内 Kernel 宿主；不承担 CLI、模型 SDK、Shell 或 Sandbox 职责。"""
@@ -115,6 +126,8 @@ class AgentRuntime:
         processes: ProcessRuntime | None = None,
         process_artifacts: ProcessArtifactPublisher | None = None,
         artifacts: ArtifactPublisher | None = None,
+        artifact_verifier: ArtifactReferenceVerifier | None = None,
+        artifact_access: ArtifactAccessScope | None = None,
         batch_diffs: BatchDiffPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         observability: Observability | None = None,
@@ -122,6 +135,7 @@ class AgentRuntime:
         max_parallel_tools: int = 4,
         context: ContextPlanner | None = None,
         async_context: AsyncContextPlanner | None = None,
+        tool_result_view_policy: ToolResultViewPolicy | None = None,
     ) -> None:
         if type(max_parallel_tools) is not int or not 1 <= max_parallel_tools <= 16:
             raise KernelError("tool_concurrency_invalid", "并行工具上限必须在1到16之间")
@@ -201,6 +215,30 @@ class AgentRuntime:
                 "Process Artifact发布器必须绑定同一Session和原进程端口",
             )
         self._process_artifacts = process_artifacts
+        verifiers = tuple(
+            verifier
+            for verifier in (
+                artifact_verifier,
+                artifacts,
+                process_artifacts.artifacts if process_artifacts is not None else None,
+                batch_diffs.artifacts if batch_diffs is not None else None,
+            )
+            if verifier is not None
+        )
+        if any(verifier.session is not store for verifier in verifiers):
+            raise KernelError(
+                "artifact_store_mismatch",
+                "模型历史Artifact验证器必须绑定同一Session和发布存储",
+            )
+        self._artifact_verifier = verifiers[0] if verifiers else None
+        self._artifact_access = artifact_access or next(
+            (
+                cast(ArtifactAccessScope, access)
+                for access in (scoped_tools, batch_diffs)
+                if isinstance(access, ArtifactAccessScope)
+            ),
+            None,
+        )
         if len({d.name for d in definitions}) != len(definitions):
             raise KernelError("duplicate_tool", "Tool 名称重复")
         self._definitions = {d.name: d.model_copy(deep=True) for d in definitions}
@@ -213,6 +251,9 @@ class AgentRuntime:
         self._max_parallel_tools = max_parallel_tools
         self._context = context
         self._async_context = async_context
+        self._tool_result_view_policy = (
+            tool_result_view_policy or ToolResultViewPolicy()
+        ).model_copy(deep=True)
 
     async def __aenter__(self) -> Self:
         if self._owner is not None:
@@ -933,6 +974,41 @@ class AgentRuntime:
         ):
             raise KernelError("tool_contract_changed", "工具契约已变化，旧调用不可继续")
 
+    async def _verify_history_artifacts(
+        self, thread: Thread, prepared: PreparedModelHistory, token: CancelToken
+    ) -> None:
+        if not prepared.references:
+            return
+        verifier, access = self._artifact_verifier, self._artifact_access
+        if verifier is None:
+            raise KernelError(
+                "context_artifact_verifier_required", "模型历史包含Artifact引用但未配置验证器"
+            )
+        if access is None:
+            raise KernelError(
+                "context_artifact_scope_required", "模型历史Artifact缺少当前工作区访问能力"
+            )
+        try:
+            async with asyncio.timeout(HISTORY_ARTIFACT_TIMEOUT_SECONDS):
+                scope = await token.run(access.artifact_workspace_scope(thread.workspace, token))
+                for reference in prepared.references:
+                    token.checkpoint()
+                    await token.run(
+                        verifier.verify_reference(
+                            thread.thread_id,
+                            reference.call_id,
+                            reference.binding.artifact,
+                            workspace_scope=scope,
+                            purpose=reference.binding.purpose,
+                            omitted_field=reference.omitted_field,
+                        )
+                    )
+                    token.checkpoint()
+        except TimeoutError:
+            raise KernelError(
+                "context_artifact_timeout", "模型历史Artifact验证超过时间上限", retryable=True
+            ) from None
+
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
         while True:
             token.checkpoint()
@@ -945,13 +1021,36 @@ class AgentRuntime:
                     or turn.usage.total_tokens >= turn.budget.max_tokens
                 ):
                     raise KernelError("budget_exceeded", "模型步骤或 Token 预算耗尽")
-                history = tuple(
-                    item
-                    for previous in thread.turns
-                    for item in previous.items
-                    if item.status == ItemStatus.COMPLETED
-                    and isinstance(item.content, TextContent | ToolCallContent | ToolResultContent)
-                )
+                model_step = turn.model_steps + 1
+                with self._telemetry.operation(
+                    "history",
+                    thread_id=thread_id,
+                    turn_id=turn_id,
+                    step=model_step,
+                ) as operation:
+                    token.checkpoint()
+                    prepared_history = prepare_model_history(
+                        thread,
+                        model_step,
+                        self._tool_result_view_policy,
+                    )
+                    await self._verify_history_artifacts(thread, prepared_history, token)
+                    self._fault("runtime.after_history_artifacts_verified")
+                    thread = await self._commit(
+                        thread_id,
+                        turn_id,
+                        [
+                            ModelHistoryPrepared(
+                                inspection=prepared_history.inspection,
+                                decisions=prepared_history.new_decisions,
+                            )
+                        ],
+                    )
+                    self._fault("runtime.after_model_history_prepared")
+                    self._telemetry.model_history(prepared_history.inspection)
+                    operation.finish("ok")
+                    history = prepared_history.history
+                    turn = get_turn(thread, turn_id)
                 tools = tuple(
                     d
                     for d in self._definitions.values()
@@ -973,17 +1072,9 @@ class AgentRuntime:
                             context_request = ContextBuildInput(
                                 thread_id=thread_id,
                                 turn_id=turn_id,
-                                model_step=turn.model_steps + 1,
+                                model_step=model_step,
                                 workspace=thread.workspace,
-                                history_documents=tuple(
-                                    json.dumps(
-                                        item.model_dump(mode="json"),
-                                        ensure_ascii=False,
-                                        sort_keys=True,
-                                        separators=(",", ":"),
-                                    )
-                                    for item in history
-                                ),
+                                history_documents=tuple(history_document(item) for item in history),
                                 tool_documents=tuple(
                                     json.dumps(
                                         definition.model_dump(mode="json"),

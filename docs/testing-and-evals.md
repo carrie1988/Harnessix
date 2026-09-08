@@ -1169,3 +1169,31 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 实现过程中发现仅过滤Workspace目录项不足以阻止Git状态泄漏敏感文件名。根因是Git返回路径未经过同一Workspace能力策略。修复后，当前路径与rename原路径统一通过`Workspace.parts`校验，过滤不改变Git底层事实总数并强制标记截断；对应回归覆盖`.env`与`.git`边界。
 
 实现提交`26dbfc3`的[CI 34134867832](https://github.com/carrie1988/Harnessix/actions/runs/34134867832)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、敏感路径回归、失败恢复、独立发布物和真实v11→v12升级证据，0.6.2b正式关闭；后续0.6.2c继续Tool Result有界裁剪与持久化语义。
+
+## 57. 0.6.2c Tool Result稳定模型视图验收（2026-09-08）
+
+状态：本地验收通过，远端CI待验收。依据ADR 0057、Context源码研究和实施设计第29节。
+
+专项测试覆盖以下契约：
+
+- JSON空值、布尔、数值、嵌套结构、多字节UTF-8、精确字节边界、非有限数值与非法Unicode；
+- inline/Artifact引用首次决定、冻结重用、精确Replay、预算缩小、原Item不变和可变嵌套对象隔离；
+- 来源/Call身份、缺失/重复/未知决定、事件步骤/状态/摘要、旧Schema拒绝和原历史准备资源上限；
+- 真实Grep/Glob归档与查询/统计保留、超过预览范围分页回读、正文覆盖证明与布尔/数值类型区分；
+- Artifact Thread/Call/Workspace/用途/manifest/TTL/正文损坏、缺验证器、缺能力、根被替换和工具关闭；
+- 不完整归档、未被归档字段、Patch/Batch/Process局部证据均不得替代完整结果；
+- Context使用同一准备后历史，OpenAI/Anthropic映射一致，真实OpenAI SDK通过MockTransport验证2 KiB视图与后续回读；
+- 验证I/O的用户取消、Task取消、5秒独立上限；故障后没有Provider请求、伪完成决定或遗留子任务；
+- 两个真实`os._exit`窗口验证归档检查后/History提交后退出；重开标记Interrupted，不重发模型、不重执行工具、不改已完成结果；
+- Event/Thread v13、migration15、v1-v12冻结Schema和旧迁移checksum。
+
+真实v12/v13独立wheel升级探针已验证：旧搜索结果与Artifact原字节保留、只追加migration15、旧reader拒绝、禁止小预算重裁旧模型前缀、默认策略可追加v13检查并Replay。本地门禁结果：
+
+- 新增69项回归。全仓严格模式`PYTHONASYNCIODEBUG=1 python -W error -m pytest`为 **2692 passed、2 skipped**；两项跳过仅为本机未配置PostgreSQL，实库门禁由远端CI提供。普通全仓初次为2691 passed，随后新增的SDK裁剪参数场景已单独通过并纳入上述严格全仓。
+- Ruff格式/规则全部通过，Mypy检查153个源文件通过；测试配置显式使用function级异步fixture loop，避免依赖pytest-asyncio未声明默认值。
+- 17个既有示例全部通过，无需模型API、SSH或新增中间件。
+- Schema连续两次生成聚合SHA256一致：`83280b254ef8f75a5c8d3955624472c71d93f618a44ba4869b627ab1cb61849f`（按文件名排序，依次拼接文件名、NUL与文件原字节）；v1-v12冻结Schema未改写。
+- sdist/wheel构建与仓库外Python 3.12基础环境安装通过。验收wheel SHA256为`55fb2ca488a6026d3c06271e7812ddbe9e51f832f2c96b9289a5f15bafcc408a`；真实旧v12 wheel SHA256为`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`。两个基础环境分别执行完整升级四步骤，不依赖OpenAI/Anthropic SDK。
+- migration15 SHA256为`304f1bf9e5c0170a9a3703c11d655ef8aae98438884ab80d2e4f098b6db22835`；真实进程退出与旧迁移回归均保持旧事件/投影/Artifact原字节。
+
+远端Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵通过后关闭本片。

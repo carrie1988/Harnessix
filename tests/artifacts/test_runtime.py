@@ -139,13 +139,14 @@ async def test_gc_protects_active_thread_and_cursor_does_not_starve_others(tmp_p
         )
     assert protected_owner in {first_thread.thread_id, second_thread.thread_id}
     future = artifact_sqlite.utc_now() + timedelta(days=2)
-    monkeypatch.setattr(artifact_sqlite, "utc_now", lambda: future)
     async with CodingToolRuntime(root, artifacts=artifacts, require_approval=True) as tools:
         async with AgentRuntime(
             store, ScriptedProvider([step(), answer()]), scoped_tools=tools, artifacts=artifacts
         ) as runtime:
             waiting = await runtime.run_turn(protected_owner, "保持活跃", request_id="waiting")
             assert waiting.status == TurnStatus.WAITING_APPROVAL
+            # 先进入合法活跃状态再推进TTL；已过期历史会在模型调用前被拒绝。
+            monkeypatch.setattr(artifact_sqlite, "utc_now", lambda: future)
             first = await artifacts.collect(limit=1)
             assert first.protected == 1 and first.expired == 0 and first.next_after is not None
             second = await artifacts.collect(limit=1, after=first.next_after)
@@ -242,15 +243,20 @@ async def test_read_tool_uses_actual_thread_and_rebound_workspace(tmp_path, kind
     async with CodingToolRuntime(
         root, artifacts=artifacts, denied_paths=("main.py",) if kind == "policy" else ()
     ) as tools:
+        provider = ScriptedProvider([step("read_artifact", **args), answer()])
         async with AgentRuntime(
             store,
-            ScriptedProvider([step("read_artifact", **args), answer()]),
+            provider,
             scoped_tools=tools,
             artifacts=artifacts,
         ) as runtime:
             if kind == "other_thread":
                 thread = await runtime.create_thread(str(tools.workspace_root))
             final = await runtime.run_turn(thread.thread_id, "读取归档", request_id="read")
+    if kind in {"policy", "root"}:
+        assert final.status == TurnStatus.FAILED and final.error.code == "artifact_not_found"
+        assert not provider.requests and not results(final)
+        return
     result = results(final)[0]
     if kind == "same":
         assert result.outcome == "succeeded" and result.output["artifact"]["records"] == 3

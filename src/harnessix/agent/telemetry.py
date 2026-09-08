@@ -17,11 +17,14 @@ from harnessix.context.contracts import (
     ContextInspectionV2,
     ContextInspectionV3,
 )
+from harnessix.context.tool_result_contracts import ModelHistoryInspection
 from harnessix.domain.models import TraceContext
 from harnessix.observability.core import Observability, ObservabilitySpan
 
 _LOGGER = logging.getLogger(__name__)
-OperationName = Literal["turn", "model", "tool", "approval", "cancel", "recovery", "context"]
+OperationName = Literal[
+    "turn", "model", "tool", "approval", "cancel", "recovery", "context", "history"
+]
 _OUTCOMES = frozenset(
     {
         "ok",
@@ -235,6 +238,40 @@ class KernelTelemetry:
                     },
                 )
             )
+
+    def model_history(self, inspection: ModelHistoryInspection) -> None:
+        values = {
+            "source": inspection.source_tool_result_utf8_bytes,
+            "view": inspection.view_tool_result_utf8_bytes,
+        }
+        for component, value in values.items():
+            self._send(
+                partial(
+                    self.observability.record,
+                    "harnessix.agent.model_history.tool_result_bytes",
+                    value,
+                    attributes={"component": component},
+                )
+            )
+        for strategy, count in (
+            ("inline", inspection.inline_results),
+            ("artifact_reference", inspection.artifact_reference_results),
+        ):
+            self._send(
+                partial(
+                    self.observability.increment,
+                    "harnessix.agent.model_history.tool_results",
+                    count,
+                    attributes={"strategy": strategy},
+                )
+            )
+        self._send(
+            partial(
+                self.observability.record,
+                "harnessix.agent.model_history.artifact_bindings",
+                inspection.artifact_bindings,
+            )
+        )
 
     def finished(self, turn: Turn) -> None:
         labels = {"status": turn.status.value}

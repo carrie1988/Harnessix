@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source及0.6.2b Workspace/Git/环境Source。0.6.2b新增多来源乐观双观测、Context Inspection v3、Event/Thread v12和Session migration 14；Tool Result模型视图、自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source及0.6.2b Workspace/Git/环境Source。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，发布验收中。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -401,7 +401,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
 - `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
 
-以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source。Tool Result裁剪、自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source。0.6.2c已增加Tool Result稳定模型视图；自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
 
 ## 当前已实现：受控项目指令Source与freshness（0.6.2a）
 
@@ -424,7 +424,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - Context一致性只证明两轮有界窗口内未检测到变化，不是文件系统/Git事务，也不替代工具revision、Policy、Approval和效果核对；
 - Workspace默认每目录64项/12 KiB，Git默认100项/16 KiB，环境最多32个allowlist键/4 KiB，所有截断均显式记录。
 
-0.6.2c继续实现Tool Result裁剪、稳定模型视图和完整Artifact引用；当前Session原始Item不会被0.6.2b改写。设计与安全边界见[ADR 0056](docs/adr/0056-workspace-git-environment-sources-and-consistency.md)和[0.6实施设计](docs/m06-context-and-sessions.md)。
+0.6.2c的Tool Result模型视图见下一节；动态Source本身不改写Session原始Item。设计与安全边界见[ADR 0056](docs/adr/0056-workspace-git-environment-sources-and-consistency.md)和[0.6实施设计](docs/m06-context-and-sessions.md)。
 
 ## 当前已实现：0.1 Action Plane
 
@@ -740,3 +740,16 @@ examples/                   可运行演示
 Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是：
 
 > Action 身份稳定、可幂等时安全复用、结果不确定时停止盲目重试，并通过外部观察和对账尽量实现业务级 Effectively Once。
+
+## 当前已实现：Tool Result稳定模型视图（0.6.2c，发布验收中）
+
+- Session原始结果保持不变，Context预算和Provider使用同一份深拷贝视图；
+- 每个结果默认64 KiB。首次进入模型历史时冻结策略、规范JSON摘要和精确替换，后续步骤复用；
+- 超限Grep/Glob只省略已经由完整Artifact覆盖的记录列表，查询、统计和完整性信息不丢失；其他结果不做任意JSON截断；
+- 模型调用前检查当前工作区权限、Thread/Call归属、引用用途、TTL、manifest、正文摘要和省略覆盖；分页回读另核对原发布者与消费调用；
+- 每步以Event v13记录`ModelHistoryPrepared`；取消、验证超时、失效引用或提交失败不会调用下一步模型；
+- 旧会话没有冻结证据时只允许原样inline，不因升级而改变已经进入模型的前缀。
+
+宿主可通过`AgentRuntime(tool_result_view_policy=ToolResultViewPolicy(max_inline_utf8_bytes=65536))`配置单结果预算。`ToolResultViewPolicy`从`harnessix.context`导入；归档验证默认复用绑定同一Session的SQLite发布器，访问能力来自Coding Tool Runtime或原Batch Diff桥接。无归档且超限时明确失败，不自动补写旧结果或重试工具。
+
+正式接口、失败代码、数据版本和恢复语义见[ADR 0057](docs/adr/0057-tool-result-model-view-and-artifact-binding.md)、[实施设计](docs/m06-context-and-sessions.md#29-062c实现边界)和[部署规范](docs/deployment.md)。本能力不等于Compaction，也不代表整体生产商用版本完成。

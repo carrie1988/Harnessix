@@ -258,6 +258,25 @@ class CodingToolRuntime:
     def workspace_scope(self) -> str:
         return self._workspace.scope
 
+    async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
+        if workspace != str(self.workspace_root):
+            raise KernelError("tool_workspace_mismatch", "Artifact访问与已绑定工作区不匹配")
+
+        def inspect(operation: ReadOperation) -> str:
+            with self._workspace.open(".", operation, directory=True):
+                return self.workspace_scope
+
+        async def locked() -> str:
+            async with self._lock:
+                if self._closed:
+                    raise KernelError("tool_runtime_closed", "工具运行时已关闭")
+                return await run_read_operation(inspect)
+
+        try:
+            return await cancel.run(locked())
+        except ReadToolError as error:
+            raise KernelError(error.code, "Artifact工作区访问能力失效") from None
+
     async def execute_scoped(
         self, call: ToolCallContent, scope: ToolExecutionScope, cancel: CancelToken
     ) -> ToolResultContent | ArtifactToolResult:

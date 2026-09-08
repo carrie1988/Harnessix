@@ -848,3 +848,27 @@ context = SourcedContextEngine(
 - Event v12写入、v3 Replay、migration 14和旧reader拒绝结果。
 
 标签不得包含路径、环境变量名/值、Git分支/文件名、source ID、revision或scope。部署验收应覆盖真实Git普通/非仓库/初始/detached状态、deny-path过滤、环境allowlist、两轮漂移、取消、SQLite重开和旧v11升级。该切片不要求真实模型API、SSH、远程服务器或新增中间件。
+
+## 0.6.2c稳定Tool Result视图部署
+
+新写Agent Event/Thread为v13，追加`0015_tool_result_model_view.sql`。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+
+### 宿主配置与限制
+
+- `tool_result_view_policy`默认每个公开Tool Result 64 KiB，允许1 KiB至1 MiB；已有冻结视图不因调小配置而改写，无法容纳时失败。
+- `artifact_verifier`须绑定同一Session；未显式配置时复用搜索、Process或Batch Diff发布器的Artifact Store。
+- `artifact_access`须返回真实当前Workspace能力；内建Coding工具校验根目录身份与deny策略，Batch Diff委托原桥接验证副本根；独立宿主必须显式提供等价实现。
+- Artifact整组验证最多5秒，仍受Turn截止时间约束。取消会回收异步I/O及受控读取线程。失效Artifact不会作为可取回证据继续发送。
+- 原历史最多8192项/8 MiB；单结果超限且没有完整覆盖归档时失败，不静默丢弃。该资源限制不能代替Compaction。
+- 旧v1-v12会话中的已见结果只能inline；调小单结果预算前必须评估旧会话兼容性。
+
+### 独立wheel升级验收
+
+使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v13 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
+
+1. 旧环境：`python -I tool_result_view_upgrade_probe.py create <验证目录>`；真实搜索产生40条预览、100条归档及v12会话。
+2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15且全部旧事件、投影与Artifact原字节不变。
+3. 旧环境：`python -I tool_result_view_upgrade_probe.py old-reader <验证目录>`；必须拒绝且不改数据库。
+4. 新环境：`python -I tool_result_view_upgrade_probe.py resume <验证目录>`；2 KiB策略拒绝重裁旧前缀，默认策略以内联原结果续写v13检查；原事件与Artifact保持不变。
+
+探针不使用模型凭据、远程服务器或外部中间件。发布门禁还包含真实进程退出窗口、全仓回归、严格异步检查、Schema再生稳定性、基础wheel安装与远端CI；结果记录在测试规范第57节。

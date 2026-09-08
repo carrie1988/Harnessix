@@ -30,6 +30,11 @@ from harnessix.context.sources import (
     SourcedContextEngine,
     WorkspaceContextSource,
 )
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspection,
+    ToolResultViewDecision,
+    ToolResultViewPolicy,
+)
 
 __all__ = [
     "AsyncContextPlanner",
@@ -56,9 +61,12 @@ __all__ = [
     "ContextTrust",
     "EnvironmentContextSource",
     "GitContextSource",
+    "ModelHistoryInspection",
     "PreparedContext",
     "ProjectInstructionSource",
     "SourcedContextEngine",
+    "ToolResultViewDecision",
+    "ToolResultViewPolicy",
     "WorkspaceContextSource",
     "estimate_tokens",
 ]

@@ -23,6 +23,11 @@ from harnessix.context.contracts import (
     ContextSourceObservation,
     ContextSourceSnapshot,
 )
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspection,
+    ToolResultViewDecision,
+    ToolResultViewPolicy,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
@@ -97,8 +102,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v12.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v12.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v13.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v13.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
@@ -117,6 +122,9 @@ def main() -> None:
         TypeAdapter(ProcessOutputRecord).json_schema(),
     )
     for name, model in (
+        ("model-history-inspection", ModelHistoryInspection),
+        ("tool-result-view-policy", ToolResultViewPolicy),
+        ("tool-result-view-decision", ToolResultViewDecision),
         ("context-fragment", ContextFragment),
         ("context-limits", ContextLimits),
         ("context-inspection", ContextInspection),

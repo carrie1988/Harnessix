@@ -130,6 +130,7 @@ async def test_durable_trace_segments_and_low_cardinality_metrics(tmp_path: Path
         assert {s.name for s in spans} == {
             "harnessix.agent.turn",
             "harnessix.agent.model",
+            "harnessix.agent.history",
             "harnessix.agent.tool",
             "harnessix.agent.approval",
             "harnessix.agent.recovery",
@@ -145,7 +146,14 @@ async def test_durable_trace_segments_and_low_cardinality_metrics(tmp_path: Path
         metric_data = metrics(reader)
         for metric in metric_data:
             for point in metric.data.data_points:
-                assert set(point.attributes) <= {"operation", "outcome", "category", "status"}
+                assert set(point.attributes) <= {
+                    "operation",
+                    "outcome",
+                    "category",
+                    "status",
+                    "component",
+                    "strategy",
+                }
         finished = next(m for m in metric_data if m.name == "harnessix.agent.turns.finished")
         assert sum(p.value for p in finished.data.data_points) == 1
         assert "harnessix.agent.operation.duration" in {m.name for m in metric_data}

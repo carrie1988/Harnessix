@@ -20,6 +20,11 @@ from harnessix.context import (
     ContextSourceObservation,
     ContextSourceSnapshot,
 )
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspection,
+    ToolResultViewDecision,
+    ToolResultViewPolicy,
+)
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport
@@ -30,8 +35,11 @@ from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
-        "agent-event-v12.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v12.schema.json": Thread.model_json_schema(),
+        "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
+        "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
+        "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
+        "agent-event-v13.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v13.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -57,7 +65,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 13,
+                "schema_version": 14,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -91,7 +99,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 12
+        assert EventDraft(payload=payload).schema_version == 13
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -110,7 +118,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 12
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 13
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -140,7 +148,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 12
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 13
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -278,6 +286,16 @@ def test_historical_schemas_are_frozen() -> None:
             ),
             "provider-event-v2.schema.json": (
                 "278d5032650328c24e0939011864e8928cddce5c0106b81bae1554bc9c9f0eb5"
+            ),
+        }
+    )
+    expected.update(
+        {
+            "agent-event-v12.schema.json": (
+                "11d1ebecece86e2cc279dffd6b6adfa3f5154bfb537e26b86ec1b150146effa7"
+            ),
+            "agent-thread-v12.schema.json": (
+                "bb0a7d079bd9e04de337cdcb0e3c5609205cc470328c7c3cc2f3ee33fc808d5d"
             ),
         }
     )

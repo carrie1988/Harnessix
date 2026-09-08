@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c设计已冻结、实现中；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c实现完成、验收中；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -13,7 +13,7 @@
 | 0.6.1 | 指令/Fragment契约、输入预算、双Provider映射、Event v10、Context Inspect | 已完成 |
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
-| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 设计已冻结、实现中 |
+| 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 实现完成、验收中 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 未开始 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
@@ -345,8 +345,29 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 采用Session事实历史与瞬时模型历史双层结构。Tool Result首次进入模型历史时，按Provider可见规范JSON的UTF-8字节数冻结`inline`或`artifact_reference`决定；后续步骤和恢复复用精确决定。每步先验证所有可见Artifact并提交`ModelHistoryPrepared`，再让Context与Provider共同使用准备后历史。
 
-超限结果不切割任意JSON。只有完整、已发布、未过期且与Thread/Call/`tool_result`用途双向绑定的Artifact，才能把整个preview替换为固定省略元数据并保留引用。Process和Batch Diff Artifact仅验证各自证据，不为任意结果字段兜底；当前JSON结果不声明媒体支持。正式契约、失败语义和迁移见[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
+超限结果不切割任意JSON。只有完整、已发布、未过期且与Thread/Call/`tool_result`用途双向绑定的Artifact，并能证明被省略字段被正文完整覆盖时，才能省略对应内容并保留引用。Grep/Glob只省略归档记录列表，查询和统计字段原样保留；通用preview只有整体等于单条正文或记录前缀时才置空。Process和Batch Diff Artifact仅验证各自证据，不为任意结果字段兜底；当前JSON结果不声明媒体支持。正式契约、失败语义和迁移见[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
 
 ### 28.2 0.6.3
 
 在来源和工具模型视图稳定后实现Compaction。Summary必须版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不能删除原始Event事实。
+
+## 29. 0.6.2c实现边界
+
+| 模块 | 实现职责 | 持久化边界 |
+|---|---|---|
+| `context/tool_result_contracts.py` | v1策略、冻结决定、每步检查与字段一致性 | 通过Event v13写入Turn投影 |
+| `context/tool_result_view.py` | 有界纯投影、规范JSON计量、完整性分类、旧决定应用 | 不执行I/O、不修改原Item |
+| `ArtifactAccessScope` | 验证宿主绑定的当前工作区能力 | 不从历史反推访问授权 |
+| `ArtifactReferenceVerifier` | 同Session事务快照内验证归属、manifest、TTL、正文与省略覆盖 | 只读，不补写旧结果Artifact |
+| `AgentRuntime` | History → Artifact验证 → History事件 → Context → Provider | 每步新决定与检查记录原子追加 |
+| Reducer | 状态/步骤、来源、唯一性、替换范围和全部摘要验证 | 在线提交和离线Replay复用 |
+
+`AgentRuntime`新增`tool_result_view_policy`、`artifact_verifier`、`artifact_access`三个可选配置。默认每结果64 KiB；配置范围1 KiB至1 MiB。原始历史准备总量最多8192项/8 MiB；Artifact I/O整组最多5秒。Context和Provider引用同一份深拷贝历史，两个Provider按原有消息格式映射，不修改其线上JSON键顺序；检查摘要针对排序规范JSON而非供应商HTTP请求原字节。
+
+SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实际Workspace scope；Batch Diff发布器委托原Managed Patch Bridge提供副本scope。独立宿主可显式注入这两个只读端口，但必须维持相同Session和真实工作区访问边界。
+
+当前读写Agent Event/Thread v13；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
+
+已提交决定通过`Turn.tool_result_view_decisions`读取；每步统计通过`Turn.model_history_inspections`读取。决定可能包含Artifact manifest及残留查询元数据，应按Session本身权限保护。Metrics仅输出固定strategy/component和数量；不输出正文、路径、ID或摘要标签。完整失败代码与退出窗口见ADR 0057。
+
+当前能力不包含自动补归档、任意文件结果截断、图片/音频、Compaction或总历史Token预算压缩。超限且无完整归档的结果明确失败，不能把成功执行事实改成失败工具结果，也不能自动重试有副作用的调用。

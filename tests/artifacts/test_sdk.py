@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
 from harnessix.agent.models import TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.models._history import tool_alias
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.openai_chat import OpenAIChatProvider
@@ -16,7 +18,10 @@ from harnessix.tools.runtime import CodingToolRuntime
 from tests.models.wire import WireStream, chunk, frame, response, text_frames
 
 
-async def test_real_sdk_reads_beyond_preview_without_exposing_host_scope(tmp_path, monkeypatch):
+@pytest.mark.parametrize("reduce", [False, True])
+async def test_real_sdk_reads_beyond_preview_without_exposing_host_scope(
+    tmp_path, monkeypatch, reduce
+):
     monkeypatch.setenv("HARNESSIX_ARTIFACT_FIXTURE_KEY", "not-a-real-credential")
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     root = tmp_path / "repo"
@@ -32,10 +37,20 @@ async def test_real_sdk_reads_beyond_preview_without_exposing_host_scope(tmp_pat
         outputs = [json.loads(m["content"]) for m in body["messages"] if m["role"] == "tool"]
         assert all(o["outcome"] == "succeeded" for o in outputs)
         if len(requests) == 1:
-            tool, args = "grep", {"query": "needle", "max_results": 2}
+            tool, args = "grep", {"query": "needle", "max_results": 40 if reduce else 2}
         elif len(requests) == 2:
             output = outputs[-1]["output"]
-            assert len(output["preview"]["matches"]) == 2
+            if reduce:
+                assert "matches" not in output["preview"]
+                assert output["model_view"]["omitted_field"] == "matches"
+                assert (
+                    len(
+                        next(m["content"] for m in body["messages"] if m["role"] == "tool").encode()
+                    )
+                    <= 2048
+                )
+            else:
+                assert len(output["preview"]["matches"]) == 2
             assert output["artifact"]["records"] == 300 and output["artifact"]["complete"]
             assert len(request.content) < 20000  # 完整 300 条正文没有回灌模型。
             tool, args = (
@@ -88,7 +103,13 @@ async def test_real_sdk_reads_beyond_preview_without_exposing_host_scope(tmp_pat
     async with CodingToolRuntime(root, artifacts=artifacts) as tools:
         async with OpenAIChatProvider(config, transport=httpx.MockTransport(handle)) as provider:
             async with AgentRuntime(
-                session, provider, scoped_tools=tools, artifacts=artifacts
+                session,
+                provider,
+                scoped_tools=tools,
+                artifacts=artifacts,
+                tool_result_view_policy=ToolResultViewPolicy(
+                    max_inline_utf8_bytes=2048 if reduce else 65536
+                ),
             ) as runtime:
                 thread = await runtime.create_thread(str(tools.workspace_root))
                 turn = await runtime.run_turn(thread.thread_id, "读取更多命中", request_id="sdk")

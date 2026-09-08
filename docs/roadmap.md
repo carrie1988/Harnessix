@@ -279,7 +279,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration 14。0.6.2c已完成Tool Result稳定模型视图和完整Artifact绑定设计，正在实现；Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source与Tool Result专项研究](research/context-sources-and-tool-results.md)、[ADR 0056](adr/0056-workspace-git-environment-sources-and-consistency.md)和[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
+状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration 14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明和Event/Thread v13实现，正在进行发布验收；Compaction和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source与Tool Result专项研究](research/context-sources-and-tool-results.md)、[ADR 0056](adr/0056-workspace-git-environment-sources-and-consistency.md)和[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
 
 ### 目标
 

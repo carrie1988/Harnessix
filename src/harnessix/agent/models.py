@@ -31,6 +31,10 @@ from harnessix.context.contracts import (
     ContextInspectionV3,
     ContextPrepared,
 )
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspection,
+    ToolResultViewDecision,
+)
 from harnessix.domain.models import (
     ActionStatus,
     ApprovalOutcome,
@@ -404,6 +408,8 @@ class Turn(ContractModel):
     usage: Usage = Field(default_factory=Usage)
     model_attempts: tuple[ModelAttempt, ...] = ()
     context_inspections: tuple[ContextInspectionRecord, ...] = ()
+    tool_result_view_decisions: tuple[ToolResultViewDecision, ...] = ()
+    model_history_inspections: tuple[ModelHistoryInspection, ...] = ()
     error: AgentFailure | None = None
     created_at: datetime
     completed_at: datetime | None = None
@@ -477,6 +483,12 @@ class UsageRecorded(ContractModel):
     usage: Usage
 
 
+class ModelHistoryPrepared(ContractModel):
+    type: Literal["model_history_prepared"] = "model_history_prepared"
+    inspection: ModelHistoryInspection
+    decisions: tuple[ToolResultViewDecision, ...] = Field(default_factory=tuple, max_length=8192)
+
+
 EventPayload = Annotated[
     ThreadCreated
     | TurnStarted
@@ -487,13 +499,14 @@ EventPayload = Annotated[
     | ModelAttemptStarted
     | ModelUsageObserved
     | ModelAttemptFinished
+    | ModelHistoryPrepared
     | ContextPrepared,
     Field(discriminator="type"),
 ]
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] = 12
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] = 13
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -519,6 +532,8 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 13 and isinstance(self.payload, ModelHistoryPrepared):
+            raise ValueError("Tool Result模型历史检查需要Agent Event v13")
         if (
             self.schema_version < 12
             and isinstance(self.payload, ContextPrepared)

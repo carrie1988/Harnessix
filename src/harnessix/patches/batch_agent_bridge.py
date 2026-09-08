@@ -176,6 +176,16 @@ class ManagedPatchBatchBridge:
         except ReadToolError as error:
             raise fail(error.code) from None
 
+    async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
+        if workspace != str(self._copy.workspace.root):
+            raise fail("workspace_mismatch")
+
+        def inspect(operation: ReadOperation) -> str:
+            with self._copy.workspace.open(".", operation, directory=True):
+                return self._copy.workspace.scope
+
+        return await self._run(inspect, cancel)
+
     async def prepare(
         self,
         call: ToolCallContent,

@@ -62,6 +62,9 @@ class SQLiteBatchDiffPublisher:
     def session(self) -> SQLiteSessionStore:
         return self.artifacts.session
 
+    async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
+        return await self.bridge.artifact_workspace_scope(workspace, cancel)
+
     async def _prepare(self, thread: Thread, draft: EventDraft) -> _Publication | None:
         payload = draft.payload
         if not isinstance(payload, ItemStarted) or draft.turn_id is None:

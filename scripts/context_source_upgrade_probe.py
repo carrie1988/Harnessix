@@ -1,4 +1,4 @@
-"""真实Agent v11与当前v12 wheel的Session migration14升级探针。"""
+"""真实Agent v11与当前v13 wheel的Session migration15升级探针。"""
 
 from __future__ import annotations
 
@@ -68,10 +68,10 @@ async def main(mode: str, root: Path) -> None:
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("真实v11 reader意外接受migration14")
+            raise AssertionError("真实v11 reader意外接受migration15")
         assert database_path.stat().st_ino == inode
         assert database_state(database_path) == before
-        print("真实v11 reader明确拒绝migration14，数据库未改变")
+        print("真实v11 reader明确拒绝migration15，数据库未改变")
         return
 
     if mode == "create":
@@ -122,13 +122,13 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:13] == [tuple(row) for row in metadata["migrations"]]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 15))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 16))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 12
-        print("当前wheel已原字节追加migration14，v11事件与投影未改写")
+        assert EventDraft.model_fields["schema_version"].default == 13
+        print("当前wheel已原字节追加migration15，v11事件与投影未改写")
         return
 
     from harnessix.context import (
@@ -146,17 +146,19 @@ async def main(mode: str, root: Path) -> None:
     )
     old_event_count = len(before["events"])
     async with AgentRuntime(store, FakeProvider(), async_context=planner) as runtime:
-        turn = await runtime.run_turn(thread_id, "追加v12来源会话", request_id="context-source-v12")
+        turn = await runtime.run_turn(thread_id, "追加v13来源会话", request_id="context-source-v13")
     assert len(turn.context_inspections) == 1
     assert isinstance(turn.context_inspections[0], ContextInspectionV3)
     resumed = database_state(database_path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 12 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 13 for row in resumed["events"][old_event_count:]
     )
-    assert resumed["threads"][0][4] == 12
+    assert resumed["threads"][0][4] == 13
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
-    print("v12 wheel已追加Context Inspection v3事件，旧v11事件原字节保留")
+    print(
+        "v13 wheel已追加Context Inspection v3与Model History Inspection v1事件，旧v11事件原字节保留"
+    )
 
 
 if __name__ == "__main__":

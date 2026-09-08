@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.2b多Context Source切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.2c工具结果模型视图切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -13,7 +13,7 @@
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
-- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration 14及低基数一致性指标。Tool Result模型视图、Compaction和会话生命周期仍未实现，见[实施设计](m06-context-and-sessions.md)；
+- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration 14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验，处于发布验收；Compaction和会话生命周期仍未实现，见[实施设计](m06-context-and-sessions.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -352,7 +352,7 @@ Client Cancel
 src/harnessix/
 ├── agent/             # 已实现基础切片：Loop、领域模型、Reducer、取消
 ├── models/            # 中立端口、离线 Provider、OpenAI/Anthropic Adapter 与有界传输
-├── context/           # 已实现0.6.2b：规划、四类Source、freshness和乐观一致性；规划：裁剪、压缩
+├── context/           # 已实现：规划、Source、一致性、稳定工具视图；规划：Compaction
 ├── tools/             # 已实现：Workspace只读、搜索、Git与Artifact读取入口
 ├── artifacts/         # 已实现：事务正文、分页、配额、TTL与清理
 ├── patches/           # 已实现：单文件/整组计划、执行、恢复与Diff
@@ -448,3 +448,9 @@ src/harnessix/
 0.5.5在上述正式Runtime上增加版本化历史任务、隐藏检查、无Golden Patch评分、可恢复真实Provider Campaign和显式单文件交付。任务v3在固定历史缺陷上三次严格通过；交付层重新核对来源、工作树、前后镜像和批准指纹后原子修改目标工作树，恢复只观察已持久证据。它不提供三方合并、通用多文件发布或自动commit/push，见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。
 
 0.5.6在现有`ToolDescriptor`增加默认关闭且只允许`READ_ONLY`的并发能力。Agent Runtime只并发连续安全前缀，默认上限4；执行完成后仍按Provider顺序写Session，任一异常或取消先排空兄弟任务。`CodingToolRuntime`以独立有界信号量限制实际读取；审批、Patch和Process保持屏障。工具域稳定错误统一归类但不改错误码。该设计是单进程调度，不替代0.7的跨进程锁和Sandbox，见[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。
+
+## Tool Result双层历史边界（0.6.2c）
+
+事实层仍由Session Event、原始Item、效果证据和Artifact构成，不能因输入预算回写或删除。投影层由纯`prepare_model_history`生成；`ModelHistoryPrepared`以Event v13保存首次决定和每步检查。Kernel先核验Artifact的当前访问scope、关联与内容，再提交决定并规划Context，最后发送模型请求。
+
+Artifact完整性是字段覆盖证明而非通用“备份成功”标志：搜索归档只覆盖记录，Process归档只覆盖已捕获流，Batch Diff只覆盖差异。后两者不能替代任意结果字段。旧模型前缀、Artifact TTL、取消/超时和崩溃重启均属于此边界；应用不持久化供应商SDK对象。当前数据版本为Event/Thread v13、Model History Inspection v1、Tool Result View v1与Session migration 15；Context Inspection v3不变。

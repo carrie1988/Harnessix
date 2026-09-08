@@ -20,6 +20,7 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
+    ModelHistoryPrepared,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
     PlanContent,
@@ -45,6 +46,7 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.context.contracts import ContextPrepared
+from harnessix.context.tool_result_view import prepare_model_history
 from harnessix.domain.models import (
     ALLOWED_ACTION_TRANSITIONS,
     ActionStatus,
@@ -695,6 +697,36 @@ def _prepare_context(turn: Turn, payload: ContextPrepared) -> Turn:
     return turn.model_copy(update={"context_inspections": (*turn.context_inspections, inspection)})
 
 
+def _prepare_model_history(thread: Thread, turn: Turn, payload: ModelHistoryPrepared) -> Turn:
+    inspection = payload.inspection
+    require(turn.status == TurnStatus.PREPARING_CONTEXT, "模型历史只能在准备阶段记录")
+    require(inspection.model_step == turn.model_steps + 1, "模型历史不属于下一个模型步骤")
+    require(
+        all(
+            existing.model_step != inspection.model_step
+            for existing in turn.model_history_inspections
+        ),
+        "同一模型步骤只能记录一份模型历史检查",
+    )
+    try:
+        prepared = prepare_model_history(
+            thread, inspection.model_step, inspection.policy, decisions=payload.decisions
+        )
+    except (KernelError, ValueError):
+        raise KernelError("invalid_event", "模型历史决定无法由Session事实验证") from None
+    require(prepared.inspection == inspection, "模型历史检查与Session事实不一致")
+    require(prepared.new_decisions == payload.decisions, "Tool Result新决定与Session事实不一致")
+    return turn.model_copy(
+        update={
+            "tool_result_view_decisions": (
+                *turn.tool_result_view_decisions,
+                *payload.decisions,
+            ),
+            "model_history_inspections": (*turn.model_history_inspections, inspection),
+        }
+    )
+
+
 def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
     """唯一的状态投影器；在线提交和离线 Replay 使用相同校验。"""
     payload = event.payload
@@ -758,6 +790,8 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             turn = _model_attempt(turn, event)
         elif isinstance(payload, ContextPrepared):
             turn = _prepare_context(turn, payload)
+        elif isinstance(payload, ModelHistoryPrepared):
+            turn = _prepare_model_history(thread, turn, payload)
         elif isinstance(payload, UsageRecorded):
             require(turn.status == TurnStatus.CALLING_MODEL, "用量只能在模型步骤内记录")
             require(payload.step == turn.model_steps, "用量不属于当前模型步骤")

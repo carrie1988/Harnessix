@@ -30,11 +30,14 @@ from harnessix.artifacts.contracts import (
     MAX_ARTIFACT_BYTES,
     MAX_ARTIFACT_RECORDS,
     MAX_PAGE_BYTES,
+    ArtifactOmittedField,
     ArtifactPage,
     ArtifactPolicy,
     ArtifactRef,
     ArtifactToolResult,
     CollectionReport,
+    HistoryArtifactPurpose,
+    ReadArtifactInput,
 )
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
@@ -217,6 +220,55 @@ class SQLiteArtifactStore:
             raise KernelError("artifact_quota_exceeded", "Artifact 配额不足，未发布正文或结果")
 
     @staticmethod
+    def _body(row: aiosqlite.Row, thread: Thread, ref: ArtifactRef) -> list[str]:
+        body = row["body"]
+        if (
+            row["state"] != "published"
+            or ref.expires_at <= utc_now()
+            or not isinstance(body, bytes)
+        ):
+            if row["state"] == "expired" or ref.expires_at <= utc_now():
+                raise KernelError("artifact_expired", "Artifact 已过期")
+            raise KernelError("artifact_corrupt", "Artifact状态或正文不存在")
+        if len(body) != ref.size_bytes or hashlib.sha256(body).hexdigest() != ref.sha256:
+            raise KernelError("artifact_corrupt", "Artifact 正文校验失败")
+        try:
+            lines = records(body)
+        except KernelError:
+            raise KernelError("artifact_corrupt", "Artifact 记录损坏") from None
+        if len(lines) != ref.records:
+            raise KernelError("artifact_corrupt", "Artifact 记录数不一致")
+        if row["purpose"] == "process_output":
+            try:
+                document = parse_process_output_document(body)
+                turn = get_turn(thread, UUID(row["turn_id"]))
+                result = next(
+                    i.content
+                    for i in turn.items
+                    if isinstance(i.content, ToolResultContent)
+                    and i.status == ItemStatus.COMPLETED
+                    and str(i.content.call_id) == row["call_id"]
+                    and i.content.process is not None
+                )
+                assert isinstance(result.output, dict)
+                for name in ("stdout", "stderr"):
+                    public = result.output[name]
+                    stream = getattr(document.summary, name)
+                    if not isinstance(public, dict) or public != {
+                        "captured_bytes": stream.captured_bytes,
+                        "observed_bytes": stream.observed_bytes,
+                        "observed_sha256": stream.observed_sha256,
+                        "truncated": stream.truncated,
+                        "eof": stream.eof,
+                    }:
+                        raise ValueError("流摘要不匹配")
+                if document.summary.complete != ref.complete:
+                    raise ValueError("完整性不匹配")
+            except (AssertionError, KeyError, StopIteration, ValueError):
+                raise KernelError("artifact_corrupt", "Process Artifact正文与结果不一致") from None
+        return lines
+
+    @staticmethod
     def _reference(row: aiosqlite.Row, thread: Thread) -> ArtifactRef:
         try:
             ref = ArtifactRef.model_validate_json(row["manifest_json"])
@@ -337,51 +389,7 @@ class SQLiteArtifactStore:
             if thread is None:
                 raise KernelError("artifact_corrupt", "Artifact 归属不存在")
             ref = self._reference(row, thread)
-            if ref.expires_at <= utc_now() or row["state"] == "expired":
-                raise KernelError("artifact_expired", "Artifact 已过期")
-            body = row["body"]
-            if (
-                not isinstance(body, bytes)
-                or len(body) != ref.size_bytes
-                or hashlib.sha256(body).hexdigest() != ref.sha256
-            ):
-                raise KernelError("artifact_corrupt", "Artifact 正文校验失败")
-            try:
-                lines = records(body)
-            except KernelError:
-                raise KernelError("artifact_corrupt", "Artifact 记录损坏") from None
-            if len(lines) != ref.records:
-                raise KernelError("artifact_corrupt", "Artifact 记录数不一致")
-            if row["purpose"] == "process_output":
-                try:
-                    document = parse_process_output_document(body)
-                    turn = get_turn(thread, UUID(row["turn_id"]))
-                    result = next(
-                        i.content
-                        for i in turn.items
-                        if isinstance(i.content, ToolResultContent)
-                        and i.status == ItemStatus.COMPLETED
-                        and str(i.content.call_id) == row["call_id"]
-                        and i.content.process is not None
-                    )
-                    assert isinstance(result.output, dict)
-                    for name in ("stdout", "stderr"):
-                        public = result.output[name]
-                        stream = getattr(document.summary, name)
-                        if not isinstance(public, dict) or public != {
-                            "captured_bytes": stream.captured_bytes,
-                            "observed_bytes": stream.observed_bytes,
-                            "observed_sha256": stream.observed_sha256,
-                            "truncated": stream.truncated,
-                            "eof": stream.eof,
-                        }:
-                            raise ValueError("流摘要不匹配")
-                    if document.summary.complete != ref.complete:
-                        raise ValueError("完整性不匹配")
-                except (AssertionError, KeyError, StopIteration, ValueError):
-                    raise KernelError(
-                        "artifact_corrupt", "Process Artifact正文与结果不一致"
-                    ) from None
+            lines = self._body(row, thread, ref)
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
         selected, size = [], 0
@@ -398,6 +406,122 @@ class SQLiteArtifactStore:
             text="".join(selected),
             next_offset=end if end < len(lines) else None,
         )
+
+    async def verify_reference(
+        self,
+        thread_id: UUID,
+        call_id: UUID,
+        reference: ArtifactRef,
+        *,
+        workspace_scope: str,
+        purpose: HistoryArtifactPurpose,
+        omitted_field: ArtifactOmittedField | None = None,
+    ) -> None:
+        if purpose not in {"tool_result", "batch_effect", "process_output", "artifact_page"}:
+            raise KernelError("artifact_invalid", "Artifact用途不符合契约")
+        async with self.session._connection() as database:
+            await database.execute("BEGIN")
+            cursor = await database.execute(
+                "SELECT * FROM agent_artifacts WHERE artifact_id = ? AND thread_id = ? "
+                "AND workspace_scope = ?",
+                (str(reference.artifact_id), str(thread_id), workspace_scope),
+            )
+            row = await cursor.fetchone()
+            if row is None:
+                raise KernelError("artifact_not_found", "Artifact不存在或不属于当前作用域")
+            if purpose != "artifact_page" and (
+                row["call_id"] != str(call_id) or row["purpose"] != purpose
+            ):
+                raise KernelError("artifact_not_found", "Artifact不存在或不属于当前作用域")
+            thread = await self.session._snapshot(database, thread_id)
+            if thread is None:
+                raise KernelError("artifact_corrupt", "Artifact归属不存在")
+            stored = self._reference(row, thread)
+            if stored != reference:
+                raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
+            lines = self._body(row, thread, stored)
+            if purpose == "artifact_page":
+                self._verify_page(thread, call_id, stored, lines)
+            if omitted_field is not None:
+                if purpose != "tool_result" or not stored.complete:
+                    raise KernelError("artifact_corrupt", "局部Artifact不能证明结果省略")
+                self._verify_coverage(thread, call_id, lines, omitted_field)
+
+    @staticmethod
+    def _verify_page(thread: Thread, call_id: UUID, ref: ArtifactRef, lines: list[str]) -> None:
+        calls = [
+            i.content
+            for t in thread.turns
+            for i in t.items
+            if isinstance(i.content, ToolCallContent) and i.content.call_id == call_id
+        ]
+        results = [
+            i.content
+            for t in thread.turns
+            for i in t.items
+            if isinstance(i.content, ToolResultContent)
+            and i.content.call_id == call_id
+            and i.status == ItemStatus.COMPLETED
+        ]
+        try:
+            if len(calls) != 1 or len(results) != 1 or calls[0].tool != "read_artifact":
+                raise ValueError("分页调用缺失")
+            args = ReadArtifactInput.model_validate_json(json.dumps(calls[0].arguments))
+            if args.artifact_id != ref.artifact_id or results[0].outcome != "succeeded":
+                raise ValueError("分页引用错绑")
+            page = ArtifactPage.model_validate_json(json.dumps(results[0].output, allow_nan=False))
+            selected: list[str] = []
+            size = 0
+            for line in lines[args.offset : args.offset + args.limit]:
+                size += len(line.encode()) + 1
+                if size > MAX_PAGE_BYTES:
+                    break
+                selected.append(line + "\n")
+            end = args.offset + len(selected)
+            if (
+                page.artifact != ref
+                or page.offset != args.offset
+                or args.offset > len(lines)
+                or page.text != "".join(selected)
+                or page.next_offset != (end if end < len(lines) else None)
+            ):
+                raise ValueError("分页正文不匹配")
+        except (ValueError, TypeError):
+            raise KernelError("artifact_corrupt", "Artifact分页结果与完整正文不一致") from None
+
+    @staticmethod
+    def _verify_coverage(
+        thread: Thread, call_id: UUID, lines: list[str], field: ArtifactOmittedField
+    ) -> None:
+        result = next(
+            i.content
+            for t in thread.turns
+            for i in t.items
+            if isinstance(i.content, ToolResultContent)
+            and i.content.call_id == call_id
+            and i.status == ItemStatus.COMPLETED
+        )
+        assert isinstance(result.output, dict)
+        preview = result.output.get("preview")
+        values = [json.loads(line) for line in lines]
+        if field != "preview":
+            preview = preview.get(field) if isinstance(preview, dict) else None
+
+        # JSON类型必须一致；Python的True == 1不能证明归档覆盖。
+        def canonical(value: object) -> str:
+            return json.dumps(
+                value, ensure_ascii=False, sort_keys=True, allow_nan=False, separators=(",", ":")
+            )
+
+        covered = (
+            isinstance(preview, list)
+            and len(preview) <= len(values)
+            and canonical(preview) == canonical(values[: len(preview)])
+        ) or (
+            field == "preview" and len(values) == 1 and canonical(preview) == canonical(values[0])
+        )
+        if not covered:
+            raise KernelError("artifact_corrupt", "Artifact正文未覆盖被省略的结果字段")
 
     async def collect(self, *, limit: int = 100, after: UUID | None = None) -> CollectionReport:
         if type(limit) is not int or not 1 <= limit <= 1000:
