@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.execution-intent/v1",
+      "default": "harnessix.execution-intent/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "builtin",
+        "mcp",
+        "skill",
+        "hook",
+        "custom"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Source Id",
+      "type": "string"
+    },
+    "tool": {
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+      "title": "Tool",
+      "type": "string"
+    },
+    "tool_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Tool Version",
+      "type": "string"
+    },
+    "tool_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Tool Fingerprint",
+      "type": "string"
+    },
+    "arguments": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Arguments",
+      "type": "object"
+    },
+    "effect_class": {
+      "$ref": "#/$defs/EffectClass"
+    },
+    "risk_level": {
+      "$ref": "#/$defs/RiskLevel"
+    },
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotency Key"
+    }
+  },
+  "required": [
+    "source",
+    "source_id",
+    "tool",
+    "tool_version",
+    "tool_fingerprint",
+    "effect_class",
+    "risk_level"
+  ],
+  "title": "ExecutionIntent",
+  "type": "object"
+}

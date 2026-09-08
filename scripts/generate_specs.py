@@ -68,6 +68,12 @@ from harnessix.evals.delivery_contracts import (
     CodingEvalDeliveryPlan,
     CodingEvalDeliveryRecord,
 )
+from harnessix.execution.contracts import (
+    ExecutionApprovalCheckpoint,
+    ExecutionCapabilityEvidence,
+    ExecutionIntent,
+    ExecutionPlan,
+)
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport, CostReportV2
@@ -109,6 +115,7 @@ from harnessix.tools.search_contracts import (
     GrepInput,
     GrepOutput,
 )
+from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 
 
 def write_json(path: Path, value: object) -> None:
@@ -212,6 +219,12 @@ def main() -> None:
         ("coding-eval-delivery-record", CodingEvalDeliveryRecord),
         ("compaction-semantic-eval-case", CompactionSemanticEvalCase),
         ("compaction-semantic-eval-report", CompactionSemanticEvalReport),
+        ("workspace-snapshot", WorkspaceSnapshot),
+        ("workspace-lease", WorkspaceLease),
+        ("execution-intent", ExecutionIntent),
+        ("execution-capability-evidence", ExecutionCapabilityEvidence),
+        ("execution-plan", ExecutionPlan),
+        ("execution-approval", ExecutionApprovalCheckpoint),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
@@ -220,7 +233,7 @@ def main() -> None:
     )
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
-        "Process、Context、Coding Eval 与 OpenAPI Schema"
+        "Process、Context、Coding Eval、可信执行与 OpenAPI Schema"
     )
 
 

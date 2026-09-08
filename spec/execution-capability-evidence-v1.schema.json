@@ -1,0 +1,83 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "provider": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Provider",
+      "type": "string"
+    },
+    "provider_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Provider Version",
+      "type": "string"
+    },
+    "sandbox_levels": {
+      "items": {
+        "enum": [
+          "host_guarded",
+          "host_sandboxed",
+          "container_strong"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Sandbox Levels",
+      "type": "array"
+    },
+    "network_modes": {
+      "items": {
+        "enum": [
+          "none",
+          "limited",
+          "restricted",
+          "full"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Network Modes",
+      "type": "array"
+    },
+    "supports_pty": {
+      "title": "Supports Pty",
+      "type": "boolean"
+    },
+    "supports_background": {
+      "title": "Supports Background",
+      "type": "boolean"
+    },
+    "supports_process_tree": {
+      "title": "Supports Process Tree",
+      "type": "boolean"
+    },
+    "evidence_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Evidence Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "provider",
+    "provider_version",
+    "sandbox_levels",
+    "network_modes",
+    "supports_pty",
+    "supports_background",
+    "supports_process_tree",
+    "evidence_digest"
+  ],
+  "title": "ExecutionCapabilityEvidence",
+  "type": "object"
+}

@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "ApprovalOutcome": {
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "title": "ApprovalOutcome",
+      "type": "string"
+    },
+    "ApprovalRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/ApprovalOutcome"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "request_fingerprint": {
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor",
+        "request_fingerprint"
+      ],
+      "title": "ApprovalRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.execution-approval/v1",
+      "default": "harnessix.execution-approval/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "plan_id": {
+      "format": "uuid",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "decision": {
+      "$ref": "#/$defs/ApprovalRecord"
+    }
+  },
+  "required": [
+    "plan_id",
+    "plan_fingerprint",
+    "decision"
+  ],
+  "title": "ExecutionApprovalCheckpoint",
+  "type": "object"
+}

@@ -88,14 +88,14 @@ async def run_read_operation[T](reader: Callable[[ReadOperation], T]) -> T:
         raise
 
 
-def _parts(path: str) -> tuple[str, ...]:
+def _parts(path: str, *, max_bytes: int = 1024, max_parts: int = 64) -> tuple[str, ...]:
     try:
         encoded = path.encode("utf-8")
     except UnicodeError:
         raise ReadToolError("path_denied") from None
     if (
         not encoded
-        or len(encoded) > 1024
+        or len(encoded) > max_bytes
         or "\\" in path
         or any(ord(char) < 32 or ord(char) == 127 for char in path)
     ):
@@ -103,7 +103,7 @@ def _parts(path: str) -> tuple[str, ...]:
     if path == ".":
         return ()
     parts = tuple(path.split("/"))
-    if len(parts) > 64 or any(p in {"", ".", ".."} or len(p.encode()) > 255 for p in parts):
+    if len(parts) > max_parts or any(p in {"", ".", ".."} or len(p.encode()) > 255 for p in parts):
         raise ReadToolError("path_denied")
     return parts
 
@@ -111,10 +111,19 @@ def _parts(path: str) -> tuple[str, ...]:
 class Workspace:
     """宿主选择的本地目录能力；生命周期内保留根 FD，不等价于 OS Sandbox。"""
 
-    def __init__(self, root: Path, *, denied_paths: tuple[str, ...] = ()) -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        denied_paths: tuple[str, ...] = (),
+        path_max_bytes: int = 1024,
+        path_max_parts: int = 64,
+    ) -> None:
         if os.name != "posix" or not hasattr(os, "O_NOFOLLOW"):
             raise ValueError("当前工作区实现仅支持具备 no-follow 的 POSIX 系统")
         self._denied_paths = tuple(sorted({_parts(p.casefold()) for p in denied_paths}))
+        self._path_max_bytes = path_max_bytes
+        self._path_max_parts = path_max_parts
         self.root = root.resolve(strict=True)
         self._root_fd: int | None = self._open_root()
         info = os.fstat(self._root_fd)
@@ -144,7 +153,11 @@ class Workspace:
             raise
 
     def parts(self, path: str) -> tuple[str, ...]:
-        parts = _parts(path)
+        parts = _parts(
+            path,
+            max_bytes=self._path_max_bytes,
+            max_parts=self._path_max_parts,
+        )
         folded = tuple(p.casefold() for p in parts)
         if any(
             p in _DENIED_NAMES or p.startswith(".env.") or p.endswith(_DENIED_SUFFIXES)
@@ -166,7 +179,14 @@ class Workspace:
         return fd
 
     @contextmanager
-    def open(self, path: str, operation: ReadOperation, *, directory: bool) -> Iterator[int]:
+    def open(
+        self,
+        path: str,
+        operation: ReadOperation,
+        *,
+        directory: bool,
+        same_device: int | None = None,
+    ) -> Iterator[int]:
         parts = self.parts(path)
         operation.checkpoint()
         with ExitStack() as stack:
@@ -191,6 +211,8 @@ class Workspace:
                 stack.callback(os.close, fd)
                 after = os.fstat(fd)
                 self._check_type(after, directory=expected_directory)
+                if same_device is not None and after.st_dev != same_device:
+                    raise ReadToolError("path_denied")
                 if identity(before) != identity(after):
                     raise ReadToolError("workspace_changed")
                 links.append((parent, part, fd))

@@ -1,0 +1,40 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-lease/v1",
+      "default": "harnessix.workspace-lease/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "owner_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Owner Id",
+      "type": "string"
+    },
+    "fencing_token": {
+      "minimum": 1,
+      "title": "Fencing Token",
+      "type": "integer"
+    },
+    "expires_at": {
+      "exclusiveMinimum": 0,
+      "title": "Expires At",
+      "type": "number"
+    }
+  },
+  "required": [
+    "workspace_id",
+    "owner_id",
+    "fencing_token",
+    "expires_at"
+  ],
+  "title": "WorkspaceLease",
+  "type": "object"
+}

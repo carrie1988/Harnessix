@@ -9,7 +9,7 @@
 
 ## 决策
 
-1. 领域层新增平台中立的 `WorkspacePath`、`WorkspaceSnapshot`、`ExecutionIntent` 与 `ExecutionPlan`。
+1. 领域层新增平台中立的逻辑路径规范、`WorkspaceSnapshot`、`ExecutionIntent` 与 `ExecutionPlan`。
 2. `WorkspacePath` 只能是相对 Workspace 的 `/` 分隔逻辑路径；宿主盘符、UNC 和设备路径只存在于受信平台端口。
 3. POSIX 与 Windows 分别实现路径打开、对象身份和进程所有权，不共享虚假的最小公分母。
 4. `ExecutionPlan` 使用规范 canonical JSON 计算 fingerprint，至少绑定：Tool 名称/版本/来源、规范参数、cwd、非 Secret 环境摘要、Workspace Snapshot、策略版本、Sandbox、网络、Secret 引用版本、效果、风险和幂等键。
@@ -35,4 +35,3 @@
 - POSIX 和 Windows 路径属性测试；
 - Windows 盘符、UNC、设备路径、ADS、保留名、尾随点/空格和 Reparse Point；
 - 参数、cwd、环境、Workspace、策略、Sandbox、网络和 Secret 版本逐字段变异测试。
-

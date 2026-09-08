@@ -1316,3 +1316,21 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 全仓相对Markdown链接检查无缺失；`uv lock --check`通过，许可证正文SHA256为`d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee`，验收wheel SHA256为`633b509b7c11339cd09128325f67ef1686b4e23368ec3d44c7477d851b0e1e8f`。
 
 最终本地`make check`结果为**2928 passed、2 skipped，270.98秒**；Ruff格式与规则通过，Mypy严格检查165个源文件通过。两个skip仅因本地未配置PostgreSQL实库，远端PostgreSQL任务独立验证。该结果只关闭平台与许可治理基线，不关闭0.7 Windows原生端口、0.9三平台发行物或1.0商用发布门禁。
+
+## 64. 0.7.1跨平台Workspace与Execution Plan候选验收（2026-09-08）
+
+状态：实现和本地完整门禁通过；Windows原生Workspace声明必须等待本次提交的Windows远端任务通过后才能关闭。设计见[ADR 0065](adr/0065-platform-capability-ports-and-execution-plan.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#10-071-跨平台workspace与permission详细设计)。
+
+验收覆盖：
+
+- 逻辑路径拒绝POSIX/Windows绝对前缀、回退段、反斜线、控制字符、ADS、DOS保留名、尾随点/空格，并采用Windows大小写不敏感比较和扩展长度路径；
+- POSIX root FD/no-follow、硬链接、跨设备门禁、文件/目录/缺失目标观察及显式外部根；Windows原生`CreateFileW`句柄链、Reparse Point/Junction拒绝、根句柄替换阻断、对象身份和长路径实测进入Windows CI；
+- `WorkspaceSnapshot v1`绑定root、cwd、文件内容、目录成员、缺失目标父目录和外部根访问，执行前变化统一使Plan过期；
+- 两个独立SQLite连接及真实独立Python进程竞争Workspace租约，旧owner的fencing token在到期/释放后不能复用；非法TTL失败关闭；
+- `ExecutionIntent`、能力证据、Sandbox、Policy、环境摘要、Secret版本和`ExecutionPlan v1`严格冻结；参数、环境、Secret、Workspace、策略和能力逐字段变异失效；Windows环境名折叠和Secret目标冲突拒绝；
+- `ExecutionApproval v1`绑定Plan ID与完整fingerprint；SQLite Plan Store v1验证持久重开、相同写幂等、Plan ID/审批决定冲突、未知Schema和损坏记录失败关闭；持久JSON不包含环境值或Secret明文；
+- 旧0.5 Workspace默认路径限制保持兼容，0.7 Snapshot通过显式端口参数获得新上限；旧Session Schema和migration未修改。
+
+完整本地`make check`为**2989 passed、5 skipped，322.89秒**；Ruff格式与规则通过，Mypy严格检查175个源文件通过。5项跳过包含本地未配置的PostgreSQL集成测试和仅能在Windows执行的3项原生路径测试。Schema连续生成两次聚合SHA256均为`7222eb24f5ae369b2887358b2c4b59fb3cf91c60563c8682e7a900c44d85da82`，新增Workspace Snapshot/Lease、Execution Intent/Capability/Plan/Approval六份v1 Schema，旧Schema未改写。
+
+本片未调用模型API、SSH或远程服务器，也未安装中间件。OS Sandbox、Windows Process/Job Object、通用事务性交付、Git Commit/Push和旧Tool统一接入尚未完成，不得由本片测试结果推导为0.7整体完成。
