@@ -2,7 +2,7 @@
 
 - 更新日期：2026-09-08
 - 范围：Harnessix Code 0.6.3
-- 状态：研究完成；架构决策与契约设计中，尚未实现自动Compaction
+- 状态：研究完成；首窗口规划契约已实现，摘要账本及运行时设计中，尚未实现自动Compaction
 
 ## 1. 研究目标
 
@@ -71,3 +71,9 @@ Harnessix现有Model Attempt绑定普通模型步骤，Reducer只允许在CALLIN
 - Fork未来继承Summary来源时的Thread归属和效果权限隔离。
 
 上述问题未完成ADR、契约和失败测试前，不接入自动压缩，也不把历史8 MiB保护上限描述成可支持无限长会话。
+
+## 6. Harnessix端口约束复核
+
+对照Harnessix自身`models/_anthropic_mapping.py::build_request`，现有端口明确要求消息以user开始和结束，不支持assistant prefill。因此不能把上游的“Summary + recent”直接映射为以助手摘要开头的历史，也不能通过修改旧Adapter来放松协议。首窗口规划固定首条原用户消息，将低信任助手摘要插在其后，并保留当前用户及工具配对。真实SQLite Session和双Adapter映射已纳入对应测试。
+
+`agent/models.py::Item`没有model_step；规划器仅在用户边界或完整结果组结束处切分，连续助手文本保守合并。固定一个结果锚点会保留整个助手/调用/结果组，避免仅按Item计数留下孤立结果。固定集与连续后缀的正式分区、预算和失败语义见[窗口规划详细设计](../compaction-window-planning.md)。

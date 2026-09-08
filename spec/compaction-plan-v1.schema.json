@@ -1,0 +1,265 @@
+{
+  "$defs": {
+    "CompactionAnchor": {
+      "additionalProperties": false,
+      "description": "宿主固定的原始Item指纹；保留时扩展到完整闭合组。",
+      "properties": {
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "source_sha256"
+      ],
+      "title": "CompactionAnchor",
+      "type": "object"
+    },
+    "CompactionPolicy": {
+      "additionalProperties": false,
+      "description": "窗口规划预算，不是开启自动压缩或发起付费请求的配置。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.compaction-policy/v1",
+          "default": "harnessix.compaction-policy/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "target_history_tokens": {
+          "maximum": 8388608,
+          "minimum": 512,
+          "title": "Target History Tokens",
+          "type": "integer"
+        },
+        "summary_reserve_tokens": {
+          "default": 4096,
+          "maximum": 1000000,
+          "minimum": 256,
+          "title": "Summary Reserve Tokens",
+          "type": "integer"
+        },
+        "max_summary_input_tokens": {
+          "maximum": 8388608,
+          "minimum": 512,
+          "title": "Max Summary Input Tokens",
+          "type": "integer"
+        },
+        "retain_recent_groups": {
+          "default": 2,
+          "maximum": 8192,
+          "minimum": 1,
+          "title": "Retain Recent Groups",
+          "type": "integer"
+        },
+        "min_savings_tokens": {
+          "default": 256,
+          "maximum": 8388608,
+          "minimum": 1,
+          "title": "Min Savings Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "target_history_tokens",
+        "max_summary_input_tokens"
+      ],
+      "title": "CompactionPolicy",
+      "type": "object"
+    },
+    "ToolResultViewPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.tool-result-model-view/v1",
+          "default": "harnessix.tool-result-model-view/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "max_inline_utf8_bytes": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1024,
+          "title": "Max Inline Utf8 Bytes",
+          "type": "integer"
+        }
+      },
+      "title": "ToolResultViewPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "无副作用的首窗口选择证据；不能作为活动窗口或执行授权。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-plan/v1",
+      "default": "harnessix.compaction-plan/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "strategy": {
+      "const": "closed-prefix-with-pins/v1",
+      "default": "closed-prefix-with-pins/v1",
+      "title": "Strategy",
+      "type": "string"
+    },
+    "estimator": {
+      "const": "utf8-bytes/v1",
+      "default": "utf8-bytes/v1",
+      "title": "Estimator",
+      "type": "string"
+    },
+    "compaction_id": {
+      "format": "uuid",
+      "title": "Compaction Id",
+      "type": "string"
+    },
+    "thread_id": {
+      "format": "uuid",
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "format": "uuid",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "source_event_sequence": {
+      "minimum": 1,
+      "title": "Source Event Sequence",
+      "type": "integer"
+    },
+    "model_step": {
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Model Step",
+      "type": "integer"
+    },
+    "policy": {
+      "$ref": "#/$defs/CompactionPolicy"
+    },
+    "tool_result_view_policy": {
+      "$ref": "#/$defs/ToolResultViewPolicy"
+    },
+    "anchors": {
+      "items": {
+        "$ref": "#/$defs/CompactionAnchor"
+      },
+      "maxItems": 64,
+      "title": "Anchors",
+      "type": "array"
+    },
+    "source_item_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 8192,
+      "minItems": 2,
+      "title": "Source Item Ids",
+      "type": "array"
+    },
+    "covered_item_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 8192,
+      "minItems": 1,
+      "title": "Covered Item Ids",
+      "type": "array"
+    },
+    "retained_item_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 8192,
+      "minItems": 1,
+      "title": "Retained Item Ids",
+      "type": "array"
+    },
+    "pinned_item_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 8192,
+      "minItems": 1,
+      "title": "Pinned Item Ids",
+      "type": "array"
+    },
+    "source_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source History Sha256",
+      "type": "string"
+    },
+    "model_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Model History Sha256",
+      "type": "string"
+    },
+    "decisions_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Decisions Sha256",
+      "type": "string"
+    },
+    "summary_source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Summary Source Sha256",
+      "type": "string"
+    },
+    "retained_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Retained History Sha256",
+      "type": "string"
+    },
+    "source_history_tokens": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Source History Tokens",
+      "type": "integer"
+    },
+    "retained_history_tokens": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Retained History Tokens",
+      "type": "integer"
+    },
+    "summary_input_tokens": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Summary Input Tokens",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "compaction_id",
+    "thread_id",
+    "turn_id",
+    "source_event_sequence",
+    "model_step",
+    "policy",
+    "tool_result_view_policy",
+    "source_item_ids",
+    "covered_item_ids",
+    "retained_item_ids",
+    "pinned_item_ids",
+    "source_history_sha256",
+    "model_history_sha256",
+    "decisions_sha256",
+    "summary_source_sha256",
+    "retained_history_sha256",
+    "source_history_tokens",
+    "retained_history_tokens",
+    "summary_input_tokens"
+  ],
+  "title": "CompactionPlan",
+  "type": "object"
+}

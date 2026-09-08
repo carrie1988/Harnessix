@@ -33,6 +33,10 @@ def failure_category(code: str) -> FailureCategory:
         "model_output_too_large",
         "tool_output_too_large",
         "context_budget_exceeded",
+        "context_compaction_retained_overflow",
+        "context_compaction_source_overflow",
+        "context_compaction_summary_overflow",
+        "context_compaction_no_progress",
     }:
         return FailureCategory.BUDGET
     if code in {
@@ -41,6 +45,7 @@ def failure_category(code: str) -> FailureCategory:
         "event_conflict",
         "runtime_busy",
         "turn_busy",
+        "context_compaction_source_changed",
     }:
         return FailureCategory.CONFLICT
     if code.startswith(

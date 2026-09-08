@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "description": "待验证的低信任摘要正文；不包含工具、审批或窗口发布权限。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-summary/v1",
+      "default": "harnessix.compaction-summary/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "compaction_id": {
+      "format": "uuid",
+      "title": "Compaction Id",
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 1000000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "compaction_id",
+    "text"
+  ],
+  "title": "CompactionSummary",
+  "type": "object"
+}

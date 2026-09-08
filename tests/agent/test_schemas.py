@@ -20,6 +20,12 @@ from harnessix.context import (
     ContextSourceObservation,
     ContextSourceSnapshot,
 )
+from harnessix.context.compaction_contracts import (
+    CompactionAnchor,
+    CompactionPlan,
+    CompactionPolicy,
+    CompactionSummary,
+)
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspection,
     ToolResultViewDecision,
@@ -35,6 +41,10 @@ from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 def test_generated_schemas_match_code() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
+        "compaction-anchor-v1.schema.json": CompactionAnchor.model_json_schema(),
+        "compaction-plan-v1.schema.json": CompactionPlan.model_json_schema(),
+        "compaction-policy-v1.schema.json": CompactionPolicy.model_json_schema(),
+        "compaction-summary-v1.schema.json": CompactionSummary.model_json_schema(),
         "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),

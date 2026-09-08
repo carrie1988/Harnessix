@@ -13,6 +13,12 @@ from harnessix.artifacts.contracts import (
     ArtifactRef,
     ReadArtifactInput,
 )
+from harnessix.context.compaction_contracts import (
+    CompactionAnchor,
+    CompactionPlan,
+    CompactionPolicy,
+    CompactionSummary,
+)
 from harnessix.context.contracts import (
     ContextConsistencySnapshot,
     ContextFragment,
@@ -122,6 +128,10 @@ def main() -> None:
         TypeAdapter(ProcessOutputRecord).json_schema(),
     )
     for name, model in (
+        ("compaction-anchor", CompactionAnchor),
+        ("compaction-plan", CompactionPlan),
+        ("compaction-policy", CompactionPolicy),
+        ("compaction-summary", CompactionSummary),
         ("model-history-inspection", ModelHistoryInspection),
         ("tool-result-view-policy", ToolResultViewPolicy),
         ("tool-result-view-decision", ToolResultViewDecision),

@@ -474,7 +474,7 @@ uv run python examples/kernel_approval.py
 uv run --extra observability python -m examples.kernel_observability
 ~~~
 
-Plan/Compaction 当前支持可信宿主记录与 Replay，不包含自动规划或压缩算法。
+Plan/Compaction语义Item当前支持可信宿主记录与Replay，不自动改变活动模型历史。0.6.3已新增独立的首窗口规划与候选校验模块，但未接入自动压缩运行时或付费摘要账本，见[窗口规划设计](docs/compaction-window-planning.md)。
 
 这些入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
 

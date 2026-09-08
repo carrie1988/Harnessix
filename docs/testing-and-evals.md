@@ -1,7 +1,7 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.2b Workspace/Git/环境Source与跨来源一致性切片
-- 更新日期：2026-09-07
+- 状态：0.2架构基线，已随实现更新至0.6.3首窗口规划内部门禁；自动Compaction尚未验收
+- 更新日期：2026-09-08
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
@@ -1197,3 +1197,19 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - migration15 SHA256为`304f1bf9e5c0170a9a3703c11d655ef8aae98438884ab80d2e4f098b6db22835`；真实进程退出与旧迁移回归均保持旧事件/投影/Artifact原字节。
 
 实现提交`5e283ff`的[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)已通过Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务，0.6.2c正式关闭。此结论仅针对本切片，不代表Compaction、完整会话生命周期或整体V1.0商用版本完成。
+
+## 58. 0.6.3首窗口规划内部门禁（2026-09-08）
+
+状态：首窗口契约、规划和候选校验的本地门禁通过；摘要账本、CAS窗口发布、自动触发及语义保持Eval未完成，0.6.3保持进行中。设计见[窗口规划详设](compaction-window-planning.md)和[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
+
+- 新增91项测试：88项领域反例、1项实际文件/SQLite Session/重开Replay验证、2项保留工具组的双Adapter映射。
+- 领域覆盖闭合并行组的全部结果排列、固定组扩展、首条/当前用户原文、重复/缺失/错序消息、非法原JSON、来源和候选篡改、JSON往返、确定性投影ID、UTF-8及完整JSON转义预算、恰好上限/多一字节、8192项/8 MiB保护。
+- 取消矩阵为规划/校验两入口分别验证预取消、运行中取消、父Task取消和截止时间；所有路径均不改写来源、不遗留后台任务。
+- 实际文件验证由正式Coding Tool Runtime读取临时工程源码；SQLite Session重开及Replay后重算候选。源文件与原事件保持不变，不产生额外Provider请求。首条用户、低信任摘要和后续用户/工具组符合两个既有Adapter的映射。
+- 全仓严格模式`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -o addopts='' -q`：**2783 passed、2 skipped，250.11秒**。两项本地跳过均为未配置PostgreSQL实库；远端矩阵另行验证。
+- Ruff格式/规则通过，Mypy检查155个源文件通过；17个既有示例全部通过。
+- 四份新增v1 Schema纳入生成一致性测试；全部原Schema未改写。连续两次生成聚合SHA256为`91f6e2dd46c69d8cb437ddaa038c04825e6ea922bbba8fe47f597978749f9562`，算法同第57节。
+- sdist/wheel构建及仓库外Python 3.12基础环境安装通过；不依赖OpenAI/Anthropic可选SDK即可导入规划器。Event/Thread仍为v13、Provider Event仍为v3、Session migration仍为15，无数据库升级或新增中间件。
+- macOS CI测试范围增加`tests/context`，确保新的真实Session及候选映射门禁也在远端macOS执行。
+
+上述结果不包含真实摘要API、付费请求崩溃恢复、活动窗口提交或关键任务约束的语义保持；不得据此宣称自动压缩或V1.0完成。

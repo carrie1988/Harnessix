@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "description": "宿主固定的原始Item指纹；保留时扩展到完整闭合组。",
+  "properties": {
+    "item_id": {
+      "format": "uuid",
+      "title": "Item Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "item_id",
+    "source_sha256"
+  ],
+  "title": "CompactionAnchor",
+  "type": "object"
+}

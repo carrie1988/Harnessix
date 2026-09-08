@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b已完成；0.6.2c已完成；0.6.3源码研究完成、架构设计中；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3首窗口规划契约已实现、摘要账本与运行时设计中；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -14,7 +14,7 @@
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 已完成 |
-| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 源码研究完成、架构设计中 |
+| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 首窗口规划契约已实现；账本及运行时未接入 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
 
@@ -373,3 +373,11 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 当前能力不包含自动补归档、任意文件结果截断、图片/音频、Compaction或总历史Token预算压缩。超限且无完整归档的结果明确失败，不能把成功执行事实改成失败工具结果，也不能自动重试有副作用的调用。
 
 0.6.2c实现提交`5e283ff`通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务。结合测试规范第57节的完整本地、发布物与恢复门禁，本片关闭；整体0.6与V1.0商用目标仍未完成。
+
+## 30. 0.6.3首窗口规划内部门禁
+
+已实现`CompactionPolicy/Anchor/Plan/Summary v1`、闭合组规划和候选校验。正式接口、选择算法、预算单位、取消语义、来源指纹及安全边界见[压缩窗口规划详细设计](compaction-window-planning.md)。
+
+当前流程不调用Provider、不写Session、不发布活动窗口。原模型视图决定、Artifact验证义务和原始事件保持不变。候选结构为首条原用户消息、低信任助手摘要和原顺序保留的固定组/后缀；不会为满足Provider格式伪造用户指令。首条/当前用户原文自动固定，显式锚点扩展到完整调用组。
+
+本门禁完成后继续独立摘要Attempt包装、Token增量记账、成本报告、候选与尝试绑定、CAS窗口发布和中断恢复。仅计划JSON往返与只读Session重开不等于付费摘要恢复验收；自动Compaction、重复压缩和语义保持Eval仍未完成，0.6.3不得据此关闭。
