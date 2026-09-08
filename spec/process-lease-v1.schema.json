@@ -1,0 +1,221 @@
+{
+  "$defs": {
+    "ProcessOutputObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "persisted_bytes": {
+          "maximum": 67108864,
+          "minimum": 0,
+          "title": "Persisted Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_bytes",
+        "persisted_bytes",
+        "sha256",
+        "truncated",
+        "eof"
+      ],
+      "title": "ProcessOutputObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-lease/v1",
+      "default": "harnessix.process-lease/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "process_id": {
+      "format": "uuid",
+      "title": "Process Id",
+      "type": "string"
+    },
+    "plan_id": {
+      "format": "uuid",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "process_spec_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Process Spec Digest",
+      "type": "string"
+    },
+    "capability_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Capability Digest",
+      "type": "string"
+    },
+    "lifecycle": {
+      "enum": [
+        "foreground",
+        "background"
+      ],
+      "title": "Lifecycle",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "starting",
+        "running",
+        "stopping",
+        "exited",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "owner_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Token",
+      "type": "string"
+    },
+    "owner_identity": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner Identity"
+    },
+    "pid": {
+      "anyOf": [
+        {
+          "maximum": 4294967295,
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pid"
+    },
+    "deadline": {
+      "format": "date-time",
+      "title": "Deadline",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "returncode": {
+      "anyOf": [
+        {
+          "maximum": 4294967295,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Returncode"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "exited",
+            "timeout",
+            "cancelled",
+            "closed",
+            "output_limit",
+            "host_lost",
+            "launch_failed",
+            "cleanup_failed",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "stdout": {
+      "$ref": "#/$defs/ProcessOutputObservation"
+    },
+    "stderr": {
+      "$ref": "#/$defs/ProcessOutputObservation"
+    }
+  },
+  "required": [
+    "process_id",
+    "plan_id",
+    "plan_fingerprint",
+    "process_spec_digest",
+    "capability_digest",
+    "lifecycle",
+    "state",
+    "sequence",
+    "owner_token",
+    "deadline"
+  ],
+  "title": "ProcessLease",
+  "type": "object"
+}

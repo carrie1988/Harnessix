@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-capability/v1",
+      "default": "harnessix.process-capability/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "owner_backend": {
+      "enum": [
+        "posix_session",
+        "windows_job_object"
+      ],
+      "title": "Owner Backend",
+      "type": "string"
+    },
+    "invocation_modes": {
+      "items": {
+        "enum": [
+          "argv",
+          "posix_sh",
+          "cmd",
+          "powershell"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Invocation Modes",
+      "type": "array"
+    },
+    "supports_pipe": {
+      "const": true,
+      "default": true,
+      "title": "Supports Pipe",
+      "type": "boolean"
+    },
+    "supports_pty": {
+      "title": "Supports Pty",
+      "type": "boolean"
+    },
+    "supports_background": {
+      "const": true,
+      "default": true,
+      "title": "Supports Background",
+      "type": "boolean"
+    },
+    "supports_process_tree": {
+      "const": true,
+      "default": true,
+      "title": "Supports Process Tree",
+      "type": "boolean"
+    },
+    "atomic_containment": {
+      "const": true,
+      "default": true,
+      "title": "Atomic Containment",
+      "type": "boolean"
+    },
+    "implementation_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Implementation Digest",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "owner_backend",
+    "invocation_modes",
+    "supports_pty",
+    "implementation_digest",
+    "digest"
+  ],
+  "title": "ProcessCapabilityProbe",
+  "type": "object"
+}

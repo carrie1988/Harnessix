@@ -1,0 +1,38 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "observed_bytes": {
+      "minimum": 0,
+      "title": "Observed Bytes",
+      "type": "integer"
+    },
+    "persisted_bytes": {
+      "maximum": 67108864,
+      "minimum": 0,
+      "title": "Persisted Bytes",
+      "type": "integer"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "eof": {
+      "title": "Eof",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "observed_bytes",
+    "persisted_bytes",
+    "sha256",
+    "truncated",
+    "eof"
+  ],
+  "title": "ProcessOutputObservation",
+  "type": "object"
+}

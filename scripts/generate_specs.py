@@ -107,6 +107,12 @@ from harnessix.processes.contracts import (
     ProcessStream,
 )
 from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
+from harnessix.processes.supervision_contracts import (
+    ProcessCapabilityProbe,
+    ProcessLease,
+    ProcessOutputObservation,
+    ProcessSpec,
+)
 from harnessix.sandbox.capabilities import ContainerEngineProbe, HostSandboxProbe
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
@@ -184,6 +190,10 @@ def main() -> None:
         ("process-stream", ProcessStream),
         ("process-result", ProcessResult),
         ("process-output-document", ProcessOutputDocument),
+        ("process-spec", ProcessSpec),
+        ("process-capability", ProcessCapabilityProbe),
+        ("process-lease", ProcessLease),
+        ("process-output-observation", ProcessOutputObservation),
         ("list-files-input", ListFilesInput),
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),

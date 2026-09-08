@@ -283,3 +283,21 @@ Redactor不是加密/DLP系统，不能检测哈希、压缩、分段重编码�
 确定性测试覆盖网络合同、DNS固定/过期/私网、CIDR、TLS ClientHello/SNI、真实asyncio代理中继、Docker inspect重复键/标签/额外容器、引擎和Host Sandbox探测、Profile持久化、Plan v2持久重开与逐字段漂移、Container argv、Secret版本/Windows碰撞、所有chunk边界和常见编码Canary。Linux CI额外拉取固定BusyBox OCI摘要，实际验证非root、零Capability、只读根、只读Workspace、仅loopback网络、可写`/tmp`以及Secret不进入argv且输出被脱敏；CPU/内存/PID/tmpfs上限的精确argv由确定性测试验证，压力与超限终止测试归入0.7.3 Process Supervisor。
 
 Windows和macOS运行相同Sandbox/Secret合同与平台能力测试；Windows当前没有native host strong执行器，强隔离仍依赖通过探测的Docker Desktop/受管WSL2容器后端。0.7.3必须接入通用Process Supervisor、PTY、后台Lease、立即网络复核和Secret流式发布；0.7.5再把所有内置Tool与扩展统一路由到该边界。上述后续工作完成前，不宣称任意模型命令已经具备端到端生产隔离。
+
+## 12. 0.7.3 跨平台Process与终端监督详细设计
+
+### 12.1 已冻结的ProcessSpec、能力与Lease账本
+
+0.7.3首先落地不依赖具体spawn API的领域合同和持久状态机，避免把旧`HostProcessRuntime`的POSIX前台行为直接扩散到Windows和后台任务：
+
+- `ProcessSpec v1`使用稳定`process_id`和自摘要，分别表达`argv`、`posix_sh`、`cmd`、`powershell`；Shell source与argv互斥，原文参与Execution Plan批准，不由Runtime拼接；
+- pipe/PTY、stdin关闭/管道、foreground/background、运行时限、输入/输出预算和终端尺寸均为计划字段；stdin默认关闭且预算为零；
+- `ProcessCapabilityProbe v1`固定平台owner为POSIX Session或Windows Job Object，声明可用调用模式、PTY、后台和原子进程树归属，并绑定实现摘要；
+- Planner要求ProcessSpec完整JSON等于`ExecutionIntent.arguments`，Process能力摘要等于`ExecutionCapabilityEvidenceV2.provider_evidence_digest`，并校验平台、PTY、后台和进程树能力；
+- `ProcessLease v1`不可变绑定plan id/fingerprint、spec/capability摘要、lifecycle、随机owner token和deadline。数字PID只作观察字段，不构成恢复权限；
+- 状态机固定为`prepared → starting → running → stopping → exited`，任一非终态可按证据进入`unknown`，终态不可重开；运行身份必须以owner identity、PID和started time完整出现或全部缺失；
+- stdout/stderr只保存观察字节数、实际持久字节数、SHA-256、截断和EOF；正文由后续有界输出Artifact存储，不进入Lease事件。
+
+`SQLiteProcessLeaseStore`使用私有SQLite/WAL/FULL同步保存当前投影和append-only完整Lease事件。创建相同Lease幂等；状态推进同时校验完整绑定、相邻sequence、允许迁移及当前payload CAS。读取时交叉校验关系列、当前payload和同sequence事件，任何索引漂移、事件缺失、损坏JSON或未知Schema失败关闭。`active()`先验证所有记录再按payload状态过滤，不能通过篡改冗余state列隐藏待恢复进程。
+
+本小节只完成领域契约、Schema、Planner和账本，不启动进程。下一小节实现POSIX owner worker、持久输出和pipe/PTY控制；随后实现Windows suspended spawn + Job Object与ConPTY，最后接入Container launch、取消/超时/宿主死亡恢复。上述执行与三平台故障门禁完成前，0.7.3保持未完成。

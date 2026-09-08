@@ -1357,3 +1357,17 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 Schema连续生成两次聚合SHA256均为`dc9b1114ca6d7110bd9e768c451f0f25851fe1a02787962bbccb441cbd19a1ad`；原`execution-capability-evidence-v1`和`execution-plan-v1`分别保持`51c989bc1cf09464b4810e0ee8af53bc7746278109c856a246ff5a4a0cad1b5f`与`98d7c1d0642024638245ef1e02536bb1f5fc9d077aaa67f8c85c13220c4833d0`不变。
 
 远端六项为Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和独立Container Sandbox。首次候选[CI 34218526009](https://github.com/carrie1988/Harnessix/actions/runs/34218526009)真实发现上述探测接口错误；修复运行六项全部通过。该验收不调用模型API、SSH或远程服务器，也不把直接容器smoke描述为已接入模型的通用Process Runtime；Process生命周期、立即网络再证明和全输出接线属于0.7.3/0.7.5。
+
+## 66. 0.7.3a Process合同与Lease账本候选验收（2026-09-08）
+
+状态：领域契约、Planner、SQLite账本及Schema已实现；实际Process owner、pipe/PTY、后台控制、宿主死亡监督和三平台原生测试尚未完成，本节不关闭0.7.3。
+
+当前8项确定性测试覆盖：
+
+- argv与三类显式Shell source互斥、NUL/UTF-8/参数/输入/输出/时限/终端尺寸边界及ProcessSpec自摘要；
+- ProcessSpec完整JSON、Execution Plan v2、平台能力摘要、PTY/后台/进程树和deadline绑定；
+- prepared/running/unknown/exited的身份、时间、返回码和停止原因一致性；
+- prepared起点、相邻sequence、合法状态图、不可变计划/能力/owner绑定和并发CAS；
+- SQLite重开、幂等创建、append-only事件、未知Schema、损坏payload、冗余索引漂移和最新事件缺失失败关闭。
+
+Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capability-v1`、`process-lease-v1`和`process-output-observation-v1`；旧ProcessResult和Execution Plan Schema未修改。连续生成聚合SHA256为`941ac28d5d42e3e1f7ba668ab4fef74d59c917a4e706d41163d66364d0fea883`。该候选不调用外部进程、模型API、Docker、SSH或远程中间件。
