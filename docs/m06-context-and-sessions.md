@@ -381,3 +381,7 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 当前流程不调用Provider、不写Session、不发布活动窗口。原模型视图决定、Artifact验证义务和原始事件保持不变。候选结构为首条原用户消息、低信任助手摘要和原顺序保留的固定组/后缀；不会为满足Provider格式伪造用户指令。首条/当前用户原文自动固定，显式锚点扩展到完整调用组。
 
 本门禁完成后继续独立摘要Attempt包装、Token增量记账、成本报告、候选与尝试绑定、CAS窗口发布和中断恢复。仅计划JSON往返与只读Session重开不等于付费摘要恢复验收；自动Compaction、重复压缩和语义保持Eval仍未完成，0.6.3不得据此关闭。
+
+下一步的现有接口复核、候选事件、Cost v2与Campaign影响面、发布事务及付费请求崩溃矩阵见[摘要尝试账本设计草案](compaction-attempt-ledger.md)。Provider Event v3保持不变；Event/Thread v14等新增版本尚未冻结。
+
+首窗口实现提交`13e50eb`的[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)四项任务通过；严格本地回归2783 passed、2项仅因PostgreSQL未配置跳过，详见测试规范第58节。

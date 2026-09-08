@@ -123,3 +123,5 @@ Summary是从不可信历史派生的数据，不得升级为Runtime/User指令�
 首窗口`CompactionPolicy/Anchor/Plan/Summary v1`及`plan_compaction/validate_compaction`已落地，完成闭合组、预算、来源变化、固定项、取消/超时、计划JSON往返和实际SQLite Session验证。低信任摘要位于首条原用户之后，两个现有Adapter的请求映射均纳入回归。
 
 该实现不调用Provider、不写Session、不发布窗口。仅凭内存候选无法证明尝试结算、语义保持或付费请求崩溃恢复；独立账本与发布门禁仍须按第5节推进，不将本ADR提前改为Accepted。
+
+账本候选事件、Cost Report v2、Campaign聚合和崩溃窗口已细化为[摘要尝试账本与窗口发布设计草案](../compaction-attempt-ledger.md)。该文明确现有接口约束和未实施边界，不作为已发布Schema。

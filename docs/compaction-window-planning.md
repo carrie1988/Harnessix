@@ -150,7 +150,7 @@ summary_source_utf8_bytes <= max_summary_input_tokens
 
 实际文件验证使用正式Coding Tool Runtime读取临时工作区源码，保存SQLite Session，再对新Turn的只读快照生成计划；重开数据库和Replay后验证同一候选，原事件及源文件指纹不变。OpenAI与Anthropic映射均验证原用户起始、低信任摘要及保留工具组。这些验证不产生真实模型请求费用。
 
-下一门禁按ADR 0058继续：
+下一门禁按ADR 0058及[摘要尝试账本与窗口发布草案](compaction-attempt-ledger.md)继续：
 
 1. 独立Compaction Attempt包装事件、与普通Attempt共享的Token增量和线程级唯一身份；
 2. Cost Report/Eval聚合两类尝试，保留未知/不完整费用语义；

@@ -1200,7 +1200,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 58. 0.6.3首窗口规划内部门禁（2026-09-08）
 
-状态：首窗口契约、规划和候选校验的本地门禁通过；摘要账本、CAS窗口发布、自动触发及语义保持Eval未完成，0.6.3保持进行中。设计见[窗口规划详设](compaction-window-planning.md)和[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
+状态：首窗口契约、规划和候选校验的本地及实现提交四项CI门禁通过；摘要账本、CAS窗口发布、自动触发及语义保持Eval未完成，0.6.3保持进行中。设计见[窗口规划详设](compaction-window-planning.md)和[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
 
 - 新增91项测试：88项领域反例、1项实际文件/SQLite Session/重开Replay验证、2项保留工具组的双Adapter映射。
 - 领域覆盖闭合并行组的全部结果排列、固定组扩展、首条/当前用户原文、重复/缺失/错序消息、非法原JSON、来源和候选篡改、JSON往返、确定性投影ID、UTF-8及完整JSON转义预算、恰好上限/多一字节、8192项/8 MiB保护。
@@ -1209,7 +1209,9 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 全仓严格模式`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -o addopts='' -q`：**2783 passed、2 skipped，250.11秒**。两项本地跳过均为未配置PostgreSQL实库；远端矩阵另行验证。
 - Ruff格式/规则通过，Mypy检查155个源文件通过；17个既有示例全部通过。
 - 四份新增v1 Schema纳入生成一致性测试；全部原Schema未改写。连续两次生成聚合SHA256为`91f6e2dd46c69d8cb437ddaa038c04825e6ea922bbba8fe47f597978749f9562`，算法同第57节。
-- sdist/wheel构建及仓库外Python 3.12基础环境安装通过；不依赖OpenAI/Anthropic可选SDK即可导入规划器。Event/Thread仍为v13、Provider Event仍为v3、Session migration仍为15，无数据库升级或新增中间件。
+- sdist/wheel构建及仓库外Python 3.12基础环境安装通过；无OpenAI/Anthropic可选SDK时，实际执行规划、计划JSON恢复、候选校验、原用户固定和取消均通过。Event/Thread仍为v13、Provider Event仍为v3、Session migration仍为15，无数据库升级或新增中间件。
 - macOS CI测试范围增加`tests/context`，确保新的真实Session及候选映射门禁也在远端macOS执行。
 
 上述结果不包含真实摘要API、付费请求崩溃恢复、活动窗口提交或关键任务约束的语义保持；不得据此宣称自动压缩或V1.0完成。
+
+实现提交`13e50eb`通过[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)的Python 3.12、Python 3.13、macOS与PostgreSQL四项任务。后续账本、费用报告和恢复矩阵按[摘要尝试账本草案](compaction-attempt-ledger.md)继续实施，不扩大本门禁的验收结论。
