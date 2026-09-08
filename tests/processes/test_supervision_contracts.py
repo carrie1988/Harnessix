@@ -15,7 +15,12 @@ from harnessix.execution.contracts import (
     SandboxBindingV2,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
-from harnessix.processes.supervision_contracts import ProcessLease, ProcessSpec
+from harnessix.processes.owner_receipt import sign_owner_receipt, verify_owner_receipt
+from harnessix.processes.supervision_contracts import (
+    ProcessLease,
+    ProcessSpec,
+    empty_process_output,
+)
 from harnessix.processes.supervision_planner import (
     build_process_capability,
     build_process_spec,
@@ -160,3 +165,31 @@ def test_process_lease_rejects_partial_running_and_terminal_facts(tmp_path: Path
                 "stop_reason": "exited",
             }
         )
+
+
+def test_process_owner_receipt_mac_binds_identity_and_payload() -> None:
+    process_id = UUID("00000000-0000-4000-8000-000000000001")
+    receipt = sign_owner_receipt(
+        process_id=process_id,
+        owner_identity="e" * 64,
+        state="running",
+        sequence=1,
+        owner_token="d" * 64,
+        pid=123,
+        started_at=NOW,
+        stdout=empty_process_output(),
+        stderr=empty_process_output(),
+    )
+    assert (
+        verify_owner_receipt(
+            receipt,
+            owner_token="d" * 64,
+            process_id=process_id,
+            owner_identity="e" * 64,
+        )
+        == receipt
+    )
+    forged = receipt.model_copy(update={"pid": 124})
+    with pytest.raises(KernelError) as invalid:
+        verify_owner_receipt(forged, owner_token="d" * 64, process_id=process_id)
+    assert invalid.value.code == "process_owner_receipt_invalid"

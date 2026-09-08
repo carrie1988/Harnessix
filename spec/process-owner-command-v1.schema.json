@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-owner-command/v1",
+      "default": "harnessix.process-owner-command/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "stdin",
+        "close_stdin",
+        "resize",
+        "stop"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "data_base64": {
+      "anyOf": [
+        {
+          "maxLength": 87384,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data Base64"
+    },
+    "columns": {
+      "anyOf": [
+        {
+          "maximum": 1000,
+          "minimum": 20,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Columns"
+    },
+    "rows": {
+      "anyOf": [
+        {
+          "maximum": 1000,
+          "minimum": 5,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rows"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "exited",
+            "timeout",
+            "cancelled",
+            "closed",
+            "output_limit",
+            "input_limit",
+            "io_error",
+            "host_lost",
+            "launch_failed",
+            "cleanup_failed",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "operation"
+  ],
+  "title": "ProcessOwnerCommand",
+  "type": "object"
+}

@@ -1,0 +1,127 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-owner-start/v1",
+      "default": "harnessix.process-owner-start/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "process_id": {
+      "format": "uuid",
+      "title": "Process Id",
+      "type": "string"
+    },
+    "owner_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Identity",
+      "type": "string"
+    },
+    "owner_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Token",
+      "type": "string"
+    },
+    "argv": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Argv",
+      "type": "array"
+    },
+    "cwd": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Cwd",
+      "type": "string"
+    },
+    "environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "maxProperties": 128,
+      "title": "Environment",
+      "type": "object"
+    },
+    "secret_names": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Secret Names",
+      "type": "array"
+    },
+    "terminal": {
+      "enum": [
+        "pipe",
+        "pty"
+      ],
+      "title": "Terminal",
+      "type": "string"
+    },
+    "stdin": {
+      "enum": [
+        "closed",
+        "pipe"
+      ],
+      "title": "Stdin",
+      "type": "string"
+    },
+    "deadline": {
+      "format": "date-time",
+      "title": "Deadline",
+      "type": "string"
+    },
+    "output_bytes": {
+      "maximum": 67108864,
+      "minimum": 1,
+      "title": "Output Bytes",
+      "type": "integer"
+    },
+    "input_bytes": {
+      "maximum": 1048576,
+      "minimum": 0,
+      "title": "Input Bytes",
+      "type": "integer"
+    },
+    "columns": {
+      "maximum": 1000,
+      "minimum": 20,
+      "title": "Columns",
+      "type": "integer"
+    },
+    "rows": {
+      "maximum": 1000,
+      "minimum": 5,
+      "title": "Rows",
+      "type": "integer"
+    },
+    "terminate_grace_seconds": {
+      "default": 0.5,
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Terminate Grace Seconds",
+      "type": "number"
+    }
+  },
+  "required": [
+    "process_id",
+    "owner_identity",
+    "owner_token",
+    "argv",
+    "cwd",
+    "environment",
+    "terminal",
+    "stdin",
+    "deadline",
+    "output_bytes",
+    "input_bytes",
+    "columns",
+    "rows"
+  ],
+  "title": "ProcessOwnerStart",
+  "type": "object"
+}

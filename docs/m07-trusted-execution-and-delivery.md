@@ -295,9 +295,23 @@ Windows和macOS运行相同Sandbox/Secret合同与平台能力测试；Windows�
 - `ProcessCapabilityProbe v1`固定平台owner为POSIX Session或Windows Job Object，声明可用调用模式、PTY、后台和原子进程树归属，并绑定实现摘要；
 - Planner要求ProcessSpec完整JSON等于`ExecutionIntent.arguments`，Process能力摘要等于`ExecutionCapabilityEvidenceV2.provider_evidence_digest`，并校验平台、PTY、后台和进程树能力；
 - `ProcessLease v1`不可变绑定plan id/fingerprint、spec/capability摘要、lifecycle、随机owner token和deadline。数字PID只作观察字段，不构成恢复权限；
-- 状态机固定为`prepared → starting → running → stopping → exited`，任一非终态可按证据进入`unknown`，终态不可重开；运行身份必须以owner identity、PID和started time完整出现或全部缺失；
-- stdout/stderr只保存观察字节数、实际持久字节数、SHA-256、截断和EOF；正文由后续有界输出Artifact存储，不进入Lease事件。
+- 状态机以`prepared → starting → running → stopping → exited`为正常主线；未创建目标进程的确定性启动失败进入`failed`，任一非终态可按证据进入`unknown`，终态不可重开；运行身份必须以owner identity、PID和started time完整出现或全部缺失；
+- stdout/stderr只保存观察字节数、实际持久字节数、完整流与持久前缀各自的SHA-256、截断和EOF；正文由私有有界输出Artifact保存，不进入Lease事件。
 
 `SQLiteProcessLeaseStore`使用私有SQLite/WAL/FULL同步保存当前投影和append-only完整Lease事件。创建相同Lease幂等；状态推进同时校验完整绑定、相邻sequence、允许迁移及当前payload CAS。读取时交叉校验关系列、当前payload和同sequence事件，任何索引漂移、事件缺失、损坏JSON或未知Schema失败关闭。`active()`先验证所有记录再按payload状态过滤，不能通过篡改冗余state列隐藏待恢复进程。
 
 本小节只完成领域契约、Schema、Planner和账本，不启动进程。下一小节实现POSIX owner worker、持久输出和pipe/PTY控制；随后实现Windows suspended spawn + Job Object与ConPTY，最后接入Container launch、取消/超时/宿主死亡恢复。上述执行与三平台故障门禁完成前，0.7.3保持未完成。
+
+### 12.2 独立owner、终端与宿主死亡监督
+
+Process Supervisor不直接把目标进程作为Agent服务的普通子进程。每次启动创建仅当前用户可访问的独立run目录、随机256位owner token和owner identity，再通过不可继承到目标进程的匿名控制管道启动短生命周期owner worker。启动帧携带已批准argv、cwd、精确环境、Secret目标名、deadline和I/O预算；帧只存在于内存管道，Secret明文不写入Plan、Lease、回执、命令行或run目录。目标环境不合并owner或Agent宿主环境。
+
+owner先写输出文件并`fsync`，随后原子替换HMAC-SHA256回执；MAC使用Lease中的owner token，绑定process id、owner identity、目标PID、时间、终态和双流摘要。恢复端只消费可验证回执，数字PID不构成控制权限。当前投影与append-only Lease事件继续CAS推进；运行中输出检查点允许同状态递增sequence，`failed/exited/unknown`终态不可重开。宿主重启遇到`prepared`可确定为未启动；`starting/running/stopping`先等待owner完成控制管道EOF清理，只在无终态回执时进入`unknown/host_lost`，禁止按PID补发、发送输入或终止其他进程。
+
+POSIX目标在独立Session/Process Group中启动。owner监视控制EOF、deadline、根进程、完整进程组及pipe/PTY；取消、关闭、输入/输出超限和超时先向进程组发送`SIGTERM`，宽限到期后`SIGKILL`，根进程正常退出也清理残留后代。Linux额外在目标pre-exec设置parent-death signal并复核parent PID；该机制只缩小owner异常死亡窗口，不替代回执恢复。PTY通过独立master/slave、controlling terminal和有界resize/stdin命令工作；pipe保持stdout/stderr独立。
+
+Windows pipe目标使用`CREATE_SUSPENDED → AssignProcessToJobObject → NtResumeProcess`，Job固定`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`且不允许breakaway；分配或恢复任一步失败都会终止仍挂起的目标。ConPTY使用`PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE`与`PROC_THREAD_ATTRIBUTE_JOB_LIST`在同一次`CreateProcessW`中原子绑定终端和Job，避免先运行再归属的逃逸窗口。owner持有Job最后句柄，Agent宿主死亡使控制管道EOF并终止整棵树，owner自身异常退出也由kill-on-close清理。Windows stdin线程和输出线程均使用有界队列；ConPTY输入将LF规范为CR、退格规范为DEL，并保留跨分片CRLF语义。
+
+双流在写盘前分别通过`StreamingSecretRedactor`，再按共享`ProcessSpec.output_bytes`预算计量。超过预算立即停止进程树，文件只保留获准前缀，同时完整记录脱敏后观察字节数、摘要、截断和EOF；读取时按Lease中的持久字节数和前缀摘要复核，替换、截短或伪造文件失败关闭。PTY为单一组合stdout流，stderr以空且EOF记录。控制帧最大1 MiB、单次stdin最大64 KiB、累计stdin受Plan预算约束；控制损坏、I/O故障或无法证明树清理进入`unknown/cleanup_failed`。
+
+能力探测摘要绑定Python可执行文件身份、owner/协议/回执/平台实现模块及Windows受信Shell路径；每次spawn前重新计算，安装内容变化必须重新规划。Windows ConPTY只有在真实系统build和导出函数满足要求时广告，Job或启动属性在当前宿主不可用时启动失败，不回退到根PID或`taskkill`。本候选仍需远端Windows真机及macOS/Linux矩阵关闭实现差异，并在下一小节接入Container启动和立即网络再证明后才能关闭0.7.3。

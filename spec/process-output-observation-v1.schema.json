@@ -17,6 +17,11 @@
       "title": "Sha256",
       "type": "string"
     },
+    "persisted_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Persisted Sha256",
+      "type": "string"
+    },
     "truncated": {
       "title": "Truncated",
       "type": "boolean"
@@ -30,6 +35,7 @@
     "observed_bytes",
     "persisted_bytes",
     "sha256",
+    "persisted_sha256",
     "truncated",
     "eof"
   ],

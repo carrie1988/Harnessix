@@ -1371,3 +1371,20 @@ Schema连续生成两次聚合SHA256均为`dc9b1114ca6d7110bd9e768c451f0f25851fe
 - SQLite重开、幂等创建、append-only事件、未知Schema、损坏payload、冗余索引漂移和最新事件缺失失败关闭。
 
 Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capability-v1`、`process-lease-v1`和`process-output-observation-v1`；旧ProcessResult和Execution Plan Schema未修改。连续生成聚合SHA256为`941ac28d5d42e3e1f7ba668ab4fef74d59c917a4e706d41163d66364d0fea883`。该候选不调用外部进程、模型API、Docker、SSH或远程中间件。
+
+## 67. 0.7.3b/c 跨平台Process owner候选验收（2026-09-08）
+
+状态：POSIX Session/PTY与Windows Job Object/ConPTY实现及确定性测试已进入候选；Windows真机、macOS矩阵和Container接线尚待远端验收，本节不关闭0.7.3。
+
+本地原生POSIX专项19项通过、Windows真机5项按平台跳过，覆盖：
+
+- argv与`posix_sh`实际执行、精确环境、Secret跨流脱敏以及持久文件不含Canary；
+- pipe stdin、PTY Unicode、resize、stdin累计预算、共享输出上限、持久前缀摘要与Artifact篡改失败关闭；
+- deadline、CancelToken、显式close、根进程正常退出及忽略SIGTERM的后代进程组强制回收；
+- 宿主控制管道丢失后owner独立终止进程树，新Supervisor只凭HMAC回执和Lease恢复为`exited/host_lost`，不以PID取得权限；
+- 启动失败以无PID的`failed/launch_failed`终结，同process id重复调用不重放；回执PID或身份被篡改不能通过MAC；
+- Windows输入CR/LF/退格跨分片规范化的平台中立回归。
+
+Windows真机门禁包含：挂起目标加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
+
+Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、`process-owner-command-v1`和`process-owner-receipt-v1` Schema；Process Lease增加确定性启动失败终态，Output Observation增加持久前缀摘要。连续生成聚合SHA256为`d8c98c0340b25c0afc3da00e071f2a5b89d107fbeeb0f59e2f3148836fe302d8`。该候选未调用模型API、SSH或远程服务器。

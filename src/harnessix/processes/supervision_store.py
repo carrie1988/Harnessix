@@ -16,11 +16,12 @@ from harnessix.processes.supervision_contracts import (
 
 _SCHEMA_VERSION = "1"
 _TRANSITIONS: dict[ProcessLeaseState, frozenset[ProcessLeaseState]] = {
-    "prepared": frozenset({"starting", "unknown"}),
-    "starting": frozenset({"running", "exited", "unknown"}),
-    "running": frozenset({"stopping", "exited", "unknown"}),
-    "stopping": frozenset({"exited", "unknown"}),
+    "prepared": frozenset({"starting", "failed", "unknown"}),
+    "starting": frozenset({"running", "exited", "failed", "unknown"}),
+    "running": frozenset({"running", "stopping", "exited", "unknown"}),
+    "stopping": frozenset({"stopping", "exited", "unknown"}),
     "exited": frozenset(),
+    "failed": frozenset(),
     "unknown": frozenset(),
 }
 
@@ -192,7 +193,9 @@ class SQLiteProcessLeaseStore:
             "FROM process_leases ORDER BY process_id"
         ).fetchall()
         leases = tuple(self._decode_current(row) for row in rows)
-        return tuple(lease for lease in leases if lease.state not in {"exited", "unknown"})
+        return tuple(
+            lease for lease in leases if lease.state not in {"exited", "failed", "unknown"}
+        )
 
     def _decode_current(self, row: tuple[object, ...]) -> ProcessLease:
         if len(row) != 6 or not isinstance(row[5], str):

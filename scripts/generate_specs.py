@@ -107,6 +107,8 @@ from harnessix.processes.contracts import (
     ProcessStream,
 )
 from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
+from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwnerStart
+from harnessix.processes.owner_receipt import ProcessOwnerReceipt
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
     ProcessLease,
@@ -194,6 +196,9 @@ def main() -> None:
         ("process-capability", ProcessCapabilityProbe),
         ("process-lease", ProcessLease),
         ("process-output-observation", ProcessOutputObservation),
+        ("process-owner-start", ProcessOwnerStart),
+        ("process-owner-command", ProcessOwnerCommand),
+        ("process-owner-receipt", ProcessOwnerReceipt),
         ("list-files-input", ListFilesInput),
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),

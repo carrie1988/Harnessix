@@ -48,8 +48,8 @@
   "additionalProperties": false,
   "properties": {
     "spec_version": {
-      "const": "harnessix.process-lease/v1",
-      "default": "harnessix.process-lease/v1",
+      "const": "harnessix.process-owner-receipt/v1",
+      "default": "harnessix.process-owner-receipt/v1",
       "title": "Spec Version",
       "type": "string"
     },
@@ -58,40 +58,14 @@
       "title": "Process Id",
       "type": "string"
     },
-    "plan_id": {
-      "format": "uuid",
-      "title": "Plan Id",
-      "type": "string"
-    },
-    "plan_fingerprint": {
+    "owner_identity": {
       "pattern": "^[0-9a-f]{64}$",
-      "title": "Plan Fingerprint",
-      "type": "string"
-    },
-    "process_spec_digest": {
-      "pattern": "^[0-9a-f]{64}$",
-      "title": "Process Spec Digest",
-      "type": "string"
-    },
-    "capability_digest": {
-      "pattern": "^[0-9a-f]{64}$",
-      "title": "Capability Digest",
-      "type": "string"
-    },
-    "lifecycle": {
-      "enum": [
-        "foreground",
-        "background"
-      ],
-      "title": "Lifecycle",
+      "title": "Owner Identity",
       "type": "string"
     },
     "state": {
       "enum": [
-        "prepared",
-        "starting",
         "running",
-        "stopping",
         "exited",
         "failed",
         "unknown"
@@ -100,27 +74,9 @@
       "type": "string"
     },
     "sequence": {
-      "minimum": 0,
+      "minimum": 1,
       "title": "Sequence",
       "type": "integer"
-    },
-    "owner_token": {
-      "pattern": "^[0-9a-f]{64}$",
-      "title": "Owner Token",
-      "type": "string"
-    },
-    "owner_identity": {
-      "anyOf": [
-        {
-          "pattern": "^[0-9a-f]{64}$",
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Owner Identity"
     },
     "pid": {
       "anyOf": [
@@ -135,11 +91,6 @@
       ],
       "default": null,
       "title": "Pid"
-    },
-    "deadline": {
-      "format": "date-time",
-      "title": "Deadline",
-      "type": "string"
     },
     "started_at": {
       "anyOf": [
@@ -211,20 +162,22 @@
     },
     "stderr": {
       "$ref": "#/$defs/ProcessOutputObservation"
+    },
+    "mac": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Mac",
+      "type": "string"
     }
   },
   "required": [
     "process_id",
-    "plan_id",
-    "plan_fingerprint",
-    "process_spec_digest",
-    "capability_digest",
-    "lifecycle",
+    "owner_identity",
     "state",
     "sequence",
-    "owner_token",
-    "deadline"
+    "stdout",
+    "stderr",
+    "mac"
   ],
-  "title": "ProcessLease",
+  "title": "ProcessOwnerReceipt",
   "type": "object"
 }

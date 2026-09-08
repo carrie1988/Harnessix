@@ -16,13 +16,17 @@ ProcessInvocation = Literal["argv", "posix_sh", "cmd", "powershell"]
 ProcessTerminal = Literal["pipe", "pty"]
 ProcessInput = Literal["closed", "pipe"]
 ProcessLifecycle = Literal["foreground", "background"]
-ProcessLeaseState = Literal["prepared", "starting", "running", "stopping", "exited", "unknown"]
+ProcessLeaseState = Literal[
+    "prepared", "starting", "running", "stopping", "exited", "failed", "unknown"
+]
 ProcessStopReason = Literal[
     "exited",
     "timeout",
     "cancelled",
     "closed",
     "output_limit",
+    "input_limit",
+    "io_error",
     "host_lost",
     "launch_failed",
     "cleanup_failed",
@@ -127,6 +131,7 @@ class ProcessOutputObservation(SupervisionContract):
     observed_bytes: int = Field(ge=0)
     persisted_bytes: int = Field(ge=0, le=MAX_PROCESS_OUTPUT_BYTES)
     sha256: Revision
+    persisted_sha256: Revision
     truncated: bool
     eof: bool
 
@@ -136,8 +141,11 @@ class ProcessOutputObservation(SupervisionContract):
             self.persisted_bytes < self.observed_bytes
         ):
             raise ValueError("Process输出观察不一致")
-        if self.observed_bytes == 0 and self.sha256 != hashlib.sha256(b"").hexdigest():
+        empty_digest = hashlib.sha256(b"").hexdigest()
+        if self.observed_bytes == 0 and self.sha256 != empty_digest:
             raise ValueError("空Process输出摘要不一致")
+        if self.persisted_bytes == 0 and self.persisted_sha256 != empty_digest:
+            raise ValueError("空Process持久输出摘要不一致")
         return self
 
 
@@ -146,6 +154,7 @@ def empty_process_output(*, eof: bool = False) -> ProcessOutputObservation:
         observed_bytes=0,
         persisted_bytes=0,
         sha256=hashlib.sha256(b"").hexdigest(),
+        persisted_sha256=hashlib.sha256(b"").hexdigest(),
         truncated=False,
         eof=eof,
     )
@@ -182,15 +191,17 @@ class ProcessLease(SupervisionContract):
             raise ValueError("Process Lease运行身份只能完整存在或全部缺失")
         if self.state in {"running", "stopping", "exited"} and not has_identity:
             raise ValueError("Process Lease运行身份不完整")
-        if self.state in {"prepared", "starting"} and has_identity:
+        if self.state in {"prepared", "starting", "failed"} and has_identity:
             raise ValueError("Process Lease运行身份不完整")
-        terminal = self.state in {"exited", "unknown"}
+        terminal = self.state in {"exited", "failed", "unknown"}
         if terminal != (self.stop_reason is not None and self.finished_at is not None):
             raise ValueError("Process Lease终态事实不完整")
         if self.state == "exited" and self.returncode is None:
             raise ValueError("退出Process必须包含returncode")
         if self.state != "exited" and self.returncode is not None:
             raise ValueError("非退出Process不能包含returncode")
+        if self.state == "failed" and self.stop_reason != "launch_failed":
+            raise ValueError("启动失败Process必须使用launch_failed原因")
         if self.started_at is not None and self.started_at.tzinfo is None:
             raise ValueError("Process启动时间必须包含时区")
         if self.finished_at is not None:
