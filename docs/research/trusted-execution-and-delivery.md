@@ -75,7 +75,7 @@ Harnessix 0.7 不实现“看起来像 Sandbox”的 Host 文本检查。`none` 
 2. Windows `JobObject` 设置 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`，可选择禁止 breakaway，并以 `TerminateJobObject` 终止整个进程树。
 3. 先普通 spawn 再加入 Job Object 存在子进程在绑定前逃逸的竞态，Codex 源码对此有明确注释。
 4. 无竞态路径使用 `CREATE_SUSPENDED`：创建挂起进程、加入 Job Object、再恢复；测试验证直接子进程属于 Job Object，且终止会清理进程树。
-5. Windows PTY 使用 ConPTY；POSIX 使用进程组，并在 Linux 路径设置父进程死亡信号。
+5. Windows PTY 使用 ConPTY，并在扩展启动信息中把伪终端和Job同时绑定；标准句柄由Pseudo Console接管而不是继承宿主。POSIX 使用进程组，并在 Linux 路径设置父进程死亡信号。
 6. ConPTY 输入是终端按键流而不是普通重定向stdin。关闭其输入传输管道不能可靠表达应用EOF，关闭Pseudo Console还会向附着进程发送`CTRL_CLOSE_EVENT`；控制台应用在processed-input模式下以`Ctrl+Z`表达EOF。
 
 **独立结论**

@@ -13,6 +13,8 @@ _PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D
 _PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE = 0x00020016
 _EXTENDED_STARTUPINFO_PRESENT = 0x00080000
 _CREATE_UNICODE_ENVIRONMENT = 0x00000400
+_STARTF_USESTDHANDLES = 0x00000100
+_INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 _ERROR_INSUFFICIENT_BUFFER = 122
 _WAIT_OBJECT_0 = 0
 _WAIT_TIMEOUT = 258
@@ -345,6 +347,10 @@ def spawn_conpty(
 
         startup = _STARTUPINFOEXW()
         startup.StartupInfo.cb = ctypes.sizeof(startup)
+        startup.StartupInfo.dwFlags = _STARTF_USESTDHANDLES
+        startup.StartupInfo.hStdInput = _INVALID_HANDLE_VALUE
+        startup.StartupInfo.hStdOutput = _INVALID_HANDLE_VALUE
+        startup.StartupInfo.hStdError = _INVALID_HANDLE_VALUE
         startup.lpAttributeList = attribute_pointer
         process_information = _PROCESS_INFORMATION()
         command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(argv))

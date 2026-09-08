@@ -160,7 +160,7 @@ async def test_windows_job_owner_pipe_unicode_secret_and_exact_environment(tmp_p
         await handle.close_stdin()
         lease = await handle.wait()
         output = await handle.output("stdout")
-    assert lease.state == "exited" and lease.returncode == 0
+    assert lease.state == "exited" and lease.returncode == 0, output.decode(errors="replace")
     assert "你好".encode() in output and b"[REDACTED]" in output
     assert secret.encode() not in output
 
@@ -228,7 +228,7 @@ async def test_windows_conpty_unicode_input_resize_and_tree_owner(tmp_path: Path
         lease = await handle.wait()
         output = await handle.output("stdout")
     expected = "cafeé 汉字".encode().hex().encode()
-    assert lease.state == "exited" and lease.returncode == 0
+    assert lease.state == "exited" and lease.returncode == 0, output.decode(errors="replace")
     assert b"132x43:" + expected in output
     assert lease.stderr.eof and lease.stderr.observed_bytes == 0
 
