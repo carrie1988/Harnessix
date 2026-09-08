@@ -91,6 +91,14 @@ def _find_sensitive_path(value: Any, path: str = "") -> str | None:
     return None
 
 
+def _parse_tool_arguments(tool: ToolDefinition, arguments: dict[str, Any]) -> BaseModel:
+    """按真实 JSON 传输语义解析工具参数，同时保留契约的 strict 校验。"""
+
+    return tool.input_model.model_validate_json(
+        json.dumps(arguments, ensure_ascii=False, allow_nan=False)
+    )
+
+
 class ActionService:
     def __init__(
         self,
@@ -433,8 +441,8 @@ class ActionService:
                 retriable=False,
             )
         try:
-            tool.input_model.model_validate(request.arguments)
-        except ValidationError as error:
+            _parse_tool_arguments(tool, request.arguments)
+        except (ValidationError, TypeError, ValueError) as error:
             return ActionFailure(code="invalid_arguments", message=str(error), retriable=False)
         return None
 
@@ -512,7 +520,7 @@ class ActionService:
             required_lease_owner=self.worker_id,
         )
         try:
-            arguments: BaseModel = tool.input_model.model_validate(snapshot.request.arguments)
+            arguments = _parse_tool_arguments(tool, snapshot.request.arguments)
             outcome = await tool.executor.execute(snapshot, arguments)
         except UncertainEffectError as error:
             outcome_kind = ExecutionOutcomeKind.UNKNOWN

@@ -1,0 +1,55 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.git-push-receipt/v1",
+      "default": "harnessix.git-push-receipt/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "push_id": {
+      "format": "uuid",
+      "title": "Push Id",
+      "type": "string"
+    },
+    "remote_name": {
+      "title": "Remote Name",
+      "type": "string"
+    },
+    "remote_ref": {
+      "title": "Remote Ref",
+      "type": "string"
+    },
+    "remote_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Remote Oid",
+      "type": "string"
+    },
+    "remote_url_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Remote Url Sha256",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "push_id",
+    "remote_name",
+    "remote_ref",
+    "remote_oid",
+    "remote_url_sha256",
+    "observed_at",
+    "digest"
+  ],
+  "title": "GitPushReceipt",
+  "type": "object"
+}

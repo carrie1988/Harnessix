@@ -1,0 +1,880 @@
+{
+  "$defs": {
+    "CanonicalActionResource": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.action-resource/v1",
+          "default": "harnessix.action-resource/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "workspace",
+            "process",
+            "network",
+            "secret",
+            "git_ref",
+            "external"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "execute",
+            "connect",
+            "use",
+            "update"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "identifier_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identifier Sha256",
+          "type": "string"
+        },
+        "attributes_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Attributes Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "access",
+        "identifier_sha256",
+        "attributes_sha256"
+      ],
+      "title": "CanonicalActionResource",
+      "type": "object"
+    },
+    "CodingActionInvocation": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-action-invocation/v1",
+          "default": "harnessix.coding-action-invocation/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "invocation_id": {
+          "format": "uuid",
+          "title": "Invocation Id",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint"
+      ],
+      "title": "CodingActionInvocation",
+      "type": "object"
+    },
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "EnvironmentBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "value_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Value Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value_sha256"
+      ],
+      "title": "EnvironmentBinding",
+      "type": "object"
+    },
+    "ExecutionCapabilityEvidenceV2": {
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "provider": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Version",
+          "type": "string"
+        },
+        "sandbox_levels": {
+          "items": {
+            "enum": [
+              "host_guarded",
+              "host_sandboxed",
+              "container_strong"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Sandbox Levels",
+          "type": "array"
+        },
+        "network_modes": {
+          "items": {
+            "enum": [
+              "none",
+              "limited",
+              "restricted",
+              "full"
+            ],
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Network Modes",
+          "type": "array"
+        },
+        "supports_pty": {
+          "title": "Supports Pty",
+          "type": "boolean"
+        },
+        "supports_background": {
+          "title": "Supports Background",
+          "type": "boolean"
+        },
+        "supports_process_tree": {
+          "title": "Supports Process Tree",
+          "type": "boolean"
+        },
+        "evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Digest",
+          "type": "string"
+        },
+        "spec_version": {
+          "const": "harnessix.execution-capability/v2",
+          "default": "harnessix.execution-capability/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "provider_evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Provider Evidence Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "provider",
+        "provider_version",
+        "sandbox_levels",
+        "network_modes",
+        "supports_pty",
+        "supports_background",
+        "supports_process_tree",
+        "evidence_digest",
+        "provider_evidence_digest"
+      ],
+      "title": "ExecutionCapabilityEvidenceV2",
+      "type": "object"
+    },
+    "ExecutionIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.execution-intent/v1",
+          "default": "harnessix.execution-intent/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "risk_level": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint",
+        "effect_class",
+        "risk_level"
+      ],
+      "title": "ExecutionIntent",
+      "type": "object"
+    },
+    "ExecutionPlanV2": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.execution-plan/v2",
+          "default": "harnessix.execution-plan/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "plan_id": {
+          "format": "uuid",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/ExecutionIntent"
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceSnapshot"
+        },
+        "environment": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EnvironmentBinding"
+          },
+          "maxItems": 128,
+          "title": "Environment",
+          "type": "array"
+        },
+        "secrets": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SecretVersionBinding"
+          },
+          "maxItems": 32,
+          "title": "Secrets",
+          "type": "array"
+        },
+        "sandbox": {
+          "$ref": "#/$defs/SandboxBindingV2"
+        },
+        "policy": {
+          "$ref": "#/$defs/ExecutionPolicyBinding"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/ExecutionCapabilityEvidenceV2"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "workspace",
+        "sandbox",
+        "policy",
+        "capabilities",
+        "fingerprint"
+      ],
+      "title": "ExecutionPlanV2",
+      "type": "object"
+    },
+    "ExecutionPolicyBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/PolicyDecisionKind"
+        },
+        "policy_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "decision",
+        "policy_id",
+        "reason_code"
+      ],
+      "title": "ExecutionPolicyBinding",
+      "type": "object"
+    },
+    "ExternalRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Digest",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "access": {
+          "items": {
+            "enum": [
+              "read",
+              "write",
+              "execute"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Access",
+          "type": "array"
+        }
+      },
+      "required": [
+        "location",
+        "path_digest",
+        "identity",
+        "access"
+      ],
+      "title": "ExternalRoot",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PolicyDecisionKind": {
+      "enum": [
+        "allow",
+        "deny",
+        "require_approval"
+      ],
+      "title": "PolicyDecisionKind",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    },
+    "SandboxBindingV2": {
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "enum": [
+            "host_guarded",
+            "host_sandboxed",
+            "container_strong"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "backend": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Backend",
+          "type": "string"
+        },
+        "backend_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Backend Version",
+          "type": "string"
+        },
+        "network": {
+          "enum": [
+            "none",
+            "limited",
+            "restricted",
+            "full"
+          ],
+          "title": "Network",
+          "type": "string"
+        },
+        "capability_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Capability Digest",
+          "type": "string"
+        },
+        "profile_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "backend",
+        "backend_version",
+        "network",
+        "capability_digest",
+        "profile_digest"
+      ],
+      "title": "SandboxBindingV2",
+      "type": "object"
+    },
+    "SecretVersionBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "target": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "target"
+      ],
+      "title": "SecretVersionBinding",
+      "type": "object"
+    },
+    "TrustedToolBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.trusted-tool-binding/v1",
+          "default": "harnessix.trusted-tool-binding/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "input_schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Input Schema Sha256",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "risk_level": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "recovery_mode": {
+          "enum": [
+            "none",
+            "durable_ledger",
+            "external_reconcile"
+          ],
+          "title": "Recovery Mode",
+          "type": "string"
+        },
+        "executor_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Executor Id",
+          "type": "string"
+        },
+        "binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Binding Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint",
+        "input_schema_sha256",
+        "effect_class",
+        "risk_level",
+        "recovery_mode",
+        "executor_id",
+        "binding_digest"
+      ],
+      "title": "TrustedToolBinding",
+      "type": "object"
+    },
+    "WorkspaceResourceObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "execute"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "missing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Sha256"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location",
+        "path",
+        "access",
+        "kind",
+        "identity",
+        "size"
+      ],
+      "title": "WorkspaceResourceObservation",
+      "type": "object"
+    },
+    "WorkspaceSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.workspace-snapshot/v1",
+          "default": "harnessix.workspace-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "workspace_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "root_path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Path Digest",
+          "type": "string"
+        },
+        "root_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Identity",
+          "type": "string"
+        },
+        "cwd": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Cwd",
+          "type": "string"
+        },
+        "external_roots": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExternalRoot"
+          },
+          "maxItems": 16,
+          "title": "External Roots",
+          "type": "array"
+        },
+        "resources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WorkspaceResourceObservation"
+          },
+          "maxItems": 256,
+          "title": "Resources",
+          "type": "array"
+        },
+        "algorithm": {
+          "const": "selected-resources-sha256/v1",
+          "default": "selected-resources-sha256/v1",
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "workspace_id",
+        "root_path_digest",
+        "root_identity",
+        "cwd",
+        "revision"
+      ],
+      "title": "WorkspaceSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action-route-plan/v1",
+      "default": "harnessix.action-route-plan/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "invocation": {
+      "$ref": "#/$defs/CodingActionInvocation"
+    },
+    "binding": {
+      "$ref": "#/$defs/TrustedToolBinding"
+    },
+    "resources": {
+      "items": {
+        "$ref": "#/$defs/CanonicalActionResource"
+      },
+      "maxItems": 512,
+      "title": "Resources",
+      "type": "array"
+    },
+    "resources_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Resources Sha256",
+      "type": "string"
+    },
+    "execution": {
+      "$ref": "#/$defs/ExecutionPlanV2"
+    },
+    "external_action_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "External Action Id"
+    },
+    "fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "invocation",
+    "binding",
+    "resources",
+    "resources_sha256",
+    "execution",
+    "fingerprint"
+  ],
+  "title": "ActionRoutePlan",
+  "type": "object"
+}

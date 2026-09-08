@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action-resource/v1",
+      "default": "harnessix.action-resource/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "workspace",
+        "process",
+        "network",
+        "secret",
+        "git_ref",
+        "external"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "access": {
+      "enum": [
+        "read",
+        "write",
+        "execute",
+        "connect",
+        "use",
+        "update"
+      ],
+      "title": "Access",
+      "type": "string"
+    },
+    "identifier_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Identifier Sha256",
+      "type": "string"
+    },
+    "attributes_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Attributes Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "access",
+    "identifier_sha256",
+    "attributes_sha256"
+  ],
+  "title": "CanonicalActionResource",
+  "type": "object"
+}

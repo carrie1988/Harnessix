@@ -165,9 +165,17 @@ class _GitRunner:
         index_file: Path | None = None,
         accepted: tuple[int, ...] = (0,),
         timeout: float = 20.0,
+        allowed_protocols: tuple[str, ...] = ("file",),
     ) -> subprocess.CompletedProcess[bytes]:
         if _executable_identity(self.path) != self.identity:
             raise KernelError("git_executable_changed", "Git可执行文件身份已经变化")
+        if (
+            not allowed_protocols
+            or len(set(allowed_protocols)) != len(allowed_protocols)
+            or allowed_protocols != tuple(sorted(allowed_protocols))
+            or any(value not in {"file", "https", "ssh"} for value in allowed_protocols)
+        ):
+            raise KernelError("git_protocol_invalid", "Git协议白名单无效")
         environment = {
             "PATH": os.pathsep.join((str(self.path.parent), os.defpath)),
             "HOME": str(self._home),
@@ -181,7 +189,7 @@ class _GitRunner:
             "GIT_OPTIONAL_LOCKS": "0",
             "GIT_LITERAL_PATHSPECS": "1",
             "GIT_NO_REPLACE_OBJECTS": "1",
-            "GIT_ALLOW_PROTOCOL": "file",
+            "GIT_ALLOW_PROTOCOL": ":".join(allowed_protocols),
             "TMPDIR": str(self._temp),
             "TEMP": str(self._temp),
             "TMP": str(self._temp),

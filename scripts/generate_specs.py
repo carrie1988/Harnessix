@@ -54,6 +54,9 @@ from harnessix.delivery.git_contracts import (
     GitCheckpoint,
     GitCommitRecord,
     GitCommitSpec,
+    GitPushActionInput,
+    GitPushIntent,
+    GitPushReceipt,
     GitRepositoryBinding,
     ManagedGitWorktreeBinding,
     ManagedGitWorktreePlan,
@@ -153,6 +156,15 @@ from harnessix.tools.search_contracts import (
     GlobOutput,
     GrepInput,
     GrepOutput,
+)
+from harnessix.trusted_actions.contracts import (
+    ActionAuditEvent,
+    ActionExecutionOutcome,
+    ActionRoutePlan,
+    ActionRouteSnapshot,
+    CanonicalActionResource,
+    CodingActionInvocation,
+    TrustedToolBinding,
 )
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 
@@ -285,6 +297,16 @@ def main() -> None:
         ("git-checkpoint", GitCheckpoint),
         ("git-commit-spec", GitCommitSpec),
         ("git-commit-record", GitCommitRecord),
+        ("git-push-intent", GitPushIntent),
+        ("git-push-action-input", GitPushActionInput),
+        ("git-push-receipt", GitPushReceipt),
+        ("action-resource", CanonicalActionResource),
+        ("trusted-tool-binding", TrustedToolBinding),
+        ("coding-action-invocation", CodingActionInvocation),
+        ("action-route-plan", ActionRoutePlan),
+        ("action-execution-outcome", ActionExecutionOutcome),
+        ("action-audit-event", ActionAuditEvent),
+        ("action-route-snapshot", ActionRouteSnapshot),
         ("network-destination", NetworkDestination),
         ("network-policy", NetworkPolicy),
         ("network-policy-snapshot", NetworkPolicySnapshot),

@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.trusted-tool-binding/v1",
+      "default": "harnessix.trusted-tool-binding/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "builtin",
+        "mcp",
+        "skill",
+        "hook",
+        "custom"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Source Id",
+      "type": "string"
+    },
+    "tool": {
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+      "title": "Tool",
+      "type": "string"
+    },
+    "tool_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Tool Version",
+      "type": "string"
+    },
+    "tool_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Tool Fingerprint",
+      "type": "string"
+    },
+    "input_schema_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Input Schema Sha256",
+      "type": "string"
+    },
+    "effect_class": {
+      "$ref": "#/$defs/EffectClass"
+    },
+    "risk_level": {
+      "$ref": "#/$defs/RiskLevel"
+    },
+    "recovery_mode": {
+      "enum": [
+        "none",
+        "durable_ledger",
+        "external_reconcile"
+      ],
+      "title": "Recovery Mode",
+      "type": "string"
+    },
+    "executor_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Executor Id",
+      "type": "string"
+    },
+    "binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Binding Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "source_id",
+    "tool",
+    "tool_version",
+    "tool_fingerprint",
+    "input_schema_sha256",
+    "effect_class",
+    "risk_level",
+    "recovery_mode",
+    "executor_id",
+    "binding_digest"
+  ],
+  "title": "TrustedToolBinding",
+  "type": "object"
+}

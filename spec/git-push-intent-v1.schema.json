@@ -1,0 +1,94 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.git-push-intent/v1",
+      "default": "harnessix.git-push-intent/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "push_id": {
+      "format": "uuid",
+      "title": "Push Id",
+      "type": "string"
+    },
+    "repository_binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Repository Binding Digest",
+      "type": "string"
+    },
+    "remote_name": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "title": "Remote Name",
+      "type": "string"
+    },
+    "remote_url_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Remote Url Sha256",
+      "type": "string"
+    },
+    "local_ref": {
+      "maxLength": 1024,
+      "minLength": 12,
+      "title": "Local Ref",
+      "type": "string"
+    },
+    "local_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Local Oid",
+      "type": "string"
+    },
+    "remote_ref": {
+      "maxLength": 1024,
+      "minLength": 12,
+      "title": "Remote Ref",
+      "type": "string"
+    },
+    "expected_remote_oid": {
+      "anyOf": [
+        {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Remote Oid"
+    },
+    "force_mode": {
+      "default": "fast_forward_only",
+      "enum": [
+        "fast_forward_only",
+        "force_with_lease"
+      ],
+      "title": "Force Mode",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "push_id",
+    "repository_binding_digest",
+    "remote_name",
+    "remote_url_sha256",
+    "local_ref",
+    "local_oid",
+    "remote_ref",
+    "idempotency_key",
+    "digest"
+  ],
+  "title": "GitPushIntent",
+  "type": "object"
+}

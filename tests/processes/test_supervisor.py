@@ -222,7 +222,7 @@ async def test_timeout_kills_descendant_process_group(tmp_path: Path) -> None:
         spec = build_process_spec(
             invocation="argv",
             argv=(sys.executable, "-I", "-c", code, str(marker)),
-            timeout_seconds=0.3,
+            timeout_seconds=2.0,
         )
         plan = _plan(workspace, spec, supervisor)
         handle = await supervisor.start(

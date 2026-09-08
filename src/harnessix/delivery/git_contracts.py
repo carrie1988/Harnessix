@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ntpath
 import posixpath
+import re
 from datetime import datetime
 from typing import Annotated, Literal, Self
 from uuid import UUID
@@ -18,6 +19,37 @@ GitWorktreeState = Literal["prepared", "creating", "ready", "diverged", "unknown
 GitCommitState = Literal[
     "prepared", "committing", "interrupted", "committed", "diverged", "unknown"
 ]
+GitPushForceMode = Literal["fast_forward_only", "force_with_lease"]
+
+_GIT_OBJECT_ID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+_GIT_REMOTE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+
+def validate_git_remote_name(value: str) -> None:
+    if _GIT_REMOTE_NAME.fullmatch(value) is None:
+        raise ValueError("Git remote名称无效")
+
+
+def validate_git_branch_ref(value: str) -> None:
+    components = value.split("/")
+    if (
+        len(value) > 1024
+        or not value.startswith("refs/heads/")
+        or len(components) < 3
+        or any(not component or component.startswith(".") for component in components)
+        or any(component.endswith(".lock") for component in components)
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+        or any(character in " ~^:?*[\\" for character in value)
+        or value.endswith(("/", "."))
+        or ".." in value
+        or "@{" in value
+    ):
+        raise ValueError("Git branch ref无效")
+
+
+def validate_git_object_id(value: str) -> None:
+    if _GIT_OBJECT_ID.fullmatch(value) is None:
+        raise ValueError("Git对象ID无效")
 
 
 class GitRepositoryBinding(DeliveryContract):
@@ -52,6 +84,76 @@ class GitRepositoryBinding(DeliveryContract):
 
 def git_repository_binding_digest(binding: GitRepositoryBinding) -> str:
     return canonical_digest(binding.model_dump(mode="json", exclude={"digest"}, warnings="error"))
+
+
+class GitPushIntent(DeliveryContract):
+    spec_version: Literal["harnessix.git-push-intent/v1"] = "harnessix.git-push-intent/v1"
+    push_id: UUID
+    repository_binding_digest: Revision
+    remote_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    remote_url_sha256: Revision
+    local_ref: str = Field(min_length=12, max_length=1024)
+    local_oid: GitObjectId
+    remote_ref: str = Field(min_length=12, max_length=1024)
+    expected_remote_oid: GitObjectId | None = None
+    force_mode: GitPushForceMode = "fast_forward_only"
+    idempotency_key: str = Field(min_length=1, max_length=256)
+    digest: Revision
+
+    @model_validator(mode="after")
+    def complete_push_intent(self) -> Self:
+        try:
+            validate_git_remote_name(self.remote_name)
+            validate_git_branch_ref(self.local_ref)
+            validate_git_branch_ref(self.remote_ref)
+            validate_git_object_id(self.local_oid)
+            if self.expected_remote_oid is not None:
+                validate_git_object_id(self.expected_remote_oid)
+        except ValueError:
+            raise ValueError("Git Push Intent绑定无效") from None
+        if (
+            (
+                self.expected_remote_oid is not None
+                and len(self.expected_remote_oid) != len(self.local_oid)
+            )
+            or not self.idempotency_key.strip()
+            or self.digest != git_push_intent_digest(self)
+        ):
+            raise ValueError("Git Push Intent绑定无效")
+        return self
+
+
+def git_push_intent_digest(intent: GitPushIntent) -> str:
+    return canonical_digest(intent.model_dump(mode="json", exclude={"digest"}, warnings="error"))
+
+
+class GitPushActionInput(DeliveryContract):
+    spec_version: Literal["harnessix.git-push-action-input/v1"] = (
+        "harnessix.git-push-action-input/v1"
+    )
+    route_plan_id: UUID
+    route_plan_fingerprint: Revision
+    external_action_id: UUID
+    intent: GitPushIntent
+
+
+class GitPushReceipt(DeliveryContract):
+    spec_version: Literal["harnessix.git-push-receipt/v1"] = "harnessix.git-push-receipt/v1"
+    push_id: UUID
+    remote_name: str
+    remote_ref: str
+    remote_oid: GitObjectId
+    remote_url_sha256: Revision
+    observed_at: AwareDatetime
+    digest: Revision
+
+    @model_validator(mode="after")
+    def complete_receipt(self) -> Self:
+        if self.digest != canonical_digest(
+            self.model_dump(mode="json", exclude={"digest"}, warnings="error")
+        ):
+            raise ValueError("Git Push Receipt摘要不一致")
+        return self
 
 
 class ManagedGitWorktreePlan(DeliveryContract):

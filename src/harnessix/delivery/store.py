@@ -211,7 +211,12 @@ class SQLiteWorkspaceTransactionStore:
         if not _valid_digest(digest):
             raise KernelError("delivery_blob_invalid", "Workspace事务Blob摘要无效")
         path = self._blobs / digest
-        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_BINARY", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
         descriptor: int | None = None
         try:
             descriptor = os.open(path, flags)
@@ -255,7 +260,13 @@ class SQLiteWorkspaceTransactionStore:
                 raise KernelError("delivery_blob_conflict", "Workspace事务Blob发生冲突")
             return
         temporary = self._blobs / f".{digest}.{uuid4().hex}.tmp"
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
+        flags = (
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_BINARY", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+        )
         descriptor: int | None = None
         try:
             descriptor = os.open(temporary, flags, 0o600)
