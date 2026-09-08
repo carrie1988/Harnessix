@@ -25,7 +25,11 @@ from harnessix.execution.planner import (
 from harnessix.processes.supervision_contracts import ProcessSpec
 from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.supervisor import WindowsProcessSupervisor
-from harnessix.processes.windows_job import WindowsJobObject
+from harnessix.processes.windows_job import (
+    CREATE_NEW_PROCESS_GROUP,
+    CREATE_SUSPENDED,
+    WindowsJobObject,
+)
 from harnessix.secrets.provider import (
     EnvironmentSecretProvider,
     EnvironmentSecretSource,
@@ -102,6 +106,8 @@ def _is_running(pid: int) -> bool:
     if not handle:
         return False
     try:
+        kernel32.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        kernel32.WaitForSingleObject.restype = wintypes.DWORD
         return kernel32.WaitForSingleObject(handle, 0) == 258
     finally:
         kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
@@ -261,10 +267,7 @@ async def test_windows_owner_loss_closes_job_and_restart_reconciles(tmp_path: Pa
 def test_windows_job_assigns_suspended_process_before_resume() -> None:
     process = subprocess.Popen(
         (sys.executable, "-I", "-c", "import time; time.sleep(30)"),
-        creationflags=(
-            subprocess.CREATE_SUSPENDED  # type: ignore[attr-defined]
-            | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
-        ),
+        creationflags=(CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP),
     )
     try:
         with WindowsJobObject() as job:

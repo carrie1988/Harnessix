@@ -722,6 +722,18 @@ class WindowsProcessSupervisor(PosixProcessSupervisor):
         handle = msvcrt.get_osfhandle(read_fd)  # type: ignore[attr-defined]
         startup = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
         startup.lpAttributeList = {"handle_list": [handle]}
+        system_root = os.environ.get("SystemRoot", r"C:\Windows")
+        owner_environment = {
+            "PATH": os.pathsep.join(
+                (
+                    str(Path(sys.executable).parent),
+                    str(Path(system_root) / "System32"),
+                    system_root,
+                )
+            ),
+            "SystemRoot": system_root,
+            "WINDIR": system_root,
+        }
         with _WINDOWS_SPAWN_LOCK:
             os.set_handle_inheritable(handle, True)  # type: ignore[attr-defined]
             try:
@@ -736,7 +748,7 @@ class WindowsProcessSupervisor(PosixProcessSupervisor):
                         str(run_directory),
                     ),
                     cwd=self._root,
-                    env={"PATH": os.environ.get("SystemRoot", r"C:\Windows")},
+                    env=owner_environment,
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

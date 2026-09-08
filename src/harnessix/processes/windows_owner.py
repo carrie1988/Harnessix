@@ -27,7 +27,11 @@ from harnessix.processes.windows_conpty import (
     WindowsTtyInputNormalizer,
     spawn_conpty,
 )
-from harnessix.processes.windows_job import WindowsJobObject
+from harnessix.processes.windows_job import (
+    CREATE_NEW_PROCESS_GROUP,
+    CREATE_SUSPENDED,
+    WindowsJobObject,
+)
 
 _READ_CHUNK_BYTES = 64 * 1024
 _PROGRESS_INTERVAL_SECONDS = 0.25
@@ -129,13 +133,10 @@ class _Owner:
             if self.request.stdin == "pipe":
                 threading.Thread(target=self._stdin_writer, daemon=True).start()
             else:
-                conpty.close_input()
+                conpty.signal_eof()
             self._publish("running")
             return
-        flags = (
-            subprocess.CREATE_SUSPENDED  # type: ignore[attr-defined]
-            | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
-        )
+        flags = CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP
         self.process = subprocess.Popen(
             self.request.argv,
             cwd=self.request.cwd,
@@ -205,7 +206,7 @@ class _Owner:
                     self.process.stdin.write(data)
                     self.process.stdin.flush()
             if isinstance(self.process, WindowsConPtyProcess):
-                self.process.close_input()
+                self.process.signal_eof()
             else:
                 assert self.process.stdin is not None
                 self.process.stdin.close()

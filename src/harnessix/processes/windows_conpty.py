@@ -19,6 +19,7 @@ _WAIT_TIMEOUT = 258
 _INFINITE = 0xFFFFFFFF
 _MIN_CONPTY_BUILD = 17763
 _PSEUDOCONSOLE_RESIZE_QUIRK = 0x2
+_CONSOLE_EOF = b"\x1a\r"
 
 
 class WindowsTtyInputNormalizer:
@@ -210,6 +211,17 @@ class WindowsConPtyProcess:
         if self.input_fd is not None:
             os.close(self.input_fd)
             self.input_fd = None
+
+    def signal_eof(self) -> None:
+        """向终端发送Windows控制台EOF键，不提前关闭ConPTY传输管道。"""
+        if self.input_fd is None:
+            return
+        view = memoryview(_CONSOLE_EOF)
+        while view:
+            written = os.write(self.input_fd, view)
+            if written <= 0:
+                raise OSError("short ConPTY EOF write")
+            view = view[written:]
 
     def close_pseudoconsole(self) -> None:
         if self._pseudoconsole:

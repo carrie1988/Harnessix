@@ -1385,6 +1385,6 @@ Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capabil
 - 启动失败以无PID的`failed/launch_failed`终结，同process id重复调用不重放；回执PID或身份被篡改不能通过MAC；
 - Windows输入CR/LF/退格跨分片规范化的平台中立回归。
 
-Windows真机门禁包含：挂起目标加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
+Windows真机门禁包含：显式Win32挂起标志创建目标、加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize、`Ctrl+Z + CR`逻辑EOF、不提前关闭传输句柄和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
 
 Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、`process-owner-command-v1`和`process-owner-receipt-v1` Schema；Process Lease增加确定性启动失败终态，Output Observation增加持久前缀摘要。连续生成聚合SHA256为`d8c98c0340b25c0afc3da00e071f2a5b89d107fbeeb0f59e2f3148836fe302d8`。该候选未调用模型API、SSH或远程服务器。

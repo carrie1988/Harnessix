@@ -76,16 +76,21 @@ Harnessix 0.7 不实现“看起来像 Sandbox”的 Host 文本检查。`none` 
 3. 先普通 spawn 再加入 Job Object 存在子进程在绑定前逃逸的竞态，Codex 源码对此有明确注释。
 4. 无竞态路径使用 `CREATE_SUSPENDED`：创建挂起进程、加入 Job Object、再恢复；测试验证直接子进程属于 Job Object，且终止会清理进程树。
 5. Windows PTY 使用 ConPTY；POSIX 使用进程组，并在 Linux 路径设置父进程死亡信号。
+6. ConPTY 输入是终端按键流而不是普通重定向stdin。关闭其输入传输管道不能可靠表达应用EOF，关闭Pseudo Console还会向附着进程发送`CTRL_CLOSE_EVENT`；控制台应用在processed-input模式下以`Ctrl+Z`表达EOF。
 
 **独立结论**
 
 Harnessix Windows 原生进程端口必须采用挂起启动后加入 Job Object 再恢复；如果当前宿主 Job 限制、API 缺失或绑定失败，启动整体失败，不能退回仅终止根 PID。后台进程必须由持久 `ProcessLease` 所有，不能仅存在内存 Map。
+
+PTY的`close_stdin`不能直接关闭ConPTY输入句柄，否则可能把正常完成误报为`0xC000013A`。Windows端发送`Ctrl+Z + CR`终端EOF键并逻辑关闭写侧，传输句柄保留至目标结束；原始模式程序若不解释该键，仍由已批准的deadline、取消或显式停止收敛，不伪造普通pipe EOF语义。
 
 **源码索引**
 
 - [`exec-server/README.md`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/exec-server/README.md)
 - [`utils/pty/src/win/job.rs`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/utils/pty/src/win/job.rs)
 - [`utils/pty/src/windows_tests.rs`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/utils/pty/src/windows_tests.rs)
+- [Microsoft Terminal：ConPTY输入关闭与EOF讨论](https://github.com/microsoft/terminal/discussions/15006)
+- [Microsoft Terminal：`ClosePseudoConsole`发送`CTRL_CLOSE_EVENT`](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalConnection/ConptyConnection.cpp)
 
 ## 4. OpenCode 事实
 
