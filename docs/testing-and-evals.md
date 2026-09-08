@@ -1392,7 +1392,7 @@ Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、
 
 ## 68. 0.7.3d Container统一Process候选验收（2026-09-08）
 
-状态：Container执行合同、确定性物化、统一Process owner、立即网络复核和残留清理已进入候选；必须在远端真实Container及完整三平台矩阵通过后才能关闭0.7.3。
+状态：Container执行合同、确定性物化、统一Process owner、立即网络复核和残留清理已完成；实现提交`5f50d4b`的[CI 34239365467](https://github.com/carrie1988/Harnessix/actions/runs/34239365467)六项任务全部通过，0.7.3关闭。
 
 候选验证覆盖：
 
@@ -1405,6 +1405,8 @@ Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、
 本地候选专项为**181 passed、6 skipped**；6项仅包含平台限定或本机未配置真实Docker的测试。最终`make check`为**3051 passed、11 skipped，263.52秒**；Ruff格式与规则检查584个文件通过，Mypy严格检查200个源文件通过。Schema连续生成两次聚合SHA256均为`a7ad516d95174287376269f1d7104286774affa8556467c58afe4bc4b1e9603c`。Process Lease在0.7.3尚未关闭前补充不可变launch binding，私有Process Store版本由1升为2；版本1候选状态不能安全推导该摘要，因此旧库明确失败关闭而不伪造迁移，已完成未知版本、损坏记录及全新v2重开测试。
 
 Windows实现提交`3ca736f`的[CI 34235932400](https://github.com/carrie1988/Harnessix/actions/runs/34235932400)中，Windows、macOS、Python 3.12、Python 3.13和PostgreSQL任务通过，证明pipe/Secret、超时进程树、owner丢失恢复、挂起Job分配及ConPTY Unicode/resize已在真机闭环。Container任务在首次拉取镜像后紧接的5秒Docker能力探测超时，未进入产品测试；该结果只记录基础设施冷启动现象，不作为Container通过证据，也不以重跑替代下一候选提交的完整门禁。
+
+后续候选提交`5f50d4b`的六矩阵首次运行全部通过。真实Container任务使用统一`ContainerProcessRuntime → PosixProcessSupervisor`路径完成非root、零Capability、只读边界、禁网、Secret脱敏、cgroup PID/内存、tmpfs实际超限及执行后无残留验证；Windows真机重复通过Job Object、owner-loss和ConPTY门禁。该运行不是对旧失败任务的重跑，关闭了0.7.3剩余的Container与综合矩阵证据。
 
 ## 69. 0.7.4a Workspace Transaction合同与账本候选验收（2026-09-08）
 

@@ -326,7 +326,7 @@ Windows pipe目标使用显式Win32 `CREATE_SUSPENDED → AssignProcessToJobObje
 
 Container实例使用`harnessix-process-<uuid>`名称和双标签核对生命周期。启动前固定`container ls --filter label=...`要求不存在同身份实例；自然退出、超时、取消、输出限制或调用方取消后，包装句柄以固定`container rm --force`清理残留并再次查询证明为空。启动半途失败也执行相同清理；宿主恢复通过Execution Plan中的ContainerExecutionSpec和Process Lease先核对owner回执，再执行幂等Container清理。查询失败、多个身份、名称或标签不匹配、删除失败或删除后仍存在均返回`process_cleanup_failed`，不得把内部Process Lease的退出误报为Container已完成。
 
-该切片不把Docker Socket交给不可信工作负载，也不允许模型构造生命周期命令。Container生命周期调用只接受受信执行合同派生的固定argv，响应各限64 KiB并带时限。下一步以真实固定摘要BusyBox验证统一owner、只读Workspace、禁网、Secret流式脱敏、cgroup限制、tmpfs超限和无残留实例；三平台及真实Container CI全部通过后关闭0.7.3。
+该切片不把Docker Socket交给不可信工作负载，也不允许模型构造生命周期命令。Container生命周期调用只接受受信执行合同派生的固定argv，响应各限64 KiB并带时限。固定摘要BusyBox已经通过统一owner、只读Workspace、禁网、Secret流式脱敏、cgroup限制、tmpfs超限和无残留实例验证；Python 3.12/3.13、macOS、Windows、PostgreSQL和真实Container六矩阵均通过，0.7.3关闭。统一Tool入口仍属于0.7.5，不能由本节推导为所有旧工具已经迁移。
 
 ## 13. 0.7.4事务性交付与Git闭环详细设计
 

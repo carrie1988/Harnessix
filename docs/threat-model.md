@@ -4,7 +4,7 @@
 - 更新日期：2026-09-08
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理。上述新边界尚未在0.7.5接管全部既有Tool，Container综合门禁也未关闭；actor身份认证及MCP/Hook强制接入仍在后续实施。目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。上述新边界尚未在0.7.5接管全部既有Tool；actor身份认证及MCP/Hook强制接入仍在后续实施。目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
 
 Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。0.7.3已实现挂起启动后加入不可breakaway Job再恢复，以及ConPTY与Job启动属性原子绑定，单独Windows真机故障门禁已经通过，综合Process/Container切片仍待关闭；Git与发行物尚未完成。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整产品门禁完成前，Windows仍不属于当前产品支持范围。
 
