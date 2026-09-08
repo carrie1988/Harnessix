@@ -195,7 +195,62 @@ Harnessix 可采用有序规则和外部目录单独展示，但审批必须继�
 6. Commit 只消费已批准交付计划；Push 永远形成新的 Action。
 7. 0.4.3c 的真实 Provider 计价适用性不属于可信执行实现，按路线图留到 0.9 Provider 发布证据门禁关闭。
 
-## 9. 可复查命令
+## 9. 0.7.4事务交付专项求证
+
+### 9.1 Codex受管Worktree
+
+**事实**
+
+1. Codex `worktree`组件先解析精确仓库根与基准commit，再以`worktree add --detach --no-checkout`创建受管checkout，随后用固定`reset --hard --no-recurse-submodules`物化文件；中途失败会删除不完整worktree。
+2. Git命令主动清除继承的`GIT_DIR`、`GIT_WORK_TREE`、`GIT_INDEX_FILE`、replace refs、object目录等仓库选择环境，禁用terminal prompt、hooks、fsmonitor、attributes来源，并在工作树操作前枚举和关闭配置的clean/smudge/process filter。
+3. 重开受管worktree时同时核对受管目录布局、`.git`普通文件、common directory和管理目录`gitdir`回链，避免陈旧注册被其他checkout占用。
+
+**独立结论**
+
+Harnessix的Git执行环境不能只设置`GIT_CONFIG_GLOBAL=/dev/null`。受管worktree创建、重开、暂存和commit都必须清除仓库选择环境并固定hooks、fsmonitor、attributes和filter语义；worktree路径及管理回链必须进入持久身份。
+
+**源码索引**
+
+- [`worktree/src/git.rs`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/worktree/src/git.rs)
+- [`worktree/src/lib.rs`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/worktree/src/lib.rs)
+- [`worktree/src/git_tests.rs`](https://github.com/openai/codex/blob/d6489472f3c15e87d2d7763a5fde033545c530f8/codex-rs/worktree/src/git_tests.rs)
+
+### 9.2 OpenCode Tree、Diff与恢复
+
+**事实**
+
+1. OpenCode通过刷新index并执行`write-tree`捕获tracked与受限untracked文件；预览使用独立`GIT_INDEX_FILE`、`read-tree`和`update-index --cacheinfo`生成候选tree，不直接改变主index。
+2. tree diff逐路径输出新增、删除、修改、行数和文本patch；binary单独标记，不把空patch误认为无变化。
+3. tree restore按路径checkout或删除，完整checkout使用`read-tree`和`checkout-index --all --force`；这些操作仍是逐成员效果，不提供跨路径内核原子性。
+4. 独立worktree使用detached HEAD创建；变更捕获同时处理tracked binary patch与untracked文件。
+
+**独立结论**
+
+Git tree适合作为Checkpoint和commit前事实，但不能代替Workspace事务。Harnessix使用私有CAS保存before/after文件镜像、独立index生成预期tree、逐成员write-ahead游标和事后核对；恢复只能根据实际文件或Git tree判定before、after、interrupted、diverged或unknown。
+
+**源码索引**
+
+- [`packages/core/src/git.ts`](https://github.com/anomalyco/opencode/blob/d6855b6b47a8433462ac6aeeba882ccf734cb7f1/packages/core/src/git.ts)
+
+### 9.3 Claude Code逆向仓库的Git授权佐证
+
+**事实，仅作辅助佐证**
+
+1. Commit和Push是不同工具权限，单次Push授权不扩展到后续上下文；强制Push和破坏性checkout/reset被单独视为高风险。
+2. Bash/PowerShell安全分析必须防止命令拼接、环境前缀和变量展开把看似Commit的授权扩大为Push或其他命令。
+3. worktree辅助逻辑会处理`core.hooksPath`与Husky，但这同时证明Hook是可执行控制面，不能只作为普通仓库文件处理。
+
+**独立结论**
+
+Harnessix不从Shell文本推断Git写权限。Commit、创建/移动本地ref和Push分别使用结构化合同；0.7默认禁用仓库Hook与外部filter，未来启用必须作为新的可执行资源进入Sandbox和批准指纹。Push不属于Workspace事务，也不继承Commit批准。
+
+**源码索引**
+
+- [`src/commands/commit.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/commands/commit.ts)
+- [`src/commands/commit-push-pr.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/commands/commit-push-pr.ts)
+- [`src/tools/BashTool/bashSecurity.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/tools/BashTool/bashSecurity.ts)
+
+## 10. 可复查命令
 
 ~~~bash
 git -C "$HARNESSIX_RESEARCH_ROOT/codex" show -s --format='%H %cI %s' \

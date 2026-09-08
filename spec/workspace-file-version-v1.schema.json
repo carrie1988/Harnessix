@@ -1,0 +1,54 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "presence": {
+      "enum": [
+        "absent",
+        "file"
+      ],
+      "title": "Presence",
+      "type": "string"
+    },
+    "sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sha256"
+    },
+    "size": {
+      "maximum": 8388608,
+      "minimum": 0,
+      "title": "Size",
+      "type": "integer"
+    },
+    "mode": {
+      "anyOf": [
+        {
+          "enum": [
+            420,
+            493
+          ],
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mode"
+    }
+  },
+  "required": [
+    "presence",
+    "size"
+  ],
+  "title": "WorkspaceFileVersion",
+  "type": "object"
+}

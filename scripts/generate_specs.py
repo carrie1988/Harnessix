@@ -42,6 +42,12 @@ from harnessix.context.tool_result_contracts import (
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
+from harnessix.delivery.contracts import (
+    WorkspaceFileVersion,
+    WorkspaceMutation,
+    WorkspaceTransactionPlan,
+    WorkspaceTransactionRecord,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
@@ -255,6 +261,10 @@ def main() -> None:
         ("execution-capability-evidence", ExecutionCapabilityEvidence),
         ("execution-plan", ExecutionPlan),
         ("execution-approval", ExecutionApprovalCheckpoint),
+        ("workspace-file-version", WorkspaceFileVersion),
+        ("workspace-mutation", WorkspaceMutation),
+        ("workspace-transaction-plan", WorkspaceTransactionPlan),
+        ("workspace-transaction-record", WorkspaceTransactionRecord),
         ("network-destination", NetworkDestination),
         ("network-policy", NetworkPolicy),
         ("network-policy-snapshot", NetworkPolicySnapshot),

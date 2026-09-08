@@ -327,3 +327,33 @@ Windows pipe目标使用显式Win32 `CREATE_SUSPENDED → AssignProcessToJobObje
 Container实例使用`harnessix-process-<uuid>`名称和双标签核对生命周期。启动前固定`container ls --filter label=...`要求不存在同身份实例；自然退出、超时、取消、输出限制或调用方取消后，包装句柄以固定`container rm --force`清理残留并再次查询证明为空。启动半途失败也执行相同清理；宿主恢复通过Execution Plan中的ContainerExecutionSpec和Process Lease先核对owner回执，再执行幂等Container清理。查询失败、多个身份、名称或标签不匹配、删除失败或删除后仍存在均返回`process_cleanup_failed`，不得把内部Process Lease的退出误报为Container已完成。
 
 该切片不把Docker Socket交给不可信工作负载，也不允许模型构造生命周期命令。Container生命周期调用只接受受信执行合同派生的固定argv，响应各限64 KiB并带时限。下一步以真实固定摘要BusyBox验证统一owner、只读Workspace、禁网、Secret流式脱敏、cgroup限制、tmpfs超限和无残留实例；三平台及真实Container CI全部通过后关闭0.7.3。
+
+## 13. 0.7.4事务性交付与Git闭环详细设计
+
+### 13.1 Workspace事务合同与私有CAS
+
+`WorkspaceTransactionPlan v1`绑定transaction id、平台、来源`WorkspaceSnapshot`、有序文件Mutation、创建时间和自摘要。每个Mutation只允许普通文件或缺失状态，分别保存before/after的SHA-256、字节数和0644/0755模式；新增、修改、删除统一表示为同一路径的before/after状态，rename由内容相同且一删一增的两个Mutation在Diff层识别。路径按平台语义唯一排序，`.git`、`.harnessix`、`.codex`、`.agents`及Secret控制面永远拒绝写入。
+
+Planner为每个目标同时捕获文件和全部现存父目录，避免只验证叶子内容而遗漏父目录替换；单文件不超过8 MiB、文件数不超过256、before与after镜像合计不超过32 MiB。公开Plan只含摘要，不携带正文。正文进入当前用户私有状态根的内容寻址存储，写入使用临时文件、`fsync`、原子replace和目录`fsync`，读取时重新核对大小、摘要、权限及对象类型。
+
+`WorkspaceTransactionRecord v1`和append-only事件记录`prepared/publishing/interrupted/published/diverged/unknown`、相邻sequence和已确认游标。SQLite使用WAL、FULL同步、完整payload CAS和冗余列交叉校验。普通文件系统不承诺跨路径单系统调用原子性；产品承诺是任意中断后每个成员都可按before/after CAS归因，不能归因时停止为`diverged`或`unknown`。
+
+### 13.2 发布、恢复与Rollback
+
+发布必须持有跨进程Workspace fencing租约并核对批准fingerprint。首次写入前完整来源Snapshot必须相等；恢复时逐路径读取事实：全部before回到`prepared`，全部after进入`published`，before/after混合进入`interrupted`，出现第三种内容、链接、特殊文件或不可读状态进入`diverged/unknown`。执行器只对当前仍等于before的成员写入after；已经等于after的成员只推进账本，绝不重复写入。
+
+POSIX写入通过root FD和逐段`openat`/no-follow父目录句柄定位；新内容先写同目录唯一临时普通文件，设置模式并`fsync`，再以`replace`或`unlink`提交，随后`fsync`父目录。每次成员事实核对后才推进持久游标；replace/unlink后、记账前崩溃由reconcile识别。Windows普通目录写入在具备抗Reparse Point竞态的句柄相对替换端口前失败关闭，Windows正式交付使用下一节的受管Git worktree。
+
+Rollback不是倒退原记录或执行`reset --hard`，而是从已发布Plan生成新的反向事务：交换每个Mutation的before/after，以当前after事实作为新来源Snapshot，取得新的transaction id和批准。旧事务、旧批准和旧审计保持不可变；用户在发布后产生的第三种内容会使Rollback冲突而不是被删除。
+
+### 13.3 完整Diff与Git Checkpoint
+
+Diff必须列出所有路径、before/after摘要、模式和新增/修改/删除/重命名类别。UTF-8文本生成确定性unified diff；binary或超长单行记录完整文件摘要和字节数，不伪造文本patch。完整Diff正文作为私有Artifact保存并由摘要绑定Plan，模型只接收有界视图。
+
+Git受管模式先绑定精确repository root、HEAD commit/tree、common directory、Git可执行文件身份和干净状态，再在私有根创建detached、no-checkout worktree。固定Git环境清除所有继承的仓库选择变量，关闭prompt、外部配置、replace refs、hooks、fsmonitor、外部attributes和可执行filter；submodule、LFS和稀疏checkout在0.7不支持时失败关闭。重开同时核对`.git`普通文件、common directory、管理回链和受管路径身份。
+
+Checkpoint使用独立`GIT_INDEX_FILE`从基准tree开始，只加入Plan列出的最终路径并生成预期tree，不修改用户index。Commit合同绑定branch、parent、tree、作者、邮箱、消息、Hook策略和Git实现摘要；默认Hook策略为disabled。Commit结果丢失时按worktree HEAD的parent/tree/作者/消息核对，不能仅凭进程返回码重发。创建branch和更新ref使用旧值CAS；已存在branch、来源HEAD变化或非预期tree均失败关闭。
+
+### 13.4 Push边界
+
+Push不属于本节本地事务的隐式尾步骤。`GitPushIntent`只描述remote名称、规范URL摘要、本地/远端ref、预期远端旧OID、force模式和幂等键，由0.7.5 Action Plane独立规划、批准、执行和reconcile。没有独立批准时不得建立网络连接；Commit成功、用户曾允许Git或仓库存在upstream均不能推导Push许可。

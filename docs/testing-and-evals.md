@@ -1405,3 +1405,18 @@ Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、
 本地候选专项为**181 passed、6 skipped**；6项仅包含平台限定或本机未配置真实Docker的测试。最终`make check`为**3051 passed、11 skipped，263.52秒**；Ruff格式与规则检查584个文件通过，Mypy严格检查200个源文件通过。Schema连续生成两次聚合SHA256均为`a7ad516d95174287376269f1d7104286774affa8556467c58afe4bc4b1e9603c`。Process Lease在0.7.3尚未关闭前补充不可变launch binding，私有Process Store版本由1升为2；版本1候选状态不能安全推导该摘要，因此旧库明确失败关闭而不伪造迁移，已完成未知版本、损坏记录及全新v2重开测试。
 
 Windows实现提交`3ca736f`的[CI 34235932400](https://github.com/carrie1988/Harnessix/actions/runs/34235932400)中，Windows、macOS、Python 3.12、Python 3.13和PostgreSQL任务通过，证明pipe/Secret、超时进程树、owner丢失恢复、挂起Job分配及ConPTY Unicode/resize已在真机闭环。Container任务在首次拉取镜像后紧接的5秒Docker能力探测超时，未进入产品测试；该结果只记录基础设施冷启动现象，不作为Container通过证据，也不以重跑替代下一候选提交的完整门禁。
+
+## 69. 0.7.4a Workspace Transaction合同与账本候选验收（2026-09-08）
+
+状态：专项源码求证、ADR修订、领域合同、Planner、私有CAS和append-only SQLite账本已进入候选；尚未执行用户Workspace写入、Rollback或Git命令，不关闭0.7.4。
+
+当前10项确定性测试覆盖：
+
+- 新增、修改、删除组成的有序多文件Plan，逐文件before/after内容、模式和缺失事实，以及目标文件和全部现存父目录Snapshot；
+- `.git`、`.harnessix`、`.codex`、`.agents`与`.env`控制面拒绝，规划末尾来源二次核对；
+- request id、transaction id、平台路径唯一性、总文件数、单文件及总镜像上限和Plan自摘要；
+- before/after正文只进入当前用户私有CAS，Blob写入经临时文件、`fsync`、replace和摘要复核；
+- Store持久重开、同请求幂等、进度后重复保存、请求冲突、Blob篡改、未知Store版本和记录payload损坏失败关闭；
+- `WorkspaceTransactionRecord`以完整Plan、状态、sequence、cursor、开始/结束时间和自摘要构成append-only事件，转移时执行完整payload CAS。
+
+Ruff格式与规则、Mypy严格检查4个新增源文件通过，专项测试为**10 passed**。新增`workspace-file-version-v1`、`workspace-mutation-v1`、`workspace-transaction-plan-v1`和`workspace-transaction-record-v1`四份Schema；当前聚合SHA256为`8e927bf6d9c6e9d74a95feca8517f2170051718ba8a435571a308c4021391896`。该候选没有调用模型API、Git写、SSH、远程服务器或新增中间件。
