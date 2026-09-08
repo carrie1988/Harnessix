@@ -984,3 +984,67 @@ Secret部署要求：
 - 明文作用域关闭会尽力清零可变字节副本，但Python不可变字符串、操作系统环境和目标进程内存不提供安全擦除保证，仍应最小化Secret数量与存活时间。
 
 CI真实容器门禁通过环境变量`HARNESSIX_TEST_CONTAINER_IMAGE`启用。仓库工作流固定BusyBox OCI摘要并验证无网络、只读根/Workspace、非root、零Capability和Secret脱敏，资源限制参数由确定性argv测试固定；本地未配置Docker时该单项明确skip，不能把skip作为发布证据。0.7.3接入Process Supervisor后，容器启动、资源超限、超时、取消、双流和清理必须由同一owner控制，不允许业务代码直接`subprocess.run`绕过生命周期端口。
+
+## 0.7.3 Process Supervisor部署
+
+Process状态根必须与Session、Execution Plan和Sandbox Profile处于同一受信用户的私有数据目录。`SQLiteProcessLeaseStore`及输出文件要求父目录仅当前用户可写；备份时必须同时复制数据库、WAL/SHM和输出Artifact，或先优雅关闭Supervisor。仅复制当前投影而丢失owner receipt不能被解释为进程已停止。
+
+平台要求：
+
+1. POSIX普通进程使用新Session/Process Group；Linux可附加父进程死亡信号，macOS不把缺少该能力视为已回收；
+2. Windows必须具备Job Object；进程先挂起创建、加入不可breakaway且close-kill的Job后再恢复。任一步骤失败不得退化为根PID监督；
+3. PTY按平台分别使用POSIX PTY或Windows ConPTY；ConPTY不可用时只是不广告PTY，不能伪装为普通pipe等价；
+4. Container进程仍由同一Supervisor拥有Docker/Podman客户端进程，并以容器名和双标签复核、清理实际容器；
+5. 宿主重开只根据持久Lease和owner receipt核对，不使用历史PID取得新控制权；无法证明时保持`control_lost/unknown`。
+
+运行时关闭必须先停止接收新Process，再取消前台任务、按策略处理后台任务并等待owner清理。SIGKILL、断电和系统强制结束不能执行优雅路径，因此启动时的恢复扫描是必需步骤。
+
+## 0.7.4 Workspace Transaction与Git交付部署
+
+Workspace Transaction状态根包含私有CAS、`transactions.db`、受管worktree、Git账本和跨进程Workspace Lease。生产部署必须：
+
+- 使用本地文件系统；不把SQLite、WAL或Git管理目录放在语义未知的网络共享；
+- 保持状态根0700、数据库/Blob 0600（Windows由当前用户ACL保护）；Windows CAS使用二进制文件模式，不能发生文本换行转换；
+- Git可执行文件由宿主提供绝对普通文件路径并绑定身份，不从仓库或模型参数解析；
+- 来源仓库必须干净，配置include、filter、外部attributes、alternates、submodule、LFS和sparse checkout在0.7失败关闭；
+- 所有写入持有有效fencing lease；计划、批准、Workspace Snapshot或仓库Binding变化后重新规划；
+- 不手工修改私有CAS、受管worktree、`.git`回链或账本。诊断只导出摘要和状态，不导出源代码正文。
+
+普通目录原子发布当前只在POSIX开启；Windows使用受管Git worktree交付。Commit始终创建此前不存在的`harnessix/*`分支，不移动来源HEAD/index，不运行Hook。Rollback生成新的反向事务，不删除旧记录或使用`reset --hard`覆盖用户后续变更。
+
+备份/恢复时先停写并完整复制Workspace、Git和Lease状态；只恢复部分文件时所有无法形成完整证据的记录必须进入diverged/unknown。孤立Git object不是已提交；只有持久Commit合同、对象正文和branch ref同时一致才是committed。
+
+## 0.7.5 Trusted Action Plane部署
+
+部署者需要为每个本地用户实例配置两个新的私有SQLite文件：`SQLiteExecutionPlanStore`和`SQLiteActionAuditStore`。推荐和其他0.7状态放在同一版本化数据根，但不得让Workspace内代码、MCP进程或Hook拥有写权限。初始化顺序为：
+
+两个数据库都属于敏感运行状态：审计事件只保存摘要，但不可变Execution/Route Plan为重开执行和对账保存规范化调用参数，可能包含路径、命令参数等元数据。数据库、WAL/SHM、备份和诊断包必须保持当前用户私有；不得把Plan表直接作为脱敏审计导出。疑似Secret字段拒绝仅是纵深防御，不替代Tool Schema、Context和Secret Provider的明文隔离。
+
+1. 打开Execution Plan Store和Action Audit Store并验证Schema版本；
+2. 宿主注册固定`TrustedActionDefinition`，重新计算输入Schema摘要；
+3. 恢复`running/reconciling` Route到unknown；
+4. 先运行各专用Process/Delivery/Effect账本的事实恢复，再调用Route reconcile；
+5. 最后开放Agent Protocol或本地宿主调用。
+
+关闭顺序相反：停止新规划，等待或取消只读操作，对写入中的Route只记录可证明终态；不能证明时保留running供下次恢复为unknown。禁止运维人员通过直接更新SQLite把pending/unknown改为ready/succeeded。
+
+Tool注册由应用发行物和受信配置拥有。MCP/Skill/Hook/custom只能持有与其source/source id绑定的`ExtensionActionPort`；不应将Router、Definition Registry、executor、Session Store、Secret Provider或Workspace root对象传给扩展。第三方代码需要执行时必须位于独立Process/Sandbox，不作为进程内Python模块加载。
+
+### Git Push装配
+
+Git Push默认不注册。显式启用时需要同时装配：
+
+- 精确`GitRepositoryBinding`和`GitPushActionExecutor`；
+- `git_push_tool_definition`进入旧Effect Registry；
+- `ApprovedGitPushPolicy`绑定同一Execution Plan Store和Action Audit Store；
+- `GitPushRoutedExecutor`作为Trusted Action Definition的executor；
+- resolver把remote/ref声明为`external/write + git_ref/update`；
+- file协议仅用于本地受控验证，生产默认只允许https/ssh。
+
+`prepare_intent`不访问网络；expected remote OID必须来自此前获准的远端观察，或者明确表示目标ref必须不存在。审批后才允许`ls-remote/push`。URL内用户名密码、query、fragment、HTTP、自定义helper协议和歧义路径全部拒绝。
+
+0.7不继承完整`HOME`、Git全局配置、`GIT_ASKPASS`或任意宿主环境，因此公网认证Push尚未产品化。0.8.6必须通过版本化Secret引用、SSH Agent/known-hosts或受管凭据Helper明确设计和验收，不能让用户把Token放进remote URL、命令或Intent。
+
+### 迁移与回退
+
+0.7.5新增独立Schema文件，不迁移或改写0.5 Session/Patch/Process历史事件。回退到不认识这些数据库的旧版本前，应保留完整状态备份并停止任何pending/running/unknown Action；旧版本不能读取新Action Audit时必须失败关闭，不能忽略新表后继续执行。

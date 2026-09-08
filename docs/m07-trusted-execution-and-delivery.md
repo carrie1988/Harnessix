@@ -1,9 +1,9 @@
 # Harnessix Code 0.7 可信执行与工程交付设计
 
 - 状态：实施中
-- 更新日期：2026-09-08
+- 更新日期：2026-09-09
 - 适用范围：0.7.0～0.7.5
-- 已完成切片：0.7.0、0.7.1、0.7.2
+- 已完成切片：0.7.0、0.7.1、0.7.2、0.7.3；0.7.4/0.7.5为发布候选
 
 ## 1. 目标与非目标
 
@@ -359,3 +359,101 @@ Commit合同绑定此前不存在的新branch、parent、tree、作者、邮箱�
 ### 13.4 Push边界
 
 Push不属于本节本地事务的隐式尾步骤。`GitPushIntent`只描述remote名称、规范URL摘要、本地/远端ref、预期远端旧OID、force模式和幂等键，由0.7.5 Action Plane独立规划、批准、执行和reconcile。没有独立批准时不得建立网络连接；Commit成功、用户曾允许Git或仓库存在upstream均不能推导Push许可。
+
+## 14. 0.7.5 Action Plane与安全验收详细设计
+
+### 14.1 适用边界
+
+0.7.5建立供内置Tool、后续MCP、Skill、Hook和custom adapter共同使用的唯一可信Action入口。0.8以前不开放第三方进程内Python插件；“扩展接入”在本阶段表示扩展只能持有受限能力端口，不能取得Host Executor、Session数据库、Secret Provider或Workspace文件对象。0.5历史Patch/Process事件与账本保持原样读取，不通过迁移伪造新审计；新接线只能把它们作为宿主adapter接入，不得删除其既有审批和恢复检查。
+
+源码证据、调用链和独立取舍见[0.7.5统一Action Plane专项研究](research/unified-action-plane-and-extension-boundaries.md)与[ADR 0069](adr/0069-unified-coding-action-risk-route.md)。
+
+### 14.2 领域合同
+
+0.7.5新增以下公开v1合同：
+
+- `CanonicalActionResource`：资源类型、访问方式、标识摘要和属性摘要；不保存路径、命令、URL或Secret明文；
+- `TrustedToolBinding`：来源、source id、Tool版本/指纹、输入Schema摘要、宿主效果/风险、恢复模式、executor id和自摘要；
+- `CodingActionInvocation`：调用身份、Tool身份、JSON参数和幂等键；刻意不允许调用方提交effect、risk、policy、Sandbox或executor；
+- `ActionRoutePlan`：把Invocation、Binding、规范资源、`ExecutionPlanV2`、外部Action id和完整fingerprint冻结为一个不可变授权对象；
+- `ActionAuditEvent`/`ActionRouteSnapshot`：append-only哈希链和当前状态投影；
+- `ActionExecutionOutcome`：统一`succeeded/failed/unknown/manual_intervention`结果；
+- `GitPushIntent`/`GitPushActionInput`/`GitPushReceipt`：证明外部非幂等写的独立合同。
+
+所有合同使用`extra=forbid`、frozen、strict和禁NaN配置；跨JSON边界使用`model_validate_json`，避免严格UUID/时间合同在Python字典与真实JSON之间产生不同解析语义。生成Schema进入`spec/`并由测试与模型Schema逐项相等校验。
+
+### 14.3 路由与策略
+
+`TrustedActionRouter.register`只接受宿主构造的`TrustedActionDefinition`，注册时重新计算Pydantic输入Schema摘要。唯一键为`source/source_id/tool`；重复注册、Schema替换或执行前Binding变化均失败关闭。
+
+规划顺序固定：
+
+1. 重解析Invocation并精确匹配宿主Binding；
+2. 拒绝参数树中的疑似明文凭据字段；
+3. 用注册input model按真实JSON语义严格解析并规范化参数；
+4. 由宿主resolver生成规范资源和Workspace Resource Request；
+5. Policy只读取宿主Binding、规范资源、Sandbox和Secret bindings；
+6. 捕获选择资源Workspace Snapshot并生成不可变`ExecutionPlanV2`；
+7. 持久化Execution Plan，再保存Route Plan和初始审计事件。
+
+默认Policy不信任模型风险自报：critical/destructive拒绝；read-only与写资源不一致、写工具无效果资源、network资源与Sandbox网络能力不一致、secret资源与Secret bindings不一致均拒绝；写入、medium/high、网络、Secret或外部reconcile要求批准；其余有界只读允许。
+
+当前Execution Plan Store与Action Audit Store是两个私有SQLite文件。先写Execution Plan、后写Route Plan的崩溃最多产生不可达孤立Plan，不会产生可执行Route；执行必须同时重开两个对象并要求完全相等。清理孤立Plan属于后续存储维护，不改变安全性。
+
+### 14.4 批准、执行与审计
+
+Approval只绑定`plan_id + plan_fingerprint`，批准人只在审计中保存摘要。执行前重新检查：
+
+- Route中的Execution Plan与Plan Store完全相等；
+- 当前Registry Binding与持久Binding完全相等；
+- Workspace根身份和全部选择资源Snapshot未变化；
+- Approval Checkpoint对当前fingerprint仍有效；
+- 持久参数仍能被同一Schema解析。
+
+任一项失败时executor不会被调用。append-only审计事件保存状态、资源摘要、策略、批准摘要、executor id、输出/Artifact摘要、外部Action id、错误码和reconcile结论，不保存输出或文件正文。为执行与恢复保留的私有Route Plan payload包含规范化调用参数，因此可能包含路径、命令参数等非Secret元数据；疑似凭据字段在规划时拒绝，Secret值只能经独立Secret Provider短期解析。两个SQLite文件都必须按敏感运行状态保护，不得把事件“只含摘要”误写为整个数据库不含调用参数。SQLite使用WAL、FULL同步、不可变plan payload、冗余索引交叉校验和相邻哈希链；同UID恶意进程仍属于本地宿主信任边界，摘要不是数字签名。
+
+状态机为：
+
+```text
+deny → denied
+require_approval → pending_approval → ready | denied
+allow → ready
+ready → running → succeeded | failed | unknown
+unknown → reconciling → succeeded | failed | unknown | manual_intervention
+unknown → manual_intervention（无恢复能力）
+```
+
+读执行异常可确定为failed；写执行未分类异常保守为unknown。重启扫描发现`running/reconciling`时只转unknown，不调用execute。reconcile只能从unknown进入；外部Action identity不一致或对账异常回到unknown，避免卡在reconciling或误报终态。
+
+### 14.5 Extension强制端口
+
+`ExtensionActionPort`创建时固定`source`和`source_id`，只提供本来源Binding查询、plan、execute、reconcile和status。它没有公共executor、Session、Secret或文件系统属性；读取或执行其他来源Plan返回`extension_plan_denied`。扩展提交的Tool版本、指纹或参数即使语法合法，也必须与宿主Binding和Schema精确一致。
+
+该边界是能力最小化，不是把任意恶意Python代码放进同一进程后的OS隔离。未来MCP/Skill/Hook进程生命周期由0.8管理；不受信代码仍必须进入0.7已交付的Process/Sandbox端口。
+
+### 14.6 Git Push外部副作用
+
+Push与Commit严格分离。`GitPushActionExecutor.prepare_intent`只读取本地仓库、local ref和remote配置，不连接远端；expected remote OID必须来自此前获准的观察或明确的“ref必须不存在”前提。Intent绑定：
+
+- 精确`GitRepositoryBinding.digest`；
+- remote名称和去凭据、去歧义后的URL摘要；
+- 一个local branch ref/OID和一个remote branch ref；
+- expected remote OID；
+- `fast_forward_only`或显式`force_with_lease`；
+- 幂等键和自摘要。
+
+执行只在统一Route进入running且Approval有效后，确定性投影到既有Effect Journal。旧ActionService另有`ApprovedGitPushPolicy`，直接调用、Route未批准、Route不在running、plan/intent/action id任一错绑均拒绝。Git命令固定`--no-verify`和单ref refspec，禁prompt、外部配置、Hook、replace refs、外部attributes，协议限制为显式file/https/ssh集合；file只用于测试或宿主显式开启。
+
+Push前重新核对仓库、remote URL、local OID和远端lease；`fast_forward_only`还验证旧远端OID是local OID祖先。Push调用一旦开始，启动/等待/返回/后续观察的任何异常都进入unknown。对账只执行`ls-remote`：目标OID表示成功，旧OID表示未应用，第三种OID表示人工处置；绝不再次Push。
+
+0.7受控真实场景使用本地bare remote，不需要凭据且不发生公网访问。HTTPS/SSH凭据、SSH Agent/known-hosts和平台Keychain必须由0.8.6的Secret/配置产品化显式装配；当前Runner不继承完整宿主环境，也不允许URL凭据或Token进入Intent/argv。
+
+### 14.7 文件、命令和外部效果审计
+
+Action Audit事件不保存敏感正文：Workspace资源记录路径标识摘要和read/write/execute；Process资源记录程序/参数合同摘要和execute；Network记录规范目标摘要；Secret只记录名称/版本绑定摘要；Git ref和外部资源记录remote/ref/lease摘要。不可变Route Plan另行保存执行所需的规范化参数，但不保存Secret值。具体Process与文件执行仍由0.7.1～0.7.4各自的Snapshot、Lease、Artifact和Delivery Ledger保存可恢复事实，Action Audit只提供跨组件统一因果索引，不复制第二份效果真相。
+
+### 14.8 验证与当前限制
+
+候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项，全仓本地门禁为3131 passed、11 skipped。
+
+0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7发布关闭仍必须以Python 3.12/3.13、macOS、Windows、PostgreSQL和真实Container远端门禁全部通过为准。

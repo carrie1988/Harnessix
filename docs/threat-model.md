@@ -528,3 +528,18 @@ Agent Runtime                │
 - 剩余风险包括第三方只读工具错误声明、CPU密集读取争抢线程池、同UID进程并发改写Workspace及跨进程TOCTOU。生产宿主只应给经过并发测试的内置工具opt-in；0.7必须提供跨进程锁、Sandbox和资源配额。
 
 完整证据和取舍见[调度专项研究](research/tool-scheduling-and-errors.md)与[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。
+
+## 0.7.5统一Action Plane补充（2026-09-09）
+
+- **调用方伪造风险**：`CodingActionInvocation`没有effect、risk、policy、Sandbox或executor字段；这些事实来自宿主自摘要`TrustedToolBinding`。额外字段、Tool版本/指纹/Schema摘要或注册Binding不一致均在执行能力发放前拒绝。
+- **资源漏报**：资源由宿主resolver生成，并与Workspace Snapshot、Sandbox网络模式和Secret版本绑定交叉检查。该机制依赖受信resolver正确实现；任意第三方Python resolver不能与宿主同进程加载，扩展只能提交到预注册端口。
+- **扩展越权**：`ExtensionActionPort`固定source/source id，只暴露本来源Binding和Plan生命周期。MCP/Skill/Hook/custom不能取得Host Executor、Session Store、Secret Provider或Workspace对象，也不能读取其他来源Plan。0.8仍必须对扩展进程、传输身份和供应链签名另建边界。
+- **Hook提权**：Hook来源不具有覆盖宿主deny的能力；任何Hook请求仍按同一Binding、资源和Policy规划。Hook正文或返回值不是批准记录。
+- **审批错绑与漂移**：Approval Checkpoint只绑定Plan fingerprint。执行重开时同时核对Route/Execution Plan、当前Tool Binding、Workspace Snapshot和持久批准；参数、cwd、环境、策略、Sandbox、Secret版本、文件或Git配置变化使批准失效。
+- **审计泄漏与篡改**：append-only Action Audit事件仅保存资源、输出和Artifact摘要，不保存输出或文件正文；私有Route Plan为执行/恢复保留规范化调用参数，可能包含路径和命令元数据，但疑似凭据字段被拒绝且Secret值只能通过独立Provider注入。因此Plan/Audit数据库仍按敏感状态保护，不能对外直接发布。当前投影、不可变payload、冗余索引和事件链不一致时失败关闭。字段名检测不是通用DLP，无法识别被放入普通文本字段的任意凭据；上游Context与Tool Schema仍必须禁止Secret正文进入参数。SQLite和SHA-256不能抵抗可同时改写数据库与程序的同UID恶意主体，也不提供不可抵赖签名。
+- **外部写重复执行**：Git Push投影到稳定外部Action id和Effect Journal；调用开始后的任何异常为unknown。恢复只执行`ls-remote`对账，不再次Push。目标OID、旧OID和第三种OID分别收敛为成功、失败和人工处置。
+- **直接旁路**：旧ActionService中的Git Push Tool额外要求对应Route已获批准且当前处于running，plan/action/intent/idempotency任一错绑即deny。直接调用`_GitRunner`仍属于受信宿主代码能力；不受信扩展不能获得该对象，未来插件进程必须继续依靠OS Sandbox。
+- **Git协议与凭据**：remote URL拒绝内嵌凭据、query、fragment、HTTP、自定义协议和歧义路径；Git固定环境关闭prompt、外部配置、Hook、replace refs和attributes，并只开放显式协议。0.7不装配公网凭据，不能把本地bare remote验收解释为远端认证、known-hosts或Secret防泄漏完成。
+- **跨库窗口**：Execution Plan先于Route持久化，崩溃可留下不可达孤立Plan；没有Route、Approval和当前Binding时不能执行。Route进入running后宿主硬退出，重开只转unknown。该设计不承诺跨SQLite事务原子性，而以不可达和保守恢复保证安全。
+
+对应攻击和硬退出证据见[0.7.5测试记录](testing-and-evals.md#72-075统一action-plane与git-push发布候选验收2026-09-09)、[专项研究](research/unified-action-plane-and-extension-boundaries.md)和[详细设计](m07-trusted-execution-and-delivery.md#14-075-action-plane与安全验收详细设计)。

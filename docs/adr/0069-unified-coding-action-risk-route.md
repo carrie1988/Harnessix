@@ -2,6 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-09-08
+- 实施：0.7.5发布候选（2026-09-09）
 
 ## 背景
 
@@ -29,3 +30,18 @@
 - 外部写在提交后丢响应时只进入 reconcile，不重复执行；
 - 审计与最终文件、进程、Git 和远端事实一致。
 
+## 实施结果
+
+- `trusted_actions/contracts.py`实现宿主Binding、调用、规范资源、Route Plan、统一结果和审计事件合同；调用方没有effect/risk/policy/executor字段；
+- `TrustedActionRouter`实现注册、strict JSON解析、资源解析、默认Policy、不可变Execution Plan、审批、执行前重开复核、恢复和reconcile；
+- `SQLiteActionAuditStore`实现不可变Plan、当前投影和append-only哈希链；事件只保存结果/资源摘要，私有Plan payload为恢复保留规范化调用参数；
+- `ExtensionActionPort`按source/source id限制能力，不暴露executor、Session、Secret或文件对象；
+- `GitPushActionExecutor`与`ApprovedGitPushPolicy`证明外部写必须从统一Route进入，直接旧Action入口失败关闭；Push响应丢失后只读远端ref对账，不再次执行；
+- 公共v1 Schema生成到`spec/`，实现与设计详见[0.7.5专项研究](../research/unified-action-plane-and-extension-boundaries.md)和[0.7详细设计](../m07-trusted-execution-and-delivery.md#14-075-action-plane与安全验收详细设计)。
+
+## 后果与限制
+
+- Execution Plan和Action Audit当前分属两个SQLite文件，跨库不做伪原子事务；前者先成功、后者失败只会留下不可达Plan，不能执行；
+- 0.5历史Session事件和专用Patch/Process账本不改写，新Action Audit作为跨组件因果索引，不复制效果真相；
+- 0.8以前不加载任意第三方进程内代码。扩展协议、生命周期和凭据产品化完成后，MCP/Skill/Hook adapter只能调用已冻结的`ExtensionActionPort`；
+- 摘要和本地文件权限不抵抗同UID恶意宿主进程，远端认证链路也不在0.7本地bare remote验收范围内。

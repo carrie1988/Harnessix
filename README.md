@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime、0.6 Context/Session全部路线图范围，以及0.7.0～0.7.2的研究、跨平台Workspace/Execution Plan、Container强隔离启动适配、网络与Secret边界。0.7.3～0.7.5正在实施；通用Process/PTY和后台监督、Windows Job Object、通用多文件交付、自动commit/push、统一Tool接入和Agent CLI尚不是当前能力。0.7.2通过[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)的真实固定摘要容器、Python双版本、macOS、Windows及PostgreSQL验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1～0.6全部路线图范围和0.7.0～0.7.3；0.7.4/0.7.5已形成通用多文件事务、完整Diff、受管Git worktree/checkpoint/commit、统一Trusted Action路由、Extension最小能力端口及独立Git Push/reconcile发布候选，正在关闭最新远端多平台门禁。Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、远端Git凭据产品化和三平台发行物仍属于0.8/0.9，不能把当前候选宣称为1.0产品。0.7.2通过[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)的真实固定摘要容器、Python双版本、macOS、Windows及PostgreSQL验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -43,7 +43,20 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY和受管Git交付均已有Windows原生实现或候选；旧Coding Tool统一接入、完整产品CLI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已有Windows原生实现或平台中立候选；该入口当前是进程内宿主API，Agent Protocol/MCP/Skill/Hook产品接线、完整CLI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
+
+## 当前发布候选：0.7可信执行与工程交付
+
+- POSIX/Windows原生Workspace Snapshot、规范路径与跨进程fencing租约；
+- 不可变`ExecutionPlanV2`与精确Approval Checkpoint，绑定Tool、参数、cwd、环境、Workspace、Sandbox、网络和Secret版本；
+- Container强隔离、选择性网络、Secret最小注入/流式脱敏，以及POSIX Process Group、Windows suspended Job Object/ConPTY和持久后台监督；
+- 多文件Workspace Transaction、私有CAS、append-only账本、崩溃恢复、新事务Rollback和完整Diff；
+- 受管Git worktree/checkpoint/显式commit，固定Git环境且来源HEAD/index不移动；
+- `TrustedActionRouter`统一宿主Tool Binding、规范资源、Policy/Approval、摘要化审计和`UNKNOWN → reconcile`；
+- `ExtensionActionPort`把MCP/Skill/Hook/custom限制为来源隔离的plan/execute/reconcile端口，不暴露executor、Session、Secret或文件系统对象；
+- Git Push与Commit分离、默认不装配；Push只更新一个ref，使用exact lease，调用结果丢失后只对账不重放。
+
+0.7.5的受控真实Push使用本地bare remote验证零重复副作用；公网HTTPS/SSH凭据不会从宿主环境隐式继承，待0.8.6通过Secret和配置产品化装配。设计、失败语义和限制见[0.7详细设计](docs/m07-trusted-execution-and-delivery.md)与[统一Action Plane源码研究](docs/research/unified-action-plane-and-extension-boundaries.md)。
 
 ## 许可证与品牌
 

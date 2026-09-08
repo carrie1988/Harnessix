@@ -325,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**实施中**。0.7.1已交付POSIX/Windows原生Workspace Snapshot、跨进程fencing租约和不可变Execution Plan/Approval；0.7.2已交付Container强隔离启动适配、选择性网络与Secret正式端口并通过真实容器验收；0.7.3已交付跨平台Process/PTY/后台监督、Container统一生命周期并通过六矩阵门禁。0.7.4已实现Workspace Transaction、私有CAS、append-only账本、POSIX发布/恢复、新事务Rollback、完整Diff及受管Git worktree/checkpoint/commit候选，待远端Windows/macOS矩阵通过后关闭；统一Tool接入尚未开始，不得宣称0.7整体已经可用。
+状态：**发布候选**。0.7.1已交付POSIX/Windows原生Workspace Snapshot、跨进程fencing租约和不可变Execution Plan/Approval；0.7.2已交付Container强隔离启动适配、选择性网络与Secret正式端口并通过真实容器验收；0.7.3已交付跨平台Process/PTY/后台监督、Container统一生命周期并通过六矩阵门禁。0.7.4已实现Workspace Transaction、私有CAS、append-only账本、POSIX发布/恢复、新事务Rollback、完整Diff及受管Git worktree/checkpoint/commit；0.7.5已实现宿主Binding、规范资源、统一Policy/Approval、哈希链审计、Extension强制端口和独立Git Push/reconcile。本轮仍须通过最新Python 3.12/3.13、macOS、Windows、PostgreSQL和真实Container门禁后才能关闭0.7。
 
 ### 目标
 
@@ -359,7 +359,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - 隔离后端不可用时失败关闭或明确要求用户选择Host风险，不静默降级；
 - 多文件修改能够原子交付或恢复到可核对状态，Git结果与最终回答一致；
 - 高风险外部Action可以恢复和对账，连续故障测试不产生重复副作用或失管进程。
-- Windows原生Workspace、Git、Process和CLI通过正式契约；仅WSL2可运行不能标记为Windows原生支持。
+- Windows原生Workspace、Git和Process通过正式契约；仅WSL2可运行不能标记为Windows原生支持。CLI通过0.8的Protocol/Headless边界接入，不能由0.7执行端口推导为已完成。
 
 ## 10. 0.8：产品运行时与扩展
 

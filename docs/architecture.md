@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.5终态Retry与Provider切换切片、0.7.0可信执行研究基线和0.7.1～0.7.2正式实现）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.5、0.7.0～0.7.3正式实现，以及0.7.4/0.7.5发布候选）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -15,7 +15,7 @@
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、migration为19，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期已通过综合六矩阵门禁，0.7.4受管Git交付已进入Windows真机候选；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
-- 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3已交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理，并通过六矩阵发布门禁；0.7.4已实现Workspace Transaction、文件before/after CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff及受管Git worktree/checkpoint/commit候选，待远端矩阵关闭；0.7.5尚未开始，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
+- 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3已交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理，并通过六矩阵发布门禁；0.7.4已实现Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5已形成宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile发布候选，待最新远端六矩阵关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -211,7 +211,9 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 - SQLite/PostgreSQL 后端；
 - Trace Context 和结构化审计。
 
-Coding Agent 中只有外部、高风险或结果可能不确定的副作用必须进入 Action Plane。普通只读文件工具不承担 Durable Action 的额外成本。
+0.7.5在旧Effect Journal之上增加`TrustedActionRouter`：所有新Coding Tool来源先形成宿主Binding、规范资源和不可变`ExecutionPlanV2`，再统一决定deny/allow/require approval。低风险只读不进入旧外部Effect Worker，但仍以轻量Action Audit记录Plan、资源摘要和结果摘要；外部、高风险或结果可能不确定的副作用再确定性投影到专用durable ledger或旧Effect Journal。这样避免为普通读取承担远端Worker成本，同时不允许扩展绕过统一风险路由。
+
+Action Audit、Session Store、Process/Delivery Ledger和外部Effect Journal各自保存单一事实：Action Audit提供跨组件因果索引，Session保存对话和用户决定，专用账本保存本地文件/进程事实，Effect Journal保存外部Action。跨库不伪装为原子事务；稳定plan/action id、不可变fingerprint和只读reconcile用于恢复。
 
 ### 4.10 Extension Runtime
 
@@ -223,7 +225,7 @@ Coding Agent 中只有外部、高风险或结果可能不确定的副作用必�
 - 生命周期 Hooks；
 - 自定义 Tool Provider。
 
-所有扩展最终仍通过 Tool Runtime、Permission 和 Sandbox 边界，不能绕过安全策略直接执行。
+所有扩展最终仍通过 Tool Runtime、Permission 和 Sandbox 边界，不能绕过安全策略直接执行。0.7.5候选的`ExtensionActionPort`已经按source/source id固定能力，只暴露Binding查询、plan、execute、reconcile和status；MCP传输、Skill加载和Hook生命周期仍由0.8实现。
 
 ### 4.11 Observability 与 Evals
 
@@ -368,7 +370,11 @@ src/harnessix/
 ├── artifacts/         # 已实现：事务正文、分页、配额、TTL与清理
 ├── patches/           # 已实现：单文件/整组计划、执行、恢复与Diff
 ├── processes/         # 已实现：宿主进程、Action桥接、测试Profile与输出
-├── workspace/         # 规划：统一Workspace锁与Sandbox后端
+├── workspace/         # 已实现：跨平台Snapshot、路径端口与fencing租约
+├── sandbox/           # 已实现：Host/Container能力、网络与启动绑定
+├── secrets/           # 已实现：版本绑定、短期解析、流式脱敏与泄漏门禁
+├── delivery/          # 0.7.4/0.7.5候选：事务、Git worktree/commit/push
+├── trusted_actions/   # 0.7.5候选：统一风险路由、审计和扩展端口
 ├── protocol/          # 规划：App Server Protocol
 ├── session/           # 已实现 SQLite Event Log、聚合投影、迁移和宿主锁
 ├── extensions/        # 规划：MCP、Skills、Hooks

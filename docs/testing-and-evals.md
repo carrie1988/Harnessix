@@ -1452,3 +1452,24 @@ Ruff格式与规则通过，Mypy严格检查6个Delivery源文件通过，专项
 - 错误批准指纹和已存在branch在副作用前拒绝；外部include、attributes转换、`.gitmodules`、sparse checkout及alternates攻击输入均由真实仓库用例失败关闭；未知Store版本和损坏payload失败关闭；macOS Git 2.24.3兼容路径经过真实命令验证。
 
 Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schema，连续两次生成后的聚合SHA256均为`7bb6f371f5b2cc26967a919167ddc4b594df8218f1e81a702490c0522fa5b335`。加入测试包隔离文件后，全仓门禁为**3081 passed、11 skipped**；随后增加的5项Git攻击参数已由专项门禁通过，最终全仓数字在0.7.5综合关闭时统一更新。本片只在pytest临时目录创建本地Git仓库和受管branch，没有Push、网络、模型API、SSH、远程服务器或新增中间件。
+
+## 72. 0.7.5统一Action Plane与Git Push发布候选验收（2026-09-09）
+
+状态：领域合同、唯一可信路由、默认风险Policy、append-only审计、Extension能力端口及Git Push外部副作用证明切片已完成本地候选；0.7整体仍须等待本提交及最终文档提交的远端六矩阵全部通过后关闭。
+
+0.7.5专项共**45 tests**（Trusted Action 21项、Git Push 24项），覆盖：
+
+- `CanonicalActionResource`、`TrustedToolBinding`、`CodingActionInvocation`、`ActionRoutePlan`、`ActionExecutionOutcome`、`ActionAuditEvent`和`ActionRouteSnapshot`的严格合同、自摘要、排序、身份与状态不变量；
+- builtin、MCP、Skill、Hook和custom五种来源进入同一默认Policy；未注册Tool、版本/指纹/Schema替换、调用方伪造effect字段、疑似明文Secret和跨来源Extension访问失败关闭；
+- 低风险只读自动允许，高风险写生成精确Approval Checkpoint；批准前执行、批准后Workspace/remote配置漂移均不调用executor；
+- Action Audit事件只保存输出摘要而不保存输出正文；私有Route Plan保留规范化调用参数。冗余索引、事件payload、哈希链和未知Store版本损坏失败关闭；
+- 真实子进程在Route进入running并写下一次外部效果后`os._exit`，父进程重开只把running转unknown并调用一次reconcile，效果文件保持恰好一条；
+- `ActionService`按真实JSON语义解析strict UUID合同，避免Python字典传输与JSON传输产生不同验证结果；
+- 真实Git来源仓库经Workspace Transaction、受管worktree、Checkpoint和确定性Commit产生新branch，随后独立Push Plan和批准只更新一个bare remote ref；
+- 直接调用旧ActionService、Route未批准、remote URL含凭据/歧义/未授权协议，以及批准后Git配置漂移全部失败关闭；
+- remote/ref字段在任何Git子进程前完成准入，选项形态remote、非法branch ref、无效host/SSH user、控制字符和歧义多行响应均失败关闭；Git单行解析兼容LF、CRLF和无行尾三种确定格式；
+- Push命令已经成功但响应被注入丢失时，双层状态均进入unknown；reconcile只执行远端ref观察，成功收敛且Push调用次数为1。
+
+Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delivery和Process超时后代清理扩大回归通过。Ruff和Mypy定向门禁通过；10份新公共Schema与运行时模型逐项相等。全仓本地门禁为**3131 passed、11 skipped**。Windows CAS额外修复`os.open`未显式使用`O_BINARY`导致LF可能被文本模式转换、Blob摘要错误的问题；macOS Process后代超时测试把启动窗口从0.3秒调整为2秒，测试仍验证超时、SIGKILL和整组后代退出，不再把共享Runner冷启动误判为产品失败。
+
+本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
