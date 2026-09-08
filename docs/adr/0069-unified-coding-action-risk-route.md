@@ -2,7 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-09-08
-- 实施：0.7.5已完成（2026-09-09，[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)）
+- 实施：0.7.5已完成（2026-09-09，[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)）
 
 ## 背景
 

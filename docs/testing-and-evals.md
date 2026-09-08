@@ -1474,8 +1474,10 @@ Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delive
 
 关闭提交后的Windows矩阵暴露一次`execution_plan_stale`间歇失败。根因不是正文变化，而是目录Snapshot把Windows枚举缓存中的时间/大小和全部属性作为跨观察身份；第一轮修复又通过新增测试发现`DirEntry.stat()`普通项可能不提供当前File Index，并暴露Git配置漂移测试依赖父目录时间变化而非正式`GitRepositoryBinding.config_sha256`的错误假设。最终实现统一三条语义：目录持久身份只绑定执行相关元数据，直接成员绑定名称/类型/对象身份，显式文件绑定内容；完整revision仍用于单次观察窗口竞态；Git remote配置由批准Intent中的仓库绑定在发网前重新计算并以`git_repository_changed`失败。回归覆盖Windows重开文件稳定、未选择成员正文变化、同名成员替换、易变属性排除及对象/只读/link/size绑定。
 
-最终本地`make check`为**3139 passed、12 skipped，269.72秒**；Ruff格式与规则通过，Mypy严格检查215个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。
+Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.com/carrie1988/Harnessix/actions/runs/34266946268)在固定BusyBox镜像已成功拉取后，Container Sandbox任务仍因Docker Daemon冷启动超过原5秒探测预算而以`sandbox_unavailable`失败。该结果表明原预算把“有界冷启动”误判为“后端不可用”，不是放宽失败关闭的理由。最终实现把`version`与`info`探测分别调整为15秒有界超时，保持零重试，任何启动、超时、非零返回或输出异常仍立即失败关闭；确定性回归同时断言精确超时和首次超时后只调用一次。
+
+最终本地`make check`为**3140 passed、12 skipped，270.43秒**；Ruff格式与规则通过，Mypy严格检查215个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。
 
 本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
 
-最终加固提交`7cd6079`由[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理。该门禁不访问模型API或公网Git remote。
+最终加固提交`e12ae38`由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理，Container矩阵验证放宽启动预算后隔离合同未被削弱。该门禁不访问模型API或公网Git remote。

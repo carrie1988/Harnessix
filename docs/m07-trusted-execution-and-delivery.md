@@ -233,7 +233,7 @@ Plan与Approval写入独立私有SQLite存储。相同内容重复提交为幂�
 
 ### 11.3 Container启动适配
 
-Container引擎由宿主绑定绝对普通可执行文件。探测使用固定`version --format`取得客户端/服务端版本，并使用固定`info --format`读取Docker Security Options或Podman rootless事实；命令运行在清理后的环境中，输出和时限有界。Builder初始化时保存可执行文件对象身份，prepare时再次比较设备/inode/大小/时间/模式和能力摘要。
+Container引擎由宿主绑定绝对普通可执行文件。探测使用固定`version --format`取得客户端/服务端版本，并使用固定`info --format`读取Docker Security Options或Podman rootless事实；两条命令分别使用15秒有界超时且不自动重试，启动、超时、非零返回或输出异常统一失败关闭为`sandbox_unavailable`。命令运行在清理后的环境中，输出有界。Builder初始化时保存可执行文件对象身份，prepare时再次比较设备/inode/大小/时间/模式和能力摘要。
 
 固定启动参数包括：
 
@@ -458,6 +458,6 @@ Action Audit事件不保存敏感正文：Workspace资源记录路径标识摘�
 
 ### 14.8 验证与当前限制
 
-候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项；Windows Snapshot加固后全仓本地门禁为3139 passed、12 skipped。
+候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项；Windows Snapshot和Container冷启动探测加固后，全仓本地门禁为3140 passed、12 skipped。
 
-0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7实现及Windows Snapshot稳定性加固已通过[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵，0.7全部切片据此关闭。
+0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7实现及Windows Snapshot、Container冷启动探测加固已通过[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵，0.7全部切片据此关闭。

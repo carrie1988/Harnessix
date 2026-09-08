@@ -2,6 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-09-08
+- 实施：0.7.2已完成，0.7最终冷启动探测加固见`e12ae38`（2026-09-09，[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)）
 
 ## 背景
 
@@ -16,6 +17,7 @@ Host 进程与当前用户共享权限；命令解析和审批不能阻止进程
 5. 网络 Profile 为 `none`、`limited`、`restricted`、`full`。`none` 必须由网络命名空间/容器网络禁用实现；`limited/restricted` 只有托管代理和隔离网络同时可用时才可生效；`full` 仍需单独策略允许。
 6. `SecretProvider` 只接受版本化 `SecretRef`，在 spawn 边界临时解析并仅注入获准进程；模型、计划、Session、日志、Trace、Diff、Artifact 只保存引用和摘要。
 7. 所有输出进入持久或模型边界前经过同一 `SecretRedactor`；Redactor 失败关闭输出发布，但不伪造进程未执行。
+8. Container引擎`version`与`info`探测各自使用15秒有界超时，不自动重试；启动、超时或输出异常统一失败关闭为`sandbox_unavailable`。
 
 ## 取舍
 
@@ -30,4 +32,3 @@ Host 进程与当前用户共享权限；命令解析和审批不能阻止进程
 - 网络策略无法完整落实：`network_policy_unenforceable`；
 - Secret 缺失/版本漂移：`secret_unavailable` / `secret_version_changed`；
 - 输出脱敏失败：`secret_redaction_failed`，效果按真实执行状态记账。
-

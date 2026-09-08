@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成 0.1～0.7全部路线图范围。0.7交付通用多文件事务、完整Diff、受管Git worktree/checkpoint/commit、统一Trusted Action路由、Extension最小能力端口及独立Git Push/reconcile，并通过[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵验收。Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、远端Git凭据产品化和三平台发行物仍属于0.8/0.9，不能把0.7宣称为1.0产品。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1～0.7全部路线图范围。0.7交付通用多文件事务、完整Diff、受管Git worktree/checkpoint/commit、统一Trusted Action路由、Extension最小能力端口及独立Git Push/reconcile，并完成Windows Snapshot与Container冷启动探测加固；[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)覆盖Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵。Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、远端Git凭据产品化和三平台发行物仍属于0.8/0.9，不能把0.7宣称为1.0产品。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
