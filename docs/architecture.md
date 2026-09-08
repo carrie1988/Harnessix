@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.5终态Retry与Provider切换切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.5终态Retry与Provider切换切片，以及0.7.0可信执行研究基线）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -15,6 +15,7 @@
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、migration为19，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - Windows已进入1.0目标并增加平台中立CI，但当前Workspace、Process、Git执行和Sandbox仍为POSIX实现，不能据此宣称Windows当前可用；
+- 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成跨平台路径、进程、Sandbox、网络、Secret和事务性交付差距矩阵、五项ADR及Threat Model v2；实现仍按0.7.1～0.7.5推进，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

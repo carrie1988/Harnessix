@@ -143,7 +143,7 @@ idempotency key
 - 客户端伪造 Tool Result 或 Approval；
 - Sandbox 不可用时静默降级。
 
-完整资产、攻击者、控制和剩余风险见[威胁模型 v1](../threat-model.md)。
+完整资产、攻击者、控制和剩余风险见[威胁模型 v2](../threat-model.md)。0.7刷新证据及差距矩阵见[可信执行与工程交付研究](trusted-execution-and-delivery.md)。
 
 ## 8. 对应测试
 

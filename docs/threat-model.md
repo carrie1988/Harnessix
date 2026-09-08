@@ -1,12 +1,12 @@
-# Harnessix Code 威胁模型 v1
+# Harnessix Code 威胁模型 v2
 
-- 状态：0.2架构基线，已随实现更新至0.6.5终态Turn Retry与Provider切换
+- 状态：0.7可信执行架构基线，已随实现更新至0.6.5终态Turn Retry与Provider切换
 - 更新日期：2026-09-08
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。审批绑定当前工具契约、参数和Workspace路径，但不提供OS隔离、actor身份认证、文件内容或环境完整性保证。真实Sandbox、网络隔离、完整Secret Redactor和MCP/Hook仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见[Kernel支持边界](m03-runtime-kernel.md)和[0.5实施设计](m05-coding-tools.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。审批绑定当前工具契约、参数和Workspace路径，但尚未绑定0.7定义的完整Execution Plan，也不提供OS隔离、actor身份认证、文件内容或环境完整性保证。真实Sandbox、网络隔离、完整Secret Redactor和MCP/Hook仍在0.7/0.8实施；目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
 
-Windows已进入1.0正式目标，但当前Workspace、Process、Git执行和Sandbox仍只完成POSIX实现。现有Windows平台中立CI不证明路径安全、进程树清理或隔离能力；在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的契约、故障测试和发行门禁完成前，Windows不属于当前安全支持范围。
+Windows已进入1.0正式目标，但当前Workspace、Process、Git执行和Sandbox仍只完成POSIX实现。0.7选择领域路径与平台端口分离，Windows native Process使用挂起启动后加入不可breakaway Job Object再恢复；Windows strong Sandbox优先使用受管Docker Desktop或WSL2后端。现有Windows平台中立CI不证明这些能力，在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的真实故障测试完成前，Windows仍不属于当前安全支持范围。
 
 ## 1. 安全目标
 
@@ -19,7 +19,11 @@ Harnessix Code 必须保证：
 5. 未知外部写不会被自动重复；
 6. Prompt、日志、Trace、Session 和 Artifact 不泄漏凭据；
 7. 客户端不能伪造 Runtime 事实；
-8. Sandbox 不可用时不静默降级。
+8. Sandbox 不可用时不静默降级；
+9. Windows 盘符、UNC、ADS、Reparse Point、Junction 和大小写语义不能绕过 Workspace；
+10. Commit、Push、外部 Action 和扩展执行必须分别取得与实际效果一致的授权；
+11. 多文件发布任意崩溃点都能恢复为可核对状态，不将顺序写误称为原子事务；
+12. requested 与 effective Sandbox/Network 能力一致并有运行证据。
 
 安全边界研究见[Permission、Approval 与 Sandbox](research/security.md)。
 
@@ -49,7 +53,7 @@ Harnessix Code 必须保证：
 
 - 防御拥有 root/内核权限的本地攻击者；
 - 证明第三方模型不保留发送给它的数据；
-- 在 0.2 实现完整 DLP、远端多租户和企业 KMS；
+- 在 0.7 实现完整 DLP、远端多租户和企业 KMS；
 - 通过命令文本静态分析证明任意 Shell 安全。
 
 ## 3. 资产
@@ -148,6 +152,20 @@ Agent Runtime                │
 
 **剩余风险**：跨平台文件系统语义不同；当前Windows平台端口尚未实现；Host后端无法提供容器级隔离。
 
+### TM-02A：Windows 命名与 Reparse 逃逸
+
+**场景**：模型使用盘符相对路径、UNC/设备命名空间、保留名、尾随点/空格、ADS 或 Junction/Reparse Point，使展示路径与内核对象不一致。
+
+**控制**
+
+- 模型只提交平台中立相对 `WorkspacePath`，不能提交盘符、UNC 或设备前缀；
+- Windows 平台端口逐段拒绝 ADS、保留名、尾随点/空格和 Reparse Point；
+- 使用句柄身份和最终路径复核，不用 `Path.resolve()` 或大小写字符串前缀作为安全边界；
+- 打开、审批后复核和写入分别覆盖检查后替换竞态；
+- Windows CI 创建真实 Junction/Reparse、大小写和长路径夹具。
+
+**剩余风险**：第三方文件系统、云盘过滤驱动和网络共享可能具有不同语义；未通过能力探测时只允许 guarded 读或失败关闭。
+
 ### TM-03：Shell 注入与进程逃逸
 
 **场景**：字符串拼接、命令替换、后台任务或孙进程绕过超时和取消。
@@ -192,6 +210,21 @@ Agent Runtime                │
 - Canary Secret 全链路扫描。
 
 **剩余风险**：未知编码、压缩文件和模型推断可能绕过模式脱敏。
+
+### TM-05A：Secret 生命周期和派生值泄漏
+
+**场景**：Secret 明文虽未进入 Tool 参数，却通过子进程环境、错误回显、编码/分片输出、Git Diff、诊断包或派生 Token 泄漏。
+
+**控制**
+
+- 领域对象只保存版本化 `SecretRef`，仅在 spawn 边界解析；
+- 批准绑定 Secret 名称/版本摘要，不绑定或展示明文；
+- 子进程只得到计划声明的 Secret，清空未声明环境和代理凭据；
+- stdout/stderr、异常、Artifact、日志、Trace、模型 Context 和诊断包共享流式 Redactor；
+- 使用跨 chunk、Base64/URL 编码和短前后缀 Canary 测试；
+- Redactor 失败时阻止输出发布，但效果状态仍按真实进程/Action 记账。
+
+**剩余风险**：任意加密、压缩、哈希推断和被允许进程主动外传无法由字符串 Redactor 完全阻止，仍依赖最小注入和网络隔离。
 
 ### TM-06：Approval Bait-and-switch
 
@@ -296,6 +329,20 @@ Agent Runtime                │
 
 **剩余风险**：用户可主动选择 Host；产品必须准确描述其安全级别。
 
+### TM-12A：能力声明高于实际后端
+
+**场景**：配置请求强隔离或选择性网络，但执行器缺少 namespace、代理、Seatbelt Profile、Docker 能力或 Windows 后端，仍以较弱模式启动。
+
+**控制**
+
+- Capability Probe 在计划前生成证据，执行前再次校验；
+- `ExecutionPlan` 同时绑定 requested/effective level、后端和版本；
+- 后端缺失、版本变化或策略无法完整落实时在 spawn 前失败关闭；
+- 降级必须由新的用户意图、新计划和新批准表达；
+- 发布文档只声明 CI 和真实 smoke 已证明的平台/后端组合。
+
+**剩余风险**：后端自身实现缺陷仍需供应链固定、版本升级测试和攻击回归发现。
+
 ### TM-13：供应链与更新
 
 **场景**：依赖、安装脚本、Provider SDK 或发布包被替换。
@@ -323,6 +370,11 @@ Agent Runtime                │
 8. Tool/MCP/Hook 不能绕过统一 Registry；
 9. 客户端不能直接写内部 Event；
 10. 所有安全降级都有持久事实和用户可见状态。
+11. Windows 进程在恢复运行前必须已属于预期 Job Object；绑定失败不得退化为仅杀根 PID；
+12. Commit 与 Push 是不同效果；Push 默认关闭且不能继承 Commit 批准；
+13. 多文件 transaction 每个成员 replace 前先持久化意图，replace 后先记录可核对事实再推进游标；
+14. Secret 明文不得进入 ExecutionPlan canonical JSON、fingerprint 输入、Session Event 或审计载荷；
+15. Capability requested/effective 不一致时不得执行。
 
 ## 8. 发布门禁
 

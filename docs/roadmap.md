@@ -325,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**规划中**。Windows已进入1.0正式范围并建立平台中立CI基线，但当前Workspace/Process仍只支持POSIX，不得宣称Windows已经可用。本阶段先刷新研究证据和威胁模型，再按平台端口、安全边界、执行后端、进程监督、事务性交付和综合验收推进，不将全部能力合并为一次性Sandbox改造。
+状态：**实施中**。Windows已进入1.0正式范围并建立平台中立CI基线，但当前Workspace/Process仍只支持POSIX，不得宣称Windows已经可用。本阶段已完成研究证据和威胁模型刷新，正按平台端口、安全边界、执行后端、进程监督、事务性交付和综合验收推进，不将全部能力合并为一次性Sandbox改造。
 
 ### 目标
 
@@ -333,7 +333,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ### 纵向切片
 
-- [ ] **0.7.0 研究基线与生产差距**：刷新Codex、OpenCode和Claude Code行为研究版本；求证POSIX/Windows路径、进程、Sandbox和发行接口；输出安全执行、进程、工作区交付差距矩阵；完成Threat Model v2；明确0.4.3c由0.9发布证据门禁收口；
+- [x] **0.7.0 研究基线与生产差距**：刷新Codex、OpenCode和Claude Code行为研究版本；求证POSIX/Windows路径、进程、Sandbox和发行接口；输出安全执行、进程、工作区交付差距矩阵；完成Threat Model v2；明确0.4.3c由0.9发布证据门禁收口；
 - [ ] **0.7.1 跨平台Workspace与Permission**：建立Workspace平台端口；统一POSIX路径以及Windows盘符、UNC、保留名、ADS、大小写折叠、长路径、Reparse Point/Junction、外部目录和跨进程所有权；审批指纹绑定Tool、参数、cwd、环境摘要、Workspace revision和策略版本；
 - [ ] **0.7.2 Sandbox、网络与Secret**：定义三平台Host安全级别和失败关闭策略；实现Container Sandbox Executor、资源限制、网络出口域名/IP/端口策略、代理防绕过及Secret Provider最小化注入；Windows强隔离优先采用受管WSL2或Docker Desktop后端；
 - [ ] **0.7.3 跨平台Process与终端监督**：在Permission和Sandbox内提供通用argv/受控Shell、PTY、标准输入、后台进程、超时、取消、宿主死亡监督和有界输出Artifact；POSIX使用Session/Process Group，Windows使用Job Object等原生归属能力；是否引入Rust Sidecar由基准和失败测试决定；
