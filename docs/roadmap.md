@@ -325,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**已完成（2026-09-09）**。0.7.0～0.7.5的源码研究、正式契约、实现、失败恢复、安全攻击、真实仓库验证和文档已经交付；最终实现由[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵验收。0.7 Action入口当前是进程内宿主API；Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、公网Git凭据装配和发行物仍属于0.8/0.9。
+状态：**已完成（2026-09-09）**。0.7.0～0.7.5的源码研究、正式契约、实现、失败恢复、安全攻击、真实仓库验证和文档已经交付；最终实现及Windows Snapshot稳定性加固由[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵验收。0.7 Action入口当前是进程内宿主API；Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、公网Git凭据装配和发行物仍属于0.8/0.9。
 
 ### 目标
 

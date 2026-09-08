@@ -157,17 +157,21 @@ Workspace租约只协调遵守Harnessix协议的写入者，不能阻止外部�
 
 POSIX端口复用已验证的root FD、`openat`和`O_NOFOLLOW`能力，并在0.7快照中要求所有资源段与Workspace根位于同一设备。符号链接、普通文件硬链接、跨挂载资源和检查期间对象变化失败关闭。需要访问其他文件系统时必须配置外部根。
 
+POSIX目录的持久身份绑定device/inode、类型/权限、link count和owner，直接成员摘要绑定名称、类型与device/inode。目录扫描仍在持有FD期间比较完整revision；因此扫描中的增删、替换或权限变化失败关闭，但未被显式选择的成员仅修改正文不会把“选择资源Snapshot”扩大为隐式全仓内容锁。
+
 Windows端口不模拟POSIX权限位：
 
 - 拒绝盘符/UNC形式的模型路径、反斜线、ADS、尾随点或空格、DOS设备名及大小写折叠冲突；
 - 宿主根可使用盘符或UNC，内部转换为`\\?\`扩展长度路径；
 - 从卷/共享根开始逐段打开句柄，所有段使用`FILE_FLAG_OPEN_REPARSE_POINT`并拒绝Reparse Point/Junction；
 - 共享模式不允许写入或删除，在观察窗口内阻止目标和已打开父段被替换；根句柄持续持有到端口关闭；
-- 对象身份使用Volume Serial与File Index，内容变化另由属性、时间、大小及文件SHA-256/目录成员摘要绑定；普通文件硬链接数必须为一。
+- 对象身份使用Volume Serial与File Index；文件持久身份绑定只读属性、link count、大小及内容SHA-256，目录成员使用Python 3.12当前`st_dev/st_ino`而不是`DirEntry.stat()`缓存的时间/大小。完整属性、写入时间和大小只用于同一次句柄观察前后竞态比较，不作为跨观察的易变身份；普通文件硬链接数必须为一。
+
+该取舍依据[Microsoft `BY_HANDLE_FILE_INFORMATION`](https://learn.microsoft.com/zh-cn/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information)对Volume Serial/File Index对象身份及文件时间文件系统差异的定义，以及[Python 3.12 `os.stat_result`](https://docs.python.org/3.12/library/os.html#os.stat_result)在Windows以File Index提供`st_ino`的合同。时间戳仍是观察窗口内的竞态信号，但不是目录成员跨观察的主键。
 
 ### 10.3 Workspace Snapshot
 
-`harnessix.workspace-snapshot/v1`使用`selected-resources-sha256/v1`，不对整个大型仓库做无界遍历。每个Snapshot必含cwd目录观察，并按`location/path/access`规范排序。资源分为文件、目录和缺失目标：文件保存内容SHA-256；目录保存有界成员观察摘要；缺失目标保存现存父目录身份和目标名。
+`harnessix.workspace-snapshot/v1`使用`selected-resources-sha256/v1`，不对整个大型仓库做无界遍历。每个Snapshot必含cwd目录观察，并按`location/path/access`规范排序。资源分为文件、目录和缺失目标：文件保存内容SHA-256；目录保存有界直接成员的名称、类型与对象身份摘要，不递归绑定未选择成员正文；缺失目标保存现存父目录稳定身份和目标名。目录同名成员被替换会因对象身份变化而过期，未选择成员只改正文不会产生与计划无关的伪过期。
 
 固定限制为单文件8 MiB、总观察正文32 MiB、目录10000项、资源256项、外部根16个。Snapshot不保存宿主根明文路径。执行前按原请求重新捕获，任何root、cwd、资源内容/身份、外部根或访问配置变化均返回`execution_plan_stale`。
 
@@ -454,6 +458,6 @@ Action Audit事件不保存敏感正文：Workspace资源记录路径标识摘�
 
 ### 14.8 验证与当前限制
 
-候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项，全仓本地门禁为3131 passed、11 skipped。
+候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项；Windows Snapshot加固后全仓本地门禁为3139 passed、12 skipped。
 
-0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7实现提交已通过[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵，0.7全部切片据此关闭。
+0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7实现及Windows Snapshot稳定性加固已通过[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵，0.7全部切片据此关闭。

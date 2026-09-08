@@ -1470,8 +1470,12 @@ Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schem
 - remote/ref字段在任何Git子进程前完成准入，选项形态remote、非法branch ref、无效host/SSH user、控制字符和歧义多行响应均失败关闭；Git单行解析兼容LF、CRLF和无行尾三种确定格式；
 - Push命令已经成功但响应被注入丢失时，双层状态均进入unknown；reconcile只执行远端ref观察，成功收敛且Push调用次数为1。
 
-Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delivery和Process超时后代清理扩大回归通过。Ruff和Mypy定向门禁通过；10份新公共Schema与运行时模型逐项相等。全仓本地门禁为**3131 passed、11 skipped**。Windows CAS额外修复`os.open`未显式使用`O_BINARY`导致LF可能被文本模式转换、Blob摘要错误的问题；macOS Process后代超时测试把启动窗口从0.3秒调整为2秒，测试仍验证超时、SIGKILL和整组后代退出，不再把共享Runner冷启动误判为产品失败。
+Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delivery和Process超时后代清理扩大回归通过。Ruff和Mypy定向门禁通过；10份新公共Schema与运行时模型逐项相等。Windows CAS额外修复`os.open`未显式使用`O_BINARY`导致LF可能被文本模式转换、Blob摘要错误的问题；macOS Process后代超时测试把启动窗口从0.3秒调整为2秒，测试仍验证超时、SIGKILL和整组后代退出，不再把共享Runner冷启动误判为产品失败。
+
+关闭提交后的Windows矩阵暴露一次`execution_plan_stale`间歇失败。根因不是正文变化，而是目录Snapshot把Windows枚举缓存中的时间/大小和全部属性作为跨观察身份；第一轮修复又通过新增测试发现`DirEntry.stat()`普通项可能不提供当前File Index，并暴露Git配置漂移测试依赖父目录时间变化而非正式`GitRepositoryBinding.config_sha256`的错误假设。最终实现统一三条语义：目录持久身份只绑定执行相关元数据，直接成员绑定名称/类型/对象身份，显式文件绑定内容；完整revision仍用于单次观察窗口竞态；Git remote配置由批准Intent中的仓库绑定在发网前重新计算并以`git_repository_changed`失败。回归覆盖Windows重开文件稳定、未选择成员正文变化、同名成员替换、易变属性排除及对象/只读/link/size绑定。
+
+最终本地`make check`为**3139 passed、12 skipped，269.72秒**；Ruff格式与规则通过，Mypy严格检查215个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。
 
 本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
 
-最终实现提交`4023904`由[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS，macOS继续验证Process Group超时清理。该门禁不访问模型API或公网Git remote。
+最终加固提交`7cd6079`由[CI 34265610488](https://github.com/carrie1988/Harnessix/actions/runs/34265610488)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理。该门禁不访问模型API或公网Git remote。
