@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "NetworkDestination": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "domain",
+            "cidr"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "protocol": {
+          "enum": [
+            "https",
+            "tcp"
+          ],
+          "title": "Protocol",
+          "type": "string"
+        },
+        "ports": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Ports",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "protocol",
+        "ports"
+      ],
+      "title": "NetworkDestination",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.network-policy/v1",
+      "default": "harnessix.network-policy/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "none",
+        "limited",
+        "restricted",
+        "full"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "destinations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/NetworkDestination"
+      },
+      "maxItems": 64,
+      "title": "Destinations",
+      "type": "array"
+    },
+    "allow_private_addresses": {
+      "default": false,
+      "title": "Allow Private Addresses",
+      "type": "boolean"
+    },
+    "resolution_ttl_seconds": {
+      "default": 60,
+      "maximum": 300,
+      "minimum": 1,
+      "title": "Resolution Ttl Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "mode"
+  ],
+  "title": "NetworkPolicy",
+  "type": "object"
+}

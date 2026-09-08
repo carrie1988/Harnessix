@@ -1,0 +1,76 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.host-sandbox-probe/v1",
+      "default": "harnessix.host-sandbox-probe/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "guarded_available": {
+      "const": true,
+      "default": true,
+      "title": "Guarded Available",
+      "type": "boolean"
+    },
+    "sandboxed_backend": {
+      "anyOf": [
+        {
+          "enum": [
+            "seatbelt",
+            "bubblewrap"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Sandboxed Backend"
+    },
+    "sandboxed_available": {
+      "title": "Sandboxed Available",
+      "type": "boolean"
+    },
+    "backend_identity": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Backend Identity"
+    },
+    "reason_code": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "sandboxed_backend",
+    "sandboxed_available",
+    "backend_identity",
+    "reason_code",
+    "digest"
+  ],
+  "title": "HostSandboxProbe",
+  "type": "object"
+}

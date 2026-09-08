@@ -71,8 +71,10 @@ from harnessix.evals.delivery_contracts import (
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionCapabilityEvidence,
+    ExecutionCapabilityEvidenceV2,
     ExecutionIntent,
     ExecutionPlan,
+    ExecutionPlanV2,
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
@@ -105,6 +107,16 @@ from harnessix.processes.contracts import (
     ProcessStream,
 )
 from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
+from harnessix.sandbox.capabilities import ContainerEngineProbe, HostSandboxProbe
+from harnessix.sandbox.contracts import (
+    ContainerCommandSpec,
+    ContainerSandboxProfile,
+    ManagedEgressBinding,
+    NetworkDestination,
+    NetworkPolicy,
+    NetworkPolicySnapshot,
+    SandboxResourceLimits,
+)
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
 from harnessix.tools.search_contracts import (
@@ -225,12 +237,26 @@ def main() -> None:
         ("execution-capability-evidence", ExecutionCapabilityEvidence),
         ("execution-plan", ExecutionPlan),
         ("execution-approval", ExecutionApprovalCheckpoint),
+        ("network-destination", NetworkDestination),
+        ("network-policy", NetworkPolicy),
+        ("network-policy-snapshot", NetworkPolicySnapshot),
+        ("sandbox-resource-limits", SandboxResourceLimits),
+        ("container-sandbox-profile", ContainerSandboxProfile),
+        ("container-command", ContainerCommandSpec),
+        ("managed-egress-binding", ManagedEgressBinding),
+        ("container-engine-probe", ContainerEngineProbe),
+        ("host-sandbox-probe", HostSandboxProbe),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
         output / "model-history-inspection-v2.schema.json",
         ModelHistoryInspectionV2.model_json_schema(),
     )
+    write_json(
+        output / "execution-capability-evidence-v2.schema.json",
+        ExecutionCapabilityEvidenceV2.model_json_schema(),
+    )
+    write_json(output / "execution-plan-v2.schema.json", ExecutionPlanV2.model_json_schema())
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
         "Process、Context、Coding Eval、可信执行与 OpenAPI Schema"

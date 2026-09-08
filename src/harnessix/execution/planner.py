@@ -10,11 +10,14 @@ from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import (
     EnvironmentBinding,
     ExecutionCapabilityEvidence,
+    ExecutionCapabilityEvidenceV2,
     ExecutionIntent,
     ExecutionPlan,
+    ExecutionPlanV2,
     ExecutionPolicyBinding,
     NetworkMode,
     SandboxBinding,
+    SandboxBindingV2,
     SandboxLevel,
     SecretVersionBinding,
     canonical_digest,
@@ -54,6 +57,47 @@ def build_capability_evidence(
             supports_pty=supports_pty,
             supports_background=supports_background,
             supports_process_tree=supports_process_tree,
+            evidence_digest=canonical_digest(payload),
+        )
+    except ValidationError:
+        raise KernelError("execution_capability_invalid", "执行器能力证据无效") from None
+
+
+def build_capability_evidence_v2(
+    *,
+    platform: PlatformKind,
+    provider: str,
+    provider_version: str,
+    sandbox_levels: tuple[SandboxLevel, ...],
+    network_modes: tuple[NetworkMode, ...],
+    supports_pty: bool,
+    supports_background: bool,
+    supports_process_tree: bool,
+    provider_evidence_digest: str,
+) -> ExecutionCapabilityEvidenceV2:
+    payload = {
+        "spec_version": "harnessix.execution-capability/v2",
+        "platform": platform,
+        "provider": provider,
+        "provider_version": provider_version,
+        "sandbox_levels": list(sandbox_levels),
+        "network_modes": list(network_modes),
+        "supports_pty": supports_pty,
+        "supports_background": supports_background,
+        "supports_process_tree": supports_process_tree,
+        "provider_evidence_digest": provider_evidence_digest,
+    }
+    try:
+        return ExecutionCapabilityEvidenceV2(
+            platform=platform,
+            provider=provider,
+            provider_version=provider_version,
+            sandbox_levels=sandbox_levels,
+            network_modes=network_modes,
+            supports_pty=supports_pty,
+            supports_background=supports_background,
+            supports_process_tree=supports_process_tree,
+            provider_evidence_digest=provider_evidence_digest,
             evidence_digest=canonical_digest(payload),
         )
     except ValidationError:
@@ -168,3 +212,81 @@ def verify_execution_plan(
     )
     if rebuilt != checked or execution_plan_fingerprint(checked) != checked.fingerprint:
         raise KernelError("execution_plan_stale", "执行计划绑定事实已经变化")
+
+
+def build_execution_plan_v2(
+    intent: ExecutionIntent,
+    workspace: WorkspaceSnapshot,
+    *,
+    environment: Mapping[str, str],
+    secrets: Sequence[SecretVersionBinding],
+    sandbox: SandboxBindingV2,
+    policy: ExecutionPolicyBinding,
+    capabilities: ExecutionCapabilityEvidenceV2,
+    plan_id: UUID | None = None,
+) -> ExecutionPlanV2:
+    environment_binding = bind_environment(environment, platform=workspace.platform)
+    secret_binding = tuple(
+        sorted(
+            secrets,
+            key=lambda item: (
+                item.name,
+                item.target.casefold() if workspace.platform == "windows" else item.target,
+            ),
+        )
+    )
+    identifier = plan_id or uuid4()
+    payload = {
+        "spec_version": "harnessix.execution-plan/v2",
+        "plan_id": str(identifier),
+        "intent": intent.model_dump(mode="json", warnings="error"),
+        "workspace": workspace.model_dump(mode="json", warnings="error"),
+        "environment": [item.model_dump(mode="json") for item in environment_binding],
+        "secrets": [item.model_dump(mode="json") for item in secret_binding],
+        "sandbox": sandbox.model_dump(mode="json", warnings="error"),
+        "policy": policy.model_dump(mode="json", warnings="error"),
+        "capabilities": capabilities.model_dump(mode="json", warnings="error"),
+    }
+    try:
+        return ExecutionPlanV2(
+            plan_id=identifier,
+            intent=intent,
+            workspace=workspace,
+            environment=environment_binding,
+            secrets=secret_binding,
+            sandbox=sandbox,
+            policy=policy,
+            capabilities=capabilities,
+            fingerprint=canonical_digest(payload),
+        )
+    except ValidationError:
+        raise KernelError("execution_plan_invalid", "执行计划绑定不符合v2契约") from None
+
+
+def verify_execution_plan_v2(
+    plan: ExecutionPlanV2,
+    *,
+    intent: ExecutionIntent,
+    workspace: WorkspaceSnapshot,
+    environment: Mapping[str, str],
+    secrets: Sequence[SecretVersionBinding],
+    sandbox: SandboxBindingV2,
+    policy: ExecutionPolicyBinding,
+    capabilities: ExecutionCapabilityEvidenceV2,
+) -> None:
+    try:
+        checked = ExecutionPlanV2.model_validate_json(plan.model_dump_json(warnings="error"))
+    except (ValidationError, ValueError):
+        raise KernelError("execution_plan_mismatch", "执行计划v2自身校验失败") from None
+    rebuilt = build_execution_plan_v2(
+        intent,
+        workspace,
+        environment=environment,
+        secrets=secrets,
+        sandbox=sandbox,
+        policy=policy,
+        capabilities=capabilities,
+        plan_id=checked.plan_id,
+    )
+    if rebuilt != checked or execution_plan_fingerprint(checked) != checked.fingerprint:
+        raise KernelError("execution_plan_stale", "执行计划v2绑定事实已经变化")

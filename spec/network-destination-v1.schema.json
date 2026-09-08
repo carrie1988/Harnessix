@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "enum": [
+        "domain",
+        "cidr"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "value": {
+      "maxLength": 253,
+      "minLength": 1,
+      "title": "Value",
+      "type": "string"
+    },
+    "protocol": {
+      "enum": [
+        "https",
+        "tcp"
+      ],
+      "title": "Protocol",
+      "type": "string"
+    },
+    "ports": {
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Ports",
+      "type": "array"
+    }
+  },
+  "required": [
+    "kind",
+    "value",
+    "protocol",
+    "ports"
+  ],
+  "title": "NetworkDestination",
+  "type": "object"
+}

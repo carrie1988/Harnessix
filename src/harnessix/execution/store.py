@@ -5,13 +5,19 @@ import sqlite3
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import PolicyDecisionKind
-from harnessix.execution.contracts import ExecutionApprovalCheckpoint, ExecutionPlan
+from harnessix.execution.contracts import (
+    ExecutionApprovalCheckpoint,
+    ExecutionPlan,
+    ExecutionPlanV2,
+)
 
 _SCHEMA_VERSION = "1"
+ExecutionPlanAny = ExecutionPlan | ExecutionPlanV2
+_PLAN_ADAPTER: TypeAdapter[ExecutionPlanAny] = TypeAdapter(ExecutionPlanAny)
 
 
 class SQLiteExecutionPlanStore:
@@ -75,7 +81,7 @@ class SQLiteExecutionPlanStore:
             """
         )
 
-    def save_plan(self, plan: ExecutionPlan) -> None:
+    def save_plan(self, plan: ExecutionPlanAny) -> None:
         checked = self._validate_plan(plan)
         payload = checked.model_dump_json(warnings="error")
         try:
@@ -103,14 +109,14 @@ class SQLiteExecutionPlanStore:
                 self._db.execute("ROLLBACK")
             raise
 
-    def load_plan(self, plan_id: UUID) -> ExecutionPlan:
+    def load_plan(self, plan_id: UUID) -> ExecutionPlanAny:
         row = self._db.execute(
             "SELECT payload FROM execution_plans WHERE plan_id = ?", (str(plan_id),)
         ).fetchone()
         if row is None:
             raise KernelError("execution_plan_not_found", "Execution Plan不存在")
         try:
-            return ExecutionPlan.model_validate_json(row[0])
+            return _PLAN_ADAPTER.validate_json(row[0])
         except (ValidationError, ValueError, TypeError):
             raise KernelError("execution_store_corrupt", "Execution Plan存储记录损坏") from None
 
@@ -126,7 +132,7 @@ class SQLiteExecutionPlanStore:
             if row is None:
                 raise KernelError("execution_plan_not_found", "审批对应的Execution Plan不存在")
             try:
-                plan = ExecutionPlan.model_validate_json(row[0])
+                plan = _PLAN_ADAPTER.validate_json(row[0])
             except (ValidationError, ValueError, TypeError):
                 raise KernelError("execution_store_corrupt", "Execution Plan存储记录损坏") from None
             if (
@@ -163,9 +169,9 @@ class SQLiteExecutionPlanStore:
             raise KernelError("execution_store_corrupt", "Execution审批存储记录损坏") from None
 
     @staticmethod
-    def _validate_plan(plan: ExecutionPlan) -> ExecutionPlan:
+    def _validate_plan(plan: ExecutionPlanAny) -> ExecutionPlanAny:
         try:
-            return ExecutionPlan.model_validate_json(plan.model_dump_json(warnings="error"))
+            return _PLAN_ADAPTER.validate_json(plan.model_dump_json(warnings="error"))
         except (ValidationError, ValueError, TypeError):
             raise KernelError("execution_plan_invalid", "Execution Plan不符合持久化契约") from None
 

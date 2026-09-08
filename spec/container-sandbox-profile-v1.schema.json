@@ -1,0 +1,263 @@
+{
+  "$defs": {
+    "NetworkDestination": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "domain",
+            "cidr"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "protocol": {
+          "enum": [
+            "https",
+            "tcp"
+          ],
+          "title": "Protocol",
+          "type": "string"
+        },
+        "ports": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Ports",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "protocol",
+        "ports"
+      ],
+      "title": "NetworkDestination",
+      "type": "object"
+    },
+    "NetworkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.network-policy/v1",
+          "default": "harnessix.network-policy/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "none",
+            "limited",
+            "restricted",
+            "full"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "destinations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NetworkDestination"
+          },
+          "maxItems": 64,
+          "title": "Destinations",
+          "type": "array"
+        },
+        "allow_private_addresses": {
+          "default": false,
+          "title": "Allow Private Addresses",
+          "type": "boolean"
+        },
+        "resolution_ttl_seconds": {
+          "default": 60,
+          "maximum": 300,
+          "minimum": 1,
+          "title": "Resolution Ttl Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "NetworkPolicy",
+      "type": "object"
+    },
+    "NetworkPolicySnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.network-policy-snapshot/v1",
+          "default": "harnessix.network-policy-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/NetworkPolicy"
+        },
+        "resolutions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NetworkResolution"
+          },
+          "maxItems": 64,
+          "title": "Resolutions",
+          "type": "array"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy",
+        "digest"
+      ],
+      "title": "NetworkPolicySnapshot",
+      "type": "object"
+    },
+    "NetworkResolution": {
+      "additionalProperties": false,
+      "properties": {
+        "hostname": {
+          "maxLength": 253,
+          "minLength": 1,
+          "title": "Hostname",
+          "type": "string"
+        },
+        "addresses": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Addresses",
+          "type": "array"
+        },
+        "resolved_at": {
+          "format": "date-time",
+          "title": "Resolved At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "hostname",
+        "addresses",
+        "resolved_at",
+        "expires_at"
+      ],
+      "title": "NetworkResolution",
+      "type": "object"
+    },
+    "SandboxResourceLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "cpus": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "maximum": 32,
+          "title": "Cpus",
+          "type": "number"
+        },
+        "memory_bytes": {
+          "default": 1073741824,
+          "maximum": 68719476736,
+          "minimum": 67108864,
+          "title": "Memory Bytes",
+          "type": "integer"
+        },
+        "pids": {
+          "default": 256,
+          "maximum": 4096,
+          "minimum": 16,
+          "title": "Pids",
+          "type": "integer"
+        },
+        "tmpfs_bytes": {
+          "default": 268435456,
+          "maximum": 4294967296,
+          "minimum": 16777216,
+          "title": "Tmpfs Bytes",
+          "type": "integer"
+        }
+      },
+      "title": "SandboxResourceLimits",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.container-sandbox-profile/v1",
+      "default": "harnessix.container-sandbox-profile/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "image": {
+      "maxLength": 512,
+      "minLength": 71,
+      "title": "Image",
+      "type": "string"
+    },
+    "workspace_mode": {
+      "enum": [
+        "read_only",
+        "read_write"
+      ],
+      "title": "Workspace Mode",
+      "type": "string"
+    },
+    "run_as": {
+      "default": "65532:65532",
+      "pattern": "^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$",
+      "title": "Run As",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/SandboxResourceLimits"
+    },
+    "network": {
+      "$ref": "#/$defs/NetworkPolicySnapshot"
+    },
+    "egress_gateway_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Egress Gateway Digest"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "image",
+    "workspace_mode",
+    "network",
+    "digest"
+  ],
+  "title": "ContainerSandboxProfile",
+  "type": "object"
+}

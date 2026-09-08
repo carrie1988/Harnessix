@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "network_name": {
+      "pattern": "^harnessix-internal-[a-z0-9]{12,64}$",
+      "title": "Network Name",
+      "type": "string"
+    },
+    "proxy_url": {
+      "pattern": "^http://harnessix-egress:[1-9][0-9]{0,4}$",
+      "title": "Proxy Url",
+      "type": "string"
+    },
+    "policy_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Policy Digest",
+      "type": "string"
+    },
+    "gateway_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Gateway Digest",
+      "type": "string"
+    },
+    "internal_network_attestation": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Internal Network Attestation",
+      "type": "string"
+    }
+  },
+  "required": [
+    "network_name",
+    "proxy_url",
+    "policy_digest",
+    "gateway_digest",
+    "internal_network_attestation"
+  ],
+  "title": "ManagedEgressBinding",
+  "type": "object"
+}

@@ -1,0 +1,70 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.container-engine-probe/v1",
+      "default": "harnessix.container-engine-probe/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "engine": {
+      "enum": [
+        "docker",
+        "podman"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "client_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Client Version",
+      "type": "string"
+    },
+    "server_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Server Version",
+      "type": "string"
+    },
+    "executable_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Executable Identity",
+      "type": "string"
+    },
+    "available": {
+      "const": true,
+      "default": true,
+      "title": "Available",
+      "type": "boolean"
+    },
+    "rootless": {
+      "title": "Rootless",
+      "type": "boolean"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "engine",
+    "client_version",
+    "server_version",
+    "executable_identity",
+    "rootless",
+    "digest"
+  ],
+  "title": "ContainerEngineProbe",
+  "type": "object"
+}

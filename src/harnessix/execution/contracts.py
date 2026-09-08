@@ -182,6 +182,21 @@ class ExecutionPlan(ExecutionContract):
         return self
 
 
+class SandboxBindingV2(SandboxBinding):
+    profile_digest: Revision
+
+
+class ExecutionCapabilityEvidenceV2(ExecutionCapabilityEvidence):
+    spec_version: Literal["harnessix.execution-capability/v2"] = "harnessix.execution-capability/v2"
+    provider_evidence_digest: Revision
+
+
+class ExecutionPlanV2(ExecutionPlan):
+    spec_version: Literal["harnessix.execution-plan/v2"] = "harnessix.execution-plan/v2"  # type: ignore[assignment]
+    sandbox: SandboxBindingV2
+    capabilities: ExecutionCapabilityEvidenceV2
+
+
 class ExecutionApprovalCheckpoint(ExecutionContract):
     spec_version: Literal["harnessix.execution-approval/v1"] = "harnessix.execution-approval/v1"
     plan_id: UUID
@@ -209,7 +224,7 @@ def capability_evidence_digest(evidence: ExecutionCapabilityEvidence) -> str:
 
 
 def execution_is_approved(
-    plan: ExecutionPlan, checkpoint: ExecutionApprovalCheckpoint | None
+    plan: ExecutionPlan | ExecutionPlanV2, checkpoint: ExecutionApprovalCheckpoint | None
 ) -> bool:
     if plan.policy.decision is PolicyDecisionKind.DENY:
         return False

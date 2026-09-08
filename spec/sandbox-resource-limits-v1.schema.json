@@ -1,0 +1,35 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "cpus": {
+      "default": 2.0,
+      "exclusiveMinimum": 0,
+      "maximum": 32,
+      "title": "Cpus",
+      "type": "number"
+    },
+    "memory_bytes": {
+      "default": 1073741824,
+      "maximum": 68719476736,
+      "minimum": 67108864,
+      "title": "Memory Bytes",
+      "type": "integer"
+    },
+    "pids": {
+      "default": 256,
+      "maximum": 4096,
+      "minimum": 16,
+      "title": "Pids",
+      "type": "integer"
+    },
+    "tmpfs_bytes": {
+      "default": 268435456,
+      "maximum": 4294967296,
+      "minimum": 16777216,
+      "title": "Tmpfs Bytes",
+      "type": "integer"
+    }
+  },
+  "title": "SandboxResourceLimits",
+  "type": "object"
+}
