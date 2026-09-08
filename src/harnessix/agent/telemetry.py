@@ -33,6 +33,8 @@ OperationName = Literal[
     "history",
     "compaction",
 ]
+ThreadLifecycleAction = Literal["resume", "fork", "archive"]
+ThreadLifecycleOutcome = Literal["completed", "idempotent", "rejected"]
 _OUTCOMES = frozenset(
     {
         "ok",
@@ -290,3 +292,24 @@ class KernelTelemetry:
                 "harnessix.agent.turns.finished", attributes=labels
             )
         )
+
+    def thread_lifecycle(
+        self,
+        action: ThreadLifecycleAction,
+        outcome: ThreadLifecycleOutcome,
+        *,
+        inherited_items: int = 0,
+    ) -> None:
+        labels = {"action": action, "outcome": outcome}
+        self._send(
+            lambda: self.observability.increment(
+                "harnessix.agent.thread.lifecycle", attributes=labels
+            )
+        )
+        if action == "fork":
+            self._send(
+                lambda: self.observability.record(
+                    "harnessix.agent.thread.fork.inherited_items",
+                    inherited_items,
+                )
+            )

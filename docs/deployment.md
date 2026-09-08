@@ -851,7 +851,7 @@ context = SourcedContextEngine(
 
 ## 0.6.2c稳定Tool Result视图部署
 
-Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，当前活动窗口写入版本已推进至v15/migration17。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，仓库当前写入版本已推进至v16/migration18。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
 
 ### 宿主配置与限制
 
@@ -864,7 +864,7 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 
 ### 独立wheel升级验收
 
-使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v15 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
+使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建当前wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
 
 1. 旧环境：`python -I tool_result_view_upgrade_probe.py create <验证目录>`；真实搜索产生40条预览、100条归档及v12会话。
 2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15-17且全部旧事件、投影与Artifact原字节不变。
@@ -880,7 +880,7 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 
 独立wheel验证使用`scripts/compaction_ledger_upgrade_probe.py`：旧环境由`ff15533`构建v13 wheel，新环境使用当前wheel，均不安装可选模型SDK。先由旧环境执行`create`，新环境执行`upgrade`，旧环境执行`old-reader`，新环境执行`append`，最后再次由旧环境执行`old-reader`。参数为仓库外绝对验证目录。append仅提交离线摘要事实及重开验证，不访问供应商API。
 
-该门禁在v14发布时只验证摘要账本。当前v15对紧邻Thread尾部的summarized候选执行确定性窗口恢复，不重发摘要；其他planned/running或未持久候选仍保守中断。旧v13 reader遇到migration16必须返回schema_too_new且不修改数据库。
+该门禁在v14发布时只验证摘要账本。当前运行时对紧邻Thread尾部的summarized候选执行确定性窗口恢复，不重发摘要；其他planned/running或未持久候选仍保守中断。旧v13 reader遇到migration16必须返回schema_too_new且不修改数据库。
 
 ## 0.6.3自动Compaction与活动窗口部署
 
@@ -905,7 +905,7 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 
 ### 独立wheel升级验收
 
-使用`scripts/compaction_window_upgrade_probe.py`，旧环境由`b20948e`构建真实v14 wheel，当前环境构建v15 wheel。两个环境均不需要供应商SDK或模型凭据。按顺序执行：
+使用`scripts/compaction_window_upgrade_probe.py`，旧环境由`b20948e`构建真实v14 wheel，当前环境构建当前wheel。两个环境均不需要供应商SDK或模型凭据。按顺序执行：
 
 1. v14：`python -I compaction_window_upgrade_probe.py create <验证目录>`，创建长历史及已结算summarized候选；
 2. v15：`python -I compaction_window_upgrade_probe.py upgrade <验证目录>`，只追加migration17并验证旧事件、投影原字节；
@@ -913,3 +913,18 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 4. v14：`python -I compaction_window_upgrade_probe.py old-reader <验证目录>`，必须返回`schema_too_new`且不修改数据库。
 
 部署升级前关闭旧宿主并制作SQLite一致备份。新版本首次打开可能为尾部summarized候选追加窗口和Interrupted终态，这是预期的确定性恢复写入。产生migration17或v15事件后，回退必须恢复升级前备份；禁止删除迁移记录、手工下调projection version或移除窗口字段。
+
+## 0.6.4 Thread生命周期部署
+
+`0018_thread_lifecycle.sql`将最低reader推进至Event/Thread v16，SHA256为`4cbe8c146e4ed71f021e9be45b63da3b5b691115307412dd61e4ffcb277a2f9c`。迁移只追加marker，不改写v1-v15 Event、Projection、Artifact或Effect Journal，不需要远程数据库或新增中间件。
+
+运行边界：
+
+- Resume只读取同一Thread投影；Runtime打开时仍由既有恢复器处理活跃Turn，Resume本身不重放Provider或工具；
+- Fork只接受未归档、无活跃Turn的来源和终结Turn边界；单宿主锁与SQLite来源CAS共同防止来源漂移；
+- Fork最多物化8192项、8 MiB历史。容量规划必须同时计算子Thread首事件、投影和WAL峰值；不得通过提高上限绕过历史Compaction；
+- Artifact不复制，子Thread依赖原所有者记录及其TTL。归档来源不会删除Artifact，但过期清理策略必须覆盖产品允许的分支寿命；
+- Archive为不可逆只读标记。上线前应明确客户端隐藏策略；恢复工作应创建安全Fork，不能直接修改归档数据库；
+- 监控`harnessix.agent.thread.lifecycle{action,outcome}`和`harnessix.agent.thread.fork.inherited_items`，不得把Thread ID、路径、请求ID、Artifact ID或正文写入Metric标签。
+
+独立wheel验收使用`scripts/thread_lifecycle_upgrade_probe.py`：旧环境由`97c667a`构建v15 wheel，当前环境构建v16 wheel。按`create → upgrade → old-reader`顺序执行：v15创建终结Thread；v16只追加migration18并以零Provider请求完成Resume、Fork和Archive Replay/Rebuild；v15 reader必须以`schema_too_new`拒绝且不修改数据库。升级前停止旧Runtime并制作SQLite一致备份；产生migration18或v16事件后，回退只能恢复该备份。

@@ -279,7 +279,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)；当前Event/Thread为v15、Session migration为17，实现和本地完整验收通过，远端CI待对应提交确认。0.6.4会话生命周期与0.6.5综合恢复仍待推进。见[详细实施设计](m06-context-and-sessions.md)。
+状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)，并通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已完成[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)及[Resume/Fork/Archive详细设计](thread-lifecycle.md)对应实现；当前Event/Thread为v16、Session migration为18，本地严格验收通过，远端CI待实现提交确认。0.6.5综合恢复仍待推进。见[详细实施设计](m06-context-and-sessions.md)。
 
 ### 目标
 
@@ -294,7 +294,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [x] Tool Result 裁剪和完整结果引用（0.6.2c稳定视图与Artifact覆盖校验）；
 - [x] 自动 Compaction；
 - [x] Compaction Summary 的版本和持久化；
-- [ ] Session Resume、Fork 和 Archive；
+- [x] Session Resume、Fork 和 Archive；
 - [ ] Turn Retry 与 Interrupted Recovery；
 - [x] Context Inspect 诊断输出；
 - [ ] 历史规范化和 Provider 切换兼容。

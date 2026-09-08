@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：已随实现更新至0.6.3自动Compaction与活动窗口本地完整验收
+- 状态：已随实现更新至0.6.4 Thread生命周期本地完整验收
 - 更新日期：2026-09-08
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1230,7 +1230,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 60. 0.6.3自动Compaction与活动窗口验收（2026-09-08）
 
-状态：自动Compaction实现和本地完整门禁通过；远端Python 3.12、Python 3.13、macOS与PostgreSQL矩阵待对应实现提交确认。设计见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)与[运行时详细设计](compaction-runtime-and-windows.md)。
+状态：自动Compaction实现、本地完整门禁及远端Python 3.12、Python 3.13、macOS与PostgreSQL矩阵全部通过。设计见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)与[运行时详细设计](compaction-runtime-and-windows.md)。
 
 实现专项共370项通过，主要覆盖：
 
@@ -1253,6 +1253,23 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - Schema连续生成两次聚合SHA256均为`a629b92323d63f136b8787a8d9864cd5deb336da6833052a7db96bc1324edf29`；新增Event/Thread v15、Compaction Runtime/Window v1、Model History Inspection v2及Compaction语义Case/Report v1，冻结v14及更早Schema未改写；
 - migration17 SHA256为`d6bdd00f06924d02580129a96e785e000e75e748d0195b64345cefb317b19b02`。
 
-真实独立wheel升级使用`b20948e`构建的v14 wheel和当前v15 wheel，SHA256分别为`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`与`b7f2832bc35c2043969bf31a543d51c1aaeaedea8dcfa67543e4ec94d1c53747`。`scripts/compaction_window_upgrade_probe.py`验证v14创建长历史及已结算候选，v15只追加migration17且保持旧事件/投影原字节，首次重开零Provider请求发布唯一窗口，随后v14 reader明确拒绝新库且不修改数据库。
+真实独立wheel升级使用`b20948e`构建的v14 wheel和该切片v15 wheel，SHA256分别为`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`与`b7f2832bc35c2043969bf31a543d51c1aaeaedea8dcfa67543e4ec94d1c53747`。`scripts/compaction_window_upgrade_probe.py`验证v14创建长历史及已结算候选，v15只追加migration17且保持旧事件/投影原字节，首次重开零Provider请求发布唯一窗口，随后v14 reader明确拒绝新库且不修改数据库。
 
-本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。0.6.4会话生命周期与0.6.5综合恢复仍需继续实施。
+本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。远端[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。0.6.4会话生命周期已进入下一节，0.6.5综合恢复仍需继续实施。
+
+## 61. 0.6.4 Thread生命周期验收（2026-09-08）
+
+状态：Resume、无授权Fork、Archive、跨代Artifact所有者和来源CAS实现及本地完整门禁通过；远端矩阵待实现提交确认。设计见[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)与[Thread生命周期详细设计](thread-lifecycle.md)。
+
+验收覆盖：
+
+- Resume复用原Thread身份，不新增事件、调用Provider或执行工具；归档Thread明确拒绝Resume；
+- 空Thread、最新终结Turn和指定终结Turn Fork，边界后历史不进入子Thread；
+- 继承Tool Call/Result完整配对与冻结模型视图，后续Turn不再次执行来源工具；
+- Artifact保留真实父级或祖先Thread所有者，按当前Workspace能力在发网前验证正文、TTL与覆盖；
+- 确定性request幂等、来源变化冲突、普通`append`绕过来源CAS失败关闭；
+- 活跃Turn不能Fork或Archive，归档后不能接受新Turn或其他状态修改；同原因Archive幂等、不同原因冲突；
+- Fork和Archive共七个真实子进程硬退出切点，验证事务前回滚、Commit后完整可见、重开零Provider请求及Replay/Rebuild；
+- v15→v16独立wheel升级：旧wheel SHA256为`63a8592bd3f49063bb354dc62079be2fb79ab66f36b4bd4887d1bf5cb076e133`，v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`；migration18只追加marker，旧事件和投影原字节不变，v15 reader拒绝新库且不修改数据库。
+
+完整质量结果：严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为**2914 passed、2 skipped，266.43秒**；Ruff格式与规则通过；Mypy严格检查164个源文件通过；Schema连续生成两次聚合SHA256均为`e9e54ad0afd92c0d9de41477d32e2c52a43cdc0ec0b2e38bd2764c7a59d0004a`；migration18 SHA256为`4cbe8c146e4ed71f021e9be45b63da3b5b691115307412dd61e4ffcb277a2f9c`。验证未使用模型凭据、SSH、远程服务器或新增中间件。

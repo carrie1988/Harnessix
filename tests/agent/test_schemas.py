@@ -5,7 +5,14 @@ from uuid import uuid4
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from harnessix.agent.models import AgentEvent, CompactionWindow, EventDraft, Thread
+from harnessix.agent.models import (
+    AgentEvent,
+    CompactionWindow,
+    EventDraft,
+    Thread,
+    ThreadArchiveRecord,
+    ThreadForkSnapshot,
+)
 from harnessix.context import (
     ContextBuildInput,
     ContextConsistencySnapshot,
@@ -55,10 +62,12 @@ def test_generated_schemas_match_code() -> None:
         "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
         "model-history-inspection-v2.schema.json": ModelHistoryInspectionV2.model_json_schema(),
         "compaction-window-v1.schema.json": CompactionWindow.model_json_schema(),
+        "thread-fork-v1.schema.json": ThreadForkSnapshot.model_json_schema(),
+        "thread-archive-v1.schema.json": ThreadArchiveRecord.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v15.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v15.schema.json": Thread.model_json_schema(),
+        "agent-event-v16.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v16.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -91,7 +100,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 16,
+                "schema_version": 17,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -125,7 +134,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 15
+        assert EventDraft(payload=payload).schema_version == 16
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -144,7 +153,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 15
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 16
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -174,7 +183,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 15
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 16
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:

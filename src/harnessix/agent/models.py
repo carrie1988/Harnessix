@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -40,6 +42,7 @@ from harnessix.context.tool_result_contracts import (
     ModelHistoryInspectionRecord,
     ModelHistoryInspectionV2,
     ToolResultViewDecision,
+    ToolResultViewPolicy,
 )
 from harnessix.domain.models import (
     ActionStatus,
@@ -405,6 +408,89 @@ class Item(ContractModel):
     error: AgentFailure | None = None
 
 
+class ForkArtifactOwner(ContractModel):
+    artifact_id: UUID
+    owner_thread_id: UUID
+
+
+class ThreadForkSnapshot(ContractModel):
+    """Fork继承的只读历史；不属于子Thread的可执行Turn。"""
+
+    spec_version: Literal["harnessix.thread-fork/v1"] = "harnessix.thread-fork/v1"
+    authority: Literal["none"] = "none"
+    request_id: str = Field(min_length=1, max_length=256)
+    source_thread_id: UUID
+    source_sequence: int = Field(ge=1, strict=True)
+    through_turn_id: UUID | None = None
+    source_compaction_window_id: UUID | None = None
+    source_thread_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    view_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tool_result_view_policy: ToolResultViewPolicy
+    items: tuple[Item, ...] = Field(default_factory=tuple, max_length=8192)
+    tool_result_view_decisions: tuple[ToolResultViewDecision, ...] = Field(
+        default_factory=tuple, max_length=8192
+    )
+    artifact_owners: tuple[ForkArtifactOwner, ...] = Field(default_factory=tuple, max_length=16384)
+
+    @model_validator(mode="after")
+    def safe_history(self) -> Self:
+        if len({item.item_id for item in self.items}) != len(self.items):
+            raise ValueError("Fork历史Item身份重复")
+        calls: set[UUID] = set()
+        settled: set[UUID] = set()
+        result_ids: set[UUID] = set()
+        for item in self.items:
+            if item.status != ItemStatus.COMPLETED or not isinstance(
+                item.content, TextContent | ToolCallContent | ToolResultContent
+            ):
+                raise ValueError("Fork只能继承已完成的模型历史Item")
+            if isinstance(item.content, ToolCallContent):
+                if item.content.call_id in calls:
+                    raise ValueError("Fork历史Tool Call身份重复")
+                calls.add(item.content.call_id)
+            elif isinstance(item.content, ToolResultContent):
+                if item.content.call_id not in calls or item.content.call_id in settled:
+                    raise ValueError("Fork历史Tool Result缺少唯一前置调用")
+                settled.add(item.content.call_id)
+                result_ids.add(item.item_id)
+        if calls != settled:
+            raise ValueError("Fork历史不能继承未结算Tool Call")
+        decisions = self.tool_result_view_decisions
+        if (
+            len({decision.item_id for decision in decisions}) != len(decisions)
+            or {decision.item_id for decision in decisions} != result_ids
+        ):
+            raise ValueError("Fork历史必须为每个Tool Result冻结唯一模型视图")
+        owner_ids = [owner.artifact_id for owner in self.artifact_owners]
+        referenced_ids = {
+            binding.artifact.artifact_id
+            for decision in decisions
+            for binding in decision.references
+        }
+        if len(set(owner_ids)) != len(owner_ids) or set(owner_ids) != referenced_ids:
+            raise ValueError("Fork历史Artifact所有者必须完整且唯一")
+        encoded = json.dumps(
+            [item.model_dump(mode="json") for item in self.items],
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        if len(encoded) > 8_388_608:
+            raise ValueError("Fork历史超过8 MiB持久化上限")
+        if hashlib.sha256(encoded).hexdigest() != self.source_history_sha256:
+            raise ValueError("Fork历史摘要与Item不一致")
+        return self
+
+
+class ThreadArchiveRecord(ContractModel):
+    spec_version: Literal["harnessix.thread-archive/v1"] = "harnessix.thread-archive/v1"
+    archived_event_sequence: int = Field(ge=2, strict=True)
+    archived_at: AwareDatetime
+    reason: str | None = Field(default=None, min_length=1, max_length=1000)
+
+
 class CompactionWindow(ContractModel):
     spec_version: Literal["harnessix.compaction-window/v1"] = "harnessix.compaction-window/v1"
     window_id: UUID
@@ -479,6 +565,8 @@ class Thread(ContractModel):
     turns: tuple[Turn, ...] = ()
     compaction_windows: tuple[CompactionWindow, ...] = Field(default_factory=tuple, max_length=1000)
     active_compaction_window_id: UUID | None = None
+    fork_snapshot: ThreadForkSnapshot | None = None
+    archive: ThreadArchiveRecord | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -499,6 +587,10 @@ class Thread(ContractModel):
             previous = window.window_id
         if self.active_compaction_window_id != previous:
             raise ValueError("活动Compaction窗口必须指向线性链尾")
+        if self.fork_snapshot is not None and self.fork_snapshot.source_thread_id == self.thread_id:
+            raise ValueError("Thread不能Fork自身")
+        if self.archive is not None and self.archive.archived_event_sequence != self.sequence:
+            raise ValueError("归档记录必须位于Thread当前序号")
         return self
 
 
@@ -512,6 +604,24 @@ class ThreadCreated(ContractModel):
         if not Path(value).is_absolute():
             raise ValueError("Workspace 必须使用绝对路径")
         return value
+
+
+class ThreadForked(ContractModel):
+    type: Literal["thread_forked"] = "thread_forked"
+    workspace: str = Field(min_length=1, max_length=4096)
+    snapshot: ThreadForkSnapshot
+
+    @field_validator("workspace")
+    @classmethod
+    def absolute_workspace(cls, value: str) -> str:
+        if not Path(value).is_absolute():
+            raise ValueError("Workspace 必须使用绝对路径")
+        return value
+
+
+class ThreadArchived(ContractModel):
+    type: Literal["thread_archived"] = "thread_archived"
+    reason: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
 class TurnStarted(ContractModel):
@@ -561,6 +671,8 @@ class CompactionWindowActivated(ContractModel):
 
 EventPayload = Annotated[
     ThreadCreated
+    | ThreadForked
+    | ThreadArchived
     | TurnStarted
     | TurnStateChanged
     | ItemStarted
@@ -578,7 +690,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] = 15
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] = 16
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -604,6 +716,8 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 16 and isinstance(self.payload, ThreadForked | ThreadArchived):
+            raise ValueError("Thread生命周期事件需要Agent Event v16")
         if self.schema_version < 15 and (
             isinstance(self.payload, CompactionWindowActivated)
             or (

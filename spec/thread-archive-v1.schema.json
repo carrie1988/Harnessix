@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.thread-archive/v1",
+      "default": "harnessix.thread-archive/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "archived_event_sequence": {
+      "minimum": 2,
+      "title": "Archived Event Sequence",
+      "type": "integer"
+    },
+    "archived_at": {
+      "format": "date-time",
+      "title": "Archived At",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "archived_event_sequence",
+    "archived_at"
+  ],
+  "title": "ThreadArchiveRecord",
+  "type": "object"
+}

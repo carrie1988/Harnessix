@@ -9,14 +9,84 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.ids import new_id
-from harnessix.agent.models import Budget, EventDraft, ThreadCreated, TurnStarted
+from harnessix.agent.lifecycle import prepare_fork_snapshot
+from harnessix.agent.models import Budget, EventDraft, ThreadCreated, ThreadForked, TurnStarted
 from harnessix.agent.reducer import replay
+from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.session.ports import SessionStore
 
 StoreFactory = Callable[[str], SessionStore]
 
 
 class SessionStoreContract:
+    async def test_fork_requires_source_cas_and_is_idempotent(
+        self, store_factory: StoreFactory
+    ) -> None:
+        store = store_factory("shared")
+        await store.initialize()
+        source_id, destination_id = new_id(), new_id()
+        source = await store.append(
+            source_id,
+            [EventDraft(payload=ThreadCreated(workspace="/workspace"))],
+            expected_sequence=0,
+        )
+        snapshot = prepare_fork_snapshot(
+            source,
+            request_id="fork-contract",
+            through_turn_id=None,
+            policy=ToolResultViewPolicy(),
+        ).snapshot
+        draft = EventDraft(
+            occurred_at=source.updated_at,
+            payload=ThreadForked(workspace=source.workspace, snapshot=snapshot),
+        )
+
+        with pytest.raises(KernelError, match="Fork"):
+            await store.append(destination_id, [draft], expected_sequence=0)
+
+        child = await store.fork(
+            source_id,
+            destination_id,
+            draft,
+            expected_source_sequence=source.sequence,
+        )
+        assert child.fork_snapshot == snapshot
+        assert (
+            await store.fork(
+                source_id,
+                destination_id,
+                draft,
+                expected_source_sequence=source.sequence,
+            )
+            == child
+        )
+        assert replay(await store.events(destination_id)) == child
+        assert await store.rebuild(destination_id) == child
+
+        advanced = await store.append(
+            source_id,
+            [
+                EventDraft(
+                    turn_id=new_id(),
+                    payload=TurnStarted(
+                        request_id="source-advanced",
+                        request_fingerprint="0" * 64,
+                        budget=Budget(),
+                    ),
+                )
+            ],
+            expected_sequence=source.sequence,
+        )
+        assert advanced.sequence == source.sequence + 1
+        with pytest.raises(KernelError) as error:
+            await store.fork(
+                source_id,
+                new_id(),
+                draft.model_copy(update={"event_id": new_id()}),
+                expected_source_sequence=source.sequence,
+            )
+        assert error.value.code == "sequence_conflict"
+
     async def test_identity_idempotency_and_cursor(self, store_factory: StoreFactory) -> None:
         store = store_factory("shared")
         await store.initialize()

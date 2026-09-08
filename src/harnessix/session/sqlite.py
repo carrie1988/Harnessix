@@ -15,7 +15,8 @@ import aiosqlite
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import AgentEvent, EventDraft, Thread
+from harnessix.agent.lifecycle import validate_fork_snapshot
+from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import apply_event, replay
 from harnessix.session.errors import storage_errors
 
@@ -196,6 +197,7 @@ class SQLiteSessionStore:
             13,
             14,
             15,
+            16,
         ):
             raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
         if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
@@ -236,7 +238,7 @@ class SQLiteSessionStore:
         await database.execute(
             "INSERT INTO agent_threads "
             "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-            "VALUES (?, ?, ?, ?, 15) "
+            "VALUES (?, ?, ?, ?, 16) "
             "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
             "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
             "projection_version = excluded.projection_version",
@@ -256,10 +258,57 @@ class SQLiteSessionStore:
         expected_sequence: int,
     ) -> Thread:
         batch = self._freeze_batch(drafts)
+        if any(isinstance(draft.payload, ThreadForked) for draft in batch):
+            raise KernelError("thread_fork_requires_cas", "Fork必须同时校验来源Thread")
         async with self._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
             thread, changed = await self._append_in_transaction(
                 database, thread_id, batch, expected_sequence=expected_sequence
+            )
+            await database.commit()
+            if changed:
+                self._fault("session.after_commit")
+            return thread
+
+    async def fork(
+        self,
+        source_thread_id: UUID,
+        destination_thread_id: UUID,
+        draft: EventDraft,
+        *,
+        expected_source_sequence: int,
+    ) -> Thread:
+        batch = self._freeze_batch((draft,))
+        payload = batch[0].payload
+        if (
+            not isinstance(payload, ThreadForked)
+            or batch[0].turn_id is not None
+            or source_thread_id == destination_thread_id
+            or payload.snapshot.source_thread_id != source_thread_id
+        ):
+            raise KernelError("thread_fork_invalid", "Fork创建事件或Thread身份不合法")
+        async with self._connection() as database:
+            await database.execute("BEGIN IMMEDIATE")
+            destination = await self._snapshot(database, destination_thread_id)
+            if destination is not None:
+                thread, changed = await self._append_in_transaction(
+                    database, destination_thread_id, batch, expected_sequence=0
+                )
+                await database.commit()
+                if changed:
+                    self._fault("session.after_commit")
+                return thread
+            source = await self._snapshot(database, source_thread_id)
+            if source is None:
+                raise KernelError("thread_not_found", "Fork来源Thread不存在")
+            if source.sequence != expected_source_sequence:
+                raise KernelError("sequence_conflict", "Fork来源Thread已更新")
+            if payload.workspace != source.workspace:
+                raise KernelError("thread_fork_invalid", "Fork不能改变来源Workspace")
+            validate_fork_snapshot(source, payload.snapshot)
+            self._fault("session.fork.after_source")
+            thread, changed = await self._append_in_transaction(
+                database, destination_thread_id, batch, expected_sequence=0
             )
             await database.commit()
             if changed:
@@ -368,7 +417,33 @@ class SQLiteSessionStore:
     async def rebuild(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
-            thread = replay(await self._events(database, thread_id, 0))
+            thread = await self._validated_replay(database, thread_id, None, frozenset())
             await self._save(database, thread)
             await database.commit()
             return thread
+
+    async def _validated_replay(
+        self,
+        database: aiosqlite.Connection,
+        thread_id: UUID,
+        through_sequence: int | None,
+        ancestors: frozenset[UUID],
+    ) -> Thread:
+        if thread_id in ancestors:
+            raise KernelError("thread_fork_invalid", "Fork来源链存在循环")
+        events = await self._events(database, thread_id, 0)
+        if through_sequence is not None:
+            if len(events) < through_sequence:
+                raise KernelError("thread_fork_invalid", "Fork来源事件前缀缺失")
+            events = events[:through_sequence]
+        thread = replay(events)
+        snapshot = thread.fork_snapshot
+        if snapshot is not None:
+            source = await self._validated_replay(
+                database,
+                snapshot.source_thread_id,
+                snapshot.source_sequence,
+                ancestors | {thread_id},
+            )
+            validate_fork_snapshot(source, snapshot)
+        return thread

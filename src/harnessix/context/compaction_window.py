@@ -165,3 +165,9 @@ def prepare_active_model_history(
         new_decisions=prepared.new_decisions,
         references=prepared.references,
     )
+
+
+def active_model_history_source(thread: Thread) -> tuple[Item, ...]:
+    """返回活动窗口背后的原始模型历史；供Fork在不复制私有Turn状态时冻结边界。"""
+    window = active_window(thread)
+    return history_items(thread) if window is None else _window_source(thread, window)

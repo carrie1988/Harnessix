@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.2c工具结果模型视图切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.4 Thread生命周期切片）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -13,7 +13,7 @@
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
-- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval；当前Event/Thread为v15、migration为17，会话Fork/Archive仍未接入，见[实施设计](m06-context-and-sessions.md)与[自动Compaction详设](compaction-runtime-and-windows.md)；
+- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval，并通过远端CI。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS；当前Event/Thread为v16、migration为18，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)与[Thread生命周期详设](thread-lifecycle.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -187,7 +187,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 
 第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
 
-当前Agent Event/Thread为v15，最低读者由Migration 0017约束；v1–v14事件与旧Schema保持原文。受管Patch的完整计划/镜像/意图留在副本账本，Session保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用ID只读核对，不重放写入。尝试用量属于Session事实，不放入对话Item或外部副作用Journal。
+当前Agent Event/Thread为v16，最低读者由Migration 0018约束；v1–v15事件与旧Schema保持原文。受管Patch的完整计划/镜像/意图留在副本账本，Session保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用ID只读核对，不重放写入。尝试用量属于Session事实，不放入对话Item或外部副作用Journal。
 
 ### 4.9 Harnessix Action Plane
 
@@ -453,4 +453,10 @@ src/harnessix/
 
 事实层仍由Session Event、原始Item、效果证据和Artifact构成，不能因输入预算回写或删除。投影层由纯`prepare_model_history`生成；`ModelHistoryPrepared`以Event v13保存首次决定和每步检查。Kernel先核验Artifact的当前访问scope、关联与内容，再提交决定并规划Context，最后发送模型请求。
 
-Artifact完整性是字段覆盖证明而非通用“备份成功”标志：搜索归档只覆盖记录，Process归档只覆盖已捕获流，Batch Diff只覆盖差异。后两者不能替代任意结果字段。旧模型前缀、Artifact TTL、取消/超时和崩溃重启均属于此边界；应用不持久化供应商SDK对象。工具视图引入Event/Thread v13与migration15，摘要账本升级为v14/migration16，活动窗口升级为v15/migration17。Tool Result View v1和Context Inspection v3不变，Model History Inspection新增v2窗口证据，见[摘要账本设计](compaction-attempt-ledger.md)与[活动窗口设计](compaction-runtime-and-windows.md)。
+Artifact完整性是字段覆盖证明而非通用“备份成功”标志：搜索归档只覆盖记录，Process归档只覆盖已捕获流，Batch Diff只覆盖差异。后两者不能替代任意结果字段。旧模型前缀、Artifact TTL、取消/超时和崩溃重启均属于此边界；应用不持久化供应商SDK对象。工具视图引入Event/Thread v13与migration15，摘要账本升级为v14/migration16，活动窗口升级为v15/migration17，Thread生命周期升级为v16/migration18。Tool Result View v1和Context Inspection v3不变，Model History Inspection新增v2窗口证据，见[摘要账本设计](compaction-attempt-ledger.md)、[活动窗口设计](compaction-runtime-and-windows.md)与[Thread生命周期设计](thread-lifecycle.md)。
+
+## Thread生命周期与Fork边界（0.6.4）
+
+Resume是同身份、只读重新附着；Archive是追加事件表达的不可变只读状态。Fork在终结Turn边界将有界模型历史、Tool Result视图决定和Artifact真实所有者冻结到子Thread首事件，但固定`authority=none`且不复制父Thread的Turn、审批、Action租约或Runtime任务。子Thread可把继承事实发送给模型，执行端口不能把历史Tool Call解释为待处理工作。
+
+跨Thread创建由SessionStore执行来源sequence CAS和完整快照纯函数重建，目标Event与Projection同事务提交。确定性子Thread和事件身份覆盖Commit后响应丢失；Rebuild先重放来源到冻结sequence，再验证子快照。Artifact正文保留在真实父级或祖先所有者下，每次模型使用仍按当前Workspace scope执行完整验证。该边界不提供文件系统回退、跨Workspace Fork、活跃Turn Fork或Unarchive，详见[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)。

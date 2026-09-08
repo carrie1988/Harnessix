@@ -5,7 +5,13 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from harnessix.agent.models import AgentEvent, CompactionWindow, Thread
+from harnessix.agent.models import (
+    AgentEvent,
+    CompactionWindow,
+    Thread,
+    ThreadArchiveRecord,
+    ThreadForkSnapshot,
+)
 from harnessix.api import create_app
 from harnessix.artifacts.contracts import (
     ArtifactPage,
@@ -114,8 +120,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v15.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v15.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v16.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v16.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
@@ -141,6 +147,8 @@ def main() -> None:
         ("compaction-runtime", CompactionRuntimeConfig),
         ("compaction-summary", CompactionSummary),
         ("compaction-window", CompactionWindow),
+        ("thread-fork", ThreadForkSnapshot),
+        ("thread-archive", ThreadArchiveRecord),
         ("model-history-inspection", ModelHistoryInspection),
         ("tool-result-view-policy", ToolResultViewPolicy),
         ("tool-result-view-decision", ToolResultViewDecision),

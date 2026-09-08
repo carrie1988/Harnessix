@@ -37,6 +37,7 @@ class ModelHistoryArtifactReference:
     call_id: UUID
     binding: ToolResultArtifactBinding
     omitted_field: Literal["preview", "matches", "paths"] | None = None
+    owner_thread_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,13 +68,15 @@ def _digest(value: object) -> str:
 
 
 def history_items(thread: Thread) -> tuple[Item, ...]:
-    return tuple(
+    inherited = thread.fork_snapshot.items if thread.fork_snapshot is not None else ()
+    local = tuple(
         item
         for turn in thread.turns
         for item in turn.items
         if item.status == ItemStatus.COMPLETED
         and isinstance(item.content, TextContent | ToolCallContent | ToolResultContent)
     )
+    return (*inherited, *local)
 
 
 def history_document(item: Item) -> str:
@@ -326,7 +329,10 @@ def prepare_model_history_items(
         or sum(len(history_document(i).encode()) for i in source_history) > 8_388_608
     ):
         raise KernelError("context_budget_exceeded", "模型历史超过8192项或8 MiB准备上限")
-    prior = [decision for turn in thread.turns for decision in turn.tool_result_view_decisions]
+    prior = [
+        *(thread.fork_snapshot.tool_result_view_decisions if thread.fork_snapshot else ()),
+        *(decision for turn in thread.turns for decision in turn.tool_result_view_decisions),
+    ]
     decisions_by_item = {decision.item_id: decision for decision in prior}
     if len(decisions_by_item) != len(prior):
         raise KernelError(
@@ -393,6 +399,7 @@ def prepare_model_history_items(
             decision.call_id,
             binding,
             _omitted_field(decision) if binding.purpose == "tool_result" else None,
+            _artifact_owner(thread, binding.artifact.artifact_id),
         )
         for decision in used
         for binding in decision.references
@@ -427,3 +434,16 @@ def _omitted_field(decision: ToolResultViewDecision) -> ArtifactOmittedField | N
     omission = decision.replacement_output["model_view"]
     assert isinstance(omission, dict)
     return cast(ArtifactOmittedField, omission["omitted_field"])
+
+
+def _artifact_owner(thread: Thread, artifact_id: UUID) -> UUID | None:
+    if thread.fork_snapshot is None:
+        return None
+    return next(
+        (
+            owner.owner_thread_id
+            for owner in thread.fork_snapshot.artifact_owners
+            if owner.artifact_id == artifact_id
+        ),
+        None,
+    )

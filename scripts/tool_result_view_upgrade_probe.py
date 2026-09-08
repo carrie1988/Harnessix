@@ -76,7 +76,7 @@ async def main(mode: str, root: Path) -> None:
         print("v12 reader拒绝migration15且没有改变数据库")
         return
     assert mode in {"upgrade", "resume"}
-    assert EventDraft.model_fields["schema_version"].default == 15
+    assert EventDraft.model_fields["schema_version"].default == 16
     original = json.loads(metadata.read_text())
     await store.initialize()
     migrated = state(store.path)
@@ -84,13 +84,13 @@ async def main(mode: str, root: Path) -> None:
         migrated[table] == before[table]
         for table in ("agent_events", "agent_threads", "agent_artifacts")
     )
-    assert len(migrated["agent_migrations"]) == 17
+    assert len(migrated["agent_migrations"]) == 18
     assert migrated["agent_migrations"][:14] == original["state"]["agent_migrations"]
     thread_id = UUID(original["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
     if mode == "upgrade":
         assert migrated["agent_threads"] == original["state"]["agent_threads"]
-        print("v15 wheel追加migration15-17；v12事件、投影和Artifact原字节不变")
+        print("v16 wheel追加migration15-18；v12事件、投影和Artifact原字节不变")
         return
     from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 
@@ -125,7 +125,7 @@ async def main(mode: str, root: Path) -> None:
     assert final["agent_events"][: len(old["agent_events"])] == old["agent_events"]
     assert final["agent_artifacts"] == old["agent_artifacts"]
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
-    print("v13拒绝重裁旧模型前缀，按原视图续写v13检查记录；旧事件和Artifact保留")
+    print("v16拒绝重裁旧模型前缀，按原视图续写检查记录；旧事件和Artifact保留")
 
 
 if __name__ == "__main__":

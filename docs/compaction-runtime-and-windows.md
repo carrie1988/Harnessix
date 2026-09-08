@@ -1,7 +1,7 @@
 # 0.6.3 自动Compaction运行时与活动窗口详细设计
 
 - 更新日期：2026-09-08
-- 状态：实现及本地验收完成；远端CI待对应提交确认
+- 状态：已完成；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过
 - 架构决策：[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)
 - 前置设计：[窗口规划](compaction-window-planning.md)、[摘要尝试账本](compaction-attempt-ledger.md)
 
@@ -138,8 +138,7 @@ Compaction使用固定`operation=compaction`和有限`outcome`标签；请求用
 
 ## 11. Schema、迁移与升级
 
-- Agent Event/Thread当前版本：v15；
-- Session migration：17；
+- 本切片交付版本：Agent Event/Thread v15、Session migration17；仓库当前版本为v16/migration18；
 - 新增独立Schema：Compaction Runtime v1、Compaction Window v1、Model History Inspection v2、Compaction语义评测Case/Report v1；
 - v1-v14 Event/Thread、Model History Inspection v1、Cost Report v1/v2文件保持冻结。
 
@@ -153,5 +152,5 @@ Compaction使用固定`operation=compaction`和有限`outcome`标签；请求用
 - 当前不使用供应商精确Tokenizer；触发和候选预算是保守估算；
 - 摘要质量依赖Provider，生产发布应以固定语义评测集持续回归；
 - 旧Artifact的长期保留和归档宽限策略尚未实现；
-- Fork继承窗口时的Thread归属和副作用权限由0.6.4定义；
+- Fork继承窗口时的Thread归属和副作用权限已由0.6.4无授权Fork契约实现；
 - 通用Turn Retry、Provider切换和长会话综合发布门禁由0.6.5完成。

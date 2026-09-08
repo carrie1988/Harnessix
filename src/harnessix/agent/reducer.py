@@ -32,7 +32,10 @@ from harnessix.agent.models import (
     ProcessApprovalRequestContent,
     TextContent,
     Thread,
+    ThreadArchived,
+    ThreadArchiveRecord,
     ThreadCreated,
+    ThreadForked,
     ToolCallContent,
     ToolResultContent,
     Turn,
@@ -236,10 +239,11 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         require(turn.status == TurnStatus.CALLING_MODEL, "Tool Call 只能由模型步骤产生")
         require(
             all(
-                not isinstance(i.content, ToolCallContent) or i.content.call_id != content.call_id
-                for i in turn.items
+                not isinstance(item.content, ToolCallContent)
+                or item.content.call_id != content.call_id
+                for item in history_items(thread)
             ),
-            "Tool Call ID 重复",
+            "Tool Call ID 在Thread模型历史内重复",
         )
     elif isinstance(content, ApprovalContent):
         calls = pending_calls(turn)
@@ -730,19 +734,37 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
     payload = event.payload
     if thread is None:
         require(event.sequence == 1, "首事件 sequence 必须为 1")
-        require(isinstance(payload, ThreadCreated), "首事件必须创建 Thread")
+        require(isinstance(payload, ThreadCreated | ThreadForked), "首事件必须创建或Fork Thread")
         require(event.turn_id is None, "Thread 事件不能绑定 Turn")
-        assert isinstance(payload, ThreadCreated)
+        assert isinstance(payload, ThreadCreated | ThreadForked)
         return Thread(
             thread_id=event.thread_id,
             workspace=payload.workspace,
             sequence=1,
+            fork_snapshot=payload.snapshot if isinstance(payload, ThreadForked) else None,
             created_at=event.occurred_at,
             updated_at=event.occurred_at,
         )
     require(thread.thread_id == event.thread_id, "事件属于其他 Thread")
     require(event.sequence == thread.sequence + 1, "事件序号存在缺口或倒序")
-    require(not isinstance(payload, ThreadCreated), "Thread 不可重复创建")
+    require(not isinstance(payload, ThreadCreated | ThreadForked), "Thread 不可重复创建或Fork")
+    if isinstance(payload, ThreadArchived):
+        require(event.turn_id is None, "归档事件不能绑定Turn")
+        require(thread.archive is None, "Thread已经归档")
+        require(thread.active_turn_id is None, "活跃Turn结束前不能归档Thread")
+        return thread.model_copy(
+            update={
+                "archive": ThreadArchiveRecord(
+                    archived_event_sequence=event.sequence,
+                    archived_at=event.occurred_at,
+                    reason=payload.reason,
+                ),
+                "sequence": event.sequence,
+                "updated_at": event.occurred_at,
+            },
+            deep=True,
+        )
+    require(thread.archive is None, "归档Thread不可修改")
     require(event.turn_id is not None, "Turn 事件缺少 turn_id")
     assert event.turn_id is not None
     thread_updates: dict[str, object] = {}
@@ -779,7 +801,12 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             turn = _change_state(thread, turn, event, payload)
         elif isinstance(payload, ItemStarted):
             require(
-                all(i.item_id != payload.item_id for t in thread.turns for i in t.items),
+                all(item.item_id != payload.item_id for item in history_items(thread))
+                and all(
+                    item.item_id != payload.item_id
+                    for turn_in_thread in thread.turns
+                    for item in turn_in_thread.items
+                ),
                 "Item ID 在 Thread 内重复",
             )
             turn = _start_item(thread, turn, payload)

@@ -68,10 +68,10 @@ async def main(mode: str, root: Path) -> None:
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("真实v11 reader意外接受migration15")
+            raise AssertionError("真实v11 reader意外接受migration14及后续版本")
         assert database_path.stat().st_ino == inode
         assert database_state(database_path) == before
-        print("真实v11 reader明确拒绝migration15，数据库未改变")
+        print("真实v11 reader明确拒绝migration14及后续版本，数据库未改变")
         return
 
     if mode == "create":
@@ -122,13 +122,13 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:13] == [tuple(row) for row in metadata["migrations"]]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 18))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 19))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 15
-        print("当前wheel已原字节追加migration15-17，v11事件与投影未改写")
+        assert EventDraft.model_fields["schema_version"].default == 16
+        print("当前wheel已原字节追加migration14-18，v11事件与投影未改写")
         return
 
     from harnessix.context import (
@@ -152,12 +152,12 @@ async def main(mode: str, root: Path) -> None:
     resumed = database_state(database_path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 15 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 16 for row in resumed["events"][old_event_count:]
     )
-    assert resumed["threads"][0][4] == 15
+    assert resumed["threads"][0][4] == 16
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
     print(
-        "v15 wheel已追加Context Inspection v3与Model History Inspection v1事件，旧v11事件原字节保留"
+        "v16 wheel已追加Context Inspection v3与Model History Inspection v1事件，旧v11事件原字节保留"
     )
 
 

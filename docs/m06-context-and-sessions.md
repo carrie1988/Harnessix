@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3实现及本地完整验收完成、远端CI待确认；整体0.6进行中
+- 状态：0.6.1至0.6.3已完成并通过远端CI；0.6.4实现及本地完整验收完成、远端CI待确认；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -14,8 +14,8 @@
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 已完成 |
-| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 实现及本地完整验收完成；远端CI待确认 |
-| 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
+| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 已完成；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过 |
+| 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 实现及本地完整验收完成；远端CI待确认 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
 
 开发顺序遵循：源码研究 → 架构决策 → 领域契约 → 最小正式实现 → 失败与恢复测试 → 真实场景验证 → 文档同步。
@@ -85,7 +85,7 @@ Context Planner 只决定模型输入视图。它不能执行工具、授予权�
 
 ## 6. 0.6.1数据与迁移
 
-- 0.6.1 Agent Event/Thread版本：v10；多Source门禁推进至v12，当前活动窗口版本为v15；
+- 0.6.1 Agent Event/Thread版本：v10；多Source门禁推进至v12，仓库当前版本为v16；
 - Session Migration：`0012_context_inspection.sql`；
 - `Turn.context_inspections`按模型步骤保存；
 - v1-v9事件继续按原Schema解析和导出；
@@ -221,7 +221,7 @@ AgentRuntime PREPARING_CONTEXT
 - Context Source Snapshot：v1；
 - Session Migration：`0013_context_sources.sql`，只增加最低reader标记；
 - v1-v10事件和投影继续读取，历史Schema文件冻结；
-- v2检查记录只能写入Event v11及以上；静态v1检查事实最低仍为v10。0.6.2a新写使用v11，0.6.2b使用v12，当前程序统一写v15；
+- v2检查记录只能写入Event v11及以上；静态v1检查事实最低仍为v10。0.6.2a新写使用v11，0.6.2b使用v12，当前程序统一写v16；
 - Migration 13不改写旧Event、投影或Artifact。
 
 ## 18. 可观测性与安全
@@ -366,7 +366,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实际Workspace scope；Batch Diff发布器委托原Managed Patch Bridge提供副本scope。独立宿主可显式注入这两个只读端口，但必须维持相同Session和真实工作区访问边界。
 
-0.6.2c基线为Agent Event/Thread v13（当前活动窗口已推进为v15）；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
+0.6.2c基线为Agent Event/Thread v13（仓库当前已推进为v16）；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
 
 已提交决定通过`Turn.tool_result_view_decisions`读取；每步统计通过`Turn.model_history_inspections`读取。决定可能包含Artifact manifest及残留查询元数据，应按Session本身权限保护。Metrics仅输出固定strategy/component和数量；不输出正文、路径、ID或摘要标签。完整失败代码与退出窗口见ADR 0057。
 
@@ -403,4 +403,14 @@ Runtime在摘要HTTP前验证整个来源历史的Artifact，提交计划和Prov
 
 reactive路径只接受未产生语义Item且已完整结算的`provider_context_overflow`。失败请求仍消耗普通步骤和Token；没有新压缩进展时停止，不再次付费摘要。Model History Inspection v2绑定活动窗口并保留原始历史数量证据。
 
-当前Agent Event/Thread为v15，Session migration为17。真实`b20948e` v14 wheel创建已结算候选后，v15升级保持旧事件和投影原字节，首次重开零Provider请求发布唯一窗口，v14 reader明确拒绝migration17。运行时及窗口事务九个进程退出切点、双Adapter、取消、超时、Artifact损坏、重复窗口和六类工程语义Oracle均已验证。370项专项测试及严格全量2901 passed、2 skipped通过；远端矩阵以对应实现提交CI为准。
+0.6.3交付使用Agent Event/Thread v15和Session migration17。真实`b20948e` v14 wheel创建已结算候选后，v15升级保持旧事件和投影原字节，首次重开零Provider请求发布唯一窗口，v14 reader明确拒绝migration17。运行时及窗口事务九个进程退出切点、双Adapter、取消、超时、Artifact损坏、重复窗口和六类工程语义Oracle均已验证。370项专项测试及严格全量2901 passed、2 skipped通过；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。仓库当前版本已由0.6.4推进为Event/Thread v16和migration18。
+
+## 33. 0.6.4 Thread生命周期与无授权Fork
+
+源码依据、决策和实现分别见[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)和[详细设计](thread-lifecycle.md)。Resume只重新附着到同一持久Thread；Fork在终结Turn边界冻结有界模型历史；Archive将无活跃Turn的Thread原子转换为只读状态。三类操作均不会自动调用Provider或重放已完成工具。
+
+Fork历史以`authority=none`写入子Thread首事件，不进入子Thread的Turn集合。Tool Call/Result必须完整配对，Tool Result模型视图决定与Artifact真实所有者同时冻结。Artifact正文不复制；后续模型请求仍按原所有者、当前Workspace scope、TTL、正文摘要和覆盖证明执行发网前校验。来源Thread的sequence、规范投影摘要、边界和完整快照由SessionStore在同一SQLite事务中重算，确定性子Thread和事件身份支持提交后安全重试。
+
+Agent Event/Thread推进至v16，Session migration18只提高最低reader，不改写旧事件、投影或Artifact。七个真实进程退出切点覆盖Fork来源检查、目标Event、Projection、Commit和Archive Event、Projection、Commit；退出后只存在完整回滚或完整提交。v15→v16独立wheel验证保持旧事件与投影原字节，Resume零模型请求，Fork和Archive可Replay/Rebuild，旧v15 reader拒绝migration18且不修改数据库。
+
+本地严格全量验收为2914 passed、2 skipped，Ruff和Mypy通过，Schema连续生成两次聚合SHA256均为`e9e54ad0afd92c0d9de41477d32e2c52a43cdc0ec0b2e38bd2764c7a59d0004a`。两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`。远端四矩阵以0.6.4实现提交CI为最终发布门禁；0.6.5继续完成通用Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收。

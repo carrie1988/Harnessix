@@ -23,6 +23,15 @@ class SessionStore(Protocol):
         expected_sequence: int,
     ) -> Thread: ...
 
+    async def fork(
+        self,
+        source_thread_id: UUID,
+        destination_thread_id: UUID,
+        draft: EventDraft,
+        *,
+        expected_source_sequence: int,
+    ) -> Thread: ...
+
     async def events(self, thread_id: UUID, *, after: int = 0) -> list[AgentEvent]: ...
 
     async def rebuild(self, thread_id: UUID) -> Thread: ...

@@ -23,6 +23,7 @@ from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
+from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     AgentFailure,
@@ -45,7 +46,9 @@ from harnessix.agent.models import (
     ProcessApprovalRequestContent,
     TextContent,
     Thread,
+    ThreadArchived,
     ThreadCreated,
+    ThreadForked,
     ToolCallContent,
     ToolResultContent,
     Turn,
@@ -440,6 +443,94 @@ class AgentRuntime:
             expected_sequence=0,
         )
 
+    async def resume_thread(self, thread_id: UUID) -> Thread:
+        """重新附着到已持久化Thread；恢复动作只发生在Runtime打开阶段。"""
+        self._ensure_open()
+        try:
+            async with self._lock(thread_id):
+                thread = await self.store.get_thread(thread_id)
+                if thread.archive is not None:
+                    raise KernelError("thread_archived", "归档Thread不能恢复")
+                resumed = thread.model_copy(deep=True)
+                self._telemetry.thread_lifecycle("resume", "completed")
+                return resumed
+        except KernelError:
+            self._telemetry.thread_lifecycle("resume", "rejected")
+            raise
+
+    async def fork_thread(
+        self,
+        source_thread_id: UUID,
+        *,
+        request_id: str,
+        through_turn_id: UUID | None = None,
+    ) -> Thread:
+        """在终结Turn边界冻结只读模型历史，并以来源CAS创建独立Thread。"""
+        self._ensure_open()
+        try:
+            if not request_id or len(request_id) > 256:
+                raise KernelError("thread_fork_invalid", "Fork request_id长度必须为1到256")
+            destination_thread_id = uuid5(
+                source_thread_id, f"harnessix.thread-fork/v1:{request_id}"
+            )
+            async with self._lock(source_thread_id):
+                source = await self.store.get_thread(source_thread_id)
+                prepared = prepare_fork_snapshot(
+                    source,
+                    request_id=request_id,
+                    through_turn_id=through_turn_id,
+                    policy=self._tool_result_view_policy,
+                )
+                if prepared.model_history is not None:
+                    await self._verify_history_artifacts(
+                        source, prepared.model_history, CancelToken()
+                    )
+                draft = EventDraft(
+                    event_id=uuid5(destination_thread_id, "harnessix.thread-fork-event/v1"),
+                    occurred_at=source.updated_at,
+                    payload=ThreadForked(workspace=source.workspace, snapshot=prepared.snapshot),
+                )
+                forked = await self.store.fork(
+                    source_thread_id,
+                    destination_thread_id,
+                    draft,
+                    expected_source_sequence=source.sequence,
+                )
+                self._telemetry.thread_lifecycle(
+                    "fork",
+                    "completed",
+                    inherited_items=len(prepared.snapshot.items),
+                )
+                return forked
+        except KernelError:
+            self._telemetry.thread_lifecycle("fork", "rejected")
+            raise
+
+    async def archive_thread(self, thread_id: UUID, *, reason: str | None = None) -> Thread:
+        """将无活跃Turn的Thread原子标记为只读归档；重复请求返回已有状态。"""
+        self._ensure_open()
+        try:
+            async with self._lock(thread_id):
+                thread = await self.store.get_thread(thread_id)
+                if thread.archive is not None:
+                    if reason != thread.archive.reason:
+                        raise KernelError("thread_archive_conflict", "Thread已使用其他原因归档")
+                    archived = thread.model_copy(deep=True)
+                    self._telemetry.thread_lifecycle("archive", "idempotent")
+                    return archived
+                if thread.active_turn_id is not None:
+                    raise KernelError("thread_busy", "活跃Turn结束前不能归档Thread")
+                archived = await self.store.append(
+                    thread_id,
+                    [EventDraft(payload=ThreadArchived(reason=reason))],
+                    expected_sequence=thread.sequence,
+                )
+                self._telemetry.thread_lifecycle("archive", "completed")
+                return archived
+        except KernelError:
+            self._telemetry.thread_lifecycle("archive", "rejected")
+            raise
+
     async def _commit(
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
@@ -480,6 +571,8 @@ class AgentRuntime:
         )
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
+            if thread.archive is not None:
+                raise KernelError("thread_archived", "归档Thread不能接受新Turn")
             existing = next((t for t in thread.turns if t.request_id == request_id), None)
             if existing is not None:
                 if existing.request_fingerprint != fingerprint:
@@ -1048,7 +1141,7 @@ class AgentRuntime:
                     token.checkpoint()
                     await token.run(
                         verifier.verify_reference(
-                            thread.thread_id,
+                            reference.owner_thread_id or thread.thread_id,
                             reference.call_id,
                             reference.binding.artifact,
                             workspace_scope=scope,

@@ -1,4 +1,4 @@
-"""在独立v14与v15 wheel间验证摘要候选升级、窗口恢复及旧reader拒绝。"""
+"""在独立v14与当前wheel间验证摘要候选升级、窗口恢复及旧reader拒绝。"""
 
 from __future__ import annotations
 
@@ -197,7 +197,7 @@ async def main(mode: str, root: Path) -> None:
         print("v14 reader拒绝migration17且未修改数据库")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 15
+    assert EventDraft.model_fields["schema_version"].default == 16
     metadata = json.loads((root / "metadata.json").read_text())
     original = metadata["state"]
     await store.initialize()
@@ -205,11 +205,11 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["agent_events"] == original["agent_events"]
     assert migrated["agent_threads"] == original["agent_threads"]
     assert migrated["agent_migrations"][:16] == original["agent_migrations"]
-    assert len(migrated["agent_migrations"]) == 17
+    assert len(migrated["agent_migrations"]) == 18
     thread_id = UUID(metadata["thread_id"])
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))
     if mode == "upgrade":
-        print("v15 wheel仅追加migration17，v14事件和投影原字节保持不变")
+        print("v16 wheel仅追加migration17-18，v14事件和投影原字节保持不变")
         return
 
     assert mode == "recover"

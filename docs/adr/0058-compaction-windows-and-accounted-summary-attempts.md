@@ -1,6 +1,6 @@
 # ADR 0058：可审计压缩窗口与独立摘要尝试
 
-- 状态：Accepted（实现及本地完整验收通过；远端CI待对应提交确认）
+- 状态：Accepted（实现、本地完整验收及[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过）
 - 日期：2026-09-08
 - 范围：0.6.3
 - 前置：ADR 0054、ADR 0057、ADR 0059、现有Model Attempt/Billing与Session恢复契约
