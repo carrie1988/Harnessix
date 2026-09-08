@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1至0.6.4已完成并通过远端CI；0.6.5实现及本地完整验收完成、远端CI待确认；整体0.6处于发布门禁
+- 状态：0.6.1至0.6.5全部完成并通过远端CI；整体0.6正式关闭
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -16,7 +16,7 @@
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 已完成 |
 | 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 已完成；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 已完成；[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)通过 |
-| 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 实现及本地完整验收完成；远端CI待确认 |
+| 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 已完成；[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)通过 |
 
 开发顺序遵循：源码研究 → 架构决策 → 领域契约 → 最小正式实现 → 失败与恢复测试 → 真实场景验证 → 文档同步。
 
@@ -425,4 +425,4 @@ Agent Event/Thread推进至v16，Session migration18只提高最低reader，不�
 
 Agent Event/Thread推进至v17，Session migration19只追加最低reader标记，不改写旧Event、Projection、Artifact、Compaction窗口或模型尝试。三个Retry接受事务硬退出切点验证Event/Projection前完整回滚、Commit后完整可见，重开只将已接受Turn收敛为Interrupted且不调用Provider。v16→v17独立wheel验证旧wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`、v17 wheel SHA256为`40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`；旧字节保持不变，v16 reader拒绝migration19且不修改数据库。
 
-长会话综合测试串联有账本Compaction、活动窗口、Tool Result、接受后进程中断、启动恢复、跨Provider Retry、Fork和Archive，验证模型历史保持有界、原事件前缀原字节保留、工具不重执行、Usage按全部普通与摘要尝试一致累计、Cost报告可重算以及父子Thread均可Replay/Rebuild。本地严格全量为2924 passed、2 skipped，270.46秒；Ruff和Mypy 164个源文件通过；Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`；migration19 SHA256为`926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a`。两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`，远端四矩阵待本次实现提交确认。
+长会话综合测试串联有账本Compaction、活动窗口、Tool Result、接受后进程中断、启动恢复、跨Provider Retry、Fork和Archive，验证模型历史保持有界、原事件前缀原字节保留、工具不重执行、Usage按全部普通与摘要尝试一致累计、Cost报告可重算以及父子Thread均可Replay/Rebuild。本地严格全量为2924 passed、2 skipped，270.46秒；Ruff和Mypy 164个源文件通过；Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`；migration19 SHA256为`926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a`。两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`；实现提交的[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)已通过Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务，0.6正式关闭。

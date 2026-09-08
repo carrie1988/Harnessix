@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：已随实现更新至0.6.5终态Turn Retry、Provider切换与长会话本地完整验收
+- 状态：0.6.5终态Turn Retry、Provider切换与长会话已通过本地及远端完整验收
 - 更新日期：2026-09-08
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1278,7 +1278,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 62. 0.6.5终态Turn Retry、Provider切换与长会话验收（2026-09-08）
 
-状态：实现及本地完整发布门禁通过；远端矩阵待本次实现提交确认。设计见[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](turn-retry-and-provider-switch.md)。
+状态：实现及本地完整发布门禁通过；[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵通过。设计见[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](turn-retry-and-provider-switch.md)。
 
 验收覆盖：
 

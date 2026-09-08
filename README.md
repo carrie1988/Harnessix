@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围。0.6.1至0.6.4已完成Context、Tool Result模型视图、自动Compaction和Thread生命周期，其中0.6.4通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复，Event/Thread为v17、Session migration为19，本地严格验收通过，远端CI待本次提交确认。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime和0.6 Context/Session全部路线图范围。0.6.5交付终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复，Event/Thread为v17、Session migration为19，并通过[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵验收。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -777,4 +777,4 @@ Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是
 - 三个接受事务硬退出窗口、取消/中断续作、双向真实Adapter和压缩→恢复→重试→Fork→Archive长会话已经本地验收；
 - 当前Agent Event/Thread为v17，Session migration19；v16→v17独立wheel升级保持旧字节，旧reader失败关闭。
 
-源码依据、决策和接口见[专项研究](docs/research/turn-retry-and-provider-switch.md)、[ADR 0061](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](docs/turn-retry-and-provider-switch.md)。0.6.5远端发布矩阵待本次实现提交确认；0.7及后续生产能力仍按路线图推进。
+源码依据、决策和接口见[专项研究](docs/research/turn-retry-and-provider-switch.md)、[ADR 0061](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](docs/turn-retry-and-provider-switch.md)。实现提交已通过[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵验收，0.6正式关闭；0.7及后续生产能力仍按路线图推进。

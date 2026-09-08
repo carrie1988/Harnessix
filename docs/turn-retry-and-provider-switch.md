@@ -2,7 +2,7 @@
 
 - 版本：0.6.5
 - 更新日期：2026-09-08
-- 状态：实现与本地完整验收完成，远端CI待确认
+- 状态：实现、本地完整验收及远端CI全部通过
 
 ## 1. 目标与边界
 
@@ -139,4 +139,4 @@ Retry复用现有Operation协议，新增`operation=retry`：
 9. v16→v17独立wheel升级、Schema冻结、旧reader拒绝；
 10. Ruff、Mypy、严格全量测试、默认CI四矩阵和文档同步。
 
-本地严格全量结果为2924 passed、2 skipped，270.46秒；两个skip仅因未配置`HARNESSIX_TEST_POSTGRES_URL`。Ruff格式与规则、Mypy严格检查164个源文件均通过。Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`。远端默认CI四矩阵待实现提交确认。
+本地严格全量结果为2924 passed、2 skipped，270.46秒；两个skip仅因未配置`HARNESSIX_TEST_POSTGRES_URL`。Ruff格式与规则、Mypy严格检查164个源文件均通过。Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`。实现提交的[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)已通过Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务，0.6.5正式关闭。
