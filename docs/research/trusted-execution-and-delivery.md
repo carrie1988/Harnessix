@@ -250,6 +250,12 @@ Harnessix不从Shell文本推断Git写权限。Commit、创建/移动本地ref�
 - [`src/commands/commit-push-pr.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/commands/commit-push-pr.ts)
 - [`src/tools/BashTool/bashSecurity.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/tools/BashTool/bashSecurity.ts)
 
+### 9.4 兼容性求证与独立实现结论
+
+本地macOS系统Git为2.24.3。该版本的`rev-parse`不支持`--path-format=absolute`，`worktree list`也不支持`-z`；直接采用新版本argv会把未知选项当成revision文本或直接失败。Harnessix因此使用所有目标版本均可核对的`rev-parse --show-toplevel`，并只解析自身生成、不含控制字符的受管worktree路径。对象格式由已验证HEAD OID长度确定，不依赖较新`--show-object-format`。这些兼容分支经过真实2.24.3执行，不以版本字符串臆测能力。
+
+独立实现不复制任一参考项目：Workspace正文保存在私有SHA-256 CAS；Git对象通过独立`GIT_INDEX_FILE`、`read-tree`、固定`hash-object`与`update-index --cacheinfo`生成；候选tree与计划路径全集核对后再通过受管worktree独立index物化。Commit原始对象由已批准的tree、parent、作者、时间和消息确定，先用不写对象的`hash-object -t commit --stdin`得到预期OID；执行时写入同一确定性对象，再以旧值全零的`update-ref`创建新branch。这样在对象写入或ref更新后丢失响应时，可以核对精确对象和ref，不生成第二个提交，也不移动来源HEAD或来源index。
+
 ## 10. 可复查命令
 
 ~~~bash

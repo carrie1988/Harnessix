@@ -1437,3 +1437,18 @@ Ruff格式与规则、Mypy严格检查4个新增源文件通过，专项测试�
 - Diff覆盖全部新增、修改、删除和内容相同的精确重命名，记录before/after摘要与模式；UTF-8输出确定性unified diff，binary输出完整摘要和字节事实，不以空patch冒充无变化。
 
 Ruff格式与规则通过，Mypy严格检查6个Delivery源文件通过，专项测试为**20 passed**。新增`workspace-diff-entry-v1`与`workspace-diff-v1` Schema，连续两次生成后的聚合SHA256均为`a33cc92bbb8b69141e0e6ef07405452b50e52b88eccb2c8f6e3add549188c678`。该切片没有执行Git写、模型API、SSH、远程服务器或新增中间件。
+
+## 71. 0.7.4c 受管Git Worktree、Checkpoint与Commit候选验收（2026-09-08）
+
+状态：跨平台受管Git交付代码及本地macOS真实Git验证已完成；远端Windows/macOS矩阵尚待最终提交运行，不在本节提前关闭0.7.4。
+
+当前Delivery共**35 passed**，新增Git用例及扩展安全参数覆盖：
+
+- 精确repository root、HEAD commit/tree、common directory、Git可执行文件身份、干净状态和有效配置形成自摘要绑定；来源dirty、外部include、可执行filter、attributes转换、submodule/LFS、sparse checkout和alternates失败关闭；
+- 私有detached/no-checkout worktree持久记录`prepared/creating/ready/diverged/unknown`和append-only事件；真实注册后崩溃能够通过`.git`普通文件、common directory、管理回链、路径身份与HEAD恢复，来源HEAD和index保持不变；
+- 独立`GIT_INDEX_FILE`从基准tree构造Checkpoint，逐路径核对before blob/模式，只写入Plan after blob，完整delta路径、受管index和物化文件再次核对；新增binary、修改和删除均进入同一预期tree；
+- Commit Spec绑定新branch、parent、tree、作者、邮箱、时间、消息、Hook禁用策略、实现摘要、原始对象摘要及预期OID；确定性对象写入后只用全零旧值CAS创建此前不存在的新ref；
+- 两个真实独立Python进程分别在commit对象写入后、ref更新后以`os._exit`硬退出；重开后前者恢复为`interrupted`再完成，后者直接对账为`committed`，最终都只有同一预期OID且不移动来源HEAD；
+- 错误批准指纹和已存在branch在副作用前拒绝；外部include、attributes转换、`.gitmodules`、sparse checkout及alternates攻击输入均由真实仓库用例失败关闭；未知Store版本和损坏payload失败关闭；macOS Git 2.24.3兼容路径经过真实命令验证。
+
+Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schema，连续两次生成后的聚合SHA256均为`7bb6f371f5b2cc26967a919167ddc4b594df8218f1e81a702490c0522fa5b335`。加入测试包隔离文件后，全仓门禁为**3081 passed、11 skipped**；随后增加的5项Git攻击参数已由专项门禁通过，最终全仓数字在0.7.5综合关闭时统一更新。本片只在pytest临时目录创建本地Git仓库和受管branch，没有Push、网络、模型API、SSH、远程服务器或新增中间件。

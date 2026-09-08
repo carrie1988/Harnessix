@@ -1,0 +1,339 @@
+{
+  "$defs": {
+    "GitRepositoryBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.git-repository-binding/v1",
+          "default": "harnessix.git-repository-binding/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "workspace_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "root_path_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Path Sha256",
+          "type": "string"
+        },
+        "root_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Identity",
+          "type": "string"
+        },
+        "common_directory_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Common Directory Sha256",
+          "type": "string"
+        },
+        "common_directory_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Common Directory Identity",
+          "type": "string"
+        },
+        "head_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Head Oid",
+          "type": "string"
+        },
+        "head_tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Head Tree Oid",
+          "type": "string"
+        },
+        "object_format": {
+          "enum": [
+            "sha1",
+            "sha256"
+          ],
+          "title": "Object Format",
+          "type": "string"
+        },
+        "status_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Status Sha256",
+          "type": "string"
+        },
+        "config_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Config Sha256",
+          "type": "string"
+        },
+        "git_executable_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Git Executable Identity",
+          "type": "string"
+        },
+        "git_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Git Version",
+          "type": "string"
+        },
+        "implementation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Implementation Digest",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "workspace_id",
+        "root_path_sha256",
+        "root_identity",
+        "common_directory_sha256",
+        "common_directory_identity",
+        "head_oid",
+        "head_tree_oid",
+        "object_format",
+        "status_sha256",
+        "config_sha256",
+        "git_executable_identity",
+        "git_version",
+        "implementation_digest",
+        "digest"
+      ],
+      "title": "GitRepositoryBinding",
+      "type": "object"
+    },
+    "ManagedGitWorktreeBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.managed-git-worktree-binding/v1",
+          "default": "harnessix.managed-git-worktree-binding/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "worktree_id": {
+          "format": "uuid",
+          "title": "Worktree Id",
+          "type": "string"
+        },
+        "plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plan Fingerprint",
+          "type": "string"
+        },
+        "path_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Identity",
+          "type": "string"
+        },
+        "gitfile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Gitfile Sha256",
+          "type": "string"
+        },
+        "admin_directory_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Admin Directory Sha256",
+          "type": "string"
+        },
+        "admin_directory_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Admin Directory Identity",
+          "type": "string"
+        },
+        "backlink_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Backlink Sha256",
+          "type": "string"
+        },
+        "head_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Head Oid",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "worktree_id",
+        "plan_fingerprint",
+        "path_identity",
+        "gitfile_sha256",
+        "admin_directory_sha256",
+        "admin_directory_identity",
+        "backlink_sha256",
+        "head_oid",
+        "digest"
+      ],
+      "title": "ManagedGitWorktreeBinding",
+      "type": "object"
+    },
+    "ManagedGitWorktreePlan": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.managed-git-worktree-plan/v1",
+          "default": "harnessix.managed-git-worktree-plan/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "worktree_id": {
+          "format": "uuid",
+          "title": "Worktree Id",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "transaction_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Transaction Plan Fingerprint",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "#/$defs/GitRepositoryBinding"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "worktree_id",
+        "transaction_id",
+        "transaction_plan_fingerprint",
+        "repository",
+        "path",
+        "created_at",
+        "fingerprint"
+      ],
+      "title": "ManagedGitWorktreePlan",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.managed-git-worktree-record/v1",
+      "default": "harnessix.managed-git-worktree-record/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "worktree_id": {
+      "format": "uuid",
+      "title": "Worktree Id",
+      "type": "string"
+    },
+    "plan": {
+      "$ref": "#/$defs/ManagedGitWorktreePlan"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "creating",
+        "ready",
+        "diverged",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 64,
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "binding": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ManagedGitWorktreeBinding"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "record_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "worktree_id",
+    "plan",
+    "state",
+    "sequence",
+    "record_digest"
+  ],
+  "title": "ManagedGitWorktreeRecord",
+  "type": "object"
+}

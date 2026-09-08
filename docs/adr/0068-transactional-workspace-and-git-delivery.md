@@ -17,6 +17,7 @@
 6. Commit 仅作用于计划列出的路径并显式绑定作者、消息、parent和预期tree。0.7默认禁用仓库Hook、fsmonitor、attributes外部来源及可执行filter；未来启用任何Hook/filter都必须作为新的可执行资源进入Sandbox和批准指纹，不能继承普通Commit许可。
 7. Push 是 Action Plane 中独立的外部网络写，默认关闭；Commit 的批准不能授权 Push、force push 或创建 PR。
 8. POSIX普通Workspace提供直接发布；Windows 0.7交付优先在受管Git worktree/branch中完成。未实现抗Reparse Point竞态的Windows普通目录发布端口前，该组合失败关闭，不以字符串复核冒充安全写入。
+9. Commit使用确定性原始Git对象：Checkpoint先绑定tree和parent，Commit Spec再绑定作者、时区时间、消息、实现摘要与预期OID；执行只写入该对象，并通过旧值全零的`update-ref`创建此前不存在的新branch。该策略不修改来源HEAD/index，不运行Hook，也能在返回丢失后按对象正文与ref对账。
 
 ## 取舍
 
@@ -29,5 +30,5 @@
 - 写前失败：`not_applied`；
 - replace 后记账前：`unknown`，必须 reconcile；
 - 部分发布：`interrupted`，重开后按 manifest 核对，不盲目继续；
-- Commit 结果丢失：按预期 tree/parent/message查询，不重复 commit；
+- Commit对象或ref更新结果丢失：按预期OID、完整对象正文和ref查询，不生成第二个commit；
 - Push 结果丢失：按远端 ref 对账，不自动重推。

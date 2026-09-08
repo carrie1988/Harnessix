@@ -15,7 +15,9 @@ from harnessix.workspace.paths import normalize_workspace_path, path_comparison_
 MAX_TRANSACTION_FILES = 256
 MAX_TRANSACTION_FILE_BYTES = 8 * 1024 * 1024
 MAX_TRANSACTION_IMAGE_BYTES = 32 * 1024 * 1024
-PROTECTED_COMPONENTS = frozenset({".agents", ".codex", ".git", ".harnessix"})
+PROTECTED_COMPONENTS = frozenset(
+    {".agents", ".codex", ".git", ".gitattributes", ".gitmodules", ".harnessix", ".lfsconfig"}
+)
 
 FilePresence = Literal["absent", "file"]
 FileMode = Literal[420, 493]

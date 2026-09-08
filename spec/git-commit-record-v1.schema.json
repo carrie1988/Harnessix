@@ -1,0 +1,299 @@
+{
+  "$defs": {
+    "GitCheckpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.git-checkpoint/v1",
+          "default": "harnessix.git-checkpoint/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "checkpoint_id": {
+          "format": "uuid",
+          "title": "Checkpoint Id",
+          "type": "string"
+        },
+        "worktree_id": {
+          "format": "uuid",
+          "title": "Worktree Id",
+          "type": "string"
+        },
+        "worktree_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Worktree Plan Fingerprint",
+          "type": "string"
+        },
+        "worktree_binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Worktree Binding Digest",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "transaction_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Transaction Plan Fingerprint",
+          "type": "string"
+        },
+        "repository_binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Repository Binding Digest",
+          "type": "string"
+        },
+        "base_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Commit Oid",
+          "type": "string"
+        },
+        "base_tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Tree Oid",
+          "type": "string"
+        },
+        "tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Tree Oid",
+          "type": "string"
+        },
+        "mutations_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Mutations Digest",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "checkpoint_id",
+        "worktree_id",
+        "worktree_plan_fingerprint",
+        "worktree_binding_digest",
+        "transaction_id",
+        "transaction_plan_fingerprint",
+        "repository_binding_digest",
+        "base_commit_oid",
+        "base_tree_oid",
+        "tree_oid",
+        "mutations_digest",
+        "created_at",
+        "digest"
+      ],
+      "title": "GitCheckpoint",
+      "type": "object"
+    },
+    "GitCommitSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.git-commit-spec/v1",
+          "default": "harnessix.git-commit-spec/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "commit_id": {
+          "format": "uuid",
+          "title": "Commit Id",
+          "type": "string"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/GitCheckpoint"
+        },
+        "branch_ref": {
+          "maxLength": 1024,
+          "minLength": 12,
+          "title": "Branch Ref",
+          "type": "string"
+        },
+        "parent_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Parent Oid",
+          "type": "string"
+        },
+        "tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Tree Oid",
+          "type": "string"
+        },
+        "author_name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Author Name",
+          "type": "string"
+        },
+        "author_email": {
+          "maxLength": 320,
+          "minLength": 3,
+          "title": "Author Email",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 65536,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "authored_at": {
+          "format": "date-time",
+          "title": "Authored At",
+          "type": "string"
+        },
+        "hooks_policy": {
+          "const": "disabled",
+          "default": "disabled",
+          "title": "Hooks Policy",
+          "type": "string"
+        },
+        "raw_commit_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Raw Commit Sha256",
+          "type": "string"
+        },
+        "expected_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Expected Commit Oid",
+          "type": "string"
+        },
+        "implementation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Implementation Digest",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commit_id",
+        "checkpoint",
+        "branch_ref",
+        "parent_oid",
+        "tree_oid",
+        "author_name",
+        "author_email",
+        "message",
+        "authored_at",
+        "raw_commit_sha256",
+        "expected_commit_oid",
+        "implementation_digest",
+        "fingerprint"
+      ],
+      "title": "GitCommitSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.git-commit-record/v1",
+      "default": "harnessix.git-commit-record/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "commit_id": {
+      "format": "uuid",
+      "title": "Commit Id",
+      "type": "string"
+    },
+    "spec": {
+      "$ref": "#/$defs/GitCommitSpec"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "committing",
+        "interrupted",
+        "committed",
+        "diverged",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 64,
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "commit_oid": {
+      "anyOf": [
+        {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Commit Oid"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "record_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "commit_id",
+    "spec",
+    "state",
+    "sequence",
+    "record_digest"
+  ],
+  "title": "GitCommitRecord",
+  "type": "object"
+}

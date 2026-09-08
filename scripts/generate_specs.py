@@ -50,6 +50,15 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
+from harnessix.delivery.git_contracts import (
+    GitCheckpoint,
+    GitCommitRecord,
+    GitCommitSpec,
+    GitRepositoryBinding,
+    ManagedGitWorktreeBinding,
+    ManagedGitWorktreePlan,
+    ManagedGitWorktreeRecord,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
@@ -269,6 +278,13 @@ def main() -> None:
         ("workspace-transaction-record", WorkspaceTransactionRecord),
         ("workspace-diff-entry", WorkspaceDiffEntry),
         ("workspace-diff", WorkspaceDiffDocument),
+        ("git-repository-binding", GitRepositoryBinding),
+        ("managed-git-worktree-plan", ManagedGitWorktreePlan),
+        ("managed-git-worktree-binding", ManagedGitWorktreeBinding),
+        ("managed-git-worktree-record", ManagedGitWorktreeRecord),
+        ("git-checkpoint", GitCheckpoint),
+        ("git-commit-spec", GitCommitSpec),
+        ("git-commit-record", GitCommitRecord),
         ("network-destination", NetworkDestination),
         ("network-policy", NetworkPolicy),
         ("network-policy-snapshot", NetworkPolicySnapshot),

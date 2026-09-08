@@ -47,7 +47,16 @@ def test_prepares_complete_multi_file_plan_and_private_blob_set(tmp_path: Path) 
 
 @pytest.mark.parametrize(
     "path",
-    [".git/config", ".harnessix/state", ".codex/settings.json", ".agents/rules", ".env"],
+    [
+        ".git/config",
+        ".gitattributes",
+        ".gitmodules",
+        ".lfsconfig",
+        ".harnessix/state",
+        ".codex/settings.json",
+        ".agents/rules",
+        ".env",
+    ],
 )
 def test_planner_rejects_control_plane_and_secret_paths(tmp_path: Path, path: str) -> None:
     with pytest.raises(KernelError) as denied:

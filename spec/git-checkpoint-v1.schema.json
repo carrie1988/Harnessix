@@ -1,0 +1,93 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.git-checkpoint/v1",
+      "default": "harnessix.git-checkpoint/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "checkpoint_id": {
+      "format": "uuid",
+      "title": "Checkpoint Id",
+      "type": "string"
+    },
+    "worktree_id": {
+      "format": "uuid",
+      "title": "Worktree Id",
+      "type": "string"
+    },
+    "worktree_plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Worktree Plan Fingerprint",
+      "type": "string"
+    },
+    "worktree_binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Worktree Binding Digest",
+      "type": "string"
+    },
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "transaction_plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Transaction Plan Fingerprint",
+      "type": "string"
+    },
+    "repository_binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Repository Binding Digest",
+      "type": "string"
+    },
+    "base_commit_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Base Commit Oid",
+      "type": "string"
+    },
+    "base_tree_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Base Tree Oid",
+      "type": "string"
+    },
+    "tree_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Tree Oid",
+      "type": "string"
+    },
+    "mutations_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Mutations Digest",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "checkpoint_id",
+    "worktree_id",
+    "worktree_plan_fingerprint",
+    "worktree_binding_digest",
+    "transaction_id",
+    "transaction_plan_fingerprint",
+    "repository_binding_digest",
+    "base_commit_oid",
+    "base_tree_oid",
+    "tree_oid",
+    "mutations_digest",
+    "created_at",
+    "digest"
+  ],
+  "title": "GitCheckpoint",
+  "type": "object"
+}

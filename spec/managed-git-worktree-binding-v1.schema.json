@@ -1,0 +1,69 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.managed-git-worktree-binding/v1",
+      "default": "harnessix.managed-git-worktree-binding/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "worktree_id": {
+      "format": "uuid",
+      "title": "Worktree Id",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "path_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Path Identity",
+      "type": "string"
+    },
+    "gitfile_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Gitfile Sha256",
+      "type": "string"
+    },
+    "admin_directory_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Admin Directory Sha256",
+      "type": "string"
+    },
+    "admin_directory_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Admin Directory Identity",
+      "type": "string"
+    },
+    "backlink_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Backlink Sha256",
+      "type": "string"
+    },
+    "head_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Head Oid",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "worktree_id",
+    "plan_fingerprint",
+    "path_identity",
+    "gitfile_sha256",
+    "admin_directory_sha256",
+    "admin_directory_identity",
+    "backlink_sha256",
+    "head_oid",
+    "digest"
+  ],
+  "title": "ManagedGitWorktreeBinding",
+  "type": "object"
+}

@@ -43,7 +43,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot已具有POSIX和Windows原生端口；既有Coding Tool、Process和Git执行仍只支持POSIX，Windows产品整体未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY和受管Git交付均已有Windows原生实现或候选；旧Coding Tool统一接入、完整产品CLI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
 
 ## 许可证与品牌
 

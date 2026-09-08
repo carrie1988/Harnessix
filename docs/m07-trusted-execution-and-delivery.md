@@ -352,7 +352,9 @@ Diff必须列出所有路径、before/after摘要、模式和新增/修改/删�
 
 Git受管模式先绑定精确repository root、HEAD commit/tree、common directory、Git可执行文件身份和干净状态，再在私有根创建detached、no-checkout worktree。固定Git环境清除所有继承的仓库选择变量，关闭prompt、外部配置、replace refs、hooks、fsmonitor、外部attributes和可执行filter；submodule、LFS和稀疏checkout在0.7不支持时失败关闭。重开同时核对`.git`普通文件、common directory、管理回链和受管路径身份。
 
-Checkpoint使用独立`GIT_INDEX_FILE`从基准tree开始，只加入Plan列出的最终路径并生成预期tree，不修改用户index。Commit合同绑定branch、parent、tree、作者、邮箱、消息、Hook策略和Git实现摘要；默认Hook策略为disabled。Commit结果丢失时按worktree HEAD的parent/tree/作者/消息核对，不能仅凭进程返回码重发。创建branch和更新ref使用旧值CAS；已存在branch、来源HEAD变化或非预期tree均失败关闭。
+Checkpoint使用独立`GIT_INDEX_FILE`从基准tree开始，逐路径核对Git blob与Workspace before CAS，只加入Plan列出的最终路径并生成预期tree；随后以受管worktree自己的index执行固定`read-tree --reset -u`并重新核对tree和文件正文，不修改来源index。配置include、可执行filter、带转换规则的attributes、submodule、LFS、sparse checkout和alternates在0.7失败关闭。兼容基线包含macOS系统Git 2.24.3，不调用其尚未支持的`--path-format`、`--show-object-format`或`worktree list -z`。
+
+Commit合同绑定此前不存在的新branch、parent、tree、作者、邮箱、带时区时间、消息、Hook策略、实现摘要、原始commit正文摘要和预期OID；默认Hook策略为disabled。规划阶段以不写对象的`hash-object`计算OID；执行阶段只写入同一确定性对象，再以全零旧值CAS创建branch ref。对象写入后或ref更新后崩溃分别恢复为`interrupted`或`committed`，对账同时核对OID、完整对象正文和ref，不根据返回码生成第二个commit。来源HEAD、来源index和现有branch均不移动；已存在branch、来源HEAD/配置/干净状态变化或非预期tree全部失败关闭。
 
 ### 13.4 Push边界
 

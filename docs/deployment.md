@@ -2,7 +2,7 @@
 
 ## 当前平台与许可状态
 
-当前0.7 Workspace Snapshot已提供POSIX和Windows原生端口；既有Coding Tool、Process和Git执行仍只支持具备所需no-follow与POSIX进程语义的macOS/Linux。0.7.2的Sandbox/Secret合同在三平台CI运行，Container强隔离启动适配可绑定通过探测的Docker兼容后端，但通用Process Supervisor和Windows Job Object尚未接入。Windows已经进入1.0正式支持范围，在Process、Git、完整Sandbox接线和发行物门禁完成前不得宣称产品支持。平台演进见[ADR 0063](adr/0063-windows-v1-platform-support.md)。
+当前0.7 Workspace Snapshot已提供POSIX和Windows原生端口；Process Supervisor在POSIX使用Session/Process Group，在Windows使用挂起创建、不可breakaway Job Object与ConPTY，Container执行也已接入同一owner生命周期。受管Git worktree/checkpoint/commit具有跨平台候选，Windows普通目录事务写因缺少抗Reparse Point竞态端口而失败关闭。0.7.2的Sandbox/Secret合同在三平台CI运行，Container强隔离可绑定通过探测的Docker兼容后端。Windows已经进入1.0正式支持范围，在统一Tool接入、完整Sandbox接线和发行物门禁完成前不得宣称产品支持。平台演进见[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
 社区版按照`AGPL-3.0-only`发布。安装后的基础许可、源代码和商业授权信息可以离线查看：
 
