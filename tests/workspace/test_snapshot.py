@@ -193,8 +193,22 @@ def test_windows_snapshot_remains_stable_after_selected_files_are_reopened(
     verify_workspace_snapshot(expected, root)
 
 
-@pytest.mark.skipif(os.name != "nt", reason="Windows目录成员身份语义")
-def test_windows_directory_snapshot_detects_same_name_member_replacement(tmp_path: Path) -> None:
+def test_directory_snapshot_ignores_unselected_member_content_change(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    member = root / "member.txt"
+    member.write_bytes(b"one!")
+    expected = capture_workspace_snapshot(
+        root,
+        resources=(WorkspaceResourceRequest(path="new.txt", access="write"),),
+    )
+
+    member.write_bytes(b"same")
+
+    verify_workspace_snapshot(expected, root)
+
+
+def test_directory_snapshot_detects_same_name_member_replacement(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     root.mkdir()
     member = root / "member.txt"

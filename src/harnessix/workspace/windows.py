@@ -4,6 +4,7 @@ import ctypes
 import hashlib
 import json
 import os
+import stat
 from pathlib import Path
 from typing import Literal
 
@@ -255,11 +256,13 @@ class WindowsWorkspaceRoot:
             for entry in iterator:
                 if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
                     raise KernelError("workspace_snapshot_limit", "Windows目录观察超过条目上限")
-                info = entry.stat(follow_symlinks=False)
+                # Windows DirEntry.stat()对普通项可能复用FindFirstFileW缓存，显式os.stat
+                # 才能取得Python 3.12提供的当前File Index（st_ino）。
+                info = os.stat(entry.path, follow_symlinks=False)
                 attributes = int(getattr(info, "st_file_attributes", 0))
                 if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
                     kind = _FILE_ATTRIBUTE_REPARSE_POINT
-                elif entry.is_dir(follow_symlinks=False):
+                elif stat.S_ISDIR(info.st_mode):
                     kind = _FILE_ATTRIBUTE_DIRECTORY
                 else:
                     kind = 0

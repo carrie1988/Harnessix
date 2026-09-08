@@ -100,7 +100,7 @@ class _PosixRoot:
                 except FileNotFoundError:
                     return _Observed(
                         "missing",
-                        (*revision_state(parent_info), name),
+                        (*self._stable_directory_identity(parent_info), name),
                         None,
                         0,
                     )
@@ -132,7 +132,7 @@ class _PosixRoot:
             if access == "execute" and not directory and info.st_mode & 0o111 == 0:
                 raise KernelError("workspace_execute_denied", "Workspace文件不可执行")
             if directory:
-                entries: list[tuple[str, int, tuple[int, ...]]] = []
+                entries: list[tuple[str, int, tuple[int, int]]] = []
                 with os.scandir(descriptor) as iterator:
                     for entry in iterator:
                         if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
@@ -141,13 +141,13 @@ class _PosixRoot:
                             )
                         child = entry.stat(follow_symlinks=False)
                         entries.append(
-                            (entry.name, stat.S_IFMT(child.st_mode), revision_state(child))
+                            (entry.name, stat.S_IFMT(child.st_mode), (child.st_dev, child.st_ino))
                         )
                 entries.sort()
                 body = json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode()
                 return _Observed(
                     "directory",
-                    (*revision_state(info), hashlib.sha256(body).hexdigest()),
+                    (*self._stable_directory_identity(info), hashlib.sha256(body).hexdigest()),
                     body,
                     len(entries),
                 )
@@ -163,6 +163,19 @@ class _PosixRoot:
                 if len(content) > MAX_SNAPSHOT_FILE_BYTES:
                     raise KernelError("workspace_snapshot_limit", "Workspace文件超过快照上限")
             return _Observed("file", revision_state(info), bytes(content), info.st_size)
+
+    @staticmethod
+    def _stable_directory_identity(info: os.stat_result) -> tuple[int, ...]:
+        """目录跨观察身份只绑定执行相关元数据；成员变化由成员对象摘要绑定。"""
+
+        return (
+            info.st_dev,
+            info.st_ino,
+            info.st_mode,
+            info.st_nlink,
+            info.st_uid,
+            info.st_gid,
+        )
 
     def close(self) -> None:
         self._workspace.close()

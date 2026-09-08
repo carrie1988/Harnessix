@@ -395,10 +395,11 @@ async def test_remote_configuration_drift_after_approval_fails_closed(tmp_path: 
             ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
         )
         _run(repository, "remote", "set-url", "origin", str(changed_remote))
-        with pytest.raises(KernelError) as stale:
-            await router.execute(planned.plan.execution.plan_id)
+        outcome = await router.execute(planned.plan.execution.plan_id)
 
-        assert stale.value.code == "execution_plan_stale"
+        assert outcome.kind == "failed"
+        assert outcome.error_code == "git_repository_changed"
+        assert router.status(planned.plan.execution.plan_id).state == "failed"
         assert _run(repository, "ls-remote", "--refs", str(remote)) == b""
         assert _run(repository, "ls-remote", "--refs", str(changed_remote)) == b""
     finally:
