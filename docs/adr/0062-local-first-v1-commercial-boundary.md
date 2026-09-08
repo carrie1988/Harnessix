@@ -12,7 +12,7 @@ Harnessix Code已经完成0.1至0.6的Action Plane、Agent Runtime、Model Runti
 ## 决策
 
 1. Harnessix Code 1.0定位为**面向大量独立终端用户安装和长期使用的、本地优先的生产级Coding Agent商业版本**。
-2. “大量用户”表示同一版本能够在大量相互独立的macOS/Linux终端实例中可靠安装、升级、运行、诊断和恢复，不表示1.0提供集中式多租户云控制面。
+2. “大量用户”表示同一版本能够在大量相互独立的macOS、Linux和Windows终端实例中可靠安装、升级、运行、诊断和恢复，不表示1.0提供集中式多租户云控制面；Windows平台语义由[ADR 0063](0063-windows-v1-platform-support.md)约束。
 3. 1.0必须形成真实仓库中的“理解—规划—修改—执行—验证—审查—交付”闭环，包含通用多文件事务性交付、受控命令与进程、Git检查点和回滚、持久会话、安全执行、CLI/TUI、Headless App Server、MCP/Skills及可复现评测。
 4. 远程Sandbox、云任务、多租户身份与配额、分布式Session/Worker、团队集中策略、云端Secret托管和计费控制面进入1.x候选范围；只有真实用户证据证明必要时才立项。
 5. 0.7调整为“可信执行与工程交付”，0.8调整为“产品运行时与扩展”，0.9调整为“Release Candidate与质量工程”，1.0负责冻结契约并完成正式发布。

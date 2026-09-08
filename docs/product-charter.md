@@ -12,7 +12,7 @@
 
 第一阶段目标用户是：
 
-- 希望在macOS/Linux本地代码仓库中长期使用可控Coding Agent的独立开发者；
+- 希望在macOS、Linux或Windows本地代码仓库中长期使用可控Coding Agent的独立开发者；
 - 需要接入不同模型供应商，又不希望业务绑定单一模型 SDK 的团队；
 - 对命令执行、文件写入、网络访问和外部系统副作用有审计与审批要求的工程团队；
 - 需要研究和扩展 Agent Loop、Context、Tool、Sandbox、MCP、Skills 的 Agent 工程师。
@@ -21,7 +21,7 @@
 
 1.0采用以下约束：
 
-- 本地优先，支持 macOS 和 Linux；
+- 本地优先，1.0正式支持macOS、Linux和Windows；
 - 提供CLI/TUI、无界面的App Server和Python Agent SDK；
 - 单个 Workspace 对应一个明确的文件系统边界；
 - 支持交互式会话和一次性 Headless 任务；
@@ -32,7 +32,7 @@
 - 支持Host安全级别与至少一种Container隔离执行后端；
 - 高风险外部副作用由 Harnessix Action Plane 治理。
 
-1.0面向大量相互独立的本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。该边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)。
+1.0面向大量相互独立的本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。Windows必须具备原生Workspace、Git、Process和CLI能力；强隔离优先使用受管WSL2或Docker Desktop后端，不能把仅能在WSL2运行声明为Windows原生支持。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
 ## 4. 核心价值
 
@@ -84,6 +84,8 @@ Harnessix Code 必须能够独立完成：
 - 不承诺任意外部系统上的 Exactly Once；
 - 不直接复制参考项目实现代码；任何代码复用必须满足许可证和归属要求，研究记录固定版本、来源和独立架构决策。
 
+社区版按照`AGPL-3.0-only`发布，版权所有者保留独立商业授权能力。代码许可证不授予项目名称和Logo的品牌权利；历史MIT版本、贡献权利链、商业授权和第三方通知分别由仓库治理文件约束，见[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)。
+
 ## 6. 产品成功标准
 
 Harnessix Code 1.0 必须满足：
@@ -96,7 +98,7 @@ Harnessix Code 1.0 必须满足：
 6. 支持 MCP、项目指令和 Skills；
 7. 有稳定、版本化的 App Server 协议；
 8. 有单元、契约、集成、端到端、故障注入和真实仓库 Eval；
-9. 提供macOS/Linux安装、跨版本升级、备份恢复、卸载、配置、诊断和安全文档；
+9. 提供macOS、Linux和Windows安装、跨版本升级、备份恢复、卸载、配置、诊断和安全文档；
 10. 提供用户数据导出、删除、保留及诊断脱敏能力；
 11. 发布可复现的质量、成本、延迟、任务成功率和人工干预率基线；
 12. 通过长会话Soak、故障注入、安全测试和受控真实用户Dogfooding门禁。

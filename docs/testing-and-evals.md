@@ -1301,3 +1301,18 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - 真实v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`，v17 wheel SHA256为`40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`。`scripts/turn_retry_upgrade_probe.py`按`create → upgrade → old-reader`完整通过。
 
 默认验收没有使用真实模型凭据、SSH、远程服务器或新增中间件。Provider切换验证使用实际SDK协议栈和进程内受控HTTP传输，不把MockTransport通过描述为真实收费平台模型质量验收。
+
+## 63. Windows目标与双许可治理基线验收（2026-09-08）
+
+状态：本地治理、构建和完整回归门禁通过；Windows平台中立CI已加入默认工作流，远端结果随本次变更提交记录。该基线不实现或宣称Windows原生执行能力。
+
+验收覆盖：
+
+- ADR 0063将macOS、Linux和Windows共同纳入1.0正式矩阵，并把Workspace、Process、Git、Sandbox和发行差异限制在0.7平台端口；当前POSIX能力与Windows目标状态在README、架构、产品章程、路线图、部署和安全文档中保持一致；
+- ADR 0064从本次切换提交开始采用`AGPL-3.0-only`社区许可证，明确历史MIT授权不追溯撤销、闭源商业许可需另行签署、代码许可不授予品牌权利，并建立贡献附加授权及第三方通知边界；
+- 新增仓库治理测试，固定SPDX表达式、规范AGPL正文SHA256、LF换行策略、版权主体、历史许可证、商业许可非授予、贡献签署、商标及第三方通知不变量；
+- `harnessix license`不读取运行配置即可离线输出许可证、源代码和商业许可入口；独立wheel元数据包含`License-Expression: AGPL-3.0-only`、`License-File: LICENSE`和34,020字节完整许可证；
+- Windows工作流仅运行安装、导入、治理和平台中立单元测试，不运行当前明确依赖POSIX的Workspace/Process/Git测试，避免用跳过或兼容层冒充产品支持；
+- 全仓相对Markdown链接检查无缺失；`uv lock --check`通过，许可证正文SHA256为`d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee`，验收wheel SHA256为`633b509b7c11339cd09128325f67ef1686b4e23368ec3d44c7477d851b0e1e8f`。
+
+最终本地`make check`结果为**2928 passed、2 skipped，270.98秒**；Ruff格式与规则通过，Mypy严格检查165个源文件通过。两个skip仅因本地未配置PostgreSQL实库，远端PostgreSQL任务独立验证。该结果只关闭平台与许可治理基线，不关闭0.7 Windows原生端口、0.9三平台发行物或1.0商用发布门禁。

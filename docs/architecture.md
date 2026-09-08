@@ -14,6 +14,7 @@
 - 0.4核心运行能力已交付但整体仍待0.4.3c关闭：双Adapter、尝试/失败用量账本、成本报告、受控Smoke/白名单诊断和响应计费元数据已通过对应验收；百炼文本、内存工具和审批重开实测通过；真实计价适用性作为0.9发布证据门禁继续跟踪，未关闭时不得发布1.0；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、migration为19，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
+- Windows已进入1.0目标并增加平台中立CI，但当前Workspace、Process、Git执行和Sandbox仍为POSIX实现，不能据此宣称Windows当前可用；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -29,7 +30,9 @@ Harnessix Code的目标是独立实现面向真实软件工程任务的、本地
 7. 每个关键状态转换、工具执行和审批都有结构化事件；
 8. 不以多 Agent、RAG 或复杂工作流掩盖单 Agent Runtime 的不可靠。
 
-1.0是面向大量独立macOS/Linux终端用户安装和长期使用的本地优先商业版本，而不是Runtime演示或集中式多租户SaaS。“大量用户”要求发行物、兼容升级、恢复、诊断、安全和质量基线可以在大量相互独立的本地实例中复现；不要求1.0实现远程执行池、云端高可用或集中式服务SLO。边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)。
+1.0是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先商业版本，而不是Runtime演示或集中式多租户SaaS。“大量用户”要求发行物、兼容升级、恢复、诊断、安全和质量基线可以在大量相互独立的本地实例中复现；不要求1.0实现远程执行池、云端高可用或集中式服务SLO。产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
+
+社区版从许可证切换边界起按照`AGPL-3.0-only`发布，版权所有者保留独立商业授权能力。历史MIT版本、外部贡献、品牌和第三方依赖分别维持可审计权利链，见[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)。
 
 ## 3. 系统上下文
 
@@ -67,7 +70,7 @@ Harnessix Code的目标是独立实现面向真实软件工程任务的、本地
 - 发起创建、恢复、取消、审批、回滚和分叉请求；
 - 不拥有 Agent 状态机，不直接执行工具。
 
-1.0提供CLI/TUI；IDE、桌面客户端和Web在协议稳定且有真实需求后于1.x评估。薄CLI在0.8随Protocol和App Server接入，完整交互体验在0.9收口。
+1.0在macOS、Linux和Windows提供CLI/TUI；IDE、桌面客户端和Web在协议稳定且有真实需求后于1.x评估。薄CLI在0.8随Protocol和App Server接入，完整交互体验在0.9收口。
 
 ### 4.2 App Server 与 Protocol
 
@@ -160,6 +163,7 @@ Tool Runtime 负责：
 
 Workspace Runtime 提供：
 
+- POSIX与Windows分离的平台实现，以及不包含平台判断的上层领域端口；
 - 规范化工作目录和符号链接检查；
 - Workspace 内外路径边界；
 - 多文件事务写入、Checkpoint、Rollback和变更Diff；
@@ -175,6 +179,8 @@ Workspace Runtime 提供：
 - `container`：容器化隔离后端，用于需要更强边界的命令。
 
 如果 Python 无法可靠提供跨平台 PTY、进程树清理或低层隔离，再以基准和失败测试为依据引入 Rust Sidecar。
+
+Windows原生实现不能复用POSIX权限位和Process Group假设。Workspace必须单独处理盘符、UNC、保留名、ADS、大小写折叠、长路径和Reparse Point/Junction；Process使用Job Object等原生能力建立进程树归属。Windows强隔离优先通过受管WSL2或Docker Desktop后端提供，但仅在WSL2内运行不能冒充Windows原生Workspace支持。
 
 ### 4.8 Session Store
 
@@ -388,7 +394,8 @@ src/harnessix/
 - Python-first；
 - 自研 Agent Loop；
 - 本地优先、CLI + Headless App Server；
-- 1.0面向大量独立macOS/Linux终端实例，不包含集中式多租户SaaS；
+- 1.0面向大量独立macOS、Linux和Windows终端实例，不包含集中式多租户SaaS；
+- Windows原生Workspace、Git、Process和CLI属于1.0正式范围，强隔离优先使用受管WSL2或Docker Desktop后端；
 - 远程Sandbox、云任务、多租户控制面和分布式Agent Worker进入1.x候选范围；
 - SQLite 为本地 Session Store；
 - Session Store 采用 Thread 内单调 AgentEvent 与事务投影；
@@ -399,8 +406,9 @@ src/harnessix/
 - 持久审批采用暂停返回、答复仅落库、显式继续；默认仅开放可信只读工具，见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)；受管单文件 Patch 通过独立写审批与专用端口开放，见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
+- 社区版采用`AGPL-3.0-only`，版权所有者保留独立商业授权能力，代码许可证不授予品牌权利。
 
-已确认事项分别由[ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md)、[ADR 0010](adr/0010-session-store-and-recovery.md)和[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)固化。
+已确认事项分别由[ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md)、[ADR 0010](adr/0010-session-store-and-recovery.md)、[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)、[ADR 0063](adr/0063-windows-v1-platform-support.md)和[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)固化。
 
 ### 必须通过 ADR 决定
 

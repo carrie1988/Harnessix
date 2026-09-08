@@ -14,6 +14,7 @@ from uuid import uuid4
 import uvicorn
 
 from harnessix.bootstrap import build_service
+from harnessix.licensing import render_license_notice
 from harnessix.observability import configure_logging
 from harnessix.settings import Settings
 from harnessix.worker import ActionWorker
@@ -34,6 +35,7 @@ def _parser() -> argparse.ArgumentParser:
     subcommands.add_parser(
         "coding-eval-campaign", help="运行显式启用的固定历史任务真实模型Campaign"
     )
+    subcommands.add_parser("license", help="显示社区许可证、源代码和商业许可信息")
     return parser
 
 
@@ -70,6 +72,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         campaign_main(args[1:])
         return
     arguments = _parser().parse_args(args)
+    if arguments.command == "license":
+        print(render_license_notice())
+        return
     settings = Settings.from_environment()
     configure_logging(level=settings.log_level, log_format=settings.log_format)
     if arguments.command == "serve":

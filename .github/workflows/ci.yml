@@ -71,6 +71,20 @@ jobs:
       - run: uv run python -m examples.kernel_process
       - run: uv run python -m examples.coding_feedback
 
+  windows-portability:
+    # 仅验证平台中立层；完整Windows Workspace/Process/Sandbox支持由0.7/0.9交付。
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - run: uv run python -c "import harnessix"
+      - run: uv run pytest tests/governance tests/unit
+
   postgres:
     runs-on: ubuntu-latest
     services:

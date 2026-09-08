@@ -1,5 +1,17 @@
 # 部署与运行
 
+## 当前平台与许可状态
+
+当前Workspace、Process和Git执行实现仅支持具备所需no-follow与POSIX进程语义的macOS/Linux。Windows已经进入1.0正式支持范围并配置平台中立CI，但尚未完成原生Workspace、Job Object进程监督、Sandbox和发行物门禁，当前版本在Windows上不得启用这些执行能力或宣称完整支持。平台演进见[ADR 0063](adr/0063-windows-v1-platform-support.md)。
+
+社区版按照`AGPL-3.0-only`发布。安装后的基础许可、源代码和商业授权信息可以离线查看：
+
+```bash
+uv run harnessix license
+```
+
+修改版本的发行者和网络服务运营者必须根据自身版本履行AGPL义务；官方源代码链接不能替代修改版本对应源码的提供责任。商业双许可、历史MIT边界和第三方通知见[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)、[版权说明](../COPYRIGHT.md)和[第三方通知](../THIRD_PARTY_NOTICES.md)。
+
 ## 1. 本地开发模式
 
 默认使用 SQLite 和 `inline` 执行，不需要外部中间件：

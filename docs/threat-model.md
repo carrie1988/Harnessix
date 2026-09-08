@@ -1,10 +1,12 @@
 # Harnessix Code 威胁模型 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.2b多Context Source切片
-- 更新日期：2026-09-07
+- 状态：0.2架构基线，已随实现更新至0.6.5终态Turn Retry与Provider切换
+- 更新日期：2026-09-08
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-0.3 实施说明：当前 Kernel 已实现单宿主锁、事件 CAS/幂等、可信只读工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误和 Kernel 遥测字段隔离。审批绑定当前工具契约/参数/Workspace 路径，但不提供 OS 隔离、actor 身份认证、文件内容或环境完整性保证。真实 Sandbox、网络隔离、完整 Secret Redactor 和 MCP/Hook 仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见 [Kernel 支持边界](m03-runtime-kernel.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。审批绑定当前工具契约、参数和Workspace路径，但不提供OS隔离、actor身份认证、文件内容或环境完整性保证。真实Sandbox、网络隔离、完整Secret Redactor和MCP/Hook仍未实现；本威胁模型中的目标控制不能全部视为当前保证，参见[Kernel支持边界](m03-runtime-kernel.md)和[0.5实施设计](m05-coding-tools.md)。
+
+Windows已进入1.0正式目标，但当前Workspace、Process、Git执行和Sandbox仍只完成POSIX实现。现有Windows平台中立CI不证明路径安全、进程树清理或隔离能力；在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的契约、故障测试和发行门禁完成前，Windows不属于当前安全支持范围。
 
 ## 1. 安全目标
 
@@ -140,10 +142,11 @@ Agent Runtime                │
 - Workspace/External Root 明确建模；
 - 写前与打开时重新校验文件身份；
 - 使用安全打开/原子替换原语，避免只做字符串前缀判断；
+- POSIX与Windows采用独立平台端口；Windows额外校验盘符、UNC、保留名、ADS、大小写折叠、长路径和Reparse Point/Junction；
 - 审批绑定 Workspace Revision；
-- 构造 symlink/rename race 测试。
+- 构造symlink/reparse/rename/file-sharing race测试。
 
-**剩余风险**：跨平台文件系统语义不同；Host 后端无法提供容器级隔离。
+**剩余风险**：跨平台文件系统语义不同；当前Windows平台端口尚未实现；Host后端无法提供容器级隔离。
 
 ### TM-03：Shell 注入与进程逃逸
 
@@ -152,7 +155,7 @@ Agent Runtime                │
 **控制**
 
 - 结构化 argv 优先，显式 Shell 模式单独标识；
-- 进程组/Job Object 级取消；
+- POSIX进程组与Windows Job Object分别建立进程树归属、取消和宿主退出核对；
 - stdin 默认关闭；
 - 超时、CPU/内存和输出上限；
 - Turn 完成前扫描并清理托管进程；
@@ -301,6 +304,7 @@ Agent Runtime                │
 
 - Lockfile、Hash、最小依赖和依赖扫描；
 - 发布构建可复现并生成 SBOM；
+- 校验第三方许可证、版权通知、贡献来源与发布物内源代码许可声明；
 - 插件版本固定；
 - 更新包签名；
 - CI Secret 与发布权限分离。
@@ -330,7 +334,8 @@ Agent Runtime                │
 - Sandbox 不可用测试证明 fail closed；
 - 外部写故障注入中重复效果数为 0；
 - Threat Model 根据实现更新为 v2；
-- 文档准确区分 Host 限制与 Container 保证。
+- 文档准确区分 Host 限制与 Container 保证；
+- macOS、Linux和Windows分别通过路径、进程树、取消、恢复和Sandbox能力门禁；Windows平台中立CI不得替代原生执行测试。
 
 ## 9. 后续工作
 

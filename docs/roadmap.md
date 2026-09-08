@@ -4,9 +4,11 @@
 
 Harnessix Code通过研究Codex、OpenCode、Claude Code等主流Coding Agent的架构、公开行为和可核验实现思路，独立设计并实现面向真实软件工程任务的、本地优先、模型无关、安全可控、可恢复、可审计、可评测、可扩展的生产级Coding Agent。系统必须在真实代码仓库中稳定完成理解、规划、修改、执行、验证、审查和交付闭环，并具备完整的协议契约、失败语义、持久化、可观测性、安全边界、兼容升级、真实评测和产品发布能力。
 
-Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，而是能够供大量独立macOS/Linux终端用户安装并长期使用的本地优先正式商用版本。“大量用户”指大量相互独立的本地实例，不表示1.0包含集中式多租户云控制面；远程Sandbox、云任务和分布式Agent Worker按真实需求在1.x评估。产品边界由[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)固化。
+Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，而是能够供大量独立macOS、Linux和Windows终端用户安装并长期使用的本地优先正式商用版本。“大量用户”指大量相互独立的本地实例，不表示1.0包含集中式多租户云控制面；远程Sandbox、云任务和分布式Agent Worker按真实需求在1.x评估。产品与平台边界由[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)固化。
 
 路线图采用“可发布的纵向切片”，每个切片都必须包含正式契约、失败语义、持久化、可观测性、完备测试、总体方案设计和详细设计。参考项目仅作为架构与行为证据，研究必须记录固定提交或产品版本、来源和Harnessix独立决策；任何代码复用必须满足许可证和归属要求。
+
+社区版自许可证切换边界起按照`AGPL-3.0-only`发布，并保留独立商业授权能力。历史MIT版本、外部贡献、品牌标识和第三方依赖必须分别保留可审计权利链，见[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)。
 
 开发顺序遵循：
 
@@ -51,10 +53,10 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 | 0.4 | Model Runtime | 两类 Provider、流式事件、错误和用量归一化 | 0.3 |
 | 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 运行基线；计价证据独立跟踪 |
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
-| 0.7 | 可信执行与工程交付 | Permission、Sandbox、Process、事务性交付和 Action Plane | 0.6 |
+| 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Action Plane | 0.6 |
 | 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks | 0.7 |
-| 0.9 | Release Candidate与质量工程 | 完整CLI/TUI、故障注入、质量/成本基线、安装与Dogfooding | 0.8 |
-| 1.0 | 本地优先正式商用发布 | 稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
+| 0.9 | Release Candidate与质量工程 | 完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
+| 1.0 | 本地优先正式商用发布 | macOS/Linux/Windows稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
 | 1.x | 按需求演进 | 云任务、多租户、远程Sandbox、IDE和分布式运行 | 1.0 |
 
 版本号代表能力成熟度，不承诺固定日期。每个里程碑完成后根据 Eval、风险和实际投入重新估算后续计划。
@@ -323,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**规划中**。本阶段先刷新研究证据和威胁模型，再按安全边界、执行后端、进程监督、事务性交付和综合验收推进，不将全部能力合并为一次性Sandbox改造。
+状态：**规划中**。Windows已进入1.0正式范围并建立平台中立CI基线，但当前Workspace/Process仍只支持POSIX，不得宣称Windows已经可用。本阶段先刷新研究证据和威胁模型，再按平台端口、安全边界、执行后端、进程监督、事务性交付和综合验收推进，不将全部能力合并为一次性Sandbox改造。
 
 ### 目标
 
@@ -331,18 +333,18 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ### 纵向切片
 
-- [ ] **0.7.0 研究基线与生产差距**：刷新Codex、OpenCode和Claude Code行为研究版本；输出安全执行、进程、工作区交付差距矩阵；完成Threat Model v2；明确0.4.3c由0.9发布证据门禁收口；
-- [ ] **0.7.1 Workspace与Permission**：统一路径、符号链接、外部目录、跨进程Workspace所有权、命令风险分类和版本化Permission Rule；审批指纹绑定Tool、参数、cwd、环境摘要、Workspace revision和策略版本；
-- [ ] **0.7.2 Sandbox、网络与Secret**：定义Host安全级别和失败关闭策略；实现Container Sandbox Executor、资源限制、网络出口域名/IP/端口策略、代理防绕过及Secret Provider最小化注入；
-- [ ] **0.7.3 Process与终端监督**：在Permission和Sandbox内提供通用argv/受控Shell、PTY、标准输入、后台进程、进程组、超时、取消、宿主死亡监督和有界输出Artifact；是否引入Rust Sidecar由基准和失败测试决定；
+- [ ] **0.7.0 研究基线与生产差距**：刷新Codex、OpenCode和Claude Code行为研究版本；求证POSIX/Windows路径、进程、Sandbox和发行接口；输出安全执行、进程、工作区交付差距矩阵；完成Threat Model v2；明确0.4.3c由0.9发布证据门禁收口；
+- [ ] **0.7.1 跨平台Workspace与Permission**：建立Workspace平台端口；统一POSIX路径以及Windows盘符、UNC、保留名、ADS、大小写折叠、长路径、Reparse Point/Junction、外部目录和跨进程所有权；审批指纹绑定Tool、参数、cwd、环境摘要、Workspace revision和策略版本；
+- [ ] **0.7.2 Sandbox、网络与Secret**：定义三平台Host安全级别和失败关闭策略；实现Container Sandbox Executor、资源限制、网络出口域名/IP/端口策略、代理防绕过及Secret Provider最小化注入；Windows强隔离优先采用受管WSL2或Docker Desktop后端；
+- [ ] **0.7.3 跨平台Process与终端监督**：在Permission和Sandbox内提供通用argv/受控Shell、PTY、标准输入、后台进程、超时、取消、宿主死亡监督和有界输出Artifact；POSIX使用Session/Process Group，Windows使用Job Object等原生归属能力；是否引入Rust Sidecar由基准和失败测试决定；
 - [ ] **0.7.4 事务性交付与Git闭环**：把受管副本扩展为通用多文件Workspace事务，支持来源CAS、脏工作区保护、完整Diff、Checkpoint、Rollback、Branch/Worktree和显式Commit；Push始终单独授权且默认关闭；
 - [ ] **0.7.5 Action Plane与安全验收**：统一Coding Tool风险路由、文件/命令审计、外部副作用`UNKNOWN → reconcile`和扩展强制接入点，完成真实仓库、安全攻击、崩溃恢复及跨组件发布门禁。
 
 ### 关键测试
 
-- [ ] `..`、绝对路径、符号链接、挂载点和检查后替换的竞态逃逸；
+- [ ] POSIX的`..`、绝对路径、符号链接、挂载点，以及Windows盘符、UNC、ADS、保留名、Junction/Reparse Point和检查后替换的竞态逃逸；
 - [ ] 审批后参数、cwd、环境、Workspace revision或策略变化导致授权失效；
-- [ ] 子进程、PTY、后台进程和进程树在取消、超时及宿主崩溃后进入可核对状态；
+- [ ] POSIX Process Group和Windows Job Object下的子进程、PTY、后台进程和进程树在取消、超时及宿主崩溃后进入可核对状态；
 - [ ] 禁止网络时DNS、IPv4/IPv6、代理、重定向和解析漂移均受策略约束；
 - [ ] Secret不出现在模型Context、Session、日志、Trace、Diff或诊断包；
 - [ ] 多文件写入、Checkpoint、Commit各崩溃切点不产生未归因交付或盲目重放；
@@ -357,6 +359,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - 隔离后端不可用时失败关闭或明确要求用户选择Host风险，不静默降级；
 - 多文件修改能够原子交付或恢复到可核对状态，Git结果与最终回答一致；
 - 高风险外部Action可以恢复和对账，连续故障测试不产生重复副作用或失管进程。
+- Windows原生Workspace、Git、Process和CLI通过正式契约；仅WSL2可运行不能标记为Windows原生支持。
 
 ## 10. 0.8：产品运行时与扩展
 
@@ -405,8 +408,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；
 - [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
 - [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
-- [ ] **0.9.4 安全与供应链**：攻击测试、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；
-- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；
+- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；
+- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
 
 ### 验收标准
@@ -429,14 +432,14 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] MCP、项目指令、Skills和Hooks；
 - [ ] CLI/TUI、Headless App Server和Python Agent SDK；
 - [ ] Action Plane外部副作用治理；
-- [ ] macOS/Linux安装、升级、恢复、卸载和诊断；
+- [ ] macOS、Linux和Windows安装、升级、恢复、卸载和诊断；
 - [ ] 可复现Eval、质量报告、安全文档和运维资料。
 
 ### 发布门禁
 
 - [ ] 所有公共Schema有版本、兼容窗口和废弃策略；
 - [ ] 所有数据库及持久Artifact变更有向前迁移、备份恢复和回滚说明；
-- [ ] macOS/Linux全新安装、跨版本升级、失败回滚和卸载验证通过；
+- [ ] macOS、Linux和Windows全新安装、跨版本升级、失败回滚和卸载验证通过；
 - [ ] 用户数据导出、删除、保留和诊断脱敏策略经过测试；
 - [ ] 安全文档、Threat Model v2、Sandbox、网络、Secret及扩展供应链完成审查；
 - [ ] 默认CI完全离线，受控真实Provider门禁独立且可审计；
@@ -444,9 +447,10 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] 不存在未分类或未处置的发布阻塞级可靠性与安全缺陷；
 - [ ] README中的每项当前能力声明都有可运行证据；
 - [ ] 发布物可复现并具备版本、校验摘要、SBOM、Changelog、迁移说明和支持矩阵；
+- [ ] AGPL社区许可证、商业授权边界、贡献权利链、商标规则和第三方通知完成发布审查；
 - [ ] 0.9固定Eval、Soak和受控Beta达到预先冻结的发布阈值，不在看到结果后降低标准。
 
-1.0的规模声明限定为大量相互独立的本地实例。该版本不宣称多租户隔离、云端高可用、远程执行池或集中式服务SLO。
+1.0的规模声明限定为大量相互独立的macOS、Linux和Windows本地实例。该版本不宣称多租户隔离、云端高可用、远程执行池或集中式服务SLO。
 
 ## 13. 1.x与后续演进
 
@@ -465,7 +469,6 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - Subagent、Reviewer和并行任务；
 - IDE、桌面客户端和Web；
 - LSP、代码索引和大型Monorepo优化；
-- Windows原生支持；
 - 经0.7基准证明必要但未提前落地的Rust Process/Sandbox Sidecar。
 
 这些能力不能提前侵入1.0核心，除非已有真实用户场景、风险分析和评测数据证明必要。
@@ -484,4 +487,5 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 8. `make check`通过；
 9. 相关README、架构、部署、安全、测试和运维文档与实现同步；
 10. 至少有一个跨组件集成验证；涉及模型或编码行为的切片还需真实Provider或真实仓库验证；
-11. Git Diff仅包含该迭代必要变更，发布声明能够追溯到测试、Eval或运行证据。
+11. 代码来源、许可证、版权、商标和第三方通知与实际发布物一致；
+12. Git Diff仅包含该迭代必要变更，发布声明能够追溯到测试、Eval或运行证据。

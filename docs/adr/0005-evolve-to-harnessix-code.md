@@ -3,6 +3,8 @@
 - 状态：已接受
 - 日期：2026-09-02
 
+后续决策：本ADR确定的本地优先产品方向保持不变；第4项当时的macOS/Linux平台范围已由[ADR 0063](0063-windows-v1-platform-support.md)扩展为macOS、Linux和Windows共同进入1.0正式支持矩阵。当前实现与目标范围仍须分别表述。
+
 ## 背景
 
 Harnessix 0.1 已完成 Framework-agnostic Agent Action Plane 的基础能力，包括 Action Contract、Policy、Approval、Effect Journal、租约、Worker、幂等、不确定结果对账和 OpenTelemetry。
@@ -16,7 +18,7 @@ Harnessix 0.1 已完成 Framework-agnostic Agent Action Plane 的基础能力，
 1. 顶层产品名称升级为 **Harnessix Code**；仓库、Python 包和 CLI 保留 `Harnessix` / `harnessix`。
 2. 自研 Agent Runtime，不使用 LangGraph 作为核心 Agent Loop。
 3. 现有 Action Plane 保留为执行治理子系统，继续负责高风险、外部和不确定副作用。
-4. 第一版采用本地优先、CLI + Headless App Server、macOS/Linux 的产品范围。
+4. 第一版采用本地优先、CLI + Headless App Server、macOS/Linux 的产品范围；该平台范围后由ADR 0063扩展。
 5. 继续遵循 ADR 0001 的 Python-first 决策；只有进程、PTY、Sandbox 或分发需求得到基准数据证明后，才下沉局部 Rust 组件。
 6. 开发采用“源码研究—ADR—生产切片—故障测试—评测基线”的闭环，不直接复制参考项目代码。
 7. 每个里程碑必须满足统一质量门禁，不允许以 Demo 实现替代正式领域模型和失败语义。
