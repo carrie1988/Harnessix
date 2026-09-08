@@ -15,7 +15,13 @@ from harnessix.execution.contracts import (
     SandboxBindingV2,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
-from harnessix.processes.owner_receipt import sign_owner_receipt, verify_owner_receipt
+from harnessix.processes import owner_receipt
+from harnessix.processes.owner_receipt import (
+    read_owner_receipt,
+    sign_owner_receipt,
+    verify_owner_receipt,
+    write_owner_receipt,
+)
 from harnessix.processes.supervision_contracts import (
     ProcessLease,
     ProcessSpec,
@@ -193,3 +199,37 @@ def test_process_owner_receipt_mac_binds_identity_and_payload() -> None:
     with pytest.raises(KernelError) as invalid:
         verify_owner_receipt(forged, owner_token="d" * 64, process_id=process_id)
     assert invalid.value.code == "process_owner_receipt_invalid"
+
+
+def test_process_owner_receipt_reads_short_regular_file_chunks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    process_id = UUID("00000000-0000-4000-8000-000000000001")
+    receipt = sign_owner_receipt(
+        process_id=process_id,
+        owner_identity="e" * 64,
+        state="running",
+        sequence=1,
+        owner_token="d" * 64,
+        pid=123,
+        started_at=NOW,
+        stdout=empty_process_output(),
+        stderr=empty_process_output(),
+    )
+    path = tmp_path / "receipt.json"
+    write_owner_receipt(path, receipt)
+    real_read = owner_receipt.os.read
+    monkeypatch.setattr(
+        owner_receipt.os,
+        "read",
+        lambda descriptor, size: real_read(descriptor, min(size, 7)),
+    )
+    assert (
+        read_owner_receipt(
+            path,
+            owner_token="d" * 64,
+            process_id=process_id,
+            owner_identity="e" * 64,
+        )
+        == receipt
+    )

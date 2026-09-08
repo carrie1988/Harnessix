@@ -1384,6 +1384,7 @@ Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capabil
 - 宿主控制管道丢失后owner独立终止进程树，新Supervisor只凭HMAC回执和Lease恢复为`exited/host_lost`，不以PID取得权限；
 - 启动失败以无PID的`failed/launch_failed`终结，同process id重复调用不重放；回执PID或身份被篡改不能通过MAC；
 - Windows输入CR/LF/退格跨分片规范化的平台中立回归。
+- 回执读取必须循环消费普通文件短读；单次`os.read`少于`st_size`不能把已原子发布的Windows回执误判损坏。
 
 Windows真机门禁包含：显式Win32挂起标志创建目标、加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize、`Ctrl+Z + CR`逻辑EOF、不提前关闭传输句柄和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
 

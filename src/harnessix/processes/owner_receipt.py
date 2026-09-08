@@ -157,7 +157,15 @@ def read_owner_receipt(
             info = os.fstat(descriptor)
             if info.st_size <= 0 or info.st_size > MAX_OWNER_RECEIPT_BYTES:
                 raise ValueError
-            body = os.read(descriptor, MAX_OWNER_RECEIPT_BYTES + 1)
+            chunks: list[bytes] = []
+            remaining = info.st_size
+            while remaining:
+                chunk = os.read(descriptor, remaining)
+                if not chunk:
+                    raise ValueError
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            body = b"".join(chunks)
         finally:
             os.close(descriptor)
         if len(body) != info.st_size:
