@@ -49,7 +49,7 @@ from harnessix.workspace.snapshot import capture_workspace_snapshot
 
 
 def _probe_runner(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
-    assert timeout == 5.0
+    assert timeout == 15.0
     output = "28.3.2|28.3.2\n" if argv[1] == "version" else '["name=seccomp"]\n'
     return subprocess.CompletedProcess(argv, 0, output, "")
 

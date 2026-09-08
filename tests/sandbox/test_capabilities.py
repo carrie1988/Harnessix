@@ -37,7 +37,7 @@ def test_container_probe_uses_daemon_and_security_capability_evidence(
     observed = []
 
     def runner(argv, timeout):
-        observed.append(tuple(argv))
+        observed.append((tuple(argv), timeout))
         output = "client|server" if argv[1] == "version" else security
         return subprocess.CompletedProcess(argv, 0, output, "")
 
@@ -45,7 +45,8 @@ def test_container_probe_uses_daemon_and_security_capability_evidence(
         Path(sys.executable), engine=engine, runner=runner
     )
     assert probe.rootless is rootless
-    assert [item[1] for item in observed] == ["version", "info"]
+    assert [item[0][1] for item in observed] == ["version", "info"]
+    assert [item[1] for item in observed] == [15.0, 15.0]
 
 
 def test_container_probe_rejects_unparseable_security_evidence() -> None:
@@ -56,3 +57,17 @@ def test_container_probe_rejects_unparseable_security_evidence() -> None:
     with pytest.raises(KernelError) as error:
         probe_container_engine(Path(sys.executable), engine="docker", runner=runner)
     assert error.value.code == "sandbox_unavailable"
+
+
+def test_container_probe_timeout_fails_closed_without_retry() -> None:
+    calls = 0
+
+    def runner(argv, timeout):
+        nonlocal calls
+        calls += 1
+        raise subprocess.TimeoutExpired(argv, timeout)
+
+    with pytest.raises(KernelError) as error:
+        probe_container_engine(Path(sys.executable), engine="docker", runner=runner)
+    assert error.value.code == "sandbox_unavailable"
+    assert calls == 1

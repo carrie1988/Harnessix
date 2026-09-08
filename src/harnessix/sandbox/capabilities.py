@@ -18,6 +18,7 @@ from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
 ContainerEngineKind = Literal["docker", "podman"]
+_CONTAINER_ENGINE_PROBE_TIMEOUT_SECONDS = 15.0
 
 
 class ContainerEngineProbe(SandboxContract):
@@ -114,8 +115,8 @@ def probe_container_engine(
                 "--format",
                 "{{.Host.Security.Rootless}}",
             )
-        completed = runner(version_command, 5.0)
-        security_completed = runner(security_command, 5.0)
+        completed = runner(version_command, _CONTAINER_ENGINE_PROBE_TIMEOUT_SECONDS)
+        security_completed = runner(security_command, _CONTAINER_ENGINE_PROBE_TIMEOUT_SECONDS)
     except (OSError, ValueError, subprocess.SubprocessError):
         raise KernelError("sandbox_unavailable", "容器引擎探测失败") from None
     if (
