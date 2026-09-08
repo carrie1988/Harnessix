@@ -27,6 +27,7 @@ TransactionState = Literal[
     "diverged",
     "unknown",
 ]
+DiffKind = Literal["added", "modified", "deleted", "renamed"]
 
 
 class DeliveryContract(ContractModel):
@@ -210,3 +211,58 @@ def transition_transaction_record(
         error_code=error_code,
         record_digest=workspace_transaction_record_digest(candidate),
     )
+
+
+class WorkspaceDiffEntry(DeliveryContract):
+    kind: DiffKind
+    path: str = Field(min_length=1, max_length=4096)
+    original_path: str | None = Field(default=None, min_length=1, max_length=4096)
+    before: WorkspaceFileVersion
+    after: WorkspaceFileVersion
+    binary: bool
+
+    @model_validator(mode="after")
+    def complete_entry(self) -> Self:
+        renamed = self.kind == "renamed"
+        if renamed != (self.original_path is not None):
+            raise ValueError("只有重命名Diff携带原路径")
+        if renamed and (
+            self.before.presence != "file"
+            or self.after.presence != "file"
+            or self.before != self.after
+            or self.original_path == self.path
+        ):
+            raise ValueError("重命名Diff必须绑定相同文件版本的两个路径")
+        if self.kind == "added" and not (
+            self.before.presence == "absent" and self.after.presence == "file"
+        ):
+            raise ValueError("新增Diff状态无效")
+        if self.kind == "deleted" and not (
+            self.before.presence == "file" and self.after.presence == "absent"
+        ):
+            raise ValueError("删除Diff状态无效")
+        if self.kind == "modified" and not (self.before.presence == self.after.presence == "file"):
+            raise ValueError("修改Diff状态无效")
+        return self
+
+
+class WorkspaceDiffDocument(DeliveryContract):
+    spec_version: Literal["harnessix.workspace-diff/v1"] = "harnessix.workspace-diff/v1"
+    transaction_id: UUID
+    plan_fingerprint: Revision
+    entries: tuple[WorkspaceDiffEntry, ...] = Field(min_length=1, max_length=MAX_TRANSACTION_FILES)
+    text: str = Field(repr=False)
+    utf8_bytes: int = Field(ge=1, le=64 * 1024 * 1024)
+    sha256: Revision
+
+    @model_validator(mode="after")
+    def complete_document(self) -> Self:
+        import hashlib
+
+        try:
+            body = self.text.encode("utf-8", errors="strict")
+        except UnicodeError:
+            raise ValueError("Workspace Diff不是合法UTF-8") from None
+        if len(body) != self.utf8_bytes or hashlib.sha256(body).hexdigest() != self.sha256:
+            raise ValueError("Workspace Diff正文与摘要不一致")
+        return self

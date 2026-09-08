@@ -1422,3 +1422,18 @@ Windows实现提交`3ca736f`的[CI 34235932400](https://github.com/carrie1988/Ha
 - `WorkspaceTransactionRecord`以完整Plan、状态、sequence、cursor、开始/结束时间和自摘要构成append-only事件，转移时执行完整payload CAS。
 
 Ruff格式与规则、Mypy严格检查4个新增源文件通过，专项测试为**10 passed**。新增`workspace-file-version-v1`、`workspace-mutation-v1`、`workspace-transaction-plan-v1`和`workspace-transaction-record-v1`四份Schema；当前聚合SHA256为`8e927bf6d9c6e9d74a95feca8517f2170051718ba8a435571a308c4021391896`。该候选没有调用模型API、Git写、SSH、远程服务器或新增中间件。
+
+## 70. 0.7.4b POSIX发布、恢复、Rollback与完整Diff候选验收（2026-09-08）
+
+状态：POSIX普通Workspace事务执行器和完整Diff已进入候选；Git worktree/checkpoint/commit和Windows Git矩阵尚未完成，不关闭0.7.4。
+
+当前20项专项测试覆盖：
+
+- 在来源Snapshot完整相等且跨进程fencing lease有效后，按规范路径顺序发布新增、修改和删除文件；同目录临时文件、模式设置、文件`fsync`、`replace/unlink`及父目录`fsync`形成正式写入原语；
+- 每个成员写前重新核对before CAS，写后核对after CAS再推进append-only cursor；批准指纹、Workspace ID或fencing token不匹配均在副作用前失败，租约在首个成员后失效时不会执行下一成员且可由新owner安全恢复；
+- 真实独立Python进程在首个`replace`完成、账本记账前以`os._exit`硬退出；重开后识别`interrupted/cursor=1`并只执行剩余成员，不重复首个效果；
+- 来源在首个效果前漂移保持记录`prepared`且不覆盖用户内容；中间态只接受有序after前缀与before后缀，第三种内容或乱序after进入`diverged`；
+- Rollback只从`published`事务生成新的反向Plan、transaction id、来源Snapshot和批准指纹；原事务仍保持不可变published，发布后用户第三种修改不会被旧Rollback盲目覆盖；
+- Diff覆盖全部新增、修改、删除和内容相同的精确重命名，记录before/after摘要与模式；UTF-8输出确定性unified diff，binary输出完整摘要和字节事实，不以空patch冒充无变化。
+
+Ruff格式与规则通过，Mypy严格检查6个Delivery源文件通过，专项测试为**20 passed**。新增`workspace-diff-entry-v1`与`workspace-diff-v1` Schema，连续两次生成后的聚合SHA256均为`a33cc92bbb8b69141e0e6ef07405452b50e52b88eccb2c8f6e3add549188c678`。该切片没有执行Git写、模型API、SSH、远程服务器或新增中间件。

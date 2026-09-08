@@ -43,6 +43,8 @@ from harnessix.context.tool_result_contracts import (
     ToolResultViewPolicy,
 )
 from harnessix.delivery.contracts import (
+    WorkspaceDiffDocument,
+    WorkspaceDiffEntry,
     WorkspaceFileVersion,
     WorkspaceMutation,
     WorkspaceTransactionPlan,
@@ -265,6 +267,8 @@ def main() -> None:
         ("workspace-mutation", WorkspaceMutation),
         ("workspace-transaction-plan", WorkspaceTransactionPlan),
         ("workspace-transaction-record", WorkspaceTransactionRecord),
+        ("workspace-diff-entry", WorkspaceDiffEntry),
+        ("workspace-diff", WorkspaceDiffDocument),
         ("network-destination", NetworkDestination),
         ("network-policy", NetworkPolicy),
         ("network-policy-snapshot", NetworkPolicySnapshot),

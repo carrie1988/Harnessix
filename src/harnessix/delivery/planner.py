@@ -96,7 +96,8 @@ def prepare_workspace_transaction(
             before = _file_version(before_body, before_mode)
             if before.sha256 != observed.content_sha256 or before.size != observed.size:
                 raise KernelError("delivery_source_changed", "Workspace事务来源读取期间变化")
-            assert before.sha256 is not None
+            if before.sha256 is None:
+                raise KernelError("delivery_source_changed", "Workspace事务来源摘要缺失")
             blobs[before.sha256] = before_body
         else:
             before = WorkspaceFileVersion(presence="absent", size=0)
@@ -104,7 +105,8 @@ def prepare_workspace_transaction(
             after = WorkspaceFileVersion(presence="absent", size=0)
         else:
             after = _file_version(target.content, target.mode)
-            assert after.sha256 is not None
+            if after.sha256 is None:
+                raise KernelError("delivery_plan_invalid", "Workspace事务目标摘要缺失")
             blobs[after.sha256] = target.content
         if before == after:
             raise KernelError("delivery_no_change", "Workspace事务包含无变化文件")
@@ -158,7 +160,16 @@ def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes
                 with workspace.open(path, ReadOperation(), directory=False) as descriptor:
                     info = os.fstat(descriptor)
                     body = _read_all(descriptor)
-                    mode: FileMode = 0o755 if stat.S_IMODE(info.st_mode) & 0o111 else 0o644
+                    actual_mode = stat.S_IMODE(info.st_mode)
+                    if actual_mode == 0o644:
+                        mode: FileMode = 0o644
+                    elif actual_mode == 0o755:
+                        mode = 0o755
+                    else:
+                        raise KernelError(
+                            "delivery_metadata_unsupported",
+                            "Workspace事务只支持0644或0755普通文件",
+                        )
                     return body, mode
         except OSError:
             raise KernelError("delivery_source_changed", "Workspace事务来源读取失败") from None
