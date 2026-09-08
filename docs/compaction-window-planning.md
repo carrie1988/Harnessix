@@ -1,7 +1,7 @@
 # 0.6.3 压缩窗口规划与候选校验详细设计
 
 - 更新日期：2026-09-08
-- 状态：首窗口领域契约与无副作用实现已落地；自动Compaction运行时尚未接入
+- 状态：首窗口规划已作为自动Compaction运行时的纯计算内核投入使用
 - 总体方案：[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)
 - 前置能力：0.6.2c稳定Tool Result模型视图及Artifact绑定验证
 
@@ -9,9 +9,9 @@
 
 本模块解决三个确定性问题：从完成历史选择不拆工具组的覆盖集和保留集；冻结来源、策略和预算证据；校验摘要候选是否对应同一快照且确实缩减窗口。它不调用Provider、不读取文件或Artifact、不写Session、不授予执行权限。
 
-本实现是0.6.3内部开发门禁，不是单独完成的生产切片。摘要尝试账本、费用报告、窗口CAS发布、付费请求中断恢复、重复压缩、轮前/reactive触发和语义保持Eval仍属于0.6.3的必要交付。当前`AgentRuntime`不会调用本模块，启用或传入`CompactionPolicy`也不会自动发起请求。
+本模块是0.6.3自动Compaction的纯计算内核。`AgentRuntime`在显式配置`CompactionRuntimeConfig`和摘要Provider后调用该模块，并在外层完成Artifact验证、摘要尝试账本、费用报告、窗口CAS发布、恢复、重复压缩和轮前/reactive触发。完整集成见[自动Compaction运行时与活动窗口详细设计](compaction-runtime-and-windows.md)。
 
-首窗口规划仍使用完整的原历史准备边界：8192个模型可见Item、8 MiB原始规范JSON。超过硬保护上限时明确失败，不借“压缩”绕过内存保护，不声明支持无限长会话。后续活动窗口接入必须在已有窗口上增量选择，不能反复从完整事实历史重新摘要。
+首窗口规划使用完整原历史准备边界：8192个模型可见Item、8 MiB原始规范JSON。超过硬保护上限时明确失败，不借“压缩”绕过内存保护，不声明支持无限长会话。重复压缩使用已有活动窗口并追加原始历史高水位后的增量，不反复从完整事实历史重新摘要。
 
 ## 2. 模块边界
 
@@ -21,7 +21,7 @@
 | `context/compaction.py` | 异步协作取消的闭合组选择、规范计量、来源复核和候选投影 | 不执行模型、工具、Artifact I/O或数据库事务 |
 | `context/tool_result_view.py` | 复用原始事实到冻结模型视图的唯一转换 | 不改变旧模型已见前缀 |
 | `agent/errors.py` | 新失败码的预算、输入和冲突分类 | 不自动重试 |
-| `scripts/generate_specs.py` | 导出四份独立JSON Schema | 不升级现有Event/Thread/Provider Schema |
+| `scripts/generate_specs.py` | 导出四份规划独立JSON Schema | Event/Thread版本由活动窗口契约单独升级 |
 
 依赖方向为`Compaction Planner → Tool Result模型视图 → 既有Session领域模型`。运行时集成时仍由Agent Runtime协调Artifact访问和事件提交；Context Engine内部不能隐藏摘要调用。
 
@@ -116,7 +116,7 @@ summary_source_utf8_bytes <= max_summary_input_tokens
 
 `PreparedCompaction.model_history.references`保留**整个来源历史**的验证义务，包括将被摘要覆盖的引用。规划函数不读取Artifact，也不声称任何引用已经验证。运行时必须先通过实际Workspace scope、归属、TTL、manifest、正文与覆盖证明检查，才可把`summary_source`送给摘要Provider；不能只验证最终保留后缀，借压缩隐藏跨scope或过期引用。
 
-摘要中的“已批准”“已经执行”始终是普通文字，不能替代原审批和效果记录。逐字保留的锚点由选择算法保证；目标、未完成工作、revision及不确定效果的语义保持仍须后续真实Eval，当前文本校验不宣称具备此能力。
+摘要中的“已批准”“已经执行”始终是普通文字，不能替代原审批和效果记录。逐字保留的锚点由选择算法保证；目标、未完成工作、revision及不确定效果由`CompactionSemanticEvalCase/Report v1`的人工Oracle评测，候选文本校验本身不宣称具备开放域语义等价能力。
 
 ## 6. 失败、取消与恢复
 
@@ -140,17 +140,17 @@ summary_source_utf8_bytes <= max_summary_input_tokens
 
 ## 7. 持久化、部署和可观测性
 
-本次新增四份独立v1 JSON Schema；Agent Event/Thread仍为v13，Provider Event仍为v3，Session migration仍为15。不修改旧Schema、旧事件、原Item、Tool Result决定或Artifact，不需要新增中间件。
+规划门禁新增四份独立v1 JSON Schema。完整0.6.3在其后增加Event/Thread v14摘要账本、Event/Thread v15活动窗口、Model History Inspection v2和Session migration17。Provider Event仍为v3；旧Schema、旧事件、原Item、Tool Result决定或Artifact不修改，也不需要新增中间件。
 
-`PreparedCompaction`与`ValidatedCompaction`是宿主进程内对象，正文属性不出现在默认repr中；不要把完整计划或摘要作为Metrics标签。计划指纹可供受Session权限保护的诊断；固定失败码、来源/保留/摘要字节数是后续运行时遥测允许的低基数统计。本阶段未新增运行时Metrics或Context Inspect命令，不把未接入的观测路径描述为已上线。
+`PreparedCompaction`与`ValidatedCompaction`是宿主进程内对象，正文属性不出现在默认repr中；完整计划或摘要不得作为Metrics标签。运行时只发布固定`operation=compaction`和有限结果标签；Model History Inspection v2记录窗口与历史摘要，不保存正文。
 
-## 8. 验证与后续门禁
+## 8. 验证与集成结果
 
 当前测试包含闭合组所有三调用结果顺序、当前/首条用户保留、单结果锚点扩展、快照篡改、计划往返、原JSON非法值、Unicode及转义预算、恰好上限/多一字节、来源数量/字节保护、取消/超时/父Task退出、冻结视图和私有字段排除。
 
 实际文件验证使用正式Coding Tool Runtime读取临时工作区源码，保存SQLite Session，再对新Turn的只读快照生成计划；重开数据库和Replay后验证同一候选，原事件及源文件指纹不变。OpenAI与Anthropic映射均验证原用户起始、低信任摘要及保留工具组。这些验证不产生真实模型请求费用。
 
-下一门禁按ADR 0058及[摘要尝试账本与窗口发布草案](compaction-attempt-ledger.md)继续：
+后续门禁已按ADR 0058、[摘要尝试账本](compaction-attempt-ledger.md)和[自动Compaction运行时](compaction-runtime-and-windows.md)完成：
 
 1. 独立Compaction Attempt包装事件、与普通Attempt共享的Token增量和线程级唯一身份；
 2. Cost Report/Eval聚合两类尝试，保留未知/不完整费用语义；
@@ -158,4 +158,4 @@ summary_source_utf8_bytes <= max_summary_input_tokens
 4. 持久活动窗口、候选与尝试绑定、原子发布和新旧reader迁移；
 5. 重复压缩、轮前/reactive入口、真实工程任务及语义保持Eval。
 
-所有后续门禁完成前，0.6.3保持进行中，整体0.6及V1.0商用验收均未关闭。
+0.6.3实现与本地完整验收已完成；远端CI以对应实现提交为准。整体0.6及V1.0商用验收仍未关闭。

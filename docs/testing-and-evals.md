@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.2架构基线，已随实现更新至0.6.3首窗口规划内部门禁；自动Compaction尚未验收
+- 状态：已随实现更新至0.6.3自动Compaction与活动窗口本地完整验收
 - 更新日期：2026-09-08
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -707,7 +707,7 @@ Agent v8/Thread v8冻结摘要分别为`d83381b4dffa5854ad4c5997a775e617800c3304
 基线`bc2006c`及CI33949877646四项成功。本片不修改运行时领域契约，只补齐b2b2a明确保留的真实跨安装和迁移硬退出证据。
 
 - 从`e0e849813942b21452ba1943d5cca3a5f936e5f6`实际导出并构建v8 wheel，安装到独立基础环境；旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。旧环境真实执行两步离线模型脚本和只读工具，生成Event/Thread v8及migration1–9，不从当前源码改版本号。
-- `process_session_upgrade_probe.py`以当前v9 wheel升级同一数据库。初始化只追加migration10；旧事件JSON、旧投影JSON/摘要/projection version 8、前九个migration及数据库inode保持不变。升级后可追加v9 Turn，原v8事件仍逐字节一致，Replay等于持久投影。
+- `process_session_upgrade_probe.py`以该门禁的v9 wheel升级同一数据库。初始化只追加migration10；旧事件JSON、旧投影JSON/摘要/projection version 8、前九个migration及数据库inode保持不变。升级后可追加v9 Turn，原v8事件仍逐字节一致，Replay等于持久投影。
 - migration10升级后及追加v9事件后两次由真实v8环境重开，均明确返回`schema_too_new`；拒绝前后的migration、事件和投影行及数据库inode一致。旧reader未执行降级、重建或工具调用。
 - 真实旧wheel导出的`session-v8.json`纳入历史transcript回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`；v1–v8均可由当前reader升级、继续并保持旧事件原字节。
 - migration10 marker插入后未提交、事务提交后启用WAL前两个窗口使用真实子进程`os._exit(85)`。重开只看到完整migration1–9或1–10；旧v8事件/投影与projection version 8不变，再次初始化幂等。按既有事务/恢复口径，硬崩溃场景由301增至303；进程宿主存活后代反例不混入该计数。
@@ -758,7 +758,7 @@ b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.
 - `make check`：Ruff、Mypy（**124源文件**）通过，**2435 passed、1 skipped**；唯一跳过仍为本机未配置PostgreSQL实库；
 - Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2399项全部通过**；
 - 基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行 **16个** 基础离线示例通过；`kernel_process`现额外验证Process Artifact读取，wheel SHA256为`2ec6c89e2be650cd01654e8567dd44775d6ef52c0825d42cb481d63189b4a4ee`；
-- 真实`e0e8498` v8 wheel（SHA256 `d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`）创建migration1–9会话；当前wheel原字节升级到migration11、继续追加v9事件，旧reader在升级及继续后均`schema_too_new`且不改变数据库。
+- 真实`e0e8498` v8 wheel（SHA256 `d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`）创建migration1–9会话；该门禁wheel原字节升级到migration11、继续追加v9事件，旧reader在升级及继续后均`schema_too_new`且不改变数据库。
 
 没有真实模型请求、API Key、SSH或中间件部署。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。本片仍不提供WAITING_ACTION取消、Action创建前后完整恢复、跨进程并发决定、后台命令、OS Sandbox、Git/run_tests或自主Coding Eval；下一片为b2c3。
 
@@ -1163,7 +1163,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 - Schema连续生成两次聚合摘要均为`6b503e8af2ad14b371bb8e3a1caeb827d93e6f4da38b80391badf0fec44faa89`；Agent Event v12、Thread v12、Context Inspection v3和Context Consistency v1摘要分别为`11d1ebecece86e2cc279dffd6b6adfa3f5154bfb537e26b86ec1b150146effa7`、`bb0a7d079bd9e04de337cdcb0e3c5609205cc470328c7c3cc2f3ee33fc808d5d`、`5e743ba5c1d57417baee557bb4809399ea751b1630b164f5c89dec66bdfe5d8b`和`96717d290ebafe522097401b918d515b2f124aa616d353eac585b0e79f931d91`；历史Event/Thread v11与Context Inspection v2摘要保持冻结；
 - CI覆盖的 **17个** 既有示例全部通过，未破坏静态Context、工具、Patch、Process和Eval路径；
 - sdist/wheel构建成功，SHA-256分别为`0449a8b0dab7515e19fb07a6efeda06965f456e5b6422bcf4008098e5d9382e4`和`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`；仓库外Python 3.12基础依赖环境实际组合三个新Source，生成Context Inspection v3，确认敏感环境值未读取、Agent Event默认v12且Migration 0014完整安装；
-- 使用从0.6.2a源码提交`120f57f`构建的真实v11 wheel创建Event v11、Context Inspection v2、Projection v11和Migration 1—13数据库；当前wheel只追加Migration 0014和新的v12事件，不改写历史事件或投影；真实v11 reader对Migration 0014返回`schema_too_new`且数据库业务状态不变；
+- 使用从0.6.2a源码提交`120f57f`构建的真实v11 wheel创建Event v11、Context Inspection v2、Projection v11和Migration 1—13数据库；该门禁v12 wheel只追加Migration 0014和新的v12事件，不改写历史事件或投影；真实v11 reader对Migration 0014返回`schema_too_new`且数据库业务状态不变；
 - 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
 
 实现过程中发现仅过滤Workspace目录项不足以阻止Git状态泄漏敏感文件名。根因是Git返回路径未经过同一Workspace能力策略。修复后，当前路径与rename原路径统一通过`Workspace.parts`校验，过滤不改变Git底层事实总数并强制标记截断；对应回归覆盖`.env`与`.git`边界。
@@ -1218,7 +1218,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 59. 0.6.3独立摘要账本内部门禁（2026-09-08）
 
-状态：Event/Thread v14独立账本、Cost Report v2、Campaign全用途汇总和Runtime中断收尾已实现；自动摘要HTTP、活动窗口、重复压缩与整体0.6.3仍未完成。设计见[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)和[账本详细设计](compaction-attempt-ledger.md)。
+状态：Event/Thread v14独立账本、Cost Report v2、Campaign全用途汇总和Runtime中断收尾已实现。该内部门禁在完成时不包含摘要HTTP、活动窗口或重复压缩；缺口已由第60节后续门禁补齐。设计见[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)和[账本详细设计](compaction-attempt-ledger.md)。
 
 专项自动化共82项，覆盖计划/阶段/时间/预算、来源及候选重算、Tool Result决定冻结、跨用途Attempt ID、累计用量与Billing后继、请求成功但候选失败、Cost v2归属/金额/币种/未知费用、Campaign遗漏摘要、Schema版本和18种真实子进程事务/恢复组合。恢复矩阵遍历计划、请求意图、部分/完整用量、请求结算、候选提交与恢复本身，并在SQLite的`after_events`、`after_projection`、`after_commit`三个切点退出；每次重开均不调用Provider，重复重开不新增事件。
 
@@ -1226,4 +1226,33 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 独立wheel升级使用上一已验收提交`ff15533`构建的v13基础环境和当前v14构建产物，未安装OpenAI/Anthropic SDK。验收sdist与wheel SHA256分别为`8275af1c0633c4329f5f9284bcb88934b0d76f2fc8d5ff6d606778ae3afff443`和`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`。`scripts/compaction_ledger_upgrade_probe.py`已验证：旧环境创建真实长历史；新环境仅追加migration16且旧事件/投影原字节不变；旧reader前后两次均拒绝；新环境追加离线摘要账本、重放Cost v2并重开为Interrupted，全程零Provider请求。migration16 SHA256为`5a1babc80cc700c9f372d61ecdcb4457ed6b9552267bcc24fe61b1cddd1f9fbb`。
 
-该门禁不验证真实收费摘要、SDK流关闭或活动窗口发布；不能据此关闭0.6.3、0.6或V1.0。后续必须延续无工具消费器、HTTP前意图、窗口CAS/恢复、轮前/reactive和工程语义保持测试。
+该门禁本身不验证摘要消费器、SDK流关闭或活动窗口发布，不能单独关闭0.6.3。后续验证见第60节；整体0.6和V1.0仍未关闭。
+
+## 60. 0.6.3自动Compaction与活动窗口验收（2026-09-08）
+
+状态：自动Compaction实现和本地完整门禁通过；远端Python 3.12、Python 3.13、macOS与PostgreSQL矩阵待对应实现提交确认。设计见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)与[运行时详细设计](compaction-runtime-and-windows.md)。
+
+实现专项共370项通过，主要覆盖：
+
+- `CompactionRuntimeConfig v1`严格边界、默认关闭和配置/Provider成对要求；
+- OpenAI Chat与Anthropic实际映射函数接收单用户、无工具、固定摘要指令请求；
+- Provider首事件意图、HTTP前持久化、累计Usage、响应身份、单文本、终态、事件/正文上限和流关闭；
+- 摘要Tool Call拒绝且不执行、第二Attempt在第二次HTTP前阻断、空流及未记账请求风险；
+- 轮前触发、已记账context overflow的reactive触发、部分语义输出禁止回退、连续溢出无进展停止；
+- 原始事实不变、Summary低权限投影、Model History Inspection v2、Artifact在摘要前完整校验；
+- 重复压缩形成线性窗口链，只追加原历史高水位之后的增量，不恢复被覆盖前缀；
+- 用户取消、Task取消、原Turn超时、候选与窗口邻接以及低基数遥测；
+- 六个运行时真实进程退出点和窗口Event/Projection/Commit三个SQLite事务退出点；多次重开均不重发摘要、不重复窗口；
+- 人工语义Oracle覆盖目标、约束、未完成工作、文件/revision、测试结果和不确定效果，并验证事实缺失、禁用断言、原始正文残留和语料未绑定反例；报告不保存来源或摘要正文。
+
+完整质量结果：
+
+- 严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`：**2901 passed、2 skipped，270.42秒**；两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`；
+- Ruff格式和规则通过，Mypy严格检查163个源文件通过；
+- 24个无需常驻HTTP服务的离线示例逐一通过；`examples/mvp.py`仍按原设计要求先启动本地API服务，不计入离线单进程集合；
+- Schema连续生成两次聚合SHA256均为`a629b92323d63f136b8787a8d9864cd5deb336da6833052a7db96bc1324edf29`；新增Event/Thread v15、Compaction Runtime/Window v1、Model History Inspection v2及Compaction语义Case/Report v1，冻结v14及更早Schema未改写；
+- migration17 SHA256为`d6bdd00f06924d02580129a96e785e000e75e748d0195b64345cefb317b19b02`。
+
+真实独立wheel升级使用`b20948e`构建的v14 wheel和当前v15 wheel，SHA256分别为`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`与`b7f2832bc35c2043969bf31a543d51c1aaeaedea8dcfa67543e4ec94d1c53747`。`scripts/compaction_window_upgrade_probe.py`验证v14创建长历史及已结算候选，v15只追加migration17且保持旧事件/投影原字节，首次重开零Provider请求发布唯一窗口，随后v14 reader明确拒绝新库且不修改数据库。
+
+本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。0.6.4会话生命周期与0.6.5综合恢复仍需继续实施。

@@ -22,6 +22,7 @@ from harnessix.artifacts.contracts import ArtifactOmittedField, ArtifactPage, Ar
 from harnessix.context.tool_result_contracts import (
     TOOL_RESULT_OMISSION_VERSION,
     ModelHistoryInspection,
+    ModelHistoryInspectionRecord,
     ToolResultArtifactBinding,
     ToolResultViewDecision,
     ToolResultViewPolicy,
@@ -41,7 +42,7 @@ class ModelHistoryArtifactReference:
 @dataclass(frozen=True, slots=True)
 class PreparedModelHistory:
     history: tuple[Item, ...]
-    inspection: ModelHistoryInspection
+    inspection: ModelHistoryInspectionRecord
     new_decisions: tuple[ToolResultViewDecision, ...]
     references: tuple[ModelHistoryArtifactReference, ...]
 
@@ -298,7 +299,26 @@ def prepare_model_history(
     *,
     decisions: tuple[ToolResultViewDecision, ...] | None = None,
 ) -> PreparedModelHistory:
-    source_history = history_items(thread)
+    return prepare_model_history_items(
+        thread,
+        history_items(thread),
+        model_step,
+        policy,
+        decisions=decisions,
+        require_all_prior_decisions=True,
+    )
+
+
+def prepare_model_history_items(
+    thread: Thread,
+    source_history: tuple[Item, ...],
+    model_step: int,
+    policy: ToolResultViewPolicy,
+    *,
+    decisions: tuple[ToolResultViewDecision, ...] | None = None,
+    require_all_prior_decisions: bool = False,
+) -> PreparedModelHistory:
+    """准备显式活动历史；调用方必须证明被省略的旧事实来自已发布窗口。"""
     if not source_history:
         raise KernelError("empty_transcript", "模型历史不能为空")
     if (
@@ -359,7 +379,10 @@ def prepare_model_history(
             view = _apply_decision(item, call, decision, policy)
         used.append(decision)
         prepared.append(item.model_copy(deep=True, update={"content": view}))
-    if supplied or not set(decisions_by_item).issubset({i.item_id for i in source_history}):
+    if supplied or (
+        require_all_prior_decisions
+        and not set(decisions_by_item).issubset({i.item_id for i in source_history})
+    ):
         raise KernelError("context_tool_result_decision_mismatch", "模型视图决定引用未知Item")
 
     prepared_history = tuple(prepared)

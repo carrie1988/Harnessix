@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "CompactionSemanticExpectation": {
+      "additionalProperties": false,
+      "description": "由评测语料人工绑定的来源事实及可接受等价表述。",
+      "properties": {
+        "expectation_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Expectation Id",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "objective",
+            "constraint",
+            "unresolved_work",
+            "file_revision",
+            "test_result",
+            "effect_uncertainty"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "source_markers": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Source Markers",
+          "type": "array"
+        },
+        "accepted_summary_phrases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Accepted Summary Phrases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "expectation_id",
+        "category",
+        "source_markers",
+        "accepted_summary_phrases"
+      ],
+      "title": "CompactionSemanticExpectation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "覆盖全部关键类别的版本化语义保持评测用例。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-semantic-eval-case/v1",
+      "default": "harnessix.compaction-semantic-eval-case/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "case_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "expectations": {
+      "items": {
+        "$ref": "#/$defs/CompactionSemanticExpectation"
+      },
+      "maxItems": 64,
+      "minItems": 6,
+      "title": "Expectations",
+      "type": "array"
+    },
+    "forbidden_summary_phrases": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Forbidden Summary Phrases",
+      "type": "array"
+    },
+    "omitted_history_markers": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Omitted History Markers",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "expectations",
+    "forbidden_summary_phrases",
+    "omitted_history_markers"
+  ],
+  "title": "CompactionSemanticEvalCase",
+  "type": "object"
+}

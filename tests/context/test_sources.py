@@ -326,7 +326,7 @@ async def test_runtime_refreshes_and_persists_source_freshness_each_model_step(
     events = await store.events(thread.thread_id)
     context_events = [event for event in events if event.payload.type == "context_prepared"]
     assert len(context_events) == 2
-    assert all(event.schema_version == 14 for event in context_events)
+    assert all(event.schema_version == 15 for event in context_events)
 
 
 async def test_source_failure_stops_before_provider_and_is_input_failure(tmp_path: Path) -> None:
@@ -753,7 +753,7 @@ async def test_multi_source_v3_is_persisted_and_replayed_as_event_v12(tmp_path: 
     assert len(turn.context_inspections) == 1
     assert isinstance(turn.context_inspections[0], ContextInspectionV3)
     events = await store.events(thread.thread_id)
-    assert all(event.schema_version == 14 for event in events)
+    assert all(event.schema_version == 15 for event in events)
     assert await store.rebuild(thread.thread_id) == await store.get_thread(thread.thread_id)
 
 

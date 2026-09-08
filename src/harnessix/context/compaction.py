@@ -6,7 +6,7 @@ import json
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import cast
-from uuid import UUID, uuid5
+from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
@@ -27,12 +27,13 @@ from harnessix.context.compaction_contracts import (
     CompactionSummary,
 )
 from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN
+from harnessix.context.compaction_projection import compaction_summary_item
+from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import (
     PreparedModelHistory,
     history_document,
     history_items,
-    prepare_model_history,
 )
 
 
@@ -205,7 +206,7 @@ def _plan_steps(
     anchors = tuple(
         CompactionAnchor.model_validate_json(anchor.model_dump_json()) for anchor in anchors
     )
-    prepared = prepare_model_history(thread, model_step, view_policy)
+    prepared = prepare_active_model_history(thread, model_step, view_policy)
     first = prepared.history[0]
     if not isinstance(first.content, TextContent) or first.content.kind != "user_message":
         raise KernelError("context_compaction_invalid_history", "历史缺少首条原用户消息")
@@ -292,25 +293,6 @@ def _plan_steps(
     return PreparedCompaction(plan, prepared, summary_source, retained)
 
 
-def _summary_item(summary: CompactionSummary) -> Item:
-    return Item(
-        item_id=uuid5(summary.compaction_id, "harnessix.compaction-summary/v1"),
-        status=ItemStatus.COMPLETED,
-        content=TextContent(
-            kind="assistant_message",
-            text=_json(
-                {
-                    "schema": summary.spec_version,
-                    "compaction_id": str(summary.compaction_id),
-                    "trust": "derived_history",
-                    "authority": "none",
-                    "summary": summary.text,
-                }
-            ),
-        ),
-    )
-
-
 def _validation_steps(
     thread: Thread,
     plan: CompactionPlan,
@@ -343,7 +325,7 @@ def _validation_steps(
     if prepared.plan != plan:
         raise KernelError("context_compaction_source_changed", "候选来源或选择证据发生变化")
     try:
-        summary_item = _summary_item(summary)
+        summary_item = compaction_summary_item(summary)
     except ValueError:
         raise KernelError(
             "context_compaction_summary_overflow", "摘要完整投影超过文本保护上限"

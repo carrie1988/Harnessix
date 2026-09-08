@@ -367,7 +367,7 @@ OpenAI/Anthropic SDK闭环测试使用离线Mock传输，不需要生产Key。�
 
 ## Git与测试Profile部署（0.5.4c）
 
-本片不增加数据库迁移、第三方Python依赖或远程中间件。它复用当前Agent v9、Session migration11、Action/Process/Artifact v1和副本账本v3；升级wheel本身不会启用Git、注册测试命令、创建Action或执行仓库代码。包版本仍为0.1.0，部署必须记录精确Git提交和wheel SHA-256。
+本片不增加数据库迁移、第三方Python依赖或远程中间件。该门禁交付时复用Agent v9、Session migration11、Action/Process/Artifact v1和副本账本v3；当前Agent/Session版本见本文末尾的0.6.3部署章节。升级wheel本身不会启用Git、注册测试命令、创建Action或执行仓库代码。包版本仍为0.1.0，部署必须记录精确Git提交和wheel SHA-256。
 
 ### Git能力
 
@@ -851,7 +851,7 @@ context = SourcedContextEngine(
 
 ## 0.6.2c稳定Tool Result视图部署
 
-Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，当前摘要账本写入版本进一步升至v14/migration16。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，当前活动窗口写入版本已推进至v15/migration17。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
 
 ### 宿主配置与限制
 
@@ -864,12 +864,12 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 
 ### 独立wheel升级验收
 
-使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v14 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
+使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v15 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
 
 1. 旧环境：`python -I tool_result_view_upgrade_probe.py create <验证目录>`；真实搜索产生40条预览、100条归档及v12会话。
-2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15-16且全部旧事件、投影与Artifact原字节不变。
+2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15-17且全部旧事件、投影与Artifact原字节不变。
 3. 旧环境：`python -I tool_result_view_upgrade_probe.py old-reader <验证目录>`；必须拒绝且不改数据库。
-4. 新环境：`python -I tool_result_view_upgrade_probe.py resume <验证目录>`；2 KiB策略拒绝重裁旧前缀，默认策略以内联原结果续写v14检查；原事件与Artifact保持不变。
+4. 新环境：`python -I tool_result_view_upgrade_probe.py resume <验证目录>`；2 KiB策略拒绝重裁旧前缀，默认策略以内联原结果续写v15检查；原事件与Artifact保持不变。
 
 探针不使用模型凭据、远程服务器或外部中间件。发布门禁还包含真实进程退出窗口、全仓回归、严格异步检查、Schema再生稳定性、基础wheel安装与远端CI；结果记录在测试规范第57节。
 
@@ -880,4 +880,36 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 
 独立wheel验证使用`scripts/compaction_ledger_upgrade_probe.py`：旧环境由`ff15533`构建v13 wheel，新环境使用当前wheel，均不安装可选模型SDK。先由旧环境执行`create`，新环境执行`upgrade`，旧环境执行`old-reader`，新环境执行`append`，最后再次由旧环境执行`old-reader`。参数为仓库外绝对验证目录。append仅提交离线摘要事实及重开验证，不访问供应商API。
 
-关闭旧宿主并取得一致备份后升级。恢复时planned/running压缩统一中断，已结算费用保留；summarized候选不会自动激活或重发摘要。旧v13 reader遇到migration16必须返回schema_too_new且不修改数据库。回退使用升级前备份，禁止删除迁移marker或下调投影版本。活动窗口尚未发布，本升级不启用自动压缩。
+该门禁在v14发布时只验证摘要账本。当前v15对紧邻Thread尾部的summarized候选执行确定性窗口恢复，不重发摘要；其他planned/running或未持久候选仍保守中断。旧v13 reader遇到migration16必须返回schema_too_new且不修改数据库。
+
+## 0.6.3自动Compaction与活动窗口部署
+
+`0017_compaction_window.sql`将最低reader推进至活动窗口版本，SHA256为`d6bdd00f06924d02580129a96e785e000e75e748d0195b64345cefb317b19b02`。该迁移只增加marker，不新增外部数据库表、不改写历史事件或投影正文，也不需要远程中间件。
+
+### 配置与运行边界
+
+- 默认不启用自动Compaction。`CompactionRuntimeConfig`和`summary_provider`必须同时配置；
+- `trigger_history_tokens`必须高于`policy.target_history_tokens`，形成触发回差；
+- `max_summary_output_tokens`及Turn剩余Token共同限制摘要输出；摘要实际Usage计入Turn和Cost v2；
+- 摘要Provider必须遵守首事件意图协议。兼容Adapter在首个`ModelAttemptStarted`之后才执行真实HTTP；自定义Provider违反协议会产生未记账请求风险；
+- 摘要请求没有工具，不得为摘要Provider注册服务器工具或自动重试中间件；
+- 被覆盖历史中的Artifact也必须可在当前Workspace scope内验证。上线前应评估Artifact TTL是否覆盖预期长会话时长；
+- 单Runtime宿主锁、Session文件0600、WAL与一致备份要求不变。摘要Provider凭据只从既有受控环境配置读取，不写入Session或日志。
+
+建议监控：
+
+- `harnessix.agent.operations{operation="compaction",outcome=...}`的完成、失败、取消比例；
+- `provider_context_overflow`、`context_compaction_no_progress`、摘要预算超限和Artifact验证失败数；
+- Compaction Attempt用量完整性、未计价请求风险、Cost v2 partial/unknown比例；
+- 每Thread窗口数量、压缩前后估算量和重复压缩间隔，但ID、路径、来源正文和摘要不得作为标签。
+
+### 独立wheel升级验收
+
+使用`scripts/compaction_window_upgrade_probe.py`，旧环境由`b20948e`构建真实v14 wheel，当前环境构建v15 wheel。两个环境均不需要供应商SDK或模型凭据。按顺序执行：
+
+1. v14：`python -I compaction_window_upgrade_probe.py create <验证目录>`，创建长历史及已结算summarized候选；
+2. v15：`python -I compaction_window_upgrade_probe.py upgrade <验证目录>`，只追加migration17并验证旧事件、投影原字节；
+3. v15：`python -I compaction_window_upgrade_probe.py recover <验证目录>`，零Provider请求发布唯一活动窗口并保守关闭原Turn；
+4. v14：`python -I compaction_window_upgrade_probe.py old-reader <验证目录>`，必须返回`schema_too_new`且不修改数据库。
+
+部署升级前关闭旧宿主并制作SQLite一致备份。新版本首次打开可能为尾部summarized候选追加窗口和Interrupted终态，这是预期的确定性恢复写入。产生migration17或v15事件后，回退必须恢复升级前备份；禁止删除迁移记录、手工下调projection version或移除窗口字段。

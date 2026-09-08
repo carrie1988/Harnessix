@@ -1,0 +1,143 @@
+{
+  "$defs": {
+    "CompactionSemanticCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "expectation_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Expectation Id",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "objective",
+            "constraint",
+            "unresolved_work",
+            "file_revision",
+            "test_result",
+            "effect_uncertainty"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "source_bound": {
+          "title": "Source Bound",
+          "type": "boolean"
+        },
+        "preserved": {
+          "title": "Preserved",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "expectation_id",
+        "category",
+        "source_bound",
+        "preserved"
+      ],
+      "title": "CompactionSemanticCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "不保存来源或摘要正文的确定性评测报告。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-semantic-eval-report/v1",
+      "default": "harnessix.compaction-semantic-eval-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "case_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "compaction_id": {
+      "format": "uuid",
+      "title": "Compaction Id",
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "failed",
+        "invalid"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Sha256",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "summary_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Summary Sha256",
+      "type": "string"
+    },
+    "history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "History Sha256",
+      "type": "string"
+    },
+    "history_tokens": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "History Tokens",
+      "type": "integer"
+    },
+    "corpus_bound": {
+      "title": "Corpus Bound",
+      "type": "boolean"
+    },
+    "forbidden_summary_clean": {
+      "title": "Forbidden Summary Clean",
+      "type": "boolean"
+    },
+    "covered_history_omitted": {
+      "title": "Covered History Omitted",
+      "type": "boolean"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/CompactionSemanticCheck"
+      },
+      "maxItems": 64,
+      "minItems": 6,
+      "title": "Checks",
+      "type": "array"
+    },
+    "failed_expectation_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Failed Expectation Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "compaction_id",
+    "outcome",
+    "plan_sha256",
+    "source_sha256",
+    "summary_sha256",
+    "history_sha256",
+    "history_tokens",
+    "corpus_bound",
+    "forbidden_summary_clean",
+    "covered_history_omitted",
+    "checks",
+    "failed_expectation_ids"
+  ],
+  "title": "CompactionSemanticEvalReport",
+  "type": "object"
+}

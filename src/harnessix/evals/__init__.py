@@ -27,6 +27,14 @@ from harnessix.evals.checks import (
     historical_python_launcher,
     run_historical_checks,
 )
+from harnessix.evals.compaction import grade_compaction_semantics
+from harnessix.evals.compaction_contracts import (
+    COMPACTION_SEMANTIC_CATEGORIES,
+    CompactionSemanticCheck,
+    CompactionSemanticEvalCase,
+    CompactionSemanticEvalReport,
+    CompactionSemanticExpectation,
+)
 from harnessix.evals.contracts import (
     CODING_EVAL_GRADER_VERSION,
     CODING_EVAL_MATERIALIZER_VERSION,
@@ -82,6 +90,7 @@ __all__ = [
     "CODING_EVAL_GRADER_VERSION",
     "CODING_EVAL_MATERIALIZER_VERSION",
     "CODING_EVAL_SPEC_VERSION",
+    "COMPACTION_SEMANTIC_CATEGORIES",
     "CHANGE_PACKAGE_SPEC_VERSION",
     "DELIVERY_PLAN_SPEC_VERSION",
     "DELIVERY_RECORD_SPEC_VERSION",
@@ -103,6 +112,10 @@ __all__ = [
     "CodingEvalReport",
     "CodingEvalRunState",
     "CodingEvalTask",
+    "CompactionSemanticCheck",
+    "CompactionSemanticEvalCase",
+    "CompactionSemanticEvalReport",
+    "CompactionSemanticExpectation",
     "CompletedCodingEvalTrial",
     "EvalFinalAnswer",
     "EvalFinalAnswerEvidence",
@@ -116,6 +129,7 @@ __all__ = [
     "build_coding_eval_campaign_report",
     "build_coding_eval_change_package",
     "grade_coding_eval",
+    "grade_compaction_semantics",
     "historical_check_arguments",
     "historical_python_launcher",
     "historical_coding_eval",

@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3首窗口规划与独立摘要账本已实现，摘要HTTP与活动窗口待接入；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3实现及本地完整验收完成、远端CI待确认；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -14,7 +14,7 @@
 | 0.6.2a | 异步Source端口、受控项目指令发现、freshness、Context Inspection v2、Event/Thread v11 | 已完成 |
 | 0.6.2b | Workspace/Git/环境Source与跨来源一致性 | 已完成 |
 | 0.6.2c | Tool Result模型视图裁剪、稳定决策与完整Artifact引用 | 已完成 |
-| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 首窗口规划契约已实现；账本及运行时未接入 |
+| 0.6.3 | 轮前与reactive Compaction、版本化Summary、关键约束保持Eval | 实现及本地完整验收完成；远端CI待确认 |
 | 0.6.4 | Thread Resume、Fork、Archive与副作用继承边界 | 未开始 |
 | 0.6.5 | Turn Retry、Interrupted Recovery、Provider切换和长会话综合验收 | 未开始 |
 
@@ -85,7 +85,7 @@ Context Planner 只决定模型输入视图。它不能执行工具、授予权�
 
 ## 6. 0.6.1数据与迁移
 
-- 0.6.1 Agent Event/Thread版本：v10；当前多Source实现已推进至v12，见第21节；
+- 0.6.1 Agent Event/Thread版本：v10；多Source门禁推进至v12，当前活动窗口版本为v15；
 - Session Migration：`0012_context_inspection.sql`；
 - `Turn.context_inspections`按模型步骤保存；
 - v1-v9事件继续按原Schema解析和导出；
@@ -221,7 +221,7 @@ AgentRuntime PREPARING_CONTEXT
 - Context Source Snapshot：v1；
 - Session Migration：`0013_context_sources.sql`，只增加最低reader标记；
 - v1-v10事件和投影继续读取，历史Schema文件冻结；
-- v2检查记录只能写入Event v11及以上；静态v1检查事实最低仍为v10。该切片程序新写统一使用v11，当前0.6.2b程序统一写v12；
+- v2检查记录只能写入Event v11及以上；静态v1检查事实最低仍为v10。0.6.2a新写使用v11，0.6.2b使用v12，当前程序统一写v15；
 - Migration 13不改写旧Event、投影或Artifact。
 
 ## 18. 可观测性与安全
@@ -349,7 +349,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 ### 28.2 0.6.3
 
-在来源和工具模型视图稳定后实现Compaction。Summary必须版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不能删除原始Event事实。源码证据见[Compaction研究](research/compaction-and-context-windows.md)，窗口、独立摘要尝试、计费与发布边界见[ADR 0058草案](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。草案尚未成为已发布API；接受前须完成闭合组、预算分摊和恢复反例的契约评审。
+在来源和工具模型视图稳定后实现Compaction。Summary版本化、持久化、可恢复，并通过关键约束保持Eval；压缩不删除原始Event事实。源码证据见[Compaction研究](research/compaction-and-context-windows.md)，决策见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)，模块、接口、流程、失败、安全、部署与测试见[自动Compaction运行时详细设计](compaction-runtime-and-windows.md)。
 
 ## 29. 0.6.2c实现边界
 
@@ -366,11 +366,11 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实际Workspace scope；Batch Diff发布器委托原Managed Patch Bridge提供副本scope。独立宿主可显式注入这两个只读端口，但必须维持相同Session和真实工作区访问边界。
 
-0.6.2c基线为Agent Event/Thread v13（当前摘要账本已推进为v14）；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
+0.6.2c基线为Agent Event/Thread v13（当前活动窗口已推进为v15）；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
 
 已提交决定通过`Turn.tool_result_view_decisions`读取；每步统计通过`Turn.model_history_inspections`读取。决定可能包含Artifact manifest及残留查询元数据，应按Session本身权限保护。Metrics仅输出固定strategy/component和数量；不输出正文、路径、ID或摘要标签。完整失败代码与退出窗口见ADR 0057。
 
-当前能力不包含自动补归档、任意文件结果截断、图片/音频、Compaction或总历史Token预算压缩。超限且无完整归档的结果明确失败，不能把成功执行事实改成失败工具结果，也不能自动重试有副作用的调用。
+0.6.2c自身不包含自动补归档、任意文件结果截断、图片/音频或总历史Token预算压缩。后续0.6.3已增加Compaction，但不会改变单个Tool Result的完整归档要求；超限且无完整归档的结果仍明确失败。
 
 0.6.2c实现提交`5e283ff`通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务。结合测试规范第57节的完整本地、发布物与恢复门禁，本片关闭；整体0.6与V1.0商用目标仍未完成。
 
@@ -380,9 +380,9 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 
 当前流程不调用Provider、不写Session、不发布活动窗口。原模型视图决定、Artifact验证义务和原始事件保持不变。候选结构为首条原用户消息、低信任助手摘要和原顺序保留的固定组/后缀；不会为满足Provider格式伪造用户指令。首条/当前用户原文自动固定，显式锚点扩展到完整调用组。
 
-本门禁完成后继续独立摘要Attempt包装、Token增量记账、成本报告、候选与尝试绑定、CAS窗口发布和中断恢复。仅计划JSON往返与只读Session重开不等于付费摘要恢复验收；自动Compaction、重复压缩和语义保持Eval仍未完成，0.6.3不得据此关闭。
+本门禁完成后依次推进独立摘要Attempt包装、Token增量记账、成本报告、候选与尝试绑定、CAS窗口发布和中断恢复。仅计划JSON往返与只读Session重开不等于付费摘要恢复验收；这些缺口已由第31、32节的后续门禁补齐。
 
-后续摘要账本已实现，正式事件、Cost v2、Campaign影响面、事务和恢复矩阵见[摘要尝试账本详细设计](compaction-attempt-ledger.md)。Provider Event v3保持不变；当前Event/Thread v14与migration16仅发布账本，活动窗口使用后续新版本。
+后续摘要账本已实现，正式事件、Cost v2、Campaign影响面、事务和恢复矩阵见[摘要尝试账本详细设计](compaction-attempt-ledger.md)。Provider Event v3保持不变；该账本门禁使用Event/Thread v14与migration16，活动窗口另使用v15与migration17。
 
 首窗口实现提交`13e50eb`的[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)四项任务通过；严格本地回归2783 passed、2项仅因PostgreSQL未配置跳过，详见测试规范第58节。
 
@@ -393,4 +393,14 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 
 Event/Thread v14、Cost Report v2、Session migration16已加入；旧v1-v13及Cost v1 Schema不变。真实SQLite子进程退出覆盖计划、意图、用量、结算、候选与恢复事务；多次重开不自动请求。没有摘要记录时仍返回Cost v1，原Smoke不启用压缩。
 
-当前尚未实现摘要HTTP消费、请求预算预留、活动窗口发布/恢复、重复压缩及轮前/reactive触发，因此本门禁只接受账本，不关闭0.6.3。下一步先实现HTTP前意图持久化、禁止摘要工具执行、有界流关闭和完整用量收尾，再发布绑定原始来源的活动窗口。0.6.4和0.6.5随后按原纵向切片顺序推进。
+该门禁只接受账本，不单独关闭0.6.3。摘要HTTP、请求预算、活动窗口、重复压缩及轮前/reactive触发已由后续v15切片实现，见下一节。0.6.4和0.6.5继续按原纵向切片顺序推进。
+
+## 32. 0.6.3自动Compaction与活动窗口
+
+正式实现见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)和[详细设计](compaction-runtime-and-windows.md)。`CompactionRuntimeConfig v1`显式绑定规划策略、轮前阈值和摘要输出上限；配置与摘要Provider必须同时存在，默认不启用付费请求。
+
+Runtime在摘要HTTP前验证整个来源历史的Artifact，提交计划和Provider请求意图后才继续消费流。摘要没有工具，只允许单Attempt、单文本和完整一致用量。候选经纯计算重算后持久化，活动窗口以紧邻事件和Session CAS发布。窗口仅保存Item身份、高水位和摘要，不复制或删除原历史；重复压缩使用上一活动窗口与新增原始事实。
+
+reactive路径只接受未产生语义Item且已完整结算的`provider_context_overflow`。失败请求仍消耗普通步骤和Token；没有新压缩进展时停止，不再次付费摘要。Model History Inspection v2绑定活动窗口并保留原始历史数量证据。
+
+当前Agent Event/Thread为v15，Session migration为17。真实`b20948e` v14 wheel创建已结算候选后，v15升级保持旧事件和投影原字节，首次重开零Provider请求发布唯一窗口，v14 reader明确拒绝migration17。运行时及窗口事务九个进程退出切点、双Adapter、取消、超时、Artifact损坏、重复窗口和六类工程语义Oracle均已验证。370项专项测试及严格全量2901 passed、2 skipped通过；远端矩阵以对应实现提交CI为准。

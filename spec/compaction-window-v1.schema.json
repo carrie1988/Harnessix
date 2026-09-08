@@ -1,0 +1,108 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-window/v1",
+      "default": "harnessix.compaction-window/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "window_id": {
+      "format": "uuid",
+      "title": "Window Id",
+      "type": "string"
+    },
+    "compaction_id": {
+      "format": "uuid",
+      "title": "Compaction Id",
+      "type": "string"
+    },
+    "previous_window_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Window Id"
+    },
+    "source_finished_event_sequence": {
+      "minimum": 3,
+      "title": "Source Finished Event Sequence",
+      "type": "integer"
+    },
+    "activated_event_sequence": {
+      "minimum": 4,
+      "title": "Activated Event Sequence",
+      "type": "integer"
+    },
+    "model_step": {
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Model Step",
+      "type": "integer"
+    },
+    "history_item_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 8192,
+      "minItems": 2,
+      "title": "History Item Ids",
+      "type": "array"
+    },
+    "history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "History Sha256",
+      "type": "string"
+    },
+    "history_tokens": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "History Tokens",
+      "type": "integer"
+    },
+    "raw_history_items": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Raw History Items",
+      "type": "integer"
+    },
+    "raw_history_last_item_id": {
+      "format": "uuid",
+      "title": "Raw History Last Item Id",
+      "type": "string"
+    },
+    "raw_history_ids_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Raw History Ids Sha256",
+      "type": "string"
+    },
+    "activated_at": {
+      "format": "date-time",
+      "title": "Activated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "window_id",
+    "compaction_id",
+    "source_finished_event_sequence",
+    "activated_event_sequence",
+    "model_step",
+    "history_item_ids",
+    "history_sha256",
+    "history_tokens",
+    "raw_history_items",
+    "raw_history_last_item_id",
+    "raw_history_ids_sha256",
+    "activated_at"
+  ],
+  "title": "CompactionWindow",
+  "type": "object"
+}

@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source、0.6.2b Workspace/Git/环境Source及0.6.2c稳定Tool Result模型视图。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，并通过完整本地与远端CI验收。0.6.3已增加独立摘要账本、Cost v2和中断收尾，当前Event/Thread为v14、Session migration为16；摘要HTTP与窗口尚未接入。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围，以及0.6.1至0.6.2c Context来源与稳定Tool Result模型视图。0.6.3已实现独立摘要账本、Cost v2、无工具摘要请求、轮前/reactive Compaction、线性活动窗口、Model History Inspection v2和关键工程语义Eval；当前Event/Thread为v15、Session migration为17，本地完整验收通过，远端CI待对应提交确认。Session Fork/Archive、通用Turn Retry、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -117,7 +117,7 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- 本节交付时为 Agent v6 / Session migration7；当前为 v9 / migration10，兼容 v1–v8 原文，真实`e0e8498` v8 wheel升级与旧reader拒绝已通过。
+- 本节交付时为Agent v6/Session migration7；当前为v15/migration17，兼容v1–v14原文，真实旧wheel升级与旧reader拒绝持续验证。
 
 ~~~bash
 uv run python -m examples.kernel_patch
@@ -189,7 +189,7 @@ uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge
 - Session 保存完整调用计划、独立组审批与决定；持久离开等待后才镜像后端决定并一次性顺序执行。答复审批不会修改文件；
 - 两个实际供应商 SDK 均通过离线 HTTP 完成“两文件读取→整组提案→审批重开→真实副本写入→逐文件读回”；没有新增真实模型调用；
 - 私有 `ToolResult.patch_batch` 保留有界效果与运行原因，不进模型 wire，也不因公开结果超限丢失。部分效果停止当前 Turn；未知效果禁止自动继续；
-- 本节交付时为 Agent Event/Thread **v7**、Session **migration8**（当前 v9/migration10）；真实旧 v6 wheel 的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧 reader 明确拒绝新库。副本账本保持 **v3**。
+- 本节交付时为Agent Event/Thread **v7**、Session **migration8**（当前v15/migration17）；真实旧v6 wheel的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧reader明确拒绝新库。副本账本保持 **v3**。
 
 ~~~bash
 uv run python -m examples.kernel_batch
@@ -217,7 +217,7 @@ uv run pytest tests/patches/test_diff_document.py tests/patches/test_batch_diff_
 - 显式注入 `SQLiteBatchDiffPublisher`，计划引用与真实审批同事务，效果引用与真实 ToolResult/私有效果同事务；同一调用两用途互不覆盖。
 - 失败、部分、未知效果不伪造成功；归档或预算失败可省略引用，不丢弃真实写效果。重开只核对，不重新执行；提交后丢确认不会重复归档。
 - 复用分页、配额、TTL 和活跃会话保护；两个 SDK 的离线闭环可从效果引用继续调用 `read_artifact`。旧只读发布限制不变。
-- 该片交付 Agent **v8** / Session **migration9**；真实旧 v7 wheel 的三类审批、已有 Artifact 升级通过，旧 Schema/事件原字节保留，旧 reader 拒绝新库。当前最低reader已推进到v9/migration10。
+- 该片交付Agent **v8**/Session **migration9**；真实旧v7 wheel的三类审批、已有Artifact升级通过，旧Schema/事件原字节保留，旧reader拒绝新库。当前最低reader已推进到v15/migration17。
 
 ```bash
 uv run python -m examples.batch_diff
@@ -401,7 +401,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 每个启用Planner的模型步骤先提交Agent Event v10 `ContextPrepared`，检查记录不复制指令正文；
 - `AgentRuntime.inspect_context`、Context Span和低基数Token/Fragment指标提供持久诊断。
 
-以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source。0.6.2c已增加Tool Result稳定模型视图；自动Compaction、精确Tokenizer和Session Fork/Archive仍属于后续0.6切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)。
+以上是0.6.1静态规划基线；0.6.2a和0.6.2b已增加受控动态Source，0.6.2c已增加Tool Result稳定模型视图，0.6.3已增加自动Compaction与活动窗口。精确Tokenizer和Session Fork/Archive仍属于后续切片。静态规划边界见[ADR 0054](docs/adr/0054-context-planning-and-inspection.md)，压缩边界见[ADR 0058](docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
 
 ## 当前已实现：受控项目指令Source与freshness（0.6.2a）
 
@@ -461,7 +461,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 重启保留审批检查点，其他中断步骤显式 INTERRUPTED，不自动重放工具；
 - Plan/Compaction/Error 语义 Item 和统一错误分类；
 - Agent OTel Trace/Metrics、审批重启关联与可观测性故障降级；
-- 版本化 Agent Event、Session 历史迁移，旧事件不改写（当前 v9；真实 v1–v8 transcript 回归及 v8 旧包升级已通过）；
+- 版本化Agent Event、Session历史迁移，旧事件不改写（当前v15；真实v1–v14回归及多代旧包升级已通过）；
 - SessionStore 共享契约和损坏/不可写/磁盘满等故障测试；
 - Transcript Replay、投影重建和真实进程故障注入。
 
@@ -474,7 +474,7 @@ uv run python examples/kernel_approval.py
 uv run --extra observability python -m examples.kernel_observability
 ~~~
 
-Plan/Compaction语义Item当前支持可信宿主记录与Replay，不自动改变活动模型历史。0.6.3已新增独立的首窗口规划与候选校验模块，并已增加[独立摘要账本、成本与恢复](docs/compaction-attempt-ledger.md)，但未接入自动摘要HTTP或窗口发布，见[窗口规划设计](docs/compaction-window-planning.md)。
+Plan/Compaction语义Item支持可信宿主记录与Replay。0.6.3新增[窗口规划](docs/compaction-window-planning.md)、[独立摘要账本](docs/compaction-attempt-ledger.md)和[自动Compaction运行时与活动窗口](docs/compaction-runtime-and-windows.md)。摘要请求在HTTP前持久化意图，候选与窗口分离提交，重复压缩不恢复旧原始前缀。
 
 这些入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
 
@@ -505,7 +505,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付 Agent Event/Thread v4、Provider Event v2、真实 v1/v2/v3 会话升级与冻结 Schema（当前为 Agent v9/Provider v3，见 0.5.4b2b2a 与 0.4.3b2）；
+- 当时交付Agent Event/Thread v4、Provider Event v2、真实v1/v2/v3会话升级与冻结Schema（当前为Agent v15/Provider v3）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。

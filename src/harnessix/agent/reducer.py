@@ -7,7 +7,7 @@ from uuid import UUID
 from harnessix.agent.approvals import approval_for, approval_matches, request_fingerprint
 from harnessix.agent.attempt_accounting import settle_observation
 from harnessix.agent.batch_patching import validate_effect
-from harnessix.agent.compaction_reducer import apply_compaction
+from harnessix.agent.compaction_reducer import activate_compaction_window, apply_compaction
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     PROCESS_RESOLVED_STATUSES,
@@ -17,6 +17,7 @@ from harnessix.agent.models import (
     ApprovalContent,
     ApprovalRequestContent,
     CompactionContent,
+    CompactionWindowActivated,
     ErrorContent,
     Item,
     ItemFinished,
@@ -48,8 +49,10 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN, CompactionEvent
+from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import ContextPrepared
-from harnessix.context.tool_result_view import prepare_model_history
+from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
+from harnessix.context.tool_result_view import history_items
 from harnessix.domain.models import (
     ALLOWED_ACTION_TRANSITIONS,
     ActionStatus,
@@ -476,12 +479,40 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
     )
 
 
-def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> Turn:
+def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> Turn:
     target = payload.status
     allowed = set(TURN_TRANSITIONS.get(turn.status, set()))
     if turn.status != TurnStatus.CANCELLING:
         allowed.update({TurnStatus.CANCELLING, TurnStatus.FAILED, TurnStatus.INTERRUPTED})
     require(target in allowed, f"非法 Turn 状态转换：{turn.status} → {target}")
+    if turn.status == TurnStatus.CALLING_MODEL and target == TurnStatus.PREPARING_CONTEXT:
+        attempts = [attempt for attempt in turn.model_attempts if attempt.step == turn.model_steps]
+        inspections = [
+            inspection
+            for inspection in turn.model_history_inspections
+            if inspection.model_step == turn.model_steps
+        ]
+        raw_items_before = (
+            inspections[0].raw_history_items
+            if len(inspections) == 1 and isinstance(inspections[0], ModelHistoryInspectionV2)
+            else inspections[0].history_items
+            if len(inspections) == 1
+            else -1
+        )
+        require(event.schema_version >= 15, "Context Overflow恢复需要Agent Event v15")
+        require(payload.error is None, "Context Overflow恢复状态不能携带终止错误")
+        require(
+            bool(attempts)
+            and attempts[-1].status == "failed"
+            and attempts[-1].error is not None
+            and attempts[-1].error.code == "provider_context_overflow",
+            "只有已记账的Context Overflow才能进入压缩恢复",
+        )
+        require(all(attempt.status != "running" for attempt in attempts), "模型尝试尚未结算")
+        require(turn.usage_step < turn.model_steps, "已完成响应不能进入Context Overflow恢复")
+        require(len(history_items(thread)) == raw_items_before, "模型已输出语义Item，禁止压缩重试")
+        require(not pending_calls(turn), "Context Overflow恢复时存在未结算调用")
+        require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
     if target in TERMINAL_TURNS:
         require(all(a.status != "running" for a in turn.accounted_attempts), "存在未结算模型尝试")
         require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
@@ -676,7 +707,7 @@ def _prepare_model_history(thread: Thread, turn: Turn, payload: ModelHistoryPrep
         "同一模型步骤只能记录一份模型历史检查",
     )
     try:
-        prepared = prepare_model_history(
+        prepared = prepare_active_model_history(
             thread, inspection.model_step, inspection.policy, decisions=payload.decisions
         )
     except (KernelError, ValueError):
@@ -714,6 +745,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
     require(not isinstance(payload, ThreadCreated), "Thread 不可重复创建")
     require(event.turn_id is not None, "Turn 事件缺少 turn_id")
     assert event.turn_id is not None
+    thread_updates: dict[str, object] = {}
     if isinstance(payload, TurnStarted):
         require(thread.active_turn_id is None, "同一 Thread 已存在活跃 Turn")
         require(all(t.turn_id != event.turn_id for t in thread.turns), "Turn ID 已存在")
@@ -744,7 +776,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                 "开放压缩期间只能推进摘要账本或取消",
             )
         if isinstance(payload, TurnStateChanged):
-            turn = _change_state(turn, event, payload)
+            turn = _change_state(thread, turn, event, payload)
         elif isinstance(payload, ItemStarted):
             require(
                 all(i.item_id != payload.item_id for t in thread.turns for i in t.items),
@@ -766,6 +798,12 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             turn = _model_attempt(turn, event)
         elif isinstance(payload, CompactionEvent):
             turn = apply_compaction(thread, turn, event)
+        elif isinstance(payload, CompactionWindowActivated):
+            window = activate_compaction_window(thread, turn, event, payload)
+            thread_updates = {
+                "compaction_windows": (*thread.compaction_windows, window),
+                "active_compaction_window_id": window.window_id,
+            }
         elif isinstance(payload, ContextPrepared):
             turn = _prepare_context(turn, payload)
         elif isinstance(payload, ModelHistoryPrepared):
@@ -801,6 +839,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             "active_turn_id": None if turn.status in TERMINAL_TURNS else turn.turn_id,
             "sequence": event.sequence,
             "updated_at": event.occurred_at,
+            **thread_updates,
         },
         deep=True,
     )

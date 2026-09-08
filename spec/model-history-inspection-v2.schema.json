@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "ToolResultViewPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.tool-result-model-view/v1",
+          "default": "harnessix.tool-result-model-view/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "max_inline_utf8_bytes": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1024,
+          "title": "Max Inline Utf8 Bytes",
+          "type": "integer"
+        }
+      },
+      "title": "ToolResultViewPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "绑定已发布活动窗口；原v1字段继续描述本次实际模型历史。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.model-history-inspection/v2",
+      "default": "harnessix.model-history-inspection/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "model_step": {
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Model Step",
+      "type": "integer"
+    },
+    "policy": {
+      "$ref": "#/$defs/ToolResultViewPolicy"
+    },
+    "history_items": {
+      "maximum": 8192,
+      "minimum": 1,
+      "title": "History Items",
+      "type": "integer"
+    },
+    "tool_results": {
+      "maximum": 8192,
+      "minimum": 0,
+      "title": "Tool Results",
+      "type": "integer"
+    },
+    "inline_results": {
+      "maximum": 8192,
+      "minimum": 0,
+      "title": "Inline Results",
+      "type": "integer"
+    },
+    "artifact_reference_results": {
+      "maximum": 8192,
+      "minimum": 0,
+      "title": "Artifact Reference Results",
+      "type": "integer"
+    },
+    "artifact_bindings": {
+      "maximum": 16384,
+      "minimum": 0,
+      "title": "Artifact Bindings",
+      "type": "integer"
+    },
+    "source_tool_result_utf8_bytes": {
+      "maximum": 8388608,
+      "minimum": 0,
+      "title": "Source Tool Result Utf8 Bytes",
+      "type": "integer"
+    },
+    "view_tool_result_utf8_bytes": {
+      "maximum": 8388608,
+      "minimum": 0,
+      "title": "View Tool Result Utf8 Bytes",
+      "type": "integer"
+    },
+    "source_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source History Sha256",
+      "type": "string"
+    },
+    "view_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "View History Sha256",
+      "type": "string"
+    },
+    "decisions_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Decisions Sha256",
+      "type": "string"
+    },
+    "window_id": {
+      "format": "uuid",
+      "title": "Window Id",
+      "type": "string"
+    },
+    "window_history_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Window History Sha256",
+      "type": "string"
+    },
+    "raw_history_items": {
+      "maximum": 8388608,
+      "minimum": 1,
+      "title": "Raw History Items",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "model_step",
+    "policy",
+    "history_items",
+    "tool_results",
+    "inline_results",
+    "artifact_reference_results",
+    "artifact_bindings",
+    "source_tool_result_utf8_bytes",
+    "view_tool_result_utf8_bytes",
+    "source_history_sha256",
+    "view_history_sha256",
+    "decisions_sha256",
+    "window_id",
+    "window_history_sha256",
+    "raw_history_items"
+  ],
+  "title": "ModelHistoryInspectionV2",
+  "type": "object"
+}

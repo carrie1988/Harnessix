@@ -17,13 +17,21 @@ from harnessix.context.contracts import (
     ContextInspectionV2,
     ContextInspectionV3,
 )
-from harnessix.context.tool_result_contracts import ModelHistoryInspection
+from harnessix.context.tool_result_contracts import ModelHistoryInspectionRecord
 from harnessix.domain.models import TraceContext
 from harnessix.observability.core import Observability, ObservabilitySpan
 
 _LOGGER = logging.getLogger(__name__)
 OperationName = Literal[
-    "turn", "model", "tool", "approval", "cancel", "recovery", "context", "history"
+    "turn",
+    "model",
+    "tool",
+    "approval",
+    "cancel",
+    "recovery",
+    "context",
+    "history",
+    "compaction",
 ]
 _OUTCOMES = frozenset(
     {
@@ -239,7 +247,7 @@ class KernelTelemetry:
                 )
             )
 
-    def model_history(self, inspection: ModelHistoryInspection) -> None:
+    def model_history(self, inspection: ModelHistoryInspectionRecord) -> None:
         values = {
             "source": inspection.source_tool_result_utf8_bytes,
             "view": inspection.view_tool_result_utf8_bytes,

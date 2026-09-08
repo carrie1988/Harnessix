@@ -1,10 +1,10 @@
 # 0.6.3 摘要尝试账本详细设计
 
 - 更新日期：2026-09-08
-- 状态：独立账本内部门禁；自动摘要、活动窗口和整体0.6.3尚未完成
+- 状态：独立账本已由自动摘要和活动窗口运行时集成
 - 前置：[窗口规划与候选校验](compaction-window-planning.md)
 - 决策：[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)
-- 后续：[整体压缩窗口决策草案](adr/0058-compaction-windows-and-accounted-summary-attempts.md)
+- 集成：[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)
 
 ## 1. 系统边界
 
@@ -87,16 +87,16 @@ Campaign遍历全部请求绑定价格，并根据同一Turn重算Cost v1/v2。�
 | 请求completed、候选未提交 | 保留费用；Compaction Interrupted |
 | summarized候选已提交 | 候选原样保留；Turn Interrupted，不激活、不再请求 |
 
-结束请求、拒绝开放Compaction、Error Item与Turn终态由同一Session事务提交。事务内退出时未提交事件和投影一起回滚；提交后退出可重放；反复启动不新增重复结算，不发模型请求或工具调用。该语义覆盖取消、超时和宿主退出，但当前没有自动摘要HTTP消费器，不能将账本退出测试等同于真实Provider请求全链路验收。
+结束请求、拒绝开放Compaction、Error Item与Turn终态由同一Session事务提交。事务内退出时未提交事件和投影一起回滚；提交后退出可重放；反复启动不新增重复结算，不发模型请求或工具调用。自动摘要消费器在该账本上增加HTTP前意图、流关闭和窗口发布验证；完整退出矩阵见[运行时详细设计](compaction-runtime-and-windows.md)。
 
 新事件违反守卫统一为`invalid_event`，整个追加原子回滚。成本报告失败使用契约ValueError，Campaign转换为`eval_campaign_cost_invalid`或证据错误，不返回残缺成功报告。SQLite的存储不可用、并发CAS及迁移错误沿用既有Session错误契约。
 
 ## 6. 安全、观测与部署
 
-摘要正文只保存在有权限的Session记录中，不写入Cost/Campaign报告或指标标签。Session数据库及侧文件沿用本地权限、单Runtime所有权和WAL事务策略。账本事件可用于审计用途、阶段、用量完整性和失败原因；尚未增加摘要HTTP耗时或窗口命中指标，后续消费器必须以固定purpose/stage/result低基数标签接入，不能用路径、正文或ID做指标标签。
+摘要正文只保存在有权限的Session记录中，不写入Cost/Campaign报告或指标标签。Session数据库及侧文件沿用本地权限、单Runtime所有权和WAL事务策略。运行时以固定`operation=compaction`及有限结果标签记录操作，不使用路径、正文或ID作为指标标签。
 
 数据版本为Agent Event/Thread v14、Cost Report v2、Session migration16；Provider Event v3、Model History Inspection v1、Context Inspection v3不变。`0016_compaction_attempt_ledger.sql`仅推进最低reader，不增加外部数据库或重写旧事件。v1-v13事件及投影继续兼容读取；新摘要包装事件不得标记为旧版本。
 
-## 7. 尚未完成的0.6.3边界
+## 7. 后续集成边界
 
-后续仍需无工具摘要消费器、HTTP前意图与流关闭验证、请求预算预留、窗口发布CAS、活动窗口历史读取、重复压缩、轮前与reactive触发、诊断指标及真实工程语义保持Eval。活动窗口事件与历史检查必须使用后续新版本，禁止改写已冻结v14 Schema。0.6.4会话生命周期和0.6.5综合恢复验收在完整窗口流程后继续推进；本账本内部门禁不关闭整体0.6.3或0.6。
+无工具摘要消费器、HTTP前意图、流关闭、请求预算、窗口CAS、活动历史、重复压缩、轮前/reactive触发及工程语义保持Eval已在Event/Thread v15与migration17中实现，未修改冻结v14 Schema。该账本仍只负责摘要请求事实和费用，不负责0.6.4会话生命周期或0.6.5通用重试策略。

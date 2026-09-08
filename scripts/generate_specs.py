@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from harnessix.agent.models import AgentEvent, Thread
+from harnessix.agent.models import AgentEvent, CompactionWindow, Thread
 from harnessix.api import create_app
 from harnessix.artifacts.contracts import (
     ArtifactPage,
@@ -19,6 +19,7 @@ from harnessix.context.compaction_contracts import (
     CompactionPolicy,
     CompactionSummary,
 )
+from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import (
     ContextConsistencySnapshot,
     ContextFragment,
@@ -31,6 +32,7 @@ from harnessix.context.contracts import (
 )
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspection,
+    ModelHistoryInspectionV2,
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
@@ -43,6 +45,10 @@ from harnessix.evals.campaign_execution_contracts import (
     CodingEvalCampaignExecutionState,
     CodingEvalCampaignRunConfig,
     CodingEvalCampaignRunReport,
+)
+from harnessix.evals.compaction_contracts import (
+    CompactionSemanticEvalCase,
+    CompactionSemanticEvalReport,
 )
 from harnessix.evals.contracts import (
     CodingEvalMaterialization,
@@ -108,8 +114,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v14.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v14.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v15.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v15.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
@@ -132,7 +138,9 @@ def main() -> None:
         ("compaction-anchor", CompactionAnchor),
         ("compaction-plan", CompactionPlan),
         ("compaction-policy", CompactionPolicy),
+        ("compaction-runtime", CompactionRuntimeConfig),
         ("compaction-summary", CompactionSummary),
+        ("compaction-window", CompactionWindow),
         ("model-history-inspection", ModelHistoryInspection),
         ("tool-result-view-policy", ToolResultViewPolicy),
         ("tool-result-view-decision", ToolResultViewDecision),
@@ -194,8 +202,14 @@ def main() -> None:
         ("coding-eval-change-package", CodingEvalChangePackage),
         ("coding-eval-delivery-plan", CodingEvalDeliveryPlan),
         ("coding-eval-delivery-record", CodingEvalDeliveryRecord),
+        ("compaction-semantic-eval-case", CompactionSemanticEvalCase),
+        ("compaction-semantic-eval-report", CompactionSemanticEvalReport),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
+    write_json(
+        output / "model-history-inspection-v2.schema.json",
+        ModelHistoryInspectionV2.model_json_schema(),
+    )
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
         "Process、Context、Coding Eval 与 OpenAPI Schema"

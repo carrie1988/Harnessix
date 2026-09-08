@@ -1,127 +1,115 @@
 # ADR 0058：可审计压缩窗口与独立摘要尝试
 
-- 状态：Proposed
+- 状态：Accepted（实现及本地完整验收通过；远端CI待对应提交确认）
 - 日期：2026-09-08
 - 范围：0.6.3
-- 前置：ADR 0054、ADR 0057、现有Model Attempt/Billing与Session恢复契约
+- 前置：ADR 0054、ADR 0057、ADR 0059、现有Model Attempt/Billing与Session恢复契约
 - 源码依据：[Compaction与长会话窗口研究](../research/compaction-and-context-windows.md)
+- 详细设计：[自动Compaction运行时与活动窗口](../compaction-runtime-and-windows.md)
 
 ## 1. 问题与边界
 
-单结果裁剪不能控制累计历史长度。直接覆盖Thread.items、把摘要器藏在Context Planner中、或者失败后反复调用摘要器，分别会破坏审计、漏记费用、放大成本。0.6.3必须交付一个完整的长会话窗口流程，而不是增加一个“生成摘要”函数。
+单结果裁剪不能控制累计历史长度。直接覆盖Thread.items、把摘要器藏在Context Planner中、或者失败后反复调用摘要器，分别会破坏审计、漏记费用和放大成本。0.6.3必须交付一个包含正式契约、用量结算、窗口发布、恢复和评测的长会话纵向切片，而不是只增加摘要函数。
 
-本ADR提出待完整契约与反例测试确认的运行时设计。首窗口规划及候选校验已实现为独立、无副作用的v1领域契约，详见[窗口规划设计](../compaction-window-planning.md)；摘要账本已按[ADR 0059](0059-compaction-attempt-ledger-and-purpose-costs.md)发布为Event/Thread v14、Cost v2和migration16，并接入终止恢复。摘要HTTP及活动窗口仍未接入，不能把下述窗口候选类型当作已发布API。
+本决策由三个连续门禁落地：首窗口规划及候选校验、Event/Thread v14独立摘要账本与Cost v2，以及Event/Thread v15自动摘要运行时和活动窗口。默认未配置时不产生摘要请求或行为变化。
 
-## 2. 拟采用设计
+## 2. 决策
 
 ### 2.1 独立活动窗口，不改事实历史
 
-Thread拟增加活动模型窗口身份，窗口由首条原用户消息、版本化Summary、按原顺序保留的固定组和近期后缀构成。保留首条原用户消息用于满足既有Anthropic端口的user起始约束，不把Summary伪装为用户或系统指令。原Event、Item、Approval、Effect、Artifact和工具视图决定保持不变。
+Thread增加活动模型窗口身份。窗口由首条原用户消息、版本化Summary、按原顺序保留的固定组和近期后缀构成。首条原用户消息满足既有Anthropic端口的user起始约束；Summary不伪装为用户或系统指令。原Event、Item、Approval、Effect、Artifact和工具视图决定保持不变。
 
-窗口发布记录至少包含：
+`CompactionWindow v1`保存窗口及前序窗口身份、候选结束和激活序号、生效步骤、有序活动Item ID、候选摘要与估算Token，以及原始历史高水位、末Item ID和有序ID摘要。窗口不复制原Item正文。窗口形成严格线性链，活动ID必须指向链尾。
 
-- `window_id`、`previous_window_id`和所属Thread/Turn；
-- 来源事件序号、覆盖的原Item ID及来源规范摘要；
-- 有序保留Item ID、选择算法版本和预算策略；
-- Summary版本、内容摘要、派生来源、稳定投影Item ID；
-- 生成Summary的Compaction及Attempt身份；
-- 变换前后输入估算、验证结果和生效模型步骤。
-
-后续模型请求只能使用已提交的活动窗口。历史检查记录应升级为带窗口身份的新版本；v13及更早事件继续按当时全历史规则Replay，不能由新的窗口算法重解释旧决定。
+物化时从原始Session事实、稳定Summary投影和冻结Tool Result决定重建候选，再追加高水位之后的原始增量。重复压缩基于上一活动窗口和新增原始事实，不重新引入被覆盖正文。
 
 ### 2.2 闭合组选择
 
-窗口选择从真实完成历史建立保守响应组：连续助手块与该响应的全部Tool Call、全部完成Tool Result不拆组。Item本身没有model_step，因此不猜测相邻纯文本的响应边界。保留最近的完整组、首条/当前用户消息及明确固定的任务约束；其余闭合前缀扣除固定组后作为摘要来源。固定组参与预算，不能默默丢弃。
+窗口选择从已准备的模型历史建立保守响应组：连续助手块与该响应的全部Tool Call、全部完成Tool Result不拆组。Item没有model_step时不猜测相邻纯文本的响应边界。必须保留最近完整组、首条/当前用户消息和显式锚点；其余闭合前缀作为摘要来源。
 
-以下状态禁止压缩或发布：
-
-- 有未完成Item、未结算模型尝试；
-- 有等待审批或等待Action；
-- 调用/结果身份重复、缺失或顺序不合法；
-- 来源不属于当前活动窗口或在候选生成期间发生变化。
-
-不通过截取字符串修复非法边界；没有可压缩前缀或保留集本身超限时明确失败。
+存在未完成Item、未结算请求、等待审批/Action、非法调用配对、来源变化或无可证明缩减时拒绝压缩。不通过字符串截断修复非法历史。
 
 ### 2.3 摘要请求显式记账
 
-新增Compaction运行记录及其尝试事件封装，复用`UsageObservation`、`ResponseBillingMetadata`、`ModelAttempt`和`estimate_attempt`的已有数据/计费语义，但不冒充普通CALLING_MODEL步骤。
+摘要使用独立Compaction Attempt集合，不冒充普通交付步骤。Attempt ID在Thread内跨用途唯一；普通与摘要请求共享Turn总Token预算和截止时间。累计观测、缓存/推理分项、响应身份、Billing和价格绑定复用已有规则。Cost Report v2和Coding Eval Campaign汇总所有用途。
 
-具体原因：原`reducer._model_attempt`约束尝试只属于正在打开的普通步骤，旧成本构建仅遍历`turn.model_attempts`（ADR 0059已扩展全用途汇总）。仅在PREPARING_CONTEXT发起Provider请求会绕过两者；直接增加普通step又会伪造一次交付模型响应。
+摘要Provider必须先产生`ModelAttemptStarted`。Runtime提交`CompactionAttemptStarted`后才继续消费Provider流，从而让兼容Adapter把真实HTTP放在持久意图之后。首事件缺失、错误或首事件前异常以`provider_summary_accounting_required`失败，并保守标记未记账请求风险。
 
-拟采用独立Compaction Attempt集合，Attempt ID在整个Thread唯一；普通与摘要集合共享Turn Token总预算和截止时间，累计观测按增量入账，完整性、缓存分项、响应身份和价格绑定仍沿用原规则。Cost Report、Eval与诊断必须同时汇总两类尝试，并明确用途，不能只修改核心Runtime而漏掉报告层。
+每个Compaction至多一个Attempt。请求只允许一个非空文本块、完整且一致的用量和成功终态；工具集合为空，任何Tool Call均拒绝且不执行。第二个Attempt在Provider继续第二次HTTP之前被拒绝。已经发生的用量始终结算，摘要失败不回退费用。
 
-摘要Provider复用供应商中立流端口，工具定义为空；出现Tool Call、拒绝、无有效正文或异常终态时拒绝候选。已发生用量依然结算。默认不自动重试摘要请求，禁止摘要器递归触发Compaction。
-
-### 2.4 原子发布与恢复
-
-流程为：
+### 2.4 候选与窗口发布
 
 ~~~text
 PREPARING_CONTEXT
-  → 选择闭合前缀与保留集
-  → 持久化Compaction计划及预算边界
-  → 开始摘要Attempt并持久化累计用量
-  → 结算Attempt
-  → 校验Summary结构、来源、关键约束与缩减效果
-  → CAS原子发布新窗口
-  → 新窗口的Tool Result/Artifact检查
-  → Context规划
-  → 普通模型请求
+  → 验证全部来源Artifact
+  → 生成并提交CompactionPlan
+  → 提交摘要Attempt意图
+  → 消费、累计和结算Provider流
+  → 重算Summary候选并提交CompactionSummarized
+  → 紧邻提交CompactionWindowActivated
+  → 从活动窗口准备Model History Inspection v2
+  → Context规划与普通模型请求
 ~~~
 
-生成失败、校验失败、取消或超时不发布窗口；原窗口不变，但尝试费用和失败事实保留。发布事务必须比较计划来源与当前活动窗口身份，不接受仅凭内存中的候选直接替换。
+候选和窗口是两个不同事实。候选提交要求请求成功结算、来源和策略可重算、投影在预算内且达到最小缩减。窗口发布要求候选结束事件仍是Thread尾部，并由Reducer按同一来源、候选、事件序号和时间完整重算。窗口发布使用Session sequence CAS。
 
-进程在请求开始后到结算前退出，恢复为Interrupted/用量不完整，不自动重新计费发起请求。结算后、窗口发布前退出也不猜测候选可以恢复；没有持久候选证据时仅保留已结算尝试。发布后退出恢复已提交窗口，不重新摘要，也不执行任何工具。
+候选提交后到窗口提交之间使用屏蔽外部Task取消的本地任务。进程退出时，已提交候选由首次重开纯计算发布为唯一窗口，不调用Provider或工具。窗口事务在Event或Projection后退出会整体回滚；commit后退出保留完整窗口，重开不重复发布。
 
-### 2.5 轮前与reactive触发分离
+### 2.5 轮前与reactive触发
 
-轮前触发使用宿主显式配置的阈值、输出预留和安全余量。首版默认不启用；配置、诊断和用量路径验收后再用于自动运行。
+轮前触发只在宿主同时配置`CompactionRuntimeConfig`和摘要Provider时启用。触发阈值必须严格高于目标窗口预算，避免压缩后立即再次触发。
 
-reactive路径仅允许明确的Provider context-overflow错误，且本次普通请求没有产生可用回答或Tool Call、所有尝试均已结算。压缩成功后进入新的普通model_step，因此max_steps仍计算失败请求；不能无限复用同一个步骤规避预算。每个失败步骤最多一次reactive压缩，来源或窗口没有进展时立即停止。
+reactive路径只接受已记账的`provider_context_overflow`。当前步骤全部Attempt必须结算，且不得已产生完成响应、Tool Call、Tool Result或其他语义Item。失败请求仍消耗普通model_step及已报告Token；下一步骤强制压缩。压缩后再次溢出而没有新闭合前缀时返回`context_compaction_no_progress`，不发起第二次付费摘要。其他Provider失败不自动重跑。
 
-这一分支需要正式新增状态转移前置条件；不得通过捕获所有Provider异常并自动重跑来实现。
+### 2.6 信任、约束与Artifact
 
-### 2.6 摘要信任、约束与Artifact
+摘要来源固定为`trust=untrusted_history/authority=none`，摘要投影固定为`trust=derived_history/authority=none`。摘要文字不能替代Runtime/User指令、Approval、Effect Journal或Process核对。
 
-Summary是从不可信历史派生的数据，不得升级为Runtime/User指令或执行授权。持久化“已批准/已成功”的文字不能取代原Approval、Effect或Process核对。Runtime/User Fragment和当前用户输入继续独立进入Context。
+首条/当前用户消息和显式锚点逐字保留。目标、约束、未完成事项、文件/revision、测试结果和不确定效果通过版本化人工语义Oracle持续评测。Oracle报告只保存身份、摘要和布尔结果，不保存正文，也不充当运行时权限。
 
-必须区分：
+被覆盖来源中的Artifact也必须在摘要HTTP前完成Workspace scope、TTL、manifest、正文和覆盖验证；不能通过压缩隐藏过期、损坏或跨scope引用。
 
-- 逐字固定项：宿主明确提供、带来源的约束锚点及必须保留的原消息；
-- 语义保持项：目标、未完成事项、决定、文件/revision、测试结果和不确定效果；
-- 旧Artifact审计引用：不能在不可回读时继续向模型承诺完整证据可取回。
+## 3. 失败与恢复
 
-任何压缩流程都不能绕过当前Workspace访问策略。活动窗口只校验实际进入模型的引用，但被覆盖来源的摘要读取仍须遵守授权范围；跨scope失败不能靠压缩“洗掉”。首窗口规划保留整个来源历史的Artifact验证义务，运行时必须在摘要请求之前完成现有scope/TTL/正文验证，不能仅检查保留后缀。过期归档的后续宽限策略尚未启用，不能静默当作有效Artifact。
+- 计划前失败：无Compaction事实，保留旧窗口；
+- 已计划但未开始请求：恢复为Interrupted，不调用Provider；
+- 请求意图后、结算前退出：结算已知Usage并转Interrupted，不重发；
+- Attempt成功但候选前退出：不从内存补造候选；
+- 候选已提交但窗口前退出：重开发布唯一窗口，零Provider请求；
+- 取消或超时：关闭Provider流，结算开放Attempt和Compaction，不留后台任务；
+- 非法摘要、超限、无缩减或语义评测失败：保留原事实和费用，不把候选解释为授权。
 
-## 3. 数据版本方案
+## 4. 数据版本
 
-拟新增Agent Event/Thread v14、Model History Inspection v2和Session migration16；具体Schema在领域契约评审后冻结。v1-v13 Agent Schema、既有Provider Event和计费元数据保持原版本文件不变。新增尝试事件采用包装而不是就地改变既有Provider Event v3字段，从而避免无关供应商映射契约升级。
+- 独立摘要账本：Agent Event/Thread v14、Session migration16；
+- 活动窗口和Model History Inspection v2：Agent Event/Thread v15、Session migration17；
+- 新增独立Schema：Compaction Runtime v1、Compaction Window v1、Compaction语义评测Case/Report v1；
+- v1-v14 Agent Schema、Model History Inspection v1、Provider Event v3和Cost Report v1/v2保持冻结。
 
-旧v13投影升级不自动生成Summary或计费请求；只有显式启用Compaction的后续运行才能产生新窗口。旧reader按最低迁移标记拒绝接管。未来Fork需要重新验证窗口来源归属，不继承效果执行许可。
+migration17只标记最低reader，不重写旧事件、投影正文或Artifact。真实独立wheel验证以`b20948e`的v14为旧基线：v15初始化仅追加migration17，原字节不变；v14已结算候选在v15重开时零请求发布唯一窗口；随后v14 reader以`schema_too_new`拒绝且不修改数据库。
 
-## 4. 未采用方案
+## 5. 未采用方案
 
-- 删除旧Event或覆写Thread.items：破坏唯一事实源和Replay。
-- 无账本摘要调用：费用、取消和恢复不可审计。
-- 把Summary写成系统指令：提升不可信来源的权限。
-- 切开Tool Call与Result：破坏Provider配对和效果解释。
-- 摘要失败无限重试：没有进展证明且成本无界。
-- Summary宣称缩减即激活：必须用实际候选窗口重新计量、校验来源并CAS发布。
+- 删除旧Event或覆写Thread.items：破坏唯一事实源和Replay；
+- 无账本摘要调用：费用、取消和恢复不可审计；
+- 将Summary写成系统或用户指令：提升不可信来源权限；
+- 切开Tool Call与Result：破坏Provider配对和效果解释；
+- 摘要失败自动重试：没有进展证明且成本无界；
+- 将候选直接视为活动窗口：缺少发布CAS和重开边界；
+- 对所有Provider失败执行压缩重试：会掩盖错误并重复有成本请求。
 
-## 5. 接受前门禁与实施顺序
+## 6. 验收
 
-1. 窗口/闭合组规划和预算分摊的领域契约，明确每个有界集合、计量算法及失败代码。
-2. Compaction尝试账本、Token增量、Cost Report/Eval覆盖和中断恢复反例测试。
-3. 显式启用的端到端压缩路径：两种Provider、无工具摘要、候选验证和原子窗口发布。
-4. 轮前与reactive触发，验证空前缀、无缩减、连续失败、超限摘要和预算耗尽。
-5. 关键约束保持、重复压缩、长任务、Workspace变化与旧wheel升级验证。
+已完成以下本地门禁：
 
-任何一项缺少取消、超时、恢复、安全边界或完整回归，都不得将0.6.3标记完成。该ADR在上述契约反例评审完成前保持Proposed。
+1. 闭合组、预算、来源、固定锚点、候选和活动窗口契约；
+2. Compaction账本、全用途Token/Cost/Campaign和失败结算；
+3. OpenAI Chat及Anthropic无工具摘要映射；
+4. 轮前/reactive触发、连续溢出、部分语义输出拒绝；
+5. Artifact损坏、取消、超时、流关闭和摘要重试阻断；
+6. 重复窗口、六个运行时退出点和三个SQLite窗口事务退出点；
+7. 六类关键工程语义保持及缺失、幻觉、无效语料反例；
+8. 真实v14→v15独立wheel升级和旧reader拒绝；
+9. 370项专项测试及严格全量2901 passed、2 skipped。
 
-## 6. 已实现的内部门禁
-
-首窗口`CompactionPolicy/Anchor/Plan/Summary v1`及`plan_compaction/validate_compaction`已落地，完成闭合组、预算、来源变化、固定项、取消/超时、计划JSON往返和实际SQLite Session验证。低信任摘要位于首条原用户之后，两个现有Adapter的请求映射均纳入回归。
-
-该实现不调用Provider、不写Session、不发布窗口。仅凭内存候选无法证明尝试结算、语义保持或付费请求崩溃恢复；独立账本与发布门禁仍须按第5节推进，不将本ADR提前改为Accepted。
-
-独立账本、Cost Report v2、Campaign聚合和崩溃窗口已按[ADR 0059](0059-compaction-attempt-ledger-and-purpose-costs.md)与[摘要尝试账本详细设计](../compaction-attempt-ledger.md)实现。活动窗口、摘要HTTP和自动触发仍属本ADR未完成范围。
+两个skip为本地未配置PostgreSQL。远端Python 3.12、Python 3.13、macOS和PostgreSQL矩阵以对应实现提交CI为准。

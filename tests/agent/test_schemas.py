@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from harnessix.agent.models import AgentEvent, EventDraft, Thread
+from harnessix.agent.models import AgentEvent, CompactionWindow, EventDraft, Thread
 from harnessix.context import (
     ContextBuildInput,
     ContextConsistencySnapshot,
@@ -26,10 +26,16 @@ from harnessix.context.compaction_contracts import (
     CompactionPolicy,
     CompactionSummary,
 )
+from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspection,
+    ModelHistoryInspectionV2,
     ToolResultViewDecision,
     ToolResultViewPolicy,
+)
+from harnessix.evals.compaction_contracts import (
+    CompactionSemanticEvalCase,
+    CompactionSemanticEvalReport,
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
@@ -44,12 +50,15 @@ def test_generated_schemas_match_code() -> None:
         "compaction-anchor-v1.schema.json": CompactionAnchor.model_json_schema(),
         "compaction-plan-v1.schema.json": CompactionPlan.model_json_schema(),
         "compaction-policy-v1.schema.json": CompactionPolicy.model_json_schema(),
+        "compaction-runtime-v1.schema.json": CompactionRuntimeConfig.model_json_schema(),
         "compaction-summary-v1.schema.json": CompactionSummary.model_json_schema(),
         "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
+        "model-history-inspection-v2.schema.json": ModelHistoryInspectionV2.model_json_schema(),
+        "compaction-window-v1.schema.json": CompactionWindow.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v14.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v14.schema.json": Thread.model_json_schema(),
+        "agent-event-v15.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v15.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -65,6 +74,12 @@ def test_generated_schemas_match_code() -> None:
         "price-snapshot-v1.schema.json": PriceSnapshot.model_json_schema(),
         "cost-report-v1.schema.json": CostReport.model_json_schema(),
         "cost-report-v2.schema.json": CostReportV2.model_json_schema(),
+        "compaction-semantic-eval-case-v1.schema.json": (
+            CompactionSemanticEvalCase.model_json_schema()
+        ),
+        "compaction-semantic-eval-report-v1.schema.json": (
+            CompactionSemanticEvalReport.model_json_schema()
+        ),
         "model-smoke-config-v1.schema.json": SmokeConfig.model_json_schema(),
         "model-smoke-report-v1.schema.json": SmokeReport.model_json_schema(),
     }
@@ -76,7 +91,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 15,
+                "schema_version": 16,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -110,7 +125,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 14
+        assert EventDraft(payload=payload).schema_version == 15
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -129,7 +144,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 14
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 15
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -159,7 +174,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 14
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 15
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -318,8 +333,20 @@ def test_historical_schemas_are_frozen() -> None:
             "agent-thread-v13.schema.json": (
                 "9033954df7323fc32f710cb2e377476d42d2dea667bf57bb8b7b93546f7cc6f4"
             ),
+            "agent-event-v14.schema.json": (
+                "c49f7bd781414165a1901202c658635b98397eb73aabbc92149baaa970a47d52"
+            ),
+            "agent-thread-v14.schema.json": (
+                "074f8ff7c08a0e917ed163b641e588b19f018afe3b89162d2caf83356464d51b"
+            ),
+            "model-history-inspection-v1.schema.json": (
+                "86c210a0e49e77a2fb45e5db1b1d9c8f8392e217115034db33f0a54c40a8852a"
+            ),
             "cost-report-v1.schema.json": (
                 "ad97a70268a9bc3df23274c6591c8e45af3ac26f3ade3838e0308802f828963e"
+            ),
+            "cost-report-v2.schema.json": (
+                "17d97a6290f3bd4ea8af706d435637ac4c43ae29d122cd7e12fbf7c67c01d694"
             ),
         }
     )

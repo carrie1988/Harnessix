@@ -279,7 +279,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration 14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration 15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)，已落地[首窗口规划与候选校验](compaction-window-planning.md)，已实现[独立摘要账本、Cost v2与中断收尾](compaction-attempt-ledger.md)，正在按[ADR 0058草案](adr/0058-compaction-windows-and-accounted-summary-attempts.md)推进无工具摘要请求与活动窗口；自动Compaction运行时和会话生命周期仍未实现。见[详细实施设计](m06-context-and-sessions.md)、[Source与Tool Result专项研究](research/context-sources-and-tool-results.md)、[ADR 0056](adr/0056-workspace-git-environment-sources-and-consistency.md)和[ADR 0057](adr/0057-tool-result-model-view-and-artifact-binding.md)。
+状态：**进行中**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)；当前Event/Thread为v15、Session migration为17，实现和本地完整验收通过，远端CI待对应提交确认。0.6.4会话生命周期与0.6.5综合恢复仍待推进。见[详细实施设计](m06-context-and-sessions.md)。
 
 ### 目标
 
@@ -290,10 +290,10 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [x] 系统指令、用户指令、项目指令的优先级；
 - [x] 受控项目指令发现、Source freshness和无正文持久快照；
 - [x] Workspace/Git/环境 Context Fragment及跨来源有界一致性；
-- [x] Token Budget（0.6.1供应商中立输入门禁；精确Tokenizer与自动压缩后续完成）；
+- [x] Token Budget（供应商中立输入门禁与自动压缩；精确Tokenizer仍属后续优化）；
 - [x] Tool Result 裁剪和完整结果引用（0.6.2c稳定视图与Artifact覆盖校验）；
-- [ ] 自动 Compaction；
-- [ ] Compaction Summary 的版本和持久化；
+- [x] 自动 Compaction；
+- [x] Compaction Summary 的版本和持久化；
 - [ ] Session Resume、Fork 和 Archive；
 - [ ] Turn Retry 与 Interrupted Recovery；
 - [x] Context Inspect 诊断输出；
@@ -304,11 +304,11 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - [x] 指令优先级、稳定排序和结构边界冲突；
 - [x] 项目指令层级/override、缺失/失败、超时/取消、更新和Replay；
 - [x] Workspace/Git/环境边界、非仓库语义、allowlist、跨Source漂移和v12 Replay；
-- [ ] 接近模型上下文上限时自动压缩；
-- [ ] 压缩前后关键任务约束不丢失；
-- [ ] 恢复后 Tool Call/Result 仍正确配对；
+- [x] 接近模型上下文上限时自动压缩；
+- [x] 压缩前后关键任务约束不丢失；
+- [x] 恢复后 Tool Call/Result 仍正确配对；
 - [ ] Provider 切换后的历史格式正确；
-- [ ] 长输出不会无限增长 Session 数据库。
+- [x] 重复压缩后模型可见历史保持有界，原Session事实按审计策略保留。
 
 ### 验收标准
 

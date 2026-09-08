@@ -1,4 +1,4 @@
-"""在独立v13/v14 wheel环境验证原字节升级、账本追加与旧reader拒绝。"""
+"""在独立v13与当前wheel环境验证原字节升级、账本追加与旧reader拒绝。"""
 
 from __future__ import annotations
 
@@ -98,24 +98,24 @@ async def main(mode, root):
         except KernelError as error:
             assert error.code == "schema_too_new"
         else:
-            raise AssertionError("旧reader错误接受migration16")
+            raise AssertionError("旧reader错误接受migration16-17")
         assert before == state(store.path)
-        print("v13 reader拒绝migration16且未修改数据库")
+        print("v13 reader拒绝migration16-17且未修改数据库")
         return
-    assert EventDraft.model_fields["schema_version"].default == 14
+    assert EventDraft.model_fields["schema_version"].default == 15
     original = json.loads(metadata.read_text())
     await store.initialize()
     after = state(store.path)
     assert after["agent_events"] == before["agent_events"]
     assert after["agent_threads"] == before["agent_threads"]
     assert after["agent_migrations"][:15] == before["agent_migrations"][:15]
-    assert len(after["agent_migrations"]) == 16
+    assert len(after["agent_migrations"]) == 17
     thread_id = UUID(original["thread_id"])
     source = await store.get_thread(thread_id)
     assert source == replay(await store.events(thread_id))
     if mode == "upgrade":
         assert not source.turns[-1].compactions
-        print("v14基础wheel仅追加migration16；v13历史原字节保留且Replay一致")
+        print("当前wheel仅追加migration16-17；v13历史原字节保留且Replay一致")
         return
     assert mode == "append"
     from harnessix.agent.usage import (
@@ -212,7 +212,7 @@ async def main(mode, root):
     assert report.spec_version == "harnessix.cost-report/v2"
     assert report.summary.completeness == "unknown"  # 没有价格证据，不补零费用。
     assert COST_REPORT_ADAPTER.validate_json(report.model_dump_json()) == report
-    print("v14摘要账本追加、候选持久化、费用未知标志与重开零请求全部通过")
+    print("当前摘要账本追加、候选持久化、费用未知标志与重开零请求全部通过")
 
 
 if __name__ == "__main__":

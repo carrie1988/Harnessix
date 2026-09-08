@@ -17,6 +17,9 @@ TOOL_RESULT_OMISSION_VERSION: Literal["harnessix.tool-result-omission/v1"] = (
 MODEL_HISTORY_INSPECTION_VERSION: Literal["harnessix.model-history-inspection/v1"] = (
     "harnessix.model-history-inspection/v1"
 )
+MODEL_HISTORY_INSPECTION_V2_VERSION: Literal["harnessix.model-history-inspection/v2"] = (
+    "harnessix.model-history-inspection/v2"
+)
 
 
 class ToolResultViewPolicy(ContractModel):
@@ -121,3 +124,39 @@ class ModelHistoryInspection(ContractModel):
         if self.view_tool_result_utf8_bytes > self.source_tool_result_utf8_bytes:
             raise ValueError("Tool Result模型视图不得扩大正文")
         return self
+
+
+class ModelHistoryInspectionV2(ContractModel):
+    """绑定已发布活动窗口；原v1字段继续描述本次实际模型历史。"""
+
+    spec_version: Literal["harnessix.model-history-inspection/v2"] = (
+        MODEL_HISTORY_INSPECTION_V2_VERSION
+    )
+    model_step: int = Field(ge=1, le=1000)
+    policy: ToolResultViewPolicy
+    history_items: int = Field(ge=1, le=8192)
+    tool_results: int = Field(ge=0, le=8192)
+    inline_results: int = Field(ge=0, le=8192)
+    artifact_reference_results: int = Field(ge=0, le=8192)
+    artifact_bindings: int = Field(ge=0, le=16384)
+    source_tool_result_utf8_bytes: int = Field(ge=0, le=8_388_608)
+    view_tool_result_utf8_bytes: int = Field(ge=0, le=8_388_608)
+    source_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    view_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    decisions_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    window_id: UUID
+    window_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    raw_history_items: int = Field(ge=1, le=8_388_608, strict=True)
+
+    @model_validator(mode="after")
+    def counts_are_consistent(self) -> Self:
+        if self.tool_results != self.inline_results + self.artifact_reference_results:
+            raise ValueError("Tool Result模型视图策略计数不一致")
+        if self.tool_results > self.history_items:
+            raise ValueError("Tool Result数量超过历史Item数量")
+        if self.view_tool_result_utf8_bytes > self.source_tool_result_utf8_bytes:
+            raise ValueError("Tool Result模型视图不得扩大正文")
+        return self
+
+
+ModelHistoryInspectionRecord = ModelHistoryInspection | ModelHistoryInspectionV2

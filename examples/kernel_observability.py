@@ -60,7 +60,15 @@ async def main() -> None:
                 for m in scope.metrics
             ]
             assert all(
-                set(point.attributes) <= {"operation", "outcome", "category", "status"}
+                set(point.attributes)
+                <= {
+                    "operation",
+                    "outcome",
+                    "category",
+                    "status",
+                    "component",
+                    "strategy",
+                }
                 for m in metrics
                 for point in m.data.data_points
             )

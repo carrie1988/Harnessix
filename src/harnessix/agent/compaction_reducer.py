@@ -4,7 +4,15 @@ from datetime import timedelta
 
 from harnessix.agent.attempt_accounting import settle_observation
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import AgentEvent, Thread, Turn, TurnStatus, Usage
+from harnessix.agent.models import (
+    AgentEvent,
+    CompactionWindow,
+    CompactionWindowActivated,
+    Thread,
+    Turn,
+    TurnStatus,
+    Usage,
+)
 from harnessix.agent.usage import ModelAttempt
 from harnessix.context.compaction import replay_compaction_candidate, replay_compaction_plan
 from harnessix.context.compaction_ledger_contracts import (
@@ -17,6 +25,7 @@ from harnessix.context.compaction_ledger_contracts import (
     CompactionSummarized,
     CompactionUsageObserved,
 )
+from harnessix.context.compaction_window import build_compaction_window
 
 
 def _require(condition: bool, message: str) -> None:
@@ -212,3 +221,53 @@ def apply_compaction(thread: Thread, turn: Turn, event: AgentEvent) -> Turn:
             ),
         }
     )
+
+
+def activate_compaction_window(
+    thread: Thread,
+    turn: Turn,
+    event: AgentEvent,
+    payload: CompactionWindowActivated,
+) -> CompactionWindow:
+    _require(turn.status == TurnStatus.PREPARING_CONTEXT, "活动窗口只能在准备阶段发布")
+    _require(
+        all(i.model_step != payload.window.model_step for i in turn.model_history_inspections)
+        and all(i.model_step != payload.window.model_step for i in turn.context_inspections),
+        "模型历史或Context冻结后不能发布窗口",
+    )
+    record = next(
+        (
+            record
+            for record in turn.compactions
+            if record.plan.compaction_id == payload.window.compaction_id
+        ),
+        None,
+    )
+    _require(
+        record is not None
+        and record.status == "summarized"
+        and record.summary is not None
+        and record.finished_event_sequence == thread.sequence,
+        "窗口候选不是当前最新已结算摘要",
+    )
+    assert record is not None and record.summary is not None
+    _require(
+        all(window.window_id != payload.window.window_id for window in thread.compaction_windows),
+        "窗口ID在Thread内重复",
+    )
+    try:
+        candidate = replay_compaction_candidate(
+            compaction_source(thread, turn, record), record.plan, record.summary
+        )
+        expected = build_compaction_window(
+            thread,
+            record,
+            candidate,
+            window_id=payload.window.window_id,
+            activated_event_sequence=event.sequence,
+            activated_at=event.occurred_at,
+        )
+    except (KernelError, ValueError):
+        raise KernelError("invalid_event", "活动窗口无法由候选与Session事实验证") from None
+    _require(payload.window == expected, "活动窗口内容与Session事实不一致")
+    return expected

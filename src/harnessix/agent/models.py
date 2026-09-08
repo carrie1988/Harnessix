@@ -37,7 +37,8 @@ from harnessix.context.contracts import (
     ContextPrepared,
 )
 from harnessix.context.tool_result_contracts import (
-    ModelHistoryInspection,
+    ModelHistoryInspectionRecord,
+    ModelHistoryInspectionV2,
     ToolResultViewDecision,
 )
 from harnessix.domain.models import (
@@ -96,7 +97,11 @@ TERMINAL_TURNS = frozenset(
 TURN_TRANSITIONS = {
     TurnStatus.ACCEPTED: {TurnStatus.PREPARING_CONTEXT},
     TurnStatus.PREPARING_CONTEXT: {TurnStatus.CALLING_MODEL},
-    TurnStatus.CALLING_MODEL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.FINALIZING},
+    TurnStatus.CALLING_MODEL: {
+        TurnStatus.PREPARING_CONTEXT,
+        TurnStatus.EXECUTING_TOOLS,
+        TurnStatus.FINALIZING,
+    },
     TurnStatus.EXECUTING_TOOLS: {TurnStatus.PREPARING_CONTEXT, TurnStatus.WAITING_APPROVAL},
     TurnStatus.WAITING_APPROVAL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.WAITING_ACTION},
     TurnStatus.WAITING_ACTION: {TurnStatus.EXECUTING_TOOLS},
@@ -400,6 +405,31 @@ class Item(ContractModel):
     error: AgentFailure | None = None
 
 
+class CompactionWindow(ContractModel):
+    spec_version: Literal["harnessix.compaction-window/v1"] = "harnessix.compaction-window/v1"
+    window_id: UUID
+    compaction_id: UUID
+    previous_window_id: UUID | None = None
+    source_finished_event_sequence: int = Field(ge=3, strict=True)
+    activated_event_sequence: int = Field(ge=4, strict=True)
+    model_step: int = Field(ge=1, le=1000, strict=True)
+    history_item_ids: tuple[UUID, ...] = Field(min_length=2, max_length=8192)
+    history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    history_tokens: int = Field(ge=1, le=8_388_608, strict=True)
+    raw_history_items: int = Field(ge=1, le=8_388_608, strict=True)
+    raw_history_last_item_id: UUID
+    raw_history_ids_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    activated_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def coherent_window(self) -> Self:
+        if self.activated_event_sequence != self.source_finished_event_sequence + 1:
+            raise ValueError("窗口发布事件必须紧邻候选结束事件")
+        if len(set(self.history_item_ids)) != len(self.history_item_ids):
+            raise ValueError("活动窗口Item身份重复")
+        return self
+
+
 class Turn(ContractModel):
     turn_id: UUID
     request_id: str
@@ -415,7 +445,7 @@ class Turn(ContractModel):
     compactions: tuple[CompactionRecord, ...] = Field(default_factory=tuple, max_length=1000)
     context_inspections: tuple[ContextInspectionRecord, ...] = ()
     tool_result_view_decisions: tuple[ToolResultViewDecision, ...] = ()
-    model_history_inspections: tuple[ModelHistoryInspection, ...] = ()
+    model_history_inspections: tuple[ModelHistoryInspectionRecord, ...] = ()
     error: AgentFailure | None = None
     created_at: datetime
     completed_at: datetime | None = None
@@ -447,8 +477,29 @@ class Thread(ContractModel):
     sequence: int = 0
     active_turn_id: UUID | None = None
     turns: tuple[Turn, ...] = ()
+    compaction_windows: tuple[CompactionWindow, ...] = Field(default_factory=tuple, max_length=1000)
+    active_compaction_window_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def linear_compaction_windows(self) -> Self:
+        ids: set[UUID] = set()
+        compactions: set[UUID] = set()
+        previous: UUID | None = None
+        for window in self.compaction_windows:
+            if (
+                window.window_id in ids
+                or window.compaction_id in compactions
+                or window.previous_window_id != previous
+            ):
+                raise ValueError("Compaction窗口身份重复或链路不连续")
+            ids.add(window.window_id)
+            compactions.add(window.compaction_id)
+            previous = window.window_id
+        if self.active_compaction_window_id != previous:
+            raise ValueError("活动Compaction窗口必须指向线性链尾")
+        return self
 
 
 class ThreadCreated(ContractModel):
@@ -499,8 +550,13 @@ class UsageRecorded(ContractModel):
 
 class ModelHistoryPrepared(ContractModel):
     type: Literal["model_history_prepared"] = "model_history_prepared"
-    inspection: ModelHistoryInspection
+    inspection: ModelHistoryInspectionRecord
     decisions: tuple[ToolResultViewDecision, ...] = Field(default_factory=tuple, max_length=8192)
+
+
+class CompactionWindowActivated(ContractModel):
+    type: Literal["compaction_window_activated"] = "compaction_window_activated"
+    window: CompactionWindow
 
 
 EventPayload = Annotated[
@@ -515,13 +571,14 @@ EventPayload = Annotated[
     | ModelAttemptFinished
     | ModelHistoryPrepared
     | CompactionEvent
+    | CompactionWindowActivated
     | ContextPrepared,
     Field(discriminator="type"),
 ]
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] = 14
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] = 15
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -547,6 +604,14 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 15 and (
+            isinstance(self.payload, CompactionWindowActivated)
+            or (
+                isinstance(self.payload, ModelHistoryPrepared)
+                and isinstance(self.payload.inspection, ModelHistoryInspectionV2)
+            )
+        ):
+            raise ValueError("活动Compaction窗口需要Agent Event v15")
         if self.schema_version < 14 and isinstance(self.payload, CompactionEvent):
             raise ValueError("摘要尝试账本需要Agent Event v14")
         if self.schema_version < 13 and isinstance(self.payload, ModelHistoryPrepared):

@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "CompactionPolicy": {
+      "additionalProperties": false,
+      "description": "窗口规划预算，不是开启自动压缩或发起付费请求的配置。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.compaction-policy/v1",
+          "default": "harnessix.compaction-policy/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "target_history_tokens": {
+          "maximum": 8388608,
+          "minimum": 512,
+          "title": "Target History Tokens",
+          "type": "integer"
+        },
+        "summary_reserve_tokens": {
+          "default": 4096,
+          "maximum": 1000000,
+          "minimum": 256,
+          "title": "Summary Reserve Tokens",
+          "type": "integer"
+        },
+        "max_summary_input_tokens": {
+          "maximum": 8388608,
+          "minimum": 512,
+          "title": "Max Summary Input Tokens",
+          "type": "integer"
+        },
+        "retain_recent_groups": {
+          "default": 2,
+          "maximum": 8192,
+          "minimum": 1,
+          "title": "Retain Recent Groups",
+          "type": "integer"
+        },
+        "min_savings_tokens": {
+          "default": 256,
+          "maximum": 8388608,
+          "minimum": 1,
+          "title": "Min Savings Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "target_history_tokens",
+        "max_summary_input_tokens"
+      ],
+      "title": "CompactionPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "显式开启轮前压缩；阈值与摘要请求上限均进入可验证配置。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.compaction-runtime/v1",
+      "default": "harnessix.compaction-runtime/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "#/$defs/CompactionPolicy"
+    },
+    "trigger_history_tokens": {
+      "maximum": 8388608,
+      "minimum": 513,
+      "title": "Trigger History Tokens",
+      "type": "integer"
+    },
+    "max_summary_output_tokens": {
+      "maximum": 65536,
+      "minimum": 1,
+      "title": "Max Summary Output Tokens",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "policy",
+    "trigger_history_tokens",
+    "max_summary_output_tokens"
+  ],
+  "title": "CompactionRuntimeConfig",
+  "type": "object"
+}

@@ -1,5 +1,6 @@
 """供应商中立、可检查的 Context 规划契约。"""
 
+from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import (
     ContextBuildInput,
     ContextConsistencySnapshot,
@@ -32,6 +33,8 @@ from harnessix.context.sources import (
 )
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspection,
+    ModelHistoryInspectionRecord,
+    ModelHistoryInspectionV2,
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
@@ -39,6 +42,7 @@ from harnessix.context.tool_result_contracts import (
 __all__ = [
     "AsyncContextPlanner",
     "ContextBuildInput",
+    "CompactionRuntimeConfig",
     "ContextConsistencySnapshot",
     "ContextEngine",
     "ContextFragment",
@@ -62,6 +66,8 @@ __all__ = [
     "EnvironmentContextSource",
     "GitContextSource",
     "ModelHistoryInspection",
+    "ModelHistoryInspectionRecord",
+    "ModelHistoryInspectionV2",
     "PreparedContext",
     "ProjectInstructionSource",
     "SourcedContextEngine",
