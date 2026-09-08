@@ -315,3 +315,15 @@ Windows pipe目标使用显式Win32 `CREATE_SUSPENDED → AssignProcessToJobObje
 双流在写盘前分别通过`StreamingSecretRedactor`，再按共享`ProcessSpec.output_bytes`预算计量。超过预算立即停止进程树，文件只保留获准前缀，同时完整记录脱敏后观察字节数、摘要、截断和EOF；读取时按Lease中的持久字节数和前缀摘要复核，替换、截短或伪造文件失败关闭。PTY为单一组合stdout流，stderr以空且EOF记录。控制帧最大1 MiB、单次stdin最大64 KiB、累计stdin受Plan预算约束；控制损坏、I/O故障或无法证明树清理进入`unknown/cleanup_failed`。
 
 能力探测摘要绑定Python可执行文件身份、owner/协议/回执/平台实现模块及Windows受信Shell路径；每次spawn前重新计算，安装内容变化必须重新规划。Windows ConPTY只有在真实系统build和导出函数满足要求时广告，Job或启动属性在当前宿主不可用时启动失败，不回退到根PID或`taskkill`。本候选仍需远端Windows真机及macOS/Linux矩阵关闭实现差异，并在下一小节接入Container启动和立即网络再证明后才能关闭0.7.3。
+
+### 12.3 Container统一Process生命周期
+
+`ContainerExecutionSpec v1`把原`ContainerCommandSpec`、完整内层`ProcessSpec`和当前平台owner能力摘要组成一个自摘要合同。内层Process固定为相同argv的pipe模式，正式绑定process id、stdin、foreground/background、deadline、输入/输出预算；Container PTY在后端尚未形成三平台一致语义前拒绝规划。Execution Plan的Intent参数必须逐字段等于该合同，Sandbox继续绑定固定镜像、资源、网络与引擎能力，因此不能在批准后改变命令或生命周期限制。
+
+`ContainerCommandBuilder`在执行时把内层命令确定性转换为Docker兼容argv：打开stdin时显式增加`--interactive`；增加由process id派生的唯一容器名，以及process id和execution digest双标签；Secret仍只以环境变量名进入argv。`ProcessLaunchBinding v1`再绑定Plan fingerprint、原始Intent参数摘要、外层ProcessSpec摘要、owner能力及物化环境摘要。通用Supervisor只接受该Container绑定后启动Docker客户端owner，Process Lease新增不可变launch binding摘要；Host调用仍要求Plan参数精确等于ProcessSpec，不能借预物化入口绕过。
+
+选择性网络在全部Workspace、环境、Secret、Profile和argv检查完成后，立即执行固定`docker network inspect <name>`。当前证明必须再次满足internal bridge、Policy/Gateway标签和唯一`harnessix-egress`容器，并与Plan阶段`ManagedEgressBinding`完全相等；Podman选择性网络在等价inspect合同完成前失败关闭。引擎可执行文件在控制命令前后都复核对象身份。
+
+Container实例使用`harnessix-process-<uuid>`名称和双标签核对生命周期。启动前固定`container ls --filter label=...`要求不存在同身份实例；自然退出、超时、取消、输出限制或调用方取消后，包装句柄以固定`container rm --force`清理残留并再次查询证明为空。启动半途失败也执行相同清理；宿主恢复通过Execution Plan中的ContainerExecutionSpec和Process Lease先核对owner回执，再执行幂等Container清理。查询失败、多个身份、名称或标签不匹配、删除失败或删除后仍存在均返回`process_cleanup_failed`，不得把内部Process Lease的退出误报为Container已完成。
+
+该切片不把Docker Socket交给不可信工作负载，也不允许模型构造生命周期命令。Container生命周期调用只接受受信执行合同派生的固定argv，响应各限64 KiB并带时限。下一步以真实固定摘要BusyBox验证统一owner、只读Workspace、禁网、Secret流式脱敏、cgroup限制、tmpfs超限和无残留实例；三平台及真实Container CI全部通过后关闭0.7.3。

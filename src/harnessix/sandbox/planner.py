@@ -4,8 +4,10 @@ from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import canonical_digest
+from harnessix.processes.supervision_contracts import ProcessSpec
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
+    ContainerExecutionSpec,
     ContainerSandboxProfile,
     NetworkPolicySnapshot,
     SandboxResourceLimits,
@@ -27,6 +29,29 @@ def build_container_command(argv: tuple[str, ...], *, profile_digest: str) -> Co
         )
     except (ValidationError, ValueError, TypeError):
         raise KernelError("sandbox_command_invalid", "容器命令无效") from None
+
+
+def build_container_execution(
+    command: ContainerCommandSpec,
+    process: ProcessSpec,
+    *,
+    owner_capability_digest: str,
+) -> ContainerExecutionSpec:
+    payload = {
+        "spec_version": "harnessix.container-execution/v1",
+        "command": command.model_dump(mode="json", warnings="error"),
+        "process": process.model_dump(mode="json", warnings="error"),
+        "owner_capability_digest": owner_capability_digest,
+    }
+    try:
+        return ContainerExecutionSpec(
+            command=command,
+            process=process,
+            owner_capability_digest=owner_capability_digest,
+            digest=canonical_digest(payload),
+        )
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("sandbox_execution_invalid", "容器执行合同无效") from None
 
 
 def build_container_sandbox_profile(

@@ -14,7 +14,7 @@ from harnessix.processes.supervision_contracts import (
     process_lease_binding,
 )
 
-_SCHEMA_VERSION = "1"
+_SCHEMA_VERSION = "2"
 _TRANSITIONS: dict[ProcessLeaseState, frozenset[ProcessLeaseState]] = {
     "prepared": frozenset({"starting", "failed", "unknown"}),
     "starting": frozenset({"running", "exited", "failed", "unknown"}),

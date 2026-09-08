@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -11,11 +12,11 @@ from harnessix.agent.errors import KernelError
 from harnessix.domain.models import EffectClass, PolicyDecisionKind, RiskLevel
 from harnessix.execution.contracts import (
     ExecutionIntent,
+    ExecutionPlanV2,
     ExecutionPolicyBinding,
     SandboxBindingV2,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
-from harnessix.processes import owner_receipt
 from harnessix.processes.owner_receipt import (
     read_owner_receipt,
     sign_owner_receipt,
@@ -23,12 +24,14 @@ from harnessix.processes.owner_receipt import (
     write_owner_receipt,
 )
 from harnessix.processes.supervision_contracts import (
+    ProcessCapabilityProbe,
     ProcessLease,
     ProcessSpec,
     empty_process_output,
 )
 from harnessix.processes.supervision_planner import (
     build_process_capability,
+    build_process_launch_binding,
     build_process_spec,
     prepare_process_lease,
 )
@@ -38,7 +41,7 @@ from harnessix.workspace.snapshot import capture_workspace_snapshot
 NOW = datetime(2026, 9, 8, tzinfo=UTC)
 
 
-def _plan(root: Path, spec: ProcessSpec):
+def _plan(root: Path, spec: ProcessSpec) -> tuple[ExecutionPlanV2, ProcessCapabilityProbe]:
     snapshot = capture_workspace_snapshot(
         root, resources=(WorkspaceResourceRequest(path=".", access="write"),)
     )
@@ -134,6 +137,7 @@ def test_process_lease_binds_plan_spec_capability_and_deadline(tmp_path: Path) -
     assert lease.state == "prepared"
     assert lease.deadline == NOW + timedelta(seconds=30)
     assert lease.process_spec_digest == spec.digest
+    assert lease.launch_binding_digest != capability.digest
     assert "d" * 64 not in repr(lease)
     changed = build_process_spec(
         invocation="argv",
@@ -146,6 +150,25 @@ def test_process_lease_binds_plan_spec_capability_and_deadline(tmp_path: Path) -
     with pytest.raises(KernelError) as mismatch:
         prepare_process_lease(plan, changed, capability, now=NOW)
     assert mismatch.value.code == "process_capability_mismatch"
+
+
+def test_process_launch_binding_covers_plan_materialization_and_environment(tmp_path: Path) -> None:
+    spec = build_process_spec(invocation="argv", argv=("python", "-V"))
+    plan, capability = _plan(tmp_path, spec)
+    binding = build_process_launch_binding(
+        plan,
+        spec,
+        capability,
+        kind="host",
+        environment={},
+    )
+    assert binding.plan_fingerprint == plan.fingerprint
+    assert binding.process_spec_digest == spec.digest
+    assert binding.capability_digest == capability.digest
+    with pytest.raises(ValidationError):
+        type(binding).model_validate_json(
+            binding.model_copy(update={"process_spec_digest": "f" * 64}).model_dump_json()
+        )
 
 
 def test_process_lease_rejects_partial_running_and_terminal_facts(tmp_path: Path) -> None:
@@ -218,9 +241,9 @@ def test_process_owner_receipt_reads_short_regular_file_chunks(
     )
     path = tmp_path / "receipt.json"
     write_owner_receipt(path, receipt)
-    real_read = owner_receipt.os.read
+    real_read = os.read
     monkeypatch.setattr(
-        owner_receipt.os,
+        os,
         "read",
         lambda descriptor, size: real_read(descriptor, min(size, 7)),
     )

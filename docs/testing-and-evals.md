@@ -1389,3 +1389,19 @@ Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capabil
 Windows真机门禁包含：显式Win32挂起标志创建目标、加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize、`Ctrl+Z + CR`逻辑EOF、不提前关闭传输句柄和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
 
 Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、`process-owner-command-v1`和`process-owner-receipt-v1` Schema；Process Lease增加确定性启动失败终态，Output Observation增加持久前缀摘要。连续生成聚合SHA256为`d8c98c0340b25c0afc3da00e071f2a5b89d107fbeeb0f59e2f3148836fe302d8`。该候选未调用模型API、SSH或远程服务器。
+
+## 68. 0.7.3d Container统一Process候选验收（2026-09-08）
+
+状态：Container执行合同、确定性物化、统一Process owner、立即网络复核和残留清理已进入候选；必须在远端真实Container及完整三平台矩阵通过后才能关闭0.7.3。
+
+候选验证覆盖：
+
+- `ContainerExecutionSpec v1`绑定原容器命令、完整内层`ProcessSpec`和owner能力摘要；`ProcessLaunchBinding v1`绑定批准fingerprint、Intent参数摘要、物化后的外层Process、owner能力和无明文环境摘要；Plan、Process、owner或环境漂移均在spawn前失败；
+- 固定Docker兼容argv增加确定性名称、process id与execution digest双标签，并只在pipe stdin开放时增加`--interactive`；Container PTY当前失败关闭；
+- 选择性网络在其他执行检查完成后重新执行固定`docker network inspect`，要求internal bridge、策略/网关标签、唯一受管网关及完整证明与Plan一致；当前Podman选择性网络因缺少等价证明失败关闭；
+- 启动前要求同执行身份不存在；正常、超时、取消、输出上限、启动失败和恢复均使用固定`container rm --force`清理，并再次查询证明无残留；多个实例、伪造名称/标签、查询或删除失败统一返回`process_cleanup_failed`；
+- 真实Linux固定摘要BusyBox场景改由`ContainerProcessRuntime → Process Supervisor`执行，验证非root、零Capability、只读根、只读Workspace、仅loopback、Secret不进入argv且输出流脱敏、cgroup PID/内存限制、16 MiB tmpfs实际超限和执行后无残留容器。
+
+本地候选专项为**181 passed、6 skipped**；6项仅包含平台限定或本机未配置真实Docker的测试。最终`make check`为**3051 passed、11 skipped，263.52秒**；Ruff格式与规则检查584个文件通过，Mypy严格检查200个源文件通过。Schema连续生成两次聚合SHA256均为`a7ad516d95174287376269f1d7104286774affa8556467c58afe4bc4b1e9603c`。Process Lease在0.7.3尚未关闭前补充不可变launch binding，私有Process Store版本由1升为2；版本1候选状态不能安全推导该摘要，因此旧库明确失败关闭而不伪造迁移，已完成未知版本、损坏记录及全新v2重开测试。
+
+Windows实现提交`3ca736f`的[CI 34235932400](https://github.com/carrie1988/Harnessix/actions/runs/34235932400)中，Windows、macOS、Python 3.12、Python 3.13和PostgreSQL任务通过，证明pipe/Secret、超时进程树、owner丢失恢复、挂起Job分配及ConPTY Unicode/resize已在真机闭环。Container任务在首次拉取镜像后紧接的5秒Docker能力探测超时，未进入产品测试；该结果只记录基础设施冷启动现象，不作为Container通过证据，也不以重跑替代下一候选提交的完整门禁。

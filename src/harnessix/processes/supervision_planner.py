@@ -8,10 +8,13 @@ from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import ExecutionPlanV2, canonical_digest
+from harnessix.execution.planner import bind_environment
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
     ProcessInput,
     ProcessInvocation,
+    ProcessLaunchBinding,
+    ProcessLaunchKind,
     ProcessLease,
     ProcessLifecycle,
     ProcessSpec,
@@ -111,20 +114,77 @@ def build_process_capability(
         raise KernelError("process_capability_invalid", "Process能力证据无效") from None
 
 
+def build_process_launch_binding(
+    plan: ExecutionPlanV2,
+    spec: ProcessSpec,
+    capability: ProcessCapabilityProbe,
+    *,
+    kind: ProcessLaunchKind,
+    environment: dict[str, str] | None = None,
+) -> ProcessLaunchBinding:
+    bound_environment = (
+        plan.environment
+        if environment is None
+        else bind_environment(environment, platform=capability.platform)
+    )
+    if (
+        plan.workspace.platform != capability.platform
+        or (kind == "host" and plan.sandbox.level == "container_strong")
+        or (kind == "container" and plan.sandbox.level != "container_strong")
+        or (
+            kind == "host"
+            and (
+                plan.intent.arguments != spec.model_dump(mode="json", warnings="error")
+                or plan.capabilities.provider_evidence_digest != capability.digest
+                or bound_environment != plan.environment
+            )
+        )
+    ):
+        raise KernelError("process_capability_mismatch", "Process启动绑定与Execution Plan不一致")
+    payload = {
+        "spec_version": "harnessix.process-launch-binding/v1",
+        "kind": kind,
+        "platform": capability.platform,
+        "plan_fingerprint": plan.fingerprint,
+        "intent_arguments_digest": canonical_digest(plan.intent.arguments),
+        "process_spec_digest": spec.digest,
+        "capability_digest": capability.digest,
+        "environment": [item.model_dump(mode="json") for item in bound_environment],
+    }
+    try:
+        return ProcessLaunchBinding(
+            kind=kind,
+            platform=capability.platform,
+            plan_fingerprint=plan.fingerprint,
+            intent_arguments_digest=canonical_digest(plan.intent.arguments),
+            process_spec_digest=spec.digest,
+            capability_digest=capability.digest,
+            environment=bound_environment,
+            digest=canonical_digest(payload),
+        )
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("process_binding_invalid", "Process启动绑定不符合契约") from None
+
+
 def prepare_process_lease(
     plan: ExecutionPlanV2,
     spec: ProcessSpec,
     capability: ProcessCapabilityProbe,
     *,
+    binding: ProcessLaunchBinding | None = None,
     now: datetime | None = None,
     owner_token: Revision | None = None,
 ) -> ProcessLease:
     checked_now = now or datetime.now(UTC)
     if checked_now.tzinfo is None:
         raise KernelError("process_lease_invalid", "Process Lease时间必须包含时区")
+    launch_binding = binding or build_process_launch_binding(plan, spec, capability, kind="host")
     if (
-        plan.intent.arguments != spec.model_dump(mode="json", warnings="error")
-        or plan.capabilities.provider_evidence_digest != capability.digest
+        launch_binding.plan_fingerprint != plan.fingerprint
+        or launch_binding.intent_arguments_digest != canonical_digest(plan.intent.arguments)
+        or launch_binding.process_spec_digest != spec.digest
+        or launch_binding.capability_digest != capability.digest
+        or launch_binding.platform != capability.platform
         or plan.workspace.platform != capability.platform
         or spec.invocation not in capability.invocation_modes
         or (spec.terminal == "pty" and not capability.supports_pty)
@@ -140,6 +200,7 @@ def prepare_process_lease(
             plan_fingerprint=plan.fingerprint,
             process_spec_digest=spec.digest,
             capability_digest=capability.digest,
+            launch_binding_digest=launch_binding.digest,
             lifecycle=spec.lifecycle,
             state="prepared",
             sequence=0,

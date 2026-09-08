@@ -1,0 +1,195 @@
+{
+  "$defs": {
+    "ContainerCommandSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.container-command/v1",
+          "default": "harnessix.container-command/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Argv",
+          "type": "array"
+        },
+        "profile_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Digest",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "argv",
+        "profile_digest",
+        "digest"
+      ],
+      "title": "ContainerCommandSpec",
+      "type": "object"
+    },
+    "ProcessSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.process-spec/v1",
+          "default": "harnessix.process-spec/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "process_id": {
+          "format": "uuid",
+          "title": "Process Id",
+          "type": "string"
+        },
+        "invocation": {
+          "enum": [
+            "argv",
+            "posix_sh",
+            "cmd",
+            "powershell"
+          ],
+          "title": "Invocation",
+          "type": "string"
+        },
+        "argv": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Argv",
+          "type": "array"
+        },
+        "shell_source": {
+          "anyOf": [
+            {
+              "maxLength": 65536,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shell Source"
+        },
+        "terminal": {
+          "default": "pipe",
+          "enum": [
+            "pipe",
+            "pty"
+          ],
+          "title": "Terminal",
+          "type": "string"
+        },
+        "stdin": {
+          "default": "closed",
+          "enum": [
+            "closed",
+            "pipe"
+          ],
+          "title": "Stdin",
+          "type": "string"
+        },
+        "lifecycle": {
+          "default": "foreground",
+          "enum": [
+            "foreground",
+            "background"
+          ],
+          "title": "Lifecycle",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 300.0,
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "output_bytes": {
+          "default": 8388608,
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Output Bytes",
+          "type": "integer"
+        },
+        "input_bytes": {
+          "default": 0,
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Input Bytes",
+          "type": "integer"
+        },
+        "columns": {
+          "default": 120,
+          "maximum": 1000,
+          "minimum": 20,
+          "title": "Columns",
+          "type": "integer"
+        },
+        "rows": {
+          "default": 40,
+          "maximum": 1000,
+          "minimum": 5,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "invocation",
+        "digest"
+      ],
+      "title": "ProcessSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.container-execution/v1",
+      "default": "harnessix.container-execution/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "command": {
+      "$ref": "#/$defs/ContainerCommandSpec"
+    },
+    "process": {
+      "$ref": "#/$defs/ProcessSpec"
+    },
+    "owner_capability_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Capability Digest",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command",
+    "process",
+    "owner_capability_digest",
+    "digest"
+  ],
+  "title": "ContainerExecutionSpec",
+  "type": "object"
+}

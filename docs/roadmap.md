@@ -325,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**实施中**。0.7.1已交付POSIX/Windows原生Workspace Snapshot、跨进程fencing租约和不可变Execution Plan/Approval；0.7.2已交付Container强隔离启动适配、选择性网络与Secret正式端口并通过真实容器验收。0.7.3已实现Process合同、持久Lease、POSIX Session/PTY owner与Windows suspended Job/ConPTY候选，正在通过三平台真机和Container接线关闭。Git交付和统一Tool接入尚未开始，不得宣称Windows产品或0.7整体已经可用。
+状态：**实施中**。0.7.1已交付POSIX/Windows原生Workspace Snapshot、跨进程fencing租约和不可变Execution Plan/Approval；0.7.2已交付Container强隔离启动适配、选择性网络与Secret正式端口并通过真实容器验收。0.7.3已实现Process合同、持久Lease、POSIX Session/PTY owner、Windows suspended Job/ConPTY、ContainerExecution/ProcessLaunch绑定、立即网络复核与有标签残留清理，正在完成统一真实Container和全矩阵门禁。Git交付和统一Tool接入尚未开始，不得宣称0.7整体已经可用。
 
 ### 目标
 

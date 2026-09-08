@@ -1,0 +1,95 @@
+{
+  "$defs": {
+    "EnvironmentBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "value_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Value Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value_sha256"
+      ],
+      "title": "EnvironmentBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-launch-binding/v1",
+      "default": "harnessix.process-launch-binding/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "host",
+        "container"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "intent_arguments_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Intent Arguments Digest",
+      "type": "string"
+    },
+    "process_spec_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Process Spec Digest",
+      "type": "string"
+    },
+    "capability_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Capability Digest",
+      "type": "string"
+    },
+    "environment": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EnvironmentBinding"
+      },
+      "maxItems": 128,
+      "title": "Environment",
+      "type": "array"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "platform",
+    "plan_fingerprint",
+    "intent_arguments_digest",
+    "process_spec_digest",
+    "capability_digest",
+    "digest"
+  ],
+  "title": "ProcessLaunchBinding",
+  "type": "object"
+}

@@ -17,6 +17,9 @@
 6. 超时、取消、输出上限、关闭和宿主死亡都先停止完整 owner，再等待回收并记录 `exited/terminated/killed/cleanup_failed/unknown`。
 7. 输出内存有界，超额内容流式进入 Artifact；最终结果包含观察字节数、摘要、截断和 EOF，不把截断误报完整。
 8. Rust Sidecar 暂不引入；Python 端口若无法在 Windows 消除创建竞态或 PTY 生命周期经基准不达标，再由独立 ADR 决定。
+9. Container 执行使用 `ContainerExecutionSpec` 将内层命令、Process 生命周期和 owner 能力绑定，再以 `ProcessLaunchBinding` 固定批准计划到实际容器客户端进程的转换；容器名称和标签只由 process id 与执行摘要派生。
+10. 容器客户端进程仍由同一 POSIX Session/Windows Job owner 监督，但其退出不等于容器工作负载已经结束；正常、取消、超时、启动失败和恢复都必须按名称及双标签清理容器，并在再次查询为空后才能报告产品级终态。
+11. 选择性网络在 spawn 前即时复核受管 internal network、策略/网关标签和唯一网关容器；后端不能提供等价证明时失败关闭，不把规划阶段的陈旧网络证明继续用于执行。
 
 ## 失败语义
 
@@ -24,4 +27,5 @@
 - 启动后、Lease 提交前失败：`UNKNOWN`，只能按 owner token/输出标记/进程句柄核对；
 - 终止失败：Runtime 熔断该 executor，不接收新进程；
 - 宿主重启后 owner 不可证明：`orphaned_unknown`，不自动执行或发送输入。
-
+- 容器客户端已退出但实例存在、身份冲突或无法查询/清理：`process_cleanup_failed`，不得把内部 Lease 的退出状态作为容器执行成功；
+- 选择性网络无法即时复核：`network_policy_unenforceable`，不得启动容器。

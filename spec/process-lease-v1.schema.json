@@ -78,6 +78,11 @@
       "title": "Capability Digest",
       "type": "string"
     },
+    "launch_binding_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Launch Binding Digest",
+      "type": "string"
+    },
     "lifecycle": {
       "enum": [
         "foreground",
@@ -219,6 +224,7 @@
     "plan_fingerprint",
     "process_spec_digest",
     "capability_digest",
+    "launch_binding_digest",
     "lifecycle",
     "state",
     "sequence",

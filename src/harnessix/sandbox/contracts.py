@@ -9,6 +9,7 @@ from pydantic import ConfigDict, Field, model_validator
 
 from harnessix.domain.models import ContractModel
 from harnessix.execution.contracts import NetworkMode, canonical_digest
+from harnessix.processes.supervision_contracts import ProcessSpec
 from harnessix.tools.contracts import Revision
 
 DestinationKind = Literal["domain", "cidr"]
@@ -199,6 +200,26 @@ class ContainerCommandSpec(SandboxContract):
         return self
 
 
+class ContainerExecutionSpec(SandboxContract):
+    spec_version: Literal["harnessix.container-execution/v1"] = "harnessix.container-execution/v1"
+    command: ContainerCommandSpec
+    process: ProcessSpec
+    owner_capability_digest: Revision
+    digest: Revision
+
+    @model_validator(mode="after")
+    def complete_execution(self) -> Self:
+        if (
+            self.process.invocation != "argv"
+            or self.process.argv != self.command.argv
+            or self.process.terminal != "pipe"
+        ):
+            raise ValueError("Container执行只能绑定相同argv的非终端Process")
+        if self.digest != container_execution_digest(self):
+            raise ValueError("Container执行摘要不一致")
+        return self
+
+
 def network_policy_snapshot_digest(snapshot: NetworkPolicySnapshot) -> str:
     return canonical_digest(snapshot.model_dump(mode="json", exclude={"digest"}, warnings="error"))
 
@@ -209,3 +230,7 @@ def container_sandbox_profile_digest(profile: ContainerSandboxProfile) -> str:
 
 def container_command_digest(command: ContainerCommandSpec) -> str:
     return canonical_digest(command.model_dump(mode="json", exclude={"digest"}, warnings="error"))
+
+
+def container_execution_digest(execution: ContainerExecutionSpec) -> str:
+    return canonical_digest(execution.model_dump(mode="json", exclude={"digest"}, warnings="error"))

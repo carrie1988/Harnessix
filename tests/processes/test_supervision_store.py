@@ -21,6 +21,7 @@ def _lease(process_id: int = 1) -> ProcessLease:
         plan_fingerprint="a" * 64,
         process_spec_digest="b" * 64,
         capability_digest="c" * 64,
+        launch_binding_digest="f" * 64,
         lifecycle="background",
         state="prepared",
         sequence=0,
@@ -91,7 +92,7 @@ def test_process_lease_store_fails_closed_on_unknown_version_and_corruption(
     database.execute(
         "CREATE TABLE process_store_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
     )
-    database.execute("INSERT INTO process_store_metadata VALUES ('schema_version', '2')")
+    database.execute("INSERT INTO process_store_metadata VALUES ('schema_version', '3')")
     database.commit()
     database.close()
     with pytest.raises(KernelError) as version:

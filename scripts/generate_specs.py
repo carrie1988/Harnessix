@@ -111,6 +111,7 @@ from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwner
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
+    ProcessLaunchBinding,
     ProcessLease,
     ProcessOutputObservation,
     ProcessSpec,
@@ -118,6 +119,7 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.sandbox.capabilities import ContainerEngineProbe, HostSandboxProbe
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
+    ContainerExecutionSpec,
     ContainerSandboxProfile,
     ManagedEgressBinding,
     NetworkDestination,
@@ -194,6 +196,7 @@ def main() -> None:
         ("process-output-document", ProcessOutputDocument),
         ("process-spec", ProcessSpec),
         ("process-capability", ProcessCapabilityProbe),
+        ("process-launch-binding", ProcessLaunchBinding),
         ("process-lease", ProcessLease),
         ("process-output-observation", ProcessOutputObservation),
         ("process-owner-start", ProcessOwnerStart),
@@ -258,6 +261,7 @@ def main() -> None:
         ("sandbox-resource-limits", SandboxResourceLimits),
         ("container-sandbox-profile", ContainerSandboxProfile),
         ("container-command", ContainerCommandSpec),
+        ("container-execution", ContainerExecutionSpec),
         ("managed-egress-binding", ManagedEgressBinding),
         ("container-engine-probe", ContainerEngineProbe),
         ("host-sandbox-probe", HostSandboxProbe),

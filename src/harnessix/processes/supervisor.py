@@ -31,10 +31,15 @@ from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwner
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt, read_owner_receipt
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
+    ProcessLaunchBinding,
     ProcessLease,
     ProcessSpec,
 )
-from harnessix.processes.supervision_planner import build_process_capability, prepare_process_lease
+from harnessix.processes.supervision_planner import (
+    build_process_capability,
+    build_process_launch_binding,
+    prepare_process_lease,
+)
 from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
 from harnessix.processes.windows_conpty import conpty_available
 from harnessix.secrets.provider import ResolvedSecretEnvironment
@@ -54,6 +59,7 @@ def posix_process_implementation_digest() -> str:
             "owner_receipt.py",
             "posix_owner.py",
             "supervision_contracts.py",
+            "supervision_planner.py",
             "supervisor.py",
         )
     )
@@ -97,6 +103,7 @@ def windows_process_implementation_digest() -> str:
             "owner_protocol.py",
             "owner_receipt.py",
             "supervision_contracts.py",
+            "supervision_planner.py",
             "supervisor.py",
             "windows_job.py",
             "windows_conpty.py",
@@ -464,6 +471,61 @@ class PosixProcessSupervisor:
         secrets: ResolvedSecretEnvironment | None = None,
         checkpoint: ExecutionApprovalCheckpoint | None = None,
     ) -> SupervisedProcess:
+        binding = build_process_launch_binding(
+            plan,
+            spec,
+            capability,
+            kind="host",
+            environment=dict(environment),
+        )
+        return await self._start_bound(
+            plan,
+            spec,
+            capability,
+            binding,
+            workspace=workspace,
+            environment=environment,
+            secrets=secrets,
+            checkpoint=checkpoint,
+        )
+
+    async def start_prepared(
+        self,
+        plan: ExecutionPlanV2,
+        spec: ProcessSpec,
+        capability: ProcessCapabilityProbe,
+        binding: ProcessLaunchBinding,
+        *,
+        workspace: str | Path,
+        environment: Mapping[str, str],
+        secrets: ResolvedSecretEnvironment | None = None,
+        checkpoint: ExecutionApprovalCheckpoint | None = None,
+    ) -> SupervisedProcess:
+        if binding.kind != "container":
+            raise KernelError("process_binding_invalid", "预物化Process必须来自Container绑定")
+        return await self._start_bound(
+            plan,
+            spec,
+            capability,
+            binding,
+            workspace=workspace,
+            environment=environment,
+            secrets=secrets,
+            checkpoint=checkpoint,
+        )
+
+    async def _start_bound(
+        self,
+        plan: ExecutionPlanV2,
+        spec: ProcessSpec,
+        capability: ProcessCapabilityProbe,
+        binding: ProcessLaunchBinding,
+        *,
+        workspace: str | Path,
+        environment: Mapping[str, str],
+        secrets: ResolvedSecretEnvironment | None,
+        checkpoint: ExecutionApprovalCheckpoint | None,
+    ) -> SupervisedProcess:
         if self._closed:
             raise KernelError("process_closed", "Process Supervisor已经关闭")
         if not execution_is_approved(plan, checkpoint):
@@ -481,13 +543,14 @@ class PosixProcessSupervisor:
                 or existing.plan_fingerprint != plan.fingerprint
                 or existing.process_spec_digest != spec.digest
                 or existing.capability_digest != capability.digest
+                or existing.launch_binding_digest != binding.digest
             ):
                 raise KernelError("process_lease_conflict", "Process ID已绑定其他执行计划")
             raise KernelError("process_already_exists", "Process已经创建；禁止自动重放")
         verify_workspace_snapshot(plan.workspace, workspace)
         checked_environment = dict(environment)
-        if bind_environment(checked_environment, platform=self._platform) != plan.environment:
-            raise KernelError("execution_plan_stale", "Process环境与Execution Plan不一致")
+        if bind_environment(checked_environment, platform=self._platform) != binding.environment:
+            raise KernelError("execution_plan_stale", "Process物化环境与启动绑定不一致")
         secret_values = {} if secrets is None else secrets.as_text()
         actual_bindings = () if secrets is None else secrets.bindings()
         expected_bindings = tuple(
@@ -496,7 +559,7 @@ class PosixProcessSupervisor:
         if actual_bindings != expected_bindings or set(checked_environment) & set(secret_values):
             raise KernelError("secret_binding_mismatch", "Secret注入与Execution Plan不一致")
         checked_environment.update(secret_values)
-        lease = prepare_process_lease(plan, spec, capability)
+        lease = prepare_process_lease(plan, spec, capability, binding=binding)
         owner_identity = os.urandom(32).hex()
         try:
             request = ProcessOwnerStart(

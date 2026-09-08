@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from harnessix.domain.models import ContractModel
-from harnessix.execution.contracts import canonical_digest
+from harnessix.execution.contracts import EnvironmentBinding, canonical_digest
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
@@ -16,6 +16,7 @@ ProcessInvocation = Literal["argv", "posix_sh", "cmd", "powershell"]
 ProcessTerminal = Literal["pipe", "pty"]
 ProcessInput = Literal["closed", "pipe"]
 ProcessLifecycle = Literal["foreground", "background"]
+ProcessLaunchKind = Literal["host", "container"]
 ProcessLeaseState = Literal[
     "prepared", "starting", "running", "stopping", "exited", "failed", "unknown"
 ]
@@ -127,6 +128,34 @@ def process_capability_digest(probe: ProcessCapabilityProbe) -> str:
     return canonical_digest(probe.model_dump(mode="json", exclude={"digest"}, warnings="error"))
 
 
+class ProcessLaunchBinding(SupervisionContract):
+    spec_version: Literal["harnessix.process-launch-binding/v1"] = (
+        "harnessix.process-launch-binding/v1"
+    )
+    kind: ProcessLaunchKind
+    platform: PlatformKind
+    plan_fingerprint: Revision
+    intent_arguments_digest: Revision
+    process_spec_digest: Revision
+    capability_digest: Revision
+    environment: tuple[EnvironmentBinding, ...] = Field(default=(), max_length=128)
+    digest: Revision
+
+    @model_validator(mode="after")
+    def complete_binding(self) -> Self:
+        comparison = str.casefold if self.platform == "windows" else lambda value: value
+        names = [comparison(item.name) for item in self.environment]
+        if names != sorted(names) or len(names) != len(set(names)):
+            raise ValueError("Process启动环境不符合平台排序或唯一性")
+        if self.digest != process_launch_binding_digest(self):
+            raise ValueError("Process启动绑定摘要不一致")
+        return self
+
+
+def process_launch_binding_digest(binding: ProcessLaunchBinding) -> str:
+    return canonical_digest(binding.model_dump(mode="json", exclude={"digest"}, warnings="error"))
+
+
 class ProcessOutputObservation(SupervisionContract):
     observed_bytes: int = Field(ge=0)
     persisted_bytes: int = Field(ge=0, le=MAX_PROCESS_OUTPUT_BYTES)
@@ -167,6 +196,7 @@ class ProcessLease(SupervisionContract):
     plan_fingerprint: Revision
     process_spec_digest: Revision
     capability_digest: Revision
+    launch_binding_digest: Revision
     lifecycle: ProcessLifecycle
     state: ProcessLeaseState
     sequence: int = Field(ge=0)
@@ -225,6 +255,7 @@ def process_lease_binding(lease: ProcessLease) -> tuple[object, ...]:
         lease.plan_fingerprint,
         lease.process_spec_digest,
         lease.capability_digest,
+        lease.launch_binding_digest,
         lease.lifecycle,
         lease.owner_token,
         lease.deadline,

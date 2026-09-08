@@ -3,11 +3,14 @@ from __future__ import annotations
 import csv
 import io
 import os
+import re
 import stat
-from collections.abc import Mapping
+import subprocess
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
+from typing import Literal
 
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import (
@@ -19,14 +22,32 @@ from harnessix.execution.planner import bind_environment
 from harnessix.sandbox.capabilities import ContainerEngineProbe, executable_identity_digest
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
+    ContainerExecutionSpec,
     ContainerSandboxProfile,
     ManagedEgressBinding,
     NetworkPolicySnapshot,
 )
+from harnessix.sandbox.network_isolation import attest_internal_network
 from harnessix.secrets.provider import ResolvedSecretEnvironment
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import ResourceAccess
 from harnessix.workspace.snapshot import verify_workspace_snapshot
+
+InspectRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[bytes]]
+_CONTAINER_ROW = re.compile(
+    rb"^(?P<id>[0-9a-f]{12,64})\|(?P<name>harnessix-process-[0-9a-f]{32})"
+    rb"\|(?P<process>[0-9a-f-]{36})\|(?P<execution>[0-9a-f]{64})$"
+)
+
+
+def _run_inspect(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        argv,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+        env={"PATH": os.defpath},
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +57,8 @@ class PreparedContainerLaunch:
     secrets: ResolvedSecretEnvironment | None = field(repr=False)
     plan_fingerprint: Revision
     profile_digest: Revision
+    execution_digest: Revision | None = None
+    container_name: str | None = None
 
     def materialize_environment(self) -> dict[str, str]:
         values = dict(self.base_environment)
@@ -69,7 +92,13 @@ def _csv_fields(*values: str) -> str:
 class ContainerCommandBuilder:
     """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。"""
 
-    def __init__(self, executable: str | Path, probe: ContainerEngineProbe) -> None:
+    def __init__(
+        self,
+        executable: str | Path,
+        probe: ContainerEngineProbe,
+        *,
+        inspect_runner: InspectRunner = _run_inspect,
+    ) -> None:
         path = Path(executable)
         try:
             if not path.is_absolute():
@@ -89,6 +118,7 @@ class ContainerCommandBuilder:
         self._engine = probe.engine
         self._version = probe.server_version
         self._capability_digest = probe.digest
+        self._inspect_runner = inspect_runner
 
     def prepare(
         self,
@@ -97,13 +127,20 @@ class ContainerCommandBuilder:
         profile: ContainerSandboxProfile,
         *,
         workspace: str | Path,
-        command: ContainerCommandSpec,
+        command: ContainerCommandSpec | ContainerExecutionSpec,
         environment: Mapping[str, str],
         secrets: ResolvedSecretEnvironment | None = None,
         external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
         egress: ManagedEgressBinding | None = None,
+        reattest_network: bool = False,
     ) -> PreparedContainerLaunch:
         self._verify_binding()
+        if isinstance(command, ContainerExecutionSpec):
+            execution: ContainerExecutionSpec | None = command
+            target_command = command.command
+        else:
+            execution = None
+            target_command = command
         if not execution_is_approved(plan, checkpoint):
             raise KernelError("approval_required", "Execution Plan尚未获得有效批准")
         if (
@@ -113,7 +150,7 @@ class ContainerCommandBuilder:
             or plan.capabilities.provider_evidence_digest != self._capability_digest
             or plan.sandbox.profile_digest != profile.digest
             or plan.sandbox.network != profile.network.policy.mode
-            or command.profile_digest != profile.digest
+            or target_command.profile_digest != profile.digest
             or plan.intent.arguments != command.model_dump(mode="json", warnings="error")
         ):
             raise KernelError("sandbox_capability_mismatch", "Execution Plan与容器后端不匹配")
@@ -192,6 +229,12 @@ class ContainerCommandBuilder:
             "run",
             "--rm",
             "--init",
+            *self._container_identity_arguments(execution),
+            *(
+                ("--interactive",)
+                if execution is not None and execution.process.stdin == "pipe"
+                else ()
+            ),
             "--pull",
             "never",
             "--read-only",
@@ -223,13 +266,24 @@ class ContainerCommandBuilder:
         ]
         for name in sorted(set(checked_environment) | set(secret_environment)):
             arguments.extend(("--env", name))
-        arguments.extend(("--entrypoint", command.argv[0], profile.image, *command.argv[1:]))
+        arguments.extend(
+            (
+                "--entrypoint",
+                target_command.argv[0],
+                profile.image,
+                *target_command.argv[1:],
+            )
+        )
+        if reattest_network:
+            self._reattest_network(profile, egress)
         return PreparedContainerLaunch(
             argv=tuple(arguments),
             base_environment=MappingProxyType(checked_environment),
             secrets=secrets,
             plan_fingerprint=plan.fingerprint,
             profile_digest=profile.digest,
+            execution_digest=None if execution is None else execution.digest,
+            container_name=None if execution is None else self.container_name(execution),
         )
 
     def _verify_binding(self) -> None:
@@ -238,6 +292,129 @@ class ContainerCommandBuilder:
                 raise ValueError
         except (OSError, ValueError):
             raise KernelError("sandbox_binding_changed", "容器引擎绑定已经变化") from None
+
+    def ensure_container_absent(self, execution: ContainerExecutionSpec) -> None:
+        if self._container_rows(execution):
+            raise KernelError("process_already_exists", "Container执行身份已经存在")
+
+    def cleanup_container(self, execution: ContainerExecutionSpec) -> Literal["absent", "removed"]:
+        rows = self._container_rows(execution)
+        if not rows:
+            return "absent"
+        container_id = rows[0]
+        completed = self._run_control(
+            (str(self._path), "container", "rm", "--force", container_id), 10.0
+        )
+        if completed.returncode != 0 or self._container_rows(execution):
+            raise KernelError("process_cleanup_failed", "Container执行实例无法证明已清理")
+        return "removed"
+
+    def _container_rows(self, execution: ContainerExecutionSpec) -> tuple[str, ...]:
+        process_id = str(execution.process.process_id)
+        completed = self._run_control(
+            (
+                str(self._path),
+                "container",
+                "ls",
+                "--all",
+                "--filter",
+                f"label=com.harnessix.process-id={process_id}",
+                "--format",
+                '{{.ID}}|{{.Names}}|{{.Label "com.harnessix.process-id"}}|'
+                '{{.Label "com.harnessix.execution-spec"}}',
+            ),
+            5.0,
+        )
+        if completed.returncode != 0:
+            raise KernelError("process_cleanup_failed", "Container执行实例无法查询")
+        lines = tuple(line for line in completed.stdout.splitlines() if line)
+        if len(lines) > 1:
+            raise KernelError("process_cleanup_failed", "Container执行身份存在多个实例")
+        identifiers: list[str] = []
+        for line in lines:
+            match = _CONTAINER_ROW.fullmatch(line)
+            if (
+                match is None
+                or match.group("name").decode() != self.container_name(execution)
+                or match.group("process").decode() != process_id
+                or match.group("execution").decode() != execution.digest
+            ):
+                raise KernelError("process_cleanup_failed", "Container执行身份证明无效")
+            identifiers.append(match.group("id").decode())
+        return tuple(identifiers)
+
+    def _run_control(
+        self, argv: Sequence[str], timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        self._verify_binding()
+        try:
+            completed = self._inspect_runner(argv, timeout)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            raise KernelError("process_cleanup_failed", "Container生命周期命令失败") from None
+        self._verify_binding()
+        if (
+            type(completed.stdout) is not bytes
+            or type(completed.stderr) is not bytes
+            or len(completed.stdout) > 64 * 1024
+            or len(completed.stderr) > 64 * 1024
+        ):
+            raise KernelError("process_cleanup_failed", "Container生命周期响应无效")
+        return completed
+
+    @staticmethod
+    def container_name(execution: ContainerExecutionSpec) -> str:
+        return f"harnessix-process-{execution.process.process_id.hex}"
+
+    @classmethod
+    def _container_identity_arguments(
+        cls, execution: ContainerExecutionSpec | None
+    ) -> tuple[str, ...]:
+        if execution is None:
+            return ()
+        return (
+            "--name",
+            cls.container_name(execution),
+            "--label",
+            f"com.harnessix.process-id={execution.process.process_id}",
+            "--label",
+            f"com.harnessix.execution-spec={execution.digest}",
+        )
+
+    def _reattest_network(
+        self,
+        profile: ContainerSandboxProfile,
+        egress: ManagedEgressBinding | None,
+    ) -> None:
+        if profile.network.policy.mode not in {"limited", "restricted"}:
+            return
+        if self._engine != "docker" or egress is None or profile.egress_gateway_digest is None:
+            raise KernelError("network_policy_unenforceable", "当前容器后端不能即时复核受管网络")
+        try:
+            completed = self._inspect_runner(
+                (str(self._path), "network", "inspect", egress.network_name), 5.0
+            )
+        except (OSError, ValueError, subprocess.SubprocessError):
+            raise KernelError(
+                "network_policy_unenforceable", "Docker内部网络即时复核失败"
+            ) from None
+        if (
+            completed.returncode != 0
+            or type(completed.stdout) is not bytes
+            or type(completed.stderr) is not bytes
+            or len(completed.stdout) > 64 * 1024
+            or len(completed.stderr) > 64 * 1024
+        ):
+            raise KernelError("network_policy_unenforceable", "Docker内部网络即时复核失败")
+        current = attest_internal_network(
+            completed.stdout,
+            network_name=egress.network_name,
+            proxy_port=int(egress.proxy_url.rsplit(":", 1)[1]),
+            policy=profile.network,
+            gateway_digest=profile.egress_gateway_digest,
+        )
+        self._verify_binding()
+        if current != egress:
+            raise KernelError("network_policy_unenforceable", "Docker内部网络证明已经变化")
 
     @staticmethod
     def _network(

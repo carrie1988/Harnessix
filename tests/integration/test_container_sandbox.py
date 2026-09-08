@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -16,30 +15,37 @@ from harnessix.execution.contracts import (
     SecretVersionBinding,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
+from harnessix.processes.supervision_planner import build_process_spec
+from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.sandbox.capabilities import probe_container_engine
 from harnessix.sandbox.container import ContainerCommandBuilder
-from harnessix.sandbox.contracts import NetworkPolicy
+from harnessix.sandbox.contracts import NetworkPolicy, SandboxResourceLimits
 from harnessix.sandbox.network import resolve_network_policy
-from harnessix.sandbox.planner import build_container_command, build_container_sandbox_profile
+from harnessix.sandbox.planner import (
+    build_container_command,
+    build_container_execution,
+    build_container_sandbox_profile,
+)
+from harnessix.sandbox.process_runtime import ContainerProcessRuntime
 from harnessix.secrets.provider import (
     EnvironmentSecretProvider,
     EnvironmentSecretSource,
     resolve_secret_environment,
 )
-from harnessix.secrets.redaction import redact_bytes
 from harnessix.workspace.contracts import WorkspaceResourceRequest
 from harnessix.workspace.snapshot import capture_workspace_snapshot
 
 
-def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary(
+async def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary(
     tmp_path: Path,
 ) -> None:
     image = os.environ.get("HARNESSIX_TEST_CONTAINER_IMAGE")
     docker = shutil.which("docker")
     if not image or not docker:
         pytest.skip("未配置固定摘要的真实Container Sandbox验收")
-    tmp_path.chmod(0o755)
-    target = tmp_path / "main.txt"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(mode=0o755)
+    target = workspace / "main.txt"
     target.write_text("workspace-content\n", encoding="utf-8")
     target.chmod(0o644)
     probe = probe_container_engine(Path(docker), engine="docker")
@@ -48,6 +54,12 @@ def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary
         image=image,
         workspace_mode="read_only",
         network=network,
+        limits=SandboxResourceLimits(
+            cpus=0.5,
+            memory_bytes=64 * 1024 * 1024,
+            pids=16,
+            tmpfs_bytes=16 * 1024 * 1024,
+        ),
     )
     command = build_container_command(
         (
@@ -59,12 +71,18 @@ def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary
             "cat /workspace/main.txt; touch /tmp/allowed; "
             "if touch /denied 2>/dev/null; then exit 21; fi; "
             "if echo changed >>/workspace/main.txt 2>/dev/null; then exit 22; fi; "
+            "if [ -f /sys/fs/cgroup/pids.max ]; then "
+            'test "$(cat /sys/fs/cgroup/pids.max)" = 16; fi; '
+            "if [ -f /sys/fs/cgroup/memory.max ]; then "
+            'test "$(cat /sys/fs/cgroup/memory.max)" = 67108864; fi; '
+            "if dd if=/dev/zero of=/tmp/overrun bs=1048576 count=32 2>/dev/null; "
+            "then exit 23; fi; rm -f /tmp/overrun; echo resource-limit-enforced; "
             "printf '%s\\n' \"$TOKEN\"",
         ),
         profile_digest=profile.digest,
     )
     snapshot = capture_workspace_snapshot(
-        tmp_path,
+        workspace,
         resources=(
             WorkspaceResourceRequest(path=".", access="read"),
             WorkspaceResourceRequest(path="main.txt", access="read"),
@@ -89,17 +107,6 @@ def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary
         capability_digest=capabilities.evidence_digest,
         profile_digest=profile.digest,
     )
-    intent = ExecutionIntent(
-        source="builtin",
-        source_id="harnessix",
-        tool="sandbox.process",
-        tool_version="v1",
-        tool_fingerprint="a" * 64,
-        arguments=command.model_dump(mode="json", warnings="error"),
-        effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
-        risk_level=RiskLevel.HIGH,
-        idempotency_key="container-smoke",
-    )
     policy = ExecutionPolicyBinding(
         version="sandbox/v1",
         decision=PolicyDecisionKind.ALLOW,
@@ -107,42 +114,61 @@ def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary
         reason_code="isolated_test",
     )
     secret_bindings = (SecretVersionBinding(name="canary", version="1", target="TOKEN"),)
-    plan = build_execution_plan_v2(
-        intent,
-        snapshot,
-        environment={"LANG": "C"},
-        secrets=secret_bindings,
-        sandbox=sandbox,
-        policy=policy,
-        capabilities=capabilities,
-    )
     provider = EnvironmentSecretProvider(
         (EnvironmentSecretSource("canary", "1", "HOST_CANARY"),),
         environment={"HOST_CANARY": "container-secret-canary"},
     )
-    with resolve_secret_environment(
-        plan.secrets, provider, platform=plan.workspace.platform
-    ) as secret:
-        launch = ContainerCommandBuilder(Path(docker), probe).prepare(
-            plan,
-            None,
-            profile,
-            workspace=tmp_path,
-            command=command,
+    async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
+        process = build_process_spec(
+            invocation="argv",
+            argv=command.argv,
+            timeout_seconds=30,
+            output_bytes=64 * 1024,
+        )
+        execution = build_container_execution(
+            command,
+            process,
+            owner_capability_digest=supervisor.capability.digest,
+        )
+        intent = ExecutionIntent(
+            source="builtin",
+            source_id="harnessix",
+            tool="sandbox.process",
+            tool_version="v1",
+            tool_fingerprint="a" * 64,
+            arguments=execution.model_dump(mode="json", warnings="error"),
+            effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+            risk_level=RiskLevel.HIGH,
+            idempotency_key="container-smoke",
+        )
+        plan = build_execution_plan_v2(
+            intent,
+            snapshot,
             environment={"LANG": "C"},
-            secrets=secret,
+            secrets=secret_bindings,
+            sandbox=sandbox,
+            policy=policy,
+            capabilities=capabilities,
         )
-        assert "container-secret-canary" not in "\0".join(launch.argv)
-        completed = subprocess.run(
-            launch.argv,
-            env=launch.materialize_environment(),
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
-        output = redact_bytes(completed.stdout + completed.stderr, launch.redaction_values())
-    assert completed.returncode == 0
+        runtime = ContainerProcessRuntime(ContainerCommandBuilder(Path(docker), probe), supervisor)
+        with resolve_secret_environment(
+            plan.secrets, provider, platform=plan.workspace.platform
+        ) as secret:
+            handle = await runtime.start(
+                plan,
+                None,
+                profile,
+                execution,
+                workspace=workspace,
+                environment={"LANG": "C"},
+                secrets=secret,
+            )
+        assert "container-secret-canary" not in "\0".join(handle.launch_argv)
+        lease = await handle.wait()
+        output = await handle.output("stdout") + await handle.output("stderr")
+    assert lease.returncode == 0 and lease.stop_reason == "exited"
     assert b"workspace-content" in output
+    assert b"resource-limit-enforced" in output
     assert b"container-secret-canary" not in output
     assert b"[REDACTED]" in output
     assert target.read_text(encoding="utf-8") == "workspace-content\n"
