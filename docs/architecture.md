@@ -11,16 +11,16 @@
 - 已实现 0.3.1 核心切片：进程内 Loop、基础领域模型、SQLite Session Store、Fake/Scripted Provider、取消、保守恢复和进程故障注入；
 - 已实现 0.3.2：持久审批检查点、答复/取消/显式继续、指纹绑定、跨重启预算和 Session v1→v2 迁移；
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
-- 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
+- 0.4核心运行能力已交付但整体仍待0.4.3c关闭：双Adapter、尝试/失败用量账本、成本报告、受控Smoke/白名单诊断和响应计费元数据已通过对应验收；百炼文本、内存工具和审批重开实测通过；真实计价适用性作为0.9发布证据门禁继续跟踪，未关闭时不得发布1.0；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、migration为19，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
 
-Harnessix Code 的目标是成为生产级、本地优先、模型无关的 Coding Agent。系统必须同时满足：
+Harnessix Code的目标是独立实现面向真实软件工程任务的、本地优先、模型无关、安全可控、可恢复、可审计、可评测、可扩展的生产级Coding Agent。系统必须同时满足：
 
-1. 在真实仓库中形成“理解—修改—验证—交付”闭环；
+1. 在真实仓库中形成“理解—规划—修改—执行—验证—审查—交付”闭环；
 2. 模型、工具、客户端和持久化后端通过稳定契约解耦；
 3. 长时间运行可以取消，进程退出后可以恢复到明确状态；
 4. Context 的来源、预算、裁剪和压缩可检查；
@@ -28,6 +28,8 @@ Harnessix Code 的目标是成为生产级、本地优先、模型无关的 Codi
 6. 核心行为能够使用 Fake Provider 确定性复现；
 7. 每个关键状态转换、工具执行和审批都有结构化事件；
 8. 不以多 Agent、RAG 或复杂工作流掩盖单 Agent Runtime 的不可靠。
+
+1.0是面向大量独立macOS/Linux终端用户安装和长期使用的本地优先商业版本，而不是Runtime演示或集中式多租户SaaS。“大量用户”要求发行物、兼容升级、恢复、诊断、安全和质量基线可以在大量相互独立的本地实例中复现；不要求1.0实现远程执行池、云端高可用或集中式服务SLO。边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)。
 
 ## 3. 系统上下文
 
@@ -65,7 +67,7 @@ Harnessix Code 的目标是成为生产级、本地优先、模型无关的 Codi
 - 发起创建、恢复、取消、审批、回滚和分叉请求；
 - 不拥有 Agent 状态机，不直接执行工具。
 
-第一版提供 CLI；TUI 和 IDE 在协议稳定后接入。
+1.0提供CLI/TUI；IDE、桌面客户端和Web在协议稳定且有真实需求后于1.x评估。薄CLI在0.8随Protocol和App Server接入，完整交互体验在0.9收口。
 
 ### 4.2 App Server 与 Protocol
 
@@ -134,7 +136,7 @@ Context Engine 不负责全文代码索引。只有真实 Eval 证明必要时�
 
 ### 4.6 Coding Tool Runtime
 
-第一版工具集合：
+1.0工具集合：
 
 ```text
 read_file       list_files       glob           grep
@@ -160,14 +162,14 @@ Workspace Runtime 提供：
 
 - 规范化工作目录和符号链接检查；
 - Workspace 内外路径边界；
-- 原子文件写入和变更 Diff；
-- Git 仓库状态与脏文件保护；
-- Shell 子进程、进程组、超时、取消和输出截断；
+- 多文件事务写入、Checkpoint、Rollback和变更Diff；
+- Git仓库状态、脏文件保护、Branch/Worktree和显式Commit；
+- 受控Shell、PTY、标准输入、后台进程、进程组、超时、取消、宿主死亡监督和输出Artifact；
 - 环境变量和 Secret 的最小化注入；
 - Host 与隔离执行后端的显式安全级别；
 - 网络出口策略。
 
-第一版至少提供：
+1.0至少提供：
 
 - `host`：本机受限执行，依赖权限审批，不宣称强隔离；
 - `container`：容器化隔离后端，用于需要更强边界的命令。
@@ -185,7 +187,7 @@ Session Store 与 Action Plane 的 Effect Journal 分离：
 - 不把模型流式 token 全部当作业务事实无限保存，Item 终值才是默认恢复事实；
 - 持久事件、物化快照和 Compaction 必须有 Schema 版本及迁移。
 
-第一版使用 SQLite，服务端多实例需求明确后再增加 PostgreSQL 实现。
+1.0本地Session Store使用SQLite；Action Plane继续保留现有SQLite/PostgreSQL后端。远程服务端Session的PostgreSQL实现只有在1.x多实例需求明确后立项。
 
 当前Agent Event/Thread为v17，最低读者由Migration 0019约束；v1–v16事件与旧Schema保持原文。受管Patch的完整计划/镜像/意图留在副本账本，Session保存写审批和最小私有效果证据；两库不原子提交，通过稳定调用ID只读核对，不重放写入。尝试用量属于Session事实，不放入对话Item或外部副作用Journal。
 
@@ -227,6 +229,8 @@ Coding Agent 中只有外部、高风险或结果可能不确定的副作用必�
 - 真实仓库任务 Eval；
 - 故障注入和恢复测试；
 - 版本间质量与成本回归报告。
+
+评测从每个纵向切片开始，而不是等到0.9集中补建。0.7及后续实现必须同时提供确定性回归、按风险选择的故障注入、真实仓库场景和必要的受控真实Provider证据；0.9负责冻结任务集、指标口径和1.0发布阈值。
 
 ## 5. 核心领域模型
 
@@ -384,23 +388,27 @@ src/harnessix/
 - Python-first；
 - 自研 Agent Loop；
 - 本地优先、CLI + Headless App Server；
+- 1.0面向大量独立macOS/Linux终端实例，不包含集中式多租户SaaS；
+- 远程Sandbox、云任务、多租户控制面和分布式Agent Worker进入1.x候选范围；
 - SQLite 为本地 Session Store；
 - Session Store 采用 Thread 内单调 AgentEvent 与事务投影；
 - Agent Loop 采用持久边界驱动的状态机和分层 Cancel Token；
 - Provider 使用供应商中立的流式事件和结构化错误；
-- Agent Protocol 使用标准 JSON-RPC 2.0，第一版传输为 stdio JSONL；
+- Agent Protocol使用标准JSON-RPC 2.0，1.0基线传输为stdio JSONL；
 - 0.3 Kernel 先提供进程内宿主，使用本地单宿主锁和初始聚合快照，见 [ADR 0011](adr/0011-kernel-host-and-initial-projection.md)；
 - 持久审批采用暂停返回、答复仅落库、显式继续；默认仅开放可信只读工具，见 [ADR 0012](adr/0012-durable-approval-checkpoint.md)；受管单文件 Patch 通过独立写审批与专用端口开放，见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)；
 - Action Plane 作为治理子系统保留；
 - 参考实现采用 clean-room 研究方式。
 
-已确认事项分别由 [ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md) 和 [ADR 0010](adr/0010-session-store-and-recovery.md) 固化。
+已确认事项分别由[ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md)、[ADR 0010](adr/0010-session-store-and-recovery.md)和[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)固化。
 
 ### 必须通过 ADR 决定
 
-- Patch 的原子提交和回滚模型；
+- 通用多文件Workspace事务、Git Checkpoint和Rollback模型；
 - Host/Container Sandbox 的默认策略；
+- 通用Shell、PTY和后台进程的能力与审批边界；
 - TUI 技术栈；
+- 本地发行物签名、自动更新和失败回滚策略；
 - 是否以及何时引入 Rust Process/Sandbox Sidecar；
 - Subagent 的状态隔离、预算和权限继承模型。
 

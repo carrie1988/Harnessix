@@ -1093,5 +1093,5 @@ Catalog以`(task_id, task_version)`索引；`historical_coding_eval(task_id)`返
 以下能力不用于否定0.5完成，但仍是后续版本硬门禁：
 
 - 0.6：长上下文构建、自动压缩、Resume/Fork/Archive产品语义；
-- 0.7：OS Sandbox、网络/Secret策略、跨进程Workspace锁和不受信代码隔离；
-- 0.8以后：App Server、MCP/Skills/Hooks、CLI/TUI产品化、通用多文件交付和自动commit/push。
+- 0.7：OS Sandbox、网络/Secret策略、跨进程Workspace锁、通用Process/PTY、不受信代码隔离、通用多文件事务交付和Git Checkpoint/Commit；Push保持独立授权且默认关闭；
+- 0.8：App Server、薄CLI、MCP/Skills/Hooks和双向交互；0.9完成TUI及发布产品化。

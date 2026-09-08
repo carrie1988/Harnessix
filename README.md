@@ -2,7 +2,7 @@
 
 **面向生产级、本地优先、模型无关的 Coding Agent。**
 
-Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
+Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
 > 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime和0.6 Context/Session全部路线图范围。0.6.5交付终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复，Event/Thread为v17、Session migration为19，并通过[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵验收。OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
@@ -41,7 +41,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-第一版目标是 macOS/Linux、本地优先、CLI + Headless App Server。IDE、Web、多租户云平台和分布式 Agent Worker 在 1.0 之后评估。
+1.0目标是面向大量独立macOS/Linux终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。
 
 ## 当前已实现：只读编码工具与事务 Artifact
 
@@ -675,6 +675,7 @@ examples/                   可运行演示
 
 - [产品章程](docs/product-charter.md)
 - [总体架构](docs/architecture.md)
+- [1.0本地优先商用边界决策](docs/adr/0062-local-first-v1-commercial-boundary.md)
 - [主流 Coding Agent 源码研究计划](docs/research-plan.md)
 - [0.2 源码研究基线](docs/research/baselines.md)
 - [Agent Loop 研究](docs/research/agent-loop.md)
@@ -733,10 +734,11 @@ examples/                   可运行演示
 | 0.4 | OpenAI-compatible / Anthropic Model Runtime |
 | 0.5 | Read/Search/Patch/Process/Git/Test 编码闭环 |
 | 0.6 | Context Compaction 与持久会话 |
-| 0.7 | Workspace、Permission、Sandbox、Action Plane 集成 |
-| 0.8 | App Server、MCP、Skills、Hooks |
-| 0.9 | CLI/TUI、故障注入与 Coding Evals |
-| 1.0 | 生产发布 |
+| 0.7 | 可信执行、通用Process、多文件事务与Git交付 |
+| 0.8 | Agent Protocol、Headless、薄CLI、MCP、Skills、Hooks |
+| 0.9 | 完整CLI/TUI、故障注入、质量工程、安装与Dogfooding |
+| 1.0 | 本地优先正式商用发布 |
+| 1.x | 按需求评估云任务、多租户、IDE与分布式运行 |
 
 ## 重要语义
 

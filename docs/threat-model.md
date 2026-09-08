@@ -322,7 +322,7 @@ Agent Runtime                │
 
 ## 8. 发布门禁
 
-0.7 安全执行版本发布前必须：
+0.7可信执行与工程交付版本发布前必须：
 
 - 路径、symlink、进程树、禁网和 Secret Canary 测试全部通过；
 - 所有内置 Tool 声明 Effect、Permission、Sandbox 和 Secret；

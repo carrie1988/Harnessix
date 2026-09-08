@@ -2,7 +2,11 @@
 
 ## 1. 路线图原则
 
-Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，包括claude code（泄密版）、codex、 opencode，自研设计并实现面向真实软件工程任务的、可恢复、可审计、可评测的生产级Coding Agent。非POC或功能演示版本，目标能够支撑大量真实C端用户AI软件开发需求，路线图采用“可发布的纵向切片”，但每个切片都必须包含正式契约、失败语义、持久化、可观测性、完整测试和完整设计文档（包含总体方案设计文档及详设文档）。
+Harnessix Code通过研究Codex、OpenCode、Claude Code等主流Coding Agent的架构、公开行为和可核验实现思路，独立设计并实现面向真实软件工程任务的、本地优先、模型无关、安全可控、可恢复、可审计、可评测、可扩展的生产级Coding Agent。系统必须在真实代码仓库中稳定完成理解、规划、修改、执行、验证、审查和交付闭环，并具备完整的协议契约、失败语义、持久化、可观测性、安全边界、兼容升级、真实评测和产品发布能力。
+
+Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，而是能够供大量独立macOS/Linux终端用户安装并长期使用的本地优先正式商用版本。“大量用户”指大量相互独立的本地实例，不表示1.0包含集中式多租户云控制面；远程Sandbox、云任务和分布式Agent Worker按真实需求在1.x评估。产品边界由[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)固化。
+
+路线图采用“可发布的纵向切片”，每个切片都必须包含正式契约、失败语义、持久化、可观测性、完备测试、总体方案设计和详细设计。参考项目仅作为架构与行为证据，研究必须记录固定提交或产品版本、来源和Harnessix独立决策；任何代码复用必须满足许可证和归属要求。
 
 开发顺序遵循：
 
@@ -47,10 +51,11 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 | 0.4 | Model Runtime | 两类 Provider、流式事件、错误和用量归一化 | 0.3 |
 | 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 运行基线；计价证据独立跟踪 |
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
-| 0.7 | 安全执行 | Workspace 边界、权限、Sandbox、网络和 Secret | 0.6 |
-| 0.8 | App Server 与扩展 | 双向协议、Headless、MCP、Skills、Hooks | 0.7 |
-| 0.9 | 产品硬化与 Evals | CLI/TUI、故障注入、质量/成本基线、跨平台 CI | 0.8 |
-| 1.0 | 生产发布 | 稳定协议、安装升级、安全文档和发布保障 | 0.9 |
+| 0.7 | 可信执行与工程交付 | Permission、Sandbox、Process、事务性交付和 Action Plane | 0.6 |
+| 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks | 0.7 |
+| 0.9 | Release Candidate与质量工程 | 完整CLI/TUI、故障注入、质量/成本基线、安装与Dogfooding | 0.8 |
+| 1.0 | 本地优先正式商用发布 | 稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
+| 1.x | 按需求演进 | 云任务、多租户、远程Sandbox、IDE和分布式运行 | 1.0 |
 
 版本号代表能力成熟度，不承诺固定日期。每个里程碑完成后根据 Eval、风险和实际投入重新估算后续计划。
 
@@ -144,7 +149,7 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 
 ## 6. 0.4：Model Runtime
 
-状态：**0.4.1 / 0.4.2a / 0.4.2b1/b2 / 0.4.3a/b1/b2 已完成离线验收，整体 0.4 进行中**。已实现双 Adapter、尝试账本、SDK 用量/计费元数据映射、显式价格绑定的成本报告和受控 Smoke/白名单诊断；百炼文本/内存工具/审批重开已实测通过，计价适用性仍待单次授权。按用户继续后续阶段的要求，独立推进 0.5 离线开发，不将 0.4 标记完成。见 [0.4 实施计划](m04-model-runtime.md)。
+状态：**核心运行能力已交付，整体0.4仍待0.4.3c计价适用性验收后关闭**。0.4.1 / 0.4.2a / 0.4.2b1/b2 / 0.4.3a/b1/b2已完成离线验收，双Adapter、尝试账本、SDK用量/计费元数据映射、显式价格绑定的成本报告和受控Smoke/白名单诊断已经实现；百炼文本、内存工具和审批重开已实测通过。0.4.3c作为跨版本发布证据继续跟踪，不阻断已经独立验收的0.5/0.6，但必须最迟在0.9发布候选阶段关闭，未关闭时不得发布1.0。见[0.4实施计划](m04-model-runtime.md)。
 
 ### 目标
 
@@ -316,156 +321,167 @@ Harnessix Code 的总体目标是参考借鉴主流开源coding agent实现，�
 - 用户能够查看 Context 主要来源和压缩记录；
 - Resume/Fork 不重复已完成的副作用。
 
-## 9. 0.7：安全执行与 Action Plane 集成
+## 9. 0.7：可信执行与工程交付
+
+状态：**规划中**。本阶段先刷新研究证据和威胁模型，再按安全边界、执行后端、进程监督、事务性交付和综合验收推进，不将全部能力合并为一次性Sandbox改造。
 
 ### 目标
 
-把“提示模型谨慎”升级为可执行的权限、隔离和副作用治理边界。
+把“提示模型谨慎”和0.5的受控工具闭环升级为可执行的权限、隔离、通用工程命令、多文件事务交付和副作用治理边界，使Agent能够安全完成真实项目，而不是依赖每个仓库预注册固定命令。
 
-### 核心交付
+### 纵向切片
 
-- [ ] Workspace 路径、符号链接和外部目录策略；
-- [ ] Permission Rule 与命令风险分类；
-- [ ] 审批指纹绑定 Tool、参数、cwd、环境摘要和策略版本；
-- [ ] Host Executor 安全级别；
-- [ ] Container Sandbox Executor；
-- [ ] 网络出口域名/IP/端口策略；
-- [ ] Secret Provider 与最小化注入；
-- [ ] 文件和命令审计记录；
-- [ ] Coding Tool 与 Action Plane 风险路由；
-- [ ] 外部副作用 `UNKNOWN → reconcile`；
-- [ ] Threat Model v2。
+- [ ] **0.7.0 研究基线与生产差距**：刷新Codex、OpenCode和Claude Code行为研究版本；输出安全执行、进程、工作区交付差距矩阵；完成Threat Model v2；明确0.4.3c由0.9发布证据门禁收口；
+- [ ] **0.7.1 Workspace与Permission**：统一路径、符号链接、外部目录、跨进程Workspace所有权、命令风险分类和版本化Permission Rule；审批指纹绑定Tool、参数、cwd、环境摘要、Workspace revision和策略版本；
+- [ ] **0.7.2 Sandbox、网络与Secret**：定义Host安全级别和失败关闭策略；实现Container Sandbox Executor、资源限制、网络出口域名/IP/端口策略、代理防绕过及Secret Provider最小化注入；
+- [ ] **0.7.3 Process与终端监督**：在Permission和Sandbox内提供通用argv/受控Shell、PTY、标准输入、后台进程、进程组、超时、取消、宿主死亡监督和有界输出Artifact；是否引入Rust Sidecar由基准和失败测试决定；
+- [ ] **0.7.4 事务性交付与Git闭环**：把受管副本扩展为通用多文件Workspace事务，支持来源CAS、脏工作区保护、完整Diff、Checkpoint、Rollback、Branch/Worktree和显式Commit；Push始终单独授权且默认关闭；
+- [ ] **0.7.5 Action Plane与安全验收**：统一Coding Tool风险路由、文件/命令审计、外部副作用`UNKNOWN → reconcile`和扩展强制接入点，完成真实仓库、安全攻击、崩溃恢复及跨组件发布门禁。
 
 ### 关键测试
 
-- [ ] `..`、绝对路径、符号链接和竞态路径逃逸；
-- [ ] 审批后参数、cwd 或环境变化导致指纹失效；
-- [ ] 子进程、后台进程和进程树不能逃逸取消；
-- [ ] 禁止网络时 DNS、IPv4/IPv6 和代理路径都受控；
-- [ ] Secret 不出现在模型 Context、日志、Trace、Diff；
-- [ ] 外部写操作结果丢失时不重复执行；
-- [ ] Host 和 Container 模式安全声明准确。
+- [ ] `..`、绝对路径、符号链接、挂载点和检查后替换的竞态逃逸；
+- [ ] 审批后参数、cwd、环境、Workspace revision或策略变化导致授权失效；
+- [ ] 子进程、PTY、后台进程和进程树在取消、超时及宿主崩溃后进入可核对状态；
+- [ ] 禁止网络时DNS、IPv4/IPv6、代理、重定向和解析漂移均受策略约束；
+- [ ] Secret不出现在模型Context、Session、日志、Trace、Diff或诊断包；
+- [ ] 多文件写入、Checkpoint、Commit各崩溃切点不产生未归因交付或盲目重放；
+- [ ] 外部写操作结果丢失时不重复执行，并能够通过Reconcile结束；
+- [ ] Host和Container模式的实际隔离能力、降级和不可用声明准确；
+- [ ] 每个切片至少完成一个真实仓库任务和对应的确定性回归。
 
 ### 验收标准
 
-- 未授权工具不能通过扩展、Shell 或路径技巧绕过边界；
-- 隔离后端不可用时默认策略明确，不能静默降级；
-- 高风险外部 Action 可以恢复和对账。
+- Agent能够在明确Permission和Sandbox边界内执行真实项目命令，不要求为每条命令硬编码Profile；
+- 未授权工具不能通过扩展、Shell、PTY、路径或网络技巧绕过边界；
+- 隔离后端不可用时失败关闭或明确要求用户选择Host风险，不静默降级；
+- 多文件修改能够原子交付或恢复到可核对状态，Git结果与最终回答一致；
+- 高风险外部Action可以恢复和对账，连续故障测试不产生重复副作用或失管进程。
 
-## 10. 0.8：App Server、MCP 与扩展
+## 10. 0.8：产品运行时与扩展
+
+状态：**规划中**。安全执行端口稳定后再开放协议和扩展，所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
 
 ### 目标
 
-将 Runtime 从单一 CLI 中解耦，形成可供 TUI、SDK、IDE 和自动化调用的稳定服务边界。
+将Runtime从进程内调用解耦为稳定的本地产品服务，使CLI、TUI、SDK和自动化客户端能够断线恢复、持续交互和安全扩展，而不复制Agent状态机。
 
-### 核心交付
+### 纵向切片
 
-- [ ] Agent Protocol v1；
-- [ ] Thread/Turn/Item 请求、响应和通知；
-- [ ] 双向审批、提问和取消；
-- [ ] Headless App Server；
-- [ ] Python Agent SDK；
-- [ ] MCP Client；
-- [ ] 可选 MCP Server；
-- [ ] 项目指令Source的Protocol诊断和刷新通知；
-- [ ] Skills 渐进加载；
-- [ ] 生命周期 Hooks；
-- [ ] 扩展 Tool 的 Permission/Sandbox 强制接入。
+- [ ] **0.8.1 Agent Protocol v1**：版本化Command/Query/Event、Thread/Turn/Item、事件游标、幂等请求、错误、未知字段和兼容策略；
+- [ ] **0.8.2 Headless App Server与Agent SDK**：stdio JSONL基线、本地调用身份、Workspace绑定、优雅关闭、断线重连、事件续传、背压和Python Agent SDK；
+- [ ] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
+- [ ] **0.8.4 MCP**：MCP Client、可选MCP Server、进程生命周期、能力快照、Schema漂移和所有Tool的Permission/Sandbox强制接入；
+- [ ] **0.8.5 Skills与Hooks**：来源、版本、渐进加载、生命周期Hook、冲突、超时、取消和供应链信任边界；
+- [ ] **0.8.6 Provider与配置产品化**：模型/Profile选择、能力诊断、Secret引用、配置迁移和安全切换；任何自动Fallback不得跨越已经暴露模型输出或工具调用的边界。
 
 ### 关键测试
 
-- [ ] Protocol Schema 兼容性和未知字段处理；
-- [ ] 客户端断线重连和事件续传；
-- [ ] 审批请求与对应 Tool Call 不错配；
-- [ ] MCP Server 崩溃、超时和 Schema 变化；
-- [ ] 恶意 Skill/Hook 不能绕过安全边界；
-- [ ] CLI 进程内模式与 App Server 模式行为一致。
+- [ ] Protocol Schema兼容、旧客户端、未知字段和重复Command；
+- [ ] 客户端在任意事件前后断线，重连后不丢事件、不重复审批和副作用；
+- [ ] Steering、审批、提问、取消与对应Turn/Tool Call不会错配；
+- [ ] 慢客户端、背压、服务端重启和同时关闭不会损坏Session；
+- [ ] MCP Server崩溃、超时、Schema变化和恶意Tool描述失败关闭；
+- [ ] 恶意Skill/Hook不能读取未授权Secret或绕过Tool/Sandbox；
+- [ ] 进程内、Headless和薄CLI模式对同一Transcript产生等价领域结果。
 
 ### 验收标准
 
-- Headless 客户端能够完整驱动 Coding Turn；
-- 客户端断线不导致 Agent 状态损坏；
-- 核心 Runtime 不依赖具体 UI。
+- Headless和薄CLI客户端能够完整驱动并恢复一个真实Coding Turn；
+- 客户端断线、服务端重启和扩展故障不导致Agent状态损坏；
+- 核心Runtime不依赖具体UI，扩展不拥有额外执行权限；
+- 公共协议、SDK和配置均有版本、升级及错误诊断。
 
-## 11. 0.9：产品硬化、TUI 与 Evals
+## 11. 0.9：Release Candidate与质量工程
+
+状态：**规划中**。本阶段不再补建基础领域语义，而是把0.7以前已经持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
-从“功能完整”进入“可长期使用、可回归、可公开证明质量”的发布候选状态。
+从“功能完整”进入“真实用户可长期使用、问题可诊断、质量可回归、发布声明有证据”的候选版本状态。
 
-### 核心交付
+### 纵向切片
 
-- [ ] 交互式 CLI/TUI；
-- [ ] 流式消息、工具进度、Diff、审批和成本展示；
-- [ ] 配置诊断、环境检查和错误自助信息；
-- [ ] macOS/Linux CI；
-- [ ] Unit、Contract、Integration、E2E、Failure Injection 分层；
-- [ ] 受控真实仓库 Eval 数据集；
-- [ ] 任务成功率、测试通过率、Token、成本、延迟基线；
-- [ ] Transcript Regression；
-- [ ] 性能和数据库增长基准；
-- [ ] 安全测试与依赖扫描；
-- [ ] Dogfooding 记录和缺陷清单。
+- [ ] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；
+- [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
+- [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
+- [ ] **0.9.4 安全与供应链**：攻击测试、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；
+- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；
+- [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
 
 ### 验收标准
 
-- 至少覆盖 Bug Fix、Feature、Refactor、Test、Review 五类任务；
-- 每次关键变更能够输出与基线对比的 Eval 报告；
-- 连续故障注入运行后无 Session 损坏、孤儿进程和重复外部副作用；
-- 新用户根据文档可以安装并完成首个真实任务。
+- 多仓库任务集覆盖五类软件工程任务，并为不同难度、语言生态和工具链输出可复现分层结果；
+- 每次关键变更能够输出与固定基线比较的Eval报告，不以单一任务或单次模型结果宣称质量；
+- 连续故障注入和Soak后无Session损坏、孤儿进程、未归因文件和重复外部副作用；
+- 受控Beta发现的发布阻塞缺陷已关闭或有明确降级边界；
+- 新用户仅依据正式文档即可完成安装、配置、首个真实任务、恢复和卸载。
 
-## 12. 1.0：生产发布
+## 12. 1.0：本地优先正式商用发布
 
 ### 发布范围
 
-- [ ] 稳定的 Agent/Tool/Provider/Protocol v1 契约；
-- [ ] OpenAI-compatible 与 Anthropic Provider；
-- [ ] 完整 Coding Tool 闭环；
-- [ ] 持久 Session、Resume/Fork、Context Compaction；
-- [ ] Host/Container 执行、安全策略、审批和 Secret；
-- [ ] MCP、项目指令、Skills 和 Hooks；
-- [ ] CLI/TUI 与 Headless App Server；
-- [ ] Action Plane 外部副作用治理；
-- [ ] 可复现 Eval 和质量报告。
+- [ ] 稳定的Agent、Tool、Provider、Context、Session和Protocol v1契约；
+- [ ] OpenAI-compatible与Anthropic Provider，以及明确的能力和计价适用边界；
+- [ ] 读取、搜索、通用进程、多文件修改、测试、Diff、Checkpoint、Rollback和Git交付闭环；
+- [ ] 持久Session、Resume、Fork、Retry、Archive与Context Compaction；
+- [ ] Host/Container执行、安全策略、审批、网络和Secret；
+- [ ] MCP、项目指令、Skills和Hooks；
+- [ ] CLI/TUI、Headless App Server和Python Agent SDK；
+- [ ] Action Plane外部副作用治理；
+- [ ] macOS/Linux安装、升级、恢复、卸载和诊断；
+- [ ] 可复现Eval、质量报告、安全文档和运维资料。
 
 ### 发布门禁
 
-- [ ] 所有公共 Schema 有版本和兼容策略；
-- [ ] 所有数据库变更有向前迁移和回滚说明；
-- [ ] macOS/Linux 安装、升级和卸载验证通过；
-- [ ] 安全文档、威胁模型和 Secret 处理完成审查；
-- [ ] 默认 CI 不依赖外部模型和不稳定网络；
-- [ ] 真实 Provider Smoke Test 在受控环境通过；
-- [ ] 不存在未分类的高优先级故障恢复缺陷；
-- [ ] README 中的功能声明全部有可运行证据；
-- [ ] 发布包可复现，包含 Changelog 和迁移说明。
+- [ ] 所有公共Schema有版本、兼容窗口和废弃策略；
+- [ ] 所有数据库及持久Artifact变更有向前迁移、备份恢复和回滚说明；
+- [ ] macOS/Linux全新安装、跨版本升级、失败回滚和卸载验证通过；
+- [ ] 用户数据导出、删除、保留和诊断脱敏策略经过测试；
+- [ ] 安全文档、Threat Model v2、Sandbox、网络、Secret及扩展供应链完成审查；
+- [ ] 默认CI完全离线，受控真实Provider门禁独立且可审计；
+- [ ] 0.4.3c及所有跨版本发布债务已经关闭；
+- [ ] 不存在未分类或未处置的发布阻塞级可靠性与安全缺陷；
+- [ ] README中的每项当前能力声明都有可运行证据；
+- [ ] 发布物可复现并具备版本、校验摘要、SBOM、Changelog、迁移说明和支持矩阵；
+- [ ] 0.9固定Eval、Soak和受控Beta达到预先冻结的发布阈值，不在看到结果后降低标准。
 
-## 13. 1.0 之后
+1.0的规模声明限定为大量相互独立的本地实例。该版本不宣称多租户隔离、云端高可用、远程执行池或集中式服务SLO。
 
-只有 1.0 单 Agent Runtime 稳定后，才评估：
+## 13. 1.x与后续演进
 
-- Subagent、Reviewer 和并行任务；
-- IDE/桌面客户端；
-- 远程 Sandbox 与云任务；
-- 团队策略、多租户和集中审计；
-- LSP、代码索引和大型 Monorepo 优化；
-- Windows 原生支持；
-- Rust Process/Sandbox Sidecar；
-- 分布式 Session 和 Agent Worker。
+只有1.0单Agent本地产品稳定且真实用户证据充分后，才评估以下方向。
 
-这些能力不能提前侵入 1.0 核心，除非已有真实用户场景和评测数据证明必要。
+### 云端运行候选
+
+- 远程Sandbox与云任务；
+- 身份、租户、配额、限流和滥用治理；
+- 云端Secret/KMS、对象存储和数据生命周期；
+- 分布式Session、任务调度和Agent Worker；
+- 团队策略、集中审计、计费、服务SLO、备份和容灾。
+
+### 产品与能力候选
+
+- Subagent、Reviewer和并行任务；
+- IDE、桌面客户端和Web；
+- LSP、代码索引和大型Monorepo优化；
+- Windows原生支持；
+- 经0.7基准证明必要但未提前落地的Rust Process/Sandbox Sidecar。
+
+这些能力不能提前侵入1.0核心，除非已有真实用户场景、风险分析和评测数据证明必要。
 
 ## 14. 每个迭代的统一完成定义
 
 每个开发项只有同时满足以下条件才能勾选：
 
-1. 需求、边界和失败语义已写入设计或 ADR；
-2. 公共输入输出有类型和版本化 Schema；
-3. 实现没有绕过既有分层和安全端口；
-4. 正常、失败、取消、超时和恢复路径按风险完成测试；
-5. 日志、Trace 和指标不包含明文凭据；
-6. 数据库变更包含迁移和兼容测试；
-7. `make check` 通过；
-8. 相关 README、架构、部署和安全文档同步；
-9. 至少有一个跨组件集成验证；涉及模型或编码行为的里程碑还需真实 Provider 或真实仓库验证；
-10. Git Diff 仅包含该迭代必要变更。
+1. 参考实现研究记录固定提交或产品版本、来源、调用链、失败语义和Harnessix独立决策；
+2. 需求、边界、约束和失败语义已写入总体设计、详细设计或ADR；
+3. 公共输入输出有类型和版本化Schema；
+4. 实现没有绕过既有分层和安全端口；
+5. 正常、失败、取消、超时、崩溃和恢复路径按风险完成测试；
+6. 日志、Trace、指标、Artifact和诊断资料不包含明文凭据；
+7. 数据库及持久Artifact变更包含迁移、兼容、备份恢复和旧Reader测试；
+8. `make check`通过；
+9. 相关README、架构、部署、安全、测试和运维文档与实现同步；
+10. 至少有一个跨组件集成验证；涉及模型或编码行为的切片还需真实Provider或真实仓库验证；
+11. Git Diff仅包含该迭代必要变更，发布声明能够追溯到测试、Eval或运行证据。
