@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import subprocess
 from pathlib import Path
@@ -158,3 +159,114 @@ def test_windows_root_handle_blocks_workspace_replacement(tmp_path: Path) -> Non
             root.rename(tmp_path / "replacement")
     finally:
         port.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows快照稳定性语义")
+def test_windows_snapshot_remains_stable_after_selected_files_are_reopened(
+    tmp_path: Path,
+) -> None:
+    from harnessix.workspace.windows import WindowsWorkspaceRoot
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "src").mkdir()
+    (root / "src/keep.py").write_bytes(b"old\n")
+    (root / "remove.txt").write_bytes(b"remove\n")
+    resources = (
+        WorkspaceResourceRequest(path=".", access="read"),
+        WorkspaceResourceRequest(path="remove.txt", access="write"),
+        WorkspaceResourceRequest(path="src", access="read"),
+        WorkspaceResourceRequest(path="src/keep.py", access="write"),
+        WorkspaceResourceRequest(path="src/new.py", access="write"),
+    )
+    expected = capture_workspace_snapshot(root, resources=resources)
+
+    for path in ("src/keep.py", "remove.txt"):
+        native = WindowsWorkspaceRoot(root)
+        try:
+            observed = native.observe(path, access="write")
+            assert observed.kind == "file"
+            assert observed.content is not None
+        finally:
+            native.close()
+
+    verify_workspace_snapshot(expected, root)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows目录成员身份语义")
+def test_windows_directory_snapshot_detects_same_name_member_replacement(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    member = root / "member.txt"
+    member.write_bytes(b"same")
+    expected = capture_workspace_snapshot(
+        root,
+        resources=(WorkspaceResourceRequest(path="new.txt", access="write"),),
+    )
+
+    member.rename(tmp_path / "original.txt")
+    member.write_bytes(b"same")
+
+    with pytest.raises(KernelError) as error:
+        verify_workspace_snapshot(expected, root)
+    assert error.value.code == "execution_plan_stale"
+
+
+def test_windows_stable_identity_excludes_volatile_metadata() -> None:
+    from harnessix.workspace.windows import (
+        WindowsWorkspaceRoot,
+        _ByHandleFileInformation,
+    )
+
+    before = _ByHandleFileInformation()
+    before.attributes = 0x00000020  # FILE_ATTRIBUTE_ARCHIVE
+    before.volume_serial = 7
+    before.file_index_high = 11
+    before.file_index_low = 13
+    before.links = 1
+    before.size_low = 17
+    before.write_time.low = 19
+    after = _ByHandleFileInformation()
+    ctypes.memmove(ctypes.byref(after), ctypes.byref(before), ctypes.sizeof(before))
+    after.attributes = 0
+    after.write_time.low = 23
+
+    assert WindowsWorkspaceRoot._revision_identity(before) != (
+        WindowsWorkspaceRoot._revision_identity(after)
+    )
+    assert WindowsWorkspaceRoot._stable_identity(before, directory=False) == (
+        WindowsWorkspaceRoot._stable_identity(after, directory=False)
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "changed"),
+    [
+        ("volume_serial", 29),
+        ("file_index_low", 31),
+        ("attributes", 0x00000001),  # FILE_ATTRIBUTE_READONLY
+        ("links", 2),
+        ("size_low", 37),
+    ],
+)
+def test_windows_stable_file_identity_binds_execution_relevant_metadata(
+    field: str, changed: int
+) -> None:
+    from harnessix.workspace.windows import (
+        WindowsWorkspaceRoot,
+        _ByHandleFileInformation,
+    )
+
+    before = _ByHandleFileInformation()
+    before.volume_serial = 7
+    before.file_index_high = 11
+    before.file_index_low = 13
+    before.links = 1
+    before.size_low = 17
+    after = _ByHandleFileInformation()
+    ctypes.memmove(ctypes.byref(after), ctypes.byref(before), ctypes.sizeof(before))
+    setattr(after, field, changed)
+
+    assert WindowsWorkspaceRoot._stable_identity(before, directory=False) != (
+        WindowsWorkspaceRoot._stable_identity(after, directory=False)
+    )

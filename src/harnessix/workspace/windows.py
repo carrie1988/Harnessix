@@ -20,6 +20,7 @@ _FILE_READ_DATA = 0x0001
 _FILE_READ_ATTRIBUTES = 0x0080
 _FILE_SHARE_READ = 0x00000001
 _OPEN_EXISTING = 3
+_FILE_ATTRIBUTE_READONLY = 0x00000001
 _FILE_ATTRIBUTE_DIRECTORY = 0x00000010
 _FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
 _FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
@@ -202,7 +203,7 @@ class WindowsWorkspaceRoot:
                 parent_info = self._information(handles[-1])
                 return _Observed(
                     "missing",
-                    (*self._revision_identity(parent_info), name or normalized),
+                    (*self._stable_identity(parent_info, directory=True), name or normalized),
                     None,
                     0,
                 )
@@ -222,7 +223,10 @@ class WindowsWorkspaceRoot:
                     raise KernelError("workspace_changed", "Windows目录在观察期间变化")
                 return _Observed(
                     "directory",
-                    (*self._revision_identity(before), hashlib.sha256(body).hexdigest()),
+                    (
+                        *self._stable_identity(before, directory=True),
+                        hashlib.sha256(body).hexdigest(),
+                    ),
                     body,
                     count,
                 )
@@ -236,7 +240,7 @@ class WindowsWorkspaceRoot:
                 or len(content) != size
             ):
                 raise KernelError("workspace_changed", "Windows文件在观察期间变化")
-            return _Observed("file", self._revision_identity(before), content, size)
+            return _Observed("file", self._stable_identity(before, directory=False), content, size)
         except KernelError:
             raise
         except OSError:
@@ -263,7 +267,9 @@ class WindowsWorkspaceRoot:
                 if folded in seen:
                     raise KernelError("workspace_path_denied", "Windows目录包含大小写折叠冲突")
                 seen.add(folded)
-                entries.append((folded, kind, info.st_size, info.st_mtime_ns))
+                # FindFirstFileW返回的时间和大小可能来自目录枚举缓存。目录资源只绑定
+                # 成员名称、类型和对象身份；被显式选择的文件另由句柄身份与内容摘要绑定。
+                entries.append((folded, kind, info.st_dev, info.st_ino))
         entries.sort()
         return (
             json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode(),
@@ -306,6 +312,21 @@ class WindowsWorkspaceRoot:
             info.write_time.high,
             info.write_time.low,
         )
+
+    @classmethod
+    def _stable_identity(
+        cls, info: _ByHandleFileInformation, *, directory: bool
+    ) -> tuple[object, ...]:
+        """返回可跨观察比较的语义身份，不持久化Windows易变时间元数据。"""
+
+        identity: tuple[object, ...] = (
+            *cls._object_identity(info),
+            info.attributes & _FILE_ATTRIBUTE_READONLY,
+            info.links,
+        )
+        if directory:
+            return identity
+        return (*identity, info.size_high, info.size_low)
 
     def _final_path(self, handle: int) -> str:
         size = self._kernel32.GetFinalPathNameByHandleW(handle, None, 0, 0)
