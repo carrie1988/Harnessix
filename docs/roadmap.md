@@ -325,7 +325,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 9. 0.7：可信执行与工程交付
 
-状态：**发布候选**。0.7.1已交付POSIX/Windows原生Workspace Snapshot、跨进程fencing租约和不可变Execution Plan/Approval；0.7.2已交付Container强隔离启动适配、选择性网络与Secret正式端口并通过真实容器验收；0.7.3已交付跨平台Process/PTY/后台监督、Container统一生命周期并通过六矩阵门禁。0.7.4已实现Workspace Transaction、私有CAS、append-only账本、POSIX发布/恢复、新事务Rollback、完整Diff及受管Git worktree/checkpoint/commit；0.7.5已实现宿主Binding、规范资源、统一Policy/Approval、哈希链审计、Extension强制端口和独立Git Push/reconcile。本轮仍须通过最新Python 3.12/3.13、macOS、Windows、PostgreSQL和真实Container门禁后才能关闭0.7。
+状态：**已完成（2026-09-09）**。0.7.0～0.7.5的源码研究、正式契约、实现、失败恢复、安全攻击、真实仓库验证和文档已经交付；最终实现由[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵验收。0.7 Action入口当前是进程内宿主API；Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、公网Git凭据装配和发行物仍属于0.8/0.9。
 
 ### 目标
 
@@ -337,20 +337,20 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.7.1 跨平台Workspace与Permission**：建立Workspace平台端口；统一POSIX路径以及Windows盘符、UNC、保留名、ADS、大小写折叠、长路径、Reparse Point/Junction、外部目录和跨进程所有权；审批指纹绑定Tool、参数、cwd、环境摘要、Workspace revision和策略版本；
 - [x] **0.7.2 Sandbox、网络与Secret**：定义三平台Host安全级别和失败关闭策略；实现Container Sandbox执行适配、资源限制、网络出口域名/IP/端口策略、代理防绕过及Secret Provider最小化注入；Windows强隔离优先采用受管WSL2或Docker Desktop后端；通用spawn/回收由0.7.3接入；
 - [x] **0.7.3 跨平台Process与终端监督**：在Permission和Sandbox内提供通用argv/受控Shell、PTY、标准输入、后台进程、超时、取消、宿主死亡监督和有界输出Artifact；POSIX使用Session/Process Group，Windows使用Job Object等原生归属能力；是否引入Rust Sidecar由基准和失败测试决定；
-- [ ] **0.7.4 事务性交付与Git闭环**：把受管副本扩展为通用多文件Workspace事务，支持来源CAS、脏工作区保护、完整Diff、Checkpoint、Rollback、Branch/Worktree和显式Commit；Push始终单独授权且默认关闭；
-- [ ] **0.7.5 Action Plane与安全验收**：统一Coding Tool风险路由、文件/命令审计、外部副作用`UNKNOWN → reconcile`和扩展强制接入点，完成真实仓库、安全攻击、崩溃恢复及跨组件发布门禁。
+- [x] **0.7.4 事务性交付与Git闭环**：把受管副本扩展为通用多文件Workspace事务，支持来源CAS、脏工作区保护、完整Diff、Checkpoint、Rollback、Branch/Worktree和显式Commit；Push始终单独授权且默认关闭；
+- [x] **0.7.5 Action Plane与安全验收**：统一Coding Tool风险路由、文件/命令审计、外部副作用`UNKNOWN → reconcile`和扩展强制接入点，完成真实仓库、安全攻击、崩溃恢复及跨组件发布门禁。
 
 ### 关键测试
 
-- [ ] POSIX的`..`、绝对路径、符号链接、挂载点，以及Windows盘符、UNC、ADS、保留名、Junction/Reparse Point和检查后替换的竞态逃逸；
-- [ ] 审批后参数、cwd、环境、Workspace revision或策略变化导致授权失效；
-- [ ] POSIX Process Group和Windows Job Object下的子进程、PTY、后台进程和进程树在取消、超时及宿主崩溃后进入可核对状态；
-- [ ] 禁止网络时DNS、IPv4/IPv6、代理、重定向和解析漂移均受策略约束；
-- [ ] Secret不出现在模型Context、Session、日志、Trace、Diff或诊断包；
-- [ ] 多文件写入、Checkpoint、Commit各崩溃切点不产生未归因交付或盲目重放；
-- [ ] 外部写操作结果丢失时不重复执行，并能够通过Reconcile结束；
-- [ ] Host和Container模式的实际隔离能力、降级和不可用声明准确；
-- [ ] 每个切片至少完成一个真实仓库任务和对应的确定性回归。
+- [x] POSIX的`..`、绝对路径、符号链接、挂载点，以及Windows盘符、UNC、ADS、保留名、Junction/Reparse Point和检查后替换的竞态逃逸；
+- [x] 审批后参数、cwd、环境、Workspace revision或策略变化导致授权失效；
+- [x] POSIX Process Group和Windows Job Object下的子进程、PTY、后台进程和进程树在取消、超时及宿主崩溃后进入可核对状态；
+- [x] 禁止网络时DNS、IPv4/IPv6、代理、重定向和解析漂移均受策略约束；
+- [x] Secret不出现在模型Context、Session、日志、Trace、Diff或诊断包；
+- [x] 多文件写入、Checkpoint、Commit各崩溃切点不产生未归因交付或盲目重放；
+- [x] 外部写操作结果丢失时不重复执行，并能够通过Reconcile结束；
+- [x] Host和Container模式的实际隔离能力、降级和不可用声明准确；
+- [x] 每个切片至少完成一个真实仓库任务和对应的确定性回归。
 
 ### 验收标准
 

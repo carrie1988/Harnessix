@@ -1,9 +1,9 @@
 # Harnessix Code 0.7 可信执行与工程交付设计
 
-- 状态：实施中
+- 状态：已完成（2026-09-09）
 - 更新日期：2026-09-09
 - 适用范围：0.7.0～0.7.5
-- 已完成切片：0.7.0、0.7.1、0.7.2、0.7.3；0.7.4/0.7.5为发布候选
+- 已完成切片：0.7.0、0.7.1、0.7.2、0.7.3、0.7.4、0.7.5
 
 ## 1. 目标与非目标
 
@@ -456,4 +456,4 @@ Action Audit事件不保存敏感正文：Workspace资源记录路径标识摘�
 
 候选门禁覆盖：五类Tool来源同策略、未注册/伪造风险/Schema替换、明文凭据、扩展跨来源访问、审批和Workspace漂移、审计payload/index/事件链损坏、真实宿主`os._exit`恢复、真实Git仓库/受管worktree/checkpoint/commit/bare remote Push、直接ActionService旁路、remote/ref命令参数注入、LF/CRLF输出边界、remote配置漂移、Push返回丢失和只对账不重放。Trusted Action与Git Push专项共45项，Delivery回归52项，全仓本地门禁为3131 passed、11 skipped。
 
-0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7发布关闭仍必须以Python 3.12/3.13、macOS、Windows、PostgreSQL和真实Container远端门禁全部通过为准。
+0.7.5不交付MCP协议客户端、Skill加载器、Hook进程、CLI审批UI、远端凭据产品化或多租户签名审计；这些是0.8/0.9工作。0.7实现提交已通过[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵，0.7全部切片据此关闭。

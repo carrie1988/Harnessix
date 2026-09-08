@@ -1440,7 +1440,7 @@ Ruff格式与规则通过，Mypy严格检查6个Delivery源文件通过，专项
 
 ## 71. 0.7.4c 受管Git Worktree、Checkpoint与Commit候选验收（2026-09-08）
 
-状态：跨平台受管Git交付代码及本地macOS真实Git验证已完成；远端Windows/macOS矩阵尚待最终提交运行，不在本节提前关闭0.7.4。
+状态：跨平台受管Git交付代码及本地macOS真实Git验证已完成；后续与0.7.5一并进入的[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)已通过Windows/macOS及完整六矩阵，0.7.4据此关闭。
 
 当前Delivery共**35 passed**，新增Git用例及扩展安全参数覆盖：
 
@@ -1455,7 +1455,7 @@ Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schem
 
 ## 72. 0.7.5统一Action Plane与Git Push发布候选验收（2026-09-09）
 
-状态：领域合同、唯一可信路由、默认风险Policy、append-only审计、Extension能力端口及Git Push外部副作用证明切片已完成本地候选；0.7整体仍须等待本提交及最终文档提交的远端六矩阵全部通过后关闭。
+状态：**已完成**。领域合同、唯一可信路由、默认风险Policy、append-only审计、Extension能力端口及Git Push外部副作用证明切片已完成本地和远端验收；0.7整体随本切片关闭。
 
 0.7.5专项共**45 tests**（Trusted Action 21项、Git Push 24项），覆盖：
 
@@ -1473,3 +1473,5 @@ Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schem
 Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delivery和Process超时后代清理扩大回归通过。Ruff和Mypy定向门禁通过；10份新公共Schema与运行时模型逐项相等。全仓本地门禁为**3131 passed、11 skipped**。Windows CAS额外修复`os.open`未显式使用`O_BINARY`导致LF可能被文本模式转换、Blob摘要错误的问题；macOS Process后代超时测试把启动窗口从0.3秒调整为2秒，测试仍验证超时、SIGKILL和整组后代退出，不再把共享Runner冷启动误判为产品失败。
 
 本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
+
+最终实现提交`4023904`由[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS，macOS继续验证Process Group超时清理。该门禁不访问模型API或公网Git remote。

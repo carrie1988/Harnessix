@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成 0.1～0.6全部路线图范围和0.7.0～0.7.3；0.7.4/0.7.5已形成通用多文件事务、完整Diff、受管Git worktree/checkpoint/commit、统一Trusted Action路由、Extension最小能力端口及独立Git Push/reconcile发布候选，正在关闭最新远端多平台门禁。Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、远端Git凭据产品化和三平台发行物仍属于0.8/0.9，不能把当前候选宣称为1.0产品。0.7.2通过[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)的真实固定摘要容器、Python双版本、macOS、Windows及PostgreSQL验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1～0.7全部路线图范围。0.7交付通用多文件事务、完整Diff、受管Git worktree/checkpoint/commit、统一Trusted Action路由、Extension最小能力端口及独立Git Push/reconcile，并通过[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)的Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要真实Container六矩阵验收。Agent Protocol、MCP/Skill/Hook产品接线、完整CLI/TUI、远端Git凭据产品化和三平台发行物仍属于0.8/0.9，不能把0.7宣称为1.0产品。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -43,9 +43,9 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已有Windows原生实现或平台中立候选；该入口当前是进程内宿主API，Agent Protocol/MCP/Skill/Hook产品接线、完整CLI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；该入口当前是进程内宿主API，Agent Protocol/MCP/Skill/Hook产品接线、完整CLI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
 
-## 当前发布候选：0.7可信执行与工程交付
+## 当前已完成：0.7可信执行与工程交付
 
 - POSIX/Windows原生Workspace Snapshot、规范路径与跨进程fencing租约；
 - 不可变`ExecutionPlanV2`与精确Approval Checkpoint，绑定Tool、参数、cwd、环境、Workspace、Sandbox、网络和Secret版本；
