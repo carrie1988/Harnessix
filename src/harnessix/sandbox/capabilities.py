@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import platform as host_platform
 import stat
@@ -93,25 +94,56 @@ def probe_container_engine(
             raise ValueError
         path = path.resolve(strict=True)
         identity = executable_identity_digest(path)
+        version_command = (
+            str(path),
+            "version",
+            "--format",
+            "{{.Client.Version}}|{{.Server.Version}}",
+        )
         if engine == "docker":
-            command = (
+            security_command = (
                 str(path),
-                "version",
+                "info",
                 "--format",
-                "{{.Client.Version}}|{{.Server.Version}}|{{.Server.SecurityOptions}}",
+                "{{json .SecurityOptions}}",
             )
         else:
-            command = (str(path), "version", "--format", "{{.Client.Version}}|{{.Server.Version}}|")
-        completed = runner(command, 5.0)
+            security_command = (
+                str(path),
+                "info",
+                "--format",
+                "{{.Host.Security.Rootless}}",
+            )
+        completed = runner(version_command, 5.0)
+        security_completed = runner(security_command, 5.0)
     except (OSError, ValueError, subprocess.SubprocessError):
         raise KernelError("sandbox_unavailable", "容器引擎探测失败") from None
-    if completed.returncode != 0 or len(completed.stdout.encode("utf-8")) > 4096:
+    if (
+        completed.returncode != 0
+        or security_completed.returncode != 0
+        or len(completed.stdout.encode("utf-8")) > 4096
+        or len(security_completed.stdout.encode("utf-8")) > 16384
+    ):
         raise KernelError("sandbox_unavailable", "容器引擎服务不可用")
-    parts = completed.stdout.strip().split("|", 2)
-    if len(parts) != 3 or not parts[0] or not parts[1]:
+    parts = completed.stdout.strip().split("|", 1)
+    if len(parts) != 2 or not parts[0] or not parts[1]:
         raise KernelError("sandbox_unavailable", "容器引擎版本响应无效")
-    client, server, security = parts
-    rootless = "rootless" in security.casefold()
+    client, server = parts
+    try:
+        if engine == "docker":
+            security = json.loads(security_completed.stdout)
+            if not isinstance(security, list) or not all(
+                isinstance(item, str) for item in security
+            ):
+                raise ValueError
+            rootless = any("rootless" in item.casefold() for item in security)
+        else:
+            value = security_completed.stdout.strip().casefold()
+            if value not in {"true", "false"}:
+                raise ValueError
+            rootless = value == "true"
+    except (json.JSONDecodeError, ValueError, TypeError):
+        raise KernelError("sandbox_unavailable", "容器引擎安全能力响应无效") from None
     payload = {
         "spec_version": "harnessix.container-engine-probe/v1",
         "platform": native_platform(),

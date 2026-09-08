@@ -41,8 +41,9 @@ NOW = datetime(2026, 9, 8, tzinfo=UTC)
 
 def _runner(argv, timeout):
     assert timeout == 5.0
-    assert argv[1:3] == ("version", "--format")
-    return subprocess.CompletedProcess(argv, 0, "28.3.2|28.3.2|[name=seccomp]\n", "")
+    assert argv[1] in {"version", "info"}
+    output = "28.3.2|28.3.2\n" if argv[1] == "version" else '["name=seccomp"]\n'
+    return subprocess.CompletedProcess(argv, 0, output, "")
 
 
 def _fixtures(root: Path, mode="none"):

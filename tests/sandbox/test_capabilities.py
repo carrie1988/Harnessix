@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import subprocess
+import sys
+from pathlib import Path
 
-from harnessix.sandbox.capabilities import probe_host_sandbox
+import pytest
+
+from harnessix.agent.errors import KernelError
+from harnessix.sandbox.capabilities import probe_container_engine, probe_host_sandbox
 
 
 def test_host_sandbox_probe_only_advertises_backend_after_preflight() -> None:
@@ -20,3 +25,34 @@ def test_host_sandbox_probe_only_advertises_backend_after_preflight() -> None:
     if observed:
         assert observed[0][1] == 5.0
         assert "preflight_failed" in probe.reason_code
+
+
+@pytest.mark.parametrize(
+    ("engine", "security", "rootless"),
+    [("docker", '["name=seccomp","name=rootless"]', True), ("podman", "false", False)],
+)
+def test_container_probe_uses_daemon_and_security_capability_evidence(
+    engine: str, security: str, rootless: bool
+) -> None:
+    observed = []
+
+    def runner(argv, timeout):
+        observed.append(tuple(argv))
+        output = "client|server" if argv[1] == "version" else security
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    probe = probe_container_engine(  # type: ignore[arg-type]
+        Path(sys.executable), engine=engine, runner=runner
+    )
+    assert probe.rootless is rootless
+    assert [item[1] for item in observed] == ["version", "info"]
+
+
+def test_container_probe_rejects_unparseable_security_evidence() -> None:
+    def runner(argv, timeout):
+        output = "client|server" if argv[1] == "version" else "not-json"
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    with pytest.raises(KernelError) as error:
+        probe_container_engine(Path(sys.executable), engine="docker", runner=runner)
+    assert error.value.code == "sandbox_unavailable"
