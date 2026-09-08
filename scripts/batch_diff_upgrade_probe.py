@@ -248,7 +248,7 @@ async def main(mode, root):
     await store.initialize()
     assert all(records(store.path)[key] == value for key, value in data["events"].items())
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 13
+        assert EventDraft.model_fields["schema_version"].default == 14
         assert json.loads(json.dumps(snapshots(store.path))) == data["snapshots"]
         with factory.open(UUID(data["workspace_id"])) as copy:
             assert files_state(copy.workspace.root / "main.py") == data["copy"]

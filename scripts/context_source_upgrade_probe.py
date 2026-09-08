@@ -1,4 +1,4 @@
-"""真实Agent v11与当前v13 wheel的Session migration15升级探针。"""
+"""真实Agent v11与当前v14 wheel的Session migration15升级探针。"""
 
 from __future__ import annotations
 
@@ -122,13 +122,13 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["events"] == before["events"]
     assert migrated["threads"] == before["threads"]
     assert migrated["migrations"][:13] == [tuple(row) for row in metadata["migrations"]]
-    assert [row[0] for row in migrated["migrations"]] == list(range(1, 16))
+    assert [row[0] for row in migrated["migrations"]] == list(range(1, 17))
     thread_id = UUID(metadata["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 13
-        print("当前wheel已原字节追加migration15，v11事件与投影未改写")
+        assert EventDraft.model_fields["schema_version"].default == 14
+        print("当前wheel已原字节追加migration15-16，v11事件与投影未改写")
         return
 
     from harnessix.context import (
@@ -152,12 +152,12 @@ async def main(mode: str, root: Path) -> None:
     resumed = database_state(database_path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 13 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 14 for row in resumed["events"][old_event_count:]
     )
-    assert resumed["threads"][0][4] == 13
+    assert resumed["threads"][0][4] == 14
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
     print(
-        "v13 wheel已追加Context Inspection v3与Model History Inspection v1事件，旧v11事件原字节保留"
+        "v14 wheel已追加Context Inspection v3与Model History Inspection v1事件，旧v11事件原字节保留"
     )
 
 

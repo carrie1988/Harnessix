@@ -25,6 +25,11 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.context.compaction_ledger_contracts import (
+    COMPACTION_OPEN,
+    CompactionEvent,
+    CompactionRecord,
+)
 from harnessix.context.contracts import (
     ContextInspectionRecord,
     ContextInspectionV2,
@@ -407,12 +412,20 @@ class Turn(ContractModel):
     usage_step: int = 0
     usage: Usage = Field(default_factory=Usage)
     model_attempts: tuple[ModelAttempt, ...] = ()
+    compactions: tuple[CompactionRecord, ...] = Field(default_factory=tuple, max_length=1000)
     context_inspections: tuple[ContextInspectionRecord, ...] = ()
     tool_result_view_decisions: tuple[ToolResultViewDecision, ...] = ()
     model_history_inspections: tuple[ModelHistoryInspection, ...] = ()
     error: AgentFailure | None = None
     created_at: datetime
     completed_at: datetime | None = None
+
+    @property
+    def accounted_attempts(self) -> tuple[ModelAttempt, ...]:
+        return (
+            *self.model_attempts,
+            *(c.attempt for c in self.compactions if c.attempt is not None),
+        )
 
     @property
     def usage_is_complete(self) -> bool:
@@ -422,8 +435,9 @@ class Turn(ContractModel):
             and {a.step for a in self.model_attempts} == set(range(1, self.model_steps + 1))
             and all(
                 a.status != "running" and a.usage.completeness == "complete"
-                for a in self.model_attempts
+                for a in self.accounted_attempts
             )
+            and all(c.status not in COMPACTION_OPEN for c in self.compactions)
         )
 
 
@@ -500,13 +514,14 @@ EventPayload = Annotated[
     | ModelUsageObserved
     | ModelAttemptFinished
     | ModelHistoryPrepared
+    | CompactionEvent
     | ContextPrepared,
     Field(discriminator="type"),
 ]
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] = 13
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] = 14
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -532,6 +547,8 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 14 and isinstance(self.payload, CompactionEvent):
+            raise ValueError("摘要尝试账本需要Agent Event v14")
         if self.schema_version < 13 and isinstance(self.payload, ModelHistoryPrepared):
             raise ValueError("Tool Result模型历史检查需要Agent Event v13")
         if (

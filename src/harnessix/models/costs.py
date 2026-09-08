@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, model_validator
+from pydantic import AwareDatetime, Field, TypeAdapter, model_validator
 
 from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatus
 from harnessix.agent.usage import ModelAttempt, ModelIdentifier, TokenCount, UsageObservation
+from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN
 from harnessix.domain.models import ContractModel
 from harnessix.models.billing import resolve_billing_context
 from harnessix.models.pricing import (
@@ -274,13 +275,147 @@ class CostReport(ContractModel):
         return self
 
 
-def build_cost_report(turn: Turn, bindings: tuple[PriceBinding, ...] = ()) -> CostReport:
+class AccountedAttemptCost(AttemptCost):
+    purpose: Literal["generation", "compaction"]
+    compaction_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def bound_purpose(self) -> Self:
+        if (self.purpose == "compaction") != (self.compaction_id is not None):
+            raise ValueError("摘要费用必须绑定独立压缩身份")
+        return self
+
+
+class CompactionCostState(ContractModel):
+    compaction_id: UUID
+    model_step: int = Field(ge=1, le=1000, strict=True)
+    status: Literal["planned", "sampling", "summarized", "failed", "cancelled", "interrupted"]
+    attempt_id: UUID | None
+    unaccounted_request_possible: bool = False
+
+
+def _summarize_accounted(
+    entries: tuple[AccountedAttemptCost, ...],
+    compactions: tuple[CompactionCostState, ...],
+    model_steps: int,
+    status: TurnStatus,
+) -> CostSummary:
+    generation = tuple(e for e in entries if e.purpose == "generation")
+    ordinary = _summarize(generation, model_steps, status)
+    by_id = {c.compaction_id: c for c in compactions}
+    if len(by_id) != len(compactions) or len({c.model_step for c in compactions}) != len(
+        compactions
+    ):
+        raise ValueError("压缩身份或目标步骤重复")
+    if len({e.attempt.attempt_id for e in entries}) != len(entries):
+        raise ValueError("跨用途请求身份重复")
+    summary_entries = {e.compaction_id: e for e in entries if e.purpose == "compaction"}
+    if (
+        len(summary_entries) != len(entries) - len(generation)
+        or not set(summary_entries) <= by_id.keys()
+    ):
+        raise ValueError("摘要成本重复或不属于压缩记录")
+    for compaction in compactions:
+        if compaction.model_step > model_steps + 1:
+            raise ValueError("摘要目标超过当前或下一普通步骤")
+        entry = summary_entries.get(compaction.compaction_id)
+        if compaction.attempt_id is None:
+            if entry is not None or compaction.status in {"sampling", "summarized"}:
+                raise ValueError("摘要阶段与请求事实不一致")
+        elif (
+            entry is None
+            or entry.attempt.attempt_id != compaction.attempt_id
+            or entry.attempt.step != compaction.model_step
+            or entry.attempt.index != 1
+            or compaction.status == "planned"
+            or (compaction.status not in COMPACTION_OPEN and entry.attempt.status == "running")
+            or (compaction.status == "summarized" and entry.attempt.status != "completed")
+        ):
+            raise ValueError("摘要费用缺失、归属或结算状态不一致")
+    totals: dict[Currency, int] = {}
+    for entry in entries:
+        result = entry.result
+        if result.status == "estimated":
+            assert result.currency is not None and result.amount is not None
+            totals[result.currency] = totals.get(result.currency, 0) + amount_units(result.amount)
+    complete = (
+        status in TERMINAL_TURNS
+        and bool(entries)
+        and not ordinary.uncovered_steps
+        and all(e.result.status == "estimated" for e in entries)
+        and all(c.status not in COMPACTION_OPEN for c in compactions)
+        and not any(c.unaccounted_request_possible for c in compactions)
+    )
+    return CostSummary(
+        completeness="complete" if complete else "partial" if totals else "unknown",
+        uncovered_steps=ordinary.uncovered_steps,
+        totals=tuple(
+            CurrencySubtotal(currency=c, known_amount=format_amount(totals[c]))
+            for c in sorted(totals)
+        ),
+    )
+
+
+class CostReportV2(ContractModel):
+    spec_version: Literal["harnessix.cost-report/v2"] = "harnessix.cost-report/v2"
+    turn_id: UUID
+    turn_status: TurnStatus
+    model_steps: int = Field(ge=0, le=1000, strict=True)
+    compactions: tuple[CompactionCostState, ...] = Field(min_length=1, max_length=1000)
+    entries: tuple[AccountedAttemptCost, ...] = Field(max_length=33000)
+    summary: CostSummary
+
+    @model_validator(mode="after")
+    def validate_summary(self) -> Self:
+        expected = _summarize_accounted(
+            self.entries, self.compactions, self.model_steps, self.turn_status
+        )
+        if self.summary != expected:
+            raise ValueError("成本汇总与全用途账本不一致")
+        return self
+
+
+CostReportRecord = Annotated[CostReport | CostReportV2, Field(discriminator="spec_version")]
+COST_REPORT_ADAPTER: TypeAdapter[CostReportRecord] = TypeAdapter(CostReportRecord)
+
+
+def build_cost_report(turn: Turn, bindings: tuple[PriceBinding, ...] = ()) -> CostReportRecord:
     by_id = {binding.attempt_id: binding for binding in bindings}
     if len(by_id) != len(bindings) or not set(by_id).issubset(
-        {a.attempt_id for a in turn.model_attempts}
+        {a.attempt_id for a in turn.accounted_attempts}
     ):
         raise ValueError("存在重复或不属于本 Turn 的价格绑定")
     entries = tuple(estimate_attempt(a, by_id.get(a.attempt_id)) for a in turn.model_attempts)
+    if turn.compactions:
+        accounted = tuple(
+            AccountedAttemptCost(**e.model_dump(), purpose="generation") for e in entries
+        ) + tuple(
+            AccountedAttemptCost(
+                **estimate_attempt(c.attempt, by_id.get(c.attempt.attempt_id)).model_dump(),
+                purpose="compaction",
+                compaction_id=c.plan.compaction_id,
+            )
+            for c in turn.compactions
+            if c.attempt is not None
+        )
+        states = tuple(
+            CompactionCostState(
+                compaction_id=c.plan.compaction_id,
+                model_step=c.plan.model_step,
+                status=c.status,
+                attempt_id=c.attempt.attempt_id if c.attempt is not None else None,
+                unaccounted_request_possible=c.unaccounted_request_possible,
+            )
+            for c in turn.compactions
+        )
+        return CostReportV2(
+            turn_id=turn.turn_id,
+            turn_status=turn.status,
+            model_steps=turn.model_steps,
+            compactions=states,
+            entries=accounted,
+            summary=_summarize_accounted(accounted, states, turn.model_steps, turn.status),
+        )
     return CostReport(
         turn_id=turn.turn_id,
         turn_status=turn.status,

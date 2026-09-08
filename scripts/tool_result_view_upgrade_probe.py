@@ -76,7 +76,7 @@ async def main(mode: str, root: Path) -> None:
         print("v12 reader拒绝migration15且没有改变数据库")
         return
     assert mode in {"upgrade", "resume"}
-    assert EventDraft.model_fields["schema_version"].default == 13
+    assert EventDraft.model_fields["schema_version"].default == 14
     original = json.loads(metadata.read_text())
     await store.initialize()
     migrated = state(store.path)
@@ -84,13 +84,13 @@ async def main(mode: str, root: Path) -> None:
         migrated[table] == before[table]
         for table in ("agent_events", "agent_threads", "agent_artifacts")
     )
-    assert len(migrated["agent_migrations"]) == 15
+    assert len(migrated["agent_migrations"]) == 16
     assert migrated["agent_migrations"][:14] == original["state"]["agent_migrations"]
     thread_id = UUID(original["thread_id"])
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
     if mode == "upgrade":
         assert migrated["agent_threads"] == original["state"]["agent_threads"]
-        print("v13 wheel追加migration15；v12事件、投影和Artifact原字节不变")
+        print("v14 wheel追加migration15-16；v12事件、投影和Artifact原字节不变")
         return
     from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 

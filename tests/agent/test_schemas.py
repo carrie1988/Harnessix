@@ -33,7 +33,7 @@ from harnessix.context.tool_result_contracts import (
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
-from harnessix.models.costs import CostReport
+from harnessix.models.costs import CostReport, CostReportV2
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 
@@ -48,8 +48,8 @@ def test_generated_schemas_match_code() -> None:
         "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v13.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v13.schema.json": Thread.model_json_schema(),
+        "agent-event-v14.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v14.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -64,6 +64,7 @@ def test_generated_schemas_match_code() -> None:
         "anthropic-config-v1.schema.json": AnthropicConfig.model_json_schema(),
         "price-snapshot-v1.schema.json": PriceSnapshot.model_json_schema(),
         "cost-report-v1.schema.json": CostReport.model_json_schema(),
+        "cost-report-v2.schema.json": CostReportV2.model_json_schema(),
         "model-smoke-config-v1.schema.json": SmokeConfig.model_json_schema(),
         "model-smoke-report-v1.schema.json": SmokeReport.model_json_schema(),
     }
@@ -75,7 +76,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 14,
+                "schema_version": 15,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -109,7 +110,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 13
+        assert EventDraft(payload=payload).schema_version == 14
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -128,7 +129,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 13
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 14
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -158,7 +159,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 13
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 14
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -306,6 +307,19 @@ def test_historical_schemas_are_frozen() -> None:
             ),
             "agent-thread-v12.schema.json": (
                 "bb0a7d079bd9e04de337cdcb0e3c5609205cc470328c7c3cc2f3ee33fc808d5d"
+            ),
+        }
+    )
+    expected.update(
+        {
+            "agent-event-v13.schema.json": (
+                "6be8502d83465a3e2209d39a3d1ea1893c5e15679441b0625a724bf6a2fcfe6d"
+            ),
+            "agent-thread-v13.schema.json": (
+                "9033954df7323fc32f710cb2e377476d42d2dea667bf57bb8b7b93546f7cc6f4"
+            ),
+            "cost-report-v1.schema.json": (
+                "ad97a70268a9bc3df23274c6591c8e45af3ac26f3ade3838e0308802f828963e"
             ),
         }
     )

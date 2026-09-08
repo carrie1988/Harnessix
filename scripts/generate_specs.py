@@ -58,7 +58,7 @@ from harnessix.evals.delivery_contracts import (
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
-from harnessix.models.costs import CostReport
+from harnessix.models.costs import CostReport, CostReportV2
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.patches.batch_approval_contracts import (
     ManagedPatchBatchApproval,
@@ -108,8 +108,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v13.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v13.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v14.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v14.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
@@ -118,6 +118,7 @@ def main() -> None:
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
     write_json(output / "price-snapshot-v1.schema.json", PriceSnapshot.model_json_schema())
     write_json(output / "cost-report-v1.schema.json", CostReport.model_json_schema())
+    write_json(output / "cost-report-v2.schema.json", CostReportV2.model_json_schema())
     write_json(output / "model-smoke-config-v1.schema.json", SmokeConfig.model_json_schema())
     write_json(output / "model-smoke-report-v1.schema.json", SmokeReport.model_json_schema())
     write_json(

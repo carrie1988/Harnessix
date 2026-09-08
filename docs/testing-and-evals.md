@@ -1215,3 +1215,15 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 上述结果不包含真实摘要API、付费请求崩溃恢复、活动窗口提交或关键任务约束的语义保持；不得据此宣称自动压缩或V1.0完成。
 
 实现提交`13e50eb`通过[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)的Python 3.12、Python 3.13、macOS与PostgreSQL四项任务。后续账本、费用报告和恢复矩阵按[摘要尝试账本草案](compaction-attempt-ledger.md)继续实施，不扩大本门禁的验收结论。
+
+## 59. 0.6.3独立摘要账本内部门禁（2026-09-08）
+
+状态：Event/Thread v14独立账本、Cost Report v2、Campaign全用途汇总和Runtime中断收尾已实现；自动摘要HTTP、活动窗口、重复压缩与整体0.6.3仍未完成。设计见[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)和[账本详细设计](compaction-attempt-ledger.md)。
+
+专项自动化共82项，覆盖计划/阶段/时间/预算、来源及候选重算、Tool Result决定冻结、跨用途Attempt ID、累计用量与Billing后继、请求成功但候选失败、Cost v2归属/金额/币种/未知费用、Campaign遗漏摘要、Schema版本和18种真实子进程事务/恢复组合。恢复矩阵遍历计划、请求意图、部分/完整用量、请求结算、候选提交与恢复本身，并在SQLite的`after_events`、`after_projection`、`after_commit`三个切点退出；每次重开均不调用Provider，重复重开不新增事件。
+
+严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为 **2860 passed、2 skipped，256.68秒**；两项跳过仅因本机未配置`HARNESSIX_TEST_POSTGRES_URL`，PostgreSQL由远端CI矩阵验证。Ruff、Mypy 158个源文件及17个既有示例均通过。Schema连续生成两次聚合SHA256均为`29b0cb9633fe5aff6160f5dede32f442ce00055fbc31b5d4d12fec2cfff4be73`；旧v1-v13 Event/Thread及Cost v1文件哈希不变，新Schema为Agent Event/Thread v14和Cost Report v2；Provider Event v3不变。
+
+独立wheel升级使用上一已验收提交`ff15533`构建的v13基础环境和当前v14构建产物，未安装OpenAI/Anthropic SDK。验收sdist与wheel SHA256分别为`8275af1c0633c4329f5f9284bcb88934b0d76f2fc8d5ff6d606778ae3afff443`和`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`。`scripts/compaction_ledger_upgrade_probe.py`已验证：旧环境创建真实长历史；新环境仅追加migration16且旧事件/投影原字节不变；旧reader前后两次均拒绝；新环境追加离线摘要账本、重放Cost v2并重开为Interrupted，全程零Provider请求。migration16 SHA256为`5a1babc80cc700c9f372d61ecdcb4457ed6b9552267bcc24fe61b1cddd1f9fbb`。
+
+该门禁不验证真实收费摘要、SDK流关闭或活动窗口发布；不能据此关闭0.6.3、0.6或V1.0。后续必须延续无工具消费器、HTTP前意图、窗口CAS/恢复、轮前/reactive和工程语义保持测试。

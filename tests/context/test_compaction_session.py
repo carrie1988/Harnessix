@@ -121,7 +121,7 @@ async def test_real_file_session_plan_reopen_replay_and_both_provider_mappings(t
     assert [
         event.model_dump_json() for event in await store.events(thread.thread_id)
     ] == events_before
-    assert all(event.schema_version == 13 for event in await store.events(thread.thread_id))
+    assert all(event.schema_version == 14 for event in await store.events(thread.thread_id))
     assert hashlib.sha256(source_file.read_bytes()).hexdigest() == original_file_sha
 
 

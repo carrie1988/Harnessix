@@ -17,7 +17,7 @@ from harnessix.evals.campaign_contracts import (
 from harnessix.evals.contracts import CodingEvalReport, CodingEvalRunState
 from harnessix.evals.report import eval_report_sha256
 from harnessix.models.contracts import ResponseFailed
-from harnessix.models.costs import CostReport, build_cost_report
+from harnessix.models.costs import COST_REPORT_ADAPTER, CostReportRecord, build_cost_report
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +25,7 @@ class CompletedCodingEvalTrial:
     state: CodingEvalRunState
     report: CodingEvalReport
     turn: Turn
-    cost: CostReport
+    cost: CostReportRecord
 
 
 def _provider_failure(turn: Turn, *, allowed: bool) -> ResponseFailed | None:
@@ -51,7 +51,7 @@ def _require_evidence(
             evidence.report.model_dump_json(), strict=True
         )
         turn = Turn.model_validate_json(evidence.turn.model_dump_json(), strict=True)
-        cost = CostReport.model_validate_json(evidence.cost.model_dump_json(), strict=True)
+        cost = COST_REPORT_ADAPTER.validate_json(evidence.cost.model_dump_json(), strict=True)
     except ValueError:
         raise KernelError("eval_campaign_evidence_invalid", "Campaign单次证据契约无效") from None
     temporal_valid = False
@@ -132,12 +132,12 @@ def _require_evidence(
             sorted(
                 {
                     attempt.actual_model
-                    for attempt in turn.model_attempts
+                    for attempt in turn.accounted_attempts
                     if attempt.actual_model is not None
                 }
             )
         ),
-        model_attempts=len(turn.model_attempts),
+        model_attempts=len(turn.accounted_attempts),
         input_tokens=report.metrics.input_tokens,
         output_tokens=report.metrics.output_tokens,
         elapsed_seconds=report.metrics.elapsed_seconds,

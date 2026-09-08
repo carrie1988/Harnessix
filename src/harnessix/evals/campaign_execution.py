@@ -38,7 +38,7 @@ from harnessix.evals.run_state import read_eval_run_state
 from harnessix.evals.runner import run_historical_coding_eval
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelProvider
-from harnessix.models.costs import CostReport, bind_price, build_cost_report
+from harnessix.models.costs import CostReportRecord, bind_price, build_cost_report
 from harnessix.models.pricing import amount_units, format_amount
 from harnessix.session.sqlite import SQLiteSessionStore
 
@@ -226,7 +226,7 @@ async def _load_trial(
     try:
         bindings = tuple(
             bind_price(attempt, config.plan.price, config.plan.billing_context)
-            for attempt in turn.model_attempts
+            for attempt in turn.accounted_attempts
         )
         cost = build_cost_report(turn, bindings)
     except ValueError:
@@ -234,7 +234,7 @@ async def _load_trial(
     return CompletedCodingEvalTrial(state=state, report=report, turn=turn, cost=cost)
 
 
-def _known_cost(cost: CostReport, currency: str) -> tuple[int, bool]:
+def _known_cost(cost: CostReportRecord, currency: str) -> tuple[int, bool]:
     totals = cost.summary.totals
     if len(totals) > 1 or (totals and totals[0].currency != currency):
         raise KernelError("eval_campaign_cost_invalid", "Campaign单次成本币种不一致")

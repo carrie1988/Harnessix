@@ -4,7 +4,7 @@
 
 Harnessix Code 的目标是面向真实软件仓库完成代码理解、修改、命令执行、测试和交付，并把 Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox 和外部副作用治理纳入同一个可观测、可测试的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source、0.6.2b Workspace/Git/环境Source及0.6.2c稳定Tool Result模型视图。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，并通过完整本地与远端CI验收。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime全部路线图范围、0.6.1 Context规划、0.6.2a受控项目指令Source、0.6.2b Workspace/Git/环境Source及0.6.2c稳定Tool Result模型视图。0.6.2b提供多来源乐观双观测与Context Inspection v3；0.6.2c已实现稳定Tool Result模型视图、Artifact覆盖与工作区校验、Event/Thread v13和Session migration 15，并通过完整本地与远端CI验收。0.6.3已增加独立摘要账本、Cost v2和中断收尾，当前Event/Thread为v14、Session migration为16；摘要HTTP与窗口尚未接入。自动Compaction、Session Fork/Archive、OS Sandbox、通用多文件交付、自动commit/push和Agent CLI属于后续版本。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -474,7 +474,7 @@ uv run python examples/kernel_approval.py
 uv run --extra observability python -m examples.kernel_observability
 ~~~
 
-Plan/Compaction语义Item当前支持可信宿主记录与Replay，不自动改变活动模型历史。0.6.3已新增独立的首窗口规划与候选校验模块，但未接入自动压缩运行时或付费摘要账本，见[窗口规划设计](docs/compaction-window-planning.md)。
+Plan/Compaction语义Item当前支持可信宿主记录与Replay，不自动改变活动模型历史。0.6.3已新增独立的首窗口规划与候选校验模块，并已增加[独立摘要账本、成本与恢复](docs/compaction-attempt-ledger.md)，但未接入自动摘要HTTP或窗口发布，见[窗口规划设计](docs/compaction-window-planning.md)。
 
 这些入口验证真实 Kernel 和 SQLite 持久化，不调用模型 API，也不代表已经具备真实编码能力。当前仅允许可信只读 Tool，包括需要审批的只读调用；写工具仍关闭。审批为进程内接口，不是客户端审批 UI；完整边界与剩余任务见 [Kernel 实施设计](docs/m03-runtime-kernel.md)。
 
@@ -747,7 +747,7 @@ Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是
 - 每个结果默认64 KiB。首次进入模型历史时冻结策略、规范JSON摘要和精确替换，后续步骤复用；
 - 超限Grep/Glob只省略已经由完整Artifact覆盖的记录列表，查询、统计和完整性信息不丢失；其他结果不做任意JSON截断；
 - 模型调用前检查当前工作区权限、Thread/Call归属、引用用途、TTL、manifest、正文摘要和省略覆盖；分页回读另核对原发布者与消费调用；
-- 每步以Event v13记录`ModelHistoryPrepared`；取消、验证超时、失效引用或提交失败不会调用下一步模型；
+- 自Event v13起每步记录`ModelHistoryPrepared`；取消、验证超时、失效引用或提交失败不会调用下一步模型；
 - 旧会话没有冻结证据时只允许原样inline，不因升级而改变已经进入模型的前缀。
 
 宿主可通过`AgentRuntime(tool_result_view_policy=ToolResultViewPolicy(max_inline_utf8_bytes=65536))`配置单结果预算。`ToolResultViewPolicy`从`harnessix.context`导入；归档验证默认复用绑定同一Session的SQLite发布器，访问能力来自Coding Tool Runtime或原Batch Diff桥接。无归档且超限时明确失败，不自动补写旧结果或重试工具。

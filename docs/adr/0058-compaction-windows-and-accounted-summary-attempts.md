@@ -10,7 +10,7 @@
 
 单结果裁剪不能控制累计历史长度。直接覆盖Thread.items、把摘要器藏在Context Planner中、或者失败后反复调用摘要器，分别会破坏审计、漏记费用、放大成本。0.6.3必须交付一个完整的长会话窗口流程，而不是增加一个“生成摘要”函数。
 
-本ADR提出待完整契约与反例测试确认的运行时设计。首窗口规划及候选校验已实现为独立、无副作用的v1领域契约，详见[窗口规划设计](../compaction-window-planning.md)；摘要账本和活动窗口尚未写入当前运行时。Event/Thread仍为v13，不能把下述运行时候选类型当作已发布API。
+本ADR提出待完整契约与反例测试确认的运行时设计。首窗口规划及候选校验已实现为独立、无副作用的v1领域契约，详见[窗口规划设计](../compaction-window-planning.md)；摘要账本已按[ADR 0059](0059-compaction-attempt-ledger-and-purpose-costs.md)发布为Event/Thread v14、Cost v2和migration16，并接入终止恢复。摘要HTTP及活动窗口仍未接入，不能把下述窗口候选类型当作已发布API。
 
 ## 2. 拟采用设计
 
@@ -46,7 +46,7 @@ Thread拟增加活动模型窗口身份，窗口由首条原用户消息、版�
 
 新增Compaction运行记录及其尝试事件封装，复用`UsageObservation`、`ResponseBillingMetadata`、`ModelAttempt`和`estimate_attempt`的已有数据/计费语义，但不冒充普通CALLING_MODEL步骤。
 
-具体原因：当前`reducer._model_attempt`约束尝试只属于正在打开的普通步骤，`build_cost_report`只遍历`turn.model_attempts`。仅在PREPARING_CONTEXT发起Provider请求会绕过两者；直接增加普通step又会伪造一次交付模型响应。
+具体原因：原`reducer._model_attempt`约束尝试只属于正在打开的普通步骤，旧成本构建仅遍历`turn.model_attempts`（ADR 0059已扩展全用途汇总）。仅在PREPARING_CONTEXT发起Provider请求会绕过两者；直接增加普通step又会伪造一次交付模型响应。
 
 拟采用独立Compaction Attempt集合，Attempt ID在整个Thread唯一；普通与摘要集合共享Turn Token总预算和截止时间，累计观测按增量入账，完整性、缓存分项、响应身份和价格绑定仍沿用原规则。Cost Report、Eval与诊断必须同时汇总两类尝试，并明确用途，不能只修改核心Runtime而漏掉报告层。
 
@@ -124,4 +124,4 @@ Summary是从不可信历史派生的数据，不得升级为Runtime/User指令�
 
 该实现不调用Provider、不写Session、不发布窗口。仅凭内存候选无法证明尝试结算、语义保持或付费请求崩溃恢复；独立账本与发布门禁仍须按第5节推进，不将本ADR提前改为Accepted。
 
-账本候选事件、Cost Report v2、Campaign聚合和崩溃窗口已细化为[摘要尝试账本与窗口发布设计草案](../compaction-attempt-ledger.md)。该文明确现有接口约束和未实施边界，不作为已发布Schema。
+独立账本、Cost Report v2、Campaign聚合和崩溃窗口已按[ADR 0059](0059-compaction-attempt-ledger-and-purpose-costs.md)与[摘要尝试账本详细设计](../compaction-attempt-ledger.md)实现。活动窗口、摘要HTTP和自动触发仍属本ADR未完成范围。

@@ -1,7 +1,7 @@
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08
-- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3首窗口规划契约已实现、摘要账本与运行时设计中；整体0.6进行中
+- 状态：0.6.1、0.6.2a、0.6.2b、0.6.2c已完成；0.6.3首窗口规划与独立摘要账本已实现，摘要HTTP与活动窗口待接入；整体0.6进行中
 - 目标：支持长任务、多轮会话和可解释、可恢复的上下文管理
 
 ## 1. 实施顺序
@@ -366,7 +366,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实际Workspace scope；Batch Diff发布器委托原Managed Patch Bridge提供副本scope。独立宿主可显式注入这两个只读端口，但必须维持相同Session和真实工作区访问边界。
 
-当前读写Agent Event/Thread v13；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
+0.6.2c基线为Agent Event/Thread v13（当前摘要账本已推进为v14）；Context Inspection仍兼容v1/v2/v3。新增Session `0015_tool_result_model_view.sql`只推进最低reader，不重写旧Event、投影或Artifact；v1-v12 Schema保持冻结。旧历史缺少冻结决定时只允许inline，不因新默认预算而追溯裁剪。
 
 已提交决定通过`Turn.tool_result_view_decisions`读取；每步统计通过`Turn.model_history_inspections`读取。决定可能包含Artifact manifest及残留查询元数据，应按Session本身权限保护。Metrics仅输出固定strategy/component和数量；不输出正文、路径、ID或摘要标签。完整失败代码与退出窗口见ADR 0057。
 
@@ -382,6 +382,15 @@ SQLite Artifact发布器可自动作为验证器。Coding Tool Runtime提供实�
 
 本门禁完成后继续独立摘要Attempt包装、Token增量记账、成本报告、候选与尝试绑定、CAS窗口发布和中断恢复。仅计划JSON往返与只读Session重开不等于付费摘要恢复验收；自动Compaction、重复压缩和语义保持Eval仍未完成，0.6.3不得据此关闭。
 
-下一步的现有接口复核、候选事件、Cost v2与Campaign影响面、发布事务及付费请求崩溃矩阵见[摘要尝试账本设计草案](compaction-attempt-ledger.md)。Provider Event v3保持不变；Event/Thread v14等新增版本尚未冻结。
+后续摘要账本已实现，正式事件、Cost v2、Campaign影响面、事务和恢复矩阵见[摘要尝试账本详细设计](compaction-attempt-ledger.md)。Provider Event v3保持不变；当前Event/Thread v14与migration16仅发布账本，活动窗口使用后续新版本。
 
 首窗口实现提交`13e50eb`的[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)四项任务通过；严格本地回归2783 passed、2项仅因PostgreSQL未配置跳过，详见测试规范第58节。
+
+
+## 31. 0.6.3独立摘要账本内部门禁
+
+正式实现见[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)及[详细设计](compaction-attempt-ledger.md)。独立集合不增加普通模型步骤；开放账本隔离来源变化；普通与摘要复用累计差额、Billing和响应身份验证。成功请求与候选接受分离，失败摘要仍进入Cost v2和Campaign支出。
+
+Event/Thread v14、Cost Report v2、Session migration16已加入；旧v1-v13及Cost v1 Schema不变。真实SQLite子进程退出覆盖计划、意图、用量、结算、候选与恢复事务；多次重开不自动请求。没有摘要记录时仍返回Cost v1，原Smoke不启用压缩。
+
+当前尚未实现摘要HTTP消费、请求预算预留、活动窗口发布/恢复、重复压缩及轮前/reactive触发，因此本门禁只接受账本，不关闭0.6.3。下一步先实现HTTP前意图持久化、禁止摘要工具执行、有界流关闭和完整用量收尾，再发布绑定原始来源的活动窗口。0.6.4和0.6.5随后按原纵向切片顺序推进。

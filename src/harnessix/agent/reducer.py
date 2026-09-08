@@ -5,7 +5,9 @@ from datetime import timedelta
 from uuid import UUID
 
 from harnessix.agent.approvals import approval_for, approval_matches, request_fingerprint
+from harnessix.agent.attempt_accounting import settle_observation
 from harnessix.agent.batch_patching import validate_effect
+from harnessix.agent.compaction_reducer import apply_compaction
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     PROCESS_RESOLVED_STATUSES,
@@ -45,6 +47,7 @@ from harnessix.agent.usage import (
     ModelAttemptStarted,
     ModelUsageObserved,
 )
+from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN, CompactionEvent
 from harnessix.context.contracts import ContextPrepared
 from harnessix.context.tool_result_view import prepare_model_history
 from harnessix.domain.models import (
@@ -480,7 +483,8 @@ def _change_state(turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> T
         allowed.update({TurnStatus.CANCELLING, TurnStatus.FAILED, TurnStatus.INTERRUPTED})
     require(target in allowed, f"非法 Turn 状态转换：{turn.status} → {target}")
     if target in TERMINAL_TURNS:
-        require(all(a.status != "running" for a in turn.model_attempts), "存在未结算模型尝试")
+        require(all(a.status != "running" for a in turn.accounted_attempts), "存在未结算模型尝试")
+        require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
         require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
         require(not pending_calls(turn), "存在未配对 Tool Call")
         if target == TurnStatus.COMPLETED:
@@ -634,48 +638,11 @@ def _model_attempt(turn: Turn, event: AgentEvent) -> Turn:
     assert attempt is not None
     require(attempt.status == "running", "模型尝试已结算")
     require(attempt.step == turn.model_steps, "尝试不属于当前模型步骤")
-    usage = turn.usage
-    if isinstance(payload, ModelUsageObserved):
-        try:
-            payload.usage.validate_successor(attempt.usage)
-            billing = payload.billing if payload.billing is not None else attempt.billing
-            billing.validate_successor(attempt.billing)
-            billing.validate_usage(payload.usage)
-        except ValueError:
-            raise KernelError("invalid_event", "模型用量或计费元数据冲突") from None
-        for field in ("actual_model", "response_id"):
-            before, after = getattr(attempt, field), getattr(payload, field)
-            require(before is None or after is None or before == after, "尝试响应身份发生变化")
-        usage = Usage(
-            input_tokens=turn.usage.input_tokens
-            + (payload.usage.input_tokens or 0)
-            - (attempt.usage.input_tokens or 0),
-            output_tokens=turn.usage.output_tokens
-            + (payload.usage.output_tokens or 0)
-            - (attempt.usage.output_tokens or 0),
-        )
-        attempt = attempt.model_copy(
-            update={
-                "usage": payload.usage,
-                "billing": billing,
-                "actual_model": payload.actual_model or attempt.actual_model,
-                "response_id": payload.response_id or attempt.response_id,
-            }
-        )
-    else:
-        if payload.outcome == "completed":
-            require(attempt.usage.completeness == "complete", "成功尝试需要完整用量")
-            require(
-                attempt.actual_model is not None and attempt.response_id is not None,
-                "成功尝试缺少响应身份",
-            )
-        attempt = attempt.model_copy(
-            update={
-                "status": payload.outcome,
-                "error": payload.error,
-                "finished_at": event.occurred_at,
-            }
-        )
+    attempt, input_delta, output_delta = settle_observation(attempt, payload, event.occurred_at)
+    usage = Usage(
+        input_tokens=turn.usage.input_tokens + input_delta,
+        output_tokens=turn.usage.output_tokens + output_delta,
+    )
     return turn.model_copy(
         update={
             "usage": usage,
@@ -767,6 +734,15 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
         require(thread.active_turn_id == event.turn_id, "不能修改非活跃 Turn")
         turn = get_turn(thread, event.turn_id)
         require(turn.status not in TERMINAL_TURNS, "终态不可重开")
+        if any(c.status in COMPACTION_OPEN for c in turn.compactions):
+            require(
+                isinstance(payload, CompactionEvent)
+                or (
+                    isinstance(payload, TurnStateChanged)
+                    and payload.status == TurnStatus.CANCELLING
+                ),
+                "开放压缩期间只能推进摘要账本或取消",
+            )
         if isinstance(payload, TurnStateChanged):
             turn = _change_state(turn, event, payload)
         elif isinstance(payload, ItemStarted):
@@ -783,11 +759,13 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                     all(
                         a.attempt_id != payload.attempt_id
                         for t in thread.turns
-                        for a in t.model_attempts
+                        for a in t.accounted_attempts
                     ),
                     "尝试 ID 在 Thread 内重复",
                 )
             turn = _model_attempt(turn, event)
+        elif isinstance(payload, CompactionEvent):
+            turn = apply_compaction(thread, turn, event)
         elif isinstance(payload, ContextPrepared):
             turn = _prepare_context(turn, payload)
         elif isinstance(payload, ModelHistoryPrepared):

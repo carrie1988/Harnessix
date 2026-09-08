@@ -13,7 +13,7 @@
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4 进行中：双 Adapter、尝试/失败用量账本、0.4.3a 成本报告、0.4.3b1 受控 Smoke/白名单诊断、0.4.3b2 响应计费元数据已通过离线验收；百炼文本/内存工具/审批重开实测通过；真实计价适用性验收尚未完成。其他后续规划：Context Engine、Sandbox、MCP/Skills 和产品化 Evals；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
-- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration 14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验，已通过本地与远端CI验收；0.6.3已实现独立首窗口规划与候选校验，但摘要账本、自动Compaction和会话生命周期仍未接入，见[实施设计](m06-context-and-sessions.md)与[窗口规划详设](compaction-window-planning.md)；
+- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration 14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验，已通过本地与远端CI验收；0.6.3已实现独立首窗口规划与候选校验，并已实现独立摘要账本、Cost v2与恢复；自动Compaction和会话生命周期仍未接入，见[实施设计](m06-context-and-sessions.md)与[窗口规划详设](compaction-window-planning.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -326,7 +326,7 @@ Client Cancel
 ### Context
 
 7. 每次模型请求都能解释主要 Context 来源和预算使用。
-8. Compaction 结果必须作为独立 Item 持久化，不能原地篡改历史事实。
+8. Compaction 结果必须作为独立版本化事实（摘要账本及窗口记录）持久化，不能原地篡改历史事实。
 9. Tool Result 截断必须显式标识，并保留获取完整结果的受控引用。
 
 ### 工具与安全
@@ -453,4 +453,4 @@ src/harnessix/
 
 事实层仍由Session Event、原始Item、效果证据和Artifact构成，不能因输入预算回写或删除。投影层由纯`prepare_model_history`生成；`ModelHistoryPrepared`以Event v13保存首次决定和每步检查。Kernel先核验Artifact的当前访问scope、关联与内容，再提交决定并规划Context，最后发送模型请求。
 
-Artifact完整性是字段覆盖证明而非通用“备份成功”标志：搜索归档只覆盖记录，Process归档只覆盖已捕获流，Batch Diff只覆盖差异。后两者不能替代任意结果字段。旧模型前缀、Artifact TTL、取消/超时和崩溃重启均属于此边界；应用不持久化供应商SDK对象。当前数据版本为Event/Thread v13、Model History Inspection v1、Tool Result View v1与Session migration 15；Context Inspection v3不变。
+Artifact完整性是字段覆盖证明而非通用“备份成功”标志：搜索归档只覆盖记录，Process归档只覆盖已捕获流，Batch Diff只覆盖差异。后两者不能替代任意结果字段。旧模型前缀、Artifact TTL、取消/超时和崩溃重启均属于此边界；应用不持久化供应商SDK对象。工具视图引入Event/Thread v13与migration15；摘要账本进一步升级为Event/Thread v14、Cost v2与migration16。Model History Inspection v1、Tool Result View v1和Context Inspection v3不变，见[摘要账本设计](compaction-attempt-ledger.md)。

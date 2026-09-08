@@ -851,7 +851,7 @@ context = SourcedContextEngine(
 
 ## 0.6.2c稳定Tool Result视图部署
 
-新写Agent Event/Thread为v13，追加`0015_tool_result_model_view.sql`。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，当前摘要账本写入版本进一步升至v14/migration16。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
 
 ### 宿主配置与限制
 
@@ -864,11 +864,20 @@ context = SourcedContextEngine(
 
 ### 独立wheel升级验收
 
-使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v13 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
+使用`scripts/tool_result_view_upgrade_probe.py`，分别从`fd10c633cbe3f713bb413d9c1e843d5a66ea25da`归档构建v12 wheel和从当前提交构建v14 wheel，安装到两个仓库外Python 3.12基础环境。按顺序执行：
 
 1. 旧环境：`python -I tool_result_view_upgrade_probe.py create <验证目录>`；真实搜索产生40条预览、100条归档及v12会话。
-2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15且全部旧事件、投影与Artifact原字节不变。
+2. 新环境：`python -I tool_result_view_upgrade_probe.py upgrade <验证目录>`；检查migration15-16且全部旧事件、投影与Artifact原字节不变。
 3. 旧环境：`python -I tool_result_view_upgrade_probe.py old-reader <验证目录>`；必须拒绝且不改数据库。
-4. 新环境：`python -I tool_result_view_upgrade_probe.py resume <验证目录>`；2 KiB策略拒绝重裁旧前缀，默认策略以内联原结果续写v13检查；原事件与Artifact保持不变。
+4. 新环境：`python -I tool_result_view_upgrade_probe.py resume <验证目录>`；2 KiB策略拒绝重裁旧前缀，默认策略以内联原结果续写v14检查；原事件与Artifact保持不变。
 
 探针不使用模型凭据、远程服务器或外部中间件。发布门禁还包含真实进程退出窗口、全仓回归、严格异步检查、Schema再生稳定性、基础wheel安装与远端CI；结果记录在测试规范第57节。
+
+
+## 摘要账本升级与回退
+
+`0016_compaction_attempt_ledger.sql`将最低reader推进至摘要账本版本；SHA256为`5a1babc80cc700c9f372d61ecdcb4457ed6b9552267bcc24fe61b1cddd1f9fbb`。沿用同一SQLite/WAL存储，不要求额外中间件。升级只追加迁移marker，旧事件、投影和Artifact不重写；首次追加新事件才写v14投影。
+
+独立wheel验证使用`scripts/compaction_ledger_upgrade_probe.py`：旧环境由`ff15533`构建v13 wheel，新环境使用当前wheel，均不安装可选模型SDK。先由旧环境执行`create`，新环境执行`upgrade`，旧环境执行`old-reader`，新环境执行`append`，最后再次由旧环境执行`old-reader`。参数为仓库外绝对验证目录。append仅提交离线摘要事实及重开验证，不访问供应商API。
+
+关闭旧宿主并取得一致备份后升级。恢复时planned/running压缩统一中断，已结算费用保留；summarized候选不会自动激活或重发摘要。旧v13 reader遇到migration16必须返回schema_too_new且不修改数据库。回退使用升级前备份，禁止删除迁移marker或下调投影版本。活动窗口尚未发布，本升级不启用自动压缩。

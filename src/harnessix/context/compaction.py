@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from collections.abc import Generator
 from dataclasses import dataclass, field
+from typing import cast
 from uuid import UUID, uuid5
 
 from harnessix.agent.cancellation import CancelToken
@@ -24,6 +26,7 @@ from harnessix.context.compaction_contracts import (
     CompactionPolicy,
     CompactionSummary,
 )
+from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import (
     PreparedModelHistory,
@@ -75,9 +78,9 @@ async def _checkpoint(cancel: CancelToken) -> None:
     cancel.checkpoint()
 
 
-async def _closed_groups(
-    history: tuple[Item, ...], cancel: CancelToken
-) -> tuple[tuple[Item, ...], ...]:
+def _closed_group_steps(
+    history: tuple[Item, ...],
+) -> Generator[None, None, tuple[tuple[Item, ...], ...]]:
     """保守合并连续助手块；只有用户边界或完整结果组结束才允许切分。"""
     groups: list[tuple[Item, ...]] = []
     current: list[Item] = []
@@ -86,7 +89,7 @@ async def _closed_groups(
     item_ids: set[UUID] = set()
     taking_results = False
     for item in history:
-        await _checkpoint(cancel)
+        yield None
         if item.item_id in item_ids or item.status != ItemStatus.COMPLETED:
             raise KernelError("context_compaction_invalid_history", "压缩来源Item重复或未完成")
         item_ids.add(item.item_id)
@@ -137,7 +140,8 @@ def _current_user(thread: Thread, model_step: int) -> UUID:
         or model_step != active.model_steps + 1
         or any(turn.status not in TERMINAL_TURNS for turn in thread.turns if turn is not active)
         or any(item.status == ItemStatus.STARTED for turn in thread.turns for item in turn.items)
-        or any(a.status == "running" for turn in thread.turns for a in turn.model_attempts)
+        or any(a.status == "running" for turn in thread.turns for a in turn.accounted_attempts)
+        or any(c.status in COMPACTION_OPEN for turn in thread.turns for c in turn.compactions)
     ):
         raise KernelError("context_compaction_unsafe_state", "压缩需要已结算、无开放Item的准备状态")
     if (
@@ -182,18 +186,17 @@ def _summary_source(items: tuple[Item, ...]) -> str:
     )
 
 
-async def plan_compaction(
+def _plan_steps(
     thread: Thread,
     model_step: int,
     view_policy: ToolResultViewPolicy,
     policy: CompactionPolicy,
-    cancel: CancelToken,
     *,
     compaction_id: UUID,
     anchors: tuple[CompactionAnchor, ...] = (),
-) -> PreparedCompaction:
+) -> Generator[None, None, PreparedCompaction]:
     """规划首个压缩窗口；不调用Provider、读取Artifact或修改Session。"""
-    await _checkpoint(cancel)
+    yield None
     policy = CompactionPolicy.model_validate_json(policy.model_dump_json())
     view_policy = ToolResultViewPolicy.model_validate_json(view_policy.model_dump_json())
     current_user_id = _current_user(thread, model_step)
@@ -216,7 +219,7 @@ async def plan_compaction(
                 "context_compaction_anchor_mismatch", "固定锚点与原始Session事实不匹配"
             )
         requested_pins.add(anchor.item_id)
-    groups = await _closed_groups(prepared.history, cancel)
+    groups = yield from _closed_group_steps(prepared.history)
     pinned_groups = {
         index
         for index, group in enumerate(groups)
@@ -230,7 +233,7 @@ async def plan_compaction(
     if retained_tokens > available:
         raise KernelError("context_compaction_retained_overflow", "固定项和近期完整组超过保留预算")
     for index in range(tail - 1, -1, -1):
-        await _checkpoint(cancel)
+        yield None
         if index in selected:
             continue
         if retained_tokens + sizes[index] > available:
@@ -250,7 +253,7 @@ async def plan_compaction(
         < policy.min_savings_tokens
     ):
         raise KernelError("context_compaction_no_progress", "没有可压缩前缀或预留后不足最小缩减量")
-    await _checkpoint(cancel)
+    yield None
     summary_source = _summary_source(covered)
     summary_tokens = len(summary_source.encode())
     if summary_tokens > policy.max_summary_input_tokens:
@@ -285,7 +288,7 @@ async def plan_compaction(
         retained_history_tokens=retained_tokens,
         summary_input_tokens=summary_tokens,
     )
-    await _checkpoint(cancel)
+    yield None
     return PreparedCompaction(plan, prepared, summary_source, retained)
 
 
@@ -308,14 +311,13 @@ def _summary_item(summary: CompactionSummary) -> Item:
     )
 
 
-async def validate_compaction(
+def _validation_steps(
     thread: Thread,
     plan: CompactionPlan,
     summary: CompactionSummary,
-    cancel: CancelToken,
-) -> ValidatedCompaction:
+) -> Generator[None, None, ValidatedCompaction]:
     """重新求证快照及预算；调用方仍须完成尝试绑定和Session CAS发布。"""
-    await _checkpoint(cancel)
+    yield None
     try:
         plan = CompactionPlan.model_validate_json(plan.model_dump_json())
         summary = CompactionSummary.model_validate_json(summary.model_dump_json())
@@ -330,12 +332,11 @@ async def validate_compaction(
         or thread.sequence != plan.source_event_sequence
     ):
         raise KernelError("context_compaction_source_changed", "候选与来源快照身份不一致")
-    prepared = await plan_compaction(
+    prepared = yield from _plan_steps(
         thread,
         plan.model_step,
         plan.tool_result_view_policy,
         plan.policy,
-        cancel,
         compaction_id=plan.compaction_id,
         anchors=plan.anchors,
     )
@@ -359,7 +360,7 @@ async def validate_compaction(
         or plan.source_history_tokens - after_tokens < plan.policy.min_savings_tokens
     ):
         raise KernelError("context_compaction_no_progress", "候选窗口未达到目标预算和缩减量")
-    await _closed_groups(history, cancel)
+    yield from _closed_group_steps(history)
     return ValidatedCompaction(
         plan=plan,
         summary=summary,
@@ -368,3 +369,83 @@ async def validate_compaction(
         history_tokens=after_tokens,
         summary_sha256=_sha(summary.text),
     )
+
+
+def _collect[T](steps: Generator[None, None, T]) -> T:
+    try:
+        while True:
+            try:
+                next(steps)
+            except StopIteration as finished:
+                return cast(T, finished.value)
+    finally:
+        steps.close()
+
+
+async def _iterate[T](steps: Generator[None, None, T], cancel: CancelToken) -> T:
+    try:
+        while True:
+            await _checkpoint(cancel)
+            try:
+                next(steps)
+            except StopIteration as finished:
+                return cast(T, finished.value)
+    finally:
+        steps.close()
+
+
+def replay_compaction_plan(thread: Thread, plan: CompactionPlan) -> PreparedCompaction:
+    prepared = _collect(
+        _plan_steps(
+            thread,
+            plan.model_step,
+            plan.tool_result_view_policy,
+            plan.policy,
+            compaction_id=plan.compaction_id,
+            anchors=plan.anchors,
+        )
+    )
+    if prepared.plan != plan:
+        raise KernelError("context_compaction_source_changed", "压缩计划与原快照重算不一致")
+    return prepared
+
+
+def replay_compaction_candidate(
+    thread: Thread,
+    plan: CompactionPlan,
+    summary: CompactionSummary,
+) -> ValidatedCompaction:
+    return _collect(_validation_steps(thread, plan, summary))
+
+
+async def plan_compaction(
+    thread: Thread,
+    model_step: int,
+    view_policy: ToolResultViewPolicy,
+    policy: CompactionPolicy,
+    cancel: CancelToken,
+    *,
+    compaction_id: UUID,
+    anchors: tuple[CompactionAnchor, ...] = (),
+) -> PreparedCompaction:
+    """可取消规划与同步Replay共用有界纯计算，不执行I/O。"""
+    return await _iterate(
+        _plan_steps(
+            thread,
+            model_step,
+            view_policy,
+            policy,
+            compaction_id=compaction_id,
+            anchors=anchors,
+        ),
+        cancel,
+    )
+
+
+async def validate_compaction(
+    thread: Thread,
+    plan: CompactionPlan,
+    summary: CompactionSummary,
+    cancel: CancelToken,
+) -> ValidatedCompaction:
+    return await _iterate(_validation_steps(thread, plan, summary), cancel)

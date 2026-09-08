@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import replace
 from types import TracebackType
-from typing import Self, cast
+from typing import Literal, Self, cast
 from uuid import UUID
 
 from harnessix.agent import batch_patching
@@ -71,6 +71,11 @@ from harnessix.artifacts.ports import (
     ArtifactReferenceVerifier,
     BatchDiffPublisher,
     ProcessArtifactPublisher,
+)
+from harnessix.context.compaction_ledger_contracts import (
+    COMPACTION_OPEN,
+    CompactionAttemptFinished,
+    CompactionRejected,
 )
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
 from harnessix.context.engine import ContextPreparationError
@@ -1879,6 +1884,40 @@ class AgentRuntime:
                 status = TurnStatus.INTERRUPTED
                 error = AgentFailure(code="uncertain_effect", message="存在未知效果，禁止自动重放")
             payloads: list[EventPayload] = []
+            for compaction in turn.compactions:
+                if compaction.status not in COMPACTION_OPEN:
+                    continue
+                if status == TurnStatus.COMPLETED:
+                    status = TurnStatus.INTERRUPTED
+                    error = AgentFailure(code="compaction_incomplete", message="摘要运行未结算")
+                summary_error = error or AgentFailure(
+                    code="compaction_incomplete", message="摘要运行未结算"
+                )
+                summary_outcome: Literal["failed", "cancelled", "interrupted"] = (
+                    "cancelled"
+                    if status == TurnStatus.CANCELLED
+                    else "interrupted"
+                    if status == TurnStatus.INTERRUPTED
+                    else "failed"
+                )
+                if compaction.attempt is not None and compaction.attempt.status == "running":
+                    payloads.append(
+                        CompactionAttemptFinished(
+                            compaction_id=compaction.plan.compaction_id,
+                            event=ModelAttemptFinished(
+                                attempt_id=compaction.attempt.attempt_id,
+                                outcome=summary_outcome,
+                                error=summary_error,
+                            ),
+                        )
+                    )
+                payloads.append(
+                    CompactionRejected(
+                        compaction_id=compaction.plan.compaction_id,
+                        outcome=summary_outcome,
+                        failure=summary_error,
+                    )
+                )
             for attempt in turn.model_attempts:
                 if attempt.status == "running":
                     payloads.append(
