@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime和0.6 Context/Session全部路线图范围。0.7.0已冻结可信执行研究、生产差距和Threat Model v2，0.7.1～0.7.5正在实施；OS Sandbox、通用多文件交付、自动commit/push和Agent CLI尚不是当前能力。0.6.5交付终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复，Event/Thread为v17、Session migration为19，并通过[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四矩阵验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime、0.6 Context/Session全部路线图范围，以及0.7.0研究基线和0.7.1跨平台Workspace/Execution Plan。0.7.2～0.7.5正在实施；OS Sandbox执行、Windows Process、通用多文件交付、自动commit/push和Agent CLI尚不是当前能力。0.7.1通过[CI 34212369888](https://github.com/carrie1988/Harnessix/actions/runs/34212369888)的Python 3.12、Python 3.13、macOS Coding Tools、Windows原生Workspace和PostgreSQL五矩阵验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -43,7 +43,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前Workspace和Process仍只支持POSIX，Windows处于正式规划与平台中立CI基线阶段，未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot已具有POSIX和Windows原生端口；既有Coding Tool、Process和Git执行仍只支持POSIX，Windows产品整体未达到当前支持门禁。
 
 ## 许可证与品牌
 

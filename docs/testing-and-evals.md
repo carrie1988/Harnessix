@@ -1319,7 +1319,7 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 
 ## 64. 0.7.1跨平台Workspace与Execution Plan候选验收（2026-09-08）
 
-状态：实现和本地完整门禁通过；Windows原生Workspace声明必须等待本次提交的Windows远端任务通过后才能关闭。设计见[ADR 0065](adr/0065-platform-capability-ports-and-execution-plan.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#10-071-跨平台workspace与permission详细设计)。
+状态：实现、本地完整门禁和[CI 34212369888](https://github.com/carrie1988/Harnessix/actions/runs/34212369888)五矩阵通过，0.7.1关闭。设计见[ADR 0065](adr/0065-platform-capability-ports-and-execution-plan.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#10-071-跨平台workspace与permission详细设计)。
 
 验收覆盖：
 
@@ -1334,3 +1334,5 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 完整本地`make check`为**2989 passed、5 skipped，322.89秒**；Ruff格式与规则通过，Mypy严格检查175个源文件通过。5项跳过包含本地未配置的PostgreSQL集成测试和仅能在Windows执行的3项原生路径测试。Schema连续生成两次聚合SHA256均为`7222eb24f5ae369b2887358b2c4b59fb3cf91c60563c8682e7a900c44d85da82`，新增Workspace Snapshot/Lease、Execution Intent/Capability/Plan/Approval六份v1 Schema，旧Schema未改写。
 
 本片未调用模型API、SSH或远程服务器，也未安装中间件。OS Sandbox、Windows Process/Job Object、通用事务性交付、Git Commit/Push和旧Tool统一接入尚未完成，不得由本片测试结果推导为0.7整体完成。
+
+远端Python 3.12、Python 3.13、Windows原生Workspace和PostgreSQL首次运行通过。macOS首次运行在既有`HostProcessRuntime`的SIGKILL回收断言中收到asyncio `Unknown child process`并返回255；同一提交只重跑失败任务后完整通过。该瞬态不由Workspace代码触发，但作为0.7.3进程所有权风险保留，不能用重跑结果掩盖。
