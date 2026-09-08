@@ -1,12 +1,12 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：0.7可信执行架构基线，已随实现更新至0.6.5终态Turn Retry与Provider切换
+- 状态：0.7可信执行架构基线，已随实现更新至0.7.2 Sandbox、网络与Secret
 - 更新日期：2026-09-08
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。审批绑定当前工具契约、参数和Workspace路径，但尚未绑定0.7定义的完整Execution Plan，也不提供OS隔离、actor身份认证、文件内容或环境完整性保证。真实Sandbox、网络隔离、完整Secret Redactor和MCP/Hook仍在0.7/0.8实施；目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard。上述新边界尚未在0.7.5接管全部既有Tool；通用spawn、Process owner、PTY和持久输出由0.7.3交付，actor身份认证及MCP/Hook强制接入仍在后续实施。目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
 
-Windows已进入1.0正式目标，但当前Workspace、Process、Git执行和Sandbox仍只完成POSIX实现。0.7选择领域路径与平台端口分离，Windows native Process使用挂起启动后加入不可breakaway Job Object再恢复；Windows strong Sandbox优先使用受管Docker Desktop或WSL2后端。现有Windows平台中立CI不证明这些能力，在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的真实故障测试完成前，Windows仍不属于当前安全支持范围。
+Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。Windows native Process仍需按0.7.3实现挂起启动、加入不可breakaway Job Object再恢复，Git与发行物也未完成正式门禁。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整故障测试完成前，Windows仍不属于当前产品支持范围。
 
 ## 1. 安全目标
 
@@ -134,7 +134,7 @@ Agent Runtime                │
 - 高风险 Tool 需要绑定效果的审批；
 - Security Eval 使用间接注入语料。
 
-**剩余风险**：结构化编码和受控发现不能保证模型拒绝恶意正文，Secret Redactor和OS Sandbox尚未实现；环境名称过滤不能判断被错误命名的敏感值，生产宿主仍须严格选择allowlist；双观测不提供跨来源事务原子性；当前只发现活动工作目录祖先链规则，不会在编辑任意子目录文件前自动加载该子树规则。用户仍可能批准具有欺骗性的合法命令，需要可解释审批UI和最小效果展示。
+**剩余风险**：结构化编码和受控发现不能保证模型拒绝恶意正文；0.7.2的Redactor/Container端口尚未在0.7.5接管全部Tool输出，环境名称过滤也不能判断被错误命名的敏感值；双观测不提供跨来源事务原子性；当前只发现活动工作目录祖先链规则，不会在编辑任意子目录文件前自动加载该子树规则。用户仍可能批准具有欺骗性的合法命令，需要可解释审批UI和最小效果展示。
 
 ### TM-02：路径穿越和符号链接逃逸
 
@@ -150,7 +150,7 @@ Agent Runtime                │
 - 审批绑定 Workspace Revision；
 - 构造symlink/reparse/rename/file-sharing race测试。
 
-**剩余风险**：跨平台文件系统语义不同；当前Windows平台端口尚未实现；Host后端无法提供容器级隔离。
+**剩余风险**：跨平台文件系统和第三方过滤驱动语义不同；Windows Workspace端口已实现但Process/Git/交付尚未完成；Host后端无法提供容器级隔离。
 
 ### TM-02A：Windows 命名与 Reparse 逃逸
 

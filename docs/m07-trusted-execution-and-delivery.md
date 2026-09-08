@@ -3,7 +3,7 @@
 - 状态：实施中
 - 更新日期：2026-09-08
 - 适用范围：0.7.0～0.7.5
-- 已完成切片：0.7.0、0.7.1
+- 已完成切片：0.7.0、0.7.1、0.7.2
 
 ## 1. 目标与非目标
 
@@ -198,3 +198,88 @@ Plan与Approval写入独立私有SQLite存储。相同内容重复提交为幂�
 确定性测试覆盖路径属性、POSIX链接/外部根/缺失父目录、Windows Junction/长路径/根替换、文件与目录漂移、跨独立进程租约、fencing token、环境/Secret碰撞、Plan逐字段变异、Approval绑定、持久重开、重复写入、未知版本和损坏记录。Linux和macOS运行POSIX端口；Windows CI从本片开始实际运行原生Workspace测试，而非仅运行平台中立导入。
 
 0.7.2～0.7.4新增的Sandbox、Process和Delivery端口必须先复核Plan、Approval、Workspace Snapshot和fencing token，再获得底层执行能力。0.7.5完成旧Patch/Process Adapter接入前，README不会把完整统一Permission入口声明为当前能力。
+
+## 11. 0.7.2 Sandbox、网络与Secret详细设计
+
+### 11.1 实现边界与安全等级
+
+0.7.2实现Sandbox执行适配层、网络出口授权和Secret生命周期，不提前拥有通用进程生命周期。`ContainerCommandBuilder`只在全部事实复核后生成固定Docker兼容argv和短生命周期环境；0.7.3的Process Supervisor负责实际spawn、双流、超时、取消、进程树回收和持久Lease。真实容器验收直接执行Builder产物，只用于证明隔离参数有效，不能解释为模型调用已经接入统一执行路由。
+
+安全等级保持三个独立语义：
+
+| 等级 | 当前实现 | 不作出的保证 |
+|---|---|---|
+| `host_guarded` | 可声明Permission、Approval、环境最小化和后续Process owner | 不提供文件或网络强隔离 |
+| `host_sandboxed` | macOS Seatbelt或Linux Bubblewrap通过实际deny-default预检后才广告 | Windows不宣称native host strong；只有二进制存在不足以通过探测 |
+| `container_strong` | Docker/Podman兼容引擎证据、固定摘要镜像、只读根、显式Workspace mount、非root、cap-drop、no-new-privileges、IPC/PID/CPU/内存/tmpfs/nofile和网络策略 | 容器引擎控制面仍是受信高权限边界；不抵御宿主内核或Daemon失陷 |
+
+后端不可用、版本变化、可执行文件身份变化或能力低于Plan要求时失败关闭。降级必须重新生成Intent、Plan和Approval，Builder没有Host fallback分支。
+
+### 11.2 Execution Plan v2与能力证据
+
+冻结的`ExecutionPlan v1`和`ExecutionCapabilityEvidence v1`保持字节兼容。Container切片新增`ExecutionCapabilityEvidence v2`、`SandboxBindingV2`和`ExecutionPlan v2`：
+
+- 能力证据除平台、后端版本、Sandbox/Network集合和PTY/后台/进程树能力外，绑定自校验的`ContainerEngineProbe.digest`；
+- Sandbox绑定不可变`ContainerSandboxProfile.digest`；Profile继续绑定网络快照和选择性出口网关实现摘要；
+- Intent参数必须逐字段等于`ContainerCommandSpec`，命令摘要再绑定Profile摘要；
+- 执行前重新计算Plan fingerprint、Workspace Snapshot、环境值摘要、Secret名称/版本/目标、能力证据、Profile和命令；任何变化不能复用批准；
+- SQLite Execution Plan Store v1以严格union读取v1/v2，不迁移或改写既有v1记录。
+
+公开JSON Schema新增Execution Plan/Capability v2及Sandbox、Network、Probe、Command和Egress契约。v1 Schema在连续生成中保持原SHA-256，避免把0.7.2字段静默写入历史合同。
+
+### 11.3 Container启动适配
+
+Container引擎由宿主绑定绝对普通可执行文件。探测使用固定`version --format`取得客户端/服务端版本，并使用固定`info --format`读取Docker Security Options或Podman rootless事实；命令运行在清理后的环境中，输出和时限有界。Builder初始化时保存可执行文件对象身份，prepare时再次比较设备/inode/大小/时间/模式和能力摘要。
+
+固定启动参数包括：
+
+- `run --rm --init --pull never`，镜像必须是`sha256:`摘要或`name@sha256:`；
+- `--read-only --cap-drop ALL --security-opt no-new-privileges --ipc none`；
+- 数字非root用户、固定`/workspace`工作目录、显式只读或读写bind；
+- PID、内存、CPU、只读根、`/tmp` noexec/nosuid/nodev配额、nofile和stop timeout；
+- 仅使用`--env NAME`传递获准变量名，Secret值绝不进入argv、Plan或对象repr；
+- Profile声明的根读写Permission必须出现在Workspace Snapshot；外部根在正式挂载合同交付前失败关闭。
+
+### 11.4 网络策略与受管出口
+
+`NetworkPolicy v1`只接受规范精确域名或CIDR、`https`/`tcp`和唯一有序端口。域名规则必须是HTTPS；`limited`默认只接受公网解析，`restricted`可显式允许私网。DNS规划时解析为最多16个规范IPv4/IPv6地址，TTL限制1～300秒；出口连接只使用冻结地址，过期不动态刷新。
+
+| 模式 | Container落实方式 | 失败条件 |
+|---|---|---|
+| `none` | `--network none` | 携带任何Egress binding |
+| `full` | 普通bridge，仍需Policy显式允许 | 伪装为选择性代理 |
+| `limited/restricted` | 仅连接带Policy/Gateway标签的internal bridge；代理环境由Builder独占 | 缺少匹配证明、标签/驱动/容器集合变化或代理配置冲突 |
+
+受管网关只接受HTTP CONNECT。目标必须与批准的host/protocol/port及固定IP一致；域名HTTPS在向上游发送首字节前解析完整有界TLS ClientHello并要求精确规范SNI，无SNI、ECH不可见身份或不匹配均关闭连接。网关限制请求头、连接时间、空闲时间和双向字节数。内部网络证明严格解析Docker inspect JSON，拒绝重复键、非internal bridge、错误标签和除`harnessix-egress`外的任意已连接容器。
+
+Docker API/Socket具有宿主级高权限，不进入不可信工作负载。0.7.3的生命周期管理器必须在spawn前立即重新inspect并核对`internal_network_attestation`；当前Builder只消费已经证明的binding，不创建网络或代理。
+
+### 11.5 Secret生命周期和输出边界
+
+`EnvironmentSecretProvider`是首个宿主适配：配置只保存受批准Secret名称、版本和宿主环境变量名。解析时验证名称、版本和注入目标，最多32项、合计64 KiB；Windows目标按大小写不敏感去重。明文仅存在于`ResolvedSecretEnvironment`的可变字节副本，并在作用域关闭时尽力清零；Python字符串和子进程环境产生的不可变副本不能承诺内存级彻底擦除。
+
+`StreamingSecretRedactor`保留最长模式窗口，覆盖任意stdout/stderr chunk边界，以及原文、标准/URL-safe Base64、有无padding、URL百分号、hex、JSON字符串和Shell引用表示。Secret短于4字节或模式超过256项时拒绝启动可发布输出流。`SecretLeakGuard`为JSON/模型/日志/Artifact边界提供最多16 MiB、100000节点、64层的最终扫描；值可替换为`[REDACTED]`，键命中、不可序列化、超限或仍有Canary时阻止发布。
+
+Redactor不是加密/DLP系统，不能检测哈希、压缩、分段重编码或语义推断。安全性依赖最小注入、网络隔离和所有持久/模型出口在0.7.5统一接入Guard；0.7.2只交付可复用正式端口和Container smoke接线。
+
+### 11.6 持久化、失败语义与恢复
+
+`SQLiteSandboxProfileStore`使用私有目录、0600数据库、WAL和FULL同步，按Profile内容摘要不可变保存；同摘要同内容幂等，不同内容冲突，未知Schema和损坏JSON失败关闭。它不保存宿主路径、环境值或Secret明文。Plan/Approval继续由Execution Plan Store持久化，网关实例、解析后Secret和Prepared launch不持久化。
+
+| 错误 | 含义 | 恢复动作 |
+|---|---|---|
+| `sandbox_unavailable` | 引擎/Daemon/Host Sandbox探测失败 | 修复后端并重新探测、规划 |
+| `sandbox_binding_changed` | 已绑定容器可执行文件对象变化 | 停止执行，重新绑定受信程序 |
+| `sandbox_capability_mismatch` | Plan、Profile、Command或能力证据不一致 | 丢弃原批准并生成新Plan |
+| `network_policy_unenforceable` | 请求网络语义无法由后端完整落实 | 不启动工作负载；修复内部网络/网关 |
+| `network_destination_denied` | host/IP/protocol/port/TTL不在批准快照 | 拒绝连接；需要新网络Plan |
+| `network_tls_identity_denied` | TLS身份不可见或SNI不匹配 | 关闭连接，不转发应用数据 |
+| `secret_unavailable` / `secret_version_changed` | Secret缺失或版本漂移 | 不启动；重新配置或重新批准版本 |
+| `secret_redaction_unsafe` / `secret_redaction_failed` | 无法建立可靠脱敏或最终扫描失败 | 阻止输出发布；效果状态仍按真实执行记录 |
+| `sandbox_store_corrupt` | Profile持久记录不再满足严格合同 | 停止执行并保留数据库诊断 |
+
+### 11.7 验证证据与剩余工作
+
+确定性测试覆盖网络合同、DNS固定/过期/私网、CIDR、TLS ClientHello/SNI、真实asyncio代理中继、Docker inspect重复键/标签/额外容器、引擎和Host Sandbox探测、Profile持久化、Plan v2持久重开与逐字段漂移、Container argv、Secret版本/Windows碰撞、所有chunk边界和常见编码Canary。Linux CI额外拉取固定BusyBox OCI摘要，实际验证非root、零Capability、只读根、只读Workspace、仅loopback网络、可写`/tmp`以及Secret不进入argv且输出被脱敏；CPU/内存/PID/tmpfs上限的精确argv由确定性测试验证，压力与超限终止测试归入0.7.3 Process Supervisor。
+
+Windows和macOS运行相同Sandbox/Secret合同与平台能力测试；Windows当前没有native host strong执行器，强隔离仍依赖通过探测的Docker Desktop/受管WSL2容器后端。0.7.3必须接入通用Process Supervisor、PTY、后台Lease、立即网络复核和Secret流式发布；0.7.5再把所有内置Tool与扩展统一路由到该边界。上述后续工作完成前，不宣称任意模型命令已经具备端到端生产隔离。

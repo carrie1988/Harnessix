@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime、0.6 Context/Session全部路线图范围，以及0.7.0研究基线和0.7.1跨平台Workspace/Execution Plan。0.7.2～0.7.5正在实施；OS Sandbox执行、Windows Process、通用多文件交付、自动commit/push和Agent CLI尚不是当前能力。0.7.1通过[CI 34212369888](https://github.com/carrie1988/Harnessix/actions/runs/34212369888)的Python 3.12、Python 3.13、macOS Coding Tools、Windows原生Workspace和PostgreSQL五矩阵验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成 0.1 Action Plane、0.2 架构基线、0.3 Agent Runtime Kernel、0.4 Provider与计费基础、0.5 Coding Tool Runtime、0.6 Context/Session全部路线图范围，以及0.7.0～0.7.2的研究、跨平台Workspace/Execution Plan、Container强隔离启动适配、网络与Secret边界。0.7.3～0.7.5正在实施；通用Process/PTY和后台监督、Windows Job Object、通用多文件交付、自动commit/push、统一Tool接入和Agent CLI尚不是当前能力。0.7.2通过[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)的真实固定摘要容器、Python双版本、macOS、Windows及PostgreSQL验收。任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE

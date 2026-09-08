@@ -1336,3 +1336,24 @@ Session行为分析显示，三个模型在首次分页成功后均遗漏后续�
 本片未调用模型API、SSH或远程服务器，也未安装中间件。OS Sandbox、Windows Process/Job Object、通用事务性交付、Git Commit/Push和旧Tool统一接入尚未完成，不得由本片测试结果推导为0.7整体完成。
 
 远端Python 3.12、Python 3.13、Windows原生Workspace和PostgreSQL首次运行通过。macOS首次运行在既有`HostProcessRuntime`的SIGKILL回收断言中收到asyncio `Unknown child process`并返回255；同一提交只重跑失败任务后完整通过。该瞬态不由Workspace代码触发，但作为0.7.3进程所有权风险保留，不能用重跑结果掩盖。
+
+## 65. 0.7.2 Sandbox、网络与Secret验收（2026-09-08）
+
+状态：实现、本地完整门禁和[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)六任务通过，0.7.2关闭。设计见[ADR 0066](adr/0066-sandbox-network-and-secret-boundaries.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#11-072-sandbox网络与secret详细设计)。
+
+验收覆盖：
+
+- `ExecutionCapabilityEvidence v2`与`ExecutionPlan v2`绑定容器引擎实测摘要、Sandbox Profile和Command；参数、环境、Workspace、Secret版本、Profile、命令、后端版本和可执行文件身份变化均在spawn前失败；v2可由原SQLite Execution Plan Store持久重开；
+- Docker/Podman使用固定`version`和`info`接口分别取得服务端版本及安全/rootless事实；Daemon不可用、非零返回、超限或不可解析响应不广告强能力；Seatbelt/Bubblewrap只有实际deny-default预检通过才广告host sandboxed；
+- Container argv固定只读根、非root、cap-drop、no-new-privileges、IPC/PID/CPU/内存/tmpfs/nofile、无隐式pull、Workspace读写模式、受管环境名和网络；镜像、Profile、Command和Plan均以SHA-256摘要相互绑定；
+- Network合同覆盖精确域名/CIDR、HTTPS/TCP、唯一端口、DNS IPv4/IPv6固定、TTL过期、私网显式restricted和禁止网络；选择性出口验证internal bridge、Policy/Gateway标签、唯一网关容器及重复JSON键；
+- 真实asyncio CONNECT网关仅在host/protocol/port/IP授权后连接，域名HTTPS在转发前校验完整TLS ClientHello与精确SNI；无SNI、SNI错配、非法请求、超时和字节上限均失败关闭；
+- Secret只按名称、版本和目标解析，Windows目标大小写不敏感；最多32项、合计64 KiB。流式Redactor覆盖所有chunk边界和原文/Base64/URL/hex/JSON/Shell形式，最终Guard覆盖结构深度、节点、字节、键泄漏和不可序列化输出；
+- SQLite Sandbox Profile Store验证私有权限、持久重开、幂等、未知版本和损坏记录；计划、Schema、argv、对象repr和数据库均不保存Secret明文；
+- Linux真实容器使用固定`busybox@sha256:9db7b59979c38555a39def84a31fb98b5296952f9e3afd4f6f11f05b07adfab0`，实际断言UID 65532、`CapEff=0`、只读根、只读Workspace、仅loopback网络、可写`/tmp`、Secret不在argv且回显被脱敏；资源上限超限终止由0.7.3补测。
+
+本地先在桌面受限命令沙箱内运行全量门禁，`ps`调用和setuid/setgid模式位检查产生22项环境假失败；在获准的原生宿主环境重跑后为**3020 passed、6 skipped，333.11秒**。容器能力探测首次远端候选错误地从`docker version`读取只属于`docker info`的Security Options，真实容器任务在启动前以`sandbox_unavailable`失败；根据Docker/Podman正式CLI合同拆分版本与安全探测，并增加Docker rootless、Podman非rootless和坏响应回归。修复后专项为42项通过、1项本地Docker未配置跳过；最终`make check`为**3023 passed、6 skipped，327.53秒**，Ruff格式/规则和Mypy 188个源文件均通过。
+
+Schema连续生成两次聚合SHA256均为`dc9b1114ca6d7110bd9e768c451f0f25851fe1a02787962bbccb441cbd19a1ad`；原`execution-capability-evidence-v1`和`execution-plan-v1`分别保持`51c989bc1cf09464b4810e0ee8af53bc7746278109c856a246ff5a4a0cad1b5f`与`98d7c1d0642024638245ef1e02536bb1f5fc9d077aaa67f8c85c13220c4833d0`不变。
+
+远端六项为Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和独立Container Sandbox。首次候选[CI 34218526009](https://github.com/carrie1988/Harnessix/actions/runs/34218526009)真实发现上述探测接口错误；修复运行六项全部通过。该验收不调用模型API、SSH或远程服务器，也不把直接容器smoke描述为已接入模型的通用Process Runtime；Process生命周期、立即网络再证明和全输出接线属于0.7.3/0.7.5。

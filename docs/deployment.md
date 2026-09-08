@@ -2,7 +2,7 @@
 
 ## 当前平台与许可状态
 
-当前Workspace、Process和Git执行实现仅支持具备所需no-follow与POSIX进程语义的macOS/Linux。Windows已经进入1.0正式支持范围并配置平台中立CI，但尚未完成原生Workspace、Job Object进程监督、Sandbox和发行物门禁，当前版本在Windows上不得启用这些执行能力或宣称完整支持。平台演进见[ADR 0063](adr/0063-windows-v1-platform-support.md)。
+当前0.7 Workspace Snapshot已提供POSIX和Windows原生端口；既有Coding Tool、Process和Git执行仍只支持具备所需no-follow与POSIX进程语义的macOS/Linux。0.7.2的Sandbox/Secret合同在三平台CI运行，Container强隔离启动适配可绑定通过探测的Docker兼容后端，但通用Process Supervisor和Windows Job Object尚未接入。Windows已经进入1.0正式支持范围，在Process、Git、完整Sandbox接线和发行物门禁完成前不得宣称产品支持。平台演进见[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
 社区版按照`AGPL-3.0-only`发布。安装后的基础许可、源代码和商业授权信息可以离线查看：
 
@@ -961,3 +961,26 @@ Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_vi
 3. v16：`python -I turn_retry_upgrade_probe.py old-reader <验证目录>`，必须返回`schema_too_new`且数据库字节不变。
 
 验收wheel SHA256分别为v16 `e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`、v17 `40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`。该验证不调用真实模型平台，也不需要API Key。
+
+## 0.7.2 Container Sandbox、网络与Secret部署
+
+0.7.2不增加常驻中间件或数据库迁移。`SQLiteSandboxProfileStore`和`SQLiteExecutionPlanStore`均为本地私有SQLite文件；生产实例应放在用户私有数据目录，保持父目录0700、数据库0600并使用一致备份。Profile Store只保存固定镜像、资源限制和网络摘要，不保存宿主路径、环境值或Secret。
+
+Container后端部署要求：
+
+1. 宿主配置Docker或Podman绝对可执行文件，不能从仓库、模型参数或动态`PATH`选择；
+2. Daemon必须可用，`version --format`和`info --format`能力探测均成功；可执行文件或服务端版本变化后重新生成能力证据和Execution Plan；
+3. 允许的镜像必须预拉取并固定到`sha256:`摘要；运行参数固定`--pull never`，生产不得把可变tag解释为已批准镜像；
+4. Workspace Profile明确`read_only`或`read_write`，Plan包含对应根目录Permission。0.7.2尚不支持Container外部根；需要时失败关闭；
+5. `none`模式无需代理；`full`模式必须经Policy显式允许；`limited/restricted`必须由生命周期管理器创建仅网关连接的internal bridge，并在工作负载spawn前立即执行inspect证明；
+6. Docker Socket/远程Daemon API等价于宿主高权限控制面，不能挂载进工作负载、暴露给模型或交给不受信扩展；
+7. Windows strong优先使用通过探测的Docker Desktop或受管WSL2容器后端；Windows native host strong当前不可用，不能静默降级。
+
+Secret部署要求：
+
+- 配置只引用Secret名称、版本和宿主环境变量名；实际值由进程管理器、系统Keychain适配或后续KMS Provider注入，禁止进入配置文件、argv、Plan、日志和诊断包；
+- 每次spawn前解析，版本漂移必须重新规划；子进程环境从显式普通变量、受管代理变量和计划Secret构造，不继承完整宿主环境；
+- stdout/stderr在写入Artifact、Session、日志、Trace或模型Context前必须共用同一流式Redactor，并在最终提交前通过`SecretLeakGuard`；任何失败只阻止发布，不能把已经发生的进程效果改写成未执行；
+- 明文作用域关闭会尽力清零可变字节副本，但Python不可变字符串、操作系统环境和目标进程内存不提供安全擦除保证，仍应最小化Secret数量与存活时间。
+
+CI真实容器门禁通过环境变量`HARNESSIX_TEST_CONTAINER_IMAGE`启用。仓库工作流固定BusyBox OCI摘要并验证无网络、只读根/Workspace、非root、零Capability和Secret脱敏，资源限制参数由确定性argv测试固定；本地未配置Docker时该单项明确skip，不能把skip作为发布证据。0.7.3接入Process Supervisor后，容器启动、资源超限、超时、取消、双流和清理必须由同一owner控制，不允许业务代码直接`subprocess.run`绕过生命周期端口。

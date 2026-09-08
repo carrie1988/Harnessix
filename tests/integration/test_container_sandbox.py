@@ -132,6 +132,7 @@ def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary
             environment={"LANG": "C"},
             secrets=secret,
         )
+        assert "container-secret-canary" not in "\0".join(launch.argv)
         completed = subprocess.run(
             launch.argv,
             env=launch.materialize_environment(),
