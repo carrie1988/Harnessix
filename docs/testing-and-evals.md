@@ -1588,7 +1588,7 @@ Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共�
   异常正文，八份新增Schema及v2示例与运行合同一致。
 
 扩大回归`tests/product_config + App Server + 双Provider`为**238项通过**。最终原生宿主全仓
-pytest为**3313 passed、13 skipped，283.88秒**；13项只包含平台限定或本机未配置的PostgreSQL/
+pytest为**3320 passed、13 skipped，311.35秒**；13项只包含平台限定或本机未配置的PostgreSQL/
 Container集成场景。受限桌面命令沙箱中的首次全仓运行因禁止`ps`并剥离setuid/setgid模式产生
 24项环境假失败；相同代码在原生宿主通过，未通过修改运行时或删除安全断言规避。
 
@@ -1609,11 +1609,20 @@ Ruff格式检查691个文件、规则检查和Mypy严格检查253个源文件全
 平台前置诊断。`62830ed`补齐二进制原子写，并让Windows `agent-server`在创建状态、Provider或
 协议前以稳定错误失败关闭；Windows配置诊断和迁移继续通过原生路径验证。
 
-最终实现提交`62830ed`的[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)
-中，Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和
-固定摘要Container Sandbox六项全部通过。该结果同时关闭0.8.4 MCP、0.8.5 Skills/Hooks和
-0.8.6产品配置的远端门禁；Windows原生Coding Tool产品装配仍按路线图进入0.9.1，不将当前
-失败关闭边界表述为Windows产品已支持。
+产品文档收口提交`a5709be`的
+[CI 34348023136](https://github.com/carrie1988/Harnessix/actions/runs/34348023136)中，其余五项通过，
+Python 3.12在慢速磁盘上暴露6项Eval失败。根因是该历史任务需要复制240个跟踪文件，并对受管
+文件逐项执行`FULL`同步的SQLite基线持久化，却错误复用了模型单次读取的5秒预算；同一代码在
+较快环境通过不能消除该非确定性。`3588d76`保留模型工具5秒默认值，为受信批量物化设置60秒有限截止时间，
+并将复制放入支持调用取消、线程通知和排空的读取执行器；非法、非有限或非正预算继续在I/O前
+拒绝。新增7项预算边界回归后，本地全量达到3320项通过，未通过重跑失败任务掩盖根因。
+
+最终实现及加固提交`3588d76`的
+[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)中，Python 3.12、
+Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定摘要Container
+Sandbox六项全部通过。该结果同时关闭0.8.4 MCP、0.8.5 Skills/Hooks和0.8.6产品配置的远端
+门禁；Windows原生Coding Tool产品装配仍按路线图进入0.9.1，不将当前失败关闭边界表述为
+Windows产品已支持。
 
 本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
 性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。
