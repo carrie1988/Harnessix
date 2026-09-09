@@ -1203,6 +1203,11 @@ uv run harnessix agent-server \
   --state-directory "$HOME/.harnessix/runtime/project-id"
 ```
 
+0.8.6的内置`agent-server`装配现有`CodingToolRuntime`，因此只在macOS/Linux开放；Windows会在
+创建状态目录、Provider Client或协议流之前以`product_tools_platform_unsupported`失败关闭。
+Windows原生Workspace Snapshot、Process和配置诊断/迁移继续可用；Windows产品Tool Runtime与
+完整发行物分别由0.9产品装配和0.9.5 Dogfooding关闭门禁，不能把WSL兼容等同于原生支持。
+
 配置与状态目录必须由当前用户保护；配置文件不得位于Workspace内，状态目录不得位于Workspace
 内，Workspace也不得位于状态目录内。可选`--git-executable`只绑定既有只读Git工具的绝对可执行文件。当前产品入口不装配
 Patch、任意Process、Commit或Push；这些能力不能因0.7已有宿主端口而被推导为默认开放。

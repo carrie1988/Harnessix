@@ -587,8 +587,9 @@ uv run harnessix agent-server \
 ```
 
 `agent-server`只注册固定Workspace的现有只读Coding Tool Runtime；客户端创建Thread时提交其他
-或不存在的Workspace会失败。配置文件必须位于Workspace之外，状态目录不得与Workspace互相
-包含，stdout专用于stdio JSONL，
+或不存在的Workspace会失败。该Tool Runtime当前仅支持macOS/Linux；Windows产品入口在创建
+状态或Provider前以`product_tools_platform_unsupported`失败关闭，Windows完整产品Tool装配仍
+由0.9交付。配置文件必须位于Workspace之外，状态目录不得与Workspace互相包含，stdout专用于stdio JSONL，
 诊断只写stderr。写工具、Sandbox产品装配、TUI、安装器和自动更新仍属于0.9发布切片。
 
 ### 9.9 失败语义与恢复

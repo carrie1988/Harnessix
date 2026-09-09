@@ -59,6 +59,14 @@ def _workspace_root(path: str | Path) -> Path:
     return root
 
 
+def _require_coding_tool_platform() -> None:
+    if os.name != "posix" or not hasattr(os, "O_NOFOLLOW"):
+        raise KernelError(
+            "product_tools_platform_unsupported",
+            "内置只读Coding Tool Runtime当前不支持该宿主平台",
+        )
+
+
 def _configuration_file(path: str | Path) -> Path:
     try:
         return Path(path).resolve(strict=True)
@@ -109,6 +117,7 @@ async def run_product_stdio(
         state_candidate
     ):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
+    _require_coding_tool_platform()
     state_root = await asyncio.to_thread(_private_root, state_directory)
     if state_root.is_relative_to(workspace_root) or workspace_root.is_relative_to(state_root):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")

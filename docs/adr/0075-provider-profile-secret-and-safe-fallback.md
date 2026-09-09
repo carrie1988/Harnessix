@@ -98,6 +98,11 @@ fsync→发布私有备份→原子替换→目录fsync→记录迁移收据。�
 - `harnessix agent-server`：按配置/Profile装配Provider、固定Workspace只读Coding Tools、
   Session、请求账本和stdio App Server。
 
+现有`CodingToolRuntime`只具备POSIX目录FD/no-follow实现，因此0.8.6的内置`agent-server`只在
+macOS/Linux开放；Windows在创建状态、Provider Client或协议流前返回稳定错误，不能降级为
+不安全的路径跟随读取。Windows配置诊断和二进制原子迁移仍属于本切片，完整Windows产品Tool
+端口及发行物进入0.9门禁。
+
 产品启动拒绝位于Workspace内的配置文件，以及与Workspace互相包含的状态目录，避免后续写工具
 把控制面纳入模型可修改范围。
 

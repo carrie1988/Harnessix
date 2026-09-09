@@ -60,7 +60,7 @@ def migrate_v1(config: ProductConfigV1) -> ProductConfigV2:
 
 def _write_new(path: Path, body: bytes) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
     descriptor = os.open(path, flags, 0o600)
     try:
         remaining = memoryview(body)
