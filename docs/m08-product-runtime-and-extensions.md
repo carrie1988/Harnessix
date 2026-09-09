@@ -3,7 +3,7 @@
 ## 1. 文档状态
 
 - 适用版本：0.8；
-- 当前状态：0.8.1～0.8.6已完成实现和本地完整验收，远端六矩阵门禁待关闭；
+- 当前状态：0.8.1～0.8.6已完成，最终实现提交`62830ed`的六矩阵CI已通过；
 - 总体目标：把0.7已经完成的可信执行与工程交付能力开放为可恢复的本地产品服务，并在相同Runtime、Permission和Sandbox边界内接入CLI、SDK、MCP、Skills、Hooks与Provider配置。
 
 本文只把已经实现并验证的切片标记为完成。每个切片必须依次完成源码研究、架构决策、领域契约、最小正式实现、失败恢复测试、真实场景验证和文档同步。
@@ -437,8 +437,9 @@ Workspace Snapshot合同，只允许Skill运行时在同一安全语义下进行
 专项确定性回归为29 passed，Ruff和Mypy严格检查245个源文件通过。Schema目录共213份
 JSON文件，按文件名、NUL和原字节聚合SHA256为
 `0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。验证不调用模型
-API、远程服务、SSH或用户服务器。完整仓库门禁和跨平台CI证据在本切片提交后记录；
-在CI关闭前只称为本地验收完成。
+API、远程服务、SSH或用户服务器。最终实现提交`62830ed`已由
+[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)同时覆盖本切片的
+macOS、Windows、Python 3.12/3.13和Container回归。
 
 ## 9. 0.8.6 Provider与配置产品化详细设计
 
@@ -626,8 +627,9 @@ uv run harnessix agent-server \
 
 0.8.6专项为49项通过；原生宿主全仓为3313项通过、13项按平台/本地集成条件跳过，Ruff、Mypy、
 17个离线示例、构建及基础wheel安装通过。完整边界与证据见
-[测试规范第78节](testing-and-evals.md#78-086-provider与产品配置候选验收2026-09-09)。远端六矩阵
-未关闭前，0.8仍只标记为本地验收完成。
+[测试规范第78节](testing-and-evals.md#78-086-provider与产品配置候选验收2026-09-09)。六矩阵
+[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)全部通过，
+0.8据此完成验收。
 
 ## 10. 参考资料
 

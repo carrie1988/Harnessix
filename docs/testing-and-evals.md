@@ -1,6 +1,6 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.8.1～0.8.6实现及本地完整验收通过，0.8跨平台CI待最终关闭
+- 状态：0.8.1～0.8.6全部完成，最终实现六矩阵CI通过
 - 更新日期：2026-09-09
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
@@ -1528,7 +1528,7 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 
 ## 76. 0.8.4 MCP候选验收（2026-09-09）
 
-状态：**本地验收完成，跨平台CI随本切片提交验收**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth进入0.9.4，模型Provider配置由0.8.6独立完成。
+状态：**已完成**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth进入0.9.4，模型Provider配置由0.8.6独立完成。最终实现由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成含固定镜像Container、macOS和Windows在内的六矩阵验收。
 
 专项回归覆盖：
 
@@ -1545,7 +1545,7 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 
 ## 77. 0.8.5 Skills与Hooks候选验收（2026-09-09）
 
-状态：**本地验收完成，跨平台CI随本切片提交验收**。不可变Skill目录、限定名称冲突、跨平台安全渐进加载、声明式Hook Registry、精确定义授权、超时/取消及中断恢复已经实现；远端Skill安装、Marketplace、Shell Hook和进程内第三方Plugin不属于本切片。
+状态：**已完成**。不可变Skill目录、限定名称冲突、跨平台安全渐进加载、声明式Hook Registry、精确定义授权、超时/取消及中断恢复已经实现；远端Skill安装、Marketplace、Shell Hook和进程内第三方Plugin不属于本切片。最终实现由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成macOS、Windows及完整Linux回归。
 
 专项回归覆盖：
 
@@ -1560,11 +1560,11 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 
 专项确定性回归为**29 passed**。本切片还把历史Eval Action Worker租约从5秒调整为30秒，Heartbeat保持1秒；原因是同步评分/发布在较慢macOS Runner上可能阻塞事件循环超过原租约，造成活跃Worker自我丢失。新的预算仍为单次有界租约且不重试Action，既有发布失败与恢复回归继续验证零重复评分。
 
-Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共有213份JSON文件，按文件名、NUL和原字节聚合SHA256为`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。完整仓库门禁和跨平台CI结果在切片提交后补充。测试不调用模型API、不访问网络、SSH、远程Git或用户服务器；所有Root、数据库和崩溃进程均位于pytest临时目录。
+Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共有213份JSON文件，按文件名、NUL和原字节聚合SHA256为`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。测试不调用模型API、不访问网络、SSH、远程Git或用户服务器；所有Root、数据库和崩溃进程均位于pytest临时目录。
 
 ## 78. 0.8.6 Provider与产品配置候选验收（2026-09-09）
 
-状态：**实现及本地完整发布门禁通过，跨平台CI待本切片提交后关闭**。源码研究见
+状态：**已完成**。源码研究见
 [Provider、Profile、配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)，
 正式决策见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)。
 
@@ -1581,8 +1581,9 @@ Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共�
   限制为8 KiB可打印ASCII，供应商自定义Header环境变量、错误和领域事件均不泄漏Canary；
 - 零响应暴露的可重试失败只有在持久审计成功后才切换，已知Usage保留，各Adapter局部尝试号
   改写为全局连续号；Response、Text、Tool Call、不可重试失败、无审计或审计失败均不切换；
-- 固定Workspace服务、Windows大小写别名、配置文件/状态控制面隔离、Provider构造失败、Runtime
-  owner冲突、活动CAS和EOF关闭；任何初始化失败均不开放stdio或创建Thread；
+- 固定Workspace服务及Windows大小写别名、配置文件/状态控制面隔离、Provider构造失败、Runtime
+  owner冲突、活动CAS和POSIX EOF关闭；Windows产品入口在状态/Provider/协议前明确失败关闭，
+  任何初始化失败均不开放stdio或创建Thread；
 - CLI诊断在建连前检查依赖、Secret版本与API Key格式；诊断/迁移输出为有界JSON且屏蔽意外
   异常正文，八份新增Schema及v2示例与运行合同一致。
 
@@ -1602,7 +1603,17 @@ Ruff格式检查691个文件、规则检查和Mypy严格检查253个源文件全
 测试只给0.5秒发布子进程PID，macOS Eval同步评分超过30秒租约，Python 3.13出现同类Eval租约
 波动。Windows测试预算调整为2秒后仍严格验证Job Object整树回收；Eval单Worker租约调整为120秒，
 继续以1秒Heartbeat续约并保持Action不重试，覆盖最长60秒受管测试及CI调度暂停。该失败运行作为
-缺陷发现证据保留，不用局部重跑冒充0.8通过；修复后的六矩阵结果由本切片提交另行记录。
+缺陷发现证据保留，不用局部重跑冒充0.8通过。首个0.8.6提交`901244b`的
+[CI 34346010677](https://github.com/carrie1988/Harnessix/actions/runs/34346010677)进一步发现Windows
+低层配置写入缺少`O_BINARY`导致规范LF转换为CRLF，以及POSIX-only只读Tool Runtime缺少产品级
+平台前置诊断。`62830ed`补齐二进制原子写，并让Windows `agent-server`在创建状态、Provider或
+协议前以稳定错误失败关闭；Windows配置诊断和迁移继续通过原生路径验证。
+
+最终实现提交`62830ed`的[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)
+中，Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和
+固定摘要Container Sandbox六项全部通过。该结果同时关闭0.8.4 MCP、0.8.5 Skills/Hooks和
+0.8.6产品配置的远端门禁；Windows原生Coding Tool产品装配仍按路线图进入0.9.1，不将当前
+失败关闭边界表述为Windows产品已支持。
 
 本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
 性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。

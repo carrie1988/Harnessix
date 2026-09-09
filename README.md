@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.7全部路线图范围以及0.8全部实现和本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。0.8远端六矩阵门禁关闭前仍是本地验收状态；完整TUI、三平台发行物、供应链和Dogfooding属于0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.8全部路线图范围。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。0.8最终实现提交`62830ed`已由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收；完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -71,7 +71,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - Hooks只允许绑定宿主预注册的低风险只读Action；非Bundled定义需要精确摘要授权，`before_action`失败关闭，其他事件只记录，并具备超时、取消、哈希链和中断恢复。
 - 严格JSON v2把Provider、模型Profile和Environment Secret引用分层，提供有界安全读取、v1原子迁移、不可变配置快照、离线能力诊断和活动配置CAS；配置及审计不保存Secret值；
 - `SafeFallbackProvider`只在`transport/rate_limit/provider_internal`零响应暴露失败且审计成功后切换显式候选；任意响应、文本、Tool Call或未来未知事件均关闭Fallback窗口；
-- `harnessix agent-server`按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议。
+- `harnessix agent-server`在macOS/Linux按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议，Windows在原生Tool Runtime完成前显式失败关闭。
 
 0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[部署说明](docs/deployment.md#086-provider与产品配置部署)。
 

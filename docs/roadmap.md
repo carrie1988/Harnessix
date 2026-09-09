@@ -363,7 +363,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 10. 0.8：产品运行时与扩展
 
-状态：**已完成本地验收（2026-09-09）**。0.8.1～0.8.6的源码研究、架构决策、正式契约、实现、失败恢复、安全测试、产品装配和中文文档均已完成；远端六矩阵门禁关闭后补充最终CI证据。所有客户端、MCP、Skill、Hook和Provider配置只能通过同一Runtime、Permission、Secret及Sandbox边界工作。
+状态：**已完成（2026-09-09）**。0.8.1～0.8.6的源码研究、架构决策、正式契约、实现、失败恢复、安全测试、产品装配和中文文档均已完成；最终实现提交`62830ed`由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定摘要Container六矩阵验收。所有客户端、MCP、Skill、Hook和Provider配置只能通过同一Runtime、Permission、Secret及Sandbox边界工作。
 
 ### 目标
 
