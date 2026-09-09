@@ -138,7 +138,7 @@ Compaction使用固定`operation=compaction`和有限`outcome`标签；请求用
 
 ## 11. Schema、迁移与升级
 
-- 本切片交付版本：Agent Event/Thread v15、Session migration17；仓库当前版本为v17/migration19；
+- 本切片交付版本：Agent Event/Thread v15、Session migration17；仓库当前版本为Agent v17/Session migration20；
 - 新增独立Schema：Compaction Runtime v1、Compaction Window v1、Model History Inspection v2、Compaction语义评测Case/Report v1；
 - v1-v14 Event/Thread、Model History Inspection v1、Cost Report v1/v2文件保持冻结。
 

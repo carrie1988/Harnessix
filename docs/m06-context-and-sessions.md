@@ -403,7 +403,7 @@ Runtime在摘要HTTP前验证整个来源历史的Artifact，提交计划和Prov
 
 reactive路径只接受未产生语义Item且已完整结算的`provider_context_overflow`。失败请求仍消耗普通步骤和Token；没有新压缩进展时停止，不再次付费摘要。Model History Inspection v2绑定活动窗口并保留原始历史数量证据。
 
-0.6.3交付使用Agent Event/Thread v15和Session migration17。真实`b20948e` v14 wheel创建已结算候选后，v15升级保持旧事件和投影原字节，首次重开零Provider请求发布唯一窗口，v14 reader明确拒绝migration17。运行时及窗口事务九个进程退出切点、双Adapter、取消、超时、Artifact损坏、重复窗口和六类工程语义Oracle均已验证。370项专项测试及严格全量2901 passed、2 skipped通过；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。仓库当前版本已由0.6.5推进为Event/Thread v17和migration19。
+0.6.3交付使用Agent Event/Thread v15和Session migration17。真实`b20948e` v14 wheel创建已结算候选后，v15升级保持旧事件和投影原字节，首次重开零Provider请求发布唯一窗口，v14 reader明确拒绝migration17。运行时及窗口事务九个进程退出切点、双Adapter、取消、超时、Artifact损坏、重复窗口和六类工程语义Oracle均已验证。370项专项测试及严格全量2901 passed、2 skipped通过；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。仓库当前版本已推进为Agent Event/Thread v17和Session migration20；migration20只追加协议请求账本。
 
 ## 33. 0.6.4 Thread生命周期与无授权Fork
 

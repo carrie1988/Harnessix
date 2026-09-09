@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "ClientCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "itemDeltas": {
+          "default": false,
+          "title": "Itemdeltas",
+          "type": "boolean"
+        },
+        "serverRequests": {
+          "default": true,
+          "title": "Serverrequests",
+          "type": "boolean"
+        },
+        "artifactPages": {
+          "default": true,
+          "title": "Artifactpages",
+          "type": "boolean"
+        },
+        "replay": {
+          "default": true,
+          "title": "Replay",
+          "type": "boolean"
+        },
+        "ignoredNotificationMethods": {
+          "default": true,
+          "title": "Ignorednotificationmethods",
+          "type": "boolean"
+        }
+      },
+      "title": "ClientCapabilities",
+      "type": "object"
+    },
+    "ClientInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "ClientInfo",
+      "type": "object"
+    },
+    "ProtocolLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "maxMessageBytes": {
+          "default": 1048576,
+          "maximum": 8388608,
+          "minimum": 4096,
+          "title": "Maxmessagebytes",
+          "type": "integer"
+        },
+        "maxPendingRequests": {
+          "default": 64,
+          "maximum": 1024,
+          "minimum": 1,
+          "title": "Maxpendingrequests",
+          "type": "integer"
+        },
+        "maxOutboundMessages": {
+          "default": 256,
+          "maximum": 4096,
+          "minimum": 8,
+          "title": "Maxoutboundmessages",
+          "type": "integer"
+        },
+        "maxReplayEvents": {
+          "default": 256,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Maxreplayevents",
+          "type": "integer"
+        }
+      },
+      "title": "ProtocolLimits",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "const": "1.0",
+      "title": "Protocolversion",
+      "type": "string"
+    },
+    "clientInfo": {
+      "$ref": "#/$defs/ClientInfo"
+    },
+    "clientInstanceId": {
+      "format": "uuid",
+      "title": "Clientinstanceid",
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/ClientCapabilities"
+    },
+    "limits": {
+      "$ref": "#/$defs/ProtocolLimits"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "clientInfo",
+    "clientInstanceId"
+  ],
+  "title": "InitializeParams",
+  "type": "object"
+}

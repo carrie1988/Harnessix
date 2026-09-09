@@ -1,0 +1,33 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0",
+      "default": "2.0",
+      "title": "Jsonrpc",
+      "type": "string"
+    },
+    "method": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Method",
+      "type": "string"
+    },
+    "params": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "maxProperties": 256,
+      "title": "Params",
+      "type": "object"
+    }
+  },
+  "required": [
+    "method"
+  ],
+  "title": "JsonRpcNotification",
+  "type": "object"
+}

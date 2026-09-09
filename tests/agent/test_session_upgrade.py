@@ -175,6 +175,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
             (17,),
             (18,),
             (19,),
+            (20,),
         ]
         assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 17
         stored = database.execute(

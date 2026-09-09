@@ -136,6 +136,21 @@ from harnessix.processes.supervision_contracts import (
     ProcessOutputObservation,
     ProcessSpec,
 )
+from harnessix.protocol.contracts import (
+    AgentCommandParams,
+    AgentQueryParams,
+    EventsReplayResult,
+    InitializeParams,
+    InitializeResult,
+    JsonRpcErrorResponse,
+    JsonRpcNotification,
+    JsonRpcRequest,
+    JsonRpcSuccessResponse,
+    PublicEvent,
+    PublicItem,
+    ThreadView,
+    TurnView,
+)
 from harnessix.sandbox.capabilities import ContainerEngineProbe, HostSandboxProbe
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
@@ -328,9 +343,31 @@ def main() -> None:
         ExecutionCapabilityEvidenceV2.model_json_schema(),
     )
     write_json(output / "execution-plan-v2.schema.json", ExecutionPlanV2.model_json_schema())
+    for name, model in (
+        ("agent-protocol-jsonrpc-request", JsonRpcRequest),
+        ("agent-protocol-jsonrpc-notification", JsonRpcNotification),
+        ("agent-protocol-jsonrpc-success", JsonRpcSuccessResponse),
+        ("agent-protocol-jsonrpc-error", JsonRpcErrorResponse),
+        ("agent-protocol-initialize-params", InitializeParams),
+        ("agent-protocol-initialize-result", InitializeResult),
+        ("agent-protocol-thread", ThreadView),
+        ("agent-protocol-turn", TurnView),
+        ("agent-protocol-item", PublicItem),
+        ("agent-protocol-event", PublicEvent),
+        ("agent-protocol-replay-result", EventsReplayResult),
+    ):
+        write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
+    write_json(
+        output / "agent-protocol-command-params-v1.schema.json",
+        TypeAdapter(AgentCommandParams).json_schema(),
+    )
+    write_json(
+        output / "agent-protocol-query-params-v1.schema.json",
+        TypeAdapter(AgentQueryParams).json_schema(),
+    )
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
-        "Process、Context、Coding Eval、可信执行与 OpenAPI Schema"
+        "Process、Context、Coding Eval、可信执行、Agent Protocol 与 OpenAPI Schema"
     )
 
 

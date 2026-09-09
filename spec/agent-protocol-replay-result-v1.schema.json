@@ -1,0 +1,992 @@
+{
+  "$defs": {
+    "ItemPublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "item_started",
+            "item_finished"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/$defs/PublicItem"
+        }
+      },
+      "required": [
+        "type",
+        "item"
+      ],
+      "title": "ItemPublicEvent",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PublicApprovalDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "approved",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "actor": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor"
+      ],
+      "title": "PublicApprovalDecision",
+      "type": "object"
+    },
+    "PublicApprovalRequestContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "approval_request",
+          "default": "approval_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "approvalType": {
+          "enum": [
+            "tool",
+            "patch",
+            "patch_batch",
+            "process"
+          ],
+          "title": "Approvaltype",
+          "type": "string"
+        },
+        "approvalId": {
+          "format": "uuid",
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "requestFingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Requestfingerprint",
+          "type": "string"
+        },
+        "policyVersion": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Policyversion",
+          "type": "string"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicApprovalDecision"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "diffArtifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "approvalType",
+        "approvalId",
+        "callId",
+        "requestFingerprint",
+        "policyVersion"
+      ],
+      "title": "PublicApprovalRequestContent",
+      "type": "object"
+    },
+    "PublicArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactId": {
+          "format": "uuid",
+          "title": "Artifactid",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "sizeBytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Sizebytes",
+          "type": "integer"
+        },
+        "records": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Records",
+          "type": "integer"
+        },
+        "format": {
+          "const": "jsonl/v1",
+          "title": "Format",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "format": "date-time",
+          "title": "Expiresat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifactId",
+        "sha256",
+        "sizeBytes",
+        "records",
+        "format",
+        "complete",
+        "expiresAt"
+      ],
+      "title": "PublicArtifactRef",
+      "type": "object"
+    },
+    "PublicBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "maxSteps": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Maxsteps",
+          "type": "integer"
+        },
+        "maxTokens": {
+          "minimum": 1,
+          "title": "Maxtokens",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeoutseconds",
+          "type": "number"
+        },
+        "maxOutputChars": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Maxoutputchars",
+          "type": "integer"
+        },
+        "maxToolCallsPerStep": {
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Maxtoolcallsperstep",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "maxSteps",
+        "maxTokens",
+        "timeoutSeconds",
+        "maxOutputChars",
+        "maxToolCallsPerStep"
+      ],
+      "title": "PublicBudget",
+      "type": "object"
+    },
+    "PublicCompactionContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "context_compaction",
+          "default": "context_compaction",
+          "title": "Kind",
+          "type": "string"
+        },
+        "sourceItems": {
+          "maximum": 4096,
+          "minimum": 1,
+          "title": "Sourceitems",
+          "type": "integer"
+        },
+        "tokensBefore": {
+          "minimum": 1,
+          "title": "Tokensbefore",
+          "type": "integer"
+        },
+        "tokensAfter": {
+          "minimum": 0,
+          "title": "Tokensafter",
+          "type": "integer"
+        },
+        "tokenizer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tokenizer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceItems",
+        "tokensBefore",
+        "tokensAfter",
+        "tokenizer"
+      ],
+      "title": "PublicCompactionContent",
+      "type": "object"
+    },
+    "PublicErrorContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "error",
+          "default": "error",
+          "title": "Kind",
+          "type": "string"
+        },
+        "failure": {
+          "$ref": "#/$defs/PublicFailure"
+        }
+      },
+      "required": [
+        "failure"
+      ],
+      "title": "PublicErrorContent",
+      "type": "object"
+    },
+    "PublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "specVersion": {
+          "const": "harnessix.agent-protocol-event/v1",
+          "default": "harnessix.agent-protocol-event/v1",
+          "title": "Specversion",
+          "type": "string"
+        },
+        "eventId": {
+          "format": "uuid",
+          "title": "Eventid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Turnid"
+        },
+        "cursor": {
+          "minimum": 1,
+          "title": "Cursor",
+          "type": "integer"
+        },
+        "occurredAt": {
+          "format": "date-time",
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "data": {
+          "discriminator": {
+            "mapping": {
+              "item_finished": "#/$defs/ItemPublicEvent",
+              "item_started": "#/$defs/ItemPublicEvent",
+              "thread_archived": "#/$defs/ThreadPublicEvent",
+              "thread_created": "#/$defs/ThreadPublicEvent",
+              "thread_forked": "#/$defs/ThreadPublicEvent",
+              "turn_started": "#/$defs/TurnStartedPublicEvent",
+              "turn_state_changed": "#/$defs/TurnStatePublicEvent",
+              "usage_updated": "#/$defs/UsagePublicEvent"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ThreadPublicEvent"
+            },
+            {
+              "$ref": "#/$defs/TurnStartedPublicEvent"
+            },
+            {
+              "$ref": "#/$defs/TurnStatePublicEvent"
+            },
+            {
+              "$ref": "#/$defs/ItemPublicEvent"
+            },
+            {
+              "$ref": "#/$defs/UsagePublicEvent"
+            }
+          ],
+          "title": "Data"
+        }
+      },
+      "required": [
+        "eventId",
+        "threadId",
+        "cursor",
+        "occurredAt",
+        "data"
+      ],
+      "title": "PublicEvent",
+      "type": "object"
+    },
+    "PublicFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "category": {
+          "enum": [
+            "input",
+            "provider",
+            "tool",
+            "approval",
+            "budget",
+            "cancelled",
+            "interrupted",
+            "storage",
+            "conflict",
+            "internal"
+          ],
+          "title": "Category",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "category"
+      ],
+      "title": "PublicFailure",
+      "type": "object"
+    },
+    "PublicItem": {
+      "additionalProperties": false,
+      "properties": {
+        "itemId": {
+          "format": "uuid",
+          "title": "Itemid",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "started",
+            "completed",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "approval_request": "#/$defs/PublicApprovalRequestContent",
+              "assistant_message": "#/$defs/PublicTextContent",
+              "context_compaction": "#/$defs/PublicCompactionContent",
+              "error": "#/$defs/PublicErrorContent",
+              "plan": "#/$defs/PublicPlanContent",
+              "process_action_state": "#/$defs/PublicProcessStateContent",
+              "reasoning_summary": "#/$defs/PublicTextContent",
+              "tool_call": "#/$defs/PublicToolCallContent",
+              "tool_result": "#/$defs/PublicToolResultContent",
+              "user_message": "#/$defs/PublicTextContent"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PublicTextContent"
+            },
+            {
+              "$ref": "#/$defs/PublicToolCallContent"
+            },
+            {
+              "$ref": "#/$defs/PublicToolResultContent"
+            },
+            {
+              "$ref": "#/$defs/PublicApprovalRequestContent"
+            },
+            {
+              "$ref": "#/$defs/PublicProcessStateContent"
+            },
+            {
+              "$ref": "#/$defs/PublicPlanContent"
+            },
+            {
+              "$ref": "#/$defs/PublicCompactionContent"
+            },
+            {
+              "$ref": "#/$defs/PublicErrorContent"
+            }
+          ],
+          "title": "Content"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "itemId",
+        "status",
+        "content"
+      ],
+      "title": "PublicItem",
+      "type": "object"
+    },
+    "PublicPlanContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "plan",
+          "default": "plan",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/PublicPlanStep"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        },
+        "supersedes": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supersedes"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "title": "PublicPlanContent",
+      "type": "object"
+    },
+    "PublicPlanStep": {
+      "additionalProperties": false,
+      "properties": {
+        "stepId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Stepid",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stepId",
+        "description",
+        "status"
+      ],
+      "title": "PublicPlanStep",
+      "type": "object"
+    },
+    "PublicProcessStateContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "process_action_state",
+          "default": "process_action_state",
+          "title": "Kind",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "actionId": {
+          "format": "uuid",
+          "title": "Actionid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "execution",
+            "recovery"
+          ],
+          "title": "Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "callId",
+        "actionId",
+        "status",
+        "origin"
+      ],
+      "title": "PublicProcessStateContent",
+      "type": "object"
+    },
+    "PublicTextContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "user_message",
+            "assistant_message",
+            "reasoning_summary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "title": "PublicTextContent",
+      "type": "object"
+    },
+    "PublicToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "toolVersion": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Toolversion",
+          "type": "string"
+        },
+        "effectClass": {
+          "enum": [
+            "read_only",
+            "idempotent_write",
+            "non_idempotent_write",
+            "destructive"
+          ],
+          "title": "Effectclass",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "maxProperties": 256,
+          "title": "Arguments",
+          "type": "object"
+        },
+        "requiresApproval": {
+          "title": "Requiresapproval",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "callId",
+        "tool",
+        "toolVersion",
+        "effectClass",
+        "requiresApproval"
+      ],
+      "title": "PublicToolCallContent",
+      "type": "object"
+    },
+    "PublicToolResultContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_result",
+          "default": "tool_result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "actionId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actionid"
+        },
+        "diffArtifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "callId",
+        "outcome"
+      ],
+      "title": "PublicToolResultContent",
+      "type": "object"
+    },
+    "PublicUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": {
+          "minimum": 0,
+          "title": "Inputtokens",
+          "type": "integer"
+        },
+        "outputTokens": {
+          "minimum": 0,
+          "title": "Outputtokens",
+          "type": "integer"
+        },
+        "totalTokens": {
+          "minimum": 0,
+          "title": "Totaltokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inputTokens",
+        "outputTokens",
+        "totalTokens"
+      ],
+      "title": "PublicUsage",
+      "type": "object"
+    },
+    "ThreadPublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "thread_created",
+            "thread_forked",
+            "thread_archived"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "workspace": {
+          "anyOf": [
+            {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace"
+        },
+        "sourceThreadId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcethreadid"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ThreadPublicEvent",
+      "type": "object"
+    },
+    "TurnStartedPublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_started",
+          "default": "turn_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "retryOfTurnId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retryofturnid"
+        },
+        "budget": {
+          "$ref": "#/$defs/PublicBudget"
+        }
+      },
+      "required": [
+        "requestId",
+        "budget"
+      ],
+      "title": "TurnStartedPublicEvent",
+      "type": "object"
+    },
+    "TurnStatePublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "turn_state_changed",
+          "default": "turn_state_changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "TurnStatePublicEvent",
+      "type": "object"
+    },
+    "UsagePublicEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "usage_updated",
+          "default": "usage_updated",
+          "title": "Type",
+          "type": "string"
+        },
+        "step": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "usage": {
+          "$ref": "#/$defs/PublicUsage"
+        }
+      },
+      "required": [
+        "step",
+        "usage"
+      ],
+      "title": "UsagePublicEvent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "threadId": {
+      "format": "uuid",
+      "title": "Threadid",
+      "type": "string"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/PublicEvent"
+      },
+      "maxItems": 1000,
+      "title": "Events",
+      "type": "array"
+    },
+    "scannedThrough": {
+      "minimum": 0,
+      "title": "Scannedthrough",
+      "type": "integer"
+    },
+    "hasMore": {
+      "title": "Hasmore",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "threadId",
+    "events",
+    "scannedThrough",
+    "hasMore"
+  ],
+  "title": "EventsReplayResult",
+  "type": "object"
+}

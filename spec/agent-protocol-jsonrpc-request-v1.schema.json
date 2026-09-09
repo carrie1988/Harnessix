@@ -1,0 +1,51 @@
+{
+  "$defs": {
+    "JsonRpcId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        }
+      ]
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0",
+      "default": "2.0",
+      "title": "Jsonrpc",
+      "type": "string"
+    },
+    "id": {
+      "$ref": "#/$defs/JsonRpcId"
+    },
+    "method": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Method",
+      "type": "string"
+    },
+    "params": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "maxProperties": 256,
+      "title": "Params",
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "method"
+  ],
+  "title": "JsonRpcRequest",
+  "type": "object"
+}

@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "ArtifactReadParams": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "artifactId": {
+          "format": "uuid",
+          "title": "Artifactid",
+          "type": "string"
+        },
+        "offset": {
+          "default": 0,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 100,
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "threadId",
+        "artifactId"
+      ],
+      "title": "ArtifactReadParams",
+      "type": "object"
+    },
+    "EventsReplayParams": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "afterCursor": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Aftercursor",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 256,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "threadId"
+      ],
+      "title": "EventsReplayParams",
+      "type": "object"
+    },
+    "ThreadGetParams": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "threadId"
+      ],
+      "title": "ThreadGetParams",
+      "type": "object"
+    },
+    "ThreadListParams": {
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "limit": {
+          "default": 50,
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "archived": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Archived"
+        }
+      },
+      "title": "ThreadListParams",
+      "type": "object"
+    },
+    "ThreadResumeParams": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "threadId"
+      ],
+      "title": "ThreadResumeParams",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ThreadGetParams"
+    },
+    {
+      "$ref": "#/$defs/ThreadListParams"
+    },
+    {
+      "$ref": "#/$defs/ThreadResumeParams"
+    },
+    {
+      "$ref": "#/$defs/EventsReplayParams"
+    },
+    {
+      "$ref": "#/$defs/ArtifactReadParams"
+    }
+  ]
+}

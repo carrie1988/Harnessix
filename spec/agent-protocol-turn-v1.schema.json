@@ -1,0 +1,209 @@
+{
+  "$defs": {
+    "PublicBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "maxSteps": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Maxsteps",
+          "type": "integer"
+        },
+        "maxTokens": {
+          "minimum": 1,
+          "title": "Maxtokens",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeoutseconds",
+          "type": "number"
+        },
+        "maxOutputChars": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Maxoutputchars",
+          "type": "integer"
+        },
+        "maxToolCallsPerStep": {
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Maxtoolcallsperstep",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "maxSteps",
+        "maxTokens",
+        "timeoutSeconds",
+        "maxOutputChars",
+        "maxToolCallsPerStep"
+      ],
+      "title": "PublicBudget",
+      "type": "object"
+    },
+    "PublicFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "category": {
+          "enum": [
+            "input",
+            "provider",
+            "tool",
+            "approval",
+            "budget",
+            "cancelled",
+            "interrupted",
+            "storage",
+            "conflict",
+            "internal"
+          ],
+          "title": "Category",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "category"
+      ],
+      "title": "PublicFailure",
+      "type": "object"
+    },
+    "PublicUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": {
+          "minimum": 0,
+          "title": "Inputtokens",
+          "type": "integer"
+        },
+        "outputTokens": {
+          "minimum": 0,
+          "title": "Outputtokens",
+          "type": "integer"
+        },
+        "totalTokens": {
+          "minimum": 0,
+          "title": "Totaltokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inputTokens",
+        "outputTokens",
+        "totalTokens"
+      ],
+      "title": "PublicUsage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "specVersion": {
+      "const": "harnessix.agent-protocol-turn/v1",
+      "default": "harnessix.agent-protocol-turn/v1",
+      "title": "Specversion",
+      "type": "string"
+    },
+    "turnId": {
+      "format": "uuid",
+      "title": "Turnid",
+      "type": "string"
+    },
+    "requestId": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Requestid",
+      "type": "string"
+    },
+    "retryOfTurnId": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Retryofturnid"
+    },
+    "status": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Status",
+      "type": "string"
+    },
+    "budget": {
+      "$ref": "#/$defs/PublicBudget"
+    },
+    "usage": {
+      "$ref": "#/$defs/PublicUsage"
+    },
+    "modelSteps": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Modelsteps",
+      "type": "integer"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PublicFailure"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "completedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completedat"
+    }
+  },
+  "required": [
+    "turnId",
+    "requestId",
+    "status",
+    "budget",
+    "usage",
+    "modelSteps",
+    "createdAt"
+  ],
+  "title": "TurnView",
+  "type": "object"
+}

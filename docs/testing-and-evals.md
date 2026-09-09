@@ -1481,3 +1481,11 @@ Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.co
 本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
 
 最终加固提交`e12ae38`由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理，Container矩阵验证放宽启动预算后隔离合同未被削弱。该门禁不访问模型API或公网Git remote。
+
+## 73. 0.8.1 Agent Protocol v1候选验收（2026-09-09）
+
+状态：公共合同、JSON Schema、严格帧Codec、兼容读取、内部事件投影、Replay和持久请求账本已完成确定性本地验收；Headless传输与Agent SDK属于0.8.2。
+
+专项测试覆盖标准JSON-RPC Request/Notification/Success/Error互斥结构，字符串和安全整数ID边界，非法UTF-8/JSON、重复字段、Batch、多行、深度与尺寸门禁；未知输入字段失败，旧客户端忽略新增可选输出字段和未知通知；内部模型尝试/Context事件不公开但`scannedThrough`仍前进，公开游标允许跳跃且严格递增。Session migration20追加`protocol_requests`，重复命令在`clientInstanceId + requestId`域内复用，参数漂移冲突，原始Prompt不落库，终态摘要篡改和终态改写失败关闭。
+
+13份`agent-protocol-*-v1.schema.json`由运行时合同统一生成并逐项相等。专项验证不调用模型API、不访问网络、不读取用户凭据或远程服务器。

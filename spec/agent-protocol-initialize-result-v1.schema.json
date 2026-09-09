@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "ProtocolLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "maxMessageBytes": {
+          "default": 1048576,
+          "maximum": 8388608,
+          "minimum": 4096,
+          "title": "Maxmessagebytes",
+          "type": "integer"
+        },
+        "maxPendingRequests": {
+          "default": 64,
+          "maximum": 1024,
+          "minimum": 1,
+          "title": "Maxpendingrequests",
+          "type": "integer"
+        },
+        "maxOutboundMessages": {
+          "default": 256,
+          "maximum": 4096,
+          "minimum": 8,
+          "title": "Maxoutboundmessages",
+          "type": "integer"
+        },
+        "maxReplayEvents": {
+          "default": 256,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Maxreplayevents",
+          "type": "integer"
+        }
+      },
+      "title": "ProtocolLimits",
+      "type": "object"
+    },
+    "ServerCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "methods": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Methods",
+          "type": "array"
+        },
+        "notifications": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Notifications",
+          "type": "array"
+        },
+        "serverRequests": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Serverrequests",
+          "type": "array"
+        },
+        "replay": {
+          "default": true,
+          "title": "Replay",
+          "type": "boolean"
+        },
+        "artifactPages": {
+          "default": true,
+          "title": "Artifactpages",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "methods"
+      ],
+      "title": "ServerCapabilities",
+      "type": "object"
+    },
+    "ServerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "harnessix-code",
+          "default": "harnessix-code",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "ServerInfo",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Protocolversion",
+      "type": "string"
+    },
+    "serverInfo": {
+      "$ref": "#/$defs/ServerInfo"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/ServerCapabilities"
+    },
+    "limits": {
+      "$ref": "#/$defs/ProtocolLimits"
+    }
+  },
+  "required": [
+    "serverInfo",
+    "capabilities",
+    "limits"
+  ],
+  "title": "InitializeResult",
+  "type": "object"
+}

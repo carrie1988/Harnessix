@@ -863,7 +863,7 @@ context = SourcedContextEngine(
 
 ## 0.6.2c稳定Tool Result视图部署
 
-Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，仓库当前写入版本已推进至v17/migration19。迁移只增加最低reader标记，不改写旧Event、投影、Artifact或Effect Journal。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
+Tool Result模型视图基线引入Event/Thread v13与`0015_tool_result_model_view.sql`，仓库当前写入版本已推进至Agent v17/Session migration20。后续迁移不改写旧Event、投影、Artifact或Effect Journal；migration20只追加协议请求账本。升级前停止旧宿主、排空活跃Turn并制作一致备份；旧v12 wheel遇到migration15明确返回`schema_too_new`。回退通过恢复升级前备份完成，不能删除marker或下调投影版本。
 
 ### 宿主配置与限制
 

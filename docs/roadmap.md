@@ -286,7 +286,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**已完成**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)，并通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已完成[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)及[Resume/Fork/Archive详细设计](thread-lifecycle.md)，并通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已完成[Retry与Provider切换源码研究](research/turn-retry-and-provider-switch.md)、[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)、[详细设计](turn-retry-and-provider-switch.md)及对应实现；当前Event/Thread为v17、Session migration为19，本地严格验收及[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵全部通过。见[详细实施设计](m06-context-and-sessions.md)。
+状态：**已完成**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)，并通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已完成[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)及[Resume/Fork/Archive详细设计](thread-lifecycle.md)，并通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已完成[Retry与Provider切换源码研究](research/turn-retry-and-provider-switch.md)、[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)、[详细设计](turn-retry-and-provider-switch.md)及对应实现；当前Event/Thread为v17、Session migration为20，本地严格验收及[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵全部通过。见[详细实施设计](m06-context-and-sessions.md)。
 
 ### 目标
 
@@ -363,7 +363,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 10. 0.8：产品运行时与扩展
 
-状态：**规划中**。安全执行端口稳定后再开放协议和扩展，所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
+状态：**实施中**。0.8.1 Agent Protocol v1已经完成公共合同、JSON Schema、严格编解码、公共事件投影、Replay游标和持久幂等请求账本的本地验收；0.8.2～0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
 
 ### 目标
 
@@ -371,7 +371,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ### 纵向切片
 
-- [ ] **0.8.1 Agent Protocol v1**：版本化Command/Query/Event、Thread/Turn/Item、事件游标、幂等请求、错误、未知字段和兼容策略；
+- [x] **0.8.1 Agent Protocol v1**：版本化Command/Query/Event、Thread/Turn/Item、事件游标、幂等请求、错误、未知字段和兼容策略；
 - [ ] **0.8.2 Headless App Server与Agent SDK**：stdio JSONL基线、本地调用身份、Workspace绑定、优雅关闭、断线重连、事件续传、背压和Python Agent SDK；
 - [ ] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
 - [ ] **0.8.4 MCP**：MCP Client、可选MCP Server、进程生命周期、能力快照、Schema漂移和所有Tool的Permission/Sandbox强制接入；
@@ -380,7 +380,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ### 关键测试
 
-- [ ] Protocol Schema兼容、旧客户端、未知字段和重复Command；
+- [x] Protocol Schema兼容、旧客户端、未知字段和重复Command；
 - [ ] 客户端在任意事件前后断线，重连后不丢事件、不重复审批和副作用；
 - [ ] Steering、审批、提问、取消与对应Turn/Tool Call不会错配；
 - [ ] 慢客户端、背压、服务端重启和同时关闭不会损坏Session；

@@ -1,0 +1,384 @@
+{
+  "$defs": {
+    "ApprovalRespondParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        },
+        "approvalId": {
+          "format": "uuid",
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/PublicApprovalDecision"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "turnId",
+        "approvalId",
+        "fingerprint",
+        "decision"
+      ],
+      "title": "ApprovalRespondParams",
+      "type": "object"
+    },
+    "PublicApprovalDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "approved",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "actor": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "outcome",
+        "actor"
+      ],
+      "title": "PublicApprovalDecision",
+      "type": "object"
+    },
+    "PublicBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "maxSteps": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Maxsteps",
+          "type": "integer"
+        },
+        "maxTokens": {
+          "minimum": 1,
+          "title": "Maxtokens",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeoutseconds",
+          "type": "number"
+        },
+        "maxOutputChars": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Maxoutputchars",
+          "type": "integer"
+        },
+        "maxToolCallsPerStep": {
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Maxtoolcallsperstep",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "maxSteps",
+        "maxTokens",
+        "timeoutSeconds",
+        "maxOutputChars",
+        "maxToolCallsPerStep"
+      ],
+      "title": "PublicBudget",
+      "type": "object"
+    },
+    "ThreadArchiveParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId"
+      ],
+      "title": "ThreadArchiveParams",
+      "type": "object"
+    },
+    "ThreadCreateParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "workspace": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Workspace",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "workspace"
+      ],
+      "title": "ThreadCreateParams",
+      "type": "object"
+    },
+    "ThreadForkParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "sourceThreadId": {
+          "format": "uuid",
+          "title": "Sourcethreadid",
+          "type": "string"
+        },
+        "throughTurnId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Throughturnid"
+        }
+      },
+      "required": [
+        "requestId",
+        "sourceThreadId"
+      ],
+      "title": "ThreadForkParams",
+      "type": "object"
+    },
+    "TurnCancelParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "turnId"
+      ],
+      "title": "TurnCancelParams",
+      "type": "object"
+    },
+    "TurnResumeParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "turnId"
+      ],
+      "title": "TurnResumeParams",
+      "type": "object"
+    },
+    "TurnRetryParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "sourceTurnId": {
+          "format": "uuid",
+          "title": "Sourceturnid",
+          "type": "string"
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicBudget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "sourceTurnId"
+      ],
+      "title": "TurnRetryParams",
+      "type": "object"
+    },
+    "TurnStartParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 1000000,
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicBudget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "prompt"
+      ],
+      "title": "TurnStartParams",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ThreadCreateParams"
+    },
+    {
+      "$ref": "#/$defs/ThreadForkParams"
+    },
+    {
+      "$ref": "#/$defs/ThreadArchiveParams"
+    },
+    {
+      "$ref": "#/$defs/TurnStartParams"
+    },
+    {
+      "$ref": "#/$defs/TurnRetryParams"
+    },
+    {
+      "$ref": "#/$defs/TurnResumeParams"
+    },
+    {
+      "$ref": "#/$defs/TurnCancelParams"
+    },
+    {
+      "$ref": "#/$defs/ApprovalRespondParams"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.6.5和已完成的0.7可信执行与工程交付）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.7和0.8.1 Agent Protocol v1）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -13,9 +13,10 @@
 - 已实现 0.3.3：Plan/Compaction/Error 语义契约、统一错误、Store Contract、Agent OTel 和 v1/v2→v3 迁移；0.3 范围本地验收完成；
 - 0.4核心运行能力已交付但整体仍待0.4.3c关闭：双Adapter、尝试/失败用量账本、成本报告、受控Smoke/白名单诊断和响应计费元数据已通过对应验收；百炼文本、内存工具和审批重开实测通过；真实计价适用性作为0.9发布证据门禁继续跟踪，未关闭时不得发布1.0；
 - 0.5 已实现只读工具、有界Artifact、受管单文件/整组Patch及计划/效果Diff、受控Process/Git/测试反馈、真实缺陷Eval和显式单文件工作树交付；0.5.6补齐受信并发能力、连续只读有界调度、写/审批屏障、失败排空和统一工具错误类别。任意Shell字符串被正式排除，非交互命令由结构化`host.process`承担；OS隔离、通用多文件发布和自动commit/push属于后续版本，见[实施设计](m05-coding-tools.md)；
-- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、migration为19，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
+- 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、Session migration为20，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期、0.7.4受管Git交付和0.7.5平台中立Action入口均已通过综合六矩阵门禁；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
 - 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理；0.7.4交付Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5交付宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile。Windows Snapshot和Container冷启动探测加固后，0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
+- 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；Headless App Server、Agent SDK及扩展仍按后续切片实施，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -375,7 +376,7 @@ src/harnessix/
 ├── secrets/           # 已实现：版本绑定、短期解析、流式脱敏与泄漏门禁
 ├── delivery/          # 已实现：事务、Git worktree/checkpoint/commit/push
 ├── trusted_actions/   # 已实现：统一风险路由、审计和扩展端口
-├── protocol/          # 规划：App Server Protocol
+├── protocol/          # 已实现v1合同、Codec、投影、Replay与持久请求账本
 ├── session/           # 已实现 SQLite Event Log、聚合投影、迁移和宿主锁
 ├── extensions/        # 规划：MCP、Skills、Hooks
 ├── evals/             # 已实现：历史任务、评分、Campaign与受控交付

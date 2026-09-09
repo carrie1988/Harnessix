@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "JsonRpcError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maximum": 32767,
+          "minimum": -32768,
+          "title": "Code",
+          "type": "integer"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/JsonRpcErrorData"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "data"
+      ],
+      "title": "JsonRpcError",
+      "type": "object"
+    },
+    "JsonRpcErrorData": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "path": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "maxItems": 64,
+          "title": "Path",
+          "type": "array"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "JsonRpcErrorData",
+      "type": "object"
+    },
+    "JsonRpcId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0",
+      "default": "2.0",
+      "title": "Jsonrpc",
+      "type": "string"
+    },
+    "id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonRpcId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "$ref": "#/$defs/JsonRpcError"
+    }
+  },
+  "required": [
+    "id",
+    "error"
+  ],
+  "title": "JsonRpcErrorResponse",
+  "type": "object"
+}
