@@ -127,7 +127,7 @@ async def main(mode: str, root: Path) -> None:
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 17
+        assert EventDraft.model_fields["schema_version"].default == 18
         print("当前wheel已原字节追加migration14-18，v11事件与投影未改写")
         return
 
@@ -152,7 +152,7 @@ async def main(mode: str, root: Path) -> None:
     resumed = database_state(database_path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 17 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 18 for row in resumed["events"][old_event_count:]
     )
     assert resumed["threads"][0][4] == 16
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)

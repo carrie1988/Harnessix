@@ -1048,3 +1048,13 @@ Git Push默认不注册。显式启用时需要同时装配：
 ### 迁移与回退
 
 0.7.5新增独立Schema文件，不迁移或改写0.5 Session/Patch/Process历史事件。回退到不认识这些数据库的旧版本前，应保留完整状态备份并停止任何pending/running/unknown Action；旧版本不能读取新Action Audit时必须失败关闭，不能忽略新表后继续执行。
+
+## 0.8.2 Headless App Server与Agent SDK部署
+
+0.8.2的正式传输边界是本地父子进程stdio JSONL，不监听网络端口。宿主应为每个App Server实例提供独占Session数据库和runtime lock，并把stdout完整保留给Agent Protocol；日志、Trace和启动诊断只能写stderr，且必须经过既有Secret脱敏。
+
+建议数据目录权限为0700、Session数据库及锁文件为0600。`clientInstanceId`由客户端持久保存，用于命令幂等命名空间，但不是认证Token；不得把stdio桥接到远程或多用户套接字后继续沿用该信任假设。Workspace在创建Thread时必须是App Server宿主上的绝对路径，实际访问仍由Execution Plan、Permission和Sandbox决定。
+
+关闭顺序固定为停止接收新帧、等待后台Turn到宽限期、取消未完成后台驱动并等待Runtime持久结算、关闭stdout Writer。进程管理器应把非零退出、Writer失败和`client_too_slow`视为连接故障；恢复时复用原`clientInstanceId`和Command `requestId`，读取Thread Snapshot并从最后`scannedThrough`继续Replay，不能生成新requestId盲目重放写命令。
+
+本阶段不提供TCP/WebSocket、远程认证、服务端守护进程安装、实时事件通知或Artifact读取端口。子进程SDK必须以argv启动App Server，不经过Shell；完整启动装配、配置诊断和三平台发行物分别由0.8.6与0.9交付。

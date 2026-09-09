@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -165,6 +166,13 @@ class CommandParams(ProtocolModel):
 
 class ThreadCreateParams(CommandParams):
     workspace: str = Field(min_length=1, max_length=4096)
+
+    @field_validator("workspace")
+    @classmethod
+    def local_absolute_workspace(cls, value: str) -> str:
+        if "\x00" in value or not Path(value).is_absolute():
+            raise ValueError("Workspace必须是App Server宿主上的绝对路径")
+        return value
 
 
 class ThreadGetParams(ProtocolModel):
@@ -538,3 +546,12 @@ def validate_server_output[ProtocolOutput: ProtocolModel](
 
     encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     return model.model_validate_json(encoded, extra="ignore")
+
+
+def validate_protocol_input[ProtocolInput: ProtocolModel](
+    model: type[ProtocolInput], value: object
+) -> ProtocolInput:
+    """按JSON语义严格解析入站合同，禁止Python调用绕过UUID/时间转换边界。"""
+
+    encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+    return model.model_validate_json(encoded)

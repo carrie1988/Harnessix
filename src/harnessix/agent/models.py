@@ -521,6 +521,7 @@ class Turn(ContractModel):
     request_id: str
     request_fingerprint: str
     retry_of_turn_id: UUID | None = None
+    execution_mode: Literal["immediate", "deferred"] = "immediate"
     status: TurnStatus = TurnStatus.ACCEPTED
     budget: Budget
     trace_context: TraceContext | None = None
@@ -645,6 +646,7 @@ class TurnStarted(ContractModel):
     request_id: str = Field(min_length=1, max_length=256)
     request_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     retry_of_turn_id: UUID | None = None
+    execution_mode: Literal["immediate", "deferred"] = "immediate"
     budget: Budget
     trace_context: TraceContext | None = None
 
@@ -707,7 +709,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17] = 17
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] = 18
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -716,6 +718,8 @@ class EventDraft(ContractModel):
     @model_serializer(mode="wrap")
     def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
+        if self.schema_version < 18 and isinstance(self.payload, TurnStarted):
+            data.get("payload", {}).pop("execution_mode", None)
         if self.schema_version < 17 and isinstance(self.payload, TurnStarted):
             data.get("payload", {}).pop("retry_of_turn_id", None)
         if self.schema_version < 5 and isinstance(self.payload, ModelUsageObserved):
@@ -735,6 +739,12 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if (
+            self.schema_version < 18
+            and isinstance(self.payload, TurnStarted)
+            and self.payload.execution_mode != "immediate"
+        ):
+            raise ValueError("延迟驱动Turn需要Agent Event v18")
         if (
             self.schema_version < 17
             and isinstance(self.payload, TurnStarted)

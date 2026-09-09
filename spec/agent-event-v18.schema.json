@@ -3864,6 +3864,15 @@
           "default": null,
           "title": "Retry Of Turn Id"
         },
+        "execution_mode": {
+          "default": "immediate",
+          "enum": [
+            "immediate",
+            "deferred"
+          ],
+          "title": "Execution Mode",
+          "type": "string"
+        },
         "budget": {
           "$ref": "#/$defs/Budget"
         },
@@ -4079,7 +4088,7 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "default": 17,
+      "default": 18,
       "enum": [
         1,
         2,
@@ -4097,7 +4106,8 @@
         14,
         15,
         16,
-        17
+        17,
+        18
       ],
       "title": "Schema Version",
       "type": "integer"

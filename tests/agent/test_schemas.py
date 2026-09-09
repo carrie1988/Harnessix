@@ -67,8 +67,8 @@ def test_generated_schemas_match_code() -> None:
         "thread-archive-v1.schema.json": ThreadArchiveRecord.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v17.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v17.schema.json": Thread.model_json_schema(),
+        "agent-event-v18.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v18.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -101,7 +101,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 18,
+                "schema_version": 19,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -135,7 +135,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 17
+        assert EventDraft(payload=payload).schema_version == 18
 
 
 def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
@@ -148,13 +148,31 @@ def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=16, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 17
+    assert EventDraft(payload=payload).schema_version == 18
 
     legacy = EventDraft(
         schema_version=16,
         payload=payload.model_copy(update={"retry_of_turn_id": None}),
     ).model_dump(mode="json")
     assert "retry_of_turn_id" not in legacy["payload"]
+
+
+def test_deferred_turn_execution_requires_v18_and_legacy_export_is_frozen() -> None:
+    payload = TurnStarted(
+        request_id="deferred",
+        request_fingerprint="0" * 64,
+        execution_mode="deferred",
+        budget={"max_steps": 1},
+    )
+    with pytest.raises(ValidationError):
+        EventDraft(schema_version=17, payload=payload)
+    assert EventDraft(payload=payload).schema_version == 18
+
+    legacy = EventDraft(
+        schema_version=17,
+        payload=payload.model_copy(update={"execution_mode": "immediate"}),
+    ).model_dump(mode="json")
+    assert "execution_mode" not in legacy["payload"]
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -173,7 +191,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 17
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 18
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -203,7 +221,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 17
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 18
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:

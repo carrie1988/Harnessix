@@ -128,7 +128,7 @@ async def test_real_search_reduction_page_replay_context_and_both_provider_mappi
     events = await store.events(thread.thread_id)
     committed = [e for e in events if isinstance(e.payload, ModelHistoryPrepared)]
     assert [len(e.payload.decisions) for e in committed] == [0, 1, 1]
-    assert all(e.schema_version == 17 for e in committed)
+    assert all(e.schema_version == 18 for e in committed)
     stored = await store.get_thread(thread.thread_id)
     assert replay(events) == stored == await store.rebuild(thread.thread_id)
     reopened = SQLiteSessionStore(store.path)

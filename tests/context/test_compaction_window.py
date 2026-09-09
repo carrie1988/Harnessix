@@ -169,9 +169,9 @@ async def test_window_contract_requires_v15_and_linear_active_tail():
             schema_version=14,
             payload=ModelHistoryPrepared(inspection=history.inspection),
         )
-    assert EventDraft(payload=event.payload).schema_version == 17
+    assert EventDraft(payload=event.payload).schema_version == 18
     assert (
-        EventDraft(payload=ModelHistoryPrepared(inspection=history.inspection)).schema_version == 17
+        EventDraft(payload=ModelHistoryPrepared(inspection=history.inspection)).schema_version == 18
     )
     with pytest.raises(ValidationError):
         Thread.model_validate(active.model_dump() | {"active_compaction_window_id": None})

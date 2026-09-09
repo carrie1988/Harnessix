@@ -3,7 +3,7 @@
 ## 1. 文档状态
 
 - 适用版本：0.8；
-- 当前状态：0.8.1已完成本地验收，0.8.2实施中，0.8.3～0.8.6待前序切片关闭后实施；
+- 当前状态：0.8.1～0.8.2已完成本地验收，0.8.3实施中，0.8.4～0.8.6待前序切片关闭后实施；
 - 总体目标：把0.7已经完成的可信执行与工程交付能力开放为可恢复的本地产品服务，并在相同Runtime、Permission和Sandbox边界内接入CLI、SDK、MCP、Skills、Hooks与Provider配置。
 
 本文只把已经实现并验证的切片标记为完成。每个切片必须依次完成源码研究、架构决策、领域契约、最小正式实现、失败恢复测试、真实场景验证和文档同步。
@@ -113,13 +113,63 @@ JSON-RPC ID与`requestId`独立。SDK在响应超时后重用原`requestId`并�
 
 0.8.1实现位于`harnessix.protocol`，包括严格公共合同、JSON帧Codec、兼容解码、内部事件白名单投影、Replay投影和SQLite协议请求账本。提交仓库的13份Schema由同一运行时模型生成。确定性测试覆盖非法UTF-8/JSON、Batch、重复字段、深度和尺寸、ID边界、未知输入字段、旧客户端新增输出字段、未知通知、隐藏内部事件造成的游标跳跃、重复Command、持久重开、终态冲突和账本篡改；不连接模型或网络。
 
-## 5. 后续切片冻结入口
+## 5. 0.8.2 Headless App Server与Agent SDK详细设计
+
+### 5.1 模块边界
+
+`harnessix.app_server`包含连接协议状态、应用服务和stdio传输；`harnessix.sdk.agent_client`包含公共异步SDK及进程内/子进程传输。应用服务只能调用`AgentRuntime`、`SessionStore`和`ProtocolRequestStore`，不能直接构造内部事件或执行Tool。SDK只能消费Agent Protocol公共模型，不能打开Session数据库。
+
+### 5.2 受理与执行顺序
+
+开始Turn和重试Turn先以`clientInstanceId + requestId`在协议账本提交`accepted`，再由Runtime以确定性UUID提交`TurnStarted`及初始用户Item，随后保存有界公共`TurnResult`，最后创建后台驱动任务。服务按`turnId`去重任务；Runtime以活动Turn再次拒绝并发执行。
+
+Agent Event/Thread v18通过`executionMode`区分进程内立即驱动与App Server延迟驱动。只有延迟驱动的`ACCEPTED`尚未调用Provider或Tool，Runtime重开时保留该安全边界；旧`run_turn`在接受后异常退出仍按原语义中断。客户端可重发原Command，或调用`thread/resume`重新调度。Session migration21不改写历史事件和投影，旧记录读取时默认`immediate`。已进入模型、工具、审批或Process边界的恢复继续完全服从既有Agent Runtime语义，不由App Server猜测。
+
+### 5.3 stdio与背压
+
+- 输入输出均为UTF-8 JSONL，一行一帧；
+- 单Reader顺序验证请求，单Writer串行写stdout；
+- 初始化协商后使用双方消息、Replay和出站上限的较小值；
+- 出站队列在配置时间内不能进入容量窗口时结束连接，不继续读取并接受无限命令；
+- Writer错误结束连接并向进程入口传播，不把诊断写入stdout；
+- EOF进入closing，后台Turn最多等待宽限期，超时取消并由Runtime结算。
+
+### 5.4 SDK恢复合同
+
+`AgentClient`覆盖Thread创建、读取、列表、恢复、分叉、归档，Turn开始、重试、恢复、取消，审批答复和事件Replay。调用方负责持久保存`clientInstanceId`、每个Command的`requestId`及每个Thread最后消费的`scannedThrough`。JSON-RPC ID只在当前SDK实例递增，用于当前连接响应关联。
+
+进程内传输用于嵌入和确定性测试；子进程传输通过argv直接启动，不使用Shell。Request读一个Response；Notification只写不读，避免等待协议明确禁止的响应。stderr只保存最近64 KiB诊断尾部，后续诊断包仍须执行Secret脱敏。
+
+### 5.5 Workspace和本地身份
+
+`workspace`必须是App Server宿主上的无NUL绝对路径。创建Thread只绑定路径，不证明目录存在，也不授予读写或执行权限；实际Action必须通过0.7的Workspace Snapshot、Execution Plan、Permission、Sandbox和Action Audit。
+
+`clientInstanceId`是本地调用身份和幂等命名空间，不是远程认证凭据。0.8只支持父子进程stdio；未来开放套接字前必须另行设计操作系统主体绑定、认证和多租户隔离。
+
+### 5.6 失败与恢复矩阵
+
+| 切点 | 恢复行为 |
+|---|---|
+| 协议accepted前 | 客户端可用原requestId重试 |
+| 协议accepted后、领域提交前 | 重跑确定性领域操作 |
+| 领域提交后、协议completed前 | 返回同一Thread/Turn，不重复事实 |
+| 协议completed后、后台调度前 | 重放或thread/resume调度同一ACCEPTED Turn |
+| Response后、事件消费前断线 | 从最后scannedThrough继续Replay |
+| stdout阻塞/失败 | 关闭连接，持久Session不受影响 |
+| EOF或关闭时Turn仍运行 | 宽限期后取消并持久结算 |
+
+### 5.7 当前限制
+
+0.8.2只交付Snapshot与Replay恢复，不广告实时通知和服务端Request；流式Delta、审批/提问主动呈现、运行中Steering和薄CLI属于0.8.3。Artifact分页合同尚未绑定安全读取端口，因此服务端不广告`artifact/read`，不能因Schema存在而宣称可用。
+
+## 6. 后续切片冻结入口
 
 0.8.2只能依赖本章公共合同和既有`AgentRuntime`/`SessionStore`端口；0.8.3只能依赖Agent SDK；0.8.4～0.8.5只能调用`ExtensionActionPort`；0.8.6的配置只能保存Secret引用，不能把凭据值写入协议、Session或配置文件。具体设计在对应源码研究和ADR完成后追加。
 
-## 6. 参考资料
+## 7. 参考资料
 
 - [Agent Protocol与产品运行时源码研究](research/agent-protocol-product-runtime.md)
 - [ADR 0009：JSON-RPC 2.0与stdio JSONL](adr/0009-app-server-protocol.md)
 - [ADR 0070：Agent Protocol v1边界](adr/0070-agent-protocol-v1-boundaries.md)
+- [ADR 0071：Headless App Server与Agent SDK生命周期](adr/0071-headless-app-server-and-sdk-lifecycle.md)
 - [JSON-RPC 2.0规范](https://www.jsonrpc.org/specification)

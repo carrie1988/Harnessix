@@ -71,7 +71,7 @@ async def main(mode: str, root: Path) -> None:
         return
 
     assert mode == "upgrade"
-    assert EventDraft.model_fields["schema_version"].default == 17
+    assert EventDraft.model_fields["schema_version"].default == 18
     metadata = json.loads((root / "metadata.json").read_text(encoding="utf-8"))
     original = metadata["state"]
     await store.initialize()
@@ -99,7 +99,7 @@ async def main(mode: str, root: Path) -> None:
     after = state(store.path)
     assert after["agent_events"][: len(original["agent_events"])] == original["agent_events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 17
+        json.loads(row[3])["schema_version"] == 18
         for row in after["agent_events"][len(original["agent_events"]) :]
     )
     print("v17仅追加migration19；旧字节不变且新Retry可重放、重建")

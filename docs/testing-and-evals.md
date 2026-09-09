@@ -1489,3 +1489,19 @@ Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.co
 专项测试覆盖标准JSON-RPC Request/Notification/Success/Error互斥结构，字符串和安全整数ID边界，非法UTF-8/JSON、重复字段、Batch、多行、深度与尺寸门禁；未知输入字段失败，旧客户端忽略新增可选输出字段和未知通知；内部模型尝试/Context事件不公开但`scannedThrough`仍前进，公开游标允许跳跃且严格递增。Session migration20追加`protocol_requests`，重复命令在`clientInstanceId + requestId`域内复用，参数漂移冲突，原始Prompt不落库，终态摘要篡改和终态改写失败关闭。
 
 13份`agent-protocol-*-v1.schema.json`由运行时合同统一生成并逐项相等。专项验证不调用模型API、不访问网络、不读取用户凭据或远程服务器。
+
+## 74. 0.8.2 Headless App Server与Agent SDK候选验收（2026-09-09）
+
+状态：**本地验收完成**。单客户端stdio JSONL、应用服务、进程内/子进程Python Agent SDK、确定性受理恢复、Thread过滤分页、协商限制、背压和有界关闭已经实现；实时通知、提问、Steering与薄CLI属于0.8.3。
+
+专项及扩大回归为**75 passed**，覆盖：
+
+- 初始化前拒绝、精确版本、未知参数、`initialized`确认和稳定错误映射；
+- Thread创建、读取、列表、恢复、分叉、归档以及Turn开始、重试、恢复、取消、审批和Replay的SDK接线；
+- 相同Command返回同一领域身份、参数漂移冲突，以及协议结果已提交但后台任务尚未调度时的Runtime重启恢复；Agent Event/Thread v18用持久`executionMode`保证该行为不改变进程内Turn的既有中断语义；
+- 归档筛选先于分页，避免页面被不匹配记录占用；
+- 子进程Notification只写不等待Response，stderr有界保留；
+- EOF、慢Writer和长时间Provider下的有界关闭，验证Session不损坏且活动Turn进入确定性取消终态；
+- Protocol和Agent Runtime既有回归。
+
+Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整门禁为**3180 passed、12 skipped，296.28秒**。12项跳过只包含平台限定或本机未配置的集成场景。本切片只使用确定性Fake/Scripted Provider和本地临时SQLite，不连接模型API、网络、SSH或远程服务器。0.8整体仍未关闭，不能由本次结果推导实时双向交互、MCP、Skills、Hooks、Provider配置或发行物已经可用。

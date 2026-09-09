@@ -343,6 +343,11 @@ class AgentRuntime:
                     recoverable_compaction.plan.compaction_id,
                 )
                 turn = get_turn(thread, turn.turn_id)
+            # App Server先持久化接受边界再异步驱动。宿主可能在响应或调度前退出；
+            # ACCEPTED尚未调用Provider或执行Tool，保留该状态即可由同一requestId安全续跑。
+            if turn.status == TurnStatus.ACCEPTED and turn.execution_mode == "deferred":
+                operation.finish(turn.status.value)
+                return
             calls = pending_calls(turn)
             if (
                 turn.status == TurnStatus.EXECUTING_TOOLS
@@ -438,10 +443,21 @@ class AgentRuntime:
     def _lock(self, thread_id: UUID) -> asyncio.Lock:
         return self._locks.setdefault(thread_id, asyncio.Lock())
 
-    async def create_thread(self, workspace: str) -> Thread:
+    async def create_thread(self, workspace: str, *, thread_id: UUID | None = None) -> Thread:
         self._ensure_open()
+        identity = thread_id or new_id()
+        if thread_id is not None:
+            try:
+                existing = await self.store.get_thread(identity)
+            except KernelError as error:
+                if error.code != "thread_not_found":
+                    raise
+            else:
+                if existing.workspace != workspace:
+                    raise KernelError("thread_create_conflict", "Thread身份已绑定其他Workspace")
+                return existing
         return await self.store.append(
-            new_id(),
+            identity,
             [EventDraft(payload=ThreadCreated(workspace=workspace))],
             expected_sequence=0,
         )
@@ -557,12 +573,15 @@ class AgentRuntime:
         budget: Budget,
         trace_context: TraceContext | None,
         retry_of_turn_id: UUID | None = None,
+        execution_mode: Literal["immediate", "deferred"] = "immediate",
     ) -> tuple[Turn, bool]:
         content = TextContent(kind="user_message", text=prompt)
         fingerprint_input: dict[str, object] = {
             "prompt": prompt,
             "budget": budget.model_dump(),
         }
+        if execution_mode == "deferred":
+            fingerprint_input["execution_mode"] = execution_mode
         if retry_of_turn_id is not None:
             fingerprint_input["retry_of_turn_id"] = str(retry_of_turn_id)
         fingerprint = hashlib.sha256(
@@ -577,6 +596,7 @@ class AgentRuntime:
             request_id=request_id,
             request_fingerprint=fingerprint,
             retry_of_turn_id=retry_of_turn_id,
+            execution_mode=execution_mode,
             budget=budget,
             trace_context=trace_context,
         )
@@ -589,6 +609,7 @@ class AgentRuntime:
                 if (
                     existing.request_fingerprint != fingerprint
                     or existing.retry_of_turn_id != retry_of_turn_id
+                    or existing.execution_mode != execution_mode
                 ):
                     raise KernelError("request_conflict", "request_id 已绑定不同输入或预算")
                 return existing, False
@@ -665,6 +686,30 @@ class AgentRuntime:
         finally:
             self._active.pop(turn_id, None)
 
+    async def accept_turn(
+        self,
+        thread_id: UUID,
+        prompt: str,
+        *,
+        request_id: str,
+        budget: Budget | None = None,
+        trace_context: TraceContext | None = None,
+    ) -> Turn:
+        """只提交Turn接受边界；供产品服务在响应前持久化用户输入。"""
+
+        self._ensure_open()
+        turn_id = uuid5(thread_id, f"harnessix.turn/v1:{request_id}")
+        turn, _ = await self._accept(
+            thread_id,
+            turn_id,
+            prompt,
+            request_id,
+            budget or Budget(),
+            trace_context,
+            execution_mode="deferred",
+        )
+        return turn
+
     async def retry_turn(
         self,
         thread_id: UUID,
@@ -708,6 +753,31 @@ class AgentRuntime:
         finally:
             self._active.pop(turn_id, None)
 
+    async def accept_retry_turn(
+        self,
+        thread_id: UUID,
+        source_turn_id: UUID,
+        *,
+        request_id: str,
+        budget: Budget | None = None,
+        trace_context: TraceContext | None = None,
+    ) -> Turn:
+        """只提交Retry Turn接受边界；执行由显式resume继续。"""
+
+        self._ensure_open()
+        turn_id = uuid5(thread_id, f"harnessix.turn-retry/v1:{request_id}")
+        turn, _ = await self._accept(
+            thread_id,
+            turn_id,
+            RETRY_INSTRUCTIONS,
+            request_id,
+            budget or Budget(),
+            trace_context,
+            retry_of_turn_id=source_turn_id,
+            execution_mode="deferred",
+        )
+        return turn
+
     async def resume_turn(self, thread_id: UUID, turn_id: UUID) -> Turn:
         self._ensure_open()
         token = CancelToken()
@@ -717,8 +787,12 @@ class AgentRuntime:
             turn = get_turn(await self.store.get_thread(thread_id), turn_id)
             if turn.status in TERMINAL_TURNS:
                 return turn
-            if turn.status not in {TurnStatus.WAITING_APPROVAL, TurnStatus.WAITING_ACTION}:
-                raise KernelError("turn_not_resumable", "仅可从持久审批边界继续")
+            if turn.status not in {
+                TurnStatus.ACCEPTED,
+                TurnStatus.WAITING_APPROVAL,
+                TurnStatus.WAITING_ACTION,
+            }:
+                raise KernelError("turn_not_resumable", "仅可从持久接受或等待边界继续")
             if turn.status == TurnStatus.WAITING_ACTION and self._processes is None:
                 raise KernelError("turn_not_resumable", "Process Action运行时尚未配置")
             if turn_id in self._active:

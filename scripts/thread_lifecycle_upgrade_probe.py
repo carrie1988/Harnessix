@@ -65,7 +65,7 @@ async def main(mode: str, root: Path) -> None:
     assert mode == "upgrade"
     from harnessix.agent.models import ThreadArchived, ThreadForked
 
-    assert EventDraft.model_fields["schema_version"].default == 17
+    assert EventDraft.model_fields["schema_version"].default == 18
     metadata = json.loads((root / "metadata.json").read_text(encoding="utf-8"))
     original = metadata["state"]
     await store.initialize()

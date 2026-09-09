@@ -197,7 +197,7 @@ async def main(mode: str, root: Path) -> None:
         print("v14 reader拒绝migration17且未修改数据库")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 17
+    assert EventDraft.model_fields["schema_version"].default == 18
     metadata = json.loads((root / "metadata.json").read_text())
     original = metadata["state"]
     await store.initialize()

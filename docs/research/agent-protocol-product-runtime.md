@@ -27,7 +27,7 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 
 ### 2.2 公共协议与持久事件
 
-内部`AgentEvent v17`是Session恢复事实，包含Context、模型尝试、私有执行计划等实现信息；公共Agent Protocol必须投影而不是直接序列化该事件。公共游标可以使用内部单调sequence作为不透明位置，但客户端不得假设相邻公开事件的游标差恒为一。
+内部`AgentEvent v18`是Session恢复事实，包含Context、模型尝试、延迟驱动模式和私有执行计划等实现信息；公共Agent Protocol必须投影而不是直接序列化该事件。公共游标可以使用内部单调sequence作为不透明位置，但客户端不得假设相邻公开事件的游标差恒为一。
 
 ## 3. 参考实现事实
 
@@ -77,7 +77,7 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 
 0.7结束时，`AgentRuntime`已经提供Thread创建、恢复、分叉、归档，Turn运行、重试、继续、取消和审批答复；`SQLiteSessionStore`已经提供单调事件与`events(after=...)`。仍缺少：
 
-1. 与内部Event v17解耦的公共Thread/Turn/Item/Event投影；
+1. 与内部Agent Event版本解耦的公共Thread/Turn/Item/Event投影；
 2. 标准JSON-RPC Envelope、初始化协商、方法注册和错误映射；
 3. 跨进程持久请求幂等和已接受命令的重开语义；
 4. stdio单读者/单写者、消息上限、有界队列和优雅关闭；
@@ -94,7 +94,9 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 6. 关键事件和双向请求不可丢弃；可合并Delta只能作为live-only优化，Snapshot和持久事件始终是恢复事实；
 7. v1不开放TCP/WebSocket，不接受JSON-RPC Batch，不允许客户端提交内部Event、Tool Result或Policy结果。
 
-具体决策见[ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md)，实现详设见[0.8设计](../m08-product-runtime-and-extensions.md)。
+0.8.2进一步冻结命令顺序为“协议accepted → 领域接受事实 → 协议completed → 后台驱动”。该顺序使每个崩溃窗口都有可查询事实：已完成账本不能证明后台任务已经获得调度，因此相同Command和`thread/resume`都必须能够重新驱动仍处于`ACCEPTED`的确定性Turn。stdio对Notification采用只写路径，不能复用“写后读取一个Response”的Request交换函数。
+
+具体决策见[ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md)和[ADR 0071](../adr/0071-headless-app-server-and-sdk-lifecycle.md)，实现详设见[0.8设计](../m08-product-runtime-and-extensions.md)。
 
 ## 6. 源码索引
 

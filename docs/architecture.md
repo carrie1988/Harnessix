@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.7和0.8.1 Agent Protocol v1）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.7、0.8.1 Agent Protocol v1和0.8.2 Headless/Agent SDK）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -16,7 +16,7 @@
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、Session migration为20，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期、0.7.4受管Git交付和0.7.5平台中立Action入口均已通过综合六矩阵门禁；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
 - 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理；0.7.4交付Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5交付宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile。Windows Snapshot和Container冷启动探测加固后，0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
-- 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；Headless App Server、Agent SDK及扩展仍按后续切片实施，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
+- 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；0.8.2已实现单客户端stdio Headless App Server、薄应用服务、进程内/子进程Python Agent SDK、Agent Event/Thread v18延迟驱动事实及migration21、确定性受理恢复、出站背压和有界关闭。实时双向交互及扩展仍按后续切片实施，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

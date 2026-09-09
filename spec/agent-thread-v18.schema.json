@@ -3481,6 +3481,15 @@
           "default": null,
           "title": "Retry Of Turn Id"
         },
+        "execution_mode": {
+          "default": "immediate",
+          "enum": [
+            "immediate",
+            "deferred"
+          ],
+          "title": "Execution Mode",
+          "type": "string"
+        },
         "status": {
           "$ref": "#/$defs/TurnStatus",
           "default": "accepted"

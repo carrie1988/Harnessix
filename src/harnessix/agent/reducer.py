@@ -797,6 +797,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             request_id=payload.request_id,
             request_fingerprint=payload.request_fingerprint,
             retry_of_turn_id=payload.retry_of_turn_id,
+            execution_mode=payload.execution_mode,
             budget=payload.budget,
             trace_context=payload.trace_context,
             created_at=event.occurred_at,

@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.7全部路线图范围及0.8.1 Agent Protocol v1本地验收。公共协议已包含严格JSON-RPC合同、13份JSON Schema、事件投影/Replay和持久幂等命令账本；Headless App Server、Agent SDK、薄CLI、MCP/Skill/Hook产品接线、Provider配置产品化和三平台发行物仍属于0.8.2～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.7全部路线图范围、0.8.1 Agent Protocol v1及0.8.2 Headless App Server/Python Agent SDK本地验收。公共协议现可通过stdio JSONL驱动并以Snapshot/Replay断线恢复，命令受理、领域提交、后台调度、背压和有界关闭具有明确失败语义；薄CLI双向交互、MCP/Skill/Hook产品接线、Provider配置产品化和三平台发行物仍属于0.8.3～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
