@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import os
 import stat
 import time
@@ -56,9 +57,14 @@ def revision_state(info: os.stat_result) -> tuple[int, ...]:
 
 
 class ReadOperation:
-    def __init__(self) -> None:
+    def __init__(self, *, timeout_seconds: int | float = READ_TIMEOUT_SECONDS) -> None:
+        if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)):
+            raise ValueError("读取操作时限必须是有限正数")
+        timeout = float(timeout_seconds)
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("读取操作时限必须是有限正数")
         self.stopped = Event()
-        self.deadline = time.monotonic() + READ_TIMEOUT_SECONDS
+        self.deadline = time.monotonic() + timeout
 
     def checkpoint(self) -> None:
         if self.stopped.is_set():
@@ -67,10 +73,14 @@ class ReadOperation:
             raise ReadToolError("timeout")
 
 
-async def run_read_operation[T](reader: Callable[[ReadOperation], T]) -> T:
+async def run_read_operation[T](
+    reader: Callable[[ReadOperation], T],
+    *,
+    timeout_seconds: int | float = READ_TIMEOUT_SECONDS,
+) -> T:
     """在线程中执行受限读取；调用方取消时先通知并回收线程。"""
 
-    operation = ReadOperation()
+    operation = ReadOperation(timeout_seconds=timeout_seconds)
     worker = asyncio.create_task(asyncio.to_thread(reader, operation))
     try:
         return await asyncio.shield(worker)

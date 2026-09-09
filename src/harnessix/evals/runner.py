@@ -64,7 +64,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.storage import SQLiteEffectJournal
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.runtime import CodingToolRuntime
-from harnessix.tools.workspace import ReadOperation, Workspace
+from harnessix.tools.workspace import Workspace, run_read_operation
 from harnessix.worker import ActionWorker
 
 _STATE_FILE = "run-state.json"
@@ -73,6 +73,9 @@ _MANAGED_DIRECTORY = "managed"
 _SESSION_FILE = "session.sqlite"
 _EFFECT_FILE = "effects.sqlite"
 _MAX_TREE_PATH_BYTES = 4 * 1024 * 1024
+# 受管副本最多导入256个文件并逐项同步SQLite，不与模型可调用的5秒单次读取共用预算。
+# 该受信物化步骤仍有逐文件检查点、有限截止时间且不自动重试。
+_EVAL_COPY_TIMEOUT_SECONDS = 60
 # 固定测试进程最长60秒；租约需覆盖进程截止时间及托管CI暂停，心跳仍每秒续约。
 # Eval只有单个受管Worker，延长失联恢复窗口不会引入竞争执行。
 _EVAL_ACTION_LEASE_SECONDS = 120
@@ -225,7 +228,12 @@ async def _provision(
                 "Eval工具隐藏路径与任务固定定义不一致",
             )
         factory = PatchWorkspaces(managed_root)
-        copy = factory.create(source, managed_paths, ReadOperation())
+        copy = await cancel.run(
+            run_read_operation(
+                lambda operation: factory.create(source, managed_paths, operation),
+                timeout_seconds=_EVAL_COPY_TIMEOUT_SECONDS,
+            )
+        )
     with copy:
         try:
             for path in host_only_paths:

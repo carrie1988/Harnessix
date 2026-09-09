@@ -99,3 +99,19 @@ def test_deadline_and_stop_are_distinct(tmp_path):
         operation.stopped.set()
         with pytest.raises(TurnCancelled):
             operation.checkpoint()
+
+
+def test_explicit_timeout_budget_remains_finite(monkeypatch):
+    clock = iter((100.0, 109.999, 110.0))
+    monkeypatch.setattr("harnessix.tools.workspace.time.monotonic", lambda: next(clock))
+    operation = ReadOperation(timeout_seconds=10)
+
+    operation.checkpoint()
+    with pytest.raises(ReadToolError, match="timeout"):
+        operation.checkpoint()
+
+
+@pytest.mark.parametrize("timeout", [True, 0, -1, float("inf"), float("nan"), "5"])
+def test_invalid_explicit_timeout_budget_is_rejected(timeout):
+    with pytest.raises(ValueError, match="有限正数"):
+        ReadOperation(timeout_seconds=timeout)
