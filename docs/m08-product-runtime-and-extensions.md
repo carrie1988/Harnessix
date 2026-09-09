@@ -3,7 +3,7 @@
 ## 1. 文档状态
 
 - 适用版本：0.8；
-- 当前状态：0.8.1～0.8.4已完成本地验收，0.8.5～0.8.6待前序切片关闭后实施；
+- 当前状态：0.8.1～0.8.5已完成本地验收，0.8.6待前序切片关闭后实施；
 - 总体目标：把0.7已经完成的可信执行与工程交付能力开放为可恢复的本地产品服务，并在相同Runtime、Permission和Sandbox边界内接入CLI、SDK、MCP、Skills、Hooks与Provider配置。
 
 本文只把已经实现并验证的切片标记为完成。每个切片必须依次完成源码研究、架构决策、领域契约、最小正式实现、失败恢复测试、真实场景验证和文档同步。
@@ -326,11 +326,125 @@ stdio Client的启动、目录发现、调用和关闭均有独立超时。SDK�
 
 本地完整门禁为3235 passed、13 skipped，319.39秒；Ruff格式与规则检查655个文件通过，Mypy严格检查236个源文件通过。192份Schema生成物按文件名、NUL和原字节聚合SHA256为`4231d529343624f8c4a963e8d71c991303b65e995c5b4cf3b8f4602e2e3a25ce`。13项跳过只包含平台限定或本机未配置的集成场景；真实Container MCP由固定镜像CI门禁提供发布证据。
 
-## 8. 后续切片冻结入口
+## 8. 0.8.5 Skills与Hooks详细设计
+
+### 8.1 模块与执行边界
+
+`harnessix.skills`由合同、目录运行时、SQLite Store和Action适配组成；
+`harnessix.hooks`由定义/运行合同、SQLite Store和生命周期运行时组成。Skill是
+不受信内容包，不是可执行插件；Hook定义是受信宿主对既有只读Action的声明式绑定，
+不是Shell、HTTP、Prompt或进程内回调。两者均不得持有Router、Executor、Session、
+Secret Provider或任意文件系统对象。
+
+Skill正文与资源分别注册为`skill.load`和`skill.read_resource`，固定为
+`READ_ONLY + LOW + recovery=none`并只经`ExtensionActionPort(source="skill")`
+计划和执行。Hook处理器必须是宿主预注册的
+`ExtensionActionPort(source="hook")`绑定，且同样只能为低风险只读Action。
+目标Action自己的Policy、Approval、Sandbox和恢复结论保持权威；Hook的`allow`不能
+放宽目标Action，`before_action`的`deny`或失败只能收紧执行。
+
+### 8.2 Skill来源、目录与冲突
+
+来源只接受宿主显式绑定的`bundled`、`user`和`workspace`本地Root。初始化使用
+POSIX目录描述符/no-follow或Windows目录句柄/Reparse Point检查绑定Root身份；Root
+本身为链接、Junction或重解析点时失败关闭。发现过程限制32个来源、2048个Skill、
+2048个目录、8192个条目、6层目录和有界Frontmatter，不跟随链接或特殊文件。
+
+`SKILL.md`只解析安全YAML中的`name`、`description`和可选`version`。重复键、Alias
+扩张超限、非UTF-8、NUL、过深结构、空正文或超限正文形成稳定发现问题，不使整个
+宿主读取任意内容。Frontmatter中的Tool、Hook、Shell、模型或权限字段没有授权含义。
+
+每次发现生成不可变`SkillCatalogSnapshot`和来源/Manifest摘要。来源内相同限定名称
+全部排除；跨来源同名保留但建立冲突索引，普通名称只能在全局唯一时解析，否则必须
+使用`source/name`。语义相同的重新发现可以形成新代次，但目录内容摘要保持相同，
+便于解释实际装载版本而不把时间戳伪装成内容变化。
+
+### 8.3 渐进加载与资源安全
+
+目录只向模型公开名称、描述、来源、版本、路径摘要和内容摘要，不持久化正文。调用方
+必须同时提交目录摘要和预期Manifest摘要；加载时重新验证目录、Root对象身份、文件
+类型和内容摘要。目录形成后正文变化以`skill_content_changed`失败，不自动采用新内容。
+
+资源只允许Skill自身目录下的规范相对路径，单个资源最大64 KiB且必须为UTF-8普通
+文件。符号链接、Windows Reparse Point、硬链接、特殊文件、绝对/回退/反斜线路径、
+敏感名称以及嵌套Skill均不可作为资源读取。目录最多列出64个资源；读取前后分别核对
+句柄身份、大小和内容，关闭检查到使用之间的路径替换窗口。
+
+`SQLiteSkillStore`使用WAL和`FULL`同步保存不可变目录代次以及哈希链访问事件，仅记录
+操作、Manifest/资源路径/结果摘要和稳定错误码，不保存绝对Root、正文、资源内容或
+Secret。读取输出在进入Action结果前通过`SecretLeakGuard`；发现内容中出现已保护
+凭据不会被持久化，尝试输出时失败关闭。
+
+### 8.4 Hook定义、授权与匹配
+
+Hook事件固定为`session_started`、`session_ended`、`turn_started`、
+`turn_completed`、`before_action`和`after_action`。只有Action事件允许Matcher；Matcher
+只接受来源、来源身份和Tool的精确值或单字段`*`，不接受正则。执行顺序固定为
+`event + order + qualifiedId`，并在同一Dispatch内串行执行。
+
+Bundled Hook由发行物信任；`managed`、`user`和`workspace` Hook必须提供绑定完整
+`definition_sha256`的未过期`HookTrustGrant`。事件、Matcher、顺序、模式、超时、
+Action版本、Schema或指纹任一变化都会使旧授权失效。Registry初始化还会复核处理器
+真实绑定为`source="hook"`、低风险只读、无需恢复，并且输入Schema与
+`HookActionInput`精确相等。
+
+### 8.5 输入最小化、阻断与失败语义
+
+Hook输入只包含Registry/Definition/Dispatch身份、Thread/Turn ID、目标Action来源和
+Tool、目标Plan ID，以及参数或结果摘要。来源身份在进入处理器前再摘要化；原始参数、
+Action输出、模型正文、路径正文、环境和Secret都不进入Hook输入。输出只接受
+`allow`或带稳定`reason_code`的`deny`，并经过严格Schema、尺寸和Secret检查。
+
+| 事件 | 模式 | 失败策略 | 对目标流程的影响 |
+|---|---|---|---|
+| `before_action` | blocking | fail closed | `deny`、超时、取消、计划/执行/输出失败均阻止目标Action |
+| 其他事件 | advisory | record only | 记录成功或失败，不改变已经形成的目标事实 |
+
+Advisory Hook返回`deny`属于非法输出并记录失败，不能追溯撤销Turn或Action。多个
+Blocking Hook遇到首个非成功结果立即停止后续执行。相同Dispatch和定义使用确定性
+UUID形成同一Run；已存在终态直接返回，不重复调用处理器。
+
+### 8.6 持久化、取消与恢复
+
+`SQLiteHookStore`保存不可变Registry快照、Run Plan、当前投影和哈希链Run Event，
+状态机为`ready → running → succeeded|failed|blocked|cancelled`；进程重开把遗留
+`running`收敛为`interrupted`。Store核对合法转换、Plan/事件/投影摘要和序列，检测到
+正文或链篡改时失败关闭。
+
+每个定义具有100毫秒至60秒独立超时。超时和调用方取消都会取消底层只读Trusted
+Action；Action Audit据此结算为`failed(executor_cancelled)`，Hook分别持久化
+`hook_timeout`或`hook_cancelled`。Interrupted Run不自动重放；生命周期调用方必须
+产生新的Dispatch才能显式重试，避免把已经观察过的Hook执行伪装成从未发生。
+
+### 8.7 跨平台读取实现
+
+0.8.5从既有Workspace安全路径能力提取公共`SecureWorkspaceReader`。POSIX复用目录
+描述符、`O_NOFOLLOW`、普通文件/链接计数和双次目录观察；Windows复用
+`WindowsWorkspaceRoot`句柄链、大小写规范化和Reparse Point检查。该抽取不改变原
+Workspace Snapshot合同，只允许Skill运行时在同一安全语义下进行有界目录和文件读取。
+
+### 8.8 0.8.5验收
+
+- Skill覆盖同目录重复、跨来源冲突、内容漂移、Root/资源链接、POSIX硬链接、敏感路径、
+  二进制、YAML重复键/Alias超限、目录重开与访问链篡改；
+- Skill Action覆盖目录指纹绑定、正文/资源渐进加载、跨来源端口隔离和Secret canary；
+- Hook覆盖精确授权、过期/定义漂移、Binding/Schema/effect错配、Matcher、顺序、阻断、
+  Advisory、目标Policy不可放宽、超时、取消、重复Dispatch和输出泄漏；
+- 独立崩溃进程在`running`状态硬退出，重开只恢复为`interrupted`且不重放；
+- 21份Skill/Hook JSON Schema由运行时合同生成并逐项比对；PyYAML许可证进入第三方通知；
+  macOS和Windows CI显式运行两套回归。
+
+专项确定性回归为29 passed，Ruff和Mypy严格检查245个源文件通过。Schema目录共213份
+JSON文件，按文件名、NUL和原字节聚合SHA256为
+`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。验证不调用模型
+API、远程服务、SSH或用户服务器。完整仓库门禁和跨平台CI证据在本切片提交后记录；
+在CI关闭前只称为本地验收完成。
+
+## 9. 后续切片冻结入口
 
 0.8.3只能依赖Agent SDK，不直接打开Session或Runtime；0.8.5只能调用`ExtensionActionPort`；0.8.6的配置只能保存Secret引用，不能把凭据值写入协议、Session或配置文件。具体设计在对应源码研究和ADR完成后追加。
 
-## 9. 参考资料
+## 10. 参考资料
 
 - [Agent Protocol与产品运行时源码研究](research/agent-protocol-product-runtime.md)
 - [ADR 0009：JSON-RPC 2.0与stdio JSONL](adr/0009-app-server-protocol.md)
@@ -339,4 +453,6 @@ stdio Client的启动、目录发现、调用和关闭均有独立超时。SDK�
 - [ADR 0072：持久交互与Pull-Live事件流](adr/0072-durable-interaction-and-pull-live-stream.md)
 - [MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)
 - [ADR 0073：MCP目录绑定与Sandbox](adr/0073-mcp-catalog-binding-and-sandbox.md)
+- [Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)
+- [ADR 0074：Skill快照与Hook Action安全边界](adr/0074-skill-snapshot-and-hook-action-boundary.md)
 - [JSON-RPC 2.0规范](https://www.jsonrpc.org/specification)

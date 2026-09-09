@@ -4,7 +4,7 @@
 - 更新日期：2026-09-08
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。上述新边界尚未在0.7.5接管全部既有Tool；actor身份认证及MCP/Hook强制接入仍在后续实施。目标控制与当前保证必须分开解读，参见[0.7设计](m07-trusted-execution-and-delivery.md)和[0.5实施设计](m05-coding-tools.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在后续实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
 
 Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。0.7.3挂起启动、不可breakaway Job、ConPTY及Container统一生命周期、0.7.4受管Git worktree/checkpoint/commit和0.7.5平台中立Action入口均已通过综合门禁；普通Windows目录事务写仍失败关闭。0.7统一入口约束新Tool和未来扩展，0.5既有Patch/Process桥接继续由原不可变批准与专用账本治理，不改写历史事件；Agent Protocol产品接线与发行物尚未完成。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整产品门禁完成前，Windows仍不属于当前产品支持范围。
 
@@ -246,14 +246,16 @@ Agent Runtime                │
 
 **控制**
 
-- 来源、版本、签名/校验和与 trust 状态；
-- 未信任项目 Hook 默认禁用；
+- 来源、版本、内容/定义摘要与Trust Grant状态；
+- 非Bundled Hook没有精确定义授权时失败关闭；
 - Tool Schema/版本变化使授权失效；
+- Skill只作为不受信内容经渐进读取Action加载，不解释其中的权限或可执行声明；
+- Hook输入只获得Thread/Turn/Action身份及参数/结果摘要；
 - 扩展只通过受限 Context 和 Tool API；
 - 所有效果经过统一 Permission/Sandbox；
 - 输出大小、类型和内容校验。
 
-**剩余风险**：进程内第三方 Python 扩展可拥有过大权限；首版应优先进程外协议。
+**剩余风险**：本地同UID主体可替换用户可写Skill/Hook定义或调试宿主；每次目录/Registry重建会通过摘要漂移撤销旧绑定，但发行物签名、远端分发和多用户隔离仍待后续关闭。
 
 ### TM-08：Provider 流伪造或异常
 
@@ -533,7 +535,7 @@ Agent Runtime                │
 
 - **调用方伪造风险**：`CodingActionInvocation`没有effect、risk、policy、Sandbox或executor字段；这些事实来自宿主自摘要`TrustedToolBinding`。额外字段、Tool版本/指纹/Schema摘要或注册Binding不一致均在执行能力发放前拒绝。
 - **资源漏报**：资源由宿主resolver生成，并与Workspace Snapshot、Sandbox网络模式和Secret版本绑定交叉检查。该机制依赖受信resolver正确实现；任意第三方Python resolver不能与宿主同进程加载，扩展只能提交到预注册端口。
-- **扩展越权**：`ExtensionActionPort`固定source/source id，只暴露本来源Binding和Plan生命周期。MCP/Skill/Hook/custom不能取得Host Executor、Session Store、Secret Provider或Workspace对象，也不能读取其他来源Plan。0.8仍必须对扩展进程、传输身份和供应链签名另建边界。
+- **扩展越权**：`ExtensionActionPort`固定source/source id，只暴露本来源Binding和Plan生命周期。MCP/Skill/Hook/custom不能取得Host Executor、Session Store、Secret Provider或Workspace对象，也不能读取其他来源Plan。0.8.4/0.8.5已分别约束MCP进程和不可执行Skill/Hook；远端分发、发行签名与供应链清单仍由后续里程碑关闭。
 - **Hook提权**：Hook来源不具有覆盖宿主deny的能力；任何Hook请求仍按同一Binding、资源和Policy规划。Hook正文或返回值不是批准记录。
 - **审批错绑与漂移**：Approval Checkpoint只绑定Plan fingerprint。执行重开时同时核对Route/Execution Plan、当前Tool Binding、Workspace Snapshot和持久批准；参数、cwd、环境、策略、Sandbox、Secret版本、文件或Git配置变化使批准失效。
 - **审计泄漏与篡改**：append-only Action Audit事件仅保存资源、输出和Artifact摘要，不保存输出或文件正文；私有Route Plan为执行/恢复保留规范化调用参数，可能包含路径和命令元数据，但疑似凭据字段被拒绝且Secret值只能通过独立Provider注入。因此Plan/Audit数据库仍按敏感状态保护，不能对外直接发布。当前投影、不可变payload、冗余索引和事件链不一致时失败关闭。字段名检测不是通用DLP，无法识别被放入普通文本字段的任意凭据；上游Context与Tool Schema仍必须禁止Secret正文进入参数。SQLite和SHA-256不能抵抗可同时改写数据库与程序的同UID恶意主体，也不提供不可抵赖签名。
@@ -571,3 +573,18 @@ Agent Runtime                │
 - **剩余风险**：同UID主体仍可替换宿主配置或调试本地进程；Container Runtime本身属于高权限TCB。Streamable HTTP、受管OAuth、Secret引用轮换与配置来源信任由0.8.6补齐，发行签名与SBOM由0.9关闭。
 
 对应设计、源码依据和回归见[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。
+
+## 0.8.5 Skills与Hooks补充（2026-09-09）
+
+- **内容包提示注入**：Skill正文和资源始终是不受信模型输入；目录只保存元数据和摘要，Frontmatter中的Tool、Hook、Shell、模型、Secret或权限声明不产生能力。
+- **名称劫持**：同一来源重复限定名称全部失效；跨来源同名要求显式`source/name`，禁止按来源优先级静默覆盖。
+- **路径越界与TOCTOU**：Root通过POSIX目录描述符或Windows句柄/Reparse Point检查固定身份；每次读取重核Root、普通文件、链接数、目录观察和内容摘要。符号链接、Junction、硬链接、特殊文件、敏感路径、回退段和嵌套Skill资源失败关闭。
+- **正文持久泄漏**：Skill Store只保存目录、Manifest和访问摘要，不保存绝对Root、正文或资源；正文跨越Action边界前执行Secret Guard。
+- **可执行扩展旁路**：Hook不支持任意Shell、HTTP、Prompt或进程内回调，只能调用宿主注册的低风险只读`source="hook"` Action；第三方需要执行能力时必须使用MCP/Container和目标Action自身的Policy/Sandbox。
+- **定义替换**：非Bundled Hook授权绑定完整定义摘要；事件、Matcher、顺序、超时或Action版本/指纹变化都会使旧Trust Grant失效。运行前再次核对Registry和Binding。
+- **信息过度暴露**：Hook处理器只看到身份和摘要；来源身份再次哈希，原始Action参数、结果、路径、模型正文、环境和Secret均不传递。
+- **拒绝绕过与权限提升**：`before_action`只能Blocking/Fail Closed并按确定顺序执行；任一拒绝或失败阻断目标调用。其他Hook只能Advisory/Record Only，非法`deny`记录失败，`allow`不能覆盖目标Action的deny、审批或Sandbox。
+- **挂起、取消与重放**：每个Hook有独立超时并取消底层Action；调用取消持久结算两层状态。重开把遗留Running收敛为Interrupted，重复Dispatch只返回既有终态，不自动重放。
+- **剩余风险**：0.8.5不提供远端Skill安装、签名Marketplace或可执行Hook生态；同UID配置篡改由摘要漂移检测但不能抵御宿主账户失陷，发行签名和供应链清单属于0.9。
+
+对应设计、源码依据和回归见[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#8-085-skills与hooks详细设计)。

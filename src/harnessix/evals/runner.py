@@ -73,6 +73,8 @@ _MANAGED_DIRECTORY = "managed"
 _SESSION_FILE = "session.sqlite"
 _EFFECT_FILE = "effects.sqlite"
 _MAX_TREE_PATH_BYTES = 4 * 1024 * 1024
+_EVAL_ACTION_LEASE_SECONDS = 30
+_EVAL_ACTION_HEARTBEAT_SECONDS = 1
 _GIT_ENVIRONMENT = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_NOSYSTEM": "1",
@@ -538,7 +540,7 @@ async def run_historical_coding_eval(
             journal=SQLiteEffectJournal(materialized.run_root / _EFFECT_FILE),
             registry=registry,
             policy_engine=DefaultPolicyEngine(),
-            lease_seconds=5,
+            lease_seconds=_EVAL_ACTION_LEASE_SECONDS,
             auto_execute=False,
             observability=observer,
         )
@@ -568,7 +570,7 @@ async def run_historical_coding_eval(
         worker = ActionWorker(
             actions,
             poll_seconds=0.01,
-            heartbeat_seconds=1,
+            heartbeat_seconds=_EVAL_ACTION_HEARTBEAT_SECONDS,
             recovery_interval_seconds=0.1,
         )
     except BaseException:

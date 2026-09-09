@@ -6,8 +6,10 @@ import os
 import stat
 from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from types import TracebackType
+from typing import Literal, Protocol, Self
 
 from harnessix.agent.errors import KernelError
 from harnessix.tools.contracts import ReadToolError
@@ -41,6 +43,7 @@ class _NativeObservation(Protocol):
     identity: tuple[object, ...]
     content: bytes | None
     size: int
+    entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...] | None
 
 
 class _NativeRoot(Protocol):
@@ -59,11 +62,14 @@ class _Observed:
         identity: tuple[object, ...],
         content: bytes | None,
         size: int,
+        entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...]
+        | None = None,
     ) -> None:
         self.kind = kind
         self.identity = identity
         self.content = content
         self.size = size
+        self.entries = entries
 
 
 class _PosixRoot:
@@ -133,6 +139,7 @@ class _PosixRoot:
                 raise KernelError("workspace_execute_denied", "Workspace文件不可执行")
             if directory:
                 entries: list[tuple[str, int, tuple[int, int]]] = []
+                exposed: list[tuple[str, Literal["file", "directory", "symlink", "special"]]] = []
                 with os.scandir(descriptor) as iterator:
                     for entry in iterator:
                         if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
@@ -143,13 +150,24 @@ class _PosixRoot:
                         entries.append(
                             (entry.name, stat.S_IFMT(child.st_mode), (child.st_dev, child.st_ino))
                         )
+                        if stat.S_ISLNK(child.st_mode):
+                            kind: Literal["file", "directory", "symlink", "special"] = "symlink"
+                        elif stat.S_ISREG(child.st_mode):
+                            kind = "file"
+                        elif stat.S_ISDIR(child.st_mode):
+                            kind = "directory"
+                        else:
+                            kind = "special"
+                        exposed.append((entry.name, kind))
                 entries.sort()
+                exposed.sort()
                 body = json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode()
                 return _Observed(
                     "directory",
                     (*self._stable_directory_identity(info), hashlib.sha256(body).hexdigest()),
                     body,
                     len(entries),
+                    tuple(exposed),
                 )
             if info.st_size > MAX_SNAPSHOT_FILE_BYTES:
                 raise KernelError("workspace_snapshot_limit", "Workspace文件超过快照上限")
@@ -197,6 +215,68 @@ def _open_native(path: Path, platform: PlatformKind) -> _NativeRoot:
 
         return WindowsWorkspaceRoot(path)
     raise KernelError("workspace_platform_unsupported", "请求平台与当前宿主不一致")
+
+
+@dataclass(frozen=True, slots=True)
+class SecureDirectoryEntry:
+    name: str
+    kind: Literal["file", "directory", "symlink", "special"]
+
+
+class SecureWorkspaceReader:
+    """复用Workspace句柄链，为只读扩展提供跨平台、无跟随的根能力。"""
+
+    def __init__(self, root: str | Path, *, platform: PlatformKind | None = None) -> None:
+        self.platform = platform or _native_platform()
+        self._root = _open_native(Path(root), self.platform)
+        self.path = self._root.path
+        self.root_identity = self._root.root_identity
+
+    def read_file(self, path: str, *, max_bytes: int) -> bytes:
+        if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_SNAPSHOT_FILE_BYTES:
+            raise ValueError("安全读取上限无效")
+        normalized = normalize_workspace_path(path, self.platform)
+        observed = self._root.observe(normalized, access="read")
+        if observed.kind != "file" or observed.content is None:
+            raise KernelError("workspace_path_denied", "安全读取目标不是普通文件")
+        if observed.size > max_bytes or len(observed.content) > max_bytes:
+            raise KernelError("workspace_snapshot_limit", "安全读取目标超过字节上限")
+        return bytes(observed.content)
+
+    def list_directory(
+        self, path: str = ".", *, max_entries: int = MAX_SNAPSHOT_DIRECTORY_ENTRIES
+    ) -> tuple[SecureDirectoryEntry, ...]:
+        if type(max_entries) is not int or not 1 <= max_entries <= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
+            raise ValueError("目录条目上限无效")
+        normalized = normalize_workspace_path(path, self.platform)
+        before = self._root.observe(normalized, access="read")
+        if before.kind != "directory" or before.entries is None:
+            raise KernelError("workspace_path_denied", "安全读取目标不是目录")
+        if len(before.entries) > max_entries:
+            raise KernelError("workspace_snapshot_limit", "安全目录读取超过条目上限")
+        after = self._root.observe(normalized, access="read")
+        if (
+            before.identity != after.identity
+            or before.content != after.content
+            or before.size != after.size
+            or before.entries != after.entries
+        ):
+            raise KernelError("workspace_changed", "目录在安全读取期间发生变化")
+        return tuple(SecureDirectoryEntry(name=name, kind=kind) for name, kind in before.entries)
+
+    def close(self) -> None:
+        self._root.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
 
 def capture_workspace_snapshot(

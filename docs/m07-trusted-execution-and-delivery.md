@@ -433,7 +433,7 @@ unknown → manual_intervention（无恢复能力）
 
 `ExtensionActionPort`创建时固定`source`和`source_id`，只提供本来源Binding查询、plan、execute、reconcile和status。它没有公共executor、Session、Secret或文件系统属性；读取或执行其他来源Plan返回`extension_plan_denied`。扩展提交的Tool版本、指纹或参数即使语法合法，也必须与宿主Binding和Schema精确一致。
 
-该边界是能力最小化，不是把任意恶意Python代码放进同一进程后的OS隔离。未来MCP/Skill/Hook进程生命周期由0.8管理；不受信代码仍必须进入0.7已交付的Process/Sandbox端口。
+该边界是能力最小化，不是把任意恶意Python代码放进同一进程后的OS隔离。0.8.4/0.8.5已经分别要求MCP进入受管进程/Sandbox、Skill保持不可执行内容包且Hook只能绑定宿主只读Action；其他不受信代码仍必须进入0.7已交付的Process/Sandbox端口。
 
 ### 14.6 Git Push外部副作用
 

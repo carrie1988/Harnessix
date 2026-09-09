@@ -95,6 +95,19 @@ from harnessix.execution.contracts import (
     ExecutionPlan,
     ExecutionPlanV2,
 )
+from harnessix.hooks.contracts import (
+    HookActionInput,
+    HookActionOutput,
+    HookDefinition,
+    HookDispatch,
+    HookDispatchResult,
+    HookMatcher,
+    HookRegistrySnapshot,
+    HookRunEvent,
+    HookRunPlan,
+    HookRunSnapshot,
+    HookTrustGrant,
+)
 from harnessix.mcp.contracts import (
     McpCatalogSnapshot,
     McpConnectionEvent,
@@ -169,6 +182,18 @@ from harnessix.sandbox.contracts import (
     NetworkPolicy,
     NetworkPolicySnapshot,
     SandboxResourceLimits,
+)
+from harnessix.skills.contracts import (
+    SkillAccessEvent,
+    SkillCatalogSnapshot,
+    SkillContent,
+    SkillDiscoveryIssue,
+    SkillLoadInput,
+    SkillManifestSnapshot,
+    SkillNameConflict,
+    SkillResourceContent,
+    SkillResourceReadInput,
+    SkillSourceSnapshot,
 )
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
@@ -346,6 +371,27 @@ def main() -> None:
         ("mcp-connection-event", McpConnectionEvent),
         ("mcp-connection-snapshot", McpConnectionSnapshot),
         ("mcp-tool-call-output", McpToolCallOutput),
+        ("skill-source-snapshot", SkillSourceSnapshot),
+        ("skill-manifest-snapshot", SkillManifestSnapshot),
+        ("skill-discovery-issue", SkillDiscoveryIssue),
+        ("skill-name-conflict", SkillNameConflict),
+        ("skill-catalog-snapshot", SkillCatalogSnapshot),
+        ("skill-load-input", SkillLoadInput),
+        ("skill-resource-read-input", SkillResourceReadInput),
+        ("skill-content", SkillContent),
+        ("skill-resource-content", SkillResourceContent),
+        ("skill-access-event", SkillAccessEvent),
+        ("hook-matcher", HookMatcher),
+        ("hook-definition", HookDefinition),
+        ("hook-trust-grant", HookTrustGrant),
+        ("hook-registry-snapshot", HookRegistrySnapshot),
+        ("hook-dispatch", HookDispatch),
+        ("hook-action-input", HookActionInput),
+        ("hook-action-output", HookActionOutput),
+        ("hook-run-plan", HookRunPlan),
+        ("hook-run-event", HookRunEvent),
+        ("hook-run-snapshot", HookRunSnapshot),
+        ("hook-dispatch-result", HookDispatchResult),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
@@ -382,7 +428,8 @@ def main() -> None:
     )
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
-        "Process、Context、Coding Eval、可信执行、MCP、Agent Protocol 与 OpenAPI Schema"
+        "Process、Context、Coding Eval、可信执行、MCP、Skill、Hook、"
+        "Agent Protocol 与 OpenAPI Schema"
     )
 
 

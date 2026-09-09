@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "source_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "code": {
+      "pattern": "^skill_[a-z0-9_]{1,119}$",
+      "title": "Code",
+      "type": "string"
+    },
+    "path_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Path Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_id",
+    "code",
+    "path_sha256"
+  ],
+  "title": "SkillDiscoveryIssue",
+  "type": "object"
+}

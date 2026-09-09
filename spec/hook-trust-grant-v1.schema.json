@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.hook-trust-grant/v1",
+      "default": "harnessix.hook-trust-grant/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "hook_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Hook Id",
+      "type": "string"
+    },
+    "definition_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Definition Sha256",
+      "type": "string"
+    },
+    "granted_by_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Granted By Sha256",
+      "type": "string"
+    },
+    "granted_at": {
+      "format": "date-time",
+      "title": "Granted At",
+      "type": "string"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expires At"
+    },
+    "grant_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Grant Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_id",
+    "hook_id",
+    "definition_sha256",
+    "granted_by_sha256",
+    "granted_at",
+    "grant_sha256"
+  ],
+  "title": "HookTrustGrant",
+  "type": "object"
+}

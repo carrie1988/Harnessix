@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.skill-content/v1",
+      "default": "harnessix.skill-content/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "catalog_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Catalog Sha256",
+      "type": "string"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "qualified_name": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}$",
+      "title": "Qualified Name",
+      "type": "string"
+    },
+    "effective_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Effective Version",
+      "type": "string"
+    },
+    "content": {
+      "maxLength": 262144,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "content_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Content Sha256",
+      "type": "string"
+    },
+    "resources": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Resources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "catalog_sha256",
+    "manifest_sha256",
+    "qualified_name",
+    "effective_version",
+    "content",
+    "content_sha256",
+    "resources"
+  ],
+  "title": "SkillContent",
+  "type": "object"
+}

@@ -363,7 +363,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 10. 0.8：产品运行时与扩展
 
-状态：**实施中**。0.8.1 Agent Protocol v1、0.8.2 Headless App Server/Agent SDK、0.8.3薄CLI与双向交互及0.8.4 MCP已经完成本地验收；0.8.5～0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
+状态：**实施中**。0.8.1 Agent Protocol v1、0.8.2 Headless App Server/Agent SDK、0.8.3薄CLI与双向交互、0.8.4 MCP及0.8.5 Skills/Hooks已经完成本地验收；0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
 
 ### 目标
 
@@ -375,7 +375,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.8.2 Headless App Server与Agent SDK**：stdio JSONL基线、本地调用身份、Workspace绑定、优雅关闭、断线重连、事件续传、背压和Python Agent SDK；
 - [x] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
 - [x] **0.8.4 MCP**：MCP Client、可选MCP Server、进程生命周期、能力快照、Schema漂移和所有Tool的Permission/Sandbox强制接入；
-- [ ] **0.8.5 Skills与Hooks**：来源、版本、渐进加载、生命周期Hook、冲突、超时、取消和供应链信任边界；
+- [x] **0.8.5 Skills与Hooks**：来源、版本、渐进加载、生命周期Hook、冲突、超时、取消和供应链信任边界；
 - [ ] **0.8.6 Provider与配置产品化**：模型/Profile选择、能力诊断、Secret引用、配置迁移和安全切换；任何自动Fallback不得跨越已经暴露模型输出或工具调用的边界。
 
 ### 关键测试

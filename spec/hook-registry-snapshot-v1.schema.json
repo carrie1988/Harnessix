@@ -1,0 +1,239 @@
+{
+  "$defs": {
+    "HookDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.hook-definition/v1",
+          "default": "harnessix.hook-definition/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "bundled",
+            "managed",
+            "user",
+            "workspace"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Version",
+          "type": "string"
+        },
+        "hook_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Hook Id",
+          "type": "string"
+        },
+        "qualified_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}/[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Qualified Id",
+          "type": "string"
+        },
+        "event": {
+          "enum": [
+            "session_started",
+            "session_ended",
+            "turn_started",
+            "turn_completed",
+            "before_action",
+            "after_action"
+          ],
+          "title": "Event",
+          "type": "string"
+        },
+        "matcher": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HookMatcher"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "order": {
+          "maximum": 10000,
+          "minimum": -10000,
+          "title": "Order",
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "blocking",
+            "advisory"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "failure_policy": {
+          "enum": [
+            "fail_closed",
+            "record_only"
+          ],
+          "title": "Failure Policy",
+          "type": "string"
+        },
+        "timeout_ms": {
+          "maximum": 60000,
+          "minimum": 100,
+          "title": "Timeout Ms",
+          "type": "integer"
+        },
+        "action_tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Action Tool",
+          "type": "string"
+        },
+        "action_tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Action Tool Version",
+          "type": "string"
+        },
+        "action_tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Action Tool Fingerprint",
+          "type": "string"
+        },
+        "definition_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Definition Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_kind",
+        "source_version",
+        "hook_id",
+        "qualified_id",
+        "event",
+        "order",
+        "mode",
+        "failure_policy",
+        "timeout_ms",
+        "action_tool",
+        "action_tool_version",
+        "action_tool_fingerprint",
+        "definition_sha256"
+      ],
+      "title": "HookDefinition",
+      "type": "object"
+    },
+    "HookMatcher": {
+      "additionalProperties": false,
+      "properties": {
+        "action_source": {
+          "anyOf": [
+            {
+              "pattern": "^(\\*|[a-z][a-z0-9_.-]{0,63})$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Source"
+        },
+        "action_source_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Source Id"
+        },
+        "action_tool": {
+          "anyOf": [
+            {
+              "pattern": "^(\\*|[A-Za-z][A-Za-z0-9_.-]{0,255})$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Tool"
+        }
+      },
+      "title": "HookMatcher",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.hook-registry-snapshot/v1",
+      "default": "harnessix.hook-registry-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "registry_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Registry Id",
+      "type": "string"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "definitions": {
+      "items": {
+        "$ref": "#/$defs/HookDefinition"
+      },
+      "maxItems": 512,
+      "title": "Definitions",
+      "type": "array"
+    },
+    "trust_grant_sha256": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "maxItems": 512,
+      "title": "Trust Grant Sha256",
+      "type": "array"
+    },
+    "registry_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Registry Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "registry_id",
+    "generation",
+    "captured_at",
+    "definitions",
+    "trust_grant_sha256",
+    "registry_sha256"
+  ],
+  "title": "HookRegistrySnapshot",
+  "type": "object"
+}

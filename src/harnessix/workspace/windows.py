@@ -60,11 +60,14 @@ class _Observed:
         identity: tuple[object, ...],
         content: bytes | None,
         size: int,
+        entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...]
+        | None = None,
     ) -> None:
         self.kind = kind
         self.identity = identity
         self.content = content
         self.size = size
+        self.entries = entries
 
 
 class WindowsWorkspaceRoot:
@@ -218,7 +221,9 @@ class WindowsWorkspaceRoot:
             if not directory and before.links != 1:
                 raise KernelError("workspace_path_denied", "Windows文件具有多个硬链接")
             if directory:
-                body, count = self._directory_body(self.path / Path(*normalized.split("/")))
+                body, count, entries = self._directory_body(
+                    self.path / Path(*normalized.split("/"))
+                )
                 after = self._information(handle)
                 if self._revision_identity(before) != self._revision_identity(after):
                     raise KernelError("workspace_changed", "Windows目录在观察期间变化")
@@ -230,6 +235,7 @@ class WindowsWorkspaceRoot:
                     ),
                     body,
                     count,
+                    entries,
                 )
             size = (before.size_high << 32) | before.size_low
             if size > MAX_SNAPSHOT_FILE_BYTES:
@@ -249,8 +255,15 @@ class WindowsWorkspaceRoot:
         finally:
             self._close_all(handles)
 
-    def _directory_body(self, path: Path) -> tuple[bytes, int]:
+    def _directory_body(
+        self, path: Path
+    ) -> tuple[
+        bytes,
+        int,
+        tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...],
+    ]:
         entries: list[tuple[str, int, int, int]] = []
+        exposed: list[tuple[str, Literal["file", "directory", "symlink", "special"]]] = []
         seen: set[str] = set()
         with os.scandir(self._api_path(path)) as iterator:
             for entry in iterator:
@@ -262,10 +275,13 @@ class WindowsWorkspaceRoot:
                 attributes = int(getattr(info, "st_file_attributes", 0))
                 if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
                     kind = _FILE_ATTRIBUTE_REPARSE_POINT
+                    exposed_kind: Literal["file", "directory", "symlink", "special"] = "symlink"
                 elif stat.S_ISDIR(info.st_mode):
                     kind = _FILE_ATTRIBUTE_DIRECTORY
+                    exposed_kind = "directory"
                 else:
                     kind = 0
+                    exposed_kind = "file" if stat.S_ISREG(info.st_mode) else "special"
                 folded = entry.name.casefold()
                 if folded in seen:
                     raise KernelError("workspace_path_denied", "Windows目录包含大小写折叠冲突")
@@ -273,10 +289,13 @@ class WindowsWorkspaceRoot:
                 # FindFirstFileW返回的时间和大小可能来自目录枚举缓存。目录资源只绑定
                 # 成员名称、类型和对象身份；被显式选择的文件另由句柄身份与内容摘要绑定。
                 entries.append((folded, kind, info.st_dev, info.st_ino))
+                exposed.append((entry.name, exposed_kind))
         entries.sort()
+        exposed.sort(key=lambda item: item[0].casefold())
         return (
             json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode(),
             len(entries),
+            tuple(exposed),
         )
 
     def _read_all(self, handle: int) -> bytes:

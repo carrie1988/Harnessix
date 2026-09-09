@@ -1,0 +1,136 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.hook-run-event/v1",
+      "default": "harnessix.hook-run-event/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Sha256",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 16,
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "from_state": {
+      "anyOf": [
+        {
+          "enum": [
+            "ready",
+            "running",
+            "succeeded",
+            "failed",
+            "blocked",
+            "cancelled",
+            "interrupted"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "From State"
+    },
+    "to_state": {
+      "enum": [
+        "ready",
+        "running",
+        "succeeded",
+        "failed",
+        "blocked",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "To State",
+      "type": "string"
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "enum": [
+            "allow",
+            "deny"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decision"
+    },
+    "output_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Sha256"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^hook_[a-z0-9_]{1,119}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "previous_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Digest"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "plan_sha256",
+    "sequence",
+    "from_state",
+    "to_state",
+    "occurred_at",
+    "digest"
+  ],
+  "title": "HookRunEvent",
+  "type": "object"
+}

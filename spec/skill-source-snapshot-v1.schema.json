@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.skill-source-snapshot/v1",
+      "default": "harnessix.skill-source-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "bundled",
+        "user",
+        "workspace"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "root_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Root Sha256",
+      "type": "string"
+    },
+    "source_revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "skill_count": {
+      "maximum": 2048,
+      "minimum": 0,
+      "title": "Skill Count",
+      "type": "integer"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_id",
+    "kind",
+    "root_sha256",
+    "source_revision",
+    "skill_count",
+    "source_sha256"
+  ],
+  "title": "SkillSourceSnapshot",
+  "type": "object"
+}

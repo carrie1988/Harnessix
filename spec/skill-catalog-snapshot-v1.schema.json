@@ -1,0 +1,288 @@
+{
+  "$defs": {
+    "SkillDiscoveryIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "code": {
+          "pattern": "^skill_[a-z0-9_]{1,119}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "path_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "code",
+        "path_sha256"
+      ],
+      "title": "SkillDiscoveryIssue",
+      "type": "object"
+    },
+    "SkillManifestSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.skill-manifest-snapshot/v1",
+          "default": "harnessix.skill-manifest-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "bundled",
+            "user",
+            "workspace"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "qualified_name": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Qualified Name",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "declared_version": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared Version"
+        },
+        "effective_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Effective Version",
+          "type": "string"
+        },
+        "relative_path": {
+          "maxLength": 4096,
+          "minLength": 8,
+          "title": "Relative Path",
+          "type": "string"
+        },
+        "content_utf8_bytes": {
+          "maximum": 262144,
+          "minimum": 1,
+          "title": "Content Utf8 Bytes",
+          "type": "integer"
+        },
+        "content_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "metadata_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Metadata Sha256",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifest Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_kind",
+        "name",
+        "qualified_name",
+        "description",
+        "effective_version",
+        "relative_path",
+        "content_utf8_bytes",
+        "content_sha256",
+        "metadata_sha256",
+        "manifest_sha256"
+      ],
+      "title": "SkillManifestSnapshot",
+      "type": "object"
+    },
+    "SkillNameConflict": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "qualified_names": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 2,
+          "title": "Qualified Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "qualified_names"
+      ],
+      "title": "SkillNameConflict",
+      "type": "object"
+    },
+    "SkillSourceSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.skill-source-snapshot/v1",
+          "default": "harnessix.skill-source-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "bundled",
+            "user",
+            "workspace"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "root_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Sha256",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "skill_count": {
+          "maximum": 2048,
+          "minimum": 0,
+          "title": "Skill Count",
+          "type": "integer"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "kind",
+        "root_sha256",
+        "source_revision",
+        "skill_count",
+        "source_sha256"
+      ],
+      "title": "SkillSourceSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.skill-catalog-snapshot/v1",
+      "default": "harnessix.skill-catalog-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "catalog_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Catalog Id",
+      "type": "string"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SkillSourceSnapshot"
+      },
+      "maxItems": 32,
+      "title": "Sources",
+      "type": "array"
+    },
+    "skills": {
+      "items": {
+        "$ref": "#/$defs/SkillManifestSnapshot"
+      },
+      "maxItems": 2048,
+      "title": "Skills",
+      "type": "array"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/SkillNameConflict"
+      },
+      "maxItems": 512,
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/SkillDiscoveryIssue"
+      },
+      "maxItems": 2048,
+      "title": "Issues",
+      "type": "array"
+    },
+    "catalog_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Catalog Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "catalog_id",
+    "generation",
+    "captured_at",
+    "sources",
+    "skills",
+    "conflicts",
+    "issues",
+    "catalog_sha256"
+  ],
+  "title": "SkillCatalogSnapshot",
+  "type": "object"
+}

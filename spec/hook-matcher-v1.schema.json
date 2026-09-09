@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action_source": {
+      "anyOf": [
+        {
+          "pattern": "^(\\*|[a-z][a-z0-9_.-]{0,63})$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action Source"
+    },
+    "action_source_id": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action Source Id"
+    },
+    "action_tool": {
+      "anyOf": [
+        {
+          "pattern": "^(\\*|[A-Za-z][A-Za-z0-9_.-]{0,255})$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action Tool"
+    }
+  },
+  "title": "HookMatcher",
+  "type": "object"
+}

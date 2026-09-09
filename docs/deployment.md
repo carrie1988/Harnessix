@@ -1104,3 +1104,29 @@ MCP运行时新增独立私有SQLite数据库，用于不可变目录快照、�
 可选MCP Server仅通过本地stdio运行，stdout专用于MCP帧，诊断写入脱敏stderr。只允许显式导出低风险只读Binding；不应把stdio桥接到远程或多用户套接字。0.8.4不支持Streamable HTTP、OAuth、用户提供任意Header、远端URL或持久`input_required`；这些能力在0.8.6形成配置、Secret与受管出口合同前必须保持关闭。
 
 CI的`container-sandbox`任务使用固定摘要BusyBox镜像，同时验证基础Sandbox与真实MCP stdio连接、目录发现、调用及关闭后无残留。macOS和Windows矩阵运行MCP确定性/真实子进程测试；本地没有固定镜像或Container Daemon时，Container单项skip不能作为正式发布证据。
+
+## 0.8.5 Skill与Hook部署
+
+Skill和Hook各使用一个独立私有SQLite数据库。数据库、WAL/SHM和备份应与Execution Plan、Action Audit处于同一受信用户数据根，不能位于Workspace，也不能暴露给MCP容器或项目进程。Skill数据库不保存正文或绝对Root；Hook数据库不保存原始Action参数、结果或Secret，但两者的元数据和摘要仍可能暴露扩展结构，诊断导出必须最小化。
+
+Skill装配顺序固定为：
+
+1. 由受信配置明确声明`bundled`、`user`和`workspace`来源ID及绝对Root；禁止从模型输出、Skill正文或工作目录隐式增加来源；
+2. 初始化`SecureWorkspaceReader`并验证Root不是符号链接、Junction或Reparse Point；
+3. 有界发现`SKILL.md`，生成并持久化不可变目录代次；存在来源内重复名称时排除全部重复项，跨来源冲突只允许限定名称；
+4. 为该目录生成`skill.load`和`skill.read_resource`定义，注册到对应`ExtensionActionPort(source="skill")`；
+5. 只把目录元数据提供给模型；正文和资源必须提交目录/Manifest摘要后按需读取，目录变化时重新注册Action，禁止继续使用旧绑定。
+
+Bundled Root应位于只读发行物目录；User Root建议为当前用户私有且不可被Workspace进程写入；Workspace Root天然不受信，任何变化都必须形成新目录。远端URL、Git自动安装、自动更新、脚本执行和Marketplace在0.8.5全部关闭。部署者不得把API Key、SSH私钥、`.env`、凭据目录或用户HOME整体放入Skill Root；敏感路径拒绝和Secret Guard只是纵深防御。
+
+Hook装配顺序固定为：
+
+1. 宿主先注册处理器Trusted Action，并确认其`source="hook"`、`READ_ONLY`、`LOW`、`recovery=none`及输入Schema；
+2. 从受信配置构造Hook定义。Bundled定义随发行物信任；Managed/User/Workspace定义必须取得绑定完整定义摘要和有效期的`HookTrustGrant`；
+3. 构造并持久化Registry快照，再开放生命周期Dispatch；定义、授权或处理器Binding变化时创建新Registry，不能修改历史快照；
+4. 启动时先执行`recover_interrupted`，把遗留Running Run收敛为Interrupted；不得自动重放；
+5. 关闭时停止接受新Dispatch，取消在途处理器并等待两层Action/Hook状态提交。进程被强制终止时依靠下次启动恢复。
+
+`before_action`必须在目标Action执行前完成并检查`allowed`；拒绝、超时、取消或任意处理失败均停止目标执行。其他事件只能记录，不能回滚已经形成的Session或Action事实。Hook处理器不得通过配置指定Shell、URL、Prompt、Python/JavaScript模块或宿主环境；需要外部能力时应由宿主单独配置MCP/Container Action，并让目标Action自己的Policy、Approval和Sandbox保持权威。
+
+macOS和Windows CI均显式运行Skill/Hook回归；Linux完整矩阵同时验证POSIX硬链接、独立崩溃进程和SQLite恢复。跨平台成功只证明本地读取和状态语义，不代表远端分发、签名Marketplace或发行物供应链已经完成，这些属于0.9。

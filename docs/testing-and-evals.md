@@ -1542,3 +1542,22 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 0.8.4专项当前为**47 passed**（含`tests/mcp`与可信Action扩大回归；真实Container由CI单独启用）。测试不调用模型API、不访问远端MCP、SSH、Git remote或用户服务器。MCP目录数据库只保存协议身份、Schema、Annotation和摘要；Tool结果仍由Action Audit只保存摘要，Secret canary在跨边界前被替换为`[REDACTED]`。
 
 最终非沙箱`make check`为**3235 passed、13 skipped，319.39秒**；Ruff格式与规则检查655个文件通过，Mypy严格检查236个源文件通过。Schema生成后共有192份JSON文件，按文件名、NUL和原字节聚合SHA256为`4231d529343624f8c4a963e8d71c991303b65e995c5b4cf3b8f4602e2e3a25ce`。13项跳过中新增的一项是本机未配置Container Daemon的真实MCP容器验收；该项必须由CI固定镜像任务关闭。
+
+## 77. 0.8.5 Skills与Hooks候选验收（2026-09-09）
+
+状态：**本地验收完成，跨平台CI随本切片提交验收**。不可变Skill目录、限定名称冲突、跨平台安全渐进加载、声明式Hook Registry、精确定义授权、超时/取消及中断恢复已经实现；远端Skill安装、Marketplace、Shell Hook和进程内第三方Plugin不属于本切片。
+
+专项回归覆盖：
+
+- 相同语义目录的新代次保持内容摘要稳定；普通名称只解析全局唯一Skill，跨来源同名要求限定名称，来源内重复名称全部排除；
+- YAML重复键、Alias展开、Frontmatter尺寸/深度/节点、非法UTF-8/NUL/空正文、发现数量和目录深度均有显式上限与稳定错误；
+- Root符号链接、资源符号链接、POSIX硬链接、敏感名称、特殊/二进制文件、路径回退、嵌套Skill和目录形成后的正文漂移失败关闭；
+- `skill.load`与`skill.read_resource`固定为低风险只读Action，目录/Manifest指纹、来源端口与Secret canary在Action边界再次核对；
+- Hook非Bundled精确定义授权、过期/定义漂移、Action Binding/Schema/effect错配、精确Matcher、确定顺序、首个Blocking失败停止和Advisory只记录；
+- Hook不能使用带Secret或写资源的目标，`allow`不能覆盖目标Action Policy deny，输出中的Secret或非法`deny`失败关闭；
+- 超时和外层取消都持久结算Hook及底层Action；重复Dispatch只读取终态；独立进程在Run进入`running`后硬退出，重开收敛为`interrupted`且不重放；
+- Skill访问链、Hook Registry/Plan/Event/Projection摘要篡改均被Store拒绝；21份Schema与运行时模型逐项相等；macOS和Windows CI显式包含两套测试。
+
+专项确定性回归为**29 passed**。本切片还把历史Eval Action Worker租约从5秒调整为30秒，Heartbeat保持1秒；原因是同步评分/发布在较慢macOS Runner上可能阻塞事件循环超过原租约，造成活跃Worker自我丢失。新的预算仍为单次有界租约且不重试Action，既有发布失败与恢复回归继续验证零重复评分。
+
+Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共有213份JSON文件，按文件名、NUL和原字节聚合SHA256为`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。完整仓库门禁和跨平台CI结果在切片提交后补充。测试不调用模型API、不访问网络、SSH、远程Git或用户服务器；所有Root、数据库和崩溃进程均位于pytest临时目录。

@@ -1,0 +1,35 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "catalog_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Catalog Sha256",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "expected_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Expected Manifest Sha256",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "catalog_sha256",
+    "name",
+    "expected_manifest_sha256",
+    "path"
+  ],
+  "title": "SkillResourceReadInput",
+  "type": "object"
+}
