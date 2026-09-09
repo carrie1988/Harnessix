@@ -2,7 +2,7 @@
 
 ## 1. 研究范围与基线
 
-本文为 Harnessix Code 0.8.1～0.8.3提供源码事实，关注公共Agent协议、Headless进程、客户端恢复、双向请求和背压。扩展与配置另行研究。研究继续使用[冻结基线](baselines.md)：
+本文为 Harnessix Code 0.8.1～0.8.3提供源码事实，关注公共Agent协议、Headless进程、客户端恢复、持续交互和背压。扩展与配置另行研究。研究继续使用[冻结基线](baselines.md)：
 
 | 项目 | 提交 | 本主题证据定位 |
 |---|---|---|
@@ -41,11 +41,15 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 - 传输入站、请求处理和出站写之间使用有界队列；过载返回专用可重试错误；
 - stdio连接关闭会结束单客户端App Server进程，但Thread事实由独立存储和Runtime管理，不把EOF解释为任意领域事件；
 - 协议类型可以生成TypeScript与JSON Schema，生成物与具体App Server版本绑定。
+- `turn/steer`要求调用方提交活动Thread和预期Turn身份；Core区分start、steer和未提交结果，输入队列能够报告待决Steering；
+- `item/tool/requestUserInput`是独立服务端Request，参数绑定Thread、Turn和Item，答复按问题ID返回；
+- Steering相关测试明确验证输入不应越过当前模型/工具继续步骤，并验证压缩前后输入仍留在正确的后续模型请求中。
 
 **推断**
 
 - 初始化握手、Schema生成和连接级能力应进入Harnessix公共合同；Codex不断扩张的方法集合不应成为Harnessix v1兼容承诺；
 - 对本地优先产品，stdio能先证明进程隔离、恢复和双向审批，无需提前承担端口认证与Origin攻击面。
+- Steering必须绑定预期Turn并保留模型历史顺序，不能把任意新输入附加到已切换的活动Turn。
 
 ### 3.2 OpenCode
 
@@ -55,11 +59,15 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 - `/api/event`通过SSE发送Schema约束事件，订阅容量固定为256，并发送心跳；
 - durable事件携带aggregate ID、sequence和version，实时连接不是唯一事实来源；
 - Server公开OpenAPI，客户端与服务端共享生成协议类型。
+- Question服务使用按Question ID索引的待决Map和Deferred；`ask`发布Asked，`reply`发布Replied，`reject`发布Rejected，完成后删除待决项；
+- 实例结束的Finalizer拒绝全部待决问题并清空Map；Reply/Reject按Question ID只结算原待决项，并在事件中带回原`sessionID`，未知Question ID明确失败；
+- CLI在错过实时`question.asked`时会调用问题列表恢复待决交互，而不是假定事件连接完整。
 
 **推断**
 
 - 命令响应与事件恢复必须分开设计；“收到成功响应”不代表客户端已经消费对应事件；
 - 公开游标需要指向持久聚合位置，而不是只在内存连接中递增。
+- 待决交互必须可重新枚举或持久恢复；只在UI内保存Promise不能满足进程重启语义。
 
 ### 3.3 Claude Code逆向仓库
 
@@ -68,10 +76,14 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 - `StructuredIO`按换行拆分输入，跳过空行，并在输入关闭时拒绝全部待决控制请求；
 - 控制请求与流事件进入同一个出站队列，由唯一drain路径写stdout，避免消息互相超越；
 - 已处理Tool Use ID使用有界集合去重，迟到或重复控制响应不会再次注入消息。
+- `prependUserMessage`在每次解析输入块前重新检查插入队列，使运行中加入的用户消息进入下一次消费位置；
+- 输入关闭时遍历并拒绝全部待决控制请求；待决请求以request ID索引，控制响应按身份解析；
+- `sendRequest`和普通流事件共用一个出站队列及唯一drain Writer，避免控制请求越过已排队事件。
 
 **推断**
 
 - 双向协议必须对待决请求、重复响应、EOF和唯一写者给出显式语义；仅用多个协程直接写stdout无法保证帧原子性和顺序。
+- 输入队列和输出单写者可以独立设计；运行中用户消息不能以牺牲当前模型/Tool配对顺序为代价。
 
 ## 4. Harnessix差距
 
@@ -96,10 +108,12 @@ Harnessix保留标准`jsonrpc`字段，不照搬参考实现的线上省略形�
 
 0.8.2进一步冻结命令顺序为“协议accepted → 领域接受事实 → 协议completed → 后台驱动”。该顺序使每个崩溃窗口都有可查询事实：已完成账本不能证明后台任务已经获得调度，因此相同Command和`thread/resume`都必须能够重新驱动仍处于`ACCEPTED`的确定性Turn。stdio对Notification采用只写路径，不能复用“写后读取一个Response”的Request交换函数。
 
-具体决策见[ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md)和[ADR 0071](../adr/0071-headless-app-server-and-sdk-lifecycle.md)，实现详设见[0.8设计](../m08-product-runtime-and-extensions.md)。
+0.8.3没有直接复制Codex的服务端Request或OpenCode的内存Deferred。Harnessix现有Session事件是更强的恢复事实，因此提问被建模为`ask_user` Tool Call、持久Question Request/Answer、配对Tool Result和`WAITING_INPUT`状态；CLI从Replay重建待决交互。实时文本采用有界Pull-Live Delta，任何缺口由持久Item恢复。stdio在握手后并发处理Request，SDK使用单Reader和按JSON-RPC id索引的待决Future，从而允许`events/next`长轮询与Steering、审批、提问和取消并行。
+
+具体决策见[ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md)、[ADR 0071](../adr/0071-headless-app-server-and-sdk-lifecycle.md)和[ADR 0072](../adr/0072-durable-interaction-and-pull-live-stream.md)，实现详设见[0.8设计](../m08-product-runtime-and-extensions.md)。
 
 ## 6. 源码索引
 
-- Codex：[App Server README](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server/README.md)、[`rpc.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server-protocol/src/rpc.rs)、[`lib.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server/src/lib.rs)、[`transport.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server/src/transport.rs)
-- OpenCode：[`event.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/server/src/handlers/event.ts)、[`session.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/server/src/handlers/session.ts)、[`permission.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/server/src/handlers/permission.ts)
+- Codex：[App Server README](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server/README.md)、[`common.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server-protocol/src/protocol/common.rs)、[`turn.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server-protocol/src/protocol/v2/turn.rs)、[`item.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/app-server-protocol/src/protocol/v2/item.rs)、[`codex_thread.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/core/src/codex_thread.rs)、[`input_queue.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/core/src/session/input_queue.rs)
+- OpenCode：[`question/index.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/src/question/index.ts)、[`question handler`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/src/server/routes/instance/httpapi/handlers/question.ts)、[`stream.transport.test.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/test/cli/run/stream.transport.test.ts)
 - Claude Code逆向仓库：[`structuredIO.ts`](https://github.com/carrie1988/claude-code-source-code/blob/2ca5ddabfed5f220812ea11f029eda03b21bc4c1/src/cli/structuredIO.ts)

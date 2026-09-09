@@ -8,6 +8,7 @@ from pydantic import TypeAdapter
 from harnessix.protocol.contracts import (
     AgentCommandParams,
     AgentQueryParams,
+    EventsNextResult,
     EventsReplayResult,
     InitializeParams,
     InitializeResult,
@@ -40,6 +41,7 @@ def test_agent_protocol_schemas_match_runtime_contracts() -> None:
         "agent-protocol-item-v1.schema.json": PublicItem.model_json_schema(),
         "agent-protocol-event-v1.schema.json": PublicEvent.model_json_schema(),
         "agent-protocol-replay-result-v1.schema.json": EventsReplayResult.model_json_schema(),
+        "agent-protocol-next-result-v1.schema.json": EventsNextResult.model_json_schema(),
         "agent-protocol-command-params-v1.schema.json": (
             TypeAdapter(AgentCommandParams).json_schema()
         ),

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import BinaryIO
 
-from harnessix.app_server.server import AgentProtocolServer
+from harnessix.app_server.server import AgentProtocolServer, ConnectionState
 
 
 async def _write(output: BinaryIO, frame: bytes) -> None:
@@ -21,7 +21,7 @@ async def run_stdio(
     *,
     outbound_timeout_seconds: float = 5.0,
 ) -> None:
-    """运行单客户端stdio JSONL；EOF后等待已接受命令到持久边界。"""
+    """运行可多路复用的单客户端stdio JSONL；EOF后关闭并收敛未决请求。"""
 
     outbox: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=server.limits.max_outbound_messages)
     outbox_drained = asyncio.Event()
@@ -41,36 +41,64 @@ async def run_stdio(
             raise
 
     writer_task = asyncio.create_task(writer(), name="harnessix-stdio-writer")
-    overloaded = False
+    stopping = asyncio.Event()
+    slots = asyncio.Semaphore(server.limits.max_pending_requests)
+    pending: set[asyncio.Task[None]] = set()
 
     async def enqueue(frame: bytes) -> None:
-        while outbox.qsize() >= server.limits.max_outbound_messages:
+        while True:
             outbox_drained.clear()
-            if outbox.qsize() >= server.limits.max_outbound_messages:
+            try:
+                outbox.put_nowait(frame)
+                return
+            except asyncio.QueueFull:
                 await outbox_drained.wait()
-        await outbox.put(frame)
+
+    async def dispatch(frame: bytes) -> None:
+        try:
+            responses = await server.process_frame(frame)
+            for response in responses:
+                try:
+                    async with asyncio.timeout(outbound_timeout_seconds):
+                        await enqueue(response)
+                except TimeoutError:
+                    stopping.set()
+                    return
+        finally:
+            slots.release()
+
+    def settled(task: asyncio.Task[None]) -> None:
+        pending.discard(task)
+        if not task.cancelled() and task.exception() is not None:
+            stopping.set()
 
     try:
         while True:
-            if writer_task.done():
+            if writer_task.done() or stopping.is_set():
                 break
             line = await asyncio.to_thread(
                 input_stream.readline, server.limits.max_message_bytes + 1
             )
             if not line:
                 break
-            responses = await server.process_frame(line)
-            for response in responses:
-                try:
-                    async with asyncio.timeout(outbound_timeout_seconds):
-                        await enqueue(response)
-                except TimeoutError:
-                    overloaded = True
-                    break
-            if overloaded:
-                break
+            if server.state is not ConnectionState.READY:
+                responses = await server.process_frame(line)
+                for response in responses:
+                    try:
+                        async with asyncio.timeout(outbound_timeout_seconds):
+                            await enqueue(response)
+                    except TimeoutError:
+                        stopping.set()
+                        break
+                continue
+            await slots.acquire()
+            task = asyncio.create_task(dispatch(line), name="harnessix-stdio-request")
+            pending.add(task)
+            task.add_done_callback(settled)
     finally:
         await server.close()
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
         if not writer_task.done():
             try:
                 async with asyncio.timeout(outbound_timeout_seconds):

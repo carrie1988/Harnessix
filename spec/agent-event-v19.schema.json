@@ -1795,6 +1795,8 @@
               "plan": "#/$defs/PlanContent",
               "process_action_state": "#/$defs/ProcessActionStateContent",
               "process_approval_request": "#/$defs/ProcessApprovalRequestContent",
+              "question_answer": "#/$defs/QuestionAnswerContent",
+              "question_request": "#/$defs/QuestionRequestContent",
               "reasoning_summary": "#/$defs/TextContent",
               "tool_call": "#/$defs/ToolCallContent",
               "tool_result": "#/$defs/ToolResultContent",
@@ -1826,6 +1828,12 @@
             },
             {
               "$ref": "#/$defs/ProcessActionStateContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionRequestContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionAnswerContent"
             },
             {
               "$ref": "#/$defs/PlanContent"
@@ -1894,6 +1902,8 @@
               "plan": "#/$defs/PlanContent",
               "process_action_state": "#/$defs/ProcessActionStateContent",
               "process_approval_request": "#/$defs/ProcessApprovalRequestContent",
+              "question_answer": "#/$defs/QuestionAnswerContent",
+              "question_request": "#/$defs/QuestionRequestContent",
               "reasoning_summary": "#/$defs/TextContent",
               "tool_call": "#/$defs/ToolCallContent",
               "tool_result": "#/$defs/ToolResultContent",
@@ -1925,6 +1935,12 @@
             },
             {
               "$ref": "#/$defs/ProcessActionStateContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionRequestContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionAnswerContent"
             },
             {
               "$ref": "#/$defs/PlanContent"
@@ -1984,6 +2000,8 @@
               "plan": "#/$defs/PlanContent",
               "process_action_state": "#/$defs/ProcessActionStateContent",
               "process_approval_request": "#/$defs/ProcessApprovalRequestContent",
+              "question_answer": "#/$defs/QuestionAnswerContent",
+              "question_request": "#/$defs/QuestionRequestContent",
               "reasoning_summary": "#/$defs/TextContent",
               "tool_call": "#/$defs/ToolCallContent",
               "tool_result": "#/$defs/ToolResultContent",
@@ -2015,6 +2033,12 @@
             },
             {
               "$ref": "#/$defs/ProcessActionStateContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionRequestContent"
+            },
+            {
+              "$ref": "#/$defs/QuestionAnswerContent"
             },
             {
               "$ref": "#/$defs/PlanContent"
@@ -3222,6 +3246,82 @@
       "title": "ProcessApprovalRequestContent",
       "type": "object"
     },
+    "QuestionAnswerContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "question_answer",
+          "default": "question_answer",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question_id": {
+          "format": "uuid",
+          "title": "Question Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question_id",
+        "call_id",
+        "answer"
+      ],
+      "title": "QuestionAnswerContent",
+      "type": "object"
+    },
+    "QuestionRequestContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "question_request",
+          "default": "question_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question_id": {
+          "format": "uuid",
+          "title": "Question Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question_id",
+        "call_id",
+        "question"
+      ],
+      "title": "QuestionRequestContent",
+      "type": "object"
+    },
     "ResponseBillingMetadata": {
       "additionalProperties": false,
       "description": "响应中观测到的原生事实，不推断平台/价格，不代表实际账单。",
@@ -3918,6 +4018,16 @@
             }
           ],
           "default": null
+        },
+        "reason": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "context_overflow",
+            "steering"
+          ],
+          "title": "Reason",
+          "type": "string"
         }
       },
       "required": [
@@ -3934,6 +4044,7 @@
         "executing_tools",
         "waiting_approval",
         "waiting_action",
+        "waiting_input",
         "finalizing",
         "cancelling",
         "completed",
@@ -4088,7 +4199,7 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "default": 18,
+      "default": 19,
       "enum": [
         1,
         2,
@@ -4107,7 +4218,8 @@
         15,
         16,
         17,
-        18
+        18,
+        19
       ],
       "title": "Schema Version",
       "type": "integer"

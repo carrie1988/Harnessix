@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.7全部路线图范围、0.8.1 Agent Protocol v1及0.8.2 Headless App Server/Python Agent SDK本地验收。公共协议现可通过stdio JSONL驱动并以Snapshot/Replay断线恢复，命令受理、领域提交、后台调度、背压和有界关闭具有明确失败语义；薄CLI双向交互、MCP/Skill/Hook产品接线、Provider配置产品化和三平台发行物仍属于0.8.3～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.7全部路线图范围以及0.8.1～0.8.3本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取和薄CLI已接入同一Agent Runtime。MCP、Skill/Hook产品接线、Provider配置产品化和三平台发行物仍属于0.8.4～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -57,6 +57,18 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - Git Push与Commit分离、默认不装配；Push只更新一个ref，使用exact lease，调用结果丢失后只对账不重放。
 
 0.7.5的受控真实Push使用本地bare remote验证零重复副作用；公网HTTPS/SSH凭据不会从宿主环境隐式继承，待0.8.6通过Secret和配置产品化装配。设计、失败语义和限制见[0.7详细设计](docs/m07-trusted-execution-and-delivery.md)与[统一Action Plane源码研究](docs/research/unified-action-plane-and-extension-boundaries.md)。
+
+## 当前已实现：产品协议、Headless与薄CLI（0.8.1～0.8.3）
+
+- Agent Protocol v1使用严格JSON-RPC 2.0/stdio JSONL合同，Command的持久`requestId`与连接内JSON-RPC `id`分离；
+- Headless App Server复用唯一Agent Runtime和Session Store，支持Thread创建、恢复、分叉、归档，Turn开始、重试、取消、审批、提问与Steering；
+- Python Agent SDK支持进程内和子进程传输；子进程传输以唯一Reader和`id → Future`表归并乱序响应，长轮询不会阻塞控制命令；
+- `events/next`把权威持久Replay与最多1000条live-only文本Delta分离；溢出显式报告`liveGap`，客户端回退到完整Item；
+- `ask_user`使用持久Question Request/Answer、`WAITING_INPUT`和配对Tool Result，进程重启后可继续回答，重复、冲突、取消与过期均有稳定语义；
+- Steering绑定预期活动Turn并在模型步骤边界生效，不打断当前Provider请求，也不破坏模型响应、Tool Call、Tool Result和后续用户输入的历史顺序；
+- 薄CLI只依赖Agent SDK，支持`create/list/run/follow/resume/retry/fork/archive/steer/cancel`，可显示计划、工具进度、Diff、审批、问题及流式回答。
+
+0.8.3不提供完整TUI、网络Agent Server或三平台安装器。薄CLI要求宿主通过argv提供已装配的stdio App Server；内置Provider/Profile、Secret引用、配置迁移及正式启动装配由0.8.6交付。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0072](docs/adr/0072-durable-interaction-and-pull-live-stream.md)和[部署说明](docs/deployment.md#083-薄cli与双向交互部署)。
 
 ## 许可证与品牌
 

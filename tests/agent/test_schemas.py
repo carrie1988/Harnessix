@@ -11,7 +11,6 @@ from harnessix.agent.models import (
     EventDraft,
     Thread,
     ThreadArchiveRecord,
-    ThreadForkSnapshot,
     TurnStarted,
 )
 from harnessix.context import (
@@ -47,7 +46,7 @@ from harnessix.evals.compaction_contracts import (
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
-from harnessix.models.costs import CostReport, CostReportV2
+from harnessix.models.costs import CostReport, CostReportV2, CostReportV3
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 
@@ -63,12 +62,11 @@ def test_generated_schemas_match_code() -> None:
         "model-history-inspection-v1.schema.json": ModelHistoryInspection.model_json_schema(),
         "model-history-inspection-v2.schema.json": ModelHistoryInspectionV2.model_json_schema(),
         "compaction-window-v1.schema.json": CompactionWindow.model_json_schema(),
-        "thread-fork-v1.schema.json": ThreadForkSnapshot.model_json_schema(),
         "thread-archive-v1.schema.json": ThreadArchiveRecord.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v18.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v18.schema.json": Thread.model_json_schema(),
+        "agent-event-v19.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v19.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -84,6 +82,7 @@ def test_generated_schemas_match_code() -> None:
         "price-snapshot-v1.schema.json": PriceSnapshot.model_json_schema(),
         "cost-report-v1.schema.json": CostReport.model_json_schema(),
         "cost-report-v2.schema.json": CostReportV2.model_json_schema(),
+        "cost-report-v3.schema.json": CostReportV3.model_json_schema(),
         "compaction-semantic-eval-case-v1.schema.json": (
             CompactionSemanticEvalCase.model_json_schema()
         ),
@@ -101,7 +100,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 19,
+                "schema_version": 20,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -135,7 +134,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 18
+        assert EventDraft(payload=payload).schema_version == 19
 
 
 def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
@@ -148,7 +147,7 @@ def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=16, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 18
+    assert EventDraft(payload=payload).schema_version == 19
 
     legacy = EventDraft(
         schema_version=16,
@@ -166,13 +165,44 @@ def test_deferred_turn_execution_requires_v18_and_legacy_export_is_frozen() -> N
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=17, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 18
+    assert EventDraft(payload=payload).schema_version == 19
 
     legacy = EventDraft(
         schema_version=17,
         payload=payload.model_copy(update={"execution_mode": "immediate"}),
     ).model_dump(mode="json")
     assert "execution_mode" not in legacy["payload"]
+
+
+def test_interactive_turn_features_require_v19_and_legacy_export_is_frozen() -> None:
+    from harnessix.agent.models import (
+        ItemStarted,
+        QuestionRequestContent,
+        TurnStateChanged,
+        TurnStatus,
+    )
+
+    payload = ItemStarted(
+        item_id=uuid4(),
+        content=QuestionRequestContent(
+            question_id=uuid4(),
+            call_id=uuid4(),
+            question="选择环境",
+            options=("测试", "生产"),
+        ),
+    )
+    with pytest.raises(ValidationError):
+        EventDraft(schema_version=18, payload=payload)
+    assert EventDraft(payload=payload).schema_version == 19
+
+    state = TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT, reason="steering")
+    with pytest.raises(ValidationError):
+        EventDraft(schema_version=18, payload=state)
+    legacy = EventDraft(
+        schema_version=18,
+        payload=state.model_copy(update={"reason": "normal"}),
+    ).model_dump(mode="json")
+    assert "reason" not in legacy["payload"]
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -191,7 +221,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 18
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 19
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -221,7 +251,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 18
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 19
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -406,6 +436,9 @@ def test_historical_schemas_are_frozen() -> None:
             ),
             "cost-report-v2.schema.json": (
                 "17d97a6290f3bd4ea8af706d435637ac4c43ae29d122cd7e12fbf7c67c01d694"
+            ),
+            "thread-fork-v1.schema.json": (
+                "9e7f154ce8b45369ef4f3ab9900151c0355345ffafab44e85d68b59430e0466c"
             ),
         }
     )

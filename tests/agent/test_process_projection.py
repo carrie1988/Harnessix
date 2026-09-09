@@ -504,7 +504,7 @@ async def test_agent_v9_boundary_and_restart_preserve_waiting_action(tmp_path: P
         with pytest.raises(ValidationError):
             EventDraft(schema_version=8, turn_id=case.turn_id, payload=payload)
     assert (
-        EventDraft(payload=TurnStateChanged(status=TurnStatus.WAITING_ACTION)).schema_version == 18
+        EventDraft(payload=TurnStateChanged(status=TurnStatus.WAITING_ACTION)).schema_version == 19
     )
 
     before = await case.store.get_thread(case.thread_id)

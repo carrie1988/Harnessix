@@ -1,4 +1,4 @@
-"""在独立v16与v17 wheel间验证Turn Retry升级及旧reader拒绝。"""
+"""在独立v16与当前wheel间验证Turn Retry升级及旧reader拒绝。"""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ async def main(mode: str, root: Path) -> None:
         return
 
     assert mode == "upgrade"
-    assert EventDraft.model_fields["schema_version"].default == 18
+    assert EventDraft.model_fields["schema_version"].default == 19
     metadata = json.loads((root / "metadata.json").read_text(encoding="utf-8"))
     original = metadata["state"]
     await store.initialize()
@@ -79,7 +79,7 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["agent_events"] == original["agent_events"]
     assert migrated["agent_threads"] == original["agent_threads"]
     assert migrated["agent_migrations"][:18] == original["agent_migrations"]
-    assert len(migrated["agent_migrations"]) == 19
+    assert len(migrated["agent_migrations"]) == 22
 
     thread_id = UUID(metadata["thread_id"])
     source_turn_id = UUID(metadata["source_turn_id"])
@@ -99,10 +99,10 @@ async def main(mode: str, root: Path) -> None:
     after = state(store.path)
     assert after["agent_events"][: len(original["agent_events"])] == original["agent_events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 18
+        json.loads(row[3])["schema_version"] == 19
         for row in after["agent_events"][len(original["agent_events"]) :]
     )
-    print("v17仅追加migration19；旧字节不变且新Retry可重放、重建")
+    print("当前v19仅追加migration19-22；旧字节不变且新Retry可重放、重建")
 
 
 if __name__ == "__main__":

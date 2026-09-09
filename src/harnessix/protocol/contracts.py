@@ -138,6 +138,7 @@ class ServerCapabilities(ProtocolModel):
     server_requests: tuple[str, ...] = Field(default_factory=tuple, max_length=32)
     replay: bool = True
     artifact_pages: bool = True
+    item_deltas: bool = False
 
     @model_validator(mode="after")
     def stable_capabilities(self) -> ServerCapabilities:
@@ -229,6 +230,12 @@ class TurnCancelParams(CommandParams):
     turn_id: UUID
 
 
+class TurnSteerParams(CommandParams):
+    thread_id: UUID
+    turn_id: UUID
+    text: str = Field(min_length=1, max_length=MAX_PROTOCOL_TEXT_CHARS)
+
+
 class PublicApprovalDecision(ProtocolModel):
     outcome: Literal["approved", "rejected"]
     actor: str = Field(min_length=1, max_length=256)
@@ -243,9 +250,23 @@ class ApprovalRespondParams(CommandParams):
     decision: PublicApprovalDecision
 
 
+class QuestionRespondParams(CommandParams):
+    thread_id: UUID
+    turn_id: UUID
+    question_id: UUID
+    answer: str = Field(min_length=1, max_length=4000)
+
+
 class EventsReplayParams(ProtocolModel):
     thread_id: UUID
     after_cursor: int = Field(default=0, ge=0, strict=True)
+    limit: int = Field(default=256, ge=1, le=1000, strict=True)
+
+
+class EventsNextParams(ProtocolModel):
+    thread_id: UUID
+    after_cursor: int = Field(default=0, ge=0, strict=True)
+    wait_ms: int = Field(default=30_000, ge=0, le=30_000, strict=True)
     limit: int = Field(default=256, ge=1, le=1000, strict=True)
 
 
@@ -264,13 +285,16 @@ type AgentCommandParams = (
     | TurnRetryParams
     | TurnResumeParams
     | TurnCancelParams
+    | TurnSteerParams
     | ApprovalRespondParams
+    | QuestionRespondParams
 )
 type AgentQueryParams = (
     ThreadGetParams
     | ThreadListParams
     | ThreadResumeParams
     | EventsReplayParams
+    | EventsNextParams
     | ArtifactReadParams
 )
 
@@ -351,6 +375,30 @@ class PublicApprovalRequestContent(ProtocolModel):
     diff_artifact: PublicArtifactRef | None = None
 
 
+class PublicQuestionRequestContent(ProtocolModel):
+    kind: Literal["question_request"] = "question_request"
+    question_id: UUID
+    call_id: UUID
+    question: str = Field(min_length=1, max_length=4000)
+    options: tuple[str, ...] = Field(default_factory=tuple, max_length=8)
+
+    @field_validator("options")
+    @classmethod
+    def valid_options(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(set(value)) != len(value) or any(
+            not option or len(option) > 500 for option in value
+        ):
+            raise ValueError("提问选项必须唯一且长度有效")
+        return value
+
+
+class PublicQuestionAnswerContent(ProtocolModel):
+    kind: Literal["question_answer"] = "question_answer"
+    question_id: UUID
+    call_id: UUID
+    answer: str = Field(min_length=1, max_length=4000)
+
+
 class PublicProcessStateContent(ProtocolModel):
     kind: Literal["process_action_state"] = "process_action_state"
     call_id: UUID
@@ -389,6 +437,8 @@ PublicItemContent = Annotated[
     | PublicToolCallContent
     | PublicToolResultContent
     | PublicApprovalRequestContent
+    | PublicQuestionRequestContent
+    | PublicQuestionAnswerContent
     | PublicProcessStateContent
     | PublicPlanContent
     | PublicCompactionContent
@@ -516,6 +566,40 @@ class EventsReplayResult(ProtocolModel):
             raise ValueError("Replay公开事件游标必须严格递增")
         if cursors and (cursors[-1] > self.scanned_through or cursors[0] < 1):
             raise ValueError("Replay公开事件游标超过扫描位置")
+        return self
+
+
+class PublicItemDelta(ProtocolModel):
+    thread_id: UUID
+    turn_id: UUID
+    item_id: UUID
+    model_step: int = Field(ge=1, le=1000, strict=True)
+    stream_sequence: int = Field(ge=1, strict=True)
+    delta: str = Field(max_length=MAX_PROTOCOL_TEXT_CHARS)
+
+
+class EventsNextResult(ProtocolModel):
+    replay: EventsReplayResult
+    deltas: tuple[PublicItemDelta, ...] = Field(default_factory=tuple, max_length=1000)
+    live_has_more: bool = False
+    live_gap: bool = False
+    timed_out: bool = False
+
+    @model_validator(mode="after")
+    def coherent_page(self) -> EventsNextResult:
+        if any(delta.thread_id != self.replay.thread_id for delta in self.deltas):
+            raise ValueError("实时Delta与Replay不属于同一Thread")
+        identities = tuple((delta.item_id, delta.stream_sequence) for delta in self.deltas)
+        if len(set(identities)) != len(identities):
+            raise ValueError("实时Delta身份重复")
+        if self.timed_out and (
+            self.replay.events
+            or self.replay.has_more
+            or self.deltas
+            or self.live_has_more
+            or self.live_gap
+        ):
+            raise ValueError("超时结果不能同时携带事件或Delta")
         return self
 
 

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, Field, TypeAdapter, model_validator
 
-from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatus
+from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatus, TurnStatusV18
 from harnessix.agent.usage import ModelAttempt, ModelIdentifier, TokenCount, UsageObservation
 from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN
 from harnessix.domain.models import ContractModel
@@ -220,7 +220,7 @@ class CostSummary(ContractModel):
 
 
 def _summarize(
-    entries: tuple[AttemptCost, ...], model_steps: int, status: TurnStatus
+    entries: tuple[AttemptCost, ...], model_steps: int, status: TurnStatus | TurnStatusV18
 ) -> CostSummary:
     ids: set[UUID] = set()
     pairs: set[tuple[int, int]] = set()
@@ -263,7 +263,7 @@ def _summarize(
 class CostReport(ContractModel):
     spec_version: Literal["harnessix.cost-report/v1"] = "harnessix.cost-report/v1"
     turn_id: UUID
-    turn_status: TurnStatus
+    turn_status: TurnStatusV18
     model_steps: int = Field(ge=0, le=1000, strict=True)
     entries: tuple[AttemptCost, ...] = Field(max_length=32000)
     summary: CostSummary
@@ -298,7 +298,7 @@ def _summarize_accounted(
     entries: tuple[AccountedAttemptCost, ...],
     compactions: tuple[CompactionCostState, ...],
     model_steps: int,
-    status: TurnStatus,
+    status: TurnStatus | TurnStatusV18,
 ) -> CostSummary:
     generation = tuple(e for e in entries if e.purpose == "generation")
     ordinary = _summarize(generation, model_steps, status)
@@ -359,7 +359,7 @@ def _summarize_accounted(
 class CostReportV2(ContractModel):
     spec_version: Literal["harnessix.cost-report/v2"] = "harnessix.cost-report/v2"
     turn_id: UUID
-    turn_status: TurnStatus
+    turn_status: TurnStatusV18
     model_steps: int = Field(ge=0, le=1000, strict=True)
     compactions: tuple[CompactionCostState, ...] = Field(min_length=1, max_length=1000)
     entries: tuple[AccountedAttemptCost, ...] = Field(max_length=33000)
@@ -375,7 +375,30 @@ class CostReportV2(ContractModel):
         return self
 
 
-CostReportRecord = Annotated[CostReport | CostReportV2, Field(discriminator="spec_version")]
+class CostReportV3(ContractModel):
+    """支持0.8.3交互状态，并统一普通生成与压缩尝试。"""
+
+    spec_version: Literal["harnessix.cost-report/v3"] = "harnessix.cost-report/v3"
+    turn_id: UUID
+    turn_status: TurnStatus
+    model_steps: int = Field(ge=0, le=1000, strict=True)
+    compactions: tuple[CompactionCostState, ...] = Field(default_factory=tuple, max_length=1000)
+    entries: tuple[AccountedAttemptCost, ...] = Field(max_length=33000)
+    summary: CostSummary
+
+    @model_validator(mode="after")
+    def validate_summary(self) -> Self:
+        expected = _summarize_accounted(
+            self.entries, self.compactions, self.model_steps, self.turn_status
+        )
+        if self.summary != expected:
+            raise ValueError("成本汇总与全用途账本不一致")
+        return self
+
+
+CostReportRecord = Annotated[
+    CostReport | CostReportV2 | CostReportV3, Field(discriminator="spec_version")
+]
 COST_REPORT_ADAPTER: TypeAdapter[CostReportRecord] = TypeAdapter(CostReportRecord)
 
 
@@ -386,6 +409,36 @@ def build_cost_report(turn: Turn, bindings: tuple[PriceBinding, ...] = ()) -> Co
     ):
         raise ValueError("存在重复或不属于本 Turn 的价格绑定")
     entries = tuple(estimate_attempt(a, by_id.get(a.attempt_id)) for a in turn.model_attempts)
+    if turn.status == TurnStatus.WAITING_INPUT:
+        accounted = tuple(
+            AccountedAttemptCost(**entry.model_dump(), purpose="generation") for entry in entries
+        ) + tuple(
+            AccountedAttemptCost(
+                **estimate_attempt(c.attempt, by_id.get(c.attempt.attempt_id)).model_dump(),
+                purpose="compaction",
+                compaction_id=c.plan.compaction_id,
+            )
+            for c in turn.compactions
+            if c.attempt is not None
+        )
+        states = tuple(
+            CompactionCostState(
+                compaction_id=c.plan.compaction_id,
+                model_step=c.plan.model_step,
+                status=c.status,
+                attempt_id=c.attempt.attempt_id if c.attempt is not None else None,
+                unaccounted_request_possible=c.unaccounted_request_possible,
+            )
+            for c in turn.compactions
+        )
+        return CostReportV3(
+            turn_id=turn.turn_id,
+            turn_status=turn.status,
+            model_steps=turn.model_steps,
+            compactions=states,
+            entries=accounted,
+            summary=_summarize_accounted(accounted, states, turn.model_steps, turn.status),
+        )
     if turn.compactions:
         accounted = tuple(
             AccountedAttemptCost(**e.model_dump(), purpose="generation") for e in entries
@@ -410,7 +463,7 @@ def build_cost_report(turn: Turn, bindings: tuple[PriceBinding, ...] = ()) -> Co
         )
         return CostReportV2(
             turn_id=turn.turn_id,
-            turn_status=turn.status,
+            turn_status=TurnStatusV18(turn.status),
             model_steps=turn.model_steps,
             compactions=states,
             entries=accounted,
@@ -418,7 +471,7 @@ def build_cost_report(turn: Turn, bindings: tuple[PriceBinding, ...] = ()) -> Co
         )
     return CostReport(
         turn_id=turn.turn_id,
-        turn_status=turn.status,
+        turn_status=TurnStatusV18(turn.status),
         model_steps=turn.model_steps,
         entries=entries,
         summary=_summarize(entries, turn.model_steps, turn.status),

@@ -72,6 +72,11 @@
           "default": true,
           "title": "Artifactpages",
           "type": "boolean"
+        },
+        "itemDeltas": {
+          "default": false,
+          "title": "Itemdeltas",
+          "type": "boolean"
         }
       },
       "required": [

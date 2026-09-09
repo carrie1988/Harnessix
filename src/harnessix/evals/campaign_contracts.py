@@ -8,7 +8,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 
 from harnessix.agent.errors import FailureCategory
-from harnessix.agent.models import TurnStatus
+from harnessix.agent.models import TurnStatusV18
 from harnessix.agent.usage import ModelIdentifier
 from harnessix.domain.models import ContractModel
 from harnessix.evals.contracts import CodingEvalEnvironment, EvalFailureCategory, EvalOutcome
@@ -114,7 +114,7 @@ class CodingEvalCampaignTrial(CampaignContract):
     run_id: UUID
     eval_report_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     turn_id: UUID
-    turn_status: TurnStatus
+    turn_status: TurnStatusV18
     classification: CampaignClassification
     eval_outcome: EvalOutcome
     failure_categories: tuple[EvalFailureCategory, ...]
@@ -156,7 +156,7 @@ class CodingEvalCampaignTrial(CampaignContract):
             raise ValueError("Campaign Provider分类与规范失败不一致")
         if self.classification == "passed" and self.agent_failure_category is not None:
             raise ValueError("Campaign通过试验不能携带Agent失败")
-        if self.classification == "passed" and self.turn_status != TurnStatus.COMPLETED:
+        if self.classification == "passed" and self.turn_status != TurnStatusV18.COMPLETED:
             raise ValueError("Campaign通过试验必须由完成Turn产生")
         has_known_cost = self.known_cost_currency is not None or self.known_cost_amount is not None
         if self.cost_completeness == "unknown":

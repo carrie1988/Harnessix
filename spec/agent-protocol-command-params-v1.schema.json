@@ -125,6 +125,47 @@
       "title": "PublicBudget",
       "type": "object"
     },
+    "QuestionRespondParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        },
+        "questionId": {
+          "format": "uuid",
+          "title": "Questionid",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "turnId",
+        "questionId",
+        "answer"
+      ],
+      "title": "QuestionRespondParams",
+      "type": "object"
+    },
     "ThreadArchiveParams": {
       "additionalProperties": false,
       "properties": {
@@ -353,6 +394,41 @@
       ],
       "title": "TurnStartParams",
       "type": "object"
+    },
+    "TurnSteerParams": {
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "threadId",
+        "turnId",
+        "text"
+      ],
+      "title": "TurnSteerParams",
+      "type": "object"
     }
   },
   "anyOf": [
@@ -378,7 +454,13 @@
       "$ref": "#/$defs/TurnCancelParams"
     },
     {
+      "$ref": "#/$defs/TurnSteerParams"
+    },
+    {
       "$ref": "#/$defs/ApprovalRespondParams"
+    },
+    {
+      "$ref": "#/$defs/QuestionRespondParams"
     }
   ]
 }

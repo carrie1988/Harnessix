@@ -1505,3 +1505,23 @@ Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.co
 - Protocol和Agent Runtime既有回归。
 
 Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整门禁为**3180 passed、12 skipped，296.28秒**。12项跳过只包含平台限定或本机未配置的集成场景。本切片只使用确定性Fake/Scripted Provider和本地临时SQLite，不连接模型API、网络、SSH或远程服务器。0.8整体仍未关闭，不能由本次结果推导实时双向交互、MCP、Skills、Hooks、Provider配置或发行物已经可用。
+
+## 75. 0.8.3 薄CLI与双向交互验收（2026-09-09）
+
+状态：**本地验收完成**。Pull-Live事件页、stdio请求多路复用、持久提问、运行中Steering、Scoped Artifact读取和薄CLI已完成实现及扩大回归；MCP、Skills/Hooks和Provider配置仍属于0.8.4～0.8.6。
+
+专项与扩大回归覆盖：
+
+- `ask_user`请求在Session中进入`WAITING_INPUT`，重启后保持等待；回答事务同时提交Answer、成功Tool Result和执行状态，重复回答幂等、不同回答冲突，取消、非法参数、期限过期和真实进程硬退出均有确定结果；
+- Steering绑定活动Thread/Turn和稳定请求身份，覆盖Provider流式期间、ACCEPTED窗口、首个响应Item前竞态、等待审批/问题、关闭状态和下一次Provider历史顺序；
+- `events/next`覆盖Replay优先、30秒有界等待、能力关闭、实时Delta、1000条缓冲溢出与`liveGap`恢复；`timedOut`不能与事件、后续页、Delta或缺口同时成立；
+- App Server在READY后并发处理有界Request，单Writer保持帧完整；真实子进程传输按JSON-RPC ID归并乱序Response，长轮询与`thread/list`可并行，malformed/未知ID/EOF会稳定终结全部待决请求；
+- 薄CLI覆盖快速终态Replay、编号问题映射、重启恢复、分页Thread列表，以及真实整组Patch在批准前读取计划Diff、提交原指纹并完成受管写入；
+- Scoped Artifact读取从Thread恢复当前Workspace能力，严格校验Session归属、TTL、摘要和分页边界；未装配Reader或客户端未协商Delta时不广告对应能力；
+- Agent Event/Thread v19、Session migration22、Agent Protocol新增Schema和Cost Report v3保持运行时模型与生成物相等；旧Cost/Smoke/Campaign状态集合及冻结`thread-fork-v1`哈希不变，历史事件和投影不被迁移改写。
+
+最终非沙箱`make check`为**3208 passed、12 skipped，293.20秒**；Ruff格式与规则检查636个文件通过，Mypy严格检查228个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。Schema生成后共有186份JSON文件，按文件名、NUL和原字节聚合SHA256为`bd15e7dcfc6c775bcaa02b39dfa373f19881ff05c268595e7f1a308cea3092dd`；migration22 SHA256为`63e4fa0983de87e2d6bc5c8e4a5bbc126c6de6351c0abec99aacacacc808a0b1`。
+
+独立wheel升级探针以历史提交`e0e8498`的真实v8 wheel创建完成会话和migration1～9，再由当前v19 wheel仅追加migration10～22。升级未改变数据库inode、旧事件、旧投影或前九个migration；v8 reader随后以`schema_too_new`拒绝且不修改数据库；当前wheel继续运行时只追加v19事件、投影升级为19并保持Replay一致。历史与当前wheel SHA256分别为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`和`d9b00ea2015d0b91b918ddf21b469fcb523b818e645f16655a29220e1e069d7d`。
+
+验收使用确定性Fake/Scripted Provider、本地临时SQLite和本地受管副本，不调用模型API，不访问公网、SSH或远程服务器。薄CLI当前要求宿主提供已装配的stdio App Server argv；不能由本切片推导Provider/Profile配置、正式安装器或完整TUI已经可用。

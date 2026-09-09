@@ -197,7 +197,7 @@ async def main(mode: str, root: Path) -> None:
         print("v14 reader拒绝migration17且未修改数据库")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 18
+    assert EventDraft.model_fields["schema_version"].default == 19
     metadata = json.loads((root / "metadata.json").read_text())
     original = metadata["state"]
     await store.initialize()
@@ -205,11 +205,11 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["agent_events"] == original["agent_events"]
     assert migrated["agent_threads"] == original["agent_threads"]
     assert migrated["agent_migrations"][:16] == original["agent_migrations"]
-    assert len(migrated["agent_migrations"]) == 19
+    assert len(migrated["agent_migrations"]) == 22
     thread_id = UUID(metadata["thread_id"])
     assert await store.get_thread(thread_id) == replay(await store.events(thread_id))
     if mode == "upgrade":
-        print("v17 wheel仅追加migration17-19，v14事件和投影原字节保持不变")
+        print("当前v19 wheel仅追加migration17-22，v14事件和投影原字节保持不变")
         return
 
     assert mode == "recover"

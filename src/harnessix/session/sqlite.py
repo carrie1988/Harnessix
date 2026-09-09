@@ -200,6 +200,7 @@ class SQLiteSessionStore:
             16,
             17,
             18,
+            19,
         ):
             raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
         if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
@@ -240,7 +241,7 @@ class SQLiteSessionStore:
         await database.execute(
             "INSERT INTO agent_threads "
             "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-            "VALUES (?, ?, ?, ?, 18) "
+            "VALUES (?, ?, ?, ?, 19) "
             "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
             "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
             "projection_version = excluded.projection_version",

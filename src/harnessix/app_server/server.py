@@ -13,6 +13,8 @@ from harnessix.protocol.codec import ProtocolDecodeError, decode_client_frame
 from harnessix.protocol.contracts import (
     AGENT_PROTOCOL_VERSION,
     ApprovalRespondParams,
+    ArtifactReadParams,
+    EventsNextParams,
     EventsReplayParams,
     InitializedParams,
     InitializeParams,
@@ -26,6 +28,7 @@ from harnessix.protocol.contracts import (
     JsonRpcSuccessResponse,
     ProtocolLimits,
     ProtocolModel,
+    QuestionRespondParams,
     ServerCapabilities,
     ServerInfo,
     ThreadArchiveParams,
@@ -38,13 +41,16 @@ from harnessix.protocol.contracts import (
     TurnResumeParams,
     TurnRetryParams,
     TurnStartParams,
+    TurnSteerParams,
     validate_protocol_input,
 )
 
 SERVER_METHODS = (
     "approval/respond",
+    "events/next",
     "events/replay",
     "initialize",
+    "question/respond",
     "thread/archive",
     "thread/create",
     "thread/fork",
@@ -55,6 +61,7 @@ SERVER_METHODS = (
     "turn/resume",
     "turn/retry",
     "turn/start",
+    "turn/steer",
 )
 
 
@@ -64,6 +71,19 @@ class ConnectionState(StrEnum):
     READY = "ready"
     CLOSING = "closing"
     CLOSED = "closed"
+
+
+class InvalidProtocolParams(ValueError):
+    def __init__(self, error: ValidationError) -> None:
+        super().__init__("协议参数无效")
+        self.error = error
+
+
+def _params[Params: ProtocolModel](model: type[Params], value: dict[str, JsonValue]) -> Params:
+    try:
+        return validate_protocol_input(model, value)
+    except ValidationError as error:
+        raise InvalidProtocolParams(error) from None
 
 
 def _product_version() -> str:
@@ -95,9 +115,18 @@ class AgentProtocolServer:
         limits: ProtocolLimits | None = None,
     ) -> None:
         self.service = service
+        self.methods = tuple(
+            sorted(
+                (
+                    *SERVER_METHODS,
+                    *(("artifact/read",) if service.artifact_reader is not None else ()),
+                )
+            )
+        )
         self.limits = limits or ProtocolLimits()
         self.state = ConnectionState.NEW
         self.client_instance_id: UUID | None = None
+        self.item_deltas_enabled = False
 
     def _error(
         self,
@@ -152,6 +181,7 @@ class AgentProtocolServer:
                 path=("protocolVersion",),
             )
         self.client_instance_id = params.client_instance_id
+        self.item_deltas_enabled = params.capabilities.item_deltas
         self.state = ConnectionState.INITIALIZED_PENDING_ACK
         effective_limits = ProtocolLimits(
             max_message_bytes=min(self.limits.max_message_bytes, params.limits.max_message_bytes),
@@ -166,7 +196,11 @@ class AgentProtocolServer:
         self.limits = effective_limits
         result = InitializeResult(
             server_info=ServerInfo(version=_product_version()),
-            capabilities=ServerCapabilities(methods=SERVER_METHODS),
+            capabilities=ServerCapabilities(
+                methods=self.methods,
+                artifact_pages=self.service.artifact_reader is not None,
+                item_deltas=params.capabilities.item_deltas,
+            ),
             limits=effective_limits,
         )
         return _encode(
@@ -187,51 +221,44 @@ class AgentProtocolServer:
         assert self.client_instance_id is not None
         client = self.client_instance_id
         if method == "thread/create":
-            return await self.service.create_thread(
-                client, validate_protocol_input(ThreadCreateParams, params)
-            )
+            return await self.service.create_thread(client, _params(ThreadCreateParams, params))
         if method == "thread/get":
-            return await self.service.get_thread(validate_protocol_input(ThreadGetParams, params))
+            return await self.service.get_thread(_params(ThreadGetParams, params))
         if method == "thread/list":
-            return await self.service.list_threads(
-                validate_protocol_input(ThreadListParams, params)
-            )
+            return await self.service.list_threads(_params(ThreadListParams, params))
         if method == "thread/resume":
-            return await self.service.resume_thread(
-                validate_protocol_input(ThreadResumeParams, params)
-            )
+            return await self.service.resume_thread(_params(ThreadResumeParams, params))
         if method == "thread/fork":
-            return await self.service.fork_thread(
-                client, validate_protocol_input(ThreadForkParams, params)
-            )
+            return await self.service.fork_thread(client, _params(ThreadForkParams, params))
         if method == "thread/archive":
-            return await self.service.archive_thread(
-                client, validate_protocol_input(ThreadArchiveParams, params)
-            )
+            return await self.service.archive_thread(client, _params(ThreadArchiveParams, params))
         if method == "turn/start":
-            return await self.service.start_turn(
-                client, validate_protocol_input(TurnStartParams, params)
-            )
+            return await self.service.start_turn(client, _params(TurnStartParams, params))
         if method == "turn/retry":
-            return await self.service.retry_turn(
-                client, validate_protocol_input(TurnRetryParams, params)
-            )
+            return await self.service.retry_turn(client, _params(TurnRetryParams, params))
         if method == "turn/resume":
-            return await self.service.resume_turn(
-                client, validate_protocol_input(TurnResumeParams, params)
-            )
+            return await self.service.resume_turn(client, _params(TurnResumeParams, params))
         if method == "turn/cancel":
-            return await self.service.cancel_turn(
-                client, validate_protocol_input(TurnCancelParams, params)
-            )
+            return await self.service.cancel_turn(client, _params(TurnCancelParams, params))
+        if method == "turn/steer":
+            return await self.service.steer_turn(client, _params(TurnSteerParams, params))
         if method == "approval/respond":
             return await self.service.respond_approval(
-                client, validate_protocol_input(ApprovalRespondParams, params)
+                client, _params(ApprovalRespondParams, params)
+            )
+        if method == "question/respond":
+            return await self.service.respond_question(
+                client, _params(QuestionRespondParams, params)
+            )
+        if method == "events/next":
+            return await self.service.next_events(
+                _params(EventsNextParams, params),
+                include_deltas=self.item_deltas_enabled,
             )
         if method == "events/replay":
-            return await self.service.replay_events(
-                validate_protocol_input(EventsReplayParams, params)
-            )
+            return await self.service.replay_events(_params(EventsReplayParams, params))
+        if method == "artifact/read":
+            return await self.service.read_artifact(_params(ArtifactReadParams, params))
         raise AgentServiceError("method_not_found", "方法未实现")
 
     async def process_frame(self, frame: bytes) -> tuple[bytes, ...]:
@@ -253,18 +280,18 @@ class AgentProtocolServer:
             return (self._initialize(message),)
         if self.state is not ConnectionState.READY:
             return (self._error(message.id, -32012, "not_initialized", "连接尚未完成初始化"),)
-        if message.method not in SERVER_METHODS:
+        if message.method not in self.methods:
             return (self._error(message.id, -32601, "method_not_found", "协议方法不存在"),)
         try:
             result = await self._dispatch(message.method, message.params)
-        except ValidationError as error:
+        except InvalidProtocolParams as invalid:
             return (
                 self._error(
                     message.id,
                     -32602,
                     "invalid_params",
                     "协议参数无效",
-                    path=self._validation_path(error),
+                    path=self._validation_path(invalid.error),
                 ),
             )
         except AgentServiceError as error:

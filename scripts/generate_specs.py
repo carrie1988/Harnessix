@@ -10,7 +10,6 @@ from harnessix.agent.models import (
     CompactionWindow,
     Thread,
     ThreadArchiveRecord,
-    ThreadForkSnapshot,
 )
 from harnessix.api import create_app
 from harnessix.artifacts.contracts import (
@@ -98,7 +97,7 @@ from harnessix.execution.contracts import (
 )
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
-from harnessix.models.costs import CostReport, CostReportV2
+from harnessix.models.costs import CostReport, CostReportV2, CostReportV3
 from harnessix.models.pricing import PriceSnapshot
 from harnessix.patches.batch_approval_contracts import (
     ManagedPatchBatchApproval,
@@ -139,6 +138,7 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.protocol.contracts import (
     AgentCommandParams,
     AgentQueryParams,
+    EventsNextResult,
     EventsReplayResult,
     InitializeParams,
     InitializeResult,
@@ -193,8 +193,8 @@ def main() -> None:
     output.mkdir(exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v18.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v18.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v19.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v19.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
@@ -204,6 +204,7 @@ def main() -> None:
     write_json(output / "price-snapshot-v1.schema.json", PriceSnapshot.model_json_schema())
     write_json(output / "cost-report-v1.schema.json", CostReport.model_json_schema())
     write_json(output / "cost-report-v2.schema.json", CostReportV2.model_json_schema())
+    write_json(output / "cost-report-v3.schema.json", CostReportV3.model_json_schema())
     write_json(output / "model-smoke-config-v1.schema.json", SmokeConfig.model_json_schema())
     write_json(output / "model-smoke-report-v1.schema.json", SmokeReport.model_json_schema())
     write_json(
@@ -220,7 +221,6 @@ def main() -> None:
         ("compaction-runtime", CompactionRuntimeConfig),
         ("compaction-summary", CompactionSummary),
         ("compaction-window", CompactionWindow),
-        ("thread-fork", ThreadForkSnapshot),
         ("thread-archive", ThreadArchiveRecord),
         ("model-history-inspection", ModelHistoryInspection),
         ("tool-result-view-policy", ToolResultViewPolicy),
@@ -355,6 +355,7 @@ def main() -> None:
         ("agent-protocol-item", PublicItem),
         ("agent-protocol-event", PublicEvent),
         ("agent-protocol-replay-result", EventsReplayResult),
+        ("agent-protocol-next-result", EventsNextResult),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(

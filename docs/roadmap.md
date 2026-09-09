@@ -363,7 +363,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 10. 0.8：产品运行时与扩展
 
-状态：**实施中**。0.8.1 Agent Protocol v1与0.8.2 Headless App Server/Agent SDK已经完成本地验收；0.8.3～0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
+状态：**实施中**。0.8.1 Agent Protocol v1、0.8.2 Headless App Server/Agent SDK及0.8.3薄CLI与双向交互已经完成本地验收；0.8.4～0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
 
 ### 目标
 
@@ -373,7 +373,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 - [x] **0.8.1 Agent Protocol v1**：版本化Command/Query/Event、Thread/Turn/Item、事件游标、幂等请求、错误、未知字段和兼容策略；
 - [x] **0.8.2 Headless App Server与Agent SDK**：stdio JSONL基线、本地调用身份、Workspace绑定、优雅关闭、断线重连、事件续传、背压和Python Agent SDK；
-- [ ] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
+- [x] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
 - [ ] **0.8.4 MCP**：MCP Client、可选MCP Server、进程生命周期、能力快照、Schema漂移和所有Tool的Permission/Sandbox强制接入；
 - [ ] **0.8.5 Skills与Hooks**：来源、版本、渐进加载、生命周期Hook、冲突、超时、取消和供应链信任边界；
 - [ ] **0.8.6 Provider与配置产品化**：模型/Profile选择、能力诊断、Secret引用、配置迁移和安全切换；任何自动Fallback不得跨越已经暴露模型输出或工具调用的边界。
@@ -381,12 +381,12 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 ### 关键测试
 
 - [x] Protocol Schema兼容、旧客户端、未知字段和重复Command；
-- [ ] 客户端在任意事件前后断线，重连后不丢事件、不重复审批和副作用；
-- [ ] Steering、审批、提问、取消与对应Turn/Tool Call不会错配；
-- [ ] 慢客户端、背压、服务端重启和同时关闭不会损坏Session；
+- [x] 客户端在任意事件前后断线，重连后不丢事件、不重复审批和副作用；
+- [x] Steering、审批、提问、取消与对应Turn/Tool Call不会错配；
+- [x] 慢客户端、背压、服务端重启和同时关闭不会损坏Session；
 - [ ] MCP Server崩溃、超时、Schema变化和恶意Tool描述失败关闭；
 - [ ] 恶意Skill/Hook不能读取未授权Secret或绕过Tool/Sandbox；
-- [ ] 进程内、Headless和薄CLI模式对同一Transcript产生等价领域结果。
+- [x] 进程内、Headless和薄CLI模式对同一Transcript产生等价领域结果。
 
 ### 验收标准
 

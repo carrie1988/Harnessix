@@ -19,6 +19,8 @@ from harnessix.agent.models import (
     PlanContent,
     ProcessActionStateContent,
     ProcessApprovalRequestContent,
+    QuestionAnswerContent,
+    QuestionRequestContent,
     TextContent,
     Thread,
     ThreadArchived,
@@ -51,6 +53,8 @@ from harnessix.protocol.contracts import (
     PublicPlanContent,
     PublicPlanStep,
     PublicProcessStateContent,
+    PublicQuestionAnswerContent,
+    PublicQuestionRequestContent,
     PublicTextContent,
     PublicToolCallContent,
     PublicToolResultContent,
@@ -83,7 +87,7 @@ def _usage(value: Usage) -> PublicUsage:
 def _artifact(value: ArtifactRef | None) -> PublicArtifactRef | None:
     if value is None:
         return None
-    return PublicArtifactRef.model_validate(value.model_dump(mode="json"))
+    return PublicArtifactRef.model_validate(value.model_dump())
 
 
 def _decision(value: ApprovalRecord | None) -> PublicApprovalDecision | None:
@@ -159,6 +163,19 @@ def project_item(item: Item) -> PublicItem:
         | ProcessApprovalRequestContent,
     ):
         public = _approval(content)
+    elif isinstance(content, QuestionRequestContent):
+        public = PublicQuestionRequestContent(
+            question_id=content.question_id,
+            call_id=content.call_id,
+            question=content.question,
+            options=content.options,
+        )
+    elif isinstance(content, QuestionAnswerContent):
+        public = PublicQuestionAnswerContent(
+            question_id=content.question_id,
+            call_id=content.call_id,
+            answer=content.answer,
+        )
     elif isinstance(content, ProcessActionStateContent):
         public = PublicProcessStateContent(
             call_id=content.call_id,

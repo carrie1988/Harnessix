@@ -1,5 +1,40 @@
 {
   "$defs": {
+    "EventsReplayResult": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/PublicEvent"
+          },
+          "maxItems": 1000,
+          "title": "Events",
+          "type": "array"
+        },
+        "scannedThrough": {
+          "minimum": 0,
+          "title": "Scannedthrough",
+          "type": "integer"
+        },
+        "hasMore": {
+          "title": "Hasmore",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "threadId",
+        "events",
+        "scannedThrough",
+        "hasMore"
+      ],
+      "title": "EventsReplayResult",
+      "type": "object"
+    },
     "ItemPublicEvent": {
       "additionalProperties": false,
       "properties": {
@@ -507,6 +542,52 @@
         "content"
       ],
       "title": "PublicItem",
+      "type": "object"
+    },
+    "PublicItemDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "turnId": {
+          "format": "uuid",
+          "title": "Turnid",
+          "type": "string"
+        },
+        "itemId": {
+          "format": "uuid",
+          "title": "Itemid",
+          "type": "string"
+        },
+        "modelStep": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Modelstep",
+          "type": "integer"
+        },
+        "streamSequence": {
+          "minimum": 1,
+          "title": "Streamsequence",
+          "type": "integer"
+        },
+        "delta": {
+          "maxLength": 1000000,
+          "title": "Delta",
+          "type": "string"
+        }
+      },
+      "required": [
+        "threadId",
+        "turnId",
+        "itemId",
+        "modelStep",
+        "streamSequence",
+        "delta"
+      ],
+      "title": "PublicItemDelta",
       "type": "object"
     },
     "PublicPlanContent": {
@@ -1042,35 +1123,36 @@
   },
   "additionalProperties": false,
   "properties": {
-    "threadId": {
-      "format": "uuid",
-      "title": "Threadid",
-      "type": "string"
+    "replay": {
+      "$ref": "#/$defs/EventsReplayResult"
     },
-    "events": {
+    "deltas": {
       "items": {
-        "$ref": "#/$defs/PublicEvent"
+        "$ref": "#/$defs/PublicItemDelta"
       },
       "maxItems": 1000,
-      "title": "Events",
+      "title": "Deltas",
       "type": "array"
     },
-    "scannedThrough": {
-      "minimum": 0,
-      "title": "Scannedthrough",
-      "type": "integer"
+    "liveHasMore": {
+      "default": false,
+      "title": "Livehasmore",
+      "type": "boolean"
     },
-    "hasMore": {
-      "title": "Hasmore",
+    "liveGap": {
+      "default": false,
+      "title": "Livegap",
+      "type": "boolean"
+    },
+    "timedOut": {
+      "default": false,
+      "title": "Timedout",
       "type": "boolean"
     }
   },
   "required": [
-    "threadId",
-    "events",
-    "scannedThrough",
-    "hasMore"
+    "replay"
   ],
-  "title": "EventsReplayResult",
+  "title": "EventsNextResult",
   "type": "object"
 }

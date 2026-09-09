@@ -30,6 +30,8 @@ from harnessix.agent.models import (
     ProcessActionEffect,
     ProcessActionStateContent,
     ProcessApprovalRequestContent,
+    QuestionAnswerContent,
+    QuestionRequestContent,
     TextContent,
     Thread,
     ThreadArchived,
@@ -226,13 +228,60 @@ def _validate_process_result(turn: Turn, call: ToolCallContent, content: ToolRes
     require(content.outcome == expected, "Process结果结论与Action状态不一致")
 
 
-def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
+def _append_step_item_before_pending_steering(
+    thread: Thread, turn: Turn, item: Item
+) -> tuple[Item, ...]:
+    """模型输出按语义位于当前步骤内收到的Steering之前。"""
+
+    inspections = [
+        inspection
+        for inspection in turn.model_history_inspections
+        if inspection.model_step == turn.model_steps
+    ]
+    if len(inspections) != 1:
+        return (*turn.items, item)
+    inspection = inspections[0]
+    consumed = (
+        inspection.raw_history_items
+        if isinstance(inspection, ModelHistoryInspectionV2)
+        else inspection.history_items
+    )
+    current_history = history_items(thread)
+    if consumed > len(current_history):
+        return (*turn.items, item)
+    pending_steering = {
+        candidate.item_id
+        for candidate in current_history[consumed:]
+        if isinstance(candidate.content, TextContent) and candidate.content.kind == "user_message"
+    }
+    for index, candidate in enumerate(turn.items):
+        if candidate.item_id in pending_steering:
+            return (*turn.items[:index], item, *turn.items[index:])
+    return (*turn.items, item)
+
+
+def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStarted) -> Turn:
     require(all(i.item_id != payload.item_id for i in turn.items), "Item ID 已存在")
     content = payload.content
     if isinstance(content, TextContent):
         if content.kind == "user_message":
-            require(turn.status == TurnStatus.ACCEPTED, "用户输入只能在 Turn 接受时记录")
-            require(not turn.items, "同一 Turn 只能接受一份用户输入")
+            if turn.status == TurnStatus.ACCEPTED and not turn.items:
+                require(not turn.items, "Turn初始输入必须是首个Item")
+            else:
+                require(event.schema_version >= 19, "运行中Steering需要Agent Event v19")
+                require(
+                    turn.status
+                    in {
+                        TurnStatus.ACCEPTED,
+                        TurnStatus.PREPARING_CONTEXT,
+                        TurnStatus.CALLING_MODEL,
+                        TurnStatus.EXECUTING_TOOLS,
+                        TurnStatus.WAITING_APPROVAL,
+                        TurnStatus.WAITING_ACTION,
+                        TurnStatus.WAITING_INPUT,
+                    },
+                    "当前Turn状态不接受Steering",
+                )
         else:
             require(turn.status == TurnStatus.CALLING_MODEL, "模型 Item 只能在模型步骤内开始")
     elif isinstance(content, ToolCallContent):
@@ -289,6 +338,46 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
         require(bool(calls) and calls[0].call_id == content.call_id, "Process状态与当前调用不匹配")
         require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")
         _validate_process_state(thread, turn, calls[0], content)
+    elif isinstance(content, QuestionRequestContent):
+        calls = pending_calls(turn)
+        require(event.schema_version >= 19, "持久提问需要Agent Event v19")
+        require(turn.status == TurnStatus.EXECUTING_TOOLS, "提问只能在工具执行边界生成")
+        require(bool(calls) and calls[0].call_id == content.call_id, "提问与当前调用不匹配")
+        require(calls[0].tool == "ask_user", "提问只能来自ask_user工具")
+        require(
+            not any(
+                isinstance(item.content, QuestionRequestContent)
+                and item.content.call_id == content.call_id
+                for item in turn.items
+            ),
+            "当前调用已经生成提问",
+        )
+    elif isinstance(content, QuestionAnswerContent):
+        calls = pending_calls(turn)
+        questions = [
+            item.content
+            for item in turn.items
+            if isinstance(item.content, QuestionRequestContent)
+            and item.status == ItemStatus.COMPLETED
+            and item.content.question_id == content.question_id
+        ]
+        require(event.schema_version >= 19, "持久回答需要Agent Event v19")
+        require(turn.status == TurnStatus.WAITING_INPUT, "回答只能在等待输入状态提交")
+        require(len(questions) == 1, "回答缺少唯一提问")
+        require(
+            bool(calls)
+            and calls[0].call_id == content.call_id
+            and questions[0].call_id == content.call_id,
+            "回答与当前调用不匹配",
+        )
+        require(
+            not any(
+                isinstance(item.content, QuestionAnswerContent)
+                and item.content.question_id == content.question_id
+                for item in turn.items
+            ),
+            "提问已经答复",
+        )
     elif isinstance(content, PlanContent | CompactionContent):
         require(
             turn.status == TurnStatus.PREPARING_CONTEXT, "Plan/Compaction 只能在准备上下文时记录"
@@ -422,7 +511,15 @@ def _start_item(thread: Thread, turn: Turn, payload: ItemStarted) -> Turn:
                     "未经批准的调用不能成功",
                 )
     item = Item(item_id=payload.item_id, status=ItemStatus.STARTED, content=content)
-    return turn.model_copy(update={"items": (*turn.items, item)})
+    step_item = (isinstance(content, TextContent) and content.kind != "user_message") or isinstance(
+        content, ToolCallContent | ToolResultContent
+    )
+    items = (
+        _append_step_item_before_pending_steering(thread, turn, item)
+        if step_item
+        else (*turn.items, item)
+    )
+    return turn.model_copy(update={"items": items})
 
 
 def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
@@ -489,7 +586,12 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
     if turn.status != TurnStatus.CANCELLING:
         allowed.update({TurnStatus.CANCELLING, TurnStatus.FAILED, TurnStatus.INTERRUPTED})
     require(target in allowed, f"非法 Turn 状态转换：{turn.status} → {target}")
-    if turn.status == TurnStatus.CALLING_MODEL and target == TurnStatus.PREPARING_CONTEXT:
+    model_reentry = (
+        turn.status == TurnStatus.CALLING_MODEL and target == TurnStatus.PREPARING_CONTEXT
+    )
+    if not model_reentry:
+        require(payload.reason == "normal", "普通状态转换不能携带模型重入原因")
+    if model_reentry and payload.reason == "context_overflow":
         attempts = [attempt for attempt in turn.model_attempts if attempt.step == turn.model_steps]
         inspections = [
             inspection
@@ -517,6 +619,29 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
         require(len(history_items(thread)) == raw_items_before, "模型已输出语义Item，禁止压缩重试")
         require(not pending_calls(turn), "Context Overflow恢复时存在未结算调用")
         require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
+    elif model_reentry:
+        require(event.schema_version >= 19 and payload.reason == "steering", "模型重入原因无效")
+        inspections = [
+            inspection
+            for inspection in turn.model_history_inspections
+            if inspection.model_step == turn.model_steps
+        ]
+        history_count = (
+            inspections[0].raw_history_items
+            if len(inspections) == 1 and isinstance(inspections[0], ModelHistoryInspectionV2)
+            else inspections[0].history_items
+            if len(inspections) == 1
+            else -1
+        )
+        new_history = history_items(thread)[history_count:]
+        require(
+            any(
+                isinstance(item.content, TextContent) and item.content.kind == "user_message"
+                for item in new_history
+            ),
+            "Steering重入缺少新用户输入",
+        )
+        require(not pending_calls(turn), "存在工具调用时不提前Steering重入")
     if target in TERMINAL_TURNS:
         require(all(a.status != "running" for a in turn.accounted_attempts), "存在未结算模型尝试")
         require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
@@ -614,6 +739,37 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
         require(
             all(i.status != ItemStatus.STARTED for i in turn.items), "等待Action时存在未完成 Item"
         )
+    if target == TurnStatus.WAITING_INPUT:
+        calls = pending_calls(turn)
+        require(event.schema_version >= 19, "等待输入需要Agent Event v19")
+        require(bool(calls) and calls[0].tool == "ask_user", "等待输入缺少ask_user调用")
+        questions = [
+            item
+            for item in turn.items
+            if isinstance(item.content, QuestionRequestContent)
+            and item.content.call_id == calls[0].call_id
+        ]
+        require(
+            len(questions) == 1 and questions[0].status == ItemStatus.COMPLETED,
+            "等待输入缺少完成的提问",
+        )
+        require(all(i.status != ItemStatus.STARTED for i in turn.items), "等待输入时存在未完成Item")
+    if turn.status == TurnStatus.WAITING_INPUT and target == TurnStatus.EXECUTING_TOOLS:
+        calls = pending_calls(turn)
+        require(bool(calls), "回答之后缺少当前调用")
+        question_contents = [
+            item.content
+            for item in turn.items
+            if isinstance(item.content, QuestionRequestContent)
+            and item.content.call_id == calls[0].call_id
+        ]
+        answers = [
+            item.content
+            for item in turn.items
+            if isinstance(item.content, QuestionAnswerContent)
+            and item.content.call_id == calls[0].call_id
+        ]
+        require(len(question_contents) == len(answers) == 1, "等待输入没有唯一回答")
     if turn.status == TurnStatus.WAITING_APPROVAL and target == TurnStatus.EXECUTING_TOOLS:
         calls = pending_calls(turn)
         require(bool(calls), "审批之后缺少当前调用")
@@ -828,7 +984,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                 ),
                 "Item ID 在 Thread 内重复",
             )
-            turn = _start_item(thread, turn, payload)
+            turn = _start_item(thread, turn, event, payload)
         elif isinstance(payload, ItemFinished):
             turn = _finish_item(turn, event, payload)
         elif isinstance(payload, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished):

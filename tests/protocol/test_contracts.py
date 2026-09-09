@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from harnessix.protocol.compatibility import decode_known_notification
 from harnessix.protocol.contracts import (
     ClientInfo,
+    EventsNextResult,
     EventsReplayResult,
     InitializeParams,
     JsonRpcError,
@@ -19,6 +20,7 @@ from harnessix.protocol.contracts import (
     ProtocolLimits,
     PublicBudget,
     PublicEvent,
+    PublicItemDelta,
     PublicUsage,
     ServerCapabilities,
     ServerInfo,
@@ -170,6 +172,36 @@ def test_replay_accepts_cursor_gaps_but_rejects_reordering() -> None:
             scanned_through=9,
             has_more=False,
         )
+
+
+def test_next_events_rejects_cross_thread_or_duplicate_deltas() -> None:
+    thread_id = uuid4()
+    replay = EventsReplayResult(
+        thread_id=thread_id,
+        events=(),
+        scanned_through=0,
+        has_more=False,
+    )
+    delta = PublicItemDelta(
+        thread_id=thread_id,
+        turn_id=uuid4(),
+        item_id=uuid4(),
+        model_step=1,
+        stream_sequence=1,
+        delta="增量",
+    )
+    assert EventsNextResult(replay=replay, deltas=(delta,)).deltas == (delta,)
+    with pytest.raises(ValidationError):
+        EventsNextResult(
+            replay=replay,
+            deltas=(delta.model_copy(update={"thread_id": uuid4()}),),
+        )
+    with pytest.raises(ValidationError):
+        EventsNextResult(replay=replay, deltas=(delta, delta))
+    with pytest.raises(ValidationError):
+        EventsNextResult(replay=replay, deltas=(delta,), timed_out=True)
+    with pytest.raises(ValidationError):
+        EventsNextResult(replay=replay, live_gap=True, timed_out=True)
 
 
 def test_public_budget_and_limits_are_finite_and_bounded() -> None:

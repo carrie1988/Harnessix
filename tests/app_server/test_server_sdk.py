@@ -3,29 +3,48 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import os
 import sys
 import threading
 from collections.abc import Buffer
 from pathlib import Path
-from uuid import uuid4
+from unittest.mock import AsyncMock
+from uuid import UUID, uuid4
 
 import pytest
 
+from harnessix.agent.approvals import approval_for
+from harnessix.agent.models import ItemDelta, QuestionRequestContent
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.server import AgentProtocolServer, ConnectionState
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
-from harnessix.models.contracts import ResponseCompleted, ResponseStarted
+from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
-from harnessix.protocol.contracts import ThreadCreateParams, TurnResult, TurnStartParams
+from harnessix.protocol.contracts import (
+    ApprovalRespondParams,
+    EventsNextParams,
+    EventsNextResult,
+    EventsReplayResult,
+    PublicApprovalDecision,
+    QuestionRespondParams,
+    ThreadCreateParams,
+    TurnResult,
+    TurnStartParams,
+)
 from harnessix.protocol.projection import project_turn
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import (
     AgentClient,
+    AgentSDKError,
     InProcessAgentTransport,
     SubprocessAgentTransport,
 )
 from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.tools.runtime import CodingToolRuntime
+from tests.agent.helpers import RecordingTools, answer, tool_step
+from tests.artifacts.helpers import exercise, results
 
 
 def _request(method: str, params: dict[str, object], *, request_id: int = 1) -> bytes:
@@ -84,6 +103,7 @@ async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> No
             )
         )
         assert initialized["result"]["protocolVersion"] == "1.0"  # type: ignore[index]
+        assert not initialized["result"]["capabilities"]["itemDeltas"]  # type: ignore[index]
         assert server.state.value == ConnectionState.INITIALIZED_PENDING_ACK.value
         assert (
             await server.process_frame(
@@ -92,6 +112,37 @@ async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> No
             == ()
         )
         assert server.state.value == ConnectionState.READY.value
+
+
+async def test_sdk_serializes_concurrent_initialize_calls(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        server = AgentProtocolServer(await _service(runtime, store))
+        client = AgentClient(InProcessAgentTransport(server))
+        first, second = await asyncio.gather(client.initialize(), client.initialize())
+        assert first is second
+        await client.close()
+
+
+async def test_internal_validation_failure_is_not_reported_as_invalid_params(
+    tmp_path: Path, monkeypatch
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        service = await _service(runtime, store)
+        server = AgentProtocolServer(service)
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+
+        async def broken_projection(_params):
+            ThreadCreateParams(request_id="", workspace=str(tmp_path))
+            raise AssertionError("unreachable")
+
+        monkeypatch.setattr(service, "list_threads", broken_projection)
+        with pytest.raises(AgentSDKError) as error:
+            await client.list_threads()
+        assert error.value.code == "internal_error"
+        await client.close()
 
 
 async def test_agent_sdk_drives_turn_replay_and_duplicate_command(tmp_path: Path) -> None:
@@ -252,6 +303,57 @@ async def test_subprocess_notification_does_not_wait_for_response() -> None:
     await transport.close()
 
 
+async def test_subprocess_transport_routes_out_of_order_responses() -> None:
+    child = "\n".join(
+        (
+            "import json, sys",
+            "first = json.loads(sys.stdin.buffer.readline())",
+            "second = json.loads(sys.stdin.buffer.readline())",
+            "for request in (second, first):",
+            "    response = {'jsonrpc': '2.0', 'id': request['id'], "
+            "'result': {'method': request['method']}}",
+            "    print(json.dumps(response), flush=True)",
+        )
+    )
+    transport = SubprocessAgentTransport((sys.executable, "-c", child))
+    client = AgentClient(transport)
+    first = asyncio.create_task(client._send("first", {}))
+    await asyncio.sleep(0)
+    second = asyncio.create_task(client._send("second", {}))
+
+    assert await asyncio.gather(first, second) == [
+        {"method": "first"},
+        {"method": "second"},
+    ]
+    await client.close()
+
+
+async def test_subprocess_transport_fails_all_pending_on_malformed_response() -> None:
+    child = "\n".join(
+        (
+            "import sys",
+            "sys.stdin.buffer.readline()",
+            "sys.stdin.buffer.readline()",
+            "print('not-json', flush=True)",
+        )
+    )
+    transport = SubprocessAgentTransport((sys.executable, "-c", child))
+    first = asyncio.create_task(
+        transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"first","params":{}}\n')
+    )
+    await asyncio.sleep(0)
+    second = asyncio.create_task(
+        transport.exchange(b'{"jsonrpc":"2.0","id":2,"method":"second","params":{}}\n')
+    )
+    errors = await asyncio.gather(first, second, return_exceptions=True)
+
+    assert all(isinstance(error, AgentSDKError) for error in errors)
+    assert {error.code for error in errors if isinstance(error, AgentSDKError)} == {
+        "invalid_response"
+    }
+    await transport.close()
+
+
 def test_thread_create_rejects_relative_or_nul_workspace() -> None:
     with pytest.raises(ValueError):
         ThreadCreateParams(request_id="relative", workspace="relative")
@@ -287,6 +389,64 @@ async def test_stdio_uses_jsonl_and_closes_on_eof(tmp_path: Path) -> None:
         "id": 2,
         "result": {"threads": [], "nextCursor": None},
     }
+
+
+async def test_stdio_long_poll_does_not_block_concurrent_request(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    client_id = uuid4()
+    read_fd, write_fd = os.pipe()
+    incoming = os.fdopen(read_fd, "rb", buffering=0)
+    producer = os.fdopen(write_fd, "wb", buffering=0)
+    outgoing = io.BytesIO()
+    try:
+        async with AgentRuntime(store, FakeProvider()) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            cursor = (await store.events(thread.thread_id))[-1].sequence
+            server = AgentProtocolServer(await _service(runtime, store))
+            task = asyncio.create_task(run_stdio(server, incoming, outgoing))
+            producer.write(
+                _request(
+                    "initialize",
+                    {
+                        "protocolVersion": "1.0",
+                        "clientInfo": {"name": "multiplex-test", "version": "1"},
+                        "clientInstanceId": str(client_id),
+                    },
+                )
+                + b'{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}\n'
+                + _request(
+                    "events/next",
+                    EventsNextParams(
+                        thread_id=thread.thread_id,
+                        after_cursor=cursor,
+                        wait_ms=30_000,
+                    ).model_dump(mode="json", by_alias=True),
+                    request_id=2,
+                )
+                + _request("thread/list", {}, request_id=3)
+            )
+            producer.flush()
+
+            responses: dict[int, dict[str, object]] = {}
+            for _ in range(100):
+                responses = {
+                    value["id"]: value
+                    for line in outgoing.getvalue().splitlines()
+                    if isinstance((value := json.loads(line)).get("id"), int)
+                }
+                if 3 in responses:
+                    break
+                await asyncio.sleep(0.01)
+            assert 3 in responses
+            assert 2 not in responses
+
+            producer.close()
+            await asyncio.wait_for(task, timeout=2)
+            assert server.state is ConnectionState.CLOSED
+    finally:
+        if not producer.closed:
+            producer.close()
+        incoming.close()
 
 
 async def test_stdio_closes_slow_client_without_session_damage(tmp_path: Path) -> None:
@@ -329,3 +489,395 @@ async def test_stdio_closes_slow_client_without_session_damage(tmp_path: Path) -
             outgoing.release.set()
         assert server.state is ConnectionState.CLOSED
         assert await store.thread_ids() == []
+
+
+async def test_sdk_question_response_resumes_background_turn(tmp_path: Path) -> None:
+    provider = ScriptedProvider(
+        [
+            [
+                ResponseStarted(response_id="question"),
+                ToolCallCompleted(
+                    call_id="ask",
+                    tool="ask_user",
+                    arguments={"question": "选择环境", "options": ["测试", "生产"]},
+                ),
+                ResponseCompleted(finish_reason="tool_calls"),
+            ],
+            answer("继续完成"),
+        ]
+    )
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider, enable_questions=True) as runtime:
+        service = await _service(runtime, store)
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        thread = await client.create_thread(str(tmp_path), request_id="create-question")
+        accepted = await client.start_turn(thread.thread_id, "准备发布", request_id="turn-question")
+
+        for _ in range(50):
+            current = await client.get_thread(thread.thread_id)
+            if current.latest_turn is not None and current.latest_turn.status == "waiting_input":
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("Turn未进入等待输入")
+        internal = await store.get_thread(thread.thread_id)
+        request = next(
+            item.content
+            for item in internal.turns[-1].items
+            if isinstance(item.content, QuestionRequestContent)
+        )
+        responded = await client.respond_question(
+            QuestionRespondParams(
+                request_id="answer-question",
+                thread_id=thread.thread_id,
+                turn_id=accepted.turn_id,
+                question_id=request.question_id,
+                answer="生产",
+            )
+        )
+        assert responded.status == "executing_tools"
+        duplicate = await client.respond_question(
+            QuestionRespondParams(
+                request_id="answer-question",
+                thread_id=thread.thread_id,
+                turn_id=accepted.turn_id,
+                question_id=request.question_id,
+                answer="生产",
+            )
+        )
+        assert duplicate == responded
+        await service.close()
+        completed = await client.get_thread(thread.thread_id)
+        assert completed.latest_turn is not None
+        assert completed.latest_turn.status == "completed"
+        assert len(provider.requests) == 2
+        await client.close()
+
+
+async def test_completed_question_command_recovers_before_background_spawn(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    requests = SQLiteProtocolRequestStore(store.path)
+    client_id = uuid4()
+    params: QuestionRespondParams
+    provider = ScriptedProvider(
+        [
+            [
+                ResponseStarted(response_id="question"),
+                ToolCallCompleted(
+                    call_id="ask",
+                    tool="ask_user",
+                    arguments={"question": "选择环境"},
+                ),
+                ResponseCompleted(finish_reason="tool_calls"),
+            ],
+            answer("恢复完成"),
+        ]
+    )
+    async with AgentRuntime(store, provider, enable_questions=True) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        waiting = await runtime.run_turn(thread.thread_id, "准备发布", request_id="turn")
+        question = next(
+            item.content
+            for item in waiting.items
+            if isinstance(item.content, QuestionRequestContent)
+        )
+        params = QuestionRespondParams(
+            request_id="answer-before-spawn",
+            thread_id=thread.thread_id,
+            turn_id=waiting.turn_id,
+            question_id=question.question_id,
+            answer="生产",
+        )
+        await requests.claim(
+            client_id,
+            params.request_id,
+            "question/respond",
+            params.model_dump(mode="json", by_alias=True),
+        )
+        answered = await runtime.reply_question(
+            thread.thread_id,
+            waiting.turn_id,
+            question.question_id,
+            answer=params.answer,
+        )
+        await requests.complete(
+            client_id,
+            params.request_id,
+            TurnResult(turn=project_turn(answered)).model_dump(mode="json", by_alias=True),
+        )
+
+    resumed_provider = ScriptedProvider(
+        [
+            [
+                ResponseStarted(response_id="question"),
+                ToolCallCompleted(
+                    call_id="ask",
+                    tool="ask_user",
+                    arguments={"question": "选择环境"},
+                ),
+                ResponseCompleted(finish_reason="tool_calls"),
+            ],
+            answer("恢复完成"),
+        ]
+    )
+    async with AgentRuntime(store, resumed_provider, enable_questions=True) as runtime:
+        service = AgentApplicationService(runtime, store, requests)
+        client = AgentClient(
+            InProcessAgentTransport(AgentProtocolServer(service)),
+            client_instance_id=client_id,
+        )
+        await client.initialize()
+        duplicate = await client.respond_question(params)
+        assert duplicate.status == "executing_tools"
+        await service.close()
+        current = await client.get_thread(params.thread_id)
+        assert current.latest_turn is not None and current.latest_turn.status == "completed"
+        assert len(resumed_provider.requests) == 1
+        await client.close()
+
+
+async def test_events_next_delivers_live_delta_then_durable_replay(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    provider = ScriptedProvider([answer("流式文本")], delay_seconds=0.02)
+    async with AgentRuntime(store, provider) as runtime:
+        service = await _service(runtime, store)
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        initialized = await client.initialize()
+        assert initialized.capabilities.item_deltas
+        thread = await client.create_thread(str(tmp_path), request_id="create-stream")
+        cursor = thread.cursor
+        await client.start_turn(thread.thread_id, "输出文本", request_id="turn-stream")
+
+        seen_delta = False
+        seen_terminal = False
+        for _ in range(100):
+            page = await client.next_events(
+                thread.thread_id,
+                after_cursor=cursor,
+                wait_ms=100,
+                limit=100,
+            )
+            cursor = max(cursor, page.replay.scanned_through)
+            seen_delta = seen_delta or any(delta.delta == "流式文本" for delta in page.deltas)
+            seen_terminal = seen_terminal or any(
+                event.turn_id is not None
+                and event.data.type == "turn_state_changed"
+                and event.data.status == "completed"
+                for event in page.replay.events
+            )
+            if seen_delta and seen_terminal:
+                break
+        assert seen_delta and seen_terminal
+        timed_out = await client.next_events(
+            thread.thread_id,
+            after_cursor=cursor,
+            wait_ms=0,
+        )
+        assert timed_out.timed_out
+        replay = await client.replay_events(thread.thread_id, after_cursor=0, limit=100)
+        assert replay.scanned_through == cursor
+        await client.close()
+
+
+async def test_events_next_returns_progress_arriving_at_timeout_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        service = await _service(runtime, store)
+        progressed = EventsNextResult(
+            replay=EventsReplayResult(
+                thread_id=thread.thread_id,
+                events=(),
+                scanned_through=thread.sequence + 1,
+                has_more=False,
+            )
+        )
+        snapshot = AsyncMock(side_effect=[None, progressed])
+        monkeypatch.setattr(service, "_next_snapshot", snapshot)
+        result = await service.next_events(
+            EventsNextParams(
+                thread_id=thread.thread_id,
+                after_cursor=thread.sequence,
+                wait_ms=0,
+            )
+        )
+        assert result == progressed and not result.timed_out
+        assert snapshot.await_count == 2
+        await service.close()
+
+
+async def test_events_next_marks_bounded_delta_buffer_gap(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        cursor = (await store.events(thread.thread_id))[-1].sequence
+        service = await _service(runtime, store)
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        turn_id = uuid4()
+        item_id = uuid4()
+        for sequence in range(1, 1003):
+            service._receive_delta(
+                ItemDelta(
+                    thread_id=thread.thread_id,
+                    turn_id=turn_id,
+                    item_id=item_id,
+                    model_step=1,
+                    stream_sequence=sequence,
+                    delta=str(sequence),
+                )
+            )
+
+        first = await client.next_events(
+            thread.thread_id,
+            after_cursor=cursor,
+            wait_ms=0,
+            limit=10,
+        )
+        assert first.live_gap
+        assert first.live_has_more
+        assert [delta.stream_sequence for delta in first.deltas] == list(range(3, 13))
+        second = await client.next_events(
+            thread.thread_id,
+            after_cursor=cursor,
+            wait_ms=0,
+            limit=10,
+        )
+        assert not second.live_gap
+        assert second.live_has_more
+        assert [delta.stream_sequence for delta in second.deltas] == list(range(13, 23))
+        await client.close()
+
+
+async def test_events_next_omits_deltas_when_client_did_not_negotiate_them(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, FakeProvider()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        cursor = (await store.events(thread.thread_id))[-1].sequence
+        service = await _service(runtime, store)
+        server = AgentProtocolServer(service)
+        await server.process_frame(
+            _request(
+                "initialize",
+                {
+                    "protocolVersion": "1.0",
+                    "clientInfo": {"name": "no-delta", "version": "1"},
+                    "clientInstanceId": str(uuid4()),
+                },
+            )
+        )
+        await server.process_frame(
+            b'{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}\n'
+        )
+        service._receive_delta(
+            ItemDelta(
+                thread_id=thread.thread_id,
+                turn_id=uuid4(),
+                item_id=uuid4(),
+                model_step=1,
+                stream_sequence=1,
+                delta="不应下发",
+            )
+        )
+
+        response = _decoded(
+            await server.process_frame(
+                _request(
+                    "events/next",
+                    EventsNextParams(
+                        thread_id=thread.thread_id,
+                        after_cursor=cursor,
+                        wait_ms=0,
+                    ).model_dump(mode="json", by_alias=True),
+                    request_id=2,
+                )
+            )
+        )
+        result = response["result"]
+        assert isinstance(result, dict)
+        assert result["deltas"] == []
+        assert result["timedOut"] is True
+        await server.close()
+
+
+async def test_sdk_approval_response_drives_decided_turn(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider([tool_step("test.read"), answer("审批后完成")])
+    async with AgentRuntime(store, provider, tools) as runtime:
+        service = await _service(runtime, store)
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        thread = await client.create_thread(str(tmp_path), request_id="create-approval")
+        accepted = await client.start_turn(thread.thread_id, "读取文件", request_id="turn-approval")
+        for _ in range(50):
+            internal = await store.get_thread(thread.thread_id)
+            turn = internal.turns[-1]
+            if turn.status.value == "waiting_approval":
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("Turn未进入等待审批")
+        call = next(
+            item.content
+            for item in turn.items
+            if getattr(item.content, "kind", None) == "tool_call"
+        )
+        approval = approval_for(turn, call)
+        assert approval is not None
+        content = approval.content
+        responded = await client.respond_approval(
+            ApprovalRespondParams(
+                request_id="approve",
+                thread_id=thread.thread_id,
+                turn_id=accepted.turn_id,
+                approval_id=content.approval_id,
+                fingerprint=content.request_fingerprint,
+                decision=PublicApprovalDecision(outcome="approved", actor="cli-user"),
+            )
+        )
+        assert responded.status == "waiting_approval"
+        await service.close()
+        completed = await client.get_thread(thread.thread_id)
+        assert completed.latest_turn is not None
+        assert completed.latest_turn.status == "completed"
+        assert len(tools.calls) == 1
+        await client.close()
+
+
+async def test_artifact_read_is_advertised_only_with_scoped_reader(tmp_path: Path) -> None:
+    store, artifacts, _, thread, turn = await exercise(tmp_path, count=300)
+    reference = results(turn)[0].output["artifact"]
+    async with CodingToolRuntime(tmp_path / "repo", artifacts=artifacts) as tools:
+        async with AgentRuntime(
+            store,
+            FakeProvider(),
+            scoped_tools=tools,
+            artifacts=artifacts,
+        ) as runtime:
+            service = AgentApplicationService(
+                runtime,
+                store,
+                SQLiteProtocolRequestStore(store.path),
+                ScopedProtocolArtifactReader(store, artifacts, tools),
+            )
+            client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+            initialized = await client.initialize()
+            assert initialized.capabilities.artifact_pages
+            assert "artifact/read" in initialized.capabilities.methods
+            page = await client.read_artifact(
+                thread.thread_id,
+                UUID(reference["artifact_id"]),
+                limit=10,
+            )
+            assert page.artifact.records == 300
+            assert len(page.text.splitlines()) == 10
+            assert page.next_offset == 10
+            await client.close()

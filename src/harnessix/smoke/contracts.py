@@ -5,7 +5,7 @@ from typing import Literal, Self
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from harnessix.agent.errors import FailureCategory
-from harnessix.agent.models import Budget, TurnStatus
+from harnessix.agent.models import Budget, TurnStatusV18
 from harnessix.domain.models import ContractModel
 from harnessix.models.config import (
     AnthropicConfig,
@@ -98,7 +98,7 @@ class SmokeReport(ContractModel):
     scenario: Scenario | None = None
     execution: Execution = "sdk_default"
     reason: SmokeReason
-    turn_status: TurnStatus | None = None
+    turn_status: TurnStatusV18 | None = None
     failure_category: FailureCategory | None = None
     provider_failure: ResponseFailed | None = None
     attempts_started: int | None = Field(default=None, ge=0, strict=True)
@@ -115,7 +115,7 @@ class SmokeReport(ContractModel):
         if self.reason == "passed" and not (
             self.provider is not None
             and self.scenario is not None
-            and self.turn_status == TurnStatus.COMPLETED
+            and self.turn_status == TurnStatusV18.COMPLETED
             and self.failure_category is None
             and self.provider_failure is None
             and self.usage_complete

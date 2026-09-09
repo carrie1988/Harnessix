@@ -1058,3 +1058,28 @@ Git Push默认不注册。显式启用时需要同时装配：
 关闭顺序固定为停止接收新帧、等待后台Turn到宽限期、取消未完成后台驱动并等待Runtime持久结算、关闭stdout Writer。进程管理器应把非零退出、Writer失败和`client_too_slow`视为连接故障；恢复时复用原`clientInstanceId`和Command `requestId`，读取Thread Snapshot并从最后`scannedThrough`继续Replay，不能生成新requestId盲目重放写命令。
 
 本阶段不提供TCP/WebSocket、远程认证、服务端守护进程安装、实时事件通知或Artifact读取端口。子进程SDK必须以argv启动App Server，不经过Shell；完整启动装配、配置诊断和三平台发行物分别由0.8.6与0.9交付。
+
+## 0.8.3 薄CLI与双向交互部署
+
+0.8.3继续使用单客户端、父子进程stdio边界，但READY阶段允许最多协商值范围内的并发Request。App Server必须保持单Reader和单Writer：Reader只拆分并校验JSONL帧，请求任务可以乱序完成，所有Response经同一有界Outbox写stdout。子进程SDK必须保持唯一Response Reader并按JSON-RPC `id`结算待决Future；不能为每个请求各自读取stdout。进程关闭时先使App Server进入closing以唤醒`events/next`长轮询，再收敛请求和Writer。
+
+部署方需要持久保存三类客户端状态：稳定`clientInstanceId`、每个写命令的领域`requestId`、每个Thread最后确认的`scannedThrough`。JSON-RPC `id`只用于当前连接内归并，不得持久化代替领域幂等键。重连后先调用`thread/resume`，再从已确认游标Replay；薄CLI为了重建审批和问题会从游标0读取公开Item，但只显示目标游标后的事件。
+
+`events/next`最长等待30秒，持久Replay始终优先。live-only Delta每个Thread最多保留1000条；出现`liveGap`时客户端必须停止拼接受影响Item并等待持久`item_finished`。没有协商`itemDeltas`的客户端只接收Replay。部署监控应分别记录长轮询超时、Delta缺口、`client_too_slow`、未知Response ID和子进程EOF，不能把正常长轮询超时记录成服务故障。
+
+持久提问默认关闭，只有宿主显式以`AgentRuntime(enable_questions=True)`装配时才注册`ask_user`。问题等待继续消耗Turn墙钟预算；过期后恢复将Turn结算为`time_budget_exceeded`。审批和提问命令必须复用原Question/Approval、Turn、Thread及请求指纹，客户端不得基于显示文本重建身份。
+
+`artifact/read`只有在宿主装配`ScopedProtocolArtifactReader`时才被协商和广告。Reader从Thread取得Workspace并重新获取当前`ArtifactAccessScope`，单页最多200条、24 KiB；数据库文件不得直接暴露给CLI。Diff审批必须先完整读取计划Artifact，再提交原Approval指纹。
+
+薄CLI通过下列形式启动协议宿主，不调用Shell：
+
+```bash
+harnessix agent \
+  --server-program /absolute/path/to/harnessix-app-server \
+  --server-arg=--config \
+  --server-arg=/absolute/path/to/config.toml \
+  --client-instance-id 00000000-0000-4000-8000-000000000001 \
+  follow THREAD_UUID
+```
+
+当前仓库提供协议服务、SDK和薄CLI边界，不提供已配置Provider的内置stdio启动装配；该装配、Secret引用、Profile诊断和配置迁移属于0.8.6。0.8.3不应把自定义测试宿主包装成正式发行入口。

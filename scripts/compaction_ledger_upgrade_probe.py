@@ -102,20 +102,20 @@ async def main(mode, root):
         assert before == state(store.path)
         print("v13 reader拒绝migration16及后续版本且未修改数据库")
         return
-    assert EventDraft.model_fields["schema_version"].default == 18
+    assert EventDraft.model_fields["schema_version"].default == 19
     original = json.loads(metadata.read_text())
     await store.initialize()
     after = state(store.path)
     assert after["agent_events"] == before["agent_events"]
     assert after["agent_threads"] == before["agent_threads"]
     assert after["agent_migrations"][:15] == before["agent_migrations"][:15]
-    assert len(after["agent_migrations"]) == 19
+    assert len(after["agent_migrations"]) == 22
     thread_id = UUID(original["thread_id"])
     source = await store.get_thread(thread_id)
     assert source == replay(await store.events(thread_id))
     if mode == "upgrade":
         assert not source.turns[-1].compactions
-        print("当前wheel仅追加migration16-19；v13历史原字节保留且Replay一致")
+        print("当前wheel仅追加migration16-22；v13历史原字节保留且Replay一致")
         return
     assert mode == "append"
     from harnessix.agent.usage import (

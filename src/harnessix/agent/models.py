@@ -85,12 +85,34 @@ class TurnStatus(StrEnum):
     EXECUTING_TOOLS = "executing_tools"
     WAITING_APPROVAL = "waiting_approval"
     WAITING_ACTION = "waiting_action"
+    WAITING_INPUT = "waiting_input"
     FINALIZING = "finalizing"
     CANCELLING = "cancelling"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
     INTERRUPTED = "interrupted"
+
+
+class TurnStatusV18(StrEnum):
+    # 已发布辅助报告使用的冻结状态集合；新状态必须发布新报告版本。
+    ACCEPTED = "accepted"
+    PREPARING_CONTEXT = "preparing_context"
+    CALLING_MODEL = "calling_model"
+    EXECUTING_TOOLS = "executing_tools"
+    WAITING_APPROVAL = "waiting_approval"
+    WAITING_ACTION = "waiting_action"
+    FINALIZING = "finalizing"
+    CANCELLING = "cancelling"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    INTERRUPTED = "interrupted"
+
+
+# 保持历史JSON Schema的定义名；Python符号名明确标识冻结边界。
+TurnStatusV18.__name__ = "TurnStatus"
+TurnStatusV18.__qualname__ = "TurnStatus"
 
 
 TERMINAL_TURNS = frozenset(
@@ -105,9 +127,14 @@ TURN_TRANSITIONS = {
         TurnStatus.EXECUTING_TOOLS,
         TurnStatus.FINALIZING,
     },
-    TurnStatus.EXECUTING_TOOLS: {TurnStatus.PREPARING_CONTEXT, TurnStatus.WAITING_APPROVAL},
+    TurnStatus.EXECUTING_TOOLS: {
+        TurnStatus.PREPARING_CONTEXT,
+        TurnStatus.WAITING_APPROVAL,
+        TurnStatus.WAITING_INPUT,
+    },
     TurnStatus.WAITING_APPROVAL: {TurnStatus.EXECUTING_TOOLS, TurnStatus.WAITING_ACTION},
     TurnStatus.WAITING_ACTION: {TurnStatus.EXECUTING_TOOLS},
+    TurnStatus.WAITING_INPUT: {TurnStatus.EXECUTING_TOOLS},
     TurnStatus.FINALIZING: {TurnStatus.COMPLETED},
     TurnStatus.CANCELLING: {TurnStatus.CANCELLED, TurnStatus.INTERRUPTED},
 }
@@ -135,6 +162,40 @@ class ToolCallContent(ContractModel):
     arguments: dict[str, JsonValue] = Field(default_factory=dict)
     requires_approval: bool = False
     tool_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
+class AskUserInput(ContractModel):
+    question: str = Field(min_length=1, max_length=4000)
+    options: tuple[str, ...] = Field(default_factory=tuple, max_length=8)
+
+    @field_validator("options")
+    @classmethod
+    def valid_options(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(set(value)) != len(value) or any(
+            not option or len(option) > 500 for option in value
+        ):
+            raise ValueError("提问选项必须唯一且长度有效")
+        return value
+
+
+class QuestionRequestContent(ContractModel):
+    kind: Literal["question_request"] = "question_request"
+    question_id: UUID
+    call_id: UUID
+    question: str = Field(min_length=1, max_length=4000)
+    options: tuple[str, ...] = Field(default_factory=tuple, max_length=8)
+
+    @field_validator("options")
+    @classmethod
+    def valid_options(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return AskUserInput.valid_options(value)
+
+
+class QuestionAnswerContent(ContractModel):
+    kind: Literal["question_answer"] = "question_answer"
+    question_id: UUID
+    call_id: UUID
+    answer: str = Field(min_length=1, max_length=4000)
 
 
 class PatchEffect(ContractModel):
@@ -394,6 +455,8 @@ ItemContent = Annotated[
     | PatchBatchApprovalRequestContent
     | ProcessApprovalRequestContent
     | ProcessActionStateContent
+    | QuestionRequestContent
+    | QuestionAnswerContent
     | PlanContent
     | CompactionContent
     | ErrorContent,
@@ -618,7 +681,7 @@ class ThreadCreated(ContractModel):
     @field_validator("workspace")
     @classmethod
     def absolute_workspace(cls, value: str) -> str:
-        if not Path(value).is_absolute():
+        if "\x00" in value or not Path(value).is_absolute():
             raise ValueError("Workspace 必须使用绝对路径")
         return value
 
@@ -631,7 +694,7 @@ class ThreadForked(ContractModel):
     @field_validator("workspace")
     @classmethod
     def absolute_workspace(cls, value: str) -> str:
-        if not Path(value).is_absolute():
+        if "\x00" in value or not Path(value).is_absolute():
             raise ValueError("Workspace 必须使用绝对路径")
         return value
 
@@ -655,6 +718,7 @@ class TurnStateChanged(ContractModel):
     type: Literal["turn_state_changed"] = "turn_state_changed"
     status: TurnStatus
     error: AgentFailure | None = None
+    reason: Literal["normal", "context_overflow", "steering"] = "normal"
 
 
 class ItemStarted(ContractModel):
@@ -709,7 +773,7 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] = 18
+    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] = 19
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -718,6 +782,8 @@ class EventDraft(ContractModel):
     @model_serializer(mode="wrap")
     def serialize_event(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         data: dict[str, Any] = handler(self)
+        if self.schema_version < 19 and isinstance(self.payload, TurnStateChanged):
+            data.get("payload", {}).pop("reason", None)
         if self.schema_version < 18 and isinstance(self.payload, TurnStarted):
             data.get("payload", {}).pop("execution_mode", None)
         if self.schema_version < 17 and isinstance(self.payload, TurnStarted):
@@ -739,6 +805,15 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
+        if self.schema_version < 19 and isinstance(self.payload, ItemStarted | ItemFinished):
+            if isinstance(self.payload.content, QuestionRequestContent | QuestionAnswerContent):
+                raise ValueError("持久提问需要Agent Event v19")
+        if (
+            self.schema_version < 19
+            and isinstance(self.payload, TurnStateChanged)
+            and (self.payload.reason != "normal" or self.payload.status == TurnStatus.WAITING_INPUT)
+        ):
+            raise ValueError("交互状态需要Agent Event v19")
         if (
             self.schema_version < 18
             and isinstance(self.payload, TurnStarted)

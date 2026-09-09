@@ -382,6 +382,82 @@
       "title": "PublicProcessStateContent",
       "type": "object"
     },
+    "PublicQuestionAnswerContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "question_answer",
+          "default": "question_answer",
+          "title": "Kind",
+          "type": "string"
+        },
+        "questionId": {
+          "format": "uuid",
+          "title": "Questionid",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "questionId",
+        "callId",
+        "answer"
+      ],
+      "title": "PublicQuestionAnswerContent",
+      "type": "object"
+    },
+    "PublicQuestionRequestContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "question_request",
+          "default": "question_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "questionId": {
+          "format": "uuid",
+          "title": "Questionid",
+          "type": "string"
+        },
+        "callId": {
+          "format": "uuid",
+          "title": "Callid",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "questionId",
+        "callId",
+        "question"
+      ],
+      "title": "PublicQuestionRequestContent",
+      "type": "object"
+    },
     "PublicTextContent": {
       "additionalProperties": false,
       "properties": {
@@ -564,6 +640,8 @@
           "error": "#/$defs/PublicErrorContent",
           "plan": "#/$defs/PublicPlanContent",
           "process_action_state": "#/$defs/PublicProcessStateContent",
+          "question_answer": "#/$defs/PublicQuestionAnswerContent",
+          "question_request": "#/$defs/PublicQuestionRequestContent",
           "reasoning_summary": "#/$defs/PublicTextContent",
           "tool_call": "#/$defs/PublicToolCallContent",
           "tool_result": "#/$defs/PublicToolResultContent",
@@ -583,6 +661,12 @@
         },
         {
           "$ref": "#/$defs/PublicApprovalRequestContent"
+        },
+        {
+          "$ref": "#/$defs/PublicQuestionRequestContent"
+        },
+        {
+          "$ref": "#/$defs/PublicQuestionAnswerContent"
         },
         {
           "$ref": "#/$defs/PublicProcessStateContent"

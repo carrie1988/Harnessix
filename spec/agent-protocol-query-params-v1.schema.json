@@ -35,6 +35,41 @@
       "title": "ArtifactReadParams",
       "type": "object"
     },
+    "EventsNextParams": {
+      "additionalProperties": false,
+      "properties": {
+        "threadId": {
+          "format": "uuid",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "afterCursor": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Aftercursor",
+          "type": "integer"
+        },
+        "waitMs": {
+          "default": 30000,
+          "maximum": 30000,
+          "minimum": 0,
+          "title": "Waitms",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 256,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "threadId"
+      ],
+      "title": "EventsNextParams",
+      "type": "object"
+    },
     "EventsReplayParams": {
       "additionalProperties": false,
       "properties": {
@@ -146,6 +181,9 @@
     },
     {
       "$ref": "#/$defs/EventsReplayParams"
+    },
+    {
+      "$ref": "#/$defs/EventsNextParams"
     },
     {
       "$ref": "#/$defs/ArtifactReadParams"

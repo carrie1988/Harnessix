@@ -15,6 +15,7 @@ from harnessix.agent.models import (
     ToolResultContent,
     Turn,
     TurnStatus,
+    TurnStatusV18,
 )
 from harnessix.agent.ports import NoTools
 from harnessix.agent.reducer import get_turn, replay
@@ -131,7 +132,7 @@ def _report(
         else "check_failed"
         if turn.status == TurnStatus.COMPLETED
         else "runtime_failed",
-        turn_status=turn.status,
+        turn_status=TurnStatusV18(turn.status),
         failure_category=turn.error.category if turn.error else None,
         provider_failure=provider_failure,
         attempts_started=len(turn.model_attempts),

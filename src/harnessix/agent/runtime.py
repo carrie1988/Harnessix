@@ -29,6 +29,7 @@ from harnessix.agent.models import (
     AgentFailure,
     ApprovalContent,
     ApprovalRequestContent,
+    AskUserInput,
     Budget,
     CompactionWindowActivated,
     ErrorContent,
@@ -44,6 +45,8 @@ from harnessix.agent.models import (
     PatchBatchApprovalRequestContent,
     ProcessActionStateContent,
     ProcessApprovalRequestContent,
+    QuestionAnswerContent,
+    QuestionRequestContent,
     TextContent,
     Thread,
     ThreadArchived,
@@ -115,6 +118,7 @@ from harnessix.domain.models import (
     ApprovalRecord,
     EffectClass,
     RiskLevel,
+    ToolDescriptor,
     TraceContext,
     utc_now,
 )
@@ -145,6 +149,24 @@ RETRY_INSTRUCTIONS = (
 )
 
 
+def _question_resume_safe(turn: Turn) -> bool:
+    answers = [
+        item.content
+        for item in turn.items
+        if item.status == ItemStatus.COMPLETED and isinstance(item.content, QuestionAnswerContent)
+    ]
+    if not answers:
+        return False
+    latest = answers[-1]
+    return any(
+        item.status == ItemStatus.COMPLETED
+        and isinstance(item.content, ToolResultContent)
+        and item.content.call_id == latest.call_id
+        and item.content.outcome == "succeeded"
+        for item in turn.items
+    )
+
+
 class AgentRuntime:
     """进程内 Kernel 宿主；不承担 CLI、模型 SDK、Shell 或 Sandbox 职责。"""
 
@@ -164,6 +186,7 @@ class AgentRuntime:
         artifact_access: ArtifactAccessScope | None = None,
         batch_diffs: BatchDiffPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
+        enable_questions: bool = False,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
         max_parallel_tools: int = 4,
@@ -175,6 +198,8 @@ class AgentRuntime:
     ) -> None:
         if type(max_parallel_tools) is not int or not 1 <= max_parallel_tools <= 16:
             raise KernelError("tool_concurrency_invalid", "并行工具上限必须在1到16之间")
+        if type(enable_questions) is not bool:
+            raise KernelError("question_runtime_invalid", "提问能力开关必须是布尔值")
         if tools is not None and scoped_tools is not None:
             raise KernelError("tool_runtime_conflict", "旧工具入口与 Scoped 入口不能同时配置")
         if context is not None and async_context is not None:
@@ -256,6 +281,23 @@ class AgentRuntime:
                 "Process Artifact发布器必须绑定同一Session和原进程端口",
             )
         self._process_artifacts = process_artifacts
+        self._questions_enabled = enable_questions
+        if enable_questions:
+            definitions = (
+                *definitions,
+                ToolDescriptor(
+                    name="ask_user",
+                    version="harnessix.ask-user/v1",
+                    description="向用户提出一个阻塞性问题；只在缺少关键决策时使用。",
+                    input_schema=AskUserInput.model_json_schema(),
+                    effect_class=EffectClass.READ_ONLY,
+                    risk_level=RiskLevel.LOW,
+                    requires_idempotency=False,
+                    requires_approval=False,
+                    supports_reconciliation=False,
+                    supports_parallel_calls=False,
+                ),
+            )
         verifiers = tuple(
             verifier
             for verifier in (
@@ -284,6 +326,7 @@ class AgentRuntime:
             raise KernelError("duplicate_tool", "Tool 名称重复")
         self._definitions = {d.name: d.model_copy(deep=True) for d in definitions}
         self._on_delta = on_delta or (lambda _: None)
+        self._delta_listeners: set[Callable[[ItemDelta], None]] = set()
         self._fault = fault or (lambda _: None)
         self._owner: AbstractAsyncContextManager[None] | None = None
         self._open = False
@@ -348,6 +391,21 @@ class AgentRuntime:
             if turn.status == TurnStatus.ACCEPTED and turn.execution_mode == "deferred":
                 operation.finish(turn.status.value)
                 return
+            if turn.status == TurnStatus.WAITING_INPUT:
+                if remaining_seconds(turn) > 0:
+                    operation.finish(turn.status.value)
+                    return
+                recovered = await self._finish(
+                    thread.thread_id,
+                    turn.turn_id,
+                    TurnStatus.FAILED,
+                    AgentFailure(code="time_budget_exceeded", message="Turn 时间预算耗尽"),
+                )
+                operation.finish(recovered.status.value, recovered.error)
+                return
+            if turn.status == TurnStatus.EXECUTING_TOOLS and _question_resume_safe(turn):
+                operation.finish(turn.status.value)
+                return
             calls = pending_calls(turn)
             if (
                 turn.status == TurnStatus.EXECUTING_TOOLS
@@ -365,11 +423,13 @@ class AgentRuntime:
                 if self._processes is None:
                     operation.finish(turn.status.value)
                     return
-                recovered = await self._execute_calls(thread.thread_id, turn.turn_id, CancelToken())
-                current = recovered or get_turn(
+                call_result = await self._execute_calls(
+                    thread.thread_id, turn.turn_id, CancelToken()
+                )
+                current = call_result or get_turn(
                     await self.store.get_thread(thread.thread_id), turn.turn_id
                 )
-                if recovered is not None:
+                if call_result is not None:
                     operation.finish(current.status.value)
                     return
                 turn = current
@@ -442,6 +502,25 @@ class AgentRuntime:
 
     def _lock(self, thread_id: UUID) -> asyncio.Lock:
         return self._locks.setdefault(thread_id, asyncio.Lock())
+
+    def subscribe_deltas(self, listener: Callable[[ItemDelta], None]) -> Callable[[], None]:
+        """订阅live-only文本增量；持久恢复仍以ItemFinished和Replay为准。"""
+
+        self._delta_listeners.add(listener)
+
+        def unsubscribe() -> None:
+            self._delta_listeners.discard(listener)
+
+        return unsubscribe
+
+    def _emit_delta(self, delta: ItemDelta) -> None:
+        self._on_delta(delta)
+        for listener in tuple(self._delta_listeners):
+            try:
+                listener(delta)
+            except Exception:
+                # live-only消费者故障不能破坏Provider流或持久Session。
+                continue
 
     async def create_thread(self, workspace: str, *, thread_id: UUID | None = None) -> Thread:
         self._ensure_open()
@@ -561,8 +640,19 @@ class AgentRuntime:
                 expected_sequence=thread.sequence,
             )
 
-    async def _state(self, thread_id: UUID, turn_id: UUID, status: TurnStatus) -> Thread:
-        return await self._commit(thread_id, turn_id, [TurnStateChanged(status=status)])
+    async def _state(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        status: TurnStatus,
+        *,
+        reason: Literal["normal", "context_overflow", "steering"] = "normal",
+    ) -> Thread:
+        return await self._commit(
+            thread_id,
+            turn_id,
+            [TurnStateChanged(status=status, reason=reason)],
+        )
 
     async def _accept(
         self,
@@ -783,21 +873,45 @@ class AgentRuntime:
         token = CancelToken()
         task = asyncio.current_task()
         assert task is not None
+        expire_waiting_input = False
         async with self._lock(thread_id):
             turn = get_turn(await self.store.get_thread(thread_id), turn_id)
             if turn.status in TERMINAL_TURNS:
                 return turn
-            if turn.status not in {
+            if turn.status == TurnStatus.WAITING_INPUT:
+                if remaining_seconds(turn) > 0:
+                    return turn
+                expire_waiting_input = True
+            elif turn.status not in {
                 TurnStatus.ACCEPTED,
+                TurnStatus.EXECUTING_TOOLS,
                 TurnStatus.WAITING_APPROVAL,
                 TurnStatus.WAITING_ACTION,
             }:
                 raise KernelError("turn_not_resumable", "仅可从持久接受或等待边界继续")
-            if turn.status == TurnStatus.WAITING_ACTION and self._processes is None:
+            if (
+                not expire_waiting_input
+                and turn.status == TurnStatus.EXECUTING_TOOLS
+                and not _question_resume_safe(turn)
+            ):
+                raise KernelError("turn_not_resumable", "工具执行状态缺少安全的提问回答边界")
+            if (
+                not expire_waiting_input
+                and turn.status == TurnStatus.WAITING_ACTION
+                and self._processes is None
+            ):
                 raise KernelError("turn_not_resumable", "Process Action运行时尚未配置")
-            if turn_id in self._active:
+            if not expire_waiting_input and turn_id in self._active:
                 raise KernelError("turn_busy", "Turn 已在执行")
-            self._active[turn_id] = (thread_id, token, task)
+            if not expire_waiting_input:
+                self._active[turn_id] = (thread_id, token, task)
+        if expire_waiting_input:
+            return await self._finish(
+                thread_id,
+                turn_id,
+                TurnStatus.FAILED,
+                AgentFailure(code="time_budget_exceeded", message="Turn 时间预算耗尽"),
+            )
         try:
             with self._telemetry.operation(
                 "turn",
@@ -1080,6 +1194,164 @@ class AgentRuntime:
             result = await self._cancel(thread_id, turn_id)
             operation.finish(result.status.value, result.error)
             return result
+
+    async def steer_turn(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        text: str,
+        *,
+        request_id: str,
+    ) -> Turn:
+        """把用户补充输入原子追加到当前Turn；不创建新Turn或取消当前Provider。"""
+
+        self._ensure_open()
+        if not request_id or len(request_id) > 256:
+            raise KernelError("steering_invalid", "Steering request_id长度必须为1到256")
+        if not text or len(text) > 1_000_000:
+            raise KernelError("steering_invalid", "Steering正文长度必须为1到1000000")
+        content = TextContent(kind="user_message", text=text)
+        item_id = uuid5(turn_id, f"harnessix.turn-steering/v1:{request_id}")
+        async with self._lock(thread_id):
+            thread = await self.store.get_thread(thread_id)
+            turn = get_turn(thread, turn_id)
+            if turn.status not in {
+                TurnStatus.ACCEPTED,
+                TurnStatus.PREPARING_CONTEXT,
+                TurnStatus.CALLING_MODEL,
+                TurnStatus.EXECUTING_TOOLS,
+                TurnStatus.WAITING_APPROVAL,
+                TurnStatus.WAITING_ACTION,
+                TurnStatus.WAITING_INPUT,
+            }:
+                raise KernelError("steering_closed", "Turn已经关闭，不再接受Steering")
+            existing = next((item for item in turn.items if item.item_id == item_id), None)
+            if existing is not None:
+                if existing.status != ItemStatus.COMPLETED or existing.content != content:
+                    raise KernelError("steering_conflict", "Steering身份已经绑定其他输入")
+                return turn
+            updated = await self.store.append(
+                thread_id,
+                [
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemStarted(item_id=item_id, content=content),
+                    ),
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemFinished(
+                            item_id=item_id,
+                            content=content,
+                            status=ItemStatus.COMPLETED,
+                        ),
+                    ),
+                ],
+                expected_sequence=thread.sequence,
+            )
+            return get_turn(updated, turn_id)
+
+    async def reply_question(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        question_id: UUID,
+        *,
+        answer: str,
+    ) -> Turn:
+        """把Question、Answer和ask_user Tool Result按同一Session事务结算。"""
+
+        self._ensure_open()
+        if not self._questions_enabled:
+            raise KernelError("question_not_enabled", "当前Runtime未启用提问能力")
+        if not answer or len(answer) > 4000:
+            raise KernelError("question_answer_invalid", "提问回答长度必须为1到4000")
+        async with self._lock(thread_id):
+            thread = await self.store.get_thread(thread_id)
+            turn = get_turn(thread, turn_id)
+            question_item = next(
+                (
+                    item
+                    for item in turn.items
+                    if isinstance(item.content, QuestionRequestContent)
+                    and item.content.question_id == question_id
+                ),
+                None,
+            )
+            if question_item is None:
+                raise KernelError("question_not_found", "提问请求不存在")
+            assert isinstance(question_item.content, QuestionRequestContent)
+            existing = next(
+                (
+                    item.content
+                    for item in turn.items
+                    if isinstance(item.content, QuestionAnswerContent)
+                    and item.content.question_id == question_id
+                ),
+                None,
+            )
+            if existing is not None:
+                if existing.answer != answer:
+                    raise KernelError("question_conflict", "提问已经绑定其他回答")
+                return turn
+            if (
+                turn.status != TurnStatus.WAITING_INPUT
+                or question_item.status != ItemStatus.COMPLETED
+            ):
+                raise KernelError("question_closed", "提问请求已经关闭")
+            if remaining_seconds(turn) <= 0:
+                raise KernelError("question_expired", "提问已经超过Turn时间预算")
+            calls = pending_calls(turn)
+            if not calls or calls[0].call_id != question_item.content.call_id:
+                raise KernelError("question_mismatch", "提问与当前Tool Call不匹配")
+            call = calls[0]
+            self._validate_tool_contract(call)
+            answer_content = QuestionAnswerContent(
+                question_id=question_id,
+                call_id=call.call_id,
+                answer=answer,
+            )
+            result = ToolResultContent(
+                call_id=call.call_id,
+                outcome="succeeded",
+                output={"answer": answer},
+            )
+            answer_item_id = uuid5(question_id, "harnessix.question-answer/v1")
+            result_item_id = uuid5(question_id, "harnessix.question-result/v1")
+            updated = await self.store.append(
+                thread_id,
+                [
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemStarted(item_id=answer_item_id, content=answer_content),
+                    ),
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemFinished(
+                            item_id=answer_item_id,
+                            content=answer_content,
+                            status=ItemStatus.COMPLETED,
+                        ),
+                    ),
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=TurnStateChanged(status=TurnStatus.EXECUTING_TOOLS),
+                    ),
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemStarted(item_id=result_item_id, content=result),
+                    ),
+                    EventDraft(
+                        turn_id=turn_id,
+                        payload=ItemFinished(
+                            item_id=result_item_id,
+                            content=result,
+                            status=ItemStatus.COMPLETED,
+                        ),
+                    ),
+                ],
+                expected_sequence=thread.sequence,
+            )
+            return get_turn(updated, turn_id)
 
     async def _cancel(self, thread_id: UUID, turn_id: UUID) -> Turn:
         self._ensure_open()
@@ -1772,6 +2044,36 @@ class AgentRuntime:
                     )
                 raise KernelError(failure.code, failure.message) from None
 
+    async def _close_model_step(self, request: ModelRequest) -> TurnStatus:
+        """在线程CAS内决定完成或消费运行中Steering，避免终结竞态。"""
+
+        history_ids = {item.item_id for item in request.history}
+        async with self._lock(request.thread_id):
+            thread = await self.store.get_thread(request.thread_id)
+            turn = get_turn(thread, request.turn_id)
+            if pending_calls(turn):
+                raise KernelError("model_step_not_settled", "存在Tool Call时不能终结模型步骤")
+            steered = any(
+                item.item_id not in history_ids
+                and item.status == ItemStatus.COMPLETED
+                and isinstance(item.content, TextContent)
+                and item.content.kind == "user_message"
+                for item in turn.items
+            )
+            target = TurnStatus.PREPARING_CONTEXT if steered else TurnStatus.FINALIZING
+            reason: Literal["normal", "steering"] = "steering" if steered else "normal"
+            updated = await self.store.append(
+                request.thread_id,
+                [
+                    EventDraft(
+                        turn_id=request.turn_id,
+                        payload=TurnStateChanged(status=target, reason=reason),
+                    )
+                ],
+                expected_sequence=thread.sequence,
+            )
+            return get_turn(updated, request.turn_id).status
+
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
         reactive_compaction_required = False
         while True:
@@ -1915,7 +2217,12 @@ class AgentRuntime:
                             "budget_exceeded",
                             "Context Overflow后没有剩余模型步骤或Token预算",
                         ) from None
-                    await self._state(thread_id, turn_id, TurnStatus.PREPARING_CONTEXT)
+                    await self._state(
+                        thread_id,
+                        turn_id,
+                        TurnStatus.PREPARING_CONTEXT,
+                        reason="context_overflow",
+                    )
                     reactive_compaction_required = True
                     continue
                 turn = get_turn(await self.store.get_thread(thread_id), turn_id)
@@ -1924,7 +2231,9 @@ class AgentRuntime:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")
                 if not calls:
                     token.checkpoint()
-                    await self._state(thread_id, turn_id, TurnStatus.FINALIZING)
+                    target = await self._close_model_step(request)
+                    if target == TurnStatus.PREPARING_CONTEXT:
+                        continue
                     return await self._finish(thread_id, turn_id, TurnStatus.COMPLETED, None)
                 if turn.usage.total_tokens >= turn.budget.max_tokens:
                     raise KernelError("budget_exceeded", "Token 预算耗尽，停止调度工具")
@@ -1968,6 +2277,68 @@ class AgentRuntime:
             token.checkpoint()
             rejected = False
             early_result: ToolResultContent | None = None
+            if self._questions_enabled and call.tool == "ask_user":
+                self._validate_tool_contract(call)
+                questions = [
+                    item
+                    for item in turn.items
+                    if isinstance(item.content, QuestionRequestContent)
+                    and item.content.call_id == call.call_id
+                ]
+                if questions:
+                    if len(questions) != 1 or questions[0].status != ItemStatus.COMPLETED:
+                        raise KernelError("question_projection_mismatch", "提问持久状态损坏")
+                    answers = [
+                        item
+                        for item in turn.items
+                        if isinstance(item.content, QuestionAnswerContent)
+                        and item.content.call_id == call.call_id
+                    ]
+                    if answers:
+                        raise KernelError("question_projection_mismatch", "回答缺少原子Tool Result")
+                    return turn
+                try:
+                    parsed = AskUserInput.model_validate_json(
+                        json.dumps(
+                            call.arguments,
+                            ensure_ascii=False,
+                            allow_nan=False,
+                            separators=(",", ":"),
+                        )
+                    )
+                except (TypeError, ValueError):
+                    early_result = ToolResultContent(
+                        call_id=call.call_id,
+                        outcome="failed",
+                        error=AgentFailure(
+                            code="tool_invalid_arguments",
+                            message="ask_user参数无效",
+                        ),
+                    )
+                else:
+                    question_id = uuid5(call.call_id, "harnessix.question/v1")
+                    question_content = QuestionRequestContent(
+                        question_id=question_id,
+                        call_id=call.call_id,
+                        question=parsed.question,
+                        options=parsed.options,
+                    )
+                    item_id = uuid5(question_id, "harnessix.question-request/v1")
+                    thread = await self._commit(
+                        thread_id,
+                        turn_id,
+                        [
+                            ItemStarted(item_id=item_id, content=question_content),
+                            ItemFinished(
+                                item_id=item_id,
+                                content=question_content,
+                                status=ItemStatus.COMPLETED,
+                            ),
+                            TurnStateChanged(status=TurnStatus.WAITING_INPUT),
+                        ],
+                    )
+                    self._fault("runtime.after_question_request")
+                    return get_turn(thread, turn_id)
             existing = approval_for(turn, call)
             if existing is not None:
                 if (
@@ -2466,7 +2837,7 @@ class AgentRuntime:
                         buffer += event.delta
                         text_items[event.content_id] = (item_id, buffer, False)
                         stream_sequence += 1
-                        self._on_delta(
+                        self._emit_delta(
                             ItemDelta(
                                 thread_id=request.thread_id,
                                 turn_id=request.turn_id,

@@ -8,6 +8,8 @@ from harnessix.agent.models import (
     ApprovalRequestContent,
     Item,
     ItemStatus,
+    QuestionAnswerContent,
+    QuestionRequestContent,
     ToolCallContent,
 )
 from harnessix.agent.runtime import AgentRuntime
@@ -104,3 +106,33 @@ def test_item_projection_removes_provider_and_private_approval_fields() -> None:
     assert approval_wire["approvalType"] == "tool"
     assert approval_wire["requestFingerprint"] == "b" * 64
     assert "plan" not in approval_wire
+
+
+def test_question_projection_exposes_only_ui_contract() -> None:
+    question_id = uuid4()
+    call_id = uuid4()
+    request = project_item(
+        Item(
+            item_id=uuid4(),
+            status=ItemStatus.COMPLETED,
+            content=QuestionRequestContent(
+                question_id=question_id,
+                call_id=call_id,
+                question="选择环境",
+                options=("测试", "生产"),
+            ),
+        )
+    )
+    answer = project_item(
+        Item(
+            item_id=uuid4(),
+            status=ItemStatus.COMPLETED,
+            content=QuestionAnswerContent(
+                question_id=question_id,
+                call_id=call_id,
+                answer="生产",
+            ),
+        )
+    )
+    assert request.content.kind == "question_request"
+    assert answer.content.kind == "question_answer"

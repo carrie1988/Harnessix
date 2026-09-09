@@ -65,7 +65,7 @@ async def main(mode: str, root: Path) -> None:
     assert mode == "upgrade"
     from harnessix.agent.models import ThreadArchived, ThreadForked
 
-    assert EventDraft.model_fields["schema_version"].default == 18
+    assert EventDraft.model_fields["schema_version"].default == 19
     metadata = json.loads((root / "metadata.json").read_text(encoding="utf-8"))
     original = metadata["state"]
     await store.initialize()
@@ -73,7 +73,7 @@ async def main(mode: str, root: Path) -> None:
     assert migrated["agent_events"] == original["agent_events"]
     assert migrated["agent_threads"] == original["agent_threads"]
     assert migrated["agent_migrations"][:17] == original["agent_migrations"]
-    assert len(migrated["agent_migrations"]) == 19
+    assert len(migrated["agent_migrations"]) == 22
 
     thread_id = UUID(metadata["thread_id"])
     provider = FakeProvider()
@@ -92,7 +92,7 @@ async def main(mode: str, root: Path) -> None:
     assert isinstance((await store.events(thread_id))[-1].payload, ThreadArchived)
     after = state(store.path)
     assert after["agent_events"][: len(original["agent_events"])] == original["agent_events"]
-    print("v17仅追加migration18-19；Resume零请求，Fork与Archive可重放且旧字节不变")
+    print("当前v19仅追加migration18-22；Resume零请求，Fork与Archive可重放且旧字节不变")
 
 
 if __name__ == "__main__":

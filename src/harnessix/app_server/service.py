@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from collections.abc import Awaitable, Callable
 from uuid import UUID, uuid5
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Budget, Turn, TurnStatus
+from harnessix.agent.models import Budget, ItemDelta, Turn, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.protocol.contracts import (
     ApprovalRespondParams,
+    ArtifactPageResult,
+    ArtifactReadParams,
     CommandParams,
+    EventsNextParams,
+    EventsNextResult,
     EventsReplayParams,
     EventsReplayResult,
     ProtocolModel,
+    PublicItemDelta,
+    QuestionRespondParams,
     ThreadArchiveParams,
     ThreadCreateParams,
     ThreadForkParams,
@@ -27,6 +35,7 @@ from harnessix.protocol.contracts import (
     TurnResumeParams,
     TurnRetryParams,
     TurnStartParams,
+    TurnSteerParams,
     validate_protocol_input,
 )
 from harnessix.protocol.projection import project_replay, project_thread, project_turn
@@ -57,11 +66,27 @@ class AgentApplicationService:
         runtime: AgentRuntime,
         store: SessionStore,
         requests: ProtocolRequestStore,
+        artifact_reader: ScopedProtocolArtifactReader | None = None,
     ) -> None:
         self.runtime = runtime
         self.store = store
         self.requests = requests
+        self.artifact_reader = artifact_reader
         self._tasks: dict[UUID, asyncio.Task[Turn]] = {}
+        self._delta_limit = 1000
+        self._deltas: dict[UUID, deque[ItemDelta]] = {}
+        self._delta_gaps: set[UUID] = set()
+        self._delta_events: dict[UUID, asyncio.Event] = {}
+        self._unsubscribe_deltas = runtime.subscribe_deltas(self._receive_delta)
+        self._closed = False
+
+    def _receive_delta(self, delta: ItemDelta) -> None:
+        buffer = self._deltas.setdefault(delta.thread_id, deque())
+        if len(buffer) >= self._delta_limit:
+            buffer.popleft()
+            self._delta_gaps.add(delta.thread_id)
+        buffer.append(delta.model_copy(deep=True))
+        self._delta_events.setdefault(delta.thread_id, asyncio.Event()).set()
 
     def _spawn(self, thread_id: UUID, turn_id: UUID) -> None:
         existing = self._tasks.get(turn_id)
@@ -84,14 +109,19 @@ class AgentApplicationService:
     async def close(self, *, grace_seconds: float = 5.0) -> None:
         """有界等待后台Turn；超时后取消并由Runtime提交确定性取消终态。"""
 
-        tasks = tuple(self._tasks.values())
-        if not tasks:
+        if self._closed:
             return
-        _, pending = await asyncio.wait(tasks, timeout=grace_seconds)
-        for task in pending:
-            task.cancel()
-        if pending:
-            await asyncio.gather(*pending, return_exceptions=True)
+        self._closed = True
+        self._unsubscribe_deltas()
+        for event in self._delta_events.values():
+            event.set()
+        tasks = tuple(self._tasks.values())
+        if tasks:
+            _, pending = await asyncio.wait(tasks, timeout=grace_seconds)
+            for task in pending:
+                task.cancel()
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
 
     @staticmethod
     def _raise(error: KernelError | ProtocolRequestError) -> AgentServiceError:
@@ -203,7 +233,12 @@ class AgentApplicationService:
         thread = await self.runtime.resume_thread(params.thread_id)
         if thread.active_turn_id is not None:
             turn = next(item for item in thread.turns if item.turn_id == thread.active_turn_id)
-            if turn.status == TurnStatus.ACCEPTED:
+            if turn.status in {
+                TurnStatus.ACCEPTED,
+                TurnStatus.EXECUTING_TOOLS,
+                TurnStatus.WAITING_APPROVAL,
+                TurnStatus.WAITING_ACTION,
+            }:
                 self._spawn(thread.thread_id, turn.turn_id)
         return ThreadResult(thread=project_thread(thread))
 
@@ -293,6 +328,24 @@ class AgentApplicationService:
 
         return await self._command(client_instance_id, "turn/cancel", params, operation, TurnResult)
 
+    async def steer_turn(self, client_instance_id: UUID, params: TurnSteerParams) -> TurnResult:
+        async def operation() -> TurnResult:
+            turn = await self.runtime.steer_turn(
+                params.thread_id,
+                params.turn_id,
+                params.text,
+                request_id=params.request_id,
+            )
+            return TurnResult(turn=project_turn(turn))
+
+        return await self._command(
+            client_instance_id,
+            "turn/steer",
+            params,
+            operation,
+            TurnResult,
+        )
+
     async def respond_approval(
         self, client_instance_id: UUID, params: ApprovalRespondParams
     ) -> TurnResult:
@@ -311,12 +364,45 @@ class AgentApplicationService:
             )
             return TurnResult(turn=project_turn(turn))
 
+        def drive(result: TurnResult) -> None:
+            if result.turn.status in {
+                TurnStatus.EXECUTING_TOOLS.value,
+                TurnStatus.WAITING_APPROVAL.value,
+            }:
+                self._spawn(params.thread_id, result.turn.turn_id)
+
         return await self._command(
             client_instance_id,
             "approval/respond",
             params,
             operation,
             TurnResult,
+            after_result=drive,
+        )
+
+    async def respond_question(
+        self, client_instance_id: UUID, params: QuestionRespondParams
+    ) -> TurnResult:
+        async def operation() -> TurnResult:
+            turn = await self.runtime.reply_question(
+                params.thread_id,
+                params.turn_id,
+                params.question_id,
+                answer=params.answer,
+            )
+            return TurnResult(turn=project_turn(turn))
+
+        def drive(result: TurnResult) -> None:
+            if result.turn.status == TurnStatus.EXECUTING_TOOLS.value:
+                self._spawn(params.thread_id, result.turn.turn_id)
+
+        return await self._command(
+            client_instance_id,
+            "question/respond",
+            params,
+            operation,
+            TurnResult,
+            after_result=drive,
         )
 
     async def replay_events(self, params: EventsReplayParams) -> EventsReplayResult:
@@ -329,3 +415,95 @@ class AgentApplicationService:
             scanned_through=scanned,
             has_more=len(events) > len(page),
         )
+
+    async def read_artifact(self, params: ArtifactReadParams) -> ArtifactPageResult:
+        if self.artifact_reader is None:
+            raise AgentServiceError("artifact_not_enabled", "App Server未配置Artifact读取端口")
+        return await self.artifact_reader.read(
+            params.thread_id,
+            params.artifact_id,
+            offset=params.offset,
+            limit=params.limit,
+        )
+
+    def _take_deltas(
+        self, thread_id: UUID, limit: int
+    ) -> tuple[tuple[PublicItemDelta, ...], bool, bool]:
+        buffer = self._deltas.get(thread_id)
+        selected: list[ItemDelta] = []
+        if buffer is not None:
+            while buffer and len(selected) < limit:
+                selected.append(buffer.popleft())
+            if not buffer:
+                self._deltas.pop(thread_id, None)
+        gap = thread_id in self._delta_gaps
+        self._delta_gaps.discard(thread_id)
+        return (
+            tuple(PublicItemDelta.model_validate(delta.model_dump()) for delta in selected),
+            bool(buffer),
+            gap,
+        )
+
+    async def _next_snapshot(
+        self, params: EventsNextParams, *, include_deltas: bool
+    ) -> EventsNextResult | None:
+        replay = await self.replay_events(
+            EventsReplayParams(
+                thread_id=params.thread_id,
+                after_cursor=params.after_cursor,
+                limit=params.limit,
+            )
+        )
+        if replay.scanned_through > params.after_cursor or replay.has_more:
+            return EventsNextResult(replay=replay)
+        if not include_deltas:
+            return None
+        deltas, has_more, gap = self._take_deltas(params.thread_id, params.limit)
+        if deltas or gap:
+            return EventsNextResult(
+                replay=replay,
+                deltas=deltas,
+                live_has_more=has_more,
+                live_gap=gap,
+            )
+        return None
+
+    async def next_events(
+        self, params: EventsNextParams, *, include_deltas: bool = True
+    ) -> EventsNextResult:
+        """长轮询公开事件；Replay是事实，Delta只提供可丢失的低延迟显示。"""
+
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + params.wait_ms / 1000
+        signal = self._delta_events.setdefault(params.thread_id, asyncio.Event())
+        while True:
+            ready = await self._next_snapshot(params, include_deltas=include_deltas)
+            if ready is not None:
+                return ready
+            remaining = deadline - loop.time()
+            if remaining <= 0 or self._closed:
+                break
+            signal.clear()
+            # clear与wait之间重新读取，避免Delta恰在注册窗口到达而沉睡；
+            # 50ms轮询用于观察不产生Delta的审批、提问、Tool和终态事件。
+            ready = await self._next_snapshot(params, include_deltas=include_deltas)
+            if ready is not None:
+                return ready
+            try:
+                async with asyncio.timeout(min(0.05, remaining)):
+                    await signal.wait()
+            except TimeoutError:
+                pass
+        ready = await self._next_snapshot(params, include_deltas=include_deltas)
+        if ready is not None:
+            return ready
+        replay = await self.replay_events(
+            EventsReplayParams(
+                thread_id=params.thread_id,
+                after_cursor=params.after_cursor,
+                limit=params.limit,
+            )
+        )
+        if replay.scanned_through > params.after_cursor or replay.has_more:
+            return EventsNextResult(replay=replay)
+        return EventsNextResult(replay=replay, timed_out=True)

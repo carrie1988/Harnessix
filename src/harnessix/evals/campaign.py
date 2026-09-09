@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from harnessix.agent.errors import FailureCategory, KernelError
-from harnessix.agent.models import TERMINAL_TURNS, Turn
+from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatusV18
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
     CodingEvalCampaignReport,
@@ -122,7 +122,7 @@ def _require_evidence(
         run_id=run_id,
         eval_report_sha256=state.report_sha256,
         turn_id=turn.turn_id,
-        turn_status=turn.status,
+        turn_status=TurnStatusV18(turn.status),
         classification=classification,
         eval_outcome=report.outcome,
         failure_categories=report.failure_categories,

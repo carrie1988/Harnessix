@@ -543,3 +543,16 @@ Agent Runtime                │
 - **跨库窗口**：Execution Plan先于Route持久化，崩溃可留下不可达孤立Plan；没有Route、Approval和当前Binding时不能执行。Route进入running后宿主硬退出，重开只转unknown。该设计不承诺跨SQLite事务原子性，而以不可达和保守恢复保证安全。
 
 对应攻击和硬退出证据见[0.7.5测试记录](testing-and-evals.md#72-075统一action-plane与git-push发布候选验收2026-09-09)、[专项研究](research/unified-action-plane-and-extension-boundaries.md)和[详细设计](m07-trusted-execution-and-delivery.md#14-075-action-plane与安全验收详细设计)。
+
+## 0.8.3 双向交互与Pull-Live补充（2026-09-09）
+
+- **响应身份混淆**：stdio请求可以乱序完成。SDK只允许唯一Reader读取stdout并以JSON-RPC `id`结算待决Future；重复未决ID、未知Response ID、非法Response、EOF和读取失败会稳定失败全部待决请求，不能把下一帧误配给先返回的协程。
+- **长轮询队头阻塞与资源耗尽**：READY阶段以协商的`maxPendingRequests`限制并发任务，所有出站帧仍经过唯一有界Writer。`events/next`最长30秒，关闭先唤醒长轮询；攻击者不能用无限等待占满无界Task。该边界是单客户端本地进程保护，不是远程DoS防护。
+- **Delta丢失或伪完整**：实时文本只保存在每Thread最多1000条的内存缓冲中，不作为恢复事实；溢出必须返回`liveGap`。客户端发现缺口后不得继续拼接为完整回答，只能等待持久完成Item。服务重启会丢失全部Delta，但不能丢失Session事件。
+- **提问伪造、重放和错配**：Question ID及Request/Answer/Result Item ID由原Tool Call稳定推导。回答只接受当前Thread、Turn、Question的`WAITING_INPUT`边界；相同回答幂等，不同回答冲突，取消、关闭或过期后的回答失败。审计Answer不直接进入Provider历史，模型只接收配对Tool Result。
+- **Steering投递到错误Turn**：命令必须绑定预期活动Turn；终态、finalizing或取消中拒绝。Steering只在模型步骤边界进入下一次Context，不取消当前Provider请求；Reducer强制当前响应及其Tool配对排在新用户输入之前，避免并发到达改变模型历史。
+- **Artifact跨Workspace读取**：客户端不能提交Scope。`ScopedProtocolArtifactReader`从Thread恢复Workspace并重新获取当前能力，再校验Session归属、用途、TTL、摘要和页界限；宿主未装配Reader时方法不广告。SQLite路径、私有计划和完整Session对象不进入公共协议。
+- **重复交互提示**：CLI本进程记录已成功提交的Approval/Question ID，跨进程则从持久Answer或Approval事实恢复。客户端崩溃发生在命令提交后、响应前时必须重用原领域`requestId`，不能创建新决定；最终副作用仍由既有Approval和Action幂等边界保护。
+- **剩余风险**：同UID主体仍可终止或调试本地stdio进程、篡改可写数据库或替换宿主程序；0.8.3不提供网络认证、二进制签名或多用户隔离。完整发行签名和诊断包治理属于0.9，远程协议必须另建认证和主体绑定后才能开放。
+
+对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals.md#75-083-薄cli与双向交互验收2026-09-09)。
