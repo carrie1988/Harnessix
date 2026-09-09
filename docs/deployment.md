@@ -1043,7 +1043,7 @@ Git Push默认不注册。显式启用时需要同时装配：
 
 `prepare_intent`不访问网络；expected remote OID必须来自此前获准的远端观察，或者明确表示目标ref必须不存在。审批后才允许`ls-remote/push`。URL内用户名密码、query、fragment、HTTP、自定义helper协议和歧义路径全部拒绝。
 
-0.7不继承完整`HOME`、Git全局配置、`GIT_ASKPASS`或任意宿主环境，因此公网认证Push尚未产品化。0.8.6必须通过版本化Secret引用、SSH Agent/known-hosts或受管凭据Helper明确设计和验收，不能让用户把Token放进remote URL、命令或Intent。
+0.7不继承完整`HOME`、Git全局配置、`GIT_ASKPASS`或任意宿主环境，因此公网认证Push尚未产品化。模型Provider的0.8.6 Secret引用不能复用于Git；公网Push必须在0.9.5通过独立版本化凭据作用域、SSH Agent/known-hosts或受管凭据Helper明确设计和验收，不能让用户把Token放进remote URL、命令或Intent。
 
 ### 迁移与回退
 
@@ -1057,7 +1057,7 @@ Git Push默认不注册。显式启用时需要同时装配：
 
 关闭顺序固定为停止接收新帧、等待后台Turn到宽限期、取消未完成后台驱动并等待Runtime持久结算、关闭stdout Writer。进程管理器应把非零退出、Writer失败和`client_too_slow`视为连接故障；恢复时复用原`clientInstanceId`和Command `requestId`，读取Thread Snapshot并从最后`scannedThrough`继续Replay，不能生成新requestId盲目重放写命令。
 
-本阶段不提供TCP/WebSocket、远程认证、服务端守护进程安装、实时事件通知或Artifact读取端口。子进程SDK必须以argv启动App Server，不经过Shell；完整启动装配、配置诊断和三平台发行物分别由0.8.6与0.9交付。
+本阶段不提供TCP/WebSocket、远程认证、服务端守护进程安装或实时服务端通知。子进程SDK必须以argv启动App Server，不经过Shell；0.8.6已提供内置Provider启动装配和配置诊断，三平台发行物仍由0.9交付。
 
 ## 0.8.3 薄CLI与双向交互部署
 
@@ -1075,14 +1075,19 @@ Git Push默认不注册。显式启用时需要同时装配：
 
 ```bash
 harnessix agent \
-  --server-program /absolute/path/to/harnessix-app-server \
+  --server-program /absolute/path/to/harnessix \
+  --server-arg=agent-server \
   --server-arg=--config \
-  --server-arg=/absolute/path/to/config.toml \
+  --server-arg=/absolute/path/to/product-config.json \
+  --server-arg=--workspace \
+  --server-arg=/absolute/path/to/workspace \
+  --server-arg=--state-directory \
+  --server-arg=/absolute/path/to/private-state \
   --client-instance-id 00000000-0000-4000-8000-000000000001 \
   follow THREAD_UUID
 ```
 
-当前仓库提供协议服务、SDK和薄CLI边界，不提供已配置Provider的内置stdio启动装配；该装配、Secret引用、Profile诊断和配置迁移属于0.8.6。0.8.3不应把自定义测试宿主包装成正式发行入口。
+当前仓库由0.8.6提供`harnessix agent-server`内置stdio启动装配；0.8.3薄CLI仍只依赖协议和SDK，不直接导入配置、Session或Provider。完整安装器与TUI由0.9交付。
 
 ## 0.8.4 MCP部署
 
@@ -1101,7 +1106,7 @@ MCP运行时新增独立私有SQLite数据库，用于不可变目录快照、�
 
 连接进入`schema_changed`或`failed`后不得继续调用；运维应关闭旧连接、检查服务端版本/镜像和目录差异，重新生成宿主Policy与Action绑定后再连接。不能直接修改SQLite状态或把旧摘要复制到新目录。宿主异常退出后，启动扫描只把遗留活跃连接标记为`mcp_host_interrupted`，实际容器残留必须由Container执行身份扫描清理，不能依据历史PID盲目接管。
 
-可选MCP Server仅通过本地stdio运行，stdout专用于MCP帧，诊断写入脱敏stderr。只允许显式导出低风险只读Binding；不应把stdio桥接到远程或多用户套接字。0.8.4不支持Streamable HTTP、OAuth、用户提供任意Header、远端URL或持久`input_required`；这些能力在0.8.6形成配置、Secret与受管出口合同前必须保持关闭。
+可选MCP Server仅通过本地stdio运行，stdout专用于MCP帧，诊断写入脱敏stderr。只允许显式导出低风险只读Binding；不应把stdio桥接到远程或多用户套接字。0.8.4不支持Streamable HTTP、OAuth、用户提供任意Header、远端URL或持久`input_required`；模型Provider的0.8.6 Secret合同不适用于MCP，这些能力在0.9.4完成目标身份、OAuth生命周期和受管出口验收前必须保持关闭。
 
 CI的`container-sandbox`任务使用固定摘要BusyBox镜像，同时验证基础Sandbox与真实MCP stdio连接、目录发现、调用及关闭后无残留。macOS和Windows矩阵运行MCP确定性/真实子进程测试；本地没有固定镜像或Container Daemon时，Container单项skip不能作为正式发布证据。
 
@@ -1130,3 +1135,99 @@ Hook装配顺序固定为：
 `before_action`必须在目标Action执行前完成并检查`allowed`；拒绝、超时、取消或任意处理失败均停止目标执行。其他事件只能记录，不能回滚已经形成的Session或Action事实。Hook处理器不得通过配置指定Shell、URL、Prompt、Python/JavaScript模块或宿主环境；需要外部能力时应由宿主单独配置MCP/Container Action，并让目标Action自己的Policy、Approval和Sandbox保持权威。
 
 macOS和Windows CI均显式运行Skill/Hook回归；Linux完整矩阵同时验证POSIX硬链接、独立崩溃进程和SQLite恢复。跨平台成功只证明本地读取和状态语义，不代表远端分发、签名Marketplace或发行物供应链已经完成，这些属于0.9。
+
+## 0.8.6 Provider与产品配置部署
+
+### 配置准备
+
+0.8.6只接受严格UTF-8 JSON v2。仓库示例使用占位端点和模型，必须复制到Workspace之外的
+用户私有目录后修改：
+
+```bash
+mkdir -p "$HOME/.harnessix"
+chmod 700 "$HOME/.harnessix"
+cp docs/examples/product-config-v2.json "$HOME/.harnessix/product-config.json"
+chmod 600 "$HOME/.harnessix/product-config.json"
+```
+
+配置中只保存`SecretReference(name, version)`和环境变量定位。实际值由受信进程管理器注入；
+不要把值写入JSON、argv、Shell历史、Workspace、Session或诊断包。Environment Source中的版本
+是部署声明，轮换值时必须同步提升版本并生成新配置摘要，不能在同一版本下静默替换；同一个
+环境变量只能定位一个Secret引用，共享凭据的Provider必须引用同一个名称和版本。
+
+安装必须包含配置所选Provider的可选依赖，例如开发环境使用：
+
+```bash
+uv sync --locked --all-extras
+```
+
+缺少`openai`或`anthropic`包会在离线诊断阶段失败，不会发起网络请求。
+
+### 诊断与迁移
+
+启动前执行：
+
+```bash
+export HARNESSIX_PRIMARY_API_KEY='***'
+export HARNESSIX_BACKUP_API_KEY='***'
+
+uv run harnessix config diagnose \
+  --config "$HOME/.harnessix/product-config.json" \
+  --state-database "$HOME/.harnessix/config-audit.db"
+```
+
+退出码0表示配置、候选能力、SDK依赖以及精确Secret版本和API Key格式全部可用；退出码2表示未就绪或配置错误。
+stdout是规范诊断JSON，stderr只输出稳定错误码和固定消息。诊断不会连接Provider，也不会输出
+Secret、底层异常或供应商响应。
+
+旧v1迁移必须先按原字节计算SHA256，并把完整摘要作为CAS前提：
+
+```bash
+SOURCE_SHA256='<64位小写SHA256>'
+uv run harnessix config migrate \
+  --config "$HOME/.harnessix/product-config.json" \
+  --expected-source-sha256 "$SOURCE_SHA256" \
+  --state-database "$HOME/.harnessix/config-audit.db"
+```
+
+迁移会在同目录保留绑定源摘要的私有v1备份并原子替换为v2。进程在替换后、收据返回前退出时，
+使用当前v2文件的新摘要重跑会返回`changed=false`；不得手工伪造收据或删除备份绕过冲突。
+
+### 启动与安全切换
+
+```bash
+uv run harnessix agent-server \
+  --config "$HOME/.harnessix/product-config.json" \
+  --profile primary \
+  --workspace /absolute/path/to/project \
+  --state-directory "$HOME/.harnessix/runtime/project-id"
+```
+
+配置与状态目录必须由当前用户保护；配置文件不得位于Workspace内，状态目录不得位于Workspace
+内，Workspace也不得位于状态目录内。可选`--git-executable`只绑定既有只读Git工具的绝对可执行文件。当前产品入口不装配
+Patch、任意Process、Commit或Push；这些能力不能因0.7已有宿主端口而被推导为默认开放。
+POSIX配置数据库要求既有父目录精确为0700、数据库为0600且只有一个硬链接；运行时遇到共享
+目录不会替调用方自动修改权限，而是返回`product_config_store_permissions`。
+
+首次启动时不传期望活动参数。切换现有实例时，停止旧进程，读取配置数据库当前活动摘要和
+Profile，并同时以`--expected-active-sha256`、`--expected-active-profile`提交CAS。启动先诊断、
+构造全部Provider并初始化Session/Tool/Agent Runtime，再发布活动指针；组件初始化失败、Secret
+错版或CAS冲突不会开放stdio。同一配置内切换Profile也必须提交旧Profile，避免并发丢失更新。
+切换成功只影响新进程，新旧Provider流不做热迁移。
+
+### Fallback运维
+
+Fallback链必须由Profile显式列出。只有零响应暴露的`transport`、`rate_limit`和
+`provider_internal`可重试失败，且配置数据库成功持久化决策后，才进入下一候选。已出现
+`response_started`、文本、Tool Call或完成事件后不自动切换；运维不得在网关层追加透明重试
+破坏该边界。Adapter内部尝试与跨Profile尝试合计最多32次，生产默认应保持较小值。
+
+监控应读取配置/Fallback事件链的状态和稳定错误码，不直接导出SQLite正文。链篡改、Head缺失、
+活动索引损坏或快照摘要不一致必须停机，从一致备份恢复；不得删除异常行后继续追加。
+
+### 当前非目标
+
+- 远端MCP Streamable HTTP、OAuth及任意Header进入0.9.4；
+- 公网Git HTTPS/SSH认证、known-hosts及凭据Helper进入0.9.5；
+- 真实Provider发布能力、价格适用性和受控Smoke证据进入0.9.6；
+- 配置热加载、系统Keychain/KMS Adapter、完整TUI和三平台安装器不属于0.8.6。

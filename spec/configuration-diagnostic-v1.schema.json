@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "ConfigurationDiagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "enum": [
+            "config",
+            "profile",
+            "provider",
+            "secret",
+            "dependency"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "subject_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "code": {
+          "pattern": "^config_[a-z0-9_]{1,119}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "subject_id",
+        "code",
+        "status"
+      ],
+      "title": "ConfigurationDiagnostic",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.configuration-diagnostic/v1",
+      "default": "harnessix.configuration-diagnostic/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "selection_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selection Sha256",
+      "type": "string"
+    },
+    "selected_profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Selected Profile",
+      "type": "string"
+    },
+    "ready": {
+      "title": "Ready",
+      "type": "boolean"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/ConfigurationDiagnostic"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Checks",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "config_sha256",
+    "selection_sha256",
+    "selected_profile",
+    "ready",
+    "checks",
+    "generated_at",
+    "report_sha256"
+  ],
+  "title": "ConfigurationDiagnosticReport",
+  "type": "object"
+}

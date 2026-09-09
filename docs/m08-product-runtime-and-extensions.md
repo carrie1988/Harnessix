@@ -3,7 +3,7 @@
 ## 1. 文档状态
 
 - 适用版本：0.8；
-- 当前状态：0.8.1～0.8.5已完成本地验收，0.8.6待前序切片关闭后实施；
+- 当前状态：0.8.1～0.8.6已完成实现和本地完整验收，远端六矩阵门禁待关闭；
 - 总体目标：把0.7已经完成的可信执行与工程交付能力开放为可恢复的本地产品服务，并在相同Runtime、Permission和Sandbox边界内接入CLI、SDK、MCP、Skills、Hooks与Provider配置。
 
 本文只把已经实现并验证的切片标记为完成。每个切片必须依次完成源码研究、架构决策、领域契约、最小正式实现、失败恢复测试、真实场景验证和文档同步。
@@ -267,7 +267,7 @@ Agent Event/Thread当前版本升级为v19，Session migration22把快照投影�
 | `runtime` | 官方MCP SDK Client、stdio进程生命周期、目录刷新和调用 | 不直接访问Agent Session或审批 |
 | `actions`、`server` | MCP Client到可信Action的适配，以及可选低风险只读MCP Server | 不持有Router、Executor Registry或Secret Provider |
 
-第三方MCP Server、其二进制、描述、Annotation、Schema和结果均按不受信输入处理。生产本地Client只接受`McpContainerStdioTarget`：启动argv必须来自`ContainerCommandBuilder`，并同时绑定不可变镜像、`ContainerExecutionSpec`、强Sandbox Profile、网络模式和进程身份。`McpInProcessTarget`只用于受信宿主内嵌与测试，不加载第三方Python模块。任意远端URL、Header、OAuth和Streamable HTTP配置留给0.8.6的Secret引用与受管出口切片。
+第三方MCP Server、其二进制、描述、Annotation、Schema和结果均按不受信输入处理。生产本地Client只接受`McpContainerStdioTarget`：启动argv必须来自`ContainerCommandBuilder`，并同时绑定不可变镜像、`ContainerExecutionSpec`、强Sandbox Profile、网络模式和进程身份。`McpInProcessTarget`只用于受信宿主内嵌与测试，不加载第三方Python模块。任意远端URL、Header、OAuth和Streamable HTTP配置进入0.9.4独立目标身份、Secret生命周期与受管出口切片，不复用0.8.6模型Provider认证。
 
 ### 7.2 协议代际与连接状态
 
@@ -440,9 +440,193 @@ JSON文件，按文件名、NUL和原字节聚合SHA256为
 API、远程服务、SSH或用户服务器。完整仓库门禁和跨平台CI证据在本切片提交后记录；
 在CI关闭前只称为本地验收完成。
 
-## 9. 后续切片冻结入口
+## 9. 0.8.6 Provider与配置产品化详细设计
 
-0.8.3只能依赖Agent SDK，不直接打开Session或Runtime；0.8.5只能调用`ExtensionActionPort`；0.8.6的配置只能保存Secret引用，不能把凭据值写入协议、Session或配置文件。具体设计在对应源码研究和ADR完成后追加。
+### 9.1 模块边界
+
+`harnessix.product_config`是产品配置域，不取代0.4的Provider Adapter或0.6的Agent状态机：
+
+| 模块 | 职责 | 明确不拥有 |
+| --- | --- | --- |
+| `contracts` | v1/v2配置、Profile选择、诊断、迁移、配置审计和Fallback决策合同 | Secret值、HTTP Client |
+| `codec` | 有界严格JSON及跨平台安全文件读取 | include、模板替换、远端配置 |
+| `migration` | v1到v2的CAS、备份、原子替换和收据 | 自动回滚已发布v2 |
+| `store` | 不含明文的快照、活动指针和两条Hash事件链 | Session、Provider响应正文 |
+| `runtime` | Profile选择、离线诊断、Secret解析、Provider构造和安全Fallback | Tool执行、Turn恢复 |
+| `server` | 固定Workspace的产品装配和stdio生命周期 | 第二套Agent Loop、网络监听 |
+| `cli` | `diagnose`、`migrate`和`agent-server`进程入口 | 交互式配置编辑器、TUI |
+
+依赖方向固定为`CLI/Server → Product Config → Model/Secret/Session/App Server`。Model Adapter只
+新增显式`api_key`构造参数，并保留原环境引用入口兼容既有宿主；产品配置域不读取Adapter的
+环境变量名，也不把Secret值复制到Pydantic合同。
+
+### 9.2 配置合同
+
+唯一正式输入格式是最大256 KiB的UTF-8 JSON。`ProductConfigV2`由三组规范排序数组组成：
+
+1. `secret_sources`：`SecretReference(name, version)`到受信环境变量名的白名单映射；
+2. `providers`：稳定Provider ID、`openai_chat|anthropic`类型、HTTPS端点、Secret引用和可选
+   OpenAI输出Token参数；
+3. `profiles`：稳定Profile ID、Provider引用、精确模型、声明/要求能力、请求边界、Adapter
+   内部尝试数和显式有序Fallback列表。
+
+加载同时拒绝未知字段、重复键、非有限数、标量类型转换、非法UTF-8/NUL、深度超过32、节点
+超过20000、未排序或重复ID、一个环境变量映射多个Secret引用、悬空引用、Secret版本不一致、能力不足、Fallback环/重复展开、
+超过六个候选及累计超过32次模型尝试。配置对象冻结；规范配置摘要来自领域值，源摘要来自
+实际文件字节，两者分别用于语义身份和迁移CAS。
+
+`ProductConfigV1`只作为迁移输入，Provider中的`api_key_env`迁移为名称
+`<provider-id>-api-key`、版本`env-v1`的Environment Secret Source；多个Provider共用同一旧环境
+变量时复用按Provider规范顺序首次建立的Secret引用。运行入口拒绝直接启动v1。
+配置示例位于[`docs/examples/product-config-v2.json`](examples/product-config-v2.json)，示例
+端点和模型是占位值，不包含凭据。
+
+### 9.3 安全读取与迁移
+
+配置文件使用`SecureWorkspaceReader`。POSIX要求当前用户拥有的普通文件、无组/其他权限、
+单硬链接，并通过目录描述符和`O_NOFOLLOW`读取；Windows复用句柄链、大小写规范化和Reparse
+Point检查。读取前后身份、大小和时间观测变化时返回`product_config_changed`，不使用首次
+读取正文继续启动。
+
+迁移要求调用方提交完整源SHA256。单进程流程为：
+
+```text
+私有迁移锁 → 安全读取 → 源摘要CAS → v1全量校验 → v2内存转换与全量校验
+→ 同目录临时文件0600 + fsync → 私有源备份 + 目录fsync
+→ 锁内再次核对源摘要 → os.replace → 目录fsync → 迁移收据
+```
+
+替换前退出不会改变源文件；替换后、收据返回前退出时，重开把现有v2识别为幂等完成，不再次
+改写。备份冲突、非协作写入或锁竞争均失败关闭。`ConfigMigrationReceipt`绑定源、目标和备份
+摘要；配置数据库启用时再把收据摘要写入配置审计链。
+
+### 9.4 Profile选择与离线诊断
+
+`select_profile`从活动Profile或显式ID生成不可变`ProfileSelection`，绑定配置摘要、按深度优先
+展开的Profile/Provider/模型链及选择摘要。诊断和Provider构造会重新从配置生成选择并逐字段
+比对，拒绝调用方伪造、截短或重排候选链。
+
+`diagnose_configuration`不连接网络，只检查：配置合同、每个候选对首选能力要求的满足情况、
+对应Provider SDK可导入性，以及Secret名称/精确版本/8 KiB可打印ASCII格式。报告按
+`scope + subject_id + code`排序并绑定摘要，只包含标识、枚举和通过状态，不包含端点、环境值、
+Secret正文或底层异常。`ready=false`时`agent-server`不会构造Provider或打开stdio。
+
+### 9.5 Provider构造与Secret生命周期
+
+Environment Secret Provider只解析配置列出的变量，不枚举环境。每个候选构造前解析
+`SecretReference`并再次核对名称和版本；值必须是不超过8 KiB的非空可打印ASCII且不含空格。短生命周期
+`bytearray`在工厂返回后清零，Adapter持有SDK所需的字符串副本直到Client关闭。两个Adapter
+均禁用环境代理、重定向、SDK自动重试和供应商自定义Header环境变量。
+
+候选构造采用全有或全无：任一Secret或工厂失败时，逆序尽力关闭全部已构造Client，并保留
+原始构造错误。Bundle关闭同样尝试关闭所有候选，即使某个Client关闭失败也不会跳过其他候选。
+
+### 9.6 Fallback状态机
+
+每个Adapter先按Profile自身`max_attempts`完成同Provider重试；`SafeFallbackProvider`只在候选
+最终发出`ResponseFailed`时决定是否进入下一Profile：
+
+```text
+候选失败
+  ├─ 非 transport/rate_limit/provider_internal，或 retryable=false → 原失败
+  ├─ 已暴露任意响应事件 → 原失败
+  ├─ 无下一候选或无配置审计Store → 原失败
+  ├─ Fallback审计提交失败 → 原失败
+  └─ 零暴露 + 可重试 + 审计成功 → 抑制中间失败，启动下一候选
+```
+
+只有`ModelAttemptStarted`、`ModelUsageObserved`和`ModelAttemptFinished`属于允许切换的内部元数据；
+`ResponseStarted`、文本、Tool Call、完成事件以及未来新增的未知Provider事件均关闭Fallback窗口。
+因此已知费用和失败尝试仍进入Session，但不会重复已经展示的输出或可能触发的Tool Call。
+
+编排器把各Adapter局部尝试号重写为同一步骤内1～32的全局连续序号，把Provider字段重写为
+配置Provider ID；不重写Attempt ID、请求历史或供应商私有响应。Fallback是新的完整请求，不是
+旧流续传。
+
+### 9.7 持久化与配置切换
+
+`SQLiteProductConfigStore`使用WAL、`synchronous=FULL`、外键和STRICT表，POSIX数据库为0600、
+父目录为0700；既有共享目录、链接或多硬链接数据库会被拒绝，不通过自动`chmod`改变调用方目录。
+数据包括：
+
+- `product_config_snapshots`：以规范配置摘要为主键的无Secret快照；
+- `product_config_active`：唯一活动配置摘要和Profile；
+- `product_config_events/head`：`loaded|activated|migrated`连续Hash链；
+- `provider_fallback_events/head`：零暴露Fallback决策连续Hash链。
+
+读取事件时重算正文摘要、前驱摘要、连续序号和Head；任一不一致返回
+`product_config_store_corrupt`。活动切换要求`expected_active_sha256`和
+`expected_active_profile`组成的旧指针与当前值同时一致；首次激活两者都要求`null`，相同
+配置/Profile重复激活幂等，其他竞争返回`product_config_conflict`，因此同一配置内的并发
+Profile切换也不能丢失更新。激活事件同时保存旧摘要和旧Profile。
+
+产品启动顺序固定为：安全加载→选择→固定Workspace并拒绝配置重叠→离线诊断→固定状态根/Git可执行文件→保存
+快照→构造全部Provider→初始化Session并进入Bundle/Tool/Agent Runtime生命周期→CAS激活→
+开放stdio。组件初始化或CAS失败会逆序关闭已进入的生命周期且不开放协议；新配置只影响新
+进程，活动Turn不热换流。
+
+### 9.8 产品入口和部署
+
+```bash
+# 从仓库示例创建私有配置；先替换占位端点和精确模型
+cp docs/examples/product-config-v2.json "$HOME/.harnessix/product-config.json"
+chmod 600 "$HOME/.harnessix/product-config.json"   # POSIX
+
+# 值只进入受信进程环境，配置仅保存变量名和版本声明
+export HARNESSIX_PRIMARY_API_KEY='***'
+export HARNESSIX_BACKUP_API_KEY='***'
+
+uv run harnessix config diagnose \
+  --config "$HOME/.harnessix/product-config.json" \
+  --state-database "$HOME/.harnessix/config-audit.db"
+
+uv run harnessix agent-server \
+  --config "$HOME/.harnessix/product-config.json" \
+  --workspace /absolute/project \
+  --state-directory "$HOME/.harnessix/runtime/project-id"
+```
+
+`agent-server`只注册固定Workspace的现有只读Coding Tool Runtime；客户端创建Thread时提交其他
+或不存在的Workspace会失败。配置文件必须位于Workspace之外，状态目录不得与Workspace互相
+包含，stdout专用于stdio JSONL，
+诊断只写stderr。写工具、Sandbox产品装配、TUI、安装器和自动更新仍属于0.9发布切片。
+
+### 9.9 失败语义与恢复
+
+| 错误类别 | 是否自动重试 | 恢复动作 |
+| --- | --- | --- |
+| 配置格式/权限/引用/能力无效 | 否 | 修复配置并重新诊断 |
+| Secret缺失或版本变化 | 否 | 恢复受信来源，或显式更新版本和配置摘要 |
+| 依赖缺失 | 否 | 安装对应Provider可选依赖后重启 |
+| 迁移CAS/锁/备份冲突 | 否 | 读取最新源摘要，核对备份后重新发起 |
+| Provider构造失败 | 否 | 活动指针不变，修复配置或依赖后重启 |
+| 活动配置CAS冲突 | 否 | 读取活动摘要，重新决定是否切换 |
+| 零暴露可重试Provider失败 | 有条件 | 审计成功后只切换到显式下一候选 |
+| 已暴露响应后的Provider失败 | 否 | 保留失败和已知用量，由用户发起新Turn/Retry |
+| 配置/Fallback事件链损坏 | 否 | 停止使用数据库，从一致备份恢复并审计 |
+
+### 9.10 安全边界与非目标
+
+- 配置、Schema、Session、配置数据库、CLI输出和测试均不得包含Secret值；
+- Environment版本是部署者声明，不等价于云Secret Manager的强版本证明；
+- SQLite Hash链用于检测意外或越界修改，不是抵御同用户恶意进程的签名日志；
+- 配置文件不支持热加载；轮换需要新版本引用、新摘要、诊断、CAS和进程重启；
+- 0.8.6不开放远端MCP Streamable HTTP/OAuth/自定义Header，也不开放公网Git认证；二者分别
+  进入0.9.4安全供应链和0.9.5跨平台Dogfooding门禁；
+- 真实Provider能力与计价发布证据属于0.9.6，不以离线Mock或既有Eval结果代替。
+
+### 9.11 验收范围
+
+确定性测试覆盖严格JSON、路径/权限/链接、Profile图与能力、Secret错版、迁移CAS及替换前后
+崩溃、配置/Fallback Hash链篡改、选择伪造、候选构造和关闭故障、零暴露切换、响应/Tool Call
+暴露后禁止切换、审计失败、全局尝试序号、双Adapter显式Secret Mock传输、CLI诊断/迁移、
+固定Workspace、启动/EOF关闭及构造失败不激活。正式Schema由同一Pydantic合同生成并逐项比对。
+该验收不连接真实模型、远端MCP、Git远端或用户服务器。
+
+0.8.6专项为49项通过；原生宿主全仓为3313项通过、13项按平台/本地集成条件跳过，Ruff、Mypy、
+17个离线示例、构建及基础wheel安装通过。完整边界与证据见
+[测试规范第78节](testing-and-evals.md#78-086-provider与产品配置候选验收2026-09-09)。远端六矩阵
+未关闭前，0.8仍只标记为本地验收完成。
 
 ## 10. 参考资料
 
@@ -455,4 +639,6 @@ API、远程服务、SSH或用户服务器。完整仓库门禁和跨平台CI证
 - [ADR 0073：MCP目录绑定与Sandbox](adr/0073-mcp-catalog-binding-and-sandbox.md)
 - [Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)
 - [ADR 0074：Skill快照与Hook Action安全边界](adr/0074-skill-snapshot-and-hook-action-boundary.md)
+- [Provider、Profile、配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)
+- [ADR 0075：Provider Profile、Secret引用与安全Fallback](adr/0075-provider-profile-secret-and-safe-fallback.md)
 - [JSON-RPC 2.0规范](https://www.jsonrpc.org/specification)

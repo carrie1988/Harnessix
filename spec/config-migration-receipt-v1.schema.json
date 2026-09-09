@@ -1,0 +1,72 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.config-migration-receipt/v1",
+      "default": "harnessix.config-migration-receipt/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "from_version": {
+      "enum": [
+        "v1",
+        "v2"
+      ],
+      "title": "From Version",
+      "type": "string"
+    },
+    "to_version": {
+      "const": "v2",
+      "default": "v2",
+      "title": "To Version",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "target_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Target Sha256",
+      "type": "string"
+    },
+    "backup_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Backup Sha256"
+    },
+    "changed": {
+      "title": "Changed",
+      "type": "boolean"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Receipt Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_version",
+    "source_sha256",
+    "target_sha256",
+    "changed",
+    "occurred_at",
+    "receipt_sha256"
+  ],
+  "title": "ConfigMigrationReceipt",
+  "type": "object"
+}

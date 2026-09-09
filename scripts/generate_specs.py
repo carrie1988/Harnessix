@@ -156,6 +156,16 @@ from harnessix.processes.supervision_contracts import (
     ProcessOutputObservation,
     ProcessSpec,
 )
+from harnessix.product_config.contracts import (
+    ConfigAuditEvent,
+    ConfigMigrationReceipt,
+    ConfigurationDiagnosticReport,
+    ProductConfigSnapshot,
+    ProductConfigV1,
+    ProductConfigV2,
+    ProfileSelection,
+    ProviderFallbackDecision,
+)
 from harnessix.protocol.contracts import (
     AgentCommandParams,
     AgentQueryParams,
@@ -234,6 +244,8 @@ def main() -> None:
     write_json(output / "provider-event-v3.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
+    write_json(output / "product-config-v1.schema.json", ProductConfigV1.model_json_schema())
+    write_json(output / "product-config-v2.schema.json", ProductConfigV2.model_json_schema())
     write_json(output / "price-snapshot-v1.schema.json", PriceSnapshot.model_json_schema())
     write_json(output / "cost-report-v1.schema.json", CostReport.model_json_schema())
     write_json(output / "cost-report-v2.schema.json", CostReportV2.model_json_schema())
@@ -392,6 +404,12 @@ def main() -> None:
         ("hook-run-event", HookRunEvent),
         ("hook-run-snapshot", HookRunSnapshot),
         ("hook-dispatch-result", HookDispatchResult),
+        ("product-config-snapshot", ProductConfigSnapshot),
+        ("profile-selection", ProfileSelection),
+        ("configuration-diagnostic", ConfigurationDiagnosticReport),
+        ("config-migration-receipt", ConfigMigrationReceipt),
+        ("config-audit-event", ConfigAuditEvent),
+        ("provider-fallback-decision", ProviderFallbackDecision),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
@@ -429,7 +447,7 @@ def main() -> None:
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
         "Process、Context、Coding Eval、可信执行、MCP、Skill、Hook、"
-        "Agent Protocol 与 OpenAPI Schema"
+        "Provider产品配置、Agent Protocol 与 OpenAPI Schema"
     )
 
 

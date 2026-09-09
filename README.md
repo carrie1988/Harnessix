@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.7全部路线图范围以及0.8.1～0.8.5本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills和Hooks均受同一可信Action边界治理。Provider配置产品化和三平台发行物仍属于0.8.6～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.7全部路线图范围以及0.8全部实现和本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。0.8远端六矩阵门禁关闭前仍是本地验收状态；完整TUI、三平台发行物、供应链和Dogfooding属于0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -43,7 +43,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8.1～0.8.5已提供Agent Protocol及MCP/Skill/Hook运行边界，Provider/Profile正式装配、完整TUI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
 
 ## 当前已完成：0.7可信执行与工程交付
 
@@ -56,9 +56,9 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - `ExtensionActionPort`把MCP/Skill/Hook/custom限制为来源隔离的plan/execute/reconcile端口，不暴露executor、Session、Secret或文件系统对象；
 - Git Push与Commit分离、默认不装配；Push只更新一个ref，使用exact lease，调用结果丢失后只对账不重放。
 
-0.7.5的受控真实Push使用本地bare remote验证零重复副作用；公网HTTPS/SSH凭据不会从宿主环境隐式继承，待0.8.6通过Secret和配置产品化装配。设计、失败语义和限制见[0.7详细设计](docs/m07-trusted-execution-and-delivery.md)与[统一Action Plane源码研究](docs/research/unified-action-plane-and-extension-boundaries.md)。
+0.7.5的受控真实Push使用本地bare remote验证零重复副作用；公网HTTPS/SSH凭据不会从宿主环境隐式继承，须在0.9.5通过独立凭据作用域、known-hosts和跨平台Dogfooding后才能装配，不能复用模型Provider API Key。设计、失败语义和限制见[0.7详细设计](docs/m07-trusted-execution-and-delivery.md)与[统一Action Plane源码研究](docs/research/unified-action-plane-and-extension-boundaries.md)。
 
-## 当前已实现：产品运行时与可信扩展（0.8.1～0.8.5）
+## 当前已实现：产品运行时与可信扩展（0.8）
 
 - Agent Protocol v1使用严格JSON-RPC 2.0/stdio JSONL合同，Command的持久`requestId`与连接内JSON-RPC `id`分离；
 - Headless App Server复用唯一Agent Runtime和Session Store，支持Thread创建、恢复、分叉、归档，Turn开始、重试、取消、审批、提问与Steering；
@@ -69,8 +69,11 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - 薄CLI只依赖Agent SDK，支持`create/list/run/follow/resume/retry/fork/archive/steer/cancel`，可显示计划、工具进度、Diff、审批、问题及流式回答。
 - Skills从显式Bundled/User/Workspace Root生成不可变目录；普通名称仅在全局唯一时可用，正文和UTF-8资源按需复核摘要并通过只读`ExtensionActionPort`加载；
 - Hooks只允许绑定宿主预注册的低风险只读Action；非Bundled定义需要精确摘要授权，`before_action`失败关闭，其他事件只记录，并具备超时、取消、哈希链和中断恢复。
+- 严格JSON v2把Provider、模型Profile和Environment Secret引用分层，提供有界安全读取、v1原子迁移、不可变配置快照、离线能力诊断和活动配置CAS；配置及审计不保存Secret值；
+- `SafeFallbackProvider`只在`transport/rate_limit/provider_internal`零响应暴露失败且审计成功后切换显式候选；任意响应、文本、Tool Call或未来未知事件均关闭Fallback窗口；
+- `harnessix agent-server`按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议。
 
-0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复；远端MCP HTTP/OAuth、远端Skill安装和任意Shell Hook均未开放。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。薄CLI要求宿主通过argv提供已装配的stdio App Server；内置Provider/Profile、Secret引用、配置迁移及正式启动装配由0.8.6交付。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0074](docs/adr/0074-skill-snapshot-and-hook-action-boundary.md)和[部署说明](docs/deployment.md#085-skill与hook部署)。
+0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[部署说明](docs/deployment.md#086-provider与产品配置部署)。
 
 ## 许可证与品牌
 
@@ -705,6 +708,7 @@ src/harnessix/app_server/   stdio Headless服务与应用编排
 src/harnessix/mcp/          MCP目录、连接、可信Action适配与只读Server
 src/harnessix/skills/       Skill目录、冲突、渐进读取与Action适配
 src/harnessix/hooks/        Hook定义/授权、生命周期运行、持久化与恢复
+src/harnessix/product_config/ Provider/Profile配置、迁移、诊断、审计与产品装配
 tests/                      单元和集成测试
 docs/                       中文架构与决策文档
 spec/                       生成的 JSON Schema 和 OpenAPI
@@ -749,6 +753,8 @@ examples/                   可运行演示
 - [Thread Resume、Fork与Archive详细设计](docs/thread-lifecycle.md)
 - [Turn Retry与Provider切换详细设计](docs/turn-retry-and-provider-switch.md)
 - [终态Turn Retry与Provider中立历史决策](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)
+- [Provider/Profile配置与安全Fallback源码研究](docs/research/provider-profile-config-and-safe-fallback.md)
+- [Provider/Profile、Secret引用与安全Fallback决策](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)
 - [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
@@ -779,7 +785,7 @@ examples/                   可运行演示
 | 0.5 | Read/Search/Patch/Process/Git/Test 编码闭环 |
 | 0.6 | Context Compaction 与持久会话 |
 | 0.7 | 跨平台端口、可信执行、通用Process、多文件事务与Git交付 |
-| 0.8 | Agent Protocol、Headless、薄CLI、MCP、Skills、Hooks |
+| 0.8 | Agent Protocol、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 |
 | 0.9 | 完整CLI/TUI、三平台CI与发行物、故障注入、质量工程和Dogfooding |
 | 1.0 | macOS/Linux/Windows本地优先正式商用发布 |
 | 1.x | 按需求评估云任务、多租户、IDE与分布式运行 |

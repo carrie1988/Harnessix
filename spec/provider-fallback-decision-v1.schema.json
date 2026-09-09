@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.provider-fallback-decision/v1",
+      "default": "harnessix.provider-fallback-decision/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "thread_id": {
+      "format": "uuid",
+      "title": "Thread Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "format": "uuid",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "step": {
+      "minimum": 1,
+      "title": "Step",
+      "type": "integer"
+    },
+    "from_profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "From Profile",
+      "type": "string"
+    },
+    "from_provider": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "From Provider",
+      "type": "string"
+    },
+    "to_profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "To Profile",
+      "type": "string"
+    },
+    "to_provider": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "To Provider",
+      "type": "string"
+    },
+    "failure_code": {
+      "enum": [
+        "transport",
+        "rate_limit",
+        "provider_internal"
+      ],
+      "title": "Failure Code",
+      "type": "string"
+    },
+    "response_exposed": {
+      "const": false,
+      "default": false,
+      "title": "Response Exposed",
+      "type": "boolean"
+    },
+    "tool_call_exposed": {
+      "const": false,
+      "default": false,
+      "title": "Tool Call Exposed",
+      "type": "boolean"
+    },
+    "previous_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Digest"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sequence",
+    "config_sha256",
+    "thread_id",
+    "turn_id",
+    "step",
+    "from_profile",
+    "from_provider",
+    "to_profile",
+    "to_provider",
+    "failure_code",
+    "occurred_at",
+    "digest"
+  ],
+  "title": "ProviderFallbackDecision",
+  "type": "object"
+}

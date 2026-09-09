@@ -36,6 +36,8 @@ def _parser() -> argparse.ArgumentParser:
         "coding-eval-campaign", help="运行显式启用的固定历史任务真实模型Campaign"
     )
     subcommands.add_parser("agent", help="通过stdio App Server运行薄Agent CLI")
+    subcommands.add_parser("agent-server", help="按产品配置运行stdio App Server")
+    subcommands.add_parser("config", help="诊断或迁移产品配置")
     subcommands.add_parser("license", help="显示社区许可证、源代码和商业许可信息")
     return parser
 
@@ -76,6 +78,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         from harnessix.agent_cli import main as agent_main
 
         agent_main(args[1:])
+        return
+    if args and args[0] == "agent-server":
+        from harnessix.product_config.cli import agent_server_main
+
+        agent_server_main(args[1:])
+        return
+    if args and args[0] == "config":
+        from harnessix.product_config.cli import config_main
+
+        config_main(args[1:])
         return
     arguments = _parser().parse_args(args)
     if arguments.command == "license":

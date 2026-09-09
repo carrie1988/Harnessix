@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.7以及0.8.1～0.8.5产品运行时与可信扩展）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.8产品运行时与可信扩展）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -16,7 +16,7 @@
 - 0.6.1已实现静态Context Fragment、固定指令优先级、保守输入预算、双Provider system映射、Event v10检查记录和诊断；0.6.2a已完成项目指令Source与Context Inspection v2；0.6.2b已完成Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12、migration14及低基数一致性指标。0.6.2c已实现Tool Result稳定模型视图与Artifact覆盖校验。0.6.3已实现独立摘要账本、Cost v2、无工具摘要、轮前/reactive触发、线性活动窗口、Model History Inspection v2和语义Eval。0.6.4已实现同身份Resume、无授权Fork、Archive、跨代Artifact所有者校验和来源CAS。0.6.5已实现终态Turn Retry、Interrupted Recovery、双向Provider切换和长会话综合恢复；当前Event/Thread为v17、Session migration为20，见[实施设计](m06-context-and-sessions.md)、[自动Compaction详设](compaction-runtime-and-windows.md)、[Thread生命周期详设](thread-lifecycle.md)与[Retry详设](turn-retry-and-provider-switch.md)；
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期、0.7.4受管Git交付和0.7.5平台中立Action入口均已通过综合六矩阵门禁；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
 - 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理；0.7.4交付Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5交付宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile。Windows Snapshot和Container冷启动探测加固后，0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
-- 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；0.8.2已实现单客户端stdio Headless App Server、薄应用服务、进程内/子进程Python Agent SDK、Agent Event/Thread v18延迟驱动事实及migration21、确定性受理恢复、出站背压和有界关闭；0.8.3已实现stdio请求多路复用、Pull-Live事件页、持久提问、Turn Steering、Scoped Artifact读取及只依赖SDK的薄CLI，Agent Event/Thread升级为v19并追加migration22；0.8.4已实现官方SDK驱动的MCP Client、不可变目录和连接事件、调用前Schema漂移门禁、Container stdio生命周期、统一Action接入及可选只读MCP Server；0.8.5已实现不可变Skill目录、冲突消歧、跨平台渐进加载、声明式Hook Registry、摘要授权、超时/取消及中断恢复。Provider配置仍按0.8.6实施，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
+- 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；0.8.2已实现单客户端stdio Headless App Server、薄应用服务、进程内/子进程Python Agent SDK、Agent Event/Thread v18延迟驱动事实及migration21、确定性受理恢复、出站背压和有界关闭；0.8.3已实现stdio请求多路复用、Pull-Live事件页、持久提问、Turn Steering、Scoped Artifact读取及只依赖SDK的薄CLI，Agent Event/Thread升级为v19并追加migration22；0.8.4已实现官方SDK驱动的MCP Client、不可变目录和连接事件、调用前Schema漂移门禁、Container stdio生命周期、统一Action接入及可选只读MCP Server；0.8.5已实现不可变Skill目录、冲突消歧、跨平台渐进加载、声明式Hook Registry、摘要授权、超时/取消及中断恢复；0.8.6已实现Provider/Profile/Secret引用、严格配置、迁移/诊断、活动CAS、零暴露安全Fallback和固定Workspace产品启动装配，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -230,7 +230,20 @@ Action Audit、Session Store、Process/Delivery Ledger和外部Effect Journal各
 
 Skill目录把来源Root身份、Manifest和内容摘要冻结为不可变代次，模型先看到元数据，加载时再核对目录、Root和文件正文。同名跨来源Skill必须使用限定名称；来源内重复名称全部失效。Hook Registry冻结定义、Matcher、顺序、处理器指纹和精确Trust Grant；`before_action`串行失败关闭，其他生命周期事件只记录。Hook Run和Skill访问事件各自在私有SQLite中形成哈希链，不把正文、原始Action参数或Secret写入扩展账本。
 
-### 4.11 Observability 与 Evals
+### 4.11 Product Config与Provider装配
+
+产品配置把Provider定义、精确模型Profile和版本化Secret引用分离。严格JSON经跨平台安全文件
+读取后形成不可变配置快照和摘要；Profile选择冻结显式Fallback链并经离线能力、依赖和Secret
+诊断。私有SQLite分别保存配置加载/迁移/活动切换与Provider Fallback的连续Hash链，活动指针
+使用期望旧配置摘要与旧Profile联合CAS。
+
+`SafeFallbackProvider`只把模型尝试和用量事件视为零暴露元数据；响应身份、文本、Tool Call、
+完成或未来新增事件都会关闭自动切换窗口。只有白名单可重试失败且Fallback审计提交成功后才
+进入显式下一候选。内置`agent-server`在Provider、Session、Tool和Agent Runtime全部初始化后
+才激活配置，并把协议Thread固定到唯一Workspace；配置文件和状态根均被隔离在Workspace之外。
+该入口当前只装配只读Coding Tools，不将0.7写能力隐式暴露给客户端。
+
+### 4.12 Observability 与 Evals
 
 横切能力包括：
 

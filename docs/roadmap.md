@@ -54,7 +54,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 | 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 运行基线；计价证据独立跟踪 |
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
 | 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Action Plane | 0.6 |
-| 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks | 0.7 |
+| 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 | 0.7 |
 | 0.9 | Release Candidate与质量工程 | 完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
 | 1.0 | 本地优先正式商用发布 | macOS/Linux/Windows稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
 | 1.x | 按需求演进 | 云任务、多租户、远程Sandbox、IDE和分布式运行 | 1.0 |
@@ -363,7 +363,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 10. 0.8：产品运行时与扩展
 
-状态：**实施中**。0.8.1 Agent Protocol v1、0.8.2 Headless App Server/Agent SDK、0.8.3薄CLI与双向交互、0.8.4 MCP及0.8.5 Skills/Hooks已经完成本地验收；0.8.6按纵向切片继续实施。所有客户端、MCP、Skill与Hook只能通过同一Runtime、Permission和Sandbox边界工作。
+状态：**已完成本地验收（2026-09-09）**。0.8.1～0.8.6的源码研究、架构决策、正式契约、实现、失败恢复、安全测试、产品装配和中文文档均已完成；远端六矩阵门禁关闭后补充最终CI证据。所有客户端、MCP、Skill、Hook和Provider配置只能通过同一Runtime、Permission、Secret及Sandbox边界工作。
 
 ### 目标
 
@@ -376,7 +376,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.8.3 薄CLI与双向交互**：创建/恢复/分叉/归档、流式文本、计划与工具进度、审批、提问、取消、运行中Steering及Diff确认；完整TUI视觉和发布体验留给0.9；
 - [x] **0.8.4 MCP**：MCP Client、可选MCP Server、进程生命周期、能力快照、Schema漂移和所有Tool的Permission/Sandbox强制接入；
 - [x] **0.8.5 Skills与Hooks**：来源、版本、渐进加载、生命周期Hook、冲突、超时、取消和供应链信任边界；
-- [ ] **0.8.6 Provider与配置产品化**：模型/Profile选择、能力诊断、Secret引用、配置迁移和安全切换；任何自动Fallback不得跨越已经暴露模型输出或工具调用的边界。
+- [x] **0.8.6 Provider与配置产品化**：模型/Profile选择、能力诊断、Secret引用、配置迁移和安全切换；任何自动Fallback不得跨越已经暴露模型输出或工具调用的边界。
 
 ### 关键测试
 
@@ -385,8 +385,11 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] Steering、审批、提问、取消与对应Turn/Tool Call不会错配；
 - [x] 慢客户端、背压、服务端重启和同时关闭不会损坏Session；
 - [x] MCP Server崩溃、超时、Schema变化和恶意Tool描述失败关闭；
-- [ ] 恶意Skill/Hook不能读取未授权Secret或绕过Tool/Sandbox；
+- [x] 恶意Skill/Hook不能读取未授权Secret或绕过Tool/Sandbox；
 - [x] 进程内、Headless和薄CLI模式对同一Transcript产生等价领域结果。
+- [x] 配置重复键、链接、错版Secret、能力不足、Fallback环、迁移崩溃和活动CAS失败关闭；
+- [x] 零暴露可重试失败仅在审计成功后切换，响应/文本/Tool Call暴露后绝不自动Fallback；
+- [x] OpenAI-compatible与Anthropic Adapter显式Secret注入、固定Workspace产品启动和EOF关闭均通过离线真实SDK路径。
 
 ### 验收标准
 
@@ -408,8 +411,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；
 - [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
 - [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
-- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；
-- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；
+- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
+- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
 
 ### 验收标准

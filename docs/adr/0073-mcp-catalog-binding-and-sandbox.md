@@ -21,7 +21,7 @@ MCP把外部Tool目录和调用协议标准化，但不提供Harnessix所需的�
 9. 进入`tools/call`前的目录失败是确定性失败；进入调用后的断链、超时、取消或结果边界失败，对只读Tool为`failed`，对写Tool为`unknown`。写Tool注册必须提供外部Reconcile实现，禁止自动重放。
 10. Tool Result只保留有界JSON表示。`isError=true`对只读调用是普通失败；对写调用按可能已有部分副作用进入`unknown`。任何结果都不能改变已冻结的Permission或Sandbox。
 11. 可选MCP Server使用官方低层Server导出显式白名单，只允许低风险只读Binding。输入按公开Schema验证，调用仍走`ExtensionActionPort`；若计划需要审批、被拒绝或状态不一致，返回`isError=true`，不允许远端调用方作审批主体。
-12. 0.8.4不开放任意远端URL、Header或OAuth明文配置。Streamable HTTP、Secret引用和受管出口随0.8.6配置纵向切片一起交付。
+12. 0.8.4不开放任意远端URL、Header或OAuth明文配置。Streamable HTTP、独立Secret生命周期和受管出口进入0.9.4安全供应链切片，不复用0.8.6模型Provider认证。
 
 ## 失败语义
 

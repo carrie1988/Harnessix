@@ -1,7 +1,7 @@
 # Harnessix Code 测试与 Eval 规范 v1
 
-- 状态：0.6.5终态Turn Retry、Provider切换与长会话已通过本地及远端完整验收
-- 更新日期：2026-09-08
+- 状态：0.8.1～0.8.6实现及本地完整验收通过，0.8跨平台CI待最终关闭
+- 更新日期：2026-09-09
 
 实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
 
@@ -1478,7 +1478,7 @@ Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.co
 
 最终本地`make check`为**3140 passed、12 skipped，270.43秒**；Ruff格式与规则通过，Mypy严格检查215个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。
 
-本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.8.6，不能用本地bare remote替代认证、known-hosts或Secret泄漏验收。
+本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.9.5，不能用本地bare remote或0.8.6模型Provider Secret替代认证、known-hosts或Secret泄漏验收。
 
 最终加固提交`e12ae38`由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理，Container矩阵验证放宽启动预算后隔离合同未被削弱。该门禁不访问模型API或公网Git remote。
 
@@ -1528,7 +1528,7 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 
 ## 76. 0.8.4 MCP候选验收（2026-09-09）
 
-状态：**本地验收完成，跨平台CI随本切片提交验收**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth和配置产品化属于0.8.6。
+状态：**本地验收完成，跨平台CI随本切片提交验收**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth进入0.9.4，模型Provider配置由0.8.6独立完成。
 
 专项回归覆盖：
 
@@ -1561,3 +1561,48 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 专项确定性回归为**29 passed**。本切片还把历史Eval Action Worker租约从5秒调整为30秒，Heartbeat保持1秒；原因是同步评分/发布在较慢macOS Runner上可能阻塞事件循环超过原租约，造成活跃Worker自我丢失。新的预算仍为单次有界租约且不重试Action，既有发布失败与恢复回归继续验证零重复评分。
 
 Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共有213份JSON文件，按文件名、NUL和原字节聚合SHA256为`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。完整仓库门禁和跨平台CI结果在切片提交后补充。测试不调用模型API、不访问网络、SSH、远程Git或用户服务器；所有Root、数据库和崩溃进程均位于pytest临时目录。
+
+## 78. 0.8.6 Provider与产品配置候选验收（2026-09-09）
+
+状态：**实现及本地完整发布门禁通过，跨平台CI待本切片提交后关闭**。源码研究见
+[Provider、Profile、配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)，
+正式决策见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)。
+
+`tests/product_config`共**49项通过**，覆盖：
+
+- 最大256 KiB的严格UTF-8 JSON、重复键、未知字段、非有限数、标量转换、深度/节点上限、
+  规范排序、配置双摘要、链接/硬链接/私有权限，以及一个环境变量只能定位一个Secret引用；
+- Provider/Profile/能力/Fallback图正式引用、累计32次尝试上限、伪造选择快照和错版Secret；
+- v1→v2完整源摘要CAS、共享环境Secret去重、0600单链接迁移锁、全摘要私有备份、替换前后
+  崩溃恢复和v2幂等重开；迁移收据同时约束源、目标和备份摘要；
+- SQLite快照、旧配置摘要与旧Profile联合CAS、同配置Profile并发冲突、活动索引、配置及
+  Fallback连续Hash链；已有链损坏时禁止继续追加，非法Fallback图决策失败关闭；
+- OpenAI-compatible与Anthropic真实SDK经Mock传输消费显式Secret，不读取占位环境变量；API Key
+  限制为8 KiB可打印ASCII，供应商自定义Header环境变量、错误和领域事件均不泄漏Canary；
+- 零响应暴露的可重试失败只有在持久审计成功后才切换，已知Usage保留，各Adapter局部尝试号
+  改写为全局连续号；Response、Text、Tool Call、不可重试失败、无审计或审计失败均不切换；
+- 固定Workspace服务、Windows大小写别名、配置文件/状态控制面隔离、Provider构造失败、Runtime
+  owner冲突、活动CAS和EOF关闭；任何初始化失败均不开放stdio或创建Thread；
+- CLI诊断在建连前检查依赖、Secret版本与API Key格式；诊断/迁移输出为有界JSON且屏蔽意外
+  异常正文，八份新增Schema及v2示例与运行合同一致。
+
+扩大回归`tests/product_config + App Server + 双Provider`为**238项通过**。最终原生宿主全仓
+pytest为**3313 passed、13 skipped，283.88秒**；13项只包含平台限定或本机未配置的PostgreSQL/
+Container集成场景。受限桌面命令沙箱中的首次全仓运行因禁止`ps`并剥离setuid/setgid模式产生
+24项环境假失败；相同代码在原生宿主通过，未通过修改运行时或删除安全断言规避。
+
+Ruff格式检查691个文件、规则检查和Mypy严格检查253个源文件全部通过；17个既有离线示例、
+`uv lock --check`、sdist/wheel构建均通过。221份JSON Schema按文件名、NUL和原字节聚合SHA256为
+`1681d5a8bc11e4389716071a9c45cec71cfa3c02d717d4d7f93659fe2f842378`。基础依赖的全新Python
+3.12环境从wheel安装成功，`harnessix`、`config`和`agent-server`帮助入口可用；未安装Provider
+可选SDK时，离线诊断以9项有界检查明确返回未就绪且不泄漏Secret。
+
+0.8.5基线提交`bf10c9d`的[CI 34327050210](https://github.com/carrie1988/Harnessix/actions/runs/34327050210)
+已通过Python 3.12、PostgreSQL和固定摘要Container任务，但真实发现三类慢速Runner问题：Windows
+测试只给0.5秒发布子进程PID，macOS Eval同步评分超过30秒租约，Python 3.13出现同类Eval租约
+波动。Windows测试预算调整为2秒后仍严格验证Job Object整树回收；Eval单Worker租约调整为120秒，
+继续以1秒Heartbeat续约并保持Action不重试，覆盖最长60秒受管测试及CI调度暂停。该失败运行作为
+缺陷发现证据保留，不用局部重跑冒充0.8通过；修复后的六矩阵结果由本切片提交另行记录。
+
+本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
+性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。

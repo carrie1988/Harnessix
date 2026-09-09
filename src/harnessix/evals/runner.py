@@ -73,7 +73,9 @@ _MANAGED_DIRECTORY = "managed"
 _SESSION_FILE = "session.sqlite"
 _EFFECT_FILE = "effects.sqlite"
 _MAX_TREE_PATH_BYTES = 4 * 1024 * 1024
-_EVAL_ACTION_LEASE_SECONDS = 30
+# 固定测试进程最长60秒；租约需覆盖进程截止时间及托管CI暂停，心跳仍每秒续约。
+# Eval只有单个受管Worker，延长失联恢复窗口不会引入竞争执行。
+_EVAL_ACTION_LEASE_SECONDS = 120
 _EVAL_ACTION_HEARTBEAT_SECONDS = 1
 _GIT_ENVIRONMENT = {
     "GIT_CONFIG_GLOBAL": "/dev/null",

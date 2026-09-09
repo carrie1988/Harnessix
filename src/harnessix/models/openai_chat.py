@@ -17,7 +17,7 @@ from harnessix.models._bounded_http import BoundedStream, BoundedTransport, Inva
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest
-from harnessix.models._provider_io import finish_attempt, read_key, wait_for_io
+from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
@@ -55,13 +55,21 @@ def _failure(error: Exception) -> ResponseFailed:
 
 
 class OpenAIChatProvider:
-    """拥有 HTTP Client 的 Chat Completions Adapter；通过环境引用读取认证。"""
+    """拥有HTTP Client的Chat Completions Adapter；支持宿主注入短生命周期认证。"""
 
     def __init__(
-        self, config: OpenAIChatConfig, *, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        config: OpenAIChatConfig,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        api_key: str | None = None,
     ) -> None:
         self.config = OpenAIChatConfig.model_validate_json(config.model_dump_json())
-        key = read_key(self.config, headers_env="OPENAI_CUSTOM_HEADERS")
+        key = (
+            read_key(self.config, headers_env="OPENAI_CUSTOM_HEADERS")
+            if api_key is None
+            else validate_key(api_key, headers_env="OPENAI_CUSTOM_HEADERS")
+        )
         client = httpx.AsyncClient(
             transport=BoundedTransport(
                 transport or httpx.AsyncHTTPTransport(trust_env=False),

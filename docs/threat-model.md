@@ -1,12 +1,12 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：0.7可信执行架构基线，已随实现更新至0.7.2 Sandbox、网络与Secret
-- 更新日期：2026-09-08
+- 状态：0.8产品运行时安全基线，已更新至0.8.6 Provider与配置产品化
+- 更新日期：2026-09-09
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在后续实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
+实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；0.8.6增加严格产品配置、安全读取/迁移、版本化Provider Secret引用、活动配置CAS和零响应暴露Fallback。上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在0.9实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
 
-Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。0.7.3挂起启动、不可breakaway Job、ConPTY及Container统一生命周期、0.7.4受管Git worktree/checkpoint/commit和0.7.5平台中立Action入口均已通过综合门禁；普通Windows目录事务写仍失败关闭。0.7统一入口约束新Tool和未来扩展，0.5既有Patch/Process桥接继续由原不可变批准与专用账本治理，不改写历史事件；Agent Protocol产品接线与发行物尚未完成。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整产品门禁完成前，Windows仍不属于当前产品支持范围。
+Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。0.7.3挂起启动、不可breakaway Job、ConPTY及Container统一生命周期、0.7.4受管Git worktree/checkpoint/commit和0.7.5平台中立Action入口均已通过综合门禁；普通Windows目录事务写仍失败关闭。0.7统一入口约束新Tool和未来扩展，0.5既有Patch/Process桥接继续由原不可变批准与专用账本治理，不改写历史事件；0.8已完成本地Agent Protocol与Provider配置产品接线，发行物尚未完成。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整产品门禁完成前，Windows仍不属于当前产品支持范围。
 
 ## 1. 安全目标
 
@@ -272,6 +272,29 @@ Agent Runtime                │
 
 **剩余风险**：供应商语义变化需要及时升级 Adapter Contract Test。
 
+### TM-08A：Provider配置投毒与不安全Fallback
+
+**场景**：配置通过重复键、链接替换、Secret错版或伪造Profile链切换到攻击者端点；Provider在
+已返回文本或Tool Call后失败，透明Fallback造成重复输出、重复副作用或错误计费归因。
+
+**控制**
+
+- 最大256 KiB严格JSON，拒绝未知字段、重复键、非有限数、类型转换、过深结构和悬空引用；
+- 配置文件使用POSIX目录描述符/`O_NOFOLLOW`或Windows句柄/Reparse Point安全读取，并核对读取
+  前后身份；产品入口额外拒绝位于Workspace内的配置文件；
+- Provider、Profile、精确模型、能力要求、Fallback顺序和Secret名称/版本形成不可变摘要；
+- 诊断与Provider构造重新生成并核对完整`ProfileSelection`，不接受调用方截短或重排；
+- 活动指针以旧配置摘要和旧Profile联合CAS切换，配置事件和Fallback决策分别形成连续Hash链；
+- 自动Fallback只接受零响应暴露的三类可重试失败，且先持久化决策；任何响应、文本、Tool Call、
+  完成事件或未来未知Provider事件均关闭Fallback窗口；
+- Adapter局部尝试号重写为步骤内连续全局序号，失败尝试及已知用量仍进入Session；
+- 构造或CAS失败时关闭全部已创建Client，不开放stdio。
+
+**剩余风险**：Environment Secret版本由部署者声明，不能证明云端真实版本；Python SDK仍持有
+不可变Key字符串直到Client关闭；SQLite Hash链不能抵御可同时篡改程序与数据库的同UID主体；
+已发送但未收到任何响应的模型请求可能已经计费，Fallback只保证没有向Agent暴露输出，不保证
+供应商侧零费用。
+
 ### TM-09：Client 协议伪造与资源耗尽
 
 **场景**：客户端跳过 initialize、伪造 ToolResult/Event、发送巨大 JSON 或制造慢消费者。
@@ -377,10 +400,11 @@ Agent Runtime                │
 13. 多文件 transaction 每个成员 replace 前先持久化意图，replace 后先记录可核对事实再推进游标；
 14. Secret 明文不得进入 ExecutionPlan canonical JSON、fingerprint 输入、Session Event 或审计载荷；
 15. Capability requested/effective 不一致时不得执行。
+16. Provider自动Fallback不得跨越响应或Tool Call暴露边界，且没有持久审计不得切换。
 
 ## 8. 发布门禁
 
-0.7可信执行与工程交付版本发布前必须：
+0.8产品运行时版本发布前必须：
 
 - 路径、symlink、进程树、禁网和 Secret Canary 测试全部通过；
 - 所有内置 Tool 声明 Effect、Permission、Sandbox 和 Secret；
@@ -390,12 +414,13 @@ Agent Runtime                │
 - Threat Model 根据实现更新为 v2；
 - 文档准确区分 Host 限制与 Container 保证；
 - macOS、Linux和Windows分别通过路径、进程树、取消、恢复和Sandbox能力门禁；Windows平台中立CI不得替代原生执行测试。
+- Product Config严格解析、Secret canary、迁移崩溃、活动CAS、Hash链篡改和Fallback暴露边界测试通过。
 
 ## 9. 后续工作
 
 - 0.5：Patch、Process、交付和Tool调度专项威胁分析已随纵向切片补齐；
 - 0.7：根据真实执行后端更新 Threat Model v2；
-- 0.8：为 MCP、Hooks 和 WebSocket 增加独立边界；
+- 0.8：Agent Protocol、MCP、Skills、Hooks及Provider产品配置威胁边界已完成；
 - 0.9：引入自动化红队 Eval、依赖扫描和发布 SBOM；
 - 1.0：完成安装更新、安全响应和数据删除策略。
 
@@ -570,7 +595,7 @@ Agent Runtime                │
 - **Secret泄漏**：目标环境只由Execution Plan绑定的Secret短期解析，值不进入argv、目录、连接事件或配置；Tool结果在进入Action输出、日志或模型Context前执行同一Secret Guard脱敏。
 - **生命周期**：连接状态和目录代次持久化；宿主重开不接管历史连接。SDK关闭后通过容器名、进程ID和执行摘要标签证明无残留，无法证明时以`mcp_process_cleanup_failed`失败。
 - **Server反向暴露**：可选MCP Server只通过本地stdio导出显式低风险只读Action；列表和调用都重核绑定，远端客户端无权批准写操作。0.8.4不监听网络，不实现OAuth或任意Header。
-- **剩余风险**：同UID主体仍可替换宿主配置或调试本地进程；Container Runtime本身属于高权限TCB。Streamable HTTP、受管OAuth、Secret引用轮换与配置来源信任由0.8.6补齐，发行签名与SBOM由0.9关闭。
+- **剩余风险**：同UID主体仍可替换宿主配置或调试本地进程；Container Runtime本身属于高权限TCB。模型Provider的0.8.6 Secret引用不适用于MCP；Streamable HTTP、受管OAuth和远端目标身份由0.9.4补齐，发行签名与SBOM由0.9关闭。
 
 对应设计、源码依据和回归见[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。
 
@@ -588,3 +613,36 @@ Agent Runtime                │
 - **剩余风险**：0.8.5不提供远端Skill安装、签名Marketplace或可执行Hook生态；同UID配置篡改由摘要漂移检测但不能抵御宿主账户失陷，发行签名和供应链清单属于0.9。
 
 对应设计、源码依据和回归见[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#8-085-skills与hooks详细设计)。
+
+## 0.8.6 Provider与配置产品化补充（2026-09-09）
+
+- **配置来源投毒**：只接受受信宿主显式路径下的单一严格JSON文件；不支持include、远端URL、
+  命令替换、环境正文插值或插件解析器。文件读取复用跨平台安全句柄并拒绝链接、特殊文件、
+  多硬链接及观测漂移。
+- **配置混淆**：Provider定义、模型Profile和Secret Source分离；所有ID排序唯一，引用、版本、
+  能力、Fallback图和累计尝试数在构造网络Client前全量验证。规范摘要与原文件摘要分离，分别
+  用于语义身份和源迁移CAS。
+- **Secret污染与泄漏**：配置和数据库只保存Secret名称、版本和环境变量定位；只解析选中链的
+  白名单值且一个环境变量只能对应一个Secret身份。Provider构造核对精确版本，将API Key限制
+  为8 KiB可打印ASCII，拒绝自定义Header环境变量，诊断和CLI错误不传播值或
+  原始异常。可变副本立即清零，但Python/SDK不可变字符串不承诺内存安全擦除。
+- **迁移覆盖与半写**：v1到v2要求完整源摘要、私有锁、同目录临时文件、文件/目录fsync、私有
+  备份和替换前二次CAS。替换前失败保持v1；替换后退出由v2幂等重开收敛，不根据缺失收据回滚。
+- **配置切换竞态**：Provider候选和Runtime组件全部初始化成功后才使用期望旧摘要与旧Profile
+  联合CAS发布活动指针；失败会关闭已创建Client，不开放stdio。同配置内Profile切换也不能
+  丢失更新；配置热加载关闭，活动Turn不会在流中途换Provider。
+- **重复输出与副作用**：Fallback只在零响应暴露、可重试白名单错误和审计成功时发生。尝试和
+  用量元数据可以先持久化；响应身份、文本、Tool Call、完成或未来未知事件一经观察即禁止切换。
+- **审计篡改**：配置加载/激活/迁移和Fallback使用独立连续Hash链；读取时核对正文、索引、
+  前驱和Head；POSIX共享父目录、链接或多硬链接数据库在打开前拒绝。该链是篡改检测，不是
+  同UID攻击者下的密码学不可抵赖日志。
+- **产品入口隔离**：内置`agent-server`固定单一已解析Workspace，只装配现有只读Coding Tools；
+  配置文件必须位于Workspace之外，状态目录不能与Workspace互相包含。stdio不提供网络身份，
+  不能桥接为多用户服务。
+- **剩余风险**：真实模型能力与端点运营状态需要0.9.6受控Provider门禁持续验证；远端MCP
+  OAuth与公网Git凭据分别由0.9.4/0.9.5建立独立目标身份和Secret作用域，不能复用当前模型
+  Provider认证。
+
+对应设计、源码依据和回归见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)、
+[Provider/Profile配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)
+及[0.8详细设计](m08-product-runtime-and-extensions.md#9-086-provider与配置产品化详细设计)。

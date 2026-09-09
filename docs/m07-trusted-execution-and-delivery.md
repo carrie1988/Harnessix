@@ -450,7 +450,7 @@ Push与Commit严格分离。`GitPushActionExecutor.prepare_intent`只读取本�
 
 Push前重新核对仓库、remote URL、local OID和远端lease；`fast_forward_only`还验证旧远端OID是local OID祖先。Push调用一旦开始，启动/等待/返回/后续观察的任何异常都进入unknown。对账只执行`ls-remote`：目标OID表示成功，旧OID表示未应用，第三种OID表示人工处置；绝不再次Push。
 
-0.7受控真实场景使用本地bare remote，不需要凭据且不发生公网访问。HTTPS/SSH凭据、SSH Agent/known-hosts和平台Keychain必须由0.8.6的Secret/配置产品化显式装配；当前Runner不继承完整宿主环境，也不允许URL凭据或Token进入Intent/argv。
+0.7受控真实场景使用本地bare remote，不需要凭据且不发生公网访问。模型Provider的0.8.6 Secret配置不用于Git；HTTPS/SSH凭据、SSH Agent/known-hosts和平台Keychain必须由0.9.5建立独立作用域并通过三平台Dogfooding；当前Runner不继承完整宿主环境，也不允许URL凭据或Token进入Intent/argv。
 
 ### 14.7 文件、命令和外部效果审计
 

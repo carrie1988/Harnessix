@@ -92,7 +92,7 @@ Tool执行错误以成功JSON-RPC响应中的`isError=true`表达；协议错误
 
 1. 使用官方`mcp>=2.2,<3` SDK承担Wire Protocol、版本协商和跨平台stdio关闭；Harnessix不自研JSON-RPC MCP协议栈。
 2. 0.8.4生产本地Client只接受由0.7 `ContainerCommandBuilder`产生、携带执行身份且可核对残留的强隔离启动对象。直接宿主stdio只用于受控测试，不作为生产配置。
-3. 远端Streamable HTTP需要0.8.6的Provider/Profile/Secret引用和受管出口配置；在该边界完成前不开放任意URL、Header或OAuth值。
+3. 远端Streamable HTTP需要0.9.4建立独立目标身份、OAuth/Secret生命周期和受管出口配置；不能复用0.8.6模型Provider认证，在该边界完成前不开放任意URL、Header或OAuth值。
 4. 每次调用在持有单服务端调用锁时强制重新读取完整目录；当前目录摘要、原始Tool摘要或Schema摘要与捕获快照任一不符，均在`tools/call`前失败关闭。
 5. Tool描述、Title、Annotation和服务端Instructions全部视为未受信模型内容，只能影响展示，不能赋予Permission、Sandbox、Secret、风险或恢复能力。
 6. MCP Tool仅通过`ExtensionActionPort`计划与执行。宿主显式提供资源Resolver和可信效果合同；未绑定Tool不向模型暴露，也不可调用。

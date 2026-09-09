@@ -1,0 +1,311 @@
+{
+  "$defs": {
+    "EnvironmentSecretSourceConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "secret": {
+          "$ref": "#/$defs/SecretReference"
+        },
+        "environment_variable": {
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "title": "Environment Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "secret",
+        "environment_variable"
+      ],
+      "title": "EnvironmentSecretSourceConfig",
+      "type": "object"
+    },
+    "ModelCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "tool_calls": {
+          "default": true,
+          "title": "Tool Calls",
+          "type": "boolean"
+        },
+        "parallel_tool_calls": {
+          "default": true,
+          "title": "Parallel Tool Calls",
+          "type": "boolean"
+        },
+        "streaming_usage": {
+          "const": true,
+          "default": true,
+          "title": "Streaming Usage",
+          "type": "boolean"
+        }
+      },
+      "title": "ModelCapabilities",
+      "type": "object"
+    },
+    "ModelProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Model",
+          "type": "string"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/ModelCapabilities"
+        },
+        "required_capabilities": {
+          "$ref": "#/$defs/ModelCapabilities"
+        },
+        "fallback_profiles": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Fallback Profiles",
+          "type": "array"
+        },
+        "max_output_tokens": {
+          "default": 4096,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "io_timeout_seconds": {
+          "default": 30,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Io Timeout Seconds",
+          "type": "number"
+        },
+        "max_attempts": {
+          "default": 2,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "retry_delay_seconds": {
+          "default": 0.5,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Retry Delay Seconds",
+          "type": "number"
+        },
+        "max_request_bytes": {
+          "default": 2097152,
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Request Bytes",
+          "type": "integer"
+        },
+        "max_response_bytes": {
+          "default": 2097152,
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Response Bytes",
+          "type": "integer"
+        },
+        "max_frame_bytes": {
+          "default": 262144,
+          "maximum": 1048576,
+          "minimum": 128,
+          "title": "Max Frame Bytes",
+          "type": "integer"
+        },
+        "max_chunks": {
+          "default": 10000,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Chunks",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "provider_id",
+        "model"
+      ],
+      "title": "ModelProfile",
+      "type": "object"
+    },
+    "ProductConfigV2": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-config/v2",
+          "default": "harnessix.product-config/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "active_profile": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Active Profile",
+          "type": "string"
+        },
+        "secret_sources": {
+          "items": {
+            "$ref": "#/$defs/EnvironmentSecretSourceConfig"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Secret Sources",
+          "type": "array"
+        },
+        "providers": {
+          "items": {
+            "$ref": "#/$defs/ProviderDefinition"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Providers",
+          "type": "array"
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/$defs/ModelProfile"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Profiles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "active_profile",
+        "secret_sources",
+        "providers",
+        "profiles"
+      ],
+      "title": "ProductConfigV2",
+      "type": "object"
+    },
+    "ProviderDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "provider_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "openai_chat",
+            "anthropic"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "base_url": {
+          "maxLength": 2048,
+          "title": "Base Url",
+          "type": "string"
+        },
+        "credential": {
+          "$ref": "#/$defs/SecretReference"
+        },
+        "output_token_parameter": {
+          "anyOf": [
+            {
+              "enum": [
+                "max_completion_tokens",
+                "max_tokens"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Token Parameter"
+        }
+      },
+      "required": [
+        "provider_id",
+        "kind",
+        "base_url",
+        "credential"
+      ],
+      "title": "ProviderDefinition",
+      "type": "object"
+    },
+    "SecretReference": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "SecretReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-config-snapshot/v1",
+      "default": "harnessix.product-config-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "loaded_at": {
+      "format": "date-time",
+      "title": "Loaded At",
+      "type": "string"
+    },
+    "config": {
+      "$ref": "#/$defs/ProductConfigV2"
+    }
+  },
+  "required": [
+    "source_sha256",
+    "config_sha256",
+    "loaded_at",
+    "config"
+  ],
+  "title": "ProductConfigSnapshot",
+  "type": "object"
+}

@@ -158,7 +158,7 @@ Git Push选作第一个真实外部非幂等写：
 - Commit不会隐式产生Push权限；Push必须形成新的高风险Plan和独立批准；
 - 固定argv只更新一个ref，关闭Hook和prompt，限制Git协议，并始终使用exact `--force-with-lease`；
 - Push调用开始后的异常一律按不确定效果处理；reconcile只读取远端ref，目标OID已存在则成功，仍为旧OID则失败，第三方OID则人工处置；
-- 当前受控真实验收使用本地bare remote证明CAS、旁路拒绝和零重复副作用。HTTPS/SSH非交互凭据装配属于0.8.6配置产品化，0.7不继承用户完整环境或把Token写入argv。
+- 当前受控真实验收使用本地bare remote证明CAS、旁路拒绝和零重复副作用。HTTPS/SSH非交互凭据装配属于0.9.5独立Git凭据与Dogfooding切片，不能复用0.8.6模型Provider Secret；0.7不继承用户完整环境或把Token写入argv。
 
 ## 8. 验证映射
 

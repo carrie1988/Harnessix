@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from uuid import UUID, uuid5
 
 from harnessix.agent.errors import KernelError
@@ -58,6 +59,10 @@ def _budget(value: object) -> Budget | None:
     return Budget.model_validate(value.model_dump())
 
 
+def _resolved_workspace(value: str) -> Path:
+    return Path(value).resolve(strict=True)
+
+
 class AgentApplicationService:
     """公共协议到既有AgentRuntime的薄应用服务，不复制Agent状态机。"""
 
@@ -67,11 +72,13 @@ class AgentApplicationService:
         store: SessionStore,
         requests: ProtocolRequestStore,
         artifact_reader: ScopedProtocolArtifactReader | None = None,
+        workspace: str | Path | None = None,
     ) -> None:
         self.runtime = runtime
         self.store = store
         self.requests = requests
         self.artifact_reader = artifact_reader
+        self.workspace = None if workspace is None else Path(workspace).resolve(strict=True)
         self._tasks: dict[UUID, asyncio.Task[Turn]] = {}
         self._delta_limit = 1000
         self._deltas: dict[UUID, deque[ItemDelta]] = {}
@@ -193,11 +200,25 @@ class AgentApplicationService:
         self, client_instance_id: UUID, params: ThreadCreateParams
     ) -> ThreadResult:
         async def operation() -> ThreadResult:
+            workspace = params.workspace
+            if self.workspace is not None:
+                try:
+                    resolved = await asyncio.to_thread(_resolved_workspace, workspace)
+                except (OSError, RuntimeError):
+                    raise AgentServiceError(
+                        "workspace_not_configured", "Thread Workspace不属于当前产品运行时"
+                    ) from None
+                # Path在Windows上按大小写不敏感规则比较；POSIX仍保持精确路径身份。
+                if resolved != self.workspace:
+                    raise AgentServiceError(
+                        "workspace_not_configured", "Thread Workspace不属于当前产品运行时"
+                    )
+                workspace = str(resolved)
             identity = uuid5(
                 client_instance_id,
                 f"harnessix.protocol-thread/v1:{params.request_id}",
             )
-            thread = await self.runtime.create_thread(params.workspace, thread_id=identity)
+            thread = await self.runtime.create_thread(workspace, thread_id=identity)
             return ThreadResult(thread=project_thread(thread))
 
         return await self._command(

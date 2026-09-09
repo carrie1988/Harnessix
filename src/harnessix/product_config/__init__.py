@@ -1,0 +1,33 @@
+from harnessix.product_config.contracts import (
+    ConfigAuditEvent,
+    ConfigMigrationReceipt,
+    ConfigurationDiagnostic,
+    ConfigurationDiagnosticReport,
+    EnvironmentSecretSourceConfig,
+    ModelCapabilities,
+    ModelProfile,
+    ProductConfigSnapshot,
+    ProductConfigV1,
+    ProductConfigV2,
+    ProfileSelection,
+    ProviderDefinition,
+    ProviderFallbackDecision,
+    SecretReference,
+)
+
+__all__ = [
+    "ConfigAuditEvent",
+    "ConfigMigrationReceipt",
+    "ConfigurationDiagnostic",
+    "ConfigurationDiagnosticReport",
+    "EnvironmentSecretSourceConfig",
+    "ModelCapabilities",
+    "ModelProfile",
+    "ProductConfigSnapshot",
+    "ProductConfigV1",
+    "ProductConfigV2",
+    "ProfileSelection",
+    "ProviderDefinition",
+    "ProviderFallbackDecision",
+    "SecretReference",
+]

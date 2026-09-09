@@ -1,0 +1,63 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.profile-selection/v1",
+      "default": "harnessix.profile-selection/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "selected_profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Selected Profile",
+      "type": "string"
+    },
+    "profile_chain": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Profile Chain",
+      "type": "array"
+    },
+    "provider_chain": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Provider Chain",
+      "type": "array"
+    },
+    "model_chain": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Model Chain",
+      "type": "array"
+    },
+    "selection_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selection Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "config_sha256",
+    "selected_profile",
+    "profile_chain",
+    "provider_chain",
+    "model_chain",
+    "selection_sha256"
+  ],
+  "title": "ProfileSelection",
+  "type": "object"
+}

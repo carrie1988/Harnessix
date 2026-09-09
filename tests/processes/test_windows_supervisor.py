@@ -178,7 +178,9 @@ async def test_windows_timeout_terminates_complete_job_tree(tmp_path: Path) -> N
         spec = build_process_spec(
             invocation="argv",
             argv=(sys.executable, "-I", "-c", code, str(marker)),
-            timeout_seconds=0.5,
+            # Hosted Windows冷启动可能接近一秒；为父进程留出发布子PID的时间，
+            # 超时后仍由同一个Job Object验证完整进程树回收。
+            timeout_seconds=2,
         )
         plan = _plan(workspace, spec, supervisor)
         lease = await supervisor.run(

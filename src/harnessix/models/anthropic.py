@@ -17,7 +17,7 @@ from harnessix.models._anthropic_http import AnthropicTransport
 from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._anthropic_stream import AnthropicStream
 from harnessix.models._bounded_http import InvalidWireData
-from harnessix.models._provider_io import finish_attempt, read_key, wait_for_io
+from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
 from harnessix.models.config import AnthropicConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
@@ -56,10 +56,18 @@ class AnthropicProvider:
     """仅支持非 Thinking 的 Messages 配置；拥有独立 SDK 和 HTTPX2 Client。"""
 
     def __init__(
-        self, config: AnthropicConfig, *, transport: httpx2.AsyncBaseTransport | None = None
+        self,
+        config: AnthropicConfig,
+        *,
+        transport: httpx2.AsyncBaseTransport | None = None,
+        api_key: str | None = None,
     ) -> None:
         self.config = AnthropicConfig.model_validate_json(config.model_dump_json())
-        key = read_key(self.config, headers_env="ANTHROPIC_CUSTOM_HEADERS")
+        key = (
+            read_key(self.config, headers_env="ANTHROPIC_CUSTOM_HEADERS")
+            if api_key is None
+            else validate_key(api_key, headers_env="ANTHROPIC_CUSTOM_HEADERS")
+        )
         client = httpx2.AsyncClient(
             transport=AnthropicTransport(
                 transport or httpx2.AsyncHTTPTransport(trust_env=False), self.config

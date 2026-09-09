@@ -1,0 +1,96 @@
+{
+  "active_profile": "primary",
+  "profiles": [
+    {
+      "capabilities": {
+        "parallel_tool_calls": true,
+        "streaming_usage": true,
+        "tool_calls": true
+      },
+      "fallback_profiles": [],
+      "io_timeout_seconds": 30.0,
+      "max_attempts": 1,
+      "max_chunks": 10000,
+      "max_frame_bytes": 262144,
+      "max_output_tokens": 4096,
+      "max_request_bytes": 2097152,
+      "max_response_bytes": 2097152,
+      "model": "example-backup-model",
+      "profile_id": "backup",
+      "provider_id": "backup",
+      "required_capabilities": {
+        "parallel_tool_calls": false,
+        "streaming_usage": true,
+        "tool_calls": true
+      },
+      "retry_delay_seconds": 0.5,
+      "timeout_seconds": 120.0
+    },
+    {
+      "capabilities": {
+        "parallel_tool_calls": true,
+        "streaming_usage": true,
+        "tool_calls": true
+      },
+      "fallback_profiles": [
+        "backup"
+      ],
+      "io_timeout_seconds": 30.0,
+      "max_attempts": 1,
+      "max_chunks": 10000,
+      "max_frame_bytes": 262144,
+      "max_output_tokens": 4096,
+      "max_request_bytes": 2097152,
+      "max_response_bytes": 2097152,
+      "model": "example-primary-model",
+      "profile_id": "primary",
+      "provider_id": "primary",
+      "required_capabilities": {
+        "parallel_tool_calls": false,
+        "streaming_usage": true,
+        "tool_calls": true
+      },
+      "retry_delay_seconds": 0.5,
+      "timeout_seconds": 120.0
+    }
+  ],
+  "providers": [
+    {
+      "base_url": "https://api.anthropic.com",
+      "credential": {
+        "name": "backup-api-key",
+        "version": "env-v1"
+      },
+      "kind": "anthropic",
+      "output_token_parameter": null,
+      "provider_id": "backup"
+    },
+    {
+      "base_url": "https://gateway.example.com/v1",
+      "credential": {
+        "name": "primary-api-key",
+        "version": "env-v1"
+      },
+      "kind": "openai_chat",
+      "output_token_parameter": "max_completion_tokens",
+      "provider_id": "primary"
+    }
+  ],
+  "secret_sources": [
+    {
+      "environment_variable": "HARNESSIX_BACKUP_API_KEY",
+      "secret": {
+        "name": "backup-api-key",
+        "version": "env-v1"
+      }
+    },
+    {
+      "environment_variable": "HARNESSIX_PRIMARY_API_KEY",
+      "secret": {
+        "name": "primary-api-key",
+        "version": "env-v1"
+      }
+    }
+  ],
+  "spec_version": "harnessix.product-config/v2"
+}
