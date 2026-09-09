@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
@@ -12,13 +14,15 @@ from harnessix.agent.models import (
 )
 from harnessix.artifacts.contracts import ArtifactToolResult
 from harnessix.domain.models import ApprovalDecision, ApprovalRecord, ToolDescriptor
-from harnessix.patches.agent_bridge import PatchCallResult
-from harnessix.patches.batch_agent_bridge import BatchCallResult
 from harnessix.patches.batch_approval_contracts import ManagedPatchBatchApproval
 from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.managed_contracts import PatchRecord
 from harnessix.processes.contracts import ProcessResult
+
+if TYPE_CHECKING:
+    from harnessix.patches.agent_bridge import PatchCallResult
+    from harnessix.patches.batch_agent_bridge import BatchCallResult
 
 
 class ToolRuntime(Protocol):

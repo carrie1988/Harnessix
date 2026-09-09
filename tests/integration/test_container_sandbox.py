@@ -15,6 +15,7 @@ from harnessix.execution.contracts import (
     SecretVersionBinding,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
+from harnessix.mcp import McpClientConnection, McpContainerStdioTarget, SQLiteMcpStore
 from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.sandbox.capabilities import probe_container_engine
@@ -172,3 +173,130 @@ async def test_real_container_enforces_read_only_no_network_limits_and_secret_bo
     assert b"container-secret-canary" not in output
     assert b"[REDACTED]" in output
     assert target.read_text(encoding="utf-8") == "workspace-content\n"
+
+
+async def test_real_container_runs_mcp_stdio_with_frozen_sandbox_binding(
+    tmp_path: Path,
+) -> None:
+    image = os.environ.get("HARNESSIX_TEST_CONTAINER_IMAGE")
+    docker = shutil.which("docker")
+    if not image or not docker:
+        pytest.skip("未配置固定摘要的真实Container MCP验收")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(mode=0o755)
+    fixture = Path(__file__).parents[1] / "mcp/fixtures/busybox_server.sh"
+    server = workspace / "mcp-server.sh"
+    server.write_bytes(fixture.read_bytes())
+    server.chmod(0o644)
+
+    probe = probe_container_engine(Path(docker), engine="docker")
+    network = resolve_network_policy(NetworkPolicy(mode="none"), now=datetime.now(UTC))
+    profile = build_container_sandbox_profile(
+        image=image,
+        workspace_mode="read_only",
+        network=network,
+        limits=SandboxResourceLimits(
+            cpus=0.5,
+            memory_bytes=64 * 1024 * 1024,
+            pids=16,
+            tmpfs_bytes=16 * 1024 * 1024,
+        ),
+    )
+    command = build_container_command(
+        ("/bin/sh", "/workspace/mcp-server.sh"), profile_digest=profile.digest
+    )
+    snapshot = capture_workspace_snapshot(
+        workspace,
+        resources=(
+            WorkspaceResourceRequest(path=".", access="read"),
+            WorkspaceResourceRequest(path="mcp-server.sh", access="read"),
+        ),
+    )
+    capabilities = build_capability_evidence_v2(
+        platform=snapshot.platform,
+        provider="docker",
+        provider_version=probe.server_version,
+        sandbox_levels=("container_strong",),
+        network_modes=("none",),
+        supports_pty=False,
+        supports_background=True,
+        supports_process_tree=True,
+        provider_evidence_digest=probe.digest,
+    )
+    sandbox = SandboxBindingV2(
+        level="container_strong",
+        backend="docker",
+        backend_version=probe.server_version,
+        network="none",
+        capability_digest=capabilities.evidence_digest,
+        profile_digest=profile.digest,
+    )
+    process = build_process_spec(
+        invocation="argv",
+        argv=command.argv,
+        stdin="pipe",
+        lifecycle="background",
+        timeout_seconds=30,
+        output_bytes=64 * 1024,
+        input_bytes=64 * 1024,
+    )
+    async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
+        execution = build_container_execution(
+            command,
+            process,
+            owner_capability_digest=supervisor.capability.digest,
+        )
+        plan = build_execution_plan_v2(
+            ExecutionIntent(
+                source="mcp",
+                source_id="container-fixture",
+                tool="mcp.server",
+                tool_version="1",
+                tool_fingerprint="c" * 64,
+                arguments=execution.model_dump(mode="json", warnings="error"),
+                effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+                risk_level=RiskLevel.HIGH,
+                idempotency_key="container-mcp-fixture",
+            ),
+            snapshot,
+            environment={"LANG": "C"},
+            secrets=(),
+            sandbox=sandbox,
+            policy=ExecutionPolicyBinding(
+                version="sandbox/v1",
+                decision=PolicyDecisionKind.ALLOW,
+                policy_id="container.mcp",
+                reason_code="isolated_test",
+            ),
+            capabilities=capabilities,
+        )
+        builder = ContainerCommandBuilder(Path(docker), probe)
+        launch = builder.prepare(
+            plan,
+            None,
+            profile,
+            workspace=workspace,
+            command=execution,
+            environment={"LANG": "C"},
+        )
+        target = McpContainerStdioTarget(
+            server_id="container-fixture",
+            prepared=launch,
+            execution=execution,
+            profile=profile,
+            builder=builder,
+            startup_timeout_seconds=10,
+            call_timeout_seconds=5,
+        )
+        store = SQLiteMcpStore(tmp_path / "mcp.db")
+        connection = await McpClientConnection.connect(target, store)
+        selected = connection.tool("echo")
+        output = await connection.call(
+            expected_catalog_sha256=connection.catalog.catalog_sha256,
+            expected_tool_sha256=selected.tool_sha256,
+            raw_name="echo",
+            arguments={"text": "Harnessix"},
+        )
+        assert output.structured_content == {"ok": True}
+        await connection.aclose()
+        assert store.load("container-fixture").state == "closed"

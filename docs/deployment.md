@@ -1083,3 +1083,24 @@ harnessix agent \
 ```
 
 当前仓库提供协议服务、SDK和薄CLI边界，不提供已配置Provider的内置stdio启动装配；该装配、Secret引用、Profile诊断和配置迁移属于0.8.6。0.8.3不应把自定义测试宿主包装成正式发行入口。
+
+## 0.8.4 MCP部署
+
+MCP运行时新增独立私有SQLite数据库，用于不可变目录快照、连接事件链和当前连接投影。数据库、WAL/SHM、备份与0.7 Execution Plan/Action Audit应位于同一受信用户的数据根，不能置于Workspace或让MCP容器挂载。目录保存Tool描述与Schema，可能包含第三方敏感元数据；诊断导出只应包含服务端ID、状态、协议版本和摘要。
+
+生产本地MCP Client装配顺序固定为：
+
+1. 由受信配置选择宿主分配的`serverId`、固定OCI镜像摘要、结构化服务端argv、显式普通环境和Secret引用；
+2. 探测Docker/Podman绝对可执行文件与服务端能力，生成`ContainerSandboxProfile`、`ContainerExecutionSpec`和完整Execution Plan；
+3. 取得所需批准后由`ContainerCommandBuilder.prepare`生成不可变`PreparedContainerLaunch`；
+4. 构造`McpContainerStdioTarget`并连接，捕获协议身份和完整Tool目录；
+5. 对每个允许Tool配置宿主持有的`McpTrustedToolPolicy`，经对应`ExtensionActionPort`注册；未配置的Tool不向模型公开；
+6. 关闭时先停止新调用，等待每服务端调用锁，退出官方SDK传输，再按容器执行身份核对并清理残留。
+
+默认网络模式为`none`。`limited/restricted`必须复用0.7.2受管出口并绑定网关摘要；`full`只能由宿主Policy显式允许。MCP容器不得挂载Docker Socket、用户HOME、Session数据库、Action账本、SSH目录或云厂商凭据目录。Secret只在启动前解析进目标环境，值不得出现在MCP配置、argv、目录快照和错误正文。
+
+连接进入`schema_changed`或`failed`后不得继续调用；运维应关闭旧连接、检查服务端版本/镜像和目录差异，重新生成宿主Policy与Action绑定后再连接。不能直接修改SQLite状态或把旧摘要复制到新目录。宿主异常退出后，启动扫描只把遗留活跃连接标记为`mcp_host_interrupted`，实际容器残留必须由Container执行身份扫描清理，不能依据历史PID盲目接管。
+
+可选MCP Server仅通过本地stdio运行，stdout专用于MCP帧，诊断写入脱敏stderr。只允许显式导出低风险只读Binding；不应把stdio桥接到远程或多用户套接字。0.8.4不支持Streamable HTTP、OAuth、用户提供任意Header、远端URL或持久`input_required`；这些能力在0.8.6形成配置、Secret与受管出口合同前必须保持关闭。
+
+CI的`container-sandbox`任务使用固定摘要BusyBox镜像，同时验证基础Sandbox与真实MCP stdio连接、目录发现、调用及关闭后无残留。macOS和Windows矩阵运行MCP确定性/真实子进程测试；本地没有固定镜像或Container Daemon时，Container单项skip不能作为正式发布证据。

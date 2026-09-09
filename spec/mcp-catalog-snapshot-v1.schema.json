@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "McpServerIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.mcp-server-identity/v1",
+          "default": "harnessix.mcp-server-identity/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "server_id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Server Id",
+          "type": "string"
+        },
+        "transport": {
+          "enum": [
+            "container_stdio",
+            "in_process",
+            "streamable_http"
+          ],
+          "title": "Transport",
+          "type": "string"
+        },
+        "target_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Target Sha256",
+          "type": "string"
+        },
+        "protocol_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "reported_name": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Name"
+        },
+        "reported_version": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Version"
+        },
+        "capabilities_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Capabilities Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "server_id",
+        "transport",
+        "target_sha256",
+        "protocol_version",
+        "capabilities_sha256"
+      ],
+      "title": "McpServerIdentity",
+      "type": "object"
+    },
+    "McpToolSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.mcp-tool-snapshot/v1",
+          "default": "harnessix.mcp-tool-snapshot/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "raw_name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Raw Name",
+          "type": "string"
+        },
+        "model_name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Model Name",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 1024,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 16384,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "input_schema": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Input Schema",
+          "type": "object"
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Schema"
+        },
+        "annotations": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "maxProperties": 64,
+          "title": "Annotations",
+          "type": "object"
+        },
+        "definition_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Definition Sha256",
+          "type": "string"
+        },
+        "tool_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "raw_name",
+        "model_name",
+        "input_schema",
+        "definition_sha256",
+        "tool_sha256"
+      ],
+      "title": "McpToolSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.mcp-catalog-snapshot/v1",
+      "default": "harnessix.mcp-catalog-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "server": {
+      "$ref": "#/$defs/McpServerIdentity"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "tools": {
+      "items": {
+        "$ref": "#/$defs/McpToolSnapshot"
+      },
+      "maxItems": 2048,
+      "title": "Tools",
+      "type": "array"
+    },
+    "catalog_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Catalog Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server",
+    "generation",
+    "captured_at",
+    "tools",
+    "catalog_sha256"
+  ],
+  "title": "McpCatalogSnapshot",
+  "type": "object"
+}

@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator, Sequence
-from typing import Protocol, Self, cast
+from typing import TYPE_CHECKING, Protocol, Self, cast
 from uuid import UUID, uuid4
 
 from pydantic import JsonValue
 
-from harnessix.app_server.server import AgentProtocolServer
 from harnessix.protocol.contracts import (
     AGENT_PROTOCOL_VERSION,
     ApprovalRespondParams,
@@ -45,6 +44,9 @@ from harnessix.protocol.contracts import (
     TurnView,
     validate_server_output,
 )
+
+if TYPE_CHECKING:
+    from harnessix.app_server.server import AgentProtocolServer
 
 
 class AgentSDKError(RuntimeError):

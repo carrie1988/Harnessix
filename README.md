@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.7全部路线图范围以及0.8.1～0.8.3本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取和薄CLI已接入同一Agent Runtime。MCP、Skill/Hook产品接线、Provider配置产品化和三平台发行物仍属于0.8.4～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.7全部路线图范围以及0.8.1～0.8.4本地验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI和MCP可信Action接入同一Agent Runtime。Skills/Hooks、Provider配置产品化和三平台发行物仍属于0.8.5～0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -58,7 +58,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 
 0.7.5的受控真实Push使用本地bare remote验证零重复副作用；公网HTTPS/SSH凭据不会从宿主环境隐式继承，待0.8.6通过Secret和配置产品化装配。设计、失败语义和限制见[0.7详细设计](docs/m07-trusted-execution-and-delivery.md)与[统一Action Plane源码研究](docs/research/unified-action-plane-and-extension-boundaries.md)。
 
-## 当前已实现：产品协议、Headless与薄CLI（0.8.1～0.8.3）
+## 当前已实现：产品协议、Headless、薄CLI与MCP（0.8.1～0.8.4）
 
 - Agent Protocol v1使用严格JSON-RPC 2.0/stdio JSONL合同，Command的持久`requestId`与连接内JSON-RPC `id`分离；
 - Headless App Server复用唯一Agent Runtime和Session Store，支持Thread创建、恢复、分叉、归档，Turn开始、重试、取消、审批、提问与Steering；
@@ -68,7 +68,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - Steering绑定预期活动Turn并在模型步骤边界生效，不打断当前Provider请求，也不破坏模型响应、Tool Call、Tool Result和后续用户输入的历史顺序；
 - 薄CLI只依赖Agent SDK，支持`create/list/run/follow/resume/retry/fork/archive/steer/cancel`，可显示计划、工具进度、Diff、审批、问题及流式回答。
 
-0.8.3不提供完整TUI、网络Agent Server或三平台安装器。薄CLI要求宿主通过argv提供已装配的stdio App Server；内置Provider/Profile、Secret引用、配置迁移及正式启动装配由0.8.6交付。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0072](docs/adr/0072-durable-interaction-and-pull-live-stream.md)和[部署说明](docs/deployment.md#083-薄cli与双向交互部署)。
+0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复；远端HTTP/OAuth尚未开放。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。薄CLI要求宿主通过argv提供已装配的stdio App Server；内置Provider/Profile、Secret引用、配置迁移及正式启动装配由0.8.6交付。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0073](docs/adr/0073-mcp-catalog-binding-and-sandbox.md)和[部署说明](docs/deployment.md#084-mcp部署)。
 
 ## 许可证与品牌
 

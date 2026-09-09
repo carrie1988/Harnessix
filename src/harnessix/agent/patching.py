@@ -1,6 +1,8 @@
 """Kernel 专用 Patch 准入与结算；不持有存储、文件或后台执行所有权。"""
 
-from typing import Literal
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
 
 from harnessix.agent.approvals import (
     approval_for,
@@ -20,7 +22,9 @@ from harnessix.agent.models import (
     Turn,
     TurnStatus,
 )
-from harnessix.patches.agent_bridge import PatchCallResult
+
+if TYPE_CHECKING:
+    from harnessix.patches.agent_bridge import PatchCallResult
 
 
 def inspection_scope(thread: Thread, turn: Turn, call: ToolCallContent) -> ToolExecutionScope:

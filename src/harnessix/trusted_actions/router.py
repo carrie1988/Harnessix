@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from collections.abc import Callable, Mapping, Sequence
@@ -112,6 +113,7 @@ class TrustedActionExecutor(Protocol):
 
 
 ResourceResolver = Callable[[BaseModel, ActionPlanningContext], ResolvedAction]
+ArgumentDecoder = Callable[[dict[str, JsonValue]], BaseModel]
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +122,8 @@ class TrustedActionDefinition:
     input_model: type[BaseModel]
     resolve: ResourceResolver
     executor: TrustedActionExecutor
+    input_schema: dict[str, JsonValue] | None = None
+    decode_arguments: ArgumentDecoder | None = None
 
 
 class TrustedActionRouter:
@@ -141,13 +145,30 @@ class TrustedActionRouter:
 
     def register(self, definition: TrustedActionDefinition) -> None:
         binding = TrustedToolBinding.model_validate_json(definition.binding.model_dump_json())
-        schema_digest = canonical_digest(definition.input_model.model_json_schema())
+        if (definition.input_schema is None) != (definition.decode_arguments is None):
+            raise KernelError(
+                "trusted_tool_decoder_invalid",
+                "显式Trusted Tool Schema必须同时提供参数解码器",
+            )
+        schema = (
+            definition.input_model.model_json_schema()
+            if definition.input_schema is None
+            else _canonical_json_object(definition.input_schema)
+        )
+        schema_digest = canonical_digest(schema)
         if schema_digest != binding.input_schema_sha256:
             raise KernelError("trusted_tool_schema_mismatch", "Trusted Tool输入Schema摘要不匹配")
         key = (binding.source, binding.source_id, binding.tool)
         if key in self._definitions:
             raise KernelError("trusted_tool_duplicate", "Trusted Tool重复注册")
-        self._definitions[key] = definition
+        self._definitions[key] = TrustedActionDefinition(
+            binding=binding,
+            input_model=definition.input_model,
+            resolve=definition.resolve,
+            executor=definition.executor,
+            input_schema=schema if definition.input_schema is not None else None,
+            decode_arguments=definition.decode_arguments,
+        )
 
     def bindings(
         self, *, source: str | None = None, source_id: str | None = None
@@ -174,10 +195,11 @@ class TrustedActionRouter:
         if _find_sensitive_path(checked.arguments) is not None:
             raise KernelError("raw_secret_rejected", "Action参数包含疑似明文凭据字段")
         try:
-            arguments = definition.input_model.model_validate_json(
-                json.dumps(checked.arguments, ensure_ascii=False, allow_nan=False)
-            )
-            normalized = cast(dict[str, JsonValue], arguments.model_dump(mode="json"))
+            arguments = _decode_action_arguments(definition, checked.arguments)
+            dumped = arguments.model_dump(mode="json")
+            if type(dumped) is not dict:
+                raise ValueError
+            normalized = cast(dict[str, JsonValue], dumped)
         except (ValidationError, ValueError, TypeError):
             raise KernelError(
                 "tool_invalid_arguments", "Action参数不符合Trusted Tool契约"
@@ -297,12 +319,26 @@ class TrustedActionRouter:
             executor_id=plan.binding.executor_id,
             external_action_id=plan.external_action_id,
         )
+        cancelled: asyncio.CancelledError | None = None
         try:
             outcome = await definition.executor.execute(plan, arguments)
             outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
             self._validate_outcome_identity(plan, outcome)
             if outcome.kind == "manual_intervention":
                 raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
+        except asyncio.CancelledError as error:
+            cancelled = error
+            outcome = ActionExecutionOutcome(
+                kind=(
+                    "failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"
+                ),
+                external_action_id=plan.external_action_id,
+                error_code=(
+                    "executor_cancelled"
+                    if plan.binding.effect_class is EffectClass.READ_ONLY
+                    else "cancelled_write_effect_unknown"
+                ),
+            )
         except UncertainEffectError:
             outcome = ActionExecutionOutcome(
                 kind="unknown",
@@ -334,6 +370,8 @@ class TrustedActionRouter:
             external_action_id=outcome.external_action_id,
             error_code=outcome.error_code,
         )
+        if cancelled is not None:
+            raise cancelled
         return outcome
 
     async def reconcile(self, plan_id: UUID) -> ActionExecutionOutcome:
@@ -353,10 +391,8 @@ class TrustedActionRouter:
             )
             return outcome
         try:
-            arguments = definition.input_model.model_validate_json(
-                json.dumps(plan.invocation.arguments, ensure_ascii=False, allow_nan=False)
-            )
-        except ValidationError:
+            arguments = _decode_action_arguments(definition, plan.invocation.arguments)
+        except (KernelError, ValidationError, ValueError, TypeError):
             raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
         self._audit.transition(
             plan_id,
@@ -538,6 +574,33 @@ class ExtensionActionPort:
         ):
             raise KernelError("extension_plan_denied", "扩展不能读取其他来源的Action计划")
         return current
+
+
+def _canonical_json_object(value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    try:
+        decoded = json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False))
+    except (TypeError, ValueError, RecursionError):
+        raise KernelError(
+            "trusted_tool_schema_invalid", "Trusted Tool Schema不是规范JSON"
+        ) from None
+    if type(decoded) is not dict:
+        raise KernelError("trusted_tool_schema_invalid", "Trusted Tool Schema必须是JSON对象")
+    return cast(dict[str, JsonValue], decoded)
+
+
+def _decode_action_arguments(
+    definition: TrustedActionDefinition,
+    arguments: Mapping[str, JsonValue],
+) -> BaseModel:
+    copied = _canonical_json_object(arguments)
+    if definition.decode_arguments is not None:
+        decoded = definition.decode_arguments(copied)
+        if not isinstance(decoded, BaseModel):
+            raise TypeError("Trusted Tool参数解码器必须返回BaseModel")
+        return decoded
+    return definition.input_model.model_validate_json(
+        json.dumps(copied, ensure_ascii=False, allow_nan=False)
+    )
 
 
 def _canonical_resources(

@@ -60,7 +60,16 @@ def failure_category(code: str) -> FailureCategory:
     if code.startswith("context_"):
         return FailureCategory.INPUT
     if code.startswith(
-        ("tool_", "patch_", "process_", "artifact_", "test_", "git_", "workspace_")
+        (
+            "tool_",
+            "patch_",
+            "process_",
+            "artifact_",
+            "test_",
+            "git_",
+            "workspace_",
+            "mcp_",
+        )
     ) or code in {"unknown_tool", "duplicate_tool"}:
         return FailureCategory.TOOL
     if code in {

@@ -10,6 +10,7 @@ Harnessix Code依赖第三方开源组件。各组件仍由各自权利人所有
 | asyncpg | PostgreSQL异步访问 | Apache-2.0 | [MagicStack/asyncpg](https://github.com/MagicStack/asyncpg) |
 | FastAPI | HTTP API | MIT | [fastapi/fastapi](https://github.com/fastapi/fastapi) |
 | HTTPX | HTTP客户端 | BSD-3-Clause | [encode/httpx](https://github.com/encode/httpx) |
+| MCP Python SDK | Model Context Protocol Client/Server与stdio传输 | MIT | [modelcontextprotocol/python-sdk](https://github.com/modelcontextprotocol/python-sdk) |
 | Pydantic | 数据模型与校验 | MIT | [pydantic/pydantic](https://github.com/pydantic/pydantic) |
 | Uvicorn | ASGI Server | BSD-3-Clause | [encode/uvicorn](https://github.com/encode/uvicorn) |
 

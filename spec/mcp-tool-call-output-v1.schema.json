@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.mcp-tool-call-output/v1",
+      "default": "harnessix.mcp-tool-call-output/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "content": {
+      "items": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "maxItems": 256,
+      "title": "Content",
+      "type": "array"
+    },
+    "structured_content": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "is_error": {
+      "default": false,
+      "title": "Is Error",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "content"
+  ],
+  "title": "McpToolCallOutput",
+  "type": "object"
+}

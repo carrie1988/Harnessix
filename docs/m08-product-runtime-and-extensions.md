@@ -3,7 +3,7 @@
 ## 1. 文档状态
 
 - 适用版本：0.8；
-- 当前状态：0.8.1～0.8.3已完成本地验收，0.8.4～0.8.6待前序切片关闭后实施；
+- 当前状态：0.8.1～0.8.4已完成本地验收，0.8.5～0.8.6待前序切片关闭后实施；
 - 总体目标：把0.7已经完成的可信执行与工程交付能力开放为可恢复的本地产品服务，并在相同Runtime、Permission和Sandbox边界内接入CLI、SDK、MCP、Skills、Hooks与Provider配置。
 
 本文只把已经实现并验证的切片标记为完成。每个切片必须依次完成源码研究、架构决策、领域契约、最小正式实现、失败恢复测试、真实场景验证和文档同步。
@@ -253,15 +253,90 @@ Agent Event/Thread当前版本升级为v19，Session migration22把快照投影�
 
 独立wheel升级使用历史提交`e0e8498`创建真实v8 Session；当前wheel仅追加migration10～22，保持旧事件和投影原字节，旧reader明确拒绝新库，当前v19继续写入并保持Replay一致。
 
-## 7. 后续切片冻结入口
+## 7. 0.8.4 MCP详细设计
 
-0.8.3只能依赖Agent SDK，不直接打开Session或Runtime；0.8.4～0.8.5只能调用`ExtensionActionPort`；0.8.6的配置只能保存Secret引用，不能把凭据值写入协议、Session或配置文件。具体设计在对应源码研究和ADR完成后追加。
+### 7.1 模块与信任边界
 
-## 8. 参考资料
+`harnessix.mcp`由五个边界组成：
+
+| 模块 | 职责 | 不拥有的能力 |
+|---|---|---|
+| `contracts` | 服务端身份、Tool快照、目录快照、连接事件/投影和调用输出合同 | 不执行Tool，不解释信任 |
+| `schema` | JSON Schema 2020-12、参数和结果的有界验证 | 不授予Permission |
+| `store` | 私有SQLite目录快照、哈希链连接事件和重启恢复 | 不保存Secret或Tool结果正文 |
+| `runtime` | 官方MCP SDK Client、stdio进程生命周期、目录刷新和调用 | 不直接访问Agent Session或审批 |
+| `actions`、`server` | MCP Client到可信Action的适配，以及可选低风险只读MCP Server | 不持有Router、Executor Registry或Secret Provider |
+
+第三方MCP Server、其二进制、描述、Annotation、Schema和结果均按不受信输入处理。生产本地Client只接受`McpContainerStdioTarget`：启动argv必须来自`ContainerCommandBuilder`，并同时绑定不可变镜像、`ContainerExecutionSpec`、强Sandbox Profile、网络模式和进程身份。`McpInProcessTarget`只用于受信宿主内嵌与测试，不加载第三方Python模块。任意远端URL、Header、OAuth和Streamable HTTP配置留给0.8.6的Secret引用与受管出口切片。
+
+### 7.2 协议代际与连接状态
+
+Client使用官方`mcp` Python SDK 2.x的`mode="auto"`：优先探测2026代`server/discover`，并兼容仍使用`initialize/initialized`的旧服务端。Harnessix不自行复制协议Codec。协商出的协议版本、服务端报告身份、Capability摘要、目标实现摘要和传输类型共同进入`McpServerIdentity`；报告名称和版本仅用于诊断，不能替代宿主分配的`serverId`。
+
+连接状态机为：
+
+```text
+不存在 → connecting → connected → schema_changed → closed
+                   └──────────────→ failed ─────────→ closed
+failed / closed / schema_changed → connecting
+```
+
+每次转换追加带前序摘要的`McpConnectionEvent`，并在同一SQLite事务更新当前投影。目录以`serverId + generation`不可变保存；语义相同的重连仍生成新代次，目录摘要故意排除捕获时间和代次。宿主重开时，遗留`connecting/connected`只收敛为`failed(mcp_host_interrupted)`，不声称远端进程或Tool仍可执行。
+
+### 7.3 Tool目录与Schema绑定
+
+`tools/list`最多读取1000页、2048个Tool；重复Cursor、重复原始名称、超限定义和非法字段使整个连接失败关闭。模型名称固定为`mcp__<server>__<tool>`；规范化冲突或超长名称追加原始名称SHA-256前缀，原始名称始终单独保存并用于协议调用。
+
+每个`McpToolSnapshot`保存原始/模型名称、输入/输出Schema、显示字段、Annotation、原始定义摘要和完整Tool摘要。Description与Annotation仅进入不受信目录快照，绝不决定`EffectClass`、`RiskLevel`、Permission、Recovery或Sandbox。输入Schema必须以object为根，使用JSON Schema 2020-12；禁止外部`$ref`、`$id`、`pattern`和`patternProperties`，并限制字节、深度、节点和字符串长度。调用参数在规划时依照捕获Schema验证，非法或无法解析的本地引用统一为`tool_invalid_arguments`。
+
+每次调用在同一服务端锁内先以`cache_mode="bypass"`完整刷新目录。当前目录或目标Tool摘要与计划绑定不一致时，先持久化`schema_changed`，再以`mcp_tool_schema_changed`拒绝，实际`tools/call`尚未发送。列表变化通知只可作为刷新提示，不能代替调用前权威检查。
+
+### 7.4 可信Action路由与失败语义
+
+宿主必须为每个准入Tool提供`McpTrustedToolPolicy`，显式声明原始名称、效果类别、风险、资源解析和恢复方式。动态MCP Schema通过`TrustedActionDefinition.input_schema + decode_arguments`进入既有Router，注册摘要、计划、审批、Workspace、Sandbox和执行器身份仍由0.7.5合同冻结。模型侧只获得已在对应`ExtensionActionPort(source="mcp", sourceId=serverId)`注册且指纹仍匹配当前目录的Tool。
+
+写Tool必须声明`external_reconcile`并提供只观察外部事实的Reconciler；只读Tool必须使用`recovery_mode="none"`。结果在跨越Action边界前限制为1 MiB并执行Secret脱敏。调用失败按“是否可能已经发送”区分：
+
+| 切点 | 只读Tool | 写Tool |
+|---|---|---|
+| 参数、计划、Sandbox或Schema漂移，调用前拒绝 | `failed` | `failed` |
+| 调用后超时、断连、结果非法、`input_required` | `failed` | `unknown` |
+| 服务端返回`isError=true` | `failed` | `unknown` |
+| 调用协程取消 | Action Router持久`failed(executor_cancelled)` | Action Router持久`unknown(cancelled_write_effect_unknown)` |
+| 重开后存在`running/reconciling` | 按Router恢复规则收敛 | 只允许显式Reconcile，不重放原调用 |
+
+保守地把写Tool的`isError`视为UNKNOWN，是因为协议错误结果不能证明外部效果尚未发生。MCP的多轮工具请求`input_required`尚未映射为持久Agent交互；当前版本明确失败，不把SDK内存回调伪装为可恢复审批。
+
+### 7.5 进程关闭与可选Server
+
+stdio Client的启动、目录发现、调用和关闭均有独立超时。SDK退出后还必须调用`ContainerCommandBuilder.cleanup_container`，以进程ID、执行摘要、容器名和双标签证明容器不存在；无法证明时持久化并返回`mcp_process_cleanup_failed`。真实子进程故障测试覆盖服务端硬退出、调用超时和关闭后进程消失；固定摘要BusyBox容器门禁额外覆盖禁网、只读Workspace、低资源限制、协议调用和无残留关闭。
+
+可选`HarnessixMcpServer`只导出宿主显式白名单中的低风险、只读、无需恢复且Schema摘要一致的`TrustedToolBinding`。列表和调用都重新核对当前绑定；调用仍通过`ExtensionActionPort.plan/execute`，非`ready`计划只返回安全错误，不代表MCP客户端拥有批准权。Server只提供本地stdio入口，不开放网络监听。
+
+### 7.6 0.8.4验收
+
+- 目录分页、重复Cursor、名称冲突、恶意描述/Annotation、非法/超限Schema和漂移均失败关闭；
+- SQLite重开、事件链、相同目录多代次、并发连接、损坏正文和中断恢复均有确定结果；
+- 只读调用、写审批、写超时UNKNOWN、显式Reconcile、取消、Secret结果脱敏和动态Schema接入统一Action Plane；
+- 可选Server只导出显式低风险只读Action，写绑定、缺失Tool和非法参数被拒绝；
+- 真实stdio子进程覆盖Crash/Timeout/进程清理，真实固定镜像Container覆盖强Sandbox绑定；
+- 六份MCP JSON Schema由运行时合同生成并逐项比对，官方SDK许可证进入第三方通知。
+
+0.8.4不增加Agent Protocol方法或Session migration。MCP连接与目录使用独立私有数据库；调用审计和UNKNOWN恢复仍使用0.7.5 Execution Plan/Action Audit事实。
+
+本地完整门禁为3235 passed、13 skipped，319.39秒；Ruff格式与规则检查655个文件通过，Mypy严格检查236个源文件通过。192份Schema生成物按文件名、NUL和原字节聚合SHA256为`4231d529343624f8c4a963e8d71c991303b65e995c5b4cf3b8f4602e2e3a25ce`。13项跳过只包含平台限定或本机未配置的集成场景；真实Container MCP由固定镜像CI门禁提供发布证据。
+
+## 8. 后续切片冻结入口
+
+0.8.3只能依赖Agent SDK，不直接打开Session或Runtime；0.8.5只能调用`ExtensionActionPort`；0.8.6的配置只能保存Secret引用，不能把凭据值写入协议、Session或配置文件。具体设计在对应源码研究和ADR完成后追加。
+
+## 9. 参考资料
 
 - [Agent Protocol与产品运行时源码研究](research/agent-protocol-product-runtime.md)
 - [ADR 0009：JSON-RPC 2.0与stdio JSONL](adr/0009-app-server-protocol.md)
 - [ADR 0070：Agent Protocol v1边界](adr/0070-agent-protocol-v1-boundaries.md)
 - [ADR 0071：Headless App Server与Agent SDK生命周期](adr/0071-headless-app-server-and-sdk-lifecycle.md)
 - [ADR 0072：持久交互与Pull-Live事件流](adr/0072-durable-interaction-and-pull-live-stream.md)
+- [MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)
+- [ADR 0073：MCP目录绑定与Sandbox](adr/0073-mcp-catalog-binding-and-sandbox.md)
 - [JSON-RPC 2.0规范](https://www.jsonrpc.org/specification)

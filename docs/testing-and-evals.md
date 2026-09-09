@@ -1525,3 +1525,20 @@ Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整�
 独立wheel升级探针以历史提交`e0e8498`的真实v8 wheel创建完成会话和migration1～9，再由当前v19 wheel仅追加migration10～22。升级未改变数据库inode、旧事件、旧投影或前九个migration；v8 reader随后以`schema_too_new`拒绝且不修改数据库；当前wheel继续运行时只追加v19事件、投影升级为19并保持Replay一致。历史与当前wheel SHA256分别为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`和`d9b00ea2015d0b91b918ddf21b469fcb523b818e645f16655a29220e1e069d7d`。
 
 验收使用确定性Fake/Scripted Provider、本地临时SQLite和本地受管副本，不调用模型API，不访问公网、SSH或远程服务器。薄CLI当前要求宿主提供已装配的stdio App Server argv；不能由本切片推导Provider/Profile配置、正式安装器或完整TUI已经可用。
+
+## 76. 0.8.4 MCP候选验收（2026-09-09）
+
+状态：**本地验收完成，跨平台CI随本切片提交验收**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth和配置产品化属于0.8.6。
+
+专项回归覆盖：
+
+- 2026代自动发现与旧握手兼容、完整分页、重复Cursor、重复名称、稳定名称冲突摘要、目录持久重开、同内容多代次、连接并发、哈希链篡改和宿主中断恢复；
+- JSON Schema 2020-12 object根、字节/深度/节点边界、外部引用、基址、正则、无法解析本地引用、参数与输出上限；恶意Description/Annotation不能降低宿主Policy；
+- 每次调用前绕过缓存刷新，Schema变化和Tool移除在调用前持久化并拒绝；只读调用、写审批、发送后超时UNKNOWN、显式Reconcile零重放、调用取消及结果Secret脱敏；
+- 可选Server只导出显式低风险只读Action，写绑定、Schema错配、缺失Tool和非法参数失败关闭；
+- 真实stdio Python子进程硬退出、调用超时、关闭后进程消失；固定摘要BusyBox容器执行旧握手、目录读取、Tool调用、禁网/只读/低资源Profile绑定和标签化残留清理；
+- 六份MCP JSON Schema与运行时模型逐项相等，连续两次全量生成聚合摘要一致；MCP SDK进入第三方许可证通知；macOS与Windows CI显式加入MCP测试。
+
+0.8.4专项当前为**47 passed**（含`tests/mcp`与可信Action扩大回归；真实Container由CI单独启用）。测试不调用模型API、不访问远端MCP、SSH、Git remote或用户服务器。MCP目录数据库只保存协议身份、Schema、Annotation和摘要；Tool结果仍由Action Audit只保存摘要，Secret canary在跨边界前被替换为`[REDACTED]`。
+
+最终非沙箱`make check`为**3235 passed、13 skipped，319.39秒**；Ruff格式与规则检查655个文件通过，Mypy严格检查236个源文件通过。Schema生成后共有192份JSON文件，按文件名、NUL和原字节聚合SHA256为`4231d529343624f8c4a963e8d71c991303b65e995c5b4cf3b8f4602e2e3a25ce`。13项跳过中新增的一项是本机未配置Container Daemon的真实MCP容器验收；该项必须由CI固定镜像任务关闭。

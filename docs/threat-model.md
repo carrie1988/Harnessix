@@ -556,3 +556,18 @@ Agent Runtime                │
 - **剩余风险**：同UID主体仍可终止或调试本地stdio进程、篡改可写数据库或替换宿主程序；0.8.3不提供网络认证、二进制签名或多用户隔离。完整发行签名和诊断包治理属于0.9，远程协议必须另建认证和主体绑定后才能开放。
 
 对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals.md#75-083-薄cli与双向交互验收2026-09-09)。
+
+## 0.8.4 MCP补充（2026-09-09）
+
+- **新增不受信主体**：第三方MCP Server二进制、协议实现、显示身份、Capability、Tool名称、Description、Annotation、输入/输出Schema、分页Cursor和调用结果；这些数据都不能成为本地Permission或风险事实。
+- **隔离边界**：生产本地Server只能由固定镜像摘要、`ContainerExecutionSpec`和`ContainerSandboxProfile`构造stdio进程；默认禁网，选择性网络必须走受管出口。MCP进程不获得Session、Action Audit、Execution Plan、Secret Store或宿主Docker Socket。
+- **目录投毒与TOCTOU**：完整Tool定义和目录形成内容摘要；调用锁内绕过缓存重新获取所有分页，重复Cursor、重复名称、超限、非法Schema或任一摘要变化均在`tools/call`前失败并持久化`schema_changed`。
+- **Schema资源消耗**：JSON Schema仅接受2020-12 object根；外部引用、基址重定义和无界正则关键字失败关闭，Schema、参数和结果分别限制字节、深度、节点及字符串长度。无法解析的本地引用转换为稳定参数错误，不向上泄漏解析器异常。
+- **权限提升**：Description和Annotation只作低信任显示；Effect、Risk、资源、Recovery和Sandbox只能来自宿主`McpTrustedToolPolicy`。模型只看到当前目录中同时存在且已注册到对应`ExtensionActionPort`的Tool。
+- **不确定副作用**：调用发送后的超时、断连、异常结果、`input_required`和写Tool `isError`均不能证明未产生效果；写Action进入UNKNOWN，只允许宿主显式外部对账，不自动重放。
+- **Secret泄漏**：目标环境只由Execution Plan绑定的Secret短期解析，值不进入argv、目录、连接事件或配置；Tool结果在进入Action输出、日志或模型Context前执行同一Secret Guard脱敏。
+- **生命周期**：连接状态和目录代次持久化；宿主重开不接管历史连接。SDK关闭后通过容器名、进程ID和执行摘要标签证明无残留，无法证明时以`mcp_process_cleanup_failed`失败。
+- **Server反向暴露**：可选MCP Server只通过本地stdio导出显式低风险只读Action；列表和调用都重核绑定，远端客户端无权批准写操作。0.8.4不监听网络，不实现OAuth或任意Header。
+- **剩余风险**：同UID主体仍可替换宿主配置或调试本地进程；Container Runtime本身属于高权限TCB。Streamable HTTP、受管OAuth、Secret引用轮换与配置来源信任由0.8.6补齐，发行签名与SBOM由0.9关闭。
+
+对应设计、源码依据和回归见[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。

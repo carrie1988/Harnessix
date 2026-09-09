@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import fcntl
 import hashlib
 import os
 import sqlite3
@@ -18,6 +17,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.lifecycle import validate_fork_snapshot
 from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import apply_event, replay
+from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session.errors import storage_errors
 
 _APPLICATION_ID = 0x4858534B
@@ -143,11 +143,13 @@ class SQLiteSessionStore:
         with storage_errors():
             self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
             descriptor = os.open(
-                str(self.path) + ".runtime.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600
+                str(self.path) + ".runtime.lock",
+                os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
             )
             try:
                 try:
-                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    acquire_exclusive_file_lock(descriptor)
                 except BlockingIOError as exc:
                     raise KernelError(
                         "runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主"

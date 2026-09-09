@@ -1,0 +1,100 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.mcp-tool-snapshot/v1",
+      "default": "harnessix.mcp-tool-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "raw_name": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Raw Name",
+      "type": "string"
+    },
+    "model_name": {
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+      "title": "Model Name",
+      "type": "string"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "maxLength": 16384,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "input_schema": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Input Schema",
+      "type": "object"
+    },
+    "output_schema": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Schema"
+    },
+    "annotations": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "maxProperties": 64,
+      "title": "Annotations",
+      "type": "object"
+    },
+    "definition_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Definition Sha256",
+      "type": "string"
+    },
+    "tool_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Tool Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "raw_name",
+    "model_name",
+    "input_schema",
+    "definition_sha256",
+    "tool_sha256"
+  ],
+  "title": "McpToolSnapshot",
+  "type": "object"
+}

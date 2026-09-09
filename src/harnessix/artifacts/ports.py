@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from uuid import UUID
 
 from harnessix.agent.models import EventDraft, Thread, ToolCallContent
-from harnessix.agent.ports import PatchBatchRuntime
 from harnessix.artifacts.contracts import (
     ArtifactOmittedField,
     ArtifactRef,
@@ -16,7 +15,7 @@ from harnessix.session.ports import SessionStore
 
 if TYPE_CHECKING:
     from harnessix.agent.cancellation import CancelToken
-    from harnessix.agent.ports import ProcessObservation, ProcessRuntime
+    from harnessix.agent.ports import PatchBatchRuntime, ProcessObservation, ProcessRuntime
 
 
 @runtime_checkable

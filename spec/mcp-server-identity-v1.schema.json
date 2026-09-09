@@ -1,0 +1,76 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.mcp-server-identity/v1",
+      "default": "harnessix.mcp-server-identity/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "server_id": {
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+      "title": "Server Id",
+      "type": "string"
+    },
+    "transport": {
+      "enum": [
+        "container_stdio",
+        "in_process",
+        "streamable_http"
+      ],
+      "title": "Transport",
+      "type": "string"
+    },
+    "target_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Target Sha256",
+      "type": "string"
+    },
+    "protocol_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "reported_name": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reported Name"
+    },
+    "reported_version": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reported Version"
+    },
+    "capabilities_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Capabilities Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_id",
+    "transport",
+    "target_sha256",
+    "protocol_version",
+    "capabilities_sha256"
+  ],
+  "title": "McpServerIdentity",
+  "type": "object"
+}

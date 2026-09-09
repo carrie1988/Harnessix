@@ -95,6 +95,14 @@ from harnessix.execution.contracts import (
     ExecutionPlan,
     ExecutionPlanV2,
 )
+from harnessix.mcp.contracts import (
+    McpCatalogSnapshot,
+    McpConnectionEvent,
+    McpConnectionSnapshot,
+    McpServerIdentity,
+    McpToolCallOutput,
+    McpToolSnapshot,
+)
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import ProviderEvent
 from harnessix.models.costs import CostReport, CostReportV2, CostReportV3
@@ -332,6 +340,12 @@ def main() -> None:
         ("managed-egress-binding", ManagedEgressBinding),
         ("container-engine-probe", ContainerEngineProbe),
         ("host-sandbox-probe", HostSandboxProbe),
+        ("mcp-server-identity", McpServerIdentity),
+        ("mcp-tool-snapshot", McpToolSnapshot),
+        ("mcp-catalog-snapshot", McpCatalogSnapshot),
+        ("mcp-connection-event", McpConnectionEvent),
+        ("mcp-connection-snapshot", McpConnectionSnapshot),
+        ("mcp-tool-call-output", McpToolCallOutput),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
@@ -368,7 +382,7 @@ def main() -> None:
     )
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
-        "Process、Context、Coding Eval、可信执行、Agent Protocol 与 OpenAPI Schema"
+        "Process、Context、Coding Eval、可信执行、MCP、Agent Protocol 与 OpenAPI Schema"
     )
 
 
