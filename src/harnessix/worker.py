@@ -6,7 +6,12 @@ import asyncio
 import logging
 from datetime import timedelta
 
-from harnessix.domain.models import ActionSnapshot, utc_now
+from harnessix.domain.models import (
+    TERMINAL_ACTION_STATUSES,
+    ActionSnapshot,
+    ActionStatus,
+    utc_now,
+)
 from harnessix.observability import SpanKind, bind_log_context, trace_log_fields
 from harnessix.runtime import ActionService
 
@@ -15,6 +20,42 @@ logger = logging.getLogger(__name__)
 
 class WorkerLeaseLostError(RuntimeError):
     """Worker 在 Action 执行完成前失去租约。"""
+
+
+async def _execution_commit_exists(service: ActionService, snapshot: ActionSnapshot) -> bool:
+    """识别执行完成事务；UNKNOWN租约恢复不能冒充Executor提交。"""
+    if snapshot.status in TERMINAL_ACTION_STATUSES:
+        return True
+    if snapshot.status is not ActionStatus.UNKNOWN:
+        return False
+    events = await service.events(snapshot.request.action_id)
+    return bool(events and events[-1].event_type == "execution_completed")
+
+
+async def _resolve_failed_renewal(
+    service: ActionService,
+    execution: asyncio.Task[ActionSnapshot],
+    snapshot: ActionSnapshot,
+) -> ActionSnapshot:
+    """区分终态提交竞态与真实租约丢失，并停止不再拥有执行权的任务。"""
+    if execution.done():
+        return execution.result()
+    current = await service.get(snapshot.request.action_id)
+    if execution.done():
+        return execution.result()
+    execution.cancel()
+    await asyncio.gather(execution, return_exceptions=True)
+    if not execution.cancelled():
+        return execution.result()
+    if not await _execution_commit_exists(service, current):
+        current = await service.get(snapshot.request.action_id)
+    if await _execution_commit_exists(service, current):
+        return current
+    service.observability.increment(
+        "harnessix.worker.lease_renewal_failures",
+        attributes={"tool": snapshot.request.tool},
+    )
+    raise WorkerLeaseLostError(f"Action {snapshot.request.action_id} 的执行租约已经丢失")
 
 
 class ActionWorker:
@@ -109,19 +150,7 @@ class ActionWorker:
                     lease_expires_at=utc_now() + timedelta(seconds=self.service.lease_seconds),
                 )
                 if not renewed:
-                    self.service.observability.increment(
-                        "harnessix.worker.lease_renewal_failures",
-                        attributes={"tool": snapshot.request.tool},
-                    )
-                    if execution.done():
-                        return execution.result()
-                    execution.cancel()
-                    await asyncio.gather(execution, return_exceptions=True)
-                    if not execution.cancelled():
-                        return execution.result()
-                    raise WorkerLeaseLostError(
-                        f"Action {snapshot.request.action_id} 的执行租约已经丢失"
-                    )
+                    return await _resolve_failed_renewal(self.service, execution, snapshot)
         except BaseException:
             if not execution.done():
                 execution.cancel()

@@ -1627,20 +1627,20 @@ Windows产品已支持。
 本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
 性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。
 
-## 79. 0.9.0代码可维护性治理验收（2026-09-12）
+## 79. 0.9.0代码可维护性治理候选验收（2026-09-12）
 
-状态：**已完成**。正式决策见
+状态：**本地候选验收完成，待最终六矩阵CI**。正式决策见
 [ADR 0076](adr/0076-code-readability-and-structural-governance.md)，详细测试边界见
 [0.9.0设计](m09-code-maintainability.md)。
 
 可读性报告从固定提交`e15ffaa20142e9f61cf8412b3d4499001a695368`导出的源码独立重建，结果与
-`docs/baselines/readability-0.9.0-start.json`逐字一致。最终报告覆盖256个生产源码文件、
-55,677物理行、49,770逻辑行、273个静态公共导出和146个公共Pydantic/Enum合同；256个模块、
+`docs/baselines/readability-0.9.0-start.json`逐字一致。最终候选报告覆盖256个生产源码文件、
+55,706物理行、49,795逻辑行、273个静态公共导出和146个公共Pydantic/Enum合同；256个模块、
 全部公共行为和25组高风险入口均通过说明门禁。存量13个超大文件、148个超长或高复杂度符号、
 164条一级包依赖边和一个既有强连通分量被精确冻结，新增或增长债务会使`make readability`失败。
 
 Reducer拆分特征回归覆盖Agent、Context、Provider、Tool、Patch和Session，共1162项通过；治理专项
-与Agent Schema共13项通过。最终本地`make check`结果为**3323 passed、13 skipped，390.45秒**。
+与Agent Schema共13项通过。最终本地`make check`结果为**3326 passed、13 skipped，277.46秒**。
 13项跳过仅包含平台限定或本机未配置的PostgreSQL/Container集成场景。Ruff格式检查699个文件、
 Ruff规则检查、Mypy严格检查256个源文件和`uv lock --check`全部通过。
 
@@ -1655,4 +1655,13 @@ Agent Server帮助入口以及Reducer旧门面与新职责模块均可导入。
 未失败。修复测试编码边界后，实现提交`f9315d7`的
 [CI 34623008860](https://github.com/carrie1988/Harnessix/actions/runs/34623008860)一次通过Python 3.12、
 Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定镜像Container
-Sandbox六项，0.9.0据此关闭。
+Sandbox六项。随后文档收口提交`4bdef47`的
+[CI 34624537427](https://github.com/carrie1988/Harnessix/actions/runs/34624537427)中其余五项通过，
+Python 3.13全量测试暴露Action Worker的终态提交竞态：Effect Journal已经原子提交终态并清除租约，
+但执行协程仍可能等待SQLite返回；Heartbeat此时观察到续租失败且协程尚未结束，旧实现会误报
+`WorkerLeaseLostError`。
+
+修复后，续租失败路径先读取持久Action；已提交终态优先于瞬时任务状态，真实非终态租约丢失仍
+取消执行、记录指标并保持后续`UNKNOWN`恢复。两项确定性回归分别覆盖终态提交窗口和真实续租
+失败，连续20轮共60次通过；Campaign与Worker组合回归23项通过。最终六矩阵CI通过前，0.9.0仍
+保持候选状态，不以重跑失败任务代替根因修复。

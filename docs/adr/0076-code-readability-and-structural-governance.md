@@ -104,6 +104,19 @@ Mixin，或通过循环导入和Service Locator隐藏耦合。
 门禁。Linux Python 3.12/3.13、macOS和Windows任务显式运行同一命令，避免平台路径或Tokenizer
 差异只在单一Runner暴露。
 
+### 2.7 终态提交与Heartbeat判定
+
+异步Journal的终态事务可以先于`transition()`调用返回完成：事务已经提交并清除租约时，执行
+协程仍可能等待结果读取或连接关闭。此窗口内`renew_lease()`按合同返回`false`，但它只表示租约
+没有续期，不能单独证明执行所有权在终态提交前丢失。
+
+`ActionWorker`因此在续租失败后读取同一Action的持久状态，并在取消本地执行后再次消解并发窗口。
+若Journal已处于`TERMINAL_ACTION_STATUSES`，持久终态胜出并作为结果返回；`UNKNOWN`只有在最新
+事件为`execution_completed`时才代表Executor已经提交，`lease_recovered`产生的`UNKNOWN`仍按真实
+租约丢失处理。取消后再次读取仍无执行完成事实时，才记录续租失败并抛出
+`WorkerLeaseLostError`。RUNNING租约过期后的保守恢复、Effect Journal状态机和公共错误合同均不
+改变。该判定不重试Tool，也不依据内存任务状态覆盖持久事实。
+
 ## 3. 备选方案
 
 ### 3.1 全局启用Pydocstyle并要求所有符号有文档字符串

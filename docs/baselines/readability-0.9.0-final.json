@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 256,
-    "physical_lines": 55677,
-    "logical_lines": 49770,
+    "physical_lines": 55706,
+    "logical_lines": 49795,
     "documented_modules": 256,
     "classes": 667,
     "documented_classes": 168,
-    "functions": 2160,
-    "documented_functions": 166,
+    "functions": 2162,
+    "documented_functions": 168,
     "public_exports": 273,
     "public_contract_types": 146,
     "undocumented_public_behavior": 0,
@@ -1729,8 +1729,8 @@
       "path": "src/harnessix/worker.py",
       "qualname": "ActionWorker",
       "kind": "class",
-      "line": 20,
-      "lines": 136,
+      "line": 61,
+      "lines": 124,
       "documented": false
     },
     {

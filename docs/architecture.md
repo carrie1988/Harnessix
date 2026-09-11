@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.8产品运行时与可信扩展，以及0.9.0可维护性治理）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.8产品运行时与可信扩展，以及0.9.0可维护性治理候选）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -17,7 +17,7 @@
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期、0.7.4受管Git交付和0.7.5平台中立Action入口均已通过综合六矩阵门禁；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
 - 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理；0.7.4交付Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5交付宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile。Windows Snapshot和Container冷启动探测加固后，0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
 - 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；0.8.2已实现单客户端stdio Headless App Server、薄应用服务、进程内/子进程Python Agent SDK、Agent Event/Thread v18延迟驱动事实及migration21、确定性受理恢复、出站背压和有界关闭；0.8.3已实现stdio请求多路复用、Pull-Live事件页、持久提问、Turn Steering、Scoped Artifact读取及只依赖SDK的薄CLI，Agent Event/Thread升级为v19并追加migration22；0.8.4已实现官方SDK驱动的MCP Client、不可变目录和连接事件、调用前Schema漂移门禁、Container stdio生命周期、统一Action接入及可选只读MCP Server；0.8.5已实现不可变Skill目录、冲突消歧、跨平台渐进加载、声明式Hook Registry、摘要授权、超时/取消及中断恢复；0.8.6已实现Provider/Profile/Secret引用、严格配置、迁移/诊断、活动CAS、零暴露安全Fallback和固定Workspace产品启动装配，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
-- 0.9.0已建立版本化可读性报告与渐进防退化策略，为全部生产模块、公共行为和高风险状态/副作用入口补齐邻近语义，并在稳定`agent.reducer`门面下分离Item投影、Turn投影与共用守卫；公共导入、Schema、错误码、事件顺序和恢复调用链保持不变，最终实现由[CI 34623008860](https://github.com/carrie1988/Harnessix/actions/runs/34623008860)完成六矩阵验收，见[ADR 0076](adr/0076-code-readability-and-structural-governance.md)与[详细设计](m09-code-maintainability.md)；
+- 0.9.0候选已建立版本化可读性报告与渐进防退化策略，为全部生产模块、公共行为和高风险状态/副作用入口补齐邻近语义，并在稳定`agent.reducer`门面下分离Item投影、Turn投影与共用守卫；公共导入、Schema、错误码、事件顺序和恢复调用链保持不变。候选还让Action Worker在续租失败时以持久终态消解提交竞态，真实租约丢失仍保持取消与`UNKNOWN`恢复边界，见[ADR 0076](adr/0076-code-readability-and-structural-governance.md)与[详细设计](m09-code-maintainability.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标

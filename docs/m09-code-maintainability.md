@@ -1,6 +1,6 @@
 # 0.9.0代码可读性、可维护性与结构治理详细设计
 
-- 状态：已完成
+- 状态：候选实现，待最终六矩阵验收
 - 适用版本：Harnessix Code 0.9.0
 - 决策依据：[ADR 0076](adr/0076-code-readability-and-structural-governance.md)
 - 研究依据：[代码可读性与结构治理研究](research/code-readability-and-structure.md)
@@ -180,6 +180,11 @@ Hooks、Provider、Context和Eval。
 - Reducer非法事件：保持原`invalid_event`错误，Session事务整体回滚；
 - Reducer拆分后进程崩溃：恢复仍从同一有序事件日志调用门面`replay`，无新增中间状态；
 - Pydantic合同说明：不通过Docstring改Schema，防止旧客户端观察到未声明描述漂移。
+- Worker续租与终态提交并发：续租返回`false`时重新读取Effect Journal；若Action终态已经提交，
+  以持久终态为权威并停止尚未返回的本地任务，不误报租约丢失；只有取消执行后再次读取仍非
+  终态，才记录`lease_renewal_failures`并抛出`WorkerLeaseLostError`。`UNKNOWN`仍不是领域终态：
+  仅最新事件为`execution_completed`时按已提交执行结果返回，`lease_recovered`产生的`UNKNOWN`
+  继续表示真实租约丢失；既有过期恢复与人工对账语义不变。
 
 ## 8. 测试与验收
 
@@ -191,6 +196,8 @@ Hooks、Provider、Context和Eval。
 2. 起始报告绑定固定提交并保留165个缺失模块事实；
 3. 模块、公共行为、高风险入口、超大文件、依赖边、依赖环和公共面回退会在一次检查中全部报告；
 4. Reducer五个既有门面导入继续有效，`apply_event/replay`仍属于稳定门面。
+5. Action终态已提交但异步调用尚未返回时，Heartbeat不会把提交窗口误判为租约丢失；真实续租
+   失败仍取消本地执行并保持`RUNNING -> UNKNOWN`恢复语义。
 
 Reducer拆分前后运行同一组Agent、Context、Provider、Tool、Patch和Session特征测试。最终验收还需：
 
