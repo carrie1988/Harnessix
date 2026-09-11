@@ -1627,14 +1627,14 @@ Windows产品已支持。
 本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
 性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。
 
-## 79. 0.9.0代码可维护性治理候选验收（2026-09-12）
+## 79. 0.9.0代码可维护性治理验收（2026-09-12）
 
-状态：**本地候选验收完成，待六矩阵CI**。正式决策见
+状态：**已完成**。正式决策见
 [ADR 0076](adr/0076-code-readability-and-structural-governance.md)，详细测试边界见
 [0.9.0设计](m09-code-maintainability.md)。
 
 可读性报告从固定提交`e15ffaa20142e9f61cf8412b3d4499001a695368`导出的源码独立重建，结果与
-`docs/baselines/readability-0.9.0-start.json`逐字一致。最终候选报告覆盖256个生产源码文件、
+`docs/baselines/readability-0.9.0-start.json`逐字一致。最终报告覆盖256个生产源码文件、
 55,677物理行、49,770逻辑行、273个静态公共导出和146个公共Pydantic/Enum合同；256个模块、
 全部公共行为和25组高风险入口均通过说明门禁。存量13个超大文件、148个超长或高复杂度符号、
 164条一级包依赖边和一个既有强连通分量被精确冻结，新增或增长债务会使`make readability`失败。
@@ -1649,5 +1649,10 @@ Schema生成后共有221份JSON文件，生成目录零差异；按文件名、N
 示例全部通过。sdist和wheel可构建；全新Python 3.12虚拟环境从wheel安装后，顶层CLI、配置命令、
 Agent Server帮助入口以及Reducer旧门面与新职责模块均可导入。
 
-本地验收未调用模型API、远端MCP、SSH、公网Git或用户服务器。Python 3.12/3.13、macOS、Windows、
-PostgreSQL和固定镜像Container六矩阵结果将在候选提交进入远端CI后补充；在此之前0.9.0保持未关闭。
+本地验收未调用模型API、远端MCP、SSH、公网Git或用户服务器。首个候选提交的
+[CI 34621790187](https://github.com/carrie1988/Harnessix/actions/runs/34621790187)在Windows发现新增治理
+测试读取含中文Docstring的源码时未显式指定UTF-8，默认cp1252解码失败；生产运行时及其余五项
+未失败。修复测试编码边界后，实现提交`f9315d7`的
+[CI 34623008860](https://github.com/carrie1988/Harnessix/actions/runs/34623008860)一次通过Python 3.12、
+Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定镜像Container
+Sandbox六项，0.9.0据此关闭。

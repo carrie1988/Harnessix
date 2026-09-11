@@ -1,6 +1,6 @@
 # 0.9.0代码可读性、可维护性与结构治理详细设计
 
-- 状态：候选实现，待六矩阵验收
+- 状态：已完成
 - 适用版本：Harnessix Code 0.9.0
 - 决策依据：[ADR 0076](adr/0076-code-readability-and-structural-governance.md)
 - 研究依据：[代码可读性与结构治理研究](research/code-readability-and-structure.md)
