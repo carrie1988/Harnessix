@@ -76,4 +76,7 @@ def test_reducer_facade_preserves_established_imports_after_split() -> None:
         callable(symbol) for symbol in (apply_event, get_turn, pending_calls, replay, require)
     )
     assert apply_event.__module__ == replay.__module__ == "harnessix.agent.reducer"
-    assert len((ROOT / "src/harnessix/agent/reducer.py").read_text().splitlines()) < 300
+    assert (
+        len((ROOT / "src/harnessix/agent/reducer.py").read_text(encoding="utf-8").splitlines())
+        < 300
+    )
