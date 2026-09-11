@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.8路线图范围，0.9.0代码治理与Worker终态提交竞态修复已形成候选实现，等待最终六矩阵验收。0.9.0基础实现提交`f9315d7`已由[CI 34623008860](https://github.com/carrie1988/Harnessix/actions/runs/34623008860)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。0.8最终实现及Eval低速物化加固提交`3588d76`已由[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.9.0路线图范围。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。0.8最终实现及Eval低速物化加固提交`3588d76`已由[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -75,7 +75,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 
 0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[部署说明](docs/deployment.md#086-provider与产品配置部署)。
 
-## 当前候选：代码可维护性与结构治理（0.9.0）
+## 当前已完成：代码可维护性与结构治理（0.9.0）
 
 - 以固定AST/Tokenizer口径记录源码规模、模块说明、公共行为、高风险入口、复杂度、一级包依赖、依赖环和静态公共导出；
 - 起始报告、最终报告和治理策略均采用版本化JSON，仓库路径及排序稳定，不导入生产模块，也不读取配置、数据库或Secret；
@@ -84,7 +84,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - `make readability`和`make check`阻止新增说明债务、增长既有热点、新增未评审依赖边/依赖环及静态公共面漂移；
 - 存量13个超大文件、148个符号热点和一个一级包强连通分量被精确冻结，不以机械拆分或模板化注释冒充治理完成。
 
-研究事实、架构取舍、详细接口和验收边界见[源码研究](docs/research/code-readability-and-structure.md)、[ADR 0076](docs/adr/0076-code-readability-and-structural-governance.md)和[0.9.0详细设计](docs/m09-code-maintainability.md)。最终候选还关闭了Heartbeat与持久终态提交的竞态；新的六矩阵完成前，本节不代表0.9.0已经关闭。
+研究事实、架构取舍、详细接口和验收边界见[源码研究](docs/research/code-readability-and-structure.md)、[ADR 0076](docs/adr/0076-code-readability-and-structural-governance.md)和[0.9.0详细设计](docs/m09-code-maintainability.md)。最终实现还关闭了Heartbeat与持久执行结果提交的竞态，并由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成六矩阵验收。
 
 ## 许可证与品牌
 
