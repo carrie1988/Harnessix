@@ -1,3 +1,5 @@
+"""MCP工具接入：规范化并校验外部JSON Schema参数。"""
+
 from __future__ import annotations
 
 import json
@@ -76,6 +78,7 @@ def validate_mcp_input_schema(value: Mapping[str, object]) -> dict[str, JsonValu
 def validate_mcp_arguments(
     schema: Mapping[str, object], arguments: Mapping[str, object]
 ) -> McpToolArguments:
+    """按固定MCP输入Schema校验并规范化参数。"""
     checked_schema = validate_mcp_input_schema(schema)
     checked_arguments = canonical_json_object(arguments, error_code="tool_invalid_arguments")
     if len(_json_bytes(checked_arguments, "tool_invalid_arguments")) > MAX_MCP_ARGUMENT_BYTES:

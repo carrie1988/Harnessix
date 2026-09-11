@@ -1,3 +1,5 @@
+"""公共Agent Protocol：严格编解码不可信配置或协议负载。"""
+
 from __future__ import annotations
 
 import json

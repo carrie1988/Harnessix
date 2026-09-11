@@ -1,3 +1,5 @@
+"""模型Provider适配：将持久Agent历史转换为Provider输入消息。"""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,3 +1,5 @@
+"""模型Provider适配：解析Provider计费上下文并形成领域观测。"""
+
 from __future__ import annotations
 
 from harnessix.agent.usage import ModelAttempt

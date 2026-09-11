@@ -1,3 +1,5 @@
+"""真实Provider受控验证：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

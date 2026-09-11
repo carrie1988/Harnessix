@@ -1,3 +1,5 @@
+"""受监督进程：持久捕获进程输出并生成有界完整性观察。"""
+
 from __future__ import annotations
 
 import hashlib

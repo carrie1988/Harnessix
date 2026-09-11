@@ -1,3 +1,5 @@
+"""Workspace身份与租约：冻结已校验输入及其内容摘要。"""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,3 +1,5 @@
+"""以SQLite保存Hook定义、摘要授权、调度快照和Hash链运行事件。"""
+
 from __future__ import annotations
 
 import os

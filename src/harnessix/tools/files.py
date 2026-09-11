@@ -1,3 +1,5 @@
+"""内置Coding Tool：执行有界、无链接跟随的Workspace文件读取。"""
+
 from __future__ import annotations
 
 import os

@@ -1,3 +1,5 @@
+"""Python客户端SDK：提供同步与异步Action Plane HTTP客户端。"""
+
 from __future__ import annotations
 
 from typing import Any, Self
@@ -15,6 +17,8 @@ from harnessix.domain.models import (
 
 
 class HarnessixAPIError(RuntimeError):
+    """Harnessix HTTP客户端返回的稳定服务错误。"""
+
     def __init__(self, status_code: int, code: str, message: str) -> None:
         super().__init__(f"{code}: {message}")
         self.status_code = status_code
@@ -23,6 +27,8 @@ class HarnessixAPIError(RuntimeError):
 
 
 class HarnessixClient:
+    """同步调用Action Plane HTTP API的客户端。"""
+
     def __init__(
         self,
         base_url: str = "http://127.0.0.1:8787",
@@ -74,6 +80,8 @@ class HarnessixClient:
 
 
 class HarnessixAsyncClient:
+    """异步调用Action Plane HTTP API的客户端。"""
+
     def __init__(
         self,
         base_url: str = "http://127.0.0.1:8787",

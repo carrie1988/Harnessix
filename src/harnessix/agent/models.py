@@ -1,3 +1,5 @@
+"""持久Agent状态机：定义Agent事件、Thread、Turn和Item的版本化持久契约。"""
+
 from __future__ import annotations
 
 import hashlib

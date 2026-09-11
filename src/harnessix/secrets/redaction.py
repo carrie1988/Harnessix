@@ -1,3 +1,5 @@
+"""Secret解析与脱敏：在输出、异常和审计边界替换Secret字节模式。"""
+
 from __future__ import annotations
 
 import base64

@@ -1,3 +1,5 @@
+"""Headless Agent Protocol服务：把内部Artifact投影为公共协议分页结果。"""
+
 from __future__ import annotations
 
 from typing import Protocol

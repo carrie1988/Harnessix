@@ -1,3 +1,5 @@
+"""模型Provider适配：限制错误响应读取大小并关闭HTTP资源。"""
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, AsyncIterator, Callable

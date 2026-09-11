@@ -1,3 +1,5 @@
+"""以SQLite保存Skill目录快照和连续Hash链访问事件，不保存资源正文。"""
+
 from __future__ import annotations
 
 import os

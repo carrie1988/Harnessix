@@ -1,3 +1,5 @@
+"""可观测性：定义Trace、Span、Counter与Histogram抽象。"""
+
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
@@ -12,18 +14,24 @@ MetricAttributes = Mapping[str, AttributeValue]
 
 
 class SpanKind(StrEnum):
+    """区分内部、服务端、客户端和消费端Span种类。"""
+
     INTERNAL = "internal"
     SERVER = "server"
     CONSUMER = "consumer"
 
 
 class ObservabilitySpan(Protocol):
+    """记录属性、异常和结束状态的Span端口。"""
+
     def set_attribute(self, name: str, value: AttributeValue) -> None: ...
 
     def set_error(self, category: str) -> None: ...
 
 
 class Observability(Protocol):
+    """创建Span、Counter和Histogram的可观测端口。"""
+
     def span(
         self,
         name: str,
@@ -74,6 +82,8 @@ _NOOP_SPAN = _NoOpSpan()
 
 
 class NoOpObservability:
+    """不导出遥测数据的Observability实现。"""
+
     @contextmanager
     def span(
         self,

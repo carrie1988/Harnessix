@@ -1,3 +1,5 @@
+"""匹配生命周期Hook并经Trusted Action执行；授权、运行事件和恢复事实持久化。"""
+
 from __future__ import annotations
 
 import asyncio

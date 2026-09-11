@@ -1,3 +1,5 @@
+"""受管Patch：定义受管副本、Patch记录与恢复合同。"""
+
 from typing import Literal, Self
 from uuid import UUID
 

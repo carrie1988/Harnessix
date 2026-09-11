@@ -1,3 +1,5 @@
+"""持久Agent状态机：校验并投影Compaction账本事件。"""
+
 from __future__ import annotations
 
 from datetime import timedelta

@@ -1,3 +1,5 @@
+"""Claim持久Action并执行可恢复的后台工作循环。"""
+
 from __future__ import annotations
 
 import asyncio

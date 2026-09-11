@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：探测并构造平台网络隔离命令。"""
+
 from __future__ import annotations
 
 import json

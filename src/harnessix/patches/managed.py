@@ -435,6 +435,7 @@ class ManagedPatchWorkspace:
     def execute(
         self, plan_id: UUID, approval_fingerprint: str, operation: ReadOperation
     ) -> PatchRecord:
+        """持有副本锁执行已批准单文件Patch；同一计划受批次账本约束且不会自动重放。"""
         with self._guard():
             batch_ledger.require_single(self._db, plan_id)
             return self._execute(plan_id, approval_fingerprint, operation)

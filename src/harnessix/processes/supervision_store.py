@@ -1,3 +1,5 @@
+"""受监督进程：以CAS持久化Process Lease状态转换。"""
+
 from __future__ import annotations
 
 import os

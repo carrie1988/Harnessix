@@ -1,3 +1,5 @@
+"""Python客户端SDK：通过可替换Transport驱动Agent Protocol会话。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -50,6 +52,8 @@ if TYPE_CHECKING:
 
 
 class AgentSDKError(RuntimeError):
+    """Agent SDK协议、传输或服务失败的稳定错误。"""
+
     def __init__(
         self,
         code: str,
@@ -67,6 +71,8 @@ class AgentSDKError(RuntimeError):
 
 
 class AgentTransport(Protocol):
+    """交换JSON-RPC请求与通知的SDK传输端口。"""
+
     async def exchange(self, frame: bytes) -> tuple[bytes, ...]: ...
 
     async def notify(self, frame: bytes) -> None: ...

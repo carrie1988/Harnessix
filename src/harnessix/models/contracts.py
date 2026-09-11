@@ -1,3 +1,5 @@
+"""模型Provider适配：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator

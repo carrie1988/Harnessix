@@ -1,3 +1,5 @@
+"""持久Agent状态机：生成Thread、Turn、Item与Attempt的稳定身份。"""
+
 from secrets import randbits
 from time import time_ns
 from uuid import UUID

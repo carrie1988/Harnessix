@@ -1,3 +1,5 @@
+"""持久Agent状态机：解析Provider计费上下文并形成领域观测。"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated

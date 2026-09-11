@@ -1,3 +1,5 @@
+"""受监督进程：定义Process能力、Spec、Lease与输出观察合同。"""
+
 from __future__ import annotations
 
 import hashlib

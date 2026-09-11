@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：准备固定镜像、资源和网络约束的Container进程。"""
+
 from __future__ import annotations
 
 import csv

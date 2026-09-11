@@ -1,3 +1,5 @@
+"""产品配置：以CAS、备份和原子替换迁移旧版配置。"""
+
 from __future__ import annotations
 
 import hashlib

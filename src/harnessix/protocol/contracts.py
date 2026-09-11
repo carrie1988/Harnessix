@@ -1,3 +1,5 @@
+"""公共Agent Protocol：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 import json

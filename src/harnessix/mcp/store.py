@@ -1,3 +1,5 @@
+"""以SQLite保存不可变MCP目录、连接快照和Hash链连接事件。"""
+
 from __future__ import annotations
 
 import os

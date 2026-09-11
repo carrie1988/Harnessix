@@ -22,6 +22,8 @@ from harnessix.models.costs import COST_REPORT_ADAPTER, CostReportRecord, build_
 
 @dataclass(frozen=True, slots=True)
 class CompletedCodingEvalTrial:
+    """已完成Eval试验及其环境、报告和可选交付记录。"""
+
     state: CodingEvalRunState
     report: CodingEvalReport
     turn: Turn

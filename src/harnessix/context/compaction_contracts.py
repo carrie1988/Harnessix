@@ -1,3 +1,5 @@
+"""模型Context规划：定义Compaction计划、锚点与摘要合同。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

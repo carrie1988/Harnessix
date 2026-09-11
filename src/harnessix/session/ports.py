@@ -1,3 +1,5 @@
+"""Session事件存储：定义依赖倒置端口，不提供具体基础设施实现。"""
+
 from collections.abc import Sequence
 from contextlib import AbstractAsyncContextManager
 from typing import Protocol

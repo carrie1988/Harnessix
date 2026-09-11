@@ -1,3 +1,5 @@
+"""真实Provider受控验证：在固定预算内执行验证流程并生成可审计报告。"""
+
 from __future__ import annotations
 
 from collections.abc import Callable

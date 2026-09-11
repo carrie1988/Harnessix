@@ -1,3 +1,5 @@
+"""模型Provider适配：提供确定性Provider脚本用于失败与恢复测试。"""
+
 from __future__ import annotations
 
 import asyncio

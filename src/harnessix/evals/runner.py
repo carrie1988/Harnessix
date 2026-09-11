@@ -94,6 +94,8 @@ _GIT_ENVIRONMENT = {
 
 @dataclass(frozen=True, slots=True)
 class HistoricalCodingEvalResult:
+    """一次历史编码任务执行的完整结果。"""
+
     state: CodingEvalRunState
     report: CodingEvalReport
     workspace: Path

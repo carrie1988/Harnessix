@@ -1,3 +1,5 @@
+"""以SQLite保存不可变配置快照、活动Profile CAS和连续Hash链审计。"""
+
 from __future__ import annotations
 
 import os

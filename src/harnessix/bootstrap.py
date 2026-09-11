@@ -1,3 +1,5 @@
+"""装配Action Plane服务、持久化与内置Executor。"""
+
 from __future__ import annotations
 
 from harnessix.domain.models import EffectClass, RiskLevel

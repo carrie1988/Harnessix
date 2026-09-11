@@ -1,3 +1,5 @@
+"""模型Provider适配：依据版本化价格快照核算模型尝试成本。"""
+
 from __future__ import annotations
 
 from typing import Annotated, Literal, Self

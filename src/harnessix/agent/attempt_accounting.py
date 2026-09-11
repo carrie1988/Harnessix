@@ -1,3 +1,5 @@
+"""持久Agent状态机：根据Provider观测事实结算模型尝试用量。"""
+
 from __future__ import annotations
 
 from datetime import datetime

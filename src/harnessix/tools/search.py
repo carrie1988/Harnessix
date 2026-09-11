@@ -1,3 +1,5 @@
+"""内置Coding Tool：执行有界文件发现、Glob与文本搜索。"""
+
 from __future__ import annotations
 
 import io

@@ -1,3 +1,5 @@
+"""可信Hook扩展：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -103,6 +105,7 @@ def build_hook_definition(
     action_tool_version: str,
     action_tool_fingerprint: str,
 ) -> HookDefinition:
+    """规范化Hook声明并计算稳定定义摘要。"""
     candidate = HookDefinition.model_construct(
         _fields_set=None,
         source_id=source_id,
@@ -157,6 +160,7 @@ def build_hook_trust_grant(
     granted_at: datetime,
     expires_at: datetime | None = None,
 ) -> HookTrustGrant:
+    """签发绑定Hook定义和Workspace的信任授权。"""
     candidate = HookTrustGrant.model_construct(
         _fields_set=None,
         source_id=definition.source_id,
@@ -268,6 +272,7 @@ def build_hook_dispatch(
     arguments_sha256: str | None = None,
     outcome_sha256: str | None = None,
 ) -> HookDispatch:
+    """冻结一次Hook匹配结果及输入身份。"""
     candidate = HookDispatch.model_construct(
         _fields_set=None,
         dispatch_id=dispatch_id,

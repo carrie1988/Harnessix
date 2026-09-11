@@ -1,3 +1,5 @@
+"""内置Coding Tool：定义搜索输入、分页游标、统计和结果合同。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

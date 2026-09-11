@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：规范化网络目的地并执行策略匹配。"""
+
 from __future__ import annotations
 
 import ipaddress

@@ -1,3 +1,5 @@
+"""外部Agent框架适配层：把Harnessix Action契约封装为LangGraph可调用工具，不接管图状态。"""
+
 from __future__ import annotations
 
 import re

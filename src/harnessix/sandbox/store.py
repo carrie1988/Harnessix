@@ -1,3 +1,5 @@
+"""以SQLite不可变保存Sandbox Profile，并拒绝同名不同内容的重复注册。"""
+
 from __future__ import annotations
 
 import os

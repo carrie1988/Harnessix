@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：探测并摘要宿主与Container执行能力。"""
+
 from __future__ import annotations
 
 import json

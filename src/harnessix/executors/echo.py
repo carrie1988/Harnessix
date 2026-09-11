@@ -1,3 +1,5 @@
+"""内置示例Executor：提供无副作用Echo Executor用于运行链路验证。"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +18,8 @@ class EchoInput(BaseModel):
 
 
 class EchoExecutor:
+    """用于验证无副作用执行链路的Echo Executor。"""
+
     async def execute(self, action: ActionSnapshot, arguments: BaseModel) -> ExecutionOutcome:
         parsed = EchoInput.model_validate(arguments)
         return ExecutionOutcome.succeeded(

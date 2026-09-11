@@ -1,3 +1,5 @@
+"""Action策略：按风险、Effect与Principal生成默认策略决定。"""
+
 from __future__ import annotations
 
 from harnessix.domain.models import (

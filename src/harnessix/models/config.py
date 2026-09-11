@@ -1,3 +1,5 @@
+"""模型Provider适配：定义Provider连接、重试与HTTP限制配置。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

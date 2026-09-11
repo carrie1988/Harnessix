@@ -1,3 +1,5 @@
+"""受监督进程：封装Windows ConPTY句柄、输入与尺寸控制。"""
+
 from __future__ import annotations
 
 import ctypes

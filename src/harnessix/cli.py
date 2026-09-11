@@ -1,3 +1,5 @@
+"""解析顶层命令并分派服务、Worker、Eval和配置子命令。"""
+
 from __future__ import annotations
 
 import argparse

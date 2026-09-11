@@ -1,3 +1,5 @@
+"""可观测性：把内部可观测端口接入OpenTelemetry SDK。"""
+
 from __future__ import annotations
 
 from collections.abc import Iterator

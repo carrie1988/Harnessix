@@ -1,3 +1,5 @@
+"""模型Context规划：从事件历史投影Compaction有效状态。"""
+
 from __future__ import annotations
 
 import json

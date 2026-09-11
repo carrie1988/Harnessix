@@ -1,3 +1,5 @@
+"""模型Provider适配：提取并校验Provider返回的计费元数据。"""
+
 from __future__ import annotations
 
 from harnessix.agent.billing import ResponseBillingMetadata

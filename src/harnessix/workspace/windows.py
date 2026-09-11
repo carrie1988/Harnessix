@@ -1,3 +1,5 @@
+"""Workspace身份与租约：使用Windows句柄链拒绝Reparse Point与路径逃逸。"""
+
 from __future__ import annotations
 
 import ctypes

@@ -1,3 +1,5 @@
+"""Workspace与Git交付：计算前后Workspace镜像的结构化差异。"""
+
 from __future__ import annotations
 
 import difflib

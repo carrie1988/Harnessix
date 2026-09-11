@@ -1,3 +1,5 @@
+"""持久Agent状态机：校验审批请求指纹、有效期与决策绑定。"""
+
 from __future__ import annotations
 
 import hashlib

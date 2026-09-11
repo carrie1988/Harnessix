@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 import ipaddress

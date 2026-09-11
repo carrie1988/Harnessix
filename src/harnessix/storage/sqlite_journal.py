@@ -1,3 +1,5 @@
+"""Effect Journal持久化：以SQLite事务实现本地Effect Journal。"""
+
 from __future__ import annotations
 
 import json

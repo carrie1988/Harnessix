@@ -1,3 +1,5 @@
+"""定义Agent可调用的Tool、Patch和Process端口；Kernel不依赖具体执行后端。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

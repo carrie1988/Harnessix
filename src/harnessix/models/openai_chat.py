@@ -1,3 +1,5 @@
+"""模型Provider适配：实现OpenAI-compatible Chat Completions Provider端口。"""
+
 from __future__ import annotations
 
 import asyncio

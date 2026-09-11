@@ -1,3 +1,5 @@
+"""以SQLite保存Action路由快照和连续Hash链审计，不持有Executor或Secret。"""
+
 from __future__ import annotations
 
 import os

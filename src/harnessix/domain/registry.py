@@ -1,3 +1,5 @@
+"""Action Plane核心领域：注册Tool描述与Executor并拒绝歧义绑定。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

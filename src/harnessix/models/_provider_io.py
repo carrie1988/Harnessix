@@ -1,3 +1,5 @@
+"""模型Provider适配：跟踪Provider输出暴露边界与资源关闭。"""
+
 from __future__ import annotations
 
 import asyncio

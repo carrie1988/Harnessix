@@ -1,3 +1,5 @@
+"""模型Provider适配：增量解析Chat Completions流并验证事件顺序。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

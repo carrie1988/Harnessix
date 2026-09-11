@@ -1,3 +1,5 @@
+"""模型Context规划：构造有界模型历史并归档被替换的Tool Result。"""
+
 from __future__ import annotations
 
 import hashlib

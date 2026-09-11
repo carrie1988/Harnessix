@@ -1,3 +1,5 @@
+"""MCP工具接入：把扩展声明转换为统一Trusted Action定义。"""
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -131,6 +133,7 @@ def build_mcp_action_definition(
     connection: McpClientConnection,
     policy: McpTrustedToolPolicy,
 ) -> TrustedActionDefinition:
+    """将固定MCP Tool快照转换为统一Action定义。"""
     catalog = connection.catalog
     tool = connection.tool(policy.raw_name)
     version = _tool_version(catalog.server.protocol_version, catalog.server.reported_version, tool)

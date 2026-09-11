@@ -1,3 +1,5 @@
+"""受监督进程：跨平台启动、控制、恢复并回收独立Process Owner。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -202,6 +204,7 @@ class SupervisedProcess:
         return self._lease
 
     async def refresh(self) -> ProcessLease:
+        """验证签名Owner回执并以CAS推进Lease；Owner丢失且无回执时保守标记UNKNOWN。"""
         async with self._lock:
             if self._lease.state in _TERMINAL_STATES:
                 return self._lease
@@ -471,6 +474,7 @@ class PosixProcessSupervisor:
         secrets: ResolvedSecretEnvironment | None = None,
         checkpoint: ExecutionApprovalCheckpoint | None = None,
     ) -> SupervisedProcess:
+        """绑定Execution Plan后启动独立Owner；已有Process ID或失效审批均拒绝执行。"""
         binding = build_process_launch_binding(
             plan,
             spec,

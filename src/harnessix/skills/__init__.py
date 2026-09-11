@@ -1,3 +1,5 @@
+"""可信Skill扩展：汇总并导出受支持的公共入口，不承载运行时编排。"""
+
 from harnessix.skills.actions import (
     SKILL_LOAD_TOOL,
     SKILL_RESOURCE_TOOL,

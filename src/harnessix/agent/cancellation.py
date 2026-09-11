@@ -1,3 +1,5 @@
+"""持久Agent状态机：提供可协作传播的Turn取消令牌。"""
+
 from __future__ import annotations
 
 import asyncio

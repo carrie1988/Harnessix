@@ -1,3 +1,5 @@
+"""模型Provider适配：在Chat Completions消息与Provider中立合同间转换。"""
+
 from __future__ import annotations
 
 from typing import Any

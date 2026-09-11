@@ -1,3 +1,5 @@
+"""从环境变量加载并校验进程级运行配置。"""
+
 from __future__ import annotations
 
 import os

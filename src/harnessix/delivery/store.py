@@ -1,3 +1,5 @@
+"""以SQLite事件链和CAS持久化Workspace事务，并执行数据库耐久性检查。"""
+
 from __future__ import annotations
 
 import hashlib

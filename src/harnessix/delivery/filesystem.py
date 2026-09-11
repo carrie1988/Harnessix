@@ -1,3 +1,5 @@
+"""Workspace与Git交付：执行并恢复原子Workspace事务。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -61,6 +63,7 @@ class WorkspaceTransactionRuntime:
         approval_fingerprint: str,
         lease: WorkspaceLease,
     ) -> WorkspaceTransactionRecord:
+        """在批准指纹和Workspace Lease仍匹配时发布事务；部分效果转入可恢复状态。"""
         record = self._store.load(transaction_id)
         if approval_fingerprint != record.plan.fingerprint:
             raise KernelError("delivery_approval_mismatch", "Workspace事务批准指纹不匹配")
@@ -120,6 +123,7 @@ class WorkspaceTransactionRuntime:
         return self._advance(record, "published", len(record.plan.mutations))
 
     def reconcile(self, transaction_id: UUID, root: str | Path) -> WorkspaceTransactionRecord:
+        """比较前后镜像恢复中断事务；混合或不可证明状态标记为diverged或unknown。"""
         record = self._store.load(transaction_id)
         if record.state in {"published", "diverged", "unknown"}:
             return record

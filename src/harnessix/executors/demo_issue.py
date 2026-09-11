@@ -1,3 +1,5 @@
+"""内置示例Executor：提供可重复的写副作用Executor用于合同测试。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -147,6 +149,8 @@ class DemoIssueRepository:
 
 
 class DemoIssueExecutor:
+    """用于验证写副作用生命周期的确定性示例Executor。"""
+
     def __init__(self, repository: DemoIssueRepository) -> None:
         self.repository = repository
 

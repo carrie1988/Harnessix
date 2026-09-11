@@ -1,3 +1,5 @@
+"""持久Agent状态机：定义Thread生命周期与Fork快照校验。"""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,3 +1,5 @@
+"""可信Hook扩展：汇总并导出受支持的公共入口，不承载运行时编排。"""
+
 from harnessix.hooks.contracts import (
     HookActionInput,
     HookActionOutput,

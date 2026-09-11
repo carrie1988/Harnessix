@@ -1,3 +1,5 @@
+"""定义Action Plane稳定错误码，以及外部副作用结果不确定的控制流信号。"""
+
 from __future__ import annotations
 
 

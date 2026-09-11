@@ -1,3 +1,5 @@
+"""管理MCP客户端目标、连接生命周期、目录快照和有界调用结果，不授予Tool执行权限。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -185,6 +187,8 @@ class McpInProcessTarget:
 
 
 class McpCallAfterSendError(RuntimeError):
+    """MCP请求已发送后连接失败的未知效果错误。"""
+
     def __init__(self, code: str) -> None:
         super().__init__(code)
         self.code = code

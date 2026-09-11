@@ -1,3 +1,5 @@
+"""可观测性：汇总并导出受支持的公共入口，不承载运行时编排。"""
+
 from __future__ import annotations
 
 from harnessix.observability.core import (
@@ -15,6 +17,7 @@ def build_observability(
     endpoint: str | None,
     export_interval_millis: int,
 ) -> Observability:
+    """根据配置构造No-op或OpenTelemetry实现。"""
     if endpoint is None:
         return NoOpObservability()
     try:

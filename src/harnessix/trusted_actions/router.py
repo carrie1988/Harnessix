@@ -1,3 +1,5 @@
+"""统一可信Action路由：绑定Tool、Execution Plan、Sandbox与Executor后执行Action。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -87,6 +89,8 @@ def canonical_action_resource(
 
 @dataclass(frozen=True, slots=True)
 class ActionPlanningContext:
+    """Trusted Action规划时绑定的Workspace、策略与能力上下文。"""
+
     workspace_root: Path
     sandbox: SandboxBindingV2
     capabilities: ExecutionCapabilityEvidenceV2
@@ -98,6 +102,8 @@ class ActionPlanningContext:
 
 @dataclass(frozen=True, slots=True)
 class ResolvedAction:
+    """已完成Tool解析、计划与Executor绑定的Action。"""
+
     resources: tuple[CanonicalActionResource, ...]
     workspace_resources: tuple[WorkspaceResourceRequest, ...] = ()
 
@@ -118,6 +124,8 @@ ArgumentDecoder = Callable[[dict[str, JsonValue]], BaseModel]
 
 @dataclass(frozen=True, slots=True)
 class TrustedActionDefinition:
+    """统一Action路由注册的Tool合同与Executor工厂。"""
+
     binding: TrustedToolBinding
     input_model: type[BaseModel]
     resolve: ResourceResolver
@@ -184,6 +192,7 @@ class TrustedActionRouter:
     def plan(
         self, invocation: CodingActionInvocation, context: ActionPlanningContext
     ) -> ActionRouteSnapshot:
+        """冻结Tool合同、资源、策略、Sandbox与Executor身份，拒绝明文Secret和能力漂移。"""
         checked = CodingActionInvocation.model_validate_json(invocation.model_dump_json())
         definition = self._definition(checked.source, checked.source_id, checked.tool)
         binding = definition.binding
@@ -310,6 +319,7 @@ class TrustedActionRouter:
         )
 
     async def execute(self, plan_id: UUID) -> ActionExecutionOutcome:
+        """Claim已批准计划并执行一次；取消后对账，发送后失败保留未知效果而不重试。"""
         current, definition, arguments = self._prepare_execution(plan_id)
         plan = current.plan
         self._audit.transition(

@@ -139,6 +139,7 @@ def write_eval_report(path: Path, report: CodingEvalReport) -> None:
 
 
 def read_eval_report(path: Path) -> CodingEvalReport:
+    """从受限JSON文件读取并校验单次Eval报告。"""
     return _read_report(
         path,
         CodingEvalReport,
@@ -167,6 +168,7 @@ def write_eval_campaign_plan(path: Path, plan: CodingEvalCampaignPlan) -> None:
 
 
 def read_eval_campaign_plan(path: Path) -> CodingEvalCampaignPlan:
+    """从受限JSON文件读取并校验Eval Campaign计划。"""
     return _read_report(
         path,
         CodingEvalCampaignPlan,
@@ -196,6 +198,7 @@ def write_eval_campaign_report(path: Path, report: CodingEvalCampaignReport) -> 
 
 
 def read_eval_campaign_report(path: Path) -> CodingEvalCampaignReport:
+    """从受限JSON文件读取并校验Eval Campaign报告。"""
     return _read_report(
         path,
         CodingEvalCampaignReport,
@@ -209,6 +212,7 @@ def read_eval_campaign_report(path: Path) -> CodingEvalCampaignReport:
 def write_eval_campaign_execution_state(
     path: Path, state: CodingEvalCampaignExecutionState
 ) -> None:
+    """以原子替换持久化Campaign执行状态。"""
     try:
         state = CodingEvalCampaignExecutionState.model_validate_json(
             state.model_dump_json(), strict=True
@@ -227,6 +231,7 @@ def write_eval_campaign_execution_state(
 
 
 def read_eval_campaign_execution_state(path: Path) -> CodingEvalCampaignExecutionState:
+    """读取并校验可恢复的Campaign执行状态。"""
     return _read_report(
         path,
         CodingEvalCampaignExecutionState,

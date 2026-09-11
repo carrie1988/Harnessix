@@ -1,3 +1,5 @@
+"""Workspace身份与租约：签发并校验绑定Workspace快照的执行租约。"""
+
 from __future__ import annotations
 
 import math

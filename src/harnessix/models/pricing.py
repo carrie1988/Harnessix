@@ -1,3 +1,5 @@
+"""模型Provider适配：加载、匹配并验证版本化模型价格快照。"""
+
 from __future__ import annotations
 
 import hashlib

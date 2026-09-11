@@ -1,3 +1,5 @@
+"""持久Agent状态机：定义跨组件传播的稳定Kernel错误。"""
+
 from __future__ import annotations
 
 from enum import StrEnum

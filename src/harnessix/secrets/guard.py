@@ -1,3 +1,5 @@
+"""Secret解析与脱敏：限定Secret在Workspace路径与环境中的可见范围。"""
+
 from __future__ import annotations
 
 import json

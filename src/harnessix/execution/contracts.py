@@ -1,3 +1,5 @@
+"""可信执行计划：定义版本化数据合同及其跨字段一致性校验。"""
+
 from __future__ import annotations
 
 import hashlib

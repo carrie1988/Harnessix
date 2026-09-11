@@ -1,3 +1,5 @@
+"""模型Context规划：定义Tool Result模型视图决定与检查合同。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

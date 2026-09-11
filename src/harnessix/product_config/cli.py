@@ -1,3 +1,5 @@
+"""产品配置：解析用户命令并调用对应应用服务，不承载领域规则。"""
+
 from __future__ import annotations
 
 import argparse

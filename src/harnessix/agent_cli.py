@@ -1,3 +1,5 @@
+"""实现驱动公共Agent Protocol的薄命令行客户端。"""
+
 from __future__ import annotations
 
 import argparse

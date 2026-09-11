@@ -1,3 +1,5 @@
+"""模型Context规划：选择并激活可审计的模型历史窗口。"""
+
 from __future__ import annotations
 
 import hashlib

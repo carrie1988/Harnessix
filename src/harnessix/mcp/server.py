@@ -1,3 +1,5 @@
+"""把显式白名单内的低风险只读Trusted Action导出为本地MCP stdio服务。"""
+
 from __future__ import annotations
 
 import json
@@ -32,6 +34,8 @@ from harnessix.trusted_actions.router import ExtensionActionPort
 
 @dataclass(frozen=True, slots=True)
 class McpExportedTool:
+    """MCP Server向客户端公开的脱敏Tool定义。"""
+
     public_name: str
     binding_name: str
     description: str

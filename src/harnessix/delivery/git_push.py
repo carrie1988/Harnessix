@@ -1,3 +1,5 @@
+"""Workspace与Git交付：规范化远端身份并执行受策略约束的Git Push。"""
+
 from __future__ import annotations
 
 import asyncio

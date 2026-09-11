@@ -1,3 +1,5 @@
+"""Headless Agent Protocol服务：以有界stdio帧运行Headless App Server。"""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,3 +1,5 @@
+"""受监督进程：绑定Process意图、平台能力与Execution Plan。"""
+
 from __future__ import annotations
 
 import os

@@ -1,3 +1,5 @@
+"""受监督进程：封装Windows Job Object进程树所有权。"""
+
 from __future__ import annotations
 
 import ctypes

@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：把已验证意图冻结为可执行且可重放的计划。"""
+
 from __future__ import annotations
 
 from pydantic import ValidationError

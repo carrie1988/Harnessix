@@ -1,3 +1,5 @@
+"""Workspace身份与租约：执行跨平台Workspace路径规范化与成员校验。"""
+
 from __future__ import annotations
 
 import re

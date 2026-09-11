@@ -1,0 +1,1109 @@
+{
+  "spec_version": "harnessix.readability-policy/v1",
+  "report_spec_version": "harnessix.readability-report/v1",
+  "thresholds": {
+    "file_lines": 600,
+    "symbol_lines": 100,
+    "decision_complexity": 20
+  },
+  "required_module_docstrings": true,
+  "required_public_behavior_docstrings": true,
+  "required_high_risk_callable_docstrings": true,
+  "approved_oversized_files": {
+    "src/harnessix/agent/models.py": 929,
+    "src/harnessix/agent/runtime.py": 3198,
+    "src/harnessix/context/sources.py": 844,
+    "src/harnessix/delivery/git.py": 1041,
+    "src/harnessix/delivery/git_push.py": 642,
+    "src/harnessix/evals/delivery.py": 937,
+    "src/harnessix/evals/runner.py": 700,
+    "src/harnessix/mcp/runtime.py": 643,
+    "src/harnessix/processes/supervisor.py": 827,
+    "src/harnessix/protocol/contracts.py": 643,
+    "src/harnessix/sdk/agent_client.py": 639,
+    "src/harnessix/skills/runtime.py": 644,
+    "src/harnessix/trusted_actions/router.py": 659
+  },
+  "approved_oversized_symbols": {
+    "harnessix.agent.batch_patching:validate_effect": {
+      "max_lines": 89,
+      "max_decision_complexity": 31
+    },
+    "harnessix.agent.compaction_reducer:apply_compaction": {
+      "max_lines": 115,
+      "max_decision_complexity": 20
+    },
+    "harnessix.agent.item_reducer:_start_item": {
+      "max_lines": 261,
+      "max_decision_complexity": 82
+    },
+    "harnessix.agent.models:EventDraft": {
+      "max_lines": 139,
+      "max_decision_complexity": 0
+    },
+    "harnessix.agent.models:EventDraft.legacy_event_boundary": {
+      "max_lines": 107,
+      "max_decision_complexity": 69
+    },
+    "harnessix.agent.models:ThreadForkSnapshot.safe_history": {
+      "max_lines": 48,
+      "max_decision_complexity": 24
+    },
+    "harnessix.agent.reducer:apply_event": {
+      "max_lines": 160,
+      "max_decision_complexity": 38
+    },
+    "harnessix.agent.runtime:AgentRuntime": {
+      "max_lines": 3027,
+      "max_decision_complexity": 0
+    },
+    "harnessix.agent.runtime:AgentRuntime.__init__": {
+      "max_lines": 170,
+      "max_decision_complexity": 58
+    },
+    "harnessix.agent.runtime:AgentRuntime._drive": {
+      "max_lines": 169,
+      "max_decision_complexity": 35
+    },
+    "harnessix.agent.runtime:AgentRuntime._execute_calls": {
+      "max_lines": 270,
+      "max_decision_complexity": 62
+    },
+    "harnessix.agent.runtime:AgentRuntime._finish": {
+      "max_lines": 162,
+      "max_decision_complexity": 48
+    },
+    "harnessix.agent.runtime:AgentRuntime._observe_process_action": {
+      "max_lines": 102,
+      "max_decision_complexity": 21
+    },
+    "harnessix.agent.runtime:AgentRuntime._recover": {
+      "max_lines": 101,
+      "max_decision_complexity": 28
+    },
+    "harnessix.agent.runtime:AgentRuntime._reply_approval": {
+      "max_lines": 135,
+      "max_decision_complexity": 23
+    },
+    "harnessix.agent.runtime:AgentRuntime._run_compaction": {
+      "max_lines": 135,
+      "max_decision_complexity": 12
+    },
+    "harnessix.agent.runtime:AgentRuntime._sample_events": {
+      "max_lines": 211,
+      "max_decision_complexity": 60
+    },
+    "harnessix.agent.runtime:AgentRuntime._summary_text": {
+      "max_lines": 230,
+      "max_decision_complexity": 51
+    },
+    "harnessix.agent.runtime:AgentRuntime.reply_question": {
+      "max_lines": 102,
+      "max_decision_complexity": 18
+    },
+    "harnessix.agent.telemetry:KernelTelemetry": {
+      "max_lines": 240,
+      "max_decision_complexity": 0
+    },
+    "harnessix.agent.turn_reducer:_change_state": {
+      "max_lines": 224,
+      "max_decision_complexity": 90
+    },
+    "harnessix.agent_cli:ThinAgentCLI": {
+      "max_lines": 250,
+      "max_decision_complexity": 0
+    },
+    "harnessix.agent_cli:ThinAgentCLI._answer_pending": {
+      "max_lines": 77,
+      "max_decision_complexity": 23
+    },
+    "harnessix.api.app:create_app": {
+      "max_lines": 164,
+      "max_decision_complexity": 3
+    },
+    "harnessix.app_server.server:AgentProtocolServer": {
+      "max_lines": 234,
+      "max_decision_complexity": 0
+    },
+    "harnessix.app_server.service:AgentApplicationService": {
+      "max_lines": 465,
+      "max_decision_complexity": 0
+    },
+    "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher": {
+      "max_lines": 204,
+      "max_decision_complexity": 0
+    },
+    "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher.append": {
+      "max_lines": 101,
+      "max_decision_complexity": 27
+    },
+    "harnessix.artifacts.process_output:SQLiteProcessArtifactPublisher": {
+      "max_lines": 221,
+      "max_decision_complexity": 0
+    },
+    "harnessix.artifacts.sqlite:SQLiteArtifactStore": {
+      "max_lines": 492,
+      "max_decision_complexity": 0
+    },
+    "harnessix.artifacts.sqlite:SQLiteArtifactStore._body": {
+      "max_lines": 47,
+      "max_decision_complexity": 21
+    },
+    "harnessix.artifacts.sqlite:SQLiteArtifactStore._reference": {
+      "max_lines": 89,
+      "max_decision_complexity": 48
+    },
+    "harnessix.artifacts.sqlite:SQLiteArtifactStore._verify_page": {
+      "max_lines": 40,
+      "max_decision_complexity": 24
+    },
+    "harnessix.context.compaction:_current_user": {
+      "max_lines": 28,
+      "max_decision_complexity": 26
+    },
+    "harnessix.context.compaction:_plan_steps": {
+      "max_lines": 104,
+      "max_decision_complexity": 36
+    },
+    "harnessix.context.compaction_ledger_contracts:CompactionRecord.coherent_state": {
+      "max_lines": 65,
+      "max_decision_complexity": 38
+    },
+    "harnessix.context.contracts:ContextInspectionV3.internally_consistent": {
+      "max_lines": 41,
+      "max_decision_complexity": 22
+    },
+    "harnessix.context.engine:ContextEngine": {
+      "max_lines": 141,
+      "max_decision_complexity": 0
+    },
+    "harnessix.context.engine:ContextEngine._prepare": {
+      "max_lines": 109,
+      "max_decision_complexity": 24
+    },
+    "harnessix.context.sources:EnvironmentContextSource": {
+      "max_lines": 113,
+      "max_decision_complexity": 0
+    },
+    "harnessix.context.sources:GitContextSource": {
+      "max_lines": 105,
+      "max_decision_complexity": 0
+    },
+    "harnessix.context.sources:ProjectInstructionSource": {
+      "max_lines": 149,
+      "max_decision_complexity": 0
+    },
+    "harnessix.context.sources:SourcedContextEngine": {
+      "max_lines": 108,
+      "max_decision_complexity": 0
+    },
+    "harnessix.context.tool_result_contracts:ToolResultViewDecision.strategy_is_consistent": {
+      "max_lines": 50,
+      "max_decision_complexity": 27
+    },
+    "harnessix.context.tool_result_view:prepare_model_history_items": {
+      "max_lines": 114,
+      "max_decision_complexity": 45
+    },
+    "harnessix.delivery.filesystem:WorkspaceTransactionRuntime": {
+      "max_lines": 172,
+      "max_decision_complexity": 0
+    },
+    "harnessix.delivery.git:GitDeliveryRuntime": {
+      "max_lines": 767,
+      "max_decision_complexity": 0
+    },
+    "harnessix.delivery.git:_GitRunner": {
+      "max_lines": 122,
+      "max_decision_complexity": 0
+    },
+    "harnessix.delivery.git_contracts:ManagedGitWorktreeRecord.complete_record": {
+      "max_lines": 34,
+      "max_decision_complexity": 21
+    },
+    "harnessix.delivery.git_push:GitPushActionExecutor": {
+      "max_lines": 272,
+      "max_decision_complexity": 0
+    },
+    "harnessix.delivery.git_push:canonical_git_remote_url": {
+      "max_lines": 65,
+      "max_decision_complexity": 31
+    },
+    "harnessix.delivery.git_store:SQLiteGitDeliveryStore": {
+      "max_lines": 434,
+      "max_decision_complexity": 0
+    },
+    "harnessix.delivery.planner:prepare_workspace_transaction": {
+      "max_lines": 86,
+      "max_decision_complexity": 26
+    },
+    "harnessix.delivery.store:SQLiteWorkspaceTransactionStore": {
+      "max_lines": 326,
+      "max_decision_complexity": 0
+    },
+    "harnessix.evals.campaign:_require_evidence": {
+      "max_lines": 109,
+      "max_decision_complexity": 45
+    },
+    "harnessix.evals.campaign_execution:run_coding_eval_campaign": {
+      "max_lines": 137,
+      "max_decision_complexity": 21
+    },
+    "harnessix.evals.checks:historical_python_launcher": {
+      "max_lines": 71,
+      "max_decision_complexity": 24
+    },
+    "harnessix.evals.contracts:CodingEvalReport.consistent_report": {
+      "max_lines": 31,
+      "max_decision_complexity": 25
+    },
+    "harnessix.evals.delivery:CodingEvalDeliveryStore": {
+      "max_lines": 371,
+      "max_decision_complexity": 0
+    },
+    "harnessix.evals.delivery:CodingEvalDeliveryStore.execute": {
+      "max_lines": 110,
+      "max_decision_complexity": 18
+    },
+    "harnessix.evals.delivery:build_coding_eval_change_package": {
+      "max_lines": 91,
+      "max_decision_complexity": 35
+    },
+    "harnessix.evals.delivery_contracts:CodingEvalDeliveryRecord.record_is_consistent": {
+      "max_lines": 53,
+      "max_decision_complexity": 29
+    },
+    "harnessix.evals.grader:grade_coding_eval": {
+      "max_lines": 164,
+      "max_decision_complexity": 15
+    },
+    "harnessix.evals.materializer:materialize_historical_coding_eval": {
+      "max_lines": 115,
+      "max_decision_complexity": 18
+    },
+    "harnessix.evals.runner:_provision": {
+      "max_lines": 107,
+      "max_decision_complexity": 26
+    },
+    "harnessix.evals.runner:run_historical_coding_eval": {
+      "max_lines": 233,
+      "max_decision_complexity": 24
+    },
+    "harnessix.execution.store:SQLiteExecutionPlanStore": {
+      "max_lines": 176,
+      "max_decision_complexity": 0
+    },
+    "harnessix.executors.demo_issue:DemoIssueRepository": {
+      "max_lines": 105,
+      "max_decision_complexity": 0
+    },
+    "harnessix.hooks.runtime:HookRuntime": {
+      "max_lines": 294,
+      "max_decision_complexity": 0
+    },
+    "harnessix.hooks.runtime:HookRuntime.__init__": {
+      "max_lines": 76,
+      "max_decision_complexity": 23
+    },
+    "harnessix.hooks.runtime:HookRuntime._run": {
+      "max_lines": 133,
+      "max_decision_complexity": 16
+    },
+    "harnessix.hooks.store:SQLiteHookStore": {
+      "max_lines": 369,
+      "max_decision_complexity": 0
+    },
+    "harnessix.mcp.runtime:McpClientConnection": {
+      "max_lines": 257,
+      "max_decision_complexity": 0
+    },
+    "harnessix.mcp.server:HarnessixMcpServer": {
+      "max_lines": 114,
+      "max_decision_complexity": 0
+    },
+    "harnessix.mcp.store:SQLiteMcpStore": {
+      "max_lines": 359,
+      "max_decision_complexity": 0
+    },
+    "harnessix.models._anthropic_mapping:build_request": {
+      "max_lines": 83,
+      "max_decision_complexity": 23
+    },
+    "harnessix.models._anthropic_stream:AnthropicStream": {
+      "max_lines": 204,
+      "max_decision_complexity": 0
+    },
+    "harnessix.models._anthropic_stream:AnthropicStream.feed": {
+      "max_lines": 89,
+      "max_decision_complexity": 47
+    },
+    "harnessix.models._bounded_http:BoundedStream._iterate": {
+      "max_lines": 47,
+      "max_decision_complexity": 22
+    },
+    "harnessix.models._chat_stream:ChatStream": {
+      "max_lines": 167,
+      "max_decision_complexity": 0
+    },
+    "harnessix.models._chat_stream:ChatStream.feed": {
+      "max_lines": 88,
+      "max_decision_complexity": 42
+    },
+    "harnessix.models._history:messages_for": {
+      "max_lines": 71,
+      "max_decision_complexity": 21
+    },
+    "harnessix.models.anthropic:AnthropicProvider": {
+      "max_lines": 141,
+      "max_decision_complexity": 0
+    },
+    "harnessix.models.anthropic:AnthropicProvider.stream": {
+      "max_lines": 89,
+      "max_decision_complexity": 24
+    },
+    "harnessix.models.billing:resolve_billing_context": {
+      "max_lines": 32,
+      "max_decision_complexity": 23
+    },
+    "harnessix.models.costs:_calculate": {
+      "max_lines": 72,
+      "max_decision_complexity": 28
+    },
+    "harnessix.models.costs:_summarize_accounted": {
+      "max_lines": 60,
+      "max_decision_complexity": 41
+    },
+    "harnessix.models.openai_chat:OpenAIChatProvider": {
+      "max_lines": 149,
+      "max_decision_complexity": 0
+    },
+    "harnessix.models.openai_chat:OpenAIChatProvider.stream": {
+      "max_lines": 92,
+      "max_decision_complexity": 24
+    },
+    "harnessix.observability.opentelemetry:OpenTelemetryObservability": {
+      "max_lines": 122,
+      "max_decision_complexity": 0
+    },
+    "harnessix.patches.agent_bridge:ManagedPatchBridge": {
+      "max_lines": 304,
+      "max_decision_complexity": 0
+    },
+    "harnessix.patches.batch_agent_bridge:ManagedPatchBatchBridge": {
+      "max_lines": 411,
+      "max_decision_complexity": 0
+    },
+    "harnessix.patches.batch_agent_bridge:ManagedPatchBatchBridge._result": {
+      "max_lines": 71,
+      "max_decision_complexity": 25
+    },
+    "harnessix.patches.diff_document:batch_diff_document": {
+      "max_lines": 84,
+      "max_decision_complexity": 27
+    },
+    "harnessix.patches.diff_document_contracts:BatchDiffDocument.valid_document": {
+      "max_lines": 81,
+      "max_decision_complexity": 56
+    },
+    "harnessix.patches.ledger:load": {
+      "max_lines": 107,
+      "max_decision_complexity": 38
+    },
+    "harnessix.patches.managed:ManagedPatchWorkspace": {
+      "max_lines": 428,
+      "max_decision_complexity": 0
+    },
+    "harnessix.patches.managed:ManagedPatchWorkspace.__init__": {
+      "max_lines": 114,
+      "max_decision_complexity": 27
+    },
+    "harnessix.patches.managed:PatchWorkspaces": {
+      "max_lines": 103,
+      "max_decision_complexity": 0
+    },
+    "harnessix.patches.managed_batches:ManagedPatchBatches": {
+      "max_lines": 131,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.agent_runtime:ProcessAgentBridge": {
+      "max_lines": 347,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.owner_protocol:ProcessOwnerCommand.command_shape": {
+      "max_lines": 31,
+      "max_decision_complexity": 23
+    },
+    "harnessix.processes.owner_receipt:ProcessOwnerReceipt.receipt_shape": {
+      "max_lines": 26,
+      "max_decision_complexity": 23
+    },
+    "harnessix.processes.posix_owner:_Owner": {
+      "max_lines": 429,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.posix_owner:_Owner._event_loop": {
+      "max_lines": 39,
+      "max_decision_complexity": 23
+    },
+    "harnessix.processes.runtime:HostProcessRuntime": {
+      "max_lines": 261,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.runtime:HostProcessRuntime.__init__": {
+      "max_lines": 65,
+      "max_decision_complexity": 21
+    },
+    "harnessix.processes.supervision_contracts:ProcessLease.lifecycle_shape": {
+      "max_lines": 34,
+      "max_decision_complexity": 26
+    },
+    "harnessix.processes.supervision_store:SQLiteProcessLeaseStore": {
+      "max_lines": 216,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.supervisor:PosixProcessSupervisor": {
+      "max_lines": 302,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.supervisor:PosixProcessSupervisor._start_bound": {
+      "max_lines": 130,
+      "max_decision_complexity": 29
+    },
+    "harnessix.processes.supervisor:SupervisedProcess": {
+      "max_lines": 253,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.windows_conpty:spawn_conpty": {
+      "max_lines": 182,
+      "max_decision_complexity": 20
+    },
+    "harnessix.processes.windows_job:WindowsJobObject": {
+      "max_lines": 102,
+      "max_decision_complexity": 0
+    },
+    "harnessix.processes.windows_owner:_Owner": {
+      "max_lines": 363,
+      "max_decision_complexity": 0
+    },
+    "harnessix.product_config.contracts:ProductConfigV2.valid_graph": {
+      "max_lines": 35,
+      "max_decision_complexity": 27
+    },
+    "harnessix.product_config.runtime:SafeFallbackProvider": {
+      "max_lines": 106,
+      "max_decision_complexity": 0
+    },
+    "harnessix.product_config.store:SQLiteProductConfigStore": {
+      "max_lines": 462,
+      "max_decision_complexity": 0
+    },
+    "harnessix.protocol.requests:SQLiteProtocolRequestStore": {
+      "max_lines": 161,
+      "max_decision_complexity": 0
+    },
+    "harnessix.runtime:ActionService": {
+      "max_lines": 483,
+      "max_decision_complexity": 0
+    },
+    "harnessix.sandbox.container:ContainerCommandBuilder": {
+      "max_lines": 361,
+      "max_decision_complexity": 0
+    },
+    "harnessix.sandbox.container:ContainerCommandBuilder.prepare": {
+      "max_lines": 165,
+      "max_decision_complexity": 47
+    },
+    "harnessix.sandbox.egress:ManagedEgressGateway": {
+      "max_lines": 143,
+      "max_decision_complexity": 0
+    },
+    "harnessix.sandbox.network:authorized_addresses": {
+      "max_lines": 53,
+      "max_decision_complexity": 26
+    },
+    "harnessix.sandbox.network_isolation:attest_internal_network": {
+      "max_lines": 53,
+      "max_decision_complexity": 21
+    },
+    "harnessix.sandbox.process_runtime:ContainerProcessRuntime": {
+      "max_lines": 142,
+      "max_decision_complexity": 0
+    },
+    "harnessix.sdk.agent_client:AgentClient": {
+      "max_lines": 339,
+      "max_decision_complexity": 0
+    },
+    "harnessix.sdk.agent_client:SubprocessAgentTransport": {
+      "max_lines": 187,
+      "max_decision_complexity": 0
+    },
+    "harnessix.session.sqlite:SQLiteSessionStore": {
+      "max_lines": 428,
+      "max_decision_complexity": 0
+    },
+    "harnessix.skills.contracts:SkillCatalogSnapshot.canonical_catalog": {
+      "max_lines": 24,
+      "max_decision_complexity": 23
+    },
+    "harnessix.skills.runtime:SkillRegistry": {
+      "max_lines": 507,
+      "max_decision_complexity": 0
+    },
+    "harnessix.skills.store:SQLiteSkillStore": {
+      "max_lines": 252,
+      "max_decision_complexity": 0
+    },
+    "harnessix.smoke.runner:_report": {
+      "max_lines": 66,
+      "max_decision_complexity": 26
+    },
+    "harnessix.storage.postgres_journal:PostgresEffectJournal": {
+      "max_lines": 515,
+      "max_decision_complexity": 0
+    },
+    "harnessix.storage.sqlite_journal:SQLiteEffectJournal": {
+      "max_lines": 494,
+      "max_decision_complexity": 0
+    },
+    "harnessix.tools.git:GitReadRuntime": {
+      "max_lines": 111,
+      "max_decision_complexity": 0
+    },
+    "harnessix.tools.git:_status": {
+      "max_lines": 79,
+      "max_decision_complexity": 25
+    },
+    "harnessix.tools.runtime:CodingToolRuntime": {
+      "max_lines": 301,
+      "max_decision_complexity": 0
+    },
+    "harnessix.tools.workspace:Workspace": {
+      "max_lines": 148,
+      "max_decision_complexity": 0
+    },
+    "harnessix.trusted_actions.router:TrustedActionRouter": {
+      "max_lines": 379,
+      "max_decision_complexity": 0
+    },
+    "harnessix.trusted_actions.store:SQLiteActionAuditStore": {
+      "max_lines": 316,
+      "max_decision_complexity": 0
+    },
+    "harnessix.worker:ActionWorker": {
+      "max_lines": 136,
+      "max_decision_complexity": 0
+    },
+    "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources": {
+      "max_lines": 58,
+      "max_decision_complexity": 27
+    },
+    "harnessix.workspace.leases:WorkspaceLeaseStore": {
+      "max_lines": 144,
+      "max_decision_complexity": 0
+    },
+    "harnessix.workspace.paths:normalize_workspace_path": {
+      "max_lines": 33,
+      "max_decision_complexity": 22
+    },
+    "harnessix.workspace.snapshot:_PosixRoot": {
+      "max_lines": 125,
+      "max_decision_complexity": 0
+    },
+    "harnessix.workspace.snapshot:capture_workspace_snapshot": {
+      "max_lines": 133,
+      "max_decision_complexity": 29
+    },
+    "harnessix.workspace.windows:WindowsWorkspaceRoot": {
+      "max_lines": 313,
+      "max_decision_complexity": 0
+    }
+  },
+  "approved_package_dependencies": [
+    "__main__->cli",
+    "__root__->domain",
+    "__root__->sdk",
+    "adapters->domain",
+    "adapters->sdk",
+    "agent->artifacts",
+    "agent->context",
+    "agent->domain",
+    "agent->models",
+    "agent->observability",
+    "agent->patches",
+    "agent->processes",
+    "agent->session",
+    "agent->tools",
+    "agent_cli->protocol",
+    "agent_cli->sdk",
+    "api->bootstrap",
+    "api->domain",
+    "api->observability",
+    "api->runtime",
+    "api->settings",
+    "app_server->agent",
+    "app_server->artifacts",
+    "app_server->domain",
+    "app_server->protocol",
+    "app_server->session",
+    "artifacts->agent",
+    "artifacts->domain",
+    "artifacts->patches",
+    "artifacts->processes",
+    "artifacts->session",
+    "bootstrap->domain",
+    "bootstrap->executors",
+    "bootstrap->observability",
+    "bootstrap->policy",
+    "bootstrap->runtime",
+    "bootstrap->settings",
+    "bootstrap->storage",
+    "cli->agent_cli",
+    "cli->bootstrap",
+    "cli->evals",
+    "cli->licensing",
+    "cli->observability",
+    "cli->product_config",
+    "cli->settings",
+    "cli->smoke",
+    "cli->worker",
+    "context->agent",
+    "context->artifacts",
+    "context->domain",
+    "context->tools",
+    "delivery->agent",
+    "delivery->domain",
+    "delivery->execution",
+    "delivery->runtime",
+    "delivery->tools",
+    "delivery->trusted_actions",
+    "delivery->workspace",
+    "evals->agent",
+    "evals->artifacts",
+    "evals->context",
+    "evals->domain",
+    "evals->models",
+    "evals->observability",
+    "evals->patches",
+    "evals->policy",
+    "evals->processes",
+    "evals->runtime",
+    "evals->session",
+    "evals->storage",
+    "evals->tools",
+    "evals->worker",
+    "execution->agent",
+    "execution->domain",
+    "execution->tools",
+    "execution->workspace",
+    "executors->domain",
+    "hooks->agent",
+    "hooks->domain",
+    "hooks->execution",
+    "hooks->secrets",
+    "hooks->tools",
+    "hooks->trusted_actions",
+    "mcp->agent",
+    "mcp->domain",
+    "mcp->execution",
+    "mcp->sandbox",
+    "mcp->secrets",
+    "mcp->tools",
+    "mcp->trusted_actions",
+    "models->agent",
+    "models->context",
+    "models->domain",
+    "observability->domain",
+    "patches->agent",
+    "patches->domain",
+    "patches->tools",
+    "policy->domain",
+    "processes->agent",
+    "processes->artifacts",
+    "processes->domain",
+    "processes->execution",
+    "processes->runtime",
+    "processes->secrets",
+    "processes->tools",
+    "processes->workspace",
+    "product_config->agent",
+    "product_config->app_server",
+    "product_config->domain",
+    "product_config->execution",
+    "product_config->file_lock",
+    "product_config->models",
+    "product_config->protocol",
+    "product_config->secrets",
+    "product_config->session",
+    "product_config->tools",
+    "product_config->workspace",
+    "protocol->agent",
+    "protocol->artifacts",
+    "protocol->domain",
+    "runtime->domain",
+    "runtime->observability",
+    "sandbox->agent",
+    "sandbox->domain",
+    "sandbox->execution",
+    "sandbox->processes",
+    "sandbox->secrets",
+    "sandbox->tools",
+    "sandbox->workspace",
+    "sdk->app_server",
+    "sdk->domain",
+    "sdk->protocol",
+    "secrets->agent",
+    "secrets->execution",
+    "secrets->workspace",
+    "session->agent",
+    "session->file_lock",
+    "skills->agent",
+    "skills->domain",
+    "skills->execution",
+    "skills->secrets",
+    "skills->tools",
+    "skills->trusted_actions",
+    "skills->workspace",
+    "smoke->agent",
+    "smoke->domain",
+    "smoke->models",
+    "smoke->session",
+    "storage->domain",
+    "tools->agent",
+    "tools->artifacts",
+    "tools->domain",
+    "tools->processes",
+    "trusted_actions->agent",
+    "trusted_actions->domain",
+    "trusted_actions->execution",
+    "trusted_actions->tools",
+    "trusted_actions->workspace",
+    "worker->domain",
+    "worker->observability",
+    "worker->runtime",
+    "workspace->agent",
+    "workspace->domain",
+    "workspace->tools"
+  ],
+  "approved_dependency_cycles": [
+    [
+      "agent",
+      "artifacts",
+      "context",
+      "execution",
+      "models",
+      "patches",
+      "processes",
+      "secrets",
+      "session",
+      "tools",
+      "workspace"
+    ]
+  ],
+  "public_api": {
+    "harnessix": [
+      "ACTION_SPEC_VERSION",
+      "ActionContext",
+      "ActionEvent",
+      "ActionFailure",
+      "ActionRequest",
+      "ActionResult",
+      "ActionSnapshot",
+      "ActionStatus",
+      "ApprovalDecision",
+      "ApprovalOutcome",
+      "EffectClass",
+      "EffectReceipt",
+      "HarnessixAPIError",
+      "HarnessixAsyncClient",
+      "HarnessixClient",
+      "Principal",
+      "RiskLevel",
+      "SecretRef",
+      "ToolDescriptor",
+      "TraceContext"
+    ],
+    "harnessix.api": [
+      "create_app"
+    ],
+    "harnessix.app_server": [
+      "AgentApplicationService",
+      "AgentProtocolServer",
+      "AgentServiceError",
+      "ConnectionState",
+      "ScopedProtocolArtifactReader"
+    ],
+    "harnessix.context": [
+      "AsyncContextPlanner",
+      "CompactionRuntimeConfig",
+      "ContextBuildInput",
+      "ContextConsistencySnapshot",
+      "ContextEngine",
+      "ContextFragment",
+      "ContextFragmentDecision",
+      "ContextFragmentKind",
+      "ContextInspection",
+      "ContextInspectionRecord",
+      "ContextInspectionV2",
+      "ContextInspectionV3",
+      "ContextLimits",
+      "ContextPlanner",
+      "ContextPreparationError",
+      "ContextPrepared",
+      "ContextSource",
+      "ContextSourceDocument",
+      "ContextSourceDocumentSnapshot",
+      "ContextSourceError",
+      "ContextSourceObservation",
+      "ContextSourceSnapshot",
+      "ContextTrust",
+      "EnvironmentContextSource",
+      "GitContextSource",
+      "ModelHistoryInspection",
+      "ModelHistoryInspectionRecord",
+      "ModelHistoryInspectionV2",
+      "PreparedContext",
+      "ProjectInstructionSource",
+      "SourcedContextEngine",
+      "ToolResultViewDecision",
+      "ToolResultViewPolicy",
+      "WorkspaceContextSource",
+      "estimate_tokens"
+    ],
+    "harnessix.evals": [
+      "CHANGE_PACKAGE_SPEC_VERSION",
+      "CODING_EVAL_GRADER_VERSION",
+      "CODING_EVAL_MATERIALIZER_VERSION",
+      "CODING_EVAL_SPEC_VERSION",
+      "COMPACTION_SEMANTIC_CATEGORIES",
+      "CodingEvalCampaignExecutionState",
+      "CodingEvalCampaignPlan",
+      "CodingEvalCampaignReport",
+      "CodingEvalCampaignRunConfig",
+      "CodingEvalCampaignRunReport",
+      "CodingEvalCampaignSummary",
+      "CodingEvalCampaignTrial",
+      "CodingEvalChangeImage",
+      "CodingEvalChangePackage",
+      "CodingEvalDeliveryPlan",
+      "CodingEvalDeliveryRecord",
+      "CodingEvalDeliveryStore",
+      "CodingEvalDeliveryTransition",
+      "CodingEvalEnvironment",
+      "CodingEvalMaterialization",
+      "CodingEvalReport",
+      "CodingEvalRunState",
+      "CodingEvalTask",
+      "CompactionSemanticCheck",
+      "CompactionSemanticEvalCase",
+      "CompactionSemanticEvalReport",
+      "CompactionSemanticExpectation",
+      "CompletedCodingEvalTrial",
+      "DELIVERY_PLAN_SPEC_VERSION",
+      "DELIVERY_RECORD_SPEC_VERSION",
+      "EvalFinalAnswer",
+      "EvalFinalAnswerEvidence",
+      "EvalFinalTest",
+      "EvalGitEvidence",
+      "EvalTestObservation",
+      "HistoricalCodingEval",
+      "HistoricalCodingEvalResult",
+      "MaterializedCodingEval",
+      "build_coding_eval_campaign_report",
+      "build_coding_eval_change_package",
+      "collect_git_evidence",
+      "grade_coding_eval",
+      "grade_compaction_semantics",
+      "historical_check_arguments",
+      "historical_coding_eval",
+      "historical_coding_eval_ids",
+      "historical_coding_eval_versions",
+      "historical_python_launcher",
+      "load_materialized_coding_eval",
+      "materialize_historical_coding_eval",
+      "read_coding_eval_change_package",
+      "read_eval_campaign_execution_state",
+      "read_eval_campaign_plan",
+      "read_eval_campaign_report",
+      "read_eval_report",
+      "read_eval_run_state",
+      "run_coding_eval_campaign",
+      "run_historical_checks",
+      "run_historical_coding_eval",
+      "write_coding_eval_change_package",
+      "write_eval_campaign_execution_state",
+      "write_eval_campaign_plan",
+      "write_eval_campaign_report",
+      "write_eval_report",
+      "write_eval_run_state"
+    ],
+    "harnessix.executors": [
+      "DemoIssueCreateInput",
+      "DemoIssueExecutor",
+      "DemoIssueRepository",
+      "EchoExecutor",
+      "EchoInput"
+    ],
+    "harnessix.hooks": [
+      "HookActionInput",
+      "HookActionOutput",
+      "HookDefinition",
+      "HookDispatch",
+      "HookDispatchResult",
+      "HookMatcher",
+      "HookRegistrySnapshot",
+      "HookRunEvent",
+      "HookRunPlan",
+      "HookRunSnapshot",
+      "HookRuntime",
+      "HookTrustGrant",
+      "SQLiteHookStore",
+      "build_hook_definition",
+      "build_hook_dispatch",
+      "build_hook_trust_grant"
+    ],
+    "harnessix.mcp": [
+      "HarnessixMcpServer",
+      "MCP_PROTOCOL_VERSION",
+      "McpActionGateway",
+      "McpCallAfterSendError",
+      "McpCatalogSnapshot",
+      "McpClientConnection",
+      "McpConnectionEvent",
+      "McpConnectionSnapshot",
+      "McpContainerStdioTarget",
+      "McpExportedTool",
+      "McpInProcessTarget",
+      "McpServerIdentity",
+      "McpToolArguments",
+      "McpToolCallOutput",
+      "McpToolSnapshot",
+      "McpTrustedToolPolicy",
+      "SQLiteMcpStore",
+      "build_mcp_action_definition",
+      "static_mcp_resource_resolver",
+      "validate_mcp_arguments"
+    ],
+    "harnessix.observability": [
+      "NoOpObservability",
+      "Observability",
+      "ObservabilitySpan",
+      "SpanKind",
+      "bind_log_context",
+      "build_observability",
+      "configure_logging",
+      "trace_log_fields"
+    ],
+    "harnessix.policy": [
+      "DefaultPolicyEngine"
+    ],
+    "harnessix.product_config": [
+      "ConfigAuditEvent",
+      "ConfigMigrationReceipt",
+      "ConfigurationDiagnostic",
+      "ConfigurationDiagnosticReport",
+      "EnvironmentSecretSourceConfig",
+      "ModelCapabilities",
+      "ModelProfile",
+      "ProductConfigSnapshot",
+      "ProductConfigV1",
+      "ProductConfigV2",
+      "ProfileSelection",
+      "ProviderDefinition",
+      "ProviderFallbackDecision",
+      "SecretReference"
+    ],
+    "harnessix.protocol": [
+      "AGENT_PROTOCOL_VERSION",
+      "ApprovalRespondParams",
+      "EventsNextParams",
+      "EventsNextResult",
+      "EventsReplayParams",
+      "EventsReplayResult",
+      "InitializeParams",
+      "InitializeResult",
+      "JsonRpcError",
+      "JsonRpcErrorResponse",
+      "JsonRpcNotification",
+      "JsonRpcRequest",
+      "JsonRpcSuccessResponse",
+      "ProtocolDecodeError",
+      "ProtocolRequestClaim",
+      "ProtocolRequestError",
+      "ProtocolRequestRecord",
+      "PublicEvent",
+      "PublicItemDelta",
+      "QuestionRespondParams",
+      "SQLiteProtocolRequestStore",
+      "ThreadArchiveParams",
+      "ThreadCreateParams",
+      "ThreadForkParams",
+      "ThreadGetParams",
+      "ThreadListParams",
+      "ThreadResumeParams",
+      "ThreadView",
+      "TurnCancelParams",
+      "TurnResumeParams",
+      "TurnRetryParams",
+      "TurnStartParams",
+      "TurnSteerParams",
+      "TurnView",
+      "decode_client_frame",
+      "decode_known_notification",
+      "project_event",
+      "project_replay",
+      "project_thread",
+      "project_turn",
+      "request_fingerprint",
+      "validate_server_output"
+    ],
+    "harnessix.sdk": [
+      "AgentClient",
+      "AgentSDKError",
+      "AgentTransport",
+      "HarnessixAPIError",
+      "HarnessixAsyncClient",
+      "HarnessixClient",
+      "InProcessAgentTransport",
+      "SubprocessAgentTransport"
+    ],
+    "harnessix.skills": [
+      "SKILL_LOAD_TOOL",
+      "SKILL_RESOURCE_TOOL",
+      "SQLiteSkillStore",
+      "SkillAccessEvent",
+      "SkillActionGateway",
+      "SkillCatalogSnapshot",
+      "SkillContent",
+      "SkillDiscoveryIssue",
+      "SkillLoadInput",
+      "SkillManifestSnapshot",
+      "SkillNameConflict",
+      "SkillRegistry",
+      "SkillResourceContent",
+      "SkillResourceReadInput",
+      "SkillSource",
+      "SkillSourceSnapshot",
+      "build_skill_action_definitions"
+    ],
+    "harnessix.storage": [
+      "PostgresEffectJournal",
+      "SQLiteEffectJournal"
+    ],
+    "harnessix.trusted_actions": [
+      "ActionAuditEvent",
+      "ActionExecutionOutcome",
+      "ActionPlanningContext",
+      "ActionRoutePlan",
+      "ActionRouteSnapshot",
+      "CanonicalActionResource",
+      "CodingActionInvocation",
+      "DefaultCodingRiskPolicy",
+      "ExtensionActionPort",
+      "ResolvedAction",
+      "SQLiteActionAuditStore",
+      "TrustedActionDefinition",
+      "TrustedActionRouter",
+      "TrustedToolBinding"
+    ]
+  }
+}

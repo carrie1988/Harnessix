@@ -1,3 +1,5 @@
+"""从受控路径装配产品stdio运行时，并在平台或依赖不满足时于开放协议前失败关闭。"""
+
 from __future__ import annotations
 
 import asyncio

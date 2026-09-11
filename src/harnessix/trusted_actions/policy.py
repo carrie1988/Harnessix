@@ -1,3 +1,5 @@
+"""统一可信Action路由：评估统一Action的资源、风险与审批要求。"""
+
 from __future__ import annotations
 
 from collections.abc import Sequence

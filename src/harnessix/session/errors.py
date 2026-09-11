@@ -1,3 +1,5 @@
+"""把SQLite及文件系统故障映射为不泄漏内部细节的稳定Session错误。"""
+
 from __future__ import annotations
 
 import sqlite3

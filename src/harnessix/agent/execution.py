@@ -1,3 +1,5 @@
+"""持久Agent状态机：协调Tool调用的审批判定与Executor入口。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

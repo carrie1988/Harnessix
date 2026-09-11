@@ -1,3 +1,5 @@
+"""持久Agent状态机：把Agent生命周期映射为稳定Trace与指标属性。"""
+
 from __future__ import annotations
 
 import asyncio

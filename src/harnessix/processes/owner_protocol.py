@@ -1,3 +1,5 @@
+"""受监督进程：定义宿主与独立Process Owner之间的控制帧。"""
+
 from __future__ import annotations
 
 import base64

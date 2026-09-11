@@ -1,3 +1,5 @@
+"""Workspace与Git交付：管理受控Git Worktree、Checkpoint与Commit生命周期。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -345,6 +347,7 @@ class GitDeliveryRuntime:
         approval_fingerprint: str,
         lease: WorkspaceLease,
     ) -> ManagedGitWorktreeRecord:
+        """校验批准、Lease与仓库身份后创建受管Worktree，并可由持久阶段幂等恢复。"""
         record = self._store.load_worktree(worktree_id)
         self._authorize_worktree(record, repository_root, approval_fingerprint, lease)
         if record.state == "ready":
@@ -433,6 +436,7 @@ class GitDeliveryRuntime:
         checkpoint_id: UUID | None = None,
         now: datetime | None = None,
     ) -> GitCheckpoint:
+        """冻结ready Worktree的树、父提交和完整状态；任一观察漂移即拒绝Checkpoint。"""
         worktree = self._store.load_worktree(worktree_id)
         if worktree.state != "ready" or worktree.binding is None:
             raise KernelError("git_worktree_not_ready", "Git Checkpoint要求ready worktree")
@@ -586,6 +590,7 @@ class GitDeliveryRuntime:
         approval_fingerprint: str,
         lease: WorkspaceLease,
     ) -> GitCommitRecord:
+        """在批准和Checkpoint仍成立时物化Commit；崩溃后依据对象与引用事实对账。"""
         record = self._store.load_commit(commit_id)
         if approval_fingerprint != record.spec.fingerprint:
             raise KernelError("git_commit_approval_mismatch", "Git Commit批准指纹不匹配")

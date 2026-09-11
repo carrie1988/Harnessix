@@ -1,3 +1,5 @@
+"""Workspace与Git交付：持久化Git Worktree与Commit状态转换。"""
+
 from __future__ import annotations
 
 import os

@@ -47,6 +47,8 @@ _COMMIT_ENVIRONMENT = {
 
 @dataclass(frozen=True, slots=True)
 class MaterializedCodingEval:
+    """隔离物化后的Eval Workspace与隐藏检查入口。"""
+
     run_root: Path
     workspace: Path
     manifest: CodingEvalMaterialization

@@ -1,3 +1,5 @@
+"""公共Agent Protocol：把内部领域事实脱敏投影为公共协议视图。"""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -217,6 +219,7 @@ def project_item(item: Item) -> PublicItem:
 
 
 def project_turn(turn: Turn) -> TurnView:
+    """把Turn及其Items投影为公共协议视图。"""
     return TurnView(
         turn_id=turn.turn_id,
         request_id=turn.request_id,
@@ -232,6 +235,7 @@ def project_turn(turn: Turn) -> TurnView:
 
 
 def project_thread(thread: Thread) -> ThreadView:
+    """把Thread聚合投影为公共协议视图。"""
     latest = project_turn(thread.turns[-1]) if thread.turns else None
     archive = (
         ThreadArchiveView(
@@ -258,6 +262,7 @@ def project_thread(thread: Thread) -> ThreadView:
 
 
 def project_event(thread_id: UUID, event: AgentEvent) -> PublicEvent | None:
+    """把内部Agent事件脱敏投影为公共协议事件。"""
     payload = event.payload
     data: PublicEventData
     if isinstance(payload, ThreadCreated):

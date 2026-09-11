@@ -1,3 +1,5 @@
+"""持久Agent状态机：定义模型尝试、观测用量与结算事件合同。"""
+
 from __future__ import annotations
 
 from typing import Annotated, Literal, Self

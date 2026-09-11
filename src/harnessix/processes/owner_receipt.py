@@ -1,3 +1,5 @@
+"""受监督进程：签名、原子发布并验证Process Owner事实回执。"""
+
 from __future__ import annotations
 
 import hashlib

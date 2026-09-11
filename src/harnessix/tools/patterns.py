@@ -1,3 +1,5 @@
+"""内置Coding Tool：校验Glob和Grep模式的长度及语法边界。"""
+
 from __future__ import annotations
 
 from fnmatch import fnmatchcase

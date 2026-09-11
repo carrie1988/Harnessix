@@ -1,3 +1,5 @@
+"""Action Plane HTTP接口：装配FastAPI路由与Action生命周期接口。"""
+
 from __future__ import annotations
 
 import logging
@@ -71,6 +73,7 @@ def _apply_action_status(response: Response, snapshot: ActionSnapshot) -> None:
 def create_app(
     settings: Settings | None = None, *, service: ActionService | None = None
 ) -> FastAPI:
+    """装配并返回Action Plane FastAPI应用；调用方负责进程生命周期。"""
     resolved_settings = settings or Settings.from_environment()
     resolved_service = service or build_service(resolved_settings)
 

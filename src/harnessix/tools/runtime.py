@@ -1,3 +1,5 @@
+"""注册Workspace只读Tool并协调有界并发、取消和Artifact发布，不提供写入能力。"""
+
 from __future__ import annotations
 
 import asyncio

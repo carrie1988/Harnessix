@@ -1,3 +1,5 @@
+"""可观测性：建立结构化日志上下文并过滤敏感字段。"""
+
 from __future__ import annotations
 
 import json
@@ -16,6 +18,7 @@ _ALLOWED_CONTEXT_KEYS = frozenset(
 
 @contextmanager
 def bind_log_context(**values: object) -> Iterator[None]:
+    """在当前上下文绑定结构化日志字段并在退出时恢复。"""
     current = (_LOG_CONTEXT.get() or {}).copy()
     current.update(
         {
@@ -32,6 +35,7 @@ def bind_log_context(**values: object) -> Iterator[None]:
 
 
 def trace_log_fields(trace_context: str | None) -> dict[str, str]:
+    """把Trace Context转换为稳定日志关联字段。"""
     if trace_context is None:
         return {}
     parts = trace_context.split("-")
@@ -55,6 +59,7 @@ class JsonLogFormatter(logging.Formatter):
 
 
 def configure_logging(*, level: str = "INFO", log_format: str = "json") -> None:
+    """配置结构化日志级别、格式和敏感字段过滤。"""
     numeric_level = getattr(logging, level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError(f"不支持的日志级别：{level}")

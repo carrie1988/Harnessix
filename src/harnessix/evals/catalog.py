@@ -18,6 +18,8 @@ class HistoricalCheck:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalCodingEval:
+    """固定版本历史编码任务的物化与检查定义。"""
+
     task: CodingEvalTask
     source_tree_oid: str
     host_only_paths: tuple[str, ...]
@@ -119,6 +121,7 @@ _TASK_VERSIONS = {
 
 
 def historical_coding_eval(task_id: str, task_version: int | None = None) -> HistoricalCodingEval:
+    """按稳定任务ID和版本读取历史编码Eval定义。"""
     try:
         versions = _TASK_VERSIONS[task_id]
         return _TASKS[(task_id, versions[-1] if task_version is None else task_version)]
@@ -127,10 +130,12 @@ def historical_coding_eval(task_id: str, task_version: int | None = None) -> His
 
 
 def historical_coding_eval_ids() -> tuple[str, ...]:
+    """按确定顺序返回全部历史编码Eval任务ID。"""
     return tuple(sorted(_TASK_VERSIONS))
 
 
 def historical_coding_eval_versions(task_id: str) -> tuple[int, ...]:
+    """返回指定历史编码Eval任务的可用版本。"""
     try:
         return _TASK_VERSIONS[task_id]
     except (KeyError, TypeError):

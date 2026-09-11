@@ -16,6 +16,7 @@ MAX_EVAL_RUN_STATE_BYTES = 256 * 1024
 
 
 def write_eval_run_state(path: Path, state: CodingEvalRunState) -> None:
+    """以原子替换持久化单次Eval运行状态。"""
     state = CodingEvalRunState.model_validate_json(state.model_dump_json(), strict=True)
     body = (state.model_dump_json(indent=2) + "\n").encode("utf-8")
     if len(body) > MAX_EVAL_RUN_STATE_BYTES:
@@ -66,6 +67,7 @@ def write_eval_run_state(path: Path, state: CodingEvalRunState) -> None:
 
 
 def read_eval_run_state(path: Path) -> CodingEvalRunState:
+    """读取并校验单次Eval运行状态。"""
     descriptor: int | None = None
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)

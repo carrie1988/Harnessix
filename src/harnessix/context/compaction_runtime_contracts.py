@@ -1,3 +1,5 @@
+"""模型Context规划：定义自动Compaction运行参数及边界。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

@@ -1,3 +1,5 @@
+"""模型Provider适配：执行严格JSON序列化与错误归一化。"""
+
 from __future__ import annotations
 
 import json

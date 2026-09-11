@@ -1,3 +1,5 @@
+"""输出项目许可证与商业授权边界。"""
+
 from __future__ import annotations
 
 LICENSE_EXPRESSION = "AGPL-3.0-only"

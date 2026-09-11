@@ -1,3 +1,5 @@
+"""Session事件存储：以SQLite事务实现对应持久化端口。"""
+
 from __future__ import annotations
 
 import asyncio

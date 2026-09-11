@@ -1,3 +1,5 @@
+"""内置Coding Tool：把Workspace只读能力注册为版本化Tool。"""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,3 +1,5 @@
+"""公共Agent Protocol：在明确版本窗口内读取旧协议通知。"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

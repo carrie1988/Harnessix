@@ -1,3 +1,5 @@
+"""协调Session CAS、Context、Provider、Tool、取消与恢复；持久状态只经Session端口提交。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -362,6 +364,7 @@ class AgentRuntime:
         return self
 
     async def _recover(self, thread: Thread) -> None:
+        """从最新持久事实恢复开放Turn；不确定外部效果保持UNKNOWN且不自动重放。"""
         assert thread.active_turn_id is not None
         turn = get_turn(thread, thread.active_turn_id)
         with self._telemetry.operation(
@@ -632,6 +635,7 @@ class AgentRuntime:
     async def _commit(
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
+        """在Thread互斥锁内按期望序号原子追加事件并返回最新投影。"""
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             return await (self._batch_diffs or self.store).append(
@@ -665,6 +669,7 @@ class AgentRuntime:
         retry_of_turn_id: UUID | None = None,
         execution_mode: Literal["immediate", "deferred"] = "immediate",
     ) -> tuple[Turn, bool]:
+        """以请求指纹幂等接纳Turn；冲突重用失败，deferred模式仅持久化不执行。"""
         content = TextContent(kind="user_message", text=prompt)
         fingerprint_input: dict[str, object] = {
             "prompt": prompt,
@@ -1404,6 +1409,7 @@ class AgentRuntime:
         fingerprint: str,
         decision: ApprovalDecision,
     ) -> Turn:
+        """核对审批身份和请求指纹后持久化唯一决定，再恢复或终止对应执行流。"""
         self._ensure_open()
         decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
         async with self._lock(thread_id):
@@ -1916,6 +1922,7 @@ class AgentRuntime:
         prepared_history: PreparedModelHistory,
         token: CancelToken,
     ) -> Thread:
+        """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
         assert self._compaction is not None and self._summary_provider is not None
         model_step = turn.model_steps + 1
         compaction_id = new_id()
@@ -2075,6 +2082,7 @@ class AgentRuntime:
             return get_turn(updated, request.turn_id).status
 
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
+        """推进单个Turn的Context、模型与Tool循环，直到等待外部输入或进入终态。"""
         reactive_compaction_required = False
         while True:
             token.checkpoint()
@@ -2249,6 +2257,7 @@ class AgentRuntime:
         turn_id: UUID,
         token: CancelToken,
     ) -> Turn | None:
+        """按持久调用顺序执行Tool；只读前缀可并行，写入及未知效果保持串行。"""
         thread = await self.store.get_thread(thread_id)
         turn = get_turn(thread, turn_id)
         calls = pending_calls(turn)
@@ -2719,6 +2728,7 @@ class AgentRuntime:
             await self._sample_events(request, token)
 
     async def _sample_events(self, request: ModelRequest, token: CancelToken) -> None:
+        """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
         completed: ResponseCompleted | None = None
         text_items: dict[str, tuple[UUID, str, bool]] = {}
@@ -3012,6 +3022,7 @@ class AgentRuntime:
         status: TurnStatus,
         error: AgentFailure | None,
     ) -> Turn:
+        """在Thread锁内补齐未结算调用与尝试，再以单向状态迁移提交Turn终态。"""
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             turn = get_turn(thread, turn_id)

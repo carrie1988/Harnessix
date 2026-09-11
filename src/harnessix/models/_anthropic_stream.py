@@ -1,3 +1,5 @@
+"""模型Provider适配：增量解析Anthropic流并验证事件顺序。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -451,6 +451,7 @@ def _read_private(path: Path, maximum: int, code: str) -> bytes:
 
 
 def write_coding_eval_change_package(path: Path, package: CodingEvalChangePackage) -> None:
+    """原子持久化受控编码变更包。"""
     package = CodingEvalChangePackage.model_validate_json(package.model_dump_json(), strict=True)
     _write_private(
         path,
@@ -461,6 +462,7 @@ def write_coding_eval_change_package(path: Path, package: CodingEvalChangePackag
 
 
 def read_coding_eval_change_package(path: Path) -> CodingEvalChangePackage:
+    """读取并验证受控编码变更包及其完整性摘要。"""
     try:
         return CodingEvalChangePackage.model_validate_json(
             _read_private(path, MAX_CHANGE_PACKAGE_BYTES, "eval_change_package_invalid"),

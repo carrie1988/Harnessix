@@ -1,3 +1,5 @@
+"""以SQLite不可变保存Execution Plan与Approval Checkpoint，并校验重复写一致性。"""
+
 from __future__ import annotations
 
 import os

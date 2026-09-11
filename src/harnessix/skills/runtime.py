@@ -1,3 +1,5 @@
+"""发现、校验并按需读取不可执行Skill内容；路径与内容摘要在每次访问时复核。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -101,6 +103,8 @@ _UniqueKeySafeLoader.add_constructor(
 
 @dataclass(frozen=True, slots=True)
 class SkillSource:
+    """一个受边界约束的Skill发现根目录。"""
+
     source_id: str
     kind: SkillSourceKind
     root: Path

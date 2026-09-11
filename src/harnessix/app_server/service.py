@@ -1,3 +1,5 @@
+"""Headless Agent Protocol服务：执行业务命令、查询与持久交互协调。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -45,6 +47,8 @@ from harnessix.session.ports import SessionStore
 
 
 class AgentServiceError(RuntimeError):
+    """App Server业务命令返回的稳定服务错误。"""
+
     def __init__(self, code: str, message: str, *, retryable: bool = False) -> None:
         super().__init__(message)
         self.code = code

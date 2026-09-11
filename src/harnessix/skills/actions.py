@@ -1,3 +1,5 @@
+"""可信Skill扩展：把扩展声明转换为统一Trusted Action定义。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

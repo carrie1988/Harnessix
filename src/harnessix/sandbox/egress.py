@@ -1,3 +1,5 @@
+"""Sandbox与网络隔离：将网络策略物化为受管出口绑定。"""
+
 from __future__ import annotations
 
 import asyncio

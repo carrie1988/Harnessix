@@ -1,3 +1,5 @@
+"""模型Context规划：定义可恢复Compaction尝试账本合同。"""
+
 from __future__ import annotations
 
 from typing import Literal, Self

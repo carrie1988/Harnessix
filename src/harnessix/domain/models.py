@@ -1,3 +1,5 @@
+"""定义Action请求、策略、审批、生命周期、结果与对账的版本化领域契约。"""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

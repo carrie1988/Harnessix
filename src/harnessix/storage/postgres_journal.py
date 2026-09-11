@@ -1,3 +1,5 @@
+"""Effect Journal持久化：以PostgreSQL事务实现分布式Effect Journal。"""
+
 from __future__ import annotations
 
 import asyncio

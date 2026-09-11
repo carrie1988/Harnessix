@@ -1,3 +1,5 @@
+"""事务Artifact存储：定义依赖倒置端口，不提供具体基础设施实现。"""
+
 from __future__ import annotations
 
 from collections.abc import Sequence

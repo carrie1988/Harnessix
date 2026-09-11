@@ -1,3 +1,5 @@
+"""Secret解析与脱敏：按名称和版本解析Secret并管理明文生命周期。"""
+
 from __future__ import annotations
 
 import os

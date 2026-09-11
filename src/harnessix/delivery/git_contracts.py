@@ -1,3 +1,5 @@
+"""Workspace与Git交付：定义Git仓库、Worktree、Commit和Push合同。"""
+
 from __future__ import annotations
 
 import ntpath

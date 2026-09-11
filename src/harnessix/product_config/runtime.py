@@ -1,3 +1,5 @@
+"""验证Profile选择、解析Environment Secret并装配Provider与审计约束的安全Fallback。"""
+
 from __future__ import annotations
 
 import importlib.util

@@ -1,3 +1,5 @@
+"""模型Provider适配：构造Anthropic HTTP请求边界与错误映射。"""
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator

@@ -1,3 +1,5 @@
+"""模型Context规划：按优先级、信任和Token预算准备Context。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -33,6 +35,8 @@ _METADATA: dict[ContextFragmentKind, tuple[ContextTrust, int, bool]] = {
 
 
 class ContextPreparationError(Exception):
+    """Context准备失败的稳定错误及可诊断细节。"""
+
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
         self.code = code

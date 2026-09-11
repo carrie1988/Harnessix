@@ -1,3 +1,5 @@
+"""编排Action准入、策略、审批、Effect Journal与Executor。"""
+
 from __future__ import annotations
 
 import hashlib

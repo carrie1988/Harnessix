@@ -1,3 +1,5 @@
+"""公共Agent Protocol：持久化JSON-RPC请求指纹、Claim与幂等结果。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -36,6 +38,8 @@ class ProtocolRequestClaim(BaseModel):
 
 
 class ProtocolRequestError(RuntimeError):
+    """携带协议请求幂等、Claim或持久化失败的稳定错误码。"""
+
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
         self.code = code
@@ -80,6 +84,7 @@ def _json(value: JsonValue) -> str:
 
 
 def request_fingerprint(method: str, params: JsonValue) -> str:
+    """计算绑定方法与规范参数的幂等请求指纹。"""
     if not method or len(method) > 128:
         raise ProtocolRequestError("invalid_request", "协议方法名长度无效")
     return hashlib.sha256(f"{method}\n{_json(params)}".encode()).hexdigest()

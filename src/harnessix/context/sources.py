@@ -1,3 +1,5 @@
+"""模型Context规划：采集项目指令、Workspace、Git与环境Context Source。"""
+
 from __future__ import annotations
 
 import errno
@@ -68,6 +70,8 @@ MAX_ENVIRONMENT_VALUE_BYTES = 1024
 
 
 class ContextSourceError(Exception):
+    """Context Source采集失败的稳定错误。"""
+
     def __init__(self, code: str, message: str, *, retryable: bool = False) -> None:
         super().__init__(message)
         self.code = code
@@ -76,6 +80,8 @@ class ContextSourceError(Exception):
 
 
 class ContextSource(Protocol):
+    """一个可刷新的Context来源及其最新快照。"""
+
     @property
     def source_id(self) -> str: ...
 

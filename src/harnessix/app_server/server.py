@@ -1,3 +1,5 @@
+"""管理单连接Agent Protocol状态、参数校验与方法分派；领域执行委托应用服务。"""
+
 from __future__ import annotations
 
 import json
@@ -66,6 +68,8 @@ SERVER_METHODS = (
 
 
 class ConnectionState(StrEnum):
+    """单个JSON-RPC连接的初始化、关闭和请求状态。"""
+
     NEW = "new"
     INITIALIZED_PENDING_ACK = "initialized_pending_ack"
     READY = "ready"
