@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.8全部路线图范围。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。0.8最终实现及Eval低速物化加固提交`3588d76`已由[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收；完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
+> 当前状态：已完成0.1～0.8全部路线图范围，0.9.0代码可维护性治理已形成候选实现并等待最终六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。0.8最终实现及Eval低速物化加固提交`3588d76`已由[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)完成Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收；完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)完成六矩阵验收；任务v3百炼北京在固定历史缺陷上3/3严格通过。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -74,6 +74,17 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - `harnessix agent-server`在macOS/Linux按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议，Windows在原生Tool Runtime完成前显式失败关闭。
 
 0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[部署说明](docs/deployment.md#086-provider与产品配置部署)。
+
+## 当前候选：代码可维护性与结构治理（0.9.0）
+
+- 以固定AST/Tokenizer口径记录源码规模、模块说明、公共行为、高风险入口、复杂度、一级包依赖、依赖环和静态公共导出；
+- 起始报告、最终报告和治理策略均采用版本化JSON，仓库路径及排序稳定，不导入生产模块，也不读取配置、数据库或Secret；
+- 全部生产模块、公共行为以及25组状态机、副作用和恢复入口已具有邻近语义说明；Pydantic/Enum合同不因注释治理改变JSON Schema；
+- `agent.reducer`保留稳定门面，Item投影、Turn投影和共用守卫按职责拆分，Session在线提交和离线Replay仍共享同一个`apply_event`；
+- `make readability`和`make check`阻止新增说明债务、增长既有热点、新增未评审依赖边/依赖环及静态公共面漂移；
+- 存量13个超大文件、148个符号热点和一个一级包强连通分量被精确冻结，不以机械拆分或模板化注释冒充治理完成。
+
+研究事实、架构取舍、详细接口和验收边界见[源码研究](docs/research/code-readability-and-structure.md)、[ADR 0076](docs/adr/0076-code-readability-and-structural-governance.md)和[0.9.0详细设计](docs/m09-code-maintainability.md)。远端六矩阵完成前，本节只代表候选实现，不代表0.9.0已经关闭。
 
 ## 许可证与品牌
 
@@ -695,7 +706,7 @@ src/harnessix/executors/    内置和演示 Executor
 src/harnessix/api/          FastAPI HTTP 边界
 src/harnessix/sdk/          Python 同步/异步客户端
 src/harnessix/adapters/     Agent 框架适配器
-src/harnessix/agent/        Kernel 领域模型、Reducer、Loop、取消
+src/harnessix/agent/        Kernel领域模型、Reducer稳定门面及Item/Turn投影、Loop、取消
 src/harnessix/models/       Provider 契约、Fake/Scripted Provider
 src/harnessix/session/      SQLite Session Store、迁移与宿主锁
 src/harnessix/tools/        工作区只读/Git工具、作用域与Artifact读取入口
@@ -755,6 +766,9 @@ examples/                   可运行演示
 - [终态Turn Retry与Provider中立历史决策](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)
 - [Provider/Profile配置与安全Fallback源码研究](docs/research/provider-profile-config-and-safe-fallback.md)
 - [Provider/Profile、Secret引用与安全Fallback决策](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)
+- [代码可读性与结构治理源码研究](docs/research/code-readability-and-structure.md)
+- [代码可读性、可维护性与结构治理决策](docs/adr/0076-code-readability-and-structural-governance.md)
+- [0.9.0代码可维护性详细设计](docs/m09-code-maintainability.md)
 - [进程内宿主与初始投影决策](docs/adr/0011-kernel-host-and-initial-projection.md)
 - [Action Contract](docs/action-contract.md)
 - [Action 生命周期](docs/action-lifecycle.md)
@@ -786,7 +800,7 @@ examples/                   可运行演示
 | 0.6 | Context Compaction 与持久会话 |
 | 0.7 | 跨平台端口、可信执行、通用Process、多文件事务与Git交付 |
 | 0.8 | Agent Protocol、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 |
-| 0.9 | 完整CLI/TUI、三平台CI与发行物、故障注入、质量工程和Dogfooding |
+| 0.9 | 代码可维护性治理、完整CLI/TUI、三平台CI与发行物、故障注入、质量工程和Dogfooding |
 | 1.0 | macOS/Linux/Windows本地优先正式商用发布 |
 | 1.x | 按需求评估云任务、多租户、IDE与分布式运行 |
 

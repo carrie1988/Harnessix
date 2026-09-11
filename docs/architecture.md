@@ -2,7 +2,7 @@
 
 ## 1. 文档状态
 
-本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.8产品运行时与可信扩展）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
+本文同时描述 Harnessix Code 的**当前实现**（含0.1 Action Plane至0.8产品运行时与可信扩展，以及0.9.0可维护性治理候选）和1.0的**目标架构**。所有尚未实现的组件均明确标记，避免把路线图能力描述成现有功能。
 
 当前状态：
 
@@ -17,6 +17,7 @@
 - Windows已进入1.0目标；0.7.1已增加Windows原生Workspace Snapshot端口，0.7.2在三平台运行Sandbox/Secret合同并以Docker兼容容器提供强隔离适配；0.7.3的Windows Process/Job Object/ConPTY及Container统一生命周期、0.7.4受管Git交付和0.7.5平台中立Action入口均已通过综合六矩阵门禁；完整发行物尚未交付，不能据此宣称Windows产品当前可用；
 - 0.7.0已冻结Codex/OpenCode/Claude Code参考版本，完成差距矩阵、五项ADR及Threat Model v2；0.7.1实现平台路径、选择资源Snapshot、跨进程fencing租约、完整Execution Plan/Approval指纹和私有持久检查点；0.7.2实现Container Profile/Command、能力实测、选择性网络、受管CONNECT/SNI出口、Secret Provider/Redactor/Guard和Profile持久化；0.7.3交付Process合同、计划绑定、append-only Lease Store、POSIX Session/PTY owner、Windows suspended Job/ConPTY，以及ContainerExecution到ProcessLaunch的正式绑定、即时网络复核和标签化残留清理；0.7.4交付Workspace Transaction、私有CAS、append-only事务账本、POSIX发布/恢复、新事务Rollback、完整Diff和受管Git worktree/checkpoint/commit；0.7.5交付宿主Binding、规范资源、统一Policy/Approval、哈希链审计、受限Extension端口和独立Git Push/reconcile。Windows Snapshot和Container冷启动探测加固后，0.7最终由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)关闭，见[可信执行设计](m07-trusted-execution-and-delivery.md)；
 - 0.8.1已实现Agent Protocol v1严格公共合同、13份JSON Schema、JSON-RPC单帧编解码、内部事件白名单投影、可跳跃单调Replay游标和Session migration20持久幂等命令账本；0.8.2已实现单客户端stdio Headless App Server、薄应用服务、进程内/子进程Python Agent SDK、Agent Event/Thread v18延迟驱动事实及migration21、确定性受理恢复、出站背压和有界关闭；0.8.3已实现stdio请求多路复用、Pull-Live事件页、持久提问、Turn Steering、Scoped Artifact读取及只依赖SDK的薄CLI，Agent Event/Thread升级为v19并追加migration22；0.8.4已实现官方SDK驱动的MCP Client、不可变目录和连接事件、调用前Schema漂移门禁、Container stdio生命周期、统一Action接入及可选只读MCP Server；0.8.5已实现不可变Skill目录、冲突消歧、跨平台渐进加载、声明式Hook Registry、摘要授权、超时/取消及中断恢复；0.8.6已实现Provider/Profile/Secret引用、严格配置、迁移/诊断、活动CAS、零暴露安全Fallback和固定Workspace产品启动装配，见[0.8详细设计](m08-product-runtime-and-extensions.md)；
+- 0.9.0候选已建立版本化可读性报告与渐进防退化策略，为全部生产模块、公共行为和高风险状态/副作用入口补齐邻近语义，并在稳定`agent.reducer`门面下分离Item投影、Turn投影与共用守卫；公共导入、Schema、错误码、事件顺序和恢复调用链保持不变，见[ADR 0076](adr/0076-code-readability-and-structural-governance.md)与[详细设计](m09-code-maintainability.md)；
 - 当前版本仍不能作为完整 Coding Agent 使用。
 
 ## 2. 架构目标
@@ -379,7 +380,7 @@ Client Cancel
 
 ```text
 src/harnessix/
-├── agent/             # 已实现基础切片：Loop、领域模型、Reducer、取消
+├── agent/             # 已实现：Loop、领域模型、Reducer门面及Item/Turn投影、取消
 ├── models/            # 中立端口、离线 Provider、OpenAI/Anthropic Adapter 与有界传输
 ├── context/           # 已实现：规划、Source、一致性、稳定工具视图、自动Compaction与活动窗口
 ├── tools/             # 已实现：Workspace只读、搜索、Git与Artifact读取入口
@@ -409,6 +410,20 @@ src/harnessix/
 └── worker.py          # 已实现：Action Worker
 ```
 
+### 8.1 Reducer投影边界（0.9.0）
+
+`agent/reducer.py`是Session在线提交和离线重放共同使用的稳定门面，负责Thread级事件分派、
+`apply_event`和`replay`。它不访问数据库、Tool或外部系统。门面向内委派给三个职责模块：
+
+- `agent/item_reducer.py`校验Item开始/完成事件并生成不可变Turn投影；
+- `agent/turn_reducer.py`处理Turn状态、模型尝试、Usage、Context及Tool Result历史决定；
+- `agent/reducer_support.py`提供纯查询、统一错误守卫和Process Action一致性检查。
+
+既有`apply_event`、`replay`、`get_turn`、`pending_calls`和`require`导入路径保持有效。Reducer拆分
+不引入持久状态或异步生命周期，非法事件仍以`invalid_event`失败，事务恢复仍从有序Event Log调用
+同一门面重放。`scripts/readability_report.py`及`governance/readability-policy-v1.json`固定模块说明、
+公共面、热点与一级包依赖预算；预算变化必须通过独立设计评审，不能由CI自动放宽。
+
 演进过程中不进行一次性目录大搬迁。新模块按里程碑加入；只有出现清晰依赖冲突时，才将现有 Action Plane 移入独立命名空间。
 
 ## 9. 已确认与待决策事项
@@ -433,7 +448,7 @@ src/harnessix/
 - 参考实现采用 clean-room 研究方式。
 - 社区版采用`AGPL-3.0-only`，版权所有者保留独立商业授权能力，代码许可证不授予品牌权利。
 
-已确认事项分别由[ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md)、[ADR 0010](adr/0010-session-store-and-recovery.md)、[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)、[ADR 0063](adr/0063-windows-v1-platform-support.md)和[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)固化。
+已确认事项分别由[ADR 0005](adr/0005-evolve-to-harnessix-code.md)、[ADR 0006](adr/0006-thread-turn-item-event-model.md)、[ADR 0007](adr/0007-agent-loop-and-cancellation.md)、[ADR 0008](adr/0008-provider-event-model.md)、[ADR 0009](adr/0009-app-server-protocol.md)、[ADR 0010](adr/0010-session-store-and-recovery.md)、[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)、[ADR 0063](adr/0063-windows-v1-platform-support.md)、[ADR 0064](adr/0064-agpl-and-commercial-dual-licensing.md)和[ADR 0076](adr/0076-code-readability-and-structural-governance.md)固化。
 
 ### 必须通过 ADR 决定
 
