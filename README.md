@@ -35,7 +35,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 - Agent Loop 与 Thread/Turn/Item 生命周期；
 - Provider 无关的流式模型事件；
 - Context 构建、Token Budget、裁剪和 Compaction；
-- Coding Tool Runtime、Process Runtime 和 Workspace 边界；
+- Coding Tool Runtime、[Process Runtime](docs/modules/processes.md)和 Workspace 边界；
 - Session 持久化、取消、恢复和双向客户端协议；
 - Permission、Approval 与 Action Plane；
 - MCP、项目指令、Skills 和 Hooks；

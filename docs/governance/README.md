@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 10
-code_revision: 8ab1d0380941206b7a5fddc52e780fe7b3f937bd
+version: 11
+code_revision: c7449164a2bbf08164472a36c11102dc408ebb15
 owners:
   - core
 modules:
@@ -29,7 +29,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.0 | 文档盘点、分类、规范、模板、追踪矩阵和整改待办 | 已完成 | 本目录与[起始基线](../baselines/documentation-doc1.0-start.json) |
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
-| DOC-1.3 | Coding Agent主链模块设计 | 进行中（7/19） | Wave A已完成；Wave B的[Coding Tool Runtime](../modules/tools.md)、[Managed Patch Runtime](../modules/patches.md)和[Execution Plan](../modules/execution.md)已完成，继续Process执行链 |
+| DOC-1.3 | Coding Agent主链模块设计 | 进行中（8/19） | Wave A、Wave B已完成；下一步进入Wave C的Action、安全与可信边界 |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 未开始 | Protocol、App Server、SDK、MCP、Skill、Hook等模块文档 |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
@@ -54,6 +54,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [Coding Tool Runtime模块设计](../modules/tools.md)：Workspace只读文件/搜索/Git、Scope、并发、取消和Artifact捕获的当前事实；
 - [Managed Patch Runtime模块设计](../modules/patches.md)：精确计划、受管副本、单文件/批次审批执行、崩溃恢复和Diff Artifact的当前事实；
 - [Execution Plan模块设计](../modules/execution.md)：不可变执行计划、环境/Secret摘要、能力/Sandbox、Policy/Approval和持久检查点的当前事实；
+- [Process Runtime模块设计](../modules/processes.md)：兼容Action Saga与跨平台Owner、Lease/CAS、pipe/PTY、输出脱敏、取消和恢复的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；
