@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 13
-code_revision: 4dc613f12e0deb5ce5ab53937fca226afab21516
+version: 14
+code_revision: ffa56de02b372df981d234fafd1feffbb0b870fb
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ supersedes: []
 | 文件修改和执行 | [Managed Patch Runtime模块设计](modules/patches.md) | `patches → agent/artifacts`，再阅读`sandbox/workspace → delivery` |
 | 执行授权与审批 | [Execution Plan模块设计](modules/execution.md) | `execution → trusted_actions/processes/sandbox/delivery` |
 | 进程与终端监督 | [Process Runtime模块设计](modules/processes.md) | `processes → execution/workspace/secrets/sandbox`，区分兼容Saga与跨平台Supervisor |
-| Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域合同、决策和效果边界，再读跨包主链 |
+| Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)、[Storage模块设计](modules/storage.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域、决策、效果和持久化边界，再读跨包主链 |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
 
@@ -73,6 +73,7 @@ supersedes: []
 | Domain | [Domain模块设计](modules/domain.md) | Action v1模型、状态、Tool Registry、Policy/Approval、Outcome、错误和依赖倒置端口 |
 | Policy | [Policy模块设计](modules/policy.md) | 默认Action Policy三分支、完整Effect/Risk矩阵、Service事务边界及Trusted Action策略分界 |
 | Executors | [Executors模块设计](modules/executors.md) | Echo与Issue样例、外部效果、双库事务、Outcome/Receipt、UNKNOWN对账和版本漂移边界 |
+| Storage | [Storage模块设计](modules/storage.md) | SQLite/PostgreSQL Journal、Schema/Migration、事务、队列、Lease、恢复、后端差异和数据保护边界 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -143,7 +144,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成11/19个主链模块，Wave C已完成Domain、Policy和Executors，下一步迁移Storage；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成12/19个主链模块，Wave C已完成Domain、Policy、Executors和Storage，下一步迁移Sandbox；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 

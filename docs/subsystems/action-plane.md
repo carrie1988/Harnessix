@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 4dc613f12e0deb5ce5ab53937fca226afab21516
+version: 4
+code_revision: ffa56de02b372df981d234fafd1feffbb0b870fb
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ supersedes: []
 |---|---|
 | 当前能力 | 版本化Action Contract、Tool Registry、Policy、Approval、Effect Journal、Inline/Worker执行、Lease、`UNKNOWN`和Reconcile |
 | 本文状态 | 当前实现；本文是Action Plane跨包子系统的现行事实源 |
-| 代码版本 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` |
+| 代码版本 | `ffa56de02b372df981d234fafd1feffbb0b870fb` |
 | 存储后端 | SQLite本地单机场景；PostgreSQL多进程Worker Claim场景 |
 | 部署入口 | `harnessix serve`和`harnessix worker`；也可将`ActionService`作为库显式装配 |
 | 稳定合同 | `harnessix.action/v1`；Action状态、事件、审批、效果凭证和公开错误 |
@@ -137,7 +137,7 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | `ToolRegistry` | 注册唯一Tool定义并提供Descriptor/Input Model/Executor | Domain、Executor | 动态覆盖同名Tool | Bootstrap期构建后只读 |
 | `DefaultPolicyEngine` | 根据Effect、Risk和Tool要求作默认决策 | Domain | 执行工具或修改Journal | 无状态，可替换端口 |
 | `ActionService` | 校验、Policy、审批、Inline执行、Reconcile和观察编排 | Registry、Policy、Journal、Executor、Obs | 直接使用具体数据库事务或框架状态 | 服务生命周期；单请求无内存权威状态 |
-| `EffectJournal` | 快照、事件、CAS转换、Claim、Renew和Recover | Domain、数据库 | 调用Executor或自行决策Policy | SQLite或PostgreSQL持久生命周期 |
+| `EffectJournal` | 快照、事件、状态守卫、Claim、Renew和Recover；内部结构详见[Storage模块设计](../modules/storage.md) | Domain、数据库 | 调用Executor或自行决策Policy | SQLite或PostgreSQL持久生命周期 |
 | `ActionWorker` | 领取Ready Action、续租、执行和恢复竞态 | Journal、Executor、Obs | 无Lease推进Action；重复执行未知Action | 每Worker唯一`worker_id` |
 | `ActionExecutor` | 执行和对账具体外部效果；内置实现详见[Executors模块设计](../modules/executors.md) | 输入模型、外部系统 | 修改Action状态或自行批准 | 每Tool定义绑定实现 |
 | `api.app` | HTTP Schema、状态码、Trace头校验和错误投影 | Service | 复制领域状态机或信任未校验Header | FastAPI lifespan |
@@ -178,8 +178,8 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | `ActionFailure` | code、message、retriable | 可公开失败；不包含原始Exception或响应正文 |
 | `EffectReceipt` | provider、resource_type、resource_id、idempotency_key、response_digest、observed_at | 已知外部效果的有界证据 |
 | `ActionResult` | status、output、error、receipt、attempt | 执行或对账结果；当前由Service正常路径维持状态一致，模型本身尚无跨字段Validator |
-| `ActionEvent` | action_id、sequence、event_type、from/to、data、time | 严格递增的审计事实 |
-| `ActionSnapshot` | request、fingerprint、tool、status、policy、approval、result、lease、version | 当前权威投影及CAS版本 |
+| `ActionEvent` | action_id、sequence、event_type、from/to、data、time | 状态事件按Action严格递增；Heartbeat续期当前不产生事件 |
+| `ActionSnapshot` | request、fingerprint、tool、status、policy、approval、result、lease、version | 当前权威投影及单调版本；Journal端口当前不接收Expected Version |
 
 ### 7.4 公共端口与接口设计
 
@@ -190,9 +190,9 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | `ActionExecutor.reconcile` | Service → Tool Executor | `UNKNOWN` Snapshot → Reconciliation Outcome | Tool声明支持对账，Action先转`RECONCILING` | 异常回`UNKNOWN`，可重复查询 | Lease限定恢复所有权 | 不得产生新效果；按稳定身份查询 | 只读权威结果 |
 | `EffectJournal.create_action` | Service → SQLite/PostgreSQL | Request、Descriptor、Fingerprint、Trace → Snapshot和created标志 | Schema已解析；事务内检查Action ID和幂等键 | 冲突409；数据库错误向上失败 | 数据库驱动超时 | 租户幂等键唯一；Action/Event同事务 | 不负责认证或Policy |
 | `EffectJournal.transition` | Service/Worker → Journal | 期望状态、目标、可选结果/Lease → Snapshot | 合法状态边；Owner参数匹配 | 非法转换/Owner冲突拒绝，不自动重试 | 数据库驱动超时 | Snapshot和下一Event原子、严格序列 | 仅状态守卫，不授予外部能力 |
-| `claim_next_ready` | Worker/Inline Service → Journal | worker、到期时间 → Snapshot或空 | 只选择`READY` | 竞争失败返回其他结果/空 | Lease时长必须为正 | FIFO候选；单Action只产生一个有效Owner | 领取不是业务批准 |
-| `renew_lease` | 当前Worker → Journal | action、owner、到期时间 → bool | 状态为执行相关且Lease未过期 | false触发失租解析 | Heartbeat必须早于Lease | 只有相同Owner可续租 | 不可夺取他人Lease |
-| `recover_expired` | Service启动/Worker周期 → Journal | 可选当前时间 → Action ID列表 | 在事务锁内扫描过期Lease | 数据库错误保留原事实 | 周期由Worker配置 | 恢复转换逐Action原子 | 不调用Executor |
+| `claim_next_ready` | Worker/Inline Service → Journal | worker、到期时间 → Snapshot或空 | 只选择`READY`；正常Worker传入非空身份和未来Deadline，Journal尚未自行校验 | 竞争后返回其他候选或空 | 无方法级Deadline；SQLite仅有Busy Timeout | FIFO候选；单Action只产生一个Claim结果 | 领取不是业务批准 |
+| `renew_lease` | 当前Worker → Journal | action、owner、到期时间 → bool | 当前Owner匹配、旧Lease未过期且状态可执行；当前未要求新Deadline晚于现在或旧值 | false触发失租解析 | Heartbeat应早于旧Lease；Journal无方法级Deadline | 只有相同Owner可更新；成功只增Version、不追加Event | 不可夺取他人Lease |
+| `recover_expired` | Service启动/Worker周期 → Journal | 可选当前时间 → Action ID列表 | 在事务锁内扫描过期Lease | 数据库错误回滚本次批次 | 周期由Worker配置；无Batch Limit | 本次候选的Snapshot和Event在一个事务中提交 | 不调用Executor |
 
 所有端口定义见[`domain/ports.py`](../../src/harnessix/domain/ports.py)。当前合同没有领域级取消或统一
 Executor Deadline参数；这一限制在第18节和第23节显式保留，不能由Adapter私自扩展状态值。
@@ -452,10 +452,14 @@ erDiagram
     }
 ```
 
-真实Schema见[`0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql)和
-[`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql)。上图只展示关键列，
-不替代迁移文件。Action创建在单事务内同时写Snapshot和`action_received` Event；状态转换在单事务内
-校验期望状态、合法边、Lease Owner并更新Snapshot与下一序号Event。
+SQLite真实Schema见[`0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql)和
+[`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql)，PostgreSQL对应Schema见
+[`postgresql/0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql)和
+[`postgresql/0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql)。
+上图只展示关键列，不替代迁移文件；两库的JSON逻辑字段当前均以`TEXT`而非JSONB保存。Action创建在
+单事务内同时写Snapshot和`action_received` Event；状态转换在单事务内校验期望状态、合法边、Lease
+Owner并更新Snapshot与下一序号Event。表结构、序列化和迁移限制详见
+[Storage模块设计](../modules/storage.md)。
 
 ### 15.2 SQLite与PostgreSQL差异
 
@@ -467,7 +471,11 @@ erDiagram
 | Recover | 写事务扫描过期Lease | 锁定候选并跳过竞争行 | `LEASED→READY`，`RUNNING/RECONCILING→UNKNOWN` |
 | 多Worker | 适合本地低并发，不作为分布式队列 | 支持多进程竞争Claim | Owner和Lease规则相同 |
 | 幂等约束 | 部分唯一索引`tenant_id,idempotency_key` | 等价唯一索引 | 相同语义复用，不同语义冲突 |
-| 迁移 | 2个内置迁移 | 2个对应迁移 | Trace Context在第2次迁移加入 |
+| 迁移 | 2个内置迁移；0002的DDL/版本记录中断重入尚未闭环 | 2个对应迁移；事务级Advisory Lock | Trace Context在第2次迁移加入；当前均无Checksum/版本Gap门禁 |
+
+`renew_lease`只校验旧Lease仍有效，不校验新Deadline晚于当前时间或旧Deadline；Claim也未在Journal
+边界拒绝空Worker ID或过去Deadline。`ping()`只证明基础连接，SQLite甚至可能对尚无Schema的新文件返回
+成功。这些属于当前实现限制，不得由正常Worker调用路径的正确参数掩盖。
 
 ## 16. API、错误和部署
 
@@ -614,8 +622,8 @@ reconcile(unknown_action):
 | Approval | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.decide_approval` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` | 拒绝不触发效果 |
 | Reconcile | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.reconcile` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` | UNKNOWN不重执行 |
 | Executor异常边界 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService._execute_leased` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | 显式不确定与Lease恢复；只读普通异常无直接测试 | 读写异常分类；详见[Executors模块设计](../modules/executors.md) |
-| SQLite事务 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `create_action`、`transition`、`claim_next_ready`、`recover_expired` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown`、`test_journal_rejects_illegal_state_transition` | 原子Event和恢复 |
-| PostgreSQL Claim | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`renew_lease`、`recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | PostgreSQL并发Claim和恢复用例 | `SKIP LOCKED`多Worker语义 |
+| SQLite事务 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `create_action`、`transition`、`claim_next_ready`、`recover_expired` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown`、`test_journal_rejects_illegal_state_transition` | Snapshot/Event原子与恢复主链；迁移/Lease缺口详见[Storage模块设计](../modules/storage.md) |
+| PostgreSQL Claim | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`renew_lease`、`recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication`、`test_postgres_expired_running_lease_persists_unknown_result` | `SKIP LOCKED`多Worker语义；当前专用真实数据库证据限于两个用例 |
 | Worker循环 | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker.run_once`、`run_forever` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker`、`test_ready_action_can_only_be_claimed_once` | 入队与单Claim |
 | Lease续租 | [`worker.py`](../../src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action`、`test_failed_renewal_while_running_still_reports_lost_lease` | Heartbeat与真正失租 |
 | 续租提交竞态 | [`worker.py`](../../src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` | 终态提交优先且不误报 |
@@ -643,7 +651,7 @@ reconcile(unknown_action):
 | 合同单元 | 指纹字段、Tool唯一和并行只读约束；其余模型组合约束尚不完备 | `tests/unit/test_models.py`、`test_registry.py`及[Domain模块测试盘点](../modules/domain.md#32-测试设计与当前证据) |
 | Service集成 | 正常、审批、拒绝、幂等、Secret、Effect Hint、UNKNOWN、非法转换 | `tests/integration/test_action_service.py` |
 | Worker故障 | 单Claim、Heartbeat、失租、执行提交竞态、指标故障隔离 | `tests/integration/test_worker.py` |
-| 存储合同 | SQLite/PostgreSQL状态、事件、并发Claim和Recover等价 | `test_action_service.py`、`test_postgres_journal.py` |
+| 存储合同 | SQLite覆盖大部分Action/Worker主链；PostgreSQL覆盖并发Claim和过期Running恢复；尚无双后端参数化等价套件 | `test_action_service.py`、`test_worker.py`、`test_postgres_journal.py`及[Storage模块测试盘点](../modules/storage.md#27-测试设计与验证证据) |
 | HTTP合同 | 202/终态/404/409、Trace Header、Lifespan | `tests/integration/test_api.py` |
 | 观测 | Span/Metric/Trace关联与导出故障隔离 | `test_observability_flow.py`、`test_otlp_export.py` |
 | 框架适配 | 相同Action身份、状态投影和异常映射 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) |
@@ -663,20 +671,24 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 | 内置Tool仅为合同样例 | 不构成生产SaaS连接器生态 | 按真实需求逐个增加受控Executor |
 | Agent与Action无跨库事务 | 桥接崩溃需稳定Action身份恢复 | Adapter持久绑定并查询，不新建副作用 |
 | SQLite不适合多宿主高并发 | 多Worker竞争和HA能力受限 | 独立部署使用PostgreSQL |
+| SQLite迁移中断重入未闭环且双后端无Checksum/Gap门禁 | 升级中断或Migration漂移可能导致初始化失败或Schema误判 | 0.9.5安装升级；详见[Storage模块设计](../modules/storage.md#9-migration与初始化) |
+| Claim/Renew未在Journal边界验证Worker身份和新Deadline | 直接调用者可写入空Owner、立即过期或倒退Lease | 0.9.3恢复可靠性与双后端合同测试 |
+| `ping`只证明连接且SQLite可对空Schema返回成功 | Readiness可能误报，业务请求随后失败 | 0.9.3增加Schema与可写性检查 |
 | 数据保留、删除、备份和灾备未形成发布门禁证据 | 长期生产运维不完整 | 0.9.5/1.0 |
 | `MANUAL_INTERVENTION`缺Operator工作流 | 状态可审计但处置体验不完整 | 0.9产品体验或后续运维切片 |
 | 默认Policy较简单 | 不能表达复杂组织授权和资源策略 | 未来替换Policy端口；需先固定身份和合同 |
 | Queued执行使用当前Registry且无通用Executor绑定核对 | API/Worker版本漂移时旧Action可能由不同Executor执行 | 0.9.3/0.9.5绑定、升级和故障测试 |
 | 异常消息直接采用`str(error)` | Provider或Executor若把敏感值写入异常，可能进入Journal、API或日志 | 0.9.4增加统一错误清洗与泄漏回归测试 |
 
-本文与Agent Runtime设计共同作为DOC-1.3/1.4迁移范式。`domain`、`policy`和`executors`独立模块设计已完成；
-后续`storage`文档应链接本文的跨包主链，只细化内部结构，避免复制状态机产生双写。若独立文档与本文冲突，
-应在同一提交更新本文。
+本文与Agent Runtime设计共同作为DOC-1.3/1.4迁移范式。`domain`、`policy`、`executors`和`storage`
+独立模块设计均已完成；本文拥有跨包Action主链，四份包级文档只细化各自内部结构。任何一处边界变化都
+必须在同一提交同步相关事实源，避免形成第二套状态机或事务语义。
 
 ## 24. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `ffa56de02b372df981d234fafd1feffbb0b870fb` | 2026-09-12 | 接入Storage现行模块设计，纠正Lease输入、Readiness、迁移原子性、双后端测试与版本/事件关系边界 |
 | 3 | `4dc613f12e0deb5ce5ab53937fca226afab21516` | 2026-09-12 | 接入Executors现行模块设计，纠正Policy DENY与只读异常测试证据边界，补充Executor版本漂移风险 |
 | 2 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计并纠正ApprovalRecord字段、ActionResult模型约束和直接测试证据边界 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Action Plane黄金样例初版 |

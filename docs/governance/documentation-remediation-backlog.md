@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 14
-code_revision: 4dc613f12e0deb5ce5ab53937fca226afab21516
+version: 15
+code_revision: ffa56de02b372df981d234fafd1feffbb0b870fb
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
-| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（11/19） |
+| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（12/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
@@ -139,8 +139,8 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 | 后续迁移范式 | 摘要、边界、职责、状态、正常/失败/恢复、字段、接口、持久化、安全、观测、伪代码、源码测试映射、限制与变更记录 | 跨包子系统额外要求部署边界、事务后端差异、租约/UNKNOWN矩阵和独立模块去重策略 |
 
 后续DOC-1.3/1.4必须复用上述**结构和评审口径**，不得复制两份文档的业务内容。Action Plane的
-`domain`、`policy`、`executors`和`storage`独立模块设计仍需在DOC-1.3细化；它们应引用子系统主链，
-不得维护第二份相互漂移的跨包状态机。
+`domain`、`policy`、`executors`和`storage`独立模块设计已在DOC-1.3细化；它们引用子系统主链，
+不维护第二份相互漂移的跨包状态机。
 
 ## 7. DOC-1.3：Coding Agent核心运行链
 
@@ -170,15 +170,16 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 7.3 Wave C：Action、安全与可信边界
 
-进度：**3/7，进行中**。[Domain](../modules/domain.md)、[Policy](../modules/policy.md)和
-[Executors](../modules/executors.md)已完成；继续按`storage → sandbox → secrets → trusted_actions`迁移持久执行和安全边界。
+进度：**4/7，进行中**。[Domain](../modules/domain.md)、[Policy](../modules/policy.md)、
+[Executors](../modules/executors.md)和[Storage](../modules/storage.md)已完成；继续按
+`sandbox → secrets → trusted_actions`迁移安全和可信执行边界。
 
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
 | 1 | `domain` | [docs/modules/domain.md](../modules/domain.md) | Action领域对象、状态和错误；已完成 |
 | 2 | `policy` | [docs/modules/policy.md](../modules/policy.md) | 决策输入、风险、审批策略；已完成 |
 | 3 | `executors` | [docs/modules/executors.md](../modules/executors.md) | Executor合同、副作用和对账；已完成 |
-| 4 | `storage` | `docs/modules/storage.md` | Action Journal、队列、租约和多Worker Claim |
+| 4 | `storage` | [docs/modules/storage.md](../modules/storage.md) | Action Journal、Schema/Migration、队列、租约、多Worker Claim和恢复；已完成 |
 | 5 | `sandbox` | `docs/modules/sandbox.md` | Profile、Container、网络和能力探测 |
 | 6 | `secrets` | `docs/modules/secrets.md` | Secret引用、注入、守卫和脱敏 |
 | 7 | `trusted_actions` | `docs/modules/trusted-actions.md` | 统一风险路由、审计链和扩展边界 |
