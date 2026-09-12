@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 11
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 12
+code_revision: 5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ supersedes: []
 | 文件修改和执行 | [Managed Patch Runtime模块设计](modules/patches.md) | `patches → agent/artifacts`，再阅读`sandbox/workspace → delivery` |
 | 执行授权与审批 | [Execution Plan模块设计](modules/execution.md) | `execution → trusted_actions/processes/sandbox/delivery` |
 | 进程与终端监督 | [Process Runtime模块设计](modules/processes.md) | `processes → execution/workspace/secrets/sandbox`，区分兼容Saga与跨平台Supervisor |
-| Action Plane | [Domain模块设计](modules/domain.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → runtime → storage/worker`，先读领域合同再读跨包主链 |
+| Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → runtime → storage/worker`，先读领域合同和决策矩阵，再读跨包主链 |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
 
@@ -71,6 +71,7 @@ supersedes: []
 | Execution Plan | [Execution Plan模块设计](modules/execution.md) | v1/v2不可变计划、环境/Secret摘要、能力与Sandbox绑定、Policy/Approval和SQLite检查点 |
 | Process Runtime | [Process Runtime模块设计](modules/processes.md) | POSIX/Windows进程树Owner、pipe/PTY、Lease/CAS、输出脱敏、取消及重启恢复；兼容Action Saga单独说明 |
 | Domain | [Domain模块设计](modules/domain.md) | Action v1模型、状态、Tool Registry、Policy/Approval、Outcome、错误和依赖倒置端口 |
+| Policy | [Policy模块设计](modules/policy.md) | 默认Action Policy三分支、完整Effect/Risk矩阵、Service事务边界及Trusted Action策略分界 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -141,7 +142,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成9/19个主链模块，Wave C已完成Domain，下一步迁移Policy；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成10/19个主链模块，Wave C已完成Domain和Policy，下一步迁移Executor；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 

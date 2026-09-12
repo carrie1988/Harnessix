@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 12
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 13
+code_revision: 5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
-| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（9/19） |
+| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（10/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
@@ -170,13 +170,13 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 7.3 Wave C：Action、安全与可信边界
 
-进度：**1/7，进行中**。[Domain](../modules/domain.md)已完成；继续按
-`policy → executors → storage → sandbox → secrets → trusted_actions`迁移决策、执行和安全边界。
+进度：**2/7，进行中**。[Domain](../modules/domain.md)和[Policy](../modules/policy.md)已完成；继续按
+`executors → storage → sandbox → secrets → trusted_actions`迁移执行和安全边界。
 
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
 | 1 | `domain` | [docs/modules/domain.md](../modules/domain.md) | Action领域对象、状态和错误；已完成 |
-| 2 | `policy` | `docs/modules/policy.md` | 决策输入、风险、审批策略 |
+| 2 | `policy` | [docs/modules/policy.md](../modules/policy.md) | 决策输入、风险、审批策略；已完成 |
 | 3 | `executors` | `docs/modules/executors.md` | Executor合同、副作用和对账 |
 | 4 | `storage` | `docs/modules/storage.md` | Action Journal、队列、租约和多Worker Claim |
 | 5 | `sandbox` | `docs/modules/sandbox.md` | Profile、Container、网络和能力探测 |

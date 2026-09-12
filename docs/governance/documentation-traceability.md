@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 12
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 13
+code_revision: 5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197
 owners:
   - core
 modules:
@@ -60,7 +60,7 @@ flowchart LR
 |---|---|---|---|
 | 产品边界 | [文档中心](../README.md)、[产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 能力证据仍需在DOC-1.5按发布声明统一索引 |
 | 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口和两份黄金样例已完成；剩余模块级事实待DOC-1.3～DOC-1.4迁移 |
-| Action Plane | [Domain模块设计](../modules/domain.md)、[Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | Domain独立设计和子系统主链已完成；Policy、Executor、Storage继续细化 |
+| Action Plane | [Domain模块设计](../modules/domain.md)、[Policy模块设计](../modules/policy.md)、[Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | Domain、Policy独立设计和子系统主链已完成；Executor、Storage继续细化 |
 | Agent Runtime | [Agent Runtime模块设计](../modules/agent.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块设计已完成 |
 | Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本和计费现行设计已完成；Smoke独立模块入口待DOC-1.4 |
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计已完成；Eval继续独立迁移 |
@@ -93,7 +93,7 @@ flowchart LR
 | [models](../../src/harnessix/models/) | Provider适配、用量与成本 | [Model Runtime模块设计](../modules/models.md) | [models](../../tests/models/) | [docs/modules/models.md](../modules/models.md) | 完整，DOC-1.3 Wave A |
 | [observability](../../src/harnessix/observability/) | Trace、Metric与结构化日志 | [M1可观测性](../m1-observability.md) | [integration](../../tests/integration/)、[unit](../../tests/unit/) | `docs/modules/observability.md` | 缺失 |
 | [patches](../../src/harnessix/patches/) | Patch计划、批次、应用与恢复 | [Managed Patch Runtime模块设计](../modules/patches.md) | [patches](../../tests/patches/) | [docs/modules/patches.md](../modules/patches.md) | 完整，DOC-1.3 Wave B |
-| [policy](../../src/harnessix/policy/) | Action Policy决策 | [Action Plane子系统设计](../subsystems/action-plane.md) | [unit](../../tests/unit/) | `docs/modules/policy.md` | 子系统级完整；独立模块待DOC-1.3 |
+| [policy](../../src/harnessix/policy/) | Action Policy决策 | [Policy模块设计](../modules/policy.md) | [Action Service](../../tests/integration/test_action_service.py)、[Process](../../tests/processes/test_action_executor.py) | [docs/modules/policy.md](../modules/policy.md) | 完整，DOC-1.3 Wave C |
 | [processes](../../src/harnessix/processes/) | 宿主/容器进程生命周期 | [Process Runtime模块设计](../modules/processes.md) | [processes](../../tests/processes/) | [docs/modules/processes.md](../modules/processes.md) | 完整，DOC-1.3 Wave B |
 | [product_config](../../src/harnessix/product_config/) | 产品配置、迁移与活动Profile | [0.8](../m08-product-runtime-and-extensions.md)、[部署](../deployment.md) | [product_config](../../tests/product_config/) | `docs/modules/product-config.md` | 缺失 |
 | [protocol](../../src/harnessix/protocol/) | Agent Protocol Schema、编解码和投影 | [0.8](../m08-product-runtime-and-extensions.md)、[Protocol研究](../research/protocol.md) | [protocol](../../tests/protocol/) | `docs/modules/protocol.md` | 缺失 |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成10/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成11/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

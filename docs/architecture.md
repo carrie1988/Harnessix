@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 12
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 13
+code_revision: 5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ modules:
   - execution
   - processes
   - domain
+  - policy
   - trusted_actions
   - runtime
 related_adrs:
@@ -39,7 +40,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`69bd39ac3b0445ca96813c32bbdaf855e9861756`。状态标签含义如下：
+本文基于提交`5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -222,6 +223,7 @@ flowchart LR
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复；详见[模块设计](modules/patches.md) | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
 | Execution Plan | 已实现/显式装配 | v1/v2不可变执行计划、环境/Secret摘要、能力/Sandbox绑定和一次性Approval Checkpoint；详见[模块设计](modules/execution.md) | [contracts.py](../src/harnessix/execution/contracts.py)、[store.py](../src/harnessix/execution/store.py) | [execution测试](../tests/execution/) |
 | Process | 已实现/显式装配 | 命令计划、进程树Owner、pipe/PTY、Lease/CAS、脱敏输出和保守恢复；兼容Saga与跨平台Supervisor边界详见[模块设计](modules/processes.md) | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
+| Action Policy | 已实现/显式装配 | 通用Action Plane的默认三分支决策；不等同资源感知Trusted Action策略，详见[模块设计](modules/policy.md) | [default.py](../src/harnessix/policy/default.py) `DefaultPolicyEngine` | [Action Service测试](../tests/integration/test_action_service.py)、[Process审批测试](../tests/processes/test_action_executor.py) |
 | Sandbox | 已实现/显式装配 | 能力探测、容器、网络隔离和Egress策略 | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py) | [sandbox测试](../tests/sandbox/) |
 | Workspace | 已实现/显式装配 | 路径身份、Snapshot、Lease与Windows路径规则 | [paths.py](../src/harnessix/workspace/paths.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 已实现/显式装配 | 文件事务、Diff、Git Commit和受控Push | [planner.py](../src/harnessix/delivery/planner.py)、[store.py](../src/harnessix/delivery/store.py) | [delivery测试](../tests/delivery/) |
@@ -815,6 +817,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 只读工具如何约束路径和结果 | [Coding Tool Runtime模块设计](modules/tools.md)、[tools/runtime.py](../src/harnessix/tools/runtime.py) | [tools测试](../tests/tools/) |
 | Patch如何冻结计划、批准、落盘和恢复 | [Managed Patch Runtime模块设计](modules/patches.md)、[patches/managed.py](../src/harnessix/patches/managed.py) | [patches测试](../tests/patches/) |
 | Execution Plan如何绑定Workspace、环境、Secret、Sandbox、Policy、能力与批准 | [Execution Plan模块设计](modules/execution.md)、[execution/contracts.py](../src/harnessix/execution/contracts.py) | [execution测试](../tests/execution/) |
+| 默认Action Policy如何拒绝、审批和允许 | [Policy模块设计](modules/policy.md)、[policy/default.py](../src/harnessix/policy/default.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_action_executor.py](../tests/processes/test_action_executor.py) |
 | 状态如何恢复 | [session/sqlite.py](../src/harnessix/session/sqlite.py)、`AgentRuntime._recover` | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_session_upgrade.py](../tests/agent/test_session_upgrade.py) |
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
 | 高风险能力如何收口 | [trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py) |
@@ -836,7 +839,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 20个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 19个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -904,6 +907,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197` | 2026-09-12 | 接入Policy现行模块设计，明确默认决策矩阵、Action Service事务边界及Trusted Action资源策略分界 |
 | 12 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计，明确Action v1模型、状态、Registry、端口及模型与组合层不变量边界 |
 | 11 | `c7449164a2bbf08164472a36c11102dc408ebb15` | 2026-09-12 | 接入Process Runtime现行模块设计，明确兼容Saga、跨平台Owner、Lease/CAS、PTY、输出脱敏和恢复边界 |
 | 10 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 接入Execution Plan现行模块设计，补充执行授权绑定、持久计划和审批检查点入口 |
