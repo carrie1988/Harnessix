@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: c7449164a2bbf08164472a36c11102dc408ebb15
+version: 2
+code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
 owners:
   - core
 modules:
@@ -810,13 +810,18 @@ sequenceDiagram
     O->>R: os.replace原子发布
     O->>R: POSIX目录fsync
     S->>R: O_NOFOLLOW读取、64 KiB上限、严格JSON
+    opt Windows WinError 5/32共享冲突
+        S->>R: 2/10/50 ms有界重读
+    end
     S->>S: Process ID/Owner identity/HMAC compare_digest
     S->>F: 按Lease持久长度/摘要读取
 ```
 
 输出必须先持久并同步，回执才能引用该前缀。Receipt最大64 KiB，临时文件使用`O_EXCL`和0600；POSIX读取增加
-`O_NOFOLLOW`。HMAC key是Lease中的Owner token，目的是识别本次Owner事实并拒绝随机/串线回执，不是抵御能读取
-状态数据库的同UID攻击者。
+`O_NOFOLLOW`。Windows上并发`os.replace`可能让读取端短暂收到WinError 5或32；读取只对这两个共享冲突按
+`0/2/10/50 ms`四次机会有界重读。文件缺失、长度/JSON/Schema/HMAC错误及其他I/O错误仍立即失败关闭，重读不会
+接受半文件或掩盖持久篡改。HMAC key是Lease中的Owner token，目的是识别本次Owner事实并拒绝随机/串线回执，
+不是抵御能读取状态数据库的同UID攻击者。
 
 ### 21.3 回执映射
 
@@ -1359,7 +1364,7 @@ function agent_observe(plan):
 | `run_tests` Profile限制 | [`test_profiles.py`](../../src/harnessix/processes/test_profiles.py) | `RunTestsAgentBridge` | [`test_test_profiles.py`](../../tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure`、`test_run_tests_rejects_unknown_profile_and_model_arguments` |
 | ProcessSpec/Lease合同 | [`supervision_contracts.py`](../../src/harnessix/processes/supervision_contracts.py) | `ProcessSpec`、`ProcessLease` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_spec_requires_one_exact_invocation_and_self_digest`、`test_process_lease_binds_plan_spec_capability_and_deadline` |
 | Launch Binding | [`supervision_planner.py`](../../src/harnessix/processes/supervision_planner.py) | `build_process_launch_binding` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_launch_binding_covers_plan_materialization_and_environment` |
-| Receipt HMAC与短读 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks` |
+| Receipt HMAC、短读与Windows共享冲突 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks`、`test_process_owner_receipt_retries_windows_sharing_conflict`、`test_process_owner_receipt_bounds_persistent_windows_sharing_conflict`、`test_process_owner_receipt_does_not_retry_invalid_content` |
 | Lease CAS与最新事件完整性 | [`supervision_store.py`](../../src/harnessix/processes/supervision_store.py) | `create`、`transition`、`_decode_current` | [`test_supervision_store.py`](../../tests/processes/test_supervision_store.py) | `test_process_lease_store_is_append_only_durable_and_cas_guarded`、`test_process_lease_store_rejects_index_or_event_divergence` |
 | 精确环境、Secret脱敏 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `_start_bound`、`CapturedProcessOutput` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_process_uses_exact_environment_and_redacts_secret` |
 | pipe/PTY控制 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `send_stdin`、`resize`、`_Owner` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_stdin_and_pty_resize_are_explicit` |
@@ -1377,7 +1382,7 @@ function agent_observe(plan):
 
 ### 37.1 模块基线
 
-[`tests/processes/`](../../tests/processes/)当前收集151个测试用例。本地POSIX基线为146通过、5个Windows真机用例
+[`tests/processes/`](../../tests/processes/)当前收集154个测试用例。本地POSIX基线为149通过、5个Windows真机用例
 跳过；Windows专用CI执行Supervision合同、Store、输入和Windows Supervisor测试。覆盖面包括：
 
 - 旧固定Runtime合同、二进制双流、环境/FD隔离、超时、取消、信号和硬退出边界；
@@ -1415,8 +1420,9 @@ function agent_observe(plan):
 12. Windows真机矩阵证明GitHub-hosted runner环境，不等价于全部Windows版本、企业父Job和安全软件组合；
 13. CPU、内存、PID、网络和文件系统逃逸只在Container层验证，Host Supervisor不具备这些隔离；
 14. 0.5 Agent Bridge与0.7 Supervised链尚无统一产品级端到端接入测试；
-15. 托管Windows Runner曾在Owner并发更新回执期间出现一次`process_owner_receipt_invalid`；原子替换、读取共享
-    语义和安全软件影响尚未形成可重复根因与压力回归，当前仍按损坏失败关闭，不以无条件重试掩盖证据问题。
+15. 托管Windows Runner在Owner并发更新回执期间重复出现`process_owner_receipt_invalid`；当前只对可识别的WinError
+    5/32共享冲突执行最长62 ms有界重读，其他错误仍失败关闭。高频发布/读取Soak、文件身份观测及安全软件组合证据
+    尚未补齐，不能把这一兼容分支扩大为无条件重试。
 
 ## 38. 当前限制与演进方向
 
@@ -1437,7 +1443,7 @@ function agent_observe(plan):
 | Supervised输出无通用Artifact发布 | 产品客户端难分页读取长后台输出 | 增加基于Lease摘要的只读Artifact/cursor，不复制文件正文 |
 | Schema生成未纳入独立CI diff门禁 | 新合同可能与checked-in Schema漂移 | 添加`generate_specs.py`无差异门禁和模块级合同测试 |
 | Windows部署身份边界有限 | 私有目录ACL和父Job兼容性依赖环境 | 加Windows ACL、企业Job、旧Build和恢复安装矩阵 |
-| Windows回执并发读写存在未复现抖动 | 偶发读取可能以`process_owner_receipt_invalid`失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入，先求证根因再定义有界重读合同 |
+| Windows回执并发读写存在共享冲突 | WinError 5/32已由最长62 ms有界重读收敛，其他异常仍失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入；不得扩大可重试错误集合 |
 
 ## 39. 验收标准
 

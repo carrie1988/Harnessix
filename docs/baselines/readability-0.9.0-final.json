@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 270,
-    "physical_lines": 58116,
-    "logical_lines": 51858,
+    "physical_lines": 58147,
+    "logical_lines": 51880,
     "documented_modules": 270,
     "classes": 700,
     "documented_classes": 191,
-    "functions": 2280,
-    "documented_functions": 195,
+    "functions": 2282,
+    "documented_functions": 196,
     "public_exports": 303,
     "public_contract_types": 151,
     "undocumented_public_behavior": 0,
@@ -1331,7 +1331,7 @@
       "path": "src/harnessix/processes/owner_receipt.py",
       "qualname": "ProcessOwnerReceipt.receipt_shape",
       "kind": "function",
-      "line": 45,
+      "line": 47,
       "lines": 26,
       "documented": false,
       "decision_complexity": 23
@@ -1498,8 +1498,8 @@
       "path": "src/harnessix/product_ui/app.py",
       "qualname": "ProductApp",
       "kind": "class",
-      "line": 39,
-      "lines": 183,
+      "line": 48,
+      "lines": 182,
       "documented": true
     },
     {

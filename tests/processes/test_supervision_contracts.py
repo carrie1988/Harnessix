@@ -8,6 +8,7 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
+import harnessix.processes.owner_receipt as owner_receipt_module
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import EffectClass, PolicyDecisionKind, RiskLevel
 from harnessix.execution.contracts import (
@@ -256,3 +257,97 @@ def test_process_owner_receipt_reads_short_regular_file_chunks(
         )
         == receipt
     )
+
+
+def test_process_owner_receipt_retries_windows_sharing_conflict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    process_id = UUID("00000000-0000-4000-8000-000000000001")
+    receipt = sign_owner_receipt(
+        process_id=process_id,
+        owner_identity="e" * 64,
+        state="running",
+        sequence=1,
+        owner_token="d" * 64,
+        pid=123,
+        started_at=NOW,
+        stdout=empty_process_output(),
+        stderr=empty_process_output(),
+    )
+    path = tmp_path / "receipt.json"
+    write_owner_receipt(path, receipt)
+    read_once = owner_receipt_module._read_owner_receipt_once  # noqa: SLF001
+    calls = 0
+
+    def sharing_then_read(candidate: Path):
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            error = PermissionError("sharing violation")
+            error.winerror = 32  # type: ignore[attr-defined]
+            raise error
+        return read_once(candidate)
+
+    monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", sharing_then_read)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+
+    assert (
+        read_owner_receipt(
+            path,
+            owner_token="d" * 64,
+            process_id=process_id,
+            owner_identity="e" * 64,
+        )
+        == receipt
+    )
+    assert calls == 3
+
+
+def test_process_owner_receipt_bounds_persistent_windows_sharing_conflict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = 0
+
+    def always_conflicted(_candidate: Path):
+        nonlocal calls
+        calls += 1
+        error = PermissionError("sharing violation")
+        error.winerror = 32  # type: ignore[attr-defined]
+        raise error
+
+    monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", always_conflicted)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+
+    with pytest.raises(KernelError) as invalid:
+        read_owner_receipt(
+            tmp_path / "receipt.json",
+            owner_token="d" * 64,
+            process_id=UUID("00000000-0000-4000-8000-000000000001"),
+        )
+
+    assert invalid.value.code == "process_owner_receipt_invalid"
+    assert calls == 4
+
+
+def test_process_owner_receipt_does_not_retry_invalid_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = 0
+
+    def invalid_content(_candidate: Path):
+        nonlocal calls
+        calls += 1
+        raise ValueError("invalid JSON")
+
+    monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", invalid_content)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+
+    with pytest.raises(KernelError) as invalid:
+        read_owner_receipt(
+            tmp_path / "receipt.json",
+            owner_token="d" * 64,
+            process_id=UUID("00000000-0000-4000-8000-000000000001"),
+        )
+
+    assert invalid.value.code == "process_owner_receipt_invalid"
+    assert calls == 1

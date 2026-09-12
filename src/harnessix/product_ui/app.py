@@ -36,6 +36,15 @@ class ControllerUpdated(Message):
         self.state = state
 
 
+_PRODUCT_CSS = """
+#workspace { height: 1fr; }
+#threads { width: 28; min-width: 20; border-right: solid $primary; }
+#transcript { width: 1fr; padding: 0 1; }
+#status { height: auto; min-height: 1; padding: 0 1; color: $text-muted; }
+#composer { dock: bottom; }
+"""
+
+
 class ProductApp(App[CloseReport]):
     """Harnessix Code首个可恢复全屏终端入口。"""
 
@@ -46,13 +55,7 @@ class ProductApp(App[CloseReport]):
         Binding("ctrl+r", "reconnect", "重新连接"),
         Binding("ctrl+q", "quit_product", "退出"),
     ]
-    CSS = """
-    #workspace { height: 1fr; }
-    #threads { width: 28; min-width: 20; border-right: solid $primary; }
-    #transcript { width: 1fr; padding: 0 1; }
-    #status { height: auto; min-height: 1; padding: 0 1; color: $text-muted; }
-    #composer { dock: bottom; }
-    """
+    CSS = _PRODUCT_CSS
 
     def __init__(self, controller: ProductController, request: StartRequest) -> None:
         super().__init__()
@@ -145,6 +148,7 @@ class ProductApp(App[CloseReport]):
             state.phase is not ControllerPhase.READY
             or state.selected_thread_id is None
             or self._intent_in_flight
+            or self._closing
         )
 
     async def _dispatch(self, intent: ProductIntent) -> None:
@@ -158,7 +162,11 @@ class ProductApp(App[CloseReport]):
             self.query_one("#status", Static).update(f"{error.code}：{error.message}")
         finally:
             self._intent_in_flight = False
-            await self._render_state(self.controller.state)
+            state = self.controller.state
+            await self._render_state(state)
+            # Controller快照可能已由watcher先渲染；revision未变化时仍需根据
+            # 本地in-flight门闩重算输入状态，避免Composer保持禁用。
+            self._update_composer(state)
 
     @on(Input.Submitted, "#composer")
     async def _submit_prompt(self, event: Input.Submitted) -> None:

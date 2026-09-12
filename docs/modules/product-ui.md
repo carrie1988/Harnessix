@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 5
+code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
 owners:
   - product
 modules:
@@ -338,8 +338,10 @@ sequenceDiagram
 
 `ProductApp`清空Composer后只启动一个`local-intent-waiter`组Worker；`_intent_in_flight`期间Composer禁用，连续Enter不会
 形成重复Intent。View收到Revision不大于已渲染Revision的快照时完全忽略，避免迟到STARTING/BROKEN快照回退Composer或
-会话视图。会话列表仅展示Thread ID短前缀、Turn状态和轮数，不展示Workspace路径。所有不可信文本均关闭Textual
-markup解析。
+会话视图。由于`_intent_in_flight`是View本地门闩而不是Controller Revision的一部分，Worker结算后即使快照已由Watcher
+渲染，`_dispatch`也必须再次调用`_update_composer`；否则相同Revision的短路会让Composer永久保持禁用。关闭阶段的
+`_closing`同样进入禁用条件，避免退出过程中重新开放输入。会话列表仅展示Thread ID短前缀、Turn状态和轮数，不展示
+Workspace路径。所有不可信文本均关闭Textual markup解析。
 
 ## 7. 接口设计
 
@@ -627,7 +629,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | SDK协商前置门禁 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) `_send`与[`request.py`](../../src/harnessix/sdk/request.py) `require_replay_limit` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_sdk_rejects_unadvertised_method_before_transport_write`、`test_sdk_enforces_negotiated_replay_and_message_limits_before_write` |
 | Actor、Intent和有界关闭 | [`controller.py`](../../src/harnessix/product_ui/controller.py) `ProductController.start`、`dispatch`、`close` | [`test_controller.py`](../../tests/product_ui/test_controller.py)四个串行、取消和超时场景 |
 | Transcript与会话标签 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)持久顺序、Gap和终态覆盖 |
-| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、会话切换、Composer、Resize和Context退出 |
+| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、会话切换、Composer门闩结算、Resize和Context退出 |
 | CLI组合根与可选依赖 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `code_main`、`_server_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)顶层分派、精确argv和脱敏失败 |
 | 跨进程产品恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`controller.py`](../../src/harnessix/product_ui/controller.py) | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)关闭并重开真实JSONL子进程与Store |
 

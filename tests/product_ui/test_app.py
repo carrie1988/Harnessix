@@ -19,12 +19,10 @@ from harnessix.sdk import InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
-async def _wait_until(predicate, *, attempts: int = 100) -> None:
-    for _ in range(attempts):
-        if predicate():
-            return
-        await asyncio.sleep(0.01)
-    raise AssertionError("Textual状态未在时限内更新")
+async def _wait_until(predicate, *, timeout_seconds: float = 10) -> None:
+    async with asyncio.timeout(timeout_seconds):
+        while not predicate():  # noqa: ASYNC110 - Textual视图没有可订阅完成事件
+            await asyncio.sleep(0.02)
 
 
 async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: Path) -> None:

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 6
+code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ modules:
   - protocol
   - app_server
   - product_config
+  - processes
   - tools
   - trusted_actions
   - delivery
@@ -34,6 +35,8 @@ related_tests:
   - tests/product_ui/test_stdio_product.py
   - tests/product_ui/test_cli.py
   - tests/product_config/test_server_and_cli.py
+  - tests/processes/test_supervision_contracts.py
+  - tests/processes/test_windows_supervisor.py
   - tests/tools
 supersedes: []
 ---
@@ -769,7 +772,22 @@ Windows Workspace和统一Action行仍是计划路径；Controller、Rendering�
 Initialize Response与Notification之间、Replay应用与Cursor提交之间、Live Gap、Artifact中间页、Approval提交前后、
 Renderer异常、Close软限和Windows对象替换。
 
-### 16.3 真实场景
+### 16.3 三平台并发稳定化约束
+
+0.9.1b三平台门禁把两类调度假设和一个Windows文件共享边界暴露为可重复故障：
+
+1. Textual Worker结算时，Controller快照可能已由Watcher渲染，相同Revision不能代表View本地
+   `_intent_in_flight`门闩未变化；结算路径必须显式重算Composer可用性；
+2. 异步测试不能把托管Windows Runner的一秒CPU/调度完成当作产品时限，等待者取消测试改为消费Controller更新，
+   无头View测试使用十秒总Deadline而非固定一百次短轮询；
+3. Windows Owner回执的同卷原子替换可能与读取产生WinError 5/32共享冲突。`read_owner_receipt`仅对这两个错误执行
+   `0/2/10/50 ms`四次有界读取；缺失、非法长度、JSON/Schema/HMAC错误及其他I/O错误不重试。
+
+第三项不改变Receipt Schema、HMAC或损坏失败语义，只收敛Windows明确可恢复的文件共享冲突。对应实现位于
+[`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py)，合同回归位于
+[`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py)。
+
+### 16.4 真实场景
 
 1. 新Workspace通过向导配置并完成只读代码理解；
 2. 创建Session、重启TUI、恢复流式Turn并继续Steer；

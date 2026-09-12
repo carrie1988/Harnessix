@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
@@ -22,6 +23,7 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.tools.contracts import Revision
 
 MAX_OWNER_RECEIPT_BYTES = 64 * 1024
+_WINDOWS_RECEIPT_READ_DELAYS = (0.0, 0.002, 0.01, 0.05)
 
 
 class ProcessOwnerReceipt(SupervisionContract):
@@ -143,6 +145,37 @@ def verify_owner_receipt(
     return checked
 
 
+def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(path, flags)
+    try:
+        info = os.fstat(descriptor)
+        if info.st_size <= 0 or info.st_size > MAX_OWNER_RECEIPT_BYTES:
+            raise ValueError
+        chunks: list[bytes] = []
+        remaining = info.st_size
+        while remaining:
+            chunk = os.read(descriptor, remaining)
+            if not chunk:
+                raise ValueError
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        body = b"".join(chunks)
+    finally:
+        os.close(descriptor)
+    if len(body) != info.st_size:
+        raise ValueError
+    return ProcessOwnerReceipt.model_validate_json(body)
+
+
+def _is_windows_sharing_error(error: OSError) -> bool:
+    """只识别Windows原子替换与并发读取之间可瞬时恢复的共享冲突。"""
+
+    return getattr(error, "winerror", None) in {5, 32}
+
+
 def read_owner_receipt(
     path: Path,
     *,
@@ -150,33 +183,23 @@ def read_owner_receipt(
     process_id: UUID,
     owner_identity: Revision | None = None,
 ) -> ProcessOwnerReceipt:
-    try:
-        flags = os.O_RDONLY
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        descriptor = os.open(path, flags)
+    receipt: ProcessOwnerReceipt | None = None
+    for index, delay in enumerate(_WINDOWS_RECEIPT_READ_DELAYS):
+        if delay:
+            time.sleep(delay)
         try:
-            info = os.fstat(descriptor)
-            if info.st_size <= 0 or info.st_size > MAX_OWNER_RECEIPT_BYTES:
-                raise ValueError
-            chunks: list[bytes] = []
-            remaining = info.st_size
-            while remaining:
-                chunk = os.read(descriptor, remaining)
-                if not chunk:
-                    raise ValueError
-                chunks.append(chunk)
-                remaining -= len(chunk)
-            body = b"".join(chunks)
-        finally:
-            os.close(descriptor)
-        if len(body) != info.st_size:
-            raise ValueError
-        receipt = ProcessOwnerReceipt.model_validate_json(body)
-    except FileNotFoundError:
-        raise KernelError("process_owner_receipt_missing", "Process owner回执不存在") from None
-    except (OSError, ValidationError, ValueError, TypeError):
-        raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
+            receipt = _read_owner_receipt_once(path)
+            break
+        except FileNotFoundError:
+            raise KernelError("process_owner_receipt_missing", "Process owner回执不存在") from None
+        except OSError as error:
+            final_attempt = index == len(_WINDOWS_RECEIPT_READ_DELAYS) - 1
+            if _is_windows_sharing_error(error) and not final_attempt:
+                continue
+            raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
+        except (ValidationError, ValueError, TypeError):
+            raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
+    assert receipt is not None
     return verify_owner_receipt(
         receipt,
         owner_token=owner_token,

@@ -180,12 +180,9 @@ async def test_controller_caller_cancellation_does_not_cancel_accepted_intent(
                 await waiter
             release.set()
 
-            for _ in range(100):
-                if controller.state.selected_thread_id is not None:
-                    break
-                await asyncio.sleep(0.01)
-            else:
-                raise AssertionError("已接纳Intent被调用者取消")
+            async with asyncio.timeout(10):
+                while controller.state.selected_thread_id is None:
+                    await controller.next_update()
             assert store.state().next_command_sequence == 2
             await controller.close(deadline_seconds=2)
 
