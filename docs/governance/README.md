@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 4
-code_revision: 8321ef383f2cbb3ab76191a1cc3db361a52e92ef
+version: 5
+code_revision: 6c5f310346afa3fa176f51707722467f46811b35
 owners:
   - core
 modules:
@@ -29,7 +29,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.0 | 文档盘点、分类、规范、模板、追踪矩阵和整改待办 | 已完成 | 本目录与[起始基线](../baselines/documentation-doc1.0-start.json) |
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
-| DOC-1.3 | Coding Agent主链模块设计 | 进行中（1/19） | [Session](../modules/session.md)已完成；Model、Context、Tool、Process、Workspace等待迁移 |
+| DOC-1.3 | Coding Agent主链模块设计 | 进行中（2/19） | [Session](../modules/session.md)、[Context](../modules/context.md)已完成；Model、Artifact、Tool、Process、Workspace等待迁移 |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 未开始 | Protocol、App Server、SDK、MCP、Skill、Hook等模块文档 |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
@@ -48,6 +48,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [Agent Runtime模块设计](../modules/agent.md)：DOC-1后模块设计黄金样例；
 - [Action Plane子系统设计](../subsystems/action-plane.md)：DOC-1后跨包子系统设计黄金样例；
 - [Session模块设计](../modules/session.md)：Event Log、CAS、Fork、迁移和重建的当前事实；
+- [Context模块设计](../modules/context.md)：Source、预算、模型历史视图和Compaction的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；

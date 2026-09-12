@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 4
-code_revision: 8321ef383f2cbb3ab76191a1cc3db361a52e92ef
+version: 5
+code_revision: 6c5f310346afa3fa176f51707722467f46811b35
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
-| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（1/19） |
+| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（2/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
@@ -146,12 +146,12 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 7.1 Wave A：模型、上下文和持久状态
 
-进度：**1/4**。已完成[Session模块设计](../modules/session.md)，Context、Artifact和Model继续按依赖顺序迁移。
+进度：**2/4**。已完成[Session](../modules/session.md)和[Context](../modules/context.md)模块设计，Artifact和Model继续按依赖顺序迁移。
 
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
 | 1 | `session` | [docs/modules/session.md](../modules/session.md) | Event Log、投影、22次迁移、CAS、恢复；已完成 |
-| 2 | `context` | `docs/modules/context.md` | Source优先级、预算、检查、Compaction窗口 |
+| 2 | `context` | [docs/modules/context.md](../modules/context.md) | Source优先级、预算、检查、Compaction窗口；已完成 |
 | 3 | `artifacts` | `docs/modules/artifacts.md` | 大对象、覆盖证明、Diff和模型历史 |
 | 4 | `models` | `docs/modules/models.md` | Provider端口、流式事件、尝试/用量/成本账本 |
 

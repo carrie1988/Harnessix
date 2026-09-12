@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 3
-code_revision: 8321ef383f2cbb3ab76191a1cc3db361a52e92ef
+version: 4
+code_revision: 6c5f310346afa3fa176f51707722467f46811b35
 owners:
   - core
 modules:
@@ -61,6 +61,7 @@ supersedes: []
 | 系统当前结构 | [总体架构](architecture.md) | 系统上下文、模块边界、主流程和当前限制 |
 | Agent Runtime | [Agent Runtime模块设计](modules/agent.md) | Thread/Turn/Item/Event、Agent Loop、交互、取消、Retry与恢复 |
 | Session | [Session模块设计](modules/session.md) | Event Log、Snapshot、CAS、Fork、迁移、重建和Runtime Owner |
+| Context | [Context模块设计](modules/context.md) | Source优先级、预算、模型历史视图、Compaction账本和活动窗口 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
