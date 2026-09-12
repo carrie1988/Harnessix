@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP与Skill现行设计
+- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP、Skill与Hook现行设计
 - 更新日期：2026-09-12
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -255,9 +255,9 @@ Journal和失败Snapshot；未知编码、压缩文件和模型推断也可能�
 - Hook输入只获得Thread/Turn/Action身份及参数/结果摘要；
 - 扩展只通过受限 Context 和 Tool API；
 - 所有效果经过统一 Permission/Sandbox；
-- 输出大小、类型和内容校验。
+- MCP/Skill执行输出大小、类型和内容边界；Hook执行严格结果结构和调用方已知Secret精确值检查，原始输出资源预算仍待补齐。
 
-**剩余风险**：本地同UID主体可替换用户可写Skill/Hook定义或调试宿主；每次目录/Registry重建会通过摘要漂移撤销旧绑定，但发行物签名、远端分发和多用户隔离仍待后续关闭。
+**剩余风险**：Hook Grant当前不是密码学签名，不绑定Workspace/Tenant且只在Registry捕获时检查有效期；Bundled是宿主标签而非发行签名证明；Definition与Port实际来源没有交叉校验；Hook输出Guard晚于底层Action成功结算；恢复没有Owner Lease或Action账本对账。本地同UID主体还可替换用户可写Skill/Hook定义或调试宿主。完整风险、崩溃窗口和关闭条件见[Hook模块设计](modules/hooks.md)与[Skill模块设计](modules/skills.md)；发行物签名、远端分发和多用户隔离仍待后续关闭。
 
 ### TM-08：Provider 流伪造或异常
 
@@ -601,8 +601,8 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 
 - **调用方伪造风险**：`CodingActionInvocation`没有effect、risk、policy、Sandbox或executor字段；这些事实来自宿主自摘要`TrustedToolBinding`。额外字段、Tool版本/指纹/Schema摘要或注册Binding不一致均在执行能力发放前拒绝。
 - **资源漏报**：资源由宿主resolver生成，并与Workspace Snapshot、Sandbox网络模式和Secret版本绑定交叉检查。该机制依赖受信resolver正确实现；任意第三方Python resolver不能与宿主同进程加载，扩展只能提交到预注册端口。
-- **扩展越权**：`ExtensionActionPort`固定source/source id，只暴露本来源Binding和Plan生命周期。MCP/Skill/Hook/custom不能取得Host Executor、Session Store、Secret Provider或Workspace对象，也不能读取其他来源Plan。0.8.4/0.8.5已分别约束MCP进程和不可执行Skill/Hook；远端分发、发行签名与供应链清单仍由后续里程碑关闭。
-- **Hook提权**：Hook来源不具有覆盖宿主deny的能力；任何Hook请求仍按同一Binding、资源和Policy规划。Hook正文或返回值不是批准记录。
+- **扩展越权**：`ExtensionActionPort`固定其实际source/source id，只暴露该来源Binding和Plan生命周期。MCP/Skill/Hook/custom不能取得Host Executor、Session Store、Secret Provider或Workspace对象，也不能读取其他来源Plan。Hook装配仍需单独核对Definition来源与Port实际来源；现行Runtime缺少该比较，错误Mapping键可形成审计身份混淆。0.8.4/0.8.5已分别约束MCP进程和不可执行Skill/声明式Hook；远端分发、发行签名与供应链清单仍由后续里程碑关闭。
+- **Hook提权**：Hook来源不具有覆盖宿主deny的能力；任何Hook请求仍按同一Binding、资源和Policy规划。Hook Definition或返回值不是批准记录。现行`READ_ONLY`是宿主Binding声明而非Executor副作用的机械证明，第三方逻辑必须进入独立Sandbox/MCP/Container Action。
 - **审批错绑与漂移**：Approval Checkpoint只绑定Plan fingerprint。执行重开时同时核对Route/Execution Plan、当前Tool Binding、Workspace Snapshot和持久批准；参数、cwd、环境、策略、Sandbox、Secret版本、文件或Git配置变化使批准失效。
 - **审计泄漏与篡改**：append-only Action Audit事件仅保存资源、输出和Artifact摘要，不保存输出或文件正文；私有Route Plan为执行/恢复保留规范化调用参数，可能包含路径和命令元数据，但疑似凭据字段被拒绝且Secret值只能通过独立Provider注入。因此Plan/Audit数据库仍按敏感状态保护，不能对外直接发布。当前投影、不可变payload、冗余索引和事件链不一致时失败关闭。字段名检测不是通用DLP，无法识别被放入普通文本字段的任意凭据；上游Context与Tool Schema仍必须禁止Secret正文进入参数。SQLite和SHA-256不能抵抗可同时改写数据库与程序的同UID恶意主体，也不提供不可抵赖签名。
 - **外部写重复执行**：Git Push投影到稳定外部Action id和Effect Journal；调用开始后的任何异常为unknown。恢复只执行`ls-remote`对账，不再次Push。目标OID、旧OID和第三种OID分别收敛为成功、失败和人工处置。

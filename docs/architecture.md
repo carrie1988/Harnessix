@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 30
-code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
+version: 31
+code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
 owners:
   - core
 modules:
@@ -25,12 +25,14 @@ modules:
   - trusted_actions
   - mcp
   - skills
+  - hooks
   - runtime
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
+  - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
@@ -39,6 +41,8 @@ related_tests:
   - tests/integration/test_action_service.py
   - tests/integration/test_worker.py
   - tests/integration/test_postgres_journal.py
+  - tests/hooks/test_runtime.py
+  - tests/hooks/test_schemas.py
 supersedes: []
 ---
 
@@ -48,7 +52,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`e1aa95764da726d2c1e8f286e4400579ce3efae7`。状态标签含义如下：
+本文基于提交`097f23b24c03df0d9d5b540c5b65ddc12029e9f1`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -244,7 +248,7 @@ flowchart LR
 | Trusted Action | 已实现/显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口和UNKNOWN对账；默认产品尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
 | MCP | 已实现/显式装配 | 受管stdio/受信进程内Target、不可变目录、调用前Schema漂移、Trusted Action与只读stdio Server；默认产品未装配，详见[模块设计](modules/mcp.md) | [runtime.py](../src/harnessix/mcp/runtime.py)、[actions.py](../src/harnessix/mcp/actions.py)、[store.py](../src/harnessix/mcp/store.py) | [MCP](../tests/mcp/)与[真实Container](../tests/integration/test_container_sandbox.py)测试 |
 | Skill | 已实现/显式装配 | 本地来源、不可变目录、冲突消歧、渐进加载、安全Reader、无正文访问事件及只读Trusted Action；默认产品未装配，详见[模块设计](modules/skills.md) | [runtime.py](../src/harnessix/skills/runtime.py)、[store.py](../src/harnessix/skills/store.py)、[actions.py](../src/harnessix/skills/actions.py) | [Skill测试](../tests/skills/) |
-| Hook | 已实现/显式装配 | 声明式Hook、摘要授权、超时和恢复；独立现行模块设计待迁移 | [hooks](../src/harnessix/hooks/) | [Hook测试](../tests/hooks/) |
+| Hook | 已实现/显式装配 | Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Action执行Timeout、取消和Interrupted恢复；默认产品未装配且授权/对账仍有缺口，详见[模块设计](modules/hooks.md) | [runtime.py](../src/harnessix/hooks/runtime.py)、[contracts.py](../src/harnessix/hooks/contracts.py)、[store.py](../src/harnessix/hooks/store.py) | [Hook测试](../tests/hooks/) |
 | Eval/Smoke | 已实现/显式运行 | 固定任务、物化、正式Agent运行、确定性分级、Campaign和受控真实Provider验证；详见[Evals模块设计](modules/evals.md) | [evals](../src/harnessix/evals/)、[smoke](../src/harnessix/smoke/) | [evals](../tests/evals/)、[smoke](../tests/smoke/)测试 |
 | 可观测性 | Action默认可配置/Agent默认未装配 | 内部端口、No-op/OTel适配、W3C持久传播、结构化日志及Agent安全包装；故障隔离和隐私保证因调用链不同，详见[模块设计](modules/observability.md) | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py)、[agent/telemetry.py](../src/harnessix/agent/telemetry.py) | [观测单元测试](../tests/unit/test_observability_core.py)、[跨进程测试](../tests/integration/test_observability_flow.py)、[Agent遥测测试](../tests/agent/test_telemetry.py) |
 
@@ -307,7 +311,7 @@ flowchart TD
 | `evals` | quality | 产品公开入口与Eval契约 | 用测试夹具改写生产事实 |
 | `execution` | execution | `workspace`与持久计划契约 | 将未持久计划直接交给执行器 |
 | `executors` | action-plane | `domain`端口 | 自行更新Action生命周期 |
-| `hooks` | extensions | `trusted_actions/execution/secrets` | Hook脚本绕过统一Action Router |
+| `hooks` | extensions | `trusted_actions/execution/secrets` | Hook处理器绕过统一Action Router，或把Binding声明误当成副作用隔离证明 |
 | `mcp` | extensions | `trusted_actions/execution/secrets`与MCP契约 | 远端Schema直接获得宿主执行权限 |
 | `models` | model | Provider中立契约、Secret引用 | 上游响应对象泄漏进Agent领域模型 |
 | `observability` | platform | 标准观测SDK | 日志记录Secret、Prompt正文或未脱敏输出 |
@@ -862,7 +866,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 2个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK、Product Config、API、Adapter、MCP与Skill设计已完成，Hook为下一项 | Hook与Smoke源码理解仍部分依赖聚合资料 | DOC-1.4 |
+| 1个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook设计已完成 | Smoke源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -930,6 +934,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 31 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 接入Hook现行模块设计，明确Definition/Grant、Registry、Matcher、确定Run、Hook/Action双账本、Timeout/取消、Interrupted恢复、来源错配和默认产品未装配边界 |
 | 30 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 接入Skill现行模块设计，明确本地来源、目录与Manifest绑定、渐进加载、安全Reader、访问账本、Action Gateway、Secret发布窗口、提示注入和默认产品未装配边界 |
 | 29 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 接入MCP现行模块设计，明确受管Target、目录与Schema、调用前漂移、Trusted Action、UNKNOWN、只读Server、关闭风险和默认产品未装配边界 |
 | 25 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，区分Agent Protocol与Action HTTP客户端，明确Transport并发取消、身份恢复、错误、安全和平台边界 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
+version: 4
+code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
 owners:
   - core
 modules:
@@ -836,6 +836,11 @@ Hook有独立Timeout和取消状态。Timeout取消底层Router执行；Router�
 取消，Hook Store再记录`hook_timeout`。Hook输出还会经过Canary和`HookActionOutput`验证。Advisory Hook
 的deny无效；Blocking Hook可阻止后续流程，但其allow不能改变目标Action自身Policy。
 
+Hook完整现行事实见[Hook模块设计](hooks.md)。当前需特别注意四个集成缺口：Grant只在Registry捕获时按调用方
+`captured_at`检查；Runtime未核对Definition来源与Port实际来源相同；Router先结算Action成功，后置Guard或
+Schema拒绝会使Action为`succeeded`而Hook为`failed`；启动恢复没有Owner Lease，也不查询底层Action状态。
+因此Port来源隔离、Hook授权和双账本恢复不能仅凭单个组件测试推断为默认产品安全闭环。
+
 ## 26. Git Push外部非幂等写
 
 ```mermaid
@@ -1187,6 +1192,8 @@ uv run pytest \
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
 | P0 | 外部效果与最终Audit非原子 | 效果成功但Event失败时只能保守对账 | 0.9.3故障恢复 |
+| P0 | Hook Definition与Port实际来源未交叉校验 | 错误Mapping可执行另一来源Action并形成审计身份混淆 | 0.9.4扩展安全 |
+| P0 | Hook输出接受晚于Action成功结算 | Guard/Schema拒绝时Action与Hook终态分裂 | 0.9.3对账 |
 | P1 | 两个Plan Store跨库非原子且无孤儿治理 | 局部失败留下孤儿或批准/Route短暂不一致 | 0.9.3运维恢复 |
 | P1 | 通用Invocation无复杂度预算 | 深/大参数可消耗CPU、内存和磁盘 | 0.9.4输入防护 |
 | P1 | Resource与Workspace/Secret/网络只做部分一致性 | 受信Resolver错误可能授权错误对象 | 0.9.4资源授权 |
@@ -1195,6 +1202,7 @@ uv run pytest \
 | P1 | 无Route级Timeout/Cancel Token/Progress | 长执行可占用Runtime且诊断不足 | 0.9.3 |
 | P1 | Hash链无签名且本地文件未加密 | 不抵抗有写权限的恶意主体 | 0.9.4威胁模型 |
 | P1 | 无原生Telemetry | 无法建立SLO、UNKNOWN告警和容量分析 | DOC-1.4/0.9.3 |
+| P1 | Hook Grant仅捕获时有效且恢复无Owner/Action对账 | 过期后继续执行或重启误判处理器事实 | 0.9.3/0.9.4 |
 | P2 | Sequence上限无归档策略 | 多次Reconcile后可能触发未归一ValidationError | 运维/存储治理 |
 | P2 | 包根未导出部分构造API | 第三方调用稳定性和文档面不清晰 | API治理 |
 
@@ -1289,3 +1297,4 @@ uv run pytest \
 | 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |
 | 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
 | 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |
+| 4 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 将Hook现行事实下沉到独立模块设计，并登记捕获时授权、来源错配、输出接受与Action终态分歧及无租约恢复缺口 |

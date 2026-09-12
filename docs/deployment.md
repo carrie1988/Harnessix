@@ -1114,7 +1114,8 @@ CI的`container-sandbox`任务使用固定摘要BusyBox镜像，同时验证基�
 
 ## 0.8.5 Skill与Hook部署
 
-Skill现行装配、安全、持久化与运维限制见[Skill模块设计](modules/skills.md)。本节给出0.8部署约束，
+Skill与Hook现行装配、安全、持久化与运维限制分别见[Skill模块设计](modules/skills.md)和
+[Hook模块设计](modules/hooks.md)。本节给出0.8部署约束，
 不表示默认`agent-server`已经加载Skill或Hook。
 
 Skill和Hook各使用一个独立私有SQLite数据库。数据库、WAL/SHM和备份应与Execution Plan、Action Audit处于同一受信用户数据根，不能位于Workspace，也不能暴露给MCP容器或项目进程。Skill数据库不保存正文或绝对Root；Hook数据库不保存原始Action参数、结果或Secret，但两者的元数据和摘要仍可能暴露扩展结构，诊断导出必须最小化。
@@ -1134,12 +1135,17 @@ Bundled Root应位于只读发行物目录；User Root建议为当前用户私�
 Hook装配顺序固定为：
 
 1. 宿主先注册处理器Trusted Action，并确认其`source="hook"`、`READ_ONLY`、`LOW`、`recovery=none`及输入Schema；
-2. 从受信配置构造Hook定义。Bundled定义随发行物信任；Managed/User/Workspace定义必须取得绑定完整定义摘要和有效期的`HookTrustGrant`；
+2. 从受信配置构造Hook定义。当前Bundled标签免Grant但尚无发行签名证明；Managed/User/Workspace定义必须取得绑定完整定义摘要且在Registry捕获时有效的`HookTrustGrant`；现行Grant不含Workspace/Tenant范围，Runtime存活期间不复核过期或撤销；
 3. 构造并持久化Registry快照，再开放生命周期Dispatch；定义、授权或处理器Binding变化时创建新Registry，不能修改历史快照；
-4. 启动时先执行`recover_interrupted`，把遗留Running Run收敛为Interrupted；不得自动重放；
-5. 关闭时停止接受新Dispatch，取消在途处理器并等待两层Action/Hook状态提交。进程被强制终止时依靠下次启动恢复。
+4. 只有确认旧执行者已经停止并取得独占启动所有权后，才执行`recover_interrupted`把遗留Running Run收敛为Interrupted；现行Store没有Owner/Lease，也不查询Action账本，不得自动重放；
+5. 关闭时由宿主自行停止接受新Dispatch、跟踪并取消在途任务，等待Action与Hook两层状态提交后再关闭Store；现行Runtime没有`close/drain`接口，进程被强制终止时只能依靠下次显式恢复。
 
 `before_action`必须在目标Action执行前完成并检查`allowed`；拒绝、超时、取消或任意处理失败均停止目标执行。其他事件只能记录，不能回滚已经形成的Session或Action事实。Hook处理器不得通过配置指定Shell、URL、Prompt、Python/JavaScript模块或宿主环境；需要外部能力时应由宿主单独配置MCP/Container Action，并让目标Action自己的Policy、Approval和Sandbox保持权威。
+
+装配方必须显式核对Definition来源、Port实际来源和Binding来源三者相同；现行`HookRuntime`只按Definition来源查找
+Mapping键，尚未执行最后一项比较。Hook Timeout只覆盖`port.execute()`，不覆盖全局Dispatch Lock、Action规划或
+SQLite。Hook输出Guard/Schema位于Action成功结算之后，两账本可能分别呈现Action `succeeded`与Hook `failed`；
+运维必须联合查询同一`run_id/action_plan_id`，不能依据单库判断处理器已经被接受发布。
 
 macOS和Windows CI均显式运行Skill/Hook回归；Linux完整矩阵同时验证POSIX硬链接、独立崩溃进程和SQLite恢复。跨平台成功只证明本地读取和状态语义，不代表远端分发、签名Marketplace或发行物供应链已经完成，这些属于0.9。
 

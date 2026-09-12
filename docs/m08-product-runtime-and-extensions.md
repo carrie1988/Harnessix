@@ -328,8 +328,8 @@ stdio Client的启动、目录发现、调用和关闭阶段均设置了局部�
 
 ## 8. 0.8.5 Skills与Hooks详细设计
 
-本节记录0.8.5交付增量。Skill当前实现的完整合同、源码、失败语义、测试证据和生产差距以
-[Skill模块设计](modules/skills.md)为现行事实源；Hook独立现行模块设计仍在DOC-1.4迁移。
+本节记录0.8.5交付增量。Skill与Hook当前实现的完整合同、源码、失败语义、测试证据和生产差距分别以
+[Skill模块设计](modules/skills.md)和[Hook模块设计](modules/hooks.md)为现行事实源。
 
 ### 8.1 模块与执行边界
 
@@ -387,18 +387,19 @@ Hook事件固定为`session_started`、`session_ended`、`turn_started`、
 只接受来源、来源身份和Tool的精确值或单字段`*`，不接受正则。执行顺序固定为
 `event + order + qualifiedId`，并在同一Dispatch内串行执行。
 
-Bundled Hook由发行物信任；`managed`、`user`和`workspace` Hook必须提供绑定完整
-`definition_sha256`的未过期`HookTrustGrant`。事件、Matcher、顺序、模式、超时、
-Action版本、Schema或指纹任一变化都会使旧授权失效。Registry初始化还会复核处理器
-真实绑定为`source="hook"`、低风险只读、无需恢复，并且输入Schema与
-`HookActionInput`精确相等。
+当前把宿主声明为Bundled的Hook视为免Grant，但尚未验证发行物签名；`managed`、`user`和`workspace`
+Hook必须提供绑定完整`definition_sha256`且在Registry捕获时未过期的`HookTrustGrant`。事件、Matcher、
+顺序、模式、超时、Action版本或指纹任一变化都会使旧授权不匹配。Registry初始化还会独立复核处理器
+绑定为`source="hook"`、低风险只读、无需恢复，并且输入Schema与`HookActionInput`精确相等。当前Grant不是
+密码学签名、不包含Workspace/Tenant范围，且Runtime存活期间不复核过期或撤销。
 
 ### 8.5 输入最小化、阻断与失败语义
 
 Hook输入只包含Registry/Definition/Dispatch身份、Thread/Turn ID、目标Action来源和
 Tool、目标Plan ID，以及参数或结果摘要。来源身份在进入处理器前再摘要化；原始参数、
 Action输出、模型正文、路径正文、环境和Secret都不进入Hook输入。输出只接受
-`allow`或带稳定`reason_code`的`deny`，并经过严格Schema、尺寸和Secret检查。
+`allow`或带稳定`reason_code`的`deny`，并经过严格Schema和调用方已知Secret精确值检查；当前没有独立原始输出
+字节、深度或节点预算，默认Secret保护集合为空。
 
 | 事件 | 模式 | 失败策略 | 对目标流程的影响 |
 |---|---|---|---|
@@ -416,10 +417,16 @@ UUID形成同一Run；已存在终态直接返回，不重复调用处理器。
 `running`收敛为`interrupted`。Store核对合法转换、Plan/事件/投影摘要和序列，检测到
 正文或链篡改时失败关闭。
 
-每个定义具有100毫秒至60秒独立超时。超时和调用方取消都会取消底层只读Trusted
+每个定义具有100毫秒至60秒的底层Action执行等待超时；该范围不包含全局Lock、Registry复核、Action规划、
+同步SQLite和输出校验。执行阶段超时和调用方取消都会取消底层只读Trusted
 Action；Action Audit据此结算为`failed(executor_cancelled)`，Hook分别持久化
 `hook_timeout`或`hook_cancelled`。Interrupted Run不自动重放；生命周期调用方必须
 产生新的Dispatch才能显式重试，避免把已经观察过的Hook执行伪装成从未发生。
+
+Hook与底层Action使用不同SQLite账本且没有共同事务。Router先把处理器Action结算为`succeeded`，Hook随后才做
+Secret Guard和输出Schema；若输出被拒绝，Action仍为`succeeded`而Hook为`failed(hook_output_invalid)`。此外，
+Runtime当前没有核对Definition来源与Port实际来源一致，恢复也没有Owner Lease或Action状态对账。这些差距和完整
+崩溃窗口以[Hook模块设计](modules/hooks.md)为准。
 
 ### 8.7 跨平台读取实现
 

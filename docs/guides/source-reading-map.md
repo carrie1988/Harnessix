@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 8
-code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
+version: 9
+code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
 owners:
   - core
 modules:
@@ -19,15 +19,19 @@ modules:
   - adapters
   - mcp
   - skills
+  - hooks
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
+  - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_runtime.py
   - tests/agent/test_crash_recovery.py
+  - tests/hooks/test_runtime.py
+  - tests/hooks/test_schemas.py
   - tests/integration/test_action_service.py
 supersedes: []
 ---
@@ -429,10 +433,12 @@ flowchart LR
 
 ### 10.3 Hook
 
-按[contracts.py](../../src/harnessix/hooks/contracts.py) → [store.py](../../src/harnessix/hooks/store.py) →
+先通读[Hook模块设计](../modules/hooks.md)，明确当前能力是受信宿主显式装配的声明式生命周期绑定，默认产品尚未接线。
+再按[contracts.py](../../src/harnessix/hooks/contracts.py) → [store.py](../../src/harnessix/hooks/store.py) →
 [runtime.py](../../src/harnessix/hooks/runtime.py)阅读，并用[Hook Runtime](../../tests/hooks/test_runtime.py)和
-[Hook Schema](../../tests/hooks/test_schemas.py)验证。Hook处理器提出只读Action，不是可信代码；判断是否允许
-执行仍由统一Action边界完成。Hook独立现行模块设计仍待DOC-1.4迁移。
+[Hook Schema](../../tests/hooks/test_schemas.py)验证。重点跟踪Definition/Grant/Registry、Matcher、确定Run、Hook与Action
+双账本、Action执行Timeout和Interrupted恢复。Hook Executor是宿主预注册的受信代码，`READ_ONLY`是Binding声明而非
+静态副作用证明；Hook `allow`也不产生目标Action授权。
 
 ### 10.4 LangGraph Adapter
 
@@ -486,7 +492,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 | [evals](../../src/harnessix/evals/) | `contracts.py`、`runner.py` | 真实任务结果如何分级 | [evals](../../tests/evals/) |
 | [execution](../../src/harnessix/execution/) | `contracts.py`、`planner.py` | 执行意图如何先持久化 | [execution](../../tests/execution/) |
 | [executors](../../src/harnessix/executors/) | `echo.py`、`demo_issue.py` | Executor如何实现效果与对账 | [unit](../../tests/unit/) |
-| [hooks](../../src/harnessix/hooks/) | `contracts.py`、`runtime.py` | 声明式Hook如何受控执行 | [hooks](../../tests/hooks/) |
+| [hooks](../../src/harnessix/hooks/) | [`contracts.py`](../../src/harnessix/hooks/contracts.py)、[`store.py`](../../src/harnessix/hooks/store.py)、[`runtime.py`](../../src/harnessix/hooks/runtime.py)；[模块设计](../modules/hooks.md) | Definition/Grant、Matcher、状态、双账本和恢复如何约束Hook执行 | [hooks](../../tests/hooks/) |
 | [mcp](../../src/harnessix/mcp/) | [`contracts.py`](../../src/harnessix/mcp/contracts.py)、[`store.py`](../../src/harnessix/mcp/store.py)、[`runtime.py`](../../src/harnessix/mcp/runtime.py)、[`actions.py`](../../src/harnessix/mcp/actions.py)；[模块设计](../modules/mcp.md) | Target、目录、Schema、连接状态与Trusted Action如何共同约束MCP调用 | [mcp](../../tests/mcp/) |
 | [models](../../src/harnessix/models/) | `contracts.py`、`config.py` | Provider如何被规范化 | [models](../../tests/models/) |
 | [observability](../../src/harnessix/observability/) | `core.py` | 业务身份如何进入观测 | [integration](../../tests/integration/) |
@@ -572,7 +578,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 ## 17. 后续文档入口
 
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
-- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)与[Skill模块设计](../modules/skills.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包和关闭的现行事实；
+- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)与[Hook模块设计](../modules/hooks.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包、生命周期Hook和关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
 - [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；
