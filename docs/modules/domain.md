@@ -584,13 +584,9 @@ flowchart TD
 
 ```python
 class ActionExecutor(Protocol):
-    async def execute(
-        self, action: ActionSnapshot, arguments: BaseModel
-    ) -> ExecutionOutcome: ...
+    async def execute(self, action: ActionSnapshot, arguments: BaseModel) -> ExecutionOutcome: ...
 
-    async def reconcile(
-        self, action: ActionSnapshot
-    ) -> ReconciliationOutcome: ...
+    async def reconcile(self, action: ActionSnapshot) -> ReconciliationOutcome: ...
 ```
 
 - Service保证普通执行前Snapshot已进入`RUNNING`；
