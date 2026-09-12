@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 45b2b1043b1aed9dd53800c89b69252cb90e2eb8
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs:
+  - docs/adr/0030-kernel-managed-patch-admission.md
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0029：受管 Patch 的调用绑定与 Agent 接入顺序
 
 - 日期：2026-09-04

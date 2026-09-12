@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 03d0aaeae3d44edc7ed541f80d76ef24e9a7be22
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0048：受控真实Coding Eval Campaign执行
 
 - 状态：已接受；0.5.5c2a执行基础设施与c2b首轮三次真实基线均已完成

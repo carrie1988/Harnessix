@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: f1c0622ea54bdbeefc3dc407ae59229dea0bfed2
+owners:
+  - core
+modules:
+  - models
+  - smoke
+related_adrs: []
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0022：百炼单次计价验收的证据边界
 
 - 日期：2026-09-03

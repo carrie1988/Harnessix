@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 37d7abd03b4465a427cd1c379786729bfc1b30a2
+owners:
+  - core
+modules:
+  - storage
+  - worker
+related_adrs: []
+related_tests:
+  - tests/contracts
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0003：使用 Journal 状态实现持久化 Worker Queue
 
 - 状态：已接受

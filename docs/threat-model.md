@@ -1,3 +1,39 @@
+---
+doc_type: threat-model
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - agent
+  - policy
+  - sandbox
+  - secrets
+  - trusted_actions
+  - workspace
+  - delivery
+  - mcp
+  - skills
+  - hooks
+related_adrs:
+  - docs/adr/0002-unknown-first-class.md
+  - docs/adr/0066-sandbox-network-and-secret-boundaries.md
+  - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
+  - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+related_tests:
+  - tests/sandbox
+  - tests/secrets
+  - tests/trusted_actions
+  - tests/workspace
+  - tests/delivery
+  - tests/mcp
+  - tests/skills
+  - tests/hooks
+supersedes: []
+---
+
 # Harnessix Code 威胁模型 v2
 
 - 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP、Skill、Hook与Smoke现行设计

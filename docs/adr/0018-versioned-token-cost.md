@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: c560c915eea6f2317ef6718974d18ee586021feb
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs: []
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0018：版本化 Token 价格与可重算成本报告
 
 - 日期：2026-09-03

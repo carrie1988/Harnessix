@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 6e28589b775d3d4ba0ce8c2c9415b2425898e281
+owners:
+  - core
+modules:
+  - sandbox
+  - secrets
+related_adrs: []
+related_tests:
+  - tests/sandbox
+  - tests/secrets
+supersedes: []
+---
+
 # ADR 0066：Sandbox、网络与 Secret 失败关闭边界
 
 - 状态：已接受

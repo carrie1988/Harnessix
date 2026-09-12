@@ -1,3 +1,18 @@
+---
+doc_type: governance
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - documentation
+  - research
+related_adrs: []
+related_tests: []
+supersedes: []
+---
+
 # 主流 Coding Agent 源码研究计划
 
 ## 1. 研究目标

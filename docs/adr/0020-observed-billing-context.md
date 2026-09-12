@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 9f24961840fa704e7c7a344c648164d8afe793b7
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs: []
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0020：响应计费元数据与尝试绑定
 
 - 日期：2026-09-03

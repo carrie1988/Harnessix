@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 24e08998146aacbeb8c4dd8238e5ee3dca20f081
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/context
+supersedes: []
+---
+
 # ADR 0060：Thread生命周期与无授权Fork
 
 - 状态：Accepted

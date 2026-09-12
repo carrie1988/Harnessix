@@ -1,3 +1,26 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 3e331b778f4b22418d472fdde4f190b955ed21d3
+owners:
+  - core
+modules:
+  - context
+  - tools
+  - artifacts
+related_adrs:
+  - docs/adr/0055-project-instruction-source-and-freshness.md
+  - docs/adr/0056-workspace-git-environment-sources-and-consistency.md
+  - docs/adr/0057-tool-result-model-view-and-artifact-binding.md
+related_tests:
+  - tests/context
+  - tests/artifacts
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-08；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Context Source、项目指令与 Tool Result 模型视图源码研究
 
 - 更新日期：2026-09-08

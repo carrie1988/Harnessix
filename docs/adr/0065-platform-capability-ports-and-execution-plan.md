@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 8abaebc21b9739f2f272e73df2f8246aaab947c6
+owners:
+  - core
+modules:
+  - execution
+  - workspace
+related_adrs: []
+related_tests:
+  - tests/execution
+  - tests/workspace
+supersedes: []
+---
+
 # ADR 0065：平台能力端口与不可变执行计划
 
 - 状态：已接受

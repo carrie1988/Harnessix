@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: d75d309582bd47e41c2c1687b06dde3e7320758d
+owners:
+  - core
+modules:
+  - domain
+  - runtime
+related_adrs: []
+related_tests:
+  - tests/contracts
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0002：将 `UNKNOWN` 作为一等结果
 
 - 状态：已接受

@@ -1,3 +1,26 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: b0622cb3d3e94344292df35d96ae79a101495b6b
+owners:
+  - core
+modules:
+  - tools
+  - agent
+related_adrs:
+  - docs/adr/0023-workspace-read-tools.md
+  - docs/adr/0024-bounded-search-and-artifact-scope.md
+  - docs/adr/0027-prepared-patch-and-write-admission.md
+  - docs/adr/0053-tool-concurrency-and-error-taxonomy.md
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-03；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Tool Runtime 研究与执行契约
 
 ## 1. 研究基线

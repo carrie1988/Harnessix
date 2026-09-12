@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: c560c915eea6f2317ef6718974d18ee586021feb
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs:
+  - docs/adr/0018-versioned-token-cost.md
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0017：实际 SDK 的尝试与用量映射
 
 - 日期：2026-09-03

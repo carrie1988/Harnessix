@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 62830edab5808b2199ac188dd3012021c0c20c86
+owners:
+  - core
+modules:
+  - product_config
+  - models
+  - secrets
+related_adrs: []
+related_tests:
+  - tests/product_config
+  - tests/models
+supersedes: []
+---
+
 # ADR 0075：Provider Profile、Secret 引用与安全 Fallback
 
 - 状态：已接受

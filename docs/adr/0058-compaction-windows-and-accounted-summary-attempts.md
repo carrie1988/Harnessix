@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 24e08998146aacbeb8c4dd8238e5ee3dca20f081
+owners:
+  - core
+modules:
+  - context
+  - agent
+  - session
+  - models
+  - evals
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0058：可审计压缩窗口与独立摘要尝试
 
 - 状态：Accepted（实现、本地完整验收及[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过）

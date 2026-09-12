@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 76dae1102c32e6fe6232f168b0b3bca1cc6ca34a
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0036：真实整组差异报告与归档准入
 
 - 日期：2026-09-04

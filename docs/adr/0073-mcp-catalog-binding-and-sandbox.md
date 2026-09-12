@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 901244b45925cbf9e9ed9793209665b4e3a3391d
+owners:
+  - core
+modules:
+  - mcp
+  - trusted_actions
+  - sandbox
+related_adrs: []
+related_tests:
+  - tests/mcp
+  - tests/trusted_actions
+supersedes: []
+---
+
 # ADR 0073：MCP目录绑定与Sandbox执行边界
 
 - 状态：已接受

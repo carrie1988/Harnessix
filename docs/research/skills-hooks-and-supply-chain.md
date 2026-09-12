@@ -1,3 +1,24 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: bf10c9d6ffea373f1a6e39fc8621b65d08133e03
+owners:
+  - core
+modules:
+  - skills
+  - hooks
+  - trusted_actions
+related_adrs:
+  - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+related_tests:
+  - tests/skills
+  - tests/hooks
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-09；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Skills、Hooks与供应链边界源码研究
 
 ## 1. 研究范围与冻结基线

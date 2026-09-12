@@ -1,3 +1,18 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: adfe267362db2efd1eb9cf8c0ec402d183c9bb9c
+owners:
+  - core
+modules:
+  - processes
+related_adrs: []
+related_tests:
+  - tests/processes
+supersedes: []
+---
+
 # ADR 0038：受信宿主进程生命周期与有界捕获
 
 - 日期：2026-09-05

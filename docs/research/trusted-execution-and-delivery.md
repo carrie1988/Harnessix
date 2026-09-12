@@ -1,3 +1,35 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: f0d366c3071c2e5c134dd2c475d1763ef87360c1
+owners:
+  - core
+modules:
+  - execution
+  - sandbox
+  - secrets
+  - processes
+  - workspace
+  - delivery
+related_adrs:
+  - docs/adr/0065-platform-capability-ports-and-execution-plan.md
+  - docs/adr/0066-sandbox-network-and-secret-boundaries.md
+  - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
+  - docs/adr/0068-transactional-workspace-and-git-delivery.md
+  - docs/adr/0069-unified-coding-action-risk-route.md
+related_tests:
+  - tests/execution
+  - tests/sandbox
+  - tests/secrets
+  - tests/processes
+  - tests/workspace
+  - tests/delivery
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-09；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # 0.7 可信执行与工程交付研究
 
 - 状态：已冻结
@@ -6,7 +38,7 @@
 
 ## 1. 研究方法与证据等级
 
-本轮研究延续[0.2 源码研究基线](baselines.md)的 clean-room 规则，只提取机制、边界、不变量和失败语义，不复制参考实现。证据分为：
+本研究延续[0.2 源码研究基线](baselines.md)的clean-room规则，只提取机制、边界、不变量和失败语义，不复制参考实现。证据分为：
 
 - **事实**：锁定提交的源码、测试或协议可以直接复查；
 - **推断**：由多个入口和失败路径归纳，不代表参考项目的正式承诺；

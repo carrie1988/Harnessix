@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 4054e1d209af00fc42fe6ea783e6468c5f8c852c
+owners:
+  - core
+modules:
+  - tools
+  - artifacts
+related_adrs:
+  - docs/adr/0025-trusted-tool-execution-scope.md
+  - docs/adr/0026-transactional-artifacts.md
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0024：有界搜索与 Artifact 归属拆片
 
 - 日期：2026-09-03

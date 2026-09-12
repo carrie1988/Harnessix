@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0030：Kernel 写准入、持久审批与双账本恢复
 
 - 日期：2026-09-04

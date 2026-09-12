@@ -1,3 +1,22 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 397542942be8474d99feb190a901e8b336a19bdd
+owners:
+  - core
+modules:
+  - evals
+  - models
+related_adrs:
+  - docs/adr/0049-versioned-eval-token-budget.md
+related_tests:
+  - tests/evals
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-06；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Coding Eval Token预算适用性源码研究
 
 - 日期：2026-09-06

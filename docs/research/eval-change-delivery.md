@@ -1,3 +1,23 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 83b60853718a3abb6589cafc06915a192319ae0d
+owners:
+  - core
+modules:
+  - evals
+  - delivery
+related_adrs:
+  - docs/adr/0052-controlled-eval-change-delivery.md
+related_tests:
+  - tests/evals
+  - tests/delivery
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-07；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Coding Eval变更交付源码求证与适用性研究
 
 ## 1. 研究范围

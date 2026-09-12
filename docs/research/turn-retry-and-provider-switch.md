@@ -1,3 +1,25 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: edab546cc45ba6912a747494e7480a52118431cc
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - models
+related_adrs:
+  - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
+related_tests:
+  - tests/context
+  - tests/models
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-08；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Turn Retry、Interrupted Recovery 与 Provider 切换源码研究
 
 - 更新日期：2026-09-08

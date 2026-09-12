@@ -1,3 +1,23 @@
+---
+doc_type: product-charter
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - product
+  - documentation
+related_adrs:
+  - docs/adr/0005-evolve-to-harnessix-code.md
+  - docs/adr/0062-local-first-v1-commercial-boundary.md
+  - docs/adr/0063-windows-v1-platform-support.md
+  - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+related_tests:
+  - tests/governance/test_repository_policy.py
+supersedes: []
+---
+
 # Harnessix Code 产品章程
 
 ## 1. 产品定义

@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: f6df90076f77a0ed29cadfba5f56669b7e16e7f1
+owners:
+  - core
+modules:
+  - tools
+  - processes
+related_adrs: []
+related_tests:
+  - tests/tools
+  - tests/processes
+supersedes: []
+---
+
 # ADR 0043：Git只读反馈与宿主测试Profile
 
 - 状态：已接受并实现

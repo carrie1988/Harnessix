@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: ba9bac6ba7c0b8a2e8616979cd1ea401f6478743
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0049：版本化Coding Eval Token预算
 
 - 状态：已接受；0.5.5c3a已完成离线实现，c3b真实复测已完成

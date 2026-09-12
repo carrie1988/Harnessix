@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 6a7cc65f4bbd6c509d761f0cad75f1d362e66bf0
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0032：整组事务预留与持久审批
 
 - 日期：2026-09-04

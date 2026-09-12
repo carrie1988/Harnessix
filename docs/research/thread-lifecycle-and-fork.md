@@ -1,3 +1,24 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 24e08998146aacbeb8c4dd8238e5ee3dca20f081
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - artifacts
+related_adrs:
+  - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
+related_tests:
+  - tests/context
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-08；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Thread Resume、Fork 与 Archive 源码研究
 
 - 更新日期：2026-09-08

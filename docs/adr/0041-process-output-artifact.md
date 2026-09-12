@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: f00b554fbe6a27d77a0e02ce688c8253ea24aa13
+owners:
+  - core
+modules:
+  - processes
+  - artifacts
+related_adrs:
+  - docs/adr/0042-process-saga-recovery-and-cancellation.md
+related_tests:
+  - tests/processes
+  - tests/agent
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0041：Process输出Artifact契约与事务发布
 
 - 日期：2026-09-05

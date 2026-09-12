@@ -1,3 +1,18 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 96c3d365229b95af6b1f4949ebc0edec5ec86702
+owners:
+  - core
+modules:
+  - protocol
+related_adrs: []
+related_tests:
+  - tests/protocol
+supersedes: []
+---
+
 # ADR 0070：Agent Protocol v1公共投影、游标与兼容边界
 
 - 状态：已接受

@@ -1,3 +1,20 @@
+---
+doc_type: governance
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - documentation
+  - product
+related_adrs:
+  - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+related_tests:
+  - tests/governance/test_repository_policy.py
+supersedes: []
+---
+
 # 自研与复用边界
 
 Harnessix Code 自研决定 Coding Agent 行为、可靠性和差异化的核心运行语义；成熟标准、协议、系统工具和供应商 SDK 优先复用。

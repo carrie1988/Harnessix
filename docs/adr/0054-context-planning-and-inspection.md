@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 16c5838bcb14070eda16da807cfa2d97c0704217
+owners:
+  - core
+modules:
+  - context
+  - agent
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR-0054：版本化 Context 规划、指令优先级与无正文检查记录
 
 - 状态：Accepted

@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 20b28d24005b4fcd89c081252f23ead35846d02b
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0028：受管副本内的持久单文件 Patch 执行
 
 - 日期：2026-09-03

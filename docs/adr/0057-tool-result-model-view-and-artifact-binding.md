@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 5e283ff474f5452d6152e86c2e2f5fe14cb3bec0
+owners:
+  - core
+modules:
+  - context
+  - artifacts
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0057：Tool Result稳定模型视图与完整Artifact绑定
 
 - 状态：Accepted

@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 3d1978df0c6aec8607d9e9ce56630cc76e2a8a97
+owners:
+  - core
+modules:
+  - session
+  - agent
+related_adrs: []
+related_tests:
+  - tests/agent
+  - tests/contracts
+supersedes: []
+---
+
 # ADR 0010：SQLite Event Log、事务投影与保守恢复
 
 - 状态：已接受

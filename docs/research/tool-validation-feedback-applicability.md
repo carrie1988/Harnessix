@@ -1,3 +1,24 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: b93f1e3fad920110f594e93886a74abd7620e87c
+owners:
+  - core
+modules:
+  - tools
+  - evals
+  - models
+related_adrs:
+  - docs/adr/0050-model-correctable-tool-validation.md
+related_tests:
+  - tests/tools
+  - tests/evals
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-06；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Coding Tool参数校验反馈适用性源码研究
 
 - 日期：2026-09-06

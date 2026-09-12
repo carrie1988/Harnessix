@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 83b60853718a3abb6589cafc06915a192319ae0d
+owners:
+  - core
+modules:
+  - evals
+  - delivery
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/delivery
+supersedes: []
+---
+
 # ADR 0052：Coding Eval受控变更包与显式合入
 
 - 状态：已接受并实现

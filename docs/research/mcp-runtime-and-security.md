@@ -1,3 +1,24 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 901244b45925cbf9e9ed9793209665b4e3a3391d
+owners:
+  - core
+modules:
+  - mcp
+  - trusted_actions
+  - sandbox
+related_adrs:
+  - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
+related_tests:
+  - tests/mcp
+  - tests/trusted_actions
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-09；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # MCP运行时与安全边界源码研究
 
 ## 1. 研究范围与冻结基线

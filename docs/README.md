@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 34
-code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+version: 35
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
 modules:
@@ -147,15 +147,15 @@ supersedes: []
 | [部署与运维](deployment.md) | 运维聚合入口 | 是 | 只维护拓扑、跨组件硬约束和安装/配置/升级/恢复/诊断/平台入口 |
 | [部署里程碑历史](deployment-milestone-history.md) | 冻结的旧版本部署记录 | 否 | 保留0.3～0.8当时命令和升级证据，不作为当前手册 |
 | `m03`～`m09`里程碑文档 | 历史增量设计 | 否 | 用于解释某阶段交付，不作为当前模块事实的唯一来源 |
-| [ADR目录](adr/) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
-| [研究目录](research/) | 参考源码证据 | 否 | 不能直接成为Harnessix的产品契约 |
+| [ADR索引](adr/README.md) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
+| [源码研究索引](research/README.md) | 参考源码证据 | 否 | 不能直接成为Harnessix的产品契约 |
 | [验证目录](validation/) | 特定版本证据 | 否 | 结论不得外推到未记录的平台、Provider或输入 |
 
 ## 5. 架构决策和源码研究
 
-- [ADR目录](adr/)：记录长期决策的背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录76份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究目录](research/)：Codex、OpenCode、Claude Code等参考实现的可核验证据；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等27份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -182,7 +182,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试/验证证据、六类现行运维资料以及里程碑/0.6专题设计已完成职责和历史状态分层；ADR与研究资料仍在后续批次治理。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份ADR和27份源码研究的职责、状态及入口治理。仓库内189份Markdown均已有标准YAML元数据；下一阶段DOC-1.6将这些约束转为自动阻断门禁。
 
 ## 8. 文档状态说明
 
@@ -195,4 +195,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-存量文档正在按DOC-1渐进迁移；未带标准YAML元数据的文档不应仅凭“完成”字样判断为当前事实。
+仓库内Markdown已经完成DOC-1.5状态迁移。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

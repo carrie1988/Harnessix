@@ -1,3 +1,22 @@
+---
+doc_type: test-and-eval-design
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - smoke
+  - models
+  - agent
+related_adrs:
+  - docs/adr/0019-controlled-model-smoke.md
+  - docs/adr/0022-bailian-price-validation.md
+related_tests:
+  - tests/smoke
+supersedes: []
+---
+
 # 受控模型 Smoke 使用说明
 
 本入口验证 **SDK → Adapter → Kernel → SQLite → Replay** 的固定闭环，不是交互式Coding Agent，不读取业务仓库或执行Shell。当前离线验证通过；百炼北京的文本、内存工具、审批重开均已实测通过；0.4.3c的真实计价适用性仍未收口，其他模型/平台不能据此推定兼容，见[真实验证记录](validation/bailian-2026-09-03.md)。配置合同、三场景时序、预算、恢复、风险和源码测试映射以[Smoke模块设计](modules/smoke.md)为当前事实源。

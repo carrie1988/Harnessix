@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: bfd70874cc1e93a24b715c22ab6091382db8f3d2
+owners:
+  - core
+modules:
+  - context
+  - tools
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0055：受控项目指令 Source 与持久 freshness
 
 - 状态：Accepted

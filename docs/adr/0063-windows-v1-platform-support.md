@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 89501eee74268cb8be1fa1f80d5c9bfee7de0aa3
+owners:
+  - core
+modules:
+  - workspace
+  - processes
+  - product
+related_adrs: []
+related_tests:
+  - tests/workspace
+  - tests/processes
+supersedes: []
+---
+
 # ADR 0063：Windows纳入Harnessix Code 1.0支持范围
 
 - 状态：已接受

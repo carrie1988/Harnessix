@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 81c76f630cbd3d586b3d2889c1f9ad72b565203f
+owners:
+  - core
+modules:
+  - processes
+  - domain
+  - storage
+related_adrs: []
+related_tests:
+  - tests/processes
+  - tests/agent
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0039：复用Action Plane的持久命令准入
 
 - 日期：2026-09-05

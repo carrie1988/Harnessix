@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 776fd67eaf9b9a3e6e9f199bdf7b2bfec8255006
+owners:
+  - core
+modules:
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/models
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0008：采用模型无关的流式 Provider Event
 
 - 状态：已接受

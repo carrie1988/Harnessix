@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: c560c915eea6f2317ef6718974d18ee586021feb
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs:
+  - docs/adr/0017-provider-attempt-usage.md
+  - docs/adr/0018-versioned-token-cost.md
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0016：模型尝试账本与累计用量事实
 
 - 日期：2026-09-03

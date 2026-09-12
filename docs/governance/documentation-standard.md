@@ -1,8 +1,8 @@
 ---
 doc_type: documentation-standard
 status: current
-version: 1
-code_revision: 8e3e3576bbc64bf2b696279c404ba5fcb3fee06e
+version: 2
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
 modules:
@@ -52,6 +52,10 @@ supersedes: []
 | `deployment-design` | 安装、配置、升级、回滚和运维 | 是 | `docs/`及后续运维目录 |
 | `threat-model` | 资产、信任边界、攻击面和缓解措施 | 是 | `docs/threat-model.md` |
 | `governance` | 文档或工程治理规则 | 是 | `docs/governance/` |
+| `governance-index` | 同类正式资料的统一导航、状态和阅读顺序 | 是 | 各治理目录的`README.md` |
+| `documentation-standard` | 文档工程分类、元数据、评审和门禁规范 | 是 | `docs/governance/documentation-standard.md` |
+| `source-reading-guide` | 当前仓库源码主链和推荐阅读路径 | 是 | `docs/guides/` |
+| `template` | 新文档的结构和必填内容约束 | 是 | `docs/governance/templates/` |
 
 职责分离规则：
 
@@ -302,6 +306,8 @@ DOC-1.0之前的133份文档作为存量基线保留，不因缺少新元数据�
 2. DOC-1.2用Agent Runtime和Action Plane形成黄金样例；
 3. DOC-1.3、DOC-1.4按运行主链逐包补齐现行模块设计；
 4. DOC-1.5拆分聚合文档并标记历史资料；
-5. DOC-1.6只对已迁移文档和新增重大变更启用严格门禁，再逐步扩大覆盖。
+5. DOC-1.6将全部已迁移Markdown和新增重大变更纳入严格门禁。
 
 不得通过机械增加空章节、无意义图或重复源码来提高合规数字。迁移完成度以他人能否据文档定位、实现、测试和维护为准。
+
+DOC-1.5结束时，仓库内189份Markdown均已完成标准YAML元数据和生命周期迁移；该数字包含DOC-1期间新增的现行模块设计、运维资料、历史索引以及ADR/研究索引，不改写DOC-1.0的133份起始基线。后续新增或修改文档直接适用本规范，不再使用“存量暂不阻断”豁免。

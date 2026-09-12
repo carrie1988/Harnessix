@@ -1,3 +1,20 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 3d1978df0c6aec8607d9e9ce56630cc76e2a8a97
+owners:
+  - core
+modules:
+  - documentation
+  - research
+related_adrs: []
+related_tests: []
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-02；具体提交、分支与证据等级见下文。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # 0.2 源码研究基线
 
 - 状态：已冻结

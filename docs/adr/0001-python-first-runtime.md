@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: be8eeccfbe6bac599595ec4282ee42a7a2a38346
+owners:
+  - core
+modules:
+  - runtime
+  - adapters
+related_adrs: []
+related_tests:
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0001：采用 Python-first Runtime
 
 - 状态：已接受（由 ADR 0005 扩展到 Harnessix Code）

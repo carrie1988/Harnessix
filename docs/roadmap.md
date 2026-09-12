@@ -1,3 +1,23 @@
+---
+doc_type: roadmap
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - product
+  - documentation
+related_adrs:
+  - docs/adr/0005-evolve-to-harnessix-code.md
+  - docs/adr/0062-local-first-v1-commercial-boundary.md
+  - docs/adr/0063-windows-v1-platform-support.md
+  - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+related_tests:
+  - tests/governance
+supersedes: []
+---
+
 # Harnessix Code 设计与开发路线图
 
 ## 1. 路线图原则
@@ -402,7 +422,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.4已完成，30/30个生产源码包均有独立现行模块设计；DOC-1.5正在实施，当前测试规范、里程碑测试历史、真实Provider验证证据、安装/配置/升级/恢复/诊断/平台资料以及里程碑增量设计已完成分层，ADR与研究资料仍待治理；0.9.1～0.9.6产品切片和DOC-1.6仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.5已完成，30/30个生产源码包均有独立现行模块设计，仓库内189份Markdown均已完成标准元数据、职责和生命周期迁移；0.9.1～0.9.6产品切片和DOC-1.6自动化门禁仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -431,7 +451,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
 - [x] **DOC-1.3 Coding Agent主链**：19/19已完成；Wave A～D已补齐Session、Context、Artifact、Model、Tool、Patch、Execution、Process、Action安全链、Workspace、Delivery、[Evals](modules/evals.md)与[Observability](modules/observability.md)现行设计，并登记实现与历史资料之间的真实差异；
 - [x] **DOC-1.4 产品运行时与扩展**：10/10已完成；[Protocol模块设计](modules/protocol.md)、[App Server模块设计](modules/app-server.md)、[SDK模块设计](modules/sdk.md)、[Product Config模块设计](modules/product-config.md)、[API模块设计](modules/api.md)、[Adapter模块设计](modules/adapters.md)、[MCP模块设计](modules/mcp.md)、[Skill模块设计](modules/skills.md)、[Hook模块设计](modules/hooks.md)与[Smoke模块设计](modules/smoke.md)均已建立；
-- [ ] **DOC-1.5 聚合与历史治理**：正在实施；已将当前[测试与Eval规范](testing-and-evals.md)、[里程碑测试历史](testing-and-evals-milestone-history.md)、[真实验证证据](validation/README.md)、[六类运维资料](deployment.md)和里程碑增量设计分层；0.5及0.8采用历史索引与冻结完整原文结构，其余里程碑及0.6专题设计统一标记为`historical`并链接现行模块，后续治理ADR和研究状态；
+- [x] **DOC-1.5 聚合与历史治理**：已将当前[测试与Eval规范](testing-and-evals.md)、[里程碑测试历史](testing-and-evals-milestone-history.md)、[真实验证证据](validation/README.md)、[六类运维资料](deployment.md)和里程碑增量设计分层；0.5及0.8采用历史索引与冻结完整原文结构，其余里程碑及0.6专题设计统一标记为`historical`并链接现行模块；[ADR索引](adr/README.md)覆盖76份接受决策，[源码研究索引](research/README.md)覆盖27份冻结研究，仓库内189份Markdown均已完成标准状态迁移；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
 
 DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都必须按照

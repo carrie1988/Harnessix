@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: c57f01ff70c3e5758a3a49127bf93801324c071a
+owners:
+  - core
+modules:
+  - session
+  - agent
+related_adrs: []
+related_tests:
+  - tests/agent
+  - tests/contracts
+supersedes: []
+---
+
 # ADR 0012：持久审批检查点与显式继续
 
 - 状态：已接受并实现

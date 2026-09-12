@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 113980facd231cc0f426830531e9e612cfac3f41
+owners:
+  - core
+modules:
+  - tools
+  - agent
+related_adrs: []
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0053：Tool有界并发与统一错误分类
 
 - 状态：已接受并实现

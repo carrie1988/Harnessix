@@ -1,3 +1,23 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 113980facd231cc0f426830531e9e612cfac3f41
+owners:
+  - core
+modules:
+  - tools
+  - agent
+related_adrs:
+  - docs/adr/0053-tool-concurrency-and-error-taxonomy.md
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-07；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Tool 调度与错误分类专项研究
 
 - 研究日期：2026-09-07

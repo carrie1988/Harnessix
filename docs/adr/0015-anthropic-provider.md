@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 1cac4b8aba916f030be56bbaf84bec0497ec4a09
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs:
+  - docs/adr/0016-model-attempt-ledger.md
+  - docs/adr/0017-provider-attempt-usage.md
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0015：第二类 Provider 与用量演进边界
 
 - 日期：2026-09-03

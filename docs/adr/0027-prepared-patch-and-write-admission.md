@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 20b28d24005b4fcd89c081252f23ead35846d02b
+owners:
+  - core
+modules:
+  - patches
+  - agent
+  - session
+  - artifacts
+related_adrs:
+  - docs/adr/0028-managed-patch-execution.md
+related_tests:
+  - tests/patches
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0027：先准备精确 Patch，再开放受控写入
 
 - 日期：2026-09-03

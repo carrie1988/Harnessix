@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 4054e1d209af00fc42fe6ea783e6468c5f8c852c
+owners:
+  - core
+modules:
+  - artifacts
+  - session
+related_adrs: []
+related_tests:
+  - tests/artifacts
+supersedes: []
+---
+
 # ADR 0026：同一 Session 事务发布有界 Artifact
 
 - 日期：2026-09-03

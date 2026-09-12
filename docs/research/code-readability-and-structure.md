@@ -1,3 +1,22 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 5d1bf06d6bb71949d65001b8221b488a0b1f0c79
+owners:
+  - core
+modules:
+  - governance
+  - documentation
+related_adrs:
+  - docs/adr/0076-code-readability-and-structural-governance.md
+related_tests:
+  - tests/governance
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-12；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Coding Agent代码可读性、可维护性与结构治理研究
 
 - 状态：已完成

@@ -1,3 +1,26 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 901244b45925cbf9e9ed9793209665b4e3a3391d
+owners:
+  - core
+modules:
+  - trusted_actions
+  - policy
+  - mcp
+  - skills
+  - hooks
+  - delivery
+related_adrs:
+  - docs/adr/0069-unified-coding-action-risk-route.md
+related_tests:
+  - tests/trusted_actions
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-09；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # 0.7.5 统一 Action Plane 与扩展边界源码研究
 
 - 状态：已冻结
@@ -7,7 +30,7 @@
 
 ## 1. 研究问题
 
-本轮只回答四个与0.7.5实现直接相关的问题：
+本专题只回答四个与0.7.5实现直接相关的问题：
 
 1. 内置工具、自定义工具、MCP、Skill和Hook如何进入同一工具路由；
 2. Schema、工具身份、权限、Sandbox和执行器应由谁持有；
@@ -18,7 +41,7 @@
 
 ## 2. 冻结基线
 
-| 项目 | 锁定提交 | 本轮主要证据 |
+| 项目 | 锁定提交 | 本专题主要证据 |
 |---|---|---|
 | Codex | `d6489472f3c15e87d2d7763a5fde033545c530f8` | `codex-rs/core/src/tools/router.rs`、`registry.rs`、`orchestrator.rs` |
 | OpenCode | `d6855b6b47a8433462ac6aeeba882ccf734cb7f1` | `packages/opencode/src/tool/tool.ts`、`registry.ts`、`shell.ts`、`external-directory.ts` |

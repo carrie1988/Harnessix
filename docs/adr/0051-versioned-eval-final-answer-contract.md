@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 83b60853718a3abb6589cafc06915a192319ae0d
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0051：版本化公开Coding Eval最终回答契约
 
 - 状态：已接受并完成真实Campaign验收

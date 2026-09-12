@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 7c9443f0c6a3e50157ebdd7d31b8104bd2f26745
+owners:
+  - core
+modules:
+  - session
+  - agent
+related_adrs: []
+related_tests:
+  - tests/agent
+  - tests/contracts
+supersedes: []
+---
+
 # ADR 0011：0.3 Kernel 使用进程内宿主与初始聚合投影
 
 - 状态：已接受

@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 120f57f802532773fa047971335d8ba5d7ed4336
+owners:
+  - core
+modules:
+  - context
+  - workspace
+  - tools
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0056：Workspace、Git、环境Source与乐观一致性
 
 - 状态：Accepted

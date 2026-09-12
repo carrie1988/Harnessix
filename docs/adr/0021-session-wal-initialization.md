@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 1c11449de0e817a41b830bb8e45e6e34d3baf009
+owners:
+  - core
+modules:
+  - session
+  - agent
+related_adrs: []
+related_tests:
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0021：并发 Session 初始化的 WAL 切换边界
 
 - 日期：2026-09-03

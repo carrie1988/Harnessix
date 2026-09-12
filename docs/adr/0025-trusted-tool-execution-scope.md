@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 4054e1d209af00fc42fe6ea783e6468c5f8c852c
+owners:
+  - core
+modules:
+  - agent
+  - tools
+  - artifacts
+related_adrs:
+  - docs/adr/0026-transactional-artifacts.md
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0025：可信工具执行作用域与旧端口兼容
 
 - 日期：2026-09-03

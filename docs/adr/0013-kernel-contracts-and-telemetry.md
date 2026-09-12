@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 977a0b0979fd57bc5b51784a3f37f60ab51a7021
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - observability
+related_adrs: []
+related_tests:
+  - tests/agent
+  - tests/contracts
+supersedes: []
+---
+
 # ADR 0013：Kernel 语义契约、诊断与存储验收
 
 - 日期：2026-09-03

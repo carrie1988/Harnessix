@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: bf10c9d6ffea373f1a6e39fc8621b65d08133e03
+owners:
+  - core
+modules:
+  - skills
+  - hooks
+  - trusted_actions
+related_adrs: []
+related_tests:
+  - tests/skills
+  - tests/hooks
+supersedes: []
+---
+
 # ADR 0074：Skill快照与Hook Action安全边界
 
 - 状态：已接受

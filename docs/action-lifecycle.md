@@ -1,3 +1,24 @@
+---
+doc_type: contract
+status: current
+version: 1
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+owners:
+  - core
+modules:
+  - domain
+  - storage
+  - worker
+  - runtime
+related_adrs:
+  - docs/adr/0002-unknown-first-class.md
+  - docs/adr/0003-database-backed-worker-queue.md
+related_tests:
+  - tests/contracts
+  - tests/integration/test_worker.py
+supersedes: []
+---
+
 # Action 生命周期
 
 ## 1. 状态机

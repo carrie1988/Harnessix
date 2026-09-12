@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 89501eee74268cb8be1fa1f80d5c9bfee7de0aa3
+owners:
+  - core
+modules:
+  - product
+  - documentation
+related_adrs:
+  - docs/adr/0063-windows-v1-platform-support.md
+related_tests: []
+supersedes: []
+---
+
 # ADR 0062：Harnessix Code 1.0本地优先商用边界
 
 - 状态：已接受

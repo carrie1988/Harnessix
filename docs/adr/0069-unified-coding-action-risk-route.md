@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 6e28589b775d3d4ba0ce8c2c9415b2425898e281
+owners:
+  - core
+modules:
+  - trusted_actions
+  - policy
+related_adrs: []
+related_tests:
+  - tests/trusted_actions
+supersedes: []
+---
+
 # ADR 0069：统一 Coding Action 风险路由
 
 - 状态：已接受

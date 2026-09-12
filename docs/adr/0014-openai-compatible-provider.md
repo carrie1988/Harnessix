@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 1cac4b8aba916f030be56bbaf84bec0497ec4a09
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs:
+  - docs/adr/0017-provider-attempt-usage.md
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0014：首个 OpenAI-compatible Provider
 
 - 日期：2026-09-03

@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: f0d366c3071c2e5c134dd2c475d1763ef87360c1
+owners:
+  - core
+modules:
+  - delivery
+  - workspace
+related_adrs: []
+related_tests:
+  - tests/delivery
+  - tests/workspace
+supersedes: []
+---
+
 # ADR 0068：事务性 Workspace 与 Git 交付
 
 - 状态：已接受

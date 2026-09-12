@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: edab546cc45ba6912a747494e7480a52118431cc
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - models
+related_adrs: []
+related_tests:
+  - tests/context
+supersedes: []
+---
+
 # ADR 0061：终态Turn重试与Provider中立历史
 
 - 状态：Accepted

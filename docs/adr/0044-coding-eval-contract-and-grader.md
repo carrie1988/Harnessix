@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: d6990eb6ef1fd2f9c13c6f851838d434afb43d04
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0044：Coding Eval任务、证据与确定性评分基线
 
 - 状态：已接受并实现0.5.5a

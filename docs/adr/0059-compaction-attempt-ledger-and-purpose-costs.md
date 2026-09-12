@@ -1,3 +1,23 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: b20948e1eb3a1427c13d1579e6dde94a3da0f0f6
+owners:
+  - core
+modules:
+  - context
+  - agent
+  - session
+  - models
+  - evals
+related_adrs: []
+related_tests:
+  - tests/context
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0059：独立摘要账本与分用途成本报告
 
 - 状态：Accepted（账本内部切片；整体Compaction ADR 0058仍为Proposed）

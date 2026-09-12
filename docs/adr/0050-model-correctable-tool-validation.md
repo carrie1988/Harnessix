@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 9d0be66e197a82506cf0d0dcbf59832d8865f1e2
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs:
+  - docs/adr/0051-versioned-eval-final-answer-contract.md
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0050：模型可纠正的工具参数校验反馈
 
 - 状态：已接受；0.5.5c3c实现及离线验收完成，c3d真实验证3/3采用纠正协议

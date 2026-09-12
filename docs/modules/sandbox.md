@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 1
-code_revision: 49c798b2688fb87d68130179a616c5457836f3bd
+code_revision: 49c798bb6a9b18052f298258ef28bc3e4ef73104
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ supersedes: []
 | 下游依赖 | `execution`合同、`workspace`快照、`secrets`短生命周期环境、`processes` Supervisor、Docker/Podman兼容CLI、DNS和TCP |
 | 持久化 | `SQLiteSandboxProfileStore`按Profile Digest保存不可变JSON；Execution Plan和Process Lease由其他模块保存 |
 | 平台 | 合同与确定性测试覆盖POSIX/Windows；真实Container隔离只在Linux Docker CI验证；Windows/macOS真实强隔离尚未形成发布证据 |
-| 代码版本 | `49c798b2688fb87d68130179a616c5457836f3bd` |
+| 代码版本 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` |
 | 当前完成度 | 可显式组合的正式运行库，不是默认Coding Agent已启用的端到端Sandbox产品能力 |
 
 本文描述Sandbox包当前实现。不可变执行计划和批准指纹以
@@ -1380,4 +1380,4 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 1 | `49c798b2688fb87d68130179a616c5457836f3bd` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |
+| 1 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |

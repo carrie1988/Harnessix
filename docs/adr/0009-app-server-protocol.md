@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 3d1978df0c6aec8607d9e9ce56630cc76e2a8a97
+owners:
+  - core
+modules:
+  - protocol
+  - app_server
+related_adrs: []
+related_tests:
+  - tests/protocol
+  - tests/app_server
+supersedes: []
+---
+
 # ADR 0009：App Server v1 使用标准 JSON-RPC 2.0 与 stdio JSONL
 
 - 状态：已接受

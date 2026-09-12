@@ -1,3 +1,22 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: f00b554fbe6a27d77a0e02ce688c8253ea24aa13
+owners:
+  - core
+modules:
+  - agent
+  - processes
+  - storage
+related_adrs: []
+related_tests:
+  - tests/processes
+  - tests/agent
+  - tests/integration
+supersedes: []
+---
+
 # ADR 0042：Process跨库恢复、等待取消与SDK闭环
 
 - 日期：2026-09-06

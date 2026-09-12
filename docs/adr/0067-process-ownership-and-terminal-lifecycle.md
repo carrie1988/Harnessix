@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 5f50d4b705712fc4f035a5b4f799f4da0f5cee85
+owners:
+  - core
+modules:
+  - processes
+  - workspace
+related_adrs: []
+related_tests:
+  - tests/processes
+supersedes: []
+---
+
 # ADR 0067：跨平台进程所有权与终端生命周期
 
 - 状态：已接受

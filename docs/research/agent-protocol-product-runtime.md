@@ -1,3 +1,29 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: cf7ec283f24018832d9b16052cf9373e49cb5c5d
+owners:
+  - core
+modules:
+  - protocol
+  - app_server
+  - sdk
+  - agent
+related_adrs:
+  - docs/adr/0009-app-server-protocol.md
+  - docs/adr/0070-agent-protocol-v1-boundaries.md
+  - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
+  - docs/adr/0072-durable-interaction-and-pull-live-stream.md
+related_tests:
+  - tests/protocol
+  - tests/app_server
+  - tests/unit/test_sdk.py
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-09；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Agent Protocol 与产品运行时源码研究
 
 ## 1. 研究范围与基线

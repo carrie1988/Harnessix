@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 1e954ad2ad8387f1766c56ff590add4c154f802e
+owners:
+  - core
+modules:
+  - models
+  - agent
+  - smoke
+related_adrs: []
+related_tests:
+  - tests/models
+  - tests/smoke
+supersedes: []
+---
+
 # ADR 0019：受控模型 Smoke 与白名单诊断
 
 - 日期：2026-09-03

@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: cf7ec283f24018832d9b16052cf9373e49cb5c5d
+owners:
+  - core
+modules:
+  - protocol
+  - app_server
+  - agent
+related_adrs: []
+related_tests:
+  - tests/protocol
+  - tests/app_server
+supersedes: []
+---
+
 # ADR 0072：持久交互与Pull-Live事件流
 
 - 状态：已接受

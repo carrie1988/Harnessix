@@ -1,3 +1,19 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 8a0686cdc97780c59d9afd22499c446ed5e1d7ee
+owners:
+  - core
+modules:
+  - governance
+  - documentation
+related_adrs: []
+related_tests:
+  - tests/governance
+supersedes: []
+---
+
 # ADR 0076：代码可读性、可维护性与结构治理
 
 - 状态：已接受

@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 9ac6008f3f0ce07a2375f306f087b520d9efe90e
+owners:
+  - core
+modules:
+  - observability
+  - domain
+related_adrs: []
+related_tests:
+  - tests/contracts
+  - tests/integration
+supersedes: []
+---
+
 # ADR-0004：在 Action 快照中持久化 W3C Trace Context
 
 - 状态：已采纳

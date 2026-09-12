@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+owners:
+  - core
+modules:
+  - tools
+  - workspace
+related_adrs: []
+related_tests:
+  - tests/tools
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0023：工作区绑定与首批只读编码工具
 
 - 日期：2026-09-03
@@ -5,7 +22,7 @@
 
 ## 1. 顺序调整与复用
 
-用户要求继续后续阶段。0.4.3c 的真实计价适用性仍独立待验收，不再阻塞没有模型消费的 0.5.1；不将此调整写成 0.4 已完成。本片只实现 `list_files` / `read_file`，不开放写、Shell、搜索或 Artifact。
+0.4.3c的真实计价适用性仍作为独立证据待验收，但不阻塞不产生模型消费的0.5.1。该依赖调整不改变0.4的完成状态；本切片只实现`list_files`/`read_file`，不开放写、Shell、搜索或Artifact。
 
 复用现有 ToolRuntime、ToolDescriptor、ToolCall/Result、审批指纹和 Session v5。Action Plane 的 ToolRegistry 绑定 ActionExecutor，不为了本地读取伪造 ActionExecutor 或发往 Worker；CodingToolRuntime 维护固定的受信只读绑定表，不另建公共插件注册协议。
 

@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 8354ae9a42f1ac354057e26698b0d8cf1a28fabe
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0045：历史缺陷任务物化与宿主隐藏检查
 
 - 状态：已接受并实现0.5.5b1
@@ -117,7 +135,7 @@ Catalog、物化器和检查程序均属于受信宿主代码。被评Agent在b2
 
 ### 新建单提交仓库，而不是保留浅克隆
 
-浅克隆仍可能携带remote、配置和可扩展历史边界。`git archive`加单提交基线只保留本次任务所需内容，并为Git状态、差异和HEAD不变评分提供正常仓库语义。
+浅克隆仍可能携带remote、配置和可扩展历史边界。`git archive`加单提交基线只保留目标任务所需内容，并为Git状态、差异和HEAD不变评分提供正常仓库语义。
 
 ### 允许脏工作树重开，而不是要求每次重新物化
 

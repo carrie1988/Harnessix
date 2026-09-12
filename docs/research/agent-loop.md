@@ -1,3 +1,21 @@
+---
+doc_type: source-research
+status: historical
+version: 1
+code_revision: 3d1978df0c6aec8607d9e9ce56630cc76e2a8a97
+owners:
+  - core
+modules:
+  - agent
+related_adrs:
+  - docs/adr/0007-agent-loop-and-cancellation.md
+related_tests:
+  - tests/agent
+supersedes: []
+---
+
+> **冻结源码研究**：本资料的参考版本与访问日期冻结于2026-09-02；具体提交、版本和证据位置见正文及[统一研究基线](baselines.md)。结论不随上游分支移动自动更新，Harnessix现行行为以关联ADR和模块设计为准。
+
 # Agent Loop 研究与 Harnessix 状态机
 
 ## 1. 研究基线

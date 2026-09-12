@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 89501eee74268cb8be1fa1f80d5c9bfee7de0aa3
+owners:
+  - core
+modules:
+  - agent
+  - documentation
+related_adrs:
+  - docs/adr/0063-windows-v1-platform-support.md
+related_tests:
+  - tests/agent
+supersedes: []
+---
+
 # ADR 0005：将 Harnessix 演进为 Harnessix Code
 
 - 状态：已接受

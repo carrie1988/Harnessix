@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 35
-code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+version: 36
+code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
 modules:
@@ -148,3 +148,7 @@ flowchart LR
 [0.5完整历史](../m05-coding-tools-milestone-history.md)、[0.8索引](../m08-product-runtime-and-extensions.md)和
 [0.8完整历史](../m08-product-runtime-and-extensions-milestone-history.md)。历史资料只用于追溯增量，不能覆盖
 本矩阵列出的当前模块事实源。
+
+[ADR索引](../adr/README.md)已覆盖76份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
+已覆盖27份冻结研究、访问日期和采用结果。DOC-1.5结束时，仓库内189份Markdown均具备标准YAML元数据，
+状态迁移从人工约定转入DOC-1.6自动门禁范围。

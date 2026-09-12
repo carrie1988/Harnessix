@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 3588d76e5171d40b63a91a7401a785c7d89223b3
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0046：历史任务的Agent Runtime、审批、Worker与评分编排
 
 - 状态：已接受并实现0.5.5b2

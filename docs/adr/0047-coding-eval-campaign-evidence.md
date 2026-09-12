@@ -1,3 +1,21 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: bbfd446707acbd9f945657ad96a6556d24af5df5
+owners:
+  - core
+modules:
+  - evals
+  - models
+  - agent
+related_adrs: []
+related_tests:
+  - tests/evals
+  - tests/models
+supersedes: []
+---
+
 # ADR 0047：Coding Eval多试验计划与可重算证据
 
 - 状态：已接受并实现0.5.5c1

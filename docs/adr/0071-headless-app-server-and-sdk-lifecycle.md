@@ -1,3 +1,20 @@
+---
+doc_type: adr
+status: current
+version: 1
+code_revision: 401759ebc42e5c8440e66f25d528a01c3bc68ed1
+owners:
+  - core
+modules:
+  - app_server
+  - sdk
+related_adrs: []
+related_tests:
+  - tests/app_server
+  - tests/unit/test_sdk.py
+supersedes: []
+---
+
 # ADR 0071：Headless App Server与Agent SDK生命周期
 
 - 状态：已接受
