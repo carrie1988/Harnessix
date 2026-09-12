@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 23
-code_revision: b71682da19b54e93b225c54c594e2583fd648e70
+version: 24
+code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
-| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 进行中（1/10） |
+| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 进行中（2/10） |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
 
@@ -209,12 +209,12 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ## 8. DOC-1.4：产品运行时与扩展
 
-状态：**进行中（1/10）**。Protocol现行模块设计已完成，下一项为App Server。
+状态：**进行中（2/10）**。Protocol与App Server现行模块设计已完成，下一项为SDK。
 
 | Wave | 源码包 | 目标文档 | 重点 |
 |---|---|---|---|
 | 产品协议 | `protocol` | [Protocol模块设计](../modules/protocol.md) | 已完成：JSON-RPC、Schema、Replay、幂等、投影白名单及真实协商差距 |
-| 产品协议 | `app_server` | `docs/modules/app-server.md` | 生命周期、背压、多路复用和有界关闭 |
+| 产品协议 | `app_server` | [App Server模块设计](../modules/app-server.md) | 已完成：连接状态、应用命令、后台Turn、Replay/Delta、stdio背压关闭、Scoped Artifact与默认装配边界 |
 | 产品协议 | `sdk` | `docs/modules/sdk.md` | 进程内/子进程合同、取消和错误投影 |
 | 产品装配 | `product_config` | `docs/modules/product-config.md` | 配置、迁移、Profile CAS、Secret引用和Fallback |
 | 产品装配 | `api` | `docs/modules/api.md` | Action API合同、认证边界和错误 |

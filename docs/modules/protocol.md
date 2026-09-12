@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: b71682da19b54e93b225c54c594e2583fd648e70
+version: 2
+code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
 owners:
   - core
 modules:
@@ -35,7 +35,7 @@ supersedes: []
 | 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
-| 代码版本 | `b71682da19b54e93b225c54c594e2583fd648e70` |
+| 代码版本 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` |
 | 当前完成度 | v1合同、投影、Schema与命令账本已实现；能力协商只部分驱动运行时，出站字节门禁、请求账本回收、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
@@ -234,6 +234,10 @@ flowchart TB
 | `JsonRpcSuccessResponse` | `jsonrpc`、`id`、`result` | `result`为JSON值 | 不允许`error` |
 | `JsonRpcErrorResponse` | `jsonrpc`、`id`、`error` | 解析阶段可用`id=null`；错误结构有界 | 不允许`result` |
 
+“Notification不产生Response”是协议合同，也是App Server正常解码路径的行为。当前App Server在
+`CLOSING/CLOSED`状态会先于解码返回ID为空的`server_closing`，所以合法Notification在该边界也会收到
+Error Response；这是已登记实现缺口，不应被解释为合同允许的例外。
+
 所有模型继承`ProtocolModel`：线上别名为`camelCase`、`extra="forbid"`、`frozen=True`、
 `populate_by_name=True`、`serialize_by_alias=True`和`strict=True`。`validate_protocol_input`先执行一次
 JSON序列化再调用`model_validate_json`，防止进程内Python调用利用UUID、时间或数字的隐式转换绕过
@@ -337,11 +341,16 @@ stateDiagram-v2
 握手顺序固定为：
 
 1. Client发送`initialize` Request；
-2. Server严格校验`InitializeParams`并要求`protocolVersion == "1.0"`；
+2. Server严格校验`InitializeParams`；该模型当前把`protocolVersion`声明为`Literal["1.0"]`；
 3. Server固定`clientInstanceId`、协商Limit并返回`InitializeResult`；
 4. Client发送`notifications/initialized` Notification；
 5. Server校验空`InitializedParams`后进入`READY`；
 6. 进入`READY`前的业务Request返回`-32012 not_initialized`。
+
+当前存在一个实现与错误合同不一致点：非`1.0`值会在步骤2的Pydantic校验阶段直接返回
+`-32602 invalid_params`，因此[`AgentProtocolServer._initialize`](../../src/harnessix/app_server/server.py)
+后续用于返回`unsupported_protocol_version`的显式比较分支不可达。现行客户端必须把该场景按
+`invalid_params`处理；专用版本错误码只能在合同类型与Server分支同步修复并增加回归测试后对外承诺。
 
 ### 10.1 初始化字段
 
@@ -859,6 +868,7 @@ sequenceDiagram
 | Agent Runtime稳定失败 | `-32010`与领域`code/retryable` | 可能已写领域事实 | 按领域错误和Snapshot决定Retry/Resume |
 | 未预期异常 | `-32603 internal_error`，不公开原异常 | 未知 | 读取持久Thread/Replay和账本状态后恢复 |
 | Server关闭 | `-32015 server_closing`或连接EOF | 不保证 | 重连新进程，使用相同客户端实例和命令ID |
+| Closing/Closed时发送Notification | 当前在解码前返回`server_closing` Error Response | 否 | 客户端关闭连接；服务端需恢复Notification单向合同 |
 | 实时Delta溢出 | `liveGap=true` | 领域执行继续 | 丢弃增量完整性假设，依赖持久Item Replay |
 | `events/next`无进展到期 | `timedOut=true` | 无变更 | 继续轮询、退避或按客户端生命周期取消等待 |
 
@@ -974,7 +984,8 @@ Protocol包没有全局事件循环或线程池。并发语义由调用者与SQL
 - 公开事件Cursor严格递增但可跳跃；
 - 同一`EventsNextResult`内Delta身份唯一，但合同未要求跨页面Sequence完全连续；
 - 协议账本终态在后台Turn驱动前提交；后台驱动可由重放或Resume恢复；
-- Notification不产生Response，SDK不能用“发送后读取一条响应”的同步交换模式处理它。
+- 正常解码路径中Notification不产生Response，SDK不能用“发送后读取一条响应”的同步交换模式处理它；
+  Closing/Closed前置错误是待修复实现偏差。
 
 ## 21. 安全与隐私边界
 
@@ -1040,7 +1051,7 @@ v1产品传输是由同一用户启动的本地stdio子进程，信任父进程�
 | 已知Notification Envelope非法 | 客户端校验失败 | 否 |
 | 公共联合增加未知`kind/type` | 当前旧模型判别联合无法解析 | 通常否；需版本或兼容设计 |
 | 内部Session Event升级 | 只要投影输出不变，不自动影响协议 | 是 |
-| 协议版本不是`1.0` | initialize拒绝 | 否；无降级协商 |
+| 协议版本不是`1.0` | `InitializeParams`的Literal校验返回`invalid_params`；专用`unsupported_protocol_version`分支当前不可达 | 否；无降级协商 |
 | 方法存在Schema但未被Server广告 | 客户端必须以`capabilities.methods`为准 | 不可调用 |
 
 `validate_server_output`通过JSON序列化后按目标模型读取，并只对顶层及嵌套模型的额外字段采用忽略策略；
@@ -1371,12 +1382,14 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 - 所有可能的超大Public Tool Output都满足出站协商字节上限；
 - SQLite磁盘满、锁超时、进程Kill在每个指令级窗口的系统化故障注入；
 - 数据库同权限恶意篡改、消息签名或加密；
+- 非`1.0`初始化返回专用`unsupported_protocol_version`错误，而不是通用`invalid_params`；
 - v1与未来v2双栈升级、降级和长期兼容窗口。
 
 ## 29. 已知限制、风险与后续工作
 
 | 优先级 | 当前限制/风险 | 影响 | 后续方向 |
 |---|---|---|---|
+| P0 | `InitializeParams.protocol_version`是`Literal["1.0"]`，导致显式`unsupported_protocol_version`分支不可达 | 实际错误码与Server意图、ADR描述不一致，客户端无法稳定区分格式错误与版本不支持 | 调整校验边界并新增非1.0握手回归，再同步Schema与SDK |
 | P0 | `_encode`未强制协商`maxMessageBytes`，`protocol_json_size`未进入生产出站路径 | 极端公共结果可能生成超出客户端声明能力的帧 | 在App Server设计中定义有界错误或Artifact外置，并补出站边界测试 |
 | P0 | 三个非消息Limit未全部贯穿运行时；Queue/Semaphore在握手前建立，Replay未按协商值收紧 | 初始化返回值与实际强制容量存在差异 | 固化Limit语义并在构造/分派处执行一致门禁 |
 | P1 | `protocol_requests`无保留期、分页、GC或accepted恢复扫描 | 长期用户可能导致数据库持续增长，陈旧accepted难运维 | 0.9.3定义容量、年龄指标、在线回收与恢复策略 |
@@ -1390,6 +1403,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 | P2 | 已知Server Notification集合与当前Pull-only Server能力脱节 | 阅读者可能误判推送能力 | 在SDK模块文档说明历史兼容用途；未来删除或正式实现需版本决策 |
 | P2 | `clientInfo`目前不持久、不参与策略；`clientInstanceId`由客户端自声明 | 无法作为安全身份 | 保持其仅幂等命名空间，禁止用于授权 |
 | P2 | `protocol_json_size`的规范排序与Server `_encode`非排序输出不完全同字节表示 | 辅助函数值不等于当前实际帧逐字节长度 | 统一单一编码器后再作为硬门禁 |
+| P2 | App Server在Closing/Closed时先于解码返回错误，合法Notification也会收到Response | 偏离Notification单向合同 | 调整关闭分支并增加直接Frame回归 |
 
 上述差距是现行实现边界，不影响已有v1本地stdio合同的基本可运行性，但在1.0商用、多用户规模和远程
 产品化前必须纳入0.9.1～0.9.5对应切片并形成独立设计与故障测试。
@@ -1435,4 +1449,5 @@ Protocol模块现行设计满足以下条件时可判定DOC-1.4中的本模块�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 2 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 根据App Server源码反向求证，修正非1.0版本错误分支不可达及Closing状态回复Notification的实现偏差 |
 | 1 | `b71682da19b54e93b225c54c594e2583fd648e70` | 2026-09-12 | 建立Protocol现行模块设计，覆盖合同、严格解码、公共投影、Replay、命令账本、兼容、Schema、失败恢复和真实实现差距 |

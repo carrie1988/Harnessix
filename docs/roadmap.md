@@ -430,7 +430,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.1 导航与系统架构**：建立[文档总入口](README.md)、[当前系统架构](architecture.md)、30个包与10个根级模块的边界，以及[源码阅读路线](guides/source-reading-map.md)；明确默认产品、显式装配库和规划能力，覆盖正常任务、审批、取消、崩溃恢复和事务性交付五条时序；
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
 - [x] **DOC-1.3 Coding Agent主链**：19/19已完成；Wave A～D已补齐Session、Context、Artifact、Model、Tool、Patch、Execution、Process、Action安全链、Workspace、Delivery、[Evals](modules/evals.md)与[Observability](modules/observability.md)现行设计，并登记实现与历史资料之间的真实差异；
-- [ ] **DOC-1.4 产品运行时与扩展**：进行中（1/10）；[Protocol模块设计](modules/protocol.md)已完成，下一项为App Server，之后为SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke；
+- [ ] **DOC-1.4 产品运行时与扩展**：进行中（2/10）；[Protocol模块设计](modules/protocol.md)与[App Server模块设计](modules/app-server.md)已完成，下一项为SDK，之后为配置、API、Adapter、MCP、Skill、Hook和Smoke；
 - [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
 

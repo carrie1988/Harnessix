@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 22
-code_revision: b71682da19b54e93b225c54c594e2583fd648e70
+version: 23
+code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
 owners:
   - core
 modules:
@@ -48,7 +48,8 @@ supersedes: []
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；历史验收再读[测试与Eval规范](testing-and-evals.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
-| Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读`app_server/server.py`和`service.py`的握手、路由与命令顺序 |
+| Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
+| App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
 
 30个生产源码包、10个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
 
@@ -89,6 +90,7 @@ supersedes: []
 | Evals | [Evals模块设计](modules/evals.md) | 历史任务、私有物化、Agent运行、固定评分、Campaign、成本、Compaction语义评测和专用单文件交付 |
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
+| App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -159,7 +161,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；剩余10个产品运行时与扩展包按DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；DOC-1.4已完成Protocol与App Server，剩余8个产品运行时与扩展包继续迁移。
 
 ## 8. 文档状态说明
 

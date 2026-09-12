@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 23
-code_revision: b71682da19b54e93b225c54c594e2583fd648e70
+version: 24
+code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
-| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（1/10） | [Protocol](../modules/protocol.md)已完成；下一项为App Server，之后为SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke |
+| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（2/10） | [Protocol](../modules/protocol.md)与[App Server](../modules/app-server.md)已完成；下一项为SDK，之后为配置、API、Adapter、MCP、Skill、Hook和Smoke |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 
@@ -66,6 +66,8 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [Delivery模块设计](../modules/delivery.md)：Workspace Transaction、私有Blob、完整Diff、POSIX发布与恢复、Git Worktree/Checkpoint/Commit和单独批准Push的当前事实；
 - [Evals模块设计](../modules/evals.md)：历史任务、物化、正式Agent运行、固定评分、Campaign、成本、Compaction语义评测和专用单文件交付的当前事实；
 - [Observability模块设计](../modules/observability.md)：内部端口、OpenTelemetry、日志、持久Trace、完整信号目录、Agent安全包装和故障隔离边界的当前事实；
+- [Protocol模块设计](../modules/protocol.md)：公共JSON-RPC合同、严格帧、投影、Replay/Delta、请求账本、兼容及Schema边界的当前事实；
+- [App Server模块设计](../modules/app-server.md)：单连接握手、应用服务、后台Turn、stdio并发关闭、Scoped Artifact与默认装配边界的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；
