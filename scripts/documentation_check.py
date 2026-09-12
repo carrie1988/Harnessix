@@ -172,6 +172,18 @@ class PolicyError(ValueError):
     """表示策略文件无法形成安全、确定的检查合同。"""
 
 
+def _configure_utf8_console() -> None:
+    """统一Windows和POSIX CLI编码，避免中文诊断在旧代码页写出失败。"""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+
+
 def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result: dict[str, object] = {}
     for key, value in pairs:
@@ -1293,6 +1305,7 @@ def _argument_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_utf8_console()
     args = _argument_parser().parse_args(argv)
     root = args.root.resolve()
     try:

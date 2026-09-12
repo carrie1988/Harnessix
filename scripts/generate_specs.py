@@ -230,6 +230,18 @@ from harnessix.trusted_actions.contracts import (
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 
 
+def _configure_utf8_console() -> None:
+    """统一Windows和POSIX CLI编码，确保中文检查结果可写出。"""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+
+
 def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
 
@@ -491,6 +503,7 @@ def _argument_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_utf8_console()
     args = _argument_parser().parse_args(argv)
     if args.check:
         findings = check_specs(args.output)
