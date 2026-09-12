@@ -1,7 +1,7 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：0.8产品运行时安全基线，已更新至0.8.6 Provider与配置产品化
-- 更新日期：2026-09-09
+- 状态：当前安全基线，已同步DOC-1.4 API与Product Config现行设计
+- 更新日期：2026-09-12
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
 实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；0.8.6增加严格产品配置、安全读取/迁移、版本化Provider Secret引用、活动配置CAS和零响应暴露Fallback。上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在0.9实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
@@ -204,12 +204,14 @@ Agent Runtime                │
 
 - Secret Reference，不在领域对象保存明文；
 - 每个 Tool 声明所需 Secret；
-- 写入任意持久层前统一 Redactor；
+- Product Config只保存Secret引用；Process/Artifact等已接入路径按各自合同使用Redactor或最终Guard；
 - 日志默认记录摘要而非 Payload；
 - Artifact ACL、保留期和删除；
 - Canary Secret 全链路扫描。
 
-**剩余风险**：未知编码、压缩文件和模型推断可能绕过模式脱敏。
+**剩余风险**：Action Plane当前在敏感键守卫前先持久化完整Action Request，被拒绝的疑似明文仍进入
+Journal和失败Snapshot；未知编码、压缩文件和模型推断也可能绕过模式脱敏。完整现行边界见
+[API模块设计](modules/api.md#25-敏感数据真实流向)。
 
 ### TM-05A：Secret 生命周期和派生值泄漏
 
@@ -309,6 +311,26 @@ Agent Runtime                │
 - WebSocket 上线前增加鉴权与 Origin。
 
 **剩余风险**：stdio 默认继承父进程信任，不能防御已控制同一进程树的攻击者。
+
+### TM-09A：Action HTTP身份伪造、跨租户访问与资源耗尽
+
+**场景**：网络调用方伪造`Principal`中的Tenant、Subject、Roles或Approval Actor，按已知UUID读取其他
+Tenant的Action/Event，批准或对账不属于自己的Action；超大Body、深层JSON、全量Event响应、并发Inline执行或
+慢连接耗尽API、Journal和Executor。
+
+**当前控制**
+
+- 默认本机命令监听Loopback，部署文档要求公网前置受信Gateway；
+- Domain模型限制部分标识长度、拒绝额外顶层字段，Journal以Tenant和幂等键约束重复写；
+- Action状态、审批和Reconcile由Journal期望状态及Lease守卫，HTTP不能直接指定目标状态；
+- HTTP Metric不记录Path UUID、Arguments或Header正文；
+- 当前Docker以非root用户运行。
+
+**剩余风险**：API没有Authentication、可信Principal注入、Tenant授权、行级读取过滤、Security Scheme、Body/JSON/
+Response预算、分页、限流、并发上限或Deadline。任意可达主体可声明任意Tenant并读取、批准、对账或执行；Docker默认
+绑定`0.0.0.0`会放大误发布风险。外层Gateway只能临时限制网络暴露，不能修复Journal在敏感键守卫前保存完整Request
+的内部缺口。该边界是0.9.4身份/数据安全和0.9.3容量可靠性的发布阻塞项，详见
+[API模块设计](modules/api.md)。
 
 ### TM-10：Session/Event 篡改或回放
 

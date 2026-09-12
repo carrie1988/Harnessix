@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 2
+code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
 owners:
   - core
 modules:
@@ -352,7 +352,9 @@ stateDiagram-v2
 4. 先JSON序列化，再由Tool `input_model.model_validate_json`解析。
 
 这保证Executor接收Tool输入模型，而不是原始字典；但Domain对象仍可包含无法JSON持久化的`Any`值，失败位置可能
-出现在指纹或Journal序列化。
+出现在指纹或Journal序列化。`ActionService._submit`在上述四项校验前已经调用`journal.create_action`持久化完整
+Request；因此敏感键守卫只保证“Policy/Executor前拒绝”，不保证“持久化前拒绝”。完整HTTP数据流和P0风险见
+[API模块设计](api.md#25-敏感数据真实流向)。
 
 ## 11. Principal、Context、Trace与Secret引用
 
@@ -797,7 +799,7 @@ Principal、Trace、Secret Ref、Tool Descriptor及同步/异步SDK客户端。�
 | 数据 | 当前位置 | 敏感性 | 现有控制 | 剩余风险 |
 |---|---|---|---|---|
 | Principal | Request/Journal/Log关联 | 身份元数据 | 字段长度；日志不展开请求 | API不验证真实性 |
-| arguments | Request/Journal | 可能高敏感 | 敏感键名扫描；Tool Model | 值型Secret、编码值、无界嵌套可能漏过 |
+| arguments | Request/Journal | 可能高敏感 | 首次持久化后执行敏感键名扫描；Tool Model | 命中键也已落盘；值型Secret、编码值、无界嵌套可能漏过 |
 | secret_refs | Request/Journal/指纹 | Secret标识元数据 | 不含值 | 名称/版本仍可能敏感 |
 | metadata | Request/Journal | 声明非敏感 | 与arguments一起扫键名 | 任意值、无字节预算 |
 | Approval actor/reason | Snapshot | 审计/可能PII | 输入长度 | Record模型自身约束较弱 |
@@ -871,7 +873,7 @@ Request/Snapshot/Outcome。
 | datetime UTC/顺序 | 默认值通常是 | 部分Store使用UTC | 外部构造可naive/逆序 |
 | Output/Failure/Receipt有界且JSON | 否 | Tool/Artifact局部处理 | 通用Action无统一预算 |
 | Trace W3C有效 | 仅长度 | Observability适配器解析 | Domain可接受任意字符串 |
-| Secret值不入请求 | 仅`SecretRef`形状 | Service敏感键名守卫 | 值型、派生和编码Secret漏检 |
+| Secret值不入请求 | 仅`SecretRef`形状 | Service在首次持久化后执行敏感键名守卫 | 命中键也已落盘；值型、派生和编码Secret漏检 |
 
 ## 29. 重点类与接口设计
 
@@ -1051,6 +1053,7 @@ MCP、Hook和Trusted Action测试广泛复用Domain类型，但不应被计作Do
 
 | 当前限制 | 直接影响 | 正确演进方向 |
 |---|---|---|
+| 敏感键守卫晚于首次Action持久化 | 被拒绝的疑似明文仍进入Journal和失败Snapshot | 版本化持久化前Admission安全门、最小拒绝事实及双后端兼容迁移 |
 | ContractModel仅浅冻结 | 嵌套字典可在持久前后被原地修改 | 版本化JSON值类型、深冻结/规范复制；先补失败测试 |
 | 核心Any字段无预算 | 可造成数据库/API/内存放大 | 定义统一JsonValue、深度、键数和UTF-8字节预算 |
 | Result/Snapshot/Event缺跨字段Validator | 合法JSON可能语义自相矛盾 | 先形成兼容矩阵和历史数据扫描，再新增严格v2或可兼容Validator |
@@ -1151,6 +1154,7 @@ MCP、Hook和Trusted Action测试广泛复用Domain类型，但不应被计作Do
 ## 38. 相关现行设计与历史证据
 
 - 跨包主链：[Action Plane子系统设计](../subsystems/action-plane.md)；
+- HTTP边界：[API模块设计](api.md)；
 - 外部合同：[Action Contract v1](../action-contract.md)；
 - 生命周期：[Action生命周期](../action-lifecycle.md)；
 - 系统边界：[总体架构](../architecture.md)；
@@ -1167,4 +1171,5 @@ Action Contract和生命周期文档是稳定外部契约摘要；Action Plane�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` | 2026-09-12 | 接入API现行设计，明确敏感键守卫在首次Journal持久化之后 |
 | 1 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 建立Domain包现行事实源，覆盖Action v1模型、状态、Tool Registry、Policy/Approval、Outcome、错误、端口、持久/租约边界、源码测试映射和契约加固缺口 |

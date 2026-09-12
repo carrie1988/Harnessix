@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 4
-code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
+version: 5
+code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
 owners:
   - core
 modules:
@@ -459,7 +459,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 |---|---|---|---|
 | [adapters](../../src/harnessix/adapters/) | `langgraph.py` | 外部框架如何只依赖Action契约 | [unit](../../tests/unit/) |
 | [agent](../../src/harnessix/agent/) | `models.py`、`runtime.py` | Turn如何持久运行和恢复 | [agent](../../tests/agent/) |
-| [api](../../src/harnessix/api/) | `app.py` | HTTP如何保持薄边界 | [integration](../../tests/integration/) |
+| [api](../../src/harnessix/api/) | [`app.py`](../../src/harnessix/api/app.py)；[模块设计](../modules/api.md) | HTTP资源、Lifespan、200/202、错误、Trace、身份和资源预算 | [test_api.py](../../tests/integration/test_api.py) |
 | [app_server](../../src/harnessix/app_server/) | [server.py](../../src/harnessix/app_server/server.py)、[service.py](../../src/harnessix/app_server/service.py)；[模块设计](../modules/app-server.md) | 协议连接与应用命令如何分层 | [app_server](../../tests/app_server/) |
 | [artifacts](../../src/harnessix/artifacts/) | `contracts.py`、`sqlite.py` | 大对象如何持久化并授权读取 | [artifacts](../../tests/artifacts/) |
 | [context](../../src/harnessix/context/) | `contracts.py`、`engine.py` | Context如何预算和压缩 | [context](../../tests/context/) |

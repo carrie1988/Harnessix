@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: ffa56de02b372df981d234fafd1feffbb0b870fb
+version: 5
+code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
 owners:
   - core
 modules:
@@ -480,9 +480,11 @@ Owner并更新Snapshot与下一序号Event。表结构、序列化和迁移限�
 ## 16. API、错误和部署
 
 [`api/app.py`](../../src/harnessix/api/app.py)提供健康、就绪、Tool列表、Action提交/查询/Event、审批和
-Reconcile端点。`PENDING_APPROVAL`、`READY`、`LEASED`、`RUNNING`、`UNKNOWN`和`RECONCILING`均以
-HTTP 202表示尚未终结；确定终态返回正常资源表示，领域冲突返回409，不存在返回404。W3C
-`traceparent`和`tracestate`先验证再写`TraceContext`。
+Reconcile端点。Submit、Approval和Reconcile三个状态变更POST在返回`PENDING_APPROVAL`、`READY`、
+`LEASED`、`RUNNING`、`UNKNOWN`或`RECONCILING`时使用HTTP 202；Action GET找到同一非终态资源仍返回
+200。领域冲突返回409，不存在返回404。`traceparent`和`tracestate`先进入只做长度限制的
+`TraceContext`；完整W3C语法由OpenTelemetry Propagator处理，自定义Observer仍可能收到长度合法但语法无效的值。
+HTTP接口、身份、预算、错误和Lifespan的完整边界见[API模块设计](../modules/api.md)。
 
 公开错误由[`domain/errors.py`](../../src/harnessix/domain/errors.py)定义，至少包括
 `action_not_found`、`tool_not_found`、`action_conflict`、`idempotency_conflict`和
@@ -505,9 +507,9 @@ API当前没有认证中间件，也没有从受信Token重建`Principal`；请�
 ```mermaid
 flowchart LR
     Caller[已认证外层或本地调用方] --> Contract[ActionRequest校验]
-    Contract --> RawGuard[Arguments和Metadata原始Secret守卫]
-    RawGuard --> Ref[仅保留SecretRef]
-    Ref --> Journal[(加密边界外的Action Journal)]
+    Contract --> Journal[(先持久化完整ActionRequest)]
+    Journal --> RawGuard[Arguments和Metadata原始Secret守卫]
+    RawGuard --> Ref[后续执行只接受通过校验的请求和SecretRef]
     Ref --> Executor[受控执行器解析引用]
     Executor --> External[外部系统]
     External --> Receipt[有界Receipt和响应摘要]
@@ -515,9 +517,11 @@ flowchart LR
     Journal --> Telemetry[状态 Tool名 错误码 队列Gauge]
 ```
 
-Action请求不得内嵌Secret值；可疑字段名在Policy前即被拒绝，Metadata明确规定为非敏感。`SecretRef`
-只表达名称和版本，实际解析应由执行环境的Secret端口完成。Journal仍可能保存业务参数和资源身份，应
-按高敏业务数据保护。Telemetry不得记录Arguments、外部响应正文、Header或Secret Ref解析值。
+Action请求不得内嵌Secret值；可疑字段名在Policy和Executor前被拒绝，但当前`ActionService._submit`先调用
+`journal.create_action`，所以完整请求已经进入Journal和失败Snapshot。`raw_secret_rejected`不能证明明文未落盘。
+`SecretRef`只表达名称和版本，实际解析应由执行环境的Secret端口完成。Journal保存完整业务参数和资源身份，应
+按高敏业务数据保护。Telemetry不得记录Arguments、外部响应正文、Header或Secret Ref解析值。持久化前输入安全门
+属于[API模块设计](../modules/api.md)登记的P0缺口。
 
 Policy不是身份认证；`roles`只有在受信身份层注入后才可用于授权。Executor不能依据模型参数自行扩大
 网络、文件或Secret能力，能力应在Bootstrap和Sandbox边界显式授予。
@@ -627,7 +631,7 @@ reconcile(unknown_action):
 | Worker循环 | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker.run_once`、`run_forever` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker`、`test_ready_action_can_only_be_claimed_once` | 入队与单Claim |
 | Lease续租 | [`worker.py`](../../src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action`、`test_failed_renewal_while_running_still_reports_lost_lease` | Heartbeat与真正失租 |
 | 续租提交竞态 | [`worker.py`](../../src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` | 终态提交优先且不误报 |
-| HTTP边界 | [`app.py`](../../src/harnessix/api/app.py) | `create_app`及Action路由 | [`test_api.py`](../../tests/integration/test_api.py) | 202、错误、Trace Header和生命周期用例 | 薄API与状态投影 |
+| HTTP边界 | [`app.py`](../../src/harnessix/api/app.py) | `create_app`及Action路由 | [`test_api.py`](../../tests/integration/test_api.py) | Inline成功、幂等冲突、Queued 202、Readiness和Lifespan；Trace Header无直接测试 | 薄API与状态投影；详见[API模块设计](../modules/api.md) |
 | OTel关联 | [`observability`](../../src/harnessix/observability/) | `ActionObservability`实现 | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | Action流程观测用例 | 状态与Trace关联 |
 
 ### 21.1 推荐源码阅读路线
@@ -652,7 +656,7 @@ reconcile(unknown_action):
 | Service集成 | 正常、审批、拒绝、幂等、Secret、Effect Hint、UNKNOWN、非法转换 | `tests/integration/test_action_service.py` |
 | Worker故障 | 单Claim、Heartbeat、失租、执行提交竞态、指标故障隔离 | `tests/integration/test_worker.py` |
 | 存储合同 | SQLite覆盖大部分Action/Worker主链；PostgreSQL覆盖并发Claim和过期Running恢复；尚无双后端参数化等价套件 | `test_action_service.py`、`test_worker.py`、`test_postgres_journal.py`及[Storage模块测试盘点](../modules/storage.md#27-测试设计与验证证据) |
-| HTTP合同 | 202/终态/404/409、Trace Header、Lifespan | `tests/integration/test_api.py` |
+| HTTP合同 | 当前直接覆盖Inline 200、Queued 202、幂等409、Readiness与Lifespan；404、422、Trace Header、未知500和完整状态映射仍缺 | `tests/integration/test_api.py`及[API测试盘点](../modules/api.md#36-直接测试证据) |
 | 观测 | Span/Metric/Trace关联与导出故障隔离 | `test_observability_flow.py`、`test_otlp_export.py` |
 | 框架适配 | 相同Action身份、状态投影和异常映射 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) |
 
@@ -667,6 +671,8 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 | 项目 | 当前影响 | 缓解/后续归属 |
 |---|---|---|
 | API无身份认证和可信Principal注入 | 不能直接作为不可信公网多租户边界 | 本地/受信Gateway部署；0.9.4及1.x云能力 |
+| 敏感键守卫发生在首次Journal持久化之后 | 可疑明文虽不进入Policy/Executor，仍进入Request、失败Snapshot和数据库 | 0.9.4版本化持久化前Admission安全门 |
+| API无Body/JSON/Response预算、分页、并发和Deadline | 大请求、长Event和Inline执行可耗尽服务 | 0.9.3容量与真实Socket故障测试；详见[API模块设计](../modules/api.md) |
 | 无领域取消和执行Deadline合同 | 长执行依赖Executor自身和Lease，用户不能显式撤销 | 需要重大变更设计，不在文档中虚构 |
 | 内置Tool仅为合同样例 | 不构成生产SaaS连接器生态 | 按真实需求逐个增加受控Executor |
 | Agent与Action无跨库事务 | 桥接崩溃需稳定Action身份恢复 | Adapter持久绑定并查询，不新建副作用 |
@@ -688,6 +694,7 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` | 2026-09-12 | 接入API现行模块设计，纠正GET/POST状态、Trace校验、直接测试覆盖及Secret守卫晚于首次持久化的事实 |
 | 4 | `ffa56de02b372df981d234fafd1feffbb0b870fb` | 2026-09-12 | 接入Storage现行模块设计，纠正Lease输入、Readiness、迁移原子性、双后端测试与版本/事件关系边界 |
 | 3 | `4dc613f12e0deb5ce5ab53937fca226afab21516` | 2026-09-12 | 接入Executors现行模块设计，纠正Policy DENY与只读异常测试证据边界，补充Executor版本漂移风险 |
 | 2 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计并纠正ApprovalRecord字段、ActionResult模型约束和直接测试证据边界 |

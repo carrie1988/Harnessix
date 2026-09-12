@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 26
-code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
+version: 27
+code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
-| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 进行中（4/10） |
+| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 进行中（5/10） |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
 
@@ -209,7 +209,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ## 8. DOC-1.4：产品运行时与扩展
 
-状态：**进行中（4/10）**。Protocol、App Server、SDK与Product Config现行模块设计已完成，下一项为API。
+状态：**进行中（5/10）**。Protocol、App Server、SDK、Product Config与API现行模块设计已完成，下一项为Adapter。
 
 | Wave | 源码包 | 目标文档 | 重点 |
 |---|---|---|---|
@@ -217,7 +217,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 | 产品协议 | `app_server` | [App Server模块设计](../modules/app-server.md) | 已完成：连接状态、应用命令、后台Turn、Replay/Delta、stdio背压关闭、Scoped Artifact与默认装配边界 |
 | 产品协议 | `sdk` | [SDK模块设计](../modules/sdk.md) | 已完成：双客户端、进程内/子进程、并发取消、身份/游标恢复、HTTP资源及真实加固差距 |
 | 产品装配 | `product_config` | [Product Config模块设计](../modules/product-config.md) | 已完成：严格配置、迁移、Profile CAS、Secret引用、安全Fallback和启动事务 |
-| 产品装配 | `api` | `docs/modules/api.md` | Action API合同、认证边界和错误 |
+| 产品装配 | `api` | [API模块设计](../modules/api.md) | 已完成：Action资源、Lifespan、状态码、错误、Trace、身份、资源预算和部署边界 |
 | 产品装配 | `adapters` | `docs/modules/adapters.md` | LangGraph等框架适配与Action边界 |
 | 扩展 | `mcp` | `docs/modules/mcp.md` | 目录绑定、Schema漂移、Sandbox和受管生命周期 |
 | 扩展 | `skills` | `docs/modules/skills.md` | 快照、发现、冲突消歧和供应链 |
