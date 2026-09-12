@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 31
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 32
+code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
 owners:
   - core
 modules:
@@ -51,7 +51,7 @@ supersedes: []
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
 | 受控Provider验证 | [Smoke模块设计](modules/smoke.md) | `network gate → strict config → fixed scenario → Agent/SQLite/Replay → whitelist report`；重点区分Token边界、金额未知、配置对象安全与端点—凭据未绑定 |
-| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；历史验收再读[测试与Eval规范](testing-and-evals.md) |
+| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
@@ -111,7 +111,8 @@ supersedes: []
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
 | 安全模型 | [威胁模型](threat-model.md) | 资产、信任边界、攻击面和缓解措施 |
 | 部署与升级 | [部署与运行](deployment.md) | 当前命令、配置、存储迁移和运行边界 |
-| 测试与Eval | [测试与Eval规范](testing-and-evals.md) | 测试分层、故障注入、Eval和通过证据 |
+| 测试与Eval | [测试与Eval规范](testing-and-evals.md) | 当前测试分层、故障注入、Eval指标和发布判定；历史运行数字不在本文维护 |
+| 验证证据 | [验证证据索引](validation/README.md) | 固定Revision、环境、预算、结果、脱敏边界和证据谱系 |
 | 现行模块设计 | [追踪矩阵](governance/documentation-traceability.md) | DOC-1迁移期间的模块覆盖状态和目标路径 |
 
 里程碑文档描述某个版本切片的交付增量，不再作为单个模块当前实现的唯一事实源。
@@ -141,7 +142,8 @@ supersedes: []
 | [Action Contract](action-contract.md) | 稳定外部契约 | 是 | Action Plane契约变化必须同步实现和合同测试 |
 | [Action生命周期](action-lifecycle.md) | Action状态与恢复契约 | 是 | 不替代Agent Turn生命周期设计 |
 | [威胁模型](threat-model.md) | 统一风险登记 | 是 | 模块缓解措施应链接到现行模块设计和测试 |
-| [测试与Eval规范](testing-and-evals.md) | 质量规范聚合入口 | 是 | 具体模块测试事实逐步迁移到模块设计 |
+| [测试与Eval规范](testing-and-evals.md) | 质量规范聚合入口 | 是 | 只定义跨模块测试策略、Eval指标、证据生命周期和发布判定 |
+| [测试里程碑历史](testing-and-evals-milestone-history.md) | 冻结的历史验收记录 | 否 | 保留阶段数字与失败演进，不作为当前测试策略或发布状态 |
 | [部署与运行](deployment.md) | 运维聚合入口 | 是 | 安装、升级、恢复和平台资料将在DOC-1.5拆分 |
 | `m03`～`m09`里程碑文档 | 历史增量设计 | 否 | 用于解释某阶段交付，不作为当前模块事实的唯一来源 |
 | [ADR目录](adr/) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
@@ -159,10 +161,11 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 
 ## 6. 测试、部署和验证证据
 
-- [测试与Eval规范](testing-and-evals.md)；
+- [测试与Eval规范](testing-and-evals.md)：当前测试策略与发布门槛；
+- [测试里程碑历史](testing-and-evals-milestone-history.md)：DOC-1.5前冻结的阶段验收记录；
 - [受控模型Smoke指南](model-smoke.md)；
 - [部署与运行](deployment.md)；
-- [验证证据目录](validation/)；
+- [验证证据索引](validation/README.md)：真实Provider Smoke与Coding Eval证据谱系；
 - [威胁模型](threat-model.md)。
 
 验证证据绑定特定代码、环境和输入，不应被解释为所有模型、平台或用户任务均已通过。
@@ -176,7 +179,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计，后续由DOC-1.5治理聚合、历史和验证证据资料。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试规范、里程碑测试历史和真实验证证据已完成职责分层；部署、里程碑、ADR与研究资料仍在后续批次治理。
 
 ## 8. 文档状态说明
 

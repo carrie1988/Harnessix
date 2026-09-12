@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 32
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 33
+code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 已完成（10/10） |
-| DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
+| DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 进行中：测试与验证证据分层已完成 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
 
 DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一切片维护现行模块设计，不能重新累积“代码先行、资料追补”的债务。
@@ -232,7 +232,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 | 文档 | 处理策略 | 禁止事项 |
 |---|---|---|
-| [测试与Eval](../testing-and-evals.md) | 保留总规范；拆出合同、任务集、Campaign、成本和证据索引 | 不复制各模块测试清单 |
+| [测试与Eval](../testing-and-evals.md) | 已重写为当前总规范；[里程碑历史](../testing-and-evals-milestone-history.md)与[验证证据索引](../validation/README.md)已拆分，合同、任务、Campaign和成本的源码事实链接Evals模块 | 不复制各模块测试清单 |
 | [部署与运行](../deployment.md) | 拆分安装、配置、升级、恢复、诊断和平台差异 | 不把命令输出当设计 |
 | [0.5 Coding Tools](../m05-coding-tools.md) | 转为里程碑历史索引，当前事实链接模块设计 | 不继续追加跨模块细节 |
 | [0.8产品运行时](../m08-product-runtime-and-extensions.md) | 转为里程碑历史索引，当前事实链接10个模块设计 | 不与现行模块设计双写 |

@@ -1,3 +1,23 @@
+---
+doc_type: validation-evidence
+status: historical
+version: 1
+code_revision: 397542942be8474d99feb190a901e8b336a19bdd
+owners:
+  - core
+modules:
+  - evals
+  - agent
+related_adrs:
+  - docs/adr/0044-coding-eval-contract-and-grader.md
+  - docs/adr/0047-coding-eval-campaign-evidence.md
+  - docs/adr/0048-controlled-real-eval-campaign-execution.md
+related_tests:
+  - tests/evals
+  - tests/agent
+supersedes: []
+---
+
 # 百炼北京Coding Eval任务v2三次真实基线
 
 - 执行日期：2026-09-06
@@ -75,7 +95,7 @@ v2已把首轮v1在第5步、读取目标文件之前的错误截断推迟到第
 1. 源码求证主流Agent如何把参数校验错误反馈给模型；
 2. 为`read_file`/`list_files`分页缺少revision提供稳定、无参数回显的校正错误；
 3. 补直接工具、Agent循环、恢复、隐私和回归测试；
-4. 在新授权下创建新Campaign验证模型能否从一次错误中纠正；
+4. 在新的固定预算与执行边界下创建Campaign，验证模型能否从一次错误中纠正；
 5. 成功形成有效质量基线后，才进入0.5.5d变更交付。
 
 不得修改本Campaign的计划、状态、run ID或报告，也不得把后续试验追加到本报告。

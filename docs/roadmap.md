@@ -215,7 +215,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
     - [x] 0.5.3b2：Agent 写审批契约升级、Scoped 准入、模型工具接入、双账本边界和 Kernel 恢复；
       - [x] 0.5.3b2a：稳定调用/计划绑定、宿主审批桥接、私有证据分离、异步取消排空、只读恢复和桥接崩溃矩阵；
       - [x] 0.5.3b2b：版本化写审批/恢复事件、最低 reader 迁移、专用 Kernel 端口、SDK 离线闭环与 Session × 副本组合恢复；
-        - KWP-01～10 对应实现与证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 和 [验收记录第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)；默认仍只读，显式开启后仅受管副本单文件可写。
+        - KWP-01～10 对应实现与证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 和 [验收记录第 22 节](testing-and-evals-milestone-history.md#22-053b2b-kernel-受管写闭环验收2026-09-04)；默认仍只读，显式开启后仅受管副本单文件可写。
   - [x] 0.5.3c：多文件部分效果与结构化 Diff 交付（c1/c2/c3a/c3b/c3c1/c3c2 已完成范围内验收）；
     - [x] 0.5.3c1：有序唯一整组提案、不可变计划/整体复核、有界 UTF-8 字节坐标 Diff、四份独立 Schema；仅宿主只读；
     - [x] 0.5.3c2：整组持久预留/审批、逐文件一次性消费、部分/未知效果、取消与崩溃只核对；
@@ -402,7 +402,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.4已完成，30/30个生产源码包均有独立现行模块设计；0.9.1～0.9.6产品切片和DOC-1.5～DOC-1.6文档治理仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.4已完成，30/30个生产源码包均有独立现行模块设计；DOC-1.5正在实施，当前测试规范、里程碑测试历史和真实Provider验证证据已完成分层，部署、里程碑、ADR与研究资料仍待治理；0.9.1～0.9.6产品切片和DOC-1.6仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -431,7 +431,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
 - [x] **DOC-1.3 Coding Agent主链**：19/19已完成；Wave A～D已补齐Session、Context、Artifact、Model、Tool、Patch、Execution、Process、Action安全链、Workspace、Delivery、[Evals](modules/evals.md)与[Observability](modules/observability.md)现行设计，并登记实现与历史资料之间的真实差异；
 - [x] **DOC-1.4 产品运行时与扩展**：10/10已完成；[Protocol模块设计](modules/protocol.md)、[App Server模块设计](modules/app-server.md)、[SDK模块设计](modules/sdk.md)、[Product Config模块设计](modules/product-config.md)、[API模块设计](modules/api.md)、[Adapter模块设计](modules/adapters.md)、[MCP模块设计](modules/mcp.md)、[Skill模块设计](modules/skills.md)、[Hook模块设计](modules/hooks.md)与[Smoke模块设计](modules/smoke.md)均已建立；
-- [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
+- [ ] **DOC-1.5 聚合与历史治理**：正在实施；已将当前[测试与Eval规范](testing-and-evals.md)、[里程碑测试历史](testing-and-evals-milestone-history.md)和[真实验证证据](validation/README.md)分层，后续拆分部署资料并治理里程碑、ADR和研究状态；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
 
 DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都必须按照
@@ -448,7 +448,7 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 高风险入口已通过说明门禁；`agent.reducer`保留稳定门面，并把Item、Turn和共用守卫提取到独立
 模块。起始基线可从提交`e15ffaa20142e9f61cf8412b3d4499001a695368`逐字重建，详细事实见
 [0.9.0设计](m09-code-maintainability.md)、[ADR 0076](adr/0076-code-readability-and-structural-governance.md)
-与[测试验收](testing-and-evals.md#79-090代码可维护性治理验收2026-09-12)。
+与[测试验收](testing-and-evals-milestone-history.md#79-090代码可维护性治理验收2026-09-12)。
 
 实施顺序继续遵循本路线图统一原则：先研究Harnessix现有职责、调用链、复杂度和测试保护，按固定
 版本求证Codex、OpenCode与Claude Code的可维护性做法，再形成Harnessix独立决策、注释规范及

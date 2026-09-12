@@ -494,7 +494,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - 模型 wire 使用结果白名单，私有计划与效果证据不回灌；这不意味着原始提案代码、读取内容或完整 Session 无敏感信息。私有 Python 端口和本地数据库仍属于受信宿主边界，摘要不是签名，actor 不是身份认证。
 - 目前仍不是 OS Sandbox、任意进程隔离、网络策略或通用 Secret Redactor；不支持跨文件原子事务、源目录自动合入或安全执行任意仓库代码。多文件/Process 必须分别补充威胁分析。
 
-可复查证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 与 [测试记录](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。
+可复查证据见 [ADR 0030](adr/0030-kernel-managed-patch-admission.md) 与 [测试记录](testing-and-evals-milestone-history.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。
 
 ## 0.5.3c1 只读整组计划与 Diff 补充（2026-09-04）
 
@@ -621,7 +621,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **Git协议与凭据**：remote URL拒绝内嵌凭据、query、fragment、HTTP、自定义协议和歧义路径；Git固定环境关闭prompt、外部配置、Hook、replace refs和attributes，并只开放显式协议。0.7不装配公网凭据，不能把本地bare remote验收解释为远端认证、known-hosts或Secret防泄漏完成。
 - **跨库窗口**：Execution Plan先于Route持久化，崩溃可留下不可达孤立Plan；没有Route、Approval和当前Binding时不能执行。Route进入running后宿主硬退出，重开只转unknown。该设计不承诺跨SQLite事务原子性，而以不可达和保守恢复保证安全。
 
-对应攻击和硬退出证据见[0.7.5测试记录](testing-and-evals.md#72-075统一action-plane与git-push发布候选验收2026-09-09)、[专项研究](research/unified-action-plane-and-extension-boundaries.md)和[详细设计](m07-trusted-execution-and-delivery.md#14-075-action-plane与安全验收详细设计)。
+对应攻击和硬退出证据见[0.7.5测试记录](testing-and-evals-milestone-history.md#72-075统一action-plane与git-push发布候选验收2026-09-09)、[专项研究](research/unified-action-plane-and-extension-boundaries.md)和[详细设计](m07-trusted-execution-and-delivery.md#14-075-action-plane与安全验收详细设计)。
 
 ## 0.8.3 双向交互与Pull-Live补充（2026-09-09）
 
@@ -634,7 +634,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **重复交互提示**：CLI本进程记录已成功提交的Approval/Question ID，跨进程则从持久Answer或Approval事实恢复。客户端崩溃发生在命令提交后、响应前时必须重用原领域`requestId`，不能创建新决定；最终副作用仍由既有Approval和Action幂等边界保护。
 - **剩余风险**：同UID主体仍可终止或调试本地stdio进程、篡改可写数据库或替换宿主程序；0.8.3不提供网络认证、二进制签名或多用户隔离。完整发行签名和诊断包治理属于0.9，远程协议必须另建认证和主体绑定后才能开放。
 
-对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals.md#75-083-薄cli与双向交互验收2026-09-09)。
+对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals-milestone-history.md#75-083-薄cli与双向交互验收2026-09-09)。
 
 ## 0.8.4 MCP补充（2026-09-09）
 

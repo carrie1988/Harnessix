@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 32
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 33
+code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
 owners:
   - core
 modules:
@@ -69,7 +69,7 @@ flowchart LR
 | 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 10个产品运行时与扩展包均已有现行设计；聚合与历史资料由DOC-1.5分层 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md) | 文档门禁留待DOC-1.6 |
-| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md) | Eval系列研究与ADR | Evals现行模块事实已完成；1,670行聚合历史仍需在DOC-1.5按规范、任务集、执行和证据分层 |
+| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、Eval系列研究与ADR | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；后续由DOC-1.6纳入自动门禁 |
 | 部署与运维 | [部署与运行](../deployment.md) | 平台、许可和产品边界ADR | 1,238行聚合资料需拆分安装、配置、升级、恢复和诊断 |
 
 ## 4. 30个生产源码包覆盖矩阵

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 32
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 33
+code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
 owners:
   - core
 modules:
@@ -31,7 +31,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 已完成（10/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、[API](../modules/api.md)、[Adapter](../modules/adapters.md)、[MCP](../modules/mcp.md)、[Skill](../modules/skills.md)、[Hook](../modules/hooks.md)与[Smoke](../modules/smoke.md) |
-| DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
+| DOC-1.5 | Eval、历史设计和验证资料治理 | 进行中 | 测试规范、里程碑测试历史与验证证据已分层；部署、里程碑、ADR和研究待治理 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 
 “已完成”只表示对应切片的验收边界已经满足。DOC-1.0/1.1完成不表示30个包的模块设计或133份存量文档已经全部整改完成。
@@ -45,6 +45,9 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [文档中心](../README.md)：面向读者的统一入口和资料角色；
 - [当前总体架构](../architecture.md)：系统边界、模块依赖、数据流、五条系统时序和源码测试映射；
 - [源码阅读地图](../guides/source-reading-map.md)：产品启动、Agent Loop、可信执行和Action Plane逐文件路线；
+- [测试与Eval规范](../testing-and-evals.md)：当前测试策略、Eval指标和发布判定；
+- [测试里程碑历史](../testing-and-evals-milestone-history.md)：冻结的阶段验收记录；
+- [验证证据索引](../validation/README.md)：真实Provider验证的版本、预算、结果和谱系；
 - [Agent Runtime模块设计](../modules/agent.md)：DOC-1后模块设计黄金样例；
 - [Action Plane子系统设计](../subsystems/action-plane.md)：DOC-1后跨包子系统设计黄金样例；
 - [Session模块设计](../modules/session.md)：Event Log、CAS、Fork、迁移和重建的当前事实；

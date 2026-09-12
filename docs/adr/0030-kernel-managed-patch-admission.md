@@ -131,4 +131,4 @@ KWP-09 至少包括：Call 提交后、计划保存后/Session 请求前、审�
 3. Kernel 取消/恢复结算、组合崩溃、旧 wheel 升级和输出预算门禁。
 4. 全量回归、包外验证、中文文档、提交推送和跨平台 CI。
 
-上述四步已实现：`agent/patching.py` 分离核对上下文、执行准入与最小结果证据；Runtime 复用既有 Bridge，不另建执行器。Schema v6 与 migration 7 已加入，旧 Schema/migration 字节保持不变。验收入口包括 `test_kernel_patch*.py`、`test_session_upgrade.py`、独立 wheel 探针 `scripts/session_upgrade_probe.py` 和 `examples/kernel_patch.py`；具体数量与环境见 [测试记录第 22 节](../testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。本片关闭 b2b/0.5.3b 的受管单文件范围，不关闭整个 0.5.3/0.5。多文件、Process、源目录合入和自主 Coding Eval 仍未实现。
+上述四步已实现：`agent/patching.py` 分离核对上下文、执行准入与最小结果证据；Runtime 复用既有 Bridge，不另建执行器。Schema v6 与 migration 7 已加入，旧 Schema/migration 字节保持不变。验收入口包括 `test_kernel_patch*.py`、`test_session_upgrade.py`、独立 wheel 探针 `scripts/session_upgrade_probe.py` 和 `examples/kernel_patch.py`；具体数量与环境见 [测试记录第 22 节](../testing-and-evals-milestone-history.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。本片关闭 b2b/0.5.3b 的受管单文件范围，不关闭整个 0.5.3/0.5。多文件、Process、源目录合入和自主 Coding Eval 仍未实现。

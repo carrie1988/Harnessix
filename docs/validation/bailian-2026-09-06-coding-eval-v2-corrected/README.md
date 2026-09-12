@@ -1,3 +1,23 @@
+---
+doc_type: validation-evidence
+status: historical
+version: 1
+code_revision: 7e58c15a4be9780de5837c9706f986a8613b1420
+owners:
+  - core
+modules:
+  - evals
+  - agent
+related_adrs:
+  - docs/adr/0044-coding-eval-contract-and-grader.md
+  - docs/adr/0047-coding-eval-campaign-evidence.md
+  - docs/adr/0048-controlled-real-eval-campaign-execution.md
+related_tests:
+  - tests/evals
+  - tests/agent
+supersedes: []
+---
+
 # 百炼北京Coding Eval任务v2分页纠正后真实基线
 
 - 执行日期：2026-09-06

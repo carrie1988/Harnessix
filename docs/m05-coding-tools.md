@@ -178,7 +178,7 @@ PYTHONASYNCIODEBUG=1 uv run pytest tests/tools -W error
 
 当前新增测试覆盖固定工具契约、真实文件与目录、严格输入、权限/链接/替换竞争、扫描/编码/分页、两个取消入口与 FD 回收、真实 SDK 离线闭环、审批重开及根/规则漂移、3 个真实进程退出边界。CLI 中尚无交互编码命令；该入口是可复查的只读验收，不是编码 Demo 冒充生产完成。
 
-本地验收：新增 70 项通过；全量 `make check` **890 passed、1 skipped**，独立基础 wheel/无供应商 SDK 的只读入口通过。全项目硬崩溃切点从 54 增至 57，原 2 个 SIGINT 用例保留。异步调试和远端 CI 结果见 [测试验收记录](testing-and-evals.md#14-051-只读编码工具验收2026-09-03)。CI 新增 macOS 只读回归，Linux 完整套件保持；不把待运行的远端 CI 提前标记成功。
+本地验收：新增 70 项通过；全量 `make check` **890 passed、1 skipped**，独立基础 wheel/无供应商 SDK 的只读入口通过。全项目硬崩溃切点从 54 增至 57，原 2 个 SIGINT 用例保留。异步调试和远端 CI 结果见 [测试验收记录](testing-and-evals-milestone-history.md#14-051-只读编码工具验收2026-09-03)。CI 新增 macOS 只读回归，Linux 完整套件保持；不把待运行的远端 CI 提前标记成功。
 
 后续 0.5.2 已拆成 a/b，搜索交付见下节；Artifact 与写工具仍分别经过 0.5.2b/0.5.3 门禁。
 
@@ -213,7 +213,7 @@ uv run pytest tests/tools
 
 scan_complete 只针对本次定义的可搜索范围，不是全树原子快照。计数说明观察到的缺口，并非对截断后未读范围的统计；空命中且 scan_complete=false 不能解释为不存在。字符片段裁剪与结果截断是两件事：前者仍可能扫描完整，后者一定不完整。
 
-新增四份 `glob/grep-input/output-v1.schema.json`，不修改 Agent v5、Action v1 或旧工具 Schema。搜索示例使用固定离线 Provider 消费真实文件输出，不是自主编码 Eval；默认测试不使用真实模型或服务器。验收记录见 [测试文档](testing-and-evals.md#15-052a-有界搜索验收2026-09-03)。
+新增四份 `glob/grep-input/output-v1.schema.json`，不修改 Agent v5、Action v1 或旧工具 Schema。搜索示例使用固定离线 Provider 消费真实文件输出，不是自主编码 Eval；默认测试不使用真实模型或服务器。验收记录见 [测试文档](testing-and-evals-milestone-history.md#15-052a-有界搜索验收2026-09-03)。
 
 0.5.2b 拆为 b1/b2，上下文和 Artifact 分别见以下两节；两片现均已实现，0.5.2 范围闭环。
 
@@ -237,7 +237,7 @@ Kernel 在只读/版本/审批门禁之后，从最新持久投影核对活跃 T
 
 CodingToolRuntime 的新入口还要求 workspace 严格匹配其规范根，随后复用原有根身份、策略、输入/输出、取消和 FD 检查。宿主应使用 workspace_root 创建 Thread；不匹配报 tool_workspace_mismatch，不通过别名重新 resolve 悄悄修正。0.5.2b1 当时保持旧定义、八份 list/read/glob/grep Schema、Agent v5、审批指纹与 Migration 不变；后续 b2 新增 migration 6，默认工具定义仍不变。
 
-`examples.kernel_search` 已切换到显式 Scoped 入口，`examples.kernel_files` 保留旧入口，独立 wheel 和跨平台 CI 同时验证二者。作用域不自动给用户开放 Artifact、文件写入或 Shell，也不是在 Turn 结束后仍有效的发布租约。详细边界见 [ADR 0025](adr/0025-trusted-tool-execution-scope.md)，验收见 [测试记录](testing-and-evals.md#16-052b1-可信执行作用域验收2026-09-03)。
+`examples.kernel_search` 已切换到显式 Scoped 入口，`examples.kernel_files` 保留旧入口，独立 wheel 和跨平台 CI 同时验证二者。作用域不自动给用户开放 Artifact、文件写入或 Shell，也不是在 Turn 结束后仍有效的发布租约。详细边界见 [ADR 0025](adr/0025-trusted-tool-execution-scope.md)，验收见 [测试记录](testing-and-evals-milestone-history.md#16-052b1-可信执行作用域验收2026-09-03)。
 
 0.5.2b2 已选择同一 Session 事务，避免外部 blob 的双写与孤儿协议，交付见下节。
 
@@ -280,7 +280,7 @@ async with CodingToolRuntime(root, artifacts=artifacts) as tools:
 
 清理只释放正文并保留 tombstone，不立即缩小数据库文件；配额不覆盖历史事件、SQLite 空闲页或 WAL 的物理大小。达到 manifest 累计上限后需要宿主轮换/保留管理，不自动删除用户会话。进程标准输出、任意二进制/流式 blob 和导出尚不在本片支持范围。
 
-`uv run python -m examples.kernel_artifacts` 在临时真实文件中搜索 300 条中文命中，模型预览只有 2 条，随后读取第 299/300 条，重开 SQLite 并核对 Replay；固定离线决策不等于自主编码 Eval。质量证据见 [第 17 节验收](testing-and-evals.md#17-052b2-事务-artifact-验收2026-09-03)。
+`uv run python -m examples.kernel_artifacts` 在临时真实文件中搜索 300 条中文命中，模型预览只有 2 条，随后读取第 299/300 条，重开 SQLite 并核对 Replay；固定离线决策不等于自主编码 Eval。质量证据见 [第 17 节验收](testing-and-evals-milestone-history.md#17-052b2-事务-artifact-验收2026-09-03)。
 
 **0.5.3 演进**：已完成只读计划及写准入 ADR 基线，复用既有 Call/Result 与效果分类，明确完整前镜像、目标计划审批、持久写意图、文件系统与 Session 非原子的核对边界。首先交付单文件 Patch，逐一验证脏工作区、编辑器竞争、提交前后崩溃及第三种内容冲突；多文件效果和 Process 必须分别验收，不能以简单替换或删除 READ_ONLY 门禁代替。
 
@@ -449,7 +449,7 @@ uv run python -m examples.kernel_patch
 
 恢复只查找/核对，已知未应用也不重新 execute；需要再尝试时必须新的调用/计划/审批。公开结果受模型正文预算限制，私有证据不占公开预算。写入后结果超限终止 Turn，核对并保存效果；必要时丢弃公开 output，绝不丢弃绑定字段或重新写。
 
-测试覆盖两个实际 SDK 的离线 HTTP 全链路、审批/绑定/严格参数、替换前后四类取消、关闭/迟到答复、输出预算、旧 wheel 升级以及 Session × Patch 的真实进程退出。详见 [验收第 22 节](testing-and-evals.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。b2/b 的受管单文件范围已交付；多文件部分效果和结构化 Diff 现按 ADR 0031 分为 c1/c2/c3；c1 交付见下节，不承诺跨文件原子或自动回滚。
+测试覆盖两个实际 SDK 的离线 HTTP 全链路、审批/绑定/严格参数、替换前后四类取消、关闭/迟到答复、输出预算、旧 wheel 升级以及 Session × Patch 的真实进程退出。详见 [验收第 22 节](testing-and-evals-milestone-history.md#22-053b2b-kernel-受管写闭环验收2026-09-04)。b2/b 的受管单文件范围已交付；多文件部分效果和结构化 Diff 现按 ADR 0031 分为 c1/c2/c3；c1 交付见下节，不承诺跨文件原子或自动回滚。
 
 ## 21. 0.5.3c1 当前交付：只读整组计划与结构化 Diff
 
@@ -480,7 +480,7 @@ Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号
 
 `uv run python -m examples.patch_batch` 在两个真实文件上验证 BOM/CRLF 保留、坐标重建、256字节截断、重开整体复核且磁盘无修改。四份独立 v1 Schema 覆盖整组提案/manifest、Diff 和预算；旧 Schema、Agent v6/Session migration 7/副本账本 v1/模型工具清单保持不变。
 
-本片没有组审批、组效果状态、组账本、自动 Artifact 发布或新模型工具。下一片 c2 先固化实际账本事务/成员预留和逐文件部分效果；c3 再升级 Kernel 并对接模型/Artifact。整组计划或截断 Diff 不能拿来绕过旧单文件审批，不能把当前准备器称作已完成多文件写入。具体测试记录见 [第23节](testing-and-evals.md#23-053c1-只读整组计划与结构化-diff-验收2026-09-04)。
+本片没有组审批、组效果状态、组账本、自动 Artifact 发布或新模型工具。下一片 c2 先固化实际账本事务/成员预留和逐文件部分效果；c3 再升级 Kernel 并对接模型/Artifact。整组计划或截断 Diff 不能拿来绕过旧单文件审批，不能把当前准备器称作已完成多文件写入。具体测试记录见 [第23节](testing-and-evals-milestone-history.md#23-053c1-只读整组计划与结构化-diff-验收2026-09-04)。
 
 ## 22. 0.5.3c2a 当前交付：整组事务预留与持久审批
 
@@ -498,7 +498,7 @@ Diff 的每项包含路径、文件计划指纹、按原文偏移排序的序号
 
 组计划最多64 KiB UTF-8 JSON，元数据逻辑预留合计1 MiB，每组按计划实际字节加16 KiB决定空间计算。成员占用原64计划/32 MiB前后镜像配额，检查和插入均在同一事务。批准后的文件漂移不改写原批准；后续执行必须重新复核，当前 verify 会拒绝陈旧前镜像。超时/取消可能发生在提交确认之前或之后，调用方应 lookup 已有请求，不因返回异常就断言没有持久记录。
 
-副本账本升级为 v2，Agent v6/Session migration 7/Provider v3/旧单文件 Schema 不变。新旧 wheel 升级证据与11个真实提交/迁移退出切点见 [测试第24节](testing-and-evals.md#24-053c2a-整组预留持久审批及迁移验收2026-09-04)。后续 c2b 已按 ADR 0033 实现顺序消费、部分/未知效果和只核对恢复；组事务预留仍不承诺文件修改的组原子性。
+副本账本升级为 v2，Agent v6/Session migration 7/Provider v3/旧单文件 Schema 不变。新旧 wheel 升级证据与11个真实提交/迁移退出切点见 [测试第24节](testing-and-evals-milestone-history.md#24-053c2a-整组预留持久审批及迁移验收2026-09-04)。后续 c2b 已按 ADR 0033 实现顺序消费、部分/未知效果和只核对恢复；组事务预留仍不承诺文件修改的组原子性。
 
 ## 23. 0.5.3c2b 当前交付：顺序消费、部分效果与只核对恢复
 
@@ -523,7 +523,7 @@ BatchRunRecord 只保存完整组审批指纹/副本/组身份，以及 started/
 | 后镜像字节相同但 inode 无法归因 | unknown，不补写、不按字节推断成功 |
 | 存储异常导致结果不可发布 | 调用可能失败；通过已有开始/成员记录只核对，不能盲目重试 execute |
 
-恢复中断后可再次只核对。仍 started 的组结束为 interrupted；已有 finished 保留原原因，未知成员观察可更新已知效果，但不追加新的组终止原因。结果是历史归因而不是实时文件完整性证明；已应用文件以后被外部修改，不会凭空抹去曾发生的效果。源目录、目标文件 inode/mtime/ctime 的恢复不写入证据及真实旧 wheel 升级见 [测试第25节](testing-and-evals.md#25-053c2b-顺序执行与部分效果恢复验收2026-09-04)。
+恢复中断后可再次只核对。仍 started 的组结束为 interrupted；已有 finished 保留原原因，未知成员观察可更新已知效果，但不追加新的组终止原因。结果是历史归因而不是实时文件完整性证明；已应用文件以后被外部修改，不会凭空抹去曾发生的效果。源目录、目标文件 inode/mtime/ctime 的恢复不写入证据及真实旧 wheel 升级见 [测试第25节](testing-and-evals-milestone-history.md#25-053c2b-顺序执行与部分效果恢复验收2026-09-04)。
 
 
 ## 24. 0.5.3c3a 当前交付：完整整组调用与宿主异步桥接

@@ -639,7 +639,7 @@ uv run harnessix agent-server \
 
 0.8.6专项为49项通过；原生宿主全仓为3320项通过、13项按平台/本地集成条件跳过，Ruff、Mypy、
 17个离线示例、构建及基础wheel安装通过。完整边界与证据见
-[测试规范第78节](testing-and-evals.md#78-086-provider与产品配置候选验收2026-09-09)。六矩阵
+[测试规范第78节](testing-and-evals-milestone-history.md#78-086-provider与产品配置候选验收2026-09-09)。六矩阵
 [CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)全部通过，
 0.8据此完成验收。
 

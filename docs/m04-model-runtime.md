@@ -298,7 +298,7 @@ assert restored == report
 
 ### 15.3 CI 超时测试确定性收口
 
-低速 Runner 暴露两个把短预算与“必然已进入请求/模型流”混为一谈的测试假设，运行时提前终止本身正确。已按 [测试规范第 13 节](testing-and-evals.md#13-ci-低速-runner-的超时测试边界2026-09-03) 将传输超时与 Kernel 期限到期拆开验证：前者在响应读取阶段注入 HTTP ReadTimeout，后者在明确检查点推进真实 asyncio.Timeout；同时覆盖进入 Provider 前已过期。未改变生产预算或追加 API 调用。当前全量 **820 passed、1 skipped**，异步调试 **784 passed**。
+低速 Runner 暴露两个把短预算与“必然已进入请求/模型流”混为一谈的测试假设，运行时提前终止本身正确。已按 [测试规范第 13 节](testing-and-evals-milestone-history.md#13-ci-低速-runner-的超时测试边界2026-09-03) 将传输超时与 Kernel 期限到期拆开验证：前者在响应读取阶段注入 HTTP ReadTimeout，后者在明确检查点推进真实 asyncio.Timeout；同时覆盖进入 Provider 前已过期。未改变生产预算或追加 API 调用。当前全量 **820 passed、1 skipped**，异步调试 **784 passed**。
 
 ### 15.4 下一次计价验收准备
 

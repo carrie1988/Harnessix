@@ -243,7 +243,7 @@ AgentRuntime PREPARING_CONTEXT
 - Event v11、Context v2最低版本、Migration 13、历史Schema冻结、SQLite Replay与升级硬退出；
 - Source指标只有kind/status且不泄漏路径、正文、scope或revision。
 
-默认测试不需要模型API Key、网络、SSH、远程服务器或新中间件。全量回归、严格异步、Schema、wheel及远端四矩阵CI关闭数据见[测试与Eval规范第55节](testing-and-evals.md#55-062a-受控项目指令source与freshness验收2026-09-07)。
+默认测试不需要模型API Key、网络、SSH、远程服务器或新中间件。全量回归、严格异步、Schema、wheel及远端四矩阵CI关闭数据见[测试与Eval规范第55节](testing-and-evals-milestone-history.md#55-062a-受控项目指令source与freshness验收2026-09-07)。
 
 ## 20. 0.6.2b总体方案
 
@@ -337,7 +337,7 @@ Git运行时使用固定最小环境、空全局配置、关闭系统配置/Hook
 
 自动测试覆盖Workspace排序/过滤/截断/revision竞态，Git普通/脏/非仓库/初始/detached/状态截断/超时，环境allowlist/Secret名称/非法值/总量和每步骤刷新，多Source scope错配/revision漂移/同revision正文漂移，以及v3持久化、Event v12、migration 14、Replay、Schema冻结和Telemetry脱敏。
 
-真实场景使用临时Git仓库执行实际`git init/add/commit/checkout/status`，并通过真实v11 wheel创建Context Inspection v2会话，再由v12 wheel原字节升级、追加v3事件和验证旧reader拒绝。默认验收不需要模型API、SSH、远程服务器或新中间件。关闭数据见[测试与Eval规范第56节](testing-and-evals.md#56-062b-workspacegit环境source与跨来源一致性验收2026-09-07)。
+真实场景使用临时Git仓库执行实际`git init/add/commit/checkout/status`，并通过真实v11 wheel创建Context Inspection v2会话，再由v12 wheel原字节升级、追加v3事件和验证旧reader拒绝。默认验收不需要模型API、SSH、远程服务器或新中间件。关闭数据见[测试与Eval规范第56节](testing-and-evals-milestone-history.md#56-062b-workspacegit环境source与跨来源一致性验收2026-09-07)。
 
 ## 28. 工具视图与后续切片
 

@@ -1,1670 +1,387 @@
-# Harnessix Code 测试与 Eval 规范 v1
+---
+doc_type: test-and-eval-design
+status: current
+version: 2
+code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
+owners:
+  - core
+modules:
+  - documentation
+  - evals
+  - smoke
+  - agent
+related_adrs:
+  - docs/adr/0044-coding-eval-contract-and-grader.md
+  - docs/adr/0047-coding-eval-campaign-evidence.md
+  - docs/adr/0048-controlled-real-eval-campaign-execution.md
+related_tests:
+  - tests/governance
+  - tests/agent
+  - tests/evals
+  - tests/integration
+supersedes: []
+---
 
-- 状态：0.8.1～0.8.6全部完成，最终实现六矩阵CI通过
-- 更新日期：2026-09-09
+# Harnessix Code测试与Eval规范
 
-实施进展（2026-09-03）：0.3 范围本地验收完成。tests/agent 覆盖语义 Item、持久审批、统一错误、SQLite 事务、取消、混合版本 Replay、真实 v1/v2→v3 升级和 OTel 内存导出；进程矩阵包含 7 个核心、10 个审批、9 个语义 Item 边界。tests/contracts/session.py 提供 SessionStore 共享契约；真实模型有效性和真实编码 Evals 仍在后续阶段；详情见 [Kernel 实施设计](m03-runtime-kernel.md)。
+## 1. 文档定位
 
-0.4.2b1 收口快照（2026-09-03）：尝试账本领域/Kernel、累计用量去重、未知值与完整性、身份绑定、失败/取消结算、预算与 OTel 差额、v1/v2/v3→v4 混合升级及历史 Schema 冻结。当时新增 15 个模型尝试子进程崩溃切点，共 41 个。
+本文定义当前仓库统一测试分层、失败与恢复矩阵、CI发布门禁、Eval证据生命周期和结果判定规则，不复制各模块
+的全部测试清单。模块特有测试以[30份现行模块设计](README.md#3-当前事实源)为准；历史迭代中的测试数量、
+提交和一次性验收过程已冻结到[里程碑验收记录](testing-and-evals-milestone-history.md)。
 
-0.4.2b2 收口快照（2026-09-03）：两个真实 SDK 的尝试/缓存/推理/失败用量映射、HTTP 前持久意图、累计值与迟到分项、取消和合法观测保留。新增 8 个 SDK 子进程切点，全项目合计 49 个；每次恢复均验证不重发请求。当时 `make check` 为 546 passed、1 skipped；异步调试下 Kernel + Provider 为 510 passed，详见 [ADR 0017](adr/0017-provider-attempt-usage.md)。
+| 问题 | 当前事实源 |
+|---|---|
+| 模块当前如何运行、有哪些失败边界 | 对应[`docs/modules`](modules/)现行模块设计 |
+| 测试采用什么层次和共同规则 | 本文 |
+| Coding Eval任务、评分、Campaign如何实现 | [Evals模块设计](modules/evals.md) |
+| 固定Provider验证如何控制请求 | [Smoke模块设计](modules/smoke.md) |
+| 某次真实验证实际发生了什么 | [验证证据索引](validation/README.md) |
+| 某个历史切片当时通过多少测试 | [里程碑验收记录](testing-and-evals-milestone-history.md) |
 
-0.4.3a 收口快照（2026-09-03）：新增 96 项价格/成本测试，覆盖严格十进制字符串、整数定点精度、未知与显式零、计费上下文/模式/TTL/生效期/输入阶梯、失败尝试与重试去重、跨币种、旧步骤、JSON 重算与内容错绑、双 SDK → Kernel/SQLite → 报告 Replay。`make check` 为 **642 passed、1 skipped**（本地 PostgreSQL 未配置），异步调试回归 **606 passed**；新增两个独立 Schema，不改变历史 Agent/Provider Schema。真实价格、计费上下文自动采集与平台验证未验收，见 [ADR 0018](adr/0018-versioned-token-cost.md)。
+## 2. 质量目标与判定原则
 
-0.4.3b1 收口快照（2026-09-03）：`tests/smoke/` 新增 **94 项**，包括两个实际 SDK × 三场景、私有临时 Session、Kernel 重开/审批/Replay、默认门禁、配置/预算、错误/不重试、超时/Task 取消、CLI 参数/正文 canary 和真实 SIGINT 子进程。全量 **736 passed、1 skipped**；异步调试下 Kernel + Provider + Smoke **700 passed**。注入传输验收不代表真实平台通过；报告白名单不承诺对不可信语义内容做通用 DLP。详情见 [ADR 0019](adr/0019-controlled-model-smoke.md)。
+Harnessix Code测试必须分别回答：
 
-0.4.3b2 收口快照（2026-09-03）：新增 **69 项**，覆盖原生响应计费元数据、迟到/去重/漂移、严格 TTL 分项、原子提交、直接平台映射与价格绑定冲突、真实 v4 升级；全量 **805 passed、1 skipped**，异步调试 **769 passed**。新增 5 个硬崩溃切点，全项目 **54 个**，另有 2 个 SIGINT 用例。旧 Schema 冻结、旧读者拒绝、独立 wheel 与六个离线入口通过。设计见 [ADR 0020](adr/0020-observed-billing-context.md)。
+1. **Runtime正确性**：合同、状态、持久化、幂等、取消、权限和恢复是否满足不变量；
+2. **Agent有效性**：在固定真实仓库任务中能否完成正确、有限且可交付的修改；
+3. **产品可运营性**：安装、升级、兼容、性能、故障和安全证据能否支撑发布；
+4. **结论可重算性**：任务、版本、输入、预算、评分器和证据是否足以重算结果。
 
-真实验证与默认 CI 分开：百炼北京首次工具解析失败，定位确认空 ID 增量兼容问题；修复后文本/内存工具/审批重开均有真实通过证据。兼容修复新增 6 项回归（先复现 2 failed，再全部通过），随后并发初始化暴露 WAL 忙锁并完成根因修复，另补 8 项存储回归（见 [ADR 0021](adr/0021-session-wal-initialization.md)）；该次全量 **819 passed、1 skipped**，异步调试 **783 passed**；不将固定场景通过等同于全模型兼容或 Coding Eval，见 [验证记录](validation/bailian-2026-09-03.md)。
+优先级从高到低为：副作用安全、状态/恢复正确、修改正确、安全边界、可重复/可诊断、效率成本、交互体验。
+不得用更高任务成功率换取未知副作用自动重试，不得以少数成功Demo替代系统质量证据。
 
-## 1. 目标
-
-0.4.1 增量（2026-09-03）：新增 `tests/contracts/provider.py` 共享行为契约与 `tests/models/` 的实际 OpenAI SDK + MockTransport 测试，覆盖流分片、协议错误、重试/取消、错误 body 清理、凭据边界、Kernel 多步骤与审批重启。默认测试不访问真实平台；真实模型有效性和成本验收尚未完成（Anthropic 已在 0.4.2a 完成离线验收）。具体状态见 [Model Runtime](m04-model-runtime.md)。
-
-Harnessix Code 的测试必须回答两类不同问题：
-
-1. **Runtime 是否正确**：状态、持久化、取消、权限和恢复是否满足契约；
-2. **Agent 是否有效**：在真实仓库任务中能否以合理成本完成正确修改。
-
-不能用几个成功 Demo 代替 Runtime 正确性，也不能只靠单元测试宣称 Coding Agent 有用。
-
-## 2. 质量属性
-
-0.4.2a 收口快照（2026-09-03）：两类 Adapter 分别通过同一 Provider 契约。Anthropic 使用实际 SDK + HTTPX2 Transport，覆盖原始 SSE 强类型校验、未知事件、缓存总量、取消/错误 body，以及会话和审批边界切换 Provider。其后明细/失败用量已在 b2 补齐离线验收；真实 API 未验收，不以 Mock 通过替代。
-
-优先级：
-
-1. 副作用安全；
-2. 状态和恢复正确；
-3. 代码修改正确；
-4. 安全边界；
-5. 可重复和可诊断；
-6. 延迟、Token 与成本；
-7. 交互体验。
-
-质量指标出现冲突时，不用更高任务成功率换取未知副作用自动重试。
+```mermaid
+flowchart LR
+    Contract[合同正确] --> Runtime[运行时正确]
+    Runtime --> Recovery[失败与恢复正确]
+    Recovery --> Task[真实任务有效]
+    Task --> Operations[可安装与可运营]
+    Operations --> Release[发布结论]
+```
 
 ## 3. 测试分层
 
-### 3.1 Unit
-
-覆盖纯领域逻辑：
-
-- ID、状态转换和终态保护；
-- Provider Stop/Error/Usage 映射；
-- Tool 参数规范化与输出边界；
-- Permission Rule 与 Approval Fingerprint；
-- Token Budget 和 Context Fragment 选择；
-- 路径、Effect Class、Retry/Reconcile 决策；
-- Redaction。
-
-要求无网络、无真实模型、毫秒级执行。
-
-### 3.2 Contract
-
-每个可替换端口都有共享测试套件：
-
-| 端口 | Contract |
-|---|---|
-| ModelProvider | 流事件顺序、Chunk 组装、Usage、Error、Cancel |
-| Tool | Schema、生命周期、超时、取消、输出、Effect |
-| SessionStore | 事务、sequence、幂等、Migration、Replay |
-| SandboxBackend | 文件、进程、网络和资源能力 |
-| ActionExecutor | 幂等、UNKNOWN、Reconcile |
-| Agent Protocol | JSON-RPC Schema、版本、顺序、重放、背压 |
-
-新增 Adapter 必须通过已有 Contract，不允许为某 Provider 修改 Runtime 测试期望。
-
-### 3.3 Integration
-
-真实组合但尽量不使用公网：
-
-- Agent Runtime + SQLite + Scripted Provider；
-- Tool Runtime + 临时 Git Workspace；
-- Process Runtime + 实际子进程树；
-- App Server + stdio JSONL Client；
-- Action Plane + SQLite/PostgreSQL；
-- Context Compaction + Fake Summarizer。
-
-### 3.4 End-to-End
-
-在隔离临时仓库运行：
-
-~~~text
-读取问题 → 搜索代码 → 修改 → 执行测试 → 查看 Diff → 最终回答
-~~~
-
-E2E 断言最终 Git Diff、测试状态、事件序列、Tool 次数和遗留进程，而不是只检查自然语言回答。
-
-### 3.5 Fault Injection
-
-在每个持久边界注入：
-
-- Python 异常；
-- Task Cancel；
-- Provider 断流；
-- Tool 超时；
-- 进程强制退出；
-- 数据库 busy/磁盘满；
-- 网络超时与响应丢失；
-- Sandbox 启动失败。
-
-### 3.6 Security
-
-与[威胁模型](threat-model.md)逐项对应：
-
-- Prompt Injection；
-- path/symlink/TOCTOU；
-- Shell/进程树；
-- 禁网；
-- Approval bait-and-switch；
-- Secret canary；
-- 恶意 MCP/Hook；
-- 协议 Fuzz；
-- UNKNOWN 无重复对账。
-
-## 4. 确定性测试基础设施
-
-### 4.1 FakeProvider
-
-最小同步/异步 Provider，用于返回固定最终响应和错误。
-
-### 4.2 ScriptedProvider
-
-输入为 Provider Event 脚本，支持：
-
-- 任意文本和 Tool 参数 Chunk；
-- 多 Tool Call；
-- Delay 和 Barrier；
-- 指定事件处抛错；
-- 指定事件处等待 Cancel；
-- Usage/Stop Reason；
-- Context Overflow 和 Rate Limit。
-
-### 4.3 Transcript Replay
-
-读取已脱敏 Event Transcript，验证：
-
-- 相同输入产生相同 AgentEvent；
-- Snapshot 重建一致；
-- 客户端关键事件顺序一致；
-- Provider/Tool 不被真实执行。
-
-Delta 分块可不同，但 Item 终值和领域终态必须一致。
-
-### 4.4 FaultPoint
-
-正式实现中的关键事务边界使用可测试 FaultPoint 标识，不在业务代码散落测试专用条件：
-
-~~~text
-after_turn_started
-after_provider_event
-after_tool_call_committed
-before_tool_effect
-after_tool_effect
-before_tool_result_committed
-after_cancel_requested
-before_turn_terminal
-~~~
-
-生产默认 NoOp；测试 Harness 注入异常或进程退出。
-
-## 5. Agent Loop 场景矩阵
-
-| 场景 | 期望 |
-|---|---|
-| 单轮无 Tool | Assistant 完成，Turn COMPLETED |
-| 单 Tool | Call 先于 Effect，Result 先于下一 Model Step |
-| 多 Tool | ID 与 Result 不串线，按并发策略执行 |
-| 未知 Tool | 模型可见失败，不执行任何效果 |
-| 非法参数 | Tool FAILED，不进入 Handler |
-| 最大步骤/Token/时间 | 结构化预算终止 |
-| Provider 限流且无 Tool | 有限退避重试 |
-| Tool 已提交后 Provider 失败 | 不重复 Tool |
-| 等待审批取消 | Approval/Turn 明确终态 |
-| 本地写中崩溃 | Reconcile Workspace，不盲目 Patch |
-| 外部写结果丢失 | Action UNKNOWN，重复效果为 0 |
-
-## 6. Crash Recovery Matrix
-
-每种 Effect 至少测试以下切点：
-
-| 切点 | PURE/READ_ONLY | LOCAL_WRITE | EXTERNAL_WRITE |
+| 层级 | 隔离范围 | 必须证明 | 不得替代 |
 |---|---|---|---|
-| Call 提交前 | 无调用，可重试命令 | 无调用 | 无调用 |
-| Call 提交后、Effect 前 | 可建恢复 Attempt | 可建恢复 Attempt | 可安全重新调度 Action |
-| Effect 中 | 按定义重试或中断 | 检查文件/Git | UNKNOWN/Reconcile |
-| Effect 后、Result 前 | 可重新观察 | pre/post hash + Diff | 幂等查询/Reconcile |
-| Result 提交后 | 不重复 | 不重复 | 不重复 |
-
-断言不仅是状态正确，还包括外部效果计数、文件内容和事件因果链。
-
-## 7. Protocol 测试
-
-- JSON-RPC Golden Request/Response；
-- initialize 前置和版本不兼容；
-- requestId 同载荷幂等、异载荷冲突；
-- Event sequence 单调与缺口恢复；
-- Delta 合并、丢弃和 Snapshot 回补；
-- 服务端 Approval Request 与 Response 关联；
-- 慢消费者和有界队列；
-- stdout 无非协议污染；
-- 断线重连不重复 Turn。
-
-## 8. Coding Eval 数据集
-
-### 8.1 任务类别
-
-首版维护可复现的小型真实仓库集：
-
-- 定位并修复单元测试缺陷；
-- 跨文件行为修复；
-- 增加小功能并补测试；
-- 类型/静态检查修复；
-- 重构但行为保持；
-- 文档与代码同步；
-- 脏工作区保护；
-- 无法安全完成时正确停止。
-
-每个任务固定：
-
-- 起始 Git Commit；
-- 用户 Prompt；
-- 允许的工具、网络和预算；
-- 隐藏测试；
-- 预期行为与禁止修改；
-- 评分器版本。
-
-### 8.2 不使用单一 Golden Patch
-
-正确实现可能有多个 Diff。评分按：
-
-1. 隐藏测试/行为；
-2. 未破坏基线测试；
-3. 禁止文件未修改；
-4. Diff 范围和代码质量；
-5. 最终回答与真实状态一致；
-6. 安全与预算约束。
-
-## 9. 指标
-
-### 9.1 正确性
-
-- task success rate；
-- test pass rate；
-- regression rate；
-- invalid/forbidden edit rate；
-- final-answer factual consistency。
-
-### 9.2 Runtime
-
-- terminal-state correctness；
-- replay determinism；
-- duplicate effect count；
-- orphan Tool Call/Result count；
-- cancellation latency；
-- recovery success/interrupt rate。
-
-### 9.3 效率
-
-- wall-clock time；
-- model input/output/cache token；
-- estimated cost；
-- model steps；
-- Tool calls 与重复读取；
-- compaction count；
-- approval count。
-
-### 9.4 安全
-
-- unauthorized effect count；
-- secret leakage count；
-- sandbox escape count；
-- approval mismatch count；
-- network policy violation count。
-
-## 10. 0.3 质量门禁
-
-Agent Runtime Kernel 合并前：
-
-- 所有 Unit/Contract/Integration 测试通过；
-- ScriptedProvider 核心场景覆盖正常、失败、取消和预算；
-- Event Replay 的终态和 Snapshot 100% 一致；
-- Crash Matrix 中不存在无法解释的 RUNNING；
-- Tool Call/Result orphan 数为 0；
-- duplicate effect count 为 0；
-- CI 不需要任何真实模型 API Key；
-- Schema、ADR、README 与实现同步。
-
-真实 Provider Smoke Test 在 0.4 加入，使用显式环境开关，永不作为默认 CI 前提。
-
-## 11. Eval 运行与报告
-
-每次基线运行记录：
-
-- Harnessix commit；
-- Provider/Model 与配置摘要；
-- Eval 数据集和评分器版本；
-- Sandbox/Platform；
-- 成功率、成本、时延和安全指标；
-- 每个失败的分类，不保存明文 Secret。
-
-报告比较同一数据集的前后版本，并将差异分成：
-
-- Runtime regression；
-- Provider variance；
-- Prompt/Context regression；
-- Tool/Sandbox regression；
-- Eval infrastructure defect。
-
-没有完成失败分类的单次成功率变化，不作为架构决策依据。
-
-## 12. 非目标与后续
-
-- 0.2 不追求大型公开 Benchmark 排名；
-- 0.3 不调用真实模型验证 Runtime；
-- 0.4 建立 Provider Smoke 与成本基线；
-- 0.5 建立第一个真实 Coding Eval 集；
-- 0.7 增加安全红队与隔离后端 Contract；
-- 0.9 增加跨平台、长时间 Soak、性能和版本回归 Dashboard。
-
-## 13. CI 低速 Runner 的超时测试边界（2026-09-03）
-
-代码提交 `1c11449` 的 Python 3.12/3.13 与 PostgreSQL CI 均通过。后续纯文档提交在较慢的 Python 3.12 Runner 上暴露 Smoke 测试假设：测试给整个 Turn 0.4 秒，却断言必然已经产生一个 HTTP 请求；实际上预算可能在持久化/准备期间耗尽，正确结果是零请求。
-
-测试改为在真实 SDK 使用的 MockTransport 响应流读完有效分片后，确定性抛出对应 HTTP 库的 ReadTimeout，使用正常 Turn 预算，严格验证 provider/transport 分类、一次请求、零重试、连接关闭和 Replay。没有放宽运行时预算，也不是简单增加 0.4 秒阈值。真实 deadline 行为继续由 Kernel 和双 Provider 的原有超时测试覆盖；测试总数仍为 819，默认 CI 不访问模型 API。
-
-随后 Python 3.13 暴露同类的 Kernel 测试假设：给整个 Turn 0.1 秒，却要求已打开模型流。现已统一按执行阶段驱动超时测试：通过局部测试代理捕获真正的 `asyncio.Timeout`，等待模型流/用量持久化检查点后调用 `reschedule()` 推进期限，再验证真实取消与清理。没有替换全局时钟或生产实现。同步排查并修复尝试账本的 0.3 秒以及 SDK 用量收据的 1 秒前置速度假设；保留 Provider 原有真实总 deadline 测试。
-
-另增加“进入 Provider 前预算已耗尽”的独立用例，明确零请求/未开流不需要关闭不存在的流。最终本地全量 **820 passed、1 skipped**，异步调试 **784 passed**；原 819 项阶段快照保持历史含义。
-
-## 14. 0.5.1 只读编码工具验收（2026-09-03）
-
-本片新增 **70 项**测试，全量 `make check` **890 passed、1 skipped**，Ruff/Mypy 通过；Agent/Model/Smoke/Tools 开启 `PYTHONASYNCIODEBUG=1`、`-W error` 共 **854 passed**。本地 PostgreSQL 未配置而跳过的测试保留，远端 PostgreSQL Job 独立执行。
-
-- `tests/tools/test_files.py`：严格参数、真实目录/文件、UTF-8、控制字符/二进制、长行/扫描/字节限制、分页漂移、路径拒绝和错误脱敏；
-- `test_workspace.py`：根/中间目录/目标替换、同 inode 修改、stat/open 竞争、链接与 FIFO、停止/期限、FD 释放；
-- `test_runtime.py`：固定工具契约校验、输出模型、关闭、Token/Task 取消、重复取消及排队调用不启动；额外覆盖关闭等待中重复取消也必须回收根 FD（修复前明确失败）；
-- `test_kernel.py`：实际 SDK + HTTP 替身 → Kernel → 真实文件 → SQLite 重开/Replay，审批重开与根/策略变化失效，文件读取中的用户/Task 取消持久化，生成 Schema 校验；
-- `test_recovery.py`：真实子进程分别在工具执行前、读取后/结果提交前、终态前退出，重开不重新调用工具或 Provider。
-
-新增 3 个进程崩溃切点后全项目为 **57 个**，另有 2 个 SIGINT 用例。`uv build`、独立基础 wheel 和无供应商 SDK 的 `examples.kernel_files` 入口通过；仅验证只读能力，不属于 0.5.5 自主编码 Eval。Linux 完整测试与新增 macOS 只读 CI 的最终结果应查看对应提交，默认 CI 不使用真实模型凭据。
-
-初始实现 `0a0f68f` 的 [CI](https://github.com/carrie1988/Harnessix/actions/runs/33742500047) 已通过 Linux Python 3.12/3.13、macOS 只读套件与 PostgreSQL。之后的关闭取消硬化增加 1 项回归，已重新完成上述本地全量、异步调试与独立 wheel 验收；其远端结果以最新提交 CI 为准。
-
-## 15. 0.5.2a 有界搜索验收（2026-09-03）
-
-基线 `993720b` 的 [CI](https://github.com/carrie1988/Harnessix/actions/runs/33742942261) 已通过后，再增量实施搜索。0.5.2a 交付 glob/字面量 grep，**不包含 Artifact、写入、Shell、自主编码 Eval 或新的真实模型调用**。
-
-本片新增 **80 项**测试，只读工具套件累计 **150 项**。本地 `make check`：Ruff/Mypy 通过、**970 passed、1 skipped**（未配置本地 PostgreSQL）；`PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools`：**934 passed**。基线阶段的旧测试数字保留历史含义。
-
-- `test_search.py`：路径段通配/globstar、大小写/点文件、严格参数、排序与数量截断、grep→revision 读取；负向验证完整性、截断原因、排序、去重和空截断输出契约；
-- `test_search_boundaries.py`：链接/FIFO/拒绝路径、性能忽略与权限区分、字面量而非正则、CRLF/未终止 CR 原文、非法 UTF-8/二进制/超大文件/长行缺口、Unicode 片段边界、枚举/深度/名称/累计读取硬预算、输出字节截断、对象替换/读取中变更、I/O 脱敏、取消等待 FD 释放与期限；
-- `test_search_kernel.py`：真实 OpenAI SDK + MockTransport → glob → grep → revision 读取 → 回答；四个 HTTP 替身请求全部关闭，SQLite 重开/Replay 一致；新旧四工具的审批重开、搜索规则变化与版本隔离；四份新 v1 Schema 的内容/哈希冻结；
-- `test_recovery.py`：复用只读故障夹具，为 glob/grep 增加执行前、效果完成/结果提交前、终态前共 **6 个真实进程崩溃切点**，恢复不重搜、不请求模型；全项目硬崩溃切点累计 **63 个**，原 2 个 SIGINT 用例保留。
-
-独立安装/兼容证据：
-
-1. `uv build` 成功；新建基础依赖环境安装 wheel，以 `python -I` 从仓库外运行 `examples/kernel_search.py`，无 OpenAI/Anthropic SDK 也可完成固定搜索闭环和 Replay。
-2. 用上一片独立安装的 `993720b` wheel 创建真实 list_files/read_file 待审批会话；用新 wheel、同一工作区和 SQLite 重开，旧工具完整定义相同，两项旧审批均可批准、执行、完成和 Replay。不是仅比较同一新进程的哈希。
-3. 在 Harnessix 自身 `src`（不是临时示例仓库）执行独立 wheel 只读探测：glob 找到 **80 个 Python 文件**；grep `ModelAttempt` 得到 **40 个命中行**，读取 80 文件、393287 字节，两次 scan_complete=true。该次 macOS 观测约 0.024/0.067 秒，仅为离线可用性证据，不是性能 SLA 或完整 Coding Eval。
-
-新搜索示例已加入 Linux Python 3.12/3.13 与 macOS CI；macOS 工具回归和 PostgreSQL 独立 Job 保留。推送后的具体远端结果以对应提交 CI 为准，不用基线成功替代新提交验收。
-
-## 16. 0.5.2b1 可信执行作用域验收（2026-09-03）
-
-基线 `9a70ce4` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33748311220) 通过后继续实施。本片新增 **46 项**测试：24 项 Kernel 作用域测试、10 项 Coding Scoped 测试和 12 项既有集成/恢复路径扩展；工具套件累计 **172 项**。
-
-- 本地 `make check`：Ruff/Mypy 通过，**1016 passed、1 skipped**（本地未配置 PostgreSQL）。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools`：**980 passed**。
-- `test_execution_scope.py`：入口互斥、不自动发现新签名、持久归属而非模型参数、不可变性、完整调用摘要漂移、活跃/未完成调用工厂、TypeError 不降级/不重试、审批等待/拒绝/重开、未知/写工具/版本门禁、跨 Thread 并发/连续 Turn/多 Call 隔离。
-- `test_scoped_runtime.py`：四工具旧入口待审批会话切换 Scoped 入口继续，定义完全相同；规范根/别名/参数/摘要不匹配时不进行目标 I/O；Coding 参数不能注入 Thread 归属。
-- 实际 SDK 离线 glob→grep→revision 读取同时测试旧/新入口，作用域摘要不出现在 HTTP 请求中；实际文件读取消同样覆盖两种入口。
-- 真实子进程故障夹具新增 Scoped read/glob/grep 的 9 个切点，总计 **72 个硬崩溃切点**，原 2 个 SIGINT 用例保留；中断恢复不调用 Provider 或重新执行工具。
-
-独立兼容验收从 `git archive 9a70ce4` 构建旧 wheel，在无 OpenAI/Anthropic SDK 的基础环境中创建四个真实待审批会话，再安装新 wheel，以 Scoped 入口重开同一 SQLite/规范工作区：工具完整定义一致，四项旧审批均可批准、执行、完成并 Replay。该流程实际跨版本安装，不是仅在同一新版本内计算两个相等摘要。随后以 `python -I` 从仓库外运行新 Scoped 搜索和旧只读两个示例均通过。
-
-未修改旧输入/输出、Agent/Action Schema 或 Session Migration，也未新增依赖、真实 API 请求或远程中间件。现有 Linux 全量、macOS 工具/示例及 PostgreSQL CI 继续运行，新提交结果以对应 CI 为准。
-
-**0.5.2b1 本片未交付**：Artifact 内容/manifest、引用发布、配额、过期和孤儿回收。后续交付见第 17 节。作用域不是发布租约；终态后的历史 scope 不能单独证明仍有发布权限。0.5.2b2 必须补齐持久事务及故障验证，才能关闭 0.5.2b/0.5.2。
-
-## 17. 0.5.2b2 事务 Artifact 验收（2026-09-03）
-
-基线 `0c39c39` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33755778266) 通过后实施。本片交付有界 JSONL Artifact，不包括 Patch、进程日志或真实编码 Eval；未调用真实模型 API、使用凭据或部署中间件。
-
-- `tests/artifacts/` 新增 **102 项**：严格契约/六份冻结 Schema、300 条中文搜索预览外读取、完整性与缺口、跨归属/策略/根身份、配置错绑、配额及并发竞争、过期/损坏/清理游标与活跃引用保护、审批漂移/拒绝/重开、取消与故障恢复。
-- 本地 `make check`：Ruff/Mypy（85 个源文件）及 **1118 passed、1 skipped**；本地未配置 PostgreSQL，真实 PostgreSQL 由现有 CI 服务验证。
-- 异步调试 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts`：**1082 passed**。
-- 真实 OpenAI SDK + MockTransport 三次离线请求完成 grep→read_artifact→回答；原始 300 条正文不回灌 HTTP，宿主归属字段不进入模型参数/请求，流均关闭。
-- 新增 glob/grep × 7 个真实 `os._exit(77)` 切点：捕获后、Artifact 插入后、Session 事件后/投影后、提交前/后、Turn 终态前。全项目累计 **86 个硬崩溃切点**及原有 **2 个 SIGINT 用例**；不把进程退出当作所有断电/磁盘故障模拟。
-- 提交前硬崩溃、异常或 Task 取消：正文/引用同时缺席；提交后失败：正文/引用同时保留。重开均 INTERRUPTED、不重新调用工具或 Provider、SQLite 完整性检查及 Replay 通过。用户取消与发布在 Thread 锁上线性化，允许先原子提交再取消。
-- 注入 SQLITE_FULL 映射为 storage_full 并回滚；清理事务失败可重试，过期墓碑不变成缺失。该项是驱动错误注入，不宣称真实灌满磁盘验证。
-
-**独立安装与升级**：从 `git archive 0c39c39` 构建旧 wheel，仓库外无 OpenAI/Anthropic SDK 的基础环境创建四个真实待审批会话（migration 5）。新 wheel 升级到 migration 6，以 Scoped 入口批准并继续四工具；旧工具完整定义和历史事件原始字节不变，Replay 一致。旧 wheel 再次打开升级库明确报 schema_too_new。新 wheel 以 `python -I` 在仓库外运行 files/search/artifacts 三个离线示例通过。
-
-**兼容与 CI**：仅新增 migration 6，事件/投影仍为 Agent v5；未改写旧 migration 或八份默认工具 Schema。Linux Python 3.12/3.13 全量 CI 和 macOS 工具 CI 已纳入新 Artifact 测试与示例，PostgreSQL 作业沿用。CI 结果以本片对应提交为准。
-
-范围内 0.5.2b/0.5.2 已完成。当前上限为单件 1 MiB/10000 条 JSONL，不是任意 blob 服务；逻辑内容/manifest 配额不限制整个 Session/WAL 物理大小，保留的墓碑最终需要宿主按保留策略轮换 Session。具体组合与生命周期见 [0.5 设计](m05-coding-tools.md#15-052b2-当前交付与使用)、[ADR 0026](adr/0026-transactional-artifacts.md)。
-
-## 18. 0.5.3a 只读 Patch 准备验收（2026-09-03）
-
-在 `4054e1d` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33760516486) 全绿后开始。专项核对冻结 Codex/OpenCode 的 Patch 入口、实际文件写操作和失败证据；明确用户态内容复核不等于跨进程 CAS，见 [专项研究](research/patch-runtime.md) 和 [ADR 0027](adr/0027-prepared-patch-and-write-admission.md)。
-
-- `tests/patches/` 新增 **69 项**：精确/非唯一/重叠锚点、同一前镜像坐标、顺序绑定、无实际变化、严格参数与字节/编辑数限制、完整 SHA、JSON manifest、私有载荷篡改、根/文件/拒绝策略/权限漂移、链接/特殊文件、完整尾部编码检查及两份冻结 Schema。
-- 完整前后镜像各最多 1 MiB；边界测试包含正好上限、超限哨兵、读取期间增长及后镜像超限，不把预览前缀作为完整内容。
-- UTF-8 中文、组合字符不归一化、BOM、CRLF、混合换行与无末尾换行均测试；未涉及字节保持不变。关闭并重开同一 Workspace 后仍可复核计划。
-- 读取期间文件/根替换、I/O 异常和协作取消均验证 FD 回收；宿主线程被停止后等待其退出，不把“取消 asyncio 等待”当作停止底层文件 I/O。超时不会误报为计划损坏。
-- 本地 `make check`：Ruff/Mypy（88 个源文件）通过，**1187 passed、1 skipped**；本地无 PostgreSQL，沿用 CI 实库作业。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1151 passed**。
-- 从新 wheel 建立仓库外基础环境，无 OpenAI/Anthropic SDK，以 `python -I` 运行 `examples/patch_plan.py` 和既有 Artifact 示例通过；默认 CI 同时运行 Linux Python 3.12/3.13 和 macOS Patch 测试/示例。
-
-本片没有修改 Kernel、默认工具定义、Action/Agent Schema 或 Session migration 6，没有新增依赖、真实模型请求或服务器操作。原 **86 个硬崩溃切点、2 个 SIGINT** 保持，不把本片只读测试虚报为新的写崩溃恢复测试。
-
-**0.5.3a 当时未交付（后续见第 19 节）**：模型可调用的 apply_patch、持久计划/写意图、写审批、文件提交、单文件写恢复及多文件效果。0.5.3a 的 manifest/私有字节不是授权凭据；verify_prepared 不会把计划变成已批准或已提交的状态。下一片 0.5.3b 的独占工作副本、持久意图、计划审批和效果核对通过后才开放写入，0.5.3 整体仍未完成。
-
-## 19. 0.5.3b1 受管单文件 Patch 执行验收（2026-09-04）
-
-在 `b0622cb` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33762318938) 全绿和远程基线同步后实施。进一步核对固定的 kernel-read-only/v1 审批契约，将 b 拆为宿主执行后端 b1 与 Kernel 模型接入 b2，见 [ADR 0028](adr/0028-managed-patch-execution.md) 和 [下一片实施顺序](m05-coding-tools.md#下一片-053b2-的实施顺序)。
-
-- 本片新增 **87 项**测试，Patch 套件累计 **156 项**；新增两份独立 v1 Schema，旧 Schema 字节不变。
-- 本地 `make check`：Ruff/Mypy（92 个源文件）通过，**1274 passed、1 skipped**；本地无 PostgreSQL，真实 PostgreSQL 作业保留在 CI。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1238 passed**。
-- 完整宿主链路：真实文件导入→副本读取/计划→保存→批准→写入→重开/核对；副本内容与预期一致，源文件始终不变，重复执行拒绝。
-- 覆盖拒绝/错绑/幂等冲突、计划和导入预算、非登记路径、特殊文件/链接/编码、根/锁/数据库替换、前镜像/目录/权限漂移、损坏私有载荷/来源基线/事件/版本、查询只读库和结果写库失败。
-- 替换前各阶段取消进入 failed 并消费审批；替换后取消先完成效果与 applied 记账。两个线程只能消费一次审批，close 必须等待活动写结束；不是 Kernel/asyncio Task 写取消验收。
-- 验证短写循环、零写、注入 ENOSPC/EIO、实际 fsync 调用抛错和临时文件清理；错误不携带原始路径/SQL。属于故障注入，未灌满真实磁盘或进行断电测试。
-- 原生元数据检查覆盖可见扩展属性；Darwin 额外建立实际扩展 ACL 验证拒绝，不通过忽略属性接口错误兼容平台。允许系统 provenance 标记的窄策略有明确文档，不声称通用元数据保留。
-- `test_managed_crash.py`：根级/嵌套目标各 9 个真实 os._exit 切点（started、临时创建、临时刷盘、临时证据、替换前/后、目录刷盘、结果前/后），另有 building 导入的 2 个切点，共 **20 个**。重开不重写；恢复前后 inode/mtime/ctime 不变，源文件不变，building 拒绝执行。全项目累计 **106 个硬崩溃场景及 2 个 SIGINT 用例**。
-- 后镜像相同但临时 inode 不符仍 uncertain，不能仅凭字节归因；前镜像、第三种内容、缺失和不可读分别观察。observed_before 后只有新请求/新计划/新审批才可再次尝试。
-
-**独立交付**：新建仓库外基础 wheel 环境，确认没有 OpenAI/Anthropic SDK，以 `python -I` 运行 managed_patch、patch_plan 和 kernel_artifacts 三个示例通过。未新增依赖、真实 API 请求或服务器操作。默认 CI 已增加 Linux Python 3.12/3.13 和 macOS 的 managed_patch 示例及新测试，PostgreSQL 服务作业保留；远端结果以本片对应提交为准。
-
-**仍未完成**：模型可调用的写工具、Agent 写审批/结果兼容、Session 与副本账本组合恢复、源目录 Diff 合入、多文件部分效果、Process 与自主编码 Eval。Kernel/Agent v5/Action v1/Session migration 6 和默认工具清单未修改。b1 的宿主审批不是 kernel-read-only/v1 的写授权，不能据此勾选整体 0.5.3b/0.5 完成。
-
-## 20. 0.5.3b2a 调用绑定桥接验收（2026-09-04）
-
-在 `20b28d2` 与远端同步、[四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33779154455) 全绿后，按 [ADR 0029](adr/0029-managed-patch-agent-bridge.md) 交付宿主桥接，不提前放开模型写工具。
-
-- 新增 **95 项**测试，Patch 套件累计 **251 项**。本地 `make check`：Ruff/Mypy（94 个源文件）通过，**1369 passed、1 skipped**；跳过项为本地未配置 PostgreSQL，沿用 CI 实库作业。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1333 passed**。Patch 单独的异步调试模式 **251 passed**。
-- 新增 ManagedPatchCallPlan、ManagedPatchOutput 两份冻结 v1 Schema；运行 Schema 生成器后，全部旧 Schema 字节不变。未修改 Agent v5、Action v1、Session migration 6、副本账本 schema v1 或既有默认工具契约。
-- 调用/计划归属：Thread/Turn/Call、工作区、工具版本/指纹、提案、后端及桥接指纹的错绑/篡改均覆盖；模型注入授权字段拒绝；相同请求找回原计划，不再 prepare；已有请求的不同提案不能借壳使用。
-- 宿主批准/拒绝、只读和后端指纹混用、无效 actor/reason、持久审批冲突、旧 revision、重复/并发执行、两个桥接共享副本等路径覆盖；最多一次应用，源文件不变。拒绝不要求旧前镜像仍存在。
-- 协作取消、Task.cancel、外层 timeout、重复取消分别覆盖替换前/后；后台写收尾后才完成取消。关闭（含重复取消关闭）等待活动线程并拒绝排队调用，但不关闭宿主副本。批准镜像后、写意图前取消保留 approved，恢复报告未成功，不自动写入。
-- 恢复覆盖无计划/孤立计划、已知计划丢失、损坏计划/索引、根身份失效、缺少批准/批准不匹配；后镜像、第三种内容、缺失、不可读、相同字节不同 inode 分别归类。不把执行抛错当作没有效果，不把缺证据当作成功。
-- `test_bridge_crash.py` 新增 **12 个真实 os._exit 场景**：计划保存后、后端答复后、9 个既有执行切点以及桥接返回后。以宿主文件夹具保存调用归属，重开找回原计划并核对；恢复禁用 prepare/save/reply/execute，目标 inode/mtime/ctime 和源文件保持不变。累计 **118 个硬崩溃场景及 2 个 SIGINT 用例**。这是桥接崩溃证据，不是尚未实现的 Session 写审批组合恢复或断电测试。
-- Kernel 集成边界反向验证：即使宿主误把该写定义放入旧通用注册表，模型请求仍不广告它，Kernel 仍返回 tool_not_enabled，不执行桥接。没有将通用 NON_IDEMPOTENT_WRITE 放行。
-
-**独立 wheel**：在仓库外新建基础环境，安装当前 wheel 与锁定的默认依赖（无 OpenAI/Anthropic SDK），以 `python -I` 运行 patch_bridge、managed_patch、kernel_artifacts 通过。新示例串联真实只读工具→精确提案→原计划找回→宿主批准→副本写入→读回→重开不重写。Linux Python 3.12/3.13 与 macOS CI 均增加该示例；远端验收结果以对应提交为准。
-
-**下一片 b2b**：版本化 Agent 写审批/恢复结果、最低 reader 迁移、专用 Kernel 准入、真实 SDK 离线 HTTP 闭环及 Session × 副本账本崩溃矩阵。本片 ApprovalRecord 是受信宿主声明，未核验活跃 Turn、预算或 Session 审批消费；宿主夹具不等于自主编码 Eval。无新增依赖、真实模型请求、服务器登录或中间件部署，不关闭整体 0.5.3b/0.5。
-
-## 21. b2b 设计审查与桥接恢复修正（2026-09-04）
-
-基于 `8832dd7` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33836437879) 全绿结果，完成 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)：逐项核对 Runtime、Reducer、作用域、Session 投影/迁移和模型结果白名单，明确拟定 v6 写审批、专用准入、持久答复/消费顺序、取消后的效果结算及 KWP-01～10 组合验收矩阵。上述 Kernel 接入仍待实现，未写入新 Schema 或 migration。
-
-设计审查发现：恢复只带 ApprovalRecord、未带 plan，而账本计划缺失时，旧桥接忽略了审批证据并返回 failed。增加无证据/批准/拒绝 **3 项回归**，修改前批准和拒绝两项稳定失败；修改后只要 plan 或 approval 任一证据存在就返回 unknown，避免把缺证据解释为未发生效果。恢复仍不 prepare/save/reply/execute，也不新增重试权限。
-
-- `make check`：Ruff/Mypy（94 个源文件）通过，**1372 passed、1 skipped**；本地 PostgreSQL 跳过项仍由 CI 实库作业验证。
-- 异步调试全范围：`PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`，**1336 passed**。
-- Patch 测试累计 **254 项**；真实硬崩溃仍为 **118 个场景及 2 个 SIGINT**，不把这次普通回归计为新增崩溃场景。
-- 仓库外建立基础 wheel 环境，使用锁定的默认依赖，不安装 OpenAI/Anthropic SDK，`python -I patch_bridge.py` 通过。
-- 全部旧公开 Schema、Agent v5、Session migration 6、副本账本 schema v1、默认 Kernel 工具及依赖保持不变。无真实模型请求或远程服务器操作。
-
-本次交付是 b2b 的设计基线和一处现有桥接修正，不标记 b2b/0.5.3b 完成。下一步按 ADR 0030 开始契约/Reducer/最低 reader 迁移，再接通专用端口与 SDK 离线闭环。
-
-## 22. 0.5.3b2b Kernel 受管写闭环验收（2026-09-04）
-
-基于 `45b2b10` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33838299601) 全绿和远端同步结果，实际实现 [ADR 0030](adr/0030-kernel-managed-patch-admission.md)，不再停留在设计或宿主桥接夹具。
-
-- 本片新增 **56 项**测试：Kernel Patch 套件 **55 项**，旧 wheel 导出的 v5 transcript 升级 **1 项**；Patch 套件累计 **309 项**。
-- `make check`：Ruff/Mypy（95 个源文件）通过，**1428 passed、1 skipped**；本地未配置 PostgreSQL，该跳过项继续由 CI 的真实 PostgreSQL 服务验证。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1392 passed**。
-- 专用端口拒绝错误名称/效果/审批/幂等/核对属性和定义重名；旧通用注册表写门禁回归保留。错误工作区不降级执行，严格参数拒绝模型注入批准标志。
-- Session 持久写审批暂停、重开、同答复幂等、冲突拒绝、陈旧来源、拒绝不复核旧来源、复核中预算过期均覆盖；答复不调用后端决定或修改文件。Reducer 验证归属/审批/效果，旧事件标签拒绝新字段。
-- 真实 OpenAI SDK 与 Anthropic SDK 各以 MockTransport 完成四次离线模型 HTTP 交互：读文件→提案→持久审批重开→写入→读回→回答。目标副本确实改变、源目录保持不变，所有流关闭，两个模型 wire 均不含计划/副本 ID、审批摘要或私有 patch 证据。
-- 替换前/后分别覆盖 token、Task.cancel、重复取消和 deadline；另验证 Runtime 关闭在写线程/审批复核阻塞时保持 Session 所有权，重复取消关闭也必须等排空。替换后的工具成功与 Turn cancelled/failed 分别结算，不把取消描述为文件回滚。
-- 文件写完但 Kernel 回调失败或公开结果超限：不再执行，核对并保留私有成功事实，Turn 失败而非假完成。250 字符预算时核对后的公开 output 被舍弃，归因字段完整；1 字符预算在模型提案阶段停止，尚未准备/审批。
-- `test_kernel_patch_crash.py` 新增 **23 个真实 os._exit 场景**：20 个 Session × Patch 组合切点（Call、计划、请求、决定、消费、后端批准、9 个文件执行窗口、工具返回、Session 结果和终态前），另有缺失端口/定义变化/第三种内容三个重启场景。恢复禁用 Provider/prepare/save/reply/execute，已知效果诚实结算，不充分证据为 unknown；重复打开幂等，恢复前后 inode/mtime/ctime 与源文件不变。全项目累计 **141 个硬崩溃场景及 2 个 SIGINT 用例**，不声称模拟所有断电/硬盘故障。
-
-**版本/升级**：只新增 Agent Event/Thread v6、migration 7；旧 v1–v5 Schema、旧 migration 校验和、Action/Provider/工具/桥接 Schema 和副本账本 v1 不变。无 patch 的旧结果序列化不增加 null 字段。使用 `git archive 45b2b10` 在隔离源码目录构建真正旧 wheel，旧基础环境创建真实 WAITING_APPROVAL；新基础 wheel 重开、答复并完成旧只读审批，旧事件原始字节不变、Replay 一致；旧 wheel 再开新库明确报 schema_too_new。旧 wheel 完成的 v5 transcript 冻结到 `tests/agent/fixtures/session-v5.json`，持续覆盖 v1–v5 升级；包外探针和步骤见 [部署文档](deployment.md#历史-session-v6--migration-7-升级053b2b)。
-
-**包外交付**：仓库外基础 wheel 环境确认未安装 OpenAI/Anthropic SDK，以 `python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch 共七个示例通过。新 Kernel 示例是真实文件/数据库与离线决策，不是自主编码 Eval。Linux Python 3.12/3.13 全量和 macOS Patch CI 均增加该入口；PostgreSQL 作业保留，远端结果以本片对应提交为准。
-
-未新增依赖、真实模型请求、服务器登录或中间件。b2b/0.5.3b 的受管单文件范围完成；多文件部分效果、结构化 Diff、Process、源目录合入、Agent CLI 与自主 Coding Eval 仍未交付，整个 0.5.3/0.5 不标记完成。
-
-## 23. 0.5.3c1 只读整组计划与结构化 Diff 验收（2026-09-04）
-
-基于 `3f42130` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33840907282) 全绿与远程同步结果，按 [ADR 0031](adr/0031-patch-batches-and-structured-diff.md) 实施 c1，不把准备/展示视作已完成多文件写入。
-
-- 新增 **79 项**：整组准备24项、Diff 51项、冻结 Schema 4项；Patch 套件累计 **388 项**。
-- `make check`：Ruff/Mypy（99个源文件）通过，**1507 passed、1 skipped**；本地 PostgreSQL 跳过，CI 实库作业保留。
-- 异步调试全范围 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1471 passed**。
-- 真实多文件只读准备/重开复核：路径唯一和顺序绑定、严格参数/授权字段注入、不同工作区、提案重排、成员/镜像/manifest 篡改均拒绝。准备晚文件时更改早文件，最终整组复核拒绝；缺失/链接/来源漂移不修改前面的文件。共享操作取消/截止时间不因下一个文件重置。
-- 预算边界使用真实内容：提案 UTF-8 合计恰好512 KiB及多1字节；4个各1 MiB文件的完整前后镜像恰好8 MiB，再加一个文件即拒绝。原单文件完整读取、长行、编码、链接/FD、取消、审批和写恢复测试保持通过。
-- BOM、中文、多字节 emoji、组合字符、CRLF/混合前缀/无末尾换行均覆盖；反向提案顺序、长度变化和删除片段的前/后字节坐标配合前镜像可重建目标，不按字符索引替代字节索引。
-- Diff 预览0/1/2/3/4/1024/4096字节不切断 UTF-8 码点，完整长度/SHA与截断独立校验。JSON 引号、反斜杠、换行/制表符转义计入总量，恰好预算可返回、少1字节则截断前缀；256字节可只保留摘要/总量和 truncated。16文件×32编辑的512项报告在1 MiB内完整返回，默认64 KiB明确返回前缀。
-- Diff 只校验计划内部事实；来源随后改变时仍可以展示原计划，但 verify 拒绝陈旧来源。测试禁止 Diff 重新 open 文件，避免将展示误写成实时工作区或已提交结果。
-- 仅提取既有精确区间解析供准备器/Diff共用；新增四份独立 v1 Schema，生成后全部旧 Schema 字节不变。Agent v6、Session migration 7、副本账本 v1、既有 apply_patch 定义与依赖均未修改。
-
-**独立基础 wheel**：仓库外新环境安装锁定默认依赖，确认无 OpenAI/Anthropic SDK，以 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch 共八个入口通过。新示例只准备和展示两个真实文件，校验磁盘字节不变，没有批准/执行整组写入或发布 Artifact。Linux Python 3.12/3.13 与 macOS CI 均增加新示例；远端结果以本片对应提交为准。
-
-本片未新增真实模型请求、服务器操作、数据库迁移或硬崩溃场景；全项目仍为 **141 个真实硬崩溃场景及2个 SIGINT用例**，不将只读计划回归计为多文件写崩溃验收。c1 范围完成，c2 的持久组预留/批准/部分效果及 c3 的 Kernel/模型/Artifact 仍待开发；整体0.5.3c/0.5尚未完成。
-
-## 24. 0.5.3c2a 整组预留、持久审批及迁移验收（2026-09-04）
-
-基于 `09cb6d6` 及 [四项通过的 CI](https://github.com/carrie1988/Harnessix/actions/runs/33842477262) 实施 [ADR 0032](adr/0032-durable-batch-reservation-and-approval.md)。c2a 是 c2 的预留/审批切片，不包含组文件写入。
-
-- 新增 **99 项**：整组宿主与边界81项，真实崩溃/迁移16项（其中11个真实退出），冻结 Schema 2项；Patch 套件累计 **487 项**。
-- `make check`：格式/Ruff/Mypy（103源文件）通过，**1606 passed、1 skipped**；跳过项为本地无 PostgreSQL，远程实库 CI 保留。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1570 passed**。
-- 真实三个文件按顺序整组保存/批准/拒绝/重开，源与副本字节、inode、mtime、ctime 不变；相同请求/载荷幂等、内容/顺序冲突、组/成员指纹错绑、无效字段/决定、来源漂移、未登记路径、错误副本与关闭句柄均覆盖。
-- 待审批/批准/拒绝 × 三个成员位置：旧单文件 save/reply/execute 全部拒绝拆分消费；额外覆盖清空 owner 列后的旧接口拒绝。组成员始终 pending，批准不隐式产生单文件批准事件。四线程八次同请求保存只产生一组，竞争批准/拒绝只有一个持久决定。
-- 与旧单文件双向共享计划数量和镜像配额，容量检查在写事务中完成；组元数据 UTF-8 实际预算恰好可用、少1字节拒绝。决定预留覆盖最长 actor/reason 的 JSON 转义，其他组不能挤占已预留决定空间；超长持久载荷拒绝。
-- 组行、三个成员插入位置及提交前的存储/取消/超时共15种异常均完整回滚；决定提交前/后丢失确认共6种异常通过只读 lookup 判断是否已提交，不凭异常推断没有持久事实。所有公开入口共用操作预算，未知/缺失/损坏记录不默默新建或修复。
-- **11 个真实 os._exit 场景**：预留组行/三个成员/提交前后共6个，决定提交前后2个，迁移版本标记前/提交前/提交后3个。未提交时无半组成员或决定，已提交时全量可见；迁移中断只有完整 v1 或完整 v2，旧 metadata/baseline/镜像/事件字节及目标文件状态不变，数据库 inode 不变。另有5项旧账本损坏/未来版本/DDL冲突拒绝，失败不先推进版本。
-
-**真实旧 wheel 验收**：从 `git archive 09cb6d6` 单独构建旧 wheel，不从当前源码伪造旧版本；仓库外旧基础环境实际创建 pending/approved/applied 三类 v1 计划。新基础 wheel 升级至 v2，旧事件/镜像原字节、三类状态、副本文件字节/inode/mtime/ctime、源目录与数据库 inode 全部保留；旧 wheel 再次打开明确返回 patch_wrong_database，新 wheel 随后再次重开仍一致。可复现探针与步骤见 [部署说明](deployment.md#副本账本-v2-升级053c2a)。单元测试中的 v1 表形夹具仅用于故障注入，不替代上述旧包证据。
-
-**基础发行包**：独立环境安装锁定默认依赖，未安装 OpenAI/Anthropic SDK；`python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval 共九个入口通过。新示例仅预留、审批、重开和验证旧接口拒绝；Linux Python 3.12/3.13 与 macOS CI 均增加该入口。新增两份独立 Schema，全部旧 Schema 字节不变；Agent v6、Session migration7、Provider v3、依赖与单文件工具定义不变。副本账本独立升级为 v2。
-
-全项目累计 **152 个真实硬崩溃场景及2个 SIGINT 用例**。新增11个场景只证明组持久事务/迁移，不冒充多文件写效果恢复。本片没有真实模型请求、服务器操作或中间件部署。c2a 范围完成，下一片 c2b 实现顺序一次性消费、部分/未知效果和每成员写前后崩溃核对；c2/c3/0.5 均未标记完成。远端跨平台结果以本片提交 CI 为准。
-
-## 25. 0.5.3c2b 顺序执行与部分效果恢复验收（2026-09-04）
-
-在 `f0adddc` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33860637921) 基础上实现 [ADR 0033](adr/0033-batch-consumption-and-effect-recovery.md)。新增独立组运行/效果契约、真实顺序消费和只核对恢复，副本账本升级 v3；不改变模型工具入口。
-
-- 新增 **182项**：执行/故障边界131项、崩溃/迁移49项（44个真实退出场景及5项旧数据拒绝）、冻结 Schema 2项。Patch 套件累计 **669项**。
-- `make check`：Ruff/Mypy（107源文件）通过，**1788 passed、1 skipped**；本地缺 PostgreSQL，仅该项跳过，远程实库 CI 保留。
-- 异步调试全范围 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1752 passed**。
-- 三文件成功闭环和最大16成员严格有序执行、重复执行拒绝、未批准/拒绝/错指纹、取消/超时前置检查、组消费/结果事务失败均覆盖。源目录始终不变，审批完成本身不写文件，升级也不消费旧批准。
-- 三个成员位置 × 九个单文件切点 × 存储/取消/超时共81项：检查实际成功前缀、失败或未知的当前成员、pending 后缀。取消发生在最后文件替换之后时可以 all-applied + cancelled/timeout，不能伪装未写入；恢复保留既有终止原因。
-- 全部成员位置的整组来源/元数据漂移均在首次文件修改前拒绝，批准仍消费。两个后续成员位置在前一成员完成后发生来源变化时停止，当前成员可保持 approved/未启动意图，不伪装执行失败。
-- 单独注入替换前/后 fsync 调用失败6项、成员意图/应用/不确定结果记账失败6项；记账失败导致成员仍 started 时返回 unknown，恢复只观察归因，不调度后续文件。另验证相同后镜像但不同 inode 的三个成员位置始终 unknown，以及 missing/diverged/unavailable 不谎称未发生效果。
-- 查询和恢复校验组运行事件、完整审批绑定、成员决定与顺序；覆盖校验和/指纹/副本错绑、开始事件缺失、成员越序、审批被替换、虚假效果摘要。恢复中途取消/超时保留已落库观察，之后仍只核对，不解锁批准。
-
-**44个真实进程退出场景**：38个组/文件执行窗口（组提交前后、整组复核后、每成员批准/完成、每成员九个替换/结果切点、组终态提交前后）；3个观察/终态提交中再退出场景；3个 v2→v3 迁移版本标记/提交切点。核对阶段禁止调用执行/保存/批准入口；恢复前后目标文件 inode、mtime、ctime 与源目录一致。全部文件已应用但组终态未提交时，恢复为 applied + interrupted，不自动补跑或改称正常完成。另有5项损坏旧组/成员/外键/组ID/DDL冲突拒绝，失败保持v2。
-
-**真实旧包与两级升级**：从 `git archive f0adddc` 构建实际旧 v2 wheel，在隔离基础环境创建 pending/approved/rejected 三类组。新 wheel 升 v3，旧 metadata/baseline/plans/events/batches/batch_approvals 原字节、文件时间/inode、源目录及数据库 inode 保留，所有运行记录仍不存在；旧 v2 reader 明确拒绝 v3。随后只在新环境显式执行原 approved 组并只核对，旧 reader 再次拒绝。另用 `09cb6d6` 的真实 v1 wheel 创建单文件 pending/approved/applied，验证 v1→v2→v3 和旧 reader 拒绝。步骤见 [部署说明](deployment.md#副本账本-v3-升级053c2b)，不以修改版本标记的单元夹具代替旧 wheel 证据。
-
-**复用与基础发行包**：归一化 AST 审查确认原单文件 execute/reconcile 核心与 `f0adddc` 一致，仅提取内部方法并维持公开组成员拒绝。旧 Schema、原 v1→v2 迁移实现、Agent v6/Session migration7/Provider v3、模型工具定义和依赖不变；新增 run/result 两份 Schema。基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch/managed_batch_approval/managed_batch 共十个示例通过；Linux 3.12/3.13 和 macOS CI 增加新多文件示例。
-
-全项目累计 **196个真实硬崩溃场景及2个 SIGINT 用例**，不宣称覆盖全部硬件断电。c2 范围完成，c3 的 Kernel 批量审批/结果、模型闭环与 Diff Artifact 尚未实现；当前效果报告是历史归因，不是实时文件完整性证明，也未新增实际效果 Diff 自动发布。本片无真实模型请求、SSH 或中间件部署。远端结果以本片提交 CI 为准。
-
-
-## 26. 0.5.3c3a 整组调用桥接验收（2026-09-04）
-
-在 `6a7cc65` 和 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33867929295) 基础上实现 [ADR 0034](adr/0034-batch-call-bridge-and-kernel-integration.md)。本片是完整宿主调用桥接，不是 Kernel 模型批量工具或 Session 组审批。
-
-- 新增 **159项**：调用/契约/结果边界98项、生命周期40项、真实崩溃19项、冻结 Schema2项；Patch 套件累计 **828项**。
-- `make check`：Ruff、Mypy（109源文件）通过；**1947 passed、1 skipped**。本地缺 PostgreSQL，仅该项跳过，远程实库 CI 保留。
-- 异步调试 `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**1911 passed**。
-- 三文件准备/复核/完整批准/执行/重开，最大16文件执行与重开；定义深拷贝、幂等准备、并发重复消费拒绝；公开结果不包含原文、成员 ID、宿主身份或私有根，极限转义路径结果仍在48 KiB内。
-- Thread/Turn/Call/工作区/工具/版本/效果类别/审批要求错绑；顶层及每文件输入注入宿主字段均拒绝；完整计划篡改、成员重排、其他调用或副本、只读/后端/成员批准指纹替代均拒绝。重算外层哈希不能修复原稳定请求错绑。
-- 三成员位置的陈旧计划批准/拒绝及写前/写后故障：准确保留部分或未知效果和 pending 后缀；拒绝不制造运行，已批准陈旧组仍消费原许可。恢复只核对，后端 failed 原因不被“后来全部归因成功”改写。
-- pending/approved/rejected/applied × 原完整证明/缺计划/缺批准/错批准人/错摘要20组合；缺事实、损坏计划、丢失组开始事件均 unknown，不返回伪造成功或补批。结果层也拒绝别组/别调用/重排成员事实与虚假公开摘要。
-- 24项每成员写前后 × Token/Task/外层超时/重复 Task 取消；两个重复关闭场景、八项操作前取消/截止、排队截止不刷新、决定镜像与组开始间取消，以及准备/复核活动线程取消。所有父任务等待线程退出后返回，不遗留写线程。最后文件写后取消可以 applied + cancelled，不能用 succeeded 覆盖 Turn 中断事实。
-- 旧 Kernel 即使被通用注册器告知新定义也不广告或执行批量写，返回 tool_not_enabled；旧单文件定义和实现未改。
-
-**19个真实崩溃场景**：16个宿主组计划预留、决定镜像、组消费提交前后、三个成员批准及替换前后、组终态和桥接返回窗口；3个在各成员 after_replace 退出后，核对该成员时再次退出的场景。原计划夹具丢失保持 unknown，不伪造 Session 审批；有证明则只查询/核对原组，禁止准备/保存/批准/执行和旧单文件内部执行。恢复前后实际源目录、目标文件字节/inode/mtime/ctime 不变，重复恢复一致。全项目累计 **215个真实硬崩溃场景及2个 SIGINT 用例**；不是 Session×组组合矩阵或硬件断电证明。
-
-**兼容与基础包**：新增 managed-patch-batch-call-plan/output 两份 v1 Schema，所有既有 Schema 字节不变。Agent v6、Session migration7、Provider v3、副本账本v3、旧单文件路径、依赖及包版本均不变，不新增数据库迁移。独立基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 下此前十个示例及新 `batch_patch_bridge` 共十一个入口通过；Linux 3.12/3.13 与 macOS CI 加入新示例。
-
-本片未调用真实模型、SSH 或部署中间件。**c3a 范围完成，c3b/c3c 尚未实现**：下一片完成 Kernel 持久组审批/消费/效果、原时限和双 SDK/双账本恢复；再实现实际调用归属的 Diff Artifact。桥接的5秒排队/线程预算不能替代持久 Turn 预算，宿主仍需先持久消费等待边界。跨平台结果以本片提交 CI 为准。
-
-## 27. 0.5.3c3b Kernel 整组闭环验收（2026-09-04）
-
-在 `5a09dd0` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33869981047) 基础上实现 [ADR 0035](adr/0035-kernel-batch-approval-and-recovery.md)。本片交付显式 Kernel 整组端口、持久审批与双账本效果恢复；Diff Artifact 仍待 c3c，不把本片视作整个0.5或生产 Coding Agent 完成。
-
-- 新增 **158项**：整组 Kernel27、边界23、生命周期30、双 SDK2、组合崩溃67、Session 存储故障4、旧单文件缺端口回归1；真实 v6 transcript 升级1、migration8 故障3。Patch 套件累计 **982项**。
-- `make check`：格式/Ruff/Mypy（110源文件）通过，**2105 passed、1 skipped**。唯一跳过为本地未配置 PostgreSQL，远端实库作业保留。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**2069 passed**。
-- 显式组端口和默认关闭、错误名称/效果/幂等/审批/核对声明、重复定义、单文件端口不能代替组端口均覆盖。真实三文件等待/重开、Session 决定幂等/冲突、拒绝与严格参数、3个位置来源漂移、工具/副本/完整计划错绑有回归。
-- 两个实际 SDK 各用离线 MockTransport 完成6次 HTTP：读取两文件→组提案→关闭/重开审批→真实顺序写→逐文件读回→回答。所有流关闭，源目录 bytes/inode/mtime/ctime 不变；模型 wire 不含私有组证据、审批指纹/身份/组与成员 ID。不是新真实模型调用或自主 Coding Eval。
-- 3成员×替换前/后×Token/Task/重复取消/原超时共24项，另验证 Runtime 写/审批复核期间关闭及关闭反复取消、review 超时与复核后过期、等待中取消的保守结算。所有路径排空线程，Turn 取消/失败不抹去已归因写入。
-- 700/800字符结果预算下丢弃公开 output，保留 applied 私有效果并终止当前 Turn；准备前输出/Token预算耗尽不预留组。伪造宿主结果经拒绝后只恢复真实效果；已发生写入后丢弃全部证据、仅报告 failed 的宿主返回也不能冒充已知未应用，缺证据只允许 unknown；Replay 拒绝组身份/批准/有序成员/输出错绑、私有内层模型绕过构造校验、审批类型升级及恢复假完成。
-- Session 决定/结果分别覆盖事务投影后未提交、已提交丢失确认4项；决定故障不提前批准后端，结果故障不重复写或重复追加结果，旧事件 Replay 一致。新测试发现并修复了缺少原写端口重开时在 WAITING 中反复结算 unknown_tool 直到超时的问题，旧单文件同根因回归一并覆盖。
-
-**真实硬崩溃**：`test_kernel_batch_crash.py` 新增67个 os._exit 场景：11个 Session 调用/计划/请求/决定/消费/结果/终态窗口，15个组预留/审批/开始/预检/成员调度/结果窗口，3成员×9单文件意图/临时文件/替换/结果窗口，6个观察结算再次退出，以及8个真实写后退出结合端口/契约/计划/批准/运行缺失或相同字节异inode/文件丢失/内容偏离的重启场景。恢复禁用 Provider 和 prepare/save/reply/execute，未消费 WAITING 保留，其他只核对原组；缺后端匹配批准则 unknown。核对后源目录与目标 bytes/inode/mtime/ctime 不变，已持久 ToolResult 不再观察。另有2个真实 migration8 提交前/后退出；全项目累计 **284个硬崩溃场景及2个 SIGINT用例**，不是全部硬件故障覆盖。
-
-**版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment.md#历史-session-v7--migration8-升级053c3b)。
-
-**基础发行包**：仓库外独立环境只安装锁定基础依赖，确认无 OpenAI/Anthropic SDK；`python -I` 下 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval、managed_batch、batch_patch_bridge、kernel_batch 共 **12个示例**通过。Linux Python3.12/3.13 与 macOS CI 增加新示例，PostgreSQL 作业保留，远端状态以本片对应提交为准。包版本仍0.1.0，没有新模型请求、远程登录或中间件部署。
-
-## 28. 0.5.3c3c1 真实差异报告与 JSONL 验收（2026-09-04）
-
-在 `1c02c22` 及 [四项全绿 CI](https://github.com/carrie1988/Harnessix/actions/runs/33885067939) 基础上实现 [ADR 0036](adr/0036-batch-diff-documents-and-artifact-admission.md)。本节记录 c3c1 当时的报告准备验收，不是 Session Artifact 发布；c3c2 的后续验收见第29节，不将 c3c/0.5 标记完成。
-
-- 新增 **108项**：文档/预算/契约56、真实桥接与只读发布门禁30、异步生命周期12、真实退出7、冻结 Schema3。Patch 套件累计 **1090项**。
-- `make check`：Ruff/Mypy（112源文件）通过，**2213 passed、1 skipped**；本地未配置 PostgreSQL，实库回归继续由远端 CI 承担。
-- `PYTHONASYNCIODEBUG=1 uv run pytest -W error tests/agent tests/models tests/smoke tests/tools tests/artifacts tests/patches`：**2177 passed**。
-- 计划 JSONL 与既有 Diff 的编辑、坐标和文本摘要完全一致；仅提取共用精确区间迭代器，没有新文本匹配器。历史选择 applied/observed_after；failed、observed_before、pending、approved、started、uncertain、diverged、missing、unavailable 分别验证，未知/未执行成员不隐藏或伪造编辑。全部应用也保留 completed/cancelled/timeout/failed/interrupted 原因。
-- 字节预算1024/1600/2000/2400/4000/65536/1048576覆盖拒绝与编辑前缀。完整预算恰好可用、少1字节明确截断，换行和 JSON 转义计入。预览0/1/2/3/4/1024/4096字节不切断 UTF-8 码点，完整摘要/长度与 c1 一致。16文件×32编辑的512行大报告在1 MiB内完整、默认64 KiB为显式前缀；4096字节两侧最大转义预览配合长路径仍在24 KiB单记录上限内。每份报告均由原 Artifact JSONL 校验器解析，但不进行发布。
-- 文档契约拒绝伪造完整性、计数、成员/编辑重排、丢成员、计划伪装效果、错误指纹及坐标。真实宿主桥接拒绝 Thread/Turn/Call/工作区/工具/计划/批准/运行错绑、证据缺失、镜像损坏、预算不足与非法视图；报告未改变账本/目标状态。
-- 实际三文件写后重开并改变当前目标，报告仍只展示原计划与已归因历史；禁用所有 prepare/save/reply/execute/reconcile/verify 和目标 open 后生成成功，数据库逻辑原文、源目录及目标 bytes/inode/mtime/ctime 不因生成改变。3成员×替换前/后异常覆盖部分/未知报告；显式恢复后的新快照才可显示 observed_after，旧快照拒绝，不隐式采用新事实。
-- 计划/效果两种视图各覆盖 Token/Task/重复取消/外层超时/重复取消关闭，线程结束前任务或关闭不会提前返回；已停止操作不加载账本。真实 Kernel 宿主的计划与效果文档均不能绕过旧只读发布器，失败不改变 Session 事件。
-
-**真实退出**：两种视图在加载后/编辑中/报告返回前共6个 os._exit 场景，重开报告不追加任何账本观察或改变文件；另有1个真实组开始后退出，确认 started 运行不能被报告器冒充已结算历史，也不自动 reconcile。全项目累计 **291个硬崩溃场景及2个 SIGINT用例**。这7项不代表未来 Session 归档事务已验收，也不模拟全部断电故障。
-
-**兼容/发行**：新文档、选项与 JSONL 记录三份独立v1 Schema，所有既有 Schema 字节不变。Agent v7、Session migration8、Provider v3、副本v3、旧工具定义与依赖不变，没有新迁移。仓库外基础 wheel 环境未安装供应商 SDK，以 `python -I` 运行原12个示例加 `batch_diff` 共 **13个示例**通过；新示例从真实 Kernel 审批取得计划/决定/效果，但报告没有 ArtifactRef，不伪造发布。Linux Python3.12/3.13 与 macOS CI 增加新入口，PostgreSQL 作业保留，远端验收以本片提交为准。
-
-无新模型请求、SSH、数据库或中间件部署。下一片 c3c2 必须单独验证计划/效果双用途的事务引用、真实 Session 准入、reader 兼容、分页/配额/过期、发布失败后的效果保留及真退出；不得简单取消旧只读限制或单调用唯一约束。
-
-## 29. 0.5.3c3c2 差异事务归档验收（2026-09-05）
-
-基线 `33e690e`，实现见 [ADR 0037](adr/0037-batch-diff-transaction-publication.md)。本次交付计划/效果双用途的真实 Session 归档，完成0.5.3c范围，不把0.5、Shell或完整生产 Coding Agent标记完成。
-
-- 新增 **65项**：事务/结果语义/预算/配额/作用域/生命周期52、真实发布退出6、真实migration9退出与旧归档4、双SDK归档分页2、真实v7 transcript升级1。
-- `make check`：Ruff及Mypy（113源文件）通过，**2278 passed、1 skipped**；唯一跳过为本地无PostgreSQL的实库项，远端CI继续验收。
-- 原组工具定义、全部旧Schema字节和副本账本v3不变；新增Agent Event/Thread v8及migration9。Provider v3、供应商依赖、包版本0.1.0不变。
-
-**发布与失败**：真实Kernel等待审批保有计划引用，批准不改变该引用或完整计划指纹。正常、拒绝、陈旧计划、三成员各位置的替换前失败/替换后未知，均把原真实效果和独立引用一起保存；只为已归因前缀返回编辑，不把unknown或未执行后缀变成修改。报告预算、公开引用预算、四类配额耗尽均不丢弃真实效果。两用途的插入/提交前/提交后故障分别验证回滚后原事实结算或提交后确认，不重复模型/文件执行。
-
-**恢复和取消**：计划/效果×插入后/提交前/提交后共6个真实 `os._exit` 窗口，重开禁止prepare/execute/Provider，保留WAITING或核对原效果；目标bytes/inode/mtime/ctime和源目录不变。任务取消在计划/效果的提交前/后共4种组合下验证正文/引用/结果一致；有完整已写证据的恢复结果可生成历史报告，已提交结果不重新观察。分页、跨Thread/工作区、用途/调用错绑、正文损坏、TTL、活跃Thread保护及清理均覆盖。
-
-**迁移**：实际旧 `33e690e` wheel 在独立基础环境生成三类WAITING与一个只读Artifact，新wheel初始化保持旧事件/投影/manifest/正文原字节和文件身份不变，再显式完成旧三类审批，整组效果取得新引用；旧reader在升级和执行后均拒绝。实际旧wheel完成的v7整组transcript与旧只读归档原文夹具纳入CI。migration9在复制、删除旧表、重命名和提交后共4个真实退出，重开只有完整旧库或完整新库，旧引用可读且可过期清理。全项目累计 **301个硬崩溃场景及2个SIGINT用例**，不代表硬件故障全覆盖。
-
-**模型和发行**：两个真实SDK通过MockTransport完成读取、整组提案、审批重开、实际副本修改、读回，再根据公开效果引用分页读取一条报告；wire不泄漏私有批准/组/成员身份，不把写输出包装成只读结果。基础wheel无供应商SDK，仓库外`python -I`执行13个示例，`batch_diff`已更新为双引用事务归档验收。全部验证无新模型请求、SSH或中间件部署。
-
-`PYTHONASYNCIODEBUG=1`、`-W error` 的 Agent/Models/Smoke/Tools/Artifacts/Patches 回归 **2242 passed**；未关闭流、后台任务或异步警告不被忽略。最终基础 wheel SHA256 为 `8ea716bd22ee7021d822a21e4e580ed24a8bffe82f9e3f2e7764c6aabad7e0bc`。跨平台验收以本片最新提交 CI 为准，不使用旧提交结果冒充本片通过。下一阶段0.5.4先完成Process的执行/输出/进程组生命周期与审批边界设计，再实现Git/测试反馈，详见阶段文档第27节。
-
-## 30. 0.5.4a 宿主进程生命周期验收（2026-09-05）
-
-基线 `76dae11` 与CI33893001258四项成功；设计见 [ADR 0038](adr/0038-host-process-lifecycle.md)。新增 **100项**：契约/准入/Schema61，运行/输出/取消/绑定27，后代/启动窗口/关闭/错误生命周期11，宿主硬退出能力边界1。
-
-- 实际OS进程验证双流各2MiB的并发输出，捕获0/1/1024/24576字节仍完整排水，独立观察长度/摘要正确；二进制、跨块UTF-8和截断多字节字符不被替换成伪原文。
-- 输出停止阈值与展示预算独立，达到阈值关闭仍打开的管道并终止，非EOF不冒充完整；stdin EOF、环境不继承、额外FD关闭、argv不解释Shell、非零/信号退出均验收。
-- 实际Token/Task/多次Task取消、外部超时、close、取消close、启动成功但句柄交付前取消，均先回收直接子进程；忙时不排队，正常结束或取消后可再次执行，关闭后拒绝新请求。
-- 主进程先退出而同组后代继续持管道/已关管道、忽略TERM的孙进程、管道先EOF但主进程仍活，均验证独立事件和组清理。组信号失败明确cleanup_failed并拒绝后续执行。
-- 脱组子进程持有管道的例子验证有界关闭与非EOF；子进程仍活，不伪称containment。另一个宿主 `os._exit(84)` 真退出后仍有存活子进程，测试父进程负责清理。本片新增的是已知缺口的真退出反例，不宣称已经实现宿主硬崩溃恢复；前序301个硬崩溃验收及2个SIGINT的口径不被该反例混淆。
-
-仅新增四份Process v1 Schema；Agent v8/Session migration9/Provider v3/副本v3、旧Schema、工具定义和依赖不变。所有新进程运行固定测试夹具，未运行不可信仓库代码、真实模型、SSH或中间件。本片完成0.5.4a基础层，不是整个0.5.4或生产Coding Agent完工。
-
-`make check`：Ruff及Mypy（117源文件）通过，**2378 passed、1 skipped**；唯一跳过仍为本地无PostgreSQL的实库项，由远端PostgreSQL作业单独验收。`PYTHONASYNCIODEBUG=1`、`-W error`的Agent/Models/Smoke/Tools/Artifacts/Patches/Processes回归 **2342 passed**，不忽略未关闭流、后台任务和异步警告。
-
-基础wheel重新构建并安装到独立环境，无供应商SDK；仓库外`python -I`执行原13个示例及`host_process`共 **14个示例**通过。最终wheel SHA256为 `7ec1043a222fe800aeaf7c495b391e146e35eed1095d76601c72dba86d47f309`。Linux Python3.12/3.13全回归和macOS工具回归纳入本片进程测试/示例，PostgreSQL作业保留；跨平台结论以本片最终提交CI为准，不能使用旧提交结果。后续b1已实施Action Plane持久准入；下一片b2处理Agent绑定与宿主死亡运维处置，再接Git/run_tests。
-
-**跨平台根因修复**：首个提交`ab02373`的CI33897979250中，Linux3.12/3.13与PostgreSQL成功，macOS只有环境键集合断言失败（1523通过、1失败）。在本地Python Framework 3.12.8的全新环境复现出系统编码变量，而Anaconda 3.12.7没有，排除简单重跑。执行层及允许列表不改；补充默认/空/显式三种真实启动映射、父变量哨兵与配置防变更回归，并明确拒绝宿主传入CF编码变量。子进程初始化可自设变量，不能以其完整键集合反推exec继承情况；该事实和求证来源见ADR0038。独立Framework 3.12.8环境在异步调试与警告转错误下100项进程测试通过，最终精确环境用例4项再验通过；执行包内容未变化，基础wheel及14示例验收仍对应相同字节。最终结论必须核对修复提交CI，不沿用首次失败结果。
-
-## 31. 0.5.4b1 Action Plane持久进程准入验收（2026-09-05）
-
-基线`adfe267`及CI33899008420四项成功；设计见 [ADR 0039](adr/0039-process-action-plane-admission.md)。新增 **14项**：Action输入/工具描述/绑定摘要5，持久审批/幂等/结果/拒绝/配置漂移/非零与未知效果6，Task取消与租约恢复1，凭据引用拒绝1，Action执行宿主真硬退出边界1。
-
-- 批准前命令不运行；批准后真实进程只执行一次，相同幂等请求返回原Action/Result。拒绝、当前绑定漂移及跨重启工具版本漂移均在启动前失败。
-- 二进制ProcessResult和Effect Receipt进入原SQLite Effect Journal；退出0/7都是确定的调用结果。输出强制关闭保留证据并归为UNKNOWN，对账只到MANUAL_INTERVENTION，不重放。
-- Task取消先回收直接子进程；未写终态的RUNNING租约过期后恢复UNKNOWN。真`os._exit(84)`后重开亦恢复UNKNOWN，原测试子进程仍活且不被历史PID终止，父测试负责清理。
-- 严格Action JSON拒绝类型强转/NUL/额外Shell字段，SecretRef未解析时批准后仍在启动前失败。工具不加入默认Bootstrap或模型清单。
-
-阶段针对性进程测试 **114 passed**，Ruff和Mypy（118源文件）通过。`make check`为 **2392 passed、1 skipped**，唯一跳过仍是本地无PostgreSQL的实库项；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2356 passed**。
-
-基础wheel无供应商SDK，仓库外`python -I`运行原14个及`process_action`共 **15个示例**通过；最终wheel SHA256为`f5724f7dd070194b28817d70419eb91558a1226ae7f7777d414488ab9766bbd2`。Linux3.12/3.13、macOS与PostgreSQL以本片最终提交CI为准，不能用`adfe267`旧CI代替。本片完成0.5.4b1，不代表Agent进程工具、b2、0.5.4c或生产Coding Agent完成。无模型请求、SSH或中间件部署。
-
-## 32. 0.5.4b2a 单一审批Saga设计验收（2026-09-05）
-
-基线`81c76f6`及CI33921498948四项成功；设计见 [ADR 0040](adr/0040-agent-process-action-saga.md)。本片只冻结跨账本协议，不新增代码能力或更改版本。
-
-- 对照现有Agent审批、Action审批、Action租约恢复和Artifact事务发布，确认原样串联会产生双执行许可；明确Action Approval为唯一权威，Session只存可核验投影。
-- 列出Action创建、Session等待、Action决定、执行、结果投影各提交边界的8类崩溃窗口；每类恢复均只重取稳定Action或补Session投影，不再次批准/执行。
-- 明确需要持久WAITING_ACTION，避免批准后把Worker运行塞入同步答复；取消不撤销已提交决定，UNKNOWN不回READY。
-- 区分Action Result效果事实和Process Artifact展示材料；后续Artifact必须绑定Action/Call/流摘要并与Session ToolResult同事务。
-- Codex/OpenCode使用实际冻结源码路径求证；Claude辅助仓库只观察前后台需求，不作为安全规范。
-
-文档链接、格式、敏感信息扫描均通过；`make check` **2392 passed、1 skipped**，Mypy仍为118源文件；异步调试与警告转错误 **2356 passed**。基础wheel无供应商SDK，仓库外`python -I`运行15个示例通过，SHA256为`6c7528ed16dee578f446a652a27e646599ae2f1343b38edec57c8f55276eb22a`。跨平台CI以最终提交为准。
-
-Agent v8、Session migration9、Action/Process Schema、依赖和示例行为不变。下一片b2b才实现契约、事件与迁移，不能把本ADR称为Agent进程工具完成。无模型请求、SSH或中间件部署。
-
-## 33. 0.5.4b2b1 稳定Agent/Process Action身份验收（2026-09-05）
-
-基于`3ee2cea`及CI33925461337四项成功实施。新增纯契约`AgentProcessCallPlan`和受信准备/快照核对桥接；没有修改Agent Event/Thread v8、Session migration9、Action/Process v1、Provider v3或依赖。
-
-- 同一Thread/Turn/Call、绝对工作区、完整ToolCall、Principal和宿主ToolDescriptor重复准备，得到逐字段相同的ActionRequest、Action ID、幂等键与计划；主体、argv或宿主环境绑定变化均生成不同身份。
-- 严格核对`host.process`名称、Process Action输入Schema、高风险非幂等分类、强制审批/幂等、禁止自动对账、工具版本和完整描述指纹。额外字段、类型强转、伪造计划、工作区/调用作用域或宿主绑定错配在提交或投影前拒绝。
-- 真实SQLite Effect Journal提交后停在PENDING_APPROVAL；相同请求返回原Action。测试再由Action Service写入唯一批准并停在READY，不启动进程。只有原ActionRequest、持久ToolDescriptor、Action请求指纹、Action状态以及已有Action Approval指纹全部匹配时，快照才可作为后续Session投影来源；伪造未批准READY或在PENDING挂拒绝决定均被拒绝。
-- 新增独立`agent-process-call-plan-v1`冻结Schema；完整argv仍只在原ToolCall和ActionRequest，计划仅保存摘要。契约模块不依赖Agent模型，避免b2b2把计划加入事件时形成循环导入。
-
-新增 **5项** 契约/Journal测试。`make check`通过：Ruff、Mypy（120源文件）、**2397 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2361项全部通过**。没有新增硬崩溃场景，前序数量不变。
-
-基础wheel未安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。无真实模型请求、SSH或中间件。下一片b2b2升级Agent事件/等待/结果投影与Session reader，并用真实v8旧wheel验证升级和拒绝降级；当前默认Agent仍不暴露或执行`host.process`。
-
-## 34. 0.5.4b2b2a Agent进程投影与持久等待验收（2026-09-05）
-
-基线`e0e8498`及CI33930667562四项成功；本片实现b2b2的事件/Reducer/最低reader子片，不把真实旧wheel和运行时工作提前标记完成。
-
-- 新增Agent Event/Thread v9、WAITING_ACTION、Process审批/Action状态/Tool Result私有证据和Session migration10。v1–v8 Agent Schema文件摘要冻结；无Process证据的旧Tool Result仍不序列化空字段。
-- 投影构造只接受通过b2b1完整身份核对的ActionSnapshot。Session决定的指纹来自Action请求，不接受普通Session展示指纹；批准与DENIED矛盾、伪造Action请求或跨调用快照均在构造层拒绝。
-- Reducer强制`WAITING_APPROVAL → WAITING_ACTION → EXECUTING_TOOLS`。RUNNING观察不能提前离开或生成结果；FAILED终止观察及结果摘要持久化后才可结算。伪造摘要、结论错配、倒退或终态后追加均失败，失败批次原子回滚。
-- Runtime重开保留WAITING_ACTION，不误记INTERRUPTED；现有`resume_turn`明确拒绝该尚未接线的状态。模型历史仅包含Tool Result的`outcome/output/error/diff_artifact`白名单，不暴露Process计划、批准、Action ID或私有效果。
-- CostReport与SmokeReport继续使用原v1数据契约，只在共享TurnStatus枚举中加入WAITING_ACTION；当前已实现的成本和Smoke场景输出形状不变。
-
-新增 **4项** Agent投影/边界测试。`make check`通过：Ruff、Mypy（121源文件）、**2401 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2365项全部通过**。本片未新增硬崩溃场景；真实migration10提交窗口留给b2b2b。
-
-Agent v8/Thread v8冻结摘要分别为`d83381b4dffa5854ad4c5997a775e617800c3304481c88f10e3b7b9021a23fa3`和`5874c0d4eef02d0cc473ed12bbf5cf7f529eff6508087c9f7ac1a2a7f57f4608`；migration10摘要为`fbcda6a8f05001fb1834aae2c75ed8e96d052632c8627777b62dabd5edb5b3fa`。基础wheel不安装供应商SDK，仓库外`python -I`运行15个既有示例通过；wheel SHA256为`7a8d189119d978240cd10b5efab7ecb3a13d453a08609fa16eb56a1c753fae04`。
-
-无真实模型请求、SSH或中间件部署。下一片b2b2b使用真实`e0e8498` v8 wheel验证跨安装升级、旧reader拒绝和migration10提交前后硬退出；b2c再实现Agent Runtime创建/批准/执行/观察、Process Artifact及双SDK离线闭环。默认Agent仍不暴露`host.process`。
-
-## 35. 0.5.4b2b2b 真实v8升级与migration10恢复验收（2026-09-05）
-
-基线`bc2006c`及CI33949877646四项成功。本片不修改运行时领域契约，只补齐b2b2a明确保留的真实跨安装和迁移硬退出证据。
-
-- 从`e0e849813942b21452ba1943d5cca3a5f936e5f6`实际导出并构建v8 wheel，安装到独立基础环境；旧wheel SHA256为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`。旧环境真实执行两步离线模型脚本和只读工具，生成Event/Thread v8及migration1–9，不从当前源码改版本号。
-- `process_session_upgrade_probe.py`以该门禁的v9 wheel升级同一数据库。初始化只追加migration10；旧事件JSON、旧投影JSON/摘要/projection version 8、前九个migration及数据库inode保持不变。升级后可追加v9 Turn，原v8事件仍逐字节一致，Replay等于持久投影。
-- migration10升级后及追加v9事件后两次由真实v8环境重开，均明确返回`schema_too_new`；拒绝前后的migration、事件和投影行及数据库inode一致。旧reader未执行降级、重建或工具调用。
-- 真实旧wheel导出的`session-v8.json`纳入历史transcript回归，SHA256为`f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3`；v1–v8均可由当前reader升级、继续并保持旧事件原字节。
-- migration10 marker插入后未提交、事务提交后启用WAL前两个窗口使用真实子进程`os._exit(85)`。重开只看到完整migration1–9或1–10；旧v8事件/投影与projection version 8不变，再次初始化幂等。按既有事务/恢复口径，硬崩溃场景由301增至303；进程宿主存活后代反例不混入该计数。
-
-新增 **3项** 自动回归：1项真实v8 transcript历史参数和2项migration10硬退出。`make check`通过：Ruff、Mypy（121源文件）、**2404 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2368项全部通过**。
-
-最终基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行15个示例和真实旧/新升级探针通过，SHA256为`e7a85fc4af22bea55ebd2d4db963890a774fbfbf3b0526d42899a4e86ef6dd84`。无真实模型请求、SSH或中间件部署；Linux3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
-
-b2b2范围完成不代表Agent已能执行进程。默认Agent仍不暴露`host.process`，`reply_approval`、`resume_turn`和取消也不会越过b2b2a门禁。下一片b2c实现Action创建/唯一批准、Worker执行/有界观察、跨库恢复、Process Artifact及双SDK离线闭环。
-
-## 36. 0.5.4b2c1 Process Agent运行时Saga验收（2026-09-05）
-
-基线`57a49e2`及CI33953770189四项成功。本片在冻结的Agent v9/Session migration10和Action/Process v1契约上接入运行时行为，没有修改Schema、数据库迁移、依赖或包版本。
-
-新增 **7项** Agent/Action组合测试：
-
-- 显式端口后模型才看到`host.process`；模型调用先形成PENDING Action和Session审批，批准只进入WAITING_ACTION，标记文件证明审批答复没有执行命令；
-- Action Worker独立领取READY并真实执行一次；`resume_turn`对READY只追加一次有界状态，相同快照不增加Session sequence，对SUCCEEDED一次提交终态状态/结果并继续第二模型步骤；
-- Action决定已写、Session决定提交前注入失败后，相同决定可重答补投影，不再执行Action状态转换；不同actor/outcome/reason明确`approval_conflict`；
-- 外部Action审批已完成而Session仍WAITING_APPROVAL时，`resume_turn`只读镜像原ApprovalRecord并进入WAITING_ACTION，Action事件中只有一次`approval_granted`；
-- 用户拒绝后Action为DENIED且Worker队列为空，终态失败结果可供模型处理；桥接拒绝`auto_execute=True`，防止审批调用内同步执行；
-- 未决定的Process审批即使原Turn已超时，重开和resume也保留原PENDING事实，不走既有通用终结路径伪造结果；外部Action后来形成决定时仍按其真实时间补投影，但不会刷新Turn预算；等待取消协议留给b2c3；
-- 输出证据不完整的真实Worker结果为UNKNOWN；Agent投影unknown后直接INTERRUPTED，未发起第二模型步骤，也未把Action放回READY。
-
-模型公开结果验证只含Action状态、returncode、stop reason、termination和双流计数/摘要/EOF，不含`data_base64`；模型wire继续只含`outcome/output/error`，Action ID和Process效果留在Session私有证据。完整输出Artifact尚未实现。
-
-`make check`通过：Ruff、Mypy（**122源文件**）、**2411 passed、1 skipped**；唯一跳过仍是本地未配置PostgreSQL。Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2375项全部通过**。基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行原15个示例及新`kernel_process`共 **16个示例**通过，wheel SHA256为`7dc4ef2fdaef33b02b0746fa701303c158dfacde3db0069b655948e3e9fd3fa3`。
-
-新示例使用脚本化Provider、本地Session/Effect Journal和固定Python程序，串联模型调用、唯一Action审批、外部Worker、结果观察、第二模型步骤与Replay。没有真实模型请求、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL以本片最终提交CI为准。
-
-本片不计入新的真硬退出场景。Action提交后而Session审批请求尚未落库、跨进程并发决定、WAITING_ACTION取消、租约UNKNOWN和Session终态提交窗口留给b2c3；Process Artifact、分页/配额/TTL/损坏恢复留给b2c2。默认Agent仍不暴露`host.process`，当前仍不是任意Shell或OS Sandbox。
-
-## 37. 0.5.4b2c2 Process输出Artifact验收（2026-09-06）
-
-基线`8387741`及CI33972815446四项成功；开工前fetch确认本地与`origin/main`一致。本片只实现b2c2，不提前把b2c3跨库恢复或0.5.4c Git/测试工具标记完成。
-
-新增 **24项** 自动回归：
-
-- `process-output/v1`保存唯一summary及stdout/stderr有序Base64分片；二进制、NUL、无效UTF-8和中文原字节往返一致，规范JSONL、连续offset、捕获摘要、观察摘要、EOF/truncated和`complete`均严格校验；
-- 文档保留Action已经捕获的完整前缀，编码后超过1 MiB则不发布，不进行第二次隐藏截断；两份独立v1 Schema与代码生成结果一致；
-- 正常模型→Action审批→外部Worker→终态观察链路同时提交正文、manifest、`output.artifact`和Session终态，按每页1条实际遍历后可重建双流；模型历史不包含Base64、PID或私有Action ID；
-- 正文插入后/提交前异常与配额不足均降级保留无引用真实效果，提交后确认丢失识别原Event ID且只有一个引用；正文、manifest、Call、引用和purpose五类篡改均为`artifact_corrupt`；跨Thread/scope不可见，TTL后明确过期并清理；
-- 三个真实`os._exit(87)`覆盖正文插入后、Session提交前和提交后。提交前恢复只读原SUCCEEDED Action并发布，不调用Worker；提交后恢复不观察或重放。三种路径均为一个Action、进程标记一次和至多一个Artifact；
-- migration11的复制、删除旧表、重命名和提交后四个真实`os._exit(86)`只留下完整migration10或11，旧Artifact/事件/投影原字节、读取、TTL清理、外键和Replay保持。按既有统计口径，真实持久边界硬退出场景由303增至 **310**。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**124源文件**）通过，**2435 passed、1 skipped**；唯一跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2399项全部通过**；
-- 基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行 **16个** 基础离线示例通过；`kernel_process`现额外验证Process Artifact读取，wheel SHA256为`2ec6c89e2be650cd01654e8567dd44775d6ef52c0825d42cb481d63189b4a4ee`；
-- 真实`e0e8498` v8 wheel（SHA256 `d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`）创建migration1–9会话；该门禁wheel原字节升级到migration11、继续追加v9事件，旧reader在升级及继续后均`schema_too_new`且不改变数据库。
-
-没有真实模型请求、API Key、SSH或中间件部署。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。本片仍不提供WAITING_ACTION取消、Action创建前后完整恢复、跨进程并发决定、后台命令、OS Sandbox、Git/run_tests或自主Coding Eval；下一片为b2c3。
-
-## 38. 0.5.4b2c3 Process完整恢复与双SDK验收（2026-09-06）
-
-基线`048a231`及CI 33987803502四项成功；开工前`fetch`确认本地与`origin/main`一致。本片完成b2c3，不修改Agent/Session/Action/Process/Artifact Schema，不增加迁移、依赖、真实模型请求或中间件。
-
-新增 **15项** 自动回归，其中本地14项通过、1项PostgreSQL实库测试按环境跳过：
-
-- 八个Session×Action真实`os._exit(88)`边界覆盖Action准备前后、审批请求前后、Action决定、Session决定、终态观察和结果提交。恢复后均为一个Action、一次进程标记、至多一个Artifact及Replay一致；结果已提交但模型续跑未提交时保守INTERRUPTED；
-- Action准备前退出后，先用未配置Process端口的Runtime重开，证明`EXECUTING_TOOLS`事实与零Action保持；随后配置原端口，只创建稳定Action并补请求。Action决定先于Session请求时由只读同步修复；
-- WAITING_APPROVAL在原Turn过期后拒绝新决定，取消可幂等结算为unknown/INTERRUPTED；WAITING_ACTION取消保留原Action ID且不伪造Process效果，原READY许可仍能被独立Worker执行一次；
-- 真实Worker在进程启动后`os._exit(89)`，租约恢复在SQLite中持久保存`UNKNOWN/lease_expired`结果；Agent投影后中断且不发第二模型请求。PostgreSQL新增同语义实库用例，由CI服务作业执行；
-- 两个独立Python进程同时决定同一Action：相同决定双方幂等成功且仅一个决定事件，不同决定一胜一`approval_conflict`；Session只镜像权威获胜事实；
-- OpenAI `AsyncOpenAI`和Anthropic `AsyncAnthropic`分别通过真实SDK与离线Mock HTTP完成Process调用、Runtime关闭/重开、审批、外部Worker、终态Artifact发布、`read_artifact`读取summary及最终回答。每种供应商固定三次请求、所有SSE流关闭；wire无Action ID、私有指纹/效果、幂等键和`data_base64`。
-
-本片新增九个真实硬退出场景，按既有统计口径由310增至 **319**；其中八个是跨库提交窗口，一个是RUNNING Worker租约丢失。跨进程审批测试是并发裁决，不计入硬退出数量。父测试清理仍存活的夹具进程组不代表生产Runtime具备孤儿监督。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**124源文件**）通过，**2449 passed、2 skipped**；两项跳过均为本机未配置PostgreSQL实库，其中新增项会在PostgreSQL CI执行；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2413项全部通过**，没有忽略未关闭流、后台任务或异步警告；
-- 当前基础wheel不含OpenAI/Anthropic SDK，仓库外`python -I`运行 **16个** 基础离线示例通过；wheel SHA256为`c203275f39014ea3869f6771400767850f0981ae7d12f5230d9d4295a9c2e59b`；
-- README/docs本地链接、格式、`git diff --check`及凭据模式扫描通过。实际SDK测试只使用离线夹具环境引用，不使用用户Key、SSH或网络。
-
-Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。0.5.4b范围至此完成；下一片是0.5.4c固定Git状态/差异、run_tests和受控命令反馈，不提前宣称任意Shell、OS Sandbox或自主Coding Eval完成。
-
-## 39. 0.5.4c Git与受控测试反馈验收（2026-09-06）
-
-基线`5e9efc`及[CI 34015620562](https://github.com/carrie1988/Harnessix/actions/runs/34015620562)四项成功；开工前fetch确认本地与`origin/main`一致。本片复用Agent v9、Session migration11、Action/Process/Artifact v1和副本账本v3，不增加数据库迁移、依赖、真实模型请求或中间件。
-
-新增 **15项** 自动回归：
-
-- 7项Git测试：工具必须显式绑定可执行文件才注册；porcelain v2结构化解析普通/rename/untracked及条目上限；worktree/staged差异严格分开；48 KiB完整UTF-8前缀、观察字节和完整观察摘要一致；恶意`diff.external`与`core.fsmonitor`辅助程序未执行；父仓库子目录、非仓库和类型强转均有界拒绝；
-- 5项测试Profile用例：公开Schema只有`profile`，程序/固定argv不进入模型工具描述但完整进入唯一`host.process` Action；批准前不执行、独立Worker只执行一次；非零退出形成`passed=false`并继续模型；未知Profile和参数注入在零Action时失败，工作区/程序/时限绑定漂移在工具广告前拒绝；Thread工作区错配保持零Action并保守中断；
-- 1项完整脚本Provider闭环：第一次测试失败，读取真实Process Artifact stderr，读取源码并经Patch审批修改私有副本，第二次测试通过，再读取Git状态/差异并形成一致回答；源目录字节不变；
-- 2项官方SDK离线HTTP闭环：OpenAI和Anthropic分别完成`run_tests → git_status → git_diff → 回答`。每种供应商固定4次请求且流全部关闭；wire不包含固定测试代码/argv、Action ID、审批/绑定指纹、幂等键或`data_base64`。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**128个源文件**）通过，**2464 passed、2 skipped**；跳过项均为本机未配置PostgreSQL实库，CI实库作业继续覆盖；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2428项全部通过**，没有忽略未关闭流、后台任务或异步警告；
-- 构建sdist/wheel成功。基础wheel不安装OpenAI/Anthropic SDK，仓库外`python -I`运行原16个及新`coding_feedback`共 **17个** 离线示例通过，wheel SHA256为`01a1a26091a5756e151ee88b960f8c6f3aa6e401204bd422e5ecdaa4a394cc53`；
-- Linux Python3.12/3.13和macOS CI均新增`coding_feedback`入口；PostgreSQL作业保持。最终跨平台状态以本片提交后的CI为准。
-
-本片未新增真实硬退出场景，累计仍为319。示例中的临时Git仓库由受信宿主在私有受管副本中初始化，不把所有副本冒充Git worktree。没有使用API Key、SSH、远程服务器或中间件。0.5.4c当前定义范围完成，但仍不提供任意Shell、容器/网络隔离、源目录自动合入、Git提交/推送或非示例真实缺陷Coding Eval；下一阶段为0.5.5。
-
-## 40. 0.5.5a Coding Eval契约与评分器验收（2026-09-06）
-
-基线`f6df900`及CI34018653102四项成功；开工前读取项目规范并fetch确认本地与`origin/main`一致。本片只实现[ADR 0044](adr/0044-coding-eval-contract-and-grader.md)的任务/证据/评分/报告层，不把脚本Provider、测试夹具或单次真实请求冒充模型自主能力。
-
-新增 **15项** 专项自动回归：
-
-- 严格任务版本、来源revision/树摘要、受限相对路径、行为/回归集合、预算类型、HTTP来源凭据拒绝与完整任务指纹；
-- 成功报告必须同时通过固定14项检查，不比较Golden Patch；缺陷基线意外通过或最终检查集合被增删归为`invalid`，反馈顺序、越界修改和回答不一致归入对应`failed`类别；
-- 最终回答只接受严格JSON，路径和测试声明与真实证据精确一致；报告只保存回答SHA-256、字节数和解析声明，不保存模型summary；
-- 真实临时Git仓库验证普通修改、已暂存rename、untracked及原路径分类，HEAD不变，状态与Diff摘要来自0.5.4c固定Git端口；
-- 报告以0600临时文件原子往返，读取拒绝符号链接和损坏内容，缺失父目录统一映射为公开写入失败；三份公共v1 Schema由生成器和测试锁定。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**133个源文件**）通过，**2479 passed、2 skipped**；两项跳过仍是本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2443项全部通过**；
-- sdist/wheel构建成功；仓库外基础wheel未安装OpenAI/Anthropic SDK，Eval契约/评分入口/Schema可导入，既有 **17个** 基础离线入口全部通过；wheel SHA-256为`37d6e3e82bb3ee0d286c3afa8069ee7c94199925e3ea5dc81bedabf56fc250bc`；
-- 没有新增Agent/Session/Action/Patch/Process/Artifact Schema或数据库迁移，没有模型请求、API Key、SSH或中间件。Linux Python3.12/3.13、macOS和PostgreSQL最终状态以本片提交后的CI为准。
-
-首轮提交`d6990eb`的CI 34021247915中，PostgreSQL、macOS和Python3.13通过，慢速Python3.12 Runner暴露两个既有Patch生命周期测试的墙钟假设：测试把整个Turn预算写死为0.4秒或1秒，却断言审批、持久化和多成员执行一定先到达故障注入点。该Runner分别在到达单文件审批前和整组第二成员前耗尽预算；不是Eval代码失败。测试现复用仓库既有`capture_deadlines`，先用正常120秒预算到达明确执行点，再推进真实`asyncio.Timeout`上下文；同类整组审批和Process审批过期用例也不再等待墙钟。34个相关参数场景在asyncio debug与warnings-as-error下连续5轮通过，随后全量`make check`再次得到 **2479 passed、2 skipped**。
-
-0.5.5a不执行隐藏检查或真实任务，不新增硬崩溃场景，累计仍为319。下一片0.5.5b固定Harnessix历史真实缺陷来源、可复现缺陷物化、宿主隐藏检查和同一Runtime/Worker驱动；完成前仍不宣称非示例仓库Coding Eval通过。
-
-## 41. 0.5.5b1 历史真实缺陷物化与隐藏检查验收（2026-09-06）
-
-基线`a7770ef`及[CI 34022467264](https://github.com/carrie1988/Harnessix/actions/runs/34022467264)四项成功；开工前读取项目规范并fetch确认本地与`origin/main`一致。本片按[ADR 0045](adr/0045-historical-eval-materialization-and-checks.md)只实现历史任务Catalog、私有物化、ready清单和宿主隐藏检查，不接模型、Session、Action或Worker。
-
-新增 **8项** 自动回归，其中`tests/evals/test_historical.py`新增7项，公共物化Schema冻结新增1项：
-
-- Catalog固定真实来源revision、tree OID、`ls-tree` SHA-256、240个文件、允许路径、行为/回归检查和focused Profile；未知任务/检查有稳定错误码；
-- 从真实历史提交导出0700私有运行目录和单提交Git基线，0600 `ready`清单记录来源归档与基线身份；工作区不包含后续修复提交新增的测试，来源历史不进入私有仓库；
-- 相同运行ID保留未提交修改并重开；不完整目录不覆盖，清单权限放宽、符号链接、来源树不匹配均拒绝，物化失败不残留新运行目录；
-- 基线空ID行为检查确定失败、身份回归检查通过；只修改允许文件的一处判断后，行为和四类身份回归全部通过，Git证据只有允许路径且HEAD/暂存区不变；
-- 预取消传播`TurnCancelled`；解释器相对路径、宿主入口符号链接和非0/1退出分别形成绑定、发布或检查基础设施错误，不伪造行为失败；
-- 新`coding-eval-materialization-v1` Schema由生成器和冻结测试核对。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**137个源文件**）通过，**2487 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2451项全部通过**，没有忽略未关闭流、后台任务或异步警告；
-- sdist/wheel构建成功；仓库外基础wheel不安装OpenAI/Anthropic SDK，可完成真实历史物化，wheel包含宿主检查程序，既有 **17个** 基础离线示例全部通过；wheel SHA-256为`9c2f914c9b7ffaf3228e98a23c0b5cb204e26259f83996a900fb5dd593e54baa`；
-- Python3.12/3.13和macOS CI的Eval测试需要固定历史对象，checkout已改为`fetch-depth: 0`；PostgreSQL作业不运行历史物化，保持浅检出即可。最终跨平台状态以本片提交后的CI为准。
-
-本片没有新增真实硬退出场景，累计仍为319；没有模型请求、API Key、SSH、网络下载或中间件。宿主检查未提供OS Sandbox，仅允许内置Harnessix历史任务。0.5.5b2将复用现有Agent Runtime、Process/Patch审批和外部Worker形成端到端运行与评分；完成前不把确定性最小修复验收称为模型自主能力。
-
-最终全量复跑暴露一项既有Worker测试的1秒墙钟假设：测试要求1.2秒动作跨过初始1秒租约，同时假定本机调度不会让任意0.1秒心跳延迟超过租约；高负载下曾在续租前过期。该用例现使用5秒测试租约并按实际版本增长证明执行期间发生多次续租，不再把测试机调度及时性当作Worker功能前提；租约过期、过期恢复和过期Owner拒绝仍由独立测试覆盖。该用例连续10轮通过后重新执行全量门禁。
-
-## 42. 0.5.5b2 历史任务正式Runtime与评分验收（2026-09-06）
-
-本片按[ADR 0046](adr/0046-historical-eval-runtime-orchestration.md)把0.5.5b1固定的真实历史缺陷接入现有Agent Runtime、受管Patch、Process Action审批、外部Worker、隐藏检查、Git证据和0.5.5a评分器。使用确定性脚本Provider隔离模型方差，不访问网络或API Key。
-
-新增 **8项** 自动回归：`tests/evals/test_runner.py`新增6项，历史启动器身份新增1项，公共运行状态Schema冻结新增1项：
-
-- 真实历史revision先证明行为基线失败，再在第二层受管执行副本完成`run_tests(fail) → read_file → apply_patch → run_tests(pass) → git_status → git_diff → JSON answer`；最终行为及身份回归检查通过，HEAD/暂存区不变，只有允许文件产生Diff；
-- Session中实际形成三个批准事实，两次测试均由`ActionService(auto_execute=False)`后的独立`ActionWorker`消费，Effect Journal只有两个Action；Patch经过原Managed Patch账本，当前源仓库和只读物化层字节不变；
-- 完成报告保存7个模型步骤、6个工具调用、3次审批和1个修改文件；再次以同一运行ID调用只读取原状态/报告，不调用Provider；
-- Process批准持久化后注入宿主退出，重开保持原Thread/Turn、Action身份和批准事实，Worker只执行原READY Action，最终仍只有两个预期测试Action；
-- 外部取消在Session持久化CANCELLED，本次不强行执行最终检查；新进程重开不调用Provider，读取持久终态并生成`runtime`失败报告；
-- 报告原子发布后、运行状态提交前退出时，重开核对已有报告并只补`completed`与报告摘要，不重跑模型、测试或评分；
-- Agent尝试修改受管副本中任务允许范围之外的已有文件时，Patch计划可以形成但编排审批明确拒绝，文件不变、Effect Journal零Action且不发布报告；
-- 受管副本创建前要求工具隐藏路径与Catalog固定清单精确一致，新增或遗漏隐藏路径均拒绝，且不发布副本和运行状态；
-- 解释器启动器的正文与0700权限相同则重开不修改`ctime`，从而保持Process绑定指纹；权限被放宽时拒绝，不在旧审批身份下就地修复；
-- `coding-eval-run-state-v1`要求`ready/running/completed`字段组合一致，以0600原子文件持久化，读取拒绝权限放宽、符号链接、损坏和超限内容。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**139个源文件**）通过，**2495 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2459项全部通过**，没有忽略异步资源或警告；
-- sdist/wheel构建成功；仓库外基础依赖环境确认没有OpenAI/Anthropic SDK，可导入运行器/运行状态契约，wheel包含隐藏检查程序，既有 **17个** 基础离线示例全部通过；wheel SHA-256为`e1a6566478d031e0aa710d433e4b94af42deb6cd37451b13e3d9e49dd21c83d3`；
-- 本片没有修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，没有使用真实模型、API Key、SSH、远程服务器或中间件。
-
-本片测试直接使用Harnessix固定历史对象和真实本地Git，不使用人工临时缺陷代替数据集。确定性Provider仍不是模型能力证据；0.5.5c2必须对显式授权的真实Provider执行多次试验并分别记录成功率、Runtime/Provider失败、Token、时延和费用。宿主检查仍没有OS Sandbox，不能接入任意第三方仓库。
-
-## 43. 0.5.5c1 多试验计划与证据聚合验收（2026-09-06）
-
-本片基于[多试验源码研究](research/eval-campaign.md)和[ADR 0047](adr/0047-coding-eval-campaign-evidence.md)，新增请求前Campaign计划、完整运行证据核对、失败分类、Token/时延/成本聚合及私有原子报告。没有调用真实Provider或读取API Key。
-
-新增 **9项** 自动回归：
-
-- 四个独立run分别构造通过、Provider失败、Runtime失败和任务失败，聚合准确得到分类数量、14次模型尝试、140输入/28输出Token、nearest-rank P50/P95和同币种已知成本；
-- Provider失败只保留规范`transport`及retryable，供应商错误原文不进入Campaign报告；
-- 失败尝试Usage未知时单次成本为`unknown`，整体保留其他试验已知小计并标记`partial`及对应run ID，不填零；
-- 缺失计划试验、交叉run状态/报告、不同价格快照、计费上下文漂移、重复run ID和模型/价格不一致均拒绝；
-- CostReport必须由原Turn和Campaign固定价格绑定逐字段重算，不能信任调用方提供的金额或汇总；
-- 计划指纹、试验顺序及汇总字段在Schema反序列化时重新计算，删除、替换或篡改不能通过；
-- `coding-eval-campaign-plan-v1`和`coding-eval-campaign-report-v1`两份公共Schema由生成器与冻结测试核对；
-- 计划与报告使用0600临时文件、文件/目录`fsync`和同目录原子替换，读取拒绝权限放宽、符号链接、损坏和超限内容。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**141个源文件**）通过，**2504 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2468项全部通过**；
-- sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign计划、报告、构建与读写入口，既有 **17个** 离线示例全部通过；wheel SHA-256为`91970cd74774932bf32785a51ffd695979328834b97a1f5610e1a89eee49e633`；
-- 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema，也未使用网络、SSH、远程服务器或中间件。
-
-0.5.5c1只证明多个已完成运行能够形成一致、可重算且不掩盖未知成本的报告，不形成真实模型成功率。默认禁网执行入口与费用停止策略已由下一节c2a补齐；真实模型多次运行仍属于c2b。
-
-## 44. 0.5.5c2a 受控Campaign执行基础设施验收（2026-09-06）
-
-本片基于[执行与费用研究](research/eval-campaign-execution.md)和[ADR 0048](adr/0048-controlled-real-eval-campaign-execution.md)，增加默认禁网CLI、固定执行配置、单宿主锁、持久进度、试验间费用停止及聚合报告恢复。真实三次基线单列为c2b，不混入离线实现结论。
-
-新增 **30项** 定向自动回归：
-
-- 两个独立run通过正式0.5.5b2运行器完成物化、Agent Runtime、Patch/Process审批、外部Worker、隐藏检查和Campaign报告；每次拥有独立Session与工作区；
-- 计划在Provider创建前原子发布，Provider创建失败不丢失请求前固定证据；
-- 已知累计金额达到停止线后不创建下一试验，费用未知时持久`cost_unknown`并在重开时保持停止；
-- 单次完成后Campaign提交前退出时沿用同一run ID恢复，Campaign报告发布后状态提交前退出时核对完整报告并补写终态，不重开Provider；
-- 同一Campaign并发锁和源码revision漂移均在Provider创建前拒绝；完成状态、报告摘要、成本金额、完成顺序或停止原因漂移均fail closed；
-- 默认禁网不读取配置、不触碰文件、不创建Provider；CLI参数错误不回显输入；
-- 配置只接受0600普通文件，拒绝缺失、目录、FIFO、符号链接、权限放宽/只读、空文件、超过512 KiB、非法UTF-8、重复键及NaN；
-- 三份公共Schema由生成器与冻结测试核对，执行状态使用0600原子替换，读取拒绝链接、权限漂移和内容篡改；
-- CLI成功和失败输出均只能通过`CodingEvalCampaignRunReport`白名单契约反序列化，不含配置canary。
-
-定向入口：
-
-```bash
-uv run pytest \
-  tests/evals/test_campaign_execution.py \
-  tests/evals/test_campaign_cli.py
+| Unit | 纯函数、Reducer、Validator、Mapper | 边界值、非法状态、确定输出 | 持久化/进程/网络真实行为 |
+| Contract | 可替换端口的共享套件 | 所有实现满足同一行为合同 | 某个实现的性能与平台差异 |
+| Integration | 真实组件组合，公网默认关闭 | 事务、资源所有权、调用顺序 | 外部Provider或系统服务实际兼容 |
+| End-to-End | 隔离仓库中的完整产品链 | 最终Diff、测试、事件、进程和回答一致 | 长期Soak与大规模用户负载 |
+| Fault Injection | 明确事务/副作用切点 | 取消、异常、崩溃后状态和效果可解释 | 真实断电与所有内核故障 |
+| Security | 主动构造恶意输入和边界竞态 | 未授权能力、Secret、路径、协议失败关闭 | 完整第三方审计或形式化证明 |
+| Eval | 固定任务与评分合同 | 跨版本真实任务质量、效率与安全 | Runtime不变量测试 |
+| Validation | 受控真实外部环境 | 特定版本、环境和输入的实际证据 | 对未验证组合的兼容承诺 |
+
+```mermaid
+flowchart TD
+    Unit --> Contract
+    Contract --> Integration
+    Integration --> E2E[End-to-End]
+    Unit --> Fault[Fault Injection]
+    Contract --> Fault
+    Integration --> Security
+    E2E --> Eval
+    Eval --> Validation
+    Fault --> Release[Release Gate]
+    Security --> Release
+    Validation --> Release
 ```
 
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**144个源文件**）通过，**2534 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2498项全部通过**；
-- sdist/wheel构建成功；仓库外基础依赖环境没有OpenAI/Anthropic SDK，可导入Campaign执行契约与入口，默认禁网CLI不读取不存在的配置，wheel SHA-256为`bfc78d6681d37dfd5f4f7d67745cdf856a0a5bede3cc7b7c50e4902b45ff98e4`；
-- 本片未修改Agent v9、Session migration11、Action/Process/Artifact/Patch协议或数据库Schema。
-
-c2a测试全部使用可计价确定性Provider或故障替身，不使用网络、真实API Key、SSH、远程服务器或中间件。费用门禁只在完整试验之间生效，不证明单请求实时硬额度；随后c2b已在实现提交和CI通过后，使用固定百炼北京精确模型、三个独立run、Provider不自动重试及人民币10元停止线生成脱敏真实证据，见下一节。
-
-## 45. 0.5.5c2b 百炼北京三次真实Campaign验收（2026-09-06）
-
-执行前置门禁：实现提交`bbfd446`本地`make check`为2534 passed、2 skipped，异步调试套件2498项通过，基础wheel隔离导入通过；远端CI [34034578492](https://github.com/carrie1988/Harnessix/actions/runs/34034578492)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务全部通过。
-
-真实Campaign固定百炼北京`qwen3-coder-plus-2025-09-23`、3个独立run、单步骤最多1次Provider尝试、4096输出上限和人民币10元试验间停止线。执行结果：
-
-- Campaign状态completed，计划3次、实际完成3次、聚合报告原子发布；
-- 15个模型步骤均只有attempt index 1，没有自动重试；实际模型身份和Usage全部完整；
-- 总输入63129、输出1327 Token，已知估算成本¥0.273748，费用门禁未触发；
-- 三次主分类均为budget，Provider、Eval基础设施、一般Runtime和未知成本均为0；
-- 各run在第5步累计Token达到21429—21567，超过任务v1的20000预算，均在目标实现读取工具执行前终结；
-- 三个工作区均无变更，目标行为检查失败、身份回归检查通过，没有最终结构化回答。
-
-因此0/3不能解释为模型编码失败率，只能作为预算错误基线。Campaign基础设施、真实Function Calling、Usage映射、模型身份核对和费用聚合通过实测；任务预算适用性未通过。完整脱敏证据见[验证记录](validation/bailian-2026-09-06-coding-eval/README.md)。后续0.5.5c3需要任务版本升级和新Campaign，追加付费试验必须重新授权。
-
-## 46. 0.5.5c3a Eval累计Token预算版本化验收（2026-09-06）
-
-本片依据[Token预算适用性研究](research/eval-token-budget-applicability.md)和[ADR 0049](adr/0049-versioned-eval-token-budget.md)，不改变Runtime累计Token语义。新增 **4项** 自动回归增量：
-
-- 历史任务Catalog同时列出v1/v2，无版本查询返回v2；v1/v2仓库与Prompt相同、预算和指纹不同，未知任务/版本拒绝；
-- 同一正式Campaign测试分别以v1和v2完成两个独立run、发布聚合报告并只读重开，确认计划版本和指纹精确绑定；
-- Agent Runtime最终回答在100/100 Token时完成，在101/100时以`budget_exceeded`失败，两种终态均保留Provider实际报告Usage；
-- Eval评分在140/140时通过预算检查，在141/140时分类为`budget`，报告指标保存141而不是截断或清零。
-
-质量门禁结果：
-
-- `make check`：Ruff、Mypy（**144个源文件**）通过，**2538 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2502项全部通过**；
-- sdist/wheel构建成功；仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入v1/v2 Catalog和Campaign入口，默认禁网CLI不读取不存在的配置；wheel SHA-256为`c31c3de92c17a82ee832236bda9f2e1411cf9a0e4b370212d34890c3089b03ca`；
-- 仓库内首轮百炼v1计划和报告可由当前严格契约重新加载，计划指纹仍精确匹配Catalog v1的20000预算定义；
-- Schema生成器运行后无公共Schema变化；本片未修改Agent v9、Session migration11、Provider v3、Action/Process/Artifact/Patch协议或数据库Schema；
-- 本片没有真实Provider网络请求、API Key读取、SSH、远程服务器或中间件操作。
-
-c3a交付时只完成离线预算门禁；后续c3b已执行任务v2真实Campaign并形成第47节证据。
-
-## 47. 0.5.5c3b 任务v2三次真实Campaign验收（2026-09-06）
-
-执行提交`397542942be8474d99feb190a901e8b336a19bdd`已经通过本地2538 passed、2 skipped、2502项异步严格回归、隔离wheel验证及远端CI [34036786555](https://github.com/carrie1988/Harnessix/actions/runs/34036786555)四项任务。真实Campaign使用百炼北京`qwen3-coder-plus-2025-09-23`、任务v2、三个独立run、单步骤一次Provider尝试、4096输出上限、100000 Turn累计Token和人民币10元试验间停止线。
-
-验收事实：
-
-- Campaign完成3/3并原子发布报告；41个模型步骤全部为attempt index 1，模型身份和Usage完整；
-- 合计324142输入、3717输出Token和¥1.35604完整已知估算费用，未触发试验间费用停止；
-- 三次主分类均为`budget`；Provider、Eval基础设施、一般Runtime、任务主失败和未知成本均为0；
-- 三个Turn分别使用107564、114860和105435累计Token，在第13—14步记账后停止；
-- 三个工作区均无变更、没有最终回答，行为检查失败而身份回归检查通过。
-
-Session行为分析显示，三个模型在首次分页成功后均遗漏后续页所需的`expected_revision`，至少连续出现3、4和8次相同类型的无效读取。通用`tool_invalid_arguments`没有暴露参数值或内部异常，但也没有告诉模型跨字段要求，导致错误无法自纠正且完整历史持续增长。该Campaign证明任务v2消除了原20000预算的过早停止，却没有形成可解释编码质量基线。后续必须先以离线测试证明有界错误能经OpenAI-compatible和Anthropic映射进入模型历史并被纠正，再申请新Campaign；禁止在本Campaign上追加付费试验。完整证据见[验证记录](validation/bailian-2026-09-06-coding-eval-v2/README.md)。
-
-## 48. 0.5.5c3c 分页工具可纠正校验反馈验收（2026-09-06）
-
-本片净增 **8项** 自动回归，并强化已有Anthropic映射断言：
-
-- `read_file`缺少/null revision和`list_files`缺少revision返回稳定专用错误；消息不回显路径canary；
-- 缺少path、额外字段等复合无效输入仍返回通用错误，避免误报单一修正；
-- 确定性Agent循环持久化失败结果，从首个成功结果复制revision后完成第二页读取；SQLite重开与Replay一致；
-- OpenAI-compatible与Anthropic规范映射都保留code/message/category，Anthropic同时标记`is_error=true`；
-- 两个实际Provider SDK通过离线HTTP各完成四个模型步骤的纠正闭环，`max_attempts=1`且所有流均关闭；不访问真实Provider。
-
-本地质量门禁：
-
-- `make check`：Ruff、Mypy（**144个源文件**）通过，**2546 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`与`-W error`下 **2510项全部通过**；
-- Schema生成器运行后无公共Schema变化；
-- sdist/wheel构建成功，仓库外基础依赖环境未安装OpenAI/Anthropic SDK时专用错误行为和默认禁网CLI均通过；wheel SHA-256为`fc5b96e20734a5d51fd4b832091ab1dc4855f96dbaf21d895dfc7d36fb91cb33`；
-- 本片没有真实API请求、API Key读取、SSH、远程服务器或中间件操作。
-- 远端CI [34039025440](https://github.com/carrie1988/Harnessix/actions/runs/34039025440)的Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。
-
-以上只验证实现和协议，不构成真实模型质量结论。c3d必须使用新Campaign和独立费用授权，不得复用或修改c3b证据。
-
-补充CI风险记录：c3b纯文档提交的首次CI在macOS出现一次`asyncio`子进程回收返回255、在Python 3.13低速运行中出现七项受管副本5秒操作超时；同一提交不改代码的失败任务重跑全部通过，随后c3c当前提交四项任务首轮通过。该现象不归因于本片功能，但保留为后续慢速Runner与进程回收稳定性风险，不用重跑结果删除首次失败事实。
-
-## 49. 0.5.5c3d 分页纠正后百炼真实Campaign验收（2026-09-06）
-
-实现提交`7e58c15`及CI [34039563970](https://github.com/carrie1988/Harnessix/actions/runs/34039563970)四项任务通过后，使用任务v2、百炼北京`qwen3-coder-plus-2025-09-23`、三个独立run、单步骤一次Provider尝试、100000累计Token和人民币10元试验间停止线完成新Campaign。
-
-- Campaign `0a0ee9f3-8d4d-46cb-8e38-b1956a7068d8`完成3/3，报告原子发布；
-- 38次尝试全部为`index=1`，无Provider、Eval基础设施、一般Runtime或未知成本失败；
-- 总输入294662、输出4803 Token，费用¥1.255496，时延P50 29.680875秒；
-- 三个run都在一次`tool_expected_revision_required`后复制上一页revision并成功分页，纠正采用率3/3；
-- 两个run正确修改唯一允许文件，行为/回归检查、测试反馈和Git核对均通过；一个run因错误探索在第14步超过Token预算，未执行Patch；
-- 两个完成run的最终回答带Markdown围栏且字段结构不符，严格结果仍为0/3。
-
-评分器只接受裸`EvalFinalAnswer` JSON，但任务v2 Prompt未公开字段与围栏要求，`AgentRuntime`也没有注入该约定。该输入/评分不闭合使严格0/3不可作为公平成功率。完整脱敏证据见[验证记录](validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md)。
-
-## 50. 0.5.5c3e1 最终回答契约版本化验收（2026-09-06）
-
-任务Catalog新增v3并保持v1/v2不可变。v3预算仍为100000，只追加模型可见的裸JSON、禁止Markdown围栏及`summary/changed_paths/tests`精确结构。评分器、Runtime、Provider、Session、工具和数据库契约均不变化。
-
-自动回归核对版本集合、三个唯一指纹、v1/v2 Prompt相等、v3继承预算/仓库/检查/权限以及未知v4拒绝；历史物化、正式Runtime和Campaign执行定向套件通过。
-
-本地质量门禁：`make check`的Ruff、Mypy（144个源文件）通过，2546 passed、2 skipped；异步调试与警告严格套件2510项通过；Schema生成无差异；sdist/wheel和仓库外基础依赖环境通过，wheel SHA-256为`64a790d38faa3186357c83dd3243ebca5c36309f90598215a761ae73a8725c7c`。真实v3质量由独立c3e2 Campaign验证。
-
-## 51. 0.5.5c3e2 任务v3百炼真实Campaign验收（2026-09-06）
-
-实现提交`9d0be66`及CI [34042784117](https://github.com/carrie1988/Harnessix/actions/runs/34042784117)四项任务通过后，使用任务v3、百炼北京`qwen3-coder-plus-2025-09-23`、三个独立run、单步骤一次Provider尝试、100000累计Token和人民币10元试验间停止线完成新Campaign。
-
-- Campaign `b98a76ad-a586-4b98-aa95-fd62276380f6`完成3/3，报告原子发布；
-- 31次模型尝试全部为`index=1`，无SDK自动重试、Provider、Eval基础设施、Runtime、任务、预算或未知成本失败；
-- 总输入193539、输出3392 Token，费用¥0.828428，时延min/P50/P95/max为23.217640/23.431778/25.270868/25.270868秒；
-- 三个run均完成分页纠正、允许文件Patch、行为/回归检查、测试和Git核对；
-- 三个最终回答均为裸JSON，严格字段、路径和focused结果与机器事实一致。
-
-私有Session字段级审计进一步确认：三个run都先收到一次`tool_expected_revision_required`，随后携带上一成功页revision；全部尝试index为1。仓库只归档脱敏计划和聚合报告，见[验证记录](validation/bailian-2026-09-06-coding-eval-v3/README.md)。任务v3相对c3d只公开最终回答结构，没有放宽评分器或修改代码检查，因此本结果关闭0.5.5c真实质量门禁。
-
-## 52. 0.5.5d 受控变更交付验收（2026-09-07）
-
-新增`delivery_contracts.py`、`delivery.py`、三份公开Schema和专用测试套件。测试覆盖：
-
-- 只有completed、passed、14项检查完整、报告摘要匹配且工作区未漂移的单文件运行能生成包；
-- 私有包0600原子读写、确定性指纹、正文/摘要篡改拒绝；
-- origin、HEAD、tree OID、规范树摘要、前镜像、权限和Workspace scope绑定；
-- staged、unstaged、untracked、符号链接、来源漂移和批准后新增脏项均在写入前拒绝；
-- 错批准指纹、用户拒绝、不同重复决定、重复执行和单交付跨进程锁；
-- 意图落盘后、替换前、替换后和目录fsync后的退出恢复；
-- 第三镜像进入conflicted，同内容但非本次临时inode进入unknown，均不覆盖或错误归因；
-- 真实任务v3通过run生成包，在精确历史checkout完成脏工作区拒绝、显式批准、一次写入、幂等重开、Diff摘要一致和两项隐藏检查通过。
-
-真实交付验证使用run `d904e7b1-ed3e-4ee7-9168-2921b9a8d420`，确定性包指纹为`2bedacc33dea0e98ae956ab5c292a27c5de4d8672fa337f9ca34bc44802669df`。目标最终只有`src/harnessix/models/_chat_stream.py`变化，Git Diff摘要等于原Eval报告，`empty_id_behavior`和`identity_guards`返回码均为0。
-
-0.5.5d专用套件16项通过。最终本地`make check`完成Ruff、Mypy（146个源文件）及2562 passed、2 skipped；Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下2526项全部通过。Schema连续生成摘要不变；sdist/wheel构建成功，wheel SHA-256为`cec4e9832f04de565b14f1b13c584ab15b6eb2a6fd2fdd4e986c9494ca11ceb6`。
-
-仓库外基础依赖环境未安装OpenAI/Anthropic SDK，可导入三份交付契约与Store，读取最新任务v3，并验证Campaign CLI默认禁网时不读取缺失配置。0.5.5d没有使用模型API、SSH、远程服务器或中间件；完整设计和边界见[ADR 0052](adr/0052-controlled-eval-change-delivery.md)。实现提交`83b6085`的[CI 34046477484](https://github.com/carrie1988/Harnessix/actions/runs/34046477484)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过，0.5.5当前定义范围关闭。
-
-## 53. 0.5.6 Tool Contract与有界调度验收（2026-09-07）
-
-完整源码证据与决策见[调度专项研究](research/tool-scheduling-and-errors.md)和[ADR 0053](adr/0053-tool-concurrency-and-error-taxonomy.md)。本片新增 **17项** 自动回归：
-
-- 两个显式opt-in只读调用真实重叠，三个调用受Kernel上限分批，结果仍按Provider顺序持久化；
-- 未opt-in读取保持串行屏障，写Descriptor不能声明并行；
-- 并发任务单项失败时立即取消并排空阻塞兄弟任务，Turn保存原工具错误和`tool`类别；
-- Turn取消排空全部并发读取，CodingToolRuntime关闭等待所有读取许可后再关闭Workspace；
-- 工具层最多两个读取实际进入线程工作区，第三个排队；原排队取消测试固定上限1后继续证明未启动第二Worker；
-- Kernel和工具层对0、17、布尔及浮点上限均以`tool_concurrency_invalid`失败；
-- 旧Descriptor缺失`supports_parallel_calls`时按`false`读取，公开Schema包含非必填字段；非法写定义注册失败且不污染Registry；
-- `tool_`、`patch_`、`process_`、`artifact_`、`test_`、`git_`、`workspace_`统一归为`FailureCategory.TOOL`；
-- 两个并发调用分别生成`call_id` Span和低基数`tool`操作指标，不把业务参数写入Metric标签。
-
-本地质量门禁：
-
-- `make check`完成Ruff、Mypy（**146个源文件**）和 **2579 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2542项全部通过**；
-- Schema连续生成摘要均为`04d218d53e5f7e5aa3f9ad0d7d2f43ac5535369585e16eb660811339600d611e`，公开变更仅为OpenAPI新增并发能力属性；
-- sdist/wheel构建成功，最终关闭工作树的wheel SHA-256为`eb7578abdab760a785e22a7ae870e610c1cb0d7a65e2f674f8f941e9dfb866b1`；
-- 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，旧Descriptor兼容、只读能力、并发配置及Campaign默认禁网入口均通过；
-- 本片没有模型API请求、API Key读取、SSH、远程服务器、数据库迁移或中间件操作。
-
-实现提交`113980f`的[CI 34083177442](https://github.com/carrie1988/Harnessix/actions/runs/34083177442)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合既有0.5.1—0.5.5验收，本片关闭整体0.5 Coding Tool Runtime路线图范围。
-
-## 54. 0.6.1 Context规划、指令与检查记录验收（2026-09-07）
-
-本片依据[Context规划专项研究](research/context-planning-and-instructions.md)和[ADR 0054](adr/0054-context-planning-and-inspection.md)，建立供应商中立的Fragment、输入预算、Provider system映射和Event v10检查记录。新增 **12项** 定向自动回归：
-
-- 固定Runtime/User/Project/Workspace/Git/Environment优先级、稳定排序、Fragment去重和结构化JSON转义；
-- Runtime/User必选指令保留，大型可选Fragment省略后较小低优先级Fragment仍可装入；
-- 历史、Tool Definition或必选指令超预算时以`context_budget_exceeded`在Provider调用前失败；
-- 每个模型步骤唯一Context记录，SQLite重开、Event Replay和`inspect_context`结果一致；
-- Context记录提交后、模型调用前故障时保留无正文检查事实且不调用Provider；
-- OpenAI-compatible首个`system` message和Anthropic顶层`system`映射；
-- Context Span、固定Token分项及低基数Fragment指标不携带正文、source或Fragment ID；
-- Event v9拒绝v10 Context事实，历史v1-v9 Schema冻结，Migration 0012与v10投影升级连续。
-
-本地质量门禁：
-
-- `make check`完成Ruff、Mypy（**150个源文件**）和 **2591 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2554项全部通过**；
-- Schema连续生成两次聚合摘要均为`941b3bea8a1d289621dc1a7ab14ec6a7dbc9606c362d17ad4065d69dc14bce43`；Agent Event v10、Thread v10和Context Inspection v1摘要分别为`6f2d2c5c85b3af1ce6f2fe2fe52b71927417063f467c2c56ef9c5b4ad73310ea`、`6fd70473fce49d6ad0f9190c90d674543d908eb3f0463adc97697e8b022dbbc5`和`a89b5c2f8b99b0975c7339e08ea0d43dfeedfb218de7304cf3f8874f281fdf97`；
-- sdist/wheel构建成功，wheel SHA-256为`6deb16de1a20a2597b507e7606d015912e902193759df22dd11c4db1f81d8ba1`；
-- 仓库外Python 3.12基础依赖环境未安装OpenAI/Anthropic SDK，可导入Context公开契约，完成确定性规划并确认Agent Event默认版本为v10；
-- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
-
-实现提交`16c5838`的[CI 34090360609](https://github.com/carrie1988/Harnessix/actions/runs/34090360609)最终在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务通过。首次Python 3.12尝试在异常低速Runner上运行12分38秒，七项既有Eval在Context进入前的受管副本创建阶段触发固定5秒操作超时；同一提交不改代码重跑后2591项、2项跳过及全部示例通过。首次失败作为既有慢速Runner风险保留，不归因于0.6.1，也不以重跑记录删除。
-
-0.6.1正式关闭。该时点尚未实现的项目指令自动发现已由0.6.2a补齐，动态Workspace/Git/环境Source与跨来源一致性已由0.6.2b补齐；Tool Result裁剪、Compaction和Session生命周期仍由后续0.6切片继续完成。
-
-## 55. 0.6.2a 受控项目指令Source与freshness验收（2026-09-07）
-
-本片依据[Context Source专项研究](research/context-sources-and-tool-results.md)和[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)，建立异步Source端口、受控项目指令发现、每模型步骤freshness、Context Inspection v2及Agent Event/Thread v11。实现保持正文只存在于瞬时Fragment，Session只持久化来源状态、revision、字节数和Fragment引用。
-
-新增 **16项** 自动回归，覆盖：
-
-- 根目录到工作目录的祖先顺序、同目录`AGENTS.override.md`优先、缺失/空白语义和正文结构化转义；
-- Thread工作区规范路径别名接受、越界或不存在路径拒绝、相对工作目录约束；
-- 符号链接、硬链接、非法文件状态和总量上限拒绝；
-- 目录revision、分页文件revision和观测前后revision竞态检测，不把混合版本正文发送给Provider；
-- 每模型步骤重新观测、Source更新后revision变化、SQLite重开、Event Replay和无正文Context检查；
-- 读取超时、Source不可用、Provider调用前失败及`retryable`持久化；
-- CancelToken通知、阻塞读取线程停止并join、Runtime关闭不遗留后台读取；
-- 动态Source不能声明Runtime/User权限，同步与异步Context配置互斥；
-- Source快照的kind、路径、字节数与Fragment决定一致，指标只包含低基数`kind/status`；
-- Event v10拒绝Context Inspection v2，Event/Thread v11、Migration 0013和历史Schema冻结边界。
-
-本地质量门禁：
-
-- `make check`完成Ruff、Mypy（**151个源文件**）和 **2607 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2570项全部通过**；
-- Schema连续生成两次聚合摘要均为`5616e34d8fa33679914567c6dab30e027b4a8091dd12848d0d046ceb9f53c86b`；Event v10、Thread v10与Context Inspection v1冻结摘要保持不变；
-- 16个既有示例全部通过，未因异步Context端口破坏静态0.6.1或0.5工具路径；
-- sdist/wheel构建成功，SHA-256分别为`3a9a68d3b9e9509d44072804868c9524ffa217918ca071e9cfe42fab07ffe51d`和`defb1b546918d9ab830177b0595097aa757991543d088a75cd06768e86a839af`；仓库外Python 3.12基础依赖环境没有OpenAI/Anthropic SDK，实际读取临时`AGENTS.md`后生成Context Inspection v2和Event v11，检查记录不含正文；
-- 独立wheel验证发现macOS临时目录的`/var`到`/private/var`规范路径别名会被原始字符串比较误拒绝。实现改为在可取消读取Worker内严格解析Thread路径，再与绑定能力根比较；规范别名接受、越界路径拒绝已加入回归；
-- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
-
-实现提交`bfd7087`的[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、失败与恢复矩阵、独立发布物验证和同步设计文档，0.6.2a正式关闭；0.6.2b继续实现Workspace/Git/环境Source及跨来源一致性。
-
-## 56. 0.6.2b Workspace/Git/环境Source与跨来源一致性验收（2026-09-07）
-
-本片依据[Context Source专项研究](research/context-sources-and-tool-results.md)、[ADR 0055](adr/0055-project-instruction-source-and-freshness.md)和[ADR 0056](adr/0056-workspace-git-environment-sources-and-consistency.md)，在0.6.2a异步Source端口上增加三个受控内建Source，并以两轮乐观观测建立跨来源一致性边界。Workspace Source只输出根目录与工作目录的有界目录项；Git Source只输出仓库状态、分支、HEAD、upstream及ahead/behind，不读取日志、Diff、远端地址、用户配置或文件正文；环境Source只按显式白名单索引宿主提供的映射，不枚举进程环境，并拒绝敏感名称和无界值。
-
-新增 **16项** 自动回归，覆盖：
-
-- Workspace、Git和环境三个Source在同一规范工作区形成Context Inspection v3，正文只进入瞬时Context，Session仅保存来源摘要与一致性事实；
-- Workspace根目录/工作目录列表稳定排序、显式截断、拒绝`.git`、`.env`、密钥后缀和自定义deny路径，并在目录观测竞态时失败关闭；
-- Git非仓库显式`repository=false`，初始仓库、detached HEAD、脏状态数量和正文预算语义稳定，超时映射为可重试且不泄漏宿主路径；
-- Git状态中的当前路径和rename原路径都复用Workspace路径策略，敏感路径不进入模型Context，同时保留原始总数并以`truncated=true`声明过滤；
-- 环境Source不枚举映射，只读取白名单键；未授权值、敏感名称、超长值、NUL和控制字符均不能进入Context；
-- 多Source按固定注册顺序观测两轮；工作区scope变化或revision漂移返回可重试`context_sources_changed`，同revision而完整观测变化返回不可重试`context_source_invalid`；
-- Source工作区不一致在Provider调用前返回`context_source_workspace_mismatch`；直接调用纯规划引擎不能绕过多Source一致性快照；
-- 每个模型步骤重新观测环境值，Context Inspection v3通过Event v12持久化和Replay，历史v1-v11事件与Context Inspection v1/v2保持兼容；
-- 一致性遥测只包含固定`strategy/result`标签，Source指标仍只包含`kind/status`，不记录路径、revision、变量名或正文。
-
-本地质量门禁：
-
-- `make check`完成Ruff、Mypy（**151个源文件**）和 **2623 passed、2 skipped**；两项跳过仍为本机未配置PostgreSQL实库；
-- Context/Agent/Models/Smoke/Tools/Artifacts/Patches/Processes/Evals在`PYTHONASYNCIODEBUG=1`和`-W error`下 **2586项全部通过**；
-- Schema连续生成两次聚合摘要均为`6b503e8af2ad14b371bb8e3a1caeb827d93e6f4da38b80391badf0fec44faa89`；Agent Event v12、Thread v12、Context Inspection v3和Context Consistency v1摘要分别为`11d1ebecece86e2cc279dffd6b6adfa3f5154bfb537e26b86ec1b150146effa7`、`bb0a7d079bd9e04de337cdcb0e3c5609205cc470328c7c3cc2f3ee33fc808d5d`、`5e743ba5c1d57417baee557bb4809399ea751b1630b164f5c89dec66bdfe5d8b`和`96717d290ebafe522097401b918d515b2f124aa616d353eac585b0e79f931d91`；历史Event/Thread v11与Context Inspection v2摘要保持冻结；
-- CI覆盖的 **17个** 既有示例全部通过，未破坏静态Context、工具、Patch、Process和Eval路径；
-- sdist/wheel构建成功，SHA-256分别为`0449a8b0dab7515e19fb07a6efeda06965f456e5b6422bcf4008098e5d9382e4`和`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`；仓库外Python 3.12基础依赖环境实际组合三个新Source，生成Context Inspection v3，确认敏感环境值未读取、Agent Event默认v12且Migration 0014完整安装；
-- 使用从0.6.2a源码提交`120f57f`构建的真实v11 wheel创建Event v11、Context Inspection v2、Projection v11和Migration 1—13数据库；该门禁v12 wheel只追加Migration 0014和新的v12事件，不改写历史事件或投影；真实v11 reader对Migration 0014返回`schema_too_new`且数据库业务状态不变；
-- 本片没有模型API请求、API Key读取、SSH、远程服务器或外部中间件操作。
-
-实现过程中发现仅过滤Workspace目录项不足以阻止Git状态泄漏敏感文件名。根因是Git返回路径未经过同一Workspace能力策略。修复后，当前路径与rename原路径统一通过`Workspace.parts`校验，过滤不改变Git底层事实总数并强制标记截断；对应回归覆盖`.env`与`.git`边界。
-
-实现提交`26dbfc3`的[CI 34134867832](https://github.com/carrie1988/Harnessix/actions/runs/34134867832)在Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务均通过。结合本地完整门禁、敏感路径回归、失败恢复、独立发布物和真实v11→v12升级证据，0.6.2b正式关闭；后续0.6.2c继续Tool Result有界裁剪与持久化语义。
-
-## 57. 0.6.2c Tool Result稳定模型视图验收（2026-09-08）
-
-状态：本地与远端CI验收通过，0.6.2c关闭。依据ADR 0057、Context源码研究和实施设计第29节。
-
-专项测试覆盖以下契约：
-
-- JSON空值、布尔、数值、嵌套结构、多字节UTF-8、精确字节边界、非有限数值与非法Unicode；
-- inline/Artifact引用首次决定、冻结重用、精确Replay、预算缩小、原Item不变和可变嵌套对象隔离；
-- 来源/Call身份、缺失/重复/未知决定、事件步骤/状态/摘要、旧Schema拒绝和原历史准备资源上限；
-- 真实Grep/Glob归档与查询/统计保留、超过预览范围分页回读、正文覆盖证明与布尔/数值类型区分；
-- Artifact Thread/Call/Workspace/用途/manifest/TTL/正文损坏、缺验证器、缺能力、根被替换和工具关闭；
-- 不完整归档、未被归档字段、Patch/Batch/Process局部证据均不得替代完整结果；
-- Context使用同一准备后历史，OpenAI/Anthropic映射一致，真实OpenAI SDK通过MockTransport验证2 KiB视图与后续回读；
-- 验证I/O的用户取消、Task取消、5秒独立上限；故障后没有Provider请求、伪完成决定或遗留子任务；
-- 两个真实`os._exit`窗口验证归档检查后/History提交后退出；重开标记Interrupted，不重发模型、不重执行工具、不改已完成结果；
-- Event/Thread v13、migration15、v1-v12冻结Schema和旧迁移checksum。
-
-真实v12/v13独立wheel升级探针已验证：旧搜索结果与Artifact原字节保留、只追加migration15、旧reader拒绝、禁止小预算重裁旧模型前缀、默认策略可追加v13检查并Replay。本地门禁结果：
-
-- 新增69项回归。全仓严格模式`PYTHONASYNCIODEBUG=1 python -W error -m pytest`为 **2692 passed、2 skipped**；两项跳过仅为本机未配置PostgreSQL，实库门禁由远端CI提供。普通全仓初次为2691 passed，随后新增的SDK裁剪参数场景已单独通过并纳入上述严格全仓。
-- Ruff格式/规则全部通过，Mypy检查153个源文件通过；测试配置显式使用function级异步fixture loop，避免依赖pytest-asyncio未声明默认值。
-- 17个既有示例全部通过，无需模型API、SSH或新增中间件。
-- Schema连续两次生成聚合SHA256一致：`83280b254ef8f75a5c8d3955624472c71d93f618a44ba4869b627ab1cb61849f`（按文件名排序，依次拼接文件名、NUL与文件原字节）；v1-v12冻结Schema未改写。
-- sdist/wheel构建与仓库外Python 3.12基础环境安装通过。验收wheel SHA256为`55fb2ca488a6026d3c06271e7812ddbe9e51f832f2c96b9289a5f15bafcc408a`；真实旧v12 wheel SHA256为`0a648b08d8cd7cdd3f5b1149c423b008ebed0538f153b238bdb2a5f4aca74296`。两个基础环境分别执行完整升级四步骤，不依赖OpenAI/Anthropic SDK。
-- migration15 SHA256为`304f1bf9e5c0170a9a3703c11d655ef8aae98438884ab80d2e4f098b6db22835`；真实进程退出与旧迁移回归均保持旧事件/投影/Artifact原字节。
-
-实现提交`5e283ff`的[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)已通过Python 3.12、Python 3.13、macOS Coding Tools和PostgreSQL四项任务，0.6.2c正式关闭。此结论仅针对本切片，不代表Compaction、完整会话生命周期或整体V1.0商用版本完成。
-
-## 58. 0.6.3首窗口规划内部门禁（2026-09-08）
-
-状态：首窗口契约、规划和候选校验的本地及实现提交四项CI门禁通过；摘要账本、CAS窗口发布、自动触发及语义保持Eval未完成，0.6.3保持进行中。设计见[窗口规划详设](compaction-window-planning.md)和[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)。
-
-- 新增91项测试：88项领域反例、1项实际文件/SQLite Session/重开Replay验证、2项保留工具组的双Adapter映射。
-- 领域覆盖闭合并行组的全部结果排列、固定组扩展、首条/当前用户原文、重复/缺失/错序消息、非法原JSON、来源和候选篡改、JSON往返、确定性投影ID、UTF-8及完整JSON转义预算、恰好上限/多一字节、8192项/8 MiB保护。
-- 取消矩阵为规划/校验两入口分别验证预取消、运行中取消、父Task取消和截止时间；所有路径均不改写来源、不遗留后台任务。
-- 实际文件验证由正式Coding Tool Runtime读取临时工程源码；SQLite Session重开及Replay后重算候选。源文件与原事件保持不变，不产生额外Provider请求。首条用户、低信任摘要和后续用户/工具组符合两个既有Adapter的映射。
-- 全仓严格模式`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -o addopts='' -q`：**2783 passed、2 skipped，250.11秒**。两项本地跳过均为未配置PostgreSQL实库；远端矩阵另行验证。
-- Ruff格式/规则通过，Mypy检查155个源文件通过；17个既有示例全部通过。
-- 四份新增v1 Schema纳入生成一致性测试；全部原Schema未改写。连续两次生成聚合SHA256为`91f6e2dd46c69d8cb437ddaa038c04825e6ea922bbba8fe47f597978749f9562`，算法同第57节。
-- sdist/wheel构建及仓库外Python 3.12基础环境安装通过；无OpenAI/Anthropic可选SDK时，实际执行规划、计划JSON恢复、候选校验、原用户固定和取消均通过。Event/Thread仍为v13、Provider Event仍为v3、Session migration仍为15，无数据库升级或新增中间件。
-- macOS CI测试范围增加`tests/context`，确保新的真实Session及候选映射门禁也在远端macOS执行。
-
-上述结果不包含真实摘要API、付费请求崩溃恢复、活动窗口提交或关键任务约束的语义保持；不得据此宣称自动压缩或V1.0完成。
-
-实现提交`13e50eb`通过[CI 34175148706](https://github.com/carrie1988/Harnessix/actions/runs/34175148706)的Python 3.12、Python 3.13、macOS与PostgreSQL四项任务。后续账本、费用报告和恢复矩阵按[摘要尝试账本草案](compaction-attempt-ledger.md)继续实施，不扩大本门禁的验收结论。
-
-## 59. 0.6.3独立摘要账本内部门禁（2026-09-08）
-
-状态：Event/Thread v14独立账本、Cost Report v2、Campaign全用途汇总和Runtime中断收尾已实现。该内部门禁在完成时不包含摘要HTTP、活动窗口或重复压缩；缺口已由第60节后续门禁补齐。设计见[ADR 0059](adr/0059-compaction-attempt-ledger-and-purpose-costs.md)和[账本详细设计](compaction-attempt-ledger.md)。
-
-专项自动化共82项，覆盖计划/阶段/时间/预算、来源及候选重算、Tool Result决定冻结、跨用途Attempt ID、累计用量与Billing后继、请求成功但候选失败、Cost v2归属/金额/币种/未知费用、Campaign遗漏摘要、Schema版本和18种真实子进程事务/恢复组合。恢复矩阵遍历计划、请求意图、部分/完整用量、请求结算、候选提交与恢复本身，并在SQLite的`after_events`、`after_projection`、`after_commit`三个切点退出；每次重开均不调用Provider，重复重开不新增事件。
-
-严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为 **2860 passed、2 skipped，256.68秒**；两项跳过仅因本机未配置`HARNESSIX_TEST_POSTGRES_URL`，PostgreSQL由远端CI矩阵验证。Ruff、Mypy 158个源文件及17个既有示例均通过。Schema连续生成两次聚合SHA256均为`29b0cb9633fe5aff6160f5dede32f442ce00055fbc31b5d4d12fec2cfff4be73`；旧v1-v13 Event/Thread及Cost v1文件哈希不变，新Schema为Agent Event/Thread v14和Cost Report v2；Provider Event v3不变。
-
-独立wheel升级使用上一已验收提交`ff15533`构建的v13基础环境和当前v14构建产物，未安装OpenAI/Anthropic SDK。验收sdist与wheel SHA256分别为`8275af1c0633c4329f5f9284bcb88934b0d76f2fc8d5ff6d606778ae3afff443`和`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`。`scripts/compaction_ledger_upgrade_probe.py`已验证：旧环境创建真实长历史；新环境仅追加migration16且旧事件/投影原字节不变；旧reader前后两次均拒绝；新环境追加离线摘要账本、重放Cost v2并重开为Interrupted，全程零Provider请求。migration16 SHA256为`5a1babc80cc700c9f372d61ecdcb4457ed6b9552267bcc24fe61b1cddd1f9fbb`。
-
-该门禁本身不验证摘要消费器、SDK流关闭或活动窗口发布，不能单独关闭0.6.3。后续验证见第60节；整体0.6和V1.0仍未关闭。
-
-## 60. 0.6.3自动Compaction与活动窗口验收（2026-09-08）
-
-状态：自动Compaction实现、本地完整门禁及远端Python 3.12、Python 3.13、macOS与PostgreSQL矩阵全部通过。设计见[ADR 0058](adr/0058-compaction-windows-and-accounted-summary-attempts.md)与[运行时详细设计](compaction-runtime-and-windows.md)。
-
-实现专项共370项通过，主要覆盖：
-
-- `CompactionRuntimeConfig v1`严格边界、默认关闭和配置/Provider成对要求；
-- OpenAI Chat与Anthropic实际映射函数接收单用户、无工具、固定摘要指令请求；
-- Provider首事件意图、HTTP前持久化、累计Usage、响应身份、单文本、终态、事件/正文上限和流关闭；
-- 摘要Tool Call拒绝且不执行、第二Attempt在第二次HTTP前阻断、空流及未记账请求风险；
-- 轮前触发、已记账context overflow的reactive触发、部分语义输出禁止回退、连续溢出无进展停止；
-- 原始事实不变、Summary低权限投影、Model History Inspection v2、Artifact在摘要前完整校验；
-- 重复压缩形成线性窗口链，只追加原历史高水位之后的增量，不恢复被覆盖前缀；
-- 用户取消、Task取消、原Turn超时、候选与窗口邻接以及低基数遥测；
-- 六个运行时真实进程退出点和窗口Event/Projection/Commit三个SQLite事务退出点；多次重开均不重发摘要、不重复窗口；
-- 人工语义Oracle覆盖目标、约束、未完成工作、文件/revision、测试结果和不确定效果，并验证事实缺失、禁用断言、原始正文残留和语料未绑定反例；报告不保存来源或摘要正文。
-
-完整质量结果：
-
-- 严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`：**2901 passed、2 skipped，270.42秒**；两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`；
-- Ruff格式和规则通过，Mypy严格检查163个源文件通过；
-- 24个无需常驻HTTP服务的离线示例逐一通过；`examples/mvp.py`仍按原设计要求先启动本地API服务，不计入离线单进程集合；
-- Schema连续生成两次聚合SHA256均为`a629b92323d63f136b8787a8d9864cd5deb336da6833052a7db96bc1324edf29`；新增Event/Thread v15、Compaction Runtime/Window v1、Model History Inspection v2及Compaction语义Case/Report v1，冻结v14及更早Schema未改写；
-- migration17 SHA256为`d6bdd00f06924d02580129a96e785e000e75e748d0195b64345cefb317b19b02`。
-
-真实独立wheel升级使用`b20948e`构建的v14 wheel和该切片v15 wheel，SHA256分别为`83efdb832f6ce72ec4709df7527c3d16e88abac5f417159035eafaf4f661b591`与`b7f2832bc35c2043969bf31a543d51c1aaeaedea8dcfa67543e4ec94d1c53747`。`scripts/compaction_window_upgrade_probe.py`验证v14创建长历史及已结算候选，v15只追加migration17且保持旧事件/投影原字节，首次重开零Provider请求发布唯一窗口，随后v14 reader明确拒绝新库且不修改数据库。
-
-本地验收不使用真实模型凭据、SSH、远程服务器或新增中间件。真实收费摘要质量属于受预算发布验证，不替代确定性契约和恢复门禁。远端[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四项任务全部通过。0.6.4会话生命周期与0.6.5综合恢复验收分别见后续章节。
-
-## 61. 0.6.4 Thread生命周期验收（2026-09-08）
-
-状态：Resume、无授权Fork、Archive、跨代Artifact所有者和来源CAS实现通过本地完整门禁及远端[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵。设计见[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)与[Thread生命周期详细设计](thread-lifecycle.md)。
-
-验收覆盖：
-
-- Resume复用原Thread身份，不新增事件、调用Provider或执行工具；归档Thread明确拒绝Resume；
-- 空Thread、最新终结Turn和指定终结Turn Fork，边界后历史不进入子Thread；
-- 继承Tool Call/Result完整配对与冻结模型视图，后续Turn不再次执行来源工具；
-- Artifact保留真实父级或祖先Thread所有者，按当前Workspace能力在发网前验证正文、TTL与覆盖；
-- 确定性request幂等、来源变化冲突、普通`append`绕过来源CAS失败关闭；
-- 活跃Turn不能Fork或Archive，归档后不能接受新Turn或其他状态修改；同原因Archive幂等、不同原因冲突；
-- Fork和Archive共七个真实子进程硬退出切点，验证事务前回滚、Commit后完整可见、重开零Provider请求及Replay/Rebuild；
-- v15→v16独立wheel升级：旧wheel SHA256为`63a8592bd3f49063bb354dc62079be2fb79ab66f36b4bd4887d1bf5cb076e133`，v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`；migration18只追加marker，旧事件和投影原字节不变，v15 reader拒绝新库且不修改数据库。
-
-完整质量结果：严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为**2914 passed、2 skipped，266.43秒**；Ruff格式与规则通过；Mypy严格检查164个源文件通过；Schema连续生成两次聚合SHA256均为`e9e54ad0afd92c0d9de41477d32e2c52a43cdc0ec0b2e38bd2764c7a59d0004a`；migration18 SHA256为`4cbe8c146e4ed71f021e9be45b63da3b5b691115307412dd61e4ffcb277a2f9c`。验证未使用模型凭据、SSH、远程服务器或新增中间件。
-
-远端实现提交`24e0899`的Python 3.12、Python 3.13、macOS Coding Tools与PostgreSQL四项任务均通过，完整证据见[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)。
-
-## 62. 0.6.5终态Turn Retry、Provider切换与长会话验收（2026-09-08）
-
-状态：实现及本地完整发布门禁通过；[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵通过。设计见[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](turn-retry-and-provider-switch.md)。
-
-验收覆盖：
-
-- `failed`、`cancelled`、`interrupted`最新Turn以新身份续作，来源终态和错误事实保持不变；`completed`、非最新、活跃、归档和不存在来源失败关闭；
-- `retry_of_turn_id`进入Event v17与Thread投影；相同request幂等返回，普通Turn、不同预算或不同来源占用相同request时冲突；Reducer独立拒绝伪造来源；
-- 真实Process Action进入UNKNOWN后，`retry_unsafe_effect`在接受前阻断，零第二模型步骤、零旧Action重放；
-- SQLite `session.after_events`、`session.after_projection`、`session.after_commit`三个真实子进程硬退出切点；重开只恢复持久事实，不调用Provider；
-- OpenAI-compatible→Anthropic与Anthropic→OpenAI双向实际SDK + MockTransport：历史Tool Call/Result使用稳定内部ID配对，原生`wire-call-0`/`toolu_0`不出现在新请求，工具执行次数保持一次；
-- 独立Retry Operation Span/Counter只使用有限`operation/outcome/category`标签，不包含Prompt、request ID或来源Turn ID；
-- 长会话串联Tool、Compaction摘要账本、活动窗口、接受后进程中断、启动恢复、Provider切换Retry、Fork和Archive；原Event前缀、模型历史边界、Usage、Cost、Replay和Rebuild全部核对；
-- Agent Event/Thread v17、Session migration19和v1-v16 Schema冻结。v16→v17 wheel升级保持旧Event/Projection原字节，新Retry可Replay/Rebuild，旧reader以`schema_too_new`拒绝且不修改数据库。
-
-完整质量结果：
-
-- `make check`的格式、规则、类型及2924项测试门禁全部通过；
-- 最终严格全量命令`PYTHONASYNCIODEBUG=1 uv run python -W error -m pytest -q -o addopts=''`为**2924 passed、2 skipped，270.46秒**；两个skip仅因本地未配置`HARNESSIX_TEST_POSTGRES_URL`；
-- Ruff格式与规则通过，Mypy严格检查164个源文件通过；
-- Schema连续生成两次聚合SHA256均为`68f1eed44d4e8dee742db5adfd01f85f4f6844d2509b18c6ccce6b4744151f0c`；冻结v15 Event/Thread SHA256分别为`b3fde60c5f7f822763c2bea7ae3c2249dfbbc4e790a6e39e0d6a8d43c3ba193a`、`b5948c85e37a145ac5bc2b796f1f7700b604e2684d799698232922769c02b4ab`，冻结v16分别为`0529b81c8766f6159f5558f06b64b22dadfa5a6738c855ef07a4c25437cea2f2`、`f986f75ffd9dd3416a84d022ed8982523e2ac599ec2d5e79835d9b811b226bda`；
-- migration19 SHA256为`926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a`；
-- 真实v16 wheel SHA256为`e43338aa23c0da5d03a7fcfef1cc32c6fcff0e7c2da18f713cdc8f9ddba4fd2c`，v17 wheel SHA256为`40c7b59fed4c81746b643a2639aa292a1039c28f4eb1fc3a5a6fbfa928ea7338`。`scripts/turn_retry_upgrade_probe.py`按`create → upgrade → old-reader`完整通过。
-
-默认验收没有使用真实模型凭据、SSH、远程服务器或新增中间件。Provider切换验证使用实际SDK协议栈和进程内受控HTTP传输，不把MockTransport通过描述为真实收费平台模型质量验收。
-
-## 63. Windows目标与双许可治理基线验收（2026-09-08）
-
-状态：本地治理、构建和完整回归门禁通过；实现提交`89501ee`的[CI 34201721604](https://github.com/carrie1988/Harnessix/actions/runs/34201721604)已通过Python 3.12、Python 3.13、macOS Coding Tools、Windows Portability和PostgreSQL五项任务。该基线不实现或宣称Windows原生执行能力。
-
-验收覆盖：
-
-- ADR 0063将macOS、Linux和Windows共同纳入1.0正式矩阵，并把Workspace、Process、Git、Sandbox和发行差异限制在0.7平台端口；当前POSIX能力与Windows目标状态在README、架构、产品章程、路线图、部署和安全文档中保持一致；
-- ADR 0064从本次切换提交开始采用`AGPL-3.0-only`社区许可证，明确历史MIT授权不追溯撤销、闭源商业许可需另行签署、代码许可不授予品牌权利，并建立贡献附加授权及第三方通知边界；
-- 新增仓库治理测试，固定SPDX表达式、规范AGPL正文SHA256、LF换行策略、版权主体、历史许可证、商业许可非授予、贡献签署、商标及第三方通知不变量；
-- `harnessix license`不读取运行配置即可离线输出许可证、源代码和商业许可入口；独立wheel元数据包含`License-Expression: AGPL-3.0-only`、`License-File: LICENSE`和34,020字节完整许可证；
-- Windows工作流仅运行安装、导入、治理和平台中立单元测试，不运行当前明确依赖POSIX的Workspace/Process/Git测试，避免用跳过或兼容层冒充产品支持；
-- 全仓相对Markdown链接检查无缺失；`uv lock --check`通过，许可证正文SHA256为`d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee`，验收wheel SHA256为`633b509b7c11339cd09128325f67ef1686b4e23368ec3d44c7477d851b0e1e8f`。
-
-最终本地`make check`结果为**2928 passed、2 skipped，270.98秒**；Ruff格式与规则通过，Mypy严格检查165个源文件通过。两个skip仅因本地未配置PostgreSQL实库，远端PostgreSQL任务独立验证。该结果只关闭平台与许可治理基线，不关闭0.7 Windows原生端口、0.9三平台发行物或1.0商用发布门禁。
-
-## 64. 0.7.1跨平台Workspace与Execution Plan候选验收（2026-09-08）
-
-状态：实现、本地完整门禁和[CI 34212369888](https://github.com/carrie1988/Harnessix/actions/runs/34212369888)五矩阵通过，0.7.1关闭。设计见[ADR 0065](adr/0065-platform-capability-ports-and-execution-plan.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#10-071-跨平台workspace与permission详细设计)。
-
-验收覆盖：
-
-- 逻辑路径拒绝POSIX/Windows绝对前缀、回退段、反斜线、控制字符、ADS、DOS保留名、尾随点/空格，并采用Windows大小写不敏感比较和扩展长度路径；
-- POSIX root FD/no-follow、硬链接、跨设备门禁、文件/目录/缺失目标观察及显式外部根；Windows原生`CreateFileW`句柄链、Reparse Point/Junction拒绝、根句柄替换阻断、对象身份和长路径实测进入Windows CI；
-- `WorkspaceSnapshot v1`绑定root、cwd、文件内容、目录成员、缺失目标父目录和外部根访问，执行前变化统一使Plan过期；
-- 两个独立SQLite连接及真实独立Python进程竞争Workspace租约，旧owner的fencing token在到期/释放后不能复用；非法TTL失败关闭；
-- `ExecutionIntent`、能力证据、Sandbox、Policy、环境摘要、Secret版本和`ExecutionPlan v1`严格冻结；参数、环境、Secret、Workspace、策略和能力逐字段变异失效；Windows环境名折叠和Secret目标冲突拒绝；
-- `ExecutionApproval v1`绑定Plan ID与完整fingerprint；SQLite Plan Store v1验证持久重开、相同写幂等、Plan ID/审批决定冲突、未知Schema和损坏记录失败关闭；持久JSON不包含环境值或Secret明文；
-- 旧0.5 Workspace默认路径限制保持兼容，0.7 Snapshot通过显式端口参数获得新上限；旧Session Schema和migration未修改。
-
-完整本地`make check`为**2989 passed、5 skipped，322.89秒**；Ruff格式与规则通过，Mypy严格检查175个源文件通过。5项跳过包含本地未配置的PostgreSQL集成测试和仅能在Windows执行的3项原生路径测试。Schema连续生成两次聚合SHA256均为`7222eb24f5ae369b2887358b2c4b59fb3cf91c60563c8682e7a900c44d85da82`，新增Workspace Snapshot/Lease、Execution Intent/Capability/Plan/Approval六份v1 Schema，旧Schema未改写。
-
-本片未调用模型API、SSH或远程服务器，也未安装中间件。OS Sandbox、Windows Process/Job Object、通用事务性交付、Git Commit/Push和旧Tool统一接入尚未完成，不得由本片测试结果推导为0.7整体完成。
-
-远端Python 3.12、Python 3.13、Windows原生Workspace和PostgreSQL首次运行通过。macOS首次运行在既有`HostProcessRuntime`的SIGKILL回收断言中收到asyncio `Unknown child process`并返回255；同一提交只重跑失败任务后完整通过。该瞬态不由Workspace代码触发，但作为0.7.3进程所有权风险保留，不能用重跑结果掩盖。
-
-## 65. 0.7.2 Sandbox、网络与Secret验收（2026-09-08）
-
-状态：实现、本地完整门禁和[CI 34218929368](https://github.com/carrie1988/Harnessix/actions/runs/34218929368)六任务通过，0.7.2关闭。设计见[ADR 0066](adr/0066-sandbox-network-and-secret-boundaries.md)与[0.7详细设计](m07-trusted-execution-and-delivery.md#11-072-sandbox网络与secret详细设计)。
-
-验收覆盖：
-
-- `ExecutionCapabilityEvidence v2`与`ExecutionPlan v2`绑定容器引擎实测摘要、Sandbox Profile和Command；参数、环境、Workspace、Secret版本、Profile、命令、后端版本和可执行文件身份变化均在spawn前失败；v2可由原SQLite Execution Plan Store持久重开；
-- Docker/Podman使用固定`version`和`info`接口分别取得服务端版本及安全/rootless事实；Daemon不可用、非零返回、超限或不可解析响应不广告强能力；Seatbelt/Bubblewrap只有实际deny-default预检通过才广告host sandboxed；
-- Container argv固定只读根、非root、cap-drop、no-new-privileges、IPC/PID/CPU/内存/tmpfs/nofile、无隐式pull、Workspace读写模式、受管环境名和网络；镜像、Profile、Command和Plan均以SHA-256摘要相互绑定；
-- Network合同覆盖精确域名/CIDR、HTTPS/TCP、唯一端口、DNS IPv4/IPv6固定、TTL过期、私网显式restricted和禁止网络；选择性出口验证internal bridge、Policy/Gateway标签、唯一网关容器及重复JSON键；
-- 真实asyncio CONNECT网关仅在host/protocol/port/IP授权后连接，域名HTTPS在转发前校验完整TLS ClientHello与精确SNI；无SNI、SNI错配、非法请求、超时和字节上限均失败关闭；
-- Secret只按名称、版本和目标解析，Windows目标大小写不敏感；最多32项、合计64 KiB。流式Redactor覆盖所有chunk边界和原文/Base64/URL/hex/JSON/Shell形式，最终Guard覆盖结构深度、节点、字节、键泄漏和不可序列化输出；
-- SQLite Sandbox Profile Store验证私有权限、持久重开、幂等、未知版本和损坏记录；计划、Schema、argv、对象repr和数据库均不保存Secret明文；
-- Linux真实容器使用固定`busybox@sha256:9db7b59979c38555a39def84a31fb98b5296952f9e3afd4f6f11f05b07adfab0`，实际断言UID 65532、`CapEff=0`、只读根、只读Workspace、仅loopback网络、可写`/tmp`、Secret不在argv且回显被脱敏；资源上限超限终止由0.7.3补测。
-
-本地先在桌面受限命令沙箱内运行全量门禁，`ps`调用和setuid/setgid模式位检查产生22项环境假失败；在获准的原生宿主环境重跑后为**3020 passed、6 skipped，333.11秒**。容器能力探测首次远端候选错误地从`docker version`读取只属于`docker info`的Security Options，真实容器任务在启动前以`sandbox_unavailable`失败；根据Docker/Podman正式CLI合同拆分版本与安全探测，并增加Docker rootless、Podman非rootless和坏响应回归。修复后专项为42项通过、1项本地Docker未配置跳过；最终`make check`为**3023 passed、6 skipped，327.53秒**，Ruff格式/规则和Mypy 188个源文件均通过。
-
-Schema连续生成两次聚合SHA256均为`dc9b1114ca6d7110bd9e768c451f0f25851fe1a02787962bbccb441cbd19a1ad`；原`execution-capability-evidence-v1`和`execution-plan-v1`分别保持`51c989bc1cf09464b4810e0ee8af53bc7746278109c856a246ff5a4a0cad1b5f`与`98d7c1d0642024638245ef1e02536bb1f5fc9d077aaa67f8c85c13220c4833d0`不变。
-
-远端六项为Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和独立Container Sandbox。首次候选[CI 34218526009](https://github.com/carrie1988/Harnessix/actions/runs/34218526009)真实发现上述探测接口错误；修复运行六项全部通过。该验收不调用模型API、SSH或远程服务器，也不把直接容器smoke描述为已接入模型的通用Process Runtime；Process生命周期、立即网络再证明和全输出接线属于0.7.3/0.7.5。
-
-## 66. 0.7.3a Process合同与Lease账本候选验收（2026-09-08）
-
-状态：领域契约、Planner、SQLite账本及Schema已实现；实际Process owner、pipe/PTY、后台控制、宿主死亡监督和三平台原生测试尚未完成，本节不关闭0.7.3。
-
-当前8项确定性测试覆盖：
-
-- argv与三类显式Shell source互斥、NUL/UTF-8/参数/输入/输出/时限/终端尺寸边界及ProcessSpec自摘要；
-- ProcessSpec完整JSON、Execution Plan v2、平台能力摘要、PTY/后台/进程树和deadline绑定；
-- prepared/running/unknown/exited的身份、时间、返回码和停止原因一致性；
-- prepared起点、相邻sequence、合法状态图、不可变计划/能力/owner绑定和并发CAS；
-- SQLite重开、幂等创建、append-only事件、未知Schema、损坏payload、冗余索引漂移和最新事件缺失失败关闭。
-
-Ruff和Mypy严格检查通过。Schema新增`process-spec-v1`、`process-capability-v1`、`process-lease-v1`和`process-output-observation-v1`；旧ProcessResult和Execution Plan Schema未修改。连续生成聚合SHA256为`941ac28d5d42e3e1f7ba668ab4fef74d59c917a4e706d41163d66364d0fea883`。该候选不调用外部进程、模型API、Docker、SSH或远程中间件。
-
-## 67. 0.7.3b/c 跨平台Process owner候选验收（2026-09-08）
-
-状态：POSIX Session/PTY与Windows Job Object/ConPTY实现及确定性测试已进入候选；Windows真机、macOS矩阵和Container接线尚待远端验收，本节不关闭0.7.3。
-
-本地原生POSIX专项19项通过、Windows真机5项按平台跳过，覆盖：
-
-- argv与`posix_sh`实际执行、精确环境、Secret跨流脱敏以及持久文件不含Canary；
-- pipe stdin、PTY Unicode、resize、stdin累计预算、共享输出上限、持久前缀摘要与Artifact篡改失败关闭；
-- deadline、CancelToken、显式close、根进程正常退出及忽略SIGTERM的后代进程组强制回收；
-- 宿主控制管道丢失后owner独立终止进程树，新Supervisor只凭HMAC回执和Lease恢复为`exited/host_lost`，不以PID取得权限；
-- 启动失败以无PID的`failed/launch_failed`终结，同process id重复调用不重放；回执PID或身份被篡改不能通过MAC；
-- Windows输入CR/LF/退格跨分片规范化的平台中立回归。
-- 回执读取必须循环消费普通文件短读；单次`os.read`少于`st_size`不能把已原子发布的Windows回执误判损坏。
-
-Windows真机门禁包含：显式Win32挂起标志创建目标、加入不可breakaway Job后再恢复、直接成员查询、pipe Unicode/Secret、超时清理后代、宿主死亡的Job kill-on-close恢复，以及ConPTY Unicode输入、resize、`Ctrl+Z + CR`逻辑EOF、不提前关闭传输句柄和空stderr语义。工作流已将上述用例加入`windows-trusted-execution`，但只有远端运行成功后才构成证据。
-
-Ruff与Mypy严格检查199个源文件通过。新增`process-owner-start-v1`、`process-owner-command-v1`和`process-owner-receipt-v1` Schema；Process Lease增加确定性启动失败终态，Output Observation增加持久前缀摘要。连续生成聚合SHA256为`d8c98c0340b25c0afc3da00e071f2a5b89d107fbeeb0f59e2f3148836fe302d8`。该候选未调用模型API、SSH或远程服务器。
-
-## 68. 0.7.3d Container统一Process候选验收（2026-09-08）
-
-状态：Container执行合同、确定性物化、统一Process owner、立即网络复核和残留清理已完成；实现提交`5f50d4b`的[CI 34239365467](https://github.com/carrie1988/Harnessix/actions/runs/34239365467)六项任务全部通过，0.7.3关闭。
-
-候选验证覆盖：
-
-- `ContainerExecutionSpec v1`绑定原容器命令、完整内层`ProcessSpec`和owner能力摘要；`ProcessLaunchBinding v1`绑定批准fingerprint、Intent参数摘要、物化后的外层Process、owner能力和无明文环境摘要；Plan、Process、owner或环境漂移均在spawn前失败；
-- 固定Docker兼容argv增加确定性名称、process id与execution digest双标签，并只在pipe stdin开放时增加`--interactive`；Container PTY当前失败关闭；
-- 选择性网络在其他执行检查完成后重新执行固定`docker network inspect`，要求internal bridge、策略/网关标签、唯一受管网关及完整证明与Plan一致；当前Podman选择性网络因缺少等价证明失败关闭；
-- 启动前要求同执行身份不存在；正常、超时、取消、输出上限、启动失败和恢复均使用固定`container rm --force`清理，并再次查询证明无残留；多个实例、伪造名称/标签、查询或删除失败统一返回`process_cleanup_failed`；
-- 真实Linux固定摘要BusyBox场景改由`ContainerProcessRuntime → Process Supervisor`执行，验证非root、零Capability、只读根、只读Workspace、仅loopback、Secret不进入argv且输出流脱敏、cgroup PID/内存限制、16 MiB tmpfs实际超限和执行后无残留容器。
-
-本地候选专项为**181 passed、6 skipped**；6项仅包含平台限定或本机未配置真实Docker的测试。最终`make check`为**3051 passed、11 skipped，263.52秒**；Ruff格式与规则检查584个文件通过，Mypy严格检查200个源文件通过。Schema连续生成两次聚合SHA256均为`a7ad516d95174287376269f1d7104286774affa8556467c58afe4bc4b1e9603c`。Process Lease在0.7.3尚未关闭前补充不可变launch binding，私有Process Store版本由1升为2；版本1候选状态不能安全推导该摘要，因此旧库明确失败关闭而不伪造迁移，已完成未知版本、损坏记录及全新v2重开测试。
-
-Windows实现提交`3ca736f`的[CI 34235932400](https://github.com/carrie1988/Harnessix/actions/runs/34235932400)中，Windows、macOS、Python 3.12、Python 3.13和PostgreSQL任务通过，证明pipe/Secret、超时进程树、owner丢失恢复、挂起Job分配及ConPTY Unicode/resize已在真机闭环。Container任务在首次拉取镜像后紧接的5秒Docker能力探测超时，未进入产品测试；该结果只记录基础设施冷启动现象，不作为Container通过证据，也不以重跑替代下一候选提交的完整门禁。
-
-后续候选提交`5f50d4b`的六矩阵首次运行全部通过。真实Container任务使用统一`ContainerProcessRuntime → PosixProcessSupervisor`路径完成非root、零Capability、只读边界、禁网、Secret脱敏、cgroup PID/内存、tmpfs实际超限及执行后无残留验证；Windows真机重复通过Job Object、owner-loss和ConPTY门禁。该运行不是对旧失败任务的重跑，关闭了0.7.3剩余的Container与综合矩阵证据。
-
-## 69. 0.7.4a Workspace Transaction合同与账本候选验收（2026-09-08）
-
-状态：专项源码求证、ADR修订、领域合同、Planner、私有CAS和append-only SQLite账本已进入候选；尚未执行用户Workspace写入、Rollback或Git命令，不关闭0.7.4。
-
-当前10项确定性测试覆盖：
-
-- 新增、修改、删除组成的有序多文件Plan，逐文件before/after内容、模式和缺失事实，以及目标文件和全部现存父目录Snapshot；
-- `.git`、`.harnessix`、`.codex`、`.agents`与`.env`控制面拒绝，规划末尾来源二次核对；
-- request id、transaction id、平台路径唯一性、总文件数、单文件及总镜像上限和Plan自摘要；
-- before/after正文只进入当前用户私有CAS，Blob写入经临时文件、`fsync`、replace和摘要复核；
-- Store持久重开、同请求幂等、进度后重复保存、请求冲突、Blob篡改、未知Store版本和记录payload损坏失败关闭；
-- `WorkspaceTransactionRecord`以完整Plan、状态、sequence、cursor、开始/结束时间和自摘要构成append-only事件，转移时执行完整payload CAS。
-
-Ruff格式与规则、Mypy严格检查4个新增源文件通过，专项测试为**10 passed**。新增`workspace-file-version-v1`、`workspace-mutation-v1`、`workspace-transaction-plan-v1`和`workspace-transaction-record-v1`四份Schema；当前聚合SHA256为`8e927bf6d9c6e9d74a95feca8517f2170051718ba8a435571a308c4021391896`。该候选没有调用模型API、Git写、SSH、远程服务器或新增中间件。
-
-## 70. 0.7.4b POSIX发布、恢复、Rollback与完整Diff候选验收（2026-09-08）
-
-状态：POSIX普通Workspace事务执行器和完整Diff已进入候选；Git worktree/checkpoint/commit和Windows Git矩阵尚未完成，不关闭0.7.4。
-
-当前20项专项测试覆盖：
-
-- 在来源Snapshot完整相等且跨进程fencing lease有效后，按规范路径顺序发布新增、修改和删除文件；同目录临时文件、模式设置、文件`fsync`、`replace/unlink`及父目录`fsync`形成正式写入原语；
-- 每个成员写前重新核对before CAS，写后核对after CAS再推进append-only cursor；批准指纹、Workspace ID或fencing token不匹配均在副作用前失败，租约在首个成员后失效时不会执行下一成员且可由新owner安全恢复；
-- 真实独立Python进程在首个`replace`完成、账本记账前以`os._exit`硬退出；重开后识别`interrupted/cursor=1`并只执行剩余成员，不重复首个效果；
-- 来源在首个效果前漂移保持记录`prepared`且不覆盖用户内容；中间态只接受有序after前缀与before后缀，第三种内容或乱序after进入`diverged`；
-- Rollback只从`published`事务生成新的反向Plan、transaction id、来源Snapshot和批准指纹；原事务仍保持不可变published，发布后用户第三种修改不会被旧Rollback盲目覆盖；
-- Diff覆盖全部新增、修改、删除和内容相同的精确重命名，记录before/after摘要与模式；UTF-8输出确定性unified diff，binary输出完整摘要和字节事实，不以空patch冒充无变化。
-
-Ruff格式与规则通过，Mypy严格检查6个Delivery源文件通过，专项测试为**20 passed**。新增`workspace-diff-entry-v1`与`workspace-diff-v1` Schema，连续两次生成后的聚合SHA256均为`a33cc92bbb8b69141e0e6ef07405452b50e52b88eccb2c8f6e3add549188c678`。该切片没有执行Git写、模型API、SSH、远程服务器或新增中间件。
-
-## 71. 0.7.4c 受管Git Worktree、Checkpoint与Commit候选验收（2026-09-08）
-
-状态：跨平台受管Git交付代码及本地macOS真实Git验证已完成；后续与0.7.5一并进入的[CI 34260423881](https://github.com/carrie1988/Harnessix/actions/runs/34260423881)已通过Windows/macOS及完整六矩阵，0.7.4据此关闭。
-
-当前Delivery共**35 passed**，新增Git用例及扩展安全参数覆盖：
-
-- 精确repository root、HEAD commit/tree、common directory、Git可执行文件身份、干净状态和有效配置形成自摘要绑定；来源dirty、外部include、可执行filter、attributes转换、submodule/LFS、sparse checkout和alternates失败关闭；
-- 私有detached/no-checkout worktree持久记录`prepared/creating/ready/diverged/unknown`和append-only事件；真实注册后崩溃能够通过`.git`普通文件、common directory、管理回链、路径身份与HEAD恢复，来源HEAD和index保持不变；
-- 独立`GIT_INDEX_FILE`从基准tree构造Checkpoint，逐路径核对before blob/模式，只写入Plan after blob，完整delta路径、受管index和物化文件再次核对；新增binary、修改和删除均进入同一预期tree；
-- Commit Spec绑定新branch、parent、tree、作者、邮箱、时间、消息、Hook禁用策略、实现摘要、原始对象摘要及预期OID；确定性对象写入后只用全零旧值CAS创建此前不存在的新ref；
-- 两个真实独立Python进程分别在commit对象写入后、ref更新后以`os._exit`硬退出；重开后前者恢复为`interrupted`再完成，后者直接对账为`committed`，最终都只有同一预期OID且不移动来源HEAD；
-- 错误批准指纹和已存在branch在副作用前拒绝；外部include、attributes转换、`.gitmodules`、sparse checkout及alternates攻击输入均由真实仓库用例失败关闭；未知Store版本和损坏payload失败关闭；macOS Git 2.24.3兼容路径经过真实命令验证。
-
-Ruff与Mypy严格检查10个Delivery源/测试文件通过；新增7份Git Schema，连续两次生成后的聚合SHA256均为`7bb6f371f5b2cc26967a919167ddc4b594df8218f1e81a702490c0522fa5b335`。加入测试包隔离文件后，全仓门禁为**3081 passed、11 skipped**；随后增加的5项Git攻击参数已由专项门禁通过，最终全仓数字在0.7.5综合关闭时统一更新。本片只在pytest临时目录创建本地Git仓库和受管branch，没有Push、网络、模型API、SSH、远程服务器或新增中间件。
-
-## 72. 0.7.5统一Action Plane与Git Push发布候选验收（2026-09-09）
-
-状态：**已完成**。领域合同、唯一可信路由、默认风险Policy、append-only审计、Extension能力端口及Git Push外部副作用证明切片已完成本地和远端验收；0.7整体随本切片关闭。
-
-0.7.5专项共**45 tests**（Trusted Action 21项、Git Push 24项），覆盖：
-
-- `CanonicalActionResource`、`TrustedToolBinding`、`CodingActionInvocation`、`ActionRoutePlan`、`ActionExecutionOutcome`、`ActionAuditEvent`和`ActionRouteSnapshot`的严格合同、自摘要、排序、身份与状态不变量；
-- builtin、MCP、Skill、Hook和custom五种来源进入同一默认Policy；未注册Tool、版本/指纹/Schema替换、调用方伪造effect字段、疑似明文Secret和跨来源Extension访问失败关闭；
-- 低风险只读自动允许，高风险写生成精确Approval Checkpoint；批准前执行、批准后Workspace/remote配置漂移均不调用executor；
-- Action Audit事件只保存输出摘要而不保存输出正文；私有Route Plan保留规范化调用参数。冗余索引、事件payload、哈希链和未知Store版本损坏失败关闭；
-- 真实子进程在Route进入running并写下一次外部效果后`os._exit`，父进程重开只把running转unknown并调用一次reconcile，效果文件保持恰好一条；
-- `ActionService`按真实JSON语义解析strict UUID合同，避免Python字典传输与JSON传输产生不同验证结果；
-- 真实Git来源仓库经Workspace Transaction、受管worktree、Checkpoint和确定性Commit产生新branch，随后独立Push Plan和批准只更新一个bare remote ref；
-- 直接调用旧ActionService、Route未批准、remote URL含凭据/歧义/未授权协议，以及批准后Git配置漂移全部失败关闭；
-- remote/ref字段在任何Git子进程前完成准入，选项形态remote、非法branch ref、无效host/SSH user、控制字符和歧义多行响应均失败关闭；Git单行解析兼容LF、CRLF和无行尾三种确定格式；
-- Push命令已经成功但响应被注入丢失时，双层状态均进入unknown；reconcile只执行远端ref观察，成功收敛且Push调用次数为1。
-
-Delivery扩大回归当前为**52 tests**；ActionService、0.7.5、全部Delivery和Process超时后代清理扩大回归通过。Ruff和Mypy定向门禁通过；10份新公共Schema与运行时模型逐项相等。Windows CAS额外修复`os.open`未显式使用`O_BINARY`导致LF可能被文本模式转换、Blob摘要错误的问题；macOS Process后代超时测试把启动窗口从0.3秒调整为2秒，测试仍验证超时、SIGKILL和整组后代退出，不再把共享Runner冷启动误判为产品失败。
-
-关闭提交后的Windows矩阵暴露一次`execution_plan_stale`间歇失败。根因不是正文变化，而是目录Snapshot把Windows枚举缓存中的时间/大小和全部属性作为跨观察身份；第一轮修复又通过新增测试发现`DirEntry.stat()`普通项可能不提供当前File Index，并暴露Git配置漂移测试依赖父目录时间变化而非正式`GitRepositoryBinding.config_sha256`的错误假设。最终实现统一三条语义：目录持久身份只绑定执行相关元数据，直接成员绑定名称/类型/对象身份，显式文件绑定内容；完整revision仍用于单次观察窗口竞态；Git remote配置由批准Intent中的仓库绑定在发网前重新计算并以`git_repository_changed`失败。回归覆盖Windows重开文件稳定、未选择成员正文变化、同名成员替换、易变属性排除及对象/只读/link/size绑定。
-
-Windows Snapshot修复后的文档收口运行[CI 34266946268](https://github.com/carrie1988/Harnessix/actions/runs/34266946268)在固定BusyBox镜像已成功拉取后，Container Sandbox任务仍因Docker Daemon冷启动超过原5秒探测预算而以`sandbox_unavailable`失败。该结果表明原预算把“有界冷启动”误判为“后端不可用”，不是放宽失败关闭的理由。最终实现把`version`与`info`探测分别调整为15秒有界超时，保持零重试，任何启动、超时、非零返回或输出异常仍立即失败关闭；确定性回归同时断言精确超时和首次超时后只调用一次。
-
-最终本地`make check`为**3140 passed、12 skipped，270.43秒**；Ruff格式与规则通过，Mypy严格检查215个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。
-
-本地真实Push只访问pytest临时目录中的bare repository，不访问公网、不调用模型API、不使用用户凭据、SSH或远程服务器。公网Git认证配置明确留在0.9.5，不能用本地bare remote或0.8.6模型Provider Secret替代认证、known-hosts或Secret泄漏验收。
-
-最终加固提交`e12ae38`由[CI 34268017600](https://github.com/carrie1988/Harnessix/actions/runs/34268017600)验证：Python 3.12、Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定BusyBox摘要Container Sandbox六项全部成功。macOS和Windows矩阵均显式包含`tests/trusted_actions`；Windows同时验证受管Git二进制CAS、Snapshot稳定与同名成员替换，macOS继续验证Process Group超时清理，Container矩阵验证放宽启动预算后隔离合同未被削弱。该门禁不访问模型API或公网Git remote。
-
-## 73. 0.8.1 Agent Protocol v1候选验收（2026-09-09）
-
-状态：公共合同、JSON Schema、严格帧Codec、兼容读取、内部事件投影、Replay和持久请求账本已完成确定性本地验收；Headless传输与Agent SDK属于0.8.2。
-
-专项测试覆盖标准JSON-RPC Request/Notification/Success/Error互斥结构，字符串和安全整数ID边界，非法UTF-8/JSON、重复字段、Batch、多行、深度与尺寸门禁；未知输入字段失败，旧客户端忽略新增可选输出字段和未知通知；内部模型尝试/Context事件不公开但`scannedThrough`仍前进，公开游标允许跳跃且严格递增。Session migration20追加`protocol_requests`，重复命令在`clientInstanceId + requestId`域内复用，参数漂移冲突，原始Prompt不落库，终态摘要篡改和终态改写失败关闭。
-
-13份`agent-protocol-*-v1.schema.json`由运行时合同统一生成并逐项相等。专项验证不调用模型API、不访问网络、不读取用户凭据或远程服务器。
-
-## 74. 0.8.2 Headless App Server与Agent SDK候选验收（2026-09-09）
-
-状态：**本地验收完成**。单客户端stdio JSONL、应用服务、进程内/子进程Python Agent SDK、确定性受理恢复、Thread过滤分页、协商限制、背压和有界关闭已经实现；实时通知、提问、Steering与薄CLI属于0.8.3。
-
-专项及扩大回归为**75 passed**，覆盖：
-
-- 初始化前拒绝、精确版本、未知参数、`initialized`确认和稳定错误映射；
-- Thread创建、读取、列表、恢复、分叉、归档以及Turn开始、重试、恢复、取消、审批和Replay的SDK接线；
-- 相同Command返回同一领域身份、参数漂移冲突，以及协议结果已提交但后台任务尚未调度时的Runtime重启恢复；Agent Event/Thread v18用持久`executionMode`保证该行为不改变进程内Turn的既有中断语义；
-- 归档筛选先于分页，避免页面被不匹配记录占用；
-- 子进程Notification只写不等待Response，stderr有界保留；
-- EOF、慢Writer和长时间Provider下的有界关闭，验证Session不损坏且活动Turn进入确定性取消终态；
-- Protocol和Agent Runtime既有回归。
-
-Ruff格式/规则通过，Mypy严格检查226个源文件通过；最终完整门禁为**3180 passed、12 skipped，296.28秒**。12项跳过只包含平台限定或本机未配置的集成场景。本切片只使用确定性Fake/Scripted Provider和本地临时SQLite，不连接模型API、网络、SSH或远程服务器。0.8整体仍未关闭，不能由本次结果推导实时双向交互、MCP、Skills、Hooks、Provider配置或发行物已经可用。
-
-## 75. 0.8.3 薄CLI与双向交互验收（2026-09-09）
-
-状态：**本地验收完成**。Pull-Live事件页、stdio请求多路复用、持久提问、运行中Steering、Scoped Artifact读取和薄CLI已完成实现及扩大回归；MCP、Skills/Hooks和Provider配置仍属于0.8.4～0.8.6。
-
-专项与扩大回归覆盖：
-
-- `ask_user`请求在Session中进入`WAITING_INPUT`，重启后保持等待；回答事务同时提交Answer、成功Tool Result和执行状态，重复回答幂等、不同回答冲突，取消、非法参数、期限过期和真实进程硬退出均有确定结果；
-- Steering绑定活动Thread/Turn和稳定请求身份，覆盖Provider流式期间、ACCEPTED窗口、首个响应Item前竞态、等待审批/问题、关闭状态和下一次Provider历史顺序；
-- `events/next`覆盖Replay优先、30秒有界等待、能力关闭、实时Delta、1000条缓冲溢出与`liveGap`恢复；`timedOut`不能与事件、后续页、Delta或缺口同时成立；
-- App Server在READY后并发处理有界Request，单Writer保持帧完整；真实子进程传输按JSON-RPC ID归并乱序Response，长轮询与`thread/list`可并行，malformed/未知ID/EOF会稳定终结全部待决请求；
-- 薄CLI覆盖快速终态Replay、编号问题映射、重启恢复、分页Thread列表，以及真实整组Patch在批准前读取计划Diff、提交原指纹并完成受管写入；
-- Scoped Artifact读取从Thread恢复当前Workspace能力，严格校验Session归属、TTL、摘要和分页边界；未装配Reader或客户端未协商Delta时不广告对应能力；
-- Agent Event/Thread v19、Session migration22、Agent Protocol新增Schema和Cost Report v3保持运行时模型与生成物相等；旧Cost/Smoke/Campaign状态集合及冻结`thread-fork-v1`哈希不变，历史事件和投影不被迁移改写。
-
-最终非沙箱`make check`为**3208 passed、12 skipped，293.20秒**；Ruff格式与规则检查636个文件通过，Mypy严格检查228个源文件通过。12项跳过只包含平台限定或本机未配置的集成场景。Schema生成后共有186份JSON文件，按文件名、NUL和原字节聚合SHA256为`bd15e7dcfc6c775bcaa02b39dfa373f19881ff05c268595e7f1a308cea3092dd`；migration22 SHA256为`63e4fa0983de87e2d6bc5c8e4a5bbc126c6de6351c0abec99aacacacc808a0b1`。
-
-独立wheel升级探针以历史提交`e0e8498`的真实v8 wheel创建完成会话和migration1～9，再由当前v19 wheel仅追加migration10～22。升级未改变数据库inode、旧事件、旧投影或前九个migration；v8 reader随后以`schema_too_new`拒绝且不修改数据库；当前wheel继续运行时只追加v19事件、投影升级为19并保持Replay一致。历史与当前wheel SHA256分别为`d0d5ba4322ddaa846565478901932335a5a89f3d26da3804df0155c022601d93`和`d9b00ea2015d0b91b918ddf21b469fcb523b818e645f16655a29220e1e069d7d`。
-
-验收使用确定性Fake/Scripted Provider、本地临时SQLite和本地受管副本，不调用模型API，不访问公网、SSH或远程服务器。薄CLI当前要求宿主提供已装配的stdio App Server argv；不能由本切片推导Provider/Profile配置、正式安装器或完整TUI已经可用。
-
-## 76. 0.8.4 MCP候选验收（2026-09-09）
-
-状态：**已完成**。官方MCP Python SDK Client、不可变目录和连接状态、调用前Schema漂移检查、统一Action接入、强Container stdio目标及可选只读MCP Server已经实现；远端HTTP/OAuth进入0.9.4，模型Provider配置由0.8.6独立完成。最终实现由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成含固定镜像Container、macOS和Windows在内的六矩阵验收。
-
-专项回归覆盖：
-
-- 2026代自动发现与旧握手兼容、完整分页、重复Cursor、重复名称、稳定名称冲突摘要、目录持久重开、同内容多代次、连接并发、哈希链篡改和宿主中断恢复；
-- JSON Schema 2020-12 object根、字节/深度/节点边界、外部引用、基址、正则、无法解析本地引用、参数与输出上限；恶意Description/Annotation不能降低宿主Policy；
-- 每次调用前绕过缓存刷新，Schema变化和Tool移除在调用前持久化并拒绝；只读调用、写审批、发送后超时UNKNOWN、显式Reconcile零重放、调用取消及结果Secret脱敏；
-- 可选Server只导出显式低风险只读Action，写绑定、Schema错配、缺失Tool和非法参数失败关闭；
-- 真实stdio Python子进程硬退出、调用超时、关闭后进程消失；固定摘要BusyBox容器执行旧握手、目录读取、Tool调用、禁网/只读/低资源Profile绑定和标签化残留清理；
-- 六份MCP JSON Schema与运行时模型逐项相等，连续两次全量生成聚合摘要一致；MCP SDK进入第三方许可证通知；macOS与Windows CI显式加入MCP测试。
-
-0.8.4专项当前为**47 passed**（含`tests/mcp`与可信Action扩大回归；真实Container由CI单独启用）。测试不调用模型API、不访问远端MCP、SSH、Git remote或用户服务器。MCP目录数据库只保存协议身份、Schema、Annotation和摘要；Tool结果仍由Action Audit只保存摘要，Secret canary在跨边界前被替换为`[REDACTED]`。
-
-最终非沙箱`make check`为**3235 passed、13 skipped，319.39秒**；Ruff格式与规则检查655个文件通过，Mypy严格检查236个源文件通过。Schema生成后共有192份JSON文件，按文件名、NUL和原字节聚合SHA256为`4231d529343624f8c4a963e8d71c991303b65e995c5b4cf3b8f4602e2e3a25ce`。13项跳过中新增的一项是本机未配置Container Daemon的真实MCP容器验收；该项必须由CI固定镜像任务关闭。
-
-## 77. 0.8.5 Skills与Hooks候选验收（2026-09-09）
-
-状态：**已完成**。不可变Skill目录、限定名称冲突、跨平台安全渐进加载、声明式Hook Registry、精确定义授权、超时/取消及中断恢复已经实现；远端Skill安装、Marketplace、Shell Hook和进程内第三方Plugin不属于本切片。最终实现由[CI 34346811727](https://github.com/carrie1988/Harnessix/actions/runs/34346811727)完成macOS、Windows及完整Linux回归。
-
-专项回归覆盖：
-
-- 相同语义目录的新代次保持内容摘要稳定；普通名称只解析全局唯一Skill，跨来源同名要求限定名称，来源内重复名称全部排除；
-- YAML重复键、Alias展开、Frontmatter尺寸/深度/节点、非法UTF-8/NUL/空正文、发现数量和目录深度均有显式上限与稳定错误；
-- Root符号链接、资源符号链接、POSIX硬链接、敏感名称、特殊/二进制文件、路径回退、嵌套Skill和目录形成后的正文漂移失败关闭；
-- `skill.load`与`skill.read_resource`固定为低风险只读Action，目录/Manifest指纹、来源端口与Secret canary在Action边界再次核对；
-- Hook非Bundled精确定义授权、过期/定义漂移、Action Binding/Schema/effect错配、精确Matcher、确定顺序、首个Blocking失败停止和Advisory只记录；
-- Hook不能使用带Secret或写资源的目标，`allow`不能覆盖目标Action Policy deny，输出中的Secret或非法`deny`失败关闭；
-- 超时和外层取消都持久结算Hook及底层Action；重复Dispatch只读取终态；独立进程在Run进入`running`后硬退出，重开收敛为`interrupted`且不重放；
-- Skill访问链、Hook Registry/Plan/Event/Projection摘要篡改均被Store拒绝；21份Schema与运行时模型逐项相等；macOS和Windows CI显式包含两套测试。
-
-专项确定性回归为**29 passed**。本切片还把历史Eval Action Worker租约从5秒调整为30秒，Heartbeat保持1秒；原因是同步评分/发布在较慢macOS Runner上可能阻塞事件循环超过原租约，造成活跃Worker自我丢失。新的预算仍为单次有界租约且不重试Action，既有发布失败与恢复回归继续验证零重复评分。
-
-Ruff格式/规则和Mypy严格检查245个源文件通过。Schema生成后共有213份JSON文件，按文件名、NUL和原字节聚合SHA256为`0c25f173c7ad4ad1c205e45cc872fa81fd8985de62e37b225b8ecbb6839de552`。测试不调用模型API、不访问网络、SSH、远程Git或用户服务器；所有Root、数据库和崩溃进程均位于pytest临时目录。
-
-## 78. 0.8.6 Provider与产品配置候选验收（2026-09-09）
-
-状态：**已完成**。源码研究见
-[Provider、Profile、配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)，
-正式决策见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)。
-
-`tests/product_config`共**49项通过**，覆盖：
-
-- 最大256 KiB的严格UTF-8 JSON、重复键、未知字段、非有限数、标量转换、深度/节点上限、
-  规范排序、配置双摘要、链接/硬链接/私有权限，以及一个环境变量只能定位一个Secret引用；
-- Provider/Profile/能力/Fallback图正式引用、累计32次尝试上限、伪造选择快照和错版Secret；
-- v1→v2完整源摘要CAS、共享环境Secret去重、0600单链接迁移锁、全摘要私有备份、替换前后
-  崩溃恢复和v2幂等重开；迁移收据同时约束源、目标和备份摘要；
-- SQLite快照、旧配置摘要与旧Profile联合CAS、同配置Profile并发冲突、活动索引、配置及
-  Fallback连续Hash链；已有链损坏时禁止继续追加，非法Fallback图决策失败关闭；
-- OpenAI-compatible与Anthropic真实SDK经Mock传输消费显式Secret，不读取占位环境变量；API Key
-  限制为8 KiB可打印ASCII，供应商自定义Header环境变量、错误和领域事件均不泄漏Canary；
-- 零响应暴露的可重试失败只有在持久审计成功后才切换，已知Usage保留，各Adapter局部尝试号
-  改写为全局连续号；Response、Text、Tool Call、不可重试失败、无审计或审计失败均不切换；
-- 固定Workspace服务及Windows大小写别名、配置文件/状态控制面隔离、Provider构造失败、Runtime
-  owner冲突、活动CAS和POSIX EOF关闭；Windows产品入口在状态/Provider/协议前明确失败关闭，
-  任何初始化失败均不开放stdio或创建Thread；
-- CLI诊断在建连前检查依赖、Secret版本与API Key格式；诊断/迁移输出为有界JSON且屏蔽意外
-  异常正文，八份新增Schema及v2示例与运行合同一致。
-
-扩大回归`tests/product_config + App Server + 双Provider`为**238项通过**。最终原生宿主全仓
-pytest为**3320 passed、13 skipped，311.35秒**；13项只包含平台限定或本机未配置的PostgreSQL/
-Container集成场景。受限桌面命令沙箱中的首次全仓运行因禁止`ps`并剥离setuid/setgid模式产生
-24项环境假失败；相同代码在原生宿主通过，未通过修改运行时或删除安全断言规避。
-
-Ruff格式检查691个文件、规则检查和Mypy严格检查253个源文件全部通过；17个既有离线示例、
-`uv lock --check`、sdist/wheel构建均通过。221份JSON Schema按文件名、NUL和原字节聚合SHA256为
-`1681d5a8bc11e4389716071a9c45cec71cfa3c02d717d4d7f93659fe2f842378`。基础依赖的全新Python
-3.12环境从wheel安装成功，`harnessix`、`config`和`agent-server`帮助入口可用；未安装Provider
-可选SDK时，离线诊断以9项有界检查明确返回未就绪且不泄漏Secret。
-
-0.8.5基线提交`bf10c9d`的[CI 34327050210](https://github.com/carrie1988/Harnessix/actions/runs/34327050210)
-已通过Python 3.12、PostgreSQL和固定摘要Container任务，但真实发现三类慢速Runner问题：Windows
-测试只给0.5秒发布子进程PID，macOS Eval同步评分超过30秒租约，Python 3.13出现同类Eval租约
-波动。Windows测试预算调整为2秒后仍严格验证Job Object整树回收；Eval单Worker租约调整为120秒，
-继续以1秒Heartbeat续约并保持Action不重试，覆盖最长60秒受管测试及CI调度暂停。该失败运行作为
-缺陷发现证据保留，不用局部重跑冒充0.8通过。首个0.8.6提交`901244b`的
-[CI 34346010677](https://github.com/carrie1988/Harnessix/actions/runs/34346010677)进一步发现Windows
-低层配置写入缺少`O_BINARY`导致规范LF转换为CRLF，以及POSIX-only只读Tool Runtime缺少产品级
-平台前置诊断。`62830ed`补齐二进制原子写，并让Windows `agent-server`在创建状态、Provider或
-协议前以稳定错误失败关闭；Windows配置诊断和迁移继续通过原生路径验证。
-
-产品文档收口提交`a5709be`的
-[CI 34348023136](https://github.com/carrie1988/Harnessix/actions/runs/34348023136)中，其余五项通过，
-Python 3.12在慢速磁盘上暴露6项Eval失败。根因是该历史任务需要复制240个跟踪文件，并对受管
-文件逐项执行`FULL`同步的SQLite基线持久化，却错误复用了模型单次读取的5秒预算；同一代码在
-较快环境通过不能消除该非确定性。`3588d76`保留模型工具5秒默认值，为受信批量物化设置60秒有限截止时间，
-并将复制放入支持调用取消、线程通知和排空的读取执行器；非法、非有限或非正预算继续在I/O前
-拒绝。新增7项预算边界回归后，本地全量达到3320项通过，未通过重跑失败任务掩盖根因。
-
-最终实现及加固提交`3588d76`的
-[CI 34351402193](https://github.com/carrie1988/Harnessix/actions/runs/34351402193)中，Python 3.12、
-Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定摘要Container
-Sandbox六项全部通过。该结果同时关闭0.8.4 MCP、0.8.5 Skills/Hooks和0.8.6产品配置的远端
-门禁；Windows原生Coding Tool产品装配仍按路线图进入0.9.1，不将当前失败关闭边界表述为
-Windows产品已支持。
-
-本地验收不调用真实模型API、远端MCP、SSH、公网Git或用户服务器。真实Provider能力、价格适用
-性和付费Smoke仍属于0.9.6，不能由Mock传输或历史百炼Eval结果推导。
-
-## 79. 0.9.0代码可维护性治理验收（2026-09-12）
-
-状态：**已完成**。正式决策见
-[ADR 0076](adr/0076-code-readability-and-structural-governance.md)，详细测试边界见
-[0.9.0设计](m09-code-maintainability.md)。
-
-可读性报告从固定提交`e15ffaa20142e9f61cf8412b3d4499001a695368`导出的源码独立重建，结果与
-`docs/baselines/readability-0.9.0-start.json`逐字一致。最终报告覆盖256个生产源码文件、
-55,706物理行、49,795逻辑行、273个静态公共导出和146个公共Pydantic/Enum合同；256个模块、
-全部公共行为和25组高风险入口均通过说明门禁。存量13个超大文件、148个超长或高复杂度符号、
-164条一级包依赖边和一个既有强连通分量被精确冻结，新增或增长债务会使`make readability`失败。
-
-Reducer拆分特征回归覆盖Agent、Context、Provider、Tool、Patch和Session，共1162项通过；治理专项
-与Agent Schema共13项通过。最终本地`make check`结果为**3326 passed、13 skipped，277.46秒**。
-13项跳过仅包含平台限定或本机未配置的PostgreSQL/Container集成场景。Ruff格式检查699个文件、
-Ruff规则检查、Mypy严格检查256个源文件和`uv lock --check`全部通过。
-
-Schema生成后共有221份JSON文件，生成目录零差异；按文件名、NUL和原字节聚合SHA256保持
-`1681d5a8bc11e4389716071a9c45cec71cfa3c02d717d4d7f93659fe2f842378`。CI声明的17个离线端到端
-示例全部通过。sdist和wheel可构建；全新Python 3.12虚拟环境从wheel安装后，顶层CLI、配置命令、
-Agent Server帮助入口以及Reducer旧门面与新职责模块均可导入。
-
-本地验收未调用模型API、远端MCP、SSH、公网Git或用户服务器。首个候选提交的
-[CI 34621790187](https://github.com/carrie1988/Harnessix/actions/runs/34621790187)在Windows发现新增治理
-测试读取含中文Docstring的源码时未显式指定UTF-8，默认cp1252解码失败；生产运行时及其余五项
-未失败。修复测试编码边界后，实现提交`f9315d7`的
-[CI 34623008860](https://github.com/carrie1988/Harnessix/actions/runs/34623008860)一次通过Python 3.12、
-Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定镜像Container
-Sandbox六项。随后文档收口提交`4bdef47`的
-[CI 34624537427](https://github.com/carrie1988/Harnessix/actions/runs/34624537427)中其余五项通过，
-Python 3.13全量测试暴露Action Worker的终态提交竞态：Effect Journal已经原子提交终态并清除租约，
-但执行协程仍可能等待SQLite返回；Heartbeat此时观察到续租失败且协程尚未结束，旧实现会误报
-`WorkerLeaseLostError`。
-
-修复后，续租失败路径先读取持久Action；已提交终态优先于瞬时任务状态，真实非终态租约丢失仍
-取消执行、记录指标并保持后续`UNKNOWN`恢复。两项确定性回归分别覆盖终态提交窗口和真实续租
-失败，连续20轮共60次通过；Campaign与Worker组合回归23项通过，不以重跑失败任务代替根因修复。
-最终实现提交`8a0686c`的
-[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)一次通过Python 3.12、
-Python 3.13、macOS Coding Tools、Windows Trusted Execution、PostgreSQL和固定镜像Container
-Sandbox六项，0.9.0据此关闭。
+## 4. 确定性基础设施
+
+### 4.1 模型与传输
+
+- `ScriptedProvider`用于构造精确Provider Event序列、Barrier、Delay、失败、取消和Usage；
+- Model Wire夹具使用锁定的真实SDK与MockTransport，验证实际请求映射和SSE解析；
+- 默认测试不访问公网，不要求任何真实模型API Key；
+- `provider_factory`注入只说明工厂被替换，离线性必须由MockTransport或网络隔离另行证明；
+- 时间相关测试应等待明确检查点，不以“睡眠足够久”推断请求已开始。
+
+### 4.2 文件、Git和进程
+
+- 每项测试使用独立临时Workspace与状态目录；
+- Git场景使用真实临时仓库、固定作者环境和禁Hook配置；
+- Process测试观察进程树、退出码、输出、取消和残留，不只观察父进程Future；
+- 平台专属能力在对应Runner真实执行，不用Linux Mock宣称Windows或macOS支持；
+- 需要硬退出的场景使用子进程和持久结果文件，不在主Pytest进程伪造。
+
+### 4.3 数据库与时钟
+
+- SQLite测试使用真实事务、WAL、锁和文件权限；
+- PostgreSQL合同在真实服务容器执行，不以SQLite实现替代；
+- 墙钟由测试固定或注入，Deadline使用事件循环单调时钟；
+- CAS、Lease与Fencing测试必须显式构造旧Owner或并发竞争；
+- Migration测试优先使用真实旧Wheel生成旧数据，不手改版本字段伪装升级。
+
+```mermaid
+flowchart LR
+    Fixture[固定输入夹具] --> Runtime[真实业务Runtime]
+    Runtime --> RealState[真实SQLite/Git/Process]
+    Runtime --> MockWire[真实SDK加MockTransport]
+    Fault[明确Fault Point] --> Runtime
+    RealState --> Assertions[状态加外部效果断言]
+    MockWire --> Assertions
+```
+
+## 5. Contract测试规范
+
+每个可替换端口至少覆盖正常、非法输入、边界、取消、资源关闭和实现间一致性：
+
+| 端口 | 核心合同 |
+|---|---|
+| `ModelProvider` | Event顺序、流终态、Usage、Attempt、错误、取消、资源关闭 |
+| Agent Tool | Schema、身份、Effect、参数、结果、取消、输出上限 |
+| `SessionStore` | Sequence、CAS、事务、Replay、Migration、Owner |
+| Artifact Store | Scope、Digest、分页、TTL、原子发布、回收 |
+| Execution/Action Store | 不可变Plan、审批、Lease、事件链、UNKNOWN、Reconcile |
+| Workspace/Delivery | 路径对象、Snapshot、Fencing、发布、Rollback、Git身份 |
+| Sandbox/Process | 能力、网络、Owner、PTY、取消、残留清理 |
+| Agent Protocol | Frame、版本、请求幂等、投影、Replay、背压和关闭 |
+| Extension | Catalog/Registry、来源身份、Schema漂移、授权和统一Action入口 |
+
+新增实现必须通过既有合同；不得通过为某个Provider、后端或平台改写共同期望来掩盖不兼容。
+
+## 6. 状态与Replay测试
+
+每个持久聚合至少证明：
+
+1. 事件先于投影或与投影在同一事务提交；
+2. Sequence单调且重复相同事实幂等；
+3. 同身份不同Payload冲突；
+4. 非法转换不产生部分提交；
+5. `replay(all_events) == snapshot`；
+6. 旧Schema按Upcast规则可读，新Reader不改写旧事件；
+7. 旧Reader遇到更高Migration明确拒绝；
+8. Hash链、摘要、索引和正文不一致时失败关闭。
+
+```mermaid
+sequenceDiagram
+    participant T as Test
+    participant R as Runtime
+    participant S as Store
+    participant D as Reducer
+    T->>R: 执行领域命令
+    R->>S: 原子追加Event与更新Snapshot
+    T->>S: 关闭并重开
+    S-->>T: Snapshot与全部Events
+    T->>D: replay(Events)
+    D-->>T: Rebuilt Snapshot
+    T->>T: 严格比较并检查旧字节
+```
+
+## 7. 副作用与崩溃矩阵
+
+| 切点 | Read Only | Local Write | External Write |
+|---|---|---|---|
+| 意图持久化前 | 无调用，可重发命令 | 无修改 | 无外部请求 |
+| 意图后、效果前 | 可安全恢复或取消 | 依据Plan重新准入 | 只有持久身份后才可调用 |
+| 效果执行中 | 终止或重新读取 | 观察Pre/Post与事务游标 | 进入UNKNOWN或专用查询 |
+| 效果后、结果前 | 可重新观察 | 按文件/Git事实对账 | 禁止盲目重发，必须Reconcile |
+| 结果提交后 | 不重复调用 | 不重复发布 | 不重复外部效果 |
+
+断言必须同时覆盖领域状态、事件因果、实际文件/进程/远端夹具效果次数和恢复后的后续行为。
+
+## 8. 取消、Timeout与资源关闭
+
+```mermaid
+flowchart TD
+    Cancel[取消或Deadline] --> Intent[持久化取消意图]
+    Intent --> Active{活动资源类型}
+    Active -- Provider --> CloseStream[关闭流与Client]
+    Active -- Tool/Process --> StopTree[停止任务或进程树]
+    Active -- External Action --> Unknown[按副作用边界决定UNKNOWN]
+    CloseStream --> Settle[提交确定终态]
+    StopTree --> Settle
+    Unknown --> Reconcile[进入对账]
+    Settle --> LeakCheck[检查无遗留资源]
+```
+
+测试不得只断言抛出`CancelledError`。还应检查Turn/Action终态、Provider/流关闭、子进程树、Lock/Lease释放、临时目录、
+迟到回调和已知Usage。Cleanup异常不得把可能已发生的外部效果误写为失败前未执行。
+
+## 9. Security测试
+
+安全回归与[威胁模型](threat-model.md)建立双向关系，最低覆盖：
+
+- Path Traversal、Symlink、Hardlink、Junction/Reparse Point与TOCTOU；
+- 恶意文件类型、Mode、Owner、父目录和路径大小写/Unicode差异；
+- Shell参数、环境继承、Git Hook、配置和外部Helper注入；
+- Approval Fingerprint、计划替换、跨Workspace与跨Tenant身份混淆；
+- Secret Canary的原文、编码、跨Chunk、结构化字段和错误正文；
+- Provider/MCP的恶意SSE、超大帧、身份漂移、断流和响应后继续输出；
+- JSON/JSONL/YAML重复Key、非有限值、深度、大小和协议Fuzz；
+- 网络禁用、DNS漂移、端点错绑、重定向、代理和Egress；
+- 扩展来源、Catalog、Definition、Grant、版本和摘要替换；
+- UNKNOWN对账与重复效果计数必须为零。
+
+Canary未出现在公开报告只能证明对应投影边界，不等于进程内存、私有Session或第三方库从未接触Secret。
+
+## 10. 兼容与Migration验证
+
+```mermaid
+flowchart LR
+    OldWheel[真实旧Wheel] --> OldState[创建旧事件和数据库]
+    OldState --> NewWheel[当前Wheel升级]
+    NewWheel --> Verify[核对旧字节、投影和新行为]
+    Verify --> OldReader[旧Wheel重开]
+    OldReader --> Reject[明确schema_too_new]
+    Verify --> Reopen[当前Wheel再次重开]
+    Reopen --> Stable[结果稳定]
+```
+
+每次Schema/Migration变化应证明原Migration Checksum未改、升级事务原子、取消/崩溃后可重开、旧事件原字节保留、
+兼容读取范围明确和回退策略可执行。删除Migration行、手改版本或只构造当前Pydantic对象不构成真实升级证据。
+
+## 11. 平台与后端验证矩阵
+
+仓库CI使用独立Job隔离不同平台和可选后端，避免单一Linux进程掩盖平台差异：
+
+| CI Job | 运行环境 | 当前验证重点 | 结论边界 |
+|---|---|---|---|
+| `python` | Ubuntu，Python 3.12/3.13 | 锁定依赖、静态检查、全量Pytest、离线示例 | 主语言与默认后端回归 |
+| `coding-tools-macos` | macOS，Python 3.12 | Coding Tools、Artifact、Patch、Process、Eval、Workspace、Sandbox等 | macOS关键纵向切片 |
+| `windows-trusted-execution` | Windows，Python 3.12 | 治理、受信执行、扩展、产品配置和进程相关测试 | 选定契约的Windows兼容性，不等于完整产品支持 |
+| `postgres` | Ubuntu + PostgreSQL 17 | PostgreSQL Journal集成 | 数据库后端语义 |
+| `container-sandbox` | Ubuntu + 固定Digest容器镜像 | 容器Sandbox集成 | 容器执行边界 |
+
+新增平台能力时，必须先明确“契约可导入”“选定模块可用”和“产品完整支持”三种不同承诺。CI中存在Windows Job不能单独证明安装器、终端交互、进程树终止、文件权限和恢复路径已达到Windows生产支持标准。
+
+## 12. Coding Eval任务契约
+
+每个Eval任务至少固定以下输入，禁止只用自然语言问题和人工观感判定：
+
+1. 仓库来源、基线Commit和工作区初始状态；
+2. 目标、非目标、允许能力和禁止修改范围；
+3. Provider、模型、参数、时间、Token、请求次数和费用预算；
+4. 可见检查、隐藏检查、回归测试与安全断言；
+5. Grader版本、评分维度、失败分类和通过阈值；
+6. 最终答复要求、Artifact要求和证据保存策略。
+
+评分至少区分行为正确性、隐藏测试、既有回归、禁止修改、Diff质量、最终答复一致性、安全边界、预算和交付完整性。任务契约、Campaign、Grader和证据结构的源码级事实以[Eval模块详细设计](modules/evals.md)为准。
+
+## 13. Eval指标体系
+
+| 维度 | 示例指标 | 不充分的替代指标 |
+|---|---|---|
+| Correctness | 必要检查通过率、隐藏测试通过率、回归失败数 | 仅判断进程Exit Code |
+| Runtime | 完成率、取消收敛时延、恢复成功率、UNKNOWN占比 | 仅统计平均耗时 |
+| Efficiency | Turn数、Tool Call数、上下文增长、无效重试 | 仅统计总Token |
+| Cost | Input/Output Token、请求次数、实际或估算费用 | 只记录Provider账单总额 |
+| Security | 越权、Secret泄漏、未审批效果、路径逃逸 | 只检查日志中没有明文Key |
+| Interaction | Approval轮次、用户补充次数、最终答复一致性 | 主观“看起来合理” |
+
+单一成功率若没有任务难度、失败分类、预算和环境信息，不能作为架构效果证据。指标必须能回溯到Task、Run、Attempt、Event和固定的Grader版本。
+
+## 14. 真实Provider验证
+
+真实网络验证与默认离线CI分离。执行顺序固定为：
+
+1. 先用`MockTransport`和确定性Fixture证明协议、重试、流式和失败语义；
+2. 固定代码Revision、依赖锁、端点、地域、模型和请求参数；
+3. 使用环境变量或Secret Store注入凭据，禁止写入命令、仓库和证据正文；
+4. 声明请求次数、Token、时长、频率和费用上限，以及首次失败、预算耗尽和响应异常时的停止条件；
+5. 仅保存白名单字段、摘要、状态、Usage和脱敏错误；
+6. 将结果冻结为不可覆盖的验证证据，并明确只证明了哪些契约。
+
+模型Smoke行为见[模型Smoke模块详细设计](modules/smoke.md)，Campaign与证据聚合见[Eval模块详细设计](modules/evals.md)。真实Provider通过不能替代离线协议回归，单个地域和模型通过也不能外推到所有端点或模型。
+
+## 15. 验证证据生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> Planned
+    Planned --> Running: 固定输入、环境与预算
+    Running --> Collected: 执行完成
+    Running --> Incomplete: 中断、超时或预算终止
+    Collected --> Reviewed: 校验完整性与脱敏
+    Incomplete --> Reviewed: 记录未知项和停止原因
+    Reviewed --> Frozen: 绑定Revision并发布
+    Frozen --> Superseded: 新证据明确替代
+    Superseded --> [*]
+```
+
+每份验证证据必须记录代码Revision、依赖、环境、输入或任务版本、预算、停止条件、结果、未知项、脱敏方式和适用范围。新一次运行产生新证据，不得覆盖旧证据或删除失败记录。当前证据清单见[验证证据索引](validation/README.md)。
+
+## 16. 本地质量门禁
+
+仓库的标准本地门禁为：
+
+```bash
+uv sync --locked --all-extras --dev
+make spec
+make check
+```
+
+`make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、Mypy和全量Pytest；`make spec`重新生成契约产物并拒绝未提交漂移。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
+
+文档结构、链接、元数据和Mermaid自动门禁属于DOC-1.6范围。在该门禁落地前，每次大提交仍须人工执行等价检查并保存结果。
+
+## 17. 发布判定
+
+| 结果 | 是否可发布 | 处理规则 |
+|---|---|---|
+| 必要门禁全部通过 | 可进入发布评审 | 仍需核对范围、证据和文档一致性 |
+| 任一必要门禁失败 | 否 | 修复根因并重跑受影响层及全量回归 |
+| 测试Skip | 视合同而定 | 必须解释环境条件，不得按通过计数 |
+| Flaky测试重跑后通过 | 否 | 先分类根因、固定复现证据并消除不确定性 |
+| 真实Provider状态未知 | 否 | 若版本门禁要求Provider认证，未知即未通过 |
+| 文档与实现不一致 | 否 | 更新当前事实源、链接和适用Revision |
+| Security或Recovery证据缺失 | 否 | 不得以功能Happy Path代替 |
+
+“测试数量增加”不等于“发布条件满足”。发布结论必须绑定明确版本、门禁集合、环境与证据。
+
+## 18. 失败分诊与闭环
+
+```mermaid
+flowchart TD
+    Fail[门禁或场景失败] --> Repro{可稳定复现?}
+    Repro -- 是 --> Layer{定位层级}
+    Layer -- 单元 --> Unit[收窄到契约和输入]
+    Layer -- 集成 --> Integration[检查边界、事务和资源]
+    Layer -- 平台 --> Platform[固定OS、后端和工具链]
+    Repro -- 否 --> Flaky[保存Seed、时序、日志和环境]
+    Flaky --> Barrier[增加确定性Barrier或故障注入]
+    Unit --> Root[定位根因]
+    Integration --> Root
+    Platform --> Root
+    Barrier --> Root
+    Root --> Fix[最小修复]
+    Fix --> Regression[新增失败回归]
+    Regression --> Full[受影响测试与全量门禁]
+```
+
+禁止通过无限增加Timeout、无条件Retry、删除断言、扩大Mock范围或只重跑到偶然通过来关闭问题。失败闭环必须保留原始失败分类，并证明修复不会把确定失败改写为`UNKNOWN`或吞掉异常。
+
+## 19. 变更影响规则
+
+| 变更类型 | 最低验证范围 |
+|---|---|
+| 领域契约或Schema | 单元、序列化字节、生成规格、兼容和Migration |
+| 状态机或Reducer | 转移矩阵、非法转移、Replay、Crash Cut Point |
+| Provider或SDK | 协议Fixture、流式、重试、Usage、取消、真实Smoke（若要求） |
+| Tool或Effect | 参数验证、Policy、Approval、Journal、Reconcile、安全边界 |
+| Store或Migration | 原子性、旧版本升级、并发、崩溃恢复、后端矩阵 |
+| Sandbox或Process | 进程树、Timeout、资源上限、路径与平台矩阵 |
+| Protocol或客户端SDK | 编解码、Golden、乱序/重复、版本协商和跨语言Fixture |
+| Eval合同或Grader | 任务Schema、确定性评分、隐藏检查、预算和证据兼容 |
+| 文档结构或事实源 | 元数据、链接、Mermaid、索引、历史状态和重复事实检查 |
+
+## 20. 当前证据与限制
+
+在代码Revision `b99a7ada06d06d3bf0e0e06c0572609f053f8895`上，本地执行`make spec`无生成漂移，`make check`通过Ruff、Readability和256个源码文件的Mypy检查，Pytest结果为`3326 passed, 13 skipped`。该结果是本地环境证据；跨平台、PostgreSQL和容器结论仍以对应远端CI Job为准。
+
+截至该Revision，以下项目仍不能宣称生产完成：0.9.1至0.9.6范围的产品级端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+
+## 21. 维护与验收标准
+
+本规范满足以下条件时保持`current`状态：
+
+1. CI Job、`Makefile`和本文命令、层次及平台边界一致；
+2. 当前策略不与模块详细设计、路线图或威胁模型冲突；
+3. 新的里程碑运行记录不再追加到本文，而进入历史或验证证据目录；
+4. 新的真实Provider、Benchmark或发布验收在`docs/validation/`登记；
+5. 模块具体测试文件清单只在对应模块详细设计维护，本文只定义跨模块策略；
+6. 相对链接、Mermaid和YAML元数据可由自动门禁验证；
+7. Skip、Flaky、UNKNOWN和未运行项均不被表述为通过；
+8. 预算、停止条件、脱敏和证据保存范围与执行配置同步。
