@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0064-agpl-and-commercial-dual-licensing.md
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/governance
 supersedes: []
@@ -423,7 +424,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，30/30个生产源码包均有独立现行模块设计，仓库内191份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1～0.9.6产品切片仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，30/30个生产源码包均有独立现行模块设计，仓库内194份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计，生产代码尚未实施，0.9.2～0.9.6也未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -438,6 +439,25 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Action Plane补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
 - [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
+
+### 0.9.1实施计划与完成边界
+
+0.9.1按[源码研究](research/cli-tui-product-experience.md)、
+[ADR 0078](adr/0078-product-shell-and-recoverable-client-state.md)和
+[详细设计](changes/m09-1-cli-tui-product-experience.md)拆分为以下可独立验证的纵向子切片。先关闭协议和恢复正确性，
+再建设终端表现层；任何后续子切片不得绕过未完成前置项：
+
+- [ ] **0.9.1a 严格SDK与可恢复客户端内核**：Response/Frame/Result/Handshake加固，版本化Client State、
+  发送前Command分配、连接代际和确定性Projection Reducer；
+- [ ] **0.9.1b TUI基础产品链**：`harnessix code`、Textual生命周期、Transcript、Composer、Session Picker、
+  Resume和真实stdio纵向恢复；
+- [ ] **0.9.1c 完整领域交互**：Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel、Steer和错误自助；
+- [ ] **0.9.1d 配置与Windows原生只读链**：配置向导、Preflight、Doctor、Windows Workspace安全端口和默认产品启动；
+- [ ] **0.9.1e 统一Action产品装配**：Artifact、Patch、Process、Delivery通过Trusted Action、Policy、Approval、
+  Effect Journal、Sandbox和Reconcile进入默认能力目录。
+
+界面可启动或单个Prompt正常返回不能关闭0.9.1。五个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
+可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。
 
 ### DOC-1：设计文档与源码可追溯治理
 

@@ -1,14 +1,15 @@
 ---
 doc_type: governance-index
 status: current
-version: 1
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 2
+code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
 owners:
   - core
 modules:
   - documentation
   - research
-related_adrs: []
+related_adrs:
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests: []
 supersedes: []
 ---
@@ -21,7 +22,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含27份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含28份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -111,6 +112,12 @@ flowchart LR
 |---|---|---|---|
 | [代码可读性与结构治理](code-readability-and-structure.md) | 2026-09-12 | 正文专项基线 | [ADR 0076](../adr/0076-code-readability-and-structural-governance.md) |
 
+### 4.8 产品体验与终端交互
+
+| 主题 | 冻结访问日期 | 参考版本 | 采用结果/当前入口 |
+|---|---|---|---|
+| [CLI/TUI产品体验与可恢复客户端](cli-tui-product-experience.md) | 2026-09-13 | 正文专项基线 | [ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)、[0.9.1详细设计](../changes/m09-1-cli-tui-product-experience.md) |
+
 ## 5. 推荐阅读顺序
 
 1. 先读[统一研究基线](baselines.md)，理解三个参考项目的固定提交、证据等级和clean-room限制；
@@ -130,5 +137,6 @@ flowchart LR
 
 ## 7. 当前限制
 
-冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制，但不代表持续跟踪上游最新版本。0.9后续切片若涉及完整TUI、
-三平台发行、长期Soak、远程MCP认证或供应链发布，必须先建立对应的新版本研究证据，不能继续外推现有冻结结论。
+冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制，以及0.9.1完整TUI设计所需的产品交互证据，但不代表持续
+跟踪上游最新版本。0.9后续切片若涉及Eval基线、三平台发行、长期Soak、远程MCP认证或供应链发布，必须先建立
+对应的新版本研究证据，不能继续外推现有冻结结论。

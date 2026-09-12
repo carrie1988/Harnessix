@@ -1,14 +1,15 @@
 ---
 doc_type: governance-index
 status: current
-version: 37
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 38
+code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
 owners:
   - core
 modules:
   - documentation
 related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/governance/test_generated_specs.py
@@ -21,7 +22,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立，生产实现仍未完成。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -132,6 +133,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md) | 评审中；协议/SDK加固、可恢复客户端、TUI、Windows原生工具和统一Action装配尚待分片实现 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
@@ -156,9 +158,9 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录77份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录78份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等27份冻结参考实现证据及访问日期；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等28份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -199,4 +201,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内191份Markdown已经完成状态迁移并受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内194份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
