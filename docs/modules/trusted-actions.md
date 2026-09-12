@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: a6c2082c40bd159ea00e16ada877bb2dc03088bc
+version: 2
+code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
 owners:
   - core
 modules:
@@ -809,7 +809,7 @@ MCP适配的重要约束：
 7. MCP结果在Connection层做边界、Schema和可选Secret替换，再作为Outcome返回；
 8. 可选Harnessix MCP Server反向导出时只允许白名单低风险只读Action，审批态不会由远端自行批准。
 
-详细目录、协议和输出限制将在[MCP模块设计目标](../governance/documentation-remediation-backlog.md#8-doc-14产品运行时与扩展)中维护。
+Target、目录、协议、SQLite、输出、取消和生产差距的现行事实见[MCP模块设计](mcp.md)。
 
 ## 25. Skill与Hook接入
 
@@ -1282,3 +1282,4 @@ uv run pytest \
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |
+| 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |

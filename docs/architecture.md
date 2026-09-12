@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 28
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 29
+code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
 owners:
   - core
 modules:
@@ -240,7 +240,8 @@ flowchart LR
 | Workspace | 已实现/显式装配 | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验与SQLite Fencing Lease；详见[模块设计](modules/workspace.md) | [contracts.py](../src/harnessix/workspace/contracts.py)、[snapshot.py](../src/harnessix/workspace/snapshot.py)、[windows.py](../src/harnessix/workspace/windows.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 已实现/显式装配 | Workspace Transaction、私有Blob、完整Diff、POSIX可恢复发布、Git Worktree/Checkpoint/确定性Commit和经统一Route单独批准的Push；默认产品尚未装配，详见[模块设计](modules/delivery.md) | [planner.py](../src/harnessix/delivery/planner.py)、[filesystem.py](../src/harnessix/delivery/filesystem.py)、[git.py](../src/harnessix/delivery/git.py)、[git_push.py](../src/harnessix/delivery/git_push.py) | [delivery测试](../tests/delivery/)、[Push Schema测试](../tests/trusted_actions/test_schemas.py) |
 | Trusted Action | 已实现/显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口和UNKNOWN对账；默认产品尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
-| MCP/Skill/Hook | 已实现/显式装配 | 外部工具目录、Skill快照与声明式Hook | [mcp](../src/harnessix/mcp/)、[skills](../src/harnessix/skills/)、[hooks](../src/harnessix/hooks/) | [MCP](../tests/mcp/)、[Skill](../tests/skills/)、[Hook](../tests/hooks/)测试 |
+| MCP | 已实现/显式装配 | 受管stdio/受信进程内Target、不可变目录、调用前Schema漂移、Trusted Action与只读stdio Server；默认产品未装配，详见[模块设计](modules/mcp.md) | [runtime.py](../src/harnessix/mcp/runtime.py)、[actions.py](../src/harnessix/mcp/actions.py)、[store.py](../src/harnessix/mcp/store.py) | [MCP](../tests/mcp/)与[真实Container](../tests/integration/test_container_sandbox.py)测试 |
+| Skill/Hook | 已实现/显式装配 | Skill快照与声明式Hook；独立现行模块设计待迁移 | [skills](../src/harnessix/skills/)、[hooks](../src/harnessix/hooks/) | [Skill](../tests/skills/)、[Hook](../tests/hooks/)测试 |
 | Eval/Smoke | 已实现/显式运行 | 固定任务、物化、正式Agent运行、确定性分级、Campaign和受控真实Provider验证；详见[Evals模块设计](modules/evals.md) | [evals](../src/harnessix/evals/)、[smoke](../src/harnessix/smoke/) | [evals](../tests/evals/)、[smoke](../tests/smoke/)测试 |
 | 可观测性 | Action默认可配置/Agent默认未装配 | 内部端口、No-op/OTel适配、W3C持久传播、结构化日志及Agent安全包装；故障隔离和隐私保证因调用链不同，详见[模块设计](modules/observability.md) | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py)、[agent/telemetry.py](../src/harnessix/agent/telemetry.py) | [观测单元测试](../tests/unit/test_observability_core.py)、[跨进程测试](../tests/integration/test_observability_flow.py)、[Agent遥测测试](../tests/agent/test_telemetry.py) |
 
@@ -858,7 +859,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 4个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK、Product Config、API与Adapter设计已完成，MCP为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
+| 3个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK、Product Config、API、Adapter与MCP设计已完成，Skill为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -926,6 +927,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 29 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 接入MCP现行模块设计，明确受管Target、目录与Schema、调用前漂移、Trusted Action、UNKNOWN、只读Server、关闭风险和默认产品未装配边界 |
 | 25 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，区分Agent Protocol与Action HTTP客户端，明确Transport并发取消、身份恢复、错误、安全和平台边界 |
 | 24 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 接入App Server现行模块设计，明确单连接状态、应用命令顺序、后台Turn、Replay/Delta、stdio并发关闭、Scoped Artifact与默认装配边界 |
 | 20 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` | 2026-09-12 | 接入Delivery现行模块设计，明确Workspace Transaction、Blob、POSIX发布与对账、Rollback、Diff、Git Worktree/Checkpoint/Commit、Push统一Route和跨Store边界 |

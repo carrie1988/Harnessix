@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 6
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 7
+code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ modules:
   - tools
   - trusted_actions
   - adapters
+  - mcp
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
@@ -411,7 +412,7 @@ flowchart LR
 
 ### 10.1 MCP
 
-依次阅读[MCP契约](../../src/harnessix/mcp/contracts.py)、[Schema转换](../../src/harnessix/mcp/schema.py)、[目录Store](../../src/harnessix/mcp/store.py)、[客户端Runtime](../../src/harnessix/mcp/runtime.py)、[stdio Server](../../src/harnessix/mcp/server.py)和[统一Action绑定](../../src/harnessix/mcp/actions.py)。用[Schema测试](../../tests/mcp/test_schema.py)、[stdio故障测试](../../tests/mcp/test_stdio_faults.py)和[Runtime Action测试](../../tests/mcp/test_runtime_actions.py)核对不可信边界。
+先通读[MCP模块设计](../modules/mcp.md)，区分当前显式库能力、默认产品尚未装配和远端HTTP目标。再依次阅读[MCP契约](../../src/harnessix/mcp/contracts.py)、[Schema转换](../../src/harnessix/mcp/schema.py)、[目录Store](../../src/harnessix/mcp/store.py)、[客户端Runtime](../../src/harnessix/mcp/runtime.py)、[stdio Server](../../src/harnessix/mcp/server.py)和[统一Action绑定](../../src/harnessix/mcp/actions.py)。用[Schema测试](../../tests/mcp/test_schema.py)、[stdio故障测试](../../tests/mcp/test_stdio_faults.py)和[Runtime Action测试](../../tests/mcp/test_runtime_actions.py)核对不可信边界。
 
 ### 10.2 Skill与Hook
 
@@ -474,7 +475,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 | [execution](../../src/harnessix/execution/) | `contracts.py`、`planner.py` | 执行意图如何先持久化 | [execution](../../tests/execution/) |
 | [executors](../../src/harnessix/executors/) | `echo.py`、`demo_issue.py` | Executor如何实现效果与对账 | [unit](../../tests/unit/) |
 | [hooks](../../src/harnessix/hooks/) | `contracts.py`、`runtime.py` | 声明式Hook如何受控执行 | [hooks](../../tests/hooks/) |
-| [mcp](../../src/harnessix/mcp/) | `contracts.py`、`runtime.py` | MCP如何转换为统一Action | [mcp](../../tests/mcp/) |
+| [mcp](../../src/harnessix/mcp/) | [`contracts.py`](../../src/harnessix/mcp/contracts.py)、[`store.py`](../../src/harnessix/mcp/store.py)、[`runtime.py`](../../src/harnessix/mcp/runtime.py)、[`actions.py`](../../src/harnessix/mcp/actions.py)；[模块设计](../modules/mcp.md) | Target、目录、Schema、连接状态与Trusted Action如何共同约束MCP调用 | [mcp](../../tests/mcp/) |
 | [models](../../src/harnessix/models/) | `contracts.py`、`config.py` | Provider如何被规范化 | [models](../../tests/models/) |
 | [observability](../../src/harnessix/observability/) | `core.py` | 业务身份如何进入观测 | [integration](../../tests/integration/) |
 | [patches](../../src/harnessix/patches/) | `contracts.py`、`planner.py` | Patch如何指纹、审批和恢复 | [patches](../../tests/patches/) |
@@ -559,7 +560,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 ## 17. 后续文档入口
 
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
-- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)与[SDK模块设计](../modules/sdk.md)：公共合同、连接、客户端传输、应用编排、事件与stdio关闭的现行事实；
+- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)与[MCP模块设计](../modules/mcp.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用和关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
 - [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；

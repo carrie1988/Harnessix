@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 28
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 29
+code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
-| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（6/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、[API](../modules/api.md)与[Adapter](../modules/adapters.md)已完成；下一项为MCP，之后为Skill、Hook和Smoke |
+| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（7/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、[API](../modules/api.md)、[Adapter](../modules/adapters.md)与[MCP](../modules/mcp.md)已完成；下一项为Skill，之后为Hook和Smoke |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 
@@ -72,6 +72,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [Product Config模块设计](../modules/product-config.md)：严格配置、双摘要、Profile/Secret、诊断、迁移、安全Fallback、CAS和启动事务的当前事实；
 - [API模块设计](../modules/api.md)：Action HTTP资源、Lifespan、状态码、错误、Trace、身份、资源预算和部署边界的当前事实；
 - [Adapter模块设计](../modules/adapters.md)：LangChain StructuredTool映射、固定Context、状态投影、Tool Call身份、幂等恢复及真实LangGraph证据边界的当前事实；
+- [MCP模块设计](../modules/mcp.md)：受管Target、不可变目录、Schema/结果预算、SQLite状态、调用前漂移、Trusted Action、UNKNOWN/Reconcile和只读stdio Server的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；

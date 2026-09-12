@@ -267,7 +267,7 @@ Agent Event/Thread当前版本升级为v19，Session migration22把快照投影�
 | `runtime` | 官方MCP SDK Client、stdio进程生命周期、目录刷新和调用 | 不直接访问Agent Session或审批 |
 | `actions`、`server` | MCP Client到可信Action的适配，以及可选低风险只读MCP Server | 不持有Router、Executor Registry或Secret Provider |
 
-第三方MCP Server、其二进制、描述、Annotation、Schema和结果均按不受信输入处理。生产本地Client只接受`McpContainerStdioTarget`：启动argv必须来自`ContainerCommandBuilder`，并同时绑定不可变镜像、`ContainerExecutionSpec`、强Sandbox Profile、网络模式和进程身份。`McpInProcessTarget`只用于受信宿主内嵌与测试，不加载第三方Python模块。任意远端URL、Header、OAuth和Streamable HTTP配置进入0.9.4独立目标身份、Secret生命周期与受管出口切片，不复用0.8.6模型Provider认证。
+第三方MCP Server、其二进制、描述、Annotation、Schema和结果均按不受信输入处理。生产部署准入规则要求第三方本地Client只使用`McpContainerStdioTarget`：启动argv必须来自`ContainerCommandBuilder`，并同时绑定不可变镜像、`ContainerExecutionSpec`、强Sandbox Profile、网络模式和进程身份。当前默认产品尚未装配MCP，也没有工厂在运行时强制该部署规则；公开的`McpInProcessTarget`只应由受信宿主内嵌与测试使用，不得加载第三方Python模块。任意远端URL、Header、OAuth和Streamable HTTP配置进入0.9.4独立目标身份、Secret生命周期与受管出口切片，不复用0.8.6模型Provider认证。
 
 ### 7.2 协议代际与连接状态
 
@@ -309,7 +309,7 @@ failed / closed / schema_changed → connecting
 
 ### 7.5 进程关闭与可选Server
 
-stdio Client的启动、目录发现、调用和关闭均有独立超时。SDK退出后还必须调用`ContainerCommandBuilder.cleanup_container`，以进程ID、执行摘要、容器名和双标签证明容器不存在；无法证明时持久化并返回`mcp_process_cleanup_failed`。真实子进程故障测试覆盖服务端硬退出、调用超时和关闭后进程消失；固定摘要BusyBox容器门禁额外覆盖禁网、只读Workspace、低资源限制、协议调用和无残留关闭。
+stdio Client的启动、目录发现、调用和关闭阶段均设置了局部超时；Connection关闭在取得调用锁前没有总超时，清理期间取消也尚未形成可重试关闭合同。SDK退出后还必须调用`ContainerCommandBuilder.cleanup_container`，以进程ID、执行摘要、容器名和双标签证明容器不存在；无法证明时持久化并返回`mcp_process_cleanup_failed`。真实子进程故障测试覆盖服务端硬退出、调用超时和关闭后进程消失；固定摘要BusyBox容器门禁额外覆盖禁网、只读Workspace、低资源限制、协议调用和无残留关闭。
 
 可选`HarnessixMcpServer`只导出宿主显式白名单中的低风险、只读、无需恢复且Schema摘要一致的`TrustedToolBinding`。列表和调用都重新核对当前绑定；调用仍通过`ExtensionActionPort.plan/execute`，非`ready`计划只返回安全错误，不代表MCP客户端拥有批准权。Server只提供本地stdio入口，不开放网络监听。
 

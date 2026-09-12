@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：当前安全基线，已同步DOC-1.4 API与Product Config现行设计
+- 状态：当前安全基线，已同步DOC-1.4 API、Product Config与MCP现行设计
 - 更新日期：2026-09-12
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -634,11 +634,11 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **权限提升**：Description和Annotation只作低信任显示；Effect、Risk、资源、Recovery和Sandbox只能来自宿主`McpTrustedToolPolicy`。模型只看到当前目录中同时存在且已注册到对应`ExtensionActionPort`的Tool。
 - **不确定副作用**：调用发送后的超时、断连、异常结果、`input_required`和写Tool `isError`均不能证明未产生效果；写Action进入UNKNOWN，只允许宿主显式外部对账，不自动重放。
 - **Secret泄漏**：目标环境只由Execution Plan绑定的Secret短期解析，值不进入argv、目录、连接事件或配置；Tool结果在进入Action输出、日志或模型Context前执行同一Secret Guard脱敏。
-- **生命周期**：连接状态和目录代次持久化；宿主重开不接管历史连接。SDK关闭后通过容器名、进程ID和执行摘要标签证明无残留，无法证明时以`mcp_process_cleanup_failed`失败。
+- **生命周期**：连接状态和目录代次持久化；宿主重开不接管历史连接。SDK关闭后通过容器名、进程ID和执行摘要标签证明无残留，无法证明时以`mcp_process_cleanup_failed`失败。当前关闭先置内存关闭标志，清理期间取消不被普通异常分支捕获，可能导致后续关闭无法重试，是0.9.3必须关闭的高优先级风险。
 - **Server反向暴露**：可选MCP Server只通过本地stdio导出显式低风险只读Action；列表和调用都重核绑定，远端客户端无权批准写操作。0.8.4不监听网络，不实现OAuth或任意Header。
-- **剩余风险**：同UID主体仍可替换宿主配置或调试本地进程；Container Runtime本身属于高权限TCB。模型Provider的0.8.6 Secret引用不适用于MCP；Streamable HTTP、受管OAuth和远端目标身份由0.9.4补齐，发行签名与SBOM由0.9关闭。
+- **剩余风险**：默认产品尚未装配MCP；同UID主体仍可替换宿主配置、重算无密钥Hash链或调试本地进程；Container Runtime本身属于高权限TCB。Catalog没有总字节预算，MCP/Execution Plan/Action Audit三库没有跨库事务和统一关联；In-process信任及Reconciler只观察约束依赖宿主装配。模型Provider的0.8.6 Secret引用不适用于MCP；Streamable HTTP、受管OAuth和远端目标身份由0.9.4补齐，发行签名与SBOM由0.9关闭。
 
-对应设计、源码依据和回归见[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。
+对应现行设计、源码依据和回归见[MCP模块设计](modules/mcp.md)、[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。
 
 ## 0.8.5 Skills与Hooks补充（2026-09-09）
 
