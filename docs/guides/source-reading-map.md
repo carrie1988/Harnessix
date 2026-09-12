@@ -2,7 +2,7 @@
 doc_type: source-reading-guide
 status: current
 version: 11
-code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
+code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
 owners:
   - core
 modules:
@@ -63,7 +63,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应提交`58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现；
+- 本文对应提交`608c548feb909aa5ae572bab7db35859283d3d01`；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；

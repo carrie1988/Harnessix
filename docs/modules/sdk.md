@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 4
-code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
+code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ supersedes: []
 | 连接 | Agent子进程Transport惰性启动一个stdio子进程，Response Reader具有构造期字节上限；HTTP客户端拥有一个`httpx.Client/AsyncClient`连接池 |
 | 平台 | Python逻辑未设平台分支；子进程与HTTP机制可跨平台，但默认Agent产品Windows入口及三平台关闭证据尚未完成 |
 | 公共导出 | `harnessix.sdk`导出两套客户端；根包`harnessix`当前只导出Action HTTP客户端，不导出`AgentClient` |
-| 代码版本 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 |
+| 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
 | 当前完成度 | Agent主链、严格Response/Result、有界Frame、半握手失败关闭、广告方法及协商消息/Replay上限前置门禁已实现；可恢复状态和连接代际由Product UI客户端内核提供；协商并发/出站队列、完整HTTP测试和发布级平台证据仍缺失 |
 
 本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、
@@ -1204,7 +1204,7 @@ return value
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 4 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 | 2026-09-13 | 增加广告方法、协商消息字节和Replay数量的Transport写入前门禁，并登记Product UI连接恢复分层 |
+| 4 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 增加广告方法、协商消息字节和Replay数量的Transport写入前门禁，并登记Product UI连接恢复分层 |
 | 3 | `4f7c009869a46f70169a8e34a40c1df8227a8651` | 2026-09-13 | 严格校验Response Envelope与JSON预算，限制子进程Response Frame，统一Result错误并在半握手失败后关闭且禁止复用当前连接 |
 | 2 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，明确其只调用Submit、完整Snapshot返回及真实HTTP/LangGraph测试边界 |
 | 1 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 建立SDK现行模块设计，覆盖双客户端边界、Transport并发取消、stdio进程、握手恢复、事件消费、HTTP资源、安全与真实测试差距 |

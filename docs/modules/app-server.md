@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 3
-code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
+code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
 owners:
   - core
 modules:
@@ -35,7 +35,7 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、只读Coding Tool Runtime和Agent Runtime；当前默认不装配Artifact Reader |
 | 平台 | App Server Python逻辑无显式平台分支；默认产品因Coding Tool Runtime限制仍在Windows启动前失败，三平台产品证据尚未完成 |
-| 代码版本 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 |
+| 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、有界关闭及薄CLI协商事件页上限已实现；Server侧协商Pending/Outbox/Replay贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
@@ -1262,6 +1262,6 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 3 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
+| 3 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
 | 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |
 | 1 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 建立App Server现行模块设计，覆盖连接、应用服务、stdio、Artifact、并发背压、关闭恢复、默认装配及真实实现差距 |

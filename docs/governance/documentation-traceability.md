@@ -2,7 +2,7 @@
 doc_type: governance
 status: current
 version: 39
-code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
+code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
 owners:
   - core
 modules:
@@ -159,7 +159,7 @@ flowchart LR
 [0.8完整历史](../m08-product-runtime-and-extensions-milestone-history.md)。历史资料只用于追溯增量，不能覆盖
 本矩阵列出的当前模块事实源。
 
-[ADR索引](../adr/README.md)当前覆盖77份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
+[ADR索引](../adr/README.md)当前覆盖78份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
 已覆盖27份冻结研究、访问日期和采用结果。DOC-1.5结束时189份Markdown已具备标准YAML元数据；
 加入ADR 0077和DOC-1.6详细设计时共有191份Markdown、30个生产源码包；当前新增Product UI模块后，
 195份Markdown、31个生产源码包及其源码/测试映射均由自动门禁持续验证。
