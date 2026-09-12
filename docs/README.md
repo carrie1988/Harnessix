@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 32
-code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
+version: 33
+code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
 owners:
   - core
 modules:
@@ -110,7 +110,7 @@ supersedes: []
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
 | 安全模型 | [威胁模型](threat-model.md) | 资产、信任边界、攻击面和缓解措施 |
-| 部署与升级 | [部署与运行](deployment.md) | 当前命令、配置、存储迁移和运行边界 |
+| 部署与运维 | [部署总入口](deployment.md) | 当前部署面、拓扑、持久状态、安全约束和六类运维资料入口 |
 | 测试与Eval | [测试与Eval规范](testing-and-evals.md) | 当前测试分层、故障注入、Eval指标和发布判定；历史运行数字不在本文维护 |
 | 验证证据 | [验证证据索引](validation/README.md) | 固定Revision、环境、预算、结果、脱敏边界和证据谱系 |
 | 现行模块设计 | [追踪矩阵](governance/documentation-traceability.md) | DOC-1迁移期间的模块覆盖状态和目标路径 |
@@ -144,7 +144,8 @@ supersedes: []
 | [威胁模型](threat-model.md) | 统一风险登记 | 是 | 模块缓解措施应链接到现行模块设计和测试 |
 | [测试与Eval规范](testing-and-evals.md) | 质量规范聚合入口 | 是 | 只定义跨模块测试策略、Eval指标、证据生命周期和发布判定 |
 | [测试里程碑历史](testing-and-evals-milestone-history.md) | 冻结的历史验收记录 | 否 | 保留阶段数字与失败演进，不作为当前测试策略或发布状态 |
-| [部署与运行](deployment.md) | 运维聚合入口 | 是 | 安装、升级、恢复和平台资料将在DOC-1.5拆分 |
+| [部署与运维](deployment.md) | 运维聚合入口 | 是 | 只维护拓扑、跨组件硬约束和安装/配置/升级/恢复/诊断/平台入口 |
+| [部署里程碑历史](deployment-milestone-history.md) | 冻结的旧版本部署记录 | 否 | 保留0.3～0.8当时命令和升级证据，不作为当前手册 |
 | `m03`～`m09`里程碑文档 | 历史增量设计 | 否 | 用于解释某阶段交付，不作为当前模块事实的唯一来源 |
 | [ADR目录](adr/) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
 | [研究目录](research/) | 参考源码证据 | 否 | 不能直接成为Harnessix的产品契约 |
@@ -164,7 +165,9 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [测试与Eval规范](testing-and-evals.md)：当前测试策略与发布门槛；
 - [测试里程碑历史](testing-and-evals-milestone-history.md)：DOC-1.5前冻结的阶段验收记录；
 - [受控模型Smoke指南](model-smoke.md)；
-- [部署与运行](deployment.md)；
+- [部署与运维](deployment.md)：当前部署拓扑和统一入口；
+- [安装与制品](operations/installation.md)、[配置参考](operations/configuration.md)、[升级与回退](operations/upgrade-and-rollback.md)；
+- [故障恢复](operations/recovery.md)、[诊断与可观测性](operations/diagnostics.md)、[平台与运行环境](operations/platforms.md)；
 - [验证证据索引](validation/README.md)：真实Provider Smoke与Coding Eval证据谱系；
 - [威胁模型](threat-model.md)。
 
@@ -179,7 +182,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试规范、里程碑测试历史和真实验证证据已完成职责分层；部署、里程碑、ADR与研究资料仍在后续批次治理。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试/验证证据和六类现行运维资料已完成职责分层；里程碑、ADR与研究资料仍在后续批次治理。
 
 ## 8. 文档状态说明
 

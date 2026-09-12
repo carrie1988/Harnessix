@@ -509,7 +509,7 @@ Agent Runtime Kernel 合并前：
 - 文件写完但 Kernel 回调失败或公开结果超限：不再执行，核对并保留私有成功事实，Turn 失败而非假完成。250 字符预算时核对后的公开 output 被舍弃，归因字段完整；1 字符预算在模型提案阶段停止，尚未准备/审批。
 - `test_kernel_patch_crash.py` 新增 **23 个真实 os._exit 场景**：20 个 Session × Patch 组合切点（Call、计划、请求、决定、消费、后端批准、9 个文件执行窗口、工具返回、Session 结果和终态前），另有缺失端口/定义变化/第三种内容三个重启场景。恢复禁用 Provider/prepare/save/reply/execute，已知效果诚实结算，不充分证据为 unknown；重复打开幂等，恢复前后 inode/mtime/ctime 与源文件不变。全项目累计 **141 个硬崩溃场景及 2 个 SIGINT 用例**，不声称模拟所有断电/硬盘故障。
 
-**版本/升级**：只新增 Agent Event/Thread v6、migration 7；旧 v1–v5 Schema、旧 migration 校验和、Action/Provider/工具/桥接 Schema 和副本账本 v1 不变。无 patch 的旧结果序列化不增加 null 字段。使用 `git archive 45b2b10` 在隔离源码目录构建真正旧 wheel，旧基础环境创建真实 WAITING_APPROVAL；新基础 wheel 重开、答复并完成旧只读审批，旧事件原始字节不变、Replay 一致；旧 wheel 再开新库明确报 schema_too_new。旧 wheel 完成的 v5 transcript 冻结到 `tests/agent/fixtures/session-v5.json`，持续覆盖 v1–v5 升级；包外探针和步骤见 [部署文档](deployment.md#历史-session-v6--migration-7-升级053b2b)。
+**版本/升级**：只新增 Agent Event/Thread v6、migration 7；旧 v1–v5 Schema、旧 migration 校验和、Action/Provider/工具/桥接 Schema 和副本账本 v1 不变。无 patch 的旧结果序列化不增加 null 字段。使用 `git archive 45b2b10` 在隔离源码目录构建真正旧 wheel，旧基础环境创建真实 WAITING_APPROVAL；新基础 wheel 重开、答复并完成旧只读审批，旧事件原始字节不变、Replay 一致；旧 wheel 再开新库明确报 schema_too_new。旧 wheel 完成的 v5 transcript 冻结到 `tests/agent/fixtures/session-v5.json`，持续覆盖 v1–v5 升级；包外探针和步骤见 [部署文档](deployment-milestone-history.md#历史-session-v6--migration-7-升级053b2b)。
 
 **包外交付**：仓库外基础 wheel 环境确认未安装 OpenAI/Anthropic SDK，以 `python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch 共七个示例通过。新 Kernel 示例是真实文件/数据库与离线决策，不是自主编码 Eval。Linux Python 3.12/3.13 全量和 macOS Patch CI 均增加该入口；PostgreSQL 作业保留，远端结果以本片对应提交为准。
 
@@ -546,7 +546,7 @@ Agent Runtime Kernel 合并前：
 - 组行、三个成员插入位置及提交前的存储/取消/超时共15种异常均完整回滚；决定提交前/后丢失确认共6种异常通过只读 lookup 判断是否已提交，不凭异常推断没有持久事实。所有公开入口共用操作预算，未知/缺失/损坏记录不默默新建或修复。
 - **11 个真实 os._exit 场景**：预留组行/三个成员/提交前后共6个，决定提交前后2个，迁移版本标记前/提交前/提交后3个。未提交时无半组成员或决定，已提交时全量可见；迁移中断只有完整 v1 或完整 v2，旧 metadata/baseline/镜像/事件字节及目标文件状态不变，数据库 inode 不变。另有5项旧账本损坏/未来版本/DDL冲突拒绝，失败不先推进版本。
 
-**真实旧 wheel 验收**：从 `git archive 09cb6d6` 单独构建旧 wheel，不从当前源码伪造旧版本；仓库外旧基础环境实际创建 pending/approved/applied 三类 v1 计划。新基础 wheel 升级至 v2，旧事件/镜像原字节、三类状态、副本文件字节/inode/mtime/ctime、源目录与数据库 inode 全部保留；旧 wheel 再次打开明确返回 patch_wrong_database，新 wheel 随后再次重开仍一致。可复现探针与步骤见 [部署说明](deployment.md#副本账本-v2-升级053c2a)。单元测试中的 v1 表形夹具仅用于故障注入，不替代上述旧包证据。
+**真实旧 wheel 验收**：从 `git archive 09cb6d6` 单独构建旧 wheel，不从当前源码伪造旧版本；仓库外旧基础环境实际创建 pending/approved/applied 三类 v1 计划。新基础 wheel 升级至 v2，旧事件/镜像原字节、三类状态、副本文件字节/inode/mtime/ctime、源目录与数据库 inode 全部保留；旧 wheel 再次打开明确返回 patch_wrong_database，新 wheel 随后再次重开仍一致。可复现探针与步骤见 [部署说明](deployment-milestone-history.md#副本账本-v2-升级053c2a)。单元测试中的 v1 表形夹具仅用于故障注入，不替代上述旧包证据。
 
 **基础发行包**：独立环境安装锁定默认依赖，未安装 OpenAI/Anthropic SDK；`python -I` 运行 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval 共九个入口通过。新示例仅预留、审批、重开和验证旧接口拒绝；Linux Python 3.12/3.13 与 macOS CI 均增加该入口。新增两份独立 Schema，全部旧 Schema 字节不变；Agent v6、Session migration7、Provider v3、依赖与单文件工具定义不变。副本账本独立升级为 v2。
 
@@ -567,7 +567,7 @@ Agent Runtime Kernel 合并前：
 
 **44个真实进程退出场景**：38个组/文件执行窗口（组提交前后、整组复核后、每成员批准/完成、每成员九个替换/结果切点、组终态提交前后）；3个观察/终态提交中再退出场景；3个 v2→v3 迁移版本标记/提交切点。核对阶段禁止调用执行/保存/批准入口；恢复前后目标文件 inode、mtime、ctime 与源目录一致。全部文件已应用但组终态未提交时，恢复为 applied + interrupted，不自动补跑或改称正常完成。另有5项损坏旧组/成员/外键/组ID/DDL冲突拒绝，失败保持v2。
 
-**真实旧包与两级升级**：从 `git archive f0adddc` 构建实际旧 v2 wheel，在隔离基础环境创建 pending/approved/rejected 三类组。新 wheel 升 v3，旧 metadata/baseline/plans/events/batches/batch_approvals 原字节、文件时间/inode、源目录及数据库 inode 保留，所有运行记录仍不存在；旧 v2 reader 明确拒绝 v3。随后只在新环境显式执行原 approved 组并只核对，旧 reader 再次拒绝。另用 `09cb6d6` 的真实 v1 wheel 创建单文件 pending/approved/applied，验证 v1→v2→v3 和旧 reader 拒绝。步骤见 [部署说明](deployment.md#副本账本-v3-升级053c2b)，不以修改版本标记的单元夹具代替旧 wheel 证据。
+**真实旧包与两级升级**：从 `git archive f0adddc` 构建实际旧 v2 wheel，在隔离基础环境创建 pending/approved/rejected 三类组。新 wheel 升 v3，旧 metadata/baseline/plans/events/batches/batch_approvals 原字节、文件时间/inode、源目录及数据库 inode 保留，所有运行记录仍不存在；旧 v2 reader 明确拒绝 v3。随后只在新环境显式执行原 approved 组并只核对，旧 reader 再次拒绝。另用 `09cb6d6` 的真实 v1 wheel 创建单文件 pending/approved/applied，验证 v1→v2→v3 和旧 reader 拒绝。步骤见 [部署说明](deployment-milestone-history.md#副本账本-v3-升级053c2b)，不以修改版本标记的单元夹具代替旧 wheel 证据。
 
 **复用与基础发行包**：归一化 AST 审查确认原单文件 execute/reconcile 核心与 `f0adddc` 一致，仅提取内部方法并维持公开组成员拒绝。旧 Schema、原 v1→v2 迁移实现、Agent v6/Session migration7/Provider v3、模型工具定义和依赖不变；新增 run/result 两份 Schema。基础 wheel 无 OpenAI/Anthropic SDK，仓库外 `python -I` 运行 files/search/artifacts/patch_plan/managed_patch/patch_bridge/kernel_patch/patch_batch/managed_batch_approval/managed_batch 共十个示例通过；Linux 3.12/3.13 和 macOS CI 增加新多文件示例。
 
@@ -609,7 +609,7 @@ Agent Runtime Kernel 合并前：
 
 **真实硬崩溃**：`test_kernel_batch_crash.py` 新增67个 os._exit 场景：11个 Session 调用/计划/请求/决定/消费/结果/终态窗口，15个组预留/审批/开始/预检/成员调度/结果窗口，3成员×9单文件意图/临时文件/替换/结果窗口，6个观察结算再次退出，以及8个真实写后退出结合端口/契约/计划/批准/运行缺失或相同字节异inode/文件丢失/内容偏离的重启场景。恢复禁用 Provider 和 prepare/save/reply/execute，未消费 WAITING 保留，其他只核对原组；缺后端匹配批准则 unknown。核对后源目录与目标 bytes/inode/mtime/ctime 不变，已持久 ToolResult 不再观察。另有2个真实 migration8 提交前/后退出；全项目累计 **284个硬崩溃场景及2个 SIGINT用例**，不是全部硬件故障覆盖。
 
-**版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment.md#历史-session-v7--migration8-升级053c3b)。
+**版本和升级**：新增 Agent Event/Thread v7、Session migration8（仅最低 reader 标记）；Provider v3、副本账本v3、既有工具/组计划/运行 Schema、旧单文件后端和依赖不变。v1–v6 Schema 冻结，旧无新证据的 ToolResult 不增加 null 字段。真实 `6a7cc65` 旧 wheel 在独立环境创建只读和单文件两类 WAITING；新 wheel 初始化保持旧事件/投影原字节、源/副本不变，旧 reader 明确拒绝，然后新 wheel 显式决定并完成两类旧审批，新事件v7、Replay一致、源目录不变。完成后旧 reader 再次拒绝。旧 wheel 实际完成的 v6 单文件 transcript 纳入 CI，不手改版本伪造旧包。步骤见 [部署说明](deployment-milestone-history.md#历史-session-v7--migration8-升级053c3b)。
 
 **基础发行包**：仓库外独立环境只安装锁定基础依赖，确认无 OpenAI/Anthropic SDK；`python -I` 下 kernel_files、kernel_search、kernel_artifacts、patch_plan、managed_patch、patch_bridge、kernel_patch、patch_batch、managed_batch_approval、managed_batch、batch_patch_bridge、kernel_batch 共 **12个示例**通过。Linux Python3.12/3.13 与 macOS CI 增加新示例，PostgreSQL 作业保留，远端状态以本片对应提交为准。包版本仍0.1.0，没有新模型请求、远程登录或中间件部署。
 

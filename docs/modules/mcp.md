@@ -1598,7 +1598,7 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 - [Sandbox模块设计](sandbox.md)；
 - [Secrets模块设计](secrets.md)；
 - [0.8产品运行时与扩展详细设计](../m08-product-runtime-and-extensions.md#7-084-mcp详细设计)；
-- [部署与运行：MCP部署](../deployment.md#084-mcp部署)；
+- [部署与运维总入口](../deployment.md)；
 - [威胁模型：MCP边界](../threat-model.md#084-mcp补充2026-09-09)；
 - [MCP公共Schema目录](../../spec/)；
 - [文档工程规范](../governance/documentation-standard.md)。

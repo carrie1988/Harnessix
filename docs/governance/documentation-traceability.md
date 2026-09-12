@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 33
-code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
+version: 34
+code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
 owners:
   - core
 modules:
@@ -70,7 +70,7 @@ flowchart LR
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md) | 文档门禁留待DOC-1.6 |
 | 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、Eval系列研究与ADR | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；后续由DOC-1.6纳入自动门禁 |
-| 部署与运维 | [部署与运行](../deployment.md) | 平台、许可和产品边界ADR | 1,238行聚合资料需拆分安装、配置、升级、恢复和诊断 |
+| 部署与运维 | [部署总入口](../deployment.md)、[安装](../operations/installation.md)、[配置](../operations/configuration.md)、[升级](../operations/upgrade-and-rollback.md)、[恢复](../operations/recovery.md)、[诊断](../operations/diagnostics.md)、[平台](../operations/platforms.md) | [部署里程碑历史](../deployment-milestone-history.md)、平台、许可和产品边界ADR | 当前操作与历史命令已分层；正式制品、统一Doctor、自动升级/回退和RPO/RTO仍属产品缺口 |
 
 ## 4. 30个生产源码包覆盖矩阵
 

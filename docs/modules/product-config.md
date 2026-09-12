@@ -1528,7 +1528,7 @@ Product Config模块现行设计满足以下条件时可判定DOC-1.4中的本�
 - [0.8产品运行时与扩展详细设计](../m08-product-runtime-and-extensions.md)
 - [ADR 0075：Provider Profile、Secret引用与安全Fallback](../adr/0075-provider-profile-secret-and-safe-fallback.md)
 - [Provider、Profile、配置与安全Fallback源码研究](../research/provider-profile-config-and-safe-fallback.md)
-- [部署说明](../deployment.md#086-provider与产品配置部署)
+- [配置参考](../operations/configuration.md)
 - [威胁模型](../threat-model.md)
 - [测试与评测规范](../testing-and-evals-milestone-history.md#78-086-provider与产品配置候选验收2026-09-09)
 - [Model Runtime模块设计](models.md)

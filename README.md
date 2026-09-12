@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.4文档治理；30/30个生产源码包均已建立独立现行模块设计，DOC-1.5正在实施聚合、历史和验证证据治理，其中测试规范、里程碑测试历史及验证证据已经分层。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.4文档治理；30/30个生产源码包均已建立独立现行模块设计，DOC-1.5正在实施聚合、历史和验证证据治理，其中测试/验证证据以及安装、配置、升级、恢复、诊断和平台运维资料已经分层。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -73,7 +73,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - `SafeFallbackProvider`只在`transport/rate_limit/provider_internal`零响应暴露失败且审计成功后切换显式候选；任意响应、文本、Tool Call或未来未知事件均关闭Fallback窗口；
 - `harnessix agent-server`在macOS/Linux按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议，Windows在原生Tool Runtime完成前显式失败关闭。
 
-0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。MCP的当前目录、Schema、连接、UNKNOWN与可选Server边界见[MCP模块设计](docs/modules/mcp.md)；Skill的来源、目录、渐进加载、文件安全、访问账本和提示注入边界见[Skill模块设计](docs/modules/skills.md)；Hook的定义授权、匹配、状态、双账本、超时、取消和恢复边界见[Hook模块设计](docs/modules/hooks.md)；其他0.8设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[部署说明](docs/deployment.md#086-provider与产品配置部署)。
+0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。MCP的当前目录、Schema、连接、UNKNOWN与可选Server边界见[MCP模块设计](docs/modules/mcp.md)；Skill的来源、目录、渐进加载、文件安全、访问账本和提示注入边界见[Skill模块设计](docs/modules/skills.md)；Hook的定义授权、匹配、状态、双账本、超时、取消和恢复边界见[Hook模块设计](docs/modules/hooks.md)；其他0.8设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[配置参考](docs/operations/configuration.md)。
 
 ## 当前已完成：代码可维护性与结构治理（0.9.0）
 
@@ -218,7 +218,7 @@ uv run python -m examples.managed_batch
 uv run pytest tests/patches/test_batch_execution.py tests/patches/test_batch_execution_crash.py
 ~~~
 
-**边界**：仅宿主显式调用、仅私有受管副本内的已有普通文件。不承诺跨文件原子提交、内容 CAS 或自动回滚；不合入源目录，不运行 Shell。c2 本身不开放模型写工具；当前批量 Kernel 接入见 c3b，Diff Artifact 仍待 c3c。设计见 [ADR 0033](docs/adr/0033-batch-consumption-and-effect-recovery.md)，迁移见 [部署说明](docs/deployment.md#副本账本-v3-升级053c2b)。
+**边界**：仅宿主显式调用、仅私有受管副本内的已有普通文件。不承诺跨文件原子提交、内容 CAS 或自动回滚；不合入源目录，不运行 Shell。c2 本身不开放模型写工具；当前批量 Kernel 接入见 c3b，Diff Artifact 仍待 c3c。设计见 [ADR 0033](docs/adr/0033-batch-consumption-and-effect-recovery.md)，当时迁移见[部署里程碑历史](docs/deployment-milestone-history.md#副本账本-v3-升级053c2b)。
 
 ## 当前已实现：整组调用绑定与异步桥接（0.5.3c3a）
 
@@ -275,7 +275,7 @@ uv run python -m examples.batch_diff
 uv run pytest tests/artifacts/test_batch_diff*.py
 ```
 
-设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，部署见 [升级步骤](docs/deployment.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈、真实Coding Eval和受控单文件合入已由后续0.5.4c/0.5.5交付。任意Shell字符串被正式排除，非交互命令由受控`host.process`承担；OS Sandbox仍属于后续版本。
+设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，当时部署见[部署里程碑历史](docs/deployment-milestone-history.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈、真实Coding Eval和受控单文件合入已由后续0.5.4c/0.5.5交付。任意Shell字符串被正式排除，非交互命令由受控`host.process`承担；OS Sandbox仍属于后续版本。
 
 ## 当前已实现：受信宿主进程运行层（0.5.4a）
 
@@ -782,7 +782,7 @@ examples/                   可运行演示
 - [设计与开发路线图](docs/roadmap.md)
 - [M1 Worker 与 PostgreSQL 设计](docs/m1-worker-postgresql.md)
 - [M1.2 可观测性设计](docs/m1-observability.md)
-- [部署与运行](docs/deployment.md)
+- [部署与运维](docs/deployment.md)：当前拓扑及安装、配置、升级、恢复、诊断与平台入口
 - [Process输出Artifact决策](docs/adr/0041-process-output-artifact.md)
 - [Git与受控测试反馈决策](docs/adr/0043-git-and-controlled-test-feedback.md)
 - [Coding Eval多试验证据决策](docs/adr/0047-coding-eval-campaign-evidence.md)
