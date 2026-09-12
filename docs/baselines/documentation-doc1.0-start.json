@@ -1,0 +1,6252 @@
+{
+  "schema_version": "harnessix.documentation-baseline/v1",
+  "baseline_name": "DOC-1.0-start",
+  "repository_revision": "8e3e3576bbc64bf2b696279c404ba5fcb3fee06e",
+  "scope": {
+    "documentation_root": "docs/",
+    "source_root": "src/harnessix/",
+    "test_root": "tests/",
+    "method": "对固定Git提交读取受版本控制文件；不包含工作区未跟踪文件。",
+    "limitations": [
+      "只校验相对链接目标路径是否存在，不校验Markdown锚点。",
+      "不联网验证外部链接可用性。",
+      "章节识别按标题关键词执行，只反映结构覆盖，不评价内容质量。",
+      "源码引用识别以当前仓库路径文本和Markdown目标为依据，不解析自然语言中的符号别名。"
+    ]
+  },
+  "summary": {
+    "markdown_document_count": 133,
+    "markdown_line_count": 18831,
+    "category_counts": {
+      "adr": 76,
+      "research": 27,
+      "top-level": 25,
+      "validation": 5
+    },
+    "role_counts": {
+      "adr": 76,
+      "contract": 1,
+      "decision-support": 1,
+      "deployment-design": 1,
+      "detailed-design": 6,
+      "milestone-design": 9,
+      "product-charter": 1,
+      "research-plan": 1,
+      "roadmap": 1,
+      "source-research": 27,
+      "system-architecture": 1,
+      "test-and-eval-design": 1,
+      "threat-model": 1,
+      "validation-evidence": 5,
+      "verification-guide": 1
+    },
+    "documents_with_explicit_status": 96,
+    "distinct_status_text_count": 61,
+    "mermaid_document_count": 0,
+    "mermaid_block_count": 0,
+    "link_counts": {
+      "local": 406,
+      "external": 281,
+      "anchor_only": 0,
+      "other_scheme": 0,
+      "broken_relative_path": 0
+    },
+    "documents_with_plain_current_source_or_test_references": 13,
+    "plain_current_source_or_test_reference_count": 39,
+    "documents_with_plain_existing_repository_references": 22,
+    "plain_existing_repository_reference_count": 127,
+    "documents_with_markdown_source_links": 0,
+    "documents_with_markdown_test_links": 0,
+    "top_level_package_count": 30,
+    "root_python_module_count": 10,
+    "packages_with_dedicated_module_design": 0,
+    "section_heading_coverage": {
+      "requirement_background": 0,
+      "design_goals": 1,
+      "scope_non_goals": 23,
+      "overall_architecture": 2,
+      "module_boundaries": 6,
+      "core_flow": 2,
+      "sequence": 1,
+      "data_flow": 0,
+      "class_design": 0,
+      "interface_design": 0,
+      "data_structure": 0,
+      "field_explanation": 1,
+      "failure_recovery": 10,
+      "security": 31,
+      "observability": 16,
+      "test_design": 70,
+      "source_mapping": 0,
+      "pseudocode": 0
+    }
+  },
+  "categories": {
+    "adr": {
+      "document_count": 76,
+      "line_count": 5542,
+      "average_line_count": 72.9
+    },
+    "research": {
+      "document_count": 27,
+      "line_count": 3305,
+      "average_line_count": 122.4
+    },
+    "top-level": {
+      "document_count": 25,
+      "line_count": 9655,
+      "average_line_count": 386.2
+    },
+    "validation": {
+      "document_count": 5,
+      "line_count": 329,
+      "average_line_count": 65.8
+    }
+  },
+  "status_text_counts": {
+    "**已完成（2026-09-02）**。本阶段只完成研究与架构决策，没有实现或宣称 Agent Runtime 能力。": 1,
+    "0.3 范围实现与本地验收完成；后续进入 0.4": 1,
+    "0.5.2a、0.5.2b1/b2 均已实现；本 ADR 保留拆片时的搜索默认语义": 1,
+    "0.5.2b1 已实现；Artifact 存储/发布/清理属于 0.5.2b2，尚未实现": 1,
+    "0.5.2b2 已实现并通过本地验收；CI 结果以对应提交为准": 1,
+    "0.5.3 专项研究；0.5.3a 是只读准备，不是写能力": 1,
+    "0.5.3a 只读准备已实现；0.5.3b1 受管写后端已实现，b2 模型接入待实施，见 [ADR 0028](0028-managed-patch-execution.md)": 1,
+    "0.5.3b1 已实现并完成范围内验收；Kernel 写工具接入留到 0.5.3b2": 1,
+    "0.5.3b2a 已实现并通过本地验收；完整 Kernel 接入留到 b2b": 1,
+    "0.5.3b2b 已实现并完成本地验收；远端跨平台结果以对应提交 CI 为准": 1,
+    "0.6.1至0.6.5全部完成并通过远端CI；整体0.6正式关闭": 1,
+    "0.8.1～0.8.6全部完成，最终实现六矩阵CI通过": 1,
+    "0.8产品运行时安全基线，已更新至0.8.6 Provider与配置产品化": 1,
+    "Accepted": 6,
+    "Accepted（实现、本地完整验收及[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过）": 1,
+    "Accepted（账本内部切片；整体Compaction ADR 0058仍为Proposed）": 1,
+    "c1 已交付；c2a/c2b 已交付，分别见 ADR 0032/0033；c3a 宿主调用桥接已实现，c3b/c3c 待实现，见 ADR 0034": 1,
+    "c2a 已交付；c2b 后续实现见 ADR 0033，本 ADR 保留审批层历史边界": 1,
+    "c2b 已实现并完成本地/独立 wheel 验收，跨平台结果以对应提交 CI 为准；不接入 Kernel 批量工具": 1,
+    "c3a 已实现并通过本地/独立 wheel 验收，跨平台以本片 CI 为准；c3b 已按 ADR0035 实现；c3c1 差异报告已按 ADR0036 实现，c3c2 事务归档按 ADR0037 实现；下文保留 c3a 实施时边界": 1,
+    "c3b 已实现并完成本地/独立 wheel 验收，跨平台以本片 CI 为准；Diff Artifact 仍属于 c3c": 1,
+    "c3c1 已实现，验收证据见测试第28节；c3c2 的 Session 事务发布按 ADR0037 实现；下文保留 c3c1 当时的设计边界": 1,
+    "实现、本地完整验收及远端CI全部通过": 1,
+    "实现、本地完整验收及远端CI完成": 1,
+    "已冻结": 3,
+    "已完成": 2,
+    "已完成（2026-09-07）；0.5.1—0.5.6实现、本地验收及远端CI均通过，任务v3真实Provider基线3/3严格通过，严格通过结果可形成私有单文件变更包并经显式批准合入精确历史工作树": 1,
+    "已完成（2026-09-09）": 1,
+    "已完成；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过": 1,
+    "已实现并完成本地离线验收；对应 0.5.1": 1,
+    "已实现并通过本地全量与真实旧 wheel 升级验收；证据见测试第29节，远端以本片提交 CI 为准": 1,
+    "已接受": 24,
+    "已接受并完成真实Campaign验收": 1,
+    "已接受并实现": 5,
+    "已接受并实现0.5.5a": 1,
+    "已接受并实现0.5.5b1": 1,
+    "已接受并实现0.5.5b2": 1,
+    "已接受并实现0.5.5c1": 1,
+    "已接受并实现，离线验收通过": 1,
+    "已接受（由 ADR 0005 扩展到 Harnessix Code）": 1,
+    "已接受，0.4.2b2 已通过离线验收": 1,
+    "已接受，0.4.3a 已通过离线验收": 1,
+    "已接受；0.4.2a 已验收，后续 b1/b2 账本与 SDK 用量接入也已离线验收（ADR 0016/0017）": 1,
+    "已接受；0.4.2b1 与 b2 已通过离线验收，SDK 映射细节见 ADR 0017": 1,
+    "已接受；0.5.5c2a执行基础设施与c2b首轮三次真实基线均已完成": 1,
+    "已接受；0.5.5c3a已完成离线实现，c3b真实复测已完成": 1,
+    "已接受；0.5.5c3c实现及离线验收完成，c3d真实验证3/3采用纠正协议": 1,
+    "已采纳": 1,
+    "已采纳并实现（0.5.4b2c2）": 1,
+    "已采纳并实现（0.5.4b2c3）": 1,
+    "已采纳，0.5.4a范围已实现并完成本地验收；不将基础层称为已完成整个0.5.4": 1,
+    "已采纳；0.5.4b1实现，不代表0.5.4b全部完成": 1,
+    "架构已采纳并完成b2b/b2c实现；b2c3恢复与取消细节见ADR 0042": 1,
+    "核心运行能力已交付；0.4.1、0.4.2a、0.4.2b1/b2、0.4.3a/b1/b2已完成对应验收，百炼文本/内存工具/审批重开实测通过；0.4.3c真实计价适用性作为0.9.6发布证据门禁继续跟踪，关闭前整体0.4不标记完成": 1,
+    "独立账本已由自动摘要和活动窗口运行时集成": 1,
+    "研究完成；结论已由0.6.3自动Compaction运行时、活动窗口和语义Eval实现验证": 1,
+    "设计采纳；实现与离线验收见 `docs/m04-model-runtime.md`": 1,
+    "采纳，0.4 收口硬化": 1,
+    "采纳，0.4.3b2 实施": 1,
+    "首窗口规划已作为自动Compaction运行时的纯计算内核投入使用": 1,
+    "验收方案已确定，真实计价验证待当次预算授权": 1
+  },
+  "documents": [
+    {
+      "path": "docs/action-contract.md",
+      "category": "top-level",
+      "role": "contract",
+      "title": "Action Contract v1",
+      "status_text": null,
+      "line_count": 85,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": true,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": true,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/action-lifecycle.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "Action 生命周期",
+      "status_text": null,
+      "line_count": 71,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0001-python-first-runtime.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0001：采用 Python-first Runtime",
+      "status_text": "已接受（由 ADR 0005 扩展到 Harnessix Code）",
+      "line_count": 19,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0002-unknown-first-class.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0002：将 `UNKNOWN` 作为一等结果",
+      "status_text": "已接受",
+      "line_count": 19,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0003-database-backed-worker-queue.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0003：使用 Journal 状态实现持久化 Worker Queue",
+      "status_text": "已接受",
+      "line_count": 20,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0004-durable-trace-context.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR-0004：在 Action 快照中持久化 W3C Trace Context",
+      "status_text": "已采纳",
+      "line_count": 53,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0005-evolve-to-harnessix-code.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0005：将 Harnessix 演进为 Harnessix Code",
+      "status_text": "已接受",
+      "line_count": 54,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0006-thread-turn-item-event-model.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0006：采用 Thread、Turn、Item 与 AgentEvent 领域模型",
+      "status_text": "已接受",
+      "line_count": 128,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0007-agent-loop-and-cancellation.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0007：采用持久边界驱动的 Agent Loop 与分层取消",
+      "status_text": "已接受",
+      "line_count": 156,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0008-provider-event-model.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0008：采用模型无关的流式 Provider Event",
+      "status_text": "已接受",
+      "line_count": 141,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0009-app-server-protocol.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0009：App Server v1 使用标准 JSON-RPC 2.0 与 stdio JSONL",
+      "status_text": "已接受",
+      "line_count": 146,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0010-session-store-and-recovery.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0010：SQLite Event Log、事务投影与保守恢复",
+      "status_text": "已接受",
+      "line_count": 147,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0011-kernel-host-and-initial-projection.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0011：0.3 Kernel 使用进程内宿主与初始聚合投影",
+      "status_text": "已接受",
+      "line_count": 60,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0012-durable-approval-checkpoint.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0012：持久审批检查点与显式继续",
+      "status_text": "已接受并实现",
+      "line_count": 99,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/agent/test_approval_crash_recovery.py",
+          "tests/agent/test_approvals.py",
+          "tests/agent/test_session_upgrade.py"
+        ],
+        "plain_existing_repository_references": [
+          "examples/kernel_approval.py",
+          "tests/agent/fixtures/session-v1.json",
+          "tests/agent/test_approval_crash_recovery.py",
+          "tests/agent/test_approvals.py",
+          "tests/agent/test_session_upgrade.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0013-kernel-contracts-and-telemetry.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0013：Kernel 语义契约、诊断与存储验收",
+      "status_text": "已接受并实现",
+      "line_count": 65,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/agent/test_semantic_crash_recovery.py",
+          "tests/agent/test_semantic_items.py",
+          "tests/agent/test_session_upgrade.py",
+          "tests/agent/test_storage_failures.py",
+          "tests/agent/test_telemetry.py",
+          "tests/contracts/session.py"
+        ],
+        "plain_existing_repository_references": [
+          "tests/agent/test_semantic_crash_recovery.py",
+          "tests/agent/test_semantic_items.py",
+          "tests/agent/test_session_upgrade.py",
+          "tests/agent/test_storage_failures.py",
+          "tests/agent/test_telemetry.py",
+          "tests/contracts/session.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0014-openai-compatible-provider.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0014：首个 OpenAI-compatible Provider",
+      "status_text": "已接受并实现，离线验收通过",
+      "line_count": 52,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0015-anthropic-provider.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0015：第二类 Provider 与用量演进边界",
+      "status_text": "已接受；0.4.2a 已验收，后续 b1/b2 账本与 SDK 用量接入也已离线验收（ADR 0016/0017）",
+      "line_count": 57,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 5,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0016-model-attempt-ledger.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0016：模型尝试账本与累计用量事实",
+      "status_text": "已接受；0.4.2b1 与 b2 已通过离线验收，SDK 映射细节见 ADR 0017",
+      "line_count": 72,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0017-provider-attempt-usage.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0017：实际 SDK 的尝试与用量映射",
+      "status_text": "已接受，0.4.2b2 已通过离线验收",
+      "line_count": 60,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0018-versioned-token-cost.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0018：版本化 Token 价格与可重算成本报告",
+      "status_text": "已接受，0.4.3a 已通过离线验收",
+      "line_count": 64,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0019-controlled-model-smoke.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0019：受控模型 Smoke 与白名单诊断",
+      "status_text": "设计采纳；实现与离线验收见 `docs/m04-model-runtime.md`",
+      "line_count": 35,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0020-observed-billing-context.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0020：响应计费元数据与尝试绑定",
+      "status_text": "采纳，0.4.3b2 实施",
+      "line_count": 41,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0021-session-wal-initialization.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0021：并发 Session 初始化的 WAL 切换边界",
+      "status_text": "采纳，0.4 收口硬化",
+      "line_count": 32,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0022-bailian-price-validation.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0022：百炼单次计价验收的证据边界",
+      "status_text": "验收方案已确定，真实计价验证待当次预算授权",
+      "line_count": 46,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0023-workspace-read-tools.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0023：工作区绑定与首批只读编码工具",
+      "status_text": "已实现并完成本地离线验收；对应 0.5.1",
+      "line_count": 43,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0024-bounded-search-and-artifact-scope.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0024：有界搜索与 Artifact 归属拆片",
+      "status_text": "0.5.2a、0.5.2b1/b2 均已实现；本 ADR 保留拆片时的搜索默认语义",
+      "line_count": 48,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0025-trusted-tool-execution-scope.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0025：可信工具执行作用域与旧端口兼容",
+      "status_text": "0.5.2b1 已实现；Artifact 存储/发布/清理属于 0.5.2b2，尚未实现",
+      "line_count": 50,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0026-transactional-artifacts.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0026：同一 Session 事务发布有界 Artifact",
+      "status_text": "0.5.2b2 已实现并通过本地验收；CI 结果以对应提交为准",
+      "line_count": 36,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0027-prepared-patch-and-write-admission.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0027：先准备精确 Patch，再开放受控写入",
+      "status_text": "0.5.3a 只读准备已实现；0.5.3b1 受管写后端已实现，b2 模型接入待实施，见 [ADR 0028](0028-managed-patch-execution.md)",
+      "line_count": 48,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0028-managed-patch-execution.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0028：受管副本内的持久单文件 Patch 执行",
+      "status_text": "0.5.3b1 已实现并完成范围内验收；Kernel 写工具接入留到 0.5.3b2",
+      "line_count": 47,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0029-managed-patch-agent-bridge.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0029：受管 Patch 的调用绑定与 Agent 接入顺序",
+      "status_text": "0.5.3b2a 已实现并通过本地验收；完整 Kernel 接入留到 b2b",
+      "line_count": 60,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0030-kernel-managed-patch-admission.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0030：Kernel 写准入、持久审批与双账本恢复",
+      "status_text": "0.5.3b2b 已实现并完成本地验收；远端跨平台结果以对应提交 CI 为准",
+      "line_count": 134,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "examples/kernel_patch.py",
+          "scripts/session_upgrade_probe.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": true,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0031-patch-batches-and-structured-diff.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0031：多文件计划、部分效果与有界结构化 Diff",
+      "status_text": "c1 已交付；c2a/c2b 已交付，分别见 ADR 0032/0033；c3a 宿主调用桥接已实现，c3b/c3c 待实现，见 ADR 0034",
+      "line_count": 59,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0032-durable-batch-reservation-and-approval.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0032：整组事务预留与持久审批",
+      "status_text": "c2a 已交付；c2b 后续实现见 ADR 0033，本 ADR 保留审批层历史边界",
+      "line_count": 40,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0033-batch-consumption-and-effect-recovery.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0033：整组一次性消费、部分效果与只核对恢复",
+      "status_text": "c2b 已实现并完成本地/独立 wheel 验收，跨平台结果以对应提交 CI 为准；不接入 Kernel 批量工具",
+      "line_count": 41,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0034-batch-call-bridge-and-kernel-integration.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0034：整组调用桥接与 Kernel 接入边界",
+      "status_text": "c3a 已实现并通过本地/独立 wheel 验收，跨平台以本片 CI 为准；c3b 已按 ADR0035 实现；c3c1 差异报告已按 ADR0036 实现，c3c2 事务归档按 ADR0037 实现；下文保留 c3a 实施时边界",
+      "line_count": 56,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0035-kernel-batch-approval-and-recovery.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0035：Kernel 整组审批、效果与跨账本恢复",
+      "status_text": "c3b 已实现并完成本地/独立 wheel 验收，跨平台以本片 CI 为准；Diff Artifact 仍属于 c3c",
+      "line_count": 41,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0036-batch-diff-documents-and-artifact-admission.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0036：真实整组差异报告与归档准入",
+      "status_text": "c3c1 已实现，验收证据见测试第28节；c3c2 的 Session 事务发布按 ADR0037 实现；下文保留 c3c1 当时的设计边界",
+      "line_count": 42,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0037-batch-diff-transaction-publication.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0037：整组差异报告的事务发布",
+      "status_text": "已实现并通过本地全量与真实旧 wheel 升级验收；证据见测试第29节，远端以本片提交 CI 为准",
+      "line_count": 25,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0038-host-process-lifecycle.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0038：受信宿主进程生命周期与有界捕获",
+      "status_text": "已采纳，0.5.4a范围已实现并完成本地验收；不将基础层称为已完成整个0.5.4",
+      "line_count": 44,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0039-process-action-plane-admission.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0039：复用Action Plane的持久命令准入",
+      "status_text": "已采纳；0.5.4b1实现，不代表0.5.4b全部完成",
+      "line_count": 40,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0040-agent-process-action-saga.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0040：Agent进程调用的单一审批权威与恢复Saga",
+      "status_text": "架构已采纳并完成b2b/b2c实现；b2c3恢复与取消细节见ADR 0042",
+      "line_count": 93,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 4,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0041-process-output-artifact.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0041：Process输出Artifact契约与事务发布",
+      "status_text": "已采纳并实现（0.5.4b2c2）",
+      "line_count": 84,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0042-process-saga-recovery-and-cancellation.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0042：Process跨库恢复、等待取消与SDK闭环",
+      "status_text": "已采纳并实现（0.5.4b2c3）",
+      "line_count": 119,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": true,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0043-git-and-controlled-test-feedback.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0043：Git只读反馈与宿主测试Profile",
+      "status_text": "已接受并实现",
+      "line_count": 207,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0044-coding-eval-contract-and-grader.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0044：Coding Eval任务、证据与确定性评分基线",
+      "status_text": "已接受并实现0.5.5a",
+      "line_count": 130,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "tests",
+          "tests/evals"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": true,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0045-historical-eval-materialization-and-checks.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0045：历史缺陷任务物化与宿主隐藏检查",
+      "status_text": "已接受并实现0.5.5b1",
+      "line_count": 134,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "src/harnessix/models/_chat_stream.py"
+        ],
+        "plain_existing_repository_references": [
+          "src/harnessix/models/_chat_stream.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0046-historical-eval-runtime-orchestration.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0046：历史任务的Agent Runtime、审批、Worker与评分编排",
+      "status_text": "已接受并实现0.5.5b2",
+      "line_count": 141,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0047-coding-eval-campaign-evidence.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0047：Coding Eval多试验计划与可重算证据",
+      "status_text": "已接受并实现0.5.5c1",
+      "line_count": 66,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0048-controlled-real-eval-campaign-execution.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0048：受控真实Coding Eval Campaign执行",
+      "status_text": "已接受；0.5.5c2a执行基础设施与c2b首轮三次真实基线均已完成",
+      "line_count": 84,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0049-versioned-eval-token-budget.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0049：版本化Coding Eval Token预算",
+      "status_text": "已接受；0.5.5c3a已完成离线实现，c3b真实复测已完成",
+      "line_count": 78,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0050-model-correctable-tool-validation.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0050：模型可纠正的工具参数校验反馈",
+      "status_text": "已接受；0.5.5c3c实现及离线验收完成，c3d真实验证3/3采用纠正协议",
+      "line_count": 104,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0051-versioned-eval-final-answer-contract.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0051：版本化公开Coding Eval最终回答契约",
+      "status_text": "已接受并完成真实Campaign验收",
+      "line_count": 43,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "tests"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0052-controlled-eval-change-delivery.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0052：Coding Eval受控变更包与显式合入",
+      "status_text": "已接受并实现",
+      "line_count": 68,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0053-tool-concurrency-and-error-taxonomy.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0053：Tool有界并发与统一错误分类",
+      "status_text": "已接受并实现",
+      "line_count": 87,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0054-context-planning-and-inspection.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR-0054：版本化 Context 规划、指令优先级与无正文检查记录",
+      "status_text": "Accepted",
+      "line_count": 109,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0055-project-instruction-source-and-freshness.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0055：受控项目指令 Source 与持久 freshness",
+      "status_text": "Accepted",
+      "line_count": 113,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0056-workspace-git-environment-sources-and-consistency.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0056：Workspace、Git、环境Source与乐观一致性",
+      "status_text": "Accepted",
+      "line_count": 105,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0057-tool-result-model-view-and-artifact-binding.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0057：Tool Result稳定模型视图与完整Artifact绑定",
+      "status_text": "Accepted",
+      "line_count": 157,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0058：可审计压缩窗口与独立摘要尝试",
+      "status_text": "Accepted（实现、本地完整验收及[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过）",
+      "line_count": 115,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0059：独立摘要账本与分用途成本报告",
+      "status_text": "Accepted（账本内部切片；整体Compaction ADR 0058仍为Proposed）",
+      "line_count": 32,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0060-thread-lifecycle-and-authority-free-forks.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0060：Thread生命周期与无授权Fork",
+      "status_text": "Accepted",
+      "line_count": 55,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0061：终态Turn重试与Provider中立历史",
+      "status_text": "Accepted",
+      "line_count": 60,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0062-local-first-v1-commercial-boundary.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0062：Harnessix Code 1.0本地优先商用边界",
+      "status_text": "已接受",
+      "line_count": 50,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0063-windows-v1-platform-support.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0063：Windows纳入Harnessix Code 1.0支持范围",
+      "status_text": "已接受",
+      "line_count": 50,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0064-agpl-and-commercial-dual-licensing.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0064：AGPL社区版与商业许可证双许可",
+      "status_text": "已接受",
+      "line_count": 52,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0065-platform-capability-ports-and-execution-plan.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0065：平台能力端口与不可变执行计划",
+      "status_text": "已接受",
+      "line_count": 40,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0066-sandbox-network-and-secret-boundaries.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0066：Sandbox、网络与 Secret 失败关闭边界",
+      "status_text": "已接受",
+      "line_count": 34,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0067-process-ownership-and-terminal-lifecycle.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0067：跨平台进程所有权与终端生命周期",
+      "status_text": "已接受",
+      "line_count": 31,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0068-transactional-workspace-and-git-delivery.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0068：事务性 Workspace 与 Git 交付",
+      "status_text": "已接受",
+      "line_count": 34,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0069-unified-coding-action-risk-route.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0069：统一 Coding Action 风险路由",
+      "status_text": "已接受",
+      "line_count": 47,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0070-agent-protocol-v1-boundaries.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0070：Agent Protocol v1公共投影、游标与兼容边界",
+      "status_text": "已接受",
+      "line_count": 56,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0071-headless-app-server-and-sdk-lifecycle.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0071：Headless App Server与Agent SDK生命周期",
+      "status_text": "已接受",
+      "line_count": 50,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0072-durable-interaction-and-pull-live-stream.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0072：持久交互与Pull-Live事件流",
+      "status_text": "已接受",
+      "line_count": 56,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0073-mcp-catalog-binding-and-sandbox.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0073：MCP目录绑定与Sandbox执行边界",
+      "status_text": "已接受",
+      "line_count": 58,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0074-skill-snapshot-and-hook-action-boundary.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0074：Skill快照与Hook Action安全边界",
+      "status_text": "已接受",
+      "line_count": 66,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0075-provider-profile-secret-and-safe-fallback.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0075：Provider Profile、Secret 引用与安全 Fallback",
+      "status_text": "已接受",
+      "line_count": 155,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/adr/0076-code-readability-and-structural-governance.md",
+      "category": "adr",
+      "role": "adr",
+      "title": "ADR 0076：代码可读性、可维护性与结构治理",
+      "status_text": "已接受",
+      "line_count": 159,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/governance/test_readability_policy.py"
+        ],
+        "plain_existing_repository_references": [
+          "scripts/readability_report.py",
+          "src/harnessix",
+          "tests/governance/test_readability_policy.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/architecture.md",
+      "category": "top-level",
+      "role": "system-architecture",
+      "title": "Harnessix Code 总体架构",
+      "status_text": null,
+      "line_count": 526,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 48,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "scripts/readability_report.py",
+          "src/harnessix"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": true,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/build-vs-buy.md",
+      "category": "top-level",
+      "role": "decision-support",
+      "title": "自研与复用边界",
+      "status_text": null,
+      "line_count": 55,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/compaction-attempt-ledger.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "0.6.3 摘要尝试账本详细设计",
+      "status_text": "独立账本已由自动摘要和活动窗口运行时集成",
+      "line_count": 102,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 4,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/compaction-runtime-and-windows.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "0.6.3 自动Compaction运行时与活动窗口详细设计",
+      "status_text": "已完成；[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)通过",
+      "line_count": 156,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/compaction-window-planning.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "0.6.3 压缩窗口规划与候选校验详细设计",
+      "status_text": "首窗口规划已作为自动Compaction运行时的纯计算内核投入使用",
+      "line_count": 161,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 4,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "scripts/generate_specs.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": true,
+        "core_flow": true,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/deployment.md",
+      "category": "top-level",
+      "role": "deployment-design",
+      "title": "部署与运行",
+      "status_text": null,
+      "line_count": 1238,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 10,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/agent/test_session_upgrade.py",
+          "tests/integration/test_postgres_journal.py"
+        ],
+        "plain_existing_repository_references": [
+          "examples",
+          "examples/batch_diff.py",
+          "examples/batch_patch_bridge.py",
+          "examples/coding_feedback.py",
+          "examples/host_process.py",
+          "examples/kernel_approval.py",
+          "examples/kernel_batch.py",
+          "examples/kernel_process.py",
+          "scripts/batch_diff_upgrade_probe.py",
+          "scripts/compaction_ledger_upgrade_probe.py",
+          "scripts/compaction_window_upgrade_probe.py",
+          "scripts/kernel_batch_upgrade_probe.py",
+          "scripts/patch_ledger_upgrade_probe.py",
+          "scripts/process_session_upgrade_probe.py",
+          "scripts/session_upgrade_probe.py",
+          "scripts/thread_lifecycle_upgrade_probe.py",
+          "scripts/tool_result_view_upgrade_probe.py",
+          "scripts/turn_retry_upgrade_probe.py",
+          "tests",
+          "tests/agent/fixtures/session-v6.json",
+          "tests/agent/fixtures/session-v8.json",
+          "tests/agent/test_session_upgrade.py",
+          "tests/integration/test_postgres_journal.py",
+          "tests/unit"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m03-runtime-kernel.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "0.3 Agent Runtime Kernel 实施设计",
+      "status_text": "0.3 范围实现与本地验收完成；后续进入 0.4",
+      "line_count": 326,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 6,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "examples/kernel_approval.py",
+          "examples/kernel_replay.py",
+          "tests/agent"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m04-model-runtime.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "0.4 Model Runtime 实施计划",
+      "status_text": "核心运行能力已交付；0.4.1、0.4.2a、0.4.2b1/b2、0.4.3a/b1/b2已完成对应验收，百炼文本/内存工具/审批重开实测通过；0.4.3c真实计价适用性作为0.9.6发布证据门禁继续跟踪，关闭前整体0.4不标记完成",
+      "line_count": 307,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 13,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/contracts/provider.py"
+        ],
+        "plain_existing_repository_references": [
+          "examples/kernel_anthropic_offline.py",
+          "examples/kernel_openai_offline.py",
+          "tests/agent",
+          "tests/contracts/provider.py",
+          "tests/models",
+          "tests/models/",
+          "tests/smoke"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m05-coding-tools.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "0.5 Coding Tool Runtime 详细实施设计",
+      "status_text": "已完成（2026-09-07）；0.5.1—0.5.6实现、本地验收及远端CI均通过，任务v3真实Provider基线3/3严格通过，严格通过结果可形成私有单文件变更包并经显式批准合入精确历史工作树",
+      "line_count": 1097,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 50,
+        "external": 2,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/agent/test_coding_feedback_loop.py",
+          "tests/agent/test_coding_feedback_sdk.py",
+          "tests/agent/test_process_agent_crash.py",
+          "tests/agent/test_process_agent_runtime.py",
+          "tests/agent/test_process_agent_sdk.py",
+          "tests/evals/test_historical.py",
+          "tests/processes/test_test_profiles.py",
+          "tests/tools/test_git.py"
+        ],
+        "plain_existing_repository_references": [
+          "examples/batch_diff.py",
+          "examples/kernel_batch.py",
+          "examples/kernel_patch.py",
+          "scripts/generate_specs.py",
+          "scripts/process_session_upgrade_probe.py",
+          "src/harnessix/tools/",
+          "tests",
+          "tests/agent/fixtures/session-v8.json",
+          "tests/agent/test_coding_feedback_loop.py",
+          "tests/agent/test_coding_feedback_sdk.py",
+          "tests/agent/test_process_agent_crash.py",
+          "tests/agent/test_process_agent_runtime.py",
+          "tests/agent/test_process_agent_sdk.py",
+          "tests/evals",
+          "tests/evals/test_historical.py",
+          "tests/processes/test_test_profiles.py",
+          "tests/tools",
+          "tests/tools/test_git.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m06-context-and-sessions.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "0.6 Context Engine 与持久会话详细实施设计",
+      "status_text": "0.6.1至0.6.5全部完成并通过远端CI；整体0.6正式关闭",
+      "line_count": 428,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 18,
+        "external": 9,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": true,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m07-trusted-execution-and-delivery.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "Harnessix Code 0.7 可信执行与工程交付设计",
+      "status_text": "已完成（2026-09-09）",
+      "line_count": 463,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": true,
+        "module_boundaries": true,
+        "core_flow": true,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m08-product-runtime-and-extensions.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "Harnessix Code 0.8 产品运行时与扩展详细设计",
+      "status_text": null,
+      "line_count": 647,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 13,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": true,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m09-code-maintainability.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "0.9.0代码可读性、可维护性与结构治理详细设计",
+      "status_text": "已完成",
+      "line_count": 226,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/governance/test_readability_policy.py"
+        ],
+        "plain_existing_repository_references": [
+          "scripts/generate_specs.py",
+          "scripts/readability_report.py",
+          "src/harnessix",
+          "src/harnessix/",
+          "tests/governance/test_readability_policy.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": true,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m1-observability.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "M1.2 可观测性与运行保障设计",
+      "status_text": null,
+      "line_count": 194,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 5,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/m1-worker-postgresql.md",
+      "category": "top-level",
+      "role": "milestone-design",
+      "title": "M1 独立 Worker 与 PostgreSQL 设计",
+      "status_text": null,
+      "line_count": 126,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/model-smoke.md",
+      "category": "top-level",
+      "role": "verification-guide",
+      "title": "受控模型 Smoke 使用说明",
+      "status_text": null,
+      "line_count": 93,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "tests/agent",
+          "tests/models",
+          "tests/smoke"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/product-charter.md",
+      "category": "top-level",
+      "role": "product-charter",
+      "title": "Harnessix Code 产品章程",
+      "status_text": null,
+      "line_count": 112,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research-plan.md",
+      "category": "top-level",
+      "role": "research-plan",
+      "title": "主流 Coding Agent 源码研究计划",
+      "status_text": null,
+      "line_count": 113,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 7,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/agent-loop.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Agent Loop 研究与 Harnessix 状态机",
+      "status_text": null,
+      "line_count": 149,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 5,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/agent-protocol-product-runtime.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Agent Protocol 与产品运行时源码研究",
+      "status_text": null,
+      "line_count": 119,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 5,
+        "external": 11,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/baselines.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "0.2 源码研究基线",
+      "status_text": "已冻结",
+      "line_count": 62,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/code-readability-and-structure.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Agent代码可读性、可维护性与结构治理研究",
+      "status_text": "已完成",
+      "line_count": 174,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "tests/governance/test_readability_policy.py"
+        ],
+        "plain_existing_repository_references": [
+          "scripts/readability_report.py",
+          "tests/governance/test_readability_policy.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/compaction-and-context-windows.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Compaction与长会话窗口源码研究",
+      "status_text": "研究完成；结论已由0.6.3自动Compaction运行时、活动窗口和语义Eval实现验证",
+      "line_count": 79,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/context-engine.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Context Engine 研究与预算模型",
+      "status_text": null,
+      "line_count": 185,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 5,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/context-planning-and-instructions.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Context 规划、指令与预算源码研究",
+      "status_text": null,
+      "line_count": 78,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 14,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/context-sources-and-tool-results.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Context Source、项目指令与 Tool Result 模型视图源码研究",
+      "status_text": null,
+      "line_count": 189,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/eval-campaign-execution.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Eval真实Campaign执行与费用边界研究",
+      "status_text": null,
+      "line_count": 67,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/eval-campaign.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Agent多试验质量与成本证据研究",
+      "status_text": null,
+      "line_count": 41,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/eval-change-delivery.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Eval变更交付源码求证与适用性研究",
+      "status_text": null,
+      "line_count": 97,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "src/harnessix/patches/managed.py",
+          "src/harnessix/tools/git.py"
+        ],
+        "plain_existing_repository_references": [
+          "src/harnessix/evals/",
+          "src/harnessix/patches/managed.py",
+          "src/harnessix/tools/git.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/eval-final-answer-contract-applicability.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Eval最终回答契约可见性研究",
+      "status_text": null,
+      "line_count": 63,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "src/harnessix/agent/runtime.py",
+          "src/harnessix/evals/catalog.py",
+          "src/harnessix/evals/contracts.py",
+          "src/harnessix/evals/grader.py"
+        ],
+        "plain_existing_repository_references": [
+          "src/harnessix/agent/runtime.py",
+          "src/harnessix/evals/catalog.py",
+          "src/harnessix/evals/contracts.py",
+          "src/harnessix/evals/grader.py",
+          "tests"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/eval-token-budget-applicability.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Eval Token预算适用性源码研究",
+      "status_text": null,
+      "line_count": 92,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/mcp-runtime-and-security.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "MCP运行时与安全边界源码研究",
+      "status_text": null,
+      "line_count": 109,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 14,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/patch-runtime.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Patch：精确计划、写效果和恢复边界",
+      "status_text": "0.5.3 专项研究；0.5.3a 是只读准备，不是写能力",
+      "line_count": 36,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 7,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/protocol.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "App Server Protocol 与 Provider Event 研究",
+      "status_text": null,
+      "line_count": 204,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 8,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/provider-profile-config-and-safe-fallback.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Provider、Profile、配置与安全 Fallback 源码研究",
+      "status_text": null,
+      "line_count": 123,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/security.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Permission、Approval 与 Sandbox 研究",
+      "status_text": null,
+      "line_count": 164,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 6,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/session-model.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Session、Thread、Turn、Item 与事件模型研究",
+      "status_text": null,
+      "line_count": 192,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 3,
+        "external": 11,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/skills-hooks-and-supply-chain.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Skills、Hooks与供应链边界源码研究",
+      "status_text": null,
+      "line_count": 83,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 12,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/thread-lifecycle-and-fork.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Thread Resume、Fork 与 Archive 源码研究",
+      "status_text": null,
+      "line_count": 64,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/tool-runtime.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Tool Runtime 研究与执行契约",
+      "status_text": null,
+      "line_count": 192,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 8,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/tool-scheduling-and-errors.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Tool 调度与错误分类专项研究",
+      "status_text": null,
+      "line_count": 111,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/tool-validation-feedback-applicability.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Coding Tool参数校验反馈适用性源码研究",
+      "status_text": null,
+      "line_count": 105,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/trusted-execution-and-delivery.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "0.7 可信执行与工程交付研究",
+      "status_text": "已冻结",
+      "line_count": 269,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 1,
+        "external": 29,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/turn-retry-and-provider-switch.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "Turn Retry、Interrupted Recovery 与 Provider 切换源码研究",
+      "status_text": null,
+      "line_count": 73,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/research/unified-action-plane-and-extension-boundaries.md",
+      "category": "research",
+      "role": "source-research",
+      "title": "0.7.5 统一 Action Plane 与扩展边界源码研究",
+      "status_text": "已冻结",
+      "line_count": 185,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/roadmap.md",
+      "category": "top-level",
+      "role": "roadmap",
+      "title": "Harnessix Code 设计与开发路线图",
+      "status_text": "**已完成（2026-09-02）**。本阶段只完成研究与架构决策，没有实现或宣称 Agent Runtime 能力。",
+      "line_count": 539,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 37,
+        "external": 9,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/testing-and-evals.md",
+      "category": "top-level",
+      "role": "test-and-eval-design",
+      "title": "Harnessix Code 测试与 Eval 规范 v1",
+      "status_text": "0.8.1～0.8.6全部完成，最终实现六矩阵CI通过",
+      "line_count": 1670,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 74,
+        "external": 52,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "src/harnessix/models/_chat_stream.py",
+          "tests/contracts/provider.py",
+          "tests/contracts/session.py",
+          "tests/evals/test_campaign_cli.py",
+          "tests/evals/test_campaign_execution.py",
+          "tests/evals/test_historical.py",
+          "tests/evals/test_runner.py",
+          "tests/tools/test_files.py"
+        ],
+        "plain_existing_repository_references": [
+          "examples/kernel_search.py",
+          "examples/mvp.py",
+          "examples/patch_plan.py",
+          "scripts/compaction_ledger_upgrade_probe.py",
+          "scripts/compaction_window_upgrade_probe.py",
+          "scripts/turn_retry_upgrade_probe.py",
+          "src/harnessix/models/_chat_stream.py",
+          "tests",
+          "tests/agent",
+          "tests/agent/fixtures/session-v5.json",
+          "tests/artifacts",
+          "tests/artifacts/",
+          "tests/context",
+          "tests/contracts/provider.py",
+          "tests/contracts/session.py",
+          "tests/evals/test_campaign_cli.py",
+          "tests/evals/test_campaign_execution.py",
+          "tests/evals/test_historical.py",
+          "tests/evals/test_runner.py",
+          "tests/mcp",
+          "tests/models",
+          "tests/models/",
+          "tests/patches",
+          "tests/patches/",
+          "tests/product_config",
+          "tests/smoke",
+          "tests/smoke/",
+          "tests/tools",
+          "tests/tools/test_files.py",
+          "tests/trusted_actions"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/thread-lifecycle.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "Thread Resume、Fork 与 Archive 详细设计",
+      "status_text": "实现、本地完整验收及远端CI完成",
+      "line_count": 130,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/threat-model.md",
+      "category": "top-level",
+      "role": "threat-model",
+      "title": "Harnessix Code 威胁模型 v2",
+      "status_text": "0.8产品运行时安全基线，已更新至0.8.6 Provider与配置产品化",
+      "line_count": 648,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 25,
+        "external": 0,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": false,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/turn-retry-and-provider-switch.md",
+      "category": "top-level",
+      "role": "detailed-design",
+      "title": "Turn Retry、Interrupted Recovery 与 Provider 切换详细设计",
+      "status_text": "实现、本地完整验收及远端CI全部通过",
+      "line_count": 142,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "scripts/turn_retry_upgrade_probe.py"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": true,
+        "observability": true,
+        "test_design": true,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/validation/bailian-2026-09-03.md",
+      "category": "validation",
+      "role": "validation-evidence",
+      "title": "百炼北京受控验证记录（2026-09-03）",
+      "status_text": null,
+      "line_count": 55,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 5,
+        "external": 4,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": true,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/validation/bailian-2026-09-06-coding-eval-v2-corrected/README.md",
+      "category": "validation",
+      "role": "validation-evidence",
+      "title": "百炼北京Coding Eval任务v2分页纠正后真实基线",
+      "status_text": null,
+      "line_count": 74,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [
+          "tests"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/validation/bailian-2026-09-06-coding-eval-v2/README.md",
+      "category": "validation",
+      "role": "validation-evidence",
+      "title": "百炼北京Coding Eval任务v2三次真实基线",
+      "status_text": null,
+      "line_count": 81,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/validation/bailian-2026-09-06-coding-eval-v3/README.md",
+      "category": "validation",
+      "role": "validation-evidence",
+      "title": "百炼北京Coding Eval任务v3真实质量基线",
+      "status_text": null,
+      "line_count": 67,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 0,
+        "external": 1,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [
+          "src/harnessix/models/_chat_stream.py"
+        ],
+        "plain_existing_repository_references": [
+          "src/harnessix/models/_chat_stream.py",
+          "tests"
+        ],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    },
+    {
+      "path": "docs/validation/bailian-2026-09-06-coding-eval/README.md",
+      "category": "validation",
+      "role": "validation-evidence",
+      "title": "百炼北京三次Coding Eval基线验证",
+      "status_text": null,
+      "line_count": 52,
+      "mermaid_block_count": 0,
+      "links": {
+        "local": 2,
+        "external": 3,
+        "anchor_only": 0,
+        "other_scheme": 0,
+        "broken_relative_paths": []
+      },
+      "traceability": {
+        "plain_current_source_or_test_references": [],
+        "plain_existing_repository_references": [],
+        "markdown_source_links": [],
+        "markdown_test_links": []
+      },
+      "section_presence": {
+        "requirement_background": false,
+        "design_goals": false,
+        "scope_non_goals": false,
+        "overall_architecture": false,
+        "module_boundaries": false,
+        "core_flow": false,
+        "sequence": false,
+        "data_flow": false,
+        "class_design": false,
+        "interface_design": false,
+        "data_structure": false,
+        "field_explanation": false,
+        "failure_recovery": false,
+        "security": false,
+        "observability": false,
+        "test_design": false,
+        "source_mapping": false,
+        "pseudocode": false
+      }
+    }
+  ],
+  "source_packages": [
+    {
+      "package": "adapters",
+      "python_file_count": 2,
+      "physical_line_count": 97,
+      "nonblank_noncomment_line_count": 78,
+      "dedicated_module_design_path": "docs/modules/adapters.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "agent",
+      "python_file_count": 21,
+      "physical_line_count": 7241,
+      "nonblank_noncomment_line_count": 6743,
+      "dedicated_module_design_path": "docs/modules/agent.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "api",
+      "python_file_count": 2,
+      "physical_line_count": 244,
+      "nonblank_noncomment_line_count": 205,
+      "dedicated_module_design_path": "docs/modules/api.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "app_server",
+      "python_file_count": 5,
+      "physical_line_count": 1075,
+      "nonblank_noncomment_line_count": 964,
+      "dedicated_module_design_path": "docs/modules/app_server.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "artifacts",
+      "python_file_count": 6,
+      "physical_line_count": 1273,
+      "nonblank_noncomment_line_count": 1170,
+      "dedicated_module_design_path": "docs/modules/artifacts.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "context",
+      "python_file_count": 13,
+      "physical_line_count": 3136,
+      "nonblank_noncomment_line_count": 2800,
+      "dedicated_module_design_path": "docs/modules/context.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "delivery",
+      "python_file_count": 10,
+      "physical_line_count": 4032,
+      "nonblank_noncomment_line_count": 3716,
+      "dedicated_module_design_path": "docs/modules/delivery.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "domain",
+      "python_file_count": 5,
+      "physical_line_count": 512,
+      "nonblank_noncomment_line_count": 394,
+      "dedicated_module_design_path": "docs/modules/domain.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "evals",
+      "python_file_count": 20,
+      "physical_line_count": 5539,
+      "nonblank_noncomment_line_count": 5014,
+      "dedicated_module_design_path": "docs/modules/evals.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "execution",
+      "python_file_count": 4,
+      "physical_line_count": 735,
+      "nonblank_noncomment_line_count": 654,
+      "dedicated_module_design_path": "docs/modules/execution.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "executors",
+      "python_file_count": 3,
+      "physical_line_count": 256,
+      "nonblank_noncomment_line_count": 219,
+      "dedicated_module_design_path": "docs/modules/executors.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "hooks",
+      "python_file_count": 4,
+      "physical_line_count": 1272,
+      "nonblank_noncomment_line_count": 1173,
+      "dedicated_module_design_path": "docs/modules/hooks.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "mcp",
+      "python_file_count": 7,
+      "physical_line_count": 1880,
+      "nonblank_noncomment_line_count": 1680,
+      "dedicated_module_design_path": "docs/modules/mcp.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "models",
+      "python_file_count": 19,
+      "physical_line_count": 2312,
+      "nonblank_noncomment_line_count": 2033,
+      "dedicated_module_design_path": "docs/modules/models.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "observability",
+      "python_file_count": 4,
+      "physical_line_count": 422,
+      "nonblank_noncomment_line_count": 350,
+      "dedicated_module_design_path": "docs/modules/observability.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "patches",
+      "python_file_count": 25,
+      "physical_line_count": 3722,
+      "nonblank_noncomment_line_count": 3291,
+      "dedicated_module_design_path": "docs/modules/patches.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "policy",
+      "python_file_count": 2,
+      "physical_line_count": 40,
+      "nonblank_noncomment_line_count": 33,
+      "dedicated_module_design_path": "docs/modules/policy.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "processes",
+      "python_file_count": 23,
+      "physical_line_count": 5579,
+      "nonblank_noncomment_line_count": 5044,
+      "dedicated_module_design_path": "docs/modules/processes.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "product_config",
+      "python_file_count": 8,
+      "physical_line_count": 2085,
+      "nonblank_noncomment_line_count": 1860,
+      "dedicated_module_design_path": "docs/modules/product_config.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "protocol",
+      "python_file_count": 6,
+      "physical_line_count": 1452,
+      "nonblank_noncomment_line_count": 1206,
+      "dedicated_module_design_path": "docs/modules/protocol.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "sandbox",
+      "python_file_count": 10,
+      "physical_line_count": 1934,
+      "nonblank_noncomment_line_count": 1734,
+      "dedicated_module_design_path": "docs/modules/sandbox.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "sdk",
+      "python_file_count": 3,
+      "physical_line_count": 812,
+      "nonblank_noncomment_line_count": 716,
+      "dedicated_module_design_path": "docs/modules/sdk.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "secrets",
+      "python_file_count": 4,
+      "physical_line_count": 332,
+      "nonblank_noncomment_line_count": 278,
+      "dedicated_module_design_path": "docs/modules/secrets.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "session",
+      "python_file_count": 4,
+      "physical_line_count": 527,
+      "nonblank_noncomment_line_count": 481,
+      "dedicated_module_design_path": "docs/modules/session.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "skills",
+      "python_file_count": 5,
+      "physical_line_count": 1508,
+      "nonblank_noncomment_line_count": 1373,
+      "dedicated_module_design_path": "docs/modules/skills.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "smoke",
+      "python_file_count": 4,
+      "physical_line_count": 443,
+      "nonblank_noncomment_line_count": 397,
+      "dedicated_module_design_path": "docs/modules/smoke.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "storage",
+      "python_file_count": 3,
+      "physical_line_count": 1110,
+      "nonblank_noncomment_line_count": 1043,
+      "dedicated_module_design_path": "docs/modules/storage.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "tools",
+      "python_file_count": 10,
+      "physical_line_count": 1878,
+      "nonblank_noncomment_line_count": 1654,
+      "dedicated_module_design_path": "docs/modules/tools.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "trusted_actions",
+      "python_file_count": 5,
+      "physical_line_count": 1475,
+      "nonblank_noncomment_line_count": 1354,
+      "dedicated_module_design_path": "docs/modules/trusted_actions.md",
+      "dedicated_module_design_exists": false
+    },
+    {
+      "package": "workspace",
+      "python_file_count": 6,
+      "physical_line_count": 1214,
+      "nonblank_noncomment_line_count": 1084,
+      "dedicated_module_design_path": "docs/modules/workspace.md",
+      "dedicated_module_design_exists": false
+    }
+  ],
+  "source_root_modules": [
+    {
+      "path": "src/harnessix/__init__.py",
+      "physical_line_count": 45,
+      "nonblank_noncomment_line_count": 43
+    },
+    {
+      "path": "src/harnessix/__main__.py",
+      "physical_line_count": 5,
+      "nonblank_noncomment_line_count": 3
+    },
+    {
+      "path": "src/harnessix/agent_cli.py",
+      "physical_line_count": 422,
+      "nonblank_noncomment_line_count": 393
+    },
+    {
+      "path": "src/harnessix/bootstrap.py",
+      "physical_line_count": 82,
+      "nonblank_noncomment_line_count": 74
+    },
+    {
+      "path": "src/harnessix/cli.py",
+      "physical_line_count": 117,
+      "nonblank_noncomment_line_count": 102
+    },
+    {
+      "path": "src/harnessix/file_lock.py",
+      "physical_line_count": 31,
+      "nonblank_noncomment_line_count": 23
+    },
+    {
+      "path": "src/harnessix/licensing.py",
+      "physical_line_count": 20,
+      "nonblank_noncomment_line_count": 16
+    },
+    {
+      "path": "src/harnessix/runtime.py",
+      "physical_line_count": 586,
+      "nonblank_noncomment_line_count": 548
+    },
+    {
+      "path": "src/harnessix/settings.py",
+      "physical_line_count": 74,
+      "nonblank_noncomment_line_count": 68
+    },
+    {
+      "path": "src/harnessix/worker.py",
+      "physical_line_count": 184,
+      "nonblank_noncomment_line_count": 165
+    }
+  ]
+}

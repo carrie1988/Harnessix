@@ -18,6 +18,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 ```
 
 不按功能数量判断完成度。没有取消、超时、恢复、安全边界和完备测试的功能，不得标记为生产完成。
+重大变更必须在实现前形成可评审的正式设计，并在合入前同步现行模块设计、源码与测试映射；
+文档角色、结构和完成门槛以[文档工程规范](governance/documentation-standard.md)为准。
 
 ## 2. 当前基线：0.1 Action Plane
 
@@ -55,7 +57,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
 | 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Action Plane | 0.6 |
 | 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 | 0.7 |
-| 0.9 | Release Candidate与质量工程 | 可维护性基线、完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
+| 0.9 | Release Candidate与质量工程 | 可维护性和文档工程基线、完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
 | 1.0 | 本地优先正式商用发布 | macOS/Linux/Windows稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
 | 1.x | 按需求演进 | 云任务、多租户、远程Sandbox、IDE和分布式运行 | 1.0 |
 
@@ -400,7 +402,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0已完成；其余切片尚未开始。本阶段不再补建基础领域语义，而是先建立与现有代码规模匹配的可维护性基线，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0和DOC-1.0已完成；DOC-1.1、DOC-1.2是0.9.1大规模产品实现的文档前置门禁，其余产品切片尚未开始。本阶段不再补建基础领域语义，而是先建立与现有代码规模匹配的可维护性和文档工程基线，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -415,6 +417,27 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
 - [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
+
+### DOC-1：设计文档与源码可追溯治理
+
+DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1～0.9.6产品切片。目标是把
+历史上按里程碑和ADR累积的资料治理为可直接支持源码阅读、设计评审、测试和故障定位的正式
+文档体系。完整范围、量化基线和执行顺序见[文档治理入口](governance/README.md)、
+[现状全量盘点](governance/documentation-inventory.md)和
+[整改待办](governance/documentation-remediation-backlog.md)。
+
+- [x] **DOC-1.0 盘点与规范**：固定133份Markdown、30个顶层生产包和10个根级生产模块的起始基线；建立文档分类、状态、元数据、重大变更流程、图示、源码/测试链接规范、五类模板、追踪矩阵和分阶段待办。本切片不修改生产代码，也不宣称存量资料已经整改完成；
+- [ ] **DOC-1.1 导航与系统架构**：建立文档总入口、当前系统架构、模块依赖和Coding Agent主链源码阅读路线；
+- [ ] **DOC-1.2 黄金样例**：按新规范完成Agent Runtime模块设计和Action Plane子系统设计，并以源码及测试双向抽查；
+- [ ] **DOC-1.3 Coding Agent主链**：为模型、上下文、会话、工具、补丁、进程、Sandbox、工作区、交付、Eval和观测等核心包补齐现行模块设计；
+- [ ] **DOC-1.4 产品运行时与扩展**：为Protocol、App Server、SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke补齐现行模块设计；
+- [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
+- [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
+
+DOC-1.1和DOC-1.2完成前，不开始0.9.1的大范围实现。以后每次重大提交都必须按照
+[详细设计模板](governance/templates/detailed-design-template.md)或
+[重大变更设计模板](governance/templates/change-design-template.md)形成正式设计；没有失败与恢复、
+安全边界、完备测试和实际源码映射的变更不得标记为生产完成。
 
 ### 0.9.0范围与完成边界
 
