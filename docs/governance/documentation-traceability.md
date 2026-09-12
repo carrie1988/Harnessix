@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 3
-code_revision: 7c50a5815e3d859fcdd93176d8a5019bf419b6bc
+version: 4
+code_revision: 8321ef383f2cbb3ab76191a1cc3db361a52e92ef
 owners:
   - core
 modules:
@@ -100,7 +100,7 @@ flowchart LR
 | [sandbox](../../src/harnessix/sandbox/) | 隔离、网络和能力探测 | [0.7](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [sandbox](../../tests/sandbox/) | `docs/modules/sandbox.md` | 缺失 |
 | [sdk](../../src/harnessix/sdk/) | 进程内/子进程Python SDK | [0.8](../m08-product-runtime-and-extensions.md) | [app_server](../../tests/app_server/)、[unit](../../tests/unit/) | `docs/modules/sdk.md` | 缺失 |
 | [secrets](../../src/harnessix/secrets/) | Secret引用、解析、守卫和脱敏 | [0.7](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [secrets](../../tests/secrets/) | `docs/modules/secrets.md` | 缺失 |
-| [session](../../src/harnessix/session/) | Session Store、迁移与恢复 | [0.3](../m03-runtime-kernel.md)、[0.6](../m06-context-and-sessions.md) | [agent](../../tests/agent/)、[contracts](../../tests/contracts/) | `docs/modules/session.md` | 缺失 |
+| [session](../../src/harnessix/session/) | Session Store、迁移与恢复 | [Session模块设计](../modules/session.md) | [agent](../../tests/agent/)、[contracts](../../tests/contracts/) | [docs/modules/session.md](../modules/session.md) | 完整，DOC-1.3 Wave A |
 | [skills](../../src/harnessix/skills/) | Skill快照、发现和渐进加载 | [0.8](../m08-product-runtime-and-extensions.md) | [skills](../../tests/skills/) | `docs/modules/skills.md` | 缺失 |
 | [smoke](../../src/harnessix/smoke/) | 受控真实Provider Smoke | [0.4](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [smoke](../../tests/smoke/) | `docs/modules/smoke.md` | 缺失 |
 | [storage](../../src/harnessix/storage/) | SQLite/PostgreSQL Action Journal | [Action Plane子系统设计](../subsystems/action-plane.md) | [integration](../../tests/integration/) | `docs/modules/storage.md` | 子系统级完整；独立模块待DOC-1.3 |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前DOC-1.2完成1/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成2/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。
