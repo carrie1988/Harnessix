@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 2
-code_revision: 48f286938ddd877bf9fdbb6ad3e64f8403098723
+version: 3
+code_revision: 7c50a5815e3d859fcdd93176d8a5019bf419b6bc
 owners:
   - core
 modules:
@@ -28,7 +28,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 |---|---|---|---|
 | DOC-1.0 | 文档盘点、分类、规范、模板、追踪矩阵和整改待办 | 已完成 | 本目录与[起始基线](../baselines/documentation-doc1.0-start.json) |
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
-| DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 未开始 | 两份符合新规范的完整模块设计 |
+| DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 未开始 | Model、Context、Tool、Process、Workspace等模块文档 |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 未开始 | Protocol、App Server、SDK、MCP、Skill、Hook等模块文档 |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
@@ -45,6 +45,8 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [文档中心](../README.md)：面向读者的统一入口和资料角色；
 - [当前总体架构](../architecture.md)：系统边界、模块依赖、数据流、五条系统时序和源码测试映射；
 - [源码阅读地图](../guides/source-reading-map.md)：产品启动、Agent Loop、可信执行和Action Plane逐文件路线；
+- [Agent Runtime模块设计](../modules/agent.md)：DOC-1后模块设计黄金样例；
+- [Action Plane子系统设计](../subsystems/action-plane.md)：DOC-1后跨包子系统设计黄金样例；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；

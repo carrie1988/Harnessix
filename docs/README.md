@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 1
-code_revision: 48f286938ddd877bf9fdbb6ad3e64f8403098723
+version: 2
+code_revision: 7c50a5815e3d859fcdd93176d8a5019bf419b6bc
 owners:
   - core
 modules:
@@ -35,9 +35,9 @@ supersedes: []
 | 阅读目标 | 起点 | 下一步 |
 |---|---|---|
 | 产品启动与协议 | [源码阅读地图：产品启动](guides/source-reading-map.md#4-产品启动与装配主链) | `cli → product_config → app_server → protocol` |
-| Agent Loop与状态 | [源码阅读地图：Turn主链](guides/source-reading-map.md#5-coding-turn主链) | `agent → session → models/context/tools` |
+| Agent Loop与状态 | [Agent Runtime模块设计](modules/agent.md) | `agent → session → models/context/tools` |
 | 文件修改和执行 | [源码阅读地图：可信执行](guides/source-reading-map.md#8-可信写入进程与交付主链) | `patches/processes → sandbox/workspace → delivery` |
-| Action Plane | [Action Contract](action-contract.md)与[生命周期](action-lifecycle.md) | `domain → policy → runtime → storage/worker` |
+| Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → runtime → storage/worker` |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
 
@@ -59,6 +59,8 @@ supersedes: []
 | 产品定位 | [产品章程](product-charter.md) | 用户、价值、1.0范围与非目标 |
 | 交付顺序 | [路线图](roadmap.md) | 切片、依赖、状态和验收门槛 |
 | 系统当前结构 | [总体架构](architecture.md) | 系统上下文、模块边界、主流程和当前限制 |
+| Agent Runtime | [Agent Runtime模块设计](modules/agent.md) | Thread/Turn/Item/Event、Agent Loop、交互、取消、Retry与恢复 |
+| Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
 | 安全模型 | [威胁模型](threat-model.md) | 资产、信任边界、攻击面和缓解措施 |
@@ -128,7 +130,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1建立本导航、总体架构和源码阅读主链；DOC-1.2开始用Agent Runtime与Action Plane黄金样例建立现行模块设计。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 
