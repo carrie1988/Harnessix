@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 7
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 8
+code_revision: 7839dc56b351695a329c0575483f155d9ac216b0
 owners:
   - core
 modules:
@@ -452,7 +452,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   发送前Command分配、连接代际和确定性Projection Reducer；
 - [x] **0.9.1b TUI基础产品链**：`harnessix code`、Textual生命周期、Transcript、Composer、Session Picker、
   Resume和真实stdio纵向恢复；实现、并发稳定化与三平台CI已经完成；
-- [ ] **0.9.1c 完整领域交互**：Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel、Steer和错误自助；
+- [ ] **0.9.1c 完整领域交互**：按[专项详细设计](changes/m09-1c-domain-interactions.md)交付Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel、Steer和错误自助；
 - [ ] **0.9.1d 配置与Windows原生只读链**：配置向导、Preflight、Doctor、Windows Workspace安全端口和默认产品启动；
 - [ ] **0.9.1e 统一Action产品装配**：Artifact、Patch、Process、Delivery通过Trusted Action、Policy、Approval、
   Effect Journal、Sandbox和Reconcile进入默认能力目录。
