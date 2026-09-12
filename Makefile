@@ -1,4 +1,4 @@
-.PHONY: install format lint readability typecheck test check run worker spec demo
+.PHONY: install format lint readability documentation typecheck test check run worker spec demo
 
 install:
 	uv sync --all-extras --dev
@@ -14,13 +14,16 @@ lint:
 readability:
 	uv run python scripts/readability_report.py --check --check-final-report --quiet
 
+documentation:
+	uv run python scripts/documentation_check.py
+
 typecheck:
 	uv run mypy src
 
 test:
 	uv run pytest
 
-check: lint readability typecheck test
+check: lint readability documentation typecheck test
 
 run:
 	uv run harnessix serve

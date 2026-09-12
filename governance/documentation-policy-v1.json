@@ -1,0 +1,146 @@
+{
+  "schema_version": "harnessix.documentation-policy/v1",
+  "allowed_doc_types": [
+    "product-charter",
+    "roadmap",
+    "system-architecture",
+    "module-design",
+    "change-design",
+    "contract",
+    "adr",
+    "source-research",
+    "test-and-eval-design",
+    "validation-evidence",
+    "deployment-design",
+    "threat-model",
+    "governance",
+    "governance-index",
+    "documentation-standard",
+    "source-reading-guide",
+    "template"
+  ],
+  "allowed_statuses": [
+    "draft",
+    "reviewing",
+    "current",
+    "historical",
+    "superseded",
+    "deprecated"
+  ],
+  "required_metadata": [
+    "doc_type",
+    "status",
+    "version",
+    "code_revision",
+    "owners",
+    "modules",
+    "related_adrs",
+    "related_tests",
+    "supersedes"
+  ],
+  "limits": {
+    "max_documents": 1000,
+    "max_document_bytes": 4194304,
+    "max_frontmatter_bytes": 65536,
+    "max_headings_per_document": 2000,
+    "max_links_per_document": 10000,
+    "max_mermaid_blocks_per_document": 256,
+    "max_mermaid_block_bytes": 262144,
+    "git_timeout_seconds": 15,
+    "mermaid_timeout_seconds": 30
+  },
+  "required_sections": {
+    "module-design": [
+      ["文档摘要", "模块摘要"],
+      ["需求背景"],
+      ["设计目标"],
+      ["架构", "模块上下文", "系统上下文"],
+      ["流程", "时序", "数据流", "状态机", "生命周期", "调用顺序"],
+      ["接口", "合同", "契约", "数据结构", "领域对象", "字段设计"],
+      ["失败", "恢复", "取消", "超时"],
+      ["安全", "权限", "信任边界"],
+      ["测试", "验证", "验收"],
+      ["源码", "映射", "追踪", "阅读顺序"],
+      ["限制", "风险", "差距"]
+    ],
+    "change-design": [
+      ["需求背景"],
+      ["设计目标"],
+      ["总体架构"],
+      ["流程", "时序", "数据流"],
+      ["接口设计"],
+      ["数据结构", "领域契约"],
+      ["失败", "恢复", "取消", "超时"],
+      ["持久化", "事务", "数据流程"],
+      ["安全", "权限", "信任边界"],
+      ["可观测", "错误分类"],
+      ["测试", "验证", "验收"],
+      ["源码", "映射", "追踪"],
+      ["部署", "兼容", "回退"],
+      ["风险", "取舍"]
+    ]
+  },
+  "doc_type_roots": {
+    "adr": "docs/adr",
+    "source-research": "docs/research",
+    "template": "docs/governance/templates"
+  },
+  "root_source_documents": {
+    "src/harnessix/__init__.py": ["docs/architecture.md"],
+    "src/harnessix/__main__.py": ["docs/modules/app-server.md"],
+    "src/harnessix/agent_cli.py": ["docs/modules/app-server.md", "docs/modules/sdk.md"],
+    "src/harnessix/bootstrap.py": ["docs/architecture.md", "docs/modules/product-config.md"],
+    "src/harnessix/cli.py": ["docs/subsystems/action-plane.md"],
+    "src/harnessix/file_lock.py": ["docs/modules/storage.md", "docs/modules/product-config.md"],
+    "src/harnessix/licensing.py": ["docs/product-charter.md", "docs/build-vs-buy.md"],
+    "src/harnessix/runtime.py": ["docs/subsystems/action-plane.md"],
+    "src/harnessix/settings.py": ["docs/deployment.md", "docs/modules/product-config.md"],
+    "src/harnessix/worker.py": ["docs/subsystems/action-plane.md"]
+  },
+  "major_change_patterns": [
+    "^spec/",
+    "^src/harnessix/(?:protocol|session|domain|policy|execution|sandbox|secrets|trusted_actions|product_config)/",
+    "^src/harnessix/(?:[^/]+/)*(?:contracts|[^/]+_contracts|models|reducer|ports|codec)\\.py$",
+    "^src/harnessix/session/migrations/[^/]+\\.sql$",
+    "^src/harnessix/(?:bootstrap|runtime|worker|agent_cli|cli|settings|licensing)\\.py$",
+    "^pyproject\\.toml$"
+  ],
+  "allowed_mermaid_diagram_types": [
+    "flowchart",
+    "graph",
+    "sequenceDiagram",
+    "stateDiagram",
+    "stateDiagram-v2",
+    "classDiagram",
+    "erDiagram",
+    "journey",
+    "gantt",
+    "pie",
+    "mindmap",
+    "timeline",
+    "quadrantChart",
+    "gitGraph",
+    "C4Context",
+    "C4Container",
+    "C4Component",
+    "C4Dynamic",
+    "C4Deployment"
+  ],
+  "forbidden_patterns": [
+    {
+      "code": "content_personal_path",
+      "pattern": "(?:/Users/[^/\\s]+|/home/[^/\\s]+|[A-Za-z]:\\\\Users\\\\[^\\\\\\s]+)",
+      "message": "文档包含个人环境绝对路径，应改用仓库相对路径或公开占位符"
+    },
+    {
+      "code": "content_possible_secret",
+      "pattern": "(?:sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,})",
+      "message": "文档包含疑似凭据，必须删除正文并只保留脱敏标识"
+    },
+    {
+      "code": "content_dialogue_process",
+      "pattern": "(?:用户要求继续|用户同意继续|与用户对齐|按照我们对齐|本轮研究|本轮只回答|本轮主要证据|已询问.{0,32}待回复)",
+      "message": "正式文档包含对话过程措辞，应改写为可对外的需求、决策或状态"
+    }
+  ]
+}

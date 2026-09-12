@@ -10,7 +10,8 @@ modules:
   - documentation
 related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
-related_tests: []
+related_tests:
+  - tests/governance/test_documentation_policy.py
 supersedes: []
 ---
 
@@ -19,7 +20,8 @@ supersedes: []
 ## 1. 需求背景
 
 DOC-1.0～DOC-1.5已把历史上按里程碑追加的资料迁移为“当前事实、历史决策、冻结研究、验证证据”四层体系。
-当前仓库包含189份Markdown、30个顶层生产源码包、10个根级生产模块、76份既有ADR和27份冻结研究。
+DOC-1.5结束时仓库包含189份Markdown、30个顶层生产源码包、10个根级生产模块、76份既有ADR和27份冻结研究；
+加上本切片的ADR与详细设计后，实施基线为191份Markdown和77份ADR。
 人工检查已经证明这些约束可执行，但尚未形成持续阻断：后续0.9产品切片仍可能新增无元数据文档、失效链接、
 不完整设计或只改源码不改现行模块说明。
 
@@ -136,8 +138,8 @@ uv run python scripts/documentation_check.py --format json
 |---|---|---|
 | `load_policy(root, path)` | 根目录、策略路径 | `DocumentationPolicy`或策略Finding |
 | `load_documents(root, policy)` | 根目录和预算 | `Document`映射与加载Finding |
-| `validate_repository(...)` | 文档、策略、可选变化集合 | 聚合`Finding`列表 |
-| `collect_changed_paths(root, revision)` | Git基线 | POSIX相对路径集合或Finding |
+| `check_repository(...)` | 文档、策略、可选变化集合 | 聚合`CheckReport` |
+| `collect_changed_paths(root, revision, policy)` | Git基线和策略 | POSIX相对路径集合及Finding |
 | `render_mermaid(...)` | 待渲染图块、命令和超时 | 渲染Finding |
 
 ## 7. 数据结构设计
@@ -255,18 +257,23 @@ JSON格式包含策略版本、计数和排序后的Finding数组。检查器不
 
 ## 13. 源码与测试映射
 
-实施后本节必须链接到实际文件和关键符号。计划位置如下：
-
-- `governance/documentation-policy-v1.json`：策略合同；
-- `scripts/documentation_check.py`：检查器和CLI；
-- `tests/governance/test_documentation_policy.py`：策略、解析、仓库和差异反例；
-- `Makefile`：本地质量门；
-- `.github/workflows/ci.yml`：三平台静态检查和Linux Mermaid渲染。
+| 设计元素 | 实现位置 | 关键符号或配置 | 验证 |
+|---|---|---|---|
+| 版本化策略 | [文档策略v1](../../governance/documentation-policy-v1.json) | `schema_version`、`required_sections`、`major_change_patterns` | `test_policy_loader_rejects_duplicate_and_weakened_v1_contract` |
+| 有界解析与元数据 | [文档检查器](../../scripts/documentation_check.py) | `load_policy`、`load_documents`、`validate_metadata` | `test_yaml_parser_rejects_duplicate_keys_aliases_and_non_object`及元数据反例 |
+| 链接、结构与安全 | [文档检查器](../../scripts/documentation_check.py) | `validate_links`、`validate_sections`、`validate_mermaid_structure` | 链接、章节和敏感内容测试 |
+| 仓库追踪 | [文档检查器](../../scripts/documentation_check.py) | `validate_repository_relations` | `test_repository_relations_detect_index_and_module_traceability_gaps` |
+| Git差异同步 | [文档检查器](../../scripts/documentation_check.py) | `collect_changed_paths`、`validate_changed_documentation` | 单包、根模块、多包和合法变更设计测试 |
+| Mermaid真实渲染 | [文档检查器](../../scripts/documentation_check.py) | `render_mermaid` | 缺命令、空SVG、超时和成功渲染测试 |
+| 自动回归 | [治理测试](../../tests/governance/test_documentation_policy.py) | 22个正反例场景 | Pytest治理套件 |
+| 本地门禁 | [Makefile](../../Makefile) | `documentation`、`check` | `make documentation`、`make check` |
+| 三平台与图表CI | [CI工作流](../../.github/workflows/ci.yml) | Python/macOS/Windows静态检查、Linux `documentation`任务 | GitHub Actions |
 
 ## 14. 部署、兼容与回退
 
 文档工具只在源码仓库和CI运行，不进入wheel入口。`make documentation`提供独立门禁，`make check`组合执行。
-CI新增独立文档任务并固定Mermaid CLI版本；Python 3.12/3.13继续执行Pytest中的治理测试。
+CI新增独立文档任务，固定Node 22、`actions/setup-node` v4.4.0提交和Mermaid CLI 11.6.0，
+并显式校验Linux Runner预装的`google-chrome`后把绝对路径交给Puppeteer；Python 3.12/3.13继续执行Pytest中的治理测试。
 
 回退时可从`make check`和CI移除调用，但不得删除策略、设计、测试和失败证据来伪造通过。策略v1不原地改义；
 新增文档类型、状态或重大路径语义时递增策略版本并新增ADR或变更设计。

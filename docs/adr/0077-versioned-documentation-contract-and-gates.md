@@ -10,7 +10,8 @@ modules:
   - documentation
 related_adrs:
   - docs/adr/0076-code-readability-and-structural-governance.md
-related_tests: []
+related_tests:
+  - tests/governance/test_documentation_policy.py
 supersedes: []
 ---
 
