@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 21
-code_revision: 45cc209133784fdbff853001230171f95516be20
+version: 22
+code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
-| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（18/19） |
+| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
@@ -173,9 +173,9 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 进度：**7/7，已完成**。[Domain](../modules/domain.md)、[Policy](../modules/policy.md)、
 [Executors](../modules/executors.md)、[Storage](../modules/storage.md)、
 [Sandbox](../modules/sandbox.md)、[Secrets](../modules/secrets.md)和
-[Trusted Actions](../modules/trusted-actions.md)已完成。Wave D当前进度为**3/4**，已完成
-[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)和
-[Evals](../modules/evals.md)，下一步迁移`observability`。
+[Trusted Actions](../modules/trusted-actions.md)已完成。Wave D当前进度为**4/4，已完成**，包括
+[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、
+[Evals](../modules/evals.md)和[Observability](../modules/observability.md)。
 
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
@@ -189,15 +189,15 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 7.4 Wave D：工作区、交付、评测与观测
 
-进度：**3/4**。[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)和
-[Evals](../modules/evals.md)已完成，下一步迁移`observability`。
+进度：**4/4，已完成**。[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、
+[Evals](../modules/evals.md)和[Observability](../modules/observability.md)均已完成。
 
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
 | 1 | `workspace` | [docs/modules/workspace.md](../modules/workspace.md) | 路径、选择资源Snapshot、Secure Reader、Fencing Lease和一致性；已完成 |
 | 2 | `delivery` | [docs/modules/delivery.md](../modules/delivery.md) | Workspace Transaction、私有Blob、Rollback、Git Worktree/Checkpoint/Commit和Push；已完成 |
 | 3 | `evals` | [docs/modules/evals.md](../modules/evals.md) | 任务合同、分级、Campaign、预算和交付证据；已完成 |
-| 4 | `observability` | `docs/modules/observability.md` | Trace/Metric/Log、低基数和导出故障隔离 |
+| 4 | `observability` | [docs/modules/observability.md](../modules/observability.md) | Trace/Metric/Log、持久传播、低基数、异常隐私和分链故障隔离；已完成 |
 
 ### 7.5 每个模块的完成条件
 

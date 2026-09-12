@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 21
-code_revision: 45cc209133784fdbff853001230171f95516be20
+version: 22
+code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
 owners:
   - core
 modules:
@@ -239,7 +239,7 @@ flowchart LR
 | Trusted Action | 已实现/显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口和UNKNOWN对账；默认产品尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
 | MCP/Skill/Hook | 已实现/显式装配 | 外部工具目录、Skill快照与声明式Hook | [mcp](../src/harnessix/mcp/)、[skills](../src/harnessix/skills/)、[hooks](../src/harnessix/hooks/) | [MCP](../tests/mcp/)、[Skill](../tests/skills/)、[Hook](../tests/hooks/)测试 |
 | Eval/Smoke | 已实现/显式运行 | 固定任务、物化、正式Agent运行、确定性分级、Campaign和受控真实Provider验证；详见[Evals模块设计](modules/evals.md) | [evals](../src/harnessix/evals/)、[smoke](../src/harnessix/smoke/) | [evals](../tests/evals/)、[smoke](../tests/smoke/)测试 |
-| 可观测性 | 当前跨链 | Trace、Metric和结构化日志端口 | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py) | [观测集成测试](../tests/integration/test_observability_flow.py) |
+| 可观测性 | Action默认可配置/Agent默认未装配 | 内部端口、No-op/OTel适配、W3C持久传播、结构化日志及Agent安全包装；故障隔离和隐私保证因调用链不同，详见[模块设计](modules/observability.md) | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py)、[agent/telemetry.py](../src/harnessix/agent/telemetry.py) | [观测单元测试](../tests/unit/test_observability_core.py)、[跨进程测试](../tests/integration/test_observability_flow.py)、[Agent遥测测试](../tests/agent/test_telemetry.py) |
 
 ### 7.1 重点类与生命周期
 
@@ -738,7 +738,7 @@ sequenceDiagram
 | Session/Journal事件 | 业务级可审计事实和重放 | sequence、event/action ID |
 | Eval报告 | 任务成功、检查、成本、Token和延迟 | campaign/run/task ID |
 
-观测数据不是业务提交事实，观测导出失败不能回滚已经持久化的Session或Action。实现见[observability](../src/harnessix/observability/)，测试见[observability flow](../tests/integration/test_observability_flow.py)与[OTLP export](../tests/integration/test_otlp_export.py)。
+观测数据不是业务提交事实；恢复与重放必须依据已持久化的Session或Action。Agent `KernelTelemetry`已保证Observer故障不改变Turn结果，但Action/API主链的直接Observer调用尚未统一隔离，不能把该保证外推到所有调用点。信号合同、持久Trace、单位缺陷、日志与异常隐私边界见[Observability模块设计](modules/observability.md)，验证见[observability flow](../tests/integration/test_observability_flow.py)、[OTLP export](../tests/integration/test_otlp_export.py)与[Agent telemetry](../tests/agent/test_telemetry.py)。
 
 ## 17. 部署与平台边界
 
@@ -829,6 +829,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | Workspace如何规范路径、捕获选择资源事实、校验漂移并提供跨进程Fencing | [Workspace模块设计](modules/workspace.md)、[workspace/snapshot.py](../src/harnessix/workspace/snapshot.py)、[workspace/leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/)、[delivery测试](../tests/delivery/) |
 | Delivery如何冻结多文件变更、持久Blob、恢复部分效果并形成Git Commit/Push | [Delivery模块设计](modules/delivery.md)、[delivery/filesystem.py](../src/harnessix/delivery/filesystem.py)、[delivery/git.py](../src/harnessix/delivery/git.py)、[delivery/git_push.py](../src/harnessix/delivery/git_push.py) | [delivery测试](../tests/delivery/)、[trusted_actions测试](../tests/trusted_actions/) |
 | Coding Eval如何固定历史任务、运行正式Agent、评分、聚合Campaign并恢复 | [Evals模块设计](modules/evals.md)、[evals/runner.py](../src/harnessix/evals/runner.py)、[evals/grader.py](../src/harnessix/evals/grader.py)、[evals/campaign_execution.py](../src/harnessix/evals/campaign_execution.py) | [evals测试](../tests/evals/) |
+| Trace如何跨暂停和队列传播、Metric/日志记录什么、Observer故障是否隔离 | [Observability模块设计](modules/observability.md)、[observability/core.py](../src/harnessix/observability/core.py)、[agent/telemetry.py](../src/harnessix/agent/telemetry.py) | [观测单元测试](../tests/unit/test_observability_core.py)、[跨进程测试](../tests/integration/test_observability_flow.py)、[Agent遥测测试](../tests/agent/test_telemetry.py) |
 | Sandbox如何探测能力、冻结网络、物化Container并证明清理 | [Sandbox模块设计](modules/sandbox.md)、[sandbox/contracts.py](../src/harnessix/sandbox/contracts.py)、[sandbox/container.py](../src/harnessix/sandbox/container.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
 | Secret如何从引用解析、注入并在输出边界阻断泄漏 | [Secrets模块设计](modules/secrets.md)、[secrets/provider.py](../src/harnessix/secrets/provider.py)、[secrets/redaction.py](../src/harnessix/secrets/redaction.py) | [secrets测试](../tests/secrets/)、[Process输出测试](../tests/processes/test_supervisor.py)、[MCP输出测试](../tests/mcp/test_runtime_actions.py) |
 | 默认Action Policy如何拒绝、审批和允许 | [Policy模块设计](modules/policy.md)、[policy/default.py](../src/harnessix/policy/default.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_action_executor.py](../tests/processes/test_action_executor.py) |
@@ -854,7 +855,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 12个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 10个产品运行时与扩展包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 
