@@ -497,8 +497,16 @@
       "max_lines": 462,
       "max_decision_complexity": 0
     },
+    "harnessix.product_ui.app:ProductApp": {
+      "max_lines": 184,
+      "max_decision_complexity": 0
+    },
+    "harnessix.product_ui.controller:ProductController": {
+      "max_lines": 329,
+      "max_decision_complexity": 0
+    },
     "harnessix.product_ui.session:RecoverableAgentSession": {
-      "max_lines": 229,
+      "max_lines": 276,
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.state_store:ClientStateStore": {
@@ -671,6 +679,7 @@
     "cli->licensing",
     "cli->observability",
     "cli->product_config",
+    "cli->product_ui",
     "cli->settings",
     "cli->smoke",
     "cli->worker",
@@ -1028,13 +1037,24 @@
       "ClientStateStore",
       "ClientStateV1",
       "ClientThreadCursor",
+      "CloseReport",
       "ConnectionPhase",
+      "ControllerPhase",
+      "CreateThreadIntent",
       "PreparedClientCommand",
       "ProductConnection",
+      "ProductController",
+      "ProductControllerState",
+      "ProductNotice",
       "ProductUIError",
       "ProductViewState",
       "ProjectedItem",
+      "ReconnectIntent",
       "RecoverableAgentSession",
+      "RefreshThreadsIntent",
+      "SelectThreadIntent",
+      "StartRequest",
+      "SubmitPromptIntent",
       "TransientItemStream",
       "TurnProjection",
       "apply_events_next",

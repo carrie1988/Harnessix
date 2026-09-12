@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 40
-code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
+version: 41
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -17,6 +17,9 @@ related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
+  - tests/product_ui/test_controller.py
+  - tests/product_ui/test_app.py
+  - tests/product_ui/test_stdio_product.py
 supersedes: []
 ---
 
@@ -26,7 +29,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已经本地实现并通过Controller、无头UI与真实stdio恢复测试，等待实现提交及三平台CI；完整领域交互、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -64,7 +67,7 @@ supersedes: []
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
 | Python SDK边界 | [SDK模块设计](modules/sdk.md) | 区分Agent Protocol与Action HTTP两套客户端；再读Transport并发、取消和错误边界 |
-| 可恢复产品客户端 | [Product UI客户端内核模块设计](modules/product-ui.md) | `contracts → state_store → projection → session`；重点区分冷启动全文重建、暖续传、Prepared Command和服务端事实 |
+| 可恢复终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | `contracts → state_store → projection → session → controller → rendering → app/cli`；重点区分持久事实、类型化Intent、Textual View和stdio组合根 |
 | Product Config与安全Fallback | [Product Config模块设计](modules/product-config.md) | `contracts → codec → runtime/store/migration → server/cli`；重点区分源/语义摘要、零暴露切换、CAS与启动事务 |
 
 31个生产源码包、10个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
@@ -108,7 +111,7 @@ supersedes: []
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
 | SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限，以及Action Plane HTTP同步/异步客户端 |
-| Product UI客户端内核 | [Product UI客户端内核模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际和冷暖Replay恢复；不包含Textual表现层 |
+| Product UI终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际、单Actor Controller、Textual基础View和stdio冷恢复；完整领域交互待0.9.1c |
 | Product Config | [Product Config模块设计](modules/product-config.md) | 严格配置、Profile选择、Secret引用、离线诊断、安全Fallback、迁移、CAS和产品启动事务 |
 | Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
 | Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
@@ -139,7 +142,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md) | 评审中；协议/SDK加固、可恢复客户端、TUI、Windows原生工具和统一Action装配尚待分片实现 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md) | 评审中；0.9.1a已关闭，0.9.1b本地实现待CI，完整交互、Windows原生工具和统一Action装配尚待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

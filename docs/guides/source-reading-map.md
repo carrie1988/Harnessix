@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 11
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 12
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -34,6 +34,9 @@ related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
+  - tests/product_ui/test_controller.py
+  - tests/product_ui/test_app.py
+  - tests/product_ui/test_stdio_product.py
   - tests/agent/test_runtime.py
   - tests/agent/test_crash_recovery.py
   - tests/hooks/test_runtime.py
@@ -52,7 +55,7 @@ supersedes: []
 
 阅读完成后应能回答：
 
-1. `harnessix agent`如何启动Server并完成协议握手；
+1. `harnessix code`如何装配Textual、Controller和`agent-server`并完成协议握手；
 2. `turn/start`为什么先返回`ACCEPTED`再执行模型；
 3. Thread、Turn、Item和Event如何通过Reducer重建；
 4. Model、Context、Tool、Approval和Session的边界在哪里；
@@ -63,7 +66,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应提交`608c548feb909aa5ae572bab7db35859283d3d01`；
+- 本文对应`1c11956d3fdc95ccc5a051a96e2107becfdbe78d`基线及0.9.1b当前工作树；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -74,9 +77,9 @@ supersedes: []
 
 ```text
 src/harnessix/
-├── cli.py, __main__.py, agent_cli.py     # 命令与薄客户端
+├── cli.py, __main__.py, agent_cli.py     # 顶层命令与协议薄客户端
 ├── product_config/, product_ui/, app_server/, protocol/, sdk/
-│                                          # 产品装配、客户端恢复与协议边界
+│                                          # TUI、产品装配、客户端恢复与协议边界
 ├── agent/, session/, models/, context/   # Agent内核与持久会话
 ├── tools/, artifacts/                    # 只读能力与大对象
 ├── patches/, processes/, sandbox/, workspace/, delivery/
@@ -99,19 +102,23 @@ src/harnessix/
 
 1. [pyproject.toml](../../pyproject.toml)：确认控制台入口是`harnessix.cli:main`；
 2. [src/harnessix/__main__.py](../../src/harnessix/__main__.py)：确认`python -m harnessix`只委托顶层CLI；
-3. [src/harnessix/cli.py](../../src/harnessix/cli.py)：读`_parser`和`main`的子命令分派；
-4. [src/harnessix/product_config/cli.py](../../src/harnessix/product_config/cli.py)：读`agent_server_main`如何解析产品参数；
-5. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`；
-6. [Product Config模块设计](../modules/product-config.md)：先理解双摘要、严格合同、迁移、审计和零暴露Fallback的完整边界；
-7. [src/harnessix/product_config/runtime.py](../../src/harnessix/product_config/runtime.py)：理解Profile选择、离线诊断和Provider Bundle；
-8. [src/harnessix/product_config/store.py](../../src/harnessix/product_config/store.py)：理解配置Snapshot与活动指针CAS；
-9. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证设计。
+3. [src/harnessix/cli.py](../../src/harnessix/cli.py)：读`_parser`、`_delegate_special_command`和`main`的子命令分派；
+4. [src/harnessix/product_ui/cli.py](../../src/harnessix/product_ui/cli.py)：追踪Workspace、配置/状态默认值、当前解释器子进程argv和TUI延迟导入；
+5. [src/harnessix/product_ui/app.py](../../src/harnessix/product_ui/app.py)：理解Textual事件如何只产生类型化Intent；
+6. [src/harnessix/product_ui/controller.py](../../src/harnessix/product_ui/controller.py)：理解单Actor、轮询、快照和有界关闭；
+7. [src/harnessix/product_config/cli.py](../../src/harnessix/product_config/cli.py)：读子进程`agent_server_main`如何解析产品参数；
+8. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`；
+9. [Product Config模块设计](../modules/product-config.md)：理解双摘要、严格合同、迁移、审计和零暴露Fallback；
+10. [tests/product_ui/test_stdio_product.py](../../tests/product_ui/test_stdio_product.py)：从真实JSONL子进程关闭、重开和完整Replay反证产品链；
+11. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证组合根。
 
 ### 4.2 调用链
 
 ```mermaid
 sequenceDiagram
-    participant CLI as cli.main
+    participant CLI as cli.main / product_ui.cli
+    participant UI as ProductApp
+    participant C as ProductController
     participant PC as product_config.cli
     participant PS as run_product_stdio
     participant CFG as ProductConfigStore
@@ -121,7 +128,9 @@ sequenceDiagram
     participant A as AgentRuntime
     participant IO as stdio Server
 
-    CLI->>PC: agent-server argv
+    CLI->>UI: construct with state store
+    UI->>C: start and typed intents
+    C->>PC: subprocess agent-server argv
     PC->>PS: typed paths/profile
     PS->>PS: load/select/diagnose/validate paths
     PS->>CFG: save exact snapshot
@@ -145,19 +154,24 @@ sequenceDiagram
 - `_require_coding_tool_platform`为何让当前Windows产品入口失败关闭；
 - 当前装配代码没有哪些构造参数，因此哪些库能力实际上未开放。
 
-### 4.4 可恢复产品客户端内核
+### 4.4 可恢复终端产品链
 
-0.9.1a尚未替换薄CLI，但已经建立后续Textual Controller必须复用的恢复边界：
+0.9.1a建立客户端恢复内核，0.9.1b在其上加入Textual、Controller和正式`harnessix code`入口：
 
-1. [Product UI客户端内核模块设计](../modules/product-ui.md)：先理解持久事实、内存投影和服务端事实的分界；
+1. [Product UI终端产品模块设计](../modules/product-ui.md)：先理解View、Controller、Session与服务端事实的分界；
 2. [product_ui/contracts.py](../../src/harnessix/product_ui/contracts.py)：读取Client State字段、摘要和Command ID规则；
 3. [product_ui/state_store.py](../../src/harnessix/product_ui/state_store.py)：追踪锁、重读、原子替换和单调Cursor；
 4. [product_ui/projection.py](../../src/harnessix/product_ui/projection.py)：对照Replay重叠、Delta Gap和终态覆盖；
 5. [product_ui/session.py](../../src/harnessix/product_ui/session.py)：追踪Generation、冷启动从0和暖重连续传；
-6. [tests/product_ui](../../tests/product_ui/)：从权限、崩溃、冲突和断线恢复测试反证设计。
+6. [product_ui/controller.py](../../src/harnessix/product_ui/controller.py)：检查五类Intent、Actor循环、活动/空闲轮询和关闭报告；
+7. [product_ui/rendering.py](../../src/harnessix/product_ui/rendering.py)：检查持久Item、临时流、Gap和标签的框架中立转换；
+8. [product_ui/app.py](../../src/harnessix/product_ui/app.py)：检查Widget不接触SDK、Composer防重与Textual卸载关闭；
+9. [product_ui/cli.py](../../src/harnessix/product_ui/cli.py)：检查用户级状态布局和固定`agent-server`命令；
+10. [tests/product_ui](../../tests/product_ui/)：从权限、崩溃、取消、关闭、无头UI和真实子进程恢复反证设计。
 
 关键检查点：Client State为何不保存Transcript；已保存Cursor为何不能作为冷启动Replay起点；Prepared Command为何在
-连接失败后复用原ID；Reducer为何先产出候选视图、Cursor落盘成功后才发布到Session内存。
+连接失败后复用原ID；Reducer为何先产出候选视图、Cursor落盘成功后才发布到Session内存；调用者取消等待为何不取消
+已接纳Intent；关闭超时为何必须报告未知而不能回退Command序列。
 
 ## 5. Coding Turn主链
 

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ modules:
   - processes
   - sandbox
   - tools
+  - product_ui
 related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
@@ -19,6 +20,7 @@ related_tests:
   - tests/processes
   - tests/sandbox
   - tests/product_config/test_server_and_cli.py
+  - tests/product_ui
 supersedes: []
 ---
 
@@ -41,6 +43,8 @@ supersedes: []
 | 能力 | Linux | macOS | Windows | Container |
 |---|---|---|---|---|
 | Python基础包/Action Plane | CI主路径 | 候选测试 | 选定测试 | 可构建基础镜像 |
+| Textual基础View/Controller | 本地实现，远端CI待执行 | 本地实现，远端CI待执行 | 平台中立合同已实现，远端CI待执行 | 非容器默认入口 |
+| `harnessix code`完整子进程链 | 本地候选，0.9.1b CI待执行 | 代码候选，0.9.1b CI待执行 | **子进程在工具平台门失败关闭** | 当前镜像未装配 |
 | SQLite Action Journal | 可用 | 可用 | 库级候选 | `/data`持久卷 |
 | PostgreSQL Action Journal | PostgreSQL 17 CI | 协议上可用，未独立原生矩阵 | 未独立验证 | 外部数据库 |
 | `agent-server`默认入口 | 候选可用 | 候选可用 | **失败关闭** | 当前镜像未装配 |
@@ -55,7 +59,8 @@ supersedes: []
 
 截至当前Revision，没有任何桌面平台达到完整1.0“产品支持”等级。Windows已经进入1.0目标范围，但当前
 `_require_coding_tool_platform`要求`os.name == "posix"`且存在`O_NOFOLLOW`，因此`agent-server`在Windows启动前
-返回`product_tools_platform_unsupported`。
+返回`product_tools_platform_unsupported`。Textual View、Controller和Client State能够通过Windows测试，也不能据此
+推导`harnessix code`的子进程产品链已支持Windows；0.9.1d必须先完成原生Coding Tool端口。
 
 ## 3. CI证据矩阵
 
@@ -66,6 +71,9 @@ supersedes: []
 | `windows-trusted-execution` | Windows | 3.12 | 治理、Workspace、Execution、Sandbox、Process、Delivery、Trusted Action、扩展与产品配置选集 |
 | `postgres` | Ubuntu + PostgreSQL 17 | 3.12 | PostgreSQL Journal集成 |
 | `container-sandbox` | Ubuntu + 固定BusyBox Digest | 3.12 | 真实Container Sandbox集成 |
+
+0.9.1a已经把Client State、Projection和Recoverable Session纳入Linux全量、macOS及Windows矩阵。0.9.1b新增的
+Controller、Textual无头View、CLI和stdio恢复已在本地通过，远端矩阵将在实现提交后执行，尚不能作为平台结论。
 
 CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。当前缺少Windows `agent-server`产品E2E、
 三平台安装器、真实终端长期交互、网络文件系统、ARM发布矩阵和平台升级/回退Dogfooding。
@@ -107,6 +115,10 @@ macOS默认文件系统也可能大小写不敏感；测试环境需要同时覆
 
 平台Process合同必须验证启动前Plan、环境白名单、输出预算、Timeout、取消、进程树、Owner Lease、回执和重启恢复。
 只验证`subprocess` Exit Code不足以证明平台支持。
+
+0.9.1b TUI以Textual 8.2.8的`App.run_test()`验证按键、会话选择、Composer、Resize和Context退出，不依赖真实TTY。
+该证据证明View/Controller合同，不证明平台终端全部键盘布局、IME、Shell启动、睡眠唤醒或长时间交互。真实终端和安装器
+Dogfooding属于0.9.5。
 
 ## 6. Sandbox与网络
 
@@ -185,10 +197,12 @@ flowchart LR
 | Container Sandbox | [`sandbox/container.py`](../../src/harnessix/sandbox/container.py) | [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) |
 | POSIX交付 | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py) | [`test_filesystem.py`](../../tests/delivery/test_filesystem.py) |
 | Git交付 | [`delivery/git.py`](../../src/harnessix/delivery/git.py) | [`test_git.py`](../../tests/delivery/test_git.py) |
+| TUI平台中立层 | [`product_ui/controller.py`](../../src/harnessix/product_ui/controller.py)、[`product_ui/app.py`](../../src/harnessix/product_ui/app.py) | [`tests/product_ui`](../../tests/product_ui/) |
 
 ## 11. 当前风险
 
 - Windows属于1.0目标但当前产品入口拒绝，时间和实现风险高；
+- 0.9.1b远端三平台CI尚未形成，当前基础TUI只能视为本地候选；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 容器镜像缺少正式供应链和Hardening门禁；

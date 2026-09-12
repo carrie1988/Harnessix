@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
+version: 5
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -28,6 +28,11 @@ related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
+  - tests/product_ui/test_controller.py
+  - tests/product_ui/test_rendering.py
+  - tests/product_ui/test_app.py
+  - tests/product_ui/test_stdio_product.py
+  - tests/product_ui/test_cli.py
   - tests/product_config/test_server_and_cli.py
   - tests/tools
 supersedes: []
@@ -298,21 +303,22 @@ flowchart LR
 
 ### 7.1 产品CLI
 
-规划入口：
+0.9.1b已实现入口：
 
 ```text
 harnessix code [WORKSPACE] [--config PATH] [--profile ID] [--state-directory PATH]
-harnessix code --resume [THREAD_ID]
-harnessix code doctor [WORKSPACE] [--json]
-harnessix code configure [--output PATH]
+harnessix code [WORKSPACE] --resume THREAD_ID
 ```
+
+`doctor`和`configure`仍属于0.9.1d，当前不作为`code`子命令接受。配置诊断和迁移继续使用已有
+`harnessix config diagnose|migrate`运维入口。
 
 | 参数/动作 | 前置条件 | 结果 | 失败语义 |
 |---|---|---|---|
 | 默认启动 | Workspace存在且配置/状态安全 | 进入最近Thread或新建选择页 | 安全检查失败不开启Agent交互 |
 | `--resume` | Thread属于固定Workspace | 恢复Snapshot/Replay/Live | 不存在/归档/Workspace错配稳定报错 |
-| `doctor` | 不要求Provider联网 | 输出有序诊断与修复动作 | `--json`不含Secret值和本机敏感正文 |
-| `configure` | 输出目录可安全创建 | 生成严格Product Config草案 | 不覆盖变化文件；使用摘要CAS |
+| `doctor`（0.9.1d） | 不要求Provider联网 | 输出有序诊断与修复动作 | `--json`不含Secret值和本机敏感正文 |
+| `configure`（0.9.1d） | 输出目录可安全创建 | 生成严格Product Config草案 | 不覆盖变化文件；使用摘要CAS |
 
 现有`harnessix agent`、`agent-server`和`config`保持兼容，作为低层调试、嵌入和运维入口。
 
@@ -320,13 +326,19 @@ harnessix code configure [--output PATH]
 
 ```python
 class ProductController:
-    async def start(self, request: StartRequest) -> ProductViewState: ...
+    async def start(self, request: StartRequest) -> ProductControllerState: ...
     async def dispatch(self, intent: ProductIntent) -> None: ...
+    async def next_update(self) -> ProductControllerState: ...
     async def close(self, *, deadline_seconds: float) -> CloseReport: ...
 ```
 
-`dispatch`接收封闭的Intent联合类型。会产生领域副作用的Intent按单Thread串行化；只读Artifact分页与诊断可以并行，
-但结果携带连接代际和目标身份，过期结果被丢弃。方法取消只取消等待者，不据此伪造领域命令取消。
+0.9.1b的封闭联合包含`CreateThreadIntent`、`SelectThreadIntent`、`SubmitPromptIntent`、
+`RefreshThreadsIntent`和`ReconnectIntent`。唯一Actor拥有全部Session I/O；队列上限64，更新队列上限1，Thread列表
+上限1000。`dispatch`方法取消只取消等待者，`asyncio.shield`保证已接纳Intent继续结算。0.9.1c的Artifact读取、审批、
+提问、Cancel和Steer在绑定完整身份合同前不会加入通用字典Intent。
+
+关闭采用同一绝对Deadline：先停止接收，再让Actor处理已排队Intent和Stop，最后关闭Session。超时取消Actor、把未结算
+操作标为`controller_operation_unknown`并返回非Clean `CloseReport`；已经分配的Command序列不回退。
 
 ### 7.3 RecoverableAgentSession
 
@@ -336,21 +348,25 @@ class RecoverableAgentSession:
     def prepare_command(self) -> PreparedClientCommand: ...
     async def execute_prepared(self, command, operation): ...
     async def hydrate_thread(self, thread_id: UUID) -> ProductViewState: ...
+    async def list_threads_page(self, *, cursor: str | None, limit: int) -> ThreadListResult: ...
+    async def resume_thread(self, thread_id: UUID) -> ThreadView: ...
     async def poll_thread(self, thread_id: UUID, *, wait_ms: int = 30_000) -> ProductViewState: ...
     async def close(self) -> None: ...
 ```
 
-`execute_prepared`只接受已经由同一Client State分配并提交`request_id`的Command。连接类错误把当前Generation标为
+`execute_prepared`只接受已经由同一Client State分配并提交`request_id`的Command。`list_threads_page`和
+`resume_thread`复用Session操作锁，避免Controller绕过代际所有权。连接类错误把当前Generation标为
 `BROKEN`，但不自动重放业务操作；调用方建立新连接后显式传入同一`PreparedClientCommand`和相同业务参数。
 参数、权限、合同和服务端非重试错误不触发连接代际变化。
 
 ### 7.4 ProjectionReducer
 
 ```python
-def reduce_snapshot(state: ProductViewState, thread: ThreadView) -> ProductViewState: ...
-def reduce_replay(state: ProductViewState, page: EventsReplayResult) -> ProductViewState: ...
-def reduce_delta(state: ProductViewState, delta: PublicItemDelta) -> ProductViewState: ...
-def reduce_connection(state: ProductViewState, event: ConnectionEvent) -> ProductViewState: ...
+def cold_product_view(thread: ThreadView) -> ProductViewState: ...
+def refresh_thread_snapshot(state: ProductViewState, thread: ThreadView) -> ProductViewState: ...
+def apply_replay_page(state: ProductViewState, page: EventsReplayResult) -> ProductViewState: ...
+def apply_item_delta(state: ProductViewState, delta: PublicItemDelta) -> ProductViewState: ...
+def apply_events_next(state: ProductViewState, page: EventsNextResult) -> ProductViewState: ...
 ```
 
 Reducer是无I/O纯函数。输入违反游标、Item身份或终态不变量时返回稳定Projection错误，不部分修改原状态。
@@ -368,8 +384,9 @@ Reducer是无I/O纯函数。输入违反游标、Item身份或终态不变量时
 
 ### 7.6 View与可访问性接口
 
-首版Screen包括Session Picker、Transcript、Composer、Approval/Diff、Question、Cost/Usage、Doctor和Configuration。
-所有核心动作同时提供键盘命令和可发现Help；颜色不是状态的唯一表达，窄终端有文本降级，Resize不改变命令状态。
+0.9.1b的`ProductApp`包括Header/Footer、Session Picker、Transcript、状态行和单行Composer，提供`Ctrl+N`新建、
+`Ctrl+R`显式重连和`Ctrl+Q`关闭。Transcript关闭Markup解析，Thread标签不含Workspace路径；Resize只改变布局，不改变
+Controller状态。Approval/Diff、Question、Cost/Usage、Cancel、Steer、Doctor和Configuration仍按0.9.1c/0.9.1d实施。
 
 ## 8. 数据结构与领域契约
 
@@ -412,18 +429,40 @@ request_id = "tui-" + compact(client_instance_id) + "-" + base36(sequence)
 
 ### 8.3 `ProductViewState`
 
-| 字段组 | 核心字段 | 权威来源 |
+| 字段 | 当前合同 | 权威来源 |
 |---|---|---|
-| Connection | generation、phase、last_error_code | 本地连接状态机 |
-| Session | selected_thread、thread_summary、durable_cursor | Snapshot/Replay + ClientState选择；冷启动Replay起点固定为0 |
-| Transcript | 有序Public Item、临时Delta、Gap集合 | 持久Event为权威，Delta为临时 |
-| Turn | turn_id、status、可用动作 | `ThreadView.latest_turn`和Turn Event |
-| Interaction | pending approval/question、focus target | 持久Public Item投影 |
-| Progress | plan steps、tool calls/results | 持久Public Item投影 |
-| Cost | token usage、已知货币成本、适用性 | Public Usage/Cost投影；未知不估算 |
-| Diagnostics | 稳定错误、自助动作、限制 | Error Catalog/Preflight |
+| `thread` | `ThreadView` | `thread/get` Snapshot |
+| `durable_cursor` | 单调整数 | Replay `scanned_through`；冷启动从0开始 |
+| `items` | 有序`ProjectedItem` Tuple | 持久Item Event |
+| `streams` | 临时`TransientItemStream` Tuple | Live Delta；不推进Cursor |
+| `current_turn` | `TurnProjection | None` | Snapshot、Turn和Usage Event |
+| `recent_events` | 最多256个`ReplayCheckpoint` | 近期Cursor/Event身份冲突检查 |
+| `live_gap` | 粘性布尔 | `EventsNextResult.live_gap` |
+
+连接、Workspace级会话列表、选择和稳定Notice位于独立`ProductControllerState`，不混入单Thread投影。0.9.1c通过
+现有Public Item内容派生待决Interaction、Plan、Tool和Usage显示，不在本切片预先添加不可验证字段。
 
 ### 8.4 连接状态机
+
+0.9.1b实际Controller状态机为：
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+    CREATED --> STARTING: start once
+    STARTING --> READY: connect list hydrate
+    STARTING --> BROKEN: startup failure
+    READY --> READY: serialized intent or poll
+    READY --> BROKEN: connection failure
+    BROKEN --> READY: explicit reconnect
+    READY --> CLOSING: close
+    BROKEN --> CLOSING: close
+    CLOSING --> CLOSED: drain or bounded force
+    CLOSED --> [*]
+```
+
+自动重连和退避不是当前行为。以下是0.9.1完整目标状态机，只有0.9.1c～0.9.3补齐策略和Soak证据后才可启用
+`RECONNECTING`自动分支：
 
 ```mermaid
 stateDiagram-v2
@@ -444,8 +483,8 @@ stateDiagram-v2
     CLOSED --> [*]
 ```
 
-状态转换由Controller单写者执行。`BROKEN`保留最后稳定错误和可重试性，不保留原始响应正文。自动重连只在无安全
-错误且未超过当前交互预算时执行；0.9.3再扩展Soak与自适应退避。
+状态转换由Controller单写者执行。`BROKEN`保留最后稳定错误和可重试性，不保留原始响应正文。当前只能由
+`ReconnectIntent`显式重建连接和Hydrate；任何未来自动重连也不得盲目重放业务Command。
 
 ## 9. 失败、恢复、取消与超时
 
@@ -466,19 +505,24 @@ stateDiagram-v2
 | Renderer异常 | TUI退出错误 | Agent Turn不自动取消 | 恢复终端；下次启动Replay |
 | App Server半握手失败 | `handshake_failed` | 不复用连接 | 关闭并创建新代际 |
 | Windows路径对象变化 | 稳定Workspace错误 | 不执行读取 | 重新观察后由新命令重试 |
+| Intent队列已满 | `controller_busy` | 不分配Command | 当前Intent完成后发起新操作 |
+| Prompt非法或已有活动Turn | `controller_prompt_invalid`/`controller_turn_active` | 非法输入不分配Command | 修正输入或等待Turn结束 |
+| `dispatch`等待者取消 | 调用者收到取消 | 已接纳Intent继续结算 | 观察后续不可变快照和持久事实 |
+| Controller关闭超时 | `controller_operation_unknown`、非Clean `CloseReport` | 已分配序列保持消费 | 重启后冷Replay，不猜测命令失败 |
 
 ### 9.2 超时语义
 
 | 超时 | 默认初值 | 语义 |
 |---|---:|---|
-| 子进程启动/握手 | 10秒 | 未建立可用连接，无领域命令 |
-| 普通协议Request | 30秒 | 等待者超时；有Command ID的领域结果为未知 |
+| 子进程启动/握手 | 当前SDK/Transport合同；尚无Controller独立值 | 未建立可用连接，无领域命令 |
+| 普通协议Request | 当前无统一外层Deadline | 关闭时由整体Deadline转为未知；0.9.3必须建立专项基线 |
 | `events/next` | 协商值且不高于30秒 | 正常空轮询，不算故障 |
-| Artifact分页 | 每页10秒 | 当前页失败，不允许提交Approve |
-| 关闭 | 5秒软限 + 2秒升级 | 先协作关闭，再Terminate/Kill；记录清理结果 |
-| Preflight单项 | 5秒 | 安全项失败关闭，体验项降级 |
+| Artifact分页 | 0.9.1c待实现 | 当前页失败时不得提交Approve |
+| Controller关闭 | 默认10秒，可配置1～30秒 | 排空Actor和关闭Session共用同一绝对Deadline |
+| Preflight单项 | 0.9.1d待实现 | 安全项失败关闭，体验项降级 |
 
-数值在实现时进入常量与测试，不接受负值、NaN或无限值。外层TUI Worker取消不改变领域超时合同。
+当前关闭值已进入代码和测试，不接受0、负值、超过30秒、NaN或无限值。其余目标数值必须在实现时进入常量与测试。
+外层TUI Worker取消不改变领域超时合同。
 
 ### 9.3 失败恢复时序
 
@@ -588,33 +632,21 @@ Agent Session、Protocol Request Ledger、Approval/Question和Effect Journal Sch
 ### 13.1 启动与Hydration
 
 ```text
-preflight = run_bounded_preflight()
-if preflight.has_security_failure:
-    render_repair_only_screen(preflight)
-    stop_before_agent_connection()
-
-state = client_state_store.open_exclusive(workspace)
-generation = connection_generation.next()
-client = connect_and_complete_handshake(generation, state.client_instance_id)
-capabilities = validate_required_methods_and_limits(client.initialize_result)
-
-thread = resolve_selected_thread_or_show_picker(state.selected_thread_id)
-view = reduce_snapshot(empty_view(generation), get_thread(thread))
-previously_observed_cursor = state.cursor_for(thread)
-cursor = 0  # ThreadView不含Item，冷启动必须重建完整Transcript
-
-while replay_has_more:
-    page = replay(after=cursor)
-    candidate = reduce_replay(view, page)
-    client_state_store.commit_cursor(thread, page.scanned_through)
-    view = candidate
-    cursor = page.scanned_through
-
-require cursor >= previously_observed_cursor
-
-publish_view(view)
-start_live_follow_owned_by_controller(generation, cursor)
+workspace = resolve_existing_directory(start_request.workspace)
+publish(STARTING, workspace)
+connection = session.connect_and_complete_handshake()
+threads = list_all_pages(limit=200, total_limit=1000, detect_cursor_stall=true)
+selected = explicit_resume or persisted_selected_thread
+if selected no longer belongs to workspace:
+    fail explicit resume or clear stale persisted selection
+if selected:
+    session.resume_thread(selected)
+    view = session.hydrate_thread(selected)  # cold process starts at cursor 0
+publish(READY, threads, selected, view, connection_generation)
+start_single_actor()
 ```
+
+配置/平台Preflight当前由被启动的`agent-server`执行；0.9.1d再把安全检查和修复动作提升为正式产品Screen。
 
 ### 13.2 Command执行与未知结果
 
@@ -626,13 +658,17 @@ command = build_command(intent, request_id, bound_thread_and_turn)
 try:
     result = agent_session.execute(command)
 except retryable_transport_failure:
-    mark_command_outcome_unknown(request_id)
-    reconnect_with_new_generation()
-    result = agent_session.execute_same_command(command)
+    mark_connection_broken_and_expose_stable_notice()
+    keep request_id consumed
+    do not automatically replay business payload
 
-hydrate_from_durable_snapshot_and_replay()
-publish_resolution(result)
+on explicit ReconnectIntent:
+    reconnect_with_new_generation()
+    list threads and hydrate selected thread from durable facts
 ```
+
+Controller不持久保存Prompt业务正文，因此不能在断线后自行证明Payload逐字一致。若未来某一类型化操作允许同ID重放，
+必须由拥有不可变业务参数的上层显式调用`execute_prepared`，并继续由服务端Ledger核验同ID同Payload。
 
 ### 13.3 Approval
 
@@ -654,12 +690,14 @@ recover_by_replay_until_decision_fact_visible()
 
 ```text
 stop_accepting_new_ui_intents()
-cancel_local_poll_waiters_without_cancelling_turns()
-wait_for_inflight_commands_until_soft_deadline()
-persist_clean_shutdown_if_state_is_consistent()
-close_agent_client_with_terminate_kill_escalation()
-restore_terminal_in_finally()
-emit_sanitized_close_report()
+enqueue_stop_after_already_accepted_intents()
+wait_for_actor_within_absolute_deadline()
+if deadline expires:
+    cancel_actor()
+    settle_inflight_and_queued_intents_as_operation_unknown()
+close_recoverable_session_within_same_deadline()
+publish_closed_state()
+return memoized_sanitized_close_report()
 ```
 
 ## 14. 实施切片
@@ -686,13 +724,17 @@ emit_sanitized_close_report()
 | 客户端状态 | [`contracts.py`](../../src/harnessix/product_ui/contracts.py)、[`state_file.py`](../../src/harnessix/product_ui/state_file.py)、[`state_store.py`](../../src/harnessix/product_ui/state_store.py) | `ClientStateV1`、`ClientStateStore` | [`test_state_store.py`](../../tests/product_ui/test_state_store.py) |
 | 投影Reducer | [`projection.py`](../../src/harnessix/product_ui/projection.py) | `ProductViewState`、`apply_replay_page`、`apply_item_delta` | [`test_projection.py`](../../tests/product_ui/test_projection.py) |
 | 可恢复Session | [`session.py`](../../src/harnessix/product_ui/session.py) | `ProductConnection`、`PreparedClientCommand`、`RecoverableAgentSession` | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) |
-| Controller | 计划`controller.py` | `ProductController` | 计划Intent串行、取消树和旧代际结果测试 |
-| Textual View | 计划`app.py`与`views/` | `ProductApp`和专用Screen/Widget | 计划`App.run_test()`与Pilot测试 |
-| 产品配置/启动 | [`product_config/server.py`](../../src/harnessix/product_config/server.py)、[`cli.py`](../../src/harnessix/cli.py) | `run_product_stdio`、`main` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| Controller | [`controller.py`](../../src/harnessix/product_ui/controller.py) | `ProductController`、`ProductControllerState`、五类Intent、`CloseReport` | [`test_controller.py`](../../tests/product_ui/test_controller.py)串行、等待者取消、关闭超时和ID不复用 |
+| 框架中立渲染 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) | `TranscriptLine`、`transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)顺序、Gap、终态覆盖和路径隔离 |
+| Textual View | [`app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp`、`ControllerUpdated` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、Composer、Session Picker、Resize和退出 |
+| 产品CLI组合根 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py)、[`src/harnessix/cli.py`](../../src/harnessix/cli.py) | `code_main`、`_server_command`、`_delegate_special_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)分派、精确子进程argv和脱敏失败 |
+| 真实stdio恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`session.py`](../../src/harnessix/product_ui/session.py) | Client State + Controller + Subprocess Transport | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)跨进程冷Replay和Command单调性 |
+| 产品配置/Server | [`product_config/server.py`](../../src/harnessix/product_config/server.py)、[`product_config/cli.py`](../../src/harnessix/product_config/cli.py) | `run_product_stdio`、`agent_server_main` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | Windows Workspace | [`workspace`](../../src/harnessix/workspace/)、[`tools`](../../src/harnessix/tools/) | 新Windows观察/读取端口，保留统一Tool合同 | 计划Windows Runner对象安全测试 |
 | 统一Action装配 | [`trusted_actions`](../../src/harnessix/trusted_actions/)、[`delivery`](../../src/harnessix/delivery/)、[`processes`](../../src/harnessix/processes/) | `TrustedActionRouter`及现有Executor/Store端口 | 现有模块测试 + 计划产品端到端场景 |
 
-计划路径在对应实现子切片创建后才成为现行源码入口；在此之前不得从本文推断这些文件已经存在。
+Windows Workspace和统一Action行仍是计划路径；Controller、Rendering、Textual View、产品CLI和stdio恢复行已经是
+0.9.1b当前实现入口。
 
 ### 15.2 文档同步矩阵
 
@@ -715,8 +757,8 @@ emit_sanitized_close_report()
 | Reducer | Snapshot、Replay、重复事件、Gap、终态覆盖、乱序 | 确定性、幂等、冲突失败关闭 |
 | SDK | 恶意Response、布尔ID、超长帧、无效Result、半握手 | 稳定`AgentSDKError`，有界内存，连接不可误复用 |
 | Controller | 重复Submit、关闭、旧代际结果、Command未知 | 一次Intent至多一个持久Command身份 |
-| 无头UI | Screen、Modal、焦点、Resize、按键、终端退出 | View与Intent一致，无真实TTY依赖 |
-| 纵向stdio | 真实子进程、断线/重启、Replay/Live、审批/问题 | 不丢持久事件，不重复领域副作用 |
+| 无头UI | 当前基础Screen、Session Picker、Composer、Resize、按键、终端退出 | View与Intent一致，无真实TTY依赖；专用Modal属于0.9.1c |
+| 纵向stdio | 真实子进程、关闭/重启、Replay/Live；审批/问题后续扩展 | 基础链不丢持久事件，不重复Command身份 |
 | Windows | 盘符、UNC、保留名、ADS、Junction、共享替换 | 根逃逸与对象变化在I/O前后失败关闭 |
 | 统一Action | Patch、Process、Delivery、UNKNOWN/Reconcile | 所有副作用经过既有安全链且可恢复 |
 | 性能冒烟 | 1万Item投影、千Thread Cursor、大Diff分页 | 预算内完成，无无界正文缓存 |
@@ -738,6 +780,10 @@ Renderer异常、Close软限和Windows对象替换。
 
 真实Provider调用只在离线合同和Fake路径通过后进行，并复用既有受控Smoke预算、脱敏和网络门禁；TUI正确性不依赖
 付费模型才能验证。
+
+0.9.1b本地证据已经覆盖：Product UI 38项测试；Product UI与相关CLI/SDK回归合计79项；真实Textual
+`App.run_test()`；真实JSONL子进程关闭、Store重开、完整Transcript冷Replay和Command序列不复用。实现提交形成后仍须
+由Linux Python 3.12/3.13、macOS和Windows矩阵重复验证，远端证据通过前不关闭本子切片。
 
 ## 17. 部署、兼容与回退
 
@@ -781,15 +827,20 @@ Renderer异常、Close软限和Windows对象替换。
 
 当前为持续实施状态。0.9.1a已经实现严格Response Envelope/Result/Frame/Handshake、广告方法及消息/Replay
 协商上限门禁、Client State v1、安全原子Store、发送前Command分配、连接Generation、Prepared Command跨代际复用、
-冷启动从0/暖重连续传和确定性Projection Reducer。实现入口与测试见[Product UI客户端内核模块设计](../modules/product-ui.md)；
-自动重连策略、Controller任务树和Textual View尚未实现。实现及平台门禁提交已由
+冷启动从0/暖重连续传和确定性Projection Reducer。实现及平台门禁提交已由
 [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、
 macOS Coding Tools、Windows Trusted Execution、PostgreSQL、Container及文档矩阵验收，0.9.1a正式完成。
+
+0.9.1b已经在当前工作树实现单Actor `ProductController`、五类Intent、合并更新队列、有界关闭、框架中立
+Transcript转换、Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真实stdio跨进程恢复。依赖范围最终解析为
+Textual 8.2.8。实现与测试见[Product UI终端产品模块设计](../modules/product-ui.md)。当前尚未形成实现提交和三平台CI
+证据，因此0.9.1b仍保持未关闭。
 
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
 
 
-0.9.1a已关闭；0.9.1b～0.9.1e仍未实现。当前代码不包含Textual依赖、`harnessix code`入口、
-Product Controller、配置向导、Windows只读产品端口或统一Action默认装配，不能由客户端内核推断这些能力已经可用。
+0.9.1a已关闭；0.9.1b本地实现等待提交与CI；0.9.1c～0.9.1e仍未实现。当前不包含配置向导/Doctor、
+Approval/Question/Diff/Cancel/Steer专用交互、Windows只读产品端口或统一Action默认装配，不能由基础TUI推断这些能力
+已经可用。

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -10,6 +10,7 @@ modules:
   - settings
   - product_config
   - secrets
+  - product_ui
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
 related_tests:
@@ -18,6 +19,7 @@ related_tests:
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_ui/test_cli.py
 supersedes: []
 ---
 
@@ -30,7 +32,9 @@ Harnessix当前有两套相互独立的配置入口：
 1. [`Settings`](../../src/harnessix/settings.py)从`HARNESSIX_*`环境变量加载Action Plane HTTP、Worker、
    Journal、日志和OpenTelemetry设置；
 2. `ProductConfigV2`从严格JSON文件加载Coding Agent的Provider、模型Profile、Secret引用和请求预算，
-   `agent-server`的Workspace与状态目录继续由显式CLI参数提供。
+   `agent-server`的Workspace与状态目录继续由显式CLI参数提供；
+3. `harnessix code`在产品边界解析Workspace、配置路径、客户端状态根、Profile和Git可执行文件，再以确定argv启动
+   `agent-server`子进程。
 
 ```mermaid
 flowchart LR
@@ -46,7 +50,8 @@ flowchart LR
     CLI[workspace/state/profile参数] --> Server
 ```
 
-两套配置不会自动合并。`HARNESSIX_DATABASE_PATH`不指定Agent Session路径，Product Config也不配置Action Plane数据库。
+三类入口不会把Action Plane Settings与Product Config自动合并。`HARNESSIX_DATABASE_PATH`不指定Agent Session路径，
+Product Config也不配置Action Plane数据库。
 
 ## 2. Action Plane环境变量
 
@@ -229,6 +234,33 @@ uv run harnessix config diagnose \
 
 若同时指定两个`expected-active-*`字段，启动只在活动指针与预期一致时切换；CAS冲突会关闭已打开组件且不开放stdio。
 
+### 6.1 `harnessix code`参数与优先级
+
+```text
+harnessix code [WORKSPACE] [--config PATH] [--profile ID]
+    [--state-directory PATH] [--resume THREAD_ID] [--git-executable PATH]
+```
+
+| 配置项 | 显式CLI | 环境变量 | 默认值/结果 |
+|---|---|---|---|
+| Workspace | 位置参数 | 无 | 当前目录；必须严格解析为已存在目录 |
+| Product Config | `--config` | `HARNESSIX_PRODUCT_CONFIG` | 用户级`.harnessix/config.json` |
+| 客户端状态根 | `--state-directory` | `HARNESSIX_PRODUCT_STATE_DIRECTORY` | 用户级`.harnessix/workspaces/<workspace-fingerprint>` |
+| Profile | `--profile` | 无 | 省略后由Product Config的`active_profile`选择 |
+| 恢复Thread | `--resume UUID` | 无 | 省略后使用Client State中已保存且仍属于当前Workspace的选择 |
+| Git | `--git-executable` | 无 | 省略后由`agent-server`现行组合根处理 |
+
+优先级为“显式CLI > 对应环境变量 > 固定默认值”。客户端状态根直接保存`client-state.json`和锁文件；服务端运行状态
+固定传给`<state-root>/runtime`，避免两个Schema共享同一文件命名空间。子进程命令固定使用当前`sys.executable`：
+
+```text
+python -m harnessix agent-server --config CONFIG --workspace WORKSPACE
+    --state-directory STATE_ROOT/runtime [--profile ID] [--git-executable PATH]
+```
+
+CLI不接受任意Server argv，不通过Shell拼接，也不会把环境变量或Secret复制到命令行。Workspace不可用、TUI依赖缺失和
+启动前产品错误均输出稳定单行JSON并退出2。
+
 ## 7. Secret与环境隔离
 
 1. 每个Secret环境变量只能映射一个`SecretReference`；
@@ -270,6 +302,7 @@ sequenceDiagram
 | 安全读取 | [`codec.py`](../../src/harnessix/product_config/codec.py) | `read_product_config_bytes`、`decode_product_config_bytes` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
 | Secret与诊断 | [`runtime.py`](../../src/harnessix/product_config/runtime.py) | `environment_secret_provider`、`diagnose_configuration` | [`test_provider_credentials.py`](../../tests/product_config/test_provider_credentials.py) |
 | 启动装配 | [`server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| TUI产品组合根 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_default_config`、`_default_state_directory`、`_server_command` | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 
 ## 10. 已知限制
 
@@ -278,5 +311,6 @@ sequenceDiagram
 - `base_url`与Credential、地域、组织和Egress策略未形成统一绑定合同；
 - Action Plane `Settings`缺少统一脱敏诊断命令和部分范围校验；
 - CLI参数、环境变量和配置没有统一优先级框架；
+- `harnessix code`只为配置路径和客户端状态根定义环境覆盖，Profile、Resume和Git仍要求显式参数；
 - 当前配置没有任务级费用上限和账户账单对账字段；
 - 配置审计是本地SQLite，不是远程不可抵赖审计服务。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
+version: 4
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - product
 modules:
@@ -18,26 +18,31 @@ related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
+  - tests/product_ui/test_controller.py
+  - tests/product_ui/test_rendering.py
+  - tests/product_ui/test_app.py
+  - tests/product_ui/test_stdio_product.py
+  - tests/product_ui/test_cli.py
   - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 
-# Product UI客户端内核模块设计
+# Product UI终端产品模块设计
 
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_ui`](../../src/harnessix/product_ui/) |
-| 当前职责 | 保存最小客户端恢复元数据；发送前持久分配Command ID；管理Agent SDK连接代际；从Snapshot、Replay和Live Delta确定性生成单Thread产品视图 |
-| 非职责 | 不实现Textual界面、Controller、配置向导、自动重试策略、Agent状态机、Session数据库、Protocol Server或Trusted Action执行 |
-| 上游调用者 | 0.9.1b计划中的Product Controller；当前由模块测试直接调用 |
+| 当前职责 | 保存最小客户端恢复元数据；发送前持久分配Command ID；管理Agent SDK连接代际；串行处理类型化Intent；从Snapshot、Replay和Live Delta确定性生成单Thread产品视图；通过Textual提供会话列表、Transcript、Composer和显式重连；由`harnessix code`装配本地stdio产品链 |
+| 非职责 | 不实现Approval/Question/Diff专用交互、配置向导与Doctor、自动业务命令重放、Agent状态机、Session数据库、Windows产品级Coding Tool或统一Trusted Action默认装配 |
+| 上游调用者 | 顶层`harnessix code`入口、Textual事件循环和模块测试 |
 | 下游端口 | `AgentTransportFactory → AgentClient → Agent Protocol`、`ClientStateStore → 本地私有文件` |
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
-| 公共导出 | 包根导出状态合同、Store、投影类型/Reducer、连接状态及`RecoverableAgentSession` |
-| 当前完成度 | 0.9.1a客户端内核已完成并通过三平台CI；Textual、产品CLI、完整领域交互、Doctor和默认Action装配尚未实现 |
-| 代码版本 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` |
+| 公共导出 | 包根导出状态合同、Store、投影类型/Reducer、连接状态、`RecoverableAgentSession`、Controller状态/Intent及关闭报告；Textual App从具体模块导入以保持可选依赖隔离 |
+| 当前完成度 | 0.9.1a已通过三平台CI；0.9.1b实现与本地测试已完成，等待实现提交及三平台CI；完整领域交互、Doctor、Windows产品工具链和默认Action装配尚未实现 |
+| 代码版本 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d`为本切片实现基线；当前工作树实现待形成独立提交 |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -50,12 +55,14 @@ supersedes: []
 重新生成身份或Command ID，服务端无法把重放识别为原命令；如果从已保存Cursor恢复但本地没有Transcript正文，
 则界面只得到Cursor之后的增量，历史消息永久缺失。并发启动两个客户端还可能同时消费同一个Command序列。
 
-生产客户端因此必须同时解决四个问题：
+生产客户端因此必须同时解决六个问题：
 
 1. **稳定身份**：同一状态目录跨进程保持Client Instance ID和单调Command序列；
 2. **提交顺序**：Command ID必须先原子落盘，再允许写入Transport；
 3. **完整恢复**：冷启动从Cursor 0重建全文，只有同进程仍持有完整投影时才允许暖续传；
 4. **临时与权威分离**：Live Delta只优化显示，持久`item_finished`始终覆盖临时文本。
+5. **单写者并发**：Widget、轮询和按键不能并发操作同一个Transport或重复提交同一Intent；
+6. **有界关闭**：退出先停止接收Intent，再排空或明确标记未知，不能把取消等待误当作领域命令失败。
 
 ### 2.2 当前设计目标
 
@@ -67,23 +74,28 @@ supersedes: []
 - Agent连接每次完整握手形成新Generation，半握手和协议损坏进入`BROKEN`；
 - Projection Reducer无I/O、时钟和随机数，相同输入逐字段相等；
 - Replay游标回退、近期事件身份冲突、Item事件类型/状态不一致、终态Item冲突和Delta身份漂移均失败关闭。
+- Controller由单个Actor拥有全部Session I/O，Intent队列和状态更新队列均有固定上限；
+- Textual Widget只派发类型化Intent并渲染不可变快照，不直接操作SDK、Store或Transport；
+- `harnessix code`固定Workspace、配置、客户端状态根和子进程Runtime状态根，缺少TUI依赖时不联网安装。
 
 ### 2.3 明确非目标
 
 - 不保存Transcript、Diff、Prompt、Approval/Question答案、Provider正文或Secret；
 - 不依据`clean_shutdown=false`猜测领域命令成功或失败；
 - 不自动清理第1001个Thread Cursor；只有上层验证Thread已归档后才能调用显式遗忘；
-- 不在本模块实现自动重连次数、指数退避、UI通知或后台Task所有权；
+- 不自动重放发生歧义的业务命令；显式Reconnect只重建连接并从持久事实恢复；
 - 不把Client Instance ID当作认证身份；
 - 不修改Agent Protocol v1、Server Session Schema或Protocol Request Ledger；
-- 不宣称0.9.1整体完成，当前实现没有Textual View和产品入口。
+- 不在0.9.1b提供Approval、Question、Diff、Plan、Usage/Cost、Cancel、Steer专用交互；这些属于0.9.1c；
+- 不宣称0.9.1或Windows产品支持已经完成。
 
 ## 3. 模块上下文、总体架构与信任边界
 
 ```mermaid
 flowchart LR
-    Controller[Product Controller<br/>0.9.1b] --> Session[RecoverableAgentSession]
-    Controller --> Store[ClientStateStore]
+    CLI[harnessix code] --> App[Textual ProductApp]
+    App -->|typed Intent| Controller[ProductController Actor]
+    Controller --> Session[RecoverableAgentSession]
     Session --> Client[AgentClient]
     Client --> Transport[AgentTransport]
     Transport --> Server[Agent Protocol Server]
@@ -93,6 +105,8 @@ flowchart LR
     Store --> Local[(client-state.json)]
     Facts -->|Snapshot Replay Delta| Session
     Local -. 只含恢复元数据 .-> Session
+    Controller --> Renderer[framework-neutral rendering]
+    Renderer --> App
 ```
 
 **边界说明：**
@@ -101,7 +115,9 @@ flowchart LR
 - `RecoverableAgentSession`拥有一个当前`AgentClient`和多个同进程Thread投影，但不拥有服务端领域事实；
 - `ClientStateStore`只接受产品边界已经规范化的Workspace身份并保存其版本化SHA-256，不自行解释平台路径；
 - `ProjectionReducer`只接收已由SDK校验的`ThreadView`、`EventsReplayResult`和`PublicItemDelta`；
-- 未来Textual Widget只能发送类型化Intent，不能直接分配Command ID、推进Cursor或调用Transport。
+- Textual Widget只能发送类型化Intent，不能直接分配Command ID、推进Cursor或调用Transport；
+- `ProductController`是Session I/O和Workspace级产品状态的唯一异步所有者；View退出不等于Turn取消；
+- CLI只负责参数、安全默认目录和组合根；实际stdio子进程继续由`agent-server`执行正式配置和Runtime装配。
 
 ## 4. 包结构与源码阅读顺序
 
@@ -113,10 +129,14 @@ flowchart LR
 | 4 | [`state_store.py`](../../src/harnessix/product_ui/state_store.py) | `ClientStateStore` | 理解变更前重读、Command分配、选择和单调Cursor |
 | 5 | [`projection.py`](../../src/harnessix/product_ui/projection.py) | `ProductViewState`、`apply_replay_page`、`apply_item_delta` | 理解冷暖视图、Replay幂等和Delta覆盖 |
 | 6 | [`session.py`](../../src/harnessix/product_ui/session.py) | `ConnectionPhase`、`PreparedClientCommand`、`RecoverableAgentSession` | 理解连接代际、Hydration和同ID显式重放 |
-| 7 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient._send`、`initialize`、`replay_events` | 对照SDK握手、方法和协商Limit门禁 |
-| 8 | [`test_state_store.py`](../../tests/product_ui/test_state_store.py) | Store正反例 | 从崩溃、权限、锁和损坏场景反证持久化设计 |
-| 9 | [`test_projection.py`](../../tests/product_ui/test_projection.py) | Reducer正反例 | 验证确定性、重复页、冲突、Gap和终态覆盖 |
-| 10 | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) | 连接恢复场景 | 验证冷启动从0、暖重连续传和Command身份复用 |
+| 7 | [`controller.py`](../../src/harnessix/product_ui/controller.py) | `ProductController`、五类Intent、`CloseReport` | 理解单Actor、队列背压、轮询和关闭结算 |
+| 8 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) | `TranscriptLine`、`transcript_lines`、`thread_label` | 理解持久正文、临时流和终端标记隔离 |
+| 9 | [`app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp`、`ControllerUpdated` | 理解Textual布局、焦点、按键和View生命周期 |
+| 10 | [`cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | 理解状态目录布局、可选依赖和stdio组合根 |
+| 11 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient._send`、`initialize`、`replay_events` | 对照SDK握手、方法和协商Limit门禁 |
+| 12 | [`test_controller.py`](../../tests/product_ui/test_controller.py) | Actor正反例 | 验证串行、等待者取消、歧义结果和序列不复用 |
+| 13 | [`test_app.py`](../../tests/product_ui/test_app.py) | `App.run_test()`产品场景 | 验证会话列表、Composer、防重复提交、Resize和退出 |
+| 14 | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py) | 真实JSONL子进程恢复 | 验证跨进程冷Replay、Transcript恢复和Command单调性 |
 
 ## 5. 核心生命周期与状态机
 
@@ -177,6 +197,32 @@ stateDiagram-v2
 `PreparedClientCommand`不保存Prompt或业务参数，只绑定客户端身份、序列、Request ID和分配时Revision。
 结果不明确时调用方保留同一对象；Session不会在重放路径重新调用`allocate_command_id`。业务Payload是否漂移最终仍由
 服务端Protocol Request Ledger的同ID同Payload规则校验。
+
+### 5.4 Product Controller生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+    CREATED --> STARTING: start once
+    STARTING --> READY: connect list hydrate
+    STARTING --> BROKEN: startup failure
+    READY --> READY: serialized intent or poll
+    READY --> BROKEN: connection-class failure
+    BROKEN --> READY: explicit ReconnectIntent
+    READY --> CLOSING: close
+    BROKEN --> CLOSING: close
+    CLOSING --> CLOSED: drained or bounded forced close
+    CLOSED --> [*]
+```
+
+`ProductController`在`start`完成前不接收Intent；成功后创建唯一Actor Task。Intent队列最多64项，队列满返回
+`controller_busy`且不会分配Command ID。更新队列最多保留一份最新不可变快照，慢View不会使Actor无界积压。
+活动Turn每100毫秒拉取一次，空闲态每1秒拉取一次；轮询仍在Actor中执行，因此不会与用户Intent并发访问Session。
+Thread列表逐页读取，每页最多200项，总量上限1000项，并检测重复分页Cursor。
+
+关闭先将`_accepting`置为假，再把Stop标记排到已经接纳的Intent之后。正常路径排空队列并关闭Session；达到1～30秒
+调用方指定时限后取消Actor，把当前及剩余Intent完成为`controller_operation_unknown`，并返回非Clean的
+`CloseReport`。已经分配的Command序列保持消费，重复`close`返回同一报告。
 
 ## 6. 正常流程、失败恢复时序与数据流
 
@@ -255,6 +301,46 @@ Item事件必须携带Turn ID；`item_started`只接受`status=started`，`item_
 事件类型与Item状态不一致时以`projection_event_invalid`失败关闭。`turn_started`对应领域Reducer创建Turn时的
 持久`accepted`状态，不能伪造尚未发生的`running`状态。
 
+### 6.4 TUI启动、提交与跨进程恢复
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant V as ProductApp
+    participant C as ProductController
+    participant R as RecoverableAgentSession
+    participant P as agent-server subprocess
+    participant D as Session Store
+    U->>V: harnessix code WORKSPACE
+    V->>C: start(StartRequest)
+    C->>R: connect + list_threads
+    R->>P: initialize / thread APIs
+    C-->>V: READY snapshot
+    U->>V: Ctrl+N then Enter prompt
+    V->>C: CreateThreadIntent / SubmitPromptIntent
+    C->>R: prepare_command before send
+    R->>P: thread/create / turn/start
+    P->>D: request ledger + durable events
+    loop active turn
+        C->>R: poll_thread(wait_ms=0)
+        R->>P: events/next
+        C-->>V: coalesced immutable snapshot
+    end
+    U->>V: exit
+    V->>C: bounded close
+    C->>R: clean shutdown
+    Note over U,D: reopen same state root and runtime store
+    V->>C: start with persisted selected thread
+    C->>R: hydrate from cursor 0 on cold process
+    R->>P: full replay from durable Session facts
+    C-->>V: exact persisted transcript
+```
+
+`ProductApp`清空Composer后只启动一个`local-intent-waiter`组Worker；`_intent_in_flight`期间Composer禁用，连续Enter不会
+形成重复Intent。View收到Revision不大于已渲染Revision的快照时完全忽略，避免迟到STARTING/BROKEN快照回退Composer或
+会话视图。会话列表仅展示Thread ID短前缀、Turn状态和轮数，不展示Workspace路径。所有不可信文本均关闭Textual
+markup解析。
+
 ## 7. 接口设计
 
 ### 7.1 `ClientStateStore`
@@ -289,6 +375,43 @@ Item事件必须携带Turn ID；`item_started`只接受`status=started`，`item_
 | `hydrate_thread()` | READY、Thread存在 | 完整冷/暖投影并选择Thread | 当前实现由SDK调用者提供外层超时 |
 | `poll_thread()` | READY且已经Hydrate | 一页Replay/Delta结果 | `events/next`最多使用协议允许的30秒 |
 | `close()` | 任意非CLOSED状态 | 关闭Client、提交安全关闭标志 | 失败保留BROKEN且不伪造安全关闭 |
+
+0.9.1b为Session新增两个只读/幂等边界：`list_threads_page(cursor, limit)`在当前代际读取一页未归档Thread；
+`resume_thread(thread_id)`恢复服务端Runtime驱动。二者都受同一`_operation_lock`保护，连接类错误会把Session标为
+`BROKEN`。`client_state()`返回重新校验的快照，`clear_selected_thread()`只清除已被Controller证明无效的选择。
+
+### 7.4 `ProductController`
+
+| 方法 | 输入/输出 | 所有权与顺序 | 失败/取消语义 |
+|---|---|---|---|
+| `start(request)` | `StartRequest → ProductControllerState` | 只允许一次；规范Workspace、连接、分页列举并恢复显式或持久选择 | 启动失败发布`BROKEN`快照并抛稳定错误 |
+| `dispatch(intent)` | 五类封闭Intent，无业务结果正文 | `put_nowait`进入64项Actor队列；Actor串行执行 | 调用者取消只停止等待，`shield`保护已接纳Intent |
+| `next_update()` | 下一份`ProductControllerState` | 更新队列大小1，较旧未消费快照被最新状态覆盖 | 不保证每个中间Revision都送达，但状态事实不丢失 |
+| `close(deadline_seconds)` | `CloseReport` | 停止接收、排空、关闭Session；重复调用幂等 | 超时标记未知并消费已分配身份，不误报业务失败 |
+
+五类Intent为`CreateThreadIntent`、`SelectThreadIntent`、`SubmitPromptIntent`、`RefreshThreadsIntent`和
+`ReconnectIntent`。0.9.1b不把Cancel、Steer、Approval、Question或Artifact读取伪装成通用字典Intent；它们必须在
+0.9.1c形成各自绑定身份和失败语义的正式合同。
+
+### 7.5 框架中立渲染
+
+`transcript_lines(ProductViewState | None)`把持久Item按首次Cursor顺序转换为`TranscriptLine`，然后附加尚未被
+终态Item覆盖的临时流。Gap使用固定提示替代不完整正文；未知内容只显示“上下文已压缩”。`thread_label(ThreadView)`
+不接收Workspace，因此从类型边界上避免把绝对路径写入列表。
+
+### 7.6 `ProductApp`与`harnessix code`
+
+`ProductApp(App[CloseReport])`包含Header、Footer、Session Picker、`RichLog` Transcript、状态行和单行Composer。
+快捷键为`Ctrl+N`新建会话、`Ctrl+R`显式重连、`Ctrl+Q`有界关闭。退出TUI不会自动取消服务端Turn。
+
+```text
+harnessix code [WORKSPACE] [--config PATH] [--profile ID]
+    [--state-directory PATH] [--resume THREAD_ID] [--git-executable PATH]
+```
+
+CLI通过当前Python解释器启动`python -m harnessix agent-server`，不依赖PATH中另一个Harnessix版本。Textual在进入
+`code_main`后延迟导入；基础安装缺少依赖时返回`{"code":"tui_dependency_missing",...}`并退出2，不动态下载。
+参数解析前或启动前错误输出为单行、排序、有界JSON，不包含路径、argv、stderr或异常正文。
 
 ## 8. 数据结构、重点字段与持久化格式
 
@@ -333,6 +456,28 @@ tui-{client_instance_id.hex}-{base36(sequence)}
 | 锁文件 | 当前UID、普通文件、单硬链接、`0600` | 普通文件且至少1字节供`msvcrt.locking` | 生命周期持锁、非阻塞获取 |
 | 状态文件 | 当前UID、普通文件、单硬链接、`0600` | 拒绝Symlink/Junction | 打开前后对象身份一致、最大1 MiB |
 | 临时文件 | `0600`、`O_EXCL`、`fsync` | 同目录同卷、独占创建 | 随机名、失败清理、原子替换 |
+
+### 8.4 `ProductControllerState`
+
+| 字段 | 类型 | 语义与来源 |
+|---|---|---|
+| `phase` | `ControllerPhase` | CREATED、STARTING、READY、BROKEN、CLOSING或CLOSED |
+| `workspace` | `str | None` | 启动时严格解析的固定目录；只在内存中存在 |
+| `connection_generation` | `int` | 当前Session连接代际，用于诊断而非认证 |
+| `threads` | `tuple[ThreadView, ...]` | 当前Workspace未归档Thread，按更新时间和ID稳定倒序 |
+| `selected_thread_id` | `UUID | None` | 已验证属于当前列表的选择 |
+| `thread_view` | `ProductViewState | None` | 当前Thread不可变投影，不复制到Controller持久文件 |
+| `last_notice` | `ProductNotice | None` | 仅含稳定code、固定message和retryable |
+| `revision` | `int` | 每次发布递增，View用其拒绝迟到重绘 |
+
+### 8.5 `CloseReport`
+
+| 字段 | 语义 |
+|---|---|
+| `clean` | Actor与Session是否在同一关闭时限内完成 |
+| `processed_intents` | Actor已确定完成的Intent数量 |
+| `abandoned_intents` | 关闭时限内无法结算的排队Intent数量，不包含对领域结果的猜测 |
+| `error_code` | `controller_close_timeout`、`controller_connection_close_failed`或空 |
 
 ## 9. 核心业务逻辑伪代码
 
@@ -382,6 +527,31 @@ except connection_class_error:
 
 Session不自动执行最后一步，以免在不知道上层业务参数是否仍相同的情况下盲目重放。服务端Ledger是最终幂等裁决者。
 
+### 9.4 Actor串行与有界关闭
+
+```text
+dispatch(intent):
+    require accepting and actor alive
+    completion = new future
+    enqueue without waiting or fail controller_busy
+    await shield(completion)
+
+actor_loop:
+    wait for next intent using active/idle poll interval
+    if timeout: poll selected hydrated thread
+    if stop: return
+    execute exactly one intent through RecoverableAgentSession
+    publish immutable snapshot, then settle completion
+
+close(deadline):
+    accepting = false
+    enqueue stop after already accepted intents
+    await actor within remaining deadline
+    if timeout: cancel actor and mark unresolved completions unknown
+    close session within same absolute deadline
+    publish CLOSED and memoize CloseReport
+```
+
 ## 10. 失败、恢复、取消与超时
 
 | 故障 | 稳定错误/状态 | 是否修改持久状态 | 恢复方式 |
@@ -399,9 +569,16 @@ Session不自动执行最后一步，以免在不知道上层业务参数是否�
 | `execute_prepared`等待者取消 | 原协程取消 | 已分配ID保持消费 | 不生成新ID；按Transport/服务端事实恢复 |
 | `events/next`超时 | 协议正常`timed_out=true` | Cursor不变 | 继续下一次轮询 |
 | Close失败 | `connection_close_failed`、`BROKEN` | 不提交`clean_shutdown=true` | 运维诊断并重新打开 |
+| Intent队列已满 | `controller_busy` | 否 | 等待当前操作完成后重新发起新Intent |
+| 无Thread、已有活动Turn或Prompt非法 | `controller_thread_required`/`controller_turn_active`/`controller_prompt_invalid` | 非法Prompt不分配ID | 修正当前选择或输入；不重放 |
+| Thread列表超过1000或分页不推进 | `controller_thread_limit`/`controller_pagination_stalled` | 否 | 服务端归档治理或修复分页合同 |
+| 调用者取消`dispatch`等待 | 原等待者收到取消 | 已接纳Intent继续由Actor结算 | 从Controller快照和服务端事实观察结果 |
+| Controller关闭超时 | `controller_operation_unknown`与`controller_close_timeout` | 已分配序列不回退 | 重启并从持久事实Hydrate，不生成替代结果 |
+| 缺少Textual | `tui_dependency_missing`，CLI退出2 | 否 | 显式安装`tui` Extra |
 
-本模块不自行设置普通Request的墙钟超时；Transport关闭上限和`events/next`等待上限沿用SDK/Protocol现行合同。自动退避、
-最大重连次数和Controller Task取消树属于0.9.1b与0.9.3。
+Session不自行设置普通Request的墙钟超时；Transport关闭上限和`events/next`等待上限沿用SDK/Protocol现行合同。
+Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Intent和Session I/O纳入单Actor所有权。自动退避、普通请求
+统一Deadline和进程级强制回收基准仍属于0.9.3；发生歧义时只能显式重连并从服务端持久事实恢复。
 
 ## 11. 安全、权限与隐私
 
@@ -418,10 +595,11 @@ Session不自动执行最后一步，以免在不知道上层业务参数是否�
 
 ## 12. 可观测性与错误分类
 
-当前0.9.1a只维护`ProductConnection(generation, phase, last_error_code)`内存诊断面和稳定异常，不直接写日志、Metric或
-Trace，避免在Controller和Telemetry组合根完成前形成第二套观测实现。0.9.1b必须在不记录正文的前提下装配以下信号：
+当前实现维护`ProductConnection(generation, phase, last_error_code)`和
+`ProductControllerState(phase, revision, last_notice)`两层内存诊断面；状态行展示连接代际、Turn状态和固定错误信息。
+0.9.1b没有建立第二套日志、Metric或Trace实现，下列正式Telemetry仍必须在0.9.3统一产品组合根落地：
 
-| 计划信号 | 低基数字段 | 禁止字段 |
+| 后续信号 | 低基数字段 | 禁止字段 |
 |---|---|---|
 | `product.client.connection` | phase、result、generation bucket | stderr、argv、Workspace路径 |
 | `product.client.state_write` | operation、result | UUID、文件正文、绝对路径 |
@@ -447,6 +625,11 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 | 同一Prepared ID跨代际重放 | [`session.py`](../../src/harnessix/product_ui/session.py) `prepare_command`、`execute_prepared` | `test_prepared_command_reuses_identity_after_ambiguous_connection_failure` |
 | Poll投影故障失败关闭 | [`session.py`](../../src/harnessix/product_ui/session.py) `poll_thread` | `test_poll_projection_failure_marks_connection_broken` |
 | SDK协商前置门禁 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) `_send`与[`request.py`](../../src/harnessix/sdk/request.py) `require_replay_limit` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_sdk_rejects_unadvertised_method_before_transport_write`、`test_sdk_enforces_negotiated_replay_and_message_limits_before_write` |
+| Actor、Intent和有界关闭 | [`controller.py`](../../src/harnessix/product_ui/controller.py) `ProductController.start`、`dispatch`、`close` | [`test_controller.py`](../../tests/product_ui/test_controller.py)四个串行、取消和超时场景 |
+| Transcript与会话标签 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)持久顺序、Gap和终态覆盖 |
+| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、会话切换、Composer、Resize和Context退出 |
+| CLI组合根与可选依赖 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `code_main`、`_server_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)顶层分派、精确argv和脱敏失败 |
+| 跨进程产品恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`controller.py`](../../src/harnessix/product_ui/controller.py) | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)关闭并重开真实JSONL子进程与Store |
 
 ## 14. 测试、验证与验收
 
@@ -455,8 +638,14 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 - Store：初始化/重开、权限、链接、摘要、未知版本/字段、重复键、并发锁、原子替换和目录同步失败、关闭幂等；
 - Projection：冷启动、确定性、重复Replay、近期冲突、跨Thread、Cursor回退、Turn初态、Item事件一致性、Delta重复/缺口/身份漂移、终态覆盖；
 - Session：保存Cursor存在时仍冷启动从0、同进程暖重连续传、Generation递增、旧Transport关闭、Prepared ID复用、Poll投影故障失败关闭；
+- Controller：创建/选择/提交/显式重连串行执行，非法Prompt不消费ID，调用者取消不取消已接纳Intent，关闭超时不复用ID；
+- Rendering：持久Item稳定排序、临时流追加、Gap显式展示、终态正文覆盖和Workspace路径不进入标签；
+- Textual：使用`App.run_test()`驱动真实Controller和内存Protocol，覆盖两个新Thread、选择、连续Enter防重、Turn完成、Resize和退出关闭；
+- stdio：启动真实JSONL子进程和持久Session Store，首次提交后关闭，再以相同状态重开并从Cursor 0恢复精确用户/助手Transcript；
+- CLI：`harnessix code`延迟导入Textual，构造当前解释器`agent-server` argv，缺失Workspace输出稳定脱敏JSON；
 - SDK：非法Envelope、深度预算、Result归一、半握手、超长Frame、未协商方法和协商Limit前置拒绝；
-- 全仓门禁：Ruff、Readability、Documentation、Contract、Mypy和全部Pytest。
+- 本地切片门禁：Product UI 38项测试、相关CLI/SDK回归合计79项、Ruff、Mypy、Readability和真实`run_test()`均已通过；
+- 全仓门禁：实现提交前仍须执行Ruff、Readability、Documentation、Contract、Mypy和全部Pytest。
 - 平台门禁：Linux Python 3.12/3.13全量测试、macOS Coding Tools矩阵和Windows Trusted Execution矩阵均
   显式执行或覆盖`tests/product_ui`，并由
   [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)全部通过。
@@ -473,11 +662,15 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 - [x] SDK在Transport写入前拒绝未协商方法、过大消息和过量Replay；
 - [x] 连接故障后可显式复用同一Prepared Command，不额外消费序列；
 - [x] Linux Python 3.12/3.13、macOS和Windows矩阵验证Product UI及其协作边界；
-- [ ] Textual View、Controller Task树、真实stdio产品恢复和三平台安装由后续子切片验收。
+- [x] Textual View、单Actor Controller、真实stdio冷恢复和CLI参数合同通过本地自动化；
+- [ ] 0.9.1b实现提交完成三平台CI后才可正式关闭；三平台安装器仍属于0.9.5。
 
 ## 15. 部署、兼容、回退与迁移
 
-- 当前模块只使用项目已有依赖，不引入Textual，也不改变安装Extra；
+- `tui = ["textual>=8.2,<9"]`为可选Extra，当前锁文件解析到Textual 8.2.8；基础Wheel不导入Textual；
+- `harnessix code`默认读取`HARNESSIX_PRODUCT_CONFIG`或用户级`.harnessix/config.json`，状态根读取
+  `HARNESSIX_PRODUCT_STATE_DIRECTORY`或用户级`.harnessix/workspaces/<workspace-fingerprint>`；
+- 客户端状态文件位于状态根，`agent-server`运行状态固定在其`runtime/`子目录，两者均不得与Workspace重叠；
 - Agent Protocol仍为`1.0`，Session数据库和Protocol Request Ledger没有迁移；
 - `client-state.json`是新增独立文件，不读取旧薄CLI内存状态；首次启动原子创建v1；
 - 未知Client State版本失败关闭，当前不提供自动迁移器；未来迁移必须保留备份、摘要CAS和收据；
@@ -490,20 +683,29 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 
 | 限制/风险 | 当前影响 | 后续归属 |
 |---|---|---|
-| 无Textual View和Product Controller | 用户不能从正式TUI使用本模块 | 0.9.1b |
+| 0.9.1b尚未获得三平台CI证据 | 本地实现不能升级为正式子切片完成 | 实现提交后远端CI |
 | Prepared Command不持久保存业务Payload | 崩溃后不能仅凭本地文件自动重放最后操作；必须由UI Intent/服务端事实恢复 | 0.9.1b设计后仍坚持不保存敏感正文 |
-| 投影在内存保存完整Item历史 | 大Transcript可能占用较多内存 | 0.9.1b虚拟化、0.9.3性能基线 |
-| `live_gap`是粘性诊断标志 | 当前没有自动重新Hydrate策略 | 0.9.1b Controller |
+| 投影在内存保存完整Item历史，`RichLog`只保留1万展示行 | 大Transcript仍可能使投影占用较多内存 | 0.9.3性能基线与虚拟化 |
+| `live_gap`是粘性诊断标志 | UI显示缺口并等待持久终态，没有自动重新Hydrate | 0.9.1c/0.9.3 |
 | Store锁只覆盖协作本地实例 | 不适用于网络共享或分布式客户端 | 1.0本地优先边界 |
 | 状态文件无自动迁移/备份 | v1升级必须新增正式迁移流程 | 首次Schema变更前 |
-| Session普通Request无统一外层Deadline | 卡住的自定义Transport可能阻塞操作 | 0.9.1b/0.9.3 |
-| 当前没有产品层Telemetry适配 | 只能通过Connection状态和错误码诊断 | 0.9.1b/0.9.3 |
+| Session普通Request无统一外层Deadline | Actor操作可能直到整体关闭时限才转为未知 | 0.9.3 |
+| 当前没有产品层Telemetry适配 | 只能通过Connection/Controller状态和错误码诊断 | 0.9.3 |
+| 0.9.1b只提供基础Transcript/Composer/Picker | Approval、Question、Diff、Cancel、Steer及成本尚无专用交互 | 0.9.1c |
 | Windows文件安全只有算法和CI证据 | 不能代表默认Windows Coding Tool已可用 | 0.9.1d |
+
+`ProductController`和`ProductApp`分别超过默认类行数阈值，因此本切片对
+[`readability-policy-v1.json`](../../governance/readability-policy-v1.json)进行了显式合同审查，而不是忽略门禁。
+Controller保留在一个类中是为了让连接、Intent、轮询和关闭只有一个生命周期所有者；拆成多个有状态对象会扩大并发
+结算面。App保留在一个类中是为了遵循Textual的单App事件生命周期。两者当前决策复杂度报告均为0，数据合同、投影和
+渲染转换已经独立为无状态模块；后续只能在不提高已批准行数与复杂度预算的前提下修改，新增领域交互优先放入专用
+Screen/Presenter而不是继续扩张这两个类。
 
 ## 17. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d` | 2026-09-13 | 同步0.9.1b本地实现：单Actor Controller、框架中立渲染、Textual基础产品壳、`harnessix code`组合根和真实stdio冷恢复；等待实现提交及三平台CI |
 | 3 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` | 2026-09-13 | 记录0.9.1a在Linux Python 3.12/3.13、macOS和Windows矩阵全部通过，正式关闭客户端内核子切片 |
 | 2 | `085649da9aa27192c9f67ee35ee5471fdd33ce6d` | 2026-09-13 | 将Product UI专项测试纳入Linux全量、macOS Coding Tools和Windows Trusted Execution三平台CI矩阵 |
 | 1 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 建立Client State、原子Store、投影Reducer、连接代际、Prepared Command及SDK协商门禁的现行设计 |

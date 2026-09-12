@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
+version: 2
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_tests:
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_config/test_schemas.py
+  - tests/product_ui/test_cli.py
 supersedes: []
 ---
 
@@ -28,14 +29,14 @@ supersedes: []
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
 | 当前职责 | 严格加载和迁移产品配置，选择模型Profile，解析版本化Secret，离线诊断，构造Provider Bundle，以零响应暴露规则执行跨Profile Fallback，并持久化配置及Fallback审计事实 |
 | 非职责 | 不执行Agent Loop、Tool、Approval或Action；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
-| 上游调用者 | `harnessix config`、`harnessix agent-server`、自定义产品组合根和测试宿主 |
+| 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Coding Tool Runtime、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
 | 默认产品平台 | 配置诊断和迁移具有跨平台实现；内置`agent-server`因Coding Tool Runtime限制只在POSIX且具有`O_NOFOLLOW`时开放 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` |
-| 当前完成度 | 0.8.6纵向切片已完成；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理、完整Windows产品入口和产品级Telemetry仍未完成 |
+| 当前完成度 | 0.8.6纵向切片已完成；0.9.1b已在本地实现TUI到`agent-server`的确定组合根，等待实现提交与CI；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理、完整Windows产品入口和产品级Telemetry仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1108,6 +1109,20 @@ stdout专用于Agent Protocol JSONL。启动错误写stderr JSON并退出2。首
 未知`Exception`不会输出`repr`或底层消息，而统一为`product_internal_failure`。`SystemExit`、`KeyboardInterrupt`
 等`BaseException`不由通用分支吞掉。
 
+### 32.5 TUI产品调用方
+
+[`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py)不复制Product Config加载、诊断或Runtime装配逻辑，而是使用
+当前Python解释器启动同一Wheel中的`agent-server`：
+
+```text
+python -m harnessix agent-server --config CONFIG --workspace WORKSPACE
+    --state-directory CLIENT_STATE_ROOT/runtime [--profile ID] [--git-executable PATH]
+```
+
+TUI的客户端状态文件保存在`CLIENT_STATE_ROOT`，本模块的配置审计、Session、Request Ledger和运行时账本保存在其
+`runtime/`子目录。Workspace、配置和状态的安全重叠检查仍由本模块执行；TUI仅提前拒绝不存在的Workspace。缺少配置、
+Secret、Provider SDK或平台能力时，子进程保持现行失败关闭语义，不由View静默降级。
+
 ## 33. 主要失败语义与恢复动作
 
 | 错误码/类别 | 触发点 | 自动重试 | 恢复动作 |
@@ -1231,6 +1246,7 @@ Store连接默认SQLite线程约束，未设计为跨线程共享。Product Serv
 | Provider Factory/Fallback | 平台中立Python | 平台中立Python | Runtime测试 |
 | 内置`agent-server` | 支持具有`O_NOFOLLOW`的POSIX | 启动前稳定拒绝 | Server测试 |
 | 固定Workspace Service | 支持 | 进程内Service合同支持路径大小写等价 | App Server测试 |
+| `harnessix code`调用 | 当前Python子进程组合根已实现；Product配置语义不复制到View | View可运行，但`agent-server`仍在工具平台门失败关闭 | Product UI CLI与stdio测试；0.9.1b远端CI待执行 |
 
 “配置诊断/迁移支持Windows”不能推导为“默认Coding Agent产品支持Windows”。完整Windows产品Tool Runtime、安装器、
 升级和Dogfooding属于后续路线图门禁。
@@ -1291,6 +1307,7 @@ Store连接默认SQLite线程约束，未设计为跨线程共享。Product Serv
 | [`test_fixed_workspace_rejects_other_thread_roots`](../../tests/product_config/test_server_and_cli.py) | Protocol不能切换Workspace |
 | [`test_config_diagnose_and_migrate_commands_emit_bounded_json`](../../tests/product_config/test_server_and_cli.py) | CLI成功输出、迁移和canary |
 | [`test_config_cli_redacts_unexpected_exception`](../../tests/product_config/test_server_and_cli.py) | 未知异常统一脱敏 |
+| [`test_product_command_builds_current_python_stdio_server_argv`](../../tests/product_ui/test_cli.py) | TUI使用当前解释器、固定Workspace和`runtime/`状态子目录调用`agent-server` |
 
 ### 39.5 Schema
 

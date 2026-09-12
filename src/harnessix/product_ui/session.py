@@ -9,7 +9,7 @@ from enum import StrEnum
 from typing import Protocol
 from uuid import UUID
 
-from harnessix.product_ui.contracts import command_request_id
+from harnessix.product_ui.contracts import ClientStateV1, command_request_id
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.projection import (
     ProductViewState,
@@ -19,6 +19,7 @@ from harnessix.product_ui.projection import (
     refresh_thread_snapshot,
 )
 from harnessix.product_ui.state_store import ClientStateStore
+from harnessix.protocol.contracts import ThreadListResult, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 from harnessix.sdk.agent_client import AgentTransport
 
@@ -225,6 +226,53 @@ class RecoverableAgentSession:
                 raise
             self.connection = ProductConnection(generation, ConnectionPhase.READY)
             return view
+
+    def client_state(self) -> ClientStateV1:
+        """返回重新校验过的客户端持久状态，不暴露Store写入口。"""
+
+        return self._state_store.state()
+
+    def clear_selected_thread(self) -> None:
+        """清除已经不在当前Workspace活动列表中的本地选择。"""
+
+        self._state_store.select_thread(None)
+
+    async def list_threads_page(
+        self,
+        *,
+        cursor: str | None = None,
+        limit: int = 200,
+    ) -> ThreadListResult:
+        """在当前连接代际内读取一页未归档Thread。"""
+
+        async with self._operation_lock:
+            client = self._ready_client()
+            try:
+                return await client.list_threads(cursor=cursor, limit=limit, archived=False)
+            except AgentSDKError as error:
+                if error.code in _CONNECTION_FAILURES:
+                    self.connection = ProductConnection(
+                        self.connection.generation,
+                        ConnectionPhase.BROKEN,
+                        error.code,
+                    )
+                raise
+
+    async def resume_thread(self, thread_id: UUID) -> ThreadView:
+        """恢复服务端Thread驱动；该协议操作本身由Agent Runtime保证可重复。"""
+
+        async with self._operation_lock:
+            client = self._ready_client()
+            try:
+                return await client.resume_thread(thread_id)
+            except AgentSDKError as error:
+                if error.code in _CONNECTION_FAILURES:
+                    self.connection = ProductConnection(
+                        self.connection.generation,
+                        ConnectionPhase.BROKEN,
+                        error.code,
+                    )
+                raise
 
     async def poll_thread(
         self,

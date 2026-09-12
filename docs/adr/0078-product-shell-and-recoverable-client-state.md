@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 2
-code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
+version: 3
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
@@ -20,13 +20,17 @@ related_adrs:
 related_tests:
   - tests/app_server/test_agent_cli.py
   - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_controller.py
+  - tests/product_ui/test_app.py
+  - tests/product_ui/test_stdio_product.py
+  - tests/product_ui/test_cli.py
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
 # ADR 0078：产品终端壳与可恢复客户端状态
 
-- 状态：已接受，等待0.9.1分片实现
+- 状态：已接受；0.9.1a已关闭，0.9.1b本地实现等待提交与三平台CI
 - 日期：2026-09-13
 - 决策范围：Harnessix Code 0.9.1
 
@@ -101,11 +105,19 @@ Snapshot和有序事件序列必须产生逐字段相等的视图。若未来增
 - 超时只形成`outcome_unknown`或稳定传输错误，不在UI层假定领域命令失败；
 - 终端恢复在`finally`路径执行，清理失败不得覆盖更重要的领域/传输错误，但必须进入诊断记录。
 
+0.9.1b将上述所有权收敛为一个Actor Task：用户Intent和空闲/活动轮询都经同一队列时序访问Session；Intent队列
+上限64，View更新队列只保存最新一份不可变快照。调用者取消`dispatch`等待不会取消已经接纳的Intent。关闭使用同一
+绝对Deadline排空Actor与关闭Session；超时返回`controller_operation_unknown`/非Clean `CloseReport`，不得回退
+Command序列或伪造服务端结果。
+
 ### 2.5 渲染框架
 
 选择Textual 8.x作为TUI渲染层，并在0.9.1初始实现中约束为`>=8.2,<9`。Textual通过`tui`可选依赖隔离纯
 Server/SDK安装；正式Harnessix Code终端产品安装物必须包含该Extra。缺少依赖时，CLI返回稳定错误和静态安装
 指引，不动态联网安装。
+
+0.9.1b锁文件实际解析为Textual 8.2.8。当前基础View只提供Session Picker、Transcript、Composer、状态行及
+新建/重连/退出快捷键；完整Approval、Question、Diff、Cancel、Steer和Usage/Cost专用交互仍属于0.9.1c。
 
 Controller、Store、Reducer、View Model和错误目录不导入Textual，确保协议/恢复语义可由普通Pytest测试。
 Textual测试使用`App.run_test()`与Pilot验证按键、焦点、尺寸、Modal和退出；不依赖真实TTY或Snapshot人工目测。
@@ -188,7 +200,16 @@ Reconcile边界装配。TUI不增加旁路文件写入、任意Shell或“始终
 ## 6. 实施与追踪
 
 完整接口、数据、时序、测试和回退计划见
-[0.9.1 CLI/TUI产品体验详细设计](../changes/m09-1-cli-tui-product-experience.md)。实现完成前，现行能力仍以
+[0.9.1 CLI/TUI产品体验详细设计](../changes/m09-1-cli-tui-product-experience.md)。0.9.1a客户端状态、投影、连接代际和
+SDK严格边界已由CI关闭。0.9.1b当前工作树已实现：
+
+- [`ProductController`](../../src/harnessix/product_ui/controller.py)单Actor、类型化Intent和有界关闭；
+- [`ProductApp`](../../src/harnessix/product_ui/app.py)基础Textual产品壳；
+- [`code_main`](../../src/harnessix/product_ui/cli.py)可选依赖、用户级状态布局和stdio组合根；
+- [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)真实子进程/Store关闭重开与完整Transcript恢复；
+- [`test_app.py`](../../tests/product_ui/test_app.py)无头会话切换、Composer防重、Resize和退出验证。
+
+上述实现的本地测试已通过，但在实现提交完成三平台CI之前，0.9.1b不得标记完成。0.9.1c～0.9.1e的现行能力仍以
 [SDK模块](../modules/sdk.md)、[App Server模块](../modules/app-server.md)、
 [Product Config模块](../modules/product-config.md)、[Tools模块](../modules/tools.md)和
 [总体架构](../architecture.md)为准。

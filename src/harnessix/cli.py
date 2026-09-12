@@ -38,6 +38,7 @@ def _parser() -> argparse.ArgumentParser:
         "coding-eval-campaign", help="运行显式启用的固定历史任务真实模型Campaign"
     )
     subcommands.add_parser("agent", help="通过stdio App Server运行薄Agent CLI")
+    subcommands.add_parser("code", help="启动全屏Coding Agent终端产品")
     subcommands.add_parser("agent-server", help="按产品配置运行stdio App Server")
     subcommands.add_parser("config", help="诊断或迁移产品配置")
     subcommands.add_parser("license", help="显示社区许可证、源代码和商业许可信息")
@@ -64,32 +65,45 @@ async def _run_worker(settings: Settings, *, once: bool) -> None:
         await service.close()
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    args = list(sys.argv[1:] if argv is None else argv)
-    if args and args[0] == "model-smoke":
+def _delegate_special_command(args: list[str]) -> bool:
+    if not args:
+        return False
+    if args[0] == "model-smoke":
         from harnessix.smoke.cli import main as smoke_main
 
         smoke_main(args[1:])
-        return
-    if args and args[0] == "coding-eval-campaign":
+        return True
+    if args[0] == "coding-eval-campaign":
         from harnessix.evals.campaign_cli import main as campaign_main
 
         campaign_main(args[1:])
-        return
-    if args and args[0] == "agent":
+        return True
+    if args[0] == "agent":
         from harnessix.agent_cli import main as agent_main
 
         agent_main(args[1:])
-        return
-    if args and args[0] == "agent-server":
+        return True
+    if args[0] == "agent-server":
         from harnessix.product_config.cli import agent_server_main
 
         agent_server_main(args[1:])
-        return
-    if args and args[0] == "config":
+        return True
+    if args[0] == "code":
+        from harnessix.product_ui.cli import code_main
+
+        code_main(args[1:])
+        return True
+    if args[0] == "config":
         from harnessix.product_config.cli import config_main
 
         config_main(args[1:])
+        return True
+    return False
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if _delegate_special_command(args):
         return
     arguments = _parser().parse_args(args)
     if arguments.command == "license":

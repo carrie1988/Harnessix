@@ -1,13 +1,14 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
 owners:
   - core
 modules:
   - deployment
   - cli
+  - product_ui
 related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
@@ -16,6 +17,8 @@ related_tests:
   - tests/governance/test_repository_policy.py
   - tests/unit/test_cli_license.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_ui/test_cli.py
+  - tests/product_ui/test_app.py
 supersedes: []
 ---
 
@@ -23,7 +26,7 @@ supersedes: []
 
 ## 1. 适用范围
 
-本文描述代码Revision `ef36a7cebba5a4b50e2fb19055dcb3940363034f`可验证的源码安装、开发环境、
+本文描述代码Revision `1c11956d3fdc95ccc5a051a96e2107becfdbe78d`及0.9.1b当前工作树可验证的源码安装、开发环境、
 本地Wheel和Action Plane容器路径。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 
@@ -37,6 +40,7 @@ supersedes: []
 | Docker兼容后端 | 能拉取固定镜像并运行非Root容器 | Action Plane镜像和Container Sandbox | 可选 |
 | PostgreSQL | 17为当前CI基线 | 多Worker共享Action Journal | queued生产拓扑 |
 | Provider SDK | `openai`或`anthropic`可选依赖 | `agent-server`模型调用 | 按Product Config选择 |
+| Textual | `>=8.2,<9`，当前锁定8.2.8 | `harnessix code`全屏终端 | `tui` Extra |
 
 Python约束来自[`pyproject.toml`](../../pyproject.toml)的`requires-python = ">=3.12"`。Python 3.12/3.13、
 macOS、Windows和后端测试矩阵不等于所有平台的完整产品支持，详见[平台矩阵](platforms.md)。
@@ -77,13 +81,24 @@ uv sync --locked --all-extras --dev
 ```
 
 `--locked`确保解析结果与[`uv.lock`](../../uv.lock)一致；`--all-extras`安装OpenAI、Anthropic、
-OpenTelemetry和LangGraph可选依赖；`--dev`安装测试和静态检查工具。仅运行某一入口时可以安装更小依赖集，
+OpenTelemetry、LangGraph和Textual可选依赖；`--dev`安装测试和静态检查工具。仅运行某一入口时可以安装更小依赖集，
 但对应环境必须单独验收，不能借用全量开发环境结论。
+
+仅验证终端入口时，在构建好的Wheel或源码包上显式安装`tui`以及目标Provider Extra：
+
+```bash
+python -m pip install 'harnessix[tui,openai]'
+harnessix code /srv/project --config /srv/harnessix-private/config.json
+```
+
+基础Wheel不会隐式安装Textual。缺少Extra时`harnessix code`输出稳定`tui_dependency_missing` JSON并退出2，不会
+运行时联网下载。上述命令只说明入口和依赖关系；当前没有PyPI发布证据，应使用本地Wheel或锁定源码安装。
 
 ### 4.3 安装后验收
 
 ```bash
 uv run harnessix --help
+uv run harnessix code --help
 uv run harnessix license
 uv run python -c 'import harnessix; print(harnessix.__file__)'
 make spec
@@ -109,8 +124,8 @@ python -m venv ./wheel-verify
 ./wheel-verify/bin/harnessix --help
 ```
 
-Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel不自动安装模型Provider、Observability或
-LangGraph Extras；验收某项能力时必须显式安装相应Extra，并确认依赖解析没有越过项目上限。
+Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel不自动安装模型Provider、Observability、
+LangGraph或TUI Extras；验收某项能力时必须显式安装相应Extra，并确认依赖解析没有越过项目上限。
 
 ### 5.1 Wheel边界
 
@@ -165,7 +180,8 @@ docker run --rm \
 | 源码Checkout | 只读或受控构建目录 | 按构建用户 | 与运行状态混放 |
 | Action SQLite | 专用持久卷 | 目录`0700`、文件最小权限 | 网络文件系统、多主机并发共享 |
 | Product Config | Workspace外私有目录 | 文件`0600` | Symlink、多硬链接、组/其他可读 |
-| Agent状态目录 | Workspace外私有目录 | 目录`0700` | 与Workspace互相包含 |
+| 产品客户端状态根 | 默认用户级`.harnessix/workspaces/<workspace-fingerprint>`或显式目录 | 目录`0700` | 与Workspace互相包含、多个产品进程共享写入 |
+| Agent Runtime状态目录 | 客户端状态根的`runtime/`子目录 | 目录`0700` | 与客户端状态文件混成同一Schema、位于Workspace内 |
 | Workspace | 独立用户仓库 | 由仓库所有者控制 | 存放Provider Secret或状态数据库 |
 
 产品入口会在POSIX校验Product Config和状态目录，但Action Plane通用SQLite路径没有同等级的Owner/Mode入口校验；
@@ -186,6 +202,7 @@ docker run --rm \
 | 源码开发 | `uv sync --locked --all-extras --dev`、`make check` | 锁定依赖、静态检查和全量测试通过 |
 | 基础Wheel | 全新环境安装、`harnessix --help`、`license` | 不依赖源码目录也能导入和运行命令 |
 | Provider Wheel | 安装目标Extra、`config diagnose` | SDK、Secret引用和Profile能力通过 |
+| TUI源码/Wheel | 安装`tui` Extra、`harnessix code --help`、无头UI和真实stdio恢复 | Textual可导入，会话/输入/恢复/关闭合同通过 |
 | 容器 | 非Root身份、持久卷、Health/Readiness | 重启后状态保留，端口只按预期暴露 |
 | 升级 | 旧版本建库、新版本迁移、重开、旧Reader拒绝 | 旧字节和失败语义符合合同 |
 | 平台 | 对应CI与原生Dogfooding | 文件、进程、终端、Git和取消矩阵通过 |
@@ -197,6 +214,7 @@ docker run --rm \
 | 包与Extra | [`pyproject.toml`](../../pyproject.toml) | [`tests/governance/test_repository_policy.py`](../../tests/governance/test_repository_policy.py) |
 | 锁定依赖 | [`uv.lock`](../../uv.lock) | [CI workflow](../../.github/workflows/ci.yml) |
 | CLI入口 | [`src/harnessix/cli.py`](../../src/harnessix/cli.py)的`main` | [`tests/unit/test_cli_license.py`](../../tests/unit/test_cli_license.py) |
+| TUI Extra与产品入口 | [`pyproject.toml`](../../pyproject.toml)、[`src/harnessix/product_ui/cli.py`](../../src/harnessix/product_ui/cli.py)的`code_main` | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py)、[`test_app.py`](../../tests/product_ui/test_app.py) |
 | 产品启动 | [`src/harnessix/product_config/server.py`](../../src/harnessix/product_config/server.py)的`run_product_stdio` | [`tests/product_config/test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | 镜像 | [`Dockerfile`](../../Dockerfile) | [`tests/integration/test_api.py`](../../tests/integration/test_api.py) |
 

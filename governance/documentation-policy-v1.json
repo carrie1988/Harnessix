@@ -90,7 +90,10 @@
     "src/harnessix/__main__.py": ["docs/modules/app-server.md"],
     "src/harnessix/agent_cli.py": ["docs/modules/app-server.md", "docs/modules/sdk.md"],
     "src/harnessix/bootstrap.py": ["docs/architecture.md", "docs/modules/product-config.md"],
-    "src/harnessix/cli.py": ["docs/subsystems/action-plane.md"],
+    "src/harnessix/cli.py": [
+      "docs/subsystems/action-plane.md",
+      "docs/modules/product-ui.md"
+    ],
     "src/harnessix/file_lock.py": ["docs/modules/storage.md", "docs/modules/product-config.md"],
     "src/harnessix/licensing.py": ["docs/product-charter.md", "docs/build-vs-buy.md"],
     "src/harnessix/runtime.py": ["docs/subsystems/action-plane.md"],
