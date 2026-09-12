@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 7
-code_revision: 00e2b816078f52c10849a65efddb36e84a538eef
+version: 8
+code_revision: efc7d82062681469651925bff411134c95d89a01
 owners:
   - core
 modules:
@@ -63,7 +63,7 @@ flowchart LR
 | Action Plane | [Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | 子系统级现行设计已完成；各包独立设计待DOC-1.3细化 |
 | Agent Runtime | [Agent Runtime模块设计](../modules/agent.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块设计已完成 |
 | Model Runtime | [0.4设计](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本、计费和Smoke缺独立模块入口 |
-| Coding Tool | [0.5设计](../m05-coding-tools.md) | Tool/Patch/Eval系列研究与ADR | 1,097行聚合文档承担过多模块事实 |
+| Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md) | [Tool Runtime研究](../research/tool-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools现行模块设计已完成；Patch、Process、Eval继续独立迁移 |
 | Context/Session | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计 | Context/Session系列研究与ADR | Context、Session、Artifact边界仍需逐包固化 |
 | 可信执行/交付 | [0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、ADR 0065～0069 | Process、Sandbox、Workspace、Delivery等缺独立设计 |
 | 产品运行时/扩展 | [0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill研究、ADR 0070～0075 | Protocol、App Server、SDK及扩展需逐包固化 |
@@ -104,7 +104,7 @@ flowchart LR
 | [skills](../../src/harnessix/skills/) | Skill快照、发现和渐进加载 | [0.8](../m08-product-runtime-and-extensions.md) | [skills](../../tests/skills/) | `docs/modules/skills.md` | 缺失 |
 | [smoke](../../src/harnessix/smoke/) | 受控真实Provider Smoke | [0.4](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [smoke](../../tests/smoke/) | `docs/modules/smoke.md` | 缺失 |
 | [storage](../../src/harnessix/storage/) | SQLite/PostgreSQL Action Journal | [Action Plane子系统设计](../subsystems/action-plane.md) | [integration](../../tests/integration/) | `docs/modules/storage.md` | 子系统级完整；独立模块待DOC-1.3 |
-| [tools](../../src/harnessix/tools/) | 只读、Git和受控工具运行 | [0.5](../m05-coding-tools.md) | [tools](../../tests/tools/) | `docs/modules/tools.md` | 缺失 |
+| [tools](../../src/harnessix/tools/) | 只读、Git和受控工具运行 | [Coding Tool Runtime模块设计](../modules/tools.md) | [tools](../../tests/tools/) | [docs/modules/tools.md](../modules/tools.md) | 完整，DOC-1.3 Wave B |
 | [trusted_actions](../../src/harnessix/trusted_actions/) | 高风险Coding Action统一路由 | [0.7](../m07-trusted-execution-and-delivery.md) | [trusted_actions](../../tests/trusted_actions/) | `docs/modules/trusted-actions.md` | 缺失 |
 | [workspace](../../src/harnessix/workspace/) | 路径、Snapshot和租约 | [0.5](../m05-coding-tools.md)、[0.7](../m07-trusted-execution-and-delivery.md) | [workspace](../../tests/workspace/) | `docs/modules/workspace.md` | 缺失 |
 
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成5/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成6/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

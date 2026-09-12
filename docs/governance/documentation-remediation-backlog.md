@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 7
-code_revision: 00e2b816078f52c10849a65efddb36e84a538eef
+version: 8
+code_revision: efc7d82062681469651925bff411134c95d89a01
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
-| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（4/19） |
+| DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 进行中（5/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
@@ -157,9 +157,11 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 7.2 Wave B：工具、补丁和进程执行
 
+进度：**1/4，进行中**。[Coding Tool Runtime](../modules/tools.md)已完成，继续Patch、Execution和Process。
+
 | 顺序 | 源码包 | 目标文档 | 重点 |
 |---:|---|---|---|
-| 1 | `tools` | `docs/modules/tools.md` | 只读/搜索/Git工具、分页、稳定模型视图 |
+| 1 | `tools` | [docs/modules/tools.md](../modules/tools.md) | 只读/搜索/Git工具、分页、稳定模型视图；已完成 |
 | 2 | `patches` | `docs/modules/patches.md` | Prepared Patch、批次、Diff、Agent桥接和恢复 |
 | 3 | `execution` | `docs/modules/execution.md` | Execution Plan、持久存储和审批绑定 |
 | 4 | `processes` | `docs/modules/processes.md` | 跨平台进程、PTY、Owner、租约和终态 |
