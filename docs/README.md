@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 8
-code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
+version: 9
+code_revision: 8ab1d0380941206b7a5fddc52e780fe7b3f937bd
 owners:
   - core
 modules:
@@ -37,6 +37,7 @@ supersedes: []
 | 产品启动与协议 | [源码阅读地图：产品启动](guides/source-reading-map.md#4-产品启动与装配主链) | `cli → product_config → app_server → protocol` |
 | Agent Loop与状态 | [Agent Runtime模块设计](modules/agent.md) | `agent → session → models/context/tools` |
 | 文件修改和执行 | [Managed Patch Runtime模块设计](modules/patches.md) | `patches → agent/artifacts`，再阅读`sandbox/workspace → delivery` |
+| 执行授权与审批 | [Execution Plan模块设计](modules/execution.md) | `execution → trusted_actions/processes/sandbox/delivery` |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → runtime → storage/worker` |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
@@ -66,6 +67,7 @@ supersedes: []
 | Artifact | [Artifact模块设计](modules/artifacts.md) | 有界正文、原子发布、分页、完整性验证、TTL和回收 |
 | Coding Tool Runtime | [Coding Tool Runtime模块设计](modules/tools.md) | Workspace只读文件/搜索/Git、可信Scope、并发、取消和Artifact捕获 |
 | Managed Patch Runtime | [Managed Patch Runtime模块设计](modules/patches.md) | 精确计划、受管副本、单文件/批次审批、持久执行、恢复和Diff Artifact |
+| Execution Plan | [Execution Plan模块设计](modules/execution.md) | v1/v2不可变计划、环境/Secret摘要、能力与Sandbox绑定、Policy/Approval和SQLite检查点 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -136,7 +138,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成7/19个主链模块，其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 

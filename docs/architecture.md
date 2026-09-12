@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 9
-code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
+version: 10
+code_revision: 8ab1d0380941206b7a5fddc52e780fe7b3f937bd
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ modules:
   - models
   - context
   - tools
+  - execution
   - trusted_actions
   - runtime
 related_adrs:
@@ -36,7 +37,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`efc7d82062681469651925bff411134c95d89a01`。状态标签含义如下：
+本文基于提交`8ab1d0380941206b7a5fddc52e780fe7b3f937bd`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -217,6 +218,7 @@ flowchart LR
 | 只读Tool | 当前默认产品 | Workspace内读取、搜索和可选固定Git查询；详见[模块设计](modules/tools.md) | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime` | [tools测试](../tests/tools/) |
 | Artifact | 已实现/显式装配 | 有界正文、模型历史、Diff与进程输出外置；详见[模块设计](modules/artifacts.md) | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复；详见[模块设计](modules/patches.md) | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
+| Execution Plan | 已实现/显式装配 | v1/v2不可变执行计划、环境/Secret摘要、能力/Sandbox绑定和一次性Approval Checkpoint；详见[模块设计](modules/execution.md) | [contracts.py](../src/harnessix/execution/contracts.py)、[store.py](../src/harnessix/execution/store.py) | [execution测试](../tests/execution/) |
 | Process | 已实现/显式装配 | 命令计划、Owner、监督、输出Artifact和跨平台端口 | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
 | Sandbox | 已实现/显式装配 | 能力探测、容器、网络隔离和Egress策略 | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py) | [sandbox测试](../tests/sandbox/) |
 | Workspace | 已实现/显式装配 | 路径身份、Snapshot、Lease与Windows路径规则 | [paths.py](../src/harnessix/workspace/paths.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
@@ -658,7 +660,7 @@ sequenceDiagram
 | Product Config审计 | SQLite `product-config.db` | Snapshot保存和活动指针CAS | 配置Hash、Profile和期望版本冲突检测 |
 | Artifact | SQLite元数据与内容存储 | Artifact提交 | Digest/身份、分页读取、Thread授权和崩溃恢复 |
 | Action Journal | SQLite或PostgreSQL | Action事件/快照状态转换 | 幂等键、Lease、Worker身份、UNKNOWN/Reconcile |
-| Execution/Trusted Action | SQLite计划账本 | 计划与状态转换 | 指纹、审批、稳定Plan ID和恢复扫描 |
+| Execution/Trusted Action | SQLite计划账本 | 计划与状态转换；Execution合同详见[模块设计](modules/execution.md) | 指纹、审批、稳定Plan ID和恢复扫描 |
 | Delivery Transaction | SQLite元数据与内容Blob | Prepared计划保存/状态转换 | Request ID、Digest、Snapshot与恢复读取 |
 
 跨这些存储没有分布式事务。组合操作必须明确“先写哪条事实、失败后由谁恢复、重复请求返回什么”，并以稳定ID连接记录。
@@ -810,6 +812,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | Turn如何运行 | [agent/runtime.py](../src/harnessix/agent/runtime.py)、[agent/reducer.py](../src/harnessix/agent/reducer.py) | [test_runtime.py](../tests/agent/test_runtime.py)、[test_tool_scheduling.py](../tests/agent/test_tool_scheduling.py) |
 | 只读工具如何约束路径和结果 | [Coding Tool Runtime模块设计](modules/tools.md)、[tools/runtime.py](../src/harnessix/tools/runtime.py) | [tools测试](../tests/tools/) |
 | Patch如何冻结计划、批准、落盘和恢复 | [Managed Patch Runtime模块设计](modules/patches.md)、[patches/managed.py](../src/harnessix/patches/managed.py) | [patches测试](../tests/patches/) |
+| Execution Plan如何绑定Workspace、环境、Secret、Sandbox、Policy、能力与批准 | [Execution Plan模块设计](modules/execution.md)、[execution/contracts.py](../src/harnessix/execution/contracts.py) | [execution测试](../tests/execution/) |
 | 状态如何恢复 | [session/sqlite.py](../src/harnessix/session/sqlite.py)、`AgentRuntime._recover` | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_session_upgrade.py](../tests/agent/test_session_upgrade.py) |
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
 | 高风险能力如何收口 | [trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py) |
@@ -831,7 +834,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 23个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 22个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -899,6 +902,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 接入Execution Plan现行模块设计，补充执行授权绑定、持久计划和审批检查点入口 |
 | 9 | `5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1` | 2026-09-12 | 接入Managed Patch Runtime现行模块设计入口，同步独立模块覆盖进度 |
 | 8 | `efc7d82062681469651925bff411134c95d89a01` | 2026-09-12 | 接入Coding Tool Runtime现行模块设计入口，同步独立模块覆盖进度 |
 | 2 | `48f286938ddd877bf9fdbb6ad3e64f8403098723` | 2026-09-12 | 按DOC-1.1重构为当前系统事实源，补齐边界、状态、五条时序、数据、安全、恢复和源码测试映射 |

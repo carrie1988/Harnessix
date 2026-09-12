@@ -48,7 +48,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 ## 当前已完成：0.7可信执行与工程交付
 
 - POSIX/Windows原生Workspace Snapshot、规范路径与跨进程fencing租约；
-- 不可变`ExecutionPlanV2`与精确Approval Checkpoint，绑定Tool、参数、cwd、环境、Workspace、Sandbox、网络和Secret版本；
+- 不可变`ExecutionPlanV2`与精确Approval Checkpoint，绑定Tool、参数、cwd、环境、Workspace、Sandbox、网络和Secret版本；详见[Execution Plan模块设计](docs/modules/execution.md)；
 - Container强隔离、选择性网络、Secret最小注入/流式脱敏，以及POSIX Process Group、Windows suspended Job Object/ConPTY和持久后台监督；
 - 多文件Workspace Transaction、私有CAS、append-only账本、崩溃恢复、新事务Rollback和完整Diff；
 - 受管Git worktree/checkpoint/显式commit，固定Git环境且来源HEAD/index不移动；
