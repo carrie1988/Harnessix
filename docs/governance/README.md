@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 22
-code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
+version: 23
+code_revision: b71682da19b54e93b225c54c594e2583fd648e70
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
-| DOC-1.4 | 产品运行时与扩展模块设计 | 下一阶段 | Protocol、App Server、SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke共10个模块文档 |
+| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（1/10） | [Protocol](../modules/protocol.md)已完成；下一项为App Server，之后为SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 

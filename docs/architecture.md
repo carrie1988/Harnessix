@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 22
-code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
+version: 23
+code_revision: b71682da19b54e93b225c54c594e2583fd648e70
 owners:
   - core
 modules:
@@ -218,7 +218,7 @@ flowchart LR
 |---|---|---|---|---|
 | 顶层命令 | 当前默认产品 | 命令解析与入口分派 | [cli.py](../src/harnessix/cli.py) `main` | [CLI许可测试](../tests/unit/test_cli_license.py)、[产品CLI测试](../tests/product_config/test_server_and_cli.py) |
 | Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移和活动配置CAS | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
-| Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等 | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
+| Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
 | Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py) |
@@ -405,7 +405,7 @@ stateDiagram-v2
     CLOSED --> [*]
 ```
 
-Server在`READY`前拒绝业务方法；协议版本不等于`1.0`时握手失败。实现见[AgentProtocolServer](../src/harnessix/app_server/server.py)，合同测试见[Server SDK测试](../tests/app_server/test_server_sdk.py)。
+Server在`READY`前拒绝业务方法；协议版本不等于`1.0`时握手失败。JSON-RPC、严格解码、公共投影、Replay游标与持久命令账本见[Protocol模块设计](modules/protocol.md)，连接执行见[AgentProtocolServer](../src/harnessix/app_server/server.py)，合同测试见[Server SDK测试](../tests/app_server/test_server_sdk.py)。当前只有`itemDeltas`能力和`maxMessageBytes`限制完整贯穿对应运行路径，其他协商Limit仍有执行差距，不能把初始化返回值全部解释为动态强制配额。
 
 ### 10.2 Turn生命周期
 
@@ -501,7 +501,7 @@ Action领域模型、端口及其当前强弱约束见[Domain模块设计](modul
 | `AgentEvent.sequence` | 递增整数/是 | Session Store分配 | 非敏感 | SQLite唯一顺序；CAS和Replay游标 |
 | `ToolCallContent.call_id` | 字符串/是 | Provider规范化层 | 非敏感 | Session Event；关联审批、结果和恢复 |
 | `ApprovalContent.request_fingerprint` | SHA-256样式摘要/是 | 对批准对象的规范化内容计算 | 安全敏感元数据 | Session Event；响应必须精确匹配 |
-| `ProtocolRequestRecord.fingerprint` | 摘要/是 | 方法和规范化Params计算 | 非敏感 | Protocol Request表；阻止请求键换Payload |
+| `ProtocolRequestRecord.params_sha256` | SHA-256摘要/是 | 方法和规范化Params共同计算 | 受控摘要 | Protocol Request表；阻止请求键换方法或Payload |
 | `ActionRequest.idempotency_key` | 条件必填 | 调用者；写工具按Definition要求 | 非敏感 | Effect Journal唯一性范围；冲突拒绝 |
 | `ActionSnapshot.status` | `ActionStatus`/是 | Action Service/Journal转换 | 非敏感 | SQLite/PostgreSQL Journal；非法转换拒绝 |
 | `TraceContext` | trace/span身份/可选 | 上游或运行时 | 受控元数据 | Session/Journal和观测属性；不得承载Secret |
@@ -821,7 +821,7 @@ if UNKNOWN: require reconcile instead of blind replay
 |---|---|---|
 | 命令如何进入产品 | [cli.py](../src/harnessix/cli.py)、[agent_cli.py](../src/harnessix/agent_cli.py) | [test_agent_cli.py](../tests/app_server/test_agent_cli.py) |
 | 产品如何安全装配 | [product_config/server.py](../src/harnessix/product_config/server.py) | [test_server_and_cli.py](../tests/product_config/test_server_and_cli.py) |
-| 协议如何握手和幂等 | [app_server/server.py](../src/harnessix/app_server/server.py)、[protocol/requests.py](../src/harnessix/protocol/requests.py) | [test_server_sdk.py](../tests/app_server/test_server_sdk.py)、[test_requests.py](../tests/protocol/test_requests.py) |
+| 协议如何严格解码、握手、投影、Replay和幂等 | [Protocol模块设计](modules/protocol.md)、[protocol/contracts.py](../src/harnessix/protocol/contracts.py)、[protocol/projection.py](../src/harnessix/protocol/projection.py)、[protocol/requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/)、[test_server_sdk.py](../tests/app_server/test_server_sdk.py) |
 | Turn如何运行 | [agent/runtime.py](../src/harnessix/agent/runtime.py)、[agent/reducer.py](../src/harnessix/agent/reducer.py) | [test_runtime.py](../tests/agent/test_runtime.py)、[test_tool_scheduling.py](../tests/agent/test_tool_scheduling.py) |
 | 只读工具如何约束路径和结果 | [Coding Tool Runtime模块设计](modules/tools.md)、[tools/runtime.py](../src/harnessix/tools/runtime.py) | [tools测试](../tests/tools/) |
 | Patch如何冻结计划、批准、落盘和恢复 | [Managed Patch Runtime模块设计](modules/patches.md)、[patches/managed.py](../src/harnessix/patches/managed.py) | [patches测试](../tests/patches/) |
@@ -855,7 +855,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 10个产品运行时与扩展包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
+| 9个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol设计已完成，App Server为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 

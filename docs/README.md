@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 21
-code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
+version: 22
+code_revision: b71682da19b54e93b225c54c594e2583fd648e70
 owners:
   - core
 modules:
@@ -48,6 +48,7 @@ supersedes: []
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；历史验收再读[测试与Eval规范](testing-and-evals.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
+| Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读`app_server/server.py`和`service.py`的握手、路由与命令顺序 |
 
 30个生产源码包、10个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
 
@@ -87,6 +88,7 @@ supersedes: []
 | Delivery | [Delivery模块设计](modules/delivery.md) | Workspace Transaction、私有Blob、完整Diff、POSIX可恢复发布、Git Worktree/Checkpoint/Commit和单独批准Push |
 | Evals | [Evals模块设计](modules/evals.md) | 历史任务、私有物化、Agent运行、固定评分、Campaign、成本、Compaction语义评测和专用单文件交付 |
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
+| Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
