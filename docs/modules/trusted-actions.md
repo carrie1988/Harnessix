@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
+version: 3
+code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
 owners:
   - core
 modules:
@@ -820,6 +820,11 @@ Target、目录、协议、SQLite、输出、取消和生产差距的现行事�
 `SkillRegistry`读取冻结Manifest/资源，并用`SecretLeakGuard`在输出跨Action边界前阻断已知Canary。
 `SkillActionGateway`再次核对Catalog和Binding Fingerprint，只经Skill Port规划和执行。
 
+Skill当前实现的完整来源、Frontmatter、Catalog/Manifest摘要、资源Reader、SQLite访问事件和生产差距见
+[Skill模块设计](skills.md)。需特别区分Registry“文件读取成功”和Action“内容发布成功”：Registry当前在
+Secret Guard前写入成功访问事件，Guard拒绝时Action失败；两套账本无统一关联或事务。目录变化还不能在同一
+Router中原子替换Definition，默认产品也尚未装配Skill。
+
 ### 25.2 Hook
 
 `HookRuntime`不创建任意脚本Executor，只消费宿主已注册的`source="hook"` Port。构造时要求Binding为
@@ -1283,3 +1288,4 @@ uv run pytest \
 |---|---|---|---|
 | 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |
 | 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
+| 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |

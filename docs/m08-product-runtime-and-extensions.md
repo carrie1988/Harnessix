@@ -328,6 +328,9 @@ stdio Client的启动、目录发现、调用和关闭阶段均设置了局部�
 
 ## 8. 0.8.5 Skills与Hooks详细设计
 
+本节记录0.8.5交付增量。Skill当前实现的完整合同、源码、失败语义、测试证据和生产差距以
+[Skill模块设计](modules/skills.md)为现行事实源；Hook独立现行模块设计仍在DOC-1.4迁移。
+
 ### 8.1 模块与执行边界
 
 `harnessix.skills`由合同、目录运行时、SQLite Store和Action适配组成；
@@ -361,7 +364,8 @@ POSIX目录描述符/no-follow或Windows目录句柄/Reparse Point检查绑定Ro
 
 ### 8.3 渐进加载与资源安全
 
-目录只向模型公开名称、描述、来源、版本、路径摘要和内容摘要，不持久化正文。调用方
+目录合同只包含名称、描述、来源、版本、相对Manifest路径和内容摘要，不持久化正文；当前默认产品
+尚未把该目录自动装配给模型。显式调用方
 必须同时提交目录摘要和预期Manifest摘要；加载时重新验证目录、Root对象身份、文件
 类型和内容摘要。目录形成后正文变化以`skill_content_changed`失败，不自动采用新内容。
 
@@ -372,8 +376,9 @@ POSIX目录描述符/no-follow或Windows目录句柄/Reparse Point检查绑定Ro
 
 `SQLiteSkillStore`使用WAL和`FULL`同步保存不可变目录代次以及哈希链访问事件，仅记录
 操作、Manifest/资源路径/结果摘要和稳定错误码，不保存绝对Root、正文、资源内容或
-Secret。读取输出在进入Action结果前通过`SecretLeakGuard`；发现内容中出现已保护
-凭据不会被持久化，尝试输出时失败关闭。
+Secret。调用方显式提供受保护明文时，读取输出在进入Action结果前通过`SecretLeakGuard`；默认保护集合
+为空。Registry当前先记录读取成功事件再执行Guard，Guard拒绝时Skill账本成功而Action账本失败，且资源
+扫描缺少累计目录/条目预算；这些现行风险由后续切片关闭。
 
 ### 8.4 Hook定义、授权与匹配
 

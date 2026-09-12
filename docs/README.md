@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 28
-code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
+version: 29
+code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
 owners:
   - core
 modules:
@@ -48,7 +48,8 @@ supersedes: []
 | Action HTTP API | [API模块设计](modules/api.md) | `create_app → lifespan/middleware → routes → ActionService`；重点区分POST 202、GET 200、身份缺口、首次持久化与输入安全边界 |
 | Framework Adapter | [Adapter模块设计](modules/adapters.md) | `StructuredTool → build_request → Sync/Async Client → ActionSnapshot`；重点区分LangChain Tool兼容意图、真实LangGraph未验证、Tool Call身份与Action状态 |
 | MCP扩展 | [MCP模块设计](modules/mcp.md) | `target → connection/catalog → trusted policy/definition → gateway → trusted_actions`；重点区分目录事实、权限事实、Pre-send/After-send、UNKNOWN和默认产品未装配 |
-| Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `skills/hooks → trusted_actions`；独立模块设计继续迁移 |
+| Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
+| Hook扩展 | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `hooks → trusted_actions`；独立模块设计继续迁移 |
 | Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；历史验收再读[测试与Eval规范](testing-and-evals.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
@@ -101,6 +102,7 @@ supersedes: []
 | Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
 | Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
 | MCP | [MCP模块设计](modules/mcp.md) | 受管Target、不可变目录、Schema边界、SQLite状态、调用前漂移、Trusted Action、UNKNOWN/Reconcile和只读stdio Server |
+| Skill | [Skill模块设计](modules/skills.md) | 本地来源、Frontmatter、目录摘要、渐进加载、安全Reader、无正文访问账本、Action Gateway、Secret与提示注入边界 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -171,7 +173,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter与MCP，剩余Skill、Hook和Smoke三个产品运行时与扩展包继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP与Skill，剩余Hook和Smoke两个产品运行时与扩展包继续迁移。
 
 ## 8. 文档状态说明
 

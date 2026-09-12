@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：当前安全基线，已同步DOC-1.4 API、Product Config与MCP现行设计
+- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP与Skill现行设计
 - 更新日期：2026-09-12
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -644,16 +644,19 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 
 - **内容包提示注入**：Skill正文和资源始终是不受信模型输入；目录只保存元数据和摘要，Frontmatter中的Tool、Hook、Shell、模型、Secret或权限声明不产生能力。
 - **名称劫持**：同一来源重复限定名称全部失效；跨来源同名要求显式`source/name`，禁止按来源优先级静默覆盖。
-- **路径越界与TOCTOU**：Root通过POSIX目录描述符或Windows句柄/Reparse Point检查固定身份；每次读取重核Root、普通文件、链接数、目录观察和内容摘要。符号链接、Junction、硬链接、特殊文件、敏感路径、回退段和嵌套Skill资源失败关闭。
-- **正文持久泄漏**：Skill Store只保存目录、Manifest和访问摘要，不保存绝对Root、正文或资源；正文跨越Action边界前执行Secret Guard。
+- **路径越界与TOCTOU**：Root通过POSIX目录描述符或Windows句柄/Reparse Point检查固定身份；每次读取重核Root、普通文件、链接数、目录观察和内容摘要。符号链接、Junction、特殊文件、敏感路径、回退段和嵌套Skill资源失败关闭；POSIX硬链接当前会出现在资源列表，但实际读取由Reader拒绝。
+- **资源耗尽**：Manifest发现限制总目录、总条目、深度和Skill数；资源枚举当前只有深度、单目录条目和最终文件数上限，缺少累计目录/条目、Deadline和可取消预算，超宽纯目录树仍可阻塞同步调用。
+- **正文持久泄漏**：Skill Store只保存目录、Manifest和访问摘要，不保存绝对Root、正文或资源；调用方提供受保护明文时，正文跨越Action边界前执行Secret Guard。保护集合默认为空，未知或变形Secret不在当前保证内。
+- **访问审计**：敏感路径、Catalog缺失、名称冲突和期望Manifest不匹配等早期拒绝当前不写Skill Access Event；Registry在Secret Guard前先记录成功，Guard拒绝时Skill与Action账本结论不同，三库也没有统一关联或事务。
+- **目录生命周期**：Catalog和Manifest摘要阻止旧计划静默读取新内容，但同一Router不支持Skill Definition注销或原子替换；目录更新必须停止旧计划并重建生命周期，默认产品尚未实现该装配。
 - **可执行扩展旁路**：Hook不支持任意Shell、HTTP、Prompt或进程内回调，只能调用宿主注册的低风险只读`source="hook"` Action；第三方需要执行能力时必须使用MCP/Container和目标Action自身的Policy/Sandbox。
 - **定义替换**：非Bundled Hook授权绑定完整定义摘要；事件、Matcher、顺序、超时或Action版本/指纹变化都会使旧Trust Grant失效。运行前再次核对Registry和Binding。
 - **信息过度暴露**：Hook处理器只看到身份和摘要；来源身份再次哈希，原始Action参数、结果、路径、模型正文、环境和Secret均不传递。
 - **拒绝绕过与权限提升**：`before_action`只能Blocking/Fail Closed并按确定顺序执行；任一拒绝或失败阻断目标调用。其他Hook只能Advisory/Record Only，非法`deny`记录失败，`allow`不能覆盖目标Action的deny、审批或Sandbox。
 - **挂起、取消与重放**：每个Hook有独立超时并取消底层Action；调用取消持久结算两层状态。重开把遗留Running收敛为Interrupted，重复Dispatch只返回既有终态，不自动重放。
-- **剩余风险**：0.8.5不提供远端Skill安装、签名Marketplace或可执行Hook生态；同UID配置篡改由摘要漂移检测但不能抵御宿主账户失陷，发行签名和供应链清单属于0.9。
+- **剩余风险**：0.8.5不提供远端Skill安装、签名Marketplace或可执行Hook生态；默认产品尚未装配Skill，上下文信任标签和提示注入真实模型门禁未完成。同步扫描/YAML/SQLite不可及时取消，Store路径/WAL权限、分页、保留和迁移仍需加固；同UID配置篡改可重算无密钥Hash链，不能抵御宿主账户失陷。发行签名和供应链清单属于0.9。
 
-对应设计、源码依据和回归见[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#8-085-skills与hooks详细设计)。
+对应现行Skill设计、源码依据和回归见[Skill模块设计](modules/skills.md)、[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#8-085-skills与hooks详细设计)。
 
 ## 0.8.6 Provider与配置产品化补充（2026-09-09）
 

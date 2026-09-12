@@ -1114,6 +1114,9 @@ CI的`container-sandbox`任务使用固定摘要BusyBox镜像，同时验证基�
 
 ## 0.8.5 Skill与Hook部署
 
+Skill现行装配、安全、持久化与运维限制见[Skill模块设计](modules/skills.md)。本节给出0.8部署约束，
+不表示默认`agent-server`已经加载Skill或Hook。
+
 Skill和Hook各使用一个独立私有SQLite数据库。数据库、WAL/SHM和备份应与Execution Plan、Action Audit处于同一受信用户数据根，不能位于Workspace，也不能暴露给MCP容器或项目进程。Skill数据库不保存正文或绝对Root；Hook数据库不保存原始Action参数、结果或Secret，但两者的元数据和摘要仍可能暴露扩展结构，诊断导出必须最小化。
 
 Skill装配顺序固定为：
@@ -1122,9 +1125,11 @@ Skill装配顺序固定为：
 2. 初始化`SecureWorkspaceReader`并验证Root不是符号链接、Junction或Reparse Point；
 3. 有界发现`SKILL.md`，生成并持久化不可变目录代次；存在来源内重复名称时排除全部重复项，跨来源冲突只允许限定名称；
 4. 为该目录生成`skill.load`和`skill.read_resource`定义，注册到对应`ExtensionActionPort(source="skill")`；
-5. 只把目录元数据提供给模型；正文和资源必须提交目录/Manifest摘要后按需读取，目录变化时重新注册Action，禁止继续使用旧绑定。
+5. 只把目录元数据提供给模型；正文和资源必须提交目录/Manifest摘要后按需读取。目录变化时必须停止旧计划并重建Router/Gateway生命周期；当前Router不支持同一来源Tool的注销或原子替换，不能在原Router上直接重复注册。
 
 Bundled Root应位于只读发行物目录；User Root建议为当前用户私有且不可被Workspace进程写入；Workspace Root天然不受信，任何变化都必须形成新目录。远端URL、Git自动安装、自动更新、脚本执行和Marketplace在0.8.5全部关闭。部署者不得把API Key、SSH私钥、`.env`、凭据目录或用户HOME整体放入Skill Root；敏感路径拒绝和Secret Guard只是纵深防御。
+
+当前资源枚举只有深度、单目录条目和最终文件数上限，没有累计资源目录/条目或业务Deadline；不应把超宽目录树接入长期运行的事件循环。`protected_secret_values`默认为空，产品装配必须从当前Secret作用域显式传入保护值，并正确解释Guard拒绝时Skill读取事件与Action发布结果可能不一致的现状。数据库只能放在受信私有数据根；现行Store尚未验证全部祖先、数据库Symlink及WAL/SHM权限。
 
 Hook装配顺序固定为：
 

@@ -402,7 +402,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.3已完成；0.9.1～0.9.6产品切片和DOC-1.4～DOC-1.6文档治理仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.3已完成；DOC-1.4已完成8/10；0.9.1～0.9.6产品切片和DOC-1.4剩余项、DOC-1.5～DOC-1.6文档治理仍未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -430,7 +430,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.1 导航与系统架构**：建立[文档总入口](README.md)、[当前系统架构](architecture.md)、30个包与10个根级模块的边界，以及[源码阅读路线](guides/source-reading-map.md)；明确默认产品、显式装配库和规划能力，覆盖正常任务、审批、取消、崩溃恢复和事务性交付五条时序；
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
 - [x] **DOC-1.3 Coding Agent主链**：19/19已完成；Wave A～D已补齐Session、Context、Artifact、Model、Tool、Patch、Execution、Process、Action安全链、Workspace、Delivery、[Evals](modules/evals.md)与[Observability](modules/observability.md)现行设计，并登记实现与历史资料之间的真实差异；
-- [ ] **DOC-1.4 产品运行时与扩展**：进行中（7/10）；[Protocol模块设计](modules/protocol.md)、[App Server模块设计](modules/app-server.md)、[SDK模块设计](modules/sdk.md)、[Product Config模块设计](modules/product-config.md)、[API模块设计](modules/api.md)、[Adapter模块设计](modules/adapters.md)与[MCP模块设计](modules/mcp.md)已完成，下一项为Skill，之后为Hook和Smoke；
+- [ ] **DOC-1.4 产品运行时与扩展**：进行中（8/10）；[Protocol模块设计](modules/protocol.md)、[App Server模块设计](modules/app-server.md)、[SDK模块设计](modules/sdk.md)、[Product Config模块设计](modules/product-config.md)、[API模块设计](modules/api.md)、[Adapter模块设计](modules/adapters.md)、[MCP模块设计](modules/mcp.md)与[Skill模块设计](modules/skills.md)已完成，下一项为Hook，之后为Smoke；
 - [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
 

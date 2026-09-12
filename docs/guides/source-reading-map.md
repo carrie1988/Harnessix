@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 7
-code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
+version: 8
+code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ modules:
   - trusted_actions
   - adapters
   - mcp
+  - skills
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
@@ -414,15 +415,26 @@ flowchart LR
 
 先通读[MCP模块设计](../modules/mcp.md)，区分当前显式库能力、默认产品尚未装配和远端HTTP目标。再依次阅读[MCP契约](../../src/harnessix/mcp/contracts.py)、[Schema转换](../../src/harnessix/mcp/schema.py)、[目录Store](../../src/harnessix/mcp/store.py)、[客户端Runtime](../../src/harnessix/mcp/runtime.py)、[stdio Server](../../src/harnessix/mcp/server.py)和[统一Action绑定](../../src/harnessix/mcp/actions.py)。用[Schema测试](../../tests/mcp/test_schema.py)、[stdio故障测试](../../tests/mcp/test_stdio_faults.py)和[Runtime Action测试](../../tests/mcp/test_runtime_actions.py)核对不可信边界。
 
-### 10.2 Skill与Hook
+### 10.2 Skill
 
-- Skill：[contracts.py](../../src/harnessix/skills/contracts.py) → [store.py](../../src/harnessix/skills/store.py) → [runtime.py](../../src/harnessix/skills/runtime.py) → [actions.py](../../src/harnessix/skills/actions.py)；
-- Hook：[contracts.py](../../src/harnessix/hooks/contracts.py) → [store.py](../../src/harnessix/hooks/store.py) → [runtime.py](../../src/harnessix/hooks/runtime.py)；
-- 验证：[Skill Runtime](../../tests/skills/test_runtime.py)、[Skill Schema](../../tests/skills/test_schemas.py)、[Hook Runtime](../../tests/hooks/test_runtime.py)、[Hook Schema](../../tests/hooks/test_schemas.py)。
+先通读[Skill模块设计](../modules/skills.md)，明确Skill是不可信、不可执行内容包，默认产品也尚未装配。
+再按[contracts.py](../../src/harnessix/skills/contracts.py) →
+[runtime.py](../../src/harnessix/skills/runtime.py) →
+[workspace/snapshot.py](../../src/harnessix/workspace/snapshot.py)的`SecureWorkspaceReader` →
+[store.py](../../src/harnessix/skills/store.py) →
+[actions.py](../../src/harnessix/skills/actions.py)顺序阅读。重点跟踪Root身份、Manifest/Catalog摘要、
+跨来源冲突、正文/资源重核、访问事件先于Secret Guard提交的窗口，以及Router不能原子替换旧Definition的限制。
+用[Skill Runtime](../../tests/skills/test_runtime.py)和[Skill Schema](../../tests/skills/test_schemas.py)核对现有证明，
+同时对照模块设计中的未覆盖测试清单，不能把14个测试解释为产品完成。
 
-Skill和Hook内容提供上下文或提出Action，不是可信代码。判断是否允许执行仍由统一Action边界完成。
+### 10.3 Hook
 
-### 10.3 LangGraph Adapter
+按[contracts.py](../../src/harnessix/hooks/contracts.py) → [store.py](../../src/harnessix/hooks/store.py) →
+[runtime.py](../../src/harnessix/hooks/runtime.py)阅读，并用[Hook Runtime](../../tests/hooks/test_runtime.py)和
+[Hook Schema](../../tests/hooks/test_schemas.py)验证。Hook处理器提出只读Action，不是可信代码；判断是否允许
+执行仍由统一Action边界完成。Hook独立现行模块设计仍待DOC-1.4迁移。
+
+### 10.4 LangGraph Adapter
 
 先读[Adapter模块设计](../modules/adapters.md)，再阅读[adapters/langgraph.py](../../src/harnessix/adapters/langgraph.py)的
 `HarnessixToolContext → create_harnessix_tool → build_request/invoke/ainvoke`。当前实现是LangChain
@@ -430,7 +442,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 用[test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py)核对唯一Async正常路径，并重点检查固定Context、
 Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework success。Adapter不拥有Policy、Journal或Executor生命周期。
 
-### 10.4 Eval与Smoke
+### 10.5 Eval与Smoke
 
 - Eval契约从[evals/contracts.py](../../src/harnessix/evals/contracts.py)开始；
 - 单任务执行读[runner.py](../../src/harnessix/evals/runner.py)和[grader.py](../../src/harnessix/evals/grader.py)；
@@ -560,7 +572,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 ## 17. 后续文档入口
 
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
-- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)与[MCP模块设计](../modules/mcp.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用和关闭的现行事实；
+- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)与[Skill模块设计](../modules/skills.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包和关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
 - [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；
