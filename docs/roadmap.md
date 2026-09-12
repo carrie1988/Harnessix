@@ -429,7 +429,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.0 盘点与规范**：固定133份Markdown、30个顶层生产包和10个根级生产模块的起始基线；建立文档分类、状态、元数据、重大变更流程、图示、源码/测试链接规范、五类模板、追踪矩阵和分阶段待办。本切片不修改生产代码，也不宣称存量资料已经整改完成；
 - [x] **DOC-1.1 导航与系统架构**：建立[文档总入口](README.md)、[当前系统架构](architecture.md)、30个包与10个根级模块的边界，以及[源码阅读路线](guides/source-reading-map.md)；明确默认产品、显式装配库和规划能力，覆盖正常任务、审批、取消、崩溃恢复和事务性交付五条时序；
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
-- [ ] **DOC-1.3 Coding Agent主链**：进行中（12/19）；Wave A、Wave B已完成，Wave C已完成[Domain](modules/domain.md)、[Policy](modules/policy.md)、[Executors](modules/executors.md)和[Storage](modules/storage.md)现行模块设计，明确Action领域合同、默认决策、外部效果、双后端Journal/Migration、事务、队列、Lease、UNKNOWN恢复及版本边界；下一步继续Sandbox、Secret和Trusted Action；
+- [ ] **DOC-1.3 Coding Agent主链**：进行中（13/19）；Wave A、Wave B已完成，Wave C已完成[Domain](modules/domain.md)、[Policy](modules/policy.md)、[Executors](modules/executors.md)、[Storage](modules/storage.md)和[Sandbox](modules/sandbox.md)现行模块设计，明确Action领域合同、默认决策、外部效果、双后端Journal/Migration、Sandbox能力与Container/网络执行边界、恢复及版本约束；下一步继续Secret和Trusted Action；
 - [ ] **DOC-1.4 产品运行时与扩展**：为Protocol、App Server、SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke补齐现行模块设计；
 - [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
