@@ -72,12 +72,22 @@ async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: P
                 assert controller.state.selected_thread_id != first_thread
 
                 thread_list = app.query_one("#threads", ListView)
+                await _wait_until(lambda: len(thread_list.children) == 2)
+                await _wait_until(lambda: not app.query_one("#composer", Input).disabled)
+                await pilot.pause()
+                assert thread_list.children[1].id == f"thread-{first_thread.hex}"
                 thread_list.index = 1
+                thread_list.focus()
+                await pilot.pause()
+                assert thread_list.has_focus and thread_list.index == 1
                 await pilot.press("enter")
                 await _wait_until(lambda: controller.state.selected_thread_id == first_thread)
+                await _wait_until(lambda: not app.query_one("#composer", Input).disabled)
 
                 composer = app.query_one("#composer", Input)
                 composer.focus()
+                await pilot.pause()
+                assert composer.has_focus
                 await pilot.press("h", "e", "l", "l", "o", "enter", "enter")
                 await _wait_until(
                     lambda: (

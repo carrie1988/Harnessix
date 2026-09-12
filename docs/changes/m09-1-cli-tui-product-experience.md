@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
-code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
+version: 8
+code_revision: f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a
 owners:
   - core
 modules:
@@ -782,7 +782,9 @@ Renderer异常、Close软限和Windows对象替换。
    `_intent_in_flight`门闩未变化；结算路径必须显式重算Composer可用性；
 2. 异步测试不能把托管Windows Runner的一秒CPU/调度完成当作产品时限，等待者取消测试改为消费Controller更新；
    无头View测试使用十秒总Deadline，并分别验证一次真实按键绑定和再次直接Action派发，避免把Pilot控制键注入差异
-   误判为产品Controller故障；
+   误判为产品Controller故障；测试必须同时等待ListView完成对应Controller快照的条目投影、Composer重新启用以证明
+   本地Intent门闩已经结算，再设置索引；ListView选择和Composer输入前必须显式聚焦并等待Textual消息循环确认焦点，
+   不能依赖不同平台的渲染调度和默认焦点归属；
 3. Windows Owner回执的同卷原子替换可能与读取产生WinError 5/32共享冲突。`read_owner_receipt`仅对这两个错误执行
    `0/2/10/50/100/250/500 ms`七次有界读取；缺失、非法长度、JSON/Schema/HMAC错误及其他I/O错误不重试；
 4. Session `runtime_owner`的`storage_errors`只能包围锁文件I/O，不能跨越`yield`捕获整个应用生命周期；否则产品测试
