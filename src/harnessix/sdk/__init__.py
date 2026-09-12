@@ -2,12 +2,12 @@
 
 from harnessix.sdk.agent_client import (
     AgentClient,
-    AgentSDKError,
     AgentTransport,
     InProcessAgentTransport,
     SubprocessAgentTransport,
 )
 from harnessix.sdk.client import HarnessixAPIError, HarnessixAsyncClient, HarnessixClient
+from harnessix.sdk.errors import AgentSDKError
 
 __all__ = [
     "AgentClient",

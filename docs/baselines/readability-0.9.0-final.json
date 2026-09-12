@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 256,
-    "physical_lines": 55706,
-    "logical_lines": 49795,
-    "documented_modules": 256,
+    "source_files": 258,
+    "physical_lines": 55844,
+    "logical_lines": 49911,
+    "documented_modules": 258,
     "classes": 667,
     "documented_classes": 168,
-    "functions": 2162,
-    "documented_functions": 168,
+    "functions": 2168,
+    "documented_functions": 171,
     "public_exports": 273,
     "public_contract_types": 146,
     "undocumented_public_behavior": 0,
@@ -225,7 +225,7 @@
     },
     {
       "path": "src/harnessix/sdk/agent_client.py",
-      "lines": 639
+      "lines": 636
     },
     {
       "path": "src/harnessix/skills/runtime.py",
@@ -1576,8 +1576,8 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "AgentClient",
       "kind": "class",
-      "line": 301,
-      "lines": 339,
+      "line": 300,
+      "lines": 337,
       "documented": true
     },
     {
@@ -1586,7 +1586,7 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "SubprocessAgentTransport",
       "kind": "class",
-      "line": 100,
+      "line": 99,
       "lines": 187,
       "documented": true
     },

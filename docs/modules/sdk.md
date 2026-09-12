@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 3
+code_revision: b518e66097c503c61cd07b2adbee2b50b03051d4
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
@@ -33,11 +34,11 @@ supersedes: []
 | 上游调用者 | 薄Agent CLI、Python宿主、LangGraph Adapter、测试和直接Action API用户 |
 | 下游依赖 | Agent分支依赖Protocol公共合同；HTTP分支依赖Domain模型与`httpx`；进程内Transport仅在类型检查时引用App Server |
 | 持久化 | SDK不持久化任何状态；Client Instance ID、Command Request ID、Replay Cursor和Action ID均由调用方保存 |
-| 连接 | Agent子进程Transport惰性启动一个stdio子进程；HTTP客户端拥有一个`httpx.Client/AsyncClient`连接池 |
+| 连接 | Agent子进程Transport惰性启动一个stdio子进程，Response Reader具有构造期字节上限；HTTP客户端拥有一个`httpx.Client/AsyncClient`连接池 |
 | 平台 | Python逻辑未设平台分支；子进程与HTTP机制可跨平台，但默认Agent产品Windows入口及三平台关闭证据尚未完成 |
 | 公共导出 | `harnessix.sdk`导出两套客户端；根包`harnessix`当前只导出Action HTTP客户端，不导出`AgentClient` |
-| 代码版本 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` |
-| 当前完成度 | Agent主链、乱序归并、取消迟到响应、Question/Approval、Replay/Delta和Artifact纵向路径已实现；严格Response Envelope、自动恢复、客户端资源预算、完整HTTP测试和发布级平台证据仍缺失 |
+| 代码版本 | `b518e66097c503c61cd07b2adbee2b50b03051d4`之后的0.9.1a工作树实现；关闭提交在变更记录落地后固定 |
+| 当前完成度 | Agent主链、乱序归并、取消迟到响应、Question/Approval、Replay/Delta、Artifact、严格Response Envelope、有界Response Frame、Result错误归一及半握手失败关闭已实现；自动重连、持久客户端状态、协商并发预算、完整HTTP测试和发布级平台证据仍缺失 |
 
 本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、
 [`client.py`](../../src/harnessix/sdk/client.py)和[`__init__.py`](../../src/harnessix/sdk/__init__.py)
@@ -167,12 +168,14 @@ Domain模型和HTTP资源。两条分支只共享Python包与发布物，不共�
 
 | 顺序 | 文件 | 规模 | 阅读目标 |
 |---:|---|---:|---|
-| 1 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 639行 | Transport端口、子进程并发、握手、Thread/Turn/Event客户端 |
-| 2 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
-| 3 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
-| 4 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 883行 | 验证Client、Transport、Server与Runtime纵向行为 |
-| 5 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
-| 6 | [`client.py`](../../src/harnessix/sdk/client.py) | 152行 | Action HTTP同步/异步方法和错误映射 |
+| 1 | [`errors.py`](../../src/harnessix/sdk/errors.py) | 22行 | Agent SDK跨Transport共享的稳定错误合同 |
+| 2 | [`response.py`](../../src/harnessix/sdk/response.py) | 119行 | 严格Response Envelope/JSON预算和Result错误归一 |
+| 3 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 636行 | Transport端口、子进程并发、握手、Thread/Turn/Event客户端 |
+| 4 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
+| 5 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
+| 6 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1021行 | 33项Client、Transport、Server与Runtime纵向场景，含恶意Response和半握手失败 |
+| 7 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
+| 8 | [`client.py`](../../src/harnessix/sdk/client.py) | 152行 | Action HTTP同步/异步方法和错误映射 |
 | 7 | [`api/app.py`](../../src/harnessix/api/app.py) | Server对端 | 对照路由、202、错误和Lifespan |
 | 8 | [`test_sdk.py`](../../tests/unit/test_sdk.py) | 51行 | 当前仅有的HTTP SDK专项用例 |
 | 9 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 区分包级与根级导出 |
@@ -308,9 +311,10 @@ stateDiagram-v2
 在构造时失败。启动参数不经过Shell，避免Shell元字符解释；当前未设置`cwd`、`env`、`start_new_session`、
 Windows Creation Flags或文件描述符白名单，因此子进程继承父进程工作目录和默认环境。
 
-启动成功后同时创建：
+构造函数使用`ProtocolLimits`校验`max_message_bytes`，当前允许4 KiB～8 MiB，默认1 MiB；非法值在启动
+子进程前以`ValueError`失败。启动成功后同时创建：
 
-- `harnessix-sdk-reader`：持续按行读取stdout并归并Response；
+- `harnessix-sdk-reader`：在`max_message_bytes + 1`的`StreamReader`预算内按行读取stdout并归并Response；
 - `harnessix-sdk-stderr`：每次读取4096字节，保留最后65,536字节；
 - PIPE stdin：所有写入通过`_write_lock`；
 - PIPE stdout/stderr：分别由唯一Task读取，避免子进程因缓冲区填满阻塞。
@@ -355,12 +359,13 @@ sequenceDiagram
 
 ### 13.2 读侧
 
-Reader每次`stdout.readline()`取得一帧，解析顶层对象和非布尔字符串/整数ID。Abandoned ID只被丢弃一次；
-普通ID从`_pending`取出并结算Future。无效JSON、非对象、无效ID、未知ID、EOF或读取错误会调用
+Reader每次`stdout.readline()`取得一帧，并在路由前调用`_decode_response`校验UTF-8、单对象、重复键、非有限数、
+深度、集合预算、标准JSON-RPC版本、Response联合类型和安全ID。Abandoned ID只被丢弃一次；普通ID从
+`_pending`取出并结算Future。无效Envelope、未知ID、超限帧、EOF或读取错误会调用
 `_fail_pending`，把所有Pending统一失败并固定Sticky Reader Error。
 
-这种Fail-closed策略避免错配Response，但一个未知或畸形帧会终止整条连接上所有并发调用。当前Reader未
-限制单行字节数，也未严格验证`jsonrpc/result/error`互斥、重复键、深度或安全整数范围。
+这种Fail-closed策略避免错配Response，但一个未知、畸形或超限帧会终止整条连接上所有并发调用。流Reader在
+换行前阻止超限缓冲继续增长，`_decode_response`再次检查实际帧长，避免自定义Transport绕过相同边界。
 
 ## 14. 取消与迟到Response
 
@@ -456,8 +461,8 @@ flowchart TD
 
 ## 18. AgentClient状态与初始化
 
-`AgentClient`持有Transport、Client身份、连接序号、初始化锁和最近一次`InitializeResult`。它没有显式状态
-枚举，也不检查Transport是否已经关闭。
+`AgentClient`持有Transport、Client身份、连接序号、初始化锁、失败标志和最近一次`InitializeResult`。它没有
+完整连接状态枚举，也不自动创建替代Transport。
 
 ```mermaid
 sequenceDiagram
@@ -492,10 +497,10 @@ sequenceDiagram
 
 ### 18.2 部分握手失败
 
-`initialized`只在Initialize Response验证成功且`notifications/initialized`写入返回后设置。若Response已使
-Server进入`INITIALIZED_PENDING_ACK`，但Notification写入失败或调用被取消，Client仍认为未初始化；再次调用
-会发送第二个Initialize，而同一Server返回`already_initialized`。当前没有恢复该半握手连接的状态机，安全
-动作是关闭并重建Transport，然后使用同一Client Instance ID重新握手。
+`initialized`只在Initialize Response验证成功且`notifications/initialized`写入返回后设置。Initialize任一步骤
+失败或调用被取消时，Client设置`_initialize_failed`并关闭当前Transport；关闭错误不覆盖原始握手错误。后续
+`initialize()`不再发送第二个Initialize，而是返回可重试`handshake_failed`。调用方必须创建新Transport和Client，
+复用同一Client Instance ID完成完整握手；自动重建由0.9.1a的`RecoverableAgentSession`承担。
 
 ## 19. JSON-RPC序号与业务幂等身份
 
@@ -526,41 +531,35 @@ Response Future的路由键，即使相同Command跨重连，其JSON-RPC ID也�
 
 ```mermaid
 flowchart TD
-    Bytes["response bytes"] --> Loads["json.loads"]
-    Loads -- Fail --> Invalid["AgentSDKError invalid_response"]
-    Loads --> Identity{"dict and id equals local id"}
+    Bytes["response bytes"] --> Budget["UTF-8、Frame和JSON预算"]
+    Budget -- Fail --> Invalid["AgentSDKError invalid_response"]
+    Budget --> Envelope["strict Success or Error Response"]
+    Envelope -- Fail --> Invalid
+    Envelope --> Identity{"typed id equals local id"}
     Identity -- No --> Invalid
-    Identity -- Yes --> Error{"contains error key"}
-    Error -- Yes --> Map["AgentSDKError from loose error fields"]
-    Error -- No --> Result{"contains result key"}
-    Result -- No --> Invalid
-    Result -- Yes --> Value["return raw JSON value"]
-    Value --> Model["validate_server_output target model"]
+    Identity -- Yes --> Error{"JsonRpcErrorResponse"}
+    Error -- Yes --> Map["AgentSDKError from typed error"]
+    Error -- No --> Value["JsonRpcSuccessResponse.result"]
+    Value --> Model["compatible target Result validation"]
+    Model -- Fail --> InvalidResult["AgentSDKError invalid_result + path"]
 ```
 
 ### 20.1 已实现映射
 
-- 非JSON或非对象/ID不相等返回`invalid_response`；
-- Error优先于Result，`data.code`缺失时使用`protocol_error`；
-- `retryable`只有严格`true`时保留；
-- `path`只保留字符串或非布尔整数成员；
-- 公开方法使用`validate_server_output`解析具体Result，并忽略新增未知输出字段；
+- 非UTF-8、非单对象、重复键、非有限数、深度/集合/帧超限返回`invalid_response`；
+- Envelope严格解析为`JsonRpcSuccessResponse`或`JsonRpcErrorResponse`，拒绝错误版本、额外字段、布尔ID和
+  `result/error`共存或同时缺失；
+- `code/message/retryable/path`由严格Error合同校验，不使用松散默认值；
+- 公开方法通过`_validate_result`复用`validate_server_output`，继续忽略Result中新加可选字段；
+- 已知Result字段非法时统一返回`invalid_result`，首个Pydantic错误位置进入有界`path`；
 - Server返回的业务错误转换为`AgentSDKError(code,message,retryable,path)`。
 
-### 20.2 当前严格性差距
+### 20.2 兼容与剩余边界
 
-`_send`没有使用`JsonRpcSuccessResponse/JsonRpcErrorResponse`严格模型，因此当前会出现以下行为：
-
-1. 不检查`jsonrpc == "2.0"`；
-2. 不拒绝同时包含`result`和`error`或额外字段的Response；
-3. Python中`True == 1`，自定义Transport给第一个Request返回`id: true`可通过身份比较；
-4. Error结构、码值、消息长度和Path边界未完整执行Protocol模型；
-5. `json.loads`接受默认非有限数和重复键，且无深度/集合门禁；
-6. 具体Result校验失败会直接抛Pydantic `ValidationError`或序列化`ValueError`，未统一为`AgentSDKError`；
-7. Subprocess Reader只预检顶层对象和ID，也没有补齐Envelope校验。
-
-这些行为已通过当前源码和受控探针求证，不属于计划能力。SDK不能宣称“所有服务端输出都严格验证”，
-必须在0.9产品客户端加固中复用Protocol兼容Response模型并增加恶意Server回归。
+Response Envelope属于JSON-RPC固定结构，因此拒绝未知顶层字段；Result内部继续按Protocol向前兼容规则忽略新增
+可选字段，已知字段仍严格。自定义Transport返回的帧也经过相同解析。当前`AgentClient`使用默认1 MiB再次校验
+Response，`SubprocessAgentTransport`使用构造期上限在读取前限制缓冲；Initialize协商出的更小Limit尚未动态
+调整已创建StreamReader，服务端必须遵守协商结果，客户端能力/并发门禁仍由后续0.9.1a实现。
 
 ## 21. AgentSDKError合同
 
@@ -792,8 +791,8 @@ Transport因此也关闭注入的Server/Service，说明该适配器把Server生
 | 取消登记 | Exchange异常分支移除Pending并加Abandoned | 仅CancelledError添加 |
 | 关闭开始 | `_closed = true` | 拒绝后续Start/Write |
 
-客户端没有Semaphore、Pending数量上限、Response字节上限、Reader行长上限或Abandoned上限。Server协商Limit
-不会调整这些结构。大量并发会先在客户端创建无界Future并写入Server；大量取消但无响应会增长集合。
+客户端已有构造期Response字节与Reader行长上限，但没有Semaphore、Pending数量上限或Abandoned上限；Server协商
+Limit不会调整这些结构。大量并发会先在客户端创建无界Future并写入Server；大量取消但无响应会增长集合。
 
 ### 31.2 HTTP分支
 
@@ -809,13 +808,13 @@ Transport因此也关闭注入的Server/Service，说明该适配器把Server生
 | Request本地JSON/ID无效 | `invalid_request` | 未写入 | 修正自定义Frame |
 | Pending ID重复 | `duplicate_request_id` | 原请求可能在执行 | 等待原请求；不要换业务身份盲重试 |
 | stdin写入失败 | `server_closed` | 未知是否部分写入 | 新连接，以原Command ID查询/重放 |
-| stdout非法JSON/对象/ID | 全部Pending `invalid_response`，Reader Sticky | 各请求未知 | 关闭进程；按业务ID逐项恢复 |
+| stdout非法/超限Envelope | 全部Pending `invalid_response`，Reader Sticky | 各请求未知 | 关闭进程；按业务ID逐项恢复 |
 | stdout EOF | 全部Pending `server_closed` | Session可能已提交 | 新建Client，Snapshot+Replay |
 | 未知Response ID | 整连接失败 | 其他Request可能正常 | 关闭并按每个业务身份恢复 |
 | 调用取消 | Subprocess记Abandoned；InProcess向Server协程传播取消 | 取决于Transport与提交切点 | 查询Thread/Action，不把取消当作回滚 |
-| Initialize Response后Notify失败 | Client未初始化、Server可能Pending Ack | 无领域命令 | 关闭并用同Client ID重连 |
+| Initialize Response后Notify失败 | 原错误；当前Client后续固定`handshake_failed` | 无领域命令 | Transport已关闭；新建Client并复用同Client ID |
 | Server返回Error | `AgentSDKError` | 取决于错误 | 依据Code/Retryable及Snapshot |
-| Result结构损坏 | Pydantic/Value异常泄漏 | 未知 | 关闭不可信连接，保留原身份诊断 |
+| Result结构损坏 | `invalid_result`及首个安全字段路径 | 未知 | 不盲重提；关闭不可信连接并保留业务身份 |
 | `watch_thread`超时页 | 正常Yield | 无新增事实 | 调用方退避或继续 |
 | Live Gap | 正常Yield `liveGap` | 持久Item仍权威 | 放弃Delta拼接，等Replay终态 |
 | SDK崩溃 | 全部内存状态丢失 | Server持久事实保留 | 从外部保存ID/Cursor重建 |
@@ -914,18 +913,20 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 | `AgentTransport` | Request/Notification/Close端口 | 实现定义 | 端口未固定Timeout和取消隔离 |
 | `InProcessAgentTransport` | 复用完整Server Frame入口 | Server引用 | 取消直达Server协程；Notification Response立即失败 |
 | `SubprocessAgentTransport` | stdio进程、并发和关闭 | Process、Locks、Pending、Abandoned、Reader Error、stderr | Sticky失败；Close逐级终止 |
+| `response._decode_response` | 严格解析服务端Envelope | Frame/JSON预算 | 任一非法结构映射`invalid_response` |
+| `response._validate_result` | 兼容读取具体Result | 首个错误路径 | 映射`invalid_result` |
 | `_start` | 惰性且唯一地创建子进程和Reader | `_start_lock` | OSError映射启动失败 |
 | `_frame_id` | 写前提取ID | 无 | 只做浅层JSON/ID检查 |
 | `_fail_pending` | 连接级失败广播 | Reader Error、Pending、Abandoned | 首错误优先 |
-| `_read_responses` | 单Reader按ID结算 | Pending/Abandoned | 畸形/未知/EOF使全连接失败 |
+| `_read_responses` | 有界单Reader按严格ID结算 | Pending/Abandoned | 畸形/超限/未知/EOF使全连接失败 |
 | `_drain_stderr` | 避免Pipe阻塞并保留尾部 | 64 KiB Bytearray | 无脱敏；异常可传播到Close |
 | `exchange` | 登记、串行写、等待或取消 | Future Map | Cancel登记迟到ID |
 | `notify` | 只写Notification | Write Lock | 不同步等待违规Response |
 | `SubprocessAgentTransport.close` | EOF、Wait、Terminate、Kill | Closed Flag、Tasks | 硬编码15秒分层等待 |
 | `_frame` | Protocol Model到JSONL | 无 | UTF-8、紧凑JSON、禁止NaN |
 | `AgentClient` | 握手、方法、结果和事件 | Sequence、Initialize Lock/Result、Client ID | Transport/Server/模型错误 |
-| `AgentClient._send` | Request总模板 | Sequence | Envelope校验当前不完整 |
-| `AgentClient.initialize` | 两步握手 | Initialize Lock/Result | Notify失败产生半握手风险 |
+| `AgentClient._send` | Request总模板 | Sequence | 严格Envelope、ID和类型化Error |
+| `AgentClient.initialize` | 两步握手 | Initialize Lock/Result/Failed | 任一步失败关闭并禁止复用连接 |
 | `AgentClient.watch_thread` | Pull-Live无限迭代 | 局部Cursor | 调用取消停止；无自动恢复 |
 
 ### 36.2 HTTP分支
@@ -945,6 +946,7 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 | 字段 | 类型 | 不变量/生命周期 |
 |---|---|---|
 | `command` | `tuple[str,...]` | 非空；不经Shell；内容不再变 |
+| `max_message_bytes` | `int` | 4 KiB～8 MiB；构造后固定；约束stdout Reader与Response复核 |
 | `_process` | optional Process | 最多赋值一次，不重启、不清空 |
 | `_start_lock` | Async Lock | 串行Create与Close标记 |
 | `_write_lock` | Async Lock | stdin帧完整顺序和Close stdin互斥 |
@@ -967,6 +969,7 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 | `client_version` | 握手信息 | 默认0.8.0，与包版本漂移 |
 | `_sequence` | JSON-RPC ID源 | 每Send递增；非线程安全 |
 | `_initialize_lock` | 握手串行 | 只保护Initialize，不保护Close竞态 |
+| `_initialize_failed` | 半握手失败标志 | 一旦true不回退；后续Initialize不再写当前Transport |
 | `initialized` | 最近Result或None | Notify成功后才赋值；Close后不清空 |
 
 ### 37.3 HTTP字段
@@ -1008,7 +1011,8 @@ exchange(frame):
 
 ```text
 while line := stdout.readline():
-    parse JSON object and non-boolean string-or-int id
+    reject line over configured byte budget before unbounded buffering
+    strictly parse JSON-RPC success-or-error response and safe id
     if id in abandoned:
         remove id and discard response
     else if id in pending:
@@ -1029,18 +1033,18 @@ sequence += 1
 request := strict JsonRpcRequest(sequence, method, params)
 responses := transport.exchange(frame(request))
 require exactly one response
-wire := loose json parse
-require wire object and wire.id equals sequence
-if error key exists:
-    extract loose code, message, retryable and filtered path
+response := strict bounded JSON-RPC response parse
+require typed response.id equals sequence
+if response is typed error:
+    use validated code, message, retryable and path
     raise AgentSDKError
-require result key exists
-return raw result
+return typed success result
 
 public method:
     build strict Params
     raw := send(protocol method, params)
-    validate target Result while ignoring added output fields
+    validate target Result while ignoring added optional output fields
+    map validation failure to invalid_result and safe field path
     return projected resource
 ```
 
@@ -1071,6 +1075,10 @@ return value
 | Notification只写 | `SubprocessAgentTransport.notify` | 同上 | `test_subprocess_notification_does_not_wait_for_response` |
 | Response乱序归并 | `_pending/_read_responses` | 同上 | `test_subprocess_transport_routes_out_of_order_responses` |
 | Malformed Response全局失败 | `_fail_pending/_read_responses` | 同上 | `test_subprocess_transport_fails_all_pending_on_malformed_response` |
+| 严格Response Envelope | `response._decode_response/AgentClient._send` | 同上 | `test_sdk_rejects_invalid_response_envelopes`六类攻击输入、`test_sdk_rejects_response_over_json_depth_budget` |
+| Response字节上限 | `SubprocessAgentTransport(max_message_bytes=...)` | 同上 | `test_subprocess_transport_rejects_oversized_response_frame` |
+| Result错误归一 | `_validate_result` | 同上 | `test_sdk_normalizes_invalid_result_contract` |
+| 半握手失败关闭 | `AgentClient.initialize/_initialize_failed` | 同上 | `test_initialize_notification_failure_makes_connection_unusable` |
 | Question恢复 | `respond_question` | 同上 | `test_sdk_question_response_resumes_background_turn`、`test_completed_question_command_recovers_before_background_spawn` |
 | Replay/Delta | `next_events/replay_events` | 同上 | `test_events_next_delivers_live_delta_then_durable_replay`、`test_events_next_marks_bounded_delta_buffer_gap` |
 | Approval | `respond_approval` | 同上 | `test_sdk_approval_response_drives_decided_turn` |
@@ -1115,6 +1123,10 @@ return value
 - 子进程Notification不等待Response；
 - 两个并发Request的逆序Response能按ID正确归并；
 - 一个Malformed stdout帧会使全部Pending得到`invalid_response`；
+- 布尔ID、错误版本、Envelope额外字段、Result/Error共存和重复字段均被拒绝；
+- 超过构造预算的子进程Response在Reader边界失败，不交给业务Result解析；
+- 非法Result统一映射`invalid_result`并携带首个字段路径；
+- Initialize Notification失败后当前Transport被关闭，第二次Initialize不再重复请求；
 - 持久Replay、Live Delta、Gap和Deadline由纵向测试消费；
 - 薄CLI仅依赖AgentClient实现分页、交互、最终文本和Diff后审批；
 - HTTP Async Client Submit保留Action Spec和状态；
@@ -1122,12 +1134,10 @@ return value
 
 ### 40.2 尚未证明范围
 
-- Agent Response完整JSON-RPC Envelope严格性、布尔ID拒绝、重复键、NaN、深度和字节上限；
-- Result合同错误统一转换为`AgentSDKError`；
-- Initialize Response成功而Notification失败后的自动恢复；
+- Initialize Response成功而Notification失败后的新Transport自动重建；
 - Subprocess Exchange取消、迟到Response、永不返回导致Abandoned增长；
 - 客户端Pending/Response/并发上限与Server协商Limit一致；
-- 子进程启动Timeout、写入Timeout、Reader超长行和stderr Reader故障；
+- 子进程启动Timeout、写入Timeout和stderr Reader故障；
 - Close被取消、Terminate/Kill升级、子进程后代清理和复合错误优先级；
 - Windows原生、macOS/Linux安装产物和长时间真实Pipe测试；
 - HTTP同步Client任何方法；
@@ -1140,10 +1150,7 @@ return value
 
 | 优先级 | 限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
-| P0 | Agent `_send`不严格验证Response Envelope，布尔ID可与整数1相等通过 | 不可信/损坏Transport可绕过关联与结构合同 | 0.9.1复用严格兼容Response解析并补攻击测试 |
-| P0 | Subprocess stdout `readline`无单帧字节/深度/集合上限 | 异常子进程可导致客户端内存放大 | 0.9.1协议客户端边界加固 |
-| P0 | Result校验异常不统一为`AgentSDKError` | CLI/TUI无法只依赖稳定错误合同 | 0.9.1错误投影 |
-| P1 | Initialize Response后Notify失败使同连接进入不可恢复半握手 | 再次Initialize得到already_initialized | 0.9.1连接状态与重建策略 |
+| P1 | Initialize失败会关闭并毒化当前Client，但尚无新Transport自动重建 | TUI仍需自行创建连接代际 | 0.9.1a `RecoverableAgentSession` |
 | P1 | SDK不自动保存Client Instance、Command ID和Cursor，也不提供Reconnect Manager | 默认随机身份在宿主崩溃后可能丢失协议幂等域 | 0.9.1会话仓库与产品生命周期 |
 | P1 | Pending、Abandoned和并发无客户端上限，协商Limit未执行 | 高并发/高取消导致内存与服务压力 | 0.9.3容量、背压和Soak |
 | P1 | Close不可配置、可被取消，且只终止直接进程 | 退出可能残留子进程后代或未结算Future | 0.9.3可靠性、0.9.5平台发行 |
@@ -1195,5 +1202,6 @@ return value
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 3 | `b518e66097c503c61cd07b2adbee2b50b03051d4`之后的0.9.1a实现 | 2026-09-13 | 严格校验Response Envelope与JSON预算，限制子进程Response Frame，统一Result错误并在半握手失败后关闭且禁止复用当前连接 |
 | 2 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，明确其只调用Submit、完整Snapshot返回及真实HTTP/LangGraph测试边界 |
 | 1 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 建立SDK现行模块设计，覆盖双客户端边界、Transport并发取消、stdio进程、握手恢复、事件消费、HTTP资源、安全与真实测试差距 |

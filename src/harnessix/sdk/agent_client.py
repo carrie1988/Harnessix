@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator, Sequence
-from typing import TYPE_CHECKING, Protocol, Self, cast
+from typing import TYPE_CHECKING, Protocol, Self
 from uuid import UUID, uuid4
 
-from pydantic import JsonValue
+from pydantic import JsonValue, ValidationError
 
 from harnessix.protocol.contracts import (
     AGENT_PROTOCOL_VERSION,
@@ -23,8 +23,10 @@ from harnessix.protocol.contracts import (
     EventsReplayResult,
     InitializeParams,
     InitializeResult,
+    JsonRpcErrorResponse,
     JsonRpcNotification,
     JsonRpcRequest,
+    ProtocolLimits,
     ProtocolModel,
     PublicBudget,
     QuestionRespondParams,
@@ -44,30 +46,12 @@ from harnessix.protocol.contracts import (
     TurnStartParams,
     TurnSteerParams,
     TurnView,
-    validate_server_output,
 )
+from harnessix.sdk.errors import AgentSDKError as AgentSDKError
+from harnessix.sdk.response import _decode_response, _validate_result
 
 if TYPE_CHECKING:
     from harnessix.app_server.server import AgentProtocolServer
-
-
-class AgentSDKError(RuntimeError):
-    """Agent SDK协议、传输或服务失败的稳定错误。"""
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        retryable: bool = False,
-        path: tuple[str | int, ...] = (),
-    ) -> None:
-        location = "/".join(str(part) for part in path)
-        super().__init__(f"{code}: {message}" + (f" [{location}]" if location else ""))
-        self.code = code
-        self.message = message
-        self.retryable = retryable
-        self.path = path
 
 
 class AgentTransport(Protocol):
@@ -97,13 +81,38 @@ class InProcessAgentTransport:
         await self.server.close()
 
 
+def _frame_id(frame: bytes) -> str | int:
+    """读取SDK自身生成Request的路由ID，不承担完整入站协议校验。"""
+
+    try:
+        wire = json.loads(frame)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise AgentSDKError("invalid_request", "Request不是有效JSON") from None
+    if not isinstance(wire, dict):
+        raise AgentSDKError("invalid_request", "Request必须是JSON对象")
+    request_id = wire.get("id")
+    if isinstance(request_id, bool) or not isinstance(request_id, (str, int)):
+        raise AgentSDKError("invalid_request", "Request缺少有效JSON-RPC id")
+    return request_id
+
+
 class SubprocessAgentTransport:
     """支持并发请求的单进程stdio传输；Response按JSON-RPC id归并。"""
 
-    def __init__(self, command: Sequence[str]) -> None:
+    def __init__(
+        self,
+        command: Sequence[str],
+        *,
+        max_message_bytes: int = 1_048_576,
+    ) -> None:
         if not command:
             raise ValueError("App Server命令不能为空")
+        try:
+            checked_limits = ProtocolLimits(max_message_bytes=max_message_bytes)
+        except ValidationError:
+            raise ValueError("App Server Response字节上限无效") from None
         self.command = tuple(command)
+        self.max_message_bytes = checked_limits.max_message_bytes
         self._process: asyncio.subprocess.Process | None = None
         self._start_lock = asyncio.Lock()
         self._write_lock = asyncio.Lock()
@@ -129,6 +138,7 @@ class SubprocessAgentTransport:
                         stdin=asyncio.subprocess.PIPE,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
+                        limit=self.max_message_bytes + 1,
                     )
                 except OSError:
                     raise AgentSDKError("server_start_failed", "App Server子进程启动失败") from None
@@ -139,19 +149,6 @@ class SubprocessAgentTransport:
                     self._drain_stderr(self._process), name="harnessix-sdk-stderr"
                 )
             return self._process
-
-    @staticmethod
-    def _frame_id(frame: bytes) -> str | int:
-        try:
-            wire = json.loads(frame)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            raise AgentSDKError("invalid_request", "Request不是有效JSON") from None
-        if not isinstance(wire, dict):
-            raise AgentSDKError("invalid_request", "Request必须是JSON对象")
-        request_id = wire.get("id")
-        if isinstance(request_id, bool) or not isinstance(request_id, (str, int)):
-            raise AgentSDKError("invalid_request", "Request缺少有效JSON-RPC id")
-        return request_id
 
     def _fail_pending(self, code: str, message: str) -> None:
         if self._reader_error is None:
@@ -167,15 +164,15 @@ class SubprocessAgentTransport:
         try:
             while response := await process.stdout.readline():
                 try:
-                    wire = json.loads(response)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    self._fail_pending("invalid_response", "App Server返回了无效JSON")
+                    decoded = _decode_response(
+                        response,
+                        max_message_bytes=self.max_message_bytes,
+                    )
+                except AgentSDKError as error:
+                    self._fail_pending(error.code, error.message)
                     return
-                if not isinstance(wire, dict):
-                    self._fail_pending("invalid_response", "App Server Response必须是JSON对象")
-                    return
-                response_id = wire.get("id")
-                if isinstance(response_id, bool) or not isinstance(response_id, (str, int)):
+                response_id = decoded.id
+                if response_id is None:
                     self._fail_pending("invalid_response", "App Server Response缺少有效id")
                     return
                 if response_id in self._abandoned:
@@ -190,6 +187,8 @@ class SubprocessAgentTransport:
         except asyncio.CancelledError:
             self._fail_pending("server_closed", "App Server响应读取已经停止")
             raise
+        except ValueError:
+            self._fail_pending("invalid_response", "App Server Response超过字节上限")
         except (OSError, RuntimeError):
             self._fail_pending("server_closed", "App Server响应读取失败")
         else:
@@ -203,7 +202,7 @@ class SubprocessAgentTransport:
                 del self.stderr_tail[:-65_536]
 
     async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
-        request_id = self._frame_id(frame)
+        request_id = _frame_id(frame)
         process = await self._start()
         assert process.stdin is not None
         loop = asyncio.get_running_loop()
@@ -315,6 +314,7 @@ class AgentClient:
         self.client_version = client_version
         self._sequence = 0
         self._initialize_lock = asyncio.Lock()
+        self._initialize_failed = False
         self.initialized: InitializeResult | None = None
 
     async def __aenter__(self) -> Self:
@@ -331,38 +331,21 @@ class AgentClient:
         responses = await self.transport.exchange(_frame(request))
         if len(responses) != 1:
             raise AgentSDKError("invalid_response", "Request未收到唯一Response")
-        try:
-            wire = json.loads(responses[0])
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            raise AgentSDKError("invalid_response", "Response不是有效JSON") from None
-        if not isinstance(wire, dict) or wire.get("id") != request_id:
+        response = _decode_response(
+            responses[0],
+            max_message_bytes=ProtocolLimits().max_message_bytes,
+        )
+        if response.id != request_id:
             raise AgentSDKError("invalid_response", "Response身份不匹配")
-        if "error" in wire:
-            error = wire.get("error")
-            data = error.get("data") if isinstance(error, dict) else None
-            raw_path = data.get("path") if isinstance(data, dict) else None
-            path = (
-                tuple(
-                    part
-                    for part in raw_path
-                    if isinstance(part, str) or isinstance(part, int) and not isinstance(part, bool)
-                )
-                if isinstance(raw_path, list)
-                else ()
-            )
+        if isinstance(response, JsonRpcErrorResponse):
+            error = response.error
             raise AgentSDKError(
-                str(data.get("code", "protocol_error"))
-                if isinstance(data, dict)
-                else "protocol_error",
-                str(error.get("message", "协议请求失败"))
-                if isinstance(error, dict)
-                else "协议请求失败",
-                retryable=isinstance(data, dict) and data.get("retryable") is True,
-                path=path,
+                error.data.code,
+                error.message,
+                retryable=error.data.retryable,
+                path=error.data.path,
             )
-        if "result" not in wire:
-            raise AgentSDKError("invalid_response", "Response缺少result或error")
-        return cast(JsonValue, wire["result"])
+        return response.result
 
     async def _notify(self, method: str, params: dict[str, JsonValue]) -> None:
         notification = JsonRpcNotification(method=method, params=params)
@@ -372,23 +355,37 @@ class AgentClient:
         async with self._initialize_lock:
             if self.initialized is not None:
                 return self.initialized
+            if self._initialize_failed:
+                raise AgentSDKError(
+                    "handshake_failed",
+                    "Agent Protocol握手未完成，当前连接不能复用",
+                    retryable=True,
+                )
             params = InitializeParams(
                 protocol_version=AGENT_PROTOCOL_VERSION,
                 client_info=ClientInfo(name=self.client_name, version=self.client_version),
                 client_instance_id=self.client_instance_id,
                 capabilities=ClientCapabilities(item_deltas=True),
             )
-            result = validate_server_output(
-                InitializeResult,
-                await self._send("initialize", params.model_dump(mode="json", by_alias=True)),
-            )
-            await self._notify("notifications/initialized", {})
+            try:
+                result = _validate_result(
+                    InitializeResult,
+                    await self._send("initialize", params.model_dump(mode="json", by_alias=True)),
+                )
+                await self._notify("notifications/initialized", {})
+            except BaseException:
+                self._initialize_failed = True
+                try:
+                    await self.transport.close()
+                except Exception:
+                    pass
+                raise
             self.initialized = result
             return result
 
     async def create_thread(self, workspace: str, *, request_id: str) -> ThreadView:
         params = ThreadCreateParams(request_id=request_id, workspace=workspace)
-        result = validate_server_output(
+        result = _validate_result(
             ThreadResult,
             await self._send("thread/create", params.model_dump(mode="json", by_alias=True)),
         )
@@ -396,7 +393,7 @@ class AgentClient:
 
     async def get_thread(self, thread_id: UUID) -> ThreadView:
         params = ThreadGetParams(thread_id=thread_id)
-        result = validate_server_output(
+        result = _validate_result(
             ThreadResult,
             await self._send("thread/get", params.model_dump(mode="json", by_alias=True)),
         )
@@ -410,14 +407,14 @@ class AgentClient:
         archived: bool | None = None,
     ) -> ThreadListResult:
         params = ThreadListParams(cursor=cursor, limit=limit, archived=archived)
-        return validate_server_output(
+        return _validate_result(
             ThreadListResult,
             await self._send("thread/list", params.model_dump(mode="json", by_alias=True)),
         )
 
     async def resume_thread(self, thread_id: UUID) -> ThreadView:
         params = ThreadResumeParams(thread_id=thread_id)
-        result = validate_server_output(
+        result = _validate_result(
             ThreadResult,
             await self._send("thread/resume", params.model_dump(mode="json", by_alias=True)),
         )
@@ -435,7 +432,7 @@ class AgentClient:
             source_thread_id=source_thread_id,
             through_turn_id=through_turn_id,
         )
-        result = validate_server_output(
+        result = _validate_result(
             ThreadResult,
             await self._send("thread/fork", params.model_dump(mode="json", by_alias=True)),
         )
@@ -453,7 +450,7 @@ class AgentClient:
             thread_id=thread_id,
             reason=reason,
         )
-        result = validate_server_output(
+        result = _validate_result(
             ThreadResult,
             await self._send("thread/archive", params.model_dump(mode="json", by_alias=True)),
         )
@@ -473,7 +470,7 @@ class AgentClient:
             prompt=prompt,
             budget=budget,
         )
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("turn/start", params.model_dump(mode="json", by_alias=True)),
         )
@@ -493,7 +490,7 @@ class AgentClient:
             source_turn_id=source_turn_id,
             budget=budget,
         )
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("turn/retry", params.model_dump(mode="json", by_alias=True)),
         )
@@ -511,7 +508,7 @@ class AgentClient:
             thread_id=thread_id,
             turn_id=turn_id,
         )
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("turn/resume", params.model_dump(mode="json", by_alias=True)),
         )
@@ -523,7 +520,7 @@ class AgentClient:
             thread_id=thread_id,
             turn_id=turn_id,
         )
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("turn/cancel", params.model_dump(mode="json", by_alias=True)),
         )
@@ -543,21 +540,21 @@ class AgentClient:
             turn_id=turn_id,
             text=text,
         )
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("turn/steer", params.model_dump(mode="json", by_alias=True)),
         )
         return result.turn
 
     async def respond_approval(self, params: ApprovalRespondParams) -> TurnView:
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("approval/respond", params.model_dump(mode="json", by_alias=True)),
         )
         return result.turn
 
     async def respond_question(self, params: QuestionRespondParams) -> TurnView:
-        result = validate_server_output(
+        result = _validate_result(
             TurnResult,
             await self._send("question/respond", params.model_dump(mode="json", by_alias=True)),
         )
@@ -571,7 +568,7 @@ class AgentClient:
             after_cursor=after_cursor,
             limit=limit,
         )
-        return validate_server_output(
+        return _validate_result(
             EventsReplayResult,
             await self._send("events/replay", params.model_dump(mode="json", by_alias=True)),
         )
@@ -590,7 +587,7 @@ class AgentClient:
             offset=offset,
             limit=limit,
         )
-        return validate_server_output(
+        return _validate_result(
             ArtifactPageResult,
             await self._send("artifact/read", params.model_dump(mode="json", by_alias=True)),
         )
@@ -609,7 +606,7 @@ class AgentClient:
             wait_ms=wait_ms,
             limit=limit,
         )
-        return validate_server_output(
+        return _validate_result(
             EventsNextResult,
             await self._send("events/next", params.model_dump(mode="json", by_alias=True)),
         )

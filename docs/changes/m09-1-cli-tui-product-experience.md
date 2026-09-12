@@ -672,7 +672,7 @@ emit_sanitized_close_report()
 | 设计元素 | 当前源码/计划位置 | 关键符号 | 当前测试/计划验证 |
 |---|---|---|---|
 | 薄CLI兼容入口 | [`agent_cli.py`](../../src/harnessix/agent_cli.py) | `ThinAgentCLI`、`follow`、`_answer_pending` | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py)现有4类行为 |
-| SDK严格边界 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport`、`AgentClient._send`、`initialize` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)扩展攻击/断线测试 |
+| SDK严格边界 | [`response.py`](../../src/harnessix/sdk/response.py)、[`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `_decode_response`、`_validate_result`、`SubprocessAgentTransport`、`AgentClient.initialize` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)攻击/帧上限/半握手测试 |
 | Protocol Envelope/Limit | [`contracts.py`](../../src/harnessix/protocol/contracts.py)、[`server.py`](../../src/harnessix/app_server/server.py) | `validate_server_output`、`InitializeResult`、`AgentProtocolServer` | [`tests/protocol`](../../tests/protocol/)、App Server合同测试 |
 | 客户端状态 | 计划`src/harnessix/product_ui/state.py`、`state_store.py` | `ClientStateV1`、`ClientStateStore` | 计划`tests/product_ui/test_state_store.py` |
 | 投影Reducer | 计划`src/harnessix/product_ui/projection.py` | `ProductViewState`、`ProjectionReducer` | 计划`tests/product_ui/test_projection.py` |
@@ -769,6 +769,12 @@ Renderer异常、Close软限和Windows对象替换。
 
 ## 19. 实现偏差与最终结论
 
-当前为设计评审状态，尚未产生0.9.1生产实现。实施期间任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须
-先更新本文和ADR，再修改代码。每个子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行
-模块文档；五个子切片全部通过前，路线图0.9.1保持未完成。
+当前为设计评审状态。0.9.1a已实现第一组SDK边界：严格Response Envelope与JSON预算、构造期子进程Response
+Frame上限、`invalid_result`统一错误，以及Initialize任一步失败后关闭并禁止复用当前连接。该组由
+`test_sdk_rejects_invalid_response_envelopes`、`test_subprocess_transport_rejects_oversized_response_frame`、
+`test_sdk_normalizes_invalid_result_contract`和`test_initialize_notification_failure_makes_connection_unusable`验证；
+自动连接代际、Client State、Command分配和Projection Reducer尚未实现，因此0.9.1a仍保持未完成。
+
+后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
+子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
+路线图0.9.1保持未完成。

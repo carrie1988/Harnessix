@@ -27,8 +27,12 @@ from harnessix.protocol.contracts import (
     EventsNextParams,
     EventsNextResult,
     EventsReplayResult,
+    InitializeResult,
+    ProtocolLimits,
     PublicApprovalDecision,
     QuestionRespondParams,
+    ServerCapabilities,
+    ServerInfo,
     ThreadCreateParams,
     TurnResult,
     TurnStartParams,
@@ -122,6 +126,140 @@ async def test_sdk_serializes_concurrent_initialize_calls(tmp_path: Path) -> Non
         first, second = await asyncio.gather(client.initialize(), client.initialize())
         assert first is second
         await client.close()
+
+
+class _ReplyTransport:
+    def __init__(self, result: object, *, notify_error: AgentSDKError | None = None) -> None:
+        self.result = result
+        self.notify_error = notify_error
+        self.exchange_calls = 0
+        self.notify_calls = 0
+        self.close_calls = 0
+
+    async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
+        self.exchange_calls += 1
+        request = json.loads(frame)
+        return (
+            json.dumps(
+                {"jsonrpc": "2.0", "id": request["id"], "result": self.result},
+                separators=(",", ":"),
+            ).encode()
+            + b"\n",
+        )
+
+    async def notify(self, frame: bytes) -> None:
+        del frame
+        self.notify_calls += 1
+        if self.notify_error is not None:
+            raise self.notify_error
+
+    async def close(self) -> None:
+        self.close_calls += 1
+
+
+@pytest.mark.parametrize(
+    "response",
+    (
+        b'{"jsonrpc":"2.0","id":true,"result":{}}\n',
+        b'{"jsonrpc":"1.0","id":1,"result":{}}\n',
+        b'{"jsonrpc":"2.0","id":1,"result":{},"future":true}\n',
+        b'{"jsonrpc":"2.0","id":1,"result":{},"error":{}}\n',
+        b'{"jsonrpc":"2.0","id":1,"id":1,"result":{}}\n',
+        b'{"jsonrpc":"2.0","id":1,"result":NaN}\n',
+    ),
+)
+async def test_sdk_rejects_invalid_response_envelopes(response: bytes) -> None:
+    class InvalidEnvelopeTransport:
+        async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
+            del frame
+            return (response,)
+
+        async def notify(self, frame: bytes) -> None:
+            del frame
+
+        async def close(self) -> None:
+            return None
+
+    client = AgentClient(InvalidEnvelopeTransport())
+    with pytest.raises(AgentSDKError) as error:
+        await client._send("thread/list", {})
+    assert error.value.code == "invalid_response"
+
+
+async def test_sdk_rejects_response_over_json_depth_budget() -> None:
+    nested: object = None
+    for _ in range(65):
+        nested = {"nested": nested}
+    response = json.dumps({"jsonrpc": "2.0", "id": 1, "result": nested}).encode() + b"\n"
+
+    class DeepResponseTransport:
+        async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
+            del frame
+            return (response,)
+
+        async def notify(self, frame: bytes) -> None:
+            del frame
+
+        async def close(self) -> None:
+            return None
+
+    client = AgentClient(DeepResponseTransport())
+    with pytest.raises(AgentSDKError) as error:
+        await client._send("thread/list", {})
+    assert error.value.code == "invalid_response"
+
+
+async def test_sdk_normalizes_invalid_result_contract() -> None:
+    transport = _ReplyTransport({"threads": [], "nextCursor": 7})
+    client = AgentClient(transport)
+
+    with pytest.raises(AgentSDKError) as error:
+        await client.list_threads()
+
+    assert error.value.code == "invalid_result"
+    assert error.value.path == ("nextCursor",)
+
+
+async def test_initialize_notification_failure_makes_connection_unusable() -> None:
+    result = InitializeResult(
+        server_info=ServerInfo(version="0.9.1-test"),
+        capabilities=ServerCapabilities(methods=("thread/list",)),
+        limits=ProtocolLimits(),
+    ).model_dump(mode="json", by_alias=True)
+    transport = _ReplyTransport(
+        result,
+        notify_error=AgentSDKError("server_closed", "初始化通知发送失败"),
+    )
+    client = AgentClient(transport)
+
+    with pytest.raises(AgentSDKError) as first:
+        await client.initialize()
+    assert first.value.code == "server_closed"
+    assert transport.close_calls == 1
+
+    with pytest.raises(AgentSDKError) as second:
+        await client.initialize()
+    assert second.value.code == "handshake_failed"
+    assert transport.exchange_calls == 1
+
+
+async def test_subprocess_transport_rejects_oversized_response_frame() -> None:
+    child = (
+        "import json,sys; "
+        "request=json.loads(sys.stdin.buffer.readline()); "
+        "print(json.dumps({'jsonrpc':'2.0','id':request['id'],'result':{'text':'x'*5000}}),"
+        "flush=True)"
+    )
+    transport = SubprocessAgentTransport(
+        (sys.executable, "-c", child),
+        max_message_bytes=4096,
+    )
+
+    with pytest.raises(AgentSDKError) as error:
+        await transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"x","params":{}}\n')
+
+    assert error.value.code == "invalid_response"
+    await transport.close()
 
 
 async def test_internal_validation_failure_is_not_reported_as_invalid_params(
