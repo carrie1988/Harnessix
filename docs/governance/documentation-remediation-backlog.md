@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 1
-code_revision: 8e3e3576bbc64bf2b696279c404ba5fcb3fee06e
+version: 2
+code_revision: 48f286938ddd877bf9fdbb6ad3e64f8403098723
 owners:
   - core
 modules:
@@ -36,7 +36,7 @@ DOC-1整体完成必须同时满足：
 | 阶段 | 优先级 | 依赖 | 核心交付 | 状态 |
 |---|---|---|---|---|
 | DOC-1.0 | P0 | 0.9.0 | 规范、模板、全量盘点、追踪矩阵、机器基线、整改待办 | 已完成 |
-| DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 未开始 |
+| DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 未开始 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个剩余模块设计 | 未开始 |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 未开始 |
@@ -68,22 +68,24 @@ DOC-1.1和DOC-1.2完成前，不开始0.9.1的大规模产品实现；紧急缺�
 
 ## 5. DOC-1.1：导航、系统架构与阅读总入口
 
+状态：**已完成**。本阶段只建立系统级事实、边界和阅读入口；30个包的独立现行模块设计仍由DOC-1.2～DOC-1.4交付。
+
 ### 5.1 交付项
 
-1. 新建`docs/README.md`，按“产品—架构—模块—契约—研究—决策—测试—部署—证据”导航；
-2. 按[详细设计模板](templates/detailed-design-template.md)重构[总体架构](../architecture.md)，明确当前/目标边界；
-3. 新建`docs/guides/source-reading-map.md`，覆盖CLI/App Server到Agent、Context、Model、Tool、Process、Workspace、Delivery、Action Plane的主链；
-4. 建立30个包和10个根级模块的所有权、依赖方向和禁止旁路图；
-5. 建立正常任务、审批、取消、崩溃恢复和事务性交付五条系统级时序；
-6. 为系统级节点添加实际源码文件、关键符号和测试入口链接；
-7. 对根目录聚合文档标注角色，消除“当前实现”和“历史里程碑”混读。
+1. [x] 新建`docs/README.md`，按“产品—架构—模块—契约—研究—决策—测试—部署—证据”导航；
+2. [x] 按[详细设计模板](templates/detailed-design-template.md)重构[总体架构](../architecture.md)，明确当前/目标边界；
+3. [x] 新建[源码阅读地图](../guides/source-reading-map.md)，覆盖CLI/App Server到Agent、Context、Model、Tool、Process、Workspace、Delivery、Action Plane的主链；
+4. [x] 建立30个包和10个根级模块的所有权、依赖方向和禁止旁路规则；
+5. [x] 建立正常任务、审批、取消、崩溃恢复和事务性交付五条系统级时序；
+6. [x] 为系统级节点添加实际源码文件、关键符号和测试入口链接；
+7. [x] 在文档中心标注根目录聚合文档角色，消除“当前实现”和“历史里程碑”混读。
 
 ### 5.2 验收
 
-- 新读者从`docs/README.md`不超过三次跳转可到达任一生产包设计入口；
-- 总体架构中的每个已实现组件都有源码和测试映射；
-- 所有图均有文字说明，当前和规划组件可明确区分；
-- 链接检查通过，无本机绝对路径和敏感信息。
+- [x] 新读者从`docs/README.md`不超过三次跳转可到达任一生产包当前源码地图或目标设计入口；
+- [x] 总体架构中的每个已实现组件都有源码和测试映射；
+- [x] 所有图均有文字说明，当前默认、显式装配和规划能力可明确区分；
+- [x] 相对链接、Mermaid、格式和敏感信息检查通过。
 
 ## 6. DOC-1.2：两份黄金样例
 

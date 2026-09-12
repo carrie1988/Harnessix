@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 1
-code_revision: 8e3e3576bbc64bf2b696279c404ba5fcb3fee06e
+version: 2
+code_revision: 48f286938ddd877bf9fdbb6ad3e64f8403098723
 owners:
   - core
 modules:
@@ -58,8 +58,8 @@ flowchart LR
 
 | 关注点 | 当前事实入口 | 决策/研究 | 当前缺口 |
 |---|---|---|---|
-| 产品边界 | [产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 缺统一文档导航和能力证据索引 |
-| 总体架构 | [总体架构](../architecture.md) | [研究计划](../research-plan.md)及各主题研究 | 缺可点击的主链源码映射和系统级Mermaid图 |
+| 产品边界 | [文档中心](../README.md)、[产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 能力证据仍需在DOC-1.5按发布声明统一索引 |
+| 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口已完成；模块级事实待DOC-1.2～DOC-1.4迁移 |
 | Action Plane | [Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | 缺黄金样例级模块设计 |
 | Agent Runtime | [0.3设计](../m03-runtime-kernel.md)、[0.6设计](../m06-context-and-sessions.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 当前事实跨里程碑分散 |
 | Model Runtime | [0.4设计](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本、计费和Smoke缺独立模块入口 |

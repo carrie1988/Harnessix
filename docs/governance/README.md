@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 1
-code_revision: 8e3e3576bbc64bf2b696279c404ba5fcb3fee06e
+version: 2
+code_revision: 48f286938ddd877bf9fdbb6ad3e64f8403098723
 owners:
   - core
 modules:
@@ -20,21 +20,21 @@ DOC-1用于建立与生产级Coding Agent相匹配的文档工程能力，使设
 
 ## 2. 边界
 
-DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代码治理结论，也不替代0.9各产品切片。DOC-1.0只建立基线和规则，不重写既有模块设计、不修改生产代码、不提前引入CI文档门禁。
+DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代码治理结论，也不替代0.9各产品切片。DOC-1.0建立基线和规则；DOC-1.1建立统一导航、当前系统架构和源码阅读主链；模块级现行设计从DOC-1.2开始迁移。
 
 ## 3. DOC-1阶段
 
 | 阶段 | 目标 | 状态 | 产物 |
 |---|---|---|---|
 | DOC-1.0 | 文档盘点、分类、规范、模板、追踪矩阵和整改待办 | 已完成 | 本目录与[起始基线](../baselines/documentation-doc1.0-start.json) |
-| DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 未开始 | 文档地图、系统上下文、主链阅读路线 |
+| DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 未开始 | 两份符合新规范的完整模块设计 |
 | DOC-1.3 | Coding Agent主链模块设计 | 未开始 | Model、Context、Tool、Process、Workspace等模块文档 |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 未开始 | Protocol、App Server、SDK、MCP、Skill、Hook等模块文档 |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 
-“已完成”表示DOC-1.0要求的治理资料已经建立，不表示133份存量文档已经整改完成。
+“已完成”只表示对应切片的验收边界已经满足。DOC-1.0/1.1完成不表示30个包的模块设计或133份存量文档已经全部整改完成。
 
 ## 4. 入口
 
@@ -42,6 +42,9 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [现状全量盘点](documentation-inventory.md)：固定提交上的数量基线、结构缺口和完整目录；
 - [文档—源码—测试追踪矩阵](documentation-traceability.md)：目标追踪模型及30个源码包的覆盖状态；
 - [整改待办](documentation-remediation-backlog.md)：DOC-1.1至DOC-1.6的执行顺序和验收边界；
+- [文档中心](../README.md)：面向读者的统一入口和资料角色；
+- [当前总体架构](../architecture.md)：系统边界、模块依赖、数据流、五条系统时序和源码测试映射；
+- [源码阅读地图](../guides/source-reading-map.md)：产品启动、Agent Loop、可信执行和Action Plane逐文件路线；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；

@@ -288,7 +288,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 8. 0.6：Context Engine 与持久会话
 
-状态：**已完成**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)，并通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已完成[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)及[Resume/Fork/Archive详细设计](thread-lifecycle.md)，并通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已完成[Retry与Provider切换源码研究](research/turn-retry-and-provider-switch.md)、[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)、[详细设计](turn-retry-and-provider-switch.md)及对应实现；当前Event/Thread为v17、Session migration为20，本地严格验收及[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵全部通过。见[详细实施设计](m06-context-and-sessions.md)。
+状态：**已完成**。0.6.1已完成固定指令优先级、供应商中立输入预算、双Provider映射、Event v10持久检查记录及Context Inspect；0.6.2a已完成受控项目指令发现、异步Source端口、每步freshness、Context Inspection v2和Event/Thread v11，并通过远端[CI 34104413651](https://github.com/carrie1988/Harnessix/actions/runs/34104413651)四矩阵验收；0.6.2b已实现Workspace/Git/环境Source、乐观双观测、Context Inspection v3、Event/Thread v12和Session migration14。0.6.2c已完成Tool Result稳定模型视图、完整Artifact覆盖证明、Event/Thread v13和Session migration15，并通过[CI 34173011955](https://github.com/carrie1988/Harnessix/actions/runs/34173011955)四矩阵验收。0.6.3已完成[Compaction源码研究](research/compaction-and-context-windows.md)、[窗口规划](compaction-window-planning.md)、[独立摘要账本](compaction-attempt-ledger.md)及[自动Compaction运行时与活动窗口](compaction-runtime-and-windows.md)，并通过[CI 34183895692](https://github.com/carrie1988/Harnessix/actions/runs/34183895692)四矩阵验收。0.6.4已完成[Thread生命周期源码研究](research/thread-lifecycle-and-fork.md)、[ADR 0060](adr/0060-thread-lifecycle-and-authority-free-forks.md)及[Resume/Fork/Archive详细设计](thread-lifecycle.md)，并通过[CI 34188329001](https://github.com/carrie1988/Harnessix/actions/runs/34188329001)四矩阵验收。0.6.5已完成[Retry与Provider切换源码研究](research/turn-retry-and-provider-switch.md)、[ADR 0061](adr/0061-terminal-turn-retry-and-provider-neutral-history.md)、[详细设计](turn-retry-and-provider-switch.md)及对应实现；该切片交付时Event/Thread为v17、Session migration为20，本地严格验收及[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵全部通过。当前版本号以[总体架构](architecture.md)为准。见[详细实施设计](m06-context-and-sessions.md)。
 
 ### 目标
 
@@ -402,7 +402,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0和DOC-1.0已完成；DOC-1.1、DOC-1.2是0.9.1大规模产品实现的文档前置门禁，其余产品切片尚未开始。本阶段不再补建基础领域语义，而是先建立与现有代码规模匹配的可维护性和文档工程基线，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0、DOC-1.0和DOC-1.1已完成；DOC-1.2仍是0.9.1大规模产品实现的文档前置门禁，其余产品切片尚未开始。本阶段不再补建基础领域语义，而是先建立与现有代码规模匹配的可维护性和文档工程基线，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -427,7 +427,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 [整改待办](governance/documentation-remediation-backlog.md)。
 
 - [x] **DOC-1.0 盘点与规范**：固定133份Markdown、30个顶层生产包和10个根级生产模块的起始基线；建立文档分类、状态、元数据、重大变更流程、图示、源码/测试链接规范、五类模板、追踪矩阵和分阶段待办。本切片不修改生产代码，也不宣称存量资料已经整改完成；
-- [ ] **DOC-1.1 导航与系统架构**：建立文档总入口、当前系统架构、模块依赖和Coding Agent主链源码阅读路线；
+- [x] **DOC-1.1 导航与系统架构**：建立[文档总入口](README.md)、[当前系统架构](architecture.md)、30个包与10个根级模块的边界，以及[源码阅读路线](guides/source-reading-map.md)；明确默认产品、显式装配库和规划能力，覆盖正常任务、审批、取消、崩溃恢复和事务性交付五条时序；
 - [ ] **DOC-1.2 黄金样例**：按新规范完成Agent Runtime模块设计和Action Plane子系统设计，并以源码及测试双向抽查；
 - [ ] **DOC-1.3 Coding Agent主链**：为模型、上下文、会话、工具、补丁、进程、Sandbox、工作区、交付、Eval和观测等核心包补齐现行模块设计；
 - [ ] **DOC-1.4 产品运行时与扩展**：为Protocol、App Server、SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke补齐现行模块设计；
