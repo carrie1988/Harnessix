@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 7
-code_revision: efc7d82062681469651925bff411134c95d89a01
+version: 8
+code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
 owners:
   - core
 modules:
@@ -36,7 +36,7 @@ supersedes: []
 |---|---|---|
 | 产品启动与协议 | [源码阅读地图：产品启动](guides/source-reading-map.md#4-产品启动与装配主链) | `cli → product_config → app_server → protocol` |
 | Agent Loop与状态 | [Agent Runtime模块设计](modules/agent.md) | `agent → session → models/context/tools` |
-| 文件修改和执行 | [源码阅读地图：可信执行](guides/source-reading-map.md#8-可信写入进程与交付主链) | `patches/processes → sandbox/workspace → delivery` |
+| 文件修改和执行 | [Managed Patch Runtime模块设计](modules/patches.md) | `patches → agent/artifacts`，再阅读`sandbox/workspace → delivery` |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → runtime → storage/worker` |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
@@ -65,6 +65,7 @@ supersedes: []
 | Model Runtime | [Model Runtime模块设计](modules/models.md) | Provider端口、流状态机、Attempt、Usage、Billing和Cost |
 | Artifact | [Artifact模块设计](modules/artifacts.md) | 有界正文、原子发布、分页、完整性验证、TTL和回收 |
 | Coding Tool Runtime | [Coding Tool Runtime模块设计](modules/tools.md) | Workspace只读文件/搜索/Git、可信Scope、并发、取消和Artifact捕获 |
+| Managed Patch Runtime | [Managed Patch Runtime模块设计](modules/patches.md) | 精确计划、受管副本、单文件/批次审批、持久执行、恢复和Diff Artifact |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
