@@ -37,6 +37,7 @@ DOC-1.5结束时仓库包含189份Markdown、30个顶层生产源码包、10个�
 | `.github/workflows/ci.yml` | Linux双Python、macOS、Windows、PostgreSQL和Container分工明确 | 离线检查三平台执行；Mermaid只在独立Linux文档任务运行 |
 | `pyproject.toml` | PyYAML已经是运行依赖，Ruff和Pytest是开发依赖 | 不新增Python依赖；YAML使用安全且拒绝重复键的Loader |
 | `docs/governance/documentation-standard.md` | 已定义17类文档、6种状态和9个必填字段 | JSON策略必须与该规范一致 |
+| `scripts/generate_specs.py`与`spec/` | 生成器输出当前合同，仓库同时保留历史版本Schema | 检查当前生成集合的缺失与内容漂移，不把受支持历史Schema误判为陈旧文件 |
 
 ## 3. 设计目标与非目标
 
@@ -50,6 +51,7 @@ DOC-1.5结束时仓库包含189份Markdown、30个顶层生产源码包、10个�
 6. 离线检查Mermaid围栏和图类型，CI使用固定CLI完成变化图表渲染；
 7. 一次聚合输出全部问题，提供稳定错误码和JSON报告能力；
 8. 拒绝个人绝对路径、疑似Secret和明确的对话过程措辞。
+9. 在临时目录重新生成当前公共Schema，阻断已提交合同缺失或内容漂移。
 
 ### 3.2 非目标
 
@@ -77,6 +79,8 @@ flowchart LR
     Sync --> Report
     Report --> Make[make check]
     Report --> CI[documentation CI + mmdc]
+    Specs[generate_specs --check] --> Make
+    Specs --> CI
 ```
 
 ### 4.1 组件职责
@@ -90,6 +94,7 @@ flowchart LR
 | Repository Validator | ADR/研究索引、源码包模块覆盖、源码/测试链接 | 不推断运行时依赖 |
 | Change Sync Validator | 解析Git差异并要求同步模块/变更设计 | 不自动判断业务是否正确 |
 | Mermaid Renderer | 调用固定`mmdc`渲染变化图 | 不作为Python安装依赖 |
+| Contract Drift Validator | 临时生成当前Schema并与`spec/`逐字节比较 | 不删除仍受支持的历史版本Schema |
 | Reporter | 排序、去重、文本/JSON输出和退出码 | 不输出Secret匹配正文 |
 
 ## 5. 数据流程
@@ -122,6 +127,7 @@ uv run python scripts/documentation_check.py
 uv run python scripts/documentation_check.py --changed-from <git-revision>
 uv run python scripts/documentation_check.py --changed-from <git-revision> --render-mermaid
 uv run python scripts/documentation_check.py --format json
+uv run python scripts/generate_specs.py --check
 ```
 
 | 参数 | 含义 | 失败语义 |
@@ -131,6 +137,9 @@ uv run python scripts/documentation_check.py --format json
 | `--changed-from` | 差异基线提交 | 非零且不可解析时`git_base_invalid`；全库静态检查仍执行 |
 | `--render-mermaid` | 调用外部`mmdc`渲染变化图或全库图 | 命令缺失/超时/失败分别产生稳定错误 |
 | `--format` | `text`或`json` | 未知值由参数解析器拒绝 |
+
+合同检查器的`--check`以`--output`指定的`spec/`为权威提交目录，在临时目录调用同一个`generate_specs`实现。
+当前生成文件缺失或字节不同均退出1；提交目录中额外的旧版本Schema按兼容合同保留，不作为删除条件。
 
 ### 6.2 Python接口
 
@@ -204,6 +213,11 @@ if changed_from:
 if render_mermaid:
     render blocks from changed documents, otherwise all blocks
 
+generated_specs = generate_current_contracts(temporary_directory)
+for generated_spec in generated_specs:
+    require matching committed_spec with identical bytes
+# committed-only files are supported historical contracts
+
 sort_and_deduplicate_findings()
 exit 0 only when findings is empty
 ```
@@ -217,6 +231,7 @@ exit 0 only when findings is empty
 | Git基线无效 | 报告`git_base_invalid`，保留全库静态结果，不伪装已执行差异门禁 |
 | 某个链接目标缺失 | 报告来源行，继续检查其余链接 |
 | Mermaid渲染失败 | 记录来源图块；继续渲染其他变化图，最终失败 |
+| Schema生成或比较失败 | `--check`非零退出；临时目录自动清理，`spec/`保持不变 |
 | 外部取消/SIGINT | 子进程由`subprocess.run`同步回收，CLI传播非零退出；不写仓库文件 |
 | 检查器异常 | 顶层转换为单个`internal_error`且不输出文档正文 |
 
@@ -253,6 +268,7 @@ JSON格式包含策略版本、计数和排序后的Finding数组。检查器不
 | 安全反例 | 个人路径、伪API Key、超限正文 | 不回显Secret值 |
 | 差异正反例 | 单包、根模块、多包、合同/迁移/安全路径 | 正确要求模块设计和变更设计 |
 | Mermaid反例 | 空块、未知图类型、渲染器缺失/超时/失败 | 稳定错误且继续聚合 |
+| 公共Schema | 当前合同一致、缺失、内容漂移、历史版本保留 | 当前集合严格一致且不破坏兼容历史 |
 | CLI | text/json、成功/失败退出码 | 输出Schema稳定 |
 
 ## 13. 源码与测试映射
@@ -266,7 +282,8 @@ JSON格式包含策略版本、计数和排序后的Finding数组。检查器不
 | Git差异同步 | [文档检查器](../../scripts/documentation_check.py) | `collect_changed_paths`、`validate_changed_documentation` | 单包、根模块、多包和合法变更设计测试 |
 | Mermaid真实渲染 | [文档检查器](../../scripts/documentation_check.py) | `render_mermaid` | 缺命令、空SVG、超时和成功渲染测试 |
 | 自动回归 | [治理测试](../../tests/governance/test_documentation_policy.py) | 22个正反例场景 | Pytest治理套件 |
-| 本地门禁 | [Makefile](../../Makefile) | `documentation`、`check` | `make documentation`、`make check` |
+| 公共合同漂移 | [Schema生成器](../../scripts/generate_specs.py) | `generate_specs`、`check_specs` | [Schema治理测试](../../tests/governance/test_generated_specs.py) |
+| 本地门禁 | [Makefile](../../Makefile) | `documentation`、`contracts`、`check` | `make documentation`、`make contracts`、`make check` |
 | 三平台与图表CI | [CI工作流](../../.github/workflows/ci.yml) | Python/macOS/Windows静态检查、Linux `documentation`任务 | GitHub Actions |
 
 ## 14. 部署、兼容与回退

@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0076-code-readability-and-structural-governance.md
 related_tests:
   - tests/governance/test_documentation_policy.py
+  - tests/governance/test_generated_specs.py
 supersedes: []
 ---
 
@@ -62,6 +63,7 @@ DOC-1.0～DOC-1.5已建立文档分类、模板、30份包级现行模块设计�
 6. 检查器输出稳定错误码、仓库相对路径、可选行号和中文解释；一次运行聚合全部错误并以非零退出；
 7. 历史ADR和里程碑不强制套用现行详细设计章节，结构门禁只应用于现行模块设计和DOC-1后变更设计；
 8. 规则实现必须有当前仓库正例和最小反例测试，不能通过关键词或关闭规则让回归“变绿”。
+9. 公共Schema使用现有生成器在临时目录重建并逐字节校验当前生成集合；额外旧版本Schema作为兼容合同保留。
 
 ## 理由
 

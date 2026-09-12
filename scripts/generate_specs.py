@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import argparse
 import json
+import sys
+import tempfile
 from pathlib import Path
 
 from pydantic import TypeAdapter
@@ -231,9 +234,10 @@ def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
 
 
-def main() -> None:
-    output = Path("spec")
-    output.mkdir(exist_ok=True)
+def generate_specs(output: Path) -> None:
+    """把当前Python合同确定性导出到指定目录。"""
+
+    output.mkdir(parents=True, exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
     write_json(output / "agent-event-v19.schema.json", AgentEvent.model_json_schema())
@@ -444,12 +448,66 @@ def main() -> None:
         output / "agent-protocol-query-params-v1.schema.json",
         TypeAdapter(AgentQueryParams).json_schema(),
     )
+
+
+def check_specs(expected: Path) -> list[str]:
+    """校验当前生成集合；额外文件是仍受支持的历史合同，不按陈旧文件删除。"""
+
+    if not expected.is_dir():
+        return [f"合同目录不存在：{expected.as_posix()}"]
+    if any(path.is_symlink() for path in expected.rglob("*")):
+        return ["合同目录不能包含符号链接"]
+
+    with tempfile.TemporaryDirectory(prefix="harnessix-spec-check-") as directory:
+        generated = Path(directory)
+        generate_specs(generated)
+        expected_files = {
+            path.relative_to(expected).as_posix(): path
+            for path in expected.rglob("*")
+            if path.is_file()
+        }
+        generated_files = {
+            path.relative_to(generated).as_posix(): path
+            for path in generated.rglob("*")
+            if path.is_file()
+        }
+        findings = [
+            f"已提交合同缺少生成文件：{path}"
+            for path in sorted(generated_files.keys() - expected_files.keys())
+        ]
+        findings.extend(
+            f"已提交合同内容漂移：{path}"
+            for path in sorted(expected_files.keys() & generated_files.keys())
+            if expected_files[path].read_bytes() != generated_files[path].read_bytes()
+        )
+        return findings
+
+
+def _argument_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="生成或验证Harnessix公共Schema")
+    parser.add_argument("--output", type=Path, default=Path("spec"))
+    parser.add_argument("--check", action="store_true")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _argument_parser().parse_args(argv)
+    if args.check:
+        findings = check_specs(args.output)
+        if findings:
+            print("\n".join(findings))
+            return 1
+        print("合同一致性检查通过")
+        return 0
+
+    generate_specs(args.output)
     print(
         "已更新 Action、Agent、Provider、成本、Smoke、工具、Artifact、Patch、"
         "Process、Context、Coding Eval、可信执行、MCP、Skill、Hook、"
         "Provider产品配置、Agent Protocol 与 OpenAPI Schema"
     )
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
