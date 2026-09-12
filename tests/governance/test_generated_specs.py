@@ -5,7 +5,13 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 ROOT = Path(__file__).parents[2]
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="当前Evals Schema导入依赖POSIX fcntl；合同生成由Linux和macOS门禁覆盖",
+)
 
 
 def _generator_module() -> ModuleType:

@@ -284,13 +284,15 @@ JSON格式包含策略版本、计数和排序后的Finding数组。检查器不
 | 自动回归 | [治理测试](../../tests/governance/test_documentation_policy.py) | 22个正反例场景 | Pytest治理套件 |
 | 公共合同漂移 | [Schema生成器](../../scripts/generate_specs.py) | `generate_specs`、`check_specs` | [Schema治理测试](../../tests/governance/test_generated_specs.py) |
 | 本地门禁 | [Makefile](../../Makefile) | `documentation`、`contracts`、`check` | `make documentation`、`make contracts`、`make check` |
-| 三平台与图表CI | [CI工作流](../../.github/workflows/ci.yml) | Python/macOS/Windows静态检查、Linux `documentation`任务 | GitHub Actions |
+| 三平台与图表CI | [CI工作流](../../.github/workflows/ci.yml) | Python/macOS/Windows文档静态检查、Linux `documentation`任务、Linux/macOS合同检查 | GitHub Actions |
 
 ## 14. 部署、兼容与回退
 
 文档工具只在源码仓库和CI运行，不进入wheel入口。`make documentation`提供独立门禁，`make check`组合执行。
 CI新增独立文档任务，固定Node 22、`actions/setup-node` v4.4.0提交和Mermaid CLI 11.6.0，
 并显式校验Linux Runner预装的`google-chrome`后把绝对路径交给Puppeteer；Python 3.12/3.13继续执行Pytest中的治理测试。
+文档门禁在Linux、macOS和Windows执行；公共Schema生成当前受`harnessix.evals`的POSIX `fcntl`顶层依赖限制，
+因此在Linux与macOS执行，Windows合同生成测试显式Skip并由0.9.6的平台治理关闭，不伪装为Windows已验证。
 
 回退时可从`make check`和CI移除调用，但不得删除策略、设计、测试和失败证据来伪造通过。策略v1不原地改义；
 新增文档类型、状态或重大路径语义时递增策略版本并新增ADR或变更设计。
