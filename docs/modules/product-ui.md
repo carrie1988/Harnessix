@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 2
+code_revision: 085649da9aa27192c9f67ee35ee5471fdd33ce6d
 owners:
   - product
 modules:
@@ -37,7 +37,7 @@ supersedes: []
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影类型/Reducer、连接状态及`RecoverableAgentSession` |
 | 当前完成度 | 0.9.1a客户端内核已实现；Textual、产品CLI、完整领域交互、Doctor和默认Action装配尚未实现 |
-| 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
+| 代码版本 | `085649da9aa27192c9f67ee35ee5471fdd33ce6d` |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -501,4 +501,5 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `085649da9aa27192c9f67ee35ee5471fdd33ce6d` | 2026-09-13 | 将Product UI专项测试纳入Linux全量、macOS Coding Tools和Windows Trusted Execution三平台CI矩阵 |
 | 1 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 建立Client State、原子Store、投影Reducer、连接代际、Prepared Command及SDK协商门禁的现行设计 |
