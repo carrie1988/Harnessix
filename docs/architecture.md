@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 25
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 26
+code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
 owners:
   - core
 modules:
@@ -217,7 +217,7 @@ flowchart LR
 | 组件 | 状态 | 责任 | 关键源码/符号 | 主要验证 |
 |---|---|---|---|---|
 | 顶层命令 | 当前默认产品 | 命令解析与入口分派 | [cli.py](../src/harnessix/cli.py) `main` | [CLI许可测试](../tests/unit/test_cli_license.py)、[产品CLI测试](../tests/product_config/test_server_and_cli.py) |
-| Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移和活动配置CAS | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
+| Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移、安全Fallback和活动配置CAS；详见[模块设计](modules/product-config.md) | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、响应归并和恢复责任，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
@@ -856,7 +856,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 7个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server与SDK设计已完成，Product Config为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
+| 6个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK与Product Config设计已完成，API为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 

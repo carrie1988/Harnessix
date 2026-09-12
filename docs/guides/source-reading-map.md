@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 3
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 4
+code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
 owners:
   - core
 modules:
@@ -48,7 +48,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应提交`48f286938ddd877bf9fdbb6ad3e64f8403098723`；
+- 本文对应提交`ac803fca1dcfc8edf76c41c8c0e474b9533282f1`；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -87,9 +87,10 @@ src/harnessix/
 3. [src/harnessix/cli.py](../../src/harnessix/cli.py)：读`_parser`和`main`的子命令分派；
 4. [src/harnessix/product_config/cli.py](../../src/harnessix/product_config/cli.py)：读`agent_server_main`如何解析产品参数；
 5. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`；
-6. [src/harnessix/product_config/runtime.py](../../src/harnessix/product_config/runtime.py)：理解Profile选择、离线诊断和Provider Bundle；
-7. [src/harnessix/product_config/store.py](../../src/harnessix/product_config/store.py)：理解配置Snapshot与活动指针CAS；
-8. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证设计。
+6. [Product Config模块设计](../modules/product-config.md)：先理解双摘要、严格合同、迁移、审计和零暴露Fallback的完整边界；
+7. [src/harnessix/product_config/runtime.py](../../src/harnessix/product_config/runtime.py)：理解Profile选择、离线诊断和Provider Bundle；
+8. [src/harnessix/product_config/store.py](../../src/harnessix/product_config/store.py)：理解配置Snapshot与活动指针CAS；
+9. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证设计。
 
 ### 4.2 调用链
 
@@ -474,7 +475,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 | [patches](../../src/harnessix/patches/) | `contracts.py`、`planner.py` | Patch如何指纹、审批和恢复 | [patches](../../tests/patches/) |
 | [policy](../../src/harnessix/policy/) | `default.py` | 风险和效果如何产生决策 | [Action Service测试](../../tests/integration/test_action_service.py) |
 | [processes](../../src/harnessix/processes/) | `contracts.py`、`runtime.py` | 进程如何拥有、监督和恢复 | [processes](../../tests/processes/) |
-| [product_config](../../src/harnessix/product_config/) | `contracts.py`、`server.py` | 产品如何诊断并安全装配 | [product_config](../../tests/product_config/) |
+| [product_config](../../src/harnessix/product_config/) | [`contracts.py`](../../src/harnessix/product_config/contracts.py)、[`server.py`](../../src/harnessix/product_config/server.py)；[模块设计](../modules/product-config.md) | 产品如何诊断、迁移、审计并安全装配 | [product_config](../../tests/product_config/) |
 | [protocol](../../src/harnessix/protocol/) | `contracts.py`、`requests.py` | 版本、投影和命令幂等如何工作 | [protocol](../../tests/protocol/) |
 | [sandbox](../../src/harnessix/sandbox/) | `contracts.py`、`planner.py` | 能力和强制隔离如何区分 | [sandbox](../../tests/sandbox/) |
 | [sdk](../../src/harnessix/sdk/) | [agent_client.py](../../src/harnessix/sdk/agent_client.py)、[client.py](../../src/harnessix/sdk/client.py)；[模块设计](../modules/sdk.md) | Agent双Transport与Action HTTP客户端如何分界 | [app_server](../../tests/app_server/)、[SDK单元](../../tests/unit/test_sdk.py) |

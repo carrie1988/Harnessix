@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 25
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 26
+code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
-| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（3/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)与[SDK](../modules/sdk.md)已完成；下一项为Product Config，之后为API、Adapter、MCP、Skill、Hook和Smoke |
+| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（4/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)与[Product Config](../modules/product-config.md)已完成；下一项为API，之后为Adapter、MCP、Skill、Hook和Smoke |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 00e2b816078f52c10849a65efddb36e84a538eef
+version: 2
+code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
 owners:
   - core
 modules:
@@ -691,11 +691,12 @@ estimate_cost(attempt, price, verified_context):
 | 默认Provider配置不支持热重载 | 活动Turn使用旧Bundle直到重启 | 当前有意保持可复现；后续需独立迁移语义 |
 
 Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agent Runtime模块设计](agent.md)，Context
-输入构造见[Context模块设计](context.md)，Profile/Secret/Fallback持久审计由后续Product Config模块设计
-维护。里程碑文档只索引当前结论，不复制维护这些状态机。
+输入构造见[Context模块设计](context.md)，Profile/Secret/Fallback持久审计由
+[Product Config模块设计](product-config.md)维护。里程碑文档只索引当前结论，不复制维护这些状态机。
 
 ## 24. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `00e2b816078f52c10849a65efddb36e84a538eef` | 2026-09-12 | DOC-1.3 Wave A Model Runtime模块设计初版 |
+| 2 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` | 2026-09-12 | 链接DOC-1.4 Product Config现行设计 |
