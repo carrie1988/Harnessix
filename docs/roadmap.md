@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 8
-code_revision: 7839dc56b351695a329c0575483f155d9ac216b0
+version: 9
+code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
 owners:
   - core
 modules:
@@ -425,7 +425,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内195份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计。0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收；0.9.1b基础Textual产品链、真实stdio恢复和跨平台并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1c～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内196份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计。0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收；0.9.1b基础Textual产品链、真实stdio恢复和跨平台并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1c～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 

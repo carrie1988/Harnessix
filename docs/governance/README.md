@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 38
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 39
+code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
 owners:
   - core
 modules:
@@ -37,7 +37,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 已完成 | 测试/验证证据、六类运维资料、里程碑增量设计、76份ADR和27份源码研究均已分层及迁移 |
 | DOC-1.6 | 自动化门禁 | 已完成 | [策略v1](../../governance/documentation-policy-v1.json)、[检查器](../../scripts/documentation_check.py)、25项新增正反例、合同漂移校验和三平台CI均已落地；Linux执行真实Mermaid渲染 |
 
-“已完成”只表示对应切片的验收边界已经满足。DOC-1全链路完成表示191份当前仓库Markdown和30个生产源码包已进入自动治理，不表示0.9.1～0.9.6产品切片或1.0发布门槛已经完成。
+“已完成”只表示对应切片的验收边界已经满足。DOC-1.6关闭时的191份Markdown和30个生产源码包均已进入自动治理，后续新增文档和源码包继承同一门禁；这不表示0.9.1～0.9.6产品切片或1.0发布门槛已经完成。
 
 ## 4. 入口
 

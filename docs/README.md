@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 43
-code_revision: 7839dc56b351695a329c0575483f155d9ac216b0
+version: 44
+code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
 owners:
   - core
 modules:
@@ -210,4 +210,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内195份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内196份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

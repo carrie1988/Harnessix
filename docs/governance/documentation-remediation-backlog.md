@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 38
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 39
+code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
 owners:
   - core
 modules:
@@ -272,7 +272,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ### 10.2 最终启用状态
 
-1. 当前191份Markdown全部执行版本化元数据、生命周期、相对链接、GitHub锚点、结构、Mermaid和敏感内容检查，不保留存量豁免；
+1. DOC-1.6关闭时的191份Markdown全部执行版本化元数据、生命周期、相对链接、GitHub锚点、结构、Mermaid和敏感内容检查，不保留存量豁免；
 2. 30个生产源码包均绑定唯一现行模块设计，并要求至少一个源码入口和一个测试入口；
 3. Git基线、暂存区、工作区和未追踪文件共同构成变化集；源码包、根级模块和重大路径变化按策略要求同步模块设计及重大变更设计；
 4. Linux、macOS和Windows均执行离线静态门禁；Linux文档任务对变化图执行固定版本`mmdc`真实渲染；
