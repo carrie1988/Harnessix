@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 24
-code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
+version: 25
+code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
 owners:
   - core
 modules:
@@ -220,6 +220,7 @@ flowchart LR
 | Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移和活动配置CAS | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
+| Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、响应归并和恢复责任，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
 | Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py) |
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本；详见[模块设计](modules/models.md) | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
@@ -855,7 +856,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 8个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol与App Server设计已完成，SDK为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
+| 7个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server与SDK设计已完成，Product Config为下一项 | 源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -923,6 +924,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 25 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，区分Agent Protocol与Action HTTP客户端，明确Transport并发取消、身份恢复、错误、安全和平台边界 |
 | 24 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 接入App Server现行模块设计，明确单连接状态、应用命令顺序、后台Turn、Replay/Delta、stdio并发关闭、Scoped Artifact与默认装配边界 |
 | 20 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` | 2026-09-12 | 接入Delivery现行模块设计，明确Workspace Transaction、Blob、POSIX发布与对账、Rollback、Diff、Git Worktree/Checkpoint/Commit、Push统一Route和跨Store边界 |
 | 19 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 接入Workspace现行模块设计，明确逻辑路径、选择资源Snapshot、POSIX/Windows对象观察、Secure Reader、执行前校验、Fencing Lease与跨模块消费边界 |

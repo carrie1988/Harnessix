@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 2
-code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
+version: 3
+code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
 owners:
   - core
 modules:
@@ -133,8 +133,9 @@ sequenceDiagram
 
 ### 5.1 从客户端到应用服务
 
-先通读[Protocol模块设计](../modules/protocol.md)和[App Server模块设计](../modules/app-server.md)，建立线上合同、
-连接状态、应用编排与领域事实的分层，再按以下顺序进入源码：
+先通读[Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)和
+[SDK模块设计](../modules/sdk.md)，建立线上合同、连接状态、客户端传输、应用编排与领域事实的分层，
+再按以下顺序进入源码：
 
 按以下顺序阅读：
 
@@ -476,7 +477,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 | [product_config](../../src/harnessix/product_config/) | `contracts.py`、`server.py` | 产品如何诊断并安全装配 | [product_config](../../tests/product_config/) |
 | [protocol](../../src/harnessix/protocol/) | `contracts.py`、`requests.py` | 版本、投影和命令幂等如何工作 | [protocol](../../tests/protocol/) |
 | [sandbox](../../src/harnessix/sandbox/) | `contracts.py`、`planner.py` | 能力和强制隔离如何区分 | [sandbox](../../tests/sandbox/) |
-| [sdk](../../src/harnessix/sdk/) | `agent_client.py` | 进程内/子进程传输如何统一 | [app_server](../../tests/app_server/) |
+| [sdk](../../src/harnessix/sdk/) | [agent_client.py](../../src/harnessix/sdk/agent_client.py)、[client.py](../../src/harnessix/sdk/client.py)；[模块设计](../modules/sdk.md) | Agent双Transport与Action HTTP客户端如何分界 | [app_server](../../tests/app_server/)、[SDK单元](../../tests/unit/test_sdk.py) |
 | [secrets](../../src/harnessix/secrets/) | `provider.py`、`redaction.py` | Secret如何不进入持久层 | [secrets](../../tests/secrets/) |
 | [session](../../src/harnessix/session/) | `ports.py`、`sqlite.py` | Event如何CAS提交和重放 | [agent](../../tests/agent/) |
 | [skills](../../src/harnessix/skills/) | `contracts.py`、`runtime.py` | Skill如何快照和渐进加载 | [skills](../../tests/skills/) |
@@ -552,7 +553,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 ## 17. 后续文档入口
 
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
-- [Protocol模块设计](../modules/protocol.md)与[App Server模块设计](../modules/app-server.md)：公共合同、连接、应用编排、事件与stdio关闭的现行事实；
+- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)与[SDK模块设计](../modules/sdk.md)：公共合同、连接、客户端传输、应用编排、事件与stdio关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
 - [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；

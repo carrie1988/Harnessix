@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
+version: 3
+code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
 owners:
   - core
 modules:
@@ -35,7 +35,7 @@ supersedes: []
 | 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
-| 代码版本 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` |
+| 代码版本 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` |
 | 当前完成度 | v1合同、投影、Schema与命令账本已实现；能力协商只部分驱动运行时，出站字节门禁、请求账本回收、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
@@ -44,7 +44,7 @@ supersedes: []
 [`projection.py`](../../src/harnessix/protocol/projection.py)、
 [`requests.py`](../../src/harnessix/protocol/requests.py)和
 [`__init__.py`](../../src/harnessix/protocol/__init__.py)的当前事实源。连接状态、调度与stdio背压应继续阅读
-[App Server源码](../../src/harnessix/app_server/)；客户端调用行为应阅读[SDK源码](../../src/harnessix/sdk/)；
+[App Server模块设计](app-server.md)；客户端调用行为应阅读[SDK模块设计](sdk.md)；
 内部持久事实应阅读[Agent Runtime模块设计](agent.md)和[Session模块设计](session.md)。
 [0.8产品运行时设计](../m08-product-runtime-and-extensions.md)和
 [ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md)用于解释历史增量与取舍，不替代本文的现行实现说明。
@@ -651,7 +651,7 @@ loop:
         continue, cancel, or back off according to client lifecycle
 ```
 
-SDK中的对应推进规则见[`AgentClient.stream_events`](../../src/harnessix/sdk/agent_client.py)。
+SDK中的对应推进规则见[`AgentClient.watch_thread`](../../src/harnessix/sdk/agent_client.py)。
 
 ## 15. 持久命令幂等账本
 
@@ -1449,5 +1449,6 @@ Protocol模块现行设计满足以下条件时可判定DOC-1.4中的本模块�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 3 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行设计，并将不存在的`AgentClient.stream_events`源码映射修正为实际`watch_thread`方法 |
 | 2 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 根据App Server源码反向求证，修正非1.0版本错误分支不可达及Closing状态回复Notification的实现偏差 |
 | 1 | `b71682da19b54e93b225c54c594e2583fd648e70` | 2026-09-12 | 建立Protocol现行模块设计，覆盖合同、严格解码、公共投影、Replay、命令账本、兼容、Schema、失败恢复和真实实现差距 |

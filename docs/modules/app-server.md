@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e
+version: 2
+code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
 owners:
   - core
 modules:
@@ -35,7 +35,7 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、只读Coding Tool Runtime和Agent Runtime；当前默认不装配Artifact Reader |
 | 平台 | App Server Python逻辑无显式平台分支；默认产品因Coding Tool Runtime限制仍在Windows启动前失败，三平台产品证据尚未完成 |
-| 代码版本 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` |
+| 代码版本 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询和有界关闭已实现；协商Limit贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
@@ -44,7 +44,7 @@ supersedes: []
 [`artifacts.py`](../../src/harnessix/app_server/artifacts.py)和
 [`__init__.py`](../../src/harnessix/app_server/__init__.py)的当前事实源。线上字段、严格帧、公共投影、
 Replay游标和命令账本详见[Protocol模块设计](protocol.md)；Agent状态与恢复详见
-[Agent Runtime模块设计](agent.md)；客户端传输属于[`sdk`](../../src/harnessix/sdk/)并将在DOC-1.4独立固化。
+[Agent Runtime模块设计](agent.md)；客户端传输、响应归并与重连责任详见[SDK模块设计](sdk.md)。
 
 ## 2. 需求背景
 
@@ -1261,4 +1261,5 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |
 | 1 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 建立App Server现行模块设计，覆盖连接、应用服务、stdio、Artifact、并发背压、关闭恢复、默认装配及真实实现差距 |
