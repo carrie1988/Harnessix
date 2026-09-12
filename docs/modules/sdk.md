@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 2
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -699,7 +699,8 @@ sequenceDiagram
 ```
 
 HTTP Client不拥有Action执行生命周期。Inline模式可能直接返回终态；Queued或等待状态可能返回202和非终态
-Snapshot，调用方需要用`get`继续查询、处理审批或触发Reconcile。
+Snapshot，调用方需要用`get`继续查询、处理审批或触发Reconcile。当前
+[Adapter模块](adapters.md)只调用Submit并把完整Snapshot序列化为Tool内容，不会自动调用这些恢复方法。
 
 ## 27. HTTP资源方法与线路
 
@@ -1091,7 +1092,7 @@ return value
 |---|---|---|
 | Async Submit保留Action合同 | `HarnessixAsyncClient.submit` | [`test_sdk.py`](../../tests/unit/test_sdk.py) `test_async_sdk_preserves_action_contract` |
 | API正常/冲突/202/Readiness | [`api/app.py`](../../src/harnessix/api/app.py) | [`test_api.py`](../../tests/integration/test_api.py)四个服务端用例；不是Client专项覆盖 |
-| LangGraph消费HTTP Client端口 | [`adapters/langgraph.py`](../../src/harnessix/adapters/langgraph.py) | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) |
+| LangChain Tool消费HTTP Client端口 | [`adapters/langgraph.py`](../../src/harnessix/adapters/langgraph.py)及[Adapter模块设计](adapters.md) | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py)只使用Fake Async Client，不证明真实HTTP或LangGraph ToolNode |
 
 ### 39.4 决策与研究
 
@@ -1194,4 +1195,5 @@ return value
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 2 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，明确其只调用Submit、完整Snapshot返回及真实HTTP/LangGraph测试边界 |
 | 1 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 建立SDK现行模块设计，覆盖双客户端边界、Transport并发取消、stdio进程、握手恢复、事件消费、HTTP资源、安全与真实测试差距 |

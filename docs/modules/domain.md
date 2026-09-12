@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 3
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ modules:
   - policy
   - storage
   - worker
+  - adapters
 related_adrs:
   - docs/adr/0001-python-first-runtime.md
   - docs/adr/0002-unknown-first-class.md
@@ -778,8 +779,10 @@ FastAPI直接使用`ActionRequest`、`ApprovalDecision`和`ActionSnapshot`生成
 
 ### 24.2 Framework Adapter
 
-[LangGraph Adapter](../../src/harnessix/adapters/langgraph.py)把框架输入转换为同一`ActionRequest`并调用Service；
-它不能定义第二套Effect或状态机。专用Agent Process/Patch桥接也必须把Action Journal视为唯一Action事实。
+[Adapter模块](adapters.md)当前通过[LangChain `StructuredTool`工厂](../../src/harnessix/adapters/langgraph.py)把
+框架输入转换为同一`ActionRequest`并调用Client；它不直接调用Service，也不能定义第二套Effect或状态机。当前没有真实
+LangGraph ToolNode/Checkpoint/Interrupt集成，Tool Call ID未绑定Action ID，非终态或负面终态Snapshot仍作为正常Tool
+内容返回。专用Agent Process/Patch桥接也必须把Action Journal视为唯一Action事实。
 
 ### 24.3 根公共API
 
@@ -1001,7 +1004,7 @@ reconcile(action_id):
 | 队列统计 | [`models.py`](../../src/harnessix/domain/models.py)、[`ports.py`](../../src/harnessix/domain/ports.py) | `JournalOperationalStats`、`operational_stats` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_operational_stats_report_queue_state`、`test_metrics_collection_failure_does_not_change_execution_result` |
 | HTTP领域投影 | [`app.py`](../../src/harnessix/api/app.py) | `create_app` | [`test_api.py`](../../tests/integration/test_api.py) | `test_http_api_executes_echo`、`test_http_api_returns_structured_conflict`、`test_queued_http_api_returns_202_and_worker_completes` |
 | PostgreSQL等价语义 | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication`、`test_postgres_expired_running_lease_persists_unknown_result` |
-| Framework中立请求 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | `create_harnessix_tool` | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) | `test_langgraph_tool_builds_framework_neutral_action` |
+| Framework中立请求 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py)及[Adapter模块设计](adapters.md) | `create_harnessix_tool` | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) | `test_langgraph_tool_builds_framework_neutral_action`；只证明Async正常映射，不证明真实LangGraph或恢复 |
 
 ## 32. 测试设计与当前证据
 
@@ -1053,6 +1056,7 @@ MCP、Hook和Trusted Action测试广泛复用Domain类型，但不应被计作Do
 
 | 当前限制 | 直接影响 | 正确演进方向 |
 |---|---|---|
+| Framework Tool Call与Action ID无持久绑定 | 图重试、Checkpoint恢复或返回前断线可能新建Action | 版本化桥接身份、可重入绑定状态机及崩溃测试；详见[Adapter模块设计](adapters.md) |
 | 敏感键守卫晚于首次Action持久化 | 被拒绝的疑似明文仍进入Journal和失败Snapshot | 版本化持久化前Admission安全门、最小拒绝事实及双后端兼容迁移 |
 | ContractModel仅浅冻结 | 嵌套字典可在持久前后被原地修改 | 版本化JSON值类型、深冻结/规范复制；先补失败测试 |
 | 核心Any字段无预算 | 可造成数据库/API/内存放大 | 定义统一JsonValue、深度、键数和UTF-8字节预算 |
@@ -1171,5 +1175,6 @@ Action Contract和生命周期文档是稳定外部契约摘要；Action Plane�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，纠正其为LangChain Tool工厂及Tool Call身份、状态投影和真实LangGraph证据边界 |
 | 2 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` | 2026-09-12 | 接入API现行设计，明确敏感键守卫在首次Journal持久化之后 |
 | 1 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 建立Domain包现行事实源，覆盖Action v1模型、状态、Tool Registry、Policy/Approval、Outcome、错误、端口、持久/租约边界、源码测试映射和契约加固缺口 |

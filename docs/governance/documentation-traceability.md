@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 27
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 28
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -59,14 +59,14 @@ flowchart LR
 | 关注点 | 当前事实入口 | 决策/研究 | 当前缺口 |
 |---|---|---|---|
 | 产品边界 | [文档中心](../README.md)、[产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 能力证据仍需在DOC-1.5按发布声明统一索引 |
-| 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口、黄金样例和DOC-1.3的19个模块已完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config与API，剩余5个包 |
+| 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口、黄金样例和DOC-1.3的19个模块已完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API与Adapter，剩余4个包 |
 | Action Plane | [Domain模块设计](../modules/domain.md)、[Policy模块设计](../modules/policy.md)、[Executors模块设计](../modules/executors.md)、[Storage模块设计](../modules/storage.md)、[Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | Domain、Policy、Executors、Storage独立设计和子系统主链已完成 |
 | Agent Runtime | [Agent Runtime模块设计](../modules/agent.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块设计已完成 |
 | Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本和计费现行设计已完成；Smoke独立模块入口待DOC-1.4 |
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计已完成；Eval继续独立迁移 |
 | Context/Session | [Context模块设计](../modules/context.md)、[Session模块设计](../modules/session.md)、[Artifact模块设计](../modules/artifacts.md) | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计及相关ADR | 三个包的现行设计已完成；里程碑和专题历史资料待DOC-1.5分层 |
 | 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[Delivery模块设计](../modules/delivery.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions、Workspace与Delivery现行设计已完成 |
-| 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill研究、ADR 0070～0075 | Protocol、App Server、SDK、Product Config与API现行设计已完成；Adapter及其余扩展仍需逐包固化 |
+| 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill研究、ADR 0070～0075 | Protocol、App Server、SDK、Product Config、API与Adapter现行设计已完成；MCP及其余扩展仍需逐包固化 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md) | 文档门禁留待DOC-1.6 |
 | 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md) | Eval系列研究与ADR | Evals现行模块事实已完成；1,670行聚合历史仍需在DOC-1.5按规范、任务集、执行和证据分层 |
@@ -78,7 +78,7 @@ flowchart LR
 
 | 源码包 | 核心职责 | 当前相关资料 | 主要测试入口 | 目标模块设计 | 当前结论 |
 |---|---|---|---|---|---|
-| [adapters](../../src/harnessix/adapters/) | 外部框架适配 | [Action Contract](../action-contract.md)、[总体架构](../architecture.md) | [unit](../../tests/unit/) | `docs/modules/adapters.md` | 缺失 |
+| [adapters](../../src/harnessix/adapters/) | 外部框架适配 | [Adapter模块设计](../modules/adapters.md)、[Action Contract](../action-contract.md)、[总体架构](../architecture.md) | [LangChain Tool单元测试](../../tests/unit/test_langgraph_adapter.py) | [docs/modules/adapters.md](../modules/adapters.md) | 完整，DOC-1.4产品装配 |
 | [agent](../../src/harnessix/agent/) | Agent Loop、Reducer、Turn运行 | [Agent Runtime模块设计](../modules/agent.md) | [agent](../../tests/agent/) | [docs/modules/agent.md](../modules/agent.md) | 完整，DOC-1.2黄金样例 |
 | [api](../../src/harnessix/api/) | Action HTTP API | [API模块设计](../modules/api.md)、[Action Contract](../action-contract.md)、[部署](../deployment.md) | [API](../../tests/integration/test_api.py)、[Action Service](../../tests/integration/test_action_service.py) | [docs/modules/api.md](../modules/api.md) | 完整，DOC-1.4产品装配 |
 | [app_server](../../src/harnessix/app_server/) | Headless App Server生命周期 | [App Server模块设计](../modules/app-server.md)、[0.8](../m08-product-runtime-and-extensions.md) | [app_server](../../tests/app_server/) | [docs/modules/app-server.md](../modules/app-server.md) | 完整，DOC-1.4产品协议 |
@@ -139,6 +139,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成25/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
-子系统设计；DOC-1.4已完成Protocol、App Server、SDK、Product Config与API，下一项为Adapter。整改阶段和责任分组见
+当前已完成26/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+子系统设计；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API与Adapter，下一项为MCP。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

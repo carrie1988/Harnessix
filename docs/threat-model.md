@@ -332,6 +332,25 @@ Response预算、分页、限流、并发上限或Deadline。任意可达主体�
 的内部缺口。该边界是0.9.4身份/数据安全和0.9.3容量可靠性的发布阻塞项，详见
 [API模块设计](modules/api.md)。
 
+### TM-09B：Framework Adapter身份混淆、重复Action与结果过度暴露
+
+**场景**：共享LangChain Tool实例固定了一个Principal和Action Context，调用方又可覆盖Metadata中的`adapter`标签；
+Framework重试或Checkpoint恢复时因Tool Call ID没有持久绑定Action ID而新建Action；完整Action Snapshot被作为正常
+Tool Content写入模型历史或外部Callback，且`pending_approval`、`failed`、`unknown`等状态仍呈现为Framework Tool成功。
+
+**当前控制**
+
+- Adapter只构造Action Request并调用Client，不直接操作Journal、Policy或Executor；
+- Action Plane继续校验Tool、Effect Hint、Policy、审批、幂等键和状态转换；
+- 写Tool可要求租户内业务幂等键，`UNKNOWN`不能由Action Service自动重执行；
+- `SecretRef`不包含明文值，Domain模型限制部分身份字段长度；
+- `langchain-core`是可选依赖，不影响基础包导入。
+
+**剩余风险**：当前无可信动态Principal、Tool Call ID到Action ID绑定、真实LangGraph Checkpoint/Interrupt恢复、
+类型化Action状态投影、模型可见字段白名单、响应预算、Callback脱敏或Adapter Trace关联。Context Metadata是浅可变字典，
+其中同名`adapter`值覆盖默认来源；完整Request、Principal、Secret Ref标识、Approval和Result可进入模型历史。多租户、写Action
+或启用外部Tracing前必须完成Adapter v2身份、恢复和最小输出设计，详见[Adapter模块设计](modules/adapters.md)。
+
 ### TM-10：Session/Event 篡改或回放
 
 **场景**：本地进程修改 SQLite、插入旧审批或制造 sequence 缺口。

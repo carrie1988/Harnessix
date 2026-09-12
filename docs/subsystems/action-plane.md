@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 6
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ modules:
   - runtime
   - worker
   - api
+  - adapters
   - observability
 related_adrs:
   - docs/adr/0001-python-first-runtime.md
@@ -125,9 +126,11 @@ flowchart LR
 
 ### 5.2 与Agent Runtime的关系
 
-Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别持久化。集成必须保存稳定
+Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别持久化。生产集成必须保存稳定
 `action_id`和`idempotency_key`，并把Action状态投影回对应Tool Call；不能假设“Agent Tool Call Event
-提交”和“Action create”原子发生。恢复时先根据稳定身份查询Action，而不是生成新Action。
+提交”和“Action create”原子发生。恢复时应先根据稳定身份查询Action，而不是生成新Action。当前
+[LangChain Tool Adapter](../modules/adapters.md)尚未持久化Tool Call ID到Action ID的绑定，也没有Checkpoint/Interrupt恢复，
+所以该要求不能视为已满足。
 
 ## 6. 组件职责、依赖和禁止边界
 
@@ -658,7 +661,7 @@ reconcile(unknown_action):
 | 存储合同 | SQLite覆盖大部分Action/Worker主链；PostgreSQL覆盖并发Claim和过期Running恢复；尚无双后端参数化等价套件 | `test_action_service.py`、`test_worker.py`、`test_postgres_journal.py`及[Storage模块测试盘点](../modules/storage.md#27-测试设计与验证证据) |
 | HTTP合同 | 当前直接覆盖Inline 200、Queued 202、幂等409、Readiness与Lifespan；404、422、Trace Header、未知500和完整状态映射仍缺 | `tests/integration/test_api.py`及[API测试盘点](../modules/api.md#36-直接测试证据) |
 | 观测 | Span/Metric/Trace关联与导出故障隔离 | `test_observability_flow.py`、`test_otlp_export.py` |
-| 框架适配 | 相同Action身份、状态投影和异常映射 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) |
+| 框架适配 | 当前只证明Async参数到Action Request及Pending Snapshot JSON的正常映射；相同Action身份、完整状态投影、异常恢复和真实LangGraph未验证 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py)及[Adapter模块设计](../modules/adapters.md) |
 
 DOC-1.2对本文执行的验收：反向核对`ActionStatus`、`ActionRequest`、`ToolRegistry`、
 `DefaultPolicyEngine.evaluate`、`action_fingerprint`、`ActionService.submit`、`decide_approval`、
@@ -671,6 +674,8 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 | 项目 | 当前影响 | 缓解/后续归属 |
 |---|---|---|
 | API无身份认证和可信Principal注入 | 不能直接作为不可信公网多租户边界 | 本地/受信Gateway部署；0.9.4及1.x云能力 |
+| Framework Tool Call与Action无持久绑定，且固定Principal/Context可跨调用复用 | 图重试或崩溃可能新建Action，共享Tool可串Tenant/Run | Adapter v2持久身份、动态可信Context及真实Checkpoint故障测试 |
+| Adapter把完整Snapshot及所有领域状态作为正常Tool Content返回 | 非终态、失败或Unknown可能被框架误判成功，敏感业务字段进入模型历史 | 类型化状态投影、Interrupt/Wait/Reconcile和最小脱敏输出 |
 | 敏感键守卫发生在首次Journal持久化之后 | 可疑明文虽不进入Policy/Executor，仍进入Request、失败Snapshot和数据库 | 0.9.4版本化持久化前Admission安全门 |
 | API无Body/JSON/Response预算、分页、并发和Deadline | 大请求、长Event和Inline执行可耗尽服务 | 0.9.3容量与真实Socket故障测试；详见[API模块设计](../modules/api.md) |
 | 无领域取消和执行Deadline合同 | 长执行依赖Executor自身和Lease，用户不能显式撤销 | 需要重大变更设计，不在文档中虚构 |
@@ -694,6 +699,7 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行模块设计，纠正Framework身份绑定、状态投影、异常恢复与真实LangGraph测试证据边界 |
 | 5 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` | 2026-09-12 | 接入API现行模块设计，纠正GET/POST状态、Trace校验、直接测试覆盖及Secret守卫晚于首次持久化的事实 |
 | 4 | `ffa56de02b372df981d234fafd1feffbb0b870fb` | 2026-09-12 | 接入Storage现行模块设计，纠正Lease输入、Readiness、迁移原子性、双后端测试与版本/事件关系边界 |
 | 3 | `4dc613f12e0deb5ce5ab53937fca226afab21516` | 2026-09-12 | 接入Executors现行模块设计，纠正Policy DENY与只读异常测试证据边界，补充Executor版本漂移风险 |

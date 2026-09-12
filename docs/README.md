@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 26
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 27
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -46,6 +46,7 @@ supersedes: []
 | Workspace与Git交付 | [Delivery模块设计](modules/delivery.md) | `desired files → transaction/snapshot/blob/diff → POSIX publish`或`managed worktree → checkpoint → deterministic commit → separately approved push` |
 | Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)、[Storage模块设计](modules/storage.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域、决策、效果和持久化边界，再读跨包主链 |
 | Action HTTP API | [API模块设计](modules/api.md) | `create_app → lifespan/middleware → routes → ActionService`；重点区分POST 202、GET 200、身份缺口、首次持久化与输入安全边界 |
+| Framework Adapter | [Adapter模块设计](modules/adapters.md) | `StructuredTool → build_request → Sync/Async Client → ActionSnapshot`；重点区分LangChain Tool兼容意图、真实LangGraph未验证、Tool Call身份与Action状态 |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；历史验收再读[测试与Eval规范](testing-and-evals.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
@@ -97,6 +98,7 @@ supersedes: []
 | SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、响应归并、取消与断线恢复，以及Action Plane HTTP同步/异步客户端 |
 | Product Config | [Product Config模块设计](modules/product-config.md) | 严格配置、Profile选择、Secret引用、离线诊断、安全Fallback、迁移、CAS和产品启动事务 |
 | Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
+| Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -167,7 +169,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；DOC-1.4已完成Protocol、App Server、SDK、Product Config与API，剩余5个产品运行时与扩展包继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成，Wave D已完成Workspace、Delivery、Evals和Observability；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API与Adapter，剩余4个产品运行时与扩展包继续迁移。
 
 ## 8. 文档状态说明
 

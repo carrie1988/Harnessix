@@ -42,7 +42,7 @@ Action Contract 是 Agent Framework 与 Harnessix 之间的稳定边界。上游
 | `spec_version` | 固定为 `harnessix.action/v1` |
 | `action_id` | 全局唯一 Action 身份；同一 ID 不得绑定不同载荷 |
 | `tool` | 运行时注册的工具名称 |
-| `arguments` | 由 Tool 的 Pydantic 模型校验 |
+| `arguments` | Framework Adapter可先用自身Schema校验；运行时权威校验来自Tool Registry绑定的Pydantic模型。当前Action Service先创建Journal记录再执行该运行时校验，持久化边界见[Domain模块设计](modules/domain.md)与[API模块设计](modules/api.md) |
 | `principal` | 租户、主体、框架和角色信息 |
 | `context` | 上游 Session、Run 和 Trace 关联信息 |
 | `effect_hint` | 调用方预期值；运行时事实来自 ToolDefinition |
@@ -77,6 +77,9 @@ Agent 提交的 `effect_hint` 不是授权事实。ToolDefinition 由 Harnessix 
 - Executor 绑定。
 
 调用方提示与运行时定义不一致时，Action 在执行前失败。
+
+当前[LangChain Tool Adapter](modules/adapters.md)的`args_schema`没有与运行时Tool Descriptor版本或摘要绑定，
+且Tool Call ID没有持久绑定Action ID；Framework重试、审批等待和恢复不能仅依赖Tool包装层。
 
 ## 6. 运行时 Trace Context
 

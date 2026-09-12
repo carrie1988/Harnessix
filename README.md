@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.3文档治理；DOC-1.4产品运行时与扩展模块设计已完成5/10，下一项为Adapter。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.3文档治理；DOC-1.4产品运行时与扩展模块设计已完成6/10，下一项为MCP。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -694,7 +694,11 @@ issue_tool = create_harnessix_tool(
 )
 ```
 
-返回的对象是标准 LangChain Tool，可直接交给 LangGraph `ToolNode`。Policy、Approval、Journal 和 Executor 仍位于 Harnessix 边界之后。
+返回对象是标准LangChain `BaseTool`；从类型设计上可供接受LangChain Tool的LangGraph组件消费，但当前依赖Extra只安装
+`langchain-core`，仓库尚无真实`langgraph`、`ToolNode`、Checkpoint或Interrupt集成测试。Adapter只提交一次并返回完整
+`ActionSnapshot` JSON，不会等待审批或Queued终态；调用方必须解析Action状态、持久化恢复身份并控制模型可见字段。
+Policy、Approval、Journal和Executor仍位于Harnessix边界之后。完整现行能力与限制见
+[Adapter模块设计](docs/modules/adapters.md)。
 
 ## 当前仓库结构
 

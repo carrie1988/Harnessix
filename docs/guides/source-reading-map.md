@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 5
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 6
+code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ modules:
   - context
   - tools
   - trusted_actions
+  - adapters
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
@@ -422,7 +423,11 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 
 ### 10.3 LangGraph Adapter
 
-阅读[adapters/langgraph.py](../../src/harnessix/adapters/langgraph.py)理解外部编排框架如何把调用转换为Harnessix Action，再用[test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py)确认边界。Adapter不拥有Policy、Journal或Executor生命周期。
+先读[Adapter模块设计](../modules/adapters.md)，再阅读[adapters/langgraph.py](../../src/harnessix/adapters/langgraph.py)的
+`HarnessixToolContext → create_harnessix_tool → build_request/invoke/ainvoke`。当前实现是LangChain
+`StructuredTool`工厂，不是完整LangGraph Runtime集成；没有真实`langgraph`依赖、ToolNode、Checkpoint或Interrupt测试。
+用[test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py)核对唯一Async正常路径，并重点检查固定Context、
+Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework success。Adapter不拥有Policy、Journal或Executor生命周期。
 
 ### 10.4 Eval与Smoke
 
@@ -457,7 +462,7 @@ Skill和Hook内容提供上下文或提出Action，不是可信代码。判断�
 
 | 包 | 第一阅读文件 | 核心问题 | 测试入口 |
 |---|---|---|---|
-| [adapters](../../src/harnessix/adapters/) | `langgraph.py` | 外部框架如何只依赖Action契约 | [unit](../../tests/unit/) |
+| [adapters](../../src/harnessix/adapters/) | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py)；[模块设计](../modules/adapters.md) | LangChain Tool如何映射Action，以及真实LangGraph、身份、状态与恢复的当前边界 | [test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py) |
 | [agent](../../src/harnessix/agent/) | `models.py`、`runtime.py` | Turn如何持久运行和恢复 | [agent](../../tests/agent/) |
 | [api](../../src/harnessix/api/) | [`app.py`](../../src/harnessix/api/app.py)；[模块设计](../modules/api.md) | HTTP资源、Lifespan、200/202、错误、Trace、身份和资源预算 | [test_api.py](../../tests/integration/test_api.py) |
 | [app_server](../../src/harnessix/app_server/) | [server.py](../../src/harnessix/app_server/server.py)、[service.py](../../src/harnessix/app_server/service.py)；[模块设计](../modules/app-server.md) | 协议连接与应用命令如何分层 | [app_server](../../tests/app_server/) |
