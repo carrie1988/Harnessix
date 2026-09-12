@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 11
-code_revision: c7449164a2bbf08164472a36c11102dc408ebb15
+version: 12
+code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ modules:
   - tools
   - execution
   - processes
+  - domain
   - trusted_actions
   - runtime
 related_adrs:
@@ -38,7 +39,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`c7449164a2bbf08164472a36c11102dc408ebb15`。状态标签含义如下：
+本文基于提交`69bd39ac3b0445ca96813c32bbdaf855e9861756`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -451,7 +452,7 @@ stateDiagram-v2
     RECONCILING --> MANUAL_INTERVENTION
 ```
 
-Action领域枚举见[domain/models.py](../src/harnessix/domain/models.py)，服务状态转换见[根级runtime.py](../src/harnessix/runtime.py)，持久实现见[storage](../src/harnessix/storage/)。`UNKNOWN`不是普通失败，也不是终态成功；它禁止无证据自动重放。
+Action领域模型、端口及其当前强弱约束见[Domain模块设计](modules/domain.md)，服务状态转换见[根级runtime.py](../src/harnessix/runtime.py)，持久实现见[storage](../src/harnessix/storage/)。`UNKNOWN`不是普通失败，也不是终态成功；它禁止无证据自动重放。
 
 ### 10.4 稳定身份
 
@@ -835,7 +836,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 21个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 20个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -903,6 +904,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计，明确Action v1模型、状态、Registry、端口及模型与组合层不变量边界 |
 | 11 | `c7449164a2bbf08164472a36c11102dc408ebb15` | 2026-09-12 | 接入Process Runtime现行模块设计，明确兼容Saga、跨平台Owner、Lease/CAS、PTY、输出脱敏和恢复边界 |
 | 10 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 接入Execution Plan现行模块设计，补充执行授权绑定、持久计划和审批检查点入口 |
 | 9 | `5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1` | 2026-09-12 | 接入Managed Patch Runtime现行模块设计入口，同步独立模块覆盖进度 |

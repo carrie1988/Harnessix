@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 11
-code_revision: c7449164a2bbf08164472a36c11102dc408ebb15
+version: 12
+code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
 owners:
   - core
 modules:
@@ -60,7 +60,7 @@ flowchart LR
 |---|---|---|---|
 | 产品边界 | [文档中心](../README.md)、[产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 能力证据仍需在DOC-1.5按发布声明统一索引 |
 | 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口和两份黄金样例已完成；剩余模块级事实待DOC-1.3～DOC-1.4迁移 |
-| Action Plane | [Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | 子系统级现行设计已完成；各包独立设计待DOC-1.3细化 |
+| Action Plane | [Domain模块设计](../modules/domain.md)、[Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | Domain独立设计和子系统主链已完成；Policy、Executor、Storage继续细化 |
 | Agent Runtime | [Agent Runtime模块设计](../modules/agent.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块设计已完成 |
 | Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本和计费现行设计已完成；Smoke独立模块入口待DOC-1.4 |
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计已完成；Eval继续独立迁移 |
@@ -84,7 +84,7 @@ flowchart LR
 | [artifacts](../../src/harnessix/artifacts/) | 大对象、Diff与模型历史Artifact | [Artifact模块设计](../modules/artifacts.md) | [artifacts](../../tests/artifacts/) | [docs/modules/artifacts.md](../modules/artifacts.md) | 完整，DOC-1.3 Wave A |
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整，DOC-1.3 Wave A |
 | [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [0.7](../m07-trusted-execution-and-delivery.md) | [delivery](../../tests/delivery/) | `docs/modules/delivery.md` | 缺失 |
-| [domain](../../src/harnessix/domain/) | Action领域契约 | [Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md) | [unit](../../tests/unit/) | `docs/modules/domain.md` | 子系统级完整；独立模块待DOC-1.3 |
+| [domain](../../src/harnessix/domain/) | Action领域契约 | [Domain模块设计](../modules/domain.md) | [unit](../../tests/unit/)、[Action Service](../../tests/integration/test_action_service.py) | [docs/modules/domain.md](../modules/domain.md) | 完整，DOC-1.3 Wave C |
 | [evals](../../src/harnessix/evals/) | Coding Eval合同、执行与分级 | [测试与Eval](../testing-and-evals.md)、[0.5](../m05-coding-tools.md) | [evals](../../tests/evals/) | `docs/modules/evals.md` | 缺失 |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
 | [executors](../../src/harnessix/executors/) | Action Executor实现 | [Action Plane子系统设计](../subsystems/action-plane.md) | [unit](../../tests/unit/) | `docs/modules/executors.md` | 子系统级完整；独立模块待DOC-1.3 |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成9/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成10/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

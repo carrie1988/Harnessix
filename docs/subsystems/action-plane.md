@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 7c50a5815e3d859fcdd93176d8a5019bf419b6bc
+version: 2
+code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
 owners:
   - core
 modules:
@@ -174,10 +174,10 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | 结构 | 关键字段 | 语义 |
 |---|---|---|
 | `PolicyDecision` | kind、reason、policy_id | `ALLOW`、`DENY`或`REQUIRE_APPROVAL`；先持久再推进 |
-| `ApprovalRecord` | decision、request_fingerprint、decided_by、decided_at | 对当前不可变Action请求的绑定决定 |
+| `ApprovalRecord` | outcome、request_fingerprint、actor、reason、decided_at | 对当前Action请求指纹的绑定决定；模型本身不重算指纹 |
 | `ActionFailure` | code、message、retriable | 可公开失败；不包含原始Exception或响应正文 |
 | `EffectReceipt` | provider、resource_type、resource_id、idempotency_key、response_digest、observed_at | 已知外部效果的有界证据 |
-| `ActionResult` | status、output、error、receipt、attempt | 执行或对账结果；状态必须与Action目标状态一致 |
+| `ActionResult` | status、output、error、receipt、attempt | 执行或对账结果；当前由Service正常路径维持状态一致，模型本身尚无跨字段Validator |
 | `ActionEvent` | action_id、sequence、event_type、from/to、data、time | 严格递增的审计事实 |
 | `ActionSnapshot` | request、fingerprint、tool、status、policy、approval、result、lease、version | 当前权威投影及CAS版本 |
 
@@ -606,7 +606,7 @@ reconcile(unknown_action):
 
 | 设计元素 | 源码文件 | 关键符号 | 测试文件 | 测试函数/合同 | 证明内容 |
 |---|---|---|---|---|---|
-| Action状态合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionStatus`、`ALLOWED_ACTION_TRANSITIONS`、`ActionSnapshot` | [`test_models.py`](../../tests/unit/test_models.py) | 状态/字段/Schema单元测试 | 合法状态和结构约束 |
+| Action状态合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionStatus`、`ALLOWED_ACTION_TRANSITIONS`、`ActionSnapshot` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_journal_rejects_illegal_state_transition` | Journal合法边与事件顺序；模型组合不变量缺口见[Domain模块设计](../modules/domain.md) |
 | Tool注册 | [`registry.py`](../../src/harnessix/domain/registry.py) | `ToolDefinition`、`ToolRegistry` | [`test_registry.py`](../../tests/unit/test_registry.py) | 重复注册和未知Tool测试 | 名称唯一与描述固定 |
 | 默认Policy | [`default.py`](../../src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent`、拒绝路径 | Effect/Risk决策 |
 | 指纹 | [`runtime.py`](../../src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request`、`test_idempotency_key_rejects_different_payload` | 请求不可变和幂等冲突 |
@@ -640,7 +640,7 @@ reconcile(unknown_action):
 
 | 层级 | 必测内容 | 当前证据 |
 |---|---|---|
-| 合同单元 | 字段、状态、Tool唯一、Policy规则、错误码 | `tests/unit/test_models.py`、`test_registry.py` |
+| 合同单元 | 指纹字段、Tool唯一和并行只读约束；其余模型组合约束尚不完备 | `tests/unit/test_models.py`、`test_registry.py`及[Domain模块测试盘点](../modules/domain.md#32-测试设计与当前证据) |
 | Service集成 | 正常、审批、拒绝、幂等、Secret、Effect Hint、UNKNOWN、非法转换 | `tests/integration/test_action_service.py` |
 | Worker故障 | 单Claim、Heartbeat、失租、执行提交竞态、指标故障隔离 | `tests/integration/test_worker.py` |
 | 存储合同 | SQLite/PostgreSQL状态、事件、并发Claim和Recover等价 | `test_action_service.py`、`test_postgres_journal.py` |
@@ -676,4 +676,5 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计并纠正ApprovalRecord字段、ActionResult模型约束和直接测试证据边界 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Action Plane黄金样例初版 |
