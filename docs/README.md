@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 33
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 34
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
 owners:
   - core
 modules:
@@ -121,16 +121,16 @@ supersedes: []
 
 | 版本 | 设计资料 | 主要能力 |
 |---|---|---|
-| 0.1/M1 | [Action Plane Worker与PostgreSQL](m1-worker-postgresql.md)、[可观测性](m1-observability.md) | Action Contract、Policy、Approval、Journal、Worker |
-| 0.3 | [Agent Runtime Kernel](m03-runtime-kernel.md) | Thread/Turn/Item/Event、Agent Loop、Session与恢复 |
-| 0.4 | [Model Runtime](m04-model-runtime.md) | Provider事件、尝试/用量/成本、Smoke |
-| 0.5 | [Coding Tool Runtime](m05-coding-tools.md) | 读取、Artifact、Patch、Process、Git、Eval与交付 |
-| 0.6 | [Context与持久会话](m06-context-and-sessions.md) | Context Source、压缩、Thread生命周期和Retry |
-| 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
-| 0.8 | [产品运行时与扩展](m08-product-runtime-and-extensions.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
-| 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 代码说明、职责拆分、复杂度与依赖基线 |
+| 0.1/M1 | [Action Plane Worker与PostgreSQL](m1-worker-postgresql.md)、[可观测性](m1-observability.md) | 历史增量；Action Contract、Policy、Approval、Journal、Worker |
+| 0.3 | [Agent Runtime Kernel](m03-runtime-kernel.md) | 历史增量；Thread/Turn/Item/Event、Agent Loop、Session与恢复 |
+| 0.4 | [Model Runtime](m04-model-runtime.md) | 历史增量；Provider事件、尝试/用量/成本、Smoke |
+| 0.5 | [Coding Tool Runtime历史索引](m05-coding-tools.md)与[完整历史](m05-coding-tools-milestone-history.md) | 读取、Artifact、Patch、Process、Git、Eval与交付 |
+| 0.6 | [Context与持久会话](m06-context-and-sessions.md) | 历史增量；Context Source、压缩、Thread生命周期和Retry |
+| 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
+| 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
+| 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
 
-专题详细设计包括[Compaction窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。
+0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
 ### 4.1 根目录聚合文档角色
 
@@ -182,7 +182,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试/验证证据和六类现行运维资料已完成职责分层；里程碑、ADR与研究资料仍在后续批次治理。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5正在实施，测试/验证证据、六类现行运维资料以及里程碑/0.6专题设计已完成职责和历史状态分层；ADR与研究资料仍在后续批次治理。
 
 ## 8. 文档状态说明
 

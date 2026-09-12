@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.4文档治理；30/30个生产源码包均已建立独立现行模块设计，DOC-1.5正在实施聚合、历史和验证证据治理，其中测试/验证证据以及安装、配置、升级、恢复、诊断和平台运维资料已经分层。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.4文档治理；30/30个生产源码包均已建立独立现行模块设计，DOC-1.5正在实施聚合、历史和验证证据治理，其中测试/验证证据、安装/配置/升级/恢复/诊断/平台资料以及里程碑增量设计已经完成职责分层。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -144,7 +144,7 @@ uv run python -m examples.managed_patch
 uv run pytest tests/patches
 ~~~
 
-**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。b2 已进一步交付下述宿主桥接 b2a 和 Kernel 写审批/模型工具 b2b。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools.md#17-053b1-当前交付受管单文件执行)。
+**范围边界**：这是宿主执行后端，不是模型可调用的写工具或完整编码 Eval；默认 Kernel 仍只读。副本最多 256 个文件、每文件 1 MiB、总计 32 MiB；不是完整 Git worktree，不运行钩子/代码，不自动合入源目录。私有目录和锁不等价于 OS Sandbox，也不能约束同 UID 的恶意进程。b2 已进一步交付下述宿主桥接 b2a 和 Kernel 写审批/模型工具 b2b。详见 [受管执行 ADR](docs/adr/0028-managed-patch-execution.md) 与 [实施设计](docs/m05-coding-tools-milestone-history.md#17-053b1-当前交付受管单文件执行)。
 
 ## 当前已实现：Patch 调用绑定桥接（0.5.3b2a）
 
@@ -175,7 +175,7 @@ uv run python -m examples.kernel_patch
 uv run pytest tests/patches/test_kernel_patch*.py
 ~~~
 
-范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；c3a/c3b 已实现宿主桥接与 Kernel/模型批量闭环；c3c 再交付 Diff Artifact。
+范围仍为私有受管副本内的单文件精确编辑；不运行仓库代码、不合入源目录，不等于 OS Sandbox 或自主编码 Eval。接入、恢复和升级见 [ADR 0030](docs/adr/0030-kernel-managed-patch-admission.md)、[使用设计](docs/m05-coding-tools-milestone-history.md#20-053b2b-当前交付kernel-受管写闭环)。0.5.3c1 的只读整组准备与计划 Diff 见下节；c2a/c2b 已交付整组预留、审批、顺序消费与部分效果；c3a/c3b 已实现宿主桥接与 Kernel/模型批量闭环；c3c 再交付 Diff Artifact。
 
 ## 当前已实现：多文件计划与结构化 Diff（0.5.3c1）
 
@@ -247,7 +247,7 @@ uv run python -m examples.kernel_batch
 uv run pytest tests/patches/test_kernel_batch*.py tests/agent/test_batch_session_upgrade.py
 ~~~
 
-这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，0.5.4a/b宿主进程与完整Agent/Process Saga及0.5.4c Git/测试反馈也已交付。详见 [设计](docs/m05-coding-tools.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals-milestone-history.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
+这是已有普通文件的受管副本闭环，不是跨文件原子提交、源目录合入、OS Sandbox 或自主编码 Eval。取消等待或后端未镜像决定时，证明不足仍保守记为 unknown，不补批/重放。c3c1 报告准备与 c3c2 事务归档已交付，0.5.4a/b宿主进程与完整Agent/Process Saga及0.5.4c Git/测试反馈也已交付。详见 [设计](docs/m05-coding-tools-milestone-history.md#25-053c3b-当前交付kernel-整组持久审批与恢复)、[ADR 0035](docs/adr/0035-kernel-batch-approval-and-recovery.md) 和 [测试记录](docs/testing-and-evals-milestone-history.md#27-053c3b-kernel-整组闭环验收2026-09-04)。
 
 ## 当前已实现：真实计划/历史效果差异报告（0.5.3c3c1）
 

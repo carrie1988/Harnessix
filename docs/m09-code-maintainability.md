@@ -1,3 +1,22 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - documentation
+  - governance
+  - agent
+related_adrs:
+  - docs/adr/0076-code-readability-and-structural-governance.md
+related_tests:
+  - tests/governance
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[代码可读性研究](research/code-readability-and-structure.md)、[治理策略](../governance/readability-policy-v1.json)与[路线图](roadmap.md)。
 # 0.9.0代码可读性、可维护性与结构治理详细设计
 
 - 状态：已完成

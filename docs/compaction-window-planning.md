@@ -1,3 +1,23 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - context
+  - agent
+related_adrs:
+  - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
+related_tests:
+  - tests/context/test_compaction.py
+  - tests/context/test_compaction_window.py
+supersedes: []
+---
+
+> **历史专题设计**：本文保留0.6.3压缩窗口规划与候选校验的增量设计，不再作为当前实现的唯一事实源。当前Context边界、数据结构、预算规则和活动窗口流程见[Context模块](modules/context.md)，Agent侧调用与失败收敛见[Agent Runtime模块](modules/agent.md)。
+
 # 0.6.3 压缩窗口规划与候选校验详细设计
 
 - 更新日期：2026-09-08

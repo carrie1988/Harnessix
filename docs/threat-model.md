@@ -634,7 +634,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **重复交互提示**：CLI本进程记录已成功提交的Approval/Question ID，跨进程则从持久Answer或Approval事实恢复。客户端崩溃发生在命令提交后、响应前时必须重用原领域`requestId`，不能创建新决定；最终副作用仍由既有Approval和Action幂等边界保护。
 - **剩余风险**：同UID主体仍可终止或调试本地stdio进程、篡改可写数据库或替换宿主程序；0.8.3不提供网络认证、二进制签名或多用户隔离。完整发行签名和诊断包治理属于0.9，远程协议必须另建认证和主体绑定后才能开放。
 
-对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals-milestone-history.md#75-083-薄cli与双向交互验收2026-09-09)。
+对应详细设计与回归见[ADR 0072](adr/0072-durable-interaction-and-pull-live-stream.md)、[0.8详细设计](m08-product-runtime-and-extensions-milestone-history.md#6-083-薄cli与双向交互详细设计)和[0.8.3测试记录](testing-and-evals-milestone-history.md#75-083-薄cli与双向交互验收2026-09-09)。
 
 ## 0.8.4 MCP补充（2026-09-09）
 
@@ -649,7 +649,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **Server反向暴露**：可选MCP Server只通过本地stdio导出显式低风险只读Action；列表和调用都重核绑定，远端客户端无权批准写操作。0.8.4不监听网络，不实现OAuth或任意Header。
 - **剩余风险**：默认产品尚未装配MCP；同UID主体仍可替换宿主配置、重算无密钥Hash链或调试本地进程；Container Runtime本身属于高权限TCB。Catalog没有总字节预算，MCP/Execution Plan/Action Audit三库没有跨库事务和统一关联；In-process信任及Reconciler只观察约束依赖宿主装配。模型Provider的0.8.6 Secret引用不适用于MCP；Streamable HTTP、受管OAuth和远端目标身份由0.9.4补齐，发行签名与SBOM由0.9关闭。
 
-对应现行设计、源码依据和回归见[MCP模块设计](modules/mcp.md)、[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#7-084-mcp详细设计)。
+对应现行设计、源码依据和回归见[MCP模块设计](modules/mcp.md)、[ADR 0073](adr/0073-mcp-catalog-binding-and-sandbox.md)、[MCP运行时与安全源码研究](research/mcp-runtime-and-security.md)及[0.8详细设计](m08-product-runtime-and-extensions-milestone-history.md#7-084-mcp详细设计)。
 
 ## 0.8.5 Skills与Hooks补充（2026-09-09）
 
@@ -667,7 +667,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **挂起、取消与重放**：每个Hook有独立超时并取消底层Action；调用取消持久结算两层状态。重开把遗留Running收敛为Interrupted，重复Dispatch只返回既有终态，不自动重放。
 - **剩余风险**：0.8.5不提供远端Skill安装、签名Marketplace或可执行Hook生态；默认产品尚未装配Skill，上下文信任标签和提示注入真实模型门禁未完成。同步扫描/YAML/SQLite不可及时取消，Store路径/WAL权限、分页、保留和迁移仍需加固；同UID配置篡改可重算无密钥Hash链，不能抵御宿主账户失陷。发行签名和供应链清单属于0.9。
 
-对应现行Skill设计、源码依据和回归见[Skill模块设计](modules/skills.md)、[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions.md#8-085-skills与hooks详细设计)。
+对应现行Skill设计、源码依据和回归见[Skill模块设计](modules/skills.md)、[ADR 0074](adr/0074-skill-snapshot-and-hook-action-boundary.md)、[Skills、Hooks与供应链边界源码研究](research/skills-hooks-and-supply-chain.md)及[0.8详细设计](m08-product-runtime-and-extensions-milestone-history.md#8-085-skills与hooks详细设计)。
 
 ## 0.8.6 Provider与配置产品化补充（2026-09-09）
 
@@ -700,4 +700,4 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 
 对应设计、源码依据和回归见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)、
 [Provider/Profile配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)
-及[0.8详细设计](m08-product-runtime-and-extensions.md#9-086-provider与配置产品化详细设计)。
+及[0.8详细设计](m08-product-runtime-and-extensions-milestone-history.md#9-086-provider与配置产品化详细设计)。

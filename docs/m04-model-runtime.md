@@ -1,3 +1,26 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - models
+  - smoke
+  - agent
+related_adrs:
+  - docs/adr/0014-openai-compatible-provider.md
+  - docs/adr/0015-anthropic-provider.md
+  - docs/adr/0019-controlled-model-smoke.md
+related_tests:
+  - tests/models
+  - tests/smoke
+  - tests/agent
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Model Runtime模块](modules/models.md)与[Smoke模块](modules/smoke.md)。
 # 0.4 Model Runtime 实施计划
 
 - 日期：2026-09-03
@@ -304,4 +327,4 @@ assert restored == report
 
 已形成 [ADR 0022](adr/0022-bailian-price-validation.md)：复用现有成本 API，不依据场景汇总补造逐次事实。新增求证明确百炼原生 service_tier 缺失/default 与 PTU 的区别，应用范围限于已核对的平台和固定模型；不能只凭归一化后的 None 推断原生字段缺失。
 
-此前 7 次授权请求已执行，新的单次文本计价验证已询问、仍待回复；不重复消费旧授权。随后用户要求继续后续阶段，已独立推进 0.5.1 只读工具；计价证据保留未验收状态，不再因其阻塞无需模型调用的开发。
+该阶段已执行7次受控请求，新的单次文本计价验证尚未取得可发布证据，因此不得重复消费原请求预算或宣称计价验收完成。0.5.1只读工具不依赖模型调用，按独立切片继续实施；计价适用性保持未验收状态，不阻塞无需模型调用的开发。

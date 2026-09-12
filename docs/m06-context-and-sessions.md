@@ -1,3 +1,26 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - context
+  - session
+  - artifacts
+  - agent
+related_adrs:
+  - docs/adr/0054-context-planning-and-inspection.md
+  - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
+related_tests:
+  - tests/context
+  - tests/agent
+  - tests/artifacts
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Context模块](modules/context.md)、[Session模块](modules/session.md)与[Artifacts模块](modules/artifacts.md)。
 # 0.6 Context Engine 与持久会话详细实施设计
 
 - 更新日期：2026-09-08

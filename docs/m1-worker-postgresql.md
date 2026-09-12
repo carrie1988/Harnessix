@@ -1,3 +1,24 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - worker
+  - storage
+  - api
+related_adrs:
+  - docs/adr/0002-unknown-first-class.md
+  - docs/adr/0003-database-backed-worker-queue.md
+related_tests:
+  - tests/integration/test_worker.py
+  - tests/integration/test_postgres_journal.py
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Storage模块](modules/storage.md)、[API模块](modules/api.md)与[部署入口](deployment.md)。
 # M1 独立 Worker 与 PostgreSQL 设计
 
 ## 1. 目标

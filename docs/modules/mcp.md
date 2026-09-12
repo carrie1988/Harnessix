@@ -1483,7 +1483,7 @@ MCP产品能力在1.0前至少还需：
 | 2026-09-12 | `make spec` | 六份MCP及其余生成规格无漂移 |
 | 2026-09-12 | `make check` | Ruff Format、Ruff、Readability、Mypy通过；3,326个测试通过，13个跳过 |
 
-验证基于代码提交`3a81225fe8014d28ba559001f7a1fdf3da5d36a0`。本轮只修改文档，没有改变生产源码、
+验证基于代码提交`3a81225fe8014d28ba559001f7a1fdf3da5d36a0`。该文档版本没有改变生产源码、
 测试或Schema；条件Container测试的正式证明仍来自配置固定镜像的CI，而不是本机Skip结果。
 
 ## 46. 已知限制与风险优先级
@@ -1597,7 +1597,7 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 - [Trusted Actions模块设计](trusted-actions.md)；
 - [Sandbox模块设计](sandbox.md)；
 - [Secrets模块设计](secrets.md)；
-- [0.8产品运行时与扩展详细设计](../m08-product-runtime-and-extensions.md#7-084-mcp详细设计)；
+- [0.8产品运行时与扩展详细设计](../m08-product-runtime-and-extensions-milestone-history.md#7-084-mcp详细设计)；
 - [部署与运维总入口](../deployment.md)；
 - [威胁模型：MCP边界](../threat-model.md#084-mcp补充2026-09-09)；
 - [MCP公共Schema目录](../../spec/)；

@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 34
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 35
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
 owners:
   - core
 modules:
@@ -142,3 +142,9 @@ flowchart LR
 当前已完成30/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；DOC-1.3与DOC-1.4的全部包级迁移已经完成。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。
+
+里程碑增量设计和0.6专题设计均已标记为`historical`并反向链接现行模块设计。0.5与0.8使用
+“历史索引 + 冻结完整原文”结构，分别见[0.5索引](../m05-coding-tools.md)、
+[0.5完整历史](../m05-coding-tools-milestone-history.md)、[0.8索引](../m08-product-runtime-and-extensions.md)和
+[0.8完整历史](../m08-product-runtime-and-extensions-milestone-history.md)。历史资料只用于追溯增量，不能覆盖
+本矩阵列出的当前模块事实源。

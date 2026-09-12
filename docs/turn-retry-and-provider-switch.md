@@ -1,3 +1,25 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - models
+related_adrs:
+  - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
+related_tests:
+  - tests/context/test_turn_retry_provider_switch.py
+  - tests/context/test_turn_retry_recovery.py
+supersedes: []
+---
+
+> **历史专题设计**：本文保留0.6.5终态Turn Retry、Interrupted Recovery与Provider切换的增量设计，不再作为当前实现的唯一事实源。当前Retry入口、状态机和恢复语义见[Agent Runtime模块](modules/agent.md)，事务与迁移见[Session模块](modules/session.md)，Provider中立历史分别见[Context模块](modules/context.md)与[Model Runtime模块](modules/models.md)。
+
 # Turn Retry、Interrupted Recovery 与 Provider 切换详细设计
 
 - 版本：0.6.5

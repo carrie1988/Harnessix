@@ -426,7 +426,7 @@ Agent Runtime Kernel 合并前：
 
 **兼容与 CI**：仅新增 migration 6，事件/投影仍为 Agent v5；未改写旧 migration 或八份默认工具 Schema。Linux Python 3.12/3.13 全量 CI 和 macOS 工具 CI 已纳入新 Artifact 测试与示例，PostgreSQL 作业沿用。CI 结果以本片对应提交为准。
 
-范围内 0.5.2b/0.5.2 已完成。当前上限为单件 1 MiB/10000 条 JSONL，不是任意 blob 服务；逻辑内容/manifest 配额不限制整个 Session/WAL 物理大小，保留的墓碑最终需要宿主按保留策略轮换 Session。具体组合与生命周期见 [0.5 设计](m05-coding-tools.md#15-052b2-当前交付与使用)、[ADR 0026](adr/0026-transactional-artifacts.md)。
+范围内 0.5.2b/0.5.2 已完成。当前上限为单件 1 MiB/10000 条 JSONL，不是任意 blob 服务；逻辑内容/manifest 配额不限制整个 Session/WAL 物理大小，保留的墓碑最终需要宿主按保留策略轮换 Session。具体组合与生命周期见 [0.5 设计](m05-coding-tools-milestone-history.md#15-052b2-当前交付与使用)、[ADR 0026](adr/0026-transactional-artifacts.md)。
 
 ## 18. 0.5.3a 只读 Patch 准备验收（2026-09-03）
 
@@ -446,7 +446,7 @@ Agent Runtime Kernel 合并前：
 
 ## 19. 0.5.3b1 受管单文件 Patch 执行验收（2026-09-04）
 
-在 `b0622cb` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33762318938) 全绿和远程基线同步后实施。进一步核对固定的 kernel-read-only/v1 审批契约，将 b 拆为宿主执行后端 b1 与 Kernel 模型接入 b2，见 [ADR 0028](adr/0028-managed-patch-execution.md) 和 [下一片实施顺序](m05-coding-tools.md#053b2-的实施顺序已交付)。
+在 `b0622cb` 的 [四项 CI](https://github.com/carrie1988/Harnessix/actions/runs/33762318938) 全绿和远程基线同步后实施。进一步核对固定的 kernel-read-only/v1 审批契约，将 b 拆为宿主执行后端 b1 与 Kernel 模型接入 b2，见 [ADR 0028](adr/0028-managed-patch-execution.md) 和 [下一片实施顺序](m05-coding-tools-milestone-history.md#053b2-的实施顺序已交付)。
 
 - 本片新增 **87 项**测试，Patch 套件累计 **156 项**；新增两份独立 v1 Schema，旧 Schema 字节不变。
 - 本地 `make check`：Ruff/Mypy（92 个源文件）通过，**1274 passed、1 skipped**；本地无 PostgreSQL，真实 PostgreSQL 作业保留在 CI。

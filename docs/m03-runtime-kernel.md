@@ -1,3 +1,24 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - agent
+  - session
+related_adrs:
+  - docs/adr/0006-thread-turn-item-event-model.md
+  - docs/adr/0007-agent-loop-and-cancellation.md
+  - docs/adr/0012-durable-approval-checkpoint.md
+  - docs/adr/0013-kernel-contracts-and-telemetry.md
+related_tests:
+  - tests/agent
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Agent模块](modules/agent.md)与[Session模块](modules/session.md)。
 # 0.3 Agent Runtime Kernel 实施设计
 
 - 更新日期：2026-09-03
@@ -14,7 +35,7 @@
 已实现：
 
 - Thread、Turn、Item、AgentEvent 与版本化 Schema；
-- UserMessage、AssistantMessage、ToolCall、ToolResult；Reasoning Summary 数据类型保留，但本轮不驱动其流；
+- UserMessage、AssistantMessage、ToolCall、ToolResult；Reasoning Summary 数据类型保留，但0.3切片不驱动其流；
 - 纯函数 Reducer，在线提交与离线 Replay 复用同一不变量；
 - SQLite 事件日志与聚合快照的事务提交；
 - 客户端 request_id 幂等、Event ID 去重、Thread sequence CAS；

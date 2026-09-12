@@ -1,3 +1,35 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - execution
+  - sandbox
+  - secrets
+  - processes
+  - workspace
+  - delivery
+  - trusted_actions
+related_adrs:
+  - docs/adr/0065-platform-capability-ports-and-execution-plan.md
+  - docs/adr/0066-sandbox-network-and-secret-boundaries.md
+  - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
+  - docs/adr/0068-transactional-workspace-and-git-delivery.md
+  - docs/adr/0069-unified-coding-action-risk-route.md
+related_tests:
+  - tests/execution
+  - tests/sandbox
+  - tests/processes
+  - tests/workspace
+  - tests/delivery
+  - tests/trusted_actions
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Execution](modules/execution.md)、[Sandbox](modules/sandbox.md)、[Process](modules/processes.md)、[Workspace](modules/workspace.md)、[Delivery](modules/delivery.md)与[Trusted Actions](modules/trusted-actions.md)模块。
 # Harnessix Code 0.7 可信执行与工程交付设计
 
 - 状态：已完成（2026-09-09）

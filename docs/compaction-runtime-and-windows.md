@@ -1,3 +1,29 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - context
+  - agent
+  - models
+  - evals
+  - session
+related_adrs:
+  - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
+  - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
+related_tests:
+  - tests/context/test_compaction_runtime.py
+  - tests/context/test_compaction_runtime_recovery.py
+  - tests/context/test_compaction_window.py
+  - tests/evals/test_compaction_semantics.py
+supersedes: []
+---
+
+> **历史专题设计**：本文保留0.6.3自动Compaction与活动窗口的增量设计，不再作为当前实现的唯一事实源。当前合同、触发流程、恢复和持久化边界见[Context模块](modules/context.md)、[Agent Runtime模块](modules/agent.md)、[Model Runtime模块](modules/models.md)、[Evals模块](modules/evals.md)与[Session模块](modules/session.md)。
+
 # 0.6.3 自动Compaction运行时与活动窗口详细设计
 
 - 更新日期：2026-09-08

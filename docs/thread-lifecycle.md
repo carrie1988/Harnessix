@@ -1,3 +1,25 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - agent
+  - session
+  - context
+  - artifacts
+related_adrs:
+  - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
+related_tests:
+  - tests/context/test_thread_lifecycle.py
+  - tests/context/test_thread_lifecycle_recovery.py
+supersedes: []
+---
+
+> **历史专题设计**：本文保留0.6.4 Thread Resume、Fork与Archive的增量设计，不再作为当前实现的唯一事实源。当前领域入口、生命周期状态和恢复语义见[Agent Runtime模块](modules/agent.md)，事务、迁移与重建边界见[Session模块](modules/session.md)，历史物化及Artifact继承见[Context模块](modules/context.md)与[Artifacts模块](modules/artifacts.md)。
+
 # Thread Resume、Fork 与 Archive 详细设计
 
 - 版本：0.6.4

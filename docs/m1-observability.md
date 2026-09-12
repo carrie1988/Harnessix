@@ -1,3 +1,24 @@
+---
+doc_type: change-design
+status: historical
+version: 1
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
+owners:
+  - core
+modules:
+  - observability
+  - api
+  - storage
+  - worker
+related_adrs:
+  - docs/adr/0004-durable-trace-context.md
+related_tests:
+  - tests/integration/test_observability_flow.py
+  - tests/unit/test_observability_core.py
+supersedes: []
+---
+
+> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Observability模块](modules/observability.md)与[诊断规范](operations/diagnostics.md)。
 # M1.2 可观测性与运行保障设计
 
 ## 1. 阶段目标

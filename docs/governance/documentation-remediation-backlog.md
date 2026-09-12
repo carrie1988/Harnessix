@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 34
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 35
+code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 已完成（10/10） |
-| DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 进行中：测试、验证证据和部署资料分层已完成 |
+| DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 进行中：测试、验证证据、部署资料和里程碑增量设计分层已完成 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
 
 DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一切片维护现行模块设计，不能重新累积“代码先行、资料追补”的债务。
@@ -234,8 +234,8 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 |---|---|---|
 | [测试与Eval](../testing-and-evals.md) | 已重写为当前总规范；[里程碑历史](../testing-and-evals-milestone-history.md)与[验证证据索引](../validation/README.md)已拆分，合同、任务、Campaign和成本的源码事实链接Evals模块 | 不复制各模块测试清单 |
 | [部署与运行](../deployment.md) | 已拆出[安装](../operations/installation.md)、[配置](../operations/configuration.md)、[升级](../operations/upgrade-and-rollback.md)、[恢复](../operations/recovery.md)、[诊断](../operations/diagnostics.md)和[平台](../operations/platforms.md)，旧追加记录冻结为[里程碑历史](../deployment-milestone-history.md) | 不把命令输出当设计 |
-| [0.5 Coding Tools](../m05-coding-tools.md) | 转为里程碑历史索引，当前事实链接模块设计 | 不继续追加跨模块细节 |
-| [0.8产品运行时](../m08-product-runtime-and-extensions.md) | 转为里程碑历史索引，当前事实链接10个模块设计 | 不与现行模块设计双写 |
+| [0.5 Coding Tools](../m05-coding-tools.md) | 已转为里程碑历史索引；[完整原文](../m05-coding-tools-milestone-history.md)冻结，当前事实链接模块设计 | 不继续追加跨模块细节 |
+| [0.8产品运行时](../m08-product-runtime-and-extensions.md) | 已转为里程碑历史索引；[完整原文](../m08-product-runtime-and-extensions-milestone-history.md)冻结，当前事实链接10个模块设计 | 不与现行模块设计双写 |
 | [威胁模型](../threat-model.md) | 保留统一威胁登记，具体缓解链接模块设计和测试 | 不在多个文档维护不同风险状态 |
 | [总体架构](../architecture.md) | 保留系统级边界和主链，不承载每个类字段 | 不扩展为源码百科 |
 | [路线图](../roadmap.md) | 只保留范围、依赖、状态和证据入口 | 不堆积实现日志 |
@@ -248,6 +248,8 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 4. 研究资料固定参考版本和访问日期；
 5. 验证证据固定代码提交、环境、预算和脱敏规则；
 6. 不确定是否仍有效的资料先标记`reviewing`，经源码核验后再归类。
+
+里程碑与0.6专题设计已经完成上述第2项：所有资料均使用`historical`状态并链接现行模块设计；0.5和0.8的超长追加文档采用“简明索引 + 冻结完整历史”结构。ADR与研究资料分别在后续批次执行第3、4项。
 
 ## 10. DOC-1.6：自动化门禁
 
