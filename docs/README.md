@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 15
-code_revision: 49c798b2688fb87d68130179a616c5457836f3bd
+version: 16
+code_revision: d655c60f54f94823f671d18080573e1b56c433d9
 owners:
   - core
 modules:
@@ -40,6 +40,7 @@ supersedes: []
 | 执行授权与审批 | [Execution Plan模块设计](modules/execution.md) | `execution → trusted_actions/processes/sandbox/delivery` |
 | 进程与终端监督 | [Process Runtime模块设计](modules/processes.md) | `processes → execution/workspace/secrets/sandbox`，区分兼容Saga与跨平台Supervisor |
 | Sandbox隔离与网络 | [Sandbox模块设计](modules/sandbox.md) | `sandbox/contracts → capabilities/network → container/process_runtime`，区分合同库、显式装配与默认产品能力 |
+| Secret解析与输出防泄漏 | [Secrets模块设计](modules/secrets.md) | `domain/product_config/execution → secrets/provider → process/sandbox/models → redaction/guard`，区分引用、明文作用域和发布边界 |
 | Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)、[Storage模块设计](modules/storage.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域、决策、效果和持久化边界，再读跨包主链 |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
@@ -76,6 +77,7 @@ supersedes: []
 | Executors | [Executors模块设计](modules/executors.md) | Echo与Issue样例、外部效果、双库事务、Outcome/Receipt、UNKNOWN对账和版本漂移边界 |
 | Storage | [Storage模块设计](modules/storage.md) | SQLite/PostgreSQL Journal、Schema/Migration、事务、队列、Lease、恢复、后端差异和数据保护边界 |
 | Sandbox | [Sandbox模块设计](modules/sandbox.md) | 严格合同、能力探测、固定Container argv、DNS快照、受管出口、Process监督、Profile持久化及真实平台证据边界 |
+| Secrets | [Secrets模块设计](modules/secrets.md) | 三套引用合同、环境Provider、短生命周期作用域、常见编码Pattern、流式脱敏、结构化Guard和跨模块装配缺口 |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -146,7 +148,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成13/19个主链模块，Wave C已完成Domain、Policy、Executors、Storage和Sandbox，下一步迁移Secrets；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成14/19个主链模块，Wave C已完成Domain、Policy、Executors、Storage、Sandbox和Secrets，下一步迁移Trusted Actions；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 

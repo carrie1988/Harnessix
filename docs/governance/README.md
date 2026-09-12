@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 16
-code_revision: 49c798b2688fb87d68130179a616c5457836f3bd
+version: 17
+code_revision: d655c60f54f94823f671d18080573e1b56c433d9
 owners:
   - core
 modules:
@@ -29,7 +29,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.0 | 文档盘点、分类、规范、模板、追踪矩阵和整改待办 | 已完成 | 本目录与[起始基线](../baselines/documentation-doc1.0-start.json) |
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
-| DOC-1.3 | Coding Agent主链模块设计 | 进行中（13/19） | Wave A、Wave B已完成；Wave C已完成[Domain](../modules/domain.md)、[Policy](../modules/policy.md)、[Executors](../modules/executors.md)、[Storage](../modules/storage.md)和[Sandbox](../modules/sandbox.md)，下一步迁移Secrets |
+| DOC-1.3 | Coding Agent主链模块设计 | 进行中（14/19） | Wave A、Wave B已完成；Wave C已完成[Domain](../modules/domain.md)、[Policy](../modules/policy.md)、[Executors](../modules/executors.md)、[Storage](../modules/storage.md)、[Sandbox](../modules/sandbox.md)和[Secrets](../modules/secrets.md)，下一步迁移Trusted Actions |
 | DOC-1.4 | 产品运行时与扩展模块设计 | 未开始 | Protocol、App Server、SDK、MCP、Skill、Hook等模块文档 |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
@@ -60,6 +60,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [Executors模块设计](../modules/executors.md)：内置效果样例、双库事务、幂等、Outcome/Receipt、UNKNOWN对账、部署和版本边界的当前事实；
 - [Storage模块设计](../modules/storage.md)：双后端Schema/Migration、事务、队列、Lease、恢复、一致性、安全和运维边界的当前事实；
 - [Sandbox模块设计](../modules/sandbox.md)：严格合同、能力探测、固定Container执行、网络/Egress、Process监督、Profile持久化和平台证据边界的当前事实；
+- [Secrets模块设计](../modules/secrets.md)：三套引用合同、环境Provider、短生命周期作用域、流式脱敏、结构化Guard和跨模块消费边界的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；
