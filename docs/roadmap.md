@@ -429,7 +429,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.0 盘点与规范**：固定133份Markdown、30个顶层生产包和10个根级生产模块的起始基线；建立文档分类、状态、元数据、重大变更流程、图示、源码/测试链接规范、五类模板、追踪矩阵和分阶段待办。本切片不修改生产代码，也不宣称存量资料已经整改完成；
 - [x] **DOC-1.1 导航与系统架构**：建立[文档总入口](README.md)、[当前系统架构](architecture.md)、30个包与10个根级模块的边界，以及[源码阅读路线](guides/source-reading-map.md)；明确默认产品、显式装配库和规划能力，覆盖正常任务、审批、取消、崩溃恢复和事务性交付五条时序；
 - [x] **DOC-1.2 黄金样例**：完成[Agent Runtime模块设计](modules/agent.md)和[Action Plane子系统设计](subsystems/action-plane.md)，覆盖状态、接口、字段、正常/失败/恢复、事务、安全、观测、伪代码及源码测试双向映射；源码反向抽查均超过10个关键符号，测试正向定位均超过5类；
-- [ ] **DOC-1.3 Coding Agent主链**：进行中（3/19）；已完成[Session](modules/session.md)、[Context](modules/context.md)和[Artifact](modules/artifacts.md)模块设计，继续为模型、工具、补丁、进程、Sandbox、工作区、交付、Eval和观测等核心包补齐现行模块设计；
+- [ ] **DOC-1.3 Coding Agent主链**：进行中（4/19）；Wave A的[Session](modules/session.md)、[Context](modules/context.md)、[Artifact](modules/artifacts.md)和[Model](modules/models.md)模块设计已完成，继续为工具、补丁、进程、Sandbox、工作区、交付、Eval和观测等核心包补齐现行模块设计；
 - [ ] **DOC-1.4 产品运行时与扩展**：为Protocol、App Server、SDK、配置、API、Adapter、MCP、Skill、Hook和Smoke补齐现行模块设计；
 - [ ] **DOC-1.5 聚合与历史治理**：拆分超大聚合文档，标准化现行、历史、被取代和验证证据的职责与状态；
 - [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。

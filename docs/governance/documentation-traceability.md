@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 6
-code_revision: 7a325f2ef11bb369f396c739992ea170cfcce8ac
+version: 7
+code_revision: 00e2b816078f52c10849a65efddb36e84a538eef
 owners:
   - core
 modules:
@@ -90,7 +90,7 @@ flowchart LR
 | [executors](../../src/harnessix/executors/) | Action Executor实现 | [Action Plane子系统设计](../subsystems/action-plane.md) | [unit](../../tests/unit/) | `docs/modules/executors.md` | 子系统级完整；独立模块待DOC-1.3 |
 | [hooks](../../src/harnessix/hooks/) | 声明式Hook注册与执行 | [0.8](../m08-product-runtime-and-extensions.md) | [hooks](../../tests/hooks/) | `docs/modules/hooks.md` | 缺失 |
 | [mcp](../../src/harnessix/mcp/) | MCP目录、客户端、Server与统一Action | [0.8](../m08-product-runtime-and-extensions.md)、[MCP研究](../research/mcp-runtime-and-security.md) | [mcp](../../tests/mcp/) | `docs/modules/mcp.md` | 缺失 |
-| [models](../../src/harnessix/models/) | Provider适配、用量与成本 | [0.4](../m04-model-runtime.md)、[Smoke](../model-smoke.md) | [models](../../tests/models/) | `docs/modules/models.md` | 缺失 |
+| [models](../../src/harnessix/models/) | Provider适配、用量与成本 | [Model Runtime模块设计](../modules/models.md) | [models](../../tests/models/) | [docs/modules/models.md](../modules/models.md) | 完整，DOC-1.3 Wave A |
 | [observability](../../src/harnessix/observability/) | Trace、Metric与结构化日志 | [M1可观测性](../m1-observability.md) | [integration](../../tests/integration/)、[unit](../../tests/unit/) | `docs/modules/observability.md` | 缺失 |
 | [patches](../../src/harnessix/patches/) | Patch计划、批次、应用与恢复 | [0.5](../m05-coding-tools.md)、[Patch研究](../research/patch-runtime.md) | [patches](../../tests/patches/) | `docs/modules/patches.md` | 缺失 |
 | [policy](../../src/harnessix/policy/) | Action Policy决策 | [Action Plane子系统设计](../subsystems/action-plane.md) | [unit](../../tests/unit/) | `docs/modules/policy.md` | 子系统级完整；独立模块待DOC-1.3 |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成4/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成5/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。
