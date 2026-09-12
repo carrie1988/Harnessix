@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: historical
-version: 1
+version: 2
 code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
 owners:
   - core
@@ -25,6 +25,7 @@ supersedes: []
 > `d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6`。本文记录参考事实和独立推断，不定义
 > Harnessix现行公共契约；实际决策见[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)，
 > 实现范围见[0.9.1详细设计](../changes/m09-1-cli-tui-product-experience.md)。
+> 第2版根据Harnessix `ThreadView`不包含历史Item的现行合同，明确区分冷启动完整Replay与暖重连续传。
 
 # CLI/TUI产品体验与可恢复客户端源码研究
 
@@ -278,7 +279,7 @@ flowchart TB
 | `client_instance_id` | 状态目录 | 跨进程保持协议命令幂等命名空间 | 用户身份或授权 |
 | `next_command_sequence` | 客户端实例 | 生成单调、不可复用的本地命令ID | 服务端事件游标 |
 | `selected_thread_id` | Workspace绑定 | 恢复当前会话 | Thread存在性的权威证明 |
-| `durable_cursor` | Thread | 从已确认持久位置继续Replay | Live Delta完整性证明 |
+| `durable_cursor` | Thread | 记录客户端最近确认的服务端持久位置；用于暖重连和回退检测 | 冷启动完整Transcript快照 |
 | `workspace_fingerprint` | 状态文件 | 防止把客户端状态误用于另一Workspace | 文件内容快照 |
 | `state_version` | 状态文件 | 兼容迁移与拒绝未知版本 | Agent Protocol版本 |
 
@@ -289,11 +290,12 @@ Prompt草稿可作为后续体验数据单独存储，但不得与命令已提�
 
 1. 每个产生副作用的UI Intent在调用SDK前先分配并原子持久化Command ID；
 2. 请求超时或连接断开后，重试复用同一Command ID，不生成新ID；
-3. 只有持久Replay的`scanned_through`推进本地`durable_cursor`；Live Delta不推进恢复位置；
-4. 进程重启先加载Snapshot，再从持久游标Replay，最后订阅Live；
-5. Hydration与Live并发时，以持久Cursor和Item终态规则归并，不以Task完成顺序覆盖；
-6. 退出TUI不等于取消Turn；取消Turn必须由显式Intent和协议Command完成；
-7. 本地状态损坏时隔离损坏文件并创建新客户端实例，不用猜测旧Command是否完成；历史Thread仍可从服务端列出恢复。
+3. 只有持久Replay的`scanned_through`推进本地`durable_cursor`；Live Delta不推进该位置；
+4. `ThreadView`不含历史Item，且Client State不复制Transcript，因此进程冷启动必须从Cursor 0分页Replay完整历史；
+5. 同一进程内存投影完整时，暖重连才可从已确认Cursor续传；冷启动重建到已保存Cursor之前不得进入Live；
+6. Hydration与Live并发时，以持久Cursor和Item终态规则归并，不以Task完成顺序覆盖；
+7. 退出TUI不等于取消Turn；取消Turn必须由显式Intent和协议Command完成；
+8. 本地状态损坏时隔离损坏文件并创建新客户端实例，不用猜测旧Command是否完成；历史Thread仍可从服务端列出恢复。
 
 ## 9. 对0.9.1的约束与实施顺序
 
@@ -337,4 +339,3 @@ Prompt草稿可作为后续体验数据单独存储，但不得与命令已提�
 | 生命周期统一所有 | [`SubprocessAgentTransport`](../../src/harnessix/sdk/agent_client.py) | OpenCode `app.tsx`及lifecycle测试 |
 | 启动检查分层 | [`diagnose_configuration`](../../src/harnessix/product_config/runtime.py) | Codex `startup_preflight.rs`、Claude逆向样本`Doctor.tsx` |
 | Windows尚未产品可用 | [`_require_coding_tool_platform`](../../src/harnessix/product_config/server.py) | Textual跨平台说明；Harnessix平台目标以ADR 0063为准 |
-

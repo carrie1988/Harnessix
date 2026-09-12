@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -201,15 +201,17 @@ sequenceDiagram
     P-->>R: methods、limits、serverInfo
     R->>P: thread/get或thread/list
     P-->>R: Snapshot
-    R->>P: events/replay(after durable_cursor)
+    R->>P: 冷启动events/replay(after 0)
     P-->>R: events + scanned_through
     R->>S: 原子提交新durable_cursor
     R-->>C: ProductViewState
     C-->>A: render
 ```
 
-图示说明：Client State先于连接读取，使初始化使用稳定实例身份。只有Replay页成功通过Reducer并形成可渲染状态后，
-`scanned_through`才持久化。Snapshot不证明本地Cursor已消费，二者不能合并成一个“已同步”布尔值。
+图示说明：Client State先于连接读取，使初始化使用稳定实例身份。当前`ThreadView`不含历史Item，Client State也不
+保存Transcript，因此冷启动必须从0分页重建；已保存Cursor只用于确认重建不能倒退和支持同一进程暖重连。只有
+Replay页成功通过Reducer并形成可渲染状态后，`scanned_through`才持久化。Snapshot不证明本地Cursor已消费，
+二者不能合并成一个“已同步”布尔值。
 
 ### 6.2 新Turn与流式消息时序
 
@@ -387,7 +389,7 @@ digest: SHA-256
 | `workspace_fingerprint` | 规范Workspace身份的无正文摘要 | 内部 | 防误绑定，不证明内容未变 |
 | `next_command_sequence` | 下一个待分配序列 | 内部关键 | 在发送前原子递增并落盘 |
 | `selected_thread_id` | 最近选择Thread | 用户元数据 | 必须由服务端重新验证 |
-| `thread_cursors` | 每Thread持久Replay确认点 | 用户元数据 | Live事件不得推进 |
+| `thread_cursors` | 每Thread最近确认的服务端Replay位置 | 用户元数据 | Live事件不得推进；不能替代冷启动Transcript重建 |
 | `clean_shutdown` | 上次是否按序关闭 | 诊断 | `false`触发保守Hydration，不代表损坏 |
 | `state_revision` | 本地CAS版本 | 内部关键 | 每次写入单调递增 |
 | `digest` | 除自身外规范正文摘要 | 完整性 | 读取不匹配时隔离损坏文件 |
@@ -409,7 +411,7 @@ request_id = "tui-" + compact(client_instance_id) + "-" + base36(sequence)
 | 字段组 | 核心字段 | 权威来源 |
 |---|---|---|
 | Connection | generation、phase、last_error_code | 本地连接状态机 |
-| Session | selected_thread、thread_summary、durable_cursor | Snapshot/Replay + ClientState选择 |
+| Session | selected_thread、thread_summary、durable_cursor | Snapshot/Replay + ClientState选择；冷启动Replay起点固定为0 |
 | Transcript | 有序Public Item、临时Delta、Gap集合 | 持久Event为权威，Delta为临时 |
 | Turn | turn_id、status、可用动作 | `ThreadView.latest_turn`和Turn Event |
 | Interaction | pending approval/question、focus target | 持久Public Item投影 |
@@ -454,7 +456,7 @@ stateDiagram-v2
 | Command落盘后、写管道前崩溃 | 结果未知 | ID已消费 | 重启后同ID重放/查询 |
 | 请求写入后断线 | 结果未知 | 服务端Ledger可能已接受 | 新连接同ID消解 |
 | Replay页Reducer失败 | `projection_invalid` | Cursor不推进 | 重新取Snapshot；重复失败则停止 |
-| Replay已应用、Cursor落盘失败 | 客户端状态失败 | 服务端事实完整 | 重启重复应用；Reducer须幂等 |
+| Replay已应用、Cursor落盘失败 | 客户端状态失败 | 服务端事实完整 | 冷启动从0重建；Reducer须幂等 |
 | Live Delta缺口 | 提示恢复中 | Cursor不推进 | Replay持久Item并替换临时文本 |
 | Artifact分页失败 | Approval保持待决 | 不提交Decision | 重试读取或Reject |
 | Renderer异常 | TUI退出错误 | Agent Turn不自动取消 | 恢复终端；下次启动Replay |
@@ -594,7 +596,8 @@ capabilities = validate_required_methods_and_limits(client.initialize_result)
 
 thread = resolve_selected_thread_or_show_picker(state.selected_thread_id)
 view = reduce_snapshot(empty_view(generation), get_thread(thread))
-cursor = state.cursor_for(thread)
+previously_observed_cursor = state.cursor_for(thread)
+cursor = 0  # ThreadView不含Item，冷启动必须重建完整Transcript
 
 while replay_has_more:
     page = replay(after=cursor)
@@ -602,6 +605,8 @@ while replay_has_more:
     client_state_store.commit_cursor(thread, page.scanned_through)
     view = candidate
     cursor = page.scanned_through
+
+require cursor >= previously_observed_cursor
 
 publish_view(view)
 start_live_follow_owned_by_controller(generation, cursor)

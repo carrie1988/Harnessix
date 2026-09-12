@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
 owners:
   - core
@@ -78,15 +78,17 @@ Command ID在请求发送前分配并持久化，格式由客户端实例与单�
 `ProductViewState`只通过纯`ProjectionReducer`更新：
 
 1. 获取Thread Snapshot；
-2. 从本地持久Cursor执行Replay；
-3. 原子应用一页事件并持久化`scanned_through`；
-4. 进入`events/next`获取持久事件和Live Delta；
-5. Live Delta只影响临时展示，不推进恢复Cursor；
-6. `item_finished`持久正文覆盖临时Delta并消除Gap；
-7. 连接重建后丢弃旧连接代际迟到结果，再从持久事实Hydrate。
+2. 进程冷启动从Cursor 0分页Replay完整历史；当前`ThreadView`不含Item，已保存Cursor不能替代Transcript快照；
+3. 同一进程内存投影完整的暖重连可以从该投影已确认的Cursor续传；
+4. 原子应用一页事件并持久化`scanned_through`；冷启动重建到已保存Cursor之前不得进入Live；
+5. 进入`events/next`获取持久事件和Live Delta；
+6. Live Delta只影响临时展示，不推进持久Cursor；
+7. `item_finished`持久正文覆盖临时Delta并消除Gap；
+8. 连接重建后丢弃旧连接代际迟到结果，再从持久事实Hydrate。
 
 Reducer输出包含Transcript、当前Turn、计划、工具状态、待决交互、Usage/Cost和连接状态，但不执行I/O。相同
-Snapshot和有序事件序列必须产生逐字段相等的视图。
+Snapshot和有序事件序列必须产生逐字段相等的视图。若未来增加服务端完整Transcript Snapshot，必须通过新协议
+合同后才能把冷启动起点从0改为Snapshot声明的覆盖Cursor。
 
 ### 2.4 生命周期与取消
 
@@ -190,4 +192,3 @@ Reconcile边界装配。TUI不增加旁路文件写入、任意Shell或“始终
 [SDK模块](../modules/sdk.md)、[App Server模块](../modules/app-server.md)、
 [Product Config模块](../modules/product-config.md)、[Tools模块](../modules/tools.md)和
 [总体架构](../architecture.md)为准。
-
