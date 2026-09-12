@@ -457,6 +457,8 @@ Trace，避免在Controller和Telemetry组合根完成前形成第二套观测�
 - Session：保存Cursor存在时仍冷启动从0、同进程暖重连续传、Generation递增、旧Transport关闭、Prepared ID复用、Poll投影故障失败关闭；
 - SDK：非法Envelope、深度预算、Result归一、半握手、超长Frame、未协商方法和协商Limit前置拒绝；
 - 全仓门禁：Ruff、Readability、Documentation、Contract、Mypy和全部Pytest。
+- 平台门禁：Linux全量测试、macOS Coding Tools矩阵和Windows Trusted Execution矩阵均显式执行`tests/product_ui`；
+  正式结论只在同一提交的远端CI全部通过后记录。
 
 ### 14.2 当前验收标准
 

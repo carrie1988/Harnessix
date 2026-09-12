@@ -58,7 +58,7 @@ jobs:
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python scripts/generate_specs.py --check
-      - run: uv run pytest tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config
+      - run: uv run pytest tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
       - run: uv run python -m examples.kernel_files
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
@@ -91,7 +91,7 @@ jobs:
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"
-      - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py
+      - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py
 
   postgres:
     runs-on: ubuntu-latest
