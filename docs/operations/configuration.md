@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 3
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a
+version: 9
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -806,9 +806,11 @@ Renderer异常、Close软限和Windows对象替换。
 真实Provider调用只在离线合同和Fake路径通过后进行，并复用既有受控Smoke预算、脱敏和网络门禁；TUI正确性不依赖
 付费模型才能验证。
 
-0.9.1b本地证据已经覆盖：Product UI 38项测试；Product UI与相关CLI/SDK回归合计79项；真实Textual
-`App.run_test()`；真实JSONL子进程关闭、Store重开、完整Transcript冷Replay和Command序列不复用。实现提交形成后仍须
-由Linux Python 3.12/3.13、macOS和Windows矩阵重复验证，远端证据通过前不关闭本子切片。
+0.9.1b证据已经覆盖：Product UI 38项测试；Product UI与相关CLI/SDK回归合计79项；真实Textual
+`App.run_test()`；真实JSONL子进程关闭、Store重开、完整Transcript冷Replay和Command序列不复用。实现提交
+`3622114`及稳定化提交`af62513`、`e717a87`、`f8a1dc4`、`5e8d71f`已由
+[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、
+Windows、PostgreSQL、Container与文档矩阵验收，本子切片正式关闭。
 
 ## 17. 部署、兼容与回退
 
@@ -856,16 +858,15 @@ Renderer异常、Close软限和Windows对象替换。
 [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、
 macOS Coding Tools、Windows Trusted Execution、PostgreSQL、Container及文档矩阵验收，0.9.1a正式完成。
 
-0.9.1b已经在当前工作树实现单Actor `ProductController`、五类Intent、合并更新队列、有界关闭、框架中立
-Transcript转换、Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真实stdio跨进程恢复。依赖范围最终解析为
-Textual 8.2.8。实现与测试见[Product UI终端产品模块设计](../modules/product-ui.md)。当前尚未形成实现提交和三平台CI
-证据，因此0.9.1b仍保持未关闭。
+0.9.1b已经实现单Actor `ProductController`、五类Intent、合并更新队列、有界关闭、框架中立Transcript转换、
+Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真实stdio跨进程恢复。依赖范围最终解析为Textual 8.2.8。
+实现、并发稳定化与三平台CI证据见[Product UI终端产品模块设计](../modules/product-ui.md)，本子切片已经关闭。
 
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
 
 
-0.9.1a已关闭；0.9.1b本地实现等待提交与CI；0.9.1c～0.9.1e仍未实现。当前不包含配置向导/Doctor、
+0.9.1a与0.9.1b已关闭；0.9.1c～0.9.1e仍未实现。当前不包含配置向导/Doctor、
 Approval/Question/Diff/Cancel/Steer专用交互、Windows只读产品端口或统一Action默认装配，不能由基础TUI推断这些能力
 已经可用。

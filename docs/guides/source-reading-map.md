@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 12
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 13
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -66,7 +66,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应`1c11956d3fdc95ccc5a051a96e2107becfdbe78d`基线及0.9.1b当前工作树；
+- 本文对应已通过[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证的`5e8d71f019b30cac28229f1fddcee3778fe8e8eb`基线；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；

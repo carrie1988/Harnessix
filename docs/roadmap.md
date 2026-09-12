@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 6
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 7
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -425,7 +425,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内195份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计；0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已在当前工作树实现并完成本地Controller、无头UI和真实stdio恢复测试，等待实现提交与三平台CI后关闭；0.9.1c～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内195份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计。0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收；0.9.1b基础Textual产品链、真实stdio恢复和跨平台并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1c～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -450,8 +450,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 - [x] **0.9.1a 严格SDK与可恢复客户端内核**：Response/Frame/Result/Handshake加固，版本化Client State、
   发送前Command分配、连接代际和确定性Projection Reducer；
-- [ ] **0.9.1b TUI基础产品链**：`harnessix code`、Textual生命周期、Transcript、Composer、Session Picker、
-  Resume和真实stdio纵向恢复；当前代码与本地自动化已完成，待实现提交和三平台CI通过后勾选；
+- [x] **0.9.1b TUI基础产品链**：`harnessix code`、Textual生命周期、Transcript、Composer、Session Picker、
+  Resume和真实stdio纵向恢复；实现、并发稳定化与三平台CI已经完成；
 - [ ] **0.9.1c 完整领域交互**：Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel、Steer和错误自助；
 - [ ] **0.9.1d 配置与Windows原生只读链**：配置向导、Preflight、Doctor、Windows Workspace安全端口和默认产品启动；
 - [ ] **0.9.1e 统一Action产品装配**：Artifact、Patch、Process、Delivery通过Trusted Action、Policy、Approval、

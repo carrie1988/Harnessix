@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 3
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -43,8 +43,8 @@ supersedes: []
 | 能力 | Linux | macOS | Windows | Container |
 |---|---|---|---|---|
 | Python基础包/Action Plane | CI主路径 | 候选测试 | 选定测试 | 可构建基础镜像 |
-| Textual基础View/Controller | 本地实现，远端CI待执行 | 本地实现，远端CI待执行 | 平台中立合同已实现，远端CI待执行 | 非容器默认入口 |
-| `harnessix code`完整子进程链 | 本地候选，0.9.1b CI待执行 | 代码候选，0.9.1b CI待执行 | **子进程在工具平台门失败关闭** | 当前镜像未装配 |
+| Textual基础View/Controller | CI候选 | CI候选 | CI候选 | 非容器默认入口 |
+| `harnessix code`完整子进程链 | CI候选 | CI候选 | **子进程在工具平台门失败关闭** | 当前镜像未装配 |
 | SQLite Action Journal | 可用 | 可用 | 库级候选 | `/data`持久卷 |
 | PostgreSQL Action Journal | PostgreSQL 17 CI | 协议上可用，未独立原生矩阵 | 未独立验证 | 外部数据库 |
 | `agent-server`默认入口 | 候选可用 | 候选可用 | **失败关闭** | 当前镜像未装配 |
@@ -73,7 +73,10 @@ supersedes: []
 | `container-sandbox` | Ubuntu + 固定BusyBox Digest | 3.12 | 真实Container Sandbox集成 |
 
 0.9.1a已经把Client State、Projection和Recoverable Session纳入Linux全量、macOS及Windows矩阵。0.9.1b新增的
-Controller、Textual无头View、CLI和stdio恢复已在本地通过，远端矩阵将在实现提交后执行，尚不能作为平台结论。
+Controller、Textual无头View、CLI和stdio恢复已由
+[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、
+Windows、PostgreSQL、Container与文档矩阵验收。该证据只证明基础产品链的CI候选状态，不代表正式安装器、真实终端
+长期运行或Windows完整产品链已经完成。
 
 CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。当前缺少Windows `agent-server`产品E2E、
 三平台安装器、真实终端长期交互、网络文件系统、ARM发布矩阵和平台升级/回退Dogfooding。
@@ -202,7 +205,7 @@ flowchart LR
 ## 11. 当前风险
 
 - Windows属于1.0目标但当前产品入口拒绝，时间和实现风险高；
-- 0.9.1b远端三平台CI尚未形成，当前基础TUI只能视为本地候选；
+- 0.9.1b三平台CI已经完成，但基础TUI仍缺少真实用户终端长期运行和发行物证据；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 容器镜像缺少正式供应链和Hardening门禁；

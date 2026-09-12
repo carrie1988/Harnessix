@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a
+version: 8
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - product
 modules:
@@ -41,8 +41,8 @@ supersedes: []
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影类型/Reducer、连接状态、`RecoverableAgentSession`、Controller状态/Intent及关闭报告；Textual App从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a已通过三平台CI；0.9.1b实现与本地测试已完成，等待实现提交及三平台CI；完整领域交互、Doctor、Windows产品工具链和默认Action装配尚未实现 |
-| 代码版本 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d`为本切片实现基线；当前工作树实现待形成独立提交 |
+| 当前完成度 | 0.9.1a与0.9.1b已通过三平台CI并关闭；完整领域交互、Doctor、Windows产品工具链和默认Action装配尚未实现 |
+| 代码版本 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb`，由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成矩阵验收 |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -647,10 +647,11 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - CLI：`harnessix code`延迟导入Textual，构造当前解释器`agent-server` argv，缺失Workspace输出稳定脱敏JSON；
 - SDK：非法Envelope、深度预算、Result归一、半握手、超长Frame、未协商方法和协商Limit前置拒绝；
 - 本地切片门禁：Product UI 38项测试、相关CLI/SDK回归合计79项、Ruff、Mypy、Readability和真实`run_test()`均已通过；
-- 全仓门禁：实现提交前仍须执行Ruff、Readability、Documentation、Contract、Mypy和全部Pytest。
+- 全仓门禁：`make check`在实现基线完成3406项通过、13项跳过；Ruff、Readability、Documentation、Contract、Mypy和全部Pytest均通过。
 - 平台门禁：Linux Python 3.12/3.13全量测试、macOS Coding Tools矩阵和Windows Trusted Execution矩阵均
   显式执行或覆盖`tests/product_ui`，并由
-  [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)全部通过。
+  [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成0.9.1a验收；
+  [CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)进一步完成0.9.1b的Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container与文档矩阵验收。
 
 ### 14.2 当前验收标准
 
@@ -665,7 +666,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - [x] 连接故障后可显式复用同一Prepared Command，不额外消费序列；
 - [x] Linux Python 3.12/3.13、macOS和Windows矩阵验证Product UI及其协作边界；
 - [x] Textual View、单Actor Controller、真实stdio冷恢复和CLI参数合同通过本地自动化；
-- [ ] 0.9.1b实现提交完成三平台CI后才可正式关闭；三平台安装器仍属于0.9.5。
+- [x] 0.9.1b实现、并发稳定化和三平台CI完成并正式关闭；三平台安装器仍属于0.9.5。
 
 ## 15. 部署、兼容、回退与迁移
 
@@ -685,7 +686,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 
 | 限制/风险 | 当前影响 | 后续归属 |
 |---|---|---|
-| 0.9.1b尚未获得三平台CI证据 | 本地实现不能升级为正式子切片完成 | 实现提交后远端CI |
+| 0.9.1b仅完成CI Runner矩阵，尚未覆盖真实用户终端长期运行 | 当前证据足以关闭基础产品链，但不能外推正式发行与长期稳定性 | 0.9.3 Soak与0.9.5 Dogfooding |
 | Prepared Command不持久保存业务Payload | 崩溃后不能仅凭本地文件自动重放最后操作；必须由UI Intent/服务端事实恢复 | 0.9.1b设计后仍坚持不保存敏感正文 |
 | 投影在内存保存完整Item历史，`RichLog`只保留1万展示行 | 大Transcript仍可能使投影占用较多内存 | 0.9.3性能基线与虚拟化 |
 | `live_gap`是粘性诊断标志 | UI显示缺口并等待持久终态，没有自动重新Hydrate | 0.9.1c/0.9.3 |
@@ -707,6 +708,7 @@ Screen/Presenter而不是继续扩张这两个类。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 8 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录实现与四次稳定化提交通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵，正式关闭0.9.1b |
 | 7 | `f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a` | 2026-09-13 | 无头产品场景在ListView投影数量和本地Intent门闩都结算后再导航，并在ListView选择和Composer输入前显式等待焦点生效，去除平台相关的渲染、调度与焦点假设 |
 | 6 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 明确跨平台无头测试分别验证真实键绑定与再次Action派发，隔离Pilot控制键注入差异 |
 | 5 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 修复Controller快照Revision未变化时Composer本地门闩无法重新启用的View生命周期缺口 |

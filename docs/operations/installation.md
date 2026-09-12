@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 3
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -26,7 +26,7 @@ supersedes: []
 
 ## 1. 适用范围
 
-本文描述代码Revision `1c11956d3fdc95ccc5a051a96e2107becfdbe78d`及0.9.1b当前工作树可验证的源码安装、开发环境、
+本文描述已通过[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证的代码Revision `5e8d71f019b30cac28229f1fddcee3778fe8e8eb`所支持的源码安装、开发环境、
 本地Wheel和Action Plane容器路径。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 

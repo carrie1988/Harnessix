@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 3
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -36,7 +36,7 @@ supersedes: []
 | 默认产品平台 | 配置诊断和迁移具有跨平台实现；内置`agent-server`因Coding Tool Runtime限制只在POSIX且具有`O_NOFOLLOW`时开放 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` |
-| 当前完成度 | 0.8.6纵向切片已完成；0.9.1b已在本地实现TUI到`agent-server`的确定组合根，等待实现提交与CI；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理、完整Windows产品入口和产品级Telemetry仍未完成 |
+| 当前完成度 | 0.8.6纵向切片与0.9.1b的TUI到`agent-server`确定组合根已完成并通过矩阵CI；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理、完整Windows产品入口和产品级Telemetry仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1246,7 +1246,7 @@ Store连接默认SQLite线程约束，未设计为跨线程共享。Product Serv
 | Provider Factory/Fallback | 平台中立Python | 平台中立Python | Runtime测试 |
 | 内置`agent-server` | 支持具有`O_NOFOLLOW`的POSIX | 启动前稳定拒绝 | Server测试 |
 | 固定Workspace Service | 支持 | 进程内Service合同支持路径大小写等价 | App Server测试 |
-| `harnessix code`调用 | 当前Python子进程组合根已实现；Product配置语义不复制到View | View可运行，但`agent-server`仍在工具平台门失败关闭 | Product UI CLI与stdio测试；0.9.1b远端CI待执行 |
+| `harnessix code`调用 | 当前Python子进程组合根已实现；Product配置语义不复制到View | View可运行，但Windows上的`agent-server`仍在工具平台门失败关闭 | Product UI CLI与stdio测试；[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419) |
 
 “配置诊断/迁移支持Windows”不能推导为“默认Coding Agent产品支持Windows”。完整Windows产品Tool Runtime、安装器、
 升级和Dogfooding属于后续路线图门禁。

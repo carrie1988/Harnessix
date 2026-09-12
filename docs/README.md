@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 41
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 42
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -29,7 +29,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已经本地实现并通过Controller、无头UI与真实stdio恢复测试，等待实现提交及三平台CI；完整领域交互、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Controller、无头UI、真实stdio恢复以及Linux Python 3.12/3.13、macOS和Windows矩阵验收并正式关闭；完整领域交互、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -142,7 +142,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md) | 评审中；0.9.1a已关闭，0.9.1b本地实现待CI，完整交互、Windows原生工具和统一Action装配尚待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md) | 评审中；0.9.1a和0.9.1b已关闭，完整交互、Windows原生工具和统一Action装配尚待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

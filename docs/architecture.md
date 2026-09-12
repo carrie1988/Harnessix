@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 35
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 36
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -63,7 +63,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`1c11956d3fdc95ccc5a051a96e2107becfdbe78d`及0.9.1b当前工作树。状态标签含义如下：
+本文基于已通过[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证的提交`5e8d71f019b30cac28229f1fddcee3778fe8e8eb`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -238,7 +238,7 @@ flowchart LR
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
-| Product UI终端产品 | 0.9.1a已关闭；0.9.1b本地实现待CI | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller、Textual基础View与`harnessix code`入口；完整领域交互仍待0.9.1c，详见[模块设计](modules/product-ui.md) | [controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py)、[cli.py](../src/harnessix/product_ui/cli.py)、[session.py](../src/harnessix/product_ui/session.py) | [product_ui测试](../tests/product_ui/) |
+| Product UI终端产品 | 0.9.1a与0.9.1b已关闭 | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller、Textual基础View与`harnessix code`入口；完整领域交互仍待0.9.1c，详见[模块设计](modules/product-ui.md) | [controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py)、[cli.py](../src/harnessix/product_ui/cli.py)、[session.py](../src/harnessix/product_ui/session.py) | [product_ui测试](../tests/product_ui/) |
 | Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
 | Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
@@ -874,7 +874,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
-| 完整TUI、Diff/审批/成本交互不足 | Textual基础产品链已在本地实现但0.9.1b CI尚未关闭，专用领域交互未实现 | 0.9.1b～0.9.1c |
+| 完整TUI、Diff/审批/成本交互不足 | Textual基础产品链已通过0.9.1b矩阵，专用领域交互仍未实现 | 0.9.1c |
 | 默认产品未装配写工具、Process和Delivery | 代码库能力无法直接形成端到端Coding Agent写入链 | 0.9.1 |
 | Windows默认只读Tool入口失败关闭 | Windows不能运行完整产品链 | 0.9.1、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
@@ -950,6 +950,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 36 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录0.9.1b实现与并发稳定化通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵并正式关闭 |
 | 35 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d` | 2026-09-13 | 同步0.9.1b本地实现：正式`harnessix code`组合根、Textual基础View、单Actor Controller及真实stdio恢复；等待实现提交和CI |
 | 34 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` | 2026-09-13 | 记录Product UI客户端内核通过Linux Python 3.12/3.13、macOS和Windows矩阵并关闭0.9.1a |
 | 33 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 新增Product UI客户端内核，明确Client State、发送前Command身份、冷暖Replay、纯投影、连接代际及SDK协商方法/消息/Replay上限 |

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 3
-code_revision: 1c11956d3fdc95ccc5a051a96e2107becfdbe78d
+version: 4
+code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 # ADR 0078：产品终端壳与可恢复客户端状态
 
-- 状态：已接受；0.9.1a已关闭，0.9.1b本地实现等待提交与三平台CI
+- 状态：已接受；0.9.1a与0.9.1b已关闭，0.9.1c～0.9.1e待实施
 - 日期：2026-09-13
 - 决策范围：Harnessix Code 0.9.1
 
@@ -201,7 +201,7 @@ Reconcile边界装配。TUI不增加旁路文件写入、任意Shell或“始终
 
 完整接口、数据、时序、测试和回退计划见
 [0.9.1 CLI/TUI产品体验详细设计](../changes/m09-1-cli-tui-product-experience.md)。0.9.1a客户端状态、投影、连接代际和
-SDK严格边界已由CI关闭。0.9.1b当前工作树已实现：
+SDK严格边界已由CI关闭。0.9.1b已实现：
 
 - [`ProductController`](../../src/harnessix/product_ui/controller.py)单Actor、类型化Intent和有界关闭；
 - [`ProductApp`](../../src/harnessix/product_ui/app.py)基础Textual产品壳；
@@ -209,7 +209,7 @@ SDK严格边界已由CI关闭。0.9.1b当前工作树已实现：
 - [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)真实子进程/Store关闭重开与完整Transcript恢复；
 - [`test_app.py`](../../tests/product_ui/test_app.py)无头会话切换、Composer防重、Resize和退出验证。
 
-上述实现的本地测试已通过，但在实现提交完成三平台CI之前，0.9.1b不得标记完成。0.9.1c～0.9.1e的现行能力仍以
+上述实现及其并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收，0.9.1b正式关闭。0.9.1c～0.9.1e的现行能力仍以
 [SDK模块](../modules/sdk.md)、[App Server模块](../modules/app-server.md)、
 [Product Config模块](../modules/product-config.md)、[Tools模块](../modules/tools.md)和
 [总体架构](../architecture.md)为准。
