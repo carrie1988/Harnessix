@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 33
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 34
+code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
 owners:
   - core
 modules:
@@ -235,7 +235,7 @@ flowchart LR
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
-| Product UI客户端内核 | 已实现/待TUI装配 | 最小Client State、发送前Command ID、连接代际、冷暖Replay和纯投影；当前没有Textual View或产品Controller，详见[模块设计](modules/product-ui.md) | [state_store.py](../src/harnessix/product_ui/state_store.py)、[projection.py](../src/harnessix/product_ui/projection.py)、[session.py](../src/harnessix/product_ui/session.py) | [product_ui测试](../tests/product_ui/) |
+| Product UI客户端内核 | 0.9.1a已完成/待TUI装配 | 最小Client State、发送前Command ID、连接代际、冷暖Replay和纯投影；Linux、macOS、Windows CI已通过，当前没有Textual View或产品Controller，详见[模块设计](modules/product-ui.md) | [state_store.py](../src/harnessix/product_ui/state_store.py)、[projection.py](../src/harnessix/product_ui/projection.py)、[session.py](../src/harnessix/product_ui/session.py) | [product_ui测试](../tests/product_ui/) |
 | Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
 | Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
@@ -945,6 +945,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 34 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` | 2026-09-13 | 记录Product UI客户端内核通过Linux Python 3.12/3.13、macOS和Windows矩阵并关闭0.9.1a |
 | 33 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 新增Product UI客户端内核，明确Client State、发送前Command身份、冷暖Replay、纯投影、连接代际及SDK协商方法/消息/Replay上限 |
 | 32 | `8f91bbebaf08edf0c68488a8604cddcbe2e6e225` | 2026-09-12 | 接入Smoke现行模块设计，明确网络门禁、Config/Report v1、固定场景、请求与Token预算、审批重开、Replay、凭据/端点边界、白名单诊断和真实Provider证据范围；DOC-1.4完成30/30包覆盖 |
 | 31 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 接入Hook现行模块设计，明确Definition/Grant、Registry、Matcher、确定Run、Hook/Action双账本、Timeout/取消、Interrupted恢复、来源错配和默认产品未装配边界 |

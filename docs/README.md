@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 39
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 40
+code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
 owners:
   - core
 modules:
@@ -26,7 +26,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已经实现并等待三平台CI关闭。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 4
+code_revision: ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1
 owners:
   - core
 modules:
@@ -782,12 +782,14 @@ Renderer异常、Close软限和Windows对象替换。
 当前为持续实施状态。0.9.1a已经实现严格Response Envelope/Result/Frame/Handshake、广告方法及消息/Replay
 协商上限门禁、Client State v1、安全原子Store、发送前Command分配、连接Generation、Prepared Command跨代际复用、
 冷启动从0/暖重连续传和确定性Projection Reducer。实现入口与测试见[Product UI客户端内核模块设计](../modules/product-ui.md)；
-自动重连策略、Controller任务树和Textual View尚未实现；0.9.1a在三平台CI通过前仍保持未完成。
+自动重连策略、Controller任务树和Textual View尚未实现。实现及平台门禁提交已由
+[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、
+macOS Coding Tools、Windows Trusted Execution、PostgreSQL、Container及文档矩阵验收，0.9.1a正式完成。
 
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
 
 
-0.9.1a等待三平台CI完成后关闭；0.9.1b～0.9.1e仍未实现。当前代码不包含Textual依赖、`harnessix code`入口、
+0.9.1a已关闭；0.9.1b～0.9.1e仍未实现。当前代码不包含Textual依赖、`harnessix code`入口、
 Product Controller、配置向导、Windows只读产品端口或统一Action默认装配，不能由客户端内核推断这些能力已经可用。
