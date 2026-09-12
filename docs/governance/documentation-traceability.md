@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 5
-code_revision: 6c5f310346afa3fa176f51707722467f46811b35
+version: 6
+code_revision: 7a325f2ef11bb369f396c739992ea170cfcce8ac
 owners:
   - core
 modules:
@@ -81,7 +81,7 @@ flowchart LR
 | [agent](../../src/harnessix/agent/) | Agent Loop、Reducer、Turn运行 | [Agent Runtime模块设计](../modules/agent.md) | [agent](../../tests/agent/) | [docs/modules/agent.md](../modules/agent.md) | 完整，DOC-1.2黄金样例 |
 | [api](../../src/harnessix/api/) | Action HTTP API | [Action Contract](../action-contract.md)、[部署](../deployment.md) | [integration](../../tests/integration/) | `docs/modules/api.md` | 缺失 |
 | [app_server](../../src/harnessix/app_server/) | Headless App Server生命周期 | [0.8](../m08-product-runtime-and-extensions.md) | [app_server](../../tests/app_server/) | `docs/modules/app-server.md` | 缺失 |
-| [artifacts](../../src/harnessix/artifacts/) | 大对象、Diff与模型历史Artifact | [0.5](../m05-coding-tools.md)、[0.6](../m06-context-and-sessions.md) | [artifacts](../../tests/artifacts/) | `docs/modules/artifacts.md` | 缺失 |
+| [artifacts](../../src/harnessix/artifacts/) | 大对象、Diff与模型历史Artifact | [Artifact模块设计](../modules/artifacts.md) | [artifacts](../../tests/artifacts/) | [docs/modules/artifacts.md](../modules/artifacts.md) | 完整，DOC-1.3 Wave A |
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整，DOC-1.3 Wave A |
 | [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [0.7](../m07-trusted-execution-and-delivery.md) | [delivery](../../tests/delivery/) | `docs/modules/delivery.md` | 缺失 |
 | [domain](../../src/harnessix/domain/) | Action领域契约 | [Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md) | [unit](../../tests/unit/) | `docs/modules/domain.md` | 子系统级完整；独立模块待DOC-1.3 |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成3/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成4/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 5
-code_revision: 6c5f310346afa3fa176f51707722467f46811b35
+version: 6
+code_revision: 7a325f2ef11bb369f396c739992ea170cfcce8ac
 owners:
   - core
 modules:
@@ -215,7 +215,7 @@ flowchart LR
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本 | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
 | Context | 已实现/显式装配 | Source聚合、预算、压缩窗口和Tool结果视图；详见[模块设计](modules/context.md) | [engine.py](../src/harnessix/context/engine.py) `ContextEngine`、[sources.py](../src/harnessix/context/sources.py) | [context测试](../tests/context/) |
 | 只读Tool | 当前默认产品 | Workspace内读取、搜索和可选固定Git查询 | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime` | [tools测试](../tests/tools/) |
-| Artifact | 已实现/显式装配 | 大对象、模型历史、Diff与进程输出外置 | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
+| Artifact | 已实现/显式装配 | 有界正文、模型历史、Diff与进程输出外置；详见[模块设计](modules/artifacts.md) | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复 | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
 | Process | 已实现/显式装配 | 命令计划、Owner、监督、输出Artifact和跨平台端口 | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
 | Sandbox | 已实现/显式装配 | 能力探测、容器、网络隔离和Egress策略 | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py) | [sandbox测试](../tests/sandbox/) |
@@ -829,7 +829,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 27个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 26个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
