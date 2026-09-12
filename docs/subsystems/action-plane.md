@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 69bd39ac3b0445ca96813c32bbdaf855e9861756
+version: 3
+code_revision: 4dc613f12e0deb5ce5ab53937fca226afab21516
 owners:
   - core
 modules:
@@ -139,7 +139,7 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | `ActionService` | 校验、Policy、审批、Inline执行、Reconcile和观察编排 | Registry、Policy、Journal、Executor、Obs | 直接使用具体数据库事务或框架状态 | 服务生命周期；单请求无内存权威状态 |
 | `EffectJournal` | 快照、事件、CAS转换、Claim、Renew和Recover | Domain、数据库 | 调用Executor或自行决策Policy | SQLite或PostgreSQL持久生命周期 |
 | `ActionWorker` | 领取Ready Action、续租、执行和恢复竞态 | Journal、Executor、Obs | 无Lease推进Action；重复执行未知Action | 每Worker唯一`worker_id` |
-| `ActionExecutor` | 执行和对账具体外部效果 | 输入模型、外部系统 | 修改Action状态或自行批准 | 每Tool定义绑定实现 |
+| `ActionExecutor` | 执行和对账具体外部效果；内置实现详见[Executors模块设计](../modules/executors.md) | 输入模型、外部系统 | 修改Action状态或自行批准 | 每Tool定义绑定实现 |
 | `api.app` | HTTP Schema、状态码、Trace头校验和错误投影 | Service | 复制领域状态机或信任未校验Header | FastAPI lifespan |
 | `observability` | Span、Metric、Log和队列Gauge | 稳定领域属性 | 让导出失败改变执行结果 | NoOp或OpenTelemetry实现 |
 
@@ -233,7 +233,7 @@ stateDiagram-v2
 |---|---|---|---|
 | `RECEIVED` | `VALIDATED`、`FAILED` | Service完成Tool/Effect/Secret/Input校验 | 原请求、指纹、Tool快照 |
 | `VALIDATED` | `POLICY_EVALUATED`、`FAILED` | Policy调用成功或分类失败 | Policy输入已固定 |
-| `POLICY_EVALUATED` | `DENIED`、`PENDING_APPROVAL`、`READY` | 按Policy Decision | Decision及版本 |
+| `POLICY_EVALUATED` | `DENIED`、`PENDING_APPROVAL`、`READY` | 按Policy Decision | Decision、policy ID和评估时间；当前无规则版本/digest |
 | `PENDING_APPROVAL` | `DENIED`、`READY` | 绑定当前指纹的拒绝/批准 | Approval Record |
 | `READY` | `LEASED` | Inline Service或Worker原子Claim | lease owner与到期时间 |
 | `LEASED` | `RUNNING`、`READY` | Owner开始执行；或执行前租约过期恢复 | Owner校验/恢复事件 |
@@ -608,12 +608,12 @@ reconcile(unknown_action):
 |---|---|---|---|---|---|
 | Action状态合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionStatus`、`ALLOWED_ACTION_TRANSITIONS`、`ActionSnapshot` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_journal_rejects_illegal_state_transition` | Journal合法边与事件顺序；模型组合不变量缺口见[Domain模块设计](../modules/domain.md) |
 | Tool注册 | [`registry.py`](../../src/harnessix/domain/registry.py) | `ToolDefinition`、`ToolRegistry` | [`test_registry.py`](../../tests/unit/test_registry.py) | 重复注册和未知Tool测试 | 名称唯一与描述固定 |
-| 默认Policy | [`default.py`](../../src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent`、拒绝路径 | Effect/Risk决策 |
+| 默认Policy | [`default.py`](../../src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | ALLOW与显式审批；默认DENY无直接测试 | Effect/Risk决策；详见[Policy模块设计](../modules/policy.md) |
 | 指纹 | [`runtime.py`](../../src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request`、`test_idempotency_key_rejects_different_payload` | 请求不可变和幂等冲突 |
 | 提交主链 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.submit` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` | 正常顺序和Event |
 | Approval | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.decide_approval` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` | 拒绝不触发效果 |
 | Reconcile | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.reconcile` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` | UNKNOWN不重执行 |
-| Executor异常边界 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService._execute_leased` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | 未知效果与只读失败用例 | 读写异常分类 |
+| Executor异常边界 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService._execute_leased` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | 显式不确定与Lease恢复；只读普通异常无直接测试 | 读写异常分类；详见[Executors模块设计](../modules/executors.md) |
 | SQLite事务 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `create_action`、`transition`、`claim_next_ready`、`recover_expired` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown`、`test_journal_rejects_illegal_state_transition` | 原子Event和恢复 |
 | PostgreSQL Claim | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`renew_lease`、`recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | PostgreSQL并发Claim和恢复用例 | `SKIP LOCKED`多Worker语义 |
 | Worker循环 | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker.run_once`、`run_forever` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker`、`test_ready_action_can_only_be_claimed_once` | 入队与单Claim |
@@ -666,15 +666,17 @@ UNKNOWN对账、Lease恢复、Worker竞态和PostgreSQL并发至少八类测试�
 | 数据保留、删除、备份和灾备未形成发布门禁证据 | 长期生产运维不完整 | 0.9.5/1.0 |
 | `MANUAL_INTERVENTION`缺Operator工作流 | 状态可审计但处置体验不完整 | 0.9产品体验或后续运维切片 |
 | 默认Policy较简单 | 不能表达复杂组织授权和资源策略 | 未来替换Policy端口；需先固定身份和合同 |
+| Queued执行使用当前Registry且无通用Executor绑定核对 | API/Worker版本漂移时旧Action可能由不同Executor执行 | 0.9.3/0.9.5绑定、升级和故障测试 |
 | 异常消息直接采用`str(error)` | Provider或Executor若把敏感值写入异常，可能进入Journal、API或日志 | 0.9.4增加统一错误清洗与泄漏回归测试 |
 
-本文与Agent Runtime设计共同作为DOC-1.3/1.4迁移范式。后续`domain`、`policy`、`executors`和
-`storage`独立模块文档应链接本文的跨包主链，只细化各自内部结构，避免复制状态机产生双写；若独立
-文档与本文冲突，应在同一提交更新本文。
+本文与Agent Runtime设计共同作为DOC-1.3/1.4迁移范式。`domain`、`policy`和`executors`独立模块设计已完成；
+后续`storage`文档应链接本文的跨包主链，只细化内部结构，避免复制状态机产生双写。若独立文档与本文冲突，
+应在同一提交更新本文。
 
 ## 24. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `4dc613f12e0deb5ce5ab53937fca226afab21516` | 2026-09-12 | 接入Executors现行模块设计，纠正Policy DENY与只读异常测试证据边界，补充Executor版本漂移风险 |
 | 2 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 接入Domain现行模块设计并纠正ApprovalRecord字段、ActionResult模型约束和直接测试证据边界 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Action Plane黄金样例初版 |
