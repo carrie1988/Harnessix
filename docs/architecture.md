@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 17
-code_revision: d655c60f54f94823f671d18080573e1b56c433d9
+version: 18
+code_revision: a6c2082c40bd159ea00e16ada877bb2dc03088bc
 owners:
   - core
 modules:
@@ -236,7 +236,7 @@ flowchart LR
 | Secrets | 默认模型Provider使用/其他路径显式装配 | 环境Source、名称/版本/Target绑定、短生命周期Material、流式脱敏和结构化Guard；不提供Vault、轮换或全局DLP，详见[模块设计](modules/secrets.md) | [provider.py](../src/harnessix/secrets/provider.py)、[redaction.py](../src/harnessix/secrets/redaction.py)、[guard.py](../src/harnessix/secrets/guard.py) | [secrets测试](../tests/secrets/)、[Provider凭据测试](../tests/product_config/test_provider_credentials.py)、[Process输出测试](../tests/processes/test_supervisor.py) |
 | Workspace | 已实现/显式装配 | 路径身份、Snapshot、Lease与Windows路径规则 | [paths.py](../src/harnessix/workspace/paths.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 已实现/显式装配 | 文件事务、Diff、Git Commit和受控Push | [planner.py](../src/harnessix/delivery/planner.py)、[store.py](../src/harnessix/delivery/store.py) | [delivery测试](../tests/delivery/) |
-| Trusted Action | 已实现/显式装配 | 高风险Action统一计划、审批、执行和对账 | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter` | [trusted_actions测试](../tests/trusted_actions/) |
+| Trusted Action | 已实现/显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口和UNKNOWN对账；默认产品尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
 | MCP/Skill/Hook | 已实现/显式装配 | 外部工具目录、Skill快照与声明式Hook | [mcp](../src/harnessix/mcp/)、[skills](../src/harnessix/skills/)、[hooks](../src/harnessix/hooks/) | [MCP](../tests/mcp/)、[Skill](../tests/skills/)、[Hook](../tests/hooks/)测试 |
 | Eval/Smoke | 已实现/显式运行 | 固定任务、分级、报告和受控真实Provider验证 | [evals](../src/harnessix/evals/)、[smoke](../src/harnessix/smoke/) | [evals](../tests/evals/)、[smoke](../tests/smoke/)测试 |
 | 可观测性 | 当前跨链 | Trace、Metric和结构化日志端口 | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py) | [观测集成测试](../tests/integration/test_observability_flow.py) |
@@ -831,7 +831,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 默认Action Policy如何拒绝、审批和允许 | [Policy模块设计](modules/policy.md)、[policy/default.py](../src/harnessix/policy/default.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_action_executor.py](../tests/processes/test_action_executor.py) |
 | 状态如何恢复 | [session/sqlite.py](../src/harnessix/session/sqlite.py)、`AgentRuntime._recover` | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_session_upgrade.py](../tests/agent/test_session_upgrade.py) |
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
-| 高风险能力如何收口 | [trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py) |
+| 高风险能力如何收口 | [Trusted Actions模块设计](modules/trusted-actions.md)、[trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py)、[test_git_push.py](../tests/delivery/test_git_push.py) |
 | Action如何执行和对账 | [Executors模块设计](modules/executors.md)、[runtime.py](../src/harnessix/runtime.py)、[worker.py](../src/harnessix/worker.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py) |
 | Action如何持久化、Claim和过期恢复 | [Storage模块设计](modules/storage.md)、[sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [test_worker.py](../tests/integration/test_worker.py)、[test_postgres_journal.py](../tests/integration/test_postgres_journal.py) |
 | 交付如何持久化 | [delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py) | [test_planner.py](../tests/delivery/test_planner.py)、[test_store.py](../tests/delivery/test_store.py) |
@@ -851,7 +851,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 15个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 14个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -919,6 +919,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 18 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 接入Trusted Actions现行模块设计，明确宿主Binding、资源/Policy、Execution/Approval、Route Hash链、取消/恢复和扩展/Git旁路边界 |
 | 17 | `d655c60f54f94823f671d18080573e1b56c433d9` | 2026-09-12 | 接入Secrets现行模块设计，明确引用合同、环境Provider、明文作用域、输出防泄漏、跨模块装配及轮换/DLP缺口 |
 | 16 | `49c798b2688fb87d68130179a616c5457836f3bd` | 2026-09-12 | 接入Sandbox现行模块设计，明确能力证据、Container物化、网络/Egress、Process监督、Profile持久化和默认装配缺口 |
 | 15 | `ffa56de02b372df981d234fafd1feffbb0b870fb` | 2026-09-12 | 接入Storage现行模块设计，明确双后端Schema/Migration、事务、队列、Lease、恢复、Readiness和数据保护边界 |
