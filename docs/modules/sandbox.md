@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 49c798bb6a9b18052f298258ef28bc3e4ef73104
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1313,7 +1313,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 | P1 | Sandbox无直接Telemetry | 无法量化拒绝、清理失败和残留 | 0.9.2/0.9.3 |
 | P2 | `sandbox/__init__.py`无公开导出 | 调用方耦合具体文件，公共API边界不明确 | 0.9.0结构治理后续 |
 | P2 | Probe Capture Output先完整缓存后检查大小 | 15秒内异常输出可能占用过多内存 | 0.9.3 |
-| P2 | Schema生成不在`make check`门禁 | 合同与发布Schema可能漂移 | DOC-1.6/0.9.5 |
+| P2 | Schema生成门禁未覆盖Windows | Windows发布前可能遗漏平台相关生成差异 | 0.9.6关闭Evals POSIX依赖后纳入Windows |
 
 ## 31. 验收标准
 
@@ -1380,4 +1380,5 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Sandbox运行合同不变 |
 | 1 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |

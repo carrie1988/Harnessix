@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 3a81225fe8014d28ba559001f7a1fdf3da5d36a0
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1454,7 +1454,7 @@ Daemon，本地可能Skip，正式发布证据必须来自配置完整的CI任�
 - [x] Container、In-process、Server导出、Secret和供应链边界明确；
 - [x] 关键结论映射到源码符号和测试函数；
 - [x] 已知缺口不伪装成已实现保证；
-- [ ] DOC-1.6严格文档门禁尚未启用。
+- [x] DOC-1.6严格文档门禁已验证本文元数据、结构、链接、源码/测试映射和Mermaid。
 
 ### 45.2 生产能力关闭条件
 
@@ -1607,4 +1607,5 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 
 | 文档版本 | 代码版本 | 日期 | 变更 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 启用DOC-1.6严格文档门禁；MCP产品能力边界不变 |
 | 1 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 建立MCP现行模块设计，覆盖Target、目录、Schema、SQLite、调用新鲜度、Trusted Action、UNKNOWN、反向Server、取消、部署、安全、测试和已知风险 |

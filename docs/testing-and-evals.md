@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 2
-code_revision: b99a7ada06d06d3bf0e0e06c0572609f053f8895
+version: 3
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0044-coding-eval-contract-and-grader.md
   - docs/adr/0047-coding-eval-campaign-evidence.md
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
+  - docs/adr/0077-versioned-documentation-contract-and-gates.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -313,9 +314,9 @@ make spec
 make check
 ```
 
-`make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、Mypy和全量Pytest；`make spec`重新生成契约产物并拒绝未提交漂移。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
+`make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、文档静态门禁、公共合同逐字节漂移检查、Mypy和全量Pytest；`make spec`重新生成契约产物，提交前还必须确认`spec/`没有非预期Git差异。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
 
-文档结构、链接、元数据和Mermaid自动门禁属于DOC-1.6范围。在该门禁落地前，每次大提交仍须人工执行等价检查并保存结果。
+文档结构、链接、元数据、生命周期、源码同步和Mermaid结构已由DOC-1.6自动门禁覆盖；Linux文档CI对变化图执行真实渲染。公共合同生成检查在Linux/macOS执行；Windows继续执行文档静态门禁和治理套件，但因Evals现有POSIX `fcntl`依赖显式跳过合同生成测试，该限制由0.9.6关闭。
 
 ## 17. 发布判定
 
@@ -369,7 +370,7 @@ flowchart TD
 
 ## 20. 当前证据与限制
 
-在代码Revision `b99a7ada06d06d3bf0e0e06c0572609f053f8895`上，本地执行`make spec`无生成漂移，`make check`通过Ruff、Readability和256个源码文件的Mypy检查，Pytest结果为`3326 passed, 13 skipped`。该结果是本地环境证据；跨平台、PostgreSQL和容器结论仍以对应远端CI Job为准。
+在代码Revision `991b6f267671f5a86870672e9c97a5fbb3991a39`上，本地`make check`通过Ruff、Readability、191份Markdown/4535个链接/483个Mermaid块/30个生产包的文档门禁、公共合同逐字节校验和256个源码文件的Mypy检查，Pytest结果为`3351 passed, 13 skipped`；固定Mermaid CLI 11.6.0的真实渲染也通过。[CI 34709603781](https://github.com/carrie1988/Harnessix/actions/runs/34709603781)进一步完成Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和独立文档Job的全部验收。Windows合同生成仍按已声明平台限制Skip，不能计为该平台已验证。
 
 截至该Revision，以下项目仍不能宣称生产完成：0.9.1至0.9.6范围的产品级端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 

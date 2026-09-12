@@ -1,15 +1,16 @@
 ---
 doc_type: governance-index
 status: current
-version: 1
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
   - documentation
   - architecture
 related_adrs: []
-related_tests: []
+related_tests:
+  - tests/governance/test_documentation_policy.py
 supersedes: []
 ---
 
@@ -191,7 +192,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 编号 | 决策 | 状态说明 |
 |---|---|---|
 | 0076 | [代码可读性、可维护性与结构治理](0076-code-readability-and-structural-governance.md) | 接受 |
-| 0077 | [版本化文档合同与分层阻断门禁](0077-versioned-documentation-contract-and-gates.md) | 接受；DOC-1.6实施中 |
+| 0077 | [版本化文档合同与分层阻断门禁](0077-versioned-documentation-contract-and-gates.md) | 接受并已实施；DOC-1.6完成 |
 
 ## 5. 维护规则
 

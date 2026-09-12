@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 8323f0fb5d0dcb95316f76b3e0fcb2140501642d
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -309,8 +309,9 @@ POSIX比较键保持规范路径原值，大小写不同是不同资源。`norma
 | `WorkspaceSnapshot` | `harnessix.workspace-snapshot/v1` | Execution/Delivery不可变来源事实 | [`workspace-snapshot-v1`](../../spec/workspace-snapshot-v1.schema.json) |
 | `WorkspaceLease` | `harnessix.workspace-lease/v1` | 写Owner与Fencing能力 | [`workspace-lease-v1`](../../spec/workspace-lease-v1.schema.json) |
 
-两个Schema由[`scripts/generate_specs.py`](../../scripts/generate_specs.py)生成。当前没有专门测试逐字比较这
-两个文件与Pydantic Schema，Schema漂移主要依赖人工运行生成脚本和Git Diff，应在DOC-1.6补门禁。
+两个Schema由[`scripts/generate_specs.py`](../../scripts/generate_specs.py)生成。DOC-1.6已增加临时目录重建和
+逐字节比较，Linux/macOS的`make check`与CI会阻断漂移；Windows因Evals现有POSIX `fcntl`依赖显式Skip，
+该平台合同生成能力由0.9.6关闭。
 
 ## 10. Resource Request与External Root
 
@@ -1067,7 +1068,7 @@ uv run pytest \
 | P1 | Snapshot/Secure Reader无统一异步取消 | 长扫描不能被产品一致终止 | 0.9.3 |
 | P1 | 无原生Telemetry | 无法量化捕获时延、漂移和Lease冲突 | Observability切片 |
 | P2 | Package Root无正式导出 | API稳定边界不清楚 | API治理 |
-| P2 | Schema无自动一致性测试 | 合同文件可能与实现漂移 | DOC-1.6 |
+| P2 | Schema一致性测试未覆盖Windows | Windows发布前可能遗漏平台相关生成差异 | 0.9.6 |
 
 ## 34. 生产化演进约束
 
@@ -1110,7 +1111,7 @@ uv run pytest \
 - [ ] Windows普通目录或受管Worktree产品路径完成真实写入/恢复验收；
 - [ ] External Root对象别名、权限升级和配置漂移失败关闭；
 - [ ] Snapshot极限预算和所有原生异常统一为稳定错误；
-- [ ] Schema、Migration、备份恢复和Windows ACL纳入自动门禁；
+- [ ] Migration、备份恢复和Windows ACL纳入自动门禁；Schema漂移已在Linux/macOS阻断，Windows待0.9.6；
 - [ ] macOS/Linux/Windows本地文件系统及受支持远端文件系统边界公开；
 - [ ] 捕获/验证/Lease指标、Trace和告警不泄露路径与正文；
 - [ ] 真实仓库并发编辑、崩溃、磁盘满和长会话Soak达到固定阈值。
@@ -1154,4 +1155,5 @@ uv run pytest \
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |
 | 1 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 建立Workspace现行模块设计，覆盖逻辑路径、选择资源Snapshot、POSIX/Windows原生端口、Secure Reader、SQLite Fencing Lease和跨模块消费边界 |

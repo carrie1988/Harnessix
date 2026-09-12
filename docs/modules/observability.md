@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 44b0cbcfcf9b1b532568e682b1b792b09df1276d
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1297,7 +1297,7 @@ Harnessix不配置Collector或后端留存，也不提供按Tenant删除遥测�
 | P1 | 默认`agent-server`未装配Observability | 主产品真实用户任务不可外部观测 | 0.9.1产品闭环 |
 | P1 | 注入Observer所有权不一致 | Action会关闭共享实例，Agent不会 | 生命周期合同加固 |
 | P1 | `close`无超时且部分失败不继续 | 进程关闭可阻塞或漏关Meter | 有界关闭与错误聚合 |
-| P1 | 日志Schema/Metric Schema未版本化 | Dashboard和采集规则易被无意破坏 | DOC-1.6/合同门禁 |
+| P1 | 日志Schema/Metric Schema未版本化 | Dashboard和采集规则易被无意破坏 | 0.9.2/0.9.4遥测合同治理 |
 | P1 | HTTP异常Metric缺Route且不记Duration | 查询Schema不一致、尾延迟缺失 | Middleware修复 |
 | P1 | Span失败状态不一致 | Executor FAILED不一定标ERROR，Policy异常可能自动带堆栈 | 统一Span语义层 |
 | P2 | Instrument名称无上限 | 动态调用可造成内存和后端时序膨胀 | 注册表/白名单 |
@@ -1355,4 +1355,5 @@ Harnessix不配置Collector或后端留存，也不提供按Tenant删除遥测�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正未关闭遥测合同的路线图归属；运行合同不变 |
 | 1 | `44b0cbcfcf9b1b532568e682b1b792b09df1276d` | 2026-09-12 | 建立Observability现行模块设计，覆盖端口、OTel、日志、持久Trace、Agent安全包装、全量信号目录、失败隔离、安全边界、测试映射和真实缺口 |

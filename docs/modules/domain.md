@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 4
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1072,7 +1072,7 @@ MCP、Hook和Trusted Action测试广泛复用Domain类型，但不应被计作Do
 | Protocol无取消/Deadline | 长执行和用户撤销没有统一领域事实 | 重大变更设计新的取消状态、提交边界和恢复语义 |
 | Lease无fencing代次 | 主要依赖Owner+时间+状态事务 | 评估跨进程长任务的单调fencing token |
 | Domain错误无公开/私有消息 | `str(error)`可能进入Journal/API | 0.9.4统一清洗和敏感泄漏回归 |
-| Schema无生成diff门禁 | checked-in合同可能漂移 | DOC-1.6/发布CI运行generate并要求仓库无差异 |
+| Schema生成门禁未覆盖Windows | Windows发布前可能遗漏平台相关生成差异 | 0.9.6关闭Evals POSIX依赖后纳入Windows |
 
 ### 33.1 兼容性约束
 
@@ -1095,7 +1095,7 @@ MCP、Hook和Trusted Action测试广泛复用Domain类型，但不应被计作Do
 | Principal可伪造 | 高（公网） | 当前仅本地/受信Gateway边界 | 0.9.4/1.x |
 | 缺取消与Deadline | 中高 | Tool/Process局部实现取消；Lease恢复 | 0.9.1/0.9.3重大设计 |
 | Registry运行时可变 | 中 | 当前Bootstrap约定 | 0.9.1产品装配 |
-| 无Schema diff门禁 | 中 | 手动`make spec` | DOC-1.6/0.9.4 |
+| Windows无Schema diff门禁 | 中 | Linux/macOS自动逐字节校验；Windows显式Skip | 0.9.6 |
 | Trace格式宽松 | 低到中 | OTel适配器解析失败关闭到新Trace | 0.9.3 |
 
 这些风险不改变当前v1事实，但在对应切片关闭前不得把Action Contract宣称为完整公网多租户或任意不可信插件边界。
@@ -1175,6 +1175,7 @@ Action Contract和生命周期文档是稳定外部契约摘要；Action Plane�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Domain运行合同不变 |
 | 3 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，纠正其为LangChain Tool工厂及Tool Call身份、状态投影和真实LangGraph证据边界 |
 | 2 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` | 2026-09-12 | 接入API现行设计，明确敏感键守卫在首次Journal持久化之后 |
 | 1 | `69bd39ac3b0445ca96813c32bbdaf855e9861756` | 2026-09-12 | 建立Domain包现行事实源，覆盖Action v1模型、状态、Tool Registry、Policy/Approval、Outcome、错误、端口、持久/租约边界、源码测试映射和契约加固缺口 |

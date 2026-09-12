@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: ffa56de02b372df981d234fafd1feffbb0b870fb
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1149,7 +1149,7 @@ PostgreSQL Job使用数据库容器执行这两个用例。此证据证明主流
 | P0 | Lease创建/续期不验证Worker和新Deadline | 立即过期、倒退Lease或无主Lease可被直接调用者写入 | 0.9.3恢复可靠性 |
 | P0 | Storage读取无Tenant谓词，PostgreSQL无RLS | 外层授权缺陷会放大为跨租户读取 | 0.9.4安全审查 |
 | P0 | 请求/结果/Event完整明文持久化且无Retention | 用户代码和业务数据长期暴露 | 0.9.4/0.9.5 |
-| P1 | 双后端没有参数化合同套件且已有错误差异 | 替换后端可能改变API行为 | DOC-1.6/0.9.2 |
+| P1 | 双后端没有参数化合同套件且已有错误差异 | 替换后端可能改变API行为 | 0.9.2 Eval与合同基线 |
 | P1 | `ping`只测连接，SQLite可对空Schema返回True | Readiness误报后才在业务流失败 | 0.9.3 |
 | P1 | Event无不可篡改证明，Payload无版本 | 审计完整性和兼容升级不足 | 0.9.4 |
 | P1 | Recover无Batch Limit，SQLite持全局写锁 | 大积压恢复阻塞在线写入 | 0.9.3/Soak |
@@ -1219,4 +1219,5 @@ PostgreSQL Job使用数据库容器执行这两个用例。此证据证明主流
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正双后端合同测试缺口的路线图归属；运行合同不变 |
 | 1 | `ffa56de02b372df981d234fafd1feffbb0b870fb` | 2026-09-12 | 建立Storage现行模块设计，覆盖双后端Schema、Migration、事务、队列、Lease、恢复、一致性、安全和测试边界 |

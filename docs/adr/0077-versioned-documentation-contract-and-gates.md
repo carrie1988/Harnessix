@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -20,13 +20,13 @@ supersedes: []
 
 ## 状态
 
-接受；DOC-1.6按本决策实施。自动门禁完成前，本ADR只确定治理合同，不表示CI已经具备对应能力。
+接受并已实施。DOC-1.6已按本决策交付版本化策略、检查器、反例测试、本地质量门和三平台CI。
 
 ## 背景
 
 DOC-1.0～DOC-1.5已建立文档分类、模板、30份包级现行模块设计、Action Plane子系统设计、运维资料、
-验证证据、里程碑历史、76份既有ADR和27份冻结源码研究。仓库内189份Markdown已经具备标准YAML元数据，
-但目前仍依赖人工脚本验证元数据、链接、锚点、Mermaid、源码映射和敏感信息。
+验证证据、里程碑历史、76份既有ADR和27份冻结源码研究。DOC-1.5结束时189份Markdown已经具备标准YAML元数据，
+但当时仍依赖人工脚本验证元数据、链接、锚点、Mermaid、源码映射和敏感信息；本ADR及详细设计加入后的实施集合为191份。
 
 只靠评审清单无法防止后续功能提交重新产生以下问题：文档状态自由文本化、源码链接漂移、模块实现变化而设计不更新、
 重大合同变化没有变更设计、Mermaid在GitHub无法渲染，以及验证资料意外记录个人路径或凭据。
@@ -97,9 +97,13 @@ CI使用只读仓库权限。Node/Mermaid只存在于文档任务，不写入Pyt
 
 ## 验证方式
 
-实施切片必须覆盖：当前189份资料全库通过；非法YAML、重复键、状态/版本/提交错误；链接和锚点缺失；
+实施切片必须覆盖：当前191份资料全库通过；非法YAML、重复键、状态/版本/提交错误；链接和锚点缺失；
 模块与测试映射缺失；个人路径、疑似凭据和过程性措辞；Markdown/Frontmatter预算；单包同步、跨包重大变更、
 合同文件重大变更；Mermaid围栏、声明与外部渲染器失败。Linux、macOS和Windows至少执行离线门禁，Linux CI执行图表渲染。
+
+## 实施结果
+
+实现Revision `991b6f267671f5a86870672e9c97a5fbb3991a39`完成191份Markdown、4535个链接、483个Mermaid块和30个生产源码包的全库检查；22项文档检查器场景与3项合同生成场景覆盖正反边界。本地`make check`结果为`3351 passed, 13 skipped`，固定Mermaid CLI真实渲染通过。[CI 34709603781](https://github.com/carrie1988/Harnessix/actions/runs/34709603781)全部Job成功，其中Linux、macOS和Windows均通过离线文档门禁，Linux通过真实Mermaid渲染。公共合同生成在Linux/macOS通过；Windows因Evals现有POSIX `fcntl`依赖显式Skip，并保留为0.9.6平台债务。
 
 ## 关联资料
 

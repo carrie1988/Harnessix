@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: d655c60f54f94823f671d18080573e1b56c433d9
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1000,7 +1000,7 @@ uv run pytest -o addopts='' -q \
 | P0 | Secret值与声明版本没有不可分割的Provider revision证明 | 环境值静默变化可复用旧Plan/Approval | 0.9.4安全加固 |
 | P0 | Process/Container Target无Consumer保留名策略 | Secret可影响Loader或Container控制面 | 0.9.4安全加固 |
 | P0 | Redaction可行性晚于Scope解析，部分消费者在效果后才构造Guard | 输出失败时外部效果状态可能不明确 | 0.9.4与MCP详细设计 |
-| P0 | Guard不是所有持久/模型/日志Sink的统一强制门 | 新调用路径可能遗漏Canary扫描 | DOC-1.6/0.9.4 |
+| P0 | Guard不是所有持久/模型/日志Sink的统一强制门 | 新调用路径可能遗漏Canary扫描 | 0.9.4安全加固 |
 | P1 | 无系统Keychain/Vault和最小主体授权 | 长期环境变量不满足正式凭据治理 | 0.9.4～0.9.5 |
 | P1 | 无轮换、撤销、TTL和活动Client失效 | 长会话可能持续使用旧凭据 | 0.9.3～0.9.6 |
 | P1 | 非字符串JSON Key和部分序列化异常未统一清洗 | 受信Python误用可泄漏内部异常类型 | 0.9.4公开错误清洗 |
@@ -1089,4 +1089,5 @@ Material清零描述成所有副本的安全擦除。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正统一Secret Guard缺口的路线图归属；运行合同不变 |
 | 1 | `d655c60f54f94823f671d18080573e1b56c433d9` | 2026-09-12 | 建立Secrets现行模块设计，覆盖引用合同、环境Provider、作用域、流式脱敏、结构化Guard、跨模块消费路径及生产缺口 |

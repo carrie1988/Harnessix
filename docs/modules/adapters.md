@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1077,7 +1077,7 @@ Fake Client不调用HTTP、Service、Journal、Policy、Executor或Worker。测�
 | P2 | 异常原样传播且未分类为Framework Tool错误 | 图可能整体失败，或外层盲目重试 | 类型化Outcome |
 | P2 | 无Adapter Trace/Metric | 难以关联Framework Run、Tool Call与Action | Observability桥接 |
 | P2 | 公共符号不从包导出且缺专用缺依赖诊断 | 可发现性和安装体验弱 | 0.9.5发行 |
-| P2 | 只有一个直接测试 | 生产回归覆盖不足 | DOC-1.6与0.9质量门禁 |
+| P2 | 只有一个直接测试 | 生产回归覆盖不足 | 0.9.2 Eval与Transcript基线 |
 
 ## 43. 生产演进约束
 
@@ -1209,4 +1209,5 @@ Interrupt、远程认证或真实副作用链已经验收。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正Adapter测试缺口的路线图归属；运行合同不变 |
 | 1 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 建立Adapter现行模块设计，覆盖LangChain StructuredTool映射、Client端口、上下文与请求字段、状态投影、Tool Call身份、幂等恢复、身份与输出安全、依赖兼容、源码测试证据和生产差距 |

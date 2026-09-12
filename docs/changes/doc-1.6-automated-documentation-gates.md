@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
+status: historical
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
 related_tests:
   - tests/governance/test_documentation_policy.py
+  - tests/governance/test_generated_specs.py
 supersedes: []
 ---
 
@@ -310,3 +311,11 @@ CI新增独立文档任务，固定Node 22、`actions/setup-node` v4.4.0提交�
 完成标准：策略、检查器、测试、Makefile和CI全部落地；当前仓库静态检查零Finding；所有反例测试通过；
 变化图表实际渲染通过；全量`make spec`无漂移、`make check`通过；文档中心、路线图和治理待办同步后，
 DOC-1.6才可标记完成。
+
+## 16. 验收证据与结论
+
+实现Revision固定为`991b6f267671f5a86870672e9c97a5fbb3991a39`。静态门禁验证191份Markdown、4535个链接、483个Mermaid块和30个生产源码包均满足策略v1；22项文档检查器场景与3项合同生成场景覆盖YAML、生命周期、链接、锚点、结构、追踪、安全、Git差异、渲染器故障和Schema漂移。
+
+本地`make check`通过Ruff、Readability、文档、合同、256个源码文件的Mypy和全量Pytest，结果为`3351 passed, 13 skipped`；固定Mermaid CLI 11.6.0使用系统Google Chrome完成真实渲染。[CI 34709603781](https://github.com/carrie1988/Harnessix/actions/runs/34709603781)的Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和独立文档Job全部成功。Windows文档门禁及治理测试已通过；公共合同生成因Evals当前依赖POSIX `fcntl`在Windows显式Skip，不能扩张为Windows合同生成已验证，该债务由0.9.6继续关闭。
+
+DOC-1.6全部完成标准已经满足，本文件冻结为历史变更设计；现行规则由文档工程规范、策略v1、检查器和测试共同维护。

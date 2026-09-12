@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1489,7 +1489,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 | P1 | Diff无Artifact/模型视图接线 | 审批与模型上下文可能过大/泄漏 | Product UI与Artifact |
 | P1 | Expected Remote OID无正式观察合同 | Push旧值来源不可追溯 | Remote Read Action |
 | P2 | Implementation Digest覆盖不完整 | 依赖变化未必使旧Binding失效 | 能力版本规范 |
-| P2 | Schema自动漂移只覆盖Push | 本地合同文件可能陈旧 | DOC-1.6门禁 |
+| P2 | Schema漂移门禁在Windows尚未执行 | Windows发布前可能遗漏平台相关生成差异 | 0.9.6关闭Evals POSIX依赖后纳入Windows |
 | P2 | Request ID允许纯空白 | 诊断和幂等质量不足 | 输入合同收紧 |
 | P2 | 错误异常/终态返回风格不统一 | 协议映射复杂 | 统一Delivery Result |
 
@@ -1585,4 +1585,5 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows已知平台限制；Delivery运行合同不变 |
 | 1 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` | 2026-09-12 | 建立Delivery现行模块设计，覆盖Workspace Transaction、私有Blob、POSIX发布与恢复、Rollback、Diff、Git Worktree/Checkpoint/Commit、Push统一Route和生产缺口 |

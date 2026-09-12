@@ -1,14 +1,16 @@
 ---
 doc_type: documentation-standard
 status: current
-version: 2
-code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
+version: 3
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
   - documentation
-related_adrs: []
-related_tests: []
+related_adrs:
+  - docs/adr/0077-versioned-documentation-contract-and-gates.md
+related_tests:
+  - tests/governance/test_documentation_policy.py
 supersedes: []
 ---
 
@@ -306,8 +308,8 @@ DOC-1.0之前的133份文档作为存量基线保留，不因缺少新元数据�
 2. DOC-1.2用Agent Runtime和Action Plane形成黄金样例；
 3. DOC-1.3、DOC-1.4按运行主链逐包补齐现行模块设计；
 4. DOC-1.5拆分聚合文档并标记历史资料；
-5. DOC-1.6将全部已迁移Markdown和新增重大变更纳入严格门禁。
+5. DOC-1.6已将全部迁移后Markdown和新增重大变更纳入严格门禁。
 
 不得通过机械增加空章节、无意义图或重复源码来提高合规数字。迁移完成度以他人能否据文档定位、实现、测试和维护为准。
 
-DOC-1.5结束时，仓库内189份Markdown均已完成标准YAML元数据和生命周期迁移；该数字包含DOC-1期间新增的现行模块设计、运维资料、历史索引以及ADR/研究索引，不改写DOC-1.0的133份起始基线。后续新增或修改文档直接适用本规范，不再使用“存量暂不阻断”豁免。
+DOC-1.5结束时，仓库内189份Markdown均已完成标准YAML元数据和生命周期迁移；该数字包含DOC-1期间新增的现行模块设计、运维资料、历史索引以及ADR/研究索引，不改写DOC-1.0的133份起始基线。加入ADR 0077和DOC-1.6详细设计后，当前191份Markdown全部执行严格门禁；后续新增或修改文档直接适用本规范，不再使用“存量暂不阻断”豁免。

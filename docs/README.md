@@ -1,14 +1,17 @@
 ---
 doc_type: governance-index
 status: current
-version: 36
-code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
+version: 37
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
   - documentation
-related_adrs: []
-related_tests: []
+related_adrs:
+  - docs/adr/0077-versioned-documentation-contract-and-gates.md
+related_tests:
+  - tests/governance/test_documentation_policy.py
+  - tests/governance/test_generated_specs.py
 supersedes: []
 ---
 
@@ -181,8 +184,9 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [文档—源码—测试追踪矩阵](governance/documentation-traceability.md)；
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
+- [文档策略v1](../governance/documentation-policy-v1.json)与[文档检查器](../scripts/documentation_check.py)：自动门禁合同和实现入口。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。DOC-1.6已完成[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)，正在实施策略、检查器、反例测试和CI门禁。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
 
 ## 8. 文档状态说明
 
@@ -195,4 +199,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内Markdown已经完成DOC-1.5状态迁移。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内191份Markdown已经完成状态迁移并受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

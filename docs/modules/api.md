@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 3480ee8d15c0de0f2f182a3dceafd37cb59a32d7
+version: 2
+code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
 modules:
@@ -1032,7 +1032,7 @@ Body预算和慢请求当前均无直接测试。
 | P1 | Readiness只Ping，Queued不检查Worker | 流量进入不可消费或Schema不完整实例 | 0.9.3 |
 | P1 | 未知异常与422不使用稳定错误合同 | SDK退化为`http_error`，正文可能含输入/异常细节 | API错误v2 |
 | P1 | TraceContext只做长度校验且无HTTP测试 | 无效父上下文进入自定义Observer，跨进程关联不可证明 | Observability/API合同 |
-| P1 | OpenAPI响应声明与真实404/503不完整 | 生成SDK和集成方错误处理遗漏 | DOC-1.6/API修复 |
+| P1 | OpenAPI响应声明与真实404/503不完整 | 生成SDK和集成方错误处理遗漏 | 0.9.1客户端契约/0.9.4 API加固 |
 | P1 | Docker默认0.0.0.0且无内建Auth/TLS | 误发布端口即可暴露全部Action能力 | 部署/发行门禁 |
 | P2 | GET非终态200而POST非终态202未形成显式终态字段/Helper | 客户端只看HTTP状态会误判 | SDK/API文档与Helper |
 | P2 | 注入Service仍先读取环境且由App关闭 | 自定义宿主存在意外构造失败/所有权冲突 | App Factory v2 |
