@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 18
-code_revision: a6c2082c40bd159ea00e16ada877bb2dc03088bc
+version: 19
+code_revision: 8323f0fb5d0dcb95316f76b3e0fcb2140501642d
 owners:
   - core
 modules:
@@ -234,7 +234,7 @@ flowchart LR
 | Action Storage | 已实现/显式装配 | SQLite/PostgreSQL Snapshot/Event、Migration、持久队列、Lease、Claim与过期恢复；详见[模块设计](modules/storage.md) | [sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [Action Service测试](../tests/integration/test_action_service.py)、[Worker测试](../tests/integration/test_worker.py)、[PostgreSQL测试](../tests/integration/test_postgres_journal.py) |
 | Sandbox | 已实现/显式装配 | 严格合同、能力探测、固定Container执行、DNS快照、受管Egress、Process监督和Profile Store；当前默认产品未装配，详见[模块设计](modules/sandbox.md) | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py)、[process_runtime.py](../src/harnessix/sandbox/process_runtime.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
 | Secrets | 默认模型Provider使用/其他路径显式装配 | 环境Source、名称/版本/Target绑定、短生命周期Material、流式脱敏和结构化Guard；不提供Vault、轮换或全局DLP，详见[模块设计](modules/secrets.md) | [provider.py](../src/harnessix/secrets/provider.py)、[redaction.py](../src/harnessix/secrets/redaction.py)、[guard.py](../src/harnessix/secrets/guard.py) | [secrets测试](../tests/secrets/)、[Provider凭据测试](../tests/product_config/test_provider_credentials.py)、[Process输出测试](../tests/processes/test_supervisor.py) |
-| Workspace | 已实现/显式装配 | 路径身份、Snapshot、Lease与Windows路径规则 | [paths.py](../src/harnessix/workspace/paths.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
+| Workspace | 已实现/显式装配 | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验与SQLite Fencing Lease；详见[模块设计](modules/workspace.md) | [contracts.py](../src/harnessix/workspace/contracts.py)、[snapshot.py](../src/harnessix/workspace/snapshot.py)、[windows.py](../src/harnessix/workspace/windows.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 已实现/显式装配 | 文件事务、Diff、Git Commit和受控Push | [planner.py](../src/harnessix/delivery/planner.py)、[store.py](../src/harnessix/delivery/store.py) | [delivery测试](../tests/delivery/) |
 | Trusted Action | 已实现/显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口和UNKNOWN对账；默认产品尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
 | MCP/Skill/Hook | 已实现/显式装配 | 外部工具目录、Skill快照与声明式Hook | [mcp](../src/harnessix/mcp/)、[skills](../src/harnessix/skills/)、[hooks](../src/harnessix/hooks/) | [MCP](../tests/mcp/)、[Skill](../tests/skills/)、[Hook](../tests/hooks/)测试 |
@@ -826,6 +826,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 只读工具如何约束路径和结果 | [Coding Tool Runtime模块设计](modules/tools.md)、[tools/runtime.py](../src/harnessix/tools/runtime.py) | [tools测试](../tests/tools/) |
 | Patch如何冻结计划、批准、落盘和恢复 | [Managed Patch Runtime模块设计](modules/patches.md)、[patches/managed.py](../src/harnessix/patches/managed.py) | [patches测试](../tests/patches/) |
 | Execution Plan如何绑定Workspace、环境、Secret、Sandbox、Policy、能力与批准 | [Execution Plan模块设计](modules/execution.md)、[execution/contracts.py](../src/harnessix/execution/contracts.py) | [execution测试](../tests/execution/) |
+| Workspace如何规范路径、捕获选择资源事实、校验漂移并提供跨进程Fencing | [Workspace模块设计](modules/workspace.md)、[workspace/snapshot.py](../src/harnessix/workspace/snapshot.py)、[workspace/leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/)、[delivery测试](../tests/delivery/) |
 | Sandbox如何探测能力、冻结网络、物化Container并证明清理 | [Sandbox模块设计](modules/sandbox.md)、[sandbox/contracts.py](../src/harnessix/sandbox/contracts.py)、[sandbox/container.py](../src/harnessix/sandbox/container.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
 | Secret如何从引用解析、注入并在输出边界阻断泄漏 | [Secrets模块设计](modules/secrets.md)、[secrets/provider.py](../src/harnessix/secrets/provider.py)、[secrets/redaction.py](../src/harnessix/secrets/redaction.py) | [secrets测试](../tests/secrets/)、[Process输出测试](../tests/processes/test_supervisor.py)、[MCP输出测试](../tests/mcp/test_runtime_actions.py) |
 | 默认Action Policy如何拒绝、审批和允许 | [Policy模块设计](modules/policy.md)、[policy/default.py](../src/harnessix/policy/default.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_action_executor.py](../tests/processes/test_action_executor.py) |
@@ -851,7 +852,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 14个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
+| 13个包的独立现行模块设计尚未建立；Action Plane已有跨包子系统设计 | 源码理解仍部分依赖聚合资料 | DOC-1.3～DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -919,6 +920,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 19 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 接入Workspace现行模块设计，明确逻辑路径、选择资源Snapshot、POSIX/Windows对象观察、Secure Reader、执行前校验、Fencing Lease与跨模块消费边界 |
 | 18 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 接入Trusted Actions现行模块设计，明确宿主Binding、资源/Policy、Execution/Approval、Route Hash链、取消/恢复和扩展/Git旁路边界 |
 | 17 | `d655c60f54f94823f671d18080573e1b56c433d9` | 2026-09-12 | 接入Secrets现行模块设计，明确引用合同、环境Provider、明文作用域、输出防泄漏、跨模块装配及轮换/DLP缺口 |
 | 16 | `49c798b2688fb87d68130179a616c5457836f3bd` | 2026-09-12 | 接入Sandbox现行模块设计，明确能力证据、Container物化、网络/Egress、Process监督、Profile持久化和默认装配缺口 |

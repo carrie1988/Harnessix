@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 17
-code_revision: a6c2082c40bd159ea00e16ada877bb2dc03088bc
+version: 18
+code_revision: 8323f0fb5d0dcb95316f76b3e0fcb2140501642d
 owners:
   - core
 modules:
@@ -42,6 +42,7 @@ supersedes: []
 | Sandbox隔离与网络 | [Sandbox模块设计](modules/sandbox.md) | `sandbox/contracts → capabilities/network → container/process_runtime`，区分合同库、显式装配与默认产品能力 |
 | Secret解析与输出防泄漏 | [Secrets模块设计](modules/secrets.md) | `domain/product_config/execution → secrets/provider → process/sandbox/models → redaction/guard`，区分引用、明文作用域和发布边界 |
 | 统一Trusted Action路由 | [Trusted Actions模块设计](modules/trusted-actions.md) | `binding/invocation → resource/policy → execution/approval → audit/executor/reconcile`，再追踪MCP、Skill、Hook与Git Push适配 |
+| Workspace路径、快照与租约 | [Workspace模块设计](modules/workspace.md) | `paths/contracts → POSIX/Windows observation → snapshot/verify → lease`，再追踪Execution、Trusted Action、Delivery、Sandbox和Skill消费者 |
 | Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)、[Storage模块设计](modules/storage.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域、决策、效果和持久化边界，再读跨包主链 |
 | MCP、Skill与Hook | [0.8产品运行时设计](m08-product-runtime-and-extensions.md) | `mcp/skills/hooks → trusted_actions` |
 | Eval与发布证据 | [测试与Eval规范](testing-and-evals.md) | `evals → validation` |
@@ -80,6 +81,7 @@ supersedes: []
 | Sandbox | [Sandbox模块设计](modules/sandbox.md) | 严格合同、能力探测、固定Container argv、DNS快照、受管出口、Process监督、Profile持久化及真实平台证据边界 |
 | Secrets | [Secrets模块设计](modules/secrets.md) | 三套引用合同、环境Provider、短生命周期作用域、常见编码Pattern、流式脱敏、结构化Guard和跨模块装配缺口 |
 | Trusted Actions | [Trusted Actions模块设计](modules/trusted-actions.md) | 宿主Binding、规范资源、默认风险Policy、Execution/Approval、Route Hash链、UNKNOWN/Reconcile和扩展能力端口 |
+| Workspace | [Workspace模块设计](modules/workspace.md) | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验和SQLite Fencing Lease |
 | Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
@@ -150,7 +152,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成15/19个主链模块，Wave C已完成Domain、Policy、Executors、Storage、Sandbox、Secrets和Trusted Actions；下一步进入Wave D并迁移Workspace，其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3当前完成16/19个主链模块，Wave C已全部完成，Wave D已完成Workspace并将继续迁移Delivery、Evals和Observability；其余独立模块设计按DOC-1.3和DOC-1.4继续迁移。
 
 ## 8. 文档状态说明
 
