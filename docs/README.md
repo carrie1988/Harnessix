@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 35
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 36
+code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
 owners:
   - core
 modules:
@@ -153,7 +153,7 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录76份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录77份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
 - [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等27份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
@@ -182,7 +182,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [整改待办](governance/documentation-remediation-backlog.md)；
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份ADR和27份源码研究的职责、状态及入口治理。仓库内189份Markdown均已有标准YAML元数据；下一阶段DOC-1.6将这些约束转为自动阻断门禁。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。DOC-1.6已完成[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)，正在实施策略、检查器、反例测试和CI门禁。
 
 ## 8. 文档状态说明
 

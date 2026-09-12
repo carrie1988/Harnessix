@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 36
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 37
+code_revision: f2f9bc6459008f0f50b4b6817d9ef632a4e03c11
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
 | DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 已完成（10/10） |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 已完成：189份Markdown均有标准元数据，聚合、历史、ADR、研究和证据已分层 |
-| DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
+| DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 进行中：ADR 0077和详细设计已完成，实施待验收 |
 
 DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一切片维护现行模块设计，不能重新累积“代码先行、资料追补”的债务。
 
@@ -252,6 +252,9 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 上述迁移已全部完成：当前事实源使用`current`，里程碑与0.6专题设计使用`historical`并链接现行模块；0.5和0.8采用“简明索引 + 冻结完整历史”结构；76份ADR保留原决策正文并增加标准状态、创建提交和测试责任域；27份源码研究固定参考版本、访问日期和采用结果；验证证据已固定环境、预算及脱敏边界。仓库内189份Markdown均具备标准YAML头。
 
 ## 10. DOC-1.6：自动化门禁
+
+实施依据：[ADR 0077](../adr/0077-versioned-documentation-contract-and-gates.md)与
+[DOC-1.6自动文档门禁详细设计](../changes/doc-1.6-automated-documentation-gates.md)。
 
 ### 10.1 首批阻断规则
 

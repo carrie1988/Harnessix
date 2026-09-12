@@ -452,7 +452,7 @@ DOC-1是0.9阶段的横向阻断工作流，不重开0.9.0，也不替代0.9.1�
 - [x] **DOC-1.3 Coding Agent主链**：19/19已完成；Wave A～D已补齐Session、Context、Artifact、Model、Tool、Patch、Execution、Process、Action安全链、Workspace、Delivery、[Evals](modules/evals.md)与[Observability](modules/observability.md)现行设计，并登记实现与历史资料之间的真实差异；
 - [x] **DOC-1.4 产品运行时与扩展**：10/10已完成；[Protocol模块设计](modules/protocol.md)、[App Server模块设计](modules/app-server.md)、[SDK模块设计](modules/sdk.md)、[Product Config模块设计](modules/product-config.md)、[API模块设计](modules/api.md)、[Adapter模块设计](modules/adapters.md)、[MCP模块设计](modules/mcp.md)、[Skill模块设计](modules/skills.md)、[Hook模块设计](modules/hooks.md)与[Smoke模块设计](modules/smoke.md)均已建立；
 - [x] **DOC-1.5 聚合与历史治理**：已将当前[测试与Eval规范](testing-and-evals.md)、[里程碑测试历史](testing-and-evals-milestone-history.md)、[真实验证证据](validation/README.md)、[六类运维资料](deployment.md)和里程碑增量设计分层；0.5及0.8采用历史索引与冻结完整原文结构，其余里程碑及0.6专题设计统一标记为`historical`并链接现行模块；[ADR索引](adr/README.md)覆盖76份接受决策，[源码研究索引](research/README.md)覆盖27份冻结研究，仓库内189份Markdown均已完成标准状态迁移；
-- [ ] **DOC-1.6 自动化门禁**：渐进启用元数据、章节、链接、Mermaid、源码/测试映射和文档陈旧性检查。
+- [ ] **DOC-1.6 自动化门禁**：正在实施；[ADR 0077](adr/0077-versioned-documentation-contract-and-gates.md)与[详细设计](changes/doc-1.6-automated-documentation-gates.md)已经完成，后续按设计交付版本化策略、全库静态检查、源码差异同步、反例测试和Linux变化图渲染。
 
 DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都必须按照
 [详细设计模板](governance/templates/detailed-design-template.md)或
