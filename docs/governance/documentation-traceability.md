@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 19
-code_revision: 8323f0fb5d0dcb95316f76b3e0fcb2140501642d
+version: 20
+code_revision: ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7
 owners:
   - core
 modules:
@@ -65,7 +65,7 @@ flowchart LR
 | Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本和计费现行设计已完成；Smoke独立模块入口待DOC-1.4 |
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计已完成；Eval继续独立迁移 |
 | Context/Session | [Context模块设计](../modules/context.md)、[Session模块设计](../modules/session.md)、[Artifact模块设计](../modules/artifacts.md) | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计及相关ADR | 三个包的现行设计已完成；里程碑和专题历史资料待DOC-1.5分层 |
-| 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions与Workspace现行设计已完成；Delivery等仍缺独立设计 |
+| 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[Delivery模块设计](../modules/delivery.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions、Workspace与Delivery现行设计已完成 |
 | 产品运行时/扩展 | [0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill研究、ADR 0070～0075 | Protocol、App Server、SDK及扩展需逐包固化 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md) | 文档门禁留待DOC-1.6 |
 | 测试与Eval | [测试与Eval规范](../testing-and-evals.md) | Eval系列研究与ADR | 1,670行聚合资料需按规范、任务集、执行和证据拆分 |
@@ -83,7 +83,7 @@ flowchart LR
 | [app_server](../../src/harnessix/app_server/) | Headless App Server生命周期 | [0.8](../m08-product-runtime-and-extensions.md) | [app_server](../../tests/app_server/) | `docs/modules/app-server.md` | 缺失 |
 | [artifacts](../../src/harnessix/artifacts/) | 大对象、Diff与模型历史Artifact | [Artifact模块设计](../modules/artifacts.md) | [artifacts](../../tests/artifacts/) | [docs/modules/artifacts.md](../modules/artifacts.md) | 完整，DOC-1.3 Wave A |
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整，DOC-1.3 Wave A |
-| [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [0.7](../m07-trusted-execution-and-delivery.md) | [delivery](../../tests/delivery/) | `docs/modules/delivery.md` | 缺失 |
+| [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md) | [delivery](../../tests/delivery/)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整，DOC-1.3 Wave D |
 | [domain](../../src/harnessix/domain/) | Action领域契约 | [Domain模块设计](../modules/domain.md) | [unit](../../tests/unit/)、[Action Service](../../tests/integration/test_action_service.py) | [docs/modules/domain.md](../modules/domain.md) | 完整，DOC-1.3 Wave C |
 | [evals](../../src/harnessix/evals/) | Coding Eval合同、执行与分级 | [测试与Eval](../testing-and-evals.md)、[0.5](../m05-coding-tools.md) | [evals](../../tests/evals/) | `docs/modules/evals.md` | 缺失 |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
@@ -138,6 +138,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成17/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+当前已完成18/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
 子系统设计；子系统覆盖不替代DOC-1.3要求的独立包设计。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。
