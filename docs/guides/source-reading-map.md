@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 9
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 10
+code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ modules:
   - mcp
   - skills
   - hooks
+  - smoke
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0006-thread-turn-item-event-model.md
@@ -32,6 +33,8 @@ related_tests:
   - tests/agent/test_crash_recovery.py
   - tests/hooks/test_runtime.py
   - tests/hooks/test_schemas.py
+  - tests/smoke/test_runner.py
+  - tests/smoke/test_cli.py
   - tests/integration/test_action_service.py
 supersedes: []
 ---
@@ -55,7 +58,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应提交`ac803fca1dcfc8edf76c41c8c0e474b9533282f1`；
+- 本文对应提交`8f91bbebaf08edf0c68488a8604cddcbe2e6e225`；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -506,7 +509,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 | [secrets](../../src/harnessix/secrets/) | `provider.py`、`redaction.py` | Secret如何不进入持久层 | [secrets](../../tests/secrets/) |
 | [session](../../src/harnessix/session/) | `ports.py`、`sqlite.py` | Event如何CAS提交和重放 | [agent](../../tests/agent/) |
 | [skills](../../src/harnessix/skills/) | `contracts.py`、`runtime.py` | Skill如何快照和渐进加载 | [skills](../../tests/skills/) |
-| [smoke](../../src/harnessix/smoke/) | `contracts.py`、`runner.py` | 真实Provider验证如何受预算控制 | [smoke](../../tests/smoke/) |
+| [smoke](../../src/harnessix/smoke/) | [Smoke模块设计](../modules/smoke.md)；`contracts.py → runner.py → cli.py` | 真实Provider验证如何显式启用、受预算约束、重开Replay并生成白名单报告 | [smoke](../../tests/smoke/) |
 | [storage](../../src/harnessix/storage/) | `sqlite_journal.py` | Action Journal如何保证租约和幂等 | [integration](../../tests/integration/) |
 | [tools](../../src/harnessix/tools/) | `contracts.py`、`runtime.py` | 只读工具如何受Workspace约束 | [tools](../../tests/tools/) |
 | [trusted_actions](../../src/harnessix/trusted_actions/) | `contracts.py`、`router.py` | 扩展如何被统一计划和审批 | [trusted_actions](../../tests/trusted_actions/) |
@@ -551,6 +554,10 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 
 先定位Patch/Delivery计划和Snapshot，再找提交边界与Ledger记录。如果外部效果不确定，不把普通异常当作“未执行”，而应观察Digest、Snapshot、Action/Transaction身份后对账。测试落点是[Patch崩溃](../../tests/patches/test_bridge_crash.py)、[Batch崩溃](../../tests/patches/test_batch_execution_crash.py)和[Delivery Store](../../tests/delivery/test_store.py)。
 
+### 14.6 “Smoke通过能否证明费用、安全和全部Provider兼容”
+
+从[Smoke模块设计](../modules/smoke.md)的Config、网络门禁和Report不变量开始，再追踪`provider_config → ModelProvider → AgentRuntime → SQLite → replay`。`passed`只证明当前固定场景的内容、次数、完整Usage和Replay；当前Config会跟随符号链接、允许任意合法HTTPS端点，且没有金额硬预算或认证矩阵。测试落点是[Smoke Runner](../../tests/smoke/test_runner.py)、[Smoke CLI](../../tests/smoke/test_cli.py)和[真实SIGINT](../../tests/smoke/test_interrupt.py)。
+
 ## 15. 建议的源码学习练习
 
 1. **最小协议追踪**：从`turn/start`请求开始，记录每个函数、数据库表和Event；用`test_server_sdk.py`验证；
@@ -578,7 +585,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 ## 17. 后续文档入口
 
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
-- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)与[Hook模块设计](../modules/hooks.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包、生命周期Hook和关闭的现行事实；
+- [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)与[Smoke模块设计](../modules/smoke.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包、生命周期Hook、受控Provider验证和关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
 - [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；

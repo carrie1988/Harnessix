@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 31
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 32
+code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 | DOC-1.1 | 文档导航、系统架构和源码阅读总入口 | 已完成 | [文档中心](../README.md)、[总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) |
 | DOC-1.2 | Agent Runtime与Action Plane黄金样例 | 已完成 | [Agent Runtime](../modules/agent.md)、[Action Plane](../subsystems/action-plane.md) |
 | DOC-1.3 | Coding Agent主链模块设计 | 已完成（19/19） | Wave A～D全部完成；最后一批为[Workspace](../modules/workspace.md)、[Delivery](../modules/delivery.md)、[Evals](../modules/evals.md)和[Observability](../modules/observability.md) |
-| DOC-1.4 | 产品运行时与扩展模块设计 | 进行中（9/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、[API](../modules/api.md)、[Adapter](../modules/adapters.md)、[MCP](../modules/mcp.md)、[Skill](../modules/skills.md)与[Hook](../modules/hooks.md)已完成；下一项为Smoke |
+| DOC-1.4 | 产品运行时与扩展模块设计 | 已完成（10/10） | [Protocol](../modules/protocol.md)、[App Server](../modules/app-server.md)、[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、[API](../modules/api.md)、[Adapter](../modules/adapters.md)、[MCP](../modules/mcp.md)、[Skill](../modules/skills.md)、[Hook](../modules/hooks.md)与[Smoke](../modules/smoke.md) |
 | DOC-1.5 | Eval、历史设计和验证资料治理 | 未开始 | 现行资料与历史证据分层、聚合文档拆分 |
 | DOC-1.6 | 自动化门禁 | 未开始 | 元数据、链接、结构、源码映射和陈旧性检查 |
 
@@ -75,6 +75,7 @@ DOC-1是0.9.1开始前的横向阻断工作流，不改变0.9.0已完成的代�
 - [MCP模块设计](../modules/mcp.md)：受管Target、不可变目录、Schema/结果预算、SQLite状态、调用前漂移、Trusted Action、UNKNOWN/Reconcile和只读stdio Server的当前事实；
 - [Skill模块设计](../modules/skills.md)：本地来源、Frontmatter、目录摘要、渐进加载、安全Reader、无正文访问账本、Action Gateway、Secret与提示注入边界的当前事实；
 - [Hook模块设计](../modules/hooks.md)：Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Timeout/取消和Interrupted恢复的当前事实；
+- [Smoke模块设计](../modules/smoke.md)：显式门禁、严格配置、固定场景、请求/Token边界、审批重开、Replay、白名单报告、凭据/端点风险和Provider证据范围的当前事实；
 - [详细设计模板](templates/detailed-design-template.md)；
 - [模块设计模板](templates/module-design-template.md)；
 - [重大变更设计模板](templates/change-design-template.md)；

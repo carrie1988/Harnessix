@@ -1,6 +1,6 @@
 # 受控模型 Smoke 使用说明
 
-本入口验证 **SDK → Adapter → Kernel → SQLite → Replay** 的固定闭环，不是交互式 Coding Agent，不读取业务仓库或执行 Shell。当前离线验证通过；百炼北京的文本、内存工具、审批重开均已实测通过；0.4.3c 的真实计价适用性仍未收口，其他模型/平台不能据此推定兼容，见 [真实验证记录](validation/bailian-2026-09-03.md)。
+本入口验证 **SDK → Adapter → Kernel → SQLite → Replay** 的固定闭环，不是交互式Coding Agent，不读取业务仓库或执行Shell。当前离线验证通过；百炼北京的文本、内存工具、审批重开均已实测通过；0.4.3c的真实计价适用性仍未收口，其他模型/平台不能据此推定兼容，见[真实验证记录](validation/bailian-2026-09-03.md)。配置合同、三场景时序、预算、恢复、风险和源码测试映射以[Smoke模块设计](modules/smoke.md)为当前事实源。
 
 ## 1. 默认不开启网络
 
@@ -13,7 +13,7 @@ uv run harnessix model-smoke --config .harnessix/smoke.json
 
 ## 2. 配置与执行
 
-先按平台官方文档核对模型 ID、地域/端点、流式工具能力、输出 Token 参数及价格，再在被 Git 忽略的 `.harnessix/smoke.json` 创建配置。以下 URL/模型均为占位，不能原样用于真实调用：
+先按平台官方文档核对模型ID、地域/端点、流式工具能力、输出Token参数及价格，再在被Git忽略、仅当前用户可访问且不位于不可信Workspace的目录中创建配置。当前CLI配置读取会跟随符号链接且不校验Owner、Mode或Hardlink，`--allow-network`也不会限制HTTPS主机；执行前必须核对配置是预期普通文件，并通过外部Egress策略限制目标端点。以下URL/模型均为占位，不能原样用于真实调用：
 
 ~~~json
 {
@@ -64,7 +64,7 @@ uv run --extra openai harnessix model-smoke --config .harnessix/smoke.json --all
 
 ## 4. 数据与资源边界
 
-每次使用独立 0700 临时目录和 0600 Session，正常退出后清理，不默认导出会话。进程强制终止可能留下私有临时数据，清理不等于安全擦除。
+在POSIX离线回归中，每次使用独立0700临时目录和0600 Session，正常退出后清理，不默认导出会话。Windows ACL尚无同等真实验收；进程强制终止可能留下私有临时数据，清理不等于安全擦除。
 
 CLI 在执行时禁用标准 Python logging，结束后恢复；库入口不更改宿主日志策略。报告白名单不等于通用 Session DLP：若不可信服务在语义内容中反射敏感字符串，私有 Session 可能保留该内容；不要将任意 Session/Trace 当作脱敏报告发布。
 

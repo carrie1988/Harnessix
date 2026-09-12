@@ -1,6 +1,6 @@
 # Harnessix Code 威胁模型 v2
 
-- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP、Skill与Hook现行设计
+- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP、Skill、Hook与Smoke现行设计
 - 更新日期：2026-09-12
 - 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
 
@@ -464,6 +464,17 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - 0.8：Agent Protocol、MCP、Skills、Hooks及Provider产品配置威胁边界已完成；
 - 0.9：引入自动化红队 Eval、依赖扫描和发布 SBOM；
 - 1.0：完成安装更新、安全响应和数据删除策略。
+
+## DOC-1.4 Smoke现行风险补充
+
+- **门禁与目标身份分离**：`allow_network is True`及`--allow-network`只决定是否创建Provider，不限制目标主机、端口、DNS结果、私网地址、地域或组织。语法合法的任意HTTPS端点均可通过当前Config v1。
+- **配置对象替换**：Smoke配置读取使用`O_RDONLY | O_NONBLOCK`和打开后的普通文件检查，但没有`O_NOFOLLOW`、Owner、Mode、Hardlink或父目录验证；符号链接和`0644`文件当前均可被接受。
+- **凭据路由**：配置可同时指定`base_url`和任意格式合法的`api_key_env`。若不可信主体替换配置，可把所选环境变量中的值发送到非预期端点。配置不保存Key不能单独关闭该风险。
+- **当前控制**：默认不联网、严格JSON、16 KiB文件上限、禁自定义Header、禁代理环境、禁重定向、HTTPS、零重试、固定场景、传输预算和白名单Report降低误用及泄露面，但不能替代安全配置打开、端点Allowlist、Secret Scope与受管Egress。
+- **消费与证据**：Token和尝试上限不是人民币金额硬预算；正常退出删除临时Session，Report也不自动持久化或签名。失败Usage不完整时必须保持消费未知并通过供应商账单核对。
+- **合同歧义**：Report v1只对`reason=passed`实施完整跨字段校验，非通过Reason可构造自相矛盾字段组合。消费方必须先按Reason拒绝所有非通过报告，后续合同应使用判别联合或完整矩阵校验。
+
+完整设计、受控探针、风险优先级和关闭条件见[Smoke模块设计](modules/smoke.md)。
 
 ## 0.5.2 实施补充（2026-09-03）
 

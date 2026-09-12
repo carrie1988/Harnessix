@@ -1247,5 +1247,5 @@ Fallback链必须由Profile显式列出。只有零响应暴露的`transport`、
 
 - 远端MCP Streamable HTTP、OAuth及任意Header进入0.9.4；
 - 公网Git HTTPS/SSH认证、known-hosts及凭据Helper进入0.9.5；
-- 真实Provider发布能力、价格适用性和受控Smoke证据进入0.9.6；
+- 真实Provider发布能力、价格适用性和受控Smoke证据进入0.9.6；执行前必须按[Smoke模块设计](modules/smoke.md)处理当前配置安全打开、端点—凭据绑定、金额预算和证据持久化缺口；
 - 配置热加载、系统Keychain/KMS Adapter、完整TUI和三平台安装器不属于0.8.6。

@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 31
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 32
+code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ DOC-1整体完成必须同时满足：
 | DOC-1.1 | P0 | DOC-1.0 | 文档总入口、系统架构、主链源码阅读路线 | 已完成 |
 | DOC-1.2 | P0 | DOC-1.1 | Agent Runtime与Action Plane两份黄金样例 | 已完成 |
 | DOC-1.3 | P0 | DOC-1.2 | Coding Agent核心运行链19个模块设计 | 已完成（19/19） |
-| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 进行中（9/10） |
+| DOC-1.4 | P1 | DOC-1.2 | 产品运行时与扩展10个模块设计 | 已完成（10/10） |
 | DOC-1.5 | P1 | DOC-1.3、DOC-1.4 | 聚合文档拆分、状态迁移、历史/证据治理 | 未开始 |
 | DOC-1.6 | P0 | DOC-1.2最小规则；完整启用依赖DOC-1.5 | 自动文档门禁与防陈旧策略 | 未开始 |
 
@@ -209,7 +209,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 
 ## 8. DOC-1.4：产品运行时与扩展
 
-状态：**进行中（9/10）**。Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook现行模块设计已完成，下一项为Smoke。
+状态：**已完成（10/10）**。Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke现行模块设计均已完成。
 
 | Wave | 源码包 | 目标文档 | 重点 |
 |---|---|---|---|
@@ -222,7 +222,7 @@ DOC-1.1和DOC-1.2已经完成。0.9.1及后续重大产品实现必须在同一�
 | 扩展协议 | `mcp` | [MCP模块设计](../modules/mcp.md) | 已完成：受管Target、目录/Schema/结果合同、SQLite状态、调用前漂移、Trusted Action、UNKNOWN/Reconcile、只读stdio Server和生产差距 |
 | 扩展 | `skills` | [Skill模块设计](../modules/skills.md) | 已完成：本地来源、Frontmatter、目录摘要、冲突消歧、渐进加载、安全Reader、访问账本、Action Gateway、Secret/提示注入和生产差距 |
 | 扩展 | `hooks` | [Hook模块设计](../modules/hooks.md) | 已完成：声明式Definition、捕获时摘要授权、精确Matcher、确定Run、双账本、Action执行Timeout、取消、Interrupted恢复和生产差距 |
-| 验证 | `smoke` | `docs/modules/smoke.md` | 请求预算、白名单、脱敏和停止条件 |
+| 验证 | `smoke` | [Smoke模块设计](../modules/smoke.md) | 已完成：显式网络门禁、严格Config/Report、固定三场景、请求/Token边界、审批重开、Replay、白名单诊断、配置与端点安全缺口及Provider证据范围 |
 
 验收标准与DOC-1.3一致，并额外覆盖Protocol兼容、扩展供应链、客户端断连和Secret零暴露。
 

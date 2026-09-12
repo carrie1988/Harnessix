@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 31
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 32
+code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
 owners:
   - core
 modules:
@@ -59,14 +59,14 @@ flowchart LR
 | 关注点 | 当前事实入口 | 决策/研究 | 当前缺口 |
 |---|---|---|---|
 | 产品边界 | [文档中心](../README.md)、[产品章程](../product-charter.md)、[路线图](../roadmap.md) | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md)、[ADR 0062](../adr/0062-local-first-v1-commercial-boundary.md) | 能力证据仍需在DOC-1.5按发布声明统一索引 |
-| 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口、黄金样例和DOC-1.3的19个模块已完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook，剩余Smoke一个包 |
+| 总体架构 | [总体架构](../architecture.md)、[源码阅读地图](../guides/source-reading-map.md) | [研究计划](../research-plan.md)及各主题研究 | 系统级入口、黄金样例、DOC-1.3的19个模块与DOC-1.4的10个模块均已完成；30/30个生产源码包具有独立现行设计 |
 | Action Plane | [Domain模块设计](../modules/domain.md)、[Policy模块设计](../modules/policy.md)、[Executors模块设计](../modules/executors.md)、[Storage模块设计](../modules/storage.md)、[Action Plane子系统设计](../subsystems/action-plane.md)、[Action Contract](../action-contract.md)、[Action生命周期](../action-lifecycle.md) | [ADR 0001](../adr/0001-python-first-runtime.md)～[ADR 0004](../adr/0004-durable-trace-context.md) | Domain、Policy、Executors、Storage独立设计和子系统主链已完成 |
 | Agent Runtime | [Agent Runtime模块设计](../modules/agent.md) | [Agent Loop研究](../research/agent-loop.md)、[ADR 0006](../adr/0006-thread-turn-item-event-model.md)～[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块设计已完成 |
-| Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本和计费现行设计已完成；Smoke独立模块入口待DOC-1.4 |
+| Model Runtime | [Model Runtime模块设计](../modules/models.md)、[Smoke模块设计](../modules/smoke.md)、[Smoke指南](../model-smoke.md) | [ADR 0014](../adr/0014-openai-compatible-provider.md)～[ADR 0022](../adr/0022-bailian-price-validation.md) | Provider、账本、计费和受控Smoke现行设计均已完成；计价与认证矩阵仍由0.9.6收口 |
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计已完成；Eval继续独立迁移 |
 | Context/Session | [Context模块设计](../modules/context.md)、[Session模块设计](../modules/session.md)、[Artifact模块设计](../modules/artifacts.md) | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计及相关ADR | 三个包的现行设计已完成；里程碑和专题历史资料待DOC-1.5分层 |
 | 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[Delivery模块设计](../modules/delivery.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions、Workspace与Delivery现行设计已完成 |
-| 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075 | Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook现行设计已完成；Smoke仍需逐包固化 |
+| 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 10个产品运行时与扩展包均已有现行设计；聚合与历史资料由DOC-1.5分层 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md) | 文档门禁留待DOC-1.6 |
 | 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md) | Eval系列研究与ADR | Evals现行模块事实已完成；1,670行聚合历史仍需在DOC-1.5按规范、任务集、执行和证据分层 |
@@ -103,7 +103,7 @@ flowchart LR
 | [secrets](../../src/harnessix/secrets/) | Secret引用、解析、守卫和脱敏 | [Secrets模块设计](../modules/secrets.md)、[威胁模型](../threat-model.md) | [secrets](../../tests/secrets/)、[Process](../../tests/processes/test_supervisor.py)、[Product Config](../../tests/product_config/test_provider_credentials.py) | [docs/modules/secrets.md](../modules/secrets.md) | 完整，DOC-1.3 Wave C |
 | [session](../../src/harnessix/session/) | Session Store、迁移与恢复 | [Session模块设计](../modules/session.md) | [agent](../../tests/agent/)、[contracts](../../tests/contracts/) | [docs/modules/session.md](../modules/session.md) | 完整，DOC-1.3 Wave A |
 | [skills](../../src/harnessix/skills/) | Skill快照、发现和渐进加载 | [Skill模块设计](../modules/skills.md)、[0.8](../m08-product-runtime-and-extensions.md)、[Skill/Hook研究](../research/skills-hooks-and-supply-chain.md) | [skills](../../tests/skills/) | [docs/modules/skills.md](../modules/skills.md) | 完整，DOC-1.4扩展 |
-| [smoke](../../src/harnessix/smoke/) | 受控真实Provider Smoke | [0.4](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [smoke](../../tests/smoke/) | `docs/modules/smoke.md` | 缺失 |
+| [smoke](../../src/harnessix/smoke/) | 受控真实Provider Smoke | [Smoke模块设计](../modules/smoke.md)、[0.4](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [smoke](../../tests/smoke/) | [docs/modules/smoke.md](../modules/smoke.md) | 完整，DOC-1.4验证 |
 | [storage](../../src/harnessix/storage/) | SQLite/PostgreSQL Action Journal | [Storage模块设计](../modules/storage.md)、[Action Plane子系统设计](../subsystems/action-plane.md) | [Action Service](../../tests/integration/test_action_service.py)、[Worker](../../tests/integration/test_worker.py)、[PostgreSQL](../../tests/integration/test_postgres_journal.py) | [docs/modules/storage.md](../modules/storage.md) | 完整，DOC-1.3 Wave C |
 | [tools](../../src/harnessix/tools/) | 只读、Git和受控工具运行 | [Coding Tool Runtime模块设计](../modules/tools.md) | [tools](../../tests/tools/) | [docs/modules/tools.md](../modules/tools.md) | 完整，DOC-1.3 Wave B |
 | [trusted_actions](../../src/harnessix/trusted_actions/) | 高风险Coding Action统一路由 | [Trusted Actions模块设计](../modules/trusted-actions.md)、[0.7](../m07-trusted-execution-and-delivery.md) | [trusted_actions](../../tests/trusted_actions/)、[Git Push](../../tests/delivery/test_git_push.py) | [docs/modules/trusted-actions.md](../modules/trusted-actions.md) | 完整，DOC-1.3 Wave C |
@@ -139,6 +139,6 @@ flowchart LR
 7. 相对链接与文档结构检查通过；
 8. 未实现能力和已知限制明确，不把路线图目标写成当前事实。
 
-当前已完成29/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
-子系统设计；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook，下一项为Smoke。整改阶段和责任分组见
+当前已完成30/30个独立包级现行模块设计，并完成1份覆盖Action Plane多个包和根级模块的现行
+子系统设计；DOC-1.3与DOC-1.4的全部包级迁移已经完成。整改阶段和责任分组见
 [文档整改待办](documentation-remediation-backlog.md)。

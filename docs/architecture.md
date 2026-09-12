@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 31
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 32
+code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ modules:
   - agent
   - session
   - models
+  - smoke
   - context
   - tools
   - execution
@@ -43,6 +44,8 @@ related_tests:
   - tests/integration/test_postgres_journal.py
   - tests/hooks/test_runtime.py
   - tests/hooks/test_schemas.py
+  - tests/smoke/test_runner.py
+  - tests/smoke/test_cli.py
 supersedes: []
 ---
 
@@ -52,7 +55,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`097f23b24c03df0d9d5b540c5b65ddc12029e9f1`。状态标签含义如下：
+本文基于提交`8f91bbebaf08edf0c68488a8604cddcbe2e6e225`。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -249,7 +252,8 @@ flowchart LR
 | MCP | 已实现/显式装配 | 受管stdio/受信进程内Target、不可变目录、调用前Schema漂移、Trusted Action与只读stdio Server；默认产品未装配，详见[模块设计](modules/mcp.md) | [runtime.py](../src/harnessix/mcp/runtime.py)、[actions.py](../src/harnessix/mcp/actions.py)、[store.py](../src/harnessix/mcp/store.py) | [MCP](../tests/mcp/)与[真实Container](../tests/integration/test_container_sandbox.py)测试 |
 | Skill | 已实现/显式装配 | 本地来源、不可变目录、冲突消歧、渐进加载、安全Reader、无正文访问事件及只读Trusted Action；默认产品未装配，详见[模块设计](modules/skills.md) | [runtime.py](../src/harnessix/skills/runtime.py)、[store.py](../src/harnessix/skills/store.py)、[actions.py](../src/harnessix/skills/actions.py) | [Skill测试](../tests/skills/) |
 | Hook | 已实现/显式装配 | Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Action执行Timeout、取消和Interrupted恢复；默认产品未装配且授权/对账仍有缺口，详见[模块设计](modules/hooks.md) | [runtime.py](../src/harnessix/hooks/runtime.py)、[contracts.py](../src/harnessix/hooks/contracts.py)、[store.py](../src/harnessix/hooks/store.py) | [Hook测试](../tests/hooks/) |
-| Eval/Smoke | 已实现/显式运行 | 固定任务、物化、正式Agent运行、确定性分级、Campaign和受控真实Provider验证；详见[Evals模块设计](modules/evals.md) | [evals](../src/harnessix/evals/)、[smoke](../src/harnessix/smoke/) | [evals](../tests/evals/)、[smoke](../tests/smoke/)测试 |
+| Eval | 已实现/显式运行 | 固定历史任务、私有物化、正式Agent运行、确定性分级、Campaign与成本聚合；详见[Evals模块设计](modules/evals.md) | [evals](../src/harnessix/evals/) | [evals](../tests/evals/)测试 |
+| Smoke | 已实现/显式运行 | 显式门禁、固定文本/工具/审批场景、临时Session重开、Replay与白名单报告；配置安全打开、端点—凭据绑定、金额预算和持久证据尚未完成，详见[Smoke模块设计](modules/smoke.md) | [smoke](../src/harnessix/smoke/) | [smoke](../tests/smoke/)测试 |
 | 可观测性 | Action默认可配置/Agent默认未装配 | 内部端口、No-op/OTel适配、W3C持久传播、结构化日志及Agent安全包装；故障隔离和隐私保证因调用链不同，详见[模块设计](modules/observability.md) | [core.py](../src/harnessix/observability/core.py)、[opentelemetry.py](../src/harnessix/observability/opentelemetry.py)、[agent/telemetry.py](../src/harnessix/agent/telemetry.py) | [观测单元测试](../tests/unit/test_observability_core.py)、[跨进程测试](../tests/integration/test_observability_flow.py)、[Agent遥测测试](../tests/agent/test_telemetry.py) |
 
 ### 7.1 重点类与生命周期
@@ -846,6 +850,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 默认Action Policy如何拒绝、审批和允许 | [Policy模块设计](modules/policy.md)、[policy/default.py](../src/harnessix/policy/default.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_action_executor.py](../tests/processes/test_action_executor.py) |
 | 状态如何恢复 | [session/sqlite.py](../src/harnessix/session/sqlite.py)、`AgentRuntime._recover` | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_session_upgrade.py](../tests/agent/test_session_upgrade.py) |
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
+| 真实Provider固定场景如何限制请求、恢复并生成白名单报告 | [Smoke模块设计](modules/smoke.md)、[smoke/contracts.py](../src/harnessix/smoke/contracts.py)、[smoke/runner.py](../src/harnessix/smoke/runner.py) | [test_runner.py](../tests/smoke/test_runner.py)、[test_cli.py](../tests/smoke/test_cli.py)、[test_interrupt.py](../tests/smoke/test_interrupt.py) |
 | 高风险能力如何收口 | [Trusted Actions模块设计](modules/trusted-actions.md)、[trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py)、[test_git_push.py](../tests/delivery/test_git_push.py) |
 | Action如何执行和对账 | [Executors模块设计](modules/executors.md)、[runtime.py](../src/harnessix/runtime.py)、[worker.py](../src/harnessix/worker.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py) |
 | Action如何持久化、Claim和过期恢复 | [Storage模块设计](modules/storage.md)、[sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [test_worker.py](../tests/integration/test_worker.py)、[test_postgres_journal.py](../tests/integration/test_postgres_journal.py) |
@@ -866,7 +871,6 @@ if UNKNOWN: require reconcile instead of blind replay
 | 三平台发行、升级、恢复和Beta未闭环 | 安装运维仍非最终产品 | 0.9.5 |
 | Provider计价和真实Smoke证据仍有限 | 成本与兼容结论不可泛化 | 0.9.6 |
 | 顶层包存在一个强连通分量 | 维护边界仍需治理 | 0.9后续结构治理 |
-| 1个产品运行时与扩展包的独立现行模块设计尚未建立；Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill与Hook设计已完成 | Smoke源码理解仍部分依赖聚合资料 | DOC-1.4 |
 
 ## 21. 变更维护规则
 
@@ -934,6 +938,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 32 | `8f91bbebaf08edf0c68488a8604cddcbe2e6e225` | 2026-09-12 | 接入Smoke现行模块设计，明确网络门禁、Config/Report v1、固定场景、请求与Token预算、审批重开、Replay、凭据/端点边界、白名单诊断和真实Provider证据范围；DOC-1.4完成30/30包覆盖 |
 | 31 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 接入Hook现行模块设计，明确Definition/Grant、Registry、Matcher、确定Run、Hook/Action双账本、Timeout/取消、Interrupted恢复、来源错配和默认产品未装配边界 |
 | 30 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 接入Skill现行模块设计，明确本地来源、目录与Manifest绑定、渐进加载、安全Reader、访问账本、Action Gateway、Secret发布窗口、提示注入和默认产品未装配边界 |
 | 29 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 接入MCP现行模块设计，明确受管Target、目录与Schema、调用前漂移、Trusted Action、UNKNOWN、只读Server、关闭风险和默认产品未装配边界 |

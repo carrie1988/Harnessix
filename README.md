@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.3文档治理；DOC-1.4产品运行时与扩展模块设计已完成9/10，下一项为Smoke。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围、DOC-1.0～DOC-1.4文档治理；30/30个生产源码包均已建立独立现行模块设计，下一阶段为DOC-1.5聚合、历史和验证证据治理。0.9.0最终实现提交`8a0686c`已由[CI 34629640717](https://github.com/carrie1988/Harnessix/actions/runs/34629640717)完成代码治理门禁、Python 3.12/3.13、macOS、Windows、PostgreSQL和固定镜像Container六矩阵验收。公共协议现可通过多路复用stdio JSONL驱动，以Snapshot/Replay恢复持久事实，并通过Pull-Live获得有界实时文本；持久提问、审批、取消、运行中Steering、Scoped Diff读取、薄CLI、MCP、Skills、Hooks、Provider/Profile选择、Secret引用、配置迁移和零暴露安全Fallback均已进入正式合同。完整TUI、Windows产品Tool Runtime、三平台发行物、供应链和Dogfooding属于0.9后续切片，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -589,7 +589,7 @@ uv run harnessix model-smoke --help
 uv run pytest tests/smoke
 ~~~
 
-操作说明、退出码、凭据引用和隐私边界见 [Smoke 使用说明](docs/model-smoke.md)。Token 检查不等于金额硬上限；响应计费元数据已在 0.4.3b2 接入，但不自动识别平台计价规则。
+操作说明、退出码、凭据引用和隐私边界见[Smoke使用说明](docs/model-smoke.md)，配置、场景、预算、恢复、安全与源码测试映射见[Smoke模块设计](docs/modules/smoke.md)。Token检查不等于金额硬上限；响应计费元数据已在0.4.3b2接入，但不自动识别平台计价规则。
 
 ## 当前已实现：0.4.3b2 响应计费元数据
 

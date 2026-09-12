@@ -235,7 +235,7 @@ assert restored == report
 
 ## 13. 0.4.3b1：受控模型 Smoke 与白名单诊断
 
-实现 [ADR 0019](adr/0019-controlled-model-smoke.md)；操作说明见 [Smoke 使用说明](model-smoke.md)。新增 `smoke.contracts`、`smoke.runner`、`smoke.cli`，只在原有 CLI 中增加提前分流，不改变 Kernel、SDK Adapter、迁移、依赖或历史 Schema。
+实现[ADR 0019](adr/0019-controlled-model-smoke.md)；当前配置、场景、预算、恢复、安全边界及源码测试映射以[Smoke模块设计](modules/smoke.md)为事实源，操作命令见[Smoke使用说明](model-smoke.md)。新增`smoke.contracts`、`smoke.runner`、`smoke.cli`，只在原有CLI中增加提前分流，不改变Kernel、SDK Adapter、迁移、依赖或历史Schema。
 
 - `harnessix model-smoke --config ...` 默认禁用；CLI 不读配置文件，库不创建工厂。显式启用后只发送固定文本/内存工具请求；凭据仅使用环境引用。
 - 三场景均经过真实 Kernel、私有 SQLite、关闭/重开与 Replay；approval 只自动批准内存夹具，并验证审批前执行数为 0。不是进程崩溃恢复测试或 Coding Eval。
