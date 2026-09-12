@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
+version: 7
+code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ modules:
   - app_server
   - product_config
   - processes
+  - session
   - tools
   - trusted_actions
   - delivery
@@ -37,6 +38,7 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/processes/test_supervision_contracts.py
   - tests/processes/test_windows_supervisor.py
+  - tests/agent/test_storage_failures.py
   - tests/tools
 supersedes: []
 ---
@@ -778,10 +780,13 @@ Renderer异常、Close软限和Windows对象替换。
 
 1. Textual Worker结算时，Controller快照可能已由Watcher渲染，相同Revision不能代表View本地
    `_intent_in_flight`门闩未变化；结算路径必须显式重算Composer可用性；
-2. 异步测试不能把托管Windows Runner的一秒CPU/调度完成当作产品时限，等待者取消测试改为消费Controller更新，
-   无头View测试使用十秒总Deadline而非固定一百次短轮询；
+2. 异步测试不能把托管Windows Runner的一秒CPU/调度完成当作产品时限，等待者取消测试改为消费Controller更新；
+   无头View测试使用十秒总Deadline，并分别验证一次真实按键绑定和再次直接Action派发，避免把Pilot控制键注入差异
+   误判为产品Controller故障；
 3. Windows Owner回执的同卷原子替换可能与读取产生WinError 5/32共享冲突。`read_owner_receipt`仅对这两个错误执行
-   `0/2/10/50 ms`四次有界读取；缺失、非法长度、JSON/Schema/HMAC错误及其他I/O错误不重试。
+   `0/2/10/50/100/250/500 ms`七次有界读取；缺失、非法长度、JSON/Schema/HMAC错误及其他I/O错误不重试；
+4. Session `runtime_owner`的`storage_errors`只能包围锁文件I/O，不能跨越`yield`捕获整个应用生命周期；否则产品测试
+   Deadline产生的`TimeoutError`会被错误归因为`storage_unavailable`，掩盖真正失败位置。
 
 第三项不改变Receipt Schema、HMAC或损坏失败语义，只收敛Windows明确可恢复的文件共享冲突。对应实现位于
 [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py)，合同回归位于

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
+version: 6
+code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
 owners:
   - product
 modules:
@@ -629,7 +629,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | SDK协商前置门禁 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) `_send`与[`request.py`](../../src/harnessix/sdk/request.py) `require_replay_limit` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_sdk_rejects_unadvertised_method_before_transport_write`、`test_sdk_enforces_negotiated_replay_and_message_limits_before_write` |
 | Actor、Intent和有界关闭 | [`controller.py`](../../src/harnessix/product_ui/controller.py) `ProductController.start`、`dispatch`、`close` | [`test_controller.py`](../../tests/product_ui/test_controller.py)四个串行、取消和超时场景 |
 | Transcript与会话标签 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)持久顺序、Gap和终态覆盖 |
-| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、会话切换、Composer门闩结算、Resize和Context退出 |
+| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、键绑定与Action会话切换、Composer门闩结算、Resize和Context退出 |
 | CLI组合根与可选依赖 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `code_main`、`_server_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)顶层分派、精确argv和脱敏失败 |
 | 跨进程产品恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`controller.py`](../../src/harnessix/product_ui/controller.py) | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)关闭并重开真实JSONL子进程与Store |
 
@@ -707,6 +707,8 @@ Screen/Presenter而不是继续扩张这两个类。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 明确跨平台无头测试分别验证真实键绑定与再次Action派发，隔离Pilot控制键注入差异 |
+| 5 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 修复Controller快照Revision未变化时Composer本地门闩无法重新启用的View生命周期缺口 |
 | 4 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d` | 2026-09-13 | 同步0.9.1b本地实现：单Actor Controller、框架中立渲染、Textual基础产品壳、`harnessix code`组合根和真实stdio冷恢复；等待实现提交及三平台CI |
 | 3 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` | 2026-09-13 | 记录0.9.1a在Linux Python 3.12/3.13、macOS和Windows矩阵全部通过，正式关闭客户端内核子切片 |
 | 2 | `085649da9aa27192c9f67ee35ee5471fdd33ce6d` | 2026-09-13 | 将Product UI专项测试纳入Linux全量、macOS Coding Tools和Windows Trusted Execution三平台CI矩阵 |

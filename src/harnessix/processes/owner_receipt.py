@@ -23,7 +23,7 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.tools.contracts import Revision
 
 MAX_OWNER_RECEIPT_BYTES = 64 * 1024
-_WINDOWS_RECEIPT_READ_DELAYS = (0.0, 0.002, 0.01, 0.05)
+_WINDOWS_RECEIPT_READ_DELAYS = (0.0, 0.002, 0.01, 0.05, 0.1, 0.25, 0.5)
 
 
 class ProcessOwnerReceipt(SupervisionContract):
@@ -196,7 +196,13 @@ def read_owner_receipt(
             final_attempt = index == len(_WINDOWS_RECEIPT_READ_DELAYS) - 1
             if _is_windows_sharing_error(error) and not final_attempt:
                 continue
-            raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
+            failure = KernelError("process_owner_receipt_invalid", "Process owner回执损坏")
+            failure.add_note(
+                "receipt_io="
+                f"{getattr(error, 'winerror', None) or 0}:{error.errno or 0}:"
+                f"attempt={index + 1}"
+            )
+            raise failure from None
         except (ValidationError, ValueError, TypeError):
             raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
     assert receipt is not None

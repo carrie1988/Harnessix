@@ -289,7 +289,7 @@ def test_process_owner_receipt_retries_windows_sharing_conflict(
         return read_once(candidate)
 
     monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", sharing_then_read)
-    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)
 
     assert (
         read_owner_receipt(
@@ -316,7 +316,7 @@ def test_process_owner_receipt_bounds_persistent_windows_sharing_conflict(
         raise error
 
     monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", always_conflicted)
-    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)
 
     with pytest.raises(KernelError) as invalid:
         read_owner_receipt(
@@ -326,7 +326,7 @@ def test_process_owner_receipt_bounds_persistent_windows_sharing_conflict(
         )
 
     assert invalid.value.code == "process_owner_receipt_invalid"
-    assert calls == 4
+    assert calls == 7
 
 
 def test_process_owner_receipt_does_not_retry_invalid_content(
@@ -340,7 +340,7 @@ def test_process_owner_receipt_does_not_retry_invalid_content(
         raise ValueError("invalid JSON")
 
     monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", invalid_content)
-    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 4)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)
 
     with pytest.raises(KernelError) as invalid:
         read_owner_receipt(

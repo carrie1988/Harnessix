@@ -26,6 +26,30 @@ _APPLICATION_ID = 0x4858534B
 _WAL_TIMEOUT_SECONDS = 5.0
 
 
+def _open_runtime_owner_lock(path: Path) -> int:
+    with storage_errors():
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        descriptor = os.open(
+            str(path) + ".runtime.lock",
+            os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+    try:
+        acquire_exclusive_file_lock(descriptor)
+    except BlockingIOError as exc:
+        _close_runtime_owner_lock(descriptor)
+        raise KernelError("runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主") from exc
+    except OSError:
+        _close_runtime_owner_lock(descriptor)
+        raise KernelError("storage_unavailable", "Session 宿主锁获取失败") from None
+    return descriptor
+
+
+def _close_runtime_owner_lock(descriptor: int) -> None:
+    with storage_errors():
+        os.close(descriptor)
+
+
 class SQLiteSessionStore:
     """事件与聚合投影原子提交；多连接 CAS，单 Runtime 宿主。"""
 
@@ -141,30 +165,19 @@ class SQLiteSessionStore:
 
     @asynccontextmanager
     async def runtime_owner(self) -> AsyncIterator[None]:
-        """本地 macOS/Linux 宿主锁；进程退出由 OS 释放，禁止第二宿主接管活跃 Turn。"""
-        with storage_errors():
-            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            descriptor = os.open(
-                str(self.path) + ".runtime.lock",
-                os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0),
-                0o600,
-            )
+        """本地跨平台宿主锁；进程退出由OS释放，禁止第二宿主接管活跃Turn。"""
+
+        descriptor = _open_runtime_owner_lock(self.path)
+        try:
+            owner = object()
+            self._runtime_owner_token = owner
             try:
-                try:
-                    acquire_exclusive_file_lock(descriptor)
-                except BlockingIOError as exc:
-                    raise KernelError(
-                        "runtime_busy", "该 Session 数据库已有活跃 Runtime 宿主"
-                    ) from exc
-                owner = object()
-                self._runtime_owner_token = owner
-                try:
-                    yield
-                finally:
-                    if self._runtime_owner_token is owner:
-                        self._runtime_owner_token = None
+                yield
             finally:
-                os.close(descriptor)
+                if self._runtime_owner_token is owner:
+                    self._runtime_owner_token = None
+        finally:
+            _close_runtime_owner_lock(descriptor)
 
     async def _snapshot(self, database: aiosqlite.Connection, thread_id: UUID) -> Thread | None:
         cursor = await database.execute(

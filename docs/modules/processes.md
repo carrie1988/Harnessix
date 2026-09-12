@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: af62513079e3a524fd6e2efb58a6d8143248cc6c
+version: 3
+code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
 owners:
   - core
 modules:
@@ -811,7 +811,7 @@ sequenceDiagram
     O->>R: POSIX目录fsync
     S->>R: O_NOFOLLOW读取、64 KiB上限、严格JSON
     opt Windows WinError 5/32共享冲突
-        S->>R: 2/10/50 ms有界重读
+        S->>R: 最长0.912秒有界重读
     end
     S->>S: Process ID/Owner identity/HMAC compare_digest
     S->>F: 按Lease持久长度/摘要读取
@@ -819,9 +819,10 @@ sequenceDiagram
 
 输出必须先持久并同步，回执才能引用该前缀。Receipt最大64 KiB，临时文件使用`O_EXCL`和0600；POSIX读取增加
 `O_NOFOLLOW`。Windows上并发`os.replace`可能让读取端短暂收到WinError 5或32；读取只对这两个共享冲突按
-`0/2/10/50 ms`四次机会有界重读。文件缺失、长度/JSON/Schema/HMAC错误及其他I/O错误仍立即失败关闭，重读不会
-接受半文件或掩盖持久篡改。HMAC key是Lease中的Owner token，目的是识别本次Owner事实并拒绝随机/串线回执，
-不是抵御能读取状态数据库的同UID攻击者。
+`0/2/10/50/100/250/500 ms`七次机会有界重读，累计等待不超过0.912秒。文件缺失、长度/JSON/Schema/HMAC错误及
+其他I/O错误仍立即失败关闭，重读不会接受半文件或掩盖持久篡改。最终I/O失败只附加
+`winerror:errno:attempt`低基数诊断，不记录路径或原始异常正文。HMAC key是Lease中的Owner token，目的是识别本次
+Owner事实并拒绝随机/串线回执，不是抵御能读取状态数据库的同UID攻击者。
 
 ### 21.3 回执映射
 
@@ -1421,7 +1422,7 @@ function agent_observe(plan):
 13. CPU、内存、PID、网络和文件系统逃逸只在Container层验证，Host Supervisor不具备这些隔离；
 14. 0.5 Agent Bridge与0.7 Supervised链尚无统一产品级端到端接入测试；
 15. 托管Windows Runner在Owner并发更新回执期间重复出现`process_owner_receipt_invalid`；当前只对可识别的WinError
-    5/32共享冲突执行最长62 ms有界重读，其他错误仍失败关闭。高频发布/读取Soak、文件身份观测及安全软件组合证据
+    5/32共享冲突执行最长0.912秒有界重读，其他错误仍失败关闭。高频发布/读取Soak、文件身份观测及安全软件组合证据
     尚未补齐，不能把这一兼容分支扩大为无条件重试。
 
 ## 38. 当前限制与演进方向
@@ -1443,7 +1444,7 @@ function agent_observe(plan):
 | Supervised输出无通用Artifact发布 | 产品客户端难分页读取长后台输出 | 增加基于Lease摘要的只读Artifact/cursor，不复制文件正文 |
 | Schema生成未纳入独立CI diff门禁 | 新合同可能与checked-in Schema漂移 | 添加`generate_specs.py`无差异门禁和模块级合同测试 |
 | Windows部署身份边界有限 | 私有目录ACL和父Job兼容性依赖环境 | 加Windows ACL、企业Job、旧Build和恢复安装矩阵 |
-| Windows回执并发读写存在共享冲突 | WinError 5/32已由最长62 ms有界重读收敛，其他异常仍失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入；不得扩大可重试错误集合 |
+| Windows回执并发读写存在共享冲突 | WinError 5/32使用最长0.912秒有界重读，其他异常仍失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入；不得扩大可重试错误集合 |
 
 ## 39. 验收标准
 
@@ -1506,4 +1507,6 @@ function agent_observe(plan):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 将Windows共享冲突重读扩展为最长0.912秒，并为最终I/O失败增加不含路径与正文的低基数诊断 |
+| 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 根据三平台CI故障增加仅限WinError 5/32的回执有界重读合同及正反故障注入 |
 | 1 | `c7449164a2bbf08164472a36c11102dc408ebb15` | 2026-09-12 | 建立Process Runtime现行事实源，区分0.5兼容Saga与0.7跨平台Supervisor，覆盖合同、Lease/CAS、Owner协议、POSIX/Windows/PTY、输出脱敏、取消恢复、Container复用、测试和已知限制 |

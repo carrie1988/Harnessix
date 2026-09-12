@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 8321ef383f2cbb3ab76191a1cc3db361a52e92ef
+version: 2
+code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 |---|---|
 | 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移和WAL |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `8321ef383f2cbb3ab76191a1cc3db361a52e92ef` |
+| 代码版本 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
 | 兼容边界 | 新投影版本19；Agent Event可读1～19；数据库迁移1～22连续且校验和不可变 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
@@ -121,7 +121,7 @@ flowchart LR
 |---|---|---|---|---|---|
 | `SessionStore` | 定义初始化、Owner、读、追加、Fork、事件和重建端口 | 无实现状态 | Agent合同 | 暴露SQLite对象或具体锁 | Runtime生命周期内使用 |
 | `SQLiteSessionStore` | 实现事务、Schema、CAS、摘要、游标、重建 | SQLite文件和Owner Token | aiosqlite、Reducer、文件锁 | 决定业务状态或调用副作用 | 每操作独立连接；写事务串行 |
-| `storage_errors` | 归一化SQLite/OSError | 无 | SQLite错误码 | 上抛原始路径、SQL和驱动消息 | 每I/O边界Context Manager |
+| `storage_errors` | 归一化SQLite/OSError | 无 | SQLite错误码 | 包围应用回调或上抛原始路径、SQL和驱动消息 | 仅包围明确I/O边界 |
 | `agent_migrations` | 保存已应用版本和校验和 | 数据库Schema历史 | 内置SQL资源 | 修改已发布Migration | 初始化事务 |
 | `agent_events` | 保存不可变Agent Event | Thread事件序列 | Event v1～19 | 部分批次可见、跳号、跨Thread复用ID | PK约束和单事务 |
 | `agent_threads` | 保存Thread投影、摘要、版本 | 最新可重建Snapshot | Thread模型 | 被当成唯一事实源 | 与Event批次原子更新 |
@@ -134,7 +134,7 @@ Session不得导入Provider Adapter、Tool Runtime、Policy或API。Reducer可�
 | 方法 | 调用者 | 输入/输出 | 前置/后置 | 错误/重试 | 取消/超时 | 幂等/顺序 | 权限 |
 |---|---|---|---|---|---|---|---|
 | `initialize` | Runtime/测试 | 无 → 无 | 创建/识别Harnessix数据库，完成迁移、quick check和WAL | Busy仅WAL切换有界重试；Migration不重放 | 可取消；连接关闭并回滚 | 已应用同摘要Migration跳过 | 需状态目录写权限 |
-| `runtime_owner` | `AgentRuntime.__aenter__` | Context Manager | 先获得旁路排他锁，退出释放 | 已占用为`runtime_busy` | 进程退出由OS释放 | 单数据库单Owner | 不是用户权限，只是宿主所有权 |
+| `runtime_owner` | `AgentRuntime.__aenter__` | Context Manager | 先获得跨平台旁路排他锁，退出释放 | 已占用为`runtime_busy`；锁I/O失败归一化 | 进程退出由OS释放；应用异常原样传播 | 单数据库单Owner | 不是用户权限，只是宿主所有权 |
 | `get_thread` | Runtime/App Service | UUID → Thread | Snapshot存在、摘要/版本/Sequence均正确 | 不存在/损坏稳定失败；不自动修复 | SQLite busy受驱动边界 | 只读一致事务 | 可读完整高敏会话 |
 | `thread_ids` | Runtime恢复 | 无 → UUID列表 | 合并Event和Snapshot索引 | 无效ID视为Event损坏 | 同上 | 排序稳定；不丢孤立事实 | 仅宿主内部 |
 | `append` | Runtime | Thread、Draft批次、期望Sequence → Thread | 非空冻结批次；不能包含Fork创建 | 冲突应重新读取，不盲目复用新Event ID | 取消前后由事务判定；调用方按原Event ID查询/重试 | 整批幂等、原子、Sequence连续 | 不替代领域授权 |
@@ -334,7 +334,9 @@ Session恢复只重建领域投影，不自动重放Provider、Tool、Patch或Pr
 
 - 读操作使用独立连接和`BEGIN`，写操作使用`BEGIN IMMEDIATE`；SQLite负责跨连接串行写；
 - `busy_timeout=5000`应用于普通连接，WAL切换使用显式5秒Deadline；
-- Runtime Owner是进程级文件锁，进程异常退出由OS释放；对象Token只保护同实例退出清理；
+- Runtime Owner是进程级跨平台文件锁，进程异常退出由OS释放；对象Token只保护同实例退出清理；
+- `storage_errors`只包围锁目录、打开、获取和关闭I/O，不跨越`yield`包围Runtime应用生命周期；应用产生的
+  `OSError`或`TimeoutError`必须保持原类型，不能伪装成Session存储故障；
 - `append/fork/rebuild`在异常或`CancelledError`下由连接Context回滚；Commit已成功但响应丢失时靠Event ID幂等；
 - Store不实现无限内部重试，避免在调用方取消或超时后继续写入；
 - `PRAGMA synchronous=FULL`强化本地提交持久性，但不替代文件系统备份或灾难恢复；
@@ -358,8 +360,8 @@ Session数据库可包含源码、用户Prompt、模型文本、Tool参数/结�
 原始SQLite/OSError文本，防止路径、SQL或驱动细节进入Protocol。Event合同不应保存Secret值，但Store
 不重新扫描语义Payload；Secret零暴露必须由上游合同和执行边界共同保证。
 
-Runtime Owner锁文件使用`O_NOFOLLOW`（平台支持时）和排他锁，但当前注释及产品装配将其限定在
-macOS/Linux宿主；Windows默认完整产品链尚未完成，不得仅凭SQLite可用宣称Session产品级跨平台通过。
+Runtime Owner锁文件使用`O_NOFOLLOW`（平台支持时）和跨平台排他锁；Windows分支复用CRT文件锁并由CI验证互斥。
+这只证明Session宿主所有权边界可跨平台，不代表Windows默认完整Coding Tool产品链已经完成。
 
 ## 16. 可观测性与运维
 
@@ -426,7 +428,7 @@ rebuild(thread):
 | 存储端口 | [`ports.py`](../../src/harnessix/session/ports.py) | `SessionStore` | [`session.py`](../../tests/contracts/session.py) | `SessionStoreContract`全部方法 | 实现中立行为合同 |
 | SQLite初始化 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `initialize`、`_initialize` | [`test_store.py`](../../tests/agent/test_store.py) | `test_migration_idempotent_future_and_checksum`、`test_refuses_action_or_foreign_database` | Schema身份和迁移 |
 | WAL并发 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `_enable_wal` | [`test_wal_initialization.py`](../../tests/agent/test_wal_initialization.py) | `test_concurrent_first_initialization_converges`、`test_only_wal_transition_is_retried_not_migrations` | 有界且不重放迁移 |
-| Runtime Owner | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `runtime_owner` | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | `test_second_host_cannot_migrate_before_obtaining_owner_lock` | 先Owner后迁移 |
+| Runtime Owner | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `runtime_owner` | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、[`test_storage_failures.py`](../../tests/agent/test_storage_failures.py) | `test_second_host_cannot_migrate_before_obtaining_owner_lock`、`test_runtime_owner_does_not_remap_application_oserror` | 先Owner后迁移；应用异常不被I/O归一化器误捕获 |
 | 批次原子性 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `_freeze_batch`、`_append_in_transaction` | [`test_store.py`](../../tests/agent/test_store.py) | `test_event_projection_transaction_rolls_back`、`test_invalid_result_and_partial_batch_are_atomic` | Event/投影同事务 |
 | CAS与Event幂等 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `append` | [`session.py`](../../tests/contracts/session.py) | `test_identity_idempotency_and_cursor`、`test_cas_across_connections`、`test_batch_atomicity_and_cross_thread_event_id` | 并发与重复请求 |
 | Snapshot校验 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `_snapshot`、`_save` | [`test_store.py`](../../tests/agent/test_store.py) | `test_snapshot_tamper_detected_and_repaired` | 摘要检测和修复 |
@@ -468,7 +470,7 @@ rebuild(thread):
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
 | 只有SQLite Session实现 | 不支持远端协作、跨主机接管或云HA | 1.x按真实云需求评估 |
-| Windows Runtime Owner/默认产品未验收 | Windows不能据此宣称完整Coding Agent可用 | 0.9.1/0.9.5 |
+| Windows默认产品未验收 | Session宿主锁可跨平台不等于Windows Coding Tool链完整可用 | 0.9.1/0.9.5 |
 | 无字段级加密 | 本地文件泄漏会暴露会话和源码 | 0.9.4安全审查及OS存储策略 |
 | 无保留、删除、导出和Vacuum合同 | 长会话数据库持续增长，用户数据生命周期不完整 | 0.9.3/0.9.5/1.0门禁 |
 | 无自动备份和灾难恢复命令 | Event损坏只能依赖外部备份 | 0.9.5 |
@@ -482,4 +484,5 @@ rebuild(thread):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 收窄`storage_errors`作用域，明确Runtime Owner跨平台锁边界，并增加应用`OSError/TimeoutError`不得误归类的回归合同 |
 | 1 | `8321ef383f2cbb3ab76191a1cc3db361a52e92ef` | 2026-09-12 | DOC-1.3 Wave A Session模块设计初版 |

@@ -67,7 +67,7 @@ async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: P
                 assert not app.query_one("#composer", Input).disabled
 
                 first_thread = controller.state.selected_thread_id
-                await pilot.press("ctrl+n")
+                app.action_new_thread()
                 await _wait_until(lambda: len(controller.state.threads) == 2)
                 assert controller.state.selected_thread_id != first_thread
 

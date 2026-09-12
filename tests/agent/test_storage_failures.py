@@ -102,6 +102,19 @@ async def test_invalid_database_file_is_structured_error(tmp_path: Path) -> None
     assert error.value.code == "database_corrupt"
 
 
+async def test_runtime_owner_does_not_remap_application_oserror(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    application_timeout = TimeoutError("application deadline")
+
+    with pytest.raises(TimeoutError) as raised:
+        async with store.runtime_owner():
+            raise application_timeout
+
+    assert raised.value is application_timeout
+    async with store.runtime_owner():
+        pass
+
+
 async def test_corrupt_idempotency_lookup_is_not_raw_validation_error(tmp_path: Path) -> None:
     from harnessix.agent.models import EventDraft
 
