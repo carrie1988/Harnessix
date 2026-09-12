@@ -134,6 +134,7 @@ async def test_controller_rejects_invalid_prompt_without_consuming_command(
 
 async def test_controller_caller_cancellation_does_not_cancel_accepted_intent(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -157,14 +158,27 @@ async def test_controller_caller_cancellation_does_not_cancel_accepted_intent(
             tmp_path / "client",
             workspace_identity=str(workspace.resolve()),
         ) as store:
-            controller = ProductController(RecoverableAgentSession(store, transport))
+            session = RecoverableAgentSession(store, transport)
+            controller = ProductController(session)
             await controller.start(StartRequest(workspace=str(workspace)))
 
+            entered = asyncio.Event()
+            release = asyncio.Event()
+            execute_prepared = session.execute_prepared
+
+            async def delayed(command, operation):
+                entered.set()
+                await release.wait()
+                return await execute_prepared(command, operation)
+
+            monkeypatch.setattr(session, "execute_prepared", delayed)
+
             waiter = asyncio.create_task(controller.dispatch(CreateThreadIntent()))
-            await asyncio.sleep(0)
+            await asyncio.wait_for(entered.wait(), timeout=1)
             waiter.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await waiter
+            release.set()
 
             for _ in range(100):
                 if controller.state.selected_thread_id is not None:

@@ -58,7 +58,7 @@ async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: P
 
                 await pilot.press("ctrl+n")
                 await _wait_until(lambda: len(controller.state.threads) == 1)
-                assert not app.query_one("#composer", Input).disabled
+                await _wait_until(lambda: not app.query_one("#composer", Input).disabled)
 
                 stale = replace(
                     controller.state,
