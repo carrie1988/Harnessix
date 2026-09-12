@@ -23,11 +23,8 @@ from harnessix.protocol.contracts import (
     EventsReplayResult,
     InitializeParams,
     InitializeResult,
-    JsonRpcErrorResponse,
     JsonRpcNotification,
-    JsonRpcRequest,
     ProtocolLimits,
-    ProtocolModel,
     PublicBudget,
     QuestionRespondParams,
     ThreadArchiveParams,
@@ -48,6 +45,7 @@ from harnessix.protocol.contracts import (
     TurnView,
 )
 from harnessix.sdk.errors import AgentSDKError as AgentSDKError
+from harnessix.sdk.request import _frame, exchange_agent_request, require_replay_limit
 from harnessix.sdk.response import _decode_response, _validate_result
 
 if TYPE_CHECKING:
@@ -285,18 +283,6 @@ class SubprocessAgentTransport:
             self._fail_pending("server_closed", "App Server传输已经关闭")
 
 
-def _frame(message: ProtocolModel) -> bytes:
-    return (
-        json.dumps(
-            message.model_dump(mode="json", by_alias=True),
-            ensure_ascii=False,
-            allow_nan=False,
-            separators=(",", ":"),
-        ).encode()
-        + b"\n"
-    )
-
-
 class AgentClient:
     """Agent Protocol v1异步SDK；领域requestId由调用方控制并可安全复用。"""
 
@@ -326,26 +312,13 @@ class AgentClient:
 
     async def _send(self, method: str, params: dict[str, JsonValue]) -> JsonValue:
         self._sequence += 1
-        request_id = self._sequence
-        request = JsonRpcRequest(id=request_id, method=method, params=params)
-        responses = await self.transport.exchange(_frame(request))
-        if len(responses) != 1:
-            raise AgentSDKError("invalid_response", "Request未收到唯一Response")
-        response = _decode_response(
-            responses[0],
-            max_message_bytes=ProtocolLimits().max_message_bytes,
+        return await exchange_agent_request(
+            self.transport,
+            method,
+            params,
+            self._sequence,
+            self.initialized,
         )
-        if response.id != request_id:
-            raise AgentSDKError("invalid_response", "Response身份不匹配")
-        if isinstance(response, JsonRpcErrorResponse):
-            error = response.error
-            raise AgentSDKError(
-                error.data.code,
-                error.message,
-                retryable=error.data.retryable,
-                path=error.data.path,
-            )
-        return response.result
 
     async def _notify(self, method: str, params: dict[str, JsonValue]) -> None:
         notification = JsonRpcNotification(method=method, params=params)
@@ -563,6 +536,7 @@ class AgentClient:
     async def replay_events(
         self, thread_id: UUID, *, after_cursor: int = 0, limit: int = 256
     ) -> EventsReplayResult:
+        require_replay_limit(self.initialized, limit)
         params = EventsReplayParams(
             thread_id=thread_id,
             after_cursor=after_cursor,
@@ -600,6 +574,7 @@ class AgentClient:
         wait_ms: int = 30_000,
         limit: int = 256,
     ) -> EventsNextResult:
+        require_replay_limit(self.initialized, limit)
         params = EventsNextParams(
             thread_id=thread_id,
             after_cursor=after_cursor,

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 3
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
@@ -35,8 +35,8 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、只读Coding Tool Runtime和Agent Runtime；当前默认不装配Artifact Reader |
 | 平台 | App Server Python逻辑无显式平台分支；默认产品因Coding Tool Runtime限制仍在Windows启动前失败，三平台产品证据尚未完成 |
-| 代码版本 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` |
-| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询和有界关闭已实现；协商Limit贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
+| 代码版本 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 |
+| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、有界关闭及薄CLI协商事件页上限已实现；Server侧协商Pending/Outbox/Replay贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
 [`service.py`](../../src/harnessix/app_server/service.py)、
@@ -187,8 +187,8 @@ flowchart LR
 | 5 | [`__init__.py`](../../src/harnessix/app_server/__init__.py) | `__all__` | 查看包级公开构造面 |
 | 6 | [`protocol`](../../src/harnessix/protocol/) | Codec、Contracts、Projection、Request Store | 理解Service调用的外部合同 |
 | 7 | [`product_config/server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | 理解默认产品实际装配和所有权 |
-| 8 | [`tests/app_server/test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 23个纵向用例 | 反向验证握手、崩溃、并发和交互 |
-| 9 | [`tests/app_server/test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 4个薄CLI用例 | 验证最终客户端只依赖SDK和公共协议 |
+| 8 | [`tests/app_server/test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 35个纵向用例 | 反向验证握手、崩溃、并发和交互 |
+| 9 | [`tests/app_server/test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 5个薄CLI用例 | 验证最终客户端只依赖SDK和公共协议 |
 
 ## 7. 内部组件架构
 
@@ -880,7 +880,7 @@ CLOSED。Service关闭后：
 | 输入帧 | Protocol `maxMessageBytes` |
 | READY并发Request | 初始`maxPendingRequests` Semaphore |
 | Outbox消息数 | 初始`maxOutboundMessages` Queue |
-| Replay请求Limit | Protocol 1～1000；当前未按协商`maxReplayEvents`再收紧 |
+| Replay请求Limit | Protocol 1～1000；AgentClient和薄CLI执行协商值前置门禁，Server Service当前未再次收紧 |
 | 单Thread Delta | 1000条Deque |
 | 单次Delta返回 | Request `limit`，最多1000 |
 | 长轮询等待 | 0～30秒，50毫秒持久事件探测 |
@@ -1155,6 +1155,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | Response乱序按ID归并 | `test_subprocess_transport_routes_out_of_order_responses` |
 | Malformed Response结算全部Pending | `test_subprocess_transport_fails_all_pending_on_malformed_response` |
 | 薄CLI全页列表与停滞Cursor拒绝 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) `test_thin_cli_lists_all_pages_and_rejects_stalled_cursor` |
+| 薄CLI使用协商事件页上限 | 同文件`test_thin_cli_uses_negotiated_event_page_limit` |
 | Question驱动保持模型Transcript | 同文件`test_thin_cli_drives_question_and_preserves_model_transcript` |
 | 快速终态仍回放最终文本 | 同文件`test_thin_cli_replays_final_text_when_turn_completed_before_follow` |
 | 批次审批前先读取Diff | 同文件`test_thin_cli_reads_diff_before_batch_approval` |
@@ -1184,13 +1185,13 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - Question和Approval响应后后台执行、已完成Question命令重放恢复；
 - Delta低延迟、持久终态、Deadline边界、1000条溢出Gap和能力门禁；
 - Artifact只在Scoped Reader装配时广告并按页读取；
-- 薄CLI只依赖SDK完成分页、提问、快速终态回放和Diff后审批；
+- 薄CLI只依赖SDK完成协商上限内分页、提问、快速终态回放和Diff后审批；
 - Product启动失败不会提前激活配置或开放协议，固定Workspace拒绝其他Create根。
 
 ### 30.2 尚未证明范围
 
 - 非1.0版本返回专用`unsupported_protocol_version`；
-- 客户端协商后的Pending/Outbox/Replay Limit被实际强制；
+- Server端协商后的Pending/Outbox/Replay Limit与连接级资源控制贯穿；客户端Replay已前置强制；
 - 所有出站Response满足协商UTF-8字节上限；
 - stdin保持打开且stdout永久阻塞/断裂时Reader能主动退出；
 - BinaryIO短写、Service Close异常和Writer/Reader同时失败的优先级；
@@ -1261,5 +1262,6 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 3 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
 | 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |
 | 1 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 建立App Server现行模块设计，覆盖连接、应用服务、stdio、Artifact、并发背压、关闭恢复、默认装配及真实实现差距 |

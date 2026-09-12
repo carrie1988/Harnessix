@@ -243,6 +243,43 @@ async def test_initialize_notification_failure_makes_connection_unusable() -> No
     assert transport.exchange_calls == 1
 
 
+async def test_sdk_rejects_unadvertised_method_before_transport_write() -> None:
+    result = InitializeResult(
+        server_info=ServerInfo(version="0.9.1-test"),
+        capabilities=ServerCapabilities(methods=("thread/get",)),
+        limits=ProtocolLimits(),
+    ).model_dump(mode="json", by_alias=True)
+    transport = _ReplyTransport(result)
+    client = AgentClient(transport)
+    await client.initialize()
+
+    with pytest.raises(AgentSDKError) as error:
+        await client.list_threads()
+
+    assert error.value.code == "method_not_negotiated"
+    assert transport.exchange_calls == 1
+
+
+async def test_sdk_enforces_negotiated_replay_and_message_limits_before_write() -> None:
+    result = InitializeResult(
+        server_info=ServerInfo(version="0.9.1-test"),
+        capabilities=ServerCapabilities(methods=("events/replay", "turn/start")),
+        limits=ProtocolLimits(max_message_bytes=4096, max_replay_events=4),
+    ).model_dump(mode="json", by_alias=True)
+    transport = _ReplyTransport(result)
+    client = AgentClient(transport)
+    await client.initialize()
+
+    with pytest.raises(AgentSDKError) as replay_error:
+        await client.replay_events(uuid4(), limit=5)
+    assert replay_error.value.code == "negotiated_limit_exceeded"
+
+    with pytest.raises(AgentSDKError) as message_error:
+        await client.start_turn(uuid4(), "x" * 5000, request_id="large")
+    assert message_error.value.code == "negotiated_limit_exceeded"
+    assert transport.exchange_calls == 1
+
+
 async def test_subprocess_transport_rejects_oversized_response_frame() -> None:
     child = (
         "import json,sys; "

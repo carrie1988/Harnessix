@@ -1,18 +1,22 @@
 ---
 doc_type: governance-index
 status: current
-version: 38
-code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
+version: 39
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
   - documentation
+  - product_ui
 related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/governance/test_generated_specs.py
+  - tests/product_ui/test_state_store.py
+  - tests/product_ui/test_projection.py
+  - tests/product_ui/test_recoverable_session.py
 supersedes: []
 ---
 
@@ -22,7 +26,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立，生产实现仍未完成。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已经实现并等待三平台CI关闭。完整TUI、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -59,10 +63,11 @@ supersedes: []
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
-| Python SDK与重连责任 | [SDK模块设计](modules/sdk.md) | 区分Agent Protocol与Action HTTP两套客户端；再读Transport并发、取消、游标和错误边界 |
+| Python SDK边界 | [SDK模块设计](modules/sdk.md) | 区分Agent Protocol与Action HTTP两套客户端；再读Transport并发、取消和错误边界 |
+| 可恢复产品客户端 | [Product UI客户端内核模块设计](modules/product-ui.md) | `contracts → state_store → projection → session`；重点区分冷启动全文重建、暖续传、Prepared Command和服务端事实 |
 | Product Config与安全Fallback | [Product Config模块设计](modules/product-config.md) | `contracts → codec → runtime/store/migration → server/cli`；重点区分源/语义摘要、零暴露切换、CAS与启动事务 |
 
-30个生产源码包、10个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
+31个生产源码包、10个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
 
 ### 2.3 参与重大变更
 
@@ -102,7 +107,8 @@ supersedes: []
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
-| SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、响应归并、取消与断线恢复，以及Action Plane HTTP同步/异步客户端 |
+| SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限，以及Action Plane HTTP同步/异步客户端 |
+| Product UI客户端内核 | [Product UI客户端内核模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际和冷暖Replay恢复；不包含Textual表现层 |
 | Product Config | [Product Config模块设计](modules/product-config.md) | 严格配置、Profile选择、Secret引用、离线诊断、安全Fallback、迁移、CAS和产品启动事务 |
 | Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
 | Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
@@ -188,7 +194,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 - [文档策略v1](../governance/documentation-policy-v1.json)与[文档检查器](../scripts/documentation_check.py)：自动门禁合同和实现入口。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。30/30个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。31/31个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
 
 ## 8. 文档状态说明
 
@@ -201,4 +207,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内194份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内195份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

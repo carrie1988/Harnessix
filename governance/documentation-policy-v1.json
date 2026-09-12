@@ -99,7 +99,7 @@
   },
   "major_change_patterns": [
     "^spec/",
-    "^src/harnessix/(?:protocol|session|domain|policy|execution|sandbox|secrets|trusted_actions|product_config)/",
+    "^src/harnessix/(?:protocol|session|domain|policy|execution|sandbox|secrets|trusted_actions|product_config|product_ui)/",
     "^src/harnessix/(?:[^/]+/)*(?:contracts|[^/]+_contracts|models|reducer|ports|codec)\\.py$",
     "^src/harnessix/session/migrations/[^/]+\\.sql$",
     "^src/harnessix/(?:bootstrap|runtime|worker|agent_cli|cli|settings|licensing)\\.py$",

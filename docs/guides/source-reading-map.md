@@ -1,13 +1,14 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 10
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 11
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
   - documentation
   - product_config
+  - product_ui
   - app_server
   - protocol
   - agent
@@ -26,9 +27,13 @@ related_adrs:
   - docs/adr/0006-thread-turn-item-event-model.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_state_store.py
+  - tests/product_ui/test_projection.py
+  - tests/product_ui/test_recoverable_session.py
   - tests/agent/test_runtime.py
   - tests/agent/test_crash_recovery.py
   - tests/hooks/test_runtime.py
@@ -54,11 +59,11 @@ supersedes: []
 5. 写文件、启动进程和交付为何不能直接复用只读Tool路径；
 6. 崩溃、取消、超时和外部效果不确定时由谁决定下一步；
 7. 独立Action Plane与Coding Agent Runtime是什么关系；
-8. 30个生产包各自从哪里开始读、用哪些测试验证。
+8. 31个生产包各自从哪里开始读、用哪些测试验证。
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应提交`8f91bbebaf08edf0c68488a8604cddcbe2e6e225`；
+- 本文对应提交`58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -70,8 +75,8 @@ supersedes: []
 ```text
 src/harnessix/
 ├── cli.py, __main__.py, agent_cli.py     # 命令与薄客户端
-├── product_config/, app_server/, protocol/, sdk/
-│                                          # 产品装配与协议边界
+├── product_config/, product_ui/, app_server/, protocol/, sdk/
+│                                          # 产品装配、客户端恢复与协议边界
 ├── agent/, session/, models/, context/   # Agent内核与持久会话
 ├── tools/, artifacts/                    # 只读能力与大对象
 ├── patches/, processes/, sandbox/, workspace/, delivery/
@@ -139,6 +144,20 @@ sequenceDiagram
 - 为什么Provider必须先进入生命周期，活动配置却在全部组件就绪后才CAS发布；
 - `_require_coding_tool_platform`为何让当前Windows产品入口失败关闭；
 - 当前装配代码没有哪些构造参数，因此哪些库能力实际上未开放。
+
+### 4.4 可恢复产品客户端内核
+
+0.9.1a尚未替换薄CLI，但已经建立后续Textual Controller必须复用的恢复边界：
+
+1. [Product UI客户端内核模块设计](../modules/product-ui.md)：先理解持久事实、内存投影和服务端事实的分界；
+2. [product_ui/contracts.py](../../src/harnessix/product_ui/contracts.py)：读取Client State字段、摘要和Command ID规则；
+3. [product_ui/state_store.py](../../src/harnessix/product_ui/state_store.py)：追踪锁、重读、原子替换和单调Cursor；
+4. [product_ui/projection.py](../../src/harnessix/product_ui/projection.py)：对照Replay重叠、Delta Gap和终态覆盖；
+5. [product_ui/session.py](../../src/harnessix/product_ui/session.py)：追踪Generation、冷启动从0和暖重连续传；
+6. [tests/product_ui](../../tests/product_ui/)：从权限、崩溃、冲突和断线恢复测试反证设计。
+
+关键检查点：Client State为何不保存Transcript；已保存Cursor为何不能作为冷启动Replay起点；Prepared Command为何在
+连接失败后复用原ID；Reducer为何先产出候选视图、Cursor落盘成功后才发布到Session内存。
 
 ## 5. Coding Turn主链
 

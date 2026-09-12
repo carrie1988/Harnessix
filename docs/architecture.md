@@ -1,12 +1,13 @@
 ---
 doc_type: system-architecture
 status: current
-version: 32
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 33
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
   - product_config
+  - product_ui
   - app_server
   - protocol
   - agent
@@ -34,9 +35,13 @@ related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_state_store.py
+  - tests/product_ui/test_projection.py
+  - tests/product_ui/test_recoverable_session.py
   - tests/agent/test_runtime.py
   - tests/agent/test_crash_recovery.py
   - tests/integration/test_action_service.py
@@ -55,7 +60,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文基于提交`8f91bbebaf08edf0c68488a8604cddcbe2e6e225`。状态标签含义如下：
+本文基于提交`58d6fd8d356c744588cc1f3ad58bce6eb92ab608`上的0.9.1a实现。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -229,7 +234,8 @@ flowchart LR
 | Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移、安全Fallback和活动配置CAS；详见[模块设计](modules/product-config.md) | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
-| Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、响应归并和恢复责任，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
+| Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
+| Product UI客户端内核 | 已实现/待TUI装配 | 最小Client State、发送前Command ID、连接代际、冷暖Replay和纯投影；当前没有Textual View或产品Controller，详见[模块设计](modules/product-ui.md) | [state_store.py](../src/harnessix/product_ui/state_store.py)、[projection.py](../src/harnessix/product_ui/projection.py)、[session.py](../src/harnessix/product_ui/session.py) | [product_ui测试](../tests/product_ui/) |
 | Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
 | Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
@@ -277,7 +283,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     Entry[入口层<br/>cli/api/agent_cli]
-    Product[产品与协议层<br/>product_config/app_server/protocol/sdk]
+    Product[产品与协议层<br/>product_config/product_ui/app_server/protocol/sdk]
     Orchestration[编排层<br/>agent/context/evals/smoke]
     Trust[可信执行层<br/>trusted_actions/execution/patches/processes/delivery]
     Capability[能力层<br/>tools/workspace/sandbox/mcp/skills/hooks/adapters]
@@ -298,7 +304,7 @@ flowchart TD
 
 图表示期望的责任方向，不是当前Python import的严格DAG。0.9.0基线记录了164条顶层包依赖边和一个包含`agent/artifacts/context/execution/models/patches/processes/secrets/session/tools/workspace`的强连通分量；这是已知结构债务，不应通过新增跨包内部导入继续扩大。机器证据见[可读性基线](baselines/readability-0.9.0-final.json)。
 
-### 8.2 30个顶层包边界
+### 8.2 31个顶层包边界
 
 “允许下游”列只列主方向而非穷举导入；跨包复用应优先依赖公开契约或端口。
 
@@ -323,6 +329,7 @@ flowchart TD
 | `policy` | action-plane | `domain`只读输入 | 执行工具或修改Journal |
 | `processes` | execution | `sandbox/workspace/execution/artifacts` | 未持久Action直接启动高风险进程 |
 | `product_config` | product | `models/secrets/session/tools/app_server`公开构造器 | 配置值直接携带明文Secret；状态目录落入Workspace |
+| `product_ui` | product | `sdk/protocol/file_lock`公开合同 | 保存Transcript正文；Widget绕过Session分配Command或推进Cursor |
 | `protocol` | product | 协议模型与兼容规则 | 依赖具体Provider或执行器实现 |
 | `sandbox` | security | 宿主能力与执行计划 | 把能力探测结果当作已强制隔离证明 |
 | `sdk` | product | `protocol` | 猜测Server内部状态或绕过握手 |
@@ -420,7 +427,7 @@ stateDiagram-v2
     CLOSED --> [*]
 ```
 
-Server在`READY`前拒绝业务方法；协议版本不等于`1.0`时握手失败。JSON-RPC、严格解码、公共投影、Replay游标与持久命令账本见[Protocol模块设计](modules/protocol.md)，连接执行见[AgentProtocolServer](../src/harnessix/app_server/server.py)，合同测试见[Server SDK测试](../tests/app_server/test_server_sdk.py)。当前只有`itemDeltas`能力和`maxMessageBytes`限制完整贯穿对应运行路径，其他协商Limit仍有执行差距，不能把初始化返回值全部解释为动态强制配额。
+Server在`READY`前拒绝业务方法；协议版本不等于`1.0`时握手失败。JSON-RPC、严格解码、公共投影、Replay游标与持久命令账本见[Protocol模块设计](modules/protocol.md)，连接执行见[AgentProtocolServer](../src/harnessix/app_server/server.py)，合同测试见[Server SDK测试](../tests/app_server/test_server_sdk.py)。当前`AgentClient`会在Transport写入前校验广告方法、协商`maxMessageBytes`和`maxReplayEvents`；`SubprocessAgentTransport`仍以构造期Reader上限分配缓冲，`maxPendingRequests`与`maxOutboundMessages`尚未形成完整客户端容量控制，不能把初始化返回值全部解释为动态强制配额。
 
 ### 10.2 Turn生命周期
 
@@ -856,13 +863,13 @@ if UNKNOWN: require reconcile instead of blind replay
 | Action如何持久化、Claim和过期恢复 | [Storage模块设计](modules/storage.md)、[sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [test_worker.py](../tests/integration/test_worker.py)、[test_postgres_journal.py](../tests/integration/test_postgres_journal.py) |
 | 交付如何持久化 | [delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py) | [test_planner.py](../tests/delivery/test_planner.py)、[test_store.py](../tests/delivery/test_store.py) |
 
-更细的逐文件阅读顺序见[源码阅读地图](guides/source-reading-map.md)，全部30个包与资料覆盖关系见[追踪矩阵](governance/documentation-traceability.md)。
+更细的逐文件阅读顺序见[源码阅读地图](guides/source-reading-map.md)，全部31个包与资料覆盖关系见[追踪矩阵](governance/documentation-traceability.md)。
 
 ## 20. 已知限制与后续演进
 
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
-| 完整TUI、Diff/审批/成本交互不足 | 当前仅薄CLI，产品体验不完整 | 0.9.1 |
+| 完整TUI、Diff/审批/成本交互不足 | 可恢复客户端内核已实现但尚未接入Textual与正式产品入口 | 0.9.1b～0.9.1c |
 | 默认产品未装配写工具、Process和Delivery | 代码库能力无法直接形成端到端Coding Agent写入链 | 0.9.1 |
 | Windows默认只读Tool入口失败关闭 | Windows不能运行完整产品链 | 0.9.1、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
@@ -927,7 +934,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 ### 23.3 DOC-1.1验收
 
-- [x] 文档入口到30个生产包源码地图不超过三次跳转；
+- [x] 文档入口到31个生产包源码地图不超过三次跳转；
 - [x] 当前默认、显式装配和规划能力分开标注；
 - [x] 正常、审批、取消、崩溃恢复和事务性交付均有时序与文字说明；
 - [x] 系统组件、40个源码边界和关键设计结论具有源码/测试入口；
@@ -938,6 +945,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 33 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 | 2026-09-13 | 新增Product UI客户端内核，明确Client State、发送前Command身份、冷暖Replay、纯投影、连接代际及SDK协商方法/消息/Replay上限 |
 | 32 | `8f91bbebaf08edf0c68488a8604cddcbe2e6e225` | 2026-09-12 | 接入Smoke现行模块设计，明确网络门禁、Config/Report v1、固定场景、请求与Token预算、审批重开、Replay、凭据/端点边界、白名单诊断和真实Provider证据范围；DOC-1.4完成30/30包覆盖 |
 | 31 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 接入Hook现行模块设计，明确Definition/Grant、Registry、Matcher、确定Run、Hook/Action双账本、Timeout/取消、Interrupted恢复、来源错配和默认产品未装配边界 |
 | 30 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 接入Skill现行模块设计，明确本地来源、目录与Manifest绑定、渐进加载、安全Reader、访问账本、Action Gateway、Secret发布窗口、提示注入和默认产品未装配边界 |

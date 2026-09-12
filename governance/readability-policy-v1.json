@@ -20,7 +20,7 @@
     "src/harnessix/mcp/runtime.py": 643,
     "src/harnessix/processes/supervisor.py": 827,
     "src/harnessix/protocol/contracts.py": 643,
-    "src/harnessix/sdk/agent_client.py": 639,
+    "src/harnessix/sdk/agent_client.py": 611,
     "src/harnessix/skills/runtime.py": 644,
     "src/harnessix/trusted_actions/router.py": 659
   },
@@ -497,6 +497,14 @@
       "max_lines": 462,
       "max_decision_complexity": 0
     },
+    "harnessix.product_ui.session:RecoverableAgentSession": {
+      "max_lines": 229,
+      "max_decision_complexity": 0
+    },
+    "harnessix.product_ui.state_store:ClientStateStore": {
+      "max_lines": 124,
+      "max_decision_complexity": 0
+    },
     "harnessix.protocol.requests:SQLiteProtocolRequestStore": {
       "max_lines": 161,
       "max_decision_complexity": 0
@@ -530,7 +538,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.sdk.agent_client:AgentClient": {
-      "max_lines": 339,
+      "max_lines": 326,
       "max_decision_complexity": 0
     },
     "harnessix.sdk.agent_client:SubprocessAgentTransport": {
@@ -736,6 +744,9 @@
     "product_config->session",
     "product_config->tools",
     "product_config->workspace",
+    "product_ui->file_lock",
+    "product_ui->protocol",
+    "product_ui->sdk",
     "protocol->agent",
     "protocol->artifacts",
     "protocol->domain",
@@ -1011,6 +1022,27 @@
       "ProviderDefinition",
       "ProviderFallbackDecision",
       "SecretReference"
+    ],
+    "harnessix.product_ui": [
+      "ClientCommandAllocation",
+      "ClientStateStore",
+      "ClientStateV1",
+      "ClientThreadCursor",
+      "ConnectionPhase",
+      "PreparedClientCommand",
+      "ProductConnection",
+      "ProductUIError",
+      "ProductViewState",
+      "ProjectedItem",
+      "RecoverableAgentSession",
+      "TransientItemStream",
+      "TurnProjection",
+      "apply_events_next",
+      "apply_item_delta",
+      "apply_replay_page",
+      "cold_product_view",
+      "refresh_thread_snapshot",
+      "workspace_identity_fingerprint"
     ],
     "harnessix.protocol": [
       "AGENT_PROTOCOL_VERSION",

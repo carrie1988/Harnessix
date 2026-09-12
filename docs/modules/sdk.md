@@ -1,12 +1,13 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 4f7c009869a46f70169a8e34a40c1df8227a8651
+version: 4
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
   - sdk
+  - product_ui
 related_adrs:
   - docs/adr/0001-python-first-runtime.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
@@ -15,6 +16,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
 related_tests:
   - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_recoverable_session.py
   - tests/app_server/test_agent_cli.py
   - tests/unit/test_sdk.py
   - tests/integration/test_api.py
@@ -37,8 +39,8 @@ supersedes: []
 | 连接 | Agent子进程Transport惰性启动一个stdio子进程，Response Reader具有构造期字节上限；HTTP客户端拥有一个`httpx.Client/AsyncClient`连接池 |
 | 平台 | Python逻辑未设平台分支；子进程与HTTP机制可跨平台，但默认Agent产品Windows入口及三平台关闭证据尚未完成 |
 | 公共导出 | `harnessix.sdk`导出两套客户端；根包`harnessix`当前只导出Action HTTP客户端，不导出`AgentClient` |
-| 代码版本 | `4f7c009869a46f70169a8e34a40c1df8227a8651` |
-| 当前完成度 | Agent主链、乱序归并、取消迟到响应、Question/Approval、Replay/Delta、Artifact、严格Response Envelope、有界Response Frame、Result错误归一及半握手失败关闭已实现；自动重连、持久客户端状态、协商并发预算、完整HTTP测试和发布级平台证据仍缺失 |
+| 代码版本 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 |
+| 当前完成度 | Agent主链、严格Response/Result、有界Frame、半握手失败关闭、广告方法及协商消息/Replay上限前置门禁已实现；可恢复状态和连接代际由Product UI客户端内核提供；协商并发/出站队列、完整HTTP测试和发布级平台证据仍缺失 |
 
 本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、
 [`client.py`](../../src/harnessix/sdk/client.py)和[`__init__.py`](../../src/harnessix/sdk/__init__.py)
@@ -111,9 +113,9 @@ Approval、Journal和Reconcile治理的副作用。该API与Coding Agent Protoco
 |---|---|---|---|
 | Agent进程内Transport | 直接调用完整`AgentProtocolServer.process_frame` | 测试和嵌入使用 | 与子进程完全一致的取消隔离 |
 | Agent子进程Transport | 惰性启动、并发归并、stderr尾部、有界退出等待 | 薄CLI使用 | 自动重启、进程树Owner、客户端队列上限 |
-| Agent Client | 19个公开异步生命周期/资源方法 | 薄CLI使用 | 同步封装、能力门禁、游标仓库 |
+| Agent Client | 19个公开异步生命周期/资源方法，写入前校验广告方法、消息字节和Replay数量 | 薄CLI及Product UI内核使用 | 同步封装、并发/出站队列协商上限 |
 | Replay与Delta | Replay/Next和无限`watch_thread` | CLI自行解释终态与交互 | 自动Gap修复、终态停止、重连续传 |
-| Artifact | 显式`read_artifact` | 仅Server广告能力时可用 | Client调用前方法能力检查 |
+| Artifact | 显式`read_artifact`；广告方法缺失时本地失败 | 仅Server广告能力时可用 | 自动分页与摘要汇总 |
 | Action HTTP同步 | 6个资源方法 | LangGraph同步适配可使用 | 专项测试、重试、分页、认证 |
 | Action HTTP异步 | 与同步端同样6个方法 | README/LangGraph示例使用 | 除Submit外的SDK专项测试 |
 | 公共包导出 | `harnessix.sdk`导出全部；根包只导出HTTP三项 | Action Plane保持旧入口 | 统一且版本化的公共API策略 |
@@ -170,15 +172,16 @@ Domain模型和HTTP资源。两条分支只共享Python包与发布物，不共�
 |---:|---|---:|---|
 | 1 | [`errors.py`](../../src/harnessix/sdk/errors.py) | 22行 | Agent SDK跨Transport共享的稳定错误合同 |
 | 2 | [`response.py`](../../src/harnessix/sdk/response.py) | 119行 | 严格Response Envelope/JSON预算和Result错误归一 |
-| 3 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 636行 | Transport端口、子进程并发、握手、Thread/Turn/Event客户端 |
-| 4 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
-| 5 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
-| 6 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1021行 | 33项Client、Transport、Server与Runtime纵向场景，含恶意Response和半握手失败 |
-| 7 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
-| 8 | [`client.py`](../../src/harnessix/sdk/client.py) | 152行 | Action HTTP同步/异步方法和错误映射 |
-| 7 | [`api/app.py`](../../src/harnessix/api/app.py) | Server对端 | 对照路由、202、错误和Lifespan |
-| 8 | [`test_sdk.py`](../../tests/unit/test_sdk.py) | 51行 | 当前仅有的HTTP SDK专项用例 |
-| 9 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 区分包级与根级导出 |
+| 3 | [`request.py`](../../src/harnessix/sdk/request.py) | 82行 | 出站Frame、广告方法、协商消息/Replay上限和唯一Response关联 |
+| 4 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 611行 | Transport端口、子进程并发、握手、Thread/Turn/Event客户端 |
+| 5 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
+| 6 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
+| 7 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1058行 | 35项Client、Transport、Server与Runtime纵向场景，含恶意Response、半握手和协商前置门禁 |
+| 8 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
+| 9 | [`client.py`](../../src/harnessix/sdk/client.py) | 152行 | Action HTTP同步/异步方法和错误映射 |
+| 10 | [`api/app.py`](../../src/harnessix/api/app.py) | Server对端 | 对照路由、202、错误和Lifespan |
+| 11 | [`test_sdk.py`](../../tests/unit/test_sdk.py) | 51行 | 当前仅有的HTTP SDK专项用例 |
+| 12 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 区分包级与根级导出 |
 
 ## 7. 双客户端内部架构
 
@@ -557,9 +560,9 @@ flowchart TD
 ### 20.2 兼容与剩余边界
 
 Response Envelope属于JSON-RPC固定结构，因此拒绝未知顶层字段；Result内部继续按Protocol向前兼容规则忽略新增
-可选字段，已知字段仍严格。自定义Transport返回的帧也经过相同解析。当前`AgentClient`使用默认1 MiB再次校验
-Response，`SubprocessAgentTransport`使用构造期上限在读取前限制缓冲；Initialize协商出的更小Limit尚未动态
-调整已创建StreamReader，服务端必须遵守协商结果，客户端能力/并发门禁仍由后续0.9.1a实现。
+可选字段，已知字段仍严格。自定义Transport返回的帧也经过相同解析。Initialize Response使用默认1 MiB校验；握手完成后`AgentClient`按服务端协商的更小`maxMessageBytes`校验后续
+Request与Response，并在写Transport前拒绝未广告方法。`SubprocessAgentTransport`的StreamReader仍按构造期上限
+分配，不能在握手后缩小底层缓冲；Pending并发与出站消息数量也尚未按协商值建立客户端容量门禁。
 
 ## 21. AgentSDKError合同
 
@@ -600,7 +603,7 @@ Request ID或Thread ID，也没有异常Cause链用于安全诊断。
 | `respond_question` | `question/respond` | 调用方提供Question身份和答案 |
 | `replay_events` | `events/replay` | 单次持久事件页 |
 | `next_events` | `events/next` | 持久进展优先，附带可选Live Delta与Timeout |
-| `read_artifact` | `artifact/read` | Thread授权下分页读取；Client当前不预查Capability |
+| `read_artifact` | `artifact/read` | Thread授权下分页读取；调用前统一检查广告方法 |
 | `watch_thread` | 循环`events/next` | 无限异步迭代，不自动判断终态 |
 
 所有方法先由本地Pydantic Params模型校验。该校验失败直接抛Pydantic异常，不转换为`AgentSDKError`；调用方
@@ -608,19 +611,17 @@ Request ID或Thread ID，也没有异常Cause链用于安全诊断。
 
 ## 23. 能力协商与调用门禁
 
-Initialize Result被保存到`client.initialized`，包含Methods、Artifact、Replay、Delta和Limits。但后续Client
-方法没有依据它执行门禁或容量调整：
+Initialize Result被保存到`client.initialized`，包含Methods、Artifact、Replay、Delta和Limits。握手完成后：
 
-- `read_artifact`不会先检查`artifact/read`是否广告；
-- Replay/Next不会根据`replay`能力关闭；
-- `watch_thread`假定`events/next`存在；
-- 客户端并发数不受`maxPendingRequests`限制；
-- 发出帧和读取Response不受协商`maxMessageBytes`限制；
-- `limit`不会按`maxReplayEvents`自动收紧；
-- `itemDeltas`固定请求true，但以Server Result为准；Client本身不解释是否缺少Delta。
+- `_send`在构造Frame后、调用Transport前检查方法是否位于`capabilities.methods`；
+- 未广告方法返回`method_not_negotiated`，不会占用Transport写入；
+- Frame超过协商`maxMessageBytes`时返回`negotiated_limit_exceeded`；
+- Response也按协商`maxMessageBytes`再次验证；
+- Replay/Next的请求`limit`超过`maxReplayEvents`时在写入前失败；
+- `itemDeltas`仍以Server Result为准，Product UI投影只把实际收到的Delta作为临时显示。
 
-因此当前能力对象主要供调用方和薄CLI读取，SDK不是Capability-aware Facade。未广告方法最终由Server返回
-`method_not_found`，而不是本地快速失败。
+当前未实现`maxPendingRequests`和`maxOutboundMessages`客户端Semaphore/队列，也不根据布尔`replay`或
+`artifactPages`单独判断；对应方法是否存在以`capabilities.methods`为最终调用门禁。
 
 ## 24. Replay、Delta与watch_thread
 
@@ -645,6 +646,8 @@ flowchart TD
 
 迭代器没有终止条件、退避、Cursor持久化、自动重连或Turn筛选。调用方Break只停止下一次循环，不关闭Client；
 在Yield点没有隐藏的进行中Request。薄CLI在SDK之上读取Thread终态并处理Question、Approval和Artifact。
+薄CLI的Replay与Next请求页大小取`min(256, initialized.limits.maxReplayEvents)`；因此小于默认值的服务端协商
+结果也会在调用SDK前生效，不会依赖服务端二次拒绝。
 
 ## 25. 断线恢复责任
 
@@ -1128,7 +1131,7 @@ return value
 - 非法Result统一映射`invalid_result`并携带首个字段路径；
 - Initialize Notification失败后当前Transport被关闭，第二次Initialize不再重复请求；
 - 持久Replay、Live Delta、Gap和Deadline由纵向测试消费；
-- 薄CLI仅依赖AgentClient实现分页、交互、最终文本和Diff后审批；
+- 薄CLI仅依赖AgentClient实现协商上限内分页、交互、最终文本和Diff后审批；
 - HTTP Async Client Submit保留Action Spec和状态；
 - HTTP API对端正常、冲突、202和Readiness有独立集成测试。
 
@@ -1136,7 +1139,7 @@ return value
 
 - Initialize Response成功而Notification失败后的新Transport自动重建；
 - Subprocess Exchange取消、迟到Response、永不返回导致Abandoned增长；
-- 客户端Pending/Response/并发上限与Server协商Limit一致；
+- 客户端Pending并发与出站队列上限和Server协商Limit一致；
 - 子进程启动Timeout、写入Timeout和stderr Reader故障；
 - Close被取消、Terminate/Kill升级、子进程后代清理和复合错误优先级；
 - Windows原生、macOS/Linux安装产物和长时间真实Pipe测试；
@@ -1150,15 +1153,14 @@ return value
 
 | 优先级 | 限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
-| P1 | Initialize失败会关闭并毒化当前Client，但尚无新Transport自动重建 | TUI仍需自行创建连接代际 | 0.9.1a `RecoverableAgentSession` |
-| P1 | SDK不自动保存Client Instance、Command ID和Cursor，也不提供Reconnect Manager | 默认随机身份在宿主崩溃后可能丢失协议幂等域 | 0.9.1会话仓库与产品生命周期 |
-| P1 | Pending、Abandoned和并发无客户端上限，协商Limit未执行 | 高并发/高取消导致内存与服务压力 | 0.9.3容量、背压和Soak |
+| P2 | SDK本身不自动重建Transport | 直接SDK调用者需自行重连；Product UI的`RecoverableAgentSession`已经管理连接代际 | 保持分层，不下沉产品重试策略 |
+| P2 | SDK不直接保存Client Instance、Command ID和Cursor | 直接调用者仍自行持久化；Product UI Store与Session已提供正式上层实现 | 保持SDK无状态边界 |
+| P1 | Pending、Abandoned和并发无客户端上限，协商Pending/Outbound Limit尚未执行 | 高并发/高取消导致内存与服务压力 | 0.9.3容量、背压和Soak |
 | P1 | Close不可配置、可被取消，且只终止直接进程 | 退出可能残留子进程后代或未结算Future | 0.9.3可靠性、0.9.5平台发行 |
 | P1 | 子进程继承默认环境和cwd，自定义Command不校验来源 | 第三方程序可读取父进程凭据和仓库上下文 | 0.9.4供应链与Secret边界 |
 | P1 | stderr Tail、Server Message与HTTP Error Body无统一Redactor | 调用方记录异常时可能泄漏敏感信息 | 0.9.4错误清洗和诊断包 |
 | P1 | HTTP Fallback保存完整无界Body，成功Body错误泄漏底层异常 | 内存、日志和公共异常不稳定 | API/SDK 0.9.1与0.9.4加固 |
 | P1 | HTTP SDK只有Async Submit一个专项测试，Sync和其余方法无覆盖 | 手工同步/异步重复易漂移 | DOC后续API切片和0.9回归补齐 |
-| P1 | SDK不按Initialize Methods/Limits本地门禁 | 能力广告与客户端资源控制脱节 | 0.9.1 Capability-aware Client |
 | P2 | 默认Agent Client Version为0.8.0而包版本为0.1.0 | 诊断身份不可信 | 从包元数据读取或统一版本源 |
 | P2 | Notification违规Response在两个Transport的失败时机不同 | 嵌入与子进程错误呈现不一致 | Transport合同测试与统一状态 |
 | P2 | `_abandoned`只靠迟到Response或Close清理 | 永不响应的取消请求长期占内存 | 有界Tombstone/连接代际策略 |
@@ -1202,6 +1204,7 @@ return value
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 4 | `58d6fd8d356c744588cc1f3ad58bce6eb92ab608`基础上的0.9.1a实现 | 2026-09-13 | 增加广告方法、协商消息字节和Replay数量的Transport写入前门禁，并登记Product UI连接恢复分层 |
 | 3 | `4f7c009869a46f70169a8e34a40c1df8227a8651` | 2026-09-13 | 严格校验Response Envelope与JSON预算，限制子进程Response Frame，统一Result错误并在半握手失败后关闭且禁止复用当前连接 |
 | 2 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，明确其只调用Submit、完整Snapshot返回及真实HTTP/LangGraph测试边界 |
 | 1 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 建立SDK现行模块设计，覆盖双客户端边界、Transport并发取消、stdio进程、握手恢复、事件消费、HTTP资源、安全与真实测试差距 |

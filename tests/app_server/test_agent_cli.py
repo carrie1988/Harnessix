@@ -75,6 +75,20 @@ async def test_thin_cli_lists_all_pages_and_rejects_stalled_cursor() -> None:
     assert error.value.code == "pagination_stalled"
 
 
+async def test_thin_cli_uses_negotiated_event_page_limit() -> None:
+    client = SimpleNamespace(
+        initialized=SimpleNamespace(limits=SimpleNamespace(max_replay_events=4)),
+        replay_events=AsyncMock(
+            return_value=SimpleNamespace(events=(), scanned_through=3, has_more=False)
+        ),
+    )
+
+    cursor = await ThinAgentCLI(client)._load_replay(uuid4(), display_after=0)  # type: ignore[arg-type]
+
+    assert cursor == 3
+    assert client.replay_events.await_args.kwargs["limit"] == 4
+
+
 async def test_thin_cli_drives_question_and_preserves_model_transcript(tmp_path: Path) -> None:
     provider = ScriptedProvider(
         [

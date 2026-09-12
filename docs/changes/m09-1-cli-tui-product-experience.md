@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: pending
+version: 3
+code_revision: 58d6fd8d356c744588cc1f3ad58bce6eb92ab608
 owners:
   - core
 modules:
   - cli
   - tui
   - sdk
+  - product_ui
   - protocol
   - app_server
   - product_config
@@ -24,6 +25,9 @@ related_adrs:
 related_tests:
   - tests/app_server/test_agent_cli.py
   - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_state_store.py
+  - tests/product_ui/test_projection.py
+  - tests/product_ui/test_recoverable_session.py
   - tests/product_config/test_server_and_cli.py
   - tests/tools
 supersedes: []
@@ -328,16 +332,17 @@ class ProductController:
 
 ```python
 class RecoverableAgentSession:
-    async def connect(self) -> NegotiatedCapabilities: ...
-    async def hydrate(self, thread_id: UUID | None) -> ProductViewState: ...
-    async def follow(self) -> AsyncIterator[ProductViewState]: ...
-    async def execute(self, command: ProductCommand) -> CommandResolution: ...
-    async def reconnect(self, cause: AgentSDKError) -> ProductViewState: ...
+    async def connect(self) -> ProductConnection: ...
+    def prepare_command(self) -> PreparedClientCommand: ...
+    async def execute_prepared(self, command, operation): ...
+    async def hydrate_thread(self, thread_id: UUID) -> ProductViewState: ...
+    async def poll_thread(self, thread_id: UUID, *, wait_ms: int = 30_000) -> ProductViewState: ...
     async def close(self) -> None: ...
 ```
 
-`execute`只接受已经分配`request_id`的Command。自动重连仅用于协议声明可恢复的本地stdio连接错误；参数、权限、
-合同和服务端非重试错误不自动重放。重连创建新代际、重做完整握手并以持久事实消解旧命令。
+`execute_prepared`只接受已经由同一Client State分配并提交`request_id`的Command。连接类错误把当前Generation标为
+`BROKEN`，但不自动重放业务操作；调用方建立新连接后显式传入同一`PreparedClientCommand`和相同业务参数。
+参数、权限、合同和服务端非重试错误不触发连接代际变化。
 
 ### 7.4 ProjectionReducer
 
@@ -394,8 +399,7 @@ digest: SHA-256
 | `state_revision` | 本地CAS版本 | 内部关键 | 每次写入单调递增 |
 | `digest` | 除自身外规范正文摘要 | 完整性 | 读取不匹配时隔离损坏文件 |
 
-资源上限：最多记录1000个Thread Cursor；文件正文不超过1 MiB；未知字段拒绝。超过Thread数量时只清理已验证归档且
-非当前Thread的最旧Cursor，不删除服务端Thread。
+资源上限：最多记录1000个Thread Cursor；文件正文不超过1 MiB；未知字段拒绝。达到上限时失败关闭，不自动驱逐任何Cursor；上层只有在服务端确认Thread已归档后才可显式遗忘对应Cursor。
 
 ### 8.2 Command身份
 
@@ -450,7 +454,7 @@ stateDiagram-v2
 | 故障点 | 对外结果 | 持久事实 | 恢复 |
 |---|---|---|---|
 | ClientState不存在 | 首次启动 | 原子创建新实例 | 正常继续 |
-| ClientState损坏/摘要不符 | `client_state_corrupt` | 原文件只读隔离，不覆盖 | 新实例 + 服务端Thread列表恢复 |
+| ClientState损坏/摘要不符 | `client_state_corrupt` | Store不修改原文件 | 运维显式隔离/删除后以新实例从服务端Cursor 0恢复 |
 | 状态锁被占用 | `client_state_busy` | 无修改 | 提示现有进程或稍后重试 |
 | Command落盘前取消 | 未提交 | 序列不变 | 可重新发起 |
 | Command落盘后、写管道前崩溃 | 结果未知 | ID已消费 | 重启后同ID重放/查询 |
@@ -676,12 +680,13 @@ emit_sanitized_close_report()
 
 | 设计元素 | 当前源码/计划位置 | 关键符号 | 当前测试/计划验证 |
 |---|---|---|---|
-| 薄CLI兼容入口 | [`agent_cli.py`](../../src/harnessix/agent_cli.py) | `ThinAgentCLI`、`follow`、`_answer_pending` | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py)现有4类行为 |
-| SDK严格边界 | [`response.py`](../../src/harnessix/sdk/response.py)、[`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `_decode_response`、`_validate_result`、`SubprocessAgentTransport`、`AgentClient.initialize` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)攻击/帧上限/半握手测试 |
+| 薄CLI兼容入口 | [`agent_cli.py`](../../src/harnessix/agent_cli.py) | `ThinAgentCLI`、`follow`、`_answer_pending`和模块级`_event_page_limit` | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py)现有5类行为，包含协商事件页上限 |
+| SDK严格边界 | [`response.py`](../../src/harnessix/sdk/response.py)、[`request.py`](../../src/harnessix/sdk/request.py)、[`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `_decode_response`、`exchange_agent_request`、`SubprocessAgentTransport`、`AgentClient.initialize` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)攻击/帧上限/半握手测试 |
 | Protocol Envelope/Limit | [`contracts.py`](../../src/harnessix/protocol/contracts.py)、[`server.py`](../../src/harnessix/app_server/server.py) | `validate_server_output`、`InitializeResult`、`AgentProtocolServer` | [`tests/protocol`](../../tests/protocol/)、App Server合同测试 |
-| 客户端状态 | 计划`src/harnessix/product_ui/state.py`、`state_store.py` | `ClientStateV1`、`ClientStateStore` | 计划`tests/product_ui/test_state_store.py` |
-| 投影Reducer | 计划`src/harnessix/product_ui/projection.py` | `ProductViewState`、`ProjectionReducer` | 计划`tests/product_ui/test_projection.py` |
-| Controller/Session | 计划`controller.py`、`session.py` | `ProductController`、`RecoverableAgentSession` | 计划断线窗口和Intent测试 |
+| 客户端状态 | [`contracts.py`](../../src/harnessix/product_ui/contracts.py)、[`state_file.py`](../../src/harnessix/product_ui/state_file.py)、[`state_store.py`](../../src/harnessix/product_ui/state_store.py) | `ClientStateV1`、`ClientStateStore` | [`test_state_store.py`](../../tests/product_ui/test_state_store.py) |
+| 投影Reducer | [`projection.py`](../../src/harnessix/product_ui/projection.py) | `ProductViewState`、`apply_replay_page`、`apply_item_delta` | [`test_projection.py`](../../tests/product_ui/test_projection.py) |
+| 可恢复Session | [`session.py`](../../src/harnessix/product_ui/session.py) | `ProductConnection`、`PreparedClientCommand`、`RecoverableAgentSession` | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) |
+| Controller | 计划`controller.py` | `ProductController` | 计划Intent串行、取消树和旧代际结果测试 |
 | Textual View | 计划`app.py`与`views/` | `ProductApp`和专用Screen/Widget | 计划`App.run_test()`与Pilot测试 |
 | 产品配置/启动 | [`product_config/server.py`](../../src/harnessix/product_config/server.py)、[`cli.py`](../../src/harnessix/cli.py) | `run_product_stdio`、`main` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | Windows Workspace | [`workspace`](../../src/harnessix/workspace/)、[`tools`](../../src/harnessix/tools/) | 新Windows观察/读取端口，保留统一Tool合同 | 计划Windows Runner对象安全测试 |
@@ -774,12 +779,15 @@ Renderer异常、Close软限和Windows对象替换。
 
 ## 19. 实现偏差与最终结论
 
-当前为设计评审状态。0.9.1a已实现第一组SDK边界：严格Response Envelope与JSON预算、构造期子进程Response
-Frame上限、`invalid_result`统一错误，以及Initialize任一步失败后关闭并禁止复用当前连接。该组由
-`test_sdk_rejects_invalid_response_envelopes`、`test_subprocess_transport_rejects_oversized_response_frame`、
-`test_sdk_normalizes_invalid_result_contract`和`test_initialize_notification_failure_makes_connection_unusable`验证；
-自动连接代际、Client State、Command分配和Projection Reducer尚未实现，因此0.9.1a仍保持未完成。
+当前为持续实施状态。0.9.1a已经实现严格Response Envelope/Result/Frame/Handshake、广告方法及消息/Replay
+协商上限门禁、Client State v1、安全原子Store、发送前Command分配、连接Generation、Prepared Command跨代际复用、
+冷启动从0/暖重连续传和确定性Projection Reducer。实现入口与测试见[Product UI客户端内核模块设计](../modules/product-ui.md)；
+自动重连策略、Controller任务树和Textual View尚未实现；0.9.1a在三平台CI通过前仍保持未完成。
 
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
+
+
+0.9.1a等待三平台CI完成后关闭；0.9.1b～0.9.1e仍未实现。当前代码不包含Textual依赖、`harnessix code`入口、
+Product Controller、配置向导、Windows只读产品端口或统一Action默认装配，不能由客户端内核推断这些能力已经可用。

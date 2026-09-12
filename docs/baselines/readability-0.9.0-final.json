@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 258,
-    "physical_lines": 55844,
-    "logical_lines": 49911,
-    "documented_modules": 258,
-    "classes": 667,
-    "documented_classes": 168,
-    "functions": 2168,
-    "documented_functions": 171,
-    "public_exports": 273,
-    "public_contract_types": 146,
+    "source_files": 266,
+    "physical_lines": 57073,
+    "logical_lines": 50963,
+    "documented_modules": 266,
+    "classes": 684,
+    "documented_classes": 179,
+    "functions": 2230,
+    "documented_functions": 185,
+    "public_exports": 292,
+    "public_contract_types": 150,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 164
+    "package_dependency_edges": 167
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -116,6 +116,10 @@
     "harnessix.product_config:ProviderDefinition->harnessix.product_config.contracts:ProviderDefinition",
     "harnessix.product_config:ProviderFallbackDecision->harnessix.product_config.contracts:ProviderFallbackDecision",
     "harnessix.product_config:SecretReference->harnessix.product_config.contracts:SecretReference",
+    "harnessix.product_ui:ClientCommandAllocation->harnessix.product_ui.contracts:ClientCommandAllocation",
+    "harnessix.product_ui:ClientStateV1->harnessix.product_ui.contracts:ClientStateV1",
+    "harnessix.product_ui:ClientThreadCursor->harnessix.product_ui.contracts:ClientThreadCursor",
+    "harnessix.product_ui:ConnectionPhase->harnessix.product_ui.session:ConnectionPhase",
     "harnessix.protocol:ApprovalRespondParams->harnessix.protocol.contracts:ApprovalRespondParams",
     "harnessix.protocol:EventsNextParams->harnessix.protocol.contracts:EventsNextParams",
     "harnessix.protocol:EventsNextResult->harnessix.protocol.contracts:EventsNextResult",
@@ -225,7 +229,7 @@
     },
     {
       "path": "src/harnessix/sdk/agent_client.py",
-      "lines": 636
+      "lines": 611
     },
     {
       "path": "src/harnessix/skills/runtime.py",
@@ -471,7 +475,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI",
       "kind": "class",
-      "line": 50,
+      "line": 55,
       "lines": 250,
       "documented": true
     },
@@ -481,7 +485,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._answer_pending",
       "kind": "function",
-      "line": 149,
+      "line": 154,
       "lines": 77,
       "documented": false,
       "decision_complexity": 23
@@ -1488,6 +1492,26 @@
       "documented": true
     },
     {
+      "id": "harnessix.product_ui.session:RecoverableAgentSession",
+      "module": "harnessix.product_ui.session",
+      "path": "src/harnessix/product_ui/session.py",
+      "qualname": "RecoverableAgentSession",
+      "kind": "class",
+      "line": 70,
+      "lines": 229,
+      "documented": true
+    },
+    {
+      "id": "harnessix.product_ui.state_store:ClientStateStore",
+      "module": "harnessix.product_ui.state_store",
+      "path": "src/harnessix/product_ui/state_store.py",
+      "qualname": "ClientStateStore",
+      "kind": "class",
+      "line": 57,
+      "lines": 124,
+      "documented": true
+    },
+    {
       "id": "harnessix.protocol.requests:SQLiteProtocolRequestStore",
       "module": "harnessix.protocol.requests",
       "path": "src/harnessix/protocol/requests.py",
@@ -1576,8 +1600,8 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "AgentClient",
       "kind": "class",
-      "line": 300,
-      "lines": 337,
+      "line": 286,
+      "lines": 326,
       "documented": true
     },
     {
@@ -1586,7 +1610,7 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "SubprocessAgentTransport",
       "kind": "class",
-      "line": 99,
+      "line": 97,
       "lines": 187,
       "documented": true
     },
@@ -1915,6 +1939,9 @@
     "product_config->session",
     "product_config->tools",
     "product_config->workspace",
+    "product_ui->file_lock",
+    "product_ui->protocol",
+    "product_ui->sdk",
     "protocol->agent",
     "protocol->artifacts",
     "protocol->domain",
@@ -2190,6 +2217,27 @@
       "ProviderDefinition",
       "ProviderFallbackDecision",
       "SecretReference"
+    ],
+    "harnessix.product_ui": [
+      "ClientCommandAllocation",
+      "ClientStateStore",
+      "ClientStateV1",
+      "ClientThreadCursor",
+      "ConnectionPhase",
+      "PreparedClientCommand",
+      "ProductConnection",
+      "ProductUIError",
+      "ProductViewState",
+      "ProjectedItem",
+      "RecoverableAgentSession",
+      "TransientItemStream",
+      "TurnProjection",
+      "apply_events_next",
+      "apply_item_delta",
+      "apply_replay_page",
+      "cold_product_view",
+      "refresh_thread_snapshot",
+      "workspace_identity_fingerprint"
     ],
     "harnessix.protocol": [
       "AGENT_PROTOCOL_VERSION",

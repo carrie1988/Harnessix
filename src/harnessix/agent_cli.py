@@ -33,6 +33,11 @@ from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAge
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
 
 
+def _event_page_limit(client: AgentClient) -> int:
+    initialized = client.initialized
+    return 256 if initialized is None else min(256, initialized.limits.max_replay_events)
+
+
 class AgentConsole(Protocol):
     def write(self, text: str, *, end: str = "\n") -> None: ...
 
@@ -137,9 +142,9 @@ class ThinAgentCLI:
             self.console.write(f"Turn状态：{data.status}")
 
     async def _load_replay(self, thread_id: UUID, *, display_after: int) -> int:
-        cursor = 0
+        cursor, limit = 0, _event_page_limit(self.client)
         while True:
-            page = await self.client.replay_events(thread_id, after_cursor=cursor, limit=1000)
+            page = await self.client.replay_events(thread_id, after_cursor=cursor, limit=limit)
             for event in page.events:
                 self._record_event(event, render=event.cursor > display_after)
             cursor = page.scanned_through
@@ -241,7 +246,7 @@ class ThinAgentCLI:
                 thread_id,
                 after_cursor=cursor,
                 wait_ms=30_000,
-                limit=256,
+                limit=_event_page_limit(self.client),
             )
             for event in page.replay.events:
                 self._record_event(event, render=True)
