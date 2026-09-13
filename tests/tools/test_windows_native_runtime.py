@@ -17,8 +17,9 @@ pytestmark = pytest.mark.skipif(os.name != "nt", reason="Windows原生Handle运�
 
 async def test_windows_runtime_executes_all_four_read_tools(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
-    (tmp_path / "src/a.py").write_text("first\nneedle = 1\n", encoding="utf-8")
-    (tmp_path / "src/b.txt").write_text("needle\n", encoding="utf-8")
+    # 固定LF字节，避免Windows文本写入把测试夹具隐式转换为CRLF。
+    (tmp_path / "src/a.py").write_bytes(b"first\nneedle = 1\n")
+    (tmp_path / "src/b.txt").write_bytes(b"needle\n")
     (tmp_path / ".env").write_text("secret", encoding="utf-8")
 
     async with CodingToolRuntime(tmp_path) as tools:

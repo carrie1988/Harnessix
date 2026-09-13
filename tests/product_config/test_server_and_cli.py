@@ -61,7 +61,6 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
     assert CANARY not in (state / "product-config.db").read_bytes().decode("utf-8", errors="ignore")
 
 
-@pytest.mark.skipif(os.name == "nt", reason="0.8产品Tool Runtime尚无Windows端口")
 async def test_provider_construction_failure_does_not_activate_config(
     tmp_path: Path,
     config: ProductConfigV2,
@@ -92,7 +91,6 @@ async def test_provider_construction_failure_does_not_activate_config(
         assert [event.operation for event in store.config_events()] == ["loaded"]
 
 
-@pytest.mark.skipif(os.name == "nt", reason="0.8产品Tool Runtime尚无Windows端口")
 async def test_session_initialization_failure_closes_provider_bundle(
     tmp_path: Path,
     config: ProductConfigV2,
@@ -139,7 +137,6 @@ async def test_session_initialization_failure_closes_provider_bundle(
         assert store.active() is None
 
 
-@pytest.mark.skipif(os.name == "nt", reason="0.8产品Tool Runtime尚无Windows端口")
 async def test_runtime_owner_conflict_does_not_activate_or_open_protocol(
     tmp_path: Path,
     config: ProductConfigV2,
