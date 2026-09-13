@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from pydantic import JsonValue, ValidationError
 
@@ -51,6 +52,9 @@ from harnessix.tools.search_contracts import (
     SearchInput,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, run_read_operation
+
+if TYPE_CHECKING:
+    from harnessix.tools.windows_read import WindowsReadRuntime
 
 
 async def _drain[T](task: asyncio.Task[T]) -> None:
@@ -171,20 +175,40 @@ class CodingToolRuntime:
     ) -> None:
         if type(max_concurrent_reads) is not int or not 1 <= max_concurrent_reads <= 16:
             raise KernelError("tool_concurrency_invalid", "只读工具并发上限必须在1到16之间")
-        self._workspace = Workspace(root, denied_paths=denied_paths)
+        self._workspace: Workspace | None = None
+        self._windows: WindowsReadRuntime | None = None
+        if os.name == "nt":
+            if git_executable is not None:
+                raise KernelError(
+                    "product_git_platform_unsupported",
+                    "Windows原生Git读取尚未开放",
+                )
+            from harnessix.tools.windows_read import WindowsReadRuntime
+
+            self._windows = WindowsReadRuntime(root, denied_paths=denied_paths)
+            read_implementation = "coding-read/windows-v1"
+        elif os.name == "posix" and hasattr(os, "O_NOFOLLOW"):
+            self._workspace = Workspace(root, denied_paths=denied_paths)
+            read_implementation = "coding-read/v1"
+        else:
+            raise KernelError(
+                "product_tools_platform_unsupported",
+                "内置只读Coding Tool Runtime不支持该宿主平台",
+            )
         self._max_concurrent_reads = max_concurrent_reads
         self._lock = asyncio.BoundedSemaphore(max_concurrent_reads)
         self._closed = False
         self._artifacts = artifacts
-        self._git = (
-            git.GitReadRuntime(self._workspace.root, git_executable) if git_executable else None
-        )
+        self._git = None
+        if git_executable is not None:
+            assert self._workspace is not None
+            self._git = git.GitReadRuntime(self._workspace.root, git_executable)
         self._definitions: dict[str, ToolDescriptor] = {}
         bindings = (*_BINDINGS, *(_GIT_BINDINGS if self._git is not None else ()))
         for binding in bindings:
             rules: dict[str, object] = {
-                "implementation": "coding-read/v1",
-                "scope": self._workspace.scope,
+                "implementation": read_implementation,
+                "scope": self.workspace_scope,
                 "input": binding.input_model.model_json_schema(),
                 "output": binding.output_model.model_json_schema(),
                 "concurrency": "parallel_read",
@@ -227,7 +251,7 @@ class CodingToolRuntime:
         if artifacts is not None:
             contract = digest(
                 {
-                    "scope": self._workspace.scope,
+                    "scope": self.workspace_scope,
                     "artifacts": artifacts.contract(),
                     "input": ReadArtifactInput.model_json_schema(),
                     "output": ArtifactPage.model_json_schema(),
@@ -254,19 +278,28 @@ class CodingToolRuntime:
     @property
     def workspace_root(self) -> Path:
         """宿主创建 Thread 时使用的规范根；访问能力仍由 Workspace 持有。"""
-        return self._workspace.root
+        if self._workspace is not None:
+            return self._workspace.root
+        assert self._windows is not None
+        return self._windows.root
 
     @property
     def workspace_scope(self) -> str:
-        return self._workspace.scope
+        if self._workspace is not None:
+            return self._workspace.scope
+        assert self._windows is not None
+        return self._windows.scope
 
     async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
         if workspace != str(self.workspace_root):
             raise KernelError("tool_workspace_mismatch", "Artifact访问与已绑定工作区不匹配")
 
         def inspect(operation: ReadOperation) -> str:
-            with self._workspace.open(".", operation, directory=True):
-                return self.workspace_scope
+            if self._workspace is not None:
+                with self._workspace.open(".", operation, directory=True):
+                    return self.workspace_scope
+            assert self._windows is not None
+            return self._windows.inspect(operation)
 
         async def locked() -> str:
             async with self._lock:
@@ -398,6 +431,9 @@ class CodingToolRuntime:
                 raise KernelError("tool_runtime_closed", "工具运行时已关闭")
 
             def read(operation: ReadOperation) -> ReadContract:
+                if self._windows is not None:
+                    return self._windows.execute(args, operation, capture=capture)
+                assert self._workspace is not None
                 if isinstance(args, ListFilesInput):
                     return files.list_files(self._workspace, args, operation)
                 if isinstance(args, GlobInput):
@@ -433,7 +469,10 @@ class CodingToolRuntime:
                 for _ in range(self._max_concurrent_reads):
                     await self._lock.acquire()
                     acquired += 1
-                self._workspace.close()
+                if self._workspace is not None:
+                    self._workspace.close()
+                if self._windows is not None:
+                    self._windows.close()
             finally:
                 for _ in range(acquired):
                     self._lock.release()

@@ -91,7 +91,7 @@ jobs:
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"
-      - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py
+      - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/tools/test_windows_native_runtime.py tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py
 
   postgres:
     runs-on: ubuntu-latest

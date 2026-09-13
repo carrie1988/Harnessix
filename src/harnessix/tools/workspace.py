@@ -120,6 +120,42 @@ def _parts(path: str, *, max_bytes: int = 1024, max_parts: int = 64) -> tuple[st
     return parts
 
 
+class WorkspaceReadPolicy:
+    """跨平台共享的逻辑路径与敏感名称拒绝策略。"""
+
+    def __init__(
+        self,
+        denied_paths: tuple[str, ...] = (),
+        *,
+        path_max_bytes: int = 1024,
+        path_max_parts: int = 64,
+    ) -> None:
+        self.denied_paths = tuple(sorted({_parts(path.casefold()) for path in denied_paths}))
+        self.path_max_bytes = path_max_bytes
+        self.path_max_parts = path_max_parts
+
+    def parts(self, path: str) -> tuple[str, ...]:
+        parts = _parts(
+            path,
+            max_bytes=self.path_max_bytes,
+            max_parts=self.path_max_parts,
+        )
+        folded = tuple(part.casefold() for part in parts)
+        if any(
+            part in _DENIED_NAMES or part.startswith(".env.") or part.endswith(_DENIED_SUFFIXES)
+            for part in folded
+        ) or any(folded[: len(prefix)] == prefix for prefix in self.denied_paths):
+            raise ReadToolError("path_denied")
+        return parts
+
+    def scope_fields(self) -> dict[str, object]:
+        return {
+            "denied_paths": self.denied_paths,
+            "denied_names": sorted(_DENIED_NAMES),
+            "denied_suffixes": _DENIED_SUFFIXES,
+        }
+
+
 class Workspace:
     """宿主选择的本地目录能力；生命周期内保留根 FD，不等价于 OS Sandbox。"""
 
@@ -133,9 +169,11 @@ class Workspace:
     ) -> None:
         if os.name != "posix" or not hasattr(os, "O_NOFOLLOW"):
             raise ValueError("当前工作区实现仅支持具备 no-follow 的 POSIX 系统")
-        self._denied_paths = tuple(sorted({_parts(p.casefold()) for p in denied_paths}))
-        self._path_max_bytes = path_max_bytes
-        self._path_max_parts = path_max_parts
+        self._policy = WorkspaceReadPolicy(
+            denied_paths,
+            path_max_bytes=path_max_bytes,
+            path_max_parts=path_max_parts,
+        )
         self.root = root.resolve(strict=True)
         self._root_fd: int | None = self._open_root()
         info = os.fstat(self._root_fd)
@@ -145,9 +183,7 @@ class Workspace:
                 "policy": "workspace-read/v1",
                 "root": str(self.root),
                 "identity": self._identity,
-                "denied_paths": self._denied_paths,
-                "denied_names": sorted(_DENIED_NAMES),
-                "denied_suffixes": _DENIED_SUFFIXES,
+                **self._policy.scope_fields(),
             }
         )
 
@@ -165,18 +201,7 @@ class Workspace:
             raise
 
     def parts(self, path: str) -> tuple[str, ...]:
-        parts = _parts(
-            path,
-            max_bytes=self._path_max_bytes,
-            max_parts=self._path_max_parts,
-        )
-        folded = tuple(p.casefold() for p in parts)
-        if any(
-            p in _DENIED_NAMES or p.startswith(".env.") or p.endswith(_DENIED_SUFFIXES)
-            for p in folded
-        ) or any(folded[: len(p)] == p for p in self._denied_paths):
-            raise ReadToolError("path_denied")
-        return parts
+        return self._policy.parts(path)
 
     def _current_root(self) -> int:
         if self._root_fd is None:

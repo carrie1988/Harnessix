@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import stat
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -151,7 +152,13 @@ class WindowsWorkspaceRoot:
             raise OSError(error, os.strerror(error), str(path))
         return int(handle)
 
-    def _open_chain(self, logical_path: str) -> tuple[list[int], str]:
+    def _open_chain(
+        self,
+        logical_path: str,
+        *,
+        data: bool = True,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> tuple[list[int], str]:
         normalized = normalize_workspace_path(logical_path, "windows")
         current = Path(self.path.anchor)
         paths = [current]
@@ -166,7 +173,12 @@ class WindowsWorkspaceRoot:
         handles: list[int] = []
         try:
             for index, candidate in enumerate(paths):
-                handle = self._open(candidate, data=index == len(paths) - 1)
+                if checkpoint is not None:
+                    checkpoint()
+                handle = self._open(
+                    candidate,
+                    data=data and index == len(paths) - 1,
+                )
                 handles.append(handle)
                 info = self._information(handle)
                 if info.attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
@@ -187,10 +199,24 @@ class WindowsWorkspaceRoot:
             self._close_all(handles)
             raise
 
-    def observe(self, path: str, *, access: ResourceAccess) -> _Observed:
+    def observe(
+        self,
+        path: str,
+        *,
+        access: ResourceAccess,
+        include_content: bool = True,
+        max_bytes: int = MAX_SNAPSHOT_FILE_BYTES,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> _Observed:
+        if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_SNAPSHOT_FILE_BYTES:
+            raise ValueError("Windows读取上限无效")
         normalized = normalize_workspace_path(path, "windows")
         try:
-            handles, final_path = self._open_chain(normalized)
+            handles, final_path = self._open_chain(
+                normalized,
+                data=include_content,
+                checkpoint=checkpoint,
+            )
         except OSError as error:
             if (
                 error.errno not in {_ERROR_FILE_NOT_FOUND, _ERROR_PATH_NOT_FOUND}
@@ -199,7 +225,10 @@ class WindowsWorkspaceRoot:
                 raise KernelError("workspace_observation_failed", "Windows资源观察失败") from None
             parent, _, name = normalized.rpartition("/")
             try:
-                handles, final_path = self._open_chain(parent or ".")
+                handles, final_path = self._open_chain(
+                    parent or ".",
+                    checkpoint=checkpoint,
+                )
             except OSError:
                 raise KernelError(
                     "workspace_parent_missing", "Windows缺失资源的父目录不存在"
@@ -224,7 +253,8 @@ class WindowsWorkspaceRoot:
                 raise KernelError("workspace_path_denied", "Windows文件具有多个硬链接")
             if directory:
                 body, count, entries = self._directory_body(
-                    self.path / Path(*normalized.split("/"))
+                    self.path / Path(*normalized.split("/")),
+                    checkpoint=checkpoint,
                 )
                 after = self._information(handle)
                 if self._revision_identity(before) != self._revision_identity(after):
@@ -240,9 +270,19 @@ class WindowsWorkspaceRoot:
                     entries,
                 )
             size = (before.size_high << 32) | before.size_low
-            if size > MAX_SNAPSHOT_FILE_BYTES:
+            if not include_content:
+                after = self._information(handle)
+                if self._revision_identity(before) != self._revision_identity(after):
+                    raise KernelError("workspace_changed", "Windows文件在观察期间变化")
+                return _Observed(
+                    "file",
+                    self._stable_identity(before, directory=False),
+                    None,
+                    size,
+                )
+            if size > max_bytes:
                 raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
-            content = self._read_all(handle)
+            content = self._read_all(handle, max_bytes=max_bytes, checkpoint=checkpoint)
             after = self._information(handle)
             if (
                 self._revision_identity(before) != self._revision_identity(after)
@@ -258,7 +298,10 @@ class WindowsWorkspaceRoot:
             self._close_all(handles)
 
     def _directory_body(
-        self, path: Path
+        self,
+        path: Path,
+        *,
+        checkpoint: Callable[[], None] | None,
     ) -> tuple[
         bytes,
         int,
@@ -269,6 +312,8 @@ class WindowsWorkspaceRoot:
         seen: set[str] = set()
         with os.scandir(self._api_path(path)) as iterator:
             for entry in iterator:
+                if checkpoint is not None:
+                    checkpoint()
                 if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
                     raise KernelError("workspace_snapshot_limit", "Windows目录观察超过条目上限")
                 # Windows DirEntry.stat()对普通项可能复用FindFirstFileW缓存，显式os.stat
@@ -300,10 +345,19 @@ class WindowsWorkspaceRoot:
             tuple(exposed),
         )
 
-    def _read_all(self, handle: int) -> bytes:
+    def _read_all(
+        self,
+        handle: int,
+        *,
+        max_bytes: int,
+        checkpoint: Callable[[], None] | None,
+    ) -> bytes:
         body = bytearray()
         while True:
-            buffer = ctypes.create_string_buffer(65536)
+            if checkpoint is not None:
+                checkpoint()
+            remaining = max_bytes - len(body)
+            buffer = ctypes.create_string_buffer(min(65536, remaining + 1))
             read = ctypes.c_uint32()
             if not self._kernel32.ReadFile(handle, buffer, len(buffer), ctypes.byref(read), None):
                 error = _last_error()
@@ -311,7 +365,7 @@ class WindowsWorkspaceRoot:
             if read.value == 0:
                 return bytes(body)
             body.extend(buffer.raw[: read.value])
-            if len(body) > MAX_SNAPSHOT_FILE_BYTES:
+            if len(body) > max_bytes:
                 raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
 
     def _information(self, handle: int) -> _ByHandleFileInformation:

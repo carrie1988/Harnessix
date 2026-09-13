@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 import stat
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,7 +52,13 @@ class _NativeRoot(Protocol):
     path: Path
     root_identity: tuple[object, ...]
 
-    def observe(self, path: str, *, access: ResourceAccess) -> _NativeObservation: ...
+    def observe(
+        self,
+        path: str,
+        *,
+        access: ResourceAccess,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> _NativeObservation: ...
 
     def close(self) -> None: ...
 
@@ -88,7 +94,15 @@ class _PosixRoot:
         except (OSError, ReadToolError, ValueError):
             raise KernelError("workspace_binding_invalid", "POSIX Workspace根绑定失败") from None
 
-    def observe(self, path: str, *, access: ResourceAccess) -> _Observed:
+    def observe(
+        self,
+        path: str,
+        *,
+        access: ResourceAccess,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> _Observed:
+        if checkpoint is not None:
+            checkpoint()
         parts = self._workspace.parts(path)
         parent = "/".join(parts[:-1]) or "."
         name = parts[-1] if parts else None
