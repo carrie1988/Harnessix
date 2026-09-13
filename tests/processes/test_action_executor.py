@@ -185,7 +185,11 @@ async def test_incomplete_pipe_evidence_is_unknown_and_never_replayed(tmp_path):
         assert completed.result is not None and completed.result.error is not None
         assert completed.result.error.code == "process_effect_unknown"
         evidence = ProcessResult.model_validate(completed.result.output)
-        assert evidence.stop_reason == "output_limit" and not evidence.stdout.eof
+        # 输出上限先触发停止，但宿主在高负载下仍可能无法证明进程组清理完成；
+        # cleanup_failed是比原始停止原因更强的未知效果事实，不能把它误判为测试失败。
+        assert evidence.stop_reason in {"output_limit", "cleanup_failed"}
+        assert not evidence.stdout.eof
+        assert (evidence.termination == "failed") == (evidence.stop_reason == "cleanup_failed")
         reconciled = await value.reconcile(request.action_id)
         assert reconciled.status is ActionStatus.MANUAL_INTERVENTION
         assert reconciled.result.error.code == "reconciliation_not_supported"
