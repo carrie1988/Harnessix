@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
+version: 5
 code_revision: pending
 owners:
   - core
@@ -52,7 +52,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2的Event v20、Gateway与双账本恢复已完成本地实现和专项回归，尚待全仓及CI关闭；e3～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2的Event v20、Gateway与双账本恢复已完成本地实现、专项回归和全仓门禁，尚待CI关闭；e3～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -792,7 +792,7 @@ on Agent turn resume:
 | 顺序 | 子切片 | 代码/数据改动 | 行为/契约 | 测试 | 可独立回滚 |
 |---:|---|---|---|---|---|
 | 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | [CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭 |
-| 2 | 0.9.1e2 Agent Gateway | Event v20、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 本地实现与专项回归完成，待全仓及CI关闭 |
+| 2 | 0.9.1e2 Agent Gateway | Event v20、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 实现提交`328aa2d`的专项与全仓本地门禁通过，待CI关闭 |
 | 3 | 0.9.1e3 Patch/Delivery | Patch定义、Review Artifact、事务Executor/Reconcile、POSIX广告 | 默认产品真实多文件写入 | 新增/改/删、Diff、漂移、Lease、部分效果、SDK/TUI | 是；停止新Patch目录 |
 | 4 | 0.9.1e4 Process/Sandbox | Action Config、Profile Probe、Container Executor/Reconcile、输出Artifact | 有配置且能力通过才广告 | 配置攻击、固定镜像、非零/取消/超时/崩溃/输出 | 是；省略Profile |
 | 5 | 0.9.1e5 产品关闭 | Server Builder/Owner、Preflight/Doctor、启动恢复、运维/威胁/CI | 完整产品纵向链与功能门 | 三平台、省略语义、真实Container、全量CI | 是；保留账本恢复 |
@@ -1319,4 +1319,4 @@ Gateway构造时对Descriptor与Router Binding执行精确集合和字段核对�
 | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | migration23连续性、旧数据库升级和v20追加 |
 | [`test_projection.py`](../../tests/protocol/test_projection.py) | 三种presentation复用Protocol v1且不泄漏内部字段 |
 
-Agent、Trusted Actions与Protocol三个测试目录的联合回归已经通过；最终全仓数量和全矩阵CI运行号在e2关闭提交中固定。当前仍未证明默认产品可修改文件或运行Container；这些能力分别由e3、e4实现，产品Owner、Preflight/Doctor和启动恢复由e5关闭。
+Agent、Trusted Actions与Protocol三个测试目录的联合回归已经通过；`uv run pytest -q`收集3535项并以退出码0结束，其中19项按平台或外部服务条件跳过；Ruff、Readability、Mypy、合同生成和文档门禁全部通过。全矩阵CI运行号在e2关闭提交中固定。当前仍未证明默认产品可修改文件或运行Container；这些能力分别由e3、e4实现，产品Owner、Preflight/Doctor和启动恢复由e5关闭。

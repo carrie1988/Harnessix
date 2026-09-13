@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 41
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 42
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -43,6 +43,11 @@ related_tests:
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_server_and_cli.py
   - tests/trusted_actions/test_router.py
+  - tests/trusted_actions/test_agent_gateway.py
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_schemas.py
+  - tests/agent/test_session_upgrade.py
+  - tests/protocol/test_projection.py
   - tests/app_server/test_server_sdk.py
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
@@ -70,7 +75,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前实现基线为提交`82e247a8d083f3f8a7d68ee091a43d59096f298d`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收。状态标签含义如下：
+本文当前实现基线为提交`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收。0.9.1e2已在该基线实现显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影，完整本地门禁已通过，远端CI尚待验收。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -122,7 +127,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 2. **不确定不重放**：不能证明外部效果是否发生时进入`UNKNOWN`、等待观察或人工处理，不自动重复写入；
 3. **控制面不越权执行**：Model和扩展只能提出Tool Call或Action，不能绕过Policy、Workspace和Executor；
 4. **Provider中立历史**：Session保存规范化内容，不把上游SDK对象作为领域事实；
-5. **显式版本和兼容性**：Agent Protocol当前为`1.0`，Agent Event当前为`schema_version=19`，Session数据库迁移当前连续到22；
+5. **显式版本和兼容性**：Agent Protocol当前为`1.0`，Agent Event当前为`schema_version=20`，Session数据库迁移当前连续到23；
 6. **有界资源**：Turn具有步骤、Token、时长、输出字符和单步Tool Call预算；stdio、HTTP与进程输出也有边界；
 7. **最小权限**：Workspace、状态目录、配置和Secret分离，路径、符号链接、可执行文件和网络能力显式校验；
 8. **单一所有者**：Session Store运行时所有权、Workspace Lease和Action Lease避免多个执行者同时提交同一事实；
@@ -228,8 +233,36 @@ flowchart TD
 不能广告或注册。`TrustedActionRouter.register_many`先验证全集再发布，避免产品目录半安装。
 
 Action规划以Action Audit中完整Route为首个可恢复事实，再保存内嵌Execution Plan。若进程在两次提交之间退出，同一规范
-Invocation重试会修复Execution Plan Store，不重新捕获Workspace或决策Policy。该地基尚未注入Agent Gateway，因此不代表Patch、
-Process或Delivery已经成为默认产品能力。详细字段、时序和测试见[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)。
+Invocation重试会修复Execution Plan Store，不重新捕获Workspace或决策Policy。该地基不代表Patch、Process或Delivery已经成为默认产品能力。详细字段、时序和测试见[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)。
+
+### 6.1.2 0.9.1e2 Agent Gateway显式装配链
+
+```mermaid
+flowchart TD
+    Model[模型Tool Call]
+    Runtime[AgentRuntime]
+    SessionRuntime[TrustedActionSessionRuntime]
+    Gateway[RouterBackedAgentActionGateway]
+    Router[TrustedActionRouter]
+    Session[(Session Event Log)]
+    Audit[(Action Audit与Execution Plan)]
+    Executor[受信Executor/Reconciler]
+
+    Model --> Runtime --> SessionRuntime
+    SessionRuntime -->|Session请求/决定/效果投影| Session
+    SessionRuntime --> Gateway --> Router
+    Router --> Audit
+    Router --> Executor
+    Gateway -->|Action状态回投影| SessionRuntime
+```
+
+[Agent Gateway合同](../src/harnessix/agent/trusted_action_contracts.py)把`prepare/decide/execute/recover`
+暴露给Agent Runtime；[Router适配](../src/harnessix/trusted_actions/agent_gateway.py)负责稳定Invocation/Plan/Idempotency
+身份、精确Descriptor/Binding核对和Action状态机推进；[Session编排](../src/harnessix/agent/trusted_action_runtime.py)
+把审批请求、决定和Effect保存为Agent Event v20事实。审批只由Router中的Approval Checkpoint授权，Session记录仅作为交互和恢复投影。
+
+这是一条**显式装配链**：宿主必须提供匹配的Gateway与Router。当前`harnessix agent-server`仍只注册只读Coding Tool，
+未注册高风险Action Descriptor、Executor或Reconciler；因此该链证明集成合同和恢复语义，不代表默认产品已经获得写入或进程权限。
 
 ### 6.2 独立Action Plane链
 
@@ -267,8 +300,8 @@ flowchart LR
 | Product UI终端产品 | 0.9.1a/0.9.1b/0.9.1c已关闭 | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller，以及Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；三平台CI已通过，详见[模块设计](modules/product-ui.md) | [interactions.py](../src/harnessix/product_ui/interactions.py)、[interaction_service.py](../src/harnessix/product_ui/interaction_service.py)、[controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py) | [product_ui测试](../tests/product_ui/) |
 | Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
 | Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
-| Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
-| Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py) |
+| Agent Runtime | 当前默认产品/Trusted Action显式装配 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；可选Gateway把受信Action接入同一Turn且不改变默认权限，详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[trusted_action_runtime.py](../src/harnessix/agent/trusted_action_runtime.py) | [agent测试](../tests/agent/)、[Gateway集成测试](../tests/agent/test_trusted_action_runtime.py) |
+| Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；v20投影Trusted Action审批与Effect，详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py)、[升级测试](../tests/agent/test_session_upgrade.py) |
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本；详见[模块设计](modules/models.md) | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
 | Context | 已实现/显式装配 | Source聚合、预算、压缩窗口和Tool结果视图；详见[模块设计](modules/context.md) | [engine.py](../src/harnessix/context/engine.py) `ContextEngine`、[sources.py](../src/harnessix/context/sources.py) | [context测试](../tests/context/) |
 | 只读Tool | 当前默认产品 | macOS/Linux使用POSIX FD，Windows使用原生Handle；四项文件/搜索工具跨平台并共享默认Artifact Store，Git仅POSIX显式装配；详见[模块设计](modules/tools.md) | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime`、[windows_read.py](../src/harnessix/tools/windows_read.py) | [tools测试](../tests/tools/)、[Windows原生测试](../tests/tools/test_windows_native_runtime.py) |
@@ -283,7 +316,7 @@ flowchart LR
 | Secrets | 默认模型Provider使用/其他路径显式装配 | 环境Source、名称/版本/Target绑定、短生命周期Material、流式脱敏和结构化Guard；不提供Vault、轮换或全局DLP，详见[模块设计](modules/secrets.md) | [provider.py](../src/harnessix/secrets/provider.py)、[redaction.py](../src/harnessix/secrets/redaction.py)、[guard.py](../src/harnessix/secrets/guard.py) | [secrets测试](../tests/secrets/)、[Provider凭据测试](../tests/product_config/test_provider_credentials.py)、[Process输出测试](../tests/processes/test_supervisor.py) |
 | Workspace | 已实现/显式装配 | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验与SQLite Fencing Lease；详见[模块设计](modules/workspace.md) | [contracts.py](../src/harnessix/workspace/contracts.py)、[snapshot.py](../src/harnessix/workspace/snapshot.py)、[windows.py](../src/harnessix/workspace/windows.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 已实现/显式装配 | Workspace Transaction、私有Blob、完整Diff、POSIX可恢复发布、Git Worktree/Checkpoint/确定性Commit和经统一Route单独批准的Push；默认产品尚未装配，详见[模块设计](modules/delivery.md) | [planner.py](../src/harnessix/delivery/planner.py)、[filesystem.py](../src/harnessix/delivery/filesystem.py)、[git.py](../src/harnessix/delivery/git.py)、[git_push.py](../src/harnessix/delivery/git_push.py) | [delivery测试](../tests/delivery/)、[Push Schema测试](../tests/trusted_actions/test_schemas.py) |
-| Trusted Action | 已实现/e1产品地基 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、扩展端口、UNKNOWN对账、原子批量注册和Audit优先幂等规划；默认Agent Gateway尚未装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[planning.py](../src/harnessix/trusted_actions/planning.py)、[store.py](../src/harnessix/trusted_actions/store.py) | [trusted_actions测试](../tests/trusted_actions/)、[Git Push测试](../tests/delivery/test_git_push.py) |
+| Trusted Action | 已实现/e1～e2产品地基 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、UNKNOWN对账、原子注册、幂等规划及Agent Gateway；默认产品尚未注册高风险能力，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[agent_gateway.py](../src/harnessix/trusted_actions/agent_gateway.py) `RouterBackedAgentActionGateway`、[planning.py](../src/harnessix/trusted_actions/planning.py) | [trusted_actions测试](../tests/trusted_actions/)、[Gateway测试](../tests/trusted_actions/test_agent_gateway.py)、[Git Push测试](../tests/delivery/test_git_push.py) |
 | MCP | 已实现/显式装配 | 受管stdio/受信进程内Target、不可变目录、调用前Schema漂移、Trusted Action与只读stdio Server；默认产品未装配，详见[模块设计](modules/mcp.md) | [runtime.py](../src/harnessix/mcp/runtime.py)、[actions.py](../src/harnessix/mcp/actions.py)、[store.py](../src/harnessix/mcp/store.py) | [MCP](../tests/mcp/)与[真实Container](../tests/integration/test_container_sandbox.py)测试 |
 | Skill | 已实现/显式装配 | 本地来源、不可变目录、冲突消歧、渐进加载、安全Reader、无正文访问事件及只读Trusted Action；默认产品未装配，详见[模块设计](modules/skills.md) | [runtime.py](../src/harnessix/skills/runtime.py)、[store.py](../src/harnessix/skills/store.py)、[actions.py](../src/harnessix/skills/actions.py) | [Skill测试](../tests/skills/) |
 | Hook | 已实现/显式装配 | Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Action执行Timeout、取消和Interrupted恢复；默认产品未装配且授权/对账仍有缺口，详见[模块设计](modules/hooks.md) | [runtime.py](../src/harnessix/hooks/runtime.py)、[contracts.py](../src/harnessix/hooks/contracts.py)、[store.py](../src/harnessix/hooks/store.py) | [Hook测试](../tests/hooks/) |
@@ -297,10 +330,11 @@ flowchart LR
 |---|---|---|---|---|
 | `AgentProtocolServer` | 单连接协议状态和协商能力 | 一个连接实例；`NEW`到`CLOSED` | `AgentApplicationService`、Protocol codec | 新协议方法必须先进入版本化合同 |
 | `AgentApplicationService` | 后台Turn Task、Delta Buffer、命令编排 | `close`有界等待后取消；每个Turn最多一个后台Task | `AgentRuntime`、Session、Protocol Request Store | Scoped Artifact Reader |
-| `AgentRuntime` | Thread锁、活动Cancel Token/Task和运行配置 | Async context拥有Session Store；每Thread串行 | Model、Context、Tool、Session及可选专用端口 | 各Port/Scoped Runtime |
+| `AgentRuntime` | Thread锁、活动Cancel Token/Task和运行配置 | Async context拥有Session Store；每Thread串行 | Model、Context、Tool、Session及可选Trusted Action Gateway | 各Port/Scoped Runtime |
 | `SQLiteSessionStore` | Event、Migration、运行时Owner | 单进程异步连接；WAL与CAS；Owner进入/退出 | SQLite、Agent Event/Reducer | `SessionStore`其他实现 |
 | `CodingToolRuntime` | Workspace根、固定Git执行文件、Artifact捕获和受限并行能力 | Async context打开/关闭Workspace资源 | Files/Search/Git、Workspace、Artifact | `ScopedToolRuntime`合同 |
-| `ProductActionCatalog` | 能力报告、Definition与模型Descriptor同源集合 | 构造时全量验证；安装时证据必须未过期 | Product Action合同、`TrustedActionRouter` | e2～e4注册Patch/Process能力 |
+| `ProductActionCatalog` | 能力报告、Definition与模型Descriptor同源集合 | 构造时全量验证；安装时证据必须未过期 | Product Action合同、`TrustedActionRouter` | e3～e4注册Patch/Process能力 |
+| `RouterBackedAgentActionGateway` | Agent调用身份、Router状态同步和恢复判断 | 无自有持久状态；所有决定回到Router和Session账本 | `TrustedActionRouter`、Descriptor/Binding集合 | `TrustedActionGateway` |
 | `TrustedActionRouter` | Definition Registry与持久Action Route | `plan/decide/execute/reconcile`按Plan身份推进 | Policy、Store、受信Executor | `ExtensionActionPort` |
 | `ActionService` | Registry、Policy、Journal与Worker身份 | 初始化恢复；内联或Lease执行 | `EffectJournal`、Executor、Observability | Journal/Policy/Executor端口 |
 | `ActionWorker` | Poll、Heartbeat和恢复周期 | 单Worker循环；终态提交前保持Lease证明 | `ActionService` | 多Worker靠Journal协调 |
@@ -893,7 +927,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 状态如何恢复 | [session/sqlite.py](../src/harnessix/session/sqlite.py)、`AgentRuntime._recover` | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_session_upgrade.py](../tests/agent/test_session_upgrade.py) |
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
 | 真实Provider固定场景如何限制请求、恢复并生成白名单报告 | [Smoke模块设计](modules/smoke.md)、[smoke/contracts.py](../src/harnessix/smoke/contracts.py)、[smoke/runner.py](../src/harnessix/smoke/runner.py) | [test_runner.py](../tests/smoke/test_runner.py)、[test_cli.py](../tests/smoke/test_cli.py)、[test_interrupt.py](../tests/smoke/test_interrupt.py) |
-| 高风险能力如何收口 | [Trusted Actions模块设计](modules/trusted-actions.md)、[trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_router.py](../tests/trusted_actions/test_router.py)、[test_git_push.py](../tests/delivery/test_git_push.py) |
+| 高风险能力如何收口 | [Trusted Actions模块设计](modules/trusted-actions.md)、[trusted_actions/agent_gateway.py](../src/harnessix/trusted_actions/agent_gateway.py)、[trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_agent_gateway.py](../tests/trusted_actions/test_agent_gateway.py)、[test_trusted_action_runtime.py](../tests/agent/test_trusted_action_runtime.py)、[test_git_push.py](../tests/delivery/test_git_push.py) |
 | Action如何执行和对账 | [Executors模块设计](modules/executors.md)、[runtime.py](../src/harnessix/runtime.py)、[worker.py](../src/harnessix/worker.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py) |
 | Action如何持久化、Claim和过期恢复 | [Storage模块设计](modules/storage.md)、[sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [test_worker.py](../tests/integration/test_worker.py)、[test_postgres_journal.py](../tests/integration/test_postgres_journal.py) |
 | 交付如何持久化 | [delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py) | [test_planner.py](../tests/delivery/test_planner.py)、[test_store.py](../tests/delivery/test_store.py) |
@@ -905,7 +939,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 默认产品已装配Artifact，但尚未装配写工具、Process和Delivery | 大结果可分页，仍不能形成修改—验证—交付闭环 | 0.9.1e2～e5 |
+| 默认产品已装配Artifact，且已有显式Agent Gateway，但尚未注册写工具、Process和Delivery | 大结果可分页、宿主可组合统一Action，默认产品仍不能形成修改—验证—交付闭环 | 0.9.1e3～e5 |
 | Windows原生只读链已验证，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.1e、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
@@ -930,8 +964,8 @@ if UNKNOWN: require reconcile instead of blind replay
 ## 22. 兼容性与迁移
 
 - Protocol只接受版本`1.0`，握手时校验版本和初始化参数；新增不兼容字段必须升级协议并补兼容矩阵；
-- Agent Event允许读取`schema_version` 1～19，当前新事件写19；字段语义由模型校验、Upcast和Reducer共同保证；
-- Session Migration文件版本必须从1连续到22，已应用Migration的Checksum变化会失败关闭；
+- Agent Event允许读取`schema_version` 1～20，当前新事件写20；字段语义由模型校验、Upcast和Reducer共同保证；
+- Session Migration文件版本必须从1连续到23，已应用Migration的Checksum变化会失败关闭；
 - Product Config当前运行格式是v2，旧配置必须先显式迁移，启动不会静默改写来源文件；
 - Protocol Request、Action、Execution Plan和Delivery Record均有独立Schema/版本，不能用一次数据库迁移代替跨边界兼容设计；
 - SQLite状态升级前应按[部署文档](deployment.md)备份；迁移失败不得继续开放协议或执行副作用；
@@ -965,6 +999,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 审批各崩溃边界可恢复 | `tests/agent/test_approval_crash_recovery.py::test_approval_crash_boundaries` |
 | Action未知效果只对账不重执行 | `tests/integration/test_action_service.py::test_uncertain_effect_is_reconciled_without_reexecution` |
 | Worker终态提交与续租竞态受控 | `tests/integration/test_worker.py::test_execution_commit_wins_renewal_race`、`::test_stale_worker_cannot_advance_state` |
+| Agent与Router双账本崩溃后按权威Action事实修复，UNKNOWN只对账 | `tests/agent/test_trusted_action_runtime.py::test_router_first_crash_is_repaired_without_reexecution`、`tests/trusted_actions/test_agent_gateway.py::test_recovery_reconciles_running_action_without_blind_reexecution` |
 | 多文件交付崩溃后按镜像恢复 | `tests/delivery/test_filesystem.py::test_reconcile_effect_after_crash_and_resume_remaining_members`、`::test_real_process_exit_after_replace_reconciles_without_repeating_effect` |
 
 ### 23.3 DOC-1.1验收
@@ -980,6 +1015,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 42 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 同步0.9.1e2显式Agent Gateway、Router审批权威、Agent Event v20、Session migration23、双账本恢复和Protocol v1兼容投影；本地完整门禁通过，等待CI |
 | 41 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 记录0.9.1e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭 |
 | 40 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1实现：Action合同/同源目录、原子注册、Audit优先规划和默认Artifact产品链 |
 | 38 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵通过，正式关闭完整领域交互子切片 |

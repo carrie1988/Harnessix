@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 13
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 14
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -28,6 +28,8 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
+  - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
@@ -39,6 +41,8 @@ related_tests:
   - tests/product_ui/test_stdio_product.py
   - tests/agent/test_runtime.py
   - tests/agent/test_crash_recovery.py
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/trusted_actions/test_agent_gateway.py
   - tests/hooks/test_runtime.py
   - tests/hooks/test_schemas.py
   - tests/smoke/test_runner.py
@@ -66,11 +70,11 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应已通过[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证的`5e8d71f019b30cac28229f1fddcee3778fe8e8eb`基线；
-- Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=19`；Session迁移当前到22；
+- 本文对应`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`实现基线；0.9.1e2本地完整门禁已通过，远端CI尚待验收；
+- Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到23；
 - 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
-- Windows存在底层实现和测试，默认只读Coding Tool产品入口仍会失败关闭；
+- Windows默认产品已装配原生List/Read/Glob/Grep安全端口；Git、写入和Process仍未进入默认能力；
 - [总体架构](../architecture.md)是系统事实入口，[里程碑设计](../README.md#4-里程碑设计)只解释历史增量。
 
 ## 3. 仓库地图
@@ -151,7 +155,7 @@ sequenceDiagram
 - 配置为什么必须先迁移到v2；
 - 配置文件、状态目录和Workspace为什么不能重叠；
 - 为什么Provider必须先进入生命周期，活动配置却在全部组件就绪后才CAS发布；
-- `_require_coding_tool_platform`为何让当前Windows产品入口失败关闭；
+- `create_secure_workspace_reader`如何在POSIX FD与Windows原生Handle之间选择只读端口，并使未证明能力失败关闭；
 - 当前装配代码没有哪些构造参数，因此哪些库能力实际上未开放。
 
 ### 4.4 可恢复终端产品链
@@ -401,10 +405,12 @@ Sandbox顺序：
 3. [trusted_actions/contracts.py](../../src/harnessix/trusted_actions/contracts.py)：统一工具绑定、计划和审计事件；
 4. [trusted_actions/policy.py](../../src/harnessix/trusted_actions/policy.py)：可信执行策略；
 5. [trusted_actions/router.py](../../src/harnessix/trusted_actions/router.py)：`plan → decide → execute/reconcile`；
-6. [trusted_actions/store.py](../../src/harnessix/trusted_actions/store.py)：路由事实；
-7. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
+6. [trusted_actions/agent_gateway.py](../../src/harnessix/trusted_actions/agent_gateway.py)：把Agent调用稳定映射到Router身份和状态；
+7. [agent/trusted_action_contracts.py](../../src/harnessix/agent/trusted_action_contracts.py)与[trusted_action_runtime.py](../../src/harnessix/agent/trusted_action_runtime.py)：Gateway端口和Session双账本编排；
+8. [trusted_actions/store.py](../../src/harnessix/trusted_actions/store.py)：路由事实；
+9. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
 
-对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
+对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
 
 ## 9. 独立Action Plane主链
 
@@ -597,7 +603,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 2. **Reducer重放**：手工构造ThreadCreated、TurnStarted、ItemStarted/Finished和TurnStateChanged，调用`replay`验证投影；
 3. **多Tool顺序**：阅读`test_tool_scheduling.py`，解释并行执行与持久顺序为何可以同时成立；
 4. **审批冲突**：定位重复相同决定和重复不同决定走向的不同分支；
-5. **崩溃分类**：把`ACCEPTED/WAITING_APPROVAL/WAITING_ACTION/CALLING_MODEL`分别代入`_recover`；
+5. **崩溃分类**：把`ACCEPTED/WAITING_APPROVAL/WAITING_ACTION/CALLING_MODEL`分别代入恢复协调器，并区分Session投影与Router副作用权威；
 6. **Action租约**：从`run_once`追踪到Journal终态，标记所有Worker身份校验；
 7. **产品能力核验**：只看`run_product_stdio`构造参数，列出默认开放和未开放工具，避免依据“仓库里有源码”做结论；
 8. **跨平台核验**：对比`_require_coding_tool_platform`、Workspace Windows规则和Process Windows测试，解释底层支持与产品支持的差别。

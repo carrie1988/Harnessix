@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
+version: 3
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0021-session-wal-initialization.md
   - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -20,6 +21,7 @@ related_tests:
   - tests/agent/test_session_upgrade.py
   - tests/agent/test_storage_failures.py
   - tests/agent/test_wal_initialization.py
+  - tests/agent/test_trusted_action_runtime.py
   - tests/context/test_thread_lifecycle.py
 supersedes: []
 ---
@@ -32,9 +34,9 @@ supersedes: []
 |---|---|
 | 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移和WAL |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` |
+| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本19；Agent Event可读1～19；数据库迁移1～22连续且校验和不可变 |
+| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～23连续且校验和不可变 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -274,7 +276,7 @@ sequenceDiagram
 ```
 
 数据库`application_id`固定为Harnessix Session标识；空文件可初始化，其他应用的非空库和Action
-数据库均拒绝。Migration必须从1连续到22，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
+数据库均拒绝。Migration必须从1连续到23，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
 均失败关闭。SQL按分号拆为普通DDL执行，不使用会隐式提交的`executescript`。只有迁移事务提交后才用
 新连接启用WAL；锁竞争仅重试WAL模式切换，绝不重放Migration。
 
@@ -289,6 +291,7 @@ sequenceDiagram
 | 16～17 | Compaction Attempt Ledger与活动窗口 |
 | 18～19 | Thread Lifecycle/Fork与Turn Retry |
 | 20～22 | Protocol Request、Deferred Turn与Interactive Turn |
+| 23 | Trusted Action审批与有界效果的Agent Event/Thread v20读取边界 |
 
 这些迁移多数通过版本标记推进最低Reader，不代表每个版本都修改物理列。发布后禁止修改旧SQL文件，
 否则校验和会阻断启动。
@@ -456,7 +459,7 @@ rebuild(thread):
 |---|---|---|
 | 合同 | 身份幂等、Cursor、CAS、批次、Thread隔离和Fork | `SessionStoreContract`由SQLite实现复用 |
 | 事务故障 | Event后/Projection后/Commit后Fault、非法批次 | `tests/agent/test_store.py` |
-| 迁移兼容 | 1～22历史、Event 1～19、未来版本和摘要变化 | `test_session_upgrade.py`、`test_store.py` |
+| 迁移兼容 | 1～23历史、Event 1～20、未来版本和摘要变化 | `test_session_upgrade.py`、`test_store.py` |
 | WAL竞争 | 首次并发、Busy Deadline、取消、真实Writer竞争 | `test_wal_initialization.py` |
 | 损坏与I/O | Event/Snapshot/索引损坏、只读、磁盘满、错误脱敏 | `test_storage_failures.py` |
 | 生命周期 | Resume、Archive、Fork截止点、嵌套Fork和Artifact Owner | `test_thread_lifecycle.py` |
@@ -480,9 +483,39 @@ rebuild(thread):
 本文沿用DOC-1.2黄金样例结构。Session状态和字段属于本文，Agent Turn状态属于
 [Agent Runtime模块设计](agent.md)；后续聚合文档只链接这两个事实源，不复制维护状态机。
 
-## 21. 变更记录
+## 21. Trusted Action投影升级（0.9.1e2）
+
+migration23不新增业务表或列，只声明当前Reader能够验证Agent Event/Thread v20并阻止旧Reader接管新语义。SQLite写入仍在`_save`中把Event批次和Projection v20放入同一事务；旧v1～v19 Event JSON保持原字节。
+
+```mermaid
+sequenceDiagram
+    participant R as AgentRuntime
+    participant S as SQLiteSessionStore
+    participant P as Reducer
+    participant D as SQLite
+    R->>S: append(EventDraft v20, expected_sequence)
+    S->>D: BEGIN IMMEDIATE
+    S->>P: apply_event(current projection, v20 event)
+    P->>P: validate Gateway approval/effect binding
+    S->>D: INSERT immutable event JSON
+    S->>D: UPSERT snapshot + projection_version=20
+    S->>D: COMMIT
+```
+
+升级和读取不变量：
+
+1. migration资源序号必须连续到23，旧22数据库只追加新的Migration记录；
+2. `_snapshot`接受Projection 1～20，未知21及以上失败关闭；
+3. `_parse_event`接受Event 1～20，v19及更早若出现统一Action字段由模型版本守卫拒绝；
+4. 新写入统一使用v20，旧事件序列和摘要不重写；
+5. Snapshot重建继续复用同一Reducer，因此在线追加与离线重放对统一Action具有相同校验。
+
+专项证据位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py)和[`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)。
+
+## 22. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 增加migration23、Projection v20、统一Action审批/效果读取与旧v19数据库向前升级证据；历史Event不重写 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 收窄`storage_errors`作用域，明确Runtime Owner跨平台锁边界，并增加应用`OSError/TimeoutError`不得误归类的回归合同 |
 | 1 | `8321ef383f2cbb3ab76191a1cc3db361a52e92ef` | 2026-09-12 | DOC-1.3 Wave A Session模块设计初版 |

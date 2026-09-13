@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 50
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 51
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -18,6 +18,9 @@ related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
   - tests/trusted_actions/test_router.py
+  - tests/trusted_actions/test_agent_gateway.py
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/protocol/test_projection.py
   - tests/governance/test_generated_specs.py
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
@@ -36,7 +39,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1a～0.9.1d已通过对应全矩阵CI并关闭。0.9.1e的[源码研究](research/default-trusted-action-product-composition.md)、[ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)已经建立；其中e1已完成Action合同、同源目录、Router幂等规划和默认Artifact组合，并由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收，e2～e5尚未实施。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1a～0.9.1d已通过对应全矩阵CI并关闭。0.9.1e的[源码研究](research/default-trusted-action-product-composition.md)、[ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)已经建立；其中e1已完成Action合同、同源目录、Router幂等规划和默认Artifact组合，并由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、双账本恢复及Protocol v1兼容投影，本地完整门禁通过并等待远端CI；e3～e5尚未实施。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -95,8 +98,8 @@ supersedes: []
 | 产品定位 | [产品章程](product-charter.md) | 用户、价值、1.0范围与非目标 |
 | 交付顺序 | [路线图](roadmap.md) | 切片、依赖、状态和验收门槛 |
 | 系统当前结构 | [总体架构](architecture.md) | 系统上下文、模块边界、主流程和当前限制 |
-| Agent Runtime | [Agent Runtime模块设计](modules/agent.md) | Thread/Turn/Item/Event、Agent Loop、交互、取消、Retry与恢复 |
-| Session | [Session模块设计](modules/session.md) | Event Log、Snapshot、CAS、Fork、迁移、重建和Runtime Owner |
+| Agent Runtime | [Agent Runtime模块设计](modules/agent.md) | Thread/Turn/Item/Event、Agent Loop、交互、取消、Retry、Trusted Action Gateway与恢复 |
+| Session | [Session模块设计](modules/session.md) | Event Log、Snapshot、CAS、Fork、迁移、重建、Trusted Action投影和Runtime Owner |
 | Context | [Context模块设计](modules/context.md) | Source优先级、预算、模型历史视图、Compaction账本和活动窗口 |
 | Model Runtime | [Model Runtime模块设计](modules/models.md) | Provider端口、流状态机、Attempt、Usage、Billing和Cost |
 | Artifact | [Artifact模块设计](modules/artifacts.md) | 有界正文、原子发布、分页、完整性验证、TTL和回收 |
@@ -110,12 +113,12 @@ supersedes: []
 | Storage | [Storage模块设计](modules/storage.md) | SQLite/PostgreSQL Journal、Schema/Migration、事务、队列、Lease、恢复、后端差异和数据保护边界 |
 | Sandbox | [Sandbox模块设计](modules/sandbox.md) | 严格合同、能力探测、固定Container argv、DNS快照、受管出口、Process监督、Profile持久化及真实平台证据边界 |
 | Secrets | [Secrets模块设计](modules/secrets.md) | 三套引用合同、环境Provider、短生命周期作用域、常见编码Pattern、流式脱敏、结构化Guard和跨模块装配缺口 |
-| Trusted Actions | [Trusted Actions模块设计](modules/trusted-actions.md) | 宿主Binding、规范资源、默认风险Policy、Execution/Approval、Route Hash链、UNKNOWN/Reconcile和扩展能力端口 |
+| Trusted Actions | [Trusted Actions模块设计](modules/trusted-actions.md) | 宿主Binding、规范资源、默认风险Policy、Execution/Approval、Route Hash链、Agent Gateway、UNKNOWN/Reconcile和扩展能力端口 |
 | Workspace | [Workspace模块设计](modules/workspace.md) | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验和SQLite Fencing Lease |
 | Delivery | [Delivery模块设计](modules/delivery.md) | Workspace Transaction、私有Blob、完整Diff、POSIX可恢复发布、Git Worktree/Checkpoint/Commit和单独批准Push |
 | Evals | [Evals模块设计](modules/evals.md) | 历史任务、私有物化、Agent运行、固定评分、Campaign、成本、Compaction语义评测和专用单文件交付 |
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
-| Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
+| Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Trusted Action兼容映射、Replay/Delta、命令幂等账本和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
 | SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限，以及Action Plane HTTP同步/异步客户端 |
 | Product UI终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际、单Actor Controller、Plan/Tool、Approval/Question、Diff证据、Usage/Cost未知、Cancel/Steer、错误自助和stdio冷恢复；0.9.1c三平台CI通过并关闭 |
@@ -149,7 +152,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md) | 进行中；0.9.1a～d已关闭；e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭，e2～e5待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md) | 进行中；0.9.1a～d和e1已关闭；e2实现提交`328aa2d`本地完整门禁通过、等待CI；e3～e5待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
@@ -204,7 +207,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 - [文档策略v1](../governance/documentation-policy-v1.json)与[文档检查器](../scripts/documentation_check.py)：自动门禁合同和实现入口。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。31/31个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。0.9.1d新增的源码研究、ADR和详细设计继续受同一文档合同约束。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。31/31个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。0.9.1d及0.9.1e新增的源码研究、ADR、详细设计和模块同步继续受同一文档合同约束。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
 
 ## 8. 文档状态说明
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 6
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/trusted_actions/test_router.py
+  - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_catalog.py
   - tests/trusted_actions/test_schemas.py
   - tests/mcp/test_runtime_actions.py
@@ -36,12 +37,12 @@ supersedes: []
 | 源码包 | [`src/harnessix/trusted_actions`](../../src/harnessix/trusted_actions/) |
 | 当前职责 | 把内置、MCP、Skill、Hook和Custom Tool绑定为宿主可信合同；规范化资源；统一完成Policy、Execution Plan、Approval、执行、摘要审计、`UNKNOWN`恢复和Reconcile |
 | 非职责 | 不实现模型Agent Loop、Tool发现协议、Secret明文解析、Sandbox执行器、Workspace锁、外部效果本体、集中式多租户认证或分布式任务调度 |
-| 上游调用者 | 受信产品装配、MCP/Skill/Hook Gateway、Git Push桥接及直接使用该库的宿主 |
+| 上游调用者 | Agent统一Gateway、受信产品装配、MCP/Skill/Hook Gateway、Git Push桥接及直接使用该库的宿主 |
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
-| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；0.9.1e1已增加产品目录原子安装及Audit优先的幂等规划修复，默认产品尚未注册Patch/Process/Delivery，也没有公网多租户控制面 |
+| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
+| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；0.9.1e1已增加产品目录原子安装及Audit优先的幂等规划，e2已增加Agent统一Gateway、Router先行审批Saga和只对账恢复；默认产品尚未注册Patch/Process/Delivery，也没有公网多租户控制面 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1348,13 +1349,72 @@ Tool合同或Binding时稳定失败，不能借幂等入口替换已持久操作
 ### 42.3 证据与剩余边界
 
 [`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖不重抓Workspace、跨Store故障修复和Invocation冲突；
-[`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖批量安装原子性、命名空间、过期与漂移。该切片尚未把
-Router注入默认Agent，e2必须建立唯一Gateway和审批投影后才能广告写Action。
+[`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖批量安装原子性、命名空间、过期与漂移。0.9.1e2已经建立
+唯一Agent Gateway和审批投影，但尚未把Router及高风险定义注入默认产品；e3/e4必须通过同源Catalog后才能广告写Action。
 
-## 43. 变更记录
+## 43. Agent Gateway与审批权威（0.9.1e2）
+
+### 43.1 薄门面和函数式核心
+
+[`RouterBackedAgentActionGateway`](../../src/harnessix/trusted_actions/agent_gateway.py)只保留端口方法和关闭状态，实际校验与状态转换位于[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py)。构造阶段读取Router同一`source/source_id`命名空间并逐项核对：Tool名称集合、版本、Fingerprint、输入Schema摘要、Effect、Risk、幂等、审批和Reconcile能力。任何字段漂移均在开放能力目录前失败。
+
+```mermaid
+flowchart TB
+    Descriptor[ToolDescriptor] --> Verify{与TrustedToolBinding精确一致?}
+    Binding[Router Binding] --> Verify
+    Verify -- 否 --> Closed[trusted_action_gateway_mismatch]
+    Verify -- 是 --> State[AgentActionGatewayState]
+    State --> Prepare[prepare_action]
+    State --> Decide[decide_action]
+    State --> Execute[execute_action]
+    State --> Recover[recover_action]
+```
+
+Gateway不拥有Router及其SQLite Store；`close`只关闭能力视图。产品组合Owner在e5负责底层资源的逆序关闭。
+
+### 43.2 决定持久化顺序
+
+`TrustedActionRouter.decide`的实际顺序是：
+
+```text
+load route
+require policy == require_approval
+load ExecutionApprovalCheckpoint
+if checkpoint exists:
+    require outcome/actor/reason and optional decided_at exact match
+else:
+    persist checkpoint with immutable Execution Plan fingerprint
+compute ready or denied
+if route already compatible terminal/active state: return current
+require route == pending_approval
+transition audit using checkpoint.decided_at
+```
+
+这使“Checkpoint提交成功、Audit转换前崩溃”成为可重放窗口：重启后读取相同Checkpoint并使用原时间戳推进Audit，而不是产生第二个决定。`approval(plan_id)`只返回深拷贝，Agent只能据此补齐相同Session投影。
+
+### 43.3 执行与恢复状态映射
+
+| Route状态 | `execute_action` | `recover_action` |
+|---|---|---|
+| `pending_approval` | 缺决定失败；有Session决定时先补Router | 返回`None`，不启动效果 |
+| `ready` | Router Claim并执行 | 返回`None`，终结路径不启动效果 |
+| `running/reconciling` | 先恢复为`unknown` | 先恢复为`unknown` |
+| `unknown` | 只调用Reconcile | 只调用Reconcile |
+| `denied/succeeded/failed/manual_intervention` | 投影已有终态 | 投影已有终态且`origin=recovery` |
+
+`ActionExecutionOutcome`被压缩为Agent `ToolResultContent`和`TrustedActionEffect`。Audit继续只保存Artifact SHA、外部Action ID、错误码及输出摘要；Session只保存有界模型输出和效果摘要，完整正文由Artifact子系统管理。
+
+### 43.4 当前证据和限制
+
+[`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py)覆盖目录漂移、重复Prepare、Review、批准、拒绝、调用漂移、取消和Reconcile；[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖决定双Store崩溃窗口。该切片没有改变Router的公共包级导出，也没有引入新的一级包依赖边或超大符号。
+
+当前Gateway可由宿主显式传给`AgentRuntime`，但默认产品仍只有只读Tool和Artifact。Patch/Delivery Executor、Process/Sandbox Executor、能力探测和产品Owner分别由0.9.1e3～e5继续实现。
+
+## 44. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 交付0.9.1e2 Agent Gateway薄门面、目录精确核对、确定性Invocation、Router先行审批Checkpoint、Session补投影和UNKNOWN只对账恢复；默认高风险目录仍未开放 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1全集验证后原子发布注册表、Audit优先规划与跨Store崩溃修复；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 将Hook现行事实下沉到独立模块设计，并登记捕获时授权、来源错配、输出接受与Action终态分歧及无租约恢复缺口 |
 | 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |

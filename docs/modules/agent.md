@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 4
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0010-session-store-and-recovery.md
   - docs/adr/0012-durable-approval-checkpoint.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/agent/test_runtime.py
   - tests/agent/test_store.py
@@ -26,6 +27,7 @@ related_tests:
   - tests/agent/test_crash_recovery.py
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
+  - tests/agent/test_trusted_action_runtime.py
 supersedes: []
 ---
 
@@ -35,11 +37,11 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry与崩溃恢复 |
+| 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复，以及可显式装配的统一Trusted Action Gateway |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | `684a17ecc013549e3472978f1c0e8c1eca4db92e`；Steering历史重备实现，测试同步提交为`84ffd595989d682c792d615e3815cf5877c0a419` |
+| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool和App Server；Context、Patch、Process等端口可显式装配，但尚未全部进入默认产品链 |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=19`；SQLite Session迁移连续到22 |
+| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到23 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。代码库中存在的Patch、Patch Batch、Process、Artifact和
@@ -617,7 +619,7 @@ recover(thread):
 5. 在`_drive`的历史准备调用处转读
    [`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py)，理解Artifact验证与
    `ModelHistoryPrepared`提交之间的乐观重备边界；
-6. 最后阅读`_recover`、`_recover_patch`、`_recover_patch_batch`以及对应崩溃测试；
+6. 最后阅读`_recover`、[`runtime_recovery.py`](../../src/harnessix/agent/runtime_recovery.py)及对应崩溃测试；
 7. 用本节表中的测试函数正向验证每个设计结论，而不是只阅读Happy Path。
 
 ## 22. 测试设计与验收标准
@@ -628,8 +630,8 @@ recover(thread):
 | Runtime合同 | 多步模型、预算、Provider非法流、公开错误、取消、Retry | `tests/agent/test_runtime.py` |
 | 并发 | 只读并行上限、提交顺序、兄弟Task回收、写屏障 | `tests/agent/test_tool_scheduling.py` |
 | 交互 | Approval、Question、Steering、历史验证竞态、错配、过期和重复答复 | `tests/agent/test_interactions.py`、审批恢复测试 |
-| 故障注入 | Provider、Session、Tool、Patch、Process各提交边界崩溃 | `tests/agent/test_crash_recovery.py`等 |
-| 兼容 | Event 1～19 Upcast、Session迁移1～22、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
+| 故障注入 | Provider、Session、Tool、Patch、Process、Trusted Action各提交边界崩溃 | `tests/agent/test_crash_recovery.py`、`tests/agent/test_trusted_action_runtime.py`等 |
+| 兼容 | Event 1～20 Upcast、Session迁移1～23、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
 | 产品集成 | 接受后重启、客户端恢复、有界关闭 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) |
 
 DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、`_execute_calls`、`_recover`、
@@ -641,8 +643,8 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 项目 | 当前边界/影响 | 后续归属 |
 |---|---|---|
-| 默认产品没有装配通用写、Process和Delivery闭环 | 代码库能力不能等同最终用户可用的完整Coding Agent | 0.9.1 |
-| Windows默认Coding Tool链失败关闭 | Agent纯领域与大部分合同跨平台，但产品级原生工具未完成 | 0.9.1/0.9.5 |
+| 默认产品没有装配通用写、Process和Delivery闭环 | Gateway已可显式装配，但代码库能力不能等同最终用户可用的完整Coding Agent | 0.9.1e3～e5 |
+| Windows默认产品仅具原生四项只读Tool | Agent领域合同与只读链跨平台，但Git、写入和Process仍未开放 | 0.9.1e、0.9.5 |
 | 本地SQLite单Owner | 不支持跨主机Thread并发和云端HA | 1.x候选，不提前侵入1.0 |
 | 数据保留、导出和删除策略未完成发布验收 | Session可能随长期使用增长 | 0.9.5和1.0发布门禁 |
 | Provider真实能力和计价证据仍有待关闭项 | 离线合同通过不代表所有真实Provider组合 | 0.9.6 |
@@ -652,10 +654,78 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 “当前/默认边界、图文说明、失败恢复矩阵、字段语义、伪代码、源码与测试双向映射、明确限制”结构，
 不得机械复制本文内容或用空章节达标。
 
-## 24. 变更记录
+## 24. 统一Trusted Action Agent接入（0.9.1e2）
+
+### 24.1 组件与职责
+
+```mermaid
+flowchart LR
+    Runtime[AgentRuntime] --> SessionFacade[TrustedActionSessionRuntime]
+    SessionFacade --> SessionCore[trusted_action_session]
+    SessionCore --> Gateway[TrustedActionGateway Port]
+    Gateway --> RouterFacade[RouterBackedAgentActionGateway]
+    RouterFacade --> RouterCore[agent_gateway_support]
+    RouterCore --> Router[TrustedActionRouter]
+    SessionCore --> Store[(SessionStore)]
+    Recovery[runtime_recovery] --> SessionFacade
+```
+
+`AgentRuntime`只负责判断一个持久Tool Call是否属于统一Action、提交交互Item并继续Agent Loop。目录核对、确定性Invocation、Policy/Plan、执行与Reconcile属于Gateway和Router；Router决定向Session的CAS传播属于`trusted_action_session`；旧Patch与统一Action的终结核对集中在`runtime_recovery`。该拆分使`runtime.py`和既有热点均不超过0.9.0治理基线。
+
+### 24.2 Session合同
+
+| 合同 | 关键字段 | 不变量 |
+|---|---|---|
+| `TrustedActionApprovalRequestContent` | Call/Plan ID、三类Fingerprint、Policy、presentation、route_state、decision、Diff Ref | 请求≤16 KiB；Patch Batch必须有Diff；Process禁止Diff；决定与请求指纹及Route拒绝状态一致 |
+| `TrustedActionEffect` | Plan ID/Fingerprint、state、origin、Artifact SHA | `action_id == plan_id`；效果状态与Tool Result outcome一致；只保存有界元数据 |
+| `TrustedActionReview` | `diff_artifact` | Review只传递Artifact引用，不让Gateway直接依赖Artifact Store |
+| `TrustedActionGateway` | `definitions/prepare/decide/sync_decision/execute/recover/close` | Router是批准与执行权威；Session对象不能直接触发Executor |
+
+Agent Event v20首次允许上述审批和效果。v19仍专用于提问、回答、Steering与`WAITING_INPUT`，旧版本Event不能承载统一Action语义。
+
+### 24.3 执行与决定时序
+
+```mermaid
+sequenceDiagram
+    participant A as AgentRuntime
+    participant S as SessionStore
+    participant G as TrustedActionGateway
+    participant R as Router
+
+    A->>G: prepare(persisted call)
+    G->>R: plan(deterministic invocation)
+    R-->>G: pending_approval
+    G-->>A: approval projection
+    A->>S: ItemStarted + WAITING_APPROVAL
+    A->>G: decide(exact request, decision)
+    G->>R: persist checkpoint then route
+    G-->>A: same-timestamp projection
+    A->>S: ItemFinished(CAS)
+    A->>G: execute(reloaded Session approval)
+    G->>R: claim and execute/reconcile
+    G-->>A: bounded Tool Result
+    A->>S: Tool Result events
+```
+
+执行前由`TrustedActionSessionRuntime.execute`重新读取Session，不接受调用栈中游离的审批对象。Router已经有决定但Session尚未完成审批Item时，`sync_action_decision`读取原Checkpoint并以同一时间戳补投影；冲突决定失败关闭。
+
+### 24.4 失败与恢复
+
+- 参数、资源和敏感字段等可公开准备失败转换为失败Tool Result；Router/Store故障继续抛出，禁止伪装为业务失败；
+- `pending_approval`和`ready`在Turn终结路径不会隐式执行；
+- `running/reconciling`先进入`unknown`，之后只允许Reconcile；
+- 取消已经Claim的Action会保留`unknown`事实并重抛取消；
+- 未知内部恢复异常只保存稳定`trusted_action_recovery_failed`，不持久化原始异常正文；
+- reducer要求恢复来源效果不能把中断Turn变成成功，未知效果不能标记完成或取消；
+- Router先提交、Session后提交窗口由`sync_decision`恢复；Session已有决定、Router缺Checkpoint窗口由`execute`按原时间补写。
+
+完整计划、状态、错误矩阵和源码映射见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md#2211-091e2实际交付边界)。
+
+## 25. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 接入Agent Event v20、统一Trusted Action审批/效果、Router先行决定恢复、Session migration23和结构化恢复模块；默认高风险产品目录仍未开放 |
 | 3 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c Steering历史重备实现、取消协作语义、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 2 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c Steering与模型历史验证/提交竞态治理，增加乐观重备算法、源码、时序和确定性回归映射 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Agent Runtime黄金样例初版 |

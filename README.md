@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已完成Action配置/能力报告、同源目录、Router原子注册、Audit优先幂等规划和默认Artifact产品闭环，并由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；Patch、Process、Delivery默认装配以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Protocol v1兼容投影，本地完整门禁通过并等待远端CI。Patch、Process、Delivery默认装配以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -168,7 +168,7 @@ uv run pytest tests/patches
 - 替换前后取消、超时和关闭先排空线程，再分别记录工具效果与 Turn 状态；已发生的写入不假报回滚；
 - Session × 副本真实进程退出后只核对，绝不重放模型/写入；不充分证据保持 unknown；
 - 两个真实供应商 SDK 使用离线 HTTP，完成读取→提案→审批重开→写入→读回→回答；私有效果证据不进入模型 wire；
-- 本节交付时为Agent v6/Session migration7；当前Agent Event为v19、Session migration22，可读取v1～v18历史事件；后续迁移只追加事实与交互能力，不静默改写历史事件。
+- 本节交付时为Agent v6/Session migration7；当前Agent Event为v20、Session migration23，可读取v1～v19历史事件；后续迁移只追加事实与交互能力，不静默改写历史事件。
 
 ~~~bash
 uv run python -m examples.kernel_patch
@@ -240,7 +240,7 @@ uv run pytest tests/patches/test_batch_bridge.py tests/patches/test_batch_bridge
 - Session 保存完整调用计划、独立组审批与决定；持久离开等待后才镜像后端决定并一次性顺序执行。答复审批不会修改文件；
 - 两个实际供应商 SDK 均通过离线 HTTP 完成“两文件读取→整组提案→审批重开→真实副本写入→逐文件读回”；没有新增真实模型调用；
 - 私有 `ToolResult.patch_batch` 保留有界效果与运行原因，不进模型 wire，也不因公开结果超限丢失。部分效果停止当前 Turn；未知效果禁止自动继续；
-- 本节交付时为Agent Event/Thread **v7**、Session **migration8**（当前Agent Event v19/Session migration22）；真实旧v6 wheel的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧reader明确拒绝新库。副本账本保持 **v3**。
+- 本节交付时为Agent Event/Thread **v7**、Session **migration8**（当前Agent Event v20/Session migration23）；真实旧v6 wheel的只读/单文件审批升级通过，旧事件/投影原字节不重写，旧reader明确拒绝新库。副本账本保持 **v3**。
 
 ~~~bash
 uv run python -m examples.kernel_batch
@@ -268,7 +268,7 @@ uv run pytest tests/patches/test_diff_document.py tests/patches/test_batch_diff_
 - 显式注入 `SQLiteBatchDiffPublisher`，计划引用与真实审批同事务，效果引用与真实 ToolResult/私有效果同事务；同一调用两用途互不覆盖。
 - 失败、部分、未知效果不伪造成功；归档或预算失败可省略引用，不丢弃真实写效果。重开只核对，不重新执行；提交后丢确认不会重复归档。
 - 复用分页、配额、TTL 和活跃会话保护；两个 SDK 的离线闭环可从效果引用继续调用 `read_artifact`。旧只读发布限制不变。
-- 该片交付Agent **v8**/Session **migration9**；真实旧v7 wheel的三类审批、已有Artifact升级通过，旧Schema/事件原字节保留，旧reader拒绝新库。当前Writer已推进到Agent Event v19/Session migration22。
+- 该片交付Agent **v8**/Session **migration9**；真实旧v7 wheel的三类审批、已有Artifact升级通过，旧Schema/事件原字节保留，旧reader拒绝新库。当前Writer已推进到Agent Event v20/Session migration23。
 
 ```bash
 uv run python -m examples.batch_diff
@@ -847,6 +847,6 @@ Harnessix 不承诺任意外部系统上的神奇 Exactly Once。它提供的是
 - 来源存在`ToolResult.outcome=unknown`时失败关闭，Retry不能代替外部效果对账；
 - OpenAI-compatible与Anthropic双向切换时，由规范Item重建目标协议，历史原生Tool Call ID和模型绑定metadata不跨Provider发送；
 - 三个接受事务硬退出窗口、取消/中断续作、双向真实Adapter和压缩→恢复→重试→Fork→Archive长会话已经本地验收；
-- 当前Agent Event为v19，Session migration22；既有v16→v17独立wheel升级保持旧字节，旧reader失败关闭，migration20～22依次追加协议请求账本、deferred Turn和持久交互能力。
+- 当前Agent Event为v20，Session migration23；既有v16→v17独立wheel升级保持旧字节，旧reader失败关闭，migration20～22依次追加协议请求账本、deferred Turn和持久交互能力，migration23追加Trusted Action v20投影语义标记。
 
 源码依据、决策和接口见[专项研究](docs/research/turn-retry-and-provider-switch.md)、[ADR 0061](docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md)与[详细设计](docs/turn-retry-and-provider-switch.md)。实现提交已通过[CI 34192389373](https://github.com/carrie1988/Harnessix/actions/runs/34192389373)四矩阵验收，0.6正式关闭；0.7及后续生产能力仍按路线图推进。

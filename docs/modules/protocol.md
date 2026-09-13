@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 658e04d216d7d7efb01cd2e6a9db9788917552b9
+version: 4
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ related_adrs:
   - docs/adr/0009-app-server-protocol.md
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/protocol/test_codec.py
   - tests/protocol/test_contracts.py
@@ -35,8 +36,8 @@ supersedes: []
 | 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
-| 代码版本 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` |
-| 当前完成度 | v1合同、投影、Schema与命令账本已实现；能力协商只部分驱动运行时，出站字节门禁、请求账本回收、远程安全和协议多版本协商尚未实现 |
+| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
+| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射到既有三类公共审批；能力协商只部分驱动运行时，出站字节门禁、请求账本回收、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
 [`compatibility.py`](../../src/harnessix/protocol/compatibility.py)、
@@ -1445,10 +1446,37 @@ Protocol模块现行设计满足以下条件时可判定DOC-1.4中的本模块�
 变化不得通过放宽v1测试静默合入。测试名称重构时同步本文映射，生成Schema变化时必须审阅语义Diff，
 不得仅机械接受生成结果。
 
-## 32. 变更记录
+## 32. 统一Action的Protocol v1兼容投影
+
+内部`TrustedActionApprovalRequestContent`不新增公共联合成员。`projection._approval`按`presentation`复用既有公共枚举，并继续逐字段构造白名单对象：
+
+| 内部字段/类型 | 公共结果 | 原因 |
+|---|---|---|
+| `presentation=tool` | `approvalType=tool` | 复用普通Tool审批UI |
+| `presentation=patch_batch` | `approvalType=patch_batch`和`diffArtifact` | 复用完整Diff审查UI |
+| `presentation=process` | `approvalType=process` | 复用Process审批UI |
+| `request_fingerprint`、`policy_version` | 保留 | 客户端响应必须绑定精确请求并显示策略版本 |
+| `plan_id` | 审批阶段省略；终态复用`ToolResult.actionId` | 不让客户端依赖Router内部计划表示 |
+| Plan/Execution Fingerprint、Policy ID、Route State | 省略 | 内部授权和恢复细节不属于公共v1 |
+| `TrustedActionEffect` | 不直接投影；结果使用既有Outcome、Action ID、Artifact引用 | 保持公共Tool Result合同稳定 |
+
+```mermaid
+flowchart LR
+    Internal[Agent Event v20统一Action] --> Projection[projection.py白名单]
+    Projection --> Tool[Public tool approval]
+    Projection --> Patch[Public patch_batch approval + Diff]
+    Projection --> Process[Public process approval]
+    Projection --> Result[既有Public Tool Result]
+    Internal -. Plan/Policy/Route .-> Removed[删除内部字段]
+```
+
+[`tests/protocol/test_projection.py`](../../tests/protocol/test_projection.py)分别验证三种呈现、决定和Diff，并断言序列化结果不含`planId`、三类内部Fingerprint、Policy ID和Route状态。`generate_specs.py --check`证明14份Protocol v1 Schema未因内部Event v20发生漂移。
+
+## 33. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 将Agent Event v20统一Action审批映射到现有`tool/patch_batch/process`，保持Protocol v1合同与Schema不变并增加内部字段不泄漏回归 |
 | 3 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行设计，并将不存在的`AgentClient.stream_events`源码映射修正为实际`watch_thread`方法 |
 | 2 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 根据App Server源码反向求证，修正非1.0版本错误分支不可达及Closing状态回复Notification的实现偏差 |
 | 1 | `b71682da19b54e93b225c54c594e2583fd648e70` | 2026-09-12 | 建立Protocol现行模块设计，覆盖合同、严格解码、公共投影、Replay、命令账本、兼容、Schema、失败恢复和真实实现差距 |

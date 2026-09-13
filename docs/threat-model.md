@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 2
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 3
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -26,10 +26,15 @@ related_adrs:
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/sandbox
   - tests/secrets
   - tests/trusted_actions
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_schemas.py
+  - tests/agent/test_session_upgrade.py
+  - tests/protocol/test_projection.py
   - tests/workspace
   - tests/delivery
   - tests/product_config/test_preflight.py
@@ -772,3 +777,31 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 对应源码、流程和测试见[ADR 0079](adr/0079-preflight-and-native-read-port.md)、
 [0.9.1d详细设计](changes/m09-1d-configuration-preflight-windows-read.md)、
 [Product Config模块](modules/product-config.md)、[Tools模块](modules/tools.md)与[Workspace模块](modules/workspace.md)。
+
+## 0.9.1e2 Agent Gateway与双账本恢复补充（2026-09-13）
+
+- **模型伪造权限**：模型调用只提供公开工具名和参数。Gateway要求模型Descriptor与宿主`TrustedToolBinding`
+  全集精确一致，Effect、Risk、资源、Policy、Executor和Reconciler继续由受信宿主提供；集合缺失、额外能力、
+  Schema、版本、Fingerprint或Binding漂移均在规划前失败关闭。
+- **Session审批越权**：Session中的审批请求和决定是交互投影，不是执行授权。只有Router持久的Approval
+  Checkpoint能够把Action推进到可执行状态；缺失Review Artifact、决定不一致或Binding漂移时不得执行。
+- **重复调用与错绑**：Invocation ID、Plan ID和Idempotency Key由Thread、Turn、Call、Workspace、Principal、
+  工具身份及规范参数确定生成。同一身份不同载荷、同一调用不同Descriptor或跨Thread/Turn复用均返回冲突，
+  不重新决策Policy或重新捕获资源。
+- **双数据库非原子提交**：Session与Action Audit/Execution Plan没有跨库事务。恢复始终以Router Action状态为
+  副作用权威，再幂等修复Session审批或Effect投影；Session先提交而Router缺失时重新建立相同确定性Action，
+  不创建第二个调用身份。
+- **未知效果盲目重放**：`RUNNING`、`RECONCILING`或取消发生在效果边界后时，恢复只调用Reconciler；不能证明
+  效果时收敛为`UNKNOWN`。`PENDING`和`READY`只恢复观察/审批状态，不在恢复扫描中自动执行。
+- **协议泄漏**：Agent Protocol v1不新增私有Action合同；内部审批和效果分别投影为既有`tool`、`patch_batch`
+  或`process`公开内容。Action ID、幂等键、Binding摘要、完整资源及私有执行结果不进入公共投影。
+- **剩余边界**：当前默认`agent-server`未注入Gateway，也未注册Patch、Process或Delivery Descriptor/Executor，
+  因此不存在默认权限扩大。显式宿主仍属于受信计算基；能同时修改Session、Action数据库与程序的同UID主体、
+  多租户身份、RBAC和不可抵赖审计不由本切片解决。
+
+对应合同、时序、源码和回归见[ADR 0080](adr/0080-capability-proven-product-action-composition.md)、
+[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)、
+[Agent Runtime模块设计](modules/agent.md)、[Trusted Actions模块设计](modules/trusted-actions.md)、
+[Gateway回归](../tests/trusted_actions/test_agent_gateway.py)与
+[Agent集成恢复回归](../tests/agent/test_trusted_action_runtime.py)。实现基线为`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`，
+远端全矩阵CI完成前不将0.9.1e2标记为关闭。

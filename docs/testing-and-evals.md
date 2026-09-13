@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 3
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 4
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -10,6 +10,9 @@ modules:
   - evals
   - smoke
   - agent
+  - session
+  - protocol
+  - trusted_actions
 related_adrs:
   - docs/adr/0044-coding-eval-contract-and-grader.md
   - docs/adr/0047-coding-eval-campaign-evidence.md
@@ -20,6 +23,10 @@ related_tests:
   - tests/agent
   - tests/evals
   - tests/integration
+  - tests/trusted_actions/test_agent_gateway.py
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_session_upgrade.py
+  - tests/protocol/test_projection.py
 supersedes: []
 ---
 
@@ -370,9 +377,18 @@ flowchart TD
 
 ## 20. 当前证据与限制
 
-在代码Revision `991b6f267671f5a86870672e9c97a5fbb3991a39`上，本地`make check`通过Ruff、Readability、191份Markdown/4535个链接/483个Mermaid块/30个生产包的文档门禁、公共合同逐字节校验和256个源码文件的Mypy检查，Pytest结果为`3351 passed, 13 skipped`；固定Mermaid CLI 11.6.0的真实渲染也通过。[CI 34709603781](https://github.com/carrie1988/Harnessix/actions/runs/34709603781)进一步完成Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和独立文档Job的全部验收。Windows合同生成仍按已声明平台限制Skip，不能计为该平台已验证。
+当前代码Revision `328aa2d6c8ee85a75ab2baef51b80869dc4089a8`的0.9.1e2实现已完成以下本地证据：
 
-截至该Revision，以下项目仍不能宣称生产完成：0.9.1至0.9.6范围的产品级端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+- `uv run pytest -q`收集3535项测试并以退出码0结束，其中19项按平台或外部服务条件跳过；
+- `make lint`、`make readability`、`make typecheck`、`make contracts`和`make documentation`全部通过；
+- `tests/trusted_actions/test_agent_gateway.py`覆盖确定身份、精确绑定、Router审批权威、拒绝不执行、执行中恢复只对账、取消不确定性和双账本修复；
+- `tests/agent/test_trusted_action_runtime.py`覆盖真实Agent Loop接入及Router先提交、Session后投影之间的崩溃恢复；
+- Agent Event/Thread v20、Session migration23和Protocol v1兼容投影由Schema、升级与Projection测试共同验证；
+- 验证不调用模型API、SSH、远程服务器或新增中间件。
+
+上述证据证明显式Gateway合同及恢复语义已在本地闭环；远端全矩阵CI尚未完成，因此0.9.1e2当前不能标记为关闭。当前默认产品仍未注册Patch、Process或Delivery高风险能力。
+
+截至该Revision，以下项目仍不能宣称生产完成：0.9.1e3～0.9.6范围的默认Action装配、产品级端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ## 21. 维护与验收标准
 

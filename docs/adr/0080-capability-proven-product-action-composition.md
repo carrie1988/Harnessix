@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 2
-code_revision: c3ed6c917368f705bab90a85ea82572520909ac5
+version: 3
+code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
 modules:
@@ -25,6 +25,9 @@ related_tests:
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_runtime.py
   - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_schemas.py
+  - tests/agent/test_session_upgrade.py
+  - tests/protocol/test_projection.py
   - tests/delivery/test_filesystem.py
   - tests/integration/test_container_sandbox.py
   - tests/product_config/test_server_and_cli.py
@@ -35,7 +38,7 @@ supersedes: []
 
 ## 状态
 
-接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经完成本地实现和专项回归；默认Patch/Process产品能力仍未完成。实现状态由
+接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经完成本地实现、专项回归和全仓门禁，等待远端CI验收；默认Patch/Process产品能力仍未完成。实现状态由
 [0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)和现行模块文档维护。
 
 ## 背景
