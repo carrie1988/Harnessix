@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 42
+version: 43
 code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
@@ -75,7 +75,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前实现基线为提交`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收。0.9.1e2已在该基线实现显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影，完整本地门禁已通过，远端CI尚待验收。状态标签含义如下：
+本文当前实现基线为提交`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收。0.9.1e2已在该基线实现显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -1015,6 +1015,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 43 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 记录0.9.1e2由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收并关闭 |
 | 42 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 同步0.9.1e2显式Agent Gateway、Router审批权威、Agent Event v20、Session migration23、双账本恢复和Protocol v1兼容投影；本地完整门禁通过，等待CI |
 | 41 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 记录0.9.1e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭 |
 | 40 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1实现：Action合同/同源目录、原子注册、Audit优先规划和默认Artifact产品链 |

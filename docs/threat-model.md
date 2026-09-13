@@ -1,7 +1,7 @@
 ---
 doc_type: threat-model
 status: current
-version: 3
+version: 4
 code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
@@ -804,4 +804,4 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 [Agent Runtime模块设计](modules/agent.md)、[Trusted Actions模块设计](modules/trusted-actions.md)、
 [Gateway回归](../tests/trusted_actions/test_agent_gateway.py)与
 [Agent集成恢复回归](../tests/agent/test_trusted_action_runtime.py)。实现基线为`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`，
-远端全矩阵CI完成前不将0.9.1e2标记为关闭。
+[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)已完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收，0.9.1e2据此关闭。

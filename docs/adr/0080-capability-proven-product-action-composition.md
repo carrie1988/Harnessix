@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 3
+version: 4
 code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
 owners:
   - core
@@ -38,7 +38,7 @@ supersedes: []
 
 ## 状态
 
-接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经完成本地实现、专项回归和全仓门禁，等待远端CI验收；默认Patch/Process产品能力仍未完成。实现状态由
+接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；默认Patch/Process产品能力仍未完成。实现状态由
 [0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)和现行模块文档维护。
 
 ## 背景
