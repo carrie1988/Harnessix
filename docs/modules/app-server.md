@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -34,8 +34,8 @@ supersedes: []
 | 下游依赖 | Protocol合同/Codec/投影/请求账本、`AgentRuntime`、`SessionStore`、可选`ArtifactPageStore`与`ArtifactAccessScope` |
 | 持久化 | 模块自身不拥有独立数据库；命令终态写`ProtocolRequestStore`，Agent事实写`SessionStore`，Artifact由外部Store拥有 |
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
-| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、Agent Runtime和Scoped Artifact Reader |
-| 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口、Windows使用原生Handle四项只读端口，Artifact分页三平台通用 |
+| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
+| 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、有界关闭及薄CLI协商事件页上限已实现；Server侧协商Pending/Outbox/Replay贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
@@ -1287,10 +1287,19 @@ sequenceDiagram
 产品级测试[`test_product_server_advertises_default_scoped_artifact_reader`](../../tests/product_config/test_server_and_cli.py)在不发送
 模型请求的真实stdio生命周期内验证握手与读取路由。
 
-## 35. 变更记录
+## 35. 默认Patch协议组合（0.9.1e3）
+
+App Server仍只负责协议连接、请求幂等、事件读取和生命周期，不拥有Patch权限。产品组合根把已经闭合的Agent Gateway注入`AgentRuntime`后，模型可在POSIX目录看到`apply_patch_batch`；App Server把Session中的已有`patch_batch`审批、`artifact/read`和最终Tool Result原样投影给客户端。
+
+Review Artifact与只读Tool Artifact共用Scoped Reader，但用途、反向引用和摘要分别校验。客户端断开或重复`approval/respond`不会创建新Action；协议请求账本重放原结果，Router审批Checkpoint仍是执行授权。Windows启动相同协议服务，但工具目录不含Patch。
+
+默认纵向链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，App Server通用重放与关闭仍由[`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)覆盖。
+
+## 36. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步默认POSIX Patch的协议组合、Review分页、审批重放和Windows省略边界 |
 | 4 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认Artifact Reader、动态能力广告、Scope重新授权和剩余取消边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 3 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
 | 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |

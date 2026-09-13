@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -31,12 +31,12 @@ supersedes: []
 | 源码包 | [`src/harnessix/delivery`](../../src/harnessix/delivery/) |
 | 当前职责 | 把多文件目标冻结为Workspace Transaction；私有保存before/after Blob；生成完整Diff；在POSIX普通目录中可恢复发布；在受管Git Worktree中生成Checkpoint和确定性Commit；把Push投影到统一Trusted Action与Effect Journal |
 | 非职责 | 不生成模型修改意图，不提供编辑器/TUI，不执行任意Shell，不实现Windows普通目录写端口，不自动Push/建PR，不管理公网凭据，不提供多租户远端服务或跨Store原子事务 |
-| 上游调用者 | 当前仅测试和显式宿主装配；默认`agent-server`、Agent Tool Runtime和CLI均未注册Delivery写能力 |
+| 上游调用者 | 默认POSIX `agent-server`通过Trusted Workspace Patch消费文件Delivery；Git、Push及其他宿主仍为显式装配 |
 | 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions、Execution Plan与Action Plane |
 | 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push另用Execution Plan、Action Audit与Effect Journal |
 | 平台 | Planner支持POSIX/Windows观察；普通Workspace发布仅POSIX；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
 | 代码版本 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` |
-| 当前完成度 | 核心库和恢复测试已实现，但尚未形成默认产品端到端写链；公网认证、取消、清理、完整可观测性及若干竞态边界仍未闭环 |
+| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；Git公网认证、产品启动全局恢复、清理、完整可观测性及若干竞态边界仍未闭环 |
 
 本文描述[`contracts.py`](../../src/harnessix/delivery/contracts.py)、
 [`planner.py`](../../src/harnessix/delivery/planner.py)、[`store.py`](../../src/harnessix/delivery/store.py)、
@@ -143,7 +143,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | 确定性Commit | 已实现 | `plan_commit/commit/reconcile_commit` | 对象写入/Ref更新硬退出测试 |
 | 单Ref Git Push | 已实现/显式装配 | Trusted Action → Action Plane | 本地bare remote审批、旁路和UNKNOWN测试 |
 | 公网Git认证 | 未实现 | Runner不继承完整宿主凭据环境 | 无真实GitHub/GitLab证据 |
-| 产品CLI/TUI写链 | 未装配 | 默认产品只读 | 0.9产品切片待实现 |
+| 产品CLI/TUI写链 | POSIX Workspace Patch已装配 | 完整Review后批准，Windows省略 | Process与启动恢复由0.9.1e4～e5实现 |
 | Worktree/Blob GC | 未实现 | 无 | 长期运行容量风险 |
 | Telemetry | 未实现 | 仅账本事实 | 无统一Metric/Trace |
 
@@ -289,7 +289,7 @@ sequenceDiagram
 
 Planner返回的`PreparedWorkspaceTransaction.blobs`仍位于内存；只有`store.save`成功后才具有持久恢复基础。
 本地批准机制不属于Delivery Store，调用方必须先将Plan/Diff送入正式审批系统，再把相同Fingerprint传给
-Runtime。当前默认产品没有完成这条装配。
+Runtime。默认POSIX产品已用Workspace Patch完成文件事务的这条装配；Git交付仍未进入默认产品。
 
 ## 9. Workspace文件与Mutation合同
 
@@ -1581,9 +1581,30 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 乐观检查描述为原子CAS，不得把Plan Fingerprint描述为Approval证明，不得把本地Commit批准描述为Push
 授权，也不得把本地bare remote测试描述为公网Git生产证据。
 
-## 46. 变更记录
+## 46. 默认Trusted Workspace Patch组合（0.9.1e3）
+
+### 46.1 输入与事务身份
+
+[`trusted_action_contracts.py`](../../src/harnessix/delivery/trusted_action_contracts.py)定义严格`WorkspacePatchInput`和Review JSONL。提案最多16个文件、512 KiB UTF-8正文，操作必须为带前置条件的`create/replace/delete`。每个规范文件生成写资源和父目录读资源；操作、before/after SHA及模式进入Action资源属性。
+
+[`WorkspacePatchTransactionPlanner`](../../src/harnessix/delivery/trusted_action.py)令`transaction_id == plan_id`、`request_id == action:<plan_id>`，从Execution Plan中复核工具、Executor、Invocation、参数、资源和Snapshot，再调用既有Delivery Store保存Prepared计划与内容寻址Blob。重放只返回逐字段相同的既有事务，任何差异拒绝覆盖。
+
+### 46.2 Review、执行与恢复
+
+Review Provider先物化事务，再调用既有Diff构造并发布确定性`action_review` Artifact。批准后Executor持有Workspace Lease并循环调用[`publish_next`](../../src/harnessix/delivery/filesystem.py)；一次调用最多提交一个成员，内部保留目录FD/no-follow、exclusive temp、文件与父目录fsync、replace/unlink、after复核和游标CAS。
+
+取消只在成员之间检查。Router进入`unknown`后，Reconciler只比较before/after镜像：全after证明published，全before且游标为0证明未应用，严格after前缀与before后缀标记interrupted并映射人工处理，第三状态或无法观察保持diverged/unknown。恢复不调用`publish_next`，因此不会自动补写剩余成员。
+
+### 46.3 平台与验证
+
+该组合只在POSIX no-follow能力成立时构造；Windows明确省略。默认状态位于`workspace-transactions/transactions.db`与`blobs/`，必须和Execution、Audit、Lease、Session数据库一致备份。
+
+专项回归[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖合同、正常链、提交确认丢失、审批孤儿、Lease竞争、取消部分效果、来源漂移和不重放；既有[`test_filesystem.py`](../../tests/delivery/test_filesystem.py)继续证明逐故障点文件系统语义。
+
+## 47. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认Trusted Workspace Patch，定义Action/Delivery同身份、Review Artifact、逐成员提交、取消与只观察恢复 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows已知平台限制；Delivery运行合同不变 |
 | 1 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` | 2026-09-12 | 建立Delivery现行模块设计，覆盖Workspace Transaction、私有Blob、POSIX发布与恢复、Rollback、Diff、Git Worktree/Checkpoint/Commit、Push统一Route和生产缺口 |

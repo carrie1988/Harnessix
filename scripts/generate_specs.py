@@ -258,7 +258,10 @@ def _configure_utf8_console() -> None:
 
 
 def write_json(path: Path, value: object) -> None:
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def generate_specs(output: Path) -> None:

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 6
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
-| 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口，在Windows使用原生Handle只读端口；Windows不广告Git读取 |
+| 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口和经能力证明的Workspace Patch，在Windows使用原生Handle只读端口并省略Patch；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前完成度 | 0.9.1d已关闭；0.9.1e1的Action配置/能力目录合同、Router原子注册/幂等规划和默认Artifact组合已由CI 34739842959验收关闭；Patch、Process、Delivery默认装配仍未完成 |
@@ -1678,7 +1678,28 @@ flowchart LR
 - Windows只获得与平台中立的Artifact分页，不获得Patch、Process、Delivery或Git写能力；
 - e1完整实施流程、规划崩溃窗口和后续e2～e5边界见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)。
 
-## 49. 相关文档
+## 49. 默认Workspace Patch产品组合（0.9.1e3）
+
+[`build_workspace_patch_composition`](../../src/harnessix/product_config/action_composition.py)在固定Product Environment上探测POSIX安全文件能力，构造`apply_patch_batch`的Binding、Descriptor、Capability Evidence、Definition、Planner、Executor与Reconciler，并由Catalog进行同源闭合。Windows及缺少`O_DIRECTORY/O_NOFOLLOW/O_CLOEXEC`的平台生成`omitted/platform_not_supported`证据，不安装模型工具。
+
+[`open_default_workspace_patch_runtime`](../../src/harnessix/product_config/action_runtime.py)拥有Execution Plan Store、Action Audit Store、Delivery Store和Workspace Lease Store。`run_product_stdio`把它与Session/Artifact、只读Tool、Agent Gateway和Protocol组合在同一`ExitStack`中；所有构造成功后才激活配置和开放stdio。状态布局如下：
+
+```text
+state-root/
+├── sessions.db
+├── execution-plans.db
+├── action-audit.db
+├── workspace-leases.db
+└── workspace-transactions/
+    ├── transactions.db
+    └── blobs/
+```
+
+[`WorkspacePatchReviewProvider`](../../src/harnessix/product_config/workspace_patch_review.py)位于产品组合层，负责跨Delivery和Artifact编排；Artifact包不依赖Delivery，从而避免存储层与执行层形成依赖环。该Provider先持久事务和Blob，再发布Review Artifact，Session最后引用；中途崩溃通过确定性Plan/Artifact身份恢复。
+
+e3不读取外部Action Config，也不在启动前扫描所有在途Route。上述能力、Doctor报告及长期Owner由e5实现。真实SDK纵向回归见[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)，底层故障矩阵见[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
+
+## 50. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1697,9 +1718,10 @@ flowchart LR
 - [SDK模块设计](sdk.md)
 
 
-## 50. 变更记录
+## 51. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 6 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 装配默认POSIX Workspace Patch、Action/Delivery/Lease状态Owner、Review Provider及Windows诚实省略 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1 Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 记录0.9.1d三平台只读产品链完成全矩阵CI验收 |

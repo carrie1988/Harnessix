@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 4
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -44,7 +44,7 @@ supersedes: []
 | 持久化 | Snapshot由上层Execution/Delivery Plan持久化；包内仅`WorkspaceLeaseStore`持久化当前Owner、Fencing Token和到期时间 |
 | 平台 | macOS/Linux走POSIX Root FD；Windows走原生句柄链；领域路径始终使用UTF-8、`/`分隔的相对路径 |
 | 代码版本 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` |
-| 当前完成度 | 路径、选择资源Snapshot、原生Windows端口、只读Reader和跨进程Lease已实现；默认产品并未把Lease应用到所有写入口，Snapshot也不是全仓锁或Sandbox |
+| 当前完成度 | 路径、选择资源Snapshot、原生Windows只读端口、Secure Reader和跨进程Lease已实现；默认Workspace Patch已逐成员应用Lease，但其他写入口未全部统一，Snapshot也不是全仓锁或Sandbox |
 
 本文描述[`contracts.py`](../../src/harnessix/workspace/contracts.py)、
 [`paths.py`](../../src/harnessix/workspace/paths.py)、[`snapshot.py`](../../src/harnessix/workspace/snapshot.py)、
@@ -731,7 +731,7 @@ sequenceDiagram
 
 Workspace包本身不强制该时序。当前[`WorkspaceTransactionRuntime`](../../src/harnessix/delivery/filesystem.py)
 和Git Delivery显式组合两者：Lease Workspace ID必须等于计划Source Workspace ID，首次效果前验证完整
-Snapshot，后续按成员CAS和Fencing推进。Trusted Action、Process和Container当前验证Snapshot但不统一
+Snapshot，后续按成员CAS和Fencing推进。默认Workspace Patch Trusted Action现同时验证Snapshot并获取Workspace Lease；Process和Container仍未统一
 获取Workspace Lease。
 
 ## 22. 上游与下游集成
@@ -1190,10 +1190,19 @@ sequenceDiagram
 `532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`
 已经由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成真实Windows Runner验收。
 
-## 39. 变更记录
+## 39. 默认Patch的资源、Snapshot与Lease（0.9.1e3）
+
+每个Patch成员通过[`trusted_action.py`](../../src/harnessix/delivery/trusted_action.py)产生一个`workspace/write`资源，并为根至父目录产生`read`资源。资源属性绑定操作、before SHA、after SHA和模式；平台规范化及`path_comparison_key`拒绝别名重复。Router与Delivery由同一资源列表捕获Snapshot，因此审批后不能只替换正文、模式或路径而复用Plan。
+
+Executor使用`WorkspaceLeaseStore`获取`owner=workspace-patch:<plan_id>`的300秒租约，在每个成员效果前由Delivery Runtime再次断言Workspace ID、Owner、Fencing Token和到期时间。Lease失败不会授权重试写入；Router把效果视为不确定并转入只观察Reconcile。
+
+Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSIX链的路径、链接、Snapshot、Lease和取消攻击面由[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)、[`test_filesystem.py`](../../tests/delivery/test_filesystem.py)和[`test_leases.py`](../../tests/workspace/test_leases.py)共同覆盖。
+
+## 40. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch规范资源、同源Snapshot、逐成员Fencing Lease及Windows省略边界 |
 | 3 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；CI 34735529084通过 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |
 | 1 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 建立Workspace现行模块设计，覆盖逻辑路径、选择资源Snapshot、POSIX/Windows原生端口、Secure Reader、SQLite Fencing Lease和跨模块消费边界 |

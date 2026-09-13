@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复，以及可显式装配的统一Trusted Action Gateway |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
 | 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
-| 默认产品装配 | Provider、SQLite Session、只读Coding Tool和App Server；Context、Patch、Process等端口可显式装配，但尚未全部进入默认产品链 |
+| 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch和App Server；Context、Process等端口尚未全部进入默认产品链 |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到23 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
@@ -643,8 +643,8 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 项目 | 当前边界/影响 | 后续归属 |
 |---|---|---|
-| 默认产品没有装配通用写、Process和Delivery闭环 | Gateway已可显式装配，但代码库能力不能等同最终用户可用的完整Coding Agent | 0.9.1e3～e5 |
-| Windows默认产品仅具原生四项只读Tool | Agent领域合同与只读链跨平台，但Git、写入和Process仍未开放 | 0.9.1e、0.9.5 |
+| 默认产品已装配受控Workspace Patch，但没有Process和启动全局恢复闭环 | 已可安全修改文本文件，仍不能等同修改—测试—恢复完整Coding Agent | 0.9.1e4～e5 |
+| Windows默认产品仅具原生四项只读Tool | Patch被明确省略，Git、写入和Process仍未开放 | 0.9.5 |
 | 本地SQLite单Owner | 不支持跨主机Thread并发和云端HA | 1.x候选，不提前侵入1.0 |
 | 数据保留、导出和删除策略未完成发布验收 | Session可能随长期使用增长 | 0.9.5和1.0发布门禁 |
 | Provider真实能力和计价证据仍有待关闭项 | 离线合同通过不代表所有真实Provider组合 | 0.9.6 |
@@ -721,10 +721,19 @@ sequenceDiagram
 
 完整计划、状态、错误矩阵和源码映射见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md#2211-091e2实际交付边界)。
 
-## 25. 变更记录
+## 25. 默认Workspace Patch分派（0.9.1e3）
+
+[`AgentRuntime`](../../src/harnessix/agent/runtime.py)构造模型请求时，不再仅按内部Definition字典筛选高风险工具；名称还必须由[`TrustedActionSessionRuntime.action_name_owned`](../../src/harnessix/agent/trusted_action_runtime.py)明确持有。该约束保证模型看到的`apply_patch_batch`一定存在完整Gateway、Router和Session投影链，任意误注入Definition不能扩大模型能力面。
+
+模型调用Patch后的Agent状态仍沿用e2统一流程：Prepare持久化Route，Review Provider物化Delivery并发布`action_review`，Reducer写入`WAITING_APPROVAL`；批准后Router执行，最终效果以同一Artifact引用投影到Tool Result。取消发生在运行中的文件效果边界后时，Session不得把恢复来源效果伪装成正常成功或已取消；`unknown/manual_intervention`保持可见终态。
+
+真实纵向测试[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖Agent→Router→Delivery→文件系统，[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖真实SDK广告、Artifact读取、审批和最终回答。
+
+## 26. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认POSIX Workspace Patch，收紧模型工具目录所有权，记录Review、审批、执行、取消和SDK纵向链 |
 | 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 接入Agent Event v20、统一Trusted Action审批/效果、Router先行决定恢复、Session migration23和结构化恢复模块；默认高风险产品目录仍未开放 |
 | 3 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c Steering历史重备实现、取消协作语义、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 2 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c Steering与模型历史验证/提交竞态治理，增加乐观重备算法、源码、时序和确定性回归映射 |

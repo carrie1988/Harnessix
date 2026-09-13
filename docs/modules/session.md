@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 4
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -512,10 +512,19 @@ sequenceDiagram
 
 专项证据位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py)和[`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)。
 
-## 22. 变更记录
+## 22. Action Review用途与migration24（0.9.1e3）
+
+[`0024_trusted_action_review_artifacts.sql`](../../src/harnessix/session/migrations/0024_trusted_action_review_artifacts.sql)重建Artifact用途约束以加入`action_review`，逐列复制旧数据并保持Agent Event/Thread v20。迁移不改写历史JSON，也不改变Session投影版本。
+
+Review Artifact可先于Session审批引用提交。只有当前pending Call经CAS追加审批事件后，公共Reader和模型历史才能通过Session反向引用取得正文；提交前崩溃留下的孤儿对外不可见。Router批准已提交而Session事件未提交时，e2的双账本恢复继续用原Checkpoint时间戳补投影，不生成第二个批准事实。
+
+升级、旧库重开和Artifact用途回归位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)及[`tests/artifacts`](../../tests/artifacts/)，完整Patch崩溃窗口位于[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
+
+## 23. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加migration24与`action_review`用途，记录Artifact先行、Session授权和双账本恢复边界 |
 | 3 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 增加migration23、Projection v20、统一Action审批/效果读取与旧v19数据库向前升级证据；历史Event不重写 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 收窄`storage_errors`作用域，明确Runtime Owner跨平台锁边界，并增加应用`OSError/TimeoutError`不得误归类的回归合同 |
 | 1 | `8321ef383f2cbb3ab76191a1cc3db361a52e92ef` | 2026-09-12 | DOC-1.3 Wave A Session模块设计初版 |

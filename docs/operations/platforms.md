@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 7
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -194,6 +194,16 @@ flowchart LR
 6. Provider TLS、证书、DNS、代理和断网；
 7. Sandbox能力探测、网络隔离和资源限制；
 8. 长会话、磁盘耗尽、系统睡眠/唤醒和异常关机。
+
+## 9.1 默认Workspace Patch平台矩阵
+
+| 平台 | 默认能力 | 安全端口 | 当前结论 |
+|---|---|---|---|
+| macOS | `apply_patch_batch`可验证后广告 | POSIX目录描述符、`O_NOFOLLOW`、原子替换、目录`fsync` | 实现与本地回归完成，仍需目标Revision CI关闭 |
+| Linux | `apply_patch_batch`可验证后广告 | 同上，另需发行环境文件系统验证 | 实现与本地回归完成，仍需目标Revision CI关闭 |
+| Windows | 不广告Patch | 仅原生Handle只读端口 | 写入失败关闭，不允许Python路径或Shell回退 |
+
+POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞争、取消后的部分效果与Snapshot漂移。网络文件系统、FUSE、云同步目录和同UID恶意进程仍不在当前安全证明内；这些环境不得仅因操作系统名称匹配而推断受支持。
 
 ## 10. 源码与测试映射
 

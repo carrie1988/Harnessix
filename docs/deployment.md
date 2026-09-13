@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 4
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -220,6 +220,14 @@ uv run harnessix agent-server \
 
 当前仓库尚未完成正式安装器、签名、SBOM、升级编排和全平台Dogfooding，因此不能据此声明1.0可商用发布。
 
+## 8.1 默认Workspace Patch状态与备份边界
+
+POSIX默认产品启动后会在同一私有State Root创建`execution-plans.db`、`action-audit.db`、`workspace-leases.db`及`workspace-transactions/transactions.db`和`blobs/`。它们与`sessions.db`共同描述一次Patch的提案、审批、文件效果和恢复事实；备份、迁移或故障取证不得只复制其中一个数据库。
+
+停机备份必须先停止`agent-server`和TUI，确认没有活动Turn，再按一致快照复制整个State Root。恢复时同时恢复所有数据库与Blob目录，并保持原Workspace身份；把旧状态指向不同Workspace会在启动或执行校验中失败。e5完成前，启动不会自动全局扫描旧的`running/reconciling` Route，运维人员不得通过删除Action或Delivery记录“修复”状态。
+
+Windows默认产品不创建可执行Patch目录项；发现模型请求、日志或文档声称Windows已经安全写入时，应视为能力漂移而不是兼容行为。
+
 ## 9. 源码与测试映射
 
 | 部署职责 | 源码 | 关键符号 | 测试 |
@@ -228,7 +236,7 @@ uv run harnessix agent-server \
 | Action服务装配 | [`src/harnessix/bootstrap.py`](../src/harnessix/bootstrap.py) | `build_journal`、`build_service` | [`tests/integration/test_action_service.py`](../tests/integration/test_action_service.py) |
 | HTTP生命周期 | [`src/harnessix/api/app.py`](../src/harnessix/api/app.py) | `create_app`、`health`、`readiness` | [`tests/integration/test_api.py`](../tests/integration/test_api.py) |
 | 队列Worker | [`src/harnessix/worker.py`](../src/harnessix/worker.py) | `ActionWorker.run_forever`、`_execute_with_heartbeat` | [`tests/integration/test_worker.py`](../tests/integration/test_worker.py) |
-| Agent产品启动 | [`src/harnessix/product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
+| Agent产品启动与Patch Owner | [`src/harnessix/product_config/server.py`](../src/harnessix/product_config/server.py)、[`action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `run_product_stdio`、`open_default_workspace_patch_runtime` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)、[`tests/delivery/test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py) |
 | 配置CLI | [`src/harnessix/product_config/cli.py`](../src/harnessix/product_config/cli.py) | `config_main`、`agent_server_main` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
 | 产品Configure/Doctor | [`src/harnessix/product_ui/cli.py`](../src/harnessix/product_ui/cli.py)、[`src/harnessix/product_config/preflight.py`](../src/harnessix/product_config/preflight.py) | `_configure`、`_doctor`、`run_product_preflight` | [`tests/product_ui/test_cli.py`](../tests/product_ui/test_cli.py)、[`tests/product_config/test_preflight.py`](../tests/product_config/test_preflight.py) |
 | Windows只读端口 | [`src/harnessix/tools/windows_read.py`](../src/harnessix/tools/windows_read.py)、[`src/harnessix/workspace/windows.py`](../src/harnessix/workspace/windows.py) | `WindowsReadRuntime`、`WindowsWorkspaceRoot` | [`tests/tools/test_windows_native_runtime.py`](../tests/tools/test_windows_native_runtime.py) |
@@ -239,9 +247,9 @@ uv run harnessix agent-server \
 
 - 项目包版本仍为`0.1.0`，路线图完成度与发布包语义版本尚未统一；
 - 没有官方macOS/Linux/Windows安装器、自动更新器、签名、来源证明和SBOM；
-- Windows当前只支持已验证的原生List/Read/Glob/Grep链；Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
+- Windows当前只支持已验证的原生List/Read/Glob/Grep链；默认Patch会被明确省略，Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
 - Action Plane HTTP API没有内置认证、授权、TLS、速率限制或租户来源绑定；
 - 当前容器只覆盖Action Plane基础依赖，不包含OpenAI、Anthropic或完整Coding Tool环境；
 - 已有离线统一`code doctor`；在线备份、数据库修复和自动回滚命令仍未实现；
-- 各扩展和Delivery能力不是默认产品装配，部署前必须核对对应模块的“当前/显式/规划”边界；
+- POSIX默认产品已装配Workspace Patch及其Delivery事务；Git交付、Process、MCP、Skill、Hook仍不是默认产品能力，部署前必须核对对应模块的“当前/显式/规划”边界；
 - 生产SLO、容量阈值、告警阈值、长时间Soak和灾难恢复目标尚待0.9后续切片固化。

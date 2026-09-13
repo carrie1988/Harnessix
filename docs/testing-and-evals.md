@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 5
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 6
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -377,18 +377,18 @@ flowchart TD
 
 ## 20. 当前证据与限制
 
-当前代码Revision `328aa2d6c8ee85a75ab2baef51b80869dc4089a8`的0.9.1e2实现已完成以下本地证据：
+当前代码Revision `71a479439edcdd29b863ec3a9bad7a52586dd1bf`包含0.9.1e3默认Workspace Patch纵向链，已完成以下本地证据：
 
-- `uv run pytest -q`收集3535项测试并以退出码0结束，其中19项按平台或外部服务条件跳过；
+- `uv run pytest -q`收集3545项测试并以退出码0结束，其中19项按平台或外部服务条件跳过；
 - `make lint`、`make readability`、`make typecheck`、`make contracts`和`make documentation`全部通过；
-- `tests/trusted_actions/test_agent_gateway.py`覆盖确定身份、精确绑定、Router审批权威、拒绝不执行、执行中恢复只对账、取消不确定性和双账本修复；
-- `tests/agent/test_trusted_action_runtime.py`覆盖真实Agent Loop接入及Router先提交、Session后投影之间的崩溃恢复；
-- Agent Event/Thread v20、Session migration23和Protocol v1兼容投影由Schema、升级与Projection测试共同验证；
+- [`test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py)覆盖严格输入、创建/替换/删除、Unicode、完整Review、提交确认丢失、孤儿不可读、Lease竞争、取消后的部分效果、来源漂移和只对账恢复；
+- [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)通过真实SDK路径证明模型仅在能力成立的平台看到Patch，客户端读取完整Diff、提交指纹绑定审批并观察真实文件效果；
+- migration24、`action_review`用途与公开模型历史由Artifact、Session、Context和协议回归共同验证；
 - 验证不调用模型API、SSH、远程服务器或新增中间件。
 
-上述本地证据证明显式Gateway合同及恢复语义闭环。[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)进一步完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation矩阵：两个Linux全仓任务均为3516 passed、19 skipped；macOS为2457 passed、15 skipped；Windows为473 passed、29 skipped；PostgreSQL与Container各2项通过；202份文档、5215条链接和559幅Mermaid完成真实门禁。0.9.1e2据此关闭。当前默认产品仍未注册Patch、Process或Delivery高风险能力。
+上述证据只证明本地实现基线。e3只有在文档同步后的Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation全矩阵通过后才可关闭。Windows必须继续证明Patch能力被省略而不是回退到不安全路径；任何平台任务失败都必须按真实回归处理。
 
-截至该Revision，以下项目仍不能宣称生产完成：0.9.1e3～0.9.6范围的默认Action装配、产品级端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至该Revision，以下项目仍不能宣称生产完成：0.9.1e4～0.9.6范围的Process/Sandbox默认装配、产品级启动恢复与端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ## 21. 维护与验收标准
 

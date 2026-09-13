@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -367,6 +367,12 @@ Thread，不启动Transport，也不进行Provider网络请求。
 `run_product_stdio`再次执行Preflight，并继续执行配置重读、Workspace/State隔离、Provider构造和激活CAS；不要把Doctor旧报告
 作为跳过Server校验的授权材料。Windows原生当前只允许四项文件/搜索读取；显式Git返回
 `product_git_platform_unsupported`。
+
+## 12.1 默认Patch配置边界
+
+当前e3实现不新增用户可编辑的Action配置文件：默认POSIX产品固定尝试构造`apply_patch_batch`，并用运行时能力报告决定`verified`或`omitted`；Windows固定省略。模型配置v2、Provider选择和Secret引用均不获得写权限字段。
+
+`workspace_patch_enabled`属于独立`ProductActionConfigV1`合同，但e5完成文件加载、迁移、Doctor报告与Owner之前，不应手工创建未知Action配置并假设产品会读取。能力报告最多有效600秒，Catalog安装时再次检查过期、Schema、Binding与Executor Evidence。
 
 ## 13. 0.9.1d源码与测试映射
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 4
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -96,8 +96,8 @@ Session事实，也不把未提交结果当作已经发生。
 3. 不提供全树原子快照、内容寻址文件系统或跨进程Workspace读锁；
 4. 不对同权限恶意宿主、管理员、挂载替换、inode重用或特殊网络文件系统提供安全证明；
 5. 不把5秒协作Deadline声明为不可中断内核I/O的硬超时；
-6. 默认产品只自动启用Session绑定Artifact存储，不自动启用任意Git路径或高风险执行能力；
-7. Windows已提供原生Handle只读Workspace端口，但不提供Git、写入、Process或Delivery；
+6. 默认产品除Session绑定Artifact外，只在POSIX能力证明成立时启用独立Trusted Workspace Patch；不自动启用任意Git路径或其他高风险能力；
+7. Windows已提供原生Handle只读Workspace端口；默认Trusted Patch会诚实省略，仍不提供Git、写入、Process或Delivery；
 8. 不在工具层决定Agent重试、Turn恢复、模型历史裁剪或Artifact事务提交顺序。
 
 ## 4. 术语、信任边界与固定上限
@@ -940,10 +940,17 @@ Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupp
 [`test_product_server_advertises_default_scoped_artifact_reader`](../../tests/product_config/test_server_and_cli.py)通过真实stdio握手和
 `artifact/read`请求验证产品链，既有Tool/Artifact测试继续验证扫描预算、归属、摘要和取消语义。
 
-## 27. 变更记录
+## 27. 只读工具与默认Patch的边界（0.9.1e3）
+
+`apply_patch_batch`不属于`CodingToolRuntime`，而由Trusted Action目录单独广告和执行。只读Tool继续只拥有读取Scope、Artifact大结果和可选Git读取；它们不能持有Patch Planner、Workspace Lease或Delivery Store，也不能把读取批准升级为写批准。
+
+Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Action Session Runtime明确持有的Action Descriptor。POSIX能力成立时可同时出现四项只读工具与Patch；Windows只出现原生四项读取。该分层由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)的真实SDK目录检查和[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)的平台省略测试证明。
+
+## 28. 变更记录
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 明确默认Patch属于Trusted Action而非CodingToolRuntime，并记录POSIX广告与Windows省略边界 |
 | 3 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |

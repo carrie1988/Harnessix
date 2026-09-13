@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -1472,10 +1472,17 @@ flowchart LR
 
 [`tests/protocol/test_projection.py`](../../tests/protocol/test_projection.py)分别验证三种呈现、决定和Diff，并断言序列化结果不含`planId`、三类内部Fingerprint、Policy ID和Route状态。`generate_specs.py --check`证明14份Protocol v1 Schema未因内部Event v20发生漂移。
 
-## 33. 变更记录
+## 33. 默认Patch的公共协议链（0.9.1e3）
+
+e3没有升级Agent Protocol版本或增加方法。内部`apply_patch_batch`继续映射为已有`approval_type=patch_batch`，`diff_artifact`指向完整`action_review`；客户端通过既有`artifact/read`分页读取、校验后通过`approval/respond`提交绑定原请求指纹的决定。终态`PublicToolResultContent`复用同一Artifact引用和Action ID。
+
+公共投影不暴露Execution Fingerprint、Policy、规范资源、Lease、Delivery游标或内部异常。Windows目录没有Patch Descriptor，因此协议初始化的工具能力不会暗示写支持。真实协议/SDK链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，投影兼容由[`test_projection.py`](../../tests/protocol/test_projection.py)覆盖。
+
+## 34. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 验证默认Patch复用Protocol v1审批、Artifact分页和Tool Result，不泄漏Action/Delivery私有字段 |
 | 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 将Agent Event v20统一Action审批映射到现有`tool/patch_batch/process`，保持Protocol v1合同与Schema不变并增加内部字段不泄漏回归 |
 | 3 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行设计，并将不存在的`AgentClient.stream_events`源码映射修正为实际`watch_thread`方法 |
 | 2 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 根据App Server源码反向求证，修正非1.0版本错误分支不可达及Closing状态回复Notification的实现偏差 |

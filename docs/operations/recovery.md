@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -190,6 +190,21 @@ Push与Commit分离，使用单ref和exact lease。响应丢失后查询远端re
 - 为其他OID：`diverged`；
 - 无法查询：保持`UNKNOWN`。
 
+## 8.1 默认Workspace Patch恢复
+
+默认POSIX Patch用同一`plan_id`关联Execution Plan、Action Audit、Delivery Transaction、Review Artifact和Workspace Lease。恢复前必须保留整个State Root及原Workspace，不得单独删除数据库、Blob、临时文件或审批事件。
+
+| 可观察事实 | 允许结论 | 禁止操作 |
+|---|---|---|
+| 全部成员等于before且游标为0 | 未应用，可保留原终态并重新发起新提案 | 用旧批准再次执行 |
+| 全部成员等于after | Reconcile可证明published/succeeded | 再次写入相同成员 |
+| 严格after前缀、before后缀 | `manual_intervention/delivery_partial_effect` | 自动提交剩余成员 |
+| 第三正文、类型变化或无法观察 | diverged/unknown | 猜测成功、覆盖外部修改 |
+| Artifact存在但Session无引用 | 未授权孤儿，公共读取为not_found | 手工添加审批引用 |
+
+e3的Gateway能在调用恢复路径对单个已知Plan执行只观察Reconcile，但`agent-server`启动前尚未全局扫描所有旧`running/reconciling` Route。e5完成前，异常退出后的运维恢复应先停机备份，再通过对应Thread Replay触发现有恢复；无法从Thread关联的Route保持原状态并升级人工处理。
+
+
 ## 9. Product Config恢复
 
 配置迁移会保留内容寻址的v1备份。激活失败时Provider、Tool和Runtime逆序关闭，原活动指针不变。恢复步骤：
@@ -236,11 +251,11 @@ Push与Commit分离，使用单ref和exact lease。响应丢失后查询远端re
 | Agent启动恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py)的`_recover` | [`test_crash_recovery.py`](../../tests/agent/test_crash_recovery.py)、[`test_interactions.py`](../../tests/agent/test_interactions.py) |
 | Patch | [`patches/managed.py`](../../src/harnessix/patches/managed.py)、[`patches/batch_execution.py`](../../src/harnessix/patches/batch_execution.py) | [`tests/patches`](../../tests/patches/) |
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |
-| 文件交付 | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py) | [`tests/delivery`](../../tests/delivery/) |
+| 文件交付与默认Patch | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py)、[`delivery/trusted_action.py`](../../src/harnessix/delivery/trusted_action.py) | [`tests/delivery`](../../tests/delivery/)、[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) |
 | Git Push | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | [`tests/delivery/test_git_push.py`](../../tests/delivery/test_git_push.py) |
 
 ## 13. 已知限制
 
-当前没有统一恢复CLI、支持包、在线状态检查器、自动跨账本一致性扫描、远程效果适配器目录或RPO/RTO承诺。
+当前没有统一恢复CLI、支持包、在线状态检查器、启动全局Route扫描、自动跨账本一致性扫描、远程效果适配器目录或RPO/RTO承诺。
 Action API只暴露Action Reconcile，不暴露Agent/Patch/Process/Delivery的统一恢复控制面。生产部署必须在0.9后续切片补齐
 操作权限、确认步骤、审计和真实故障演练后，才能把本设计转换为稳定运维产品能力。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: pending
+version: 7
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -35,6 +35,7 @@ related_tests:
   - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
   - tests/delivery/test_filesystem.py
+  - tests/delivery/test_trusted_action_patch.py
   - tests/integration/test_container_sandbox.py
   - tests/product_config/test_server_and_cli.py
 supersedes: []
@@ -52,7 +53,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2的Event v20、Gateway与双账本恢复已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；e3～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现已提交于`71a4794`并完成本地全量验收，等待文档提交后的全矩阵CI关闭；e4～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -899,7 +900,7 @@ e1/e2未关闭时直接向Server添加Patch或Process构造参数。
 
 ### 19.2 数据迁移
 
-- Agent Event Store追加v19，不重写旧事件；
+- Agent Event Store保持v20，不重写旧事件；Artifact用途通过migration24扩展；
 - Execution Plan/Action Audit/Delivery/Artifact沿用现有Schema，若新增索引或purpose不需要迁移Payload；
 - Action Config为新文件，无旧数据迁移；
 - 旧专用Patch/Process在途Session仍由旧恢复路径结算，新目录不再生成旧计划；
@@ -1320,3 +1321,265 @@ Gateway构造时对Descriptor与Router Binding执行精确集合和字段核对�
 | [`test_projection.py`](../../tests/protocol/test_projection.py) | 三种presentation复用Protocol v1且不泄漏内部字段 |
 
 Agent、Trusted Actions与Protocol三个测试目录的联合回归已经通过；`uv run pytest -q`收集3535项并以退出码0结束，其中19项按平台或外部服务条件跳过；Ruff、Readability、Mypy、合同生成和文档门禁全部通过。[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)进一步完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container及Documentation全矩阵验收，两个Linux全仓任务均为3516 passed、19 skipped。当前仍未证明默认产品可修改文件或运行Container；这些能力分别由e3、e4实现，产品Owner、Preflight/Doctor和启动恢复由e5关闭。
+
+### 22.19 0.9.1e3实际交付边界
+
+0.9.1e3把一个正式的多文件Workspace Patch纵向切片装入默认产品。该切片只在原生POSIX安全文件端口具备
+`O_DIRECTORY`、`O_NOFOLLOW`和`O_CLOEXEC`语义时广告；Windows继续保留0.9.1d只读能力，不通过字符串路径、
+Shell或Host进程模拟写入。Process/Sandbox、启动时在途计划恢复和外部Action Config仍由e4～e5实现。
+
+本切片的权威链为：
+
+```mermaid
+flowchart LR
+    Model[ModelRequest.tools] --> Descriptor[apply_patch_batch\nWorkspacePatchInput]
+    Descriptor --> Agent[AgentRuntime]
+    Agent --> Gateway[RouterBackedAgentActionGateway]
+    Gateway --> Router[TrustedActionRouter]
+    Router --> EP[(Execution Plan Store)]
+    Router --> AA[(Action Audit Store)]
+    Router --> Executor[WorkspacePatchActionExecutor]
+
+    Gateway --> Review[WorkspacePatchReviewProvider]
+    Review --> Planner[WorkspacePatchTransactionPlanner]
+    Planner --> WT[(Workspace Transaction Store + Blob CAS)]
+    Review --> Diff[Workspace Action Review JSONL]
+    Diff --> AR[(Session Artifact action_review)]
+    AR --> Approval[Session Trusted Action审批]
+
+    Executor --> Lease[(Workspace Lease Store)]
+    Executor --> FS[WorkspaceTransactionRuntime.publish_next]
+    FS --> Workspace[POSIX Workspace]
+    FS --> WT
+```
+
+`ProductActionCatalog`仍同时生成模型Descriptor和Router Definition。实现中补充了
+[`AgentRuntime`](../../src/harnessix/agent/runtime.py)的目录筛选：只有由`TrustedActionSessionRuntime`明确持有的名称才会进入
+`ModelRequest.tools`，不能因为某个任意高风险Definition出现在内部字典中就被广告。
+
+### 22.20 输入合同、预算与规范化
+
+公开输入Schema为[`workspace-patch-input-v1`](../../spec/workspace-patch-input-v1.schema.json)，实现位于
+[`trusted_action_contracts.py`](../../src/harnessix/delivery/trusted_action_contracts.py)。
+
+| 合同/字段 | 类型与上限 | 语义 | 失败行为 |
+|---|---|---|---|
+| `WorkspacePatchInput.spec_version` | 常量`harnessix.workspace-patch-input/v1` | 防止模型参数被其他Patch协议误解 | 未知版本由严格Pydantic合同拒绝 |
+| `files` | 1～16项 | 一个审批和一个Delivery事务内的完整变更集合 | 空集合、超项或原始重复路径拒绝 |
+| `operation=create` | `content`和`mode`必填，`expected_sha256`禁止 | 只允许目标当前不存在时创建 | 已存在目标在事务规划阶段返回前置条件失败 |
+| `operation=replace` | SHA-256、UTF-8 `content`、`0644/0755`必填 | SHA绑定模型读取过的完整来源正文 | 缺失、摘要漂移、目录或链接均失败关闭 |
+| `operation=delete` | SHA-256必填，`content/mode`禁止 | 只删除模型明确读取并绑定的普通文件 | 缺失、摘要漂移、非普通文件拒绝 |
+| 单个`content` | 最多512 KiB UTF-8 | 文本Patch，不接受任意二进制 | 非法Unicode、禁止控制字符或超限拒绝 |
+| 全部正文 | 最多512 KiB | 限制模型请求、计划和CAS放大 | 总预算在创建Plan前校验 |
+| `path` | 最多4096字符 | 按目标平台规范化的Workspace相对路径 | 根、别名重复、保护组件、`.env*`、逃逸和链接拒绝 |
+
+路径先由[`normalize_workspace_path`](../../src/harnessix/workspace/paths.py)按计划平台规范化，再按
+`path_comparison_key`检查别名重复。每个文件形成一个`workspace/write`规范资源，并增加根至目标父目录的`read`资源。
+因此Router捕获的[`WorkspaceSnapshot`](../../src/harnessix/workspace/contracts.py)与Delivery最终来源Snapshot覆盖相同资源集合。
+Action资源属性还绑定`operation`、来源SHA、目标SHA和目标模式，审批后不能只替换正文而复用原Route。
+
+核心解析伪代码如下：
+
+```text
+parse strict WorkspacePatchInput
+for each file:
+    normalized_path = normalize(path, planned_platform)
+    reject root / protected / .env / alias duplicate
+    bind canonical write resource(operation, before_sha, after_sha, mode)
+    bind read resources for every parent directory
+sort by platform comparison key
+return ResolvedAction(resources, workspace_resources)
+```
+
+### 22.21 Action Route与Delivery事务的同一身份
+
+[`WorkspacePatchTransactionPlanner`](../../src/harnessix/delivery/trusted_action.py)不创建第二套业务身份：
+
+```text
+Delivery.transaction_id = ActionRoute.execution.plan_id
+Delivery.request_id     = "action:" + plan_id
+Delivery.source         = ActionRoute.execution.workspace
+Delivery.mutations      = normalized proposal files in canonical order
+```
+
+物化前必须同时验证：
+
+1. Route工具为`apply_patch_batch`且Executor为`product.workspace-patch`；
+2. `plan_id == invocation_id`，调用参数与严格反序列化结果逐字段相同；
+3. Route规范资源与根据参数重新求得的资源集合相同；
+4. Delivery来源Snapshot与Execution Plan绑定Snapshot逐字段相同；
+5. 每个Mutation的before满足`create/replace/delete`前置条件；
+6. 每个after的SHA、字节数和模式与提案一致。
+
+Planner采用查询优先：同一`plan_id`已有事务时只做全量身份复核并返回原Record；任何字段不同都返回
+`delivery_action_mismatch`或`delivery_request_conflict`，不会覆盖旧Blob、刷新身份或重新捕获来源。
+
+### 22.22 审批Review Artifact数据结构与发布顺序
+
+Review的持久格式是[`workspace-action-review-record-v1`](../../spec/workspace-action-review-record-v1.schema.json)定义的规范
+JSONL。首记录为`summary`，随后是按文件序号连续的`entry`，最后是按序号连续的`text`：
+
+```text
+summary(transaction_id, plan_fingerprint, workspace_revision,
+        file_count, diff_utf8_bytes, diff_sha256, complete=true)
+entry(index=0..N-1, WorkspaceDiffEntry)
+text(sequence=0..M-1, <=3000 chars)
+```
+
+[`build_workspace_action_review`](../../src/harnessix/delivery/trusted_action_contracts.py)验证拼接后的完整Diff字节数和SHA；
+每条文本记录最多3000字符，以便包含JSON转义和四字节Unicode后仍不突破Artifact 24 KiB单页记录上限。完整JSONL不得超过
+1 MiB，且必须能由`parse_workspace_action_review`规范重编码为完全相同的字节。
+
+审批前时序为：
+
+```mermaid
+sequenceDiagram
+    participant G as Agent Gateway
+    participant P as Patch Transaction Planner
+    participant D as Delivery Store
+    participant A as Artifact Store
+    participant S as Session Store
+
+    G->>P: review(route, thread, turn, call)
+    P->>D: query plan_id or persist prepared plan + blobs
+    P-->>G: immutable WorkspaceTransactionRecord
+    G->>D: build_workspace_diff(plan)
+    G->>A: publish_action_review(deterministic artifact_id)
+    A->>S: BEGIN IMMEDIATE; verify pending call and sequence
+    A->>A: INSERT purpose=action_review; COMMIT
+    Note over A,S: 此处崩溃可留下不可读的有界孤儿
+    G-->>S: CAS append approval + WAITING_APPROVAL
+```
+
+Artifact ID为`UUIDv5(plan_id, "action_review:v1")`等价的固定命名空间派生值。发布采用查询优先和提交确认恢复：同一
+Call、Artifact ID、作用域、正文和manifest重放返回原`ArtifactRef`及原TTL；任何正文或身份冲突返回`artifact_conflict`。
+Artifact已提交而Session审批尚未提交时，`read`和`verify_reference`统一返回`artifact_not_found`，不泄漏“存在但未授权”的
+区别；超过TTL且不再受活动Turn保护后可由GC转为`expired`。migration
+[`0024_trusted_action_review_artifacts.sql`](../../src/harnessix/session/migrations/0024_trusted_action_review_artifacts.sql)
+仅重建Artifact用途约束以加入`action_review`，旧行逐列复制，Agent Event/Thread继续使用v20且历史事件正文不重写。
+
+### 22.23 批准、执行、取消与成员提交
+
+批准仍由e2的Router先行Saga完成。只有Execution Approval Checkpoint和Action Audit都证明Route为`ready`后，
+[`WorkspacePatchActionExecutor`](../../src/harnessix/delivery/trusted_action.py)才能获取Workspace Lease。执行器按以下顺序工作：
+
+```text
+load exact Delivery record and verify Route/proposal binding
+acquire workspace lease(owner = "workspace-patch:" + plan_id, ttl = 300s)
+while transaction is not published:
+    await cooperative cancellation checkpoint
+    publish_next(exact transaction, approval fingerprint, lease)
+release lease in finally
+map durable Delivery state to ActionExecutionOutcome
+```
+
+[`WorkspaceTransactionRuntime.publish_next`](../../src/harnessix/delivery/filesystem.py)最多提交一个成员。成员内部仍执行现有安全链：
+
+```text
+verify plan source / recover existing publishing state
+assert current fencing token
+observe target with directory descriptors and no-follow
+if target already equals after: advance cursor only
+elif target differs from before: mark diverged and stop
+else:
+    create exclusive temporary file in verified parent
+    write bounded blob, chmod, fsync(file)
+    re-observe before image
+    replace/unlink and fsync(parent)
+    re-observe exact after image
+    CAS advance transaction cursor
+if cursor == mutation count: mark published
+```
+
+取消只能在两个有界成员之间被协作调度。取消发生在某一成员内部时，该成员先完成文件效果和Ledger记录；Router随后把运行中的
+Action标为`unknown`。恢复路径只调用`reconcile`，不会继续提交剩余成员。若观察到一个严格after前缀和before后缀，Delivery
+进入`interrupted(cursor=N)`，Action映射为`manual_intervention/delivery_partial_effect`；全after可证明成功；全before且游标为0
+可证明未应用；第三状态、顺序混合或无法观察均保持保守终态。
+
+### 22.24 失败语义矩阵
+
+| 故障点/条件 | 持久事实 | Agent/Router结果 | 是否自动重放写入 |
+|---|---|---|---:|
+| 输入非法、保护路径、超预算 | 无Route或无Delivery事务 | 失败结果/稳定参数错误 | 否 |
+| Route已存但Delivery尚未存 | Route `pending_approval`；无文件效果 | Review重放查询后可重新物化同一事务 | 仅规划，不写文件 |
+| Delivery已存但Artifact未存 | `prepared`事务与Blob完整 | 重建同一Diff并发布同一Artifact ID | 否 |
+| Artifact提交确认丢失 | 唯一`action_review`行已提交 | 查询原身份返回原Ref/TTL | 否 |
+| Artifact已提交、审批未提交 | 有界孤儿，不可读 | Turn中断；重试同一调用可复用 | 否 |
+| 审批后来源Snapshot漂移 | Route仍`ready`，事务`prepared` | `execution_plan_stale`，无覆盖 | 否 |
+| Lease被其他Owner持有 | 无新成员效果 | Router执行不确定，随后Reconcile证明未应用 | 否 |
+| 成员替换前漂移 | `diverged/delivery_source_changed` | 失败或人工处理 | 否 |
+| 成员效果后、游标前取消/崩溃 | 文件可能after，Ledger仍旧游标 | Reconcile根据镜像推进或标记部分效果 | 否 |
+| 第一个成员后取消 | 严格after前缀+before后缀 | `manual_intervention/delivery_partial_effect` | 否 |
+| 全部文件after、终态前崩溃 | 全after可观察 | Reconcile标记`published/succeeded` | 否 |
+| 观察到第三正文/类型 | `diverged`或`unknown` | 人工处理 | 否 |
+| Windows或缺少no-follow标志 | Capability `omitted/platform_not_supported` | 模型目录无Patch Tool | 否 |
+
+审批后来源漂移当前保留Route `ready`，因为Router在进入`running`前完成Snapshot复核。该状态不会产生文件效果，但需要新提案形成
+新Plan，不能复用旧批准；0.9.3将把该失败纳入统一超时、重试和产品诊断统计。
+
+### 22.25 默认产品生命周期与状态布局
+
+[`open_default_workspace_patch_runtime`](../../src/harnessix/product_config/action_runtime.py)在
+[`run_product_stdio`](../../src/harnessix/product_config/server.py)内部拥有以下同步Store，并通过`ExitStack`保证部分构造失败也会逆序关闭：
+
+```text
+<state-root>/
+├── product-config.db
+├── sessions.db                 # Session、Protocol Request、Artifact/action_review
+├── execution-plans.db          # Execution Plan与批准Checkpoint
+├── action-audit.db             # Route快照和连续Hash链事件
+├── workspace-leases.db         # Workspace跨进程Fencing
+└── workspace-transactions/
+    ├── transactions.db         # Delivery计划、状态与成员游标
+    └── blobs/                  # SHA-256寻址的目标正文
+```
+
+构造顺序为Provider Bundle→Session/Artifact→只读Tool Runtime→Action Stores/Environment/Catalog/Gateway→Agent Runtime→配置
+CAS激活→stdio。任一Store、目录、Gateway或Agent构造失败都不会激活配置或开放协议。e3暂不在启动前调用
+`router.recover_interrupted()`；产品级Owner、在途Route扫描和Doctor/Preflight状态检查由e5统一关闭，不能把e3局部恢复误写成
+完整启动恢复能力。
+
+### 22.26 SDK、协议与模型历史
+
+Agent Protocol保持1.0且没有增加方法或公共枚举。统一Action的`presentation=patch_batch`继续投影为已有
+`PublicApprovalRequestContent(approval_type=patch_batch)`；SDK通过原`events/replay`取得审批、通过`artifact/read`分页读取完整Diff、
+通过`approval/respond`提交指纹绑定决定。最终`PublicToolResultContent.diff_artifact`沿用同一引用。
+
+模型历史中，带`trusted_action`效果的`diff_artifact`绑定用途为`action_review`；旧专用Batch Patch仍绑定`batch_effect`。
+[`reference.py`](../../src/harnessix/artifacts/reference.py)按用途分别验证Tool Result、Batch、Process和Action Review，避免在
+`SQLiteArtifactStore`中继续扩张高复杂度分支。未经Session审批引用的Review不进入模型历史，也不能由公共Artifact Reader读取。
+
+### 22.27 可读性、依赖与结构决策
+
+实现提交`71a4794`新增一级依赖`product_config -> delivery`。该边只存在于产品组合模块：产品层需要把经能力证明的Catalog连接到
+Delivery Executor，Delivery不反向依赖Product Config，因此没有扩大既有强连通分量。为避免形成
+`artifacts -> delivery -> ... -> artifacts`环，Review编排位于
+[`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py)，Artifact包只负责通用存储、授权引用和GC。
+
+Artifact发布、引用验证和Workspace成员提交分别拆至
+[`action_review_store.py`](../../src/harnessix/artifacts/action_review_store.py)、
+[`reference.py`](../../src/harnessix/artifacts/reference.py)及[`filesystem.py`](../../src/harnessix/delivery/filesystem.py)模块级函数。
+可读性策略只接受上述单向产品组合依赖，不批准新的超大文件、超长/高复杂度符号或依赖环；现有热点预算随本次拆分只减不增。
+
+### 22.28 测试证据与e3剩余边界
+
+| 测试入口 | 已证明事实 |
+|---|---|
+| [`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) | 严格输入与Schema、创建/替换/删除、Unicode路径、完整Review、Artifact确认丢失与重放冲突、孤儿不可读、Lease竞争、成员间取消、部分效果、审批后漂移及Reconcile不重放 |
+| [`test_filesystem.py`](../../tests/delivery/test_filesystem.py) | POSIX no-follow成员写、fsync/replace、Fencing、逐故障点、硬退出和镜像恢复 |
+| [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | 默认状态Store构造、模型目录真实包含Patch、SDK读取Review并批准后真实写入，以及EOF/Artifact旧链回归 |
+| [`tests/artifacts`](../../tests/artifacts/) | migration24兼容、Artifact分页/授权/过期/损坏与现有Batch/Process用途回归 |
+| [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)与[`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) | Router审批权威、Agent恢复和公共调用边界保持成立 |
+
+实现Revision `71a479439edcdd29b863ec3a9bad7a52586dd1bf`本地收集3545项测试并以退出码0完成全量回归；19项仅因平台或外部
+服务条件跳过。Ruff格式/规则、Mypy严格检查307个生产源码文件、Schema确定生成、文档链接和可读性治理门禁均通过。
+
+0.9.1e3尚不证明以下能力：
+
+- Windows原生安全写；当前必须诚实省略；
+- 固定Container Process Profile与强Sandbox；由e4实现；
+- 产品启动前扫描并对账旧Route、Action Config文件加载、Doctor能力报告及统一Owner；由e5实现；
+- 自动继续部分多文件事务；设计明确要求人工处理，不计划通过重放放宽；
+- 多租户远端控制面、长期Soak和容量降级；分别由0.9.3～1.0处理。
+
+因此e3在全矩阵CI通过后可独立关闭，但0.9.1e和0.9.1仍保持进行中。

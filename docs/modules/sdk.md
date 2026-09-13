@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -1200,10 +1200,17 @@ return value
 重大SDK语义变化使用[重大变更设计模板](../governance/templates/change-design-template.md)评审。协议生成物更新不
 自动证明手写Client兼容；必须同时执行恶意Response、取消、断线恢复、同步/异步HTTP等价和三平台子进程测试。
 
-## 44. 变更记录
+## 44. Workspace Patch客户端使用边界（0.9.1e3）
+
+Python `AgentClient`不增加Patch专用传输API。客户端从事件流观察`patch_batch`审批，使用既有`read_artifact`按连续offset读取完整Review JSONL，核对记录数、UTF-8字节与SHA后，再使用`respond_approval`提交精确`request_fingerprint`。断线后通过Replay恢复同一审批，不重新发送模型工具调用。
+
+SDK不能根据预览、工具名称或平台自行推断写权限；初始化和模型目录中没有Patch即表示该能力未安装。真实子进程/SDK回归[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)证明读取、批准、文件效果和最终回答链，协议基础回归仍由[`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)覆盖。
+
+## 45. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch通过既有SDK Replay、Artifact分页和审批方法完成，不新增客户端权限接口 |
 | 4 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 增加广告方法、协商消息字节和Replay数量的Transport写入前门禁，并登记Product UI连接恢复分层 |
 | 3 | `4f7c009869a46f70169a8e34a40c1df8227a8651` | 2026-09-13 | 严格校验Response Envelope与JSON预算，限制子进程Response Frame，统一Result错误并在半握手失败后关闭且禁止复用当前连接 |
 | 2 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` | 2026-09-12 | 接入Adapter现行设计，明确其只调用Submit、完整Snapshot返回及真实HTTP/LangGraph测试边界 |

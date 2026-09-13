@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 7
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -41,8 +41,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
-| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；0.9.1e1已增加产品目录原子安装及Audit优先的幂等规划，e2已增加Agent统一Gateway、Router先行审批Saga和只对账恢复；默认产品尚未注册Patch/Process/Delivery，也没有公网多租户控制面 |
+| 代码版本 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` |
+| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；e1完成目录与规划，e2完成Agent Gateway与双账本恢复，e3已把POSIX Workspace Patch、Review Artifact和Delivery Executor接入默认产品；Process、全局启动恢复和公网多租户控制面仍未完成 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1190,7 +1190,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | 默认产品未装配统一Router和写入Tool链 | 核心能力仍是显式库/测试装配，不能形成完整产品体验 | 0.9.1产品闭环 |
+| P0 | 默认产品仅装配Workspace Patch，尚无Process/Sandbox与启动全局恢复 | 可完成受控文件写，仍不能形成完整修改—测试—恢复体验 | 0.9.1e4～e5 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1350,7 +1350,7 @@ Tool合同或Binding时稳定失败，不能借幂等入口替换已持久操作
 
 [`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖不重抓Workspace、跨Store故障修复和Invocation冲突；
 [`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖批量安装原子性、命名空间、过期与漂移。0.9.1e2已经建立
-唯一Agent Gateway和审批投影，但尚未把Router及高风险定义注入默认产品；e3/e4必须通过同源Catalog后才能广告写Action。
+唯一Agent Gateway和审批投影，但尚未把Router及高风险定义注入默认产品；e3已使Patch通过同源Catalog广告；e4的Process仍必须遵守同一约束。
 
 ## 43. Agent Gateway与审批权威（0.9.1e2）
 
@@ -1408,12 +1408,36 @@ transition audit using checkpoint.decided_at
 
 [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py)覆盖目录漂移、重复Prepare、Review、批准、拒绝、调用漂移、取消和Reconcile；[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖决定双Store崩溃窗口。该切片没有改变Router的公共包级导出，也没有引入新的一级包依赖边或超大符号。
 
-当前Gateway可由宿主显式传给`AgentRuntime`，但默认产品仍只有只读Tool和Artifact。Patch/Delivery Executor、Process/Sandbox Executor、能力探测和产品Owner分别由0.9.1e3～e5继续实现。
+默认POSIX产品现把Gateway传给`AgentRuntime`并安装Patch/Delivery Executor；Process/Sandbox Executor和产品级启动恢复Owner分别由0.9.1e4～e5继续实现。
 
-## 44. 变更记录
+## 44. 默认Workspace Patch Route（0.9.1e3）
+
+`apply_patch_batch`的Definition由[`action_composition.py`](../../src/harnessix/product_config/action_composition.py)构造，固定`source=harnessix.product`、`executor_id=product.workspace-patch`和版本`harnessix.workspace-patch/v1`。公开Schema、Binding、Capability Evidence、规范资源解析、Executor和Reconciler在Catalog安装前逐项闭合。
+
+Prepare继续由Router先持久Action Audit，再保存Execution Plan；Review阶段物化同Plan ID的Delivery事务与完整Artifact。批准后Router Claim并调用[`WorkspacePatchActionExecutor`](../../src/harnessix/delivery/trusted_action.py)。Lease竞争、取消、宿主退出或效果不确定均进入UNKNOWN/对账路径，Reconciler不执行剩余写入。
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_approval: plan + review
+    pending_approval --> ready: router checkpoint approved
+    pending_approval --> denied: rejected
+    ready --> running: claim
+    running --> succeeded: Delivery全after
+    running --> failed: 可证明无/失败效果
+    running --> unknown: 取消/失租/崩溃
+    unknown --> reconciling: observe only
+    reconciling --> succeeded: 全after
+    reconciling --> manual_intervention: 部分效果/第三状态
+    reconciling --> unknown: 仍不可证明
+```
+
+专项测试[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖Route、审批、执行与恢复；默认模型目录和SDK链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖。e3不改变MCP/Skill/Hook/Git Push的显式装配状态。
+
+## 45. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 将POSIX Workspace Patch、Review、Delivery Executor和Lease接入默认Router，保持UNKNOWN只对账与Windows省略 |
 | 6 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 交付0.9.1e2 Agent Gateway薄门面、目录精确核对、确定性Invocation、Router先行审批Checkpoint、Session补投影和UNKNOWN只对账恢复；默认高风险目录仍未开放 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1全集验证后原子发布注册表、Audit优先规划与跨Store崩溃修复；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 将Hook现行事实下沉到独立模块设计，并登记捕获时授权、来源错配、输出接受与Action终态分歧及无租约恢复缺口 |

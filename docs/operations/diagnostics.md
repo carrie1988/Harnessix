@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 4
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -241,6 +241,20 @@ HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；
 | `artifact_read_timeout` | 5秒绝对时限内未完整读取 | 未产生领域命令；重试或Reject |
 | 连接错误分组 | 当前连接代际不可继续 | 不盲重放；`Ctrl+R`后从Replay确认 |
 | `product_internal_failure` | 未命中可公开稳定分类 | 不推断业务结果；重启并采集白名单诊断 |
+
+## 9.1 Workspace Patch错误分诊
+
+| 稳定错误/状态 | 含义 | 处置 |
+|---|---|---|
+| `platform_not_supported` | 平台缺少受支持的POSIX no-follow写语义 | 保持只读；不得用Shell或普通Path API绕过 |
+| `delivery_action_mismatch` / `delivery_request_conflict` | Route、规范资源、Snapshot或既有事务身份不一致 | 不覆盖旧事务；重新读取Workspace并创建新调用 |
+| `execution_plan_stale` | 审批前后Workspace来源发生变化 | 无文件效果；废弃原批准并生成新提案 |
+| `artifact_conflict` / `artifact_not_found` | Review正文/身份冲突，或当前Call尚未授权引用 | 禁止批准；重新Replay并核对Session事实 |
+| `delivery_source_changed` | 成员写入前观察不再等于before | 停止写入并人工审查外部修改 |
+| `delivery_partial_effect` | 已形成严格after前缀和before后缀 | 人工审查并决定补齐或回退；系统不会自动续写 |
+| Action `unknown` | 取消、失租或崩溃后无法证明效果 | 只允许Reconcile观察，不再次执行 |
+
+诊断记录只能保存Plan/Transaction/Artifact摘要、成员数量、游标、状态和稳定错误码；不得保存Patch正文、完整Diff、Workspace绝对路径或原始异常。e5之前没有启动全局恢复报告，发现旧`running/reconciling` Route时必须保留全部State文件用于对账。
 
 ## 10. 证据采集与脱敏
 

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 4
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -198,6 +198,21 @@ Product Config v3引用。
 - 回滚版本不能执行它不认识的新在途Plan，因此发布前必须先排空或使用兼容恢复命令；数据文件不得自动删除；
 - 日志与指标只记录摘要、状态和低基数能力ID，不记录Patch正文、argv、绝对路径、环境值或Secret；
 - 功能门关闭、能力探测失败和平台省略必须出现在Doctor/Preflight可操作报告中。
+
+## 0.9.1e3决策落实
+
+实现Revision `71a479439edcdd29b863ec3a9bad7a52586dd1bf`落实了本ADR的首个默认高风险纵向切片：
+
+1. `ProductActionCatalog`在POSIX能力成立时同时生成`apply_patch_batch`的模型Descriptor和Router Definition；Windows及缺少`O_NOFOLLOW`的平台返回稳定省略理由，不安装半套能力；
+2. `WorkspacePatchTransactionPlanner`令`Delivery.transaction_id`等于`ExecutionPlan.plan_id`，并全量复核调用参数、规范资源、Snapshot、before/after摘要和模式，禁止第二套业务身份漂移；
+3. `WorkspacePatchReviewProvider`先物化不可变Delivery事务，再发布规范`action_review` JSONL；Session批准与最终Tool Result引用同一Artifact，预览不充当授权证据；
+4. `WorkspacePatchActionExecutor`持有Workspace Lease并逐成员调用有界`publish_next`。取消或崩溃后的Reconcile只观察，不能继续提交剩余成员；
+5. 默认产品在同一State Root拥有Execution Plan、Action Audit、Delivery、Lease和Session/Artifact Store，并由`ExitStack`处理部分构造失败；全局启动恢复和运行期Owner仍由e5负责。
+
+本次允许新增单向`product_config -> delivery`依赖：产品组合层需要连接已经通过能力证明的Catalog与Delivery端口，Delivery不得反向依赖产品层。Review编排放在
+[`product_config/workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py)，而不是让Artifacts依赖Delivery，避免形成跨执行与存储层的依赖环。通用Artifact包只维护发布、授权引用、完整性和GC。
+
+e3没有改变Agent Protocol v1。内部`patch_batch` presentation继续投影到已有公开审批结构；新增`action_review`只是Artifact持久用途和模型历史绑定，不是新的公共方法或客户端权限。
 
 ## 验证方式
 

@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 15
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 16
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -72,9 +72,9 @@ supersedes: []
 
 - 本文对应`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`实现基线；0.9.1e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到23；
-- 默认`agent-server`仅装配Provider、Session、协议服务和只读`CodingToolRuntime`；
+- 默认`agent-server`装配Provider、Session、协议服务、只读`CodingToolRuntime`及POSIX能力证明后的`apply_patch_batch`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
-- Windows默认产品已装配原生List/Read/Glob/Grep安全端口；Git、写入和Process仍未进入默认能力；
+- Windows默认产品已装配原生List/Read/Glob/Grep安全端口并明确省略Patch；Git、写入和Process仍未进入默认能力；
 - [总体架构](../architecture.md)是系统事实入口，[里程碑设计](../README.md#4-里程碑设计)只解释历史增量。
 
 ## 3. 仓库地图
@@ -111,10 +111,12 @@ src/harnessix/
 5. [src/harnessix/product_ui/app.py](../../src/harnessix/product_ui/app.py)：理解Textual事件如何只产生类型化Intent；
 6. [src/harnessix/product_ui/controller.py](../../src/harnessix/product_ui/controller.py)：理解单Actor、轮询、快照和有界关闭；
 7. [src/harnessix/product_config/cli.py](../../src/harnessix/product_config/cli.py)：读子进程`agent_server_main`如何解析产品参数；
-8. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`；
-9. [Product Config模块设计](../modules/product-config.md)：理解双摘要、严格合同、迁移、审计和零暴露Fallback；
-10. [tests/product_ui/test_stdio_product.py](../../tests/product_ui/test_stdio_product.py)：从真实JSONL子进程关闭、重开和完整Replay反证产品链；
-11. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证组合根。
+8. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`及默认Patch状态Owner；
+9. [src/harnessix/product_config/action_composition.py](../../src/harnessix/product_config/action_composition.py)与[action_runtime.py](../../src/harnessix/product_config/action_runtime.py)：理解POSIX能力证明、Catalog、Router与Store生命周期；
+10. [src/harnessix/product_config/workspace_patch_review.py](../../src/harnessix/product_config/workspace_patch_review.py)：理解Delivery计划、完整Diff和Review Artifact；
+11. [Product Config模块设计](../modules/product-config.md)：理解双摘要、严格合同、迁移、审计和零暴露Fallback；
+12. [tests/product_ui/test_stdio_product.py](../../tests/product_ui/test_stdio_product.py)：从真实JSONL子进程关闭、重开和完整Replay反证产品链；
+13. [tests/product_config/test_server_and_cli.py](../../tests/product_config/test_server_and_cli.py)：从启动成功、失败关闭、路径隔离和生命周期测试反证组合根。
 
 ### 4.2 调用链
 
@@ -156,7 +158,8 @@ sequenceDiagram
 - 配置文件、状态目录和Workspace为什么不能重叠；
 - 为什么Provider必须先进入生命周期，活动配置却在全部组件就绪后才CAS发布；
 - `create_secure_workspace_reader`如何在POSIX FD与Windows原生Handle之间选择只读端口，并使未证明能力失败关闭；
-- 当前装配代码没有哪些构造参数，因此哪些库能力实际上未开放。
+- 为什么Patch必须同时通过平台能力、Catalog Binding、Router、Review、Delivery和Lease，且Windows必须省略；
+- 当前装配代码仍没有哪些Process/Sandbox与启动恢复构造参数，因此哪些库能力实际上未开放。
 
 ### 4.4 可恢复终端产品链
 
@@ -394,9 +397,12 @@ Sandbox顺序：
 6. [delivery/planner.py](../../src/harnessix/delivery/planner.py)：Prepared事务；
 7. [delivery/store.py](../../src/harnessix/delivery/store.py)：计划和正文Blob；
 8. [delivery/filesystem.py](../../src/harnessix/delivery/filesystem.py)：文件提交；
-9. [delivery/git.py](../../src/harnessix/delivery/git.py)与[git_push.py](../../src/harnessix/delivery/git_push.py)：Git交付。
+9. [delivery/trusted_action_contracts.py](../../src/harnessix/delivery/trusted_action_contracts.py)：默认Workspace Patch输入和Review JSONL合同；
+10. [delivery/trusted_action.py](../../src/harnessix/delivery/trusted_action.py)：Action资源、事务同身份、Executor与Reconcile；
+11. [product_config/workspace_patch_review.py](../../src/harnessix/product_config/workspace_patch_review.py)：Review Artifact编排；
+12. [delivery/git.py](../../src/harnessix/delivery/git.py)与[git_push.py](../../src/harnessix/delivery/git_push.py)：Git交付。
 
-关键测试：[路径](../../tests/workspace/test_paths.py)、[Snapshot](../../tests/workspace/test_snapshot.py)、[Lease](../../tests/workspace/test_leases.py)、[文件事务](../../tests/delivery/test_filesystem.py)、[Git](../../tests/delivery/test_git.py)和[Push](../../tests/delivery/test_git_push.py)。
+关键测试：[路径](../../tests/workspace/test_paths.py)、[Snapshot](../../tests/workspace/test_snapshot.py)、[Lease](../../tests/workspace/test_leases.py)、[文件事务](../../tests/delivery/test_filesystem.py)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Git](../../tests/delivery/test_git.py)和[Push](../../tests/delivery/test_git_push.py)。
 
 ### 8.5 Trusted Action与Execution Plan
 
@@ -408,9 +414,10 @@ Sandbox顺序：
 6. [trusted_actions/agent_gateway.py](../../src/harnessix/trusted_actions/agent_gateway.py)：把Agent调用稳定映射到Router身份和状态；
 7. [agent/trusted_action_contracts.py](../../src/harnessix/agent/trusted_action_contracts.py)与[trusted_action_runtime.py](../../src/harnessix/agent/trusted_action_runtime.py)：Gateway端口和Session双账本编排；
 8. [trusted_actions/store.py](../../src/harnessix/trusted_actions/store.py)：路由事实；
-9. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
+9. [product_config/action_composition.py](../../src/harnessix/product_config/action_composition.py)：默认POSIX Patch的能力报告、目录和环境；
+10. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
 
-对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
+对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)、[默认Patch纵向测试](../../tests/delivery/test_trusted_action_patch.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
 
 ## 9. 独立Action Plane主链
 

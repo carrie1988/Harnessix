@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 4
-code_revision: 328aa2d6c8ee85a75ab2baef51b80869dc4089a8
+version: 5
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -795,8 +795,8 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
   效果时收敛为`UNKNOWN`。`PENDING`和`READY`只恢复观察/审批状态，不在恢复扫描中自动执行。
 - **协议泄漏**：Agent Protocol v1不新增私有Action合同；内部审批和效果分别投影为既有`tool`、`patch_batch`
   或`process`公开内容。Action ID、幂等键、Binding摘要、完整资源及私有执行结果不进入公共投影。
-- **剩余边界**：当前默认`agent-server`未注入Gateway，也未注册Patch、Process或Delivery Descriptor/Executor，
-  因此不存在默认权限扩大。显式宿主仍属于受信计算基；能同时修改Session、Action数据库与程序的同UID主体、
+- **e2时点边界**：e2交付时默认`agent-server`尚未注入Gateway，也未注册Patch、Process或Delivery Descriptor/Executor，
+  因而该切片本身没有扩大默认权限；e3后的当前写边界以本文后续补充为准。显式宿主仍属于受信计算基；能同时修改Session、Action数据库与程序的同UID主体、
   多租户身份、RBAC和不可抵赖审计不由本切片解决。
 
 对应合同、时序、源码和回归见[ADR 0080](adr/0080-capability-proven-product-action-composition.md)、
@@ -805,3 +805,24 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 [Gateway回归](../tests/trusted_actions/test_agent_gateway.py)与
 [Agent集成恢复回归](../tests/agent/test_trusted_action_runtime.py)。实现基线为`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`，
 [CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)已完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收，0.9.1e2据此关闭。
+
+
+## 0.9.1e3默认Workspace Patch补充（2026-09-13）
+
+- **模型构造任意写入口**：默认产品只广告严格`apply_patch_batch`，模型只能提供版本化提案。Workspace、Principal、Plan ID、Policy、Executor、审批身份和资源由宿主构造；未知字段、超过16个文件、超过512 KiB正文、控制字符和保护路径在创建Route前拒绝。
+- **审批对象替换**：每个文件的规范路径、操作、来源SHA、目标SHA和模式同时进入Action资源、Execution Plan、Delivery事务与Review Artifact。批准后任何参数、来源Snapshot、Catalog、Policy或Artifact引用漂移均失败关闭。
+- **Diff截断导致盲批**：Review采用规范JSONL，首记录绑定完整Diff字节数和SHA，文本记录有序且单条有界，完整Artifact不超过1 MiB。SDK必须分页重组并校验摘要后才能批准；预览不能替代完整Review。
+- **未授权Artifact探测**：Review先于Session审批行提交时可能产生有界孤儿。未被当前Call引用的`action_review`对读取和验证统一表现为`artifact_not_found`，保留期后可回收，不泄漏存在性差异。
+- **符号链接、路径别名与并发覆盖**：POSIX写端口要求目录描述符和`O_NOFOLLOW`能力；路径规范化后检查平台比较键，拒绝保护组件、链接和特殊文件。Execution Snapshot、Delivery before镜像与Workspace Lease Fencing在每个成员提交边界共同约束并发修改。
+- **取消或崩溃后的重复写**：一个`publish_next`最多提交一个成员，取消只在成员之间生效。进入`running`后的恢复只观察，不继续写；严格after前缀和before后缀被标记为`manual_intervention/delivery_partial_effect`，不自动提交剩余文件。
+- **平台能力夸大**：Windows和缺少no-follow标志的平台不安装Patch Binding，模型目录中不存在该工具。Windows只读Runtime不得通过Shell、`Path.write_text`或兼容层模拟写能力。
+- **状态文件泄漏与同UID篡改**：Execution Plan、Action Audit、Session/Artifact、Lease和Delivery Blob均位于同一私有State Root，但本地同UID主体仍可修改数据库和Workspace；该威胁不由摘要、UUID或Hash链消除。
+- **剩余边界**：e3尚未提供产品启动前全局在途Route扫描、固定Container Process、远端租户身份或自动支持包。审批后来源漂移会保守保留Route为`ready`且不产生文件效果，必须创建新提案；统一诊断与可靠性统计由0.9.3和e5关闭。
+
+实现入口见[`delivery/trusted_action.py`](../src/harnessix/delivery/trusted_action.py)、
+[`product_config/workspace_patch_review.py`](../src/harnessix/product_config/workspace_patch_review.py)、
+[`artifacts/action_review_store.py`](../src/harnessix/artifacts/action_review_store.py)和
+[`product_config/server.py`](../src/harnessix/product_config/server.py)。攻击与恢复回归见
+[`test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py)及
+[`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。完整合同与时序以
+[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)为准。

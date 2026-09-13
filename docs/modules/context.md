@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 6c5f310346afa3fa176f51707722467f46811b35
+version: 2
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -497,8 +497,17 @@ compact(thread, step, cancel):
 | Session/Artifact增长未治理 | 原历史不删除，长期使用占用磁盘 | 0.9.3/0.9.5 |
 | Summary语义错误仍可能影响后续模型 | 结构验证不等于事实正确 | 0.9.2固定任务Eval与可见诊断 |
 
-## 22. 变更记录
+## 22. Trusted Action Review模型历史绑定（0.9.1e3）
+
+[`tool_result_view.py`](../../src/harnessix/context/tool_result_view.py)把统一Trusted Action产生的Patch Diff绑定为`action_review`，旧专用Batch Patch继续使用`batch_effect`。两种用途拥有不同授权与生命周期，不能仅因公开投影都叫`diff_artifact`而互换。
+
+Context只在Session已持久引用且Artifact Store重新验证Thread、Workspace和摘要后读取Review；未授权孤儿、过期、损坏或用途错配都按Artifact不可用处理，不将正文放入模型历史。该变化不增加Context预算，仍只使用Tool Result的有界模型视图和已有Artifact展开规则。
+
+回归入口为[`test_tool_result_view.py`](../../tests/context/test_tool_result_view.py)、[`tests/artifacts`](../../tests/artifacts/)和[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
+
+## 23. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
+version: 3
+code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
 owners:
   - core
 modules:
@@ -614,9 +614,20 @@ sequenceDiagram
 不激活、stdio不开放，已存在数据库事实保持可恢复。默认启用不等于无限存储：1 MiB单件上限、JSONL、TTL、累计行数、无调度GC和
 SQLite本地边界不变。
 
-## 24. 变更记录
+## 24. Workspace Action Review Artifact（0.9.1e3）
+
+`action_review`是新的持久用途，不是新的公共读取权限。[`publish_action_review`](../../src/harnessix/artifacts/action_review_store.py)采用确定性Artifact ID和查询优先语义，绑定Thread、Turn、Call、Workspace、Plan、正文摘要、manifest与原始TTL。同一完整身份重放返回原引用；正文、Scope、序列或manifest不同返回`artifact_conflict`，提交确认丢失通过查询原行恢复。
+
+发布前必须验证Session中存在匹配的pending Patch调用。Artifact行可在Session审批引用之前提交，以避免批准先于证据；该崩溃窗口产生的孤儿对[`read`](../../src/harnessix/artifacts/sqlite.py)和[`verify_reference`](../../src/harnessix/artifacts/reference.py)统一表现为`artifact_not_found`，不会泄漏存在性。活动Turn保护结束且TTL到期后，GC可把孤儿标记为`expired`。
+
+Review正文是最多1 MiB的规范JSONL，完整Diff摘要位于summary记录，文本按序分块且每块最多3000字符。Tool、旧Batch、Process和Action Review引用验证由用途专用函数分离，避免一种用途放宽另一种用途。migration24只扩展Artifact purpose约束并逐列复制旧行，不改写历史事件。
+
+主要回归位于[`tests/artifacts`](../../tests/artifacts/)与[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)，覆盖授权、分页、完整性、确认丢失、冲突、孤儿不可读和过期回收。
+
+## 25. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加`action_review`用途、确定性发布、Session反向授权、孤儿不可读与migration24兼容链 |
 | 2 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |

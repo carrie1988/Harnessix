@@ -208,11 +208,14 @@ def test_workspace_patch_input_rejects_ambiguous_operations_and_total_budget() -
 
 def test_workspace_patch_public_schemas_match_runtime_contracts() -> None:
     root = Path(__file__).parents[2] / "spec"
-    assert json.loads((root / "workspace-patch-input-v1.schema.json").read_text()) == (
-        WorkspacePatchInput.model_json_schema()
+    assert (
+        json.loads((root / "workspace-patch-input-v1.schema.json").read_text(encoding="utf-8"))
+        == WorkspacePatchInput.model_json_schema()
     )
     assert (
-        json.loads((root / "workspace-action-review-record-v1.schema.json").read_text())
+        json.loads(
+            (root / "workspace-action-review-record-v1.schema.json").read_text(encoding="utf-8")
+        )
         == TypeAdapter(WorkspaceActionReviewRecord).json_schema()
     )
 

@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭。Patch、Process、Delivery默认装配以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭。POSIX默认Workspace Patch已由实现提交`71a4794`接入并等待全矩阵CI关闭；Process/Sandbox、产品启动恢复Owner以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
