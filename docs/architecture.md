@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 38
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 39
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -36,6 +36,7 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
@@ -236,7 +237,7 @@ flowchart LR
 | 组件 | 状态 | 责任 | 关键源码/符号 | 主要验证 |
 |---|---|---|---|---|
 | 顶层命令 | 当前默认产品 | 命令解析与入口分派 | [cli.py](../src/harnessix/cli.py) `main` | [CLI许可测试](../tests/unit/test_cli_license.py)、[产品CLI测试](../tests/product_config/test_server_and_cli.py) |
-| Product Config | 当前默认产品 | Profile、Secret引用、诊断、迁移、安全Fallback和活动配置CAS；详见[模块设计](modules/product-config.md) | [server.py](../src/harnessix/product_config/server.py) `run_product_stdio`、[runtime.py](../src/harnessix/product_config/runtime.py) | [product_config测试](../tests/product_config/) |
+| Product Config | 当前默认产品 | Secret-free Configure、共享Preflight/Doctor、Profile、Secret引用、迁移、安全Fallback和活动配置CAS；详见[模块设计](modules/product-config.md) | [preflight.py](../src/harnessix/product_config/preflight.py) `run_product_preflight`、[server.py](../src/harnessix/product_config/server.py) `run_product_stdio` | [product_config测试](../tests/product_config/)、[产品CLI测试](../tests/product_ui/test_cli.py) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
@@ -247,7 +248,7 @@ flowchart LR
 | Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py) |
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本；详见[模块设计](modules/models.md) | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
 | Context | 已实现/显式装配 | Source聚合、预算、压缩窗口和Tool结果视图；详见[模块设计](modules/context.md) | [engine.py](../src/harnessix/context/engine.py) `ContextEngine`、[sources.py](../src/harnessix/context/sources.py) | [context测试](../tests/context/) |
-| 只读Tool | 当前默认产品 | Workspace内读取、搜索和可选固定Git查询；详见[模块设计](modules/tools.md) | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime` | [tools测试](../tests/tools/) |
+| 只读Tool | 当前默认产品 | macOS/Linux使用POSIX FD，Windows使用原生Handle；四项文件/搜索工具跨平台，Git仅POSIX显式装配；详见[模块设计](modules/tools.md) | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime`、[windows_read.py](../src/harnessix/tools/windows_read.py) | [tools测试](../tests/tools/)、[Windows原生测试](../tests/tools/test_windows_native_runtime.py) |
 | Artifact | 已实现/显式装配 | 有界正文、模型历史、Diff与进程输出外置；详见[模块设计](modules/artifacts.md) | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复；详见[模块设计](modules/patches.md) | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
 | Execution Plan | 已实现/显式装配 | v1/v2不可变执行计划、环境/Secret摘要、能力/Sandbox绑定和一次性Approval Checkpoint；详见[模块设计](modules/execution.md) | [contracts.py](../src/harnessix/execution/contracts.py)、[store.py](../src/harnessix/execution/store.py) | [execution测试](../tests/execution/) |
@@ -284,7 +285,7 @@ flowchart LR
 | `InteractionService` | 当前交互复核与临时Approval Evidence | Controller Actor内调用；自身无后台任务 | `RecoverableAgentSession`、公开投影 | 新交互必须先定义冻结身份和失败语义 |
 | `ProductMainView` | 基础Widget与已渲染Revision | Textual生命周期；拆卸后拒绝迟到快照 | Controller不可变快照、框架中立Renderer | 新展示不得持有SDK或Store |
 | `InteractionPresenter` | 一次性Modal编排 | 单交互Worker；不持久化正文 | `ProductController`公开状态/Intent、四类Screen | 新Modal只能返回本地值 |
-| `ProductApp` | Textual生命周期、焦点和本地Intent等待状态 | View消息循环；不拥有领域I/O，卸载时关闭Controller | `ProductController`、MainView、Presenter | 0.9.1d配置与Doctor入口 |
+| `ProductApp` | Textual生命周期、焦点和本地Intent等待状态 | View消息循环；不拥有领域I/O，卸载时关闭Controller | `ProductController`、MainView、Presenter | 0.9.1e统一Action装配 |
 
 ## 8. 模块所有权、依赖方向与禁止旁路
 
@@ -782,7 +783,7 @@ sequenceDiagram
 | Action API排队 | `harnessix serve` + `harnessix worker` | PostgreSQL优先 | 服务部署环境 | Lease Worker执行 |
 | Eval/Smoke | 独立CLI子命令 | 报告/临时状态 | 显式启用 | 受控验证，不是常驻服务 |
 
-Windows底层已有路径、锁、Process Owner/Job Object等实现和测试，但默认Coding Tool平台门仍会拒绝启动；因此文档不得写成“Windows产品已支持”。安装、升级、备份和命令参数见[部署与运行](deployment.md)。
+Windows已经实现原生Handle四项只读Tool并接入默认启动候选；当前全矩阵CI完成前不得写成“Windows产品已支持”，Git读取、写入、安装器和长期运行仍未关闭。安装、升级、备份和命令参数见[部署与运行](deployment.md)。
 
 ## 18. 核心业务伪代码
 
@@ -881,7 +882,7 @@ if UNKNOWN: require reconcile instead of blind replay
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
 | 默认产品未装配写工具、Process和Delivery | 代码库能力无法直接形成端到端Coding Agent写入链 | 0.9.1 |
-| Windows默认只读Tool入口失败关闭 | Windows不能运行完整产品链 | 0.9.1、0.9.5 |
+| Windows原生只读候选等待CI，且无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.1d、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
 | 供应链、SBOM、攻击测试和权利链未闭环 | 不满足正式商用发布门槛 | 0.9.4 |

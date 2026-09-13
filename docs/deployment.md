@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 3
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -15,10 +15,14 @@ related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/integration/test_api.py
   - tests/integration/test_worker.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_preflight.py
+  - tests/product_ui/test_cli.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/agent
 supersedes: []
 ---
@@ -49,10 +53,10 @@ supersedes: []
 | Python Wheel构建 | 项目元数据已具备 | 尚无受签名、带SBOM的正式Release制品 |
 | Action Plane SQLite/inline | 可用 | 单机开发和受控部署；默认监听`127.0.0.1` |
 | Action Plane PostgreSQL/queued | 可用 | API与Worker共享数据库；仍需外置认证、TLS和编排 |
-| Coding Agent stdio Server | macOS/Linux候选 | 启动前严格诊断Provider、Workspace、状态目录和平台 |
-| Windows底层端口 | 部分可用 | 当前产品`agent-server`主动拒绝Windows Coding Tool装配 |
+| Coding Agent stdio Server | 三平台只读候选 | 启动前运行共享Preflight，Server在开放stdio前再次校验 |
+| Windows底层端口 | 四项只读候选 | 原生Handle实现List/Read/Glob/Grep；显式Git、写入和交付仍失败关闭 |
 | 容器Action Plane | 可构建 | 当前`Dockerfile`不包含模型Provider可选依赖，不是Agent镜像 |
-| 完整TUI与三平台安装器 | 未实现 | 属于0.9.1及后续发布切片 |
+| 完整TUI与三平台安装器 | TUI已实现，安装器未实现 | TUI仍缺统一Action装配和长期Dogfooding；安装器属于后续发布切片 |
 | 远程多租户Agent服务 | 非1.0范围 | 当前本地优先，不开放公共网络Agent Server |
 
 平台承诺的完整矩阵见[平台与运行环境](operations/platforms.md)。
@@ -72,8 +76,9 @@ flowchart LR
     State --> ConfigDB[product-config.db]
 ```
 
-启动顺序为：安全读取配置→选择Profile→离线诊断依赖和Secret→校验Workspace与状态目录不重叠→
-校验平台→打开配置审计和Session→装配Provider、Tool及Runtime→CAS发布活动配置→开放stdio。
+启动顺序为：产品CLI离线Preflight→打开Client State与TUI→启动Server→Server重复执行Preflight→安全读取配置→
+选择Profile→校验Workspace、状态和平台只读端口→打开配置审计和Session→装配Provider、Tool及Runtime→
+CAS发布活动配置→开放stdio。
 任一步失败都不得先开放协议。
 
 ### 3.2 Action Plane inline
@@ -150,12 +155,20 @@ curl --fail http://127.0.0.1:8787/readyz
 
 ### 5.3 Coding Agent stdio Server
 
-先按[配置参考](operations/configuration.md#4-product-config-v2)创建私有Product Config v2并完成离线诊断，再由
-SDK或薄CLI启动：
+先用Secret-free向导创建私有Product Config v2，再执行产品级Doctor。Doctor与正常启动共享只读、离线Preflight，
+但Server仍会在开放stdio前独立复核：
 
 ```bash
-uv run harnessix config diagnose \
-  --config ./private/product-config.json
+uv run harnessix code configure \
+  --config ./private/product-config.json \
+  --provider-kind openai_chat \
+  --base-url https://example.invalid/v1 \
+  --model example-model \
+  --non-interactive
+
+uv run harnessix code doctor ./workspace \
+  --config ./private/product-config.json \
+  --state-directory ./private/state
 
 uv run harnessix agent-server \
   --config ./private/product-config.json \
@@ -217,6 +230,8 @@ uv run harnessix agent-server \
 | 队列Worker | [`src/harnessix/worker.py`](../src/harnessix/worker.py) | `ActionWorker.run_forever`、`_execute_with_heartbeat` | [`tests/integration/test_worker.py`](../tests/integration/test_worker.py) |
 | Agent产品启动 | [`src/harnessix/product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
 | 配置CLI | [`src/harnessix/product_config/cli.py`](../src/harnessix/product_config/cli.py) | `config_main`、`agent_server_main` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
+| 产品Configure/Doctor | [`src/harnessix/product_ui/cli.py`](../src/harnessix/product_ui/cli.py)、[`src/harnessix/product_config/preflight.py`](../src/harnessix/product_config/preflight.py) | `_configure`、`_doctor`、`run_product_preflight` | [`tests/product_ui/test_cli.py`](../tests/product_ui/test_cli.py)、[`tests/product_config/test_preflight.py`](../tests/product_config/test_preflight.py) |
+| Windows只读端口 | [`src/harnessix/tools/windows_read.py`](../src/harnessix/tools/windows_read.py)、[`src/harnessix/workspace/windows.py`](../src/harnessix/workspace/windows.py) | `WindowsReadRuntime`、`WindowsWorkspaceRoot` | [`tests/tools/test_windows_native_runtime.py`](../tests/tools/test_windows_native_runtime.py) |
 | 进程级设置 | [`src/harnessix/settings.py`](../src/harnessix/settings.py) | `Settings.from_environment` | [`tests/integration/test_api.py`](../tests/integration/test_api.py)、[`tests/integration/test_worker.py`](../tests/integration/test_worker.py) |
 | 镜像 | [`Dockerfile`](../Dockerfile) | 非Root用户、`/data`卷和`serve`入口 | [`tests/integration/test_api.py`](../tests/integration/test_api.py) |
 
@@ -224,9 +239,9 @@ uv run harnessix agent-server \
 
 - 项目包版本仍为`0.1.0`，路线图完成度与发布包语义版本尚未统一；
 - 没有官方macOS/Linux/Windows安装器、自动更新器、签名、来源证明和SBOM；
-- `agent-server`仅支持当前POSIX Coding Tool入口，Windows产品入口失败关闭；
+- Windows当前只支持原生List/Read/Glob/Grep候选链；Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
 - Action Plane HTTP API没有内置认证、授权、TLS、速率限制或租户来源绑定；
 - 当前容器只覆盖Action Plane基础依赖，不包含OpenAI、Anthropic或完整Coding Tool环境；
-- 没有统一`doctor`、在线备份、数据库修复或自动回滚命令；
+- 已有离线统一`code doctor`；在线备份、数据库修复和自动回滚命令仍未实现；
 - 各扩展和Delivery能力不是默认产品装配，部署前必须核对对应模块的“当前/显式/规划”边界；
 - 生产SLO、容量阈值、告警阈值、长时间Soak和灾难恢复目标尚待0.9后续切片固化。

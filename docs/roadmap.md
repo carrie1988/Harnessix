@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 12
-code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
+version: 13
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -425,7 +425,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内199份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计。0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收；0.9.1b基础Textual产品链、真实stdio恢复和跨平台并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1c实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成全矩阵验收并正式关闭；0.9.1d专项源码研究、ADR和详细设计已完成并进入实现，0.9.1e～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内199份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1已完成源码研究、架构决策和详细设计。0.9.1a客户端内核与SDK严格边界已由[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成Linux Python 3.12/3.13、macOS和Windows验收；0.9.1b基础Textual产品链、真实stdio恢复和跨平台并发稳定化已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1c实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成全矩阵验收并正式关闭；0.9.1d实现`532e59b`已完成配置向导、Preflight/Doctor、Windows原生四项只读链和本地验证，当前等待三平台CI后关闭；0.9.1e～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -453,7 +453,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.9.1b TUI基础产品链**：`harnessix code`、Textual生命周期、Transcript、Composer、Session Picker、
   Resume和真实stdio纵向恢复；实现、并发稳定化与三平台CI已经完成；
 - [x] **0.9.1c 完整领域交互**：按[专项详细设计](changes/m09-1c-domain-interactions.md)交付Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel、Steer和错误自助；65项专项测试、全仓3434项通过/13项跳过、513幅Mermaid真实渲染及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收完成；
-- [ ] **0.9.1d 配置与Windows原生只读链**：按[专项研究](research/configuration-preflight-and-windows-read-runtime.md)、[ADR 0079](adr/0079-preflight-and-native-read-port.md)和[详细设计](changes/m09-1d-configuration-preflight-windows-read.md)交付配置向导、Preflight、Doctor、Windows Workspace安全端口和默认产品启动；研究与设计已完成，源码、失败恢复、三平台真实验证和文档同步待完成；
+- [ ] **0.9.1d 配置与Windows原生只读链**：按[专项研究](research/configuration-preflight-and-windows-read-runtime.md)、[ADR 0079](adr/0079-preflight-and-native-read-port.md)和[详细设计](changes/m09-1d-configuration-preflight-windows-read.md)交付配置向导、Preflight、Doctor、Windows Workspace安全端口和默认产品启动；实现`532e59b`、失败恢复、本地全量与现行文档同步已完成，Windows原生及全矩阵CI通过后方可勾选；
 - [ ] **0.9.1e 统一Action产品装配**：Artifact、Patch、Process、Delivery通过Trusted Action、Policy、Approval、
   Effect Journal、Sandbox和Reconcile进入默认能力目录。
 

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 4
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -13,10 +13,14 @@ related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/governance/test_repository_policy.py
   - tests/unit/test_cli_license.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_preflight.py
+  - tests/product_config/test_wizard.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_app.py
 supersedes: []
@@ -26,8 +30,9 @@ supersedes: []
 
 ## 1. 适用范围
 
-本文描述已通过[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证的代码Revision `5e8d71f019b30cac28229f1fddcee3778fe8e8eb`所支持的源码安装、开发环境、
-本地Wheel和Action Plane容器路径。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
+本文描述代码Revision `532e59b346f50657518d11225102bc6999c301e6`的源码安装、开发环境、本地Wheel和Action Plane容器路径。0.9.1b的既有路径已由
+[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证；0.9.1d新增Configure、Doctor与Windows
+原生只读候选仍等待本轮全矩阵CI。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 
 ## 2. 前置条件
@@ -55,9 +60,11 @@ flowchart TD
     Container -- 否 --> Source
     Container -- 是 --> Image[按Dockerfile本地构建]
     Product -- Coding Agent --> Agent[源码安装含Provider Extra]
-    Agent --> Platform{宿主为受支持POSIX?}
-    Platform -- 是 --> Diagnose[配置诊断后启动]
-    Platform -- 否 --> Reject[产品入口失败关闭]
+    Agent --> Configure[code configure生成配置]
+    Configure --> Diagnose[code doctor离线预检]
+    Diagnose --> Platform{macOS/Linux/Windows?}
+    Platform -- macOS/Linux --> Posix[POSIX只读Runtime]
+    Platform -- Windows --> Win[Handle只读候选；Git失败关闭]
 ```
 
 当前没有可直接下载的官方二进制。任何第三方Wheel、镜像或安装脚本必须单独核对来源、Revision、许可证和摘要。
@@ -99,6 +106,8 @@ harnessix code /srv/project --config /srv/harnessix-private/config.json
 ```bash
 uv run harnessix --help
 uv run harnessix code --help
+uv run harnessix code doctor --help
+uv run harnessix code configure --help
 uv run harnessix license
 uv run python -c 'import harnessix; print(harnessix.__file__)'
 make spec
@@ -133,7 +142,7 @@ LangGraph或TUI Extras；验收某项能力时必须显式安装相应Extra，�
 - 没有Release签名、来源证明、SBOM或可复现构建声明；
 - 没有PyPI发布证据；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
-- Python Wheel可安装不等于Windows Coding Agent产品入口可运行。
+- Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；0.9.1d只提供原生四项只读候选。
 
 ## 6. Action Plane容器
 
@@ -201,7 +210,7 @@ docker run --rm \
 |---|---|---|
 | 源码开发 | `uv sync --locked --all-extras --dev`、`make check` | 锁定依赖、静态检查和全量测试通过 |
 | 基础Wheel | 全新环境安装、`harnessix --help`、`license` | 不依赖源码目录也能导入和运行命令 |
-| Provider Wheel | 安装目标Extra、`config diagnose` | SDK、Secret引用和Profile能力通过 |
+| Provider Wheel | 安装目标Extra、`code configure`、`code doctor --json` | 配置原子生成，SDK、Secret引用、Workspace和平台检查通过 |
 | TUI源码/Wheel | 安装`tui` Extra、`harnessix code --help`、无头UI和真实stdio恢复 | Textual可导入，会话/输入/恢复/关闭合同通过 |
 | 容器 | 非Root身份、持久卷、Health/Readiness | 重启后状态保留，端口只按预期暴露 |
 | 升级 | 旧版本建库、新版本迁移、重开、旧Reader拒绝 | 旧字节和失败语义符合合同 |
@@ -215,7 +224,8 @@ docker run --rm \
 | 锁定依赖 | [`uv.lock`](../../uv.lock) | [CI workflow](../../.github/workflows/ci.yml) |
 | CLI入口 | [`src/harnessix/cli.py`](../../src/harnessix/cli.py)的`main` | [`tests/unit/test_cli_license.py`](../../tests/unit/test_cli_license.py) |
 | TUI Extra与产品入口 | [`pyproject.toml`](../../pyproject.toml)、[`src/harnessix/product_ui/cli.py`](../../src/harnessix/product_ui/cli.py)的`code_main` | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py)、[`test_app.py`](../../tests/product_ui/test_app.py) |
-| 产品启动 | [`src/harnessix/product_config/server.py`](../../src/harnessix/product_config/server.py)的`run_product_stdio` | [`tests/product_config/test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| 产品配置与Doctor | [`src/harnessix/product_config/wizard.py`](../../src/harnessix/product_config/wizard.py)、[`preflight.py`](../../src/harnessix/product_config/preflight.py) | [`test_wizard.py`](../../tests/product_config/test_wizard.py)、[`test_preflight.py`](../../tests/product_config/test_preflight.py) |
+| 产品启动 | [`src/harnessix/product_config/server.py`](../../src/harnessix/product_config/server.py)的`run_product_stdio` | [`tests/product_config/test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)、[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py) |
 | 镜像 | [`Dockerfile`](../../Dockerfile) | [`tests/integration/test_api.py`](../../tests/integration/test_api.py) |
 
 ## 11. 未完成的制品治理

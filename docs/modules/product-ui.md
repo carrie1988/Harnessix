@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 11
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - product
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
@@ -871,8 +872,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - 未知Client State版本失败关闭，当前不提供自动迁移器；未来迁移必须保留备份、摘要CAS和收据；
 - 回退代码前可删除整个客户端状态目录并从服务端Thread列表及Cursor 0恢复，但会生成新的Client Instance命名空间；
 - 0.9.1b接入时必须由产品边界提供稳定、规范的Workspace身份，并确保客户端状态目录与Workspace不重叠；
-- Client State文件安全算法与专项测试已通过Windows CI；完整Windows产品支持仍需等待0.9.1d原生只读Coding Tool
-  纵向测试，不能从本切片外推。
+- Client State与产品CLI均使用跨平台文件合同；0.9.1d已经接入Windows原生只读Coding Tool候选链，正式支持声明仍等待原生Windows全矩阵CI。
 
 ## 16. 已知限制、风险与后续差距
 
@@ -886,7 +886,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | 状态文件无自动迁移/备份 | v1升级必须新增正式迁移流程 | 首次Schema变更前 |
 | Session普通Request无统一外层Deadline | Actor操作可能直到整体关闭时限才转为未知 | 0.9.3 |
 | 当前没有产品层Telemetry适配 | 只能通过Connection/Controller状态和错误码诊断 | 0.9.3 |
-| Windows文件安全只有算法和CI证据 | 不能代表默认Windows Coding Tool已可用 | 0.9.1d |
+| Windows原生只读产品链尚待当前提交CI | 本地POSIX和假端口不能替代真实Handle/Server证据 | 0.9.1d关闭门禁 |
 | 协议没有价格适用性和金额 | UI只能显示Token与费用未知，不能提供精确成本 | 0.9.6发布证据 |
 | Approval Evidence不持久化 | 重启后必须重新读取Artifact，不能离线沿用旧Diff | 安全设计，不计划放宽 |
 
@@ -897,10 +897,45 @@ Controller保留在一个类中是为了让连接、Intent、轮询和关闭只�
 渲染转换已经独立为无状态模块；后续只能在不提高已批准行数与复杂度预算的前提下修改，新增领域交互优先放入专用
 Screen/Presenter而不是继续扩张这两个类。
 
-## 17. 变更记录
+## 17. 0.9.1d Configure、Doctor与启动Preflight
+
+`code_main`保留`harnessix code [WORKSPACE]`兼容入口，仅在首个Token精确为`configure`或`doctor`时分派专用Parser。
+该分派发生在Textual延迟导入之前，因此离线配置和诊断不要求构造TUI。
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant CLI as product_ui.cli
+    participant P as Product Preflight
+    participant S as ClientStateStore
+    participant T as Subprocess Transport
+    U->>CLI: harnessix code WORKSPACE
+    CLI->>P: startup request
+    alt required check failed
+        P-->>CLI: ready=false + stable checks
+        CLI-->>U: human report / exit 2
+    else ready
+        P-->>CLI: ready=true
+        CLI->>S: open client state
+        CLI->>T: start agent-server
+    end
+```
+
+| 入口 | 输入与输出 | 副作用边界 | 源码/测试 |
+|---|---|---|---|
+| `code configure` | 非敏感Provider/Profile字段；stdout为脱敏Write Receipt | 不读取API Key；已有文件只有`--replace`与精确摘要同时存在才可替换 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `_configure`；[`test_cli.py`](../../tests/product_ui/test_cli.py)显式替换与Canary用例 |
+| `code doctor` | 与Startup相同检查；人类文本或`--json`合同；ready为0，否则2 | 不创建Client State、Server、Session、Thread或网络请求 | `_doctor`、`_render_preflight`；`test_code_doctor_json_uses_shared_report_without_creating_state` |
+| `code WORKSPACE` | 先生成Startup Preflight，再延迟加载Textual | Required失败发生在`ClientStateStore`和`SubprocessAgentTransport`之前 | `code_main`；缺失Workspace测试断言TUI加载函数未调用 |
+
+默认人类报告只显示稳定检查ID、分类、状态、代码、修复动作和摘要。JSON报告适合自动化支持包，但同样不含绝对路径、
+环境值和原始异常。Server端不信任客户端Preflight；子进程启动后执行同源检查并继续完成原有严格重校验。实现绑定
+`532e59b346f50657518d11225102bc6999c301e6`，原生Windows产品CI通过前保持候选状态。
+
+## 18. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 11 | `532e59b346f50657518d11225102bc6999c301e6` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读候选等待CI |
 | 10 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收，正式关闭完整领域交互子切片 |
 | 9 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：冻结交互身份、Artifact完整证据、发送前复核、Plan/Tool/Usage渲染、专用Modal、错误自助及65项Product UI验证；等待实现Revision与三平台CI |
 | 8 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录实现与四次稳定化提交通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵，正式关闭0.9.1b |

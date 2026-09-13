@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
+version: 2
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -19,11 +19,16 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/product_config/test_runtime.py
+  - tests/product_config/test_product_contracts.py
+  - tests/product_config/test_preflight.py
+  - tests/product_config/test_wizard.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_ui/test_cli.py
   - tests/tools/test_runtime.py
   - tests/tools/test_files.py
   - tests/tools/test_search.py
+  - tests/tools/test_windows_read_adapter.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/workspace/test_snapshot.py
 supersedes: []
 ---
@@ -40,7 +45,7 @@ supersedes: []
 | 影响模块 | Product Config、Product UI CLI、Tools、Workspace、Schema、CI与运维资料 |
 | 兼容级别 | Agent Protocol、Session、Client State及现有Tool输入输出Schema保持兼容；新增诊断与配置写收据Schema |
 | 发布/回滚单元 | 0.9.1d独立提交；Windows端口失败时恢复平台门，POSIX产品链保持可用 |
-| 当前状态 | 源码研究、ADR和本文已建立；实现、故障测试、真实场景与CI待完成 |
+| 当前状态 | 实现`532e59b`及本地故障/恢复验证已完成；Windows原生与全矩阵CI待完成 |
 
 ## 2. 需求背景与生产风险
 
@@ -88,17 +93,17 @@ supersedes: []
 
 ### 3.3 完成标准
 
-- [ ] 配置Draft、写收据和Preflight合同冻结并生成Schema；
-- [ ] 新建、CAS替换、并发、崩溃窗口、链接、权限和脱敏测试通过；
-- [ ] Doctor JSON/人类输出、退出码、异常隔离和只读性测试通过；
-- [ ] 启动Preflight失败时不创建状态、不启动Transport；
-- [ ] Windows List/Read/Glob/Grep合同与攻击测试通过；
-- [ ] Windows取消、5秒Deadline、关闭和Artifact纵向测试通过；
+- [x] 配置Draft、写收据和Preflight合同冻结并生成Schema；
+- [x] 新建、CAS替换、并发、崩溃窗口、链接、权限和脱敏测试通过；
+- [x] Doctor JSON/人类输出、退出码、异常隔离和只读性测试通过；
+- [x] 启动Preflight失败时不创建状态、不启动Transport；
+- [ ] Windows List/Read/Glob/Grep合同与攻击测试已由Fake Port跨平台验证，原生攻击用例待Windows CI；
+- [ ] Windows取消、5秒Deadline、关闭和Artifact纵向测试已由Fake Port跨平台验证，原生纵向用例待Windows CI；
 - [ ] Windows真实Server/SDK从Unicode、空格和长路径Workspace读取并关闭；
-- [ ] POSIX Tools和产品Server回归通过；
+- [x] POSIX Tools和产品Server本地回归通过；
 - [ ] Linux Python 3.12/3.13、macOS、Windows CI通过；
-- [ ] 全量`make check`、文档检查和真实Mermaid渲染通过；
-- [ ] Product Config、Product UI、Tools、Workspace、平台、配置、诊断和威胁模型文档同步；
+- [x] 全量`make check`、文档检查和真实Mermaid渲染在本地通过；
+- [x] Product Config、Product UI、Tools、Workspace、平台、配置、诊断和威胁模型文档同步；
 - [ ] 本文转为`historical`并记录实际Revision、测试、CI和实现偏差。
 
 ## 4. 当前实现与根因
@@ -238,7 +243,8 @@ harnessix code doctor [WORKSPACE] [启动相关选项] [--json]
 | `--secret-version` | `environment-v1` | 声明版本 | 非空单行 |
 | `--api-key-env` | `MODEL_API_KEY` | 环境变量名 | 不读取其值 |
 | `--output-token-parameter` | Provider默认 | OpenAI兼容参数 | Anthropic禁止 |
-| `--expected-source-sha256` | 替换时必填 | 旧文件CAS | 不匹配不改文件 |
+| `--replace` | 否 | 显式选择替换操作 | 单独使用因缺少CAS而失败 |
+| `--expected-source-sha256` | 替换时必填 | 旧文件CAS | 不匹配不改文件；无`--replace`时也失败 |
 | `--non-interactive` | 否 | 缺参直接失败 | CI/自动化使用 |
 
 交互模式只提示缺失的非Secret字段。终端从不提示“请输入API Key”；只说明需要在进程环境中设置所选变量。
@@ -550,10 +556,12 @@ flowchart TD
 class ConfigurationWriteRequest:
     path: Path
     draft: ConfigurationDraft
-    expected_source_sha256: str | None
+    expected_source_sha256: str | None = None
+    replace: bool = False
 
 
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2: ...
+
 
 def write_product_config(request: ConfigurationWriteRequest) -> ConfigurationWriteReceipt: ...
 ```
@@ -733,7 +741,9 @@ Write Receipt输出、Client State、Session和Config Store持有。
 | 7 | Product start接入Preflight | 状态/Transport前阻断 | 无副作用、错误帮助、真实start | 是 |
 | 8 | 文档/运维/CI同步 | 支持边界真实 | 门禁、Mermaid、三平台 | 否；事实同步 |
 
-不得在第5步完成前移除Windows Server平台门；不得在第6步通过前修改平台支持声明。
+不得在第5步完成前移除Windows Server平台门；不得在第6步通过前修改平台支持声明。以上八步已在实现提交
+`532e59b346f50657518d11225102bc6999c301e6`完成本地验证；Windows原生Runner和全矩阵CI尚未通过前，本文及平台资料只声明
+“候选支持”，不关闭切片。
 
 ## 17. 测试设计
 
@@ -794,32 +804,31 @@ Write Receipt输出、Client State、Session和Config Store持有。
 
 ## 18. 源码与测试映射
 
-### 18.1 当前源码
+### 18.1 实际产品配置实现
 
-| 设计元素 | 当前源码 | 关键符号 | 当前测试 |
-|---|---|---|---|
-| 配置合同 | [`product_config/contracts.py`](../../src/harnessix/product_config/contracts.py) | `ProductConfigV2`、`ConfigurationDiagnosticReport` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
-| 配置诊断 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py) | `diagnose_configuration` | [`test_runtime.py`](../../tests/product_config/test_runtime.py) |
-| 安全配置读取 | [`product_config/codec.py`](../../src/harnessix/product_config/codec.py) | `load_product_config` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
-| 产品启动 | [`product_config/server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio`、`_require_coding_tool_platform` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
-| TUI组合根 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main` | [`test_cli.py`](../../tests/product_ui/test_cli.py) |
-| POSIX Tools | [`tools/runtime.py`](../../src/harnessix/tools/runtime.py) | `CodingToolRuntime` | [`tests/tools`](../../tests/tools/) |
-| Windows Handle | [`workspace/windows.py`](../../src/harnessix/workspace/windows.py) | `WindowsWorkspaceRoot` | [`test_snapshot.py`](../../tests/workspace/test_snapshot.py) |
+| 设计元素 | 实际源码与关键符号 | 验证测试 |
+|---|---|---|
+| v2基础配置合同 | [`contracts.py`](../../src/harnessix/product_config/contracts.py) `ProductConfigV2`、`ConfigurationDiagnosticReport` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py)、[`test_runtime.py`](../../tests/product_config/test_runtime.py) |
+| Draft/Receipt/Preflight合同 | [`product_contracts.py`](../../src/harnessix/product_config/product_contracts.py) `ConfigurationDraft`、`ConfigurationWriteReceipt`、`ProductPreflightReport` | [`test_product_contracts.py`](../../tests/product_config/test_product_contracts.py)、[`test_schemas.py`](../../tests/product_config/test_schemas.py) |
+| 配置创建/替换 | [`wizard.py`](../../src/harnessix/product_config/wizard.py) `_prepare_write`、`_commit_configuration`、`_verify_commit`、`write_product_config` | [`test_wizard.py`](../../tests/product_config/test_wizard.py)新建、CAS、双Writer、故障注入、脱敏 |
+| 配置预检 | [`preflight_configuration.py`](../../src/harnessix/product_config/preflight_configuration.py) `inspect_configuration` | [`test_preflight.py`](../../tests/product_config/test_preflight.py)配置/Profile/Provider/Secret场景 |
+| 环境预检 | [`preflight_environment.py`](../../src/harnessix/product_config/preflight_environment.py) `inspect_environment` | 同上：Workspace/State/平台/TUI/Git及未知异常隔离 |
+| 报告编排 | [`preflight.py`](../../src/harnessix/product_config/preflight.py) `ProductPreflightRequest`、`run_product_preflight` | 有序、摘要、round-trip、只读与Canary用例 |
+| CLI入口 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) `_configure`、`_doctor`、`code_main` | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py)无Secret、显式替换、Doctor无副作用、Start前阻断 |
+| Server二次校验 | [`server.py`](../../src/harnessix/product_config/server.py) `_preflight_request`、`run_product_stdio` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)启动、回滚、隔离、Windows候选 |
 
-### 18.2 计划新增/修改
+### 18.2 实际Windows只读实现
 
-| 变更点 | 计划源码 | 关键符号 | 计划测试 |
-|---|---|---|---|
-| Draft/Receipt/Preflight合同 | `product_config/contracts.py` | `ConfigurationDraft`、`ConfigurationWriteReceipt`、`ProductPreflightReport` | `tests/product_config/test_wizard.py`、`test_preflight.py` |
-| 配置事务 | `product_config/wizard.py` | `build_product_config`、`write_product_config` | 创建/CAS/故障/并发 |
-| 产品检查 | `product_config/preflight.py` | `ProductPreflightRequest`、`run_product_preflight` | 检查图/脱敏/异常 |
-| Doctor与Configure入口 | `product_ui/cli.py`或专用CLI模块 | `configure_main`、`doctor_main` | `tests/product_ui/test_cli.py` |
-| Windows检查点 | `workspace/windows.py` | `observe(..., checkpoint=...)` | `tests/workspace/test_snapshot.py` |
-| Windows Tool适配 | `tools/windows_read.py` | `WindowsReadRuntime` | `tests/tools/test_windows_read.py` |
-| 平台装配 | `tools/runtime.py`、`product_config/server.py` | Native选择、Platform Gate | `test_runtime.py`、`test_server_and_cli.py` |
-| Schema | `scripts/generate_specs.py`、`spec/*.json` | 三个新v1 Schema | `tests/product_config/test_schemas.py` |
+| 设计元素 | 实际源码与关键符号 | 验证测试 |
+|---|---|---|
+| Handle安全观察 | [`workspace/windows.py`](../../src/harnessix/workspace/windows.py) `WindowsWorkspaceRoot`、`_observe_missing`、`_observe_file`、`_directory_body` | [`tests/workspace/test_snapshot.py`](../../tests/workspace/test_snapshot.py)原生平台专项 |
+| Tool观察端口 | [`tools/windows_read_port.py`](../../src/harnessix/tools/windows_read_port.py) `WindowsReadPort`、`same_observation`、`file_revision` | [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)Fake Port合同 |
+| List/Read | [`tools/windows_file_read.py`](../../src/harnessix/tools/windows_file_read.py) `list_files`、`read_file` | 分页、Revision、UTF-8、二进制、超时、取消 |
+| Glob/Grep | [`tools/windows_search.py`](../../src/harnessix/tools/windows_search.py) `_collect`、`glob_files`、`grep_files` | 搜索过滤、Capture、统计、双观察 |
+| Runtime门面与选择 | [`tools/windows_read.py`](../../src/harnessix/tools/windows_read.py) `WindowsReadRuntime`；[`tools/runtime.py`](../../src/harnessix/tools/runtime.py) `_build_read_backend` | [`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)真实四工具、长路径、Junction、ADS、保留名、硬链接、Git拒绝和关闭 |
 
-实际文件、符号和测试在实现结束时回填，不以本表计划路径冒充现行事实。
+实现采用四层文件拆分，而非设计初稿中的单一`windows_read.py`大类。该偏差只改变内部可维护性，不改变Tool输入输出、
+预算、错误或Scope合同；可读性门禁已证明没有新增超大文件、超大符号或高复杂度函数。
 
 ## 19. 发布、回滚与停止条件
 
@@ -887,16 +896,32 @@ Write Receipt输出、Client State、Session和Config Store持有。
 - [威胁模型](../threat-model.md)；
 - [文档追踪矩阵](../governance/documentation-traceability.md)。
 
-## 22. 实现偏差与最终结论
+## 22. 实现偏差与候选结论
 
-当前为实现前设计。代码版本绑定`601e23cc7be38392e82de308dd67c9cdf55f890f`，表示0.9.1c关闭后的
-现行基线，不表示0.9.1d已经实现。实现完成后必须记录：
+0.9.1d代码实现绑定`532e59b346f50657518d11225102bc6999c301e6`，当前结论是“本地验收完成、三平台CI待完成”，尚未正式关闭。
 
-- 实际新增与修改文件；
-- 公共Schema与版本；
-- Windows实际广告的Tool集合；
-- 本地和三平台测试数量；
-- 真实Server/SDK场景；
-- CI链接；
-- 与本文的偏差、原因和安全影响；
-- 最终实现Revision。
+### 22.1 与初稿的偏差
+
+1. `ConfigurationWriteRequest`增加显式`replace`布尔值，防止仅凭目标存在与否推断破坏性操作；CLI替换必须同时提供
+   `--replace`和`--expected-source-sha256`；
+2. 新产品合同从已接近600行的`contracts.py`拆到`product_contracts.py`，包根公共导出不变且增加正式新API；
+3. Preflight拆为配置检查、环境检查、记录支撑和薄编排四个文件，检查集合与报告合同不变；
+4. Windows Tool拆为Facade、Read Port、List/Read和Search四层，避免单个类同时拥有平台I/O与搜索算法；
+5. Product UI通过`product_config.errors.ProductConfigError`消费稳定错误，避免新增`product_ui -> agent`依赖；
+6. `product_ui -> product_config`和`tools -> workspace`是ADR 0079批准的新一级依赖边，均无反向边或环。
+
+### 22.2 已完成证据
+
+- 合同产物：`configuration-draft-v1.json`、`configuration-write-receipt-v1.json`、`product-preflight-v1.json`与运行时一致；
+- 本地Ruff Format、Ruff、Mypy和Spec检查通过；
+- 更新治理基线后，完整`make check`通过：3478 passed、18 skipped；跳过项包含本机无法执行的Windows原生用例；
+- 文档门禁通过199份文档、4988条链接、526幅Mermaid真实渲染、31个源码包和46个变化路径；
+- 并发Writer证明单提交，故障注入覆盖提交前保留与提交后Unknown；
+- Fake Windows Port证明跨平台合同，真实Windows用例已进入CI工作流但结果待本轮提交。
+
+### 22.3 关闭剩余条件
+
+- Windows Runner真实Handle、长路径、Junction、ADS、保留名、多硬链接、Server/SDK生命周期全部通过；
+- Linux 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation任务全绿；
+- 将CI URL、精确测试数量和最终修复Revision回填本文、现行模块设计、路线图与平台资料；
+- 上述条件未满足时，Windows能力只称为候选，不进入0.9.1e正式基线。

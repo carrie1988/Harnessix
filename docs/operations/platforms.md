@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 6
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -15,11 +15,14 @@ modules:
 related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/workspace
   - tests/processes
   - tests/sandbox
   - tests/product_config/test_server_and_cli.py
+  - tests/tools/test_windows_read_adapter.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/product_ui
 supersedes: []
 ---
@@ -43,12 +46,12 @@ supersedes: []
 | 能力 | Linux | macOS | Windows | Container |
 |---|---|---|---|---|
 | Python基础包/Action Plane | CI主路径 | 候选测试 | 选定测试 | 可构建基础镜像 |
-| Textual View/Controller与领域交互 | 本地候选，待CI | 本地候选，待CI | 平台中立层待CI | 非容器默认入口 |
-| `harnessix code`完整子进程链 | CI候选 | CI候选 | **子进程在工具平台门失败关闭** | 当前镜像未装配 |
+| Textual View/Controller与领域交互 | CI候选 | CI候选 | CI候选 | 非容器默认入口 |
+| `harnessix code`完整子进程链 | CI候选 | CI候选 | 原生只读候选，当前提交待CI | 当前镜像未装配 |
 | SQLite Action Journal | 可用 | 可用 | 库级候选 | `/data`持久卷 |
 | PostgreSQL Action Journal | PostgreSQL 17 CI | 协议上可用，未独立原生矩阵 | 未独立验证 | 外部数据库 |
-| `agent-server`默认入口 | 候选可用 | 候选可用 | **失败关闭** | 当前镜像未装配 |
-| 只读Coding Tool | POSIX实现 | POSIX实现 | 底层Windows能力存在但产品门拒绝 | 需显式宿主装配 |
+| `agent-server`默认入口 | 候选可用 | 候选可用 | 四项只读Tool候选；显式Git失败关闭 | 当前镜像未装配 |
+| 只读Coding Tool | POSIX实现 | POSIX实现 | Win32 Handle实现`list/read/glob/grep`，待本轮CI | 需显式宿主装配 |
 | Workspace安全观察 | POSIX FD/no-follow | POSIX FD/no-follow | Win32 Handle/Reparse Point端口 | 取决于宿主/挂载 |
 | Process Supervisor | Session/Process Group | Session/Process Group | Job Object/ConPTY候选 | Container Owner可显式装配 |
 | 普通目录事务发布 | POSIX候选 | POSIX候选 | 缺少抗Reparse竞态，失败关闭 | 取决于挂载语义 |
@@ -57,10 +60,10 @@ supersedes: []
 | 强Container Sandbox | Docker兼容后端 | Docker兼容后端 | 后端能力依赖宿主 | 容器内再嵌套不默认支持 |
 | 正式安装器/自动更新 | 未实现 | 未实现 | 未实现 | 无签名发布镜像 |
 
-截至当前Revision，没有任何桌面平台达到完整1.0“产品支持”等级。Windows已经进入1.0目标范围，但当前
-`_require_coding_tool_platform`要求`os.name == "posix"`且存在`O_NOFOLLOW`，因此`agent-server`在Windows启动前
-返回`product_tools_platform_unsupported`。Textual View、Controller和Client State能够通过Windows测试，也不能据此
-推导`harnessix code`的子进程产品链已支持Windows；0.9.1d必须先完成原生Coding Tool端口。
+截至实现`532e59b346f50657518d11225102bc6999c301e6`，没有桌面平台达到完整1.0“产品支持”等级。Windows已经接入原生Handle四项只读Tool，
+Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝；Windows显式Git仍返回
+`product_git_platform_unsupported`。该能力在本轮Windows Runner全绿前只称候选，不能外推到写入、Process、Delivery、
+安装器或长期终端稳定性。
 
 ## 3. CI证据矩阵
 
@@ -78,7 +81,8 @@ Controller、Textual无头View、CLI和stdio恢复已由
 Windows、PostgreSQL、Container与文档矩阵验收。该证据只证明基础产品链的CI候选状态，不代表正式安装器、真实终端
 长期运行或Windows完整产品链已经完成。
 
-CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。当前缺少Windows `agent-server`产品E2E、
+CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。0.9.1d已把Windows真实`agent-server`启动、
+四项Tool、长路径、Junction、ADS、保留名、硬链接和关闭场景加入`windows-trusted-execution`，本轮结果待回填。当前仍缺
 三平台安装器、真实终端长期交互、网络文件系统、ARM发布矩阵和平台升级/回退Dogfooding。
 
 ## 4. 文件系统要求
@@ -98,10 +102,10 @@ CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。
 - Process通过挂起创建、不可Breakaway Job Object和ConPTY管理进程树；
 - 普通目录事务发布尚无与POSIX等价的抗Reparse Point竞态实现；
 - Product Config的POSIX Owner/Mode检查在Windows不执行；
-- 默认产品入口仍主动拒绝Windows Coding Tool装配。
+- 默认产品入口装配四项Windows只读Tool；Git、普通目录写与完整Delivery仍失败关闭。
 
-Windows部署不得通过Monkey Patch平台门或关闭安全检查来启用产品入口。后续实现应使用原生Handle与ACL合同，而不是
-把POSIX权限位直接映射到Windows。
+Windows只读入口必须使用`WindowsWorkspaceRoot`的逐段Handle、Final Path、File ID和Reparse检查；不得替换为
+字符串前缀或把POSIX权限位映射到Windows。正式发行仍需补齐配置/状态ACL、安装器和签名制品。
 
 ### 4.3 大小写与Unicode
 
@@ -194,17 +198,18 @@ flowchart LR
 
 | 平台职责 | 源码 | 测试 |
 |---|---|---|
-| 平台门 | [`product_config/server.py`](../../src/harnessix/product_config/server.py)的`_require_coding_tool_platform` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| 启动Preflight与平台选择 | [`product_config/preflight.py`](../../src/harnessix/product_config/preflight.py)、[`tools/runtime.py`](../../src/harnessix/tools/runtime.py) | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)、[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py) |
 | Workspace对象安全 | [`workspace/snapshot.py`](../../src/harnessix/workspace/snapshot.py)、[`workspace/windows.py`](../../src/harnessix/workspace/windows.py) | [`tests/workspace`](../../tests/workspace/) |
 | Process Owner | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`processes/windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | [`tests/processes`](../../tests/processes/) |
 | Container Sandbox | [`sandbox/container.py`](../../src/harnessix/sandbox/container.py) | [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) |
 | POSIX交付 | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py) | [`test_filesystem.py`](../../tests/delivery/test_filesystem.py) |
 | Git交付 | [`delivery/git.py`](../../src/harnessix/delivery/git.py) | [`test_git.py`](../../tests/delivery/test_git.py) |
+| Windows只读Tool适配 | [`tools/windows_read.py`](../../src/harnessix/tools/windows_read.py)、[`tools/windows_read_port.py`](../../src/harnessix/tools/windows_read_port.py)、[`tools/windows_search.py`](../../src/harnessix/tools/windows_search.py) | [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)、[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py) |
 | TUI平台中立层 | [`product_ui/controller.py`](../../src/harnessix/product_ui/controller.py)、[`product_ui/app.py`](../../src/harnessix/product_ui/app.py) | [`tests/product_ui`](../../tests/product_ui/) |
 
 ## 11. 当前风险
 
-- Windows属于1.0目标但当前产品入口拒绝，时间和实现风险高；
+- Windows原生只读产品链已实现但当前CI结果待回填；写入、Git读取、安装器和长期稳定性仍是1.0风险；
 - 0.9.1b与0.9.1c三平台CI已经完成；0.9.1c由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)验证当前领域交互矩阵，但TUI仍缺少真实用户终端长期运行和发行物证据；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；

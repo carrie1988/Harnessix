@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -12,9 +12,12 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/workspace/test_paths.py
   - tests/workspace/test_snapshot.py
+  - tests/tools/test_windows_read_adapter.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/workspace/test_leases.py
   - tests/execution/test_plans.py
   - tests/trusted_actions/test_router.py
@@ -556,9 +559,10 @@ Python 3.12的当前File Index，拒绝大小写折叠重名。Reparse成员以`
 
 ### 15.5 当前平台差异
 
-Windows端口没有Snapshot读取Deadline或协作取消检查，也不模拟POSIX执行位；`execute` Access不会验证
-PE/脚本可执行性。Windows Root Handle的共享模式较严格，可能影响并发编辑体验。所有这些差异必须在
-上层Policy/UI中明确，不能把“同一Snapshot Schema”解释为两个平台完全相同的文件语义。
+Snapshot与`SecureWorkspaceReader`同步入口仍不注入协作取消；Tools侧`WindowsReadPort`会把`ReadOperation.checkpoint`
+传入`_open_chain`、目录扫描和`ReadFile`循环，因此Coding Tool具备取消和Deadline。Windows不模拟POSIX执行位，
+`execute` Access不会验证PE/脚本可执行性。Root Handle共享模式较严格，可能影响并发编辑体验；同一Snapshot Schema
+不表示两个平台具有完全相同的文件语义。
 
 ## 16. SecureWorkspaceReader
 
@@ -1044,7 +1048,7 @@ uv run pytest \
 - POSIX目录扫描超过时限时的稳定错误和大目录性能基准；
 - Windows网络共享、FAT/ReFS、大小写敏感目录、云文件占位和祖先Reparse场景；
 - Windows普通文件execute Access和ACL/只读文件系统语义；
-- Secure Reader Windows取消/Timeout和慢文件系统Soak；
+- Secure Reader Windows同步调用的取消/Timeout与慢文件系统Soak；Tools调用已有检查点；
 - 同Owner旧Lease对象Renew/Release后来刷新Lease的回归；
 - 墙钟前跳/回拨、进程Suspend、SQLite锁竞争和磁盘满；
 - Lease数据库损坏、未知Schema、备份恢复和Windows ACL；
@@ -1060,7 +1064,7 @@ uv run pytest \
 | P0 | 默认写工具/Process未统一使用Workspace Lease | 内部多写者不能由统一Fencing保护 | 0.9.1产品装配 |
 | P0 | Snapshot验证后到非事务效果仍有窗口 | 不安全Executor可能作用于变化对象 | 0.9.1/0.9.4端口审计 |
 | P1 | Windows普通Workspace事务写未实现 | Windows生产交付依赖受管Git路径 | 0.9.5三平台发行 |
-| P1 | Windows Native Observe无Deadline | 网络共享/慢盘可阻塞Runtime | 0.9.3取消/Soak |
+| P1 | Secure Reader未向Windows Observe传入Deadline | 配置/Skill等同步消费者在慢盘上仍可能阻塞；Coding Tool已有检查点 | 0.9.3取消/Soak |
 | P1 | 资源256边界与隐式cwd未统一 | 极限请求泄漏ValidationError | 0.9.4错误收敛 |
 | P1 | External Root对象别名未去重 | 权限和审计可能重复表达同一对象 | 0.9.4授权规范 |
 | P1 | Lease无Schema版本/损坏检测/历史 | 升级和取证能力不足 | 0.9.5运维迁移 |
@@ -1151,9 +1155,44 @@ uv run pytest \
 故障注入定位，再同步合同、Schema和消费者；不得把字符串路径检查描述成对象安全，不得把Lease描述成
 外部编辑锁，也不得把选择资源Snapshot描述成完整仓库Revision。
 
-## 38. 变更记录
+## 38. Windows观察端口在Coding Tool中的复用
+
+0.9.1d没有重写Snapshot合同，而是在`WindowsWorkspaceRoot.observe`增加可选的内容开关、单文件读取上限和检查点。
+`SecureWorkspaceReader`继续使用默认值；Tools适配器用`include_content=False`执行目录/元数据观察，用搜索文件上限执行正文
+观察，并在每段Handle打开、每个目录成员和每个`ReadFile`块前执行同一`ReadOperation.checkpoint`。
+
+`windows.py`内部职责已拆为：`_observe_missing`绑定父目录身份与目标名，`_observe_opened`区分目录/文件，
+`_observe_file`执行大小和前后Revision核对，`_directory_body`绑定大小写折叠后的成员名/类型/File Index，`_read_all`执行
+块读取和上限。`WindowsWorkspaceRoot.observe`只负责编排打开、缺失分支、异常归一和Handle清理，避免原生资源逻辑集中在单个
+高复杂度函数。
+
+```mermaid
+sequenceDiagram
+    participant T as WindowsReadPort
+    participant W as WindowsWorkspaceRoot
+    participant H as Win32 Handles
+    T->>W: observe(path, include_content, max_bytes, checkpoint)
+    W->>H: open each segment + checkpoint
+    W->>W: reject Reparse/root drift/hardlink
+    alt directory
+        W->>W: scan members + checkpoint
+    else file content
+        W->>H: ReadFile chunks + checkpoint
+    else metadata only
+        W->>H: query before/after information
+    end
+    W-->>T: stable Observation
+```
+
+原生安全断言仍由[`tests/workspace/test_snapshot.py`](../../tests/workspace/test_snapshot.py)验证；工具合同和攻击输入分别由
+[`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)与
+[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)验证。实现绑定`532e59b346f50657518d11225102bc6999c301e6`，真实Windows Runner结果
+尚未回填，不能据本地POSIX测试提前关闭0.9.1d。
+
+## 39. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `532e59b346f50657518d11225102bc6999c301e6` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；等待CI |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |
 | 1 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 建立Workspace现行模块设计，覆盖逻辑路径、选择资源Snapshot、POSIX/Windows原生端口、Secure Reader、SQLite Fencing Lease和跨模块消费边界 |

@@ -1,17 +1,21 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 4
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
   - product_config
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_migration_and_store.py
+  - tests/product_config/test_product_contracts.py
+  - tests/product_config/test_preflight.py
+  - tests/product_config/test_wizard.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
@@ -27,16 +31,16 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置，选择模型Profile，解析版本化Secret，离线诊断，构造Provider Bundle，以零响应暴露规则执行跨Profile Fallback，并持久化配置及Fallback审计事实 |
+| 当前职责 | 严格加载和迁移产品配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor报告；构造Provider Bundle；执行安全Fallback；持久化配置及Fallback审计事实 |
 | 非职责 | 不执行Agent Loop、Tool、Approval或Action；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
 | 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Coding Tool Runtime、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
-| 默认产品平台 | 配置诊断和迁移具有跨平台实现；内置`agent-server`因Coding Tool Runtime限制只在POSIX且具有`O_NOFOLLOW`时开放 |
+| 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口，在Windows使用原生Handle只读端口；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` |
-| 当前完成度 | 0.8.6纵向切片与0.9.1b的TUI到`agent-server`确定组合根已完成并通过矩阵CI；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理、完整Windows产品入口和产品级Telemetry仍未完成 |
+| 代码版本 | `532e59b346f50657518d11225102bc6999c301e6` |
+| 当前完成度 | 0.9.1d配置合同、原子Writer、共享Preflight/Doctor及三平台只读启动代码已完成本地验收，等待Windows原生CI后关闭；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理和产品级Telemetry仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -94,9 +98,9 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 - 不为失败Provider流做协议续传，Fallback总是新的完整请求；
 - 不在响应或Tool Call暴露后透明切换Provider；
 - 不把Hash链声明为抵御同用户恶意进程的密码学签名日志；
-- 不提供配置编辑器、TUI表单、集中式配置服务或多租户控制面；
+- 不提供任意配置编辑器、配置热加载、集中式配置服务或多租户控制面；Configure只生成单Provider/单Profile安全起始配置；
 - 不默认装配写文件、Process、Commit、Push、远端MCP或公网Git认证；
-- 不承诺内置`agent-server`当前可以在Windows安全运行。
+- 不在Windows广告Git读取、写入Action、Process或Delivery能力。
 
 ### 3.3 关键术语
 
@@ -130,7 +134,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | Fallback | 零暴露、三类失败、先审计后切换 | 是 | 熔断、健康评分、跨进程路由 |
 | 配置Store | Snapshot、active CAS、双Hash链 | 是 | 容量/保留策略、签名、备份编排 |
 | v1→v2迁移 | 文件锁、CAS、备份、原子替换 | CLI显式执行 | 配置DB与文件跨资源原子事务 |
-| stdio组合根 | 固定Workspace只读Tool产品路径 | POSIX | Windows产品Tool Runtime、完整写工具 |
+| stdio组合根 | Preflight后固定Workspace只读Tool产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
 | Telemetry | 稳定错误、诊断和审计可查询 | 未接入Observer | 指标、Trace、SLO和导出接口 |
 
 ## 5. 模块上下文与信任边界
@@ -1433,6 +1437,65 @@ Shell历史或工单。POSIX下配置和State使用当前用户私有目录。
 
 按[`run_product_stdio`](../../src/harnessix/product_config/server.py)顺序定位：配置→选择→路径→诊断→平台→State→
 Store→Provider→Session→Tool→Runtime Owner→CAS。stdout为空通常表示失败发生在协议开放之前，是预期失败关闭行为。
+
+## 43.5 0.9.1d配置就绪与启动门禁
+
+### 43.5.1 增量架构
+
+```mermaid
+flowchart LR
+    Draft[ConfigurationDraft] --> Builder[build_product_config]
+    Builder --> Writer[write_product_config]
+    Writer --> File[(config.json)]
+    File --> ConfigChecks[preflight_configuration]
+    ConfigChecks --> EnvChecks[preflight_environment]
+    EnvChecks --> Report[ProductPreflightReport]
+    Report -->|ready| Server[run_product_stdio]
+    Server --> Revalidate[重新加载/诊断/路径隔离]
+    Revalidate --> Runtime[Provider + Session + Tool + stdio]
+    Report -->|not ready| Stop[状态与Transport创建前失败]
+```
+
+`ProductPreflightReport`是诊断事实而不是授权票据。产品入口根据报告提前阻断，`run_product_stdio`随后仍重新读取配置、
+解析Workspace和State并构造运行组件，以消除把瞬时报告当成可复用授权的TOCTOU旁路。
+
+### 43.5.2 合同与文件边界
+
+| 文件 | 关键符号 | 职责 |
+|---|---|---|
+| [`product_contracts.py`](../../src/harnessix/product_config/product_contracts.py) | `ConfigurationDraft`、`ConfigurationWriteReceipt`、`ProductPreflightCheck/Report` | 把产品就绪合同从基础配置图拆出，保持每个合同严格、冻结、摘要自校验 |
+| [`wizard.py`](../../src/harnessix/product_config/wizard.py) | `ConfigurationWriteRequest`、`build_product_config`、`write_product_config` | 只接收Secret引用；新建或显式`replace + expected_source_sha256`事务 |
+| [`preflight.py`](../../src/harnessix/product_config/preflight.py) | `ProductPreflightRequest`、`run_product_preflight` | 编排配置与环境检查并生成有序报告 |
+| [`preflight_configuration.py`](../../src/harnessix/product_config/preflight_configuration.py) | `inspect_configuration` | 文件、v2合同、Profile、Provider依赖和Secret引用检查 |
+| [`preflight_environment.py`](../../src/harnessix/product_config/preflight_environment.py) | `inspect_environment` | 平台、Workspace、State、TUI和Git检查 |
+| [`preflight_support.py`](../../src/harnessix/product_config/preflight_support.py) | `PreflightRecorder` | 稳定耗时、排序和路径脱敏指纹 |
+| [`errors.py`](../../src/harnessix/product_config/errors.py) | `ProductConfigError` | 为产品调用方提供稳定错误边界，避免其直接依赖Agent内部包 |
+
+### 43.5.3 Writer事务与失败语义
+
+Writer先严格验证操作组合并生成Canonical v2字节，再校验0700父目录、取得0600单字节非阻塞锁、创建同目录临时文件并
+`fsync`。新建通过硬链接发布后删除临时名，替换在锁内前后两次核对源字节摘要后调用`os.replace`；提交后同步目录并
+重开执行严格解码、Source SHA、Config SHA和领域值核对。提交前失败返回`product_config_write_failed`并保留旧字节；原子
+发布后的任意不确定性返回`product_config_commit_unknown`，禁止自动重试。并发测试在第一个Writer持锁且临时文件已同步时启动
+第二个Writer，证明只有一个提交，另一个得到可重试`product_config_lock_timeout`。
+
+### 43.5.4 Preflight检查图和数据约束
+
+Required检查包括配置文件、v2合同、Profile、Provider依赖、Secret引用、平台读取端口、Workspace、State及按入口决定的
+TUI/Git。前置失败只跳过依赖项，Workspace、TUI和Git等独立检查继续运行。报告仅包含稳定代码、修复动作ID、毫秒耗时、
+Config摘要、Profile ID和不可逆Workspace指纹；不包含绝对路径、环境值、API Key、原始异常或Provider响应。Doctor全程只读，
+不创建State、Session、Thread或网络请求。
+
+### 43.5.5 实现与验证证据
+
+- [`test_product_contracts.py`](../../tests/product_config/test_product_contracts.py)：Draft/Receipt/Report不变量和摘要防篡改；
+- [`test_wizard.py`](../../tests/product_config/test_wizard.py)：新建、显式替换、CAS冲突、锁竞争、双Writer、fsync/replace/重开故障与Canary脱敏；
+- [`test_preflight.py`](../../tests/product_config/test_preflight.py)：缺失/损坏/v1、Profile/依赖/Secret、Workspace/State、TUI/Git、异常隔离和报告round-trip；
+- [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)：Server在创建持久状态前预检，进入组件生命周期后再次校验；
+- [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py)：Configure不读取Secret值、Doctor只读、显式替换及Start在TUI加载前失败。
+
+当前实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`。本地Ruff、合同生成、Mypy和产品配置/Product UI/Workspace/Windows Adapter专项测试已通过；
+Windows真实Handle、Server/SDK与全矩阵CI仍是0.9.1d关闭前置条件。
 
 ## 44. 设计取舍
 

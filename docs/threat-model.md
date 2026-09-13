@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 1
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 2
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -16,18 +16,25 @@ modules:
   - mcp
   - skills
   - hooks
+  - product_config
+  - product_ui
+  - tools
 related_adrs:
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/sandbox
   - tests/secrets
   - tests/trusted_actions
   - tests/workspace
   - tests/delivery
+  - tests/product_config/test_preflight.py
+  - tests/product_config/test_wizard.py
+  - tests/tools/test_windows_native_runtime.py
   - tests/mcp
   - tests/skills
   - tests/hooks
@@ -737,3 +744,30 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 对应设计、源码依据和回归见[ADR 0075](adr/0075-provider-profile-secret-and-safe-fallback.md)、
 [Provider/Profile配置与安全Fallback源码研究](research/provider-profile-config-and-safe-fallback.md)
 及[0.8详细设计](m08-product-runtime-and-extensions-milestone-history.md#9-086-provider与配置产品化详细设计)。
+
+## 0.9.1d配置、Preflight与Windows只读链补充（2026-09-13）
+
+- **向导读取或落盘Secret**：`ConfigurationDraft`只允许Secret逻辑名、声明版本和环境变量名；Configure不读取该环境
+  变量值，收据不包含路径、URL、模型或变量名。Canary测试同时扫描配置和输出。
+- **静默覆盖与并发Writer**：新建与替换由显式`replace`区分；替换要求两次精确Source SHA CAS。0700父目录、0600锁/
+  文件、`O_EXCL`临时文件、非阻塞独占锁和同目录原子发布防止协作进程丢失更新。提交前失败保留旧字节，发布后不确定统一
+  返回`product_config_commit_unknown`且禁止自动重试；双线程测试证明只有一个Writer提交。
+- **Doctor成为授权票据**：`ProductPreflightReport`只是一时事实，不持久化也不作为能力；Product UI只用它在状态/Transport
+  前改善错误，`agent-server`再次运行Preflight并继续重读配置、校验路径、构造Provider和执行激活CAS。
+- **诊断泄漏**：每个Check只保存稳定ID、分类、Required/Advisory、状态、代码、修复动作ID和有界耗时；报告中的Workspace
+  使用不可逆指纹。未知异常统一`product_internal_failure`，不包含绝对路径、环境值、原始异常、Prompt或Provider响应。
+- **Windows路径逃逸**：逻辑路径先拒绝盘符、反斜线、ADS、保留名和折叠段；原生端口再从卷根逐段使用
+  `CreateFileW(...OPEN_REPARSE_POINT)`，拒绝任意Reparse、根身份漂移、多硬链接和Final Path越界。不能用`resolve/casefold`
+  替代对象证明。
+- **读取期间对象变化**：List/Glob在输出前复查目录或文件元数据；Read绑定身份、大小和内容摘要；Grep执行候选元数据、
+  正文Handle和结束元数据双观察。消失、替换、类型/链接变化统一失败为`workspace_changed/page_changed`，不返回外部正文。
+- **资源耗尽与取消**：目录条目、名称、深度、单文件、总读取、行、输出和结果均有固定上限；同一`ReadOperation`检查点
+  进入Handle链、目录成员和每个64 KiB读取块。取消/Deadline失败后由Runtime回收线程和Root Handle。
+- **能力过度广告**：Windows只广告List/Read/Glob/Grep；显式Git因缺少等价受管Process环境而失败关闭。平台实现摘要进入
+  Workspace Scope和Tool Version，POSIX批准不能复用于Windows端口。
+- **剩余风险**：Windows配置/状态ACL尚未形成发行合同，网络共享、大小写敏感目录、云占位文件、慢盘Soak、正式安装器、
+  签名更新及普通目录写仍未关闭。实现`532e59b346f50657518d11225102bc6999c301e6`只有在Windows原生与全矩阵CI通过后才能从候选升级。
+
+对应源码、流程和测试见[ADR 0079](adr/0079-preflight-and-native-read-port.md)、
+[0.9.1d详细设计](changes/m09-1d-configuration-preflight-windows-read.md)、
+[Product Config模块](modules/product-config.md)、[Tools模块](modules/tools.md)与[Workspace模块](modules/workspace.md)。

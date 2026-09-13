@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 4
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -13,11 +13,14 @@ modules:
   - product_ui
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/integration/test_api.py
   - tests/integration/test_worker.py
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_provider_credentials.py
+  - tests/product_config/test_preflight.py
+  - tests/product_config/test_wizard.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_ui/test_cli.py
 supersedes: []
@@ -280,8 +283,8 @@ sequenceDiagram
     participant D as Diagnose CLI
     participant S as agent-server
     participant A as Config Audit Store
-    O->>F: 写入新v2文件并收紧权限
-    O->>D: diagnose(config, profile)
+    O->>F: code configure创建或CAS替换v2
+    O->>D: code doctor(config, profile, workspace)
     D->>F: 安全读取并计算source/config摘要
     D-->>O: 脱敏检查与ready
     O->>S: 启动并携带expected active摘要
@@ -291,7 +294,8 @@ sequenceDiagram
     S-->>O: 成功开放stdio或失败关闭
 ```
 
-配置变化必须产生新的源摘要和语义摘要。不要直接编辑运行中进程已加载的文件并假设自动生效。
+配置变化必须产生新的源摘要和语义摘要。优先使用`code configure`执行受锁保护的创建/替换；不要直接编辑运行中进程
+已加载的文件并假设自动生效。Doctor只证明一次只读观察，Server启动时会重新校验。
 
 ## 9. 源码与测试映射
 
@@ -314,3 +318,64 @@ sequenceDiagram
 - `harnessix code`只为配置路径和客户端状态根定义环境覆盖，Profile、Resume和Git仍要求显式参数；
 - 当前配置没有任务级费用上限和账户账单对账字段；
 - 配置审计是本地SQLite，不是远程不可抵赖审计服务。
+
+## 11. `harnessix code configure`
+
+最小非交互示例：
+
+```bash
+uv run harnessix code configure \
+  --config "$HOME/.harnessix/config.json" \
+  --provider-kind openai_chat \
+  --base-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
+  --model qwen-plus \
+  --api-key-env DASHSCOPE_API_KEY \
+  --non-interactive
+```
+
+命令只接收环境变量**名称**，不会提示或读取Key值。成功输出`ConfigurationWriteReceipt` JSON，其中只有操作、旧/新Source
+摘要、Config摘要、时间和Receipt摘要。默认新建；替换必须同时携带：
+
+```bash
+uv run harnessix code configure [同一组配置参数] \
+  --replace \
+  --expected-source-sha256 <doctor或既有收据确认的64位小写摘要> \
+  --non-interactive
+```
+
+只有摘要而没有`--replace`返回`product_config_write_invalid`；只有`--replace`而没有摘要返回
+`product_config_expected_digest_required`；摘要变化返回`product_config_conflict`。`product_config_commit_unknown`表示原子发布可能
+已经发生，必须读取当前文件并运行Doctor，不得直接自动重试。配置父目录在POSIX必须为当前用户0700，目标与锁为0600；链接、
+Junction、硬链接锁或不安全身份失败关闭。
+
+## 12. `harnessix code doctor`与启动Preflight
+
+```bash
+export DASHSCOPE_API_KEY='由外部Secret机制注入'
+uv run harnessix code doctor /absolute/workspace \
+  --config "$HOME/.harnessix/config.json" \
+  --state-directory "$HOME/.harnessix/workspaces/<fingerprint>" \
+  --json
+```
+
+`doctor`离线检查配置文件、v2合同、Profile、Provider SDK、Secret引用、平台只读端口、Workspace、State、TUI及可选Git。
+`--no-tui`把TUI改为Advisory，适合仅启动`agent-server`的环境。所有Required通过时退出0，否则打印完整报告并退出2。报告中
+没有绝对路径、环境值、API Key或原始异常；`workspace_fingerprint`是不可逆摘要。命令不创建配置、State、数据库、Session、
+Thread，不启动Transport，也不进行Provider网络请求。
+
+直接运行`harnessix code WORKSPACE`时，同一Preflight在加载Textual、打开Client State和启动子进程前执行。子进程中的
+`run_product_stdio`再次执行Preflight，并继续执行配置重读、Workspace/State隔离、Provider构造和激活CAS；不要把Doctor旧报告
+作为跳过Server校验的授权材料。Windows原生当前只允许四项文件/搜索读取；显式Git返回
+`product_git_platform_unsupported`。
+
+## 13. 0.9.1d源码与测试映射
+
+| 职责 | 源码 | 测试 |
+|---|---|---|
+| 草案、写入收据、预检报告 | [`product_contracts.py`](../../src/harnessix/product_config/product_contracts.py) | [`test_product_contracts.py`](../../tests/product_config/test_product_contracts.py)、[`test_schemas.py`](../../tests/product_config/test_schemas.py) |
+| 原子创建与CAS替换 | [`wizard.py`](../../src/harnessix/product_config/wizard.py) | [`test_wizard.py`](../../tests/product_config/test_wizard.py) |
+| 配置与环境预检 | [`preflight.py`](../../src/harnessix/product_config/preflight.py)、[`preflight_configuration.py`](../../src/harnessix/product_config/preflight_configuration.py)、[`preflight_environment.py`](../../src/harnessix/product_config/preflight_environment.py) | [`test_preflight.py`](../../tests/product_config/test_preflight.py) |
+| CLI分派与无副作用边界 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
+| Server重校验 | [`server.py`](../../src/harnessix/product_config/server.py) | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+
+本文绑定实现`532e59b346f50657518d11225102bc6999c301e6`；三平台CI结果通过后再把0.9.1d状态改为正式关闭。

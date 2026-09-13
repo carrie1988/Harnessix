@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 12
-code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
+version: 13
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/app_server/test_agent_cli.py
   - tests/app_server/test_server_sdk.py
@@ -81,7 +82,7 @@ Server argv、客户端UUID、Command ID和Thread ID；进程退出后不保存�
 - [`AgentClient`](../../src/harnessix/sdk/agent_client.py)没有持久状态Store或连接代际控制器；
 - [SDK模块限制](../modules/sdk.md#41-已知限制风险与后续工作)登记Response、Frame、Result和半握手缺口；
 - [App Server模块限制](../modules/app-server.md#31-已知限制风险与后续工作)登记版本错误、出站字节和协商Limit缺口；
-- [`_require_coding_tool_platform`](../../src/harnessix/product_config/server.py)拒绝非POSIX产品入口；
+- 0.9.1d实施前的[`run_product_stdio`](../../src/harnessix/product_config/server.py)仅装配POSIX Tool并拒绝Windows；当前实现已由共享Preflight和平台Read Backend取代该门；
 - [总体架构限制](../architecture.md#20-已知限制与后续演进)登记完整TUI、统一装配和Windows缺口。
 
 参考实现与TUI框架证据已冻结在
@@ -319,8 +320,8 @@ harnessix code [WORKSPACE] [--config PATH] [--profile ID] [--state-directory PAT
 harnessix code [WORKSPACE] --resume THREAD_ID
 ```
 
-`doctor`和`configure`仍属于0.9.1d，当前不作为`code`子命令接受。配置诊断和迁移继续使用已有
-`harnessix config diagnose|migrate`运维入口。
+0.9.1d已经增加`harnessix code configure`与`harnessix code doctor`。既有`harnessix config diagnose|migrate`
+继续作为低层配置诊断和v1迁移入口。
 
 | 参数/动作 | 前置条件 | 结果 | 失败语义 |
 |---|---|---|---|
@@ -532,7 +533,7 @@ stateDiagram-v2
 | `events/next` | 协商值且不高于30秒 | 正常空轮询，不算故障 |
 | Artifact分页 | 5秒绝对时限、最多50页、每页200条 | 任一页、引用、游标、记录、字节或SHA失败均不得提交Approve |
 | Controller关闭 | 默认10秒，可配置1～30秒 | 排空Actor和关闭Session共用同一绝对Deadline |
-| Preflight单项 | 0.9.1d待实现 | 安全项失败关闭，体验项降级 |
+| Preflight单项 | 记录0～300000毫秒；共享绝对调用时限由上层负责 | Required失败关闭，Advisory可跳过；每项未知异常隔离 |
 
 当前关闭值已进入代码和测试，不接受0、负值、超过30秒、NaN或无限值。其余目标数值必须在实现时进入常量与测试。
 外层TUI Worker取消不改变领域超时合同。
@@ -659,7 +660,7 @@ publish(READY, threads, selected, view, connection_generation)
 start_single_actor()
 ```
 
-配置/平台Preflight当前由被启动的`agent-server`执行；0.9.1d再把安全检查和修复动作提升为正式产品Screen。
+配置/平台Preflight由Product CLI在加载Textual、打开Client State和启动Transport前执行；`agent-server`随后再次执行并保留原有最终校验。当前以CLI人类报告/JSON呈现，独立Doctor Screen可在后续UX迭代复用同一报告。
 
 ### 13.2 Command执行与未知结果
 
@@ -743,11 +744,11 @@ return memoized_sanitized_close_report()
 | 产品CLI组合根 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py)、[`src/harnessix/cli.py`](../../src/harnessix/cli.py) | `code_main`、`_server_command`、`_delegate_special_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)分派、精确子进程argv和脱敏失败 |
 | 真实stdio恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`session.py`](../../src/harnessix/product_ui/session.py) | Client State + Controller + Subprocess Transport | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)跨进程冷Replay和Command单调性 |
 | 产品配置/Server | [`product_config/server.py`](../../src/harnessix/product_config/server.py)、[`product_config/cli.py`](../../src/harnessix/product_config/cli.py) | `run_product_stdio`、`agent_server_main` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
-| Windows Workspace | [`workspace`](../../src/harnessix/workspace/)、[`tools`](../../src/harnessix/tools/) | 新Windows观察/读取端口，保留统一Tool合同 | 计划Windows Runner对象安全测试 |
+| Windows Workspace | [`workspace/windows.py`](../../src/harnessix/workspace/windows.py)、[`tools/windows_read.py`](../../src/harnessix/tools/windows_read.py)及拆分实现 | `WindowsWorkspaceRoot`、`WindowsReadRuntime`、`WindowsReadPort`，保留统一Tool合同 | [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)跨平台合同；[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)原生对象安全与四工具纵向测试 |
 | 统一Action装配 | [`trusted_actions`](../../src/harnessix/trusted_actions/)、[`delivery`](../../src/harnessix/delivery/)、[`processes`](../../src/harnessix/processes/) | `TrustedActionRouter`及现有Executor/Store端口 | 现有模块测试 + 计划产品端到端场景 |
 
-Windows Workspace和统一Action行仍是计划路径；Controller、Rendering、Textual View、产品CLI和stdio恢复行已经是
-0.9.1b当前实现入口。
+Windows Workspace行已经由0.9.1d实现并等待原生CI验收；统一Action行仍是0.9.1e计划路径。Controller、Rendering、
+Textual View、产品CLI和stdio恢复行是0.9.1b以来的当前实现入口。
 
 ### 15.2 文档同步矩阵
 
@@ -888,5 +889,6 @@ Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真
 路线图0.9.1保持未完成。
 
 
-0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d已完成专项源码研究、ADR和详细设计并进入实现；0.9.1e仍未实现。当前不包含
-配置向导/Doctor、Windows只读产品端口或统一Action默认装配，不能由领域交互完成状态推断这些能力已经可用。
+0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d实现`532e59b`已交付Secret-free配置向导、共享Preflight/Doctor、
+Windows原生List/Read/Glob/Grep端口和默认启动装配，并完成本地失败恢复与文档同步；Windows原生及全矩阵CI通过前保持候选。
+0.9.1e统一Action默认装配仍未实现，不能从只读产品链推断写入、Process或Delivery已经可用。

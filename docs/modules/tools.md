@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: efc7d82062681469651925bff411134c95d89a01
+version: 2
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0053-tool-concurrency-and-error-taxonomy.md
   - docs/adr/0057-tool-result-model-view-and-artifact-binding.md
   - docs/adr/0063-windows-v1-platform-support.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/tools/test_files.py
   - tests/tools/test_workspace.py
@@ -30,6 +31,8 @@ related_tests:
   - tests/tools/test_scoped_runtime.py
   - tests/tools/test_kernel.py
   - tests/tools/test_recovery.py
+  - tests/tools/test_windows_read_adapter.py
+  - tests/tools/test_windows_native_runtime.py
 supersedes: []
 ---
 
@@ -844,12 +847,12 @@ close_runtime():
 |---|---|---|
 | macOS | 当前支持POSIX只读Runtime | 本地套件及macOS CI |
 | Linux | 当前支持POSIX只读Runtime | Python 3.12/3.13 CI |
-| Windows | 核心包可安装/导入，但本模块原生能力未实现 | `Workspace.__init__`要求POSIX和`O_NOFOLLOW` |
+| Windows | 原生Handle只读候选支持`list_files/read_file/glob/grep`；Git不广告 | Fake Port合同测试与Windows真实Runner测试；当前提交等待CI |
 | WSL2 | 可作为Linux环境使用，不等于Windows原生支持 | 平台边界见ADR 0063 |
 
-Windows 1.0目标必须另行实现盘符、UNC、大小写、保留名、ADS、长路径、Reparse Point/Junction、共享
-模式和替换恢复的正式端口及故障测试。不得用跳过当前POSIX检查、字符串`resolve()`或WSL兼容声明
-代替原生安全语义。
+Windows实现通过`WindowsWorkspaceRoot`逐段Handle身份与Reparse拒绝建立根能力，不复用POSIX FD，也不以
+字符串`resolve()`或WSL声明替代原生安全语义。`CodingToolRuntime`按宿主选择后端，POSIX仍使用
+`coding-read/v1`，Windows使用`coding-read/windows-v1`，平台Scope变化会自然改变Tool Version。
 
 ### 23.3 兼容与升级
 
@@ -861,7 +864,7 @@ Turn并排空在途调用；未完成调用若版本漂移会失败关闭。Arti
 
 | 限制/风险 | 当前影响 | 路线图归属 |
 |---|---|---|
-| Windows原生Workspace未实现 | 默认Coding Tool产品不能在Windows原生运行 | 0.9.1 |
+| Windows原生只读链尚待当前提交CI | 本地假端口不能替代真实Handle与Server生命周期证据 | 0.9.1d关闭门禁 |
 | Workspace不是OS Sandbox | 同权限恶意代码可攻击宿主文件和进程边界 | 0.9.4及Sandbox模块 |
 | 协作Deadline不能终止永久内核阻塞 | 极端文件系统故障可能延长取消/关闭 | 0.9.3可靠性 |
 | revision不是内容哈希或原子快照 | 只证明当前定义的元数据观察一致性 | 保持明确合同；未来快照能力另行设计 |
@@ -877,8 +880,56 @@ Turn并排空在途调用；未完成调用若版本漂移会失败关闭。Arti
 事务性交付；进程必须经过Process Action、Sandbox、资源监督和Effect Journal；新只读工具也必须先
 定义输入/输出上限、版本摘要、取消、错误、平台边界及回归测试。
 
-## 25. 变更记录
+## 25. Windows原生只读Runtime实现
+
+### 25.1 分层与依赖
+
+```mermaid
+flowchart LR
+    Runtime[CodingToolRuntime] --> Facade[WindowsReadRuntime]
+    Facade --> Port[WindowsReadPort]
+    Facade --> FileOps[windows_file_read]
+    Facade --> SearchOps[windows_search]
+    Port --> Native[WindowsWorkspaceRoot]
+    Native --> Win32[CreateFileW / ReadFile]
+    SearchOps --> Capture[SearchCapture / Artifact]
+```
+
+新增`tools -> workspace`一级依赖边由[ADR 0079](../adr/0079-preflight-and-native-read-port.md)批准：Tools只能消费原生
+观察端口，不得把Win32句柄泄露给模型合同。`product_ui -> product_config`同理由产品组合根需要Preflight产生，二者均已纳入
+[`readability-policy-v1.json`](../../governance/readability-policy-v1.json)独立依赖快照，不形成依赖环。
+
+### 25.2 组件与算法
+
+| 文件 | 关键符号 | 责任 |
+|---|---|---|
+| [`runtime.py`](../../src/harnessix/tools/runtime.py) | `_build_read_backend`、`_build_definitions`、`CodingToolRuntime` | 按`os.name`选择POSIX/Windows后端；统一并发、取消、Descriptor、Artifact与关闭 |
+| [`windows_read.py`](../../src/harnessix/tools/windows_read.py) | `WindowsReadRuntime` | 保持四工具门面与现有Runtime调用合同，拥有Root生命周期 |
+| [`windows_read_port.py`](../../src/harnessix/tools/windows_read_port.py) | `WindowsReadPort`、`same_observation`、`file_revision` | 路径拒绝、原生错误映射、两次观察一致性与Scope/Revision |
+| [`windows_file_read.py`](../../src/harnessix/tools/windows_file_read.py) | `list_files`、`read_file` | 目录分页、UTF-8文本分页、行/字节/扫描预算与Revision复核 |
+| [`windows_search.py`](../../src/harnessix/tools/windows_search.py) | `glob_files`、`grep_files` | 有界递归、Ignored策略、候选复查、内容双观察、统计与Artifact捕获 |
+
+搜索先收集按路径排序的文件候选，并绑定对象身份和大小。Glob在输出前重新观察元数据；Grep先复查元数据，再在总读取
+预算内读取正文并再次比较身份/大小。路径消失、被替换、变为链接或类型变化统一转为`workspace_changed`，不可读对象只增加
+`unreadable_entries`；预算、取消和超时立即失败。存在Capture时继续扫描以形成完整Artifact，并用`stats.has_gaps`决定
+`capture.complete`；无Capture时到结果上限即停止。
+
+### 25.3 平台失败语义与验证
+
+Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupported`，因为现有Git端口依赖POSIX受管Process语义。
+`WindowsReadRuntime.close()`释放根Handle；`CodingToolRuntime.aclose()`先阻止新调用，再取得全部并发许可并关闭后端。
+
+- [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)在所有平台使用Fake Root，覆盖分页、Revision、
+  Glob/Grep/Capture、敏感路径、链接、二进制、取消、超时和关闭；
+- [`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)只在Windows Runner执行真实长路径、Junction、
+  ADS、保留名、多硬链接、四工具、重开Revision、显式Git拒绝和关闭后调用；
+- 既有`tests/tools`继续证明POSIX合同没有行为或版本规则回退。
+
+实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`；治理基线同步后的本地完整`make check`为3478项通过、18项跳过，原生Windows与全矩阵CI是关闭前置条件。
+
+## 26. 变更记录
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 2 | `532e59b346f50657518d11225102bc6999c301e6` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击测试；等待CI |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |

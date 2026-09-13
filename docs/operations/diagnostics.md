@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 3
+code_revision: 532e59b346f50657518d11225102bc6999c301e6
 owners:
   - core
 modules:
@@ -14,11 +14,14 @@ modules:
 related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
   - tests/integration/test_api.py
   - tests/integration/test_observability_flow.py
   - tests/agent/test_telemetry.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_preflight.py
+  - tests/product_ui/test_cli.py
   - tests/product_ui/test_interaction_screens.py
   - tests/product_ui/test_app_interactions.py
 supersedes: []
@@ -33,7 +36,7 @@ Journal、Session Event和专用账本是业务事实；Log、Trace和Metric用�
 
 当前Action Plane具备结构化日志、OTLP/HTTP Trace/Metric、Health/Readiness和Action查询；Product Config具备离线诊断；
 Product UI状态行显示连接代际、Turn、Token、费用未知原因、待决交互和稳定Notice，并通过`F1`提供静态脱敏错误自助。
-Coding Agent产品入口尚无统一`doctor`、支持包或完整观测装配。
+Coding Agent产品入口已有共享的离线`harnessix code doctor`和Startup Preflight；自动支持包与完整观测装配尚未实现。
 
 ## 2. 诊断顺序
 
@@ -42,9 +45,11 @@ flowchart TD
     Symptom[故障现象] --> Surface{部署面}
     Surface -- Action HTTP --> Live[healthz与readyz]
     Surface -- Agent stdio --> Process[进程退出码与协议握手]
-    Surface -- 配置 --> Config[config diagnose]
+    Surface -- 产品启动 --> Preflight[code doctor]
+    Surface -- 配置内部 --> Config[config diagnose]
     Live --> Identity[固定Action/Trace/Worker身份]
     Process --> Identity
+    Preflight --> Identity
     Config --> Identity
     Identity --> Durable[读取Journal/Event/Snapshot/审计]
     Durable --> Effect{副作用可能发生?}
@@ -95,6 +100,17 @@ uv run harnessix config diagnose \
 
 诊断不联网、不校验Provider账户、模型存在性、地域、额度、价格或Egress。`ready=false`退出2；内部或合同错误也退出2，
 错误JSON写stderr且不回显原配置和Secret。
+
+### 4.1 产品级Doctor
+
+```bash
+uv run harnessix code doctor /absolute/workspace --config /absolute/config.json --json
+```
+
+`ProductPreflightReport`在上述配置诊断之外检查配置文件/v2合同、Profile、平台读取端口、Workspace、State、TUI和可选Git。
+Required全部通过退出0，否则退出2并保留独立检查结果；前置失败只跳过其依赖项。报告只有稳定代码、修复动作ID、摘要、
+Profile和脱敏Workspace指纹，不含绝对路径、环境值或原始异常。Doctor离线只读，不创建状态目录、数据库、Session或网络请求。
+它只代表一次瞬时观察，不能替代`agent-server`启动时的重新校验。
 
 ## 5. 结构化日志
 
@@ -243,11 +259,12 @@ Workspace绝对路径、文件内容、Tool参数/输出、私有Session和供�
 | OTel | [`observability/opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) |
 | Worker运行指标 | [`worker.py`](../../src/harnessix/worker.py)的`record_operational_metrics` | [`test_worker.py`](../../tests/integration/test_worker.py) |
 | 配置诊断 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py)的`diagnose_configuration` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| 产品Doctor/Preflight | [`product_config/preflight.py`](../../src/harnessix/product_config/preflight.py)、[`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`test_preflight.py`](../../tests/product_config/test_preflight.py)、[`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | Agent Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) |
 | Product UI错误自助 | [`product_ui/error_help.py`](../../src/harnessix/product_ui/error_help.py)、[`product_ui/main_view.py`](../../src/harnessix/product_ui/main_view.py) | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)、[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py) |
 
 ## 12. 已知限制
 
-统一Agent产品观测装配、稳定`doctor`命令、支持包Schema、数据保留策略、Dashboard、告警规则、SLO、Metric单位修复、
-高基数硬限制、异常正文统一脱敏和Observability失败完全隔离仍未完成。部署时应把这些缺口作为发布阻断项，而不是
+统一Agent产品观测装配、支持包Schema、数据保留策略、Dashboard、告警规则、SLO、Metric单位修复、高基数硬限制、
+异常正文统一脱敏和Observability失败完全隔离仍未完成。Doctor是离线启动诊断，不等价于运行期Telemetry或支持包。部署时应把这些缺口作为发布阻断项，而不是
 通过外部Collector存在来宣称可观测性已经生产完备。
