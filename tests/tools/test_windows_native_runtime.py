@@ -101,6 +101,7 @@ async def test_windows_product_server_sdk_reads_unicode_space_and_long_path(
                 event.data.item.content
                 for event in replay.events
                 if isinstance(event.data, ItemPublicEvent)
+                and event.data.type == "item_finished"
                 and isinstance(event.data.item.content, PublicToolResultContent)
             ]
 
