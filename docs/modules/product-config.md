@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 5
-code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
+code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
 owners:
   - core
 modules:
@@ -42,8 +42,8 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口，在Windows使用原生Handle只读端口；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；0.9.1e1实现尚待提交并由全矩阵CI绑定最终Revision |
-| 当前完成度 | 0.9.1d已关闭；0.9.1e1已完成Action配置/能力目录合同、Router原子注册/幂等规划和默认Artifact组合的本地实现与验证，等待实现提交及全矩阵CI；Patch、Process、Delivery默认装配仍未完成 |
+| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
+| 当前完成度 | 0.9.1d已关闭；0.9.1e1的Action配置/能力目录合同、Router原子注册/幂等规划和默认Artifact组合已由CI 34739842959验收关闭；Patch、Process、Delivery默认装配仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1701,5 +1701,5 @@ flowchart LR
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 5 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1本地实现：Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；等待实现提交和全矩阵CI |
+| 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1 Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 记录0.9.1d三平台只读产品链完成全矩阵CI验收 |

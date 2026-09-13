@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 2
-code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
+code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
 owners:
   - core
 modules:
@@ -43,7 +43,7 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan Diff、Batch Effect Diff、Process Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；默认产品组合变更尚待提交并由全矩阵CI绑定最终Revision |
+| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
 | 默认产品装配 | 0.9.1e1已在`run_product_stdio`创建Session绑定Store，并注入Tool、Agent和Scoped Protocol Reader；Patch/Process Artifact仍随对应Action能力待装配 |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
@@ -618,5 +618,5 @@ SQLite本地边界不变。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 2 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；等待实现提交和全矩阵CI |
+| 2 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |

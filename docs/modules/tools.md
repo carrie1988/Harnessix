@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 3
-code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
+code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
 owners:
   - core
 modules:
@@ -51,7 +51,7 @@ supersedes: []
 | 权限来源 | 宿主构造的Workspace能力、版本化`ToolDescriptor`和Kernel注入的`ToolExecutionScope` |
 | 并发模型 | 单Runtime有界并行读取，默认4，合法范围1～16；持久结果仍由Agent按Provider调用顺序提交 |
 | 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle四工具端口；Windows不广告Git |
-| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；默认Artifact组合尚待提交并由全矩阵CI绑定最终Revision |
+| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
 Process、测试执行和事务性交付由各自的可信执行模块负责，不能通过本模块的`READ_ONLY`声明旁路。
@@ -944,6 +944,6 @@ Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupp
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
-| 3 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；等待实现提交和全矩阵CI |
+| 3 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |

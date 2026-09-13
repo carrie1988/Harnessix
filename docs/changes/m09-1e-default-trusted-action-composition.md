@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -48,7 +48,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v19；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现及本地验证完成、全矩阵CI待验收；0.9.1e2～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -113,8 +113,8 @@ supersedes: []
 ### 3.3 完成标准
 
 - [ ] 源码研究、ADR、详细设计和现行模块文档完整同步；
-- [ ] Product Action Config/Capability Report合同冻结并生成Schema；
-- [ ] Catalog广告与Router注册同源且属性测试通过；
+- [x] Product Action Config/Capability Report合同冻结并生成Schema；
+- [x] Catalog广告与Router注册同源且属性测试通过；
 - [ ] Agent Event v19新旧读取、Reducer、Approval Match、恢复和公共投影通过；
 - [ ] Artifact默认Store/Reader、Action Review purpose与越权测试通过；
 - [ ] POSIX多文件新增/修改/删除Diff审批和真实事务提交通过；
@@ -785,7 +785,7 @@ on Agent turn resume:
 
 | 顺序 | 子切片 | 代码/数据改动 | 行为/契约 | 测试 | 可独立回滚 |
 |---:|---|---|---|---|---|
-| 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | 实现与本地验证完成；CI待验收 |
+| 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | [CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭 |
 | 2 | 0.9.1e2 Agent Gateway | Event v19、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 是；关闭Gateway目录 |
 | 3 | 0.9.1e3 Patch/Delivery | Patch定义、Review Artifact、事务Executor/Reconcile、POSIX广告 | 默认产品真实多文件写入 | 新增/改/删、Diff、漂移、Lease、部分效果、SDK/TUI | 是；停止新Patch目录 |
 | 4 | 0.9.1e4 Process/Sandbox | Action Config、Profile Probe、Container Executor/Reconcile、输出Artifact | 有配置且能力通过才广告 | 配置攻击、固定镜像、非零/取消/超时/崩溃/输出 | 是；省略Profile |
@@ -1135,7 +1135,7 @@ flowchart TD
 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) | 四份提交Schema与运行时合同逐字节等价 |
 
 本地e1专项与相关回归为52项通过；全仓回归为3500项通过、19项跳过。Ruff、Mypy、合同生成、文档检查和可读性门禁均通过。
-完整Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵仍以本实现提交触发的CI结果为关闭依据。
+实现提交`82e247a8d083f3f8a7d68ee091a43d59096f298d`已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及Documentation全矩阵验收。
 
 ### 22.9 安全、兼容与回滚
 
@@ -1148,8 +1148,8 @@ flowchart TD
 
 ### 22.10 当前结论与后续前置
 
-0.9.1e1实现、本地失败/恢复测试、Schema和现行资料同步已完成，等待全矩阵CI验收。该子切片不证明Patch、Process或Delivery已进入
-默认产品，也不关闭0.9.1e。0.9.1e2只能在e1 CI通过后开始，并必须复用这里冻结的Catalog集合、确定性Invocation和Audit优先
+0.9.1e1实现、本地失败/恢复测试、Schema和现行资料同步已完成，并已通过全矩阵CI验收。该子切片不证明Patch、Process或Delivery已进入
+默认产品，也不关闭0.9.1e。0.9.1e2开始后必须复用这里冻结的Catalog集合、确定性Invocation和Audit优先
 恢复语义；不得重新建立Agent侧第二个执行批准权威。
 
 0.9.1e2～e5完成后还需在本文记录实际事件版本、数据迁移、真实Patch/Container场景、平台证据与最终偏差。只有第3.3节全部

@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 40
-code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
+version: 41
+code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
 owners:
   - core
 modules:
@@ -70,7 +70,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前稳定发布基线为已通过[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)验证的0.9.1d；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已完成本地实现与验证，尚待实现提交及全矩阵CI。本文元数据暂绑定开工Revision`c95a126e54d83be0e1fc22365df7a1577ffe51a8`，CI关闭后替换为精确实现Revision。状态标签含义如下：
+本文当前实现基线为提交`82e247a8d083f3f8a7d68ee091a43d59096f298d`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收。状态标签含义如下：
 
 | 标签 | 含义 |
 |---|---|
@@ -980,7 +980,8 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 40 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1本地实现：Action合同/同源目录、原子注册、Audit优先规划和默认Artifact产品链；等待实现提交及全矩阵CI |
+| 41 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 记录0.9.1e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭 |
+| 40 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1实现：Action合同/同源目录、原子注册、Audit优先规划和默认Artifact产品链 |
 | 38 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵通过，正式关闭完整领域交互子切片 |
 | 37 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：完整交互绑定、Diff证据、专用Modal、Plan/Tool/Usage渲染、错误自助及Cancel/Steer/Quit分离；等待实现Revision与三平台CI |
 | 36 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录0.9.1b实现与并发稳定化通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵并正式关闭 |

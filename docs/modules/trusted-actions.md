@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 5
-code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
+code_revision: 82e247a8d083f3f8a7d68ee091a43d59096f298d
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；0.9.1e1实现尚待提交并由全矩阵CI绑定最终Revision |
+| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；0.9.1e1已增加产品目录原子安装及Audit优先的幂等规划修复，默认产品尚未注册Patch/Process/Delivery，也没有公网多租户控制面 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
@@ -1355,7 +1355,7 @@ Router注入默认Agent，e2必须建立唯一Gateway和审批投影后才能广
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 5 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1本地实现：全集验证后原子发布注册表，Audit优先规划与跨Store崩溃修复；等待实现提交和全矩阵CI |
+| 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1全集验证后原子发布注册表、Audit优先规划与跨Store崩溃修复；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 将Hook现行事实下沉到独立模块设计，并登记捕获时授权、来源错配、输出接受与Action终态分歧及无租约恢复缺口 |
 | 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |
 | 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
