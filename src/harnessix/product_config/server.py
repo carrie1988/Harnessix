@@ -10,9 +10,11 @@ from typing import BinaryIO
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
+from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
@@ -168,9 +170,19 @@ async def run_product_stdio(
             sessions = SQLiteSessionStore(state_root / "sessions.db")
             await sessions.initialize()
             requests = SQLiteProtocolRequestStore(sessions.path)
+            artifacts = SQLiteArtifactStore(sessions)
             async with (
-                CodingToolRuntime(workspace_root, git_executable=git_path) as tools,
-                AgentRuntime(sessions, bundle, scoped_tools=tools) as runtime,
+                CodingToolRuntime(
+                    workspace_root,
+                    artifacts=artifacts,
+                    git_executable=git_path,
+                ) as tools,
+                AgentRuntime(
+                    sessions,
+                    bundle,
+                    scoped_tools=tools,
+                    artifacts=artifacts,
+                ) as runtime,
             ):
                 # 全部组件成功进入生命周期后才以CAS发布活动指针；冲突会逆序关闭
                 # Runtime、Tool和Provider，且不会开放stdio或创建Thread。
@@ -184,6 +196,7 @@ async def run_product_stdio(
                     runtime,
                     sessions,
                     requests,
+                    ScopedProtocolArtifactReader(sessions, artifacts, tools),
                     workspace=workspace_root,
                 )
                 await run_stdio(

@@ -1,0 +1,194 @@
+{
+  "$defs": {
+    "ProductProcessProfile": {
+      "additionalProperties": false,
+      "description": "宿主持有的固定容器进程Profile；模型只能选择，不能改写执行边界。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-process-profile/v1",
+          "default": "harnessix.product-process-profile/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "container_engine": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Container Engine",
+          "type": "string"
+        },
+        "image": {
+          "pattern": "^[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}$",
+          "title": "Image",
+          "type": "string"
+        },
+        "program": {
+          "pattern": "^/[A-Za-z0-9._/+:-]+(?:/[A-Za-z0-9._+:-]+)*$",
+          "title": "Program",
+          "type": "string"
+        },
+        "arguments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Arguments",
+          "type": "array"
+        },
+        "selector_policy": {
+          "default": "none",
+          "enum": [
+            "none",
+            "bounded_test_selector"
+          ],
+          "title": "Selector Policy",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 300,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "max_output_bytes": {
+          "default": 1048576,
+          "maximum": 8388608,
+          "minimum": 1024,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "network_mode": {
+          "default": "none",
+          "enum": [
+            "none",
+            "limited",
+            "restricted",
+            "full"
+          ],
+          "title": "Network Mode",
+          "type": "string"
+        },
+        "cpu_limit": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 32,
+          "title": "Cpu Limit",
+          "type": "number"
+        },
+        "memory_bytes": {
+          "default": 536870912,
+          "maximum": 68719476736,
+          "minimum": 16777216,
+          "title": "Memory Bytes",
+          "type": "integer"
+        },
+        "process_limit": {
+          "default": 128,
+          "maximum": 4096,
+          "minimum": 1,
+          "title": "Process Limit",
+          "type": "integer"
+        },
+        "secret_refs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SecretReference"
+          },
+          "maxItems": 16,
+          "title": "Secret Refs",
+          "type": "array"
+        },
+        "profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "description",
+        "container_engine",
+        "image",
+        "program",
+        "profile_sha256"
+      ],
+      "title": "ProductProcessProfile",
+      "type": "object"
+    },
+    "SecretReference": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "SecretReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "独立于Product Config v2的Action功能门与固定Process Profile。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-action-config/v1",
+      "default": "harnessix.product-action-config/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "workspace_patch_enabled": {
+      "default": true,
+      "title": "Workspace Patch Enabled",
+      "type": "boolean"
+    },
+    "process_profiles": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ProductProcessProfile"
+      },
+      "maxItems": 32,
+      "title": "Process Profiles",
+      "type": "array"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "config_sha256"
+  ],
+  "title": "ProductActionConfigV1",
+  "type": "object"
+}

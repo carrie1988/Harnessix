@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -24,6 +24,9 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/product_config/test_action_contracts.py
+  - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_schemas.py
   - tests/trusted_actions/test_router.py
   - tests/agent/test_runtime.py
   - tests/protocol/test_projection.py
@@ -45,7 +48,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v19；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；实现、专项测试、真实产品验证和全矩阵CI待完成 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现及本地验证完成、全矩阵CI待验收；0.9.1e2～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -212,7 +215,8 @@ flowchart LR
 | `product_config/action_contracts.py` | Action Config、Profile、Capability Evidence/Report严格合同 | 读取环境、探测引擎、执行进程 |
 | `product_config/action_config.py` | 安全读取与诊断独立Action配置 | 修改Product Config v2、保存Secret值 |
 | `product_config/action_composition.py` | 构造并拥有Catalog、Router、Store、Executor生命周期 | Agent状态机、UI渲染 |
-| `trusted_actions/catalog.py` | 从已验证定义生成Descriptor并证明集合一致 | 动态加载任意Python插件 |
+| `product_config/action_catalog.py` | 从已验证定义生成Descriptor并证明集合一致 | 动态加载任意Python插件 |
+| `trusted_actions/planning.py` | 调用规范化、幂等Plan与跨Store规划恢复 | 审批、执行或具体产品能力探测 |
 | `trusted_actions/agent_gateway.py` | Agent调用→确定性Plan→审批→执行/恢复适配 | 重新实现Policy、直接写文件、直接spawn |
 | `trusted_actions/review.py` | 从精确Plan构造有界摘要和完整Artifact | 决定是否批准、执行写入 |
 | `delivery/trusted_action.py` | Patch输入→事务计划→执行/对账 | 接受UI重构参数、绕过Lease |
@@ -781,7 +785,7 @@ on Agent turn resume:
 
 | 顺序 | 子切片 | 代码/数据改动 | 行为/契约 | 测试 | 可独立回滚 |
 |---:|---|---|---|---|---|
-| 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | 是 |
+| 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | 实现与本地验证完成；CI待验收 |
 | 2 | 0.9.1e2 Agent Gateway | Event v19、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 是；关闭Gateway目录 |
 | 3 | 0.9.1e3 Patch/Delivery | Patch定义、Review Artifact、事务Executor/Reconcile、POSIX广告 | 默认产品真实多文件写入 | 新增/改/删、Diff、漂移、Lease、部分效果、SDK/TUI | 是；停止新Patch目录 |
 | 4 | 0.9.1e4 Process/Sandbox | Action Config、Profile Probe、Container Executor/Reconcile、输出Artifact | 有配置且能力通过才广告 | 配置攻击、固定镜像、非零/取消/超时/崩溃/输出 | 是；省略Profile |
@@ -813,7 +817,8 @@ e1/e2未关闭时直接向Server添加Patch或Process构造参数。
 |---|---|---|---|
 | 能力合同 | `product_config/action_contracts.py` | `ProductActionConfigV1`、`ProductActionCapabilityReport` | `tests/product_config/test_action_contracts.py` |
 | 能力组合 | `product_config/action_composition.py` | `ProductActionRuntimeOwner` | `tests/product_config/test_action_composition.py` |
-| 同源目录 | `trusted_actions/catalog.py` | `ProductActionCatalog` | `tests/trusted_actions/test_catalog.py` |
+| 同源目录 | `product_config/action_catalog.py` | `ProductActionCatalog` | `tests/product_config/test_action_catalog.py` |
+| 路由规划 | `trusted_actions/planning.py`、`trusted_actions/router.py` | `plan_action`、`TrustedActionRouter.plan` | `tests/trusted_actions/test_router.py` |
 | Agent Gateway | `trusted_actions/agent_gateway.py` | `RouterBackedAgentActionGateway` | `tests/trusted_actions/test_agent_gateway.py` |
 | 内部事件 | `agent/models.py`、Reducers、`agent/approvals.py` | Trusted Action审批/效果与v19 | `tests/agent/test_trusted_action_runtime.py` |
 | Patch执行 | `delivery/trusted_action.py` | `WorkspacePatchActionExecutor` | `tests/delivery/test_trusted_action_patch.py` |
@@ -948,5 +953,204 @@ e1/e2未关闭时直接向Server添加Patch或Process构造参数。
 
 ## 22. 实现偏差与最终结论
 
-当前为实施前设计，`code_revision`保持`pending`。每个子切片完成后在本文记录实际源码路径、事件版本、数据Schema、测试数量、
-平台证据和偏差；只有第3.3节全部勾选后，本文才能转为`historical`并关闭0.9.1。
+### 22.1 0.9.1e1实际交付边界
+
+0.9.1e1只建立Artifact与可信目录地基，不向默认产品注册Patch或Process。实际代码形成三条独立主链：
+
+```mermaid
+flowchart LR
+    Product[run_product_stdio] --> Sessions[(SQLiteSessionStore)]
+    Sessions --> ArtifactStore[SQLiteArtifactStore]
+    ArtifactStore --> Tools[CodingToolRuntime]
+    ArtifactStore --> Agent[AgentRuntime]
+    ArtifactStore --> Reader[ScopedProtocolArtifactReader]
+    Reader --> Protocol[Agent Protocol artifact/read]
+
+    ActionConfig[ProductActionConfigV1] --> Report[Capability Report]
+    Report --> Catalog[ProductActionCatalog]
+    Catalog --> Descriptors[ToolDescriptor集合]
+    Catalog --> Router[TrustedActionRouter.register_many]
+
+    Invocation[CodingActionInvocation] --> PlanKernel[planning.plan_action]
+    PlanKernel --> Audit[(Action Audit)]
+    Audit --> PlanStore[(Execution Plan Store)]
+```
+
+第一条主链使现有只读工具产生的大结果在正式产品中能够原子发布到Session数据库，并由公共协议按Thread、Turn、Call、
+Workspace Scope和Artifact摘要重新授权读取。第二条主链冻结后续Patch/Process能力的配置、探测和目录集合合同。第三条主链
+关闭同一Invocation在“Action Audit已提交、Execution Plan尚未提交”窗口中重复捕获Workspace的问题。
+
+### 22.2 实际模块、类与接口
+
+| 源码 | 关键符号 | 当前职责 | 失败边界 |
+|---|---|---|---|
+| [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) | `ProductProcessProfile` | 固定Container Engine、不可变镜像、程序、argv、网络及资源预算 | 相对Engine、浮动Tag、非`none`网络、重复Secret和摘要漂移由严格合同拒绝 |
+| 同上 | `ProductActionConfigV1` | 独立于Product Config v2保存Patch功能门和有序Profile | Profile乱序、重复或配置摘要漂移拒绝 |
+| 同上 | `ProductActionCapabilityEvidence` | 表达一次`verified/omitted`能力探测及十分钟内时效 | `verified`缺证据、`omitted`携带绑定、非法TTL和证据摘要漂移拒绝 |
+| 同上 | `ProductActionCapabilityReport` | 绑定Action Config摘要并稳定排序能力事实 | 能力乱序、重复和报告摘要漂移拒绝 |
+| [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py) | `ProductActionCatalog` | 从同一个Binding、Schema、描述和Evidence生成Descriptor并批量安装Router | 报告/条目、Schema、Fingerprint、命名空间或过期证据不一致时安装前失败 |
+| [`planning.py`](../../src/harnessix/trusted_actions/planning.py) | `plan_action` | 参数规范化、敏感字段拒绝、资源/Policy/Snapshot冻结、Route双Store持久化 | Invocation复用冲突、合同漂移、非法参数和Store故障使用稳定错误 |
+| [`router.py`](../../src/harnessix/trusted_actions/router.py) | `register_many` | 全量验证定义与冲突后，以单次字典发布替换注册表 | 任一Schema或Key冲突不留下部分产品目录 |
+| [`server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | 创建一个Session绑定Artifact Store并注入Tool、Agent与Scoped Reader | 仍在全部Runtime进入生命周期后才激活配置和开放stdio |
+
+`ProductActionCatalog`位于`product_config`而不是原计划的`trusted_actions/catalog.py`。原因是目录同时依赖产品能力报告和
+通用Router；若放入`trusted_actions`会形成`trusted_actions -> product_config`反向依赖，违反第5.3节。该调整不改变领域
+职责：通用Router不知道产品配置，产品组合层单向消费通用Action能力。
+
+### 22.3 关键字段与不变量
+
+| 合同 | 字段 | 来源 | 不变量/用途 |
+|---|---|---|---|
+| `ProductProcessProfile` | `container_engine` | 宿主Action配置 | 必须是绝对路径；e4还要探测对象身份与可执行性 |
+| 同上 | `image` | 宿主Action配置 | 仅接受`name@sha256:<64 hex>`，不接受Tag |
+| 同上 | `arguments` | 宿主Action配置 | 有序固定tuple；单项不超过4096 UTF-8字节且禁止NUL/换行 |
+| 同上 | `network_mode` | 宿主Action配置 | v1固定为`none`，无Host降级 |
+| 同上 | `secret_refs` | 宿主Action配置 | 按`name/version`排序唯一，只保存引用不保存值 |
+| `ProductActionCapabilityEvidence` | `status` | 启动探测 | 只有`verified`可以进入Catalog；`omitted`只形成诚实诊断 |
+| 同上 | `binding_digest` | `TrustedToolBinding` | 必须与目录Entry的精确Binding相等 |
+| 同上 | `executor_evidence_digest` | 能力探测器 | 证明Executor/Profile/Sandbox组合；Catalog不自行执行探测 |
+| 同上 | `probed_at/expires_at` | 启动探测 | 时间必须递增且窗口不超过600秒；过期前才能安装 |
+| `ProductActionCapabilityReport` | `config_sha256/created_at` | Action Config/探测时钟 | 把广告/省略结果绑定到精确配置版本；报告创建时间必须落在每项证据的有效区间内 |
+| `ProductActionCatalogEntry` | `description/definition/evidence` | 产品组合Builder | Descriptor Fingerprint、Binding、Schema与Evidence必须形成一条摘要链 |
+| `CodingActionInvocation` | `invocation_id` | Gateway确定性身份 | 同一ID只能绑定一份规范化Invocation和Binding |
+
+四份新增JSON Schema由[`generate_specs.py`](../../scripts/generate_specs.py)确定性生成：
+
+- [`product-action-config-v1.schema.json`](../../spec/product-action-config-v1.schema.json)；
+- [`product-process-profile-v1.schema.json`](../../spec/product-process-profile-v1.schema.json)；
+- [`product-action-capability-v1.schema.json`](../../spec/product-action-capability-v1.schema.json)；
+- [`product-action-capability-report-v1.schema.json`](../../spec/product-action-capability-report-v1.schema.json)。
+
+### 22.4 Catalog构造与安装流程
+
+```mermaid
+sequenceDiagram
+    participant B as Product Builder
+    participant C as ProductActionCatalog
+    participant R as Capability Report
+    participant T as TrustedActionRouter
+
+    B->>C: report + ordered entries
+    C->>R: strict JSON round-trip
+    C->>C: verified IDs == entry IDs
+    C->>C: binding/schema/fingerprint/evidence逐项核对
+    B->>C: definitions()
+    C-->>B: deep-copied ToolDescriptors
+    B->>C: install(router)
+    C->>C: 检查Evidence尚未过期
+    C->>T: 检查harnessix.product命名空间为空
+    C->>T: register_many(all definitions)
+    T->>T: 先验证全部定义与全部Key
+    T->>T: 单次发布新注册表
+    C->>T: 读取产品命名空间全部Binding
+    C->>C: observed == expected
+```
+
+安装不是“先广告、调用时再发现不可执行”。Descriptor只有在Catalog构造成功后可得；产品命名空间已有任意定义时安装失败，
+避免额外Binding被集合过滤掩盖。`register_many`先完成全部Schema摘要和重复Key检查，再替换内存注册表，因此第二个定义冲突不会
+留下第一个定义的半安装状态。
+
+### 22.5 幂等规划与跨Store恢复
+
+规划使用Action Audit作为可恢复的首个持久事实，因为其Route正文已经完整包含`ExecutionPlanV2`。写入顺序与恢复如下：
+
+```mermaid
+sequenceDiagram
+    participant G as Gateway/Caller
+    participant P as plan_action
+    participant A as Action Audit
+    participant E as Execution Plan Store
+    participant W as Workspace
+
+    G->>P: invocation + context
+    P->>A: load(invocation_id)
+    alt Route不存在
+        A-->>P: action_route_not_found
+        P->>W: capture exact snapshot
+        P->>P: freeze resources/policy/plan
+        P->>A: save complete Route
+        P->>E: save embedded Execution Plan
+        E-->>G: current Route snapshot
+    else Route精确存在
+        A-->>P: persisted current Route
+        P->>E: idempotent save/repair embedded plan
+        P-->>G: current Route，不访问Workspace
+    else ID已绑定其他Invocation或Binding
+        A-->>P: persisted conflicting Route
+        P-->>G: action_invocation_conflict
+    end
+```
+
+若进程在Audit提交后、Execution Store提交前退出，重试同一规范调用会从Audit读取原Route并补齐Execution Plan。它不会重新运行
+Resolver、重新捕获Workspace、重新决策Policy或制造不同Snapshot。若调用已执行到终态，规划重试返回当前终态而不是旧的初始
+状态。Execution Store仍以相同Plan ID、Fingerprint和正文提供自身冲突检查。
+
+### 22.6 默认Artifact所有权与数据流
+
+[`run_product_stdio`](../../src/harnessix/product_config/server.py)在Session初始化后创建唯一`SQLiteArtifactStore`，将同一个对象注入
+`CodingToolRuntime`和`AgentRuntime`，并用它构造`ScopedProtocolArtifactReader`。因此Tool捕获、Session事务发布、模型历史验证和
+协议分页读取共享同一Owner与同一SQLite事务边界：
+
+```mermaid
+flowchart TD
+    Tool[只读Tool完整结果] --> Capture[ArtifactToolResult]
+    Capture --> Store[(agent_artifacts + Session Events)]
+    Store --> Ref[有界ArtifactRef进入Tool Result]
+    Ref --> Model[模型只看预览与引用]
+    Ref --> Client[SDK/TUI请求artifact/read]
+    Client --> Reader[ScopedProtocolArtifactReader]
+    Reader --> Scope{Thread/Turn/Call/Workspace/Hash有效?}
+    Scope -->|是| Page[有界分页正文]
+    Scope -->|否| Reject[稳定拒绝]
+```
+
+该变更不扩大Artifact权限，不增加新协议形状；它只让Server现有的条件能力在默认产品组合中真实满足。初始化响应现在将
+`artifactPages=true`并包含`artifact/read`。EOF启动仍不产生模型请求，产品配置激活顺序保持不变。
+
+### 22.7 失败语义与恢复矩阵
+
+| 故障 | 稳定结果 | 是否产生部分可见能力 | 恢复/处置 |
+|---|---|---:|---|
+| Process Profile相对Engine或浮动镜像 | Pydantic严格校验失败 | 否 | 修复配置后重建 |
+| Capability `verified`缺少任一摘要 | 能力证据不完整 | 否 | 探测器不得构造Verified |
+| Capability `omitted`携带Binding | 能力证据不完整 | 否 | 保持省略且删除可执行摘要 |
+| 任一Verified或Omitted Evidence过期、报告来自未来 | `product_action_capability_expired` | 否 | 重新探测并重建完整Report/Catalog |
+| Report Verified集合与Entry集合不同 | `product_action_catalog_mismatch` | 否 | 修复组合Builder |
+| Descriptor Fingerprint与Binding不同 | `product_action_catalog_mismatch` | 否 | 从同一Descriptor生成Binding |
+| Router产品命名空间已被占用 | `product_action_catalog_mismatch` | 否 | 停止启动，禁止覆盖 |
+| 批量注册任一Schema/Key冲突 | `trusted_tool_schema_mismatch`或`trusted_tool_duplicate` | 否 | 全集合修复后重试 |
+| Invocation ID精确重试 | 返回当前Route | 不新增 | 以Audit内嵌Plan补齐Execution Store |
+| Invocation ID绑定不同参数/Binding | `action_invocation_conflict` | 不新增 | 调用方必须使用新确定性身份 |
+| Audit提交后Plan Store失败 | 原Route可查询，首次调用失败 | 不重抓Workspace | 精确重试补齐Plan Store |
+| Artifact Reader未能构造 | Runtime进入失败，stdio不开放 | 否 | 修复State/Session依赖后重启 |
+
+### 22.8 测试与验证证据
+
+| 测试 | 证明内容 |
+|---|---|
+| [`test_action_contracts.py`](../../tests/product_config/test_action_contracts.py) | Profile/Config/Evidence/Report严格往返、排序唯一、TTL、Secret引用、固定网络、不可变镜像和摘要防篡改 |
+| [`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py) | Report与Entry集合、Descriptor/Binding/Schema/Fingerprint、诚实省略、过期拒绝、命名空间和原子安装 |
+| [`test_router.py`](../../tests/trusted_actions/test_router.py) | 当前Route幂等返回、禁止重抓Workspace、跨Store故障修复和Invocation冲突 |
+| [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | 默认产品真实stdio握手广告`artifact/read`且EOF不触发模型 |
+| [`test_schemas.py`](../../tests/product_config/test_schemas.py) | 四份提交Schema与运行时合同逐字节等价 |
+
+本地e1专项与相关回归为52项通过；全仓回归为3500项通过、19项跳过。Ruff、Mypy、合同生成、文档检查和可读性门禁均通过。
+完整Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵仍以本实现提交触发的CI结果为关闭依据。
+
+### 22.9 安全、兼容与回滚
+
+- Action Config不并入Product Config v2，既有配置Schema、摘要、迁移和CLI保持兼容；
+- e1未读取Action Config文件、未探测Container、未注册Patch/Process，不会提前开放高风险能力；
+- 新增`product_config -> artifacts/trusted_actions`依赖由产品组合职责和ADR 0080批准，并进入可读性策略精确快照；未新增依赖环；
+- Router的外部导入位置保持不变，规划实现下沉到`planning.py`后原有`TrustedActionRouter.plan`仍是稳定门面；
+- 回退e1会使默认产品不再广告Artifact分页，但不会删除既有Session中的Artifact正文；旧Ref继续由兼容Reader规则决定可读性；
+- 已持久Action Route仍由原Router合同读取；规划顺序回退前必须确认不存在只写入Audit、尚未补齐Execution Store的Route。
+
+### 22.10 当前结论与后续前置
+
+0.9.1e1实现、本地失败/恢复测试、Schema和现行资料同步已完成，等待全矩阵CI验收。该子切片不证明Patch、Process或Delivery已进入
+默认产品，也不关闭0.9.1e。0.9.1e2只能在e1 CI通过后开始，并必须复用这里冻结的Catalog集合、确定性Invocation和Audit优先
+恢复语义；不得重新建立Agent侧第二个执行批准权威。
+
+0.9.1e2～e5完成后还需在本文记录实际事件版本、数据迁移、真实Patch/Container场景、平台证据与最终偏差。只有第3.3节全部
+勾选后，本文才能转为`historical`并关闭0.9.1。

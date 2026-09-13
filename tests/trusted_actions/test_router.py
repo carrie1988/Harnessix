@@ -253,6 +253,102 @@ async def test_bounded_read_is_planned_executed_and_audited(tmp_path: Path) -> N
     audit.close()
 
 
+async def test_exact_plan_retry_returns_current_route_without_recapturing_workspace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding()
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"text": "ok"}))
+    actions, plans, audit = router(root, definition(tool, executor))
+    call = invocation(tool)
+    planned = actions.plan(call, context(root))
+    await actions.execute(planned.plan.execution.plan_id)
+    current = actions.status(planned.plan.execution.plan_id)
+
+    def forbid_recapture(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("幂等重试不得重新捕获Workspace")
+
+    monkeypatch.setattr(
+        "harnessix.trusted_actions.planning.capture_workspace_snapshot",
+        forbid_recapture,
+    )
+    retried = actions.plan(call, context(root))
+
+    assert retried == current
+    assert retried.state == "succeeded"
+    assert plans.load_plan(call.invocation_id) == retried.plan.execution
+    plans.close()
+    audit.close()
+
+
+def test_plan_retry_repairs_execution_store_after_inter_store_crash(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    target = root / "file.txt"
+    target.write_text("before", encoding="utf-8")
+    tool = binding()
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"text": "ok"}))
+    actions, plans, audit = router(root, definition(tool, executor))
+    call = invocation(tool)
+    original_save = plans.save_plan
+    calls = 0
+
+    def fail_once(plan: object) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise KernelError("injected_execution_store_failure", "故障注入")
+        original_save(plan)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(plans, "save_plan", fail_once)
+    with pytest.raises(KernelError) as interrupted:
+        actions.plan(call, context(root))
+    assert interrupted.value.code == "injected_execution_store_failure"
+    durable_route = actions.status(call.invocation_id)
+    with pytest.raises(KernelError) as missing:
+        plans.load_plan(call.invocation_id)
+    assert missing.value.code == "execution_plan_not_found"
+
+    target.write_text("changed-after-crash", encoding="utf-8")
+    repaired = actions.plan(call, context(root))
+
+    assert repaired == durable_route
+    assert plans.load_plan(call.invocation_id) == durable_route.plan.execution
+    assert calls == 2
+    plans.close()
+    audit.close()
+
+
+def test_plan_retry_rejects_reused_invocation_identity_with_other_arguments(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    (root / "other.txt").write_text("other", encoding="utf-8")
+    tool = binding()
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output=None))
+    actions, plans, audit = router(root, definition(tool, executor))
+    original = invocation(tool)
+    actions.plan(original, context(root))
+
+    with pytest.raises(KernelError) as conflict:
+        actions.plan(
+            original.model_copy(update={"arguments": {"path": "other.txt"}}),
+            context(root),
+        )
+
+    assert conflict.value.code == "action_invocation_conflict"
+    plans.close()
+    audit.close()
+
+
 async def test_write_requires_exact_approval_and_workspace_freshness(tmp_path: Path) -> None:
     root = tmp_path / "workspace"
     root.mkdir()
@@ -497,6 +593,33 @@ def test_registration_rejects_schema_substitution(tmp_path: Path) -> None:
     actions = TrustedActionRouter(plans=plans, audit=audit, workspace_root=lambda _: root)
     with pytest.raises((KernelError, ValidationError)):
         actions.register(definition(tool, executor))
+    plans.close()
+    audit.close()
+
+
+def test_register_many_does_not_publish_a_valid_prefix_on_later_conflict(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output=None))
+    existing = binding(source_id="existing")
+    fresh = binding(source_id="fresh")
+    plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+    audit = SQLiteActionAuditStore(tmp_path / "audit.db")
+    actions = TrustedActionRouter(plans=plans, audit=audit, workspace_root=lambda _: root)
+    actions.register(definition(existing, executor))
+
+    with pytest.raises(KernelError) as duplicate:
+        actions.register_many(
+            (
+                definition(fresh, executor),
+                definition(existing, executor),
+            )
+        )
+
+    assert duplicate.value.code == "trusted_tool_duplicate"
+    assert actions.bindings() == (existing,)
     plans.close()
     audit.close()
 

@@ -4,6 +4,7 @@ import io
 import json
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -59,6 +60,67 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
         assert store.active() == (snapshot.config_sha256, "primary")
         assert [event.operation for event in store.config_events()] == ["loaded", "activated"]
     assert CANARY not in (state / "product-config.db").read_bytes().decode("utf-8", errors="ignore")
+
+
+async def test_product_server_advertises_default_scoped_artifact_reader(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+    initialize = {
+        "jsonrpc": "2.0",
+        "id": "initialize-artifacts",
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "1.0",
+            "clientInfo": {"name": "product-artifact-test", "version": "1"},
+            "clientInstanceId": str(uuid4()),
+        },
+    }
+    initialized = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {},
+    }
+    read_missing_artifact = {
+        "jsonrpc": "2.0",
+        "id": "read-missing-artifact",
+        "method": "artifact/read",
+        "params": {
+            "threadId": str(uuid4()),
+            "artifactId": str(uuid4()),
+            "offset": 0,
+            "limit": 1,
+        },
+    }
+    source = io.BytesIO(
+        (json.dumps(initialize, separators=(",", ":")) + "\n").encode()
+        + (json.dumps(initialized, separators=(",", ":")) + "\n").encode()
+        + (json.dumps(read_missing_artifact, separators=(",", ":")) + "\n").encode()
+    )
+    output = io.BytesIO()
+
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=source,
+        output_stream=output,
+    )
+
+    messages = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert len(messages) == 2
+    capabilities = messages[0]["result"]["capabilities"]
+    assert capabilities["artifactPages"] is True
+    assert "artifact/read" in capabilities["methods"]
+    assert messages[1]["id"] == "read-missing-artifact"
+    assert messages[1]["error"]["data"]["code"] == "thread_not_found"
 
 
 async def test_provider_construction_failure_does_not_activate_config(

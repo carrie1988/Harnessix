@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 5
+code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
 owners:
   - core
 modules:
@@ -14,8 +14,10 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/trusted_actions/test_router.py
+  - tests/product_config/test_action_catalog.py
   - tests/trusted_actions/test_schemas.py
   - tests/mcp/test_runtime_actions.py
   - tests/mcp/test_server.py
@@ -38,8 +40,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` |
-| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明切片已实现；默认Coding Agent产品尚未统一装配该Router，也没有公网多租户控制面 |
+| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；0.9.1e1实现尚待提交并由全矩阵CI绑定最终Revision |
+| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；0.9.1e1已增加产品目录原子安装及Audit优先的幂等规划修复，默认产品尚未注册Patch/Process/Delivery，也没有公网多租户控制面 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1290,11 +1292,71 @@ uv run pytest \
 真实运行证据定位缺陷，再在同一提交修正文档或实现；不得把显式库装配写成默认产品能力，不得把Hash链
 写成不可篡改账本，也不得把`ExtensionActionPort`写成敌对代码Sandbox。
 
-## 42. 变更记录
+## 42. 0.9.1e1原子注册与幂等规划
+
+### 42.1 Router注册表发布
+
+[`TrustedActionRouter.register_many`](../../src/harnessix/trusted_actions/router.py)接收完整Definition集合，先对每个Binding做严格
+JSON往返、显式Schema/Decoder配对和Schema摘要校验，再一次检查批内重复及既有注册冲突。只有全集有效时才复制并替换
+`_definitions`；任何错误都保持旧注册表不变。单项`register`委托该方法，因此既有调用语义不分叉。
+
+```text
+checked = validate_every_definition(definitions)
+keys = identity(source, source_id, tool) for checked
+if duplicate_in_batch(keys) or collision_with_registry(keys): fail
+updated = copy(registry)
+updated.update(keys, checked)
+registry = updated                 # 唯一发布点
+```
+
+产品层[`ProductActionCatalog`](../../src/harnessix/product_config/action_catalog.py)在调用前还要求整个
+`builtin/harnessix.product`命名空间为空，并在发布后读取全部Binding核对精确集合。Router不导入Product Config，保持通用执行边界。
+
+### 42.2 规划持久化与恢复顺序
+
+规划内核已从过大的[`router.py`](../../src/harnessix/trusted_actions/router.py)提取到
+[`planning.py`](../../src/harnessix/trusted_actions/planning.py)，`TrustedActionRouter.plan`仍是稳定公共门面。新顺序以包含完整
+`ExecutionPlanV2`的Action Audit Route作为首个可恢复事实：
+
+```mermaid
+sequenceDiagram
+    participant C as Caller
+    participant P as planning.plan_action
+    participant A as Action Audit Store
+    participant E as Execution Plan Store
+    participant W as Workspace
+    C->>P: invocation + context
+    P->>A: load(invocation_id)
+    alt 不存在
+        P->>W: capture snapshot once
+        P->>P: normalize + resolve + policy + freeze route
+        P->>A: save complete route
+        P->>E: save embedded execution plan
+    else 精确存在
+        A-->>P: current route state
+        P->>E: idempotent save/repair embedded plan
+        P-->>C: current route without recapture
+    else 身份冲突
+        P-->>C: action_invocation_conflict
+    end
+```
+
+进程若在Audit提交后、Execution Plan Store提交前退出，同一规范Invocation重试会从Audit内嵌Plan修复第二个Store，不重新解析
+资源、捕获Workspace或决策Policy。若Route已经执行或结算，重试返回当前状态而非构造旧初态。相同Invocation ID绑定不同参数、
+Tool合同或Binding时稳定失败，不能借幂等入口替换已持久操作。
+
+### 42.3 证据与剩余边界
+
+[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖不重抓Workspace、跨Store故障修复和Invocation冲突；
+[`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖批量安装原子性、命名空间、过期与漂移。该切片尚未把
+Router注入默认Agent，e2必须建立唯一Gateway和审批投影后才能广告写Action。
+
+## 43. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |
-| 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
-| 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |
+| 5 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1本地实现：全集验证后原子发布注册表，Audit优先规划与跨Store崩溃修复；等待实现提交和全矩阵CI |
 | 4 | `097f23b24c03df0d9d5b540c5b65ddc12029e9f1` | 2026-09-12 | 将Hook现行事实下沉到独立模块设计，并登记捕获时授权、来源错配、输出接受与Action终态分歧及无租约恢复缺口 |
+| 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |
+| 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
+| 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |

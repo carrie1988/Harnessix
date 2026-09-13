@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 7a325f2ef11bb369f396c739992ea170cfcce8ac
+version: 2
+code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0041-process-output-artifact.md
   - docs/adr/0057-tool-result-model-view-and-artifact-binding.md
   - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/artifacts/test_contracts.py
   - tests/artifacts/test_store.py
@@ -29,6 +30,7 @@ related_tests:
   - tests/artifacts/test_process_output_crash.py
   - tests/artifacts/test_model_history.py
   - tests/artifacts/test_sdk.py
+  - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
@@ -41,9 +43,9 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan Diff、Batch Effect Diff、Process Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` |
+| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；默认产品组合变更尚待提交并由全矩阵CI绑定最终Revision |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
-| 默认产品装配 | 能力需要宿主显式装配；默认产品入口未统一启用，历史Coding Eval已显式使用Tool/Process Artifact |
+| 默认产品装配 | 0.9.1e1已在`run_product_stdio`创建Session绑定Store，并注入Tool、Agent和Scoped Protocol Reader；Patch/Process Artifact仍随对应Action能力待装配 |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
 
 Artifact不是通用对象存储，也不是外部副作用的事实账本。它保存模型或客户端需要按页读取的有界证据；
@@ -570,7 +572,7 @@ collect(limit, after):
 
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
-| 默认产品未统一装配Artifact | 薄CLI/App Server默认能力不能据库内实现推断为已开放 | 0.9.1产品装配与环境检查 |
+| 默认产品已装配Artifact，但无内建GC调度与容量指标 | 长期本地使用可能达到累计记录或磁盘上限 | 0.9.3容量基准与维护策略 |
 | 仅SQLite、单件1 MiB JSONL | 不适合远端协作、大型媒体或无限构建日志 | 1.x由真实需求驱动对象存储合同 |
 | Fork主动分页不解析原Owner | 子Thread可验证继承引用，但`read_artifact`不能直接取父Thread正文 | 0.9.1/0.9.4补权限安全闭环 |
 | TTL可能使历史不可继续 | 过期引用会在模型发网前失败，长会话和Fork受影响 | 0.9.3保留策略与Soak |
@@ -584,8 +586,37 @@ collect(limit, after):
 Artifact字段和状态属于本文；模型历史裁剪属于[Context模块设计](context.md)，Session事务和迁移框架属于
 [Session模块设计](session.md)，Batch/Process效果归属分别由后续Patch和Process模块设计维护。
 
-## 23. 变更记录
+## 23. 0.9.1e1默认产品所有权与分页链
+
+默认产品在[`run_product_stdio`](../../src/harnessix/product_config/server.py)内创建一个绑定
+`SQLiteSessionStore`的`SQLiteArtifactStore`，并把同一对象交给`CodingToolRuntime`、`AgentRuntime`和
+`ScopedProtocolArtifactReader`。这保证Tool完整捕获、Session引用提交、模型历史校验和客户端分页读取共享同一数据库及同一
+Artifact身份，而不是由三个组件各自打开不一致的存储。
+
+```mermaid
+sequenceDiagram
+    participant P as Product Composition
+    participant S as SQLiteSessionStore
+    participant A as SQLiteArtifactStore
+    participant T as CodingToolRuntime
+    participant R as AgentRuntime
+    participant G as ScopedProtocolArtifactReader
+    P->>S: initialize
+    P->>A: construct(session store)
+    P->>T: construct(artifacts=A)
+    P->>R: construct(artifacts=A, scoped_tools=T)
+    P->>G: construct(sessions=S, artifacts=A, access=T)
+    P->>P: activate config, then open stdio
+```
+
+初始化能力现在包含`artifact/read`与`artifactPages=true`。读取仍由Reader加载Thread并重新获得当前Workspace Scope，再调用Store
+核对Thread、Scope、Artifact、用途、摘要和Session反向引用；仅知道Artifact ID不能读取正文。Reader或任一Runtime构造失败时配置
+不激活、stdio不开放，已存在数据库事实保持可恢复。默认启用不等于无限存储：1 MiB单件上限、JSONL、TTL、累计行数、无调度GC和
+SQLite本地边界不变。
+
+## 24. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；等待实现提交和全矩阵CI |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |

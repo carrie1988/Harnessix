@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
-from uuid import UUID, uuid5
+from uuid import UUID
 
 from pydantic import BaseModel, JsonValue, ValidationError
 
@@ -25,14 +24,12 @@ from harnessix.domain.models import (
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionCapabilityEvidenceV2,
-    ExecutionIntent,
     SandboxBindingV2,
     SecretVersionBinding,
     ToolSourceKind,
     canonical_digest,
     execution_is_approved,
 )
-from harnessix.execution.planner import build_execution_plan_v2
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
@@ -45,28 +42,16 @@ from harnessix.trusted_actions.contracts import (
     CanonicalActionResource,
     CodingActionInvocation,
     TrustedToolBinding,
-    action_route_plan_fingerprint,
+)
+from harnessix.trusted_actions.planning import (
+    canonical_json_object,
+    decode_action_arguments,
+    plan_action,
 )
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
-from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
-
-_EXTERNAL_ACTION_NAMESPACE = UUID("03e94e61-ab1c-4af5-b3da-46bf017b07b2")
-_SENSITIVE_KEYS = frozenset(
-    {
-        "access_key",
-        "api_key",
-        "apikey",
-        "authorization",
-        "credential",
-        "password",
-        "private_key",
-        "secret",
-        "secret_key",
-        "token",
-    }
-)
+from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 
 def canonical_action_resource(
@@ -152,31 +137,20 @@ class TrustedActionRouter:
         self._definitions: dict[tuple[str, str, str], TrustedActionDefinition] = {}
 
     def register(self, definition: TrustedActionDefinition) -> None:
-        binding = TrustedToolBinding.model_validate_json(definition.binding.model_dump_json())
-        if (definition.input_schema is None) != (definition.decode_arguments is None):
-            raise KernelError(
-                "trusted_tool_decoder_invalid",
-                "显式Trusted Tool Schema必须同时提供参数解码器",
-            )
-        schema = (
-            definition.input_model.model_json_schema()
-            if definition.input_schema is None
-            else _canonical_json_object(definition.input_schema)
-        )
-        schema_digest = canonical_digest(schema)
-        if schema_digest != binding.input_schema_sha256:
-            raise KernelError("trusted_tool_schema_mismatch", "Trusted Tool输入Schema摘要不匹配")
-        key = (binding.source, binding.source_id, binding.tool)
-        if key in self._definitions:
+        self.register_many((definition,))
+
+    def register_many(self, definitions: Sequence[TrustedActionDefinition]) -> None:
+        """先验证全部定义与冲突，再一次发布注册表，避免目录安装留下部分集合。"""
+
+        checked = tuple(_validated_definition(item) for item in definitions)
+        keys = [
+            (item.binding.source, item.binding.source_id, item.binding.tool) for item in checked
+        ]
+        if len(keys) != len(set(keys)) or any(key in self._definitions for key in keys):
             raise KernelError("trusted_tool_duplicate", "Trusted Tool重复注册")
-        self._definitions[key] = TrustedActionDefinition(
-            binding=binding,
-            input_model=definition.input_model,
-            resolve=definition.resolve,
-            executor=definition.executor,
-            input_schema=schema if definition.input_schema is not None else None,
-            decode_arguments=definition.decode_arguments,
-        )
+        updated = dict(self._definitions)
+        updated.update(zip(keys, checked, strict=True))
+        self._definitions = updated
 
     def bindings(
         self, *, source: str | None = None, source_id: str | None = None
@@ -195,94 +169,14 @@ class TrustedActionRouter:
         """冻结Tool合同、资源、策略、Sandbox与Executor身份，拒绝明文Secret和能力漂移。"""
         checked = CodingActionInvocation.model_validate_json(invocation.model_dump_json())
         definition = self._definition(checked.source, checked.source_id, checked.tool)
-        binding = definition.binding
-        if (
-            checked.tool_version != binding.tool_version
-            or checked.tool_fingerprint != binding.tool_fingerprint
-        ):
-            raise KernelError("trusted_tool_contract_changed", "调用的Trusted Tool契约已经变化")
-        if _find_sensitive_path(checked.arguments) is not None:
-            raise KernelError("raw_secret_rejected", "Action参数包含疑似明文凭据字段")
-        try:
-            arguments = _decode_action_arguments(definition, checked.arguments)
-            dumped = arguments.model_dump(mode="json")
-            if type(dumped) is not dict:
-                raise ValueError
-            normalized = cast(dict[str, JsonValue], dumped)
-        except (ValidationError, ValueError, TypeError):
-            raise KernelError(
-                "tool_invalid_arguments", "Action参数不符合Trusted Tool契约"
-            ) from None
-        checked = checked.model_copy(update={"arguments": normalized})
-        if (
-            binding.effect_class in {EffectClass.NON_IDEMPOTENT_WRITE, EffectClass.DESTRUCTIVE}
-            and checked.idempotency_key is None
-        ):
-            raise KernelError("idempotency_key_required", "该Action必须携带幂等键")
-        resolved = definition.resolve(arguments, context)
-        resources = _canonical_resources(resolved.resources)
-        policy = self._policy.evaluate(binding, resources, context.sandbox, context.secrets)
-        snapshot = capture_workspace_snapshot(
-            context.workspace_root,
-            cwd=context.cwd,
-            resources=resolved.workspace_resources,
-            external_roots=context.external_roots,
-            platform=context.capabilities.platform,
+        return plan_action(
+            checked,
+            context,
+            definition,
+            policy=self._policy,
+            plans=self._plans,
+            audit=self._audit,
         )
-        intent = ExecutionIntent(
-            source=binding.source,
-            source_id=binding.source_id,
-            tool=binding.tool,
-            tool_version=binding.tool_version,
-            tool_fingerprint=binding.tool_fingerprint,
-            arguments=checked.arguments,
-            effect_class=binding.effect_class,
-            risk_level=binding.risk_level,
-            idempotency_key=checked.idempotency_key,
-        )
-        execution = build_execution_plan_v2(
-            intent,
-            snapshot,
-            environment=context.environment,
-            secrets=context.secrets,
-            sandbox=context.sandbox,
-            policy=policy,
-            capabilities=context.capabilities,
-            plan_id=checked.invocation_id,
-        )
-        external_action_id = (
-            uuid5(_EXTERNAL_ACTION_NAMESPACE, f"{checked.invocation_id}:{binding.binding_digest}")
-            if binding.recovery_mode == "external_reconcile"
-            else None
-        )
-        identities = [
-            (item.kind, item.access, item.identifier_sha256, item.attributes_sha256)
-            for item in resources
-        ]
-        candidate = ActionRoutePlan.model_construct(
-            _fields_set=None,
-            invocation=checked,
-            binding=binding,
-            resources=resources,
-            resources_sha256=canonical_digest(identities),
-            execution=execution,
-            external_action_id=external_action_id,
-            fingerprint="0" * 64,
-        )
-        route = ActionRoutePlan(
-            **candidate.model_dump(exclude={"fingerprint"}),
-            fingerprint=action_route_plan_fingerprint(candidate),
-        )
-        self._plans.save_plan(execution)
-        initial_state = cast(
-            ActionRouteState,
-            {
-                PolicyDecisionKind.DENY: "denied",
-                PolicyDecisionKind.REQUIRE_APPROVAL: "pending_approval",
-                PolicyDecisionKind.ALLOW: "ready",
-            }[policy.decision],
-        )
-        return self._audit.save_plan(route, initial_state=initial_state)
 
     def decide(self, plan_id: UUID, decision: ApprovalDecision) -> ActionRouteSnapshot:
         checked_decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
@@ -401,7 +295,7 @@ class TrustedActionRouter:
             )
             return outcome
         try:
-            arguments = _decode_action_arguments(definition, plan.invocation.arguments)
+            arguments = decode_action_arguments(definition, plan.invocation.arguments)
         except (KernelError, ValidationError, ValueError, TypeError):
             raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
         self._audit.transition(
@@ -586,74 +480,26 @@ class ExtensionActionPort:
         return current
 
 
-def _canonical_json_object(value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
-    try:
-        decoded = json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False))
-    except (TypeError, ValueError, RecursionError):
+def _validated_definition(definition: TrustedActionDefinition) -> TrustedActionDefinition:
+    binding = TrustedToolBinding.model_validate_json(definition.binding.model_dump_json())
+    if (definition.input_schema is None) != (definition.decode_arguments is None):
         raise KernelError(
-            "trusted_tool_schema_invalid", "Trusted Tool Schema不是规范JSON"
-        ) from None
-    if type(decoded) is not dict:
-        raise KernelError("trusted_tool_schema_invalid", "Trusted Tool Schema必须是JSON对象")
-    return cast(dict[str, JsonValue], decoded)
-
-
-def _decode_action_arguments(
-    definition: TrustedActionDefinition,
-    arguments: Mapping[str, JsonValue],
-) -> BaseModel:
-    copied = _canonical_json_object(arguments)
-    if definition.decode_arguments is not None:
-        decoded = definition.decode_arguments(copied)
-        if not isinstance(decoded, BaseModel):
-            raise TypeError("Trusted Tool参数解码器必须返回BaseModel")
-        return decoded
-    return definition.input_model.model_validate_json(
-        json.dumps(copied, ensure_ascii=False, allow_nan=False)
-    )
-
-
-def _canonical_resources(
-    resources: Sequence[CanonicalActionResource],
-) -> tuple[CanonicalActionResource, ...]:
-    try:
-        checked = tuple(
-            CanonicalActionResource.model_validate_json(item.model_dump_json())
-            for item in resources
+            "trusted_tool_decoder_invalid",
+            "显式Trusted Tool Schema必须同时提供参数解码器",
         )
-    except (ValidationError, ValueError, TypeError):
-        raise KernelError("action_resource_invalid", "Action规范资源无效") from None
-    selected = tuple(
-        sorted(
-            checked,
-            key=lambda item: (
-                item.kind,
-                item.access,
-                item.identifier_sha256,
-                item.attributes_sha256,
-            ),
-        )
+    schema = (
+        definition.input_model.model_json_schema()
+        if definition.input_schema is None
+        else canonical_json_object(definition.input_schema)
     )
-    if len(set(selected)) != len(selected):
-        raise KernelError("action_resource_duplicate", "Action规范资源重复")
-    return selected
-
-
-def _find_sensitive_path(value: object, path: str = "") -> str | None:
-    if isinstance(value, dict):
-        for key, child in value.items():
-            normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key).replace("-", "_")).lower()
-            current = f"{path}.{key}" if path else str(key)
-            if normalized in _SENSITIVE_KEYS or any(
-                normalized.endswith(f"_{sensitive}") for sensitive in _SENSITIVE_KEYS
-            ):
-                return current
-            found = _find_sensitive_path(child, current)
-            if found is not None:
-                return found
-    elif isinstance(value, list | tuple):
-        for index, child in enumerate(value):
-            found = _find_sensitive_path(child, f"{path}[{index}]")
-            if found is not None:
-                return found
-    return None
+    schema_digest = canonical_digest(schema)
+    if schema_digest != binding.input_schema_sha256:
+        raise KernelError("trusted_tool_schema_mismatch", "Trusted Tool输入Schema摘要不匹配")
+    return TrustedActionDefinition(
+        binding=binding,
+        input_model=definition.input_model,
+        resolve=definition.resolve,
+        executor=definition.executor,
+        input_schema=schema if definition.input_schema is not None else None,
+        decode_arguments=definition.decode_arguments,
+    )

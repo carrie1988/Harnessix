@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 5
+code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
 owners:
   - core
 modules:
@@ -10,7 +10,10 @@ modules:
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/product_config/test_action_contracts.py
+  - tests/product_config/test_action_catalog.py
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_migration_and_store.py
   - tests/product_config/test_product_contracts.py
@@ -31,22 +34,24 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor报告；构造Provider Bundle；执行安全Fallback；持久化配置及Fallback审计事实 |
+| 当前职责 | 严格加载和迁移产品配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor报告；构造Provider Bundle；执行安全Fallback；定义独立Product Action配置/能力报告并构造同源Action目录；持久化配置及Fallback审计事实 |
 | 非职责 | 不执行Agent Loop、Tool、Approval或Action；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
 | 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、自定义产品组合根和测试宿主 |
-| 下游依赖 | Model Provider、Secret Provider、Session、Coding Tool Runtime、App Server、SQLite和安全文件读取 |
+| 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口，在Windows使用原生Handle只读端口；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `93723773676349fbfbe0ef42c26d9000cce379c8` |
-| 当前完成度 | 0.9.1d配置合同、原子Writer、共享Preflight/Doctor及三平台只读启动已由CI 34735529084验收并关闭；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理和产品级Telemetry仍未完成 |
+| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；0.9.1e1实现尚待提交并由全矩阵CI绑定最终Revision |
+| 当前完成度 | 0.9.1d已关闭；0.9.1e1已完成Action配置/能力目录合同、Router原子注册/幂等规划和默认Artifact组合的本地实现与验证，等待实现提交及全矩阵CI；Patch、Process、Delivery默认装配仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
 [`migration.py`](../../src/harnessix/product_config/migration.py)、
 [`store.py`](../../src/harnessix/product_config/store.py)、
 [`runtime.py`](../../src/harnessix/product_config/runtime.py)、
+[`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py)、
+[`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py)、
 [`server.py`](../../src/harnessix/product_config/server.py)和
 [`cli.py`](../../src/harnessix/product_config/cli.py)的当前事实源。决策理由见
 [ADR 0075](../adr/0075-provider-profile-secret-and-safe-fallback.md)，历史研究证据见
@@ -134,7 +139,9 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | Fallback | 零暴露、三类失败、先审计后切换 | 是 | 熔断、健康评分、跨进程路由 |
 | 配置Store | Snapshot、active CAS、双Hash链 | 是 | 容量/保留策略、签名、备份编排 |
 | v1→v2迁移 | 文件锁、CAS、备份、原子替换 | CLI显式执行 | 配置DB与文件跨资源原子事务 |
-| stdio组合根 | Preflight后固定Workspace只读Tool产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
+| stdio组合根 | Preflight后固定Workspace只读Tool与Artifact产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
+| Product Action合同/目录 | 严格Action Config、固定Process Profile、短时能力报告、同源Descriptor/Binding目录 | e1仅建立合同，尚未注册高风险Action | e2～e4实际Gateway、Patch与Process装配 |
+| Artifact | Session绑定的SQLite Store、Tool/Agent共享Owner和Scoped协议Reader | 默认产品已启用`artifact/read` | GC调度、指标和长期容量治理 |
 | Telemetry | 稳定错误、诊断和审计可查询 | 未接入Observer | 指标、Trace、SLO和导出接口 |
 
 ## 5. 模块上下文与信任边界
@@ -1601,7 +1608,77 @@ Product Config模块现行设计满足以下条件时可判定DOC-1.4中的本�
 12. Telemetry、审计导出、Smoke或SLO进入默认产品；
 13. 相关Schema、示例、ADR、威胁模型或部署手册变化。
 
-## 48. 相关文档
+## 48. 0.9.1e1 Action合同、能力目录与默认Artifact组合
+
+### 48.1 需求与边界
+
+0.9.1e1解决的是“产品广告什么，Router就必须能以同一绑定执行什么”以及“大结果如何在默认产品中安全分页”两个前置问题。
+本切片不读取Action配置文件、不注册Patch/Process，也不改变Product Config v2；新增合同是独立版本面，避免为尚未稳定的高风险
+执行配置触发既有模型配置迁移。
+
+### 48.2 组件与字段
+
+| 源码/类型 | 重点字段 | 约束与用途 |
+|---|---|---|
+| [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) `ProductProcessProfile` | `container_engine`、`image`、`program`、`arguments`、`network_mode`、资源上限、`secret_refs` | Engine必须为绝对路径，镜像必须绑定SHA-256，v1网络固定`none`，参数和Secret引用有界、排序、唯一且不含Secret值 |
+| 同上 `ProductActionConfigV1` | `workspace_patch_enabled`、`process_profiles`、`config_sha256` | Patch功能门和固定Profile形成独立规范摘要；Profile按ID排序且唯一 |
+| 同上 `ProductActionCapabilityEvidence` | `status`、`reason_code`、`binding_digest`、`executor_evidence_digest`、`expires_at` | `verified`必须同时持有两个摘要，`omitted`不得持有；有效期最多600秒 |
+| 同上 `ProductActionCapabilityReport` | `config_sha256`、`capabilities`、`created_at`、`report_sha256` | 报告绑定精确Action配置并按能力ID排序唯一；创建时间必须落在每项证据有效区间内 |
+| [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py) `ProductActionCatalog` | `report`、`entries`、派生Descriptors | Verified集合必须与Entry集合精确相等；Schema、Tool Fingerprint、Binding和Evidence逐项闭合 |
+
+四份合同由[`generate_specs.py`](../../scripts/generate_specs.py)生成并提交到[`spec`](../../spec/)；严格往返、摘要防篡改、
+非法Profile、诚实省略和目录漂移分别由[`test_action_contracts.py`](../../tests/product_config/test_action_contracts.py)与
+[`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖。
+
+### 48.3 目录构造与安装时序
+
+```mermaid
+sequenceDiagram
+    participant B as Product Builder
+    participant C as ProductActionCatalog
+    participant R as Capability Report
+    participant T as TrustedActionRouter
+    B->>C: report + ordered entries
+    C->>R: strict round-trip and verified set
+    C->>C: verify binding/schema/fingerprint/evidence
+    B->>C: install(router)
+    C->>C: reject expired evidence
+    C->>T: assert harnessix.product namespace empty
+    C->>T: register_many(all definitions)
+    T->>T: validate all, publish registry once
+    C->>T: read exact installed bindings
+    C->>C: observed == expected
+```
+
+`ProductActionCatalog`属于产品组合层，因此放在`product_config`并单向依赖通用Router；若下沉到`trusted_actions`，会让领域路由
+反向依赖产品配置并制造依赖环。`definitions()`返回深复制的模型描述，调用者不能通过修改返回值改变目录内部事实。
+
+### 48.4 默认Artifact所有权
+
+[`run_product_stdio`](../../src/harnessix/product_config/server.py)在Session初始化后创建唯一`SQLiteArtifactStore`，并把同一实例注入
+`CodingToolRuntime`、`AgentRuntime`和`ScopedProtocolArtifactReader`。产品只有在这三个消费者均构造成功后才激活配置并开放stdio。
+初始化能力因此真实包含`artifact/read`与`artifactPages=true`，正文读取仍需重新验证Thread、Workspace Scope、Artifact摘要及Session
+反向引用，客户端不能提交Scope。
+
+```mermaid
+flowchart LR
+    Session[(sessions.db)] --> Artifact[SQLiteArtifactStore]
+    Artifact --> Tools[CodingToolRuntime]
+    Artifact --> Agent[AgentRuntime]
+    Artifact --> Reader[ScopedProtocolArtifactReader]
+    Reader --> Protocol[artifact/read]
+```
+
+### 48.5 失败、恢复与兼容
+
+- 目录任一Entry无效、重复，任一Verified/Omitted证据过期、报告来自未来，或命名空间被占用时，在公开部分注册前失败关闭；
+- `register_many`先验证全集，再一次替换内存注册表，避免半安装；
+- Artifact Reader构造失败时stdio不开放，已持久Session/Artifact事实不删除；
+- Product Config v2、既有迁移、Provider Fallback和三平台只读合同不变；
+- Windows只获得与平台中立的Artifact分页，不获得Patch、Process、Delivery或Git写能力；
+- e1完整实施流程、规划崩溃窗口和后续e2～e5边界见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)。
+
+## 49. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1618,3 +1695,11 @@ Product Config模块现行设计满足以下条件时可判定DOC-1.4中的本�
 - [App Server模块设计](app-server.md)
 - [Protocol模块设计](protocol.md)
 - [SDK模块设计](sdk.md)
+
+
+## 50. 变更记录
+
+| 文档版本 | 代码版本 | 日期 | 变更摘要 |
+|---:|---|---|---|
+| 5 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1本地实现：Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；等待实现提交和全矩阵CI |
+| 4 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 记录0.9.1d三平台只读产品链完成全矩阵CI验收 |

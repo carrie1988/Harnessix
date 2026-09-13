@@ -159,6 +159,12 @@ from harnessix.processes.supervision_contracts import (
     ProcessOutputObservation,
     ProcessSpec,
 )
+from harnessix.product_config.action_contracts import (
+    ProductActionCapabilityEvidence,
+    ProductActionCapabilityReport,
+    ProductActionConfigV1,
+    ProductProcessProfile,
+)
 from harnessix.product_config.contracts import (
     ConfigAuditEvent,
     ConfigMigrationReceipt,
@@ -267,6 +273,22 @@ def generate_specs(output: Path) -> None:
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
     write_json(output / "product-config-v1.schema.json", ProductConfigV1.model_json_schema())
     write_json(output / "product-config-v2.schema.json", ProductConfigV2.model_json_schema())
+    write_json(
+        output / "product-action-config-v1.schema.json",
+        ProductActionConfigV1.model_json_schema(),
+    )
+    write_json(
+        output / "product-action-capability-v1.schema.json",
+        ProductActionCapabilityEvidence.model_json_schema(),
+    )
+    write_json(
+        output / "product-action-capability-report-v1.schema.json",
+        ProductActionCapabilityReport.model_json_schema(),
+    )
+    write_json(
+        output / "product-process-profile-v1.schema.json",
+        ProductProcessProfile.model_json_schema(),
+    )
     write_json(output / "price-snapshot-v1.schema.json", PriceSnapshot.model_json_schema())
     write_json(output / "cost-report-v1.schema.json", CostReport.model_json_schema())
     write_json(output / "cost-report-v2.schema.json", CostReportV2.model_json_schema())

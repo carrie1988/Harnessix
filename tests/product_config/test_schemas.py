@@ -3,6 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from harnessix.product_config.action_contracts import (
+    ProductActionCapabilityEvidence,
+    ProductActionCapabilityReport,
+    ProductActionConfigV1,
+    ProductProcessProfile,
+)
 from harnessix.product_config.codec import decode_product_config_bytes
 from harnessix.product_config.contracts import (
     ConfigAuditEvent,
@@ -26,6 +32,14 @@ def test_committed_product_config_schemas_match_runtime_contracts() -> None:
     expected = {
         "product-config-v1.schema.json": ProductConfigV1.model_json_schema(),
         "product-config-v2.schema.json": ProductConfigV2.model_json_schema(),
+        "product-action-config-v1.schema.json": ProductActionConfigV1.model_json_schema(),
+        "product-action-capability-v1.schema.json": (
+            ProductActionCapabilityEvidence.model_json_schema()
+        ),
+        "product-action-capability-report-v1.schema.json": (
+            ProductActionCapabilityReport.model_json_schema()
+        ),
+        "product-process-profile-v1.schema.json": ProductProcessProfile.model_json_schema(),
         "product-config-snapshot-v1.schema.json": ProductConfigSnapshot.model_json_schema(),
         "profile-selection-v1.schema.json": ProfileSelection.model_json_schema(),
         "configuration-draft-v1.schema.json": ConfigurationDraft.model_json_schema(),

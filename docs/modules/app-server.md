@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 608c548feb909aa5ae572bab7db35859283d3d01
+version: 4
+code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
@@ -33,9 +34,9 @@ supersedes: []
 | 下游依赖 | Protocol合同/Codec/投影/请求账本、`AgentRuntime`、`SessionStore`、可选`ArtifactPageStore`与`ArtifactAccessScope` |
 | 持久化 | 模块自身不拥有独立数据库；命令终态写`ProtocolRequestStore`，Agent事实写`SessionStore`，Artifact由外部Store拥有 |
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
-| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、只读Coding Tool Runtime和Agent Runtime；当前默认不装配Artifact Reader |
-| 平台 | App Server Python逻辑无显式平台分支；默认产品因Coding Tool Runtime限制仍在Windows启动前失败，三平台产品证据尚未完成 |
-| 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
+| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、Agent Runtime和Scoped Artifact Reader |
+| 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口、Windows使用原生Handle四项只读端口，Artifact分页三平台通用 |
+| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；默认Artifact组合尚待提交并由全矩阵CI绑定最终Revision |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、有界关闭及薄CLI协商事件页上限已实现；Server侧协商Pending/Outbox/Replay贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
@@ -118,7 +119,7 @@ App Server存在的核心原因是建立一层薄而正式的应用边界，解�
 | Question/Approval方法 | 方法始终注册，真实结果取决于Runtime能力/状态 | 方法仍广告；默认Runtime未启用Question | 按Runtime能力细分方法广告 |
 | Replay | 已实现 | 已启用 | 数据库侧Limit分页与性能索引 |
 | Live Delta | 服务统一订阅；连接按`itemDeltas`决定是否下发 | SDK通常协商启用 | 全局内存预算、多订阅者或持久流 |
-| Artifact Read | 注入Scoped Reader后动态开放 | 当前未装配，因此不广告 | 默认产品Artifact闭环 |
+| Artifact Read | 注入Scoped Reader后动态开放 | 已装配，共享Session绑定Store并广告 | 读取消/Timeout和长期容量治理 |
 | stdio | 任意BinaryIO便于测试 | stdin/stdout JSONL | Socket/WebSocket/HTTP |
 | 关闭 | 服务宽限、Task取消、Writer收敛 | EOF触发 | 信号编排、强制Kill完整分层 |
 | 观测 | 依赖上层错误和持久事实 | 无App Server专用Telemetry装配 | 连接/队列/延迟/SLO |
@@ -712,8 +713,8 @@ Server构造时只有Reader非空才：
 - 把`artifact/read`加入`methods`；
 - 返回`artifactPages=true`。
 
-默认Product Config组合根当前没有创建Reader，所以产品模式不广告该能力。测试中的Artifact闭环属于显式
-装配库能力，不能写成默认产品已具备。
+默认Product Config组合根已创建Reader，因此产品模式广告该能力；自定义宿主若未注入Reader仍不会广告。
+能力广告继续由实际装配决定，不能只根据Artifact包存在推断。
 
 ## 18. 默认产品装配与所有权
 
@@ -1234,7 +1235,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - [x] Thread/Turn/Approval/Question方法及固定Workspace差异完整；
 - [x] Durable Replay、Live Delta、Gap、长轮询竞态和恢复完整；
 - [x] 单Reader/Writer、Semaphore、Outbox、EOF、慢客户端和关闭顺序完整；
-- [x] Artifact重新授权、默认产品不装配能力和取消缺口明确；
+- [x] Artifact重新授权、默认产品实际装配和取消缺口明确；
 - [x] 持久事实、内存状态、并发、线性化点和资源上限完整；
 - [x] 安全、隐私、可观测性和大规模运行限制未被夸大；
 - [x] 重点类、字段、伪代码、源码、测试、ADR和研究双向映射；
@@ -1258,10 +1259,39 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 重大语义变化先使用[重大变更设计模板](../governance/templates/change-design-template.md)评审。当前风险表中的
 实现缺口不得通过只修改ADR或宣传材料关闭；必须有生产实现、失败/恢复测试、真实场景验证和文档同步。
 
-## 34. 变更记录
+## 34. 0.9.1e1默认Artifact协议闭环
+
+Product Config组合根把同一Session绑定`SQLiteArtifactStore`注入Tool、Agent和
+[`ScopedProtocolArtifactReader`](../../src/harnessix/app_server/artifacts.py)，再把Reader传给
+`AgentApplicationService`。Server由真实Reader决定`artifact/read`方法和`artifactPages`能力，不引入静态谎报。
+
+```mermaid
+sequenceDiagram
+    participant C as SDK/CLI
+    participant S as AgentProtocolServer
+    participant R as ScopedProtocolArtifactReader
+    participant D as SessionStore
+    participant A as ArtifactStore
+    C->>S: initialize
+    S-->>C: methods includes artifact/read, artifactPages=true
+    C->>S: artifact/read(threadId, artifactId, offset, limit)
+    S->>R: bounded params
+    R->>D: load thread and workspace
+    R->>R: obtain current workspace scope
+    R->>A: read(thread, scope, artifact, page)
+    A-->>C: public ref + bounded text page
+```
+
+默认装配不改变Protocol v1请求/响应形状。未知Artifact、其他Thread/Scope、过期、损坏或缺少Session反向引用继续统一失败；
+客户端不能提交Workspace Scope。Reader仍使用内部`CancelToken`且没有连接级读Timeout，这是0.9.3之前保留的可靠性缺口。
+产品级测试[`test_product_server_advertises_default_scoped_artifact_reader`](../../tests/product_config/test_server_and_cli.py)在不发送
+模型请求的真实stdio生命周期内验证握手与读取路由。
+
+## 35. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 4 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 2026-09-13 | 同步0.9.1e1默认Artifact Reader、动态能力广告、Scope重新授权和剩余取消边界；等待实现提交和全矩阵CI |
 | 3 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
 | 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |
 | 1 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 建立App Server现行模块设计，覆盖连接、应用服务、stdio、Artifact、并发背压、关闭恢复、默认装配及真实实现差距 |

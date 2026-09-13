@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "ProductActionCapabilityEvidence": {
+      "additionalProperties": false,
+      "description": "一次有时效的能力证明或诚实省略事实。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-action-capability/v1",
+          "default": "harnessix.product-action-capability/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "capability_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Capability Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "artifact",
+            "workspace_patch",
+            "process_profile"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "omitted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "binding_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Binding Digest"
+        },
+        "executor_evidence_digest": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Executor Evidence Digest"
+        },
+        "probed_at": {
+          "format": "date-time",
+          "title": "Probed At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "evidence_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "capability_id",
+        "kind",
+        "status",
+        "reason_code",
+        "platform",
+        "probed_at",
+        "expires_at",
+        "evidence_sha256"
+      ],
+      "title": "ProductActionCapabilityEvidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "产品启动时唯一的Action能力广告与省略事实。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-action-capability-report/v1",
+      "default": "harnessix.product-action-capability-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "capabilities": {
+      "items": {
+        "$ref": "#/$defs/ProductActionCapabilityEvidence"
+      },
+      "maxItems": 64,
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "config_sha256",
+    "capabilities",
+    "created_at",
+    "report_sha256"
+  ],
+  "title": "ProductActionCapabilityReport",
+  "type": "object"
+}

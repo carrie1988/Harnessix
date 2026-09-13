@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 288,
-    "physical_lines": 62298,
-    "logical_lines": 55508,
-    "documented_modules": 288,
-    "classes": 748,
-    "documented_classes": 228,
-    "functions": 2462,
-    "documented_functions": 223,
+    "source_files": 291,
+    "physical_lines": 62888,
+    "logical_lines": 56019,
+    "documented_modules": 291,
+    "classes": 754,
+    "documented_classes": 234,
+    "functions": 2489,
+    "documented_functions": 228,
     "public_exports": 337,
     "public_contract_types": 156,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 170
+    "package_dependency_edges": 172
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -240,10 +240,6 @@
     {
       "path": "src/harnessix/skills/runtime.py",
       "lines": 644
-    },
-    {
-      "path": "src/harnessix/trusted_actions/router.py",
-      "lines": 659
     }
   ],
   "oversized_symbols": [
@@ -1759,8 +1755,8 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 137,
-      "lines": 379,
+      "line": 122,
+      "lines": 288,
       "documented": true
     },
     {
@@ -1957,6 +1953,7 @@
     "processes->workspace",
     "product_config->agent",
     "product_config->app_server",
+    "product_config->artifacts",
     "product_config->domain",
     "product_config->execution",
     "product_config->file_lock",
@@ -1965,6 +1962,7 @@
     "product_config->secrets",
     "product_config->session",
     "product_config->tools",
+    "product_config->trusted_actions",
     "product_config->workspace",
     "product_ui->file_lock",
     "product_ui->product_config",

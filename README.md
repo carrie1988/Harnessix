@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a客户端内核、0.9.1b基础Textual产品链和0.9.1c完整领域交互均已通过对应全矩阵CI。0.9.1d的Secret-free Configure、共享Preflight/Doctor和Windows原生四项只读链由主体实现`532e59b`与验证修复`9372377`交付，并由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收后正式关闭。统一Action产品装配、三平台发行物、安全供应链、Dogfooding和Provider发布证据仍待实施，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已完成Action配置/能力报告、同源目录、Router原子注册、Audit优先幂等规划和默认Artifact产品闭环的本地实现与验证，等待实现提交及全矩阵CI；Patch、Process、Delivery默认装配以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE
@@ -71,7 +71,7 @@ Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、G
 - Hooks只允许绑定宿主预注册的低风险只读Action；非Bundled定义在Registry捕获时需要精确摘要授权，`before_action`失败关闭，其他事件只记录，并具备Action执行超时、取消、哈希链和显式中断恢复；默认产品尚未接线。
 - 严格JSON v2把Provider、模型Profile和Environment Secret引用分层，提供有界安全读取、v1原子迁移、不可变配置快照、离线能力诊断和活动配置CAS；配置及审计不保存Secret值；
 - `SafeFallbackProvider`只在`transport/rate_limit/provider_internal`零响应暴露失败且审计成功后切换显式候选；任意响应、文本、Tool Call或未来未知事件均关闭Fallback窗口；
-- `harnessix agent-server`在macOS/Linux按配置装配双Provider、固定Workspace只读Coding Tools、Session和stdio App Server；Provider构造或配置CAS失败时不开放协议，Windows在原生Tool Runtime完成前显式失败关闭。
+- `harnessix agent-server`按配置装配Provider、固定Workspace跨平台只读Coding Tools、Session绑定Artifact和stdio App Server；Provider构造或配置CAS失败时不开放协议，Windows不广告Git或写入能力。
 
 0.8.4增加官方SDK驱动的MCP Client、不可变Tool目录、调用前Schema漂移检查、强Container stdio目标和可选低风险只读MCP Server；0.8.5增加不可执行Skill内容包、冲突消歧、跨平台安全渐进加载，以及精确授权的持久生命周期Hook；0.8.6完成模型Provider产品配置和内置stdio启动装配。所有准入Tool均由宿主Policy通过统一`ExtensionActionPort`进入Permission、Approval、Sandbox、审计和UNKNOWN恢复。远端MCP HTTP/OAuth、远端Skill安装、任意Shell Hook及公网Git认证仍未开放，分别进入0.9安全供应链和Dogfooding门禁。0.8仍不提供完整TUI、网络Agent Server或三平台安装器。MCP的当前目录、Schema、连接、UNKNOWN与可选Server边界见[MCP模块设计](docs/modules/mcp.md)；Skill的来源、目录、渐进加载、文件安全、访问账本和提示注入边界见[Skill模块设计](docs/modules/skills.md)；Hook的定义授权、匹配、状态、双账本、超时、取消和恢复边界见[Hook模块设计](docs/modules/hooks.md)；其他0.8设计与运行边界见[0.8详细设计](docs/m08-product-runtime-and-extensions.md)、[ADR 0075](docs/adr/0075-provider-profile-secret-and-safe-fallback.md)和[配置参考](docs/operations/configuration.md)。
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 3
+code_revision: c95a126e54d83be0e1fc22365df7a1577ffe51a8
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0057-tool-result-model-view-and-artifact-binding.md
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/tools/test_files.py
   - tests/tools/test_workspace.py
@@ -33,6 +34,7 @@ related_tests:
   - tests/tools/test_recovery.py
   - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_windows_native_runtime.py
+  - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
@@ -45,11 +47,11 @@ supersedes: []
 | 模块职责 | 向Agent提供绑定单一Workspace的有界只读文件、搜索、Git和Artifact读取能力 |
 | 核心门面 | `CodingToolRuntime` |
 | 默认工具 | `list_files`、`read_file`、`glob`、`grep` |
-| 显式能力 | 绑定Git可执行文件后增加`git_status`、`git_diff`；绑定Artifact Store后增加归档搜索和`read_artifact` |
+| 显式能力 | 绑定Git可执行文件后增加`git_status`、`git_diff`；绑定Artifact Store后增加归档搜索和`read_artifact`；默认产品现已绑定Artifact Store |
 | 权限来源 | 宿主构造的Workspace能力、版本化`ToolDescriptor`和Kernel注入的`ToolExecutionScope` |
 | 并发模型 | 单Runtime有界并行读取，默认4，合法范围1～16；持久结果仍由Agent按Provider调用顺序提交 |
-| 平台状态 | 当前安全Workspace实现要求POSIX及`O_NOFOLLOW`；Windows原生端口尚未完成 |
-| 代码版本 | `efc7d82062681469651925bff411134c95d89a01` |
+| 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle四工具端口；Windows不广告Git |
+| 代码版本 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8`；默认Artifact组合尚待提交并由全矩阵CI绑定最终Revision |
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
 Process、测试执行和事务性交付由各自的可信执行模块负责，不能通过本模块的`READ_ONLY`声明旁路。
@@ -94,8 +96,8 @@ Session事实，也不把未提交结果当作已经发生。
 3. 不提供全树原子快照、内容寻址文件系统或跨进程Workspace读锁；
 4. 不对同权限恶意宿主、管理员、挂载替换、inode重用或特殊网络文件系统提供安全证明；
 5. 不把5秒协作Deadline声明为不可中断内核I/O的硬超时；
-6. 不在默认产品装配中自动启用Artifact存储、任意Git路径或高风险执行能力；
-7. 当前不提供Windows原生安全Workspace实现；
+6. 默认产品只自动启用Session绑定Artifact存储，不自动启用任意Git路径或高风险执行能力；
+7. Windows已提供原生Handle只读Workspace端口，但不提供Git、写入、Process或Delivery；
 8. 不在工具层决定Agent重试、Turn恢复、模型历史裁剪或Artifact事务提交顺序。
 
 ## 4. 术语、信任边界与固定上限
@@ -838,7 +840,7 @@ close_runtime():
 
 `product_config.server`在启动默认App Server时先执行平台能力检查，再创建
 `CodingToolRuntime(workspace_root, git_executable=git_path)`，并以`scoped_tools`传入Agent Runtime。
-默认未传Artifact Store，因此只提供四个文件/搜索工具；Git也只有用户显式配置受信绝对路径时出现。
+默认产品现传入Session绑定Artifact Store，因此四个文件/搜索工具可归档有界完整搜索结果，并开放受Scope保护的Artifact读取；Git仍只有用户显式配置受信绝对路径时出现。
 产品状态目录与Workspace必须互不包含。
 
 ### 23.2 平台矩阵
@@ -872,7 +874,7 @@ Turn并排空在途调用；未完成调用若版本漂移会失败关闭。Arti
 | 搜索先收集候选再匹配 | 接近10000项时存在内存和首结果时延 | 0.9.3性能基准 |
 | 无跨进程Workspace读写锁 | 多Runtime或外部进程可引起`workspace_changed` | Workspace/Delivery后续治理 |
 | Git不是Sandbox且能力仅两项 | 不能安全扩展为任意Git操作 | 新Git能力必须独立威胁建模 |
-| 默认产品未装配Artifact | 长搜索只有有界预览，不能分页取全量 | 0.9.1产品装配 |
+| 默认产品Artifact无内建GC调度和容量指标 | 长期搜索归档会增长Session数据库 | 0.9.3容量治理 |
 | Fork继承Artifact不能由子Thread主动分页父正文 | 长历史分支可验证但可取回性受限 | 0.9.1/0.9.4 |
 | 工具层不输出独立资源指标 | 诊断依赖Agent Span和错误分类 | Observability模块治理 |
 
@@ -927,9 +929,21 @@ Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupp
 
 主体实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision为`93723773676349fbfbe0ef42c26d9000cce379c8`；[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成原生Windows与全矩阵验收。
 
-## 26. 变更记录
+## 26. 0.9.1e1默认Artifact接线
+
+[`run_product_stdio`](../../src/harnessix/product_config/server.py)创建一个Session绑定`SQLiteArtifactStore`并传入
+`CodingToolRuntime`。因此默认产品中的Glob/Grep不再只在预览上限处停止：存在Capture时可继续在既有扫描预算内生成完整、
+不完整或截断语义明确的JSONL Artifact，Tool Result仅携带有界预览和引用。相同Store同时由Agent提交引用、由Scoped Reader
+分页读取，客户端不能在Tool参数中伪造Thread或Workspace Scope。
+
+本变更没有新增Tool Descriptor，也没有改变四项Windows只读工具的Schema；Artifact是结果承载能力，不是文件写权限。
+[`test_product_server_advertises_default_scoped_artifact_reader`](../../tests/product_config/test_server_and_cli.py)通过真实stdio握手和
+`artifact/read`请求验证产品链，既有Tool/Artifact测试继续验证扫描预算、归属、摘要和取消语义。
+
+## 27. 变更记录
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 3 | `c95a126e54d83be0e1fc22365df7a1577ffe51a8` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；等待实现提交和全矩阵CI |
 | 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |
