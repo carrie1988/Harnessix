@@ -238,6 +238,7 @@ async def test_product_app_steers_then_explicitly_cancels_active_turn(tmp_path: 
                 steer.query_one("#steer-text", Input).value = "先运行测试"
                 await pilot.press("enter")
                 await _wait_until(lambda: store.state().next_command_sequence == 4)
+                await _wait_until(lambda: not app._intent_in_flight)
                 await pilot.press("ctrl+x")
                 await _wait_until(lambda: _turn_status(controller) == "cancelled")
                 assert store.state().next_command_sequence == 5
