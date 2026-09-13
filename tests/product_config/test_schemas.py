@@ -8,9 +8,12 @@ from harnessix.product_config.contracts import (
     ConfigAuditEvent,
     ConfigMigrationReceipt,
     ConfigurationDiagnosticReport,
+    ConfigurationDraft,
+    ConfigurationWriteReceipt,
     ProductConfigSnapshot,
     ProductConfigV1,
     ProductConfigV2,
+    ProductPreflightReport,
     ProfileSelection,
     ProviderFallbackDecision,
 )
@@ -23,9 +26,14 @@ def test_committed_product_config_schemas_match_runtime_contracts() -> None:
         "product-config-v2.schema.json": ProductConfigV2.model_json_schema(),
         "product-config-snapshot-v1.schema.json": ProductConfigSnapshot.model_json_schema(),
         "profile-selection-v1.schema.json": ProfileSelection.model_json_schema(),
+        "configuration-draft-v1.schema.json": ConfigurationDraft.model_json_schema(),
         "configuration-diagnostic-v1.schema.json": (
             ConfigurationDiagnosticReport.model_json_schema()
         ),
+        "configuration-write-receipt-v1.schema.json": (
+            ConfigurationWriteReceipt.model_json_schema()
+        ),
+        "product-preflight-v1.schema.json": ProductPreflightReport.model_json_schema(),
         "config-migration-receipt-v1.schema.json": ConfigMigrationReceipt.model_json_schema(),
         "config-audit-event-v1.schema.json": ConfigAuditEvent.model_json_schema(),
         "provider-fallback-decision-v1.schema.json": (ProviderFallbackDecision.model_json_schema()),

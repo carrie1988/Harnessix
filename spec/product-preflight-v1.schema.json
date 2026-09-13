@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "ConfigurationDiagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "enum": [
+            "config",
+            "profile",
+            "provider",
+            "secret",
+            "dependency"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "subject_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "code": {
+          "pattern": "^config_[a-z0-9_]{1,119}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "subject_id",
+        "code",
+        "status"
+      ],
+      "title": "ConfigurationDiagnostic",
+      "type": "object"
+    },
+    "ConfigurationDiagnosticReport": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.configuration-diagnostic/v1",
+          "default": "harnessix.configuration-diagnostic/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "config_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Config Sha256",
+          "type": "string"
+        },
+        "selection_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selection Sha256",
+          "type": "string"
+        },
+        "selected_profile": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Selected Profile",
+          "type": "string"
+        },
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/ConfigurationDiagnostic"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        },
+        "generated_at": {
+          "format": "date-time",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "report_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Report Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "config_sha256",
+        "selection_sha256",
+        "selected_profile",
+        "ready",
+        "checks",
+        "generated_at",
+        "report_sha256"
+      ],
+      "title": "ConfigurationDiagnosticReport",
+      "type": "object"
+    },
+    "ProductPreflightCheck": {
+      "additionalProperties": false,
+      "description": "一项不含原始异常或宿主路径的产品启动检查。",
+      "properties": {
+        "check_id": {
+          "pattern": "^product_[a-z0-9_]{1,119}$",
+          "title": "Check Id",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "config",
+            "profile",
+            "dependency",
+            "secret",
+            "workspace",
+            "state",
+            "platform",
+            "tui",
+            "git"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "requirement": {
+          "enum": [
+            "required",
+            "advisory"
+          ],
+          "title": "Requirement",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{1,127}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "remediation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remediation Id"
+        },
+        "duration_ms": {
+          "maximum": 300000,
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "check_id",
+        "category",
+        "requirement",
+        "status",
+        "code",
+        "duration_ms"
+      ],
+      "title": "ProductPreflightCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Preflight与Doctor共享的版本化、摘要绑定事实。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-preflight/v1",
+      "default": "harnessix.product-preflight/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "startup",
+        "doctor"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "workspace_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Fingerprint",
+      "type": "string"
+    },
+    "config_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Config Sha256"
+    },
+    "selected_profile": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Profile"
+    },
+    "configuration": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ConfigurationDiagnosticReport"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/ProductPreflightCheck"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Checks",
+      "type": "array"
+    },
+    "ready": {
+      "title": "Ready",
+      "type": "boolean"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "platform",
+    "workspace_fingerprint",
+    "checks",
+    "ready",
+    "generated_at",
+    "report_sha256"
+  ],
+  "title": "ProductPreflightReport",
+  "type": "object"
+}

@@ -1,0 +1,86 @@
+{
+  "additionalProperties": false,
+  "description": "配置向导的非敏感最小输入；API Key值不属于该合同。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.configuration-draft/v1",
+      "default": "harnessix.configuration-draft/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "provider_kind": {
+      "enum": [
+        "openai_chat",
+        "anthropic"
+      ],
+      "title": "Provider Kind",
+      "type": "string"
+    },
+    "provider_id": {
+      "default": "primary",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Provider Id",
+      "type": "string"
+    },
+    "profile_id": {
+      "default": "primary",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "base_url": {
+      "maxLength": 2048,
+      "title": "Base Url",
+      "type": "string"
+    },
+    "model": {
+      "maxLength": 256,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:/-]+$",
+      "title": "Model",
+      "type": "string"
+    },
+    "secret_name": {
+      "default": "model-api-key",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+      "title": "Secret Name",
+      "type": "string"
+    },
+    "secret_version": {
+      "default": "environment-v1",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Secret Version",
+      "type": "string"
+    },
+    "environment_variable": {
+      "default": "MODEL_API_KEY",
+      "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+      "title": "Environment Variable",
+      "type": "string"
+    },
+    "output_token_parameter": {
+      "anyOf": [
+        {
+          "enum": [
+            "max_completion_tokens",
+            "max_tokens"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Token Parameter"
+    }
+  },
+  "required": [
+    "provider_kind",
+    "base_url",
+    "model"
+  ],
+  "title": "ConfigurationDraft",
+  "type": "object"
+}

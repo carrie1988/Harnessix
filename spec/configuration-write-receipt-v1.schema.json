@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "description": "配置文件原子创建或CAS替换的脱敏收据。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.configuration-write-receipt/v1",
+      "default": "harnessix.configuration-write-receipt/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "created",
+        "replaced"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "previous_source_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Source Sha256"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Sha256",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Receipt Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "operation",
+    "source_sha256",
+    "config_sha256",
+    "occurred_at",
+    "receipt_sha256"
+  ],
+  "title": "ConfigurationWriteReceipt",
+  "type": "object"
+}
