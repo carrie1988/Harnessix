@@ -8,12 +8,14 @@ from pydantic import ValidationError
 from harnessix.product_config.contracts import (
     ConfigurationDiagnostic,
     ConfigurationDiagnosticReport,
+    diagnostic_report_digest,
+)
+from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
     ConfigurationWriteReceipt,
     ProductPreflightCheck,
     ProductPreflightReport,
     configuration_write_receipt_digest,
-    diagnostic_report_digest,
     product_preflight_report_digest,
 )
 

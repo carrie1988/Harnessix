@@ -43,20 +43,6 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
     path = write_config(tmp_path / "config.json", config)
     output = io.BytesIO()
 
-    if os.name == "nt":
-        with pytest.raises(KernelError) as error:
-            await run_product_stdio(
-                config_path=path,
-                profile_id=None,
-                workspace=workspace,
-                state_directory=state,
-                input_stream=io.BytesIO(),
-                output_stream=output,
-            )
-        assert error.value.code == "product_tools_platform_unsupported"
-        assert output.getvalue() == b"" and not state.exists()
-        return
-
     await run_product_stdio(
         config_path=path,
         profile_id=None,

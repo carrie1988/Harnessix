@@ -9,7 +9,7 @@ import os
 import stat
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from harnessix.agent.errors import KernelError
 from harnessix.workspace.contracts import ResourceAccess
@@ -71,6 +71,173 @@ class _Observed:
         self.content = content
         self.size = size
         self.entries = entries
+
+
+def _api_path(path: Path) -> str:
+    value = os.path.abspath(path)
+    if value.startswith("\\\\?\\"):
+        return value
+    if value.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + value[2:]
+    return "\\\\?\\" + value
+
+
+def _directory_body(
+    path: Path,
+    *,
+    checkpoint: Callable[[], None] | None,
+) -> tuple[
+    bytes,
+    int,
+    tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...],
+]:
+    entries: list[tuple[str, int, int, int]] = []
+    exposed: list[tuple[str, Literal["file", "directory", "symlink", "special"]]] = []
+    seen: set[str] = set()
+    with os.scandir(_api_path(path)) as iterator:
+        for entry in iterator:
+            if checkpoint is not None:
+                checkpoint()
+            if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
+                raise KernelError("workspace_snapshot_limit", "Windows目录观察超过条目上限")
+            # DirEntry.stat可能复用枚举缓存；显式stat才能绑定当前File Index。
+            info = os.stat(entry.path, follow_symlinks=False)
+            attributes = int(getattr(info, "st_file_attributes", 0))
+            if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+                kind = _FILE_ATTRIBUTE_REPARSE_POINT
+                exposed_kind: Literal["file", "directory", "symlink", "special"] = "symlink"
+            elif stat.S_ISDIR(info.st_mode):
+                kind = _FILE_ATTRIBUTE_DIRECTORY
+                exposed_kind = "directory"
+            else:
+                kind = 0
+                exposed_kind = "file" if stat.S_ISREG(info.st_mode) else "special"
+            folded = entry.name.casefold()
+            if folded in seen:
+                raise KernelError("workspace_path_denied", "Windows目录包含大小写折叠冲突")
+            seen.add(folded)
+            # 目录只绑定成员名称、类型和对象身份；文件内容由后续Handle观察单独绑定。
+            entries.append((folded, kind, info.st_dev, info.st_ino))
+            exposed.append((entry.name, exposed_kind))
+    entries.sort()
+    exposed.sort(key=lambda item: item[0].casefold())
+    return (
+        json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode(),
+        len(entries),
+        tuple(exposed),
+    )
+
+
+def _read_all(
+    kernel32: Any,
+    handle: int,
+    *,
+    max_bytes: int,
+    checkpoint: Callable[[], None] | None,
+) -> bytes:
+    body = bytearray()
+    while True:
+        if checkpoint is not None:
+            checkpoint()
+        remaining = max_bytes - len(body)
+        buffer = ctypes.create_string_buffer(min(65536, remaining + 1))
+        read = ctypes.c_uint32()
+        if not kernel32.ReadFile(handle, buffer, len(buffer), ctypes.byref(read), None):
+            error = _last_error()
+            raise OSError(error, os.strerror(error))
+        if read.value == 0:
+            return bytes(body)
+        body.extend(buffer.raw[: read.value])
+        if len(body) > max_bytes:
+            raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
+
+
+def _observe_missing(
+    root: WindowsWorkspaceRoot,
+    normalized: str,
+    checkpoint: Callable[[], None] | None,
+) -> _Observed:
+    parent, _, name = normalized.rpartition("/")
+    try:
+        handles, final_path = root._open_chain(parent or ".", checkpoint=checkpoint)
+    except OSError:
+        raise KernelError("workspace_parent_missing", "Windows缺失资源的父目录不存在") from None
+    try:
+        root._assert_under_root(final_path)
+        parent_info = root._information(handles[-1])
+        return _Observed(
+            "missing",
+            (*root._stable_identity(parent_info, directory=True), name or normalized),
+            None,
+            0,
+        )
+    finally:
+        root._close_all(handles)
+
+
+def _observe_file(
+    root: WindowsWorkspaceRoot,
+    handle: int,
+    before: _ByHandleFileInformation,
+    *,
+    include_content: bool,
+    max_bytes: int,
+    checkpoint: Callable[[], None] | None,
+) -> _Observed:
+    size = (before.size_high << 32) | before.size_low
+    if not include_content:
+        after = root._information(handle)
+        if root._revision_identity(before) != root._revision_identity(after):
+            raise KernelError("workspace_changed", "Windows文件在观察期间变化")
+        return _Observed("file", root._stable_identity(before, directory=False), None, size)
+    if size > max_bytes:
+        raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
+    content = _read_all(root._kernel32, handle, max_bytes=max_bytes, checkpoint=checkpoint)
+    after = root._information(handle)
+    if root._revision_identity(before) != root._revision_identity(after) or len(content) != size:
+        raise KernelError("workspace_changed", "Windows文件在观察期间变化")
+    return _Observed("file", root._stable_identity(before, directory=False), content, size)
+
+
+def _observe_opened(
+    root: WindowsWorkspaceRoot,
+    handles: list[int],
+    final_path: str,
+    normalized: str,
+    *,
+    include_content: bool,
+    max_bytes: int,
+    checkpoint: Callable[[], None] | None,
+) -> _Observed:
+    root._assert_under_root(final_path)
+    handle = handles[-1]
+    before = root._information(handle)
+    directory = bool(before.attributes & _FILE_ATTRIBUTE_DIRECTORY)
+    if not directory and before.links != 1:
+        raise KernelError("workspace_path_denied", "Windows文件具有多个硬链接")
+    if not directory:
+        return _observe_file(
+            root,
+            handle,
+            before,
+            include_content=include_content,
+            max_bytes=max_bytes,
+            checkpoint=checkpoint,
+        )
+    body, count, entries = _directory_body(
+        root.path / Path(*normalized.split("/")),
+        checkpoint=checkpoint,
+    )
+    after = root._information(handle)
+    if root._revision_identity(before) != root._revision_identity(after):
+        raise KernelError("workspace_changed", "Windows目录在观察期间变化")
+    return _Observed(
+        "directory",
+        (*root._stable_identity(before, directory=True), hashlib.sha256(body).hexdigest()),
+        body,
+        count,
+        entries,
+    )
 
 
 class WindowsWorkspaceRoot:
@@ -139,7 +306,7 @@ class WindowsWorkspaceRoot:
     def _open(self, path: Path, *, data: bool) -> int:
         access = _FILE_READ_ATTRIBUTES | (_FILE_READ_DATA if data else 0)
         handle = self._kernel32.CreateFileW(
-            self._api_path(path),
+            _api_path(path),
             access,
             _FILE_SHARE_READ,
             None,
@@ -223,150 +390,23 @@ class WindowsWorkspaceRoot:
                 or normalized == "."
             ):
                 raise KernelError("workspace_observation_failed", "Windows资源观察失败") from None
-            parent, _, name = normalized.rpartition("/")
-            try:
-                handles, final_path = self._open_chain(
-                    parent or ".",
-                    checkpoint=checkpoint,
-                )
-            except OSError:
-                raise KernelError(
-                    "workspace_parent_missing", "Windows缺失资源的父目录不存在"
-                ) from None
-            try:
-                self._assert_under_root(final_path)
-                parent_info = self._information(handles[-1])
-                return _Observed(
-                    "missing",
-                    (*self._stable_identity(parent_info, directory=True), name or normalized),
-                    None,
-                    0,
-                )
-            finally:
-                self._close_all(handles)
+            return _observe_missing(self, normalized, checkpoint)
         try:
-            self._assert_under_root(final_path)
-            handle = handles[-1]
-            before = self._information(handle)
-            directory = bool(before.attributes & _FILE_ATTRIBUTE_DIRECTORY)
-            if not directory and before.links != 1:
-                raise KernelError("workspace_path_denied", "Windows文件具有多个硬链接")
-            if directory:
-                body, count, entries = self._directory_body(
-                    self.path / Path(*normalized.split("/")),
-                    checkpoint=checkpoint,
-                )
-                after = self._information(handle)
-                if self._revision_identity(before) != self._revision_identity(after):
-                    raise KernelError("workspace_changed", "Windows目录在观察期间变化")
-                return _Observed(
-                    "directory",
-                    (
-                        *self._stable_identity(before, directory=True),
-                        hashlib.sha256(body).hexdigest(),
-                    ),
-                    body,
-                    count,
-                    entries,
-                )
-            size = (before.size_high << 32) | before.size_low
-            if not include_content:
-                after = self._information(handle)
-                if self._revision_identity(before) != self._revision_identity(after):
-                    raise KernelError("workspace_changed", "Windows文件在观察期间变化")
-                return _Observed(
-                    "file",
-                    self._stable_identity(before, directory=False),
-                    None,
-                    size,
-                )
-            if size > max_bytes:
-                raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
-            content = self._read_all(handle, max_bytes=max_bytes, checkpoint=checkpoint)
-            after = self._information(handle)
-            if (
-                self._revision_identity(before) != self._revision_identity(after)
-                or len(content) != size
-            ):
-                raise KernelError("workspace_changed", "Windows文件在观察期间变化")
-            return _Observed("file", self._stable_identity(before, directory=False), content, size)
+            return _observe_opened(
+                self,
+                handles,
+                final_path,
+                normalized,
+                include_content=include_content,
+                max_bytes=max_bytes,
+                checkpoint=checkpoint,
+            )
         except KernelError:
             raise
         except OSError:
             raise KernelError("workspace_observation_failed", "Windows资源观察失败") from None
         finally:
             self._close_all(handles)
-
-    def _directory_body(
-        self,
-        path: Path,
-        *,
-        checkpoint: Callable[[], None] | None,
-    ) -> tuple[
-        bytes,
-        int,
-        tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...],
-    ]:
-        entries: list[tuple[str, int, int, int]] = []
-        exposed: list[tuple[str, Literal["file", "directory", "symlink", "special"]]] = []
-        seen: set[str] = set()
-        with os.scandir(self._api_path(path)) as iterator:
-            for entry in iterator:
-                if checkpoint is not None:
-                    checkpoint()
-                if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
-                    raise KernelError("workspace_snapshot_limit", "Windows目录观察超过条目上限")
-                # Windows DirEntry.stat()对普通项可能复用FindFirstFileW缓存，显式os.stat
-                # 才能取得Python 3.12提供的当前File Index（st_ino）。
-                info = os.stat(entry.path, follow_symlinks=False)
-                attributes = int(getattr(info, "st_file_attributes", 0))
-                if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
-                    kind = _FILE_ATTRIBUTE_REPARSE_POINT
-                    exposed_kind: Literal["file", "directory", "symlink", "special"] = "symlink"
-                elif stat.S_ISDIR(info.st_mode):
-                    kind = _FILE_ATTRIBUTE_DIRECTORY
-                    exposed_kind = "directory"
-                else:
-                    kind = 0
-                    exposed_kind = "file" if stat.S_ISREG(info.st_mode) else "special"
-                folded = entry.name.casefold()
-                if folded in seen:
-                    raise KernelError("workspace_path_denied", "Windows目录包含大小写折叠冲突")
-                seen.add(folded)
-                # FindFirstFileW返回的时间和大小可能来自目录枚举缓存。目录资源只绑定
-                # 成员名称、类型和对象身份；被显式选择的文件另由句柄身份与内容摘要绑定。
-                entries.append((folded, kind, info.st_dev, info.st_ino))
-                exposed.append((entry.name, exposed_kind))
-        entries.sort()
-        exposed.sort(key=lambda item: item[0].casefold())
-        return (
-            json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode(),
-            len(entries),
-            tuple(exposed),
-        )
-
-    def _read_all(
-        self,
-        handle: int,
-        *,
-        max_bytes: int,
-        checkpoint: Callable[[], None] | None,
-    ) -> bytes:
-        body = bytearray()
-        while True:
-            if checkpoint is not None:
-                checkpoint()
-            remaining = max_bytes - len(body)
-            buffer = ctypes.create_string_buffer(min(65536, remaining + 1))
-            read = ctypes.c_uint32()
-            if not self._kernel32.ReadFile(handle, buffer, len(buffer), ctypes.byref(read), None):
-                error = _last_error()
-                raise OSError(error, os.strerror(error))
-            if read.value == 0:
-                return bytes(body)
-            body.extend(buffer.raw[: read.value])
-            if len(body) > max_bytes:
-                raise KernelError("workspace_snapshot_limit", "Windows文件超过快照上限")
 
     def _information(self, handle: int) -> _ByHandleFileInformation:
         info = _ByHandleFileInformation()
@@ -430,15 +470,6 @@ class WindowsWorkspaceRoot:
         if self._root_handle is not None:
             self._kernel32.CloseHandle(self._root_handle)
             self._root_handle = None
-
-    @staticmethod
-    def _api_path(path: Path) -> str:
-        value = os.path.abspath(path)
-        if value.startswith("\\\\?\\"):
-            return value
-        if value.startswith("\\\\"):
-            return "\\\\?\\UNC\\" + value[2:]
-        return "\\\\?\\" + value
 
 
 def windows_port_source_digest() -> str:

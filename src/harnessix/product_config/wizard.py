@@ -8,7 +8,7 @@ import stat
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Never
 from uuid import uuid4
 
 from harnessix.agent.errors import KernelError
@@ -20,16 +20,18 @@ from harnessix.product_config.codec import (
     read_product_config_bytes,
 )
 from harnessix.product_config.contracts import (
-    ConfigurationDraft,
-    ConfigurationWriteReceipt,
     EnvironmentSecretSourceConfig,
     ModelProfile,
     ProductConfigSnapshot,
     ProductConfigV2,
     ProviderDefinition,
     SecretReference,
-    configuration_write_receipt_digest,
     product_config_digest,
+)
+from harnessix.product_config.product_contracts import (
+    ConfigurationDraft,
+    ConfigurationWriteReceipt,
+    configuration_write_receipt_digest,
 )
 
 
@@ -41,6 +43,23 @@ class ConfigurationWriteRequest:
     draft: ConfigurationDraft
     expected_source_sha256: str | None = None
     replace: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedWrite:
+    config: ProductConfigV2
+    body: bytes
+    source_sha256: str
+    config_sha256: str
+    parent: Path
+    target: Path
+    temporary: Path
+
+
+@dataclass(slots=True)
+class _CommitState:
+    committed: bool = False
+    previous_source_sha256: str | None = None
 
 
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
@@ -184,6 +203,97 @@ def _validate_expected_digest(value: str | None) -> None:
         raise KernelError("product_config_write_invalid", "产品配置期望摘要无效")
 
 
+def _validate_write_request(request: ConfigurationWriteRequest) -> None:
+    _validate_expected_digest(request.expected_source_sha256)
+    if request.replace and request.expected_source_sha256 is None:
+        raise KernelError(
+            "product_config_expected_digest_required",
+            "替换产品配置必须提供源摘要",
+        )
+    if not request.replace and request.expected_source_sha256 is not None:
+        raise KernelError("product_config_write_invalid", "新建产品配置不能提供源摘要")
+    if not request.path.name or request.path.name in {".", ".."}:
+        raise KernelError("product_config_write_invalid", "产品配置写入路径无效")
+
+
+def _prepare_write(request: ConfigurationWriteRequest) -> _PreparedWrite:
+    _validate_write_request(request)
+    config = ProductConfigV2.model_validate_json(
+        build_product_config(request.draft).model_dump_json(),
+        strict=True,
+    )
+    body = canonical_product_config_bytes(config)
+    parent = _prepare_private_parent(request.path.absolute())
+    target = parent / request.path.name
+    return _PreparedWrite(
+        config=config,
+        body=body,
+        source_sha256=hashlib.sha256(body).hexdigest(),
+        config_sha256=product_config_digest(config),
+        parent=parent,
+        target=target,
+        temporary=parent / f".{target.name}.{uuid4().hex}.tmp",
+    )
+
+
+def _validate_target(
+    request: ConfigurationWriteRequest,
+    prepared: _PreparedWrite,
+    state: _CommitState,
+) -> None:
+    exists = prepared.target.exists() or _is_link_or_junction(prepared.target)
+    if not request.replace and exists:
+        raise KernelError("product_config_exists", "产品配置已存在")
+    if request.replace and not exists:
+        raise KernelError("product_config_conflict", "待替换产品配置不存在")
+    if request.replace:
+        state.previous_source_sha256 = hashlib.sha256(
+            read_product_config_bytes(prepared.target)
+        ).hexdigest()
+        if state.previous_source_sha256 != request.expected_source_sha256:
+            raise KernelError("product_config_conflict", "产品配置源摘要已变化")
+
+
+def _commit_configuration(
+    request: ConfigurationWriteRequest,
+    prepared: _PreparedWrite,
+    state: _CommitState,
+    trigger: Callable[[str], None],
+) -> None:
+    _validate_target(request, prepared, state)
+    _write_private_file(prepared.temporary, prepared.body)
+    trigger("configuration.after_temporary_fsync")
+    if request.replace:
+        current = hashlib.sha256(read_product_config_bytes(prepared.target)).hexdigest()
+        if current != request.expected_source_sha256:
+            raise KernelError("product_config_conflict", "产品配置在写入期间发生变化")
+        os.replace(prepared.temporary, prepared.target)
+    else:
+        os.link(prepared.temporary, prepared.target)
+        prepared.temporary.unlink()
+    state.committed = True
+    _sync_directory(prepared.parent)
+    trigger("configuration.after_replace_fsync")
+
+
+def _verify_commit(prepared: _PreparedWrite) -> None:
+    reopened = load_product_config(prepared.target)
+    if not isinstance(reopened, ProductConfigSnapshot) or (
+        reopened.source_sha256 != prepared.source_sha256
+        or reopened.config_sha256 != prepared.config_sha256
+        or reopened.config != prepared.config
+    ):
+        raise KernelError("product_config_commit_unknown", "产品配置提交结果无法确认")
+
+
+def _raise_write_failure(committed: bool, *, target_exists: bool = False) -> Never:
+    if committed:
+        raise KernelError("product_config_commit_unknown", "产品配置提交结果无法确认") from None
+    if target_exists:
+        raise KernelError("product_config_exists", "产品配置已存在") from None
+    raise KernelError("product_config_write_failed", "产品配置写入未完成") from None
+
+
 def _receipt(
     *,
     operation: Literal["created", "replaced"],
@@ -212,88 +322,32 @@ def write_product_config(
 ) -> ConfigurationWriteReceipt:
     """在私有目录中创建配置，或按源字节摘要CAS替换现有配置。"""
 
-    _validate_expected_digest(request.expected_source_sha256)
-    if request.replace and request.expected_source_sha256 is None:
-        raise KernelError(
-            "product_config_expected_digest_required",
-            "替换产品配置必须提供源摘要",
-        )
-    if not request.replace and request.expected_source_sha256 is not None:
-        raise KernelError("product_config_write_invalid", "新建产品配置不能提供源摘要")
-    if not request.path.name or request.path.name in {".", ".."}:
-        raise KernelError("product_config_write_invalid", "产品配置写入路径无效")
-
-    config = ProductConfigV2.model_validate_json(
-        build_product_config(request.draft).model_dump_json(),
-        strict=True,
-    )
-    body = canonical_product_config_bytes(config)
-    source_sha256 = hashlib.sha256(body).hexdigest()
-    config_sha256 = product_config_digest(config)
-    parent = _prepare_private_parent(request.path.absolute())
-    target = parent / request.path.name
-    lock_descriptor = _open_lock(parent / f".{target.name}.configure.lock")
-    temporary = parent / f".{target.name}.{uuid4().hex}.tmp"
+    prepared = _prepare_write(request)
+    lock_descriptor = _open_lock(prepared.parent / f".{prepared.target.name}.configure.lock")
     trigger = fault or (lambda _: None)
-    committed = False
-    previous_source_sha256: str | None = None
+    state = _CommitState()
     try:
-        target_exists = target.exists() or _is_link_or_junction(target)
-        if not request.replace and target_exists:
-            raise KernelError("product_config_exists", "产品配置已存在")
-        if request.replace and not target_exists:
-            raise KernelError("product_config_conflict", "待替换产品配置不存在")
-        if request.replace:
-            previous_source_sha256 = hashlib.sha256(read_product_config_bytes(target)).hexdigest()
-            if previous_source_sha256 != request.expected_source_sha256:
-                raise KernelError("product_config_conflict", "产品配置源摘要已变化")
-
-        _write_private_file(temporary, body)
-        trigger("configuration.after_temporary_fsync")
-        if request.replace:
-            current_sha256 = hashlib.sha256(read_product_config_bytes(target)).hexdigest()
-            if current_sha256 != request.expected_source_sha256:
-                raise KernelError("product_config_conflict", "产品配置在写入期间发生变化")
-            os.replace(temporary, target)
-        else:
-            os.link(temporary, target)
-            temporary.unlink()
-        committed = True
-        _sync_directory(parent)
-        trigger("configuration.after_replace_fsync")
-
-        reopened = load_product_config(target)
-        if not isinstance(reopened, ProductConfigSnapshot) or (
-            reopened.source_sha256 != source_sha256
-            or reopened.config_sha256 != config_sha256
-            or reopened.config != config
-        ):
-            raise KernelError("product_config_commit_unknown", "产品配置提交结果无法确认")
+        _commit_configuration(request, prepared, state, trigger)
+        _verify_commit(prepared)
         return _receipt(
             operation="replaced" if request.replace else "created",
-            previous_source_sha256=previous_source_sha256,
-            source_sha256=source_sha256,
-            config_sha256=config_sha256,
+            previous_source_sha256=state.previous_source_sha256,
+            source_sha256=prepared.source_sha256,
+            config_sha256=prepared.config_sha256,
         )
     except KernelError:
-        if committed:
-            raise KernelError("product_config_commit_unknown", "产品配置提交结果无法确认") from None
+        if state.committed:
+            _raise_write_failure(True)
         raise
     except FileExistsError:
-        if committed:
-            raise KernelError("product_config_commit_unknown", "产品配置提交结果无法确认") from None
-        raise KernelError("product_config_exists", "产品配置已存在") from None
+        _raise_write_failure(state.committed, target_exists=True)
     except OSError:
-        code = "product_config_commit_unknown" if committed else "product_config_write_failed"
-        message = "产品配置提交结果无法确认" if committed else "产品配置写入未完成"
-        raise KernelError(code, message) from None
+        _raise_write_failure(state.committed)
     except Exception:
-        code = "product_config_commit_unknown" if committed else "product_config_write_failed"
-        message = "产品配置提交结果无法确认" if committed else "产品配置写入未完成"
-        raise KernelError(code, message) from None
+        _raise_write_failure(state.committed)
     finally:
         try:
-            temporary.unlink()
+            prepared.temporary.unlink()
         except OSError:
             pass
         try:

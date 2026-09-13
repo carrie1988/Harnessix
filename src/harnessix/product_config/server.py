@@ -15,6 +15,7 @@ from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
+from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.runtime import (
     build_provider_bundle,
     diagnose_configuration,
@@ -61,14 +62,6 @@ def _workspace_root(path: str | Path) -> Path:
     return root
 
 
-def _require_coding_tool_platform() -> None:
-    if os.name != "posix" or not hasattr(os, "O_NOFOLLOW"):
-        raise KernelError(
-            "product_tools_platform_unsupported",
-            "内置只读Coding Tool Runtime当前不支持该宿主平台",
-        )
-
-
 def _configuration_file(path: str | Path) -> Path:
     try:
         return Path(path).resolve(strict=True)
@@ -90,6 +83,25 @@ def _git_path(path: str | Path) -> Path:
     return executable
 
 
+def _preflight_request(
+    *,
+    config_path: str | Path,
+    profile_id: str | None,
+    workspace: str | Path,
+    state_directory: str | Path,
+    git_executable: str | Path | None,
+) -> ProductPreflightRequest:
+    return ProductPreflightRequest(
+        mode="startup",
+        config_path=Path(config_path).absolute(),
+        profile_id=profile_id,
+        workspace=Path(workspace).absolute(),
+        state_directory=Path(state_directory).absolute(),
+        git_executable=Path(git_executable).absolute() if git_executable is not None else None,
+        require_tui=False,
+    )
+
+
 async def run_product_stdio(
     *,
     config_path: str | Path,
@@ -102,6 +114,22 @@ async def run_product_stdio(
     expected_active_profile: str | None = None,
     git_executable: str | Path | None = None,
 ) -> None:
+    request = _preflight_request(
+        config_path=config_path,
+        profile_id=profile_id,
+        workspace=workspace,
+        state_directory=state_directory,
+        git_executable=git_executable,
+    )
+    preflight = await asyncio.to_thread(run_product_preflight, request)
+    if not preflight.ready:
+        blocker = next(
+            item
+            for item in preflight.checks
+            if item.requirement == "required" and item.status != "passed"
+        )
+        raise KernelError(blocker.code, "产品启动预检未通过")
+
     loaded = load_product_config(config_path)
     if not isinstance(loaded, ProductConfigSnapshot):
         raise KernelError("product_config_migration_required", "产品配置必须先迁移到v2")
@@ -119,7 +147,6 @@ async def run_product_stdio(
         state_candidate
     ):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
-    _require_coding_tool_platform()
     state_root = await asyncio.to_thread(_private_root, state_directory)
     if state_root.is_relative_to(workspace_root) or workspace_root.is_relative_to(state_root):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")

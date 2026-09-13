@@ -160,6 +160,166 @@ def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) ->
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _ReadBackend:
+    workspace: Workspace | None
+    windows: WindowsReadRuntime | None
+    implementation: str
+
+
+def _build_read_backend(
+    root: Path,
+    denied_paths: tuple[str, ...],
+    git_executable: Path | None,
+) -> _ReadBackend:
+    if os.name == "nt":
+        if git_executable is not None:
+            raise KernelError(
+                "product_git_platform_unsupported",
+                "Windows原生Git读取尚未开放",
+            )
+        from harnessix.tools.windows_read import WindowsReadRuntime
+
+        return _ReadBackend(
+            workspace=None,
+            windows=WindowsReadRuntime(root, denied_paths=denied_paths),
+            implementation="coding-read/windows-v1",
+        )
+    if os.name == "posix" and hasattr(os, "O_NOFOLLOW"):
+        return _ReadBackend(
+            workspace=Workspace(root, denied_paths=denied_paths),
+            windows=None,
+            implementation="coding-read/v1",
+        )
+    raise KernelError(
+        "product_tools_platform_unsupported",
+        "内置只读Coding Tool Runtime不支持该宿主平台",
+    )
+
+
+def _descriptor(
+    binding: _ReadBinding,
+    contract: str,
+    *,
+    require_approval: bool,
+) -> ToolDescriptor:
+    return ToolDescriptor(
+        name=binding.name,
+        version=f"1.{contract}",
+        description=binding.description,
+        input_schema=binding.input_model.model_json_schema(),
+        effect_class=EffectClass.READ_ONLY,
+        risk_level=RiskLevel.LOW,
+        requires_idempotency=False,
+        requires_approval=require_approval,
+        supports_reconciliation=False,
+        supports_parallel_calls=True,
+    )
+
+
+def _binding_rules(
+    binding: _ReadBinding,
+    *,
+    implementation: str,
+    scope: str,
+    max_concurrent_reads: int,
+    artifacts: SQLiteArtifactStore | None,
+    git_runtime: git.GitReadRuntime | None,
+) -> dict[str, object]:
+    rules: dict[str, object] = {
+        "implementation": implementation,
+        "scope": scope,
+        "input": binding.input_model.model_json_schema(),
+        "output": binding.output_model.model_json_schema(),
+        "concurrency": "parallel_read",
+        "max_concurrent_reads": max_concurrent_reads,
+        "max_text_bytes": MAX_TEXT_BYTES,
+        "max_line_bytes": MAX_LINE_BYTES,
+        "max_scan_bytes": MAX_SCAN_BYTES,
+        "max_directory_entries": MAX_DIRECTORY_ENTRIES,
+        "max_result_bytes": MAX_RESULT_BYTES,
+        "timeout": READ_TIMEOUT_SECONDS,
+    }
+    if issubclass(binding.input_model, SearchInput):
+        rules["search"] = search.execution_contract()
+        if artifacts is not None:
+            rules["artifacts"] = artifacts.contract()
+            output = ArchivedGlobOutput if binding.name == "glob" else ArchivedGrepOutput
+            rules["output"] = output.model_json_schema()
+    if binding in _GIT_BINDINGS:
+        assert git_runtime is not None
+        rules.update(implementation="git-read/v1", git=git_runtime.contract())
+    return rules
+
+
+def _artifact_descriptor(
+    scope: str,
+    artifacts: SQLiteArtifactStore,
+    max_concurrent_reads: int,
+    *,
+    require_approval: bool,
+) -> ToolDescriptor:
+    contract = digest(
+        {
+            "scope": scope,
+            "artifacts": artifacts.contract(),
+            "input": ReadArtifactInput.model_json_schema(),
+            "output": ArtifactPage.model_json_schema(),
+            "concurrency": "parallel_read",
+            "max_concurrent_reads": max_concurrent_reads,
+        }
+    )
+    return ToolDescriptor(
+        name="read_artifact",
+        version=f"1.{contract}",
+        description="分页读取当前会话/工作区的 JSONL Artifact；过期或损坏明确失败",
+        input_schema=ReadArtifactInput.model_json_schema(),
+        effect_class=EffectClass.READ_ONLY,
+        risk_level=RiskLevel.LOW,
+        requires_idempotency=False,
+        requires_approval=require_approval,
+        supports_reconciliation=False,
+        supports_parallel_calls=True,
+    )
+
+
+def _build_definitions(
+    *,
+    scope: str,
+    implementation: str,
+    max_concurrent_reads: int,
+    require_approval: bool,
+    artifacts: SQLiteArtifactStore | None,
+    git_runtime: git.GitReadRuntime | None,
+) -> dict[str, ToolDescriptor]:
+    bindings = (*_BINDINGS, *(_GIT_BINDINGS if git_runtime is not None else ()))
+    definitions = {
+        binding.name: _descriptor(
+            binding,
+            digest(
+                _binding_rules(
+                    binding,
+                    implementation=implementation,
+                    scope=scope,
+                    max_concurrent_reads=max_concurrent_reads,
+                    artifacts=artifacts,
+                    git_runtime=git_runtime,
+                )
+            ),
+            require_approval=require_approval,
+        )
+        for binding in bindings
+    }
+    if artifacts is not None:
+        definitions["read_artifact"] = _artifact_descriptor(
+            scope,
+            artifacts,
+            max_concurrent_reads,
+            require_approval=require_approval,
+        )
+    return definitions
+
+
 class CodingToolRuntime:
     """固定只读绑定；宿主拥有能力选择，Kernel 拥有审批与调度。"""
 
@@ -175,102 +335,25 @@ class CodingToolRuntime:
     ) -> None:
         if type(max_concurrent_reads) is not int or not 1 <= max_concurrent_reads <= 16:
             raise KernelError("tool_concurrency_invalid", "只读工具并发上限必须在1到16之间")
-        self._workspace: Workspace | None = None
-        self._windows: WindowsReadRuntime | None = None
-        if os.name == "nt":
-            if git_executable is not None:
-                raise KernelError(
-                    "product_git_platform_unsupported",
-                    "Windows原生Git读取尚未开放",
-                )
-            from harnessix.tools.windows_read import WindowsReadRuntime
-
-            self._windows = WindowsReadRuntime(root, denied_paths=denied_paths)
-            read_implementation = "coding-read/windows-v1"
-        elif os.name == "posix" and hasattr(os, "O_NOFOLLOW"):
-            self._workspace = Workspace(root, denied_paths=denied_paths)
-            read_implementation = "coding-read/v1"
-        else:
-            raise KernelError(
-                "product_tools_platform_unsupported",
-                "内置只读Coding Tool Runtime不支持该宿主平台",
-            )
+        backend = _build_read_backend(root, denied_paths, git_executable)
+        self._workspace = backend.workspace
+        self._windows = backend.windows
         self._max_concurrent_reads = max_concurrent_reads
         self._lock = asyncio.BoundedSemaphore(max_concurrent_reads)
         self._closed = False
         self._artifacts = artifacts
-        self._git = None
+        self._git: git.GitReadRuntime | None = None
         if git_executable is not None:
             assert self._workspace is not None
             self._git = git.GitReadRuntime(self._workspace.root, git_executable)
-        self._definitions: dict[str, ToolDescriptor] = {}
-        bindings = (*_BINDINGS, *(_GIT_BINDINGS if self._git is not None else ()))
-        for binding in bindings:
-            rules: dict[str, object] = {
-                "implementation": read_implementation,
-                "scope": self.workspace_scope,
-                "input": binding.input_model.model_json_schema(),
-                "output": binding.output_model.model_json_schema(),
-                "concurrency": "parallel_read",
-                "max_concurrent_reads": max_concurrent_reads,
-                "max_text_bytes": MAX_TEXT_BYTES,
-                "max_line_bytes": MAX_LINE_BYTES,
-                "max_scan_bytes": MAX_SCAN_BYTES,
-                "max_directory_entries": MAX_DIRECTORY_ENTRIES,
-                "max_result_bytes": MAX_RESULT_BYTES,
-                "timeout": READ_TIMEOUT_SECONDS,
-            }
-            if issubclass(binding.input_model, SearchInput):
-                rules["search"] = search.execution_contract()
-                if artifacts is not None:
-                    rules["artifacts"] = artifacts.contract()
-                    output_model = (
-                        ArchivedGlobOutput if binding.name == "glob" else ArchivedGrepOutput
-                    )
-                    rules["output"] = output_model.model_json_schema()
-            if binding in _GIT_BINDINGS:
-                assert self._git is not None
-                rules = {
-                    **rules,
-                    "implementation": "git-read/v1",
-                    "git": self._git.contract(),
-                }
-            contract = digest(rules)
-            self._definitions[binding.name] = ToolDescriptor(
-                name=binding.name,
-                version=f"1.{contract}",
-                description=binding.description,
-                input_schema=binding.input_model.model_json_schema(),
-                effect_class=EffectClass.READ_ONLY,
-                risk_level=RiskLevel.LOW,
-                requires_idempotency=False,
-                requires_approval=require_approval,
-                supports_reconciliation=False,
-                supports_parallel_calls=True,
-            )
-        if artifacts is not None:
-            contract = digest(
-                {
-                    "scope": self.workspace_scope,
-                    "artifacts": artifacts.contract(),
-                    "input": ReadArtifactInput.model_json_schema(),
-                    "output": ArtifactPage.model_json_schema(),
-                    "concurrency": "parallel_read",
-                    "max_concurrent_reads": max_concurrent_reads,
-                }
-            )
-            self._definitions["read_artifact"] = ToolDescriptor(
-                name="read_artifact",
-                version=f"1.{contract}",
-                description="分页读取当前会话/工作区的 JSONL Artifact；过期或损坏明确失败",
-                input_schema=ReadArtifactInput.model_json_schema(),
-                effect_class=EffectClass.READ_ONLY,
-                risk_level=RiskLevel.LOW,
-                requires_idempotency=False,
-                requires_approval=require_approval,
-                supports_reconciliation=False,
-                supports_parallel_calls=True,
-            )
+        self._definitions = _build_definitions(
+            scope=self.workspace_scope,
+            implementation=backend.implementation,
+            max_concurrent_reads=max_concurrent_reads,
+            require_approval=require_approval,
+            artifacts=artifacts,
+            git_runtime=self._git,
+        )
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
         return tuple(d.model_copy(deep=True) for d in self._definitions.values())

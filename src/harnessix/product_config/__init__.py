@@ -5,22 +5,24 @@ from harnessix.product_config.contracts import (
     ConfigMigrationReceipt,
     ConfigurationDiagnostic,
     ConfigurationDiagnosticReport,
-    ConfigurationDraft,
-    ConfigurationWriteReceipt,
     EnvironmentSecretSourceConfig,
     ModelCapabilities,
     ModelProfile,
     ProductConfigSnapshot,
     ProductConfigV1,
     ProductConfigV2,
-    ProductPreflightCheck,
-    ProductPreflightReport,
     ProfileSelection,
     ProviderDefinition,
     ProviderFallbackDecision,
     SecretReference,
 )
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
+from harnessix.product_config.product_contracts import (
+    ConfigurationDraft,
+    ConfigurationWriteReceipt,
+    ProductPreflightCheck,
+    ProductPreflightReport,
+)
 from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     build_product_config,

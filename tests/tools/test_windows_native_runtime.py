@@ -93,6 +93,19 @@ async def test_windows_runtime_rejects_junction_and_explicit_git(tmp_path: Path)
         outside.rmdir()
 
 
+async def test_windows_runtime_rejects_ads_reserved_names_and_hardlinks(tmp_path: Path) -> None:
+    original = tmp_path / "original.txt"
+    alias = tmp_path / "alias.txt"
+    original.write_text("canary", encoding="utf-8")
+    os.link(original, alias)
+
+    async with CodingToolRuntime(tmp_path) as tools:
+        for path in ("original.txt:secret", "CON", "C:/outside.txt", "alias.txt"):
+            denied = await execute(tools, path=path)
+            assert denied.error.code == "tool_path_denied"
+            assert "canary" not in denied.model_dump_json()
+
+
 async def test_windows_runtime_close_rejects_followup_calls(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("content", encoding="utf-8")
     tools = CodingToolRuntime(tmp_path)

@@ -163,14 +163,16 @@ from harnessix.product_config.contracts import (
     ConfigAuditEvent,
     ConfigMigrationReceipt,
     ConfigurationDiagnosticReport,
-    ConfigurationDraft,
-    ConfigurationWriteReceipt,
     ProductConfigSnapshot,
     ProductConfigV1,
     ProductConfigV2,
-    ProductPreflightReport,
     ProfileSelection,
     ProviderFallbackDecision,
+)
+from harnessix.product_config.product_contracts import (
+    ConfigurationDraft,
+    ConfigurationWriteReceipt,
+    ProductPreflightReport,
 )
 from harnessix.protocol.contracts import (
     AgentCommandParams,

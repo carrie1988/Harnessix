@@ -8,12 +8,12 @@ from pathlib import Path
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.product_config.contracts import (
-    ProductConfigV2,
+from harnessix.product_config.contracts import ProductConfigV2
+from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
+from harnessix.product_config.product_contracts import (
     ProductPreflightCheck,
     ProductPreflightReport,
 )
-from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from tests.product_config.conftest import write_config
 from tests.product_config.test_migration_and_store import legacy_body
 

@@ -207,6 +207,9 @@ def test_links_binary_limits_and_cancellation_fail_closed(
         with pytest.raises(ReadToolError) as binary:
             runtime.read_file(ReadFileInput(path="binary"), ReadOperation())
         assert binary.value.code == "binary_file"
+        with pytest.raises(ReadToolError) as timed_out:
+            runtime.list_files(ListFilesInput(), ReadOperation(timeout_seconds=1e-9))
+        assert timed_out.value.code == "timeout"
         operation = ReadOperation()
         operation.stopped.set()
         with pytest.raises(TurnCancelled):

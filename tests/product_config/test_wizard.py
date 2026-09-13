@@ -3,17 +3,19 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 
 import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import (
-    ConfigurationDraft,
     ProductConfigSnapshot,
     product_config_digest,
 )
+from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     _open_lock,
@@ -128,6 +130,39 @@ def test_lock_contention_is_retryable_and_does_not_write_target(tmp_path: Path) 
         assert not path.exists()
     finally:
         os.close(descriptor)
+
+
+def test_concurrent_creators_allow_exactly_one_commit(tmp_path: Path) -> None:
+    path = tmp_path / "config.json"
+    temporary_ready = Event()
+    release_writer = Event()
+
+    def pause_after_temporary_sync(point: str) -> None:
+        if point == "configuration.after_temporary_fsync":
+            temporary_ready.set()
+            assert release_writer.wait(timeout=5)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(
+            write_product_config,
+            ConfigurationWriteRequest(path=path, draft=_draft()),
+            fault=pause_after_temporary_sync,
+        )
+        assert temporary_ready.wait(timeout=5)
+        second = pool.submit(
+            write_product_config,
+            ConfigurationWriteRequest(path=path, draft=_draft(model="gpt-second")),
+        )
+        with pytest.raises(KernelError) as blocked:
+            second.result(timeout=5)
+        release_writer.set()
+        receipt = first.result(timeout=5)
+
+    assert blocked.value.code == "product_config_lock_timeout"
+    assert receipt.operation == "created"
+    loaded = load_product_config(path)
+    assert isinstance(loaded, ProductConfigSnapshot)
+    assert loaded.config.profiles[0].model == "gpt-test"
 
 
 def test_rejects_linked_parent_and_lock(tmp_path: Path) -> None:
