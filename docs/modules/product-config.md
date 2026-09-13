@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 4
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -39,8 +39,8 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口，在Windows使用原生Handle只读端口；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `532e59b346f50657518d11225102bc6999c301e6` |
-| 当前完成度 | 0.9.1d配置合同、原子Writer、共享Preflight/Doctor及三平台只读启动代码已完成本地验收，等待Windows原生CI后关闭；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理和产品级Telemetry仍未完成 |
+| 代码版本 | `93723773676349fbfbe0ef42c26d9000cce379c8` |
+| 当前完成度 | 0.9.1d配置合同、原子Writer、共享Preflight/Doctor及三平台只读启动已由CI 34735529084验收并关闭；动态Secret强版本证明、配置与审计跨资源原子性、异步Store、容量治理和产品级Telemetry仍未完成 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1150,7 +1150,7 @@ Secret、Provider SDK或平台能力时，子进程保持现行失败关闭语�
 | `product_config_store_corrupt` | Snapshot、active、事件正文/链/Head损坏 | 否 | 停机，从一致备份恢复并审计 |
 | `product_config_fallback_invalid` | 决策不属于配置展开图 | 否 | 修复Bundle/Store绑定，不手工追加 |
 | `product_state_overlap` | State与Workspace互相包含 | 否 | 移到Workspace外独立私有目录 |
-| `product_tools_platform_unsupported` | 非POSIX或缺少`O_NOFOLLOW` | 否 | 当前使用受支持宿主；等待Windows产品端口 |
+| `product_tools_platform_unsupported` | 未知平台或原生读取端口不可用 | 否 | 使用已验证的POSIX/Windows宿主并检查系统能力 |
 | Provider `ResponseFailed` | 模型流失败 | 条件式 | 仅满足Safe Fallback全部条件时切换 |
 
 部分SQLite `OperationalError`、`DatabaseError`或关闭后`ProgrammingError`没有在Store公共方法统一映射为Kernel错误；
@@ -1494,8 +1494,9 @@ Config摘要、Profile ID和不可逆Workspace指纹；不包含绝对路径、�
 - [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)：Server在创建持久状态前预检，进入组件生命周期后再次校验；
 - [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py)：Configure不读取Secret值、Doctor只读、显式替换及Start在TUI加载前失败。
 
-当前实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`。本地Ruff、合同生成、Mypy和产品配置/Product UI/Workspace/Windows Adapter专项测试已通过；
-Windows真实Handle、Server/SDK与全矩阵CI仍是0.9.1d关闭前置条件。
+主体实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision为
+`93723773676349fbfbe0ef42c26d9000cce379c8`。Windows真实Handle、Server/SDK及全矩阵
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已通过，0.9.1d正式关闭。
 
 ## 44. 设计取舍
 

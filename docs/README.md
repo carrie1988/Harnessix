@@ -2,7 +2,7 @@
 doc_type: governance-index
 status: current
 version: 48
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Controller、无头UI、真实stdio恢复以及Linux Python 3.12/3.13、macOS和Windows矩阵验收并正式关闭。0.9.1c已经交付Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭。0.9.1d已完成[专项源码研究](research/configuration-preflight-and-windows-read-runtime.md)、[ADR 0079](adr/0079-preflight-and-native-read-port.md)、[详细设计](changes/m09-1d-configuration-preflight-windows-read.md)及实现`532e59b`：Secret-free Configure、共享Preflight/Doctor和Windows原生四项只读产品链已通过本地验证，等待三平台CI后关闭。统一Action装配、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)验收，0.9.1b基础Textual产品链已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验收，0.9.1c完整领域交互已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)验收。0.9.1d的Secret-free Configure、共享Preflight/Doctor和Windows原生四项只读产品链由主体实现`532e59b`及验证修复`9372377`交付，并经[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收后正式关闭。统一Action装配、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -145,7 +145,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md) | 评审中；0.9.1a、0.9.1b和0.9.1c已关闭；0.9.1d实现及本地验证完成、等待三平台CI；统一Action装配尚待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md) | 评审中；0.9.1a～0.9.1d已关闭；统一Action装配尚待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

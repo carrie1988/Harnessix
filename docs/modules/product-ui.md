@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 11
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - product
 modules:
@@ -872,7 +872,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - 未知Client State版本失败关闭，当前不提供自动迁移器；未来迁移必须保留备份、摘要CAS和收据；
 - 回退代码前可删除整个客户端状态目录并从服务端Thread列表及Cursor 0恢复，但会生成新的Client Instance命名空间；
 - 0.9.1b接入时必须由产品边界提供稳定、规范的Workspace身份，并确保客户端状态目录与Workspace不重叠；
-- Client State与产品CLI均使用跨平台文件合同；0.9.1d已经接入Windows原生只读Coding Tool候选链，正式支持声明仍等待原生Windows全矩阵CI。
+- Client State与产品CLI均使用跨平台文件合同；0.9.1d已经接入并通过CI 34735529084验证Windows原生只读Coding Tool链；完整Windows支持仍需写入、Process、Delivery和发行验收。
 
 ## 16. 已知限制、风险与后续差距
 
@@ -886,7 +886,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | 状态文件无自动迁移/备份 | v1升级必须新增正式迁移流程 | 首次Schema变更前 |
 | Session普通Request无统一外层Deadline | Actor操作可能直到整体关闭时限才转为未知 | 0.9.3 |
 | 当前没有产品层Telemetry适配 | 只能通过Connection/Controller状态和错误码诊断 | 0.9.3 |
-| Windows原生只读产品链尚待当前提交CI | 本地POSIX和假端口不能替代真实Handle/Server证据 | 0.9.1d关闭门禁 |
+| Windows只读以外能力尚未装配 | 当前证据不覆盖Windows写入、Process、Delivery与发行物 | 0.9.1e、0.9.5 |
 | 协议没有价格适用性和金额 | UI只能显示Token与费用未知，不能提供精确成本 | 0.9.6发布证据 |
 | Approval Evidence不持久化 | 重启后必须重新读取Artifact，不能离线沿用旧Diff | 安全设计，不计划放宽 |
 
@@ -929,13 +929,14 @@ sequenceDiagram
 
 默认人类报告只显示稳定检查ID、分类、状态、代码、修复动作和摘要。JSON报告适合自动化支持包，但同样不含绝对路径、
 环境值和原始异常。Server端不信任客户端Preflight；子进程启动后执行同源检查并继续完成原有严格重校验。实现绑定
-`532e59b346f50657518d11225102bc6999c301e6`，原生Windows产品CI通过前保持候选状态。
+`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`
+已由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成原生Windows产品验收。
 
 ## 18. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 11 | `532e59b346f50657518d11225102bc6999c301e6` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读候选等待CI |
+| 11 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读链通过CI 34735529084 |
 | 10 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收，正式关闭完整领域交互子切片 |
 | 9 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：冻结交互身份、Artifact完整证据、发送前复核、Plan/Tool/Usage渲染、专用Modal、错误自助及65项Product UI验证；等待实现Revision与三平台CI |
 | 8 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录实现与四次稳定化提交通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵，正式关闭0.9.1b |

@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 3
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | Action Plane SQLite/inline | 可用 | 单机开发和受控部署；默认监听`127.0.0.1` |
 | Action Plane PostgreSQL/queued | 可用 | API与Worker共享数据库；仍需外置认证、TLS和编排 |
 | Coding Agent stdio Server | 三平台只读候选 | 启动前运行共享Preflight，Server在开放stdio前再次校验 |
-| Windows底层端口 | 四项只读候选 | 原生Handle实现List/Read/Glob/Grep；显式Git、写入和交付仍失败关闭 |
+| Windows底层端口 | 四项只读已验证 | 原生Handle实现List/Read/Glob/Grep并经CI 34735529084验收；显式Git、写入和交付仍失败关闭 |
 | 容器Action Plane | 可构建 | 当前`Dockerfile`不包含模型Provider可选依赖，不是Agent镜像 |
 | 完整TUI与三平台安装器 | TUI已实现，安装器未实现 | TUI仍缺统一Action装配和长期Dogfooding；安装器属于后续发布切片 |
 | 远程多租户Agent服务 | 非1.0范围 | 当前本地优先，不开放公共网络Agent Server |
@@ -239,7 +239,7 @@ uv run harnessix agent-server \
 
 - 项目包版本仍为`0.1.0`，路线图完成度与发布包语义版本尚未统一；
 - 没有官方macOS/Linux/Windows安装器、自动更新器、签名、来源证明和SBOM；
-- Windows当前只支持原生List/Read/Glob/Grep候选链；Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
+- Windows当前只支持已验证的原生List/Read/Glob/Grep链；Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
 - Action Plane HTTP API没有内置认证、授权、TLS、速率限制或租户来源绑定；
 - 当前容器只覆盖Action Plane基础依赖，不包含OpenAI、Anthropic或完整Coding Tool环境；
 - 已有离线统一`code doctor`；在线备份、数据库修复和自动回滚命令仍未实现；

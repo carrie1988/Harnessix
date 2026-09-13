@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 13
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -747,7 +747,7 @@ return memoized_sanitized_close_report()
 | Windows Workspace | [`workspace/windows.py`](../../src/harnessix/workspace/windows.py)、[`tools/windows_read.py`](../../src/harnessix/tools/windows_read.py)及拆分实现 | `WindowsWorkspaceRoot`、`WindowsReadRuntime`、`WindowsReadPort`，保留统一Tool合同 | [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)跨平台合同；[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)原生对象安全与四工具纵向测试 |
 | 统一Action装配 | [`trusted_actions`](../../src/harnessix/trusted_actions/)、[`delivery`](../../src/harnessix/delivery/)、[`processes`](../../src/harnessix/processes/) | `TrustedActionRouter`及现有Executor/Store端口 | 现有模块测试 + 计划产品端到端场景 |
 
-Windows Workspace行已经由0.9.1d实现并等待原生CI验收；统一Action行仍是0.9.1e计划路径。Controller、Rendering、
+Windows Workspace行已经由0.9.1d实现并经原生CI 34735529084验收；统一Action行仍是0.9.1e计划路径。Controller、Rendering、
 Textual View、产品CLI和stdio恢复行是0.9.1b以来的当前实现入口。
 
 ### 15.2 文档同步矩阵
@@ -889,6 +889,7 @@ Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真
 路线图0.9.1保持未完成。
 
 
-0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d实现`532e59b`已交付Secret-free配置向导、共享Preflight/Doctor、
-Windows原生List/Read/Glob/Grep端口和默认启动装配，并完成本地失败恢复与文档同步；Windows原生及全矩阵CI通过前保持候选。
+0.9.1a～0.9.1d已关闭；0.9.1d主体实现`532e59b`已交付Secret-free配置向导、共享Preflight/Doctor、
+Windows原生List/Read/Glob/Grep端口和默认启动装配，最终验证Revision `9372377`已由
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成Windows原生及全矩阵验收。
 0.9.1e统一Action默认装配仍未实现，不能从只读产品链推断写入、Process或Delivery已经可用。

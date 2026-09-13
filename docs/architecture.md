@@ -2,7 +2,7 @@
 doc_type: system-architecture
 status: current
 version: 39
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -783,7 +783,7 @@ sequenceDiagram
 | Action API排队 | `harnessix serve` + `harnessix worker` | PostgreSQL优先 | 服务部署环境 | Lease Worker执行 |
 | Eval/Smoke | 独立CLI子命令 | 报告/临时状态 | 显式启用 | 受控验证，不是常驻服务 |
 
-Windows已经实现原生Handle四项只读Tool并接入默认启动候选；当前全矩阵CI完成前不得写成“Windows产品已支持”，Git读取、写入、安装器和长期运行仍未关闭。安装、升级、备份和命令参数见[部署与运行](deployment.md)。
+Windows原生Handle四项只读Tool已接入默认启动并由CI 34735529084完成真实Runner验收；该证据不等于完整Windows产品支持，Git读取、写入、安装器和长期运行仍未关闭。安装、升级、备份和命令参数见[部署与运行](deployment.md)。
 
 ## 18. 核心业务伪代码
 
@@ -882,7 +882,7 @@ if UNKNOWN: require reconcile instead of blind replay
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
 | 默认产品未装配写工具、Process和Delivery | 代码库能力无法直接形成端到端Coding Agent写入链 | 0.9.1 |
-| Windows原生只读候选等待CI，且无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.1d、0.9.5 |
+| Windows原生只读链已验证，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.1e、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
 | 供应链、SBOM、攻击测试和权利链未闭环 | 不满足正式商用发布门槛 | 0.9.4 |

@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 4
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 ## 1. 适用范围
 
-本文描述代码Revision `532e59b346f50657518d11225102bc6999c301e6`的源码安装、开发环境、本地Wheel和Action Plane容器路径。0.9.1b的既有路径已由
+本文描述代码Revision `93723773676349fbfbe0ef42c26d9000cce379c8`的源码安装、开发环境、本地Wheel和Action Plane容器路径。0.9.1b的既有路径已由
 [CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)验证；0.9.1d新增Configure、Doctor与Windows
 原生只读候选仍等待本轮全矩阵CI。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
@@ -64,7 +64,7 @@ flowchart TD
     Configure --> Diagnose[code doctor离线预检]
     Diagnose --> Platform{macOS/Linux/Windows?}
     Platform -- macOS/Linux --> Posix[POSIX只读Runtime]
-    Platform -- Windows --> Win[Handle只读候选；Git失败关闭]
+    Platform -- Windows --> Win[Handle只读已验证；Git失败关闭]
 ```
 
 当前没有可直接下载的官方二进制。任何第三方Wheel、镜像或安装脚本必须单独核对来源、Revision、许可证和摘要。
@@ -142,7 +142,7 @@ LangGraph或TUI Extras；验收某项能力时必须显式安装相应Extra，�
 - 没有Release签名、来源证明、SBOM或可复现构建声明；
 - 没有PyPI发布证据；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
-- Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；0.9.1d只提供原生四项只读候选。
+- Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；0.9.1d仅验证原生四项只读能力。
 
 ## 6. Action Plane容器
 

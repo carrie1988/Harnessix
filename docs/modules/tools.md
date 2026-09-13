@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 2
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -847,7 +847,7 @@ close_runtime():
 |---|---|---|
 | macOS | 当前支持POSIX只读Runtime | 本地套件及macOS CI |
 | Linux | 当前支持POSIX只读Runtime | Python 3.12/3.13 CI |
-| Windows | 原生Handle只读候选支持`list_files/read_file/glob/grep`；Git不广告 | Fake Port合同测试与Windows真实Runner测试；当前提交等待CI |
+| Windows | 原生Handle只读支持`list_files/read_file/glob/grep`并已通过真实Runner；Git不广告 | Fake Port合同测试与Windows真实Runner/Server/SDK测试；CI 34735529084通过 |
 | WSL2 | 可作为Linux环境使用，不等于Windows原生支持 | 平台边界见ADR 0063 |
 
 Windows实现通过`WindowsWorkspaceRoot`逐段Handle身份与Reparse拒绝建立根能力，不复用POSIX FD，也不以
@@ -864,7 +864,7 @@ Turn并排空在途调用；未完成调用若版本漂移会失败关闭。Arti
 
 | 限制/风险 | 当前影响 | 路线图归属 |
 |---|---|---|
-| Windows原生只读链尚待当前提交CI | 本地假端口不能替代真实Handle与Server生命周期证据 | 0.9.1d关闭门禁 |
+| Windows只读以外能力未装配 | 当前证据不覆盖Windows Git、写入、Process或Delivery | 0.9.1e、0.9.5 |
 | Workspace不是OS Sandbox | 同权限恶意代码可攻击宿主文件和进程边界 | 0.9.4及Sandbox模块 |
 | 协作Deadline不能终止永久内核阻塞 | 极端文件系统故障可能延长取消/关闭 | 0.9.3可靠性 |
 | revision不是内容哈希或原子快照 | 只证明当前定义的元数据观察一致性 | 保持明确合同；未来快照能力另行设计 |
@@ -925,11 +925,11 @@ Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupp
   ADS、保留名、多硬链接、四工具、重开Revision、显式Git拒绝和关闭后调用；
 - 既有`tests/tools`继续证明POSIX合同没有行为或版本规则回退。
 
-实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`；治理基线同步后的本地完整`make check`为3478项通过、18项跳过，原生Windows与全矩阵CI是关闭前置条件。
+主体实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision为`93723773676349fbfbe0ef42c26d9000cce379c8`；[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成原生Windows与全矩阵验收。
 
 ## 26. 变更记录
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
-| 2 | `532e59b346f50657518d11225102bc6999c301e6` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击测试；等待CI |
+| 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |

@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 4
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -378,4 +378,5 @@ Thread，不启动Transport，也不进行Provider网络请求。
 | CLI分派与无副作用边界 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | Server重校验 | [`server.py`](../../src/harnessix/product_config/server.py) | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 
-本文绑定实现`532e59b346f50657518d11225102bc6999c301e6`；三平台CI结果通过后再把0.9.1d状态改为正式关闭。
+本文绑定最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`；
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成三平台及完整矩阵验收，0.9.1d正式关闭。

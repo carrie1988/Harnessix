@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 3
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -1186,13 +1186,14 @@ sequenceDiagram
 
 原生安全断言仍由[`tests/workspace/test_snapshot.py`](../../tests/workspace/test_snapshot.py)验证；工具合同和攻击输入分别由
 [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)与
-[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)验证。实现绑定`532e59b346f50657518d11225102bc6999c301e6`，真实Windows Runner结果
-尚未回填，不能据本地POSIX测试提前关闭0.9.1d。
+[`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)验证。主体实现绑定
+`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`
+已经由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成真实Windows Runner验收。
 
 ## 39. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 3 | `532e59b346f50657518d11225102bc6999c301e6` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；等待CI |
+| 3 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；CI 34735529084通过 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |
 | 1 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 建立Workspace现行模块设计，覆盖逻辑路径、选择资源Snapshot、POSIX/Windows原生端口、Secure Reader、SQLite Fencing Lease和跨模块消费边界 |

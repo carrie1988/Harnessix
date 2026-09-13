@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 3
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -219,7 +219,7 @@ HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；
 | `product_config_permissions` | POSIX配置文件身份/Mode/硬链接不安全 | 恢复Owner、`0600`和单链接普通文件 |
 | `product_config_diagnostic_failed` | 至少一个离线检查失败 | 读取脱敏诊断报告 |
 | `product_state_overlap` | 状态目录与Workspace重叠 | 移动状态目录，不用Symlink绕过 |
-| `product_tools_platform_unsupported` | 产品Coding Tool平台门拒绝 | 使用受支持POSIX或等待Windows产品切片 |
+| `product_tools_platform_unsupported` | 未知平台或原生读取端口不可用 | 使用已验证的POSIX/Windows宿主并检查系统能力 |
 | `UNKNOWN` | 外部效果无法证明 | 调用专用Reconcile或人工处理 |
 | stdio无输出 | 可能未完成握手、进程退出或stdout污染 | 检查stderr JSON、argv和协议帧，不发送Shell文本 |
 

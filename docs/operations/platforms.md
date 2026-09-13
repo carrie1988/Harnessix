@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 6
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -60,10 +60,10 @@ supersedes: []
 | 强Container Sandbox | Docker兼容后端 | Docker兼容后端 | 后端能力依赖宿主 | 容器内再嵌套不默认支持 |
 | 正式安装器/自动更新 | 未实现 | 未实现 | 未实现 | 无签名发布镜像 |
 
-截至实现`532e59b346f50657518d11225102bc6999c301e6`，没有桌面平台达到完整1.0“产品支持”等级。Windows已经接入原生Handle四项只读Tool，
-Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝；Windows显式Git仍返回
-`product_git_platform_unsupported`。该能力在本轮Windows Runner全绿前只称候选，不能外推到写入、Process、Delivery、
-安装器或长期终端稳定性。
+截至最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`，没有桌面平台达到完整1.0“产品支持”等级。Windows
+原生Handle四项只读Tool已经由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)
+验证，Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝；Windows显式Git仍返回
+`product_git_platform_unsupported`。该证据不能外推到写入、Process、Delivery、安装器或长期终端稳定性。
 
 ## 3. CI证据矩阵
 
@@ -82,7 +82,8 @@ Windows、PostgreSQL、Container与文档矩阵验收。该证据只证明基础
 长期运行或Windows完整产品链已经完成。
 
 CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。0.9.1d已把Windows真实`agent-server`启动、
-四项Tool、长路径、Junction、ADS、保留名、硬链接和关闭场景加入`windows-trusted-execution`，本轮结果待回填。当前仍缺
+四项Tool、长路径、Junction、ADS、保留名、硬链接和关闭场景加入`windows-trusted-execution`，并由
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成验收。当前仍缺
 三平台安装器、真实终端长期交互、网络文件系统、ARM发布矩阵和平台升级/回退Dogfooding。
 
 ## 4. 文件系统要求
@@ -209,7 +210,7 @@ flowchart LR
 
 ## 11. 当前风险
 
-- Windows原生只读产品链已实现但当前CI结果待回填；写入、Git读取、安装器和长期稳定性仍是1.0风险；
+- Windows原生只读产品链已由CI 34735529084验证；写入、Git读取、安装器和长期稳定性仍是1.0风险；
 - 0.9.1b与0.9.1c三平台CI已经完成；0.9.1c由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)验证当前领域交互矩阵，但TUI仍缺少真实用户终端长期运行和发行物证据；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；

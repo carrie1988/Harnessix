@@ -184,8 +184,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0073 | [MCP目录绑定与Sandbox执行边界](0073-mcp-catalog-binding-and-sandbox.md) | 接受 |
 | 0074 | [Skill快照与Hook Action安全边界](0074-skill-snapshot-and-hook-action-boundary.md) | 接受 |
 | 0075 | [Provider Profile、Secret 引用与安全 Fallback](0075-provider-profile-secret-and-safe-fallback.md) | 接受 |
-| 0078 | [产品终端壳与可恢复客户端状态](0078-product-shell-and-recoverable-client-state.md) | 接受；0.9.1a/b/c已关闭，d/e待实施 |
-| 0079 | [只读产品诊断与原生Workspace读取端口](0079-preflight-and-native-read-port.md) | 接受；约束0.9.1d实现 |
+| 0078 | [产品终端壳与可恢复客户端状态](0078-product-shell-and-recoverable-client-state.md) | 接受；0.9.1a～d已关闭，e待实施 |
+| 0079 | [只读产品诊断与原生Workspace读取端口](0079-preflight-and-native-read-port.md) | 接受；0.9.1d已由CI 34735529084关闭 |
 
 ### 4.9 可读性与结构治理
 

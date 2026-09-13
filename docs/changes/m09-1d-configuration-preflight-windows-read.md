@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: historical
 version: 2
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -45,7 +45,7 @@ supersedes: []
 | 影响模块 | Product Config、Product UI CLI、Tools、Workspace、Schema、CI与运维资料 |
 | 兼容级别 | Agent Protocol、Session、Client State及现有Tool输入输出Schema保持兼容；新增诊断与配置写收据Schema |
 | 发布/回滚单元 | 0.9.1d独立提交；Windows端口失败时恢复平台门，POSIX产品链保持可用 |
-| 当前状态 | 实现`532e59b`及本地故障/恢复验证已完成；Windows原生与全矩阵CI待完成 |
+| 当前状态 | 主体实现`532e59b`与验证修复`9372377`已经由CI 34735529084完成Windows原生及全矩阵验收，0.9.1d正式关闭 |
 
 ## 2. 需求背景与生产风险
 
@@ -97,14 +97,14 @@ supersedes: []
 - [x] 新建、CAS替换、并发、崩溃窗口、链接、权限和脱敏测试通过；
 - [x] Doctor JSON/人类输出、退出码、异常隔离和只读性测试通过；
 - [x] 启动Preflight失败时不创建状态、不启动Transport；
-- [ ] Windows List/Read/Glob/Grep合同与攻击测试已由Fake Port跨平台验证，原生攻击用例待Windows CI；
-- [ ] Windows取消、5秒Deadline、关闭和Artifact纵向测试已由Fake Port跨平台验证，原生纵向用例待Windows CI；
-- [ ] Windows真实Server/SDK从Unicode、空格和长路径Workspace读取并关闭；
+- [x] Windows List/Read/Glob/Grep合同与攻击测试已由Fake Port跨平台及Windows原生Runner验证；
+- [x] Windows取消、5秒Deadline、关闭和Artifact纵向测试已由Fake Port跨平台及Windows原生Runner验证；
+- [x] Windows真实Server/SDK从Unicode、空格和长路径Workspace读取并关闭；
 - [x] POSIX Tools和产品Server本地回归通过；
-- [ ] Linux Python 3.12/3.13、macOS、Windows CI通过；
+- [x] Linux Python 3.12/3.13、macOS、Windows CI通过；
 - [x] 全量`make check`、文档检查和真实Mermaid渲染在本地通过；
 - [x] Product Config、Product UI、Tools、Workspace、平台、配置、诊断和威胁模型文档同步；
-- [ ] 本文转为`historical`并记录实际Revision、测试、CI和实现偏差。
+- [x] 本文转为`historical`并记录实际Revision、测试、CI和实现偏差。
 
 ## 4. 当前实现与根因
 
@@ -741,9 +741,9 @@ Write Receipt输出、Client State、Session和Config Store持有。
 | 7 | Product start接入Preflight | 状态/Transport前阻断 | 无副作用、错误帮助、真实start | 是 |
 | 8 | 文档/运维/CI同步 | 支持边界真实 | 门禁、Mermaid、三平台 | 否；事实同步 |
 
-不得在第5步完成前移除Windows Server平台门；不得在第6步通过前修改平台支持声明。以上八步已在实现提交
-`532e59b346f50657518d11225102bc6999c301e6`完成本地验证；Windows原生Runner和全矩阵CI尚未通过前，本文及平台资料只声明
-“候选支持”，不关闭切片。
+不得在第5步完成前移除Windows Server平台门；不得在第6步通过前修改平台支持声明。以上八步已在主体实现
+`532e59b346f50657518d11225102bc6999c301e6`完成，并由最终验证Revision
+`93723773676349fbfbe0ef42c26d9000cce379c8`的全矩阵CI关闭。支持声明仍仅限已证明的Windows四项原生只读能力。
 
 ## 17. 测试设计
 
@@ -896,9 +896,10 @@ Write Receipt输出、Client State、Session和Config Store持有。
 - [威胁模型](../threat-model.md)；
 - [文档追踪矩阵](../governance/documentation-traceability.md)。
 
-## 22. 实现偏差与候选结论
+## 22. 实现偏差与最终结论
 
-0.9.1d代码实现绑定`532e59b346f50657518d11225102bc6999c301e6`，当前结论是“本地验收完成、三平台CI待完成”，尚未正式关闭。
+0.9.1d主体实现绑定`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision为
+`93723773676349fbfbe0ef42c26d9000cce379c8`。CI 34735529084全矩阵通过，子切片正式关闭。
 
 ### 22.1 与初稿的偏差
 
@@ -917,11 +918,10 @@ Write Receipt输出、Client State、Session和Config Store持有。
 - 更新治理基线后，完整`make check`通过：3478 passed、18 skipped；跳过项包含本机无法执行的Windows原生用例；
 - 文档门禁通过199份文档、4988条链接、526幅Mermaid真实渲染、31个源码包和46个变化路径；
 - 并发Writer证明单提交，故障注入覆盖提交前保留与提交后Unknown；
-- Fake Windows Port证明跨平台合同，真实Windows用例已进入CI工作流但结果待本轮提交。
+- Fake Windows Port证明跨平台合同；Windows Runner证明真实Handle攻击边界及真实Server/SDK长路径读取和关闭；
+- [CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)在精确Revision `9372377`完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档任务。
 
-### 22.3 关闭剩余条件
+### 22.3 最终结论
 
-- Windows Runner真实Handle、长路径、Junction、ADS、保留名、多硬链接、Server/SDK生命周期全部通过；
-- Linux 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation任务全绿；
-- 将CI URL、精确测试数量和最终修复Revision回填本文、现行模块设计、路线图与平台资料；
-- 上述条件未满足时，Windows能力只称为候选，不进入0.9.1e正式基线。
+关闭条件均已满足。Windows四项原生只读能力进入0.9.1e正式基线；Windows Git、写入、Process、Delivery、安装器和长期
+Dogfooding仍由后续切片验证，不能从本次只读证据推导完整Windows产品支持。

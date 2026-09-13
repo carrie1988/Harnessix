@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 6
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 7
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 
 # ADR 0078：产品终端壳与可恢复客户端状态
 
-- 状态：已接受；0.9.1a、0.9.1b与0.9.1c已关闭，0.9.1d/e待实施
+- 状态：已接受；0.9.1a～0.9.1d已关闭，0.9.1e待实施
 - 日期：2026-09-13
 - 决策范围：Harnessix Code 0.9.1
 

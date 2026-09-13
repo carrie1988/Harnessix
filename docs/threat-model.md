@@ -2,7 +2,7 @@
 doc_type: threat-model
 status: current
 version: 2
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -766,7 +766,8 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **能力过度广告**：Windows只广告List/Read/Glob/Grep；显式Git因缺少等价受管Process环境而失败关闭。平台实现摘要进入
   Workspace Scope和Tool Version，POSIX批准不能复用于Windows端口。
 - **剩余风险**：Windows配置/状态ACL尚未形成发行合同，网络共享、大小写敏感目录、云占位文件、慢盘Soak、正式安装器、
-  签名更新及普通目录写仍未关闭。实现`532e59b346f50657518d11225102bc6999c301e6`只有在Windows原生与全矩阵CI通过后才能从候选升级。
+  签名更新及普通目录写仍未关闭。Windows原生只读能力已由最终验证Revision
+  `93723773676349fbfbe0ef42c26d9000cce379c8`和CI 34735529084完成验收，证据不覆盖上述剩余风险。
 
 对应源码、流程和测试见[ADR 0079](adr/0079-preflight-and-native-read-port.md)、
 [0.9.1d详细设计](changes/m09-1d-configuration-preflight-windows-read.md)、

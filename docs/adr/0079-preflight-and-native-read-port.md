@@ -2,7 +2,7 @@
 doc_type: adr
 status: current
 version: 2
-code_revision: 532e59b346f50657518d11225102bc6999c301e6
+code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
 owners:
   - core
 modules:
@@ -32,8 +32,8 @@ supersedes: []
 
 ## 状态
 
-接受并已由实现提交`532e59b346f50657518d11225102bc6999c301e6`落地；本地合同、失败恢复和结构治理已通过，
-Windows原生与全矩阵CI完成前保持0.9.1d候选状态。完成证据见
+接受并已由主体实现`532e59b346f50657518d11225102bc6999c301e6`与最终验证`93723773676349fbfbe0ef42c26d9000cce379c8`
+落地；Windows原生与全矩阵[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)通过，0.9.1d正式关闭。完成证据见
 [0.9.1d详细设计](../changes/m09-1d-configuration-preflight-windows-read.md)和现行模块文档。
 
 ## 背景
@@ -172,7 +172,7 @@ Windows文件读取安全完成不代表Git进程执行安全完成。Agent只�
 本ADR不取代ADR 0063、0065、0075或0078，而是把其Windows、平台端口、配置安全和产品启动原则收敛为0.9.1d
 可执行决策。后续若统一原生工具端口或引入在线Preflight，必须以新ADR明确取代对应条款。
 
-## 实现复核（532e59b）
+## 实现复核（532e59b、9372377）
 
 实现保持本ADR的边界，并形成两条经独立评审的新一级包依赖：
 
@@ -182,4 +182,5 @@ Windows文件读取安全完成不代表Git进程执行安全完成。Agent只�
 公共API新增Draft、Write Receipt、Preflight Check/Report/Request、Builder、Writer和Preflight入口；基础v2配置、Tool输入输出、
 Agent Protocol、Session与Client State合同未变。可读性复核将新职责拆为小文件/小函数，没有批准新的超大文件或高复杂度符号。
 上述依赖和公共API已写入[`readability-policy-v1.json`](../../governance/readability-policy-v1.json)，其批准理由是本ADR，而非
-以更新快照规避门禁。原生Windows测试和CI URL仍需在候选关闭时回填。
+以更新快照规避门禁。原生Windows测试与完整CI矩阵已经在精确Revision `9372377`通过；该证据不包含Windows写入、
+Git、Process或Delivery。
