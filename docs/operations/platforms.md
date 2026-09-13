@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 5
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -205,7 +205,7 @@ flowchart LR
 ## 11. 当前风险
 
 - Windows属于1.0目标但当前产品入口拒绝，时间和实现风险高；
-- 0.9.1b三平台CI已经完成；0.9.1c领域交互通过本地专项、全仓及Mermaid渲染门禁但仍待三平台CI，且TUI仍缺少真实用户终端长期运行和发行物证据；
+- 0.9.1b与0.9.1c三平台CI已经完成；0.9.1c由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)验证当前领域交互矩阵，但TUI仍缺少真实用户终端长期运行和发行物证据；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 容器镜像缺少正式供应链和Hardening门禁；

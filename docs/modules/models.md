@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 4
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -700,6 +700,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录Scripted Provider协作取消实现及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 3 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 明确Scripted Provider延时遵循协作取消合同，为App Server关闭和Product UI Cancel提供确定性测试端口 |
 | 2 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` | 2026-09-12 | 链接DOC-1.4 Product Config现行设计 |
 | 1 | `00e2b816078f52c10849a65efddb36e84a538eef` | 2026-09-12 | DOC-1.3 Wave A Model Runtime模块设计初版 |

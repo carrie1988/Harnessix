@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 43
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 44
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -79,7 +79,7 @@ flowchart LR
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计及Eval证据分层均已完成 |
 | Context/Session | [Context模块设计](../modules/context.md)、[Session模块设计](../modules/session.md)、[Artifact模块设计](../modules/artifacts.md) | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计及相关ADR | 三个包的现行设计和里程碑历史分层均已完成 |
 | 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[Delivery模块设计](../modules/delivery.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions、Workspace与Delivery现行设计已完成 |
-| 可恢复终端产品 | [Product UI终端产品模块设计](../modules/product-ui.md) | [CLI/TUI研究](../research/cli-tui-product-experience.md)、[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md) | 0.9.1a与0.9.1b已关闭；0.9.1c领域交互本地全仓及Mermaid门禁通过并待三平台CI；Windows产品Tool Runtime和统一Action装配属于0.9.1d/e |
+| 可恢复终端产品 | [Product UI终端产品模块设计](../modules/product-ui.md) | [CLI/TUI研究](../research/cli-tui-product-experience.md)、[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md) | 0.9.1a、0.9.1b与0.9.1c已关闭；Windows产品Tool Runtime和统一Action装配属于0.9.1d/e |
 | 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 10个产品运行时与扩展包均已有现行设计；聚合与历史资料已分层 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md)、[ADR 0077](../adr/0077-versioned-documentation-contract-and-gates.md) | 代码与文档治理门禁均已启用；后续产品切片须持续同步 |
@@ -110,7 +110,7 @@ flowchart LR
 | [patches](../../src/harnessix/patches/) | Patch计划、批次、应用与恢复 | [Managed Patch Runtime模块设计](../modules/patches.md) | [patches](../../tests/patches/) | [docs/modules/patches.md](../modules/patches.md) | 完整，DOC-1.3 Wave B |
 | [policy](../../src/harnessix/policy/) | Action Policy决策 | [Policy模块设计](../modules/policy.md) | [Action Service](../../tests/integration/test_action_service.py)、[Process](../../tests/processes/test_action_executor.py) | [docs/modules/policy.md](../modules/policy.md) | 完整，DOC-1.3 Wave C |
 | [processes](../../src/harnessix/processes/) | 宿主/容器进程生命周期 | [Process Runtime模块设计](../modules/processes.md) | [processes](../../tests/processes/) | [docs/modules/processes.md](../modules/processes.md) | 完整，DOC-1.3 Wave B |
-| [product_ui](../../src/harnessix/product_ui/) | 客户端状态、连接恢复、领域交互、Controller、终端View与产品组合根 | [Product UI终端产品模块设计](../modules/product-ui.md)、[0.9.1设计](../changes/m09-1-cli-tui-product-experience.md)、[0.9.1c专项设计](../changes/m09-1c-domain-interactions.md) | [product_ui](../../tests/product_ui/)、[SDK边界](../../tests/app_server/test_server_sdk.py) | [docs/modules/product-ui.md](../modules/product-ui.md) | 完整现行设计；0.9.1a/b已关闭，0.9.1c本地专项、全仓及Mermaid门禁完成，待三平台CI |
+| [product_ui](../../src/harnessix/product_ui/) | 客户端状态、连接恢复、领域交互、Controller、终端View与产品组合根 | [Product UI终端产品模块设计](../modules/product-ui.md)、[0.9.1设计](../changes/m09-1-cli-tui-product-experience.md)、[0.9.1c专项设计](../changes/m09-1c-domain-interactions.md) | [product_ui](../../tests/product_ui/)、[SDK边界](../../tests/app_server/test_server_sdk.py) | [docs/modules/product-ui.md](../modules/product-ui.md) | 完整现行设计；0.9.1a/b/c已关闭，0.9.1c三平台全矩阵证据已归档 |
 | [product_config](../../src/harnessix/product_config/) | 产品配置、迁移与活动Profile | [Product Config模块设计](../modules/product-config.md)、[0.8](../m08-product-runtime-and-extensions.md)、[部署](../deployment.md) | [product_config](../../tests/product_config/) | [docs/modules/product-config.md](../modules/product-config.md) | 完整，DOC-1.4产品装配 |
 | [protocol](../../src/harnessix/protocol/) | Agent Protocol Schema、编解码和投影 | [Protocol模块设计](../modules/protocol.md)、[0.8](../m08-product-runtime-and-extensions.md)、[Protocol研究](../research/protocol.md) | [protocol](../../tests/protocol/)、[app_server](../../tests/app_server/) | [docs/modules/protocol.md](../modules/protocol.md) | 完整，DOC-1.4产品协议 |
 | [sandbox](../../src/harnessix/sandbox/) | 隔离、网络和能力探测 | [Sandbox模块设计](../modules/sandbox.md)、[威胁模型](../threat-model.md) | [sandbox](../../tests/sandbox/)、[真实Container](../../tests/integration/test_container_sandbox.py) | [docs/modules/sandbox.md](../modules/sandbox.md) | 完整，DOC-1.3 Wave C |

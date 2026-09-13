@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 10
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 11
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -824,8 +824,7 @@ Windows、PostgreSQL、Container与文档矩阵验收，本子切片正式关闭
 记录/字节/SHA损坏、5秒读取超时、缺少能力、连接失败、Approval/Question/Cancel/Steer真实Runtime与Protocol、
 Approval/Question/Steer Modal、Escape不发送、陈旧Modal不分配命令、Token与费用未知，以及Quit不发送
 `turn/cancel`。另有Agent历史验证竞态回归证明并发Steering会重新准备模型历史而不会误失败。Ruff、Mypy、
-Readability、合同生成、文档门禁、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；三平台CI完成前
-仍保持子切片未关闭。
+Readability、合同生成、文档门禁、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成全矩阵验收，本子切片正式关闭。
 
 ## 17. 部署、兼容与回退
 
@@ -882,13 +881,12 @@ Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真
 `ProductMainView`与框架中立Renderer展示Plan、Tool、Token及费用未知；Presenter和四类Screen提供专用交互及稳定错误
 自助。实现把I/O服务和错误目录拆成独立模块，以保持`ProductApp`、`ProductController`与
 `RecoverableAgentSession`不超过既有可读性预算。协议版本、Client State Schema和Approval领域值没有变化。专项设计与
-源码映射见[0.9.1c详细设计](m09-1c-domain-interactions.md)。本地全量与Mermaid门禁已完成；三平台CI完成后再
-记录实际Revision并关闭该子切片。
+源码映射见[0.9.1c详细设计](m09-1c-domain-interactions.md)。实现提交`684a17e`、测试同步提交`84ffd59`和[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收均已归档，本子切片正式关闭。
 
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
 
 
-0.9.1a与0.9.1b已关闭；0.9.1c已完成本地实现、全量与Mermaid门禁并等待三平台CI验收；0.9.1d和0.9.1e仍未实现。当前不包含
+0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d和0.9.1e仍未实现。当前不包含
 配置向导/Doctor、Windows只读产品端口或统一Action默认装配，不能由领域交互完成状态推断这些能力已经可用。

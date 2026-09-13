@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 3
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -37,7 +37,7 @@ supersedes: []
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry与崩溃恢复 |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | `35e9e889f78534fd8866f76cfe24d936b08d345d`；包含0.9.1c未提交实现时以本次提交父Revision表示 |
+| 代码版本 | `684a17ecc013549e3472978f1c0e8c1eca4db92e`；Steering历史重备实现，测试同步提交为`84ffd595989d682c792d615e3815cf5877c0a419` |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool和App Server；Context、Patch、Process等端口可显式装配，但尚未全部进入默认产品链 |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=19`；SQLite Session迁移连续到22 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
@@ -656,5 +656,6 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c Steering历史重备实现、取消协作语义、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 2 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c Steering与模型历史验证/提交竞态治理，增加乐观重备算法、源码、时序和确定性回归映射 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Agent Runtime黄金样例初版 |

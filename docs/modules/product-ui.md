@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 10
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - product
 modules:
@@ -45,8 +45,8 @@ supersedes: []
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影Reducer、连接、Controller、冻结交互绑定/证据/Intent、纯交互投影和稳定错误帮助；Textual App与Screen从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a与0.9.1b已通过三平台CI并关闭；0.9.1c领域交互已完成本地实现、专项验证、全仓门禁和Mermaid真实渲染，等待三平台CI；Doctor、Windows产品工具链和默认Action装配仍未实现 |
-| 代码版本 | 当前文档绑定实现前基线`35e9e889f78534fd8866f76cfe24d936b08d345d`；0.9.1c实际实现Revision在CI验收后回填 |
+| 当前完成度 | 0.9.1a、0.9.1b与0.9.1c已通过三平台CI并关闭；Doctor、Windows产品工具链和默认Action装配仍未实现 |
+| 代码版本 | `684a17ecc013549e3472978f1c0e8c1eca4db92e`；0.9.1c实现提交，测试同步提交为`84ffd595989d682c792d615e3815cf5877c0a419` |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -836,7 +836,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - CLI：`harnessix code`延迟导入Textual，构造当前解释器`agent-server` argv，缺失Workspace输出稳定脱敏JSON；
 - SDK：非法Envelope、深度预算、Result归一、半握手、超长Frame、未协商方法和协商Limit前置拒绝；
 - 本地切片门禁：Product UI 65项测试、Ruff、Mypy、Readability和真实`run_test()`均已通过；
-- 全仓门禁：当前本地为3434项通过、13项跳过；实现Revision与三平台结果将在CI验收后回填。
+- 全仓门禁：3434项通过、13项跳过；[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收。
 - 平台门禁：Linux Python 3.12/3.13全量测试、macOS Coding Tools矩阵和Windows Trusted Execution矩阵均
   显式执行或覆盖`tests/product_ui`，并由
   [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成0.9.1a验收；
@@ -858,7 +858,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - [x] 0.9.1b实现、并发稳定化和三平台CI完成并正式关闭；三平台安装器仍属于0.9.5。
 - [x] 0.9.1c领域合同、Artifact失败关闭、专用Modal、真实协议纵向场景和本地专项门禁完成；
 - [x] 0.9.1c全仓3434项通过/13项跳过及513幅Mermaid本地真实渲染完成；
-- [ ] Linux Python 3.12/3.13、macOS、Windows矩阵完成并正式关闭0.9.1c。
+- [x] Linux Python 3.12/3.13、macOS、Windows矩阵由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成并正式关闭0.9.1c。
 
 ## 15. 部署、兼容、回退与迁移
 
@@ -901,6 +901,7 @@ Screen/Presenter而不是继续扩张这两个类。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收，正式关闭完整领域交互子切片 |
 | 9 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：冻结交互身份、Artifact完整证据、发送前复核、Plan/Tool/Usage渲染、专用Modal、错误自助及65项Product UI验证；等待实现Revision与三平台CI |
 | 8 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录实现与四次稳定化提交通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵，正式关闭0.9.1b |
 | 7 | `f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a` | 2026-09-13 | 无头产品场景在ListView投影数量和本地Intent门闩都结算后再导航，并在ListView选择和Composer输入前显式等待焦点生效，去除平台相关的渲染、调度与焦点假设 |

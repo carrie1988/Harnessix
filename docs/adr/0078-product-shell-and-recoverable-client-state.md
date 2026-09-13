@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 5
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 6
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 
 # ADR 0078：产品终端壳与可恢复客户端状态
 
-- 状态：已接受；0.9.1a与0.9.1b已关闭，0.9.1c本地全仓与Mermaid门禁通过并待CI，0.9.1d/e待实施
+- 状态：已接受；0.9.1a、0.9.1b与0.9.1c已关闭，0.9.1d/e待实施
 - 日期：2026-09-13
 - 决策范围：Harnessix Code 0.9.1
 
@@ -121,7 +121,7 @@ Server/SDK安装；正式Harnessix Code终端产品安装物必须包含该Extra
 0.9.1b锁文件实际解析为Textual 8.2.8。0.9.1c在不改变本ADR分层的前提下新增`ProductMainView`、
 `InteractionPresenter`、四类专用Screen和`InteractionService`：Approval、Question、Cancel和Steer以冻结身份进入
 Controller，Diff Artifact完整性失败时禁止批准，Usage只在公共协议范围内展示且费用明确未知。退出仍不发送
-`turn/cancel`。本地专项验证已完成，三平台CI通过前不关闭该子切片。
+`turn/cancel`。专项验证与[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵均已完成，该子切片正式关闭。
 
 Controller、Store、Reducer、View Model和错误目录不导入Textual，确保协议/恢复语义可由普通Pytest测试。
 Textual测试使用`App.run_test()`与Pilot验证按键、焦点、尺寸、Modal和退出；不依赖真实TTY或Snapshot人工目测。
@@ -220,7 +220,7 @@ SDK严格边界已由CI关闭。0.9.1b已实现：
 - [`main_view.py`](../../src/harnessix/product_ui/main_view.py)、[`interaction_presenter.py`](../../src/harnessix/product_ui/interaction_presenter.py)和[`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py)实现平台中立展示适配；
 - [`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py)等专项测试验证Escape、陈旧Modal、证据失败关闭及Cancel/Steer/Quit分离。
 
-0.9.1c本地实现、全量门禁与Mermaid真实渲染已完成并等待三平台CI；0.9.1d/e的现行能力仍以
+0.9.1c实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成全矩阵验收并正式关闭；0.9.1d/e的现行能力仍以
 [SDK模块](../modules/sdk.md)、[App Server模块](../modules/app-server.md)、
 [Product Config模块](../modules/product-config.md)、[Tools模块](../modules/tools.md)和
 [总体架构](../architecture.md)为准。

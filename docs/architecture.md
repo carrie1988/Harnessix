@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 37
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+version: 38
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - core
 modules:
@@ -240,7 +240,7 @@ flowchart LR
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
-| Product UI终端产品 | 0.9.1a/0.9.1b已关闭；0.9.1c本地全仓门禁通过 | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller，以及Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；等待0.9.1c三平台CI，详见[模块设计](modules/product-ui.md) | [interactions.py](../src/harnessix/product_ui/interactions.py)、[interaction_service.py](../src/harnessix/product_ui/interaction_service.py)、[controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py) | [product_ui测试](../tests/product_ui/) |
+| Product UI终端产品 | 0.9.1a/0.9.1b/0.9.1c已关闭 | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller，以及Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；三平台CI已通过，详见[模块设计](modules/product-ui.md) | [interactions.py](../src/harnessix/product_ui/interactions.py)、[interaction_service.py](../src/harnessix/product_ui/interaction_service.py)、[controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py) | [product_ui测试](../tests/product_ui/) |
 | Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
 | Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
 | Agent Runtime | 当前默认产品 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[reducer.py](../src/harnessix/agent/reducer.py) | [agent测试](../tests/agent/) |
@@ -879,7 +879,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
-| 0.9.1c领域交互尚无三平台发布证据 | 本地65项Product UI、全仓3434项通过/13项跳过及513幅Mermaid渲染已通过，但正式关闭仍需CI | 0.9.1c |
+| Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
 | 默认产品未装配写工具、Process和Delivery | 代码库能力无法直接形成端到端Coding Agent写入链 | 0.9.1 |
 | Windows默认只读Tool入口失败关闭 | Windows不能运行完整产品链 | 0.9.1、0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
@@ -955,6 +955,7 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 38 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵通过，正式关闭完整领域交互子切片 |
 | 37 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：完整交互绑定、Diff证据、专用Modal、Plan/Tool/Usage渲染、错误自助及Cancel/Steer/Quit分离；等待实现Revision与三平台CI |
 | 36 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录0.9.1b实现与并发稳定化通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵并正式关闭 |
 | 35 | `1c11956d3fdc95ccc5a051a96e2107becfdbe78d` | 2026-09-13 | 同步0.9.1b本地实现：正式`harnessix code`组合根、Textual基础View、单Actor Controller及真实stdio恢复；等待实现提交和CI |

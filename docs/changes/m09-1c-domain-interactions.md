@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 3
-code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
+status: historical
+version: 4
+code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
 owners:
   - product
 modules:
@@ -560,9 +560,9 @@ Approval的Approve按钮在证据不足时禁用，Reject保持可用。终端Re
 - [x] Plan、Tool、Usage/Cost和错误自助可见；
 - [x] Controller/App不提高0.9.0批准规模与复杂度预算；
 - [x] 本地全量测试、文档门禁和513幅Mermaid真实渲染通过；
-- [ ] 三平台CI通过；
+- [x] [CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)三平台及辅助矩阵通过；
 - [x] Product UI现行模块设计、总体架构、路线图和运维资料同步；
-- [ ] 0.9.1c完成后本文转为`historical`并记录实际Revision与偏差。
+- [x] 本文已转为`historical`并记录实际Revision、测试同步提交与实现偏差。
 
 ## 18. 源码、测试、ADR与证据映射
 
@@ -616,8 +616,7 @@ State Schema和Approval领域值均未变化。
 | App/Controller继续膨胀 | 提取Main View、Presenter和Interaction Service | 可读性批准预算增长时重新设计 |
 | UI误导Windows支持 | 平台文档和启动门保持失败关闭 | 仅凭TUI测试宣称Windows产品可用时停止发布 |
 
-0.9.1c本地实现、专项验证、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；只有三平台CI
-通过后才能关闭并更新路线图状态。
+0.9.1c本地实现、专项验证、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；实现提交`684a17e`与测试同步提交`84ffd59`已由[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成全矩阵验收，路线图状态已关闭。
 
 ## 21. 实现偏差与验证记录
 
@@ -632,4 +631,4 @@ State Schema和Approval领域值均未变化。
 
 本地验收覆盖65项`tests/product_ui`测试，并增加1项Agent历史验证竞态确定性回归；`make check`最终为3434项
 通过、13项跳过，Ruff、Mypy、Readability、合同生成、文档静态门禁及513幅Mermaid真实渲染均已通过。实现
-Revision和CI链接在三平台流水线完成后写入本文，届时文档状态转为`historical`。
+Revision为`684a17ecc013549e3472978f1c0e8c1eca4db92e`，测试同步提交为`84ffd595989d682c792d615e3815cf5877c0a419`；[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收，本文状态已转为`historical`。
