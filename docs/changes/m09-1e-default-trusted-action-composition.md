@@ -1445,8 +1445,8 @@ sequenceDiagram
     P-->>G: immutable WorkspaceTransactionRecord
     G->>D: build_workspace_diff(plan)
     G->>A: publish_action_review(deterministic artifact_id)
-    A->>S: BEGIN IMMEDIATE; verify pending call and sequence
-    A->>A: INSERT purpose=action_review; COMMIT
+    A->>S: BEGIN IMMEDIATE并校验pending call与sequence
+    A->>A: INSERT purpose=action_review后COMMIT
     Note over A,S: 此处崩溃可留下不可读的有界孤儿
     G-->>S: CAS append approval + WAITING_APPROVAL
 ```
