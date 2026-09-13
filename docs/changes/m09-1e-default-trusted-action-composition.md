@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 7
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
 owners:
   - core
 modules:
@@ -53,7 +53,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现已提交于`71a4794`并完成本地全量验收，等待文档提交后的全矩阵CI关闭；e4～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现提交`71a4794`及验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；e4～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -1574,6 +1574,12 @@ Artifact发布、引用验证和Workspace成员提交分别拆至
 实现Revision `71a479439edcdd29b863ec3a9bad7a52586dd1bf`本地收集3545项测试并以退出码0完成全量回归；19项仅因平台或外部
 服务条件跳过。Ruff格式/规则、Mypy严格检查307个生产源码文件、Schema确定生成、文档链接和可读性治理门禁均通过。
 
+首个文档候选的Windows任务暴露MCP超时测试把单次调用预算`0.1`秒同时误用为连接目录启动预算，慢速Runner尚未完成
+握手即失败；该失败不是Patch运行时缺陷，也不能以重跑关闭。验证修复`a263f961a155ba0bd0c4d709f12691fe52e0b971`
+将测试夹具的启动预算独立固定为2秒，仍保留调用预算0.1秒以及“写调用超时必须UNKNOWN且只能Reconcile”的原断言。
+[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)随后一次通过Linux Python 3.12/3.13、
+macOS、Windows、PostgreSQL、固定镜像Container与Documentation七个任务，证明修复没有放宽生产超时或平台省略边界。
+
 0.9.1e3尚不证明以下能力：
 
 - Windows原生安全写；当前必须诚实省略；
@@ -1582,4 +1588,4 @@ Artifact发布、引用验证和Workspace成员提交分别拆至
 - 自动继续部分多文件事务；设计明确要求人工处理，不计划通过重放放宽；
 - 多租户远端控制面、长期Soak和容量降级；分别由0.9.3～1.0处理。
 
-因此e3在全矩阵CI通过后可独立关闭，但0.9.1e和0.9.1仍保持进行中。
+因此e3已经独立关闭，但0.9.1e和0.9.1仍保持进行中。

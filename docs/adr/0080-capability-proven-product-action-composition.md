@@ -2,7 +2,7 @@
 doc_type: adr
 status: current
 version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ supersedes: []
 
 ## 状态
 
-接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；默认Patch/Process产品能力仍未完成。实现状态由
+接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭，0.9.1e3默认Workspace Patch已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；默认Container Process与产品级Owner仍未完成。实现状态由
 [0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)和现行模块文档维护。
 
 ## 背景
