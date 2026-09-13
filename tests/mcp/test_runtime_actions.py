@@ -149,7 +149,10 @@ async def connection(
         server_id="test-server",
         server=server.server,
         implementation_digest=canonical_digest("mutable-server-v1"),
-        startup_timeout_seconds=call_timeout,
+        # Action-call timeout tests must not also shrink the independent
+        # connection/catalog-discovery budget.  Slow Windows CI startup can
+        # otherwise fail before the behavior under test is reached.
+        startup_timeout_seconds=2.0,
         call_timeout_seconds=call_timeout,
     )
     return await McpClientConnection.connect(target, store), store
