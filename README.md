@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；199份Markdown、31/31个生产源码包、79份ADR和29份冻结源码研究均已进入版本化文档合同。0.9.1a客户端内核、0.9.1b基础Textual产品链和0.9.1c完整领域交互均已通过对应全矩阵CI。0.9.1d的Secret-free Configure、共享Preflight/Doctor和Windows原生四项只读链由主体实现`532e59b`与验证修复`9372377`交付，并由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收后正式关闭。统一Action产品装配、三平台发行物、安全供应链、Dogfooding和Provider发布证据仍待实施，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a客户端内核、0.9.1b基础Textual产品链和0.9.1c完整领域交互均已通过对应全矩阵CI。0.9.1d的Secret-free Configure、共享Preflight/Doctor和Windows原生四项只读链由主体实现`532e59b`与验证修复`9372377`交付，并由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收后正式关闭。统一Action产品装配、三平台发行物、安全供应链、Dogfooding和Provider发布证据仍待实施，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / SDK / IDE

@@ -145,7 +145,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md) | 评审中；0.9.1a～0.9.1d已关闭；统一Action装配尚待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md) | 评审中；0.9.1a～0.9.1d已关闭；0.9.1e源码研究与设计完成，代码待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
@@ -170,9 +170,9 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录79份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录80份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等29份冻结参考实现证据及访问日期；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等30份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -213,4 +213,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内199份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内202份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

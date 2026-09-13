@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 4
-code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
+version: 5
+code_revision: c3ed6c917368f705bab90a85ea82572520909ac5
 owners:
   - core
 modules:
@@ -21,8 +21,8 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有79份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
-迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0079分别定义文档门禁、可恢复终端产品边界，以及Preflight与原生只读端口。
+截至标注代码版本，共有80份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0080继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口和默认Trusted Action组合。
 
 ## 2. 状态语义
 
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前79份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前80份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -186,6 +186,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0075 | [Provider Profile、Secret 引用与安全 Fallback](0075-provider-profile-secret-and-safe-fallback.md) | 接受 |
 | 0078 | [产品终端壳与可恢复客户端状态](0078-product-shell-and-recoverable-client-state.md) | 接受；0.9.1a～d已关闭，e待实施 |
 | 0079 | [只读产品诊断与原生Workspace读取端口](0079-preflight-and-native-read-port.md) | 接受；0.9.1d已由CI 34735529084关闭 |
+| 0080 | [能力证明驱动的默认Trusted Action组合根](0080-capability-proven-product-action-composition.md) | 接受；约束0.9.1e实现 |
 
 ### 4.9 可读性与结构治理
 
