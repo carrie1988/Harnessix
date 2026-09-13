@@ -76,7 +76,7 @@ async def main(mode: str, root: Path) -> None:
         print("v12 reader拒绝migration15且没有改变数据库")
         return
     assert mode in {"upgrade", "resume"}
-    assert EventDraft.model_fields["schema_version"].default == 19
+    assert EventDraft.model_fields["schema_version"].default == 20
     original = json.loads(metadata.read_text())
     await store.initialize()
     migrated = state(store.path)

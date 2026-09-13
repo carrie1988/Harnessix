@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from harnessix.agent.approvals import approval_for, approval_matches, request_fingerprint
+from harnessix.agent.approvals import (
+    approval_for,
+    approval_matches,
+    approval_type_matches,
+    request_fingerprint,
+)
 from harnessix.agent.batch_patching import validate_effect
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     AgentEvent,
     ApprovalContent,
-    ApprovalRequestContent,
     CompactionContent,
     ErrorContent,
     Item,
@@ -28,15 +32,18 @@ from harnessix.agent.models import (
     Thread,
     ToolCallContent,
     ToolResultContent,
+    TrustedActionApprovalRequestContent,
     Turn,
     TurnStatus,
 )
 from harnessix.agent.reducer_support import (
     _validate_process_result,
     _validate_process_state,
+    effect_origin_is_recovery,
     pending_calls,
     require,
 )
+from harnessix.agent.trusted_action_reducer import validate_trusted_action_effect
 from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
 from harnessix.context.tool_result_view import history_items
 from harnessix.domain.models import (
@@ -44,7 +51,6 @@ from harnessix.domain.models import (
     EffectClass,
 )
 from harnessix.patches.bridge_contracts import call_request_id
-from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS
 
 
 def _append_step_item_before_pending_steering(
@@ -119,25 +125,7 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
         require(turn.status == TurnStatus.EXECUTING_TOOLS, "审批请求只能在执行边界生成")
         require(bool(calls) and calls[0].call_id == content.call_id, "审批与当前调用不匹配")
         call = calls[0]
-        require(
-            call.requires_approval
-            and (
-                call.effect_class == EffectClass.READ_ONLY
-                if isinstance(content, ApprovalRequestContent)
-                else (
-                    call.tool in PROCESS_AGENT_FRONTENDS
-                    if isinstance(content, ProcessApprovalRequestContent)
-                    else call.tool
-                    == (
-                        "apply_patch_batch"
-                        if isinstance(content, PatchBatchApprovalRequestContent)
-                        else "apply_patch"
-                    )
-                )
-                and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
-            ),
-            "审批类型与工具效果不匹配",
-        )
+        require(approval_type_matches(call, content), "审批类型与工具效果不匹配")
         require(call.tool_fingerprint is not None, "审批缺少工具契约指纹")
         require(approval_for(turn, call) is None, "调用已存在审批请求")
         require(
@@ -149,6 +137,8 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
             "审批 ID 重复",
         )
         require(content.decision is None, "审批请求不能预置决定")
+        if isinstance(content, TrustedActionApprovalRequestContent):
+            require(event.schema_version >= 20, "Trusted Action审批需要Agent Event v20")
         require(
             approval_matches(thread, turn, call, content),
             "审批指纹不匹配",
@@ -246,8 +236,9 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
         if content.patch_batch is not None:
             validate_effect(thread, turn, calls[0], content)
         _validate_process_result(turn, calls[0], content)
+        validate_trusted_action_effect(thread, turn, calls[0], content)
         if content.patch is not None:
-            effect, call = content.patch, calls[0]
+            patch_effect, call = content.patch, calls[0]
             require(
                 call.tool == "apply_patch"
                 and call.effect_class == EffectClass.NON_IDEMPOTENT_WRITE
@@ -256,7 +247,7 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 "效果证据仅适用于强制审批的 Patch 调用",
             )
             require(
-                effect.request_id
+                patch_effect.request_id
                 == call_request_id(
                     thread.thread_id,
                     turn.turn_id,
@@ -275,10 +266,10 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 plan = approval.content.plan
                 require(
                     (
-                        effect.workspace_id,
-                        effect.plan_id,
-                        effect.request_id,
-                        effect.approval_fingerprint,
+                        patch_effect.workspace_id,
+                        patch_effect.plan_id,
+                        patch_effect.request_id,
+                        patch_effect.approval_fingerprint,
                     )
                     == (
                         plan.workspace_id,
@@ -289,17 +280,21 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                     "效果证据与审批计划不匹配",
                 )
             require(
-                effect.origin == "recovery" or turn.status == TurnStatus.EXECUTING_TOOLS,
+                patch_effect.origin == "recovery" or turn.status == TurnStatus.EXECUTING_TOOLS,
                 "执行证据只能在执行状态发布",
             )
             if content.outcome == "succeeded":
-                require(effect.state in {"applied", "observed_after"}, "成功结果缺少已应用证据")
                 require(
-                    effect.origin == "recovery" or effect.state == "applied", "执行不能伪造恢复观察"
+                    patch_effect.state in {"applied", "observed_after"},
+                    "成功结果缺少已应用证据",
+                )
+                require(
+                    patch_effect.origin == "recovery" or patch_effect.state == "applied",
+                    "执行不能伪造恢复观察",
                 )
             elif content.outcome == "failed":
                 require(
-                    effect.state
+                    patch_effect.state
                     in {"pending", "approved", "rejected", "failed", "observed_before"},
                     "已知失败与效果状态不一致",
                 )
@@ -307,9 +302,7 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 require(content.outcome == "unknown", "Patch 取消不等于文件效果取消")
         if content.outcome == "succeeded":
             require(
-                turn.status == TurnStatus.EXECUTING_TOOLS
-                or (content.patch is not None and content.patch.origin == "recovery")
-                or (content.patch_batch is not None and content.patch_batch.origin == "recovery"),
+                turn.status == TurnStatus.EXECUTING_TOOLS or effect_origin_is_recovery(content),
                 "执行阶段之外不能记录普通成功结果",
             )
             if calls[0].requires_approval:
@@ -325,6 +318,11 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                     require(content.patch is not None, "Patch 成功必须有类型化效果证据")
                 if isinstance(approval.content, ProcessApprovalRequestContent):
                     require(content.process is not None, "Process成功必须有Action终止证据")
+                if isinstance(approval.content, TrustedActionApprovalRequestContent):
+                    require(
+                        content.trusted_action is not None,
+                        "Trusted Action成功必须有类型化效果证据",
+                    )
                 require(
                     approval.content.decision is not None
                     and approval.content.decision.outcome == ApprovalOutcome.APPROVED,
@@ -357,6 +355,8 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
         cleared: dict[str, object] = {"decision": None}
         if isinstance(original.content, ProcessApprovalRequestContent):
             cleared["action_status"] = original.content.action_status
+        if isinstance(original.content, TrustedActionApprovalRequestContent):
+            cleared["route_state"] = original.content.route_state
         require(
             original.content == payload.content.model_copy(update=cleared),
             "审批请求身份与指纹不可变",

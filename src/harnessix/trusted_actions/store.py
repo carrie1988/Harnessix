@@ -26,6 +26,13 @@ from harnessix.trusted_actions.contracts import (
 _SCHEMA_VERSION = "1"
 
 
+def _validate_plan(plan: ActionRoutePlan) -> ActionRoutePlan:
+    try:
+        return ActionRoutePlan.model_validate_json(plan.model_dump_json(warnings="error"))
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("action_route_plan_invalid", "Action Route Plan不符合契约") from None
+
+
 class SQLiteActionAuditStore:
     """不可变Route Plan、当前投影和append-only审计事件。"""
 
@@ -100,7 +107,7 @@ class SQLiteActionAuditStore:
     ) -> ActionRouteSnapshot:
         if initial_state not in {"denied", "pending_approval", "ready"}:
             raise KernelError("action_route_state_invalid", "Action初始状态无效")
-        checked = self._validate_plan(plan)
+        checked = _validate_plan(plan)
         payload = checked.model_dump_json(warnings="error")
         now = utc_now()
         event = build_audit_event(
@@ -258,6 +265,7 @@ class SQLiteActionAuditStore:
         external_action_id: UUID | None = None,
         error_code: str | None = None,
         reconciliation: ReconciliationConclusion | None = None,
+        occurred_at: datetime | None = None,
     ) -> ActionRouteSnapshot:
         expected_set = frozenset(expected)
         try:
@@ -267,7 +275,7 @@ class SQLiteActionAuditStore:
                 raise KernelError("action_route_conflict", "Action状态与预期不一致")
             if target not in ALLOWED_ROUTE_TRANSITIONS[current.state]:
                 raise KernelError("action_route_transition", "Action状态迁移不合法")
-            now = utc_now()
+            now = occurred_at or utc_now()
             event = build_audit_event(
                 current.plan,
                 sequence=current.sequence + 1,
@@ -324,13 +332,6 @@ class SQLiteActionAuditStore:
             "ORDER BY plan_id"
         ).fetchall()
         return tuple(self.load(UUID(row[0])) for row in rows)
-
-    @staticmethod
-    def _validate_plan(plan: ActionRoutePlan) -> ActionRoutePlan:
-        try:
-            return ActionRoutePlan.model_validate_json(plan.model_dump_json(warnings="error"))
-        except (ValidationError, ValueError, TypeError):
-            raise KernelError("action_route_plan_invalid", "Action Route Plan不符合契约") from None
 
     def close(self) -> None:
         if not self._closed:

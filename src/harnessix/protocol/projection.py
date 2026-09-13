@@ -30,6 +30,7 @@ from harnessix.agent.models import (
     ThreadForked,
     ToolCallContent,
     ToolResultContent,
+    TrustedActionApprovalRequestContent,
     Turn,
     TurnStarted,
     TurnStateChanged,
@@ -121,6 +122,10 @@ def _approval(value: object) -> PublicApprovalRequestContent:
         approval_type = "process"
         policy_version = value.policy_version
         diff_artifact = None
+    elif isinstance(value, TrustedActionApprovalRequestContent):
+        approval_type = value.presentation
+        policy_version = value.policy_version
+        diff_artifact = _artifact(value.diff_artifact)
     else:
         raise TypeError("不支持的审批内容")
     return PublicApprovalRequestContent(
@@ -162,7 +167,8 @@ def project_item(item: Item) -> PublicItem:
         ApprovalRequestContent
         | PatchApprovalRequestContent
         | PatchBatchApprovalRequestContent
-        | ProcessApprovalRequestContent,
+        | ProcessApprovalRequestContent
+        | TrustedActionApprovalRequestContent,
     ):
         public = _approval(content)
     elif isinstance(content, QuestionRequestContent):

@@ -11,8 +11,11 @@ from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import (
     ProcessActionStateContent,
     ProcessApprovalRequestContent,
+    Thread,
     ToolCallContent,
     ToolResultContent,
+    TrustedActionApprovalRequestContent,
+    Turn,
 )
 from harnessix.artifacts.contracts import ArtifactToolResult
 from harnessix.domain.models import ApprovalDecision, ApprovalRecord, ToolDescriptor
@@ -48,6 +51,57 @@ class NoTools:
     async def execute(self, call: ToolCallContent, cancel: CancelToken) -> ToolResultContent:
         cancel.checkpoint()
         return ToolResultContent(call_id=call.call_id, outcome="failed")
+
+
+class TrustedActionGateway(Protocol):
+    """Agent统一高风险Action端口；批准与执行权由实现背后的Router持有。"""
+
+    def definitions(self) -> tuple[ToolDescriptor, ...]: ...
+
+    async def prepare(
+        self,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        cancel: CancelToken,
+    ) -> TrustedActionApprovalRequestContent | ToolResultContent: ...
+
+    def decide(
+        self,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        approval: TrustedActionApprovalRequestContent,
+        decision: ApprovalDecision,
+    ) -> TrustedActionApprovalRequestContent: ...
+
+    def sync_decision(
+        self,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        approval: TrustedActionApprovalRequestContent,
+    ) -> TrustedActionApprovalRequestContent | None: ...
+
+    async def execute(
+        self,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        approval: TrustedActionApprovalRequestContent,
+        cancel: CancelToken,
+    ) -> ToolResultContent: ...
+
+    async def recover(
+        self,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        approval: TrustedActionApprovalRequestContent | None,
+        cancel: CancelToken,
+    ) -> ToolResultContent | None: ...
+
+    def close(self) -> None: ...
 
 
 class PatchRuntime(Protocol):

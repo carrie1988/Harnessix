@@ -6,6 +6,7 @@ import asyncio
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol, cast
 from uuid import UUID
@@ -20,6 +21,7 @@ from harnessix.domain.models import (
     ApprovalRecord,
     EffectClass,
     PolicyDecisionKind,
+    utc_now,
 )
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
@@ -178,31 +180,62 @@ class TrustedActionRouter:
             audit=self._audit,
         )
 
-    def decide(self, plan_id: UUID, decision: ApprovalDecision) -> ActionRouteSnapshot:
+    def decide(
+        self,
+        plan_id: UUID,
+        decision: ApprovalDecision,
+        *,
+        decided_at: datetime | None = None,
+    ) -> ActionRouteSnapshot:
+        """先持久化Execution批准，再推进Route；精确重放返回原决定。"""
+
         checked_decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
         current = self._audit.load(plan_id)
         if current.plan.execution.policy.decision is not PolicyDecisionKind.REQUIRE_APPROVAL:
             raise KernelError("action_approval_not_required", "Action计划不接受人工审批")
-        checkpoint = ExecutionApprovalCheckpoint(
-            plan_id=plan_id,
-            plan_fingerprint=current.plan.execution.fingerprint,
-            decision=ApprovalRecord(
-                outcome=checked_decision.outcome,
-                actor=checked_decision.actor,
-                reason=checked_decision.reason,
-                request_fingerprint=current.plan.execution.fingerprint,
-            ),
-        )
         existing = self._plans.load_approval(plan_id)
-        if existing is not None and existing != checkpoint:
-            raise KernelError("approval_conflict", "Action计划已经绑定其他审批决定")
-        if existing is None:
+        if existing is not None:
+            recorded = existing.decision
+            if (recorded.outcome, recorded.actor, recorded.reason) != (
+                checked_decision.outcome,
+                checked_decision.actor,
+                checked_decision.reason,
+            ) or (decided_at is not None and recorded.decided_at != decided_at):
+                raise KernelError("approval_conflict", "Action计划已经绑定其他审批决定")
+            checkpoint = existing
+        else:
+            checkpoint = ExecutionApprovalCheckpoint(
+                plan_id=plan_id,
+                plan_fingerprint=current.plan.execution.fingerprint,
+                decision=ApprovalRecord(
+                    outcome=checked_decision.outcome,
+                    actor=checked_decision.actor,
+                    reason=checked_decision.reason,
+                    request_fingerprint=current.plan.execution.fingerprint,
+                    decided_at=decided_at or utc_now(),
+                ),
+            )
             self._plans.record_approval(checkpoint)
         target: ActionRouteState = (
             "ready" if checked_decision.outcome is ApprovalOutcome.APPROVED else "denied"
         )
-        if current.state == target:
+        compatible = (
+            {
+                "ready",
+                "running",
+                "succeeded",
+                "failed",
+                "unknown",
+                "reconciling",
+                "manual_intervention",
+            }
+            if target == "ready"
+            else {"denied"}
+        )
+        if current.state in compatible:
             return current
+        if current.state != "pending_approval":
+            raise KernelError("action_route_conflict", "Action审批与当前Route状态冲突")
         return self._audit.transition(
             plan_id,
             expected={"pending_approval"},
@@ -210,7 +243,14 @@ class TrustedActionRouter:
             approval_outcome=checked_decision.outcome,
             approval_actor=checked_decision.actor,
             error_code=("approval_rejected" if target == "denied" else None),
+            occurred_at=checkpoint.decision.decided_at,
         )
+
+    def approval(self, plan_id: UUID) -> ExecutionApprovalCheckpoint | None:
+        """读取Router执行批准检查点；调用方只能据此补齐相同Session投影。"""
+
+        checkpoint = self._plans.load_approval(plan_id)
+        return checkpoint.model_copy(deep=True) if checkpoint is not None else None
 
     async def execute(self, plan_id: UUID) -> ActionExecutionOutcome:
         """Claim已批准计划并执行一次；取消后对账，发送后失败保留未知效果而不重试。"""
@@ -334,19 +374,27 @@ class TrustedActionRouter:
     def recover_interrupted(self) -> tuple[UUID, ...]:
         recovered: list[UUID] = []
         for current in self._audit.active():
-            if current.state not in {"running", "reconciling"}:
-                continue
-            self._audit.transition(
-                current.plan.execution.plan_id,
-                expected={current.state},
-                target="unknown",
-                executor_id=current.plan.binding.executor_id,
-                external_action_id=current.plan.external_action_id,
-                error_code="host_interrupted",
-                reconciliation=("unknown" if current.state == "reconciling" else None),
-            )
-            recovered.append(current.plan.execution.plan_id)
+            was_interrupted = current.state in {"running", "reconciling"}
+            recovered_route = self.recover_interrupted_plan(current.plan.execution.plan_id)
+            if was_interrupted and recovered_route.state == "unknown":
+                recovered.append(current.plan.execution.plan_id)
         return tuple(recovered)
+
+    def recover_interrupted_plan(self, plan_id: UUID) -> ActionRouteSnapshot:
+        """把单个失去执行Owner的Route保守收敛为unknown，不触发Executor。"""
+
+        current = self._audit.load(plan_id)
+        if current.state not in {"running", "reconciling"}:
+            return current
+        return self._audit.transition(
+            plan_id,
+            expected={current.state},
+            target="unknown",
+            executor_id=current.plan.binding.executor_id,
+            external_action_id=current.plan.external_action_id,
+            error_code="host_interrupted",
+            reconciliation=("unknown" if current.state == "reconciling" else None),
+        )
 
     def status(self, plan_id: UUID) -> ActionRouteSnapshot:
         return self._audit.load(plan_id)

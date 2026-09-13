@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 291,
-    "physical_lines": 62888,
-    "logical_lines": 56019,
-    "documented_modules": 291,
-    "classes": 754,
-    "documented_classes": 234,
-    "functions": 2489,
-    "documented_functions": 228,
+    "source_files": 300,
+    "physical_lines": 64685,
+    "logical_lines": 57575,
+    "documented_modules": 300,
+    "classes": 763,
+    "documented_classes": 243,
+    "functions": 2582,
+    "documented_functions": 258,
     "public_exports": 337,
     "public_contract_types": 156,
     "undocumented_public_behavior": 0,
@@ -195,11 +195,11 @@
   "oversized_files": [
     {
       "path": "src/harnessix/agent/models.py",
-      "lines": 929
+      "lines": 849
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3171
+      "lines": 3113
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -271,31 +271,10 @@
       "path": "src/harnessix/agent/item_reducer.py",
       "qualname": "_start_item",
       "kind": "function",
-      "line": 82,
-      "lines": 261,
+      "line": 88,
+      "lines": 253,
       "documented": true,
-      "decision_complexity": 82
-    },
-    {
-      "id": "harnessix.agent.models:EventDraft",
-      "module": "harnessix.agent.models",
-      "path": "src/harnessix/agent/models.py",
-      "qualname": "EventDraft",
-      "kind": "class",
-      "line": 777,
-      "lines": 139,
-      "documented": false
-    },
-    {
-      "id": "harnessix.agent.models:EventDraft.legacy_event_boundary",
-      "module": "harnessix.agent.models",
-      "path": "src/harnessix/agent/models.py",
-      "qualname": "EventDraft.legacy_event_boundary",
-      "kind": "function",
-      "line": 809,
-      "lines": 107,
-      "documented": false,
-      "decision_complexity": 69
+      "decision_complexity": 76
     },
     {
       "id": "harnessix.agent.models:ThreadForkSnapshot.safe_history",
@@ -303,7 +282,7 @@
       "path": "src/harnessix/agent/models.py",
       "qualname": "ThreadForkSnapshot.safe_history",
       "kind": "function",
-      "line": 502,
+      "line": 522,
       "lines": 48,
       "documented": false,
       "decision_complexity": 24
@@ -325,8 +304,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 169,
-      "lines": 3003,
+      "line": 193,
+      "lines": 2921,
       "documented": true
     },
     {
@@ -335,10 +314,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 172,
-      "lines": 170,
+      "line": 196,
+      "lines": 169,
       "documented": false,
-      "decision_complexity": 58
+      "decision_complexity": 50
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._drive",
@@ -346,7 +325,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2081,
+      "line": 2104,
       "lines": 145,
       "documented": true,
       "decision_complexity": 31
@@ -357,10 +336,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2227,
-      "lines": 270,
+      "line": 2250,
+      "lines": 269,
       "documented": true,
-      "decision_complexity": 62
+      "decision_complexity": 55
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._finish",
@@ -368,10 +347,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 2991,
-      "lines": 162,
+      "line": 2949,
+      "lines": 146,
       "documented": true,
-      "decision_complexity": 48
+      "decision_complexity": 37
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._observe_process_action",
@@ -379,7 +358,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._observe_process_action",
       "kind": "function",
-      "line": 1000,
+      "line": 1025,
       "lines": 102,
       "documented": false,
       "decision_complexity": 21
@@ -390,10 +369,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._recover",
       "kind": "function",
-      "line": 363,
-      "lines": 101,
+      "line": 386,
+      "lines": 100,
       "documented": true,
-      "decision_complexity": 28
+      "decision_complexity": 26
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._reply_approval",
@@ -401,8 +380,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1400,
-      "lines": 135,
+      "line": 1425,
+      "lines": 133,
       "documented": true,
       "decision_complexity": 23
     },
@@ -412,7 +391,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 1915,
+      "line": 1938,
       "lines": 135,
       "documented": true,
       "decision_complexity": 12
@@ -423,7 +402,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 2703,
+      "line": 2737,
       "lines": 211,
       "documented": true,
       "decision_complexity": 60
@@ -434,7 +413,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1635,
+      "line": 1658,
       "lines": 230,
       "documented": false,
       "decision_complexity": 51
@@ -445,7 +424,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.reply_question",
       "kind": "function",
-      "line": 1255,
+      "line": 1280,
       "lines": 102,
       "documented": true,
       "decision_complexity": 18
@@ -466,10 +445,10 @@
       "path": "src/harnessix/agent/turn_reducer.py",
       "qualname": "_change_state",
       "kind": "function",
-      "line": 48,
-      "lines": 224,
+      "line": 49,
+      "lines": 218,
       "documented": true,
-      "decision_complexity": 90
+      "decision_complexity": 87
     },
     {
       "id": "harnessix.agent_cli:ThinAgentCLI",
@@ -1643,7 +1622,7 @@
       "qualname": "SQLiteSessionStore",
       "kind": "class",
       "line": 53,
-      "lines": 417,
+      "lines": 418,
       "documented": true
     },
     {
@@ -1755,8 +1734,8 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 122,
-      "lines": 288,
+      "line": 124,
+      "lines": 334,
       "documented": true
     },
     {
@@ -1765,8 +1744,8 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 29,
-      "lines": 316,
+      "line": 36,
+      "lines": 310,
       "documented": true
     },
     {

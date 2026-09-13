@@ -154,11 +154,11 @@ async def main(mode: str, root: Path) -> None:
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
     if mode == "upgrade":
-        assert EventDraft.model_fields["schema_version"].default == 19
+        assert EventDraft.model_fields["schema_version"].default == 20
         print("当前wheel已原字节升级真实v8会话；migration10-22未重写事件或投影")
         return
 
-    assert EventDraft.model_fields["schema_version"].default == 19
+    assert EventDraft.model_fields["schema_version"].default == 20
     old_event_count = len(before["events"])
     async with AgentRuntime(
         store, ScriptedProvider([answer("v9-answer", "migration10 后继续")])
@@ -172,7 +172,7 @@ async def main(mode: str, root: Path) -> None:
     resumed = database_state(store.path)
     assert resumed["events"][:old_event_count] == before["events"]
     assert all(
-        json.loads(row[3])["schema_version"] == 19 for row in resumed["events"][old_event_count:]
+        json.loads(row[3])["schema_version"] == 20 for row in resumed["events"][old_event_count:]
     )
     assert resumed["threads"][0][4] == 19
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)

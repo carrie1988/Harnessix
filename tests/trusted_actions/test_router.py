@@ -383,6 +383,57 @@ async def test_write_requires_exact_approval_and_workspace_freshness(tmp_path: P
     audit.close()
 
 
+def test_approval_checkpoint_first_crash_replays_original_decision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding(
+        effect=EffectClass.NON_IDEMPOTENT_WRITE,
+        risk=RiskLevel.HIGH,
+        recovery="durable_ledger",
+    )
+    actions, plans, audit = router(
+        root,
+        definition(tool, FakeExecutor(ActionExecutionOutcome(kind="succeeded"))),
+    )
+    planned = actions.plan(invocation(tool), context(root))
+    plan_id = planned.plan.execution.plan_id
+    original_transition = audit.transition
+    failed = False
+
+    def fail_once(*args: object, **kwargs: object) -> object:
+        nonlocal failed
+        if not failed:
+            failed = True
+            raise KernelError("injected_audit_failure", "故障注入")
+        return original_transition(*args, **kwargs)
+
+    monkeypatch.setattr(audit, "transition", fail_once)
+    decision = ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer")
+    with pytest.raises(KernelError) as interrupted:
+        actions.decide(plan_id, decision)
+    assert interrupted.value.code == "injected_audit_failure"
+    checkpoint = plans.load_approval(plan_id)
+    assert checkpoint is not None
+    assert actions.status(plan_id).state == "pending_approval"
+
+    recovered = actions.decide(plan_id, decision)
+
+    assert recovered.state == "ready"
+    assert plans.load_approval(plan_id) == checkpoint
+    with pytest.raises(KernelError) as conflict:
+        actions.decide(
+            plan_id,
+            ApprovalDecision(outcome=ApprovalOutcome.REJECTED, actor="reviewer"),
+        )
+    assert conflict.value.code == "approval_conflict"
+    plans.close()
+    audit.close()
+
+
 async def test_running_recovery_enters_unknown_then_reconciles_once(tmp_path: Path) -> None:
     root = tmp_path / "workspace"
     root.mkdir()

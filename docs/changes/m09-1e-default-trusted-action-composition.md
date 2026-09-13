@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
+version: 4
 code_revision: pending
 owners:
   - core
@@ -28,7 +28,11 @@ related_tests:
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_schemas.py
   - tests/trusted_actions/test_router.py
+  - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_runtime.py
+  - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_schemas.py
+  - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
   - tests/delivery/test_filesystem.py
   - tests/integration/test_container_sandbox.py
@@ -46,9 +50,9 @@ supersedes: []
 | 当前问题 | 默认产品只装配只读Tool；高风险能力分散在专用Bridge；Agent审批与Router审批没有统一 |
 | 目标结果 | 能力证明同时生成广告目录和可执行注册；多文件Patch真实事务发布；固定Profile Process在强Sandbox运行；完整Artifact与重启Reconcile可用 |
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
-| 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v19；新增独立Product Action Config v1和内部Gateway合同 |
+| 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1实现已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵验收并关闭；0.9.1e2的Event v20、Gateway与双账本恢复已完成本地实现和专项回归，尚待全仓及CI关闭；e3～e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -87,7 +91,7 @@ supersedes: []
 1. 创建版本化`ProductActionConfigV1`和能力报告，不改变Product Config v2；
 2. 创建同源`ProductActionCatalog`，广告集合与Router定义集合严格一致；
 3. 为Agent建立通用`TrustedActionGateway`，不为每种新Tool复制核心调度分支；
-4. Agent Event v19持久化精确Plan、Policy、呈现和Artifact绑定，旧事件可继续读取；
+4. Agent Event v20持久化精确Plan、Policy、呈现和Artifact绑定，旧事件可继续读取；
 5. 公共Agent Protocol v1 JSON形状、审批枚举和SDK解析保持不变；
 6. 默认装配Artifact Store和Scoped Reader；
 7. POSIX提供多文件Patch→完整Diff→审批→Workspace Transaction→结果闭环；
@@ -115,7 +119,7 @@ supersedes: []
 - [ ] 源码研究、ADR、详细设计和现行模块文档完整同步；
 - [x] Product Action Config/Capability Report合同冻结并生成Schema；
 - [x] Catalog广告与Router注册同源且属性测试通过；
-- [ ] Agent Event v19新旧读取、Reducer、Approval Match、恢复和公共投影通过；
+- [x] Agent Event v20新旧读取、Reducer、Approval Match、恢复和公共投影通过；
 - [ ] Artifact默认Store/Reader、Action Review purpose与越权测试通过；
 - [ ] POSIX多文件新增/修改/删除Diff审批和真实事务提交通过；
 - [ ] 计划后/审批后Workspace漂移、租约丢失、部分效果与返回丢失恢复通过；
@@ -367,8 +371,8 @@ origin: execution | recovery
 artifact_sha256?
 ```
 
-`ToolResultContent.action_id`等于`plan_id`，`trusted_action`字段保存有界效果，完整结果和Diff只通过Artifact。内部Event Schema从v18追加
-v19；v1～v18解码行为不变，新内容禁止使用旧schema_version。
+`ToolResultContent.action_id`等于`plan_id`，`trusted_action`字段保存有界效果，完整结果和Diff只通过Artifact。交互式提问已占用
+Agent Event v19，因此统一Action内部合同实际追加v20；v1～v19解码行为不变，新内容禁止使用旧`schema_version`。
 
 ### 7.3 Gateway端口
 
@@ -376,6 +380,7 @@ v19；v1～v18解码行为不变，新内容禁止使用旧schema_version。
 definitions() -> tuple[ToolDescriptor, ...]
 prepare(thread, turn, call, cancel) -> TrustedActionApprovalRequestContent | TrustedActionOutcome
 decide(thread, turn, call, approval, decision) -> updated approval
+sync_decision(thread, turn, call, approval) -> updated approval | None
 execute(thread, turn, call, approval, cancel) -> TrustedActionOutcome
 recover(thread, turn, call, approval, cancel) -> TrustedActionOutcome | None
 close() -> None
@@ -411,7 +416,7 @@ idempotency_key = sha256(thread_id, turn_id, call_id, request fingerprint)
 
 ### 8.2 `plan_or_load`
 
-当前Router先写Execution Plan Store，再写Action Audit Store；两者不是同一事务。新增查询优先流程：
+Router已经在0.9.1e1调整为Action Audit先行、Execution Plan后补；两者不是同一事务。当前查询优先流程：
 
 ```text
 try load action route by invocation id:
@@ -426,8 +431,9 @@ if execution plan exists but route plan absent:
 else:
     decode and normalize input
     capture workspace snapshot
-    build and save execution plan
+    build execution plan and route plan
     save route/audit initial state
+    save execution plan
     return snapshot
 ```
 
@@ -786,7 +792,7 @@ on Agent turn resume:
 | 顺序 | 子切片 | 代码/数据改动 | 行为/契约 | 测试 | 可独立回滚 |
 |---:|---|---|---|---|---|
 | 1 | 0.9.1e1 Artifact与Catalog地基 | 默认Artifact Owner、Capability合同、同源Catalog、Router幂等规划 | 无高风险Tool默认执行；建立可证明目录 | 合同、Store、集合属性、产品只读回归 | [CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭 |
-| 2 | 0.9.1e2 Agent Gateway | Event v19、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 是；关闭Gateway目录 |
+| 2 | 0.9.1e2 Agent Gateway | Event v20、通用审批/效果、Gateway端口、Projection兼容、恢复映射 | Router成为批准权威 | Reducer、Session升级、重放、崩溃窗口、SDK | 本地实现与专项回归完成，待全仓及CI关闭 |
 | 3 | 0.9.1e3 Patch/Delivery | Patch定义、Review Artifact、事务Executor/Reconcile、POSIX广告 | 默认产品真实多文件写入 | 新增/改/删、Diff、漂移、Lease、部分效果、SDK/TUI | 是；停止新Patch目录 |
 | 4 | 0.9.1e4 Process/Sandbox | Action Config、Profile Probe、Container Executor/Reconcile、输出Artifact | 有配置且能力通过才广告 | 配置攻击、固定镜像、非零/取消/超时/崩溃/输出 | 是；省略Profile |
 | 5 | 0.9.1e5 产品关闭 | Server Builder/Owner、Preflight/Doctor、启动恢复、运维/威胁/CI | 完整产品纵向链与功能门 | 三平台、省略语义、真实Container、全量CI | 是；保留账本恢复 |
@@ -819,8 +825,8 @@ e1/e2未关闭时直接向Server添加Patch或Process构造参数。
 | 能力组合 | `product_config/action_composition.py` | `ProductActionRuntimeOwner` | `tests/product_config/test_action_composition.py` |
 | 同源目录 | `product_config/action_catalog.py` | `ProductActionCatalog` | `tests/product_config/test_action_catalog.py` |
 | 路由规划 | `trusted_actions/planning.py`、`trusted_actions/router.py` | `plan_action`、`TrustedActionRouter.plan` | `tests/trusted_actions/test_router.py` |
-| Agent Gateway | `trusted_actions/agent_gateway.py` | `RouterBackedAgentActionGateway` | `tests/trusted_actions/test_agent_gateway.py` |
-| 内部事件 | `agent/models.py`、Reducers、`agent/approvals.py` | Trusted Action审批/效果与v19 | `tests/agent/test_trusted_action_runtime.py` |
+| Agent Gateway | [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py)、[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py) | `RouterBackedAgentActionGateway`、函数式规划/决策/执行/恢复核心 | [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) |
+| 内部事件 | [`trusted_action_contracts.py`](../../src/harnessix/agent/trusted_action_contracts.py)、[`models.py`](../../src/harnessix/agent/models.py)、Reducers、[`approvals.py`](../../src/harnessix/agent/approvals.py) | Trusted Action审批/效果与Agent Event v20 | [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py) |
 | Patch执行 | `delivery/trusted_action.py` | `WorkspacePatchActionExecutor` | `tests/delivery/test_trusted_action_patch.py` |
 | Process执行 | `sandbox/trusted_process_action.py` | `ContainerProfileActionExecutor` | `tests/processes/test_trusted_process_action.py` |
 | 产品纵向 | Product Server、Protocol Service、Product UI | 组合与恢复 | `tests/product_config/test_product_actions.py`、`tests/product_ui/test_product_actions.py` |
@@ -1154,3 +1160,163 @@ flowchart TD
 
 0.9.1e2～e5完成后还需在本文记录实际事件版本、数据迁移、真实Patch/Container场景、平台证据与最终偏差。只有第3.3节全部
 勾选后，本文才能转为`historical`并关闭0.9.1。
+
+### 22.11 0.9.1e2实际交付边界
+
+0.9.1e2建立Agent Session与Trusted Action Router之间唯一的高风险Action入口，但不把任何新Patch、Process或Delivery定义装入默认产品。显式组合方可将`RouterBackedAgentActionGateway`传给`AgentRuntime`；Gateway暴露的Tool集合必须与Router中同一`source/source_id`的Binding集合逐项相等。
+
+```mermaid
+flowchart LR
+    Provider[Model Provider] --> Call[持久Tool Call]
+    Call --> Agent[AgentRuntime]
+    Agent --> SessionRuntime[TrustedActionSessionRuntime]
+    SessionRuntime --> Gateway[RouterBackedAgentActionGateway]
+    Gateway --> Router[TrustedActionRouter]
+    Router --> PlanStore[(Execution Plan Store)]
+    Router --> AuditStore[(Action Audit Store)]
+    Gateway --> Approval[Agent Event v20审批投影]
+    Gateway --> Result[Agent Event v20有界效果]
+    Approval --> Public[Agent Protocol v1白名单投影]
+    Result --> Public
+```
+
+本切片不改变Product Config v2、Agent Protocol v1或默认Server能力广告。e3/e4必须复用此入口，不能再为产品Patch或Process添加新的Agent执行权威。
+
+### 22.12 实际模块、类与接口
+
+| 源码 | 关键符号 | 职责 | 禁止边界 |
+|---|---|---|---|
+| [`trusted_action_contracts.py`](../../src/harnessix/agent/trusted_action_contracts.py) | `TrustedActionApprovalRequestContent`、`TrustedActionEffect`、`TrustedActionReview` | 保存Session最小审批、终态与Review引用 | 不保存Router资源正文、执行参数、输出正文或执行许可 |
+| [`ports.py`](../../src/harnessix/agent/ports.py) | `TrustedActionGateway` | 冻结Agent所需的目录、准备、决定同步、执行和恢复端口 | Agent不直接读取Router Store或调用Executor |
+| [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py) | `RouterBackedAgentActionGateway` | 提供不足100行的稳定门面和关闭语义 | 不拥有Router及Store生命周期 |
+| [`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py) | `prepare_action`、`decide_action`、`execute_action`、`recover_action` | 校验目录、构造稳定Invocation、传播审批并映射终态 | 不绕过Router Policy、Approval Checkpoint和Audit状态机 |
+| [`trusted_action_runtime.py`](../../src/harnessix/agent/trusted_action_runtime.py) | `TrustedActionSessionRuntime` | Agent Runtime侧薄协调门面 | 不复制Gateway计划或Router状态机 |
+| [`trusted_action_session.py`](../../src/harnessix/agent/trusted_action_session.py) | `sync_action_decision`、`record_action_decision` | Router先行决定与Session CAS投影的双账本Saga | 不以Session审批替代Execution Approval Checkpoint |
+| [`runtime_recovery.py`](../../src/harnessix/agent/runtime_recovery.py) | `recover_pending_effects` | 聚合旧Patch与统一Action的只核对终结路径 | `pending_approval/ready`不得在终结路径启动副作用 |
+| [`event_compatibility.py`](../../src/harnessix/agent/event_compatibility.py) | `validate_event_boundary` | 集中维护v1～v20新增语义边界 | 新内容不得伪装成旧版本Event |
+| [`router.py`](../../src/harnessix/trusted_actions/router.py) | `decide`、`approval`、`recover_interrupted_plan` | Execution Approval先提交、同语义重放、单计划恢复 | 冲突决定、冲突时间戳和非法Route迁移失败关闭 |
+| [`projection.py`](../../src/harnessix/protocol/projection.py) | `_approval`、`project_item` | 把内部统一审批映射到既有公共类型 | 不公开Plan/Execution Fingerprint、Policy ID和内部Route状态 |
+
+`AgentRuntime`仍是Agent Loop门面。为防止0.9.1e2扩大既有超大类，Gateway校验/执行、Session双账本操作、历史Event版本守卫和效果恢复分别下沉到内聚模块；可读性策略不接受新增超大符号或热点增长。
+
+### 22.13 Event v20与Session migration23
+
+Agent Event v19已经承载提问、回答、`WAITING_INPUT`和Steering语义，不能被统一Action重复占用。实际版本演进如下：
+
+| 层 | 旧版本 | 新版本 | 兼容行为 |
+|---|---:|---:|---|
+| Agent Event/Thread | 19 | 20 | v1～v19继续读取；v19及更早拒绝统一Action审批和效果 |
+| Session Projection | 19 | 20 |读取1～20，后续写入统一升级为20 |
+| SQLite Migration | 22 | 23 | `0023_trusted_action_gateway.sql`为语义升级标记，不重写历史Event或Snapshot正文 |
+| Agent Protocol | 1.0 | 1.0 | Schema和枚举不变，内部presentation映射到现有`tool/patch_batch/process` |
+
+冻结产物为[`agent-event-v20.schema.json`](../../spec/agent-event-v20.schema.json)和[`agent-thread-v20.schema.json`](../../spec/agent-thread-v20.schema.json)。v19产物保持逐字节冻结；升级测试证明旧v19数据库可初始化到migration23并追加v20事件，而旧事件原字节不被重写。
+
+### 22.14 稳定身份与数据流
+
+```mermaid
+sequenceDiagram
+    participant A as AgentRuntime
+    participant S as Session Store
+    participant G as Gateway
+    participant R as TrustedActionRouter
+    participant E as Executor
+
+    A->>S: 已持久ToolCall(thread, turn, call)
+    A->>G: prepare(thread, turn, call)
+    G->>G: UUIDv5(thread, turn, call, tool_fingerprint)
+    G->>R: plan(invocation, planning_context)
+    R-->>G: pending_approval/ready/terminal
+    alt pending_approval
+        G-->>A: TrustedActionApprovalRequestContent
+        A->>S: CAS追加审批请求 + WAITING_APPROVAL
+    else ready
+        G->>R: execute(plan_id)
+        R->>E: 单次Executor调用
+        E-->>R: ActionExecutionOutcome
+        G-->>A: ToolResultContent + TrustedActionEffect
+    end
+```
+
+关键摘要链为：
+
+```text
+plan_id = UUIDv5(thread_id, turn_id, call_id, tool_fingerprint)
+idempotency_key = SHA256(thread_id, turn_id, call_id, tool_fingerprint)
+request_fingerprint = SHA256(
+  thread + turn + workspace + complete_tool_call +
+  plan_fingerprint + execution_fingerprint + policy + presentation + diff_sha256
+)
+```
+
+`TrustedActionReview`只携带可选`ArtifactRef`。`presentation=patch_batch`必须携带Diff Artifact；`presentation=process`禁止携带Diff；审批投影序列化后不得超过16 KiB。`TrustedActionEffect`只保存Plan身份、Plan摘要、终态、来源和可选Artifact摘要，模型可见输出仍受Turn的输出字符预算约束。
+
+### 22.15 Router先行审批Saga与崩溃恢复
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as AgentRuntime
+    participant S as Session Store
+    participant G as Gateway
+    participant P as Execution Plan Store
+    participant R as Action Audit Store
+
+    C->>A: approval decision + Session request fingerprint
+    A->>G: decide(exact call, approval, decision)
+    G->>P: record ExecutionApprovalCheckpoint
+    G->>R: pending_approval -> ready/denied，复用Checkpoint时间戳
+    Note over G,S: 可在Router提交后、Session提交前崩溃
+    G-->>A: Session decision projection
+    A->>S: CAS追加ItemFinished
+    alt 重启发现Session仍未决定
+        A->>G: sync_decision
+        G->>P: load original checkpoint
+        G->>R: exact semantic replay
+        G-->>A: same decision and decided_at
+        A->>S: CAS补齐一次Session投影
+    end
+```
+
+决定一致性采用两种不同但可证明关联的摘要：Router Checkpoint的`request_fingerprint`绑定不可变Execution Plan；Session `ApprovalRecord.request_fingerprint`绑定完整交互请求。Gateway同时核对Plan ID、Plan/Execution Fingerprint、Policy、presentation和Diff摘要，证明两个事实授权的是同一计划。
+
+Router的`decide`先读取既有Checkpoint。同一`outcome/actor/reason`及相同显式时间戳属于幂等重放；任何语义或时间冲突返回`approval_conflict`。Checkpoint已经提交但Audit仍为`pending_approval`时，重放使用原`decided_at`推进Route，避免产生第二个审批事实。
+
+### 22.16 执行、取消与UNKNOWN恢复
+
+| 起始事实 | Gateway行为 | Session结果 | 是否允许Executor再次执行 |
+|---|---|---|---:|
+| `pending_approval`且无决定 | 返回审批请求 | `WAITING_APPROVAL` | 否 |
+| Router `ready` | Router Claim后执行 | 有界成功/失败/未知效果 | 是，仅由Router单次Claim |
+| 决定为`rejected` | 投影`denied` | 失败结果与Action ID | 否 |
+| `running/reconciling`重启 | `recover_interrupted_plan`先收敛到`unknown` | 恢复来源效果 | 否 |
+| `unknown` | 只调用`reconcile` | 成功/失败/未知/人工处置 | 否 |
+| `succeeded/failed/manual_intervention` | 读取Audit终态 | 恢复来源效果 | 否 |
+| 终结路径遇到`pending_approval/ready` | 返回`None` | 由Agent保守终结或保留等待 | 否 |
+
+`CancelToken.run`取消等待中的Executor协程；Router已经在调用前写入`running`。取消后Router把该计划收敛到`unknown`，后续恢复只允许Reconcile。Agent reducer禁止`origin=recovery`的效果把一次中断执行伪装成成功Turn，也禁止`unknown`结果标记为完成或已取消。
+
+### 22.17 公共投影与安全边界
+
+内部统一审批复用公共Agent Protocol v1：
+
+- `presentation=tool`投影为`approval_type=tool`；
+- `presentation=patch_batch`投影为`approval_type=patch_batch`并保留公共Artifact引用；
+- `presentation=process`投影为`approval_type=process`；
+- `plan_id`仅通过既有`ToolResult.action_id`在终态公开；内部Plan/Execution Fingerprint、Policy ID、Route状态和Router错误正文不公开；
+- 未识别异常统一映射为稳定`trusted_action_recovery_failed`，原始异常文本不进入Session；更完整的跨Router异常清洗仍由0.9.4关闭。
+
+Gateway构造时对Descriptor与Router Binding执行精确集合和字段核对，包括版本、Fingerprint、Schema摘要、效果、风险、幂等、审批和Reconcile能力。任何漂移在产品开放前返回`trusted_action_gateway_mismatch`，不会留下部分能力目录。
+
+### 22.18 0.9.1e2测试证据与剩余边界
+
+| 测试 | 当前证明 |
+|---|---|
+| [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) | 确定性Prepare、目录漂移拒绝、Review Artifact绑定、Router权威审批、拒绝不执行、取消转UNKNOWN、Reconcile不重放和调用漂移失败关闭 |
+| [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py) | Agent审批→执行→结果纵向链，以及Router提交后Session提交前崩溃的重启补投影 |
+| [`test_router.py`](../../tests/trusted_actions/test_router.py) | Approval Checkpoint先行、同决定幂等、冲突决定及Checkpoint/Audit崩溃窗口 |
+| [`test_schemas.py`](../../tests/agent/test_schemas.py) | v19冻结摘要、v20运行时Schema一致及旧版本拒绝新语义 |
+| [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | migration23连续性、旧数据库升级和v20追加 |
+| [`test_projection.py`](../../tests/protocol/test_projection.py) | 三种presentation复用Protocol v1且不泄漏内部字段 |
+
+Agent、Trusted Actions与Protocol三个测试目录的联合回归已经通过；最终全仓数量和全矩阵CI运行号在e2关闭提交中固定。当前仍未证明默认产品可修改文件或运行Container；这些能力分别由e3、e4实现，产品Owner、Preflight/Doctor和启动恢复由e5关闭。

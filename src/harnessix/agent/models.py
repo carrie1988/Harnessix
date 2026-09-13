@@ -22,6 +22,10 @@ from pydantic import (
 
 from harnessix.agent.errors import AgentFailure as AgentFailure
 from harnessix.agent.ids import new_id
+from harnessix.agent.trusted_action_contracts import (
+    TrustedActionApprovalRequestContent as TrustedActionApprovalRequestContent,
+)
+from harnessix.agent.trusted_action_contracts import TrustedActionEffect as TrustedActionEffect
 from harnessix.agent.usage import (
     ModelAttempt,
     ModelAttemptFinished,
@@ -36,13 +40,10 @@ from harnessix.context.compaction_ledger_contracts import (
 )
 from harnessix.context.contracts import (
     ContextInspectionRecord,
-    ContextInspectionV2,
-    ContextInspectionV3,
     ContextPrepared,
 )
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspectionRecord,
-    ModelHistoryInspectionV2,
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
@@ -283,6 +284,7 @@ class ToolResultContent(ContractModel):
     patch: PatchEffect | None = None
     patch_batch: PatchBatchEffect | None = None
     process: ProcessActionEffect | None = None
+    trusted_action: TrustedActionEffect | None = None
     diff_artifact: ArtifactRef | None = None
 
     @model_serializer(mode="wrap")
@@ -294,18 +296,34 @@ class ToolResultContent(ContractModel):
             data.pop("patch_batch", None)
         if self.process is None:
             data.pop("process", None)
+        if self.trusted_action is None:
+            data.pop("trusted_action", None)
         if self.diff_artifact is None:
             data.pop("diff_artifact", None)
         return data
 
     @model_validator(mode="after")
     def independent_effects(self) -> Self:
-        if self.diff_artifact is not None and self.patch_batch is None:
+        if (
+            self.diff_artifact is not None
+            and self.patch_batch is None
+            and self.trusted_action is None
+        ):
             raise ValueError("差异效果引用必须附属于整组证据")
-        if sum(effect is not None for effect in (self.patch, self.patch_batch, self.process)) > 1:
-            raise ValueError("单文件、整组和进程证据不能混用")
+        effects = (self.patch, self.patch_batch, self.process, self.trusted_action)
+        if sum(effect is not None for effect in effects) > 1:
+            raise ValueError("旧专用效果与Trusted Action效果不能混用")
         if self.process is not None and self.action_id != self.process.action_id:
             raise ValueError("Process效果与Tool Result Action ID不一致")
+        if self.trusted_action is not None:
+            expected = {
+                "succeeded": "succeeded",
+                "failed": "failed",
+                "unknown": "unknown",
+                "manual_intervention": "unknown",
+            }[self.trusted_action.state]
+            if self.action_id != self.trusted_action.plan_id or self.outcome != expected:
+                raise ValueError("Trusted Action效果与Tool Result终态不一致")
         return self
 
 
@@ -403,6 +421,7 @@ ApprovalContent = (
     | PatchApprovalRequestContent
     | PatchBatchApprovalRequestContent
     | ProcessApprovalRequestContent
+    | TrustedActionApprovalRequestContent
 )
 
 
@@ -456,6 +475,7 @@ ItemContent = Annotated[
     | PatchApprovalRequestContent
     | PatchBatchApprovalRequestContent
     | ProcessApprovalRequestContent
+    | TrustedActionApprovalRequestContent
     | ProcessActionStateContent
     | QuestionRequestContent
     | QuestionAnswerContent
@@ -775,7 +795,9 @@ EventPayload = Annotated[
 
 
 class EventDraft(ContractModel):
-    schema_version: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] = 19
+    schema_version: Literal[
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+    ] = 20
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)
@@ -807,111 +829,9 @@ class EventDraft(ContractModel):
 
     @model_validator(mode="after")
     def legacy_event_boundary(self) -> Self:
-        if self.schema_version < 19 and isinstance(self.payload, ItemStarted | ItemFinished):
-            if isinstance(self.payload.content, QuestionRequestContent | QuestionAnswerContent):
-                raise ValueError("持久提问需要Agent Event v19")
-        if (
-            self.schema_version < 19
-            and isinstance(self.payload, TurnStateChanged)
-            and (self.payload.reason != "normal" or self.payload.status == TurnStatus.WAITING_INPUT)
-        ):
-            raise ValueError("交互状态需要Agent Event v19")
-        if (
-            self.schema_version < 18
-            and isinstance(self.payload, TurnStarted)
-            and self.payload.execution_mode != "immediate"
-        ):
-            raise ValueError("延迟驱动Turn需要Agent Event v18")
-        if (
-            self.schema_version < 17
-            and isinstance(self.payload, TurnStarted)
-            and self.payload.retry_of_turn_id is not None
-        ):
-            raise ValueError("Turn Retry来源需要Agent Event v17")
-        if self.schema_version < 16 and isinstance(self.payload, ThreadForked | ThreadArchived):
-            raise ValueError("Thread生命周期事件需要Agent Event v16")
-        if self.schema_version < 15 and (
-            isinstance(self.payload, CompactionWindowActivated)
-            or (
-                isinstance(self.payload, ModelHistoryPrepared)
-                and isinstance(self.payload.inspection, ModelHistoryInspectionV2)
-            )
-        ):
-            raise ValueError("活动Compaction窗口需要Agent Event v15")
-        if self.schema_version < 14 and isinstance(self.payload, CompactionEvent):
-            raise ValueError("摘要尝试账本需要Agent Event v14")
-        if self.schema_version < 13 and isinstance(self.payload, ModelHistoryPrepared):
-            raise ValueError("Tool Result模型历史检查需要Agent Event v13")
-        if (
-            self.schema_version < 12
-            and isinstance(self.payload, ContextPrepared)
-            and isinstance(self.payload.inspection, ContextInspectionV3)
-        ):
-            raise ValueError("Context 多来源一致性快照需要 Agent Event v12")
-        if (
-            self.schema_version < 11
-            and isinstance(self.payload, ContextPrepared)
-            and isinstance(self.payload.inspection, ContextInspectionV2)
-        ):
-            raise ValueError("Context Source 快照需要 Agent Event v11")
-        if self.schema_version < 10 and isinstance(self.payload, ContextPrepared):
-            raise ValueError("Context 检查记录需要 Agent Event v10")
-        if self.schema_version < 9:
-            if (
-                isinstance(self.payload, TurnStateChanged)
-                and self.payload.status == TurnStatus.WAITING_ACTION
-            ):
-                raise ValueError("Process Action等待状态需要Agent Event v9")
-            if isinstance(self.payload, ItemStarted | ItemFinished):
-                content = self.payload.content
-                if isinstance(
-                    content, ProcessApprovalRequestContent | ProcessActionStateContent
-                ) or (isinstance(content, ToolResultContent) and content.process is not None):
-                    raise ValueError("Process Action投影需要Agent Event v9")
-        if self.schema_version < 8 and isinstance(self.payload, ItemStarted | ItemFinished):
-            content = self.payload.content
-            if isinstance(content, ToolResultContent | PatchBatchApprovalRequestContent):
-                if content.diff_artifact is not None:
-                    raise ValueError("差异归档引用需要 Agent Event v8")
-        if self.schema_version < 7 and isinstance(self.payload, ItemStarted | ItemFinished):
-            content = self.payload.content
-            if isinstance(content, PatchBatchApprovalRequestContent) or (
-                isinstance(content, ToolResultContent) and content.patch_batch is not None
-            ):
-                raise ValueError("整组审批与效果需要 Agent Event v7")
-        if self.schema_version < 6 and isinstance(self.payload, ItemStarted | ItemFinished):
-            content = self.payload.content
-            if isinstance(content, PatchApprovalRequestContent) or (
-                isinstance(content, ToolResultContent) and content.patch is not None
-            ):
-                raise ValueError("写审批和效果证据需要 Agent Event v6")
-        if (
-            self.schema_version < 5
-            and isinstance(self.payload, ModelUsageObserved)
-            and self.payload.billing is not None
-        ):
-            raise ValueError("响应计费元数据需要 Agent Event v5")
-        if self.schema_version < 4 and isinstance(
-            self.payload, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
-        ):
-            raise ValueError("模型尝试和用量观测需要 Agent Event v4")
-        if self.schema_version < 3 and isinstance(self.payload, ItemStarted | ItemFinished):
-            if isinstance(self.payload.content, PlanContent | CompactionContent | ErrorContent):
-                raise ValueError("Plan/Compaction/Error Item 需要 Agent Event v3")
-        if self.schema_version == 1:
-            payload = self.payload
-            if (
-                isinstance(payload, TurnStateChanged)
-                and payload.status == TurnStatus.WAITING_APPROVAL
-            ):
-                raise ValueError("审批状态需要 Agent Event v2")
-            if isinstance(payload, ItemStarted | ItemFinished):
-                content = payload.content
-                if isinstance(content, ApprovalRequestContent) or (
-                    isinstance(content, ToolCallContent)
-                    and (content.requires_approval or content.tool_fingerprint is not None)
-                ):
-                    raise ValueError("审批契约需要 Agent Event v2")
+        from harnessix.agent.event_compatibility import validate_event_boundary
+
+        validate_event_boundary(self)
         return self
 
 

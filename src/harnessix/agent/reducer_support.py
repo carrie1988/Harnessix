@@ -31,6 +31,16 @@ def require(condition: bool, message: str) -> None:
         raise KernelError("invalid_event", message)
 
 
+def effect_origin_is_recovery(content: ToolResultContent) -> bool:
+    """判断专用或统一副作用证据是否来自恢复路径。"""
+
+    return (
+        (content.patch is not None and content.patch.origin == "recovery")
+        or (content.patch_batch is not None and content.patch_batch.origin == "recovery")
+        or (content.trusted_action is not None and content.trusted_action.origin == "recovery")
+    )
+
+
 def get_turn(thread: Thread, turn_id: UUID) -> Turn:
     for turn in thread.turns:
         if turn.turn_id == turn_id:

@@ -102,7 +102,7 @@ async def main(mode, root):
         assert before == state(store.path)
         print("v13 reader拒绝migration16及后续版本且未修改数据库")
         return
-    assert EventDraft.model_fields["schema_version"].default == 19
+    assert EventDraft.model_fields["schema_version"].default == 20
     original = json.loads(metadata.read_text())
     await store.initialize()
     after = state(store.path)

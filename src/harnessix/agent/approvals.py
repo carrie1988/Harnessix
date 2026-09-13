@@ -5,21 +5,24 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import timedelta
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from pydantic import ValidationError
 
+from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     ApprovalContent,
+    ApprovalRequestContent,
     Item,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
     ProcessApprovalRequestContent,
     Thread,
     ToolCallContent,
+    TrustedActionApprovalRequestContent,
     Turn,
 )
-from harnessix.domain.models import EffectClass, ToolDescriptor, utc_now
+from harnessix.domain.models import ApprovalDecision, EffectClass, ToolDescriptor, utc_now
 from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.batch_contracts import PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
@@ -30,6 +33,7 @@ from harnessix.processes.test_contracts import RunTestsInput
 from harnessix.tools.workspace import digest
 
 READ_ONLY_POLICY_VERSION = "kernel-read-only/v1"
+_TRUSTED_ACTION_NAMESPACE = UUID("f5cc2cc0-5b13-4f37-bd6e-7b3111b10c03")
 
 
 def _fingerprint(value: object) -> str:
@@ -77,6 +81,54 @@ def execution_fingerprint(
     )
 
 
+def trusted_action_invocation_id(
+    thread_id: UUID,
+    turn_id: UUID,
+    call: ToolCallContent,
+) -> UUID:
+    """从持久调用身份导出稳定Plan ID，重启不得产生第二个副作用计划。"""
+
+    if call.tool_fingerprint is None:
+        raise ValueError("Trusted Action调用缺少Tool Fingerprint")
+    return uuid5(
+        _TRUSTED_ACTION_NAMESPACE,
+        f"{thread_id}:{turn_id}:{call.call_id}:{call.tool_fingerprint}",
+    )
+
+
+def trusted_action_request_fingerprint(
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    *,
+    plan_id: UUID,
+    plan_fingerprint: str,
+    execution_fingerprint: str,
+    policy_id: str,
+    policy_version: str,
+    presentation: str,
+    diff_sha256: str | None,
+) -> str:
+    """绑定Session归属、完整调用、Router计划及可见Review证据。"""
+
+    return _fingerprint(
+        {
+            "spec_version": "harnessix.agent-trusted-action-approval/v1",
+            "thread_id": str(thread.thread_id),
+            "turn_id": str(turn.turn_id),
+            "workspace": thread.workspace,
+            "call": call.model_dump(mode="json"),
+            "plan_id": str(plan_id),
+            "plan_fingerprint": plan_fingerprint,
+            "execution_fingerprint": execution_fingerprint,
+            "policy_id": policy_id,
+            "policy_version": policy_version,
+            "presentation": presentation,
+            "diff_sha256": diff_sha256,
+        }
+    )
+
+
 def approval_for(turn: Turn, call: ToolCallContent) -> Item | None:
     return next(
         (
@@ -86,6 +138,55 @@ def approval_for(turn: Turn, call: ToolCallContent) -> Item | None:
         ),
         None,
     )
+
+
+def approval_action_id(turn: Turn, call: ToolCallContent) -> UUID | None:
+    """返回统一Action或旧Process审批绑定的稳定执行身份。"""
+
+    item = approval_for(turn, call)
+    if item is None:
+        return None
+    if isinstance(item.content, TrustedActionApprovalRequestContent):
+        return item.content.plan_id
+    if isinstance(item.content, ProcessApprovalRequestContent):
+        return item.content.plan.action_id
+    return None
+
+
+def approval_was_decided(content: ApprovalContent, decision: ApprovalDecision) -> bool:
+    """同语义决定幂等返回；冲突重放失败关闭。"""
+
+    recorded = content.decision
+    if recorded is None:
+        return False
+    if (recorded.outcome, recorded.actor, recorded.reason) != (
+        decision.outcome,
+        decision.actor,
+        decision.reason,
+    ):
+        raise KernelError("approval_conflict", "审批已绑定其他决定")
+    return True
+
+
+def approval_type_matches(call: ToolCallContent, content: ApprovalContent) -> bool:
+    """校验审批投影是否适用于当前Tool前端及效果类别。"""
+
+    if not call.requires_approval:
+        return False
+    if isinstance(content, TrustedActionApprovalRequestContent):
+        return True
+    if isinstance(content, ApprovalRequestContent):
+        return call.effect_class is EffectClass.READ_ONLY
+    if call.effect_class is not EffectClass.NON_IDEMPOTENT_WRITE:
+        return False
+    if isinstance(content, ProcessApprovalRequestContent):
+        return call.tool in PROCESS_AGENT_FRONTENDS
+    expected_tool = (
+        "apply_patch_batch"
+        if isinstance(content, PatchBatchApprovalRequestContent)
+        else "apply_patch"
+    )
+    return call.tool == expected_tool
 
 
 def validate_patch_plan(
@@ -176,6 +277,30 @@ def approval_matches(
     call: ToolCallContent,
     content: ApprovalContent,
 ) -> bool:
+    if isinstance(content, TrustedActionApprovalRequestContent):
+        try:
+            expected_plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        except ValueError:
+            return False
+        return (
+            call.requires_approval
+            and content.plan_id == expected_plan_id
+            and content.request_fingerprint
+            == trusted_action_request_fingerprint(
+                thread,
+                turn,
+                call,
+                plan_id=content.plan_id,
+                plan_fingerprint=content.plan_fingerprint,
+                execution_fingerprint=content.execution_fingerprint,
+                policy_id=content.policy_id,
+                policy_version=content.policy_version,
+                presentation=content.presentation,
+                diff_sha256=(
+                    content.diff_artifact.sha256 if content.diff_artifact is not None else None
+                ),
+            )
+        )
     if isinstance(content, ProcessApprovalRequestContent):
         return (
             validate_process_plan(thread, turn, call, content.plan)

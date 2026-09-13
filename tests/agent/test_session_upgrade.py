@@ -10,7 +10,7 @@ from uuid import UUID
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Thread
+from harnessix.agent.models import EventDraft, Thread, ThreadCreated
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
@@ -178,13 +178,14 @@ async def test_old_transcript_migrates_without_rewriting_history(
             (20,),
             (21,),
             (22,),
+            (23,),
         ]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 19
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 20
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 19 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 20 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -193,10 +194,50 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 20")
+        database.execute("UPDATE agent_threads SET projection_version = 21")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"
+
+
+async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "v19.db")
+    await store.initialize()
+    thread_id = UUID("aebf4df1-c012-4c5e-a252-5344a29c8a3f")
+    await store.append(
+        thread_id,
+        [EventDraft(schema_version=19, payload=ThreadCreated(workspace=str(tmp_path)))],
+        expected_sequence=0,
+    )
+    with sqlite3.connect(store.path) as database:
+        original = database.execute(
+            "SELECT event_json FROM agent_events WHERE thread_id = ? AND sequence = 1",
+            (str(thread_id),),
+        ).fetchone()[0]
+        database.execute(
+            "UPDATE agent_threads SET projection_version = 19 WHERE thread_id = ?",
+            (str(thread_id),),
+        )
+
+    async with AgentRuntime(store, FakeProvider("升级成功")) as runtime:
+        completed = await runtime.run_turn(thread_id, "继续任务", request_id="v20")
+
+    assert completed.status == "completed"
+    with sqlite3.connect(store.path) as database:
+        rows = database.execute(
+            "SELECT event_json FROM agent_events WHERE thread_id = ? ORDER BY sequence",
+            (str(thread_id),),
+        ).fetchall()
+        assert rows[0][0] == original
+        assert json.loads(rows[0][0])["schema_version"] == 19
+        assert all(json.loads(row[0])["schema_version"] == 20 for row in rows[1:])
+        assert (
+            database.execute(
+                "SELECT projection_version FROM agent_threads WHERE thread_id = ?",
+                (str(thread_id),),
+            ).fetchone()[0]
+            == 20
+        )
 
 
 async def test_second_host_cannot_migrate_before_obtaining_owner_lock(tmp_path: Path) -> None:

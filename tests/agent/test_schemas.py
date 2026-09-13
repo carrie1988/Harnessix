@@ -65,8 +65,8 @@ def test_generated_schemas_match_code() -> None:
         "thread-archive-v1.schema.json": ThreadArchiveRecord.model_json_schema(),
         "tool-result-view-decision-v1.schema.json": ToolResultViewDecision.model_json_schema(),
         "tool-result-view-policy-v1.schema.json": ToolResultViewPolicy.model_json_schema(),
-        "agent-event-v19.schema.json": AgentEvent.model_json_schema(),
-        "agent-thread-v19.schema.json": Thread.model_json_schema(),
+        "agent-event-v20.schema.json": AgentEvent.model_json_schema(),
+        "agent-thread-v20.schema.json": Thread.model_json_schema(),
         "context-fragment-v1.schema.json": ContextFragment.model_json_schema(),
         "context-limits-v1.schema.json": ContextLimits.model_json_schema(),
         "context-inspection-v1.schema.json": ContextInspection.model_json_schema(),
@@ -100,7 +100,7 @@ def test_event_version_and_unknown_fields_fail_closed() -> None:
     with pytest.raises(ValidationError):
         EventDraft.model_validate(
             {
-                "schema_version": 20,
+                "schema_version": 21,
                 "payload": {"type": "thread_created", "workspace": "/tmp"},
             }
         )
@@ -134,7 +134,7 @@ def test_approval_features_require_v2() -> None:
     ]:
         with pytest.raises(ValidationError):
             EventDraft(schema_version=1, payload=payload)
-        assert EventDraft(payload=payload).schema_version == 19
+        assert EventDraft(payload=payload).schema_version == 20
 
 
 def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
@@ -147,7 +147,7 @@ def test_turn_retry_source_requires_v17_and_legacy_export_is_frozen() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=16, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 19
+    assert EventDraft(payload=payload).schema_version == 20
 
     legacy = EventDraft(
         schema_version=16,
@@ -165,7 +165,7 @@ def test_deferred_turn_execution_requires_v18_and_legacy_export_is_frozen() -> N
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=17, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 19
+    assert EventDraft(payload=payload).schema_version == 20
 
     legacy = EventDraft(
         schema_version=17,
@@ -193,7 +193,7 @@ def test_interactive_turn_features_require_v19_and_legacy_export_is_frozen() -> 
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=18, payload=payload)
-    assert EventDraft(payload=payload).schema_version == 19
+    assert EventDraft(payload=payload).schema_version == 20
 
     state = TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT, reason="steering")
     with pytest.raises(ValidationError):
@@ -203,6 +203,44 @@ def test_interactive_turn_features_require_v19_and_legacy_export_is_frozen() -> 
         payload=state.model_copy(update={"reason": "normal"}),
     ).model_dump(mode="json")
     assert "reason" not in legacy["payload"]
+
+
+def test_trusted_action_projection_requires_v20() -> None:
+    from harnessix.agent.models import (
+        ItemStarted,
+        ToolResultContent,
+        TrustedActionApprovalRequestContent,
+        TrustedActionEffect,
+    )
+
+    plan_id = uuid4()
+    approval = TrustedActionApprovalRequestContent(
+        approval_id=uuid4(),
+        call_id=uuid4(),
+        presentation="tool",
+        plan_id=plan_id,
+        plan_fingerprint="1" * 64,
+        execution_fingerprint="2" * 64,
+        request_fingerprint="3" * 64,
+        policy_id="test.policy",
+        policy_version="1",
+    )
+    result = ToolResultContent(
+        call_id=approval.call_id,
+        outcome="failed",
+        action_id=plan_id,
+        trusted_action=TrustedActionEffect(
+            plan_id=plan_id,
+            plan_fingerprint=approval.plan_fingerprint,
+            state="failed",
+            origin="execution",
+        ),
+    )
+    for content in (approval, result):
+        payload = ItemStarted(item_id=uuid4(), content=content)
+        with pytest.raises(ValidationError):
+            EventDraft(schema_version=19, payload=payload)
+        assert EventDraft(payload=payload).schema_version == 20
 
 
 def test_context_inspection_requires_v10() -> None:
@@ -221,7 +259,7 @@ def test_context_inspection_requires_v10() -> None:
     with pytest.raises(ValidationError):
         EventDraft(schema_version=9, payload=ContextPrepared(inspection=inspection))
     assert EventDraft(schema_version=10, payload=ContextPrepared(inspection=inspection))
-    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 19
+    assert EventDraft(payload=ContextPrepared(inspection=inspection)).schema_version == 20
 
 
 def test_context_source_snapshot_requires_v11() -> None:
@@ -251,7 +289,7 @@ def test_context_source_snapshot_requires_v11() -> None:
     )
     with pytest.raises(ValidationError):
         EventDraft(schema_version=10, payload=ContextPrepared(inspection=current))
-    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 19
+    assert EventDraft(payload=ContextPrepared(inspection=current)).schema_version == 20
 
 
 def test_context_consistency_snapshot_requires_v12() -> None:
@@ -427,6 +465,12 @@ def test_historical_schemas_are_frozen() -> None:
             ),
             "agent-thread-v16.schema.json": (
                 "f986f75ffd9dd3416a84d022ed8982523e2ac599ec2d5e79835d9b811b226bda"
+            ),
+            "agent-event-v19.schema.json": (
+                "a8d204c867ef83fe22ccc92343d5336ef30ea4bd566714409bd1ff645e48e704"
+            ),
+            "agent-thread-v19.schema.json": (
+                "fb7aeb3aafd7caf285ba327219818f03ee14d77a19184c4ad116eebc3d26b1fd"
             ),
             "model-history-inspection-v1.schema.json": (
                 "86c210a0e49e77a2fb45e5db1b1d9c8f8392e217115034db33f0a54c40a8852a"

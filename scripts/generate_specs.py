@@ -263,8 +263,8 @@ def generate_specs(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
     write_json(output / "openapi.json", create_app().openapi())
-    write_json(output / "agent-event-v19.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v19.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v20.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v20.schema.json", Thread.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )

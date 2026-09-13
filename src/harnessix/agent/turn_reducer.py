@@ -29,6 +29,7 @@ from harnessix.agent.models import (
 from harnessix.agent.reducer_support import (
     _process_approval,
     _process_effects,
+    effect_origin_is_recovery,
     pending_calls,
     require,
 )
@@ -128,13 +129,7 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
             require(
                 not any(
                     isinstance(i.content, ToolResultContent)
-                    and (
-                        (i.content.patch is not None and i.content.patch.origin == "recovery")
-                        or (
-                            i.content.patch_batch is not None
-                            and i.content.patch_batch.origin == "recovery"
-                        )
-                    )
+                    and effect_origin_is_recovery(i.content)
                     for i in turn.items
                 ),
                 "恢复效果不能把中断执行冒充成功 Turn",

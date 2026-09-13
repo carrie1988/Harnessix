@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,9 +12,11 @@ from harnessix.agent.models import (
     QuestionAnswerContent,
     QuestionRequestContent,
     ToolCallContent,
+    TrustedActionApprovalRequestContent,
 )
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.domain.models import EffectClass
+from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.domain.models import EffectClass, utc_now
 from harnessix.models.scripted import FakeProvider
 from harnessix.protocol.projection import (
     project_event,
@@ -136,3 +139,43 @@ def test_question_projection_exposes_only_ui_contract() -> None:
     )
     assert request.content.kind == "question_request"
     assert answer.content.kind == "question_answer"
+
+
+def test_trusted_action_approval_reuses_public_v1_shape_without_private_plan_fields() -> None:
+    artifact = ArtifactRef(
+        artifact_id=uuid4(),
+        sha256="a" * 64,
+        size_bytes=12,
+        records=1,
+        complete=True,
+        expires_at=utc_now() + timedelta(hours=1),
+    )
+    approval = TrustedActionApprovalRequestContent(
+        approval_id=uuid4(),
+        call_id=uuid4(),
+        presentation="patch_batch",
+        plan_id=uuid4(),
+        plan_fingerprint="1" * 64,
+        execution_fingerprint="2" * 64,
+        request_fingerprint="3" * 64,
+        policy_id="product.policy",
+        policy_version="1",
+        diff_artifact=artifact,
+    )
+
+    projected = project_item(Item(item_id=uuid4(), status=ItemStatus.STARTED, content=approval))
+    wire = projected.model_dump(mode="json", by_alias=True)["content"]
+
+    assert wire["kind"] == "approval_request"
+    assert wire["approvalType"] == "patch_batch"
+    assert wire["diffArtifact"]["sha256"] == artifact.sha256
+    assert set(wire) == {
+        "kind",
+        "approvalType",
+        "approvalId",
+        "callId",
+        "requestFingerprint",
+        "policyVersion",
+        "decision",
+        "diffArtifact",
+    }
