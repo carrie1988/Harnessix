@@ -9,7 +9,17 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
+from harnessix.agent.runtime import AgentRuntime
+from harnessix.app_server.server import AgentProtocolServer
+from harnessix.app_server.service import AgentApplicationService
+from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
+from harnessix.models.scripted import ScriptedProvider
+from harnessix.protocol.contracts import ItemPublicEvent, PublicToolResultContent
+from harnessix.protocol.requests import SQLiteProtocolRequestStore
+from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
+from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
+from tests.agent.helpers import answer
 from tests.tools.test_files import call, execute
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="Windows原生Handle运行时语义")
@@ -39,6 +49,68 @@ async def test_windows_runtime_executes_all_four_read_tools(tmp_path: Path) -> N
         assert [(item["path"], item["line"]) for item in matched.output["matches"]] == [
             ("src/a.py", 2)
         ]
+
+
+async def test_windows_product_server_sdk_reads_unicode_space_and_long_path(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "项目 workspace"
+    relative = "/".join(["长路径segment" * 6] * 4) + "/主程序.py"
+    target = workspace / Path(*relative.split("/"))
+    target.parent.mkdir(parents=True)
+    target.write_bytes("产品纵向读取\n".encode())
+    assert len(str(target)) > 260
+
+    provider = ScriptedProvider(
+        [
+            [
+                ResponseStarted(response_id="windows-product-read"),
+                ToolCallCompleted(
+                    call_id="windows-product-read-call",
+                    tool="read_file",
+                    arguments={"path": relative, "max_lines": 1},
+                ),
+                ResponseCompleted(finish_reason="tool_calls"),
+            ],
+            answer("Windows产品读链完成"),
+        ]
+    )
+    sessions = SQLiteSessionStore(tmp_path / "state" / "sessions.db")
+    async with CodingToolRuntime(workspace) as tools:
+        async with AgentRuntime(sessions, provider, scoped_tools=tools) as runtime:
+            service = AgentApplicationService(
+                runtime,
+                sessions,
+                SQLiteProtocolRequestStore(sessions.path),
+                workspace=workspace,
+            )
+            client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+            await client.initialize()
+            thread = await client.create_thread(str(workspace), request_id="windows-create")
+            accepted = await client.start_turn(
+                thread.thread_id,
+                "读取Unicode长路径文件",
+                request_id="windows-read",
+            )
+            assert accepted.status == "accepted"
+
+            await service.close()
+            current = await client.get_thread(thread.thread_id)
+            replay = await client.replay_events(thread.thread_id, limit=100)
+            results = [
+                event.data.item.content
+                for event in replay.events
+                if isinstance(event.data, ItemPublicEvent)
+                and isinstance(event.data.item.content, PublicToolResultContent)
+            ]
+
+            assert current.latest_turn is not None
+            assert current.latest_turn.status == "completed"
+            assert len(results) == 1
+            assert results[0].outcome == "succeeded"
+            assert results[0].output["text"] == "产品纵向读取\n"  # type: ignore[index]
+            assert len(provider.requests) == 2
+            await client.close()
 
 
 async def test_windows_runtime_enforces_revision_denial_and_long_paths(tmp_path: Path) -> None:
