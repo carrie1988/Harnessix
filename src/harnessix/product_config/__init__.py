@@ -20,6 +20,11 @@ from harnessix.product_config.contracts import (
     ProviderFallbackDecision,
     SecretReference,
 )
+from harnessix.product_config.wizard import (
+    ConfigurationWriteRequest,
+    build_product_config,
+    write_product_config,
+)
 
 __all__ = [
     "ConfigAuditEvent",
@@ -28,6 +33,7 @@ __all__ = [
     "ConfigurationDiagnostic",
     "ConfigurationDiagnosticReport",
     "ConfigurationWriteReceipt",
+    "ConfigurationWriteRequest",
     "EnvironmentSecretSourceConfig",
     "ModelCapabilities",
     "ModelProfile",
@@ -40,4 +46,6 @@ __all__ = [
     "ProviderDefinition",
     "ProviderFallbackDecision",
     "SecretReference",
+    "build_product_config",
+    "write_product_config",
 ]
