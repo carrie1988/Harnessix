@@ -20,6 +20,7 @@ from harnessix.product_config.contracts import (
     ProviderFallbackDecision,
     SecretReference,
 )
+from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     build_product_config,
@@ -42,10 +43,12 @@ __all__ = [
     "ProductConfigV2",
     "ProductPreflightCheck",
     "ProductPreflightReport",
+    "ProductPreflightRequest",
     "ProfileSelection",
     "ProviderDefinition",
     "ProviderFallbackDecision",
     "SecretReference",
     "build_product_config",
+    "run_product_preflight",
     "write_product_config",
 ]
