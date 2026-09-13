@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 2
-code_revision: d9dbfe664a14d7095e2c4adbfd1b2c88f4d4c5c6
+version: 3
+code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
 owners:
   - core
 modules:
@@ -10,6 +10,7 @@ modules:
   - research
 related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
+  - docs/adr/0079-preflight-and-native-read-port.md
 related_tests: []
 supersedes: []
 ---
@@ -22,7 +23,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含28份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含29份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -117,6 +118,7 @@ flowchart LR
 | 主题 | 冻结访问日期 | 参考版本 | 采用结果/当前入口 |
 |---|---|---|---|
 | [CLI/TUI产品体验与可恢复客户端](cli-tui-product-experience.md) | 2026-09-13 | 正文专项基线 | [ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)、[0.9.1详细设计](../changes/m09-1-cli-tui-product-experience.md) |
+| [配置、Preflight与Windows原生只读Runtime](configuration-preflight-and-windows-read-runtime.md) | 2026-09-13 | 0.9.1d专项基线 | [ADR 0079](../adr/0079-preflight-and-native-read-port.md)、[0.9.1d详细设计](../changes/m09-1d-configuration-preflight-windows-read.md) |
 
 ## 5. 推荐阅读顺序
 

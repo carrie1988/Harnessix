@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 11
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 12
+code_revision: 601e23cc7be38392e82de308dd67c9cdf55f890f
 owners:
   - core
 modules:
@@ -720,7 +720,7 @@ return memoized_sanitized_close_report()
 | 0.9.1a | SDK Response/Frame/Result/Handshake加固；ClientState、Store、Command分配、连接代际和纯Reducer | 保持Protocol v1；新增Client State v1 | 恶意帧、断线窗口、状态崩溃、Reducer属性与三平台文件测试 | 是；不含Textual |
 | 0.9.1b | `harnessix code`、Textual App、Transcript、Composer、Session Picker/Resume | 保留薄CLI；新增正式TUI入口 | `run_test`/Pilot、真实stdio、Resize、Prompt重复提交和退出 | 是；可退回薄CLI |
 | 0.9.1c | Plan、Tool、Approval、Question、Diff、Usage/Cost、Cancel/Steer、错误自助 | 不扩张Approval领域值 | 身份错配、Artifact失败、Gap、成本未知、终端恢复 | 是；Screen按能力关闭 |
-| 0.9.1d | Configure、Preflight、Doctor、Windows Workspace只读端口和产品装配 | Windows成为原生只读支持平台 | 盘符/UNC/ADS/Reparse/共享竞态、三平台产品Smoke | 是；Windows能力失败关闭 |
+| 0.9.1d | [Configure、Preflight、Doctor、Windows Workspace只读端口和产品装配](m09-1d-configuration-preflight-windows-read.md) | Windows成为原生只读支持平台 | 盘符/UNC/ADS/Reparse/共享竞态、三平台产品Smoke | 是；Windows能力失败关闭 |
 | 0.9.1e | Artifact、Patch、Process、Delivery和统一Trusted Action默认装配 | 不新增旁路执行；能力广告按验证结果 | Policy/Approval/Journal/Sandbox/UNKNOWN/交付恢复端到端 | 是；逐能力Feature Gate回退 |
 
 每个子切片执行顺序固定为：源码研究补证据、架构/契约更新、最小实现、故障恢复测试、真实场景验证、现行文档同步。
@@ -888,5 +888,5 @@ Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真
 路线图0.9.1保持未完成。
 
 
-0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d和0.9.1e仍未实现。当前不包含
+0.9.1a、0.9.1b与0.9.1c已关闭；0.9.1d已完成专项源码研究、ADR和详细设计并进入实现；0.9.1e仍未实现。当前不包含
 配置向导/Doctor、Windows只读产品端口或统一Action默认装配，不能由领域交互完成状态推断这些能力已经可用。
