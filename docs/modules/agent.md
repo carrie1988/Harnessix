@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 7c50a5815e3d859fcdd93176d8a5019bf419b6bc
+version: 2
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -37,7 +37,7 @@ supersedes: []
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry与崩溃恢复 |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` |
+| 代码版本 | `35e9e889f78534fd8866f76cfe24d936b08d345d`；包含0.9.1c未提交实现时以本次提交父Revision表示 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool和App Server；Context、Patch、Process等端口可显式装配，但尚未全部进入默认产品链 |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=19`；SQLite Session迁移连续到22 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
@@ -352,6 +352,34 @@ Steering作为新的用户消息持久化。它不粗暴终止正在消费的Pro
 待处理Tool Call时，通过Event v19允许`CALLING_MODEL`边界重入，使下一步模型看到新指令。这样既保留
 当前Attempt的用量和输出事实，也避免把半个Provider响应静默丢弃。
 
+Steering也允许发生在首个模型步骤的历史准备期间。历史准备包含“读取Session、生成模型视图、验证Artifact、
+持久化`ModelHistoryPrepared`”多个步骤，不能假定其间Session不变。实际实现把该并发边界提取到
+[`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py)：验证完成后在Thread锁内重新
+从最新Session事实生成同一`PreparedModelHistory`；若与已验证快照不同，则丢弃旧准备结果并重新执行准备和
+Artifact验证，不提交过期检查记录。若最新状态已经是`CANCELLING/CANCELLED`，则转入`TurnCancelled`收敛路径。
+
+```mermaid
+sequenceDiagram
+    participant D as Agent驱动
+    participant H as ModelHistoryRuntime
+    participant S as SessionStore
+    participant C as Steering客户端
+    D->>H: 准备下一Model Step
+    H->>S: 读取快照N并生成模型历史
+    H->>H: 验证历史Artifact
+    C->>S: 在Thread锁内追加Steering用户Item 得到N+1
+    H->>S: 在Thread锁内重读并重新生成
+    alt 历史快照已变化
+        H->>H: 放弃旧检查并重新准备和验证
+        H->>S: 以N+1原子提交ModelHistoryPrepared
+    else 历史仍相同
+        H->>S: 以N原子提交ModelHistoryPrepared
+    end
+```
+
+这不是对`invalid_event`的事后重试：旧准备结果在进入Reducer前就完成确定性比较，因此真实合同损坏仍按
+`invalid_event`失败，只有可证明由并发Session变化造成的快照失效才重新准备。
+
 ## 14. 取消、超时和关闭
 
 ```mermaid
@@ -447,6 +475,8 @@ Upcast旧Event；`rebuild`从完整Event Log重新投影，可发现快照与历
 - Runtime内每个Thread一把锁，所有状态命令串行；不同Thread可并行；
 - `_active`记录活动Turn的Token和Task，关闭和取消必须完整回收；
 - Session `expected_sequence`提供跨调用CAS，冲突不会静默覆盖；
+- 模型历史Artifact验证后必须在Thread锁内重建并比较最新模型视图；并发Steering导致差异时重新准备，不能把
+  过期`ModelHistoryPrepared`提交给Reducer；
 - 单数据库Runtime Owner防止两个本地Agent宿主并发驱动同一Session；
 - 并行只读Tool的完成顺序不影响持久顺序；写效果不进入并行组；
 - App Service先持久`ACCEPTED`再启动后台Task，崩溃不会形成“已响应但无接受事实”的空洞。
@@ -515,7 +545,15 @@ drive(turn):
     while turn is active:
         checkpoint cancellation and deadline
         append PREPARING_CONTEXT
-        context = prepare_from_durable_history()
+        repeat:
+            prepared_history = prepare_from_durable_history()
+            verify_all_artifact_references(prepared_history)
+            under thread_lock:
+                current_history = prepare_from_latest_session()
+                if current_history differs from prepared_history:
+                    continue repeat
+                append ModelHistoryPrepared atomically
+        context = build_from_committed_history()
         append ContextPrepared and CALLING_MODEL
         events = consume_and_validate_provider_stream(context)
         append ModelAttempt terminal facts and completed Items
@@ -559,7 +597,7 @@ recover(thread):
 | 取消 | [`cancellation.py`](../../src/harnessix/agent/cancellation.py) | `CancelToken`、`TurnCancelled` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_user_cancel_during_provider_and_active_turn_conflict`、`test_cancel_during_tool_stops_follow_up_model` | 取消和子Task回收 |
 | Retry | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `retry_turn` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_terminal_turn_retry_creates_new_turn_and_is_idempotent`、`test_retry_rejects_completed_and_non_latest_turns` | 新Turn与安全限制 |
 | 审批 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `reply_approval` | [`test_approval_crash_recovery.py`](../../tests/agent/test_approval_crash_recovery.py) | `test_approval_crash_boundaries` | 各提交边界恢复 |
-| 交互 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `steer_turn`、`reply_question` | [`test_interactions.py`](../../tests/agent/test_interactions.py) | Steering、Question、错配与恢复用例 | 事件v19交互语义 |
+| 交互与历史并发 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py) | `steer_turn`、`prepare_and_commit_model_history` | [`test_interactions.py`](../../tests/agent/test_interactions.py) | `test_steering_during_history_verification_restarts_preparation`及Steering、Question、错配与恢复用例 | Steering在历史验证竞态中不会提交过期检查或误失败 |
 | Process恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover` | [`test_crash_recovery.py`](../../tests/agent/test_crash_recovery.py) | `test_process_crash_recovers_without_replaying_tool` | 不重复宿主效果 |
 | Patch恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover_patch`、`_recover_patch_batch` | [`test_kernel_patch_crash.py`](../../tests/patches/test_kernel_patch_crash.py) | Patch崩溃边界参数化用例 | 稳定计划对账 |
 | Session CAS/重放 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `SQLiteSessionStore.append`、`rebuild` | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | 旧Schema升级和重放用例 | 迁移、CAS、投影一致 |
@@ -576,8 +614,11 @@ recover(thread):
    [`session/ports.py`](../../src/harnessix/session/ports.py)，确认依赖倒置边界；
 4. 按`run_turn` → `accept_turn` → `_drive` → `_sample` → `_execute_calls` → `_execute_tool`阅读
    [`runtime.py`](../../src/harnessix/agent/runtime.py)；
-5. 最后阅读`_recover`、`_recover_patch`、`_recover_patch_batch`以及对应崩溃测试；
-6. 用本节表中的测试函数正向验证每个设计结论，而不是只阅读Happy Path。
+5. 在`_drive`的历史准备调用处转读
+   [`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py)，理解Artifact验证与
+   `ModelHistoryPrepared`提交之间的乐观重备边界；
+6. 最后阅读`_recover`、`_recover_patch`、`_recover_patch_batch`以及对应崩溃测试；
+7. 用本节表中的测试函数正向验证每个设计结论，而不是只阅读Happy Path。
 
 ## 22. 测试设计与验收标准
 
@@ -586,7 +627,7 @@ recover(thread):
 | 领域单元 | Event序列、状态转换、身份唯一、终态不变量 | `tests/agent/test_store.py`、`tests/agent/test_semantic_items.py` |
 | Runtime合同 | 多步模型、预算、Provider非法流、公开错误、取消、Retry | `tests/agent/test_runtime.py` |
 | 并发 | 只读并行上限、提交顺序、兄弟Task回收、写屏障 | `tests/agent/test_tool_scheduling.py` |
-| 交互 | Approval、Question、Steering、错配、过期和重复答复 | `tests/agent/test_interactions.py`、审批恢复测试 |
+| 交互 | Approval、Question、Steering、历史验证竞态、错配、过期和重复答复 | `tests/agent/test_interactions.py`、审批恢复测试 |
 | 故障注入 | Provider、Session、Tool、Patch、Process各提交边界崩溃 | `tests/agent/test_crash_recovery.py`等 |
 | 兼容 | Event 1～19 Upcast、Session迁移1～22、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
 | 产品集成 | 接受后重启、客户端恢复、有界关闭 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) |
@@ -615,4 +656,5 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c Steering与模型历史验证/提交竞态治理，增加乐观重备算法、源码、时序和确定性回归映射 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Agent Runtime黄金样例初版 |

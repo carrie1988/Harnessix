@@ -68,6 +68,15 @@ _CONNECTION_FAILURES = frozenset(
 )
 
 
+def _connection_after_error(
+    connection: ProductConnection,
+    error: AgentSDKError | ProductUIError,
+) -> ProductConnection:
+    if isinstance(error, AgentSDKError) and error.code not in _CONNECTION_FAILURES:
+        return connection
+    return ProductConnection(connection.generation, ConnectionPhase.BROKEN, error.code)
+
+
 class RecoverableAgentSession:
     """管理一个可重连Agent SDK以及同进程可续传的Thread投影。"""
 
@@ -170,12 +179,21 @@ class RecoverableAgentSession:
             try:
                 return await operation(client, command)
             except (AgentSDKError, ProductUIError) as error:
-                if isinstance(error, ProductUIError) or error.code in _CONNECTION_FAILURES:
-                    self.connection = ProductConnection(
-                        self.connection.generation,
-                        ConnectionPhase.BROKEN,
-                        error.code,
-                    )
+                self.connection = _connection_after_error(self.connection, error)
+                raise
+
+    async def execute_query[Result](
+        self,
+        operation: Callable[[AgentClient], Awaitable[Result]],
+    ) -> Result:
+        """串行执行不消费Command ID的只读查询，并保留连接失败语义。"""
+
+        async with self._operation_lock:
+            client = self._ready_client()
+            try:
+                return await operation(client)
+            except (AgentSDKError, ProductUIError) as error:
+                self.connection = _connection_after_error(self.connection, error)
                 raise
 
     async def hydrate_thread(self, thread_id: UUID) -> ProductViewState:
@@ -218,11 +236,7 @@ class RecoverableAgentSession:
                 self._state_store.select_thread(thread_id)
                 self._views[thread_id] = view
             except (AgentSDKError, ProductUIError) as error:
-                self.connection = ProductConnection(
-                    generation,
-                    ConnectionPhase.BROKEN,
-                    error.code,
-                )
+                self.connection = _connection_after_error(self.connection, error)
                 raise
             self.connection = ProductConnection(generation, ConnectionPhase.READY)
             return view
@@ -250,12 +264,7 @@ class RecoverableAgentSession:
             try:
                 return await client.list_threads(cursor=cursor, limit=limit, archived=False)
             except AgentSDKError as error:
-                if error.code in _CONNECTION_FAILURES:
-                    self.connection = ProductConnection(
-                        self.connection.generation,
-                        ConnectionPhase.BROKEN,
-                        error.code,
-                    )
+                self.connection = _connection_after_error(self.connection, error)
                 raise
 
     async def resume_thread(self, thread_id: UUID) -> ThreadView:
@@ -266,12 +275,7 @@ class RecoverableAgentSession:
             try:
                 return await client.resume_thread(thread_id)
             except AgentSDKError as error:
-                if error.code in _CONNECTION_FAILURES:
-                    self.connection = ProductConnection(
-                        self.connection.generation,
-                        ConnectionPhase.BROKEN,
-                        error.code,
-                    )
+                self.connection = _connection_after_error(self.connection, error)
                 raise
 
     async def poll_thread(
@@ -301,12 +305,7 @@ class RecoverableAgentSession:
                 self._views[thread_id] = candidate
                 return candidate
             except (AgentSDKError, ProductUIError) as error:
-                if isinstance(error, ProductUIError) or error.code in _CONNECTION_FAILURES:
-                    self.connection = ProductConnection(
-                        self.connection.generation,
-                        ConnectionPhase.BROKEN,
-                        error.code,
-                    )
+                self.connection = _connection_after_error(self.connection, error)
                 raise
 
     def view(self, thread_id: UUID) -> ProductViewState | None:

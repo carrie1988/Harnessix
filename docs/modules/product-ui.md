@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 9
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - product
 modules:
@@ -19,6 +19,10 @@ related_tests:
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
+  - tests/product_ui/test_controller_interactions.py
+  - tests/product_ui/test_interactions.py
+  - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_rendering.py
   - tests/product_ui/test_app.py
   - tests/product_ui/test_stdio_product.py
@@ -34,15 +38,15 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_ui`](../../src/harnessix/product_ui/) |
-| 当前职责 | 保存最小客户端恢复元数据；发送前持久分配Command ID；管理Agent SDK连接代际；串行处理类型化Intent；从Snapshot、Replay和Live Delta确定性生成单Thread产品视图；通过Textual提供会话列表、Transcript、Composer和显式重连；由`harnessix code`装配本地stdio产品链 |
-| 非职责 | 不实现Approval/Question/Diff专用交互、配置向导与Doctor、自动业务命令重放、Agent状态机、Session数据库、Windows产品级Coding Tool或统一Trusted Action默认装配 |
+| 当前职责 | 保存最小客户端恢复元数据；发送前持久分配Command ID；管理Agent SDK连接代际；串行处理类型化Intent；从Snapshot、Replay和Live Delta确定性生成单Thread产品视图；通过Textual提供会话、Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；由`harnessix code`装配本地stdio产品链 |
+| 非职责 | 不实现配置向导与Doctor、自动业务命令重放、Agent状态机、Session数据库、Windows产品级Coding Tool、客户端价格推断或统一Trusted Action默认装配 |
 | 上游调用者 | 顶层`harnessix code`入口、Textual事件循环和模块测试 |
 | 下游端口 | `AgentTransportFactory → AgentClient → Agent Protocol`、`ClientStateStore → 本地私有文件` |
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
-| 公共导出 | 包根导出状态合同、Store、投影类型/Reducer、连接状态、`RecoverableAgentSession`、Controller状态/Intent及关闭报告；Textual App从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a与0.9.1b已通过三平台CI并关闭；完整领域交互、Doctor、Windows产品工具链和默认Action装配尚未实现 |
-| 代码版本 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb`，由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成矩阵验收 |
+| 公共导出 | 包根导出状态合同、Store、投影Reducer、连接、Controller、冻结交互绑定/证据/Intent、纯交互投影和稳定错误帮助；Textual App与Screen从具体模块导入以保持可选依赖隔离 |
+| 当前完成度 | 0.9.1a与0.9.1b已通过三平台CI并关闭；0.9.1c领域交互已完成本地实现、专项验证、全仓门禁和Mermaid真实渲染，等待三平台CI；Doctor、Windows产品工具链和默认Action装配仍未实现 |
+| 代码版本 | 当前文档绑定实现前基线`35e9e889f78534fd8866f76cfe24d936b08d345d`；0.9.1c实际实现Revision在CI验收后回填 |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -62,7 +66,9 @@ supersedes: []
 3. **完整恢复**：冷启动从Cursor 0重建全文，只有同进程仍持有完整投影时才允许暖续传；
 4. **临时与权威分离**：Live Delta只优化显示，持久`item_finished`始终覆盖临时文本。
 5. **单写者并发**：Widget、轮询和按键不能并发操作同一个Transport或重复提交同一Intent；
-6. **有界关闭**：退出先停止接收Intent，再排空或明确标记未知，不能把取消等待误当作领域命令失败。
+6. **有界关闭**：退出先停止接收Intent，再排空或明确标记未知，不能把取消等待误当作领域命令失败；
+7. **交互身份**：Approval、Question、Cancel和Steer必须逐字段绑定当前Thread/Turn及领域请求；
+8. **证据完整性**：需要Diff Artifact的批准必须验证分页、引用、记录、字节数和SHA-256，失败时禁止盲批。
 
 ### 2.2 当前设计目标
 
@@ -77,6 +83,9 @@ supersedes: []
 - Controller由单个Actor拥有全部Session I/O，Intent队列和状态更新队列均有固定上限；
 - Textual Widget只派发类型化Intent并渲染不可变快照，不直接操作SDK、Store或Transport；
 - `harnessix code`固定Workspace、配置、客户端状态根和子进程Runtime状态根，缺少TUI依赖时不联网安装。
+- Approval/Question/Cancel/Steer仅通过冻结Intent进入Controller；Modal关闭不产生协议命令；
+- Artifact只读查询不消费Command ID，副作用决定在校验成功后恰好消费一个ID；
+- Token可见但协议没有价格绑定时费用明确显示未知，不能推断为零。
 
 ### 2.3 明确非目标
 
@@ -86,7 +95,8 @@ supersedes: []
 - 不自动重放发生歧义的业务命令；显式Reconnect只重建连接并从持久事实恢复；
 - 不把Client Instance ID当作认证身份；
 - 不修改Agent Protocol v1、Server Session Schema或Protocol Request Ledger；
-- 不在0.9.1b提供Approval、Question、Diff、Plan、Usage/Cost、Cancel、Steer专用交互；这些属于0.9.1c；
+- 不保存Approval Evidence、Question Answer、Steer正文或错误原文；进程重开后从持久事实重新推导；
+- 不从Provider名、模型名或内部账本推断金额；
 - 不宣称0.9.1或Windows产品支持已经完成。
 
 ## 3. 模块上下文、总体架构与信任边界
@@ -94,8 +104,14 @@ supersedes: []
 ```mermaid
 flowchart LR
     CLI[harnessix code] --> App[Textual ProductApp]
-    App -->|typed Intent| Controller[ProductController Actor]
+    App --> Main[ProductMainView]
+    App --> Presenter[InteractionPresenter]
+    Presenter --> Screens[Approval Question Steer Help]
+    Presenter -->|typed Intent| Controller[ProductController Actor]
+    App -->|basic typed Intent| Controller
+    Controller --> Interactions[InteractionService]
     Controller --> Session[RecoverableAgentSession]
+    Interactions --> Session
     Session --> Client[AgentClient]
     Client --> Transport[AgentTransport]
     Transport --> Server[Agent Protocol Server]
@@ -106,7 +122,7 @@ flowchart LR
     Facts -->|Snapshot Replay Delta| Session
     Local -. 只含恢复元数据 .-> Session
     Controller --> Renderer[framework-neutral rendering]
-    Renderer --> App
+    Renderer --> Main
 ```
 
 **边界说明：**
@@ -117,6 +133,10 @@ flowchart LR
 - `ProjectionReducer`只接收已由SDK校验的`ThreadView`、`EventsReplayResult`和`PublicItemDelta`；
 - Textual Widget只能发送类型化Intent，不能直接分配Command ID、推进Cursor或调用Transport；
 - `ProductController`是Session I/O和Workspace级产品状态的唯一异步所有者；View退出不等于Turn取消；
+- `InteractionService`校验当前不可变投影、完整交互身份和Approval Evidence后才准备命令；Artifact读取使用
+  `execute_query`，不占用Command序列；
+- `InteractionPresenter`和四类Screen只能返回本地值或派发Intent，禁止持有SDK、Transport、Store或Agent私有模型；
+- `ProductMainView`只渲染快照和调整Composer；拆卸后拒绝迟到状态，防止Textual生命周期竞态；
 - CLI只负责参数、安全默认目录和组合根；实际stdio子进程继续由`agent-server`执行正式配置和Runtime装配。
 
 ## 4. 包结构与源码阅读顺序
@@ -129,14 +149,20 @@ flowchart LR
 | 4 | [`state_store.py`](../../src/harnessix/product_ui/state_store.py) | `ClientStateStore` | 理解变更前重读、Command分配、选择和单调Cursor |
 | 5 | [`projection.py`](../../src/harnessix/product_ui/projection.py) | `ProductViewState`、`apply_replay_page`、`apply_item_delta` | 理解冷暖视图、Replay幂等和Delta覆盖 |
 | 6 | [`session.py`](../../src/harnessix/product_ui/session.py) | `ConnectionPhase`、`PreparedClientCommand`、`RecoverableAgentSession` | 理解连接代际、Hydration和同ID显式重放 |
-| 7 | [`controller.py`](../../src/harnessix/product_ui/controller.py) | `ProductController`、五类Intent、`CloseReport` | 理解单Actor、队列背压、轮询和关闭结算 |
-| 8 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) | `TranscriptLine`、`transcript_lines`、`thread_label` | 理解持久正文、临时流和终端标记隔离 |
-| 9 | [`app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp`、`ControllerUpdated` | 理解Textual布局、焦点、按键和View生命周期 |
-| 10 | [`cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | 理解状态目录布局、可选依赖和stdio组合根 |
-| 11 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient._send`、`initialize`、`replay_events` | 对照SDK握手、方法和协商Limit门禁 |
-| 12 | [`test_controller.py`](../../tests/product_ui/test_controller.py) | Actor正反例 | 验证串行、等待者取消、歧义结果和序列不复用 |
-| 13 | [`test_app.py`](../../tests/product_ui/test_app.py) | `App.run_test()`产品场景 | 验证会话列表、Composer、防重复提交、Resize和退出 |
-| 14 | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py) | 真实JSONL子进程恢复 | 验证跨进程冷Replay、Transcript恢复和Command单调性 |
+| 7 | [`interactions.py`](../../src/harnessix/product_ui/interactions.py) | `ApprovalBinding`、`PendingQuestion`、`ApprovalEvidence`、`interaction_snapshot` | 理解领域身份、交互派生、状态白名单和费用未知语义 |
+| 8 | [`interaction_service.py`](../../src/harnessix/product_ui/interaction_service.py) | `InteractionService`、`_read_artifact` | 理解Artifact完整性、发送前复核和Prepared Command边界 |
+| 9 | [`controller.py`](../../src/harnessix/product_ui/controller.py) | `ProductController`、十类Intent、`CloseReport` | 理解单Actor、队列背压、交互分派、轮询和关闭结算 |
+| 10 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) | `TranscriptLine`、`transcript_lines`、`thread_label` | 理解Plan、Tool、持久正文、临时流和终端标记隔离 |
+| 11 | [`error_help.py`](../../src/harnessix/product_ui/error_help.py) | `ProductErrorHelp`、`product_error_help` | 理解稳定错误目录和未知码脱敏回退 |
+| 12 | [`main_view.py`](../../src/harnessix/product_ui/main_view.py) | `ProductMainView` | 理解基础Widget、Usage/Cost状态及Composer门禁 |
+| 13 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py) | 四类Screen | 理解审批、问题、Steer和帮助Modal的本地返回合同 |
+| 14 | [`interaction_presenter.py`](../../src/harnessix/product_ui/interaction_presenter.py) | `InteractionPresenter` | 理解Modal与Controller Intent之间的唯一适配 |
+| 15 | [`app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp`、`ControllerUpdated` | 理解Textual焦点、快捷键、Worker和View生命周期 |
+| 16 | [`cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | 理解状态目录布局、可选依赖和stdio组合根 |
+| 17 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient._send`、`initialize`、`read_artifact` | 对照SDK握手、交互方法和协商Limit门禁 |
+| 18 | [`test_controller_interactions.py`](../../tests/product_ui/test_controller_interactions.py) | 真实协议领域纵向场景 | 验证身份复核、Command分配和Turn终态 |
+| 19 | [`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py) | `App.run_test()`交互场景 | 验证Modal、Escape、陈旧交互、Cancel/Steer/Quit分离 |
+| 20 | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py) | 真实JSONL子进程恢复 | 验证跨进程冷Replay、Transcript恢复和Command单调性 |
 
 ## 5. 核心生命周期与状态机
 
@@ -223,6 +249,24 @@ Thread列表逐页读取，每页最多200项，总量上限1000项，并检测�
 关闭先将`_accepting`置为假，再把Stop标记排到已经接纳的Intent之后。正常路径排空队列并关闭Session；达到1～30秒
 调用方指定时限后取消Actor，把当前及剩余Intent完成为`controller_operation_unknown`，并返回非Clean的
 `CloseReport`。已经分配的Command序列保持消费，重复`close`返回同一报告。
+
+### 5.5 Approval Evidence生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> not_required: 非变更审批
+    [*] --> inline: 单文件Patch公开参数
+    [*] --> required: Diff Artifact待读取
+    required --> ready: 分页与摘要全部通过
+    required --> unavailable: 超时或完整性失败
+    unavailable --> required: 用户显式重开并重试
+    ready --> [*]: 提交决定或身份变化
+    inline --> [*]: 提交决定或身份变化
+    not_required --> [*]: 提交决定或身份变化
+```
+
+`ApprovalEvidence`只存在于Controller不可变快照。Thread、Turn、Call、Approval ID或Fingerprint任一变化都会通过
+`retained_approval_evidence`清除证据。`unavailable`不会自动拒绝领域请求，但批准按钮关闭，拒绝和重新读取仍可用。
 
 ## 6. 正常流程、失败恢复时序与数据流
 
@@ -343,6 +387,55 @@ sequenceDiagram
 `_closing`同样进入禁用条件，避免退出过程中重新开放输入。会话列表仅展示Thread ID短前缀、Turn状态和轮数，不展示
 Workspace路径。所有不可信文本均关闭Textual markup解析。
 
+### 6.5 Approval与Diff证据
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant P as InteractionPresenter
+    participant C as Controller Actor
+    participant I as InteractionService
+    participant S as RecoverableAgentSession
+    participant A as Agent Protocol
+    U->>P: Ctrl+A
+    P->>C: LoadApprovalEvidenceIntent(binding)
+    C->>I: 以当前投影复核完整身份
+    I->>S: execute_query(read pages)
+    S->>A: artifact/read(offset, limit=200)
+    A-->>S: page and immutable reference
+    I->>I: records bytes SHA-256 and cursor checks
+    C-->>P: ApprovalReview
+    U->>P: Approve or Reject
+    P->>C: RespondApprovalIntent(original binding)
+    C->>I: 再次复核身份和证据
+    I->>S: prepare_command then execute_prepared
+    S->>A: approval/respond
+    S-->>C: hydrated durable view
+```
+
+Artifact完整读取最多50页、每页200条并受5秒绝对时限约束。任何引用变化、游标停滞、换行、记录数、字节数或摘要
+不一致都会形成稳定`UNAVAILABLE`证据，且在`prepare_command`之前返回。单文件Patch使用同一公开Tool Call的完整参数作为
+Inline证据；Batch Patch没有Artifact时失败关闭。Escape只关闭Modal，不分配Command ID。
+
+### 6.6 Question、Steer、Cancel与Quit
+
+```mermaid
+flowchart LR
+    Q[QuestionScreen] -->|answer plus exact binding| QI[RespondQuestionIntent]
+    S[SteerScreen] -->|text plus exact turn| SI[SteerTurnIntent]
+    C[Ctrl+X] --> CI[CancelTurnIntent]
+    X[Ctrl+Q] --> Close[Controller.close]
+    QI --> Actor[Controller Actor]
+    SI --> Actor
+    CI --> Actor
+    Actor --> Prepared[Prepared Command]
+    Close -. no turn/cancel request .-> SessionClose[Session close]
+```
+
+Question数字输入只在Screen内映射为对应选项正文，自由文本仍按1～4000字符校验。Steer使用协议文本上限，Cancel与
+Steer按Runtime显式状态白名单启用。Modal打开后如果当前Turn或交互身份变化，原绑定以`question_stale`或
+`turn_control_stale`失败且不消费Command ID。退出只关闭客户端连接，不发送`turn/cancel`。
+
 ## 7. 接口设计
 
 ### 7.1 `ClientStateStore`
@@ -374,11 +467,12 @@ Workspace路径。所有不可信文本均关闭Textual markup解析。
 | `connect()` | Store开放、Session未关闭 | 新Generation完成握手并进入READY | 复用SDK/Transport超时；失败代际BROKEN |
 | `prepare_command()` | 当前连接READY | 已持久化`PreparedClientCommand` | 同步原子事务，无Transport I/O |
 | `execute_prepared()` | READY且Command属于当前客户端 | 调用类型化SDK操作 | 不自动生成新ID；连接错误标记BROKEN |
+| `execute_query()` | READY | 在同一Operation Lock内执行不消费Command ID的只读查询 | 连接类错误标记BROKEN；业务查询错误保留READY |
 | `hydrate_thread()` | READY、Thread存在 | 完整冷/暖投影并选择Thread | 当前实现由SDK调用者提供外层超时 |
 | `poll_thread()` | READY且已经Hydrate | 一页Replay/Delta结果 | `events/next`最多使用协议允许的30秒 |
 | `close()` | 任意非CLOSED状态 | 关闭Client、提交安全关闭标志 | 失败保留BROKEN且不伪造安全关闭 |
 
-0.9.1b为Session新增两个只读/幂等边界：`list_threads_page(cursor, limit)`在当前代际读取一页未归档Thread；
+Session另有两个只读/幂等边界：`list_threads_page(cursor, limit)`在当前代际读取一页未归档Thread；
 `resume_thread(thread_id)`恢复服务端Runtime驱动。二者都受同一`_operation_lock`保护，连接类错误会把Session标为
 `BROKEN`。`client_state()`返回重新校验的快照，`clear_selected_thread()`只清除已被Controller证明无效的选择。
 
@@ -387,24 +481,46 @@ Workspace路径。所有不可信文本均关闭Textual markup解析。
 | 方法 | 输入/输出 | 所有权与顺序 | 失败/取消语义 |
 |---|---|---|---|
 | `start(request)` | `StartRequest → ProductControllerState` | 只允许一次；规范Workspace、连接、分页列举并恢复显式或持久选择 | 启动失败发布`BROKEN`快照并抛稳定错误 |
-| `dispatch(intent)` | 五类封闭Intent，无业务结果正文 | `put_nowait`进入64项Actor队列；Actor串行执行 | 调用者取消只停止等待，`shield`保护已接纳Intent |
+| `dispatch(intent)` | 十类封闭Intent，无业务结果正文 | `put_nowait`进入64项Actor队列；Actor串行执行 | 调用者取消只停止等待，`shield`保护已接纳Intent |
 | `next_update()` | 下一份`ProductControllerState` | 更新队列大小1，较旧未消费快照被最新状态覆盖 | 不保证每个中间Revision都送达，但状态事实不丢失 |
 | `close(deadline_seconds)` | `CloseReport` | 停止接收、排空、关闭Session；重复调用幂等 | 超时标记未知并消费已分配身份，不误报业务失败 |
 
-五类Intent为`CreateThreadIntent`、`SelectThreadIntent`、`SubmitPromptIntent`、`RefreshThreadsIntent`和
-`ReconnectIntent`。0.9.1b不把Cancel、Steer、Approval、Question或Artifact读取伪装成通用字典Intent；它们必须在
-0.9.1c形成各自绑定身份和失败语义的正式合同。
+基础Intent为`CreateThreadIntent`、`SelectThreadIntent`、`SubmitPromptIntent`、`RefreshThreadsIntent`和
+`ReconnectIntent`；领域交互Intent为`LoadApprovalEvidenceIntent`、`RespondApprovalIntent`、
+`RespondQuestionIntent`、`CancelTurnIntent`和`SteerTurnIntent`。Controller处理交互后重新读取Thread列表并Hydrate当前
+Thread；任何发送前校验错误只发布稳定Notice，不生成通用字典命令。
 
-### 7.5 框架中立渲染
+### 7.5 领域交互合同与服务
+
+| 合同/函数 | 关键字段或输入 | 约束与结果 |
+|---|---|---|
+| `TurnBinding` | `thread_id`、`turn_id` | Cancel/Steer必须与当前Turn逐字段相等 |
+| `ApprovalBinding` | Turn字段、`call_id`、`approval_id`、`fingerprint` | Approval提交前复核五项身份，不重新计算Fingerprint |
+| `QuestionBinding` | Turn字段、`call_id`、`question_id` | 已回答、错Call或新Turn全部拒绝 |
+| `ApprovalEvidence` | binding、status、artifact、text、sha256、records、error | 仅内存；批准准入只接受`not_required/inline/ready` |
+| `UsageCostView` | input/output/total/max token、cost status/reason | 费用固定`unknown/price_not_exposed` |
+| `pending_approval` | 当前`ProductViewState` | 只接受唯一未决请求及唯一配对Tool Call，歧义失败关闭 |
+| `pending_question` | 当前`ProductViewState` | 过滤已回答请求后必须唯一，歧义失败关闭 |
+| `active_turn_control` | 当前Turn状态 | 按显式Cancel/Steer白名单生成能力 |
+| `InteractionService` | 当前视图、Evidence、冻结Intent | 先校验、后分配；Artifact读取走只读Query |
+
+`InteractionPresenter`每次读取Controller最新快照并保存打开Modal时的原绑定；Screen只返回值。提交时Controller不信任
+Presenter缓存，而由`InteractionService`重新推导当前事实。这样，外部Replay在Modal打开期间改变状态时，旧输入不能
+命中新请求。
+
+### 7.6 框架中立渲染
 
 `transcript_lines(ProductViewState | None)`把持久Item按首次Cursor顺序转换为`TranscriptLine`，然后附加尚未被
-终态Item覆盖的临时流。Gap使用固定提示替代不完整正文；未知内容只显示“上下文已压缩”。`thread_label(ThreadView)`
-不接收Workspace，因此从类型边界上避免把绝对路径写入列表。
+终态Item覆盖的临时流。Plan逐步显示状态和描述；Tool Call显示名称、版本、effect class、审批要求和Item生命周期；
+Tool Result显示Outcome、稳定错误及Diff Artifact可用性。Gap使用固定提示替代不完整正文；未知内容只显示
+“上下文已压缩”。`thread_label(ThreadView)`不接收Workspace，因此从类型边界上避免把绝对路径写入列表。
 
-### 7.6 `ProductApp`与`harnessix code`
+### 7.7 `ProductApp`与`harnessix code`
 
-`ProductApp(App[CloseReport])`包含Header、Footer、Session Picker、`RichLog` Transcript、状态行和单行Composer。
-快捷键为`Ctrl+N`新建会话、`Ctrl+R`显式重连、`Ctrl+Q`有界关闭。退出TUI不会自动取消服务端Turn。
+`ProductApp(App[CloseReport])`拥有Textual生命周期，`ProductMainView`包含Session Picker、`RichLog` Transcript、状态行和
+单行Composer。快捷键为`Ctrl+N`新建、`Ctrl+R`重连、`Ctrl+A`审批、`Ctrl+U`回答、`Ctrl+X`取消Turn、`Ctrl+S`补充
+Turn、`F1`错误帮助和`Ctrl+Q`有界关闭。退出TUI不会发送`turn/cancel`；Textual拆卸后主视图拒绝迟到快照，避免访问
+已经卸载的子Widget。
 
 ```text
 harnessix code [WORKSPACE] [--config PATH] [--profile ID]
@@ -469,10 +585,31 @@ tui-{client_instance_id.hex}-{base36(sequence)}
 | `threads` | `tuple[ThreadView, ...]` | 当前Workspace未归档Thread，按更新时间和ID稳定倒序 |
 | `selected_thread_id` | `UUID | None` | 已验证属于当前列表的选择 |
 | `thread_view` | `ProductViewState | None` | 当前Thread不可变投影，不复制到Controller持久文件 |
+| `approval_evidence` | `ApprovalEvidence | None` | 当前审批的内存证据；完整绑定变化时自动清除 |
 | `last_notice` | `ProductNotice | None` | 仅含稳定code、固定message和retryable |
 | `revision` | `int` | 每次发布递增，View用其拒绝迟到重绘 |
 
-### 8.5 `CloseReport`
+### 8.5 交互绑定与证据字段
+
+| 字段 | 类型/上限 | 来源 | 安全与持久化语义 |
+|---|---|---|---|
+| `ApprovalBinding.fingerprint` | 64位小写十六进制 | 公开Approval Item | 完整提交，UI可缩略；不持久化副本 |
+| `PendingApproval.arguments_json` | 规范排序JSON | 配对公开Tool Call | 只用于显示和单文件Patch Inline证据，不写Client State |
+| `ApprovalEvidence.text` | UTF-8，受Artifact 1 MiB上限 | 完整Artifact或公开参数 | 只在内存，不进入Notice、日志或状态文件 |
+| `ApprovalEvidence.error_code` | 稳定码或空 | 查询与完整性分类 | 不含异常正文、路径或Artifact内容 |
+| `PendingQuestion.options` | 有序字符串Tuple | 公开Question Item | 数字只在Screen映射为实际文本 |
+| `SteerTurnIntent.text` | 1～协议文本上限 | 用户输入 | 仅通过命令发送，不写Client State |
+
+`ApprovalEvidenceStatus`为`not_required`、`inline`、`required`、`ready`、`unavailable`。`required`表示存在完整公开
+Artifact引用但尚未读取；`ready`必须同时满足引用逐页相等、记录数、字节数和SHA-256；`unavailable`永远不能批准。
+
+### 8.6 Usage与Cost
+
+`UsageCostView`从当前Turn公开Usage读取`input_tokens`、`output_tokens`和`total_tokens`，从Budget读取`max_tokens`。
+协议没有价格适用性、币种或金额字段，因此`cost_status`固定为`unknown`，`cost_reason`固定为
+`price_not_exposed`。Token为零表示当前公开累计用量为零，不表示费用为零。
+
+### 8.7 `CloseReport`
 
 | 字段 | 语义 |
 |---|---|
@@ -554,6 +691,35 @@ close(deadline):
     publish CLOSED and memoize CloseReport
 ```
 
+### 9.5 Artifact证据与交互提交
+
+```text
+load_approval_evidence(current_view, original_binding):
+    pending = derive exactly one pending approval and paired public tool call
+    require pending.binding == original_binding
+    if no artifact: return inline/not_required/unavailable by approval type
+    within one 5-second absolute deadline and one execute_query lock:
+        for at most 50 pages with limit 200:
+            require page.reference == original reference
+            require page.offset == requested offset
+            require text is empty or newline terminated
+            require next_offset == offset + page_records and progresses
+            reject running records/bytes above advertised values
+        require final records, UTF-8 bytes and SHA-256 equal reference
+    return READY evidence in memory only
+
+submit_interaction(current_view, evidence, original_intent):
+    derive current pending interaction/control again
+    require exact binding equality
+    require input and evidence policy valid
+    prepared = session.prepare_command()
+    session.execute_prepared(prepared, typed SDK method)
+    hydrate thread from durable facts
+```
+
+校验、证据准入和输入长度均发生在`prepare_command`之前。命令结果不确定时维持原Prepared Command规则；TUI不会保存
+Approval reason、Question answer或Steer正文以便自动重放。
+
 ## 10. 失败、恢复、取消与超时
 
 | 故障 | 稳定错误/状态 | 是否修改持久状态 | 恢复方式 |
@@ -576,6 +742,15 @@ close(deadline):
 | Thread列表超过1000或分页不推进 | `controller_thread_limit`/`controller_pagination_stalled` | 否 | 服务端归档治理或修复分页合同 |
 | 调用者取消`dispatch`等待 | 原等待者收到取消 | 已接纳Intent继续由Actor结算 | 从Controller快照和服务端事实观察结果 |
 | Controller关闭超时 | `controller_operation_unknown`与`controller_close_timeout` | 已分配序列不回退 | 重启并从持久事实Hydrate，不生成替代结果 |
+| Approval/Question/Turn绑定过期 | `approval_stale`/`question_stale`/`turn_control_stale` | 不分配Command ID | 从当前投影重新打开交互 |
+| Artifact方法未协商或Diff缺失 | `diff_unavailable` | 不分配Command ID | 只能Reject、重试或升级Server |
+| Artifact引用变化或分页停滞 | `artifact_reference_changed`/`artifact_pagination_stalled` | 不分配Command ID | 禁止Approve并重新读取 |
+| Artifact记录、字节或SHA不符 | `artifact_integrity_failed` | 不分配Command ID | 禁止Approve并诊断服务端 |
+| Artifact读取超过5秒 | `artifact_read_timeout` | 不分配Command ID | 显式重试或Reject |
+| 批准缺少完整证据 | `approval_evidence_required` | 不分配Command ID | 先读取完整证据 |
+| Question/Steer输入无效 | `question_answer_invalid`/`steering_invalid` | 不分配Command ID | 修正输入后重新提交 |
+| Modal Escape | 本地关闭，无错误 | 不修改 | 保持当前领域请求待决 |
+| Quit | `CloseReport` | 只提交关闭状态，不发送`turn/cancel` | 下次启动从服务端事实恢复Turn |
 | 缺少Textual | `tui_dependency_missing`，CLI退出2 | 否 | 显式安装`tui` Extra |
 
 Session不自行设置普通Request的墙钟超时；Transport关闭上限和`events/next`等待上限沿用SDK/Protocol现行合同。
@@ -593,12 +768,18 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 7. 投影只消费公共Protocol对象，不访问服务端私有Event或数据库；
 8. Client Instance ID仅作为本地协议幂等命名空间，远程部署仍需独立认证授权；
 9. `forget_thread_cursor`不自动决定归档资格，防止低层Store误删活跃恢复位置；
-10. 同状态目录排他锁不等于分布式锁，也不能抵御同账号恶意进程替换父目录。
+10. Approval完整绑定包含Fingerprint，Diff证据不足时Approve禁用但Reject保持可用；
+11. Artifact错误只保留静态稳定码，错误帮助未知输入统一映射为`product_internal_failure`；
+12. Screen内容使用`markup=False`或Textual输入组件，不把Tool参数、Diff或错误码解释为富文本；
+13. Question选项不会直接变为Shell、配置或权限；它只作为绑定问题的答案进入Agent Runtime；
+14. 同状态目录排他锁不等于分布式锁，也不能抵御同账号恶意进程替换父目录。
 
 ## 12. 可观测性与错误分类
 
 当前实现维护`ProductConnection(generation, phase, last_error_code)`和
-`ProductControllerState(phase, revision, last_notice)`两层内存诊断面；状态行展示连接代际、Turn状态和固定错误信息。
+`ProductControllerState(phase, revision, last_notice)`两层内存诊断面；状态行展示连接代际、Turn状态、Token/上限、
+费用未知原因、待决交互快捷键和固定错误信息。`ProductErrorHelp`为已知稳定码提供原因、影响、恢复动作和重试语义；
+未知输入不回显。
 0.9.1b没有建立第二套日志、Metric或Trace实现，下列正式Telemetry仍必须在0.9.3统一产品组合根落地：
 
 | 后续信号 | 低基数字段 | 禁止字段 |
@@ -626,10 +807,15 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | 冷暖Hydration和连接代际 | [`session.py`](../../src/harnessix/product_ui/session.py) `connect`、`hydrate_thread` | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) `test_session_cold_replays_from_zero_and_warm_reconnect_resumes_projection` |
 | 同一Prepared ID跨代际重放 | [`session.py`](../../src/harnessix/product_ui/session.py) `prepare_command`、`execute_prepared` | `test_prepared_command_reuses_identity_after_ambiguous_connection_failure` |
 | Poll投影故障失败关闭 | [`session.py`](../../src/harnessix/product_ui/session.py) `poll_thread` | `test_poll_projection_failure_marks_connection_broken` |
+| 只读Query与连接语义 | [`session.py`](../../src/harnessix/product_ui/session.py) `execute_query` | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) `test_read_only_query_does_not_allocate_command_and_marks_transport_failure` |
 | SDK协商前置门禁 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) `_send`与[`request.py`](../../src/harnessix/sdk/request.py) `require_replay_limit` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_sdk_rejects_unadvertised_method_before_transport_write`、`test_sdk_enforces_negotiated_replay_and_message_limits_before_write` |
 | Actor、Intent和有界关闭 | [`controller.py`](../../src/harnessix/product_ui/controller.py) `ProductController.start`、`dispatch`、`close` | [`test_controller.py`](../../tests/product_ui/test_controller.py)四个串行、取消和超时场景 |
-| Transcript与会话标签 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)持久顺序、Gap和终态覆盖 |
-| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py)真实Controller、显式焦点下的键绑定与Action会话切换、Composer门闩结算、Resize和Context退出 |
+| 交互身份与费用未知 | [`interactions.py`](../../src/harnessix/product_ui/interactions.py) `pending_approval`、`pending_question`、`active_turn_control`、`usage_cost_view` | [`test_interactions.py`](../../tests/product_ui/test_interactions.py) `test_interaction_projection_binds_approval_question_control_and_unknown_cost`及状态白名单 |
+| Artifact完整证据 | [`interaction_service.py`](../../src/harnessix/product_ui/interaction_service.py) `_read_artifact`、`load_approval_evidence` | `test_artifact_evidence_reads_all_pages_without_allocating_command`、0/50/51页、损坏、超时和能力缺失用例 |
+| 交互发送前复核 | [`interaction_service.py`](../../src/harnessix/product_ui/interaction_service.py) `_respond_approval`、`_respond_question`、`_cancel_turn`、`_steer_turn` | [`test_controller_interactions.py`](../../tests/product_ui/test_controller_interactions.py)三个真实Runtime/Protocol场景 |
+| Transcript与会话标签 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines`、`thread_label` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)持久顺序、Gap、Plan步骤、Tool生命周期和稳定错误 |
+| 专用Modal与错误帮助 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py)四类Screen、[`error_help.py`](../../src/harnessix/product_ui/error_help.py) | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)盲批、选项、Escape、输入及脱敏回退 |
+| Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp`、[`main_view.py`](../../src/harnessix/product_ui/main_view.py) `ProductMainView` | [`test_app.py`](../../tests/product_ui/test_app.py)基础View；[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py)Approval、Question、Steer、Cancel、陈旧Modal、Usage/Cost与Quit分离 |
 | CLI组合根与可选依赖 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `code_main`、`_server_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)顶层分派、精确argv和脱敏失败 |
 | 跨进程产品恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`controller.py`](../../src/harnessix/product_ui/controller.py) | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)关闭并重开真实JSONL子进程与Store |
 
@@ -643,11 +829,14 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - Controller：创建/选择/提交/显式重连串行执行，非法Prompt不消费ID，调用者取消不取消已接纳Intent，关闭超时不复用ID；
 - Rendering：持久Item稳定排序、临时流追加、Gap显式展示、终态正文覆盖和Workspace路径不进入标签；
 - Textual：使用`App.run_test()`驱动真实Controller和内存Protocol，覆盖两个新Thread、选择、连续Enter防重、Turn完成、Resize和退出关闭；
+- 领域交互：纯函数覆盖Approval/Question唯一性、完整绑定、Cancel/Steer状态白名单、Usage及费用未知；
+- Approval Artifact：覆盖0页、1页、多页、恰好50页、超过50页、引用变化、offset停滞、换行、记录/字节/SHA、能力缺失、超时和连接断开；
+- 交互纵向场景：真实Runtime/Protocol与Textual Modal覆盖Approval、Question、Steer、Cancel、Escape不发送、陈旧Modal不分配命令和Quit不发送`turn/cancel`；
 - stdio：启动真实JSONL子进程和持久Session Store，首次提交后关闭，再以相同状态重开并从Cursor 0恢复精确用户/助手Transcript；
 - CLI：`harnessix code`延迟导入Textual，构造当前解释器`agent-server` argv，缺失Workspace输出稳定脱敏JSON；
 - SDK：非法Envelope、深度预算、Result归一、半握手、超长Frame、未协商方法和协商Limit前置拒绝；
-- 本地切片门禁：Product UI 38项测试、相关CLI/SDK回归合计79项、Ruff、Mypy、Readability和真实`run_test()`均已通过；
-- 全仓门禁：`make check`在实现基线完成3406项通过、13项跳过；Ruff、Readability、Documentation、Contract、Mypy和全部Pytest均通过。
+- 本地切片门禁：Product UI 65项测试、Ruff、Mypy、Readability和真实`run_test()`均已通过；
+- 全仓门禁：当前本地为3434项通过、13项跳过；实现Revision与三平台结果将在CI验收后回填。
 - 平台门禁：Linux Python 3.12/3.13全量测试、macOS Coding Tools矩阵和Windows Trusted Execution矩阵均
   显式执行或覆盖`tests/product_ui`，并由
   [CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)完成0.9.1a验收；
@@ -667,6 +856,9 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 - [x] Linux Python 3.12/3.13、macOS和Windows矩阵验证Product UI及其协作边界；
 - [x] Textual View、单Actor Controller、真实stdio冷恢复和CLI参数合同通过本地自动化；
 - [x] 0.9.1b实现、并发稳定化和三平台CI完成并正式关闭；三平台安装器仍属于0.9.5。
+- [x] 0.9.1c领域合同、Artifact失败关闭、专用Modal、真实协议纵向场景和本地专项门禁完成；
+- [x] 0.9.1c全仓3434项通过/13项跳过及513幅Mermaid本地真实渲染完成；
+- [ ] Linux Python 3.12/3.13、macOS、Windows矩阵完成并正式关闭0.9.1c。
 
 ## 15. 部署、兼容、回退与迁移
 
@@ -689,13 +881,14 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | 0.9.1b仅完成CI Runner矩阵，尚未覆盖真实用户终端长期运行 | 当前证据足以关闭基础产品链，但不能外推正式发行与长期稳定性 | 0.9.3 Soak与0.9.5 Dogfooding |
 | Prepared Command不持久保存业务Payload | 崩溃后不能仅凭本地文件自动重放最后操作；必须由UI Intent/服务端事实恢复 | 0.9.1b设计后仍坚持不保存敏感正文 |
 | 投影在内存保存完整Item历史，`RichLog`只保留1万展示行 | 大Transcript仍可能使投影占用较多内存 | 0.9.3性能基线与虚拟化 |
-| `live_gap`是粘性诊断标志 | UI显示缺口并等待持久终态，没有自动重新Hydrate | 0.9.1c/0.9.3 |
+| `live_gap`是粘性诊断标志 | UI显示缺口并等待持久终态，没有自动重新Hydrate | 0.9.3 |
 | Store锁只覆盖协作本地实例 | 不适用于网络共享或分布式客户端 | 1.0本地优先边界 |
 | 状态文件无自动迁移/备份 | v1升级必须新增正式迁移流程 | 首次Schema变更前 |
 | Session普通Request无统一外层Deadline | Actor操作可能直到整体关闭时限才转为未知 | 0.9.3 |
 | 当前没有产品层Telemetry适配 | 只能通过Connection/Controller状态和错误码诊断 | 0.9.3 |
-| 0.9.1b只提供基础Transcript/Composer/Picker | Approval、Question、Diff、Cancel、Steer及成本尚无专用交互 | 0.9.1c |
 | Windows文件安全只有算法和CI证据 | 不能代表默认Windows Coding Tool已可用 | 0.9.1d |
+| 协议没有价格适用性和金额 | UI只能显示Token与费用未知，不能提供精确成本 | 0.9.6发布证据 |
+| Approval Evidence不持久化 | 重启后必须重新读取Artifact，不能离线沿用旧Diff | 安全设计，不计划放宽 |
 
 `ProductController`和`ProductApp`分别超过默认类行数阈值，因此本切片对
 [`readability-policy-v1.json`](../../governance/readability-policy-v1.json)进行了显式合同审查，而不是忽略门禁。
@@ -708,6 +901,7 @@ Screen/Presenter而不是继续扩张这两个类。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：冻结交互身份、Artifact完整证据、发送前复核、Plan/Tool/Usage渲染、专用Modal、错误自助及65项Product UI验证；等待实现Revision与三平台CI |
 | 8 | `5e8d71f019b30cac28229f1fddcee3778fe8e8eb` | 2026-09-13 | 记录实现与四次稳定化提交通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container及文档矩阵，正式关闭0.9.1b |
 | 7 | `f8a1dc4c1e06c9e4d052c87144a4ff3197d9ec7a` | 2026-09-13 | 无头产品场景在ListView投影数量和本地Intent门闩都结算后再导航，并在ListView选择和Composer输入前显式等待焦点生效，去除平台相关的渲染、调度与焦点假设 |
 | 6 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 明确跨平台无头测试分别验证真实键绑定与再次Action派发，隔离Pilot控制键注入差异 |

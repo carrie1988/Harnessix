@@ -16,16 +16,16 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 270,
-    "physical_lines": 58166,
-    "logical_lines": 51894,
-    "documented_modules": 270,
-    "classes": 700,
-    "documented_classes": 191,
-    "functions": 2284,
-    "documented_functions": 196,
-    "public_exports": 303,
-    "public_contract_types": 151,
+    "source_files": 277,
+    "physical_lines": 59752,
+    "logical_lines": 53242,
+    "documented_modules": 277,
+    "classes": 729,
+    "documented_classes": 215,
+    "functions": 2359,
+    "documented_functions": 207,
+    "public_exports": 327,
+    "public_contract_types": 152,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
@@ -116,6 +116,7 @@
     "harnessix.product_config:ProviderDefinition->harnessix.product_config.contracts:ProviderDefinition",
     "harnessix.product_config:ProviderFallbackDecision->harnessix.product_config.contracts:ProviderFallbackDecision",
     "harnessix.product_config:SecretReference->harnessix.product_config.contracts:SecretReference",
+    "harnessix.product_ui:ApprovalEvidenceStatus->harnessix.product_ui.interactions:ApprovalEvidenceStatus",
     "harnessix.product_ui:ClientCommandAllocation->harnessix.product_ui.contracts:ClientCommandAllocation",
     "harnessix.product_ui:ClientStateV1->harnessix.product_ui.contracts:ClientStateV1",
     "harnessix.product_ui:ClientThreadCursor->harnessix.product_ui.contracts:ClientThreadCursor",
@@ -194,7 +195,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3198
+      "lines": 3171
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -324,8 +325,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 172,
-      "lines": 3027,
+      "line": 169,
+      "lines": 3003,
       "documented": true
     },
     {
@@ -334,7 +335,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 175,
+      "line": 172,
       "lines": 170,
       "documented": false,
       "decision_complexity": 58
@@ -345,10 +346,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2084,
-      "lines": 169,
+      "line": 2081,
+      "lines": 145,
       "documented": true,
-      "decision_complexity": 35
+      "decision_complexity": 31
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._execute_calls",
@@ -356,7 +357,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2254,
+      "line": 2227,
       "lines": 270,
       "documented": true,
       "decision_complexity": 62
@@ -367,7 +368,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3018,
+      "line": 2991,
       "lines": 162,
       "documented": true,
       "decision_complexity": 48
@@ -378,7 +379,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._observe_process_action",
       "kind": "function",
-      "line": 1003,
+      "line": 1000,
       "lines": 102,
       "documented": false,
       "decision_complexity": 21
@@ -389,7 +390,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._recover",
       "kind": "function",
-      "line": 366,
+      "line": 363,
       "lines": 101,
       "documented": true,
       "decision_complexity": 28
@@ -400,7 +401,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1403,
+      "line": 1400,
       "lines": 135,
       "documented": true,
       "decision_complexity": 23
@@ -411,7 +412,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 1918,
+      "line": 1915,
       "lines": 135,
       "documented": true,
       "decision_complexity": 12
@@ -422,7 +423,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 2730,
+      "line": 2703,
       "lines": 211,
       "documented": true,
       "decision_complexity": 60
@@ -433,7 +434,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1638,
+      "line": 1635,
       "lines": 230,
       "documented": false,
       "decision_complexity": 51
@@ -444,7 +445,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.reply_question",
       "kind": "function",
-      "line": 1258,
+      "line": 1255,
       "lines": 102,
       "documented": true,
       "decision_complexity": 18
@@ -1498,8 +1499,8 @@
       "path": "src/harnessix/product_ui/app.py",
       "qualname": "ProductApp",
       "kind": "class",
-      "line": 48,
-      "lines": 182,
+      "line": 40,
+      "lines": 184,
       "documented": true
     },
     {
@@ -1508,8 +1509,8 @@
       "path": "src/harnessix/product_ui/controller.py",
       "qualname": "ProductController",
       "kind": "class",
-      "line": 170,
-      "lines": 329,
+      "line": 233,
+      "lines": 325,
       "documented": true
     },
     {
@@ -1518,8 +1519,8 @@
       "path": "src/harnessix/product_ui/session.py",
       "qualname": "RecoverableAgentSession",
       "kind": "class",
-      "line": 71,
-      "lines": 276,
+      "line": 80,
+      "lines": 266,
       "documented": true
     },
     {
@@ -2241,6 +2242,12 @@
       "SecretReference"
     ],
     "harnessix.product_ui": [
+      "ActiveTurnControl",
+      "ApprovalBinding",
+      "ApprovalEvidence",
+      "ApprovalEvidenceStatus",
+      "ApprovalReview",
+      "CancelTurnIntent",
       "ClientCommandAllocation",
       "ClientStateStore",
       "ClientStateV1",
@@ -2249,27 +2256,45 @@
       "ConnectionPhase",
       "ControllerPhase",
       "CreateThreadIntent",
+      "InteractionSnapshot",
+      "LoadApprovalEvidenceIntent",
+      "PendingApproval",
+      "PendingQuestion",
       "PreparedClientCommand",
       "ProductConnection",
       "ProductController",
       "ProductControllerState",
+      "ProductErrorHelp",
       "ProductNotice",
       "ProductUIError",
       "ProductViewState",
       "ProjectedItem",
+      "QuestionBinding",
       "ReconnectIntent",
       "RecoverableAgentSession",
       "RefreshThreadsIntent",
+      "RespondApprovalIntent",
+      "RespondQuestionIntent",
       "SelectThreadIntent",
       "StartRequest",
+      "SteerTurnIntent",
       "SubmitPromptIntent",
       "TransientItemStream",
+      "TurnBinding",
       "TurnProjection",
+      "UsageCostView",
+      "active_turn_control",
       "apply_events_next",
       "apply_item_delta",
       "apply_replay_page",
+      "approval_review",
       "cold_product_view",
+      "interaction_snapshot",
+      "pending_approval",
+      "pending_question",
+      "product_error_help",
       "refresh_thread_snapshot",
+      "usage_cost_view",
       "workspace_identity_fingerprint"
     ],
     "harnessix.protocol": [

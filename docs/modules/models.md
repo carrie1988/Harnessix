@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: ac803fca1dcfc8edf76c41c8c0e474b9533282f1
+version: 3
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -33,6 +33,8 @@ related_tests:
   - tests/models/test_costs.py
   - tests/models/test_compaction_costs.py
   - tests/models/test_cost_integration.py
+  - tests/app_server/test_server_sdk.py
+  - tests/product_ui/test_controller_interactions.py
 supersedes: []
 ---
 
@@ -642,7 +644,7 @@ estimate_cost(attempt, price, verified_context):
 | Turn成本报告 | [`costs.py`](../../src/harnessix/models/costs.py) | `build_cost_report`、`CostReportV3` | [`test_costs.py`](../../tests/models/test_costs.py)、[`test_compaction_costs.py`](../../tests/models/test_compaction_costs.py) | `test_retries_count_attempts_not_usage_observations`、`test_possible_unaccounted_request_prevents_complete_cost_claim` | 重试、Compaction和完整性 |
 | 端到端成本 | [`costs.py`](../../src/harnessix/models/costs.py) | `COST_REPORT_ADAPTER` | [`test_cost_integration.py`](../../tests/models/test_cost_integration.py) | `test_real_sdk_to_durable_cost_report_replay` | SDK到Session再到重算报告 |
 | 安全Fallback | [`runtime.py`](../../src/harnessix/product_config/runtime.py) | `SafeFallbackProvider.stream` | [`test_runtime.py`](../../tests/product_config/test_runtime.py) | `test_zero_exposure_failure_falls_back_with_global_attempts_and_audit`、`test_never_falls_back_after_response_or_tool_exposure` | 审计先行和暴露边界 |
-| Scripted测试端口 | [`scripted.py`](../../src/harnessix/models/scripted.py) | `ScriptedProvider`、`FakeProvider` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | Agent Runtime测试套件 | 无网络确定性事件脚本 |
+| Scripted测试端口 | [`scripted.py`](../../src/harnessix/models/scripted.py) | `ScriptedProvider`、`FakeProvider` | [`test_runtime.py`](../../tests/agent/test_runtime.py)、[`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)、[`test_controller_interactions.py`](../../tests/product_ui/test_controller_interactions.py) | Agent Runtime与产品交互测试套件 | 无网络确定性事件脚本；人为延时由`CancelToken.run`托管，取消立即回收Sleep而非等待延时结束 |
 
 ### 21.1 推荐源码阅读路线
 
@@ -698,5 +700,6 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 1 | `00e2b816078f52c10849a65efddb36e84a538eef` | 2026-09-12 | DOC-1.3 Wave A Model Runtime模块设计初版 |
+| 3 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 明确Scripted Provider延时遵循协作取消合同，为App Server关闭和Product UI Cancel提供确定性测试端口 |
 | 2 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` | 2026-09-12 | 链接DOC-1.4 Product Config现行设计 |
+| 1 | `00e2b816078f52c10849a65efddb36e84a538eef` | 2026-09-12 | DOC-1.3 Wave A Model Runtime模块设计初版 |

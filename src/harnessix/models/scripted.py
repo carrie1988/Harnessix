@@ -39,7 +39,7 @@ class ScriptedProvider:
             for event in self.steps[request.step - 1]:
                 cancel.checkpoint()
                 if self.delay_seconds:
-                    await asyncio.sleep(self.delay_seconds)
+                    await cancel.run(asyncio.sleep(self.delay_seconds))
                 yield event.model_copy(deep=True)
         finally:
             self.closed_streams += 1

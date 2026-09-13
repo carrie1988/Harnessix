@@ -294,6 +294,46 @@ async def test_accepted_turn_steering_joins_first_model_history(tmp_path: Path) 
     assert messages == ["初始任务", "补充约束"]
 
 
+async def test_steering_during_history_verification_restarts_preparation(tmp_path: Path) -> None:
+    class GatedHistoryRuntime(AgentRuntime):
+        def __init__(self, *args, **kwargs) -> None:
+            self.history_entered = asyncio.Event()
+            self.release_history = asyncio.Event()
+            super().__init__(*args, **kwargs)
+
+        async def _verify_history_artifacts(self, thread, prepared, token) -> None:
+            if not self.history_entered.is_set():
+                self.history_entered.set()
+                await token.run(self.release_history.wait())
+            await super()._verify_history_artifacts(thread, prepared, token)
+
+    provider = ScriptedProvider([answer("完成")])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with GatedHistoryRuntime(store, provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        running = asyncio.create_task(
+            runtime.run_turn(thread.thread_id, "初始任务", request_id="verify-race")
+        )
+        await runtime.history_entered.wait()
+        current = await store.get_thread(thread.thread_id)
+        await runtime.steer_turn(
+            thread.thread_id,
+            current.turns[-1].turn_id,
+            "验证期间补充",
+            request_id="verify-race-steer",
+        )
+        runtime.release_history.set()
+        completed = await running
+
+    assert completed.status == TurnStatus.COMPLETED
+    messages = [
+        item.content.text
+        for item in provider.requests[0].history
+        if isinstance(item.content, TextContent)
+    ]
+    assert messages == ["初始任务", "验证期间补充"]
+
+
 async def test_steering_before_first_model_item_is_ordered_after_response(tmp_path: Path) -> None:
     class GatedProvider:
         def __init__(self) -> None:

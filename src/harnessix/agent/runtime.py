@@ -26,6 +26,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
 from harnessix.agent.lifecycle import prepare_fork_snapshot
+from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     AgentFailure,
@@ -42,7 +43,6 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
-    ModelHistoryPrepared,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
     ProcessActionStateContent,
@@ -100,10 +100,7 @@ from harnessix.context.compaction_ledger_contracts import (
     CompactionUsageObserved,
 )
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
-from harnessix.context.compaction_window import (
-    build_compaction_window,
-    prepare_active_model_history,
-)
+from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
 from harnessix.context.engine import ContextPreparationError
 from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
@@ -2104,41 +2101,17 @@ class AgentRuntime:
                     turn_id=turn_id,
                     step=model_step,
                 ) as operation:
-                    token.checkpoint()
-                    prepared_history = prepare_active_model_history(
-                        thread,
-                        model_step,
-                        self._tool_result_view_policy,
-                    )
-                    if self._compaction is not None and (
-                        reactive_compaction_required
-                        or sum(
-                            len(history_document(item).encode())
-                            for item in prepared_history.history
-                        )
-                        > self._compaction.trigger_history_tokens
-                    ):
-                        thread = await self._run_compaction(thread, turn, prepared_history, token)
-                        reactive_compaction_required = False
-                        turn = get_turn(thread, turn_id)
-                        prepared_history = prepare_active_model_history(
-                            thread,
-                            model_step,
-                            self._tool_result_view_policy,
-                        )
-                    await self._verify_history_artifacts(thread, prepared_history, token)
-                    self._fault("runtime.after_history_artifacts_verified")
-                    thread = await self._commit(
+                    prepared_step = await prepare_and_commit_model_history(
+                        self,
                         thread_id,
                         turn_id,
-                        [
-                            ModelHistoryPrepared(
-                                inspection=prepared_history.inspection,
-                                decisions=prepared_history.new_decisions,
-                            )
-                        ],
+                        model_step,
+                        token,
+                        reactive_compaction_required=reactive_compaction_required,
                     )
-                    self._fault("runtime.after_model_history_prepared")
+                    thread = prepared_step.thread
+                    prepared_history = prepared_step.prepared
+                    reactive_compaction_required = prepared_step.reactive_compaction_required
                     self._telemetry.model_history(prepared_history.inspection)
                     operation.finish("ok")
                     history = prepared_history.history

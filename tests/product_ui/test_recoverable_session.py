@@ -29,7 +29,7 @@ from harnessix.protocol.contracts import (
     ThreadResult,
     ThreadView,
 )
-from harnessix.sdk import AgentSDKError
+from harnessix.sdk import AgentClient, AgentSDKError
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -207,6 +207,37 @@ async def test_prepared_command_reuses_identity_after_ambiguous_connection_failu
         assert await session.execute_prepared(command, succeeds) == command.request_id
         assert observed == [command.request_id, command.request_id]
         assert store.state().next_command_sequence == 2
+        await session.close()
+
+
+async def test_read_only_query_does_not_allocate_command_and_marks_transport_failure(
+    tmp_path: Path,
+) -> None:
+    thread_id = uuid4()
+    with ClientStateStore(tmp_path / "state", workspace_identity="/workspace") as store:
+        session = RecoverableAgentSession(
+            store,
+            lambda: _SessionTransport(
+                _thread(thread_id), _event(thread_id, uuid4()), warm_cursor=6
+            ),
+        )
+        await session.connect()
+        before = store.state().next_command_sequence
+
+        async def read(client: AgentClient) -> str:
+            assert client is not None
+            return "只读结果"
+
+        assert await session.execute_query(read) == "只读结果"
+        assert store.state().next_command_sequence == before
+
+        async def disconnected(_client: AgentClient) -> None:
+            raise AgentSDKError("server_closed", "连接关闭", retryable=True)
+
+        with pytest.raises(AgentSDKError):
+            await session.execute_query(disconnected)
+        assert session.connection.phase is ConnectionPhase.BROKEN
+        assert store.state().next_command_sequence == before
         await session.close()
 
 

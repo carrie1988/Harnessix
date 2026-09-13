@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 9
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 10
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -31,6 +31,10 @@ related_tests:
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
+  - tests/product_ui/test_controller_interactions.py
+  - tests/product_ui/test_interactions.py
+  - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_rendering.py
   - tests/product_ui/test_app.py
   - tests/product_ui/test_stdio_product.py
@@ -337,10 +341,10 @@ class ProductController:
     async def close(self, *, deadline_seconds: float) -> CloseReport: ...
 ```
 
-0.9.1b的封闭联合包含`CreateThreadIntent`、`SelectThreadIntent`、`SubmitPromptIntent`、
-`RefreshThreadsIntent`和`ReconnectIntent`。唯一Actor拥有全部Session I/O；队列上限64，更新队列上限1，Thread列表
-上限1000。`dispatch`方法取消只取消等待者，`asyncio.shield`保证已接纳Intent继续结算。0.9.1c的Artifact读取、审批、
-提问、Cancel和Steer在绑定完整身份合同前不会加入通用字典Intent。
+封闭联合包含五类基础Intent，以及`LoadApprovalEvidenceIntent`、`RespondApprovalIntent`、
+`RespondQuestionIntent`、`CancelTurnIntent`和`SteerTurnIntent`。唯一Actor拥有全部Session I/O；队列上限64，更新队列
+上限1，Thread列表上限1000。`dispatch`方法取消只取消等待者，`asyncio.shield`保证已接纳Intent继续结算。领域交互使用
+冻结Binding并在服务层根据当前投影再次复核，不加入通用字典Intent。
 
 关闭采用同一绝对Deadline：先停止接收，再让Actor处理已排队Intent和Stop，最后关闭Session。超时取消Actor、把未结算
 操作标为`controller_operation_unknown`并返回非Clean `CloseReport`；已经分配的Command序列不回退。
@@ -352,6 +356,7 @@ class RecoverableAgentSession:
     async def connect(self) -> ProductConnection: ...
     def prepare_command(self) -> PreparedClientCommand: ...
     async def execute_prepared(self, command, operation): ...
+    async def execute_query(self, operation): ...
     async def hydrate_thread(self, thread_id: UUID) -> ProductViewState: ...
     async def list_threads_page(self, *, cursor: str | None, limit: int) -> ThreadListResult: ...
     async def resume_thread(self, thread_id: UUID) -> ThreadView: ...
@@ -359,7 +364,8 @@ class RecoverableAgentSession:
     async def close(self) -> None: ...
 ```
 
-`execute_prepared`只接受已经由同一Client State分配并提交`request_id`的Command。`list_threads_page`和
+`execute_prepared`只接受已经由同一Client State分配并提交`request_id`的Command；`execute_query`在同一操作锁内执行
+Artifact等只读查询且不消费Command序列。`list_threads_page`和
 `resume_thread`复用Session操作锁，避免Controller绕过代际所有权。连接类错误把当前Generation标为
 `BROKEN`，但不自动重放业务操作；调用方建立新连接后显式传入同一`PreparedClientCommand`和相同业务参数。
 参数、权限、合同和服务端非重试错误不触发连接代际变化。
@@ -389,9 +395,11 @@ Reducer是无I/O纯函数。输入违反游标、Item身份或终态不变量时
 
 ### 7.6 View与可访问性接口
 
-0.9.1b的`ProductApp`包括Header/Footer、Session Picker、Transcript、状态行和单行Composer，提供`Ctrl+N`新建、
-`Ctrl+R`显式重连和`Ctrl+Q`关闭。Transcript关闭Markup解析，Thread标签不含Workspace路径；Resize只改变布局，不改变
-Controller状态。Approval/Diff、Question、Cost/Usage、Cancel、Steer、Doctor和Configuration仍按0.9.1c/0.9.1d实施。
+`ProductApp`拥有Textual生命周期，`ProductMainView`提供Session Picker、Transcript、状态行和单行Composer；
+`InteractionPresenter`驱动Approval、Question、Steer和Help专用Modal。快捷键为`Ctrl+N`新建、`Ctrl+R`重连、
+`Ctrl+A`审批、`Ctrl+U`回答、`Ctrl+X`取消Turn、`Ctrl+S`补充Turn、`F1`帮助和`Ctrl+Q`关闭。Transcript关闭Markup
+解析，Thread标签不含Workspace路径；Resize只改变布局。Quit与Cancel为独立路径，关闭不发送`turn/cancel`。Doctor和
+Configuration仍按0.9.1d实施。
 
 ## 8. 数据结构与领域契约
 
@@ -522,7 +530,7 @@ stateDiagram-v2
 | 子进程启动/握手 | 当前SDK/Transport合同；尚无Controller独立值 | 未建立可用连接，无领域命令 |
 | 普通协议Request | 当前无统一外层Deadline | 关闭时由整体Deadline转为未知；0.9.3必须建立专项基线 |
 | `events/next` | 协商值且不高于30秒 | 正常空轮询，不算故障 |
-| Artifact分页 | 0.9.1c待实现 | 当前页失败时不得提交Approve |
+| Artifact分页 | 5秒绝对时限、最多50页、每页200条 | 任一页、引用、游标、记录、字节或SHA失败均不得提交Approve |
 | Controller关闭 | 默认10秒，可配置1～30秒 | 排空Actor和关闭Session共用同一绝对Deadline |
 | Preflight单项 | 0.9.1d待实现 | 安全项失败关闭，体验项降级 |
 
@@ -762,7 +770,7 @@ Windows Workspace和统一Action行仍是计划路径；Controller、Rendering�
 | Reducer | Snapshot、Replay、重复事件、Gap、终态覆盖、乱序 | 确定性、幂等、冲突失败关闭 |
 | SDK | 恶意Response、布尔ID、超长帧、无效Result、半握手 | 稳定`AgentSDKError`，有界内存，连接不可误复用 |
 | Controller | 重复Submit、关闭、旧代际结果、Command未知 | 一次Intent至多一个持久Command身份 |
-| 无头UI | 当前基础Screen、Session Picker、Composer、Resize、按键、终端退出 | View与Intent一致，无真实TTY依赖；专用Modal属于0.9.1c |
+| 无头UI | Session Picker、Composer、Resize、Approval/Question/Steer/Help Modal、按键、终端退出 | View与Intent一致，无真实TTY依赖；Escape不发送、陈旧Modal失败关闭 |
 | 纵向stdio | 真实子进程、关闭/重启、Replay/Live；审批/问题后续扩展 | 基础链不丢持久事件，不重复Command身份 |
 | Windows | 盘符、UNC、保留名、ADS、Junction、共享替换 | 根逃逸与对象变化在I/O前后失败关闭 |
 | 统一Action | Patch、Process、Delivery、UNKNOWN/Reconcile | 所有副作用经过既有安全链且可恢复 |
@@ -811,6 +819,13 @@ Renderer异常、Close软限和Windows对象替换。
 `3622114`及稳定化提交`af62513`、`e717a87`、`f8a1dc4`、`5e8d71f`已由
 [CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Linux Python 3.12/3.13、macOS、
 Windows、PostgreSQL、Container与文档矩阵验收，本子切片正式关闭。
+
+0.9.1c本地证据覆盖65项Product UI测试：完整交互身份与状态白名单、0/1/多页和50页Artifact边界、引用/游标/
+记录/字节/SHA损坏、5秒读取超时、缺少能力、连接失败、Approval/Question/Cancel/Steer真实Runtime与Protocol、
+Approval/Question/Steer Modal、Escape不发送、陈旧Modal不分配命令、Token与费用未知，以及Quit不发送
+`turn/cancel`。另有Agent历史验证竞态回归证明并发Steering会重新准备模型历史而不会误失败。Ruff、Mypy、
+Readability、合同生成、文档门禁、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；三平台CI完成前
+仍保持子切片未关闭。
 
 ## 17. 部署、兼容与回退
 
@@ -862,11 +877,18 @@ macOS Coding Tools、Windows Trusted Execution、PostgreSQL、Container及文档
 Textual基础壳、`harnessix code`入口、用户级状态默认布局以及真实stdio跨进程恢复。依赖范围最终解析为Textual 8.2.8。
 实现、并发稳定化与三平台CI证据见[Product UI终端产品模块设计](../modules/product-ui.md)，本子切片已经关闭。
 
+0.9.1c已经完成本地实现：冻结`ApprovalBinding`、`QuestionBinding`和`TurnBinding`；`InteractionService`按当前投影
+复核身份，通过`execute_query`完整校验Diff Artifact，通过Prepared Command发送Approval、Question、Cancel和Steer；
+`ProductMainView`与框架中立Renderer展示Plan、Tool、Token及费用未知；Presenter和四类Screen提供专用交互及稳定错误
+自助。实现把I/O服务和错误目录拆成独立模块，以保持`ProductApp`、`ProductController`与
+`RecoverableAgentSession`不超过既有可读性预算。协议版本、Client State Schema和Approval领域值没有变化。专项设计与
+源码映射见[0.9.1c详细设计](m09-1c-domain-interactions.md)。本地全量与Mermaid门禁已完成；三平台CI完成后再
+记录实际Revision并关闭该子切片。
+
 后续实施中的任何接口、状态字段、依赖版本、平台边界或切片顺序偏差都必须先更新本文和ADR，再修改代码。每个
 子切片完成后记录实际提交、测试数量、三平台CI、真实场景证据和已更新的现行模块文档；五个子切片全部通过前，
 路线图0.9.1保持未完成。
 
 
-0.9.1a与0.9.1b已关闭；0.9.1c～0.9.1e仍未实现。当前不包含配置向导/Doctor、
-Approval/Question/Diff/Cancel/Steer专用交互、Windows只读产品端口或统一Action默认装配，不能由基础TUI推断这些能力
-已经可用。
+0.9.1a与0.9.1b已关闭；0.9.1c已完成本地实现、全量与Mermaid门禁并等待三平台CI验收；0.9.1d和0.9.1e仍未实现。当前不包含
+配置向导/Doctor、Windows只读产品端口或统一Action默认装配，不能由领域交互完成状态推断这些能力已经可用。

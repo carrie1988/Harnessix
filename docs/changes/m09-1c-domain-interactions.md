@@ -1,11 +1,13 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: pending
+version: 3
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - product
 modules:
+  - agent
+  - models
   - product_ui
   - sdk
   - protocol
@@ -17,6 +19,12 @@ related_tests:
   - tests/product_ui/test_app.py
   - tests/product_ui/test_projection.py
   - tests/product_ui/test_recoverable_session.py
+  - tests/product_ui/test_interactions.py
+  - tests/product_ui/test_controller_interactions.py
+  - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_app_interactions.py
+  - tests/product_ui/test_rendering.py
+  - tests/agent/test_interactions.py
   - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
@@ -172,7 +180,7 @@ main_view            -> interaction projection / rendering
 | `ApprovalScreen` | 单次Modal；返回批准、拒绝或关闭 | `ApprovalReview` | Controller、Session |
 | `QuestionScreen` | 单次Modal；返回规范回答或关闭 | `PendingQuestion` | Question协议调用 |
 | `SteerScreen` | 单次Modal；返回补充文本或关闭 | `ActiveTurnControl` | Cancel或退出语义 |
-| `HelpScreen` | 单次只读Modal | `ProductHelp` | 原始异常、stderr和环境变量 |
+| `HelpScreen` | 单次只读Modal | `ProductErrorHelp` | 原始异常、stderr和环境变量 |
 | `InteractionService` | 随Controller存在；无后台任务 | Recoverable Session、当前投影 | Widget、Textual |
 | `RecoverableAgentSession.execute_query` | 当前连接代际内串行执行只读SDK查询 | AgentClient、operation lock | Command序列分配 |
 
@@ -390,6 +398,9 @@ Artifact查询取消只终止只读查询，不产生领域命令。已经进入
 - 只读Artifact分页不进入Command Ledger，也不能改变客户端Command序列；
 - 提交后是否执行Tool由Agent Runtime和既有Approval事实决定，TUI不预测；
 - 证据在选择其他Thread或绑定身份变化时清除，避免跨会话正文残留。
+- Steering可能与模型历史Artifact验证并发；Agent Runtime在验证后持Thread锁重建最新历史，只有快照仍相同才
+  提交`ModelHistoryPrepared`，否则重新准备。取消已进入`CANCELLING/CANCELLED`时直接走领域取消路径，不能
+  因旧历史快照产生`invalid_event`或把取消误记为失败。
 
 ## 13. 安全、权限、隐私与信任边界
 
@@ -534,6 +545,7 @@ Approval的Approve按钮在证据不足时禁用，Reject保持可用。终端Re
 - Approval Modal展示证据，Evidence失败时Approve禁用、Reject可用；
 - Question选项和自由文本提交，Escape不产生命令；
 - Cancel、Steer和Quit分别产生不同效果；
+- Steering恰好发生在历史验证与提交之间时，旧检查被丢弃，补充输入进入首个模型请求且Turn不误失败；
 - F1未知/已知错误帮助不泄漏原始正文；
 - 冷重启后从Replay重新发现待决交互，旧内存证据不存在；
 - Linux Python 3.12/3.13、macOS和Windows CI均执行Product UI测试；
@@ -541,14 +553,15 @@ Approval的Approve按钮在证据不足时禁用，Reject保持可用。终端Re
 
 ### 17.4 完成标准
 
-- [ ] 领域合同、Presenter和Screen源码落地且依赖方向符合本文；
-- [ ] 所有副作用Intent通过Controller和Prepared Command；
-- [ ] Artifact完整性及失败关闭测试通过；
-- [ ] Approval、Question、Cancel、Steer无头纵向测试通过；
-- [ ] Plan、Tool、Usage/Cost和错误自助可见；
-- [ ] Controller/App不提高0.9.0批准规模与复杂度预算；
-- [ ] 三平台CI、全量测试、文档门禁和Mermaid渲染通过；
-- [ ] Product UI现行模块设计、总体架构、路线图和运维资料同步；
+- [x] 领域合同、Presenter和Screen源码落地且依赖方向符合本文；
+- [x] 所有副作用Intent通过Controller和Prepared Command；
+- [x] Artifact完整性及失败关闭测试通过；
+- [x] Approval、Question、Cancel、Steer无头纵向测试通过；
+- [x] Plan、Tool、Usage/Cost和错误自助可见；
+- [x] Controller/App不提高0.9.0批准规模与复杂度预算；
+- [x] 本地全量测试、文档门禁和513幅Mermaid真实渲染通过；
+- [ ] 三平台CI通过；
+- [x] Product UI现行模块设计、总体架构、路线图和运维资料同步；
 - [ ] 0.9.1c完成后本文转为`historical`并记录实际Revision与偏差。
 
 ## 18. 源码、测试、ADR与证据映射
@@ -563,14 +576,23 @@ Approval的Approve按钮在证据不足时禁用，Reject保持可用。终端Re
 | 连接与Prepared Command | [`product_ui/session.py`](../../src/harnessix/product_ui/session.py) | `prepare_command`、`execute_prepared` | [`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) |
 | 基础View | [`product_ui/app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp` | [`test_app.py`](../../tests/product_ui/test_app.py) |
 
-### 18.2 计划新增源码
+### 18.2 实际新增与修改源码
 
-实现阶段计划新增`src/harnessix/product_ui/interactions.py`、`main_view.py`、`interaction_screens.py`、
-`interaction_presenter.py`以及对应`tests/product_ui/test_interactions.py`、`test_interaction_screens.py`和纵向测试。
-文件名可以在实现评审中收敛，但职责边界、身份复核和失败语义不得绕过。
+| 职责 | 实际源码与关键符号 | 自动化证据 |
+|---|---|---|
+| 冻结交互合同与纯投影 | [`interactions.py`](../../src/harnessix/product_ui/interactions.py) `ApprovalBinding`、`QuestionBinding`、`ApprovalEvidence`、`interaction_snapshot`、`approval_review` | [`test_interactions.py`](../../tests/product_ui/test_interactions.py)身份、状态白名单、未知费用及证据准入 |
+| Artifact与副作用命令适配 | [`interaction_service.py`](../../src/harnessix/product_ui/interaction_service.py) `InteractionService`、`_read_artifact` | `test_artifact_evidence_*`、`test_batch_approval_without_diff_is_rejected_before_command_allocation` |
+| 主视图与领域渲染 | [`main_view.py`](../../src/harnessix/product_ui/main_view.py) `ProductMainView`；[`rendering.py`](../../src/harnessix/product_ui/rendering.py) `transcript_lines` | [`test_rendering.py`](../../tests/product_ui/test_rendering.py)、`test_product_app_answers_question_from_dedicated_modal` |
+| 专用Modal | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py)四类Screen | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)禁用盲批、选项映射、Escape与脱敏帮助 |
+| Textual适配 | [`interaction_presenter.py`](../../src/harnessix/product_ui/interaction_presenter.py) `InteractionPresenter`；[`app.py`](../../src/harnessix/product_ui/app.py)快捷键和生命周期 | [`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py)完整交互、陈旧Modal和退出语义 |
+| Controller与Session边界 | [`controller.py`](../../src/harnessix/product_ui/controller.py)交互Intent分派；[`session.py`](../../src/harnessix/product_ui/session.py) `execute_query` | [`test_controller_interactions.py`](../../tests/product_ui/test_controller_interactions.py)、[`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py) |
+| Steering历史竞态 | [`agent/model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py) `prepare_and_commit_model_history`；[`agent/runtime.py`](../../src/harnessix/agent/runtime.py) `_drive` | [`test_interactions.py`](../../tests/agent/test_interactions.py) `test_steering_during_history_verification_restarts_preparation`及Product Controller取消/Steer纵向回归 |
+| 稳定错误自助 | [`error_help.py`](../../src/harnessix/product_ui/error_help.py) `ProductErrorHelp`、`product_error_help` | `test_help_screen_uses_sanitized_fallback_for_unknown_code` |
 
 决策来源为[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)；整体子切片关系见
-[0.9.1详细设计](m09-1-cli-tui-product-experience.md)。实现完成后本节必须替换为实际文件、稳定符号和测试函数。
+[0.9.1详细设计](m09-1-cli-tui-product-experience.md)。实现将原计划中的Artifact读取职责独立为
+`interaction_service.py`，并将错误目录独立为`error_help.py`，避免扩大纯合同模块和Textual组件；协议方法、Client
+State Schema和Approval领域值均未变化。
 
 ## 19. 部署、兼容、迁移与回退
 
@@ -594,4 +616,20 @@ Approval的Approve按钮在证据不足时禁用，Reject保持可用。终端Re
 | App/Controller继续膨胀 | 提取Main View、Presenter和Interaction Service | 可读性批准预算增长时重新设计 |
 | UI误导Windows支持 | 平台文档和启动门保持失败关闭 | 仅凭TUI测试宣称Windows产品可用时停止发布 |
 
-0.9.1c只在上述停止条件均未触发、全部完成标准和三平台门禁通过后关闭；否则保持路线图未完成状态。
+0.9.1c本地实现、专项验证、全仓3434项通过/13项跳过及513幅Mermaid真实渲染已经完成；只有三平台CI
+通过后才能关闭并更新路线图状态。
+
+## 21. 实现偏差与验证记录
+
+| 设计项 | 实际结果 | 兼容与取舍 |
+|---|---|---|
+| 领域交互服务 | 从`interactions.py`拆分为`interaction_service.py` | 纯投影无I/O，Artifact和SDK调用集中在服务层，依赖方向更窄 |
+| 错误帮助 | 独立`error_help.py`静态目录 | 未知码统一映射`product_internal_failure`，不回显输入、路径或异常正文 |
+| Textual主布局 | 从`ProductApp`抽取`ProductMainView` | `ProductApp`保持既有可读性预算，View拆卸期间停止迟到快照渲染 |
+| Scripted Provider延时 | 延时改由`CancelToken.run`托管 | 测试Provider与正式协作取消合同一致，取消测试不再等待人为延时结束 |
+| Steering与历史准备竞态 | 新增`agent/model_history_runtime.py`乐观重备边界 | Artifact验证后重新核对最新Session模型视图；并发补充不会使Reducer接收过期检查，取消不会误收敛为失败 |
+| 成本展示 | 固定`unknown/price_not_exposed` | 未引入客户端价格表或内部账本旁路 |
+
+本地验收覆盖65项`tests/product_ui`测试，并增加1项Agent历史验证竞态确定性回归；`make check`最终为3434项
+通过、13项跳过，Ruff、Mypy、Readability、合同生成、文档静态门禁及513幅Mermaid真实渲染均已通过。实现
+Revision和CI链接在三平台流水线完成后写入本文，届时文档状态转为`historical`。

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 5e8d71f019b30cac28229f1fddcee3778fe8e8eb
+version: 4
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -43,7 +43,7 @@ supersedes: []
 | 能力 | Linux | macOS | Windows | Container |
 |---|---|---|---|---|
 | Python基础包/Action Plane | CI主路径 | 候选测试 | 选定测试 | 可构建基础镜像 |
-| Textual基础View/Controller | CI候选 | CI候选 | CI候选 | 非容器默认入口 |
+| Textual View/Controller与领域交互 | 本地候选，待CI | 本地候选，待CI | 平台中立层待CI | 非容器默认入口 |
 | `harnessix code`完整子进程链 | CI候选 | CI候选 | **子进程在工具平台门失败关闭** | 当前镜像未装配 |
 | SQLite Action Journal | 可用 | 可用 | 库级候选 | `/data`持久卷 |
 | PostgreSQL Action Journal | PostgreSQL 17 CI | 协议上可用，未独立原生矩阵 | 未独立验证 | 外部数据库 |
@@ -205,7 +205,7 @@ flowchart LR
 ## 11. 当前风险
 
 - Windows属于1.0目标但当前产品入口拒绝，时间和实现风险高；
-- 0.9.1b三平台CI已经完成，但基础TUI仍缺少真实用户终端长期运行和发行物证据；
+- 0.9.1b三平台CI已经完成；0.9.1c领域交互通过本地专项、全仓及Mermaid渲染门禁但仍待三平台CI，且TUI仍缺少真实用户终端长期运行和发行物证据；
 - macOS/Linux尚无安装器和长期Dogfooding，候选实现不能视为产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 容器镜像缺少正式供应链和Hardening门禁；

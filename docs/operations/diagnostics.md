@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -10,6 +10,7 @@ modules:
   - observability
   - api
   - product_config
+  - product_ui
 related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
@@ -18,6 +19,8 @@ related_tests:
   - tests/integration/test_observability_flow.py
   - tests/agent/test_telemetry.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_app_interactions.py
 supersedes: []
 ---
 
@@ -29,6 +32,7 @@ supersedes: []
 Journal、Session Event和专用账本是业务事实；Log、Trace和Metric用于关联与告警，丢失时不得改变领域结果。
 
 当前Action Plane具备结构化日志、OTLP/HTTP Trace/Metric、Health/Readiness和Action查询；Product Config具备离线诊断；
+Product UI状态行显示连接代际、Turn、Token、费用未知原因、待决交互和稳定Notice，并通过`F1`提供静态脱敏错误自助。
 Coding Agent产品入口尚无统一`doctor`、支持包或完整观测装配。
 
 ## 2. 诊断顺序
@@ -203,6 +207,25 @@ HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；
 | `UNKNOWN` | 外部效果无法证明 | 调用专用Reconcile或人工处理 |
 | stdio无输出 | 可能未完成握手、进程退出或stdout污染 | 检查stderr JSON、argv和协议帧，不发送Shell文本 |
 
+### 9.1 Product UI错误自助
+
+`F1`打开的帮助只来自[`error_help.py`](../../src/harnessix/product_ui/error_help.py)静态目录，包含标题、原因、影响、
+恢复动作和本文锚点。未知错误码、路径和异常正文不会回显，而是统一映射为`product_internal_failure`。
+
+| 稳定码或分组 | 直接含义 | 命令与恢复结论 |
+|---|---|---|
+| `approval_stale` | Turn、Call、Approval或Fingerprint已变化 | 决定未发送且不分配Command ID；刷新后重开 |
+| `approval_evidence_required` | 完整Diff尚未通过 | Approve禁用，Reject可用；重读证据或拒绝 |
+| `question_stale`/`question_answer_invalid` | 问题已变化，或回答为空/超限 | 回答未发送；按当前问题修正 |
+| `turn_control_stale`/`steering_invalid` | Turn状态或Steer正文不再有效 | Cancel/Steer未发送；刷新状态 |
+| `diff_unavailable` | Artifact能力缺失或批量Diff引用缺失 | 不允许盲批；升级服务、重试或Reject |
+| `artifact_reference_changed` | 分页引用与审批绑定不同 | 证据作废；重新读取并检查服务端 |
+| `artifact_pagination_stalled` | offset重复、不连续或超过50页 | 读取停止；禁止Approve |
+| `artifact_integrity_failed` | 记录、UTF-8字节或SHA-256不符 | Diff不可信；拒绝并检查Artifact链路 |
+| `artifact_read_timeout` | 5秒绝对时限内未完整读取 | 未产生领域命令；重试或Reject |
+| 连接错误分组 | 当前连接代际不可继续 | 不盲重放；`Ctrl+R`后从Replay确认 |
+| `product_internal_failure` | 未命中可公开稳定分类 | 不推断业务结果；重启并采集白名单诊断 |
+
 ## 10. 证据采集与脱敏
 
 允许保存：代码Revision、依赖版本、平台、时间、稳定错误码、状态枚举、事件类型、摘要、请求次数、Token/费用聚合、
@@ -221,6 +244,7 @@ Workspace绝对路径、文件内容、Tool参数/输出、私有Session和供�
 | Worker运行指标 | [`worker.py`](../../src/harnessix/worker.py)的`record_operational_metrics` | [`test_worker.py`](../../tests/integration/test_worker.py) |
 | 配置诊断 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py)的`diagnose_configuration` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | Agent Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) |
+| Product UI错误自助 | [`product_ui/error_help.py`](../../src/harnessix/product_ui/error_help.py)、[`product_ui/main_view.py`](../../src/harnessix/product_ui/main_view.py) | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)、[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py) |
 
 ## 12. 已知限制
 

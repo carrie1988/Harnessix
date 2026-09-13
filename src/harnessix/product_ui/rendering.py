@@ -8,7 +8,9 @@ from uuid import UUID
 from harnessix.product_ui.projection import ProductViewState
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
+    PublicCompactionContent,
     PublicErrorContent,
+    PublicItem,
     PublicPlanContent,
     PublicProcessStateContent,
     PublicQuestionAnswerContent,
@@ -28,31 +30,75 @@ class TranscriptLine:
     transient: bool = False
 
 
-def _item_line(item_id: UUID, content: object) -> TranscriptLine:
+def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
+    item_id = item.item_id
+    content = item.content
     if isinstance(content, PublicTextContent):
         role = {
             "user_message": "你",
             "assistant_message": "Harnessix",
             "reasoning_summary": "推理摘要",
         }[content.kind]
-        return TranscriptLine(item_id, role, content.text)
+        return (TranscriptLine(item_id, role, content.text),)
     if isinstance(content, PublicPlanContent):
-        return TranscriptLine(item_id, "计划", f"共{len(content.steps)}个步骤")
+        return tuple(
+            TranscriptLine(
+                item_id,
+                "计划",
+                f"{index}. [{step.status}] {step.description}",
+            )
+            for index, step in enumerate(content.steps, 1)
+        )
     if isinstance(content, PublicToolCallContent):
-        return TranscriptLine(item_id, "工具", f"开始 {content.tool}")
+        approval = "需要审批" if content.requires_approval else "无需审批"
+        return (
+            TranscriptLine(
+                item_id,
+                "工具",
+                f"{content.tool}@{content.tool_version} · {content.effect_class} · "
+                f"{approval} · {item.status}",
+            ),
+        )
     if isinstance(content, PublicToolResultContent):
-        return TranscriptLine(item_id, "工具", f"结果 {content.outcome}")
+        details = f"结果 {content.outcome}"
+        if content.error is not None:
+            details += f" · {content.error.code}：{content.error.message}"
+        if content.diff_artifact is not None:
+            details += " · 含完整Diff Artifact"
+        return (TranscriptLine(item_id, "工具", details),)
     if isinstance(content, PublicApprovalRequestContent):
-        return TranscriptLine(item_id, "审批", "需要确认操作")
+        decision = "待决定" if content.decision is None else content.decision.outcome
+        return (
+            TranscriptLine(
+                item_id,
+                "审批",
+                f"{content.approval_type} · {content.policy_version} · {decision}",
+            ),
+        )
     if isinstance(content, PublicQuestionRequestContent):
-        return TranscriptLine(item_id, "提问", content.question)
+        options = "" if not content.options else " · 选项：" + " / ".join(content.options)
+        return (TranscriptLine(item_id, "提问", content.question + options),)
     if isinstance(content, PublicQuestionAnswerContent):
-        return TranscriptLine(item_id, "回答", content.answer)
+        return (TranscriptLine(item_id, "回答", content.answer),)
     if isinstance(content, PublicProcessStateContent):
-        return TranscriptLine(item_id, "进程", content.status)
+        return (TranscriptLine(item_id, "进程", f"{content.status} · {content.origin}"),)
     if isinstance(content, PublicErrorContent):
-        return TranscriptLine(item_id, "错误", content.failure.message)
-    return TranscriptLine(item_id, "系统", "上下文已压缩")
+        return (
+            TranscriptLine(
+                item_id,
+                "错误",
+                f"{content.failure.code}：{content.failure.message}",
+            ),
+        )
+    assert isinstance(content, PublicCompactionContent)
+    return (
+        TranscriptLine(
+            item_id,
+            "上下文",
+            f"已压缩 {content.source_items} 项 · "
+            f"{content.tokens_before}→{content.tokens_after} tokens",
+        ),
+    )
 
 
 def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...]:
@@ -60,7 +106,7 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
 
     if view is None:
         return ()
-    lines = [_item_line(entry.item.item_id, entry.item.content) for entry in view.items]
+    lines = [line for entry in view.items for line in _item_lines(entry.item)]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}
     lines.extend(
         TranscriptLine(

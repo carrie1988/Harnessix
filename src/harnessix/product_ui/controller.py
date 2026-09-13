@@ -10,6 +10,18 @@ from typing import Any, Final, cast
 from uuid import UUID
 
 from harnessix.product_ui.errors import ProductUIError
+from harnessix.product_ui.interaction_service import InteractionService
+from harnessix.product_ui.interactions import (
+    ACTIVE_TURN_STATES,
+    ApprovalEvidence,
+    CancelTurnIntent,
+    InteractionIntent,
+    LoadApprovalEvidenceIntent,
+    RespondApprovalIntent,
+    RespondQuestionIntent,
+    SteerTurnIntent,
+    retained_approval_evidence,
+)
 from harnessix.product_ui.projection import ProductViewState
 from harnessix.product_ui.session import (
     ConnectionPhase,
@@ -21,19 +33,6 @@ from harnessix.sdk import AgentClient, AgentSDKError
 
 MAX_PRODUCT_THREADS: Final = 1000
 MAX_PENDING_INTENTS: Final = 64
-_ACTIVE_TURN_STATES: Final = frozenset(
-    {
-        "accepted",
-        "preparing_context",
-        "calling_model",
-        "executing_tools",
-        "waiting_approval",
-        "waiting_input",
-        "waiting_action",
-        "finalizing",
-        "cancelling",
-    }
-)
 
 
 class ControllerPhase(StrEnum):
@@ -64,6 +63,7 @@ class ProductControllerState:
     threads: tuple[ThreadView, ...] = ()
     selected_thread_id: UUID | None = None
     thread_view: ProductViewState | None = None
+    approval_evidence: ApprovalEvidence | None = None
     last_notice: ProductNotice | None = None
     revision: int = 0
 
@@ -117,6 +117,11 @@ type ProductIntent = (
     | SubmitPromptIntent
     | RefreshThreadsIntent
     | ReconnectIntent
+    | LoadApprovalEvidenceIntent
+    | RespondApprovalIntent
+    | RespondQuestionIntent
+    | CancelTurnIntent
+    | SteerTurnIntent
 )
 
 
@@ -157,6 +162,59 @@ def _ordered_threads(threads: tuple[ThreadView, ...]) -> tuple[ThreadView, ...]:
     )
 
 
+async def _read_all_threads(session: RecoverableAgentSession) -> tuple[ThreadView, ...]:
+    cursor: str | None = None
+    seen_cursors: set[str] = set()
+    values: list[ThreadView] = []
+    while True:
+        page = await session.list_threads_page(cursor=cursor, limit=200)
+        values.extend(page.threads)
+        if len(values) > MAX_PRODUCT_THREADS:
+            raise ProductUIError("controller_thread_limit", "Workspace会话数量超过客户端上限")
+        cursor = page.next_cursor
+        if cursor is None:
+            return _ordered_threads(tuple(values))
+        if cursor in seen_cursors:
+            raise ProductUIError("controller_pagination_stalled", "会话列表分页未推进")
+        seen_cursors.add(cursor)
+
+
+async def _select_thread(
+    session: RecoverableAgentSession,
+    available: tuple[ThreadView, ...],
+    thread_id: UUID,
+) -> ProductViewState:
+    if thread_id not in {thread.thread_id for thread in available}:
+        raise ProductUIError("controller_thread_missing", "所选会话不属于当前Workspace")
+    await session.resume_thread(thread_id)
+    return await session.hydrate_thread(thread_id)
+
+
+async def _select_optional_thread(
+    session: RecoverableAgentSession,
+    available: tuple[ThreadView, ...],
+    thread_id: UUID | None,
+) -> ProductViewState | None:
+    return None if thread_id is None else await _select_thread(session, available, thread_id)
+
+
+async def _execute_interaction(
+    service: InteractionService,
+    view: ProductViewState | None,
+    evidence: ApprovalEvidence | None,
+    intent: InteractionIntent,
+) -> ProductViewState:
+    if isinstance(intent, RespondApprovalIntent):
+        return await service.respond_approval(view, evidence, intent)
+    if isinstance(intent, RespondQuestionIntent):
+        return await service.respond_question(view, intent)
+    if isinstance(intent, CancelTurnIntent):
+        return await service.cancel_turn(view, intent)
+    if isinstance(intent, SteerTurnIntent):
+        return await service.steer_turn(view, intent)
+    raise ProductUIError("controller_intent_invalid", "领域交互类型无效")
+
+
 def _resolved_workspace(value: str) -> str:
     try:
         workspace = Path(value).resolve(strict=True)
@@ -167,11 +225,17 @@ def _resolved_workspace(value: str) -> str:
     return str(workspace)
 
 
+def _poll_interval(state: ProductControllerState) -> float:
+    turn = state.thread_view.current_turn if state.thread_view else None
+    return 0.1 if turn is not None and turn.status in ACTIVE_TURN_STATES else 1.0
+
+
 class ProductController:
     """串行执行UI Intent，并作为协议I/O与产品状态的唯一任务所有者。"""
 
     def __init__(self, session: RecoverableAgentSession) -> None:
         self._session = session
+        self._interactions = InteractionService(session)
         self._state = ProductControllerState()
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS
@@ -187,6 +251,11 @@ class ProductController:
         return self._state
 
     def _publish(self, **changes: object) -> ProductControllerState:
+        if "thread_view" in changes and "approval_evidence" not in changes:
+            changes["approval_evidence"] = retained_approval_evidence(
+                cast(ProductViewState | None, changes["thread_view"]),
+                self._state.approval_evidence,
+            )
         self._state = replace(
             self._state,
             **cast(Any, changes),
@@ -202,34 +271,6 @@ class ProductController:
 
         return await self._updates.get()
 
-    async def _read_all_threads(self) -> tuple[ThreadView, ...]:
-        cursor: str | None = None
-        seen_cursors: set[str] = set()
-        values: list[ThreadView] = []
-        while True:
-            page = await self._session.list_threads_page(cursor=cursor, limit=200)
-            values.extend(page.threads)
-            if len(values) > MAX_PRODUCT_THREADS:
-                raise ProductUIError("controller_thread_limit", "Workspace会话数量超过客户端上限")
-            cursor = page.next_cursor
-            if cursor is None:
-                return _ordered_threads(tuple(values))
-            if cursor in seen_cursors:
-                raise ProductUIError("controller_pagination_stalled", "会话列表分页未推进")
-            seen_cursors.add(cursor)
-
-    async def _select(
-        self,
-        thread_id: UUID,
-        *,
-        threads: tuple[ThreadView, ...] | None = None,
-    ) -> ProductViewState:
-        available = self._state.threads if threads is None else threads
-        if thread_id not in {thread.thread_id for thread in available}:
-            raise ProductUIError("controller_thread_missing", "所选会话不属于当前Workspace")
-        await self._session.resume_thread(thread_id)
-        return await self._session.hydrate_thread(thread_id)
-
     async def start(self, request: StartRequest) -> ProductControllerState:
         """建立连接并恢复显式或最近选择的Thread，然后启动单写者Actor。"""
 
@@ -239,7 +280,7 @@ class ProductController:
         self._publish(phase=ControllerPhase.STARTING, workspace=workspace, last_notice=None)
         try:
             connection = await self._session.connect()
-            threads = await self._read_all_threads()
+            threads = await _read_all_threads(self._session)
             saved = self._session.client_state().selected_thread_id
             selected = request.resume_thread_id or saved
             if selected is not None and selected not in {thread.thread_id for thread in threads}:
@@ -247,7 +288,7 @@ class ProductController:
                     raise ProductUIError("controller_thread_missing", "恢复会话不属于当前Workspace")
                 self._session.clear_selected_thread()
                 selected = None
-            view = await self._select(selected, threads=threads) if selected is not None else None
+            view = await _select_optional_thread(self._session, threads, selected)
         except Exception as error:
             normalized = _product_error(error)
             self._publish(
@@ -285,14 +326,12 @@ class ProductController:
             raise ProductUIError("controller_busy", "产品操作队列已满", retryable=True) from None
         await asyncio.shield(completion)
 
-    def _poll_interval(self) -> float:
-        turn = self._state.thread_view.current_turn if self._state.thread_view else None
-        return 0.1 if turn is not None and turn.status in _ACTIVE_TURN_STATES else 1.0
-
     async def _run(self) -> None:
         while True:
             try:
-                queued = await asyncio.wait_for(self._intents.get(), timeout=self._poll_interval())
+                queued = await asyncio.wait_for(
+                    self._intents.get(), timeout=_poll_interval(self._state)
+                )
             except TimeoutError:
                 await self._poll_once()
                 continue
@@ -331,16 +370,16 @@ class ProductController:
 
     async def _apply(self, intent: ProductIntent) -> None:
         if isinstance(intent, RefreshThreadsIntent):
-            self._publish(threads=await self._read_all_threads(), last_notice=None)
+            self._publish(threads=await _read_all_threads(self._session), last_notice=None)
             return
         if isinstance(intent, ReconnectIntent):
             connection = await self._session.connect()
-            threads = await self._read_all_threads()
+            threads = await _read_all_threads(self._session)
             selected = self._state.selected_thread_id
             if selected is not None and selected not in {item.thread_id for item in threads}:
                 self._session.clear_selected_thread()
                 selected = None
-            view = await self._select(selected, threads=threads) if selected is not None else None
+            view = await _select_optional_thread(self._session, threads, selected)
             self._publish(
                 phase=ControllerPhase.READY,
                 connection_generation=connection.generation,
@@ -354,7 +393,7 @@ class ProductController:
             await self._create_thread()
             return
         if isinstance(intent, SelectThreadIntent):
-            view = await self._select(intent.thread_id)
+            view = await _select_thread(self._session, self._state.threads, intent.thread_id)
             self._publish(
                 selected_thread_id=intent.thread_id,
                 thread_view=view,
@@ -363,6 +402,26 @@ class ProductController:
             return
         if isinstance(intent, SubmitPromptIntent):
             await self._submit_prompt(intent.prompt)
+            return
+        if isinstance(intent, LoadApprovalEvidenceIntent):
+            evidence = await self._interactions.load_approval_evidence(
+                self._state.thread_view, intent.binding
+            )
+            self._publish(approval_evidence=evidence, last_notice=None)
+            return
+        if isinstance(intent, InteractionIntent):
+            updated = await _execute_interaction(
+                self._interactions,
+                self._state.thread_view,
+                self._state.approval_evidence,
+                intent,
+            )
+            self._publish(
+                threads=await _read_all_threads(self._session),
+                thread_view=updated,
+                approval_evidence=None,
+                last_notice=None,
+            )
             return
         raise ProductUIError("controller_intent_invalid", "产品操作类型无效")
 
@@ -375,7 +434,7 @@ class ProductController:
             return await client.create_thread(workspace, request_id=prepared.request_id)
 
         thread = await self._session.execute_prepared(command, create)
-        threads = await self._read_all_threads()
+        threads = await _read_all_threads(self._session)
         view = await self._session.hydrate_thread(thread.thread_id)
         self._publish(
             threads=threads,
@@ -391,7 +450,7 @@ class ProductController:
         view = self._state.thread_view
         if thread_id is None or view is None:
             raise ProductUIError("controller_thread_required", "请先创建或选择会话")
-        if view.current_turn is not None and view.current_turn.status in _ACTIVE_TURN_STATES:
+        if view.current_turn is not None and view.current_turn.status in ACTIVE_TURN_STATES:
             raise ProductUIError("controller_turn_active", "当前会话已有活动Turn")
         command = self._session.prepare_command()
 
@@ -401,7 +460,7 @@ class ProductController:
         await self._session.execute_prepared(command, submit)
         hydrated = await self._session.hydrate_thread(thread_id)
         self._publish(
-            threads=await self._read_all_threads(),
+            threads=await _read_all_threads(self._session),
             thread_view=hydrated,
             last_notice=None,
         )
@@ -433,8 +492,8 @@ class ProductController:
             turn = view.current_turn
             threads = (
                 self._state.threads
-                if turn is not None and turn.status in _ACTIVE_TURN_STATES
-                else await self._read_all_threads()
+                if turn is not None and turn.status in ACTIVE_TURN_STATES
+                else await _read_all_threads(self._session)
             )
             self._publish(threads=threads, thread_view=view, last_notice=None)
 

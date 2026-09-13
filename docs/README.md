@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 44
-code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
+version: 45
+code_revision: 35e9e889f78534fd8866f76cfe24d936b08d345d
 owners:
   - core
 modules:
@@ -19,6 +19,8 @@ related_tests:
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
   - tests/product_ui/test_app.py
+  - tests/product_ui/test_interactions.py
+  - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_stdio_product.py
 supersedes: []
 ---
@@ -29,7 +31,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Controller、无头UI、真实stdio恢复以及Linux Python 3.12/3.13、macOS和Windows矩阵验收并正式关闭；完整领域交互、Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1的[源码研究](research/cli-tui-product-experience.md)、[架构决策](adr/0078-product-shell-and-recoverable-client-state.md)和[详细设计](changes/m09-1-cli-tui-product-experience.md)已经建立；0.9.1a客户端状态、投影、连接恢复及SDK严格边界已通过[CI 34715925598](https://github.com/carrie1988/Harnessix/actions/runs/34715925598)的Linux Python 3.12/3.13、macOS和Windows验收。0.9.1b基础Textual产品链已由[CI 34721082419](https://github.com/carrie1988/Harnessix/actions/runs/34721082419)完成Controller、无头UI、真实stdio恢复以及Linux Python 3.12/3.13、macOS和Windows矩阵验收并正式关闭。0.9.1c已经完成Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助的本地实现；65项Product UI专项测试、全仓3434项通过/13项跳过及513幅Mermaid本地真实渲染已经验收，等待三平台CI后关闭。Windows产品级Coding Tool Runtime、三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -111,7 +113,7 @@ supersedes: []
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Replay/Delta、命令幂等账本、兼容和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
 | SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限，以及Action Plane HTTP同步/异步客户端 |
-| Product UI终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际、单Actor Controller、Textual基础View和stdio冷恢复；完整领域交互待0.9.1c |
+| Product UI终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际、单Actor Controller、Plan/Tool、Approval/Question、Diff证据、Usage/Cost未知、Cancel/Steer、错误自助和stdio冷恢复；0.9.1c本地全仓门禁通过，待三平台CI关闭 |
 | Product Config | [Product Config模块设计](modules/product-config.md) | 严格配置、Profile选择、Secret引用、离线诊断、安全Fallback、迁移、CAS和产品启动事务 |
 | Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
 | Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
@@ -142,7 +144,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md) | 评审中；0.9.1a和0.9.1b已关闭，0.9.1c已完成设计并待实施，Windows原生工具和统一Action装配尚待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md) | 评审中；0.9.1a和0.9.1b已关闭，0.9.1c本地全仓与Mermaid门禁通过并待三平台CI，Windows原生工具和统一Action装配尚待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
