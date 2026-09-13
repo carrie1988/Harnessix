@@ -61,6 +61,7 @@
             "tool_result",
             "process_output",
             "batch_effect",
+            "action_review",
             "artifact_page"
           ],
           "title": "Purpose",

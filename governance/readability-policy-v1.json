@@ -10,8 +10,8 @@
   "required_public_behavior_docstrings": true,
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
-    "src/harnessix/agent/models.py": 929,
-    "src/harnessix/agent/runtime.py": 3198,
+    "src/harnessix/agent/models.py": 849,
+    "src/harnessix/agent/runtime.py": 3115,
     "src/harnessix/context/sources.py": 844,
     "src/harnessix/delivery/git.py": 1041,
     "src/harnessix/delivery/git_push.py": 642,
@@ -21,8 +21,7 @@
     "src/harnessix/processes/supervisor.py": 827,
     "src/harnessix/protocol/contracts.py": 643,
     "src/harnessix/sdk/agent_client.py": 611,
-    "src/harnessix/skills/runtime.py": 644,
-    "src/harnessix/trusted_actions/router.py": 659
+    "src/harnessix/skills/runtime.py": 644
   },
   "approved_oversized_symbols": {
     "harnessix.agent.batch_patching:validate_effect": {
@@ -34,16 +33,8 @@
       "max_decision_complexity": 20
     },
     "harnessix.agent.item_reducer:_start_item": {
-      "max_lines": 261,
-      "max_decision_complexity": 82
-    },
-    "harnessix.agent.models:EventDraft": {
-      "max_lines": 139,
-      "max_decision_complexity": 0
-    },
-    "harnessix.agent.models:EventDraft.legacy_event_boundary": {
-      "max_lines": 107,
-      "max_decision_complexity": 69
+      "max_lines": 253,
+      "max_decision_complexity": 76
     },
     "harnessix.agent.models:ThreadForkSnapshot.safe_history": {
       "max_lines": 48,
@@ -54,35 +45,35 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3027,
+      "max_lines": 2922,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
-      "max_lines": 170,
-      "max_decision_complexity": 58
+      "max_lines": 169,
+      "max_decision_complexity": 50
     },
     "harnessix.agent.runtime:AgentRuntime._drive": {
-      "max_lines": 169,
-      "max_decision_complexity": 35
+      "max_lines": 146,
+      "max_decision_complexity": 32
     },
     "harnessix.agent.runtime:AgentRuntime._execute_calls": {
-      "max_lines": 270,
-      "max_decision_complexity": 62
+      "max_lines": 269,
+      "max_decision_complexity": 55
     },
     "harnessix.agent.runtime:AgentRuntime._finish": {
-      "max_lines": 162,
-      "max_decision_complexity": 48
+      "max_lines": 146,
+      "max_decision_complexity": 37
     },
     "harnessix.agent.runtime:AgentRuntime._observe_process_action": {
       "max_lines": 102,
       "max_decision_complexity": 21
     },
     "harnessix.agent.runtime:AgentRuntime._recover": {
-      "max_lines": 101,
-      "max_decision_complexity": 28
+      "max_lines": 100,
+      "max_decision_complexity": 26
     },
     "harnessix.agent.runtime:AgentRuntime._reply_approval": {
-      "max_lines": 135,
+      "max_lines": 133,
       "max_decision_complexity": 23
     },
     "harnessix.agent.runtime:AgentRuntime._run_compaction": {
@@ -106,8 +97,8 @@
       "max_decision_complexity": 0
     },
     "harnessix.agent.turn_reducer:_change_state": {
-      "max_lines": 224,
-      "max_decision_complexity": 90
+      "max_lines": 218,
+      "max_decision_complexity": 87
     },
     "harnessix.agent_cli:ThinAgentCLI": {
       "max_lines": 250,
@@ -142,16 +133,12 @@
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore": {
-      "max_lines": 492,
+      "max_lines": 462,
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore._body": {
       "max_lines": 47,
       "max_decision_complexity": 21
-    },
-    "harnessix.artifacts.sqlite:SQLiteArtifactStore._reference": {
-      "max_lines": 89,
-      "max_decision_complexity": 48
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore._verify_page": {
       "max_lines": 40,
@@ -206,7 +193,7 @@
       "max_decision_complexity": 45
     },
     "harnessix.delivery.filesystem:WorkspaceTransactionRuntime": {
-      "max_lines": 172,
+      "max_lines": 142,
       "max_decision_complexity": 0
     },
     "harnessix.delivery.git:GitDeliveryRuntime": {
@@ -502,11 +489,11 @@
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.controller:ProductController": {
-      "max_lines": 329,
+      "max_lines": 325,
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.session:RecoverableAgentSession": {
-      "max_lines": 276,
+      "max_lines": 266,
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.state_store:ClientStateStore": {
@@ -554,7 +541,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.session.sqlite:SQLiteSessionStore": {
-      "max_lines": 428,
+      "max_lines": 418,
       "max_decision_complexity": 0
     },
     "harnessix.skills.contracts:SkillCatalogSnapshot.canonical_catalog": {
@@ -590,23 +577,23 @@
       "max_decision_complexity": 25
     },
     "harnessix.tools.runtime:CodingToolRuntime": {
-      "max_lines": 301,
+      "max_lines": 259,
       "max_decision_complexity": 0
     },
     "harnessix.tools.workspace:Workspace": {
-      "max_lines": 148,
+      "max_lines": 137,
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.router:TrustedActionRouter": {
-      "max_lines": 379,
+      "max_lines": 334,
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.store:SQLiteActionAuditStore": {
-      "max_lines": 316,
+      "max_lines": 310,
       "max_decision_complexity": 0
     },
     "harnessix.worker:ActionWorker": {
-      "max_lines": 136,
+      "max_lines": 124,
       "max_decision_complexity": 0
     },
     "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources": {
@@ -630,7 +617,7 @@
       "max_decision_complexity": 29
     },
     "harnessix.workspace.windows:WindowsWorkspaceRoot": {
-      "max_lines": 313,
+      "max_lines": 230,
       "max_decision_complexity": 0
     }
   },
@@ -745,6 +732,7 @@
     "product_config->agent",
     "product_config->app_server",
     "product_config->artifacts",
+    "product_config->delivery",
     "product_config->domain",
     "product_config->execution",
     "product_config->file_lock",

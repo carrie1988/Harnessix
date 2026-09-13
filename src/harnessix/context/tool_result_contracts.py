@@ -30,7 +30,9 @@ class ToolResultViewPolicy(ContractModel):
 
 
 class ToolResultArtifactBinding(ContractModel):
-    purpose: Literal["tool_result", "process_output", "batch_effect", "artifact_page"]
+    purpose: Literal[
+        "tool_result", "process_output", "batch_effect", "action_review", "artifact_page"
+    ]
     artifact: ArtifactRef
 
 

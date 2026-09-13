@@ -64,63 +64,33 @@ class WorkspaceTransactionRuntime:
         lease: WorkspaceLease,
     ) -> WorkspaceTransactionRecord:
         """在批准指纹和Workspace Lease仍匹配时发布事务；部分效果转入可恢复状态。"""
-        record = self._store.load(transaction_id)
-        if approval_fingerprint != record.plan.fingerprint:
-            raise KernelError("delivery_approval_mismatch", "Workspace事务批准指纹不匹配")
-        if record.plan.source.platform != "posix" or os.name != "posix":
-            raise KernelError(
-                "delivery_platform_unsupported", "普通Workspace事务当前只支持POSIX安全写端口"
+        while True:
+            record = self.publish_next(
+                transaction_id,
+                root,
+                approval_fingerprint=approval_fingerprint,
+                lease=lease,
             )
-        if record.state == "published":
-            return record
-        if record.state in {"diverged", "unknown"}:
-            raise KernelError("delivery_not_executable", "Workspace事务已处于不可执行终态")
-        self._assert_lease(record, lease)
-        if record.state == "prepared":
-            verify_workspace_snapshot(record.plan.source, root)
-            record = self._advance(record, "publishing", 0)
-        else:
-            record = self.reconcile(transaction_id, root)
             if record.state == "published":
                 return record
-            if record.state != "interrupted":
-                raise KernelError("delivery_not_executable", "Workspace事务不能安全恢复")
-            record = self._advance(record, "publishing", record.cursor)
-        for index, mutation in enumerate(record.plan.mutations):
-            if index < record.cursor:
-                continue
-            self._assert_lease(record, lease)
-            current = _observe(Path(root), mutation.path)
-            if current == mutation.after:
-                record = self._advance(record, "publishing", index + 1)
-                continue
-            if current != mutation.before:
-                diverged = self._advance(
-                    record, "diverged", index, error_code="delivery_source_changed"
-                )
-                raise KernelError(
-                    "delivery_source_changed",
-                    f"Workspace事务路径已经漂移：{mutation.path}；状态={diverged.state}",
-                )
-            try:
-                _apply(self._store, Path(root), transaction_id, index, mutation)
-                _fault(f"effect_applied:{index}")
-            except KernelError:
-                reconciled = self.reconcile(transaction_id, root)
-                if reconciled.state == "published":
-                    return reconciled
-                raise
-            if _observe(Path(root), mutation.path) != mutation.after:
-                unknown = self._advance(
-                    record, "unknown", index, error_code="delivery_effect_unknown"
-                )
-                raise KernelError(
-                    "delivery_effect_unknown",
-                    f"Workspace事务效果无法证明：{mutation.path}；状态={unknown.state}",
-                )
-            record = self._advance(record, "publishing", index + 1)
-            _fault(f"member_recorded:{index}")
-        return self._advance(record, "published", len(record.plan.mutations))
+
+    def publish_next(
+        self,
+        transaction_id: UUID,
+        root: str | Path,
+        *,
+        approval_fingerprint: str,
+        lease: WorkspaceLease,
+    ) -> WorkspaceTransactionRecord:
+        """最多提交一个有界成员，供异步Owner在成员之间建立取消检查点。"""
+
+        return _publish_next(
+            self,
+            transaction_id,
+            root,
+            approval_fingerprint=approval_fingerprint,
+            lease=lease,
+        )
 
     def reconcile(self, transaction_id: UUID, root: str | Path) -> WorkspaceTransactionRecord:
         """比较前后镜像恢复中断事务；混合或不可证明状态标记为diverged或unknown。"""
@@ -355,3 +325,95 @@ def _apply(
                     os.unlink(temporary, dir_fd=parent)
                 except OSError:
                     pass
+
+
+def _publish_next(
+    runtime: WorkspaceTransactionRuntime,
+    transaction_id: UUID,
+    root: str | Path,
+    *,
+    approval_fingerprint: str,
+    lease: WorkspaceLease,
+) -> WorkspaceTransactionRecord:
+    """复核执行资格并最多提交一个Workspace事务成员。"""
+
+    record = _prepare_publication(
+        runtime,
+        transaction_id,
+        root,
+        approval_fingerprint=approval_fingerprint,
+        lease=lease,
+    )
+    if record.state == "published":
+        return record
+    index = record.cursor
+    mutation = record.plan.mutations[index]
+    runtime._assert_lease(record, lease)
+    current = _observe(Path(root), mutation.path)
+    if current == mutation.after:
+        record = runtime._advance(record, "publishing", index + 1)
+    elif current != mutation.before:
+        diverged = runtime._advance(record, "diverged", index, error_code="delivery_source_changed")
+        raise KernelError(
+            "delivery_source_changed",
+            f"Workspace事务路径已经漂移：{mutation.path}；状态={diverged.state}",
+        )
+    else:
+        try:
+            _apply(runtime._store, Path(root), transaction_id, index, mutation)
+            _fault(f"effect_applied:{index}")
+        except KernelError:
+            reconciled = runtime.reconcile(transaction_id, root)
+            if reconciled.state == "published":
+                return reconciled
+            raise
+        if _observe(Path(root), mutation.path) != mutation.after:
+            unknown = runtime._advance(
+                record, "unknown", index, error_code="delivery_effect_unknown"
+            )
+            raise KernelError(
+                "delivery_effect_unknown",
+                f"Workspace事务效果无法证明：{mutation.path}；状态={unknown.state}",
+            )
+        record = runtime._advance(record, "publishing", index + 1)
+        _fault(f"member_recorded:{index}")
+    if record.cursor == len(record.plan.mutations):
+        return runtime._advance(record, "published", record.cursor)
+    return record
+
+
+def _prepare_publication(
+    runtime: WorkspaceTransactionRuntime,
+    transaction_id: UUID,
+    root: str | Path,
+    *,
+    approval_fingerprint: str,
+    lease: WorkspaceLease,
+) -> WorkspaceTransactionRecord:
+    """复核批准、平台、租约和可恢复状态，但不提交文件成员。"""
+
+    record = runtime._store.load(transaction_id)
+    if approval_fingerprint != record.plan.fingerprint:
+        raise KernelError("delivery_approval_mismatch", "Workspace事务批准指纹不匹配")
+    if record.plan.source.platform != "posix" or os.name != "posix":
+        raise KernelError(
+            "delivery_platform_unsupported", "普通Workspace事务当前只支持POSIX安全写端口"
+        )
+    if record.state == "published":
+        return record
+    if record.state in {"diverged", "unknown"}:
+        raise KernelError("delivery_not_executable", "Workspace事务已处于不可执行终态")
+    runtime._assert_lease(record, lease)
+    if record.state == "prepared":
+        verify_workspace_snapshot(record.plan.source, root)
+        record = runtime._advance(record, "publishing", 0)
+    else:
+        record = runtime.reconcile(transaction_id, root)
+        if record.state == "published":
+            return record
+        if record.state != "interrupted":
+            raise KernelError("delivery_not_executable", "Workspace事务不能安全恢复")
+        record = runtime._advance(record, "publishing", record.cursor)
+    if record.cursor == len(record.plan.mutations):
+        return runtime._advance(record, "published", record.cursor)
+    return record

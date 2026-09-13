@@ -1,0 +1,97 @@
+{
+  "$defs": {
+    "WorkspacePatchFile": {
+      "additionalProperties": false,
+      "description": "一个带来源前置条件的创建、替换或删除意图。",
+      "properties": {
+        "operation": {
+          "enum": [
+            "create",
+            "replace",
+            "delete"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "expected_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Sha256"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "maxLength": 524288,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "operation",
+        "path"
+      ],
+      "title": "WorkspacePatchFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "模型可见的多文件事务提案；宿主持有事务、租约和Artifact身份。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-patch-input/v1",
+      "default": "harnessix.workspace-patch-input/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/WorkspacePatchFile"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "files"
+  ],
+  "title": "WorkspacePatchInput",
+  "type": "object"
+}

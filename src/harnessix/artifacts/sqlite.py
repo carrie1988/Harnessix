@@ -21,8 +21,6 @@ from harnessix.agent.models import (
     ItemFinished,
     ItemStarted,
     ItemStatus,
-    PatchBatchApprovalRequestContent,
-    ProcessApprovalRequestContent,
     Thread,
     ToolCallContent,
     ToolResultContent,
@@ -201,6 +199,37 @@ class SQLiteArtifactStore:
             self._fault("artifact.after_commit")
             return updated
 
+    async def publish_action_review(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        call: ToolCallContent,
+        body: bytes,
+        *,
+        artifact_id: UUID,
+        workspace_scope: str,
+        expected_sequence: int,
+    ) -> ArtifactRef:
+        """查询优先发布审批Review；孤儿正文不可读，重放必须复用同一收据。"""
+
+        from harnessix.artifacts.action_review_store import publish_action_review
+
+        lines = records(body)
+        return await publish_action_review(
+            self.session,
+            self.policy,
+            self._fault,
+            self._check_quota,
+            thread_id,
+            turn_id,
+            call,
+            body,
+            artifact_id=artifact_id,
+            workspace_scope=workspace_scope,
+            expected_sequence=expected_sequence,
+            record_count=len(lines),
+        )
+
     async def _check_quota(
         self, database: aiosqlite.Connection, thread_id: UUID, turn_id: UUID, size: int
     ) -> None:
@@ -272,94 +301,9 @@ class SQLiteArtifactStore:
 
     @staticmethod
     def _reference(row: aiosqlite.Row, thread: Thread) -> ArtifactRef:
-        try:
-            ref = ArtifactRef.model_validate_json(row["manifest_json"])
-            if (
-                str(ref.artifact_id) != row["artifact_id"]
-                or ref.size_bytes != row["size_bytes"]
-                or ref.expires_at.isoformat() != row["expires_at"]
-            ):
-                raise ValueError("索引不匹配")
-            turn = get_turn(thread, UUID(row["turn_id"]))
-            if row["purpose"] not in {
-                "tool_result",
-                "batch_plan",
-                "batch_effect",
-                "process_output",
-            }:
-                raise ValueError("未知归档用途")
-            if row["purpose"] == "process_output":
-                results = [
-                    i.content
-                    for i in turn.items
-                    if isinstance(i.content, ToolResultContent)
-                    and i.status == ItemStatus.COMPLETED
-                    and str(i.content.call_id) == row["call_id"]
-                    and i.content.process is not None
-                ]
-                requests = [
-                    i.content
-                    for i in turn.items
-                    if isinstance(i.content, ProcessApprovalRequestContent)
-                    and i.status == ItemStatus.COMPLETED
-                    and str(i.content.call_id) == row["call_id"]
-                ]
-                if (
-                    len(results) != 1
-                    or len(requests) != 1
-                    or not isinstance(results[0].output, dict)
-                    or results[0].output.get("artifact") != ref.model_dump(mode="json")
-                    or results[0].process is None
-                    or results[0].action_id != requests[0].plan.action_id
-                    or results[0].process.action_id != requests[0].plan.action_id
-                    or results[0].process.action_fingerprint != requests[0].plan.action_fingerprint
-                    or results[0].process.plan_fingerprint != requests[0].plan.approval_fingerprint
-                ):
-                    raise ValueError("Process输出引用不匹配")
-                return ref
-            if row["purpose"] != "tool_result":
-                contents = [
-                    i.content
-                    for i in turn.items
-                    if isinstance(i.content, PatchBatchApprovalRequestContent | ToolResultContent)
-                    and (
-                        isinstance(i.content, PatchBatchApprovalRequestContent)
-                        if row["purpose"] == "batch_plan"
-                        else isinstance(i.content, ToolResultContent)
-                        and i.status == ItemStatus.COMPLETED
-                        and i.content.patch_batch is not None
-                    )
-                    and str(i.content.call_id) == row["call_id"]
-                ]
-                if len(contents) != 1 or contents[0].diff_artifact != ref:
-                    raise ValueError("差异引用不匹配")
-                request = next(
-                    i.content
-                    for i in turn.items
-                    if isinstance(i.content, PatchBatchApprovalRequestContent)
-                    and str(i.content.call_id) == row["call_id"]
-                )
-                if request.plan.backend.manifest.workspace_scope != row["workspace_scope"]:
-                    raise ValueError("差异工作区错绑")
-                return ref
-            results = [
-                i.content
-                for i in turn.items
-                if isinstance(i.content, ToolResultContent)
-                and str(i.content.call_id) == row["call_id"]
-                and i.status == ItemStatus.COMPLETED
-            ]
-            if (
-                len(results) != 1
-                or results[0].outcome != "succeeded"
-                or results[0].process is not None
-                or not isinstance(results[0].output, dict)
-                or results[0].output.get("artifact") != ref.model_dump(mode="json")
-            ):
-                raise ValueError("缺少结果引用")
-            return ref
-        except (ValueError, KernelError, StopIteration):
-            raise KernelError("artifact_corrupt", "Artifact manifest 或结果引用不一致") from None
+        from harnessix.artifacts.reference import validate_artifact_reference
+
+        return validate_artifact_reference(row, thread)
 
     async def read(
         self,
@@ -390,7 +334,14 @@ class SQLiteArtifactStore:
             thread = await self.session._snapshot(database, thread_id)
             if thread is None:
                 raise KernelError("artifact_corrupt", "Artifact 归属不存在")
-            ref = self._reference(row, thread)
+            try:
+                ref = self._reference(row, thread)
+            except KernelError as error:
+                if error.code == "artifact_unreferenced":
+                    raise KernelError(
+                        "artifact_not_found", "Artifact不存在或不属于当前作用域"
+                    ) from None
+                raise
             lines = self._body(row, thread, ref)
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
@@ -419,7 +370,13 @@ class SQLiteArtifactStore:
         purpose: HistoryArtifactPurpose,
         omitted_field: ArtifactOmittedField | None = None,
     ) -> None:
-        if purpose not in {"tool_result", "batch_effect", "process_output", "artifact_page"}:
+        if purpose not in {
+            "tool_result",
+            "batch_effect",
+            "process_output",
+            "action_review",
+            "artifact_page",
+        }:
             raise KernelError("artifact_invalid", "Artifact用途不符合契约")
         async with self.session._connection() as database:
             await database.execute("BEGIN")
@@ -438,7 +395,14 @@ class SQLiteArtifactStore:
             thread = await self.session._snapshot(database, thread_id)
             if thread is None:
                 raise KernelError("artifact_corrupt", "Artifact归属不存在")
-            stored = self._reference(row, thread)
+            try:
+                stored = self._reference(row, thread)
+            except KernelError as error:
+                if error.code == "artifact_unreferenced":
+                    raise KernelError(
+                        "artifact_not_found", "Artifact不存在或不属于当前作用域"
+                    ) from None
+                raise
             if stored != reference:
                 raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
             lines = self._body(row, thread, stored)
@@ -542,7 +506,11 @@ class SQLiteArtifactStore:
                 thread = await self.session._snapshot(database, UUID(row["thread_id"]))
                 if thread is None:
                     raise KernelError("artifact_corrupt", "Artifact 归属不存在")
-                self._reference(row, thread)
+                try:
+                    self._reference(row, thread)
+                except KernelError as error:
+                    if error.code != "artifact_unreferenced":
+                        raise
                 if thread.active_turn_id is not None:
                     protected += 1
                     continue

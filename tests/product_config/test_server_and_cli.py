@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import io
 import json
 import os
@@ -12,15 +14,18 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
-from harnessix.models.scripted import FakeProvider
+from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
+from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
 from harnessix.product_config.server import run_product_stdio
 from harnessix.product_config.store import SQLiteProductConfigStore
+from harnessix.protocol.contracts import ApprovalRespondParams, PublicApprovalDecision
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
+from tests.agent.helpers import answer
 from tests.product_config.conftest import write_config
 from tests.product_config.test_migration_and_store import legacy_body
 
@@ -60,6 +65,184 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
         assert store.active() == (snapshot.config_sha256, "primary")
         assert [event.operation for event in store.config_events()] == ["loaded", "activated"]
     assert CANARY not in (state / "product-config.db").read_bytes().decode("utf-8", errors="ignore")
+    assert (state / "execution-plans.db").is_file()
+    assert (state / "action-audit.db").is_file()
+    assert (state / "workspace-transactions/transactions.db").is_file()
+    assert (state / "workspace-leases.db").is_file()
+
+
+async def test_product_server_model_catalog_reflects_verified_workspace_patch(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+
+    class TrackingBundle(FakeProvider):
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    bundle = TrackingBundle()
+
+    async def build(*_args: object, **_kwargs: object) -> TrackingBundle:
+        return bundle
+
+    async def drive(
+        server: AgentProtocolServer,
+        _input_stream: object,
+        _output_stream: object,
+    ) -> None:
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+        thread = await client.create_thread(str(workspace), request_id="create-actions")
+        await client.start_turn(thread.thread_id, "报告能力", request_id="start-actions")
+        for _ in range(100):
+            current = await client.get_thread(thread.thread_id)
+            if current.latest_turn is not None and current.latest_turn.status == "completed":
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("默认产品Turn未在有界时间内完成")
+        await client.close()
+
+    monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
+    monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+
+    assert len(bundle.requests) == 1
+    tool_names = {tool.name for tool in bundle.requests[0].tools}
+    if os.name == "posix":
+        assert "apply_patch_batch" in tool_names
+    else:
+        assert "apply_patch_batch" not in tool_names
+
+
+@pytest.mark.skipif(os.name != "posix", reason="安全Workspace写端口只在POSIX广告")
+async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "app.py"
+    target.write_text("old\n", encoding="utf-8")
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+    action = [
+        ResponseStarted(response_id="patch-response"),
+        ToolCallCompleted(
+            call_id="patch-call",
+            tool="apply_patch_batch",
+            arguments={
+                "files": [
+                    {
+                        "operation": "replace",
+                        "path": "app.py",
+                        "expected_sha256": hashlib.sha256(b"old\n").hexdigest(),
+                        "content": "new\n",
+                        "mode": 0o644,
+                    }
+                ]
+            },
+        ),
+        ResponseCompleted(finish_reason="tool_calls"),
+    ]
+
+    class TrackingBundle(ScriptedProvider):
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    bundle = TrackingBundle([action, answer("修改完成")])
+
+    async def build(*_args: object, **_kwargs: object) -> TrackingBundle:
+        return bundle
+
+    async def drive(
+        server: AgentProtocolServer,
+        _input_stream: object,
+        _output_stream: object,
+    ) -> None:
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+        thread = await client.create_thread(str(workspace), request_id="create-patch")
+        accepted = await client.start_turn(
+            thread.thread_id,
+            "修改 app.py",
+            request_id="start-patch",
+        )
+        approval = None
+        for _ in range(100):
+            replay = await client.replay_events(thread.thread_id, limit=256)
+            for event in replay.events:
+                item = getattr(event.data, "item", None)
+                content = getattr(item, "content", None)
+                if getattr(content, "kind", None) == "approval_request":
+                    approval = content
+                    break
+            if approval is not None:
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("默认产品Patch未进入审批")
+        assert approval.approval_type == "patch_batch"
+        assert approval.diff_artifact is not None and approval.diff_artifact.complete
+        page = await client.read_artifact(
+            thread.thread_id,
+            approval.diff_artifact.artifact_id,
+            limit=200,
+        )
+        assert "app.py" in page.text and "old" in page.text and "new" in page.text
+        await client.respond_approval(
+            ApprovalRespondParams(
+                request_id="approve-patch",
+                thread_id=thread.thread_id,
+                turn_id=accepted.turn_id,
+                approval_id=approval.approval_id,
+                fingerprint=approval.request_fingerprint,
+                decision=PublicApprovalDecision(outcome="approved", actor="sdk-reviewer"),
+            )
+        )
+        for _ in range(100):
+            current = await client.get_thread(thread.thread_id)
+            if current.latest_turn is not None and current.latest_turn.status == "completed":
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("默认产品Patch未在批准后完成")
+        await client.close()
+
+    monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
+    monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+
+    assert target.read_text(encoding="utf-8") == "new\n"
+    assert len(bundle.requests) == 2
 
 
 async def test_product_server_advertises_default_scoped_artifact_reader(

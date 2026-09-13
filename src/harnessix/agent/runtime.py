@@ -88,6 +88,7 @@ from harnessix.agent.runtime_recovery import (
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.trusted_action_runtime import (
     action_definitions,
+    action_name_owned,
     action_owned,
     build_trusted_action_runtime,
     close_trusted_actions,
@@ -2143,6 +2144,7 @@ class AgentRuntime:
                     d
                     for d in self._definitions.values()
                     if d.effect_class == EffectClass.READ_ONLY
+                    or action_name_owned(self._trusted_actions, d.name)
                     or (self._patches is not None and d.name == "apply_patch")
                     or (self._patch_batches is not None and d.name == "apply_patch_batch")
                     or (self._process_tool_name is not None and d.name == self._process_tool_name)

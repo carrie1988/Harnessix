@@ -15,6 +15,7 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.product_config.action_runtime import open_default_workspace_patch_runtime
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
@@ -104,6 +105,18 @@ def _preflight_request(
     )
 
 
+async def _require_startup_preflight(request: ProductPreflightRequest) -> None:
+    preflight = await asyncio.to_thread(run_product_preflight, request)
+    if preflight.ready:
+        return
+    blocker = next(
+        item
+        for item in preflight.checks
+        if item.requirement == "required" and item.status != "passed"
+    )
+    raise KernelError(blocker.code, "产品启动预检未通过")
+
+
 async def run_product_stdio(
     *,
     config_path: str | Path,
@@ -123,14 +136,7 @@ async def run_product_stdio(
         state_directory=state_directory,
         git_executable=git_executable,
     )
-    preflight = await asyncio.to_thread(run_product_preflight, request)
-    if not preflight.ready:
-        blocker = next(
-            item
-            for item in preflight.checks
-            if item.requirement == "required" and item.status != "passed"
-        )
-        raise KernelError(blocker.code, "产品启动预检未通过")
+    await _require_startup_preflight(request)
 
     loaded = load_product_config(config_path)
     if not isinstance(loaded, ProductConfigSnapshot):
@@ -171,36 +177,41 @@ async def run_product_stdio(
             await sessions.initialize()
             requests = SQLiteProtocolRequestStore(sessions.path)
             artifacts = SQLiteArtifactStore(sessions)
-            async with (
-                CodingToolRuntime(
+            async with CodingToolRuntime(
+                workspace_root,
+                artifacts=artifacts,
+                git_executable=git_path,
+            ) as tools:
+                with open_default_workspace_patch_runtime(
+                    state_root,
                     workspace_root,
-                    artifacts=artifacts,
-                    git_executable=git_path,
-                ) as tools,
-                AgentRuntime(
-                    sessions,
-                    bundle,
-                    scoped_tools=tools,
-                    artifacts=artifacts,
-                ) as runtime,
-            ):
-                # 全部组件成功进入生命周期后才以CAS发布活动指针；冲突会逆序关闭
-                # Runtime、Tool和Provider，且不会开放stdio或创建Thread。
-                config_store.activate(
-                    loaded,
-                    selection.selected_profile,
-                    expected_active_sha256=expected_active_sha256,
-                    expected_active_profile=expected_active_profile,
-                )
-                service = AgentApplicationService(
-                    runtime,
-                    sessions,
-                    requests,
-                    ScopedProtocolArtifactReader(sessions, artifacts, tools),
-                    workspace=workspace_root,
-                )
-                await run_stdio(
-                    AgentProtocolServer(service),
-                    input_stream,
-                    output_stream,
-                )
+                    artifacts,
+                    artifact_workspace_scope=tools.workspace_scope,
+                ) as composition:
+                    async with AgentRuntime(
+                        sessions,
+                        bundle,
+                        scoped_tools=tools,
+                        artifacts=artifacts,
+                        trusted_actions=composition.gateway,
+                    ) as runtime:
+                        # 全部组件成功进入生命周期后才以CAS发布活动指针；冲突会逆序关闭
+                        # Runtime、Tool、Action Store和Provider，且不会开放stdio或创建Thread。
+                        config_store.activate(
+                            loaded,
+                            selection.selected_profile,
+                            expected_active_sha256=expected_active_sha256,
+                            expected_active_profile=expected_active_profile,
+                        )
+                        service = AgentApplicationService(
+                            runtime,
+                            sessions,
+                            requests,
+                            ScopedProtocolArtifactReader(sessions, artifacts, tools),
+                            workspace=workspace_root,
+                        )
+                        await run_stdio(
+                            AgentProtocolServer(service),
+                            input_stream,
+                            output_stream,
+                        )

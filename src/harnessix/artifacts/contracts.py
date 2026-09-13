@@ -20,7 +20,7 @@ MAX_ARTIFACT_RECORDS = 10000
 MAX_PAGE_BYTES = 24 * 1024
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 type HistoryArtifactPurpose = Literal[
-    "tool_result", "batch_effect", "process_output", "artifact_page"
+    "tool_result", "batch_effect", "process_output", "action_review", "artifact_page"
 ]
 type ArtifactOmittedField = Literal["preview", "matches", "paths"]
 

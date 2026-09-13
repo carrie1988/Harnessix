@@ -1,0 +1,254 @@
+{
+  "$defs": {
+    "WorkspaceActionReviewChunk": {
+      "additionalProperties": false,
+      "description": "Review正文分块；每条记录可由Artifact分页独立读取。",
+      "properties": {
+        "record_type": {
+          "const": "text",
+          "default": "text",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "sequence": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "text"
+      ],
+      "title": "WorkspaceActionReviewChunk",
+      "type": "object"
+    },
+    "WorkspaceActionReviewEntry": {
+      "additionalProperties": false,
+      "description": "Review文件级记录；不重复保存文件正文。",
+      "properties": {
+        "record_type": {
+          "const": "entry",
+          "default": "entry",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "index": {
+          "exclusiveMaximum": 16,
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "entry": {
+          "$ref": "#/$defs/WorkspaceDiffEntry"
+        }
+      },
+      "required": [
+        "index",
+        "entry"
+      ],
+      "title": "WorkspaceActionReviewEntry",
+      "type": "object"
+    },
+    "WorkspaceActionReviewSummary": {
+      "additionalProperties": false,
+      "description": "Review首记录；绑定完整Delivery计划和原始Diff摘要。",
+      "properties": {
+        "record_type": {
+          "const": "summary",
+          "default": "summary",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "spec_version": {
+          "const": "harnessix.workspace-action-review/v1",
+          "default": "harnessix.workspace-action-review/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plan Fingerprint",
+          "type": "string"
+        },
+        "workspace_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Revision",
+          "type": "string"
+        },
+        "file_count": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "File Count",
+          "type": "integer"
+        },
+        "diff_utf8_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Diff Utf8 Bytes",
+          "type": "integer"
+        },
+        "diff_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Diff Sha256",
+          "type": "string"
+        },
+        "complete": {
+          "const": true,
+          "default": true,
+          "title": "Complete",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "transaction_id",
+        "plan_fingerprint",
+        "workspace_revision",
+        "file_count",
+        "diff_utf8_bytes",
+        "diff_sha256"
+      ],
+      "title": "WorkspaceActionReviewSummary",
+      "type": "object"
+    },
+    "WorkspaceDiffEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "added",
+            "modified",
+            "deleted",
+            "renamed"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "original_path": {
+          "anyOf": [
+            {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Path"
+        },
+        "before": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "after": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "binary": {
+          "title": "Binary",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "path",
+        "before",
+        "after",
+        "binary"
+      ],
+      "title": "WorkspaceDiffEntry",
+      "type": "object"
+    },
+    "WorkspaceFileVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "presence": {
+          "enum": [
+            "absent",
+            "file"
+          ],
+          "title": "Presence",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "presence",
+        "size"
+      ],
+      "title": "WorkspaceFileVersion",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "entry": "#/$defs/WorkspaceActionReviewEntry",
+      "summary": "#/$defs/WorkspaceActionReviewSummary",
+      "text": "#/$defs/WorkspaceActionReviewChunk"
+    },
+    "propertyName": "record_type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/WorkspaceActionReviewSummary"
+    },
+    {
+      "$ref": "#/$defs/WorkspaceActionReviewEntry"
+    },
+    {
+      "$ref": "#/$defs/WorkspaceActionReviewChunk"
+    }
+  ]
+}

@@ -64,6 +64,10 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreePlan,
     ManagedGitWorktreeRecord,
 )
+from harnessix.delivery.trusted_action_contracts import (
+    WorkspaceActionReviewRecord,
+    WorkspacePatchInput,
+)
 from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
@@ -301,6 +305,14 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "process-output-record-v1.schema.json",
         TypeAdapter(ProcessOutputRecord).json_schema(),
+    )
+    write_json(
+        output / "workspace-patch-input-v1.schema.json",
+        WorkspacePatchInput.model_json_schema(),
+    )
+    write_json(
+        output / "workspace-action-review-record-v1.schema.json",
+        TypeAdapter(WorkspaceActionReviewRecord).json_schema(),
     )
     for name, model in (
         ("compaction-anchor", CompactionAnchor),

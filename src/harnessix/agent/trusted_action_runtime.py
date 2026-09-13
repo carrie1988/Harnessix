@@ -54,6 +54,9 @@ class TrustedActionSessionRuntime:
     def owns(self, call: ToolCallContent) -> bool:
         return call.tool in self._state.tool_names
 
+    def owns_name(self, tool: str) -> bool:
+        return tool in self._state.tool_names
+
     def handles(self, content: object) -> bool:
         return isinstance(content, TrustedActionApprovalRequestContent)
 
@@ -127,6 +130,10 @@ def action_definitions(
 
 def action_owned(runtime: TrustedActionSessionRuntime | None, call: ToolCallContent) -> bool:
     return runtime is not None and runtime.owns(call)
+
+
+def action_name_owned(runtime: TrustedActionSessionRuntime | None, tool: str) -> bool:
+    return runtime is not None and runtime.owns_name(tool)
 
 
 def close_trusted_actions(runtime: TrustedActionSessionRuntime | None) -> None:

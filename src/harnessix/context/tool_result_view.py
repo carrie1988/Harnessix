@@ -131,7 +131,10 @@ def _bindings(
         )
     if content.diff_artifact is not None:
         found.append(
-            ToolResultArtifactBinding(purpose="batch_effect", artifact=content.diff_artifact)
+            ToolResultArtifactBinding(
+                purpose=("action_review" if content.trusted_action is not None else "batch_effect"),
+                artifact=content.diff_artifact,
+            )
         )
     return tuple(found)
 
