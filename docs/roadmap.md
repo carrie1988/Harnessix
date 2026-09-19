@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 31
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 32
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -29,6 +30,8 @@ related_tests:
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/evals/test_suite.py
+  - tests/evals/test_task_pack.py
+  - tests/integration/test_task_pack_profiles.py
 supersedes: []
 ---
 
@@ -492,7 +495,8 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   至少两个固定仓库Revision、脱敏Transcript摘要、测试证据、任务成功率、测试通过率、人工干预率、Token、成本、
   延迟聚合，以及0600、no-follow、有界、原子Plan/Report读写。实现Revision `d42ab6c`已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2b Task Pack v1**：建立许可证和来源可审计的固定任务包，不接受运行时任意URL、任意测试命令或宿主脚本；
-  每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算；
+  每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算。内置双语言种子Pack、安全Archive/Git物化、
+  消费点身份重验、固定Product Profile和真实Container先失败后通过验收已形成实现候选；全矩阵CI通过前保持未关闭；
 - [ ] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用
   同一Run ID补证据，不重复Provider请求、审批或效果；成本未知、证据缺失和身份漂移停止后续试验；
 - [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，

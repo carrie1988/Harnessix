@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
-status: historical
-version: 1
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+status: current
+version: 2
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -11,8 +11,11 @@ modules:
   - models
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests:
   - tests/evals/test_suite.py
+  - tests/evals/test_task_pack.py
+  - tests/integration/test_task_pack_profiles.py
 supersedes: []
 ---
 
@@ -111,6 +114,25 @@ OpenCode的证据价值在于：
 | Suite跨任务聚合 | 采用 | 新增计划先行、完整证据后发布的上层合同 |
 | 任意仓库自带命令直接宿主执行 | 拒绝 | 只接受版本化Task Pack和固定Container Test Profile |
 | 模型裁判作为唯一正确性依据 | 拒绝 | 首版使用确定性行为、回归、Git和回答合同；人工复核单独记账 |
+
+### 6.1 Task Pack独立设计结论
+
+Codex的Bazel E2E Benchmark显式声明二进制和运行数据，支持“测试制品必须固定”的方向，但没有提供可直接复用的
+Harnessix Task Pack合同；OpenCode的Recorded HTTP测试证明离线输入仍需经过真实Session/Runner，不能把Fixture本身
+当作产品行为；Claude Code逆向样本只能支持Sandbox失败关闭原则，不能作为官方协议或许可证依据。
+
+基于以上证据，Harnessix独立采用以下边界：
+
+1. 只从Wheel内代码Catalog按ID与版本加载，不提供运行时URL、目录或命令入口；
+2. Manifest同时冻结Archive、Commit、Tree OID、原始Tree清单SHA-256、许可证、Task、预算和固定Profile；
+3. `LoadedCodingEvalTaskPack`只是数据载体，消费前必须重验其资源根等同于内置Catalog，不能被当作能力令牌；
+4. Profile只投影为现有Product Process Profile，经Trusted Action审批、无网只读Container和Artifact输出运行；
+5. 两个自研AGPL种子仓库只验证机制与Python/JavaScript纵向链，十Case、三仓库和五类均衡仍由0.9.2d完成。
+
+正式取舍见[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)，当前源码见
+[`task_pack_contracts.py`](../../src/harnessix/evals/task_pack_contracts.py)、
+[`task_pack.py`](../../src/harnessix/evals/task_pack.py)和
+[`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py)。
 
 ## 7. 对0.9.2的约束
 

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 2
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -13,8 +13,10 @@ related_adrs:
   - docs/adr/0044-coding-eval-contract-and-grader.md
   - docs/adr/0047-coding-eval-campaign-evidence.md
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests:
   - tests/evals/test_suite.py
+  - tests/evals/test_task_pack.py
 supersedes: []
 ---
 
@@ -112,7 +114,8 @@ Provider正文不进入Suite Report。Windows私有ACL仍由运维目录策略�
 | 源码研究 | [多仓库Eval与Transcript](../research/eval-suite-and-transcript-baseline.md) | 参考证据 |
 | 重大变更设计 | [0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | 实施边界 |
 | 现行模块设计 | [Evals模块](../modules/evals.md) | 当前事实源 |
-| 测试 | [`test_suite.py`](../../tests/evals/test_suite.py) | 合同与聚合证明 |
+| Task Pack决策 | [ADR 0083](0083-built-in-immutable-coding-eval-task-pack.md) | 固定来源、物化和检查安全边界 |
+| 测试 | [`test_suite.py`](../../tests/evals/test_suite.py)、[`test_task_pack.py`](../../tests/evals/test_task_pack.py) | Suite与Task Pack证明 |
 
 ## 被取代关系
 

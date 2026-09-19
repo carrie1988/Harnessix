@@ -97,6 +97,11 @@ from harnessix.evals.suite_contracts import (
     CodingEvalSuiteReport,
     CodingEvalTranscriptEvidence,
 )
+from harnessix.evals.task_pack_contracts import (
+    CodingEvalReviewOracle,
+    CodingEvalTaskPack,
+    CodingEvalTaskPackMaterialization,
+)
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionCapabilityEvidence,
@@ -410,6 +415,9 @@ def generate_specs(output: Path) -> None:
         ("coding-eval-suite-plan", CodingEvalSuitePlan),
         ("coding-eval-suite-report", CodingEvalSuiteReport),
         ("coding-eval-transcript-evidence", CodingEvalTranscriptEvidence),
+        ("coding-eval-task-pack", CodingEvalTaskPack),
+        ("coding-eval-task-pack-materialization", CodingEvalTaskPackMaterialization),
+        ("coding-eval-review-oracle", CodingEvalReviewOracle),
         ("coding-eval-change-package", CodingEvalChangePackage),
         ("coding-eval-delivery-plan", CodingEvalDeliveryPlan),
         ("coding-eval-delivery-record", CodingEvalDeliveryRecord),

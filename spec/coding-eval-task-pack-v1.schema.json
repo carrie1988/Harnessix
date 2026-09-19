@@ -1,0 +1,640 @@
+{
+  "$defs": {
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_steps": {
+          "default": 16,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 100000,
+          "minimum": 1,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "max_output_chars": {
+          "default": 65536,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Chars",
+          "type": "integer"
+        },
+        "max_tool_calls_per_step": {
+          "default": 32,
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Max Tool Calls Per Step",
+          "type": "integer"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "CodingEvalReviewFinding": {
+      "additionalProperties": false,
+      "description": "Review任务中一个必须识别且可定位的确定性Finding。",
+      "properties": {
+        "finding_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "correctness",
+            "security",
+            "reliability",
+            "maintainability"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "start_line": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "end_line": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "evidence_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "category",
+        "severity",
+        "path",
+        "start_line",
+        "end_line",
+        "evidence_sha256"
+      ],
+      "title": "CodingEvalReviewFinding",
+      "type": "object"
+    },
+    "CodingEvalReviewOracle": {
+      "additionalProperties": false,
+      "description": "不依赖LLM Judge的版本化Review任务确定性Oracle。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval-review-oracle/v1",
+          "default": "harnessix.coding-eval-review-oracle/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "oracle_version": {
+          "minimum": 1,
+          "title": "Oracle Version",
+          "type": "integer"
+        },
+        "required_findings": {
+          "items": {
+            "$ref": "#/$defs/CodingEvalReviewFinding"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Required Findings",
+          "type": "array"
+        },
+        "oracle_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Oracle Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "oracle_version",
+        "required_findings",
+        "oracle_sha256"
+      ],
+      "title": "CodingEvalReviewOracle",
+      "type": "object"
+    },
+    "CodingEvalTask": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval/v1",
+          "default": "harnessix.coding-eval/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "task_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "task_version": {
+          "minimum": 1,
+          "title": "Task Version",
+          "type": "integer"
+        },
+        "repository": {
+          "$ref": "#/$defs/EvalRepository"
+        },
+        "prompt": {
+          "maxLength": 16384,
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "allowed_changed_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Allowed Changed Paths",
+          "type": "array"
+        },
+        "required_test_profiles": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Required Test Profiles",
+          "type": "array"
+        },
+        "baseline_checks": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Baseline Checks",
+          "type": "array"
+        },
+        "behavior_checks": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Behavior Checks",
+          "type": "array"
+        },
+        "regression_checks": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Regression Checks",
+          "type": "array"
+        },
+        "max_changed_files": {
+          "default": 8,
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Max Changed Files",
+          "type": "integer"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "grader_version": {
+          "const": "coding-eval-grader/v1",
+          "default": "coding-eval-grader/v1",
+          "title": "Grader Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "task_version",
+        "repository",
+        "prompt",
+        "allowed_changed_paths",
+        "required_test_profiles",
+        "baseline_checks",
+        "behavior_checks"
+      ],
+      "title": "CodingEvalTask",
+      "type": "object"
+    },
+    "CodingEvalTaskPackCase": {
+      "additionalProperties": false,
+      "description": "Task Pack中任务、类别、仓库、检查Profile和Review Oracle的绑定。",
+      "properties": {
+        "case_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "task_kind": {
+          "enum": [
+            "bug_fix",
+            "feature",
+            "refactor",
+            "test",
+            "review"
+          ],
+          "title": "Task Kind",
+          "type": "string"
+        },
+        "repository_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Repository Id",
+          "type": "string"
+        },
+        "profile_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "task": {
+          "$ref": "#/$defs/CodingEvalTask"
+        },
+        "review_oracle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CodingEvalReviewOracle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "case_id",
+        "task_kind",
+        "repository_id",
+        "profile_id",
+        "task"
+      ],
+      "title": "CodingEvalTaskPackCase",
+      "type": "object"
+    },
+    "CodingEvalTaskPackLicense": {
+      "additionalProperties": false,
+      "description": "一个固定来源快照的许可证与权利链声明。",
+      "properties": {
+        "source_kind": {
+          "enum": [
+            "harnessix_authored",
+            "third_party"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "spdx_expression": {
+          "pattern": "^[A-Za-z0-9.+() -]{1,128}$",
+          "title": "Spdx Expression",
+          "type": "string"
+        },
+        "copyright_notice": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Copyright Notice",
+          "type": "string"
+        },
+        "provenance_uri": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Provenance Uri",
+          "type": "string"
+        },
+        "license_file": {
+          "title": "License File",
+          "type": "string"
+        },
+        "license_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "License Sha256",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "format": "date-time",
+          "title": "Reviewed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_kind",
+        "spdx_expression",
+        "copyright_notice",
+        "provenance_uri",
+        "license_file",
+        "license_sha256",
+        "reviewed_at"
+      ],
+      "title": "CodingEvalTaskPackLicense",
+      "type": "object"
+    },
+    "CodingEvalTaskPackProfile": {
+      "additionalProperties": false,
+      "description": "不含宿主Engine路径的固定无网Container检查Profile。",
+      "properties": {
+        "profile_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "python",
+            "javascript"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "image": {
+          "pattern": "^[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}$",
+          "title": "Image",
+          "type": "string"
+        },
+        "program": {
+          "pattern": "^/[A-Za-z0-9._/+:-]+(?:/[A-Za-z0-9._+:-]+)*$",
+          "title": "Program",
+          "type": "string"
+        },
+        "arguments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Arguments",
+          "type": "array"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "max_output_bytes": {
+          "default": 262144,
+          "maximum": 8388608,
+          "minimum": 1024,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "cpu_limit": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 8,
+          "title": "Cpu Limit",
+          "type": "number"
+        },
+        "memory_bytes": {
+          "default": 268435456,
+          "maximum": 8589934592,
+          "minimum": 16777216,
+          "title": "Memory Bytes",
+          "type": "integer"
+        },
+        "process_limit": {
+          "default": 64,
+          "maximum": 512,
+          "minimum": 1,
+          "title": "Process Limit",
+          "type": "integer"
+        },
+        "network_mode": {
+          "const": "none",
+          "default": "none",
+          "title": "Network Mode",
+          "type": "string"
+        },
+        "profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "language",
+        "description",
+        "image",
+        "program",
+        "profile_sha256"
+      ],
+      "title": "CodingEvalTaskPackProfile",
+      "type": "object"
+    },
+    "CodingEvalTaskPackRepository": {
+      "additionalProperties": false,
+      "description": "Task Pack内一个不可变、可审计的来源仓库Archive。",
+      "properties": {
+        "repository_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Repository Id",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "python",
+            "javascript"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "#/$defs/EvalRepository"
+        },
+        "source_tree_oid": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Tree Oid",
+          "type": "string"
+        },
+        "archive_file": {
+          "title": "Archive File",
+          "type": "string"
+        },
+        "archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Archive Sha256",
+          "type": "string"
+        },
+        "archive_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Archive Bytes",
+          "type": "integer"
+        },
+        "tracked_files": {
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Tracked Files",
+          "type": "integer"
+        },
+        "commit_created_at": {
+          "format": "date-time",
+          "title": "Commit Created At",
+          "type": "string"
+        },
+        "license": {
+          "$ref": "#/$defs/CodingEvalTaskPackLicense"
+        }
+      },
+      "required": [
+        "repository_id",
+        "language",
+        "repository",
+        "source_tree_oid",
+        "archive_file",
+        "archive_sha256",
+        "archive_bytes",
+        "tracked_files",
+        "commit_created_at",
+        "license"
+      ],
+      "title": "CodingEvalTaskPackRepository",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "可发布、可复核且禁止运行时命令注入的Task Pack v1。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-task-pack/v1",
+      "default": "harnessix.coding-eval-task-pack/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "pack_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "pack_version": {
+      "minimum": 1,
+      "title": "Pack Version",
+      "type": "integer"
+    },
+    "repositories": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalTaskPackRepository"
+      },
+      "maxItems": 20,
+      "minItems": 2,
+      "title": "Repositories",
+      "type": "array"
+    },
+    "profiles": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalTaskPackProfile"
+      },
+      "maxItems": 32,
+      "minItems": 2,
+      "title": "Profiles",
+      "type": "array"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalTaskPackCase"
+      },
+      "maxItems": 50,
+      "minItems": 2,
+      "title": "Cases",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "pack_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Pack Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack_id",
+    "pack_version",
+    "repositories",
+    "profiles",
+    "cases",
+    "created_at",
+    "pack_sha256"
+  ],
+  "title": "CodingEvalTaskPack",
+  "type": "object"
+}

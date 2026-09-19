@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 18
-code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
+version: 19
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -19,11 +19,14 @@ related_adrs:
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests:
   - tests/governance
   - tests/agent
   - tests/evals
   - tests/evals/test_suite.py
+  - tests/evals/test_task_pack.py
+  - tests/integration/test_task_pack_profiles.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_config_runtime.py
@@ -255,7 +258,7 @@ flowchart LR
 | `python` | Ubuntu，Python 3.12/3.13 | 锁定依赖、静态检查、全量Pytest、离线示例 | 主语言与默认后端回归 |
 | `coding-tools-macos` | macOS，Python 3.12 | Coding Tools、Artifact、Patch、Process、Eval、Workspace、Sandbox等 | macOS关键纵向切片 |
 | `windows-trusted-execution` | Windows，Python 3.12 | 治理、受信执行、扩展、产品配置和进程相关测试 | 选定契约的Windows兼容性，不等于完整产品支持 |
-| `container-sandbox` | Ubuntu + 固定Digest容器镜像 | 容器Sandbox集成 | 容器执行边界 |
+| `container-sandbox` | Ubuntu + BusyBox、Node和Python固定Digest镜像 | 容器Sandbox、Product Process及Task Pack双语言检查 | 容器执行边界；不替代真实Provider质量 |
 | `documentation` | Ubuntu + Node/Mermaid CLI | 元数据、链接、追踪、Schema和变化图真实渲染 | 文档与代码同步，不替代运行时测试 |
 
 新增平台能力时，必须先明确“契约可导入”“选定模块可用”和“产品完整支持”三种不同承诺。CI中存在Windows Job不能单独证明安装器、终端交互、进程树终止、文件权限和恢复路径已达到Windows生产支持标准。
@@ -298,8 +301,38 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 5. 端到端最小值、P50、P95和最大延迟。
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
-合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为；尚不证明Task Pack、Suite Runner、崩溃恢复、
-至少10 Case/3仓库基线或真实Provider质量。关闭边界见[0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
+合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack由0.9.2b独立切片承接；当前仍不证明Suite
+Runner、Suite崩溃恢复、至少10 Case/3仓库基线或真实Provider质量。关闭边界见
+[0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
+
+### 13.2 0.9.2b Task Pack验证矩阵
+
+Task Pack不能以“Manifest能解析”作为完成判定，必须同时证明：
+
+| 验证层 | 必须证明 |
+|---|---|
+| 合同 | Pack/Repository/Profile/Case/Oracle/Materialization严格、摘要可重算、双语言、排序唯一、精确绑定 |
+| 供应链 | Archive、许可证、Commit、Tree OID、原始Tree清单摘要、文件数、镜像Digest均冻结 |
+| 输入安全 | 不接受URL、资源目录、动态程序/参数/镜像/网络/Secret；伪造Loaded对象不能改变资源根 |
+| Archive | no-follow、有界；拒绝绝对路径、穿越、`.git`、Symlink/Hardlink、Device、非法Mode和篡改 |
+| 物化 | 固定Git身份重建同一单提交；`run_root=0700/workspace=0755/manifest=0600`；失败清理不留半成品 |
+| 恢复 | 相同Run重开保留未提交修改；Manifest、权限、Pack、Case、Repository或HEAD漂移失败关闭 |
+| 产品执行 | 固定Profile经Agent Catalog、审批、Trusted Action、非root只读无网Container、Process Owner和Artifact链运行 |
+| 行为 | JavaScript与Python Baseline均先失败，唯一允许文件的最小修复后均通过，HEAD保持固定 |
+| 发行物 | Wheel包含同一Manifest与两个Archive，安装后离线可加载 |
+| 平台 | macOS/Linux物化；Linux Docker真实检查；Windows当前不宣称Task Pack执行支持 |
+
+定向入口为：
+
+```bash
+uv run pytest -q tests/evals/test_task_pack.py
+uv run pytest -q tests/integration/test_task_pack_profiles.py
+uv build
+```
+
+本地没有Docker或未配置固定镜像环境变量时，两个真实容器Case必须明确Skip，由CI `container-sandbox`预拉Manifest中
+相同Digest镜像后验收，不能把Skip写成通过。0.9.2b实现候选包含15项单元测试、2个参数化真实容器Case和Wheel资源
+检查；全矩阵CI通过前不关闭切片。
 
 ## 14. 真实Provider验证
 

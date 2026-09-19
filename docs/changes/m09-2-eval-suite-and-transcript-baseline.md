@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
+status: current
+version: 2
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -13,10 +13,13 @@ modules:
   - sandbox
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_campaign.py
   - tests/evals/test_campaign_execution.py
+  - tests/evals/test_task_pack.py
+  - tests/integration/test_task_pack_profiles.py
 supersedes: []
 ---
 
@@ -218,10 +221,128 @@ sequenceDiagram
 | Trusted Action `manual_intervention` | 是，按Call ID去重 |
 | 普通Recovery成功 | 否 |
 
-### 8.3 后续Task Pack v1
+### 8.3 Task Pack v1合同
 
-Task Pack将冻结仓库Archive、Task、检查Definition、Container Profile摘要和Oracle，不保存Secret。Review Case允许
-`test_outcome=not_applicable`，但必须有版本化Review Oracle；其他四类必须有最终检查。
+0.9.2b已经实现独立的严格合同，源码位于
+[`task_pack_contracts.py`](../../src/harnessix/evals/task_pack_contracts.py)。Task Pack不把运行时路径或命令当成数据，
+只允许代码内置Catalog选择以下不可变对象：
+
+| 合同 | 关键字段 | 主要不变量 |
+|---|---|---|
+| `CodingEvalTaskPack` | `pack_id/version`、Repositories、Profiles、Cases、`pack_sha256` | 三组对象按ID唯一排序；至少两种语言；整体摘要自校验 |
+| `CodingEvalTaskPackRepository` | Repo ID、Language、`EvalRepository`、Tree OID、Archive、许可证 | Commit/Tree/Tree清单/Archive/许可证均固定 |
+| `CodingEvalTaskPackProfile` | Digest Image、Program、Arguments、Timeout、Output、CPU/Memory/PID | 只能`network=none`；Profile摘要自校验 |
+| `CodingEvalTaskPackCase` | Kind、Repo ID、Profile ID、`CodingEvalTask`、Review Oracle | Task仓库精确相等；唯一Profile且语言一致 |
+| `CodingEvalReviewOracle` | Oracle版本、排序Finding、Oracle摘要 | Review必须携带，非Review禁止携带 |
+| `CodingEvalTaskPackMaterialization` | Run/Pack/Case/Task/Repo/Git/Archive身份、Workspace、时间 | 重开时逐字段绑定，不接受调用方替换 |
+
+`GitObjectId`与文件`Revision`分离：前者允许Git SHA-1的40位和SHA-256的64位，后者始终是64位SHA-256。
+这避免把文件内容摘要类型误用于Commit/Tree并在macOS Apple Git 2.24上拒绝合法SHA-1仓库。
+
+Case保留现有`CodingEvalTask`约束：`baseline_checks == behavior_checks`、Regression不重叠、允许路径排序唯一、
+最大变更文件数不超过允许路径数、预算显式有界。Task Pack额外要求每个Case精确绑定一个固定Profile，调用方不能附加
+第二条检查命令。
+
+### 8.4 内置Catalog与资源身份
+
+[`task_pack.py`](../../src/harnessix/evals/task_pack.py)只公开`pack_id + pack_version`选择，不接受URL或文件路径：
+
+```mermaid
+flowchart LR
+    Caller[调用方选择ID和版本] --> Catalog[代码内置Catalog]
+    Catalog --> Root[Wheel内taskpacks/v1]
+    Root --> Manifest[严格Manifest]
+    Root --> Archives[普通文件Archive]
+    Manifest --> Digest[Pack/Profile/Archive摘要]
+    Archives --> Digest
+    Digest --> Loaded[Loaded Task Pack]
+    Loaded --> Reverify[消费点重验Catalog与资源根]
+```
+
+加载顺序固定为：先对未解析目录执行`lstat`拒绝Root Symlink，再解析真实路径；Manifest和Archive通过`O_NOFOLLOW`
+有界读取；资源解析后必须仍位于Root内且路径对象不能是Link。Archive的实际字节数与SHA-256必须和Manifest一致。
+
+`LoadedCodingEvalTaskPack`是公开数据类而不是能力令牌。Profile投影或物化前，`_verified_builtin_task_pack`重新按Manifest
+身份定位Catalog、重载内置Pack，并要求调用方Resource Root与完整Manifest均精确相等。伪造相同Manifest加任意本地目录
+不能越过这一边界。
+
+### 8.5 Archive物化与Git身份
+
+[`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py)按以下流程重建单提交仓库：
+
+```mermaid
+sequenceDiagram
+    participant E as Eval Runner
+    participant C as 内置Catalog
+    participant M as Materializer
+    participant G as 固定Git
+    participant F as 私有Run目录
+    E->>C: load(pack_id, version)
+    E->>M: materialize(case_id, run_id, git)
+    M->>C: 重验Manifest和Resource Root
+    M->>M: 校验Archive摘要与安全成员
+    M->>F: mkdir run_root 0700 / workspace 0755
+    M->>F: 解包普通文件并核对许可证SHA-256
+    M->>G: init + symbolic-ref main + add + 固定身份commit
+    G-->>M: Commit / Tree / ls-tree清单
+    M->>M: 同时核对四重Git身份和文件数
+    M->>F: 原子写materialization.json 0600并fsync
+    M-->>E: Workspace与不可变身份
+```
+
+Archive成员只允许规范POSIX相对路径、普通文件和目录；绝对路径、空段、`.`、`..`、`.git`、反斜线、Symlink、
+Hardlink、Device及其他特殊类型全部拒绝。普通文件仅允许`0644/0755`，目录仅允许`0755`；成员、总解包字节和
+Git Tree输出均有硬上限。
+
+Git调用关闭Global/System Config、Prompt、Pager、可选Lock和Commit签名，固定作者、邮箱、时间和消息，并始终传入
+`core.autocrlf=false`。为兼容Apple Git 2.24，不使用较新的`git init --initial-branch`，而是`git init`后通过
+`symbolic-ref HEAD refs/heads/main`冻结分支。物化后必须同时匹配：
+
+1. `HEAD^{commit}`；
+2. `HEAD^{tree}`；
+3. 原始`git ls-tree -r -z --full-tree HEAD`字节的SHA-256；
+4. 跟踪文件数。
+
+同一Run ID存在时不重新解包，只读取`0600`清单并核对Run/Pack/Case/Task/Repository全部身份，再验证HEAD四重身份。
+工作树中的未提交Agent修改不参与HEAD核对，因此能够原样恢复；如果Agent提交了新HEAD，则以
+`eval_task_pack_materialization_changed`失败关闭。
+
+### 8.6 固定检查Profile与产品运行链
+
+Task Pack Profile不保存宿主Container Engine路径。`build_task_pack_product_profile`在当前宿主绑定一个已解析、普通且可执行
+的Engine，并把镜像、程序、参数、资源、`selector_policy=none`、无Secret和`network=none`原样投影到现有
+`ProductProcessProfile`。模型只可调用`run_profile.<profile_id>`并提交空Selector列表。
+
+```mermaid
+flowchart LR
+    PackProfile[Task Pack固定Profile] --> Projection[Product Process Profile]
+    Engine[宿主固定Engine] --> Projection
+    Projection --> Catalog[Agent Tool Catalog]
+    Catalog --> Approval[Trusted Action审批]
+    Approval --> Container[非root/只读/无网Container]
+    Workspace[物化Workspace 0755] -->|只读bind mount| Container
+    Container --> Owner[Process Owner Ledger]
+    Owner --> Artifact[终态输出Artifact]
+    Artifact --> Result[passed由Return Code重算]
+```
+
+`run_root=0700`保持宿主隐私边界，直接挂载的`workspace=0755`允许Linux容器固定用户`65532:65532`读取`0644`文件；
+容器只得到Workspace只读挂载，不能读取父目录或`materialization.json`。检查失败是确定性的`process_nonzero_exit`，
+仍保存Return Code与完整有界Artifact；应用修复后以新的Action Plan和审批重新运行，绝不重放旧Process。
+
+### 8.7 内置种子包
+
+`harnessix-seed/v1`位于
+[`src/harnessix/evals/taskpacks/v1`](../../src/harnessix/evals/taskpacks/v1)，包含两个由Harnessix项目自研、
+AGPL-3.0-only且带完整LICENSE的离线仓库：
+
+| Case | 类别/语言 | 唯一允许修改 | 固定检查 | Baseline |
+|---|---|---|---|---|
+| `javascript-slug-lowercase` | Feature / JavaScript | `src/slug.mjs` | Node 22.18.0 Alpine Digest、`node --test` | 缺少小写标准化，失败 |
+| `python-mathbox-addition` | Bug Fix / Python | `src/mathbox.py` | Python 3.12.11 Alpine Digest、`unittest` | 把加法写成减法，失败 |
+
+两个任务都不依赖第三方包、网络、Shell或仓库动态配置。它们用于证明Task Pack机制、真实Product Runtime和双语言检查，
+不是0.9.2d最终质量数据集，也不得用于声称已覆盖全部五类任务。
 
 ## 9. 状态、事务、并发与幂等
 
@@ -290,6 +411,10 @@ atomic_publish(report)
 | Suite聚合 | [`suite.py`](../../src/harnessix/evals/suite.py) | `build_coding_eval_suite_report` | 缺项、跨任务、摘要篡改测试 |
 | 原子I/O | [`report.py`](../../src/harnessix/evals/report.py) | `write/read_eval_suite_*` | 权限、符号链接、Round Trip |
 | 现有Campaign | [`campaign.py`](../../src/harnessix/evals/campaign.py) | `build_coding_eval_campaign_report` | [`test_campaign.py`](../../tests/evals/test_campaign.py) |
+| Task Pack合同 | [`task_pack_contracts.py`](../../src/harnessix/evals/task_pack_contracts.py) | `CodingEvalTaskPack/Profile/Case/ReviewOracle` | [`test_task_pack.py`](../../tests/evals/test_task_pack.py) |
+| 内置加载与Profile投影 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `builtin_coding_eval_task_pack`、`build_task_pack_product_profile` | 伪造Root、摘要、Engine正反测试 |
+| Archive物化与恢复 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `materialize/load_materialized_task_pack_case` | 路径攻击、Git身份、脏树恢复测试 |
+| 真实固定镜像检查 | [Container集成测试](../../tests/integration/test_task_pack_profiles.py) | Product Runtime、Approval、Process、Artifact | Baseline失败、最小修复后通过 |
 | 后续Runner | `suite_execution.py` | 待0.9.2c | 状态、锁、崩溃恢复 |
 
 ## 14. 部署、兼容、风险与回退
@@ -301,6 +426,9 @@ atomic_publish(report)
 | Transcript摘要掩盖诊断 | 保留受限Session引用与Run/Turn身份，不公开正文 |
 | 真实模型费用失控 | Suite/Campaign双计划、顺序执行、未知成本停止、总预算 |
 | 外部仓库脚本攻击宿主 | 固定Digest Container、禁网、只读来源、资源限制 |
+| 调用方伪造已加载Pack | 消费点按Catalog重载并精确核对Manifest与Resource Root |
+| 非root容器无法读取0700目录 | Run Root保持0700；直接挂载Workspace为0755且父目录不可穿越 |
+| 旧版Git不支持`--initial-branch` | 使用`git init + symbolic-ref`并由macOS本地物化测试覆盖 |
 | Windows执行能力不足 | 诚实标记读取/合同支持；不把WSL证据冒充原生写支持 |
 
 回滚0.9.2a只需停止生成新Suite文件；既有单次Eval和Campaign v1不受影响。Task Pack或数据集变更必须发布新版本，
@@ -308,7 +436,10 @@ atomic_publish(report)
 
 ## 15. 当前实现状态
 
-0.9.2a已形成实现候选：新增Suite Plan/Report、Transcript Evidence、Test Evidence、聚合器、三个JSON Schema、
-私有原子I/O和定向合同测试。本地`make check`已完成Ruff、可读性、209份文档/5668条链接/578幅Mermaid静态门禁、
-Schema、294个源码文件Mypy及全仓`3483 passed, 18 skipped`；20条变化路径的Mermaid已用Chrome真实渲染。
-[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)随后通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job；Linux双版本各`3483 passed, 18 skipped`，macOS为`2474 passed, 15 skipped`，Windows为`500 passed, 45 skipped`，Container为`3 passed`，Documentation真实渲染22条变化路径。0.9.2a据此关闭；0.9.2b～e尚未实现，因此0.9.2总项保持未关闭。
+0.9.2a已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)通过Linux
+Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job并关闭。
+
+0.9.2b已形成实现候选：新增Task Pack、Profile、Review Oracle和Materialization三个JSON Schema；内置
+`harnessix-seed/v1`双语言Pack；安全Archive读取与Git四重身份物化；消费点Catalog重验；固定Profile到现有Product
+Process的投影；15项定向单元测试；以及两个真实Digest镜像的Baseline失败/最小修复后通过集成测试。Wheel已验证包含
+Manifest和两个Archive。本状态仍等待远端全矩阵CI，不提前关闭0.9.2b；0.9.2c～e和0.9.2总项保持未关闭。

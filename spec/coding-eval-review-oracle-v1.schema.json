@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "CodingEvalReviewFinding": {
+      "additionalProperties": false,
+      "description": "Review任务中一个必须识别且可定位的确定性Finding。",
+      "properties": {
+        "finding_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "correctness",
+            "security",
+            "reliability",
+            "maintainability"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "start_line": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "end_line": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "evidence_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "category",
+        "severity",
+        "path",
+        "start_line",
+        "end_line",
+        "evidence_sha256"
+      ],
+      "title": "CodingEvalReviewFinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "不依赖LLM Judge的版本化Review任务确定性Oracle。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-review-oracle/v1",
+      "default": "harnessix.coding-eval-review-oracle/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "oracle_version": {
+      "minimum": 1,
+      "title": "Oracle Version",
+      "type": "integer"
+    },
+    "required_findings": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalReviewFinding"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Required Findings",
+      "type": "array"
+    },
+    "oracle_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Oracle Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "oracle_version",
+    "required_findings",
+    "oracle_sha256"
+  ],
+  "title": "CodingEvalReviewOracle",
+  "type": "object"
+}

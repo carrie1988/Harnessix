@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 6
-code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
+version: 7
+code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
 related_tests: []
 supersedes: []
 ---
@@ -79,7 +80,7 @@ flowchart LR
 | [工具参数校验反馈适用性](tool-validation-feedback-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0050](../adr/0050-model-correctable-tool-validation.md) |
 | [多试验质量与成本证据](eval-campaign.md) | 2026-09-06 | 正文专项基线 | [ADR 0047](../adr/0047-coding-eval-campaign-evidence.md) |
 | [真实Campaign执行与费用边界](eval-campaign-execution.md) | 2026-09-06 | 正文专项基线 | [ADR 0048](../adr/0048-controlled-real-eval-campaign-execution.md) |
-| [多仓库Eval Suite与Transcript证据](eval-suite-and-transcript-baseline.md) | 2026-09-20 | Codex、OpenCode与Claude逆向样本正文固定Revision | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) |
+| [多仓库Eval Suite、Transcript与Task Pack证据](eval-suite-and-transcript-baseline.md) | 2026-09-20 | Codex、OpenCode与Claude逆向样本固定Revision；包含独立Task Pack取舍 | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) |
 | [Eval Token预算适用性](eval-token-budget-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0049](../adr/0049-versioned-eval-token-budget.md) |
 | [Eval最终回答契约可见性](eval-final-answer-contract-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0051](../adr/0051-versioned-eval-final-answer-contract.md) |
 | [Eval变更交付适用性](eval-change-delivery.md) | 2026-09-07 | 正文专项基线 | [ADR 0052](../adr/0052-controlled-eval-change-delivery.md)、[Delivery模块](../modules/delivery.md) |
