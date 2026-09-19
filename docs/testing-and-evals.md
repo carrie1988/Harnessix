@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 21
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 22
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -303,8 +303,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 5. 端到端最小值、P50、P95和最大延迟。
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
-合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack由0.9.2b独立切片承接，Suite Runner由
-0.9.2c承接；当前仍不证明至少10 Case/3仓库基线或真实Provider质量。关闭边界见
+合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
+0.9.2c验收；当前仍不证明至少10 Case/3仓库基线或真实Provider质量。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
@@ -366,7 +366,7 @@ uv run python scripts/generate_specs.py --check
 ```
 
 0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。Task Pack到Campaign/Transcript的正式适配器、
-至少10 Case/3仓库真实离线基线和受控Provider Suite分别由0.9.2d/e验收。实现候选在全矩阵CI通过前保持未关闭。
+至少10 Case/3仓库真实离线基线和受控Provider Suite分别由0.9.2d/e验收。实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
 
 ## 14. 真实Provider验证
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 5
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -416,7 +416,7 @@ atomic_publish(report)
 |---|---|---|---|
 | 0.9.2a | Suite/Transcript/Test合同、聚合、Schema和原子I/O | 缺项、跨任务、篡改、权限、自动/人工审批 | 全仓与六实例CI |
 | 0.9.2b | Task Pack v1、固定Archive/检查/Profile、Review Oracle | 摘要/来源/镜像漂移、恶意路径、禁动态命令 | ≥2语言离线真实检查 |
-| 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | 已形成实现候选；Case边界崩溃、发布确认丢失、成本停止 | 全矩阵CI前保持未关闭 |
+| 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | Case边界崩溃、发布确认丢失、成本停止均已测试 | CI 35465458256六实例验收并关闭 |
 | 0.9.2d | ≥10 Case、≥3仓库、五类各≥2 | Baseline失败、Oracle通过、固定镜像 | 本地/CI真实场景 |
 | 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | 报告与验证资料发布 |
 
@@ -465,7 +465,7 @@ Process的投影；15项定向单元测试；以及两个真实Digest镜像的Ba
 Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f76021fc`本地全仓为3499项通过/20项跳过；
 [CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例。首次Documentation执行只出现一次Mermaid冷启动超时；同一Revision的失败Job重跑渲染44幅变化图成功，其余全部Job在首次执行已通过，因此0.9.2b关闭。
 
-0.9.2c已形成实现候选：计划先行、单写者锁、连续Case证据前缀、显式停止恢复、Case/最终报告崩溃窗口、成本未知和
+0.9.2c已完成：计划先行、单写者锁、连续Case证据前缀、显式停止恢复、Case/最终报告崩溃窗口、成本未知和
 聚合费用停止均已有严格合同、Schema和定向测试；实现细节见[0.9.2c详细设计](m09-2c-recoverable-suite-runner.md)
-与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。全矩阵CI通过前0.9.2c保持未关闭；0.9.2d/e和
-0.9.2总项继续未关闭。
+与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`本地全仓为3514项通过/20项跳过，
+[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例，因此0.9.2c关闭；0.9.2d/e和0.9.2总项继续未关闭。

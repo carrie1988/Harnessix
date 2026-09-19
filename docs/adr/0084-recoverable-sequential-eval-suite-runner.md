@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 2
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -21,7 +21,7 @@ supersedes: []
 
 ## 状态
 
-接受并已形成0.9.2c实现候选。全矩阵CI通过前，路线图0.9.2c保持未关闭；0.9.2d多仓库离线基线和
+接受且已实施。实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收，路线图0.9.2c据此关闭；0.9.2d多仓库离线基线和
 0.9.2e受控真实Provider基线不在本文完成范围内。
 
 ## 背景
@@ -123,6 +123,9 @@ Suite Runner和共用Eval执行文件边界；Campaign只把原有私有目录�
 - 成本未知和聚合费用停止线阻断下一个Case；
 - 错Case、缺口证据、Campaign/Run身份漂移和锁冲突失败关闭；
 - 四份公共Schema冻结、Ruff、Mypy、Evals回归、全仓回归与文档门禁。
+
+实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`本地完成3514项通过/20项跳过、32个变化文档Mermaid真实渲染和Wheel导入冒烟；
+[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例。
 
 ## 关联资料
 

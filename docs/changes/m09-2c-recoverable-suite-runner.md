@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 2
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -454,8 +454,8 @@ build_coding_eval_suite_report_from_cases(plan, cases) -> CodingEvalSuiteReport
 
 ### 16.1 发布
 
-0.9.2c实现候选必须先通过本地Ruff、Mypy、Schema Check、Evals定向测试、全仓测试、静态文档检查和变化Mermaid真实渲染；
-随后由Linux Python 3.12/3.13、macOS、Windows合同矩阵、固定Container和Documentation CI验收。CI通过前路线图不勾选。
+实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`已通过本地Ruff、Mypy、Schema Check、Evals定向测试、3514项全仓测试、静态文档检查、
+589幅Mermaid中的32个变化文档真实渲染和Wheel全新环境导入冒烟；[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步完成Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation六实例验收，路线图0.9.2c据此关闭。
 
 ### 16.2 兼容
 
@@ -488,5 +488,5 @@ build_coding_eval_suite_report_from_cases(plan, cases) -> CodingEvalSuiteReport
 1. Case目录使用计划序号，不直接使用允许点号的Case ID；
 2. Campaign和Suite复用同一私有目录/跨平台文件锁函数，避免复制安全边界。
 
-0.9.2c实现候选已经覆盖状态机、失败恢复、严格合同、原子I/O、Schema和文档。全矩阵CI通过前不标记路线图完成；
-即使0.9.2c关闭，也只能说明Suite调度机制成立，不能宣称0.9.2多仓库质量基线或1.0商用版本完成。
+0.9.2c已经覆盖状态机、失败恢复、严格合同、原子I/O、Schema和文档，并由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)验收关闭。
+该结论只说明Suite调度机制成立，不能宣称0.9.2多仓库质量基线或1.0商用版本完成。

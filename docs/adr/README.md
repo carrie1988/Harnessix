@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 11
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 12
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -141,9 +141,9 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
-| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b已关闭，c为实现候选，d/e待实施 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c已关闭，d/e待实施 |
 | 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
-| 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受；0.9.2c实现候选待全矩阵CI验收 |
+| 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受并实施；0.9.2c已由CI 35465458256验收关闭 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

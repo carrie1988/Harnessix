@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 3
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 4
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -24,7 +24,7 @@ supersedes: []
 ## 状态
 
 接受且已实施。0.9.2b任务来源、工作区物化和真实检查已由CI 35461708961验收并关闭。0.9.2c可恢复Suite Runner
-由ADR 0084独立定义并已形成实现候选；本文不关闭0.9.2d十任务三仓库数据集或0.9.2e真实Provider基线。
+由ADR 0084独立定义并已由CI 35465458256验收关闭；本文不关闭0.9.2d十任务三仓库数据集或0.9.2e真实Provider基线。
 
 ## 背景
 

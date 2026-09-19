@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 3
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 4
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -107,7 +107,7 @@ Provider正文不进入Suite Report。Windows私有ACL仍由运维目录策略�
 - Campaign、Run、Turn、Token和Cost交叉绑定；
 - 自动/人工审批、Question、Steering和人工恢复计数测试；
 - 缺失Case、顺序漂移、摘要篡改、币种漂移、私有权限和符号链接测试；
-- 已实现候选的计划先行、锁、取消、Case前缀和报告发布崩溃恢复；
+- 已由CI 35465458256验收的计划先行、锁、取消、Case前缀和报告发布崩溃恢复；
 - 后续真实多仓库固定镜像任务与受控Provider基线。
 
 ## 关联资料

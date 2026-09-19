@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 9
+code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
 owners:
   - core
 modules:
@@ -51,8 +51,8 @@ supersedes: []
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭 |
-| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript和0.9.2b Task Pack已完成；0.9.2c可恢复Suite Runner已形成实现候选、待全矩阵CI，至少10 Case/3仓库离线基线及受控真实Provider基线仍属0.9.2d/e |
+| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭 |
+| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack和0.9.2c可恢复Suite Runner已完成；至少10 Case/3仓库离线基线及受控真实Provider基线仍属0.9.2d/e |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -163,7 +163,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Git证据 | 已实现 | `collect_git_evidence` | 最多200项状态，完整观察摘要 |
 | Run恢复 | 已实现/已验收 | Run State + Session/Execution Plan/Action Audit/Process Lease/Patch账本 | 批准提交、结果投影丢失、取消和报告发布窗口 |
 | Campaign聚合 | 已实现 | `build_coding_eval_campaign_report` | 完整计划才发布 |
-| Suite合同、Runner与聚合 | 实现候选 | `CodingEvalSuitePlan`、`run_coding_eval_suite`、`build_coding_eval_suite_report` | 五类任务、至少两仓库、计划先行、连续前缀和完整证据才发布；尚无最终真实任务集与正式Case适配器 |
+| Suite合同、Runner与聚合 | 已实现/已验收 | `CodingEvalSuitePlan`、`run_coding_eval_suite`、`build_coding_eval_suite_report` | 五类任务、至少两仓库、计划先行、连续前缀和完整证据才发布；尚无最终真实任务集与正式Case适配器 |
 | Task Pack合同与内置Catalog | 已实现/已验收 | `builtin_coding_eval_task_pack` | 双语言、来源/许可证/Archive/Profile/Oracle/整体摘要 |
 | Task Pack物化与重开 | 已实现/已验收 | `materialize_task_pack_case` | 安全Tar、固定Git四重身份、脏工作区不覆盖 |
 | Task Pack真实检查 | 已实现/已验收 | `build_task_pack_product_profile` | 两个固定Digest镜像经审批、只读、无网产品链先失败后通过 |
@@ -1906,6 +1906,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `ffd3db4e83a807ab3029c479fb4650216240b4f7` | 2026-09-20 | 0.9.2c由CI 35465458256完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 8 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 0.9.2c候选：补充计划先行、单写者Suite Runner、连续Case证据前缀、显式停止恢复、费用停止和报告发布恢复 |
 | 7 | `608c07a54543f436651aa4e55141acb7f76021fc` | 2026-09-20 | 0.9.2b由CI 35461708961完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 6 | `92c62d428f51e9b40745f04f3bf0b820dbed1797` | 2026-09-20 | 0.9.2b候选：补充内置不可变Task Pack、双语言种子Archive、固定Git物化、消费点身份重验、Product Profile投影和真实容器检查边界 |
