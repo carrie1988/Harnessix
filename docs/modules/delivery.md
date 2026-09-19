@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 5
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -37,8 +37,8 @@ supersedes: []
 | 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions、Execution Plan与Action Plane |
 | 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push另用Execution Plan、Action Audit与Effect Journal |
 | 平台 | Planner支持POSIX/Windows观察；普通Workspace发布仅POSIX；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
-| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5诊断复用为实现候选 |
-| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；e5候选使Doctor与Runtime复用同一Patch Binding构造，仍等待关闭CI；Git公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
+| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；e5使Doctor与Runtime复用同一Patch Binding构造并已由CI 35439332019验收；Git公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
 
 本文描述[`contracts.py`](../../src/harnessix/delivery/contracts.py)、
 [`planner.py`](../../src/harnessix/delivery/planner.py)、[`store.py`](../../src/harnessix/delivery/store.py)、
@@ -1603,7 +1603,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 专项回归[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖合同、正常链、提交确认丢失、审批孤儿、Lease竞争、取消部分效果、来源漂移和不重放；既有[`test_filesystem.py`](../../tests/delivery/test_filesystem.py)继续证明逐故障点文件系统语义。
 
-### 46.4 e5同源Binding诊断候选
+### 46.4 e5同源Binding诊断
 
 [`workspace_patch_binding`](../../src/harnessix/delivery/trusted_action.py)从正式Descriptor构造稳定
 `TrustedToolBinding`。Runtime的`build_workspace_patch_definition`与Doctor的无状态能力诊断均调用该入口，
@@ -1617,6 +1617,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录同源Workspace Patch Binding诊断由CI 35439332019验收关闭 |
 | 4 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor与Runtime复用正式Workspace Patch Binding的实现候选 |
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认Trusted Workspace Patch，定义Action/Delivery同身份、Review Artifact、逐成员提交、取消与只观察恢复 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows已知平台限制；Delivery运行合同不变 |

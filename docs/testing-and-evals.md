@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 9
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 10
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -380,7 +380,7 @@ flowchart TD
 
 ## 20. 当前证据与限制
 
-当前代码Revision `4b28fa4010bf1f9590f86a3c2e639916043894c2`包含0.9.1e4默认固定Container Process纵向链及后台状态等待稳定化，已完成以下证据：
+0.9.1e4代码Revision `4b28fa4010bf1f9590f86a3c2e639916043894c2`包含默认固定Container Process纵向链及后台状态等待稳定化，曾完成以下独立关闭证据：
 
 - Linux Python 3.12/3.13全仓测试均为3551 passed、20 skipped；
 - `make lint`、`make readability`、`make typecheck`、`make contracts`和`make documentation`全部通过；
@@ -392,11 +392,11 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至该Revision，0.9.1e4已关闭；以下项目仍不能宣称生产完成：0.9.1e5、0.9.1f2～f3及0.9.2～0.9.6范围的外部Action Config、产品级启动恢复、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至当前验收Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`，0.9.1e4与e5均已关闭；以下项目仍不能宣称生产完成：0.9.1f2～f3及0.9.2～0.9.6范围的兼容内核迁移与物理删除、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
-### 20.1 0.9.1e5候选验证矩阵
+### 20.1 0.9.1e5验证矩阵
 
-e5不能以“外部配置能加载”作为完成判定，候选至少同时通过以下矩阵：
+e5不能以“外部配置能加载”作为完成判定，关闭时必须同时通过以下矩阵：
 
 | 验证层 | 必须证明 |
 |---|---|
@@ -409,10 +409,11 @@ e5不能以“外部配置能加载”作为完成判定，候选至少同时通
 | 平台/真实场景 | macOS/Linux/Windows省略语义与固定Digest真实Container链；无Host Process fallback |
 | 发布门禁 | Ruff、Mypy、Schema确定生成、可读性、全仓Pytest、文档/链接/Mermaid和七任务CI一次通过 |
 
-当前候选已经通过Product Config、Product UI、Trusted Action Router专项回归以及Ruff、Mypy、Schema、
-可读性、全仓3583项收集测试和变化文档Mermaid真实渲染。本地没有可用Docker daemon，固定Digest真实
-Container将由CI专用任务执行；七任务CI尚未登记，因此e5仍保持未关闭。关闭提交必须记录实现Revision、
-精确通过/Skip数量、真实镜像结果和CI链接，并确认Skip不掩盖固定镜像产品场景。
+实现Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`已通过Product Config、Product UI、Trusted Action Router专项回归，
+以及Ruff、Mypy、Schema、可读性、全仓测试和变化文档Mermaid真实渲染。本地Docker daemon不可用，因此固定Digest真实Container由
+[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)专用任务完成。该CI七个任务全部通过：Linux Python 3.12/3.13
+各3563 passed、20 skipped，macOS为2497 passed、15 skipped，Windows为499 passed、45 skipped，固定镜像Container为3 passed，
+PostgreSQL为2 passed，Documentation完成590个Mermaid图和48条变化路径校验。Skip未覆盖固定镜像产品场景，e5据此关闭。
 
 ## 21. 维护与验收标准
 

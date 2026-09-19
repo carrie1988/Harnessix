@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 4
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -191,9 +191,9 @@ Push与Commit分离，使用单ref和exact lease。响应丢失后查询远端re
 | 第三正文、类型变化或无法观察 | diverged/unknown | 猜测成功、覆盖外部修改 |
 | Artifact存在但Session无引用 | 未授权孤儿，公共读取为not_found | 手工添加审批引用 |
 
-e5候选在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Route。它按上一活动Action配置重建精确Binding，先把
+e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Route。它按上一活动Action配置重建精确Binding，先把
 `running/reconciling`持久转为`unknown`，再对每个UNKNOWN只调用一次Reconcile；仍未知、旧Binding缺失或候选不能承接
-`pending_approval/ready`时启动失败。恢复不会调用Execute，也不会自动续写部分Patch。该能力在关闭CI完成前仍按候选状态管理。
+`pending_approval/ready`时启动失败。恢复不会调用Execute，也不会自动续写部分Patch。该能力已由CI 35439332019验收关闭。
 
 
 ## 9. Product Config恢复

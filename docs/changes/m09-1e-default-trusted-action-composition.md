@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 10
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+status: current
+version: 11
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -57,7 +57,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1～e4已由对应全矩阵CI关闭；e5的外部Action Config加载、启动全局恢复和Doctor能力报告仍待实施 |
+| 当前状态 | 0.9.1e1～e5均已通过对应全矩阵CI并关闭；e5实现Revision为`e5b7a8a`，验收证据为[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019) |
 
 ## 2. 需求背景与证据
 
@@ -1835,10 +1835,10 @@ e5至少新增以下自动化证据：安全文件读取全部攻击面；快照
 e5关闭的是0.9.1e，不关闭0.9.1总项。0.9.1仍需0.9.1f2把剩余旧调用方迁入进程内Trusted Action Runtime，并由f3物理删除
 HTTP API、Worker Queue、旧Bootstrap、专用Adapter及相关依赖后，才能按路线图评估整体完成。
 
-### 22.31 0.9.1e5实现候选与源码对应
+### 22.31 0.9.1e5实现与源码对应
 
-e5实现候选遵守22.30冻结合同，没有引入独立Action服务。当前变更须在全量回归和七任务CI完成后才能把本文状态改为`current`
-并关闭e5；本节只记录已经进入候选代码的结构和验证入口。
+e5实现遵守22.30冻结合同，没有引入独立Action服务。实现Revision `e5b7a8a`已通过
+[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)七任务全矩阵验收，本文据此转为`current`并关闭e5。
 
 #### 22.31.1 文件与职责
 
@@ -1938,6 +1938,8 @@ Product前提冲突或Action前提冲突都会回滚整个事务。配置相同�
 | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) | `--action-config`及Product/Action CAS参数精确透传 |
 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) | 三个新增公开Schema与运行时Pydantic合同确定一致 |
 
-专项Product Config、Product UI和Trusted Action Router回归已经在本地候选代码上通过；Ruff、Mypy、Schema、可读性、
-全仓3583项收集测试及变化文档Mermaid真实渲染也已以退出码0完成。本地没有可用Docker daemon，固定
-Digest真实Container和七任务CI结果将在实现提交后补入本文；未补入前不得把e5或0.9.1标记为完成。
+专项Product Config、Product UI和Trusted Action Router回归、Ruff、Mypy、Schema、可读性、全仓
+3583项收集测试及变化文档Mermaid真实渲染均已在本地以退出码0完成。[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)
+进一步证明Linux Python 3.12/3.13均为3563 passed、20 skipped；macOS为2497 passed、15 skipped；Windows为499 passed、45 skipped；
+固定Digest Container为3 passed；PostgreSQL为2 passed；Documentation真实渲染590幅Mermaid并通过全48个变化路径检查。
+所有七个Job一次通过，Skip不包含固定镜像产品验收；0.9.1e据此正式关闭，0.9.1整体仍等待0.9.1f2/f3。

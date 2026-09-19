@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 12
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -44,8 +44,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
-| 当前完成度 | 核心路由库及扩展适配已实现；e1～e4已通过全矩阵CI；e5候选新增上一活动配置恢复Router、产品Route全局扫描、只对账与候选Binding承接校验，仍等待关闭CI |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
+| 当前完成度 | 核心路由库及扩展适配已实现；e1～e5已通过全矩阵CI；上一活动配置恢复Router、产品Route全局扫描、只对账与候选Binding承接校验已关闭 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1195,7 +1195,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | e5已实现外部Action Config与启动全局恢复候选，但尚无发布矩阵关闭证据 | 功能可专项验证，仍不能写成正式关闭能力 | 0.9.1e5关闭CI |
+| P0 | 旧Git Push与历史Eval仍依赖兼容内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f2～f3 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1413,7 +1413,7 @@ transition audit using checkpoint.decided_at
 
 [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py)覆盖目录漂移、重复Prepare、Review、批准、拒绝、调用漂移、取消和Reconcile；[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖决定双Store崩溃窗口。该切片没有改变Router的公共包级导出，也没有引入新的一级包依赖边或超大符号。
 
-默认产品现把单一Gateway传给`AgentRuntime`，同时安装可用的Patch/Delivery和固定Container Process Definition；e5候选在开放协议前由产品级Owner统一扫描并结算旧Route。
+默认产品现把单一Gateway传给`AgentRuntime`，同时安装可用的Patch/Delivery和固定Container Process Definition；e5在开放协议前由产品级Owner统一扫描并结算旧Route。
 
 ## 44. 默认Workspace Patch Route（0.9.1e3）
 
@@ -1468,7 +1468,7 @@ UNKNOWN并重抛取消，Process Owner负责停止和持久化Lease；`recover`�
 [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和
 [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)。外部Action Config加载与启动时全局Route扫描不在e4。
 
-## 46. 产品启动全局恢复（0.9.1e5候选）
+## 46. 产品启动全局恢复（0.9.1e5）
 
 通用`TrustedActionRouter`继续只负责单个注册表中的Plan、Decide、Execute、Recover和Reconcile，不吸收产品配置或Server生命周期。
 产品层[`ProductActionRuntimeOwner`](../../src/harnessix/product_config/action_runtime.py)在同一组Execution Plan和Action Audit Store上按
@@ -1502,6 +1502,7 @@ flowchart TD
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则由CI 35439332019验收关闭 |
 | 11 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则；等待关闭CI |
 | 10 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Process由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown与Mermaid结构 |
 | 9 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Process同源目录、按Tool Review/Output、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI |

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 6
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 7
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ supersedes: []
 
 ## 状态
 
-接受，0.9.1e按本决策实施。0.9.1e1～e4已经分别完成全矩阵验收；默认Workspace Patch与固定Container Process共用同一产品内Router、审批和恢复语义。e5的外部Action Config、Doctor能力诊断、Product/Action双配置原子CAS及产品级启动恢复Owner已形成实现候选，仍需全量和七任务CI后关闭。实现状态由
+接受，0.9.1e已按本决策实施。0.9.1e1～e5已经分别完成全矩阵验收；默认Workspace Patch与固定Container Process共用同一产品内Router、审批和恢复语义，外部Action Config、Doctor能力诊断、Product/Action双配置原子CAS及产品级启动恢复Owner由实现`e5b7a8a`和[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)关闭。实现状态由
 [0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)和现行模块文档维护。
 
 ## 背景
@@ -224,7 +224,7 @@ Product Config v3引用。
 2. `WorkspacePatchTransactionPlanner`令`Delivery.transaction_id`等于`ExecutionPlan.plan_id`，并全量复核调用参数、规范资源、Snapshot、before/after摘要和模式，禁止第二套业务身份漂移；
 3. `WorkspacePatchReviewProvider`先物化不可变Delivery事务，再发布规范`action_review` JSONL；Session批准与最终Tool Result引用同一Artifact，预览不充当授权证据；
 4. `WorkspacePatchActionExecutor`持有Workspace Lease并逐成员调用有界`publish_next`。取消或崩溃后的Reconcile只观察，不能继续提交剩余成员；
-5. 默认产品在同一State Root拥有Execution Plan、Action Audit、Delivery、Lease和Session/Artifact Store，并由`ExitStack`处理部分构造失败；全局启动恢复和运行期Owner仍由e5负责。
+5. 默认产品在同一State Root拥有Execution Plan、Action Audit、Delivery、Lease和Session/Artifact Store，并由`ExitStack`处理部分构造失败；全局启动恢复和运行期Owner已由e5实现并验收。
 
 本次允许新增单向`product_config -> delivery`依赖：产品组合层需要连接已经通过能力证明的Catalog与Delivery端口，Delivery不得反向依赖产品层。Review编排放在
 [`product_config/workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py)，而不是让Artifacts依赖Delivery，避免形成跨执行与存储层的依赖环。通用Artifact包只维护发布、授权引用、完整性和GC。

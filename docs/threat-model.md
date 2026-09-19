@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 6
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 7
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -819,7 +819,7 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **取消或崩溃后的重复写**：一个`publish_next`最多提交一个成员，取消只在成员之间生效。进入`running`后的恢复只观察，不继续写；严格after前缀和before后缀被标记为`manual_intervention/delivery_partial_effect`，不自动提交剩余文件。
 - **平台能力夸大**：Windows和缺少no-follow标志的平台不安装Patch Binding，模型目录中不存在该工具。Windows只读Runtime不得通过Shell、`Path.write_text`或兼容层模拟写能力。
 - **状态文件泄漏与同UID篡改**：Execution Plan、Action Audit、Session/Artifact、Lease和Delivery Blob均位于同一私有State Root，但本地同UID主体仍可修改数据库和Workspace；该威胁不由摘要、UUID或Hash链消除。
-- **剩余边界**：e3尚未提供产品启动前全局在途Route扫描、固定Container Process、远端租户身份或自动支持包。审批后来源漂移会保守保留Route为`ready`且不产生文件效果，必须创建新提案；统一诊断与可靠性统计由0.9.3和e5关闭。
+- **剩余边界**：e3交付时尚未提供产品启动前全局在途Route扫描、固定Container Process、远端租户身份或自动支持包。前两项已由e4/e5关闭；审批后来源漂移会保守保留Route为`ready`且不产生文件效果，必须创建新提案；统一可靠性统计仍由0.9.3关闭。
 
 实现入口见[`delivery/trusted_action.py`](../src/harnessix/delivery/trusted_action.py)、
 [`product_config/workspace_patch_review.py`](../src/harnessix/product_config/workspace_patch_review.py)、
@@ -857,4 +857,5 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 [`test_action_config_runtime.py`](../tests/product_config/test_action_config_runtime.py)、
 [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、
 [`test_preflight.py`](../tests/product_config/test_preflight.py)与
-[`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。该实现候选仍等待关闭CI。
+[`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。实现Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`
+已由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成七任务全矩阵验收并关闭。

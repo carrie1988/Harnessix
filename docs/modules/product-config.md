@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 11
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -46,8 +46,8 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链及Action恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
-| 当前完成度 | 0.9.1d、0.9.1e1～e4已关闭；e5已实现安全Action文件、Doctor、双配置原子CAS、上一配置恢复Router与统一Owner候选，仍等待全量及七任务CI关闭 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
+| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；安全Action文件、Doctor、双配置原子CAS、上一配置恢复Router与统一Owner已通过七任务CI验收 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -157,7 +157,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | v1→v2迁移 | 文件锁、CAS、备份、原子替换 | CLI显式执行 | 配置DB与文件跨资源原子事务 |
 | stdio组合根 | Preflight后固定Workspace只读Tool与Artifact产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
 | Product Action合同/目录 | 严格Action Config、固定Process Profile、短时能力报告、同源Descriptor/Binding目录 | 默认Patch；外部配置可启用已证明Process Profile | 热加载、远端配置与任意命令 |
-| Action配置/恢复Store | 来源快照、Hash链、恢复报告、双配置原子CAS | e5实现候选 | 签名日志、保留策略和跨机器配置控制面 |
+| Action配置/恢复Store | 来源快照、Hash链、恢复报告、双配置原子CAS | e5已验收 | 签名日志、保留策略和跨机器配置控制面 |
 | Artifact | Session绑定的SQLite Store、Tool/Agent共享Owner和Scoped协议Reader | 默认产品已启用`artifact/read` | GC调度、指标和长期容量治理 |
 | Telemetry | 稳定错误、诊断和审计可查询 | 未接入Observer | 指标、Trace、SLO和导出接口 |
 
@@ -1772,7 +1772,7 @@ SHA-256，Session只保存公共摘要及Artifact引用。Artifact发布再次�
 Workspace和输出分页。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)已完成Linux
 Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务验收，本切片据此关闭。
 
-## 51. Action配置、Doctor与启动恢复Owner（0.9.1e5候选）
+## 51. Action配置、Doctor与启动恢复Owner（0.9.1e5）
 
 ### 51.1 安全加载与无状态诊断
 
@@ -1852,6 +1852,7 @@ Executor或向新Binding迁移旧批准。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 11 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner由CI 35439332019验收关闭 |
 | 10 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5实现候选：Action安全加载、无状态Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner；等待关闭CI |
 | 9 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成七任务全矩阵验收并关闭 |
 | 8 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 默认产品组合扩展为Patch与固定Container Process共享的单一Catalog/Gateway，增加Supervisor生命周期、按Tool上下文、故障恢复与真实镜像验收接线 |

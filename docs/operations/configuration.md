@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 9
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -408,6 +408,7 @@ Owner、Sandbox和Secret版本可证明。若旧`pending_approval/ready`的Bindi
 | CLI分派与无副作用边界 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | Server重校验 | [`server.py`](../../src/harnessix/product_config/server.py) | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 
-本文绑定最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`；
-[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成三平台及完整矩阵验收，0.9.1d正式关闭。e5配置、
-Doctor、原子CAS和启动恢复是当前实现候选，本地全量与变化文档渲染已通过，仍等待七任务CI，不在本文提前宣称关闭。
+0.9.1d最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`已由
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成三平台及完整矩阵验收。e5配置、
+Doctor、原子CAS和启动恢复绑定实现Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`，并由
+[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成七任务全矩阵验收后关闭。

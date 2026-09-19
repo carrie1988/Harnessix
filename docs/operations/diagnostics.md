@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 7
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - core
 modules:
@@ -193,7 +193,7 @@ OTLP实现外推为当前产品能力。
 | `delivery_partial_effect` | 已形成严格after前缀和before后缀 | 人工审查并决定补齐或回退；系统不会自动续写 |
 | Action `unknown` | 取消、失租或崩溃后无法证明效果 | 只允许Reconcile观察，不再次执行 |
 
-诊断记录只能保存Plan/Transaction/Artifact摘要、成员数量、游标、状态和稳定错误码；不得保存Patch正文、完整Diff、Workspace绝对路径或原始异常。e5候选会在开放协议前把旧`running/reconciling`转为`unknown`并只对账一次；恢复报告只汇总计数。仍未知时必须保留全部State文件并失败关闭。
+诊断记录只能保存Plan/Transaction/Artifact摘要、成员数量、游标、状态和稳定错误码；不得保存Patch正文、完整Diff、Workspace绝对路径或原始异常。e5在开放协议前把旧`running/reconciling`转为`unknown`并只对账一次；恢复报告只汇总计数。仍未知时必须保留全部State文件并失败关闭。
 
 ## 10. 证据采集与脱敏
 

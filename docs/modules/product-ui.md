@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
+version: 13
+code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
 owners:
   - product
 modules:
@@ -47,8 +47,8 @@ supersedes: []
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影Reducer、连接、Controller、冻结交互绑定/证据/Intent、纯交互投影和稳定错误帮助；Textual App与Screen从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a～d已通过三平台CI并关闭；e5候选已把Action Config与双配置CAS参数接入Doctor/启动CLI，仍等待关闭CI |
-| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
+| 当前完成度 | 0.9.1a～d已通过三平台CI并关闭；e5已把Action Config与双配置CAS参数接入Doctor/启动CLI并通过七任务CI验收 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -953,6 +953,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action Config路径、环境覆盖与双配置CAS参数透传由CI 35439332019验收关闭 |
 | 12 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 接入e5候选的Action Config路径、环境覆盖与Product/Action活动CAS前提透传；等待关闭CI |
 | 11 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读链通过CI 34735529084 |
 | 10 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收，正式关闭完整领域交互子切片 |
