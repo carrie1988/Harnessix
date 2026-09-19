@@ -47,6 +47,7 @@ def _run(*arguments: str) -> subprocess.CompletedProcess[str]:
         [sys.executable, str(SCRIPT), *arguments],
         cwd=ROOT,
         text=True,
+        encoding="utf-8",
         capture_output=True,
         check=False,
     )

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
+version: 8
 code_revision: pending
 owners:
   - core
@@ -362,5 +362,11 @@ Integration文件时，`tests.agent.helpers`不可导入并在收集阶段退出
 Pytest版本化配置中显式声明`pythonpath = ["."]`，并增加治理断言。修复后的独立Container Job已通过；第二轮
 [CI 35452483631](https://github.com/carrie1988/Harnessix/actions/runs/35452483631)的Documentation Job又正确阻止了
 “测试配置变化未同步重大变更设计”，本文版本7补齐该证据后再执行最终全矩阵验收。
+
+第三轮[CI 35452582821](https://github.com/carrie1988/Harnessix/actions/runs/35452582821)中Container与Documentation
+均通过，Windows专项则证明SQLite连接上下文退出不等于文件句柄立即关闭：归档复核连接仍占用临时数据库，
+`os.link`以`WinError 32`失败；Windows默认错误流还把中文转为反斜杠Unicode转义。版本8使用`closing()`
+显式关闭源、备份目标和复核连接后再发布，并把CLI错误流固定为UTF-8字节合同；Windows测试子进程也按UTF-8
+解码。该修复不改变归档Schema、快照内容、权限或不覆盖语义。
 
 每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在全矩阵CI完成前，不得宣称f3已经关闭。

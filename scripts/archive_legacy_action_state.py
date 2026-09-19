@@ -9,6 +9,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+from contextlib import closing
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -90,7 +91,7 @@ def inspect(path: Path) -> LegacyStateSummary:
     """在 SQLite 只读模式下返回低敏感度统计，不读取请求或事件正文。"""
 
     source = _regular_source(path)
-    with _readonly_connection(source) as connection:
+    with closing(_readonly_connection(source)) as connection:
         return _summary(connection)
 
 
@@ -149,11 +150,11 @@ def archive(source_path: Path, output_path: Path, manifest_path: Path) -> dict[s
     published_output = False
     try:
         os.chmod(output_temp, 0o600)
-        with _readonly_connection(source) as source_db:
+        with closing(_readonly_connection(source)) as source_db:
             source_summary = _summary(source_db)
-            with sqlite3.connect(output_temp) as archive_db:
+            with closing(sqlite3.connect(output_temp)) as archive_db:
                 source_db.backup(archive_db)
-        with _readonly_connection(output_temp) as archive_db:
+        with closing(_readonly_connection(output_temp)) as archive_db:
             archived_summary = _summary(archive_db)
         if archived_summary != source_summary:
             raise ArchiveError("归档快照统计与源数据库不一致")
@@ -220,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             value = archive(args.source, args.output, manifest)
     except (ArchiveError, OSError, sqlite3.Error) as error:
-        print(f"legacy_action_archive_error: {error}", file=sys.stderr)
+        sys.stderr.buffer.write(f"legacy_action_archive_error: {error}\n".encode())
         return 2
     sys.stdout.buffer.write(_json_bytes(value))
     return 0

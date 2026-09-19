@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -86,7 +86,8 @@ uv run python scripts/archive_legacy_action_state.py inspect \
 | `event_count` | 事件总数 | 低基数汇总 |
 | `status_counts` | 按状态聚合数量 | 不包含Action ID |
 
-任何结构缺失、完整性错误、符号链接或读取错误都以退出码`2`失败关闭。
+任何结构缺失、完整性错误、符号链接或读取错误都以退出码`2`失败关闭；标准输出和标准错误均使用UTF-8，
+调用脚本的进程不得依赖Windows活动代码页猜测解码。
 
 ### 4.3 生成一致归档
 
@@ -115,7 +116,8 @@ sequenceDiagram
     S-->>O: redacted canonical JSON summary
 ```
 
-脚本拒绝覆盖既有输出或清单。清单包含归档文件名、字节数、SHA-256、创建时间和低敏感度统计；只记录源文件名，
+脚本在发布前显式关闭源、备份目标和复核阶段的全部SQLite连接，避免Windows仍持有临时数据库句柄；随后拒绝
+覆盖既有输出或清单。清单包含归档文件名、字节数、SHA-256、创建时间和低敏感度统计；只记录源文件名，
 不记录绝对路径。归档内容仍可能包含Prompt、参数、Secret引用和外部身份，必须按敏感生产数据保护。
 
 ### 4.4 校验
