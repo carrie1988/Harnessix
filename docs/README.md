@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 63
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 64
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
@@ -30,6 +31,7 @@ related_tests:
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
   - tests/product_ui/test_app.py
+  - tests/evals/test_suite.py
   - tests/product_ui/test_interactions.py
   - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_stdio_product.py
@@ -42,7 +44,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a已形成多仓库Suite与脱敏Transcript合同候选，尚待全矩阵CI；Task Pack、Runner和真实多仓库基线仍未完成。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -74,7 +76,7 @@ supersedes: []
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
 | 受控Provider验证 | [Smoke模块设计](modules/smoke.md) | `network gate → strict config → fixed scenario → Agent/SQLite/Replay → whitelist report`；重点区分Token边界、金额未知、配置对象安全与端点—凭据未绑定 |
-| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign`；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
+| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task/catalog → materialization → agent run → grader → campaign → suite`；0.9.2a候选只包含Suite合同/聚合，不含Task Pack/Runner；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → Agent/Provider/Trusted Action`；再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
@@ -115,7 +117,7 @@ supersedes: []
 | Trusted Actions | [Trusted Actions模块设计](modules/trusted-actions.md) | 宿主Binding、规范资源、默认风险Policy、Execution/Approval、Route Hash链、Agent Gateway、UNKNOWN/Reconcile和扩展能力端口 |
 | Workspace | [Workspace模块设计](modules/workspace.md) | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验和SQLite Fencing Lease |
 | Delivery | [Delivery模块设计](modules/delivery.md) | Workspace Transaction、私有Blob、完整Diff、POSIX可恢复发布、Git Worktree/Checkpoint/Commit和单独批准Push |
-| Evals | [Evals模块设计](modules/evals.md) | 历史任务、私有物化、Agent运行、固定评分、Campaign、成本、Compaction语义评测和专用单文件交付 |
+| Evals | [Evals模块设计](modules/evals.md) | 历史任务、私有物化、Agent运行、固定评分、Campaign、Suite/Transcript证据候选、成本、Compaction语义评测和专用单文件交付 |
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Trusted Action兼容映射、Replay/Delta、命令幂等账本和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
@@ -153,6 +155,7 @@ supersedes: []
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
+| 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md) | 进行中；a合同候选待CI，b～e任务包、Runner、多仓库离线基线和真实Provider基线未完成 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
@@ -177,9 +180,9 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录81份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录82份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等30份冻结参考实现证据及访问日期；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等31份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -220,4 +223,4 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `superseded`：已被明确取代；
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
-仓库内205份Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+仓库内Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。

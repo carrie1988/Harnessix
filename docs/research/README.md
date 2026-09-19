@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 4
-code_revision: c3ed6c917368f705bab90a85ea82572520909ac5
+version: 5
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
 related_tests: []
 supersedes: []
 ---
@@ -24,7 +25,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含30份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含31份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -78,6 +79,7 @@ flowchart LR
 | [工具参数校验反馈适用性](tool-validation-feedback-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0050](../adr/0050-model-correctable-tool-validation.md) |
 | [多试验质量与成本证据](eval-campaign.md) | 2026-09-06 | 正文专项基线 | [ADR 0047](../adr/0047-coding-eval-campaign-evidence.md) |
 | [真实Campaign执行与费用边界](eval-campaign-execution.md) | 2026-09-06 | 正文专项基线 | [ADR 0048](../adr/0048-controlled-real-eval-campaign-execution.md) |
+| [多仓库Eval Suite与Transcript证据](eval-suite-and-transcript-baseline.md) | 2026-09-20 | Codex、OpenCode与Claude逆向样本正文固定Revision | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) |
 | [Eval Token预算适用性](eval-token-budget-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0049](../adr/0049-versioned-eval-token-budget.md) |
 | [Eval最终回答契约可见性](eval-final-answer-contract-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0051](../adr/0051-versioned-eval-final-answer-contract.md) |
 | [Eval变更交付适用性](eval-change-delivery.md) | 2026-09-07 | 正文专项基线 | [ADR 0052](../adr/0052-controlled-eval-change-delivery.md)、[Delivery模块](../modules/delivery.md) |
@@ -141,6 +143,7 @@ flowchart LR
 
 ## 7. 当前限制
 
-冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制，以及0.9.1完整TUI设计所需的产品交互证据，但不代表持续
-跟踪上游最新版本。0.9后续切片若涉及Eval基线、三平台发行、长期Soak、远程MCP认证或供应链发布，必须先建立
+冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制、0.9.1完整TUI设计所需的产品交互证据，以及0.9.2
+多仓库Eval Suite和脱敏Transcript证据的首轮基线，但不代表持续跟踪上游最新版本。后续切片若涉及三平台发行、
+长期Soak、远程MCP认证或供应链发布，必须先建立
 对应的新版本研究证据，不能继续外推现有冻结结论。

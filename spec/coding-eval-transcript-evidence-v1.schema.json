@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "TurnStatus": {
+      "enum": [
+        "accepted",
+        "preparing_context",
+        "calling_model",
+        "executing_tools",
+        "waiting_approval",
+        "waiting_action",
+        "finalizing",
+        "cancelling",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ],
+      "title": "TurnStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "从持久Turn重算的脱敏Transcript结构和人工干预证据。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-transcript-evidence/v1",
+      "default": "harnessix.coding-eval-transcript-evidence/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "format": "uuid",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "turn_status": {
+      "$ref": "#/$defs/TurnStatus"
+    },
+    "transcript_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Transcript Sha256",
+      "type": "string"
+    },
+    "completed_items": {
+      "minimum": 0,
+      "title": "Completed Items",
+      "type": "integer"
+    },
+    "model_steps": {
+      "minimum": 0,
+      "title": "Model Steps",
+      "type": "integer"
+    },
+    "model_attempts": {
+      "minimum": 0,
+      "title": "Model Attempts",
+      "type": "integer"
+    },
+    "input_tokens": {
+      "minimum": 0,
+      "title": "Input Tokens",
+      "type": "integer"
+    },
+    "output_tokens": {
+      "minimum": 0,
+      "title": "Output Tokens",
+      "type": "integer"
+    },
+    "approval_requests": {
+      "minimum": 0,
+      "title": "Approval Requests",
+      "type": "integer"
+    },
+    "automated_approval_decisions": {
+      "minimum": 0,
+      "title": "Automated Approval Decisions",
+      "type": "integer"
+    },
+    "human_approval_interventions": {
+      "minimum": 0,
+      "title": "Human Approval Interventions",
+      "type": "integer"
+    },
+    "question_requests": {
+      "minimum": 0,
+      "title": "Question Requests",
+      "type": "integer"
+    },
+    "question_answers": {
+      "minimum": 0,
+      "title": "Question Answers",
+      "type": "integer"
+    },
+    "steering_messages": {
+      "minimum": 0,
+      "title": "Steering Messages",
+      "type": "integer"
+    },
+    "manual_recovery_results": {
+      "minimum": 0,
+      "title": "Manual Recovery Results",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "run_id",
+    "turn_id",
+    "turn_status",
+    "transcript_sha256",
+    "completed_items",
+    "model_steps",
+    "model_attempts",
+    "input_tokens",
+    "output_tokens",
+    "approval_requests",
+    "automated_approval_decisions",
+    "human_approval_interventions",
+    "question_requests",
+    "question_answers",
+    "steering_messages",
+    "manual_recovery_results"
+  ],
+  "title": "CodingEvalTranscriptEvidence",
+  "type": "object"
+}

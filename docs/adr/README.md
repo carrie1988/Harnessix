@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 6
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 7
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -21,8 +21,8 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有81份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
-迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0081继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合和单一Coding Agent产品边界。
+截至标注代码版本，共有82份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0082继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界和多仓库Eval Suite证据边界。
 
 ## 2. 状态语义
 
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前81份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前82份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -141,6 +141,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；按0.9.2a～e实施 |
 
 ### 4.6 Context、Compaction与会话生命周期
 
@@ -184,10 +185,10 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0073 | [MCP目录绑定与Sandbox执行边界](0073-mcp-catalog-binding-and-sandbox.md) | 接受 |
 | 0074 | [Skill快照与Hook Action安全边界](0074-skill-snapshot-and-hook-action-boundary.md) | 接受 |
 | 0075 | [Provider Profile、Secret 引用与安全 Fallback](0075-provider-profile-secret-and-safe-fallback.md) | 接受 |
-| 0078 | [产品终端壳与可恢复客户端状态](0078-product-shell-and-recoverable-client-state.md) | 接受；0.9.1a～d已关闭，e待实施 |
+| 0078 | [产品终端壳与可恢复客户端状态](0078-product-shell-and-recoverable-client-state.md) | 接受；0.9.1a～f已关闭 |
 | 0079 | [只读产品诊断与原生Workspace读取端口](0079-preflight-and-native-read-port.md) | 接受；0.9.1d已由CI 34735529084关闭 |
-| 0080 | [能力证明驱动的默认Trusted Action组合根](0080-capability-proven-product-action-composition.md) | 接受；约束0.9.1e实现 |
-| 0081 | [收敛为单一Coding Agent产品边界](0081-single-coding-agent-product-boundary.md) | 接受；独立Action HTTP/Worker进入迁移删除流程 |
+| 0080 | [能力证明驱动的默认Trusted Action组合根](0080-capability-proven-product-action-composition.md) | 接受；0.9.1e已关闭 |
+| 0081 | [收敛为单一Coding Agent产品边界](0081-single-coding-agent-product-boundary.md) | 接受；独立Action HTTP/Worker已删除并由CI 35453082992关闭 |
 
 ### 4.9 可读性与结构治理
 

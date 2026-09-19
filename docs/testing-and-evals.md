@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 16
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 17
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -18,10 +18,12 @@ related_adrs:
   - docs/adr/0047-coding-eval-campaign-evidence.md
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
+  - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
 related_tests:
   - tests/governance
   - tests/agent
   - tests/evals
+  - tests/evals/test_suite.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_config_runtime.py
@@ -283,6 +285,21 @@ flowchart LR
 | Interaction | Approval轮次、用户补充次数、最终答复一致性 | 主观“看起来合理” |
 
 单一成功率若没有任务难度、失败分类、预算和环境信息，不能作为架构效果证据。指标必须能回溯到Task、Run、Attempt、Event和固定的Grader版本。
+
+### 13.1 0.9.2多仓库Suite证据边界
+
+0.9.2a候选在现有单任务Campaign之上增加Suite合同：每个Case绑定任务类别、固定仓库Revision和完整Campaign；
+Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。Suite报告必须重算：
+
+1. 任务成功率：严格通过Trial数/计划Trial数；
+2. 测试通过率：最终检查通过Trial数/适用测试Trial数；至少存在一个适用测试；
+3. 人工干预率：存在人工审批、Question、Steering或人工恢复的Trial数/计划Trial数；
+4. 模型尝试、输入/输出Token、同币种已知Cost和Cost完整性；
+5. 端到端最小值、P50、P95和最大延迟。
+
+自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。当前证据仅证明
+合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为；尚不证明Task Pack、Suite Runner、崩溃恢复、
+至少10 Case/3仓库基线或真实Provider质量。关闭边界见[0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ## 14. 真实Provider验证
 

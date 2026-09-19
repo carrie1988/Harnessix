@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 56
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 57
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -41,6 +41,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
 related_tests:
   - tests/product_config/test_action_contracts.py
@@ -63,6 +64,7 @@ related_tests:
   - tests/product_ui/test_interactions.py
   - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_stdio_product.py
+  - tests/evals/test_suite.py
   - tests/agent/test_runtime.py
   - tests/agent/test_tool_scheduling.py
   - tests/agent/test_crash_recovery.py
@@ -374,6 +376,10 @@ Agent `KernelTelemetry`为Turn、Context、Model、Tool、Approval和Recovery生
 W3C Trace Context。Observer故障不得改变Agent结果。可恢复性、质量和成本由持久Session、Action Audit与Eval报告证明，
 不依据“日志看起来成功”。
 
+Eval采用`Run → Campaign → Suite`三层证据：Run固定任务结果，Campaign重复同一任务，Suite按预先冻结的Case、任务类别、
+仓库Revision和Campaign指纹聚合跨任务指标。0.9.2a候选只从完整Campaign与持久Turn生成摘要、计数和可重算率，不复制
+Prompt、回答、工具正文、Diff或路径；Task Pack、可恢复Runner和真实多仓库基线仍是0.9.2后续边界。
+
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
 门禁。0.9.1f3删除PostgreSQL旧服务后，CI不再启动旧Journal服务，当前矩阵为Linux Python 3.12/3.13、macOS、Windows、
 固定镜像Container和Documentation。
@@ -495,6 +501,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
+| 多仓库Eval尚无Task Pack与真实基线 | Suite合同候选、单任务Campaign历史证据 | 0.9.2b～e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -507,6 +514,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 57 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 登记0.9.2a多仓库Suite与脱敏Transcript证据候选边界，明确Task Pack、Runner和真实基线仍未完成 |
 | 56 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录单一Coding Agent架构由CI 35453082992完成Linux双版本、macOS、Windows、Container与文档全矩阵验收 |
 | 55 | `296650216e5ec0f6819d4fb607e297b988a956a7` | 2026-09-19 | 物理删除独立Action HTTP/Worker体系，重写26包单一Coding Agent架构、历史只读兼容和归档边界 |
 | 54 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 历史Eval迁入Trusted Action并通过全矩阵验收 |

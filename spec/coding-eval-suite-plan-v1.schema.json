@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "CodingEvalEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "harnessix_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Harnessix Revision",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "isolation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Isolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "harnessix_revision",
+        "provider",
+        "model",
+        "platform",
+        "isolation"
+      ],
+      "title": "CodingEvalEnvironment",
+      "type": "object"
+    },
+    "CodingEvalSuiteCasePlan": {
+      "additionalProperties": false,
+      "description": "Suite冻结的单个任务、仓库和Campaign身份。",
+      "properties": {
+        "case_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "task_kind": {
+          "enum": [
+            "bug_fix",
+            "feature",
+            "refactor",
+            "test",
+            "review"
+          ],
+          "title": "Task Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "task_version": {
+          "minimum": 1,
+          "title": "Task Version",
+          "type": "integer"
+        },
+        "task_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Task Fingerprint",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "#/$defs/EvalRepository"
+        },
+        "campaign_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Campaign Plan Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id",
+        "task_kind",
+        "task_id",
+        "task_version",
+        "task_fingerprint",
+        "repository",
+        "campaign_plan_fingerprint"
+      ],
+      "title": "CodingEvalSuiteCasePlan",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "首个模型请求前固定的多任务、多仓库基线计划。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-suite-plan/v1",
+      "default": "harnessix.coding-eval-suite-plan/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "suite_id": {
+      "format": "uuid",
+      "title": "Suite Id",
+      "type": "string"
+    },
+    "suite_version": {
+      "minimum": 1,
+      "title": "Suite Version",
+      "type": "integer"
+    },
+    "environment": {
+      "$ref": "#/$defs/CodingEvalEnvironment"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/CodingEvalSuiteCasePlan"
+      },
+      "maxItems": 50,
+      "minItems": 5,
+      "title": "Cases",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "suite_id",
+    "suite_version",
+    "environment",
+    "cases",
+    "created_at"
+  ],
+  "title": "CodingEvalSuitePlan",
+  "type": "object"
+}

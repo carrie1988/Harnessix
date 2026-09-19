@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 28
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 29
+code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -27,6 +28,7 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
+  - tests/evals/test_suite.py
 supersedes: []
 ---
 
@@ -478,6 +480,28 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 界面可启动或单个Prompt正常返回不能关闭0.9.1。六个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
 可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。
+
+### 0.9.2实施计划与完成边界
+
+0.9.2按[源码研究](research/eval-suite-and-transcript-baseline.md)、
+[ADR 0082](adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)和
+[详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)拆分。单任务Campaign继续负责同一任务的重复试验；
+Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算聚合，不能把一次成功运行包装成“多仓库基线”：
+
+- [ ] **0.9.2a Suite与Transcript正式契约**：在首个Provider请求前冻结Suite/Case/Campaign身份；实现五类任务、
+  至少两个固定仓库Revision、脱敏Transcript摘要、测试证据、任务成功率、测试通过率、人工干预率、Token、成本、
+  延迟聚合，以及0600、no-follow、有界、原子Plan/Report读写。当前候选实现和专项回归已完成，待全量CI关闭；
+- [ ] **0.9.2b Task Pack v1**：建立许可证和来源可审计的固定任务包，不接受运行时任意URL、任意测试命令或宿主脚本；
+  每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算；
+- [ ] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用
+  同一Run ID补证据，不重复Provider请求、审批或效果；成本未知、证据缺失和身份漂移停止后续试验；
+- [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
+  每Case至少2次试验；通过固定Container Profile运行全部检查，形成可复跑的离线Suite报告；
+- [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
+  验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret。
+
+只有a～e全部满足合同、失败与恢复、持久化、可观测性、完整测试、真实场景和文档同步，且d/e达到上述规模与证据门槛，
+才可勾选0.9.2总项。Schema存在、单元测试通过或只有两个仓库五个Case均不能关闭0.9.2。
 
 ### DOC-1：设计文档与源码可追溯治理
 

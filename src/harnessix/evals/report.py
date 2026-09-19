@@ -15,11 +15,14 @@ from harnessix.domain.models import ContractModel
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan, CodingEvalCampaignReport
 from harnessix.evals.campaign_execution_contracts import CodingEvalCampaignExecutionState
 from harnessix.evals.contracts import CodingEvalReport
+from harnessix.evals.suite_contracts import CodingEvalSuitePlan, CodingEvalSuiteReport
 
 MAX_EVAL_REPORT_BYTES = 1024 * 1024
 MAX_EVAL_CAMPAIGN_PLAN_BYTES = 256 * 1024
 MAX_EVAL_CAMPAIGN_REPORT_BYTES = 1024 * 1024
 MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES = 256 * 1024
+MAX_EVAL_SUITE_PLAN_BYTES = 512 * 1024
+MAX_EVAL_SUITE_REPORT_BYTES = 8 * 1024 * 1024
 
 
 def eval_report_sha256(report: CodingEvalReport) -> str:
@@ -28,6 +31,11 @@ def eval_report_sha256(report: CodingEvalReport) -> str:
 
 
 def eval_campaign_report_sha256(report: CodingEvalCampaignReport) -> str:
+    body = (report.model_dump_json(indent=2) + "\n").encode("utf-8")
+    return hashlib.sha256(body).hexdigest()
+
+
+def eval_suite_report_sha256(report: CodingEvalSuiteReport) -> str:
     body = (report.model_dump_json(indent=2) + "\n").encode("utf-8")
     return hashlib.sha256(body).hexdigest()
 
@@ -238,5 +246,65 @@ def read_eval_campaign_execution_state(path: Path) -> CodingEvalCampaignExecutio
         MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES,
         invalid_code="eval_campaign_execution_state_invalid",
         label="Campaign执行状态",
+        require_private_mode=True,
+    )
+
+
+def write_eval_suite_plan(path: Path, plan: CodingEvalSuitePlan) -> None:
+    """在任一Case请求前原子固定跨任务、跨仓库Suite计划。"""
+
+    try:
+        plan = CodingEvalSuitePlan.model_validate_json(plan.model_dump_json(), strict=True)
+    except ValueError:
+        raise KernelError("eval_suite_plan_invalid", "Eval Suite计划无效") from None
+    _write_report(
+        path,
+        plan,
+        MAX_EVAL_SUITE_PLAN_BYTES,
+        too_large_code="eval_suite_plan_too_large",
+        path_denied_code="eval_suite_plan_path_denied",
+        write_failed_code="eval_suite_plan_write_failed",
+        label="Eval Suite计划",
+    )
+
+
+def read_eval_suite_plan(path: Path) -> CodingEvalSuitePlan:
+    """读取私有、有界且完整校验的Eval Suite计划。"""
+    return _read_report(
+        path,
+        CodingEvalSuitePlan,
+        MAX_EVAL_SUITE_PLAN_BYTES,
+        invalid_code="eval_suite_plan_invalid",
+        label="Eval Suite计划",
+        require_private_mode=True,
+    )
+
+
+def write_eval_suite_report(path: Path, report: CodingEvalSuiteReport) -> None:
+    """原子发布不含Prompt、Diff、Tool参数或输出正文的Suite聚合报告。"""
+
+    try:
+        report = CodingEvalSuiteReport.model_validate_json(report.model_dump_json(), strict=True)
+    except ValueError:
+        raise KernelError("eval_suite_report_invalid", "Eval Suite报告无效") from None
+    _write_report(
+        path,
+        report,
+        MAX_EVAL_SUITE_REPORT_BYTES,
+        too_large_code="eval_suite_report_too_large",
+        path_denied_code="eval_suite_report_path_denied",
+        write_failed_code="eval_suite_report_write_failed",
+        label="Eval Suite报告",
+    )
+
+
+def read_eval_suite_report(path: Path) -> CodingEvalSuiteReport:
+    """读取私有、有界且可重算的Eval Suite报告。"""
+    return _read_report(
+        path,
+        CodingEvalSuiteReport,
+        MAX_EVAL_SUITE_REPORT_BYTES,
+        invalid_code="eval_suite_report_invalid",
+        label="Eval Suite报告",
         require_private_mode=True,
     )

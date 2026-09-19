@@ -92,6 +92,11 @@ from harnessix.evals.delivery_contracts import (
     CodingEvalDeliveryPlan,
     CodingEvalDeliveryRecord,
 )
+from harnessix.evals.suite_contracts import (
+    CodingEvalSuitePlan,
+    CodingEvalSuiteReport,
+    CodingEvalTranscriptEvidence,
+)
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionCapabilityEvidence,
@@ -402,6 +407,9 @@ def generate_specs(output: Path) -> None:
         ("coding-eval-campaign-run-config", CodingEvalCampaignRunConfig),
         ("coding-eval-campaign-execution-state", CodingEvalCampaignExecutionState),
         ("coding-eval-campaign-run-report", CodingEvalCampaignRunReport),
+        ("coding-eval-suite-plan", CodingEvalSuitePlan),
+        ("coding-eval-suite-report", CodingEvalSuiteReport),
+        ("coding-eval-transcript-evidence", CodingEvalTranscriptEvidence),
         ("coding-eval-change-package", CodingEvalChangePackage),
         ("coding-eval-delivery-plan", CodingEvalDeliveryPlan),
         ("coding-eval-delivery-record", CodingEvalDeliveryRecord),
