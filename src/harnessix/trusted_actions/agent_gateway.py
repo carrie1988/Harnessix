@@ -46,7 +46,9 @@ class RouterBackedAgentActionGateway:
         source: str = "builtin",
         source_id: str = "harnessix.product",
         presentations: Mapping[str, TrustedActionPresentation] | None = None,
-        reviews: TrustedActionReviewProvider | None = None,
+        reviews: TrustedActionReviewProvider
+        | Mapping[str, TrustedActionReviewProvider]
+        | None = None,
         outputs: Mapping[str, TrustedActionOutputProvider] | None = None,
     ) -> None:
         self._state = build_gateway_state(

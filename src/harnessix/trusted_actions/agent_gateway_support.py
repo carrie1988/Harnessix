@@ -71,7 +71,7 @@ class AgentActionGatewayState:
     bindings: dict[str, TrustedToolBinding]
     context: PlanningContextFactory
     presentations: dict[str, TrustedActionPresentation]
-    reviews: TrustedActionReviewProvider | None
+    reviews: dict[str, TrustedActionReviewProvider]
     outputs: dict[str, TrustedActionOutputProvider]
 
 
@@ -83,7 +83,7 @@ def build_gateway_state(
     source: str,
     source_id: str,
     presentations: Mapping[str, TrustedActionPresentation] | None,
-    reviews: TrustedActionReviewProvider | None,
+    reviews: TrustedActionReviewProvider | Mapping[str, TrustedActionReviewProvider] | None,
     outputs: Mapping[str, TrustedActionOutputProvider] | None,
 ) -> AgentActionGatewayState:
     copied = tuple(item.model_copy(deep=True) for item in definitions)
@@ -97,6 +97,20 @@ def build_gateway_state(
         raise KernelError("trusted_action_gateway_invalid", "Gateway输出包含未知Tool")
     if any(requested.get(name, "tool") != "process" for name in output_providers):
         raise KernelError("trusted_action_gateway_invalid", "Gateway输出只适用于Process呈现")
+    if reviews is None:
+        review_providers: dict[str, TrustedActionReviewProvider] = {}
+    elif isinstance(reviews, Mapping):
+        review_providers = dict(reviews)
+    else:
+        if len(copied) != 1:
+            raise KernelError(
+                "trusted_action_gateway_invalid",
+                "多Tool Gateway必须显式按Tool绑定Review",
+            )
+        # 保留既有单Tool调用方兼容性，避免把Review静默扩散给其他Action。
+        review_providers = {item.name: reviews for item in copied}
+    if set(review_providers) - {item.name for item in copied}:
+        raise KernelError("trusted_action_gateway_invalid", "Gateway Review包含未知Tool")
     catalog = {item.name: item for item in copied}
     bindings = _validate_bindings(router, catalog, source, source_id)
     return AgentActionGatewayState(
@@ -105,7 +119,7 @@ def build_gateway_state(
         bindings=bindings,
         context=context,
         presentations={item.name: requested.get(item.name, "tool") for item in copied},
-        reviews=reviews,
+        reviews=review_providers,
         outputs=output_providers,
     )
 
@@ -132,8 +146,9 @@ async def prepare_action(
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
         review = TrustedActionReview()
-        if state.reviews is not None:
-            review = await cancel.run(state.reviews.review(route, thread, turn, call, cancel))
+        provider = state.reviews.get(call.tool)
+        if provider is not None:
+            review = await cancel.run(provider.review(route, thread, turn, call, cancel))
         return _build_approval(state, thread, turn, call, route, review)
     if route.state == "ready":
         return await _execute_ready(state, route, thread, turn, call, cancel, origin="execution")

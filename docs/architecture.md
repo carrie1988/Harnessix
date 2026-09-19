@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 46
+version: 47
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -86,7 +86,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前实现基线为提交`809ed2b1a10f5cb462989a12dddf44f83a9d01ab`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收。本文描述该提交基线已交付的系统结构；能力状态按“默认产品、显式装配、规划中”区分：
+本文当前已验收基线为提交`030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收。0.9.1e4已完成固定Container Process的默认产品接线和真实镜像测试，正在等待本地全量及七任务CI验收。本文描述已验收基线与当前e4实现结构；能力状态按“默认产品、显式装配、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
@@ -116,7 +116,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 - 版本化的无头App Server协议与薄客户端；
 - 事件溯源Session、协议请求幂等和崩溃恢复；
 - Workspace约束下的只读Coding Tool与默认Artifact分页；
-- POSIX默认产品中的受控Workspace Patch/Delivery，以及可显式装配的Process、Sandbox和扩展运行库；
+- 默认产品中的受控Workspace Patch/Delivery，以及由显式固定Profile启用的强Sandbox Process；MCP、Skill和Hook仍为显式装配库；
 - 内置Trusted Action Runtime中的Policy、Approval、Execution Plan、Audit、`UNKNOWN`和Reconcile；
 - SQLite本地持久化、Workspace/Process专用效果账本与可恢复产品状态；
 - 结构化日志、Metric、Trace和可重复Eval基础设施。
@@ -125,8 +125,8 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 
 - 当前薄CLI不是最终完整TUI；
 - App Server当前只有本地stdio传输，不是公网多租户服务；
-- 默认`agent-server`装配只读`CodingToolRuntime`、Session绑定Artifact及经能力证明的`apply_patch_batch`；Patch只在POSIX no-follow文件语义成立时进入模型目录，Process、MCP、Skill和Hook仍不自动开放；
-- 默认产品在Windows使用原生Handle四项只读端口，并明确省略Workspace Patch；尚无Git、写Tool、Process、Delivery与发行物证据；
+- 默认`agent-server`装配只读`CodingToolRuntime`、Session绑定Artifact及统一Trusted Action组合；Patch只在POSIX no-follow语义成立时进入目录，Process只有外部宿主传入严格Action Config且Engine、镜像、Owner、Sandbox与Secret全部验证后才进入目录；
+- 默认产品在Windows使用原生Handle四项只读端口并省略Workspace Patch；固定Profile Process具备Windows Owner代码路径但尚无Windows真实Container发布矩阵，Git写入与发行物证据仍未完成；
 - 旧Action HTTP/Worker、Demo Executor和PostgreSQL Queue仅为迁移兼容代码，不是1.0产品能力；
 - 当前版本未宣称满足大规模C端商用所需的固定Eval、Soak、安全供应链和三平台发行门槛。
 
@@ -285,7 +285,7 @@ flowchart LR
 - [模型契约](../src/harnessix/models/contracts.py)隔离具体Provider；
 - [Coding Tool Runtime](../src/harnessix/tools/runtime.py)受Workspace边界约束；
 - [Trusted Action Router](../src/harnessix/trusted_actions/router.py)是高风险能力的唯一计划、批准、执行和对账入口；
-- Artifact、POSIX Workspace Patch和对应Delivery事务已进入当前[产品装配](../src/harnessix/product_config/server.py)；Process、MCP、Skill和Hook虽有实现与测试，仍未默认注册，Git交付能力也需显式装配。
+- Artifact、POSIX Workspace Patch、对应Delivery事务和验证通过的固定Container Process Profile已进入当前[产品装配](../src/harnessix/product_config/server.py)；MCP、Skill和Hook虽有实现与测试，仍未默认注册，Git交付能力也需显式装配。
 
 ### 5.2 4+1视图索引
 
@@ -503,7 +503,7 @@ flowchart TD
 把审批请求、决定和Effect保存为Agent Event v20事实。审批只由Router中的Approval Checkpoint授权，Session记录仅作为交互和恢复投影。
 
 e2交付时这是一条仅供宿主显式组合的装配链。e3开始，`harnessix agent-server`在POSIX平台通过同源Catalog注册
-`apply_patch_batch`的Descriptor、Definition、Review Provider、Executor与Reconciler；Process仍未注册，Windows继续省略写能力。
+`apply_patch_batch`的Descriptor、Definition、Review Provider、Executor与Reconciler。e4把固定Container Process按Profile加入同一Catalog；Windows继续省略Patch，但只有真实Container能力验证通过的Process Profile才可注册。
 
 ### 6.1.3 0.9.1e3默认Workspace Patch纵向链
 
@@ -534,6 +534,22 @@ flowchart LR
 默认状态布局新增`execution-plans.db`、`action-audit.db`、`workspace-leases.db`和`workspace-transactions/`，Session与Review Artifact继续共用`sessions.db`。构造失败由同步Owner逆序关闭；e5之前没有启动前全局扫描在途Route。Windows及缺少POSIX no-follow能力的平台不安装Patch Binding。
 
 
+### 6.1.4 0.9.1e4固定Container Process纵向链
+
+[`open_default_product_action_runtime`](../src/harnessix/product_config/action_runtime.py)统一拥有Action Stores和可选平台
+Process Supervisor。配置包含Profile时，启动阶段逐项证明Engine文件身份、Daemon版本、不可变镜像Repo Digest、Process Owner、
+`container_strong` Sandbox、资源上限和Secret版本；失败Profile只生成`omitted`能力事实，不建立Host Process fallback。
+
+[`build_product_action_composition`](../src/harnessix/product_config/action_composition.py)把Patch和全部Profile探测结果原子转换为同一
+Report/Catalog/Gateway。Gateway按Tool选择规划上下文和Provider：Patch使用Host Guard及Diff Review，Process使用Container Sandbox、
+固定环境、Secret版本和终态Output Provider。Agent只看到`run_profile.<id>`及`profile/selectors`输入，不能提供程序、镜像、环境或Secret。
+
+Process批准后，[`ProductProcessActionExecutor`](../src/harnessix/product_config/process_action.py)重新核对Route，派生
+`ContainerExecutionSpec`并通过`ContainerProcessRuntime`执行。Process Lease是效果权威；取消先使Router进入`unknown`，恢复只调用
+Reconcile读取Lease，不再次运行命令。stdout/stderr按Lease摘要重建为`action_output` JSONL，Router仅保存Hash，Session只保存有界摘要
+和作用域Artifact引用。完整设计、失败矩阵和测试映射见[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)。
+
+
 ### 6.2 旧Action兼容内核迁移边界
 
 `ActionService`、`ActionWorker`、SQLite/PostgreSQL Effect Journal、HTTP API和LangChain Adapter来自0.1产品。顶层`serve/worker`命令与HTTP Client公共导出已经撤销；这些实现不再出现在默认产品、部署或能力目录中。
@@ -557,18 +573,18 @@ flowchart LR
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本；详见[模块设计](modules/models.md) | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
 | Context | 已实现/显式装配 | Source聚合、预算、压缩窗口和Tool结果视图；详见[模块设计](modules/context.md) | [engine.py](../src/harnessix/context/engine.py) `ContextEngine`、[sources.py](../src/harnessix/context/sources.py) | [context测试](../tests/context/) |
 | 只读Tool | 当前默认产品 | macOS/Linux使用POSIX FD，Windows使用原生Handle；四项文件/搜索工具跨平台并共享默认Artifact Store，Git仅POSIX显式装配；详见[模块设计](modules/tools.md) | [runtime.py](../src/harnessix/tools/runtime.py) `CodingToolRuntime`、[windows_read.py](../src/harnessix/tools/windows_read.py) | [tools测试](../tests/tools/)、[Windows原生测试](../tests/tools/test_windows_native_runtime.py) |
-| Artifact | 当前默认产品/部分用途显式装配 | 只读Tool大结果和Workspace Patch `action_review`在默认产品中使用Session授权与Scoped协议分页；旧Batch Diff与进程输出随对应Action显式装配；详见[模块设计](modules/artifacts.md) | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
+| Artifact | 当前默认产品/部分用途显式装配 | 只读Tool大结果、Workspace Patch `action_review`和固定Profile Process `action_output`共享Session授权与Scoped协议分页；旧Batch Diff仍随兼容Action显式装配；详见[模块设计](modules/artifacts.md) | [sqlite.py](../src/harnessix/artifacts/sqlite.py)、[ports.py](../src/harnessix/artifacts/ports.py) | [artifacts测试](../tests/artifacts/) |
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复；详见[模块设计](modules/patches.md) | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
 | Execution Plan | 已实现/显式装配 | v1/v2不可变执行计划、环境/Secret摘要、能力/Sandbox绑定和一次性Approval Checkpoint；详见[模块设计](modules/execution.md) | [contracts.py](../src/harnessix/execution/contracts.py)、[store.py](../src/harnessix/execution/store.py) | [execution测试](../tests/execution/) |
-| Process | 已实现/显式装配 | 命令计划、进程树Owner、pipe/PTY、Lease/CAS、脱敏输出和保守恢复；兼容Saga与跨平台Supervisor边界详见[模块设计](modules/processes.md) | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
+| Process | 当前默认产品的条件能力/兼容链待迁移 | 固定Profile在强Container证明通过时经统一Gateway执行；任意Host Process与旧Saga不进入默认目录；Lease、取消和保守恢复详见[模块设计](modules/processes.md) | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
 | 旧Action Policy | 迁移兼容 | 通用Action Plane默认决策；新增能力使用资源感知Trusted Action Policy | [default.py](../src/harnessix/policy/default.py) | [兼容测试](../tests/integration/test_action_service.py) |
 | 旧Action Executors | 迁移兼容 | Echo与Issue样例仅保留旧效果回归，不进入产品目录 | [executors](../src/harnessix/executors/) | [兼容测试](../tests/integration/test_action_service.py) |
 | 旧Action Storage | 迁移兼容 | SQLite/PostgreSQL Queue、Lease与Claim等待0.9.1f3归档删除 | [storage](../src/harnessix/storage/) | [兼容测试](../tests/integration/test_worker.py)、[PostgreSQL测试](../tests/integration/test_postgres_journal.py) |
-| Sandbox | 已实现/显式装配 | 严格合同、能力探测、固定Container执行、DNS快照、受管Egress、Process监督和Profile Store；当前默认产品未装配，详见[模块设计](modules/sandbox.md) | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py)、[process_runtime.py](../src/harnessix/sandbox/process_runtime.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
+| Sandbox | 当前默认产品的条件能力/其他路径显式装配 | 固定Profile Process已接入`container_strong`、无网络、只读Workspace和资源限制；Selective Egress、Host Sandbox Adapter及MCP其他路径仍显式装配，详见[模块设计](modules/sandbox.md) | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py)、[process_runtime.py](../src/harnessix/sandbox/process_runtime.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
 | Secrets | 默认模型Provider使用/其他路径显式装配 | 环境Source、名称/版本/Target绑定、短生命周期Material、流式脱敏和结构化Guard；不提供Vault、轮换或全局DLP，详见[模块设计](modules/secrets.md) | [provider.py](../src/harnessix/secrets/provider.py)、[redaction.py](../src/harnessix/secrets/redaction.py)、[guard.py](../src/harnessix/secrets/guard.py) | [secrets测试](../tests/secrets/)、[Provider凭据测试](../tests/product_config/test_provider_credentials.py)、[Process输出测试](../tests/processes/test_supervisor.py) |
 | Workspace | 已实现/显式装配 | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验与SQLite Fencing Lease；详见[模块设计](modules/workspace.md) | [contracts.py](../src/harnessix/workspace/contracts.py)、[snapshot.py](../src/harnessix/workspace/snapshot.py)、[windows.py](../src/harnessix/workspace/windows.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
 | Delivery | 当前默认产品/部分能力显式装配 | 默认POSIX Workspace Patch使用Transaction、私有Blob、完整Diff和可恢复文件发布；Git Worktree/Checkpoint/Commit/Push仍为显式装配，详见[模块设计](modules/delivery.md) | [planner.py](../src/harnessix/delivery/planner.py)、[filesystem.py](../src/harnessix/delivery/filesystem.py)、[git.py](../src/harnessix/delivery/git.py)、[git_push.py](../src/harnessix/delivery/git_push.py) | [delivery测试](../tests/delivery/)、[Push Schema测试](../tests/trusted_actions/test_schemas.py) |
-| Trusted Action | 当前默认产品/部分能力显式装配 | 宿主Binding、规范资源、风险Policy、Execution/Approval、Route Hash链、UNKNOWN对账、原子注册、幂等规划及Agent Gateway；默认POSIX产品现注册`apply_patch_batch`，Process及其他扩展仍为显式装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[agent_gateway.py](../src/harnessix/trusted_actions/agent_gateway.py) `RouterBackedAgentActionGateway`、[trusted_action.py](../src/harnessix/delivery/trusted_action.py) | [trusted_actions测试](../tests/trusted_actions/)、[Patch纵向测试](../tests/delivery/test_trusted_action_patch.py)、[Gateway测试](../tests/trusted_actions/test_agent_gateway.py) |
+| Trusted Action | 当前默认产品/部分能力显式装配 | 宿主Binding、规范资源、Policy、Approval、Route Hash链、UNKNOWN对账、原子注册及Agent Gateway；默认组合注册POSIX Patch和验证通过的固定Process Profile，其他扩展仍显式装配，详见[模块设计](modules/trusted-actions.md) | [router.py](../src/harnessix/trusted_actions/router.py) `TrustedActionRouter`、[agent_gateway.py](../src/harnessix/trusted_actions/agent_gateway.py) `RouterBackedAgentActionGateway`、[trusted_action.py](../src/harnessix/delivery/trusted_action.py) | [trusted_actions测试](../tests/trusted_actions/)、[Patch纵向测试](../tests/delivery/test_trusted_action_patch.py)、[Gateway测试](../tests/trusted_actions/test_agent_gateway.py) |
 | MCP | 已实现/显式装配 | 受管stdio/受信进程内Target、不可变目录、调用前Schema漂移、Trusted Action与只读stdio Server；默认产品未装配，详见[模块设计](modules/mcp.md) | [runtime.py](../src/harnessix/mcp/runtime.py)、[actions.py](../src/harnessix/mcp/actions.py)、[store.py](../src/harnessix/mcp/store.py) | [MCP](../tests/mcp/)与[真实Container](../tests/integration/test_container_sandbox.py)测试 |
 | Skill | 已实现/显式装配 | 本地来源、不可变目录、冲突消歧、渐进加载、安全Reader、无正文访问事件及只读Trusted Action；默认产品未装配，详见[模块设计](modules/skills.md) | [runtime.py](../src/harnessix/skills/runtime.py)、[store.py](../src/harnessix/skills/store.py)、[actions.py](../src/harnessix/skills/actions.py) | [Skill测试](../tests/skills/) |
 | Hook | 已实现/显式装配 | Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Action执行Timeout、取消和Interrupted恢复；默认产品未装配且授权/对账仍有缺口，详见[模块设计](modules/hooks.md) | [runtime.py](../src/harnessix/hooks/runtime.py)、[contracts.py](../src/harnessix/hooks/contracts.py)、[store.py](../src/harnessix/hooks/store.py) | [Hook测试](../tests/hooks/) |
@@ -585,7 +601,7 @@ flowchart LR
 | `AgentRuntime` | Thread锁、活动Cancel Token/Task和运行配置 | Async context拥有Session Store；每Thread串行 | Model、Context、Tool、Session及可选Trusted Action Gateway | 各Port/Scoped Runtime |
 | `SQLiteSessionStore` | Event、Migration、运行时Owner | 单进程异步连接；WAL与CAS；Owner进入/退出 | SQLite、Agent Event/Reducer | `SessionStore`其他实现 |
 | `CodingToolRuntime` | Workspace根、固定Git执行文件、Artifact捕获和受限并行能力 | Async context打开/关闭Workspace资源 | Files/Search/Git、Workspace、Artifact | `ScopedToolRuntime`合同 |
-| `ProductActionCatalog` | 能力报告、Definition与模型Descriptor同源集合 | 构造时全量验证；安装时证据必须未过期 | Product Action合同、`TrustedActionRouter` | e3已注册Patch；e4注册Process |
+| `ProductActionCatalog` | Patch与Process能力报告、Definition和模型Descriptor同源集合 | 构造时全量验证；安装时证据必须未过期 | Product Action合同、`TrustedActionRouter` | 新Action类型必须先形成可证明Entry |
 | `RouterBackedAgentActionGateway` | Agent调用身份、Router状态同步和恢复判断 | 无自有持久状态；所有决定回到Router和Session账本 | `TrustedActionRouter`、Descriptor/Binding集合 | `TrustedActionGateway` |
 | `TrustedActionRouter` | Definition Registry与持久Action Route | `plan/decide/execute/reconcile`按Plan身份推进 | Policy、Store、受信Executor | `ExtensionActionPort` |
 | `ActionService` | 旧Registry、Policy、Journal与Worker身份 | 仅迁移兼容；禁止新增调用 | `EffectJournal`、Executor、Observability | 0.9.1f3删除 |
@@ -635,8 +651,8 @@ flowchart LR
 | **execution** | 需要冻结工具、环境、Secret版本、能力和审批Checkpoint，确保批准对象等于执行对象 | Trusted Action → Execution Plan Store → 专用执行器 | 指纹化和重新校验降低漂移；Plan本身不执行，也不自动提供Sandbox隔离 |
 | **patches** | 需要对文件修改做规范化规划、指纹、批次审批和可恢复应用 | Agent/Trusted Action → Patch Plan/Batch → Workspace与Delivery | 审批绑定精确变更并保留Diff；不是所有Patch路径都默认开放 |
 | **delivery** | 需要将文件结果事务化发布、保存Blob/完整Diff并处理部分提交恢复 | Trusted Executor → Delivery Transaction → Workspace/文件系统或显式Git路径 | 多文件发布可逐项对账；普通文件系统不具备真正的多文件原子提交 |
-| **processes** | 需要以预算、进程树Owner、流输出、Lease和状态合同运行外部命令 | Trusted Action → Process Runtime/Supervisor → OS或Sandbox | 可取消、限时并对崩溃保守恢复；未知副作用需对账，默认产品未开放全部Process能力 |
-| **sandbox** | 需要探测并绑定容器/宿主隔离、网络和执行能力 | Product/Execution → Sandbox Evidence/Binding → Process Runtime | 将能力声明变成可校验事实；探测成功不是端到端隔离证明，默认产品未装配 |
+| **processes** | 需要以预算、进程树Owner、流输出、Lease和状态合同运行外部命令 | Trusted Action → Process Runtime/Supervisor → OS或Sandbox | 固定Container Profile已成为条件产品能力；任意Host Process仍不开放，未知副作用必须对账 |
+| **sandbox** | 需要探测并绑定容器/宿主隔离、网络和执行能力 | Product/Execution → Sandbox Evidence/Binding → Process Runtime | 固定Profile已条件装配强Container；探测成功仍不等于全部平台和攻击面的发布证明 |
 | **mcp** | 需要管理远端或进程内MCP目标、工具目录和调用前Schema校验 | MCP配置 → 受管Target/不可变Catalog → Trusted Action或只读Server | 接入异构工具并限制Schema漂移；远端服务仍属外部信任边界，默认未装配 |
 | **skills** | 需要安全发现、消歧和渐进加载本地操作指引 | 本地Skill来源 → 不可变目录/安全Reader → Context或只读Action | 降低一次性加载全部指令的成本；Skill文本不具有权限，默认未装配 |
 | **hooks** | 需要在宿主事件点运行可匹配、可审计、可取消的扩展动作 | 宿主事件/Grant → Hook Runtime → Trusted Action | 以定义、授权、确定Run和恢复账本约束扩展；授权/对账仍有缺口，默认未装配 |
@@ -1167,7 +1183,7 @@ sequenceDiagram
 
 ### 11.6 默认POSIX Workspace Patch时序
 
-本时序是当前默认POSIX产品中`apply_patch_batch`的纵向链。它展示Agent Session投影、Trusted Action Router权威账本、Review Artifact和Delivery Transaction之间的边界。它不适用于Windows默认只读装配，也不代表Process已进入默认产品。
+本时序是当前默认POSIX产品中`apply_patch_batch`的纵向链。它展示Agent Session投影、Trusted Action Router权威账本、Review Artifact和Delivery Transaction之间的边界。它不适用于Windows默认只读装配；固定Profile Process使用下一节独立时序。
 
 ```mermaid
 sequenceDiagram
@@ -1224,7 +1240,7 @@ sequenceDiagram
 **时序说明。** 第一个可恢复事实是Router记录的规范Action Route；Plan、审批和执行都绑定相同的稳定`plan_id`与调用身份。Review Provider先将完整Diff存为`action_review` Artifact，再把引用放入Session审批项；两者之间崩溃可能留下有界孤儿，但没有Session反向引用的Artifact不能被协议客户端读取。用户决定必须匹配`approval_id`及请求指纹。Agent Session负责持久化交互事实和恢复投影，Router中的Approval Checkpoint才授权执行；如果两份账本间发生崩溃，恢复以Router事实校正Session，不重复危险效果。
 
 批准后，Executor重新核验计划及Workspace Snapshot，获取Fencing Lease，并调用与`plan_id`绑定的Delivery Transaction。事务对成员逐个发布并记录游标；取消只在合同允许的成员边界生效。完全匹配预期after镜像才证明成功；部分提交、外部修改或效果不确定分别按`interrupted`、`diverged`或`unknown`处理，不盲目重试。终态回到Agent后先持久化Tool Result，之后才会进入下一次模型请求。核心实现见[Agent Session Runtime](../src/harnessix/agent/trusted_action_runtime.py)、[Gateway](../src/harnessix/trusted_actions/agent_gateway.py)、[Router](../src/harnessix/trusted_actions/router.py)、[Workspace Patch Delivery](../src/harnessix/delivery/trusted_action.py)和[Artifact Store](../src/harnessix/artifacts/sqlite.py)；验证见[Trusted Action Patch测试](../tests/delivery/test_trusted_action_patch.py)、[Gateway恢复测试](../tests/agent/test_trusted_action_runtime.py)及[Router测试](../tests/trusted_actions/test_agent_gateway.py)。
-
+\n### 11.7 固定Profile Process审批、取消与输出时序\n\n```mermaid\nsequenceDiagram\n    participant M as Model\n    participant A as Agent Runtime\n    participant G as Agent Gateway\n    participant R as TrustedActionRouter\n    participant P as Process Executor\n    participant O as Container/Process Owner\n    participant L as Process Lease Store\n    participant F as Artifact Store\n\n    M->>A: run_profile.id(profile, selectors)\n    A->>G: prepare(call)\n    G->>R: plan with verified container context\n    R-->>A: pending approval\n    A-->>A: persist process approval item\n    A->>G: decide(exact fingerprint)\n    G->>R: persist approval checkpoint\n    A->>G: execute\n    G->>R: execute(plan id)\n    R->>P: revalidate and derive execution spec\n    P->>O: run fixed container\n    O->>L: persist lease and output observations\n    alt terminal fact proved\n        L-->>P: exited/failed lease\n        P-->>R: result summary + artifact digest\n        G->>F: publish verified action_output\n        F-->>A: scoped ArtifactRef\n    else cancellation or owner uncertainty\n        R-->>A: unknown\n        A->>G: recover\n        G->>R: reconcile only\n        R->>O: inspect lease; never spawn\n    end\n```\n\nProgram、镜像、环境、网络和资源均不来自模型。输出正文发布晚于Router终态，Session结果引用晚于Artifact发布；任一中间崩溃都\n通过稳定Plan/Process/Artifact身份查询并补齐，不通过重新执行非幂等命令恢复。\n\n
 ## 12. 持久化与事务边界
 
 | 数据集合 | 所有者与主身份 | 持久形式/事务边界 | 权威用途与恢复/保护边界 |
@@ -1426,7 +1442,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 默认POSIX产品已装配Workspace Patch与Delivery事务，但Process、启动全局恢复Owner和外部Action Config未完成 | 已可形成受控修改链，尚不能形成修改—执行测试—启动恢复的完整闭环 | 0.9.1e4～e5 |
+| 默认产品已接入固定Container Process，但外部Action Config安全加载、Doctor报告和启动全局Route恢复未完成 | 代码可形成修改—执行测试链，CLI尚不能配置Profile且重启全局结算未闭环 | 0.9.1e5 |
 | Windows原生只读链已验证且Patch被明确省略，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
@@ -1505,6 +1521,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步0.9.1e4统一Patch/Process产品组合、固定Profile能力探测、Process Owner生命周期、取消只对账和输出Artifact时序；等待全矩阵CI验收 |
 | 46 | 809ed2b1a10f5cb462989a12dddf44f83a9d01ab | 2026-09-17 | 补齐跨模块术语词典、31个包与10个根模块的需求背景/上下游/设计取舍、Agent/Action/Trusted Action领域模型关系图及关键数据身份/持久事实目录；扩展存储权威、事务和恢复边界 |
 | 45 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-17 | 增补经典4+1视图索引、逻辑组件交互图、Agent Turn流程图、开发视图、部署物理视图和场景校验矩阵；新增默认POSIX Workspace Patch跨账本审批/执行时序；同步0.9.1e3全矩阵关闭状态 |
 | 44 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步0.9.1e3默认POSIX Workspace Patch、Review Artifact、Delivery事务、Lease、逐成员取消和状态布局；本地完整门禁通过，等待全矩阵CI |

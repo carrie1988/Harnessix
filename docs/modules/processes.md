@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 4
+version: 5
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -35,6 +35,8 @@ related_tests:
   - tests/processes/test_windows_input.py
   - tests/processes/test_windows_supervisor.py
   - tests/processes/test_test_profiles.py
+  - tests/product_config/test_process_action.py
+  - tests/integration/test_product_process_profile.py
 supersedes: []
 ---
 
@@ -51,7 +53,7 @@ supersedes: []
 | 上游调用者 | 显式宿主装配、Trusted Action/Sandbox、Agent Process专用端口、Eval的`run_tests`闭环 |
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
 | 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；兼容链的执行事实由通用Action Journal和Session/Artifact Store拥有 |
-| 当前产品状态 | 两条进程链均已实现并有测试，但默认产品Bootstrap不广告任意`host.process`；必须由受信宿主显式装配 |
+| 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
 | 代码版本 | `c7449164a2bbf08164472a36c11102dc408ebb15` |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
@@ -1072,7 +1074,7 @@ flowchart LR
 ```
 
 外层客户端`exited`不等于容器实例已结束；只有Sandbox清理证明完成后才能形成容器级确定终态。
-
+\n### 28.1 默认产品固定Profile适配\n\n[`ProductProcessActionExecutor`](../../src/harnessix/product_config/process_action.py)把Agent公共`profile/selectors`调用适配为\n`ExecutionPlanV2 + ContainerExecutionSpec + ProcessSpec`，再复用本节的Supervisor和Lease。`process_id`与Action `plan_id`相同，\n使Router Audit、Execution Approval、Process Lease和输出Artifact可以按同一稳定身份对账。\n\n适配器不会把任意命令交给Host Runtime：Profile在产品启动时固定Program、argv、不可变镜像、网络none、只读Workspace、资源预算\n和Secret版本。取消导致Router先记录`unknown`，Supervisor停止Owner后留下终态Lease；恢复调用`reconcile`读取同一Lease，禁止再次\n调用`run`。终态stdout/stderr只按Lease中的长度、SHA-256、截断和EOF事实重建，不信任内存返回值。\n\n
 ## 29. 并发与生命周期
 
 | 对象 | 并发模型 | 当前约束 |
@@ -1432,7 +1434,7 @@ function agent_observe(plan):
 
 | 当前限制 | 直接影响 | 正确演进方向 |
 |---|---|---|
-| 默认产品不装配Process写能力 | 终端用户不能通过正式默认链运行任意命令/测试 | 0.9产品入口仅装配统一Trusted Action和受控Profile，保持最小权限 |
+| 默认产品只装配固定Container Profile，不开放任意Host Process | 常见测试需由宿主定义Profile，不能临时执行模型生成命令 | e5配置Owner、0.9.5安装体验；保持最小权限 |
 | 0.5与0.7存在两套运行合同 | Agent Saga和跨平台Owner保证无法自动叠加 | 设计兼容Adapter，把Agent调用统一映射到ExecutionPlanV2+Supervisor，不复制审批 |
 | 新链不绑定目标可执行文件身份 | PATH、Workspace或系统文件变化可能在批准后改变实际程序 | 增加Executable Resolution/Identity合同或强制Container固定镜像 |
 | POSIX `/bin/sh`不在实现摘要 | Shell实现漂移不改变Capability | 将Shell绝对路径、inode/摘要和平台版本纳入能力证据 |
@@ -1463,7 +1465,8 @@ function agent_observe(plan):
 - [x] 取消、Task取消、关闭、超时、输入/输出上限和启动失败具有明确终态；
 - [x] 重启不按PID控制、不重复spawn，证据不足进入unknown；
 - [x] Container客户端生命周期复用统一Supervisor并由Sandbox补充实例清理；
-- [ ] Agent默认产品链统一迁移到ExecutionPlanV2 + Supervisor；
+- [x] 固定Container Profile产品链使用ExecutionPlanV2 + Supervisor且恢复不重放；
+- [ ] 旧Process Bridge与历史Eval调用从兼容内核迁移并删除；
 - [ ] POSIX恶意脱组、Owner强杀和长后台Soak达到预冻结阈值；
 - [ ] 可执行文件身份、状态路径、全事件完整性、容量和安全GC闭环；
 - [ ] 产品级后台列表、认证重连、分页输出和低基数Telemetry；
@@ -1510,6 +1513,7 @@ function agent_observe(plan):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile进入默认Trusted Action组合、Plan ID到Process ID绑定、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI验收 |
 | 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步固定Container Process所需的Owner只读输出接口，并把平台能力证明从Supervisor生命周期职责中拆出 |
 | 3 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 将Windows共享冲突重读扩展为最长0.912秒，并为最终I/O失败增加不含路径与正文的低基数诊断 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 根据三平台CI故障增加仅限WinError 5/32的回执有界重读合同及正反故障注入 |

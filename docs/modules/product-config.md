@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 7
+version: 8
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -23,6 +23,7 @@ related_tests:
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
+  - tests/integration/test_product_process_profile.py
   - tests/product_config/test_schemas.py
   - tests/product_ui/test_cli.py
 supersedes: []
@@ -41,10 +42,10 @@ supersedes: []
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
-| 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口和经能力证明的Workspace Patch，在Windows使用原生Handle只读端口并省略Patch；Windows不广告Git读取 |
+| 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
-| 当前完成度 | 0.9.1d、0.9.1e1～e3已关闭；固定Container Process的Profile探测、Executor和输出发布候选代码及首批合同/失败测试已建立，但尚未接入默认产品、补齐完整故障矩阵或完成全矩阵验收，因此0.9.1e4仍在进行中 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e3已关闭；0.9.1e4已完成默认产品统一组合、Process Supervisor生命周期、按Tool上下文、审批执行、输出Artifact和真实固定镜像测试接线，等待本地全量及七任务CI验收后关闭；e5仍待实施 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1685,11 +1686,22 @@ flowchart LR
 - Windows只获得与平台中立的Artifact分页，不获得Patch、Process、Delivery或Git写能力；
 - e1完整实施流程、规划崩溃窗口和后续e2～e5边界见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)。
 
-## 49. 默认Workspace Patch产品组合（0.9.1e3）
+## 49. 默认统一Action产品组合（0.9.1e3～e4）
 
-[`build_workspace_patch_composition`](../../src/harnessix/product_config/action_composition.py)在固定Product Environment上探测POSIX安全文件能力，构造`apply_patch_batch`的Binding、Descriptor、Capability Evidence、Definition、Planner、Executor与Reconciler，并由Catalog进行同源闭合。Windows及缺少`O_DIRECTORY/O_NOFOLLOW/O_CLOEXEC`的平台生成`omitted/platform_not_supported`证据，不安装模型工具。
+[`build_product_action_composition`](../../src/harnessix/product_config/action_composition.py)是当前唯一正式产品组合函数。它把
+Workspace Patch能力和每个固定Process Profile的探测结果转换为同一份`ProductActionCapabilityReport`、同一个
+`ProductActionCatalog`和同一个`RouterBackedAgentActionGateway`。兼容函数`build_workspace_patch_composition`仅保留给e3专项测试，
+不再是默认产品组合根。
 
-[`open_default_workspace_patch_runtime`](../../src/harnessix/product_config/action_runtime.py)拥有Execution Plan Store、Action Audit Store、Delivery Store和Workspace Lease Store。`run_product_stdio`把它与Session/Artifact、只读Tool、Agent Gateway和Protocol组合在同一`ExitStack`中；所有构造成功后才激活配置和开放stdio。状态布局如下：
+Patch在POSIX安全文件能力成立时生成`apply_patch_batch`；Windows及缺少`O_DIRECTORY/O_NOFOLLOW/O_CLOEXEC`的平台生成
+`omitted/platform_not_supported`。Process按Profile逐项探测，任一Engine、镜像、Owner、Sandbox、资源或Secret证据失败只省略
+该Profile，不影响已经验证的Patch或其他Profile。Report和Catalog都按Capability ID稳定排序，并在Router批量注册前断言Verified
+集合与Entry集合精确相等。
+
+[`open_default_product_action_runtime`](../../src/harnessix/product_config/action_runtime.py)使用一个`AsyncExitStack`拥有Execution Plan
+Store、Action Audit Store、Delivery Store、Workspace Lease Store和可选平台Process Supervisor。只有配置包含Profile时才创建
+Supervisor并执行阻塞能力探测；Agent Runtime退出后先关闭Gateway，再关闭Supervisor和Store。`run_product_stdio`在全部组件进入
+生命周期后才激活Product Config并开放stdio。
 
 ```text
 state-root/
@@ -1697,50 +1709,54 @@ state-root/
 ├── execution-plans.db
 ├── action-audit.db
 ├── workspace-leases.db
-└── workspace-transactions/
-    ├── transactions.db
-    └── blobs/
+├── workspace-transactions/
+│   ├── transactions.db
+│   └── blobs/
+└── process-owner/                # 仅配置Process Profile时创建
+    ├── process-leases.db
+    └── runs/<process-id>/
 ```
 
-[`WorkspacePatchReviewProvider`](../../src/harnessix/product_config/workspace_patch_review.py)位于产品组合层，负责跨Delivery和Artifact编排；Artifact包不依赖Delivery，从而避免存储层与执行层形成依赖环。该Provider先持久事务和Blob，再发布Review Artifact，Session最后引用；中途崩溃通过确定性Plan/Artifact身份恢复。
+Gateway的规划上下文按Tool选择：Patch使用固定Workspace的`host_guarded`能力；Process使用Verified Owner的
+`container_strong` Sandbox、Engine Capability、固定环境及Secret版本。Review Provider也按Tool绑定，只有Patch生成Diff；Process
+使用`presentation=process`且不得携带Diff。这个分派关闭了“多Tool Gateway仍把Process交给Patch Review”的组合错误。
 
-e3不读取外部Action Config，也不在启动前扫描所有在途Route。上述能力、Doctor报告及长期Owner由e5实现。真实SDK纵向回归见[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)，底层故障矩阵见[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
+## 50. 固定Container Process默认链（0.9.1e4验收中）
 
-## 50. 固定Container Process候选链（0.9.1e4进行中）
+Process公共输入限制为固定`profile`和有界`selectors`。宿主在
+[`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、平台Owner能力、镜像
+Repo Digest、无网络只读Sandbox、资源上限及Secret版本；失败返回稳定省略原因，不降级到Host Shell。
 
-e4候选链把模型输入限制为固定`profile`和有界`selectors`。宿主在
-[`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、
-平台Owner能力、镜像Repo Digest、无网络只读Sandbox、资源上限及Secret版本；任一证据不成立时返回明确省略原因，
-不降级到Host Shell。
-
-[`process_action.py`](../../src/harnessix/product_config/process_action.py)随后从公共参数确定性派生
-`ContainerExecutionSpec`，复核Action Route中的Tool Binding、资源、Workspace、Environment、Sandbox、Capability和
-Secret Binding，再经`ContainerProcessRuntime`执行。执行异常只有在能证明Lease不存在且错误属于确定前置失败时才返回
-`failed`；其余无法证明效果的情况返回`unknown`，恢复路径只读取Process Ledger并调用Reconcile，不自动重放命令。
+[`process_action.py`](../../src/harnessix/product_config/process_action.py)从公共参数确定性派生`ContainerExecutionSpec`，复核Action Route
+中的Tool Binding、资源、Workspace、Environment、Sandbox、Capability和Secret Binding，再经`ContainerProcessRuntime`执行。
+只有能证明Lease不存在的确定性前置失败才返回`failed/process_preflight_failed`；取消或副作用不可证明先进入`unknown`，恢复只查
+Process Ledger并Reconcile，不再次调用`run`。非零退出、超时和输出上限是具有稳定错误码的可证明终态。
 
 ```mermaid
 flowchart LR
-    Input[profile + selectors] --> Probe[Profile强能力探测]
-    Probe -->|全部成立| Definition[Trusted Action Definition]
-    Probe -->|任一失败| Omitted[能力诚实省略]
-    Definition --> Route[Policy / Approval / Route]
-    Route --> Spec[派生Container + Process合同]
-    Spec --> Owner[ContainerProcessRuntime]
-    Owner --> Ledger[(Process Lease与输出摘要)]
-    Ledger --> Audit[Action Audit摘要]
-    Ledger --> Artifact[action_output正文]
-    Audit --> Result[Session Tool Result]
-    Artifact --> Result
+    Config[Action Config Profiles] --> Owner[Action Runtime Owner]
+    Owner --> Probe[Engine / Image / Owner / Secret Probe]
+    Probe -->|verified| Catalog[统一Catalog]
+    Probe -->|omitted| Report[省略事实]
+    Catalog --> Gateway[按Tool Context / Review / Output]
+    Gateway --> Router[Policy / Approval / Audit]
+    Router --> Executor[ProductProcessActionExecutor]
+    Executor --> Runtime[ContainerProcessRuntime]
+    Runtime --> Ledger[(Process Lease与输出摘要)]
+    Ledger --> Artifact[action_output JSONL]
+    Artifact --> Result[Session Tool Result引用]
 ```
 
-终态正文由Owner根据Lease中的stdout/stderr摘要重建，再由
-[`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py)查询优先发布。Router Audit只保存输出和Artifact
-摘要，Session保存公共摘要及Artifact引用，原始输出文件不直接暴露给模型。
+终态正文由Owner按Lease中的stdout/stderr摘要重建，再由
+[`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py)查询优先发布。Router Audit只保存公开摘要Hash和Artifact
+SHA-256，Session只保存公共摘要及Artifact引用。Artifact发布再次校验Thread、Turn、Call、Workspace Scope、批准的Process ID和
+正文摘要；提交确认丢失时返回原收据，不重复插入或刷新TTL。
 
-当前边界必须明确：这些模块尚未由`run_product_stdio`装配。
-[`test_process_action.py`](../../tests/product_config/test_process_action.py)已覆盖危险Selector拒绝、完整能力证明、Route/审批、
-确定性Spawn前失败和镜像证明失败省略；取消、超时、崩溃、提交确认丢失、Reconcile不重放及真实固定镜像仍待补齐。
-因此本节只描述候选源码合同，不构成默认产品完成声明；完成后还必须回写完整测试符号、三平台能力矩阵、CI证据和默认能力目录。
+`run_product_stdio(action_config=...)`已经持有Profile探测、Definition安装和Supervisor生命周期；缺省配置仍不包含Profile，因此
+现有CLI不会在e5安全加载外部Action Config前隐式扩大权限。专项测试覆盖危险Selector、能力证明与省略、前置失败、非零退出、
+超时、输出上限、取消后Reconcile不重放、Agent审批、Artifact提交确认丢失及Server目录接线。Linux Container CI还执行
+[`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)，使用固定Digest镜像验证批准后真实运行、只读
+Workspace和输出分页。七任务CI结果回写前，本切片保持验收中。
 
 ## 51. 相关文档
 
@@ -1765,6 +1781,7 @@ flowchart LR
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 8 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 默认产品组合扩展为Patch与固定Container Process共享的单一Catalog/Gateway，增加Supervisor生命周期、按Tool上下文、故障恢复与真实镜像验收接线 |
 | 7 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 登记固定Container Process候选链的能力证明、执行、UNKNOWN、输出Artifact及尚未完成的产品装配和专项测试边界 |
 | 6 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 装配默认POSIX Workspace Patch、Action/Delivery/Lease状态Owner、Review Provider及Windows诚实省略 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1 Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |

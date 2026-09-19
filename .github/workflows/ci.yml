@@ -132,7 +132,10 @@ jobs:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
       - run: docker pull "$HARNESSIX_TEST_CONTAINER_IMAGE"
-      - run: uv run pytest tests/integration/test_container_sandbox.py
+      - run: >-
+          uv run pytest
+          tests/integration/test_container_sandbox.py
+          tests/integration/test_product_process_profile.py
 
   documentation:
     runs-on: ubuntu-latest

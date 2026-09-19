@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import os
+import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from uuid import uuid4
 
@@ -16,9 +18,14 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
+from harnessix.product_config.action_contracts import (
+    build_product_action_config,
+    build_product_process_profile,
+)
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
+from harnessix.product_config.process_profile import probe_product_process_profile
 from harnessix.product_config.server import run_product_stdio
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.protocol.contracts import ApprovalRespondParams, PublicApprovalDecision
@@ -129,6 +136,98 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
         assert "apply_patch_batch" in tool_names
     else:
         assert "apply_patch_batch" not in tool_names
+
+
+@pytest.mark.skipif(os.name != "posix", reason="固定Container Profile产品接线使用POSIX Owner")
+async def test_product_server_catalog_includes_only_verified_process_profile(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+    engine = tmp_path / "docker"
+    engine.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    engine.chmod(0o755)
+    image = "registry.example/harnessix/tests@sha256:" + "a" * 64
+    profile = build_product_process_profile(
+        profile_id="unit-tests",
+        version="2026.09.1",
+        description="在固定容器中运行单元测试",
+        container_engine=str(engine),
+        image=image,
+        program="/bin/true",
+    )
+
+    def runner(argv: Sequence[str], _timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[1] == "version":
+            output = "28.3.2|28.3.2\n"
+        elif argv[1] == "info":
+            output = '["name=seccomp"]\n'
+        else:
+            output = json.dumps([image]) + "\n"
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    def probe(profile, supervisor, secrets):
+        return probe_product_process_profile(
+            profile,
+            supervisor,
+            secrets,
+            probe_runner=runner,
+        )
+
+    class TrackingBundle(FakeProvider):
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    bundle = TrackingBundle()
+
+    async def build(*_args: object, **_kwargs: object) -> TrackingBundle:
+        return bundle
+
+    async def drive(
+        server: AgentProtocolServer,
+        _input_stream: object,
+        _output_stream: object,
+    ) -> None:
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+        thread = await client.create_thread(str(workspace), request_id="create-process")
+        await client.start_turn(thread.thread_id, "报告能力", request_id="start-process")
+        for _ in range(100):
+            current = await client.get_thread(thread.thread_id)
+            if current.latest_turn is not None and current.latest_turn.status == "completed":
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("默认产品Turn未在有界时间内完成")
+        await client.close()
+
+    monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
+    monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
+    monkeypatch.setattr(
+        "harnessix.product_config.action_runtime.probe_product_process_profile",
+        probe,
+    )
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+        action_config=build_product_action_config(process_profiles=(profile,)),
+    )
+
+    tool_names = {tool.name for tool in bundle.requests[0].tools}
+    assert {"apply_patch_batch", "run_profile.unit-tests"} <= tool_names
+    assert (state / "process-owner/process-leases.db").is_file()
 
 
 @pytest.mark.skipif(os.name != "posix", reason="安全Workspace写端口只在POSIX广告")

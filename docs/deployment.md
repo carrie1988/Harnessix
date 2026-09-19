@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
+version: 6
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -59,7 +59,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
 | 默认Workspace读取 | macOS/Linux/Windows已实现 | 启动前按平台能力证明，失败时不开放协议 |
 | 默认Workspace Patch | POSIX已实现 | 经Trusted Action、Review Artifact、审批和Delivery事务执行 |
-| 固定Container Process | 正在接入 | 只有镜像、Sandbox、Owner和恢复能力全部证明后才广告 |
+| 固定Container Process | 条件产品能力，验收中 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告；CLI加载由e5补齐 |
 | Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
 | 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
@@ -246,12 +246,12 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 | 产品组合根 | [`product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
 | Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Agent SDK Transport | [`sdk/agent_client.py`](../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport` | [`app_server测试`](../tests/app_server/) |
-| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `open_default_workspace_patch_runtime` | [`product_config测试`](../tests/product_config/) |
+| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `open_default_product_action_runtime` | [`product_config测试`](../tests/product_config/)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
 | 单一产品面门禁 | 生产源码树 | 旧内核Import集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
 
 ## 13. 当前限制与后续工作
 
-- 0.9.1e固定Container Process和统一启动恢复Owner尚未完成；
+- 0.9.1e固定Container Process已完成产品接线并等待CI；外部Action Config、Doctor和统一启动恢复Owner尚未完成；
 - 0.9.1f旧Process、Git Push和Eval调用方尚未全部迁移，兼容内核仍存在源码与测试；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 5
+version: 6
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -45,7 +45,7 @@ supersedes: []
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
-| 默认产品装配 | 0.9.1e1已在`run_product_stdio`创建Session绑定Store，并注入Tool、Agent和Scoped Protocol Reader；Patch/Process Artifact仍随对应Action能力待装配 |
+| 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
 
 Artifact不是通用对象存储，也不是外部副作用的事实账本。它保存模型或客户端需要按页读取的有界证据；
@@ -645,6 +645,7 @@ Process ID、Workspace Scope、记录数、正文摘要和Artifact配额，并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 将`action_output`接入默认固定Profile Process链，并验证提交确认丢失只返回原收据；等待全矩阵CI |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步Action Output发布Mixin、正文校验和引用授权的职责拆分，未改变Artifact身份及失败语义 |
 | 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加`action_output`用途、Trusted Process终态归档、Session反向授权和migration25兼容链 |
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加`action_review`用途、确定性发布、Session反向授权、孤儿不可读与migration24兼容链 |

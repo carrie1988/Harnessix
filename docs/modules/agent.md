@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 6
+version: 7
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -643,7 +643,7 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 项目 | 当前边界/影响 | 后续归属 |
 |---|---|---|
-| 默认产品已装配受控Workspace Patch，但没有Process和启动全局恢复闭环 | 已可安全修改文本文件，仍不能等同修改—测试—恢复完整Coding Agent | 0.9.1e4～e5 |
+| 默认产品已装配受控Patch和Verified固定Container Process，但外部Action Config与启动全局恢复未闭环 | 代码链可修改并测试，CLI仍不能配置Profile或在启动时结算全部旧Route | 0.9.1e5 |
 | Windows默认产品仅具原生四项只读Tool | Patch被明确省略，Git、写入和Process仍未开放 | 0.9.5 |
 | 本地SQLite单Owner | 不支持跨主机Thread并发和云端HA | 1.x候选，不提前侵入1.0 |
 | 数据保留、导出和删除策略未完成发布验收 | Session可能随长期使用增长 | 0.9.5和1.0发布门禁 |

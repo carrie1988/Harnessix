@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
+version: 8
 code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
 owners:
   - core
@@ -37,6 +37,7 @@ related_tests:
   - tests/delivery/test_filesystem.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/integration/test_container_sandbox.py
+  - tests/integration/test_product_process_profile.py
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
@@ -48,20 +49,20 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 需求 | 让Artifact、Patch、Process和Delivery通过统一Trusted Action链进入默认Coding Agent能力目录 |
-| 当前问题 | 默认产品只装配只读Tool；高风险能力分散在专用Bridge；Agent审批与Router审批没有统一 |
+| 变更前问题 | 默认产品只装配只读Tool；高风险能力分散在专用Bridge；Agent审批与Router审批没有统一 |
 | 目标结果 | 能力证明同时生成广告目录和可执行注册；多文件Patch真实事务发布；固定Profile Process在强Sandbox运行；完整Artifact与重启Reconcile可用 |
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现提交`71a4794`及验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；e4已建立固定Container Process候选实现和首批测试，但尚未接入默认产品或补齐完整专项矩阵，e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1～e3已由对应全矩阵CI关闭；e4已完成默认产品统一Catalog、固定Profile探测、Process Owner生命周期、审批执行、输出Artifact和真实固定镜像测试接线，正在完成本地全量及七任务CI验收；e5的外部Action Config加载、启动全局恢复和Doctor能力报告仍待实施 |
 
 ## 2. 需求背景与证据
 
 ### 2.1 用户可见缺口
 
-0.9.1a～0.9.1d已经交付可恢复客户端、完整交互、配置/Doctor以及Windows原生只读链。用户能让模型理解仓库，却不能在默认
-产品中完成一个真实的“修改→审批Diff→写入→运行测试→读取结果”循环。代码库中的Patch/Process/Delivery仅能通过示例或自定义
-组合根使用，不能作为产品能力。
+0.9.1e实施前，0.9.1a～0.9.1d已经交付可恢复客户端、完整交互、配置/Doctor以及Windows原生只读链。用户能让模型理解仓库，
+却不能在默认产品中完成一个真实的“修改→审批Diff→写入→运行测试→读取结果”循环。代码库中的Patch/Process/Delivery当时仅能
+通过示例或自定义组合根使用，不能作为产品能力。
 
 ### 2.2 生产风险
 
@@ -83,7 +84,7 @@ supersedes: []
 - [`WorkspaceTransactionRuntime`](../../src/harnessix/delivery/filesystem.py)已有POSIX Fencing和部分效果恢复；
 - [`ContainerProcessRuntime`](../../src/harnessix/sandbox/process_runtime.py)已有固定容器执行合同；
 - [`SQLiteArtifactStore`](../../src/harnessix/artifacts/sqlite.py)已有事务发布、范围与分页读取；
-- [`run_product_stdio`](../../src/harnessix/product_config/server.py)证明默认组合仍未使用上述能力。
+- e1实施前的[`run_product_stdio`](../../src/harnessix/product_config/server.py)基线证明默认组合当时尚未使用上述能力；e3、e4已在同一入口完成Patch与固定Container Process接线。
 
 ## 3. 设计目标、非目标与验收标准
 
@@ -1520,8 +1521,9 @@ Action标为`unknown`。恢复路径只调用`reconcile`，不会继续提交剩
 
 ### 22.25 默认产品生命周期与状态布局
 
-[`open_default_workspace_patch_runtime`](../../src/harnessix/product_config/action_runtime.py)在
-[`run_product_stdio`](../../src/harnessix/product_config/server.py)内部拥有以下同步Store，并通过`ExitStack`保证部分构造失败也会逆序关闭：
+[`open_default_product_action_runtime`](../../src/harnessix/product_config/action_runtime.py)在
+[`run_product_stdio`](../../src/harnessix/product_config/server.py)内部拥有以下同步Store和可选异步Process Supervisor，并通过
+`AsyncExitStack`保证部分构造失败也会逆序关闭：
 
 ```text
 <state-root>/
@@ -1530,14 +1532,18 @@ Action标为`unknown`。恢复路径只调用`reconcile`，不会继续提交剩
 ├── execution-plans.db          # Execution Plan与批准Checkpoint
 ├── action-audit.db             # Route快照和连续Hash链事件
 ├── workspace-leases.db         # Workspace跨进程Fencing
-└── workspace-transactions/
+├── workspace-transactions/
     ├── transactions.db         # Delivery计划、状态与成员游标
     └── blobs/                  # SHA-256寻址的目标正文
+└── process-owner/              # 仅配置固定Process Profile时创建
+    ├── process-leases.db
+    └── runs/<process-id>/
 ```
 
-构造顺序为Provider Bundle→Session/Artifact→只读Tool Runtime→Action Stores/Environment/Catalog/Gateway→Agent Runtime→配置
-CAS激活→stdio。任一Store、目录、Gateway或Agent构造失败都不会激活配置或开放协议。e3暂不在启动前调用
-`router.recover_interrupted()`；产品级Owner、在途Route扫描和Doctor/Preflight状态检查由e5统一关闭，不能把e3局部恢复误写成
+构造顺序为Provider Bundle→Session/Artifact→只读Tool Runtime→Action Stores→可选Process Supervisor/Profile探测→统一
+Environment/Catalog/Gateway→Agent Runtime→配置CAS激活→stdio。任一Store、目录、Supervisor、Gateway或Agent构造失败都不会
+激活配置或开放协议。e4仍不在启动前调用
+`router.recover_interrupted()`；产品级Owner、在途Route扫描和Doctor/Preflight状态检查由e5统一关闭，不能把e3/e4局部恢复误写成
 完整启动恢复能力。
 
 ### 22.26 SDK、协议与模型历史
@@ -1591,49 +1597,122 @@ macOS、Windows、PostgreSQL、固定镜像Container与Documentation七个任务
 
 因此e3已经独立关闭，但0.9.1e和0.9.1仍保持进行中。
 
-### 22.29 0.9.1e4候选实现与未关闭边界
+### 22.29 0.9.1e4默认产品实现与验收边界
 
-e4候选代码已经把固定Process Profile从抽象计划落到四个明确职责，但尚未形成默认产品纵向切片：
+e4把固定Process Profile接入与Workspace Patch相同的产品内Trusted Action Runtime，不新增HTTP、Worker或第二套审批服务。
+实际组合根由[`open_default_product_action_runtime`](../../src/harnessix/product_config/action_runtime.py)持有四类Action Store和
+可选Process Supervisor；[`build_product_action_composition`](../../src/harnessix/product_config/action_composition.py)从同一
+`ProductActionConfigV1`、Patch能力和Profile探测结果构造一个Capability Report、一个Catalog、一个Router注册集合和一个
+Agent Gateway。
 
-| 职责 | 源码 | 关键符号 | 当前结论 |
+```mermaid
+flowchart TD
+    Server[run_product_stdio] --> Config[ProductActionConfigV1]
+    Server --> Runtime[open_default_product_action_runtime]
+    Runtime --> Stores[Plan / Audit / Delivery / Workspace Lease]
+    Runtime -->|存在Profile时| Supervisor[POSIX或Windows Process Supervisor]
+    Supervisor --> Probe[Engine + Image + Sandbox + Secret Probe]
+    Config --> Composition[build_product_action_composition]
+    Probe --> Composition
+    Composition --> Report[Capability Report]
+    Composition --> Catalog[ProductActionCatalog]
+    Catalog --> Router[TrustedActionRouter]
+    Composition --> Gateway[RouterBackedAgentActionGateway]
+    Gateway --> Agent[AgentRuntime]
+    Agent --> Protocol[Agent Protocol / SDK / TUI]
+```
+
+#### 22.29.1 组合接口与生命周期
+
+| 符号 | 输入 | 输出/所有权 | 关键不变量 |
 |---|---|---|---|
-| 强能力证明 | [`process_profile.py`](../../src/harnessix/product_config/process_profile.py) | `_verified_product_process_profile`、`probe_product_process_profile` | Engine、镜像、Owner、Sandbox、资源和Secret全部成立才返回Verified Profile |
-| Route与执行 | [`process_action.py`](../../src/harnessix/product_config/process_action.py) | `resolve_run_profile`、`ProductProcessActionExecutor` | 公共输入只有Profile和Selectors；执行合同由宿主派生并逐字段复核 |
-| Owner与恢复 | [`process_runtime.py`](../../src/harnessix/sandbox/process_runtime.py)、[`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `ContainerProcessRuntime`、`status`、`output`、`reconcile` | Container身份和Process Lease持有副作用事实；恢复不重放命令 |
-| 终态正文 | [`trusted_output.py`](../../src/harnessix/processes/trusted_output.py)、[`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py) | `build_trusted_process_output`、`publish_action_output` | 原始输出按Lease摘要重建为有界JSONL，再查询优先发布 |
-| Agent投影 | [`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py) | `terminal_result`、`build_result` | Router Audit摘要、Provider正文和Session引用必须一致 |
+| `open_default_product_action_runtime` | State Root、Workspace、共享Artifact Store、Secret Provider、Action Config | 异步上下文中的`ProductActionComposition` | Store先进入Owner；有Profile才创建Supervisor；Gateway/Agent先关闭，随后Supervisor和Store逆序关闭 |
+| `_probe_process_profiles` | 严格配置、唯一平台Supervisor、Secret Provider | 与配置同顺序的Probe Result | 探测放入工作线程；每个失败转成Profile级`omitted`，不构造Host执行路径 |
+| `build_product_action_composition` | Patch环境、全部Probe Result、Router、Delivery/Artifact依赖 | Report、Catalog、可选Gateway | Probe Profile序列必须与配置逐项相等；Verified集合必须与Catalog Entry集合相等 |
+| `_planning_context` | Thread Workspace、Tool名称、Verified Owner映射 | Patch或Process专属`ActionPlanningContext` | Workspace身份始终相同；Process使用自己的Container Sandbox、Capability、环境及Secret版本 |
+| `RouterBackedAgentActionGateway` | 同源Descriptor、按Tool的Presentation/Review/Output Provider | Agent唯一高风险入口 | Patch才生成Review Diff；Process不调用Patch Review，只由输出Provider发布终态正文 |
 
-候选执行数据流为：
+`run_product_stdio`新增内部组合参数`action_config`。缺省值仍是仅开启Workspace Patch且不含Process Profile，因此现有CLI、配置
+v2摘要和启动行为保持兼容；e5再负责外部Action Config文件的安全加载、迁移、诊断和活动版本Owner。传入配置在打开Store前经
+严格JSON往返复核，不能以`model_construct`绕过摘要和字段约束。
+
+#### 22.29.2 启动、规划与执行时序
 
 ```mermaid
 sequenceDiagram
-    participant A as Agent Gateway
+    participant S as Product Server
+    participant O as Action Runtime Owner
+    participant P as Profile Probe
+    participant C as Product Composition
+    participant G as Agent Gateway
     participant R as TrustedActionRouter
-    participant E as ProductProcessActionExecutor
-    participant C as ContainerProcessRuntime
+    participant E as Process Executor
     participant L as Process Ledger
-    participant O as Action Output Artifact
-    A->>R: plan(profile, selectors)
-    R-->>A: pending approval + immutable plan
-    A->>R: decide(approved)
-    A->>R: execute(plan id)
-    R->>E: execute(route, public arguments)
-    E->>E: re-resolve resources and derive execution spec
-    E->>C: run(plan, checkpoint, profile, spec)
-    C->>L: persist lease before/through effect
-    C-->>E: terminal lease or uncertain failure
-    E-->>R: bounded summary + artifact digest
-    R-->>A: terminal audit event
-    A->>O: rebuild and publish exact output body
-    O-->>A: artifact reference
+    participant A as Action Output Artifact
+
+    S->>O: open(state, workspace, artifacts, secrets, config)
+    O->>O: open Plan/Audit/Delivery/Lease Stores
+    opt config包含Process Profile
+        O->>O: enter platform Process Supervisor
+        O->>P: probe every fixed profile
+        P-->>O: verified or omitted(reason)
+    end
+    O->>C: build one report/catalog/gateway
+    C->>R: atomically install all verified definitions
+    C-->>S: immutable ProductActionComposition
+    G->>R: plan(profile, selectors, process context)
+    R-->>G: pending approval + immutable plan
+    G->>R: persist exact approval checkpoint
+    G->>R: execute(plan id)
+    R->>E: execute(route, decoded public arguments)
+    E->>L: derive spec and run through Container owner
+    L-->>E: terminal lease or uncertain state
+    E-->>R: bounded summary + output body digest
+    R-->>G: terminal audit fact
+    G->>A: rebuild exact body and query-first publish
+    A-->>G: scoped artifact reference
 ```
 
-失败语义不能因后续装配而改变：Profile证据不足时省略Tool；Spawn前可证明失败且Lease不存在时返回`failed`；
-Lease存在、取消、宿主退出或输出不可证明时返回`unknown`；恢复来源的不可证明结果进入`manual_intervention`；
-非零退出是可观察的Process业务结果，不是传输层异常；Artifact已提交但Session结果未提交时正文保持不可读。
+公共输入继续只有`profile`和受限`selectors`。Program、固定argv、镜像Digest、Engine绝对路径、网络、只读Workspace、资源预算、
+环境和Secret引用均由宿主持有。执行前再次核对Route中的Binding、资源、Workspace、Environment、Sandbox、Capability与Secret；
+Engine文件身份、镜像或批准事实漂移会在Spawn前失败关闭。
 
-当前不允许勾选e4，原因是默认`run_product_stdio`尚未拥有Process Profile探测、Definition安装和Supervisor生命周期。
-[`test_process_action.py`](../../tests/product_config/test_process_action.py)已覆盖参数攻击、完整能力证明、镜像省略、Route审批和
-确定性Spawn前失败；审批后漂移、取消、超时、输出上限、提交确认丢失、真实宿主退出、Reconcile不重放、三平台省略及固定镜像
-隔离仍待补齐。下一步必须先完成上述测试和产品Owner接线，再执行Ruff、Mypy、Schema、文档、全量Pytest及
-Linux/macOS/Windows/Container矩阵；不能仅凭候选模块可导入或现有回归通过宣称生产完成。
+#### 22.29.3 持久化与失败/恢复语义
+
+| 故障点 | Router/Session结果 | 持久事实 | 是否重放命令 |
+|---|---|---|---:|
+| Engine、Daemon、镜像或Secret探测失败 | Tool不进入模型目录，报告`omitted/<reason>` | Capability Report内省略事实 | 否 |
+| 批量Catalog任一Entry、Probe顺序或配置摘要不一致 | 启动失败，stdio不开放 | 已打开Store保留，未发布半目录 | 否 |
+| 批准前参数、Workspace或合同漂移 | 稳定失败，不启动Process | Route、Plan和审批事实保留 | 否 |
+| Spawn前确定失败且不存在Lease | `failed/process_preflight_failed` | Action Audit终态 | 否 |
+| 非零退出 | `failed/process_nonzero_exit`并发布输出Artifact | Process Lease、Audit摘要、Artifact | 否 |
+| 超时或输出上限 | `failed/process_timeout`或`process_output_limit` | Owner终态、摘要和有界输出 | 否 |
+| Task取消 | Router先记`unknown`；Owner停止并形成Lease后由Reconcile结算 | Audit UNKNOWN + Process Lease | 否 |
+| 执行宿主丢失或输出不可证明 | `unknown`；恢复仍不可证明则`manual_intervention` | Audit、Lease或缺失证据 | 否 |
+| Artifact提交确认丢失 | 查询同一Call/Plan确定性Artifact并返回原收据 | 单一`action_output`行 | 否 |
+| Artifact已发布、Session结果未提交 | 正文保持不可读；Session恢复从Router终态重新投影 | Artifact正文 + Session事件缺口 | 否 |
+| 产品关闭 | Agent/Gateway停止接收后关闭Supervisor，未终态Handle执行有界清理 | Store与Lease保留 | 否 |
+
+Process正文使用规范JSONL：首记录是公开摘要，后续记录是二进制安全Base64分片。Router Audit仅保存公开摘要Hash和Artifact
+SHA-256；Artifact Store在同一Session事务边界校验Thread、Turn、Call、批准的Process ID和Workspace Scope。提交确认丢失时按
+稳定Artifact ID查询，不生成第二份正文或刷新TTL。
+
+#### 22.29.4 测试与真实验证
+
+| 测试入口 | 覆盖事实 |
+|---|---|
+| [`test_process_action.py`](../../tests/product_config/test_process_action.py) | Selector攻击、能力证明、镜像省略、配置/Probe集合闭合、前置失败、非零退出、超时、输出上限、取消后Reconcile不重放、完整Agent审批、输出Artifact及提交确认丢失 |
+| [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | `run_product_stdio`真实持有Process Supervisor，模型目录同时出现Patch与Verified Profile，EOF和旧产品链保持兼容 |
+| [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py) | CI固定Digest镜像中的真实产品Profile：批准前不执行、批准后只读无网络Container运行、输出分页、Workspace未修改 |
+| [`test_supervisor.py`](../../tests/processes/test_supervisor.py)、[`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py) | Owner硬退出、控制丢失、取消、超时、输出限制和重启只对账 |
+| [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) | 固定镜像、网络none、只读挂载、资源限制、Secret脱敏和Container清理 |
+
+实现完成后必须通过Ruff、Mypy、Schema生成、文档/链接/Mermaid、可读性、全量Pytest以及Linux Python 3.12/3.13、macOS、
+Windows、PostgreSQL、固定镜像Container和Documentation七任务CI。CI结果回写前，e4保持“实现完成、验收进行中”，不得在
+路线图中勾选。
+
+#### 22.29.5 与e5及0.9.1f的边界
+
+本切片不实现外部Action Config文件发现、权限校验、活动版本CAS、Doctor修复动作和产品启动时全局扫描旧Route；这些属于e5。
+本切片也不恢复独立Action HTTP/Worker：Process、Patch、Policy、Approval、Audit、UNKNOWN和Reconcile均位于单一Coding Agent
+产品进程。旧Process Bridge、Git Push和Eval迁移及兼容内核物理删除继续分别由0.9.1f2、f3完成。

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 8
+version: 9
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -19,6 +19,8 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_process_action.py
+  - tests/integration/test_product_process_profile.py
   - tests/trusted_actions/test_schemas.py
   - tests/mcp/test_runtime_actions.py
   - tests/mcp/test_server.py
@@ -42,7 +44,7 @@ supersedes: []
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
 | 代码版本 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` |
-| 当前完成度 | 核心路由库、MCP/Skill/Hook适配和Git Push证明已实现；e1完成目录与规划，e2完成Agent Gateway与双账本恢复，e3已把POSIX Workspace Patch、Review Artifact和Delivery Executor接入默认产品；Process、全局启动恢复和公网多租户控制面仍未完成 |
+| 当前完成度 | 核心路由库及扩展适配已实现；e1～e3完成目录、Gateway与POSIX Patch；e4已把验证通过的固定Container Process、按Tool Provider和输出Artifact接入默认产品，等待全矩阵CI；启动全局恢复仍属e5 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1192,7 +1194,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | 默认产品仅装配Workspace Patch，尚无Process/Sandbox与启动全局恢复 | 可完成受控文件写，仍不能形成完整修改—测试—恢复体验 | 0.9.1e4～e5 |
+| P0 | 默认产品已装配Workspace Patch和验证通过的固定Container Process，但外部Action Config与启动全局恢复尚未闭环 | 内部组合可形成受控修改—测试链，CLI仍不能配置Profile，进程重启后也未全局结算旧Route | 0.9.1e5 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1352,7 +1354,7 @@ Tool合同或Binding时稳定失败，不能借幂等入口替换已持久操作
 
 [`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖不重抓Workspace、跨Store故障修复和Invocation冲突；
 [`test_action_catalog.py`](../../tests/product_config/test_action_catalog.py)覆盖批量安装原子性、命名空间、过期与漂移。0.9.1e2已经建立
-唯一Agent Gateway和审批投影，但尚未把Router及高风险定义注入默认产品；e3已使Patch通过同源Catalog广告；e4的Process仍必须遵守同一约束。
+唯一Agent Gateway和审批投影，但尚未把Router及高风险定义注入默认产品；e3已使Patch通过同源Catalog广告；e4的固定Process Profile也由同一Verified集合和批量安装约束生成。
 
 ## 43. Agent Gateway与审批权威（0.9.1e2）
 
@@ -1410,7 +1412,7 @@ transition audit using checkpoint.decided_at
 
 [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py)覆盖目录漂移、重复Prepare、Review、批准、拒绝、调用漂移、取消和Reconcile；[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖决定双Store崩溃窗口。该切片没有改变Router的公共包级导出，也没有引入新的一级包依赖边或超大符号。
 
-默认POSIX产品现把Gateway传给`AgentRuntime`并安装Patch/Delivery Executor；Process/Sandbox Executor和产品级启动恢复Owner分别由0.9.1e4～e5继续实现。
+默认产品现把单一Gateway传给`AgentRuntime`，同时安装可用的Patch/Delivery和固定Container Process Definition；产品级启动全局恢复Owner由0.9.1e5继续实现。
 
 ## 44. 默认Workspace Patch Route（0.9.1e3）
 
@@ -1434,11 +1436,11 @@ stateDiagram-v2
 ```
 
 专项测试[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖Route、审批、执行与恢复；默认模型目录和SDK链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖。e3不改变MCP/Skill/Hook/Git Push的显式装配状态。
-
-## 45. 变更记录
+\n## 45. 固定Container Process Route（0.9.1e4）\n\n每个Verified Profile生成唯一`run_profile.<profile-id>` Definition、Descriptor、Binding和Capability Evidence。多Tool Gateway的\nReview与Output Provider改为按Tool映射：`apply_patch_batch`调用Patch Review，Process不产生Diff；Process终态才调用\n`ProductProcessOutputProvider`。单Provider构造方式仍兼容既有单Tool宿主。\n\n```mermaid\nstateDiagram-v2\n    [*] --> omitted: Profile能力不足\n    [*] --> pending_approval: verified + plan\n    pending_approval --> ready: exact approval\n    pending_approval --> denied: rejected\n    ready --> running: Router claim\n    running --> succeeded: exit 0 + output proved\n    running --> failed: nonzero/timeout/output limit\n    running --> unknown: cancel/owner uncertainty\n    unknown --> reconciling: inspect Process Lease\n    reconciling --> succeeded: terminal exit 0 proved\n    reconciling --> failed: terminal failure proved\n    reconciling --> manual_intervention: state/output unprovable\n```\n\nRouter的`execute`仍不接收模型命令；Executor根据宿主Profile和批准Selectors派生Container/Process合同。Task取消后Router保存\nUNKNOWN并重抛取消，Process Owner负责停止和持久化Lease；`recover`只进入Router Reconcile。输出Provider同时核对Audit中的公共输出\n摘要和Artifact SHA，再由Session作用域Store发布JSONL正文。\n\n验证见[`test_process_action.py`](../../tests/product_config/test_process_action.py)、\n[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和\n[`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)。外部Action Config加载与启动时全局Route扫描不在e4。\n\n## 46. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Process同源目录、按Tool Review/Output、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI |
 | 8 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 将Agent Gateway终态输出核对与Tool Result投影拆为独立职责，保持Router、审批和UNKNOWN语义不变 |
 | 7 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 将POSIX Workspace Patch、Review、Delivery Executor和Lease接入默认Router，保持UNKNOWN只对账与Windows省略 |
 | 6 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 交付0.9.1e2 Agent Gateway薄门面、目录精确核对、确定性Invocation、Router先行审批Checkpoint、Session补投影和UNKNOWN只对账恢复；默认高风险目录仍未开放 |

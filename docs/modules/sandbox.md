@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 3
+version: 4
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -22,6 +22,8 @@ related_tests:
   - tests/sandbox/test_process_runtime.py
   - tests/sandbox/test_profile_store.py
   - tests/integration/test_container_sandbox.py
+  - tests/integration/test_product_process_profile.py
+  - tests/product_config/test_process_action.py
 supersedes: []
 ---
 
@@ -33,13 +35,13 @@ supersedes: []
 |---|---|
 | 源码包 | [`src/harnessix/sandbox`](../../src/harnessix/sandbox/) |
 | 当前职责 | 定义强Container、网络策略、能力探测和执行绑定合同；将已批准Execution Plan物化为固定Docker/Podman兼容argv；提供受管出口授权、Container Process监督适配和不可变Profile存储 |
-| 非职责 | 不负责Agent决策、Tool Policy、审批签发、Workspace锁、Secret来源、通用Process底层实现、镜像构建/签名、Container Daemon运维、默认产品装配或云端远程执行 |
-| 上游调用者 | Execution Plan构建方、显式装配的可信Action、MCP Container Target和测试/宿主集成 |
+| 非职责 | 不负责Agent决策、Tool Policy、审批签发、Workspace锁、Secret来源、通用Process底层实现、镜像构建/签名、Container Daemon运维或云端远程执行；产品装配由`product_config`拥有 |
+| 上游调用者 | 默认产品固定Process Profile、Execution Plan构建方、显式可信Action、MCP Container Target和测试/宿主集成 |
 | 下游依赖 | `execution`合同、`workspace`快照、`secrets`短生命周期环境、`processes` Supervisor、Docker/Podman兼容CLI、DNS和TCP |
 | 持久化 | `SQLiteSandboxProfileStore`按Profile Digest保存不可变JSON；Execution Plan和Process Lease由其他模块保存 |
 | 平台 | 合同与确定性测试覆盖POSIX/Windows；真实Container隔离只在Linux Docker CI验证；Windows/macOS真实强隔离尚未形成发布证据 |
 | 代码版本 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` |
-| 当前完成度 | 可显式组合的正式运行库，不是默认Coding Agent已启用的端到端Sandbox产品能力 |
+| 当前完成度 | 固定Profile、无网络、只读Workspace的`container_strong`路径已接入默认产品并等待全矩阵验收；Host Sandbox Adapter、Selective Egress和其他调用方仍是显式组合能力 |
 
 本文描述Sandbox包当前实现。不可变执行计划和批准指纹以
 [Execution Plan模块设计](execution.md)为事实源；底层Process Owner、Lease、输出和终止语义以
@@ -1244,6 +1246,7 @@ handle_connect(request):
 | 启动失败清理 | [`process_runtime.py`](../../src/harnessix/sandbox/process_runtime.py) | `ContainerProcessRuntime.start` | 同上 | `test_container_start_failure_still_verifies_cleanup` |
 | 真实Linux隔离 | Container/Process/Secret组合 | `ContainerProcessRuntime.start` | [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) | `test_real_container_enforces_read_only_no_network_limits_and_secret_boundary` |
 | 真实MCP Container | [`mcp/runtime.py`](../../src/harnessix/mcp/runtime.py) | `McpContainerStdioTarget` | 同上 | `test_real_container_runs_mcp_stdio_with_frozen_sandbox_binding` |
+| 默认产品固定Profile | [`product_config/process_profile.py`](../../src/harnessix/product_config/process_profile.py)、[`process_action.py`](../../src/harnessix/product_config/process_action.py) | `probe_product_process_profile`、`ProductProcessActionExecutor` | [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py) | 固定镜像、批准后运行、只读Workspace、输出Artifact |
 
 ## 29. 测试设计与验证证据
 
@@ -1290,7 +1293,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 12. `wait/aclose/reconcile`每个Cleanup失败优先级和非Cancelled异常；
 13. 宿主硬退出后Process Lease + Container残留的跨进程恢复；
 14. MCP stdio启动中断、硬崩溃和Process Owner等价性；
-15. 默认产品冷启动、能力广告、用户审批、诊断和关闭接线；
+15. 默认产品冷启动、能力广告、用户审批和关闭已接线；外部配置加载、Doctor报告和启动全局恢复仍缺；
 16. Schema生成与`spec/*.schema.json`漂移门禁；
 17. Sandbox/Egress低基数Telemetry及导出故障隔离。
 
@@ -1298,7 +1301,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 优先级 | 当前限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
-| P0 | 默认Product Runtime未装配Container Sandbox | 当前Coding Agent高风险执行不能统一宣称强隔离 | 0.9.1产品闭环 |
+| P0 | 固定Profile已装配Container Sandbox，但CLI尚无外部Action Config加载和Doctor修复路径 | 普通用户无法配置Profile，启动恢复也未闭环 | 0.9.1e5 |
 | P0 | Host Sandboxed只有Probe无执行Adapter | Seatbelt/Bwrap可用也不能执行正式Host Sandbox计划 | 0.9.1/0.9.4 |
 | P0 | Selective Egress无Network/Gateway生命周期管理和真实Docker端到端验收 | Limited/Restricted仍是组合原语，不是可发布默认能力 | 0.9.3/0.9.4 |
 | P0 | Windows/macOS无真实Container矩阵 | 三平台1.0强隔离声明无证据 | 0.9.5 |
@@ -1382,6 +1385,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile默认产品接线、强能力探测、Supervisor生命周期及真实产品镜像验收；等待全矩阵CI |
 | 3 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加Product Process公共Intent与派生Container合同分离的复核路径，并同步Runtime只读恢复接口 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Sandbox运行合同不变 |
 | 1 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |

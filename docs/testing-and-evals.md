@@ -1,7 +1,7 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 6
+version: 7
 code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
 owners:
   - core
@@ -388,7 +388,7 @@ flowchart TD
 
 首次文档候选的Windows任务发现MCP写超时测试错误地把0.1秒调用预算复用于目录启动；`a263f96`将启动预算独立固定为2秒，调用预算及UNKNOWN/Reconcile断言保持不变。[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation全矩阵。Windows继续证明Patch能力被诚实省略而不是回退到不安全路径，0.9.1e3据此关闭。
 
-截至该Revision，以下项目仍不能宣称生产完成：0.9.1e4～0.9.6范围的Process/Sandbox默认装配、产品级启动恢复与端到端验收、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至该Revision，0.9.1e4固定Process产品接线已实现但仍等待全量和七任务CI；以下项目仍不能宣称生产完成：0.9.1e5、0.9.1f2～f3及0.9.2～0.9.6范围的外部Action Config、产品级启动恢复、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ## 21. 维护与验收标准
 

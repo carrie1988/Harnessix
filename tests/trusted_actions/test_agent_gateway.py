@@ -252,6 +252,36 @@ def close_stores(
     audit.close()
 
 
+def test_gateway_rejects_ambiguous_or_unknown_review_binding(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    gateway, router, plans, audit = build_gateway(
+        root,
+        FakeExecutor(ActionExecutionOutcome(kind="succeeded")),
+    )
+    review = FixedReview(None)
+    second = descriptor().model_copy(update={"name": "process.run"})
+
+    with pytest.raises(KernelError, match="多Tool Gateway必须显式按Tool绑定Review") as ambiguous:
+        RouterBackedAgentActionGateway(
+            router,
+            (descriptor(), second),
+            lambda *_: runtime_context(root),
+            reviews=review,
+        )
+    assert ambiguous.value.code == "trusted_action_gateway_invalid"
+
+    with pytest.raises(KernelError, match="Gateway Review包含未知Tool") as unknown:
+        RouterBackedAgentActionGateway(
+            router,
+            (descriptor(),),
+            lambda *_: runtime_context(root),
+            reviews={"unknown": review},
+        )
+    assert unknown.value.code == "trusted_action_gateway_invalid"
+    close_stores(gateway, plans, audit)
+
+
 async def test_prepare_is_deterministic_and_patch_requires_same_review_artifact(
     tmp_path: Path,
 ) -> None:

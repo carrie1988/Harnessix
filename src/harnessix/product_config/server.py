@@ -15,7 +15,11 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
-from harnessix.product_config.action_runtime import open_default_workspace_patch_runtime
+from harnessix.product_config.action_contracts import (
+    ProductActionConfigV1,
+    build_product_action_config,
+)
+from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
@@ -117,6 +121,42 @@ async def _require_startup_preflight(request: ProductPreflightRequest) -> None:
     raise KernelError(blocker.code, "产品启动预检未通过")
 
 
+async def _validated_workspace(
+    *,
+    config_path: str | Path,
+    workspace: str | Path,
+) -> Path:
+    """解析固定Workspace，并拒绝把产品配置置于其内部。"""
+
+    workspace_root = await asyncio.to_thread(_workspace_root, workspace)
+    config_file = await asyncio.to_thread(_configuration_file, config_path)
+    if config_file.is_relative_to(workspace_root):
+        raise KernelError("product_config_overlap", "产品配置文件不能位于Workspace内")
+    return workspace_root
+
+
+async def _validated_runtime_paths(
+    *,
+    workspace_root: Path,
+    state_directory: str | Path,
+    git_executable: str | Path | None,
+) -> tuple[Path, Path | None]:
+    """解析产品根并在创建私有状态前后拒绝Workspace重叠。"""
+
+    state_candidate = await asyncio.to_thread(_absolute_path, state_directory)
+    if state_candidate.is_relative_to(workspace_root) or workspace_root.is_relative_to(
+        state_candidate
+    ):
+        raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
+    state_root = await asyncio.to_thread(_private_root, state_directory)
+    if state_root.is_relative_to(workspace_root) or workspace_root.is_relative_to(state_root):
+        raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
+    git_path = (
+        await asyncio.to_thread(_git_path, git_executable) if git_executable is not None else None
+    )
+    return state_root, git_path
+
+
 async def run_product_stdio(
     *,
     config_path: str | Path,
@@ -128,6 +168,7 @@ async def run_product_stdio(
     expected_active_sha256: str | None = None,
     expected_active_profile: str | None = None,
     git_executable: str | Path | None = None,
+    action_config: ProductActionConfigV1 | None = None,
 ) -> None:
     request = _preflight_request(
         config_path=config_path,
@@ -142,25 +183,17 @@ async def run_product_stdio(
     if not isinstance(loaded, ProductConfigSnapshot):
         raise KernelError("product_config_migration_required", "产品配置必须先迁移到v2")
     selection = select_profile(loaded, profile_id)
-    workspace_root = await asyncio.to_thread(_workspace_root, workspace)
-    config_file = await asyncio.to_thread(_configuration_file, config_path)
-    if config_file.is_relative_to(workspace_root):
-        raise KernelError("product_config_overlap", "产品配置文件不能位于Workspace内")
+    workspace_root = await _validated_workspace(config_path=config_path, workspace=workspace)
     secrets = environment_secret_provider(loaded.config)
+    selected_actions = action_config or build_product_action_config()
     report = diagnose_configuration(loaded, selection, secrets)
     if not report.ready:
         raise KernelError("product_config_diagnostic_failed", "产品配置离线诊断未通过")
-    state_candidate = await asyncio.to_thread(_absolute_path, state_directory)
-    if state_candidate.is_relative_to(workspace_root) or workspace_root.is_relative_to(
-        state_candidate
-    ):
-        raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
-    state_root = await asyncio.to_thread(_private_root, state_directory)
-    if state_root.is_relative_to(workspace_root) or workspace_root.is_relative_to(state_root):
-        raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
-    git_path = None
-    if git_executable is not None:
-        git_path = await asyncio.to_thread(_git_path, git_executable)
+    state_root, git_path = await _validated_runtime_paths(
+        workspace_root=workspace_root,
+        state_directory=state_directory,
+        git_executable=git_executable,
+    )
 
     with SQLiteProductConfigStore(state_root / "product-config.db") as config_store:
         config_store.save_snapshot(loaded)
@@ -182,10 +215,12 @@ async def run_product_stdio(
                 artifacts=artifacts,
                 git_executable=git_path,
             ) as tools:
-                with open_default_workspace_patch_runtime(
+                async with open_default_product_action_runtime(
                     state_root,
                     workspace_root,
                     artifacts,
+                    secrets,
+                    selected_actions,
                     artifact_workspace_scope=tools.workspace_scope,
                 ) as composition:
                     async with AgentRuntime(

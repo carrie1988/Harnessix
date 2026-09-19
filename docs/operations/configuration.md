@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
+version: 7
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -331,6 +331,15 @@ Thread，不启动Transport，也不进行Provider网络请求。
 当前e3实现不新增用户可编辑的Action配置文件：默认POSIX产品固定尝试构造`apply_patch_batch`，并用运行时能力报告决定`verified`或`omitted`；Windows固定省略。模型配置v2、Provider选择和Secret引用均不获得写权限字段。
 
 `workspace_patch_enabled`属于独立`ProductActionConfigV1`合同，但e5完成文件加载、迁移、Doctor报告与Owner之前，不应手工创建未知Action配置并假设产品会读取。能力报告最多有效600秒，Catalog安装时再次检查过期、Schema、Binding与Executor Evidence。
+
+## 12.2 固定Process Profile配置边界
+
+e4已经允许产品组合宿主向`run_product_stdio(action_config=...)`传入经过严格校验的`ProductActionConfigV1`，用于嵌入式部署和
+端到端验收。该Python组合参数不是CLI配置文件，也不会由`harnessix code`自动发现。普通用户在e5交付安全文件读取、权限检查、
+活动版本CAS、Doctor诊断和升级合同前，不应依赖手工Action配置。
+
+每个Profile必须固定绝对Container Engine路径、不可变镜像Digest、容器内Program、固定argv、Selector策略、无网络模式、CPU/
+内存/PID/输出/超时预算及版本化Secret引用。启动探测失败时只省略对应`run_profile.<id>`；不会把同一命令降级到宿主Shell。
 
 ## 13. 0.9.1d源码与测试映射
 
