@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 7
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -477,7 +477,6 @@ Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f7602
 与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`本地全仓为3514项通过/20项跳过，
 [CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例，因此0.9.2c关闭；0.9.2d/e和0.9.2总项继续未关闭。
 
-0.9.2d1实现候选新增`harnessix-engineering/v1`：三个固定MIT派生Benchmark仓库、十个Case、五类各两个、
-十个固定Profile、确定性Archive/Manifest生成器、Review源码行证据校验和Wheel外Golden Patch。当前只证明数据集和
-检查闭环；正式Task Pack Case Adapter与每Case两次Trial的完整离线Suite分别由d2/d3完成。专项需求、流程、接口、
-失败恢复、源码和验收矩阵见[0.9.2d详细设计](m09-2d-multi-repository-offline-baseline.md)。
+0.9.2d1已完成：`harnessix-engineering/v1`固定三个MIT派生Benchmark仓库、十个Case、五类各两个、
+十个固定Profile、确定性Archive/Manifest生成器、Review源码行证据校验和Wheel外Golden Patch。实现Revision
+`ee4d0db757d0371656934254aaaee0c1a56cfab0`本地全仓为3529项通过/30项跳过；[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收。d1只证明数据集和检查闭环；正式Task Pack Case Adapter与每Case两次Trial的完整离线Suite分别由d2/d3完成。专项需求、流程、接口、失败恢复、源码和验收矩阵见[0.9.2d详细设计](m09-2d-multi-repository-offline-baseline.md)。

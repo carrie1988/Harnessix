@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 2
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -31,9 +31,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | d1数据集与检查实现候选已建立；d2 Case Adapter和d3完整Suite仍待实施 |
-| 本文设计状态 | 0.9.2d目标设计及d1当前实现 |
-| 代码版本 | 基线`0245d117adc7c385a4e42de4e023fd0d22bbb1cd`；实现Revision在验收后回填 |
+| 当前能力 | d1数据集与检查闭环已完成；d2 Case Adapter和d3完整Suite仍待实施 |
+| 本文设计状态 | 0.9.2d目标设计；d1已验收，d2/d3待实施 |
+| 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`，由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收 |
 | 影响模块 | Evals、Agent、Session、Trusted Actions、Process、Sandbox、CI和发行通知 |
 | 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md) |
 | 关键测试/证据 | `test_engineering_task_pack.py`、`test_task_pack_profiles.py`、后续离线Suite验证资料 |
@@ -419,18 +419,18 @@ execute_case_planned_d2():
 
 | 层级 | 验收标准 | 当前状态 |
 |---|---|---|
-| 合同 | Pack严格解析，3仓、10 Case、10 Profile、五类各2 | d1已实现候选 |
-| 来源/许可 | 三份LICENSE摘要与固定上游Revision一致 | d1已实现候选 |
-| 生成 | `--check`逐字节一致，手工改Manifest/Archive失败 | d1已实现候选 |
-| 安全物化 | 所有Case四重Git身份一致，恶意Archive回归不退化 | d1已实现候选 |
-| Review | 两个Finding绑定源码行；篡改后稳定失败 | d1已实现候选 |
-| 可解性 | 10/10原始检查失败，10/10黄金补丁后通过 | d1宿主已验证，Container待CI |
-| 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | 待Container CI |
+| 合同 | Pack严格解析，3仓、10 Case、10 Profile、五类各2 | d1已验收 |
+| 来源/许可 | 三份LICENSE摘要与固定上游Revision一致 | d1已验收 |
+| 生成 | `--check`逐字节一致，手工改Manifest/Archive失败 | d1已验收 |
+| 安全物化 | 所有Case四重Git身份一致，恶意Archive回归不退化 | d1已验收 |
+| Review | 两个Finding绑定源码行；篡改后稳定失败 | d1已验收 |
+| 可解性 | 10/10原始检查失败，10/10黄金补丁后通过 | 宿主与固定Container均已验收 |
+| 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | d1已验收 |
 | d2执行 | 每Case经过真实Agent/Session/Campaign，不读Golden | 待实施 |
 | d2恢复 | Provider/Tool/报告崩溃窗口不重复已完成效果 | 待实施 |
 | d3规模 | 10 Case × 2 Trial，完整Suite报告 | 待实施 |
 | d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 待实施 |
-| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | 待验收 |
+| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | [CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)已通过 |
 
 0.9.2d只有最后六项全部通过并发布验证证据后才能关闭；d1单独完成不能勾选路线图总项。
 
@@ -450,4 +450,5 @@ execute_case_planned_d2():
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | d1由CI 35469387988完成Linux双版本、macOS、Windows、固定Container与Documentation六实例验收并关闭；d2/d3保持未完成 |
 | 1 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 冻结d1～d3架构、数据集、Oracle、恢复和验收边界 |

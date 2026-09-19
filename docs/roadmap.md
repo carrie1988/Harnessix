@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 36
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 37
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -505,8 +505,8 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   连续Case证据前缀、显式停止恢复和报告发布恢复，已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
   每Case至少2次试验；通过固定Container Profile运行全部检查，形成可复跑的离线Suite报告；
-  - [ ] **d1 数据集与检查闭环**：`harnessix-engineering/v1`固定3仓10 Case、五类各2个、来源许可证、确定性生成、
-    Review源码证据和Wheel外Golden；本地候选已实现，固定Container与全矩阵CI通过后关闭；
+  - [x] **d1 数据集与检查闭环**：`harnessix-engineering/v1`固定3仓10 Case、五类各2个、来源许可证、确定性生成、
+    Review源码证据和Wheel外Golden；实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container与六实例全矩阵验收并关闭；
   - [ ] **d2 正式Case Adapter**：Task Pack Case必须经现有Agent、Session、Trusted Action、Process Artifact、Grader和
     Campaign执行/恢复，禁止另建Eval Agent或旁路审批；
   - [ ] **d3 完整离线Suite**：每Case固定2 Trial，验证取消、超时、崩溃、UNKNOWN、完成前缀和报告发布恢复，发布

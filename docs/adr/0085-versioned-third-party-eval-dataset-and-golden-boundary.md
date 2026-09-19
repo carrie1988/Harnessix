@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 2
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -21,7 +21,10 @@ supersedes: []
 
 ## 状态
 
-接受。
+接受且已实施。实现Revision `ee4d0db757d0371656934254aaaee0c1a56cfab0`已由
+[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成Linux Python 3.12/3.13、
+macOS、Windows、固定镜像Container和Documentation六实例验收；本ADR只关闭0.9.2d1数据集边界，
+不关闭d2正式Case Adapter或d3完整离线Suite。
 
 ## 背景
 

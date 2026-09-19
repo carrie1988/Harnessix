@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 63
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 64
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -387,8 +387,8 @@ Eval采用`Task Pack → Run → Campaign → Suite`证据链：Task Pack固定�
 Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先冻结的Case、任务类别、仓库Revision和Campaign指纹聚合
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
-显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。十Case/三仓库基线、正式Case适配器和
-0.9.2d已增加`harnessix-engineering/v1`的3仓10 Case工程数据集和确定性生成边界，但正式Case Adapter、
+显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。
+0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收，但正式Case Adapter、
 每Case两次Trial的完整离线Suite和真实Provider Suite仍分别是0.9.2d2/d3与0.9.2e边界。全部公开证据均不复制
 Prompt、回答、工具正文、Diff或路径。
 
@@ -529,6 +529,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 64 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | 0.9.2d1的3仓10 Case工程数据集、确定性生成、Review源码证据和固定Container链由CI 35469387988完成六实例验收并关闭 |
 | 63 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 登记0.9.2d1的3仓10 Case工程数据集、确定性生成与Review源码证据候选，保持单一Coding Agent/Trusted Action拓扑 |
 | 62 | `ffd3db4e83a807ab3029c479fb4650216240b4f7` | 2026-09-20 | 记录0.9.2c由CI 35465458256完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 61 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 登记0.9.2c计划先行、单写者Suite Runner、连续证据前缀、显式停止恢复和零Case重放实现候选 |

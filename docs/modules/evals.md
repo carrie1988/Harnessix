@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 11
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -53,8 +53,8 @@ supersedes: []
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭 |
-| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack和0.9.2c可恢复Suite Runner已完成；至少10 Case/3仓库离线基线及受控真实Provider基线仍属0.9.2d/e |
+| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭；0.9.2d1工程数据集实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`已由CI 35469387988关闭 |
+| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d1工程数据集已完成；正式Case Adapter、20 Trial离线Suite及受控真实Provider基线仍属0.9.2d2/d3/e |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -1922,6 +1922,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 11 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | 0.9.2d1由CI 35469387988完成3仓10 Case、确定性生成、Review源码证据、固定Container与六实例验收并关闭 |
 | 10 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 记录3仓10 Case工程Pack、确定性生成、MIT权利链、Review源码证据、外置Golden与d2/d3剩余边界 |
 | 9 | `ffd3db4e83a807ab3029c479fb4650216240b4f7` | 2026-09-20 | 0.9.2c由CI 35465458256完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 8 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 0.9.2c候选：补充计划先行、单写者Suite Runner、连续Case证据前缀、显式停止恢复、费用停止和报告发布恢复 |

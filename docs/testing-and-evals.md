@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 23
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 24
+code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
 owners:
   - core
 modules:
@@ -370,7 +370,7 @@ uv run python scripts/generate_specs.py --check
 0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。0.9.2d1新增
 `harnessix-engineering/v1`的3仓10 Case、五类各2个、确定性生成、Review源码证据和外置Golden闭环；
 Task Pack到Campaign/Transcript的正式Adapter、每Case两次Trial的完整离线报告和受控Provider Suite分别由
-0.9.2d2/d3/e验收。0.9.2c实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
+0.9.2d2/d3/e验收。0.9.2c实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
 
 ## 14. 真实Provider验证
 
