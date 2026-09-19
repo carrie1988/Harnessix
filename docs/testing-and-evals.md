@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 17
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 18
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -288,7 +288,7 @@ flowchart LR
 
 ### 13.1 0.9.2多仓库Suite证据边界
 
-0.9.2a候选在现有单任务Campaign之上增加Suite合同：每个Case绑定任务类别、固定仓库Revision和完整Campaign；
+0.9.2a在现有单任务Campaign之上增加已验收的Suite合同：每个Case绑定任务类别、固定仓库Revision和完整Campaign；
 Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。Suite报告必须重算：
 
 1. 任务成功率：严格通过Trial数/计划Trial数；
@@ -297,7 +297,7 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 4. 模型尝试、输入/输出Token、同币种已知Cost和Cost完整性；
 5. 端到端最小值、P50、P95和最大延迟。
 
-自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。当前证据仅证明
+自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为；尚不证明Task Pack、Suite Runner、崩溃恢复、
 至少10 Case/3仓库基线或真实Provider质量。关闭边界见[0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 

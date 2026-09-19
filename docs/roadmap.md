@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 29
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 30
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -488,9 +488,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 [详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)拆分。单任务Campaign继续负责同一任务的重复试验；
 Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算聚合，不能把一次成功运行包装成“多仓库基线”：
 
-- [ ] **0.9.2a Suite与Transcript正式契约**：在首个Provider请求前冻结Suite/Case/Campaign身份；实现五类任务、
+- [x] **0.9.2a Suite与Transcript正式契约**：在首个Provider请求前冻结Suite/Case/Campaign身份；实现五类任务、
   至少两个固定仓库Revision、脱敏Transcript摘要、测试证据、任务成功率、测试通过率、人工干预率、Token、成本、
-  延迟聚合，以及0600、no-follow、有界、原子Plan/Report读写。当前候选实现和专项回归已完成，待全量CI关闭；
+  延迟聚合，以及0600、no-follow、有界、原子Plan/Report读写。实现Revision `d42ab6c`已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2b Task Pack v1**：建立许可证和来源可审计的固定任务包，不接受运行时任意URL、任意测试命令或宿主脚本；
   每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算；
 - [ ] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用

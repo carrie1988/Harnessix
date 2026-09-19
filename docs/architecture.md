@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 57
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 58
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -377,7 +377,7 @@ W3C Trace Context。Observer故障不得改变Agent结果。可恢复性、质�
 不依据“日志看起来成功”。
 
 Eval采用`Run → Campaign → Suite`三层证据：Run固定任务结果，Campaign重复同一任务，Suite按预先冻结的Case、任务类别、
-仓库Revision和Campaign指纹聚合跨任务指标。0.9.2a候选只从完整Campaign与持久Turn生成摘要、计数和可重算率，不复制
+仓库Revision和Campaign指纹聚合跨任务指标。0.9.2a已实现并验收从完整Campaign与持久Turn生成摘要、计数和可重算率，不复制
 Prompt、回答、工具正文、Diff或路径；Task Pack、可恢复Runner和真实多仓库基线仍是0.9.2后续边界。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
@@ -514,7 +514,8 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
-| 57 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 登记0.9.2a多仓库Suite与脱敏Transcript证据候选边界，明确Task Pack、Runner和真实基线仍未完成 |
+| 58 | `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373` | 2026-09-20 | 记录0.9.2a Suite与Transcript证据由CI 35456635653完成六实例验收，Task Pack、Runner和真实基线仍未完成 |
+| 57 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 登记0.9.2a多仓库Suite与脱敏Transcript证据候选边界 |
 | 56 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录单一Coding Agent架构由CI 35453082992完成Linux双版本、macOS、Windows、Container与文档全矩阵验收 |
 | 55 | `296650216e5ec0f6819d4fb607e297b988a956a7` | 2026-09-19 | 物理删除独立Action HTTP/Worker体系，重写26包单一Coding Agent架构、历史只读兼容和归档边界 |
 | 54 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 历史Eval迁入Trusted Action并通过全矩阵验收 |

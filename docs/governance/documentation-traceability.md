@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 63
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 64
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -93,7 +93,7 @@ flowchart LR
 | 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 8个当前产品运行时与扩展包均已有现行设计；旧API/Adapter资料已冻结为历史 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md)、[ADR 0077](../adr/0077-versioned-documentation-contract-and-gates.md) | 代码与文档治理门禁均已启用；后续产品切片须持续同步 |
-| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、[0.9.2研究](../research/eval-suite-and-transcript-baseline.md)、[ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)与[详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；0.9.2a Suite合同候选待CI，b～e未完成 |
+| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、[0.9.2研究](../research/eval-suite-and-transcript-baseline.md)、[ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)与[详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；0.9.2a Suite合同已由CI 35456635653关闭，b～e未完成 |
 | 部署与运维 | [部署总入口](../deployment.md)、[安装](../operations/installation.md)、[配置](../operations/configuration.md)、[升级](../operations/upgrade-and-rollback.md)、[恢复](../operations/recovery.md)、[诊断](../operations/diagnostics.md)、[平台](../operations/platforms.md) | [部署里程碑历史](../deployment-milestone-history.md)、平台、许可和产品边界ADR | 当前操作与历史命令已分层；Doctor已实现，正式制品、支持包、自动升级/回退和RPO/RTO仍属产品缺口 |
 
 ## 4. 26个生产源码包覆盖矩阵
@@ -108,7 +108,7 @@ flowchart LR
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整；e3 `action_review`模型历史绑定现行事实已同步 |
 | [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [delivery](../../tests/delivery/)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整；f2b Git Push直接Trusted Action、响应丢失和硬崩溃只对账已由CI 35442924441验收 |
 | [domain](../../src/harnessix/domain/) | 跨模块共享枚举、基础错误与历史状态只读兼容 | [Domain模块设计](../modules/domain.md) | [产品收敛治理](../../tests/governance/test_product_runtime_convergence.py)、[历史Process兼容](../../tests/agent/test_legacy_process_compatibility.py) | [docs/modules/domain.md](../modules/domain.md) | 完整；不再包含旧Service、Registry或端口 |
-| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行、Trusted Action测试组合、Suite/Transcript证据与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md)、[0.9.2设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | [evals](../../tests/evals/)、[Suite](../../tests/evals/test_suite.py)、[Gateway](../../tests/trusted_actions/test_agent_gateway.py) | [docs/modules/evals.md](../modules/evals.md) | f2c已关闭；0.9.2a合同候选待全矩阵CI |
+| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行、Trusted Action测试组合、Suite/Transcript证据与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md)、[0.9.2设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | [evals](../../tests/evals/)、[Suite](../../tests/evals/test_suite.py)、[Gateway](../../tests/trusted_actions/test_agent_gateway.py) | [docs/modules/evals.md](../modules/evals.md) | f2c已关闭；0.9.2a已由CI 35456635653关闭 |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
 | [hooks](../../src/harnessix/hooks/) | 声明式Hook注册与执行 | [Hook模块设计](../modules/hooks.md)、[0.8](../m08-product-runtime-and-extensions.md)、[Skill/Hook研究](../research/skills-hooks-and-supply-chain.md) | [hooks](../../tests/hooks/) | [docs/modules/hooks.md](../modules/hooks.md) | 完整，DOC-1.4扩展 |
 | [mcp](../../src/harnessix/mcp/) | MCP目录、客户端、Server与统一Action | [MCP模块设计](../modules/mcp.md)、[0.8](../m08-product-runtime-and-extensions.md)、[MCP研究](../research/mcp-runtime-and-security.md) | [mcp](../../tests/mcp/)、[真实Container](../../tests/integration/test_container_sandbox.py) | [docs/modules/mcp.md](../modules/mcp.md) | 完整，DOC-1.4扩展协议 |

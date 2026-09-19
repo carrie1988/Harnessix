@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 5
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 6
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:

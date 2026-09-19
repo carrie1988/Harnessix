@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 1
-code_revision: pending
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -311,4 +311,4 @@ atomic_publish(report)
 0.9.2a已形成实现候选：新增Suite Plan/Report、Transcript Evidence、Test Evidence、聚合器、三个JSON Schema、
 私有原子I/O和定向合同测试。本地`make check`已完成Ruff、可读性、209份文档/5668条链接/578幅Mermaid静态门禁、
 Schema、294个源码文件Mypy及全仓`3483 passed, 18 skipped`；20条变化路径的Mermaid已用Chrome真实渲染。
-尚未取得全矩阵CI，0.9.2b～e尚未实现，因此0.9.2a及0.9.2总项均保持未关闭。
+[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)随后通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job；Linux双版本各`3483 passed, 18 skipped`，macOS为`2474 passed, 15 skipped`，Windows为`500 passed, 45 skipped`，Container为`3 passed`，Documentation真实渲染22条变化路径。0.9.2a据此关闭；0.9.2b～e尚未实现，因此0.9.2总项保持未关闭。

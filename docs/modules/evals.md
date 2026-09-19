@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 5
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -46,8 +46,8 @@ supersedes: []
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/Report；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | 0.9.2a候选基于`459bc4de3e60bf92ed570fa99bdc39b948689591`开发，尚待实现提交与全矩阵CI关闭；f2c历史迁移已由CI 35446341997关闭 |
-| 当前完成度 | 0.5.5单任务闭环和0.9.1f2c运行时收敛已完成；0.9.2a Suite/Transcript合同、聚合器、Schema和私有原子文件候选已实现，但Task Pack、可恢复Suite Runner、至少10 Case/3仓库离线基线及受控真实Provider基线仍属0.9.2b～e |
+| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653完成六实例全矩阵验收；f2c历史迁移已由CI 35446341997关闭 |
+| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛和0.9.2a Suite/Transcript合同、聚合器、Schema及私有原子文件已完成；Task Pack、可恢复Suite Runner、至少10 Case/3仓库离线基线及受控真实Provider基线仍属0.9.2b～e |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -150,7 +150,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Git证据 | 已实现 | `collect_git_evidence` | 最多200项状态，完整观察摘要 |
 | Run恢复 | 已实现/已验收 | Run State + Session/Execution Plan/Action Audit/Process Lease/Patch账本 | 批准提交、结果投影丢失、取消和报告发布窗口 |
 | Campaign聚合 | 已实现 | `build_coding_eval_campaign_report` | 完整计划才发布 |
-| Suite合同与聚合 | 0.9.2a候选 | `CodingEvalSuitePlan`、`build_coding_eval_suite_report` | 五类任务、至少两仓库、完整Campaign/Turn/Test证据才发布；尚无Runner和真实任务集 |
+| Suite合同与聚合 | 已实现/已验收 | `CodingEvalSuitePlan`、`build_coding_eval_suite_report` | 五类任务、至少两仓库、完整Campaign/Turn/Test证据才发布；尚无Runner和真实任务集 |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
 | Eval单文件交付 | 已实现/显式调用 | `CodingEvalDeliveryStore` | POSIX、已有UTF-8普通文件 |
@@ -1666,7 +1666,8 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 4 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 0.9.2a候选：补充多仓库Suite、脱敏Transcript/Test证据、可重算指标和私有原子Plan/Report边界；待实现提交与CI关闭 |
+| 5 | `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373` | 2026-09-20 | 0.9.2a由CI 35456635653完成Linux双版本、macOS、Windows、Container和Documentation六实例验收并关闭 |
+| 4 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 0.9.2a候选：补充多仓库Suite、脱敏Transcript/Test证据、可重算指标和私有原子Plan/Report边界 |
 | 3 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval Trusted Action迁移由CI 35446341997完成七任务全矩阵验收并关闭 |
 | 2 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | f2c候选：历史Eval从Action Service/Worker/Effect Journal迁入产品同源Trusted Action Catalog/Gateway/Router和POSIX Supervisor；补充批准、响应丢失、结果投影、旧Run升级拒绝及持久化布局 |
 | 1 | `45cc209133784fdbff853001230171f95516be20` | 2026-09-12 | 建立Evals现行模块设计，覆盖历史任务、物化、隐藏检查、正式Agent运行、固定评分、Campaign、成本、Compaction语义评测、专用单文件交付及生产缺口 |

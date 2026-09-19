@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 7
-code_revision: 459bc4de3e60bf92ed570fa99bdc39b948689591
+version: 8
+code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
 owners:
   - core
 modules:
@@ -141,7 +141,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
-| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；按0.9.2a～e实施 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a已由CI 35456635653关闭，b～e待实施 |
 
 ### 4.6 Context、Compaction与会话生命周期
 
