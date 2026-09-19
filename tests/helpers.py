@@ -2,15 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Any
 
-from harnessix.domain.models import (
-    ActionContext,
-    ActionRequest,
-    EffectClass,
-    Principal,
-    TraceContext,
-)
+from harnessix.domain.models import TraceContext
 from harnessix.observability import ObservabilitySpan, SpanKind
 from harnessix.observability.core import AttributeValue, MetricAttributes
 
@@ -87,22 +80,3 @@ class RecordingObservability:
         attributes: Mapping[str, AttributeValue] | None,
     ) -> None:
         self.metrics.append((kind, name, float(value), dict(attributes or {})))
-
-
-def action_request(
-    tool: str,
-    arguments: dict[str, Any],
-    *,
-    idempotency_key: str | None = None,
-    effect_hint: EffectClass | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> ActionRequest:
-    return ActionRequest(
-        tool=tool,
-        arguments=arguments,
-        principal=Principal(tenant_id="tenant-a", subject_id="agent-a", framework="test-agent"),
-        context=ActionContext(session_id="session-a", run_id="run-a"),
-        idempotency_key=idempotency_key,
-        effect_hint=effect_hint,
-        metadata=metadata or {},
-    )

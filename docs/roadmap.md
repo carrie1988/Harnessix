@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 26
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 27
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -434,7 +434,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d已通过对应全矩阵CI并关闭。0.9.1e的e1～e5已经全矩阵验收并关闭。为避免历史Action服务与Coding Agent形成双产品边界，0.9.1f1已经撤销旧公共入口并冻结迁移白名单，f2a固定Container Process与f2b直接Trusted Git Push均已关闭；f2c历史Eval迁移已通过七任务全矩阵CI并关闭；f3仍需物理删除兼容内核。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d与0.9.1e1～e5已经全矩阵验收并关闭。为避免历史Action服务与Coding Agent形成双产品边界，0.9.1f1已经撤销旧公共入口，f2a固定Container Process、f2b直接Trusted Git Push和f2c历史Eval迁移均已关闭；f3已形成物理删除独立HTTP/Worker体系、历史Session只读兼容和旧数据库离线归档的实现候选，仍须全矩阵CI验收后关闭。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -474,7 +474,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   Policy、Approval、Effect、`UNKNOWN`与Reconcile继续作为Coding Agent进程内Trusted Action Runtime能力。f1实现提交
   `142dfa8`已由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成七任务全矩阵验收并关闭；
   f2a由0.9.1e4/e5的固定Container Process和启动恢复Owner关闭；f2b实现提交`e2d8c24`已删除Git Push对旧ActionService/Effect Journal的生产依赖，
-  由直接Definition/Executor、exact lease、响应丢失及宿主硬崩溃重开只对账测试建立正式链，并由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收并关闭；f2c实现提交`89485f3`已把历史Eval新运行改为Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor与Action Output Artifact，治理白名单由7项缩为6项，本地3569项通过/20项跳过，并由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收并关闭；f3物理删除尚未实施。
+  由直接Definition/Executor、exact lease、响应丢失及宿主硬崩溃重开只对账测试建立正式链，并由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收并关闭；f2c实现提交`89485f3`已把历史Eval新运行改为Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor与Action Output Artifact，治理白名单由7项缩为6项，本地3569项通过/20项跳过，并由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收并关闭。f3候选已把旧生产引用集合清零，删除API/Worker/SDK/Adapter/Journal/专用Process Bridge及其依赖、规格、示例和测试；旧Session Process事件仅允许读取并以`legacy_process_state_archived`拒绝继续执行，旧SQLite/PostgreSQL状态按离线归档手册处置。本地3472项通过/18项跳过且190幅变化Mermaid真实渲染通过；该候选尚未取得六实例全矩阵CI证据，因此本项保持未勾选。
 
 界面可启动或单个Prompt正常返回不能关闭0.9.1。五个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
 可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。

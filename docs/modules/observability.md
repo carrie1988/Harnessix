@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 4
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -13,14 +13,17 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/unit/test_observability_core.py
-  - tests/integration/test_observability_flow.py
   - tests/integration/test_otlp_export.py
   - tests/agent/test_telemetry.py
-  - tests/integration/test_worker.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
 # Observability模块设计
+
+> **0.9.1f3收敛说明：** Action HTTP/Worker信号生产者已随独立服务物理删除。第11.2～11.3、12.1～12.2、
+> 15.1～15.3、16.3、18.2和21.5仅保留历史命名与迁移背景，不是当前运行拓扑。当前产品信号来自Agent、Provider、
+> Context、Tool、Trusted Action、Process、Delivery和Eval链。
 
 ## 1. 模块摘要
 
@@ -29,40 +32,40 @@ supersedes: []
 | 源码包 | [`src/harnessix/observability`](../../src/harnessix/observability/) |
 | 当前职责 | 定义与供应商无关的Trace/Metric端口；提供No-op与OpenTelemetry实现；生成、提取和传播W3C Trace Context；提供受限上下文字段的JSON/Console日志配置 |
 | 非职责 | 不保存业务审计事实，不保证遥测Exactly-once，不提供日志采集、全局DLP、Dashboard、告警、采样策略、Collector运维、遥测本地队列或计费账本 |
-| 直接调用者 | Action API、`ActionService`、`ActionWorker`、Agent `KernelTelemetry`和可选Eval宿主 |
+| 直接调用者 | Agent `KernelTelemetry`、Model/Context/Tool、Trusted Action、Process、Delivery和可选Eval宿主 |
 | 下游依赖 | Python `logging`、OpenTelemetry API/SDK、OTLP/HTTP Trace与Metric Exporter、领域层`TraceContext` |
-| 默认行为 | 未配置Endpoint时构造`NoOpObservability`；Action `serve/worker` CLI配置根日志；默认Coding Agent产品装配当前没有注入外部Observability |
-| 持久化 | 模块自身无持久存储；Action Journal和Agent Session分别持久化`TraceContext`以跨队列、暂停和重启恢复链路 |
+| 默认行为 | 未配置Endpoint时构造`NoOpObservability`；默认Coding Agent产品装配当前没有注入外部Observability |
+| 持久化 | 模块自身无持久存储；Agent Session持久化`TraceContext`以跨暂停和重启关联链路，Action Audit保存业务审计摘要而非遥测 |
 | 平台 | 核心与适配器没有显式平台分支；当前只有本地内存和本机OTLP HTTP测试，没有三平台Collector兼容证据 |
 | 代码版本 | `44b0cbcfcf9b1b532568e682b1b792b09df1276d` |
-| 当前完成度 | Trace、Metric、日志、跨Action队列传播和Agent安全包装已实现；统一产品装配、统一故障隔离、正确Metric单位、完整隐私治理和生产运维资产未完成 |
+| 当前完成度 | Trace、Metric、日志和Agent安全包装已实现；统一产品装配、统一故障隔离、完整隐私治理和生产运维资产仍未完成 |
 
 本文是[`core.py`](../../src/harnessix/observability/core.py)、
 [`logging.py`](../../src/harnessix/observability/logging.py)、
 [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py)和
-[`__init__.py`](../../src/harnessix/observability/__init__.py)的当前事实源。跨进程Action链应同时阅读
-[Action Plane子系统设计](../subsystems/action-plane.md)和[Storage模块设计](storage.md)；Agent链应同时阅读
+[`__init__.py`](../../src/harnessix/observability/__init__.py)的当前事实源。Trusted Action链应同时阅读
+[Trusted Actions模块设计](trusted-actions.md)；Agent链应同时阅读
 [Agent Runtime模块设计](agent.md)。[M1.2可观测性设计](../m1-observability.md)保留历史增量背景，
 其中“客户端Span”等表述不代表当前代码已经实现。
 
 ## 2. 需求背景
 
-生产Coding Agent同时包含HTTP入口、持久队列、后台Worker、模型请求、工具执行、审批暂停、取消、
+生产Coding Agent同时包含本地Agent Protocol、模型请求、工具执行、审批暂停、取消、
 崩溃恢复和事务性交付。单独观察某个函数的日志不能回答下列生产问题：
 
-1. 一个外部请求经过API、Action提交、持久队列和Worker后是否仍属于同一条链路；
+1. 一个Thread/Turn经过模型、审批、Trusted Action和Executor后是否仍属于同一条链路；
 2. Agent在一次Turn中耗时主要来自Context、Model、Tool、Approval还是恢复；
 3. 一个失败是Provider、Tool、存储、超时、取消还是不确定副作用；
-4. 队列是否积压、最老READY Action等待多久、Lease是否频繁丢失；
+4. Provider、Process、Workspace Lease或Action Route是否频繁失败或进入未知状态；
 5. Token、Tool结果外置和Context裁剪是否符合预算预期；
 6. 遥测后端不可用时，业务是否仍能持久提交或按原错误失败；
 7. Trace、Metric和日志是否意外携带Prompt、Workspace路径、工具参数、Secret或异常正文；
 8. Agent暂停审批或进程重启后，新的有限时长Span如何继续原Trace；
-9. 观测信号与Session/Journal审计事实有什么区别，故障恢复时应信任哪一方；
-10. 多进程部署中的API与Worker是否使用可区分的服务身份。
+9. 观测信号与Session/Action Audit审计事实有什么区别，故障恢复时应信任哪一方；
+10. TUI、App Server、Process Owner和外部Provider边界能否被区分。
 
 Observability模块以“小型内部端口 + 可选OpenTelemetry适配器”回答信号生成和传播问题。业务事实仍由
-Session Event Log、Action Journal、Execution/Delivery账本和Eval报告拥有；可观测数据只用于尽力而为的
+Session Event Log、Action Audit、Execution/Delivery账本和Eval报告拥有；可观测数据只用于尽力而为的
 诊断、聚合和关联。
 
 ## 3. 设计目标、非目标与关键术语
@@ -71,14 +74,14 @@ Session Event Log、Action Journal、Execution/Delivery账本和Eval报告拥有
 
 1. 领域和运行时调用方不直接依赖OpenTelemetry SDK类型；
 2. 未启用外部导出时不要求安装Observability可选依赖；
-3. 使用W3C `traceparent`和可选`tracestate`跨HTTP、数据库队列和进程传播；
-4. 为Action、HTTP、Worker和Agent关键操作建立稳定命名的Span；
+3. 使用W3C `traceparent`和可选`tracestate`跨Agent Protocol、持久Session和进程传播；
+4. 为Agent、Provider、Tool、Trusted Action和Process关键操作建立稳定命名的Span；
 5. 指标标签使用受控状态、类别和组件，不放入Action/Thread/Turn等无界标识；
 6. Agent链不把业务异常正文和堆栈交给第三方Span自动采集；
 7. Agent观测适配器故障后熔断为无导出，不改变Turn结果或掩盖原错误；
 8. JSON日志只允许一组固定的关联上下文字段，并在作用域退出时恢复；
-9. Action首次创建时持久化Trace Context，重复提交不覆盖原上下文；
-10. 独立API与Worker进程使用`.api`和`.worker`服务名后缀；
+9. Turn首次创建时持久化Trace Context，幂等请求不覆盖原上下文；
+10. App Server与受监督Owner使用可区分的组件身份；
 11. 进程关闭时显式Flush/Shutdown由拥有适配器生命周期的宿主触发；
 12. 测试可通过内存Exporter或本地HTTP Collector替身验证实际OpenTelemetry输出。
 
@@ -125,12 +128,12 @@ Session Event Log、Action Journal、Execution/Delivery账本和Eval报告拥有
 | OpenTelemetry Metric | 已实现/可选 | `increment/record/set_gauge` | 名称懒创建；所有Histogram被错误固定为单位`s` |
 | OTLP/HTTP导出 | 已实现/可选 | Endpoint基础地址 | 固定追加`/v1/traces`和`/v1/metrics` |
 | W3C上下文 | 已实现 | `current_trace_context/_extract` | 无效父上下文由SDK忽略并建立新Trace |
-| Action跨队列传播 | 已实现 | `ActionSnapshot.trace_context` | 首次创建固定；SQLite/PostgreSQL列可空 |
+| 历史Action跨队列传播 | 已删除 | 固定Git Revision | 不属于当前运行拓扑 |
 | Agent跨暂停/重启传播 | 已实现 | `Turn.trace_context` | 每个恢复片段沿持久上下文继续 |
 | Agent故障隔离 | 已实现 | `KernelTelemetry` | 首次Observer异常后本宿主熔断，无自动恢复 |
-| Action/API故障隔离 | 部分实现 | Worker运维指标局部捕获 | 普通Span、Counter和Histogram调用可把Observer异常传播给业务 |
+| 其他调用方故障隔离 | 未统一实现 | Evals等直接端口调用 | 普通Span、Counter和Histogram调用仍可能把Observer异常传播给业务 |
 | Agent异常隐私 | 已实现 | `KernelTelemetry.operation` | Span退出不接收业务异常；只记录低基数错误类别 |
-| Action/API异常隐私 | 未统一实现 | 直接OTel上下文管理 | 传播出Span的异常可被SDK自动记录；日志也可能输出完整异常 |
+| 直接端口调用异常隐私 | 未统一实现 | OTel上下文管理 | 传播出Span的异常可被SDK自动记录；日志也可能输出完整异常 |
 | 结构化JSON日志 | 已实现 | `configure_logging` | 关联上下文白名单；消息和异常正文未自动脱敏 |
 | Coding Agent默认装配 | 未实现 | `run_product_stdio` | 当前构造`AgentRuntime`时未注入Observer，实际为No-op |
 | Dashboard/告警/SLO | 未实现 | 无 | 仓库没有正式运维资产 |
@@ -140,33 +143,27 @@ Session Event Log、Action Journal、Execution/Delivery账本和Eval报告拥有
 
 ```mermaid
 flowchart LR
-    Client[HTTP或Agent调用方] --> API[Action API]
-    API --> Action[ActionService]
-    Agent[AgentRuntime] --> KT[KernelTelemetry]
+    Client[Agent Protocol调用方] --> Agent[AgentRuntime]
+    Agent --> KT[KernelTelemetry]
+    Eval[Eval Runner] --> Port
     KT --> Port[Observability端口]
-    Action --> Port
-    Worker[ActionWorker] --> Port
     Port --> Noop[NoOp实现]
     Port --> OTel[OpenTelemetry实现]
     OTel --> Collector[OTLP HTTP Collector]
-    API --> Log[Python Logging]
-    Action --> Log
-    Worker --> Log
     KT --> Log
-    Action --> Journal[(Action Journal)]
+    Eval --> Log[Python Logging]
     Agent --> Session[(Session Event Log)]
-    Journal -.持久Trace Context.-> Worker
     Session -.持久Trace Context.-> Agent
 ```
 
-**图示说明：** Observability端口是业务调用方与具体SDK之间的同步边界。API、Action和Worker直接调用
-端口；Agent先经过`KernelTelemetry`，因此两条链的错误隔离和隐私语义并不相同。Journal与Session只保存
-传播上下文，不保存Span或Metric。Collector是进程外不可信可用性依赖，不是业务提交参与者。
+**图示说明：** Observability端口是业务调用方与具体SDK之间的同步边界。Agent先经过`KernelTelemetry`；Eval等
+显式库调用方可直接使用端口，因此错误隔离和隐私语义仍不完全一致。Session只保存传播上下文，不保存Span或Metric。
+Collector是进程外不可信可用性依赖，不是业务提交参与者。
 
 **源码映射：** 端口和No-op位于[`core.py`](../../src/harnessix/observability/core.py)；OTel实现位于
 [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py)；Agent包装位于
-[`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py)；Action和Agent持久化分别由
-[`runtime.py`](../../src/harnessix/runtime.py)与[`agent/runtime.py`](../../src/harnessix/agent/runtime.py)发起。
+[`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py)；Agent持久传播由
+[`agent/runtime.py`](../../src/harnessix/agent/runtime.py)发起，Eval直接端口调用见[`evals/runner.py`](../../src/harnessix/evals/runner.py)。
 
 ### 5.1 信任分区
 
@@ -174,8 +171,8 @@ flowchart LR
 flowchart TB
     subgraph Business[权威业务事实]
         S[(Session事件)]
-        J[(Action Journal)]
-        E[(Execution与Delivery账本)]
+        A[(Action Audit与Execution Plan)]
+        E[(Process与Delivery账本)]
     end
     subgraph Diagnostic[尽力而为诊断]
         T[Trace]
@@ -191,8 +188,8 @@ flowchart TB
     External -.不得反向决定业务状态.-> Business
 ```
 
-权威恢复必须读取Session、Journal和专用账本，不能依据“是否看到了Span”决定重试、重复执行或审批结果。
-Trace/Metric丢失最多降低诊断能力；理想边界是不改变业务结果，但当前Action/API直接调用仍存在实现缺口。
+权威恢复必须读取Session、Action Audit、Execution Plan和专用效果账本，不能依据“是否看到了Span”决定重试、重复执行或审批结果。
+Trace/Metric丢失最多降低诊断能力；理想边界是不改变业务结果，但直接端口调用的统一故障隔离仍存在实现缺口。
 
 ### 5.2 允许依赖与禁止旁路
 
@@ -215,16 +212,11 @@ Trace/Metric丢失最多降低诊断能力；理想边界是不改变业务结�
 | 3 | [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | `_OpenTelemetrySpan`、`OpenTelemetryObservability` | 理解SDK资源、Exporter、传播器和Instrument缓存 |
 | 4 | [`logging.py`](../../src/harnessix/observability/logging.py) | `bind_log_context`、`trace_log_fields`、`JsonLogFormatter` | 理解日志关联字段和真实脱敏边界 |
 | 5 | [`__init__.py`](../../src/harnessix/observability/__init__.py) | `build_observability` | 理解No-op/OTel惰性选择 |
-| 6 | [`settings.py`](../../src/harnessix/settings.py) | `Settings.from_environment` | 理解进程级配置来源和校验 |
-| 7 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | `build_service` | 理解API/Worker服务命名和Observer注入 |
-| 8 | [`api/app.py`](../../src/harnessix/api/app.py) | `create_app.observe_http` | 追踪HTTP入口Span、日志和请求指标 |
-| 9 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService` | 追踪Action、Policy、Execution和Reconcile信号 |
-| 10 | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker` | 追踪Consumer Span、Lease和队列Gauge |
-| 11 | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry`、`Operation` | 理解Agent低基数、异常抑制和熔断 |
-| 12 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime`各Telemetry调用点 | 对照Turn、Model、Tool、Context、Retry和恢复主链 |
-| 13 | [`tests/agent/test_telemetry.py`](../../tests/agent/test_telemetry.py) | Agent遥测测试组 | 用真实内存Exporter核验安全和故障语义 |
-| 14 | [`tests/integration/test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | 三个跨层测试 | 核验Action持久传播、幂等计数和迁移 |
-| 15 | [`tests/integration/test_otlp_export.py`](../../tests/integration/test_otlp_export.py) | `test_otlp_http_exports_trace_and_metrics` | 核验真实OTLP HTTP路径和关闭Flush |
+| 6 | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry`、`Operation` | 理解Agent低基数、异常抑制和熔断 |
+| 7 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime`各Telemetry调用点 | 对照Turn、Model、Tool、Context、Retry和恢复主链 |
+| 8 | [`evals/runner.py`](../../src/harnessix/evals/runner.py) | Eval Observability注入 | 理解显式库调用方和No-op默认值 |
+| 9 | [`tests/agent/test_telemetry.py`](../../tests/agent/test_telemetry.py) | Agent遥测测试组 | 用真实内存Exporter核验安全和故障语义 |
+| 10 | [`tests/integration/test_otlp_export.py`](../../tests/integration/test_otlp_export.py) | `test_otlp_http_exports_trace_and_metrics` | 核验真实OTLP HTTP路径和关闭Flush |
 
 ## 7. 内部组件架构
 
@@ -285,7 +277,6 @@ classDiagram
 | `_OpenTelemetrySpan` | 当前SDK Span引用 | Span上下文内 | 当前Context | `set_error`只写类别和ERROR状态 |
 | 日志`ContextVar` | 当前异步上下文的字段字典 | `bind_log_context`作用域 | Task Context传播 | 退出必须按Token恢复原值 |
 | `KernelTelemetry` | Observer引用和`_broken`熔断位 | 与AgentRuntime实例一致 | AgentRuntime内使用 | Observer故障不能改变Agent业务结果 |
-| `ActionService` | Observer引用 | `initialize`到`close` | API或Worker服务实例 | 当前`close`总会关闭注入Observer |
 
 ## 8. Observability端口合同
 
@@ -321,7 +312,7 @@ classDiagram
 
 `_OpenTelemetrySpan.set_error`不主动添加Exception Event或Stacktrace。但如果业务异常穿过
 `OpenTelemetryObservability.span`的上下文管理器，底层`start_as_current_span`仍可能按SDK默认行为自动记录
-异常。Agent通过特殊退出策略避免这条路径；Action/API直接路径没有统一避免。
+异常。Agent通过特殊退出策略避免这条路径；其他直接端口调用方尚未统一避免。
 
 ## 9. OpenTelemetry适配器
 
@@ -417,16 +408,10 @@ Counter再作为Histogram，两个字典会分别创建不同类型的同名Inst
 
 ## 10. Trace设计
 
-### 10.1 当前Span目录
+### 10.1 当前Agent Span目录
 
 | Span名称 | Kind | 创建位置 | 初始属性 | 结束时属性/状态 | 父级来源 |
 |---|---|---|---|---|---|
-| `harnessix.http.request` | SERVER | API Middleware | `http.request.method` | 成功时status code、route；异常由SDK路径处理 | 入站W3C Header或新Trace |
-| `harnessix.action.submit` | INTERNAL | `ActionService.submit` | `tool`、`effect_class` | 成功写Action status；异常写`harnessix.outcome=error` | 当前HTTP/Agent Context |
-| `harnessix.policy.evaluate` | INTERNAL | `_submit` | `tool` | 无显式结果属性 | Action submit |
-| `harnessix.worker.consume` | CONSUMER | `ActionWorker.run_once` | `tool` | 无显式状态 | 持久`ActionSnapshot.trace_context` |
-| `harnessix.action.execute` | INTERNAL | `execute_leased` | `tool`、`effect_class` | `harnessix.action.status` | Worker consumer或当前Context |
-| `harnessix.action.reconcile` | INTERNAL | `reconcile` | `tool` | 无显式结果属性 | 当前调用Context |
 | `harnessix.agent.turn` | INTERNAL | Agent运行/恢复 | `thread_id`、`turn_id` | `outcome`、可选`error.type` | 入参或持久Turn Context |
 | `harnessix.agent.model` | INTERNAL | 模型采样 | `thread_id`、`turn_id`、`model_step` | `outcome`、可选错误类别 | 当前Turn Span |
 | `harnessix.agent.tool` | INTERNAL | 单个Tool调用 | `thread_id`、`turn_id`、`call_id` | `outcome`、可选错误类别 | 当前Turn Span |
@@ -438,7 +423,8 @@ Counter再作为Histogram，两个字典会分别创建不同类型的同名Inst
 | `harnessix.agent.compaction` | INTERNAL | 摘要压缩 | IDs、`model_step` | `outcome`、可选错误类别 | 当前Turn Span |
 | `harnessix.agent.retry` | INTERNAL | Turn Retry | IDs | `outcome`、可选错误类别 | 入参或新Trace |
 
-当前没有Model Provider的`CLIENT` Span、OTLP Export自身Span、Delivery/Trusted Action统一Span或Protocol请求Span。
+历史`harnessix.http.*`、`harnessix.action.*`和`harnessix.worker.*`Span生产者已删除，不属于当前目录。当前没有
+Model Provider的`CLIENT` Span、OTLP Export自身Span、Delivery/Trusted Action统一Span或Protocol请求Span。
 
 ### 10.2 Agent有限时长Trace片段
 
@@ -503,7 +489,7 @@ sequenceDiagram
 `TraceContext`是运行时拥有的诊断合同，不是Action请求载荷；不会加入Action请求指纹。Agent `TurnStarted`
 同样持久化它，以便审批、取消和恢复创建连续片段。
 
-### 11.2 Action跨API/Worker流程
+### 11.2 Action跨API/Worker流程（历史）
 
 ```mermaid
 sequenceDiagram
@@ -532,7 +518,7 @@ sequenceDiagram
 首次创建Action时，SQLite或PostgreSQL与请求、工具和初始状态一起写入`trace_context_json`。同一
 `action_id`或幂等键的合法重复提交返回既有Snapshot，不覆盖首次上下文，也不会再次累计Action终态指标。
 
-### 11.3 持久化Schema
+### 11.3 旧Action持久化Schema（历史）
 
 ```mermaid
 erDiagram
@@ -553,8 +539,8 @@ erDiagram
     ACTIONS ||--o{ ACTION_EVENTS : records
 ```
 
-SQLite迁移[`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql)增加可空列；
-PostgreSQL迁移[`postgresql/0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql)
+SQLite迁移[`0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0002_observability.sql)增加可空列；
+PostgreSQL迁移[`postgresql/0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0002_observability.sql)
 使用`IF NOT EXISTS`。历史Action没有上下文时，Worker创建新的Trace，不拒绝执行。
 
 ### 11.4 Context与业务身份的区别
@@ -569,7 +555,7 @@ PostgreSQL迁移[`postgresql/0002_observability.sql`](../../src/harnessix/storag
 
 ## 12. Metric设计
 
-### 12.1 Action、HTTP和Worker Counter
+### 12.1 Action、HTTP和Worker Counter（历史）
 
 | 名称 | 值 | 属性 | 记录时机 | 当前语义限制 |
 |---|---:|---|---|---|
@@ -584,7 +570,7 @@ PostgreSQL迁移[`postgresql/0002_observability.sql`](../../src/harnessix/storag
 | `harnessix.reconciliation` | `1` | `tool,outcome` | 对账返回或抛异常 | 异常固定`outcome=error` |
 | `harnessix.http.requests` | `1` | 成功：`method,route,status`；异常：`method,status` | HTTP响应或未处理异常 | 同一Metric存在两种属性集合 |
 
-### 12.2 Action、HTTP和Worker Histogram/Gauge
+### 12.2 Action、HTTP和Worker Histogram/Gauge（历史）
 
 | 名称 | 类型 | 值语义 | 属性 | 记录条件 |
 |---|---|---|---|---|
@@ -708,41 +694,31 @@ OTel传播器在提取父级时处理。生产调用点通常传入OTel生成的
 | `log_format` | `json` | 只能`json/console` | 选择`JsonLogFormatter`或标准文本Formatter |
 
 `configure_logging`创建一个`StreamHandler`，清空Root Logger已有全部Handler后再安装。它不是增量配置；
-嵌入其他宿主时可能移除宿主已有Handler。当前顶层CLI只在Action `serve`和`worker`分支之前执行该配置，
-`agent`、`agent-server`、`model-smoke`和`coding-eval-campaign`会提前分派，不经过该调用。
+嵌入其他宿主时可能移除宿主已有Handler。当前产品组合根尚未统一调用该函数，默认Agent Telemetry仍为No-op。
 
 ## 14. 配置、装配与生命周期
 
-### 14.1 环境配置
+### 14.1 当前配置边界
 
-| 环境变量 | 默认值 | Settings字段 | 当前校验 | 说明 |
-|---|---:|---|---|---|
-| `HARNESSIX_SERVICE_NAME` | `harnessix` | `service_name` | 非空 | Action服务自动追加组件后缀 |
-| `HARNESSIX_LOG_LEVEL` | `INFO` | `log_level` | Settings阶段不校验；配置日志时校验 | 必须是Python标准整数Level名称 |
-| `HARNESSIX_LOG_FORMAT` | `json` | `log_format` | `json/console` | 只影响Python标准输出日志 |
-| `HARNESSIX_OTEL_ENDPOINT` | 空 | `otel_endpoint` | 无URL格式校验 | 优先于标准Endpoint变量 |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | 空 | `otel_endpoint`回退 | 无URL格式校验 | 仅作为基础地址读取 |
-| `HARNESSIX_OTEL_EXPORT_INTERVAL_MILLIS` | `10000` | `otel_export_interval_millis` | 大于0 | 只控制Metric周期Reader |
-
-环境数字转换错误会在`Settings.from_environment`直接抛`ValueError`。Endpoint存在并不在启动时验证Collector
-可达性；Exporter通常在后台或关闭Flush时才暴露连接问题。
+旧`Settings`与`HARNESSIX_OTEL_*`自动装配已随Action服务删除。当前`build_observability`仍可由受信宿主显式调用，
+参数包括服务名、Endpoint和导出周期；产品CLI/Product Config尚未提供正式Telemetry配置合同。Endpoint存在并不在
+构造时证明Collector可达，Exporter通常在后台或关闭Flush时才暴露连接问题。
 
 ### 14.2 构造决策
 
 ```mermaid
 flowchart TD
-    S[Settings] --> B[build_service]
-    I{调用方注入Observer?} -- 是 --> U[直接使用注入实例]
-    I -- 否 --> F[build_observability]
+    H[受信宿主] --> I{显式注入Observer?}
+    I -- 是 --> U[Agent或Eval使用注入实例]
+    I -- 否 --> N[NoOpObservability]
+    H --> F[build_observability]
     F --> E{endpoint为空?}
-    E -- 是 --> N[NoOpObservability]
+    E -- 是 --> N
     E -- 否 --> L[惰性导入OpenTelemetry实现]
     L --> D{可选依赖可导入?}
     D -- 否 --> R[RuntimeError提示安装extra]
     D -- 是 --> O[OpenTelemetryObservability]
-    B --> C{worker_id存在?}
-    C -- 是 --> W[service.name前缀加.worker]
-    C -- 否 --> A[service.name前缀加.api]
+    O --> U
 ```
 
 Endpoint为空时不会导入`opentelemetry.py`，因此基础安装不需要Observability Extra。启用时应安装项目的
@@ -752,45 +728,34 @@ Endpoint为空时不会导入`opentelemetry.py`，因此基础安装不需要Obs
 
 | 运行形态 | Observer来源 | 日志配置 | 当前结论 |
 |---|---|---|---|
-| 旧Action API | `build_service`按Settings构造 | 无顶层CLI入口 | 仅迁移兼容测试可启用，不是产品观测链 |
-| 旧Action Worker | 独立`build_service`构造 | 无顶层CLI入口 | 仅迁移兼容测试可启用，0.9.1f3删除 |
-| 旧Action内联模式 | API服务同一Observer | 无产品装配 | 只记录历史Submit/Execute行为 |
 | `harnessix agent` | App Server产品链未注入 | 顶层CLI提前分派，不配置 | Agent Telemetry实际No-op |
 | `harnessix agent-server` | `run_product_stdio`未注入 | 顶层CLI提前分派，不配置 | Agent Telemetry实际No-op |
 | Model Smoke | 未注入 | 顶层CLI提前分派 | 无外部Agent遥测 |
-| Coding Eval | `run_historical_coding_eval`可由库调用方注入 | CLI未统一配置 | 默认No-op；旧Action观测随Eval迁移删除 |
+| Coding Eval | `run_historical_coding_eval`可由库调用方注入 | CLI未统一配置 | 默认No-op；显式宿主可注入共享Observer |
 
 ### 14.4 生命周期与所有权
 
 ```mermaid
 sequenceDiagram
-    participant Host as API或Worker宿主
-    participant Service as ActionService
-    participant Journal as EffectJournal
+    participant Host as 受信宿主
+    participant Runtime as Agent或Eval Runtime
     participant Obs as Observability
-    Host->>Service: initialize()
-    Service->>Journal: initialize + recover_expired
-    Host->>Service: 处理请求/循环
-    Host->>Service: close()
-    Service->>Journal: close()
-    alt Journal关闭成功或失败
-        Service->>Obs: close()
-    end
+    Host->>Obs: 构造或选择No-op
+    Host->>Runtime: 注入Observer
+    Runtime->>Obs: span/metric
+    Host->>Runtime: close()
+    Host->>Obs: close()
     Obs->>Obs: tracer_provider.shutdown
     Obs->>Obs: meter_provider.shutdown
 ```
 
-`ActionService.close`通过`finally`确保Journal关闭失败时仍关闭Observer。`OpenTelemetryObservability.close`
-使用`_closed`防止重复Shutdown，但先关闭Tracer再关闭Meter；任一步异常都可能向宿主传播，且没有有界超时。
-
-Agent Runtime不同：它不关闭外部注入Observer，符合“宿主拥有共享Exporter”的语义。Action Service无所有权
-标志，无论Observer是内部构造还是外部注入都会关闭它。若多个Service共享同一实例，先关闭的Service会影响
-其余调用者；Eval当前把同一Observer注入Action和Agent，并在全部Agent工作结束后由Action Service关闭，调用方
-仍需知道该隐式所有权转移。
+`AgentRuntime`不关闭外部注入Observer，生命周期由宿主拥有；共享Exporter必须在全部Runtime关闭后再释放。
+`OpenTelemetryObservability.close`使用`_closed`防止重复Shutdown，但先关闭Tracer再关闭Meter；任一步异常都可能
+向宿主传播，且没有有界超时。产品组合根未来接线时必须显式承担该关闭顺序，不能把所有权隐式转移给业务Runtime。
 
 ## 15. 正常业务流程
 
-### 15.1 HTTP成功路径
+### 15.1 HTTP成功路径（历史）
 
 1. Middleware读取`traceparent`和`tracestate`；
 2. 领域`TraceContext`校验失败时只记录固定消息，然后忽略远端父级；
@@ -801,7 +766,7 @@ Agent Runtime不同：它不关闭外部注入Observer，符合“宿主拥有�
 7. 写响应状态、请求Counter、耗时Histogram和固定格式日志；
 8. 退出Middleware后结束SERVER Span。
 
-### 15.2 Action提交成功路径
+### 15.2 Action提交成功路径（历史）
 
 ```text
 resolve tool definition
@@ -824,7 +789,7 @@ return snapshot
 Submitted按调用尝试计数，Completed按本进程确认的新终态计数；二者不是同一个Exactly-once事务，也不能替代
 Journal事件统计。
 
-### 15.3 Worker执行成功路径
+### 15.3 Worker执行成功路径（历史）
 
 1. 从Journal原子Claim一个READY Action；没有任务时不创建Span；
 2. 成功Claim后累计`worker.claims`；
@@ -883,7 +848,7 @@ stateDiagram-v2
 传给`finish`的不认识Outcome会归一化为`failed`。`unknown`映射`interrupted`类别，裸`failed`映射
 `internal`；错误类别进入Span和Metric，错误消息不进入。
 
-### 16.3 Action/API故障矩阵
+### 16.3 Action/API故障矩阵（历史）
 
 | 场景 | 当前业务行为 | 当前遥测行为 | 恢复依据 | 已知问题 |
 |---|---|---|---|---|
@@ -978,7 +943,7 @@ Python `ContextVar`可随异步Task上下文传播，因此HTTP Middleware绑定
 通常复制创建时Context，但模块没有定义跨线程、手工Context执行或第三方线程池的额外传播合同。作用域必须通过
 上下文管理器退出，避免字段污染后续请求。
 
-### 18.2 API与Worker独立进程
+### 18.2 API与Worker独立进程（历史）
 
 API和Worker各自构造独立OTel Provider，服务名分别为`<prefix>.api`与`<prefix>.worker`。它们不共享内存
 Context，通过Journal中的W3C字符串关联。独立Provider也意味着采样、队列、关闭和Exporter故障彼此独立。
@@ -1112,7 +1077,7 @@ bind_log_context(values):
     always reset ContextVar(token)
 ```
 
-### 21.5 Durable Action Trace
+### 21.5 Durable Action Trace（历史）
 
 ```text
 submit(action):
@@ -1155,7 +1120,7 @@ Meter Shutdown。这是当前实现事实，不是建议的最终恢复策略。
 | No-op | [`core.py`](../../src/harnessix/observability/core.py) | `NoOpObservability` | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) | `test_observability_is_noop_without_endpoint` |
 | 工厂惰性选择 | [`__init__.py`](../../src/harnessix/observability/__init__.py) | `build_observability` | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) | `test_observability_is_noop_without_endpoint` |
 | JSON日志白名单 | [`logging.py`](../../src/harnessix/observability/logging.py) | `_ALLOWED_CONTEXT_KEYS`、`bind_log_context` | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) | `test_json_log_formatter_includes_bound_safe_context` |
-| Trace日志字段 | [`logging.py`](../../src/harnessix/observability/logging.py) | `trace_log_fields` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | 跨Action链间接覆盖；缺独立非法值测试 |
+| Trace日志字段 | [`logging.py`](../../src/harnessix/observability/logging.py) | `trace_log_fields` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | 跨Action链间接覆盖；缺独立非法值测试 |
 | JSON Formatter | [`logging.py`](../../src/harnessix/observability/logging.py) | `JsonLogFormatter.format` | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) | 安全Context正向/未知字段反向断言 |
 | 根日志配置 | [`logging.py`](../../src/harnessix/observability/logging.py) | `configure_logging` | 无专用测试 | Level、Handler替换和Console分支待覆盖 |
 | OTel构造 | [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | `OpenTelemetryObservability.__init__` | [`test_otlp_export.py`](../../tests/integration/test_otlp_export.py) | `test_otlp_http_exports_trace_and_metrics` |
@@ -1163,15 +1128,15 @@ Meter Shutdown。这是当前实现事实，不是建议的最终恢复策略。
 | 无效父级 | [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | `_extract` | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) | `test_invalid_parent_creates_new_valid_trace` |
 | Span错误类别 | [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | `_OpenTelemetrySpan.set_error` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` |
 | OTLP Signal路径 | [`opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | `OTLPSpanExporter`、`OTLPMetricExporter`构造 | [`test_otlp_export.py`](../../tests/integration/test_otlp_export.py) | 断言`/v1/traces`与`/v1/metrics` |
-| Action服务装配 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | `build_service` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | 注入Recording Observer |
-| HTTP入口 | [`api/app.py`](../../src/harnessix/api/app.py) | `create_app.observe_http` | [`test_api.py`](../../tests/integration/test_api.py) | API成功/错误/就绪；遥测字段缺专用断言 |
-| Action Trace持久化 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.submit`、`_submit` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_trace_context_is_durable_across_api_and_worker` |
-| 重复提交计数 | [`runtime.py`](../../src/harnessix/runtime.py) | `_record_action_completion` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_duplicate_submission_does_not_double_count_completion` |
-| SQLite Trace迁移 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `create_action`、`_snapshot` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_sqlite_applies_observability_migration_to_existing_database` |
-| PostgreSQL Trace字段 | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `create_action`、`_snapshot` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | Worker链测试间接覆盖，缺专用父子Trace断言 |
-| Worker Consumer Span | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker.run_once` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | 断言Span Kind和父Context |
-| Lease失败Counter | [`worker.py`](../../src/harnessix/worker.py) | `_resolve_failed_renewal` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_failed_renewal_while_running_still_reports_lost_lease`覆盖失租调用路径，但未专门断言Counter值 |
-| 运维Gauge隔离 | [`worker.py`](../../src/harnessix/worker.py) | `record_operational_metrics` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_metrics_collection_failure_does_not_change_execution_result` |
+| Action服务装配 | [`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | `build_service` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | 注入Recording Observer |
+| HTTP入口 | [`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | `create_app.observe_http` | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | API成功/错误/就绪；遥测字段缺专用断言 |
+| Action Trace持久化 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService.submit`、`_submit` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_trace_context_is_durable_across_api_and_worker` |
+| 重复提交计数 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `_record_action_completion` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_duplicate_submission_does_not_double_count_completion` |
+| SQLite Trace迁移 | [`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py) | `create_action`、`_snapshot` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_sqlite_applies_observability_migration_to_existing_database` |
+| PostgreSQL Trace字段 | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `create_action`、`_snapshot` | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | Worker链测试间接覆盖，缺专用父子Trace断言 |
+| Worker Consumer Span | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `ActionWorker.run_once` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | 断言Span Kind和父Context |
+| Lease失败Counter | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `_resolve_failed_renewal` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_failed_renewal_while_running_still_reports_lost_lease`覆盖失租调用路径，但未专门断言Counter值 |
+| 运维Gauge隔离 | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `record_operational_metrics` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_metrics_collection_failure_does_not_change_execution_result` |
 | Agent操作包装 | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_durable_trace_segments_and_low_cardinality_metrics` |
 | Agent Retry Span | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `retry_turn` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_retry_has_dedicated_low_cardinality_operation` |
 | 并行Tool Span | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `_execute_tool` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_parallel_reads_keep_individual_tool_spans_and_metrics` |

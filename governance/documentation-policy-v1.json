@@ -89,23 +89,16 @@
     "src/harnessix/__init__.py": ["docs/architecture.md"],
     "src/harnessix/__main__.py": ["docs/modules/app-server.md"],
     "src/harnessix/agent_cli.py": ["docs/modules/app-server.md", "docs/modules/sdk.md"],
-    "src/harnessix/bootstrap.py": ["docs/architecture.md", "docs/modules/product-config.md"],
-    "src/harnessix/cli.py": [
-      "docs/subsystems/action-plane.md",
-      "docs/modules/product-ui.md"
-    ],
-    "src/harnessix/file_lock.py": ["docs/modules/storage.md", "docs/modules/product-config.md"],
-    "src/harnessix/licensing.py": ["docs/product-charter.md", "docs/build-vs-buy.md"],
-    "src/harnessix/runtime.py": ["docs/subsystems/action-plane.md"],
-    "src/harnessix/settings.py": ["docs/deployment.md", "docs/modules/product-config.md"],
-    "src/harnessix/worker.py": ["docs/subsystems/action-plane.md"]
+    "src/harnessix/cli.py": ["docs/modules/product-ui.md"],
+    "src/harnessix/file_lock.py": ["docs/modules/product-config.md"],
+    "src/harnessix/licensing.py": ["docs/product-charter.md", "docs/build-vs-buy.md"]
   },
   "major_change_patterns": [
     "^spec/",
-    "^src/harnessix/(?:protocol|session|domain|policy|execution|sandbox|secrets|trusted_actions|product_config|product_ui)/",
+    "^src/harnessix/(?:protocol|session|domain|execution|sandbox|secrets|trusted_actions|product_config|product_ui)/",
     "^src/harnessix/(?:[^/]+/)*(?:contracts|[^/]+_contracts|models|reducer|ports|codec)\\.py$",
     "^src/harnessix/session/migrations/[^/]+\\.sql$",
-    "^src/harnessix/(?:bootstrap|runtime|worker|agent_cli|cli|settings|licensing)\\.py$",
+    "^src/harnessix/(?:agent_cli|cli|licensing)\\.py$",
     "^pyproject\\.toml$"
   ],
   "allowed_mermaid_diagram_types": [

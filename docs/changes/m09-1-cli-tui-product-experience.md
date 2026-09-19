@@ -83,7 +83,7 @@ Server argv、客户端UUID、Command ID和Thread ID；进程退出后不保存�
 - [SDK模块限制](../modules/sdk.md#41-已知限制风险与后续工作)登记Response、Frame、Result和半握手缺口；
 - [App Server模块限制](../modules/app-server.md#31-已知限制风险与后续工作)登记版本错误、出站字节和协商Limit缺口；
 - 0.9.1d实施前的[`run_product_stdio`](../../src/harnessix/product_config/server.py)仅装配POSIX Tool并拒绝Windows；当前实现已由共享Preflight和平台Read Backend取代该门；
-- [总体架构限制](../architecture.md#20-已知限制与后续演进)登记完整TUI、统一装配和Windows缺口。
+- [总体架构限制](../architecture.md#20-当前限制风险与后续路线)登记完整TUI、统一装配和Windows缺口。
 
 参考实现与TUI框架证据已冻结在
 [CLI/TUI产品体验源码研究](../research/cli-tui-product-experience.md)，长期取舍进入

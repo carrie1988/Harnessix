@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 12
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -28,6 +28,7 @@ related_tests:
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
   - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_legacy_process_compatibility.py
 supersedes: []
 ---
 
@@ -37,15 +38,17 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复，以及可显式装配的统一Trusted Action Gateway |
+| 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复、统一Trusted Action Gateway，以及历史Process等待事实的只读兼容 |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | f2c恢复实现`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
+| 代码版本 | 0.9.1f3候选基于`3f37fe8ae0646d3327254ce9677110b94f7c5e80`收敛；提交号和CI结果在候选提交后回填 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到25 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
-本文把“已实现”和“默认已装配”分开描述。代码库中存在的Patch、Patch Batch、Process、Artifact和
-Compaction端口，不等于薄CLI当前默认启用了对应写能力；默认产品边界以
+本文把“已实现”和“默认已装配”分开描述。当前Process能力经统一Trusted Action组合进入Agent，
+旧`ProcessRuntime`、`ProcessArtifactPublisher`及独立Action Plane服务均已删除；历史
+`ProcessApprovalRequestContent`与`WAITING_ACTION`仅为旧Session回放合同，不是当前可执行入口。
+代码库中存在的Patch、Patch Batch、Artifact和Compaction端口，也不等于薄CLI默认启用了对应写能力；默认产品边界以
 [`product_config/server.py`](../../src/harnessix/product_config/server.py)的装配为准。
 
 ## 2. 需求背景
@@ -73,12 +76,12 @@ Agent Runtime因此解决五类核心问题：
 4. 取消、超时、Provider失败、Tool失败和未知副作用都收敛为稳定公开错误；
 5. 重启恢复不依赖丢失的Future，并且不能自动重放无法证明安全的副作用；
 6. Retry创建新Turn并保留原失败事实，不修改历史Turn；
-7. Model、Context、Tool、Patch、Process和Session均通过稳定端口替换实现。
+7. Model、Context、Tool、Patch、Trusted Action和Session均通过稳定端口替换实现。
 
 ### 3.2 非目标
 
 1. 本模块不实现LLM HTTP协议、鉴权或计价；这些属于`models`及Provider Adapter；
-2. 本模块不直接解释路径、执行Shell或提交Git；这些属于Tool、Process和Delivery边界；
+2. 本模块不直接解释路径、执行Shell或提交Git；这些属于Tool、Trusted Action、Process Supervisor和Delivery边界；
 3. 本模块不提供跨主机分布式Thread所有权；当前Session Runtime Owner是本地单宿主边界；
 4. 本模块不提供多Agent/Subagent调度；1.0当前目标仍是本地单Agent；
 5. 本模块不保证任意非幂等外部效果自动恢复；无法证明时必须中断或进入专用对账状态；
@@ -111,7 +114,7 @@ flowchart LR
     Provider -->|ProviderEvent| Runtime
     Runtime -->|prepare和commit| Context[ContextEngine]
     Runtime -->|Scoped Call| Tool[Tool Runtime]
-    Runtime -->|专用受信端口| Effects[Patch Batch Process]
+    Runtime -->|统一受信入口| Effects[Trusted Action Gateway]
     Runtime -->|append expected sequence| Session[(SessionStore)]
     Session -->|重放事件| Reducer[Reducer]
     Runtime -->|低基数信号| Obs[Observability]
@@ -122,7 +125,7 @@ flowchart LR
 - Client只能通过Runtime命令改变会话，不能直接修改`Thread`投影；
 - Provider只接收归一化`ModelRequest`，返回归一化`ProviderEvent`，没有Workspace权限；
 - Context负责预算内上下文选择和检查事实，Runtime决定何时准备及提交；
-- 普通Tool通过`ToolRuntime`或`ScopedToolRuntime`二选一注入；Patch、Batch和Process使用更严格的专用端口；
+- 普通Tool通过`ToolRuntime`或`ScopedToolRuntime`二选一注入；当前高风险Patch和Process经统一Trusted Action Gateway进入，保留的原Patch端口只服务兼容恢复；
 - Session先保存`EventDraft`，再由Reducer生成权威投影；
 - Observability失败不能改变领域结果，敏感正文不进入低基数标签。
 
@@ -176,7 +179,7 @@ Runtime入口见[`agent/runtime.py`](../../src/harnessix/agent/runtime.py)的`Ag
 ### 7.2 Event与Delta
 
 `EventDraft`携带版本、`event_id`、可选`turn_id`、发生时间和Payload；Store在持久化时补充
-`thread_id`与严格递增`sequence`形成`AgentEvent`。当前写版本是19，可读取1至19并在加载时Upcast。`ItemDelta`只用于当前连接的流式
+`thread_id`与严格递增`sequence`形成`AgentEvent`。当前写版本是20，可读取1至20并在加载时Upcast。`ItemDelta`只用于当前连接的流式
 体验，权威文本以持久Item完成事实为准；断线客户端通过Protocol Event重放而不是依赖丢失Delta。
 
 ## 8. Turn状态机与不变量
@@ -192,9 +195,7 @@ stateDiagram-v2
     EXECUTING_TOOLS --> PREPARING_CONTEXT: Tool结果已提交
     EXECUTING_TOOLS --> WAITING_APPROVAL
     EXECUTING_TOOLS --> WAITING_INPUT
-    WAITING_APPROVAL --> EXECUTING_TOOLS: 普通审批完成
-    WAITING_APPROVAL --> WAITING_ACTION: Process审批已接受
-    WAITING_ACTION --> EXECUTING_TOOLS: 外部观察已收敛
+    WAITING_APPROVAL --> EXECUTING_TOOLS: 审批完成
     WAITING_INPUT --> EXECUTING_TOOLS: 用户回答
     FINALIZING --> COMPLETED
     ACCEPTED --> CANCELLING: 取消
@@ -202,13 +203,13 @@ stateDiagram-v2
     CALLING_MODEL --> CANCELLING: 取消
     EXECUTING_TOOLS --> CANCELLING: 取消
     WAITING_APPROVAL --> CANCELLING: 取消
-    WAITING_ACTION --> CANCELLING: 取消
     WAITING_INPUT --> CANCELLING: 取消
     CANCELLING --> CANCELLED
     CANCELLING --> INTERRUPTED
 ```
 
-图中未逐条绘制的通用失败边：任何非终态且非`CANCELLING`状态可在记录公开`ErrorItem`后进入
+`WAITING_ACTION`不在当前命令状态机中；它只作为历史Process Event的可回放枚举值保留。图中未逐条
+绘制的通用失败边：当前任何非终态且非`CANCELLING`状态可在记录公开`ErrorItem`后进入
 `FAILED`或`INTERRUPTED`。`COMPLETED`、`FAILED`、`CANCELLED`和`INTERRUPTED`是终态，不可重开。
 
 关键不变量由[`turn_reducer.py`](../../src/harnessix/agent/turn_reducer.py)执行：
@@ -216,7 +217,7 @@ stateDiagram-v2
 1. `CALLING_MODEL`前检查步数和Token预算并记录Model Attempt；
 2. `WAITING_APPROVAL`必须存在已开始的Approval Item及对应待处理Tool Call；
 3. `WAITING_INPUT`只接受Event v19及以上，且必须绑定`ask_user` Call和已完成Question Request；
-4. `WAITING_ACTION`必须有已决定的Process审批，不能伪造为普通Tool等待；
+4. `WAITING_ACTION`只允许旧Event重放；当前命令不得创建、决定或恢复该历史Process等待状态；
 5. 终态前不能存在运行中的Model Attempt、开放Compaction、`STARTED` Item或待处理Call；
 6. `COMPLETED`不能携带错误、未知Tool结果、恢复副作用或未完成Batch；
 7. 非成功终态必须有与最终失败一致的Error Item；
@@ -295,7 +296,7 @@ Result和终态均先进入Session，再向后推进。流式Delta可提前显�
 ## 12. 多Tool调度
 
 Runtime只并行一个连续的、全部声明`READ_ONLY`且`supports_parallel_calls=True`的前缀，并受
-`max_parallel_tools`限制；写Tool、未选择并行的只读Tool和专用Patch/Process形成串行屏障。多个并行
+`max_parallel_tools`限制；写Tool、未选择并行的只读Tool和Trusted Action形成串行屏障。多个并行
 结果即使实际完成顺序不同，也按Provider给出的Call顺序持久化。任一并行兄弟失败时，Runtime取消并
 完整回收其余Task，避免孤儿执行跨越下一Model Step。
 
@@ -324,23 +325,23 @@ sequenceDiagram
     participant R as AgentRuntime
     participant S as SessionStore
     participant C as Client
-    participant E as Patch或Process端口
+    participant G as Trusted Action Gateway
     M-->>R: 高风险Tool Call
     R->>S: 持久Tool Call、Approval Request、WAITING_APPROVAL
     R-->>C: 返回等待审批事实
     C->>R: reply_approval(id, fingerprint, decision)
-    R->>S: 持久Approval Decision
-    alt Patch或Batch
-        R->>S: 转EXECUTING_TOOLS
-        R->>E: 执行绑定批准
-    else Process
-        R->>S: 转WAITING_ACTION
-        R->>E: 同步批准并等待权威观察
-    end
+    R->>G: 持久Router决定并核对Checkpoint
+    G-->>R: 携带原决定时间的投影
+    R->>S: CAS完成Approval Item并转EXECUTING_TOOLS
+    R->>G: 以持久Call、Plan和决定执行或核对
+    G-->>R: 有界Tool Result与效果投影
+    R->>S: 持久结果；需要时进入下一Model Step
 ```
 
 审批ID和请求指纹共同绑定当次请求；相同决定可重复读取，不同决定形成冲突。批准不是会话级权限提升。
-Process在批准后进入`WAITING_ACTION`，因为宿主进程可能继续存在，不能把“批准已提交”等同于“效果已完成”。
+当前Patch与Process均由统一Trusted Action Session/Router核对批准、执行及恢复；`WAITING_ACTION`不再由
+新命令创建。旧`ProcessApprovalRequestContent`或`WAITING_ACTION`只可回放，`reply_approval`和
+`resume_turn`稳定返回`legacy_process_state_archived`，且不得追加或改写任何Session事件。
 
 ### 13.2 提问
 
@@ -429,9 +430,13 @@ sequenceDiagram
         N->>S: 保持可安全续跑
     else WAITING_APPROVAL或WAITING_INPUT
         N->>S: 保持等待或按预算失败
-    else WAITING_ACTION
-        N->>D: 只观察或对账，不重放效果
-    else Patch边界有稳定计划和批准
+    else 当前Trusted Action有稳定Call和Checkpoint
+        N->>D: recover或sync decision 只核对同一Action
+        D-->>N: 原执行结果或对账结果
+        N->>S: 只补缺失投影
+    else 历史WAITING_ACTION或旧Process审批
+        N->>S: 保持原事件字节不变，仅供读取
+    else 原Patch边界有稳定计划和批准
         N->>D: recover(稳定身份)
         D-->>N: 权威结果
         N->>S: 提交恢复事实
@@ -445,8 +450,8 @@ sequenceDiagram
 | deferred `ACCEPTED` | 保留并允许显式`resume_turn` | Provider从未打开 |
 | `WAITING_APPROVAL` | 预算内保持等待；过期则失败 | 高风险效果尚未获得批准 |
 | `WAITING_INPUT` | 未回答保持等待；已回答安全边界继续 | Answer与Call均已持久化 |
-| Process批准提交边界 | 可从稳定Action身份重建；无Process端口则保持等待 | 不重新创建新Action |
-| `WAITING_ACTION` | 等待显式观察后继续 | 不自动重放宿主效果 |
+| 当前Trusted Action批准/终态提交边界 | 按稳定Plan、Call与Router Checkpoint同步或核对 | 不创建第二个Action，不重放已完成效果 |
+| 历史Process审批或`WAITING_ACTION` | 保持旧事实只读；拒绝决定和恢复命令 | `legacy_process_state_archived`；启动不改写 |
 | Patch/Batch稳定计划边界 | 调用专用`recover`对账 | Plan、Approval、Fingerprint已持久化 |
 | 普通活动调用且安全性不明 | 转`INTERRUPTED` | 宁可中断，不猜测执行结果 |
 
@@ -493,8 +498,9 @@ Upcast旧Event；`rebuild`从完整Event Log重新投影，可发现快照与历
 
 ### 18.2 未知结果
 
-普通Tool结果若是`unknown`或携带不可信恢复结果，Agent Loop停止而不是继续让模型决策。Patch、Batch和
-Process必须通过专用端口用稳定计划/Action身份恢复。Retry也拒绝跨越未知效果，防止用户重试造成第二次
+普通Tool结果若是`unknown`或携带不可信恢复结果，Agent Loop停止而不是继续让模型决策。当前高风险
+Patch和Process必须通过Trusted Action Gateway使用稳定Plan/Action身份恢复；原Patch/Batch端口仅保留
+兼容核对。Retry也拒绝跨越未知效果，防止用户重试造成第二次
 副作用。
 
 ### 18.3 数据流与信任
@@ -600,7 +606,8 @@ recover(thread):
 | Retry | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `retry_turn` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_terminal_turn_retry_creates_new_turn_and_is_idempotent`、`test_retry_rejects_completed_and_non_latest_turns` | 新Turn与安全限制 |
 | 审批 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `reply_approval` | [`test_approval_crash_recovery.py`](../../tests/agent/test_approval_crash_recovery.py) | `test_approval_crash_boundaries` | 各提交边界恢复 |
 | 交互与历史并发 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py) | `steer_turn`、`prepare_and_commit_model_history` | [`test_interactions.py`](../../tests/agent/test_interactions.py) | `test_steering_during_history_verification_restarts_preparation`及Steering、Question、错配与恢复用例 | Steering在历史验证竞态中不会提交过期检查或误失败 |
-| Process恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover` | [`test_crash_recovery.py`](../../tests/agent/test_crash_recovery.py) | `test_process_crash_recovers_without_replaying_tool` | 不重复宿主效果 |
+| Trusted Action恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`trusted_action_runtime.py`](../../src/harnessix/agent/trusted_action_runtime.py) | `_recover`、`resume_recovery` | [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py) | 终态响应丢失、决定同步与UNKNOWN核对用例 | 不重复当前Patch或Process效果 |
+| 历史Process兼容 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover`、`resume_turn`、`_reply_approval` | [`test_legacy_process_compatibility.py`](../../tests/agent/test_legacy_process_compatibility.py) | `test_historical_process_state_is_readable_but_never_mutated_or_replayed` | 旧等待事实可读、启动零改写、命令稳定拒绝 |
 | Patch恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover_patch`、`_recover_patch_batch` | [`test_kernel_patch_crash.py`](../../tests/patches/test_kernel_patch_crash.py) | Patch崩溃边界参数化用例 | 稳定计划对账 |
 | Session CAS/重放 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `SQLiteSessionStore.append`、`rebuild` | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | 旧Schema升级和重放用例 | 迁移、CAS、投影一致 |
 | 公开错误 | [`errors.py`](../../src/harnessix/agent/errors.py) | `failure_category`、`KernelError` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_raw_exception_not_persisted`、`test_provider_failure_is_classified_without_retry` | 错误脱敏和分类 |
@@ -630,20 +637,20 @@ recover(thread):
 | Runtime合同 | 多步模型、预算、Provider非法流、公开错误、取消、Retry | `tests/agent/test_runtime.py` |
 | 并发 | 只读并行上限、提交顺序、兄弟Task回收、写屏障 | `tests/agent/test_tool_scheduling.py` |
 | 交互 | Approval、Question、Steering、历史验证竞态、错配、过期和重复答复 | `tests/agent/test_interactions.py`、审批恢复测试 |
-| 故障注入 | Provider、Session、Tool、Patch、Process、Trusted Action各提交边界崩溃 | `tests/agent/test_crash_recovery.py`、`tests/agent/test_trusted_action_runtime.py`等 |
-| 兼容 | Event 1～20 Upcast、Session迁移1～25、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
+| 故障注入 | Provider、Session、Tool、Patch和Trusted Action各提交边界崩溃 | `tests/agent/test_crash_recovery.py`、`tests/agent/test_trusted_action_runtime.py`等 |
+| 兼容 | Event 1～20 Upcast、Session迁移1～25、旧Reader行为、历史Process等待只读归档 | `tests/agent/test_session_upgrade.py`、`tests/agent/test_legacy_process_compatibility.py` |
 | 产品集成 | 接受后重启、客户端恢复、有界关闭 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) |
 
 DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、`_execute_calls`、`_recover`、
 `apply_event`、`replay`、`_change_state`、`CancelToken`、`ToolExecutionScope`、`SessionStore.append`、
 `SQLiteSessionStore.rebuild`和`failure_category`十二个符号；至少正向定位正常循环、并行顺序、取消、
-审批崩溃、Process恢复、Retry和错误脱敏七类测试。
+审批崩溃、Trusted Action恢复、历史Process只读兼容、Retry和错误脱敏等测试。
 
 ## 23. 兼容性、限制、风险与后续工作
 
 | 项目 | 当前边界/影响 | 后续归属 |
 |---|---|---|
-| 默认产品的外部Action Config、Doctor能力报告与启动全局恢复已通过全矩阵CI | Agent内Trusted Action主链已关闭；旧HTTP/Worker迁移兼容内核仍等待物理删除 | 0.9.1f2/f3 |
+| 默认产品的外部Action Config、Doctor能力报告与启动全局恢复已通过全矩阵CI | Agent内Trusted Action主链已关闭；旧HTTP/Worker执行服务已物理删除，历史Process Session仅保留只读兼容 | 0.9.1f3候选 |
 | Windows默认产品仅具原生四项只读Tool | Patch被明确省略，Git、写入和Process仍未开放 | 0.9.5 |
 | 本地SQLite单Owner | 不支持跨主机Thread并发和云端HA | 1.x候选，不提前侵入1.0 |
 | 数据保留、导出和删除策略未完成发布验收 | Session可能随长期使用增长 | 0.9.5和1.0发布门禁 |
@@ -744,6 +751,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 登记0.9.1f3独立Action Plane执行服务删除后的Agent边界：当前Process统一经Trusted Action进入，历史Process审批及WAITING_ACTION仅可读取且命令稳定拒绝 |
 | 11 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录Trusted Action终态响应丢失恢复与不重放由CI 35446341997完成全矩阵验收 |
 | 10 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步Trusted Action Router终态响应丢失只补原执行投影、EXECUTING_TOOLS安全续跑及不重放候选 |
 | 9 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录e5外部Action Config与启动恢复通过CI 35439332019并关闭 |

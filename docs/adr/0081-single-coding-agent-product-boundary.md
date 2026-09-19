@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 5
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 6
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 ## 状态
 
-接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push已经通过全矩阵CI并关闭；f2c历史Eval Trusted Action迁移已通过七任务全矩阵CI并关闭；兼容内核物理删除仍未完成。
+接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push和f2c历史Eval Trusted Action迁移均已通过全矩阵CI并关闭。f3物理删除、历史Session只读兼容和旧数据库离线归档已经形成实现候选，等待全矩阵CI后关闭。
 
 ## 背景
 
@@ -70,10 +70,10 @@ Agent Protocol、`AgentRuntime`、`TrustedActionGateway`和`TrustedActionRouter`
    `harnessix agent-server`；客户端统一使用Agent Protocol；
 2. 顶层CLI不再提供`harnessix serve`和`harnessix worker`，根包和`harnessix.sdk`不再导出Action HTTP Client；
 3. 高风险能力统一经`TrustedActionGateway → TrustedActionRouter`完成计划、Policy、审批、执行和对账；
-4. `ActionService`、`ActionWorker`、旧Effect Journal和专用Process Bridge在迁移期属于兼容内核，不是产品能力，
-   不允许新增生产调用方；
-5. 先完成固定Container Process、Git Push和历史Eval迁移，再删除HTTP API、HTTP Client、LangChain Adapter、
-   PostgreSQL Worker Queue、旧Bootstrap和兼容内核；
+4. `ActionService`、`ActionWorker`、旧Effect Journal和专用Process Bridge已从当前源码树删除；生产代码不得重新引入
+   其模块名、服务入口、依赖或生成规格；
+5. 固定Container Process、Git Push和历史Eval已经迁入Trusted Action；旧Session Process事件和旧Process Artifact
+   只保留只读解码，不允许批准、续跑、重放或写入新历史事件；
 6. 旧数据库不得由新版本自动删除。物理移除前必须提供只读检查、导出或明确的归档说明；
 7. 1.x若需要远程执行，只能在`TrustedActionExecutor`后增加经过身份认证的Remote Executor Adapter，
    不能恢复独立于Thread/Turn的公共Action入口。
@@ -84,7 +84,7 @@ Trusted Action已经是默认产品实际使用的安全边界，并由ADR 0069�
 独立HTTP/Worker的价值主要是通用框架接入和多进程队列，这两项不属于本地优先1.0范围。把治理能力内聚到Agent，
 既保留Action Plane最有价值的失败语义，又消除双入口、双SDK和双部署拓扑。
 
-兼容内核分阶段删除优于一次硬删：f2c已经把历史Eval受控测试迁入产品同源Catalog/Gateway/Router与POSIX Supervisor，旧Process桥仍承担历史Session读取。
+兼容内核分阶段删除优于一次硬删：f2c先把历史Eval受控测试迁入产品同源Catalog/Gateway/Router与POSIX Supervisor；f3再删除旧Process执行桥，仅在当前Agent与Artifact Reader中保留历史事件和正文的只读解释。
 Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action Audit保存Route状态、远端Ref保存效果事实，
 不再投影到旧Effect Journal。先逐项建立替代路径和回归证据，才能保证收敛不是功能倒退。
 
@@ -101,16 +101,17 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
 ### 负面后果与债务
 
 - 旧Action HTTP API、Python Client和LangChain Adapter不再作为1.0兼容承诺；
-- 迁移窗口内仓库仍存在旧Action合同和Worker实现，必须通过治理测试防止扩散；
+- 当前仓库不再包含旧Action服务、Worker、Journal、Policy、Executor或框架Adapter实现；治理测试要求旧生产Import集合严格为空；
 - 历史文档需要标记为历史或兼容资料，当前运维文档必须删除旧启动方式；
-- 历史Eval新运行迁移已经完成本地候选验证；历史Process Reader和兼容内核删除仍会触及事件兼容、恢复和故障注入测试，不能只做机械替换。
+- 历史Process等待审批或等待执行状态在重启时保持原字节只读，继续操作固定返回`legacy_process_state_archived`；
+  旧数据库由独立归档工具和运维手册处理，不连接当前产品运行时。
 
 ## 兼容、安全与运维影响
 
 - 本项目尚未发布1.0，允许在0.9阶段撤销早期实验性命令和根包导出；
 - 已存在的Agent Protocol v1、Session事件和产品配置保持兼容；
 - 移除公共HTTP入口减少未认证Principal、开放OpenAPI和网络监听攻击面；
-- 兼容内核不得从默认产品组合根、TUI、Agent SDK或公开运维命令到达；
+- 默认产品组合根、TUI、Agent SDK或公开运维命令中不存在旧兼容内核入口；
 - 回滚只恢复旧版本二进制，不修改旧数据库；新版本不会自动消费或删除旧Action Queue；
 - 远程、多租户和分布式执行继续由1.x单独立项，并需要身份、配额、Secret和服务SLO设计。
 
@@ -118,10 +119,11 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
 
 1. CLI帮助和解析测试证明`serve/worker`不再存在，`code/agent/agent-server`保持可发现；
 2. 公共导出测试证明根包和`harnessix.sdk`只暴露Agent SDK，不暴露Action HTTP Client；
-3. 依赖治理测试冻结旧`ActionService/ActionWorker`生产调用方白名单，任何新增引用均失败；
+3. 依赖治理测试要求旧`ActionService/ActionWorker`生产调用方集合为空，任何新增引用均失败；
 4. 默认产品装配测试证明`run_product_stdio`只注入`TrustedActionGateway`；
-5. 后续迁移逐项覆盖正常、拒绝、取消、超时、崩溃、`UNKNOWN`和Reconcile；Git Push已覆盖未批准拒绝、响应丢失与宿主硬崩溃重开只对账；
-6. 文档门禁证明总体架构、产品章程、路线图、部署和配置资料不再声明独立服务为当前产品。
+5. Trusted Action替代链覆盖正常、拒绝、取消、超时、崩溃、`UNKNOWN`和Reconcile；历史Process兼容测试证明读取不改写、继续执行稳定拒绝；
+6. 归档测试证明旧SQLite的Schema、WAL一致快照、摘要、权限、无覆盖与清单脱敏；PostgreSQL使用停写后的原生一致性归档；
+7. 文档门禁证明总体架构、产品章程、路线图、部署和配置资料不再声明独立服务为当前产品。
 
 ## 当前实施进度
 
@@ -131,9 +133,11 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
   `GitPushActionExecutor`执行冻结Route。响应丢失进入`unknown`；宿主在Push后硬退出时，重开将`running`转为
   `unknown`并只执行`ls-remote`；真实子进程在效果后`os._exit(97)`，响应丢失用例另以调用计数断言没有第二次Push；实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收；
 - **f2c已关闭**：历史Eval以固定Profile装配专用Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor和Action Output Artifact；响应丢失只补Session结果，Process Lease计数证明不重放；治理白名单从7项缩为6项；实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`已由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收。
-- **剩余**：f3在旧生产调用方集合清零后提供归档方案并删除API、Worker、旧SDK/Adapter和依赖。
+- **f3实现候选**：旧生产调用方集合已清零；API、Worker、旧SDK/Adapter、Journal、Policy、样例Executor、旧Bootstrap、
+  专用Process桥、依赖、规格、示例和相关测试已删除；旧Session Process事件只读兼容，旧库归档工具和手册已提供。
+  该切片等待全矩阵CI，不在取得远端证据前标记关闭。
 
-治理门禁要求实际旧引用集合与白名单完全相等；因此每删除一个调用方都必须同步缩小白名单，不能保留可被未来代码重新占用的额度。
+治理门禁要求实际旧引用集合严格为空；任何旧模块Import、`legacy-action`依赖组或已删除规格重新出现都会失败。
 
 ## 关联资料
 

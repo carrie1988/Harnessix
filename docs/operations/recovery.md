@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 5
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -22,9 +22,9 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
 related_tests:
-  - tests/integration/test_worker.py
+  - tests/governance/test_product_runtime_convergence.py
   - tests/agent/test_crash_recovery.py
-  - tests/agent/test_process_agent_crash.py
+  - tests/agent/test_legacy_process_compatibility.py
   - tests/patches
   - tests/delivery
   - tests/product_config/test_action_config_runtime.py
@@ -88,12 +88,13 @@ flowchart TD
 
 ## 4. 旧Action Plane归档恢复边界
 
-独立Action API/Worker不再是当前产品恢复入口。旧SQLite/PostgreSQL Journal在0.9.1f迁移期间必须保持停写并先做一致
+独立Action API/Worker源码已删除，不是当前产品恢复入口。旧SQLite/PostgreSQL Journal必须保持停写并先做一致
 备份；不得为了“处理完队列”重新暴露`serve/worker`，也不得把历史`RUNNING/UNKNOWN`自动回退到`READY`。
 
 旧记录处理只允许：核对Action ID、事件序号、Lease、Receipt和外部幂等身份；能够证明的终态写入迁移报告，不能证明的
-效果保持`UNKNOWN`并转人工处置。0.9.1f3必须提供只读检查与导出工具后才能删除兼容代码或数据库。当前Coding Agent
-的恢复从Agent Session和`TrustedActionRouter` Route State开始，见后续章节。
+效果保持`UNKNOWN`并转人工处置。SQLite只读检查与一致归档工具、PostgreSQL停写归档流程见
+[旧Action Plane状态检查与归档手册](legacy-action-archive.md)。当前Coding Agent的恢复从Agent Session和
+`TrustedActionRouter` Route State开始，见后续章节。
 
 ## 5. Agent Runtime恢复
 
@@ -242,7 +243,7 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 
 | 恢复域 | 源码 | 测试 |
 |---|---|---|
-| 旧Action归档核对 | [`runtime.py`](../../src/harnessix/runtime.py)、[`worker.py`](../../src/harnessix/worker.py) | 仅迁移兼容回归；不作为产品恢复入口 |
+| 旧Action归档核对 | [`archive_legacy_action_state.py`](../../scripts/archive_legacy_action_state.py)、[归档手册](legacy-action-archive.md) | [`test_legacy_action_archive.py`](../../tests/governance/test_legacy_action_archive.py)；不作为产品恢复入口 |
 | Agent启动恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py)的`_recover` | [`test_crash_recovery.py`](../../tests/agent/test_crash_recovery.py)、[`test_interactions.py`](../../tests/agent/test_interactions.py) |
 | Patch | [`patches/managed.py`](../../src/harnessix/patches/managed.py)、[`patches/batch_execution.py`](../../src/harnessix/patches/batch_execution.py) | [`tests/patches`](../../tests/patches/) |
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |

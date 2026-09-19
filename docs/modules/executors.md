@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
-status: current
-version: 1
+status: deprecated
+version: 2
 code_revision: 4dc613f12e0deb5ce5ab53937fca226afab21516
 owners:
   - core
@@ -16,27 +16,27 @@ related_adrs:
   - docs/adr/0003-database-backed-worker-queue.md
   - docs/adr/0004-durable-trace-context.md
 related_tests:
-  - tests/integration/test_action_service.py
-  - tests/integration/test_worker.py
-  - tests/integration/test_api.py
-  - tests/unit/test_registry.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
 # Harnessix Code Executors模块设计
 
+> **退役状态：** 本文描述独立Action Plane的Echo与Demo Issue执行器，相关源码已在0.9.1f3删除。
+> 当前生产执行器均通过[Trusted Actions模块](trusted-actions.md)注册，不复用本模块接口。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
-| 源码包 | [`src/harnessix/executors/`](../../src/harnessix/executors/) |
-| 当前职责 | 提供通用Action Plane默认装配所需的只读Echo Executor与可幂等、可对账的本地Issue效果样例 |
+| 源码包 | [`src/harnessix/executors/`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors) |
+| 删除前职责 | 提供通用Action Plane默认装配所需的只读Echo Executor与可幂等、可对账的本地Issue效果样例 |
 | 公共实现 | `EchoExecutor`、`DemoIssueExecutor`、`DemoIssueRepository`及两个输入模型 |
-| 调用端口 | [`ActionExecutor`](../../src/harnessix/domain/ports.py)的`execute`与`reconcile` |
+| 调用端口 | [`ActionExecutor`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)的`execute`与`reconcile` |
 | 状态所有者 | Action状态由Effect Journal持有；Issue效果事实由独立`demo_issues` SQLite表持有 |
-| 默认装配 | [`build_registry`](../../src/harnessix/bootstrap.py)注册`system.echo`和`demo.issue.create` |
+| 默认装配 | [`build_registry`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)注册`system.echo`和`demo.issue.create` |
 | 非职责 | 不负责Policy、Approval、Lease、Action状态转换、Worker调度、Sandbox、Secret解析或通用连接器发现 |
-| 当前定位 | Action Plane合同验证实现，不是面向生产SaaS、代码执行或文件修改的完整Executor平台 |
+| 历史定位 | Action Plane合同验证实现，不是面向生产SaaS、代码执行或文件修改的完整Executor平台 |
 | 代码版本 | `4dc613f12e0deb5ce5ab53937fca226afab21516` |
 
 本包共3个Python文件、256行。`system.echo`证明无副作用执行路径；`demo.issue.create`用独立
@@ -117,12 +117,12 @@ flowchart LR
 
 | 顺序 | 文件 | 行数 | 关键符号 | 阅读目的 |
 |---:|---|---:|---|---|
-| 1 | [`__init__.py`](../../src/harnessix/executors/__init__.py) | 16 | `__all__` | 确认公共导出仅有五个符号 |
-| 2 | [`echo.py`](../../src/harnessix/executors/echo.py) | 33 | `EchoInput`、`EchoExecutor` | 理解最小只读执行与不支持对账 |
-| 3 | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | 207 | `DemoIssueCreateInput`、`DemoIssue`、`DemoIssueRepository`、`DemoIssueExecutor` | 理解外部效果、幂等、Receipt和对账 |
-| 4 | [`domain/ports.py`](../../src/harnessix/domain/ports.py) | — | `ActionExecutor` | 理解调用端口 |
-| 5 | [`runtime.py`](../../src/harnessix/runtime.py) | — | `_execute_leased`、`reconcile` | 理解Outcome如何成为持久Action事实 |
-| 6 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | — | `build_registry` | 理解默认Tool和风险声明 |
+| 1 | [`__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/__init__.py) | 16 | `__all__` | 确认公共导出仅有五个符号 |
+| 2 | [`echo.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/echo.py) | 33 | `EchoInput`、`EchoExecutor` | 理解最小只读执行与不支持对账 |
+| 3 | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | 207 | `DemoIssueCreateInput`、`DemoIssue`、`DemoIssueRepository`、`DemoIssueExecutor` | 理解外部效果、幂等、Receipt和对账 |
+| 4 | [`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py) | — | `ActionExecutor` | 理解调用端口 |
+| 5 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | — | `_execute_leased`、`reconcile` | 理解Outcome如何成为持久Action事实 |
+| 6 | [`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | — | `build_registry` | 理解默认Tool和风险声明 |
 
 `__init__.py`不导出`DemoIssue`。仓储可由宿主直接构造，但正常产品装配只通过`build_registry`持有实例。
 
@@ -859,22 +859,22 @@ when operator requests reconciliation:
 
 | 设计元素 | 源码 | 关键符号 | 测试 | 测试符号 |
 |---|---|---|---|---|
-| 公共导出与Bootstrap | [`__init__.py`](../../src/harnessix/executors/__init__.py)、[`bootstrap.py`](../../src/harnessix/bootstrap.py) | `__all__`、`build_registry` | [`test_registry.py`](../../tests/unit/test_registry.py) | `test_runtime_owns_effect_classification` |
-| Echo输入/成功 | [`echo.py`](../../src/harnessix/executors/echo.py) | `EchoInput`、`EchoExecutor.execute` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
-| Echo Worker执行 | [`echo.py`](../../src/harnessix/executors/echo.py) | `execute` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker` |
-| Issue输入/审批 | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | `DemoIssueCreateInput`、`DemoIssueExecutor.execute` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent` |
-| Action载荷冲突 | [`runtime.py`](../../src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_idempotency_key_rejects_different_payload` |
-| 拒绝不执行 | [`runtime.py`](../../src/harnessix/runtime.py) | `decide_approval` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` |
-| commit后不确定 | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | `simulate_uncertain_after_commit` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` |
-| Issue自动对账 | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | `DemoIssueExecutor.reconcile`、`_receipt` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` |
-| Queued审批后执行 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | `DemoIssueExecutor`绑定 | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_approval_only_enqueues_action` |
-| Lease Heartbeat | [`worker.py`](../../src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action` |
-| 终态提交/续租竞态 | [`worker.py`](../../src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` |
-| RUNNING Lease过期 | [`runtime.py`](../../src/harnessix/runtime.py) | `_execute_leased`、`reconcile` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown` |
-| API结果投影 | [`api/app.py`](../../src/harnessix/api/app.py) | `create_app` | [`test_api.py`](../../tests/integration/test_api.py) | `test_http_api_executes_echo` |
-| Repository并发/Schema | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | `initialize`、`create`、`find` | — | 无直接测试，见第31节缺口 |
-| effect-not-found/缺键对账 | [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py) | `reconcile` | — | 无直接测试，见第31节缺口 |
-| 版本漂移 | [`runtime.py`](../../src/harnessix/runtime.py) | `registry.get`、`_execute_leased` | — | 无直接测试，见第31节缺口 |
+| 公共导出与Bootstrap | [`__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/__init__.py)、[`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | `__all__`、`build_registry` | [`test_registry.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_registry.py) | `test_runtime_owns_effect_classification` |
+| Echo输入/成功 | [`echo.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/echo.py) | `EchoInput`、`EchoExecutor.execute` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
+| Echo Worker执行 | [`echo.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/echo.py) | `execute` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker` |
+| Issue输入/审批 | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | `DemoIssueCreateInput`、`DemoIssueExecutor.execute` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent` |
+| Action载荷冲突 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_idempotency_key_rejects_different_payload` |
+| 拒绝不执行 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `decide_approval` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` |
+| commit后不确定 | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | `simulate_uncertain_after_commit` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` |
+| Issue自动对账 | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | `DemoIssueExecutor.reconcile`、`_receipt` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` |
+| Queued审批后执行 | [`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | `DemoIssueExecutor`绑定 | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_approval_only_enqueues_action` |
+| Lease Heartbeat | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action` |
+| 终态提交/续租竞态 | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` |
+| RUNNING Lease过期 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `_execute_leased`、`reconcile` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown` |
+| API结果投影 | [`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | `create_app` | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | `test_http_api_executes_echo` |
+| Repository并发/Schema | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | `initialize`、`create`、`find` | — | 无直接测试，见第31节缺口 |
+| effect-not-found/缺键对账 | [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py) | `reconcile` | — | 无直接测试，见第31节缺口 |
+| 版本漂移 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `registry.get`、`_execute_leased` | — | 无直接测试，见第31节缺口 |
 
 ## 31. 测试设计与当前证据
 
@@ -995,13 +995,13 @@ when operator requests reconciliation:
 
 1. 阅读[Domain模块设计](domain.md)中的`ActionExecutor`、Outcome与Receipt；
 2. 阅读[Policy模块设计](policy.md)，确认Executor调用前的决策并非本包职责；
-3. 阅读[`bootstrap.build_registry`](../../src/harnessix/bootstrap.py)，记录两个Tool Descriptor；
-4. 阅读[`echo.py`](../../src/harnessix/executors/echo.py)建立最小执行心智模型；
+3. 阅读[`bootstrap.build_registry`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)，记录两个Tool Descriptor；
+4. 阅读[`echo.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/echo.py)建立最小执行心智模型；
 5. 按`DemoIssueCreateInput → DemoIssue → Repository.initialize/_connection/find/create`阅读
-   [`demo_issue.py`](../../src/harnessix/executors/demo_issue.py)；
+   [`demo_issue.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py)；
 6. 阅读`DemoIssueExecutor.execute/reconcile/_receipt`；
-7. 回到[`ActionService._execute_leased`](../../src/harnessix/runtime.py)核对异常映射；
-8. 阅读[`ActionWorker._execute_with_heartbeat`](../../src/harnessix/worker.py)理解Queued Lease；
+7. 回到[`ActionService._execute_leased`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)核对异常映射；
+8. 阅读[`ActionWorker._execute_with_heartbeat`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py)理解Queued Lease；
 9. 用第30节测试从正常、审批、UNKNOWN和Worker四条路径反查；
 10. 最后阅读[Trusted Action Router](../../src/harnessix/trusted_actions/router.py)，不要混淆两种Executor端口。
 

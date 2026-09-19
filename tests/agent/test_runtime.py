@@ -64,10 +64,7 @@ async def test_text_deltas_idempotency_and_trace_context(tmp_path: Path) -> None
         assert await runtime.run_turn(thread.thread_id, "任务", request_id="r") == turn
         with pytest.raises(KernelError, match="不同输入"):
             await runtime.run_turn(thread.thread_id, "其他任务", request_id="r")
-        context = await runtime.action_context(thread.thread_id, turn.turn_id)
-        assert context.session_id == str(thread.thread_id)
-        assert context.run_id == str(turn.turn_id)
-        assert context.trace_id == "a" * 32
+        assert turn.trace_context == trace
         await runtime.cancel(thread.thread_id, turn.turn_id)
     assert len(provider.requests) == 1
     assert provider.closed_streams == 1

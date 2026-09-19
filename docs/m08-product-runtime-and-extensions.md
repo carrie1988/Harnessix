@@ -23,7 +23,6 @@ related_tests:
   - tests/protocol
   - tests/app_server
   - tests/app_server/test_server_sdk.py
-  - tests/unit/test_sdk.py
   - tests/mcp
   - tests/skills
   - tests/hooks
@@ -176,7 +175,7 @@ sequenceDiagram
 ## 10. 验证与证据入口
 
 - [测试里程碑历史第73～78节](testing-and-evals-milestone-history.md#73-081-agent-protocol-v1候选验收2026-09-09)；
-- [`tests/protocol`](../tests/protocol/)、[`tests/app_server`](../tests/app_server/)、[`tests/unit/test_sdk.py`](../tests/unit/test_sdk.py)；
+- [`tests/protocol`](../tests/protocol/)、[`tests/app_server`](../tests/app_server/)、[`tests/unit/test_sdk.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_sdk.py)；
 - [`tests/mcp`](../tests/mcp/)、[`tests/skills`](../tests/skills/)、[`tests/hooks`](../tests/hooks/)；
 - [`tests/product_config`](../tests/product_config/)；
 - 当前跨模块策略见[测试与Eval规范](testing-and-evals.md)。

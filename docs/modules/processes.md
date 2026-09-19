@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 11
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -25,17 +25,14 @@ related_tests:
   - tests/processes/test_runtime.py
   - tests/processes/test_lifecycle.py
   - tests/processes/test_crash_boundary.py
-  - tests/processes/test_action_executor.py
-  - tests/processes/test_action_crash_boundary.py
-  - tests/processes/test_agent_bridge_contracts.py
+  - tests/product_config/test_process_action.py
+  - tests/agent/test_legacy_process_compatibility.py
   - tests/processes/test_supervision_contracts.py
   - tests/processes/test_supervision_store.py
   - tests/processes/test_supervisor.py
   - tests/processes/test_trusted_output.py
   - tests/processes/test_windows_input.py
   - tests/processes/test_windows_supervisor.py
-  - tests/processes/test_test_profiles.py
-  - tests/product_config/test_process_action.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_runner.py
 supersedes: []
@@ -43,19 +40,24 @@ supersedes: []
 
 # Harnessix Code Process Runtime模块设计
 
+> **0.9.1f3收敛说明：** 旧`ProcessActionExecutor`、`ProcessAgentBridge`、`RunTestsAgentBridge`和
+> Process Artifact发布器已物理删除；第10～12节、22.3、32.3和35.4只保留删除前设计的历史解释，不是当前调用链。
+> 新运行统一经Trusted Action、Execution Plan、Process Supervisor/Owner执行。旧Session中的Process事件和旧Artifact
+> 仍可只读解码，但审批、恢复和重放均被拒绝。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/processes/`](../../src/harnessix/processes/) |
-| 当前职责 | 定义受控进程请求和监督合同，完成POSIX/Windows进程树所有权、pipe/PTY、stdin、输出脱敏与持久化、Lease/CAS、取消/超时/关闭及重启后保守恢复 |
-| 兼容职责 | 保留0.5 POSIX固定程序Runtime、Action Plane准入、Agent跨库Saga和旧Process Output Artifact；历史Eval新运行已不再使用这条兼容链 |
+| 当前职责 | 定义固定Host Process工具与受监督进程合同，完成POSIX/Windows进程树所有权、pipe/PTY、stdin、输出脱敏与持久化、Lease/CAS、取消/超时/关闭及重启后保守恢复 |
+| 兼容职责 | 保留旧Process Session事件、Action状态枚举和旧Process Output Artifact的只读解码；不保留旧执行、审批或发布能力 |
 | 非职责 | 不决定模型是否应运行命令，不替代Execution Plan审批，不提供OS文件/网络隔离，不拥有Action Journal或Session Store，不把进程退出码解释为测试/业务成功 |
-| 上游调用者 | 显式宿主装配、Trusted Action/Sandbox、Agent Process专用端口、Eval的`run_tests`闭环 |
+| 上游调用者 | Trusted Action/Sandbox、Product Config固定Process与Eval Action、只读Git工具 |
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
-| 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；Eval以Execution Plan/Action Audit/Lease/Artifact分层持有事实；兼容链仍由通用Action Journal和Session/Artifact Store拥有 |
-| 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；Eval候选通过专用Trusted Action组合复用POSIX Supervisor；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c公开意图与派生ProcessSpec绑定`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
+| 主要持久状态 | Process Lease当前投影与完整快照事件；产品Action以Execution Plan/Action Audit/Lease/Artifact分层持有事实 |
+| 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；Eval通过专用Trusted Action组合复用POSIX Supervisor；任意模型`host.process`不进入产品目录 |
+| 代码版本 | f2c公开意图与派生ProcessSpec绑定已验收；0.9.1f3删除旧Action Saga，当前候选Revision由本文关闭提交回填 |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -90,7 +92,7 @@ Coding Agent执行命令具有比普通函数调用更复杂的生命周期：
 7. **有界I/O**：stdin单帧、累计输入、输出持久前缀、控制帧和终端尺寸均有显式上限；
 8. **Secret零持久明文**：Secret只经内存启动帧注入，输出先流式脱敏再计量、摘要和写盘；
 9. **真实终态**：退出、启动失败、清理失败和未知效果分开，非零returncode不等于运行时失败；
-10. **兼容历史Agent链**：0.5的唯一Action审批、跨库Saga和受控测试Profile保持可读、可恢复；
+10. **兼容历史数据**：0.5 Process Session事件和Artifact保持可读，但不再批准、恢复或执行；
 11. **跨平台合同一致**：macOS/Linux和Windows共享Spec/Lease语义，平台差异由Capability与Owner实现显式表达。
 
 ### 3.2 明确非目标
@@ -106,9 +108,9 @@ Coding Agent执行命令具有比普通函数调用更复杂的生命周期：
 - 不保证恶意同UID进程无法读取状态库、替换输出或取得Owner token；
 - 不承诺普通宿主Process达到`container_strong`隔离级别。
 
-## 4. 当前实现的三条执行链
+## 4. 当前执行链与历史兼容边界
 
-模块中存在三个来源不同但仍在使用的纵向切片，阅读时必须区分：
+模块中存在固定Host Runtime与Supervised Runtime两层执行能力；旧Agent/Action Saga只剩事件与Artifact读取合同：
 
 ```mermaid
 flowchart TB
@@ -116,7 +118,7 @@ flowchart TB
         LReq[ProcessRequest] --> LRuntime[HostProcessRuntime POSIX]
         LRuntime --> LResult[ProcessResult/Base64有界双流]
     end
-    subgraph Saga[0.5 Agent + Action Plane Saga]
+    subgraph Saga[0.5 Agent + Action Plane Saga 已删除]
         Tool[host.process / run_tests] --> Bridge[ProcessAgentBridge]
         Bridge --> Journal[(Action Journal唯一审批)]
         Journal --> Executor[ProcessActionExecutor]
@@ -142,11 +144,11 @@ flowchart TB
 pipe双流和单个前台调用。它在同一进程内持有目标句柄，没有独立Lease Store；崩溃后的效果由Action Journal标记
 `UNKNOWN`并进入人工处置。
 
-### 4.2 0.5 Agent/Action Saga
+### 4.2 0.5 Agent/Action Saga（历史）
 
-[`ProcessActionExecutor`](../../src/harnessix/processes/action_executor.py)、
-[`ProcessAgentBridge`](../../src/harnessix/processes/agent_runtime.py)和Session投影复用通用Action Plane。Action Journal
-是唯一审批和执行事实，Session只保存受限镜像。`run_tests`进一步将模型输入限制为Profile名。
+删除前的[`ProcessActionExecutor`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py)、
+[`ProcessAgentBridge`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/agent_runtime.py)和Session投影复用通用Action Plane。Action Journal
+曾以Action Journal作为唯一审批和执行事实，Session只保存受限镜像。当前源码不再包含该链，新运行不能创建对应事件。
 
 ### 4.3 0.7 Supervised链
 
@@ -156,9 +158,8 @@ pipe双流和单个前台调用。它在同一进程内持有目标句柄，没�
 
 ### 4.4 当前收口边界
 
-三条链都不是默认模型工具。0.5 Saga已有Agent专用接入但底层仅POSIX且不是强隔离；0.7链具备跨平台Owner与
-Execution Plan绑定，但未直接取代旧Agent Bridge。新增产品能力应优先经`trusted_actions + ExecutionPlanV2 +
-ProcessSupervisor`统一路由，不应再复制第四套审批或恢复状态机。
+固定Host Runtime不是默认模型工具；Supervised链由受信产品Action经`trusted_actions + ExecutionPlanV2 +
+ProcessSupervisor`统一路由。旧Agent Bridge已删除，任何新增能力不得复制审批或恢复状态机。
 
 ## 5. 模块上下文与信任边界
 
@@ -229,13 +230,13 @@ flowchart LR
 | 1 | [`contracts.py`](../../src/harnessix/processes/contracts.py) | `ProcessRequest`、`ProcessLimits`、`ProcessStream`、`ProcessResult` | 理解旧POSIX结果合同 |
 | 2 | [`capture.py`](../../src/harnessix/processes/capture.py) | `CaptureProtocol` | 理解旧双流有界内存捕获 |
 | 3 | [`runtime.py`](../../src/harnessix/processes/runtime.py) | `HostProcessRuntime` | 理解固定程序、环境、取消和组回收 |
-| 4 | [`action_executor.py`](../../src/harnessix/processes/action_executor.py) | `ProcessActionExecutor`、`process_action_tool` | 理解Action Journal准入和UNKNOWN |
+| 4 | [`action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py) | `ProcessActionExecutor`、`process_action_tool` | 理解Action Journal准入和UNKNOWN |
 | 5 | [`bridge_contracts.py`](../../src/harnessix/processes/bridge_contracts.py) | `AgentProcessCallPlan` | 理解Thread/Turn/Call到Action的稳定身份 |
-| 6 | [`agent_bridge.py`](../../src/harnessix/processes/agent_bridge.py) | `prepare_process_action`、`process_snapshot_matches` | 理解确定性Action构造与跨库核对 |
-| 7 | [`session_projection.py`](../../src/harnessix/processes/session_projection.py) | `process_approval_request`、`process_action_state` | 理解Action事实到Session的只读投影 |
-| 8 | [`agent_runtime.py`](../../src/harnessix/processes/agent_runtime.py) | `ProcessAgentBridge` | 理解prepare/decide/sync/observe Saga |
+| 6 | [`agent_bridge.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/agent_bridge.py) | `prepare_process_action`、`process_snapshot_matches` | 理解确定性Action构造与跨库核对 |
+| 7 | [`session_projection.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/session_projection.py) | `process_approval_request`、`process_action_state` | 理解Action事实到Session的只读投影 |
+| 8 | [`agent_runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/agent_runtime.py) | `ProcessAgentBridge` | 理解prepare/decide/sync/observe Saga |
 | 9 | [`output_artifact.py`](../../src/harnessix/processes/output_artifact.py) | `ProcessOutputDocument` | 理解旧ProcessResult的二进制安全Artifact |
-| 10 | [`test_contracts.py`](../../src/harnessix/processes/test_contracts.py)、[`test_profiles.py`](../../src/harnessix/processes/test_profiles.py) | `TestProfile`、`RunTestsAgentBridge` | 理解模型仅选Profile的测试入口 |
+| 10 | [`test_contracts.py`](../../src/harnessix/processes/test_contracts.py)、[`test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/test_profiles.py) | `TestProfile`、`RunTestsAgentBridge` | 理解模型仅选Profile的测试入口 |
 
 ## 7. 公共合同与Schema
 
@@ -350,9 +351,9 @@ sequenceDiagram
 POSIX进程组不是安全容器：目标可主动脱组，宿主被`SIGKILL`时没有持久Owner接管，数字PID不可在重启后安全
 控制。该链的硬退出恢复只能由Action Journal报告`UNKNOWN`和人工处置，不能声称已清理全部后代。
 
-## 10. 0.5 Action Plane准入
+## 10. 0.5 Action Plane准入（历史）
 
-[`process_action_tool`](../../src/harnessix/processes/action_executor.py)注册固定合同：
+[`process_action_tool`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py)注册固定合同：
 
 | 属性 | 值 |
 |---|---|
@@ -385,7 +386,7 @@ flowchart TD
 `FAILED`用于已证明没有启动的合同、绑定、Secret或启动错误；已启动后证据不完整必须`UNKNOWN`。Action Worker或
 宿主硬退出导致RUNNING Lease过期时，通用Journal同样转`UNKNOWN`，不回READY。
 
-## 11. Agent Process跨库Saga
+## 11. Agent Process跨库Saga（历史）
 
 ### 11.1 唯一审批权威
 
@@ -454,9 +455,9 @@ sequenceDiagram
 - RUNNING/RECONCILING过期由Action Journal产生带`lease_expired`的UNKNOWN结果；
 - UNKNOWN/MANUAL_INTERVENTION不会恢复模型循环或重放命令。
 
-## 12. `run_tests`受控前端
+## 12. `run_tests`旧受控前端（历史）
 
-[`RunTestsAgentBridge`](../../src/harnessix/processes/test_profiles.py)不向模型暴露命令或argv，只接受：
+[`RunTestsAgentBridge`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/test_profiles.py)不向模型暴露命令或argv，只接受：
 
 ```json
 {"profile":"unit"}
@@ -891,7 +892,7 @@ stdout/stderr共享`ProcessSpec.output_bytes`。超过预算会请求停止进�
 POSIX和Windows PTY都投影为组合stdout流；stderr记录为空且`eof=True`。终端本身已合并输出，调用方不能再把
 stderr空值解释为目标没有写标准错误。
 
-### 22.3 0.5 Process Output Artifact
+### 22.3 0.5 Process Output Artifact（只读历史合同）
 
 兼容链的`ProcessResult`在Action Journal中保存每流最多1 MiB Base64前缀。`ProcessOutputDocument`把它转换为：
 
@@ -901,7 +902,7 @@ stderr空值解释为目标没有写标准错误。
 - 每行和总Artifact字节上限；
 - `complete`只在双流都EOF且未截断时为真。
 
-Artifact发布由[`artifacts/process_output.py`](../../src/harnessix/artifacts/process_output.py)在Session事务中完成；若完整
+Artifact发布由[`artifacts/process_output.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/artifacts/process_output.py)在Session事务中完成；若完整
 已捕获前缀超过Artifact上限，返回`None`而不是二次静默截断。模型历史只看到摘要与受限Artifact引用，不看到PID、
 Action私有身份或原始Base64正文。
 
@@ -1210,7 +1211,7 @@ flowchart TB
 | `process_lease_stale` | CAS前置快照已被推进 | 重载Lease，不重放副作用 |
 | `unknown` | 清理、宿主或I/O证据不足 | 不重开，交由上层对账/人工处置 |
 
-### 32.3 兼容Agent链
+### 32.3 兼容Agent链（历史）
 
 | 错误码/状态 | 含义 |
 |---|---|
@@ -1361,7 +1362,7 @@ function reconcile(process_id):
     return
 ```
 
-### 35.4 Agent Saga
+### 35.4 Agent Saga（历史）
 
 ```text
 function agent_prepare(call, scope):
@@ -1394,12 +1395,12 @@ function agent_observe(plan):
 | 旧输出有界与双流排空 | [`capture.py`](../../src/harnessix/processes/capture.py) | `CaptureProtocol` | [`test_runtime.py`](../../tests/processes/test_runtime.py) | `test_large_dual_stream_drained_without_unbounded_capture`、`test_output_stop_threshold_closes_pipes_without_claiming_eof` |
 | 旧取消/超时/组回收 | [`runtime.py`](../../src/harnessix/processes/runtime.py) | `_settle` | [`test_lifecycle.py`](../../tests/processes/test_lifecycle.py) | `test_timeout_reaps_root_and_stops_same_group_grandchild`、`test_cancel_during_spawn_keeps_handle_until_cleanup` |
 | 旧宿主硬退出限制 | [`runtime.py`](../../src/harnessix/processes/runtime.py) | `HostProcessRuntime` | [`test_crash_boundary.py`](../../tests/processes/test_crash_boundary.py) | `test_host_hard_exit_does_not_falsely_claim_process_group_containment` |
-| Action审批与执行一次 | [`action_executor.py`](../../src/harnessix/processes/action_executor.py) | `ProcessActionExecutor` | [`test_action_executor.py`](../../tests/processes/test_action_executor.py) | `test_persistent_approval_executes_once_and_records_binary_result` |
-| 非零退出是结果 | [`action_executor.py`](../../src/harnessix/processes/action_executor.py) | `execute` | [`test_action_executor.py`](../../tests/processes/test_action_executor.py) | `test_command_exit_is_result_not_action_transport_failure` |
-| 兼容硬退出UNKNOWN不重放 | [`action_executor.py`](../../src/harnessix/processes/action_executor.py) | `reconcile` | [`test_action_crash_boundary.py`](../../tests/processes/test_action_crash_boundary.py) | `test_hard_exit_recovers_unknown_without_pid_kill_or_replay` |
-| 稳定Agent/Action身份 | [`bridge_contracts.py`](../../src/harnessix/processes/bridge_contracts.py)、[`agent_bridge.py`](../../src/harnessix/processes/agent_bridge.py) | `AgentProcessCallPlan`、`prepare_process_action` | [`test_agent_bridge_contracts.py`](../../tests/processes/test_agent_bridge_contracts.py) | `test_prepare_is_deterministic_and_binds_complete_action_identity`、`test_action_identity_changes_with_authority_or_intent` |
-| Action事实唯一投影 | [`agent_bridge.py`](../../src/harnessix/processes/agent_bridge.py)、[`session_projection.py`](../../src/harnessix/processes/session_projection.py) | `process_snapshot_matches`、`process_action_state` | [`test_agent_bridge_contracts.py`](../../tests/processes/test_agent_bridge_contracts.py) | `test_journal_snapshot_is_the_only_matching_action_fact` |
-| `run_tests` Profile限制 | [`test_profiles.py`](../../src/harnessix/processes/test_profiles.py) | `RunTestsAgentBridge` | [`test_test_profiles.py`](../../tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure`、`test_run_tests_rejects_unknown_profile_and_model_arguments` |
+| Action审批与执行一次 | [`action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py) | `ProcessActionExecutor` | [`test_action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_action_executor.py) | `test_persistent_approval_executes_once_and_records_binary_result` |
+| 非零退出是结果 | [`action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py) | `execute` | [`test_action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_action_executor.py) | `test_command_exit_is_result_not_action_transport_failure` |
+| 兼容硬退出UNKNOWN不重放 | [`action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py) | `reconcile` | [`test_action_crash_boundary.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_action_crash_boundary.py) | `test_hard_exit_recovers_unknown_without_pid_kill_or_replay` |
+| 稳定Agent/Action身份 | [`bridge_contracts.py`](../../src/harnessix/processes/bridge_contracts.py)、[`agent_bridge.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/agent_bridge.py) | `AgentProcessCallPlan`、`prepare_process_action` | [`test_agent_bridge_contracts.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_agent_bridge_contracts.py) | `test_prepare_is_deterministic_and_binds_complete_action_identity`、`test_action_identity_changes_with_authority_or_intent` |
+| Action事实唯一投影 | [`agent_bridge.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/agent_bridge.py)、[`session_projection.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/session_projection.py) | `process_snapshot_matches`、`process_action_state` | [`test_agent_bridge_contracts.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_agent_bridge_contracts.py) | `test_journal_snapshot_is_the_only_matching_action_fact` |
+| `run_tests` Profile限制 | [`test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/test_profiles.py) | `RunTestsAgentBridge` | [`test_test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure`、`test_run_tests_rejects_unknown_profile_and_model_arguments` |
 | ProcessSpec/Lease合同 | [`supervision_contracts.py`](../../src/harnessix/processes/supervision_contracts.py) | `ProcessSpec`、`ProcessLease` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_spec_requires_one_exact_invocation_and_self_digest`、`test_process_lease_binds_plan_spec_capability_and_deadline` |
 | Launch Binding | [`supervision_planner.py`](../../src/harnessix/processes/supervision_planner.py) | `build_process_launch_binding` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_launch_binding_covers_plan_materialization_and_environment` |
 | Receipt HMAC、短读与Windows共享冲突 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks`、`test_process_owner_receipt_retries_windows_sharing_conflict`、`test_process_owner_receipt_bounds_persistent_windows_sharing_conflict`、`test_process_owner_receipt_does_not_retry_invalid_content` |
@@ -1437,9 +1438,9 @@ function agent_observe(plan):
 
 | 场景 | 测试入口 |
 |---|---|
-| Agent Process Saga硬退出和重开 | [`tests/agent/test_process_agent_crash.py`](../../tests/agent/test_process_agent_crash.py) |
-| Process Output事务发布/损坏/TTL | [`tests/artifacts/test_process_output.py`](../../tests/artifacts/test_process_output.py)、[`test_process_output_crash.py`](../../tests/artifacts/test_process_output_crash.py) |
-| Coding反馈闭环与双Provider SDK | [`tests/agent/test_coding_feedback_loop.py`](../../tests/agent/test_coding_feedback_loop.py)、[`test_coding_feedback_sdk.py`](../../tests/agent/test_coding_feedback_sdk.py) |
+| Agent Process Saga硬退出和重开 | [`tests/agent/test_process_agent_crash.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/agent/test_process_agent_crash.py) |
+| Process Output事务发布/损坏/TTL | [`tests/artifacts/test_process_output.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/artifacts/test_process_output.py)、[`test_process_output_crash.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/artifacts/test_process_output_crash.py) |
+| Coding反馈闭环与双Provider SDK | [`tests/agent/test_coding_feedback_loop.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/agent/test_coding_feedback_loop.py)、[`test_coding_feedback_sdk.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/agent/test_coding_feedback_sdk.py) |
 | Container复用统一Owner | [`tests/sandbox/test_process_runtime.py`](../../tests/sandbox/test_process_runtime.py)、[`tests/integration/test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) |
 | Execution批准与环境/Secret绑定 | [`tests/execution/`](../../tests/execution/)、[`tests/secrets/`](../../tests/secrets/) |
 
@@ -1500,7 +1501,7 @@ function agent_observe(plan):
 - [x] Container客户端生命周期复用统一Supervisor并由Sandbox补充实例清理；
 - [x] 固定Container Profile产品链使用ExecutionPlanV2 + Supervisor且恢复不重放；
 - [x] 历史Eval新运行从旧Process Bridge/Worker迁入Trusted Action + Supervisor链，审批与结果响应丢失不重放已通过全矩阵CI验收；
-- [ ] 旧Process Bridge及历史Reader从兼容内核迁移并删除；
+- [x] 旧Process执行Bridge、Worker和发布器已删除；历史Session事件与`process_output`正文只保留只读Reader并有稳定拒绝/损坏测试；
 - [ ] POSIX恶意脱组、Owner强杀和长后台Soak达到预冻结阈值；
 - [ ] 可执行文件身份、状态路径、全事件完整性、容量和安全GC闭环；
 - [ ] 产品级后台列表、认证重连、分页输出和低基数Telemetry；
@@ -1558,6 +1559,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 11 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除旧Process执行Saga、历史Session/Artifact只读兼容和稳定拒绝边界 |
 | 10 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论由CI 35446341997验收关闭 |
 | 9 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c Eval Trusted Action对Supervisor的公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论候选 |
 | 8 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录无状态Profile证明、正式Runtime绑定及旧Profile只对账恢复由CI 35439332019验收关闭 |

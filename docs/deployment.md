@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 13
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 14
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -65,8 +65,9 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
 | 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
-独立Action HTTP/Worker已经退出产品面。旧`ActionService/ActionWorker`只在迁移调用方内保留，不接受新部署；
-迁移顺序和归档要求见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)。
+独立Action HTTP/Worker已经退出产品面，旧`ActionService/ActionWorker`及其Journal、SDK和Adapter已从候选源码物理删除。
+历史数据库只允许按[归档手册](operations/legacy-action-archive.md)离线检查和保存；收敛决策见
+[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)。
 
 ## 3. 当前部署拓扑
 
@@ -179,7 +180,7 @@ uv run harnessix agent-server \
 | `workspace-transactions/` | Delivery Store | 多文件计划、Blob、游标和效果恢复 |
 | Process状态文件 | Process Supervisor/Owner | Process Lease、输出观察、停止原因和恢复证据 |
 
-旧Action Plane的SQLite/PostgreSQL Journal不属于新状态布局。已有旧数据库由原版本或后续归档工具只读处理，
+旧Action Plane的SQLite/PostgreSQL Journal不属于新状态布局。已有旧数据库由原版本或归档工具只读处理，
 新产品不会自动导入、执行或删除其中的READY/RUNNING记录。
 
 ## 7. 启动顺序与失败关闭
@@ -214,7 +215,7 @@ on any failure: close entered components in reverse order; never open partial pr
 6. Agent Protocol是本地边界，不等于公网认证协议；
 7. 不确定外部效果进入`unknown`并只对账，不自动重放；
 8. 备份或恢复不得复制活动锁后让两个Runtime同时操作同一Workspace。
-9. 旧Action Route必须用上一活动配置的精确Binding恢复；候选配置不得继承不相等的旧批准。
+9. 待恢复的Trusted Action Route必须用上一活动配置的精确Binding恢复；候选配置不得继承不相等的旧批准。
 
 ## 9. 升级、备份与回滚
 
@@ -222,7 +223,7 @@ on any failure: close entered components in reverse order; never open partial pr
 Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server并启动新版本；不得在两个版本之间共享可写状态目录。
 
 回滚只能由能够读取当前数据版本的旧版本执行。新事件或迁移已写入后，旧Reader若不认识必须失败关闭，不能跳过字段继续。
-旧Action数据库不参与新产品启动；其归档是0.9.1f3的独立门禁。
+旧Action数据库不参与新产品启动；其归档步骤见[旧Action Plane状态检查与归档手册](operations/legacy-action-archive.md)。
 
 ## 10. 诊断与可观测性
 
@@ -234,7 +235,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 - 结构化错误码、Thread/Turn/Plan身份和低基数Telemetry。
 
 诊断包不得包含Prompt全文、代码正文、Patch正文、argv、绝对路径、环境值、Secret、Provider响应正文或未脱敏stderr。
-旧`harnessix.api.*`和`harnessix.worker.*`信号只属于迁移兼容测试，不能作为当前产品SLO。
+历史`harnessix.api.*`和`harnessix.worker.*`信号不会由当前源码产生，不能作为当前产品SLO。
 
 ## 11. 平台边界
 
@@ -242,7 +243,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 - Windows只读链使用原生Handle，写入在抗Reparse事务端口完成前失败关闭；
 - Container Process依赖Docker或Podman能力、固定镜像Digest、网络策略、资源限制和Process Owner；
 - WSL2可作为强隔离后端候选，但不能替代Windows原生Workspace、Git、Process和CLI支持声明；
-- PostgreSQL不再是1.0产品运行依赖，保留的旧Journal测试只用于迁移期行为证明。
+- PostgreSQL不是1.0产品运行依赖；旧Journal归档使用数据库原生工具，不在当前Python运行时重新引入驱动。
 
 ## 12. 源码与测试映射
 
@@ -261,7 +262,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 ## 13. 当前限制与后续工作
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
-- 0.9.1f固定Container Process与直接Trusted Git Push均已由七任务CI关闭；f2c历史Eval新运行已不再部署或启动Action Worker，并已通过七任务全矩阵CI关闭；历史Process Reader和兼容内核源码仍待f3迁移删除；
+- 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档已形成候选，等待六Job实例全矩阵CI验收；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；

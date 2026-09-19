@@ -159,14 +159,11 @@ async def resume_after_approval(
     thread_id: UUID,
     turn_id: UUID,
     token: CancelToken,
-    sync_legacy: TurnContinuation,
     continue_turn: TurnContinuation,
 ) -> Turn:
-    """优先修复Router投影，再兼容Process投影，最后继续普通执行流。"""
+    """优先修复Router投影，再继续普通执行流。"""
 
     synchronized = await sync_trusted_action(runtime, thread_id, turn_id)
-    if synchronized is None:
-        synchronized = await sync_legacy(thread_id, turn_id, token)
     if synchronized is not None:
         return synchronized
     continued = await continue_turn(thread_id, turn_id, token)

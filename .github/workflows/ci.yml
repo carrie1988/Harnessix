@@ -41,9 +41,6 @@ jobs:
       - run: uv run python -m examples.kernel_batch
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
-      - run: uv run python -m examples.process_action
-      - run: uv run python -m examples.kernel_process
-      - run: uv run python -m examples.coding_feedback
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -73,9 +70,6 @@ jobs:
       - run: uv run python -m examples.kernel_batch
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
-      - run: uv run python -m examples.process_action
-      - run: uv run python -m examples.kernel_process
-      - run: uv run python -m examples.coding_feedback
 
   windows-trusted-execution:
     # Windows运行Workspace、Job Object Process、Sandbox/Secret与受管Git交付契约。
@@ -92,32 +86,6 @@ jobs:
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"
       - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/tools/test_windows_native_runtime.py tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py
-
-  postgres:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_DB: harnessix_test
-          POSTGRES_USER: harnessix
-          POSTGRES_PASSWORD: harnessix
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U harnessix -d harnessix_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      HARNESSIX_TEST_POSTGRES_URL: postgresql://harnessix:harnessix@127.0.0.1:5432/harnessix_test
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          python-version: "3.12"
-      - run: uv sync --locked --all-extras --dev
-      - run: uv run pytest tests/integration/test_postgres_journal.py
 
   container-sandbox:
     runs-on: ubuntu-latest

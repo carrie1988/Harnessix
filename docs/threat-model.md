@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 11
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 12
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -50,9 +50,9 @@ supersedes: []
 
 # Harnessix Code 威胁模型 v2
 
-- 状态：当前安全基线，已同步DOC-1.4 API、Product Config、MCP、Skill、Hook与Smoke现行设计
-- 更新日期：2026-09-12
-- 适用范围：本地优先 CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store、Action Plane
+- 状态：当前安全基线，已同步单一Coding Agent边界、Product Config、MCP、Skill、Hook与Smoke现行设计
+- 更新日期：2026-09-19
+- 适用范围：本地优先CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store与Trusted Action Runtime
 
 实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；0.8.6增加严格产品配置、安全读取/迁移、版本化Provider Secret引用、活动配置CAS和零响应暴露Fallback。上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在0.9实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
 
@@ -87,7 +87,7 @@ Harnessix Code 必须保证：
 - Workspace 文件、Git 和 Process Runtime；
 - 内置 Tool、MCP、Skills 和 Hooks；
 - SQLite Session Store；
-- Harnessix Action Plane 与外部系统；
+- Trusted Action Runtime、执行Owner与外部系统；
 - 日志、Trace 和 Artifact。
 
 ### 假设
@@ -136,7 +136,7 @@ Agent Runtime                │
          ├── Host or Container Sandbox
          ├── Local OS / Workspace
          ├── MCP / Hook / Skill（扩展边界）
-         └── Action Plane ── 外部 SaaS / DB
+         └── Trusted Action Router ── 专用Executor / 外部SaaS / DB
 ~~~
 
 每次跨边界都必须有 Schema、身份、大小、权限和审计控制，不能因数据来自“Agent 自己”而省略校验。
@@ -259,9 +259,8 @@ Agent Runtime                │
 - Artifact ACL、保留期和删除；
 - Canary Secret 全链路扫描。
 
-**剩余风险**：Action Plane当前在敏感键守卫前先持久化完整Action Request，被拒绝的疑似明文仍进入
-Journal和失败Snapshot；未知编码、压缩文件和模型推断也可能绕过模式脱敏。完整现行边界见
-[API模块设计](modules/api.md#25-敏感数据真实流向)。
+**剩余风险**：字段名守卫无法识别被放入普通文本、编码内容或压缩文件中的凭据；SQLite状态未加密，同UID主体
+可读取Session、Artifact和私有Route Plan。Provider端点、扩展输出和诊断导出仍须按最小权限、受管出口与保留策略约束。
 
 ### TM-05A：Secret 生命周期和派生值泄漏
 
@@ -362,44 +361,20 @@ Journal和失败Snapshot；未知编码、压缩文件和模型推断也可能�
 
 **剩余风险**：stdio 默认继承父进程信任，不能防御已控制同一进程树的攻击者。
 
-### TM-09A：Action HTTP身份伪造、跨租户访问与资源耗尽
+### TM-09A：已退役服务或历史状态被误当作可执行入口
 
-**场景**：网络调用方伪造`Principal`中的Tenant、Subject、Roles或Approval Actor，按已知UUID读取其他
-Tenant的Action/Event，批准或对账不属于自己的Action；超大Body、深层JSON、全量Event响应、并发Inline执行或
-慢连接耗尽API、Journal和Executor。
-
-**当前控制**
-
-- 默认本机命令监听Loopback，部署文档要求公网前置受信Gateway；
-- Domain模型限制部分标识长度、拒绝额外顶层字段，Journal以Tenant和幂等键约束重复写；
-- Action状态、审批和Reconcile由Journal期望状态及Lease守卫，HTTP不能直接指定目标状态；
-- HTTP Metric不记录Path UUID、Arguments或Header正文；
-- 当前Docker以非root用户运行。
-
-**剩余风险**：API没有Authentication、可信Principal注入、Tenant授权、行级读取过滤、Security Scheme、Body/JSON/
-Response预算、分页、限流、并发上限或Deadline。任意可达主体可声明任意Tenant并读取、批准、对账或执行；Docker默认
-绑定`0.0.0.0`会放大误发布风险。外层Gateway只能临时限制网络暴露，不能修复Journal在敏感键守卫前保存完整Request
-的内部缺口。该边界是0.9.4身份/数据安全和0.9.3容量可靠性的发布阻塞项，详见
-[API模块设计](modules/api.md)。
-
-### TM-09B：Framework Adapter身份混淆、重复Action与结果过度暴露
-
-**场景**：共享LangChain Tool实例固定了一个Principal和Action Context，调用方又可覆盖Metadata中的`adapter`标签；
-Framework重试或Checkpoint恢复时因Tool Call ID没有持久绑定Action ID而新建Action；完整Action Snapshot被作为正常
-Tool Content写入模型历史或外部Callback，且`pending_approval`、`failed`、`unknown`等状态仍呈现为Framework Tool成功。
+**场景**：运维脚本从旧文档重建Action HTTP/Worker，或把旧Journal中的`READY/RUNNING/UNKNOWN`记录导入当前
+产品并自动执行；攻击者借机绕过Thread/Turn、当前Policy和审批权威。
 
 **当前控制**
 
-- Adapter只构造Action Request并调用Client，不直接操作Journal、Policy或Executor；
-- Action Plane继续校验Tool、Effect Hint、Policy、审批、幂等键和状态转换；
-- 写Tool可要求租户内业务幂等键，`UNKNOWN`不能由Action Service自动重执行；
-- `SecretRef`不包含明文值，Domain模型限制部分身份字段长度；
-- `langchain-core`是可选依赖，不影响基础包导入。
+- 当前源码、CLI、SDK、依赖和生成规格中不存在旧HTTP/Worker入口；治理测试要求旧生产Import集合严格为空；
+- 历史Session Process等待状态只读，继续批准或恢复固定返回`legacy_process_state_archived`；
+- 旧SQLite归档工具只执行只读检查和一致备份，不Claim、不修改、不对账；PostgreSQL仅允许停写后原生归档；
+- 当前高风险调用必须经`TrustedActionGateway → TrustedActionRouter`，并绑定Execution Plan、Approval和专用效果Owner。
 
-**剩余风险**：当前无可信动态Principal、Tool Call ID到Action ID绑定、真实LangGraph Checkpoint/Interrupt恢复、
-类型化Action状态投影、模型可见字段白名单、响应预算、Callback脱敏或Adapter Trace关联。Context Metadata是浅可变字典，
-其中同名`adapter`值覆盖默认来源；完整Request、Principal、Secret Ref标识、Approval和Result可进入模型历史。多租户、写Action
-或启用外部Tracing前必须完成Adapter v2身份、恢复和最小输出设计，详见[Adapter模块设计](modules/adapters.md)。
+**剩余风险**：具有仓库和部署权限的主体仍可从旧Git Revision构建历史服务；归档可能包含Action参数、结果或外部
+Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访问和恢复演练，并把无法证明的效果保持为人工处置。
 
 ### TM-10：Session/Event 篡改或回放
 
@@ -525,6 +500,10 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **合同歧义**：Report v1只对`reason=passed`实施完整跨字段校验，非通过Reason可构造自相矛盾字段组合。消费方必须先按Reason拒绝所有非通过报告，后续合同应使用判别联合或完整矩阵校验。
 
 完整设计、受控探针、风险优先级和关闭条件见[Smoke模块设计](modules/smoke.md)。
+
+> **历史阅读说明：** 下列0.5～0.8实施补充记录各切片当时的攻击面与控制，不代表当前源码仍保留其中提到的
+> 旧Action Service、Worker、Effect Journal或Process发布器。当前事实以第1～9节、[总体架构](architecture.md)和
+> [0.9.1f收敛设计](changes/m09-1f-single-product-runtime-convergence.md)为准。
 
 ## 0.5.2 实施补充（2026-09-03）
 

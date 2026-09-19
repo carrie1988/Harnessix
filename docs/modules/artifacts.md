@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 10
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -26,8 +26,8 @@ related_tests:
   - tests/artifacts/test_recovery.py
   - tests/artifacts/test_batch_diff.py
   - tests/artifacts/test_batch_diff_crash.py
-  - tests/artifacts/test_process_output.py
-  - tests/artifacts/test_process_output_crash.py
+  - tests/artifacts/test_process_output_upgrade.py
+  - tests/artifacts/test_legacy_process_output_reader.py
   - tests/artifacts/test_model_history.py
   - tests/artifacts/test_sdk.py
   - tests/product_config/test_server_and_cli.py
@@ -45,13 +45,14 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | f2c确定性测试结论投影`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
-| 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
+| 代码版本 | 0.9.1f3候选；独立Process Action发布器已删除，历史正文保持只读 |
+| 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`ActionOutputArtifactMixin` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
 
 Artifact不是通用对象存储，也不是外部副作用的事实账本。它保存模型或客户端需要按页读取的有界证据；
-Tool Result和Patch效果的权威状态分别属于Session与Patch账本；Trusted Process效果属于专用Process Owner/Lease，旧Process Action才属于兼容Effect Journal。
+Tool Result和Patch效果的权威状态分别属于Session与Patch账本；Trusted Process效果属于专用Process Owner/Lease。
+旧`process_output`只为历史Session保留读取校验，当前运行使用`action_output`，不存在旧Effect Journal写链。
 
 ## 2. 需求背景
 
@@ -82,7 +83,7 @@ Artifact模块把正文放入Session同一SQLite数据库，并将“正文存�
 
 1. 不提供任意文件、媒体、无限Blob、目录打包或远端对象存储；
 2. 不把Artifact ID、UUID或SHA-256当作访问凭据；
-3. 不替代Session Event、Effect Journal、Patch账本或Process Owner；
+3. 不替代Session Event、Action Audit、Patch账本或Process Owner；
 4. 不对正文执行通用Secret检测、DLP、加密或内容语义审查；
 5. 不保证搜索期间Workspace是原子快照，也不保证`complete=true`代表工具或进程成功；
 6. 不提供透明无限保留、自动Vacuum、跨Session复制或跨主机高可用；
@@ -136,7 +137,7 @@ Process正文属于附加展示证据，准备、预算或配额失败时允许�
 | Tool捕获 | Scoped Runtime生成的正文和Scope | 模型参数、旧路径标签 | 只接受绑定同一Publisher实例的`ArtifactToolResult` |
 | Session发布 | 当前Thread、Turn、Call、批准和Sequence | 调用方自报归属 | 事务内重新读取和校验 |
 | Batch报告 | Bridge从持久Patch计划/运行生成的Document | 任意Diff文本 | 无真实批次证据则不发布 |
-| Process报告 | 已结算`ProcessObservation`和Action指纹 | 任意stdout/stderr字节 | 不匹配时降级为无引用终态或明确拒绝 |
+| 历史Process报告 | 旧Session中已结算Process结果和Action指纹 | 任意stdout/stderr字节 | 仅只读验证，不再发布新`process_output` |
 | 公共读取 | Session Thread和当前Workspace能力 | 客户端Scope、用途、数据库位置 | 输入只接收Artifact ID及分页参数 |
 | 模型历史 | 冻结View Decision和完整Artifact绑定 | Manifest自报完整 | Provider调用前重新验证全部引用 |
 
@@ -148,7 +149,7 @@ Process正文属于附加展示证据，准备、预算或配额失败时允许�
 | `ArtifactRef` | 对外公开不可变Manifest | 保存Thread、Call、Scope、数据库路径 |
 | `SQLiteArtifactStore` | 标准发布、读取、验证、配额、TTL回收 | 直接执行Tool、Patch或Process |
 | `SQLiteBatchDiffPublisher` | 从真实批次事实生成Plan/Effect归档并原子注解事件 | 授予审批、执行Patch、Reconcile效果 |
-| `SQLiteProcessArtifactPublisher` | 从已核对终态观察生成双流归档并原子注解结果 | 成为Action结果或重新运行进程 |
+| `ActionOutputArtifactMixin` | 发布并验证当前Trusted Action输出 | 成为Process效果Owner或重新运行进程 |
 | `ArtifactAccessScope` | 证明当前宿主仍持有匹配Workspace能力 | 从历史路径推断访问权 |
 | `ArtifactReferenceVerifier` | 发网前验证归属、用途、正文和覆盖 | 修改旧Item或补写缺失Artifact |
 | `CodingToolRuntime` | 搜索捕获、分页Tool及Scope派生 | 暴露Scope给模型 |
@@ -214,23 +215,17 @@ classDiagram
       +artifacts
       +append(thread_id, drafts, expected_sequence)
     }
-    class ProcessArtifactPublisher {
-      +session
-      +bridge
-      +artifacts
-      +append(thread_id, turn_id, call, observation, drafts)
-    }
     class SQLiteArtifactStore
     class SQLiteBatchDiffPublisher
-    class SQLiteProcessArtifactPublisher
+    class ActionOutputArtifactMixin
     ArtifactReferenceVerifier <|-- ArtifactPublisher
     ArtifactPublisher <|.. SQLiteArtifactStore
     BatchDiffPublisher <|.. SQLiteBatchDiffPublisher
-    ProcessArtifactPublisher <|.. SQLiteProcessArtifactPublisher
+    ActionOutputArtifactMixin <|-- SQLiteArtifactStore
     ArtifactAccessScope <|.. SQLiteBatchDiffPublisher
 ```
 
-`AgentRuntime`只依赖端口，但三个SQLite发布器必须共享同一`SessionStore`对象；Batch和Process发布器还
+`AgentRuntime`只依赖端口，但SQLite Store与Batch Publisher必须共享同一`SessionStore`对象；Batch Publisher还
 必须绑定Runtime实际使用的Bridge。验证器可独立注入，但不得切换到另一Session。当前具体实现会使用
 `SQLiteSessionStore`私有事务能力，因此替换远端存储不是简单改连接字符串，而需重新实现原子合同。
 
@@ -324,31 +319,26 @@ Plan引用绑定完整审批请求；Effect引用绑定已结算Patch Batch结�
 Bridge从原计划、批准、镜像和运行记录生成。报告不可用或配额不足时，原审批/效果事件仍然提交；部分
 或Unknown效果不能伪造已应用编辑。提交后异常通过Event身份确认已提交批次，禁止重放写入。
 
-## 12. Process Output发布流程
+## 12. 历史Process Output只读兼容
 
 ```mermaid
 sequenceDiagram
-    participant W as ActionWorker
-    participant R as AgentRuntime
-    participant P as ProcessPublisher
-    participant D as SessionSQLite
-    W-->>R: terminal ProcessObservation
-    R->>P: append observation and terminal drafts
-    P->>P: verify pending call approval action and fingerprints
-    P->>P: encode summary and ordered Base64 chunks
-    alt no bounded document or archive failure
-      P->>D: append unmodified terminal facts
-    else document valid
-      P->>D: BEGIN IMMEDIATE
-      P->>D: insert process_output body
-      P->>D: append terminal result with ref
-      P->>D: COMMIT
-    end
+    participant C as Client or Model History
+    participant A as SQLiteArtifactStore
+    participant S as SessionSQLite
+    participant P as Historical Process Codec
+    C->>A: read historical process_output id
+    A->>S: load row and owning Thread
+    A->>P: parse canonical JSONL and Base64 chunks
+    P-->>A: summary and ordered captured prefixes
+    A->>A: verify manifest, result summary, action and scope binding
+    A-->>C: page or artifact_corrupt
 ```
 
-Process正文由唯一Summary及stdout后stderr的连续Base64 Chunk组成，单Chunk原始字节最多12 KiB。
-Artifact只保存`ProcessResult`已经捕获的前缀；Effect Journal仍是外部命令效果权威。Action数据库与
-Session数据库构成Saga而非跨库事务：恢复可从已结算Action重新生成展示正文，但绝不重新执行命令。
+0.9.1f3删除了`SQLiteProcessArtifactPublisher`及其Action Worker执行链，但没有重写既有Session。当前Reader仍识别
+唯一Summary及stdout后stderr连续Base64 Chunk，核对公共流摘要、Manifest、Thread/Turn/Call、历史Process批准和
+Action指纹。任何用途改写、分片错序、正文篡改或归属不一致返回`artifact_corrupt`。新执行不得写入
+`process_output`，而由Trusted Action的`action_output`保存与Plan/Route绑定的终态证据。
 
 ## 13. 读取、验证与模型历史
 
@@ -535,9 +525,7 @@ collect(limit, after):
 | 取消线性化 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_record_tool_result` | [`test_recovery.py`](../../tests/artifacts/test_recovery.py) | `test_cancel_linearizes_with_artifact_transaction` | 提交前回滚或提交后成对事实 |
 | Batch Diff | [`batch_diff.py`](../../src/harnessix/artifacts/batch_diff.py) | `SQLiteBatchDiffPublisher.append`、`_prepare` | [`test_batch_diff.py`](../../tests/artifacts/test_batch_diff.py) | `test_real_plan_and_effect_are_distinct_atomic_refs`、`test_partial_unknown_reports_do_not_invent_edits` | 两用途、真实证据和Unknown |
 | Batch崩溃恢复 | [`batch_diff.py`](../../src/harnessix/artifacts/batch_diff.py) | `append`异常确认分支 | [`test_batch_diff_crash.py`](../../tests/artifacts/test_batch_diff_crash.py) | `test_real_exit_atomic_report_and_facts_no_write_replay` | 真退出不重放写入 |
-| Process发布 | [`process_output.py`](../../src/harnessix/artifacts/process_output.py) | `SQLiteProcessArtifactPublisher.append`、`_validate_owner` | [`test_process_output.py`](../../tests/artifacts/test_process_output.py) | `test_process_output_is_published_with_terminal_session_facts`、`test_quota_omits_archive_without_erasing_effect` | Action绑定和降级 |
-| Process正文 | [`output_artifact.py`](../../src/harnessix/processes/output_artifact.py) | `process_output_document`、`parse_process_output_document` | [`test_process_output.py`](../../tests/artifacts/test_process_output.py) | `test_process_output_document_is_binary_safe_and_canonical`、`test_process_output_document_rejects_tampered_chunks` | Base64、顺序、摘要和完整性 |
-| Process真退出 | [`process_output.py`](../../src/harnessix/artifacts/process_output.py) | `SQLiteProcessArtifactPublisher.append`恢复分支 | [`test_process_output_crash.py`](../../tests/artifacts/test_process_output_crash.py) | `test_real_exit_recovers_process_output_without_action_replay` | Session×Action Saga恢复 |
+| 历史Process正文 | [`output_artifact.py`](../../src/harnessix/processes/output_artifact.py)、[`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `parse_process_output_document`、`_validate_process_output_body` | [`test_legacy_process_output_reader.py`](../../tests/artifacts/test_legacy_process_output_reader.py) | `test_historical_process_output_is_binary_safe_and_canonical`、`test_historical_process_output_rejects_tampered_chunks` | 只读Base64、顺序、摘要、完整性与冻结Schema |
 | Trusted Process终态输出 | [`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py) | `ActionOutputArtifactMixin.publish_action_output`、`validate_action_output_reference`、`validate_action_output_body` | [`test_store.py`](../../tests/artifacts/test_store.py)、[`test_process_output_upgrade.py`](../../tests/artifacts/test_process_output_upgrade.py) | Action输出发布、引用、正文和migration25回归 | 查询优先发布、Session反向授权和正文摘要一致性 |
 | 模型历史顺序 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_verify_history_artifacts` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py) | `test_invalid_history_stops_before_provider`、`test_verifier_cancellation_timeout_drains_without_provider_or_decision` | 发网前验证与取消排空 |
 | 协议读取 | [`artifacts.py`](../../src/harnessix/app_server/artifacts.py) | `ScopedProtocolArtifactReader.read` | [`test_sdk.py`](../../tests/artifacts/test_sdk.py) | `test_real_sdk_reads_beyond_preview_without_exposing_host_scope` | SDK分页不暴露内部Scope |
@@ -551,8 +539,8 @@ collect(limit, after):
 3. 按`_reference` → `_body` → `read` → `verify_reference`阅读双向完整性；
 4. 读`collect`与`test_store.py`，区分过期、清理、Tombstone和物理空间；
 5. 读`batch_diff.py`及Patch Bridge，理解报告为何不能授予执行权；
-6. 读`process_output.py`及`processes/output_artifact.py`，理解Effect事实与展示副本的Saga；
-7. 读`action_output_store.py`，区分可信Process终态正文、Router审计摘要和Session结果引用；
+6. 读`processes/output_artifact.py`与`artifacts/sqlite.py`，理解历史`process_output`为何只读；
+7. 读`action_output_store.py`，区分当前可信Process终态正文、Router审计摘要和Session结果引用；
 8. 最后读Agent Runtime、Tool Runtime、Context模型视图和App Server读取器，建立端到端调用链。
 
 ## 21. 测试设计与验收标准
@@ -563,13 +551,13 @@ collect(limit, after):
 | 存储 | 发布、分页、归属、TTL、损坏、配额、并发、磁盘满、GC | `test_store.py`、`test_runtime.py` |
 | 取消/崩溃 | Tool捕获、事务前后、用户取消、真实进程退出 | `test_recovery.py`及Crash测试 |
 | Batch Diff | Plan/Effect两用途、Unknown、预算、配额、引用错绑 | `test_batch_diff.py` |
-| Process | 二进制双流、Action绑定、降级、TTL、损坏和Saga恢复 | `test_process_output*.py` |
+| Process证据 | 当前`action_output`发布/授权，以及历史`process_output`二进制、损坏和只读Schema | `test_store.py`、`test_process_output_upgrade.py`、`test_legacy_process_output_reader.py` |
 | 模型历史 | 冻结视图、覆盖证明、全部引用验证、双Provider、发网前失败 | `test_model_history.py` |
 | 升级 | Migration 9/11每个真退出切点、旧Artifact/Event原字节保持 | Upgrade测试和独立Probe |
 | SDK/协议 | 多页读取、公开投影、Scope不外泄 | `test_sdk.py`、App Server测试 |
 
-当前`tests/artifacts`包含214项测试。Artifact变更至少运行该目录；若修改Session表、Agent装配、Tool定义、
-模型历史、Patch或Process合同，还必须运行对应模块测试和全量`make check`。仅验证Happy Path或内存Fake
+Artifact变更至少运行`tests/artifacts`；若修改Session表、Agent装配、Tool定义、模型历史、Patch或Process合同，
+还必须运行对应模块测试和全量`make check`。精确测试数以当前测试运行报告为准。仅验证Happy Path或内存Fake
 不能证明事务、崩溃和归属边界。
 
 ## 22. 已知限制、风险与后续工作

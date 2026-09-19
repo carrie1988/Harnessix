@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 3
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -15,7 +15,7 @@ related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
 related_tests:
   - tests/agent/test_session_upgrade.py
-  - tests/integration/test_postgres_journal.py
+  - tests/governance/test_legacy_action_archive.py
   - tests/product_config/test_migration_and_store.py
 supersedes: []
 ---
@@ -35,7 +35,7 @@ Revision支持的操作规则。
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
 | Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0025 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份 |
-| 旧Action SQLite/PostgreSQL Journal | 迁移兼容Schema | 当前产品不自动升级 | 停写归档；按0.9.1f3导出说明处理 |
+| 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
 | Patch/Process/Delivery/扩展账本 | 各模块专用版本或表 | 取决于宿主显式装配 | 必须按模块设计做整组备份和对账 |
@@ -108,8 +108,9 @@ Skill或Hook账本，应在同一停机窗口备份。Product Config源文件不
 
 ## 6. 旧Action PostgreSQL归档
 
-PostgreSQL只服务已退役Action Worker兼容数据。迁移期间先停止全部旧写入，再使用组织已有的一致性备份或`pg_dump`
-生成只读归档；凭据不得展开到命令日志。当前产品不连接、迁移或回放该数据库。0.9.1f3提供导出校验前不得删除原库。
+PostgreSQL只服务已退役Action Worker历史数据。先停止全部旧写入，再使用组织已有的一致性备份或`pg_dump`
+生成只读归档；凭据不得展开到命令日志。当前产品不连接、迁移或回放该数据库。命令、验收和保留要求见
+[旧Action Plane状态检查与归档手册](legacy-action-archive.md)。
 
 ## 7. Agent Session升级
 
@@ -139,7 +140,7 @@ uv run pytest tests/agent/test_store.py
 ## 8. 旧Action Journal处置
 
 旧Journal不再随Harnessix Code升级。保留源版本、Schema版本、数据库摘要和外部Receipt核对报告；不能证明的效果保持
-`UNKNOWN`。禁止由新版本自动迁移、Claim或重放旧记录。物理删除以0.9.1f3的只读导出和保留期策略为前置条件。
+`UNKNOWN`。禁止由新版本自动迁移、Claim或重放旧记录；按归档手册执行只读导出和组织保留期策略。
 
 ## 9. Product Config v1→v2
 
@@ -216,8 +217,8 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 | 领域 | 源码 | 测试 |
 |---|---|---|
 | Session Migration | [`session/sqlite.py`](../../src/harnessix/session/sqlite.py)、[`session/migrations`](../../src/harnessix/session/migrations/) | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) |
-| SQLite Journal | [`storage/sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | [`test_action_service.py`](../../tests/integration/test_action_service.py) |
-| PostgreSQL Journal | [`storage/postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) |
+| 旧SQLite Journal归档 | [`archive_legacy_action_state.py`](../../scripts/archive_legacy_action_state.py) | [`test_legacy_action_archive.py`](../../tests/governance/test_legacy_action_archive.py) |
+| 旧PostgreSQL Journal归档 | [归档手册](legacy-action-archive.md) | 停写后原生`pg_dump`与组织恢复演练 |
 | 配置Migration | [`product_config/migration.py`](../../src/harnessix/product_config/migration.py) | [`test_migration_and_store.py`](../../tests/product_config/test_migration_and_store.py) |
 | 配置活动CAS | [`product_config/store.py`](../../src/harnessix/product_config/store.py) | [`test_migration_and_store.py`](../../tests/product_config/test_migration_and_store.py) |
 

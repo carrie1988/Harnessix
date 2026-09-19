@@ -13,8 +13,8 @@ related_adrs:
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0003-database-backed-worker-queue.md
 related_tests:
-  - tests/integration/test_worker.py
-  - tests/integration/test_postgres_journal.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/governance/test_legacy_action_archive.py
 supersedes: []
 ---
 

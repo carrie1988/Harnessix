@@ -1,26 +1,28 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 6
+code_revision: pending
 owners:
   - core
 modules:
   - architecture
   - cli
   - sdk
-  - api
-  - worker
-  - runtime
   - trusted_actions
   - processes
+  - session
+  - artifacts
   - delivery
   - evals
+  - deployment
   - documentation
 related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
+  - tests/governance/test_legacy_action_archive.py
+  - tests/agent/test_legacy_process_compatibility.py
   - tests/delivery/test_git_push.py
   - tests/smoke/test_cli.py
   - tests/product_config/test_server_and_cli.py
@@ -35,9 +37,9 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 需求 | 删除独立Action HTTP/Worker产品面，把副作用治理收敛为Coding Agent内部Trusted Action Runtime |
-| 当前问题 | 顶层CLI、SDK、部署和文档同时暴露Coding Agent与通用Action服务；旧调用方阻止直接删除兼容内核 |
-| 目标结果 | 1.0只有Agent Protocol产品入口；高风险能力统一进入Trusted Action Router；旧内核有界迁移后删除 |
-| 影响模块 | CLI、SDK、API、Worker、Action Runtime、Process、Delivery、Evals、产品装配和现行文档 |
+| 当前问题 | f1前顶层CLI、SDK、部署和文档同时暴露Coding Agent与通用Action服务；f2前旧调用方阻止直接删除兼容内核 |
+| 目标结果 | 1.0只有Agent Protocol产品入口；高风险能力统一进入Trusted Action Router；旧内核已从候选源码物理删除 |
+| 影响模块 | CLI、SDK、Agent、Session、Artifact、Process、Delivery、Evals、产品装配、归档运维和现行文档 |
 | 兼容级别 | 0.9阶段有计划地撤销实验性HTTP命令和Client；Agent Protocol v1、Session和Product Config保持兼容 |
 | 发布/回滚单元 | f1产品面退役、f2调用方迁移、f3物理删除与数据归档三个独立提交单元 |
 
@@ -214,7 +216,7 @@ sequenceDiagram
 | 契约/结构 | 变更前 | 变更后 | 兼容策略 | 迁移/回滚 |
 |---|---|---|---|---|
 | CLI命令 | `serve/worker/code/agent/agent-server`并列 | 只公开Coding Agent命令 | 0.9直接撤销旧实验命令 | 回滚旧版本恢复命令，不改数据 |
-| 根包导出 | Action合同和HTTP Client | 暂保共享领域类型，不再导出HTTP Client | 显式导入旧模块只用于迁移 | f3删除旧模块 |
+| 根包导出 | Action合同和HTTP Client | 根包不再导出旧Action合同；Agent客户端统一从`harnessix.sdk`显式导入 | 旧根包导入不提供运行时兼容 | 回滚旧版本恢复原导出 |
 | `harnessix.sdk` | Agent Client与Action HTTP Client并列 | 只导出Agent Client/Transport/Error | Agent Protocol v1不变 | 旧HTTP用户固定旧版本 |
 | Action HTTP/OpenAPI | 当前可构造 | f1标记兼容，f3删除 | 不进入1.0稳定合同 | 历史Schema随Git版本保留 |
 | Agent Session | Trusted与旧专用事件均可读 | 新执行只写Trusted Action事件 | 旧事件继续只读恢复 | 不重写数据库 |
@@ -281,11 +283,13 @@ phase_f3_delete_compatibility_kernel():
 | Agent SDK导出 | [`sdk/__init__.py`](../../src/harnessix/sdk/__init__.py) | `__all__` | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | 无HTTP Client公共导出 |
 | 默认产品链 | [`server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | Gateway装配且无旧服务依赖 |
 | 统一Router | [`router.py`](../../src/harnessix/trusted_actions/router.py) | `TrustedActionRouter` | [`test_router.py`](../../tests/trusted_actions/test_router.py) | Plan/Approval/Execute/Reconcile |
-| 旧调用方门禁 | 生产源码树 | 精确Import集合 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | 新引用失败、集合缩小可见 |
-| 基础依赖边界 | [`pyproject.toml`](../../pyproject.toml)、[`Dockerfile`](../../Dockerfile) | `legacy-action` Extra、Help默认命令 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | FastAPI/Uvicorn/AsyncPG/LangChain Core不进入基础Wheel |
+| 旧调用方门禁 | 生产源码树 | 严格空Import集合与退役路径清单 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | 旧引用、源码路径、公共导出或规格重新出现即失败 |
+| 基础依赖边界 | [`pyproject.toml`](../../pyproject.toml)、[`Dockerfile`](../../Dockerfile) | 当前依赖组、Help默认命令 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | 不存在`legacy-action` Extra；FastAPI/AsyncPG/LangChain Core不再是直接依赖 |
 | 固定Process替代链 | [`process_action.py`](../../src/harnessix/product_config/process_action.py) | `ProductProcessActionExecutor` | Process专项测试 | f2a完成后登记具体测试 |
 | Git Push迁移 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `git_push_descriptor`、`git_push_binding`、`build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | f2b不再导入旧Runtime；响应丢失和硬崩溃只对账 |
 | Eval迁移 | [`runner.py`](../../src/harnessix/evals/runner.py)、[`eval_action.py`](../../src/harnessix/product_config/eval_action.py) | `run_historical_coding_eval`、`build_eval_trusted_action_composition`、`EvalRunTestsActionExecutor` | [`test_runner.py`](../../tests/evals/test_runner.py)、[`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) | 不创建`effects.sqlite`；批准与Router终态响应丢失均不重放Process |
+| 历史Session只读兼容 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`runtime_configuration.py`](../../src/harnessix/agent/runtime_configuration.py) | `_recover`、`reply_approval`、`resume_turn` | [`test_legacy_process_compatibility.py`](../../tests/agent/test_legacy_process_compatibility.py) | 启动不改写；继续旧Process固定返回`legacy_process_state_archived` |
+| 旧SQLite归档 | [`archive_legacy_action_state.py`](../../scripts/archive_legacy_action_state.py) | `inspect`、`archive` | [`test_legacy_action_archive.py`](../../tests/governance/test_legacy_action_archive.py) | Schema/完整性检查、WAL一致快照、SHA-256、0600、无覆盖与脱敏清单 |
 
 ## 13. 风险、部署、兼容与回退
 
@@ -315,7 +319,7 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 
 治理门禁已经从旧调用方精确集合中删除`delivery/git_push.py`，并由“子集”收紧为“完全相等”，防止删除引用后留下可被重新占用的
 白名单额度。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
-文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c已关闭但f3兼容内核物理删除尚未开始。
+文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c已关闭，f3实现候选已完成本地整改但尚未取得全矩阵CI证据。
 
 ### 14.1 f2c实现与关闭证据
 
@@ -325,4 +329,30 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 
 专项回归覆盖Evals、Campaign、Grader、Process绑定/Supervisor/输出、Trusted Action Gateway、Agent审批/崩溃恢复和治理门禁；测试断言首次Router终态后重开Process Lease仍为1，完整修复流程最终为2，证明首个Process没有重放。治理白名单已删除`evals/runner.py`，从7个精确调用方缩为6个。实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`本地完成Ruff、Mypy、合同、可读性、文档静态门禁、34个变化路径共591幅Mermaid真实渲染、Wheel构建及全仓3569项通过/20项跳过；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务，f2c据此关闭。
 
-每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。
+### 14.2 f3实现候选与待关闭证据
+
+f3候选把旧生产Import集合从6项降为0，并物理删除`api`、`storage`、`policy`、`executors`、`adapters`、
+旧`runtime/worker/bootstrap/settings`、Action HTTP SDK、专用Process Action桥和其示例、规格及测试。`pyproject.toml`
+不再提供`legacy-action` Extra；CI不再启动只服务旧Journal的PostgreSQL Job。Agent Protocol、Trusted Action Router、
+Execution Plan、Action Audit、Session、Artifact、Workspace和Process Supervisor仍是当前产品链。
+
+删除不等于抹除历史状态。旧Session中的`ProcessApprovalRequestContent`、`WAITING_APPROVAL`和`WAITING_ACTION`
+仍可由Reducer和Reader解释；启动恢复不追加事件，继续批准或恢复固定返回`legacy_process_state_archived`，也不会执行
+进程。旧`process_output` Artifact正文保留只读验证器，不再存在发布器。新的Agent运行只写Trusted Action事件和
+`action_output` Artifact。
+
+旧SQLite Action Journal使用[`archive_legacy_action_state.py`](../../scripts/archive_legacy_action_state.py)离线检查和
+WAL一致备份；工具验证必需表/迁移版本、`integrity_check`、源/归档统计、SHA-256、目标无覆盖和POSIX 0600，并只输出低敏字段。
+PostgreSQL不引入新的运行依赖，停写后使用组织标准`pg_dump`一致性归档。完整步骤见
+[旧Action Plane状态检查与归档手册](../operations/legacy-action-archive.md)。当前产品既不连接也不自动迁移旧数据库。
+
+候选已在执行`uv sync --locked --all-extras --dev`并卸载旧服务直接依赖后完成本地门禁：Ruff格式与Lint、
+292个源码文件Mypy、生成规格、可读性最终基线、206份文档与5598条链接静态检查、35份变化Markdown中的
+190幅Mermaid真实渲染、14个当前示例、Wheel构建与隔离安装/CLI Help均通过；全仓测试为3472项通过、
+18项跳过。Wheel内容检查确认不包含已退役包、根模块及`harnessix.sdk.client`。本机Docker Daemon未运行，
+固定镜像Container场景保留给远端CI，不能以其他本地测试替代。
+
+远端CI改为Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例；只有
+该矩阵一次通过，才能把f3、本文和路线图状态改为关闭。取得实现提交和CI URL后再回写Revision及远端结果。
+
+每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在全矩阵CI完成前，不得宣称f3已经关闭。

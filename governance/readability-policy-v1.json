@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 849,
-    "src/harnessix/agent/runtime.py": 3098,
+    "src/harnessix/agent/runtime.py": 2806,
     "src/harnessix/context/sources.py": 844,
     "src/harnessix/delivery/git.py": 1041,
     "src/harnessix/delivery/git_push.py": 609,
@@ -45,36 +45,28 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 2921,
+      "max_lines": 2634,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
-      "max_lines": 169,
-      "max_decision_complexity": 50
+      "max_lines": 139,
+      "max_decision_complexity": 39
     },
     "harnessix.agent.runtime:AgentRuntime._drive": {
-      "max_lines": 146,
-      "max_decision_complexity": 32
+      "max_lines": 145,
+      "max_decision_complexity": 30
     },
     "harnessix.agent.runtime:AgentRuntime._execute_calls": {
-      "max_lines": 268,
-      "max_decision_complexity": 55
+      "max_lines": 233,
+      "max_decision_complexity": 48
     },
     "harnessix.agent.runtime:AgentRuntime._finish": {
       "max_lines": 146,
       "max_decision_complexity": 37
     },
-    "harnessix.agent.runtime:AgentRuntime._observe_process_action": {
-      "max_lines": 102,
-      "max_decision_complexity": 21
-    },
-    "harnessix.agent.runtime:AgentRuntime._recover": {
-      "max_lines": 100,
-      "max_decision_complexity": 26
-    },
     "harnessix.agent.runtime:AgentRuntime._reply_approval": {
-      "max_lines": 133,
-      "max_decision_complexity": 23
+      "max_lines": 103,
+      "max_decision_complexity": 21
     },
     "harnessix.agent.runtime:AgentRuntime._run_compaction": {
       "max_lines": 135,
@@ -108,10 +100,6 @@
       "max_lines": 77,
       "max_decision_complexity": 23
     },
-    "harnessix.api.app:create_app": {
-      "max_lines": 164,
-      "max_decision_complexity": 3
-    },
     "harnessix.app_server.server:AgentProtocolServer": {
       "max_lines": 234,
       "max_decision_complexity": 0
@@ -127,10 +115,6 @@
     "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher.append": {
       "max_lines": 101,
       "max_decision_complexity": 27
-    },
-    "harnessix.artifacts.process_output:SQLiteProcessArtifactPublisher": {
-      "max_lines": 221,
-      "max_decision_complexity": 0
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore": {
       "max_lines": 432,
@@ -276,10 +260,6 @@
       "max_lines": 176,
       "max_decision_complexity": 0
     },
-    "harnessix.executors.demo_issue:DemoIssueRepository": {
-      "max_lines": 105,
-      "max_decision_complexity": 0
-    },
     "harnessix.hooks.runtime:HookRuntime": {
       "max_lines": 294,
       "max_decision_complexity": 0
@@ -408,10 +388,6 @@
       "max_lines": 131,
       "max_decision_complexity": 0
     },
-    "harnessix.processes.agent_runtime:ProcessAgentBridge": {
-      "max_lines": 347,
-      "max_decision_complexity": 0
-    },
     "harnessix.processes.owner_protocol:ProcessOwnerCommand.command_shape": {
       "max_lines": 31,
       "max_decision_complexity": 23
@@ -500,10 +476,6 @@
       "max_lines": 161,
       "max_decision_complexity": 0
     },
-    "harnessix.runtime:ActionService": {
-      "max_lines": 483,
-      "max_decision_complexity": 0
-    },
     "harnessix.sandbox.container:ContainerCommandBuilder": {
       "max_lines": 338,
       "max_decision_complexity": 0
@@ -556,14 +528,6 @@
       "max_lines": 66,
       "max_decision_complexity": 26
     },
-    "harnessix.storage.postgres_journal:PostgresEffectJournal": {
-      "max_lines": 515,
-      "max_decision_complexity": 0
-    },
-    "harnessix.storage.sqlite_journal:SQLiteEffectJournal": {
-      "max_lines": 494,
-      "max_decision_complexity": 0
-    },
     "harnessix.tools.git:GitReadRuntime": {
       "max_lines": 111,
       "max_decision_complexity": 0
@@ -586,10 +550,6 @@
     },
     "harnessix.trusted_actions.store:SQLiteActionAuditStore": {
       "max_lines": 310,
-      "max_decision_complexity": 0
-    },
-    "harnessix.worker:ActionWorker": {
-      "max_lines": 124,
       "max_decision_complexity": 0
     },
     "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources": {
@@ -619,9 +579,6 @@
   },
   "approved_package_dependencies": [
     "__main__->cli",
-    "__root__->domain",
-    "adapters->domain",
-    "adapters->sdk",
     "agent->artifacts",
     "agent->context",
     "agent->domain",
@@ -633,11 +590,6 @@
     "agent->tools",
     "agent_cli->protocol",
     "agent_cli->sdk",
-    "api->bootstrap",
-    "api->domain",
-    "api->observability",
-    "api->runtime",
-    "api->settings",
     "app_server->agent",
     "app_server->artifacts",
     "app_server->domain",
@@ -648,13 +600,6 @@
     "artifacts->patches",
     "artifacts->processes",
     "artifacts->session",
-    "bootstrap->domain",
-    "bootstrap->executors",
-    "bootstrap->observability",
-    "bootstrap->policy",
-    "bootstrap->runtime",
-    "bootstrap->settings",
-    "bootstrap->storage",
     "cli->agent_cli",
     "cli->evals",
     "cli->licensing",
@@ -686,7 +631,6 @@
     "execution->domain",
     "execution->tools",
     "execution->workspace",
-    "executors->domain",
     "hooks->agent",
     "hooks->domain",
     "hooks->execution",
@@ -707,12 +651,10 @@
     "patches->agent",
     "patches->domain",
     "patches->tools",
-    "policy->domain",
     "processes->agent",
     "processes->artifacts",
     "processes->domain",
     "processes->execution",
-    "processes->runtime",
     "processes->secrets",
     "processes->tools",
     "processes->workspace",
@@ -739,8 +681,6 @@
     "protocol->agent",
     "protocol->artifacts",
     "protocol->domain",
-    "runtime->domain",
-    "runtime->observability",
     "sandbox->agent",
     "sandbox->domain",
     "sandbox->execution",
@@ -749,7 +689,6 @@
     "sandbox->tools",
     "sandbox->workspace",
     "sdk->app_server",
-    "sdk->domain",
     "sdk->protocol",
     "secrets->agent",
     "secrets->execution",
@@ -767,7 +706,6 @@
     "smoke->domain",
     "smoke->models",
     "smoke->session",
-    "storage->domain",
     "tools->agent",
     "tools->artifacts",
     "tools->domain",
@@ -778,9 +716,6 @@
     "trusted_actions->execution",
     "trusted_actions->tools",
     "trusted_actions->workspace",
-    "worker->domain",
-    "worker->observability",
-    "worker->runtime",
     "workspace->agent",
     "workspace->domain",
     "workspace->tools"
@@ -801,28 +736,7 @@
     ]
   ],
   "public_api": {
-    "harnessix": [
-      "ACTION_SPEC_VERSION",
-      "ActionContext",
-      "ActionEvent",
-      "ActionFailure",
-      "ActionRequest",
-      "ActionResult",
-      "ActionSnapshot",
-      "ActionStatus",
-      "ApprovalDecision",
-      "ApprovalOutcome",
-      "EffectClass",
-      "EffectReceipt",
-      "Principal",
-      "RiskLevel",
-      "SecretRef",
-      "ToolDescriptor",
-      "TraceContext"
-    ],
-    "harnessix.api": [
-      "create_app"
-    ],
+    "harnessix": [],
     "harnessix.app_server": [
       "AgentApplicationService",
       "AgentProtocolServer",
@@ -934,13 +848,6 @@
       "write_eval_report",
       "write_eval_run_state"
     ],
-    "harnessix.executors": [
-      "DemoIssueCreateInput",
-      "DemoIssueExecutor",
-      "DemoIssueRepository",
-      "EchoExecutor",
-      "EchoInput"
-    ],
     "harnessix.hooks": [
       "HookActionInput",
       "HookActionOutput",
@@ -990,9 +897,6 @@
       "build_observability",
       "configure_logging",
       "trace_log_fields"
-    ],
-    "harnessix.policy": [
-      "DefaultPolicyEngine"
     ],
     "harnessix.product_config": [
       "ConfigAuditEvent",
@@ -1147,10 +1051,6 @@
       "SkillSource",
       "SkillSourceSnapshot",
       "build_skill_action_definitions"
-    ],
-    "harnessix.storage": [
-      "PostgresEffectJournal",
-      "SQLiteEffectJournal"
     ],
     "harnessix.trusted_actions": [
       "ActionAuditEvent",

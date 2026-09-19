@@ -1,7 +1,7 @@
 ---
 doc_type: contract
-status: current
-version: 1
+status: historical
+version: 2
 code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
@@ -15,11 +15,14 @@ related_adrs:
   - docs/adr/0003-database-backed-worker-queue.md
 related_tests:
   - tests/contracts
-  - tests/integration/test_action_service.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
 # Action Contract v1
+
+> **历史合同：** 独立Action HTTP/Worker实现已在0.9.1f3物理删除，本合同不再生成、发布或接受新请求。
+> 历史Schema和实现由Git版本永久保留；当前高风险执行合同见[Trusted Actions模块](modules/trusted-actions.md)。
 
 ## 1. 设计目标
 

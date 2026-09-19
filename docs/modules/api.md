@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
-status: current
-version: 3
+status: deprecated
+version: 4
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -14,38 +14,36 @@ related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/integration/test_api.py
-  - tests/integration/test_action_service.py
-  - tests/integration/test_worker.py
-  - tests/integration/test_observability_flow.py
-  - tests/unit/test_sdk.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/unit/test_observability_core.py
+  - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 
 # API模块设计
 
 > **迁移状态：** 本模块不再属于Harnessix Code 1.0产品面。`harnessix serve`已撤销，默认产品、Agent SDK与
-> Product Config均不能到达该HTTP入口。源码仅为既有Process、Git Push和Eval调用方迁移保留，禁止新增生产依赖，
-> 并将在0.9.1f3完成数据归档说明后物理删除。以下章节用于解释兼容源码，不是部署指南。
+> Product Config均不能到达该HTTP入口。源码已在0.9.1f3完成调用方迁移和数据归档方案后物理删除。
+> 以下章节仅解释删除前的历史实现，不是部署指南。
 
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
-| 源码包 | [`src/harnessix/api`](../../src/harnessix/api/) |
-| 当前职责 | 在迁移窗口内保留旧Action Plane FastAPI投影，供兼容回归和数据读取验证 |
+| 源码包 | [`src/harnessix/api`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api) |
+| 删除前职责 | 提供旧Action Plane FastAPI投影 |
 | 非职责 | 不实现Action状态机、Policy、Approval规则、Executor、Worker、Journal事务、Agent Protocol、最终用户认证、租户授权、限流、请求预算、API Gateway或自动客户端重试 |
-| 上游调用者 | 仅限0.9.1f冻结白名单内的既有兼容调用方和测试 |
+| 删除前上游 | 旧兼容调用方和测试 |
 | 下游依赖 | `ActionService`、Domain合同、Bootstrap、Settings、Observability、FastAPI/Starlette |
 | 网络协议 | HTTP/JSON；Action资源路径位于`/v1`，Health与Ready为无版本系统路径 |
 | 持久化 | API自身无数据库；全部Action事实由注入Service的Effect Journal持久化 |
 | 默认部署 | 无；顶层CLI、Docker默认命令和正式运维资料均不再启动该服务 |
-| 兼容导出 | `harnessix.api`仍可显式导入`create_app`，但不构成1.0公共合同 |
+| 当前导出 | 无；`harnessix.api`包已删除 |
 | 代码版本 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` |
 | 当前完成度 | 基础Action资源、inline/queued状态投影、生命周期与HTTP观测已实现；身份、授权、输入输出预算、错误统一、分页、并发控制、稳定Trace校验和生产网络门禁未完成 |
 
-本文是[`api/app.py`](../../src/harnessix/api/app.py)与
-[`api/__init__.py`](../../src/harnessix/api/__init__.py)的当前事实源。Action状态机、事务与副作用恢复见
+本文冻结记录[`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)与
+[`api/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/__init__.py)删除前的事实。Action状态机、事务与副作用恢复见
 [Action Plane子系统设计](../subsystems/action-plane.md)；HTTP客户端行为见[SDK模块设计](sdk.md)；
 Journal内部保证见[Storage模块设计](storage.md)。
 
@@ -170,20 +168,20 @@ Journal。
 
 | 顺序 | 文件 | 规模 | 阅读目标 |
 |---:|---|---:|---|
-| 1 | [`api/app.py`](../../src/harnessix/api/app.py) | 239行 | 全部HTTP Schema、Middleware、Lifespan与8个业务/系统路由 |
-| 2 | [`tests/integration/test_api.py`](../../tests/integration/test_api.py) | 112行 | 4个直接API用例及当前覆盖边界 |
+| 1 | [`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | 239行 | 全部HTTP Schema、Middleware、Lifespan与8个业务/系统路由 |
+| 2 | [`tests/integration/test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | 112行 | 4个直接API用例及当前覆盖边界 |
 | 3 | [Action Plane子系统设计](../subsystems/action-plane.md) | 跨包设计 | Action状态、事务、Lease、UNKNOWN和Reconcile |
-| 4 | [`runtime.py`](../../src/harnessix/runtime.py) | 应用服务 | Route委托方法的真实副作用与失败语义 |
+| 4 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | 应用服务 | Route委托方法的真实副作用与失败语义 |
 | 5 | [`domain/models.py`](../../src/harnessix/domain/models.py) | 领域合同 | HTTP请求/响应字段、状态和版本 |
 | 6 | [`domain/errors.py`](../../src/harnessix/domain/errors.py) | 公开错误 | 404/409错误码和消息 |
-| 7 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | 默认装配 | Journal、Registry、Policy、Executor与Observability选择 |
-| 8 | [`settings.py`](../../src/harnessix/settings.py) | 进程配置 | Host、Port、Storage、执行模式和Telemetry环境变量 |
-| 9 | [`sdk/client.py`](../../src/harnessix/sdk/client.py) | HTTP对端 | 2xx解析、错误Fallback和资源方法 |
+| 7 | [`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | 默认装配 | Journal、Registry、Policy、Executor与Observability选择 |
+| 8 | [`settings.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/settings.py) | 进程配置 | Host、Port、Storage、执行模式和Telemetry环境变量 |
+| 9 | [`sdk/client.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py) | HTTP对端 | 2xx解析、错误Fallback和资源方法 |
 | 10 | [`cli.py`](../../src/harnessix/cli.py) | 进程入口 | `harnessix serve`到Uvicorn模块导入路径 |
-| 11 | [`spec/openapi.json`](../../spec/openapi.json) | 生成合同 | 路径、Schema和已声明响应 |
+| 11 | [`spec/openapi.json`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/spec/openapi.json) | 生成合同 | 路径、Schema和已声明响应 |
 | 12 | [`Dockerfile`](../../Dockerfile)与[部署说明](../deployment.md) | 发布边界 | 默认网络、用户、卷和Queued拓扑 |
 
-[`api/__init__.py`](../../src/harnessix/api/__init__.py)只重导出`create_app`。导入该符号仍会执行
+[`api/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/__init__.py)只重导出`create_app`。导入该符号仍会执行
 `api.app`模块级`app = create_app()`，因此不仅加载函数定义，也会读取环境并构造一个默认Service对象。
 
 ## 6. 内部组件与职责
@@ -217,7 +215,7 @@ flowchart TB
 
 ## 7. 应用工厂与依赖解析
 
-[`create_app`](../../src/harnessix/api/app.py)签名为：
+[`create_app`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)签名为：
 
 ```python
 create_app(settings: Settings | None = None, *, service: ActionService | None = None) -> FastAPI
@@ -246,7 +244,7 @@ resolved_service = service or build_service(resolved_settings)
 
 ## 8. 模块级默认应用与导入副作用
 
-[`api/app.py`](../../src/harnessix/api/app.py)末尾执行：
+[`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)末尾执行：
 
 ```python
 app: Any = create_app()
@@ -341,7 +339,7 @@ FastAPI/Uvicorn默认500处理；异常路径不记录Duration、Route或响应S
 
 ## 12. HTTP状态投影
 
-[`_apply_action_status`](../../src/harnessix/api/app.py)只由三个状态变更POST调用。以下Snapshot状态被映射为202：
+[`_apply_action_status`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)只由三个状态变更POST调用。以下Snapshot状态被映射为202：
 
 - `pending_approval`；
 - `ready`；
@@ -540,7 +538,7 @@ Secret Ref名称、Policy原因、Approval Actor/Reason、Result和Receipt。
 
 ## 20. OpenAPI生成与真实差异
 
-[`spec/openapi.json`](../../spec/openapi.json)由`create_app().openapi()`生成，当前包含：
+[`spec/openapi.json`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/spec/openapi.json)由`create_app().openapi()`生成，当前包含：
 
 - 8条显式Route；
 - Pydantic Domain和Envelope Schema；
@@ -566,7 +564,7 @@ Secret Ref名称、Policy原因、Approval Actor/Reason、Result和Receipt。
 
 ### 21.1 Harnessix Error Handler
 
-[`handle_harnessix_error`](../../src/harnessix/api/app.py)把Domain Error的`status_code`、`code`和`message`
+[`handle_harnessix_error`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)把Domain Error的`status_code`、`code`和`message`
 直接映射为JSON。主要错误包括：
 
 | HTTP | Code | 场景 |
@@ -861,8 +859,8 @@ Worker只有部分Metric故障路径具备隔离测试；不能外推到API全�
 
 ## 32. 历史兼容：Python HTTP SDK
 
-以下行为只解释待删除兼容源码。[`HarnessixClient`](../../src/harnessix/sdk/client.py)和
-[`HarnessixAsyncClient`](../../src/harnessix/sdk/client.py)提供Submit、Get、Approval、Reconcile、Events和Tools。
+以下行为只解释待删除兼容源码。[`HarnessixClient`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py)和
+[`HarnessixAsyncClient`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py)提供Submit、Get、Approval、Reconcile、Events和Tools。
 
 当前客户端：
 
@@ -960,14 +958,14 @@ Socket、TLS、反向代理、Windows Service、macOS Launch Agent、多Uvicorn 
 
 ## 36. 直接测试证据
 
-[`tests/integration/test_api.py`](../../tests/integration/test_api.py)当前只有4个测试函数：
+[`tests/integration/test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py)当前只有4个测试函数：
 
 | 测试 | 直接证明 | 不证明 |
 |---|---|---|
-| [`test_http_api_executes_echo`](../../tests/integration/test_api.py) | Inline Submit 200/Succeeded、Event至少6项、Tool目录两个名称 | Health、404、422、Header、Response大小 |
-| [`test_http_api_returns_structured_conflict`](../../tests/integration/test_api.py) | 同租户幂等键不同载荷返回409和`idempotency_conflict` | 其他Error类型与Message清洗 |
-| [`test_queued_http_api_returns_202_and_worker_completes`](../../tests/integration/test_api.py) | Queued Submit返回202/Ready，独立Worker完成 | GET轮询、Worker缺失、Lease恢复、真实PostgreSQL |
-| [`test_readiness_checks_journal`](../../tests/integration/test_api.py) | Ping True为200，False为503及固定Reason | Ping抛异常、Schema/写入、Health、Worker Ready |
+| [`test_http_api_executes_echo`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | Inline Submit 200/Succeeded、Event至少6项、Tool目录两个名称 | Health、404、422、Header、Response大小 |
+| [`test_http_api_returns_structured_conflict`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | 同租户幂等键不同载荷返回409和`idempotency_conflict` | 其他Error类型与Message清洗 |
+| [`test_queued_http_api_returns_202_and_worker_completes`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | Queued Submit返回202/Ready，独立Worker完成 | GET轮询、Worker缺失、Lease恢复、真实PostgreSQL |
+| [`test_readiness_checks_journal`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | Ping True为200，False为503及固定Reason | Ping抛异常、Schema/写入、Health、Worker Ready |
 
 测试使用`httpx.ASGITransport`并显式进入App Lifespan，不打开真实TCP端口。Fixture中的Service可能已初始化，App Lifespan
 会再次初始化并关闭，Fixture结束再关闭；这只证明当前SQLite实现可承受该测试顺序，不定义任意注入Service的双重生命周期合同。
@@ -976,10 +974,10 @@ Socket、TLS、反向代理、Windows Service、macOS Launch Agent、多Uvicorn 
 
 | 关注点 | 测试 | 与API的关系 |
 |---|---|---|
-| Submit/Approval/Reconcile状态机 | [`test_action_service.py`](../../tests/integration/test_action_service.py) | 直接调用Service，证明Route下游，不证明HTTP投影 |
-| Queued Claim/Heartbeat/Recover | [`test_worker.py`](../../tests/integration/test_worker.py) | 证明共享Journal Worker，不证明API Readiness或轮询 |
-| 跨API角色与Worker Trace持久 | [`test_trace_context_is_durable_across_api_and_worker`](../../tests/integration/test_observability_flow.py) | “api”是Service组件名，测试不发送HTTP Header |
-| HTTP SDK Submit解析 | [`test_async_sdk_preserves_action_contract`](../../tests/unit/test_sdk.py) | 使用MockTransport，不调用真实FastAPI App |
+| Submit/Approval/Reconcile状态机 | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | 直接调用Service，证明Route下游，不证明HTTP投影 |
+| Queued Claim/Heartbeat/Recover | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | 证明共享Journal Worker，不证明API Readiness或轮询 |
+| 跨API角色与Worker Trace持久 | [`test_trace_context_is_durable_across_api_and_worker`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | “api”是Service组件名，测试不发送HTTP Header |
+| HTTP SDK Submit解析 | [`test_async_sdk_preserves_action_contract`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_sdk.py) | 使用MockTransport，不调用真实FastAPI App |
 | OpenAPI提交产物 | [`generate_specs.py`](../../scripts/generate_specs.py) | 生成当前Schema；没有专用逐字比较测试 |
 
 间接证据不能替代API直接合同测试。特别是Trace Header、404 Action、422 Envelope、未知500、Observer故障、Lifespan失败、

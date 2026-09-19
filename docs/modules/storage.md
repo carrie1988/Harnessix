@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
-status: current
-version: 2
+status: deprecated
+version: 3
 code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
@@ -13,29 +13,32 @@ related_adrs:
   - docs/adr/0003-database-backed-worker-queue.md
   - docs/adr/0004-durable-trace-context.md
 related_tests:
-  - tests/integration/test_action_service.py
-  - tests/integration/test_worker.py
-  - tests/integration/test_observability_flow.py
-  - tests/integration/test_postgres_journal.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/unit/test_observability_core.py
+  - tests/governance/test_legacy_action_archive.py
 supersedes: []
 ---
 
 # Storage模块设计
 
+> **退役状态：** 本文描述独立Action Plane的SQLite/PostgreSQL Effect Journal和Worker Queue，源码已在
+> 0.9.1f3物理删除。历史数据库只允许按[旧Action状态归档手册](../operations/legacy-action-archive.md)检查或归档；
+> 当前产品持久化见Session、Execution、Trusted Actions、Workspace与Delivery模块。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
-| 源码包 | [`src/harnessix/storage`](../../src/harnessix/storage/) |
-| 当前职责 | 持久化Action快照与追加式事件；提供SQLite/PostgreSQL队列、Claim、Lease续期、过期恢复、读取和低基数队列统计 |
+| 源码包 | [`src/harnessix/storage`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage) |
+| 删除前职责 | 持久化Action快照与追加式事件；提供SQLite/PostgreSQL队列、Claim、Lease续期、过期恢复、读取和低基数队列统计 |
 | 非职责 | 不校验工具参数，不执行Policy/Approval，不调用Executor，不解析Secret，不负责HTTP认证、租户授权、业务对象事务或历史归档 |
-| 上游调用者 | [`ActionService`](../../src/harnessix/runtime.py)、[`ActionWorker`](../../src/harnessix/worker.py)、Bootstrap生命周期与健康检查 |
-| 实现的端口 | [`EffectJournal`](../../src/harnessix/domain/ports.py) |
+| 上游调用者 | [`ActionService`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)、[`ActionWorker`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py)、Bootstrap生命周期与健康检查 |
+| 实现的端口 | [`EffectJournal`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py) |
 | 持久化后端 | SQLite本地单写者实现；PostgreSQL连接池与多Worker原子Claim实现 |
 | 代码版本 | `ffa56de02b372df981d234fafd1feffbb0b870fb` |
-| 当前完成度 | 两个后端可运行并覆盖主流程；迁移完整性、Lease输入约束、租户隔离、存储安全、分页/保留和双后端合同一致性尚未达到1.0发布门槛 |
+| 删除时状态 | 两个历史后端曾覆盖主流程；不再进入当前测试和发布门槛 |
 
-本文只描述Storage包内部的当前事实。Action完整状态机、Policy、Executor、Worker和HTTP流程以
+本文只描述Storage包删除前的历史事实。Action完整状态机、Policy、Executor、Worker和HTTP流程以
 [Action Plane子系统设计](../subsystems/action-plane.md)为跨包事实源；Action数据模型与合法转换以
 [Domain模块设计](domain.md)为领域事实源。本文不复制第二套Action业务状态机，而是说明Journal如何
 原子保存和并发推进这些状态。
@@ -119,10 +122,10 @@ flowchart LR
 配置选择一个后端；两个后端只读写Action控制面数据库。Policy和Executor位于Storage边界之外，Executor
 产生的外部效果也不由Storage数据库事务包围。
 
-**源码映射：** 端口位于[`domain/ports.py`](../../src/harnessix/domain/ports.py)的`EffectJournal`；
-后端位于[`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py)的`SQLiteEffectJournal`和
-[`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py)的`PostgresEffectJournal`；选择逻辑
-位于[`bootstrap.py`](../../src/harnessix/bootstrap.py)的`build_journal`。
+**源码映射：** 端口位于[`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)的`EffectJournal`；
+后端位于[`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py)的`SQLiteEffectJournal`和
+[`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py)的`PostgresEffectJournal`；选择逻辑
+位于[`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)的`build_journal`。
 
 ### 4.1 允许的依赖方向
 
@@ -146,18 +149,18 @@ flowchart LR
 
 | 顺序 | 文件/目录 | 关键符号 | 阅读目的 |
 |---:|---|---|---|
-| 1 | [`domain/ports.py`](../../src/harnessix/domain/ports.py) | `EffectJournal` | 先理解后端必须满足的公共异步合同 |
+| 1 | [`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py) | `EffectJournal` | 先理解后端必须满足的公共异步合同 |
 | 2 | [`domain/models.py`](../../src/harnessix/domain/models.py) | `ActionSnapshot`、`ActionEvent`、`JournalOperationalStats`、`ALLOWED_ACTION_TRANSITIONS` | 理解被持久化的数据和合法状态转换 |
-| 3 | [`storage/__init__.py`](../../src/harnessix/storage/__init__.py) | `SQLiteEffectJournal`、`PostgresEffectJournal` | 确认包的公开导出面 |
-| 4 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `SQLiteEffectJournal` | 阅读本地后端、事务与序列化基准实现 |
-| 5 | [`migrations/0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql) | SQLite初始Schema | 核对Action/Event表、索引和历史`demo_issues`残留 |
-| 6 | [`migrations/0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql) | SQLite Trace迁移 | 核对升级路径与非幂等DDL限制 |
-| 7 | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `PostgresEffectJournal` | 比较连接池、Migration锁、行锁和`SKIP LOCKED` |
-| 8 | [`migrations/postgresql/0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql) | PostgreSQL初始Schema | 核对类型和Ready Queue部分索引 |
-| 9 | [`migrations/postgresql/0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql) | PostgreSQL Trace迁移 | 核对幂等DDL差异 |
-| 10 | [`runtime.py`](../../src/harnessix/runtime.py)与[`worker.py`](../../src/harnessix/worker.py) | `ActionService`、`ActionWorker` | 从调用方理解各Journal方法的业务顺序 |
-| 11 | [`test_action_service.py`](../../tests/integration/test_action_service.py)与[`test_worker.py`](../../tests/integration/test_worker.py) | Action与Worker集成测试 | 以SQLite验证状态、Lease和恢复合同 |
-| 12 | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | PostgreSQL集成测试 | 验证真实多Worker Claim与过期恢复 |
+| 3 | [`storage/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/__init__.py) | `SQLiteEffectJournal`、`PostgresEffectJournal` | 确认包的公开导出面 |
+| 4 | [`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py) | `SQLiteEffectJournal` | 阅读本地后端、事务与序列化基准实现 |
+| 5 | [`migrations/0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0001_initial.sql) | SQLite初始Schema | 核对Action/Event表、索引和历史`demo_issues`残留 |
+| 6 | [`migrations/0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0002_observability.sql) | SQLite Trace迁移 | 核对升级路径与非幂等DDL限制 |
+| 7 | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `PostgresEffectJournal` | 比较连接池、Migration锁、行锁和`SKIP LOCKED` |
+| 8 | [`migrations/postgresql/0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0001_initial.sql) | PostgreSQL初始Schema | 核对类型和Ready Queue部分索引 |
+| 9 | [`migrations/postgresql/0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0002_observability.sql) | PostgreSQL Trace迁移 | 核对幂等DDL差异 |
+| 10 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)与[`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `ActionService`、`ActionWorker` | 从调用方理解各Journal方法的业务顺序 |
+| 11 | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py)与[`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | Action与Worker集成测试 | 以SQLite验证状态、Lease和恢复合同 |
+| 12 | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | PostgreSQL集成测试 | 验证真实多Worker Claim与过期恢复 |
 
 Storage包当前包含两个主实现、两组迁移和公开导出文件。两个实现存在较多结构重复，但当前没有抽取共享
 基类：SQLite事务API与PostgreSQL行锁API差异显著，过早抽象会隐藏关键并发语义。领域对象重建和JSON
@@ -235,10 +238,10 @@ erDiagram
 外键级联删除。`schema_migrations`只保存整数版本与应用时间，没有文件Checksum。SQLite和PostgreSQL
 逻辑列一致，但ID与Timestamp物理类型不同；PostgreSQL额外提供`READY`部分索引。
 
-**源码映射：** SQLite Schema见[`0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql)
-和[`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql)；PostgreSQL Schema见
-[`postgresql/0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql)和
-[`postgresql/0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql)。
+**源码映射：** SQLite Schema见[`0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0001_initial.sql)
+和[`0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0002_observability.sql)；PostgreSQL Schema见
+[`postgresql/0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0001_initial.sql)和
+[`postgresql/0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0002_observability.sql)。
 
 ### 7.1 `actions`重点字段
 
@@ -391,13 +394,13 @@ Statement Timeout、Lock Timeout或Schema Namespace合同。
 
 | 后端 | 版本 | 文件 | 变更 | 幂等性与风险 |
 |---|---:|---|---|---|
-| SQLite | 1 | [`0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql) | Action/Event/Migration表、索引、WAL及`demo_issues` | 多数DDL使用`IF NOT EXISTS`；`demo_issues`为未被Journal使用的历史残留 |
-| SQLite | 2 | [`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql) | 添加`trace_context_json` | 无`IF NOT EXISTS`；中断重入可能失败 |
-| PostgreSQL | 1 | [`0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql) | Action/Event/Migration表及两个索引 | DDL使用`IF NOT EXISTS`；数据库事务保护 |
-| PostgreSQL | 2 | [`0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql) | 添加`trace_context_json` | 使用`IF NOT EXISTS` |
+| SQLite | 1 | [`0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0001_initial.sql) | Action/Event/Migration表、索引、WAL及`demo_issues` | 多数DDL使用`IF NOT EXISTS`；`demo_issues`为未被Journal使用的历史残留 |
+| SQLite | 2 | [`0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0002_observability.sql) | 添加`trace_context_json` | 无`IF NOT EXISTS`；中断重入可能失败 |
+| PostgreSQL | 1 | [`0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0001_initial.sql) | Action/Event/Migration表及两个索引 | DDL使用`IF NOT EXISTS`；数据库事务保护 |
+| PostgreSQL | 2 | [`0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0002_observability.sql) | 添加`trace_context_json` | 使用`IF NOT EXISTS` |
 
 SQLite Schema中的`demo_issues`没有被
-[`DemoIssueRepository`](../../src/harnessix/executors/demo_issue.py)使用；后者连接独立Demo数据库并自行建表。
+[`DemoIssueRepository`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/executors/demo_issue.py)使用；后者连接独立Demo数据库并自行建表。
 该表是历史Schema残留，删除它属于持久化兼容变更，必须通过新Migration和升级测试处理，不能直接修改
 已发布的0001文件。
 
@@ -435,7 +438,7 @@ Context，也不会追加第二个`action_received`事件。SQLite先查后插�
 DO NOTHING RETURNING`，冲突后再辨别ID与租户级Key。
 
 **源码映射：** 两个后端的`create_action`和`_insert_event`；指纹生成与调用顺序位于
-[`runtime.py`](../../src/harnessix/runtime.py)的`ActionService.submit`。
+[`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)的`ActionService.submit`。
 
 ### 10.2 冲突判定矩阵
 
@@ -535,7 +538,7 @@ sequenceDiagram
 
 **源码映射：** `SQLiteEffectJournal.claim_next_ready`、
 `PostgresEffectJournal.claim_next_ready`。PostgreSQL Ready Queue部分索引见
-[`postgresql/0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql)；SQLite只具有
+[`postgresql/0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0001_initial.sql)；SQLite只具有
 `(status, lease_expires_at)`索引，Ready筛选后仍可能需要排序。
 
 ### 12.2 Claim输入和结果
@@ -611,7 +614,7 @@ stateDiagram-v2
 一旦进入Running或Reconciling，外部查询/写入可能已经发生，必须保留不确定性。
 
 **源码映射：** 两个后端的`recover_expired`；跨包Reconcile见
-[`runtime.py`](../../src/harnessix/runtime.py)的`ActionService.reconcile`；完整状态机见
+[`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)的`ActionService.reconcile`；完整状态机见
 [Domain模块设计](domain.md)。
 
 ### 14.2 恢复事务
@@ -905,8 +908,8 @@ API提交和独立Worker执行能够恢复同一分布式Trace。
 
 ### 23.1 后端选择
 
-[`settings.py`](../../src/harnessix/settings.py)提供`database_path`与可选`database_url`。
-[`bootstrap.py`](../../src/harnessix/bootstrap.py)的`build_journal`遵循：有Database URL时选择PostgreSQL，
+[`settings.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/settings.py)提供`database_path`与可选`database_url`。
+[`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)的`build_journal`遵循：有Database URL时选择PostgreSQL，
 否则选择SQLite。当前没有独立Backend枚举；配置是否存在即为选择条件。
 
 | 场景 | 推荐后端 | 当前理由 | 不应宣称 |
@@ -1064,28 +1067,28 @@ recover_expired(recovery_time):
 
 | 设计元素 | 源码 | 关键符号 | 测试 | 测试符号/证据 |
 |---|---|---|---|---|
-| Journal端口 | [`ports.py`](../../src/harnessix/domain/ports.py) | `EffectJournal` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | Service Fixture通过端口使用SQLite实现 |
-| SQLite生命周期/Migration | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `initialize`、`close`、`ping` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_sqlite_applies_observability_migration_to_existing_database` |
-| PostgreSQL生命周期/Migration | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `initialize`、`close`、`_MIGRATION_LOCK_ID` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | 两个真实数据库用例隐式覆盖干净初始化 |
-| 创建与首Event | 两个Journal实现 | `create_action`、`_insert_event` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
-| 相同幂等键冲突 | 两个Journal实现 | `create_action` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_idempotency_key_rejects_different_payload` |
-| 相同Action ID载荷冲突 | 两个Journal实现 | `create_action` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request` |
-| 状态转换守卫 | 两个Journal实现 | `transition` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_journal_rejects_illegal_state_transition` |
-| Approval持久化与拒绝 | 两个Journal实现 | `transition`、`_snapshot` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` |
-| Trace持久化 | 两个Journal实现 | `create_action`、`_snapshot` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_trace_context_is_durable_across_api_and_worker` |
-| 单Action Claim | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `claim_next_ready` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_ready_action_can_only_be_claimed_once` |
-| PostgreSQL并发Claim | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication` |
-| Stale Owner拒绝 | 两个Journal实现 | `_has_valid_lease`、`transition` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_stale_worker_cannot_advance_state` |
-| Heartbeat续期 | 两个Journal实现 | `renew_lease` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action` |
-| 续期/提交竞争 | 两个Journal实现及Worker | `renew_lease`、`transition` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` |
-| 未开始Lease恢复 | 两个Journal实现 | `recover_expired` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_expired_unstarted_lease_returns_to_ready` |
-| Running Lease恢复 | 两个Journal实现 | `recover_expired` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown` |
-| PostgreSQL Unknown结果 | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | `test_postgres_expired_running_lease_persists_unknown_result` |
-| Queue统计 | 两个Journal实现 | `operational_stats` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_operational_stats_report_queue_state` |
-| 重复提交Metric隔离 | Journal与Observability调用链 | `create_action`返回`created` | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | `test_duplicate_submission_does_not_double_count_completion` |
+| Journal端口 | [`ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py) | `EffectJournal` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | Service Fixture通过端口使用SQLite实现 |
+| SQLite生命周期/Migration | [`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py) | `initialize`、`close`、`ping` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_sqlite_applies_observability_migration_to_existing_database` |
+| PostgreSQL生命周期/Migration | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `initialize`、`close`、`_MIGRATION_LOCK_ID` | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | 两个真实数据库用例隐式覆盖干净初始化 |
+| 创建与首Event | 两个Journal实现 | `create_action`、`_insert_event` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
+| 相同幂等键冲突 | 两个Journal实现 | `create_action` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_idempotency_key_rejects_different_payload` |
+| 相同Action ID载荷冲突 | 两个Journal实现 | `create_action` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request` |
+| 状态转换守卫 | 两个Journal实现 | `transition` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_journal_rejects_illegal_state_transition` |
+| Approval持久化与拒绝 | 两个Journal实现 | `transition`、`_snapshot` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` |
+| Trace持久化 | 两个Journal实现 | `create_action`、`_snapshot` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_trace_context_is_durable_across_api_and_worker` |
+| 单Action Claim | [`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py) | `claim_next_ready` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_ready_action_can_only_be_claimed_once` |
+| PostgreSQL并发Claim | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `claim_next_ready` | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication` |
+| Stale Owner拒绝 | 两个Journal实现 | `_has_valid_lease`、`transition` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_stale_worker_cannot_advance_state` |
+| Heartbeat续期 | 两个Journal实现 | `renew_lease` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action` |
+| 续期/提交竞争 | 两个Journal实现及Worker | `renew_lease`、`transition` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` |
+| 未开始Lease恢复 | 两个Journal实现 | `recover_expired` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_expired_unstarted_lease_returns_to_ready` |
+| Running Lease恢复 | 两个Journal实现 | `recover_expired` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown` |
+| PostgreSQL Unknown结果 | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `recover_expired` | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | `test_postgres_expired_running_lease_persists_unknown_result` |
+| Queue统计 | 两个Journal实现 | `operational_stats` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_operational_stats_report_queue_state` |
+| 重复提交Metric隔离 | Journal与Observability调用链 | `create_action`返回`created` | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | `test_duplicate_submission_does_not_double_count_completion` |
 
-“两个Journal实现”表示[`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py)和
-[`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py)具有对应符号，不表示每一行测试都在两个
+“两个Journal实现”表示[`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py)和
+[`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py)具有对应符号，不表示每一行测试都在两个
 后端执行。当前绝大多数合同通过SQLite集成测试证明，PostgreSQL只有两个专用真实数据库用例。
 
 ## 27. 测试设计与验证证据
@@ -1187,16 +1190,16 @@ PostgreSQL Job使用数据库容器执行这两个用例。此证据证明主流
 
 ## 30. 推荐源码阅读路线
 
-1. 从[`EffectJournal`](../../src/harnessix/domain/ports.py)阅读所有方法签名；
+1. 从[`EffectJournal`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)阅读所有方法签名；
 2. 阅读[`ActionSnapshot`与`ActionEvent`](../../src/harnessix/domain/models.py)，区分Version与Sequence；
 3. 阅读SQLite `create_action → transition → claim_next_ready → renew_lease → recover_expired`；
 4. 对照SQLite Migration核对每个序列化字段和索引；
 5. 阅读PostgreSQL `initialize`的事务级Advisory Lock；
 6. 对比PostgreSQL `FOR UPDATE`与`SKIP LOCKED`；
-7. 回到[`ActionService`](../../src/harnessix/runtime.py)确认谁发起每次Transition；
-8. 阅读[`ActionWorker`](../../src/harnessix/worker.py)确认Claim、Heartbeat和Recover调用顺序；
-9. 用[`test_worker.py`](../../tests/integration/test_worker.py)验证Lease竞争与恢复；
-10. 最后阅读[`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py)，明确真实PostgreSQL
+7. 回到[`ActionService`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)确认谁发起每次Transition；
+8. 阅读[`ActionWorker`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py)确认Claim、Heartbeat和Recover调用顺序；
+9. 用[`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py)验证Lease竞争与恢复；
+10. 最后阅读[`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py)，明确真实PostgreSQL
     证据只覆盖两个场景，再对照第27.3节识别未完成门槛。
 
 ## 31. 维护规则

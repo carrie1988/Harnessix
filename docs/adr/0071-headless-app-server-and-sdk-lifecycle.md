@@ -11,7 +11,7 @@ modules:
 related_adrs: []
 related_tests:
   - tests/app_server
-  - tests/unit/test_sdk.py
+  - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 

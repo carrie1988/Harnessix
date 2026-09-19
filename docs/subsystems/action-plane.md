@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: deprecated
-version: 7
+version: 8
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -22,30 +22,25 @@ related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/unit/test_models.py
-  - tests/unit/test_registry.py
-  - tests/integration/test_action_service.py
-  - tests/integration/test_worker.py
-  - tests/integration/test_postgres_journal.py
-  - tests/integration/test_api.py
-  - tests/integration/test_observability_flow.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/governance/test_legacy_action_archive.py
+  - tests/unit/test_observability_core.py
 supersedes: []
 ---
 
 # Action Plane子系统设计
 
-> **迁移状态：** 本文记录早期独立Action Plane兼容内核，不再描述Harnessix Code 1.0产品拓扑。
-> `serve/worker`、Action HTTP SDK与框架Adapter已退出公共产品面；Policy、Approval、Effect、`UNKNOWN`和
-> Reconcile语义由进程内`TrustedActionRouter`继承。旧Process、Git Push和Eval迁移完成后，本子系统源码将
-> 按0.9.1f3物理删除。当前产品事实源为[总体架构](../architecture.md)与
-> [Trusted Actions模块设计](../modules/trusted-actions.md)。
+> **退役状态：** 独立Action HTTP API、SDK、LangGraph Adapter、Effect Journal与Worker Queue已在0.9.1f3
+> 物理删除。本文只保留删除前架构供审计和历史阅读；当前执行治理事实源是
+> [Trusted Actions模块](../modules/trusted-actions.md)，历史数据处置见
+> [旧Action状态归档手册](../operations/legacy-action-archive.md)。
 
 ## 1. 文档摘要
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 版本化Action Contract、Tool Registry、Policy、Approval、Effect Journal、Inline/Worker执行、Lease、`UNKNOWN`和Reconcile |
-| 本文状态 | 迁移兼容实现说明；不得作为新增产品能力依据 |
+| 删除前能力 | 版本化Action Contract、Tool Registry、Policy、Approval、Effect Journal、Inline/Worker执行、Lease、`UNKNOWN`和Reconcile |
+| 本文状态 | 冻结历史实现说明；不得作为新增产品能力依据 |
 | 代码版本 | `ffa56de02b372df981d234fafd1feffbb0b870fb` |
 | 存储后端 | SQLite本地单机场景；PostgreSQL多进程Worker Claim场景 |
 | 部署入口 | 无；历史CLI入口已撤销，显式库装配仅供冻结调用方迁移 |
@@ -203,7 +198,7 @@ Agent可通过Adapter或专用Process桥接提交Action，但两套状态分别�
 | `renew_lease` | 当前Worker → Journal | action、owner、到期时间 → bool | 当前Owner匹配、旧Lease未过期且状态可执行；当前未要求新Deadline晚于现在或旧值 | false触发失租解析 | Heartbeat应早于旧Lease；Journal无方法级Deadline | 只有相同Owner可更新；成功只增Version、不追加Event | 不可夺取他人Lease |
 | `recover_expired` | Service启动/Worker周期 → Journal | 可选当前时间 → Action ID列表 | 在事务锁内扫描过期Lease | 数据库错误回滚本次批次 | 周期由Worker配置；无Batch Limit | 本次候选的Snapshot和Event在一个事务中提交 | 不调用Executor |
 
-所有端口定义见[`domain/ports.py`](../../src/harnessix/domain/ports.py)。当前合同没有领域级取消或统一
+所有端口定义见[`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)。当前合同没有领域级取消或统一
 Executor Deadline参数；这一限制在第18节和第23节显式保留，不能由Adapter私自扩展状态值。
 
 ## 8. Action状态机
@@ -252,7 +247,7 @@ stateDiagram-v2
 
 ## 9. 请求指纹和幂等
 
-[`action_fingerprint`](../../src/harnessix/runtime.py)对`spec_version`、`tenant_id`、Tool、Arguments、
+[`action_fingerprint`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)对`spec_version`、`tenant_id`、Tool、Arguments、
 Effect Hint和Secret Refs的规范JSON计算SHA-256；它刻意排除`action_id`和易变Context。结果用于：
 
 1. 同一`action_id`重复提交时验证请求不可变；
@@ -461,10 +456,10 @@ erDiagram
     }
 ```
 
-SQLite真实Schema见[`0001_initial.sql`](../../src/harnessix/storage/migrations/0001_initial.sql)和
-[`0002_observability.sql`](../../src/harnessix/storage/migrations/0002_observability.sql)，PostgreSQL对应Schema见
-[`postgresql/0001_initial.sql`](../../src/harnessix/storage/migrations/postgresql/0001_initial.sql)和
-[`postgresql/0002_observability.sql`](../../src/harnessix/storage/migrations/postgresql/0002_observability.sql)。
+SQLite真实Schema见[`0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0001_initial.sql)和
+[`0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/0002_observability.sql)，PostgreSQL对应Schema见
+[`postgresql/0001_initial.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0001_initial.sql)和
+[`postgresql/0002_observability.sql`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/migrations/postgresql/0002_observability.sql)。
 上图只展示关键列，不替代迁移文件；两库的JSON逻辑字段当前均以`TEXT`而非JSONB保存。Action创建在
 单事务内同时写Snapshot和`action_received` Event；状态转换在单事务内校验期望状态、合法边、Lease
 Owner并更新Snapshot与下一序号Event。表结构、序列化和迁移限制详见
@@ -488,7 +483,7 @@ Owner并更新Snapshot与下一序号Event。表结构、序列化和迁移限�
 
 ## 16. API、错误和部署
 
-[`api/app.py`](../../src/harnessix/api/app.py)提供健康、就绪、Tool列表、Action提交/查询/Event、审批和
+[`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)提供健康、就绪、Tool列表、Action提交/查询/Event、审批和
 Reconcile端点。Submit、Approval和Reconcile三个状态变更POST在返回`PENDING_APPROVAL`、`READY`、
 `LEASED`、`RUNNING`、`UNKNOWN`或`RECONCILING`时使用HTTP 202；Action GET找到同一非终态资源仍返回
 200。领域冲突返回409，不存在返回404。`traceparent`和`tracestate`先进入只做长度限制的
@@ -627,47 +622,47 @@ reconcile(unknown_action):
 
 | 设计元素 | 源码文件 | 关键符号 | 测试文件 | 测试函数/合同 | 证明内容 |
 |---|---|---|---|---|---|
-| Action状态合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionStatus`、`ALLOWED_ACTION_TRANSITIONS`、`ActionSnapshot` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_journal_rejects_illegal_state_transition` | Journal合法边与事件顺序；模型组合不变量缺口见[Domain模块设计](../modules/domain.md) |
-| Tool注册 | [`registry.py`](../../src/harnessix/domain/registry.py) | `ToolDefinition`、`ToolRegistry` | [`test_registry.py`](../../tests/unit/test_registry.py) | 重复注册和未知Tool测试 | 名称唯一与描述固定 |
-| 默认Policy | [`default.py`](../../src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | ALLOW与显式审批；默认DENY无直接测试 | Effect/Risk决策；详见[Policy模块设计](../modules/policy.md) |
-| 指纹 | [`runtime.py`](../../src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request`、`test_idempotency_key_rejects_different_payload` | 请求不可变和幂等冲突 |
-| 提交主链 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.submit` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` | 正常顺序和Event |
-| Approval | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.decide_approval` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` | 拒绝不触发效果 |
-| Reconcile | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.reconcile` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` | UNKNOWN不重执行 |
-| Executor异常边界 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService._execute_leased` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | 显式不确定与Lease恢复；只读普通异常无直接测试 | 读写异常分类；详见[Executors模块设计](../modules/executors.md) |
-| SQLite事务 | [`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py) | `create_action`、`transition`、`claim_next_ready`、`recover_expired` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown`、`test_journal_rejects_illegal_state_transition` | Snapshot/Event原子与恢复主链；迁移/Lease缺口详见[Storage模块设计](../modules/storage.md) |
-| PostgreSQL Claim | [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`renew_lease`、`recover_expired` | [`test_postgres_journal.py`](../../tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication`、`test_postgres_expired_running_lease_persists_unknown_result` | `SKIP LOCKED`多Worker语义；当前专用真实数据库证据限于两个用例 |
-| Worker循环 | [`worker.py`](../../src/harnessix/worker.py) | `ActionWorker.run_once`、`run_forever` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker`、`test_ready_action_can_only_be_claimed_once` | 入队与单Claim |
-| Lease续租 | [`worker.py`](../../src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action`、`test_failed_renewal_while_running_still_reports_lost_lease` | Heartbeat与真正失租 |
-| 续租提交竞态 | [`worker.py`](../../src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](../../tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` | 终态提交优先且不误报 |
-| HTTP边界 | [`app.py`](../../src/harnessix/api/app.py) | `create_app`及Action路由 | [`test_api.py`](../../tests/integration/test_api.py) | Inline成功、幂等冲突、Queued 202、Readiness和Lifespan；Trace Header无直接测试 | 薄API与状态投影；详见[API模块设计](../modules/api.md) |
-| OTel关联 | [`observability`](../../src/harnessix/observability/) | `ActionObservability`实现 | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) | Action流程观测用例 | 状态与Trace关联 |
+| Action状态合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionStatus`、`ALLOWED_ACTION_TRANSITIONS`、`ActionSnapshot` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_journal_rejects_illegal_state_transition` | Journal合法边与事件顺序；模型组合不变量缺口见[Domain模块设计](../modules/domain.md) |
+| Tool注册 | [`registry.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/registry.py) | `ToolDefinition`、`ToolRegistry` | [`test_registry.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_registry.py) | 重复注册和未知Tool测试 | 名称唯一与描述固定 |
+| 默认Policy | [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | ALLOW与显式审批；默认DENY无直接测试 | Effect/Risk决策；详见[Policy模块设计](../modules/policy.md) |
+| 指纹 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `action_fingerprint` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_action_id_rejects_mutated_request`、`test_idempotency_key_rejects_different_payload` | 请求不可变和幂等冲突 |
+| 提交主链 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService.submit` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` | 正常顺序和Event |
+| Approval | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService.decide_approval` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_rejected_approval_never_executes_effect` | 拒绝不触发效果 |
+| Reconcile | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService.reconcile` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_uncertain_effect_is_reconciled_without_reexecution` | UNKNOWN不重执行 |
+| Executor异常边界 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService._execute_leased` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | 显式不确定与Lease恢复；只读普通异常无直接测试 | 读写异常分类；详见[Executors模块设计](../modules/executors.md) |
+| SQLite事务 | [`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py) | `create_action`、`transition`、`claim_next_ready`、`recover_expired` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_expired_running_lease_becomes_unknown`、`test_journal_rejects_illegal_state_transition` | Snapshot/Event原子与恢复主链；迁移/Lease缺口详见[Storage模块设计](../modules/storage.md) |
+| PostgreSQL Claim | [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py) | `claim_next_ready`、`renew_lease`、`recover_expired` | [`test_postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_postgres_journal.py) | `test_postgres_workers_claim_action_without_duplication`、`test_postgres_expired_running_lease_persists_unknown_result` | `SKIP LOCKED`多Worker语义；当前专用真实数据库证据限于两个用例 |
+| Worker循环 | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `ActionWorker.run_once`、`run_forever` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_queued_action_is_executed_by_worker`、`test_ready_action_can_only_be_claimed_once` | 入队与单Claim |
+| Lease续租 | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `_execute_with_heartbeat` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_heartbeat_renews_lease_during_action`、`test_failed_renewal_while_running_still_reports_lost_lease` | Heartbeat与真正失租 |
+| 续租提交竞态 | [`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py) | `_execution_commit_exists`、`_resolve_failed_renewal` | [`test_worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_worker.py) | `test_execution_commit_wins_renewal_race` | 终态提交优先且不误报 |
+| HTTP边界 | [`app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | `create_app`及Action路由 | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | Inline成功、幂等冲突、Queued 202、Readiness和Lifespan；Trace Header无直接测试 | 薄API与状态投影；详见[API模块设计](../modules/api.md) |
+| OTel关联 | [`observability`](../../src/harnessix/observability/) | `ActionObservability`实现 | [`test_observability_flow.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_observability_flow.py) | Action流程观测用例 | 状态与Trace关联 |
 
 ### 21.1 推荐源码阅读路线
 
 1. 从[`domain/models.py`](../../src/harnessix/domain/models.py)阅读Action、状态和转换，再读
-   [`domain/ports.py`](../../src/harnessix/domain/ports.py)理解Service依赖边界；
-2. 阅读[`domain/registry.py`](../../src/harnessix/domain/registry.py)和
-   [`policy/default.py`](../../src/harnessix/policy/default.py)，掌握执行前固定事实；
+   [`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)理解Service依赖边界；
+2. 阅读[`domain/registry.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/registry.py)和
+   [`policy/default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py)，掌握执行前固定事实；
 3. 按`action_fingerprint` → `ActionService.submit` → `decide_approval` → `_execute_leased` →
-   `reconcile`阅读[`runtime.py`](../../src/harnessix/runtime.py)；
-4. 对照阅读[`sqlite_journal.py`](../../src/harnessix/storage/sqlite_journal.py)和
-   [`postgres_journal.py`](../../src/harnessix/storage/postgres_journal.py)，重点比较Claim与Recover事务；
-5. 阅读[`worker.py`](../../src/harnessix/worker.py)的Heartbeat、失租和提交竞态；
-6. 最后阅读[`api/app.py`](../../src/harnessix/api/app.py)、Bootstrap和Observability，确认产品装配限制；
+   `reconcile`阅读[`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)；
+4. 对照阅读[`sqlite_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/sqlite_journal.py)和
+   [`postgres_journal.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/storage/postgres_journal.py)，重点比较Claim与Recover事务；
+5. 阅读[`worker.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/worker.py)的Heartbeat、失租和提交竞态；
+6. 最后阅读[`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)、Bootstrap和Observability，确认产品装配限制；
 7. 用本节测试函数逐条验证正常、拒绝、幂等、未知、Lease、PostgreSQL和OTel路径。
 
 ## 22. 测试设计与验收标准
 
 | 层级 | 必测内容 | 当前证据 |
 |---|---|---|
-| 合同单元 | 指纹字段、Tool唯一和并行只读约束；其余模型组合约束尚不完备 | `tests/unit/test_models.py`、`test_registry.py`及[Domain模块测试盘点](../modules/domain.md#32-测试设计与当前证据) |
+| 合同单元 | 指纹字段、Tool唯一和并行只读约束；其余模型组合约束尚不完备 | 历史`tests/unit/test_models.py`、`test_registry.py`及[当前Domain模块测试](../modules/domain.md#11-测试验证与验收) |
 | Service集成 | 正常、审批、拒绝、幂等、Secret、Effect Hint、UNKNOWN、非法转换 | `tests/integration/test_action_service.py` |
 | Worker故障 | 单Claim、Heartbeat、失租、执行提交竞态、指标故障隔离 | `tests/integration/test_worker.py` |
 | 存储合同 | SQLite覆盖大部分Action/Worker主链；PostgreSQL覆盖并发Claim和过期Running恢复；尚无双后端参数化等价套件 | `test_action_service.py`、`test_worker.py`、`test_postgres_journal.py`及[Storage模块测试盘点](../modules/storage.md#27-测试设计与验证证据) |
 | HTTP合同 | 当前直接覆盖Inline 200、Queued 202、幂等409、Readiness与Lifespan；404、422、Trace Header、未知500和完整状态映射仍缺 | `tests/integration/test_api.py`及[API测试盘点](../modules/api.md#36-直接测试证据) |
 | 观测 | Span/Metric/Trace关联与导出故障隔离 | `test_observability_flow.py`、`test_otlp_export.py` |
-| 框架适配 | 当前只证明Async参数到Action Request及Pending Snapshot JSON的正常映射；相同Action身份、完整状态投影、异常恢复和真实LangGraph未验证 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py)及[Adapter模块设计](../modules/adapters.md) |
+| 框架适配 | 当前只证明Async参数到Action Request及Pending Snapshot JSON的正常映射；相同Action身份、完整状态投影、异常恢复和真实LangGraph未验证 | [`test_langgraph_adapter.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py)及[Adapter模块设计](../modules/adapters.md) |
 
 DOC-1.2对本文执行的验收：反向核对`ActionStatus`、`ActionRequest`、`ToolRegistry`、
 `DefaultPolicyEngine.evaluate`、`action_fingerprint`、`ActionService.submit`、`decide_approval`、

@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 319,
-    "physical_lines": 70247,
-    "logical_lines": 62459,
-    "documented_modules": 319,
-    "classes": 801,
-    "documented_classes": 279,
-    "functions": 2794,
-    "documented_functions": 336,
-    "public_exports": 331,
-    "public_contract_types": 156,
+    "source_files": 292,
+    "physical_lines": 65270,
+    "logical_lines": 58095,
+    "documented_modules": 292,
+    "classes": 743,
+    "documented_classes": 259,
+    "functions": 2588,
+    "documented_functions": 322,
+    "public_exports": 305,
+    "public_contract_types": 138,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 166
+    "package_dependency_edges": 141
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -81,8 +81,6 @@
     "harnessix.evals:EvalFinalTest->harnessix.evals.contracts:EvalFinalTest",
     "harnessix.evals:EvalGitEvidence->harnessix.evals.contracts:EvalGitEvidence",
     "harnessix.evals:EvalTestObservation->harnessix.evals.contracts:EvalTestObservation",
-    "harnessix.executors:DemoIssueCreateInput->harnessix.executors.demo_issue:DemoIssueCreateInput",
-    "harnessix.executors:EchoInput->harnessix.executors.echo:EchoInput",
     "harnessix.hooks:HookActionInput->harnessix.hooks.contracts:HookActionInput",
     "harnessix.hooks:HookActionOutput->harnessix.hooks.contracts:HookActionOutput",
     "harnessix.hooks:HookDefinition->harnessix.hooks.contracts:HookDefinition",
@@ -172,23 +170,7 @@
     "harnessix.trusted_actions:ActionRouteSnapshot->harnessix.trusted_actions.contracts:ActionRouteSnapshot",
     "harnessix.trusted_actions:CanonicalActionResource->harnessix.trusted_actions.contracts:CanonicalActionResource",
     "harnessix.trusted_actions:CodingActionInvocation->harnessix.trusted_actions.contracts:CodingActionInvocation",
-    "harnessix.trusted_actions:TrustedToolBinding->harnessix.trusted_actions.contracts:TrustedToolBinding",
-    "harnessix:ActionContext->harnessix.domain.models:ActionContext",
-    "harnessix:ActionEvent->harnessix.domain.models:ActionEvent",
-    "harnessix:ActionFailure->harnessix.domain.models:ActionFailure",
-    "harnessix:ActionRequest->harnessix.domain.models:ActionRequest",
-    "harnessix:ActionResult->harnessix.domain.models:ActionResult",
-    "harnessix:ActionSnapshot->harnessix.domain.models:ActionSnapshot",
-    "harnessix:ActionStatus->harnessix.domain.models:ActionStatus",
-    "harnessix:ApprovalDecision->harnessix.domain.models:ApprovalDecision",
-    "harnessix:ApprovalOutcome->harnessix.domain.models:ApprovalOutcome",
-    "harnessix:EffectClass->harnessix.domain.models:EffectClass",
-    "harnessix:EffectReceipt->harnessix.domain.models:EffectReceipt",
-    "harnessix:Principal->harnessix.domain.models:Principal",
-    "harnessix:RiskLevel->harnessix.domain.models:RiskLevel",
-    "harnessix:SecretRef->harnessix.domain.models:SecretRef",
-    "harnessix:ToolDescriptor->harnessix.domain.models:ToolDescriptor",
-    "harnessix:TraceContext->harnessix.domain.models:TraceContext"
+    "harnessix.trusted_actions:TrustedToolBinding->harnessix.trusted_actions.contracts:TrustedToolBinding"
   ],
   "undocumented_public_behavior": [],
   "undocumented_high_risk_callables": [],
@@ -199,7 +181,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3098
+      "lines": 2806
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -304,8 +286,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 178,
-      "lines": 2921,
+      "line": 173,
+      "lines": 2634,
       "documented": true
     },
     {
@@ -314,10 +296,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 181,
-      "lines": 169,
+      "line": 176,
+      "lines": 139,
       "documented": false,
-      "decision_complexity": 50
+      "decision_complexity": 39
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._drive",
@@ -325,10 +307,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2089,
-      "lines": 146,
+      "line": 1839,
+      "lines": 145,
       "documented": true,
-      "decision_complexity": 32
+      "decision_complexity": 30
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._execute_calls",
@@ -336,10 +318,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2236,
-      "lines": 268,
+      "line": 1985,
+      "lines": 233,
       "documented": true,
-      "decision_complexity": 55
+      "decision_complexity": 48
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._finish",
@@ -347,32 +329,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 2934,
+      "line": 2648,
       "lines": 146,
       "documented": true,
       "decision_complexity": 37
-    },
-    {
-      "id": "harnessix.agent.runtime:AgentRuntime._observe_process_action",
-      "module": "harnessix.agent.runtime",
-      "path": "src/harnessix/agent/runtime.py",
-      "qualname": "AgentRuntime._observe_process_action",
-      "kind": "function",
-      "line": 1010,
-      "lines": 102,
-      "documented": false,
-      "decision_complexity": 21
-    },
-    {
-      "id": "harnessix.agent.runtime:AgentRuntime._recover",
-      "module": "harnessix.agent.runtime",
-      "path": "src/harnessix/agent/runtime.py",
-      "qualname": "AgentRuntime._recover",
-      "kind": "function",
-      "line": 371,
-      "lines": 100,
-      "documented": true,
-      "decision_complexity": 26
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._reply_approval",
@@ -380,10 +340,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1410,
-      "lines": 133,
+      "line": 1190,
+      "lines": 103,
       "documented": true,
-      "decision_complexity": 23
+      "decision_complexity": 21
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._run_compaction",
@@ -391,7 +351,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 1923,
+      "line": 1673,
       "lines": 135,
       "documented": true,
       "decision_complexity": 12
@@ -402,7 +362,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 2722,
+      "line": 2436,
       "lines": 211,
       "documented": true,
       "decision_complexity": 60
@@ -413,7 +373,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1643,
+      "line": 1393,
       "lines": 230,
       "documented": false,
       "decision_complexity": 51
@@ -424,7 +384,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.reply_question",
       "kind": "function",
-      "line": 1265,
+      "line": 1045,
       "lines": 102,
       "documented": true,
       "decision_complexity": 18
@@ -472,17 +432,6 @@
       "decision_complexity": 23
     },
     {
-      "id": "harnessix.api.app:create_app",
-      "module": "harnessix.api.app",
-      "path": "src/harnessix/api/app.py",
-      "qualname": "create_app",
-      "kind": "function",
-      "line": 73,
-      "lines": 164,
-      "documented": true,
-      "decision_complexity": 3
-    },
-    {
       "id": "harnessix.app_server.server:AgentProtocolServer",
       "module": "harnessix.app_server.server",
       "path": "src/harnessix/app_server/server.py",
@@ -522,16 +471,6 @@
       "lines": 101,
       "documented": false,
       "decision_complexity": 27
-    },
-    {
-      "id": "harnessix.artifacts.process_output:SQLiteProcessArtifactPublisher",
-      "module": "harnessix.artifacts.process_output",
-      "path": "src/harnessix/artifacts/process_output.py",
-      "qualname": "SQLiteProcessArtifactPublisher",
-      "kind": "class",
-      "line": 43,
-      "lines": 221,
-      "documented": true
     },
     {
       "id": "harnessix.artifacts.sqlite:SQLiteArtifactStore",
@@ -916,16 +855,6 @@
       "documented": true
     },
     {
-      "id": "harnessix.executors.demo_issue:DemoIssueRepository",
-      "module": "harnessix.executors.demo_issue",
-      "path": "src/harnessix/executors/demo_issue.py",
-      "qualname": "DemoIssueRepository",
-      "kind": "class",
-      "line": 44,
-      "lines": 105,
-      "documented": true
-    },
-    {
       "id": "harnessix.hooks.runtime:HookRuntime",
       "module": "harnessix.hooks.runtime",
       "path": "src/harnessix/hooks/runtime.py",
@@ -1263,16 +1192,6 @@
       "documented": false
     },
     {
-      "id": "harnessix.processes.agent_runtime:ProcessAgentBridge",
-      "module": "harnessix.processes.agent_runtime",
-      "path": "src/harnessix/processes/agent_runtime.py",
-      "qualname": "ProcessAgentBridge",
-      "kind": "class",
-      "line": 51,
-      "lines": 347,
-      "documented": true
-    },
-    {
       "id": "harnessix.processes.owner_protocol:ProcessOwnerCommand.command_shape",
       "module": "harnessix.processes.owner_protocol",
       "path": "src/harnessix/processes/owner_protocol.py",
@@ -1501,16 +1420,6 @@
       "documented": true
     },
     {
-      "id": "harnessix.runtime:ActionService",
-      "module": "harnessix.runtime",
-      "path": "src/harnessix/runtime.py",
-      "qualname": "ActionService",
-      "kind": "class",
-      "line": 104,
-      "lines": 483,
-      "documented": false
-    },
-    {
       "id": "harnessix.sandbox.container:ContainerCommandBuilder",
       "module": "harnessix.sandbox.container",
       "path": "src/harnessix/sandbox/container.py",
@@ -1646,26 +1555,6 @@
       "decision_complexity": 26
     },
     {
-      "id": "harnessix.storage.postgres_journal:PostgresEffectJournal",
-      "module": "harnessix.storage.postgres_journal",
-      "path": "src/harnessix/storage/postgres_journal.py",
-      "qualname": "PostgresEffectJournal",
-      "kind": "class",
-      "line": 47,
-      "lines": 515,
-      "documented": true
-    },
-    {
-      "id": "harnessix.storage.sqlite_journal:SQLiteEffectJournal",
-      "module": "harnessix.storage.sqlite_journal",
-      "path": "src/harnessix/storage/sqlite_journal.py",
-      "qualname": "SQLiteEffectJournal",
-      "kind": "class",
-      "line": 50,
-      "lines": 494,
-      "documented": true
-    },
-    {
       "id": "harnessix.tools.git:GitReadRuntime",
       "module": "harnessix.tools.git",
       "path": "src/harnessix/tools/git.py",
@@ -1725,16 +1614,6 @@
       "line": 36,
       "lines": 310,
       "documented": true
-    },
-    {
-      "id": "harnessix.worker:ActionWorker",
-      "module": "harnessix.worker",
-      "path": "src/harnessix/worker.py",
-      "qualname": "ActionWorker",
-      "kind": "class",
-      "line": 61,
-      "lines": 124,
-      "documented": false
     },
     {
       "id": "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources",
@@ -1802,9 +1681,6 @@
   ],
   "package_dependencies": [
     "__main__->cli",
-    "__root__->domain",
-    "adapters->domain",
-    "adapters->sdk",
     "agent->artifacts",
     "agent->context",
     "agent->domain",
@@ -1816,11 +1692,6 @@
     "agent->tools",
     "agent_cli->protocol",
     "agent_cli->sdk",
-    "api->bootstrap",
-    "api->domain",
-    "api->observability",
-    "api->runtime",
-    "api->settings",
     "app_server->agent",
     "app_server->artifacts",
     "app_server->domain",
@@ -1831,13 +1702,6 @@
     "artifacts->patches",
     "artifacts->processes",
     "artifacts->session",
-    "bootstrap->domain",
-    "bootstrap->executors",
-    "bootstrap->observability",
-    "bootstrap->policy",
-    "bootstrap->runtime",
-    "bootstrap->settings",
-    "bootstrap->storage",
     "cli->agent_cli",
     "cli->evals",
     "cli->licensing",
@@ -1869,7 +1733,6 @@
     "execution->domain",
     "execution->tools",
     "execution->workspace",
-    "executors->domain",
     "hooks->agent",
     "hooks->domain",
     "hooks->execution",
@@ -1890,12 +1753,10 @@
     "patches->agent",
     "patches->domain",
     "patches->tools",
-    "policy->domain",
     "processes->agent",
     "processes->artifacts",
     "processes->domain",
     "processes->execution",
-    "processes->runtime",
     "processes->secrets",
     "processes->tools",
     "processes->workspace",
@@ -1922,8 +1783,6 @@
     "protocol->agent",
     "protocol->artifacts",
     "protocol->domain",
-    "runtime->domain",
-    "runtime->observability",
     "sandbox->agent",
     "sandbox->domain",
     "sandbox->execution",
@@ -1932,7 +1791,6 @@
     "sandbox->tools",
     "sandbox->workspace",
     "sdk->app_server",
-    "sdk->domain",
     "sdk->protocol",
     "secrets->agent",
     "secrets->execution",
@@ -1950,7 +1808,6 @@
     "smoke->domain",
     "smoke->models",
     "smoke->session",
-    "storage->domain",
     "tools->agent",
     "tools->artifacts",
     "tools->domain",
@@ -1961,9 +1818,6 @@
     "trusted_actions->execution",
     "trusted_actions->tools",
     "trusted_actions->workspace",
-    "worker->domain",
-    "worker->observability",
-    "worker->runtime",
     "workspace->agent",
     "workspace->domain",
     "workspace->tools"
@@ -1984,28 +1838,7 @@
     ]
   ],
   "public_api": {
-    "harnessix": [
-      "ACTION_SPEC_VERSION",
-      "ActionContext",
-      "ActionEvent",
-      "ActionFailure",
-      "ActionRequest",
-      "ActionResult",
-      "ActionSnapshot",
-      "ActionStatus",
-      "ApprovalDecision",
-      "ApprovalOutcome",
-      "EffectClass",
-      "EffectReceipt",
-      "Principal",
-      "RiskLevel",
-      "SecretRef",
-      "ToolDescriptor",
-      "TraceContext"
-    ],
-    "harnessix.api": [
-      "create_app"
-    ],
+    "harnessix": [],
     "harnessix.app_server": [
       "AgentApplicationService",
       "AgentProtocolServer",
@@ -2117,13 +1950,6 @@
       "write_eval_report",
       "write_eval_run_state"
     ],
-    "harnessix.executors": [
-      "DemoIssueCreateInput",
-      "DemoIssueExecutor",
-      "DemoIssueRepository",
-      "EchoExecutor",
-      "EchoInput"
-    ],
     "harnessix.hooks": [
       "HookActionInput",
       "HookActionOutput",
@@ -2173,9 +1999,6 @@
       "build_observability",
       "configure_logging",
       "trace_log_fields"
-    ],
-    "harnessix.policy": [
-      "DefaultPolicyEngine"
     ],
     "harnessix.product_config": [
       "ConfigAuditEvent",
@@ -2330,10 +2153,6 @@
       "SkillSource",
       "SkillSourceSnapshot",
       "build_skill_action_definitions"
-    ],
-    "harnessix.storage": [
-      "PostgresEffectJournal",
-      "SQLiteEffectJournal"
     ],
     "harnessix.trusted_actions": [
       "ActionAuditEvent",

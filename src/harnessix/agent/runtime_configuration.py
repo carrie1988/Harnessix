@@ -40,13 +40,12 @@ def uses_approval_boundary(
     call_requires_read_approval: bool,
     *,
     trusted_action: bool,
-    process: bool,
     patch: bool,
     patch_batch: bool,
 ) -> bool:
-    """合并统一Action与兼容专用端口的审批入口判定。"""
+    """合并统一Action与专用Patch端口的审批入口判定。"""
 
-    return any((trusted_action, process, patch, patch_batch, call_requires_read_approval))
+    return any((trusted_action, patch, patch_batch, call_requires_read_approval))
 
 
 def ensure_approval_runtime(
@@ -54,7 +53,6 @@ def ensure_approval_runtime(
     *,
     patch_enabled: bool,
     batch_enabled: bool,
-    process_enabled: bool,
     trusted_action_enabled: bool,
 ) -> None:
     """持久审批存在时要求原专用执行能力仍由同一产品组合提供。"""
@@ -63,7 +61,10 @@ def ensure_approval_runtime(
         raise KernelError("patch_batch_not_enabled", "持久整组审批缺少原专用端口")
     if isinstance(content, PatchApprovalRequestContent) and not patch_enabled:
         raise KernelError("patch_not_enabled", "持久单文件审批缺少原专用端口")
-    if isinstance(content, ProcessApprovalRequestContent) and not process_enabled:
-        raise KernelError("process_not_enabled", "持久Process审批缺少原专用端口")
+    if isinstance(content, ProcessApprovalRequestContent):
+        raise KernelError(
+            "legacy_process_state_archived",
+            "历史Process Action审批仅供读取，不能在当前版本恢复执行",
+        )
     if isinstance(content, TrustedActionApprovalRequestContent) and not trusted_action_enabled:
         raise KernelError("trusted_action_not_enabled", "持久Trusted Action审批缺少原Gateway")

@@ -33,15 +33,15 @@ def test_committed_specs_match_current_contracts() -> None:
 def test_spec_check_detects_missing_and_changed_current_contracts(tmp_path: Path) -> None:
     generator = _generator_module()
     generator.generate_specs(tmp_path)
-    target = tmp_path / "action-contract-v1.schema.json"
+    target = tmp_path / "agent-event-v20.schema.json"
     target.write_text("{}\n", encoding="utf-8")
 
     changed = generator.check_specs(tmp_path)
     target.unlink()
     missing = generator.check_specs(tmp_path)
 
-    assert changed == ["已提交合同内容漂移：action-contract-v1.schema.json"]
-    assert missing == ["已提交合同缺少生成文件：action-contract-v1.schema.json"]
+    assert changed == ["已提交合同内容漂移：agent-event-v20.schema.json"]
+    assert missing == ["已提交合同缺少生成文件：agent-event-v20.schema.json"]
 
 
 def test_spec_check_preserves_versioned_historical_contracts(tmp_path: Path) -> None:

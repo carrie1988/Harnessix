@@ -16,12 +16,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-legacy-action = [
-    "asyncpg>=0.30,<1",
-    "fastapi>=0.116,<1",
-    "langchain-core>=1.0,<2",
-    "uvicorn>=0.35,<1",
-]
 observability = [
     "opentelemetry-api>=1.30,<2",
     "opentelemetry-exporter-otlp-proto-http>=1.30,<2",
@@ -81,5 +75,5 @@ strict = true
 packages = ["harnessix"]
 
 [[tool.mypy.overrides]]
-module = ["aiosqlite.*", "asyncpg.*", "langchain_core.*"]
+module = ["aiosqlite.*"]
 ignore_missing_imports = true

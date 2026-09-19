@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 7
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -19,8 +19,6 @@ related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/product_ui/test_recoverable_session.py
   - tests/app_server/test_agent_cli.py
-  - tests/unit/test_sdk.py
-  - tests/integration/test_api.py
   - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
@@ -34,7 +32,7 @@ supersedes: []
 | 源码包 | [`src/harnessix/sdk`](../../src/harnessix/sdk/) |
 | 当前职责 | 提供Agent Protocol v1异步客户端及进程内/子进程Transport |
 | 非职责 | 不实现Agent状态机、协议Server、Action状态迁移、自动重连、游标持久化、认证、重试策略、CLI呈现或跨语言代码生成 |
-| 兼容边界 | `client.py`中的`HarnessixClient/HarnessixAsyncClient`只为旧Action调用方迁移保留，不从包级入口导出，也不属于1.0 SDK合同 |
+| 兼容边界 | 旧`client.py`和`HarnessixClient/HarnessixAsyncClient`已物理删除；Agent Protocol是唯一SDK合同 |
 | 上游调用者 | 薄Agent CLI、Product UI、Python宿主和测试 |
 | 下游依赖 | Agent分支依赖Protocol公共合同；进程内Transport仅在类型检查时引用App Server |
 | 持久化 | SDK不持久化任何状态；Client Instance ID、Command Request ID、Replay Cursor和Action ID均由调用方保存 |
@@ -44,11 +42,10 @@ supersedes: []
 | 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
 | 当前完成度 | Agent主链、严格Response/Result、有界Frame、半握手失败关闭、广告方法及协商消息/Replay上限前置门禁已实现；可恢复状态和连接代际由Product UI客户端内核提供；协商并发/出站队列和发布级平台证据仍缺失 |
 
-本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、
-[`client.py`](../../src/harnessix/sdk/client.py)和[`__init__.py`](../../src/harnessix/sdk/__init__.py)
-的当前事实源。公共JSON字段与兼容规则见[Protocol模块设计](protocol.md)，服务端连接与stdio行为见
-[App Server模块设计](app-server.md)。旧HTTP客户端的迁移范围见
-[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)。
+本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、请求/响应辅助模块和
+[`__init__.py`](../../src/harnessix/sdk/__init__.py)的当前事实源。公共JSON字段与兼容规则见
+[Protocol模块设计](protocol.md)，服务端连接与stdio行为见[App Server模块设计](app-server.md)。
+旧HTTP客户端删除决策见[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)。
 
 ## 2. 需求背景
 
@@ -100,7 +97,7 @@ Harnessix早期Action Plane曾提供独立HTTP客户端。ADR 0081已撤销该�
 | abandoned | 调用协程已取消、但Server可能仍返回Response的ID集合 |
 | sticky reader error | Reader首次协议/流错误；后续启动、写入和请求均失败，当前Transport不自恢复 |
 | durable cursor | `EventsReplayResult.scannedThrough`；唯一可跨进程保存的事件消费进度 |
-| 旧Action client | `client.py`中等待删除的迁移兼容实现，不属于包级公共API |
+| 历史Action client | 已删除；只可在固定Git Revision研究，不属于当前包或公共API |
 
 ## 4. 当前能力与产品装配边界
 
@@ -111,9 +108,7 @@ Harnessix早期Action Plane曾提供独立HTTP客户端。ADR 0081已撤销该�
 | Agent Client | 19个公开异步生命周期/资源方法，写入前校验广告方法、消息字节和Replay数量 | 薄CLI及Product UI内核使用 | 同步封装、并发/出站队列协商上限 |
 | Replay与Delta | Replay/Next和无限`watch_thread` | CLI自行解释终态与交互 | 自动Gap修复、终态停止、重连续传 |
 | Artifact | 显式`read_artifact`；广告方法缺失时本地失败 | 仅Server广告能力时可用 | 自动分页与摘要汇总 |
-| 旧Action HTTP同步 | 6个资源方法 | 不进入默认产品，仅供既有调用方迁移 | 在0.9.1f3物理删除 |
-| 旧Action HTTP异步 | 与同步端同样6个方法 | 不进入默认产品，仅供既有调用方迁移 | 在0.9.1f3物理删除 |
-| 公共包导出 | `harnessix.sdk`导出全部；根包只导出HTTP三项 | Action Plane保持旧入口 | 统一且版本化的公共API策略 |
+| 公共包导出 | `harnessix.sdk`只导出Agent Client/Transport/Error；根包无公共导出 | 当前产品统一为Agent Protocol | 继续以治理测试防止第二套SDK回流 |
 
 ## 5. 模块上下文、依赖方向与信任边界
 
@@ -129,8 +124,7 @@ flowchart LR
     Agent --> Protocol["Protocol Models"]
 ```
 
-**图示说明：** Agent SDK以Protocol为唯一公共合同，可选择进程内或stdio边界。旧Action HTTP客户端不再进入
-产品结构图；其源码只在0.9.1f迁移窗口内保留。
+**图示说明：** Agent SDK以Protocol为唯一公共合同，可选择进程内或stdio边界。旧Action HTTP客户端源码已删除。
 
 ### 5.1 允许依赖
 
@@ -166,8 +160,6 @@ flowchart LR
 | 7 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1058行 | 35项Client、Transport、Server与Runtime纵向场景，含恶意Response、半握手和协商前置门禁 |
 | 8 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
 | 9 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 验证只公开Agent SDK |
-| 10 | [`client.py`](../../src/harnessix/sdk/client.py) | 迁移兼容 | 理解待删除HTTP客户端，不作为新增集成样例 |
-| 11 | [`test_sdk.py`](../../tests/unit/test_sdk.py) | 兼容回归 | 在迁移期防止旧客户端行为意外破坏 |
 
 ## 7. Agent SDK内部架构
 
@@ -184,8 +176,7 @@ flowchart TB
     end
 ```
 
-`agent_client.py`拥有连接级内存状态。`client.py`只包装`httpx`连接池，是等待调用方迁移完成后删除的旧实现；
-不得围绕它新增公共Base Client、统一Error或重试抽象。
+`agent_client.py`拥有连接级内存状态。SDK包不存在HTTP资源Client，不得新增绕过Agent Protocol的公共Base Client。
 
 ## 8. 公共API与导出边界
 
@@ -201,8 +192,8 @@ flowchart TB
 
 ### 8.2 根包导出边界
 
-[`harnessix.__init__`](../../src/harnessix/__init__.py)只导出共享Action领域模型，不导出协议Client。
-Agent调用方必须从`harnessix.sdk`导入Agent SDK；旧HTTP Client只能直接从兼容模块导入，且不构成稳定合同。
+[`harnessix.__init__`](../../src/harnessix/__init__.py)不导出业务符号。Agent调用方必须从`harnessix.sdk`
+导入Agent SDK；不存在可直接导入的旧HTTP Client。
 
 ## 9. AgentTransport合同
 
@@ -649,14 +640,15 @@ SDK不会自动执行图中恢复动作。宿主必须持久或可靠保存：
 2. 每个写命令的Request ID及其业务意图；
 3. Thread/Turn ID；
 4. 每个Thread最后已消费的`scannedThrough`；
-5. 需要迁移旧Action数据时，兼容调用方自行保存Action ID和Idempotency Key。
+5. 旧Action数据库不经SDK迁移，按离线归档手册保存。
 
 若宿主使用默认随机Client Instance ID并在崩溃后重新构造Client，相同Command Request ID进入新的幂等命名
 空间，不能依赖Protocol Request Ledger返回旧结果。领域层部分操作仍有确定性身份，但SDK合同要求显式复用。
 
-## 26. 迁移兼容：Action Plane HTTP客户端
+## 26. 已删除Action Plane HTTP客户端（历史）
 
-本节只记录尚未物理删除的兼容实现，不代表当前产品接口。`HarnessixClient`和`HarnessixAsyncClient`是手写的轻量HTTP包装，分别拥有`httpx.Client`和
+本节冻结记录Revision `3f37fe8`之前的兼容实现，不代表当前产品接口，所述源码和测试均已删除。
+`HarnessixClient`和`HarnessixAsyncClient`曾是手写的轻量HTTP包装，分别拥有`httpx.Client`和
 `httpx.AsyncClient`。构造参数只开放Base URL、Timeout和可选Transport；Base URL会移除尾部斜杠，默认
 `http://127.0.0.1:8787`。异步Context Enter不会发健康检查或初始化请求，只返回自身。
 
@@ -1072,13 +1064,13 @@ return value
 | 审批前分页读取Diff Artifact | 同文件`test_thin_cli_reads_diff_before_batch_approval` |
 | 固定Workspace产品装配 | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) `test_fixed_workspace_rejects_other_thread_roots` |
 
-### 39.3 迁移兼容HTTP SDK与对端
+### 39.3 已删除HTTP SDK与对端（历史证据）
 
 | 行为 | 源码 | 测试 |
 |---|---|---|
-| Async Submit保留Action合同 | `HarnessixAsyncClient.submit` | [`test_sdk.py`](../../tests/unit/test_sdk.py) `test_async_sdk_preserves_action_contract` |
-| API正常/冲突/202/Readiness | [`api/app.py`](../../src/harnessix/api/app.py) | [`test_api.py`](../../tests/integration/test_api.py)四个服务端用例；不是Client专项覆盖 |
-| LangChain Tool消费HTTP Client端口 | [`adapters/langgraph.py`](../../src/harnessix/adapters/langgraph.py)及[Adapter模块设计](adapters.md) | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py)只使用Fake Async Client，不证明真实HTTP或LangGraph ToolNode |
+| Async Submit保留Action合同 | `HarnessixAsyncClient.submit` | [`test_sdk.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_sdk.py) `test_async_sdk_preserves_action_contract` |
+| API正常/冲突/202/Readiness | [`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py)四个服务端用例；不是Client专项覆盖 |
+| LangChain Tool消费HTTP Client端口 | [`adapters/langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py)及[Adapter模块设计](adapters.md) | [`test_langgraph_adapter.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py)只使用Fake Async Client，不证明真实HTTP或LangGraph ToolNode |
 
 ### 39.4 决策与研究
 
@@ -1108,8 +1100,8 @@ return value
 - Initialize Notification失败后当前Transport被关闭，第二次Initialize不再重复请求；
 - 持久Replay、Live Delta、Gap和Deadline由纵向测试消费；
 - 薄CLI仅依赖AgentClient实现协商上限内分页、交互、最终文本和Diff后审批；
-- 迁移兼容HTTP Async Client Submit保留旧Action Spec和状态；
-- HTTP API对端正常、冲突、202和Readiness有独立集成测试。
+- 历史HTTP SDK与API证据冻结在固定Git Revision，当前测试树不再运行该链；
+- 产品收敛治理测试证明HTTP Client、API对端、依赖和生成规格没有回流。
 
 ### 40.2 尚未证明范围
 
@@ -1160,7 +1152,7 @@ return value
 
 ## 43. 维护规则
 
-以下变化必须在同一提交更新本文及对应Protocol/App Server文档；涉及兼容删除时同时更新API/Adapter迁移文档：
+以下变化必须在同一提交更新本文及对应Protocol/App Server文档；涉及已退役接口时同时更新0.9.1f收敛资料：
 
 1. `harnessix.sdk`或根包公共导出变化；
 2. `AgentTransport`方法、并发、取消或所有权合同变化；
@@ -1170,7 +1162,7 @@ return value
 6. 初始化字段、Capability、Limit、默认Client Version或半握手恢复变化；
 7. Thread/Turn/Question/Approval/Event/Artifact方法签名和返回变化；
 8. Cursor推进、Gap、Timeout、Watch终止或自动重连变化；
-9. 旧HTTP客户端调用方、删除进度或兼容行为变化；
+9. 旧HTTP客户端或第二套公共SDK重新出现；
 10. Secret清洗、诊断、Telemetry、平台和发行边界变化。
 
 重大SDK语义变化使用[重大变更设计模板](../governance/templates/change-design-template.md)评审。协议生成物更新不
@@ -1186,6 +1178,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 7 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除Action HTTP Client、旧SDK测试和第二公共入口 |
 | 6 | `pending` | 2026-09-19 | 按ADR 0081收敛SDK公共边界，撤销Action HTTP Client包级导出并把遗留实现标记为迁移兼容 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch通过既有SDK Replay、Artifact分页和审批方法完成，不新增客户端权限接口 |
 | 4 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 增加广告方法、协商消息字节和Replay数量的Transport写入前门禁，并登记Product UI连接恢复分层 |

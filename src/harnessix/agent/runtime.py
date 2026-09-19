@@ -47,7 +47,6 @@ from harnessix.agent.models import (
     ItemStatus,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
-    ProcessActionStateContent,
     ProcessApprovalRequestContent,
     QuestionAnswerContent,
     QuestionRequestContent,
@@ -70,7 +69,6 @@ from harnessix.agent.ports import (
     NoTools,
     PatchBatchRuntime,
     PatchRuntime,
-    ProcessRuntime,
     ScopedToolRuntime,
     ToolRuntime,
     TrustedActionGateway,
@@ -108,7 +106,6 @@ from harnessix.artifacts.ports import (
     ArtifactPublisher,
     ArtifactReferenceVerifier,
     BatchDiffPublisher,
-    ProcessArtifactPublisher,
 )
 from harnessix.context.compaction import (
     PreparedCompaction,
@@ -138,7 +135,6 @@ from harnessix.context.tool_result_view import (
     history_document,
 )
 from harnessix.domain.models import (
-    ActionContext,
     ApprovalDecision,
     ApprovalOutcome,
     ApprovalRecord,
@@ -160,7 +156,6 @@ from harnessix.models.contracts import (
     ToolCallCompleted,
 )
 from harnessix.observability.core import NoOpObservability, Observability
-from harnessix.processes.bridge_contracts import PROCESS_AGENT_FRONTENDS
 from harnessix.session.ports import SessionStore
 from harnessix.tools.runtime import _drain
 
@@ -188,8 +183,6 @@ class AgentRuntime:
         trusted_actions: TrustedActionGateway | None = None,
         patches: PatchRuntime | None = None,
         patch_batches: PatchBatchRuntime | None = None,
-        processes: ProcessRuntime | None = None,
-        process_artifacts: ProcessArtifactPublisher | None = None,
         artifacts: ArtifactPublisher | None = None,
         artifact_verifier: ArtifactReferenceVerifier | None = None,
         artifact_access: ArtifactAccessScope | None = None,
@@ -262,33 +255,6 @@ class AgentRuntime:
                     "patch_batch_contract_invalid", "整组专用端口必须声明一次性写、审批和核对"
                 )
             definitions = (*definitions, definition)
-        self._processes = processes
-        self._process_tool_name: str | None = None
-        if processes is not None:
-            definition = processes.definition()
-            if (
-                definition.effect_class != EffectClass.NON_IDEMPOTENT_WRITE
-                or definition.risk_level != RiskLevel.HIGH
-                or not definition.requires_approval
-                or not definition.requires_idempotency
-                or definition.supports_reconciliation
-            ):
-                raise KernelError(
-                    "process_contract_invalid",
-                    "进程专用端口必须声明高风险、非幂等、审批且不可自动核对",
-                )
-            self._process_tool_name = definition.name
-            definitions = (*definitions, definition)
-        if process_artifacts is not None and (
-            processes is None
-            or process_artifacts.session is not store
-            or process_artifacts.bridge is not processes
-        ):
-            raise KernelError(
-                "artifact_store_mismatch",
-                "Process Artifact发布器必须绑定同一Session和原进程端口",
-            )
-        self._process_artifacts = process_artifacts
         self._questions_enabled = enable_questions
         if enable_questions:
             definitions = (
@@ -311,7 +277,6 @@ class AgentRuntime:
             for verifier in (
                 artifact_verifier,
                 artifacts,
-                process_artifacts.artifacts if process_artifacts is not None else None,
                 batch_diffs.artifacts if batch_diffs is not None else None,
             )
             if verifier is not None
@@ -413,34 +378,8 @@ class AgentRuntime:
             if action_turn is not None:
                 operation.finish(action_turn.status.value)
                 return
-            if (
-                turn.status == TurnStatus.EXECUTING_TOOLS
-                and calls
-                and (
-                    calls[0].tool == self._process_tool_name
-                    or (self._processes is None and calls[0].tool in PROCESS_AGENT_FRONTENDS)
-                )
-                and calls[0].effect_class == EffectClass.NON_IDEMPOTENT_WRITE
-                and approval_for(turn, calls[0]) is None
-            ):
-                # 模型调用已提交，但Action创建或Session审批请求提交时宿主退出。
-                # 有原专用端口时按稳定身份重取/创建同一Action；缺端口则保留
-                # 原事实，避免把一个仍可恢复的调用错误终结为“未执行”。
-                if self._processes is None:
-                    operation.finish(turn.status.value)
-                    return
-                call_result = await self._execute_calls(
-                    thread.thread_id, turn.turn_id, CancelToken()
-                )
-                current = call_result or get_turn(
-                    await self.store.get_thread(thread.thread_id), turn.turn_id
-                )
-                if call_result is not None:
-                    operation.finish(current.status.value)
-                    return
-                turn = current
-            # Process Action 的Effect Journal仍是唯一执行事实；启动只保留等待，
-            # b2c1要求调用方显式resume作一次有界观察，不能在重开时后台轮询或执行。
+            # 0.5时期的Process Action事件仍可回放，但旧执行内核已经归档。
+            # 启动不得改写、重放或自动终结这些历史等待事实。
             if turn.status == TurnStatus.WAITING_ACTION:
                 operation.finish(turn.status.value)
                 return
@@ -888,6 +827,17 @@ class AgentRuntime:
             turn = get_turn(await self.store.get_thread(thread_id), turn_id)
             if turn.status in TERMINAL_TURNS:
                 return turn
+            calls = pending_calls(turn)
+            historical_approval = approval_for(turn, calls[0]) if calls else None
+            if (
+                turn.status == TurnStatus.WAITING_APPROVAL
+                and historical_approval is not None
+                and isinstance(historical_approval.content, ProcessApprovalRequestContent)
+            ):
+                raise KernelError(
+                    "legacy_process_state_archived",
+                    "历史Process Action审批仅供读取，不能在当前版本恢复执行",
+                )
             if turn.status == TurnStatus.WAITING_INPUT:
                 if remaining_seconds(turn) > 0:
                     return turn
@@ -905,12 +855,11 @@ class AgentRuntime:
                 and not result_resume_safe(turn)
             ):
                 raise KernelError("turn_not_resumable", "工具执行状态缺少安全的提问回答边界")
-            if (
-                not expire_waiting_input
-                and turn.status == TurnStatus.WAITING_ACTION
-                and self._processes is None
-            ):
-                raise KernelError("turn_not_resumable", "Process Action运行时尚未配置")
+            if not expire_waiting_input and turn.status == TurnStatus.WAITING_ACTION:
+                raise KernelError(
+                    "legacy_process_state_archived",
+                    "历史Process Action状态仅供读取，不能在当前版本恢复执行",
+                )
             if not expire_waiting_input and turn_id in self._active:
                 raise KernelError("turn_busy", "Turn 已在执行")
             if not expire_waiting_input:
@@ -929,186 +878,17 @@ class AgentRuntime:
                 turn_id=turn_id,
                 trace_context=turn.trace_context,
             ) as operation:
-                if turn.status == TurnStatus.WAITING_ACTION:
-                    observed, process_result = await self._observe_process_action(
-                        thread_id, turn_id, token
-                    )
-                    if process_result is None:
-                        operation.finish(observed.status.value)
-                        return observed
-                    if process_result.outcome == "unknown":
-                        result = await self._finish(
-                            thread_id,
-                            turn_id,
-                            TurnStatus.INTERRUPTED,
-                            AgentFailure(code="uncertain_effect", message="进程效果未知，禁止继续"),
-                        )
-                    else:
-                        result = await self._continue(thread_id, turn_id, token)
-                else:
-                    result = await resume_after_approval(
-                        self._trusted_actions,
-                        thread_id,
-                        turn_id,
-                        token,
-                        self._sync_process_approval,
-                        self._continue,
-                    )
+                result = await resume_after_approval(
+                    self._trusted_actions,
+                    thread_id,
+                    turn_id,
+                    token,
+                    self._continue,
+                )
                 operation.finish(result.status.value, result.error)
                 return result
         finally:
             self._active.pop(turn_id, None)
-
-    async def _sync_process_approval(
-        self, thread_id: UUID, turn_id: UUID, token: CancelToken
-    ) -> Turn | None:
-        async with self._lock(thread_id):
-            thread = await self.store.get_thread(thread_id)
-            turn = get_turn(thread, turn_id)
-            calls = pending_calls(turn)
-            if turn.status != TurnStatus.WAITING_APPROVAL or not calls:
-                return None
-            item = approval_for(turn, calls[0])
-            if item is None or not isinstance(item.content, ProcessApprovalRequestContent):
-                return None
-            if self._processes is None:
-                raise KernelError("process_not_enabled", "持久Process审批缺少原专用端口")
-            if item.status != ItemStatus.STARTED or item.content.decision is not None:
-                return turn
-            call = calls[0]
-            self._validate_tool_contract(call)
-            projected = await self._processes.sync_decision(
-                call,
-                inspection_scope(thread, turn, call),
-                item.content,
-                token,
-            )
-            if projected is None:
-                return turn
-            assert projected.decision is not None
-            updated = await self.store.append(
-                thread_id,
-                [
-                    EventDraft(
-                        turn_id=turn_id,
-                        occurred_at=projected.decision.decided_at,
-                        payload=ItemFinished(
-                            item_id=item.item_id,
-                            status=ItemStatus.COMPLETED,
-                            content=projected,
-                        ),
-                    ),
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=TurnStateChanged(status=TurnStatus.WAITING_ACTION),
-                    ),
-                ],
-                expected_sequence=thread.sequence,
-            )
-            return get_turn(updated, turn_id)
-
-    async def _observe_process_action(
-        self, thread_id: UUID, turn_id: UUID, token: CancelToken
-    ) -> tuple[Turn, ToolResultContent | None]:
-        async with self._lock(thread_id):
-            thread = await self.store.get_thread(thread_id)
-            turn = get_turn(thread, turn_id)
-            calls = pending_calls(turn)
-            if turn.status != TurnStatus.WAITING_ACTION or not calls:
-                raise KernelError("process_projection_mismatch", "等待边界缺少Process调用")
-            call = calls[0]
-            item = approval_for(turn, call)
-            if (
-                self._processes is None
-                or item is None
-                or item.status != ItemStatus.COMPLETED
-                or not isinstance(item.content, ProcessApprovalRequestContent)
-                or item.content.decision is None
-            ):
-                raise KernelError("process_not_enabled", "持久Process等待缺少原专用端口或决定")
-            self._validate_tool_contract(call)
-            observed = await self._processes.observe(
-                call,
-                inspection_scope(thread, turn, call),
-                item.content,
-                token,
-            )
-            self._fault("runtime.after_process_action_observe")
-            previous = [
-                candidate.content
-                for candidate in turn.items
-                if isinstance(candidate.content, ProcessActionStateContent)
-                and candidate.content.call_id == call.call_id
-                and candidate.status == ItemStatus.COMPLETED
-            ]
-            payloads: list[EventPayload] = []
-            result = observed.result
-            if previous and previous[-1].effect.status == observed.state.effect.status:
-                persisted = previous[-1].effect
-                if persisted.model_copy(update={"origin": observed.state.effect.origin}) != (
-                    observed.state.effect
-                ):
-                    raise KernelError(
-                        "process_projection_mismatch", "重复Action状态的持久事实发生变化"
-                    )
-                if result is None:
-                    return turn, None
-                result = result.model_copy(update={"process": persisted})
-                observed = replace(
-                    observed,
-                    state=observed.state.model_copy(update={"effect": persisted}),
-                    result=result,
-                )
-            else:
-                state_item_id = new_id()
-                payloads.extend(
-                    [
-                        ItemStarted(item_id=state_item_id, content=observed.state),
-                        ItemFinished(
-                            item_id=state_item_id,
-                            status=ItemStatus.COMPLETED,
-                            content=observed.state,
-                        ),
-                    ]
-                )
-            settled = None
-            if result is not None:
-                settled = self._validate_result(result, call, turn.budget.max_output_chars)
-                result_item_id = new_id()
-                payloads.extend(
-                    [
-                        TurnStateChanged(status=TurnStatus.EXECUTING_TOOLS),
-                        ItemStarted(item_id=result_item_id, content=settled),
-                        ItemFinished(
-                            item_id=result_item_id,
-                            status=ItemStatus.COMPLETED,
-                            content=settled,
-                        ),
-                    ]
-                )
-            drafts = [EventDraft(turn_id=turn_id, payload=payload) for payload in payloads]
-            if (
-                result is not None
-                and observed.process is not None
-                and self._process_artifacts is not None
-            ):
-                updated = await self._process_artifacts.append(
-                    thread_id,
-                    turn_id,
-                    call,
-                    observed,
-                    drafts,
-                    expected_sequence=thread.sequence,
-                    max_output_chars=turn.budget.max_output_chars,
-                )
-            else:
-                updated = await self.store.append(
-                    thread_id,
-                    drafts,
-                    expected_sequence=thread.sequence,
-                )
-            self._fault("runtime.after_process_action_result")
-            return get_turn(updated, turn_id), settled
 
     async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
         settling = asyncio.create_task(self._settle_cancel_task(thread_id, turn_id))
@@ -1446,47 +1226,17 @@ class AgentRuntime:
             call = pending_calls(turn)[0]
             if call.call_id != content.call_id or not approval_matches(thread, turn, call, content):
                 raise KernelError("approval_mismatch", "审批与当前调用不匹配")
-            if isinstance(content, ProcessApprovalRequestContent) and self._processes is None:
-                raise KernelError("process_action_not_enabled", "Process审批缺少原Action运行时")
+            if isinstance(content, ProcessApprovalRequestContent):
+                raise KernelError(
+                    "legacy_process_state_archived",
+                    "历史Process Action审批仅供读取，不能在当前版本作出决定",
+                )
             self._validate_tool_contract(call)
             trusted_result = await record_trusted_action_decision(
                 self._trusted_actions, thread, turn, call, item.item_id, content, decision
             )
             if trusted_result is not None:
                 return trusted_result
-            if isinstance(content, ProcessApprovalRequestContent):
-                assert self._processes is not None
-                self._fault("runtime.before_approval_decision")
-                process_projection = await self._processes.decide(
-                    call,
-                    inspection_scope(thread, turn, call),
-                    content,
-                    decision,
-                    CancelToken(),
-                )
-                assert process_projection.decision is not None
-                self._fault("runtime.after_process_action_decision")
-                updated = await self.store.append(
-                    thread_id,
-                    [
-                        EventDraft(
-                            turn_id=turn_id,
-                            occurred_at=process_projection.decision.decided_at,
-                            payload=ItemFinished(
-                                item_id=item.item_id,
-                                status=ItemStatus.COMPLETED,
-                                content=process_projection,
-                            ),
-                        ),
-                        EventDraft(
-                            turn_id=turn_id,
-                            payload=TurnStateChanged(status=TurnStatus.WAITING_ACTION),
-                        ),
-                    ],
-                    expected_sequence=thread.sequence,
-                )
-                self._fault("runtime.after_approval_decision")
-                return get_turn(updated, turn_id)
             if isinstance(content, PatchBatchApprovalRequestContent):
                 if self._patch_batches is None:
                     raise KernelError("patch_batch_not_enabled", "未配置原整组 Patch 端口")
@@ -2131,7 +1881,6 @@ class AgentRuntime:
                     or action_name_owned(self._trusted_actions, d.name)
                     or (self._patches is not None and d.name == "apply_patch")
                     or (self._patch_batches is not None and d.name == "apply_patch_batch")
-                    or (self._process_tool_name is not None and d.name == self._process_tool_name)
                 )
                 instructions: str | None = None
                 if self._context is not None or self._async_context is not None:
@@ -2336,17 +2085,14 @@ class AgentRuntime:
                     existing.content,
                     patch_enabled=self._patches is not None,
                     batch_enabled=self._patch_batches is not None,
-                    process_enabled=self._processes is not None,
                     trusted_action_enabled=self._trusted_actions is not None,
                 )
             is_patch = self._patches is not None and call.tool == "apply_patch"
             is_batch = self._patch_batches is not None and call.tool == "apply_patch_batch"
-            is_process = self._processes is not None and call.tool == self._process_tool_name
             is_trusted_action = action_owned(self._trusted_actions, call)
             if uses_approval_boundary(
                 call.requires_approval and call.effect_class == EffectClass.READ_ONLY,
                 trusted_action=is_trusted_action,
-                process=is_process,
                 patch=is_patch,
                 patch_batch=is_batch,
             ):
@@ -2358,33 +2104,6 @@ class AgentRuntime:
                         early_result, content = await prepare_trusted_action(
                             self._trusted_actions, thread, turn, call, token
                         )
-                    elif is_process:
-                        assert self._processes is not None
-                        self._fault("runtime.before_process_action_prepare")
-                        try:
-                            process_prepared = await self._processes.prepare(
-                                call,
-                                ToolExecutionScope.for_pending_call(thread, turn_id, call),
-                                token,
-                                approval_id=new_id(),
-                            )
-                        except KernelError as error:
-                            if error.code not in {
-                                "tool_invalid_arguments",
-                                "test_profile_not_found",
-                            }:
-                                raise
-                            early_result = ToolResultContent(
-                                call_id=call.call_id,
-                                outcome="failed",
-                                error=error.to_failure(),
-                            )
-                        else:
-                            if isinstance(process_prepared, ToolResultContent):
-                                early_result = process_prepared
-                            else:
-                                content = process_prepared
-                        self._fault("runtime.after_process_action_prepare")
                     elif is_patch or is_batch:
                         try:
                             scope = ToolExecutionScope.for_pending_call(thread, turn_id, call)
@@ -2450,11 +2169,6 @@ class AgentRuntime:
                     return turn
                 else:
                     assert isinstance(item.content, ApprovalContent)
-                    if is_process:
-                        raise KernelError(
-                            "process_projection_mismatch",
-                            "Process决定只能在持久Action等待边界继续",
-                        )
                     decision = item.content.decision
                     if decision is None or not approval_matches(thread, turn, call, item.content):
                         raise KernelError("approval_mismatch", "持久审批与当前调用不匹配")
@@ -3077,12 +2791,6 @@ class AgentRuntime:
             completed = get_turn(thread, turn_id)
             self._telemetry.finished(completed)
             return completed
-
-    async def action_context(self, thread_id: UUID, turn_id: UUID) -> ActionContext:
-        turn = get_turn(await self.store.get_thread(thread_id), turn_id)
-        parts = turn.trace_context.traceparent.split("-") if turn.trace_context else []
-        trace_id = parts[1] if len(parts) == 4 else None
-        return ActionContext(session_id=str(thread_id), run_id=str(turn_id), trace_id=trace_id)
 
     async def inspect_context(
         self, thread_id: UUID, turn_id: UUID, *, model_step: int | None = None

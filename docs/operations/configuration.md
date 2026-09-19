@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 10
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -56,17 +56,17 @@ flowchart LR
     Runtime --> Trusted[Trusted Action Runtime]
 ```
 
-早期`Settings`中的HTTP、Worker、Journal和OpenTelemetry环境变量只服务已退役Action兼容内核，不再出现在
+早期`Settings`中的HTTP、Worker、Journal和OpenTelemetry环境变量只服务已删除Action服务，不再出现在
 `.env.example`或正式产品运维合同中。`HARNESSIX_DATABASE_PATH`、`HARNESSIX_EXECUTION_MODE`、
-`HARNESSIX_HOST`和`HARNESSIX_PORT`不得用于配置Agent Session或当前产品入口。兼容源码保留期间如需读取旧数据，
+`HARNESSIX_HOST`和`HARNESSIX_PORT`不得用于配置Agent Session或当前产品入口。如需读取旧数据，
 必须在隔离维护环境直接调用对应模块，并以[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)的
 白名单和归档规则为准。
 
 ## 2. 已退役Action服务配置
 
 `harnessix serve`和`harnessix worker`已从顶层CLI删除，Docker镜像也不再监听8787端口。旧Action环境变量、
-queued拓扑和API/Worker双进程配置不属于1.0支持范围；新增部署不得继续使用。旧库只读检查、导出和删除将在
-0.9.1f3提供正式迁移说明，当前版本不会自动消费或删除旧SQLite/PostgreSQL Action数据。
+queued拓扑和API/Worker双进程配置不属于1.0支持范围；新增部署不得继续使用。旧库只读检查、导出和保留要求见
+[归档手册](legacy-action-archive.md)，当前版本不会自动消费或删除旧SQLite/PostgreSQL Action数据。
 
 ## 4. Product Config v2
 
@@ -306,7 +306,7 @@ sequenceDiagram
 
 | 配置职责 | 源码 | 关键符号 | 测试 |
 |---|---|---|---|
-| 进程设置 | [`settings.py`](../../src/harnessix/settings.py) | `Settings.from_environment`、`__post_init__` | [`test_api.py`](../../tests/integration/test_api.py)、[`test_worker.py`](../../tests/integration/test_worker.py) |
+| 旧服务环境变量 | [历史Settings源码](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/settings.py) | 已删除，不进入当前配置合同 | [0.9.1f收敛测试](../../tests/governance/test_product_runtime_convergence.py) |
 | JSON合同 | [`contracts.py`](../../src/harnessix/product_config/contracts.py) | `ProductConfigV2`、`ModelProfile`、`SecretReference` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
 | 安全读取 | [`codec.py`](../../src/harnessix/product_config/codec.py) | `read_product_config_bytes`、`decode_product_config_bytes` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
 | Action读取与合同 | [`action_codec.py`](../../src/harnessix/product_config/action_codec.py)、[`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) | `load_product_action_config`、`ProductActionConfigSnapshot` | [`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |

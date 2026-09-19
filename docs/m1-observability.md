@@ -13,7 +13,6 @@ modules:
 related_adrs:
   - docs/adr/0004-durable-trace-context.md
 related_tests:
-  - tests/integration/test_observability_flow.py
   - tests/unit/test_observability_core.py
 supersedes: []
 ---

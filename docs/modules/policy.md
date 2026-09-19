@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
-status: current
-version: 1
+status: deprecated
+version: 2
 code_revision: 5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197
 owners:
   - core
@@ -16,27 +16,29 @@ related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0069-unified-coding-action-risk-route.md
 related_tests:
-  - tests/integration/test_action_service.py
-  - tests/processes/test_action_executor.py
-  - tests/processes/test_test_profiles.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/product_config/test_process_action.py
   - tests/trusted_actions/test_router.py
 supersedes: []
 ---
 
 # Harnessix Code Policy模块设计
 
+> **退役状态：** 本文描述独立Action Plane的`DefaultPolicyEngine`，相关源码已在0.9.1f3删除。
+> 当前Policy事实由Trusted Action Binding、Route Plan与产品配置共同持有，见[Trusted Actions模块](trusted-actions.md)。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
-| 源码包 | [`src/harnessix/policy/`](../../src/harnessix/policy/) |
-| 当前职责 | 为通用Action Plane提供一个无状态、确定性的默认`PolicyEngine`实现 |
+| 源码包 | [`src/harnessix/policy/`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy) |
+| 删除前职责 | 为通用Action Plane提供一个无状态、确定性的默认`PolicyEngine`实现 |
 | 核心输入 | 已创建并校验的`ActionSnapshot`与受信`ToolDescriptor` |
 | 核心输出 | `ALLOW`、`DENY`或`REQUIRE_APPROVAL`的`PolicyDecision` |
-| 当前规则 | destructive或critical拒绝；显式要求审批或non-idempotent write要求审批；其余允许 |
+| 删除前规则 | destructive或critical拒绝；显式要求审批或non-idempotent write要求审批；其余允许 |
 | 非职责 | 不认证Principal，不解析资源，不读取Workspace/Secret/网络，不执行Tool，不写Journal，不决定Execution Plan |
 | 默认装配 | 根Action Plane的`build_service`始终注入`DefaultPolicyEngine` |
-| 当前测试事实 | 无独立Policy单元测试；Service集成覆盖ALLOW和显式审批，DENY/完整矩阵没有直接回归 |
+| 历史测试事实 | 无独立Policy单元测试；Service集成曾覆盖ALLOW和显式审批 |
 | 代码版本 | `5cb6903d3efe6c97e39f4f7d7d0e7bcfa2556197` |
 
 当前实现类的docstring明确标注为“MVP 默认策略”。它是Action Plane早期的最小安全路由，不是生产级组织授权引擎。
@@ -129,8 +131,8 @@ Policy只在新Action完成`RECEIVED → VALIDATED`后调用。相同Action ID�
 
 | 文件 | 行数 | 符号 | 职责 |
 |---|---:|---|---|
-| [`__init__.py`](../../src/harnessix/policy/__init__.py) | 5 | `DefaultPolicyEngine`导出 | 包公共面 |
-| [`default.py`](../../src/harnessix/policy/default.py) | 35 | `DefaultPolicyEngine.evaluate` | 默认三分支规则 |
+| [`__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/__init__.py) | 5 | `DefaultPolicyEngine`导出 | 包公共面 |
+| [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | 35 | `DefaultPolicyEngine.evaluate` | 默认三分支规则 |
 
 依赖方向：
 
@@ -148,7 +150,7 @@ Policy生产包只依赖Domain类型和标准Python语义，不依赖数据库�
 
 ## 6. `PolicyEngine`端口
 
-端口定义位于[`domain/ports.py`](../../src/harnessix/domain/ports.py)：
+端口定义位于[`domain/ports.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/domain/ports.py)：
 
 ```python
 class PolicyEngine(Protocol):
@@ -385,7 +387,7 @@ flowchart TB
 
 ## 13. 默认Bootstrap装配
 
-[`build_service`](../../src/harnessix/bootstrap.py)为API和独立Worker都构造新的`DefaultPolicyEngine`实例。
+[`build_service`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)为API和独立Worker都构造新的`DefaultPolicyEngine`实例。
 实例无字段、无初始化和关闭方法，多个实例行为相同。
 
 内置Tool：
@@ -581,14 +583,14 @@ never fall back from deny/unknown to allow
 
 | 设计元素 | 源码 | 关键符号 | 测试 | 测试符号 |
 |---|---|---|---|---|
-| 默认Policy导出 | [`__init__.py`](../../src/harnessix/policy/__init__.py) | `DefaultPolicyEngine`、`__all__` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
-| ALLOW安全读 | [`default.py`](../../src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
-| 显式审批 | [`default.py`](../../src/harnessix/policy/default.py) | `evaluate` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent` |
-| Process非幂等审批 | [`default.py`](../../src/harnessix/policy/default.py) | `EffectClass.NON_IDEMPOTENT_WRITE` | [`test_action_executor.py`](../../tests/processes/test_action_executor.py) | `test_persistent_approval_executes_once_and_records_binary_result` |
-| 固定测试Profile审批 | [`default.py`](../../src/harnessix/policy/default.py) | `PolicyDecisionKind.REQUIRE_APPROVAL` | [`test_test_profiles.py`](../../tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure` |
-| Tool权威Effect | [`runtime.py`](../../src/harnessix/runtime.py) | `_validate_request` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_effect_hint_mismatch_is_rejected` |
-| Policy持久后路由 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService._submit` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_rejected_approval_never_executes_effect` |
-| 默认Bootstrap装配 | [`bootstrap.py`](../../src/harnessix/bootstrap.py) | `build_service`、`build_registry` | [`test_registry.py`](../../tests/unit/test_registry.py) | `test_runtime_owns_effect_classification` |
+| 默认Policy导出 | [`__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/__init__.py) | `DefaultPolicyEngine`、`__all__` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
+| ALLOW安全读 | [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | `DefaultPolicyEngine.evaluate` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle` |
+| 显式审批 | [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | `evaluate` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_issue_requires_approval_and_is_idempotent` |
+| Process非幂等审批 | [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | `EffectClass.NON_IDEMPOTENT_WRITE` | [`test_action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_action_executor.py) | `test_persistent_approval_executes_once_and_records_binary_result` |
+| 固定测试Profile审批 | [`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py) | `PolicyDecisionKind.REQUIRE_APPROVAL` | [`test_test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure` |
+| Tool权威Effect | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `_validate_request` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_effect_hint_mismatch_is_rejected` |
+| Policy持久后路由 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService._submit` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | `test_echo_runs_without_approval_and_records_lifecycle`、`test_rejected_approval_never_executes_effect` |
+| 默认Bootstrap装配 | [`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py) | `build_service`、`build_registry` | [`test_registry.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_registry.py) | `test_runtime_owns_effect_classification` |
 | 资源感知策略分界 | [`policy.py`](../../src/harnessix/trusted_actions/policy.py) | `DefaultCodingRiskPolicy.evaluate` | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_bounded_read_is_planned_executed_and_audited`、`test_write_requires_exact_approval_and_workspace_freshness` |
 
 ## 22. 测试设计与当前证据
@@ -705,10 +707,10 @@ never fall back from deny/unknown to allow
 ## 27. 推荐源码阅读路线
 
 1. 阅读[Domain模块设计](domain.md)的Effect、Risk、Policy Decision与状态；
-2. 阅读[`default.py`](../../src/harnessix/policy/default.py)三分支；
+2. 阅读[`default.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/policy/default.py)三分支；
 3. 对照第7节完整矩阵，注意MEDIUM/HIGH当前不升级；
-4. 阅读[`ActionService._submit`](../../src/harnessix/runtime.py)的校验、调用、持久和路由；
-5. 阅读[`bootstrap.py`](../../src/harnessix/bootstrap.py)内置Tool事实；
+4. 阅读[`ActionService._submit`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py)的校验、调用、持久和路由；
+5. 阅读[`bootstrap.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/bootstrap.py)内置Tool事实；
 6. 阅读[Trusted Action Policy](../../src/harnessix/trusted_actions/policy.py)比较资源感知差异；
 7. 用第21节测试核对当前证据，再按第22节识别未覆盖结论。
 

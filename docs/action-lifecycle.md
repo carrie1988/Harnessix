@@ -1,7 +1,7 @@
 ---
 doc_type: contract
-status: current
-version: 1
+status: historical
+version: 2
 code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
@@ -15,11 +15,14 @@ related_adrs:
   - docs/adr/0003-database-backed-worker-queue.md
 related_tests:
   - tests/contracts
-  - tests/integration/test_worker.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
 # Action 生命周期
+
+> **历史状态机：** 本文描述已退役Effect Journal与Worker Queue。当前执行生命周期由
+> [Trusted Actions模块](modules/trusted-actions.md)的Route、Plan、Approval、Audit和Reconcile合同定义。
 
 ## 1. 状态机
 

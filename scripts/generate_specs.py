@@ -14,7 +14,6 @@ from harnessix.agent.models import (
     Thread,
     ThreadArchiveRecord,
 )
-from harnessix.api import create_app
 from harnessix.artifacts.contracts import (
     ArtifactPage,
     ArtifactPolicy,
@@ -68,7 +67,6 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspaceActionReviewRecord,
     WorkspacePatchInput,
 )
-from harnessix.domain.models import ActionRequest
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
     CodingEvalCampaignReport,
@@ -271,8 +269,6 @@ def generate_specs(output: Path) -> None:
     """把当前Python合同确定性导出到指定目录。"""
 
     output.mkdir(parents=True, exist_ok=True)
-    write_json(output / "action-contract-v1.schema.json", ActionRequest.model_json_schema())
-    write_json(output / "openapi.json", create_app().openapi())
     write_json(output / "agent-event-v20.schema.json", AgentEvent.model_json_schema())
     write_json(output / "agent-thread-v20.schema.json", Thread.model_json_schema())
     write_json(

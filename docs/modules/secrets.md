@@ -945,7 +945,7 @@ on later construction failure:
 | Product API Key显式注入 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py) | `_resolve_provider`、`default_provider_factory` | [`test_provider_credentials.py`](../../tests/product_config/test_provider_credentials.py) | OpenAI/Anthropic显式凭据且事件无Canary |
 | 离线诊断不暴露值 | 同上 | `diagnose_configuration` | [`product_config/test_runtime.py`](../../tests/product_config/test_runtime.py) | `test_diagnostics_are_offline_bounded_and_do_not_expose_secret` |
 | 配置Source唯一性 | [`product_config/contracts.py`](../../src/harnessix/product_config/contracts.py) | `ProductConfigV2.valid_graph` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) | `test_rejects_multiple_secret_references_for_same_environment_variable` |
-| Action v1未接线 | [`processes/action_executor.py`](../../src/harnessix/processes/action_executor.py) | `ProcessActionExecutor.execute` | [`test_action_executor.py`](../../tests/processes/test_action_executor.py) | `test_secret_refs_fail_after_approval_without_launch` |
+| Action v1未接线 | [`processes/action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/action_executor.py) | `ProcessActionExecutor.execute` | [`test_action_executor.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_action_executor.py) | `test_secret_refs_fail_after_approval_without_launch` |
 
 ## 28. 测试设计与验证证据
 

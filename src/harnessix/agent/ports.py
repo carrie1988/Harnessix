@@ -1,16 +1,12 @@
-"""定义Agent可调用的Tool、Patch和Process端口；Kernel不依赖具体执行后端。"""
+"""定义Agent可调用的Tool、Trusted Action与Patch端口。"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
-from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import (
-    ProcessActionStateContent,
-    ProcessApprovalRequestContent,
     Thread,
     ToolCallContent,
     ToolResultContent,
@@ -23,7 +19,6 @@ from harnessix.patches.batch_approval_contracts import ManagedPatchBatchApproval
 from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
 from harnessix.patches.managed_contracts import PatchRecord
-from harnessix.processes.contracts import ProcessResult
 
 if TYPE_CHECKING:
     from harnessix.patches.agent_bridge import PatchCallResult
@@ -180,52 +175,3 @@ class PatchBatchRuntime(Protocol):
         plan: ManagedPatchBatchCallPlan | None = None,
         approval: ApprovalRecord | None = None,
     ) -> BatchCallResult: ...
-
-
-@dataclass(frozen=True, slots=True)
-class ProcessObservation:
-    """一次有界Action读取形成的Session状态，以及仅在终态存在的模型结果。"""
-
-    state: ProcessActionStateContent
-    result: ToolResultContent | None
-    process: ProcessResult | None = field(default=None, repr=False)
-
-
-class ProcessRuntime(Protocol):
-    """显式受信的Agent/Action桥接端口；执行权仍只属于Action Worker。"""
-
-    def definition(self) -> ToolDescriptor: ...
-
-    async def prepare(
-        self,
-        call: ToolCallContent,
-        scope: ToolExecutionScope,
-        cancel: CancelToken,
-        *,
-        approval_id: UUID,
-    ) -> ProcessApprovalRequestContent | ToolResultContent: ...
-
-    async def decide(
-        self,
-        call: ToolCallContent,
-        scope: ToolExecutionScope,
-        approval: ProcessApprovalRequestContent,
-        decision: ApprovalDecision,
-        cancel: CancelToken,
-    ) -> ProcessApprovalRequestContent: ...
-
-    async def sync_decision(
-        self,
-        call: ToolCallContent,
-        scope: ToolExecutionScope,
-        approval: ProcessApprovalRequestContent,
-        cancel: CancelToken,
-    ) -> ProcessApprovalRequestContent | None: ...
-
-    async def observe(
-        self,
-        call: ToolCallContent,
-        scope: ToolExecutionScope,
-        approval: ProcessApprovalRequestContent,
-        cancel: CancelToken,
-    ) -> ProcessObservation: ...

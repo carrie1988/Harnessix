@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 17
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 18
+code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
 owners:
   - core
 modules:
@@ -48,7 +48,7 @@ related_tests:
   - tests/hooks/test_schemas.py
   - tests/smoke/test_runner.py
   - tests/smoke/test_cli.py
-  - tests/integration/test_action_service.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -56,7 +56,7 @@ supersedes: []
 
 ## 1. 阅读目标
 
-本文把产品入口、Agent Loop、可信执行和旧Action兼容内核还原为可跟踪的源码调用链。读者应先理解稳定契约和持久事实，再进入具体Provider、数据库或平台实现，避免从最大文件随机阅读。
+本文把产品入口、Agent Loop、可信执行和历史兼容边界还原为可跟踪的源码调用链。读者应先理解稳定契约和持久事实，再进入具体Provider、数据库或平台实现，避免从最大文件随机阅读。
 
 阅读完成后应能回答：
 
@@ -66,12 +66,12 @@ supersedes: []
 4. Model、Context、Tool、Approval和Session的边界在哪里；
 5. 写文件、启动进程和交付为何不能直接复用只读Tool路径；
 6. 崩溃、取消、超时和外部效果不确定时由谁决定下一步；
-7. 旧Action Plane为何退出产品面、哪些调用方仍待迁移；
-8. 31个生产包各自从哪里开始读、用哪些测试验证。
+7. 旧Action Plane为何被物理删除、哪些历史数据仍只读兼容；
+8. 26个生产包各自从哪里开始读、用哪些测试验证。
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`实现基线；0.9.1e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；
+- 本文对应0.9.1f3架构收敛候选：独立Action HTTP/Worker源码已删除，候选仍等待全矩阵CI关闭；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到25；
 - 默认`agent-server`装配Provider、Session、协议服务、只读`CodingToolRuntime`及POSIX能力证明后的`apply_patch_batch`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -82,21 +82,18 @@ supersedes: []
 
 ```text
 src/harnessix/
-├── cli.py, __main__.py, agent_cli.py     # 顶层命令与协议薄客户端
-├── product_config/, product_ui/, app_server/, protocol/, sdk/
-│                                          # TUI、产品装配、客户端恢复与协议边界
-├── agent/, session/, models/, context/   # Agent内核与持久会话
-├── tools/, artifacts/                    # 只读能力与大对象
-├── patches/, processes/, sandbox/, workspace/, delivery/
-│                                          # 可信Coding执行库
-├── trusted_actions/, execution/          # 统一高风险Action与持久计划
-├── mcp/, skills/, hooks/                  # 扩展能力
-├── adapters/, domain/, policy/, storage/, executors/
-├── runtime.py, worker.py, api/           # 旧Action迁移兼容内核
-├── observability/, secrets/              # 横切能力
-├── evals/, smoke/                        # 评测与真实Provider验证
-└── bootstrap.py, settings.py, file_lock.py, licensing.py
-                                           # 装配与基础设施
+├── cli.py, __main__.py, agent_cli.py      # 顶层命令与协议薄客户端
+├── product_config/, product_ui/           # 配置、能力证明、TUI和产品组合根
+├── app_server/, protocol/, sdk/           # Headless服务、协议与Agent客户端
+├── agent/, session/, models/, context/    # Agent内核、持久会话与模型上下文
+├── tools/, artifacts/                     # 只读工具和有界证据
+├── execution/, trusted_actions/           # 持久计划与统一高风险Action
+├── patches/, processes/, sandbox/         # Patch、进程监督与隔离
+├── workspace/, delivery/                  # 路径/租约与事务性交付
+├── mcp/, skills/, hooks/                   # 显式扩展能力
+├── evals/, smoke/                         # 评测与真实Provider验证
+├── observability/, secrets/, domain/      # 横切能力和共享合同
+└── file_lock.py, licensing.py             # 基础设施
 ```
 
 测试目录基本按生产包镜像组织。遇到复杂实现时，先找同名测试文件中的最小成功路径，再找`crash/recovery/boundaries`测试理解失败语义。
@@ -321,8 +318,9 @@ flowchart LR
 
 1. [artifacts/contracts.py](../../src/harnessix/artifacts/contracts.py)与[ports.py](../../src/harnessix/artifacts/ports.py)：Artifact身份和读写端口；
 2. [artifacts/sqlite.py](../../src/harnessix/artifacts/sqlite.py)：持久化与恢复；
-3. [artifacts/process_output.py](../../src/harnessix/artifacts/process_output.py)和[batch_diff.py](../../src/harnessix/artifacts/batch_diff.py)：专用大对象；
-4. [app_server/artifacts.py](../../src/harnessix/app_server/artifacts.py)：Thread授权下的协议分页读取。
+3. [artifacts/batch_diff.py](../../src/harnessix/artifacts/batch_diff.py)和[action_output_store.py](../../src/harnessix/artifacts/action_output_store.py)：Patch与Trusted Process专用证据；
+4. [processes/output_artifact.py](../../src/harnessix/processes/output_artifact.py)：仅用于读取历史`process_output`正文，不存在当前发布器；
+5. [app_server/artifacts.py](../../src/harnessix/app_server/artifacts.py)：Thread授权下的协议分页读取。
 
 测试从[Artifact合同](../../tests/artifacts/test_contracts.py)、[Store](../../tests/artifacts/test_store.py)、[恢复](../../tests/artifacts/test_recovery.py)到[SDK读取](../../tests/artifacts/test_sdk.py)依次阅读。
 
@@ -376,7 +374,8 @@ Process顺序：
 3. [processes/supervision_planner.py](../../src/harnessix/processes/supervision_planner.py)和[supervision_store.py](../../src/harnessix/processes/supervision_store.py)；
 4. [processes/supervisor.py](../../src/harnessix/processes/supervisor.py)；
 5. POSIX读取[posix_owner.py](../../src/harnessix/processes/posix_owner.py)，Windows读取[windows_owner.py](../../src/harnessix/processes/windows_owner.py)、[windows_job.py](../../src/harnessix/processes/windows_job.py)和[windows_conpty.py](../../src/harnessix/processes/windows_conpty.py)；
-6. [processes/agent_bridge.py](../../src/harnessix/processes/agent_bridge.py)和[agent_runtime.py](../../src/harnessix/processes/agent_runtime.py)连接Agent。
+6. [product_config/process_action.py](../../src/harnessix/product_config/process_action.py)把固定Profile装配为Trusted Action Definition/Executor；
+7. [agent/trusted_action_runtime.py](../../src/harnessix/agent/trusted_action_runtime.py)负责Session与Router双账本编排。
 
 Sandbox顺序：
 
@@ -420,49 +419,35 @@ Sandbox顺序：
 
 对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)、[默认Patch纵向测试](../../tests/delivery/test_trusted_action_patch.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
 
-## 9. 旧Action兼容内核阅读链
+## 9. 已删除Action Plane的历史阅读与兼容边界
 
-本节用于阅读尚未迁移完成的历史实现。独立入口已经撤销，不得把以下调用链作为新增集成或部署方案；当前产品执行主链
-见上一节`TrustedActionGateway → TrustedActionRouter`。
+独立Action HTTP API、Worker Queue、Effect Journal、Policy、样例Executor、HTTP SDK和LangGraph Adapter已经从当前
+源码树删除。需要研究原始设计时，使用固定Revision
+[`3f37fe8`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80)及
+[Action Plane历史设计](../subsystems/action-plane.md)，不要从当前`domain`或`processes`包推断旧服务仍可运行。
 
-### 9.1 阅读顺序
+当前只保留两类兼容能力：
 
-1. [domain/models.py](../../src/harnessix/domain/models.py)：`ActionRequest`、`ActionSnapshot`、状态、效果类别与风险；
-2. [domain/ports.py](../../src/harnessix/domain/ports.py)：Journal、Policy和Executor端口；
-3. [domain/registry.py](../../src/harnessix/domain/registry.py)：`ToolDefinition`与Registry；
-4. [policy/default.py](../../src/harnessix/policy/default.py)：默认Policy决策；
-5. [bootstrap.py](../../src/harnessix/bootstrap.py)：内置Tool、Journal和Service装配；
-6. [runtime.py](../../src/harnessix/runtime.py)：`ActionService.submit/decide_approval/execute_leased/reconcile`；
-7. [storage/sqlite_journal.py](../../src/harnessix/storage/sqlite_journal.py)与[postgres_journal.py](../../src/harnessix/storage/postgres_journal.py)：两种持久实现；
-8. [worker.py](../../src/harnessix/worker.py)：Claim、Heartbeat、失租和循环；
-9. [api/app.py](../../src/harnessix/api/app.py)：HTTP边界；
-10. [executors/echo.py](../../src/harnessix/executors/echo.py)和[demo_issue.py](../../src/harnessix/executors/demo_issue.py)：只读与可对账写入样例。
+1. [agent/runtime.py](../../src/harnessix/agent/runtime.py)和
+   [runtime_configuration.py](../../src/harnessix/agent/runtime_configuration.py)可读取历史Process等待状态；启动不改写，
+   批准或恢复固定返回`legacy_process_state_archived`；
+2. [artifacts/sqlite.py](../../src/harnessix/artifacts/sqlite.py)与
+   [processes/output_artifact.py](../../src/harnessix/processes/output_artifact.py)可验证历史`process_output`正文；
+   当前运行只发布`action_output`。
+
+对应测试是[历史Process Session兼容](../../tests/agent/test_legacy_process_compatibility.py)、
+[Session升级](../../tests/agent/test_process_session_upgrade.py)和[旧库归档](../../tests/governance/test_legacy_action_archive.py)。
+旧SQLite/PostgreSQL Journal只按[归档手册](../operations/legacy-action-archive.md)离线保存，不进入产品Runtime。
 
 ```mermaid
 flowchart LR
-    Request[ActionRequest] --> Service[ActionService.submit]
-    Service --> Registry[ToolRegistry]
-    Service --> Policy[PolicyEngine]
-    Service --> Journal[(EffectJournal)]
-    Journal --> Ready{READY?}
-    Ready --> Worker[ActionWorker claim + heartbeat]
-    Worker --> Execute[ActionService.execute_leased]
-    Execute --> Executor[Tool Executor]
-    Executor -->|outcome| Execute
-    Execute --> Journal
-    Journal --> Reconcile[UNKNOWN -> reconcile]
+    Git[固定Git Revision] --> History[旧服务源码与历史设计]
+    Session[(历史Session)] --> Reader[当前只读Reducer/Reader]
+    Reader --> Reject[legacy_process_state_archived]
+    Database[(旧Action数据库)] --> Archive[离线检查与归档]
+    Archive --> Offline[(不可执行归档)]
+    Current[当前新执行] --> Router[TrustedActionRouter]
 ```
-
-### 9.2 测试顺序
-
-1. [Registry单元测试](../../tests/unit/test_registry.py)；
-2. [Action Service集成测试](../../tests/integration/test_action_service.py)；
-3. [Worker测试](../../tests/integration/test_worker.py)；
-4. [SQLite API测试](../../tests/integration/test_api.py)；
-5. [PostgreSQL Journal测试](../../tests/integration/test_postgres_journal.py)；
-6. [可观测链测试](../../tests/integration/test_observability_flow.py)。
-
-重点检查“中风险写入为何等待审批”“Worker失租为何不能提交终态”“`UNKNOWN`为何需要Executor支持Reconcile”。
 
 ## 10. 扩展、适配和评测
 
@@ -491,13 +476,12 @@ flowchart LR
 双账本、Action执行Timeout和Interrupted恢复。Hook Executor是宿主预注册的受信代码，`READ_ONLY`是Binding声明而非
 静态副作用证明；Hook `allow`也不产生目标Action授权。
 
-### 10.4 LangGraph Adapter
+### 10.4 外部框架集成边界
 
-先读[Adapter模块设计](../modules/adapters.md)，再阅读[adapters/langgraph.py](../../src/harnessix/adapters/langgraph.py)的
-`HarnessixToolContext → create_harnessix_tool → build_request/invoke/ainvoke`。当前实现是LangChain
-`StructuredTool`工厂，不是完整LangGraph Runtime集成；没有真实`langgraph`依赖、ToolNode、Checkpoint或Interrupt测试。
-用[test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py)核对唯一Async正常路径，并重点检查固定Context、
-Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework success。Adapter不拥有Policy、Journal或Executor生命周期。
+旧LangGraph/LangChain `StructuredTool` Adapter已随Action HTTP Client删除。当前唯一公共程序化入口是
+[Agent Protocol](../modules/protocol.md)和[Agent Python SDK](../modules/sdk.md)。外部框架需要持有Thread/Turn，
+通过`AgentClient`发送消息、审批、问题回答、取消和Artifact读取；不得绕过Agent Runtime直接构造Trusted Action。
+远程或多租户集成不属于1.0范围。
 
 ### 10.5 Eval与Smoke
 
@@ -517,53 +501,51 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 
 ### 11.2 Observability
 
-[observability/core.py](../../src/harnessix/observability/core.py)定义门面，[logging.py](../../src/harnessix/observability/logging.py)配置结构化日志，[opentelemetry.py](../../src/harnessix/observability/opentelemetry.py)连接OTel。再看[单元测试](../../tests/unit/test_observability_core.py)、[业务流测试](../../tests/integration/test_observability_flow.py)和[OTLP导出测试](../../tests/integration/test_otlp_export.py)。
+[observability/core.py](../../src/harnessix/observability/core.py)定义门面，[logging.py](../../src/harnessix/observability/logging.py)配置结构化日志，[opentelemetry.py](../../src/harnessix/observability/opentelemetry.py)连接OTel。再看[单元测试](../../tests/unit/test_observability_core.py)、[Agent遥测测试](../../tests/agent/test_telemetry.py)和[OTLP导出测试](../../tests/integration/test_otlp_export.py)。
 
 ### 11.3 基础根模块
 
-- [settings.py](../../src/harnessix/settings.py)：Action Plane环境配置；
+- [__main__.py](../../src/harnessix/__main__.py)：`python -m harnessix`入口；
+- [cli.py](../../src/harnessix/cli.py)：Coding Agent命令分派；
+- [agent_cli.py](../../src/harnessix/agent_cli.py)：薄Agent Protocol客户端；
 - [file_lock.py](../../src/harnessix/file_lock.py)：跨平台本地文件锁；
 - [licensing.py](../../src/harnessix/licensing.py)：许可信息输出；
-- [__init__.py](../../src/harnessix/__init__.py)：公共导出面。
+- [__init__.py](../../src/harnessix/__init__.py)：空公共导出面，防止重新暴露第二套SDK。
 
 这些模块不应承载Agent Loop或副作用业务逻辑。
 
-## 12. 30个生产包快速索引
+## 12. 26个生产包快速索引
 
 | 包 | 第一阅读文件 | 核心问题 | 测试入口 |
 |---|---|---|---|
-| [adapters](../../src/harnessix/adapters/) | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py)；[模块设计](../modules/adapters.md) | LangChain Tool如何映射Action，以及真实LangGraph、身份、状态与恢复的当前边界 | [test_langgraph_adapter.py](../../tests/unit/test_langgraph_adapter.py) |
 | [agent](../../src/harnessix/agent/) | `models.py`、`runtime.py` | Turn如何持久运行和恢复 | [agent](../../tests/agent/) |
-| [api](../../src/harnessix/api/) | [`app.py`](../../src/harnessix/api/app.py)；[模块设计](../modules/api.md) | HTTP资源、Lifespan、200/202、错误、Trace、身份和资源预算 | [test_api.py](../../tests/integration/test_api.py) |
 | [app_server](../../src/harnessix/app_server/) | [server.py](../../src/harnessix/app_server/server.py)、[service.py](../../src/harnessix/app_server/service.py)；[模块设计](../modules/app-server.md) | 协议连接与应用命令如何分层 | [app_server](../../tests/app_server/) |
 | [artifacts](../../src/harnessix/artifacts/) | `contracts.py`、`sqlite.py` | 大对象如何持久化并授权读取 | [artifacts](../../tests/artifacts/) |
 | [context](../../src/harnessix/context/) | `contracts.py`、`engine.py` | Context如何预算和压缩 | [context](../../tests/context/) |
 | [delivery](../../src/harnessix/delivery/) | `contracts.py`、`planner.py` | 文件/Git交付如何形成事务 | [delivery](../../tests/delivery/) |
-| [domain](../../src/harnessix/domain/) | `models.py`、`ports.py` | Action稳定契约是什么 | [unit](../../tests/unit/) |
+| [domain](../../src/harnessix/domain/) | `models.py`、`errors.py` | 跨模块共享枚举和历史状态只读边界是什么 | [治理](../../tests/governance/test_product_runtime_convergence.py) |
 | [evals](../../src/harnessix/evals/) | `contracts.py`、`runner.py` | 真实任务结果如何分级 | [evals](../../tests/evals/) |
 | [execution](../../src/harnessix/execution/) | `contracts.py`、`planner.py` | 执行意图如何先持久化 | [execution](../../tests/execution/) |
-| [executors](../../src/harnessix/executors/) | `echo.py`、`demo_issue.py` | Executor如何实现效果与对账 | [unit](../../tests/unit/) |
 | [hooks](../../src/harnessix/hooks/) | [`contracts.py`](../../src/harnessix/hooks/contracts.py)、[`store.py`](../../src/harnessix/hooks/store.py)、[`runtime.py`](../../src/harnessix/hooks/runtime.py)；[模块设计](../modules/hooks.md) | Definition/Grant、Matcher、状态、双账本和恢复如何约束Hook执行 | [hooks](../../tests/hooks/) |
 | [mcp](../../src/harnessix/mcp/) | [`contracts.py`](../../src/harnessix/mcp/contracts.py)、[`store.py`](../../src/harnessix/mcp/store.py)、[`runtime.py`](../../src/harnessix/mcp/runtime.py)、[`actions.py`](../../src/harnessix/mcp/actions.py)；[模块设计](../modules/mcp.md) | Target、目录、Schema、连接状态与Trusted Action如何共同约束MCP调用 | [mcp](../../tests/mcp/) |
 | [models](../../src/harnessix/models/) | `contracts.py`、`config.py` | Provider如何被规范化 | [models](../../tests/models/) |
 | [observability](../../src/harnessix/observability/) | `core.py` | 业务身份如何进入观测 | [integration](../../tests/integration/) |
 | [patches](../../src/harnessix/patches/) | `contracts.py`、`planner.py` | Patch如何指纹、审批和恢复 | [patches](../../tests/patches/) |
-| [policy](../../src/harnessix/policy/) | `default.py` | 风险和效果如何产生决策 | [Action Service测试](../../tests/integration/test_action_service.py) |
 | [processes](../../src/harnessix/processes/) | `contracts.py`、`runtime.py` | 进程如何拥有、监督和恢复 | [processes](../../tests/processes/) |
 | [product_config](../../src/harnessix/product_config/) | [`contracts.py`](../../src/harnessix/product_config/contracts.py)、[`server.py`](../../src/harnessix/product_config/server.py)；[模块设计](../modules/product-config.md) | 产品如何诊断、迁移、审计并安全装配 | [product_config](../../tests/product_config/) |
+| [product_ui](../../src/harnessix/product_ui/) | `contracts.py`、`controller.py` | TUI状态如何持久、投影和冷恢复 | [product_ui](../../tests/product_ui/) |
 | [protocol](../../src/harnessix/protocol/) | `contracts.py`、`requests.py` | 版本、投影和命令幂等如何工作 | [protocol](../../tests/protocol/) |
 | [sandbox](../../src/harnessix/sandbox/) | `contracts.py`、`planner.py` | 能力和强制隔离如何区分 | [sandbox](../../tests/sandbox/) |
-| [sdk](../../src/harnessix/sdk/) | [agent_client.py](../../src/harnessix/sdk/agent_client.py)、[client.py](../../src/harnessix/sdk/client.py)；[模块设计](../modules/sdk.md) | Agent双Transport与Action HTTP客户端如何分界 | [app_server](../../tests/app_server/)、[SDK单元](../../tests/unit/test_sdk.py) |
+| [sdk](../../src/harnessix/sdk/) | [agent_client.py](../../src/harnessix/sdk/agent_client.py)；[模块设计](../modules/sdk.md) | Agent双Transport如何处理并发、取消和错误 | [app_server](../../tests/app_server/) |
 | [secrets](../../src/harnessix/secrets/) | `provider.py`、`redaction.py` | Secret如何不进入持久层 | [secrets](../../tests/secrets/) |
 | [session](../../src/harnessix/session/) | `ports.py`、`sqlite.py` | Event如何CAS提交和重放 | [agent](../../tests/agent/) |
 | [skills](../../src/harnessix/skills/) | `contracts.py`、`runtime.py` | Skill如何快照和渐进加载 | [skills](../../tests/skills/) |
 | [smoke](../../src/harnessix/smoke/) | [Smoke模块设计](../modules/smoke.md)；`contracts.py → runner.py → cli.py` | 真实Provider验证如何显式启用、受预算约束、重开Replay并生成白名单报告 | [smoke](../../tests/smoke/) |
-| [storage](../../src/harnessix/storage/) | `sqlite_journal.py` | Action Journal如何保证租约和幂等 | [integration](../../tests/integration/) |
 | [tools](../../src/harnessix/tools/) | `contracts.py`、`runtime.py` | 只读工具如何受Workspace约束 | [tools](../../tests/tools/) |
 | [trusted_actions](../../src/harnessix/trusted_actions/) | `contracts.py`、`router.py` | 扩展如何被统一计划和审批 | [trusted_actions](../../tests/trusted_actions/) |
 | [workspace](../../src/harnessix/workspace/) | `contracts.py`、`paths.py` | 路径、Snapshot与Lease如何建模 | [workspace](../../tests/workspace/) |
 
-包的所有权、依赖方向和禁止旁路规则见[总体架构第8节](../architecture.md#8-模块所有权依赖方向与禁止旁路)，文档覆盖状态见[追踪矩阵](../governance/documentation-traceability.md)。
+包的所有权、依赖方向和禁止旁路规则见[总体架构第16节](../architecture.md#16-源码包边界26个)，文档覆盖状态见[追踪矩阵](../governance/documentation-traceability.md)。
 
 ## 13. 根级模块快速索引
 
@@ -572,13 +554,9 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 | [__init__.py](../../src/harnessix/__init__.py) | 公共导出，不从此推断内部架构 | Import/API合同相关测试 |
 | [__main__.py](../../src/harnessix/__main__.py) | 委托`cli.main` | CLI测试 |
 | [agent_cli.py](../../src/harnessix/agent_cli.py) | 薄交互层、无领域持久化 | [test_agent_cli.py](../../tests/app_server/test_agent_cli.py) |
-| [bootstrap.py](../../src/harnessix/bootstrap.py) | Action Plane组合根 | Action Service/Worker测试 |
-| [cli.py](../../src/harnessix/cli.py) | 子命令分派 | [test_cli_license.py](../../tests/unit/test_cli_license.py) |
+| [cli.py](../../src/harnessix/cli.py) | Coding Agent子命令分派 | [test_cli.py](../../tests/smoke/test_cli.py) |
 | [file_lock.py](../../src/harnessix/file_lock.py) | 本地锁的能力和限制 | [test_file_lock.py](../../tests/unit/test_file_lock.py) |
 | [licensing.py](../../src/harnessix/licensing.py) | 许可提示事实 | [test_cli_license.py](../../tests/unit/test_cli_license.py) |
-| [runtime.py](../../src/harnessix/runtime.py) | Action Service主状态机 | [test_action_service.py](../../tests/integration/test_action_service.py) |
-| [settings.py](../../src/harnessix/settings.py) | 基础环境配置 | API/Worker集成测试 |
-| [worker.py](../../src/harnessix/worker.py) | Lease、Heartbeat和终态提交 | [test_worker.py](../../tests/integration/test_worker.py) |
 
 ## 14. 五条故障导向阅读路线
 
@@ -594,9 +572,11 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 
 `ApprovalContent.request_fingerprint` → `approval/respond` → `AgentRuntime._reply_approval`同时校验ID与指纹 → 唯一决定写入同一Session事务。测试落点是[approvals](../../tests/agent/test_approvals.py)与[approval crash recovery](../../tests/agent/test_approval_crash_recovery.py)。
 
-### 14.4 “Worker执行完时刚好失租会怎样”
+### 14.4 “Trusted Action执行完成但响应丢失会怎样”
 
-`ActionWorker._execute_with_heartbeat` → Heartbeat续租 → `ActionService.execute_leased` → 终态提交前验证Worker/Lease → 失租拒绝旧Worker写终态。测试落点是[worker集成测试](../../tests/integration/test_worker.py)。
+`TrustedActionRouter.execute`先持久化`running`，Executor效果完成但终态响应丢失时Route进入`unknown`；重开后只能按
+稳定资源身份调用`reconcile`，不得再次`execute`。测试落点是[Router响应丢失](../../tests/trusted_actions/test_router.py)、
+[Git Push硬崩溃](../../tests/delivery/test_git_push.py)和[产品恢复](../../tests/product_config/test_action_runtime.py)。
 
 ### 14.5 “写文件后宿主崩溃能否自动重试”
 
@@ -613,7 +593,7 @@ Tool Call ID未绑定Action、完整Snapshot返回和非终态仍呈现Framework
 3. **多Tool顺序**：阅读`test_tool_scheduling.py`，解释并行执行与持久顺序为何可以同时成立；
 4. **审批冲突**：定位重复相同决定和重复不同决定走向的不同分支；
 5. **崩溃分类**：把`ACCEPTED/WAITING_APPROVAL/WAITING_ACTION/CALLING_MODEL`分别代入恢复协调器，并区分Session投影与Router副作用权威；
-6. **Action租约**：从`run_once`追踪到Journal终态，标记所有Worker身份校验；
+6. **Action恢复**：从Router的`running → unknown → reconcile`追踪到专用效果Owner，标记所有禁止重放点；
 7. **产品能力核验**：只看`run_product_stdio`构造参数，列出默认开放和未开放工具，避免依据“仓库里有源码”做结论；
 8. **跨平台核验**：对比`_require_coding_tool_platform`、Workspace Windows规则和Process Windows测试，解释底层支持与产品支持的差别。
 

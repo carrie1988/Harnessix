@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
-status: current
-version: 3
+status: deprecated
+version: 4
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -14,26 +14,24 @@ related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/unit/test_langgraph_adapter.py
-  - tests/unit/test_sdk.py
-  - tests/integration/test_api.py
-  - tests/integration/test_action_service.py
+  - tests/governance/test_product_runtime_convergence.py
+  - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 
 # Adapter模块设计
 
 > **迁移状态：** 早期LangChain StructuredTool适配器已退出Harnessix Code 1.0产品边界。它依赖已退役的
-> Action HTTP Client，不进入默认能力目录、公开SDK或部署拓扑；源码只为兼容回归暂留，并将在0.9.1f3删除。
+> Action HTTP Client，不进入默认能力目录、公开SDK或部署拓扑；源码已在0.9.1f3物理删除。
 > 其他框架应通过Agent Protocol集成，未来新增框架适配必须围绕Agent生命周期而非独立Action服务建立。
 
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
-| 源码包 | [`src/harnessix/adapters`](../../src/harnessix/adapters/) |
+| 源码包 | [`src/harnessix/adapters`](https://github.com/carrie1988/Harnessix/tree/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters) |
 | 兼容实现 | 单个基于LangChain `StructuredTool`的旧Action Tool工厂，文件名为`langgraph.py` |
-| 当前职责 | 只保留旧映射行为供迁移回归，不承诺新增功能或发布兼容性 |
+| 删除前职责 | 把旧Action HTTP Client包装为LangChain StructuredTool |
 | 非职责 | 不实现LangGraph Graph/State/Checkpoint/Interrupt/Command/ToolNode，不拥有Action状态机、Policy、Approval、Journal、Worker、Executor、Sandbox或Agent Loop |
 | 直接上游 | LangChain Tool调用者；按类型设计可供LangGraph `ToolNode`消费，但仓库当前没有真实ToolNode验证 |
 | 直接下游 | 满足`SyncActionClient`或`AsyncActionClient`结构协议的Client；默认可使用Action HTTP SDK |
@@ -43,8 +41,8 @@ supersedes: []
 | 代码版本 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` |
 | 当前完成度 | 单次同步/异步Submit映射已实现；真实LangGraph图运行、恢复、审批中断、终态等待、身份注入、结果投影、安全预算和系统性测试未完成 |
 
-本文是[`adapters/langgraph.py`](../../src/harnessix/adapters/langgraph.py)与
-[`adapters/__init__.py`](../../src/harnessix/adapters/__init__.py)的现行事实源。Action状态、HTTP Client及下游
+本文冻结记录[`adapters/langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py)与
+[`adapters/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/__init__.py)删除前的事实。Action状态、HTTP Client及下游
 执行语义分别见[Action Plane子系统设计](../subsystems/action-plane.md)、[SDK模块设计](sdk.md)和
 [API模块设计](api.md)。
 
@@ -236,17 +234,17 @@ flowchart TD
 
 | 顺序 | 文件 | 行数 | 阅读重点 |
 |---:|---|---:|---|
-| 1 | [`adapters/__init__.py`](../../src/harnessix/adapters/__init__.py) | 1 | 包不重导出任何公共符号 |
-| 2 | [`adapters/langgraph.py`](../../src/harnessix/adapters/langgraph.py) | 96 | 两个Client协议、Context、Factory、请求闭包和名称归一化 |
+| 1 | [`adapters/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/__init__.py) | 1 | 包不重导出任何公共符号 |
+| 2 | [`adapters/langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | 96 | 两个Client协议、Context、Factory、请求闭包和名称归一化 |
 | 3 | [`domain/models.py`](../../src/harnessix/domain/models.py) | 下游合同 | `ActionRequest`、`ActionSnapshot`、Status与字段限制 |
-| 4 | [`sdk/client.py`](../../src/harnessix/sdk/client.py) | 默认Client | 同步/异步Submit、2xx解析和HTTP错误 |
-| 5 | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) | 72 | 唯一直接用例及其证明边界 |
-| 6 | [`test_sdk.py`](../../tests/unit/test_sdk.py) | 间接 | Async HTTP Submit合同 |
-| 7 | [`test_api.py`](../../tests/integration/test_api.py) | 间接 | Server状态投影和Queued行为 |
+| 4 | [`sdk/client.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py) | 默认Client | 同步/异步Submit、2xx解析和HTTP错误 |
+| 5 | [`test_langgraph_adapter.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py) | 72 | 唯一直接用例及其证明边界 |
+| 6 | [`test_sdk.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_sdk.py) | 间接 | Async HTTP Submit合同 |
+| 7 | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | 间接 | Server状态投影和Queued行为 |
 
 ## 10. 公共导出与安装边界
 
-[`adapters/__init__.py`](../../src/harnessix/adapters/__init__.py)只有模块说明，没有`__all__`或重导出。因此正式
+[`adapters/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/__init__.py)只有模块说明，没有`__all__`或重导出。因此正式
 导入路径是：
 
 ```python
@@ -983,26 +981,26 @@ desired future invocation(tool_call_identity, dynamic trusted context):
 
 | 设计元素 | 源码 | 关键符号 | 测试/证据 | 当前证明 |
 |---|---|---|---|---|
-| Client最小端口 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | `SyncActionClient`、`AsyncActionClient` | [`test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py) | Fake Async Client结构兼容 |
-| 固定上下文 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | `HarnessixToolContext` | 同上`test_langgraph_tool_builds_framework_neutral_action` | Principal/Context正常复制；不覆盖变异/多租户 |
-| Tool构造 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | `create_harnessix_tool` | 同上 | Async-only正常路径 |
-| Request映射 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | 内部`build_request` | 同上 | Tool、Effect Hint、幂等键及默认Metadata |
-| Async调用 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | 内部`ainvoke` | 同上 | Snapshot JSON可解析 |
-| 名称归一化 | [`langgraph.py`](../../src/harnessix/adapters/langgraph.py) | `_safe_tool_name` | 无自动测试；受控探针 | 点/斜线冲突、数字前缀、空结果 |
-| Action合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionRequest`、`ActionSnapshot` | [`test_models.py`](../../tests/unit/test_models.py) | Domain字段与指纹；不证明Framework桥接 |
-| HTTP Client | [`client.py`](../../src/harnessix/sdk/client.py) | `HarnessixClient`、`HarnessixAsyncClient` | [`test_sdk.py`](../../tests/unit/test_sdk.py) `test_async_sdk_preserves_action_contract` | Async Submit；非Adapter端到端 |
-| API状态 | [`app.py`](../../src/harnessix/api/app.py) | `create_app`、`_apply_action_status` | [`test_api.py`](../../tests/integration/test_api.py) | Inline/Queued Server行为；无Framework |
-| Service治理 | [`runtime.py`](../../src/harnessix/runtime.py) | `ActionService.submit` | [`test_action_service.py`](../../tests/integration/test_action_service.py) | Policy/Approval/幂等/Unknown；无Adapter恢复 |
+| Client最小端口 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | `SyncActionClient`、`AsyncActionClient` | [`test_langgraph_adapter.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py) | Fake Async Client结构兼容 |
+| 固定上下文 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | `HarnessixToolContext` | 同上`test_langgraph_tool_builds_framework_neutral_action` | Principal/Context正常复制；不覆盖变异/多租户 |
+| Tool构造 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | `create_harnessix_tool` | 同上 | Async-only正常路径 |
+| Request映射 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | 内部`build_request` | 同上 | Tool、Effect Hint、幂等键及默认Metadata |
+| Async调用 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | 内部`ainvoke` | 同上 | Snapshot JSON可解析 |
+| 名称归一化 | [`langgraph.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/adapters/langgraph.py) | `_safe_tool_name` | 无自动测试；受控探针 | 点/斜线冲突、数字前缀、空结果 |
+| Action合同 | [`models.py`](../../src/harnessix/domain/models.py) | `ActionRequest`、`ActionSnapshot` | [`test_models.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_models.py) | Domain字段与指纹；不证明Framework桥接 |
+| HTTP Client | [`client.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py) | `HarnessixClient`、`HarnessixAsyncClient` | [`test_sdk.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_sdk.py) `test_async_sdk_preserves_action_contract` | Async Submit；非Adapter端到端 |
+| API状态 | [`app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py) | `create_app`、`_apply_action_status` | [`test_api.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_api.py) | Inline/Queued Server行为；无Framework |
+| Service治理 | [`runtime.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/runtime.py) | `ActionService.submit` | [`test_action_service.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/integration/test_action_service.py) | Policy/Approval/幂等/Unknown；无Adapter恢复 |
 | Python-first | [ADR 0001](../adr/0001-python-first-runtime.md) | 适配主流Python生态 | 决策记录 | 选择原因 |
 | 自研Agent Loop | [ADR 0005](../adr/0005-evolve-to-harnessix-code.md) | LangGraph不作为核心Loop | 决策记录 | 产品边界 |
 
 ## 39. 直接测试证据
 
-[`tests/unit/test_langgraph_adapter.py`](../../tests/unit/test_langgraph_adapter.py)当前只有一个测试函数：
+[`tests/unit/test_langgraph_adapter.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py)当前只有一个测试函数：
 
 | 测试 | 证明 | 不证明 |
 |---|---|---|
-| [`test_langgraph_tool_builds_framework_neutral_action`](../../tests/unit/test_langgraph_adapter.py) | Async-only Factory创建；Pydantic参数传递；Action名；Principal Framework原样；Effect Hint；参数型幂等键；无冲突Metadata默认标签；Pending Snapshot JSON | 真实LangGraph/ToolNode；同步路径；Tool Call包装；所有状态；错误/取消/超时；名称；Client生命周期；Schema漂移；动态身份；输出安全；重试/恢复 |
+| [`test_langgraph_tool_builds_framework_neutral_action`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/unit/test_langgraph_adapter.py) | Async-only Factory创建；Pydantic参数传递；Action名；Principal Framework原样；Effect Hint；参数型幂等键；无冲突Metadata默认标签；Pending Snapshot JSON | 真实LangGraph/ToolNode；同步路径；Tool Call包装；所有状态；错误/取消/超时；名称；Client生命周期；Schema漂移；动态身份；输出安全；重试/恢复 |
 
 Fake Client不调用HTTP、Service、Journal、Policy、Executor或Worker。测试返回`pending_approval`但只检查JSON内部状态，
 没有验证Framework是否Suspend或如何继续。

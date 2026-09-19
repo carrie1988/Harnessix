@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e5已通过对应全矩阵CI。0.9.1f1已把独立Action HTTP/Worker撤出公共产品面，f2a固定Container Process和f2b直接Trusted Git Push均已关闭；f2c历史Eval Trusted Action迁移已通过七任务全矩阵CI并关闭；f3继续删除兼容内核。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e5已通过对应全矩阵CI。0.9.1f1、f2a、f2b和f2c均已关闭；f3已经形成物理删除、历史Session只读兼容和旧数据库归档候选，等待全矩阵CI关闭。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -36,7 +36,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 - MCP、项目指令、Skills 和 Hooks；
 - Coding Evals、故障注入和质量回归。
 
-Harnessix Code 复用模型供应商 SDK、OpenTelemetry、SQLite/PostgreSQL、Git、系统搜索工具和成熟 Sandbox，不重新实现已有标准与底层系统能力。LangGraph 等框架只作为可选 Adapter，不作为核心 Agent Loop。
+Harnessix Code复用模型供应商SDK、OpenTelemetry、SQLite、Git、系统搜索工具和成熟Sandbox，不重新实现已有标准与底层系统能力。LangGraph等框架只作为源码研究与外部集成参考；1.0公共集成面是Agent Protocol，不内置Action级LangGraph Adapter。
 
 1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
 
@@ -285,7 +285,7 @@ uv run pytest tests/processes
 
 **边界**：这是受信宿主基础API，不是模型Shell工具或OS Sandbox。脱组后代、宿主硬崩溃和不可中断内核等待仍需后续设计；测试明确验证缺口并清理夹具。下节0.5.4b1已接Action Plane持久准入，b2已完成Agent绑定/当前范围恢复，0.5.4c已在同一链路上接入固定Git读取和测试Profile。设计见 [ADR 0038](docs/adr/0038-host-process-lifecycle.md)，Agent/Session格式及原工具定义不变。
 
-### 持久命令准入（0.5.4b1）
+### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）
 
 宿主现在可以用`process_action_tool(factory)`将固定进程绑定显式注册到现有Action Plane。命令先持久化，必须提供幂等键并通过Policy/Approval，再进入租约执行；工具版本绑定cwd、程序身份、环境和资源预算。确定结果保存ProcessResult和Effect Receipt，证据不足则UNKNOWN。Task/宿主退出后不自动重放，也不根据历史PID杀进程。
 
@@ -299,11 +299,8 @@ b2c2 新增显式 `SQLiteProcessArtifactPublisher`。终态Action已捕获的std
 
 b2c3 补齐完整恢复与取消：Runtime可从“ToolCall已提交但Session审批缺失”的窗口按稳定身份重取同一Action；八个跨库提交边界真实退出后不重复建Action或执行命令。WAITING_APPROVAL/WAITING_ACTION取消只停止Session等待并保守标记unknown，不撤销Action许可；RUNNING租约过期在SQLite/PostgreSQL中保存`UNKNOWN/lease_expired`结果供Agent投影。两个独立进程竞争审批时相同决定幂等、不同决定一胜一冲突。OpenAI与Anthropic实际SDK均通过离线HTTP完成审批重开、外部Worker、Artifact摘要读取和最终回答，私有Action证据与Base64正文不进入模型wire。详见 [ADR 0042](docs/adr/0042-process-saga-recovery-and-cancellation.md)。
 
-```bash
-uv run python -m examples.kernel_process
-uv run pytest tests/agent/test_process_agent_runtime.py tests/agent/test_process_agent_crash.py
-uv run pytest tests/agent/test_process_agent_sdk.py tests/artifacts/test_process_output*.py
-```
+删除前实现、测试和Schema可从0.9.1f3前Git Revision读取。当前版本只保证旧Session事件和Process Artifact可读，
+`reply_approval`或`resume_turn`会以`legacy_process_state_archived`失败关闭且不修改历史事实。
 
 默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。Process Artifact和Session取消都不是执行许可撤销、OS Sandbox、DLP、孤儿进程监督或同UID防篡改边界。
 
@@ -311,14 +308,12 @@ uv run pytest tests/agent/test_process_agent_sdk.py tests/artifacts/test_process
 
 - `CodingToolRuntime(..., git_executable=<绝对路径>)`才注册`git_status`和`git_diff`；模型不能提交仓库路径、revision、pathspec、Git配置或任意子命令；
 - Git固定禁用分页器、可选锁、Hook、fsmonitor、外部Diff和textconv，并要求工作区就是精确仓库根；状态最多200项，Diff返回最多48 KiB完整UTF-8前缀及已观察流摘要；
-- `RunTestsAgentBridge`只向模型公开`{"profile": "unit"}`，宿主固定程序、argv、工作区和超时；完整命令仍写入原`host.process` Action，经过唯一审批和外部Worker；
+- 旧`RunTestsAgentBridge`已删除；当前产品Profile由`product_config/process_action.py`和`eval_action.py`冻结为Trusted Action定义，经Execution Plan、Action Audit和Process Supervisor执行；
 - 测试非零退出是确定的执行结果，返回`passed=false`供模型继续修复；启动/清理或输出证据不完整仍按Process failed/unknown语义处理；
 - 离线闭环已覆盖失败测试→读取Process Artifact→受管Patch审批→测试通过→Git状态/差异→最终回答；OpenAI与Anthropic官方SDK路径均不向模型wire泄漏固定argv和私有Action证据。
 
 ```bash
-uv run python -m examples.coding_feedback
-uv run pytest tests/tools/test_git.py tests/processes/test_test_profiles.py
-uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_feedback_sdk.py
+uv run pytest tests/tools/test_git.py tests/product_config/test_process_action.py
 ```
 
 这是受控测试Profile，不是任意Shell。测试代码仍在宿主权限下运行；当前没有容器/网络隔离、CPU/内存强配额或Git提交/推送。真实Provider多次Coding Eval与显式单文件工作树合入已由0.5.5交付。配置、数据、错误、恢复和取舍见 [ADR 0043](docs/adr/0043-git-and-controlled-test-feedback.md)。
@@ -472,16 +467,17 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 
 0.6.2c的Tool Result模型视图见下一节；动态Source本身不改写Session原始Item。设计与安全边界见[ADR 0056](docs/adr/0056-workspace-git-environment-sources-and-consistency.md)和[0.6实施设计](docs/m06-context-and-sessions.md)。
 
-## 历史基础：0.1 Action Plane兼容内核
+## 历史基础：0.1 Action Plane（实现已删除）
 
 0.1曾交付framework-agnostic Action Contract、Policy、Approval、Effect Journal、Worker Lease、`UNKNOWN`和
 Reconcile，并由此形成当前可信执行语义。产品演进后，默认Coding Agent已经使用
 `TrustedActionGateway → TrustedActionRouter`统一规划、审批、执行和对账。
 
 从[ADR 0081](docs/adr/0081-single-coding-agent-product-boundary.md)开始，独立HTTP API、Action HTTP Client和
-数据库Worker Queue不再属于1.0产品面；固定Container Process、Git Push和历史Eval新运行已经迁入Trusted Action链；`ActionService/ActionWorker`
-只为历史Process Reader和旧实现迁移保留，不允许新增调用方。旧实现的历史能力和测试证据仍保留在Git历史与
-[Action Plane子系统资料](docs/subsystems/action-plane.md)中，不能据此使用已撤销的`serve/worker`命令。
+数据库Worker Queue不再属于1.0产品面；固定Container Process、Git Push和历史Eval新运行已经迁入Trusted Action链。
+`ActionService/ActionWorker`、HTTP API/SDK、LangGraph Adapter、Effect Journal和Demo Executor已在0.9.1f3物理删除。
+旧实现的历史能力和测试证据仍保留在Git历史与[Action Plane子系统资料](docs/subsystems/action-plane.md)中；旧数据库只能按
+[归档手册](docs/operations/legacy-action-archive.md)只读检查或归档，不能据此使用已撤销的`serve/worker`命令。
 
 ## 当前已实现：0.3 Agent Runtime Kernel
 
@@ -617,7 +613,8 @@ uv run harnessix code /path/to/workspace \
 `harnessix code`启动本地TUI并监督stdio Agent Server；`harnessix agent-server`是产品内部Headless入口，
 其stdout只传输Agent Protocol JSONL。Python宿主使用`harnessix.sdk.AgentClient`及进程内或子进程Transport。
 
-独立`harnessix serve`、`harnessix worker`、Action HTTP SDK和LangGraph Action Adapter已经退出1.0产品面。
+独立`harnessix serve`、`harnessix worker`、Action HTTP SDK和LangGraph Action Adapter已经退出1.0产品面，
+相关实现、专用依赖和生成规格已在0.9.1f3候选中物理删除。
 其他Agent框架若需要接入，应使用版本化Agent Protocol；未来远程执行只会作为Trusted Action Executor后的
 受信适配器立项，不会恢复绕过Thread/Turn的第二套公共Action API。详细迁移边界见
 [0.9.1f设计](docs/changes/m09-1f-single-product-runtime-convergence.md)。
@@ -625,34 +622,40 @@ uv run harnessix code /path/to/workspace \
 ## 当前仓库结构
 
 ```text
-src/harnessix/domain/       旧Action合同（迁移兼容）
-src/harnessix/storage/      旧SQLite/PostgreSQL Journal（迁移兼容）
-src/harnessix/policy/       旧Action Policy（迁移兼容）
-src/harnessix/executors/    旧Action样例Executor（迁移兼容）
-src/harnessix/sdk/          Agent Protocol Python客户端与Transport
-src/harnessix/trusted_actions/ 统一高风险Action规划、审批、执行与对账
-src/harnessix/product_config/  产品配置、能力探测与默认组合根
-src/harnessix/agent/        Kernel领域模型、Reducer稳定门面及Item/Turn投影、Loop、取消
-src/harnessix/models/       Provider 契约、Fake/Scripted Provider
-src/harnessix/session/      SQLite Session Store、迁移与宿主锁
-src/harnessix/tools/        工作区只读/Git工具、作用域与Artifact读取入口
-src/harnessix/artifacts/    有界正文、事务发布、分页、配额与清理
-src/harnessix/patches/      受管单文件/整组Patch及差异报告
-src/harnessix/processes/    进程监督、旧Action桥接、测试Profile与输出文档
-src/harnessix/evals/        版本化编码任务、运行、评分、Campaign与受控交付
-src/harnessix/protocol/     Agent Protocol合同、Codec、Replay与请求账本
-src/harnessix/app_server/   stdio Headless服务与应用编排
-src/harnessix/mcp/          MCP目录、连接、可信Action适配与只读Server
-src/harnessix/skills/       Skill目录、冲突、渐进读取与Action适配
-src/harnessix/hooks/        Hook定义/授权、生命周期运行、持久化与恢复
-src/harnessix/product_config/ Provider/Profile配置、迁移、诊断、审计与产品装配
-tests/                      单元和集成测试
-docs/                       中文架构与决策文档
-spec/                       生成的 JSON Schema 和 OpenAPI
-examples/                   可运行演示
+src/harnessix/agent/            Agent Loop、Turn状态、交互、取消与恢复
+src/harnessix/app_server/       stdio Headless服务与应用编排
+src/harnessix/artifacts/        有界证据、事务发布、分页、配额与历史读取
+src/harnessix/context/          Context来源、预算、压缩与模型历史视图
+src/harnessix/delivery/         Workspace事务、Git Checkpoint/Commit/Push
+src/harnessix/domain/           跨模块共享枚举、历史状态只读Codec与基础错误
+src/harnessix/evals/            版本化编码任务、评分、Campaign与受控交付
+src/harnessix/execution/        不可变Execution Plan及批准检查点
+src/harnessix/hooks/            Hook定义、授权、运行、账本与恢复
+src/harnessix/mcp/              MCP目录、连接与Trusted Action适配
+src/harnessix/models/           Provider合同、流式状态、用量与成本
+src/harnessix/observability/    Trace、Metric和结构化日志
+src/harnessix/patches/          受管单文件/整组Patch及差异报告
+src/harnessix/processes/        跨平台进程监督、Lease、输出与恢复
+src/harnessix/product_config/   配置、能力探测、Doctor与默认组合根
+src/harnessix/product_ui/       可恢复TUI及客户端状态
+src/harnessix/protocol/         Agent Protocol合同、Codec、Replay与请求账本
+src/harnessix/sandbox/          隔离合同、Container后端与网络边界
+src/harnessix/sdk/              Agent Protocol Python客户端与Transport
+src/harnessix/secrets/          Secret引用、最小作用域解析与脱敏
+src/harnessix/session/          SQLite Session Store、迁移与宿主锁
+src/harnessix/skills/           Skill目录、快照、渐进读取与Action适配
+src/harnessix/smoke/            受预算约束的真实Provider验证
+src/harnessix/tools/            Workspace只读/Git工具与Artifact入口
+src/harnessix/trusted_actions/  高风险Action规划、审批、执行与对账
+src/harnessix/workspace/        跨平台路径、对象观察、快照与租约
+tests/                          单元、集成、故障恢复和治理测试
+docs/                           简体中文现行设计、历史决策与验证资料
+spec/                           当前协议与领域合同生成Schema
+examples/                       当前Coding Agent可运行样例
 ```
 
-后续仍按里程碑增量加入新模块，不进行一次性目录重写。
+已删除的Action HTTP/Worker源码只保留在Git历史中；旧SQLite/PostgreSQL数据库按
+[归档手册](docs/operations/legacy-action-archive.md)离线保存，不会被当前产品自动消费。
 
 ## 设计资料
 
