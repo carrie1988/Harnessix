@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 634765887237f9bc4d3d2cb6c76f2cc6d554e692
+version: 14
+code_revision: 0798d84a6ba76d0b658f912c9c41f60b5645629b
 owners:
   - core
 modules:
@@ -1560,6 +1560,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 14 | `0798d84a6ba76d0b658f912c9c41f60b5645629b` | 2026-09-20 | CRT EACCES有界重读与POSIX失败关闭边界由CI 35472231908完成Linux双版本、macOS、Windows、固定Container和Documentation六实例验收 |
 | 13 | `634765887237f9bc4d3d2cb6c76f2cc6d554e692` | 2026-09-20 | 根据Windows CI的`receipt_io=0:13:attempt=1`证据补充CRT EACCES有界重读候选，同时固定POSIX EACCES继续失败关闭 |
 | 12 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process Action Saga删除、历史只读兼容和Windows归档修复由CI 35453082992完成全矩阵验收 |
 | 11 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除旧Process执行Saga、历史Session/Artifact只读兼容和稳定拒绝边界 |

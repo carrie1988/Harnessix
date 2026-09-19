@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 24
-code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
+version: 25
+code_revision: 0798d84a6ba76d0b658f912c9c41f60b5645629b
 owners:
   - core
 modules:
@@ -117,6 +117,7 @@ flowchart TD
 - 默认测试不访问公网，不要求任何真实模型API Key；
 - `provider_factory`注入只说明工厂被替换，离线性必须由MockTransport或网络隔离另行证明；
 - 时间相关测试应等待明确检查点，不以“睡眠足够久”推断请求已开始。
+- 后台Turn测试必须等待持久状态或协议事件，不得把`service.close()`当作完成同步原语；关闭宽限期取消仅用于验证关闭语义。
 
 ### 4.2 文件、Git和进程
 
