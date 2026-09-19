@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 3
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -439,7 +439,8 @@ atomic_publish(report)
 0.9.2a已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)通过Linux
 Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job并关闭。
 
-0.9.2b已形成实现候选：新增Task Pack、Profile、Review Oracle和Materialization三个JSON Schema；内置
+0.9.2b已完成：新增Task Pack、Profile、Review Oracle和Materialization三个JSON Schema；内置
 `harnessix-seed/v1`双语言Pack；安全Archive读取与Git四重身份物化；消费点Catalog重验；固定Profile到现有Product
 Process的投影；15项定向单元测试；以及两个真实Digest镜像的Baseline失败/最小修复后通过集成测试。Wheel已验证包含
-Manifest和两个Archive。本状态仍等待远端全矩阵CI，不提前关闭0.9.2b；0.9.2c～e和0.9.2总项保持未关闭。
+Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f76021fc`本地全仓为3499项通过/20项跳过；
+[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例。首次Documentation执行只出现一次Mermaid冷启动超时；同一Revision的失败Job重跑渲染44幅变化图成功，其余全部Job在首次执行已通过，因此0.9.2b关闭。0.9.2c～e和0.9.2总项保持未关闭。

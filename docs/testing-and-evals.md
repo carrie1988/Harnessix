@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 19
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 20
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -331,8 +331,8 @@ uv build
 ```
 
 本地没有Docker或未配置固定镜像环境变量时，两个真实容器Case必须明确Skip，由CI `container-sandbox`预拉Manifest中
-相同Digest镜像后验收，不能把Skip写成通过。0.9.2b实现候选包含15项单元测试、2个参数化真实容器Case和Wheel资源
-检查；全矩阵CI通过前不关闭切片。
+相同Digest镜像后验收，不能把Skip写成通过。0.9.2b包含15项单元测试、2个参数化真实容器Case和Wheel资源
+检查；实现Revision `608c07a`已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
 
 ## 14. 真实Provider验证
 

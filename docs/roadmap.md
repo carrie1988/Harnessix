@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 32
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 33
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -494,9 +494,9 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 - [x] **0.9.2a Suite与Transcript正式契约**：在首个Provider请求前冻结Suite/Case/Campaign身份；实现五类任务、
   至少两个固定仓库Revision、脱敏Transcript摘要、测试证据、任务成功率、测试通过率、人工干预率、Token、成本、
   延迟聚合，以及0600、no-follow、有界、原子Plan/Report读写。实现Revision `d42ab6c`已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例全矩阵验收并关闭；
-- [ ] **0.9.2b Task Pack v1**：建立许可证和来源可审计的固定任务包，不接受运行时任意URL、任意测试命令或宿主脚本；
-  每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算。内置双语言种子Pack、安全Archive/Git物化、
-  消费点身份重验、固定Product Profile和真实Container先失败后通过验收已形成实现候选；全矩阵CI通过前保持未关闭；
+- [x] **0.9.2b Task Pack v1**：建立许可证和来源可审计的固定任务包，不接受运行时任意URL、任意测试命令或宿主脚本；
+  每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算。实现Revision `608c07a`交付内置双语言种子Pack、安全Archive/Git物化、
+  消费点身份重验、固定Product Profile和真实Container先失败后通过验收，已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用
   同一Run ID补证据，不重复Provider请求、审批或效果；成本未知、证据缺失和身份漂移停止后续试验；
 - [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，

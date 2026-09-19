@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 9
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 10
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -141,8 +141,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
-| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a已关闭，b候选待CI，c～e待实施 |
-| 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b实现候选已形成，待全矩阵CI关闭 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b已关闭，c～e待实施 |
+| 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

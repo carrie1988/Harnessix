@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 2
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -22,7 +22,7 @@ supersedes: []
 
 ## 状态
 
-接受，作为0.9.2b任务来源、工作区物化和真实检查的正式边界。本文不关闭0.9.2c可恢复Suite Runner、
+接受且已实施。0.9.2b任务来源、工作区物化和真实检查已由CI 35461708961验收并关闭。本文不关闭0.9.2c可恢复Suite Runner、
 0.9.2d十任务三仓库数据集或0.9.2e真实Provider基线。
 
 ## 背景
@@ -116,6 +116,11 @@ Task Pack目录属于发行供应链资源。运维不得手工修改安装目�
 - 同Run脏工作区重开不覆盖，Manifest、权限和HEAD漂移失败关闭；
 - Wheel内容检查确认Manifest和两个Archive被打包；
 - CI真实Docker链确认两个Baseline先失败，应用唯一允许路径中的最小修复后通过，并经过正式审批和Artifact投影。
+
+实现Revision `608c07a54543f436651aa4e55141acb7f76021fc`已由
+[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成Linux Python 3.12/3.13、macOS、Windows、
+固定镜像Container和Documentation六实例验收。固定镜像Job中的双语言Task Pack Profile真实执行通过；
+首次Documentation的一次Mermaid冷启动超时已由同一Revision失败Job重跑的44幅变化图全部渲染通过排除内容错误。
 
 ## 关联资料
 

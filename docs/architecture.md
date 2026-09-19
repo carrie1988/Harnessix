@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 59
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 60
+code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
 owners:
   - core
 modules:
@@ -381,7 +381,7 @@ W3C Trace Context。Observer故障不得改变Agent结果。可恢复性、质�
 
 Eval采用`Task Pack → Run → Campaign → Suite`证据链：Task Pack固定来源Archive、许可证、Git身份、Task和无网检查
 Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先冻结的Case、任务类别、仓库Revision和Campaign指纹聚合
-跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b实现候选已建立Wheel内置双语言
+跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查，均不复制Prompt、回答、工具正文、Diff或路径。可恢复Suite Runner、
 十Case/三仓库基线和真实Provider Suite仍是0.9.2c～e边界。
 
@@ -506,7 +506,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无Runner和最终真实基线 | Suite合同已验收；Task Pack双语言实现候选；单任务Campaign历史证据 | 0.9.2c～e |
+| 多仓库Eval尚无Runner和最终真实基线 | Suite合同与Task Pack双语言纵向链已验收；单任务Campaign历史证据 | 0.9.2c～e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -519,6 +519,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 60 | `608c07a54543f436651aa4e55141acb7f76021fc` | 2026-09-20 | 记录0.9.2b由CI 35461708961完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 59 | `92c62d428f51e9b40745f04f3bf0b820dbed1797` | 2026-09-20 | 登记0.9.2b内置不可变Task Pack、固定Git物化、Profile投影和双语言真实容器检查候选 |
 | 58 | `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373` | 2026-09-20 | 记录0.9.2a Suite与Transcript证据由CI 35456635653完成六实例验收，Task Pack、Runner和真实基线仍未完成 |
 | 57 | `459bc4de3e60bf92ed570fa99bdc39b948689591` | 2026-09-20 | 登记0.9.2a多仓库Suite与脱敏Transcript证据候选边界 |
