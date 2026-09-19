@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 52
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 53
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -598,7 +598,7 @@ Protocol进入同一Thread/Turn和Trusted Action Runtime。专项测试覆盖严
 
 `ActionService`、`ActionWorker`、SQLite/PostgreSQL Effect Journal、HTTP API和LangChain Adapter来自0.1产品。顶层`serve/worker`命令与HTTP Client公共导出已经撤销；这些实现不再出现在默认产品、部署或能力目录中。
 
-产品固定Container Process与Git Push已经迁入Trusted Action链；Git Push不再引用`ActionService`、`ActionWorker`或旧Effect Journal。迁移期只剩历史Process Reader、历史Eval及旧实现自身可以引用兼容内核，精确集合由[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)以完全相等断言冻结。完成Eval迁移、白名单清零并提供旧数据库归档方案后，才能删除HTTP/Worker/PostgreSQL Queue及对应依赖。Git Push当前由Execution Plan/Action Audit保存批准和Route状态，远端Ref保存效果事实；遗留`running`冷启动只转`unknown`并以`ls-remote`对账，不再生成第二个Action记录。完整决策和切片见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)与[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md)。
+产品固定Container Process、Git Push与历史Eval新运行已经迁入Trusted Action链；Git Push和Eval不再引用`ActionService`、`ActionWorker`或旧Effect Journal。迁移期只剩历史Process Reader及旧实现自身可以引用兼容内核，精确集合由[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)以完全相等断言冻结。f2c候选已经把治理白名单从7项缩为6项；全量与CI关闭后只需继续清零剩余历史Reader/旧实现并提供旧数据库归档方案，才能删除HTTP/Worker/PostgreSQL Queue及对应依赖。Git Push当前由Execution Plan/Action Audit保存批准和Route状态，远端Ref保存效果事实；遗留`running`冷启动只转`unknown`并以`ls-remote`对账，不再生成第二个Action记录。历史Eval候选同样由Execution Plan/Action Audit保存路由事实，POSIX Supervisor Lease与输出保存进程权威事实；Router终态已提交而Session结果丢失时只重建结果投影，不再次启动Process。完整决策和切片见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)与[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md)。
 
 ## 7. 逻辑组件与源码映射
 
@@ -1486,7 +1486,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 0.9.1e运行时、0.9.1f1及f2b Git Push已关闭 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；历史Eval迁移与旧HTTP/Worker兼容内核物理删除仍未完成 | 0.9.1f2c/f3 |
+| 0.9.1e运行时、0.9.1f1及f2b Git Push已关闭；f2c候选已实现 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；历史Eval新运行不再使用Worker/Effect Journal，尚待全量CI关闭；旧HTTP/Worker兼容内核仍待物理删除 | 0.9.1f2c/f3 |
 | Windows原生只读链已验证且Patch被明确省略，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |

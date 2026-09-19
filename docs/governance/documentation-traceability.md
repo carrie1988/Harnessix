@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 58
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 59
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -108,7 +108,7 @@ flowchart LR
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整；e3 `action_review`模型历史绑定现行事实已同步 |
 | [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [delivery](../../tests/delivery/)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整；f2b Git Push直接Trusted Action、响应丢失和硬崩溃只对账已由CI 35442924441验收 |
 | [domain](../../src/harnessix/domain/) | Action领域契约 | [Domain模块设计](../modules/domain.md) | [unit](../../tests/unit/)、[Action Service](../../tests/integration/test_action_service.py) | [docs/modules/domain.md](../modules/domain.md) | 完整，DOC-1.3 Wave C |
-| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.5](../m05-coding-tools.md) | [evals](../../tests/evals/) | [docs/modules/evals.md](../modules/evals.md) | 完整，DOC-1.3 Wave D |
+| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行、Trusted Action测试组合与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [evals](../../tests/evals/)、[Gateway](../../tests/trusted_actions/test_agent_gateway.py) | [docs/modules/evals.md](../modules/evals.md) | f2c候选已同步，待全量与CI关闭 |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
 | [executors](../../src/harnessix/executors/) | 旧Action示例Executor（迁移兼容） | [Executors模块设计](../modules/executors.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [Action Service](../../tests/integration/test_action_service.py)、[Worker](../../tests/integration/test_worker.py) | [docs/modules/executors.md](../modules/executors.md) | 完整；不进入Coding Agent产品目录，f3物理删除 |
 | [hooks](../../src/harnessix/hooks/) | 声明式Hook注册与执行 | [Hook模块设计](../modules/hooks.md)、[0.8](../m08-product-runtime-and-extensions.md)、[Skill/Hook研究](../research/skills-hooks-and-supply-chain.md) | [hooks](../../tests/hooks/) | [docs/modules/hooks.md](../modules/hooks.md) | 完整，DOC-1.4扩展 |

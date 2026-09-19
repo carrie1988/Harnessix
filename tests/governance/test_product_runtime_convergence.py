@@ -20,7 +20,6 @@ _LEGACY_MODULES = {
 _LEGACY_PRODUCTION_CALLERS = {
     "api/app.py",
     "bootstrap.py",
-    "evals/runner.py",
     "processes/agent_bridge.py",
     "processes/agent_runtime.py",
     "processes/test_profiles.py",

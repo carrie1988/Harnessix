@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 8
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -31,6 +31,8 @@ related_tests:
   - tests/artifacts/test_model_history.py
   - tests/artifacts/test_sdk.py
   - tests/product_config/test_server_and_cli.py
+  - tests/processes/test_trusted_output.py
+  - tests/evals/test_runner.py
 supersedes: []
 ---
 
@@ -43,13 +45,13 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
+| 代码版本 | f2c确定性测试结论投影候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待全量与CI关闭 |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
 
 Artifact不是通用对象存储，也不是外部副作用的事实账本。它保存模型或客户端需要按页读取的有界证据；
-Tool Result、Patch效果和Process Action的权威状态仍分别属于Session、Patch账本和Effect Journal。
+Tool Result和Patch效果的权威状态分别属于Session与Patch账本；Trusted Process效果属于专用Process Owner/Lease，旧Process Action才属于兼容Effect Journal。
 
 ## 2. 需求背景
 
@@ -641,10 +643,13 @@ Process ID、Workspace Scope、记录数、正文摘要和Artifact配额，并�
 唯一已批准Process请求、唯一终态Tool Result、Plan ID/Fingerprint、Artifact摘要和公开输出引用。Session结果尚未提交的
 正文保持不可见；不一致返回`artifact_unreferenced`或`artifact_corrupt`。migration25只扩展用途约束，不重写历史记录。
 
+Eval的公开结果允许增加`passed`，但该字段不是Executor可自由提交的扩展值。`trusted_process_public_output`只在调用者显式请求时，根据受信文档的`state=exited`、`stop_reason=exited`和`returncode == 0`确定性派生；`validate_action_output_body`读取Artifact时使用同一函数重算并逐字段比较。任意伪造`passed`、额外字段、摘要、Chunk或Artifact引用仍返回损坏。该设计让测试失败可以反馈为`passed=false`，同时不把Action输出变成可任意扩展的非冻结Schema。
+
 ## 26. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 8 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步Eval `passed`由可信Process终态确定性派生并在Action Output读取时重复验证的候选合同 |
 | 7 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Profile Process输出Artifact由CI 35434198163完成真实镜像及全矩阵验收 |
 | 6 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 将`action_output`接入默认固定Profile Process链，并验证提交确认丢失只返回原收据；等待全矩阵CI |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步Action Output发布Mixin、正文校验和引用授权的职责拆分，未改变Artifact身份及失败语义 |

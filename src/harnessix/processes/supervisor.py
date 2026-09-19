@@ -18,7 +18,7 @@ from types import TracebackType
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
@@ -50,6 +50,23 @@ from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 _TERMINAL_STATES = frozenset({"exited", "failed", "unknown"})
 _WINDOWS_SPAWN_LOCK = threading.Lock()
+
+
+def _host_binding(
+    plan: ExecutionPlanV2,
+    spec: ProcessSpec,
+    capability: ProcessCapabilityProbe,
+    environment: Mapping[str, str],
+    intent_arguments: Mapping[str, JsonValue] | None,
+) -> ProcessLaunchBinding:
+    return build_process_launch_binding(
+        plan,
+        spec,
+        capability,
+        kind="host",
+        environment=dict(environment),
+        intent_arguments=intent_arguments,
+    )
 
 
 def _validated_lease(lease: ProcessLease, **changes: object) -> ProcessLease:
@@ -408,15 +425,10 @@ class PosixProcessSupervisor(_ProcessObservation):
         environment: Mapping[str, str],
         secrets: ResolvedSecretEnvironment | None = None,
         checkpoint: ExecutionApprovalCheckpoint | None = None,
+        intent_arguments: Mapping[str, JsonValue] | None = None,
     ) -> SupervisedProcess:
         """绑定Execution Plan后启动独立Owner；已有Process ID或失效审批均拒绝执行。"""
-        binding = build_process_launch_binding(
-            plan,
-            spec,
-            capability,
-            kind="host",
-            environment=dict(environment),
-        )
+        binding = _host_binding(plan, spec, capability, environment, intent_arguments)
         return await self._start_bound(
             plan,
             spec,
@@ -621,6 +633,7 @@ class PosixProcessSupervisor(_ProcessObservation):
         environment: Mapping[str, str],
         secrets: ResolvedSecretEnvironment | None = None,
         checkpoint: ExecutionApprovalCheckpoint | None = None,
+        intent_arguments: Mapping[str, JsonValue] | None = None,
         cancel: CancelToken | None = None,
     ) -> ProcessLease:
         handle = await self.start(
@@ -631,6 +644,7 @@ class PosixProcessSupervisor(_ProcessObservation):
             environment=environment,
             secrets=secrets,
             checkpoint=checkpoint,
+            intent_arguments=intent_arguments,
         )
         return await handle.wait(cancel)
 

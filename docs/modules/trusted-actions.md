@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 15
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -45,7 +45,7 @@ supersedes: []
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
-| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已删除旧ActionService桥并通过响应丢失与硬崩溃只对账验证 |
+| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已关闭旧ActionService桥；f2c历史Eval新运行已迁入同一Catalog/Gateway/Router并通过本地响应丢失不重放验证，待全量与CI关闭 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
@@ -229,7 +229,8 @@ flowchart TD
     Trusted --> Local[专用本地Executor或Owner]
     Trusted --> Git[GitPushActionExecutor]
     Git --> External[Git远端Ref]
-    Legacy[兼容Action Plane<br/>Journal/Worker] -.仅历史Eval与旧实现.-> LegacyEffect[旧效果]
+    Eval[历史Eval新运行] --> EvalOwner[Execution Plan / Audit<br/>POSIX Supervisor]
+    Legacy[兼容Action Plane<br/>Journal/Worker] -.仅历史Reader与旧实现.-> LegacyEffect[旧效果]
 ```
 
 当前产品链与兼容内核必须分开理解：
@@ -241,7 +242,9 @@ flowchart TD
 | 专用Executor/Owner | 实际文件、进程、容器、Git或外部效果与对账 | 模型目录、审批权威和跨能力Policy |
 | 兼容Action Plane | 历史Action Request、Journal、Lease与Worker状态 | 新增产品能力；0.9.1f3后物理删除 |
 
-Git Push证明直接组合方式：Router先验证不可变Execution Plan和Approval，再把Route持久推进到`running`并调用
+Git Push和历史Eval证明直接组合方式：历史Eval的`run_tests`公开意图只包含固定Profile，Router冻结Plan与Approval，POSIX Supervisor按同Plan ID保存Lease和输出，结果通过Action Output Artifact投影；Router已终态但Session结果丢失时只补原执行投影，不重复启动Process。
+
+Git Push证明外部写直接组合方式：Router先验证不可变Execution Plan和Approval，再把Route持久推进到`running`并调用
 `GitPushActionExecutor`。Executor重新核对Binding、Invocation、资源、幂等键和稳定External Action ID，随后最多执行一次
 带exact lease的Push；不再创建第二个Action Request或Effect Journal记录。响应丢失或宿主硬退出后，Action Audit保存
 `unknown`恢复入口，远端Ref由`ls-remote`只读对账。
@@ -1197,7 +1200,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | 历史Eval及兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f2c～f3 |
+| P0 | f2c候选已移除历史Eval新运行依赖，但历史Reader与兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成CI关闭与物理收敛 | 0.9.1f2c～f3 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |

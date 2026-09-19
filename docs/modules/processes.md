@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 9
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -37,6 +37,7 @@ related_tests:
   - tests/processes/test_test_profiles.py
   - tests/product_config/test_process_action.py
   - tests/integration/test_product_process_profile.py
+  - tests/evals/test_runner.py
 supersedes: []
 ---
 
@@ -48,13 +49,13 @@ supersedes: []
 |---|---|
 | 源码包 | [`src/harnessix/processes/`](../../src/harnessix/processes/) |
 | 当前职责 | 定义受控进程请求和监督合同，完成POSIX/Windows进程树所有权、pipe/PTY、stdin、输出脱敏与持久化、Lease/CAS、取消/超时/关闭及重启后保守恢复 |
-| 兼容职责 | 保留0.5 POSIX固定程序Runtime、Action Plane准入、Agent跨库Saga、Process Output Artifact和`run_tests` Profile入口 |
+| 兼容职责 | 保留0.5 POSIX固定程序Runtime、Action Plane准入、Agent跨库Saga和旧Process Output Artifact；历史Eval新运行已不再使用这条兼容链 |
 | 非职责 | 不决定模型是否应运行命令，不替代Execution Plan审批，不提供OS文件/网络隔离，不拥有Action Journal或Session Store，不把进程退出码解释为测试/业务成功 |
 | 上游调用者 | 显式宿主装配、Trusted Action/Sandbox、Agent Process专用端口、Eval的`run_tests`闭环 |
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
-| 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；兼容链的执行事实由通用Action Journal和Session/Artifact Store拥有 |
-| 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；e5诊断与启动恢复接线已关闭 |
+| 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；Eval以Execution Plan/Action Audit/Lease/Artifact分层持有事实；兼容链仍由通用Action Journal和Session/Artifact Store拥有 |
+| 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；Eval候选通过专用Trusted Action组合复用POSIX Supervisor；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c公开意图与派生ProcessSpec绑定候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待全量与CI关闭 |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -479,7 +480,28 @@ flowchart LR
     Judge -->|效果不确定| Unknown[unknown，不伪装测试失败]
 ```
 
-这是当前最适合模型的命令入口；它仍以宿主权限运行，不能替代Container Sandbox。
+这是0.5兼容链最适合模型的命令入口；它仍以宿主权限运行，不能替代Container Sandbox。历史Eval新运行已经由下述f2c适配替代该Bridge/Worker链。
+
+### 12.1 Eval Trusted Action对Process Supervisor的复用
+
+[`product_config/eval_action.py`](../../src/harnessix/product_config/eval_action.py)保留相同公开合同`run_tests {profile}`，但不再构造旧`ProcessRequest`或Action Journal记录。宿主先冻结Launcher、Profile、Workspace Snapshot、Supervisor Capability、环境和`host_guarded + network=full`Sandbox证据；Router批准的公开Profile通过`intent_arguments`绑定，完整argv只由受信Profile确定性派生为`ProcessSpec`。
+
+`build_process_launch_binding`默认仍要求`ExecutionPlan.intent.arguments == ProcessSpec`，保证现有Container与Host调用无变化；只有显式传入`intent_arguments`的受信适配器才能证明“公开意图”和“派生物化”之间的关系。错误Profile、Workspace、Capability、Sandbox、Environment或资源摘要在启动前失败关闭。Process ID等于Execution Plan ID，因此同Plan不能生成第二个Lease。
+
+```mermaid
+flowchart LR
+    Model[模型固定Profile] --> Intent[公开Action Intent]
+    Host[Launcher + Profile + Capability] --> Derive[派生ProcessSpec]
+    Intent --> Router[Trusted Action Router]
+    Router --> Approval[Execution Approval]
+    Approval --> Bind[Process Launch Binding]
+    Derive --> Bind
+    Bind --> Supervisor[POSIX Supervisor]
+    Supervisor --> Lease[(Process Lease + Output)]
+    Lease --> Artifact[确定性passed投影]
+```
+
+测试正常退出但returncode非零时，可信Action本身成功而`passed=false`；超时、取消、输出限制、启动或清理失败保持Process失败/UNKNOWN语义。Router终态响应丢失后，恢复只读取同一Lease与输出并补Session投影；`reconcile`发现Lease不存在时返回`process_not_started`，绝不借恢复机会首次启动。
 
 ## 13. `ProcessSpec`设计
 
@@ -1477,7 +1499,8 @@ function agent_observe(plan):
 - [x] 重启不按PID控制、不重复spawn，证据不足进入unknown；
 - [x] Container客户端生命周期复用统一Supervisor并由Sandbox补充实例清理；
 - [x] 固定Container Profile产品链使用ExecutionPlanV2 + Supervisor且恢复不重放；
-- [ ] 旧Process Bridge与历史Eval调用从兼容内核迁移并删除；
+- [x] 历史Eval新运行从旧Process Bridge/Worker迁入Trusted Action + Supervisor候选链，并覆盖审批与结果响应丢失不重放；待全量与CI关闭后转为已验收；
+- [ ] 旧Process Bridge及历史Reader从兼容内核迁移并删除；
 - [ ] POSIX恶意脱组、Owner强杀和长后台Soak达到预冻结阈值；
 - [ ] 可执行文件身份、状态路径、全事件完整性、容量和安全GC闭环；
 - [ ] 产品级后台列表、认证重连、分页输出和低基数Telemetry；
@@ -1535,6 +1558,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c Eval Trusted Action对Supervisor的公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论候选 |
 | 8 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录无状态Profile证明、正式Runtime绑定及旧Profile只对账恢复由CI 35439332019验收关闭 |
 | 7 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Profile证明、正式Runtime绑定及按旧Profile只对账恢复候选；等待关闭CI |
 | 6 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Profile默认产品链由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown换行 |

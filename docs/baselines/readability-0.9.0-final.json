@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 317,
-    "physical_lines": 69464,
-    "logical_lines": 61759,
-    "documented_modules": 317,
-    "classes": 796,
-    "documented_classes": 274,
-    "functions": 2764,
-    "documented_functions": 331,
+    "source_files": 319,
+    "physical_lines": 70247,
+    "logical_lines": 62459,
+    "documented_modules": 319,
+    "classes": 801,
+    "documented_classes": 279,
+    "functions": 2794,
+    "documented_functions": 336,
     "public_exports": 331,
     "public_contract_types": 156,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 169
+    "package_dependency_edges": 166
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -199,7 +199,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3115
+      "lines": 3098
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -219,7 +219,7 @@
     },
     {
       "path": "src/harnessix/evals/runner.py",
-      "lines": 700
+      "lines": 669
     },
     {
       "path": "src/harnessix/mcp/runtime.py",
@@ -227,7 +227,7 @@
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
-      "lines": 762
+      "lines": 776
     },
     {
       "path": "src/harnessix/protocol/contracts.py",
@@ -304,8 +304,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 194,
-      "lines": 2922,
+      "line": 178,
+      "lines": 2921,
       "documented": true
     },
     {
@@ -314,7 +314,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 197,
+      "line": 181,
       "lines": 169,
       "documented": false,
       "decision_complexity": 50
@@ -325,7 +325,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2105,
+      "line": 2089,
       "lines": 146,
       "documented": true,
       "decision_complexity": 32
@@ -336,8 +336,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2252,
-      "lines": 269,
+      "line": 2236,
+      "lines": 268,
       "documented": true,
       "decision_complexity": 55
     },
@@ -347,7 +347,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 2951,
+      "line": 2934,
       "lines": 146,
       "documented": true,
       "decision_complexity": 37
@@ -358,7 +358,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._observe_process_action",
       "kind": "function",
-      "line": 1026,
+      "line": 1010,
       "lines": 102,
       "documented": false,
       "decision_complexity": 21
@@ -369,7 +369,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._recover",
       "kind": "function",
-      "line": 387,
+      "line": 371,
       "lines": 100,
       "documented": true,
       "decision_complexity": 26
@@ -380,7 +380,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1426,
+      "line": 1410,
       "lines": 133,
       "documented": true,
       "decision_complexity": 23
@@ -391,7 +391,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 1939,
+      "line": 1923,
       "lines": 135,
       "documented": true,
       "decision_complexity": 12
@@ -402,7 +402,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 2739,
+      "line": 2722,
       "lines": 211,
       "documented": true,
       "decision_complexity": 60
@@ -413,7 +413,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1659,
+      "line": 1643,
       "lines": 230,
       "documented": false,
       "decision_complexity": 51
@@ -424,7 +424,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.reply_question",
       "kind": "function",
-      "line": 1281,
+      "line": 1265,
       "lines": 102,
       "documented": true,
       "decision_complexity": 18
@@ -867,7 +867,7 @@
       "path": "src/harnessix/evals/grader.py",
       "qualname": "grade_coding_eval",
       "kind": "function",
-      "line": 255,
+      "line": 257,
       "lines": 164,
       "documented": true,
       "decision_complexity": 15
@@ -889,7 +889,7 @@
       "path": "src/harnessix/evals/runner.py",
       "qualname": "_provision",
       "kind": "function",
-      "line": 179,
+      "line": 166,
       "lines": 107,
       "documented": false,
       "decision_complexity": 26
@@ -900,10 +900,10 @@
       "path": "src/harnessix/evals/runner.py",
       "qualname": "run_historical_coding_eval",
       "kind": "function",
-      "line": 468,
-      "lines": 233,
+      "line": 464,
+      "lines": 206,
       "documented": true,
-      "decision_complexity": 24
+      "decision_complexity": 23
     },
     {
       "id": "harnessix.execution.store:SQLiteExecutionPlanStore",
@@ -1363,8 +1363,8 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 371,
-      "lines": 302,
+      "line": 388,
+      "lines": 299,
       "documented": false
     },
     {
@@ -1373,7 +1373,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 456,
+      "line": 468,
       "lines": 130,
       "documented": false,
       "decision_complexity": 29
@@ -1384,7 +1384,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "SupervisedProcess",
       "kind": "class",
-      "line": 89,
+      "line": 106,
       "lines": 253,
       "documented": false
     },
@@ -1861,13 +1861,10 @@
     "evals->models",
     "evals->observability",
     "evals->patches",
-    "evals->policy",
     "evals->processes",
-    "evals->runtime",
+    "evals->product_config",
     "evals->session",
-    "evals->storage",
     "evals->tools",
-    "evals->worker",
     "execution->agent",
     "execution->domain",
     "execution->tools",

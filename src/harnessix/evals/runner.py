@@ -1,8 +1,7 @@
-"""内置历史任务经正式Agent、审批、Worker与评分链路的可信编排。"""
+"""内置历史任务经正式Agent、Trusted Action与评分链路的可信编排。"""
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import os
 import shutil
@@ -20,17 +19,15 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     ItemStatus,
     PatchApprovalRequestContent,
-    ProcessApprovalRequestContent,
     ToolCallContent,
+    TrustedActionApprovalRequestContent,
     Turn,
     TurnStatus,
 )
-from harnessix.agent.reducer import get_turn, pending_calls
+from harnessix.agent.reducer import get_turn
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.artifacts.process_output import SQLiteProcessArtifactPublisher
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
-from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, Principal, utc_now
-from harnessix.domain.registry import ToolRegistry
+from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, utc_now
 from harnessix.evals.catalog import HistoricalCodingEval
 from harnessix.evals.checks import (
     historical_check_arguments,
@@ -54,32 +51,22 @@ from harnessix.models.contracts import ModelProvider
 from harnessix.observability import NoOpObservability, Observability
 from harnessix.patches.agent_bridge import ManagedPatchBridge
 from harnessix.patches.managed import ManagedPatchWorkspace, PatchWorkspaces
-from harnessix.policy import DefaultPolicyEngine
-from harnessix.processes.action_executor import process_action_tool
-from harnessix.processes.runtime import HostProcessRuntime
 from harnessix.processes.test_contracts import TestProfile
-from harnessix.processes.test_profiles import RunTestsAgentBridge
-from harnessix.runtime import ActionService
+from harnessix.product_config.eval_action import build_eval_trusted_action_composition
 from harnessix.session.sqlite import SQLiteSessionStore
-from harnessix.storage import SQLiteEffectJournal
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.workspace import Workspace, run_read_operation
-from harnessix.worker import ActionWorker
 
 _STATE_FILE = "run-state.json"
 _REPORT_FILE = "report.json"
 _MANAGED_DIRECTORY = "managed"
 _SESSION_FILE = "session.sqlite"
-_EFFECT_FILE = "effects.sqlite"
+_LEGACY_EFFECT_FILE = "effects.sqlite"
 _MAX_TREE_PATH_BYTES = 4 * 1024 * 1024
 # 受管副本最多导入256个文件并逐项同步SQLite，不与模型可调用的5秒单次读取共用预算。
 # 该受信物化步骤仍有逐文件检查点、有限截止时间且不自动重试。
 _EVAL_COPY_TIMEOUT_SECONDS = 60
-# 固定测试进程最长60秒；租约需覆盖进程截止时间及托管CI暂停，心跳仍每秒续约。
-# Eval只有单个受管Worker，延长失联恢复窗口不会引入竞争执行。
-_EVAL_ACTION_LEASE_SECONDS = 120
-_EVAL_ACTION_HEARTBEAT_SECONDS = 1
 _GIT_ENVIRONMENT = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_NOSYSTEM": "1",
@@ -326,14 +313,34 @@ def _require_report(
         raise KernelError("eval_report_mismatch", "Eval报告与运行状态不一致")
 
 
-def _pending_approval(turn: Turn) -> PatchApprovalRequestContent | ProcessApprovalRequestContent:
+def _pending_approval(
+    turn: Turn,
+) -> PatchApprovalRequestContent | TrustedActionApprovalRequestContent | None:
     values = [
         item.content
         for item in turn.items
         if item.status is ItemStatus.STARTED
-        and isinstance(item.content, PatchApprovalRequestContent | ProcessApprovalRequestContent)
+        and isinstance(
+            item.content,
+            PatchApprovalRequestContent | TrustedActionApprovalRequestContent,
+        )
         and item.content.decision is None
     ]
+    if len(values) == 1:
+        return values[0]
+    completed = [
+        item.content
+        for item in turn.items
+        if item.status is ItemStatus.COMPLETED
+        and isinstance(
+            item.content,
+            PatchApprovalRequestContent | TrustedActionApprovalRequestContent,
+        )
+        and item.content.decision is not None
+    ]
+    if not values and len(completed) == 1:
+        # Router与Session决定均已提交，但崩溃发生在显式resume之前。
+        return None
     if len(values) != 1:
         raise KernelError("eval_approval_projection_invalid", "Eval Turn待审批投影无唯一请求")
     return values[0]
@@ -341,7 +348,7 @@ def _pending_approval(turn: Turn) -> PatchApprovalRequestContent | ProcessApprov
 
 def _require_allowed_approval(
     turn: Turn,
-    approval: PatchApprovalRequestContent | ProcessApprovalRequestContent,
+    approval: PatchApprovalRequestContent | TrustedActionApprovalRequestContent,
     definition: HistoricalCodingEval,
 ) -> str:
     calls = [
@@ -354,15 +361,16 @@ def _require_allowed_approval(
     if len(calls) != 1:
         raise KernelError("eval_approval_projection_invalid", "Eval审批缺少唯一工具调用")
     call = calls[0]
-    if isinstance(approval, ProcessApprovalRequestContent):
+    if isinstance(approval, TrustedActionApprovalRequestContent):
         profile = call.arguments.get("profile") if isinstance(call.arguments, dict) else None
         if (
             call.tool != "run_tests"
             or set(call.arguments) != {"profile"}
             or profile not in definition.task.required_test_profiles
+            or approval.presentation != "process"
         ):
             raise KernelError("eval_approval_denied", "Eval只批准任务声明的测试Profile")
-        return "process"
+        return "trusted_process"
     if (
         call.tool != "apply_patch"
         or approval.plan.manifest.path not in definition.task.allowed_changed_paths
@@ -377,7 +385,6 @@ async def _await_cancel[T](operation: Awaitable[T], cancel: CancelToken) -> T:
 
 async def _drive_turn(
     runtime: AgentRuntime,
-    worker: ActionWorker,
     definition: HistoricalCodingEval,
     state: CodingEvalRunState,
     state_path: Path,
@@ -420,6 +427,9 @@ async def _drive_turn(
             continue
         if turn.status is TurnStatus.WAITING_APPROVAL:
             approval = _pending_approval(turn)
+            if approval is None:
+                turn = await _await_cancel(runtime.resume_turn(thread_id, turn.turn_id), cancel)
+                continue
             kind = _require_allowed_approval(turn, approval, definition)
             turn = await _await_cancel(
                 runtime.reply_approval(
@@ -436,29 +446,15 @@ async def _drive_turn(
                 cancel,
             )
             fault(f"eval_runner.after_{kind}_approval")
-            if kind == "patch":
-                turn = await _await_cancel(runtime.resume_turn(thread_id, turn.turn_id), cancel)
+            turn = await _await_cancel(runtime.resume_turn(thread_id, turn.turn_id), cancel)
             continue
         if turn.status is TurnStatus.WAITING_ACTION:
-            calls = pending_calls(turn)
-            if len(calls) != 1 or calls[0].tool != "run_tests":
-                raise KernelError("eval_run_projection_invalid", "Eval仅允许等待固定测试Action")
-            processed = await _await_cancel(worker.run_once(), cancel)
-            if processed is not None:
-                matching = [
-                    item.content
-                    for item in turn.items
-                    if isinstance(item.content, ProcessApprovalRequestContent)
-                    and item.content.call_id == calls[0].call_id
-                ]
-                if len(matching) != 1 or processed.request.action_id != matching[0].plan.action_id:
-                    raise KernelError(
-                        "eval_action_worker_mismatch", "Action Worker消费了非本次Eval测试Action"
-                    )
-                fault("eval_runner.after_process_worker")
-            else:
-                await worker.service.journal.recover_expired()
-                await _await_cancel(asyncio.sleep(0.05), cancel)
+            raise KernelError(
+                "eval_runtime_upgrade_required",
+                "旧版Eval Worker中间态不能由Trusted Action运行时继续执行",
+            )
+        if turn.status is TurnStatus.EXECUTING_TOOLS:
+            # 冷启动恢复可能已补写Tool Result，但尚未推进下一次模型调用。
             turn = await _await_cancel(runtime.resume_turn(thread_id, turn.turn_id), cancel)
             continue
         raise KernelError("eval_run_projection_invalid", "Eval Turn停留在不可恢复的中间状态")
@@ -540,79 +536,53 @@ async def run_historical_coding_eval(
         finally:
             copy.close()
 
-    observer = observability or NoOpObservability()
-    actions: ActionService | None = None
-    try:
-        launcher = historical_python_launcher(materialized, python_executable)
-        registry = ToolRegistry()
-        registry.register(
-            process_action_tool(lambda: HostProcessRuntime(execution_root, {"python": launcher}))
-        )
-        actions = ActionService(
-            journal=SQLiteEffectJournal(materialized.run_root / _EFFECT_FILE),
-            registry=registry,
-            policy_engine=DefaultPolicyEngine(),
-            lease_seconds=_EVAL_ACTION_LEASE_SECONDS,
-            auto_execute=False,
-            observability=observer,
-        )
-        await actions.initialize()
-        sessions = SQLiteSessionStore(materialized.run_root / _SESSION_FILE)
-        artifacts = SQLiteArtifactStore(sessions)
-        processes = RunTestsAgentBridge(
-            actions,
-            Principal(
-                tenant_id="coding-eval",
-                subject_id=definition.task.task_id,
-                framework="harnessix-agent",
-            ),
-            execution_root,
-            (
-                TestProfile(
-                    name=definition.task.required_test_profiles[0],
-                    description="内置历史缺陷行为检查",
-                    program="python",
-                    arguments=historical_check_arguments(
-                        execution_root, definition.check(definition.task.behavior_checks[0]).mode
-                    ),
-                    timeout_seconds=60,
-                ),
-            ),
-        )
-        worker = ActionWorker(
-            actions,
-            poll_seconds=0.01,
-            heartbeat_seconds=_EVAL_ACTION_HEARTBEAT_SECONDS,
-            recovery_interval_seconds=0.1,
-        )
-    except BaseException:
+    legacy_effects = materialized.run_root / _LEGACY_EFFECT_FILE
+    if legacy_effects.exists() or legacy_effects.is_symlink():
         copy.close()
-        if actions is not None:
-            await actions.close()
-        raise
-    assert actions is not None
-    try:
-        with copy:
-            async with (
-                ManagedPatchBridge(copy) as patches,
-                CodingToolRuntime(
-                    execution_root,
-                    artifacts=artifacts,
-                    git_executable=git_executable,
-                ) as tools,
-            ):
-                publisher = SQLiteProcessArtifactPublisher(
-                    artifacts, processes, workspace_scope=tools.workspace_scope
-                )
+        raise KernelError(
+            "eval_runtime_upgrade_required",
+            "未完成的旧版Eval Action Plane运行不能迁移到Trusted Action账本",
+        )
+    observer = observability or NoOpObservability()
+    launcher = historical_python_launcher(materialized, python_executable)
+    sessions = SQLiteSessionStore(materialized.run_root / _SESSION_FILE)
+    artifacts = SQLiteArtifactStore(sessions)
+    profile = TestProfile(
+        name=definition.task.required_test_profiles[0],
+        description="内置历史缺陷行为检查",
+        program="python",
+        arguments=historical_check_arguments(
+            execution_root, definition.check(definition.task.behavior_checks[0]).mode
+        ),
+        timeout_seconds=60,
+    )
+    with copy:
+        async with (
+            ManagedPatchBridge(copy) as patches,
+            CodingToolRuntime(
+                execution_root,
+                artifacts=artifacts,
+                git_executable=git_executable,
+            ) as tools,
+        ):
+            composition = await build_eval_trusted_action_composition(
+                materialized.run_root,
+                execution_root,
+                launcher,
+                profile,
+                artifacts,
+                workspace_scope=tools.workspace_scope,
+            )
+            async with composition:
                 async with AgentRuntime(
                     sessions,
                     provider,
                     scoped_tools=tools,
+                    trusted_actions=composition.gateway,
                     artifacts=artifacts,
                     patches=patches,
-                    processes=processes,
-                    process_artifacts=publisher,
                     observability=observer,
+                    fault=fail,
                 ) as runtime:
                     if state.thread_id is None:
                         existing = await sessions.thread_ids()
@@ -627,7 +597,8 @@ async def run_historical_coding_eval(
                         )
                         if thread.workspace != str(execution_root) or thread.turns:
                             raise KernelError(
-                                "eval_run_projection_invalid", "Eval ready状态与Session事实不一致"
+                                "eval_run_projection_invalid",
+                                "Eval ready状态与Session事实不一致",
                             )
                         state = state.model_copy(
                             update={
@@ -642,11 +613,11 @@ async def run_historical_coding_eval(
                         ids = await sessions.thread_ids()
                         if ids != [state.thread_id]:
                             raise KernelError(
-                                "eval_run_projection_invalid", "Eval状态与Session Thread索引不一致"
+                                "eval_run_projection_invalid",
+                                "Eval状态与Session Thread索引不一致",
                             )
                     turn, state = await _drive_turn(
                         runtime,
-                        worker,
                         definition,
                         state,
                         state_path,
@@ -654,47 +625,45 @@ async def run_historical_coding_eval(
                         token,
                         fail,
                     )
-            final = await run_historical_checks(
-                definition,
-                materialized,
-                python_executable,
-                "final",
-                token,
-                workspace=execution_root,
-            )
-            git = await collect_git_evidence(
-                execution_root,
-                git_executable,
-                baseline_revision=state.baseline_revision,
-                baseline_tree_sha256=state.baseline_tree_sha256,
-                cancel=token,
-            )
-            completed_at = utc_now()
-            report = grade_coding_eval(
-                definition.task,
-                turn,
-                run_id=run_id,
-                environment=environment,
-                started_at=state.started_at,
-                completed_at=completed_at,
-                baseline_observations=state.baseline_observations,
-                final_observations=final,
-                git=git,
-            )
-            write_eval_report(report_path, report)
-            fail("eval_runner.after_report")
-            state = state.model_copy(
-                update={
-                    "status": "completed",
-                    "report_sha256": _report_digest(report_path),
-                    "updated_at": completed_at,
-                }
-            )
-            write_eval_run_state(state_path, state)
-            return HistoricalCodingEvalResult(
-                state=state,
-                report=report,
-                workspace=execution_root,
-            )
-    finally:
-        await actions.close()
+        final = await run_historical_checks(
+            definition,
+            materialized,
+            python_executable,
+            "final",
+            token,
+            workspace=execution_root,
+        )
+        git = await collect_git_evidence(
+            execution_root,
+            git_executable,
+            baseline_revision=state.baseline_revision,
+            baseline_tree_sha256=state.baseline_tree_sha256,
+            cancel=token,
+        )
+        completed_at = utc_now()
+        report = grade_coding_eval(
+            definition.task,
+            turn,
+            run_id=run_id,
+            environment=environment,
+            started_at=state.started_at,
+            completed_at=completed_at,
+            baseline_observations=state.baseline_observations,
+            final_observations=final,
+            git=git,
+        )
+        write_eval_report(report_path, report)
+        fail("eval_runner.after_report")
+        state = state.model_copy(
+            update={
+                "status": "completed",
+                "report_sha256": _report_digest(report_path),
+                "updated_at": completed_at,
+            }
+        )
+        write_eval_run_state(state_path, state)
+        return HistoricalCodingEvalResult(
+            state=state,
+            report=report,
+            workspace=execution_root,
+        )

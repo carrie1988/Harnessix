@@ -493,6 +493,39 @@ async def test_session_first_crash_window_fills_router_before_execute(tmp_path: 
     close_stores(gateway, plans, audit)
 
 
+async def test_terminal_route_recovery_only_reprojects_original_execution(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded"))
+    gateway, router, plans, audit = build_gateway(root, executor)
+    thread, turn, call = agent_state(root)
+    prepared = await gateway.prepare(thread, turn, call, CancelToken())
+    assert isinstance(prepared, TrustedActionApprovalRequestContent)
+    approved = gateway.decide(
+        thread,
+        turn,
+        call,
+        prepared,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+    executed = await gateway.execute(thread, turn, call, approved, CancelToken())
+    replayed = await gateway.execute(thread, turn, call, approved, CancelToken())
+    recovered = await gateway.recover(thread, turn, call, approved, CancelToken())
+
+    assert executed.outcome == "succeeded"
+    assert replayed.trusted_action is not None
+    assert replayed.trusted_action.origin == "execution"
+    assert recovered is not None and recovered.outcome == "succeeded"
+    assert recovered.trusted_action is not None
+    assert recovered.trusted_action.origin == "execution"
+    assert executor.calls == 1 and executor.reconciliations == 0
+    assert router.status(prepared.plan_id).state == "succeeded"
+    close_stores(gateway, plans, audit)
+
+
 async def test_running_route_recovers_to_unknown_and_reconciles_without_reexecute(
     tmp_path: Path,
 ) -> None:

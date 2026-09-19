@@ -182,6 +182,24 @@ class TrustedProcessOutputDocument(ReadContract):
         return self
 
 
+def trusted_process_public_output(
+    document: TrustedProcessOutputDocument,
+    *,
+    include_passed: bool = False,
+) -> dict[str, JsonValue]:
+    """投影模型可见摘要；测试结论只能由受信终态事实确定性派生。"""
+
+    public = document.summary.public_output()
+    if include_passed:
+        summary = document.summary
+        public["passed"] = (
+            summary.state == "exited"
+            and summary.stop_reason == "exited"
+            and summary.returncode == 0
+        )
+    return public
+
+
 def _archive_lengths(stdout_bytes: int, stderr_bytes: int) -> tuple[int, int]:
     half = MAX_TRUSTED_PROCESS_ARCHIVE_BYTES // 2
     stdout = min(stdout_bytes, half)

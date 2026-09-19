@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 9
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 10
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -645,6 +645,14 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - 私有受管副本不是自动Git worktree。测试示例中的Git初始化是受信宿主夹具，不意味着任意副本可提交/合并或自动交付源目录。0.5.4c闭环也不是非示例缺陷集Eval或生产容量证明。
 
 完整命令、错误、恢复与替代方案见[ADR 0043](adr/0043-git-and-controlled-test-feedback.md)。
+
+### 0.9.1f2c 当前Eval可信执行边界（2026-09-19）
+
+- 上述0.5.4c的Action Journal/外部Worker描述是历史实现。f2c候选中，历史Eval新运行只使用受信Catalog、`RouterBackedAgentActionGateway`、`TrustedActionRouter`、Execution Plan、Action Audit和POSIX Process Supervisor，不再创建`effects.sqlite`或启动Action Worker。
+- 公开意图仍只有固定Profile；完整argv、Launcher身份、Workspace Snapshot、`host_guarded + network=full`能力和环境由受信宿主派生并在Executor再次核对。`network=full`是诚实能力声明，不表示网络隔离。
+- Process Lease和输出是执行效果权威，Action Audit保存路由终态，Session保存模型可见投影。三者不是跨库事务；Router终态后响应丢失只允许从原Lease/Artifact补投影，不得再次执行命令。
+- 测试`passed`只由可信终态、停止原因和退出码确定性派生，并在Artifact读取时重复验证。退出码1是测试失败而非Action基础设施失败；启动、超时、取消、输出上限、清理或证据不完整不得降级为`passed=false`。
+- 未完成且包含旧`effects.sqlite`的Run拒绝跨账本静默恢复并返回`eval_runtime_upgrade_required`；已完成报告可在该检查前按不可变摘要重开。该策略牺牲旧在途Run连续升级，以避免双重消费和重复副作用。
 
 ## 0.5.6 Tool并发补充（2026-09-07）
 

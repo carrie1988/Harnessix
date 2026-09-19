@@ -19,6 +19,7 @@ from harnessix.agent.models import (
     TextContent,
     ToolCallContent,
     ToolResultContent,
+    TrustedActionApprovalRequestContent,
     Turn,
     TurnStatus,
 )
@@ -111,6 +112,7 @@ def _transcript(turn: Turn) -> _Transcript:
                 PatchApprovalRequestContent,
                 PatchBatchApprovalRequestContent,
                 ProcessApprovalRequestContent,
+                TrustedActionApprovalRequestContent,
             ),
         ):
             if content.decision is not None and content.decision.outcome == "approved":

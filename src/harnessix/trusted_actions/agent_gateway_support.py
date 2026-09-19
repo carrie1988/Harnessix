@@ -263,7 +263,8 @@ async def execute_action(
         turn,
         call,
         cancel,
-        origin="recovery",
+        # Router终态重投影仍来自原执行；只有上方UNKNOWN对账属于recovery。
+        origin=("execution" if route.state in {"denied", "succeeded", "failed"} else "recovery"),
         approval=approval,
     )
 
@@ -286,6 +287,7 @@ async def recover_action(
         if error.code == "action_route_not_found":
             return None
         raise
+    terminal_before_recovery = route.state in {"denied", "succeeded", "failed"}
     _validate_route(route, thread, turn, call, binding)
     if approval is not None:
         _validate_approval(state, thread, turn, call, approval)
@@ -316,7 +318,9 @@ async def recover_action(
         turn,
         call,
         cancel,
-        origin="recovery",
+        # Router已在原执行中形成确定终态时这里只补Session投影；只有对账所得终态
+        # 才属于recovery效果，继续受Turn成功守卫约束。
+        origin="execution" if terminal_before_recovery else "recovery",
         approval=approval,
     )
 

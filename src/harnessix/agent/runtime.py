@@ -82,8 +82,10 @@ from harnessix.agent.runtime_configuration import (
     validate_runtime_switches,
 )
 from harnessix.agent.runtime_recovery import (
+    consume_decided_approval,
     recover_pending_effects,
     recoverable_compaction,
+    result_resume_safe,
 )
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.trusted_action_runtime import (
@@ -171,24 +173,6 @@ SUMMARY_INSTRUCTIONS = (
 RETRY_INSTRUCTIONS = (
     "继续完成上一轮未完成的请求。不要重复已完成的副作用；先核对当前Workspace与持久效果事实。"
 )
-
-
-def _question_resume_safe(turn: Turn) -> bool:
-    answers = [
-        item.content
-        for item in turn.items
-        if item.status == ItemStatus.COMPLETED and isinstance(item.content, QuestionAnswerContent)
-    ]
-    if not answers:
-        return False
-    latest = answers[-1]
-    return any(
-        item.status == ItemStatus.COMPLETED
-        and isinstance(item.content, ToolResultContent)
-        and item.content.call_id == latest.call_id
-        and item.content.outcome == "succeeded"
-        for item in turn.items
-    )
 
 
 class AgentRuntime:
@@ -419,7 +403,7 @@ class AgentRuntime:
                 )
                 operation.finish(recovered.status.value, recovered.error)
                 return
-            if turn.status == TurnStatus.EXECUTING_TOOLS and _question_resume_safe(turn):
+            if turn.status == TurnStatus.EXECUTING_TOOLS and result_resume_safe(turn):
                 operation.finish(turn.status.value)
                 return
             calls = pending_calls(turn)
@@ -918,7 +902,7 @@ class AgentRuntime:
             if (
                 not expire_waiting_input
                 and turn.status == TurnStatus.EXECUTING_TOOLS
-                and not _question_resume_safe(turn)
+                and not result_resume_safe(turn)
             ):
                 raise KernelError("turn_not_resumable", "工具执行状态缺少安全的提问回答边界")
             if (
@@ -2478,10 +2462,9 @@ class AgentRuntime:
                         not (is_patch or is_batch or is_trusted_action)
                         and decision.outcome == ApprovalOutcome.REJECTED
                     )
-                    # 持久离开等待状态即消费恢复边界；之后崩溃只能核对，不能再次执行。
-                    thread = await self._state(thread_id, turn_id, TurnStatus.EXECUTING_TOOLS)
-                    turn = get_turn(thread, turn_id)
-                    self._fault("runtime.after_approval_consumed")
+                    thread, turn = await consume_decided_approval(
+                        thread, turn, self._state, self._fault
+                    )
             token.checkpoint()
             result = early_result or (
                 ToolResultContent(

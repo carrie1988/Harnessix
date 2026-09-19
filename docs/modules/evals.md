@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 45cc209133784fdbff853001230171f95516be20
+version: 2
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -38,20 +38,22 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/evals`](../../src/harnessix/evals/) |
-| 当前职责 | 固定历史缺陷任务及版本；物化可复现私有仓库；通过正式Agent、Patch、Process、Approval和Worker运行任务；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
+| 当前职责 | 固定历史缺陷任务及版本；物化可复现私有仓库；通过正式Agent、Patch审批和Eval专用Trusted Action组合运行任务；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
 | 非职责 | 不提供通用Benchmark平台、动态第三方数据集、LLM Judge、OS Sandbox、分布式调度、供应商账单、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行 |
 | 产品入口 | `harnessix coding-eval-campaign`是显式真实Campaign CLI；单次运行、评分、Compaction评测和Eval专用交付仅由库调用 |
-| 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Process、Action Plane、Artifact、Git Read和Workspace |
-| 持久化 | 每Run私有JSON与SQLite；每Campaign私有Plan/State/Report；Eval专用交付目录中的Package/State/Lock |
+| 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
+| 持久化 | 每Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | `45cc209133784fdbff853001230171f95516be20` |
-| 当前完成度 | 0.5.5定义的单任务纵向闭环和三次真实模型基线已完成；距离生产级持续评测系统仍缺任务集、OS隔离、Windows、统计门禁、并发执行、独立Eval遥测和统一Delivery |
+| 代码版本 | f2c候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待实现提交与全矩阵CI关闭后回填 |
+| 当前完成度 | 0.5.5定义的单任务纵向闭环和三次真实模型基线已完成；0.9.1f2c已形成移除Eval Action Worker/Effect Journal依赖的候选实现并通过本地专项测试，待全量与CI关闭；距离生产级持续评测系统仍缺任务集、OS隔离、Windows、统计门禁、并发执行、独立Eval遥测和统一Delivery |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
 [`materializer.py`](../../src/harnessix/evals/materializer.py)、
 [`checks.py`](../../src/harnessix/evals/checks.py)、
 [`runner.py`](../../src/harnessix/evals/runner.py)、
+[`eval_process.py`](../../src/harnessix/product_config/eval_process.py)、
+[`eval_action.py`](../../src/harnessix/product_config/eval_action.py)、
 [`grader.py`](../../src/harnessix/evals/grader.py)、
 [`campaign.py`](../../src/harnessix/evals/campaign.py)、
 [`campaign_execution.py`](../../src/harnessix/evals/campaign_execution.py)、
@@ -66,7 +68,7 @@ Coding Agent的质量不能只由“模型给出了答案”“一次测试通�
 
 1. 任务是否来自一个不可变、可重现的真实缺陷基线；
 2. 被评Agent是否看不到后续修复历史和宿主隐藏检查；
-3. 模型是否在正式Runtime、Tool、审批、Worker和持久化路径上完成任务；
+3. 模型是否在正式Runtime、Tool、审批、Trusted Action Router、Process Owner和持久化路径上完成任务；
 4. 行为缺陷是否从失败变为通过，同时没有破坏回归行为；
 5. 实际修改是否局限于允许路径、文件类型和数量；
 6. Session是否证明Agent经历了“失败测试→Patch→通过测试→Git核对→结构化回答”；
@@ -86,8 +88,8 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 2. 历史源码通过`git archive`进入不含后续历史和Remote的私有单提交仓库；
 3. 基线缺陷必须先确定失败，不能把失效任务计入模型失败率；
 4. 隐藏检查命令由受信Catalog和宿主程序固定，模型不能选择命令或模式；
-5. 每次Run拥有独立Workspace、Managed Patch副本、Session、Effect Journal和报告；
-6. Patch与Process继续走正式审批及Worker路径，不建立Eval旁路；
+5. 每次Run拥有独立Workspace、Managed Patch副本、Session、Execution Plan、Action Audit、Process Lease和报告；
+6. Patch继续走正式Patch账本，测试Process走产品同源Trusted Action合同及专用Supervisor Owner，不建立未审批执行旁路；
 7. 评分不比较唯一补丁，而组合行为、回归、Git、Session顺序、回答和预算证据；
 8. 原始Diff、测试输出和回答摘要不进入Eval报告，只保存必要字段和摘要；
 9. Run状态和报告分别原子持久化，报告已落盘但状态未提交时可只补终态；
@@ -139,10 +141,10 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | 内置任务Catalog | 已实现 | `historical_coding_eval` | 仅1个任务、3个版本 |
 | 历史仓库物化 | 已实现 | `materialize_historical_coding_eval` | 本地完整Git历史、POSIX私有目录 |
 | 隐藏检查 | 已实现 | `run_historical_checks` | 固定Harnessix任务，不是第三方Sandbox |
-| 正式Agent运行 | 已实现 | `run_historical_coding_eval` | Managed Copy、自动受限审批、Action Worker |
+| 正式Agent运行 | 已实现/f2c候选 | `run_historical_coding_eval` | Managed Copy、自动受限审批、Eval Trusted Action、Process Supervisor |
 | 确定性评分 | 已实现 | `grade_coding_eval` | 固定14项，不评价主观代码质量 |
 | Git证据 | 已实现 | `collect_git_evidence` | 最多200项状态，完整观察摘要 |
-| Run恢复 | 已实现 | Run State + Session/Effect/Patch账本 | 关键批准、取消和报告发布窗口 |
+| Run恢复 | 已实现/f2c候选 | Run State + Session/Execution Plan/Action Audit/Process Lease/Patch账本 | 批准提交、结果投影丢失、取消和报告发布窗口 |
 | Campaign聚合 | 已实现 | `build_coding_eval_campaign_report` | 完整计划才发布 |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
@@ -165,8 +167,12 @@ flowchart LR
     Copy --> Runtime
     Runtime --> Session[(Session SQLite)]
     Runtime --> Patch[(Patch账本)]
-    Runtime --> Action[Action Service和Worker]
-    Action --> Effects[(Effect Journal)]
+    Runtime --> Gateway[Eval Trusted Action Gateway]
+    Gateway --> Router[Trusted Action Router]
+    Router --> Plan[(Execution Plan和Action Audit)]
+    Router --> Owner[POSIX Process Supervisor]
+    Owner --> Lease[(Process Lease和Output)]
+    Lease --> Artifact[(Action Output Artifact)]
     Checks --> Grader[Deterministic Grader]
     Session --> Grader
     Copy --> GitEvidence[Git Evidence]
@@ -202,7 +208,7 @@ flowchart LR
 
 1. 模型不能指定Source Revision、隐藏检查命令或Python入口；
 2. Eval Runner只批准Catalog声明的唯一`run_tests` Profile和允许Patch路径；
-3. Process测试仍由Action Service保存审批和Effect Journal，再由外部Worker消费；
+3. Process测试只接受宿主冻结的`run_tests {profile}`；Router保存Execution Plan和Action Audit，Supervisor保存真实Process Lease与输出，Session只投影批准和结果；
 4. Campaign不能根据先前结果替换Run ID、任务版本、模型或价格；
 5. `passed`报告不等于交付批准；专用Delivery仍要求独立Approval；
 6. 任何`invalid`、成本未知、目标漂移或无法归因结果均不能降级为成功。
@@ -216,7 +222,9 @@ flowchart LR
 | [`materializer.py`](../../src/harnessix/evals/materializer.py) | 来源验证、Archive、单提交Baseline、Manifest和重开 | 3 |
 | [`_historical_check.py`](../../src/harnessix/evals/_historical_check.py) | 两类宿主隐藏行为检查 | 4 |
 | [`checks.py`](../../src/harnessix/evals/checks.py) | Python Launcher和固定检查进程 | 5 |
-| [`runner.py`](../../src/harnessix/evals/runner.py) | 双层Workspace、Agent/Approval/Worker、恢复和报告发布 | 6 |
+| [`eval_process.py`](../../src/harnessix/product_config/eval_process.py) | 固定Profile、Launcher、Workspace、Capability与派生ProcessSpec绑定 | 6 |
+| [`eval_action.py`](../../src/harnessix/product_config/eval_action.py) | Catalog、Router、Supervisor、输出Artifact及恢复组合 | 7 |
+| [`runner.py`](../../src/harnessix/evals/runner.py) | 双层Workspace、Agent/Approval/Trusted Action、恢复和报告发布 | 7 |
 | [`git_evidence.py`](../../src/harnessix/evals/git_evidence.py) | 复用Git Read采集状态和Diff摘要 | 7 |
 | [`grader.py`](../../src/harnessix/evals/grader.py) | Session Transcript投影和固定评分 | 8 |
 | [`run_state.py`](../../src/harnessix/evals/run_state.py) | 256 KiB私有Run状态原子文件 | 9 |
@@ -473,28 +481,32 @@ sequenceDiagram
     participant A as Agent Runtime
     participant S as Session Store
     participant P as Managed Patch
-    participant X as Action Service
-    participant W as Action Worker
+    participant G as Trusted Action Gateway
+    participant R as Trusted Action Router
+    participant O as Process Supervisor Owner
     participant C as Hidden Checks
-    participant G as Grader
+    participant D as Grader
     E->>A: create or reopen Thread
     A->>S: persist Thread and Turn
     E->>A: run_turn(task.prompt, budget)
     loop until terminal
-        A-->>E: waiting_approval or waiting_action
+        A-->>E: waiting_approval or executing_tools
         E->>E: validate exact Profile or Path
         E->>A: approved decision with fingerprint
         alt Patch
             A->>P: apply approved plan
-        else Process
-            E->>W: run_once
-            W->>X: claim and execute run_tests
+        else run_tests
+            A->>G: execute approved invocation
+            G->>R: claim frozen route once
+            R->>O: run derived ProcessSpec
+            O-->>R: durable lease and output
+            R-->>A: audited result and artifact
         end
-        E->>A: resume_turn
+        E->>A: resume same Turn
     end
     E->>C: final behavior and regression checks
-    E->>G: Turn + observations + Git evidence
-    G-->>E: CodingEvalReport
+    E->>D: Turn + observations + Git evidence
+    D-->>E: CodingEvalReport
     E->>E: publish report then completed state
 ```
 
@@ -503,22 +515,21 @@ Runner明确装配：
 - `SQLiteSessionStore`与`SQLiteArtifactStore`；
 - `ManagedPatchBridge`；
 - `CodingToolRuntime`，含固定Git读取；
-- `RunTestsAgentBridge`与唯一`focused` Profile；
-- `ActionService(auto_execute=False)`、`SQLiteEffectJournal`和`ActionWorker`；
-- `DefaultPolicyEngine`；
-- 同一个`Observability`实例进入Agent Runtime和Action Service，默认No-op。
+- `EvalTrustedActionComposition`，内部持有`ProductActionCatalog`、`RouterBackedAgentActionGateway`、`TrustedActionRouter`、`SQLiteExecutionPlanStore`、`SQLiteActionAuditStore`和`PosixProcessSupervisor`；
+- 唯一`focused` Profile及由宿主Launcher、Profile、Workspace Snapshot和Supervisor Capability形成的Executor Evidence；
+- 同一个`Observability`实例进入Agent Runtime，默认No-op；Trusted Action事实由持久Plan/Audit/Lease/Artifact诊断。
 
 当前Runner只接受唯一Required Test Profile和唯一Behavior Check，否则`eval_task_unsupported`。这是实现限制，
-不是`CodingEvalTask`通用合同允许范围。
+不是`CodingEvalTask`通用合同允许范围。Eval组合诚实声明`host_guarded + network=full`，不把受管副本描述为OS Sandbox。
 
 ## 16. Eval自动审批边界
 
 等待审批时，Runner要求Turn投影中恰有一个未决`PatchApprovalRequestContent`或
-`ProcessApprovalRequestContent`，并找到同Call ID的唯一已完成Tool Call：
+`TrustedActionApprovalRequestContent`，并找到同Call ID的唯一已完成Tool Call：
 
 | 类型 | 可批准条件 | 其他输入 |
 |---|---|---|
-| Process | Tool必须为`run_tests`；参数只能有`profile`；Profile属于任务声明 | `eval_approval_denied` |
+| Trusted Process | Tool必须为`run_tests`；参数只能有`profile`；Profile属于任务声明；展示类型必须为`process` | `eval_approval_denied` |
 | Patch | Tool必须为`apply_patch`；Plan路径属于`allowed_changed_paths` | `eval_approval_denied` |
 
 批准记录的Actor固定为`harnessix-eval-runner`，并绑定请求Fingerprint。该策略只用于受信Eval实验自动化；
@@ -547,13 +558,29 @@ flowchart TD
 2. `after_thread_bound`后退出：沿用Thread，不创建第二个；
 3. `after_turn_bound`后退出：沿用Turn和`request_id=coding-eval:<run_id>`；
 4. Patch批准后退出：Managed Patch账本对账；
-5. Process批准或Worker效果后退出：Effect Journal恢复原Action，不重新批准新Action；
+5. Trusted Process批准后退出：沿用同Plan与Approval，不重新批准；Router终态已提交但Session结果丢失时只重建结果投影，不重复启动Process；
 6. 外部取消：Agent Session保存CANCELLED；重开读取终态并评分为Runtime失败；
 7. Report写入后状态提交前退出：读取并重算Report身份，只补`report_sha256`和`completed`；
 8. completed重开：不创建Provider调用，不运行隐藏检查，不重评分。
 
-取消由`CancelToken.run`包围Agent和Worker操作，并在循环、检查及Git读中检查。当前Campaign没有为每个Run提供
+取消由`CancelToken`包围Agent、Trusted Action与Supervisor操作，并在循环、检查及Git读中检查。当前Campaign没有为每个Run提供
 独立取消恢复结果；取消会保留已持久事实，由下一次同配置执行重开。
+
+### 17.1 f2c恢复一致性与失败语义
+
+| 场景 | 权威事实 | 恢复动作 | 禁止行为 |
+|---|---|---|---|
+| Approval已提交、Session尚未继续 | Execution Plan Approval + Session Decision | 继续同Turn并Claim同Plan | 创建第二个Plan或再次审批 |
+| Router已终态、Session Tool Result丢失 | Action Audit终态 + Process Output + Artifact摘要 | 仅重建原执行结果投影，`origin=execution` | 再次启动Process或误标为Reconcile成功 |
+| Process运行中宿主退出 | Process Lease/Owner记录 | Router转`unknown`，Supervisor只观察并对账 | 依据历史PID重放命令 |
+| Process不存在 | 无Lease | Reconcile返回`process_not_started`失败 | 首次启动或补执行 |
+| 测试退出码1 | 可信终态退出码 | Action成功、公开`passed=false`，模型继续修复 | 把测试失败误作基础设施失败 |
+| Timeout/取消/输出上限/清理失败 | Lease stop reason | 形成失败或UNKNOWN结果 | 伪造`passed=false`后继续 |
+| 未完成旧Run含`effects.sqlite` | 旧账本 | `eval_runtime_upgrade_required` | 跨账本静默迁移或双重消费 |
+
+`passed`不是Executor可自由写入的字段。它由`TrustedProcessOutputDocument`中的`state=exited`、`stop_reason=exited`和
+`returncode == 0`确定性派生，Artifact读取再次按同一投影验证。非零退出形成可审计的测试失败事实，启动与效果证据
+不完整则保持失败、UNKNOWN或人工处置，二者不能互换。
 
 ## 18. Git Evidence
 
@@ -959,7 +986,11 @@ sequenceDiagram
         ├── run-state.json                    0600
         ├── report.json                       写入为0600
         ├── session.sqlite
-        └── effects.sqlite
+        ├── execution-plans.db                 Execution Plan与Approval
+        ├── action-audit.db                    Route Hash链和终态摘要
+        └── process-state/
+            ├── process-leases.db              Process Owner权威状态
+            └── <process-id>/                  stdout/stderr与Owner记录
 
 <eval-delivery-root>/                         0700
 └── <delivery-id>/                            0700
@@ -969,13 +1000,13 @@ sequenceDiagram
 ```
 
 Run Root和Campaign Work Root必须位于Source Repository外。代码没有统一Retention/GC；长期Campaign会累积
-完整Baseline、Managed Copy、Session、Artifact、Effect、报告和Change Package。
+完整Baseline、Managed Copy、Session、Execution Plan、Action Audit、Process输出、Artifact、报告和Change Package。
 
 ## 37. 事务、一致性与并发边界
 
 ### 37.1 Run
 
-Run State、Session、Effect Journal、Patch Store、Report和文件系统是多个独立事实域，没有跨Store ACID。
+Run State、Session、Execution Plan、Action Audit、Process Lease、Patch Store、Report和文件系统是多个独立事实域，没有跨Store ACID。
 Runner通过不可变ID、摘要、状态形状和重开对账收敛。Report先于completed State发布，专门处理“结果已落盘、
 状态未提交”窗口。
 
@@ -998,13 +1029,12 @@ Campaign使用`fcntl.flock`保护单Work Root，同一进程/主机上非阻塞�
 | Git物化/Delivery命令 | 每次30秒，固定stdin/stdout/stderr和输出上限 |
 | Managed Copy | 60秒受信读取操作预算 |
 | Hidden Check | 每项60秒、Process Runtime取消 |
-| Eval Process Action Lease | 120秒，Worker每1秒心跳 |
+| Eval Process | 固定Profile超时60秒、输出上限128 KiB；Supervisor独立Owner和Lease持久化 |
 | Agent Turn | 任务`Budget.timeout_seconds`，当前任务600秒 |
 | Campaign | 无Campaign总时限；继承CancelToken，在Run边界和内部操作检查 |
 | Delivery | 同步Git/文件I/O，无CancelToken |
 
-`run_historical_coding_eval`在`finally`关闭Action Service、Managed Copy、Coding Tool Runtime、Patch Bridge和
-Agent Runtime。Campaign Provider使用单个Async Context Manager。同步`subprocess.run`和Eval Delivery写入
+`run_historical_coding_eval`通过异步上下文关闭Eval Trusted Action组合、Process Supervisor、Plan/Audit Store、Managed Copy、Coding Tool Runtime、Patch Bridge和Agent Runtime。Campaign Provider使用单个Async Context Manager。同步`subprocess.run`和Eval Delivery写入
 不可中途协作取消；超时或进程终止后的真实副作用仍需通过持久事实重开判断。
 
 ## 39. 错误分类与恢复建议
@@ -1038,7 +1068,7 @@ CLI刻意把Kernel细节压缩为`runtime_failed`，便于防泄漏，但降低�
 - Archive成员类型、路径、数量和字节上限；
 - Baseline仓库不含Remote和后续Git历史；
 - Agent只能进入Managed Copy，宿主检查位于Workspace外；
-- Tool调用继续经过正式合同、Patch账本、Approval、Action Service和Worker；
+- Tool调用继续经过正式合同、Patch账本或Trusted Action Plan、Approval、Router Audit和专用Process Owner；
 - 自动审批精确限制Tool、参数/Profile和Path；
 - Git命令使用固定可执行文件、argv、环境、超时和有界输出；
 - Run/Campaign/Delivery文件使用私有目录、原子写、严格JSON及摘要；
@@ -1077,12 +1107,11 @@ CLI刻意把Kernel细节压缩为`runtime_failed`，便于防泄漏，但降低�
 | Delivery Approval | `state.json` | 中，含Actor和Reason |
 
 当前代码不自动清理任何Run或Delivery。归档到Git的真实验证资料必须继续只保留脱敏Plan和Campaign Report，
-不得提交Config、Session、Effect DB、Workspace、Change Package、日志或Secret。
+不得提交Config、Session、Execution Plan/Action Audit/Process数据库、Workspace、Change Package、日志或Secret。
 
 ## 42. 可观测性
 
-`run_historical_coding_eval`接收可选`Observability`并把同一实例注入`AgentRuntime`和`ActionService`，因此
-能获得既有Model、Tool、Action Span和低基数Metric。默认使用`NoOpObservability`。
+`run_historical_coding_eval`接收可选`Observability`并注入`AgentRuntime`，因此能获得既有Model与Tool Span和低基数Metric。默认使用`NoOpObservability`。Trusted Action与Process恢复的当前诊断事实来自Plan、Audit、Lease、Artifact和Session；Eval组合尚未把这些阶段补齐为专用Span/Metric。
 
 Eval自身没有专用Span/Metric覆盖以下阶段：
 
@@ -1106,7 +1135,8 @@ Provider原文、Run ID高基数值或源码正文放入Metric Label。
 | `CodingEvalRunState` | Run持久 | Run恢复主锚点 |
 | `HistoricalCodingEvalResult` | 单次调用返回 | State、Report和Managed Workspace路径 |
 | `AgentRuntime` | 单次Run调用 | 驱动正式模型与Tool循环 |
-| `ActionWorker` | 单次Run调用 | 消费固定Process Action |
+| `EvalTrustedActionComposition` | 单次Run调用 | 持有Catalog/Gateway/Router、Plan/Audit Store、Supervisor与输出Provider |
+| `EvalRunTestsActionExecutor` | 单次Run调用 | 从批准的公开Profile确定性派生ProcessSpec并执行或只读对账 |
 | `CodingEvalReport` | Run不可变结果 | 固定14项和脱敏证据 |
 | `CodingEvalCampaignPlan` | Campaign不可变 | 请求前固定比较范围 |
 | `CodingEvalCampaignExecutionState` | Campaign持久 | 有序完成前缀和费用停止 |
@@ -1194,7 +1224,7 @@ if report exists:
     return report
 
 open same managed copy
-wire Session + Artifact + Tools + Patch + Process + Action Worker
+wire Session + Artifact + Tools + Patch + Eval Trusted Action
 create or reopen exactly one Thread
 run or reopen Turn with deterministic request_id
 
@@ -1202,8 +1232,9 @@ while Turn is non-terminal:
     if waiting approval:
         assert exact allowed run_tests profile or patch path
         persist approved decision
-    if waiting action:
-        worker executes only matching test Action
+    if executing tools after recovered trusted result:
+        resume same Turn without replay
+    trusted gateway executes only the frozen test route
     resume same Turn
 
 final_observations = run hidden behavior + regression checks
@@ -1292,8 +1323,8 @@ execute():
 | 不完整/篡改物化 | 同上 | `_read_manifest`、`_require_manifest_task` | 同上 | `test_existing_incomplete_run_is_rejected_without_overwrite`、`test_manifest_symbolic_link_and_wrong_source_tree_are_rejected` |
 | 隐藏检查 | [`checks.py`](../../src/harnessix/evals/checks.py) | `run_historical_checks` | 同上 | `test_hidden_checks_detect_baseline_and_accept_minimal_fix`、`test_checker_exit_other_than_zero_or_one_is_infrastructure_failure` |
 | Python入口身份 | 同上 | `historical_python_launcher` | 同上 | `test_relative_python_binding_is_rejected`、`test_existing_python_launcher_is_verified_without_changing_identity` |
-| 正式Runtime闭环 | [`runner.py`](../../src/harnessix/evals/runner.py) | `run_historical_coding_eval` | [`test_runner.py`](../../tests/evals/test_runner.py) | `test_real_history_runs_through_runtime_worker_approvals_and_grader` |
-| Approval/Worker恢复 | 同上 | `_drive_turn` | 同上 | `test_reopens_after_process_approval_without_replaying_action` |
+| 正式Runtime闭环 | [`runner.py`](../../src/harnessix/evals/runner.py)、[`eval_action.py`](../../src/harnessix/product_config/eval_action.py) | `run_historical_coding_eval`、`build_eval_trusted_action_composition` | [`test_runner.py`](../../tests/evals/test_runner.py) | `test_real_history_runs_through_runtime_trusted_actions_and_grader` |
+| Approval/结果投影恢复 | 同上 | `_drive_turn`、`EvalRunTestsActionExecutor.reconcile` | 同上 | `test_reopens_after_trusted_process_approval_without_replaying_action`、`test_reopens_after_trusted_process_result_without_replaying_process` |
 | 取消持久化 | 同上 | `_await_cancel` | 同上 | `test_cancellation_is_durable_and_reopen_grades_terminal_turn` |
 | Report崩溃窗口 | 同上 | `_require_report` | 同上 | `test_report_publication_is_recovered_without_regrading` |
 | Allowlist与Host-only | 同上 | `_require_allowed_approval`、`_provision` | 同上 | `test_task_allowlist_rejects_patch_to_other_managed_file`、`test_provision_rejects_unpinned_host_only_paths` |
@@ -1350,7 +1381,7 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 - Source仓库SHA-256对象格式、超大历史、Submodule、LFS和复杂Attributes；
 - Archive在不同Git/Tar版本下的确定性与恶意边界矩阵；
 - 磁盘满、`fsync`失败、SQLite损坏、Artifact丢失和备份恢复；
-- Run State与Session/Effect/Patch事实组合篡改的系统恢复矩阵；
+- Run State与Session/Execution Plan/Action Audit/Process Lease/Patch事实组合篡改的系统恢复矩阵；
 - 单次Report权限放宽读取拒绝；
 - Campaign总Timeout、跨主机并发、Fencing和分布式Worker；
 - Provider连接上下文在Trial间污染、限流、长时间中断和凭据轮换；
@@ -1390,8 +1421,7 @@ Grader Version、Materializer Version、Spec Version和Campaign Plan Fingerprint
 - 字段、状态或摘要输入变化评估新Spec；
 - 已发布Campaign Plan和Run不得原地迁移到新任务版本。
 
-Run/Campaign/Delivery JSON没有Migration链；未知版本由严格Literal拒绝。Session、Effect和Patch SQLite Migration
-由各自模块维护，不由Evals接管。
+Run/Campaign/Delivery JSON没有Migration链；未知版本由严格Literal拒绝。Session、Execution Plan、Action Audit、Process Lease和Patch SQLite Migration由各自模块维护，不由Evals接管。未完成且仍含`effects.sqlite`的旧Run明确返回`eval_runtime_upgrade_required`；已完成报告仍可先按不可变结果读取。
 
 ## 49. 部署与平台约束
 
@@ -1502,7 +1532,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 6. 阅读`historical_python_launcher`和`run_historical_checks`的Process、输出和退出码边界；
 7. 阅读`_provision`，画出Source、Baseline、Managed Copy和Host-only Path；
 8. 跟踪`run_historical_coding_eval`的State/Report早返回路径；
-9. 跟踪`_drive_turn`，确认唯一审批、Worker Action和Resume顺序；
+9. 跟踪`_drive_turn`和`EvalRunTestsActionExecutor`，确认唯一审批、Router Claim、Supervisor执行、结果投影和Resume顺序；
 10. 阅读`collect_git_evidence`，理解Rename、Staged、Untracked和完整Diff摘要；
 11. 阅读`_transcript`、`_feedback_order`和`_git_feedback_order`；
 12. 逐项执行`grade_coding_eval`的14个Check并推导Outcome；
@@ -1528,7 +1558,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 - Catalog任务、版本、来源Revision、Tree、Prompt、预算、Allowlist或Check；
 - Archive、Git环境、大小限制、Manifest或重开判断；
 - Hidden Check命令、Python Launcher、Process限制或退出码语义；
-- Managed Copy、Host-only Path、Agent装配、自动审批或Worker流程；
+- Managed Copy、Host-only Path、Agent装配、自动审批、Trusted Action或Process Owner流程；
 - Grader检查集合、顺序、分类、Transcript投影或回答协议；
 - Run状态、Report发布顺序、取消或崩溃恢复；
 - Campaign Plan、Config、State、主分类、Cost算法、统计或停止线；
@@ -1547,3 +1577,4 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `45cc209133784fdbff853001230171f95516be20` | 2026-09-12 | 建立Evals现行模块设计，覆盖历史任务、物化、隐藏检查、正式Agent运行、固定评分、Campaign、成本、Compaction语义评测、专用单文件交付及生产缺口 |
+| 2 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 0.9.1f2c候选：历史Eval从Action Service/Worker/Effect Journal迁入产品同源Trusted Action Catalog/Gateway/Router和POSIX Supervisor；补充批准、响应丢失、结果投影、旧Run升级拒绝及持久化布局 |

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import ExecutionPlanV2, canonical_digest
@@ -123,11 +124,19 @@ def build_process_launch_binding(
     *,
     kind: ProcessLaunchKind,
     environment: dict[str, str] | None = None,
+    intent_arguments: Mapping[str, JsonValue] | None = None,
 ) -> ProcessLaunchBinding:
+    """绑定公开Action参数与派生ProcessSpec，避免把内部argv误作用户意图。"""
+
     bound_environment = (
         plan.environment
         if environment is None
         else bind_environment(environment, platform=capability.platform)
+    )
+    approved_arguments = (
+        spec.model_dump(mode="json", warnings="error")
+        if intent_arguments is None
+        else dict(intent_arguments)
     )
     if (
         plan.workspace.platform != capability.platform
@@ -136,7 +145,7 @@ def build_process_launch_binding(
         or (
             kind == "host"
             and (
-                plan.intent.arguments != spec.model_dump(mode="json", warnings="error")
+                plan.intent.arguments != approved_arguments
                 or plan.capabilities.provider_evidence_digest != capability.digest
                 or bound_environment != plan.environment
             )

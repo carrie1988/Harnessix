@@ -35,6 +35,10 @@ TASK_ID = "harnessix-openai-empty-incremental-call-id"
 CHANGED_PATH = "src/harnessix/models/_chat_stream.py"
 
 
+class SimulatedHostExit(BaseException):
+    """绕过Runtime的业务异常收敛，模拟结果提交前宿主直接退出。"""
+
+
 def git_executable() -> Path:
     executable = shutil.which("git")
     if executable is None:
@@ -221,7 +225,7 @@ async def run(tmp_path: Path, run_id: UUID, provider, **kwargs):
     )
 
 
-async def test_real_history_runs_through_runtime_worker_approvals_and_grader(
+async def test_real_history_runs_through_runtime_trusted_actions_and_grader(
     tmp_path: Path,
 ) -> None:
     run_id = uuid4()
@@ -248,8 +252,14 @@ async def test_real_history_runs_through_runtime_worker_approvals_and_grader(
         encoding="utf-8"
     )
     assert (ROOT / CHANGED_PATH).read_bytes() == source_before
-    with sqlite3.connect(tmp_path / str(run_id) / "effects.sqlite") as database:
-        assert database.execute("SELECT COUNT(*) FROM actions").fetchone()[0] == 2
+    run_root = tmp_path / str(run_id)
+    assert not (run_root / "effects.sqlite").exists()
+    with sqlite3.connect(run_root / "action-audit.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM action_route_plans").fetchone()[0] == 2
+    with sqlite3.connect(run_root / "execution-plans.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM execution_plans").fetchone()[0] == 2
+    with sqlite3.connect(run_root / "process-state" / "process-leases.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM process_leases").fetchone()[0] == 2
 
     reopened = await run(tmp_path, run_id, NeverProvider())
     assert reopened.report == result.report
@@ -263,14 +273,16 @@ async def test_real_history_runs_through_runtime_worker_approvals_and_grader(
     assert error.value.code == "eval_run_state_invalid"
 
 
-async def test_reopens_after_process_approval_without_replaying_action(tmp_path: Path) -> None:
+async def test_reopens_after_trusted_process_approval_without_replaying_action(
+    tmp_path: Path,
+) -> None:
     run_id = uuid4()
     provider = HistoricalFixProvider()
     crashed = False
 
     def fault(point: str) -> None:
         nonlocal crashed
-        if point == "eval_runner.after_process_approval" and not crashed:
+        if point == "eval_runner.after_trusted_process_approval" and not crashed:
             crashed = True
             raise RuntimeError("simulated host exit after durable approval")
 
@@ -285,8 +297,44 @@ async def test_reopens_after_process_approval_without_replaying_action(tmp_path:
     recovered = await run(tmp_path, run_id, provider)
     assert recovered.report.outcome == "passed"
     assert len(provider.requests) == 7
-    with sqlite3.connect(tmp_path / str(run_id) / "effects.sqlite") as database:
-        assert database.execute("SELECT COUNT(*) FROM actions").fetchone()[0] == 2
+    run_root = tmp_path / str(run_id)
+    assert not (run_root / "effects.sqlite").exists()
+    with sqlite3.connect(run_root / "action-audit.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM action_route_plans").fetchone()[0] == 2
+    with sqlite3.connect(run_root / "process-state" / "process-leases.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM process_leases").fetchone()[0] == 2
+
+
+async def test_reopens_after_trusted_process_result_without_replaying_process(
+    tmp_path: Path,
+) -> None:
+    run_id = uuid4()
+    provider = HistoricalFixProvider()
+    crashed = False
+
+    def fault(point: str) -> None:
+        nonlocal crashed
+        if point == "runtime.after_tool" and not crashed:
+            crashed = True
+            raise SimulatedHostExit("simulated response loss after trusted process")
+
+    with pytest.raises(SimulatedHostExit, match="simulated response loss"):
+        await run(tmp_path, run_id, provider, fault=fault)
+
+    run_root = tmp_path / str(run_id)
+    with sqlite3.connect(run_root / "action-audit.db") as database:
+        assert database.execute(
+            "SELECT state FROM action_route_snapshots ORDER BY plan_id"
+        ).fetchall() == [("succeeded",)]
+    with sqlite3.connect(run_root / "process-state" / "process-leases.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM process_leases").fetchone()[0] == 1
+    assert len(provider.requests) == 1
+
+    recovered = await run(tmp_path, run_id, provider)
+    assert recovered.report.outcome == "passed"
+    assert len(provider.requests) == 7
+    with sqlite3.connect(run_root / "process-state" / "process-leases.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM process_leases").fetchone()[0] == 2
 
 
 async def test_cancellation_is_durable_and_reopen_grades_terminal_turn(tmp_path: Path) -> None:
@@ -343,8 +391,9 @@ async def test_task_allowlist_rejects_patch_to_other_managed_file(tmp_path: Path
     workspace = run_root / "managed" / str(state.execution_workspace_id) / "workspace"
     assert (workspace / "README.md").read_text(encoding="utf-8").startswith("# Harnessix")
     assert not (run_root / "report.json").exists()
-    with sqlite3.connect(run_root / "effects.sqlite") as database:
-        assert database.execute("SELECT COUNT(*) FROM actions").fetchone()[0] == 0
+    assert not (run_root / "effects.sqlite").exists()
+    with sqlite3.connect(run_root / "action-audit.db") as database:
+        assert database.execute("SELECT COUNT(*) FROM action_route_plans").fetchone()[0] == 0
 
 
 async def test_provision_rejects_unpinned_host_only_paths(tmp_path: Path) -> None:

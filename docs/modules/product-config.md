@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 12
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -28,6 +28,7 @@ related_tests:
   - tests/integration/test_product_process_profile.py
   - tests/product_config/test_schemas.py
   - tests/product_ui/test_cli.py
+  - tests/evals/test_runner.py
 supersedes: []
 ---
 
@@ -38,16 +39,16 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；执行安全Fallback与启动只对账恢复；持久化双配置快照、原子活动指针、恢复报告及审计事实 |
-| 非职责 | 不执行Agent Loop、Tool、Approval或Action；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
-| 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、自定义产品组合根和测试宿主 |
+| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；为默认产品及历史Eval装配能力受限的Trusted Action组合；执行安全Fallback与启动只对账恢复；持久化双配置快照、原子活动指针、恢复报告及审计事实 |
+| 非职责 | 不执行Agent Loop或替代Router审批权威；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
+| 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、历史Eval Runner、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 Product Config v2；Product Config v1只允许显式迁移；独立Product Action Config v1可显式加载 |
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链及Action恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
-| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；安全Action文件、Doctor、双配置原子CAS、上一配置恢复Router与统一Owner已通过七任务CI验收 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合候选基于`c67f48dfffb683d61c3a91d813c0add25596202f` |
+| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；f2c Eval专用Catalog/Gateway/Router/Supervisor组合已通过本地专项验证，待全量与CI关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -60,6 +61,8 @@ supersedes: []
 [`action_store.py`](../../src/harnessix/product_config/action_store.py)、
 [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、
 [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py)、
+[`eval_process.py`](../../src/harnessix/product_config/eval_process.py)、
+[`eval_action.py`](../../src/harnessix/product_config/eval_action.py)、
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)、
 [`process_action.py`](../../src/harnessix/product_config/process_action.py)、
 [`server.py`](../../src/harnessix/product_config/server.py)和
@@ -1829,7 +1832,24 @@ Executor或向新Binding迁移旧批准。
 | CLI与环境变量透传 | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | JSON Schema确定生成 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) |
 
-## 52. 相关文档
+## 52. 历史Eval专用Trusted Action组合（0.9.1f2c候选）
+
+历史Eval需要复用产品统一风险路由，但其固定宿主检查不能进入默认C端产品目录。组合根因此位于`product_config`：[`eval_process.py`](../../src/harnessix/product_config/eval_process.py)负责把公开`run_tests {profile}`与Launcher、完整argv、Workspace Snapshot、`host_guarded + network=full`能力及Supervisor证明确定性绑定；[`eval_action.py`](../../src/harnessix/product_config/eval_action.py)负责Catalog、Gateway、Router、Execution Plan Store、Action Audit Store、POSIX Supervisor和Action Output Provider生命周期。Evals包只依赖这一组合根，不直接拼装Execution、Workspace或Trusted Action内部组件。
+
+该组合与默认`ProductActionRuntimeOwner`共享合同和基础组件，但不共享配置、状态目录或能力广告：
+
+| 维度 | 默认产品组合 | Eval组合 |
+|---|---|---|
+| 入口 | App Server/Agent Protocol | 固定历史Eval Runner |
+| Process | 经证明的固定Container Profile | 固定POSIX宿主检查Profile |
+| Sandbox声明 | `container_strong` | `host_guarded` |
+| 网络 | Profile固定，当前产品为`none` | 诚实声明`full` |
+| 状态 | 产品State Root与配置快照 | 每Run私有Plan/Audit/Process目录 |
+| 目录 | 用户可见已验证能力 | 单一`run_tests`，不进入产品能力报告 |
+
+Eval组合不接受任意命令、环境或Secret。Process ID固定等于Execution Plan ID；Router已终态但Session响应丢失时只从同一Lease与Artifact补结果投影，不能再次启动。未完成旧`effects.sqlite`运行由Runner在装配前拒绝，避免新旧账本双重消费。
+
+## 53. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1848,10 +1868,11 @@ Executor或向新Binding迁移旧批准。
 - [SDK模块设计](sdk.md)
 
 
-## 53. 变更记录
+## 54. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 12 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 增加历史Eval专用Trusted Action组合根，分离公开Profile到Process物化与Catalog/Router/Owner生命周期，待全量与CI关闭 |
 | 11 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner由CI 35439332019验收关闭 |
 | 10 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5实现候选：Action安全加载、无状态Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner；等待关闭CI |
 | 9 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成七任务全矩阵验收并关闭 |

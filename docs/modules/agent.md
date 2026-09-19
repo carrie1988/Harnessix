@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 10
+code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ supersedes: []
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复，以及可显式装配的统一Trusted Action Gateway |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
+| 代码版本 | f2c恢复候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待全量与CI关闭 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到25 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
@@ -721,6 +721,17 @@ sequenceDiagram
 
 完整计划、状态、错误矩阵和源码映射见[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md#2211-091e2实际交付边界)。
 
+### 24.5 Trusted Action终态响应丢失恢复
+
+当Router和专用效果Owner已经形成确定终态、但Session的Tool Result提交前宿主退出时，重开会再次进入同一Call的Trusted Action恢复。Gateway必须区分两类来源：
+
+1. Router在本次恢复前已是`denied/succeeded/failed`：只补原执行结果，`origin=execution`；
+2. Router原为`unknown/reconciling`并经只读Reconcile得到结果：保持`origin=recovery`，继续受Reducer“恢复效果不得把中断Turn伪装为正常成功”的守卫。
+
+Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXECUTING_TOOLS`是安全的显式`resume_turn`边界；Runtime启动恢复保留该状态，调用者恢复后继续下一次模型循环。`_execute_calls`不会为了恢复再次追加非法的`executing_tools → executing_tools`转移。该规则只允许推进Session，不授权再次执行副作用。
+
+专项测试在Router终态后分别重入`execute`与调用`recover`，均断言Executor调用次数保持1；实际UNKNOWN对账仍产生`origin=recovery`。历史Eval进一步以Process Lease计数证明响应丢失后未生成第二个进程。
+
 ## 25. 默认Workspace Patch分派（0.9.1e3）
 
 [`AgentRuntime`](../../src/harnessix/agent/runtime.py)构造模型请求时，不再仅按内部Definition字典筛选高风险工具；名称还必须由[`TrustedActionSessionRuntime.action_name_owned`](../../src/harnessix/agent/trusted_action_runtime.py)明确持有。该约束保证模型看到的`apply_patch_batch`一定存在完整Gateway、Router和Session投影链，任意误注入Definition不能扩大模型能力面。
@@ -733,6 +744,7 @@ sequenceDiagram
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步Trusted Action Router终态响应丢失只补原执行投影、EXECUTING_TOOLS安全续跑及不重放候选 |
 | 9 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录e5外部Action Config与启动恢复通过CI 35439332019并关闭 |
 | 8 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步固定Container Process已验收事实，登记e5外部Action Config与启动恢复候选边界 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认POSIX Workspace Patch，收紧模型工具目录所有权，记录Review、审批、执行、取消和SDK纵向链 |

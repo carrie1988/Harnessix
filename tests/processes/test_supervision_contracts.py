@@ -16,6 +16,7 @@ from harnessix.execution.contracts import (
     ExecutionPlanV2,
     ExecutionPolicyBinding,
     SandboxBindingV2,
+    canonical_digest,
 )
 from harnessix.execution.planner import build_capability_evidence_v2, build_execution_plan_v2
 from harnessix.processes.owner_receipt import (
@@ -42,7 +43,12 @@ from harnessix.workspace.snapshot import capture_workspace_snapshot
 NOW = datetime(2026, 9, 8, tzinfo=UTC)
 
 
-def _plan(root: Path, spec: ProcessSpec) -> tuple[ExecutionPlanV2, ProcessCapabilityProbe]:
+def _plan(
+    root: Path,
+    spec: ProcessSpec,
+    *,
+    intent_arguments: dict[str, str] | None = None,
+) -> tuple[ExecutionPlanV2, ProcessCapabilityProbe]:
     snapshot = capture_workspace_snapshot(
         root, resources=(WorkspaceResourceRequest(path=".", access="write"),)
     )
@@ -76,7 +82,11 @@ def _plan(root: Path, spec: ProcessSpec) -> tuple[ExecutionPlanV2, ProcessCapabi
         tool="process.supervised",
         tool_version="v1",
         tool_fingerprint="c" * 64,
-        arguments=spec.model_dump(mode="json", warnings="error"),
+        arguments=(
+            spec.model_dump(mode="json", warnings="error")
+            if intent_arguments is None
+            else intent_arguments
+        ),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
         idempotency_key="turn/call",
@@ -170,6 +180,34 @@ def test_process_launch_binding_covers_plan_materialization_and_environment(tmp_
         type(binding).model_validate_json(
             binding.model_copy(update={"process_spec_digest": "f" * 64}).model_dump_json()
         )
+
+
+def test_process_launch_binding_accepts_only_explicit_public_intent_arguments(
+    tmp_path: Path,
+) -> None:
+    spec = build_process_spec(invocation="argv", argv=("python", "-V"))
+    public = {"profile": "focused"}
+    public_plan, capability = _plan(tmp_path, spec, intent_arguments=public)
+    binding = build_process_launch_binding(
+        public_plan,
+        spec,
+        capability,
+        kind="host",
+        environment={},
+        intent_arguments=public,
+    )
+    assert binding.intent_arguments_digest == canonical_digest(public)
+
+    with pytest.raises(KernelError) as mismatch:
+        build_process_launch_binding(
+            public_plan,
+            spec,
+            capability,
+            kind="host",
+            environment={},
+            intent_arguments={"profile": "other"},
+        )
+    assert mismatch.value.code == "process_capability_mismatch"
 
 
 def test_process_lease_rejects_partial_running_and_terminal_facts(tmp_path: Path) -> None:

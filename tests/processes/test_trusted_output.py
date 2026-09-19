@@ -15,6 +15,7 @@ from harnessix.processes.trusted_output import (
     TrustedProcessOutputDocument,
     build_trusted_process_output,
     parse_trusted_process_output,
+    trusted_process_public_output,
 )
 
 NOW = datetime(2026, 9, 13, tzinfo=UTC)
@@ -66,6 +67,7 @@ def test_trusted_process_output_is_binary_safe_canonical_and_publicly_bounded() 
     assert parse_trusted_process_output(body) == document
     assert document.summary.complete
     assert document.summary.public_output()["profile"] == "unit-tests"
+    assert trusted_process_public_output(document, include_passed=True)["passed"] is True
     assert b"hello\x00" not in body
     assert len(body) < 1024 * 1024
 
@@ -85,6 +87,18 @@ def test_trusted_process_output_fairly_archives_large_dual_streams() -> None:
     assert document.summary.stderr.archive_truncated
     assert not document.summary.complete
     assert len(document.to_jsonl()) < 1024 * 1024
+
+
+def test_trusted_process_test_result_is_derived_from_terminal_facts() -> None:
+    failed = build_trusted_process_output(
+        "unit-tests",
+        lease(b"failed\n", b"", returncode=1),
+        b"failed\n",
+        b"",
+    )
+
+    assert "passed" not in trusted_process_public_output(failed)
+    assert trusted_process_public_output(failed, include_passed=True)["passed"] is False
 
 
 def test_trusted_process_output_rejects_lease_body_and_jsonl_tampering() -> None:

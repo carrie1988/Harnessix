@@ -24,7 +24,10 @@ from harnessix.agent.models import (
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
-from harnessix.processes.trusted_output import parse_trusted_process_output
+from harnessix.processes.trusted_output import (
+    parse_trusted_process_output,
+    trusted_process_public_output,
+)
 from harnessix.session.sqlite import SQLiteSessionStore
 
 QuotaCheck = Callable[[aiosqlite.Connection, UUID, UUID, int], Awaitable[None]]
@@ -296,8 +299,12 @@ def validate_action_output_body(
         if not isinstance(result.output, dict):
             raise ValueError
         public = {key: value for key, value in result.output.items() if key != "artifact"}
+        expected = trusted_process_public_output(
+            document,
+            include_passed="passed" in public,
+        )
         if (
-            public != document.summary.public_output()
+            public != expected
             or result.output.get("artifact") != ref.model_dump(mode="json")
             or document.summary.complete != ref.complete
         ):

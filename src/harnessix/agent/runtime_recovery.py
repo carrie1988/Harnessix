@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 from harnessix.agent import batch_patching
@@ -10,12 +10,15 @@ from harnessix.agent.approvals import approval_for, approval_matches
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import (
+    ItemStatus,
     PatchApprovalRequestContent,
     PatchBatchApprovalRequestContent,
+    QuestionAnswerContent,
     Thread,
     ToolCallContent,
     ToolResultContent,
     Turn,
+    TurnStatus,
 )
 from harnessix.agent.patching import inspection_scope, result_content
 from harnessix.agent.ports import PatchBatchRuntime, PatchRuntime
@@ -29,6 +32,48 @@ from harnessix.context.compaction_ledger_contracts import CompactionRecord
 from harnessix.domain.models import EffectClass
 
 type ToolContractValidator = Callable[[ToolCallContent], None]
+type TurnStateTransition = Callable[[UUID, UUID, TurnStatus], Awaitable[Thread]]
+
+
+def result_resume_safe(turn: Turn) -> bool:
+    """仅允许已持久回答或Trusted Action终态结果继续模型循环。"""
+
+    answers = [
+        item.content
+        for item in turn.items
+        if item.status == ItemStatus.COMPLETED and isinstance(item.content, QuestionAnswerContent)
+    ]
+    question_safe = bool(answers) and any(
+        item.status == ItemStatus.COMPLETED
+        and isinstance(item.content, ToolResultContent)
+        and item.content.call_id == answers[-1].call_id
+        and item.content.outcome == "succeeded"
+        for item in turn.items
+    )
+    trusted_safe = not pending_calls(turn) and any(
+        item.status == ItemStatus.COMPLETED
+        and isinstance(item.content, ToolResultContent)
+        and item.content.trusted_action is not None
+        for item in turn.items
+    )
+    return question_safe or trusted_safe
+
+
+async def consume_decided_approval(
+    thread: Thread,
+    turn: Turn,
+    transition: TurnStateTransition,
+    fault: Callable[[str], None],
+) -> tuple[Thread, Turn]:
+    """持久消费审批等待边界；恢复只接受已处于工具执行状态。"""
+
+    if turn.status is TurnStatus.WAITING_APPROVAL:
+        thread = await transition(thread.thread_id, turn.turn_id, TurnStatus.EXECUTING_TOOLS)
+        turn = next(item for item in thread.turns if item.turn_id == turn.turn_id)
+        fault("runtime.after_approval_consumed")
+    elif turn.status is not TurnStatus.EXECUTING_TOOLS:
+        raise KernelError("approval_projection_mismatch", "已决定审批不处于等待或恢复执行状态")
+    return thread, turn
 
 
 def recoverable_compaction(turn: Turn, event_sequence: int) -> CompactionRecord | None:

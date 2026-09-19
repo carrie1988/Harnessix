@@ -11,14 +11,14 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 849,
-    "src/harnessix/agent/runtime.py": 3115,
+    "src/harnessix/agent/runtime.py": 3098,
     "src/harnessix/context/sources.py": 844,
     "src/harnessix/delivery/git.py": 1041,
-    "src/harnessix/delivery/git_push.py": 642,
+    "src/harnessix/delivery/git_push.py": 609,
     "src/harnessix/evals/delivery.py": 937,
-    "src/harnessix/evals/runner.py": 700,
+    "src/harnessix/evals/runner.py": 669,
     "src/harnessix/mcp/runtime.py": 643,
-    "src/harnessix/processes/supervisor.py": 827,
+    "src/harnessix/processes/supervisor.py": 776,
     "src/harnessix/protocol/contracts.py": 643,
     "src/harnessix/sdk/agent_client.py": 611,
     "src/harnessix/skills/runtime.py": 644
@@ -45,7 +45,7 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 2922,
+      "max_lines": 2921,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
@@ -57,7 +57,7 @@
       "max_decision_complexity": 32
     },
     "harnessix.agent.runtime:AgentRuntime._execute_calls": {
-      "max_lines": 269,
+      "max_lines": 268,
       "max_decision_complexity": 55
     },
     "harnessix.agent.runtime:AgentRuntime._finish": {
@@ -133,12 +133,8 @@
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore": {
-      "max_lines": 462,
+      "max_lines": 432,
       "max_decision_complexity": 0
-    },
-    "harnessix.artifacts.sqlite:SQLiteArtifactStore._body": {
-      "max_lines": 47,
-      "max_decision_complexity": 21
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore._verify_page": {
       "max_lines": 40,
@@ -209,7 +205,7 @@
       "max_decision_complexity": 21
     },
     "harnessix.delivery.git_push:GitPushActionExecutor": {
-      "max_lines": 272,
+      "max_lines": 267,
       "max_decision_complexity": 0
     },
     "harnessix.delivery.git_push:canonical_git_remote_url": {
@@ -273,8 +269,8 @@
       "max_decision_complexity": 26
     },
     "harnessix.evals.runner:run_historical_coding_eval": {
-      "max_lines": 233,
-      "max_decision_complexity": 24
+      "max_lines": 206,
+      "max_decision_complexity": 23
     },
     "harnessix.execution.store:SQLiteExecutionPlanStore": {
       "max_lines": 176,
@@ -449,7 +445,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.processes.supervisor:PosixProcessSupervisor": {
-      "max_lines": 302,
+      "max_lines": 299,
       "max_decision_complexity": 0
     },
     "harnessix.processes.supervisor:PosixProcessSupervisor._start_bound": {
@@ -509,12 +505,12 @@
       "max_decision_complexity": 0
     },
     "harnessix.sandbox.container:ContainerCommandBuilder": {
-      "max_lines": 361,
+      "max_lines": 338,
       "max_decision_complexity": 0
     },
     "harnessix.sandbox.container:ContainerCommandBuilder.prepare": {
-      "max_lines": 165,
-      "max_decision_complexity": 47
+      "max_lines": 146,
+      "max_decision_complexity": 36
     },
     "harnessix.sandbox.egress:ManagedEgressGateway": {
       "max_lines": 143,
@@ -529,7 +525,7 @@
       "max_decision_complexity": 21
     },
     "harnessix.sandbox.process_runtime:ContainerProcessRuntime": {
-      "max_lines": 142,
+      "max_lines": 135,
       "max_decision_complexity": 0
     },
     "harnessix.sdk.agent_client:AgentClient": {
@@ -585,7 +581,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.router:TrustedActionRouter": {
-      "max_lines": 334,
+      "max_lines": 332,
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.store:SQLiteActionAuditStore": {
@@ -624,7 +620,6 @@
   "approved_package_dependencies": [
     "__main__->cli",
     "__root__->domain",
-    "__root__->sdk",
     "adapters->domain",
     "adapters->sdk",
     "agent->artifacts",
@@ -661,15 +656,11 @@
     "bootstrap->settings",
     "bootstrap->storage",
     "cli->agent_cli",
-    "cli->bootstrap",
     "cli->evals",
     "cli->licensing",
-    "cli->observability",
     "cli->product_config",
     "cli->product_ui",
-    "cli->settings",
     "cli->smoke",
-    "cli->worker",
     "context->agent",
     "context->artifacts",
     "context->domain",
@@ -677,7 +668,6 @@
     "delivery->agent",
     "delivery->domain",
     "delivery->execution",
-    "delivery->runtime",
     "delivery->tools",
     "delivery->trusted_actions",
     "delivery->workspace",
@@ -688,13 +678,10 @@
     "evals->models",
     "evals->observability",
     "evals->patches",
-    "evals->policy",
     "evals->processes",
-    "evals->runtime",
+    "evals->product_config",
     "evals->session",
-    "evals->storage",
     "evals->tools",
-    "evals->worker",
     "execution->agent",
     "execution->domain",
     "execution->tools",

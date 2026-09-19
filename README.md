@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e5已通过对应全矩阵CI。0.9.1f1已把独立Action HTTP/Worker撤出公共产品面，f2a固定Container Process和f2b直接Trusted Git Push均已关闭；f2c/f3继续迁移历史Eval并删除兼容内核。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e5已通过对应全矩阵CI。0.9.1f1已把独立Action HTTP/Worker撤出公共产品面，f2a固定Container Process和f2b直接Trusted Git Push均已关闭；f2c历史Eval Trusted Action迁移已形成候选实现并通过本地专项验证，待全量与CI关闭；f3继续删除兼容内核。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -334,8 +334,8 @@ uv run pytest tests/agent/test_coding_feedback_loop.py tests/agent/test_coding_f
 - 固定历史树被导出为不含remote和后续修复历史的私有单提交仓库，0700运行目录和0600 `ready`清单支持脏工作树重开；
 - 宿主隐藏检查验证空工具调用ID兼容行为及四类身份回归，只向评分层提供退出码、耗时和输出摘要；
 - 完整性错误不覆盖已有运行目录，检查取消和基础设施失败与普通行为失败明确分离。
-- 运行器使用第二层受管执行副本，经同一Agent Runtime、Process/Patch持久审批和外部Action Worker形成失败测试、修复、通过测试、Git反馈和结构化回答闭环；
-- `run-state.json`保存可恢复边界；Process审批后退出、调用取消和报告发布后退出均可按原Session/Action/Patch事实恢复，不重放已完成动作。
+- 运行器使用第二层受管执行副本，经同一Agent Runtime、Patch持久审批及Eval专用Trusted Action Catalog/Gateway/Router与POSIX Process Supervisor形成失败测试、修复、通过测试、Git反馈和结构化回答闭环；
+- `run-state.json`保存可恢复边界；测试审批后退出、Router终态响应丢失、调用取消和报告发布后退出均可按原Session/Plan/Audit/Process/Patch事实恢复，不重放已完成动作；未完成旧`effects.sqlite`运行明确要求升级重建。
 
 ```bash
 uv run pytest tests/evals
@@ -479,8 +479,8 @@ Reconcile，并由此形成当前可信执行语义。产品演进后，默认Co
 `TrustedActionGateway → TrustedActionRouter`统一规划、审批、执行和对账。
 
 从[ADR 0081](docs/adr/0081-single-coding-agent-product-boundary.md)开始，独立HTTP API、Action HTTP Client和
-数据库Worker Queue不再属于1.0产品面；固定Container Process和Git Push已经迁入Trusted Action链，`ActionService/ActionWorker`
-只为历史Process Reader、Eval和旧实现迁移保留，不允许新增调用方。旧实现的历史能力和测试证据仍保留在Git历史与
+数据库Worker Queue不再属于1.0产品面；固定Container Process、Git Push和历史Eval新运行已经迁入Trusted Action链；`ActionService/ActionWorker`
+只为历史Process Reader和旧实现迁移保留，不允许新增调用方。旧实现的历史能力和测试证据仍保留在Git历史与
 [Action Plane子系统资料](docs/subsystems/action-plane.md)中，不能据此使用已撤销的`serve/worker`命令。
 
 ## 当前已实现：0.3 Agent Runtime Kernel
