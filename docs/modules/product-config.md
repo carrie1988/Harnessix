@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 13
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -47,8 +47,8 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链及Action恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合候选基于`c67f48dfffb683d61c3a91d813c0add25596202f` |
-| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；f2c Eval专用Catalog/Gateway/Router/Supervisor组合已通过本地专项验证，待全量与CI关闭 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；f2c Eval专用Catalog/Gateway/Router/Supervisor组合已通过七任务全矩阵CI关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1832,7 +1832,7 @@ Executor或向新Binding迁移旧批准。
 | CLI与环境变量透传 | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | JSON Schema确定生成 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) |
 
-## 52. 历史Eval专用Trusted Action组合（0.9.1f2c候选）
+## 52. 历史Eval专用Trusted Action组合（0.9.1f2c已验收）
 
 历史Eval需要复用产品统一风险路由，但其固定宿主检查不能进入默认C端产品目录。组合根因此位于`product_config`：[`eval_process.py`](../../src/harnessix/product_config/eval_process.py)负责把公开`run_tests {profile}`与Launcher、完整argv、Workspace Snapshot、`host_guarded + network=full`能力及Supervisor证明确定性绑定；[`eval_action.py`](../../src/harnessix/product_config/eval_action.py)负责Catalog、Gateway、Router、Execution Plan Store、Action Audit Store、POSIX Supervisor和Action Output Provider生命周期。Evals包只依赖这一组合根，不直接拼装Execution、Workspace或Trusted Action内部组件。
 
@@ -1872,7 +1872,8 @@ Eval组合不接受任意命令、环境或Secret。Process ID固定等于Execut
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 12 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 增加历史Eval专用Trusted Action组合根，分离公开Profile到Process物化与Catalog/Router/Owner生命周期，待全量与CI关闭 |
+| 13 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录历史Eval专用Trusted Action组合根由CI 35446341997完成七任务全矩阵验收 |
+| 12 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 增加历史Eval专用Trusted Action组合根，分离公开Profile到Process物化与Catalog/Router/Owner生命周期，等待验收 |
 | 11 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner由CI 35439332019验收关闭 |
 | 10 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5实现候选：Action安全加载、无状态Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner；等待关闭CI |
 | 9 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成七任务全矩阵验收并关闭 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 3
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -44,8 +44,8 @@ supersedes: []
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | f2c候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待实现提交与全矩阵CI关闭后回填 |
-| 当前完成度 | 0.5.5定义的单任务纵向闭环和三次真实模型基线已完成；0.9.1f2c已形成移除Eval Action Worker/Effect Journal依赖的候选实现并通过本地专项测试，待全量与CI关闭；距离生产级持续评测系统仍缺任务集、OS隔离、Windows、统计门禁、并发执行、独立Eval遥测和统一Delivery |
+| 代码版本 | f2c实现`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
+| 当前完成度 | 0.5.5定义的单任务纵向闭环和三次真实模型基线已完成；0.9.1f2c已移除Eval Action Worker/Effect Journal依赖并通过七任务全矩阵CI关闭；距离生产级持续评测系统仍缺任务集、OS隔离、Windows、统计门禁、并发执行、独立Eval遥测和统一Delivery |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -141,10 +141,10 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | 内置任务Catalog | 已实现 | `historical_coding_eval` | 仅1个任务、3个版本 |
 | 历史仓库物化 | 已实现 | `materialize_historical_coding_eval` | 本地完整Git历史、POSIX私有目录 |
 | 隐藏检查 | 已实现 | `run_historical_checks` | 固定Harnessix任务，不是第三方Sandbox |
-| 正式Agent运行 | 已实现/f2c候选 | `run_historical_coding_eval` | Managed Copy、自动受限审批、Eval Trusted Action、Process Supervisor |
+| 正式Agent运行 | 已实现/已验收 | `run_historical_coding_eval` | Managed Copy、自动受限审批、Eval Trusted Action、Process Supervisor |
 | 确定性评分 | 已实现 | `grade_coding_eval` | 固定14项，不评价主观代码质量 |
 | Git证据 | 已实现 | `collect_git_evidence` | 最多200项状态，完整观察摘要 |
-| Run恢复 | 已实现/f2c候选 | Run State + Session/Execution Plan/Action Audit/Process Lease/Patch账本 | 批准提交、结果投影丢失、取消和报告发布窗口 |
+| Run恢复 | 已实现/已验收 | Run State + Session/Execution Plan/Action Audit/Process Lease/Patch账本 | 批准提交、结果投影丢失、取消和报告发布窗口 |
 | Campaign聚合 | 已实现 | `build_coding_eval_campaign_report` | 完整计划才发布 |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
@@ -1576,5 +1576,6 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval Trusted Action迁移由CI 35446341997完成七任务全矩阵验收并关闭 |
+| 2 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | f2c候选：历史Eval从Action Service/Worker/Effect Journal迁入产品同源Trusted Action Catalog/Gateway/Router和POSIX Supervisor；补充批准、响应丢失、结果投影、旧Run升级拒绝及持久化布局 |
 | 1 | `45cc209133784fdbff853001230171f95516be20` | 2026-09-12 | 建立Evals现行模块设计，覆盖历史任务、物化、隐藏检查、正式Agent运行、固定评分、Campaign、成本、Compaction语义评测、专用单文件交付及生产缺口 |
-| 2 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 0.9.1f2c候选：历史Eval从Action Service/Worker/Effect Journal迁入产品同源Trusted Action Catalog/Gateway/Router和POSIX Supervisor；补充批准、响应丢失、结果投影、旧Run升级拒绝及持久化布局 |

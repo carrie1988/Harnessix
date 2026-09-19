@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 13
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 14
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -392,7 +392,7 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至已关闭验收Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`，0.9.1e4/e5、0.9.1f1与f2b Git Push直接Trusted Action均已关闭。基于`c67f48dfffb683d61c3a91d813c0add25596202f`的f2c候选已通过Evals、Campaign、Process、Gateway、Agent恢复和治理专项回归，证明Router终态响应丢失只补Session投影且Process Lease不增加；在全量与CI完成前仍不得关闭f2c。以下项目仍不能宣称生产完成：0.9.1f2c～f3及0.9.2～0.9.6范围的CI关闭、兼容内核物理删除、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至当前验收Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`，0.9.1e4/e5、0.9.1f1、f2b Git Push与f2c历史Eval Trusted Action均已关闭。f2c本地全仓3569项通过/20项跳过；Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务。以下项目仍不能宣称生产完成：0.9.1f3及0.9.2～0.9.6范围的兼容内核物理删除、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ### 20.1 0.9.1e5验证矩阵
 

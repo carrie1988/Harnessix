@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 16
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -45,7 +45,7 @@ supersedes: []
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
-| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已关闭旧ActionService桥；f2c历史Eval新运行已迁入同一Catalog/Gateway/Router并通过本地响应丢失不重放验证，待全量与CI关闭 |
+| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已关闭旧ActionService桥；f2c历史Eval新运行已迁入同一Catalog/Gateway/Router并通过七任务全矩阵CI关闭 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
@@ -1200,7 +1200,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | f2c候选已移除历史Eval新运行依赖，但历史Reader与兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成CI关闭与物理收敛 | 0.9.1f2c～f3 |
+| P0 | 历史Reader与兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f3 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1507,6 +1507,8 @@ flowchart TD
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 16 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval统一Router与响应丢失不重放由CI 35446341997完成全矩阵验收 |
+| 15 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c历史Eval新运行迁入统一Catalog、Gateway、Router，补充响应丢失不重放并收缩兼容内核白名单候选 |
 | 14 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除由CI 35442924441验收关闭 |
 | 13 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除候选；等待全矩阵CI |
 | 12 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则由CI 35439332019验收关闭 |

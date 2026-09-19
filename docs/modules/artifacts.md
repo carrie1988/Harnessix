@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 9
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -45,7 +45,7 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | f2c确定性测试结论投影候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待全量与CI关闭 |
+| 代码版本 | f2c确定性测试结论投影`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
@@ -649,6 +649,7 @@ Eval的公开结果允许增加`passed`，但该字段不是Executor可自由提
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录Eval确定性`passed`投影与Action Output重复验证由CI 35446341997完成全矩阵验收 |
 | 8 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步Eval `passed`由可信Process终态确定性派生并在Action Output读取时重复验证的候选合同 |
 | 7 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Profile Process输出Artifact由CI 35434198163完成真实镜像及全矩阵验收 |
 | 6 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 将`action_output`接入默认固定Profile Process链，并验证提交确认丢失只返回原收据；等待全矩阵CI |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 10
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ supersedes: []
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
 | 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；Eval以Execution Plan/Action Audit/Lease/Artifact分层持有事实；兼容链仍由通用Action Journal和Session/Artifact Store拥有 |
 | 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；Eval候选通过专用Trusted Action组合复用POSIX Supervisor；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c公开意图与派生ProcessSpec绑定候选基于`c67f48dfffb683d61c3a91d813c0add25596202f`，待全量与CI关闭 |
+| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c公开意图与派生ProcessSpec绑定`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -1499,7 +1499,7 @@ function agent_observe(plan):
 - [x] 重启不按PID控制、不重复spawn，证据不足进入unknown；
 - [x] Container客户端生命周期复用统一Supervisor并由Sandbox补充实例清理；
 - [x] 固定Container Profile产品链使用ExecutionPlanV2 + Supervisor且恢复不重放；
-- [x] 历史Eval新运行从旧Process Bridge/Worker迁入Trusted Action + Supervisor候选链，并覆盖审批与结果响应丢失不重放；待全量与CI关闭后转为已验收；
+- [x] 历史Eval新运行从旧Process Bridge/Worker迁入Trusted Action + Supervisor链，审批与结果响应丢失不重放已通过全矩阵CI验收；
 - [ ] 旧Process Bridge及历史Reader从兼容内核迁移并删除；
 - [ ] POSIX恶意脱组、Owner强杀和长后台Soak达到预冻结阈值；
 - [ ] 可执行文件身份、状态路径、全事件完整性、容量和安全GC闭环；
@@ -1558,6 +1558,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论由CI 35446341997验收关闭 |
 | 9 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c Eval Trusted Action对Supervisor的公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论候选 |
 | 8 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录无状态Profile证明、正式Runtime绑定及旧Profile只对账恢复由CI 35439332019验收关闭 |
 | 7 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Profile证明、正式Runtime绑定及按旧Profile只对账恢复候选；等待关闭CI |

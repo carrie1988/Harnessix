@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 4
-code_revision: c67f48dfffb683d61c3a91d813c0add25596202f
+version: 5
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 ## 状态
 
-接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push已经通过全矩阵CI并关闭；f2c历史Eval Trusted Action迁移已形成候选实现并通过本地专项验证，待全量与CI关闭；兼容内核物理删除仍未完成。
+接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push已经通过全矩阵CI并关闭；f2c历史Eval Trusted Action迁移已通过七任务全矩阵CI并关闭；兼容内核物理删除仍未完成。
 
 ## 背景
 
@@ -84,7 +84,7 @@ Trusted Action已经是默认产品实际使用的安全边界，并由ADR 0069�
 独立HTTP/Worker的价值主要是通用框架接入和多进程队列，这两项不属于本地优先1.0范围。把治理能力内聚到Agent，
 既保留Action Plane最有价值的失败语义，又消除双入口、双SDK和双部署拓扑。
 
-兼容内核分阶段删除优于一次硬删：f2c候选已经把历史Eval受控测试迁入产品同源Catalog/Gateway/Router与POSIX Supervisor，旧Process桥仍承担历史Session读取。
+兼容内核分阶段删除优于一次硬删：f2c已经把历史Eval受控测试迁入产品同源Catalog/Gateway/Router与POSIX Supervisor，旧Process桥仍承担历史Session读取。
 Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action Audit保存Route状态、远端Ref保存效果事实，
 不再投影到旧Effect Journal。先逐项建立替代路径和回归证据，才能保证收敛不是功能倒退。
 
@@ -130,7 +130,7 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
 - **f2b已关闭**：`git.push`通过`git_push_descriptor/git_push_binding/build_git_push_definition`直接注册Router，
   `GitPushActionExecutor`执行冻结Route。响应丢失进入`unknown`；宿主在Push后硬退出时，重开将`running`转为
   `unknown`并只执行`ls-remote`；真实子进程在效果后`os._exit(97)`，响应丢失用例另以调用计数断言没有第二次Push；实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收；
-- **f2c候选已实现**：历史Eval以固定Profile装配专用Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor和Action Output Artifact；响应丢失只补Session结果，Process Lease计数证明不重放；治理白名单从7项缩为6项；待全量与CI关闭。
+- **f2c已关闭**：历史Eval以固定Profile装配专用Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor和Action Output Artifact；响应丢失只补Session结果，Process Lease计数证明不重放；治理白名单从7项缩为6项；实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`已由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收。
 - **剩余**：f3在旧生产调用方集合清零后提供归档方案并删除API、Worker、旧SDK/Adapter和依赖。
 
 治理门禁要求实际旧引用集合与白名单完全相等；因此每删除一个调用方都必须同步缩小白名单，不能保留可被未来代码重新占用的额度。

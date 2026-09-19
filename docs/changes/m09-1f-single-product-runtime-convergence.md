@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: pending
+version: 5
+code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ f2/f3必须继续消除生产调用与物理实现，不能把“不可从产品
 | CLI与公共SDK已经收敛 | `cli.py`、`harnessix/__init__.py`、`sdk/__init__.py` | f1关闭双产品入口，治理测试阻止回归 |
 | 固定Container Process已进入产品链 | `product_config/process_action.py`与`product_config/action_runtime.py` | f2a已经由0.9.1e4/e5关闭；历史Process Reader留到f3处理 |
 | Git Push已直接使用Trusted Action Route | `delivery/git_push.py::build_git_push_definition` | f2b已移除ActionService/Effect Journal桥，并由CI 35442924441关闭 |
-| 历史Eval新运行已移除Worker | `evals/runner.py::run_historical_coding_eval`、`product_config/eval_action.py` | f2c候选使用产品同源Catalog/Gateway/Router、Plan/Audit与Supervisor；待全量与CI关闭 |
+| 历史Eval新运行已移除Worker | `evals/runner.py::run_historical_coding_eval`、`product_config/eval_action.py` | f2c已使用产品同源Catalog/Gateway/Router、Plan/Audit与Supervisor并通过全矩阵CI关闭 |
 
 ## 3. 设计目标、非目标与验收标准
 
@@ -315,14 +315,14 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 
 治理门禁已经从旧调用方精确集合中删除`delivery/git_push.py`，并由“子集”收紧为“完全相等”，防止删除引用后留下可被重新占用的
 白名单额度。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
-文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c仍待全量与CI关闭且f3尚未开始。
+文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c已关闭但f3兼容内核物理删除尚未开始。
 
-### 14.1 f2c候选实现与本地证据
+### 14.1 f2c实现与关闭证据
 
 历史Eval不再装配`ActionService`、`ActionWorker`、`ToolRegistry`或`SQLiteEffectJournal`。`product_config/eval_action.py`为每个Run建立唯一固定`run_tests`定义：公开参数只有受信Profile；Resolver冻结Process、Workspace和Network资源；Execution Plan保存执行绑定与批准，Action Audit保存Route Hash链，`PosixProcessSupervisor`以Plan ID作为Process ID保存Lease和输出，`SQLiteArtifactStore`保存与Router摘要绑定的模型可见结果。
 
 失败语义保持为：测试正常退出但返回码非零时Action成功并确定性投影`passed=false`，允许模型继续修复；启动、超时、取消、输出上限、清理和证据不完整保持失败、UNKNOWN或人工处置。Router已经形成确定终态但Session提交结果前宿主退出时，重开只从原Process输出重建`origin=execution`的Tool Result；实际`unknown → reconcile`才标记`origin=recovery`，避免把原执行结果误当恢复效果或再次启动Process。未完成旧Run存在`effects.sqlite`时返回`eval_runtime_upgrade_required`，不跨账本静默迁移。
 
-本地专项回归覆盖Evals、Campaign、Grader、Process绑定/Supervisor/输出、Trusted Action Gateway、Agent审批/崩溃恢复和治理门禁；测试断言首次Router终态后重开Process Lease仍为1，完整修复流程最终为2，证明首个Process没有重放。治理白名单已删除`evals/runner.py`，从7个精确调用方缩为6个。Mypy、Ruff和专项Pytest均通过；全量、Mermaid真实渲染和CI结果将在关闭提交回填。
+专项回归覆盖Evals、Campaign、Grader、Process绑定/Supervisor/输出、Trusted Action Gateway、Agent审批/崩溃恢复和治理门禁；测试断言首次Router终态后重开Process Lease仍为1，完整修复流程最终为2，证明首个Process没有重放。治理白名单已删除`evals/runner.py`，从7个精确调用方缩为6个。实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`本地完成Ruff、Mypy、合同、可读性、文档静态门禁、34个变化路径共591幅Mermaid真实渲染、Wheel构建及全仓3569项通过/20项跳过；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务，f2c据此关闭。
 
 每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。
