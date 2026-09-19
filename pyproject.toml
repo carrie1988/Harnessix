@@ -9,17 +9,19 @@ license-files = ["LICENSE"]
 authors = [{ name = "Zhang Jinhui" }]
 dependencies = [
     "aiosqlite>=0.21,<1",
-    "asyncpg>=0.30,<1",
-    "fastapi>=0.116,<1",
     "httpx>=0.28,<1",
     "mcp>=2.2,<3",
     "pydantic>=2.11,<3",
     "pyyaml>=6,<7",
-    "uvicorn>=0.35,<1",
 ]
 
 [project.optional-dependencies]
-langgraph = ["langchain-core>=1.0,<2"]
+legacy-action = [
+    "asyncpg>=0.30,<1",
+    "fastapi>=0.116,<1",
+    "langchain-core>=1.0,<2",
+    "uvicorn>=0.35,<1",
+]
 observability = [
     "opentelemetry-api>=1.30,<2",
     "opentelemetry-exporter-otlp-proto-http>=1.30,<2",

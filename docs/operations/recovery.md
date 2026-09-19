@@ -13,6 +13,7 @@ modules:
   - patches
   - delivery
 related_adrs:
+  - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0035-kernel-batch-approval-and-recovery.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
@@ -80,31 +81,14 @@ flowchart TD
 
 “可证明”必须由稳定身份、持久事件和外部事实共同支持，不能由日志缺失、进程不存在或操作员直觉推出。
 
-## 4. Action Plane恢复
+## 4. 旧Action Plane归档恢复边界
 
-### 4.1 过期租约
+独立Action API/Worker不再是当前产品恢复入口。旧SQLite/PostgreSQL Journal在0.9.1f迁移期间必须保持停写并先做一致
+备份；不得为了“处理完队列”重新暴露`serve/worker`，也不得把历史`RUNNING/UNKNOWN`自动回退到`READY`。
 
-[`ActionService.initialize`](../../src/harnessix/runtime.py)和Worker周期扫描都会调用`recover_expired`。
-`READY`未Claim可由其他Worker处理；`RUNNING`租约过期转为`UNKNOWN`，不会回到`READY`。
-
-检查项：
-
-1. 读取`GET /v1/actions/{action_id}`；
-2. 读取`GET /v1/actions/{action_id}/events`，确认最后持久事件；
-3. 核对`lease_owner`、`lease_expires_at`和工具是否支持Reconciliation；
-4. 只对`UNKNOWN`调用`POST /v1/actions/{action_id}/reconcile`；
-5. 若工具不支持对账，Runtime转为`MANUAL_INTERVENTION`；
-6. 对账异常仍保持`UNKNOWN`，不能改写为普通失败。
-
-### 4.2 Heartbeat竞态
-
-Worker续租失败时先检查执行任务是否已经完成以及Journal是否已有`execution_completed`。只有没有完成提交且Lease确实丢失时
-才取消本地任务并抛出`WorkerLeaseLostError`。运维告警不能把终态提交与续租并发误判为重复执行。
-
-### 4.3 PostgreSQL故障
-
-API `/healthz`只证明进程存活；`/readyz`通过Journal `ping`证明当前可访问数据库。数据库中断时停止接收新写入，保留
-Worker状态和Trace。恢复数据库后重新检查Migration与Readiness，再观察过期Lease和`UNKNOWN`数量。
+旧记录处理只允许：核对Action ID、事件序号、Lease、Receipt和外部幂等身份；能够证明的终态写入迁移报告，不能证明的
+效果保持`UNKNOWN`并转人工处置。0.9.1f3必须提供只读检查与导出工具后才能删除兼容代码或数据库。当前Coding Agent
+的恢复从Agent Session和`TrustedActionRouter` Route State开始，见后续章节。
 
 ## 5. Agent Runtime恢复
 
@@ -247,7 +231,7 @@ e3的Gateway能在调用恢复路径对单个已知Plan执行只观察Reconcile�
 
 | 恢复域 | 源码 | 测试 |
 |---|---|---|
-| Action Lease与Reconcile | [`runtime.py`](../../src/harnessix/runtime.py)、[`worker.py`](../../src/harnessix/worker.py) | [`test_worker.py`](../../tests/integration/test_worker.py)、[`test_action_service.py`](../../tests/integration/test_action_service.py) |
+| 旧Action归档核对 | [`runtime.py`](../../src/harnessix/runtime.py)、[`worker.py`](../../src/harnessix/worker.py) | 仅迁移兼容回归；不作为产品恢复入口 |
 | Agent启动恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py)的`_recover` | [`test_crash_recovery.py`](../../tests/agent/test_crash_recovery.py)、[`test_interactions.py`](../../tests/agent/test_interactions.py) |
 | Patch | [`patches/managed.py`](../../src/harnessix/patches/managed.py)、[`patches/batch_execution.py`](../../src/harnessix/patches/batch_execution.py) | [`tests/patches`](../../tests/patches/) |
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0003-database-backed-worker-queue.md
   - docs/adr/0004-durable-trace-context.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/integration/test_api.py
   - tests/integration/test_action_service.py
@@ -23,19 +24,23 @@ supersedes: []
 
 # API模块设计
 
+> **迁移状态：** 本模块不再属于Harnessix Code 1.0产品面。`harnessix serve`已撤销，默认产品、Agent SDK与
+> Product Config均不能到达该HTTP入口。源码仅为既有Process、Git Push和Eval调用方迁移保留，禁止新增生产依赖，
+> 并将在0.9.1f3完成数据归档说明后物理删除。以下章节用于解释兼容源码，不是部署指南。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/api`](../../src/harnessix/api/) |
-| 当前职责 | 把Action Plane应用服务投影为FastAPI HTTP接口，管理Service Lifespan，映射公开领域错误和非终态POST状态，接收W3C Trace Header并记录HTTP Span、Metric与Log |
+| 当前职责 | 在迁移窗口内保留旧Action Plane FastAPI投影，供兼容回归和数据读取验证 |
 | 非职责 | 不实现Action状态机、Policy、Approval规则、Executor、Worker、Journal事务、Agent Protocol、最终用户认证、租户授权、限流、请求预算、API Gateway或自动客户端重试 |
-| 上游调用者 | Python HTTP SDK、LangGraph Adapter、业务服务、受信本地客户端和外层Gateway |
+| 上游调用者 | 仅限0.9.1f冻结白名单内的既有兼容调用方和测试 |
 | 下游依赖 | `ActionService`、Domain合同、Bootstrap、Settings、Observability、FastAPI/Starlette |
 | 网络协议 | HTTP/JSON；Action资源路径位于`/v1`，Health与Ready为无版本系统路径 |
 | 持久化 | API自身无数据库；全部Action事实由注入Service的Effect Journal持久化 |
-| 默认部署 | `harnessix serve`启动Uvicorn；默认监听`127.0.0.1:8787`，Docker镜像默认`0.0.0.0:8787` |
-| 公共导出 | `harnessix.api`只导出`create_app`；模块同时定义默认全局`app`供Uvicorn导入 |
+| 默认部署 | 无；顶层CLI、Docker默认命令和正式运维资料均不再启动该服务 |
+| 兼容导出 | `harnessix.api`仍可显式导入`create_app`，但不构成1.0公共合同 |
 | 代码版本 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` |
 | 当前完成度 | 基础Action资源、inline/queued状态投影、生命周期与HTTP观测已实现；身份、授权、输入输出预算、错误统一、分页、并发控制、稳定Trace校验和生产网络门禁未完成 |
 
@@ -854,9 +859,9 @@ API直接调用`resolved_service.observability.span/increment/record/current_tra
 Worker只有部分Metric故障路径具备隔离测试；不能外推到API全部Observer调用。正式设计需要安全Observer Facade、错误分类、
 本地熔断和“观测失败不改变业务事实”的故障注入测试。
 
-## 32. Python SDK对接
+## 32. 历史兼容：Python HTTP SDK
 
-[`HarnessixClient`](../../src/harnessix/sdk/client.py)和
+以下行为只解释待删除兼容源码。[`HarnessixClient`](../../src/harnessix/sdk/client.py)和
 [`HarnessixAsyncClient`](../../src/harnessix/sdk/client.py)提供Submit、Get、Approval、Reconcile、Events和Tools。
 
 当前客户端：
@@ -873,9 +878,9 @@ Worker只有部分Metric故障路径具备隔离测试；不能外推到API全�
 
 因此SDK Timeout短于Inline Executor时延时，调用方必须按Action ID恢复。SDK完整边界见[SDK模块设计](sdk.md)。
 
-## 33. 顶层CLI与配置优先级
+## 33. 历史兼容：已撤销CLI与配置优先级
 
-`harnessix serve`支持：
+已撤销的`harnessix serve`曾支持：
 
 ```text
 --host
@@ -884,7 +889,7 @@ Worker只有部分Metric故障路径具备隔离测试；不能外推到API全�
 --execution-mode inline|queued
 ```
 
-顶层CLI先读取`Settings.from_environment()`以获得日志、默认Host/Port等；随后：
+旧顶层CLI曾读取`Settings.from_environment()`以获得日志、默认Host/Port等；随后：
 
 - `--host/--port`直接传给Uvicorn；
 - `--database-path`写回`HARNESSIX_DATABASE_PATH`环境；
@@ -897,7 +902,9 @@ CLI没有`--database-url`、TLS、认证、Proxy Header、Worker数、Request Li
 环境转换错误如非法Port、Float或Log配置可在CLI初次Settings读取或App导入阶段抛出普通ValueError，顶层CLI没有统一
 结构化错误输出。
 
-## 34. 部署拓扑
+## 34. 历史兼容拓扑（禁止新增部署）
+
+以下拓扑仅用于理解旧数据库和测试，不是当前部署方案：
 
 ```mermaid
 flowchart TB
@@ -934,11 +941,10 @@ flowchart TB
 
 ### 34.3 容器
 
-[`Dockerfile`](../../Dockerfile)使用非root UID 10001、`/data`卷并默认`HARNESSIX_HOST=0.0.0.0`。镜像安装
-Observability可选依赖，Expose 8787，入口为`harnessix serve`。镜像没有Healthcheck、TLS、认证、只读RootFS声明、
-资源限制或签名验证；这些属于编排/发布层后续门禁。
+当前[`Dockerfile`](../../Dockerfile)只构建非Root开发命令镜像，默认执行`harnessix --help`，不暴露8787端口、
+不声明Action数据卷，也不启动HTTP服务。旧Action服务镜像只能从历史Revision重建，不属于受支持制品。
 
-## 35. 平台与运行环境
+## 35. 兼容源码的平台边界
 
 API代码没有OS专属分支，FastAPI、Uvicorn、HTTP和PostgreSQL路径原则上可运行于Python 3.12+支持的平台。
 但整体行为还取决于：

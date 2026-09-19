@@ -28,6 +28,8 @@ supersedes: []
 
 # Context模块设计
 
+函数级调用链、逐流程时序、合同字段及可跳转源码索引见 [Context 模块源码与设计解读](context-code-reading.md)。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |

@@ -1,4 +1,4 @@
-.PHONY: install format lint readability documentation contracts typecheck test check run worker spec demo
+.PHONY: install format lint readability documentation contracts typecheck test check run spec
 
 install:
 	uv sync --all-extras --dev
@@ -29,13 +29,7 @@ test:
 check: lint readability documentation contracts typecheck test
 
 run:
-	uv run harnessix serve
-
-worker:
-	uv run harnessix worker
+	uv run harnessix code
 
 spec:
 	uv run python scripts/generate_specs.py
-
-demo:
-	uv run python examples/mvp.py

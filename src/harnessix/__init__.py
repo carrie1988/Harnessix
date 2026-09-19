@@ -1,4 +1,4 @@
-"""Harnessix 公共 API。"""
+"""Harnessix共享领域合同；产品客户端从``harnessix.sdk``导入。"""
 
 from harnessix.domain.models import (
     ACTION_SPEC_VERSION,
@@ -19,7 +19,6 @@ from harnessix.domain.models import (
     ToolDescriptor,
     TraceContext,
 )
-from harnessix.sdk.client import HarnessixAPIError, HarnessixAsyncClient, HarnessixClient
 
 __all__ = [
     "ACTION_SPEC_VERSION",
@@ -34,9 +33,6 @@ __all__ = [
     "ApprovalOutcome",
     "EffectClass",
     "EffectReceipt",
-    "HarnessixAPIError",
-    "HarnessixAsyncClient",
-    "HarnessixClient",
     "Principal",
     "RiskLevel",
     "SecretRef",

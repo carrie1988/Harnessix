@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 44
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 46
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -10,14 +10,18 @@ modules:
   - product_ui
   - app_server
   - protocol
+  - sdk
   - agent
   - session
   - models
   - smoke
   - context
   - tools
+  - artifacts
   - execution
   - processes
+  - workspace
+  - delivery
   - domain
   - policy
   - executors
@@ -28,6 +32,8 @@ modules:
   - mcp
   - skills
   - hooks
+  - evals
+  - observability
   - runtime
 related_adrs:
   - docs/adr/0005-evolve-to-harnessix-code.md
@@ -38,6 +44,8 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -58,7 +66,10 @@ related_tests:
   - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_stdio_product.py
   - tests/agent/test_runtime.py
+  - tests/agent/test_tool_scheduling.py
   - tests/agent/test_crash_recovery.py
+  - tests/delivery/test_trusted_action_patch.py
+  - tests/delivery/test_filesystem.py
   - tests/integration/test_action_service.py
   - tests/integration/test_worker.py
   - tests/integration/test_postgres_journal.py
@@ -75,7 +86,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前实现基线为提交`71a479439edcdd29b863ec3a9bad7a52586dd1bf`；0.9.1e1的Action合同、目录地基、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收。0.9.1e2已实现显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭。0.9.1e3在该基线把受控多文件Workspace Patch、Review Artifact、Delivery事务和Workspace Lease接入默认POSIX产品链；本地完整门禁已通过，正式关闭等待全矩阵CI。状态标签含义如下：
+本文当前实现基线为提交`809ed2b1a10f5cb462989a12dddf44f83a9d01ab`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收。本文描述该提交基线已交付的系统结构；能力状态按“默认产品、显式装配、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
@@ -105,9 +116,9 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 - 版本化的无头App Server协议与薄客户端；
 - 事件溯源Session、协议请求幂等和崩溃恢复；
 - Workspace约束下的只读Coding Tool与默认Artifact分页；
-- 可显式装配的Patch、Process、Sandbox、Delivery和扩展运行库；
-- 独立Action Plane中的Policy、Approval、Effect Journal、Lease和Reconcile；
-- SQLite本地持久化与Action Plane PostgreSQL部署选择；
+- POSIX默认产品中的受控Workspace Patch/Delivery，以及可显式装配的Process、Sandbox和扩展运行库；
+- 内置Trusted Action Runtime中的Policy、Approval、Execution Plan、Audit、`UNKNOWN`和Reconcile；
+- SQLite本地持久化、Workspace/Process专用效果账本与可恢复产品状态；
 - 结构化日志、Metric、Trace和可重复Eval基础设施。
 
 ### 3.2 当前非目标或未完成目标
@@ -116,7 +127,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 - App Server当前只有本地stdio传输，不是公网多租户服务；
 - 默认`agent-server`装配只读`CodingToolRuntime`、Session绑定Artifact及经能力证明的`apply_patch_batch`；Patch只在POSIX no-follow文件语义成立时进入模型目录，Process、MCP、Skill和Hook仍不自动开放；
 - 默认产品在Windows使用原生Handle四项只读端口，并明确省略Workspace Patch；尚无Git、写Tool、Process、Delivery与发行物证据；
-- Action Plane内置`demo.issue.create`用于验证契约，不代表完整SaaS工具生态；
+- 旧Action HTTP/Worker、Demo Executor和PostgreSQL Queue仅为迁移兼容代码，不是1.0产品能力；
 - 当前版本未宣称满足大规模C端商用所需的固定Eval、Soak、安全供应链和三平台发行门槛。
 
 这些缺口由[路线图0.9.1～0.9.6](roadmap.md)管理。
@@ -140,7 +151,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 | Thread | 绑定一个Workspace的持久会话聚合 | 操作系统线程 |
 | Turn | 一次用户输入驱动的有预算Agent执行 | 一次模型HTTP请求；一个Turn可含多个Model Attempt |
 | Item | Turn内的消息、Tool、审批、计划或错误记录 | 独立事务；其事实由Event提交 |
-| Agent Event | 带全局序列的Session持久事实 | 临时流式Delta |
+| Agent Event | 带Thread内单调递增序号的Session持久事实 | 临时流式Delta |
 | Delta | 为低延迟UI提供的有界临时增量 | 可恢复的持久事件；缺口时必须Replay |
 | Action | framework-agnostic的版本化工具执行请求 | Agent Turn；二者生命周期独立 |
 | Effect Journal | Action状态、副作用身份、Lease和对账事实源 | 普通应用日志 |
@@ -148,45 +159,275 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 | Workspace Snapshot | 执行前文件集合与版本证明 | 长期锁；它必须与Lease和提交期检查组合 |
 | UNKNOWN | 外部效果无法证明成功或失败 | 可直接重试的普通失败 |
 
+### 4.2 跨模块术语词典
+
+本节解释架构图、数据流和状态机中反复出现的领域词。术语相似不表示数据相同；“权威来源”列说明发生冲突时应信任哪一侧。字段级约束以对应模块合同为准，详见[领域模型目录](modules/domain.md)、[Agent模型](modules/agent.md)、[Context模型](modules/context.md)、[Protocol模型](modules/protocol.md)及第7节的模块设计链接。
+
+#### 会话与Agent运行时
+
+| 术语 | 含义与用途 | 权威来源/边界 |
+|---|---|---|
+| Thread | 绑定一个Workspace的持久会话聚合，含多个Turn、事件序列、归档状态及可选Fork来源；解决多次用户输入需要连续历史、稳定身份和并发边界的问题 | Session Event流经Reducer生成的Thread投影 |
+| Turn | 一次用户请求驱动的有预算执行，可含多步模型调用、工具执行、审批、等待、取消或恢复；用于隔离单次任务的预算、用量和终态 | Agent Event流 |
+| Item | Turn内的语义单元，如用户/助手文本、Tool Call/Result、审批、问题、计划、压缩或错误；保持历史结构化，不依赖解析自由文本 | 创建Item的持久Agent Event |
+| Agent Event | 带Thread内单调递增序号的不可变事实；Event Draft被Session Store接受后获得序号 | Session Store中的事件记录 |
+| Event Draft | Runtime提出、尚未分配持久序号的写入意图，用来区分“准备写”与“已提交事实” | 本身不是权威事实，append成功后才成为Agent Event |
+| Reducer / Projection | 将有序Agent Event折叠成当前Thread/Turn视图的纯逻辑，使在线更新和重放采用同一规则 | 持久事件序列及版本化Reducer |
+| Model Attempt | 一次完整Provider调用及开始、结束、用量或失败记录；一个Turn可有多次Attempt | Session中的Attempt事件 |
+| Item Delta | 生成期间发给客户端的暂时增量，用于低延迟体验 | 传输缓冲；非持久事实，缺口以Replay补齐 |
+| Retry | 为失败/取消/中断的前一Turn创建新Turn并保留前驱身份 | 新Turn及retry关联；不得改写原Turn |
+| Resume | 根据已持久化状态继续可证明安全的等待/运行流程 | Session事实与对应执行账本共同决定 |
+| CAS | Compare-And-Swap；仅当数据库序号等于调用者的预期序号时提交 | Session Store事务条件，防止并发写静默覆盖 |
+| Runtime Owner | 当前允许驱动本地Session数据库的宿主所有权，避免将SQLite误当多主协调器 | Session Store锁/所有权记录 |
+| Fork Snapshot | 从源Thread复制的已闭合历史、内容摘要、来源序号、Artifact所有权及结果查看策略 | 新Thread持久化的快照；权限固定为none，不继承执行权 |
+
+#### Context、模型历史与Artifact
+
+| 术语 | 含义与用途 | 权威来源/边界 |
+|---|---|---|
+| Context Fragment | 带Kind、来源和文本的不可变片段；把必选Runtime/User指令与可选项目/环境事实分开排序、信任和预算 | Context合同；Trust由Kind决定，不接受来源自报 |
+| Context Source | 每个Model Step采集一类受控动态信息的端口/实现，避免模型反复使用陈旧仓库状态 | 当前Step生成的Observation |
+| Observation | Source在某一时刻读取到的文档、Workspace范围和Revision；用于处理并发修改与来源一致性 | Source返回值，不是长期业务事实 |
+| Source Snapshot | 不含正文的来源身份和Revision记录，用于证明模型上下文取自哪些版本 | Context Inspection事实 |
+| Context Inspection | 一次上下文构建的预算、排序、来源快照和省略决定，可解释哪些内容被纳入 | ContextPrepared等Session事件 |
+| Prepared Context | 已通过预算选择和渲染、准备进入本次Model Request的指令/历史视图 | 当前Step的临时值；正文不因此成为持久事件 |
+| Model History View | 将规范化Session Items映射成Provider消息格式的只读视图；隔离厂商消息模型 | 原始Session Items与已冻结的View Decision |
+| Tool Result View Decision | 决定一个结果用原文、Artifact引用或有界摘要呈现给模型；避免大结果撑爆上下文且保持重放一致 | 首次生成并持久化的决定 |
+| Compaction Plan | 将可压缩闭合历史划为覆盖、保留和Pin区域的纯计划，先证明不拆散调用/结果组 | 从当次冻结历史确定性重算并与持久计划核对 |
+| Compaction Record | 摘要请求的计划、请求意图、Attempt、用量、候选或失败账本 | 持久Compaction事件；避免崩溃后重复可能计费的请求 |
+| Compaction Window | 已激活的摘要Item、保留历史及后续原始增量组成的线性窗口 | Session窗口链及源序号；压缩不删除原始历史 |
+| Artifact | 按用途和摘要保存的大内容对象，通过授权引用读取 | Artifact Store元数据与内容；不是任意路径别名 |
+| Artifact Ref | 不透明的Artifact身份、用途、摘要、大小和访问范围引用 | Artifact Store负责授权；引用本身不授予范围外访问 |
+
+#### Trusted Action与可信副作用
+
+| 术语 | 含义与用途 | 权威来源/边界 |
+|---|---|---|
+| Trusted Action Runtime | Agent内部统一规划、策略、审批、执行、审计和对账子系统；将模型提议与宿主权限分开 | Trusted Action Router、Execution Plan与Action Audit |
+| Action Request | harnessix.action/v1版本的调用合同，包含Action ID、工具、参数、主体、上下文及可选幂等/Secret引用 | Domain校验后由Journal接收 |
+| Tool Definition / Descriptor | Definition是宿主登记的权威执行合同；Descriptor是派生给模型/客户端的能力说明 | Registry Definition有权威；Descriptor不得提升权限 |
+| Principal | 租户、主体、框架和角色等调用身份值；为策略提供主体上下文 | 外层认证及宿主绑定才证明身份，字段本身不是认证 |
+| Policy Decision | 策略引擎产生的ALLOW、DENY或REQUIRE_APPROVAL结论 | Policy Engine决定记录 |
+| Approval | 对冻结请求指纹的人工允许/拒绝，防止批准后替换参数或资源 | Agent持久交互与Trusted Action审批检查点；旧Action审批记录仅约束迁移兼容调用 |
+| Effect Class | 只读、幂等写、非幂等写、破坏性等副作用类别 | 宿主Tool Definition |
+| Risk Level | LOW至CRITICAL的风险分级，为Policy提供输入 | 宿主注册和Policy规则；不等同副作用类别 |
+| Effect Ledger | Workspace、Process或外部效果的专用持久账本；Action Audit保存统一路由摘要，不复制真实效果 | 对应Executor的专用Ledger与Action Audit |
+| Lease | 有期限的执行所有权凭证；失租者不能提交终态 | Journal中的Owner和Deadline |
+| Fencing | 用所有权世代/令牌拒绝暂停后复活的旧执行者迟到提交 | 具体Lease与提交合同 |
+| Idempotency Key | 业务操作的稳定去重键；使重试关联到同一操作记录，但不能让非幂等外部系统自动变成幂等 | Journal约束和Executor能力声明 |
+| Execution Outcome | Executor对成功、失败或未知的外部结果判断 | Executor/Receipt观察后由Journal提交 |
+| Effect Receipt | 外部资源、标识、摘要等效果证据，供审计和恢复对账 | 受信Executor生成并由Journal保存；结构合法不等于真实 |
+| UNKNOWN | 无法证明效果发生或未发生的状态；不能按普通失败盲目重试 | Journal状态；进入Reconcile或人工处理 |
+| Reconciliation | 再次观察外部资源，将UNKNOWN收敛为成功、失败、仍未知或人工处理 | Reconciler观察与Journal迁移 |
+
+#### 可信执行、Workspace与交付
+
+| 术语 | 含义与用途 | 权威来源/边界 |
+|---|---|---|
+| Trusted Action | 宿主显式绑定并由统一Router规划、审批、执行和对账的高影响能力；隔离模型提议与宿主权限 | Trusted Action Route及其宿主Binding |
+| Host Binding | 将公开名称绑定到Definition、Executor、资源范围和能力证据的宿主注册 | 构造时校验并冻结的绑定集合 |
+| Execution Plan | 冻结工具参数、环境/Secret版本、Workspace和能力绑定的执行计划 | Execution Store与Plan Fingerprint |
+| Capability Evidence | 宿主、容器或运行器能力探测的带版本证据；区别配置意图与检测事实 | Sandbox/Execution探测结果，过期需重新探测 |
+| Workspace | 受宿主约束的项目根目录和逻辑资源命名空间 | Workspace Root与安全文件系统观察 |
+| Workspace Resource | Workspace范围内规范化的文件/目录对象及其观察Revision | Workspace Observation/Snapshot |
+| Workspace Snapshot | 执行前涉及资源的版本/摘要证明；与提交前复核配合发现并发编辑，不是长期锁 | 文件系统观察和提交期校验 |
+| Workspace Lease | 对Workspace或资源集合的限时协调/独占权，可带Fencing | Workspace Lease Store |
+| Patch Plan | 冻结的文件变更、来源版本、指纹和审批身份计划 | Patch/Trusted Action账本 |
+| Delivery Transaction | 对文件变更按可恢复成员顺序发布的事务记录；解决普通文件系统缺少多文件原子提交的问题 | Delivery Store与Workspace实际文件 |
+| Process Action | 带命令、目录、环境、预算和生命周期合同的受控进程操作 | Process/Supervisor状态记录 |
+| Sandbox | 为进程提供隔离的宿主/容器机制和能力证据；探测到容器不代表每条执行路径都已隔离 | 实际Sandbox Binding和运行器 |
+| MCP / Skill / Hook | 分别是远程/本地工具协议、渐进加载的指令包、宿主事件扩展；均需通过宿主受控能力边界 | 各自Registry；是否默认装配见第7节 |
+
+#### Protocol、配置与运行支撑
+
+| 术语 | 含义与用途 | 权威来源/边界 |
+|---|---|---|
+| Agent Protocol | 面向产品客户端的版本化JSON-RPC命令、消息和公开投影合同 | Protocol合同与投影 |
+| Command Request ID | 客户端在写命令前分配的稳定身份；响应丢失后用于重发或发现冲突 | Client Instance、请求记录及参数指纹 |
+| Event Cursor / Replay | 客户端已观察的持久事件序号及其后的补取机制；用持久Replay修复易丢Delta | Session事件序列 |
+| Projection | 将内部模型裁剪并转换为版本化公开响应 | Protocol公开合同；不得暴露内部/敏感字段 |
+| Model Provider Event | Provider流被归一化后的开始、文本、Tool Call、用量、结束或失败事件 | Models适配器输出 |
+| Secret Ref / Secret Material | Ref是名字/版本等非明文引用；Material是运行时短暂解析的凭证正文 | Secret Provider；正文不应写入Session、配置或日志 |
+| Trace Context | W3C Trace ID/Span传播字段，用于跨进程关联；不是业务身份 | 首次接收Runtime或上游；不得携带Secret |
+| Budget | Turn或子操作的步骤、Token、时长、输出和并发上限 | 类型化配置及对应持久运行事实 |
+
 ## 5. 系统上下文
 
 ```mermaid
 flowchart LR
     User[用户或上层应用]
-    Client[薄CLI或Python SDK]
-    Product[stdio App Server<br/>当前默认产品]
+    Client[CLI / TUI / Agent SDK]
+    Product[stdio App Server]
     Agent[Agent Runtime]
     Provider[模型Provider]
+    Session[(Session / Artifact / Config)]
+    Gateway[Trusted Action Gateway]
+    Router[Trusted Action Router]
+    Executors[Patch / Process / Git / MCP]
     Workspace[本地Workspace]
-    State[(本地SQLite状态)]
-    Artifact[Artifact分页<br/>当前默认产品]
-    Extensions[Patch/Process/MCP/Skill/Hook<br/>显式装配]
-    Plane[Action Plane HTTP/Worker<br/>独立服务]
-    External[外部系统或容器]
+    External[容器或外部系统]
 
     User --> Client
     Client -->|Agent Protocol 1.0| Product
     Product --> Agent
     Agent --> Provider
-    Agent --> Workspace
-    Agent --> State
-    Agent --> Artifact --> State
-    Agent -.宿主装配.-> Extensions
-    Extensions --> Workspace
-    Extensions --> External
-    User -.独立API.-> Plane
-    Plane --> External
+    Agent --> Session
+    Agent --> Gateway --> Router --> Executors
+    Executors --> Workspace
+    Executors --> External
 ```
 
 ### 5.1 上下文说明
 
-- [顶层CLI](../src/harnessix/cli.py)分派`agent`、`agent-server`、`serve`、`worker`、配置、Smoke和Eval命令；
+- [顶层CLI](../src/harnessix/cli.py)只分派Coding Agent产品、配置、Smoke和Eval命令；`serve/worker`已经退役；
 - [产品装配](../src/harnessix/product_config/server.py)构造Provider、Session绑定Artifact Store、只读Tool、Agent Runtime、Scoped Artifact Reader、Application Service和stdio Server；
 - [Agent Runtime](../src/harnessix/agent/runtime.py)拥有Agent Loop和Turn恢复；
 - [模型契约](../src/harnessix/models/contracts.py)隔离具体Provider；
 - [Coding Tool Runtime](../src/harnessix/tools/runtime.py)受Workspace边界约束；
-- [Action Plane Runtime](../src/harnessix/runtime.py)及[Worker](../src/harnessix/worker.py)是另一条可独立部署的副作用执行链；
-- Artifact已经进入当前[产品装配](../src/harnessix/product_config/server.py)；Patch、Process、Delivery和扩展均有实现与测试，但尚未默认注册。
+- [Trusted Action Router](../src/harnessix/trusted_actions/router.py)是高风险能力的唯一计划、批准、执行和对账入口；
+- Artifact、POSIX Workspace Patch和对应Delivery事务已进入当前[产品装配](../src/harnessix/product_config/server.py)；Process、MCP、Skill和Hook虽有实现与测试，仍未默认注册，Git交付能力也需显式装配。
+
+### 5.2 4+1视图索引
+
+本节按经典4+1架构视图组织系统事实。四个视图分别从逻辑结构、运行行为、源码组织和部署节点观察系统；“+1”用关键场景验证前四个视图能否共同解释一次真实运行。它们是同一实现的不同投影，不代表五套独立架构。
+
+| 视图 | 核心问题 | 本文位置 | 主要读者 |
+|---|---|---|---|
+| 逻辑视图（Logical） | 哪些组件构成系统，责任与调用边界是什么？ | [组件交互图](#53-逻辑视图与组件交互图)、[组件映射](#7-逻辑组件与源码映射) | 设计、开发、评审 |
+| 进程视图（Process） | 请求如何经过异步执行、持久化、工具和取消/恢复？ | [Turn流程图](#54-进程视图与turn流程图)、[系统级时序](#11-六条系统级时序) | Runtime、集成、测试 |
+| 开发视图（Development） | 职责落在哪些Python包，允许的依赖方向是什么？ | [源码组织视图](#55-开发视图与源码组织)、[依赖边界](#8-模块所有权依赖方向与禁止旁路) | 开发、维护、代码评审 |
+| 物理视图（Physical） | 默认组件运行在哪些进程/机器，状态和网络边界在哪里？ | [部署视图](#56-物理视图与部署拓扑)、[部署边界](#17-部署与平台边界) | 部署、运维、安全 |
+| 场景视图（Scenarios，+1） | 重要质量属性如何在端到端场景中兑现？ | [场景索引](#57-场景视图1)、[系统级时序](#11-六条系统级时序) | 全体角色、验收 |
+
+### 5.3 逻辑视图与组件交互图
+
+下图只展示1.0产品主链。实线表示默认产品或已经定义的调用关系；可选能力仍必须由产品组合根完成能力证明后进入同一个Gateway和Router，不能建立第二个公共入口。
+
+```mermaid
+flowchart LR
+    User[用户 / 上层宿主]
+    Client[CLI / TUI / Agent SDK]
+    Product[Agent Server<br/>Protocol + App Service]
+    Agent[Agent Runtime]
+    Models[Model Runtime]
+    Provider[外部模型Provider]
+    Context[Context Engine]
+    Tools[CodingToolRuntime]
+    Gateway[Trusted Action Gateway]
+    Router[TrustedActionRouter]
+    Executors[Patch / Process / Git / MCP]
+    Workspace[(本地Workspace)]
+    Session[(SQLite Session / Artifact / Config)]
+
+    User --> Client -->|JSONL over stdio| Product --> Agent
+    Agent --> Models --> Provider
+    Agent --> Context
+    Agent --> Tools --> Workspace
+    Agent --> Gateway --> Router --> Executors
+    Executors --> Workspace
+    Agent --> Session
+    Tools --> Session
+    Executors --> Session
+```
+
+**图示说明。** 用户界面只通过Agent Protocol调用Application Service。只读Coding Tool受Workspace边界约束；高风险文件、进程、Git和扩展调用进入Gateway与Router。Router持有Plan、Policy、Approval和统一Action Audit，具体效果由Workspace Transaction、Process Owner或外部效果Ledger持有。Session Event保存Thread/Turn交互事实，Artifact保存有界正文。独立Action HTTP/Worker不属于1.0产品拓扑。
+
+**失败语义。** Runtime先持久化Turn接受事实，再调用Provider或Tool。Router只执行与当前Binding、Workspace Snapshot、Sandbox能力和批准指纹匹配的Plan。跨越副作用边界后无法确认结果时进入`unknown`，恢复只能调用Reconcile观察专用效果账本或外部权威状态，不能盲目重放。
+
+**源码映射。** 产品入口位于[Product Config Server](../src/harnessix/product_config/server.py)的`run_product_stdio`；协议与应用服务分别位于[AgentProtocolServer](../src/harnessix/app_server/server.py)和[AgentApplicationService](../src/harnessix/app_server/service.py)；Agent Loop位于[AgentRuntime](../src/harnessix/agent/runtime.py)；统一高风险边界位于[RouterBackedAgentActionGateway](../src/harnessix/trusted_actions/agent_gateway.py)和[TrustedActionRouter](../src/harnessix/trusted_actions/router.py)。旧`ActionService/ActionWorker`只在[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)登记的迁移调用方内保留。
+
+### 5.4 进程视图与Turn流程图
+
+下图展开单次用户命令的主路径。`turn/start`的接受事实先持久化，再返回接受结果并驱动后台Turn；相同身份和参数的重试复用既有请求/Turn身份，已完成或失败命令直接重放账本结果。Agent Loop每轮准备Provider中立History，调用模型，随后按Tool效果类别分流。为保持图可读，取消和进程重启的详细分支见[取消时序](#113-取消)与[崩溃恢复时序](#114-宿主崩溃与恢复)。
+
+```mermaid
+flowchart TD
+    A[Client发送Protocol命令]
+    B[Server握手 / Schema / 方法校验]
+    C[Protocol Request Ledger claim]
+    D{相同身份/参数的请求记录存在?}
+    E[重放终态结果或复用Accepted命令]
+    F[Session持久化TurnAccepted]
+    G[返回Accepted并调度后台Turn]
+    H[准备预算内History / 可选Context]
+    I[Model Runtime流式调用Provider]
+    J{响应含Tool Call吗}
+    K[持久化终态回答与Usage]
+    L[校验Tool合同并持久化调用意图]
+    M{调用效果类别}
+    N[Scoped只读Tool执行]
+    O[Trusted Action规划 / 审批 / 执行 / 对账]
+    P[按合同提交Tool Result]
+    Q[继续下一轮Model Attempt]
+
+    A --> B --> C --> D
+    D -->|是| E
+    D -->|否| F --> G --> H --> I --> J
+    J -->|否| K
+    J -->|是| L --> M
+    M -->|只读| N --> P
+    M -->|受信写入或外部效果| O --> P
+    P --> Q --> H
+```
+
+**流程说明。** Protocol Server负责握手、严格解码、请求幂等和公开投影；Application Service先记录接受状态，再调度后台工作，因此调用方断线不等于Turn不存在。Agent Runtime按Thread串行化领域提交，执行每个有预算的Model Attempt。模型提出工具调用只构成不可信意图：Runtime先校验工具定义并记录调用，之后才分派到只读Tool或Trusted Action。只读调用在声明允许时可有限并行，但完成结果按Provider原始顺序持久化；写入Action经过Router确定身份、风险与审批事实，再由受信Executor触碰Workspace。每一轮Tool结果提交后才进入下一次模型请求；无Tool Call时提交完成状态。
+
+**失败与异步边界。** Provider流、数据库、Tool Runtime和受信执行都是可能阻塞的异步边界；取消通过`CancelToken`协作传播，不等于撤销已经发生的外部效果。Session追加依赖`expected_sequence` CAS；失败时内存状态不构成提交。若进程在效果执行边界崩溃，新Runtime只根据Session/Router/Delivery持久事实恢复：可证明未执行时才可续跑，无法证明的效果进入等待、`UNKNOWN`或`INTERRUPTED`，不盲目重放。临时Delta用于实时体验，断线后从持久事件Replay。
+
+**源码与测试映射。** 接受和后台调度位于[AgentApplicationService](../src/harnessix/app_server/service.py)；Turn状态机和Tool执行顺序位于[AgentRuntime](../src/harnessix/agent/runtime.py)；Provider抽象见[Model Contracts](../src/harnessix/models/contracts.py)；请求账本与投影见[Protocol Request Store](../src/harnessix/protocol/requests.py)和[Protocol Projection](../src/harnessix/protocol/projection.py)。主验证为[Server/SDK集成测试](../tests/app_server/test_server_sdk.py)、[Tool并发顺序测试](../tests/agent/test_tool_scheduling.py)、[Agent Runtime测试](../tests/agent/test_runtime.py)及[崩溃恢复测试](../tests/agent/test_crash_recovery.py)。
+
+### 5.5 开发视图与源码组织
+
+开发视图描述责任如何映射到代码，而非列举每个类。下表中的“上游”表示主要被谁调用，“关键边界”表示包之间优先采用的Port/Contract。当前仓库存在已登记的跨包强连通分量，因此分层表达的是目标责任方向，不应被误读为已经完全实现的无环依赖图；精确包级规则见[依赖方向与禁止旁路](#8-模块所有权依赖方向与禁止旁路)。
+
+| 开发层 | 代表源码包 | 对外责任与关键接口 |
+|---|---|---|
+| 产品入口与客户端 | `cli`、`agent_cli`、`product_ui`、`sdk`、`protocol`、`app_server`、`product_config` | 命令解析、客户端状态、JSON-RPC合同、产品组装；不直接拥有模型或Workspace副作用 |
+| Agent编排与模型 | `agent`、`context`、`models` | Thread/Turn事件与Loop、Context准备、Provider中立请求和流事件 |
+| 能力与可信执行 | `tools`、`workspace`、`execution`、`patches`、`processes`、`delivery`、`sandbox`、`trusted_actions`、`mcp`、`skills`、`hooks` | 文件/进程边界、冻结计划、审批、执行、交付和扩展能力；通过稳定合同向编排层提供能力 |
+| 领域与持久化/平台基础设施 | `domain`、`session`、`artifacts`、`storage`、`policy`、`executors`、`secrets`、`observability` | 领域状态、事件/快照、Artifact、Action Journal、Policy/Executor端口、Secret与信号接口 |
+| 迁移兼容内核与质量工具 | 根级`runtime`、`api`、`worker`、`evals`、`smoke` | 旧Action链只服务已登记迁移调用方；Eval/Smoke继续作为受控质量工具 |
+
+建议阅读方向是“入口 → 协议/产品组装 → Agent Port与状态机 → Adapter/能力实现 → 持久化与恢复测试”。例如，要理解文件读取，应从`AgentRuntime`的工具调度进入`CodingToolRuntime`与Workspace Reader；要理解Patch，不从模型Prompt推断安全性，而沿Agent Gateway → Router → Execution Plan/Approval → Delivery Executor追踪。所有31个源码包的边界与禁止旁路见[包所有权表](#82-31个顶层包边界)，文件级阅读路线见[源码阅读地图](guides/source-reading-map.md)。
+
+### 5.6 物理视图与部署拓扑
+
+默认产品是本地优先的父子进程组合。TUI或薄CLI通过子进程stdio与Headless Agent Server交换有界JSONL；Server访问本地Workspace和私有SQLite状态，并按Product Config连接模型Provider。高风险执行位于Server生命周期内，但Container Process由受管Process Owner和Sandbox实现隔离，不等于独立业务Worker。
+
+```mermaid
+flowchart LR
+    subgraph Local[用户本地工作站]
+        UI[harnessix code / agent]
+        Server[harnessix agent-server]
+        State[(私有状态目录)]
+        Workspace[(用户Workspace)]
+        Container[受管Container / Process Owner]
+        UI -->|Agent Protocol over stdio| Server
+        Server --> State
+        Server --> Workspace
+        Server --> Container
+    end
+    Provider[外部模型Provider]
+    External[显式批准的外部目标]
+    Server -->|HTTPS| Provider
+    Container --> External
+```
+
+**部署边界说明。** stdout只承载协议，状态目录不能与Workspace重叠，Provider Secret只在运行时解析。独立Action HTTP API、PostgreSQL Queue和常驻Action Worker不再是1.0部署形态。未来远程执行必须位于Trusted Action Executor端口之后，并重新完成身份、租户、配额、Secret和服务SLO设计。
+
+### 5.7 场景视图（+1）
+
+场景视图使用端到端用例检验组件边界和质量属性；它是对逻辑、进程、开发和物理视图的校验集，不是单独的功能列表。
+
+| 场景 | 入口与主要参与者 | 关键不变量/质量属性 | 详细时序或证据 |
+|---|---|---|---|
+| S1 普通只读Coding Turn | SDK/CLI → App Server → Agent → Model/Read Tool | 接受先持久化；Tool结果依Provider顺序提交；断线可Replay | [正常Turn](#111-正常只读coding-turn)、[Tool调度测试](../tests/agent/test_tool_scheduling.py) |
+| S2 受控Workspace Patch | 模型Tool Call → Gateway/Router → Review/审批 → Delivery/Workspace | 计划身份冻结；批准绑定原请求指纹；Lease与Snapshot防漂移；不确定效果不自动重放 | [Patch时序](#116-默认posix-workspace-patch时序)、[Trusted Patch集成测试](../tests/delivery/test_trusted_action_patch.py) |
+| S3 取消活动Turn | Client → Server → Agent → Provider/Tool/Executor | 取消意图持久化；协作取消；已跨越的外部效果按其恢复协议处理 | [取消时序](#113-取消)、[交互测试](../tests/agent/test_interactions.py) |
+| S4 Server/宿主崩溃 | 原Runtime → SQLite/Journal → 新Runtime | 依持久事实恢复；不凭丢失的内存Task判断；不安全调用不盲目重放 | [崩溃恢复时序](#114-宿主崩溃与恢复)、[恢复测试](../tests/agent/test_crash_recovery.py) |
+| S5 兼容内核迁移回归 | 已登记旧调用方 → ActionService/Worker | 迁移前保持幂等、Lease和`UNKNOWN`；不成为新产品入口 | [迁移边界](#62-旧action兼容内核迁移边界)、[治理测试](../tests/governance/test_product_runtime_convergence.py) |
+
+阅读产品场景时沿两类主要身份贯穿数据：`thread_id/turn_id/call_id`关联Agent Session与Protocol投影，`plan_id/invocation_id`关联Trusted Action和审批。迁移期旧`action_id/idempotency_key`只属于兼容内核，不能成为新能力的业务身份。
 
 ## 6. 当前运行拓扑
 
@@ -293,29 +534,11 @@ flowchart LR
 默认状态布局新增`execution-plans.db`、`action-audit.db`、`workspace-leases.db`和`workspace-transactions/`，Session与Review Artifact继续共用`sessions.db`。构造失败由同步Owner逆序关闭；e5之前没有启动前全局扫描在途Route。Windows及缺少POSIX no-follow能力的平台不安装Patch Binding。
 
 
-### 6.2 独立Action Plane链
+### 6.2 旧Action兼容内核迁移边界
 
-```mermaid
-flowchart LR
-    API[FastAPI]
-    Service[ActionService]
-    Registry[ToolRegistry]
-    Policy[PolicyEngine]
-    Journal[(EffectJournal)]
-    Worker[ActionWorker]
-    Executor[Executor]
-    Target[外部目标]
+`ActionService`、`ActionWorker`、SQLite/PostgreSQL Effect Journal、HTTP API和LangChain Adapter来自0.1产品。顶层`serve/worker`命令与HTTP Client公共导出已经撤销；这些实现不再出现在默认产品、部署或能力目录中。
 
-    API --> Service
-    Service --> Registry
-    Service --> Policy
-    Service --> Journal
-    Worker -->|claim/lease| Journal
-    Worker --> Service
-    Service --> Executor --> Target
-```
-
-`serve`可按配置内联执行或只入队，`worker`领取`READY` Action并续租。SQLite适合本地单机，PostgreSQL用于独立Worker和多进程协调。Action Plane和Agent Session目前没有一个全局数据库事务；宿主集成必须依赖稳定身份、幂等键和恢复协议，而不能假定跨库原子提交。跨包状态机、事务和故障语义见[Action Plane子系统设计](subsystems/action-plane.md)。
+迁移期只有Process旧桥、Git Push旧效果投影、历史Eval及旧实现自身可以引用兼容内核，精确集合由[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)冻结。0.9.1f按Process、Git Push、Eval顺序迁移；白名单清零并提供旧数据库归档方案后，删除HTTP/Worker/PostgreSQL Queue及对应依赖。完整决策和切片见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)与[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md)。
 
 ## 7. 逻辑组件与源码映射
 
@@ -325,10 +548,10 @@ flowchart LR
 | Product Config | 当前默认产品/e1目录地基 | Secret-free Configure、Preflight/Doctor、模型Profile与Fallback、Action配置/能力报告、同源目录和活动配置CAS；详见[模块设计](modules/product-config.md) | [preflight.py](../src/harnessix/product_config/preflight.py)、[action_contracts.py](../src/harnessix/product_config/action_contracts.py)、[action_catalog.py](../src/harnessix/product_config/action_catalog.py)、[server.py](../src/harnessix/product_config/server.py) | [product_config测试](../tests/product_config/)、[产品CLI测试](../tests/product_ui/test_cli.py) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务、Scoped Artifact分页和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
-| Python SDK | 当前默认CLI/显式Action API客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限，以及Action HTTP同步/异步包装；详见[模块设计](modules/sdk.md) | [agent_client.py](../src/harnessix/sdk/agent_client.py)、[client.py](../src/harnessix/sdk/client.py) | [app_server测试](../tests/app_server/)、[SDK单元测试](../tests/unit/test_sdk.py) |
+| Python SDK | 当前默认客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限；旧Action HTTP Client不再公共导出 | [agent_client.py](../src/harnessix/sdk/agent_client.py) | [app_server测试](../tests/app_server/)、[收敛治理测试](../tests/governance/test_product_runtime_convergence.py) |
 | Product UI终端产品 | 0.9.1a/0.9.1b/0.9.1c已关闭 | 最小Client State、发送前Command ID、连接代际、冷暖Replay、单Actor Controller，以及Plan、Tool、Approval、Question、Diff证据、Usage/Cost未知、Cancel、Steer和错误自助；三平台CI已通过，详见[模块设计](modules/product-ui.md) | [interactions.py](../src/harnessix/product_ui/interactions.py)、[interaction_service.py](../src/harnessix/product_ui/interaction_service.py)、[controller.py](../src/harnessix/product_ui/controller.py)、[app.py](../src/harnessix/product_ui/app.py) | [product_ui测试](../tests/product_ui/) |
-| Action HTTP API | 已实现/显式部署 | FastAPI Lifespan、Action资源投影、领域错误与HTTP观测；当前无认证、Tenant授权和全局资源预算，详见[模块设计](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API测试](../tests/integration/test_api.py) |
-| Framework Adapter | 已实现/显式库接入 | 把LangChain StructuredTool调用映射为Action Submit；当前不包含真实LangGraph、Checkpoint/Interrupt、终态等待或持久Tool Call绑定，详见[模块设计](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter单元测试](../tests/unit/test_langgraph_adapter.py) |
+| 旧Action HTTP API | 迁移兼容/禁止新增部署 | FastAPI资源投影仅供旧调用方迁移；顶层CLI和部署入口已撤销，详见[迁移模块说明](modules/api.md) | [app.py](../src/harnessix/api/app.py) `create_app` | [API兼容测试](../tests/integration/test_api.py) |
+| 旧Framework Adapter | 迁移兼容/禁止新增接入 | 早期LangChain StructuredTool到Action Submit映射；不属于Agent Protocol公共集成，详见[迁移模块说明](modules/adapters.md) | [langgraph.py](../src/harnessix/adapters/langgraph.py) `create_harnessix_tool` | [Adapter兼容测试](../tests/unit/test_langgraph_adapter.py) |
 | Agent Runtime | 当前默认产品/Trusted Action显式装配 | Thread/Turn、Agent Loop、Tool调度、审批、取消和恢复；可选Gateway把受信Action接入同一Turn且不改变默认权限，详见[模块设计](modules/agent.md) | [runtime.py](../src/harnessix/agent/runtime.py) `AgentRuntime`、[trusted_action_runtime.py](../src/harnessix/agent/trusted_action_runtime.py) | [agent测试](../tests/agent/)、[Gateway集成测试](../tests/agent/test_trusted_action_runtime.py) |
 | Session Store | 当前默认产品 | Event append、CAS、重放、迁移、Fork和运行时所有权；v20投影Trusted Action审批与Effect，详见[模块设计](modules/session.md) | [sqlite.py](../src/harnessix/session/sqlite.py) `SQLiteSessionStore` | [Session合同](../tests/agent/test_session_contract.py)、[恢复测试](../tests/agent/test_crash_recovery.py)、[升级测试](../tests/agent/test_session_upgrade.py) |
 | Model Runtime | 当前默认产品 | Provider配置、流事件规范化、历史映射、用量与成本；详见[模块设计](modules/models.md) | [contracts.py](../src/harnessix/models/contracts.py) `ModelProvider`、[config.py](../src/harnessix/models/config.py) | [models测试](../tests/models/) |
@@ -338,9 +561,9 @@ flowchart LR
 | Patch | 已实现/显式装配 | Patch规划、指纹、批次、审批、应用和恢复；详见[模块设计](modules/patches.md) | [planner.py](../src/harnessix/patches/planner.py)、[agent_bridge.py](../src/harnessix/patches/agent_bridge.py) | [patches测试](../tests/patches/) |
 | Execution Plan | 已实现/显式装配 | v1/v2不可变执行计划、环境/Secret摘要、能力/Sandbox绑定和一次性Approval Checkpoint；详见[模块设计](modules/execution.md) | [contracts.py](../src/harnessix/execution/contracts.py)、[store.py](../src/harnessix/execution/store.py) | [execution测试](../tests/execution/) |
 | Process | 已实现/显式装配 | 命令计划、进程树Owner、pipe/PTY、Lease/CAS、脱敏输出和保守恢复；兼容Saga与跨平台Supervisor边界详见[模块设计](modules/processes.md) | [runtime.py](../src/harnessix/processes/runtime.py)、[supervisor.py](../src/harnessix/processes/supervisor.py) | [processes测试](../tests/processes/) |
-| Action Policy | 已实现/显式装配 | 通用Action Plane的默认三分支决策；不等同资源感知Trusted Action策略，详见[模块设计](modules/policy.md) | [default.py](../src/harnessix/policy/default.py) `DefaultPolicyEngine` | [Action Service测试](../tests/integration/test_action_service.py)、[Process审批测试](../tests/processes/test_action_executor.py) |
-| Action Executors | 已实现/显式装配 | Echo只读和Issue幂等写样例，验证外部效果、Receipt及UNKNOWN对账；详见[模块设计](modules/executors.md) | [echo.py](../src/harnessix/executors/echo.py)、[demo_issue.py](../src/harnessix/executors/demo_issue.py) | [Action Service测试](../tests/integration/test_action_service.py)、[Worker测试](../tests/integration/test_worker.py) |
-| Action Storage | 已实现/显式装配 | SQLite/PostgreSQL Snapshot/Event、Migration、持久队列、Lease、Claim与过期恢复；详见[模块设计](modules/storage.md) | [sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [Action Service测试](../tests/integration/test_action_service.py)、[Worker测试](../tests/integration/test_worker.py)、[PostgreSQL测试](../tests/integration/test_postgres_journal.py) |
+| 旧Action Policy | 迁移兼容 | 通用Action Plane默认决策；新增能力使用资源感知Trusted Action Policy | [default.py](../src/harnessix/policy/default.py) | [兼容测试](../tests/integration/test_action_service.py) |
+| 旧Action Executors | 迁移兼容 | Echo与Issue样例仅保留旧效果回归，不进入产品目录 | [executors](../src/harnessix/executors/) | [兼容测试](../tests/integration/test_action_service.py) |
+| 旧Action Storage | 迁移兼容 | SQLite/PostgreSQL Queue、Lease与Claim等待0.9.1f3归档删除 | [storage](../src/harnessix/storage/) | [兼容测试](../tests/integration/test_worker.py)、[PostgreSQL测试](../tests/integration/test_postgres_journal.py) |
 | Sandbox | 已实现/显式装配 | 严格合同、能力探测、固定Container执行、DNS快照、受管Egress、Process监督和Profile Store；当前默认产品未装配，详见[模块设计](modules/sandbox.md) | [planner.py](../src/harnessix/sandbox/planner.py)、[container.py](../src/harnessix/sandbox/container.py)、[process_runtime.py](../src/harnessix/sandbox/process_runtime.py) | [sandbox测试](../tests/sandbox/)、[真实Container测试](../tests/integration/test_container_sandbox.py) |
 | Secrets | 默认模型Provider使用/其他路径显式装配 | 环境Source、名称/版本/Target绑定、短生命周期Material、流式脱敏和结构化Guard；不提供Vault、轮换或全局DLP，详见[模块设计](modules/secrets.md) | [provider.py](../src/harnessix/secrets/provider.py)、[redaction.py](../src/harnessix/secrets/redaction.py)、[guard.py](../src/harnessix/secrets/guard.py) | [secrets测试](../tests/secrets/)、[Provider凭据测试](../tests/product_config/test_provider_credentials.py)、[Process输出测试](../tests/processes/test_supervisor.py) |
 | Workspace | 已实现/显式装配 | 跨平台逻辑路径、选择资源Snapshot、POSIX/Windows对象安全观察、Secure Reader、执行前校验与SQLite Fencing Lease；详见[模块设计](modules/workspace.md) | [contracts.py](../src/harnessix/workspace/contracts.py)、[snapshot.py](../src/harnessix/workspace/snapshot.py)、[windows.py](../src/harnessix/workspace/windows.py)、[leases.py](../src/harnessix/workspace/leases.py) | [workspace测试](../tests/workspace/) |
@@ -365,8 +588,8 @@ flowchart LR
 | `ProductActionCatalog` | 能力报告、Definition与模型Descriptor同源集合 | 构造时全量验证；安装时证据必须未过期 | Product Action合同、`TrustedActionRouter` | e3已注册Patch；e4注册Process |
 | `RouterBackedAgentActionGateway` | Agent调用身份、Router状态同步和恢复判断 | 无自有持久状态；所有决定回到Router和Session账本 | `TrustedActionRouter`、Descriptor/Binding集合 | `TrustedActionGateway` |
 | `TrustedActionRouter` | Definition Registry与持久Action Route | `plan/decide/execute/reconcile`按Plan身份推进 | Policy、Store、受信Executor | `ExtensionActionPort` |
-| `ActionService` | Registry、Policy、Journal与Worker身份 | 初始化恢复；内联或Lease执行 | `EffectJournal`、Executor、Observability | Journal/Policy/Executor端口 |
-| `ActionWorker` | Poll、Heartbeat和恢复周期 | 单Worker循环；终态提交前保持Lease证明 | `ActionService` | 多Worker靠Journal协调 |
+| `ActionService` | 旧Registry、Policy、Journal与Worker身份 | 仅迁移兼容；禁止新增调用 | `EffectJournal`、Executor、Observability | 0.9.1f3删除 |
+| `ActionWorker` | 旧Poll、Heartbeat和恢复周期 | 仅兼容测试；无产品启动入口 | `ActionService` | 0.9.1f3删除 |
 | `WorkspaceTransactionRuntime` | 多文件发布游标和恢复判断 | 同步端口；每成员检查Lease | Transaction Store、Workspace Lease/Snapshot | 文件系统交付实现 |
 | `ProductController` | Workspace级会话选择、连接代际、Intent队列和不可变快照 | 唯一Actor串行Session I/O；64项Intent、1份更新；关闭共用绝对Deadline | `RecoverableAgentSession` | 新Intent必须形成类型化身份和失败合同 |
 | `InteractionService` | 当前交互复核与临时Approval Evidence | Controller Actor内调用；自身无后台任务 | `RecoverableAgentSession`、公开投影 | 新交互必须先定义冻结身份和失败语义 |
@@ -374,7 +597,62 @@ flowchart LR
 | `InteractionPresenter` | 一次性Modal编排 | 单交互Worker；不持久化正文 | `ProductController`公开状态/Intent、四类Screen | 新Modal只能返回本地值 |
 | `ProductApp` | Textual生命周期、焦点和本地Intent等待状态 | View消息循环；不拥有领域I/O，卸载时关闭Controller | `ProductController`、MainView、Presenter | 0.9.1e统一Action装配 |
 
-## 8. 模块所有权、依赖方向与禁止旁路
+### 7.2 31个包的需求背景、上下游与设计取舍
+
+下表回答每个包“为何存在、解决什么问题、把什么交给谁”。上下游表示本架构希望维持的主责任流，不是对全部Python import的穷举；第8.2节列出旁路禁令。收益和限制按当前边界描述，能力是否进入默认产品仍以第6节及第7节组件状态为准。字段、异常、迁移和测试细节以7.1节链接的模块设计文档为准。
+
+#### 产品入口与集成边界
+
+| 包 | 需求背景与设计目标 | 上游 → 下游 | 收益与代价/限制 |
+|---|---|---|---|
+| **product_config** | 需要安全配置、Preflight、模型Profile、Secret引用及Action能力目录，避免CLI各处自行解释配置 | CLI/用户配置 → 类型化Snapshot、Provider与Action Catalog | 装配事实单一、可诊断；增加配置版本与能力证据校验复杂度，Secret正文不进入配置 |
+| **product_ui** | 需要可恢复终端交互和审批/提问界面，不让UI保存第二份会话历史 | 用户 → Controller/SDK → App Server Protocol | 连接中断后可Replay、单Actor避免并发乱序；客户端状态仍需与服务端投影协调 |
+| **app_server** | 需要把Protocol命令映射到Agent应用服务、管理连接和有界stdio | SDK/Client → 协议服务 → Agent、Session、Artifact | 集中握手、路由和关闭语义；连接Task、Delta缓冲及关闭过程需受资源上限约束 |
+| **protocol** | 需要稳定、可版本化、与Provider和内部数据库无关的客户端合同 | App Server/Runtime投影 → SDK及外部Client | 可兼容演进并过滤内部字段；版本、投影和错误映射需持续维护 |
+| **sdk** | 需要客户端传输、握手、并发请求及严格响应校验的复用实现 | 产品UI/应用 → stdio或HTTP Transport → Protocol/API | 隔离传输细节、统一错误；协商能力不等于所有客户端缓冲上限均已动态强制 |
+| **api** | 需要显式部署的通用Action HTTP入口 | HTTP调用方 → Action Service → Journal/Executor | 复用领域生命周期和错误合同；当前不自动等于带认证、租户授权的生产公网API |
+| **adapters** | 需要将外部Agent框架调用转换为Harnessix Action合同 | 框架调用 → Adapter → Domain/Action Service | 集成边界不污染核心模型；适配范围窄，不代表框架级Checkpoint/Interrupt完备 |
+
+#### 会话、模型、上下文与横切基础
+
+| 包 | 需求背景与设计目标 | 上游 → 下游 | 收益与代价/限制 |
+|---|---|---|---|
+| **agent** | 需要把用户输入组织成有预算、可取消、可等待和可恢复的多步Agent Turn | App Service → Agent Runtime → models/context/tools/session及显式Trusted Action端口 | 统一控制循环和持久时序；多个账本仍需协同，没有跨库原子性 |
+| **session** | 需要持久化Agent事件、做CAS、迁移、重放和Thread所有权控制 | Agent Runtime → Event Store/Reducer → 可恢复Thread投影 | 崩溃后可还原事实；当前SQLite属于本地单宿主，不是分布式多主存储 |
+| **models** | 需要隔离不同Provider协议、流式事件、用量与能力 | Agent/Config → Provider Adapter → 规范化Model Event | 上游SDK差异不扩散至领域层；成本/Token估算受Provider报告准确性限制 |
+| **context** | 需要在有限模型窗口内确定性选择动态来源、历史和Tool结果，并提供Compaction账本 | Session/Workspace/Artifact → Context → Model Request | 有预算、可解释、可重放校验；不是RAG/向量检索，默认产品未自动装配动态Source/压缩 |
+| **artifacts** | 需要安全存放大型Tool结果、Diff等内容，避免事件、Prompt和Protocol消息无界增长 | Tool/Context/Delivery → Artifact Store → 带范围的读取接口 | 内容摘要、分页和授权引用；跨存储提交可能留下不可访问的孤儿对象 |
+| **secrets** | 需要把持久化引用、运行时明文解析、输出脱敏和敏感字段拦截分开 | Product Config/Executor → Secret Provider/Guard → Provider或受控执行器 | 缩短明文作用域；不提供通用Vault、自动轮换或全局DLP |
+| **observability** | 需要结构化日志、Trace/Metric端口及Agent/Action传播 | Runtime/Service/Worker → 内部观测端口 → No-op/OTel适配器 | 后端可替换且观测故障不应改写业务事实；不同调用链的故障隔离和隐私边界并不完全相同 |
+
+#### Workspace能力与可信执行
+
+| 包 | 需求背景与设计目标 | 上游 → 下游 | 收益与代价/限制 |
+|---|---|---|---|
+| **tools** | 需要让模型使用有限的文件、搜索等只读能力，而非直接获得任意文件系统接口 | Agent → Scoped Tool → Workspace/Artifact | 默认工具面较小、结果可控；写入必须走专门Trusted Action路径 |
+| **workspace** | 需要统一逻辑路径、安全对象观察、版本Snapshot及Lease/Fencing | Product/Tool/Execution → Workspace合同 → 文件系统、Delivery | 抵御越界路径、符号链接和并发修改；文件系统语义随OS及文件系统而异 |
+| **trusted_actions** | 需要统一绑定宿主能力、解析资源、审批、执行计划、Hash链、恢复与对账 | Agent/Product Catalog → Router/Gateway → 专用Executor及各账本 | 模型不可直达高影响副作用；Router、Session、Execution和Delivery账本仍需恢复协调 |
+| **execution** | 需要冻结工具、环境、Secret版本、能力和审批Checkpoint，确保批准对象等于执行对象 | Trusted Action → Execution Plan Store → 专用执行器 | 指纹化和重新校验降低漂移；Plan本身不执行，也不自动提供Sandbox隔离 |
+| **patches** | 需要对文件修改做规范化规划、指纹、批次审批和可恢复应用 | Agent/Trusted Action → Patch Plan/Batch → Workspace与Delivery | 审批绑定精确变更并保留Diff；不是所有Patch路径都默认开放 |
+| **delivery** | 需要将文件结果事务化发布、保存Blob/完整Diff并处理部分提交恢复 | Trusted Executor → Delivery Transaction → Workspace/文件系统或显式Git路径 | 多文件发布可逐项对账；普通文件系统不具备真正的多文件原子提交 |
+| **processes** | 需要以预算、进程树Owner、流输出、Lease和状态合同运行外部命令 | Trusted Action → Process Runtime/Supervisor → OS或Sandbox | 可取消、限时并对崩溃保守恢复；未知副作用需对账，默认产品未开放全部Process能力 |
+| **sandbox** | 需要探测并绑定容器/宿主隔离、网络和执行能力 | Product/Execution → Sandbox Evidence/Binding → Process Runtime | 将能力声明变成可校验事实；探测成功不是端到端隔离证明，默认产品未装配 |
+| **mcp** | 需要管理远端或进程内MCP目标、工具目录和调用前Schema校验 | MCP配置 → 受管Target/不可变Catalog → Trusted Action或只读Server | 接入异构工具并限制Schema漂移；远端服务仍属外部信任边界，默认未装配 |
+| **skills** | 需要安全发现、消歧和渐进加载本地操作指引 | 本地Skill来源 → 不可变目录/安全Reader → Context或只读Action | 降低一次性加载全部指令的成本；Skill文本不具有权限，默认未装配 |
+| **hooks** | 需要在宿主事件点运行可匹配、可审计、可取消的扩展动作 | 宿主事件/Grant → Hook Runtime → Trusted Action | 以定义、授权、确定Run和恢复账本约束扩展；授权/对账仍有缺口，默认未装配 |
+
+#### 旧Action兼容内核、存储与质量门禁
+
+| 包 | 需求背景与设计目标 | 上游 → 下游 | 收益与代价/限制 |
+|---|---|---|---|
+| **domain** | 需要与API、数据库、Executor解耦的Action模型、状态枚举、端口和不变量 | Runtime/Policy/Storage/Executor → Domain合同 | 依赖倒置使实现可替换；结构校验不代表认证、授权或真实效果证明 |
+| **policy** | 需要把Action默认ALLOW/DENY/审批决策从执行代码中独立出来 | Action Service → Policy Engine → Domain Decision | 决策逻辑可测且可替换；通用策略不等同Workspace资源感知的Trusted Action策略 |
+| **storage** | 保留旧SQLite/PostgreSQL Journal用于迁移核对 | 兼容Action Service/Worker → Journal Port → 数据库 | 不进入产品；白名单清零和归档完成后删除 |
+| **executors** | 需要内置样例验证Action执行、Receipt和UNKNOWN对账合同 | Action Service → Executor → 外部测试目标 | 验证端口/生命周期而非绑定单一业务系统；内置Executor只是示例 |
+| **evals** | 需要对固定任务、正式Agent运行、结果分级和Campaign成本进行回归评估 | Eval数据集 → 正式产品入口 → 可比较报告 | 可重复比较行为变化；覆盖取决于数据集和判定器，不等于线上可靠性保证 |
+| **smoke** | 需要显式运行少量真实Provider、工具和审批路径作为端到端门禁 | 操作员/CI配置 → 固定场景 → 白名单报告 | 验证装配和真实路径；涉及网络和费用，安全打开、端点凭据绑定等仍有限制 |
+
+### 8. 模块所有权、依赖方向与禁止旁路
 
 ### 8.1 允许的宏观依赖方向
 
@@ -453,7 +731,24 @@ flowchart TD
 | `licensing.py` | legal/许可输出 | 读取固定许可事实 | 运行时改变授权边界 |
 | `runtime.py` | action-plane/服务门面 | `domain/registry/policy/journal/executor` | 跳过Journal提交副作用终态 |
 | `settings.py` | platform/基础设置 | 环境到类型化配置 | 保存动态Secret正文 |
-| `worker.py` | action-plane/Worker | `journal → runtime` | 无Lease执行或提交Action |
+| `worker.py` | 旧Action兼容Worker | `journal → runtime` | 无产品入口；禁止新增调用 |
+
+### 8.4 根级模块为什么单独存在
+
+根级模块承担进程入口、装配或兼容性职责，不是与31个业务包并列的领域子系统。把它们留在根级可让入口简单、装配集中；代价是根级代码容易成为跨层便利入口，新增逻辑应优先放回对应包。
+
+| 模块 | 为什么需要/解决的问题 | 上游 → 下游 | 收益与边界 |
+|---|---|---|---|
+| **__init__.py** | 提供少量稳定的包级公共导出，避免调用方依赖内部文件布局 | 外部Python调用方 → 稳定公共类型/SDK | 保持兼容入口；必须克制导出，内部实现不能自动升级为公共API |
+| **__main__.py** | 支持以Python模块方式启动并复用同一个命令行入口 | Python模块启动 → cli.main | 入口行为唯一；不得复制一套CLI分派逻辑 |
+| **agent_cli.py** | 提供面向Agent Server的薄客户端命令，不直接操纵存储 | 用户 → SDK → Agent Protocol | 与其他客户端共享协议行为；只做交互和参数转换 |
+| **bootstrap.py** | 组合旧Action兼容服务 | Settings → Storage/Policy/Executors/Runtime | 仅冻结调用方迁移；不得从默认产品引用 |
+| **cli.py** | 统一解析子命令、许可输出和产品入口分派 | Shell/用户 → 产品子命令/Bootstrap | 进程入口容易发现；不承担领域业务逻辑 |
+| **file_lock.py** | 提供配置/本地状态需要的文件级互斥基础 | Product Config/本地存储 → OS文件锁 | 跨进程本地协调；不是跨主机分布式锁，也不替代数据库CAS/Lease |
+| **licensing.py** | 输出固定许可/版权事实供命令行使用 | CLI → 静态许可信息 | 避免各命令复制许可文本；不改变运行时权限或产品授权策略 |
+| **runtime.py** | 旧Action兼容服务门面 | 冻结调用方 → Action Service → Journal/Executor | 迁移期保持旧恢复语义；不得新增依赖 |
+| **settings.py** | 将环境/启动配置解析成有类型、可校验的运行设置 | 环境变量/启动参数 → Bootstrap/CLI | 启动错误尽早暴露；不负责秘密生命周期，不保存动态Secret明文 |
+| **worker.py** | 保留旧Ready/Lease执行语义供兼容回归 | 兼容测试 → Journal Lease → Runtime/Executor | 顶层启动已撤销，0.9.1f3删除 |
 
 ## 9. 数据流与信任边界
 
@@ -594,7 +889,7 @@ Action领域模型、端口及其当前强弱约束见[Domain模块设计](modul
 | `turn_id` | 单次用户任务 | 预算、取消、恢复、用量和终态 |
 | `call_id` | 模型Tool Call | Tool Result排序、审批和恢复关联 |
 | `approval_id + fingerprint` | 高风险请求 | 防止批准对象被替换 |
-| `action_id + idempotency_key` | Action Plane | 副作用唯一性与对账 |
+| `action_id + idempotency_key` | 旧Action兼容内核 | 迁移数据的副作用唯一性与对账 |
 | `plan_id/transaction_id` | 可信执行/交付 | 计划、快照、执行结果和恢复 |
 
 ### 10.5 关键接口契约
@@ -623,12 +918,98 @@ Action领域模型、端口及其当前强弱约束见[Domain模块设计](modul
 | `ApprovalContent.request_fingerprint` | SHA-256样式摘要/是 | 对批准对象的规范化内容计算 | 安全敏感元数据 | Session Event；响应必须精确匹配 |
 | `ProtocolRequestRecord.params_sha256` | SHA-256摘要/是 | 方法和规范化Params共同计算 | 受控摘要 | Protocol Request表；阻止请求键换方法或Payload |
 | `ActionRequest.idempotency_key` | 条件必填 | 调用者；写工具按Definition要求 | 非敏感 | Effect Journal唯一性范围；冲突拒绝 |
-| `ActionSnapshot.status` | `ActionStatus`/是 | Action Service/Journal转换 | 非敏感 | SQLite/PostgreSQL Journal；非法转换拒绝 |
+| `ActionSnapshot.status` | `ActionStatus`/是 | 旧Action Service/Journal转换 | 非敏感 | 迁移兼容SQLite/PostgreSQL Journal；非法转换拒绝 |
 | `TraceContext` | trace/span身份/可选 | 上游或运行时 | 受控元数据 | Session/Journal和观测属性；不得承载Secret |
 | Product `secret_ref` | 字符串引用/条件必填 | 配置文件 | 敏感引用，不是Secret正文 | 配置Snapshot；正文只在运行时解析 |
 | `WorkspaceTransactionRecord.cursor` | 非负整数/是 | 每个成员效果证明后递增 | 非敏感 | Delivery Store；用于中断恢复 |
 
-## 11. 五条系统级时序
+### 10.7 领域模型关系与边界
+
+以下图画的是领域身份和事实归属，不是数据库外键图。一次高层操作会跨多个独立账本；箭头表示业务关联或派生关系，不承诺跨存储原子提交。
+
+```mermaid
+flowchart LR
+    subgraph AgentLedger[Agent Session领域]
+        Thread[Thread]
+        Turn[Turn]
+        Item[Item]
+        Event[Agent Event序列]
+        Attempt[Model Attempt与Usage]
+        Context[Context Inspection]
+        Compact[Compaction Record]
+        Window[Active Compaction Window]
+        Thread --> Turn --> Item
+        Turn --> Attempt
+        Turn --> Context
+        Turn --> Compact --> Window
+        Event -->|Reducer重建| Thread
+        Event -->|持久化事实| Turn
+    end
+    subgraph ArtifactLedger[Artifact领域]
+        Ref[ArtifactRef]
+        Blob[Artifact元数据与内容]
+        Ref -->|授权读取| Blob
+    end
+    Item -->|结果或Diff引用| Ref
+    subgraph LegacyAction[迁移期旧Action兼容领域]
+        Request[ActionRequest]
+        Snapshot[ActionSnapshot]
+        AEvent[ActionEvent序列]
+        Decision[Policy与Approval事实]
+        Outcome[Execution Outcome与Receipt]
+        Request --> Snapshot
+        Snapshot --> AEvent
+        Snapshot --> Decision
+        Snapshot --> Outcome
+    end
+    subgraph TrustedExecution[编码宿主Trusted Action与Delivery]
+        Call[Agent Tool Call]
+        Route[Trusted Action Route]
+        Plan[Execution/Patch Plan]
+        Checkpoint[Approval Checkpoint]
+        Tx[Delivery Transaction]
+        FS[Workspace文件事实]
+        Call -->|Gateway转译| Route --> Plan --> Checkpoint --> Tx --> FS
+    end
+    Item --> Call
+    subgraph ProcessBoundary[Process/Sandbox可选执行链]
+        Process[Process Request与Lease]
+        Binding[Sandbox/Environment Binding]
+        OS[受管OS Process]
+        Process --> Binding --> OS
+    end
+    Route -. 显式Binding .-> Process
+```
+
+#### 领域模型分层说明
+
+1. **Agent会话领域**以Thread作为会话身份，以Turn表达一次运行，以Item表达语义内容；Event是不可变事实，Thread/Turn等对象是Reducer生成的投影。Context检查、Attempt和Compaction记录服务于模型调用及恢复，不能取代原始Item/Event。
+2. **旧Action兼容领域**以ActionRequest/ActionSnapshot/ActionEvent表达0.1通用工具生命周期，只服务已登记迁移调用方，不是1.0产品入口。
+3. **Trusted Action领域**是Coding宿主唯一新增能力边界。Gateway将Agent Tool Call翻译成Router Route，再关联Execution、Delivery、Process或外部效果专用合同；新能力不得投影回旧ActionRequest。
+4. **Artifact领域**保存大内容和授权引用，Session只保存引用/摘要；Artifact提交与Session Event提交不在同一事务中。没有有效Thread/用途范围的引用不能仅凭ID读取。
+5. **Workspace/Delivery领域**中，Workspace Snapshot记录观察到的文件版本，Workspace Lease提供协调所有权，Delivery Transaction记录逐成员发布和恢复游标；文件系统才是最终文件内容的事实源，数据库记录不能代替重新观察。
+6. **审批身份不可混为一谈**：Session中的审批Item用于展示及恢复用户交互；新执行许可只由Router Approval Checkpoint约束。兼容调用方在迁移前仍核对旧审批记录，但不得据此批准新Trusted Action。
+
+### 10.8 关键数据模型、身份与持久事实
+
+| 数据模型/集合 | 主身份与关系 | 权威事实及持久位置 | 用途、敏感性与恢复边界 |
+|---|---|---|---|
+| Thread/Turn/Item | thread_id；turn_id属于Thread；item_id在会话/继承历史范围内唯一；call_id关联模型工具调用 | Agent Event序列；SQLite Session Store将其Reducer为当前投影 | 保存历史、交互和状态；Session文本可能含代码/提示，按工作区数据保护 |
+| Agent Event | thread_id + sequence；Event改变Thread、Turn或Item投影 | Session事件表，追加并经expected_sequence CAS | 可重放的业务事实；序号是Thread流内顺序，不等于全局墙钟顺序 |
+| Attempt/Usage | 归属turn_id；Usage汇总多个Model Attempt和Compaction尝试 | Session事件与Turn投影 | 解释调用、失败和消耗；Token用量依赖Provider报告，不保证精确计费金额 |
+| Tool Call/Result/Approval | call_id；approval_id与请求fingerprint绑定；Result关联对应Call | Session Item/Event；实际许可另由Action或Trusted Action账本保存 | 实现排序、用户等待和恢复；不能仅凭Session结果推断外部副作用成功 |
+| Context/Compaction | 归属Thread/Turn/Model Step；window_id/compaction_id组成线性窗口链 | Session检查、摘要Attempt及激活窗口；原始Items不删除 | 保存来源版本、预算决定和压缩恢复点；动态来源正文仍可能依赖Workspace可用 |
+| Protocol Request | client_instance_id + request_id；记录方法与参数指纹 | Session数据库内的Protocol Request表 | 写命令响应丢失时去重并拒绝同身份换参；客户端重启需保留身份才能重试 |
+| Product Config Snapshot/Audit | 配置Snapshot Hash、Profile及活动版本 | 独立product-config SQLite库，保存Snapshot并CAS活动指针 | 审计配置变更和Profile选择；Secret正文仅运行时解析 |
+| Artifact元数据/内容 | artifact_id、用途、摘要、大小、访问Scope；调用方持有ArtifactRef | Artifact Store SQLite元数据与内容 | 大结果有界分页读取；与Session/Delivery无跨Store原子性，可能留下受控孤儿 |
+| 旧ActionRequest/Snapshot/Event | action_id；租户范围可有idempotency_key；Event按Action序列推进 | 迁移期Effect Journal | 只用于兼容恢复和归档；不作为1.0公共合同 |
+| Trusted Action Route/Execution Plan | route/plan身份、调用身份、规范化Request Fingerprint及审批绑定 | Trusted Action/Execution SQLite计划账本 | 固定宿主能力和待执行对象；计划记录不等同副作用成功，需Executor/Receipt证明 |
+| Workspace Observation/Snapshot/Lease | Workspace Scope、规范资源、Revision及Lease/Fencing身份 | 文件系统观察为内容事实；Lease/Snapshot合同由Workspace相关存储维护 | 防越界、竞态和旧持有者提交；版本须经重新观察/校验 |
+| Delivery Transaction/Blob | transaction_id、Plan/Request指纹、成员顺序和cursor | Delivery SQLite记录及私有Blob；文件系统保存已发布成员 | 支持逐成员恢复；状态须与真实文件效果对账，不具通用多文件原子性 |
+| Process/Sandbox运行事实 | Process Action身份、Lease、启动绑定、输出观察和能力Evidence | Process/Supervisor与Sandbox相关存储 | 限时、取消、观察与恢复；退出码或容器探测不足以证明所有外部效果 |
+| Trace/日志/指标 | trace_id/span_id与低基数属性 | 配置的观测后端；不是核心业务账本 | 诊断调用路径，不作为Session/Action恢复来源；禁止记录Secret、Prompt全文和未脱敏结果 |
+
+## 11. 六条系统级时序
 
 ### 11.1 正常只读Coding Turn
 
@@ -782,21 +1163,84 @@ sequenceDiagram
     end
 ```
 
-该时序描述已实现库的宿主组合方式，不是当前默认`agent-server`路径。交付计划和正文Blob先以`prepared`状态落盘；发布后逐成员推进游标，成功进入`published`。Workspace Lease和Snapshot防止静默覆盖并发修改；恢复通过比较每个成员的before/after镜像判断`published/interrupted/diverged/unknown`，不会用不存在的通用“失败”状态掩盖部分副作用。Git Push还需要独立认证和发布策略。实现见[delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py)、[delivery/filesystem.py](../src/harnessix/delivery/filesystem.py)及[Delivery测试](../tests/delivery/)。
+该时序描述通用Delivery库的宿主组合方式，不是默认POSIX Workspace Patch的完整调用链；默认Patch通过Gateway/Router接入该事务能力，精确交互见[11.6时序](#116-默认posix-workspace-patch时序)。交付计划和正文Blob先以`prepared`状态落盘；发布后逐成员推进游标，成功进入`published`。Workspace Lease和Snapshot防止静默覆盖并发修改；恢复通过比较每个成员的before/after镜像判断`published/interrupted/diverged/unknown`，不会用不存在的通用“失败”状态掩盖部分副作用。Git Worktree/Push仍需独立装配，Push还需要认证和发布策略。实现见[delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py)、[delivery/filesystem.py](../src/harnessix/delivery/filesystem.py)及[Delivery测试](../tests/delivery/)。
+
+### 11.6 默认POSIX Workspace Patch时序
+
+本时序是当前默认POSIX产品中`apply_patch_batch`的纵向链。它展示Agent Session投影、Trusted Action Router权威账本、Review Artifact和Delivery Transaction之间的边界。它不适用于Windows默认只读装配，也不代表Process已进入默认产品。
+
+```mermaid
+sequenceDiagram
+    actor U as 用户
+    participant M as Model Provider
+    participant R as AgentRuntime
+    participant S as Session Store
+    participant G as Agent Gateway
+    participant T as TrustedActionRouter
+    participant A as Action Audit Store
+    participant P as Execution Plan Store
+    participant D as Delivery Planner / Transaction Store
+    participant V as Review Provider / Artifact Store
+    participant X as Patch Executor / Workspace
+    participant App as App Server
+
+    M-->>R: apply_patch_batch Tool Call
+    R->>S: 持久化规范Tool Call
+    R->>G: prepare(thread, turn, call)
+    G->>T: plan_or_load(规范Invocation)
+    T->>A: 保存Route审计事实与稳定Plan身份
+    T->>P: 保存/核验Execution Plan
+    G->>D: 按plan_id准备受管Workspace Transaction
+    D-->>G: 冻结的成员、Snapshot和摘要
+    G->>V: 发布完整Diff为action_review Artifact
+    V-->>G: ArtifactRef
+    G-->>R: 返回绑定指纹和ArtifactRef的审批请求
+    R->>S: 持久化审批请求并暂停Turn
+    S-->>U: 公开审批信息与Diff引用
+    U->>App: approval/respond(approval_id, fingerprint, decision)
+    App->>R: reply_approval(绑定原请求)
+    R->>G: decide(原调用, 决定)
+    G->>T: 校验并保存Router Approval Checkpoint
+    T->>A: 保存ready/denied Route状态
+    R->>S: 持久化唯一审批决定投影
+    Note over S,A: Router是执行授权权威；Session审批是可恢复交互投影
+    alt 拒绝
+        G-->>R: 稳定拒绝结果
+    else 批准
+        R->>G: execute(原调用, Checkpoint)
+        G->>T: 执行已批准Plan
+        T->>X: 校验Snapshot并获取Workspace Lease
+        X->>D: 发布事务并逐成员推进游标
+        D-->>X: published / diverged / unknown
+        X-->>T: 受证明的终态和摘要
+        T->>A: 持久化终态Route/Audit
+        T-->>G: 返回权威终态
+        G-->>R: 核对终态并形成Tool Result
+    end
+    R->>S: 持久化Tool Result
+    R->>M: 下一轮请求或最终回答
+```
+
+**时序说明。** 第一个可恢复事实是Router记录的规范Action Route；Plan、审批和执行都绑定相同的稳定`plan_id`与调用身份。Review Provider先将完整Diff存为`action_review` Artifact，再把引用放入Session审批项；两者之间崩溃可能留下有界孤儿，但没有Session反向引用的Artifact不能被协议客户端读取。用户决定必须匹配`approval_id`及请求指纹。Agent Session负责持久化交互事实和恢复投影，Router中的Approval Checkpoint才授权执行；如果两份账本间发生崩溃，恢复以Router事实校正Session，不重复危险效果。
+
+批准后，Executor重新核验计划及Workspace Snapshot，获取Fencing Lease，并调用与`plan_id`绑定的Delivery Transaction。事务对成员逐个发布并记录游标；取消只在合同允许的成员边界生效。完全匹配预期after镜像才证明成功；部分提交、外部修改或效果不确定分别按`interrupted`、`diverged`或`unknown`处理，不盲目重试。终态回到Agent后先持久化Tool Result，之后才会进入下一次模型请求。核心实现见[Agent Session Runtime](../src/harnessix/agent/trusted_action_runtime.py)、[Gateway](../src/harnessix/trusted_actions/agent_gateway.py)、[Router](../src/harnessix/trusted_actions/router.py)、[Workspace Patch Delivery](../src/harnessix/delivery/trusted_action.py)和[Artifact Store](../src/harnessix/artifacts/sqlite.py)；验证见[Trusted Action Patch测试](../tests/delivery/test_trusted_action_patch.py)、[Gateway恢复测试](../tests/agent/test_trusted_action_runtime.py)及[Router测试](../tests/trusted_actions/test_agent_gateway.py)。
 
 ## 12. 持久化与事务边界
 
-| 存储 | 当前实现 | 事务单位 | 并发/恢复保证 |
+| 数据集合 | 所有者与主身份 | 持久形式/事务边界 | 权威用途与恢复/保护边界 |
 |---|---|---|---|
-| Agent Session | SQLite `sessions.db` | 单次`append`的一组Event | `expected_sequence` CAS、WAL、运行时所有权、迁移校验、重放 |
-| Protocol Request | Session数据库内独立表 | `claim/complete/fail` | 客户端实例与请求ID绑定Payload指纹，提供命令幂等 |
-| Product Config审计 | SQLite `product-config.db` | Snapshot保存和活动指针CAS | 配置Hash、Profile和期望版本冲突检测 |
-| Artifact | SQLite元数据与内容存储 | Artifact提交 | Digest/身份、分页读取、Thread授权和崩溃恢复 |
-| Action Journal | SQLite或PostgreSQL | Action事件/快照状态转换 | 幂等键、Lease、Worker身份、UNKNOWN/Reconcile |
-| Execution/Trusted Action | SQLite计划账本 | 计划与状态转换；Execution合同详见[模块设计](modules/execution.md) | 指纹、审批、稳定Plan ID和恢复扫描 |
-| Delivery Transaction | SQLite元数据与内容Blob | Prepared计划保存/状态转换 | Request ID、Digest、Snapshot与恢复读取 |
+| Agent Session | Session Store；thread_id + sequence，turn_id、item_id、call_id在事件内容中关联 | SQLite sessions.db；一次append的事件组以expected_sequence CAS原子提交，Thread等由事件重放投影 | Agent对话/状态的权威事实；支持WAL、迁移校验、重放和Runtime Owner。内容可能包含用户代码及提示，需按会话数据保护 |
+| Protocol Request | App Server Request Store；client_instance_id + request_id + 方法/参数指纹 | Session数据库中的独立请求账本；claim/complete/fail各自事务化 | 处理响应丢失后的命令去重；与业务事件仍是不同写阶段，宿主重启后需按记录恢复 |
+| Product Config与审计 | Product Config Store；Snapshot Hash、Profile、活动版本 | SQLite product-config.db；Snapshot保存与活动指针CAS分开 | 配置快照、诊断和变更事实；只保存Secret Ref，不保存凭证正文 |
+| Artifact元数据与内容 | Artifact Store；artifact_id、用途、digest及Thread/用途范围 | SQLite元数据与内容存储；单Artifact提交，不与Session/Delivery跨库原子提交 | 大结果和Review Diff的权威内容；访问需Scoped授权，崩溃可能留下不可访问孤儿 |
+| 旧Action Journal | Effect Journal；action_id、Action序号及可选租户范围idempotency_key | 迁移归档SQLite或PostgreSQL | 不进入产品启动；只用于旧效果核对，0.9.1f3后按保留策略处置 |
+| Trusted Action/Execution计划 | Router/Execution Store；Route身份、plan_id、调用身份和指纹 | SQLite计划账本；计划、审批Checkpoint和状态按各自合同保存 | 证明宿主绑定与执行对象；不证明外部副作用已完成，必须核对Action/Delivery/Workspace事实 |
+| Workspace Lease与观察 | Workspace模块；规范Scope、资源Revision、Lease所有者及Fencing身份 | 文件系统观察是资源版本事实；Lease/计划记录写入对应本地协调存储 | 防止路径越界、资源漂移和并发发布；不能仅凭旧Snapshot推断当前文件仍未变化 |
+| Delivery Transaction与Blob | Delivery Store；transaction_id、源Plan/Request指纹、成员序号和cursor | SQLite元数据与私有Blob；事务状态/游标按成员效果推进 | 支持部分发布后的恢复与差异判断；文件系统副作用与数据库提交无法构成通用原子事务 |
+| Process/Sandbox运行记录 | Process/Supervisor；Action身份、Process Lease、启动Binding和输出观察 | Process与Sandbox各自存储合同；外部OS进程/容器状态需重新探测 | 支持启动、输出、取消及保守恢复；持久记录不能替代检查实际进程是否仍运行 |
+| Trace/Metric/Log | Observability；trace/span身份和受限属性 | 配置的观测后端 | 诊断数据，不是任何业务状态的恢复权威；禁止记录Secret、完整Prompt或未脱敏输出 |
 
-跨这些存储没有分布式事务。组合操作必须明确“先写哪条事实、失败后由谁恢复、重复请求返回什么”，并以稳定ID连接记录。
+Session Event、Action Journal、Trusted Action/Execution计划、Artifact及Delivery各自拥有局部事务。系统没有分布式事务；跨存储组合必须明确先写哪个事实、崩溃后哪个模块恢复、重复请求如何去重，以及怎样从外部世界重新证明效果。数据库状态与文件、进程或远端API效果不一致时，以专用观察/对账合同处理，不用单一布尔成功标志覆盖差异。
 
 ## 13. 失败与恢复矩阵
 
@@ -824,6 +1268,21 @@ sequenceDiagram
 - 高风险工具定义必须声明效果类别、审批、幂等和对账能力，构造Runtime时即校验不安全组合；
 - `Budget`限制`max_steps`、`max_tokens`、`timeout_seconds`、`max_output_chars`和`max_tool_calls_per_step`；
 - stdio pending请求、outbox和关闭等待均有界，Process输出通过捕获限制与Artifact外置避免无界内存增长。
+
+### 14.1 可量化资源上限与指标口径
+
+下表区分“合同/配置上限”与“实测性能指标”。这些数值能够限制单次请求或单个对象的资源消耗，不代表系统吞吐、延迟、模型质量或生产可用性承诺。
+
+| 维度 | 当前合同/默认值 | 解决的问题 | 指标解释与非承诺 |
+|---|---|---|---|
+| Agent Turn预算 | 默认最多16步、100,000 Token、120秒、65,536输出字符、每步32个Tool Call；Schema分别将步数限制在1–1,000、超时限制在24小时、输出限制在1,000,000字符、每步Tool Call限制在128 | 阻止循环、时长、输出或一次模型响应无限扩张 | 这是默认预算和字段上限，不是平均Token、P95延迟或成本保证 |
+| Context输入结构 | 历史文档最多8,192份、Tool文档最多256份，总UTF-8输入文档不超过8 MiB；Context Window合同范围为1,024至10,000,000 Token | 在构建Prompt前限制输入对象规模和Token预算计算规模 | utf8-bytes/v1估算不是Provider真实Tokenizer；10,000,000是合同上限，不是推荐窗口 |
+| Artifact单对象与分页 | 单Artifact最多1 MiB和10,000条记录；单页最多24 KiB、200条记录；默认TTL 24小时，可配置60至604,800秒 | 避免大结果进入Session/stdio单帧，并使客户端分段读取 | 是存储/读取合同上限；不意味着客户端一定能在任意网络条件下达到特定吞吐 |
+| Artifact累计策略 | 默认每Turn最多4 MiB/128个Artifact，活动内容最多32 MiB；相关Schema允许各上限经配置调整 | 限制长Turn造成的对象数量及活动存储膨胀 | 是配置默认值/边界，不是清理任务的时限或磁盘容量承诺 |
+| Action并发所有权 | Worker通过Journal Claim及有期限Lease获取执行权；失租者禁止提交终态 | 防止两个Worker同时认为自己拥有同一Action | 测试覆盖租约竞争与陈旧Worker；未声明可承受的Worker数量或队列吞吐 |
+| Workspace交付 | 多文件变更按成员记录游标并对before/after镜像恢复 | 在文件系统无多文件原子事务时识别部分发布 | 这是恢复语义，不等于零停机发布或固定恢复时间 |
+
+当前有合同上限、跨平台测试矩阵和状态机故障测试，但没有固定并发布的端到端吞吐/延迟基准、长会话Soak结果、模型任务成功率或恢复时间目标。性能与可靠性量化需使用固定数据集/环境/模型，报告P50/P95/P99、失败率、重试率、Token/费用、UNKNOWN比例及恢复耗时；在对应基准落地前不得从单元测试或CI通过率推断生产SLO。
 
 ## 15. 安全边界
 
@@ -864,10 +1323,9 @@ sequenceDiagram
 
 | 形态 | 入口 | 存储 | 平台现状 | 当前用途 |
 |---|---|---|---|---|
-| 薄Coding CLI | `harnessix agent` | 由子进程Server持有 | macOS/Linux可用；Windows产品入口未完成 | 人工操作本地Agent |
-| Headless Agent Server | `harnessix agent-server` | SQLite本地状态目录 | POSIX且支持`O_NOFOLLOW` | stdio协议宿主 |
-| Action API内联 | `harnessix serve` | SQLite或PostgreSQL | Python支持平台，具体Executor另验收 | 提交并同步执行Action |
-| Action API排队 | `harnessix serve` + `harnessix worker` | PostgreSQL优先 | 服务部署环境 | Lease Worker执行 |
+| 完整终端产品 | `harnessix code` | Workspace私有状态目录 | macOS/Linux/Windows候选 | 交互式Coding Agent |
+| 薄CLI | `harnessix agent` | 由子进程Server持有 | 三平台协议客户端 | 自动化和无TUI操作 |
+| Headless Agent Server | `harnessix agent-server` | SQLite Session、Artifact、Config与执行账本 | 本地stdio | 唯一产品服务边界 |
 | Eval/Smoke | 独立CLI子命令 | 报告/临时状态 | 显式启用 | 受控验证，不是常驻服务 |
 
 Windows原生Handle四项只读Tool已接入默认启动并由CI 34735529084完成真实Runner验收；该证据不等于完整Windows产品支持，Git读取、写入、安装器和长期运行仍未关闭。安装、升级、备份和命令参数见[部署与运行](deployment.md)。
@@ -923,16 +1381,16 @@ on cancellation: persist deterministic cancellation boundary
 on unsafe external uncertainty: preserve waiting/unknown or mark interrupted
 ```
 
-### 18.4 Action Worker
+### 18.4 Trusted Action执行与恢复
 
 ```text
-recover expired leases according to journal policy
-claim one READY action with worker identity and lease deadline
-start heartbeat renewal
-execute only through ActionService and registered Executor
-before terminal commit, prove lease ownership is still valid
-persist SUCCEEDED, FAILED or UNKNOWN
-if UNKNOWN: require reconcile instead of blind replay
+plan invocation through the host-owned tool binding
+persist immutable execution plan and action audit
+if policy requires approval: wait for exact plan decision
+reopen plan, binding, workspace and sandbox evidence
+execute once through the registered executor
+persist succeeded, failed or unknown
+if unknown: reconcile by stable effect identity; never replay execute
 ```
 
 ## 19. 源码与测试阅读索引
@@ -957,8 +1415,8 @@ if UNKNOWN: require reconcile instead of blind replay
 | Provider如何隔离 | [models/contracts.py](../src/harnessix/models/contracts.py)、[models/config.py](../src/harnessix/models/config.py) | [test_openai_contract.py](../tests/models/test_openai_contract.py)、[test_anthropic_contract.py](../tests/models/test_anthropic_contract.py) |
 | 真实Provider固定场景如何限制请求、恢复并生成白名单报告 | [Smoke模块设计](modules/smoke.md)、[smoke/contracts.py](../src/harnessix/smoke/contracts.py)、[smoke/runner.py](../src/harnessix/smoke/runner.py) | [test_runner.py](../tests/smoke/test_runner.py)、[test_cli.py](../tests/smoke/test_cli.py)、[test_interrupt.py](../tests/smoke/test_interrupt.py) |
 | 高风险能力如何收口 | [Trusted Actions模块设计](modules/trusted-actions.md)、[trusted_actions/agent_gateway.py](../src/harnessix/trusted_actions/agent_gateway.py)、[trusted_actions/router.py](../src/harnessix/trusted_actions/router.py) | [test_agent_gateway.py](../tests/trusted_actions/test_agent_gateway.py)、[test_trusted_action_runtime.py](../tests/agent/test_trusted_action_runtime.py)、[test_git_push.py](../tests/delivery/test_git_push.py) |
-| Action如何执行和对账 | [Executors模块设计](modules/executors.md)、[runtime.py](../src/harnessix/runtime.py)、[worker.py](../src/harnessix/worker.py) | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py) |
-| Action如何持久化、Claim和过期恢复 | [Storage模块设计](modules/storage.md)、[sqlite_journal.py](../src/harnessix/storage/sqlite_journal.py)、[postgres_journal.py](../src/harnessix/storage/postgres_journal.py) | [test_worker.py](../tests/integration/test_worker.py)、[test_postgres_journal.py](../tests/integration/test_postgres_journal.py) |
+| Trusted Action如何执行和对账 | [Trusted Actions模块设计](modules/trusted-actions.md)、[router.py](../src/harnessix/trusted_actions/router.py) | [Trusted Action测试](../tests/trusted_actions/) |
+| 旧Action如何迁移归档 | [Action兼容内核资料](subsystems/action-plane.md)、[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md) | [收敛治理测试](../tests/governance/test_product_runtime_convergence.py)、旧兼容测试 |
 | 交付如何持久化 | [delivery/planner.py](../src/harnessix/delivery/planner.py)、[delivery/store.py](../src/harnessix/delivery/store.py) | [test_planner.py](../tests/delivery/test_planner.py)、[test_store.py](../tests/delivery/test_store.py) |
 
 更细的逐文件阅读顺序见[源码阅读地图](guides/source-reading-map.md)，全部31个包与资料覆盖关系见[追踪矩阵](governance/documentation-traceability.md)。
@@ -1011,7 +1469,7 @@ if UNKNOWN: require reconcile instead of blind replay
 | 产品集成 | 配置诊断、生命周期、stdio、SDK和重连 | [test_server_and_cli.py](../tests/product_config/test_server_and_cli.py)、[test_server_sdk.py](../tests/app_server/test_server_sdk.py) |
 | 故障恢复 | Provider/Tool/审批/进程/存储崩溃边界 | [test_crash_recovery.py](../tests/agent/test_crash_recovery.py)、[test_approval_crash_recovery.py](../tests/agent/test_approval_crash_recovery.py) |
 | 可信执行 | Patch、Process、Sandbox、Workspace和Delivery边界 | [patches测试](../tests/patches/)、[processes测试](../tests/processes/)、[delivery测试](../tests/delivery/) |
-| Action Plane集成 | Policy、Approval、Lease、UNKNOWN、Reconcile和PostgreSQL | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py) |
+| 兼容内核迁移 | 旧Policy、Lease、UNKNOWN、Reconcile和PostgreSQL在迁移期不退化 | [test_action_service.py](../tests/integration/test_action_service.py)、[test_worker.py](../tests/integration/test_worker.py)、[收敛治理测试](../tests/governance/test_product_runtime_convergence.py) |
 | 真实场景 | 固定模型Smoke与Coding Eval Campaign | [smoke测试](../tests/smoke/)、[evals测试](../tests/evals/)及版本化验证证据 |
 
 ### 23.2 设计结论与具体测试函数
@@ -1027,12 +1485,15 @@ if UNKNOWN: require reconcile instead of blind replay
 | 活动Tool崩溃不盲目重放 | `tests/agent/test_crash_recovery.py::test_process_crash_recovers_without_replaying_tool` |
 | 审批各崩溃边界可恢复 | `tests/agent/test_approval_crash_recovery.py::test_approval_crash_boundaries` |
 | Action未知效果只对账不重执行 | `tests/integration/test_action_service.py::test_uncertain_effect_is_reconciled_without_reexecution` |
-| Worker终态提交与续租竞态受控 | `tests/integration/test_worker.py::test_execution_commit_wins_renewal_race`、`::test_stale_worker_cannot_advance_state` |
+| 旧Worker终态提交与续租竞态在迁移期不退化 | `tests/integration/test_worker.py::test_execution_commit_wins_renewal_race`、`::test_stale_worker_cannot_advance_state` |
 | Agent与Router双账本崩溃后按权威Action事实修复，UNKNOWN只对账 | `tests/agent/test_trusted_action_runtime.py::test_router_first_crash_is_repaired_without_reexecution`、`tests/trusted_actions/test_agent_gateway.py::test_recovery_reconciles_running_action_without_blind_reexecution` |
 | 多文件交付崩溃后按镜像恢复 | `tests/delivery/test_filesystem.py::test_reconcile_effect_after_crash_and_resume_remaining_members`、`::test_real_process_exit_after_replace_reconciles_without_repeating_effect` |
 
 ### 23.3 DOC-1.1验收
 
+- [x] 跨模块术语同时解释语义、用途及权威来源/边界；
+- [x] 31个顶层包与10个根级模块均说明需求背景、上下游及收益/限制；
+- [x] Agent、Trusted Action、迁移兼容Action、Artifact、Workspace和Delivery领域模型及主要数据身份/持久边界有关系图和目录；
 - [x] 文档入口到31个生产包源码地图不超过三次跳转；
 - [x] 当前默认、显式装配和规划能力分开标注；
 - [x] 正常、审批、取消、崩溃恢复和事务性交付均有时序与文字说明；
@@ -1044,6 +1505,8 @@ if UNKNOWN: require reconcile instead of blind replay
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 46 | 809ed2b1a10f5cb462989a12dddf44f83a9d01ab | 2026-09-17 | 补齐跨模块术语词典、31个包与10个根模块的需求背景/上下游/设计取舍、Agent/Action/Trusted Action领域模型关系图及关键数据身份/持久事实目录；扩展存储权威、事务和恢复边界 |
+| 45 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-17 | 增补经典4+1视图索引、逻辑组件交互图、Agent Turn流程图、开发视图、部署物理视图和场景校验矩阵；新增默认POSIX Workspace Patch跨账本审批/执行时序；同步0.9.1e3全矩阵关闭状态 |
 | 44 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步0.9.1e3默认POSIX Workspace Patch、Review Artifact、Delivery事务、Lease、逐成员取消和状态布局；本地完整门禁通过，等待全矩阵CI |
 | 43 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 记录0.9.1e2由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和Documentation全矩阵验收并关闭 |
 | 42 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 同步0.9.1e2显式Agent Gateway、Router审批权威、Agent Event v20、Session migration23、双账本恢复和Protocol v1兼容投影；本地完整门禁通过，等待CI |
@@ -1074,4 +1537,4 @@ if UNKNOWN: require reconcile instead of blind replay
 | 10 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 接入Execution Plan现行模块设计，补充执行授权绑定、持久计划和审批检查点入口 |
 | 9 | `5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1` | 2026-09-12 | 接入Managed Patch Runtime现行模块设计入口，同步独立模块覆盖进度 |
 | 8 | `efc7d82062681469651925bff411134c95d89a01` | 2026-09-12 | 接入Coding Tool Runtime现行模块设计入口，同步独立模块覆盖进度 |
-| 2 | `48f286938ddd877bf9fdbb6ad3e64f8403098723` | 2026-09-12 | 按DOC-1.1重构为当前系统事实源，补齐边界、状态、五条时序、数据、安全、恢复和源码测试映射 |
+| 2 | `48f286938ddd877bf9fdbb6ad3e64f8403098723` | 2026-09-12 | 按DOC-1.1重构为当前系统事实源，补齐边界、状态、系统级时序、数据、安全、恢复和源码测试映射 |

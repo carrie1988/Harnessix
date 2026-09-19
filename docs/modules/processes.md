@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: e717a87e21d7d03b46a44a59ab203f3a8c80f9e9
+version: 4
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -31,6 +31,7 @@ related_tests:
   - tests/processes/test_supervision_contracts.py
   - tests/processes/test_supervision_store.py
   - tests/processes/test_supervisor.py
+  - tests/processes/test_trusted_output.py
   - tests/processes/test_windows_input.py
   - tests/processes/test_windows_supervisor.py
   - tests/processes/test_test_profiles.py
@@ -211,11 +212,12 @@ flowchart LR
 | 4 | [`owner_protocol.py`](../../src/harnessix/processes/owner_protocol.py) | `ProcessOwnerStart`、`ProcessOwnerCommand` | 理解内存控制帧及I/O预算 |
 | 5 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `ProcessOwnerReceipt`、`sign_owner_receipt`、`read_owner_receipt` | 理解HMAC、原子发布和恢复证据 |
 | 6 | [`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `CapturedProcessOutput` | 理解先脱敏、后计量、摘要和落盘 |
-| 7 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `SupervisedProcess`、`PosixProcessSupervisor`、`WindowsProcessSupervisor` | 跟随计划复核、启动、控制和reconcile |
-| 8 | [`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `_Owner` | 理解Session/Process Group、selector、TERM/KILL和回执 |
-| 9 | [`windows_job.py`](../../src/harnessix/processes/windows_job.py) | `WindowsJobObject` | 理解挂起归属和kill-on-close |
-| 10 | [`windows_conpty.py`](../../src/harnessix/processes/windows_conpty.py) | `spawn_conpty`、`WindowsConPtyProcess` | 理解ConPTY与Job原子属性、EOF和resize |
-| 11 | [`windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | `_Owner` | 理解Windows有界队列和Job生命周期 |
+| 7 | [`supervisor_capabilities.py`](../../src/harnessix/processes/supervisor_capabilities.py) | `probe_posix_process_capability`、`probe_windows_process_capability` | 理解平台Owner能力如何绑定解释器、实现模块和PTY证据 |
+| 8 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `SupervisedProcess`、`PosixProcessSupervisor`、`WindowsProcessSupervisor` | 跟随计划复核、启动、控制和reconcile |
+| 9 | [`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `_Owner` | 理解Session/Process Group、selector、TERM/KILL和回执 |
+| 10 | [`windows_job.py`](../../src/harnessix/processes/windows_job.py) | `WindowsJobObject` | 理解挂起归属和kill-on-close |
+| 11 | [`windows_conpty.py`](../../src/harnessix/processes/windows_conpty.py) | `spawn_conpty`、`WindowsConPtyProcess` | 理解ConPTY与Job原子属性、EOF和resize |
+| 12 | [`windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | `_Owner` | 理解Windows有界队列和Job生命周期 |
 
 ### 6.2 0.5兼容与Agent Saga
 
@@ -1367,6 +1369,7 @@ function agent_observe(plan):
 | Launch Binding | [`supervision_planner.py`](../../src/harnessix/processes/supervision_planner.py) | `build_process_launch_binding` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_launch_binding_covers_plan_materialization_and_environment` |
 | Receipt HMAC、短读与Windows共享冲突 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks`、`test_process_owner_receipt_retries_windows_sharing_conflict`、`test_process_owner_receipt_bounds_persistent_windows_sharing_conflict`、`test_process_owner_receipt_does_not_retry_invalid_content` |
 | Lease CAS与最新事件完整性 | [`supervision_store.py`](../../src/harnessix/processes/supervision_store.py) | `create`、`transition`、`_decode_current` | [`test_supervision_store.py`](../../tests/processes/test_supervision_store.py) | `test_process_lease_store_is_append_only_durable_and_cas_guarded`、`test_process_lease_store_rejects_index_or_event_divergence` |
+| 平台Owner能力证明 | [`supervisor_capabilities.py`](../../src/harnessix/processes/supervisor_capabilities.py) | `posix_process_implementation_digest`、`windows_process_implementation_digest` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py)、[`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py) | Capability绑定平台、实现文件和可执行文件；不支持平台失败关闭 |
 | 精确环境、Secret脱敏 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `_start_bound`、`CapturedProcessOutput` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_process_uses_exact_environment_and_redacts_secret` |
 | pipe/PTY控制 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `send_stdin`、`resize`、`_Owner` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_stdin_and_pty_resize_are_explicit` |
 | 输出预算/终止/完整前缀 | [`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `CapturedProcessOutput` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_output_limit_stops_tree_and_preserves_verified_prefix` |
@@ -1507,6 +1510,7 @@ function agent_observe(plan):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步固定Container Process所需的Owner只读输出接口，并把平台能力证明从Supervisor生命周期职责中拆出 |
 | 3 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 将Windows共享冲突重读扩展为最长0.912秒，并为最终I/O失败增加不含路径与正文的低基数诊断 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 根据三平台CI故障增加仅限WinError 5/32的回执有界重读合同及正反故障注入 |
 | 1 | `c7449164a2bbf08164472a36c11102dc408ebb15` | 2026-09-12 | 建立Process Runtime现行事实源，区分0.5兼容Saga与0.7跨平台Supervisor，覆盖合同、Lease/CAS、Owner协议、POSIX/Windows/PTY、输出脱敏、取消恢复、Container复用、测试和已知限制 |

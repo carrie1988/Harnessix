@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: ef36a7cebba5a4b50e2fb19055dcb3940363034f
+version: 2
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ modules:
   - session
   - product_config
 related_adrs:
+  - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
 related_tests:
   - tests/agent/test_session_upgrade.py
@@ -33,15 +34,13 @@ Revision支持的操作规则。
 
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
-| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0022 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份 |
-| Action SQLite Journal | `schema_migrations(version)`，当前资源到0002 | 初始化时按编号执行 | 恢复备份；当前不校验Checksum/更高未知版本 |
-| Action PostgreSQL Journal | 同上；事务内Advisory Lock | API/Worker初始化时串行执行 | 恢复数据库备份或切回旧集群 |
+| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0025 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份 |
+| 旧Action SQLite/PostgreSQL Journal | 迁移兼容Schema | 当前产品不自动升级 | 停写归档；按0.9.1f3导出说明处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
 | Patch/Process/Delivery/扩展账本 | 各模块专用版本或表 | 取决于宿主显式装配 | 必须按模块设计做整组备份和对账 |
 
-Action Journal与Agent Session是不同存储合同，迁移强度不同。不能把Session的Checksum、`schema_too_new`和
-`quick_check`能力外推到Action Journal。
+旧Action Journal与Agent Session是不同存储合同。当前产品不得初始化或消费旧Journal，也不能把Session的Checksum、`schema_too_new`和`quick_check`能力外推到旧数据。
 
 ## 3. 升级状态机
 
@@ -70,12 +69,12 @@ stateDiagram-v2
 
 1. 固定源Revision、目标Revision、Python版本、`uv.lock`摘要、平台和数据库版本；
 2. 阅读目标Revision的模块设计、Migration文件和兼容测试，不依赖里程碑摘要；
-3. 列出Action Journal、演示效果库、Session、配置审计、Product Config、Patch/Process/Delivery账本、
+3. 列出旧Action归档、Session、配置审计、Product Config、Patch/Process/Delivery账本、
    Workspace、私有CAS和外部系统；
 4. 停止新请求，等待可安全完成的读取或幂等工作；
-5. 记录全部`READY`、`PENDING_APPROVAL`、`RUNNING`、`UNKNOWN`、开放Turn和后台Process；
+5. 记录全部开放Turn、Trusted Action Route、`UNKNOWN`和后台Process；旧Action队列只做停写归档；
 6. 对活动外部效果建立可查询身份，不能确认结果的调用转入人工对账；
-7. 停止API、Worker、Agent Runtime和相关宿主，确认没有写连接或Owner Lease；
+7. 停止Agent Runtime和相关宿主，确认没有写连接或Owner Lease；旧API/Worker不得运行；
 8. 创建同一逻辑时间点的一致备份并校验可读性和摘要。
 
 ## 5. SQLite备份
@@ -99,7 +98,7 @@ finally:
 PY
 ```
 
-对Action Journal、演示效果库、Session、配置审计和各专用账本分别执行，并记录SHA-256。若使用文件级快照，必须
+对旧Action归档、Session、配置审计和各专用账本分别执行，并记录SHA-256。若使用文件级快照，必须
 保证所有写进程已停止，并把数据库、`-wal`和`-shm`作为同一状态处理；不得只复制正在运行的主文件。
 
 ### 5.2 Agent状态一致性
@@ -107,16 +106,10 @@ PY
 `--state-directory`至少包含`sessions.db`和`product-config.db`。若宿主还装配Patch、Process、Delivery、MCP、
 Skill或Hook账本，应在同一停机窗口备份。Product Config源文件不在状态目录内，也必须和其源摘要一起归档。
 
-## 6. PostgreSQL备份
+## 6. 旧Action PostgreSQL归档
 
-使用组织已有的事务一致性备份或`pg_dump`，示意：
-
-```bash
-pg_dump --format=custom --file=harnessix-before-upgrade.dump "$HARNESSIX_DATABASE_URL"
-```
-
-凭据通过受控环境或Secret文件提供，命令日志不得展开URL。恢复演练必须在隔离数据库执行，并验证表、Migration版本、
-Action状态、事件顺序、Idempotency Key和Lease字段。数据库备份不包含外部效果系统；`UNKNOWN`仍需单独对账。
+PostgreSQL只服务已退役Action Worker兼容数据。迁移期间先停止全部旧写入，再使用组织已有的一致性备份或`pg_dump`
+生成只读归档；凭据不得展开到命令日志。当前产品不连接、迁移或回放该数据库。0.9.1f3提供导出校验前不得删除原库。
 
 ## 7. Agent Session升级
 
@@ -131,7 +124,7 @@ Action状态、事件顺序、Idempotency Key和Lease字段。数据库备份不
 7. Commit后把文件设为`0600`并启用WAL；
 8. Agent Runtime通过单宿主锁阻止两个活动Runtime共享同一Session。
 
-当前最高Migration是[`0022_interactive_turns.sql`](../../src/harnessix/session/migrations/0022_interactive_turns.sql)。
+当前最高Migration是[`0025_trusted_action_output_artifacts.sql`](../../src/harnessix/session/migrations/0025_trusted_action_output_artifacts.sql)。
 不要修改已经发布Migration文件；新增变化必须追加新编号。
 
 验收：
@@ -143,23 +136,10 @@ uv run pytest tests/agent/test_store.py
 
 真正的版本升级证据应由旧Wheel创建数据库，再由新Wheel迁移并由旧Wheel拒绝更高版本；只手工创建表不等价。
 
-## 8. Action Journal升级
+## 8. 旧Action Journal处置
 
-SQLite和PostgreSQL Journal当前包含0001初始表与0002可观测字段。PostgreSQL在事务内获取固定Advisory Lock后迁移，
-可避免多个API/Worker同时修改Schema；SQLite依赖单进程初始化顺序。
-
-当前限制：Journal的`schema_migrations`只记录版本和时间，不保存Migration Checksum，也不拒绝数据库中存在的更高
-未知版本。升级操作必须通过目标Revision集成测试和备份补足这两个缺口，不能把“初始化未报错”当作兼容证明。
-
-验收：
-
-```bash
-uv run pytest tests/integration/test_action_service.py
-HARNESSIX_TEST_POSTGRES_URL='<受控测试数据库URL>' \
-  uv run pytest tests/integration/test_postgres_journal.py
-```
-
-测试数据库必须独立、可销毁且不含生产数据。
+旧Journal不再随Harnessix Code升级。保留源版本、Schema版本、数据库摘要和外部Receipt核对报告；不能证明的效果保持
+`UNKNOWN`。禁止由新版本自动迁移、Claim或重放旧记录。物理删除以0.9.1f3的只读导出和保留期策略为前置条件。
 
 ## 9. Product Config v1→v2
 
@@ -203,16 +183,15 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 推荐先在独立状态副本上诊断和打开Session，再停止旧Runtime并以预期活动身份启动新进程。当前没有并行双写或热切换，
 不得让两个Runtime同时拥有一个Session。
 
-Action Plane queued拓扑先升级数据库兼容代码，再滚动Worker和API时，必须确保新旧版本共享的Schema和事件语义经过
-真实旧/新进程矩阵验证。当前仓库没有声明任意两个Revision可滚动混跑；缺少证据时使用停机升级。
+独立Action API/Worker不得参与灰度或滚动升级。旧Journal保持停写归档；Coding Agent只切换Agent Server、Session和Trusted Action Runtime。
 
 ## 11. 升级后验收
 
 | 类别 | 检查 |
 |---|---|
 | 数据 | Migration连续、Checksum适用处一致、SQLite quick check、备份可读 |
-| 行为 | Health/Readiness、只读Action、审批、取消、Thread恢复和协议握手 |
-| 恢复 | 开放Turn、过期Lease、Patch/Process/Delivery中断按原语义收敛 |
+| 行为 | Doctor/Preflight、审批、取消、Thread恢复和协议握手 |
+| 恢复 | 开放Turn、Trusted Route、Patch/Process/Delivery中断按原语义收敛 |
 | 安全 | 配置/状态权限、Secret Canary、Workspace隔离、监听地址 |
 | 观测 | 日志可解析、Trace/Metric可达、错误码与Revision可关联 |
 | 兼容 | 旧字节未改写；旧Reader按合同拒绝更高版本 |

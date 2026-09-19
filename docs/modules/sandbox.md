@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -582,7 +582,7 @@ sequenceDiagram
     participant B as ContainerCommandBuilder
     participant W as Workspace
     participant N as Network Inspect
-    C->>B: Plan/Approval/Profile/Command/Env/Secret/Egress
+    C->>B: Plan/Approval/Profile/Command/Intent/Env/Secret/Egress
     B->>B: 复核Engine文件身份
     B->>B: execution_is_approved
     B->>B: 匹配Backend/Version/Capability/Profile/Network/Intent
@@ -600,6 +600,8 @@ sequenceDiagram
 ```
 
 **图示说明：** 任一批准、后端、环境、Secret、Workspace、Permission或Network事实变化均在Spawn前拒绝。
+通用调用默认以Command合同作为Plan Intent；固定Product Process可另传只含`profile/selectors`的
+`intent_arguments`，使模型公共意图与宿主派生的Container/Process合同分离，但两者仍必须分别与同一Plan精确匹配。
 `external_roots`即使能由Workspace Snapshot表达，Container后端当前也明确拒绝，因为尚无外部根挂载合同。
 
 **源码映射：** [`container.py`](../../src/harnessix/sandbox/container.py)的
@@ -1380,5 +1382,6 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加Product Process公共Intent与派生Container合同分离的复核路径，并同步Runtime只读恢复接口 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Sandbox运行合同不变 |
 | 1 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |

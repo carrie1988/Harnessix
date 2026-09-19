@@ -14,6 +14,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Literal
 
+from pydantic import JsonValue
+
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
@@ -91,6 +93,50 @@ def _csv_fields(*values: str) -> str:
     return output.getvalue()
 
 
+def _approved_arguments(
+    command: ContainerCommandSpec | ContainerExecutionSpec,
+    intent_arguments: Mapping[str, JsonValue] | None,
+) -> dict[str, JsonValue]:
+    """选择审批时冻结的公共参数，不把派生执行合同误作用户意图。"""
+
+    if intent_arguments is not None:
+        return dict(intent_arguments)
+    return command.model_dump(mode="json", warnings="error")
+
+
+def _validated_environment(environment: Mapping[str, str]) -> dict[str, str]:
+    """复制并校验传给容器的非Secret环境。"""
+
+    try:
+        checked = dict(environment)
+        if (
+            len(checked) > 128
+            or any(
+                type(name) is not str
+                or type(value) is not str
+                or not name
+                or "=" in name
+                or "\0" in name
+                or "\0" in value
+                for name, value in checked.items()
+            )
+            or sum(len(name.encode()) + len(value.encode()) + 2 for name, value in checked.items())
+            > 65536
+        ):
+            raise ValueError
+    except (UnicodeError, ValueError, TypeError):
+        raise KernelError("sandbox_environment_invalid", "容器环境不符合契约") from None
+    return checked
+
+
+def _verify_file_identity(path: Path, expected: tuple[int, ...]) -> None:
+    try:
+        if _file_identity(path) != expected:
+            raise ValueError
+    except (OSError, ValueError):
+        raise KernelError("sandbox_binding_changed", "容器引擎绑定已经变化") from None
+
+
 class ContainerCommandBuilder:
     """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。"""
 
@@ -131,6 +177,7 @@ class ContainerCommandBuilder:
         workspace: str | Path,
         command: ContainerCommandSpec | ContainerExecutionSpec,
         environment: Mapping[str, str],
+        intent_arguments: Mapping[str, JsonValue] | None = None,
         secrets: ResolvedSecretEnvironment | None = None,
         external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
         egress: ManagedEgressBinding | None = None,
@@ -145,6 +192,7 @@ class ContainerCommandBuilder:
             target_command = command
         if not execution_is_approved(plan, checkpoint):
             raise KernelError("approval_required", "Execution Plan尚未获得有效批准")
+        approved_arguments = _approved_arguments(command, intent_arguments)
         if (
             plan.sandbox.level != "container_strong"
             or plan.sandbox.backend != self._engine
@@ -153,31 +201,10 @@ class ContainerCommandBuilder:
             or plan.sandbox.profile_digest != profile.digest
             or plan.sandbox.network != profile.network.policy.mode
             or target_command.profile_digest != profile.digest
-            or plan.intent.arguments != command.model_dump(mode="json", warnings="error")
+            or plan.intent.arguments != approved_arguments
         ):
             raise KernelError("sandbox_capability_mismatch", "Execution Plan与容器后端不匹配")
-        try:
-            checked_environment = dict(environment)
-            if (
-                len(checked_environment) > 128
-                or any(
-                    type(name) is not str
-                    or type(value) is not str
-                    or not name
-                    or "=" in name
-                    or "\0" in name
-                    or "\0" in value
-                    for name, value in checked_environment.items()
-                )
-                or sum(
-                    len(name.encode()) + len(value.encode()) + 2
-                    for name, value in checked_environment.items()
-                )
-                > 65536
-            ):
-                raise ValueError
-        except (UnicodeError, ValueError, TypeError):
-            raise KernelError("sandbox_environment_invalid", "容器环境不符合契约") from None
+        checked_environment = _validated_environment(environment)
         if (
             bind_environment(checked_environment, platform=plan.workspace.platform)
             != plan.environment
@@ -289,11 +316,7 @@ class ContainerCommandBuilder:
         )
 
     def _verify_binding(self) -> None:
-        try:
-            if _file_identity(self._path) != self._identity:
-                raise ValueError
-        except (OSError, ValueError):
-            raise KernelError("sandbox_binding_changed", "容器引擎绑定已经变化") from None
+        _verify_file_identity(self._path, self._identity)
 
     def ensure_container_absent(self, execution: ContainerExecutionSpec) -> None:
         if self._container_rows(execution):

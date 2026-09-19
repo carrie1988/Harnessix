@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 53
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 54
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
@@ -65,9 +66,8 @@ supersedes: []
 | 统一Trusted Action路由 | [Trusted Actions模块设计](modules/trusted-actions.md) | `binding/invocation → resource/policy → execution/approval → audit/executor/reconcile`，再追踪MCP、Skill、Hook与Git Push适配 |
 | Workspace路径、快照与租约 | [Workspace模块设计](modules/workspace.md) | `paths/contracts → POSIX/Windows observation → snapshot/verify → lease`，再追踪Execution、Trusted Action、Delivery、Sandbox和Skill消费者 |
 | Workspace与Git交付 | [Delivery模块设计](modules/delivery.md) | `desired files → transaction/snapshot/blob/diff → POSIX publish`或`managed worktree → checkpoint → deterministic commit → separately approved push` |
-| Action Plane | [Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)、[Executors模块设计](modules/executors.md)、[Storage模块设计](modules/storage.md)与[Action Plane子系统设计](subsystems/action-plane.md) | `domain → policy → executors/runtime → storage/worker`，先读领域、决策、效果和持久化边界，再读跨包主链 |
-| Action HTTP API | [API模块设计](modules/api.md) | `create_app → lifespan/middleware → routes → ActionService`；重点区分POST 202、GET 200、身份缺口、首次持久化与输入安全边界 |
-| Framework Adapter | [Adapter模块设计](modules/adapters.md) | `StructuredTool → build_request → Sync/Async Client → ActionSnapshot`；重点区分LangChain Tool兼容意图、真实LangGraph未验证、Tool Call身份与Action状态 |
+| Trusted Action Runtime | [Trusted Actions模块设计](modules/trusted-actions.md)、[Domain模块设计](modules/domain.md)、[Policy模块设计](modules/policy.md)与[Executors模块设计](modules/executors.md) | `gateway → router → policy/approval → executor/reconcile`，这是当前Coding Agent副作用治理主链 |
+| 旧Action服务兼容内核 | [Action Plane子系统设计](subsystems/action-plane.md)、[API模块设计](modules/api.md)与[Adapter模块设计](modules/adapters.md) | 已退出产品面；只用于0.9.1f迁移和历史源码阅读，不得作为新增集成入口 |
 | MCP扩展 | [MCP模块设计](modules/mcp.md) | `target → connection/catalog → trusted policy/definition → gateway → trusted_actions`；重点区分目录事实、权限事实、Pre-send/After-send、UNKNOWN和默认产品未装配 |
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
@@ -76,7 +76,7 @@ supersedes: []
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → API/Action/Worker`；Agent链再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
-| Python SDK边界 | [SDK模块设计](modules/sdk.md) | 区分Agent Protocol与Action HTTP两套客户端；再读Transport并发、取消和错误边界 |
+| Python SDK边界 | [SDK模块设计](modules/sdk.md) | 以Agent Protocol为唯一公共客户端；再读Transport并发、取消和错误边界 |
 | 可恢复终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | `contracts → state_store → projection → session → controller → rendering → app/cli`；重点区分持久事实、类型化Intent、Textual View和stdio组合根 |
 | Product Config与安全Fallback | [Product Config模块设计](modules/product-config.md) | `contracts → codec → runtime/store/migration → server/cli`；重点区分源/语义摘要、零暴露切换、CAS与启动事务 |
 
@@ -100,7 +100,7 @@ supersedes: []
 | 系统当前结构 | [总体架构](architecture.md) | 系统上下文、模块边界、主流程和当前限制 |
 | Agent Runtime | [Agent Runtime模块设计](modules/agent.md) | Thread/Turn/Item/Event、Agent Loop、交互、取消、Retry、Trusted Action Gateway与恢复 |
 | Session | [Session模块设计](modules/session.md) | Event Log、Snapshot、CAS、Fork、迁移、重建、Trusted Action投影和Runtime Owner |
-| Context | [Context模块设计](modules/context.md) | Source优先级、预算、模型历史视图、Compaction账本和活动窗口 |
+| Context | [Context模块设计](modules/context.md) · [源码逐层解读](modules/context-code-reading.md) | Source优先级、预算、模型历史视图、Compaction账本和活动窗口 |
 | Model Runtime | [Model Runtime模块设计](modules/models.md) | Provider端口、流状态机、Attempt、Usage、Billing和Cost |
 | Artifact | [Artifact模块设计](modules/artifacts.md) | 有界正文、原子发布、分页、完整性验证、TTL和回收 |
 | Coding Tool Runtime | [Coding Tool Runtime模块设计](modules/tools.md) | Workspace只读文件/搜索/Git、可信Scope、并发、取消和Artifact捕获 |
@@ -120,16 +120,16 @@ supersedes: []
 | Observability | [Observability模块设计](modules/observability.md) | 内部端口、No-op/OTel适配、W3C持久传播、信号目录、日志、Agent安全包装、故障与隐私边界 |
 | Agent Protocol | [Protocol模块设计](modules/protocol.md) | JSON-RPC v1、严格解码、公共投影、Trusted Action兼容映射、Replay/Delta、命令幂等账本和Schema边界 |
 | App Server | [App Server模块设计](modules/app-server.md) | 单连接握手、方法分派、应用服务、后台Turn、持久Replay、Live Delta、Scoped Artifact与stdio并发关闭 |
-| SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限，以及Action Plane HTTP同步/异步客户端 |
+| SDK | [SDK模块设计](modules/sdk.md) | Agent双Transport、严格Response/Result、协商方法及消息/Replay上限；旧Action HTTP客户端仅迁移兼容 |
 | Product UI终端产品 | [Product UI终端产品模块设计](modules/product-ui.md) | Client State、发送前Command分配、纯投影、连接代际、单Actor Controller、Plan/Tool、Approval/Question、Diff证据、Usage/Cost未知、Cancel/Steer、错误自助和stdio冷恢复；0.9.1c三平台CI通过并关闭 |
 | Product Config | [Product Config模块设计](modules/product-config.md) | 严格配置、Profile选择、Secret引用、离线诊断、安全Fallback、迁移、CAS和产品启动事务 |
-| Action HTTP API | [API模块设计](modules/api.md) | FastAPI Lifespan、Action资源、200/202/404/409/422/500、Trace、身份、输入预算和部署边界 |
-| Framework Adapter | [Adapter模块设计](modules/adapters.md) | LangChain StructuredTool工厂、固定Context、Action映射、状态投影、Tool Call幂等恢复及真实LangGraph证据边界 |
+| 旧Action HTTP API | [API模块设计](modules/api.md) | 已退役兼容实现；保留FastAPI资源和迁移风险说明，不属于1.0部署边界 |
+| 旧Framework Adapter | [Adapter模块设计](modules/adapters.md) | 已退役兼容实现；不得从新增生产代码依赖 |
 | MCP | [MCP模块设计](modules/mcp.md) | 受管Target、不可变目录、Schema边界、SQLite状态、调用前漂移、Trusted Action、UNKNOWN/Reconcile和只读stdio Server |
 | Skill | [Skill模块设计](modules/skills.md) | 本地来源、Frontmatter、目录摘要、渐进加载、安全Reader、无正文访问账本、Action Gateway、Secret与提示注入边界 |
 | Hook | [Hook模块设计](modules/hooks.md) | Definition/Grant/Registry、精确Matcher、Blocking/Advisory、确定Run、双账本、Timeout/取消、Interrupted恢复和产品接线边界 |
 | Smoke | [Smoke模块设计](modules/smoke.md) | 显式网络门禁、严格配置、固定场景、请求/Token边界、审批重开、Replay、白名单报告和Provider认证边界 |
-| Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | Policy、Approval、Journal、Lease、`UNKNOWN`与Reconcile |
+| 旧Action Plane | [Action Plane子系统设计](subsystems/action-plane.md) | 迁移兼容资料；治理语义已由Trusted Action Runtime承接 |
 | 外部Action契约 | [Action Contract](action-contract.md) | 请求、工具定义、指纹和Trace Context |
 | Action状态与恢复 | [Action生命周期](action-lifecycle.md) | 状态转换、租约、`UNKNOWN`和对账 |
 | 安全模型 | [威胁模型](threat-model.md) | 资产、信任边界、攻击面和缓解措施 |
@@ -177,7 +177,7 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录80份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录81份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
 - [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等30份冻结参考实现证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
@@ -207,7 +207,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [DOC-1.0机器基线](baselines/documentation-doc1.0-start.json)。
 - [文档策略v1](../governance/documentation-policy-v1.json)与[文档检查器](../scripts/documentation_check.py)：自动门禁合同和实现入口。
 
-DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。31/31个生产源码包均已有独立现行模块设计。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、76份既有ADR和27份源码研究的职责、状态及入口治理。0.9.1d及0.9.1e新增的源码研究、ADR、详细设计和模块同步继续受同一文档合同约束。DOC-1.6已按照[架构决策](adr/0077-versioned-documentation-contract-and-gates.md)和[详细设计](changes/doc-1.6-automated-documentation-gates.md)交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查、31项治理回归和三平台CI门禁；Linux文档任务同时执行变化Mermaid真实渲染。
+DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成Agent Runtime与早期Action Plane两份黄金样例。DOC-1.3的19个Coding Agent主链模块已全部完成；DOC-1.4已完成Protocol、App Server、SDK、Product Config、API、Adapter、MCP、Skill、Hook与Smoke。API、Adapter和Action Plane资料现按ADR 0081降级为迁移兼容文档，当前产品事实由Trusted Actions及Agent主链模块承接。DOC-1.5已完成测试/验证证据、六类运维资料、里程碑/0.6专题设计、ADR和源码研究职责治理。DOC-1.6已交付版本化策略、全库检查器、源码差异同步、公共合同漂移检查和三平台CI门禁。
 
 ## 8. 文档状态说明
 

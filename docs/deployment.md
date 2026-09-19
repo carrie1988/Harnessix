@@ -1,29 +1,31 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
   - deployment
-  - api
-  - storage
+  - product_ui
   - product_config
   - app_server
+  - sdk
+  - trusted_actions
 related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
-  - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/integration/test_api.py
-  - tests/integration/test_worker.py
+  - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_config/test_preflight.py
   - tests/product_ui/test_cli.py
+  - tests/product_ui/test_stdio_product.py
   - tests/tools/test_windows_native_runtime.py
-  - tests/agent
 supersedes: []
 ---
 
@@ -31,132 +33,88 @@ supersedes: []
 
 ## 1. 文档定位
 
-本文是当前安装、配置、升级、恢复、诊断和平台资料的统一入口，只维护部署拓扑、文档职责和跨组件硬约束。
-具体操作步骤已拆分到`docs/operations/`，历史上按0.3～0.8里程碑追加的命令和验收数字冻结在
-[部署里程碑历史](deployment-milestone-history.md)，不得作为当前版本运行手册。
+本文是当前安装、配置、启动、升级、恢复、诊断和平台资料的统一入口。Harnessix Code 1.0只有一套本地优先
+Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action HTTP API不再是产品部署方式。
+0.1～0.8时期的旧命令和队列运维证据冻结在[部署里程碑历史](deployment-milestone-history.md)，不得作为当前手册。
 
-当前仓库同时包含两个不同部署面：
+具体操作分别由以下资料维护：
 
-1. **Harnessix Code本地Agent进程**：`harnessix agent-server`通过stdio提供Agent Protocol，使用产品配置、
-   本地Workspace和私有状态目录；
-2. **Harnessix Action Plane服务**：`harnessix serve`提供HTTP API，`inline`模式进程内执行，`queued`
-   模式由独立`harnessix worker`消费SQLite或PostgreSQL Journal。
+| 主题 | 当前事实源 |
+|---|---|
+| 安装与制品 | [安装与制品](operations/installation.md) |
+| Product Config、Profile与Secret | [配置参考](operations/configuration.md) |
+| 升级、备份与回退 | [升级与回退](operations/upgrade-and-rollback.md) |
+| Session、Action、Process与Delivery恢复 | [故障恢复](operations/recovery.md) |
+| Doctor、日志、Trace与Metric | [诊断与可观测性](operations/diagnostics.md) |
+| macOS、Linux、Windows与Container | [平台与运行环境](operations/platforms.md) |
 
-二者尚未合并成统一安装器或守护进程。Action Plane HTTP服务只注册`system.echo`和`demo.issue.create`示例工具，
-不是完整Coding Agent产品入口。
-
-## 2. 当前能力边界
+## 2. 当前能力与非目标
 
 | 能力 | 当前状态 | 生产解释 |
 |---|---|---|
-| 源码开发安装 | 可用 | Python 3.12+与`uv sync --locked --all-extras --dev` |
-| Python Wheel构建 | 项目元数据已具备 | 尚无受签名、带SBOM的正式Release制品 |
-| Action Plane SQLite/inline | 可用 | 单机开发和受控部署；默认监听`127.0.0.1` |
-| Action Plane PostgreSQL/queued | 可用 | API与Worker共享数据库；仍需外置认证、TLS和编排 |
-| Coding Agent stdio Server | 三平台只读候选 | 启动前运行共享Preflight，Server在开放stdio前再次校验 |
-| Windows底层端口 | 四项只读已验证 | 原生Handle实现List/Read/Glob/Grep并经CI 34735529084验收；显式Git、写入和交付仍失败关闭 |
-| 容器Action Plane | 可构建 | 当前`Dockerfile`不包含模型Provider可选依赖，不是Agent镜像 |
-| 完整TUI与三平台安装器 | TUI已实现，安装器未实现 | TUI仍缺统一Action装配和长期Dogfooding；安装器属于后续发布切片 |
-| 远程多租户Agent服务 | 非1.0范围 | 当前本地优先，不开放公共网络Agent Server |
+| 源码开发安装 | 可用 | Python 3.12+，使用锁定`uv.lock`安装 |
+| `harnessix code` | 已实现候选 | TUI、配置向导、Doctor、Client State和stdio子进程监督 |
+| `harnessix agent` | 已实现 | Agent Protocol薄CLI，适合自动化和无TUI使用 |
+| `harnessix agent-server` | 已实现 | 本地Headless App Server；stdout仅传输Agent Protocol JSONL |
+| Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
+| 默认Workspace读取 | macOS/Linux/Windows已实现 | 启动前按平台能力证明，失败时不开放协议 |
+| 默认Workspace Patch | POSIX已实现 | 经Trusted Action、Review Artifact、审批和Delivery事务执行 |
+| 固定Container Process | 正在接入 | 只有镜像、Sandbox、Owner和恢复能力全部证明后才广告 |
+| Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
+| 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
-平台承诺的完整矩阵见[平台与运行环境](operations/platforms.md)。
+独立Action HTTP/Worker已经退出产品面。旧`ActionService/ActionWorker`只在迁移调用方内保留，不接受新部署；
+迁移顺序和归档要求见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)。
 
-## 3. 部署拓扑
-
-### 3.1 本地Coding Agent
-
-```mermaid
-flowchart LR
-    CLI[薄CLI或Agent SDK] <-->|stdio JSONL| Server[agent-server]
-    Server --> Config[Product Config v2]
-    Server --> Provider[OpenAI兼容或Anthropic SDK]
-    Server --> Workspace[只读Coding Tool Workspace]
-    Server --> State[私有状态目录]
-    State --> Session[sessions.db]
-    State --> ConfigDB[product-config.db]
-```
-
-启动顺序为：产品CLI离线Preflight→打开Client State与TUI→启动Server→Server重复执行Preflight→安全读取配置→
-选择Profile→校验Workspace、状态和平台只读端口→打开配置审计和Session→装配Provider、Tool及Runtime→
-CAS发布活动配置→开放stdio。
-任一步失败都不得先开放协议。
-
-### 3.2 Action Plane inline
+## 3. 当前部署拓扑
 
 ```mermaid
 flowchart LR
-    Client[HTTP Client] --> API[harnessix serve]
-    API --> Policy[Policy与Approval]
-    API --> Executor[进程内Executor]
-    API --> Journal[(SQLite或PostgreSQL)]
-    Executor --> Journal
+    User[用户] --> UI[harnessix code 或 agent]
+    UI <-->|Agent Protocol v1<br/>stdio JSONL| Server[harnessix agent-server]
+    Server --> Config[Product Config]
+    Server --> State[(私有状态目录)]
+    Server --> Workspace[(用户Workspace)]
+    Server --> Provider[外部模型Provider]
+    Server --> Router[Trusted Action Runtime]
+    Router --> Workspace
+    Router --> Container[受管Container / Process Owner]
+    Router --> External[显式批准的外部目标]
 ```
 
-`inline`适用于开发或受控单进程部署。API进程拥有执行权，不需要独立Worker，但仍必须处理审批、幂等、
-Journal和`UNKNOWN`。
+### 3.1 进程与生命周期
 
-### 3.3 Action Plane queued
+- `harnessix code`持有TUI、客户端状态和子进程Transport；
+- `harnessix agent-server`持有Product Config Store、Session Store、Artifact Store、Coding Tool、Agent Runtime和
+  Trusted Action组合；
+- stdio EOF、协议错误或父进程退出触发Server关闭，组件按组合根逆序释放；
+- Container进程由Process Owner负责启动、输出、超时和进程树清理，它是执行后端，不是第二个产品服务；
+- Provider是外部网络边界，Workspace和状态目录是两个必须互不包含的本地信任域。
 
-```mermaid
-flowchart LR
-    Client[HTTP Client] --> API[一个或多个API进程]
-    API --> DB[(PostgreSQL)]
-    WorkerA[Worker A] -->|Claim与Heartbeat| DB
-    WorkerB[Worker B] -->|Claim与Heartbeat| DB
-    WorkerA --> Effect[受管外部效果]
-    WorkerB --> Effect
-    Collector[OTel Collector] <-->|OTLP HTTP| API
-    Collector <-->|OTLP HTTP| WorkerA
-    Collector <-->|OTLP HTTP| WorkerB
-```
+### 3.2 单一入口约束
 
-生产队列形态推荐PostgreSQL。Worker通过租约Claim，租约过期的`RUNNING`动作转入`UNKNOWN`，不能自动重发
-可能产生副作用的调用。HTTP身份认证、TLS、速率限制和多租户鉴权当前不由应用内实现，API不得直接暴露公网。
+产品用户和上层应用不得直接访问Session数据库、Action Audit或Executor。所有命令经Agent Protocol进入Application
+Service，再由Agent Runtime和Trusted Action Gateway执行。不存在用户到Action HTTP API的旁路，也不存在从数据库队列
+直接构造高风险调用的运维入口。
 
-## 4. 运维资料职责
-
-| 主题 | 当前事实源 | 主要问题 |
-|---|---|---|
-| 安装 | [安装与制品](operations/installation.md) | 前置依赖、源码安装、容器、验收、卸载和制品缺口 |
-| 配置 | [配置参考](operations/configuration.md) | 环境变量、Product Config v2、Secret、Profile和启动优先级 |
-| 升级 | [升级与回退](operations/upgrade-and-rollback.md) | 备份集、Migration、配置CAS、兼容检查和回退边界 |
-| 恢复 | [故障恢复](operations/recovery.md) | Action、Agent、Process、Patch、Delivery与配置恢复责任 |
-| 诊断 | [诊断与可观测性](operations/diagnostics.md) | Health、Readiness、日志、Trace、Metric、错误码和证据采集 |
-| 平台 | [平台与运行环境](operations/platforms.md) | macOS/Linux/Windows/Container/PostgreSQL支持等级 |
-| 历史 | [部署里程碑历史](deployment-milestone-history.md) | 旧版本命令、升级切片和当时验收记录 |
-
-模块内部部署参数仍以对应[模块详细设计](README.md#3-当前事实源)为准；本目录不复制全部类、字段和测试清单。
-
-## 5. 最小启动路径
-
-### 5.1 开发环境
+## 4. 安装与开发验收
 
 ```bash
 uv sync --locked --all-extras --dev
-make spec
-make check
-uv run harnessix license
+uv run python scripts/generate_specs.py --check
+uv run python scripts/documentation_check.py
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest
 ```
 
-### 5.2 Action Plane本地服务
+`Dockerfile`仅用于构造包含`harnessix`命令的开发镜像，默认执行`--help`，不监听端口、不声明Action API、
+不构成正式发行物。1.0容器或安装器必须在0.9.5重新设计并通过平台门禁。
 
-```bash
-export HARNESSIX_DATABASE_PATH='.harnessix/harnessix.db'
-export HARNESSIX_EXECUTION_MODE='inline'
-uv run harnessix serve --host 127.0.0.1 --port 8787
-```
+## 5. 产品配置与启动
 
-另一个终端执行：
-
-```bash
-curl --fail http://127.0.0.1:8787/healthz
-curl --fail http://127.0.0.1:8787/readyz
-```
-
-### 5.3 Coding Agent stdio Server
-
-先用Secret-free向导创建私有Product Config v2，再执行产品级Doctor。Doctor与正常启动共享只读、离线Preflight，
-但Server仍会在开放stdio前独立复核：
+### 5.1 生成不含Secret正文的配置
 
 ```bash
 uv run harnessix code configure \
@@ -164,92 +122,138 @@ uv run harnessix code configure \
   --provider-kind openai_chat \
   --base-url https://example.invalid/v1 \
   --model example-model \
+  --api-key-env MODEL_API_KEY \
   --non-interactive
+```
 
+配置只保存Secret环境变量名称与版本。API Key正文必须由启动环境提供，不得写入配置、Workspace、Session或日志。
+
+### 5.2 离线Doctor
+
+```bash
 uv run harnessix code doctor ./workspace \
   --config ./private/product-config.json \
   --state-directory ./private/state
+```
 
+Doctor检查配置、Profile、Secret引用、Workspace、状态目录、平台原生读取端口、可选Git、TUI和Action能力。
+Doctor成功不是网络Provider调用证明；真实Provider验证由受控Smoke负责。
+
+### 5.3 启动TUI
+
+```bash
+export MODEL_API_KEY='由安全环境注入'
+uv run harnessix code ./workspace \
+  --config ./private/product-config.json \
+  --state-directory ./private/state
+```
+
+### 5.4 Headless Server
+
+```bash
 uv run harnessix agent-server \
   --config ./private/product-config.json \
   --workspace ./workspace \
   --state-directory ./private/state
 ```
 
-`agent-server`的stdout是Agent Protocol数据通道，不得混入普通日志或Shell提示。调用方负责进程监督、stdin/stdout
-生命周期和重连身份。
+`agent-server`的stdin/stdout是协议通道。普通日志、Shell提示、进度条或异常Traceback不得写入stdout；调用方负责
+子进程监督、连接代际和客户端实例身份。
 
-## 6. 持久状态清单
+## 6. 私有状态布局
 
-| 部署面 | 路径或后端 | 权威内容 | 一致性要求 |
+状态目录必须由当前用户独占，不能是符号链接或Junction，不能与Workspace互相包含。当前或逐步接入的状态包括：
+
+| 状态 | Owner | 事实用途 |
+|---|---|---|
+| `product-config.db` | Product Config Store | 配置快照、诊断和活动配置CAS |
+| `sessions.db` | Session/Protocol/Artifact Store | Thread、Turn、Item、请求幂等、Artifact元数据与内容 |
+| `execution-plans.db` | Execution Plan Store | 不可变计划与批准检查点 |
+| `action-audit.db` | Trusted Action Audit Store | Route投影和摘要化Hash链事件 |
+| `workspace-leases.db` | Workspace Lease Store | Workspace执行所有权和Fencing |
+| `workspace-transactions/` | Delivery Store | 多文件计划、Blob、游标和效果恢复 |
+| Process状态文件 | Process Supervisor/Owner | Process Lease、输出观察、停止原因和恢复证据 |
+
+旧Action Plane的SQLite/PostgreSQL Journal不属于新状态布局。已有旧数据库由原版本或后续归档工具只读处理，
+新产品不会自动导入、执行或删除其中的READY/RUNNING记录。
+
+## 7. 启动顺序与失败关闭
+
+```text
+resolve config, workspace and state paths
+reject overlap, links, invalid ownership or permissions
+run shared offline preflight
+strictly load Product Config and select profile
+resolve Secret references without persisting material
+build and enter Provider bundle
+initialize Session, Protocol Request and Artifact stores
+probe platform Coding Tools and Trusted Action capabilities
+install only definitions backed by verified executors
+enter Agent Runtime
+CAS activate the exact diagnosed config snapshot
+open stdio protocol
+on any failure: close entered components in reverse order; never open partial protocol
+```
+
+启动过程中不得为了保持工具目录稳定而降级到字符串Path、不受管Shell、Host Process或未固定镜像。能力探测失败应形成
+稳定Doctor省略原因，并从模型目录和Router注册表同时移除。
+
+## 8. 安全硬约束
+
+1. 配置文件、状态目录和Workspace身份在启动期间必须稳定；
+2. Secret正文只在Provider或Executor最小使用窗口存在，不进入argv、数据库、日志或Artifact；
+3. 只读工具使用原生安全文件端口并复核漂移；写操作必须经Trusted Action和完整Review；
+4. Process只接受宿主固定Profile，不接受模型提供程序、Shell、任意环境或Secret；
+5. Container不可用时高风险Process不广告，不回退Host执行；
+6. Agent Protocol是本地边界，不等于公网认证协议；
+7. 不确定外部效果进入`unknown`并只对账，不自动重放；
+8. 备份或恢复不得复制活动锁后让两个Runtime同时操作同一Workspace。
+
+## 9. 升级、备份与回滚
+
+升级前至少备份Product Config、Session数据库、Artifact内容、Execution Plan、Action Audit、Delivery、Workspace Lease和
+Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server并启动新版本；不得在两个版本之间共享可写状态目录。
+
+回滚只能由能够读取当前数据版本的旧版本执行。新事件或迁移已写入后，旧Reader若不认识必须失败关闭，不能跳过字段继续。
+旧Action数据库不参与新产品启动；其归档是0.9.1f3的独立门禁。
+
+## 10. 诊断与可观测性
+
+当前产品没有HTTP `/healthz`或`/readyz`。就绪事实来自：
+
+- `harnessix code doctor`的离线报告；
+- Agent Protocol初始化握手及协商能力；
+- Session、Action Audit、Delivery和Process的持久状态；
+- 结构化错误码、Thread/Turn/Plan身份和低基数Telemetry。
+
+诊断包不得包含Prompt全文、代码正文、Patch正文、argv、绝对路径、环境值、Secret、Provider响应正文或未脱敏stderr。
+旧`harnessix.api.*`和`harnessix.worker.*`信号只属于迁移兼容测试，不能作为当前产品SLO。
+
+## 11. 平台边界
+
+- macOS/Linux使用POSIX安全文件语义；Workspace Patch只有在no-follow能力成立时广告；
+- Windows只读链使用原生Handle，写入在抗Reparse事务端口完成前失败关闭；
+- Container Process依赖Docker或Podman能力、固定镜像Digest、网络策略、资源限制和Process Owner；
+- WSL2可作为强隔离后端候选，但不能替代Windows原生Workspace、Git、Process和CLI支持声明；
+- PostgreSQL不再是1.0产品运行依赖，保留的旧Journal测试只用于迁移期行为证明。
+
+## 12. 源码与测试映射
+
+| 设计元素 | 源码 | 关键符号 | 测试 |
 |---|---|---|---|
-| Action Plane SQLite | `HARNESSIX_DATABASE_PATH` | Action Snapshot、Event、Approval、Lease | 备份数据库及活动WAL状态，恢复后先Readiness检查 |
-| Action Plane PostgreSQL | `HARNESSIX_DATABASE_URL` | 同上，可供多Worker共享 | 使用数据库一致性备份；Schema由事务与Advisory Lock升级 |
-| 演示外部效果 | `HARNESSIX_DEMO_DATABASE_PATH` | `demo.issue.create`幂等效果 | 与Effect Journal不是单事务，故障后必须对账 |
-| Agent产品状态 | `--state-directory/sessions.db` | Thread、Turn、Item、Event、Artifact与协议请求 | 单Runtime Owner；SQLite WAL；Migration带Checksum |
-| 配置审计 | `--state-directory/product-config.db` | 配置快照、活动指针、Fallback和迁移审计 | 与配置源文件摘要绑定；活动切换使用CAS |
-| Product Config源 | `--config`文件 | Provider、Profile、Secret引用和预算 | POSIX要求当前用户拥有、单硬链接、无组/其他权限 |
-| Workspace | `--workspace` | 用户仓库 | 不得与配置或状态目录互相包含 |
+| 顶层产品命令 | [`cli.py`](../src/harnessix/cli.py) | `_parser`、`main` | [`test_cli.py`](../tests/smoke/test_cli.py) |
+| TUI与子进程启动 | [`product_ui/cli.py`](../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | [`product_ui测试`](../tests/product_ui/) |
+| 产品组合根 | [`product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
+| Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
+| Agent SDK Transport | [`sdk/agent_client.py`](../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport` | [`app_server测试`](../tests/app_server/) |
+| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `open_default_workspace_patch_runtime` | [`product_config测试`](../tests/product_config/) |
+| 单一产品面门禁 | 生产源码树 | 旧内核Import集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
 
-显式装配的Patch、Process、Workspace Transaction、Git Delivery、MCP、Skill和Hook还会创建各自账本或私有目录；
-具体路径由宿主装配决定，不能假设全部位于`--state-directory`。
+## 13. 当前限制与后续工作
 
-## 7. 安全硬约束
-
-1. HTTP Action Plane默认仅绑定回环地址；未实现应用内认证前不得直接监听公网；
-2. PostgreSQL与OTel Collector只开放到受控私网或本机，并由外部TLS/mTLS和访问控制保护；
-3. API Key只通过环境Secret来源解析，不进入Product Config正文、命令参数、日志、Session或验证报告；
-4. Product Config和状态目录放在Workspace外；POSIX上分别使用`0600`和`0700`；
-5. 不把配置、Session、Patch账本和效果数据库拆成彼此不一致的备份时间点；
-6. `UNKNOWN`、`interrupted`和`diverged`必须先对账，不得通过重启或重复提交“碰运气”；
-7. 迁移失败、配置诊断失败、活动配置CAS冲突或平台不支持时保持失败关闭；
-8. 当前容器镜像以非Root UID 10001运行，但未提供完整只读根文件系统、Capability、Seccomp和签名策略。
-
-## 8. 发布前部署门禁
-
-| 门禁 | 最低证据 |
-|---|---|
-| 制品身份 | 源码Revision、版本、锁文件、构建日志和Artifact摘要一致 |
-| 安装 | 目标平台全新环境安装、`harnessix --help`和许可证命令通过 |
-| 配置 | 严格解析、Secret可用、依赖存在、Profile能力与活动CAS通过 |
-| 数据 | 升级前备份、Migration、重开、旧Reader拒绝和回退演练通过 |
-| 运行 | Health/Readiness、一次只读请求、审批、取消、恢复和资源关闭通过 |
-| 安全 | 监听地址、文件权限、Secret Canary、Sandbox和网络边界通过 |
-| 可观测 | 日志、Trace、Metric、错误分类和红action拒绝均可定位 |
-| 平台 | 对应OS、文件系统、进程、终端、Git和安装器矩阵通过 |
-
-当前仓库尚未完成正式安装器、签名、SBOM、升级编排和全平台Dogfooding，因此不能据此声明1.0可商用发布。
-
-## 8.1 默认Workspace Patch状态与备份边界
-
-POSIX默认产品启动后会在同一私有State Root创建`execution-plans.db`、`action-audit.db`、`workspace-leases.db`及`workspace-transactions/transactions.db`和`blobs/`。它们与`sessions.db`共同描述一次Patch的提案、审批、文件效果和恢复事实；备份、迁移或故障取证不得只复制其中一个数据库。
-
-停机备份必须先停止`agent-server`和TUI，确认没有活动Turn，再按一致快照复制整个State Root。恢复时同时恢复所有数据库与Blob目录，并保持原Workspace身份；把旧状态指向不同Workspace会在启动或执行校验中失败。e5完成前，启动不会自动全局扫描旧的`running/reconciling` Route，运维人员不得通过删除Action或Delivery记录“修复”状态。
-
-Windows默认产品不创建可执行Patch目录项；发现模型请求、日志或文档声称Windows已经安全写入时，应视为能力漂移而不是兼容行为。
-
-## 9. 源码与测试映射
-
-| 部署职责 | 源码 | 关键符号 | 测试 |
-|---|---|---|---|
-| 顶层命令 | [`src/harnessix/cli.py`](../src/harnessix/cli.py) | `_parser`、`main`、`_run_worker` | [`tests/unit/test_cli_license.py`](../tests/unit/test_cli_license.py)、[`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
-| Action服务装配 | [`src/harnessix/bootstrap.py`](../src/harnessix/bootstrap.py) | `build_journal`、`build_service` | [`tests/integration/test_action_service.py`](../tests/integration/test_action_service.py) |
-| HTTP生命周期 | [`src/harnessix/api/app.py`](../src/harnessix/api/app.py) | `create_app`、`health`、`readiness` | [`tests/integration/test_api.py`](../tests/integration/test_api.py) |
-| 队列Worker | [`src/harnessix/worker.py`](../src/harnessix/worker.py) | `ActionWorker.run_forever`、`_execute_with_heartbeat` | [`tests/integration/test_worker.py`](../tests/integration/test_worker.py) |
-| Agent产品启动与Patch Owner | [`src/harnessix/product_config/server.py`](../src/harnessix/product_config/server.py)、[`action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `run_product_stdio`、`open_default_workspace_patch_runtime` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)、[`tests/delivery/test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py) |
-| 配置CLI | [`src/harnessix/product_config/cli.py`](../src/harnessix/product_config/cli.py) | `config_main`、`agent_server_main` | [`tests/product_config/test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
-| 产品Configure/Doctor | [`src/harnessix/product_ui/cli.py`](../src/harnessix/product_ui/cli.py)、[`src/harnessix/product_config/preflight.py`](../src/harnessix/product_config/preflight.py) | `_configure`、`_doctor`、`run_product_preflight` | [`tests/product_ui/test_cli.py`](../tests/product_ui/test_cli.py)、[`tests/product_config/test_preflight.py`](../tests/product_config/test_preflight.py) |
-| Windows只读端口 | [`src/harnessix/tools/windows_read.py`](../src/harnessix/tools/windows_read.py)、[`src/harnessix/workspace/windows.py`](../src/harnessix/workspace/windows.py) | `WindowsReadRuntime`、`WindowsWorkspaceRoot` | [`tests/tools/test_windows_native_runtime.py`](../tests/tools/test_windows_native_runtime.py) |
-| 进程级设置 | [`src/harnessix/settings.py`](../src/harnessix/settings.py) | `Settings.from_environment` | [`tests/integration/test_api.py`](../tests/integration/test_api.py)、[`tests/integration/test_worker.py`](../tests/integration/test_worker.py) |
-| 镜像 | [`Dockerfile`](../Dockerfile) | 非Root用户、`/data`卷和`serve`入口 | [`tests/integration/test_api.py`](../tests/integration/test_api.py) |
-
-## 10. 已知限制
-
-- 项目包版本仍为`0.1.0`，路线图完成度与发布包语义版本尚未统一；
-- 没有官方macOS/Linux/Windows安装器、自动更新器、签名、来源证明和SBOM；
-- Windows当前只支持已验证的原生List/Read/Glob/Grep链；默认Patch会被明确省略，Git、写Tool、Process、Delivery与安装器尚未形成完整产品支持；
-- Action Plane HTTP API没有内置认证、授权、TLS、速率限制或租户来源绑定；
-- 当前容器只覆盖Action Plane基础依赖，不包含OpenAI、Anthropic或完整Coding Tool环境；
-- 已有离线统一`code doctor`；在线备份、数据库修复和自动回滚命令仍未实现；
-- POSIX默认产品已装配Workspace Patch及其Delivery事务；Git交付、Process、MCP、Skill、Hook仍不是默认产品能力，部署前必须核对对应模块的“当前/显式/规划”边界；
-- 生产SLO、容量阈值、告警阈值、长时间Soak和灾难恢复目标尚待0.9后续切片固化。
+- 0.9.1e固定Container Process和统一启动恢复Owner尚未完成；
+- 0.9.1f旧Process、Git Push和Eval调用方尚未全部迁移，兼容内核仍存在源码与测试；
+- 0.9.3尚未完成长会话Soak、容量和故障降级基线；
+- 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
+- 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
+- 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。

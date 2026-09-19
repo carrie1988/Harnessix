@@ -468,21 +468,21 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
-    { name = "asyncpg" },
-    { name = "fastapi" },
     { name = "httpx" },
     { name = "mcp" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "uvicorn" },
 ]
 
 [package.optional-dependencies]
 anthropic = [
     { name = "anthropic" },
 ]
-langgraph = [
+legacy-action = [
+    { name = "asyncpg" },
+    { name = "fastapi" },
     { name = "langchain-core" },
+    { name = "uvicorn" },
 ]
 observability = [
     { name = "opentelemetry-api" },
@@ -510,10 +510,10 @@ dev = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21,<1" },
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=1.3,<2" },
-    { name = "asyncpg", specifier = ">=0.30,<1" },
-    { name = "fastapi", specifier = ">=0.116,<1" },
+    { name = "asyncpg", marker = "extra == 'legacy-action'", specifier = ">=0.30,<1" },
+    { name = "fastapi", marker = "extra == 'legacy-action'", specifier = ">=0.116,<1" },
     { name = "httpx", specifier = ">=0.28,<1" },
-    { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=1.0,<2" },
+    { name = "langchain-core", marker = "extra == 'legacy-action'", specifier = ">=1.0,<2" },
     { name = "mcp", specifier = ">=2.2,<3" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=2.54,<3" },
     { name = "opentelemetry-api", marker = "extra == 'observability'", specifier = ">=1.30,<2" },
@@ -522,9 +522,9 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.11,<3" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "textual", marker = "extra == 'tui'", specifier = ">=8.2,<9" },
-    { name = "uvicorn", specifier = ">=0.35,<1" },
+    { name = "uvicorn", marker = "extra == 'legacy-action'", specifier = ">=0.35,<1" },
 ]
-provides-extras = ["langgraph", "observability", "openai", "anthropic", "tui"]
+provides-extras = ["legacy-action", "observability", "openai", "anthropic", "tui"]
 
 [package.metadata.requires-dev]
 dev = [

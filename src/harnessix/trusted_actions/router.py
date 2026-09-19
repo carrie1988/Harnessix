@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -428,10 +427,8 @@ class TrustedActionRouter:
         if not execution_is_approved(plan.execution, approval):
             raise KernelError("action_not_approved", "Action Execution Plan尚未获得有效批准")
         try:
-            arguments = definition.input_model.model_validate_json(
-                json.dumps(plan.invocation.arguments, ensure_ascii=False, allow_nan=False)
-            )
-        except ValidationError:
+            arguments = decode_action_arguments(definition, plan.invocation.arguments)
+        except (KernelError, ValidationError, ValueError, TypeError):
             raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
         return current, definition, arguments
 

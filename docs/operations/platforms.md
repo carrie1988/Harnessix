@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 8
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/workspace
   - tests/processes
@@ -45,11 +46,9 @@ supersedes: []
 
 | 能力 | Linux | macOS | Windows | Container |
 |---|---|---|---|---|
-| Python基础包/Action Plane | CI主路径 | 候选测试 | 选定测试 | 可构建基础镜像 |
+| Python基础包/Coding Agent | CI主路径 | 候选测试 | 选定测试 | 可构建开发命令镜像 |
 | Textual View/Controller与领域交互 | CI候选 | CI候选 | CI候选 | 非容器默认入口 |
 | `harnessix code`完整子进程链 | CI候选 | CI候选 | 原生只读候选，当前提交待CI | 当前镜像未装配 |
-| SQLite Action Journal | 可用 | 可用 | 库级候选 | `/data`持久卷 |
-| PostgreSQL Action Journal | PostgreSQL 17 CI | 协议上可用，未独立原生矩阵 | 未独立验证 | 外部数据库 |
 | `agent-server`默认入口 | 候选可用 | 候选可用 | 四项只读Tool候选；显式Git失败关闭 | 当前镜像未装配 |
 | 只读Coding Tool | POSIX实现 | POSIX实现 | Win32 Handle实现`list/read/glob/grep`，待本轮CI | 需显式宿主装配 |
 | Workspace安全观察 | POSIX FD/no-follow | POSIX FD/no-follow | Win32 Handle/Reparse Point端口 | 取决于宿主/挂载 |
@@ -143,13 +142,13 @@ Dogfooding属于0.9.5。
 
 ### 7.1 SQLite
 
-SQLite用于本地Action Journal、Agent Session和多种专用账本。每个Store的并发和锁合同不同；只有Session明确采用
-单Runtime Owner。不要在共享网络盘或多个主机间复用SQLite路径。
+SQLite用于Agent Session和多种专用账本。每个Store的并发和锁合同不同；Session明确采用
+单Runtime Owner。旧Action Journal只作为迁移归档，不进入产品启动。不要在共享网络盘或多个主机间复用SQLite路径。
 
 ### 7.2 PostgreSQL
 
-PostgreSQL用于Action Plane多Worker Journal，当前CI基线为17。应用用户只需要目标数据库Schema和表权限，不需要
-`SUPERUSER`、`CREATEDB`或`CREATEROLE`。数据库只绑定本机或受控私网，使用TLS与`pg_hba.conf`限制来源。
+PostgreSQL 17只用于旧Action Worker兼容回归和迁移验证，不是Harnessix Code 1.0运行依赖。完成0.9.1f3后，
+相关Schema仅按归档策略保留；新增产品部署不得建立多Worker Action Journal。
 
 ### 7.3 外部Provider
 
@@ -158,18 +157,9 @@ Provider端点必须为无用户信息、Query或Fragment的HTTPS URL。平台�
 
 ## 8. 容器运行要求
 
-当前Action Plane镜像：
-
-- 基于`python:3.12-slim`；
-- UID 10001非Root；
-- 默认监听容器内`0.0.0.0:8787`；
-- `/data`持久化Action和演示数据库；
-- 默认命令`harnessix serve`；
-- 只安装`observability` Extra；
-- 未声明Healthcheck、只读RootFS、Linux Capabilities、Seccomp、资源限制或签名。
-
-生产编排至少显式设置CPU/内存/PID/文件描述符限制、只读RootFS（为`/data`单独读写）、网络策略、Secret注入、
-Health/Readiness探针、Graceful Shutdown和镜像Digest。上述编排策略当前没有仓库级正式清单和E2E证据。
+当前[`Dockerfile`](../../Dockerfile)只构建非Root开发命令镜像，默认执行`harnessix --help`，不监听端口、
+不声明Action数据库Volume，也不启动`serve/worker`。它不是正式Coding Agent发行镜像。正式Container发行仍需在0.9.5
+补齐Workspace/状态卷、Provider和Sandbox边界、资源限制、只读RootFS、网络策略、签名、SBOM及升级回退证据。
 
 ## 9. 平台验收要求
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -10,6 +10,7 @@ modules:
 related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/unit/test_observability_core.py
   - tests/integration/test_observability_flow.py
@@ -751,13 +752,13 @@ Endpoint为空时不会导入`opentelemetry.py`，因此基础安装不需要Obs
 
 | 运行形态 | Observer来源 | 日志配置 | 当前结论 |
 |---|---|---|---|
-| `harnessix serve` | `build_service`按Settings构造 | 顶层CLI配置 | 可启用Action API Trace/Metric |
-| `harnessix worker` | 独立`build_service`构造 | 顶层CLI配置 | 可启用Worker Trace/Metric，服务名`.worker` |
-| Action内联模式 | API服务同一Observer | 顶层CLI配置 | Submit与Execute在同进程链路 |
+| 旧Action API | `build_service`按Settings构造 | 无顶层CLI入口 | 仅迁移兼容测试可启用，不是产品观测链 |
+| 旧Action Worker | 独立`build_service`构造 | 无顶层CLI入口 | 仅迁移兼容测试可启用，0.9.1f3删除 |
+| 旧Action内联模式 | API服务同一Observer | 无产品装配 | 只记录历史Submit/Execute行为 |
 | `harnessix agent` | App Server产品链未注入 | 顶层CLI提前分派，不配置 | Agent Telemetry实际No-op |
 | `harnessix agent-server` | `run_product_stdio`未注入 | 顶层CLI提前分派，不配置 | Agent Telemetry实际No-op |
 | Model Smoke | 未注入 | 顶层CLI提前分派 | 无外部Agent遥测 |
-| Coding Eval | `run_historical_coding_eval`可由库调用方注入 | CLI未统一配置 | 默认No-op；显式注入可同时观察Agent和Action |
+| Coding Eval | `run_historical_coding_eval`可由库调用方注入 | CLI未统一配置 | 默认No-op；旧Action观测随Eval迁移删除 |
 
 ### 14.4 生命周期与所有权
 

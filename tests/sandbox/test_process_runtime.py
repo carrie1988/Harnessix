@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import pytest
+from pydantic import JsonValue
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import EffectClass, PolicyDecisionKind, RiskLevel
@@ -59,6 +60,7 @@ def _execution_plan(
     supervisor: PosixProcessSupervisor,
     *,
     mode: Literal["none", "limited"] = "none",
+    intent_arguments: dict[str, JsonValue] | None = None,
 ) -> tuple[
     tuple[ContainerEngineProbe, ContainerSandboxProfile],
     ContainerExecutionSpec,
@@ -130,7 +132,11 @@ def _execution_plan(
             tool="sandbox.process",
             tool_version="v1",
             tool_fingerprint="a" * 64,
-            arguments=execution.model_dump(mode="json", warnings="error"),
+            arguments=(
+                execution.model_dump(mode="json", warnings="error")
+                if intent_arguments is None
+                else intent_arguments
+            ),
             effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
             risk_level=RiskLevel.HIGH,
             idempotency_key=str(process.process_id),
@@ -228,6 +234,45 @@ async def test_container_execution_rejects_owner_or_plan_drift(tmp_path: Path) -
                 environment={"LANG": "C"},
             )
         assert plan_drift.value.code == "sandbox_capability_mismatch"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="该确定性用例使用POSIX owner能力")
+async def test_container_execution_accepts_only_exact_public_intent_arguments(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    public: dict[str, JsonValue] = {"profile": "unit-tests", "selectors": ["tests/unit"]}
+    async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
+        (probe, profile), execution, plan = _execution_plan(
+            workspace,
+            supervisor,
+            intent_arguments=public,
+        )
+        runtime = ContainerProcessRuntime(
+            ContainerCommandBuilder(Path(sys.executable), probe), supervisor
+        )
+        prepared = runtime.prepare(
+            plan,
+            None,
+            profile,
+            execution,
+            workspace=workspace,
+            environment={"LANG": "C"},
+            intent_arguments=public,
+        )
+        assert prepared.process.process_id == execution.process.process_id
+        with pytest.raises(KernelError) as mismatch:
+            runtime.prepare(
+                plan,
+                None,
+                profile,
+                execution,
+                workspace=workspace,
+                environment={"LANG": "C"},
+                intent_arguments={"profile": "unit-tests", "selectors": []},
+            )
+        assert mismatch.value.code == "sandbox_capability_mismatch"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="该确定性用例使用POSIX owner能力")

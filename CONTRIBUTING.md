@@ -2,13 +2,13 @@
 
 ## 基本原则
 
-1. 核心领域层必须保持框架无关；LangGraph 等框架依赖只能出现在适配器中。
-2. 每个 Executor 必须声明副作用类型、幂等要求和对账能力。
-3. 生命周期变更必须补充不变量测试，尤其是重复提交、租约过期和不确定结果路径。
-4. Action Contract 发生变化时，代码模型、JSON Schema、OpenAPI 和中文文档必须同步更新。
+1. Coding Agent公共集成统一使用Agent Protocol；不得新增独立Action HTTP、Worker或框架专用产品入口。
+2. 每个Trusted Action Executor必须声明副作用类型、幂等要求和对账能力。
+3. 生命周期变更必须补充不变量测试，尤其是重复提交、取消、超时和不确定结果路径。
+4. Agent Protocol或Trusted Action Contract发生变化时，代码模型、JSON Schema和中文文档必须同步更新。
 5. 不把无关重构与行为变更混入同一次提交。
-6. Metric 标签不得使用 `action_id`、`tenant_id`、`worker_id` 等高基数字段。
-7. 日志不得记录 Action 参数、Header、数据库 URL、凭据或外部响应正文。
+6. Metric标签不得使用`thread_id`、`turn_id`、`call_id`、`plan_id`等高基数字段。
+7. 日志不得记录Prompt、Tool参数、Header、数据库URL、凭据、Diff正文或外部响应正文。
 8. 新增生产模块必须说明职责和非职责；新增公共行为及高风险状态机、副作用或恢复入口必须说明适用的前置条件、副作用、幂等、失败和恢复语义。
 9. 注释使用简体中文并解释设计原因、边界或不变量，不逐行复述代码；协议名、技术术语和代码标识符保持原文。
 10. 不得通过自动更新治理策略掩盖超大文件、热点符号、一级包依赖、依赖环或公共导出增长；确需调整时先提交独立设计决策及行为保持测试。

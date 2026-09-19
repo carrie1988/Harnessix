@@ -6,26 +6,21 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；202份Markdown、31/31个生产源码包、80份ADR和30份冻结源码研究均已进入版本化文档合同。0.9.1a～0.9.1d已通过全矩阵CI并关闭。0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭。POSIX默认Workspace Patch已由实现提交`71a4794`接入并等待全矩阵CI关闭；Process/Sandbox、产品启动恢复Owner以及0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e3已通过对应全矩阵CI。0.9.1e4～e5继续建设固定Container Process和启动恢复Owner；0.9.1f正在按[ADR 0081](docs/adr/0081-single-coding-agent-product-boundary.md)把独立Action HTTP/Worker收敛为Coding Agent进程内Trusted Action Runtime。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
-              CLI / TUI / SDK / IDE
+              CLI / TUI / Agent SDK
                        │
              Versioned Agent Protocol
                        │
     ┌──────────────────▼──────────────────┐
     │           Harnessix Code             │
     │ Agent Runtime / Model / Context      │
-    │ Coding Tools / Session / Sandbox     │
+    │ Session / Artifact / Coding Tools    │
+    │ Trusted Action Runtime / Sandbox     │
     └──────────────────┬──────────────────┘
                        │
-    ┌──────────────────▼──────────────────┐
-    │       Harnessix Action Plane         │
-    │ Policy / Approval / Effect Journal  │
-    │ Idempotency / UNKNOWN / Reconcile   │
-    └──────────────────┬──────────────────┘
-                       │
-               Local OS / MCP / SaaS / DB
+        Workspace / Container / MCP / Git
 ```
 
 ## 项目边界
@@ -37,7 +32,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 - Context 构建、Token Budget、裁剪和 Compaction；
 - Coding Tool Runtime、[Process Runtime](docs/modules/processes.md)和 Workspace 边界；
 - Session 持久化、取消、恢复和双向客户端协议；
-- Permission、Approval 与 [Action Domain](docs/modules/domain.md)/Action Plane；
+- Permission、Approval 与 [Trusted Action Runtime](docs/modules/trusted-actions.md)；
 - MCP、项目指令、Skills 和 Hooks；
 - Coding Evals、故障注入和质量回归。
 
@@ -477,28 +472,16 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 
 0.6.2c的Tool Result模型视图见下一节；动态Source本身不改写Session原始Item。设计与安全边界见[ADR 0056](docs/adr/0056-workspace-git-environment-sources-and-consistency.md)和[0.6实施设计](docs/m06-context-and-sessions.md)。
 
-## 当前已实现：0.1 Action Plane
+## 历史基础：0.1 Action Plane兼容内核
 
-- Python 3.12+、asyncio、Pydantic v2、FastAPI；
-- 版本化且框架无关的 `ActionRequest`；
-- 运行时拥有的 Tool Schema、副作用类型和风险等级；
-- `allow`、`deny`、`require_approval` 策略结果；
-- SQLite 与 PostgreSQL 当前快照、追加式 Effect Journal；
-- 租户范围幂等键和载荷冲突检测；
-- `READY → LEASED → RUNNING` 执行租约；
-- 基于 Journal `READY` 状态的持久队列；
-- API 与独立 Worker 进程解耦；
-- Worker 心跳续租、Owner 校验和过期恢复；
-- PostgreSQL `FOR UPDATE SKIP LOCKED` 多 Worker 原子 Claim；
-- W3C Trace Context 经 Journal 跨进程持久传播；
-- OpenTelemetry Trace/Metrics 可选适配器与 NoOp 默认实现；
-- JSON 结构化日志、队列指标和 `/readyz` 就绪检查；
-- 显式 `UNKNOWN`，写操作异常默认不盲目重试；
-- Executor 专用 `reconcile()` 对账契约；
-- FastAPI、同步/异步 Python SDK；
-- LangGraph/LangChain `StructuredTool` 适配器；
-- `system.echo` 与 `demo.issue.create` 两个可运行 Executor；
-- 不确定副作用注入和无重复对账测试。
+0.1曾交付framework-agnostic Action Contract、Policy、Approval、Effect Journal、Worker Lease、`UNKNOWN`和
+Reconcile，并由此形成当前可信执行语义。产品演进后，默认Coding Agent已经使用
+`TrustedActionGateway → TrustedActionRouter`统一规划、审批、执行和对账。
+
+从[ADR 0081](docs/adr/0081-single-coding-agent-product-boundary.md)开始，独立HTTP API、Action HTTP Client和
+数据库Worker Queue不再属于1.0产品面；`ActionService/ActionWorker`只作为Process、Git Push和历史Eval迁移期间的
+兼容内核，不允许新增调用方。旧实现的历史能力和测试证据仍保留在Git历史与
+[Action Plane子系统资料](docs/subsystems/action-plane.md)中，不能据此使用已撤销的`serve/worker`命令。
 
 ## 当前已实现：0.3 Agent Runtime Kernel
 
@@ -601,122 +584,49 @@ uv run pytest tests/smoke
 
 设计见 [ADR 0020](docs/adr/0020-observed-billing-context.md)。0.4 整体验收和真实编码工具仍未完成。
 
-## 当前 Action Plane 快速开始
+## 当前产品快速开始
 
-环境要求：Python 3.12+ 和 [uv](https://docs.astral.sh/uv/)。
+环境要求：Python 3.12+、[uv](https://docs.astral.sh/uv/)以及一个可用的OpenAI-compatible或Anthropic模型配置。
 
 ```bash
 make install
 make check
-make run
+
+uv run harnessix code configure \
+  --provider-kind openai_chat \
+  --base-url https://example.invalid/v1 \
+  --model example-model \
+  --non-interactive
+
+uv run harnessix code doctor /path/to/workspace
+uv run harnessix code /path/to/workspace
 ```
 
-服务默认监听 `http://127.0.0.1:8787`，交互式接口文档位于 `http://127.0.0.1:8787/docs`。
+`harnessix code`启动本地TUI并监督stdio Agent Server；`harnessix agent-server`是产品内部Headless入口，
+其stdout只传输Agent Protocol JSONL。Python宿主使用`harnessix.sdk.AgentClient`及进程内或子进程Transport。
 
-在另一个终端运行 Action Plane 可靠性演示：
-
-```bash
-make demo
-```
-
-演示流程包括：
-
-1. 执行只读 `system.echo`；
-2. 提交 `demo.issue.create` 并进入审批；
-3. 批准后模拟“外部 Issue 已创建，但本地结果丢失”；
-4. Action 进入 `UNKNOWN`；
-5. 对账器按业务幂等键查到既有 Issue；
-6. Action 变为 `SUCCEEDED`，不重复创建 Issue。
-
-上述演示使用默认 `inline` 模式，适合本地调试。
-
-## 队列执行模式
-
-生产形态使用 PostgreSQL，并将 API 与 Worker 分开启动：
-
-```bash
-export HARNESSIX_DATABASE_URL='postgresql://harnessix:***@数据库地址:5432/harnessix'
-export HARNESSIX_EXECUTION_MODE=queued
-
-# 终端一：只负责接收、校验、策略和审批
-uv run harnessix serve
-
-# 终端二：Claim READY Action 并执行
-uv run harnessix worker
-```
-
-在 `queued` 模式下，提交或批准 Action 后，HTTP API 返回 `202` 和 `READY` 快照；独立 Worker 完成执行后，可通过 `GET /v1/actions/{action_id}` 查询最终状态。
-
-| 环境变量 | 默认值 | 说明 |
-|---|---:|---|
-| `HARNESSIX_DATABASE_URL` | 空 | 配置后使用 PostgreSQL Journal |
-| `HARNESSIX_DATABASE_PATH` | `.harnessix/harnessix.db` | 未配置 PostgreSQL 时使用的 SQLite Journal |
-| `HARNESSIX_DEMO_DATABASE_PATH` | `.harnessix/demo-external.db` | 模拟外部 Issue 系统的独立 SQLite 文件 |
-| `HARNESSIX_EXECUTION_MODE` | `inline` | `inline` 或 `queued` |
-| `HARNESSIX_LEASE_SECONDS` | `30` | 执行租约时长 |
-| `HARNESSIX_WORKER_POLL_SECONDS` | `0.5` | 空队列轮询间隔 |
-| `HARNESSIX_WORKER_HEARTBEAT_SECONDS` | `10` | Worker 续租间隔，必须小于租约时长 |
-| `HARNESSIX_RECOVERY_INTERVAL_SECONDS` | `5` | 过期租约扫描间隔 |
-| `HARNESSIX_LOG_FORMAT` | `json` | `json` 或 `console` |
-| `HARNESSIX_LOG_LEVEL` | `INFO` | 日志级别 |
-| `HARNESSIX_OTEL_ENDPOINT` | 空 | OTLP/HTTP Collector 基础地址 |
-
-## LangGraph 适配
-
-```python
-from pydantic import BaseModel
-
-from harnessix import ActionContext, EffectClass, HarnessixAsyncClient, Principal
-from harnessix.adapters.langgraph import HarnessixToolContext, create_harnessix_tool
-
-
-class IssueInput(BaseModel):
-    title: str
-    body: str = ""
-
-
-client = HarnessixAsyncClient()
-issue_tool = create_harnessix_tool(
-    action_name="demo.issue.create",
-    description="创建经过治理的 Issue",
-    args_schema=IssueInput,
-    async_client=client,
-    context=HarnessixToolContext(
-        principal=Principal(
-            tenant_id="demo",
-            subject_id="langgraph-agent",
-            framework="langgraph",
-        ),
-        action_context=ActionContext(session_id="thread-1", run_id="run-1"),
-    ),
-    effect_hint=EffectClass.IDEMPOTENT_WRITE,
-    idempotency_key=lambda arguments: f"issue:{arguments['title']}",
-)
-```
-
-返回对象是标准LangChain `BaseTool`；从类型设计上可供接受LangChain Tool的LangGraph组件消费，但当前依赖Extra只安装
-`langchain-core`，仓库尚无真实`langgraph`、`ToolNode`、Checkpoint或Interrupt集成测试。Adapter只提交一次并返回完整
-`ActionSnapshot` JSON，不会等待审批或Queued终态；调用方必须解析Action状态、持久化恢复身份并控制模型可见字段。
-Policy、Approval、Journal和Executor仍位于Harnessix边界之后。完整现行能力与限制见
-[Adapter模块设计](docs/modules/adapters.md)。
+独立`harnessix serve`、`harnessix worker`、Action HTTP SDK和LangGraph Action Adapter已经退出1.0产品面。
+其他Agent框架若需要接入，应使用版本化Agent Protocol；未来远程执行只会作为Trusted Action Executor后的
+受信适配器立项，不会恢复绕过Thread/Turn的第二套公共Action API。详细迁移边界见
+[0.9.1f设计](docs/changes/m09-1f-single-product-runtime-convergence.md)。
 
 ## 当前仓库结构
 
 ```text
-src/harnessix/domain/       Action Contract、状态和端口
-src/harnessix/storage/      SQLite/PostgreSQL Effect Journal 与迁移
-src/harnessix/policy/       Policy Engine 实现
-src/harnessix/executors/    内置和演示 Executor
-src/harnessix/api/          FastAPI HTTP 边界
-src/harnessix/sdk/          Python 同步/异步客户端
-src/harnessix/adapters/     Agent 框架适配器
+src/harnessix/domain/       旧Action合同（迁移兼容）
+src/harnessix/storage/      旧SQLite/PostgreSQL Journal（迁移兼容）
+src/harnessix/policy/       旧Action Policy（迁移兼容）
+src/harnessix/executors/    旧Action样例Executor（迁移兼容）
+src/harnessix/sdk/          Agent Protocol Python客户端与Transport
+src/harnessix/trusted_actions/ 统一高风险Action规划、审批、执行与对账
+src/harnessix/product_config/  产品配置、能力探测与默认组合根
 src/harnessix/agent/        Kernel领域模型、Reducer稳定门面及Item/Turn投影、Loop、取消
 src/harnessix/models/       Provider 契约、Fake/Scripted Provider
 src/harnessix/session/      SQLite Session Store、迁移与宿主锁
 src/harnessix/tools/        工作区只读/Git工具、作用域与Artifact读取入口
 src/harnessix/artifacts/    有界正文、事务发布、分页、配额与清理
 src/harnessix/patches/      受管单文件/整组Patch及差异报告
-src/harnessix/processes/    宿主进程、Action桥接、测试Profile与输出文档
+src/harnessix/processes/    进程监督、旧Action桥接、测试Profile与输出文档
 src/harnessix/evals/        版本化编码任务、运行、评分、Campaign与受控交付
 src/harnessix/protocol/     Agent Protocol合同、Codec、Replay与请求账本
 src/harnessix/app_server/   stdio Headless服务与应用编排
@@ -735,7 +645,7 @@ examples/                   可运行演示
 ## 设计资料
 
 - [文档中心：当前事实、历史决策、研究与证据的统一入口](docs/README.md)
-- [源码阅读地图：产品启动、Agent Loop、可信执行和Action Plane](docs/guides/source-reading-map.md)
+- [源码阅读地图：产品启动、Agent Loop和可信执行](docs/guides/source-reading-map.md)
 - [产品章程](docs/product-charter.md)
 - [总体架构](docs/architecture.md)
 - [1.0本地优先商用边界决策](docs/adr/0062-local-first-v1-commercial-boundary.md)

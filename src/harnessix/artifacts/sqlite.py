@@ -26,6 +26,10 @@ from harnessix.agent.models import (
     ToolResultContent,
 )
 from harnessix.agent.reducer import get_turn
+from harnessix.artifacts.action_output_store import (
+    ActionOutputArtifactMixin,
+    validate_action_output_body,
+)
 from harnessix.artifacts.contracts import (
     MAX_ARTIFACT_BYTES,
     MAX_ARTIFACT_RECORDS,
@@ -42,6 +46,17 @@ from harnessix.artifacts.contracts import (
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
+
+_HISTORY_ARTIFACT_PURPOSES: frozenset[str] = frozenset(
+    {
+        "tool_result",
+        "batch_effect",
+        "process_output",
+        "action_review",
+        "action_output",
+        "artifact_page",
+    }
+)
 
 
 def _reject_constant(value: str) -> None:
@@ -67,7 +82,45 @@ def records(body: bytes) -> list[str]:
         raise KernelError("artifact_invalid", "Artifact 不是受支持的有界 UTF-8 JSONL") from None
 
 
-class SQLiteArtifactStore:
+def _validate_process_output_body(
+    row: aiosqlite.Row,
+    thread: Thread,
+    ref: ArtifactRef,
+    body: bytes,
+) -> None:
+    """核对Process归档正文与Session中已提交的公共流摘要。"""
+
+    try:
+        document = parse_process_output_document(body)
+        turn = get_turn(thread, UUID(row["turn_id"]))
+        result = next(
+            item.content
+            for item in turn.items
+            if isinstance(item.content, ToolResultContent)
+            and item.status == ItemStatus.COMPLETED
+            and str(item.content.call_id) == row["call_id"]
+            and item.content.process is not None
+        )
+        if not isinstance(result.output, dict):
+            raise ValueError("结果类型不匹配")
+        for name in ("stdout", "stderr"):
+            public = result.output[name]
+            stream = getattr(document.summary, name)
+            if not isinstance(public, dict) or public != {
+                "captured_bytes": stream.captured_bytes,
+                "observed_bytes": stream.observed_bytes,
+                "observed_sha256": stream.observed_sha256,
+                "truncated": stream.truncated,
+                "eof": stream.eof,
+            }:
+                raise ValueError("流摘要不匹配")
+        if document.summary.complete != ref.complete:
+            raise ValueError("完整性不匹配")
+    except (KeyError, StopIteration, ValueError):
+        raise KernelError("artifact_corrupt", "Process Artifact正文与结果不一致") from None
+
+
+class SQLiteArtifactStore(ActionOutputArtifactMixin):
     """同一 Session 数据库内发布；正文不通过外部文件进行双写。"""
 
     def __init__(
@@ -270,33 +323,9 @@ class SQLiteArtifactStore:
         if len(lines) != ref.records:
             raise KernelError("artifact_corrupt", "Artifact 记录数不一致")
         if row["purpose"] == "process_output":
-            try:
-                document = parse_process_output_document(body)
-                turn = get_turn(thread, UUID(row["turn_id"]))
-                result = next(
-                    i.content
-                    for i in turn.items
-                    if isinstance(i.content, ToolResultContent)
-                    and i.status == ItemStatus.COMPLETED
-                    and str(i.content.call_id) == row["call_id"]
-                    and i.content.process is not None
-                )
-                assert isinstance(result.output, dict)
-                for name in ("stdout", "stderr"):
-                    public = result.output[name]
-                    stream = getattr(document.summary, name)
-                    if not isinstance(public, dict) or public != {
-                        "captured_bytes": stream.captured_bytes,
-                        "observed_bytes": stream.observed_bytes,
-                        "observed_sha256": stream.observed_sha256,
-                        "truncated": stream.truncated,
-                        "eof": stream.eof,
-                    }:
-                        raise ValueError("流摘要不匹配")
-                if document.summary.complete != ref.complete:
-                    raise ValueError("完整性不匹配")
-            except (AssertionError, KeyError, StopIteration, ValueError):
-                raise KernelError("artifact_corrupt", "Process Artifact正文与结果不一致") from None
+            _validate_process_output_body(row, thread, ref, body)
+        if row["purpose"] == "action_output":
+            validate_action_output_body(row, thread, ref, body)
         return lines
 
     @staticmethod
@@ -370,13 +399,7 @@ class SQLiteArtifactStore:
         purpose: HistoryArtifactPurpose,
         omitted_field: ArtifactOmittedField | None = None,
     ) -> None:
-        if purpose not in {
-            "tool_result",
-            "batch_effect",
-            "process_output",
-            "action_review",
-            "artifact_page",
-        }:
+        if purpose not in _HISTORY_ARTIFACT_PURPOSES:
             raise KernelError("artifact_invalid", "Artifact用途不符合契约")
         async with self.session._connection() as database:
             await database.execute("BEGIN")

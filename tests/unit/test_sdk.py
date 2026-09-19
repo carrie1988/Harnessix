@@ -5,12 +5,12 @@ from datetime import UTC, datetime
 
 import httpx
 
-from harnessix import HarnessixAsyncClient
 from harnessix.domain.models import ActionStatus, EffectClass, RiskLevel
+from harnessix.sdk.client import HarnessixAsyncClient
 from tests.helpers import action_request
 
 
-async def test_async_sdk_preserves_action_contract() -> None:
+async def test_legacy_async_sdk_preserves_action_contract_during_migration() -> None:
     observed: dict[str, object] = {}
 
     async def handler(request: httpx.Request) -> httpx.Response:

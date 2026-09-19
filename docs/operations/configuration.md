@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 6
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -14,9 +14,9 @@ modules:
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/integration/test_api.py
-  - tests/integration/test_worker.py
+  - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_preflight.py
@@ -30,20 +30,14 @@ supersedes: []
 
 ## 1. 配置域
 
-Harnessix当前有两套相互独立的配置入口：
+Harnessix Code当前只有一套产品配置主链：
 
-1. [`Settings`](../../src/harnessix/settings.py)从`HARNESSIX_*`环境变量加载Action Plane HTTP、Worker、
-   Journal、日志和OpenTelemetry设置；
-2. `ProductConfigV2`从严格JSON文件加载Coding Agent的Provider、模型Profile、Secret引用和请求预算，
-   `agent-server`的Workspace与状态目录继续由显式CLI参数提供；
-3. `harnessix code`在产品边界解析Workspace、配置路径、客户端状态根、Profile和Git可执行文件，再以确定argv启动
-   `agent-server`子进程。
+1. `ProductConfigV2`从严格JSON文件加载Provider、模型Profile、Secret引用和请求预算；
+2. `harnessix code`解析Workspace、配置路径、客户端状态根、Profile和Git可执行文件；
+3. `agent-server`接收显式参数并在Preflight通过后建立Agent Runtime和进程内Trusted Action Runtime。
 
 ```mermaid
 flowchart LR
-    Env[HARNESSIX环境变量] --> Settings[Settings]
-    Settings --> API[Action API]
-    Settings --> Worker[Action Worker]
     File[Product Config v2] --> Snapshot[配置Snapshot]
     SecretEnv[Secret环境变量] --> SecretProvider[EnvironmentSecretProvider]
     Snapshot --> Selection[ProfileSelection]
@@ -51,57 +45,21 @@ flowchart LR
     Selection --> Diagnose
     Diagnose --> Server[agent-server]
     CLI[workspace/state/profile参数] --> Server
+    Server --> Runtime[Agent Runtime]
+    Runtime --> Trusted[Trusted Action Runtime]
 ```
 
-三类入口不会把Action Plane Settings与Product Config自动合并。`HARNESSIX_DATABASE_PATH`不指定Agent Session路径，
-Product Config也不配置Action Plane数据库。
+早期`Settings`中的HTTP、Worker、Journal和OpenTelemetry环境变量只服务已退役Action兼容内核，不再出现在
+`.env.example`或正式产品运维合同中。`HARNESSIX_DATABASE_PATH`、`HARNESSIX_EXECUTION_MODE`、
+`HARNESSIX_HOST`和`HARNESSIX_PORT`不得用于配置Agent Session或当前产品入口。兼容源码保留期间如需读取旧数据，
+必须在隔离维护环境直接调用对应模块，并以[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)的
+白名单和归档规则为准。
 
-## 2. Action Plane环境变量
+## 2. 已退役Action服务配置
 
-| 环境变量 | 类型/默认值 | 校验与语义 |
-|---|---|---|
-| `HARNESSIX_DATABASE_PATH` | Path，`.harnessix/harnessix.db` | `HARNESSIX_DATABASE_URL`为空时使用SQLite |
-| `HARNESSIX_DATABASE_URL` | String，空 | 非空时优先选择PostgreSQL，值不得写入日志和文档 |
-| `HARNESSIX_DEMO_DATABASE_PATH` | Path，`.harnessix/demo-external.db` | `demo.issue.create`示例外部效果库，不是Journal |
-| `HARNESSIX_EXECUTION_MODE` | `inline` | 只允许`inline`或`queued` |
-| `HARNESSIX_HOST` | `127.0.0.1` | HTTP监听地址；当前未内置认证时保持回环 |
-| `HARNESSIX_PORT` | `8787` | 使用Python `int`解析；无独立范围校验，最终由Server绑定校验 |
-| `HARNESSIX_LEASE_SECONDS` | `30` | 正整数；Action执行租约 |
-| `HARNESSIX_WORKER_POLL_SECONDS` | `0.5` | 正浮点数；空队列轮询 |
-| `HARNESSIX_WORKER_HEARTBEAT_SECONDS` | `10` | 正浮点数且严格小于Lease |
-| `HARNESSIX_RECOVERY_INTERVAL_SECONDS` | `5` | 正浮点数；Worker过期租约扫描 |
-| `HARNESSIX_SERVICE_NAME` | `harnessix` | 非空；最终服务名追加`.api`或`.worker` |
-| `HARNESSIX_LOG_LEVEL` | `INFO` | 由Python Logging级别名称解析 |
-| `HARNESSIX_LOG_FORMAT` | `json` | 只允许`json`或`console` |
-| `HARNESSIX_OTEL_ENDPOINT` | 空 | 非空时启用OTLP/HTTP；也回退读取`OTEL_EXPORTER_OTLP_ENDPOINT` |
-| `HARNESSIX_OTEL_EXPORT_INTERVAL_MILLIS` | `10000` | 正整数；Metric导出周期 |
-
-示例值见[`.env.example`](../../.env.example)。项目不会自动加载`.env`文件；宿主、Shell或编排系统必须显式注入。
-
-### 2.1 约束关系
-
-```text
-0 < worker_heartbeat_seconds < lease_seconds
-worker_poll_seconds > 0
-recovery_interval_seconds > 0
-otel_export_interval_millis > 0
-execution_mode ∈ {inline, queued}
-log_format ∈ {json, console}
-```
-
-无效字符串、整数或浮点数可能在进程启动早期直接触发`ValueError`。当前顶层CLI没有把所有`Settings`错误统一投影为
-稳定JSON错误，进程管理器应把非零退出视为启动失败，不能继续接流量。
-
-## 3. Action Plane命令覆盖
-
-| 命令 | CLI覆盖 | 环境变量关系 |
-|---|---|---|
-| `harnessix serve` | `--host`、`--port`、`--database-path`、`--execution-mode` | Host/Port直接取CLI优先；数据库路径和执行模式在导入ASGI应用前写回进程环境 |
-| `harnessix worker` | `--database-path`、`--once` | Path替换已加载设置；若`HARNESSIX_DATABASE_URL`非空，PostgreSQL仍优先 |
-| `harnessix license` | 无 | 不加载运行配置 |
-
-queued模式的API和Worker必须使用相同Journal后端。只给Worker传`--database-path`而API使用PostgreSQL会形成两个独立
-Action域，Readiness仍可能通过但不会消费同一队列。
+`harnessix serve`和`harnessix worker`已从顶层CLI删除，Docker镜像也不再监听8787端口。旧Action环境变量、
+queued拓扑和API/Worker双进程配置不属于1.0支持范围；新增部署不得继续使用。旧库只读检查、导出和删除将在
+0.9.1f3提供正式迁移说明，当前版本不会自动消费或删除旧SQLite/PostgreSQL Action数据。
 
 ## 4. Product Config v2
 

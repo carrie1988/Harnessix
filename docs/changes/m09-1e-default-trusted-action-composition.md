@@ -53,7 +53,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现提交`71a4794`及验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；e4～e5待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)关闭，e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；e3的默认POSIX Patch、审批Review Artifact与可恢复Delivery实现提交`71a4794`及验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；e4已建立固定Container Process候选实现和首批测试，但尚未接入默认产品或补齐完整专项矩阵，e5待实施 |
 
 ## 2. 需求背景与证据
 
@@ -826,10 +826,10 @@ e1/e2未关闭时直接向Server添加Patch或Process构造参数。
 | 能力组合 | `product_config/action_composition.py` | `ProductActionRuntimeOwner` | `tests/product_config/test_action_composition.py` |
 | 同源目录 | `product_config/action_catalog.py` | `ProductActionCatalog` | `tests/product_config/test_action_catalog.py` |
 | 路由规划 | `trusted_actions/planning.py`、`trusted_actions/router.py` | `plan_action`、`TrustedActionRouter.plan` | `tests/trusted_actions/test_router.py` |
-| Agent Gateway | [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py)、[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py) | `RouterBackedAgentActionGateway`、函数式规划/决策/执行/恢复核心 | [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) |
+| Agent Gateway | [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py)、[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py)、[`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py) | `RouterBackedAgentActionGateway`、函数式规划/决策/执行/恢复、终态输出核对与投影 | [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) |
 | 内部事件 | [`trusted_action_contracts.py`](../../src/harnessix/agent/trusted_action_contracts.py)、[`models.py`](../../src/harnessix/agent/models.py)、Reducers、[`approvals.py`](../../src/harnessix/agent/approvals.py) | Trusted Action审批/效果与Agent Event v20 | [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py) |
 | Patch执行 | `delivery/trusted_action.py` | `WorkspacePatchActionExecutor` | `tests/delivery/test_trusted_action_patch.py` |
-| Process执行 | `sandbox/trusted_process_action.py` | `ContainerProfileActionExecutor` | `tests/processes/test_trusted_process_action.py` |
+| Process执行候选 | [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)、[`process_action.py`](../../src/harnessix/product_config/process_action.py) | `probe_product_process_profile`、`ProductProcessActionExecutor`、`ProductProcessOutputProvider` | [`test_process_action.py`](../../tests/product_config/test_process_action.py)已覆盖首批合同与前置失败；完整故障矩阵尚未补齐 |
 | 产品纵向 | Product Server、Protocol Service、Product UI | 组合与恢复 | `tests/product_config/test_product_actions.py`、`tests/product_ui/test_product_actions.py` |
 
 关闭时必须把“计划路径”更新为实际可点击源码/测试链接和符号；未实现项不得留在已关闭文档中。
@@ -1191,6 +1191,7 @@ flowchart LR
 | [`ports.py`](../../src/harnessix/agent/ports.py) | `TrustedActionGateway` | 冻结Agent所需的目录、准备、决定同步、执行和恢复端口 | Agent不直接读取Router Store或调用Executor |
 | [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py) | `RouterBackedAgentActionGateway` | 提供不足100行的稳定门面和关闭语义 | 不拥有Router及Store生命周期 |
 | [`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py) | `prepare_action`、`decide_action`、`execute_action`、`recover_action` | 校验目录、构造稳定Invocation、传播审批并映射终态 | 不绕过Router Policy、Approval Checkpoint和Audit状态机 |
+| [`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py) | `terminal_result`、`build_result` | 核对Router终态摘要、调用输出Provider并投影Agent结果 | 不持久正文、不改变Route状态、不把人工介入伪装为成功 |
 | [`trusted_action_runtime.py`](../../src/harnessix/agent/trusted_action_runtime.py) | `TrustedActionSessionRuntime` | Agent Runtime侧薄协调门面 | 不复制Gateway计划或Router状态机 |
 | [`trusted_action_session.py`](../../src/harnessix/agent/trusted_action_session.py) | `sync_action_decision`、`record_action_decision` | Router先行决定与Session CAS投影的双账本Saga | 不以Session审批替代Execution Approval Checkpoint |
 | [`runtime_recovery.py`](../../src/harnessix/agent/runtime_recovery.py) | `recover_pending_effects` | 聚合旧Patch与统一Action的只核对终结路径 | `pending_approval/ready`不得在终结路径启动副作用 |
@@ -1589,3 +1590,50 @@ macOS、Windows、PostgreSQL、固定镜像Container与Documentation七个任务
 - 多租户远端控制面、长期Soak和容量降级；分别由0.9.3～1.0处理。
 
 因此e3已经独立关闭，但0.9.1e和0.9.1仍保持进行中。
+
+### 22.29 0.9.1e4候选实现与未关闭边界
+
+e4候选代码已经把固定Process Profile从抽象计划落到四个明确职责，但尚未形成默认产品纵向切片：
+
+| 职责 | 源码 | 关键符号 | 当前结论 |
+|---|---|---|---|
+| 强能力证明 | [`process_profile.py`](../../src/harnessix/product_config/process_profile.py) | `_verified_product_process_profile`、`probe_product_process_profile` | Engine、镜像、Owner、Sandbox、资源和Secret全部成立才返回Verified Profile |
+| Route与执行 | [`process_action.py`](../../src/harnessix/product_config/process_action.py) | `resolve_run_profile`、`ProductProcessActionExecutor` | 公共输入只有Profile和Selectors；执行合同由宿主派生并逐字段复核 |
+| Owner与恢复 | [`process_runtime.py`](../../src/harnessix/sandbox/process_runtime.py)、[`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `ContainerProcessRuntime`、`status`、`output`、`reconcile` | Container身份和Process Lease持有副作用事实；恢复不重放命令 |
+| 终态正文 | [`trusted_output.py`](../../src/harnessix/processes/trusted_output.py)、[`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py) | `build_trusted_process_output`、`publish_action_output` | 原始输出按Lease摘要重建为有界JSONL，再查询优先发布 |
+| Agent投影 | [`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py) | `terminal_result`、`build_result` | Router Audit摘要、Provider正文和Session引用必须一致 |
+
+候选执行数据流为：
+
+```mermaid
+sequenceDiagram
+    participant A as Agent Gateway
+    participant R as TrustedActionRouter
+    participant E as ProductProcessActionExecutor
+    participant C as ContainerProcessRuntime
+    participant L as Process Ledger
+    participant O as Action Output Artifact
+    A->>R: plan(profile, selectors)
+    R-->>A: pending approval + immutable plan
+    A->>R: decide(approved)
+    A->>R: execute(plan id)
+    R->>E: execute(route, public arguments)
+    E->>E: re-resolve resources and derive execution spec
+    E->>C: run(plan, checkpoint, profile, spec)
+    C->>L: persist lease before/through effect
+    C-->>E: terminal lease or uncertain failure
+    E-->>R: bounded summary + artifact digest
+    R-->>A: terminal audit event
+    A->>O: rebuild and publish exact output body
+    O-->>A: artifact reference
+```
+
+失败语义不能因后续装配而改变：Profile证据不足时省略Tool；Spawn前可证明失败且Lease不存在时返回`failed`；
+Lease存在、取消、宿主退出或输出不可证明时返回`unknown`；恢复来源的不可证明结果进入`manual_intervention`；
+非零退出是可观察的Process业务结果，不是传输层异常；Artifact已提交但Session结果未提交时正文保持不可读。
+
+当前不允许勾选e4，原因是默认`run_product_stdio`尚未拥有Process Profile探测、Definition安装和Supervisor生命周期。
+[`test_process_action.py`](../../tests/product_config/test_process_action.py)已覆盖参数攻击、完整能力证明、镜像省略、Route审批和
+确定性Spawn前失败；审批后漂移、取消、超时、输出上限、提交确认丢失、真实宿主退出、Reconcile不重放、三平台省略及固定镜像
+隔离仍待补齐。下一步必须先完成上述测试和产品Owner接线，再执行Ruff、Mypy、Schema、文档、全量Pytest及
+Linux/macOS/Windows/Container矩阵；不能仅凭候选模块可导入或现有回归通过宣称生产完成。

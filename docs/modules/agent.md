@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 6
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ supersedes: []
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
 | 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch和App Server；Context、Process等端口尚未全部进入默认产品链 |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到23 |
+| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到25 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。代码库中存在的Patch、Patch Batch、Process、Artifact和
@@ -631,7 +631,7 @@ recover(thread):
 | 并发 | 只读并行上限、提交顺序、兄弟Task回收、写屏障 | `tests/agent/test_tool_scheduling.py` |
 | 交互 | Approval、Question、Steering、历史验证竞态、错配、过期和重复答复 | `tests/agent/test_interactions.py`、审批恢复测试 |
 | 故障注入 | Provider、Session、Tool、Patch、Process、Trusted Action各提交边界崩溃 | `tests/agent/test_crash_recovery.py`、`tests/agent/test_trusted_action_runtime.py`等 |
-| 兼容 | Event 1～20 Upcast、Session迁移1～23、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
+| 兼容 | Event 1～20 Upcast、Session迁移1～25、旧Reader行为 | `tests/agent/test_session_upgrade.py` |
 | 产品集成 | 接受后重启、客户端恢复、有界关闭 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) |
 
 DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、`_execute_calls`、`_recover`、

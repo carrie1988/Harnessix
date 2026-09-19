@@ -120,9 +120,17 @@ def _bindings(
                 raise KernelError(
                     "context_tool_result_artifact_invalid", "Artifact分页结果不符合契约"
                 ) from None
-            purpose: Literal["tool_result", "process_output", "artifact_page"] = "artifact_page"
+            purpose: Literal["tool_result", "process_output", "action_output", "artifact_page"] = (
+                "artifact_page"
+            )
         else:
-            purpose = "process_output" if content.process is not None else "tool_result"
+            purpose = (
+                "action_output"
+                if content.trusted_action is not None
+                else "process_output"
+                if content.process is not None
+                else "tool_result"
+            )
         found.append(
             ToolResultArtifactBinding(
                 purpose=purpose,

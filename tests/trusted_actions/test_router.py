@@ -10,7 +10,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import (
@@ -249,6 +249,87 @@ async def test_bounded_read_is_planned_executed_and_audited(tmp_path: Path) -> N
         (str(planned.plan.execution.plan_id),),
     ).fetchone()[0]
     assert "public-output" not in payload and '"text":"ok"' not in payload
+    plans.close()
+    audit.close()
+
+
+async def test_explicit_argument_decoder_is_reused_for_execute_and_reconcile(
+    tmp_path: Path,
+) -> None:
+    """动态公共Schema不能只在规划时生效，持久执行与恢复必须走同一解码器。"""
+
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("public-output", encoding="utf-8")
+    schema: dict[str, JsonValue] = {
+        "type": "object",
+        "properties": {"path": {"type": "string", "const": "file.txt"}},
+        "required": ["path"],
+        "additionalProperties": False,
+    }
+    calls = 0
+
+    def decode(arguments: dict[str, JsonValue]) -> BaseModel:
+        nonlocal calls
+        calls += 1
+        parsed = FileInput.model_validate(arguments)
+        if parsed.path != "file.txt":
+            raise ValueError("path不匹配")
+        return parsed
+
+    tool = build_trusted_tool_binding(
+        source="builtin",
+        source_id="harnessix",
+        tool="file.access",
+        tool_version="1",
+        tool_fingerprint=canonical_digest("dynamic-file-tool"),
+        input_schema_sha256=canonical_digest(schema),
+        effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+        risk_level=RiskLevel.HIGH,
+        recovery_mode="durable_ledger",
+        executor_id="test.file",
+    )
+    executor = FakeExecutor(
+        ActionExecutionOutcome(kind="unknown", error_code="lost_response"),
+        ActionExecutionOutcome(kind="succeeded", output={"recovered": True}),
+    )
+
+    def resolve(arguments: BaseModel, _: ActionPlanningContext) -> ResolvedAction:
+        parsed = FileInput.model_validate(arguments)
+        return ResolvedAction(
+            resources=(
+                canonical_action_resource(
+                    kind="workspace",
+                    access="write",
+                    identifier={"location": "workspace", "path": parsed.path},
+                ),
+            ),
+            workspace_resources=(WorkspaceResourceRequest(path=parsed.path, access="write"),),
+        )
+
+    actions, plans, audit = router(
+        root,
+        TrustedActionDefinition(
+            tool,
+            FileInput,
+            resolve,
+            executor,
+            input_schema=schema,
+            decode_arguments=decode,
+        ),
+    )
+    request = invocation(tool)
+    planned = actions.plan(request, context(root))
+    actions.decide(
+        planned.plan.execution.plan_id,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+
+    first = await actions.execute(planned.plan.execution.plan_id)
+    recovered = await actions.reconcile(planned.plan.execution.plan_id)
+
+    assert first.kind == "unknown" and recovered.kind == "succeeded"
+    assert calls == 3
     plans.close()
     audit.close()
 

@@ -24,9 +24,21 @@ def test_cli_help_is_discoverable_and_sdk_free(capsys):
     with pytest.raises(SystemExit) as raised:
         main(["--help"])
     assert raised.value.code == 0
-    assert "model-smoke" in capsys.readouterr().out
+    help_text = capsys.readouterr().out
+    assert "model-smoke" in help_text
+    assert "code" in help_text and "agent-server" in help_text
+    assert "\n    serve " not in help_text and "worker" not in help_text
     code, output = invoke(["--help"], capsys)
     assert code == 0 and "--allow-network" in output.out
+
+
+@pytest.mark.parametrize("command", ["serve", "worker"])
+def test_retired_action_service_commands_are_rejected(command, capsys):
+    with pytest.raises(SystemExit) as raised:
+        main([command])
+    output = capsys.readouterr()
+    assert raised.value.code == 2
+    assert command in output.err
 
 
 def test_disabled_does_not_read_config_or_action_plane_env(capsys, monkeypatch):

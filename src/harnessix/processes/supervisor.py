@@ -25,7 +25,6 @@ from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionPlanV2,
-    canonical_digest,
     execution_is_approved,
 )
 from harnessix.execution.planner import bind_environment
@@ -38,110 +37,19 @@ from harnessix.processes.supervision_contracts import (
     ProcessSpec,
 )
 from harnessix.processes.supervision_planner import (
-    build_process_capability,
     build_process_launch_binding,
     prepare_process_lease,
 )
 from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
-from harnessix.processes.windows_conpty import conpty_available
+from harnessix.processes.supervisor_capabilities import (
+    probe_posix_process_capability,
+    probe_windows_process_capability,
+)
 from harnessix.secrets.provider import ResolvedSecretEnvironment
 from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 _TERMINAL_STATES = frozenset({"exited", "failed", "unknown"})
 _WINDOWS_SPAWN_LOCK = threading.Lock()
-
-
-def posix_process_implementation_digest() -> str:
-    root = Path(__file__).parent
-    paths = tuple(
-        root / name
-        for name in (
-            "owner_protocol.py",
-            "owner_output.py",
-            "owner_receipt.py",
-            "posix_owner.py",
-            "supervision_contracts.py",
-            "supervision_planner.py",
-            "supervisor.py",
-        )
-    )
-    try:
-        executable = Path(sys.executable).resolve(strict=True)
-        executable_info = executable.stat()
-        payload = {
-            "implementation": "harnessix.posix-process-owner/v1",
-            "python": {
-                "path": str(executable),
-                "device": executable_info.st_dev,
-                "inode": executable_info.st_ino,
-                "size": executable_info.st_size,
-                "mtime_ns": executable_info.st_mtime_ns,
-            },
-            "modules": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
-        }
-    except OSError:
-        raise KernelError("process_capability_unavailable", "POSIX Process实现不可证明") from None
-    return canonical_digest(payload)
-
-
-def probe_posix_process_capability() -> ProcessCapabilityProbe:
-    if os.name != "posix":
-        raise KernelError("process_platform_unsupported", "POSIX Process能力不可用")
-    return build_process_capability(
-        platform="posix",
-        supports_pty=True,
-        implementation_digest=posix_process_implementation_digest(),
-    )
-
-
-def windows_process_implementation_digest() -> str:
-    if os.name != "nt":
-        raise KernelError("process_platform_unsupported", "Windows Process能力不可用")
-    root = Path(__file__).parent
-    paths = tuple(
-        root / name
-        for name in (
-            "owner_output.py",
-            "owner_protocol.py",
-            "owner_receipt.py",
-            "supervision_contracts.py",
-            "supervision_planner.py",
-            "supervisor.py",
-            "windows_job.py",
-            "windows_conpty.py",
-            "windows_owner.py",
-        )
-    )
-    executables = (
-        Path(sys.executable),
-        Path(shutil.which("cmd.exe") or ""),
-        Path(shutil.which("powershell.exe") or ""),
-    )
-    try:
-        if any(not path.is_absolute() for path in executables):
-            raise OSError
-        payload = {
-            "implementation": "harnessix.windows-process-owner/v1",
-            "executables": {
-                str(path.resolve(strict=True)): {
-                    "size": path.stat().st_size,
-                    "mtime_ns": path.stat().st_mtime_ns,
-                }
-                for path in executables
-            },
-            "modules": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
-        }
-    except OSError:
-        raise KernelError("process_capability_unavailable", "Windows Process实现不可证明") from None
-    return canonical_digest(payload)
-
-
-def probe_windows_process_capability() -> ProcessCapabilityProbe:
-    return build_process_capability(
-        platform="windows",
-        supports_pty=conpty_available(),
-        implementation_digest=windows_process_implementation_digest(),
-    )
 
 
 def _validated_lease(lease: ProcessLease, **changes: object) -> ProcessLease:
@@ -433,7 +341,34 @@ class SupervisedProcess:
             self._control_fd = None
 
 
-class PosixProcessSupervisor:
+class _ProcessObservation:
+    """提供不改变Owner状态的Lease与输出查询。"""
+
+    _store: SQLiteProcessLeaseStore
+    _handles: dict[UUID, SupervisedProcess]
+    _runs: Path
+
+    def status(self, process_id: UUID) -> ProcessLease:
+        """只读返回持久Lease；不会刷新Owner、发送信号或改变状态。"""
+
+        return self._store.load(process_id)
+
+    async def output(self, process_id: UUID, stream: Literal["stdout", "stderr"]) -> bytes:
+        """按Lease摘要读取持久前缀；重启后也不要求原控制句柄仍存在。"""
+
+        handle = self._handles.get(process_id)
+        if handle is None:
+            lease = self._store.load(process_id)
+            handle = SupervisedProcess(
+                self._store,
+                lease,
+                self._runs / str(process_id),
+                lease.owner_identity,
+            )
+        return await handle.output(stream)
+
+
+class PosixProcessSupervisor(_ProcessObservation):
     def __init__(self, state_root: str | Path, *, terminate_grace_seconds: float = 0.5) -> None:
         if os.name != "posix":
             raise KernelError("process_platform_unsupported", "POSIX Process Supervisor不可用")

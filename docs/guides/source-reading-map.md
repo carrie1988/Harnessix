@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 16
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 17
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -30,6 +30,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
@@ -55,7 +56,7 @@ supersedes: []
 
 ## 1. 阅读目标
 
-本文把产品入口、Agent Loop、可信执行和Action Plane还原为可跟踪的源码调用链。读者应先理解稳定契约和持久事实，再进入具体Provider、数据库或平台实现，避免从最大文件随机阅读。
+本文把产品入口、Agent Loop、可信执行和旧Action兼容内核还原为可跟踪的源码调用链。读者应先理解稳定契约和持久事实，再进入具体Provider、数据库或平台实现，避免从最大文件随机阅读。
 
 阅读完成后应能回答：
 
@@ -65,13 +66,13 @@ supersedes: []
 4. Model、Context、Tool、Approval和Session的边界在哪里；
 5. 写文件、启动进程和交付为何不能直接复用只读Tool路径；
 6. 崩溃、取消、超时和外部效果不确定时由谁决定下一步；
-7. 独立Action Plane与Coding Agent Runtime是什么关系；
+7. 旧Action Plane为何退出产品面、哪些调用方仍待迁移；
 8. 31个生产包各自从哪里开始读、用哪些测试验证。
 
 ## 2. 阅读前提与事实边界
 
 - 本文对应`328aa2d6c8ee85a75ab2baef51b80869dc4089a8`实现基线；0.9.1e2已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；
-- Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到23；
+- Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到25；
 - 默认`agent-server`装配Provider、Session、协议服务、只读`CodingToolRuntime`及POSIX能力证明后的`apply_patch_batch`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
 - Windows默认产品已装配原生List/Read/Glob/Grep安全端口并明确省略Patch；Git、写入和Process仍未进入默认能力；
@@ -89,9 +90,9 @@ src/harnessix/
 ├── patches/, processes/, sandbox/, workspace/, delivery/
 │                                          # 可信Coding执行库
 ├── trusted_actions/, execution/          # 统一高风险Action与持久计划
-├── mcp/, skills/, hooks/, adapters/      # 扩展和框架适配
-├── domain/, policy/, storage/, executors/
-├── runtime.py, worker.py, api/           # 独立Action Plane
+├── mcp/, skills/, hooks/                  # 扩展能力
+├── adapters/, domain/, policy/, storage/, executors/
+├── runtime.py, worker.py, api/           # 旧Action迁移兼容内核
 ├── observability/, secrets/              # 横切能力
 ├── evals/, smoke/                        # 评测与真实Provider验证
 └── bootstrap.py, settings.py, file_lock.py, licensing.py
@@ -419,9 +420,10 @@ Sandbox顺序：
 
 对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)、[默认Patch纵向测试](../../tests/delivery/test_trusted_action_patch.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
 
-## 9. 独立Action Plane主链
+## 9. 旧Action兼容内核阅读链
 
-Action Plane是framework-agnostic副作用执行基础设施，与Agent Runtime可以组合，但当前是独立入口和持久链。
+本节用于阅读尚未迁移完成的历史实现。独立入口已经撤销，不得把以下调用链作为新增集成或部署方案；当前产品执行主链
+见上一节`TrustedActionGateway → TrustedActionRouter`。
 
 ### 9.1 阅读顺序
 

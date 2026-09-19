@@ -15,13 +15,12 @@ from harnessix.agent.approvals import (
     trusted_action_request_fingerprint,
 )
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.errors import AgentFailure, KernelError
+from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Thread,
     ToolCallContent,
     ToolResultContent,
     TrustedActionApprovalRequestContent,
-    TrustedActionEffect,
     Turn,
 )
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
@@ -34,6 +33,10 @@ from harnessix.domain.models import (
     utc_now,
 )
 from harnessix.execution.contracts import canonical_digest
+from harnessix.trusted_actions.agent_gateway_output import (
+    TrustedActionOutputProvider,
+    terminal_result,
+)
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
     ActionRouteSnapshot,
@@ -69,6 +72,7 @@ class AgentActionGatewayState:
     context: PlanningContextFactory
     presentations: dict[str, TrustedActionPresentation]
     reviews: TrustedActionReviewProvider | None
+    outputs: dict[str, TrustedActionOutputProvider]
 
 
 def build_gateway_state(
@@ -80,6 +84,7 @@ def build_gateway_state(
     source_id: str,
     presentations: Mapping[str, TrustedActionPresentation] | None,
     reviews: TrustedActionReviewProvider | None,
+    outputs: Mapping[str, TrustedActionOutputProvider] | None,
 ) -> AgentActionGatewayState:
     copied = tuple(item.model_copy(deep=True) for item in definitions)
     if len({item.name for item in copied}) != len(copied):
@@ -87,6 +92,11 @@ def build_gateway_state(
     requested = dict(presentations or {})
     if set(requested) - {item.name for item in copied}:
         raise KernelError("trusted_action_gateway_invalid", "Gateway呈现包含未知Tool")
+    output_providers = dict(outputs or {})
+    if set(output_providers) - {item.name for item in copied}:
+        raise KernelError("trusted_action_gateway_invalid", "Gateway输出包含未知Tool")
+    if any(requested.get(name, "tool") != "process" for name in output_providers):
+        raise KernelError("trusted_action_gateway_invalid", "Gateway输出只适用于Process呈现")
     catalog = {item.name: item for item in copied}
     bindings = _validate_bindings(router, catalog, source, source_id)
     return AgentActionGatewayState(
@@ -96,6 +106,7 @@ def build_gateway_state(
         context=context,
         presentations={item.name: requested.get(item.name, "tool") for item in copied},
         reviews=reviews,
+        outputs=output_providers,
     )
 
 
@@ -125,8 +136,8 @@ async def prepare_action(
             review = await cancel.run(state.reviews.review(route, thread, turn, call, cancel))
         return _build_approval(state, thread, turn, call, route, review)
     if route.state == "ready":
-        return await _execute_ready(state, route, call, cancel, origin="execution")
-    return _project_status(state, route, call, origin="execution")
+        return await _execute_ready(state, route, thread, turn, call, cancel, origin="execution")
+    return await _project_status(state, route, thread, turn, call, cancel, origin="execution")
 
 
 def decide_action(
@@ -199,18 +210,47 @@ async def execute_action(
         decided_at=decision.decided_at,
     )
     if decision.outcome is ApprovalOutcome.REJECTED:
-        return _project_status(state, route, call, origin="execution", approval=approval)
+        return await _project_status(
+            state,
+            route,
+            thread,
+            turn,
+            call,
+            cancel,
+            origin="execution",
+            approval=approval,
+        )
     if route.state == "ready":
         return await _execute_ready(
-            state, route, call, cancel, origin="execution", approval=approval
+            state, route, thread, turn, call, cancel, origin="execution", approval=approval
         )
     if route.state in {"running", "reconciling"}:
         route = state.router.recover_interrupted_plan(approval.plan_id)
     if route.state == "unknown":
         cancel.checkpoint()
         outcome = await cancel.run(state.router.reconcile(approval.plan_id))
-        return _build_result(route, call, outcome, origin="recovery", approval=approval)
-    return _project_status(state, route, call, origin="recovery", approval=approval)
+        route = state.router.status(approval.plan_id)
+        return await terminal_result(
+            state,
+            route,
+            thread,
+            turn,
+            call,
+            outcome,
+            cancel,
+            origin="recovery",
+            approval=approval,
+        )
+    return await _project_status(
+        state,
+        route,
+        thread,
+        turn,
+        call,
+        cancel,
+        origin="recovery",
+        approval=approval,
+    )
 
 
 async def recover_action(
@@ -242,8 +282,28 @@ async def recover_action(
     if route.state == "unknown":
         cancel.checkpoint()
         outcome = await cancel.run(state.router.reconcile(plan_id))
-        return _build_result(route, call, outcome, origin="recovery", approval=approval)
-    return _project_status(state, route, call, origin="recovery", approval=approval)
+        route = state.router.status(plan_id)
+        return await terminal_result(
+            state,
+            route,
+            thread,
+            turn,
+            call,
+            outcome,
+            cancel,
+            origin="recovery",
+            approval=approval,
+        )
+    return await _project_status(
+        state,
+        route,
+        thread,
+        turn,
+        call,
+        cancel,
+        origin="recovery",
+        approval=approval,
+    )
 
 
 def _validate_bindings(
@@ -460,6 +520,8 @@ def _restore_session_decision(
 async def _execute_ready(
     state: AgentActionGatewayState,
     route: ActionRouteSnapshot,
+    thread: Thread,
+    turn: Turn,
     call: ToolCallContent,
     cancel: CancelToken,
     *,
@@ -468,13 +530,27 @@ async def _execute_ready(
 ) -> ToolResultContent:
     cancel.checkpoint()
     outcome = await cancel.run(state.router.execute(route.plan.execution.plan_id))
-    return _build_result(route, call, outcome, origin=origin, approval=approval)
+    route = state.router.status(route.plan.execution.plan_id)
+    return await terminal_result(
+        state,
+        route,
+        thread,
+        turn,
+        call,
+        outcome,
+        cancel,
+        origin=origin,
+        approval=approval,
+    )
 
 
-def _project_status(
+async def _project_status(
     state: AgentActionGatewayState,
     route: ActionRouteSnapshot,
+    thread: Thread,
+    turn: Turn,
     call: ToolCallContent,
+    cancel: CancelToken,
     *,
     origin: Literal["execution", "recovery"],
     approval: TrustedActionApprovalRequestContent | None = None,
@@ -492,37 +568,14 @@ def _project_status(
         external_action_id=route.plan.external_action_id,
         error_code=(event.error_code or "action_failed") if route.state != "succeeded" else None,
     )
-    return _build_result(route, call, outcome, origin=origin, approval=approval)
-
-
-def _build_result(
-    route: ActionRouteSnapshot,
-    call: ToolCallContent,
-    outcome: ActionExecutionOutcome,
-    *,
-    origin: Literal["execution", "recovery"],
-    approval: TrustedActionApprovalRequestContent | None = None,
-) -> ToolResultContent:
-    state = outcome.kind
-    error = None
-    if state != "succeeded":
-        error = AgentFailure(
-            code=outcome.error_code or "trusted_action_failed",
-            message="Trusted Action未成功；详细事实请查询审计记录",
-        )
-    effect = TrustedActionEffect(
-        plan_id=route.plan.execution.plan_id,
-        plan_fingerprint=route.plan.fingerprint,
-        state=state,
+    return await terminal_result(
+        state,
+        route,
+        thread,
+        turn,
+        call,
+        outcome,
+        cancel,
         origin=origin,
-        artifact_sha256=outcome.artifact_sha256,
-    )
-    return ToolResultContent(
-        call_id=call.call_id,
-        outcome="unknown" if state == "manual_intervention" else state,
-        output=outcome.output,
-        error=error,
-        action_id=effect.plan_id,
-        trusted_action=effect,
-        diff_artifact=approval.diff_artifact if approval is not None else None,
+        approval=approval,
     )

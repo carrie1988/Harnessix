@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
@@ -37,6 +37,7 @@ from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
+    ActionRouteSnapshot,
     build_trusted_tool_binding,
 )
 from harnessix.trusted_actions.router import (
@@ -85,6 +86,31 @@ class FixedReview:
         return TrustedActionReview(diff_artifact=self.artifact)
 
 
+@dataclass
+class FixedOutput:
+    projected: JsonValue
+    calls: int = 0
+    output_sha256: str | None = None
+    artifact_sha256: str | None = None
+
+    async def output(
+        self,
+        _route: ActionRouteSnapshot,
+        _thread: Thread,
+        _turn: Turn,
+        _call: ToolCallContent,
+        *,
+        expected_output_sha256: str,
+        expected_artifact_sha256: str,
+        cancel: CancelToken,
+    ) -> JsonValue:
+        cancel.checkpoint()
+        self.calls += 1
+        self.output_sha256 = expected_output_sha256
+        self.artifact_sha256 = expected_artifact_sha256
+        return self.projected
+
+
 def descriptor() -> ToolDescriptor:
     return ToolDescriptor(
         name="workspace.patch",
@@ -131,6 +157,7 @@ def build_gateway(
     *,
     presentation: str = "tool",
     review: FixedReview | None = None,
+    output: FixedOutput | None = None,
 ) -> tuple[
     RouterBackedAgentActionGateway,
     TrustedActionRouter,
@@ -178,6 +205,7 @@ def build_gateway(
         lambda *_: runtime_context(root),
         presentations={tool.name: presentation},  # type: ignore[dict-item]
         reviews=review,
+        outputs={tool.name: output} if output is not None else None,
     )
     return gateway, router, plans, audit
 
@@ -291,6 +319,89 @@ async def test_router_decision_is_authoritative_and_execution_projects_bounded_e
     assert result.trusted_action is not None
     assert result.trusted_action.plan_fingerprint == prepared.plan_fingerprint
     assert executor.calls == 1
+    close_stores(gateway, plans, audit)
+
+
+async def test_configured_output_provider_projects_audited_terminal_body(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    summary: dict[str, JsonValue] = {"summary": "changed"}
+    artifact_sha256 = "b" * 64
+    output = FixedOutput({**summary, "artifact": {"sha256": artifact_sha256}})
+    executor = FakeExecutor(
+        ActionExecutionOutcome(
+            kind="succeeded",
+            output=summary,
+            artifact_sha256=artifact_sha256,
+        )
+    )
+    gateway, router, plans, audit = build_gateway(
+        root,
+        executor,
+        presentation="process",
+        output=output,
+    )
+    thread, turn, call = agent_state(root)
+    prepared = await gateway.prepare(thread, turn, call, CancelToken())
+    assert isinstance(prepared, TrustedActionApprovalRequestContent)
+    approved = gateway.decide(
+        thread,
+        turn,
+        call,
+        prepared,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+
+    result = await gateway.execute(thread, turn, call, approved, CancelToken())
+
+    assert result.output == output.projected
+    assert output.calls == 1
+    assert output.output_sha256 == canonical_digest(summary)
+    assert output.artifact_sha256 == artifact_sha256
+    assert router.status(prepared.plan_id).state == "succeeded"
+    close_stores(gateway, plans, audit)
+
+
+async def test_terminal_recovery_reconstructs_output_without_reexecution(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    summary: dict[str, JsonValue] = {"summary": "persisted"}
+    artifact_sha256 = "c" * 64
+    output = FixedOutput({**summary, "artifact": {"sha256": artifact_sha256}})
+    executor = FakeExecutor(
+        ActionExecutionOutcome(
+            kind="succeeded",
+            output=summary,
+            artifact_sha256=artifact_sha256,
+        )
+    )
+    gateway, router, plans, audit = build_gateway(
+        root,
+        executor,
+        presentation="process",
+        output=output,
+    )
+    thread, turn, call = agent_state(root)
+    prepared = await gateway.prepare(thread, turn, call, CancelToken())
+    assert isinstance(prepared, TrustedActionApprovalRequestContent)
+    approved = gateway.decide(
+        thread,
+        turn,
+        call,
+        prepared,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+    await router.execute(prepared.plan_id)
+
+    recovered = await gateway.recover(thread, turn, call, approved, CancelToken())
+
+    assert recovered is not None and recovered.output == output.projected
+    assert executor.calls == 1 and executor.reconciliations == 0
+    assert output.calls == 1
     close_stores(gateway, plans, audit)
 
 

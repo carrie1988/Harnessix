@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 307,
-    "physical_lines": 66101,
-    "logical_lines": 58814,
-    "documented_modules": 307,
-    "classes": 774,
-    "documented_classes": 254,
-    "functions": 2635,
-    "documented_functions": 277,
-    "public_exports": 337,
+    "source_files": 313,
+    "physical_lines": 67874,
+    "logical_lines": 60375,
+    "documented_modules": 313,
+    "classes": 788,
+    "documented_classes": 266,
+    "functions": 2700,
+    "documented_functions": 310,
+    "public_exports": 331,
     "public_contract_types": 156,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 173
+    "package_dependency_edges": 170
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -227,7 +227,7 @@
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
-      "lines": 827
+      "lines": 762
     },
     {
       "path": "src/harnessix/protocol/contracts.py",
@@ -539,20 +539,9 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore",
       "kind": "class",
-      "line": 70,
-      "lines": 462,
+      "line": 123,
+      "lines": 432,
       "documented": true
-    },
-    {
-      "id": "harnessix.artifacts.sqlite:SQLiteArtifactStore._body",
-      "module": "harnessix.artifacts.sqlite",
-      "path": "src/harnessix/artifacts/sqlite.py",
-      "qualname": "SQLiteArtifactStore._body",
-      "kind": "function",
-      "line": 254,
-      "lines": 47,
-      "documented": false,
-      "decision_complexity": 21
     },
     {
       "id": "harnessix.artifacts.sqlite:SQLiteArtifactStore._verify_page",
@@ -560,7 +549,7 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore._verify_page",
       "kind": "function",
-      "line": 417,
+      "line": 440,
       "lines": 40,
       "documented": false,
       "decision_complexity": 24
@@ -676,7 +665,7 @@
       "path": "src/harnessix/context/tool_result_contracts.py",
       "qualname": "ToolResultViewDecision.strategy_is_consistent",
       "kind": "function",
-      "line": 53,
+      "line": 58,
       "lines": 50,
       "documented": false,
       "decision_complexity": 27
@@ -687,7 +676,7 @@
       "path": "src/harnessix/context/tool_result_view.py",
       "qualname": "prepare_model_history_items",
       "kind": "function",
-      "line": 320,
+      "line": 328,
       "lines": 114,
       "documented": true,
       "decision_complexity": 45
@@ -1374,7 +1363,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 436,
+      "line": 371,
       "lines": 302,
       "documented": false
     },
@@ -1384,7 +1373,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 521,
+      "line": 456,
       "lines": 130,
       "documented": false,
       "decision_complexity": 29
@@ -1395,7 +1384,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "SupervisedProcess",
       "kind": "class",
-      "line": 181,
+      "line": 89,
       "lines": 253,
       "documented": false
     },
@@ -1527,8 +1516,8 @@
       "path": "src/harnessix/sandbox/container.py",
       "qualname": "ContainerCommandBuilder",
       "kind": "class",
-      "line": 94,
-      "lines": 361,
+      "line": 140,
+      "lines": 338,
       "documented": true
     },
     {
@@ -1537,10 +1526,10 @@
       "path": "src/harnessix/sandbox/container.py",
       "qualname": "ContainerCommandBuilder.prepare",
       "kind": "function",
-      "line": 125,
-      "lines": 165,
+      "line": 171,
+      "lines": 146,
       "documented": false,
-      "decision_complexity": 47
+      "decision_complexity": 36
     },
     {
       "id": "harnessix.sandbox.egress:ManagedEgressGateway",
@@ -1580,8 +1569,8 @@
       "path": "src/harnessix/sandbox/process_runtime.py",
       "qualname": "ContainerProcessRuntime",
       "kind": "class",
-      "line": 106,
-      "lines": 142,
+      "line": 146,
+      "lines": 135,
       "documented": true
     },
     {
@@ -1723,8 +1712,8 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 124,
-      "lines": 334,
+      "line": 123,
+      "lines": 332,
       "documented": true
     },
     {
@@ -1814,7 +1803,6 @@
   "package_dependencies": [
     "__main__->cli",
     "__root__->domain",
-    "__root__->sdk",
     "adapters->domain",
     "adapters->sdk",
     "agent->artifacts",
@@ -1851,15 +1839,11 @@
     "bootstrap->settings",
     "bootstrap->storage",
     "cli->agent_cli",
-    "cli->bootstrap",
     "cli->evals",
     "cli->licensing",
-    "cli->observability",
     "cli->product_config",
     "cli->product_ui",
-    "cli->settings",
     "cli->smoke",
-    "cli->worker",
     "context->agent",
     "context->artifacts",
     "context->domain",
@@ -1927,7 +1911,9 @@
     "product_config->execution",
     "product_config->file_lock",
     "product_config->models",
+    "product_config->processes",
     "product_config->protocol",
+    "product_config->sandbox",
     "product_config->secrets",
     "product_config->session",
     "product_config->tools",
@@ -2015,9 +2001,6 @@
       "ApprovalOutcome",
       "EffectClass",
       "EffectReceipt",
-      "HarnessixAPIError",
-      "HarnessixAsyncClient",
-      "HarnessixClient",
       "Principal",
       "RiskLevel",
       "SecretRef",
@@ -2330,9 +2313,6 @@
       "AgentClient",
       "AgentSDKError",
       "AgentTransport",
-      "HarnessixAPIError",
-      "HarnessixAsyncClient",
-      "HarnessixClient",
       "InProcessAgentTransport",
       "SubprocessAgentTransport"
     ],

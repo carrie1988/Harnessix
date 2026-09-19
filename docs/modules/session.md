@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -36,7 +36,7 @@ supersedes: []
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
 | 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～23连续且校验和不可变 |
+| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～25连续且校验和不可变 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -504,7 +504,7 @@ sequenceDiagram
 
 升级和读取不变量：
 
-1. migration资源序号必须连续到23，旧22数据库只追加新的Migration记录；
+1. migration资源序号必须连续到25，旧24数据库只追加新的Migration记录；
 2. `_snapshot`接受Projection 1～20，未知21及以上失败关闭；
 3. `_parse_event`接受Event 1～20，v19及更早若出现统一Action字段由模型版本守卫拒绝；
 4. 新写入统一使用v20，旧事件序列和摘要不重写；
@@ -520,10 +520,22 @@ Review Artifact可先于Session审批引用提交。只有当前pending Call经C
 
 升级、旧库重开和Artifact用途回归位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)及[`tests/artifacts`](../../tests/artifacts/)，完整Patch崩溃窗口位于[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
 
-## 23. 变更记录
+## 23. Trusted Action输出用途与migration25（0.9.1e4）
+
+[`0025_trusted_action_output_artifacts.sql`](../../src/harnessix/session/migrations/0025_trusted_action_output_artifacts.sql)
+重建Artifact用途约束并加入`action_output`，逐列复制既有行，不改写Agent Event、Thread投影或已有Artifact正文。
+该用途保存已批准Trusted Process Action的有界终态输出：发布前核对pending Call、Process审批与Plan身份；发布后只有
+Session中唯一终态Tool Result反向引用同一Artifact和Route效果摘要时，公共Reader与模型历史才可读取正文。
+
+确认丢失时发布器只查询并精确匹配原Artifact ID、Call、Workspace Scope、正文摘要、记录数和原始TTL，不创建第二份输出。
+旧库升级、WAL并发升级和输出用途回归由[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、
+[`test_wal_initialization.py`](../../tests/agent/test_wal_initialization.py)与[`tests/artifacts`](../../tests/artifacts/)覆盖。
+
+## 24. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加migration25与`action_output`用途，记录Trusted Process终态输出发布、授权与确认丢失边界 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加migration24与`action_review`用途，记录Artifact先行、Session授权和双账本恢复边界 |
 | 3 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 增加migration23、Projection v20、统一Action审批/效果读取与旧v19数据库向前升级证据；历史Event不重写 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 收窄`storage_errors`作用域，明确Runtime Owner跨平台锁边界，并增加应用`OSError/TimeoutError`不得误归类的回归合同 |

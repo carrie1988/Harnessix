@@ -3288,6 +3288,7 @@
             "process_output",
             "batch_effect",
             "action_review",
+            "action_output",
             "artifact_page"
           ],
           "title": "Purpose",

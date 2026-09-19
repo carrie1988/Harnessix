@@ -1,8 +1,8 @@
 ---
 doc_type: product-charter
 status: current
-version: 1
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 2
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0062-local-first-v1-commercial-boundary.md
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_repository_policy.py
 supersedes: []
@@ -26,7 +27,7 @@ supersedes: []
 
 它面向真实软件仓库完成理解、规划、修改、命令执行、验证、审查和结果交付，并把模型推理、上下文管理、工具执行、权限审批、会话恢复和副作用治理纳入同一个可观测、可测试的运行时。1.0不是POC、功能演示或仅供二次开发的Runtime库，而是能够正式安装、升级、诊断和长期使用的商业版本。
 
-仓库名、Python 包名和 CLI 命令继续使用 `Harnessix` / `harnessix`。原有 Framework-agnostic Agent Action Plane 不再作为顶层产品，而是作为 Harnessix Code 的执行治理子系统继续演进。
+仓库名、Python 包名和 CLI 命令继续使用 `Harnessix` / `harnessix`。原有Framework-agnostic Action HTTP/Worker产品已经退役；其中Policy、Approval、持久效果、`UNKNOWN`和Reconcile语义由Harnessix Code内部Trusted Action Runtime继续演进。
 
 ## 2. 目标用户
 
@@ -50,7 +51,7 @@ supersedes: []
 - 支持持久会话、恢复、取消、审批和上下文压缩；
 - 支持 MCP、项目指令和 Skills；
 - 支持Host安全级别与至少一种Container隔离执行后端；
-- 高风险外部副作用由 Harnessix Action Plane 治理。
+- 高风险文件、进程、Git和外部副作用由内部Trusted Action Runtime统一治理。
 
 1.0面向大量相互独立的本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。Windows必须具备原生Workspace、Git、Process和CLI能力；强隔离优先使用受管WSL2或Docker Desktop后端，不能把仅能在WSL2运行声明为Windows原生支持。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
@@ -74,7 +75,7 @@ Harnessix Code 必须能够独立完成：
 - 只读操作走低开销执行路径，但仍保留结构化事件；
 - Workspace 内写操作必须可生成 Diff、可审批、可取消；
 - Shell 具备超时、输出限制、进程树终止和资源清理；
-- 外部不可逆操作进入 Action Plane，使用策略、审批、幂等和 Effect Journal；
+- 外部不可逆操作进入Trusted Action Runtime，使用策略、审批、稳定效果身份和持久审计；
 - 不确定副作用不得盲目重试，必须进入显式对账流程。
 
 ### 4.3 可恢复、可解释、可评测
@@ -127,6 +128,6 @@ Harnessix Code 1.0 必须满足：
 
 项目完成后应能够被准确描述为：
 
-> 独立设计并实现生产级 Coding Agent Runtime，包含持久 Agent Loop、Provider 抽象、上下文压缩、代码工具、进程与沙箱、权限审批、MCP/Skills、双向事件协议和自动化评测；通过 Action Plane 进一步解决外部副作用的幂等、恢复与对账问题。
+> 独立设计并实现生产级 Coding Agent Runtime，包含持久 Agent Loop、Provider 抽象、上下文压缩、代码工具、进程与沙箱、权限审批、MCP/Skills、双向事件协议和自动化评测；通过内置Trusted Action Runtime进一步解决高风险副作用的幂等、恢复与对账问题。
 
 这一定义同时体现 Coding Agent 的完整性和 Harnessix 独有的执行治理能力。

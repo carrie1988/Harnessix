@@ -14,6 +14,9 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.domain.models import ApprovalDecision, ToolDescriptor
+from harnessix.trusted_actions.agent_gateway_output import (
+    TrustedActionOutputProvider as TrustedActionOutputProvider,
+)
 from harnessix.trusted_actions.agent_gateway_support import (
     PlanningContextFactory,
     TrustedActionPresentation,
@@ -44,6 +47,7 @@ class RouterBackedAgentActionGateway:
         source_id: str = "harnessix.product",
         presentations: Mapping[str, TrustedActionPresentation] | None = None,
         reviews: TrustedActionReviewProvider | None = None,
+        outputs: Mapping[str, TrustedActionOutputProvider] | None = None,
     ) -> None:
         self._state = build_gateway_state(
             router,
@@ -53,6 +57,7 @@ class RouterBackedAgentActionGateway:
             source_id=source_id,
             presentations=presentations,
             reviews=reviews,
+            outputs=outputs,
         )
         self._closed = False
 

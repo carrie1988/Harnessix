@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
-| Artifact用途 | 只读Tool Result、Batch Plan Diff、Batch Effect Diff、Process Output；模型历史另识别Artifact Page |
+| Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
@@ -536,6 +536,7 @@ collect(limit, after):
 | Process发布 | [`process_output.py`](../../src/harnessix/artifacts/process_output.py) | `SQLiteProcessArtifactPublisher.append`、`_validate_owner` | [`test_process_output.py`](../../tests/artifacts/test_process_output.py) | `test_process_output_is_published_with_terminal_session_facts`、`test_quota_omits_archive_without_erasing_effect` | Action绑定和降级 |
 | Process正文 | [`output_artifact.py`](../../src/harnessix/processes/output_artifact.py) | `process_output_document`、`parse_process_output_document` | [`test_process_output.py`](../../tests/artifacts/test_process_output.py) | `test_process_output_document_is_binary_safe_and_canonical`、`test_process_output_document_rejects_tampered_chunks` | Base64、顺序、摘要和完整性 |
 | Process真退出 | [`process_output.py`](../../src/harnessix/artifacts/process_output.py) | `SQLiteProcessArtifactPublisher.append`恢复分支 | [`test_process_output_crash.py`](../../tests/artifacts/test_process_output_crash.py) | `test_real_exit_recovers_process_output_without_action_replay` | Session×Action Saga恢复 |
+| Trusted Process终态输出 | [`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py) | `ActionOutputArtifactMixin.publish_action_output`、`validate_action_output_reference`、`validate_action_output_body` | [`test_store.py`](../../tests/artifacts/test_store.py)、[`test_process_output_upgrade.py`](../../tests/artifacts/test_process_output_upgrade.py) | Action输出发布、引用、正文和migration25回归 | 查询优先发布、Session反向授权和正文摘要一致性 |
 | 模型历史顺序 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_verify_history_artifacts` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py) | `test_invalid_history_stops_before_provider`、`test_verifier_cancellation_timeout_drains_without_provider_or_decision` | 发网前验证与取消排空 |
 | 协议读取 | [`artifacts.py`](../../src/harnessix/app_server/artifacts.py) | `ScopedProtocolArtifactReader.read` | [`test_sdk.py`](../../tests/artifacts/test_sdk.py) | `test_real_sdk_reads_beyond_preview_without_exposing_host_scope` | SDK分页不暴露内部Scope |
 | 数据库迁移 | [`0006_artifacts.sql`](../../src/harnessix/session/migrations/0006_artifacts.sql)、[`0009_batch_diff_artifacts.sql`](../../src/harnessix/session/migrations/0009_batch_diff_artifacts.sql)、[`0011_process_output_artifacts.sql`](../../src/harnessix/session/migrations/0011_process_output_artifacts.sql) | Artifact表v6/v9/v11 | [`test_batch_diff_upgrade.py`](../../tests/artifacts/test_batch_diff_upgrade.py)、[`test_process_output_upgrade.py`](../../tests/artifacts/test_process_output_upgrade.py) | `test_real_migration9_exit_preserves_original_artifact_and_events`、`test_migration11_exit_is_atomic_and_preserves_existing_artifact` | 迁移原子性和旧字节保持 |
@@ -549,7 +550,8 @@ collect(limit, after):
 4. 读`collect`与`test_store.py`，区分过期、清理、Tombstone和物理空间；
 5. 读`batch_diff.py`及Patch Bridge，理解报告为何不能授予执行权；
 6. 读`process_output.py`及`processes/output_artifact.py`，理解Effect事实与展示副本的Saga；
-7. 最后读Agent Runtime、Tool Runtime、Context模型视图和App Server读取器，建立端到端调用链。
+7. 读`action_output_store.py`，区分可信Process终态正文、Router审计摘要和Session结果引用；
+8. 最后读Agent Runtime、Tool Runtime、Context模型视图和App Server读取器，建立端到端调用链。
 
 ## 21. 测试设计与验收标准
 
@@ -624,10 +626,27 @@ Review正文是最多1 MiB的规范JSONL，完整Diff摘要位于summary记录�
 
 主要回归位于[`tests/artifacts`](../../tests/artifacts/)与[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)，覆盖授权、分页、完整性、确认丢失、冲突、孤儿不可读和过期回收。
 
-## 25. 变更记录
+## 25. Trusted Process Action Output（0.9.1e4）
+
+`action_output`保存Trusted Process Executor清洗后的有界JSONL终态输出，不等于Supervisor原始输出文件。
+[`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)只接受已批准Process Route，验证Plan与
+Process ID、Workspace Scope、记录数、正文摘要和Artifact配额，并以`call_id + purpose`保持唯一。插入提交确认丢失时
+只查询并精确匹配原记录，不刷新TTL或生成新ID。
+
+[`ActionOutputArtifactMixin`](../../src/harnessix/artifacts/action_output_store.py)只承载该用途的发布门面，通用
+[`SQLiteArtifactStore`](../../src/harnessix/artifacts/sqlite.py)继续拥有数据库连接、配额和读取入口；用途专用正文校验与
+引用授权均留在`action_output_store.py`，避免继续扩大通用Store的复杂度和职责。
+
+公共读取通过[`validate_action_output_reference`](../../src/harnessix/artifacts/action_output_store.py)核对唯一Tool Call、
+唯一已批准Process请求、唯一终态Tool Result、Plan ID/Fingerprint、Artifact摘要和公开输出引用。Session结果尚未提交的
+正文保持不可见；不一致返回`artifact_unreferenced`或`artifact_corrupt`。migration25只扩展用途约束，不重写历史记录。
+
+## 26. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步Action Output发布Mixin、正文校验和引用授权的职责拆分，未改变Artifact身份及失败语义 |
+| 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加`action_output`用途、Trusted Process终态归档、Session反向授权和migration25兼容链 |
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加`action_review`用途、确定性发布、Session反向授权、孤儿不可读与migration24兼容链 |
 | 2 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |

@@ -16,11 +16,19 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.reducer import get_turn
+from harnessix.artifacts.action_output_store import validate_action_output_reference
 from harnessix.artifacts.action_review_store import validate_action_review_reference
 from harnessix.artifacts.contracts import ArtifactRef
 
 _PURPOSES = frozenset(
-    {"tool_result", "batch_plan", "batch_effect", "process_output", "action_review"}
+    {
+        "tool_result",
+        "batch_plan",
+        "batch_effect",
+        "process_output",
+        "action_review",
+        "action_output",
+    }
 )
 
 
@@ -40,6 +48,8 @@ def validate_artifact_reference(row: aiosqlite.Row, thread: Thread) -> ArtifactR
         purpose = row["purpose"]
         if purpose == "action_review":
             return validate_action_review_reference(row, turn, ref)
+        if purpose == "action_output":
+            return validate_action_output_reference(row, thread, turn, ref)
         if purpose == "process_output":
             return _process_reference(row, turn, ref)
         if purpose != "tool_result":

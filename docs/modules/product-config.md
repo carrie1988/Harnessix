@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 7
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_tests:
   - tests/product_config/test_migration_and_store.py
   - tests/product_config/test_product_contracts.py
   - tests/product_config/test_preflight.py
+  - tests/product_config/test_process_action.py
   - tests/product_config/test_wizard.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
@@ -43,7 +44,7 @@ supersedes: []
 | 默认产品平台 | 配置、Configure和Doctor跨平台；内置`agent-server`在macOS/Linux使用POSIX只读端口和经能力证明的Workspace Patch，在Windows使用原生Handle只读端口并省略Patch；Windows不广告Git读取 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
-| 当前完成度 | 0.9.1d已关闭；0.9.1e1的Action配置/能力目录合同、Router原子注册/幂等规划和默认Artifact组合已由CI 34739842959验收关闭；Patch、Process、Delivery默认装配仍未完成 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e3已关闭；固定Container Process的Profile探测、Executor和输出发布候选代码及首批合同/失败测试已建立，但尚未接入默认产品、补齐完整故障矩阵或完成全矩阵验收，因此0.9.1e4仍在进行中 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -52,6 +53,8 @@ supersedes: []
 [`runtime.py`](../../src/harnessix/product_config/runtime.py)、
 [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py)、
 [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py)、
+[`process_profile.py`](../../src/harnessix/product_config/process_profile.py)、
+[`process_action.py`](../../src/harnessix/product_config/process_action.py)、
 [`server.py`](../../src/harnessix/product_config/server.py)和
 [`cli.py`](../../src/harnessix/product_config/cli.py)的当前事实源。决策理由见
 [ADR 0075](../adr/0075-provider-profile-secret-and-safe-fallback.md)，历史研究证据见
@@ -212,6 +215,10 @@ Workspace之外。App Server只在配置、Provider、Session和Tool全部就绪
 | 11 | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | 311行 | 启动、失败回滚、固定Workspace与CLI输出 |
 | 12 | [`test_provider_credentials.py`](../../tests/product_config/test_provider_credentials.py) | 121行 | 真实Adapter显式凭据注入及canary不泄漏 |
 | 13 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) | 46行 | 提交Schema和示例与运行时合同同步 |
+| 14 | [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) | 动态 | 理解固定Process Profile、Secret引用和能力报告合同 |
+| 15 | [`process_profile.py`](../../src/harnessix/product_config/process_profile.py) | 动态 | 理解Engine、镜像、Owner、Sandbox和Secret能力如何全部证明后才形成可执行Profile |
+| 16 | [`process_action.py`](../../src/harnessix/product_config/process_action.py) | 动态 | 理解公共`profile/selectors`如何派生执行合同、进入Router并发布终态Artifact |
+| 17 | [`action_composition.py`](../../src/harnessix/product_config/action_composition.py) | 动态 | 区分已接入的Patch组合与尚未接入Server的Process候选链 |
 
 ## 7. 内部架构与责任分层
 
@@ -1699,7 +1706,43 @@ state-root/
 
 e3不读取外部Action Config，也不在启动前扫描所有在途Route。上述能力、Doctor报告及长期Owner由e5实现。真实SDK纵向回归见[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)，底层故障矩阵见[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)。
 
-## 50. 相关文档
+## 50. 固定Container Process候选链（0.9.1e4进行中）
+
+e4候选链把模型输入限制为固定`profile`和有界`selectors`。宿主在
+[`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、
+平台Owner能力、镜像Repo Digest、无网络只读Sandbox、资源上限及Secret版本；任一证据不成立时返回明确省略原因，
+不降级到Host Shell。
+
+[`process_action.py`](../../src/harnessix/product_config/process_action.py)随后从公共参数确定性派生
+`ContainerExecutionSpec`，复核Action Route中的Tool Binding、资源、Workspace、Environment、Sandbox、Capability和
+Secret Binding，再经`ContainerProcessRuntime`执行。执行异常只有在能证明Lease不存在且错误属于确定前置失败时才返回
+`failed`；其余无法证明效果的情况返回`unknown`，恢复路径只读取Process Ledger并调用Reconcile，不自动重放命令。
+
+```mermaid
+flowchart LR
+    Input[profile + selectors] --> Probe[Profile强能力探测]
+    Probe -->|全部成立| Definition[Trusted Action Definition]
+    Probe -->|任一失败| Omitted[能力诚实省略]
+    Definition --> Route[Policy / Approval / Route]
+    Route --> Spec[派生Container + Process合同]
+    Spec --> Owner[ContainerProcessRuntime]
+    Owner --> Ledger[(Process Lease与输出摘要)]
+    Ledger --> Audit[Action Audit摘要]
+    Ledger --> Artifact[action_output正文]
+    Audit --> Result[Session Tool Result]
+    Artifact --> Result
+```
+
+终态正文由Owner根据Lease中的stdout/stderr摘要重建，再由
+[`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py)查询优先发布。Router Audit只保存输出和Artifact
+摘要，Session保存公共摘要及Artifact引用，原始输出文件不直接暴露给模型。
+
+当前边界必须明确：这些模块尚未由`run_product_stdio`装配。
+[`test_process_action.py`](../../tests/product_config/test_process_action.py)已覆盖危险Selector拒绝、完整能力证明、Route/审批、
+确定性Spawn前失败和镜像证明失败省略；取消、超时、崩溃、提交确认丢失、Reconcile不重放及真实固定镜像仍待补齐。
+因此本节只描述候选源码合同，不构成默认产品完成声明；完成后还必须回写完整测试符号、三平台能力矩阵、CI证据和默认能力目录。
+
+## 51. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1718,10 +1761,11 @@ e3不读取外部Action Config，也不在启动前扫描所有在途Route。上
 - [SDK模块设计](sdk.md)
 
 
-## 51. 变更记录
+## 52. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 7 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 登记固定Container Process候选链的能力证明、执行、UNKNOWN、输出Artifact及尚未完成的产品装配和专项测试边界 |
 | 6 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 装配默认POSIX Workspace Patch、Action/Delivery/Lease状态Owner、Review Provider及Windows诚实省略 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1 Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 记录0.9.1d三平台只读产品链完成全矩阵CI验收 |

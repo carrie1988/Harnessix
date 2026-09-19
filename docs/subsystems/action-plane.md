@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
-status: current
-version: 6
-code_revision: 12f49ce60cbba09726f27ec2e9039c7c9159d67c
+status: deprecated
+version: 7
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0003-database-backed-worker-queue.md
   - docs/adr/0004-durable-trace-context.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/unit/test_models.py
   - tests/unit/test_registry.py
@@ -33,21 +34,26 @@ supersedes: []
 
 # Action Plane子系统设计
 
+> **迁移状态：** 本文记录早期独立Action Plane兼容内核，不再描述Harnessix Code 1.0产品拓扑。
+> `serve/worker`、Action HTTP SDK与框架Adapter已退出公共产品面；Policy、Approval、Effect、`UNKNOWN`和
+> Reconcile语义由进程内`TrustedActionRouter`继承。旧Process、Git Push和Eval迁移完成后，本子系统源码将
+> 按0.9.1f3物理删除。当前产品事实源为[总体架构](../architecture.md)与
+> [Trusted Actions模块设计](../modules/trusted-actions.md)。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | 版本化Action Contract、Tool Registry、Policy、Approval、Effect Journal、Inline/Worker执行、Lease、`UNKNOWN`和Reconcile |
-| 本文状态 | 当前实现；本文是Action Plane跨包子系统的现行事实源 |
+| 本文状态 | 迁移兼容实现说明；不得作为新增产品能力依据 |
 | 代码版本 | `ffa56de02b372df981d234fafd1feffbb0b870fb` |
 | 存储后端 | SQLite本地单机场景；PostgreSQL多进程Worker Claim场景 |
-| 部署入口 | `harnessix serve`和`harnessix worker`；也可将`ActionService`作为库显式装配 |
+| 部署入口 | 无；历史CLI入口已撤销，显式库装配仅供冻结调用方迁移 |
 | 稳定合同 | `harnessix.action/v1`；Action状态、事件、审批、效果凭证和公开错误 |
 | 当前安全边界 | API没有实现最终用户认证中间件，`Principal`由调用方提供；只适合受信本地或已由外层认证的部署 |
 
-Action Plane与Agent Runtime是两条独立生命周期：Agent负责Thread/Turn决策与交互，Action Plane负责
-framework-agnostic外部副作用治理。当前默认Coding Agent产品尚未把所有Agent Tool统一代理到Action
-Plane，两者不能被误解为同一个数据库事务或同一个状态机。
+独立Action Plane与Agent Runtime曾是两条生命周期。ADR 0081已决定停止并列产品形态：当前产品只保留
+Agent Runtime及进程内Trusted Action Runtime，旧Action状态机只在迁移窗口内服务冻结调用方。
 
 ## 2. 需求背景
 

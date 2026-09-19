@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 8
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -204,12 +204,14 @@ Route合同位于[`contracts.py`](../../src/harnessix/trusted_actions/contracts.
 | 6 | 同上 | `TrustedActionRouter.register/plan/decide` | 理解Schema、资源、Plan和批准 |
 | 7 | 同上 | `execute/reconcile/recover_interrupted` | 理解副作用、取消、UNKNOWN和恢复 |
 | 8 | 同上 | `ExtensionActionPort`及私有Helper | 理解来源隔离及参数规范化限制 |
-| 9 | [`store.py`](../../src/harnessix/trusted_actions/store.py) | `SQLiteActionAuditStore` | 理解事务、CAS投影和完整性验证 |
-| 10 | [`mcp/actions.py`](../../src/harnessix/mcp/actions.py) | `build_mcp_action_definition`、`McpActionGateway` | 理解动态JSON Schema适配 |
-| 11 | [`skills/actions.py`](../../src/harnessix/skills/actions.py) | `build_skill_action_definitions`、`SkillActionGateway` | 理解只读扩展和Canary边界 |
-| 12 | [`hooks/runtime.py`](../../src/harnessix/hooks/runtime.py) | `HookRuntime._run` | 理解Hook如何消费来源受限Port |
-| 13 | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy`、`GitPushRoutedExecutor` | 理解外部非幂等写如何桥接旧Action Plane |
-| 14 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | 核心正常、攻击、崩溃测试 | 对照当前保证和未覆盖边界 |
+| 9 | [`agent_gateway.py`](../../src/harnessix/trusted_actions/agent_gateway.py)、[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py) | `RouterBackedAgentActionGateway`、`prepare_action`、`recover_action` | 理解Agent调用、审批与Router事实投影 |
+| 10 | [`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py) | `terminal_result`、`build_result` | 理解终态摘要核对、输出Provider和Tool Result投影 |
+| 11 | [`store.py`](../../src/harnessix/trusted_actions/store.py) | `SQLiteActionAuditStore` | 理解事务、CAS投影和完整性验证 |
+| 12 | [`mcp/actions.py`](../../src/harnessix/mcp/actions.py) | `build_mcp_action_definition`、`McpActionGateway` | 理解动态JSON Schema适配 |
+| 13 | [`skills/actions.py`](../../src/harnessix/skills/actions.py) | `build_skill_action_definitions`、`SkillActionGateway` | 理解只读扩展和Canary边界 |
+| 14 | [`hooks/runtime.py`](../../src/harnessix/hooks/runtime.py) | `HookRuntime._run` | 理解Hook如何消费来源受限Port |
+| 15 | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy`、`GitPushRoutedExecutor` | 理解外部非幂等写如何桥接旧Action Plane |
+| 16 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | 核心正常、攻击、崩溃测试 | 对照当前保证和未覆盖边界 |
 
 `__init__.py`导出主要合同、Router、Policy和Store，但不导出`build_trusted_tool_binding`、
 `canonical_action_resource`、`TrustedActionExecutor`等构造Helper/Protocol。当前公开面因此以包导出和各
@@ -1356,7 +1358,7 @@ Tool合同或Binding时稳定失败，不能借幂等入口替换已持久操作
 
 ### 43.1 薄门面和函数式核心
 
-[`RouterBackedAgentActionGateway`](../../src/harnessix/trusted_actions/agent_gateway.py)只保留端口方法和关闭状态，实际校验与状态转换位于[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py)。构造阶段读取Router同一`source/source_id`命名空间并逐项核对：Tool名称集合、版本、Fingerprint、输入Schema摘要、Effect、Risk、幂等、审批和Reconcile能力。任何字段漂移均在开放能力目录前失败。
+[`RouterBackedAgentActionGateway`](../../src/harnessix/trusted_actions/agent_gateway.py)只保留端口方法和关闭状态，规划、校验与状态转换位于[`agent_gateway_support.py`](../../src/harnessix/trusted_actions/agent_gateway_support.py)，终态输出摘要核对和Tool Result投影位于[`agent_gateway_output.py`](../../src/harnessix/trusted_actions/agent_gateway_output.py)。构造阶段读取Router同一`source/source_id`命名空间并逐项核对：Tool名称集合、版本、Fingerprint、输入Schema摘要、Effect、Risk、幂等、审批和Reconcile能力。任何字段漂移均在开放能力目录前失败。
 
 ```mermaid
 flowchart TB
@@ -1437,6 +1439,7 @@ stateDiagram-v2
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 8 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 将Agent Gateway终态输出核对与Tool Result投影拆为独立职责，保持Router、审批和UNKNOWN语义不变 |
 | 7 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 将POSIX Workspace Patch、Review、Delivery Executor和Lease接入默认Router，保持UNKNOWN只对账与Windows省略 |
 | 6 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 交付0.9.1e2 Agent Gateway薄门面、目录精确核对、确定性Invocation、Router先行审批Checkpoint、Session补投影和UNKNOWN只对账恢复；默认高风险目录仍未开放 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1全集验证后原子发布注册表、Audit优先规划与跨Store崩溃修复；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |

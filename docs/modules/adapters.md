@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0005-evolve-to-harnessix-code.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/unit/test_langgraph_adapter.py
   - tests/unit/test_sdk.py
@@ -22,17 +23,21 @@ supersedes: []
 
 # Adapter模块设计
 
+> **迁移状态：** 早期LangChain StructuredTool适配器已退出Harnessix Code 1.0产品边界。它依赖已退役的
+> Action HTTP Client，不进入默认能力目录、公开SDK或部署拓扑；源码只为兼容回归暂留，并将在0.9.1f3删除。
+> 其他框架应通过Agent Protocol集成，未来新增框架适配必须围绕Agent生命周期而非独立Action服务建立。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/adapters`](../../src/harnessix/adapters/) |
-| 当前实现 | 单个基于LangChain `StructuredTool`的Action Tool工厂，文件名为`langgraph.py` |
-| 当前职责 | 把经`args_schema`验证的关键字参数映射为Harnessix `ActionRequest`，调用同步或异步Action Client，并把完整`ActionSnapshot`序列化为JSON字符串 |
+| 兼容实现 | 单个基于LangChain `StructuredTool`的旧Action Tool工厂，文件名为`langgraph.py` |
+| 当前职责 | 只保留旧映射行为供迁移回归，不承诺新增功能或发布兼容性 |
 | 非职责 | 不实现LangGraph Graph/State/Checkpoint/Interrupt/Command/ToolNode，不拥有Action状态机、Policy、Approval、Journal、Worker、Executor、Sandbox或Agent Loop |
 | 直接上游 | LangChain Tool调用者；按类型设计可供LangGraph `ToolNode`消费，但仓库当前没有真实ToolNode验证 |
 | 直接下游 | 满足`SyncActionClient`或`AsyncActionClient`结构协议的Client；默认可使用Action HTTP SDK |
-| 公共入口 | `HarnessixToolContext`、`create_harnessix_tool`；仅能从`harnessix.adapters.langgraph`显式导入 |
+| 兼容入口 | `HarnessixToolContext`、`create_harnessix_tool`；不得由新增生产代码导入 |
 | 外部依赖 | 可选Extra `langgraph`实际只安装`langchain-core>=1.0,<2`；锁定验证版本为1.6.1 |
 | 持久化 | Adapter自身不持久化；Action事实由下游Journal保存，LangGraph Tool Call与Action ID之间没有绑定存储 |
 | 代码版本 | `12f49ce60cbba09726f27ec2e9039c7c9159d67c` |
@@ -143,8 +148,8 @@ langchain_core.tools.StructuredTool
 由此可得：
 
 1. Extra名称表达目标生态，而不是依赖内容；
-2. 安装`harnessix[langgraph]`只保证LangChain Core Tool类型存在；
-3. 使用真实LangGraph Graph/ToolNode的应用必须自行安装并锁定LangGraph；
+2. 迁移期只有`harnessix[legacy-action]`保留LangChain Core类型，基础安装不包含该依赖；
+3. 新增LangGraph应用不得继续使用本适配器，应通过Agent Protocol建立独立集成；
 4. CI使用`uv sync --locked --all-extras --dev`，仍没有真实LangGraph包；
 5. 当前兼容证据只覆盖LangChain Core 1.6.1，不能泛化到整个`>=1.0,<2`窗口。
 
@@ -828,7 +833,7 @@ Action Plane仍会做权威输入校验和Policy，但模型侧Schema漂移会�
 uv sync --locked --all-extras --dev
 ```
 
-库用户至少需要安装包含`langchain-core`的Extra。若要运行真实LangGraph，还需自行安装并锁定兼容的LangGraph版本。
+只有维护旧兼容测试时才安装包含`langchain-core`的`legacy-action` Extra；产品用户不应安装或调用本适配器。
 
 ### 34.2 兼容矩阵
 
@@ -1064,7 +1069,7 @@ Fake Client不调用HTTP、Service、Journal、Policy、Executor或Worker。测�
 | P0 | 完整Snapshot作为模型可见内容 | Arguments、身份、Secret Ref、审批和结果进入历史/Trace，缺少最终Guard | 0.9.4数据安全 |
 | P1 | 非终态及负面终态均映射Tool success | Graph可能把等待审批、失败或Unknown误判为工具已成功完成 | 0.9.1产品交互/Adapter v2 |
 | P1 | 没有Approval Interrupt、Queued Wait或Reconcile恢复 | 当前适配仅能Submit，不能完成生产闭环 | 0.9.1/0.9.3 |
-| P1 | Extra不安装LangGraph且没有ToolNode测试 | README“直接交给ToolNode”缺少可执行证据 | DOC纠偏/0.9.5发行 |
+| 已退役 | 从未形成真实LangGraph ToolNode合同 | 不再补建独立Action框架集成 | 0.9.1f3删除 |
 | P1 | Metadata可覆盖`adapter`且Framework字段不规范化 | 来源审计可被调用方污染 | 0.9.4审计可信度 |
 | P1 | Context Metadata浅可变 | 创建后行为变化、并发竞态、审计不可复现 | Adapter合同v2 |
 | P1 | Args Schema与Runtime Tool Schema无Digest绑定 | 调用期失败、行为漂移、错误Action增长 | Tool Catalog版本合同 |

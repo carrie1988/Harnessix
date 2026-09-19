@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -15,9 +15,8 @@ related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
-  - tests/integration/test_api.py
-  - tests/integration/test_observability_flow.py
   - tests/agent/test_telemetry.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_config/test_preflight.py
@@ -34,49 +33,39 @@ supersedes: []
 诊断应回答“哪个部署面、哪个持久身份、哪个状态边界、哪类失败、是否可能发生外部效果”，而不是只收集进程日志。
 Journal、Session Event和专用账本是业务事实；Log、Trace和Metric用于关联与告警，丢失时不得改变领域结果。
 
-当前Action Plane具备结构化日志、OTLP/HTTP Trace/Metric、Health/Readiness和Action查询；Product Config具备离线诊断；
-Product UI状态行显示连接代际、Turn、Token、费用未知原因、待决交互和稳定Notice，并通过`F1`提供静态脱敏错误自助。
+当前产品以Product Config离线诊断、启动Preflight、Agent Protocol握手、Session事件和Product UI状态为诊断主链。Product UI状态行显示连接代际、Turn、Token、费用未知原因、待决交互和稳定Notice，并通过`F1`提供静态脱敏错误自助。
 Coding Agent产品入口已有共享的离线`harnessix code doctor`和Startup Preflight；自动支持包与完整观测装配尚未实现。
 
 ## 2. 诊断顺序
 
 ```mermaid
 flowchart TD
-    Symptom[故障现象] --> Surface{部署面}
-    Surface -- Action HTTP --> Live[healthz与readyz]
-    Surface -- Agent stdio --> Process[进程退出码与协议握手]
-    Surface -- 产品启动 --> Preflight[code doctor]
-    Surface -- 配置内部 --> Config[config diagnose]
-    Live --> Identity[固定Action/Trace/Worker身份]
-    Process --> Identity
-    Preflight --> Identity
-    Config --> Identity
-    Identity --> Durable[读取Journal/Event/Snapshot/审计]
+    Symptom[故障现象] --> Preflight[code doctor与启动Preflight]
+    Preflight --> Process[agent-server退出码/握手/stderr]
+    Process --> Identity[固定Thread/Turn/Call/Plan身份]
+    Identity --> Durable[读取Session Event、Route State与Artifact元数据]
     Durable --> Effect{副作用可能发生?}
     Effect -- 否 --> Root[定位代码/依赖/配置]
-    Effect -- 是或未知 --> Reconcile[停止重试并对账]
+    Effect -- 是或未知 --> Reconcile[停止重试并只观察对账]
     Root --> Evidence[生成脱敏证据]
     Reconcile --> Evidence
 ```
 
-先固定身份和状态，再扩大日志范围。不要通过提高日志级别把Prompt、Tool参数、Workspace内容或Secret写入公共日志。
+先固定身份和持久状态，再扩大日志范围。不要通过提高日志级别把Prompt、Tool参数、Workspace内容或Secret写入公共日志。
 
-## 3. Health与Readiness
+## 3. 运行可用性信号
 
-Action Plane HTTP端点：
+独立Action HTTP Health/Readiness已随`serve/worker`产品入口撤销。Coding Agent当前使用以下信号：
 
-```bash
-curl --fail http://127.0.0.1:8787/healthz
-curl --fail http://127.0.0.1:8787/readyz
-```
+| 信号 | 成功含义 | 不能证明 |
+|---|---|---|
+| `harnessix code doctor --json` | 配置、依赖、Workspace、状态目录和平台端口的离线瞬时检查通过 | Provider账户、网络、后续文件漂移或真实任务成功 |
+| Agent Protocol握手 | stdio帧、版本和服务初始化成功 | 模型、全部Tool或外部系统可用 |
+| 启动Preflight | 启动时重新验证必要能力 | 长时间运行稳定性 |
+| Session/Route持久事件 | 指定身份的最后已提交业务事实 | 外部效果在缺少Receipt时一定成功或失败 |
 
-| 端点 | 成功 | 失败 | 能证明 | 不能证明 |
-|---|---|---|---|---|
-| `/healthz` | `200 {"status":"ok"}` | 进程/网络失败 | ASGI进程可响应 | Journal、Worker、Provider或外部效果可用 |
-| `/readyz` | `200 {"status":"ready"}` | `503`且`reason=journal_unavailable` | Journal当前`ping`成功 | Schema完整、队列被消费、外部服务可用 |
-
-`/readyz`失败时应摘除流量；`/healthz`仍成功不能覆盖Readiness失败。当前没有Agent stdio专用Health端点，
-Agent Protocol握手和初始化失败退出码承担启动可用性信号。
+不得继续使用`/healthz`、`/readyz`或8787端口作为Harnessix Code产品探针。正式服务化探针如未来需要，必须围绕
+Agent Server的身份、Session和Trusted Action能力重新设计。
 
 ## 4. Product Config离线诊断
 
@@ -112,84 +101,26 @@ Required全部通过退出0，否则退出2并保留独立检查结果；前置�
 Profile和脱敏Workspace指纹，不含绝对路径、环境值或原始异常。Doctor离线只读，不创建状态目录、数据库、Session或网络请求。
 它只代表一次瞬时观察，不能替代`agent-server`启动时的重新校验。
 
-## 5. 结构化日志
+## 5. 结构化日志与Telemetry
 
-Action Plane由`HARNESSIX_LOG_LEVEL`和`HARNESSIX_LOG_FORMAT`控制，默认单行JSON。允许绑定的上下文字段仅为：
+`agent-server`的stdout由stdio协议独占，启动错误以脱敏JSON写stderr。运行日志只允许稳定错误码、Thread/Turn/Call/Plan
+身份、摘要和低基数属性；不得记录Prompt、Tool参数、Diff正文、Workspace绝对路径、Secret或Provider原始响应。
 
-```text
-action_id, tenant_id, tool, worker_id, trace_id, span_id
-```
+Agent Telemetry通过[`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py)隔离观测失败，但默认产品尚未把完整
+OpenTelemetry Exporter、Dashboard和告警策略装配到启动链。这是0.9.3/0.9.4发布阻断项，不能通过旧Action API/Worker的
+OTLP实现外推为当前产品能力。
 
-JSON基础字段为`timestamp`、`level`、`logger`、`message`，异常时可包含`exception`。当前异常正文可能来自第三方库，
-进入集中日志前仍需外层Secret Canary和访问控制；白名单上下文字段不等于异常正文已完整脱敏。
+## 6. Trusted Action状态诊断
 
-`agent-server`在顶层CLI分派时不会执行Action Plane的`configure_logging`，stdout被stdio协议独占，启动错误以脱敏JSON写
-stderr。当前Agent Runtime Trace/Metric未通过产品启动统一接到OTel，这属于明确缺口。
+从Thread Replay定位`call_id`和`plan_id`，再读取Route State、审批指纹、执行状态、Receipt和Artifact元数据。
+如果状态为`unknown`或`reconciling`，只允许调用已注册Executor的Reconcile观察路径，不得重新执行原始效果。诊断记录
+不得包含Action输入、完整Diff或外部响应正文。旧Action HTTP查询端点不再是受支持诊断入口。
 
-## 6. OpenTelemetry
+## 7. 旧Action观测兼容边界
 
-当`HARNESSIX_OTEL_ENDPOINT`或`OTEL_EXPORTER_OTLP_ENDPOINT`非空时，Action API/Worker构造OTLP/HTTP实现；为空时
-使用No-op。安装环境必须包含`observability` Extra。
-
-```bash
-export HARNESSIX_OTEL_ENDPOINT='http://127.0.0.1:4318'
-export HARNESSIX_OTEL_EXPORT_INTERVAL_MILLIS=10000
-export HARNESSIX_SERVICE_NAME='harnessix'
-uv run harnessix serve
-```
-
-Service Name分别为`harnessix.api`和`harnessix.worker`。仓库的
-[`deploy/otel-collector.debug.yaml`](../../deploy/otel-collector.debug.yaml)只用于连通性验证，不是生产存储方案。
-
-### 6.1 主要Trace
-
-| Span | 位置 | 说明 |
-|---|---|---|
-| `harnessix.http.request` | API Middleware | HTTP Server请求 |
-| `harnessix.action.submit` | Action Runtime | 准入与提交 |
-| `harnessix.worker.consume` | Worker | 持久Trace跨队列消费 |
-| `harnessix.action.execute` | Executor | Action效果执行 |
-| `harnessix.action.reconcile` | Reconcile | 未知效果对账 |
-
-### 6.2 主要Metric
-
-| Metric | 类型语义 | 主要用途 |
-|---|---|---|
-| `harnessix.http.requests` | Counter | Route/Method/Status请求数 |
-| `harnessix.http.duration` | Histogram | HTTP时延 |
-| `harnessix.actions.submitted` | Counter | 工具和状态提交数 |
-| `harnessix.actions.completed` | Counter | 工具和终态完成数 |
-| `harnessix.executions.completed` | Counter | Executor终态数 |
-| `harnessix.executor.duration` | Histogram | 执行时延 |
-| `harnessix.worker.claims` | Counter | Worker Claim数 |
-| `harnessix.worker.lease_renewal_failures` | Counter | 租约续租失败 |
-| `harnessix.lease.recoveries` | Counter | 过期租约恢复数 |
-| `harnessix.queue.ready` | Gauge | READY数量 |
-| `harnessix.queue.oldest_ready_age` | Gauge | 最老READY年龄 |
-| `harnessix.actions.pending_approval` | Gauge | 等待审批数 |
-| `harnessix.actions.unknown` | Gauge | UNKNOWN数量 |
-| `harnessix.reconciliation` | Counter | 对账结果数 |
-
-当前OpenTelemetry实现把全部Histogram单位固定为`s`，虽然Action时延符合秒语义，但该通用实现对未来非时长Histogram
-不安全；新增Metric前必须修复单位合同。Metric标签不得使用Action ID、Tenant ID、路径、Prompt或任意高基数字段。
-
-## 7. Action状态诊断
-
-```bash
-curl --fail http://127.0.0.1:8787/v1/actions/<action-id>
-curl --fail http://127.0.0.1:8787/v1/actions/<action-id>/events
-```
-
-按以下顺序核对：
-
-1. `action_id`、`tenant_id`、Tool名称/版本和Request Fingerprint；
-2. Snapshot状态与Event最后序号；
-3. Policy、Approval Fingerprint、Lease Owner/Expiry；
-4. Result/Receipt/Error和`UNKNOWN`原因；
-5. 外部系统中的稳定Idempotency或Receipt身份；
-6. Trace ID关联的API、Worker和Executor Span。
-
-HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；只允许在回环或受保护网络使用。
+旧HTTP Span、Worker Metric、Queue Gauge和8787端点只存在于待删除兼容源码及历史测试中。它们不得写入当前部署清单、
+健康探针或SLO。读取旧数据库时应停写、制作备份，并按迁移文档核对Action ID、事件序号和Receipt；不得重新启动
+公开HTTP/Worker拓扑来完成日常诊断。
 
 ## 8. 告警建议与当前边界
 
@@ -197,10 +128,8 @@ HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；
 
 | 信号 | 应关注的变化 | 响应 |
 |---|---|---|
-| Readiness | 连续503 | 摘除API，检查Journal和Migration |
-| `queue.ready`/oldest age | 持续增长 | 检查Worker数量、错误和Lease |
-| `actions.unknown` | 非零持续或突增 | 停止自动重试，启动对账 |
-| Lease renewal failures | 突增 | 检查数据库时延、事件循环阻塞和重复Owner |
+| Startup/握手失败 | 连续出现 | 检查Preflight、stderr稳定码、配置和状态Owner |
+| Route unknown/reconciling | 非零持续或突增 | 停止自动重试，启动只观察对账 |
 | Reconcile error/unknown | 持续增长 | 检查外部查询契约和凭据，不重发效果 |
 | Provider Attempt/Usage异常 | Usage缺失或尝试激增 | 停止费用扩大，检查流式协议与Fallback |
 | Agent interrupted | 重启后集中出现 | 检查宿主稳定性与显式Resume策略 |
@@ -211,7 +140,6 @@ HTTP API当前未实现身份认证，诊断接口本身会暴露Action投影；
 
 | 错误/现象 | 直接含义 | 下一步 |
 |---|---|---|
-| `journal_unavailable` | Journal Ping失败 | 网络/文件权限/数据库进程/Migration |
 | `runtime_busy` | Session已有Runtime Owner | 查找原进程，不删除Lock绕过 |
 | `schema_too_new` | 数据由更高版本创建 | 启动正确版本或恢复备份 |
 | `migration_changed` | 已应用Session Migration字节变化 | 隔离制品并审计供应链 |
@@ -268,10 +196,6 @@ Workspace绝对路径、文件内容、Tool参数/输出、私有Session和供�
 
 | 诊断能力 | 源码 | 测试 |
 |---|---|---|
-| Health/Readiness | [`api/app.py`](../../src/harnessix/api/app.py) | [`test_api.py`](../../tests/integration/test_api.py) |
-| 日志 | [`observability/logging.py`](../../src/harnessix/observability/logging.py) | [`test_observability_core.py`](../../tests/unit/test_observability_core.py) |
-| OTel | [`observability/opentelemetry.py`](../../src/harnessix/observability/opentelemetry.py) | [`test_observability_flow.py`](../../tests/integration/test_observability_flow.py) |
-| Worker运行指标 | [`worker.py`](../../src/harnessix/worker.py)的`record_operational_metrics` | [`test_worker.py`](../../tests/integration/test_worker.py) |
 | 配置诊断 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py)的`diagnose_configuration` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | 产品Doctor/Preflight | [`product_config/preflight.py`](../../src/harnessix/product_config/preflight.py)、[`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`test_preflight.py`](../../tests/product_config/test_preflight.py)、[`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
 | Agent Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) |

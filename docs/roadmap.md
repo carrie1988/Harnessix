@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 18
-code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
+version: 19
+code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -431,7 +432,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内202份Markdown均受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a客户端内核、0.9.1b基础Textual产品链和0.9.1c完整领域交互均已通过对应全矩阵CI并关闭。0.9.1d主体实现`532e59b`与验证修复`9372377`已由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成配置向导、Preflight/Doctor、Windows原生四项只读链以及Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、Container和文档矩阵验收并正式关闭；0.9.1e源码研究、ADR与详细设计已完成，e1的Action合同/同源目录、Router原子注册/幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收并关闭；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、双账本恢复和Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭；e3实现提交`71a4794`与验证修复`a263f96`已接入POSIX多文件Workspace Patch、Review Artifact、Delivery事务与默认状态Owner，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收后正式关闭；e4～e5尚未实施，0.9.2～0.9.6未完成。本阶段不再补建基础领域语义，而是把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d已通过对应全矩阵CI并关闭。0.9.1e的e1～e3已经全矩阵验收，e4～e5正在实施。为避免历史Action服务与Coding Agent形成双产品边界，新增0.9.1f按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)收敛公共入口并分阶段迁移兼容内核。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -464,6 +465,12 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   Effect Journal、Sandbox和Reconcile进入默认能力目录；[专项源码研究](research/default-trusted-action-product-composition.md)、
   [ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)
   已完成；e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭；e2实现提交`328aa2d`已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；e3实现提交`71a4794`与验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成POSIX安全多文件Patch纵向链及全矩阵验收并关闭；e4固定Container Process链与e5产品Owner/启动恢复继续实施。
+- [ ] **0.9.1f 单一产品运行时收敛**：按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)和
+  [专项详细设计](changes/m09-1f-single-product-runtime-convergence.md)撤销`serve/worker`、Action HTTP SDK和
+  LangGraph Action Adapter的公共产品地位；f1先关闭公共入口并冻结旧调用方白名单，f2把Process、Git Push和
+  历史Eval迁入`TrustedActionRouter`，f3再删除HTTP API、Worker Queue、旧Bootstrap、专用Adapter与相关依赖。
+  Policy、Approval、Effect、`UNKNOWN`与Reconcile继续作为Coding Agent进程内Trusted Action Runtime能力。f1公共入口、
+  基础依赖、现行文档、可读性结构治理及本地全仓质量门已经完成，当前为待独立提交和CI验收的发布候选；f2/f3未实施。
 
 界面可启动或单个Prompt正常返回不能关闭0.9.1。五个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
 可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。
@@ -552,7 +559,7 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 - [ ] Host/Container执行、安全策略、审批、网络和Secret；
 - [ ] MCP、项目指令、Skills和Hooks；
 - [ ] CLI/TUI、Headless App Server和Python Agent SDK；
-- [ ] Action Plane外部副作用治理；
+- [ ] Trusted Action Runtime外部副作用治理；
 - [ ] macOS、Linux和Windows安装、升级、恢复、卸载和诊断；
 - [ ] 可复现Eval、质量报告、安全文档和运维资料。
 

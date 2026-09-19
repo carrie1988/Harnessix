@@ -7,11 +7,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
+
+from pydantic import JsonValue
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import ExecutionApprovalCheckpoint, ExecutionPlanV2
 from harnessix.processes.supervision_contracts import (
+    ProcessCapabilityProbe,
     ProcessLaunchBinding,
     ProcessLease,
     ProcessSpec,
@@ -103,8 +107,11 @@ class SupervisedContainerProcess:
             self._cleaned = True
 
 
-class ContainerProcessRuntime:
-    """把不可变Container执行合同物化到同一Process owner生命周期。"""
+class _ContainerProcessObservation:
+    """集中提供Container Owner能力、恢复和只读查询。"""
+
+    _builder: ContainerCommandBuilder
+    _supervisor: ProcessSupervisor
 
     def __init__(
         self,
@@ -113,6 +120,31 @@ class ContainerProcessRuntime:
     ) -> None:
         self._builder = builder
         self._supervisor = supervisor
+
+    @property
+    def capability(self) -> ProcessCapabilityProbe:
+        """返回构造时绑定的Process Owner能力证明。"""
+
+        return self._supervisor.capability
+
+    async def reconcile(self, execution: ContainerExecutionSpec) -> ProcessLease:
+        lease = await self._supervisor.reconcile(execution.process.process_id)
+        await asyncio.to_thread(self._builder.cleanup_container, execution)
+        return lease
+
+    def status(self, process_id: UUID) -> ProcessLease:
+        """读取Process Ledger，不触发恢复、清理或命令重放。"""
+
+        return self._supervisor.status(process_id)
+
+    async def output(self, process_id: UUID, stream: Literal["stdout", "stderr"]) -> bytes:
+        """读取Owner已清洗并持久化的输出前缀。"""
+
+        return await self._supervisor.output(process_id, stream)
+
+
+class ContainerProcessRuntime(_ContainerProcessObservation):
+    """把不可变Container执行合同物化到同一Process owner生命周期。"""
 
     def prepare(
         self,
@@ -123,6 +155,7 @@ class ContainerProcessRuntime:
         *,
         workspace: str | Path,
         environment: Mapping[str, str],
+        intent_arguments: Mapping[str, JsonValue] | None = None,
         secrets: ResolvedSecretEnvironment | None = None,
         external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
         egress: ManagedEgressBinding | None = None,
@@ -137,6 +170,7 @@ class ContainerProcessRuntime:
             workspace=workspace,
             command=execution,
             environment=environment,
+            intent_arguments=intent_arguments,
             secrets=secrets,
             external_roots=external_roots,
             egress=egress,
@@ -181,6 +215,7 @@ class ContainerProcessRuntime:
         *,
         workspace: str | Path,
         environment: Mapping[str, str],
+        intent_arguments: Mapping[str, JsonValue] | None = None,
         secrets: ResolvedSecretEnvironment | None = None,
         external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
         egress: ManagedEgressBinding | None = None,
@@ -194,6 +229,7 @@ class ContainerProcessRuntime:
             execution,
             workspace=workspace,
             environment=environment,
+            intent_arguments=intent_arguments,
             secrets=secrets,
             external_roots=external_roots,
             egress=egress,
@@ -223,6 +259,7 @@ class ContainerProcessRuntime:
         *,
         workspace: str | Path,
         environment: Mapping[str, str],
+        intent_arguments: Mapping[str, JsonValue] | None = None,
         secrets: ResolvedSecretEnvironment | None = None,
         external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
         egress: ManagedEgressBinding | None = None,
@@ -235,13 +272,9 @@ class ContainerProcessRuntime:
             execution,
             workspace=workspace,
             environment=environment,
+            intent_arguments=intent_arguments,
             secrets=secrets,
             external_roots=external_roots,
             egress=egress,
         )
         return await handle.wait(cancel)
-
-    async def reconcile(self, execution: ContainerExecutionSpec) -> ProcessLease:
-        lease = await self._supervisor.reconcile(execution.process.process_id)
-        await asyncio.to_thread(self._builder.cleanup_container, execution)
-        return lease

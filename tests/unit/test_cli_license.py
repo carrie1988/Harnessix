@@ -3,12 +3,9 @@ from __future__ import annotations
 from harnessix import cli
 
 
-def test_license_command_is_offline_and_configuration_free(capsys, monkeypatch) -> None:
-    def forbidden():
-        raise AssertionError("license命令不得读取运行配置")
-
-    monkeypatch.setattr(cli.Settings, "from_environment", forbidden)
-
+def test_license_command_is_offline_and_configuration_free(capsys) -> None:
+    # 顶层CLI不再导入旧Action Settings；license因此不可能触发其环境解析。
+    assert not hasattr(cli, "Settings")
     cli.main(["license"])
 
     assert capsys.readouterr().out == (
