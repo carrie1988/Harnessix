@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 4
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ modules:
 related_adrs:
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/execution/test_plans.py
   - tests/execution/test_store.py
@@ -24,6 +25,7 @@ related_tests:
   - tests/sandbox/test_container.py
   - tests/sandbox/test_process_runtime.py
   - tests/delivery/test_git_push.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -1190,7 +1192,7 @@ Execution子系统已经独立满足大规模多租户服务端存储要求。
 - 统一扩展边界研究：[统一Action Plane与扩展边界](../research/unified-action-plane-and-extension-boundaries.md)；
 - 基础决策：[ADR 0065：平台能力端口与不可变执行计划](../adr/0065-platform-capability-ports-and-execution-plan.md)；
 - 统一路由决策：[ADR 0069：统一Coding Action风险路由](../adr/0069-unified-coding-action-risk-route.md)；
-- 相邻当前事实：[Action Plane子系统设计](../subsystems/action-plane.md)、
+- 相邻当前事实：[Trusted Actions模块设计](trusted-actions.md)、
   [Managed Patch Runtime模块设计](patches.md)。
 
 ADR和里程碑资料描述决策及当时增量；本文维护`execution`包与当前消费链的现行事实。若历史资料中的状态文字

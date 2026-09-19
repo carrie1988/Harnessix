@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 6
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -23,6 +24,7 @@ related_tests:
   - tests/agent/test_wal_initialization.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/context/test_thread_lifecycle.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -40,8 +42,9 @@ supersedes: []
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
-Session与Action Plane Effect Journal是两套独立存储。Session保存Agent Thread/Turn语义事实，不承担
-Action Queue、Lease或外部副作用对账；Action Journal也不能替代Agent历史。
+Session与Trusted Action的Execution Plan、Action Audit及各能力专用效果账本是职责分离的持久事实。
+Session保存Agent Thread/Turn语义事实，不承担执行计划、外部副作用终态或对账；Action Audit也不能替代Agent历史。
+已删除Action Plane的Effect Journal仅允许离线归档，不参与当前产品启动、恢复或执行。
 
 ## 2. 需求背景
 

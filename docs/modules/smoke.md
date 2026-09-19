@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 8f91bbebaf08edf0c68488a8604cddcbe2e6e225
+version: 2
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -15,11 +15,13 @@ related_adrs:
   - docs/adr/0016-model-attempt-ledger.md
   - docs/adr/0019-controlled-model-smoke.md
   - docs/adr/0022-bailian-price-validation.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/smoke/test_runner.py
   - tests/smoke/test_cli.py
   - tests/smoke/test_interrupt.py
   - tests/agent/test_schemas.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -228,16 +230,15 @@ flowchart TD
 
 ### 9.1 顶层CLI分派
 
-[`src/harnessix/cli.py`](../../src/harnessix/cli.py)在解析Action Plane环境配置之前识别`model-smoke`，随后延迟
-导入`harnessix.smoke.cli.main`。因此帮助、禁用路径和配置错误不会先构造Action Service。
+[`src/harnessix/cli.py`](../../src/harnessix/cli.py)在读取Smoke场景配置或Provider凭据之前识别`model-smoke`，
+随后延迟导入`harnessix.smoke.cli.main`。因此帮助和禁用路径不会读取场景文件、构造Provider或访问API Key。
 
 ```mermaid
 flowchart TD
     Start[harnessix argv] --> IsSmoke{首参数是 model-smoke}
     IsSmoke -- 是 --> LazyImport[延迟导入 smoke.cli]
     LazyImport --> SmokeMain[smoke.cli.main]
-    IsSmoke -- 否 --> MainParser[顶层命令解析]
-    MainParser --> Settings[读取Action Plane Settings]
+    IsSmoke -- 否 --> MainParser[解析其余产品命令]
 ```
 
 ### 9.2 库入口
@@ -359,7 +360,7 @@ flowchart LR
 CLI只有`store_true`形式的`--allow-network`。Flag缺失时：
 
 1. 不读取`--config`指向的文件；
-2. 不读取Action Plane环境变量；
+2. 不读取场景文件、Provider凭据或遗留服务环境变量；
 3. 不构造Provider或读取API Key；
 4. 输出`network_not_enabled`报告；
 5. 以退出码2结束。
@@ -1452,7 +1453,7 @@ flowchart TB
 | 测试函数 | 证明的主要事实 |
 |---|---|
 | [`test_cli_help_is_discoverable_and_sdk_free`](../../tests/smoke/test_cli.py) | 基础安装可查看入口与门禁帮助 |
-| [`test_disabled_does_not_read_config_or_action_plane_env`](../../tests/smoke/test_cli.py) | 禁用路径不读配置或Action Plane环境 |
+| [`test_disabled_does_not_read_config_provider_or_legacy_service_env`](../../tests/smoke/test_cli.py) | 禁用路径不读场景配置、Provider凭据或遗留服务环境变量 |
 | [`test_cli_parse_errors_never_echo_input`](../../tests/smoke/test_cli.py) | 参数错误只输出固定stderr |
 | [`test_bad_config_never_echoes_content`](../../tests/smoke/test_cli.py) | 重复Key、非有限值、过大、非法UTF-8等均拒绝且不回显 |
 | [`test_nonregular_config_rejected_without_blocking`](../../tests/smoke/test_cli.py) | 缺失、目录和FIFO失败且FIFO不阻塞 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 17
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
@@ -28,6 +29,7 @@ related_tests:
   - tests/skills/test_runtime.py
   - tests/hooks/test_runtime.py
   - tests/delivery/test_git_push.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -135,7 +137,7 @@ Workspace、环境摘要、Secret版本、Sandbox Profile和能力证据，并�
 | Hook只读处理器 | 已实现消费 | `HookRuntime`要求外部提供Port | Hook授权、超时、取消测试 |
 | Git Push外部写 | 已实现/显式装配 | Definition直接注册Router，不经过旧Action Plane | 真实本地bare remote、响应丢失和硬崩溃测试 |
 | 默认Agent Tool调度接线 | 已实现 | 产品Owner创建Router/Gateway；Patch与固定Process按能力广告 | e3～e5产品组合与启动恢复测试 |
-| 多Worker/分布式Claim | 未实现/非1.0范围 | 单SQLite连接、无Route Lease | 不由兼容Action Plane继续承诺；1.x需独立设计 |
+| 多Worker/分布式Claim | 未实现/非1.0范围 | 单SQLite连接、无Route Lease | 已删除体系不形成兼容承诺；1.x需独立设计 |
 | Router级Timeout/Retry | 未实现 | 上游可用`asyncio.timeout`包裹，但语义不统一 | Hook上游有独立Timeout |
 | 全局输出Guard/Artifact | 未实现 | Executor或Adapter自行限制、脱敏和发布 | MCP/Skill/Hook各自接线 |
 | 多租户认证和远端审计 | 未实现 | 本地受信宿主边界 | 无发布证据 |
@@ -220,7 +222,7 @@ Route合同位于[`contracts.py`](../../src/harnessix/trusted_actions/contracts.
 `canonical_action_resource`、`TrustedActionExecutor`等构造Helper/Protocol。当前公开面因此以包导出和各
 适配模块的具体导入共同决定，尚未形成独立稳定SDK承诺。
 
-## 7. 与Execution及兼容Action Plane的关系
+## 7. 与Execution及已删除Action Plane的历史边界
 
 ```mermaid
 flowchart TD
@@ -230,17 +232,17 @@ flowchart TD
     Trusted --> Git[GitPushActionExecutor]
     Git --> External[Git远端Ref]
     Eval[历史Eval新运行] --> EvalOwner[Execution Plan / Audit<br/>POSIX Supervisor]
-    Legacy[兼容Action Plane<br/>Journal/Worker] -.仅历史Reader与旧实现.-> LegacyEffect[旧效果]
+    Legacy[已删除Action Plane<br/>Journal/Worker] -.仅离线归档和历史文档.-> LegacyEffect[旧效果]
 ```
 
-当前产品链与兼容内核必须分开理解：
+当前产品链与已删除体系必须分开理解：
 
 | 层 | 拥有事实 | 不拥有事实 |
 |---|---|---|
 | Trusted Actions | Tool Binding、规范资源、Route状态、External Action ID和跨组件审计摘要 | 外部系统详细事实、通用Worker Lease |
 | Execution | Workspace/环境/Secret/Sandbox/能力/Policy Fingerprint和Approval | Tool Registry、Route状态、效果结果 |
 | 专用Executor/Owner | 实际文件、进程、容器、Git或外部效果与对账 | 模型目录、审批权威和跨能力Policy |
-| 兼容Action Plane | 历史Action Request、Journal、Lease与Worker状态 | 新增产品能力；0.9.1f3后物理删除 |
+| 已删除Action Plane | 旧版本曾拥有Action Request、Journal、Lease与Worker状态 | 当前源码、产品启动、恢复或新增能力；旧库只离线归档 |
 
 Git Push和历史Eval证明直接组合方式：历史Eval的`run_tests`公开意图只包含固定Profile，Router冻结Plan与Approval，POSIX Supervisor按同Plan ID保存Lease和输出，结果通过Action Output Artifact投影；Router已终态但Session结果丢失时只补原执行投影，不重复启动Process。
 

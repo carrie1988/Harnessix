@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 6
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0070-agent-protocol-v1-boundaries.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/protocol/test_codec.py
   - tests/protocol/test_contracts.py
@@ -19,6 +20,7 @@ related_tests:
   - tests/protocol/test_requests.py
   - tests/protocol/test_schemas.py
   - tests/app_server/test_server_sdk.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -734,7 +736,7 @@ sequenceDiagram
 - `thread/resume`可以重驱动仍处于可恢复活动状态的Turn。
 
 Protocol Request Store不是Exactly-once副作用引擎。工具与外部副作用的幂等、Lease、`UNKNOWN`和
-Reconcile由Agent Runtime、Execution、Trusted Actions和Action Plane负责。
+Reconcile由Agent Runtime、Execution、Trusted Action Runtime及具体能力的效果Owner共同负责。
 
 ## 16. 持久化模型、事务与完整性
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/secrets/test_provider.py
   - tests/processes/test_supervisor.py
@@ -25,6 +26,7 @@ related_tests:
   - tests/hooks/test_runtime.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -1005,7 +1007,7 @@ uv run pytest -o addopts='' -q \
 | P1 | 无轮换、撤销、TTL和活动Client失效 | 长会话可能持续使用旧凭据 | 0.9.3～0.9.6 |
 | P1 | 非字符串JSON Key和部分序列化异常未统一清洗 | 受信Python误用可泄漏内部异常类型 | 0.9.4公开错误清洗 |
 | P1 | Pattern算法缺少最坏情况基准 | 高吞吐输出可能阻塞Owner/事件循环 | 0.9.3可靠性性能 |
-| P1 | Domain SecretRef没有统一转换/执行能力 | Action Plane的Secret合同不可直接用于Coding Tool | 0.9.1产品装配 |
+| P1 | 遗留Action SecretRef不是当前执行合同 | 旧数据库或旧合同不能驱动Coding Tool；新执行只接受Execution Plan绑定的Secret元数据 | 旧库仅归档；新能力归0.9.4安全加固 |
 | P1 | Trusted Action只绑定Secret元数据，不向Executor提供受控Scope | 扩展Secret使用仍需临时宿主接线 | 0.9.1/0.9.4 |
 | P2 | 通用Provider配置弱于Product Config | 独立库调用更容易接受歧义Source/版本 | 合同收敛切片 |
 | P2 | 无独立公共Secret Schema/API版本 | 兼容窗口和第三方实现边界不清晰 | DOC-1.4/API治理 |

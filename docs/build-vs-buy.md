@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 1
-code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
+version: 2
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -10,8 +10,10 @@ modules:
   - product
 related_adrs:
   - docs/adr/0064-agpl-and-commercial-dual-licensing.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_repository_policy.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -34,8 +36,8 @@ Harnessix Code 自研决定 Coding Agent 行为、可靠性和差异化的核心
 | Patch 事务与 Diff 语义 | 自研边界，复用成熟解析库需评估 | 必须保护用户工作区和支持失败恢复 |
 | Process Runtime | Python-first 自研适配；必要时 Rust Sidecar | 需要统一超时、取消、进程树和输出语义 |
 | 容器与系统 Sandbox | 复用 Docker、gVisor、bubblewrap 等 | 不自行实现内核隔离 |
-| Permission/Approval | 自研 | 与 Tool、Workspace、Agent Turn 和 Action Plane 深度关联 |
-| Action Plane | 自研 | Harnessix 的差异化：幂等、Effect Journal、`UNKNOWN`、对账 |
+| Permission/Approval | 自研 | 与Tool、Workspace、Agent Turn和Trusted Action Runtime深度关联 |
+| Trusted Action Runtime | 自研 | Harnessix的差异化：不可变计划、Action Audit、`UNKNOWN`、对账与专用效果Owner |
 | MCP | 复用官方协议 SDK，自研接入边界 | 协议无需重写，但扩展不能绕过安全策略 |
 | Skills/项目指令/Hooks | 自研发现和生命周期语义 | 需要与 Context、Tool 和 Permission 集成 |
 | Session 数据库 | 自研 Repository，复用 SQLite/PostgreSQL | 领域 Schema 自有，存储引擎复用 |
@@ -48,7 +50,10 @@ Harnessix Code 自研决定 Coding Agent 行为、可靠性和差异化的核心
 
 ## 2. 不再依赖 LangGraph 作为核心
 
-LangGraph、OpenAI Agents SDK 等仍可以通过 Adapter 使用 Harnessix Action Plane 或 Agent Protocol，但 Harnessix Code 的核心 Agent Loop、Session 和 Tool Runtime 不建立在这些框架之上。
+LangGraph、OpenAI Agents SDK等外部框架可以通过Agent Protocol驱动Harnessix Code，但1.0不再提供Action级
+HTTP API或LangGraph Adapter。未来若出现远程执行需求，只能在Trusted Action Executor之后增加经过身份验证的
+Remote Executor Adapter，不能恢复脱离Thread/Turn生命周期的公共Action入口。Harnessix Code的核心Agent Loop、
+Session和Tool Runtime不建立在第三方Agent框架之上。
 
 原因：
 

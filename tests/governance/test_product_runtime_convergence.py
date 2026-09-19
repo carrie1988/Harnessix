@@ -38,6 +38,56 @@ _RETIRED_PATHS = (
     "processes/test_profiles.py",
 )
 
+_CURRENT_DOCUMENTATION_EXPECTATIONS = {
+    "docs/build-vs-buy.md": (
+        ("Adapter 使用 Harnessix Action Plane", "| Action Plane | 自研 |"),
+        ("Trusted Action Runtime", "Agent Protocol驱动Harnessix Code"),
+    ),
+    "docs/modules/session.md": (
+        ("Session与Action Plane Effect Journal是两套独立存储",),
+        ("Session与Trusted Action", "已删除Action Plane"),
+    ),
+    "docs/modules/protocol.md": (
+        ("Trusted Actions和Action Plane负责",),
+        ("Trusted Action Runtime及具体能力的效果Owner",),
+    ),
+    "docs/modules/skills.md": (
+        ("为什么仍经过Action Plane", "统一Action路径提供"),
+        ("为什么仍经过Trusted Action Runtime", "统一Trusted Action路径提供"),
+    ),
+    "docs/modules/smoke.md": (
+        ("读取Action Plane Settings", "不读取Action Plane环境变量"),
+        ("解析其余产品命令", "不读取场景文件、Provider凭据或遗留服务环境变量"),
+    ),
+    "docs/modules/delivery.md": (
+        ("只描述待删除的迁移兼容内核",),
+        ("只保存已删除体系的冻结历史",),
+    ),
+    "docs/modules/execution.md": (
+        ("相邻当前事实：[Action Plane子系统设计]",),
+        ("相邻当前事实：[Trusted Actions模块设计]",),
+    ),
+    "docs/modules/trusted-actions.md": (
+        ("兼容Action Plane继续承诺", "与Execution及兼容Action Plane的关系"),
+        ("与Execution及已删除Action Plane的历史边界", "仅离线归档和历史文档"),
+    ),
+    "docs/modules/hooks.md": (
+        ("在统一Action Plane之外形成第二条执行通道",),
+        ("在Trusted Action Runtime之外形成第二条执行通道",),
+    ),
+    "docs/modules/secrets.md": (
+        ("Action Plane的Secret合同不可直接用于Coding Tool",),
+        ("遗留Action SecretRef不是当前执行合同",),
+    ),
+    "docs/roadmap.md": (
+        ("## 2. 当前基线：0.1 Action Plane", "为Action Plane补齐Policy/Executor/Reconcile"),
+        (
+            "## 2. 历史基线：0.1 Action Plane",
+            "为Trusted Action Runtime补齐Policy/Executor/Reconcile",
+        ),
+    ),
+}
+
 
 def _legacy_imports(path: Path) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -107,6 +157,18 @@ def test_retired_action_examples_and_make_target_are_absent() -> None:
     assert not (ROOT / "spec" / "openapi.json").exists()
     assert "examples/mvp.py" not in makefile
     assert "demo:" not in makefile
+
+
+def test_current_documentation_does_not_revive_retired_action_plane() -> None:
+    """现行事实源不得把已删除服务写成仍可部署或仍参与运行。"""
+
+    for relative_path, (
+        retired_fragments,
+        required_fragments,
+    ) in _CURRENT_DOCUMENTATION_EXPECTATIONS.items():
+        content = (ROOT / relative_path).read_text(encoding="utf-8")
+        assert all(fragment not in content for fragment in retired_fragments), relative_path
+        assert all(fragment in content for fragment in required_fragments), relative_path
 
 
 def test_pytest_subsets_can_import_repository_test_support() -> None:

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 10
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 11
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -379,3 +379,18 @@ macOS、Windows、固定镜像Container和Documentation六个Job实例。Windows
 190幅变化Mermaid及双版本全仓测试均进入远端证据，f3、0.9.1f及0.9.1据此正式关闭。
 
 每个后续切片仍必须回写实际删除范围、测试函数、数据兼容结论和对应提交，不得以局部测试替代全矩阵关闭证据。
+
+### 14.3 现行文档语义收口
+
+物理删除完成后，架构、部署和产品章程已经使用单一Coding Agent主链，但部分现行模块资料仍沿用
+“Action Plane负责”“兼容Action Plane”或“Action Plane Settings”等现在时表达。这些表述不会重新产生运行入口，
+却会让源码阅读者误判当前仍存在第二套Service、Worker、Journal或框架Adapter。
+
+本次收口遵循两条边界：
+
+1. ADR、历史里程碑、退役模块设计和源码研究继续保留当时名称与事实，不重写历史；
+2. 当前产品事实源统一使用`Trusted Action Runtime`、`Execution Plan`、`Action Audit`和专用效果Owner，
+   对旧Action Plane只允许使用“已删除、历史、离线归档”语义。
+
+治理测试对自研边界、Session、Protocol、Skill、Smoke、Delivery、Trusted Actions、Hook、Secrets、Execution及路线图
+中的已知漂移片段建立精确负向断言，并要求替代表述存在。它不做全库模糊禁词，避免把合法历史资料误判为当前实现。

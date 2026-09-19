@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 30
-code_revision: d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373
+version: 31
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 重大变更必须在实现前形成可评审的正式设计，并在合入前同步现行模块设计、源码与测试映射；
 文档角色、结构和完成门槛以[文档工程规范](governance/documentation-standard.md)为准。
 
-## 2. 当前基线：0.1 Action Plane
+## 2. 历史基线：0.1 Action Plane
 
 ### 已完成
 
@@ -89,7 +89,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 | 0.4 | Model Runtime | 两类 Provider、流式事件、错误和用量归一化 | 0.3 |
 | 0.5 | Coding Tool Runtime | 完成读取、搜索、补丁、Shell、Git、测试闭环 | 0.4 运行基线；计价证据独立跟踪 |
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
-| 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Action Plane | 0.6 |
+| 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Trusted Action Runtime | 0.6 |
 | 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 | 0.7 |
 | 0.9 | Release Candidate与质量工程 | 可维护性和文档工程基线、完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
 | 1.0 | 本地优先正式商用发布 | macOS/Linux/Windows稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
@@ -448,7 +448,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；完成Windows原生只读Coding Tool Runtime与统一Action的产品装配，不以WSL兼容替代原生端口；a～f全部子切片已经对应全矩阵CI验收；
 - [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
 - [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
-- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Action Plane补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
+- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Trusted Action Runtime补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
 - [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
 
@@ -545,7 +545,7 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
    原始覆盖数字与实际语义质量，不用空泛文档字符串提高指标；
 2. 建立简体中文代码注释与命名规范：文件说明职责和非职责，类说明生命周期、并发及持久化边界，
    函数说明前置条件、副作用、幂等性、失败和恢复语义，行内注释只解释设计原因、安全边界及不变量；
-3. 优先治理Agent Runtime/Reducer、Action Plane、Patch、Process、Workspace、Delivery和Storage，
+3. 优先治理Agent Runtime/Reducer、Trusted Action Runtime、Patch、Process、Workspace、Delivery和Session Storage，
    再治理Protocol、App Server、SDK、MCP、Skills、Hooks、Provider、Context和Eval；
 4. 对Hash/Fingerprint/Revision、Cursor/Sequence、Attempt、Lease/Timeout/TTL、前后镜像和
    Effect事实等关键变量明确身份、作用域、来源及单位；优先使用自描述命名和类型，不为显然代码

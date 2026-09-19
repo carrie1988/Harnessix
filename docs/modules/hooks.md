@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 097f23b24c03df0d9d5b540c5b65ddc12029e9f1
+version: 2
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -15,9 +15,11 @@ related_adrs:
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/hooks/test_runtime.py
   - tests/hooks/test_schemas.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -46,7 +48,7 @@ supersedes: []
 ## 2. 需求背景
 
 Coding Agent在Session建立、Turn执行和Action调用前后需要执行策略检查、记录审计事实或触发只读观察。
-若Hook直接运行工作区Shell、动态插件或任意HTTP，它会在统一Action Plane之外形成第二条执行通道：Hook既可读取
+若Hook直接运行工作区Shell、动态插件或任意HTTP，它会在Trusted Action Runtime之外形成第二条执行通道：Hook既可读取
 环境和Secret，也可能在目标Action尚未审批时产生不可恢复副作用。若配置在运行中可变，审计又无法回答实际执行
 的是哪个处理器版本。
 

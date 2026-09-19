@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
+version: 8
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/delivery/test_planner.py
   - tests/delivery/test_store.py
@@ -21,6 +22,7 @@ related_tests:
   - tests/delivery/test_git_push.py
   - tests/product_config/test_preflight.py
   - tests/trusted_actions/test_schemas.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -47,7 +49,7 @@ supersedes: []
 [`git_store.py`](../../src/harnessix/delivery/git_store.py)、[`git.py`](../../src/harnessix/delivery/git.py)和
 [`git_push.py`](../../src/harnessix/delivery/git_push.py)的当前实现。Workspace路径、Snapshot与Lease以
 [Workspace模块设计](workspace.md)为事实源；统一审批和外部效果恢复以
-[Trusted Actions模块设计](trusted-actions.md)为当前审批、路由与外部效果恢复事实源；[Action Plane子系统设计](../subsystems/action-plane.md)只描述待删除的迁移兼容内核。
+[Trusted Actions模块设计](trusted-actions.md)为当前审批、路由与外部效果恢复事实源；[Action Plane子系统设计](../subsystems/action-plane.md)只保存已删除体系的冻结历史，不是当前实现或迁移兼容内核。
 
 ## 2. 需求背景
 

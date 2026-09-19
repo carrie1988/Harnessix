@@ -41,7 +41,7 @@ def test_retired_action_service_commands_are_rejected(command, capsys):
     assert command in output.err
 
 
-def test_disabled_does_not_read_config_or_action_plane_env(capsys, monkeypatch):
+def test_disabled_does_not_read_config_provider_or_legacy_service_env(capsys, monkeypatch):
     monkeypatch.setenv("HARNESSIX_LOG_LEVEL", CANARY)
     monkeypatch.setenv("HARNESSIX_DATABASE_URL", CANARY)
 

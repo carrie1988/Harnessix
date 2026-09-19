@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: e1aa95764da726d2c1e8f286e4400579ce3efae7
+version: 2
+code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
 owners:
   - core
 modules:
@@ -15,9 +15,11 @@ related_adrs:
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
+  - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/skills/test_runtime.py
   - tests/skills/test_schemas.py
+  - tests/governance/test_product_runtime_convergence.py
 supersedes: []
 ---
 
@@ -887,10 +889,10 @@ Catalog摘要绑定整个目录，Manifest摘要绑定单个Skill。调用输入
 | Executor ID | `skill.load` | `skill.read_resource` |
 | Resource | Catalog+Manifest摘要 | Catalog+Manifest摘要+相对路径 |
 
-### 23.1 为什么仍经过Action Plane
+### 23.1 为什么仍经过Trusted Action Runtime
 
 只读不等于无风险。正文和资源可能包含提示注入、Secret、超大内容或被替换对象；访问行为也需要和
-Invocation、Workspace、Sandbox及审计绑定。统一Action路径提供：
+Invocation、Workspace、Sandbox及审计绑定。统一Trusted Action路径提供：
 
 1. 输入Schema固定与持久化；
 2. 来源隔离和工具身份；
