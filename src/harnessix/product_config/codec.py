@@ -29,6 +29,10 @@ MAX_PRODUCT_CONFIG_NODES = 20_000
 type ProductConfigDocument = ProductConfigV1 | ProductConfigV2
 
 
+class BoundedConfigSizeError(ValueError):
+    """内部信号：配置为空、包含NUL或超过统一字节上限。"""
+
+
 def _object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -61,21 +65,33 @@ def _check_shape(value: Any, *, depth: int = 0, count: list[int] | None = None) 
         raise ValueError("unsupported JSON scalar")
 
 
+def decode_bounded_config_json(body: bytes) -> tuple[str, dict[str, Any]]:
+    """按产品配置统一预算解析严格UTF-8 JSON对象，并拒绝重复键与异常形状。"""
+
+    if not body or len(body) > MAX_PRODUCT_CONFIG_BYTES or b"\x00" in body:
+        raise BoundedConfigSizeError("config size")
+    text = body.decode("utf-8", errors="strict")
+    raw = json.loads(
+        text,
+        object_pairs_hook=_object,
+        parse_constant=_reject_constant,
+    )
+    _check_shape(raw)
+    if not isinstance(raw, dict):
+        raise ValueError("root must be object")
+    return text, raw
+
+
 def decode_product_config_bytes(
     body: bytes, *, allow_legacy: bool = False
 ) -> ProductConfigDocument:
-    if not body or len(body) > MAX_PRODUCT_CONFIG_BYTES or b"\x00" in body:
-        raise KernelError("product_config_size", "产品配置为空或超过字节上限")
     try:
-        text = body.decode("utf-8", errors="strict")
-        raw = json.loads(
-            text,
-            object_pairs_hook=_object,
-            parse_constant=_reject_constant,
-        )
-        _check_shape(raw)
-        if not isinstance(raw, dict):
-            raise ValueError("root must be object")
+        text, raw = decode_bounded_config_json(body)
+    except BoundedConfigSizeError:
+        raise KernelError("product_config_size", "产品配置为空或超过字节上限") from None
+    except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
+        raise KernelError("product_config_invalid", "产品配置JSON或领域契约无效") from None
+    try:
         version = raw.get("spec_version")
         if version == "harnessix.product-config/v2":
             # 使用 JSON 校验路径保留 strict 模式，同时允许 JSON Array 映射为不可变 Tuple。

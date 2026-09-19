@@ -40,10 +40,14 @@ def _start_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("workspace", nargs="?", default=".")
     parser.add_argument("--config")
+    parser.add_argument("--action-config")
     parser.add_argument("--profile")
     parser.add_argument("--state-directory")
     parser.add_argument("--resume", type=UUID, metavar="THREAD_ID")
     parser.add_argument("--git-executable")
+    parser.add_argument("--expected-active-sha256")
+    parser.add_argument("--expected-active-profile")
+    parser.add_argument("--expected-active-action-sha256")
     return parser
 
 
@@ -78,6 +82,7 @@ def _doctor_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("workspace", nargs="?", default=".")
     parser.add_argument("--config")
+    parser.add_argument("--action-config")
     parser.add_argument("--profile")
     parser.add_argument("--state-directory")
     parser.add_argument("--git-executable")
@@ -109,13 +114,22 @@ def _default_state_directory(workspace: Path) -> Path:
     return Path.home() / ".harnessix" / "workspaces" / fingerprint
 
 
+def _action_config(value: str | None) -> Path | None:
+    configured = value or os.getenv("HARNESSIX_PRODUCT_ACTION_CONFIG")
+    return Path(configured).absolute() if configured else None
+
+
 def _server_command(
     *,
     config: Path,
+    action_config: Path | None = None,
     profile: str | None,
     workspace: Path,
     runtime_state: Path,
     git_executable: str | None,
+    expected_active_sha256: str | None = None,
+    expected_active_profile: str | None = None,
+    expected_active_action_sha256: str | None = None,
 ) -> tuple[str, ...]:
     command = [
         sys.executable,
@@ -131,8 +145,16 @@ def _server_command(
     ]
     if profile is not None:
         command.extend(("--profile", profile))
+    if action_config is not None:
+        command.extend(("--action-config", str(action_config)))
     if git_executable is not None:
         command.extend(("--git-executable", git_executable))
+    if expected_active_sha256 is not None:
+        command.extend(("--expected-active-sha256", expected_active_sha256))
+    if expected_active_profile is not None:
+        command.extend(("--expected-active-profile", expected_active_profile))
+    if expected_active_action_sha256 is not None:
+        command.extend(("--expected-active-action-sha256", expected_active_action_sha256))
     return tuple(command)
 
 
@@ -276,6 +298,7 @@ def _preflight_request(
     return ProductPreflightRequest(
         mode=mode,
         config_path=Path(arguments.config).absolute() if arguments.config else _default_config(),
+        action_config_path=_action_config(arguments.action_config),
         profile_id=arguments.profile,
         workspace=workspace,
         state_directory=state_root,
@@ -338,10 +361,14 @@ def code_main(argv: Sequence[str] | None = None) -> None:
         )
         command = _server_command(
             config=config,
+            action_config=_action_config(arguments.action_config),
             profile=arguments.profile,
             workspace=workspace,
             runtime_state=state_root / "runtime",
             git_executable=arguments.git_executable,
+            expected_active_sha256=arguments.expected_active_sha256,
+            expected_active_profile=arguments.expected_active_profile,
+            expected_active_action_sha256=arguments.expected_active_action_sha256,
         )
         with ClientStateStore(state_root, workspace_identity=str(workspace)) as store:
             session = RecoverableAgentSession(

@@ -17,6 +17,8 @@ from harnessix.workspace.contracts import PlatformKind
 ActionCapabilityKind = Literal["artifact", "workspace_patch", "process_profile"]
 ActionCapabilityStatus = Literal["verified", "omitted"]
 SelectorPolicy = Literal["none", "bounded_test_selector"]
+ProductActionConfigSource = Literal["builtin", "file"]
+ProductActionConfigOperation = Literal["loaded", "activated"]
 
 _IDENTIFIER = r"^[a-z][a-z0-9_-]{0,63}$"
 _EXECUTOR_ID = r"^[a-z][a-z0-9_.-]{0,127}$"
@@ -187,6 +189,100 @@ def build_product_action_config(
     return ProductActionConfigV1(
         **candidate.model_dump(exclude={"config_sha256"}),
         config_sha256=product_action_config_digest(candidate),
+    )
+
+
+class ProductActionConfigSnapshot(ProductConfigContract):
+    """绑定安全读取来源、原始字节摘要与规范Action配置的不可变快照。"""
+
+    spec_version: Literal["harnessix.product-action-config-snapshot/v1"] = (
+        "harnessix.product-action-config-snapshot/v1"
+    )
+    source_kind: ProductActionConfigSource
+    source_sha256: Revision
+    config_sha256: Revision
+    loaded_at: AwareDatetime
+    config: ProductActionConfigV1
+
+    @model_validator(mode="after")
+    def valid_snapshot(self) -> Self:
+        if self.config_sha256 != product_action_config_digest(self.config):
+            raise ValueError("Product Action配置快照摘要不一致")
+        return self
+
+
+class ProductActionConfigAuditEvent(ProductConfigContract):
+    """Action配置加载与激活的连续Hash链事件。"""
+
+    spec_version: Literal["harnessix.product-action-config-audit-event/v1"] = (
+        "harnessix.product-action-config-audit-event/v1"
+    )
+    sequence: int = Field(ge=1)
+    operation: ProductActionConfigOperation
+    config_sha256: Revision
+    previous_active_sha256: Revision | None = None
+    previous_digest: Revision | None = None
+    occurred_at: AwareDatetime
+    digest: Revision
+
+    @model_validator(mode="after")
+    def valid_event(self) -> Self:
+        if (
+            (self.sequence == 1) != (self.previous_digest is None)
+            or (self.operation == "loaded" and self.previous_active_sha256 is not None)
+            or self.digest != product_action_config_audit_event_digest(self)
+        ):
+            raise ValueError("Product Action配置审计事件不一致")
+        return self
+
+
+def product_action_config_audit_event_digest(event: ProductActionConfigAuditEvent) -> str:
+    return canonical_digest(event.model_dump(mode="json", exclude={"digest"}, warnings="error"))
+
+
+class ProductActionStartupRecoveryReport(ProductConfigContract):
+    """一次冷启动Action恢复的脱敏汇总；逐Plan事实保留在Action Audit中。"""
+
+    spec_version: Literal["harnessix.product-action-startup-recovery/v1"] = (
+        "harnessix.product-action-startup-recovery/v1"
+    )
+    candidate_config_sha256: Revision
+    recovery_config_sha256: Revision
+    scanned_routes: int = Field(ge=0)
+    interrupted_routes: int = Field(ge=0)
+    reconciled_routes: int = Field(ge=0)
+    succeeded_routes: int = Field(ge=0)
+    failed_routes: int = Field(ge=0)
+    manual_intervention_routes: int = Field(ge=0)
+    unresolved_routes: int = Field(ge=0)
+    pending_approval_routes: int = Field(ge=0)
+    ready_routes: int = Field(ge=0)
+    created_at: AwareDatetime
+    report_sha256: Revision
+
+    @model_validator(mode="after")
+    def valid_report(self) -> Self:
+        terminal = self.succeeded_routes + self.failed_routes + self.manual_intervention_routes
+        if (
+            self.interrupted_routes > self.scanned_routes
+            or self.reconciled_routes > self.scanned_routes
+            or terminal + self.unresolved_routes != self.reconciled_routes
+            or self.pending_approval_routes + self.ready_routes > self.scanned_routes
+            or self.report_sha256 != product_action_startup_recovery_report_digest(self)
+        ):
+            raise ValueError("Product Action启动恢复报告不一致")
+        return self
+
+
+def product_action_startup_recovery_report_digest(
+    report: ProductActionStartupRecoveryReport,
+) -> str:
+    return canonical_digest(
+        report.model_dump(
+            mode="json",
+            exclude={"report_sha256"},
+            warnings="error",
+        )
     )
 
 

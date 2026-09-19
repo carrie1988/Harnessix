@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 10
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/product_config/test_contracts_and_codec.py
   - tests/product_config/test_migration_and_store.py
   - tests/product_config/test_product_contracts.py
@@ -36,16 +38,16 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor报告；构造Provider Bundle；执行安全Fallback；定义独立Product Action配置/能力报告并构造同源Action目录；持久化配置及Fallback审计事实 |
+| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；执行安全Fallback与启动只对账恢复；持久化双配置快照、原子活动指针、恢复报告及审计事实 |
 | 非职责 | 不执行Agent Loop、Tool、Approval或Action；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
 | 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
-| 正式输入 | 最大256 KiB的严格UTF-8 JSON v2；v1只允许进入显式迁移路径 |
-| 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
+| 正式输入 | 最大256 KiB的严格UTF-8 Product Config v2；Product Config v1只允许显式迁移；独立Product Action Config v1可显式加载 |
+| 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链及Action恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
-| 当前完成度 | 0.9.1d、0.9.1e1～e4已关闭；默认产品统一组合、Process Supervisor生命周期、按Tool上下文、审批执行、输出Artifact和真实固定镜像均已通过七任务CI；e5仍待实施 |
+| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e4已关闭；e5已实现安全Action文件、Doctor、双配置原子CAS、上一配置恢复Router与统一Owner候选，仍等待全量及七任务CI关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -53,6 +55,10 @@ supersedes: []
 [`store.py`](../../src/harnessix/product_config/store.py)、
 [`runtime.py`](../../src/harnessix/product_config/runtime.py)、
 [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py)、
+[`action_codec.py`](../../src/harnessix/product_config/action_codec.py)、
+[`action_diagnostics.py`](../../src/harnessix/product_config/action_diagnostics.py)、
+[`action_store.py`](../../src/harnessix/product_config/action_store.py)、
+[`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、
 [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py)、
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)、
 [`process_action.py`](../../src/harnessix/product_config/process_action.py)、
@@ -96,6 +102,10 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 12. 默认产品启动在所有组件进入托管生命周期后才CAS激活并开放stdio；
 13. 稳定Kernel错误不包含底层异常和Secret，CLI意外错误统一脱敏；
 14. 配置、状态目录与模型可操作Workspace保持隔离。
+15. Product与Action配置保持独立Schema，但活动指针必须在同一事务中切换；
+16. Doctor只读证明Action能力，不创建State Root、Process Lease或业务命令；
+17. 启动必须先按上一活动Action配置结算在途Route，再发布候选目录；
+18. `running/reconciling/unknown`恢复只调用Reconcile，不自动重放效果。
 
 ### 3.2 明确非目标
 
@@ -108,8 +118,8 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 - 不在响应或Tool Call暴露后透明切换Provider；
 - 不把Hash链声明为抵御同用户恶意进程的密码学签名日志；
 - 不提供任意配置编辑器、配置热加载、集中式配置服务或多租户控制面；Configure只生成单Provider/单Profile安全起始配置；
-- 不默认装配写文件、Process、Commit、Push、远端MCP或公网Git认证；
-- 不在Windows广告Git读取、写入Action、Process或Delivery能力。
+- 不默认装配任意Shell、Commit、Push、远端MCP或公网Git认证；
+- 不在Windows广告Git读取、普通Workspace写入或Delivery能力；固定Container Process只有能力证明成立才广告。
 
 ### 3.3 关键术语
 
@@ -127,6 +137,8 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | activation CAS | 以期望旧配置摘要和旧Profile同时匹配为前提更新active pointer |
 | audit head | 持久事件链最后一项的连续序号和摘要 |
 | product composition root | `run_product_stdio`，负责按固定顺序建立和关闭产品依赖 |
+| Action Config SHA256 | 独立`ProductActionConfigV1`规范摘要；用于能力目录、活动CAS与恢复配置身份 |
+| Action recovery owner | 先以旧配置只对账，再以候选配置构造Gateway的产品生命周期Owner |
 
 ## 4. 当前能力与产品边界
 
@@ -134,7 +146,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 |---|---|---|---|
 | v2严格配置 | 完整 | 是 | 多来源合并与热加载 |
 | v1读取 | 仅迁移模式 | 否，Server拒绝 | v0或任意未来版本迁移 |
-| Schema | 8份提交产物与运行时逐字比较 | CLI/外部工具可用 | Schema兼容自动评估 |
+| Schema | 全部版本化提交产物与运行时逐字比较 | CLI/外部工具可用 | Schema兼容自动评估 |
 | 安全读取 | 复用`SecureWorkspaceReader`并增加POSIX私有文件检查 | 是 | 非POSIX所有者/ACL等价私有证明 |
 | Profile选择 | 绑定完整候选链和摘要 | 是 | 模糊模型查找、能力自动降级 |
 | 离线诊断 | 合同、能力、依赖、Secret版本、Key格式 | 启动前执行 | DNS、认证、模型存在性和价格探测 |
@@ -144,7 +156,8 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | 配置Store | Snapshot、active CAS、双Hash链 | 是 | 容量/保留策略、签名、备份编排 |
 | v1→v2迁移 | 文件锁、CAS、备份、原子替换 | CLI显式执行 | 配置DB与文件跨资源原子事务 |
 | stdio组合根 | Preflight后固定Workspace只读Tool与Artifact产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
-| Product Action合同/目录 | 严格Action Config、固定Process Profile、短时能力报告、同源Descriptor/Binding目录 | e1仅建立合同，尚未注册高风险Action | e2～e4实际Gateway、Patch与Process装配 |
+| Product Action合同/目录 | 严格Action Config、固定Process Profile、短时能力报告、同源Descriptor/Binding目录 | 默认Patch；外部配置可启用已证明Process Profile | 热加载、远端配置与任意命令 |
+| Action配置/恢复Store | 来源快照、Hash链、恢复报告、双配置原子CAS | e5实现候选 | 签名日志、保留策略和跨机器配置控制面 |
 | Artifact | Session绑定的SQLite Store、Tool/Agent共享Owner和Scoped协议Reader | 默认产品已启用`artifact/read` | GC调度、指标和长期容量治理 |
 | Telemetry | 稳定错误、诊断和审计可查询 | 未接入Observer | 指标、Trace、SLO和导出接口 |
 
@@ -1759,7 +1772,64 @@ SHA-256，Session只保存公共摘要及Artifact引用。Artifact发布再次�
 Workspace和输出分页。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)已完成Linux
 Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务验收，本切片据此关闭。
 
-## 51. 相关文档
+## 51. Action配置、Doctor与启动恢复Owner（0.9.1e5候选）
+
+### 51.1 安全加载与无状态诊断
+
+[`action_codec.py`](../../src/harnessix/product_config/action_codec.py)复用`codec.py`的`decode_bounded_config_json`和
+`read_product_config_bytes`，因此Product与Action两个JSON合同具有相同字节、深度、节点、重复键、UTF-8和POSIX私有文件边界。
+省略路径时构造版本化内建配置；显式路径失败不会降级内建配置。`ProductActionConfigSnapshot`同时保存原始来源摘要和规范配置摘要，
+不保存Secret值。
+
+[`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py)先加载配置，再调用
+[`diagnose_product_actions`](../../src/harnessix/product_config/action_diagnostics.py)。Patch诊断复用正式`workspace_patch_binding`；
+Process诊断通过`AttestedProductProcessProfile`验证Owner能力、Engine、固定镜像、Sandbox、资源和Secret版本，但不构造
+`ContainerProcessRuntime`、不创建Lease Store、不执行Profile命令。文件/目录错误属于Required；单项能力`omitted`属于Advisory，
+允许产品保持只读启动。
+
+### 51.2 SQLite数据模型与原子CAS
+
+```mermaid
+erDiagram
+    PRODUCT_CONFIG_SNAPSHOTS ||--o| PRODUCT_CONFIG_ACTIVE : points_to
+    PRODUCT_ACTION_CONFIG_SNAPSHOTS ||--o| PRODUCT_ACTION_CONFIG_ACTIVE : points_to
+    PRODUCT_CONFIG_EVENTS ||--o| PRODUCT_CONFIG_EVENT_HEAD : chains_to
+    PRODUCT_ACTION_CONFIG_EVENTS ||--o| PRODUCT_ACTION_CONFIG_EVENT_HEAD : chains_to
+    PRODUCT_ACTION_CONFIG_SNAPSHOTS ||--o{ PRODUCT_ACTION_RECOVERY_REPORTS : identifies
+```
+
+[`SQLiteProductRuntimeConfigStore`](../../src/harnessix/product_config/action_store.py)是现有`SQLiteProductConfigStore`的产品运行时扩展，
+不改变后者的公共导出。`activate_runtime`在一个`BEGIN IMMEDIATE`事务内验证两条事件链、确保两个快照、读取两个活动指针并校验
+所有发生变化的CAS前提；任一冲突回滚Product和Action两侧。重复启动相同组合不产生第二个激活事件。
+
+### 51.3 Owner与恢复顺序
+
+`run_product_stdio`通过私有`_ProductRuntimeStartup`把验证完成的配置、Profile、Action快照、根目录、Git路径和Secret Provider传给
+`_serve_product_stdio`。后者先读取上一活动Action快照，再打开[`ProductActionRuntimeOwner`](../../src/harnessix/product_config/action_runtime.py)：
+
+1. 上一配置构造恢复Router和完整Binding；
+2. 所有产品来源`running/reconciling` Route持久转为`unknown`；
+3. 每个`unknown`只Reconcile一次；任何仍未知结果阻止启动；
+4. 上一配置与候选不同才构造第二个候选Router；
+5. 候选必须精确承接仍在`pending_approval/ready`的Binding；
+6. 保存摘要绑定恢复报告，构造Agent Runtime，最后原子激活双配置并开放stdio。
+
+外部Action文件在Preflight后被重新安全读取，并与报告摘要核对；文件替换为另一个合法配置同样失败。上一配置的Process Profile需要
+当前宿主继续提供原Engine、镜像、Owner、Sandbox和Secret版本证明，直至旧Route结算完成。该保守条件避免为了恢复而创建弱化
+Executor或向新Binding迁移旧批准。
+
+### 51.4 测试定位
+
+| 关注点 | 测试 |
+|---|---|
+| 安全读取、双CAS、Hash链 | [`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
+| 冷启动恢复且不执行 | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py) |
+| Doctor只读、能力省略、目录隔离 | [`test_preflight.py`](../../tests/product_config/test_preflight.py) |
+| 真实Server顺序、Action切换、预检漂移 | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
+| CLI与环境变量透传 | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
+| JSON Schema确定生成 | [`test_schemas.py`](../../tests/product_config/test_schemas.py) |
+
+## 52. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1778,10 +1848,11 @@ Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Docume
 - [SDK模块设计](sdk.md)
 
 
-## 52. 变更记录
+## 53. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 10 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5实现候选：Action安全加载、无状态Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner；等待关闭CI |
 | 9 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成七任务全矩阵验收并关闭 |
 | 8 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 默认产品组合扩展为Patch与固定Container Process共享的单一Catalog/Gateway，增加Supervisor生命周期、按Tool上下文、故障恢复与真实镜像验收接线 |
 | 7 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 登记固定Container Process候选链的能力证明、执行、UNKNOWN、输出Artifact及尚未完成的产品装配和专项测试边界 |

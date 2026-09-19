@@ -35,6 +35,7 @@ from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     ActionRouteSnapshot,
     CanonicalActionResource,
+    TrustedToolBinding,
     build_trusted_tool_binding,
 )
 from harnessix.trusted_actions.router import (
@@ -46,6 +47,7 @@ from harnessix.trusted_actions.router import (
 )
 from harnessix.workspace.contracts import WorkspaceResourceRequest
 
+from .action_contracts import ProductProcessProfile
 from .process_profile import VerifiedProductProcessProfile, process_tool_name
 
 PRODUCT_PROCESS_VERSION = "harnessix.product-process/v1"
@@ -125,8 +127,7 @@ def decode_run_profile(
     return checked
 
 
-def process_profile_descriptor(owner: VerifiedProductProcessProfile) -> ToolDescriptor:
-    profile = owner.profile
+def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor:
     return ToolDescriptor(
         name=process_tool_name(profile.profile_id),
         version=f"{PRODUCT_PROCESS_VERSION}:{profile.profile_sha256[:24]}",
@@ -141,6 +142,24 @@ def process_profile_descriptor(owner: VerifiedProductProcessProfile) -> ToolDesc
         requires_approval=True,
         supports_reconciliation=True,
         supports_parallel_calls=False,
+    )
+
+
+def product_process_binding(profile: ProductProcessProfile) -> TrustedToolBinding:
+    """从固定Profile构造稳定Binding，供运行时和无状态Doctor共同复用。"""
+
+    descriptor = process_profile_descriptor(profile)
+    return build_trusted_tool_binding(
+        source="builtin",
+        source_id="harnessix.product",
+        tool=descriptor.name,
+        tool_version=descriptor.version,
+        tool_fingerprint=tool_fingerprint(descriptor),
+        input_schema_sha256=canonical_digest(descriptor.input_schema),
+        effect_class=descriptor.effect_class,
+        risk_level=descriptor.risk_level,
+        recovery_mode="durable_ledger",
+        executor_id=f"product.process-profile.{profile.profile_id}",
     )
 
 
@@ -266,7 +285,7 @@ def _validate_process_route(
             ),
         )
     )
-    descriptor = process_profile_descriptor(owner)
+    descriptor = process_profile_descriptor(owner.profile)
     if (
         route.binding.tool != descriptor.name
         or route.binding.executor_id != f"product.process-profile.{owner.profile.profile_id}"
@@ -510,19 +529,8 @@ def build_product_process_definition(
 ) -> tuple[TrustedActionDefinition, ProductProcessActionExecutor, ToolDescriptor]:
     """从同一动态Schema构造Descriptor、Router Binding与执行器。"""
 
-    descriptor = process_profile_descriptor(owner)
-    binding = build_trusted_tool_binding(
-        source="builtin",
-        source_id="harnessix.product",
-        tool=descriptor.name,
-        tool_version=descriptor.version,
-        tool_fingerprint=tool_fingerprint(descriptor),
-        input_schema_sha256=canonical_digest(descriptor.input_schema),
-        effect_class=descriptor.effect_class,
-        risk_level=descriptor.risk_level,
-        recovery_mode="durable_ledger",
-        executor_id=f"product.process-profile.{owner.profile.profile_id}",
-    )
+    descriptor = process_profile_descriptor(owner.profile)
+    binding = product_process_binding(owner.profile)
     executor = ProductProcessActionExecutor(owner, router, workspace_root, secrets)
 
     def decode(arguments: dict[str, JsonValue]) -> BaseModel:

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 6
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -15,10 +15,12 @@ related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/agent/test_telemetry.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_action_runtime.py
   - tests/product_config/test_preflight.py
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_interaction_screens.py
@@ -96,9 +98,10 @@ uv run harnessix config diagnose \
 uv run harnessix code doctor /absolute/workspace --config /absolute/config.json --json
 ```
 
-`ProductPreflightReport`在上述配置诊断之外检查配置文件/v2合同、Profile、平台读取端口、Workspace、State、TUI和可选Git。
+`ProductPreflightReport`在上述配置诊断之外检查Product/Action配置文件及合同、Profile、平台读取端口、Action能力、Workspace、State、TUI和可选Git。
 Required全部通过退出0，否则退出2并保留独立检查结果；前置失败只跳过其依赖项。报告只有稳定代码、修复动作ID、摘要、
-Profile和脱敏Workspace指纹，不含绝对路径、环境值或原始异常。Doctor离线只读，不创建状态目录、数据库、Session或网络请求。
+Profile、Action配置摘要、能力证明和脱敏Workspace指纹，不含绝对路径、argv、环境值、Secret或原始异常。Action文件/能力目录是
+Required；单项`verified/omitted`映射为Advisory检查。Doctor离线只读，不创建状态目录、数据库、Process Lease、Session或网络请求。
 它只代表一次瞬时观察，不能替代`agent-server`启动时的重新校验。
 
 ## 5. 结构化日志与Telemetry
@@ -114,7 +117,9 @@ OTLP实现外推为当前产品能力。
 
 从Thread Replay定位`call_id`和`plan_id`，再读取Route State、审批指纹、执行状态、Receipt和Artifact元数据。
 如果状态为`unknown`或`reconciling`，只允许调用已注册Executor的Reconcile观察路径，不得重新执行原始效果。诊断记录
-不得包含Action输入、完整Diff或外部响应正文。旧Action HTTP查询端点不再是受支持诊断入口。
+不得包含Action输入、完整Diff或外部响应正文。产品冷启动成功后还会在`product-config.db`保存摘要绑定的
+`ProductActionStartupRecoveryReport`：候选/恢复配置摘要、扫描/中断/对账/成功/失败/人工处置/未解决/等待审批/ready计数。逐Plan
+身份和状态历史仍只在Action Audit中。旧Action HTTP查询端点不再是受支持诊断入口。
 
 ## 7. 旧Action观测兼容边界
 
@@ -145,6 +150,12 @@ OTLP实现外推为当前产品能力。
 | `migration_changed` | 已应用Session Migration字节变化 | 隔离制品并审计供应链 |
 | `database_corrupt` | SQLite quick check失败 | 停写并恢复已验证备份 |
 | `product_config_permissions` | POSIX配置文件身份/Mode/硬链接不安全 | 恢复Owner、`0600`和单链接普通文件 |
+| `product_action_config_permissions` | Action配置文件身份/Mode/硬链接不安全 | 恢复Owner、`0600`和单链接普通文件 |
+| `product_action_config_changed` | Action文件在读取中或Preflight后变化 | 停止启动，固定文件后重新Doctor |
+| `product_action_config_conflict` | 活动Action摘要不满足切换CAS | 读取当前摘要并人工确认，不能盲覆盖 |
+| `product_action_config_store_corrupt` | Action快照、事件链或恢复报告损坏 | 停写并从已验证备份恢复 |
+| `product_action_recovery_binding_unavailable` | 旧Route的精确Binding或能力无法重建 | 恢复旧配置/Engine/镜像/Secret证据后再启动 |
+| `product_action_recovery_incomplete` | 一次只对账后仍有UNKNOWN | 保留账本，人工核对或下次只观察；不得execute |
 | `product_config_diagnostic_failed` | 至少一个离线检查失败 | 读取脱敏诊断报告 |
 | `product_state_overlap` | 状态目录与Workspace重叠 | 移动状态目录，不用Symlink绕过 |
 | `product_tools_platform_unsupported` | 未知平台或原生读取端口不可用 | 使用已验证的POSIX/Windows宿主并检查系统能力 |
@@ -182,7 +193,7 @@ OTLP实现外推为当前产品能力。
 | `delivery_partial_effect` | 已形成严格after前缀和before后缀 | 人工审查并决定补齐或回退；系统不会自动续写 |
 | Action `unknown` | 取消、失租或崩溃后无法证明效果 | 只允许Reconcile观察，不再次执行 |
 
-诊断记录只能保存Plan/Transaction/Artifact摘要、成员数量、游标、状态和稳定错误码；不得保存Patch正文、完整Diff、Workspace绝对路径或原始异常。e5之前没有启动全局恢复报告，发现旧`running/reconciling` Route时必须保留全部State文件用于对账。
+诊断记录只能保存Plan/Transaction/Artifact摘要、成员数量、游标、状态和稳定错误码；不得保存Patch正文、完整Diff、Workspace绝对路径或原始异常。e5候选会在开放协议前把旧`running/reconciling`转为`unknown`并只对账一次；恢复报告只汇总计数。仍未知时必须保留全部State文件并失败关闭。
 
 ## 10. 证据采集与脱敏
 
@@ -197,7 +208,8 @@ Workspace绝对路径、文件内容、Tool参数/输出、私有Session和供�
 | 诊断能力 | 源码 | 测试 |
 |---|---|---|
 | 配置诊断 | [`product_config/runtime.py`](../../src/harnessix/product_config/runtime.py)的`diagnose_configuration` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
-| 产品Doctor/Preflight | [`product_config/preflight.py`](../../src/harnessix/product_config/preflight.py)、[`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`test_preflight.py`](../../tests/product_config/test_preflight.py)、[`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
+| 产品Doctor/Preflight | [`product_config/preflight.py`](../../src/harnessix/product_config/preflight.py)、[`product_config/preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py)、[`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | [`test_preflight.py`](../../tests/product_config/test_preflight.py)、[`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
+| Action启动恢复报告 | [`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、[`product_config/action_store.py`](../../src/harnessix/product_config/action_store.py) | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)、[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | Agent Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) |
 | Product UI错误自助 | [`product_ui/error_help.py`](../../src/harnessix/product_ui/error_help.py)、[`product_ui/main_view.py`](../../src/harnessix/product_ui/main_view.py) | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)、[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py) |
 

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 3
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -12,7 +12,10 @@ modules:
   - processes
   - patches
   - delivery
+  - product_config
+  - trusted_actions
 related_adrs:
+  - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0002-unknown-first-class.md
   - docs/adr/0035-kernel-batch-approval-and-recovery.md
@@ -24,6 +27,8 @@ related_tests:
   - tests/agent/test_process_agent_crash.py
   - tests/patches
   - tests/delivery
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
 supersedes: []
 ---
 
@@ -145,7 +150,7 @@ Process Supervisor以Owner、Lease、平台进程树和签名回执判断结果�
 - 不能验证Owner或效果时保持`UNKNOWN`；
 - Agent侧对`WAITING_ACTION`只做显式有界观察，不在启动时后台轮询或再次启动命令。
 
-当前默认`agent-server`没有装配完整Process Tool；该恢复语义只适用于显式宿主装配。
+当前默认`agent-server`只装配外部Action Config中通过强Container能力证明的固定Process Profile；任意Host Process与旧兼容Saga仍不进入产品目录。
 
 ## 8. Workspace Transaction与Git恢复
 
@@ -186,21 +191,25 @@ Push与Commit分离，使用单ref和exact lease。响应丢失后查询远端re
 | 第三正文、类型变化或无法观察 | diverged/unknown | 猜测成功、覆盖外部修改 |
 | Artifact存在但Session无引用 | 未授权孤儿，公共读取为not_found | 手工添加审批引用 |
 
-e3的Gateway能在调用恢复路径对单个已知Plan执行只观察Reconcile，但`agent-server`启动前尚未全局扫描所有旧`running/reconciling` Route。e5完成前，异常退出后的运维恢复应先停机备份，再通过对应Thread Replay触发现有恢复；无法从Thread关联的Route保持原状态并升级人工处理。
+e5候选在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Route。它按上一活动Action配置重建精确Binding，先把
+`running/reconciling`持久转为`unknown`，再对每个UNKNOWN只调用一次Reconcile；仍未知、旧Binding缺失或候选不能承接
+`pending_approval/ready`时启动失败。恢复不会调用Execute，也不会自动续写部分Patch。该能力在关闭CI完成前仍按候选状态管理。
 
 
 ## 9. Product Config恢复
 
-配置迁移会保留内容寻址的v1备份。激活失败时Provider、Tool和Runtime逆序关闭，原活动指针不变。恢复步骤：
+配置迁移会保留内容寻址的Product Config v1备份。激活失败时Provider、Tool和Runtime逆序关闭，Product与Action两个原活动指针均不变。恢复步骤：
 
 1. 停止失败的新进程；
 2. 保存迁移收据和脱敏诊断；
 3. 校验源文件摘要及备份摘要；
 4. 必要时恢复旧配置文件和对应配置审计/Session备份；
-5. 重新运行`config diagnose`；
-6. 使用预期活动摘要启动，避免覆盖并发变更。
+5. 重新运行`code doctor`并同时检查Product/Action摘要与能力报告；
+6. 确认上一Action配置仍能重建旧Route的Engine、镜像、Owner、Sandbox和Secret版本证据；
+7. 使用Product摘要/Profile及Action摘要三个预期值启动，避免覆盖并发变更。
 
-只恢复配置文件而保留不匹配的Session/活动配置审计，可能导致Profile身份与历史Attempt不一致。
+只恢复一个配置文件而保留不匹配的Session/活动双指针或Action Audit，可能导致模型Profile与执行权限来自不同发布代际。两个配置
+活动指针、Action快照/事件和恢复报告位于同一`product-config.db`，备份与还原必须作为一个文件处理。
 
 ## 10. 数据损坏与备份恢复
 
@@ -225,6 +234,8 @@ e3的Gateway能在调用恢复路径对单个已知Plan执行只观察Reconcile�
 | Process崩溃 | 进程树无泄漏；无法证明的效果保持未知 |
 | 发布崩溃 | 部分发布可识别，外部漂移不被覆盖 |
 | 配置冲突 | 新Server不开放stdio，原活动配置保持不变 |
+| Action启动恢复 | 中断Route只Reconcile一次且execute次数为零；仍未知时stdio不开放 |
+| 双配置冲突 | Product或Action任一CAS失败时两个活动指针均保持旧值 |
 | 数据恢复 | 备份可迁移、Replay一致、旧Reader按合同拒绝 |
 
 ## 12. 源码与测试映射
@@ -236,10 +247,11 @@ e3的Gateway能在调用恢复路径对单个已知Plan执行只观察Reconcile�
 | Patch | [`patches/managed.py`](../../src/harnessix/patches/managed.py)、[`patches/batch_execution.py`](../../src/harnessix/patches/batch_execution.py) | [`tests/patches`](../../tests/patches/) |
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |
 | 文件交付与默认Patch | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py)、[`delivery/trusted_action.py`](../../src/harnessix/delivery/trusted_action.py) | [`tests/delivery`](../../tests/delivery/)、[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) |
+| 产品Action冷启动恢复 | [`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、[`product_config/action_store.py`](../../src/harnessix/product_config/action_store.py) | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)、[`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
 | Git Push | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | [`tests/delivery/test_git_push.py`](../../tests/delivery/test_git_push.py) |
 
 ## 13. 已知限制
 
-当前没有统一恢复CLI、支持包、在线状态检查器、启动全局Route扫描、自动跨账本一致性扫描、远程效果适配器目录或RPO/RTO承诺。
-Action API只暴露Action Reconcile，不暴露Agent/Patch/Process/Delivery的统一恢复控制面。生产部署必须在0.9后续切片补齐
+当前没有统一恢复CLI、支持包、在线状态检查器、自动跨账本一致性扫描、远程效果适配器目录或RPO/RTO承诺。e5启动扫描只处理
+产品内置来源，不接管MCP、Skill、Hook或自定义宿主Route；也没有独立跨进程Action Owner Lease。生产部署必须在0.9后续切片补齐
 操作权限、确认步骤、审计和真实故障演练后，才能把本设计转换为稳定运维产品能力。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 9
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 10
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -26,6 +26,9 @@ related_adrs:
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
+  - tests/product_config/test_preflight.py
   - tests/product_config/test_schemas.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
@@ -1718,3 +1721,223 @@ SHA-256；Artifact Store在同一Session事务边界校验Thread、Turn、Call�
 本切片不实现外部Action Config文件发现、权限校验、活动版本CAS、Doctor修复动作和产品启动时全局扫描旧Route；这些属于e5。
 本切片也不恢复独立Action HTTP/Worker：Process、Patch、Policy、Approval、Audit、UNKNOWN和Reconcile均位于单一Coding Agent
 产品进程。旧Process Bridge、Git Push和Eval迁移及兼容内核物理删除继续分别由0.9.1f2、f3完成。
+
+### 22.30 0.9.1e5实施前冻结设计
+
+e5只关闭默认Coding Agent产品内的Action配置、诊断、生命周期和冷启动恢复，不新增独立HTTP/Worker、远端执行或第二套产品入口。
+本节是实现前冻结合同；若实现需要改变下列状态或失败语义，必须先更新ADR和本节，再修改生产代码。
+
+#### 22.30.1 组合根与数据所有权
+
+```mermaid
+flowchart TD
+    CLI[harnessix code / agent-server] --> PC[Product Config v2安全加载]
+    CLI --> AC[Product Action Config v1安全加载]
+    PC --> PF[Preflight / Doctor]
+    AC --> PF
+    PF --> PR[脱敏配置与能力报告]
+    PC --> CS[(product-config.db)]
+    AC --> CS
+    CS --> PREV[上一活动Action Config快照]
+    PREV --> OWNER[ProductActionRuntimeOwner]
+    AC --> OWNER
+    OWNER --> STORES[Plan / Audit / Delivery / Lease / Process Owner]
+    OWNER --> RECOVERY[启动恢复：running→unknown→reconcile]
+    RECOVERY --> CATALOG[候选配置同源Catalog + Gateway]
+    CATALOG --> AGENT[AgentRuntime]
+    AGENT --> ACTIVATE[Product + Action活动指针原子CAS]
+    ACTIVATE --> STDIO[开放Agent Protocol stdio]
+```
+
+`ProductActionRuntimeOwner`是Action Store、Process Supervisor、恢复Router、候选Catalog和Gateway的唯一产品生命周期Owner。
+`ProductActionComposition`保留为一次启动冻结的能力视图，但不再承担Store和恢复生命周期。Product Config v2与Action Config v1
+保持两个独立Schema和摘要；二者的活动指针保存在同一个私有SQLite数据库，并由一个事务原子切换，禁止出现“模型配置已激活、Action
+配置未激活”或相反的半启动状态。
+
+#### 22.30.2 Action Config文件、快照与CAS
+
+外部文件通过`--action-config`显式传入；省略时使用版本化内建配置“启用POSIX安全Patch、无Process Profile”。外部文件沿用Product
+Config的安全文件读取原语：最大256 KiB、严格UTF-8、拒绝NUL/重复键/非有限数/未知字段、深度32、节点20000；POSIX还要求普通
+单链接文件、当前用户所有和`0600`，读取前后文件身份必须完全一致。
+
+```text
+ProductActionConfigSnapshot
+  source_kind: builtin | file
+  source_sha256: 原始文件或内建规范JSON的SHA-256
+  config_sha256: ProductActionConfigV1规范摘要
+  loaded_at: 带时区时间
+  config: ProductActionConfigV1
+
+ProductActionConfigAuditEvent
+  sequence / operation(loaded|activated)
+  config_sha256 / previous_active_sha256
+  previous_digest / occurred_at / digest
+```
+
+快照不可变且按`config_sha256`去重；同摘要不同正文视为存储损坏。首次激活要求预期活动摘要为空；同一摘要重复启动幂等；切换必须
+提供`--expected-active-action-sha256`并与数据库精确一致。产品配置与Action配置的活动切换在同一SQLite事务中完成，任一CAS冲突
+都不得开放stdio、创建Thread或留下单边新活动指针。
+
+#### 22.30.3 Doctor与能力诊断
+
+`ProductPreflightRequest`新增可选Action Config路径；`ProductPreflightReport`新增Action Config摘要和
+`ProductActionCapabilityReport`。显式文件不可读或合同无效属于required失败；省略外部文件属于通过的内建配置事实。每个候选能力
+产生独立advisory检查：`verified`为通过，`omitted`为失败但不阻止只读产品启动，并携带稳定`reason_code/remediation_id`。
+
+诊断不得创建请求的State Root。Patch诊断复用正式Binding构造和平台安全端口判断；Process诊断只执行只读的Owner实现、容器引擎、
+不可变镜像、Sandbox、资源和Secret版本证明，不创建Process Lease、不启动容器命令。报告禁止绝对路径、argv、环境值、Secret值、
+镜像凭据和原始异常。Startup在Preflight后仍重新执行一次正式能力探测，防止诊断与进入Owner之间发生能力漂移。
+
+#### 22.30.4 冷启动恢复算法
+
+```text
+open all durable Action stores and optional Process Supervisor
+load previous active Action Config snapshot; absent means current candidate
+build recovery Router from previous exact config and current capability evidence
+scan all active routes before accepting protocol
+verify every active route has an exact registered binding
+for running/reconciling routes: append host_interrupted transition to unknown
+for every unknown route: call reconcile exactly once; never call execute
+if any route remains running/reconciling/unknown or exact binding is unavailable: fail startup
+build candidate Router/Catalog/Gateway
+verify remaining pending_approval/ready routes match candidate exact bindings
+only then construct AgentRuntime, atomically activate both configs, and open stdio
+```
+
+上一活动配置与候选配置不同时，恢复Router和候选Router必须是两个先后使用同一账本的实例，不能在一个注册表中同时注册同Tool的两个
+版本。旧`running/unknown`先用上一快照结算；仍为`pending_approval/ready`的计划只有在候选配置提供逐字段相等的Binding时才允许继续。
+否则以`product_action_recovery_binding_unavailable`失败关闭并保留全部账本。Reconcile返回`unknown`时不循环重试，启动以
+`product_action_recovery_incomplete`失败；下一次启动或人工处置可再次观察，但任何路径不得调用`execute`。
+
+#### 22.30.5 恢复报告与失败矩阵
+
+成功恢复生成摘要绑定的`ProductActionStartupRecoveryReport`，至少记录配置摘要、扫描数、被中断数、Reconcile数、成功/失败/人工处置
+数以及仍等待审批/ready数；逐Plan身份和事件留在Action Audit Hash链，不进入Doctor公开输出。
+
+| 故障 | 对外结果 | 持久事实 | 禁止行为 |
+|---|---|---|---|
+| Action Config文件不安全或读取漂移 | Preflight/启动required失败 | 不激活候选快照 | 降级到内建配置 |
+| Action Config摘要、重复键或未知字段错误 | 合同失败 | 不注册目录 | 宽松解析或忽略字段 |
+| 活动配置CAS冲突 | 启动失败 | 旧活动双指针保持不变 | 单边覆盖指针 |
+| 旧Route绑定无法由上一快照重建 | 恢复绑定不可用 | Route与Audit原样保留 | 用新Binding对账 |
+| 旧`running/reconciling` | 先转`unknown`再对账 | Hash链追加恢复事件 | 再次execute |
+| Reconcile仍为`unknown` | 启动恢复不完整 | UNKNOWN事实保留 | 循环重试或开放stdio |
+| 候选配置删除仍在等待的Binding | 启动失败 | pending/ready保持 | 遗弃审批或静默换Tool |
+| Doctor能力探测失败 | advisory omitted | 不创建State Root | Host执行Fallback |
+
+#### 22.30.6 e5测试与关闭门禁
+
+e5至少新增以下自动化证据：安全文件读取全部攻击面；快照/事件摘要、活动Action CAS、双配置原子CAS和损坏Hash链；Doctor内建与外部
+配置、verified/omitted、脱敏和只读；启动扫描`running/reconciling/unknown`、Reconcile终态/仍未知、缺失旧Binding、配置切换与
+`pending/ready`兼容；stdio开放顺序与部分构造逆序关闭；CLI参数透传；Windows省略语义；真实固定镜像产品链。关闭顺序仍是本地专项、
+全仓Pytest、Ruff、Mypy、Schema双生成、可读性、文档/链接/Mermaid、七任务CI和现行文档同步。
+
+e5关闭的是0.9.1e，不关闭0.9.1总项。0.9.1仍需0.9.1f2把剩余旧调用方迁入进程内Trusted Action Runtime，并由f3物理删除
+HTTP API、Worker Queue、旧Bootstrap、专用Adapter及相关依赖后，才能按路线图评估整体完成。
+
+### 22.31 0.9.1e5实现候选与源码对应
+
+e5实现候选遵守22.30冻结合同，没有引入独立Action服务。当前变更须在全量回归和七任务CI完成后才能把本文状态改为`current`
+并关闭e5；本节只记录已经进入候选代码的结构和验证入口。
+
+#### 22.31.1 文件与职责
+
+| 源码 | 重点符号 | 单一职责 |
+|---|---|---|
+| [`action_codec.py`](../../src/harnessix/product_config/action_codec.py) | `decode_product_action_config_bytes`、`load_product_action_config` | 严格解析外部v1文件或生成内建快照；不持久化、不构造Runtime |
+| [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) | `ProductActionConfigSnapshot`、`ProductActionConfigAuditEvent`、`ProductActionStartupRecoveryReport` | 定义来源、活动变更与恢复汇总的不可变摘要合同 |
+| [`action_diagnostics.py`](../../src/harnessix/product_config/action_diagnostics.py) | `diagnose_product_actions` | 无状态生成Patch/Process能力证明或诚实省略事实 |
+| [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) | `inspect_product_actions` | 把Action文件与能力事实映射为Required/Advisory检查 |
+| [`action_store.py`](../../src/harnessix/product_config/action_store.py) | `SQLiteProductRuntimeConfigStore`、`_activate_runtime` | 在Product配置数据库中保存Action事实并原子切换双指针 |
+| [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py) | `ProductActionRuntimeOwner`、`open_default_product_action_runtime`、`_recover_product_actions` | 拥有Store/Supervisor，先恢复旧Route，再发布候选Gateway |
+| [`server.py`](../../src/harnessix/product_config/server.py) | `_ProductRuntimeStartup`、`_serve_product_stdio`、`run_product_stdio` | 固定启动顺序并在最后一步开放stdio |
+| [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | `_action_config`、`_server_command` | 把显式文件、环境变量和三个活动CAS前提传入内部Server |
+
+`server.py`把“输入验证”和“托管运行期”拆成两个小阶段。`_ProductRuntimeStartup`只保存已经验证的固定事实，不保存任意原始配置
+字节或Secret明文；`_serve_product_stdio`只负责编排生命周期，避免配置解析、路径检查和业务运行混入同一超大函数。
+
+#### 22.31.2 数据结构与字段语义
+
+| 合同/表 | 关键字段 | 不变量与用途 |
+|---|---|---|
+| `ProductActionConfigSnapshot` | `source_kind/source_sha256/config_sha256/loaded_at/config` | 来源摘要与规范配置摘要分离；运行期只按规范摘要去重 |
+| `ProductActionConfigAuditEvent` | `sequence/operation/previous_active_sha256/previous_digest/digest` | 连续序号和前向摘要链；`loaded`不能伪造上一活动摘要 |
+| `ProductActionStartupRecoveryReport` | 候选/恢复配置摘要、扫描/中断/对账/终态/等待计数 | 终态计数必须等于对账数；报告本身有摘要，不保存Plan身份 |
+| `product_action_config_snapshots` | `config_sha256/source_sha256/payload` | 同摘要不同规范正文视为损坏 |
+| `product_action_config_active` | 单例活动摘要 | 外键只指向已保存快照 |
+| `product_action_config_events`与`event_head` | 连续事件及链头 | 读取和激活前完整校验，不对损坏链继续追加 |
+| `product_action_recovery_reports` | `report_sha256/payload` | 幂等保存成功恢复报告；逐Route细节仍在Action Audit |
+
+`ProductPreflightReport`增加`action_config_sha256`和`actions`。Action文件与能力目录自身是Required；某项能力因平台、Engine、镜像、
+资源或Secret不成立时是Advisory `omitted`，因此只读Agent仍可启动。报告同时绑定Product和Action两个摘要，启动重读后若摘要变化，分别
+返回`product_config_changed`或`product_action_config_changed`，不让旧Doctor结论授权新文件。
+
+#### 22.31.3 启动核心伪代码
+
+```text
+preflight = run_preflight(product_path, action_path, workspace, state)
+require preflight.ready
+
+product = secure_load_product_config(product_path)
+require product.digest == preflight.product_digest
+actions = secure_load_action_config_or_builtin(action_path)
+require actions.digest == preflight.action_digest
+require config_paths outside workspace and state disjoint from workspace
+
+open ProductRuntimeConfigStore
+save product snapshot and action snapshot
+previous = load active action snapshot or candidate
+open provider, session, artifact and coding-tool owners
+open ProductActionRuntimeOwner(previous, candidate):
+    build exact previous router from current capability evidence
+    verify every active product route binding exists
+    transition running/reconciling to unknown
+    reconcile each unknown once; never execute
+    fail if any unknown/reconciling/running remains
+    build candidate router when digest differs
+    verify pending/ready routes still have exact candidate binding
+    persist recovery report
+    open AgentRuntime(candidate gateway)
+    atomically CAS product active pointer + action active pointer
+    open stdio protocol
+```
+
+恢复Router必须使用上一活动配置，而不是候选配置。Process恢复仍要求当前宿主能证明旧Engine、镜像、Owner、Sandbox及其Secret版本；
+因此运维切换Product/Action配置时，必须先结算旧在途Route，或继续保留旧Profile引用的Secret来源。删除恢复证据不会触发Host
+Fallback，而是以`product_action_recovery_binding_unavailable`失败关闭。
+
+#### 22.31.4 事务与崩溃窗口
+
+`SQLiteProductRuntimeConfigStore.activate_runtime`在单个`BEGIN IMMEDIATE`事务内执行以下顺序：校验Product事件链、校验Action事件链、
+确保两个候选快照存在、读取两个活动指针、同时验证所有发生变化的CAS前提、更新Product指针/事件、更新Action指针/事件、提交。
+Product前提冲突或Action前提冲突都会回滚整个事务。配置相同的重复启动不新增激活事件；配置切换必须提供对应旧摘要。
+
+快照保存先于Owner构造，故构造失败可能留下未激活候选快照和`loaded`审计事件，这是有意的审计事实，不代表配置已经上线。恢复报告
+只在全局Route恢复成功后保存；Agent、Tool、Action和Provider全部就绪后才激活，激活后才开放stdio。stdio EOF不回滚已经成功的
+活动配置，因为它记录的是该启动实例实际采用的配置，而不是连接租约。
+
+#### 22.31.5 稳定失败语义
+
+| 稳定码 | 触发边界 | 状态结果 | 重试规则 |
+|---|---|---|---|
+| `product_action_config_size/invalid/permissions/unavailable/changed` | 严格解析、安全读取或预检后漂移 | 不创建运行State或不激活候选 | 修复文件后重新Doctor；不得降级内建配置 |
+| `product_action_config_overlap` | 外部Action文件位于Workspace | 启动前失败 | 移到私有配置目录 |
+| `product_action_config_store_corrupt` | 快照、事件链、链头或恢复报告不一致 | 停止写入与启动 | 隔离数据库并从验证备份恢复 |
+| `product_action_config_conflict` | Action活动CAS不匹配 | Product/Action双指针均保持旧值 | 读取当前活动摘要后人工重试 |
+| `product_action_recovery_binding_unavailable` | 旧Route或候选等待Route没有精确Binding | Route状态保持；协议不开放 | 恢复旧配置/能力后再启动 |
+| `product_action_recovery_incomplete` | 一次Reconcile后仍有未知效果 | UNKNOWN事实保留；协议不开放 | 人工核对或下一次只观察恢复；禁止execute |
+
+#### 22.31.6 测试映射与候选证据
+
+| 测试 | 证明内容 |
+|---|---|
+| [`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) | 严格JSON攻击、POSIX权限/硬链接、快照篡改、双CAS双向冲突回滚、Action事件Hash链损坏 |
+| [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py) | `running→unknown→reconcile`成功、仍未知失败关闭、缺失旧Binding时不改状态、候选配置不得丢弃`pending_approval`绑定，且执行调用次数始终为零 |
+| [`test_preflight.py`](../../tests/product_config/test_preflight.py) | 内建/外部Action、Required与Advisory、Workspace重叠、脱敏和Doctor不创建State Root |
+| [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | 恢复报告持久化、外部配置切换CAS、预检后漂移失败、stdio开放前顺序和现有产品链回归 |
+| [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) | `--action-config`及Product/Action CAS参数精确透传 |
+| [`test_schemas.py`](../../tests/product_config/test_schemas.py) | 三个新增公开Schema与运行时Pydantic合同确定一致 |
+
+专项Product Config、Product UI和Trusted Action Router回归已经在本地候选代码上通过；Ruff、Mypy、Schema、可读性、
+全仓3583项收集测试及变化文档Mermaid真实渲染也已以退出码0完成。本地没有可用Docker daemon，固定
+Digest真实Container和七任务CI结果将在实现提交后补入本文；未补入前不得把e5或0.9.1标记为完成。

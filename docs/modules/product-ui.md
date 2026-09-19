@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 93723773676349fbfbe0ef42c26d9000cce379c8
+version: 12
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - product
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
@@ -46,8 +47,8 @@ supersedes: []
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影Reducer、连接、Controller、冻结交互绑定/证据/Intent、纯交互投影和稳定错误帮助；Textual App与Screen从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a、0.9.1b与0.9.1c已通过三平台CI并关闭；Doctor、Windows产品工具链和默认Action装配仍未实现 |
-| 代码版本 | `684a17ecc013549e3472978f1c0e8c1eca4db92e`；0.9.1c实现提交，测试同步提交为`84ffd595989d682c792d615e3815cf5877c0a419` |
+| 当前完成度 | 0.9.1a～d已通过三平台CI并关闭；e5候选已把Action Config与双配置CAS参数接入Doctor/启动CLI，仍等待关闭CI |
+| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -932,10 +933,27 @@ sequenceDiagram
 `532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`
 已由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成原生Windows产品验收。
 
-## 18. 变更记录
+## 18. 0.9.1e5 Action配置入口与CAS透传
+
+`harnessix code`和`harnessix code doctor`新增显式`--action-config`，也可通过
+`HARNESSIX_PRODUCT_ACTION_CONFIG`提供默认路径；显式参数优先。Doctor把该路径直接放入共享`ProductPreflightRequest`，因此会输出
+Action配置摘要、能力报告和逐能力Advisory检查，但不创建Client State或运行State。
+
+产品启动把Action文件绝对路径透传给内部`agent-server`。配置切换时可同时提供：
+
+- `--expected-active-sha256`：上一活动Product Config摘要；
+- `--expected-active-profile`：上一活动Profile；
+- `--expected-active-action-sha256`：上一活动Action Config摘要。
+
+CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Server内`SQLiteProductRuntimeConfigStore`保证。外部Action文件在Workspace
+内、权限不安全、合同无效、预检后变化或CAS冲突时，TUI、Client State和stdio Transport均不会进入可运行状态。精确argv由
+[`test_cli.py`](../../tests/product_ui/test_cli.py)验证，Server端不信任客户端检查并重复验证。
+
+## 19. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 接入e5候选的Action Config路径、环境覆盖与Product/Action活动CAS前提透传；等待关闭CI |
 | 11 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读链通过CI 34735529084 |
 | 10 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c实现提交`684a17e`、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收，正式关闭完整领域交互子切片 |
 | 9 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c本地实现：冻结交互身份、Artifact完整证据、发送前复核、Plan/Tool/Usage渲染、专用Modal、错误自助及65项Product UI验证；等待实现Revision与三平台CI |

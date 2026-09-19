@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 7
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
 | 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；兼容链的执行事实由通用Action Journal和Session/Artifact Store拥有 |
 | 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
-| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
+| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5诊断/恢复接线为实现候选 |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -1445,7 +1445,7 @@ function agent_observe(plan):
 
 | 当前限制 | 直接影响 | 正确演进方向 |
 |---|---|---|
-| 默认产品只装配固定Container Profile，不开放任意Host Process | 常见测试需由宿主定义Profile，不能临时执行模型生成命令 | e5配置Owner、0.9.5安装体验；保持最小权限 |
+| 默认产品只装配外部Action Config中的固定Container Profile，不开放任意Host Process | 常见测试必须预先定义Profile，不能临时执行模型生成命令 | e5候选提供配置/Doctor；0.9.5完善安装体验，继续保持最小权限 |
 | 0.5与0.7存在两套运行合同 | Agent Saga和跨平台Owner保证无法自动叠加 | 设计兼容Adapter，把Agent调用统一映射到ExecutionPlanV2+Supervisor，不复制审批 |
 | 新链不绑定目标可执行文件身份 | PATH、Workspace或系统文件变化可能在批准后改变实际程序 | 增加Executable Resolution/Identity合同或强制Container固定镜像 |
 | POSIX `/bin/sh`不在实现摘要 | Shell实现漂移不改变Capability | 将Shell绝对路径、inode/摘要和平台版本纳入能力证据 |
@@ -1520,10 +1520,22 @@ function agent_observe(plan):
 里程碑和ADR记录当时的切片状态；本文维护`processes`包在标注提交上的现行事实。旧资料中的“后续实现”若已经
 落地，应以当前源码、Schema和测试为准；旧链未迁移的边界也不得因新Supervisor存在而被写成已自动解决。
 
+### 41.1 e5无状态证明与旧Profile恢复
+
+e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnessix/product_config/process_profile.py)和
+`VerifiedProductProcessProfile`。Doctor只构造前者：验证平台Owner实现、Container Engine、不可变镜像、Sandbox、资源和Secret版本，
+但不创建`ContainerProcessRuntime`、Lease数据库或业务进程；正式启动才把同一证明与平台Supervisor绑定为后者。
+
+启动恢复旧Process Route时，Owner按上一活动Action配置重新证明旧Profile并重建精确Binding。旧`running/reconciling`先转
+`unknown`，Reconciler只读取Process Lease和输出摘要，不再次Spawn；旧Engine、镜像、Owner或Secret版本无法证明时，产品启动
+失败关闭而不是退回Host Process。该边界由[`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)与
+[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，真实固定镜像继续由Container集成测试约束。
+
 ## 42. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Profile证明、正式Runtime绑定及按旧Profile只对账恢复候选；等待关闭CI |
 | 6 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Profile默认产品链由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown换行 |
 | 5 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile进入默认Trusted Action组合、Plan ID到Process ID绑定、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI验收 |
 | 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步固定Container Process所需的Owner只读输出接口，并把平台能力证明从Supervisor生命周期职责中拆出 |

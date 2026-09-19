@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 5
-code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
+version: 6
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -30,6 +30,9 @@ related_tests:
   - tests/protocol/test_projection.py
   - tests/delivery/test_filesystem.py
   - tests/integration/test_container_sandbox.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
+  - tests/product_config/test_preflight.py
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
@@ -38,7 +41,7 @@ supersedes: []
 
 ## 状态
 
-接受，0.9.1e按本决策实施。0.9.1e1目录地基已经通过全矩阵验收，0.9.1e2 Agent Gateway、Agent Event v20与双账本恢复已经由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭，0.9.1e3默认Workspace Patch已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收并关闭；默认Container Process与产品级Owner仍未完成。实现状态由
+接受，0.9.1e按本决策实施。0.9.1e1～e4已经分别完成全矩阵验收；默认Workspace Patch与固定Container Process共用同一产品内Router、审批和恢复语义。e5的外部Action Config、Doctor能力诊断、Product/Action双配置原子CAS及产品级启动恢复Owner已形成实现候选，仍需全量和七任务CI后关闭。实现状态由
 [0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)和现行模块文档维护。
 
 ## 背景
@@ -155,6 +158,20 @@ Result和可操作诊断；任何路径都不得再次调用`execute`。
 
 高风险目录由默认关闭的版本化功能门逐项开启，直到专项E2E和三平台矩阵通过。关闭功能门必须只停止新Plan进入目录，不能删除
 旧Plan、审批、Artifact或效果账本；旧在途Plan仍由恢复Owner结算。
+
+### 9. 独立配置、原子激活与启动恢复Owner
+
+Product Config与Product Action Config保持独立版本和职责，但属于同一产品启动事实。Action配置只能通过显式`--action-config`或内建
+默认值进入产品；外部文件沿用Product Config的有界严格JSON、私有文件和读取前后身份校验。Doctor与Startup均输出或核对配置摘要，
+预检后的合法文件替换也必须作为`changed`失败，而不能让旧诊断结论授权新内容。
+
+两个配置快照、活动指针和各自连续审计链位于同一`product-config.db`；任一发生变化时都要求精确CAS前提，两个活动指针只能在
+一个SQLite事务中共同切换。候选快照先保存但未激活是允许的审计事实，不能被解释为已经上线。
+
+`ProductActionRuntimeOwner`是Action Store、Process Supervisor、恢复Router、候选组合和Gateway的唯一产品Owner。每次开放stdio前，
+Owner必须按上一活动Action配置重建精确Binding，扫描所有产品来源活动Route，把`running/reconciling`转为`unknown`并对每个
+`unknown`只调用一次Reconcile。缺失Binding或仍未知时失败关闭。候选配置若不能精确承接旧`pending_approval/ready` Route，也必须
+失败，不能静默换版本、丢弃审批或再次执行效果。
 
 ## 理由
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 6
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -40,8 +40,8 @@ supersedes: []
 | 下游依赖 | `execution`合同、`workspace`快照、`secrets`短生命周期环境、`processes` Supervisor、Docker/Podman兼容CLI、DNS和TCP |
 | 持久化 | `SQLiteSandboxProfileStore`按Profile Digest保存不可变JSON；Execution Plan和Process Lease由其他模块保存 |
 | 平台 | 合同与确定性测试覆盖POSIX/Windows；真实Container隔离只在Linux Docker CI验证；Windows/macOS真实强隔离尚未形成发布证据 |
-| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
-| 当前完成度 | 固定Profile、无网络、只读Workspace的`container_strong`路径已接入默认产品并通过全矩阵验收；Host Sandbox Adapter、Selective Egress和其他调用方仍是显式组合能力 |
+| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5诊断/恢复接线为实现候选 |
+| 当前完成度 | 固定Profile、无网络、只读Workspace的`container_strong`路径已接入默认产品并通过e4全矩阵验收；e5候选允许CLI外部配置并以无状态Doctor/启动Owner重复证明能力；Host Sandbox Adapter、Selective Egress和其他调用方仍是显式组合能力 |
 
 本文描述Sandbox包当前实现。不可变执行计划和批准指纹以
 [Execution Plan模块设计](execution.md)为事实源；底层Process Owner、Lease、输出和终止语义以
@@ -1293,7 +1293,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 12. `wait/aclose/reconcile`每个Cleanup失败优先级和非Cancelled异常；
 13. 宿主硬退出后Process Lease + Container残留的跨进程恢复；
 14. MCP stdio启动中断、硬崩溃和Process Owner等价性；
-15. 默认产品冷启动、能力广告、用户审批和关闭已接线；外部配置加载、Doctor报告和启动全局恢复仍缺；
+15. 默认产品冷启动、能力广告、用户审批和关闭已接线；外部配置加载、Doctor报告和启动全局恢复已有e5候选，仍待关闭CI；
 16. Schema生成与`spec/*.schema.json`漂移门禁；
 17. Sandbox/Egress低基数Telemetry及导出故障隔离。
 
@@ -1301,7 +1301,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 优先级 | 当前限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
-| P0 | 固定Profile已装配Container Sandbox，但CLI尚无外部Action Config加载和Doctor修复路径 | 普通用户无法配置Profile，启动恢复也未闭环 | 0.9.1e5 |
+| P0 | 外部Action Config、Doctor和启动恢复已有e5候选，但尚无发布矩阵关闭证据 | 可专项使用，仍不能视为已发布配置体验 | 0.9.1e5关闭CI |
 | P0 | Host Sandboxed只有Probe无执行Adapter | Seatbelt/Bwrap可用也不能执行正式Host Sandbox计划 | 0.9.1/0.9.4 |
 | P0 | Selective Egress无Network/Gateway生命周期管理和真实Docker端到端验收 | Limited/Restricted仍是组合原语，不是可发布默认能力 | 0.9.3/0.9.4 |
 | P0 | Windows/macOS无真实Container矩阵 | 三平台1.0强隔离声明无证据 | 0.9.5 |
@@ -1381,10 +1381,18 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 长期不可逆的Backend、安全和平台取舍必须进入ADR。实现与文档冲突时，以源码、固定测试和真实运行证据
 作为缺陷调查输入，在同一提交修正事实源；不得仅修改表述来掩盖失败关闭、恢复或平台缺口。
 
+### 33.1 e5 Doctor与启动重复证明
+
+[`probe_product_process_profile_attestation`](../../src/harnessix/product_config/process_profile.py)为Doctor复用正式Container Engine、镜像和
+Sandbox构造逻辑，但只接收平台Owner能力证明，不创建Process Lease或执行容器命令。报告只保存能力/Binding/Executor Evidence摘要与
+稳定省略原因，不暴露Engine绝对路径、argv、环境值或Secret。正式启动不会信任旧报告，而是以真实Supervisor重复证明并绑定
+`ContainerProcessRuntime`，从而把Doctor瞬时观察与可执行Owner严格分开。
+
 ## 34. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor Attestation与正式Supervisor重复证明边界；等待关闭CI |
 | 5 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录默认固定Container Profile由CI 35434198163完成真实产品镜像与七任务验收 |
 | 4 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile默认产品接线、强能力探测、Supervisor生命周期及真实产品镜像验收；等待全矩阵CI |
 | 3 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加Product Process公共Intent与派生Container合同分离的复核路径，并同步Runtime只读恢复接口 |

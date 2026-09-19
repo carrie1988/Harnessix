@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 20
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 21
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -22,6 +22,8 @@ related_tests:
   - tests/product_ui
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
@@ -432,7 +434,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d已通过对应全矩阵CI并关闭。0.9.1e的e1～e4已经全矩阵验收，e5尚未实施。为避免历史Action服务与Coding Agent形成双产品边界，新增0.9.1f按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)收敛公共入口并分阶段迁移兼容内核。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，31/31个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d已通过对应全矩阵CI并关闭。0.9.1e的e1～e4已经全矩阵验收，e5已形成实现候选但尚未通过关闭门禁。为避免历史Action服务与Coding Agent形成双产品边界，0.9.1f1已经撤销旧公共入口并冻结迁移白名单，f2/f3继续迁移和物理删除兼容内核。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -464,7 +466,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.1e 统一Action产品装配**：Artifact、Patch、Process、Delivery通过Trusted Action、Policy、Approval、
   Effect Journal、Sandbox和Reconcile进入默认能力目录；[专项源码研究](research/default-trusted-action-product-composition.md)、
   [ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)
-  已完成；e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭；e2实现提交`328aa2d`已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；e3实现提交`71a4794`与验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成POSIX安全多文件Patch纵向链及全矩阵验收并关闭；e4实现提交`f5a3936`与状态等待稳定化提交`4b28fa4`已由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成统一Catalog、Supervisor生命周期、审批执行、输出Artifact、真实固定镜像及七任务全矩阵验收并关闭；e5产品Owner/启动恢复随后实施。
+  已完成；e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭；e2实现提交`328aa2d`已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；e3实现提交`71a4794`与验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成POSIX安全多文件Patch纵向链及全矩阵验收并关闭；e4实现提交`f5a3936`与状态等待稳定化提交`4b28fa4`已由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成统一Catalog、Supervisor生命周期、审批执行、输出Artifact、真实固定镜像及七任务全矩阵验收并关闭；e5实现候选已接入外部Action Config安全加载、Doctor能力报告、Product/Action双指针原子CAS、上一活动配置恢复Router、`running/reconciling → unknown → reconcile`和统一`ProductActionRuntimeOwner`，正在执行全量及七任务关闭门禁，未通过前本项保持未勾选。
 - [ ] **0.9.1f 单一产品运行时收敛**：按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)和
   [专项详细设计](changes/m09-1f-single-product-runtime-convergence.md)撤销`serve/worker`、Action HTTP SDK和
   LangGraph Action Adapter的公共产品地位；f1先关闭公共入口并冻结旧调用方白名单，f2把Process、Git Push和

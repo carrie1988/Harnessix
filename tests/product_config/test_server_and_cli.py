@@ -18,10 +18,16 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
+from harnessix.product_config.action_codec import (
+    canonical_product_action_config_bytes,
+    load_product_action_config,
+    product_action_config_snapshot,
+)
 from harnessix.product_config.action_contracts import (
     build_product_action_config,
     build_product_process_profile,
 )
+from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
@@ -68,14 +74,113 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
     assert output.getvalue() == b""
     snapshot = load_product_config(path)
     assert isinstance(snapshot, ProductConfigSnapshot)
-    with SQLiteProductConfigStore(state / "product-config.db") as store:
+    with SQLiteProductRuntimeConfigStore(state / "product-config.db") as store:
         assert store.active() == (snapshot.config_sha256, "primary")
         assert [event.operation for event in store.config_events()] == ["loaded", "activated"]
+        reports = store.action_recovery_reports()
+        assert len(reports) == 1 and reports[0].scanned_routes == 0
     assert CANARY not in (state / "product-config.db").read_bytes().decode("utf-8", errors="ignore")
     assert (state / "execution-plans.db").is_file()
     assert (state / "action-audit.db").is_file()
     assert (state / "workspace-transactions/transactions.db").is_file()
     assert (state / "workspace-leases.db").is_file()
+
+
+async def test_product_server_action_config_activation_requires_exact_cas(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    with SQLiteProductRuntimeConfigStore(state / "product-config.db") as store:
+        previous = store.active_action()
+    assert previous is not None
+
+    action_path = tmp_path / "actions.json"
+    action_path.write_bytes(
+        canonical_product_action_config_bytes(
+            build_product_action_config(workspace_patch_enabled=False)
+        )
+    )
+    if os.name == "posix":
+        action_path.chmod(0o600)
+    changed = load_product_action_config(action_path)
+
+    with pytest.raises(KernelError) as conflict:
+        await run_product_stdio(
+            config_path=path,
+            action_config_path=action_path,
+            profile_id=None,
+            workspace=workspace,
+            state_directory=state,
+            input_stream=io.BytesIO(),
+            output_stream=io.BytesIO(),
+        )
+    assert conflict.value.code == "product_action_config_conflict"
+    with SQLiteProductRuntimeConfigStore(state / "product-config.db") as store:
+        assert store.active_action() == previous
+
+    await run_product_stdio(
+        config_path=path,
+        action_config_path=action_path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+        expected_active_action_sha256=previous,
+    )
+    with SQLiteProductRuntimeConfigStore(state / "product-config.db") as store:
+        assert store.active_action() == changed.config_sha256
+
+
+async def test_product_server_rejects_action_config_changed_after_preflight(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    path = write_config(tmp_path / "config.json", config)
+    action_path = tmp_path / "actions.json"
+    action_path.write_bytes(canonical_product_action_config_bytes(build_product_action_config()))
+    if os.name == "posix":
+        action_path.chmod(0o600)
+    changed = product_action_config_snapshot(
+        build_product_action_config(workspace_patch_enabled=False)
+    )
+
+    monkeypatch.setattr(
+        "harnessix.product_config.server.load_product_action_config",
+        lambda _path: changed,
+    )
+    with pytest.raises(KernelError) as error:
+        await run_product_stdio(
+            config_path=path,
+            action_config_path=action_path,
+            profile_id=None,
+            workspace=workspace,
+            state_directory=state,
+            input_stream=io.BytesIO(),
+            output_stream=io.BytesIO(),
+        )
+
+    assert error.value.code == "product_action_config_changed"
+    assert not state.exists()
 
 
 async def test_product_server_model_catalog_reflects_verified_workspace_patch(

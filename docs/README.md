@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 55
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 56
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -18,6 +18,8 @@ related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
@@ -40,7 +42,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1a～0.9.1d已通过对应全矩阵CI并关闭。0.9.1e的[源码研究](research/default-trusted-action-product-composition.md)、[ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)已经建立；其中e1已完成Action合同、同源目录、Router幂等规划和默认Artifact组合，并由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；e2实现提交`328aa2d`已完成显式Agent Gateway、Router审批权威、双账本恢复及Protocol v1兼容投影，并由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收后关闭；e3实现提交`71a4794`已把多文件Workspace Patch、完整Review Artifact、Delivery事务、Workspace Lease和默认状态Owner接入POSIX产品链，本地完整门禁通过，正式关闭仍以文档同步后的全矩阵CI为准；e4～e5尚未实施。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.0范围，但仍不是1.0正式商用版本。0.9.1a～d与0.9.1e1～e4已通过对应全矩阵CI并关闭；e5已形成外部Action Config、Doctor能力报告、双配置原子CAS和启动只对账恢复实现候选，仍等待关闭门禁。0.9.1f1已将`serve/worker`、Action HTTP SDK和LangGraph Action Adapter撤出公共产品面，f2/f3继续迁移并物理删除兼容内核。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -152,7 +154,7 @@ supersedes: []
 | 0.7 | [可信执行与工程交付](m07-trusted-execution-and-delivery.md) | 历史增量；跨平台端口、Sandbox、Secret、Process、Workspace与Delivery |
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
-| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md) | 进行中；0.9.1a～d及e1～e4已关闭；e5待实施 |
+| 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 进行中；0.9.1a～d及e1～e4、f1已关闭；e5为实现候选，f2/f3待实施 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

@@ -6,7 +6,10 @@ from pathlib import Path
 from harnessix.product_config.action_contracts import (
     ProductActionCapabilityEvidence,
     ProductActionCapabilityReport,
+    ProductActionConfigAuditEvent,
+    ProductActionConfigSnapshot,
     ProductActionConfigV1,
+    ProductActionStartupRecoveryReport,
     ProductProcessProfile,
 )
 from harnessix.product_config.codec import decode_product_config_bytes
@@ -38,6 +41,15 @@ def test_committed_product_config_schemas_match_runtime_contracts() -> None:
         ),
         "product-action-capability-report-v1.schema.json": (
             ProductActionCapabilityReport.model_json_schema()
+        ),
+        "product-action-config-snapshot-v1.schema.json": (
+            ProductActionConfigSnapshot.model_json_schema()
+        ),
+        "product-action-config-audit-event-v1.schema.json": (
+            ProductActionConfigAuditEvent.model_json_schema()
+        ),
+        "product-action-startup-recovery-v1.schema.json": (
+            ProductActionStartupRecoveryReport.model_json_schema()
         ),
         "product-process-profile-v1.schema.json": ProductProcessProfile.model_json_schema(),
         "product-config-snapshot-v1.schema.json": ProductConfigSnapshot.model_json_schema(),

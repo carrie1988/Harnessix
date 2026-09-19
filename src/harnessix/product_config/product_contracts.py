@@ -8,6 +8,7 @@ from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from harnessix.execution.contracts import canonical_digest
 from harnessix.models.config import ModelHTTPConfig
+from harnessix.product_config.action_contracts import ProductActionCapabilityReport
 from harnessix.product_config.contracts import (
     ConfigurationDiagnosticReport,
     ProductConfigContract,
@@ -27,6 +28,7 @@ PreflightCategory = Literal[
     "platform",
     "tui",
     "git",
+    "action",
 ]
 PreflightRequirement = Literal["required", "advisory"]
 PreflightStatus = Literal["passed", "failed", "skipped"]
@@ -125,6 +127,8 @@ class ProductPreflightReport(ProductConfigContract):
     config_sha256: Revision | None = None
     selected_profile: str | None = Field(default=None, pattern=_IDENTIFIER)
     configuration: ConfigurationDiagnosticReport | None = None
+    action_config_sha256: Revision | None = None
+    actions: ProductActionCapabilityReport | None = None
     checks: tuple[ProductPreflightCheck, ...] = Field(min_length=1, max_length=64)
     ready: bool
     generated_at: AwareDatetime
@@ -141,6 +145,9 @@ class ProductPreflightReport(ProductConfigContract):
                 self.config_sha256 == configuration.config_sha256
                 and self.selected_profile == configuration.selected_profile
             )
+        action_bound = self.actions is None or (
+            self.action_config_sha256 == self.actions.config_sha256
+        )
         expected_ready = (
             configuration is not None
             and configuration.ready
@@ -152,6 +159,7 @@ class ProductPreflightReport(ProductConfigContract):
             identifiers != sorted(identifiers)
             or len(set(identifiers)) != len(identifiers)
             or not configuration_bound
+            or not action_bound
             or self.ready != expected_ready
             or self.report_sha256 != product_preflight_report_digest(self)
         ):

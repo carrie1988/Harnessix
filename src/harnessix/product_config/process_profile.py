@@ -20,6 +20,7 @@ from harnessix.execution.contracts import (
     canonical_digest,
 )
 from harnessix.execution.planner import build_capability_evidence_v2
+from harnessix.processes.supervision_contracts import ProcessCapabilityProbe
 from harnessix.sandbox.capabilities import (
     ContainerEngineKind,
     ContainerEngineProbe,
@@ -118,8 +119,8 @@ def _probe_secrets(profile: ProductProcessProfile, provider: SecretProvider) -> 
 
 
 @dataclass(frozen=True, slots=True)
-class VerifiedProductProcessProfile:
-    """一次启动内可执行的Profile能力；不保存Secret明文。"""
+class AttestedProductProcessProfile:
+    """不创建Process Store即可证明的Profile执行边界；不保存Secret明文。"""
 
     profile: ProductProcessProfile
     engine: ContainerEngineProbe
@@ -127,10 +128,16 @@ class VerifiedProductProcessProfile:
     capabilities: ExecutionCapabilityEvidenceV2
     sandbox: SandboxBindingV2
     sandbox_profile: ContainerSandboxProfile
-    runtime: ContainerProcessRuntime
     environment: Mapping[str, str]
     secret_bindings: tuple[SecretVersionBinding, ...]
     executor_evidence_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedProductProcessProfile(AttestedProductProcessProfile):
+    """一次启动内已绑定持久Process Owner的可执行Profile能力。"""
+
+    runtime: ContainerProcessRuntime
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,15 +149,23 @@ class ProductProcessProfileProbeResult:
     verified: VerifiedProductProcessProfile | None = None
 
 
-def _verified_product_process_profile(
+@dataclass(frozen=True, slots=True)
+class ProductProcessProfileAttestationResult:
+    """Doctor使用的无状态Profile能力证明或稳定省略原因。"""
+
+    profile: ProductProcessProfile
+    reason_code: str
+    attested: AttestedProductProcessProfile | None = None
+
+
+def _attested_product_process_profile(
     profile: ProductProcessProfile,
-    supervisor: ProcessSupervisor,
+    owner_capability: ProcessCapabilityProbe,
     secrets: SecretProvider,
     *,
     probe_runner: ProfileProbeRunner | None,
-    inspect_runner: InspectRunner | None,
-) -> VerifiedProductProcessProfile:
-    """完成Profile所有强能力证明并装配单一Container Process Runtime。"""
+) -> AttestedProductProcessProfile:
+    """只读证明Profile、引擎、镜像、Sandbox、Owner实现和Secret版本。"""
 
     if profile.memory_bytes < 64 * 1024 * 1024 or profile.process_limit < 16:
         raise KernelError("profile_limits_unenforceable", "Process Profile资源限制无法执行")
@@ -161,7 +176,7 @@ def _verified_product_process_profile(
         if probe_runner is None
         else probe_container_engine(path, engine=engine_kind, runner=probe_runner)
     )
-    if engine.platform != supervisor.capability.platform:
+    if engine.platform != owner_capability.platform:
         raise KernelError("process_owner_mismatch", "容器引擎与Process Owner平台不一致")
     image_attestation = _attest_image(path, profile.image, probe_runner or _run_probe)
     _probe_secrets(profile, secrets)
@@ -197,12 +212,6 @@ def _verified_product_process_profile(
         capability_digest=capabilities.evidence_digest,
         profile_digest=sandbox_profile.digest,
     )
-    builder = (
-        ContainerCommandBuilder(path, engine)
-        if inspect_runner is None
-        else ContainerCommandBuilder(path, engine, inspect_runner=inspect_runner)
-    )
-    runtime = ContainerProcessRuntime(builder, supervisor)
     bindings = tuple(
         SecretVersionBinding(name=reference.name, version=reference.version, target=reference.name)
         for reference in profile.secret_refs
@@ -214,23 +223,68 @@ def _verified_product_process_profile(
             "profile_sha256": profile.profile_sha256,
             "engine_probe_sha256": engine.digest,
             "image_attestation_sha256": image_attestation,
-            "owner_capability_sha256": supervisor.capability.digest,
+            "owner_capability_sha256": owner_capability.digest,
             "sandbox_profile_sha256": sandbox_profile.digest,
             "environment": environment,
             "secrets": [item.model_dump(mode="json") for item in bindings],
         }
     )
-    return VerifiedProductProcessProfile(
+    return AttestedProductProcessProfile(
         profile=profile,
         engine=engine,
         image_attestation_sha256=image_attestation,
         capabilities=capabilities,
         sandbox=sandbox,
         sandbox_profile=sandbox_profile,
-        runtime=runtime,
         environment=MappingProxyType(environment),
         secret_bindings=bindings,
         executor_evidence_sha256=evidence,
+    )
+
+
+def _profile_probe_reason(error: KernelError) -> str:
+    reasons = {
+        "container_engine_unsupported": "container_engine_unsupported",
+        "sandbox_unavailable": "container_unavailable",
+        "sandbox_binding_invalid": "container_unavailable",
+        "container_image_unavailable": "container_image_unavailable",
+        "profile_limits_unenforceable": "profile_limits_unenforceable",
+        "process_owner_mismatch": "process_owner_unavailable",
+        "process_capability_unavailable": "process_owner_unavailable",
+        "process_platform_unsupported": "process_owner_unavailable",
+        "secret_target_invalid": "secret_target_invalid",
+        "secret_unavailable": "secret_unavailable",
+        "secret_version_changed": "secret_version_changed",
+        "secret_provider_invalid": "secret_unavailable",
+    }
+    return reasons.get(error.code, "profile_probe_failed")
+
+
+def probe_product_process_profile_attestation(
+    profile: ProductProcessProfile,
+    owner_capability: ProcessCapabilityProbe,
+    secrets: SecretProvider,
+    *,
+    probe_runner: ProfileProbeRunner | None = None,
+) -> ProductProcessProfileAttestationResult:
+    """为Doctor执行无状态只读证明，不创建Lease Store或启动容器。"""
+
+    try:
+        attested = _attested_product_process_profile(
+            profile,
+            owner_capability,
+            secrets,
+            probe_runner=probe_runner,
+        )
+    except KernelError as error:
+        return ProductProcessProfileAttestationResult(
+            profile=profile,
+            reason_code=_profile_probe_reason(error),
+        )
+    return ProductProcessProfileAttestationResult(
+        profile=profile,
+        reason_code="verified",
+        attested=attested,
     )
 
 
@@ -244,31 +298,36 @@ def probe_product_process_profile(
 ) -> ProductProcessProfileProbeResult:
     """只有全部强能力证明成立才返回可执行Owner；失败不创建Host降级路径。"""
 
-    try:
-        verified = _verified_product_process_profile(
-            profile,
-            supervisor,
-            secrets,
-            probe_runner=probe_runner,
-            inspect_runner=inspect_runner,
-        )
-    except KernelError as error:
-        reasons = {
-            "container_engine_unsupported": "container_engine_unsupported",
-            "sandbox_unavailable": "container_unavailable",
-            "sandbox_binding_invalid": "container_unavailable",
-            "container_image_unavailable": "container_image_unavailable",
-            "profile_limits_unenforceable": "profile_limits_unenforceable",
-            "process_owner_mismatch": "process_owner_unavailable",
-            "secret_target_invalid": "secret_target_invalid",
-            "secret_unavailable": "secret_unavailable",
-            "secret_version_changed": "secret_version_changed",
-            "secret_provider_invalid": "secret_unavailable",
-        }
+    attestation = probe_product_process_profile_attestation(
+        profile,
+        supervisor.capability,
+        secrets,
+        probe_runner=probe_runner,
+    )
+    if attestation.attested is None:
         return ProductProcessProfileProbeResult(
             profile=profile,
-            reason_code=reasons.get(error.code, "profile_probe_failed"),
+            reason_code=attestation.reason_code,
         )
+    attested = attestation.attested
+    path = Path(profile.container_engine)
+    builder = (
+        ContainerCommandBuilder(path, attested.engine)
+        if inspect_runner is None
+        else ContainerCommandBuilder(path, attested.engine, inspect_runner=inspect_runner)
+    )
+    verified = VerifiedProductProcessProfile(
+        profile=attested.profile,
+        engine=attested.engine,
+        image_attestation_sha256=attested.image_attestation_sha256,
+        capabilities=attested.capabilities,
+        sandbox=attested.sandbox,
+        sandbox_profile=attested.sandbox_profile,
+        environment=attested.environment,
+        secret_bindings=attested.secret_bindings,
+        executor_evidence_sha256=attested.executor_evidence_sha256,
+        runtime=ContainerProcessRuntime(builder, supervisor),
+    )
     return ProductProcessProfileProbeResult(
         profile=profile,
         reason_code="verified",

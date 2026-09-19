@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 8
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -14,10 +14,13 @@ modules:
 related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_contracts_and_codec.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_preflight.py
   - tests/product_config/test_wizard.py
@@ -30,20 +33,24 @@ supersedes: []
 
 ## 1. 配置域
 
-Harnessix Code当前只有一套产品配置主链：
+Harnessix Code当前有两个职责分离、在激活时原子绑定的产品配置合同：
 
 1. `ProductConfigV2`从严格JSON文件加载Provider、模型Profile、Secret引用和请求预算；
-2. `harnessix code`解析Workspace、配置路径、客户端状态根、Profile和Git可执行文件；
-3. `agent-server`接收显式参数并在Preflight通过后建立Agent Runtime和进程内Trusted Action Runtime。
+2. `ProductActionConfigV1`从独立严格JSON文件加载Workspace Patch功能门和固定Container Process Profile；省略时使用内建Patch配置；
+3. `harnessix code`解析Workspace、两个配置路径、客户端状态根、Profile、活动CAS前提和Git可执行文件；
+4. `agent-server`接收显式参数并在Preflight、启动恢复和双配置原子激活后建立Agent Runtime与进程内Trusted Action Runtime。
 
 ```mermaid
 flowchart LR
-    File[Product Config v2] --> Snapshot[配置Snapshot]
+    File[Product Config v2] --> Snapshot[Product Snapshot]
+    ActionFile[Product Action Config v1] --> ActionSnapshot[Action Snapshot]
     SecretEnv[Secret环境变量] --> SecretProvider[EnvironmentSecretProvider]
     Snapshot --> Selection[ProfileSelection]
     SecretProvider --> Diagnose[离线诊断]
     Selection --> Diagnose
-    Diagnose --> Server[agent-server]
+    Diagnose --> Preflight[共享Preflight与Doctor]
+    ActionSnapshot --> Preflight
+    Preflight --> Server[agent-server]
     CLI[workspace/state/profile参数] --> Server
     Server --> Runtime[Agent Runtime]
     Runtime --> Trusted[Trusted Action Runtime]
@@ -163,6 +170,38 @@ export MODEL_API_KEY='<由Secret系统注入>'
 Safe Fallback只在首选候选没有暴露文本、Tool Call或未来未知事件，失败属于可重试的`transport`、`rate_limit`
 或`provider_internal`，并且Fallback审计成功时发生。配置Fallback不等于任何错误都会自动切换。
 
+### 4.4 Product Action Config v1
+
+最小文件可显式关闭Patch且不提供Process：
+
+```json
+{
+  "config_sha256": "5a0a445b65380e1f6e532e218096ae3bbb149a15e9e86b5ed0cece707d4048ac",
+  "process_profiles": [],
+  "spec_version": "harnessix.product-action-config/v1",
+  "workspace_patch_enabled": false
+}
+```
+
+该摘要与示例正文精确绑定；修改任一字段后必须通过项目合同构造工具重新生成。`process_profiles`最多32项，按`profile_id`排序且唯一。
+每项固定以下安全边界：
+
+| 字段 | 约束与语义 |
+|---|---|
+| `profile_id/version/description` | 稳定产品身份与用户可理解说明 |
+| `container_engine` | 宿主绝对路径；只接受Docker或Podman身份 |
+| `image` | 必须为`name@sha256:<64 hex>`且本机Repo Digest可证明 |
+| `program/arguments` | 容器内绝对程序与固定argv；模型不可修改 |
+| `selector_policy` | `none`或有界测试选择器；拒绝Shell操作符、绝对路径和`..` |
+| `network_mode` | v1只能是`none` |
+| `cpu_limit/memory_bytes/process_limit` | 必须由强Container Profile可执行地约束 |
+| `timeout_seconds/max_output_bytes` | Profile级总时限和输出预算 |
+| `secret_refs` | 按名称/版本排序的引用；不包含值 |
+| `profile_sha256` | 以上全部字段的规范摘要 |
+
+外部Action文件与Product Config使用相同256 KiB、严格UTF-8、深度32、节点20,000、重复键和POSIX私有文件规则。显式文件失败不会
+降级为内建配置。当前没有Action配置向导或迁移命令；应基于提交的JSON Schema和合同构造函数生成，并先运行Doctor。
+
 ## 5. 严格读取与诊断
 
 Product Config限制为256 KiB、最大深度32、最大节点20,000，拒绝重复Key、非有限数、NUL、非UTF-8、
@@ -186,26 +225,32 @@ uv run harnessix config diagnose \
 | 参数 | 必填 | 语义 |
 |---|---|---|
 | `--config` | 是 | Product Config v2路径 |
+| `--action-config` | 否 | Product Action Config v1路径；省略时使用内建Patch配置 |
 | `--profile` | 否 | 覆盖`active_profile`选择，不修改源文件 |
 | `--workspace` | 是 | 已存在目录；不得包含配置和状态目录 |
 | `--state-directory` | 是 | 私有状态根；不得包含Workspace或被其包含 |
 | `--expected-active-sha256` | 否 | 活动配置CAS的预期旧配置摘要 |
 | `--expected-active-profile` | 否 | 活动配置CAS的预期旧Profile |
+| `--expected-active-action-sha256` | 否 | 活动Action配置CAS的预期旧摘要 |
 | `--git-executable` | 否 | 显式Git普通文件路径；不从任意配置字符串执行Shell |
 
-若同时指定两个`expected-active-*`字段，启动只在活动指针与预期一致时切换；CAS冲突会关闭已打开组件且不开放stdio。
+Product配置变化时核对Product摘要/Profile，Action配置变化时核对Action摘要；两个指针在同一SQLite事务中切换。任一CAS冲突都
+回滚双方、关闭已打开组件且不开放stdio。相同组合重复启动幂等，不要求把现值作为期望值再次提交。
 
 ### 6.1 `harnessix code`参数与优先级
 
 ```text
-harnessix code [WORKSPACE] [--config PATH] [--profile ID]
+harnessix code [WORKSPACE] [--config PATH] [--action-config PATH] [--profile ID]
     [--state-directory PATH] [--resume THREAD_ID] [--git-executable PATH]
+    [--expected-active-sha256 SHA] [--expected-active-profile ID]
+    [--expected-active-action-sha256 SHA]
 ```
 
 | 配置项 | 显式CLI | 环境变量 | 默认值/结果 |
 |---|---|---|---|
 | Workspace | 位置参数 | 无 | 当前目录；必须严格解析为已存在目录 |
 | Product Config | `--config` | `HARNESSIX_PRODUCT_CONFIG` | 用户级`.harnessix/config.json` |
+| Product Action Config | `--action-config` | `HARNESSIX_PRODUCT_ACTION_CONFIG` | 省略后使用版本化内建配置 |
 | 客户端状态根 | `--state-directory` | `HARNESSIX_PRODUCT_STATE_DIRECTORY` | 用户级`.harnessix/workspaces/<workspace-fingerprint>` |
 | Profile | `--profile` | 无 | 省略后由Product Config的`active_profile`选择 |
 | 恢复Thread | `--resume UUID` | 无 | 省略后使用Client State中已保存且仍属于当前Workspace的选择 |
@@ -216,7 +261,9 @@ harnessix code [WORKSPACE] [--config PATH] [--profile ID]
 
 ```text
 python -m harnessix agent-server --config CONFIG --workspace WORKSPACE
-    --state-directory STATE_ROOT/runtime [--profile ID] [--git-executable PATH]
+    --state-directory STATE_ROOT/runtime [--action-config ACTIONS] [--profile ID]
+    [--expected-active-sha256 SHA] [--expected-active-profile ID]
+    [--expected-active-action-sha256 SHA] [--git-executable PATH]
 ```
 
 CLI不接受任意Server argv，不通过Shell拼接，也不会把环境变量或Secret复制到命令行。Workspace不可用、TUI依赖缺失和
@@ -237,17 +284,17 @@ CLI不接受任意Server argv，不通过Shell拼接，也不会把环境变量�
 ```mermaid
 sequenceDiagram
     participant O as Operator
-    participant F as Config File
+    participant F as Product与Action配置文件
     participant D as Diagnose CLI
     participant S as agent-server
     participant A as Config Audit Store
     O->>F: code configure创建或CAS替换v2
-    O->>D: code doctor(config, profile, workspace)
-    D->>F: 安全读取并计算source/config摘要
+    O->>D: code doctor(product, actions, profile, workspace)
+    D->>F: 安全读取并计算两个配置摘要
     D-->>O: 脱敏检查与ready
     O->>S: 启动并携带expected active摘要
-    S->>A: 保存Snapshot并装配Provider
-    S->>A: CAS activate
+    S->>A: 保存两个Snapshot并结算旧Action Route
+    S->>A: 原子CAS activate Product + Action
     A-->>S: 成功或冲突
     S-->>O: 成功开放stdio或失败关闭
 ```
@@ -262,6 +309,8 @@ sequenceDiagram
 | 进程设置 | [`settings.py`](../../src/harnessix/settings.py) | `Settings.from_environment`、`__post_init__` | [`test_api.py`](../../tests/integration/test_api.py)、[`test_worker.py`](../../tests/integration/test_worker.py) |
 | JSON合同 | [`contracts.py`](../../src/harnessix/product_config/contracts.py) | `ProductConfigV2`、`ModelProfile`、`SecretReference` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
 | 安全读取 | [`codec.py`](../../src/harnessix/product_config/codec.py) | `read_product_config_bytes`、`decode_product_config_bytes` | [`test_contracts_and_codec.py`](../../tests/product_config/test_contracts_and_codec.py) |
+| Action读取与合同 | [`action_codec.py`](../../src/harnessix/product_config/action_codec.py)、[`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) | `load_product_action_config`、`ProductActionConfigSnapshot` | [`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
+| 双配置Store与恢复 | [`action_store.py`](../../src/harnessix/product_config/action_store.py)、[`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py) | `SQLiteProductRuntimeConfigStore`、`ProductActionRuntimeOwner` | [`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py)、[`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py) |
 | Secret与诊断 | [`runtime.py`](../../src/harnessix/product_config/runtime.py) | `environment_secret_provider`、`diagnose_configuration` | [`test_provider_credentials.py`](../../tests/product_config/test_provider_credentials.py) |
 | 启动装配 | [`server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 | TUI产品组合根 | [`product_ui/cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_default_config`、`_default_state_directory`、`_server_command` | [`tests/product_ui/test_cli.py`](../../tests/product_ui/test_cli.py) |
@@ -271,9 +320,9 @@ sequenceDiagram
 - Product Config只有JSON v2，没有分层Include、热加载或集中配置服务；
 - Secret Source当前只有进程环境，尚无系统Keychain、Vault/KMS或云Secret Manager Provider；
 - `base_url`与Credential、地域、组织和Egress策略未形成统一绑定合同；
-- Action Plane `Settings`缺少统一脱敏诊断命令和部分范围校验；
 - CLI参数、环境变量和配置没有统一优先级框架；
-- `harnessix code`只为配置路径和客户端状态根定义环境覆盖，Profile、Resume和Git仍要求显式参数；
+- `harnessix code`只为Product/Action配置路径和客户端状态根定义环境覆盖，Profile、Resume、CAS前提和Git仍要求显式参数；
+- Action配置没有向导、迁移命令、热加载、集中式签名分发或保留策略；
 - 当前配置没有任务级费用上限和账户账单对账字段；
 - 配置审计是本地SQLite，不是远程不可抵赖审计服务。
 
@@ -312,36 +361,44 @@ Junction、硬链接锁或不安全身份失败关闭。
 export DASHSCOPE_API_KEY='由外部Secret机制注入'
 uv run harnessix code doctor /absolute/workspace \
   --config "$HOME/.harnessix/config.json" \
+  --action-config "$HOME/.harnessix/actions.json" \
   --state-directory "$HOME/.harnessix/workspaces/<fingerprint>" \
   --json
 ```
 
-`doctor`离线检查配置文件、v2合同、Profile、Provider SDK、Secret引用、平台只读端口、Workspace、State、TUI及可选Git。
+`doctor`离线检查两个配置文件、v2/v1合同、Profile、Provider SDK、Secret引用、平台只读端口、Action能力、Workspace、State、TUI及可选Git。
 `--no-tui`把TUI改为Advisory，适合仅启动`agent-server`的环境。所有Required通过时退出0，否则打印完整报告并退出2。报告中
 没有绝对路径、环境值、API Key或原始异常；`workspace_fingerprint`是不可逆摘要。命令不创建配置、State、数据库、Session、
 Thread，不启动Transport，也不进行Provider网络请求。
 
 直接运行`harnessix code WORKSPACE`时，同一Preflight在加载Textual、打开Client State和启动子进程前执行。子进程中的
-`run_product_stdio`再次执行Preflight，并继续执行配置重读、Workspace/State隔离、Provider构造和激活CAS；不要把Doctor旧报告
+`run_product_stdio`再次执行Preflight，并继续执行两个配置重读及摘要核对、Workspace/State隔离、Provider/Action Owner构造、旧Route恢复和原子激活CAS；不要把Doctor旧报告
 作为跳过Server校验的授权材料。Windows原生当前只允许四项文件/搜索读取；显式Git返回
 `product_git_platform_unsupported`。
 
 ## 12.1 默认Patch配置边界
 
-当前e3实现不新增用户可编辑的Action配置文件：默认POSIX产品固定尝试构造`apply_patch_batch`，并用运行时能力报告决定`verified`或`omitted`；Windows固定省略。模型配置v2、Provider选择和Secret引用均不获得写权限字段。
+省略外部Action文件时使用内建`workspace_patch_enabled=true/process_profiles=[]`。POSIX安全端口成立时广告
+`apply_patch_batch`；Windows或缺少no-follow原语时生成`omitted/platform_not_supported`，产品仍可只读启动。显式Action文件可将
+`workspace_patch_enabled`设为`false`，但切换已激活配置必须提交上一Action摘要。模型配置v2、Provider选择和Secret引用不会隐式
+获得写权限字段。
 
-`workspace_patch_enabled`属于独立`ProductActionConfigV1`合同，但e5完成文件加载、迁移、Doctor报告与Owner之前，不应手工创建未知Action配置并假设产品会读取。能力报告最多有效600秒，Catalog安装时再次检查过期、Schema、Binding与Executor Evidence。
+Doctor中的单项省略是Advisory，不等于Runtime一定会使用旧报告。正式启动重新探测能力并构造同源Catalog；报告最多有效600秒，
+Catalog安装前再次检查过期、Schema、Binding与Executor Evidence。
 
 ## 12.2 固定Process Profile配置边界
 
-e4已经允许产品组合宿主向`run_product_stdio(action_config=...)`传入经过严格校验的`ProductActionConfigV1`，用于嵌入式部署和
-端到端验收。该Python组合参数不是CLI配置文件，也不会由`harnessix code`自动发现。普通用户在e5交付安全文件读取、权限检查、
-活动版本CAS、Doctor诊断和升级合同前，不应依赖手工Action配置。
+`harnessix code --action-config`与`HARNESSIX_PRODUCT_ACTION_CONFIG`均可启用固定Profile；显式CLI优先。内部
+`run_product_stdio(action_config=...)`只保留给嵌入式宿主与测试，不能与`action_config_path`同时传入。
 
 每个Profile必须固定绝对Container Engine路径、不可变镜像Digest、容器内Program、固定argv、Selector策略、无网络模式、CPU/
 内存/PID/输出/超时预算及版本化Secret引用。启动探测失败时只省略对应`run_profile.<id>`；不会把同一命令降级到宿主Shell。
 
-## 13. 0.9.1d源码与测试映射
+切换或删除旧Profile前应先确保其Route已经终态。启动恢复用上一活动Action快照重建旧Binding；旧Process仍要求原Engine、镜像、
+Owner、Sandbox和Secret版本可证明。若旧`pending_approval/ready`的Binding不能由候选精确承接，或旧UNKNOWN无法完成对账，启动
+失败并保持旧活动指针，不自动迁移批准或重放命令。
+
+## 13. 0.9.1d/e5源码与测试映射
 
 | 职责 | 源码 | 测试 |
 |---|---|---|
@@ -352,4 +409,5 @@ e4已经允许产品组合宿主向`run_product_stdio(action_config=...)`传入�
 | Server重校验 | [`server.py`](../../src/harnessix/product_config/server.py) | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) |
 
 本文绑定最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`；
-[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成三平台及完整矩阵验收，0.9.1d正式关闭。
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成三平台及完整矩阵验收，0.9.1d正式关闭。e5配置、
+Doctor、原子CAS和启动恢复是当前实现候选，本地全量与变化文档渲染已通过，仍等待七任务CI，不在本文提前宣称关闭。

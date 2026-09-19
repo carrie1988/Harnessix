@@ -1,0 +1,94 @@
+{
+  "additionalProperties": false,
+  "description": "一次冷启动Action恢复的脱敏汇总；逐Plan事实保留在Action Audit中。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-action-startup-recovery/v1",
+      "default": "harnessix.product-action-startup-recovery/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "candidate_config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Candidate Config Sha256",
+      "type": "string"
+    },
+    "recovery_config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Recovery Config Sha256",
+      "type": "string"
+    },
+    "scanned_routes": {
+      "minimum": 0,
+      "title": "Scanned Routes",
+      "type": "integer"
+    },
+    "interrupted_routes": {
+      "minimum": 0,
+      "title": "Interrupted Routes",
+      "type": "integer"
+    },
+    "reconciled_routes": {
+      "minimum": 0,
+      "title": "Reconciled Routes",
+      "type": "integer"
+    },
+    "succeeded_routes": {
+      "minimum": 0,
+      "title": "Succeeded Routes",
+      "type": "integer"
+    },
+    "failed_routes": {
+      "minimum": 0,
+      "title": "Failed Routes",
+      "type": "integer"
+    },
+    "manual_intervention_routes": {
+      "minimum": 0,
+      "title": "Manual Intervention Routes",
+      "type": "integer"
+    },
+    "unresolved_routes": {
+      "minimum": 0,
+      "title": "Unresolved Routes",
+      "type": "integer"
+    },
+    "pending_approval_routes": {
+      "minimum": 0,
+      "title": "Pending Approval Routes",
+      "type": "integer"
+    },
+    "ready_routes": {
+      "minimum": 0,
+      "title": "Ready Routes",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_config_sha256",
+    "recovery_config_sha256",
+    "scanned_routes",
+    "interrupted_routes",
+    "reconciled_routes",
+    "succeeded_routes",
+    "failed_routes",
+    "manual_intervention_routes",
+    "unresolved_routes",
+    "pending_approval_routes",
+    "ready_routes",
+    "created_at",
+    "report_sha256"
+  ],
+  "title": "ProductActionStartupRecoveryReport",
+  "type": "object"
+}

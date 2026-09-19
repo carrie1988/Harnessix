@@ -34,6 +34,7 @@ from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
     ActionRoutePlan,
     CanonicalActionResource,
+    TrustedToolBinding,
     build_trusted_tool_binding,
 )
 from harnessix.trusted_actions.router import (
@@ -92,15 +93,11 @@ def workspace_patch_executor_evidence() -> str:
     )
 
 
-def build_workspace_patch_definition(
-    transactions: SQLiteWorkspaceTransactionStore,
-    leases: WorkspaceLeaseStore,
-    workspace_root: WorkspaceRootResolver,
-) -> TrustedActionDefinition:
-    """从同一Descriptor构造Router Binding、资源解析器和Delivery Executor。"""
+def workspace_patch_binding() -> TrustedToolBinding:
+    """从公开Descriptor构造稳定Binding，供运行时和无状态Doctor共同复用。"""
 
     descriptor = workspace_patch_descriptor()
-    binding = build_trusted_tool_binding(
+    return build_trusted_tool_binding(
         source="builtin",
         source_id=PRODUCT_ACTION_SOURCE,
         tool=descriptor.name,
@@ -112,6 +109,16 @@ def build_workspace_patch_definition(
         recovery_mode="durable_ledger",
         executor_id=WORKSPACE_PATCH_EXECUTOR,
     )
+
+
+def build_workspace_patch_definition(
+    transactions: SQLiteWorkspaceTransactionStore,
+    leases: WorkspaceLeaseStore,
+    workspace_root: WorkspaceRootResolver,
+) -> TrustedActionDefinition:
+    """从同一Descriptor构造Router Binding、资源解析器和Delivery Executor。"""
+
+    binding = workspace_patch_binding()
 
     def resolve(arguments: BaseModel, context: ActionPlanningContext) -> ResolvedAction:
         checked = _arguments(arguments)

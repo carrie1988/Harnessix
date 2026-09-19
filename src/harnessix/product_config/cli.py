@@ -40,11 +40,13 @@ def _server_parser() -> argparse.ArgumentParser:
         prog="harnessix agent-server", description="运行已配置的stdio Agent Server"
     )
     parser.add_argument("--config", required=True)
+    parser.add_argument("--action-config")
     parser.add_argument("--profile")
     parser.add_argument("--workspace", required=True)
     parser.add_argument("--state-directory", required=True)
     parser.add_argument("--expected-active-sha256")
     parser.add_argument("--expected-active-profile")
+    parser.add_argument("--expected-active-action-sha256")
     parser.add_argument("--git-executable")
     return parser
 
@@ -100,6 +102,7 @@ def agent_server_main(argv: Sequence[str] | None = None) -> None:
         asyncio.run(
             run_product_stdio(
                 config_path=args.config,
+                action_config_path=args.action_config,
                 profile_id=args.profile,
                 workspace=args.workspace,
                 state_directory=args.state_directory,
@@ -107,6 +110,7 @@ def agent_server_main(argv: Sequence[str] | None = None) -> None:
                 output_stream=sys.stdout.buffer,
                 expected_active_sha256=args.expected_active_sha256,
                 expected_active_profile=args.expected_active_profile,
+                expected_active_action_sha256=args.expected_active_action_sha256,
                 git_executable=args.git_executable,
             )
         )

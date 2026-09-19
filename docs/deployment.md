@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 8
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -22,6 +22,8 @@ related_adrs:
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/product_config/test_preflight.py
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_stdio_product.py
@@ -59,7 +61,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
 | 默认Workspace读取 | macOS/Linux/Windows已实现 | 启动前按平台能力证明，失败时不开放协议 |
 | 默认Workspace Patch | POSIX已实现 | 经Trusted Action、Review Artifact、审批和Delivery事务执行 |
-| 固定Container Process | 已验收的条件产品能力 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告；CLI加载由e5补齐 |
+| 固定Container Process | e4能力已验收；e5配置入口为实现候选 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告；CLI加载、Doctor和启动恢复仍待e5关闭CI |
 | Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
 | 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
@@ -72,7 +74,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 flowchart LR
     User[用户] --> UI[harnessix code 或 agent]
     UI <-->|Agent Protocol v1<br/>stdio JSONL| Server[harnessix agent-server]
-    Server --> Config[Product Config]
+    Server --> Config[Product Config + Action Config]
     Server --> State[(私有状态目录)]
     Server --> Workspace[(用户Workspace)]
     Server --> Provider[外部模型Provider]
@@ -85,8 +87,8 @@ flowchart LR
 ### 3.1 进程与生命周期
 
 - `harnessix code`持有TUI、客户端状态和子进程Transport；
-- `harnessix agent-server`持有Product Config Store、Session Store、Artifact Store、Coding Tool、Agent Runtime和
-  Trusted Action组合；
+- `harnessix agent-server`持有双配置Store、Session Store、Artifact Store、Coding Tool、Agent Runtime和
+  `ProductActionRuntimeOwner`；
 - stdio EOF、协议错误或父进程退出触发Server关闭，组件按组合根逆序释放；
 - Container进程由Process Owner负责启动、输出、超时和进程树清理，它是执行后端，不是第二个产品服务；
 - Provider是外部网络边界，Workspace和状态目录是两个必须互不包含的本地信任域。
@@ -133,6 +135,7 @@ uv run harnessix code configure \
 ```bash
 uv run harnessix code doctor ./workspace \
   --config ./private/product-config.json \
+  --action-config ./private/product-actions.json \
   --state-directory ./private/state
 ```
 
@@ -145,6 +148,7 @@ Doctor成功不是网络Provider调用证明；真实Provider验证由受控Smok
 export MODEL_API_KEY='由安全环境注入'
 uv run harnessix code ./workspace \
   --config ./private/product-config.json \
+  --action-config ./private/product-actions.json \
   --state-directory ./private/state
 ```
 
@@ -153,6 +157,7 @@ uv run harnessix code ./workspace \
 ```bash
 uv run harnessix agent-server \
   --config ./private/product-config.json \
+  --action-config ./private/product-actions.json \
   --workspace ./workspace \
   --state-directory ./private/state
 ```
@@ -166,7 +171,7 @@ uv run harnessix agent-server \
 
 | 状态 | Owner | 事实用途 |
 |---|---|---|
-| `product-config.db` | Product Config Store | 配置快照、诊断和活动配置CAS |
+| `product-config.db` | Product Runtime Config Store | Product/Action配置快照、两条审计链、恢复报告和双活动指针原子CAS |
 | `sessions.db` | Session/Protocol/Artifact Store | Thread、Turn、Item、请求幂等、Artifact元数据与内容 |
 | `execution-plans.db` | Execution Plan Store | 不可变计划与批准检查点 |
 | `action-audit.db` | Trusted Action Audit Store | Route投影和摘要化Hash链事件 |
@@ -180,17 +185,18 @@ uv run harnessix agent-server \
 ## 7. 启动顺序与失败关闭
 
 ```text
-resolve config, workspace and state paths
+resolve product/action config, workspace and state paths
 reject overlap, links, invalid ownership or permissions
 run shared offline preflight
-strictly load Product Config and select profile
-resolve Secret references without persisting material
+strictly reload Product/Action Config and compare preflight digests
+select profile and resolve Secret references without persisting material
 build and enter Provider bundle
 initialize Session, Protocol Request and Artifact stores
-probe platform Coding Tools and Trusted Action capabilities
-install only definitions backed by verified executors
+load previous active Action snapshot
+build exact recovery router and reconcile unknown routes once; never execute
+build candidate catalog from currently verified executors
 enter Agent Runtime
-CAS activate the exact diagnosed config snapshot
+atomically CAS activate Product + Action snapshots
 open stdio protocol
 on any failure: close entered components in reverse order; never open partial protocol
 ```
@@ -208,6 +214,7 @@ on any failure: close entered components in reverse order; never open partial pr
 6. Agent Protocol是本地边界，不等于公网认证协议；
 7. 不确定外部效果进入`unknown`并只对账，不自动重放；
 8. 备份或恢复不得复制活动锁后让两个Runtime同时操作同一Workspace。
+9. 旧Action Route必须用上一活动配置的精确Binding恢复；候选配置不得继承不相等的旧批准。
 
 ## 9. 升级、备份与回滚
 
@@ -243,15 +250,16 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 |---|---|---|---|
 | 顶层产品命令 | [`cli.py`](../src/harnessix/cli.py) | `_parser`、`main` | [`test_cli.py`](../tests/smoke/test_cli.py) |
 | TUI与子进程启动 | [`product_ui/cli.py`](../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | [`product_ui测试`](../tests/product_ui/) |
-| 产品组合根 | [`product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
+| 产品组合根 | [`product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio`、`_serve_product_stdio` | [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
+| Action配置与双CAS | [`product_config/action_codec.py`](../src/harnessix/product_config/action_codec.py)、[`product_config/action_store.py`](../src/harnessix/product_config/action_store.py) | `load_product_action_config`、`SQLiteProductRuntimeConfigStore` | [`test_action_config_runtime.py`](../tests/product_config/test_action_config_runtime.py) |
 | Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Agent SDK Transport | [`sdk/agent_client.py`](../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport` | [`app_server测试`](../tests/app_server/) |
-| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `open_default_product_action_runtime` | [`product_config测试`](../tests/product_config/)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
+| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `ProductActionRuntimeOwner`、`open_default_product_action_runtime` | [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
 | 单一产品面门禁 | 生产源码树 | 旧内核Import集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
 
 ## 13. 当前限制与后续工作
 
-- 0.9.1e4固定Container Process产品链已通过七任务CI；外部Action Config、Doctor和统一启动恢复Owner尚未完成；
+- 0.9.1e4固定Container Process产品链已通过七任务CI；外部Action Config、Doctor、双配置CAS和统一启动恢复Owner已有e5候选，尚待关闭CI；
 - 0.9.1f旧Process、Git Push和Eval调用方尚未全部迁移，兼容内核仍存在源码与测试；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；

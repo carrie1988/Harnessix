@@ -99,6 +99,8 @@ def _check_workspace(
     workspace: Path,
     config_path: Path,
     config_loaded: bool,
+    action_config_path: Path | None,
+    action_config_loaded: bool,
     platform: PreflightPlatform,
     probe: WorkspaceProbe,
     recorder: PreflightRecorder,
@@ -109,6 +111,14 @@ def _check_workspace(
         root = probe(workspace, platform)
         if config_loaded and config_path.resolve(strict=True).is_relative_to(root):
             raise KernelError("product_config_overlap", "产品配置文件不能位于Workspace内")
+        if (
+            action_config_loaded
+            and action_config_path is not None
+            and action_config_path.resolve(strict=True).is_relative_to(root)
+        ):
+            raise KernelError(
+                "product_action_config_overlap", "Product Action配置文件不能位于Workspace内"
+            )
         recorder.record(
             "product_workspace_binding",
             "workspace",
@@ -272,6 +282,8 @@ def inspect_environment(
     workspace: Path,
     config_path: Path,
     config_loaded: bool,
+    action_config_path: Path | None,
+    action_config_loaded: bool,
     state_directory: Path,
     git_executable: Path | None,
     require_tui: bool,
@@ -285,7 +297,14 @@ def inspect_environment(
 
     _check_platform(platform, platform_name, recorder)
     root = _check_workspace(
-        workspace, config_path, config_loaded, platform, workspace_probe, recorder
+        workspace,
+        config_path,
+        config_loaded,
+        action_config_path,
+        action_config_loaded,
+        platform,
+        workspace_probe,
+        recorder,
     )
     _check_state(state_directory, root, recorder)
     _check_tui(require_tui, dependency_finder, recorder)

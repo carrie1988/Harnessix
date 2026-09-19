@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 48
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 49
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -50,6 +50,8 @@ related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
@@ -86,11 +88,12 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前已验收基线为提交`4b28fa4010bf1f9590f86a3c2e639916043894c2`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收；0.9.1e4的默认固定Container Process由实现提交`f5a3936`与状态等待稳定化提交`4b28fa4`交付，并由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成七任务全矩阵验收。能力状态按“默认产品、显式装配、规划中”区分：
+本文当前已验收基线为提交`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`：0.9.1e4固定Container Process已经由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成七任务全矩阵验收，0.9.1f1已经由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)关闭旧Action公共入口并收敛单一产品边界。e5的外部Action Config、Doctor能力报告、双配置原子CAS与启动只对账恢复是当前实现候选，尚未取得关闭CI证据。能力状态按“当前默认产品、实现候选、迁移兼容、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
 | **当前默认产品** | `harnessix agent-server`启动时实际装配并可由薄CLI调用 |
+| **实现候选** | 代码、合同和专项测试已经完成，仍等待全量及发布矩阵验证，不得写成已关闭能力 |
 | **已实现/显式装配** | 源码与测试已经存在，但默认产品入口尚未自动装配，需要宿主显式组合 |
 | **规划中** | 路线图已有边界但当前源码未提供完整产品能力 |
 
@@ -116,7 +119,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 - 版本化的无头App Server协议与薄客户端；
 - 事件溯源Session、协议请求幂等和崩溃恢复；
 - Workspace约束下的只读Coding Tool与默认Artifact分页；
-- 默认产品中的受控Workspace Patch/Delivery，以及由显式固定Profile启用的强Sandbox Process；MCP、Skill和Hook仍为显式装配库；
+- 默认产品中的受控Workspace Patch/Delivery，以及由独立Action Config显式启用的强Sandbox Process；MCP、Skill和Hook仍为显式装配库；
 - 内置Trusted Action Runtime中的Policy、Approval、Execution Plan、Audit、`UNKNOWN`和Reconcile；
 - SQLite本地持久化、Workspace/Process专用效果账本与可恢复产品状态；
 - 结构化日志、Metric、Trace和可重复Eval基础设施。
@@ -125,7 +128,7 @@ Harnessix Code据此把“Agent决策”“可信执行”“持久事实”“�
 
 - 当前薄CLI不是最终完整TUI；
 - App Server当前只有本地stdio传输，不是公网多租户服务；
-- 默认`agent-server`装配只读`CodingToolRuntime`、Session绑定Artifact及统一Trusted Action组合；Patch只在POSIX no-follow语义成立时进入目录，Process只有外部宿主传入严格Action Config且Engine、镜像、Owner、Sandbox与Secret全部验证后才进入目录；
+- 默认`agent-server`装配只读`CodingToolRuntime`、Session绑定Artifact及统一Trusted Action组合；Patch只在POSIX no-follow语义成立时进入目录，Process只有显式外部Action Config且Engine、镜像、Owner、Sandbox与Secret全部验证后才进入目录；
 - 默认产品在Windows使用原生Handle四项只读端口并省略Workspace Patch；固定Profile Process具备Windows Owner代码路径但尚无Windows真实Container发布矩阵，Git写入与发行物证据仍未完成；
 - 旧Action HTTP/Worker、Demo Executor和PostgreSQL Queue仅为迁移兼容代码，不是1.0产品能力；
 - 当前版本未宣称满足大规模C端商用所需的固定Eval、Soak、安全供应链和三平台发行门槛。
@@ -465,7 +468,7 @@ flowchart TD
     Child --> Config
 ```
 
-启动顺序不是任意的。`run_product_stdio`先解析并诊断Product Config v2，再校验Workspace、配置文件和状态目录不重叠，随后依次进入Provider、Session、共享Artifact、Tool和Agent Runtime生命周期，并构造Scoped Reader。全部成功后才以CAS发布活动配置，最后开放stdio。任何中间失败都不会留下一个已对外服务但内部未就绪的Server。
+启动顺序不是任意的。`run_product_stdio`先对Product Config v2和Product Action Config v1执行同一Preflight，再重新安全加载并核对预检摘要，随后校验Workspace、两个配置文件和状态目录不重叠。进入托管生命周期后依次构造Provider、Session、共享Artifact、Coding Tool、Action Store/Process Owner和Agent Runtime；上一活动Action配置先重建恢复Router并完成全局只对账，候选配置再生成模型目录。全部成功后，Product与Action活动指针在同一SQLite事务中CAS发布，最后才开放stdio。任何中间失败都不会留下单边活动指针、已创建Thread或一个内部未就绪的Server。
 
 ### 6.1.1 0.9.1e1能力目录与规划地基
 
@@ -531,7 +534,7 @@ flowchart LR
 
 批准后，[`WorkspacePatchActionExecutor`](../src/harnessix/delivery/trusted_action.py)获取Workspace Lease，并通过[`publish_next`](../src/harnessix/delivery/filesystem.py)一次最多提交一个成员。取消只发生在有界成员之间；进入效果边界后的恢复只观察，不续写。严格after前缀与before后缀映射为`manual_intervention`，全after才可证明成功，第三状态保持保守失败。
 
-默认状态布局新增`execution-plans.db`、`action-audit.db`、`workspace-leases.db`和`workspace-transactions/`，Session与Review Artifact继续共用`sessions.db`。构造失败由同步Owner逆序关闭；e5之前没有启动前全局扫描在途Route。Windows及缺少POSIX no-follow能力的平台不安装Patch Binding。
+默认状态布局新增`execution-plans.db`、`action-audit.db`、`workspace-leases.db`和`workspace-transactions/`，Session与Review Artifact继续共用`sessions.db`。构造失败由同步Owner逆序关闭；e5候选实现已在对外开放Agent Protocol前全局扫描Product Action在途Route，将中断执行先收敛为`unknown`再只调用Reconcile。Windows及缺少POSIX no-follow能力的平台不安装Patch Binding。
 
 
 ### 6.1.4 0.9.1e4固定Container Process纵向链
@@ -549,6 +552,47 @@ Process批准后，[`ProductProcessActionExecutor`](../src/harnessix/product_con
 Reconcile读取Lease，不再次运行命令。stdout/stderr按Lease摘要重建为`action_output` JSONL，Router仅保存Hash，Session只保存有界摘要
 和作用域Artifact引用。完整设计、失败矩阵和测试映射见[0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)。
 
+### 6.1.5 0.9.1e5配置、诊断与启动恢复候选
+
+```mermaid
+sequenceDiagram
+    participant CLI as code / agent-server
+    participant PF as Preflight / Doctor
+    participant CS as Runtime Config Store
+    participant RO as Recovery Router
+    participant CO as Candidate Owner
+    participant A as Agent Runtime
+    participant IO as stdio
+
+    CLI->>PF: Product Config + Action Config + Workspace
+    PF-->>CLI: 摘要绑定的脱敏能力报告
+    CLI->>CLI: 重新安全加载并核对预检摘要
+    CLI->>CS: 保存不可变配置快照
+    CS-->>CLI: 上一活动Action Config摘要
+    CLI->>RO: 按上一配置重建精确Binding
+    RO->>RO: running/reconciling→unknown→reconcile一次
+    RO-->>CLI: 恢复报告或失败关闭
+    CLI->>CO: 按候选配置构造Catalog/Gateway
+    CLI->>A: 装配单一Agent Runtime
+    CLI->>CS: Product + Action活动指针原子CAS
+    CLI->>IO: 最后开放协议
+```
+
+[`action_codec.py`](../src/harnessix/product_config/action_codec.py)复用Product Config的有界严格JSON和安全文件读取原语；
+[`action_diagnostics.py`](../src/harnessix/product_config/action_diagnostics.py)复用正式Patch/Process Binding构造，只读证明平台Owner、
+容器Engine、固定镜像、Sandbox与Secret版本，不创建State Root或Process Lease。[`action_store.py`](../src/harnessix/product_config/action_store.py)
+把Action快照、连续Hash事件、恢复报告和活动指针放入`product-config.db`，`activate_runtime`在一个`BEGIN IMMEDIATE`事务中校验
+Product/Action两个CAS前提并切换两个指针。
+
+[`ProductActionRuntimeOwner`](../src/harnessix/product_config/action_runtime.py)先用上一活动Action快照构造恢复Router。所有产品来源的
+`running/reconciling` Route先持久转入`unknown`，随后每个`unknown`只调用一次`reconcile`；缺少旧精确Binding或仍未知时启动
+失败，绝不调用`execute`。上一配置与候选配置不同则创建第二个Router；旧`pending_approval/ready`只有在候选提供逐字段相等的
+Binding时才允许继续。上一Process Profile所引用的Secret版本应保留到旧Route结算完成，否则能力证明失败并阻止启动。
+
+该切片没有恢复独立Action HTTP/Worker，也不新增网络控制面。`harnessix code`、内部`agent-server`与Python SDK仍统一经Agent
+Protocol进入同一Thread/Turn和Trusted Action Runtime。实现候选的专项测试已覆盖严格文件读取、双CAS回滚、Hash链损坏、Doctor
+只读/省略、预检后配置漂移、启动恢复不重放、缺失旧Binding、CLI透传和Schema；在全量及七任务CI通过前仍不标记e5关闭。
+
 
 ### 6.2 旧Action兼容内核迁移边界
 
@@ -561,7 +605,7 @@ Reconcile读取Lease，不再次运行命令。stdout/stderr按Lease摘要重建
 | 组件 | 状态 | 责任 | 关键源码/符号 | 主要验证 |
 |---|---|---|---|---|
 | 顶层命令 | 当前默认产品 | 命令解析与入口分派 | [cli.py](../src/harnessix/cli.py) `main` | [CLI许可测试](../tests/unit/test_cli_license.py)、[产品CLI测试](../tests/product_config/test_server_and_cli.py) |
-| Product Config | 当前默认产品/e1目录地基 | Secret-free Configure、Preflight/Doctor、模型Profile与Fallback、Action配置/能力报告、同源目录和活动配置CAS；详见[模块设计](modules/product-config.md) | [preflight.py](../src/harnessix/product_config/preflight.py)、[action_contracts.py](../src/harnessix/product_config/action_contracts.py)、[action_catalog.py](../src/harnessix/product_config/action_catalog.py)、[server.py](../src/harnessix/product_config/server.py) | [product_config测试](../tests/product_config/)、[产品CLI测试](../tests/product_ui/test_cli.py) |
+| Product Config | 当前默认产品/e5实现候选 | Secret-free Configure、双配置Preflight/Doctor、模型Profile与Fallback、Action快照/能力报告、同源目录、启动恢复报告和双活动指针原子CAS；详见[模块设计](modules/product-config.md) | [preflight.py](../src/harnessix/product_config/preflight.py)、[action_codec.py](../src/harnessix/product_config/action_codec.py)、[action_store.py](../src/harnessix/product_config/action_store.py)、[action_runtime.py](../src/harnessix/product_config/action_runtime.py)、[server.py](../src/harnessix/product_config/server.py) | [product_config测试](../tests/product_config/)、[产品CLI测试](../tests/product_ui/test_cli.py) |
 | Agent Protocol | 当前默认产品 | 版本化Schema、JSON-RPC编解码、投影与命令幂等；详见[模块设计](modules/protocol.md) | [contracts.py](../src/harnessix/protocol/contracts.py)、[requests.py](../src/harnessix/protocol/requests.py) | [protocol测试](../tests/protocol/) |
 | App Server | 当前默认产品 | 连接状态、方法路由、应用服务、Scoped Artifact分页和有界stdio；详见[模块设计](modules/app-server.md) | [server.py](../src/harnessix/app_server/server.py) `AgentProtocolServer`、[service.py](../src/harnessix/app_server/service.py) `AgentApplicationService` | [app_server测试](../tests/app_server/) |
 | Python SDK | 当前默认客户端 | Agent进程内/子进程Transport、严格响应、协商方法和消息/Replay上限；旧Action HTTP Client不再公共导出 | [agent_client.py](../src/harnessix/sdk/agent_client.py) | [app_server测试](../tests/app_server/)、[收敛治理测试](../tests/governance/test_product_runtime_convergence.py) |
@@ -1442,7 +1486,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 默认产品已接入固定Container Process，但外部Action Config安全加载、Doctor报告和启动全局Route恢复未完成 | 代码可形成修改—执行测试链，CLI尚不能配置Profile且重启全局结算未闭环 | 0.9.1e5 |
+| 外部Action Config安全加载、Doctor能力报告、Product/Action双指针原子CAS和启动全局Route恢复已形成实现候选 | 未取得全量及七任务CI证据前不作为生产已关闭能力 | 0.9.1e5 |
 | Windows原生只读链已验证且Patch被明确省略，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
@@ -1504,6 +1548,9 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 旧Worker终态提交与续租竞态在迁移期不退化 | `tests/integration/test_worker.py::test_execution_commit_wins_renewal_race`、`::test_stale_worker_cannot_advance_state` |
 | Agent与Router双账本崩溃后按权威Action事实修复，UNKNOWN只对账 | `tests/agent/test_trusted_action_runtime.py::test_router_first_crash_is_repaired_without_reexecution`、`tests/trusted_actions/test_agent_gateway.py::test_recovery_reconciles_running_action_without_blind_reexecution` |
 | 多文件交付崩溃后按镜像恢复 | `tests/delivery/test_filesystem.py::test_reconcile_effect_after_crash_and_resume_remaining_members`、`::test_real_process_exit_after_replace_reconciles_without_repeating_effect` |
+| Product与Action活动指针只能原子切换 | `tests/product_config/test_action_config_runtime.py::test_product_and_action_activation_is_atomic_and_hash_chained` |
+| 产品冷启动只对账不重放Action | `tests/product_config/test_action_runtime.py::test_startup_recovery_reconciles_without_reexecuting`、`::test_startup_recovery_unknown_fails_closed_without_retry` |
+| 预检后的Action配置替换不能复用旧报告 | `tests/product_config/test_server_and_cli.py::test_product_server_rejects_action_config_changed_after_preflight` |
 
 ### 23.3 DOC-1.1验收
 
@@ -1521,6 +1568,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 49 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router与stdio开放顺序；等待关闭CI |
 | 48 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成真实镜像及七任务全矩阵验收 |
 | 47 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步0.9.1e4统一Patch/Process产品组合、固定Profile能力探测、Process Owner生命周期、取消只对账和输出Artifact时序；等待全矩阵CI验收 |
 | 46 | 809ed2b1a10f5cb462989a12dddf44f83a9d01ab | 2026-09-17 | 补齐跨模块术语词典、31个包与10个根模块的需求背景/上下游/设计取舍、Agent/Action/Trusted Action领域模型关系图及关键数据身份/持久事实目录；扩展存储权威、事务和恢复边界 |

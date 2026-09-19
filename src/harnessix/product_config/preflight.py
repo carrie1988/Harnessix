@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harnessix.domain.models import utc_now
+from harnessix.product_config.preflight_actions import inspect_product_actions
 from harnessix.product_config.preflight_configuration import inspect_configuration
 from harnessix.product_config.preflight_environment import (
     WorkspaceProbe,
@@ -35,6 +36,7 @@ class ProductPreflightRequest:
 
     mode: PreflightMode
     config_path: Path
+    action_config_path: Path | None
     profile_id: str | None
     workspace: Path
     state_directory: Path
@@ -62,10 +64,19 @@ def run_product_preflight(
         environment=environment,
         recorder=recorder,
     )
+    actions = inspect_product_actions(
+        request.action_config_path,
+        configuration.snapshot,
+        platform=platform,
+        environment=environment,
+        recorder=recorder,
+    )
     inspect_environment(
         workspace=request.workspace,
         config_path=request.config_path,
         config_loaded=configuration.snapshot is not None,
+        action_config_path=request.action_config_path,
+        action_config_loaded=actions.snapshot is not None,
         state_directory=request.state_directory,
         git_executable=request.git_executable,
         require_tui=request.require_tui,
@@ -89,6 +100,10 @@ def run_product_preflight(
         config_sha256=diagnostics.config_sha256 if diagnostics is not None else None,
         selected_profile=diagnostics.selected_profile if diagnostics is not None else None,
         configuration=diagnostics,
+        action_config_sha256=(
+            actions.snapshot.config_sha256 if actions.snapshot is not None else None
+        ),
+        actions=actions.capabilities,
         checks=checks,
         ready=ready,
         generated_at=utc_now(),

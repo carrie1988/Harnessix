@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 11
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_catalog.py
+  - tests/product_config/test_action_runtime.py
   - tests/product_config/test_process_action.py
   - tests/integration/test_product_process_profile.py
   - tests/trusted_actions/test_schemas.py
@@ -43,8 +44,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
-| 当前完成度 | 核心路由库及扩展适配已实现；e1～e4完成目录、Gateway、POSIX Patch及验证通过的固定Container Process、按Tool Provider和输出Artifact并通过全矩阵CI；启动全局恢复仍属e5 |
+| 代码版本 | 已验收基线`27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5为当前实现候选 |
+| 当前完成度 | 核心路由库及扩展适配已实现；e1～e4已通过全矩阵CI；e5候选新增上一活动配置恢复Router、产品Route全局扫描、只对账与候选Binding承接校验，仍等待关闭CI |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1194,7 +1195,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | 默认产品已装配Workspace Patch和验证通过的固定Container Process，但外部Action Config与启动全局恢复尚未闭环 | 内部组合可形成受控修改—测试链，CLI仍不能配置Profile，进程重启后也未全局结算旧Route | 0.9.1e5 |
+| P0 | e5已实现外部Action Config与启动全局恢复候选，但尚无发布矩阵关闭证据 | 功能可专项验证，仍不能写成正式关闭能力 | 0.9.1e5关闭CI |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1412,7 +1413,7 @@ transition audit using checkpoint.decided_at
 
 [`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py)覆盖目录漂移、重复Prepare、Review、批准、拒绝、调用漂移、取消和Reconcile；[`test_router.py`](../../tests/trusted_actions/test_router.py)覆盖决定双Store崩溃窗口。该切片没有改变Router的公共包级导出，也没有引入新的一级包依赖边或超大符号。
 
-默认产品现把单一Gateway传给`AgentRuntime`，同时安装可用的Patch/Delivery和固定Container Process Definition；产品级启动全局恢复Owner由0.9.1e5继续实现。
+默认产品现把单一Gateway传给`AgentRuntime`，同时安装可用的Patch/Delivery和固定Container Process Definition；e5候选在开放协议前由产品级Owner统一扫描并结算旧Route。
 
 ## 44. 默认Workspace Patch Route（0.9.1e3）
 
@@ -1467,10 +1468,41 @@ UNKNOWN并重抛取消，Process Owner负责停止和持久化Lease；`recover`�
 [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和
 [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)。外部Action Config加载与启动时全局Route扫描不在e4。
 
-## 46. 变更记录
+## 46. 产品启动全局恢复（0.9.1e5候选）
+
+通用`TrustedActionRouter`继续只负责单个注册表中的Plan、Decide、Execute、Recover和Reconcile，不吸收产品配置或Server生命周期。
+产品层[`ProductActionRuntimeOwner`](../../src/harnessix/product_config/action_runtime.py)在同一组Execution Plan和Action Audit Store上按
+先后顺序使用恢复Router和候选Router，从而避免同名Tool的旧、新Binding同时存在。
+
+```mermaid
+flowchart TD
+    Audit[(Action Audit)] --> Scan[筛选builtin/harnessix.product活动Route]
+    Previous[上一活动Action Config] --> Recovery[恢复Router]
+    Recovery --> Exact[逐Route精确Binding校验]
+    Exact --> Interrupted[running或reconciling转unknown]
+    Interrupted --> Reconcile[每个unknown只Reconcile一次]
+    Reconcile --> Gate{仍有活动未知?}
+    Gate -- 是 --> Fail[失败关闭，不开放stdio]
+    Gate -- 否 --> Candidate[候选Router和Catalog]
+    Candidate --> Pending[核对pending_approval和ready精确Binding]
+    Pending --> Gateway[发布候选Gateway]
+```
+
+扫描仅包含`source=builtin`且`source_id=harnessix.product`的产品Route，不擅自接管MCP、Skill、Hook或自定义宿主Route。进入任何状态
+转换前先核对恢复Router包含逐字段相等的Binding；缺失时保留Route原状态。中断Route调用`recover_interrupted_plan`追加
+`host_interrupted`事实并进入`unknown`，随后只调用`reconcile`。Reconcile仍返回`unknown`时不循环，不调用`execute`，启动返回
+`product_action_recovery_incomplete`。
+
+恢复成功后才创建候选Router。旧`pending_approval/ready`计划没有发生效果但已经绑定审批证据，因此候选配置必须提供完全相同Binding；
+否则返回`product_action_recovery_binding_unavailable`，不能把旧批准移植到新Tool版本。恢复汇总持久到Product Config数据库，逐Plan
+事件继续由Action Audit Hash链保存。专项测试见[`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)；Server顺序见
+[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)。
+
+## 47. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 11 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则；等待关闭CI |
 | 10 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Process由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown与Mermaid结构 |
 | 9 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Process同源目录、按Tool Review/Output、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI |
 | 8 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 将Agent Gateway终态输出核对与Tool Result投影拆为独立职责，保持Router、审批和UNKNOWN语义不变 |

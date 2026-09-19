@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 8
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -39,8 +39,8 @@ supersedes: []
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复，以及可显式装配的统一Trusted Action Gateway |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
-| 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch和App Server；Context、Process等端口尚未全部进入默认产品链 |
+| 代码版本 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7`；e5候选变更尚未形成验收提交 |
+| 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process和App Server；e5候选增加外部Action Config与启动恢复 |
 | 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到25 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
@@ -643,7 +643,7 @@ DOC-1.2对本文执行的验收：至少反向核对`AgentRuntime`、`_drive`、
 
 | 项目 | 当前边界/影响 | 后续归属 |
 |---|---|---|
-| 默认产品已装配受控Patch和Verified固定Container Process，但外部Action Config与启动全局恢复未闭环 | 代码链可修改并测试，CLI仍不能配置Profile或在启动时结算全部旧Route | 0.9.1e5 |
+| 默认产品的外部Action Config、Doctor能力报告与启动全局恢复已形成实现候选 | 未获得全量及七任务CI证据前，仍不标记为生产完成 | 0.9.1e5 |
 | Windows默认产品仅具原生四项只读Tool | Patch被明确省略，Git、写入和Process仍未开放 | 0.9.5 |
 | 本地SQLite单Owner | 不支持跨主机Thread并发和云端HA | 1.x候选，不提前侵入1.0 |
 | 数据保留、导出和删除策略未完成发布验收 | Session可能随长期使用增长 | 0.9.5和1.0发布门禁 |
@@ -733,6 +733,7 @@ sequenceDiagram
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 8 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步固定Container Process已验收事实，登记e5外部Action Config与启动恢复候选边界 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认POSIX Workspace Patch，收紧模型工具目录所有权，记录Review、审批、执行、取消和SDK纵向链 |
 | 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 接入Agent Event v20、统一Trusted Action审批/效果、Router先行决定恢复、Session migration23和结构化恢复模块；默认高风险产品目录仍未开放 |
 | 3 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c Steering历史重备实现、取消协作语义、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |

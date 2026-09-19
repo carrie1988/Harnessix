@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 8
-code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
+version: 9
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -24,6 +24,9 @@ related_tests:
   - tests/evals
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
+  - tests/product_config/test_preflight.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
@@ -390,6 +393,26 @@ flowchart TD
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
 截至该Revision，0.9.1e4已关闭；以下项目仍不能宣称生产完成：0.9.1e5、0.9.1f2～f3及0.9.2～0.9.6范围的外部Action Config、产品级启动恢复、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+
+### 20.1 0.9.1e5候选验证矩阵
+
+e5不能以“外部配置能加载”作为完成判定，候选至少同时通过以下矩阵：
+
+| 验证层 | 必须证明 |
+|---|---|
+| 合同/Codec | 空/超限、重复键、未知字段、非法摘要、UTF-8/NUL/深度/节点、POSIX权限/链接/漂移全部失败关闭 |
+| Store/事务 | 快照幂等、Hash链和Head损坏检测、Product冲突回滚Action、Action冲突回滚Product、相同组合幂等 |
+| Doctor | 内建/外部文件、verified/omitted、稳定修复ID、报告摘要、无路径/Secret泄漏且不创建State Root |
+| 启动恢复 | `running/reconciling→unknown→reconcile`，每个UNKNOWN一次，缺Binding和仍未知均不开放stdio、不调用execute |
+| 配置切换 | 上一活动Action快照用于恢复；候选精确承接pending/ready；预检后合法文件替换仍失败 |
+| CLI/产品 | Action路径、环境覆盖和三个CAS参数精确透传；现有Patch/Process/Artifact链无回归 |
+| 平台/真实场景 | macOS/Linux/Windows省略语义与固定Digest真实Container链；无Host Process fallback |
+| 发布门禁 | Ruff、Mypy、Schema确定生成、可读性、全仓Pytest、文档/链接/Mermaid和七任务CI一次通过 |
+
+当前候选已经通过Product Config、Product UI、Trusted Action Router专项回归以及Ruff、Mypy、Schema、
+可读性、全仓3583项收集测试和变化文档Mermaid真实渲染。本地没有可用Docker daemon，固定Digest真实
+Container将由CI专用任务执行；七任务CI尚未登记，因此e5仍保持未关闭。关闭提交必须记录实现Revision、
+精确通过/Skip数量、真实镜像结果和CI链接，并确认Skip不掩盖固定镜像产品场景。
 
 ## 21. 维护与验收标准
 

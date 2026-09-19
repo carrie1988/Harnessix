@@ -8,6 +8,11 @@ from pathlib import Path
 import pytest
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.action_codec import canonical_product_action_config_bytes
+from harnessix.product_config.action_contracts import (
+    build_product_action_config,
+    build_product_process_profile,
+)
 from harnessix.product_config.contracts import ProductConfigV2
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
@@ -36,6 +41,7 @@ def _request(
     return ProductPreflightRequest(
         mode="doctor",
         config_path=config_path,
+        action_config_path=None,
         profile_id=profile_id,
         workspace=workspace,
         state_directory=tmp_path / "state",
@@ -74,11 +80,63 @@ def test_ready_report_is_ordered_hashed_redacted_and_read_only(
     )
     assert all(item.duration_ms == 0 for item in report.checks)
     assert report.configuration is not None and report.configuration.ready
+    assert report.actions is not None
+    assert report.action_config_sha256 == report.actions.config_sha256
+    assert report.actions.capabilities[0].capability_id == "apply_patch_batch"
     assert not request.state_directory.exists()
     encoded = report.model_dump_json()
     assert canary not in encoded
     assert str(tmp_path) not in encoded
     assert len(report.report_sha256) == len(report.workspace_fingerprint) == 64
+
+
+def test_explicit_action_config_failure_blocks_but_capability_omission_is_advisory(
+    tmp_path: Path,
+    config: ProductConfigV2,
+) -> None:
+    path = write_config(tmp_path / "config.json", config)
+    invalid = tmp_path / "invalid-actions.json"
+    invalid.write_text("{invalid", encoding="utf-8")
+    if os.name == "posix":
+        invalid.chmod(0o600)
+    failed = run_product_preflight(
+        replace(_request(tmp_path, path), action_config_path=invalid),
+        dependency_finder=_dependencies,
+        environment=_ENVIRONMENT,
+    )
+    assert _checks(failed)["product_action_config_source"].code == ("product_action_config_invalid")
+    assert failed.actions is None and failed.ready is False
+
+    profile = build_product_process_profile(
+        profile_id="missing-engine",
+        version="1",
+        description="诊断缺失容器引擎",
+        container_engine=str(tmp_path / "docker"),
+        image="registry.example/tests@sha256:" + "a" * 64,
+        program="/bin/true",
+    )
+    action_path = tmp_path / "actions.json"
+    action_path.write_bytes(
+        canonical_product_action_config_bytes(
+            build_product_action_config(
+                workspace_patch_enabled=False,
+                process_profiles=(profile,),
+            )
+        )
+    )
+    if os.name == "posix":
+        action_path.chmod(0o600)
+    omitted = run_product_preflight(
+        replace(_request(tmp_path, path), action_config_path=action_path),
+        dependency_finder=_dependencies,
+        environment=_ENVIRONMENT,
+    )
+    assert omitted.ready is True
+    assert omitted.actions is not None
+    assert {item.status for item in omitted.actions.capabilities} == {"omitted"}
+    action_checks = [item for item in omitted.checks if item.category == "action"]
+    assert any(item.requirement == "advisory" and item.status == "failed" for item in action_checks)
+    assert not (_request(tmp_path, path).state_directory).exists()
 
 
 @pytest.mark.parametrize(
@@ -163,6 +221,7 @@ def test_workspace_and_state_boundaries_fail_closed(
     request = ProductPreflightRequest(
         mode="startup",
         config_path=inside_config,
+        action_config_path=None,
         profile_id=None,
         workspace=workspace,
         state_directory=tmp_path / "state",
@@ -189,6 +248,25 @@ def test_workspace_and_state_boundaries_fail_closed(
         environment=_ENVIRONMENT,
     )
     assert _checks(overlap_report)["product_state_layout"].code == "product_state_overlap"
+
+    action_path = workspace / "actions.json"
+    action_path.write_bytes(canonical_product_action_config_bytes(build_product_action_config()))
+    if os.name == "posix":
+        action_path.chmod(0o600)
+    action_overlap = run_product_preflight(
+        replace(
+            request,
+            config_path=outside_config,
+            action_config_path=action_path,
+            state_directory=tmp_path / "action-state",
+        ),
+        dependency_finder=_dependencies,
+        environment=_ENVIRONMENT,
+    )
+    assert _checks(action_overlap)["product_workspace_binding"].code == (
+        "product_action_config_overlap"
+    )
+    assert action_overlap.ready is False
 
 
 def test_existing_state_directory_must_remain_private(

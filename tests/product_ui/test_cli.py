@@ -51,6 +51,33 @@ def test_product_command_builds_current_python_stdio_server_argv(tmp_path: Path)
     )
 
 
+def test_product_command_forwards_action_config_and_activation_preconditions(
+    tmp_path: Path,
+) -> None:
+    command = product_cli._server_command(
+        config=tmp_path / "config.json",
+        action_config=tmp_path / "actions.json",
+        profile="primary",
+        workspace=tmp_path,
+        runtime_state=tmp_path / "runtime",
+        git_executable=None,
+        expected_active_sha256="a" * 64,
+        expected_active_profile="previous",
+        expected_active_action_sha256="b" * 64,
+    )
+
+    assert command[-8:] == (
+        "--action-config",
+        str(tmp_path / "actions.json"),
+        "--expected-active-sha256",
+        "a" * 64,
+        "--expected-active-profile",
+        "previous",
+        "--expected-active-action-sha256",
+        "b" * 64,
+    )
+
+
 def test_code_cli_rejects_missing_workspace_with_stable_redacted_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e4已通过对应全矩阵CI。0.9.1e5继续建设外部Action Config和启动恢复Owner；0.9.1f正在按[ADR 0081](docs/adr/0081-single-coding-agent-product-boundary.md)把独立Action HTTP/Worker收敛为Coding Agent进程内Trusted Action Runtime。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e4已通过对应全矩阵CI。0.9.1e5已形成外部Action Config、Doctor能力报告、双配置原子CAS和启动只对账恢复的实现候选，仍须通过全量及七任务CI后关闭；0.9.1f1已把独立Action HTTP/Worker撤出公共产品面，f2/f3继续迁移并删除兼容内核。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -601,6 +601,18 @@ uv run harnessix code configure \
 uv run harnessix code doctor /path/to/workspace
 uv run harnessix code /path/to/workspace
 ```
+
+需要启用固定Container Process Profile时，显式提供独立Action配置；Doctor与正式启动读取同一文件：
+
+```bash
+uv run harnessix code doctor /path/to/workspace \
+  --action-config "$HOME/.harnessix/actions.json" --json
+uv run harnessix code /path/to/workspace \
+  --action-config "$HOME/.harnessix/actions.json"
+```
+
+外部Action配置必须满足严格v1合同和私有文件要求。切换已激活配置时还必须携带上一活动摘要
+`--expected-active-action-sha256`，否则启动在开放stdio前以CAS冲突失败关闭。
 
 `harnessix code`启动本地TUI并监督stdio Agent Server；`harnessix agent-server`是产品内部Headless入口，
 其stdout只传输Agent Protocol JSONL。Python宿主使用`harnessix.sdk.AgentClient`及进程内或子进程Transport。

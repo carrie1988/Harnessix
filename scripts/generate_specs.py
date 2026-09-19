@@ -166,7 +166,10 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.product_config.action_contracts import (
     ProductActionCapabilityEvidence,
     ProductActionCapabilityReport,
+    ProductActionConfigAuditEvent,
+    ProductActionConfigSnapshot,
     ProductActionConfigV1,
+    ProductActionStartupRecoveryReport,
     ProductProcessProfile,
 )
 from harnessix.product_config.contracts import (
@@ -291,6 +294,18 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "product-action-capability-report-v1.schema.json",
         ProductActionCapabilityReport.model_json_schema(),
+    )
+    write_json(
+        output / "product-action-config-snapshot-v1.schema.json",
+        ProductActionConfigSnapshot.model_json_schema(),
+    )
+    write_json(
+        output / "product-action-config-audit-event-v1.schema.json",
+        ProductActionConfigAuditEvent.model_json_schema(),
+    )
+    write_json(
+        output / "product-action-startup-recovery-v1.schema.json",
+        ProductActionStartupRecoveryReport.model_json_schema(),
     )
     write_json(
         output / "product-process-profile-v1.schema.json",

@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 6
+code_revision: 27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7
 owners:
   - core
 modules:
@@ -30,6 +30,8 @@ related_adrs:
 related_tests:
   - tests/sandbox
   - tests/secrets
+  - tests/product_config/test_action_config_runtime.py
+  - tests/product_config/test_action_runtime.py
   - tests/trusted_actions
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_schemas.py
@@ -826,3 +828,33 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 [`test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py)及
 [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。完整合同与时序以
 [0.9.1e详细设计](changes/m09-1e-default-trusted-action-composition.md)为准。
+
+## 0.9.1e5 Action配置与冷启动恢复补充（2026-09-19）
+
+- **外部Action配置投毒**：文件使用与Product Config相同的有界严格JSON与安全读取；拒绝重复键、未知字段、NUL、非UTF-8、
+  非有限数、深度/节点超限、链接、多硬链接、错误Owner/Mode和读取中身份漂移。显式文件失败不会静默回退内建配置。
+- **Doctor结论被替换**：Preflight报告绑定Action规范摘要；Server再次读取后比较摘要。攻击者即使替换为另一个合法v1文件，也会以
+  `product_action_config_changed`失败，旧Doctor报告不成为授权票据。
+- **诊断触发副作用**：Doctor只创建`AttestedProductProcessProfile`，不会创建State Root、Process Lease或执行业务命令；报告删除
+  Engine绝对路径、argv、环境值、Secret值、镜像凭据和原始异常。正式启动必须用真实Supervisor再次证明。
+- **双配置撕裂**：Product与Action快照可以先形成未激活审计事实，但活动指针只在同一个`BEGIN IMMEDIATE`事务中按两个CAS前提切换。
+  Product或Action任一冲突会回滚双方，禁止模型配置与执行权限来自不同发布代际。
+- **旧Route被新Binding接管**：冷启动首先读取上一活动Action快照，用其精确Binding构造恢复Router；候选Router在恢复完成后才创建。
+  旧`pending_approval/ready`只能由逐字段相等的候选Binding承接，不能把旧审批移植到新版本Executor。
+- **中断效果重复执行**：产品`running/reconciling`先追加中断事实并转`unknown`；每个UNKNOWN只调用一次Reconcile，任何路径都不调用
+  Execute。仍未知时启动失败并保留账本，不循环观察到“碰巧成功”。
+- **移除旧恢复证据**：旧Process Route恢复仍要求原Engine、镜像、Owner、Sandbox和Secret版本可证明。运维提前删除这些能力会阻止
+  启动，而不是触发Host Fallback。正确流程是先结算在途Route，再切换或删除配置/Secret来源。
+- **本地审计篡改**：Action配置事件链和恢复报告可检测偶发损坏与非协作改写，但同UID攻击者可同时修改程序、数据库和摘要；它们不
+  构成签名或不可抵赖日志。0.9.4仍需供应链、签名、备份和恶意同UID边界审查。
+- **剩余风险**：恢复扫描当前没有独立跨进程Action Owner Lease；产品依赖Session Runtime Owner避免两个正式Server并发，但活跃自定义
+  宿主仍可能与恢复竞争。故障注入、Owner/Fencing、容量和UNKNOWN告警由0.9.3继续关闭。
+
+源码入口见[`action_codec.py`](../src/harnessix/product_config/action_codec.py)、
+[`action_store.py`](../src/harnessix/product_config/action_store.py)、
+[`action_runtime.py`](../src/harnessix/product_config/action_runtime.py)和
+[`server.py`](../src/harnessix/product_config/server.py)。攻击与恢复回归见
+[`test_action_config_runtime.py`](../tests/product_config/test_action_config_runtime.py)、
+[`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、
+[`test_preflight.py`](../tests/product_config/test_preflight.py)与
+[`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。该实现候选仍等待关闭CI。
