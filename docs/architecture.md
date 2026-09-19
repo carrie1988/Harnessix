@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 62
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 63
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -44,6 +44,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
 related_tests:
   - tests/product_config/test_action_contracts.py
@@ -56,6 +57,7 @@ related_tests:
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_schemas.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/agent/test_session_upgrade.py
@@ -386,7 +388,9 @@ Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
 显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。十Case/三仓库基线、正式Case适配器和
-真实Provider Suite仍是0.9.2d/e边界。全部公开证据均不复制Prompt、回答、工具正文、Diff或路径。
+0.9.2d已增加`harnessix-engineering/v1`的3仓10 Case工程数据集和确定性生成边界，但正式Case Adapter、
+每Case两次Trial的完整离线Suite和真实Provider Suite仍分别是0.9.2d2/d3与0.9.2e边界。全部公开证据均不复制
+Prompt、回答、工具正文、Diff或路径。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
 门禁。0.9.1f3删除PostgreSQL旧服务后，CI不再启动旧Journal服务，当前矩阵为Linux Python 3.12/3.13、macOS、Windows、
@@ -499,7 +503,10 @@ recover_route(route):
    [Delivery](../src/harnessix/delivery/)；
 6. [产品收敛门禁](../tests/governance/test_product_runtime_convergence.py)、
    [历史Session兼容](../tests/agent/test_legacy_process_compatibility.py)和
-   [旧库归档测试](../tests/governance/test_legacy_action_archive.py)。
+   [旧库归档测试](../tests/governance/test_legacy_action_archive.py)；
+7. [工程Eval数据定义](../benchmarks/taskpacks/harnessix-engineering-v1/definition.json)、
+   [确定性生成器](../scripts/generate_engineering_task_pack.py)和
+   [Task Pack物化器](../src/harnessix/evals/task_pack_materializer.py)。
 
 更细文件级路径见[源码阅读地图](guides/source-reading-map.md)，测试分层见[测试与Eval规范](testing-and-evals.md)。
 
@@ -509,7 +516,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack与可恢复Suite Runner已验收；尚缺正式Case适配器和最终数据集 | 0.9.2d/e |
+| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner及3仓10 Case数据集已建立；尚缺正式Case Adapter、20 Trial离线报告和真实Provider基线 | 0.9.2d/e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -522,6 +529,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 63 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 登记0.9.2d1的3仓10 Case工程数据集、确定性生成与Review源码证据候选，保持单一Coding Agent/Trusted Action拓扑 |
 | 62 | `ffd3db4e83a807ab3029c479fb4650216240b4f7` | 2026-09-20 | 记录0.9.2c由CI 35465458256完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 61 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 登记0.9.2c计划先行、单写者Suite Runner、连续证据前缀、显式停止恢复和零Case重放实现候选 |
 | 60 | `608c07a54543f436651aa4e55141acb7f76021fc` | 2026-09-20 | 记录0.9.2b由CI 35461708961完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |

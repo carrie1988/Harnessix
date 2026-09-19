@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 10
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
   - tests/evals/test_grader.py
   - tests/evals/test_historical.py
@@ -33,6 +34,7 @@ related_tests:
   - tests/evals/test_delivery.py
   - tests/evals/test_suite.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
 supersedes: []
@@ -877,6 +879,17 @@ Device和其他特殊Tar成员。固定Git环境重建Commit后，同时核对Co
 内存、PID、无Selector、无Secret和`network=none`不可改写。真实集成测试通过正式Agent Catalog、审批、Trusted Action、
 Process Owner和Artifact链，证明两个种子Baseline先以非零Return Code失败，应用唯一允许路径中的最小修复后再成功。
 
+`harnessix-engineering/v1`进一步固定3个MIT派生Benchmark仓库、10个Case和10个Case专用Profile，Bug Fix、Feature、
+Refactor、Test、Review各2个。生成输入位于Wheel外的`benchmarks/taskpacks/harnessix-engineering-v1`，
+[`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py)以规范USTAR、固定Git提交和严格合同生成
+Wheel内`engineering-v1`资源；`make check`逐字节阻断手工Manifest或Archive漂移。黄金补丁只存在于Benchmark开发目录，
+不进入Pack资源根、Agent Workspace或模型上下文。
+
+Review物化在Git提交前调用`_verify_review_oracle`：按1-based闭区间提取固定UTF-8源码行的原始字节并核对SHA-256。
+路径逃逸、Link、行号越界、编码或摘要不匹配均返回`eval_task_pack_review_oracle_invalid`并删除半成品Run。d1只建立
+数据、检查和权利链；Task Pack到Campaign/Transcript的正式Case Adapter与20 Trial完整Suite仍是d2/d3未完成边界。
+完整设计见[0.9.2d详细设计](../changes/m09-2d-multi-repository-offline-baseline.md)。
+
 ## 24. Campaign执行配置与默认禁网
 
 `CodingEvalCampaignRunConfig`额外绑定Source/Work Root、Git/Python绝对路径、`OpenAIChatConfig`和费用
@@ -1641,6 +1654,10 @@ execute():
 | Task Pack恢复与漂移 | 同上 | `load_materialized_task_pack_case` | 同上 | `test_materializes_exact_single_commit_reopens_dirty_workspace`、`test_materialization_detects_changed_head` |
 | Profile投影 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `build_task_pack_product_profile` | 同上 | `test_profile_projection_is_exact_and_engine_is_validated` |
 | 双语言真实容器链 | Product Runtime + Task Pack | 固定Profile、Approval、Process Owner、Artifact | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | `test_builtin_task_pack_profile_fails_then_passes_through_product_runtime` |
+| 工程数据集生成与规模 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py)、[`definition.json`](../../benchmarks/taskpacks/harnessix-engineering-v1/definition.json) | `_generate`、`_repository_identity` | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | `test_engineering_pack_has_balanced_production_scope`、`test_engineering_pack_generation_is_reproducible` |
+| Review源码证据 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `_verify_review_oracle` | 同上 | `test_review_oracle_rejects_changed_source_evidence` |
+| 十Case可解性 | [`solutions`](../../benchmarks/taskpacks/harnessix-engineering-v1/solutions) | Wheel外Golden Patch | 同上 | `test_each_engineering_case_fails_then_golden_patch_passes` |
+| 十Case真实容器链 | Product Runtime + Engineering Pack | 固定Profile、Approval、Process Owner、Artifact | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | `test_engineering_task_pack_profiles_fail_then_pass_through_product_runtime` |
 | Campaign执行与重开 | [`campaign_execution.py`](../../src/harnessix/evals/campaign_execution.py) | `run_coding_eval_campaign` | [`test_campaign_execution.py`](../../tests/evals/test_campaign_execution.py) | `test_campaign_runs_two_isolated_trials_persists_report_and_reopens` |
 | 请求前Plan与费用停止 | 同上 | `_require_plan`、`_known_cost` | 同上 | `test_plan_is_durable_before_provider_and_fee_limit_stops_next_trial` |
 | Cost Unknown恢复 | 同上 | `_rebuild_prefix` | 同上 | `test_unknown_cost_stops_and_crash_window_recovers_without_next_trial` |
@@ -1684,9 +1701,8 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 
 - 原生Windows导入、路径、ACL、Lock、Git和Process全链；
 - Linux容器/Namespace或macOS Sandbox下运行不可信第三方历史任务；
-- 最终十Case/三仓库/五类别Catalog、同任务多个Profile、多个Behavior Check和Batch Patch；
 - Task Pack到Campaign/Transcript投影的正式Case Executor适配器与真实Run恢复组合；
-- 至少10 Case、3仓库、五类各2个的固定Container Task Pack及真实Provider基线；
+- 10 Case、3仓库、五类各2个的固定Container全量CI验收、20 Trial离线Suite及真实Provider基线；
 - Source仓库SHA-256对象格式、超大历史、Submodule、LFS和复杂Attributes；
 - Archive在不同Git/Tar版本下的确定性与恶意边界矩阵；
 - 磁盘满、`fsync`失败、SQLite损坏、Artifact丢失和备份恢复；
@@ -1781,8 +1797,8 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | Historical链无OS Sandbox；Task Pack虽有Container但仅两个自研种子仓库 | 不能接动态第三方任务 | 0.9.2d/0.9.4/0.9.5安全执行 |
-| P0 | Task Pack只有两个种子Case/两个仓库/两类任务 | Suite合同已有，但真实质量基线仍过拟合 | 0.9.2d |
+| P0 | Historical链无OS Sandbox；Task Pack工程数据集虽有Container但仍是小型派生夹具 | 不能接动态第三方任务或外推大型仓库 | 0.9.2d/0.9.4/0.9.5安全执行 |
+| P0 | 工程Pack已达3仓10 Case，但尚无正式Case Adapter和20 Trial完整报告 | Suite合同已有，质量基线仍未形成 | 0.9.2d2/d3 |
 | P0 | 原生Windows包级导入受`fcntl`阻断 | 与1.0三平台目标冲突 | 0.9.6发行门禁 |
 | P0 | Eval不参与默认发布阻断 | 当前回归可能绕过真实任务 | 0.9.2d～e/0.9.6 |
 | P0 | Eval自动审批不是用户审批 | 不能证明生产权限体验 | 产品E2E Eval |
@@ -1906,6 +1922,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 记录3仓10 Case工程Pack、确定性生成、MIT权利链、Review源码证据、外置Golden与d2/d3剩余边界 |
 | 9 | `ffd3db4e83a807ab3029c479fb4650216240b4f7` | 2026-09-20 | 0.9.2c由CI 35465458256完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |
 | 8 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 0.9.2c候选：补充计划先行、单写者Suite Runner、连续Case证据前缀、显式停止恢复、费用停止和报告发布恢复 |
 | 7 | `608c07a54543f436651aa4e55141acb7f76021fc` | 2026-09-20 | 0.9.2b由CI 35461708961完成Linux双版本、macOS、Windows、固定镜像Container与Documentation六实例验收并关闭 |

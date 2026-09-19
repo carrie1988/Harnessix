@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 12
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 13
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -144,6 +144,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c已关闭，d/e待实施 |
 | 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
 | 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受并实施；0.9.2c已由CI 35465458256验收关闭 |
+| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受；0.9.2d1已实现候选，d2/d3待实施 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

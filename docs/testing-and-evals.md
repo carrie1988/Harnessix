@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 22
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 23
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -21,12 +21,14 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
   - tests/governance
   - tests/agent
   - tests/evals
   - tests/evals/test_suite.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/integration
@@ -365,8 +367,10 @@ uv run mypy src
 uv run python scripts/generate_specs.py --check
 ```
 
-0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。Task Pack到Campaign/Transcript的正式适配器、
-至少10 Case/3仓库真实离线基线和受控Provider Suite分别由0.9.2d/e验收。实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
+0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。0.9.2d1新增
+`harnessix-engineering/v1`的3仓10 Case、五类各2个、确定性生成、Review源码证据和外置Golden闭环；
+Task Pack到Campaign/Transcript的正式Adapter、每Case两次Trial的完整离线报告和受控Provider Suite分别由
+0.9.2d2/d3/e验收。0.9.2c实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
 
 ## 14. 真实Provider验证
 
@@ -408,7 +412,7 @@ make spec
 make check
 ```
 
-`make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、文档静态门禁、公共合同逐字节漂移检查、Mypy和全量Pytest；`make spec`重新生成契约产物，提交前还必须确认`spec/`没有非预期Git差异。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
+`make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、文档静态门禁、公共合同和工程Task Pack逐字节漂移检查、Mypy和全量Pytest；`make spec`重新生成契约产物，提交前还必须确认`spec/`没有非预期Git差异。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
 
 文档结构、链接、元数据、生命周期、源码同步和Mermaid结构已由DOC-1.6自动门禁覆盖；Linux文档CI对变化图执行真实渲染。公共合同生成检查在Linux/macOS执行；Windows继续执行文档静态门禁和治理套件，但因Evals现有POSIX `fcntl`依赖显式跳过合同生成测试，该限制由0.9.6关闭。
 

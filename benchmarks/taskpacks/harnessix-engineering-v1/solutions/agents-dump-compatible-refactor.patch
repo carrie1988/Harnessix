@@ -1,0 +1,7 @@
+--- a/src/agent_utils.py
++++ b/src/agent_utils.py
+@@ -24,3 +24 @@
+-    if isinstance(value, list):
+-        return [to_dump_compatible(item) for item in value]
+-    if isinstance(value, tuple):
++    if isinstance(value, (list, tuple)):

@@ -1,0 +1,7 @@
+--- a/src/agent_utils.py
++++ b/src/agent_utils.py
+@@ -14,3 +14 @@
+-    if normalized != name:
+-        return normalized.lower()
+-    return normalized
++    return normalized.lower()

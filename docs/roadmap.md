@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 35
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 36
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
@@ -504,6 +505,12 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   连续Case证据前缀、显式停止恢复和报告发布恢复，已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
   每Case至少2次试验；通过固定Container Profile运行全部检查，形成可复跑的离线Suite报告；
+  - [ ] **d1 数据集与检查闭环**：`harnessix-engineering/v1`固定3仓10 Case、五类各2个、来源许可证、确定性生成、
+    Review源码证据和Wheel外Golden；本地候选已实现，固定Container与全矩阵CI通过后关闭；
+  - [ ] **d2 正式Case Adapter**：Task Pack Case必须经现有Agent、Session、Trusted Action、Process Artifact、Grader和
+    Campaign执行/恢复，禁止另建Eval Agent或旁路审批；
+  - [ ] **d3 完整离线Suite**：每Case固定2 Trial，验证取消、超时、崩溃、UNKNOWN、完成前缀和报告发布恢复，发布
+    20 Trial脱敏可重算报告后关闭0.9.2d；
 - [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
   验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret。
 

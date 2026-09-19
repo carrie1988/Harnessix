@@ -1,0 +1,5 @@
+--- a/src/string_utils.py
++++ b/src/string_utils.py
+@@ -28 +28 @@
+-    return text.replace("\x00", "")
++    return text.replace("\x00", replacement)

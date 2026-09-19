@@ -71,7 +71,11 @@ def test_builtin_task_pack_is_versioned_canonical_and_multi_language() -> None:
     loaded = builtin_coding_eval_task_pack()
     pack = loaded.manifest
 
-    assert builtin_coding_eval_task_pack_ids() == ("harnessix-seed",)
+    assert builtin_coding_eval_task_pack_ids() == (
+        "harnessix-engineering",
+        "harnessix-seed",
+    )
+    assert builtin_coding_eval_task_pack_versions("harnessix-engineering") == (1,)
     assert builtin_coding_eval_task_pack_versions("harnessix-seed") == (1,)
     assert pack.pack_id == "harnessix-seed" and pack.pack_version == 1
     assert [item.repository_id for item in pack.repositories] == [
@@ -426,3 +430,8 @@ def test_task_pack_resources_are_packaged_as_regular_files() -> None:
     assert root.joinpath("manifest.json").is_file()
     assert root.joinpath("archives", "javascript-slug.tar").is_file()
     assert root.joinpath("archives", "python-mathbox.tar").is_file()
+    engineering = resources.files("harnessix.evals").joinpath("taskpacks", "engineering-v1")
+    assert engineering.joinpath("manifest.json").is_file()
+    assert engineering.joinpath("archives", "agents-utils-benchmark.tar").is_file()
+    assert engineering.joinpath("archives", "langchain-utils-benchmark.tar").is_file()
+    assert engineering.joinpath("archives", "opencode-utils-benchmark.tar").is_file()

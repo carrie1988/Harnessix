@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 6
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -15,11 +15,13 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_campaign.py
   - tests/evals/test_campaign_execution.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
 supersedes: []
@@ -417,7 +419,9 @@ atomic_publish(report)
 | 0.9.2a | Suite/Transcript/Test合同、聚合、Schema和原子I/O | 缺项、跨任务、篡改、权限、自动/人工审批 | 全仓与六实例CI |
 | 0.9.2b | Task Pack v1、固定Archive/检查/Profile、Review Oracle | 摘要/来源/镜像漂移、恶意路径、禁动态命令 | ≥2语言离线真实检查 |
 | 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | Case边界崩溃、发布确认丢失、成本停止均已测试 | CI 35465458256六实例验收并关闭 |
-| 0.9.2d | ≥10 Case、≥3仓库、五类各≥2 | Baseline失败、Oracle通过、固定镜像 | 本地/CI真实场景 |
+| 0.9.2d1 | 3仓10 Case数据集、确定性生成、Review源码证据、外置Golden | Baseline失败、Golden通过、固定镜像 | 全量Profile与许可证门禁 |
+| 0.9.2d2 | Task Pack Case Adapter接入正式Agent/Session/Campaign | 取消、超时、UNKNOWN和报告崩溃窗口 | Recorded Provider真实产品链 |
+| 0.9.2d3 | 10 Case各2 Trial离线Suite | 前缀恢复、零重放、完整聚合 | 可复跑Suite报告与CI证据 |
 | 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | 报告与验证资料发布 |
 
 ## 13. 接口设计与源码测试映射
@@ -433,6 +437,9 @@ atomic_publish(report)
 | 内置加载与Profile投影 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `builtin_coding_eval_task_pack`、`build_task_pack_product_profile` | 伪造Root、摘要、Engine正反测试 |
 | Archive物化与恢复 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `materialize/load_materialized_task_pack_case` | 路径攻击、Git身份、脏树恢复测试 |
 | 真实固定镜像检查 | [Container集成测试](../../tests/integration/test_task_pack_profiles.py) | Product Runtime、Approval、Process、Artifact | Baseline失败、最小修复后通过 |
+| 工程数据集生成 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py) | 规范Tar、固定Git、Oracle和Manifest | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py)生成与3仓10 Case测试 |
+| Review源码证据 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `_verify_review_oracle` | 源码行篡改失败关闭测试 |
+| 十Case固定检查 | [`engineering-v1`](../../src/harnessix/evals/taskpacks/engineering-v1) | 10个Case专用Profile | 宿主Golden闭环与Container Product Runtime参数化测试 |
 | Suite执行合同 | [`suite_execution_contracts.py`](../../src/harnessix/evals/suite_execution_contracts.py) | Config、Case Result、State、Run Report | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) Schema与身份漂移 |
 | 可恢复Runner | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite`、前缀重建、停止与发布恢复 | 顺序、锁、取消、崩溃、Cost与零重放测试 |
 | 共用执行文件边界 | [`execution_fs.py`](../../src/harnessix/evals/execution_fs.py) | 0700目录、0600非阻塞独占锁 | Suite锁冲突及Campaign回归 |
@@ -469,3 +476,8 @@ Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f7602
 聚合费用停止均已有严格合同、Schema和定向测试；实现细节见[0.9.2c详细设计](m09-2c-recoverable-suite-runner.md)
 与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`本地全仓为3514项通过/20项跳过，
 [CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例，因此0.9.2c关闭；0.9.2d/e和0.9.2总项继续未关闭。
+
+0.9.2d1实现候选新增`harnessix-engineering/v1`：三个固定MIT派生Benchmark仓库、十个Case、五类各两个、
+十个固定Profile、确定性Archive/Manifest生成器、Review源码行证据校验和Wheel外Golden Patch。当前只证明数据集和
+检查闭环；正式Task Pack Case Adapter与每Case两次Trial的完整离线Suite分别由d2/d3完成。专项需求、流程、接口、
+失败恢复、源码和验收矩阵见[0.9.2d详细设计](m09-2d-multi-repository-offline-baseline.md)。

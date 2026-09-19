@@ -182,6 +182,41 @@ def _extract_archive(
         ) from None
 
 
+def _verify_review_oracle(workspace: Path, case: CodingEvalTaskPackCase) -> None:
+    """把Review Finding绑定到Archive内的精确源码行字节，而不是信任清单声明。"""
+
+    oracle = case.review_oracle
+    if oracle is None:
+        return
+    try:
+        root = workspace.resolve(strict=True)
+        for finding in oracle.required_findings:
+            expected = workspace / finding.path
+            target = expected.resolve(strict=True)
+            if target != expected or root not in target.parents:
+                raise OSError
+            body = _read_regular(
+                target,
+                _MAX_TREE_BYTES,
+                code="eval_task_pack_review_oracle_invalid",
+                label="Task Pack Review Oracle源码",
+            )
+            body.decode("utf-8", errors="strict")
+            lines = body.splitlines(keepends=True)
+            if finding.end_line > len(lines):
+                raise ValueError
+            evidence = b"".join(lines[finding.start_line - 1 : finding.end_line])
+            if hashlib.sha256(evidence).hexdigest() != finding.evidence_sha256:
+                raise ValueError
+    except KernelError:
+        raise
+    except (OSError, RuntimeError, UnicodeError, ValueError):
+        raise KernelError(
+            "eval_task_pack_review_oracle_invalid",
+            "Task Pack Review Oracle源码证据不匹配",
+        ) from None
+
+
 def _commit_environment(repository: CodingEvalTaskPackRepository) -> dict[str, str]:
     timestamp = repository.commit_created_at.isoformat().replace("+00:00", "Z")
     return {
@@ -420,6 +455,7 @@ def materialize_task_pack_case(
         # 父目录0700维持宿主私有边界；Workspace需允许固定非root容器读取只读挂载。
         os.mkdir(workspace, 0o755)
         _extract_archive(archive, workspace, repository)
+        _verify_review_oracle(workspace, case)
         _create_baseline_commit(git, workspace, repository)
         head = _git_text(_run_git(git, workspace, ("rev-parse", "--verify", "HEAD^{commit}")))
         tree_oid = _git_text(_run_git(git, workspace, ("rev-parse", "--verify", "HEAD^{tree}")))

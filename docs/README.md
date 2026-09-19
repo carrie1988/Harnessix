@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 69
-code_revision: ffd3db4e83a807ab3029c479fb4650216240b4f7
+version: 70
+code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
@@ -32,6 +33,7 @@ related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_engineering_task_pack.py
   - tests/integration/test_task_pack_profiles.py
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
@@ -81,7 +83,7 @@ supersedes: []
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
 | 受控Provider验证 | [Smoke模块设计](modules/smoke.md) | `network gate → strict config → fixed scenario → Agent/SQLite/Replay → whitelist report`；重点区分Token边界、金额未知、配置对象安全与端点—凭据未绑定 |
-| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack和0.9.2c可恢复Suite Runner均已验收；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
+| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack和0.9.2c可恢复Suite Runner均已验收，0.9.2d工程数据集设计见[专项详细设计](changes/m09-2d-multi-repository-offline-baseline.md)；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → Agent/Provider/Trusted Action`；再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
