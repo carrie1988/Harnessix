@@ -34,6 +34,7 @@ from harnessix.protocol.contracts import (
     ServerCapabilities,
     ServerInfo,
     ThreadCreateParams,
+    ThreadView,
     TurnResult,
     TurnStartParams,
 )
@@ -69,6 +70,26 @@ def _decoded(response: tuple[bytes, ...]) -> dict[str, object]:
 
 async def _service(runtime: AgentRuntime, store: SQLiteSessionStore) -> AgentApplicationService:
     return AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
+
+
+async def _wait_for_turn_status(
+    client: AgentClient,
+    thread_id: UUID,
+    status: str,
+    *,
+    timeout_seconds: float = 5.0,
+) -> ThreadView:
+    """等待后台Turn进入目标状态，避免把CI调度延迟误判为协议失败。"""
+
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+    while True:
+        thread = await client.get_thread(thread_id)
+        if thread.latest_turn is not None and thread.latest_turn.status == status:
+            return thread
+        if loop.time() >= deadline:
+            raise AssertionError(f"Turn未在{timeout_seconds:g}秒内进入{status}")
+        await asyncio.sleep(0.01)
 
 
 async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> None:
@@ -689,13 +710,7 @@ async def test_sdk_question_response_resumes_background_turn(tmp_path: Path) -> 
         thread = await client.create_thread(str(tmp_path), request_id="create-question")
         accepted = await client.start_turn(thread.thread_id, "准备发布", request_id="turn-question")
 
-        for _ in range(50):
-            current = await client.get_thread(thread.thread_id)
-            if current.latest_turn is not None and current.latest_turn.status == "waiting_input":
-                break
-            await asyncio.sleep(0.01)
-        else:
-            raise AssertionError("Turn未进入等待输入")
+        await _wait_for_turn_status(client, thread.thread_id, "waiting_input")
         internal = await store.get_thread(thread.thread_id)
         request = next(
             item.content
@@ -992,14 +1007,9 @@ async def test_sdk_approval_response_drives_decided_turn(tmp_path: Path) -> None
         await client.initialize()
         thread = await client.create_thread(str(tmp_path), request_id="create-approval")
         accepted = await client.start_turn(thread.thread_id, "读取文件", request_id="turn-approval")
-        for _ in range(50):
-            internal = await store.get_thread(thread.thread_id)
-            turn = internal.turns[-1]
-            if turn.status.value == "waiting_approval":
-                break
-            await asyncio.sleep(0.01)
-        else:
-            raise AssertionError("Turn未进入等待审批")
+        await _wait_for_turn_status(client, thread.thread_id, "waiting_approval")
+        internal = await store.get_thread(thread.thread_id)
+        turn = internal.turns[-1]
         call = next(
             item.content
             for item in turn.items
