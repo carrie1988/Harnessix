@@ -107,3 +107,10 @@ def test_retired_action_examples_and_make_target_are_absent() -> None:
     assert not (ROOT / "spec" / "openapi.json").exists()
     assert "examples/mvp.py" not in makefile
     assert "demo:" not in makefile
+
+
+def test_pytest_subsets_can_import_repository_test_support() -> None:
+    configuration = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert "." in configuration["tool"]["pytest"]["ini_options"]["pythonpath"]
+    assert (ROOT / "tests" / "__init__.py").is_file()

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
+version: 7
 code_revision: pending
 owners:
   - core
@@ -354,5 +354,13 @@ PostgreSQL不引入新的运行依赖，停写后使用组织标准`pg_dump`一�
 
 远端CI改为Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例；只有
 该矩阵一次通过，才能把f3、本文和路线图状态改为关闭。取得实现提交和CI URL后再回写Revision及远端结果。
+
+实现候选`296650216e5ec0f6819d4fb607e297b988a956a7`的首轮
+[CI 35452255760](https://github.com/carrie1988/Harnessix/actions/runs/35452255760)暴露了一个测试基础设施顺序依赖：
+删除旧顶层`tests/conftest.py`后，完整测试发现顺序会间接把仓库根加入模块路径，但Container Job单独收集两个
+Integration文件时，`tests.agent.helpers`不可导入并在收集阶段退出。修复不恢复旧Action Service Fixture，而是在
+Pytest版本化配置中显式声明`pythonpath = ["."]`，并增加治理断言。修复后的独立Container Job已通过；第二轮
+[CI 35452483631](https://github.com/carrie1988/Harnessix/actions/runs/35452483631)的Documentation Job又正确阻止了
+“测试配置变化未同步重大变更设计”，本文版本7补齐该证据后再执行最终全矩阵验收。
 
 每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在全矩阵CI完成前，不得宣称f3已经关闭。
