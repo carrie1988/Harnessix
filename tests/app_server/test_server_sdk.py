@@ -34,7 +34,6 @@ from harnessix.protocol.contracts import (
     ServerCapabilities,
     ServerInfo,
     ThreadCreateParams,
-    ThreadView,
     TurnResult,
     TurnStartParams,
 )
@@ -50,6 +49,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.helpers import RecordingTools, answer, tool_step
 from tests.artifacts.helpers import exercise, results
+from tests.helpers import wait_for_turn_status
 
 
 def _request(method: str, params: dict[str, object], *, request_id: int = 1) -> bytes:
@@ -70,26 +70,6 @@ def _decoded(response: tuple[bytes, ...]) -> dict[str, object]:
 
 async def _service(runtime: AgentRuntime, store: SQLiteSessionStore) -> AgentApplicationService:
     return AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
-
-
-async def _wait_for_turn_status(
-    client: AgentClient,
-    thread_id: UUID,
-    status: str,
-    *,
-    timeout_seconds: float = 5.0,
-) -> ThreadView:
-    """等待后台Turn进入目标状态，避免把CI调度延迟误判为协议失败。"""
-
-    loop = asyncio.get_running_loop()
-    deadline = loop.time() + timeout_seconds
-    while True:
-        thread = await client.get_thread(thread_id)
-        if thread.latest_turn is not None and thread.latest_turn.status == status:
-            return thread
-        if loop.time() >= deadline:
-            raise AssertionError(f"Turn未在{timeout_seconds:g}秒内进入{status}")
-        await asyncio.sleep(0.01)
 
 
 async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> None:
@@ -355,6 +335,7 @@ async def test_agent_sdk_drives_turn_replay_and_duplicate_command(tmp_path: Path
         thread = await first.create_thread(str(tmp_path), request_id="create-1")
         accepted = await first.start_turn(thread.thread_id, "完成协议测试", request_id="turn-1")
         assert accepted.status == "accepted"
+        await wait_for_turn_status(first, thread.thread_id, "completed")
         await service.close()
 
         second = AgentClient(
@@ -436,8 +417,8 @@ async def test_completed_ledger_recovers_accepted_turn_after_restart(tmp_path: P
             request_id=params.request_id,
         )
         assert duplicate.status == "accepted"
+        current = await wait_for_turn_status(client, params.thread_id, "completed")
         await service.close()
-        current = await client.get_thread(params.thread_id)
         assert current.latest_turn is not None
         assert current.latest_turn.status == "completed"
         assert len(provider.requests) == 1
@@ -710,7 +691,7 @@ async def test_sdk_question_response_resumes_background_turn(tmp_path: Path) -> 
         thread = await client.create_thread(str(tmp_path), request_id="create-question")
         accepted = await client.start_turn(thread.thread_id, "准备发布", request_id="turn-question")
 
-        await _wait_for_turn_status(client, thread.thread_id, "waiting_input")
+        await wait_for_turn_status(client, thread.thread_id, "waiting_input")
         internal = await store.get_thread(thread.thread_id)
         request = next(
             item.content
@@ -737,8 +718,8 @@ async def test_sdk_question_response_resumes_background_turn(tmp_path: Path) -> 
             )
         )
         assert duplicate == responded
+        completed = await wait_for_turn_status(client, thread.thread_id, "completed")
         await service.close()
-        completed = await client.get_thread(thread.thread_id)
         assert completed.latest_turn is not None
         assert completed.latest_turn.status == "completed"
         assert len(provider.requests) == 2
@@ -822,8 +803,8 @@ async def test_completed_question_command_recovers_before_background_spawn(
         await client.initialize()
         duplicate = await client.respond_question(params)
         assert duplicate.status == "executing_tools"
+        current = await wait_for_turn_status(client, params.thread_id, "completed")
         await service.close()
-        current = await client.get_thread(params.thread_id)
         assert current.latest_turn is not None and current.latest_turn.status == "completed"
         assert len(resumed_provider.requests) == 1
         await client.close()
@@ -1007,7 +988,7 @@ async def test_sdk_approval_response_drives_decided_turn(tmp_path: Path) -> None
         await client.initialize()
         thread = await client.create_thread(str(tmp_path), request_id="create-approval")
         accepted = await client.start_turn(thread.thread_id, "读取文件", request_id="turn-approval")
-        await _wait_for_turn_status(client, thread.thread_id, "waiting_approval")
+        await wait_for_turn_status(client, thread.thread_id, "waiting_approval")
         internal = await store.get_thread(thread.thread_id)
         turn = internal.turns[-1]
         call = next(
@@ -1029,8 +1010,8 @@ async def test_sdk_approval_response_drives_decided_turn(tmp_path: Path) -> None
             )
         )
         assert responded.status == "waiting_approval"
+        completed = await wait_for_turn_status(client, thread.thread_id, "completed")
         await service.close()
-        completed = await client.get_thread(thread.thread_id)
         assert completed.latest_turn is not None
         assert completed.latest_turn.status == "completed"
         assert len(tools.calls) == 1

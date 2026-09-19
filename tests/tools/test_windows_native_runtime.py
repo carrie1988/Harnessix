@@ -20,6 +20,7 @@ from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.helpers import answer
+from tests.helpers import wait_for_turn_status
 from tests.tools.test_files import call, execute
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="Windows原生Handle运行时语义")
@@ -94,8 +95,8 @@ async def test_windows_product_server_sdk_reads_unicode_space_and_long_path(
             )
             assert accepted.status == "accepted"
 
+            current = await wait_for_turn_status(client, thread.thread_id, "completed")
             await service.close()
-            current = await client.get_thread(thread.thread_id)
             replay = await client.replay_events(thread.thread_id, limit=100)
             results = [
                 event.data.item.content
