@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: pending
+version: 2
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
+  - tests/delivery/test_git_push.py
   - tests/smoke/test_cli.py
   - tests/product_config/test_server_and_cli.py
   - tests/trusted_actions/test_agent_gateway.py
@@ -42,19 +43,18 @@ supersedes: []
 
 ## 2. 需求背景与证据
 
-默认`run_product_stdio`已经直接装配`RouterBackedAgentActionGateway`，并不调用FastAPI、HTTP Client或
-`ActionWorker`。独立链仍由顶层CLI公开，同时保存自己的Action状态、审批、Lease和结果。两套链对同一副作用概念
-给出不同身份和恢复路径，使总体架构必须用两张并列图解释。
+默认`run_product_stdio`直接装配`RouterBackedAgentActionGateway`，并不调用FastAPI、HTTP Client或
+`ActionWorker`。f1已经撤销独立链的顶层CLI和公共SDK入口，但兼容源码仍保存自己的Action状态、审批、Lease和结果。
+f2/f3必须继续消除生产调用与物理实现，不能把“不可从产品入口到达”误写成“已删除”。
 
 源码核对得到以下迁移事实：
 
 | 事实 | 当前源码 | 影响 |
 |---|---|---|
 | 默认产品使用Trusted Action | `product_config/server.py::run_product_stdio` | 可以先撤销HTTP入口而不影响默认产品 |
-| CLI直接导入旧Bootstrap和Worker | `cli.py` | 即使只运行帮助，也扩大旧产品依赖面 |
-| 根包与SDK重导出HTTP Client | `harnessix/__init__.py`、`sdk/__init__.py` | Python用户难以区分Agent SDK与旧Action SDK |
-| Process存在新旧两条链 | `product_config/process_action.py`与`processes/agent_runtime.py` | 必须先完成固定Profile替代链 |
-| Git Push仍桥接旧Journal | `delivery/git_push.py::GitPushRoutedExecutor` | 删除ActionService前必须改为Route内直接持久效果 |
+| CLI与公共SDK已经收敛 | `cli.py`、`harnessix/__init__.py`、`sdk/__init__.py` | f1关闭双产品入口，治理测试阻止回归 |
+| 固定Container Process已进入产品链 | `product_config/process_action.py`与`product_config/action_runtime.py` | f2a已经由0.9.1e4/e5关闭；历史Process Reader留到f3处理 |
+| Git Push已直接使用Trusted Action Route | `delivery/git_push.py::build_git_push_definition` | f2b已移除ActionService/Effect Journal桥，CI关闭证据待补 |
 | 历史Eval显式启动Worker | `evals/runner.py::run_historical_coding_eval` | 需要改为产品同源Catalog/Gateway后才能删除Worker |
 
 ## 3. 设计目标、非目标与验收标准
@@ -88,26 +88,28 @@ supersedes: []
 | 迁移保持失败语义 | Process、Git Push、Eval现有正常与崩溃测试迁移后继续通过 |
 | 文档与实现一致 | 文档检查、链接检查、Mermaid渲染及现行声明扫描通过 |
 
-## 4. 当前实现与根因
+## 4. 收敛前根因与当前剩余链
 
 ```mermaid
 flowchart LR
+    subgraph Before[f1前已撤销产品面]
     User[用户或上层宿主] --> Client[CLI或Python调用方]
+    Client -.已撤销第二入口.-> API[Action HTTP API]
+    API --> Service[ActionService]
+    end
     Client --> Protocol[Agent Protocol]
     Protocol --> Agent[Agent Runtime]
     Agent --> Gateway[Trusted Action Gateway]
     Gateway --> Router[Trusted Action Router]
-    Client -.第二入口.-> API[Action HTTP API]
-    API --> Service[ActionService]
     Service --> Journal[(Effect Journal)]
     Worker[ActionWorker] --> Journal
-    Router -.部分旧Executor桥接.-> Service
+    Eval[历史Eval] -.剩余兼容调用.-> Worker
 ```
 
 根因不是单一架构图绘制错误，而是项目演进后没有退役原始产品面：
 
-1. HTTP API和Worker仍由CLI、Dockerfile和Makefile暴露；
-2. 根包把HTTP Client命名为`HarnessixClient`，Agent Client反而位于子包；
+1. f1前HTTP API和Worker仍由CLI、Dockerfile和Makefile暴露；
+2. f1前根包把HTTP Client命名为`HarnessixClient`，Agent Client反而位于子包；
 3. 0.5时期的Process/Eval和0.7 Git Push复用了旧Journal，形成真实迁移依赖；
 4. 总体文档同时把两个系统标记为当前能力，导致产品边界无法一眼识别；
 5. 缺少禁止新增旧内核调用方的自动化门禁。
@@ -191,18 +193,17 @@ sequenceDiagram
 sequenceDiagram
     participant A as Agent Runtime
     participant R as Trusted Action Router
-    participant L as Effect Ledger
+    participant L as Action Audit
     participant X as External Target
     A->>R: execute approved plan
-    R->>L: persist running intent
-    L->>X: invoke once
-    X--xL: response lost or host exits
-    Note over R,L: reopen marks unknown
+    R->>L: persist running route and frozen intent
+    R->>X: invoke once
+    X--xR: response lost or host exits
+    Note over R,L: reopen marks running as unknown
     A->>R: recover
-    R->>L: reconcile by stable identity
-    L->>X: observe only
-    X-->>L: authoritative state
-    L-->>R: succeeded/failed/unknown/manual
+    R->>X: reconcile by stable identity, observe only
+    X-->>R: authoritative state
+    R->>L: append reconciled terminal fact
 ```
 
 迁移旧Git Push或Process时必须先建立等价持久效果Owner；不能把删除Worker解释为允许异常自动重试。
@@ -216,7 +217,7 @@ sequenceDiagram
 | `harnessix.sdk` | Agent Client与Action HTTP Client并列 | 只导出Agent Client/Transport/Error | Agent Protocol v1不变 | 旧HTTP用户固定旧版本 |
 | Action HTTP/OpenAPI | 当前可构造 | f1标记兼容，f3删除 | 不进入1.0稳定合同 | 历史Schema随Git版本保留 |
 | Agent Session | Trusted与旧专用事件均可读 | 新执行只写Trusted Action事件 | 旧事件继续只读恢复 | 不重写数据库 |
-| Effect事实 | 旧Journal或专用Ledger | 每类Executor的受信Ledger + Action Audit | 迁移前逐类建立等价恢复 | 禁止删除未归档旧库 |
+| Effect事实 | 旧Journal或专用Ledger | Action Audit保存Route状态；外部系统或专用Owner保存权威效果事实 | 迁移前逐类证明等价恢复 | 禁止删除未归档旧库 |
 
 ## 8. 状态、事务、并发与幂等
 
@@ -267,7 +268,7 @@ phase_f3_delete_compatibility_kernel():
 |---|---|---|---|---|
 | f1 | 删除CLI双入口、公共HTTP SDK导出、旧示例和服务默认部署；旧服务依赖移入`legacy-action` Extra；增加旧引用白名单 | Agent产品行为不变，旧命令停止，基础Wheel不携带旧服务依赖 | CLI、导出、依赖治理、Wheel元数据、产品Server | 是 |
 | f2a | 完成固定Container Process Trusted Action及Owner | Process批准/输出/取消/恢复等价 | Process、Gateway、Container、Artifact | 是，功能门关闭新目录 |
-| f2b | Git Push直接使用受信外部效果Ledger | `UNKNOWN → reconcile`与exact lease不变 | Git Push故障与真实bare remote | 是 |
+| f2b | Git Push Definition与Executor直接注册到Trusted Action Router；删除旧Action投影 | `running → unknown → reconcile`、exact lease与稳定External Action ID不变 | 未批准拒绝、真实bare remote、响应丢失、宿主硬崩溃重开 | 是 |
 | f2c | Eval使用产品同源Catalog/Gateway | 评分、预算和历史任务证据不变 | Evals、Campaign、崩溃 | 是 |
 | f3 | 删除旧API/Worker/SDK/Adapter/Queue和依赖 | Agent Protocol成为唯一公共协议 | 全量、升级、文档、发行物 | 代码可回滚，数据只归档 |
 
@@ -282,7 +283,7 @@ phase_f3_delete_compatibility_kernel():
 | 旧调用方门禁 | 生产源码树 | 精确Import集合 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | 新引用失败、集合缩小可见 |
 | 基础依赖边界 | [`pyproject.toml`](../../pyproject.toml)、[`Dockerfile`](../../Dockerfile) | `legacy-action` Extra、Help默认命令 | [`test_product_runtime_convergence.py`](../../tests/governance/test_product_runtime_convergence.py) | FastAPI/Uvicorn/AsyncPG/LangChain Core不进入基础Wheel |
 | 固定Process替代链 | [`process_action.py`](../../src/harnessix/product_config/process_action.py) | `ProductProcessActionExecutor` | Process专项测试 | f2a完成后登记具体测试 |
-| Git Push迁移 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `GitPushRoutedExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | f2b删除旧ActionService桥 |
+| Git Push迁移 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `git_push_descriptor`、`git_push_binding`、`build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | f2b不再导入旧Runtime；响应丢失和硬崩溃只对账 |
 | Eval迁移 | [`runner.py`](../../src/harnessix/evals/runner.py) | `run_historical_coding_eval` | `tests/evals/` | f2c删除Worker驱动 |
 
 ## 13. 风险、部署、兼容与回退
@@ -304,5 +305,14 @@ f1的公共面整改已经完成：顶层CLI、根包/SDK导出、Makefile、Doc
 [CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成Python 3.12/3.13、macOS、
 Windows、PostgreSQL、固定镜像Container和文档Mermaid全矩阵验收，f1据此正式关闭。
 
-f2依赖0.9.1e4/e5完成固定Container Process和产品Owner，f3尚未开始。每个切片完成后必须回写实际删除范围、
-测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。
+f2a依赖0.9.1e4/e5交付的固定Container Process和产品Owner，已经关闭。f2b实现候选将`git.push`改为直接
+`TrustedActionDefinition`：Descriptor以`GitPushIntent`为输入，Binding固定为`external_reconcile`，Resolver冻结Remote URL摘要、
+目标Ref和Expected OID，Router的Execution Plan与Action Audit保存批准及运行状态，远端Ref是效果对账权威。执行前仍重绑仓库、
+Remote和Local OID；进入`running`后只允许一次`git push --force-with-lease`。响应丢失由Router转为`unknown`；宿主在命令后硬退出时，
+重开先把遗留`running`转为`unknown`，随后只执行`ls-remote`对账。响应丢失测试断言Push调用计数为1；独立子进程
+在远端更新后执行`os._exit(97)`，父进程重开Store/Router并只走Reconcile路径。
+
+治理门禁已经从旧调用方精确集合中删除`delivery/git_push.py`，并由“子集”收紧为“完全相等”，防止删除引用后留下可被重新占用的
+白名单额度。本候选已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
+文档静态门禁和87幅变化文档Mermaid真实渲染；CI证据将在关闭提交中补记。因此本版本仍为`reviewing`，f2c和f3尚未开始。
+每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。

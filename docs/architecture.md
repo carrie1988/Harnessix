@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 50
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 51
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -88,7 +88,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前已验收基线为提交`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`：0.9.1e5已经由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成外部Action Config、Doctor能力报告、双配置原子CAS、启动只对账恢复和七任务全矩阵验收；0.9.1f1已经由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)关闭旧Action公共入口并收敛单一产品边界。能力状态按“当前默认产品、实现候选、迁移兼容、规划中”区分：
+本文当前已验收基线为提交`b835fcef06803bf0e957a59a50bd5535e127502b`：0.9.1e5已经由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成外部Action Config、Doctor能力报告、双配置原子CAS、启动只对账恢复和七任务全矩阵验收；0.9.1f1已经由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)关闭旧Action公共入口。f2b的Git Push直接Trusted Action实现已完成本地候选验证，等待全矩阵CI关闭。能力状态按“当前默认产品、实现候选、迁移兼容、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
@@ -598,7 +598,7 @@ Protocol进入同一Thread/Turn和Trusted Action Runtime。专项测试覆盖严
 
 `ActionService`、`ActionWorker`、SQLite/PostgreSQL Effect Journal、HTTP API和LangChain Adapter来自0.1产品。顶层`serve/worker`命令与HTTP Client公共导出已经撤销；这些实现不再出现在默认产品、部署或能力目录中。
 
-迁移期只有Process旧桥、Git Push旧效果投影、历史Eval及旧实现自身可以引用兼容内核，精确集合由[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)冻结。0.9.1f按Process、Git Push、Eval顺序迁移；白名单清零并提供旧数据库归档方案后，删除HTTP/Worker/PostgreSQL Queue及对应依赖。完整决策和切片见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)与[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md)。
+产品固定Container Process与Git Push已经迁入Trusted Action链；Git Push不再引用`ActionService`、`ActionWorker`或旧Effect Journal。迁移期只剩历史Process Reader、历史Eval及旧实现自身可以引用兼容内核，精确集合由[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)以完全相等断言冻结。完成Eval迁移、白名单清零并提供旧数据库归档方案后，才能删除HTTP/Worker/PostgreSQL Queue及对应依赖。Git Push当前由Execution Plan/Action Audit保存批准和Route状态，远端Ref保存效果事实；遗留`running`冷启动只转`unknown`并以`ls-remote`对账，不再生成第二个Action记录。完整决策和切片见[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)与[0.9.1f详细设计](changes/m09-1f-single-product-runtime-convergence.md)。
 
 ## 7. 逻辑组件与源码映射
 
@@ -1486,7 +1486,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 0.9.1e的外部Action Config、Doctor、双指针CAS和启动恢复已关闭 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；旧HTTP/Worker兼容内核物理删除仍属于f2/f3 | 0.9.1f2/f3 |
+| 0.9.1e运行时与0.9.1f1已关闭，f2b Git Push候选已本地通过 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；历史Eval迁移与旧HTTP/Worker兼容内核物理删除仍未完成 | 0.9.1f2c/f3 |
 | Windows原生只读链已验证且Patch被明确省略，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
@@ -1568,6 +1568,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 51 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接Trusted Action、Action Audit/Remote事实分工与旧调用方白名单收缩候选；等待全矩阵CI |
 | 50 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录e5 Action配置、Doctor、双指针CAS和启动只对账恢复由CI 35439332019验收关闭 |
 | 49 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router与stdio开放顺序；等待关闭CI |
 | 48 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成真实镜像及七任务全矩阵验收 |

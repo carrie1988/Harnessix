@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 6
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -31,14 +31,14 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/delivery`](../../src/harnessix/delivery/) |
-| 当前职责 | 把多文件目标冻结为Workspace Transaction；私有保存before/after Blob；生成完整Diff；在POSIX普通目录中可恢复发布；在受管Git Worktree中生成Checkpoint和确定性Commit；把Push投影到统一Trusted Action与Effect Journal |
+| 当前职责 | 把多文件目标冻结为Workspace Transaction；私有保存before/after Blob；生成完整Diff；在POSIX普通目录中可恢复发布；在受管Git Worktree中生成Checkpoint和确定性Commit；把Push作为直接Trusted Action执行并对账 |
 | 非职责 | 不生成模型修改意图，不提供编辑器/TUI，不执行任意Shell，不实现Windows普通目录写端口，不自动Push/建PR，不管理公网凭据，不提供多租户远端服务或跨Store原子事务 |
 | 上游调用者 | 默认POSIX `agent-server`通过Trusted Workspace Patch消费文件Delivery；Git、Push及其他宿主仍为显式装配 |
-| 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions、Execution Plan与Action Plane |
-| 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push另用Execution Plan、Action Audit与Effect Journal |
+| 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions与Execution Plan |
+| 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push使用Execution Plan与Action Audit，远端Ref作为效果对账权威 |
 | 平台 | Planner支持POSIX/Windows观察；普通Workspace发布仅POSIX；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
-| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；e5使Doctor与Runtime复用同一Patch Binding构造并已由CI 35439332019验收；Git公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
+| 代码版本 | 已验收基线`b835fcef06803bf0e957a59a50bd5535e127502b`；本版同步f2b实现候选 |
+| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；Git Push已直接接入Trusted Action Router并通过本地bare remote、响应丢失和硬崩溃只对账测试，等待CI关闭；公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
 
 本文描述[`contracts.py`](../../src/harnessix/delivery/contracts.py)、
 [`planner.py`](../../src/harnessix/delivery/planner.py)、[`store.py`](../../src/harnessix/delivery/store.py)、
@@ -47,7 +47,7 @@ supersedes: []
 [`git_store.py`](../../src/harnessix/delivery/git_store.py)、[`git.py`](../../src/harnessix/delivery/git.py)和
 [`git_push.py`](../../src/harnessix/delivery/git_push.py)的当前实现。Workspace路径、Snapshot与Lease以
 [Workspace模块设计](workspace.md)为事实源；统一审批和外部效果恢复以
-[Trusted Actions模块设计](trusted-actions.md)与[Action Plane子系统设计](../subsystems/action-plane.md)为事实源。
+[Trusted Actions模块设计](trusted-actions.md)为当前审批、路由与外部效果恢复事实源；[Action Plane子系统设计](../subsystems/action-plane.md)只描述待删除的迁移兼容内核。
 
 ## 2. 需求背景
 
@@ -143,7 +143,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | Managed Worktree | 已实现 | `plan_worktree/create_worktree/reconcile_worktree` | 注册崩溃恢复测试 |
 | Git Checkpoint | 已实现 | `create_checkpoint` | Tree、Blob和来源不变测试 |
 | 确定性Commit | 已实现 | `plan_commit/commit/reconcile_commit` | 对象写入/Ref更新硬退出测试 |
-| 单Ref Git Push | 已实现/显式装配 | Trusted Action → Action Plane | 本地bare remote审批、旁路和UNKNOWN测试 |
+| 单Ref Git Push | 已实现/显式装配 | Trusted Action Router → GitPushActionExecutor | 本地bare remote审批、响应丢失、硬崩溃重开和UNKNOWN只对账测试 |
 | 公网Git认证 | 未实现 | Runner不继承完整宿主凭据环境 | 无真实GitHub/GitLab证据 |
 | 产品CLI/TUI写链 | POSIX Workspace Patch已装配 | 完整Review后批准，Windows省略 | Process与启动恢复由0.9.1e4～e5实现 |
 | Worktree/Blob GC | 未实现 | 无 | 长期运行容量风险 |
@@ -172,8 +172,8 @@ flowchart LR
 
 **图示说明：** 模型或扩展不能直接获得Filesystem Runtime、Git Runner、Store或Lease。受信宿主先把意图
 转换为确定的Desired File集合，再由Planner捕获来源事实。普通发布和Git交付都要求Workspace Lease；但
-本地Runtime当前只比较调用方传入的批准指纹，不自行读取Approval Store。Push必须额外经过统一Route和
-Action Plane，Commit完成不构成网络授权。
+本地Runtime当前只比较调用方传入的批准指纹，不自行读取Approval Store。Push必须额外经过统一Trusted Action Route；
+Router持久化批准与运行状态，Commit完成不构成网络授权。
 
 ### 5.1 受信输入
 
@@ -200,7 +200,7 @@ Action Plane，Commit完成不构成网络授权。
 3. 不允许把Workspace Lease替代文件before/after复核；
 4. 不允许把Transaction Plan用于未绑定的Workspace Root；
 5. 不允许把Checkpoint批准、Commit批准或已配置Upstream推导为Push批准；
-6. 不允许Push绕过Trusted Action Route直接提交旧Action Service；
+6. 不允许Push绕过Trusted Action Route直接调用`GitPushActionExecutor`；
 7. 不允许Push异常后按同一Intent自动再次调用`git push`；
 8. 不允许把Git工作目录配置、Hook或Filter作为隐式执行能力；
 9. 不允许把POSIX直接发布能力外推为Windows普通目录安全写；
@@ -220,7 +220,7 @@ Action Plane，Commit完成不构成网络授权。
 | 8 | [`git_store.py`](../../src/harnessix/delivery/git_store.py) | `SQLiteGitDeliveryStore` | 理解Worktree、Checkpoint和Commit账本 |
 | 9 | [`git.py`](../../src/harnessix/delivery/git.py) | `_GitRunner`、`GitDeliveryRuntime` | 理解固定Git环境与本地交付 |
 | 10 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `GitPushActionExecutor` | 理解Remote URL、单Ref Push和对账 |
-| 11 | 同上 | `ApprovedGitPushPolicy`、`GitPushRoutedExecutor` | 理解Route到Effect Journal桥接 |
+| 11 | 同上 | `git_push_descriptor`、`git_push_binding`、`build_git_push_definition` | 理解Route如何直接绑定Executor、资源与恢复模式 |
 | 12 | [`test_filesystem.py`](../../tests/delivery/test_filesystem.py) | 效果切点和硬退出夹具 | 对照普通目录恢复语义 |
 | 13 | [`test_git.py`](../../tests/delivery/test_git.py) | Worktree/Commit硬退出夹具 | 对照Git本地恢复语义 |
 | 14 | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | Route/Push/Remote夹具 | 对照外部效果不可重放边界 |
@@ -247,7 +247,7 @@ flowchart TB
     subgraph GitRemote[External Push]
         Push[git_push.py]
         Trusted[Trusted Action Router]
-        Effect[Action Service and Effect Journal]
+        Audit[Execution Plan and Action Audit]
     end
     Workspace[Workspace Snapshot and Lease] --> Planner
     Planner --> Contracts --> Store
@@ -256,7 +256,8 @@ flowchart TB
     Store --> GitRuntime
     GitContracts --> GitRuntime --> GitStore
     GitRuntime --> Push
-    Trusted --> Push --> Effect
+    Trusted --> Audit
+    Audit --> Push --> Remote[(Remote Git Ref)]
 ```
 
 Workspace Transaction合同和Blob是两个本地交付分支的共同输入。普通目录Runtime直接消费Plan和Blob；Git
@@ -957,8 +958,10 @@ Host经IDNA、小写、IPv4/IPv6规范化；Path先Percent Decode，拒绝空段
 
 ### 24.3 Tool合同
 
-`git_push_tool_definition`注册`git.push`为High Risk、Non-idempotent Write、必须Approval、必须Idempotency、
-支持Reconcile的Action Tool。Tool版本绑定Git Push实现Digest及Action Input/Receipt Schema。
+`git_push_descriptor`声明`git.push`为High Risk、Non-idempotent Write、必须Approval、必须Idempotency、
+支持Reconcile且禁止并发的Tool。Tool版本绑定Git Push实现Digest、`GitPushIntent`输入Schema和Receipt Schema。
+`git_push_binding`进一步固定`source=builtin`、`source_id=harnessix.product`、`recovery_mode=external_reconcile`与
+`executor_id=delivery.git-push`；`build_git_push_definition`只接受与Executor仓库根完全相同且`cwd=.`的规划上下文。
 
 ## 25. Push统一Route与旁路防护
 
@@ -968,37 +971,32 @@ sequenceDiagram
     participant T as Trusted Action Router
     participant P as Execution Plan Store
     participant A as Action Audit Store
-    participant E as GitPushRoutedExecutor
-    participant S as Action Service
     participant G as GitPushActionExecutor
     participant R as Remote Ref
     H->>T: plan GitPushIntent
-    T->>P: persist execution plan
+    T->>P: persist immutable execution plan
     T->>A: persist pending approval route
     H->>T: approve exact route fingerprint
     T->>A: ready then running
-    T->>E: execute approved route
-    E->>S: submit stable external action id
-    S->>S: ApprovedGitPushPolicy checks route and approval
-    S->>G: execute typed action input
+    T->>G: execute frozen route and intent
     G->>R: observe expected oid then single push
-    R-->>G: resulting remote oid
-    G-->>S: receipt or uncertain outcome
-    S-->>T: projected action outcome
+    R-->>G: resulting remote oid or lost response
+    G-->>T: receipt, failure or uncertain outcome
+    T->>A: persist terminal state or unknown
 ```
 
-`GitPushRoutedExecutor`把Route Plan投影为稳定`external_action_id`的`ActionRequest`。Action参数额外绑定Route
-Plan ID/Fingerprint和外部Action ID。`ApprovedGitPushPolicy`只有同时满足以下条件才允许：
+`TrustedActionRouter`是唯一批准与状态权威，不再把Route投影为第二个`ActionRequest`。规划时Resolver固定Remote URL摘要、
+Remote Ref/Expected OID两类规范资源；执行时`GitPushActionExecutor`重新核对以下事实：
 
-- Route与Execution Plan一致且持久Approval有效；
-- Route状态当前为`running`；
-- Route Fingerprint、外部Action ID和Intent完整一致；
-- Recovery Mode为`external_reconcile`；
-- Tool确为`git.push`、效果为非幂等写并支持对账；
-- Route Invocation、Action Request和Intent使用相同Idempotency Key。
+- Route Binding逐字段等于当前`git_push_binding`，恢复模式为`external_reconcile`；
+- Execution Plan ID与Invocation ID一致，External Action ID已经由Router稳定生成；
+- Route中的规范参数、Idempotency Key和持久`GitPushIntent`完全一致；
+- Route资源集合与根据Intent重新解析的Remote/Ref资源完全一致；
+- Router已经持久检查Execution Plan、Approval、当前Binding和`running`状态后才调用Executor。
 
-因此直接调用Action Service、复用未批准Route或替换Intent会被拒绝。底层`_GitRunner`仍是受信进程内能力；
-同进程恶意代码若直接持有它，不受该Policy保护。
+因此未批准Route由Router以`action_not_approved`拒绝，篡改Intent/资源/Binding由Executor失败关闭。直接调用
+`GitPushActionExecutor`或底层`_GitRunner`仍属于受信宿主代码能力；不受信扩展不能持有这些对象，OS级恶意同进程代码
+不在Python对象边界的防护范围内。
 
 ## 26. Push执行、UNKNOWN与对账
 
@@ -1017,9 +1015,9 @@ Plan ID/Fingerprint和外部Action ID。`ApprovedGitPushPolicy`只有同时满�
 `fast_forward_only`额外执行祖先检查；`force_with_lease`允许非快进，但仍要求旧OID精确匹配。固定
 `--no-verify`禁用Pre-push Hook。
 
-Push命令开始后，启动/等待异常、返回丢失或后续Remote读取失败都转为`UncertainEffectError`，由Action
-Plane进入UNKNOWN。若命令返回后Remote为Local OID则成功并生成`GitPushReceipt/EffectReceipt`；命令失败且
-Remote仍为Expected OID则确定失败；第三OID为Unknown。
+Push命令开始后，启动/等待异常、返回丢失或后续Remote读取失败都转为`UncertainEffectError`，由Trusted Action
+Router把Route推进为`unknown`。若命令返回后Remote为Local OID则成功并生成`GitPushReceipt`；命令失败且
+Remote仍为Expected OID则确定失败；第三OID为Unknown。Action Audit不复制第二份Effect Receipt，远端Ref是对账权威。
 
 ### 26.3 Reconcile
 
@@ -1048,7 +1046,7 @@ Delivery路径涉及最多六个独立事实域：
 | Workspace Owner/Fence | Lease DB | 单Lease行事务 |
 | Worktree/Checkpoint/Commit | `git-delivery.db` | 单Git记录事务 |
 | Git Object/Ref/Worktree | Git Common Directory与受管路径 | Git单命令或对象内容寻址语义 |
-| Push Route/外部Action | Execution Plan、Action Audit、Effect Journal | 各Store独立事务 |
+| Push Route/外部Action | Execution Plan、Action Audit与Remote Ref | 两个SQLite Store分别事务；Remote使用Git CAS |
 
 ```mermaid
 flowchart LR
@@ -1057,7 +1055,7 @@ flowchart LR
     Tx -. no cross-store transaction .- GitDB[(Git Delivery DB)]
     GitDB -. reconcile by facts .- GitFS[(Git Objects and Refs)]
     GitFS -. remote CAS .- Remote[(Remote Ref)]
-    Remote -. separate journals .- Action[(Route and Effect Stores)]
+    Remote -. reconcile by stable intent .- Action[(Execution Plan and Action Audit)]
 ```
 
 系统不使用分布式事务，而使用“先持久意图、再效果、再持久证明”和事实对账。当前Git流程读取Transaction
@@ -1100,8 +1098,8 @@ Plan/Blob但不推进Workspace Transaction Record，后者通常保持`prepared`
 
 Git命令没有独立Process Group/Job Object Owner合同，超时和Task取消不等同完整后代树清理。Push Async包装
 使用`asyncio.to_thread`，上层取消Task时同步线程和Git命令可能继续执行。Trusted Action Router会把Route
-记为unknown，但内层Action Service不捕获`CancelledError`，对应Effect Action可能保持running，直到启动恢复
-或额外协调器将其转为可对账状态；直接Route Reconcile不能保证立即推进该内层Action。当前没有专项测试。
+记为unknown并重新抛出取消；后台线程仍可能在取消后完成Push，因此调用方只能等待线程自然结束或稍后按Remote
+Ref事实执行Reconcile，不能据取消异常推导“未发生效果”。当前尚无Push取消与后代清理专项测试。
 
 ## 30. 错误分类与恢复建议
 
@@ -1163,7 +1161,7 @@ Git命令没有独立Process Group/Job Object Owner合同，超时和Task取消�
 - 干净Repository、无Hook/Filter/外部Config/Submodule/LFS/Sparse/Alternates；
 - 确定性Commit正文与新Branch Ref零旧值CAS；
 - Remote URL去凭据、规范Host/Path和单Ref Force-With-Lease；
-- Push必须通过统一Route、持久Approval和Action Plane；
+- Push必须通过统一Route、持久Approval和Action Audit；
 - 非幂等远端效果不确定时进入UNKNOWN，只读对账。
 
 ### 31.2 当前安全缺口
@@ -1233,8 +1231,8 @@ Trace可在受限属性中记录Transaction/Plan/Route ID，但Metric Label保�
 | `GitDeliveryRuntime` | Repo/Worktree/Checkpoint/Commit | 宿主装配生命周期 | Store和Lease由外部关闭 |
 | `SQLiteGitDeliveryStore` | Git阶段账本 | 长期连接，必须close | 两类事件CAS、Checkpoint唯一 |
 | `GitPushActionExecutor` | 单Ref外部写与对账 | Tool注册生命周期 | Async通过线程调用同步Git |
-| `ApprovedGitPushPolicy` | 阻断Action Service旁路 | Action Service生命周期 | 每次读取Route/Plan/Approval |
-| `GitPushRoutedExecutor` | Route到Action投影 | Trusted Action生命周期 | 稳定External Action ID |
+| `git_push_descriptor/git_push_binding` | 固定模型合同、风险与恢复身份 | Definition构造时 | Tool版本绑定实现和Schema摘要 |
+| `build_git_push_definition` | 绑定仓库根、Resolver与Executor | 受信宿主装配生命周期 | 规划Workspace必须精确匹配 |
 
 ## 35. 公共接口合同
 
@@ -1253,7 +1251,7 @@ Trace可在受限属性中记录Transaction/Plan/Route ID，但Metric Label保�
 | `plan_commit` | Checkpoint、新Branch和作者信息 | Commit正文确定 | 多命令 | 只读计算OID |
 | `commit/reconcile_commit` | Spec指纹、Binding、Lease | 对象内容寻址+Ref CAS | 多命令 | 创建本地Branch |
 | `prepare_intent` | Local Ref、Remote配置和旧OID | 构造不可变Intent | 本地命令 | 不连接Remote |
-| `GitPushActionExecutor.execute` | 已由Action Policy允许 | 单次Remote CAS | Push 120秒；取消不完善 | 外部网络写 |
+| `GitPushActionExecutor.execute` | Router已把精确Plan推进为running | 单次Remote CAS | Push 120秒；取消不完善 | 外部网络写；仅受信Router持有 |
 | `GitPushActionExecutor.reconcile` | 持久Intent | 只读Remote事实 | 60秒 | 外部网络读 |
 
 ## 36. 核心业务逻辑伪代码
@@ -1372,9 +1370,10 @@ reconcile_push(intent):
 | Commit硬退出 | 同上 | `GitDeliveryRuntime.commit`、`GitDeliveryRuntime.reconcile_commit` | 同上 | `test_real_process_exit_reconciles_commit_without_duplicate` |
 | Branch/Commit批准 | 同上 | `GitDeliveryRuntime.plan_commit`、`GitDeliveryRuntime.commit` | 同上 | `test_commit_approval_and_existing_branch_are_rejected` |
 | Git Store损坏 | [`git_store.py`](../../src/harnessix/delivery/git_store.py) | `SQLiteGitDeliveryStore` | 同上 | `test_git_store_rejects_unknown_schema_and_corrupt_payload` |
-| Push审批与单Ref | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
+| Push审批与单Ref | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
 | Push响应丢失 | 同上 | `GitPushActionExecutor._execute`、`GitPushActionExecutor._reconcile` | 同上 | `test_push_response_loss_reconciles_without_second_push` |
-| Action旁路 | 同上 | `ApprovedGitPushPolicy._approved` | 同上 | `test_direct_action_service_push_bypass_is_denied` |
+| 未批准旁路 | 同上 | `TrustedActionRouter.execute` | 同上 | `test_git_push_cannot_execute_before_router_approval` |
+| Push硬崩溃恢复 | 同上 | `TrustedActionRouter.recover_interrupted`、`GitPushActionExecutor._reconcile` | 同上 | `test_push_hard_crash_reopens_running_route_and_only_reconciles` |
 | Remote配置漂移 | 同上 | `GitPushActionExecutor._verify_binding`、`GitPushActionExecutor._remote_name` | 同上 | `test_remote_configuration_drift_after_approval_fails_closed` |
 | URL/argv/输出边界 | 同上 | `canonical_git_remote_url`、`_decode_single_line` | 同上 | `test_remote_url_rejects_protocol_credentials_and_ambiguous_paths`、`test_prepare_intent_rejects_unsafe_command_fields_before_git_runs` |
 | Push Schema | [`git_contracts.py`](../../src/harnessix/delivery/git_contracts.py) | `GitPushIntent`、`GitPushActionInput`、`GitPushReceipt` | [`test_schemas.py`](../../tests/trusted_actions/test_schemas.py) | `test_action_plane_public_schemas_match_generated_contracts` |
@@ -1390,7 +1389,7 @@ uv run pytest \
   tests/trusted_actions/test_router.py \
   tests/trusted_actions/test_schemas.py \
   tests/execution/test_plans.py \
-  tests/integration/test_action_service.py
+  tests/governance/test_product_runtime_convergence.py
 ```
 
 普通Filesystem测试在非POSIX平台Skip；Git测试要求本机存在Git。Push场景使用本地bare remote并显式开启
@@ -1442,7 +1441,8 @@ Worktree路径，不证明Windows普通目录发布。
 
 Schema由[`scripts/generate_specs.py`](../../scripts/generate_specs.py)生成。当前自动合同测试只逐字比较Git Push
 三份Schema；其余Delivery Schema主要依赖人工运行生成脚本和Git Diff。SQLite Transaction/Git Store各自
-只有Schema v1和拒绝未知版本，没有Migration路径。
+只有Schema v1和拒绝未知版本，没有Migration路径。`git-push-action-input-v1`只为旧Effect Journal数据读取保留；
+直接Trusted Action链以`git-push-intent-v1`作为输入，f3删除兼容内核时再评估历史Schema的归档位置。
 
 任何字段、排序、摘要输入、状态边、Git命令、实现Digest文件集合或错误语义变化，都需要判断是否升级公共
 Spec、SQLite Schema和Tool Version，不能只修改Python类型。
@@ -1451,7 +1451,7 @@ Spec、SQLite Schema和Tool Version，不能只修改Python类型。
 
 ### 40.1 状态目录
 
-Workspace Transaction、Git Delivery、Lease、Execution Plan、Action Audit和Effect Journal应位于Workspace
+Workspace Transaction、Git Delivery、Lease、Execution Plan和Action Audit应位于Workspace
 之外的当前用户私有状态根。Git Managed Worktree也位于Git Store Root下，不能落入来源仓库，否则会使
 来源Status变脏并扩大信任边界。当前构造器未统一检查所有目录互不包含，产品装配必须执行。
 
@@ -1481,7 +1481,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 | P0 | 本地Publish/Commit只比较Fingerprint参数 | 库本身不证明批准来源 | 统一Trusted Action接线 |
 | P0 | Worktree创建未重验完整Snapshot | 部分批准事实漂移可能未失效 | Git执行前复核修复 |
 | P0 | Push缺少公网Secret/Known Hosts边界 | 不能安全发布私有仓库 | 0.9.5 |
-| P0 | Push取消/超时无完整进程Owner且内层Action可停在running | 用户取消后效果仍可能继续，Route与Effect账本暂时分叉 | Process/Sandbox统一Owner与取消恢复协调 |
+| P0 | Push取消/超时无完整进程Owner，Route可停在running | 用户取消后效果仍可能继续；重开只能保守转unknown再对账 | Process/Sandbox统一Owner与取消恢复协调 |
 | P1 | Checkpoint Lease只检查一次 | 长操作可能越过Fencing期限 | 阶段续租与复核 |
 | P1 | Worktree Reconcile可写但不要求Lease | 恢复入口权限边界不清 | Observe/Repair拆分 |
 | P1 | Rollback第三内容语义与ADR不一致 | 用户预期和实现可能冲突 | 设计决策+回归测试 |
@@ -1557,7 +1557,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 14. 手工构造`_commit_bytes`，理解预期OID与`update-ref`零旧值CAS；
 15. 对照两个硬退出测试理解Object写入后与Ref更新后的不同恢复结论；
 16. 阅读Remote URL规范化和Git Push Intent合同；
-17. 从Trusted Router进入`GitPushRoutedExecutor → ActionService → ApprovedGitPushPolicy`验证旁路防护；
+17. 从`git_push_descriptor/git_push_binding/build_git_push_definition`进入Trusted Router，验证合同、资源和恢复身份同源；
 18. 阅读`GitPushActionExecutor._execute/_reconcile`，确认调用后异常不会触发第二次Push；
 19. 最后检查默认Bootstrap/Product Config，确认Delivery当前没有产品装配入口；
 20. 按第38节运行测试，并用第41节审查尚未满足的生产门槛。
@@ -1574,7 +1574,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 - POSIX父目录定位、临时文件、fsync、replace/unlink或竞态控制变化；
 - Git Runner环境、argv、协议、Timeout、身份或危险配置规则变化；
 - Repository/Worktree/Checkpoint/Commit合同、状态和恢复变化；
-- Push URL、Ref、Remote Lease、Route Policy、Effect Receipt或UNKNOWN变化；
+- Push URL、Ref、Remote Lease、Route Binding、Receipt或UNKNOWN变化；
 - SQLite Schema、Migration、事件完整性、权限、备份、Retention或GC变化；
 - 默认产品、CLI/TUI、SDK、Artifact、Approval、Secret或Observability接线变化；
 - Windows/macOS/Linux、Git版本、远端认证或真实场景证据变化。
@@ -1617,6 +1617,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b直接Trusted Git Push、硬崩溃只对账与旧Action依赖删除候选；等待全矩阵CI |
 | 5 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录同源Workspace Patch Binding诊断由CI 35439332019验收关闭 |
 | 4 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor与Runtime复用正式Workspace Patch Binding的实现候选 |
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认Trusted Workspace Patch，定义Action/Delivery同身份、Review Artifact、逐成员提交、取消与只观察恢复 |

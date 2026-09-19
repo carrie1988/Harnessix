@@ -20,7 +20,6 @@ _LEGACY_MODULES = {
 _LEGACY_PRODUCTION_CALLERS = {
     "api/app.py",
     "bootstrap.py",
-    "delivery/git_push.py",
     "evals/runner.py",
     "processes/agent_bridge.py",
     "processes/agent_runtime.py",
@@ -61,8 +60,8 @@ def test_legacy_action_runtime_production_callers_do_not_expand() -> None:
         if _legacy_imports(path)
     }
 
-    # 白名单只能在后续迁移中缩小；新增文件使用旧内核必须先改变ADR和本测试。
-    assert observed <= _LEGACY_PRODUCTION_CALLERS
+    # 白名单必须与现存迁移债务完全相等；已删除的旧引用不得以空额度留在列表中。
+    assert observed == _LEGACY_PRODUCTION_CALLERS
     assert "cli.py" not in observed
 
 

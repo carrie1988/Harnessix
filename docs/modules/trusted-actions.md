@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 13
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -40,15 +40,15 @@ supersedes: []
 | 源码包 | [`src/harnessix/trusted_actions`](../../src/harnessix/trusted_actions/) |
 | 当前职责 | 把内置、MCP、Skill、Hook和Custom Tool绑定为宿主可信合同；规范化资源；统一完成Policy、Execution Plan、Approval、执行、摘要审计、`UNKNOWN`恢复和Reconcile |
 | 非职责 | 不实现模型Agent Loop、Tool发现协议、Secret明文解析、Sandbox执行器、Workspace锁、外部效果本体、集中式多租户认证或分布式任务调度 |
-| 上游调用者 | Agent统一Gateway、受信产品装配、MCP/Skill/Hook Gateway、Git Push桥接及直接使用该库的宿主 |
+| 上游调用者 | Agent统一Gateway、受信产品装配、MCP/Skill/Hook Gateway、直接Git Push Definition及直接使用该库的宿主 |
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` |
-| 当前完成度 | 核心路由库及扩展适配已实现；e1～e5已通过全矩阵CI；上一活动配置恢复Router、产品Route全局扫描、只对账与候选Binding承接校验已关闭 |
+| 代码版本 | 已验收基线`b835fcef06803bf0e957a59a50bd5535e127502b`；本版同步f2b实现候选 |
+| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5已通过全矩阵CI；Git Push已删除旧ActionService桥并通过本地响应丢失与硬崩溃只对账验证，等待CI关闭 |
 
-本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
-[Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
+本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
+[Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
 [Execution Plan模块设计](execution.md)为事实源；Sandbox、Secret、Workspace和Delivery分别以
 [Sandbox模块设计](sandbox.md)、[Secrets模块设计](secrets.md)及后续独立模块设计为事实源。
 
@@ -60,7 +60,7 @@ Secret和失败恢复，会产生以下生产风险：
 
 1. 模型或扩展通过自报“只读/低风险”降低宿主Policy；
 2. 广告给模型的Schema与最终执行器、版本或远端目录发生漂移；
-3. 同一写操作绕过统一审批，直接调用旧Action Service或宿主Executor；
+3. 同一写操作绕过统一审批，直接调用兼容Action Service或宿主Executor；
 4. 外部效果已经发生但响应丢失时，被通用重试再次执行；
 5. 宿主崩溃后无法区分“尚未调用”和“调用结果未知”；
 6. 扩展持有Session、Secret Provider、文件系统或通用spawn对象，形成宽权限旁路；
@@ -91,7 +91,7 @@ Workspace、环境摘要、Secret版本、Sandbox Profile和能力证据，并�
 
 ### 3.2 明确非目标
 
-- 不替代[`domain`](domain.md)中的通用Action Plane、Worker、Lease和多后端Journal；
+- 不提供通用HTTP Action服务、数据库Worker Queue、分布式Claim或多后端Journal；
 - 不实现Tool本身的文件、进程、网络、Git或SaaS效果；
 - 不自动推导MCP Annotation、Tool描述或模型参数中的风险级别；
 - 不向Executor解析或注入Secret明文；
@@ -101,7 +101,7 @@ Workspace、环境摘要、Secret版本、Sandbox Profile和能力证据，并�
 - 不抵御能够修改进程内Registry、重算数据库Hash或注入同进程Python代码的主体；
 - 不提供Router/Registry的跨进程发现、热更新、注销或版本协商；
 - 不提供集中式主体认证、租户隔离、RBAC、审计导出和合规留存；
-- 不保证当前库已经接入默认`agent-server`产品链。
+- 不保证所有显式能力都已进入默认`agent-server`目录；Git Push仍需宿主显式装配。
 
 ### 3.3 关键术语
 
@@ -133,9 +133,9 @@ Workspace、环境摘要、Secret版本、Sandbox Profile和能力证据，并�
 | MCP动态Schema | 已实现适配 | `McpActionGateway`显式装配 | MCP目录漂移、调用与Reconcile测试 |
 | Skill只读正文/资源 | 已实现适配 | `SkillActionGateway`显式装配 | Skill目录与Canary测试 |
 | Hook只读处理器 | 已实现消费 | `HookRuntime`要求外部提供Port | Hook授权、超时、取消测试 |
-| Git Push外部写 | 已实现证明切片 | 测试装配Route与旧Action Plane | 真实本地bare remote测试 |
-| 默认Agent Tool调度接线 | 未实现 | `bootstrap`未创建Router | 不可宣称端到端产品已使用 |
-| 多Worker/分布式Claim | 未实现 | 单SQLite连接、无Route Lease | 由通用Action Plane承担另一套能力 |
+| Git Push外部写 | 已实现/显式装配 | Definition直接注册Router，不经过旧Action Plane | 真实本地bare remote、响应丢失和硬崩溃测试 |
+| 默认Agent Tool调度接线 | 已实现 | 产品Owner创建Router/Gateway；Patch与固定Process按能力广告 | e3～e5产品组合与启动恢复测试 |
+| 多Worker/分布式Claim | 未实现/非1.0范围 | 单SQLite连接、无Route Lease | 不由兼容Action Plane继续承诺；1.x需独立设计 |
 | Router级Timeout/Retry | 未实现 | 上游可用`asyncio.timeout`包裹，但语义不统一 | Hook上游有独立Timeout |
 | 全局输出Guard/Artifact | 未实现 | Executor或Adapter自行限制、脱敏和发布 | MCP/Skill/Hook各自接线 |
 | 多租户认证和远端审计 | 未实现 | 本地受信宿主边界 | 无发布证据 |
@@ -160,7 +160,7 @@ flowchart LR
 
 **图示说明：** 调用参数不可信，Binding、Resolver、Policy、Context和Executor由宿主持有。Router先将
 参数解释为规范资源，再冻结两个持久Store中的事实；Executor只有在Route已`ready`、Execution Plan仍
-匹配、Workspace未漂移且批准有效时才被调用。效果本体和真实对账属于Executor或下游Action Plane。
+匹配、Workspace未漂移且批准有效时才被调用。效果本体和真实对账属于Executor、专用Owner或外部系统。
 
 **源码映射：** 主链位于[`TrustedActionRouter`](../../src/harnessix/trusted_actions/router.py)；Binding和
 Route合同位于[`contracts.py`](../../src/harnessix/trusted_actions/contracts.py)；决策位于
@@ -213,36 +213,38 @@ Route合同位于[`contracts.py`](../../src/harnessix/trusted_actions/contracts.
 | 12 | [`mcp/actions.py`](../../src/harnessix/mcp/actions.py) | `build_mcp_action_definition`、`McpActionGateway` | 理解动态JSON Schema适配 |
 | 13 | [`skills/actions.py`](../../src/harnessix/skills/actions.py) | `build_skill_action_definitions`、`SkillActionGateway` | 理解只读扩展和Canary边界 |
 | 14 | [`hooks/runtime.py`](../../src/harnessix/hooks/runtime.py) | `HookRuntime._run` | 理解Hook如何消费来源受限Port |
-| 15 | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy`、`GitPushRoutedExecutor` | 理解外部非幂等写如何桥接旧Action Plane |
+| 15 | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | `git_push_binding`、`build_git_push_definition`、`GitPushActionExecutor` | 理解外部非幂等写如何直接绑定Route并只读对账 |
 | 16 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | 核心正常、攻击、崩溃测试 | 对照当前保证和未覆盖边界 |
 
 `__init__.py`导出主要合同、Router、Policy和Store，但不导出`build_trusted_tool_binding`、
 `canonical_action_resource`、`TrustedActionExecutor`等构造Helper/Protocol。当前公开面因此以包导出和各
 适配模块的具体导入共同决定，尚未形成独立稳定SDK承诺。
 
-## 7. 与通用Action Plane及Execution模块的关系
+## 7. 与Execution及兼容Action Plane的关系
 
 ```mermaid
 flowchart TD
     Invoke[CodingActionInvocation] --> Trusted[Trusted Actions<br/>风险路由和因果索引]
     Trusted --> Exec[Execution Plan<br/>Workspace/Sandbox/Approval]
-    Trusted --> Local[专用本地Executor或Ledger]
-    Trusted --> Bridge[GitPushRoutedExecutor]
-    Bridge --> Plane[通用Action Plane<br/>Journal/Worker/Lease/Reconcile]
-    Plane --> External[Git远端效果]
+    Trusted --> Local[专用本地Executor或Owner]
+    Trusted --> Git[GitPushActionExecutor]
+    Git --> External[Git远端Ref]
+    Legacy[兼容Action Plane<br/>Journal/Worker] -.仅历史Eval与旧实现.-> LegacyEffect[旧效果]
 ```
 
-三者职责不能合并理解：
+当前产品链与兼容内核必须分开理解：
 
 | 层 | 拥有事实 | 不拥有事实 |
 |---|---|---|
-| Trusted Actions | Tool Binding、规范资源、Route状态、跨组件审计摘要 | 通用Worker Lease、外部效果详细Receipt |
+| Trusted Actions | Tool Binding、规范资源、Route状态、External Action ID和跨组件审计摘要 | 外部系统详细事实、通用Worker Lease |
 | Execution | Workspace/环境/Secret/Sandbox/能力/Policy Fingerprint和Approval | Tool Registry、Route状态、效果结果 |
-| 通用Action Plane | Action Request、Journal状态、Lease、Outcome、Receipt和Reconcile | MCP/Skill/Hook注册和Execution Plan |
+| 专用Executor/Owner | 实际文件、进程、容器、Git或外部效果与对账 | 模型目录、审批权威和跨能力Policy |
+| 兼容Action Plane | 历史Action Request、Journal、Lease与Worker状态 | 新增产品能力；0.9.1f3后物理删除 |
 
-Git Push证明了组合方式：Route先进入`running`，Routed Executor再用确定`external_action_id`提交通用
-Action。`ApprovedGitPushPolicy`反向读取Route、Execution Plan和Approval，只有所有事实精确匹配且
-Route仍为`running`时才允许外部Action执行。该桥接防止直接调用旧`ActionService`绕过Route。
+Git Push证明直接组合方式：Router先验证不可变Execution Plan和Approval，再把Route持久推进到`running`并调用
+`GitPushActionExecutor`。Executor重新核对Binding、Invocation、资源、幂等键和稳定External Action ID，随后最多执行一次
+带exact lease的Push；不再创建第二个Action Request或Effect Journal记录。响应丢失或宿主硬退出后，Action Audit保存
+`unknown`恢复入口，远端Ref由`ls-remote`只读对账。
 
 ## 8. 组件架构
 
@@ -855,42 +857,41 @@ Schema拒绝会使Action为`succeeded`而Hook为`failed`；启动恢复没有Own
 sequenceDiagram
     participant U as Host/UI
     participant R as Trusted Action Router
-    participant G as GitPushRoutedExecutor
-    participant S as ActionService
-    participant P as ApprovedGitPushPolicy
+    participant A as Action Audit
+    participant G as GitPushActionExecutor
     participant Git as Git Remote
     U->>R: plan high-risk external_reconcile push
+    R->>A: persist frozen intent and resources
     U->>R: approve exact plan
     U->>R: execute
-    R->>R: ready -> running
-    R->>G: execute(plan, GitPushIntent)
-    G->>S: submit(ActionRequest id=external_action_id)
-    S->>P: evaluate
-    P->>R: load route/execution/approval facts
-    P-->>S: allow only exact running route
-    S->>Git: exact ref update with lease
+    R->>A: ready -> running
+    R->>G: execute(route, GitPushIntent)
+    G->>G: revalidate binding, resources and repository
+    G->>Git: exact ref update with lease, once
     alt response received
-        Git-->>S: receipt
-        S-->>G: succeeded
-        G-->>R: succeeded
-    else response lost
+        Git-->>G: resulting ref
+        G-->>R: succeeded/failed/unknown
+        R->>A: persist result
+    else response lost or host exits
         G--xR: uncertain effect
-        R->>R: running -> unknown
+        R->>A: running -> unknown now or on reopen
         U->>R: reconcile
-        R->>G: reconcile external action
-        G->>S: get/reconcile only
-        S->>Git: read remote ref
-        Git-->>S: actual OID
-        S-->>R: succeeded/failed/manual/unknown
+        R->>G: reconcile same route
+        G->>Git: ls-remote only
+        Git-->>G: actual OID
+        G-->>R: succeeded/failed/manual/unknown
+        R->>A: persist reconciled result
     end
 ```
 
-`external_action_id`由Route确定生成，并同时成为旧Action Plane的`ActionRequest.action_id`。Policy核对
-Route为`running`、Execution Plan和Approval完全一致、Route Fingerprint、External ID、Invocation
-参数、幂等键及Tool能力。直接调用Action Service缺少这些事实时被拒绝。
+`git_push_descriptor`和`git_push_binding`固定Tool Schema、风险、恢复模式与Executor身份；Resolver把Remote URL摘要、
+目标Ref和Expected OID冻结为规范资源。`external_action_id`由Route确定生成并由Executor原样返回，不再投影为旧
+`ActionRequest.action_id`。Router负责批准与`ready → running`门禁；Executor负责执行前完整Route/Intent复核、exact lease
+更新和只读Reconcile。未批准执行由Router拒绝，错绑Route由Executor以`git_push_action_mismatch`失败关闭。
 
-此切片证明“发送后丢响应只对账、不二次Push”，但当前真实测试使用本地bare remote，不等于HTTPS/SSH
-凭据、网络代理或公网托管Git已完成产品验收。
+响应丢失测试以调用计数证明只Push一次；真实子进程测试在Push完成点以`os._exit(97)`退出，父进程重开Store/Router后
+只调用`recover_interrupted`与`reconcile`。当前真实测试使用
+本地bare remote，不等于HTTPS/SSH凭据、网络代理或公网托管Git已完成产品验收。
 
 ## 27. 并发、幂等与顺序
 
@@ -901,7 +902,7 @@ Route为`running`、Execution Plan和Approval完全一致、Route Fingerprint、
 | Approval | 单Plan只接受完全相同Checkpoint | 无撤销、过期、角色/双人规则 |
 | Route Claim | Snapshot CAS + `BEGIN IMMEDIATE` | 同一SQLite连接不是通用跨线程API；无Owner Lease |
 | 写幂等键 | 非幂等/破坏性Invocation必填 | Router不解释键作用域，具体Executor负责执行级幂等 |
-| 外部身份 | `external_reconcile`确定UUIDv5 | durable ledger没有External ID |
+| 外部身份 | `external_reconcile`确定UUIDv5 | 具体外部系统未必接受该ID；需用冻结Intent对账 |
 | 执行顺序 | ready先持久running，再调用Executor | 最终Audit与外部效果不原子 |
 | 恢复顺序 | running/reconciling统一转unknown | 调用方必须保证无活跃执行者 |
 | Reconcile | 只允许unknown进入，同次CAS阻止重复Claim | 无租约；多Router共享连接/文件不是完整分布式模型 |
@@ -1144,9 +1145,10 @@ transition(plan_id, expected, target, details):
 | Hook安全Binding | [`hooks/runtime.py`](../../src/harnessix/hooks/runtime.py) | `_validate_binding` | [`test_runtime.py`](../../tests/hooks/test_runtime.py) | `test_hook_registry_rejects_non_readonly_or_wrong_schema_binding` |
 | Hook Timeout/取消 | 同上 | `HookRuntime._run` | 同上 | `test_hook_timeout_cancels_and_persists_underlying_action`、`test_outer_cancellation_persists_hook_and_action_cancellation` |
 | Hook不能提权 | 同上 | Dispatch与目标Policy分离 | 同上 | `test_allow_hook_cannot_override_target_action_policy` |
-| Git Push统一Route | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy`、`GitPushRoutedExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
-| Git响应丢失零重放 | 同上 | `GitPushRoutedExecutor.reconcile` | 同上 | `test_push_response_loss_reconciles_without_second_push` |
-| 旧Action旁路拒绝 | 同上 | `ApprovedGitPushPolicy._approved` | 同上 | `test_direct_action_service_push_bypass_is_denied` |
+| Git Push统一Route | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `git_push_binding`、`build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
+| Git响应丢失零重放 | 同上 | `GitPushActionExecutor._reconcile` | 同上 | `test_push_response_loss_reconciles_without_second_push` |
+| 未批准Route拒绝 | 同上 | `TrustedActionRouter.execute` | 同上 | `test_git_push_cannot_execute_before_router_approval` |
+| Git宿主硬崩溃恢复 | 同上 | `recover_interrupted`、`GitPushActionExecutor._reconcile` | 同上 | `test_push_hard_crash_reopens_running_route_and_only_reconciles` |
 
 ## 36. 测试设计与当前证据
 
@@ -1157,7 +1159,7 @@ transition(plan_id, expected, target, details):
 3. **持久故障注入**：索引、Event摘要、Schema版本损坏失败关闭；
 4. **进程故障注入**：子进程在写入外部Marker并`fsync`后`os._exit`，重开后只Reconcile；
 5. **扩展集成**：MCP动态Schema、Skill目录、Hook授权/Timeout/取消；
-6. **真实仓库效果**：本地Git仓库和bare remote验证Approval、CAS、旁路拒绝和响应丢失对账。
+6. **真实仓库效果**：本地Git仓库和bare remote验证Approval、CAS、未批准拒绝、响应丢失及宿主硬崩溃重开对账。
 
 ### 36.2 当前定向命令
 
@@ -1195,7 +1197,7 @@ uv run pytest \
 
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
-| P0 | 旧Git Push与历史Eval仍依赖兼容内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f2～f3 |
+| P0 | 历史Eval及兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f2c～f3 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
 | P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
@@ -1274,7 +1276,7 @@ uv run pytest \
 10. 阅读`ExtensionActionPort`并理解它为何只是能力收窄而非进程Sandbox；
 11. 比较MCP显式Decoder在Plan/Execute/Reconcile的当前行为；
 12. 阅读Skill和Hook的二次输出Guard，确认Router本身没有全局Guard；
-13. 以Git Push跟踪Route → Routed Executor → Action Plane → remote ref → Reconcile完整链；
+13. 以Git Push跟踪Route → Direct Executor → remote ref → Reconcile完整链；
 14. 最后按第35节逐项运行测试，并用第36.3节判断测试尚未证明什么。
 
 ## 41. 维护规则
@@ -1502,6 +1504,7 @@ flowchart TD
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除候选；等待全矩阵CI |
 | 12 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则由CI 35439332019验收关闭 |
 | 11 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则；等待关闭CI |
 | 10 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Process由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown与Mermaid结构 |

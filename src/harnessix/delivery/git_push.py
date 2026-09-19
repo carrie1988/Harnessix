@@ -5,20 +5,18 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import ipaddress
-import json
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 from urllib.parse import quote, unquote, urlsplit
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, JsonValue, ValidationError
 
+from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git import GitDeliveryRuntime, _GitRunner
 from harnessix.delivery.git_contracts import (
-    GitPushActionInput,
     GitPushForceMode,
     GitPushIntent,
     GitPushReceipt,
@@ -29,37 +27,29 @@ from harnessix.delivery.git_contracts import (
     validate_git_remote_name,
 )
 from harnessix.domain.errors import UncertainEffectError
-from harnessix.domain.models import (
-    ActionContext,
-    ActionRequest,
-    ActionSnapshot,
-    ActionStatus,
-    EffectClass,
-    EffectReceipt,
-    ExecutionOutcome,
-    PolicyDecision,
-    PolicyDecisionKind,
-    Principal,
-    ReconciliationOutcome,
-    RiskLevel,
-    ToolDescriptor,
-    utc_now,
-)
-from harnessix.domain.registry import ToolDefinition
-from harnessix.execution.contracts import ExecutionPlanV2, canonical_digest, execution_is_approved
-from harnessix.execution.store import SQLiteExecutionPlanStore
-from harnessix.runtime import ActionService
+from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor, utc_now
+from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
     ActionRoutePlan,
     ReconciliationConclusion,
+    TrustedToolBinding,
+    build_trusted_tool_binding,
 )
-from harnessix.trusted_actions.store import SQLiteActionAuditStore
+from harnessix.trusted_actions.router import (
+    ActionPlanningContext,
+    ResolvedAction,
+    TrustedActionDefinition,
+    canonical_action_resource,
+)
 
 _SCP_REMOTE = re.compile(
     r"^(?:(?P<user>[A-Za-z0-9._-]{1,64})@)?(?P<host>[A-Za-z0-9.-]{1,253}):(?P<path>[^:]+)$"
 )
 _MAX_REMOTE_URL_BYTES = 4096
+GIT_PUSH_TOOL = "git.push"
+GIT_PUSH_EXECUTOR = "delivery.git-push"
+GIT_PUSH_SOURCE = "harnessix.product"
 
 
 def git_push_implementation_digest() -> str:
@@ -192,7 +182,7 @@ def _canonical_remote_path(value: str) -> str:
 
 
 class GitPushActionExecutor:
-    """单ref、CAS remote lease、禁Hook的固定Git Push与事实对账执行器。"""
+    """直接执行已冻结Trusted Route；远端响应不确定时只允许事实对账。"""
 
     def __init__(
         self,
@@ -273,45 +263,42 @@ class GitPushActionExecutor:
         except (TypeError, ValidationError, ValueError):
             raise KernelError("git_push_intent_invalid", "Git Push Intent无效") from None
 
-    async def execute(self, action: ActionSnapshot, arguments: BaseModel) -> ExecutionOutcome:
+    async def execute(
+        self,
+        route: ActionRoutePlan,
+        arguments: BaseModel,
+    ) -> ActionExecutionOutcome:
+        intent = _validate_route_intent(route, arguments)
         try:
-            parsed = GitPushActionInput.model_validate_json(arguments.model_dump_json())
-        except ValidationError:
-            return ExecutionOutcome.failed(code="git_push_input_invalid", message="Push输入无效")
-        if action.request.action_id != parsed.external_action_id:
-            return ExecutionOutcome.failed(
-                code="git_push_action_mismatch", message="Push Action身份不一致"
-            )
-        try:
-            return await asyncio.to_thread(self._execute, parsed.intent)
+            return await asyncio.to_thread(self._execute, route, intent)
         except UncertainEffectError:
             raise
         except KernelError as error:
-            return ExecutionOutcome.failed(code=error.code, message="Git Push未开始或未应用")
+            return _git_push_outcome(route, kind="failed", error_code=error.code)
 
-    async def reconcile(self, action: ActionSnapshot) -> ReconciliationOutcome:
+    async def reconcile(
+        self,
+        route: ActionRoutePlan,
+        arguments: BaseModel,
+    ) -> ActionExecutionOutcome:
         try:
-            parsed = GitPushActionInput.model_validate_json(
-                json.dumps(action.request.arguments, ensure_ascii=False, allow_nan=False)
-            )
-            return await asyncio.to_thread(self._reconcile, parsed.intent)
+            intent = _validate_route_intent(route, arguments)
+            return await asyncio.to_thread(self._reconcile, route, intent)
         except KernelError as error:
-            return ReconciliationOutcome.unknown(code=error.code, message="Git Push事实无法核对")
-        except ValidationError:
-            return ReconciliationOutcome.manual(
-                code="git_push_input_invalid", message="持久Git Push输入损坏"
-            )
+            return _git_push_outcome(route, kind="unknown", error_code=error.code)
 
-    def _execute(self, intent: GitPushIntent) -> ExecutionOutcome:
+    def _execute(
+        self,
+        route: ActionRoutePlan,
+        intent: GitPushIntent,
+    ) -> ActionExecutionOutcome:
         try:
             self._verify_local(intent)
             before = self._remote_oid(intent)
         except KernelError as error:
-            return ExecutionOutcome.failed(code=error.code, message="Git Push预检失败")
+            return _git_push_outcome(route, kind="failed", error_code=error.code)
         if before != intent.expected_remote_oid:
-            return ExecutionOutcome.failed(
-                code="git_push_remote_changed", message="远端ref与批准前提不一致"
-            )
+            return _git_push_outcome(route, kind="failed", error_code="git_push_remote_changed")
         try:
             if intent.force_mode == "fast_forward_only" and before is not None:
                 ancestor = self._git.run(
@@ -320,11 +307,13 @@ class GitPushActionExecutor:
                     accepted=(0, 1),
                 )
                 if ancestor.returncode != 0:
-                    return ExecutionOutcome.failed(
-                        code="git_push_non_fast_forward", message="远端更新不是快进"
+                    return _git_push_outcome(
+                        route,
+                        kind="failed",
+                        error_code="git_push_non_fast_forward",
                     )
         except KernelError as error:
-            return ExecutionOutcome.failed(code=error.code, message="Git Push预检失败")
+            return _git_push_outcome(route, kind="failed", error_code=error.code)
         lease = intent.expected_remote_oid or ("0" * len(intent.local_oid))
         try:
             completed = self._git.run(
@@ -352,29 +341,35 @@ class GitPushActionExecutor:
             raise UncertainEffectError("Push命令已返回但远端事实读取失败") from None
         if after == intent.local_oid:
             receipt = self._receipt(intent, after)
-            return ExecutionOutcome.succeeded(
+            return _git_push_outcome(
+                route,
+                kind="succeeded",
                 output=receipt.model_dump(mode="json"),
-                receipt=self._effect_receipt(intent, receipt),
             )
         if completed.returncode != 0 and after == intent.expected_remote_oid:
-            return ExecutionOutcome.failed(code="git_push_rejected", message="远端拒绝Push")
-        return ExecutionOutcome.unknown(code="git_push_uncertain", message="远端ref进入非预期状态")
+            return _git_push_outcome(route, kind="failed", error_code="git_push_rejected")
+        return _git_push_outcome(route, kind="unknown", error_code="git_push_uncertain")
 
-    def _reconcile(self, intent: GitPushIntent) -> ReconciliationOutcome:
+    def _reconcile(
+        self,
+        route: ActionRoutePlan,
+        intent: GitPushIntent,
+    ) -> ActionExecutionOutcome:
         self._verify_binding(intent)
         current = self._remote_oid(intent)
         if current == intent.local_oid:
             receipt = self._receipt(intent, current)
-            return ReconciliationOutcome.succeeded(
+            return _git_push_outcome(
+                route,
+                kind="succeeded",
                 output=receipt.model_dump(mode="json"),
-                receipt=self._effect_receipt(intent, receipt),
             )
         if current == intent.expected_remote_oid:
-            return ReconciliationOutcome.failed(
-                code="git_push_not_applied", message="远端ref仍为批准前OID"
-            )
-        return ReconciliationOutcome.manual(
-            code="git_push_remote_diverged", message="远端ref由其他主体更新"
+            return _git_push_outcome(route, kind="failed", error_code="git_push_not_applied")
+        return _git_push_outcome(
+            route,
+            kind="manual_intervention",
+            error_code="git_push_remote_diverged",
         )
 
     def _verify_local(self, intent: GitPushIntent) -> None:
@@ -454,16 +449,6 @@ class GitPushActionExecutor:
             ),
         )
 
-    @staticmethod
-    def _effect_receipt(intent: GitPushIntent, receipt: GitPushReceipt) -> EffectReceipt:
-        return EffectReceipt(
-            provider="git",
-            resource_type="git_ref",
-            resource_id=intent.remote_ref,
-            idempotency_key=intent.idempotency_key,
-            response_digest=receipt.digest,
-        )
-
 
 def _decode_single_line(
     value: bytes,
@@ -485,158 +470,140 @@ def _decode_single_line(
     return decoded
 
 
-def git_push_tool_definition(executor: GitPushActionExecutor) -> ToolDefinition:
+def git_push_descriptor() -> ToolDescriptor:
+    """返回模型可见的固定Git Push Intent合同。"""
+
     version = "1." + canonical_digest(
         {
             "implementation": "git-push-action/v1",
             "implementation_digest": git_push_implementation_digest(),
-            "input": GitPushActionInput.model_json_schema(),
+            "input": GitPushIntent.model_json_schema(),
             "output": GitPushReceipt.model_json_schema(),
         }
     )
-    return ToolDefinition(
-        name="git.push",
+    return ToolDescriptor(
+        name=GIT_PUSH_TOOL,
         version=version,
         description="按已批准远端OID lease更新单个Git branch ref；结果丢失时只对账",
-        input_model=GitPushActionInput,
+        input_schema=GitPushIntent.model_json_schema(),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
-        executor=executor,
         requires_idempotency=True,
         requires_approval=True,
         supports_reconciliation=True,
+        supports_parallel_calls=False,
     )
 
 
-class ApprovedGitPushPolicy:
-    """外部Action只接受已批准且已进入running的统一Route Plan。"""
+def git_push_binding() -> TrustedToolBinding:
+    """把Git Push合同绑定到产品内Trusted Action执行器。"""
 
-    def __init__(
-        self,
-        *,
-        plans: SQLiteExecutionPlanStore,
-        audit: SQLiteActionAuditStore,
-    ) -> None:
-        self._plans = plans
-        self._audit = audit
-
-    async def evaluate(self, action: ActionSnapshot, tool: ToolDescriptor) -> PolicyDecision:
-        if self._approved(action, tool):
-            return PolicyDecision(
-                kind=PolicyDecisionKind.ALLOW,
-                policy_id="trusted-route.approved-git-push",
-                reason="统一Execution Plan批准已核对",
-            )
-        return PolicyDecision(
-            kind=PolicyDecisionKind.DENY,
-            policy_id="trusted-route.deny-unbound-git-push",
-            reason="Git Push未绑定已批准统一Execution Plan",
-        )
-
-    def _approved(self, action: ActionSnapshot, tool: ToolDescriptor) -> bool:
-        try:
-            arguments = GitPushActionInput.model_validate_json(
-                json.dumps(action.request.arguments, ensure_ascii=False, allow_nan=False)
-            )
-            route = self._audit.load(arguments.route_plan_id)
-            execution = self._plans.load_plan(arguments.route_plan_id)
-            approval = self._plans.load_approval(arguments.route_plan_id)
-        except (KernelError, ValidationError, ValueError, TypeError):
-            return False
-        plan = route.plan
-        return bool(
-            isinstance(execution, ExecutionPlanV2)
-            and execution == plan.execution
-            and execution_is_approved(execution, approval)
-            and route.state == "running"
-            and plan.fingerprint == arguments.route_plan_fingerprint
-            and plan.external_action_id == arguments.external_action_id
-            and plan.external_action_id == action.request.action_id
-            and plan.binding.recovery_mode == "external_reconcile"
-            and plan.invocation.arguments == arguments.intent.model_dump(mode="json")
-            and plan.invocation.idempotency_key == arguments.intent.idempotency_key
-            and action.request.idempotency_key == arguments.intent.idempotency_key
-            and tool.name == "git.push"
-            and tool.effect_class is EffectClass.NON_IDEMPOTENT_WRITE
-            and tool.supports_reconciliation
-        )
+    descriptor = git_push_descriptor()
+    return build_trusted_tool_binding(
+        source="builtin",
+        source_id=GIT_PUSH_SOURCE,
+        tool=descriptor.name,
+        tool_version=descriptor.version,
+        tool_fingerprint=tool_fingerprint(descriptor),
+        input_schema_sha256=canonical_digest(descriptor.input_schema),
+        effect_class=descriptor.effect_class,
+        risk_level=descriptor.risk_level,
+        recovery_mode="external_reconcile",
+        executor_id=GIT_PUSH_EXECUTOR,
+    )
 
 
-class GitPushRoutedExecutor:
-    """把统一Route Plan确定性投影为既有Effect Journal Action。"""
+def resolve_git_push(intent: GitPushIntent) -> ResolvedAction:
+    """把远端仓库与单一ref更新冻结为规范资源。"""
 
-    def __init__(
-        self,
-        *,
-        actions: ActionService,
-        principal: Principal,
-        action_tool: str = "git.push",
-    ) -> None:
-        self._actions = actions
-        self._principal = principal
-        self._tool = action_tool
-
-    async def execute(self, plan: ActionRoutePlan, arguments: BaseModel) -> ActionExecutionOutcome:
-        intent = GitPushIntent.model_validate_json(arguments.model_dump_json())
-        if plan.external_action_id is None:
-            raise KernelError("external_action_identity_missing", "Git Push缺少外部Action身份")
-        payload = GitPushActionInput(
-            route_plan_id=plan.execution.plan_id,
-            route_plan_fingerprint=plan.fingerprint,
-            external_action_id=plan.external_action_id,
-            intent=intent,
-        )
-        request = ActionRequest(
-            action_id=plan.external_action_id,
-            tool=self._tool,
-            arguments=payload.model_dump(mode="json"),
-            principal=self._principal,
-            context=ActionContext(
-                session_id=str(plan.execution.plan_id), run_id=str(intent.push_id)
+    return ResolvedAction(
+        resources=(
+            canonical_action_resource(
+                kind="external",
+                access="write",
+                identifier={"remote": intent.remote_url_sha256, "ref": intent.remote_ref},
             ),
-            effect_hint=EffectClass.NON_IDEMPOTENT_WRITE,
-            idempotency_key=intent.idempotency_key,
+            canonical_action_resource(
+                kind="git_ref",
+                access="update",
+                identifier={"remote": intent.remote_name, "ref": intent.remote_ref},
+                attributes={"expected": intent.expected_remote_oid},
+            ),
         )
-        return self._outcome(await self._actions.submit(request), plan.external_action_id)
+    )
 
-    async def reconcile(
-        self, plan: ActionRoutePlan, arguments: BaseModel
-    ) -> ActionExecutionOutcome:
-        GitPushIntent.model_validate_json(arguments.model_dump_json())
-        if plan.external_action_id is None:
-            raise KernelError("external_action_identity_missing", "Git Push缺少外部Action身份")
-        snapshot = await self._actions.get(plan.external_action_id)
-        if snapshot.status is ActionStatus.UNKNOWN:
-            snapshot = await self._actions.reconcile(plan.external_action_id)
-        return self._outcome(snapshot, plan.external_action_id)
 
-    @staticmethod
-    def _outcome(snapshot: ActionSnapshot, action_id: UUID) -> ActionExecutionOutcome:
-        output = (
-            cast(JsonValue, snapshot.result.output)
-            if snapshot.result is not None and snapshot.result.output is not None
-            else None
+def build_git_push_definition(executor: GitPushActionExecutor) -> TrustedActionDefinition:
+    """构造不经过HTTP、Worker或旧Effect Journal的Git Push定义。"""
+
+    root = _resolve_repository_root(executor._root)
+
+    def resolve(arguments: BaseModel, context: ActionPlanningContext) -> ResolvedAction:
+        intent = _git_push_arguments(arguments)
+        if context.cwd != "." or _resolve_repository_root(context.workspace_root) != root:
+            raise KernelError("git_workspace_mismatch", "Git Push与规划Workspace不一致")
+        return resolve_git_push(intent)
+
+    return TrustedActionDefinition(
+        binding=git_push_binding(),
+        input_model=GitPushIntent,
+        resolve=resolve,
+        executor=executor,
+    )
+
+
+def _resolve_repository_root(value: str | Path) -> Path:
+    try:
+        return Path(value).resolve(strict=True)
+    except OSError:
+        raise KernelError("git_repository_changed", "Git仓库根目录不可用") from None
+
+
+def _git_push_arguments(arguments: BaseModel) -> GitPushIntent:
+    try:
+        return GitPushIntent.model_validate_json(arguments.model_dump_json())
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("git_push_input_invalid", "Git Push输入无效") from None
+
+
+def _validate_route_intent(
+    route: ActionRoutePlan,
+    arguments: BaseModel,
+) -> GitPushIntent:
+    intent = _git_push_arguments(arguments)
+    expected_resources = tuple(
+        sorted(
+            resolve_git_push(intent).resources,
+            key=lambda item: (
+                item.kind,
+                item.access,
+                item.identifier_sha256,
+                item.attributes_sha256,
+            ),
         )
-        if snapshot.status is ActionStatus.SUCCEEDED:
-            return ActionExecutionOutcome(
-                kind="succeeded",
-                output=output,
-                external_action_id=action_id,
-            )
-        error = (
-            snapshot.result.error.code
-            if snapshot.result is not None and snapshot.result.error is not None
-            else f"external_action_{snapshot.status.value}"
-        )
-        if snapshot.status in {ActionStatus.DENIED, ActionStatus.FAILED}:
-            kind = "failed"
-        elif snapshot.status is ActionStatus.MANUAL_INTERVENTION:
-            kind = "manual_intervention"
-        else:
-            kind = "unknown"
-        return ActionExecutionOutcome(
-            kind=cast(ReconciliationConclusion, kind),
-            output=output,
-            external_action_id=action_id,
-            error_code=error,
-        )
+    )
+    if (
+        route.binding != git_push_binding()
+        or route.execution.plan_id != route.invocation.invocation_id
+        or route.external_action_id is None
+        or route.invocation.arguments != intent.model_dump(mode="json")
+        or route.invocation.idempotency_key != intent.idempotency_key
+        or route.resources != expected_resources
+    ):
+        raise KernelError("git_push_action_mismatch", "Git Push与Action Route不一致")
+    return intent
+
+
+def _git_push_outcome(
+    route: ActionRoutePlan,
+    *,
+    kind: ReconciliationConclusion,
+    output: JsonValue | None = None,
+    error_code: str | None = None,
+) -> ActionExecutionOutcome:
+    return ActionExecutionOutcome(
+        kind=kind,
+        output=output,
+        external_action_id=route.external_action_id,
+        error_code=error_code,
+    )

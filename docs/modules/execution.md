@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 1
-code_revision: 8ab1d0380941206b7a5fddc52e780fe7b3f937bd
+version: 2
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -148,7 +148,7 @@ flowchart LR
 | 5 | [`supervision_planner.py`](../../src/harnessix/processes/supervision_planner.py) | `build_process_launch_binding` | 理解Execution Plan如何继续绑定进程物化事实 |
 | 6 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `_start_bound` | 理解批准、能力、Workspace、环境和Secret如何在spawn前复核 |
 | 7 | [`container.py`](../../src/harnessix/sandbox/container.py) | `ContainerCommandBuilder.prepare` | 理解v2的Profile和Provider证据如何约束容器启动 |
-| 8 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy` | 理解高风险外部副作用如何要求统一Route和Execution批准 |
+| 8 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `git_push_binding`、`build_git_push_definition`、`GitPushActionExecutor` | 理解高风险外部副作用如何直接消费统一Route和Execution批准 |
 
 ## 6. 逻辑组成
 
@@ -768,30 +768,27 @@ Container准备成功不表示执行成功；容器实例清理和Owner恢复仍
 
 ## 21. Delivery与外部副作用集成
 
-Git Push是Execution批准与Effect Journal组合的代表。`ApprovedGitPushPolicy`只有同时满足以下条件才向既有Action
-Plane返回`ALLOW`：
+Git Push是Execution批准直接约束外部非幂等写的代表。`TrustedActionRouter`在调用Executor前同时要求：
 
-- Execution Store加载的是`ExecutionPlanV2`；
-- 它与Route内嵌Plan完全相等并通过`execution_is_approved`；
-- Route已经进入`running`；
-- Route fingerprint、稳定外部Action ID和请求Action ID一致；
-- Tool Binding声明`external_reconcile`和非幂等写；
-- Intent、幂等键和`git.push`工具能力完全匹配。
+- Execution Store加载的是与Route内嵌值完全相等的`ExecutionPlanV2`；
+- Plan通过`execution_is_approved`，当前Binding与计划Binding完全一致；
+- Route从`ready`原子推进为`running`并携带稳定External Action ID；
+- Executor重新核对Intent、幂等键、规范资源和`git.push`能力；
+- Tool Binding声明`external_reconcile`和非幂等写。
 
 ```mermaid
 flowchart LR
-    ApprovedRoute[已批准且running的Route] --> Gate[ApprovedGitPushPolicy]
-    PlanStore[(Execution Plan/Approval)] --> Gate
-    Audit[(Route Audit)] --> Gate
-    Gate -->|ALLOW| ActionPlane[通用Effect Journal]
-    Gate -->|DENY| Stop[拒绝旁路]
-    ActionPlane --> Push[单ref Push]
-    Push -->|响应丢失| Unknown[UNKNOWN]
+    PlanStore[(Execution Plan/Approval)] --> Router[Trusted Action Router]
+    Audit[(Route Audit)] --> Router
+    Router -->|approved and running| Push[GitPushActionExecutor]
+    Router -->|not approved or drift| Stop[拒绝旁路]
+    Push --> Remote[(单ref Remote CAS)]
+    Remote -->|响应丢失或宿主退出| Unknown[UNKNOWN]
     Unknown --> Reconcile[按远端OID对账，不二次Push]
 ```
 
-Execution Approval证明“允许尝试该精确Push”，Effect Journal证明“尝试是否已发送、结果是否未知、应如何对账”。
-二者不能合并成一个布尔`approved`字段。
+Execution Approval证明“允许尝试该精确Push”；Action Audit证明Route是否已经进入效果边界，远端Ref证明Push实际结果。
+三个事实不能合并成一个布尔`approved`字段，也不再为同一次Push复制第二份Effect Journal生命周期。
 
 ## 22. 数据流与敏感数据
 
@@ -1077,8 +1074,9 @@ plan_id
 | Process环境与Secret运行复核 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `_start_bound` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_process_uses_exact_environment_and_redacts_secret` |
 | Container重验Workspace/环境/Profile/Approval | [`container.py`](../../src/harnessix/sandbox/container.py) | `ContainerCommandBuilder.prepare` | [`test_container.py`](../../tests/sandbox/test_container.py) | `test_container_rechecks_workspace_environment_profile_and_approval` |
 | Container拒绝Owner或Plan漂移 | [`process_runtime.py`](../../src/harnessix/sandbox/process_runtime.py) | `ContainerProcessRuntime.prepare` | [`test_process_runtime.py`](../../tests/sandbox/test_process_runtime.py) | `test_container_execution_rejects_owner_or_plan_drift` |
-| Git Push要求统一批准 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `ApprovedGitPushPolicy` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
-| Git Push结果丢失不二次发送 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `GitPushRoutedExecutor.reconcile` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_push_response_loss_reconciles_without_second_push` |
+| Git Push要求统一批准 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_git_push_requires_route_approval_and_updates_one_remote_ref` |
+| Git Push结果丢失不二次发送 | [`git_push.py`](../../src/harnessix/delivery/git_push.py) | `GitPushActionExecutor._reconcile` | [`test_git_push.py`](../../tests/delivery/test_git_push.py) | `test_push_response_loss_reconciles_without_second_push` |
+| Git Push硬崩溃重开 | 同上 | `recover_interrupted`、`GitPushActionExecutor._reconcile` | 同上 | `test_push_hard_crash_reopens_running_route_and_only_reconciles` |
 
 ## 31. 测试设计与当前覆盖
 
@@ -1160,7 +1158,7 @@ Execution模块的生产完成判断必须同时满足：
 - [x] Plan与Approval使用不可变、幂等SQLite事务持久化；
 - [x] 未知Schema和损坏payload失败关闭；
 - [x] Trusted Action、Process、Container和Git Push存在跨模块消费验证；
-- [x] 非幂等外部效果使用独立账本与reconcile，不从Plan推断重放；
+- [x] 非幂等外部效果使用Action Audit状态与外部权威事实进行reconcile，不从Plan推断重放；
 - [ ] 冗余列与payload完整性交叉校验；
 - [ ] 完整v2与批准真值表模块级回归；
 - [ ] 多进程竞争、事务崩溃、磁盘满和文件系统恢复验证；
@@ -1202,4 +1200,5 @@ ADR和里程碑资料描述决策及当时增量；本文维护`execution`包与
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 2 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接消费Execution Approval、Action Audit状态及Remote事实的实现候选；等待全矩阵CI |
 | 1 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 建立Execution Plan现行事实源，覆盖v1/v2合同、规范摘要、环境/Secret、Sandbox/能力、Policy/Approval、SQLite持久化、消费方复核、恢复边界、安全、测试映射和已知限制 |

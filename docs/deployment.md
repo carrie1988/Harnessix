@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 10
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -255,12 +255,13 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 | Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Agent SDK Transport | [`sdk/agent_client.py`](../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport` | [`app_server测试`](../tests/app_server/) |
 | Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `ProductActionRuntimeOwner`、`open_default_product_action_runtime` | [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
-| 单一产品面门禁 | 生产源码树 | 旧内核Import集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
+| 单一产品面门禁 | 生产源码树 | 旧内核Import精确集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
+| 显式Git Push能力 | [`delivery/git_push.py`](../src/harnessix/delivery/git_push.py) | `build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../tests/delivery/test_git_push.py) |
 
 ## 13. 当前限制与后续工作
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
-- 0.9.1f旧Process、Git Push和Eval调用方尚未全部迁移，兼容内核仍存在源码与测试；
+- 0.9.1f固定Container Process已关闭，Git Push已形成直接Trusted Action候选并等待CI；历史Process Reader、Eval和兼容内核源码仍待f2c/f3迁移删除；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；

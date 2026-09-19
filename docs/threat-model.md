@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 7
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 8
+code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
 owners:
   - core
 modules:
@@ -666,8 +666,8 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 - **Hook提权**：Hook来源不具有覆盖宿主deny的能力；任何Hook请求仍按同一Binding、资源和Policy规划。Hook Definition或返回值不是批准记录。现行`READ_ONLY`是宿主Binding声明而非Executor副作用的机械证明，第三方逻辑必须进入独立Sandbox/MCP/Container Action。
 - **审批错绑与漂移**：Approval Checkpoint只绑定Plan fingerprint。执行重开时同时核对Route/Execution Plan、当前Tool Binding、Workspace Snapshot和持久批准；参数、cwd、环境、策略、Sandbox、Secret版本、文件或Git配置变化使批准失效。
 - **审计泄漏与篡改**：append-only Action Audit事件仅保存资源、输出和Artifact摘要，不保存输出或文件正文；私有Route Plan为执行/恢复保留规范化调用参数，可能包含路径和命令元数据，但疑似凭据字段被拒绝且Secret值只能通过独立Provider注入。因此Plan/Audit数据库仍按敏感状态保护，不能对外直接发布。当前投影、不可变payload、冗余索引和事件链不一致时失败关闭。字段名检测不是通用DLP，无法识别被放入普通文本字段的任意凭据；上游Context与Tool Schema仍必须禁止Secret正文进入参数。SQLite和SHA-256不能抵抗可同时改写数据库与程序的同UID恶意主体，也不提供不可抵赖签名。
-- **外部写重复执行**：Git Push投影到稳定外部Action id和Effect Journal；调用开始后的任何异常为unknown。恢复只执行`ls-remote`对账，不再次Push。目标OID、旧OID和第三种OID分别收敛为成功、失败和人工处置。
-- **直接旁路**：旧ActionService中的Git Push Tool额外要求对应Route已获批准且当前处于running，plan/action/intent/idempotency任一错绑即deny。直接调用`_GitRunner`仍属于受信宿主代码能力；不受信扩展不能获得该对象，未来插件进程必须继续依靠OS Sandbox。
+- **外部写重复执行**：Git Push绑定稳定External Action ID、不可变Intent和Action Audit Route；不再投影到旧Effect Journal。调用开始后的任何异常为unknown。恢复只执行`ls-remote`对账，不再次Push。目标OID、旧OID和第三种OID分别收敛为成功、失败和人工处置。
+- **直接旁路**：Router只有在Execution Plan、Approval和Binding完整匹配时才把Route推进到running；Git Executor再次核对Binding、Intent、资源、幂等键和External Action ID。未批准Route与任一错绑均失败关闭。直接调用Executor或`_GitRunner`仍属于受信宿主代码能力；不受信扩展不能获得该对象，未来插件进程必须继续依靠OS Sandbox。
 - **Git协议与凭据**：remote URL拒绝内嵌凭据、query、fragment、HTTP、自定义协议和歧义路径；Git固定环境关闭prompt、外部配置、Hook、replace refs和attributes，并只开放显式协议。0.7不装配公网凭据，不能把本地bare remote验收解释为远端认证、known-hosts或Secret防泄漏完成。
 - **跨库窗口**：Execution Plan先于Route持久化，崩溃可留下不可达孤立Plan；没有Route、Approval和当前Binding时不能执行。Route进入running后宿主硬退出，重开只转unknown。该设计不承诺跨SQLite事务原子性，而以不可达和保守恢复保证安全。
 
@@ -859,3 +859,21 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 [`test_preflight.py`](../tests/product_config/test_preflight.py)与
 [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)。实现Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`
 已由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成七任务全矩阵验收并关闭。
+
+## 0.9.1f2b Git Push直接Trusted Action补充（2026-09-19）
+
+- **双账本身份分裂**：旧实现把同一Push同时保存为Route与Effect Action。当前链只保存Execution Plan/Approval和Action Audit Route，
+  `external_action_id`由Route确定生成并由Executor原样返回；不再存在第二个Action ID、Policy决定或终态需要同步。
+- **未批准与错绑执行**：未批准Route无法越过`TrustedActionRouter.execute`；Executor仍重算当前Binding和规范资源，并比较Invocation参数、
+  Idempotency Key、Plan/Invocation身份及External Action ID。任何漂移在调用Git前失败关闭。
+- **响应丢失与宿主硬崩溃**：Router在调用Executor前先持久`running`。普通响应丢失转为`unknown`；独立子进程在Push已发生后
+  `os._exit(97)`，持久状态保持`running`，父进程重开后只执行`recover_interrupted → unknown → reconcile`。响应丢失用例另以调用计数证明没有第二次Push。
+- **效果权威与审计**：Action Audit证明是否进入效果边界及最终路由结论；远端Ref是Push实际效果权威。Reconcile只执行`ls-remote`，
+  目标OID、原OID和第三OID分别收敛为成功、未应用失败和人工处置；网络读取失败保持unknown。
+- **剩余风险**：`asyncio.to_thread`取消不能终止同步Git及后代进程；Router会保守标记unknown，但线程可能继续写。公网凭据、SSH Host Key、
+  代理、限流、进程Owner、恶意同UID进程与远端服务一致性仍未由本地bare remote测试关闭。
+
+源码与回归见[`git_push.py`](../src/harnessix/delivery/git_push.py)、
+[`test_git_push.py`](../tests/delivery/test_git_push.py)与
+[`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)。完整设计见
+[0.9.1f单一产品运行时收敛](changes/m09-1f-single-product-runtime-convergence.md)。本节记录实现候选；全矩阵CI关闭证据待补。

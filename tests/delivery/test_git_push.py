@@ -1,54 +1,37 @@
 from __future__ import annotations
 
+import asyncio
+import os
+import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
-from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git import GitDeliveryRuntime
 from harnessix.delivery.git_contracts import (
-    GitPushActionInput,
     GitPushIntent,
+    GitRepositoryBinding,
     git_push_intent_digest,
 )
 from harnessix.delivery.git_push import (
-    ApprovedGitPushPolicy,
     GitPushActionExecutor,
-    GitPushRoutedExecutor,
     _decode_single_line,
-    git_push_tool_definition,
+    build_git_push_definition,
     git_remote_url_digest,
 )
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
 from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.domain.errors import UncertainEffectError
-from harnessix.domain.models import (
-    ActionContext,
-    ActionRequest,
-    ApprovalDecision,
-    ApprovalOutcome,
-    EffectClass,
-    Principal,
-    RiskLevel,
-)
-from harnessix.domain.registry import ToolRegistry
-from harnessix.execution.contracts import canonical_digest
+from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.execution.store import SQLiteExecutionPlanStore
-from harnessix.runtime import ActionService
-from harnessix.storage.sqlite_journal import SQLiteEffectJournal
-from harnessix.trusted_actions.contracts import (
-    CodingActionInvocation,
-    build_trusted_tool_binding,
-)
+from harnessix.trusted_actions.contracts import CodingActionInvocation
 from harnessix.trusted_actions.router import (
-    ResolvedAction,
-    TrustedActionDefinition,
     TrustedActionRouter,
-    canonical_action_resource,
 )
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
@@ -56,6 +39,49 @@ from tests.delivery.test_git import _git, _run
 from tests.trusted_actions.test_router import context
 
 _COMMIT_TIME = datetime(2026, 9, 9, 8, 0, tzinfo=UTC)
+_PUSH_CRASH_EXIT = 97
+
+
+def _git_push_crash_worker(
+    plans_path: str,
+    audit_path: str,
+    workspace_state: str,
+    git_state: str,
+    lease_path: str,
+    repository: str,
+    binding_json: str,
+    git_executable: str,
+    plan_id: str,
+) -> None:
+    root = Path(repository)
+    workspace_store = SQLiteWorkspaceTransactionStore(workspace_state)
+    git_store = SQLiteGitDeliveryStore(git_state)
+    leases = WorkspaceLeaseStore(lease_path)
+    delivery = GitDeliveryRuntime(workspace_store, git_store, leases, git_executable)
+    plans = SQLiteExecutionPlanStore(plans_path)
+    audit = SQLiteActionAuditStore(audit_path)
+
+    def crash_after_push(point: str) -> None:
+        if point == "git_push.after_command":
+            os._exit(_PUSH_CRASH_EXIT)
+
+    executor = GitPushActionExecutor(
+        delivery=delivery,
+        repository_root=root,
+        repository=GitRepositoryBinding.model_validate_json(binding_json),
+        git_executable=git_executable,
+        state_root=Path(plans_path).parent / "crash-push-git",
+        allowed_protocols=(),
+        allow_file_remote=True,
+        fault=crash_after_push,
+    )
+    router = TrustedActionRouter(
+        plans=plans,
+        audit=audit,
+        workspace_root=lambda _: root,
+    )
+    router.register(build_git_push_definition(executor))
+    asyncio.run(router.execute(UUID(plan_id)))
 
 
 def _push_intent(
@@ -182,63 +208,17 @@ async def _route(
         idempotency_key=intent.idempotency_key,
         push_id=intent.push_id,
     )
-    action_definition = git_push_tool_definition(push)
-    registry = ToolRegistry()
-    registry.register(action_definition)
-    service = ActionService(
-        journal=SQLiteEffectJournal(tmp_path / "state/effects.db"),
-        registry=registry,
-        policy_engine=ApprovedGitPushPolicy(plans=plans, audit=audit),
-    )
-    await service.initialize()
-    routed = GitPushRoutedExecutor(
-        actions=service,
-        principal=Principal(tenant_id="local", subject_id="test", framework="harnessix-code"),
-    )
-    descriptor = action_definition.descriptor()
-    binding = build_trusted_tool_binding(
-        source="builtin",
-        source_id="harnessix",
-        tool=descriptor.name,
-        tool_version=descriptor.version,
-        tool_fingerprint=tool_fingerprint(descriptor),
-        input_schema_sha256=canonical_digest(GitPushIntent.model_json_schema()),
-        effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
-        risk_level=RiskLevel.HIGH,
-        recovery_mode="external_reconcile",
-        executor_id="git.push.action-plane",
-    )
-
-    def resolve(arguments, _):  # type: ignore[no-untyped-def]
-        checked = GitPushIntent.model_validate_json(arguments.model_dump_json())
-        return ResolvedAction(
-            resources=(
-                canonical_action_resource(
-                    kind="external",
-                    access="write",
-                    identifier={
-                        "remote": checked.remote_url_sha256,
-                        "ref": checked.remote_ref,
-                    },
-                ),
-                canonical_action_resource(
-                    kind="git_ref",
-                    access="update",
-                    identifier={"remote": checked.remote_name, "ref": checked.remote_ref},
-                    attributes={"expected": checked.expected_remote_oid},
-                ),
-            )
-        )
-
     router = TrustedActionRouter(
         plans=plans,
         audit=audit,
         workspace_root=lambda _: repository,
     )
-    router.register(TrustedActionDefinition(binding, GitPushIntent, resolve, routed))
+    definition = build_git_push_definition(push)
+    router.register(definition)
+    binding = definition.binding
     invocation = CodingActionInvocation(
         source="builtin",
-        source_id="harnessix",
+        source_id=binding.source_id,
         tool=binding.tool,
         tool_version=binding.tool_version,
         tool_fingerprint=binding.tool_fingerprint,
@@ -246,7 +226,7 @@ async def _route(
         idempotency_key=intent.idempotency_key,
     )
     planned = router.plan(invocation, context(repository))
-    return router, planned, plans, audit, service
+    return router, planned, plans, audit
 
 
 async def test_git_push_requires_route_approval_and_updates_one_remote_ref(
@@ -254,7 +234,7 @@ async def test_git_push_requires_route_approval_and_updates_one_remote_ref(
 ) -> None:
     values = _git_fixture(tmp_path, suffix="approved")
     repository, remote, workspace_store, git_store, leases, delivery, binding, intent = values
-    router, planned, plans, audit, service = await _route(
+    router, planned, plans, audit = await _route(
         tmp_path,
         repository=repository,
         delivery=delivery,
@@ -269,10 +249,8 @@ async def test_git_push_requires_route_approval_and_updates_one_remote_ref(
         )
         outcome = await router.execute(planned.plan.execution.plan_id)
         remote_oid = _run(remote, "rev-parse", intent.remote_ref).decode().strip()
-        action = await service.get(planned.plan.external_action_id)
         assert outcome.kind == "succeeded"
         assert remote_oid == intent.local_oid
-        assert action.status.value == "succeeded"
         assert [event.to_state for event in router.events(planned.plan.execution.plan_id)] == [
             "pending_approval",
             "ready",
@@ -280,7 +258,6 @@ async def test_git_push_requires_route_approval_and_updates_one_remote_ref(
             "succeeded",
         ]
     finally:
-        await service.close()
         audit.close()
         plans.close()
         leases.close()
@@ -299,7 +276,7 @@ async def test_push_response_loss_reconciles_without_second_push(tmp_path: Path)
             calls += 1
             raise UncertainEffectError("response lost")
 
-    router, planned, plans, audit, service = await _route(
+    router, planned, plans, audit = await _route(
         tmp_path,
         repository=repository,
         delivery=delivery,
@@ -325,7 +302,6 @@ async def test_push_response_loss_reconciles_without_second_push(tmp_path: Path)
             "succeeded",
         ]
     finally:
-        await service.close()
         audit.close()
         plans.close()
         leases.close()
@@ -333,10 +309,99 @@ async def test_push_response_loss_reconciles_without_second_push(tmp_path: Path)
         workspace_store.close()
 
 
-async def test_direct_action_service_push_bypass_is_denied(tmp_path: Path) -> None:
+async def test_push_hard_crash_reopens_running_route_and_only_reconciles(
+    tmp_path: Path,
+) -> None:
+    values = _git_fixture(tmp_path, suffix="hard-crash")
+    repository, remote, workspace_store, git_store, leases, delivery, binding, intent = values
+    router, planned, plans, audit = await _route(
+        tmp_path,
+        repository=repository,
+        delivery=delivery,
+        repository_binding=binding,
+        intent=intent,
+    )
+    plan_id = planned.plan.execution.plan_id
+    router.decide(
+        plan_id,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+    audit.close()
+    plans.close()
+    leases.close()
+    git_store.close()
+    workspace_store.close()
+
+    script = (
+        "from tests.delivery.test_git_push import _git_push_crash_worker; "
+        "import sys; _git_push_crash_worker(*sys.argv[1:])"
+    )
+    completed = await asyncio.to_thread(
+        subprocess.run,
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(tmp_path / "state/action-plans.db"),
+            str(tmp_path / "state/action-audit.db"),
+            str(tmp_path / "state/workspace"),
+            str(tmp_path / "state/git"),
+            str(tmp_path / "state/leases.db"),
+            str(repository),
+            binding.model_dump_json(),
+            str(_git()),
+            str(plan_id),
+        ],
+        cwd=Path(__file__).parents[2],
+        check=False,
+        timeout=30,
+    )
+    assert completed.returncode == _PUSH_CRASH_EXIT
+    assert _run(remote, "rev-parse", intent.remote_ref).decode().strip() == intent.local_oid
+
+    with SQLiteWorkspaceTransactionStore(tmp_path / "state/workspace") as recovered_workspace:
+        with SQLiteGitDeliveryStore(tmp_path / "state/git") as recovered_git:
+            with WorkspaceLeaseStore(tmp_path / "state/leases.db") as recovered_leases:
+                recovered_delivery = GitDeliveryRuntime(
+                    recovered_workspace,
+                    recovered_git,
+                    recovered_leases,
+                    _git(),
+                )
+                with SQLiteExecutionPlanStore(
+                    tmp_path / "state/action-plans.db"
+                ) as recovered_plans:
+                    with SQLiteActionAuditStore(
+                        tmp_path / "state/action-audit.db"
+                    ) as recovered_audit:
+                        recovered_router = TrustedActionRouter(
+                            plans=recovered_plans,
+                            audit=recovered_audit,
+                            workspace_root=lambda _: repository,
+                        )
+                        recovered_push = GitPushActionExecutor(
+                            delivery=recovered_delivery,
+                            repository_root=repository,
+                            repository=binding,
+                            git_executable=_git(),
+                            state_root=tmp_path / "state/recovered-push-git",
+                            allowed_protocols=(),
+                            allow_file_remote=True,
+                        )
+                        recovered_router.register(build_git_push_definition(recovered_push))
+
+                        assert recovered_router.recover_interrupted() == (plan_id,)
+                        outcome = await recovered_router.reconcile(plan_id)
+                        assert outcome.kind == "succeeded"
+                        assert [event.to_state for event in recovered_router.events(plan_id)][
+                            -3:
+                        ] == ["unknown", "reconciling", "succeeded"]
+
+
+async def test_git_push_cannot_execute_before_router_approval(tmp_path: Path) -> None:
     values = _git_fixture(tmp_path, suffix="bypass")
     repository, remote, workspace_store, git_store, leases, delivery, binding, intent = values
-    router, planned, plans, audit, service = await _route(
+    router, planned, plans, audit = await _route(
         tmp_path,
         repository=repository,
         delivery=delivery,
@@ -344,31 +409,12 @@ async def test_direct_action_service_push_bypass_is_denied(tmp_path: Path) -> No
         intent=intent,
     )
     try:
-        assert planned.plan.external_action_id is not None
-        payload = GitPushActionInput(
-            route_plan_id=planned.plan.execution.plan_id,
-            route_plan_fingerprint=planned.plan.fingerprint,
-            external_action_id=planned.plan.external_action_id,
-            intent=intent,
-        )
-        denied = await service.submit(
-            ActionRequest(
-                action_id=planned.plan.external_action_id,
-                tool="git.push",
-                arguments=payload.model_dump(mode="json"),
-                principal=Principal(
-                    tenant_id="local", subject_id="attacker", framework="direct-call"
-                ),
-                context=ActionContext(session_id="bypass", run_id="bypass"),
-                effect_hint=EffectClass.NON_IDEMPOTENT_WRITE,
-                idempotency_key=intent.idempotency_key,
-            )
-        )
-        assert denied.status.value == "denied"
+        with pytest.raises(KernelError) as denied:
+            await router.execute(planned.plan.execution.plan_id)
+        assert denied.value.code == "action_not_approved"
         assert router.status(planned.plan.execution.plan_id).state == "pending_approval"
         assert _run(repository, "ls-remote", "--refs", "origin", intent.remote_ref) == b""
     finally:
-        await service.close()
         audit.close()
         plans.close()
         leases.close()
@@ -379,7 +425,7 @@ async def test_direct_action_service_push_bypass_is_denied(tmp_path: Path) -> No
 async def test_remote_configuration_drift_after_approval_fails_closed(tmp_path: Path) -> None:
     values = _git_fixture(tmp_path, suffix="remote-drift")
     repository, remote, workspace_store, git_store, leases, delivery, binding, intent = values
-    router, planned, plans, audit, service = await _route(
+    router, planned, plans, audit = await _route(
         tmp_path,
         repository=repository,
         delivery=delivery,
@@ -403,7 +449,6 @@ async def test_remote_configuration_drift_after_approval_fails_closed(tmp_path: 
         assert _run(repository, "ls-remote", "--refs", str(remote)) == b""
         assert _run(repository, "ls-remote", "--refs", str(changed_remote)) == b""
     finally:
-        await service.close()
         audit.close()
         plans.close()
         leases.close()
@@ -498,3 +543,13 @@ def test_prepare_intent_rejects_unsafe_command_fields_before_git_runs(
             idempotency_key="key",
         )
     assert invalid.value.code == "git_push_intent_invalid"
+
+
+def test_git_push_definition_rejects_missing_repository_root(tmp_path: Path) -> None:
+    executor = object.__new__(GitPushActionExecutor)
+    executor._root = tmp_path / "missing"  # type: ignore[attr-defined]
+
+    with pytest.raises(KernelError) as unavailable:
+        build_git_push_definition(executor)
+
+    assert unavailable.value.code == "git_repository_changed"
