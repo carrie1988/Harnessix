@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 2
-code_revision: 92c62d428f51e9b40745f04f3bf0b820dbed1797
+version: 3
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -14,9 +14,11 @@ related_adrs:
   - docs/adr/0047-coding-eval-campaign-evidence.md
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_suite_execution.py
 supersedes: []
 ---
 
@@ -105,7 +107,8 @@ Provider正文不进入Suite Report。Windows私有ACL仍由运维目录策略�
 - Campaign、Run、Turn、Token和Cost交叉绑定；
 - 自动/人工审批、Question、Steering和人工恢复计数测试；
 - 缺失Case、顺序漂移、摘要篡改、币种漂移、私有权限和符号链接测试；
-- 后续真实多仓库固定镜像任务、崩溃恢复与受控Provider基线。
+- 已实现候选的计划先行、锁、取消、Case前缀和报告发布崩溃恢复；
+- 后续真实多仓库固定镜像任务与受控Provider基线。
 
 ## 关联资料
 
@@ -115,7 +118,8 @@ Provider正文不进入Suite Report。Windows私有ACL仍由运维目录策略�
 | 重大变更设计 | [0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | 实施边界 |
 | 现行模块设计 | [Evals模块](../modules/evals.md) | 当前事实源 |
 | Task Pack决策 | [ADR 0083](0083-built-in-immutable-coding-eval-task-pack.md) | 固定来源、物化和检查安全边界 |
-| 测试 | [`test_suite.py`](../../tests/evals/test_suite.py)、[`test_task_pack.py`](../../tests/evals/test_task_pack.py) | Suite与Task Pack证明 |
+| Runner决策 | [ADR 0084](0084-recoverable-sequential-eval-suite-runner.md) | 顺序、单写者和证据前缀恢复 |
+| 测试 | [`test_suite.py`](../../tests/evals/test_suite.py)、[`test_task_pack.py`](../../tests/evals/test_task_pack.py)、[`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) | Suite合同、Task Pack与Runner证明 |
 
 ## 被取代关系
 

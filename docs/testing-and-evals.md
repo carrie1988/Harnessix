@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 20
-code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
+version: 21
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -20,12 +20,14 @@ related_adrs:
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/governance
   - tests/agent
   - tests/evals
   - tests/evals/test_suite.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
@@ -301,8 +303,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 5. 端到端最小值、P50、P95和最大延迟。
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
-合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack由0.9.2b独立切片承接；当前仍不证明Suite
-Runner、Suite崩溃恢复、至少10 Case/3仓库基线或真实Provider质量。关闭边界见
+合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack由0.9.2b独立切片承接，Suite Runner由
+0.9.2c承接；当前仍不证明至少10 Case/3仓库基线或真实Provider质量。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
@@ -333,6 +335,38 @@ uv build
 本地没有Docker或未配置固定镜像环境变量时，两个真实容器Case必须明确Skip，由CI `container-sandbox`预拉Manifest中
 相同Digest镜像后验收，不能把Skip写成通过。0.9.2b包含15项单元测试、2个参数化真实容器Case和Wheel资源
 检查；实现Revision `608c07a`已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
+
+### 13.3 0.9.2c 可恢复Suite Runner验证矩阵
+
+Suite Runner不能以“能循环五个Fixture”作为完成判定，必须分别证明：
+
+| 验证层 | 必须证明 |
+|---|---|
+| 计划与身份 | Suite Plan先于Case调用持久化；Case/Campaign一一绑定；Run ID跨Case唯一；Config Fingerprint不可漂移 |
+| 单写者 | 同Work Root锁冲突在Case调用前失败，不等待、不并行烧钱 |
+| 完成前缀 | 只有按计划连续存在且身份有效的Case Report能推进；缺口后的报告拒绝 |
+| Case崩溃窗口 | Report已写、State未推进时重开只补前缀，执行器不再次收到该Case |
+| 报告崩溃窗口 | Suite Report已写、completed未提交时重开重建并核对报告，只补State |
+| 取消 | `TurnCancelled`进入持久`stopped/cancelled`；普通重开不调用Case；显式`resume=True`继续 |
+| 停止 | Evidence Missing、Runtime Failed、Cost Unknown和Fee Limit均阻断下一Case并返回白名单结果 |
+| 费用 | Cost由持久Case报告重算；未知不当零；同币种累计金额在Case边界执行停止线 |
+| 隐私 | Config路径不进入State公开字段或Run Report；结果不含Prompt、模型/Tool正文、Diff、Secret和原始异常 |
+| 合同 | Config、Case Result、State、Run Report四份严格v1 Schema逐字冻结 |
+| 兼容 | 原Suite聚合接口和Campaign执行回归通过；共用文件锁提取不改变Campaign错误码与恢复语义 |
+
+定向入口为：
+
+```bash
+uv run pytest -q \
+  tests/evals/test_suite_execution.py \
+  tests/evals/test_suite.py \
+  tests/evals/test_campaign_execution.py
+uv run mypy src
+uv run python scripts/generate_specs.py --check
+```
+
+0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。Task Pack到Campaign/Transcript的正式适配器、
+至少10 Case/3仓库真实离线基线和受控Provider Suite分别由0.9.2d/e验收。实现候选在全矩阵CI通过前保持未关闭。
 
 ## 14. 真实Provider验证
 

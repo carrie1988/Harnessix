@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 6
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -15,11 +15,13 @@ related_adrs:
   - docs/adr/0004-durable-trace-context.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/agent/test_session_contract.py
   - tests/agent/test_legacy_process_compatibility.py
   - tests/trusted_actions/test_router.py
   - tests/governance/test_product_runtime_convergence.py
+  - tests/unit/test_file_lock.py
 supersedes: []
 ---
 
@@ -33,8 +35,8 @@ Journal端口、工具注册表或Executor合同。0.9.1f3删除了`ActionReques
 
 | 项目 | 当前事实 |
 |---|---|
-| 源码 | [`src/harnessix/domain/models.py`](../../src/harnessix/domain/models.py)、[`errors.py`](../../src/harnessix/domain/errors.py) |
-| 当前共享类型 | `ContractModel`、Tool风险元数据、审批记录、Trace Context、时间函数 |
+| 源码 | [`src/harnessix/domain/models.py`](../../src/harnessix/domain/models.py)、[`errors.py`](../../src/harnessix/domain/errors.py)、[`file_lock.py`](../../src/harnessix/domain/file_lock.py) |
+| 当前共享类型/原语 | `ContractModel`、Tool风险元数据、审批记录、Trace Context、时间函数、跨平台文件描述符独占锁 |
 | 历史兼容类型 | `ActionStatus`和转移图，仅用于读取旧Process Session事件 |
 | 已删除 | Action Service请求/结果/快照、Journal/Policy/Executor端口、Tool Registry |
 | 新执行事实源 | [`trusted_actions/contracts.py`](../../src/harnessix/trusted_actions/contracts.py)、[`execution/contracts.py`](../../src/harnessix/execution/contracts.py) |
@@ -212,14 +214,20 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 
 此外，`mypy --strict`验证跨模块类型，生成Schema门禁验证仍受支持的合同，文档门禁验证源码与设计链接。
 
+文件锁原语只把已打开文件描述符非阻塞加独占锁：Windows使用`msvcrt.locking`并把占用归一化为
+`BlockingIOError`，POSIX使用`fcntl.flock`。路径类型、权限、符号链接、锁文件生命周期和领域Error Code均由调用模块负责；
+`domain.file_lock`不打开路径、不等待、不持久化Owner，也不提供跨主机Lease或Fencing。根级
+[`harnessix.file_lock`](../../src/harnessix/file_lock.py)保留既有导入路径并委托该唯一实现。
+
 ## 12. 源码映射与阅读顺序
 
 1. [`domain/models.py`](../../src/harnessix/domain/models.py)：共享枚举、Tool、审批和Trace类型；
-2. [`agent/models.py`](../../src/harnessix/agent/models.py)：当前Session合同与历史Process事件内容；
-3. [`agent/reducer_support.py`](../../src/harnessix/agent/reducer_support.py)：历史Action转移一致性；
-4. [`trusted_actions/contracts.py`](../../src/harnessix/trusted_actions/contracts.py)：当前Action Route合同；
-5. [`execution/contracts.py`](../../src/harnessix/execution/contracts.py)：当前Execution Plan和批准检查点；
-6. [`domain/errors.py`](../../src/harnessix/domain/errors.py)：Kernel错误基类与不确定效果信号。
+2. [`domain/file_lock.py`](../../src/harnessix/domain/file_lock.py)：跨平台非阻塞文件描述符锁；
+3. [`agent/models.py`](../../src/harnessix/agent/models.py)：当前Session合同与历史Process事件内容；
+4. [`agent/reducer_support.py`](../../src/harnessix/agent/reducer_support.py)：历史Action转移一致性；
+5. [`trusted_actions/contracts.py`](../../src/harnessix/trusted_actions/contracts.py)：当前Action Route合同；
+6. [`execution/contracts.py`](../../src/harnessix/execution/contracts.py)：当前Execution Plan和批准检查点；
+7. [`domain/errors.py`](../../src/harnessix/domain/errors.py)：Kernel错误基类与不确定效果信号。
 
 ## 13. 限制、风险与后续差距
 
@@ -227,3 +235,10 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 - `ToolDescriptor.input_schema`仍是通用字典，Schema语义由注册方和生成测试保证；
 - 根包不再重导出共享类型，内部开发者必须从明确模块导入；
 - 当前只保证旧Process Session读取，不恢复已退役Worker Queue；旧数据库按独立归档流程处置。
+
+## 14. 变更记录
+
+| 文档版本 | 代码版本 | 日期 | 变更摘要 |
+|---:|---|---|---|
+| 6 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 将既有跨平台文件描述符锁下沉为Domain原语，根级导入保持兼容，供Campaign与Suite复用 |
+| 5 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 按单一Coding Agent边界移除退役Action Service领域合同并保留历史事件兼容 |

@@ -15,13 +15,20 @@ from harnessix.domain.models import ContractModel
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan, CodingEvalCampaignReport
 from harnessix.evals.campaign_execution_contracts import CodingEvalCampaignExecutionState
 from harnessix.evals.contracts import CodingEvalReport
-from harnessix.evals.suite_contracts import CodingEvalSuitePlan, CodingEvalSuiteReport
+from harnessix.evals.suite_contracts import (
+    CodingEvalSuiteCaseReport,
+    CodingEvalSuitePlan,
+    CodingEvalSuiteReport,
+)
+from harnessix.evals.suite_execution_contracts import CodingEvalSuiteExecutionState
 
 MAX_EVAL_REPORT_BYTES = 1024 * 1024
 MAX_EVAL_CAMPAIGN_PLAN_BYTES = 256 * 1024
 MAX_EVAL_CAMPAIGN_REPORT_BYTES = 1024 * 1024
 MAX_EVAL_CAMPAIGN_EXECUTION_STATE_BYTES = 256 * 1024
 MAX_EVAL_SUITE_PLAN_BYTES = 512 * 1024
+MAX_EVAL_SUITE_CASE_REPORT_BYTES = 2 * 1024 * 1024
+MAX_EVAL_SUITE_EXECUTION_STATE_BYTES = 512 * 1024
 MAX_EVAL_SUITE_REPORT_BYTES = 8 * 1024 * 1024
 
 
@@ -276,6 +283,72 @@ def read_eval_suite_plan(path: Path) -> CodingEvalSuitePlan:
         MAX_EVAL_SUITE_PLAN_BYTES,
         invalid_code="eval_suite_plan_invalid",
         label="Eval Suite计划",
+        require_private_mode=True,
+    )
+
+
+def write_eval_suite_case_report(path: Path, report: CodingEvalSuiteCaseReport) -> None:
+    """原子持久化单个Case的完整脱敏证据。"""
+
+    try:
+        report = CodingEvalSuiteCaseReport.model_validate_json(
+            report.model_dump_json(), strict=True
+        )
+    except ValueError:
+        raise KernelError("eval_suite_case_report_invalid", "Eval Suite Case报告无效") from None
+    _write_report(
+        path,
+        report,
+        MAX_EVAL_SUITE_CASE_REPORT_BYTES,
+        too_large_code="eval_suite_case_report_too_large",
+        path_denied_code="eval_suite_case_report_path_denied",
+        write_failed_code="eval_suite_case_report_write_failed",
+        label="Eval Suite Case报告",
+    )
+
+
+def read_eval_suite_case_report(path: Path) -> CodingEvalSuiteCaseReport:
+    """读取私有、有界且完整校验的单个Suite Case报告。"""
+
+    return _read_report(
+        path,
+        CodingEvalSuiteCaseReport,
+        MAX_EVAL_SUITE_CASE_REPORT_BYTES,
+        invalid_code="eval_suite_case_report_invalid",
+        label="Eval Suite Case报告",
+        require_private_mode=True,
+    )
+
+
+def write_eval_suite_execution_state(path: Path, state: CodingEvalSuiteExecutionState) -> None:
+    """以原子替换持久化Suite连续完成前缀。"""
+
+    try:
+        state = CodingEvalSuiteExecutionState.model_validate_json(
+            state.model_dump_json(), strict=True
+        )
+    except ValueError:
+        raise KernelError("eval_suite_execution_state_invalid", "Eval Suite执行状态无效") from None
+    _write_report(
+        path,
+        state,
+        MAX_EVAL_SUITE_EXECUTION_STATE_BYTES,
+        too_large_code="eval_suite_execution_state_too_large",
+        path_denied_code="eval_suite_execution_state_path_denied",
+        write_failed_code="eval_suite_execution_state_write_failed",
+        label="Eval Suite执行状态",
+    )
+
+
+def read_eval_suite_execution_state(path: Path) -> CodingEvalSuiteExecutionState:
+    """读取并校验可恢复的Suite执行状态。"""
+
+    return _read_report(
+        path,
+        CodingEvalSuiteExecutionState,
+        MAX_EVAL_SUITE_EXECUTION_STATE_BYTES,
+        invalid_code="eval_suite_execution_state_invalid",
+        label="Eval Suite执行状态",
         require_private_mode=True,
     )
 

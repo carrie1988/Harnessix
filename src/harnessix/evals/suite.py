@@ -135,10 +135,12 @@ def build_transcript_evidence(
     )
 
 
-def _require_case(
+def build_coding_eval_suite_case_report(
     expected: CodingEvalSuiteCasePlan,
     completed: CompletedCodingEvalSuiteCase,
 ) -> CodingEvalSuiteCaseReport:
+    """把单个Case的完整内部证据投影为可持久化脱敏报告。"""
+
     task = completed.task
     campaign_plan = completed.campaign_plan
     if (
@@ -183,6 +185,30 @@ def _require_case(
     )
 
 
+def build_coding_eval_suite_report_from_cases(
+    plan: CodingEvalSuitePlan,
+    cases: tuple[CodingEvalSuiteCaseReport, ...],
+) -> CodingEvalSuiteReport:
+    """从按计划持久化的完整Case报告重建Suite报告。"""
+
+    try:
+        plan = CodingEvalSuitePlan.model_validate_json(plan.model_dump_json(), strict=True)
+    except ValueError:
+        raise KernelError("eval_suite_plan_invalid", "Eval Suite计划无效") from None
+    if len(cases) != len(plan.cases):
+        raise KernelError("eval_suite_incomplete", "Eval Suite尚未具备全部Case证据")
+    try:
+        return CodingEvalSuiteReport(
+            plan=plan,
+            plan_fingerprint=plan.fingerprint,
+            cases=cases,
+            summary=summarize_suite_cases(plan, cases),
+            completed_at=max(case.campaign.completed_at for case in cases),
+        )
+    except ValueError:
+        raise KernelError("eval_suite_evidence_invalid", "Eval Suite证据无法一致聚合") from None
+
+
 def build_coding_eval_suite_report(
     plan: CodingEvalSuitePlan,
     completed: tuple[CompletedCodingEvalSuiteCase, ...],
@@ -196,16 +222,7 @@ def build_coding_eval_suite_report(
     if len(completed) != len(plan.cases):
         raise KernelError("eval_suite_incomplete", "Eval Suite尚未具备全部Case证据")
     cases = tuple(
-        _require_case(expected, actual)
+        build_coding_eval_suite_case_report(expected, actual)
         for expected, actual in zip(plan.cases, completed, strict=True)
     )
-    try:
-        return CodingEvalSuiteReport(
-            plan=plan,
-            plan_fingerprint=plan.fingerprint,
-            cases=cases,
-            summary=summarize_suite_cases(plan, cases),
-            completed_at=max(case.campaign.completed_at for case in cases),
-        )
-    except ValueError:
-        raise KernelError("eval_suite_evidence_invalid", "Eval Suite证据无法一致聚合") from None
+    return build_coding_eval_suite_report_from_cases(plan, cases)

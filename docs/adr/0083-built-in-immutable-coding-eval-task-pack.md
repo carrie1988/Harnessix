@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 2
-code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
+version: 3
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ modules:
 related_adrs:
   - docs/adr/0044-coding-eval-contract-and-grader.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/evals/test_task_pack.py
   - tests/integration/test_task_pack_profiles.py
@@ -22,8 +23,8 @@ supersedes: []
 
 ## 状态
 
-接受且已实施。0.9.2b任务来源、工作区物化和真实检查已由CI 35461708961验收并关闭。本文不关闭0.9.2c可恢复Suite Runner、
-0.9.2d十任务三仓库数据集或0.9.2e真实Provider基线。
+接受且已实施。0.9.2b任务来源、工作区物化和真实检查已由CI 35461708961验收并关闭。0.9.2c可恢复Suite Runner
+由ADR 0084独立定义并已形成实现候选；本文不关闭0.9.2d十任务三仓库数据集或0.9.2e真实Provider基线。
 
 ## 背景
 
@@ -132,6 +133,7 @@ Task Pack目录属于发行供应链资源。运维不得手工修改安装目�
 | 合同 | [`task_pack_contracts.py`](../../src/harnessix/evals/task_pack_contracts.py) | Task、Profile、Oracle与物化合同 |
 | 加载器 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | Catalog、资源核验和Profile投影 |
 | 物化器 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | 安全解包、Git重建和恢复 |
+| Runner决策 | [ADR 0084](0084-recoverable-sequential-eval-suite-runner.md) | Task Pack之上的顺序Suite恢复边界 |
 | 单元测试 | [`test_task_pack.py`](../../tests/evals/test_task_pack.py) | 正反合同与恢复 |
 | 真实验收 | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | 固定镜像产品运行链 |
 

@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 66
-code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
+version: 67
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/governance/test_generated_specs.py
@@ -30,6 +31,7 @@ related_tests:
   - tests/protocol/test_projection.py
   - tests/product_ui/test_app.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/product_ui/test_interactions.py
   - tests/product_ui/test_app_interactions.py
@@ -96,7 +98,7 @@ flowchart LR
 | 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 8个当前产品运行时与扩展包均已有现行设计；旧API/Adapter资料已冻结为历史 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md)、[ADR 0077](../adr/0077-versioned-documentation-contract-and-gates.md) | 代码与文档治理门禁均已启用；后续产品切片须持续同步 |
-| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、[0.9.2研究](../research/eval-suite-and-transcript-baseline.md)、[ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)与[详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；0.9.2a/b已关闭，c～e未完成 |
+| 测试与Eval | [Evals模块设计](../modules/evals.md)、[测试与Eval规范](../testing-and-evals.md)、[验证证据索引](../validation/README.md) | [里程碑测试历史](../testing-and-evals-milestone-history.md)、[0.9.2研究](../research/eval-suite-and-transcript-baseline.md)、[ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[总体设计](../changes/m09-2-eval-suite-and-transcript-baseline.md)与[0.9.2c详细设计](../changes/m09-2c-recoverable-suite-runner.md) | 当前策略、模块事实、历史运行数字和真实Provider证据已分层；0.9.2a/b已关闭，c为实现候选，d/e未完成 |
 | 部署与运维 | [部署总入口](../deployment.md)、[安装](../operations/installation.md)、[配置](../operations/configuration.md)、[升级](../operations/upgrade-and-rollback.md)、[恢复](../operations/recovery.md)、[诊断](../operations/diagnostics.md)、[平台](../operations/platforms.md) | [部署里程碑历史](../deployment-milestone-history.md)、平台、许可和产品边界ADR | 当前操作与历史命令已分层；Doctor已实现，正式制品、支持包、自动升级/回退和RPO/RTO仍属产品缺口 |
 
 ## 4. 26个生产源码包覆盖矩阵
@@ -111,7 +113,7 @@ flowchart LR
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整；e3 `action_review`模型历史绑定现行事实已同步 |
 | [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [delivery](../../tests/delivery/)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整；f2b Git Push直接Trusted Action、响应丢失和硬崩溃只对账已由CI 35442924441验收 |
 | [domain](../../src/harnessix/domain/) | 跨模块共享枚举、基础错误与历史状态只读兼容 | [Domain模块设计](../modules/domain.md) | [产品收敛治理](../../tests/governance/test_product_runtime_convergence.py)、[历史Process兼容](../../tests/agent/test_legacy_process_compatibility.py) | [docs/modules/domain.md](../modules/domain.md) | 完整；不再包含旧Service、Registry或端口 |
-| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行、内置Task Pack/固定Profile、Suite/Transcript证据与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md)、[0.9.2设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) | [evals](../../tests/evals/)、[Task Pack](../../tests/evals/test_task_pack.py)、[真实Profile](../../tests/integration/test_task_pack_profiles.py)、[Suite](../../tests/evals/test_suite.py) | [docs/modules/evals.md](../modules/evals.md) | f2c与0.9.2a/b已关闭；Suite Runner属于0.9.2c |
+| [evals](../../src/harnessix/evals/) | Coding Eval合同、执行、内置Task Pack/固定Profile、可恢复Suite/Transcript证据与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md)、[0.9.2设计](../changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c设计](../changes/m09-2c-recoverable-suite-runner.md) | [evals](../../tests/evals/)、[Task Pack](../../tests/evals/test_task_pack.py)、[真实Profile](../../tests/integration/test_task_pack_profiles.py)、[Suite合同](../../tests/evals/test_suite.py)、[Suite执行](../../tests/evals/test_suite_execution.py) | [docs/modules/evals.md](../modules/evals.md) | f2c与0.9.2a/b已关闭；0.9.2c为实现候选待CI |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
 | [hooks](../../src/harnessix/hooks/) | 声明式Hook注册与执行 | [Hook模块设计](../modules/hooks.md)、[0.8](../m08-product-runtime-and-extensions.md)、[Skill/Hook研究](../research/skills-hooks-and-supply-chain.md) | [hooks](../../tests/hooks/) | [docs/modules/hooks.md](../modules/hooks.md) | 完整，DOC-1.4扩展 |
 | [mcp](../../src/harnessix/mcp/) | MCP目录、客户端、Server与统一Action | [MCP模块设计](../modules/mcp.md)、[0.8](../m08-product-runtime-and-extensions.md)、[MCP研究](../research/mcp-runtime-and-security.md) | [mcp](../../tests/mcp/)、[真实Container](../../tests/integration/test_container_sandbox.py) | [docs/modules/mcp.md](../modules/mcp.md) | 完整，DOC-1.4扩展协议 |
@@ -168,7 +170,7 @@ DOC-1.3与DOC-1.4的当前包级迁移已经完成。整改阶段和责任分组
 [0.8完整历史](../m08-product-runtime-and-extensions-milestone-history.md)。历史资料只用于追溯增量，不能覆盖
 本矩阵列出的当前模块事实源。
 
-[ADR索引](../adr/README.md)当前覆盖83份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
+[ADR索引](../adr/README.md)当前覆盖84份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
 已覆盖30份冻结研究、访问日期和采用结果。DOC-1.5结束时189份Markdown已具备标准YAML元数据；
 加入ADR 0077和DOC-1.6详细设计时共有191份Markdown、30个生产源码包；新增Product UI后曾达到31个包。
 0.9.1f3已物理删除5个旧服务包，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；当前26个生产源码包及其源码/测试映射继续由自动门禁持续验证，历史资料不计入当前包覆盖率。

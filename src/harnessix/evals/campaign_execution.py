@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import os
 import stat
 import subprocess
@@ -24,6 +23,11 @@ from harnessix.evals.campaign_execution_contracts import (
     CodingEvalCampaignRunReport,
 )
 from harnessix.evals.catalog import historical_coding_eval
+from harnessix.evals.execution_fs import (
+    ensure_private_directory,
+    exclusive_execution_lock,
+    path_present,
+)
 from harnessix.evals.report import (
     eval_campaign_report_sha256,
     read_eval_campaign_execution_state,
@@ -72,50 +76,6 @@ def _sdk_provider(config: OpenAIChatConfig) -> AbstractAsyncContextManager[Model
     return OpenAIChatProvider(config)
 
 
-def _ensure_private_root(path: Path) -> None:
-    try:
-        if path.is_symlink():
-            raise OSError
-        path.mkdir(mode=0o700, parents=True, exist_ok=True)
-        info = path.stat(follow_symlinks=False)
-        if not stat.S_ISDIR(info.st_mode) or info.st_mode & 0o777 != 0o700:
-            raise OSError
-    except OSError:
-        raise KernelError(
-            "eval_campaign_work_root_invalid", "Campaign私有运行目录缺失、权限错误或不安全"
-        ) from None
-
-
-def _path_present(path: Path) -> bool:
-    return path.exists() or path.is_symlink()
-
-
-@contextmanager
-def _campaign_lock(root: Path) -> Iterator[None]:
-    descriptor: int | None = None
-    try:
-        descriptor = os.open(
-            root / _LOCK_FILE,
-            os.O_CREAT | os.O_RDWR | os.O_CLOEXEC | os.O_NOFOLLOW,
-            0o600,
-        )
-        info = os.fstat(descriptor)
-        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o777 != 0o600:
-            raise OSError
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise KernelError("eval_campaign_busy", "Campaign已有活跃执行宿主") from None
-        yield
-    except KernelError:
-        raise
-    except OSError:
-        raise KernelError("eval_campaign_lock_invalid", "Campaign执行锁不可用") from None
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
-
-
 def _require_executable(path: Path, label: str) -> Path:
     try:
         resolved = path.resolve(strict=True)
@@ -127,6 +87,28 @@ def _require_executable(path: Path, label: str) -> Path:
         raise KernelError(
             "eval_campaign_host_binding_invalid", f"Campaign{label}绑定无效"
         ) from None
+
+
+@contextmanager
+def _campaign_execution_scope(root: Path) -> Iterator[None]:
+    ensure_private_directory(
+        root,
+        error_code="eval_campaign_work_root_invalid",
+        label="Campaign私有运行目录",
+    )
+    ensure_private_directory(
+        root / _RUNS_DIRECTORY,
+        error_code="eval_campaign_work_root_invalid",
+        label="Campaign私有运行目录",
+    )
+    with exclusive_execution_lock(
+        root,
+        _LOCK_FILE,
+        busy_code="eval_campaign_busy",
+        invalid_code="eval_campaign_lock_invalid",
+        label="Campaign",
+    ):
+        yield
 
 
 def _source_revision(config: CodingEvalCampaignRunConfig) -> str:
@@ -285,7 +267,7 @@ async def _recover_published_report(
     state: CodingEvalCampaignExecutionState,
     report_path: Path,
 ) -> tuple[CodingEvalCampaignExecutionState, CodingEvalCampaignRunReport] | None:
-    if not _path_present(report_path):
+    if not path_present(report_path):
         return None
     completed, _, all_complete = await _rebuild_prefix(config, state)
     if len(completed) != len(config.plan.run_ids) or not all_complete:
@@ -327,9 +309,7 @@ async def run_coding_eval_campaign(
     token = cancel or CancelToken()
     fail = fault or _fault
     root = Path(config.work_root)
-    _ensure_private_root(root)
-    _ensure_private_root(root / _RUNS_DIRECTORY)
-    with _campaign_lock(root):
+    with _campaign_execution_scope(root):
         plan_path = root / _PLAN_FILE
         state_path = root / _STATE_FILE
         report_path = root / _REPORT_FILE

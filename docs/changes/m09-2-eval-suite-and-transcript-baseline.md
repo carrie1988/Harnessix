@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
+version: 4
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -14,11 +14,13 @@ modules:
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_campaign.py
   - tests/evals/test_campaign_execution.py
   - tests/evals/test_task_pack.py
+  - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
 supersedes: []
 ---
@@ -124,7 +126,7 @@ flowchart TB
 | Task Pack | 固定Prompt、允许变更、检查和Profile身份 | 不接收模型动态命令 |
 | Campaign | 同任务独立试验、成本和失败分类 | 不聚合跨任务指标 |
 | Transcript Projector | 从Turn派生摘要和人工干预计数 | 不保存/上传正文 |
-| Suite Runner | 顺序执行Case、恢复完成前缀、发布报告 | 不重跑完整Case，不并发烧钱 |
+| Suite Runner | 顺序执行Case、恢复完成前缀、发布报告 | 不创建Provider、不审批、不重跑完整Case、不并发烧钱 |
 | Suite Report | 聚合可重算发布指标 | 不替代Session诊断 |
 
 ### 5.2 替代方案
@@ -344,6 +346,22 @@ AGPL-3.0-only且带完整LICENSE的离线仓库：
 两个任务都不依赖第三方包、网络、Shell或仓库动态配置。它们用于证明Task Pack机制、真实Product Runtime和双语言检查，
 不是0.9.2d最终质量数据集，也不得用于声称已覆盖全部五类任务。
 
+### 8.8 Suite执行与恢复合同
+
+0.9.2c新增四个严格v1合同，完整字段、状态和失败矩阵见
+[可恢复Suite Runner详细设计](m09-2c-recoverable-suite-runner.md)：
+
+| 合同 | 关键字段 | 主要不变量 |
+|---|---|---|
+| `CodingEvalSuiteRunConfig` | Plan、Campaign Plans、Work Root、总费用停止线 | Case与Campaign一一对应；Run ID跨Case唯一；同币种 |
+| `CodingEvalSuiteCaseRunResult` | Case ID、Reason、可选Case Report | 只有`completed`携带完整报告 |
+| `CodingEvalSuiteExecutionState` | Config/Plan指纹、状态、完成前缀、当前Case、Cost、停止原因、报告摘要 | 前缀连续；stopped/completed字段形状一致 |
+| `CodingEvalSuiteRunReport` | 稳定原因、Case计数、当前Case、已知Cost | 不回显路径、配置、正文或第三方错误 |
+
+Suite Runner先发布Plan，再持有单写者锁顺序调用可信Case执行端口。Case Report先于State前缀提交；重开扫描固定
+`cases/case-NNN`槽位，只消费连续、身份一致且0600的报告。`stopped`必须显式`resume=True`，进程崩溃留下的
+`running`状态则重入同一Case/同一Campaign，由下层固定Run ID恢复。Runner本身不创建Provider、审批或工具效果。
+
 ## 9. 状态、事务、并发与幂等
 
 ```mermaid
@@ -398,7 +416,7 @@ atomic_publish(report)
 |---|---|---|---|
 | 0.9.2a | Suite/Transcript/Test合同、聚合、Schema和原子I/O | 缺项、跨任务、篡改、权限、自动/人工审批 | 全仓与六实例CI |
 | 0.9.2b | Task Pack v1、固定Archive/检查/Profile、Review Oracle | 摘要/来源/镜像漂移、恶意路径、禁动态命令 | ≥2语言离线真实检查 |
-| 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | Case边界崩溃、发布确认丢失、成本停止 | 不重跑完成Trial/Case |
+| 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | 已形成实现候选；Case边界崩溃、发布确认丢失、成本停止 | 全矩阵CI前保持未关闭 |
 | 0.9.2d | ≥10 Case、≥3仓库、五类各≥2 | Baseline失败、Oracle通过、固定镜像 | 本地/CI真实场景 |
 | 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | 报告与验证资料发布 |
 
@@ -415,7 +433,9 @@ atomic_publish(report)
 | 内置加载与Profile投影 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `builtin_coding_eval_task_pack`、`build_task_pack_product_profile` | 伪造Root、摘要、Engine正反测试 |
 | Archive物化与恢复 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `materialize/load_materialized_task_pack_case` | 路径攻击、Git身份、脏树恢复测试 |
 | 真实固定镜像检查 | [Container集成测试](../../tests/integration/test_task_pack_profiles.py) | Product Runtime、Approval、Process、Artifact | Baseline失败、最小修复后通过 |
-| 后续Runner | `suite_execution.py` | 待0.9.2c | 状态、锁、崩溃恢复 |
+| Suite执行合同 | [`suite_execution_contracts.py`](../../src/harnessix/evals/suite_execution_contracts.py) | Config、Case Result、State、Run Report | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) Schema与身份漂移 |
+| 可恢复Runner | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite`、前缀重建、停止与发布恢复 | 顺序、锁、取消、崩溃、Cost与零重放测试 |
+| 共用执行文件边界 | [`execution_fs.py`](../../src/harnessix/evals/execution_fs.py) | 0700目录、0600非阻塞独占锁 | Suite锁冲突及Campaign回归 |
 
 ## 14. 部署、兼容、风险与回退
 
@@ -443,4 +463,9 @@ Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个
 `harnessix-seed/v1`双语言Pack；安全Archive读取与Git四重身份物化；消费点Catalog重验；固定Profile到现有Product
 Process的投影；15项定向单元测试；以及两个真实Digest镜像的Baseline失败/最小修复后通过集成测试。Wheel已验证包含
 Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f76021fc`本地全仓为3499项通过/20项跳过；
-[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例。首次Documentation执行只出现一次Mermaid冷启动超时；同一Revision的失败Job重跑渲染44幅变化图成功，其余全部Job在首次执行已通过，因此0.9.2b关闭。0.9.2c～e和0.9.2总项保持未关闭。
+[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例。首次Documentation执行只出现一次Mermaid冷启动超时；同一Revision的失败Job重跑渲染44幅变化图成功，其余全部Job在首次执行已通过，因此0.9.2b关闭。
+
+0.9.2c已形成实现候选：计划先行、单写者锁、连续Case证据前缀、显式停止恢复、Case/最终报告崩溃窗口、成本未知和
+聚合费用停止均已有严格合同、Schema和定向测试；实现细节见[0.9.2c详细设计](m09-2c-recoverable-suite-runner.md)
+与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。全矩阵CI通过前0.9.2c保持未关闭；0.9.2d/e和
+0.9.2总项继续未关闭。

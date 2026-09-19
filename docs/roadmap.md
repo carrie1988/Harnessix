@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 33
-code_revision: 608c07a54543f436651aa4e55141acb7f76021fc
+version: 34
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
+  - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -26,6 +27,7 @@ related_tests:
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_action_config_runtime.py
   - tests/product_config/test_action_runtime.py
+  - tests/evals/test_suite_execution.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/agent/test_trusted_action_runtime.py
@@ -498,7 +500,8 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   每个任务固定来源Commit、Tree摘要、允许路径、基线/行为/回归检查和预算。实现Revision `608c07a`交付内置双语言种子Pack、安全Archive/Git物化、
   消费点身份重验、固定Product Profile和真实Container先失败后通过验收，已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例全矩阵验收并关闭；
 - [ ] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用
-  同一Run ID补证据，不重复Provider请求、审批或效果；成本未知、证据缺失和身份漂移停止后续试验；
+  同一Run ID补证据，不重复Provider请求、审批或效果；成本未知、证据缺失和身份漂移停止后续试验。计划先行、单写者锁、
+  连续Case证据前缀、显式停止恢复和报告发布恢复已形成实现候选；全矩阵CI通过前保持未关闭；
 - [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
   每Case至少2次试验；通过固定Container Profile运行全部检查，形成可复跑的离线Suite报告；
 - [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与

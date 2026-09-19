@@ -78,12 +78,16 @@ from harnessix.evals.report import (
     read_eval_campaign_plan,
     read_eval_campaign_report,
     read_eval_report,
+    read_eval_suite_case_report,
+    read_eval_suite_execution_state,
     read_eval_suite_plan,
     read_eval_suite_report,
     write_eval_campaign_execution_state,
     write_eval_campaign_plan,
     write_eval_campaign_report,
     write_eval_report,
+    write_eval_suite_case_report,
+    write_eval_suite_execution_state,
     write_eval_suite_plan,
     write_eval_suite_report,
 )
@@ -91,7 +95,9 @@ from harnessix.evals.run_state import read_eval_run_state, write_eval_run_state
 from harnessix.evals.runner import HistoricalCodingEvalResult, run_historical_coding_eval
 from harnessix.evals.suite import (
     CompletedCodingEvalSuiteCase,
+    build_coding_eval_suite_case_report,
     build_coding_eval_suite_report,
+    build_coding_eval_suite_report_from_cases,
     build_transcript_evidence,
 )
 from harnessix.evals.suite_contracts import (
@@ -104,6 +110,13 @@ from harnessix.evals.suite_contracts import (
     CodingEvalSuiteSummary,
     CodingEvalTranscriptEvidence,
     CodingEvalTrialTestEvidence,
+)
+from harnessix.evals.suite_execution import run_coding_eval_suite
+from harnessix.evals.suite_execution_contracts import (
+    CodingEvalSuiteCaseRunResult,
+    CodingEvalSuiteExecutionState,
+    CodingEvalSuiteRunConfig,
+    CodingEvalSuiteRunReport,
 )
 from harnessix.evals.task_pack import (
     LoadedCodingEvalTaskPack,
@@ -159,8 +172,12 @@ __all__ = [
     "CodingEvalRate",
     "CodingEvalSuiteCasePlan",
     "CodingEvalSuiteCaseReport",
+    "CodingEvalSuiteCaseRunResult",
+    "CodingEvalSuiteExecutionState",
     "CodingEvalSuitePlan",
     "CodingEvalSuiteReport",
+    "CodingEvalSuiteRunConfig",
+    "CodingEvalSuiteRunReport",
     "CodingEvalSuiteSummary",
     "CodingEvalTask",
     "CodingEvalTaskPack",
@@ -192,8 +209,10 @@ __all__ = [
     "LoadedCodingEvalTaskPack",
     "collect_git_evidence",
     "build_coding_eval_campaign_report",
+    "build_coding_eval_suite_case_report",
     "build_coding_eval_review_oracle",
     "build_coding_eval_suite_report",
+    "build_coding_eval_suite_report_from_cases",
     "build_coding_eval_task_pack",
     "build_coding_eval_task_pack_profile",
     "build_transcript_evidence",
@@ -215,6 +234,8 @@ __all__ = [
     "materialize_task_pack_case",
     "read_eval_report",
     "read_eval_suite_plan",
+    "read_eval_suite_case_report",
+    "read_eval_suite_execution_state",
     "read_eval_suite_report",
     "read_eval_campaign_plan",
     "read_eval_campaign_report",
@@ -224,8 +245,11 @@ __all__ = [
     "run_historical_checks",
     "run_historical_coding_eval",
     "run_coding_eval_campaign",
+    "run_coding_eval_suite",
     "write_eval_report",
     "write_eval_suite_plan",
+    "write_eval_suite_case_report",
+    "write_eval_suite_execution_state",
     "write_eval_suite_report",
     "write_eval_campaign_plan",
     "write_eval_campaign_report",

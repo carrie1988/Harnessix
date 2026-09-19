@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "description": "调用面只暴露身份、计数、停止原因与已知费用。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-suite-run-report/v1",
+      "default": "harnessix.coding-eval-suite-run-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "completed",
+        "cancelled",
+        "fee_limit_reached",
+        "cost_unknown",
+        "evidence_missing",
+        "runtime_failed"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "suite_id": {
+      "format": "uuid",
+      "title": "Suite Id",
+      "type": "string"
+    },
+    "scheduled_cases": {
+      "maximum": 50,
+      "minimum": 5,
+      "title": "Scheduled Cases",
+      "type": "integer"
+    },
+    "completed_cases": {
+      "maximum": 50,
+      "minimum": 0,
+      "title": "Completed Cases",
+      "type": "integer"
+    },
+    "current_case_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Case Id"
+    },
+    "report_published": {
+      "default": false,
+      "title": "Report Published",
+      "type": "boolean"
+    },
+    "known_cost_currency": {
+      "enum": [
+        "USD",
+        "CNY"
+      ],
+      "title": "Known Cost Currency",
+      "type": "string"
+    },
+    "known_cost_amount": {
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+      "title": "Known Cost Amount",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "suite_id",
+    "scheduled_cases",
+    "completed_cases",
+    "known_cost_currency",
+    "known_cost_amount"
+  ],
+  "title": "CodingEvalSuiteRunReport",
+  "type": "object"
+}

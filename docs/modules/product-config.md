@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 89485f321b1a0f73a2e552818298c24b30e3cb3e
+version: 14
+code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
 owners:
   - core
 modules:
@@ -992,6 +992,9 @@ flowchart TD
 ```
 
 迁移锁名为`.{config-name}.migration.lock`，文件要求普通、单硬链接；POSIX要求当前UID和0600。
+底层非阻塞锁原语现由[`domain/file_lock.py`](../../src/harnessix/domain/file_lock.py)唯一实现，
+[`harnessix.file_lock`](../../src/harnessix/file_lock.py)保留稳定兼容导入；Product Config的锁文件路径、权限、CAS、
+错误码、重试与原子替换语义没有变化。
 锁竞争返回`product_config_busy`，锁对象不在成功后删除。临时文件和新备份使用排他创建、0600、文件fsync；
 POSIX再同步目录。已存在备份必须通过安全读取且SHA与源一致，否则`product_config_backup_conflict`。
 
@@ -1872,6 +1875,7 @@ Eval组合不接受任意命令、环境或Secret。Process ID固定等于Execut
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 14 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 同步跨平台锁原语下沉到Domain；Product Config兼容导入和迁移语义保持不变 |
 | 13 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录历史Eval专用Trusted Action组合根由CI 35446341997完成七任务全矩阵验收 |
 | 12 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 增加历史Eval专用Trusted Action组合根，分离公开Profile到Process物化与Catalog/Router/Owner生命周期，等待验收 |
 | 11 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router和统一产品Owner由CI 35439332019验收关闭 |
