@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 8
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 9
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -876,4 +876,5 @@ Tool Content写入模型历史或外部Callback，且`pending_approval`、`faile
 源码与回归见[`git_push.py`](../src/harnessix/delivery/git_push.py)、
 [`test_git_push.py`](../tests/delivery/test_git_push.py)与
 [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)。完整设计见
-[0.9.1f单一产品运行时收敛](changes/m09-1f-single-product-runtime-convergence.md)。本节记录实现候选；全矩阵CI关闭证据待补。
+[0.9.1f单一产品运行时收敛](changes/m09-1f-single-product-runtime-convergence.md)。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由
+[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵验收，f2b据此关闭。

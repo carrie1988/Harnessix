@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 11
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 12
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -392,7 +392,7 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至当前验收Revision `b835fcef06803bf0e957a59a50bd5535e127502b`，0.9.1e4/e5与0.9.1f1均已关闭；f2b Git Push直接Trusted Action为实现候选，尚待全矩阵CI关闭。以下项目仍不能宣称生产完成：0.9.1f2c～f3及0.9.2～0.9.6范围的历史Eval迁移、兼容内核物理删除、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至当前验收Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`，0.9.1e4/e5、0.9.1f1与f2b Git Push直接Trusted Action均已关闭。以下项目仍不能宣称生产完成：0.9.1f2c～f3及0.9.2～0.9.6范围的历史Eval迁移、兼容内核物理删除、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ### 20.1 0.9.1e5验证矩阵
 
@@ -429,9 +429,9 @@ f2b不能以“删除旧import”作为完成判定，必须同时证明直接Ro
 | 架构治理 | `delivery/git_push.py`不再导入旧Runtime；实际旧调用方集合与精确白名单完全相等 |
 | 发布门禁 | Ruff、Mypy、Schema、可读性、全仓Pytest、文档/链接/Mermaid与七任务CI全部通过 |
 
-本地候选已通过Git Push专项26项与架构治理5项测试；`make check`完成Ruff、可读性、205份文档/6059条链接/
+实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已通过Git Push专项26项与架构治理5项测试；`make check`完成Ruff、可读性、205份文档/6059条链接/
 590幅Mermaid静态结构、Schema、317个源码文件Mypy及全仓`3565 passed, 20 skipped`，修改涉及的87幅Mermaid另经
-Chrome真实渲染通过。CI结果将在关闭提交中记录。公网HTTPS/SSH认证、Known Hosts、代理、限流和Push取消后代清理
+Chrome真实渲染通过。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)七个任务全部通过：Linux Python 3.12/3.13各`3565 passed, 20 skipped`，macOS为`2499 passed, 15 skipped`，Windows为`501 passed, 45 skipped`，固定镜像Container为`3 passed`，PostgreSQL为`2 passed`，Documentation完成590幅Mermaid和17条变化路径渲染；f2b据此关闭。公网HTTPS/SSH认证、Known Hosts、代理、限流和Push取消后代清理
 由后续0.9.3/0.9.5验证，不能由bare remote结果外推。
 
 ## 21. 维护与验收标准

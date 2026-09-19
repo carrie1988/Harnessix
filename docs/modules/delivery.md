@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 7
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -37,8 +37,8 @@ supersedes: []
 | 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions与Execution Plan |
 | 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push使用Execution Plan与Action Audit，远端Ref作为效果对账权威 |
 | 平台 | Planner支持POSIX/Windows观察；普通Workspace发布仅POSIX；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
-| 代码版本 | 已验收基线`b835fcef06803bf0e957a59a50bd5535e127502b`；本版同步f2b实现候选 |
-| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；Git Push已直接接入Trusted Action Router并通过本地bare remote、响应丢失和硬崩溃只对账测试，等待CI关闭；公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
+| 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
+| 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；Git Push已直接接入Trusted Action Router，并通过本地bare remote、响应丢失、硬崩溃只对账及七任务CI；公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
 
 本文描述[`contracts.py`](../../src/harnessix/delivery/contracts.py)、
 [`planner.py`](../../src/harnessix/delivery/planner.py)、[`store.py`](../../src/harnessix/delivery/store.py)、
@@ -1617,6 +1617,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b直接Trusted Git Push由CI 35442924441完成七任务全矩阵验收并关闭 |
 | 6 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b直接Trusted Git Push、硬崩溃只对账与旧Action依赖删除候选；等待全矩阵CI |
 | 5 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录同源Workspace Patch Binding诊断由CI 35439332019验收关闭 |
 | 4 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor与Runtime复用正式Workspace Patch Binding的实现候选 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 3
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -1200,5 +1200,6 @@ ADR和里程碑资料描述决策及当时增量；本文维护`execution`包与
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接消费Execution Approval、Action Audit及Remote事实由CI 35442924441验收关闭 |
 | 2 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接消费Execution Approval、Action Audit状态及Remote事实的实现候选；等待全矩阵CI |
 | 1 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 建立Execution Plan现行事实源，覆盖v1/v2合同、规范摘要、环境/Secret、Sandbox/能力、Policy/Approval、SQLite持久化、消费方复核、恢复边界、安全、测试映射和已知限制 |

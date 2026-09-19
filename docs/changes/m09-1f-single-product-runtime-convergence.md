@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 3
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ f2/f3必须继续消除生产调用与物理实现，不能把“不可从产品
 | 默认产品使用Trusted Action | `product_config/server.py::run_product_stdio` | 可以先撤销HTTP入口而不影响默认产品 |
 | CLI与公共SDK已经收敛 | `cli.py`、`harnessix/__init__.py`、`sdk/__init__.py` | f1关闭双产品入口，治理测试阻止回归 |
 | 固定Container Process已进入产品链 | `product_config/process_action.py`与`product_config/action_runtime.py` | f2a已经由0.9.1e4/e5关闭；历史Process Reader留到f3处理 |
-| Git Push已直接使用Trusted Action Route | `delivery/git_push.py::build_git_push_definition` | f2b已移除ActionService/Effect Journal桥，CI关闭证据待补 |
+| Git Push已直接使用Trusted Action Route | `delivery/git_push.py::build_git_push_definition` | f2b已移除ActionService/Effect Journal桥，并由CI 35442924441关闭 |
 | 历史Eval显式启动Worker | `evals/runner.py::run_historical_coding_eval` | 需要改为产品同源Catalog/Gateway后才能删除Worker |
 
 ## 3. 设计目标、非目标与验收标准
@@ -305,7 +305,7 @@ f1的公共面整改已经完成：顶层CLI、根包/SDK导出、Makefile、Doc
 [CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成Python 3.12/3.13、macOS、
 Windows、PostgreSQL、固定镜像Container和文档Mermaid全矩阵验收，f1据此正式关闭。
 
-f2a依赖0.9.1e4/e5交付的固定Container Process和产品Owner，已经关闭。f2b实现候选将`git.push`改为直接
+f2a依赖0.9.1e4/e5交付的固定Container Process和产品Owner，已经关闭。f2b实现将`git.push`改为直接
 `TrustedActionDefinition`：Descriptor以`GitPushIntent`为输入，Binding固定为`external_reconcile`，Resolver冻结Remote URL摘要、
 目标Ref和Expected OID，Router的Execution Plan与Action Audit保存批准及运行状态，远端Ref是效果对账权威。执行前仍重绑仓库、
 Remote和Local OID；进入`running`后只允许一次`git push --force-with-lease`。响应丢失由Router转为`unknown`；宿主在命令后硬退出时，
@@ -313,6 +313,6 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 在远端更新后执行`os._exit(97)`，父进程重开Store/Router并只走Reconcile路径。
 
 治理门禁已经从旧调用方精确集合中删除`delivery/git_push.py`，并由“子集”收紧为“完全相等”，防止删除引用后留下可被重新占用的
-白名单额度。本候选已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
-文档静态门禁和87幅变化文档Mermaid真实渲染；CI证据将在关闭提交中补记。因此本版本仍为`reviewing`，f2c和f3尚未开始。
+白名单额度。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
+文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c和f3尚未开始。
 每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。

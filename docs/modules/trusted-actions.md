@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 14
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -44,8 +44,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | 已验收基线`b835fcef06803bf0e957a59a50bd5535e127502b`；本版同步f2b实现候选 |
-| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5已通过全矩阵CI；Git Push已删除旧ActionService桥并通过本地响应丢失与硬崩溃只对账验证，等待CI关闭 |
+| 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
+| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已删除旧ActionService桥并通过响应丢失与硬崩溃只对账验证 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
@@ -1504,6 +1504,7 @@ flowchart TD
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 14 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除由CI 35442924441验收关闭 |
 | 13 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除候选；等待全矩阵CI |
 | 12 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则由CI 35439332019验收关闭 |
 | 11 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的上一配置恢复Router、产品Route全局扫描、只对账与候选Binding承接规则；等待关闭CI |

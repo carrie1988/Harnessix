@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 2
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 3
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 ## 状态
 
-接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b Git Push直接Trusted Action候选已通过本地验证；历史Eval迁移和兼容内核物理删除仍未完成。
+接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push已经通过全矩阵CI并关闭；历史Eval迁移和兼容内核物理删除仍未完成。
 
 ## 背景
 
@@ -127,9 +127,9 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
 
 - **f1已关闭**：CLI、公共SDK、默认部署与基础依赖不再暴露独立Action服务；
 - **f2a已关闭**：固定Container Process使用产品同源Catalog、Gateway、专用Owner和启动只对账恢复；
-- **f2b实现候选**：`git.push`通过`git_push_descriptor/git_push_binding/build_git_push_definition`直接注册Router，
+- **f2b已关闭**：`git.push`通过`git_push_descriptor/git_push_binding/build_git_push_definition`直接注册Router，
   `GitPushActionExecutor`执行冻结Route。响应丢失进入`unknown`；宿主在Push后硬退出时，重开将`running`转为
-  `unknown`并只执行`ls-remote`；真实子进程在效果后`os._exit(97)`，响应丢失用例另以调用计数断言没有第二次Push；
+  `unknown`并只执行`ls-remote`；真实子进程在效果后`os._exit(97)`，响应丢失用例另以调用计数断言没有第二次Push；实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收；
 - **剩余**：f2c迁移历史Eval；f3在旧生产调用方集合清零后提供归档方案并删除API、Worker、旧SDK/Adapter和依赖。
 
 治理门禁要求实际旧引用集合与白名单完全相等；因此每删除一个调用方都必须同步缩小白名单，不能保留可被未来代码重新占用的额度。

@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 51
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 52
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -88,7 +88,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前已验收基线为提交`b835fcef06803bf0e957a59a50bd5535e127502b`：0.9.1e5已经由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成外部Action Config、Doctor能力报告、双配置原子CAS、启动只对账恢复和七任务全矩阵验收；0.9.1f1已经由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)关闭旧Action公共入口。f2b的Git Push直接Trusted Action实现已完成本地候选验证，等待全矩阵CI关闭。能力状态按“当前默认产品、实现候选、迁移兼容、规划中”区分：
+本文当前已验收基线为提交`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`：0.9.1e5已经由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成外部Action Config、Doctor能力报告、双配置原子CAS、启动只对账恢复和七任务全矩阵验收；0.9.1f1已经由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)关闭旧Action公共入口；f2b直接Trusted Git Push已经由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收并关闭。能力状态按“当前默认产品、实现候选、迁移兼容、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
@@ -1486,7 +1486,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 | 缺口 | 当前影响 | 路线图归属 |
 |---|---|---|
 | Product UI尚无真实用户终端长期运行和发行物证据 | 0.9.1c三平台CI只证明领域交互与当前矩阵，不能外推长期稳定性和可安装性 | 0.9.3、0.9.5 |
-| 0.9.1e运行时与0.9.1f1已关闭，f2b Git Push候选已本地通过 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；历史Eval迁移与旧HTTP/Worker兼容内核物理删除仍未完成 | 0.9.1f2c/f3 |
+| 0.9.1e运行时、0.9.1f1及f2b Git Push已关闭 | 产品运行时已收敛为Agent进程内Trusted Action Runtime；历史Eval迁移与旧HTTP/Worker兼容内核物理删除仍未完成 | 0.9.1f2c/f3 |
 | Windows原生只读链已验证且Patch被明确省略，但无Git/写Tool | 尚不能声明完整Windows产品支持 | 0.9.5 |
 | 固定多仓库Eval与Transcript基线未完成 | 无法量化真实软件工程成功率 | 0.9.2 |
 | 长会话Soak、并发和故障基准未固定 | 大规模可靠性尚无发布证据 | 0.9.3 |
@@ -1568,6 +1568,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 52 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接Trusted Action与旧调用方白名单收缩由CI 35442924441七任务全矩阵验收关闭 |
 | 51 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接Trusted Action、Action Audit/Remote事实分工与旧调用方白名单收缩候选；等待全矩阵CI |
 | 50 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录e5 Action配置、Doctor、双指针CAS和启动只对账恢复由CI 35439332019验收关闭 |
 | 49 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5候选的Action安全加载、Doctor、双配置原子CAS、上一配置恢复Router与stdio开放顺序；等待关闭CI |

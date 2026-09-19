@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 11
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -261,7 +261,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 ## 13. 当前限制与后续工作
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
-- 0.9.1f固定Container Process已关闭，Git Push已形成直接Trusted Action候选并等待CI；历史Process Reader、Eval和兼容内核源码仍待f2c/f3迁移删除；
+- 0.9.1f固定Container Process与直接Trusted Git Push均已由七任务CI关闭；历史Process Reader、Eval和兼容内核源码仍待f2c/f3迁移删除；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；

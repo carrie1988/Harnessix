@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 57
-code_revision: b835fcef06803bf0e957a59a50bd5535e127502b
+version: 58
+code_revision: e2d8c24b8a09518dc05a4ce113887800cbe4c9fa
 owners:
   - core
 modules:
@@ -106,7 +106,7 @@ flowchart LR
 | [app_server](../../src/harnessix/app_server/) | Headless App Server生命周期 | [App Server模块设计](../modules/app-server.md)、[0.8](../m08-product-runtime-and-extensions.md) | [app_server](../../tests/app_server/)、[默认Patch SDK链](../../tests/product_config/test_server_and_cli.py) | [docs/modules/app-server.md](../modules/app-server.md) | 完整；e3默认Patch协议组合事实已同步 |
 | [artifacts](../../src/harnessix/artifacts/) | 默认只读Tool大结果，以及显式Diff/Process和模型历史Artifact | [Artifact模块设计](../modules/artifacts.md)、[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md) | [artifacts](../../tests/artifacts/)、[默认产品链](../../tests/product_config/test_server_and_cli.py) | [docs/modules/artifacts.md](../modules/artifacts.md) | 完整；e3 Review Artifact与授权引用现行事实已同步 |
 | [context](../../src/harnessix/context/) | Context Source、预算、压缩 | [Context模块设计](../modules/context.md) | [context](../../tests/context/) | [docs/modules/context.md](../modules/context.md) | 完整；e3 `action_review`模型历史绑定现行事实已同步 |
-| [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [delivery](../../tests/delivery/)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整；f2b Git Push直接Trusted Action、响应丢失和硬崩溃只对账候选已同步 |
+| [delivery](../../src/harnessix/delivery/) | 事务性交付与Git发布 | [Delivery模块设计](../modules/delivery.md)、[0.7](../m07-trusted-execution-and-delivery.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [delivery](../../tests/delivery/)、[默认Patch纵向链](../../tests/delivery/test_trusted_action_patch.py)、[Push Schema](../../tests/trusted_actions/test_schemas.py) | [docs/modules/delivery.md](../modules/delivery.md) | 完整；f2b Git Push直接Trusted Action、响应丢失和硬崩溃只对账已由CI 35442924441验收 |
 | [domain](../../src/harnessix/domain/) | Action领域契约 | [Domain模块设计](../modules/domain.md) | [unit](../../tests/unit/)、[Action Service](../../tests/integration/test_action_service.py) | [docs/modules/domain.md](../modules/domain.md) | 完整，DOC-1.3 Wave C |
 | [evals](../../src/harnessix/evals/) | Coding Eval合同、执行与分级 | [Evals模块设计](../modules/evals.md)、[测试与Eval](../testing-and-evals.md)、[0.5](../m05-coding-tools.md) | [evals](../../tests/evals/) | [docs/modules/evals.md](../modules/evals.md) | 完整，DOC-1.3 Wave D |
 | [execution](../../src/harnessix/execution/) | Execution Plan与持久计划 | [Execution Plan模块设计](../modules/execution.md) | [execution](../../tests/execution/) | [docs/modules/execution.md](../modules/execution.md) | 完整，DOC-1.3 Wave B |
@@ -129,7 +129,7 @@ flowchart LR
 | [smoke](../../src/harnessix/smoke/) | 受控真实Provider Smoke | [Smoke模块设计](../modules/smoke.md)、[0.4](../m04-model-runtime.md)、[Smoke指南](../model-smoke.md) | [smoke](../../tests/smoke/) | [docs/modules/smoke.md](../modules/smoke.md) | 完整，DOC-1.4验证 |
 | [storage](../../src/harnessix/storage/) | 旧SQLite/PostgreSQL Action Journal（迁移兼容） | [Storage模块设计](../modules/storage.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [Action Service](../../tests/integration/test_action_service.py)、[Worker](../../tests/integration/test_worker.py)、[PostgreSQL](../../tests/integration/test_postgres_journal.py) | [docs/modules/storage.md](../modules/storage.md) | 完整；不属于新产品状态布局，f3归档后删除 |
 | [tools](../../src/harnessix/tools/) | POSIX/Windows只读、Git和受控工具运行 | [Coding Tool Runtime模块设计](../modules/tools.md) | [tools](../../tests/tools/)、[默认产品目录](../../tests/product_config/test_server_and_cli.py) | [docs/modules/tools.md](../modules/tools.md) | 完整；e3只读Tool与独立Trusted Patch边界已同步 |
-| [trusted_actions](../../src/harnessix/trusted_actions/) | 高风险Coding Action统一路由、原子注册、幂等规划、Agent Gateway、直接Git Push与产品恢复语义 | [Trusted Actions模块设计](../modules/trusted-actions.md)、[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [trusted_actions](../../tests/trusted_actions/)、[Agent Gateway](../../tests/trusted_actions/test_agent_gateway.py)、[产品恢复](../../tests/product_config/test_action_runtime.py)、[Git Push](../../tests/delivery/test_git_push.py) | [docs/modules/trusted-actions.md](../modules/trusted-actions.md) | 完整；e1～e5已关闭，f2b直接Git Push实现候选与恢复证据已同步 |
+| [trusted_actions](../../src/harnessix/trusted_actions/) | 高风险Coding Action统一路由、原子注册、幂等规划、Agent Gateway、直接Git Push与产品恢复语义 | [Trusted Actions模块设计](../modules/trusted-actions.md)、[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md)、[0.9.1f设计](../changes/m09-1f-single-product-runtime-convergence.md) | [trusted_actions](../../tests/trusted_actions/)、[Agent Gateway](../../tests/trusted_actions/test_agent_gateway.py)、[产品恢复](../../tests/product_config/test_action_runtime.py)、[Git Push](../../tests/delivery/test_git_push.py) | [docs/modules/trusted-actions.md](../modules/trusted-actions.md) | 完整；e1～e5与f2b直接Git Push均已关闭，恢复证据已同步 |
 | [workspace](../../src/harnessix/workspace/) | 路径、Snapshot和租约 | [Workspace模块设计](../modules/workspace.md)、[0.7](../m07-trusted-execution-and-delivery.md) | [workspace](../../tests/workspace/)、[delivery](../../tests/delivery/) | [docs/modules/workspace.md](../modules/workspace.md) | 完整；e3 Action/Delivery同身份、逐成员提交与恢复现行事实已同步 |
 
 ## 5. 根级生产模块归属
