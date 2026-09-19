@@ -158,7 +158,8 @@ def archive(source_path: Path, output_path: Path, manifest_path: Path) -> dict[s
             archived_summary = _summary(archive_db)
         if archived_summary != source_summary:
             raise ArchiveError("归档快照统计与源数据库不一致")
-        with output_temp.open("rb") as stream:
+        # Windows的os.fsync通过_commit实现，要求文件描述符具备写权限。
+        with output_temp.open("rb+") as stream:
             os.fsync(stream.fileno())
 
         record: dict[str, object] = {

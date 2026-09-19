@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
+version: 9
 code_revision: pending
 owners:
   - core
@@ -368,5 +368,9 @@ Pytest版本化配置中显式声明`pythonpath = ["."]`，并增加治理断言
 `os.link`以`WinError 32`失败；Windows默认错误流还把中文转为反斜杠Unicode转义。版本8使用`closing()`
 显式关闭源、备份目标和复核连接后再发布，并把CLI错误流固定为UTF-8字节合同；Windows测试子进程也按UTF-8
 解码。该修复不改变归档Schema、快照内容、权限或不覆盖语义。
+
+第四轮[CI 35452848654](https://github.com/carrie1988/Harnessix/actions/runs/35452848654)确认连接句柄已释放，
+但Windows的`os.fsync`通过`_commit`实现，对只读`rb`描述符返回`Errno 9`。版本9把归档临时文件的
+持久化句柄改为`rb+`；文件内容不变，POSIX和Windows均在硬链接发布前完成同一文件数据刷盘。
 
 每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在全矩阵CI完成前，不得宣称f3已经关闭。

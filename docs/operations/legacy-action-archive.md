@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -116,7 +116,8 @@ sequenceDiagram
     S-->>O: redacted canonical JSON summary
 ```
 
-脚本在发布前显式关闭源、备份目标和复核阶段的全部SQLite连接，避免Windows仍持有临时数据库句柄；随后拒绝
+脚本在发布前显式关闭源、备份目标和复核阶段的全部SQLite连接，避免Windows仍持有临时数据库句柄；归档
+`fsync`以可写文件描述符执行，以兼容Windows `_commit`；随后拒绝
 覆盖既有输出或清单。清单包含归档文件名、字节数、SHA-256、创建时间和低敏感度统计；只记录源文件名，
 不记录绝对路径。归档内容仍可能包含Prompt、参数、Secret引用和外部身份，必须按敏感生产数据保护。
 
