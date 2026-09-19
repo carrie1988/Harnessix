@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
+version: 3
+code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
 owners:
   - core
 modules:
@@ -17,11 +17,15 @@ related_adrs:
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
+  - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
 related_tests:
   - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_task_pack.py
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_suite_execution.py
+  - tests/evals/test_task_pack_execution.py
+  - tests/evals/test_grader.py
+  - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -31,12 +35,12 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | d1数据集与检查闭环已完成；d2 Case Adapter和d3完整Suite仍待实施 |
-| 本文设计状态 | 0.9.2d目标设计；d1已验收，d2/d3待实施 |
-| 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`，由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收 |
+| 当前能力 | d1数据集与检查闭环已验收；d2正式Case Adapter已实现并通过本地静态、类型和非Container回归，固定Container CI待验收；d3完整Suite待实施 |
+| 本文设计状态 | d1已验收；d2实现与恢复合同已同步；d3仍为目标设计 |
+| 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收；d2候选基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`实现，本地`make check`为3536项通过、31项跳过；Docker daemon不可用且固定镜像环境变量未配置，固定Container CI待验收 |
 | 影响模块 | Evals、Agent、Session、Trusted Actions、Process、Sandbox、CI和发行通知 |
-| 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md) |
-| 关键测试/证据 | `test_engineering_task_pack.py`、`test_task_pack_profiles.py`、后续离线Suite验证资料 |
+| 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0086](../adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) |
+| 关键测试/证据 | `test_task_pack_execution.py`单元测试、同名固定Container集成测试、`test_grader.py`及d1数据集/Profile测试 |
 
 ## 2. 需求背景
 
@@ -80,7 +84,7 @@ Transcript、Git证据和两次Trial形成一致报告。
 | Benchmark源树 | `benchmarks/taskpacks/harnessix-engineering-v1/repositories`中的受审输入 | 开发与审查可见，不由运行时直接加载 |
 | 生成制品 | `src/harnessix/evals/taskpacks/engineering-v1`下Manifest和Archive | 进入Wheel，必须逐字节可复现 |
 | Golden Patch | `benchmarks/.../solutions`下每Case补丁 | 仅测试使用，不进入Wheel资源根 |
-| Offline Provider | 后续d2使用的固定Recorded/Scripted模型事件源 | 不访问网络、不证明模型能力 |
+| Offline Provider | d2通过Factory注入的固定Recorded模型事件源 | 不访问网络，只证明产品链，不证明模型能力 |
 | Case Adapter | 把Task Pack Case投影到正式Run/Campaign端口 | 复用现有Agent/Session/Trusted Action链 |
 | Review Evidence | 固定源码行原始字节的SHA-256 | 物化时验证，不能由自由文本替代 |
 | Trial | 独立Run ID、Session、Workspace和效果账本 | 每Case固定2次，不复用工作树 |
@@ -109,7 +113,7 @@ flowchart LR
 
 - Generator只在开发和CI阶段运行，读取固定源树，输出可分发Pack；
 - Materializer只接受代码Catalog选中的Pack ID/版本，拒绝调用方路径；
-- d2 Adapter创建或恢复固定Run，但不直接调用Container、Provider或数据库；
+- d2 Adapter创建或恢复固定Run；只经Agent和产品组合根间接使用Provider、Container与持久Store，不直接调用Executor；
 - Agent经统一Tool Catalog和Trusted Action审批执行`run_profile.<profile_id>`；
 - Campaign生成单Case两次Trial的完整报告，Suite只消费完整Case证据；
 - Golden只连到发布前验证，不连到Adapter、Agent或Suite。
@@ -175,10 +179,28 @@ sequenceDiagram
     R->>T: run_profile after policy and approval
     T->>C: no-network read-only check
     C-->>T: bounded artifact and return code
+    R->>T: bounded apply_patch_batch after policy and approval
+    T-->>R: workspace transaction and action audit
+    R->>T: final run_profile and git read tools
     R-->>A: terminal Turn and Session evidence
     A->>P: grade and persist complete Trial/Campaign
     P-->>S: complete Case report
 ```
+
+`TaskPackCaseExecutor`先核对Pack Case、Suite Case和Campaign的Task身份及指纹，在第一次模型请求前写入
+`campaign-plan.json`与`campaign-state.json`。每个Run ID映射到独立`runs/<run-id>`目录；
+`run_task_pack_coding_eval`从固定物化Workspace装配`SQLiteSessionStore`、`SQLiteArtifactStore`、
+`CodingToolRuntime`和`open_default_product_action_runtime`。后者只启用当前Case的固定Profile及产品Workspace Patch，
+不装配Eval专用Executor或Secret Provider。
+
+自动审批并不等于无条件批准。Adapter从已持久Tool Call恢复正式Patch合同：Profile必须精确匹配工具名、Profile ID和
+空Selector；Patch必须不超过`max_changed_files`，全部路径属于`allowed_changed_paths`且不得删除。其他Action、
+参数或展示类型统一返回`eval_approval_denied`。Profile完整输出只保存在受限Artifact和Session，Grader把终态、
+停止原因、Return Code与内容摘要投影为Baseline/Final Observation。
+
+Review Case不修改`coding-eval-final-answer/v1`。Oracle的Finding ID必须按排序去重后，分别作为最终回答
+`summary`中的独立词元出现；缺失、子串碰撞或重复配置均失败关闭。Golden Patch只由集成测试侧Recorded Provider夹具
+读取，以生成正式工具调用；Adapter、Wheel资源、Session和报告均没有Golden路径或正文。
 
 ### 7.3 d3失败与恢复时序
 
@@ -260,14 +282,19 @@ classDiagram
     class CodingEvalReviewOracle
     class MaterializedCodingEvalTaskPackCase
     class TaskPackCaseExecutor {
-      <<planned port>>
-      +execute_case(plan, resume)
+      +__call__(expected, campaign, case_root, cancel)
     }
+    class TaskPackCodingEvalResult
+    class AgentRuntime
+    class ProductActionRuntime
     class CodingEvalSuiteRunner
     CodingEvalTaskPack *-- CodingEvalTaskPackCase
     CodingEvalTaskPackCase o-- CodingEvalReviewOracle
     CodingEvalTaskPackCase --> MaterializedCodingEvalTaskPackCase
     TaskPackCaseExecutor --> MaterializedCodingEvalTaskPackCase
+    TaskPackCaseExecutor --> TaskPackCodingEvalResult
+    TaskPackCodingEvalResult --> AgentRuntime
+    AgentRuntime --> ProductActionRuntime
     CodingEvalSuiteRunner --> TaskPackCaseExecutor
 ```
 
@@ -276,7 +303,7 @@ classDiagram
 | `CodingEvalTaskPack` | Pack整体身份和交叉引用 | 不可变合同 | 冻结可共享 | Pydantic合同 | 新Pack版本 |
 | `CodingEvalReviewOracle` | Finding集合与摘要 | 不可变合同 | 冻结可共享 | Finding | Oracle新版本 |
 | `MaterializedCodingEvalTaskPackCase` | 返回Run根、Workspace和清单 | 调用栈 | 单Run单写者 | Materializer | 无 |
-| `TaskPackCaseExecutor` | d2可信Case端口实现 | Campaign/Run Store | 每Case固定锁 | Agent/Campaign端口 | Recorded Provider |
+| `TaskPackCaseExecutor` | Suite可信Case端口、Campaign计划/前缀/成本/报告恢复 | Campaign/Run Store | 每Case0600文件锁 | Trial执行、Campaign聚合 | Recorded Provider Factory |
 | `CodingEvalSuiteRunner` | 顺序与恢复 | Suite State | 文件单写者锁 | Case执行端口 | 新Suite版本 |
 
 ## 11. 接口设计
@@ -287,7 +314,9 @@ classDiagram
 | `builtin_coding_eval_task_pack` | Eval装配 | ID/版本→Loaded Pack | 仅代码Catalog | 稳定KernelError | 不适用 | 只读幂等 | 无外部路径 |
 | `materialize_task_pack_case` | Case Adapter | Pack/Case/Run/Git→Workspace | 摘要、许可证、Oracle和Git匹配 | 失败删除半成品 | Git命令30秒 | 同Run严格重开 | 私有0700根 |
 | `_verify_review_oracle` | Materializer | Workspace/Case→None | 源码普通UTF-8文件且摘要匹配 | `eval_task_pack_review_oracle_invalid` | 有界读取 | 首次物化一次 | Workspace内路径 |
-| `TaskPackCaseExecutor.execute` | Suite Runner | 固定Case Plan→Case Result | d2实现后冻结Campaign | 稳定停止原因 | 继承Agent/Campaign | 同Run IDs恢复 | 不接受Golden |
+| `TaskPackCaseExecutor.__call__` | Suite Runner | Case Plan、Campaign、私有目录、CancelToken→Case Result | Pack/Case/Task/Campaign身份一致 | 稳定KernelError或`cost_unknown` | Trial边界和Agent层检查 | 固定Run IDs、连续证据前缀 | 不接受Golden |
+| `run_task_pack_coding_eval` | Case Adapter | 固定Case/Run/Provider Factory→Trial证据 | Session请求身份唯一 | 从Session/Action账本恢复 | 分层CancelToken与Turn预算 | Report先于Run State | 无Secret、自动审批白名单 |
+| `grade_coding_eval` | Trial执行器 | Turn/Profile观察/Git/Finding IDs→Run Report | 只读取已持久事实 | 缺证据失败关闭 | 不适用 | 纯确定性投影 | 不读取Golden |
 | `run_coding_eval_suite` | CLI/测试 | Suite Config→Run Report | 计划先行、Case顺序固定 | 已有停止/恢复语义 | Case边界检查 | 连续完成前缀 | 0600状态根 |
 
 ## 12. 数据结构与重点字段
@@ -308,7 +337,8 @@ classDiagram
 
 生成器先在临时目录生成完整制品，非`--check`模式才替换目标目录；已提交Manifest与Archive是构建输入，不在运行时
 修改。Materializer沿用0700 Run根、0755只读Container Workspace、0600清单、临时文件、文件`fsync`、原子替换和目录
-`fsync`。d2/d3继续复用Campaign和Suite的现有原子报告协议，不新增数据库Schema。
+`fsync`。d2为每个Trial复用Session SQLite、Artifact Store、Action Audit、Process Lease与Workspace Transaction；发布顺序固定为
+`Trial Report → Run State → Campaign Report → Campaign State`。d2/d3继续复用既有Campaign和Suite原子报告协议，不新增数据库Schema。
 
 旧`harnessix-seed/v1`保持可读且仍是默认Pack。新增Pack只扩展代码Catalog；不存在就地迁移。未来修正任何Fixture、检查、
 许可证、Profile或Finding均发布`harnessix-engineering/v2`，不得覆盖v1资源。
@@ -332,7 +362,9 @@ classDiagram
 | Review路径/行/摘要错 | 半成品Run被删除 | `eval_task_pack_review_oracle_invalid` | 修复新Pack | 新Run | 未物化 | 提交前校验 |
 | Baseline意外通过 | d1测试失败 | 测试断言 | 否 | 修正任务或检查 | 未发布 | 每Case独立基线 |
 | Golden仍失败 | d1/Container测试失败 | 测试断言 | 否 | 修正Oracle或任务 | 未发布 | 单补丁单Profile |
-| Agent取消/超时 | Session/Campaign终态 | 稳定分类 | 显式恢复 | 同Run IDs续跑 | stopped/running | Store权威事实 |
+| Agent取消/超时 | Session/Campaign状态 | 稳定分类 | 显式恢复 | 同Run ID与请求身份续跑 | stopped/running | Session权威事实 |
+| Trial Report后崩溃 | 终态Session与0600 Report | 无部分成功 | 自动恢复 | 核对Report后只补Run State | completed | 不打开已完成Run的Provider |
+| Run State后前缀前崩溃 | Run State/Report/Turn完整 | 无部分成功 | 自动恢复 | 重算Cost并推进一次前缀 | running | 固定Run IDs |
 | Process结果未知 | Action Owner记录 | UNKNOWN | 不重放 | reconcile | 终态或停止 | Lease与审计 |
 | Case报告后崩溃 | 报告存在、前缀未推进 | 无部分成功 | 自动重建 | 校验后推进一次 | running | 报告摘要绑定 |
 
@@ -344,7 +376,9 @@ classDiagram
 4. Review路径重新解析并要求位于Workspace内普通文件；
 5. Golden Patch不进入`src/harnessix`、Wheel、Workspace、Session或报告；
 6. Suite报告禁止Prompt、回答、Tool参数/输出、Diff、源码、绝对路径、环境变量和Secret；
-7. 第三方LICENSE和版权通知进入Archive及`THIRD_PARTY_NOTICES.md`。
+7. 第三方LICENSE和版权通知进入Archive及`THIRD_PARTY_NOTICES.md`；
+8. Review Finding ID只能作为最终回答`summary`的独立词元通过，子串或缺失均失败；
+9. `_NoSecrets`拒绝任何Secret解析，Recorded Provider Factory不得进入报告。
 
 ## 17. 可观测性
 
@@ -352,6 +386,7 @@ classDiagram
 |---|---|---|---|---|---|---|
 | 测试退出 | taskpack_generation_drift | `--check`不一致 | 相对制品名 | 最大4文件 | 不输出内容 | 生成漂移 |
 | Kernel错误 | eval_task_pack_review_oracle_invalid | 物化证据错 | 稳定错误码 | 单码 | 不输出路径/源码 | Pack诊断 |
+| Kernel错误 | eval_approval_denied | Profile或Patch越权 | 稳定错误码 | 单码 | 不输出内容 | 自动审批诊断 |
 | Suite状态 | completed/stopped | Case边界 | Kind、序号、原因 | 固定枚举 | 不含Task正文 | 恢复与告警 |
 | Campaign指标 | outcome/tokens/cost/latency | Trial终态 | 固定模型与环境 | Case/Run有界 | 摘要化 | 质量基线 |
 | Action审计 | run_profile terminal | Process终态 | Profile摘要、结果 | 10 Profile | 输出进入受限Artifact | 执行诊断 |
@@ -393,12 +428,24 @@ materialize_review_case():
     verify_commit_tree_inventory_and_file_count()
     atomic_publish_materialization_manifest()
 
-execute_case_planned_d2():
-    materialize_or_reopen_each_fixed_run_id()
-    run_recorded_provider_through_real_agent_session()
-    route_patch_git_and_profile_calls_through_trusted_action()
-    grade_turn_tests_git_final_answer_and_review_finding()
-    persist_complete_campaign_before_returning_case_report()
+execute_case():
+    require_pack_suite_campaign_identity()
+    persist_or_verify_campaign_plan_before_first_trial()
+    reconcile_contiguous_completed_run_prefix_and_cost()
+    for fixed_run_id in remaining_run_ids:
+        materialize_or_reopen_private_workspace()
+        if session_contains_terminal_planned_turn:
+            reuse_turn_without_opening_provider()
+        else:
+            resume_same_agent_turn_with_recorded_provider()
+            approve_only_exact_profile_or_bounded_patch()
+        project_profile_results_and_git_evidence()
+        grade_answer_and_required_review_finding_ids()
+        publish_trial_report_then_run_state()
+        advance_campaign_prefix_once()
+        stop_if_cost_is_incomplete()
+    publish_campaign_report_then_completed_state()
+    return_suite_case_report()
 ```
 
 ## 20. 源码与测试映射
@@ -412,7 +459,10 @@ execute_case_planned_d2():
 | Archive/Git物化 | 同上 | `materialize_task_pack_case` | 同上 | every case materializes | 四重Git身份 |
 | 黄金闭环 | [`solutions`](../../benchmarks/taskpacks/harnessix-engineering-v1/solutions) | 每Case patch | 同上 | baseline fail/final pass | Wheel外测试资产 |
 | 产品Container | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | engineering parameter set | 同文件 | Trusted Action profile | 固定镜像、审批和Artifact |
-| d2 Case Adapter | 计划新增`evals/task_pack_execution.py` | Case executor port | 计划新增专项测试 | Agent/Campaign恢复 | 尚未实现 |
+| Trial正式产品链 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | `run_task_pack_coding_eval`、`_drive_turn`、`_completed_session_turn` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | 两Trial、Trial Report崩溃恢复 | Agent/Session/Action/Artifact/Grader |
+| d2 Case Adapter | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、`_load_prefix`、`_recover_campaign_report` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | 计划先行取消、身份漂移 | 现有Suite Case端口 |
+| Product Patch合同解码 | [`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) | `decode_workspace_patch_input` | 同上及产品配置测试 | 自动审批复用正式合同 | 不复制Delivery内部合同 |
+| Grader产品投影 | [`grader.py`](../../src/harnessix/evals/grader.py) | `_test_result`、`_record_tool_result`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Profile终端事实、Finding ID | v1 Schema不变 |
 | d3完整报告 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite` | `test_suite_execution.py` | 20 Trial恢复 | 尚未形成最终基线 |
 
 ## 21. 测试设计与验收标准
@@ -426,13 +476,13 @@ execute_case_planned_d2():
 | Review | 两个Finding绑定源码行；篡改后稳定失败 | d1已验收 |
 | 可解性 | 10/10原始检查失败，10/10黄金补丁后通过 | 宿主与固定Container均已验收 |
 | 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | d1已验收 |
-| d2执行 | 每Case经过真实Agent/Session/Campaign，不读Golden | 待实施 |
-| d2恢复 | Provider/Tool/报告崩溃窗口不重复已完成效果 | 待实施 |
+| d2执行 | 两个独立Trial经过真实Agent/Session/Product Action/Artifact/Grader/Campaign；Adapter不读Golden | 本地非Container回归通过；固定Container CI待验收 |
+| d2恢复 | Trial Report与Campaign Report崩溃窗口不重复已完成Provider或Action | 实现及固定Container故障注入已提交；CI待验收 |
 | d3规模 | 10 Case × 2 Trial，完整Suite报告 | 待实施 |
 | d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 待实施 |
-| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | [CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)已通过 |
+| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2本地门禁进行中、CI待验收 |
 
-0.9.2d只有最后六项全部通过并发布验证证据后才能关闭；d1单独完成不能勾选路线图总项。
+0.9.2d只有d2固定Container CI与d3完整20 Trial Suite全部通过并发布验证证据后才能关闭；d1或d2单独完成均不能勾选路线图总项。
 
 ## 22. 风险、限制与后续工作
 
@@ -443,12 +493,13 @@ execute_case_planned_d2():
 | Recorded Provider过于确定 | 不证明真实模型能力 | 0.9.2e受控真实Provider完整Suite | 0.9.2e |
 | 第三方许可证更新 | 发行合规风险 | 固定Revision/LICENSE摘要，SBOM再审 | 0.9.4 |
 | Container CI时长增长 | 发布反馈变慢 | Case专用小检查、顺序有界；记录耗时 | 0.9.2d |
-| Review最终回答合同尚无Finding字段 | 可能只依赖summary文本 | d2选择版本化Review结果合同或严格Finding ID投影 | 0.9.2d2 |
+| Review v1没有独立Finding字段 | `summary`表达能力有限 | d2已采用独立词元严格Finding ID投影；扩展时发布新Schema版本 | 0.9.2d2+ |
 | Windows无本地Container证据 | 不能宣称三平台执行 | 诚实保留平台门禁，0.9.6关闭 | 0.9.6 |
 
 ## 23. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 实现d2正式Case Adapter、Agent/Product Action纵向Trial、自动审批白名单、Review Finding投影及Trial/Campaign双报告窗口恢复；本地门禁通过，固定Container CI待验收 |
 | 2 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | d1由CI 35469387988完成Linux双版本、macOS、Windows、固定Container与Documentation六实例验收并关闭；d2/d3保持未完成 |
 | 1 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 冻结d1～d3架构、数据集、Oracle、恢复和验收边界 |

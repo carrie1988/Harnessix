@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 14
-code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
+version: 15
+code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
 owners:
   - core
 modules:
@@ -21,8 +21,8 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有84份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
-迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0084继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner边界。
+截至标注代码版本，共有85份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0086继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集与正式Task Pack Case Adapter边界。
 
 ## 2. 状态语义
 
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前84份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前85份ADR均属于已接受决策，没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -141,10 +141,11 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
-| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c/d1已关闭，d2/d3/e待实施 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c/d1已关闭，d2已实现且固定Container CI待验收，d3/e待实施 |
 | 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
 | 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受并实施；0.9.2c已由CI 35465458256验收关闭 |
-| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2/d3待实施 |
+| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2已实现且固定Container CI待验收，d3待实施 |
+| 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受并已实现；0.9.2d2固定Container CI待验收 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

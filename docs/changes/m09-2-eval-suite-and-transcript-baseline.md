@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: ee4d0db757d0371656934254aaaee0c1a56cfab0
+version: 8
+code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
+  - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_campaign.py
@@ -24,6 +25,8 @@ related_tests:
   - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
+  - tests/evals/test_task_pack_execution.py
+  - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -420,7 +423,7 @@ atomic_publish(report)
 | 0.9.2b | Task Pack v1、固定Archive/检查/Profile、Review Oracle | 摘要/来源/镜像漂移、恶意路径、禁动态命令 | ≥2语言离线真实检查 |
 | 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | Case边界崩溃、发布确认丢失、成本停止均已测试 | CI 35465458256六实例验收并关闭 |
 | 0.9.2d1 | 3仓10 Case数据集、确定性生成、Review源码证据、外置Golden | Baseline失败、Golden通过、固定镜像 | 全量Profile与许可证门禁 |
-| 0.9.2d2 | Task Pack Case Adapter接入正式Agent/Session/Campaign | 取消、超时、UNKNOWN和报告崩溃窗口 | Recorded Provider真实产品链 |
+| 0.9.2d2 | Task Pack Case Adapter接入正式Agent/Session/Product Action/Campaign | Trial/Campaign报告崩溃窗口已实现；取消、超时和UNKNOWN由d3全Suite补齐 | 固定Container CI通过后关闭 |
 | 0.9.2d3 | 10 Case各2 Trial离线Suite | 前缀恢复、零重放、完整聚合 | 可复跑Suite报告与CI证据 |
 | 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | 报告与验证资料发布 |
 
@@ -440,6 +443,9 @@ atomic_publish(report)
 | 工程数据集生成 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py) | 规范Tar、固定Git、Oracle和Manifest | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py)生成与3仓10 Case测试 |
 | Review源码证据 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `_verify_review_oracle` | 源码行篡改失败关闭测试 |
 | 十Case固定检查 | [`engineering-v1`](../../src/harnessix/evals/taskpacks/engineering-v1) | 10个Case专用Profile | 宿主Golden闭环与Container Product Runtime参数化测试 |
+| Task Pack Trial | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | `run_task_pack_coding_eval`、受限自动审批、Session恢复与Grader | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) |
+| 正式Case Adapter | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、Campaign前缀/成本/报告恢复 | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| Product Profile评分 | [`grader.py`](../../src/harnessix/evals/grader.py) | Profile终端事实、Trusted Patch、Review Finding ID | [`test_grader.py`](../../tests/evals/test_grader.py) |
 | Suite执行合同 | [`suite_execution_contracts.py`](../../src/harnessix/evals/suite_execution_contracts.py) | Config、Case Result、State、Run Report | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) Schema与身份漂移 |
 | 可恢复Runner | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite`、前缀重建、停止与发布恢复 | 顺序、锁、取消、崩溃、Cost与零重放测试 |
 | 共用执行文件边界 | [`execution_fs.py`](../../src/harnessix/evals/execution_fs.py) | 0700目录、0600非阻塞独占锁 | Suite锁冲突及Campaign回归 |
@@ -480,3 +486,10 @@ Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f7602
 0.9.2d1已完成：`harnessix-engineering/v1`固定三个MIT派生Benchmark仓库、十个Case、五类各两个、
 十个固定Profile、确定性Archive/Manifest生成器、Review源码行证据校验和Wheel外Golden Patch。实现Revision
 `ee4d0db757d0371656934254aaaee0c1a56cfab0`本地全仓为3529项通过/30项跳过；[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收。d1只证明数据集和检查闭环；正式Task Pack Case Adapter与每Case两次Trial的完整离线Suite分别由d2/d3完成。专项需求、流程、接口、失败恢复、源码和验收矩阵见[0.9.2d详细设计](m09-2d-multi-repository-offline-baseline.md)。
+
+0.9.2d2已实现正式Task Pack Trial和Suite Case Adapter：Pack Case经现有Agent Runtime、Session、产品Trusted Action、
+Process Artifact、Git Evidence和Grader形成标准Run Report，再由既有Campaign与Suite Case合同聚合。自动审批仅允许精确
+固定Profile和Case允许路径内的非删除正式Patch；Review Finding ID按最终回答`summary`独立词元校验。Trial Report与
+Campaign Report发布窗口故障注入证明重开不重复已完成Provider或Action。本地Ruff、Mypy及非Container定向回归已通过；
+本地Docker daemon不可用，因此固定Digest Container纵向证据由CI验收，CI通过前d2保持未关闭。d3仍负责10 Case ×
+2 Trial完整Suite，以及取消、超时、UNKNOWN、Suite完成前缀和最终报告发布恢复。

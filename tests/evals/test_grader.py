@@ -216,6 +216,7 @@ def grade(
     baseline: tuple[EvalTestObservation, ...] | None = None,
     final: tuple[EvalTestObservation, ...] | None = None,
     git: EvalGitEvidence | None = None,
+    required_review_finding_ids: tuple[str, ...] = (),
 ):
     expected_baseline, expected_final = observations()
     now = datetime.now(UTC)
@@ -229,6 +230,7 @@ def grade(
         baseline_observations=baseline if baseline is not None else expected_baseline,
         final_observations=final if final is not None else expected_final,
         git=git or git_evidence(),
+        required_review_finding_ids=required_review_finding_ids,
     )
 
 
@@ -277,6 +279,87 @@ def test_success_requires_behavior_regression_git_and_answer_evidence() -> None:
     assert report.final_answer.changed_paths == (CHANGED_PATH,)
     assert "已修复空 ID" not in report.model_dump_json()
     assert report.metrics == report.metrics.model_copy(update={"tool_calls": 5, "changed_files": 1})
+
+
+def test_product_profile_output_is_graded_from_terminal_process_facts() -> None:
+    current = completed_turn()
+    rewritten: list[Item] = []
+    for entry in current.items:
+        content = entry.content
+        if isinstance(content, ToolCallContent) and content.tool == "run_tests":
+            rewritten.append(
+                entry.model_copy(
+                    update={"content": content.model_copy(update={"tool": "run_profile.unit"})}
+                )
+            )
+        elif isinstance(content, ToolResultContent) and isinstance(content.output, dict):
+            passed = content.output.get("passed")
+            if type(passed) is bool:
+                rewritten.append(
+                    entry.model_copy(
+                        update={
+                            "content": content.model_copy(
+                                update={
+                                    "outcome": "succeeded" if passed else "failed",
+                                    "output": {
+                                        "profile": "unit",
+                                        "state": "exited",
+                                        "stop_reason": "exited",
+                                        "returncode": 0 if passed else 1,
+                                    },
+                                }
+                            )
+                        }
+                    )
+                )
+            else:
+                rewritten.append(entry)
+        else:
+            rewritten.append(entry)
+
+    report = grade(turn=current.model_copy(update={"items": tuple(rewritten)}))
+
+    assert report.outcome == "passed"
+    assert next(check for check in report.checks if check.code == "test_feedback_order").passed
+
+
+def test_review_finding_id_requires_an_independent_summary_token() -> None:
+    current = completed_turn()
+    final = current.items[-1]
+    assert isinstance(final.content, TextContent)
+    answer = json.loads(final.content.text)
+    answer["summary"] = "已修复，Finding agents-api-key-plaintext 已闭环"
+    with_finding = current.model_copy(
+        update={
+            "items": (
+                *current.items[:-1],
+                final.model_copy(
+                    update={
+                        "content": final.content.model_copy(
+                            update={
+                                "text": json.dumps(
+                                    answer,
+                                    ensure_ascii=False,
+                                    separators=(",", ":"),
+                                )
+                            }
+                        )
+                    }
+                ),
+            )
+        }
+    )
+    passed = grade(
+        turn=with_finding,
+        required_review_finding_ids=("agents-api-key-plaintext",),
+    )
+    missing = grade(
+        turn=current,
+        required_review_finding_ids=("agents-api-key-plaintext",),
+    )
+
+    assert passed.outcome == "passed"
+    assert missing.outcome == "failed" and "final_answer" in missing.failure_categories
 
 
 def test_budget_boundary_preserves_actual_usage_in_report() -> None:

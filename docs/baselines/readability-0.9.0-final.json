@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 301,
-    "physical_lines": 68056,
-    "logical_lines": 60556,
-    "documented_modules": 301,
-    "classes": 770,
-    "documented_classes": 279,
-    "functions": 2695,
-    "documented_functions": 349,
+    "source_files": 303,
+    "physical_lines": 69135,
+    "logical_lines": 61536,
+    "documented_modules": 303,
+    "classes": 774,
+    "documented_classes": 282,
+    "functions": 2734,
+    "documented_functions": 353,
     "public_exports": 351,
     "public_contract_types": 158,
     "undocumented_public_behavior": 0,
@@ -826,10 +826,10 @@
       "path": "src/harnessix/evals/grader.py",
       "qualname": "grade_coding_eval",
       "kind": "function",
-      "line": 257,
-      "lines": 164,
+      "line": 338,
+      "lines": 159,
       "documented": true,
-      "decision_complexity": 15
+      "decision_complexity": 10
     },
     {
       "id": "harnessix.evals.materializer:materialize_historical_coding_eval",

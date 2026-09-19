@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -73,6 +74,8 @@ def _final_answer(text: str) -> EvalFinalAnswer | None:
 def _is_applied_patch(result: ToolResultContent) -> bool:
     if result.outcome != "succeeded":
         return False
+    if result.trusted_action is not None:
+        return result.trusted_action.state == "succeeded"
     if result.patch is not None:
         return result.patch.state == "applied"
     if result.patch_batch is not None and result.patch_batch.execution is not None:
@@ -80,13 +83,56 @@ def _is_applied_patch(result: ToolResultContent) -> bool:
     return False
 
 
-def _test_result(output: Any, position: int) -> _TestResult | None:
+def _test_result(
+    output: Any,
+    position: int,
+    *,
+    expected_profile: str | None = None,
+) -> _TestResult | None:
     if not isinstance(output, dict):
         return None
-    profile, passed = output.get("profile"), output.get("passed")
-    if not isinstance(profile, str) or type(passed) is not bool:
+    profile = output.get("profile")
+    if not isinstance(profile, str) or (
+        expected_profile is not None and profile != expected_profile
+    ):
         return None
+    passed = output.get("passed")
+    if type(passed) is not bool:
+        state = output.get("state")
+        stop_reason = output.get("stop_reason")
+        returncode = output.get("returncode")
+        if state != "exited" or stop_reason != "exited" or type(returncode) is not int:
+            return None
+        passed = returncode == 0
     return _TestResult(position=position, profile=profile, passed=passed)
+
+
+def _record_tool_result(
+    call: ToolCallContent,
+    result: ToolResultContent,
+    position: int,
+    tests: list[_TestResult],
+    patches: list[int],
+    statuses: list[int],
+    diffs: list[int],
+) -> None:
+    if call.tool == "run_tests":
+        if result.outcome != "succeeded":
+            return
+        observed = _test_result(result.output, position)
+        if observed is not None:
+            tests.append(observed)
+    elif call.tool.startswith("run_profile."):
+        profile = call.tool.removeprefix("run_profile.")
+        observed = _test_result(result.output, position, expected_profile=profile)
+        if observed is not None:
+            tests.append(observed)
+    elif call.tool in {"apply_patch", "apply_patch_batch"} and _is_applied_patch(result):
+        patches.append(position)
+    elif call.tool == "git_status" and result.outcome == "succeeded":
+        statuses.append(position)
+    elif call.tool == "git_diff" and result.outcome == "succeeded":
+        diffs.append(position)
 
 
 def _transcript(turn: Turn) -> _Transcript:
@@ -120,18 +166,8 @@ def _transcript(turn: Turn) -> _Transcript:
             continue
         if isinstance(content, ToolResultContent):
             call = calls.get(content.call_id)
-            if call is None:
-                continue
-            if call.tool == "run_tests" and content.outcome == "succeeded":
-                observed = _test_result(content.output, position)
-                if observed is not None:
-                    tests.append(observed)
-            elif call.tool in {"apply_patch", "apply_patch_batch"} and _is_applied_patch(content):
-                patches.append(position)
-            elif call.tool == "git_status" and content.outcome == "succeeded":
-                statuses.append(position)
-            elif call.tool == "git_diff" and content.outcome == "succeeded":
-                diffs.append(position)
+            if call is not None:
+                _record_tool_result(call, content, position, tests, patches, statuses, diffs)
             continue
         if isinstance(content, TextContent) and content.kind == "assistant_message":
             final_position = position
@@ -217,12 +253,37 @@ def _git_feedback_order(task: CodingEvalTask, transcript: _Transcript) -> bool:
     )
 
 
-def _answer_consistent(task: CodingEvalTask, transcript: _Transcript, git: EvalGitEvidence) -> bool:
+def _contains_finding(summary: str, finding_id: str) -> bool:
+    """只接受独立Finding ID，避免前后缀字符串误命中。"""
+
+    boundary = r"[a-z0-9_-]"
+    return (
+        re.search(
+            rf"(?<!{boundary}){re.escape(finding_id)}(?!{boundary})",
+            summary,
+        )
+        is not None
+    )
+
+
+def _answer_consistent(
+    task: CodingEvalTask,
+    transcript: _Transcript,
+    git: EvalGitEvidence,
+    required_review_finding_ids: tuple[str, ...],
+) -> bool:
     answer = transcript.final_answer
     if answer is None or answer.changed_paths != git.changed_paths:
         return False
     tests = {test.profile: test.passed for test in answer.tests}
-    return tuple(tests) == task.required_test_profiles and all(tests.values())
+    return (
+        tuple(tests) == task.required_test_profiles
+        and all(tests.values())
+        and all(
+            _contains_finding(answer.summary, finding_id)
+            for finding_id in required_review_finding_ids
+        )
+    )
 
 
 def _answer_evidence(transcript: _Transcript) -> EvalFinalAnswerEvidence | None:
@@ -254,6 +315,26 @@ def _check(
     )
 
 
+def _review_finding_ids(value: tuple[str, ...]) -> tuple[str, ...]:
+    if tuple(sorted(set(value))) != value:
+        raise ValueError("Review Finding ID必须唯一并排序")
+    return value
+
+
+def _eval_outcome(
+    checks: tuple[EvalCheck, ...], repository_matched: bool
+) -> tuple[tuple[EvalFailureCategory, ...], EvalOutcome]:
+    categories = tuple(sorted({check.category for check in checks if not check.passed}))
+    outcome: EvalOutcome = (
+        "passed"
+        if not categories
+        else "invalid"
+        if not repository_matched or "eval_infrastructure" in categories
+        else "failed"
+    )
+    return categories, outcome
+
+
 def grade_coding_eval(
     task: CodingEvalTask,
     turn: Turn,
@@ -265,9 +346,11 @@ def grade_coding_eval(
     baseline_observations: tuple[EvalTestObservation, ...],
     final_observations: tuple[EvalTestObservation, ...],
     git: EvalGitEvidence,
+    required_review_finding_ids: tuple[str, ...] = (),
 ) -> CodingEvalReport:
     """按行为、回归、Git 与真实 Session 事实评分，不比较唯一补丁文本。"""
 
+    required_review_finding_ids = _review_finding_ids(required_review_finding_ids)
     baseline = tuple(sorted(baseline_observations, key=lambda item: item.check_id))
     final = tuple(sorted(final_observations, key=lambda item: item.check_id))
     behavior = _selected_observations(final, task.behavior_checks)
@@ -371,7 +454,7 @@ def grade_coding_eval(
         ),
         _check(
             "final_answer_consistent",
-            _answer_consistent(task, transcript, git),
+            _answer_consistent(task, transcript, git, required_review_finding_ids),
             "final_answer",
             "结构化最终回答与实际路径和测试一致",
             "最终回答缺失、格式错误或与实际证据不一致",
@@ -385,14 +468,7 @@ def grade_coding_eval(
             "模型步骤或 Token 超过任务预算",
         ),
     )
-    categories = tuple(sorted({check.category for check in checks if not check.passed}))
-    outcome: EvalOutcome = (
-        "passed"
-        if not categories
-        else "invalid"
-        if not repository_matched or "eval_infrastructure" in categories
-        else "failed"
-    )
+    categories, outcome = _eval_outcome(checks, repository_matched)
     return CodingEvalReport(
         run_id=run_id,
         task_id=task.task_id,

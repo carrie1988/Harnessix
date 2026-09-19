@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 25
-code_revision: 0798d84a6ba76d0b658f912c9c41f60b5645629b
+version: 26
+code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
 owners:
   - core
 modules:
@@ -22,6 +22,7 @@ related_adrs:
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
+  - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -31,6 +32,8 @@ related_tests:
   - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
+  - tests/evals/test_task_pack_execution.py
+  - tests/integration/test_task_pack_execution.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_config_runtime.py
@@ -307,7 +310,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
-0.9.2c验收；当前仍不证明至少10 Case/3仓库基线或真实Provider质量。关闭边界见
+0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已实现且固定Container CI待验收；当前仍不证明
+完整20 Trial离线Suite或真实Provider质量。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
@@ -370,8 +374,42 @@ uv run python scripts/generate_specs.py --check
 
 0.9.2c使用确定性Case执行器验证Suite自身状态机，不访问公网、不产生模型费用。0.9.2d1新增
 `harnessix-engineering/v1`的3仓10 Case、五类各2个、确定性生成、Review源码证据和外置Golden闭环；
-Task Pack到Campaign/Transcript的正式Adapter、每Case两次Trial的完整离线报告和受控Provider Suite分别由
-0.9.2d2/d3/e验收。0.9.2c实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
+正式Adapter由0.9.2d2实现；每Case两次Trial的完整离线报告和受控Provider Suite分别由d3/e验收。0.9.2c实现Revision
+`ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；
+0.9.2d1实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)
+完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收并关闭。
+
+### 13.4 0.9.2d2 正式Case Adapter验证矩阵
+
+d2不能以“Case Executor接口可以调用”作为完成判定，必须同时证明：
+
+| 验证层 | 必须证明 |
+|---|---|
+| 身份/计划 | Pack Case、Suite Case、Task和Campaign指纹一致；Campaign Plan在首个Trial和Provider前持久化 |
+| 产品内核 | 每个Trial经现有Agent Runtime、Session、Coding Tool、产品Trusted Action、Artifact、Grader和Campaign，不新建Eval Runtime |
+| 审批 | 只自动批准精确固定Profile及Case允许路径内、文件数不超限、非删除的正式Workspace Patch；其他调用失败关闭 |
+| 检查证据 | Baseline和Final来自产品Process终端状态与Return Code；完整输出保留在受限Artifact，不复制到Suite报告 |
+| Review | v1最终回答`summary`必须含全部Finding ID独立词元；不读取Golden，不通过子串误判 |
+| Trial恢复 | Session请求绑定固定Run ID；Trial Report已写而Run State未写时，不重新打开已完成Run的Provider或重做Action |
+| Campaign恢复 | 完整Run证据形成连续前缀；Cost从Turn与固定Price/Billing Context重算；Campaign Report后崩溃只补State |
+| 成本/停止 | Cost不完整返回`cost_unknown`且不执行下一Trial；未知成本不能当零 |
+| 隐私 | Case/Campaign/Suite报告不含Prompt、回答正文、工具参数/输出、Diff、源码、绝对路径、环境变量或Secret |
+| 真实场景 | 两个独立Trial在固定Digest无网Container中完成失败检查、正式Patch、成功检查、Git核对和最终回答 |
+
+定向入口为：
+
+```bash
+uv run pytest -q \
+  tests/evals/test_task_pack_execution.py \
+  tests/evals/test_grader.py \
+  tests/integration/test_task_pack_execution.py
+uv run mypy src
+```
+
+当前本地Docker daemon不可用且固定镜像环境变量未配置，`make check`结果为3536项通过、31项跳过；集成测试的明确Skip只证明非Container合同回归通过，不能
+写成真实纵向验收完成。CI `container-sandbox`预拉Manifest固定Digest镜像并运行同一集成测试。Recorded Provider只在
+测试侧读取Wheel外Golden来构造工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明
+模型能力。d2固定Container CI通过前，路线图保持未勾选。
 
 ## 14. 真实Provider验证
 

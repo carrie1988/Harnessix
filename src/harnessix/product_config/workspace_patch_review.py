@@ -24,6 +24,17 @@ from harnessix.trusted_actions.contracts import ActionRouteSnapshot
 _ACTION_REVIEW_NAMESPACE = UUID("2beb71e9-794e-4ffb-a789-f1d19fecc9f9")
 
 
+def decode_workspace_patch_input(arguments: object) -> WorkspacePatchInput:
+    """以产品Action使用的同一严格合同解析Workspace Patch公共参数。"""
+
+    try:
+        return WorkspacePatchInput.model_validate_json(
+            json.dumps(arguments, ensure_ascii=False, allow_nan=False),
+        )
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("trusted_action_review_invalid", "Action Review参数不符合契约") from None
+
+
 class WorkspacePatchReviewProvider:
     """先保存精确事务，再按稳定身份查询优先发布同一完整Review。"""
 
@@ -54,14 +65,7 @@ class WorkspacePatchReviewProvider:
             != trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
         ):
             raise KernelError("trusted_action_review_invalid", "Action Review与Route不匹配")
-        try:
-            proposal = WorkspacePatchInput.model_validate_json(
-                json.dumps(route.plan.invocation.arguments, ensure_ascii=False, allow_nan=False)
-            )
-        except (ValidationError, ValueError, TypeError):
-            raise KernelError(
-                "trusted_action_review_invalid", "Action Review参数不符合契约"
-            ) from None
+        proposal = decode_workspace_patch_input(route.plan.invocation.arguments)
         record = self._planner.prepare(route.plan, proposal)
         cancel.checkpoint()
         diff = build_workspace_diff(record.plan, self._planner.transactions)

@@ -110,6 +110,7 @@ jobs:
           tests/integration/test_container_sandbox.py
           tests/integration/test_product_process_profile.py
           tests/integration/test_task_pack_profiles.py
+          tests/integration/test_task_pack_execution.py
 
   documentation:
     runs-on: ubuntu-latest
