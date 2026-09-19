@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 47
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 48
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -86,7 +86,7 @@ supersedes: []
 
 本文是Harnessix Code当前系统结构的事实入口，回答“系统由什么组成、组件如何协作、状态保存在哪里、失败后如何恢复、哪些能力尚未接入默认产品”。历史版本的设计增量保留在[里程碑文档](README.md#4-里程碑设计)和[ADR](adr/)，不再与当前架构混写。
 
-本文当前已验收基线为提交`030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收。0.9.1e4已完成固定Container Process的默认产品接线和真实镜像测试，正在等待本地全量及七任务CI验收。本文描述已验收基线与当前e4实现结构；能力状态按“默认产品、显式装配、规划中”区分：
+本文当前已验收基线为提交`4b28fa4010bf1f9590f86a3c2e639916043894c2`。0.9.1e1的Action合同、能力目录、幂等规划和默认Artifact组合已由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)完成全矩阵验收；0.9.1e2的显式Agent Gateway、Router审批权威、Session/Action双账本恢复和Agent Protocol v1兼容投影已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)关闭；0.9.1e3的默认POSIX多文件Workspace Patch、Review Artifact、Delivery事务与Workspace Lease由实现提交`71a4794`及验证修复`a263f96`交付，并由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成全矩阵验收；0.9.1e4的默认固定Container Process由实现提交`f5a3936`与状态等待稳定化提交`4b28fa4`交付，并由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成七任务全矩阵验收。能力状态按“默认产品、显式装配、规划中”区分：
 
 | 标签 | 含义 |
 |---|---|
@@ -1521,6 +1521,7 @@ if unknown: reconcile by stable effect identity; never replay execute
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 48 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成真实镜像及七任务全矩阵验收 |
 | 47 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步0.9.1e4统一Patch/Process产品组合、固定Profile能力探测、Process Owner生命周期、取消只对账和输出Artifact时序；等待全矩阵CI验收 |
 | 46 | 809ed2b1a10f5cb462989a12dddf44f83a9d01ab | 2026-09-17 | 补齐跨模块术语词典、31个包与10个根模块的需求背景/上下游/设计取舍、Agent/Action/Trusted Action领域模型关系图及关键数据身份/持久事实目录；扩展存储权威、事务和恢复边界 |
 | 45 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-17 | 增补经典4+1视图索引、逻辑组件交互图、Agent Turn流程图、开发视图、部署物理视图和场景校验矩阵；新增默认POSIX Workspace Patch跨账本审批/执行时序；同步0.9.1e3全矩阵关闭状态 |

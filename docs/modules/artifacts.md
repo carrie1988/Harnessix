@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 7
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -43,7 +43,7 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
+| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`SQLiteProcessArtifactPublisher` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
@@ -645,6 +645,7 @@ Process ID、Workspace Scope、记录数、正文摘要和Artifact配额，并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Profile Process输出Artifact由CI 35434198163完成真实镜像及全矩阵验收 |
 | 6 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 将`action_output`接入默认固定Profile Process链，并验证提交确认丢失只返回原收据；等待全矩阵CI |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步Action Output发布Mixin、正文校验和引用授权的职责拆分，未改变Artifact身份及失败语义 |
 | 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加`action_output`用途、Trusted Process终态归档、Session反向授权和migration25兼容链 |

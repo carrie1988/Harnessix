@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 10
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -43,8 +43,8 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` |
-| 当前完成度 | 核心路由库及扩展适配已实现；e1～e3完成目录、Gateway与POSIX Patch；e4已把验证通过的固定Container Process、按Tool Provider和输出Artifact接入默认产品，等待全矩阵CI；启动全局恢复仍属e5 |
+| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
+| 当前完成度 | 核心路由库及扩展适配已实现；e1～e4完成目录、Gateway、POSIX Patch及验证通过的固定Container Process、按Tool Provider和输出Artifact并通过全矩阵CI；启动全局恢复仍属e5 |
 
 本文是`trusted_actions`包当前实现的事实源。跨包Action Request、Journal、Worker和Effect Executor以
 [Action Plane子系统设计](../subsystems/action-plane.md)为事实源；不可变执行计划以
@@ -1436,10 +1436,42 @@ stateDiagram-v2
 ```
 
 专项测试[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖Route、审批、执行与恢复；默认模型目录和SDK链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖。e3不改变MCP/Skill/Hook/Git Push的显式装配状态。
-\n## 45. 固定Container Process Route（0.9.1e4）\n\n每个Verified Profile生成唯一`run_profile.<profile-id>` Definition、Descriptor、Binding和Capability Evidence。多Tool Gateway的\nReview与Output Provider改为按Tool映射：`apply_patch_batch`调用Patch Review，Process不产生Diff；Process终态才调用\n`ProductProcessOutputProvider`。单Provider构造方式仍兼容既有单Tool宿主。\n\n```mermaid\nstateDiagram-v2\n    [*] --> omitted: Profile能力不足\n    [*] --> pending_approval: verified + plan\n    pending_approval --> ready: exact approval\n    pending_approval --> denied: rejected\n    ready --> running: Router claim\n    running --> succeeded: exit 0 + output proved\n    running --> failed: nonzero/timeout/output limit\n    running --> unknown: cancel/owner uncertainty\n    unknown --> reconciling: inspect Process Lease\n    reconciling --> succeeded: terminal exit 0 proved\n    reconciling --> failed: terminal failure proved\n    reconciling --> manual_intervention: state/output unprovable\n```\n\nRouter的`execute`仍不接收模型命令；Executor根据宿主Profile和批准Selectors派生Container/Process合同。Task取消后Router保存\nUNKNOWN并重抛取消，Process Owner负责停止和持久化Lease；`recover`只进入Router Reconcile。输出Provider同时核对Audit中的公共输出\n摘要和Artifact SHA，再由Session作用域Store发布JSONL正文。\n\n验证见[`test_process_action.py`](../../tests/product_config/test_process_action.py)、\n[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和\n[`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)。外部Action Config加载与启动时全局Route扫描不在e4。\n\n## 46. 变更记录
+
+## 45. 固定Container Process Route（0.9.1e4）
+
+每个Verified Profile生成唯一`run_profile.<profile-id>` Definition、Descriptor、Binding和Capability Evidence。多Tool Gateway的
+Review与Output Provider改为按Tool映射：`apply_patch_batch`调用Patch Review，Process不产生Diff；Process终态才调用
+`ProductProcessOutputProvider`。单Provider构造方式仍兼容既有单Tool宿主。
+
+```mermaid
+stateDiagram-v2
+    [*] --> omitted: Profile能力不足
+    [*] --> pending_approval: verified + plan
+    pending_approval --> ready: exact approval
+    pending_approval --> denied: rejected
+    ready --> running: Router claim
+    running --> succeeded: exit 0 + output proved
+    running --> failed: nonzero/timeout/output limit
+    running --> unknown: cancel/owner uncertainty
+    unknown --> reconciling: inspect Process Lease
+    reconciling --> succeeded: terminal exit 0 proved
+    reconciling --> failed: terminal failure proved
+    reconciling --> manual_intervention: state/output unprovable
+```
+
+Router的`execute`仍不接收模型命令；Executor根据宿主Profile和批准Selectors派生Container/Process合同。Task取消后Router保存
+UNKNOWN并重抛取消，Process Owner负责停止和持久化Lease；`recover`只进入Router Reconcile。输出Provider同时核对Audit中的公共输出
+摘要和Artifact SHA，再由Session作用域Store发布JSONL正文。
+
+验证见[`test_process_action.py`](../../tests/product_config/test_process_action.py)、
+[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和
+[`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)。外部Action Config加载与启动时全局Route扫描不在e4。
+
+## 46. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Process由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown与Mermaid结构 |
 | 9 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Process同源目录、按Tool Review/Output、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI |
 | 8 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 将Agent Gateway终态输出核对与Tool Result投影拆为独立职责，保持Router、审批和UNKNOWN语义不变 |
 | 7 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 将POSIX Workspace Patch、Review、Delivery Executor和Lease接入默认Router，保持UNKNOWN只对账与Windows省略 |

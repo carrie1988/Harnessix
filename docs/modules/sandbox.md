@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 5
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -40,8 +40,8 @@ supersedes: []
 | 下游依赖 | `execution`合同、`workspace`快照、`secrets`短生命周期环境、`processes` Supervisor、Docker/Podman兼容CLI、DNS和TCP |
 | 持久化 | `SQLiteSandboxProfileStore`按Profile Digest保存不可变JSON；Execution Plan和Process Lease由其他模块保存 |
 | 平台 | 合同与确定性测试覆盖POSIX/Windows；真实Container隔离只在Linux Docker CI验证；Windows/macOS真实强隔离尚未形成发布证据 |
-| 代码版本 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` |
-| 当前完成度 | 固定Profile、无网络、只读Workspace的`container_strong`路径已接入默认产品并等待全矩阵验收；Host Sandbox Adapter、Selective Egress和其他调用方仍是显式组合能力 |
+| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
+| 当前完成度 | 固定Profile、无网络、只读Workspace的`container_strong`路径已接入默认产品并通过全矩阵验收；Host Sandbox Adapter、Selective Egress和其他调用方仍是显式组合能力 |
 
 本文描述Sandbox包当前实现。不可变执行计划和批准指纹以
 [Execution Plan模块设计](execution.md)为事实源；底层Process Owner、Lease、输出和终止语义以
@@ -1385,6 +1385,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录默认固定Container Profile由CI 35434198163完成真实产品镜像与七任务验收 |
 | 4 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile默认产品接线、强能力探测、Supervisor生命周期及真实产品镜像验收；等待全矩阵CI |
 | 3 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加Product Process公共Intent与派生Container合同分离的复核路径，并同步Runtime只读恢复接口 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Sandbox运行合同不变 |

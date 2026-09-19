@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 6
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
 | 主要持久状态 | Supervised链的Process Lease当前投影与完整快照事件；兼容链的执行事实由通用Action Journal和Session/Artifact Store拥有 |
 | 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；任意`host.process`和0.5兼容Saga仍不进入产品目录 |
-| 代码版本 | `c7449164a2bbf08164472a36c11102dc408ebb15` |
+| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -1074,7 +1074,18 @@ flowchart LR
 ```
 
 外层客户端`exited`不等于容器实例已结束；只有Sandbox清理证明完成后才能形成容器级确定终态。
-\n### 28.1 默认产品固定Profile适配\n\n[`ProductProcessActionExecutor`](../../src/harnessix/product_config/process_action.py)把Agent公共`profile/selectors`调用适配为\n`ExecutionPlanV2 + ContainerExecutionSpec + ProcessSpec`，再复用本节的Supervisor和Lease。`process_id`与Action `plan_id`相同，\n使Router Audit、Execution Approval、Process Lease和输出Artifact可以按同一稳定身份对账。\n\n适配器不会把任意命令交给Host Runtime：Profile在产品启动时固定Program、argv、不可变镜像、网络none、只读Workspace、资源预算\n和Secret版本。取消导致Router先记录`unknown`，Supervisor停止Owner后留下终态Lease；恢复调用`reconcile`读取同一Lease，禁止再次\n调用`run`。终态stdout/stderr只按Lease中的长度、SHA-256、截断和EOF事实重建，不信任内存返回值。\n\n
+
+### 28.1 默认产品固定Profile适配
+
+[`ProductProcessActionExecutor`](../../src/harnessix/product_config/process_action.py)把Agent公共`profile/selectors`调用适配为
+`ExecutionPlanV2 + ContainerExecutionSpec + ProcessSpec`，再复用本节的Supervisor和Lease。`process_id`与Action `plan_id`相同，
+使Router Audit、Execution Approval、Process Lease和输出Artifact可以按同一稳定身份对账。
+
+适配器不会把任意命令交给Host Runtime：Profile在产品启动时固定Program、argv、不可变镜像、网络none、只读Workspace、资源预算
+和Secret版本。取消导致Router先记录`unknown`，Supervisor停止Owner后留下终态Lease；恢复调用`reconcile`读取同一Lease，禁止再次
+调用`run`。终态stdout/stderr只按Lease中的长度、SHA-256、截断和EOF事实重建，不信任内存返回值。
+
+
 ## 29. 并发与生命周期
 
 | 对象 | 并发模型 | 当前约束 |
@@ -1513,6 +1524,7 @@ function agent_observe(plan):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录固定Container Profile默认产品链由CI 35434198163完成真实镜像及七任务验收，并修复本节Markdown换行 |
 | 5 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 同步固定Container Profile进入默认Trusted Action组合、Plan ID到Process ID绑定、取消UNKNOWN和Lease只对账恢复；等待全矩阵CI验收 |
 | 4 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 同步固定Container Process所需的Owner只读输出接口，并把平台能力证明从Supervisor生命周期职责中拆出 |
 | 3 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 将Windows共享冲突重读扩展为最长0.912秒，并为最终I/O失败增加不含路径与正文的低基数诊断 |

@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 53
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 54
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -85,7 +85,7 @@ flowchart LR
 | Coding Tool | [Coding Tool Runtime模块设计](../modules/tools.md)、[Managed Patch Runtime模块设计](../modules/patches.md)、[Process Runtime模块设计](../modules/processes.md) | [Tool Runtime研究](../research/tool-runtime.md)、[Patch Runtime研究](../research/patch-runtime.md)、[ADR 0023](../adr/0023-workspace-read-tools.md)～[ADR 0053](../adr/0053-tool-concurrency-and-error-taxonomy.md) | Tools、Patch与Process现行模块设计及Eval证据分层均已完成 |
 | Context/Session | [Context模块设计](../modules/context.md)、[Session模块设计](../modules/session.md)、[Artifact模块设计](../modules/artifacts.md) | [0.6设计](../m06-context-and-sessions.md)、Compaction与Thread专题设计及相关ADR | 三个包的现行设计和里程碑历史分层均已完成 |
 | 可信执行/交付 | [Execution Plan模块设计](../modules/execution.md)、[Process Runtime模块设计](../modules/processes.md)、[Sandbox模块设计](../modules/sandbox.md)、[Secrets模块设计](../modules/secrets.md)、[Trusted Actions模块设计](../modules/trusted-actions.md)、[Workspace模块设计](../modules/workspace.md)、[Delivery模块设计](../modules/delivery.md)、[0.7设计](../m07-trusted-execution-and-delivery.md)、[威胁模型](../threat-model.md) | [可信执行研究](../research/trusted-execution-and-delivery.md)、[统一Action研究](../research/unified-action-plane-and-extension-boundaries.md)、ADR 0065～0069 | Execution、Process、Sandbox、Secrets、Trusted Actions、Workspace与Delivery现行设计已完成 |
-| 可恢复终端产品 | [Product UI终端产品模块设计](../modules/product-ui.md) | [CLI/TUI研究](../research/cli-tui-product-experience.md)、[配置/Windows研究](../research/configuration-preflight-and-windows-read-runtime.md)、[默认Action研究](../research/default-trusted-action-product-composition.md)、[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)～[ADR 0080](../adr/0080-capability-proven-product-action-composition.md) | 0.9.1a～d及e1～e3已关闭；e4固定Container Process已完成产品接线并等待全矩阵CI；e5待实施 |
+| 可恢复终端产品 | [Product UI终端产品模块设计](../modules/product-ui.md) | [CLI/TUI研究](../research/cli-tui-product-experience.md)、[配置/Windows研究](../research/configuration-preflight-and-windows-read-runtime.md)、[默认Action研究](../research/default-trusted-action-product-composition.md)、[ADR 0078](../adr/0078-product-shell-and-recoverable-client-state.md)～[ADR 0080](../adr/0080-capability-proven-product-action-composition.md) | 0.9.1a～d及e1～e4已关闭；e5待实施 |
 | 产品运行时/扩展 | [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[Product Config模块设计](../modules/product-config.md)、[API模块设计](../modules/api.md)、[Adapter模块设计](../modules/adapters.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)、[Smoke模块设计](../modules/smoke.md)、[0.8设计](../m08-product-runtime-and-extensions.md) | Protocol/MCP/Skill/Hook研究、ADR 0070～0075及受控Provider ADR | 10个产品运行时与扩展包均已有现行设计；聚合与历史资料已分层 |
 | 可观测性 | [Observability模块设计](../modules/observability.md) | [ADR 0004](../adr/0004-durable-trace-context.md)、[ADR 0013](../adr/0013-kernel-contracts-and-telemetry.md) | 现行模块事实已完成；统一产品装配、故障隔离、单位和隐私加固仍是产品任务 |
 | 可维护性 | [0.9.0设计](../m09-code-maintainability.md) | [可读性研究](../research/code-readability-and-structure.md)、[ADR 0076](../adr/0076-code-readability-and-structural-governance.md)、[ADR 0077](../adr/0077-versioned-documentation-contract-and-gates.md) | 代码与文档治理门禁均已启用；后续产品切片须持续同步 |

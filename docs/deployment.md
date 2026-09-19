@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 7
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -59,7 +59,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
 | 默认Workspace读取 | macOS/Linux/Windows已实现 | 启动前按平台能力证明，失败时不开放协议 |
 | 默认Workspace Patch | POSIX已实现 | 经Trusted Action、Review Artifact、审批和Delivery事务执行 |
-| 固定Container Process | 条件产品能力，验收中 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告；CLI加载由e5补齐 |
+| 固定Container Process | 已验收的条件产品能力 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告；CLI加载由e5补齐 |
 | Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
 | 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
@@ -251,7 +251,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 
 ## 13. 当前限制与后续工作
 
-- 0.9.1e固定Container Process已完成产品接线并等待CI；外部Action Config、Doctor和统一启动恢复Owner尚未完成；
+- 0.9.1e4固定Container Process产品链已通过七任务CI；外部Action Config、Doctor和统一启动恢复Owner尚未完成；
 - 0.9.1f旧Process、Git Push和Eval调用方尚未全部迁移，兼容内核仍存在源码与测试；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；

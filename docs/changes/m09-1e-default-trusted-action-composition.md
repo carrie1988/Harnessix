@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
+version: 9
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | 影响模块 | Agent、Trusted Actions、Artifacts、Patches、Processes、Delivery、Sandbox、Product Config、Product UI、Protocol |
 | 兼容级别 | Product Config v2和Agent Protocol v1保持兼容；Agent Event追加v20；新增独立Product Action Config v1和内部Gateway合同 |
 | 发布/回滚单元 | 0.9.1e1～0.9.1e5五个可独立回滚纵向切片；功能门只控制新目录，不删除历史事实 |
-| 当前状态 | 源码研究与ADR已完成；0.9.1e1～e3已由对应全矩阵CI关闭；e4已完成默认产品统一Catalog、固定Profile探测、Process Owner生命周期、审批执行、输出Artifact和真实固定镜像测试接线，正在完成本地全量及七任务CI验收；e5的外部Action Config加载、启动全局恢复和Doctor能力报告仍待实施 |
+| 当前状态 | 源码研究与ADR已完成；0.9.1e1～e4已由对应全矩阵CI关闭；e5的外部Action Config加载、启动全局恢复和Doctor能力报告仍待实施 |
 
 ## 2. 需求背景与证据
 
@@ -1707,9 +1707,11 @@ SHA-256；Artifact Store在同一Session事务边界校验Thread、Turn、Call�
 | [`test_supervisor.py`](../../tests/processes/test_supervisor.py)、[`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py) | Owner硬退出、控制丢失、取消、超时、输出限制和重启只对账 |
 | [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) | 固定镜像、网络none、只读挂载、资源限制、Secret脱敏和Container清理 |
 
-实现完成后必须通过Ruff、Mypy、Schema生成、文档/链接/Mermaid、可读性、全量Pytest以及Linux Python 3.12/3.13、macOS、
-Windows、PostgreSQL、固定镜像Container和Documentation七任务CI。CI结果回写前，e4保持“实现完成、验收进行中”，不得在
-路线图中勾选。
+实现提交`f5a3936`完成后，本地Ruff、Mypy、Schema生成、文档/链接/Mermaid、可读性与全量Pytest均通过。首次并发CI中的一份
+重复运行暴露既有SDK后台Turn测试仅等待0.5秒的调度假设；`4b28fa4`把审批与问题状态等待统一为5秒单调时钟边界，并连续10轮
+通过对应回归。最终[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)七项全部通过：Linux Python
+3.12/3.13均为3551 passed、20 skipped，固定镜像Container为3 passed，macOS、Windows、PostgreSQL与Documentation同时通过。
+0.9.1e4据此关闭；Skip仅对应平台或外部能力条件，不包含固定镜像产品验收。
 
 #### 22.29.5 与e5及0.9.1f的边界
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 9
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -44,8 +44,8 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Snapshot、活动Profile CAS、配置事件Hash链和Fallback事件Hash链 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
-| 当前完成度 | 0.9.1d、0.9.1e1～e3已关闭；0.9.1e4已完成默认产品统一组合、Process Supervisor生命周期、按Tool上下文、审批执行、输出Artifact和真实固定镜像测试接线，等待本地全量及七任务CI验收后关闭；e5仍待实施 |
+| 代码版本 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` |
+| 当前完成度 | 0.9.1d、0.9.1e1～e4已关闭；默认产品统一组合、Process Supervisor生命周期、按Tool上下文、审批执行、输出Artifact和真实固定镜像均已通过七任务CI；e5仍待实施 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1721,7 +1721,7 @@ Gateway的规划上下文按Tool选择：Patch使用固定Workspace的`host_guar
 `container_strong` Sandbox、Engine Capability、固定环境及Secret版本。Review Provider也按Tool绑定，只有Patch生成Diff；Process
 使用`presentation=process`且不得携带Diff。这个分派关闭了“多Tool Gateway仍把Process交给Patch Review”的组合错误。
 
-## 50. 固定Container Process默认链（0.9.1e4验收中）
+## 50. 固定Container Process默认链（0.9.1e4已验收）
 
 Process公共输入限制为固定`profile`和有界`selectors`。宿主在
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、平台Owner能力、镜像
@@ -1756,7 +1756,8 @@ SHA-256，Session只保存公共摘要及Artifact引用。Artifact发布再次�
 现有CLI不会在e5安全加载外部Action Config前隐式扩大权限。专项测试覆盖危险Selector、能力证明与省略、前置失败、非零退出、
 超时、输出上限、取消后Reconcile不重放、Agent审批、Artifact提交确认丢失及Server目录接线。Linux Container CI还执行
 [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py)，使用固定Digest镜像验证批准后真实运行、只读
-Workspace和输出分页。七任务CI结果回写前，本切片保持验收中。
+Workspace和输出分页。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)已完成Linux
+Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务验收，本切片据此关闭。
 
 ## 51. 相关文档
 
@@ -1781,6 +1782,7 @@ Workspace和输出分页。七任务CI结果回写前，本切片保持验收中
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 9 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录0.9.1e4固定Container Process由CI 35434198163完成七任务全矩阵验收并关闭 |
 | 8 | `030deeb31bb9f2ff64b6ecbd8fd7c98c3419ed86` | 2026-09-19 | 默认产品组合扩展为Patch与固定Container Process共享的单一Catalog/Gateway，增加Supervisor生命周期、按Tool上下文、故障恢复与真实镜像验收接线 |
 | 7 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 登记固定Container Process候选链的能力证明、执行、UNKNOWN、输出Artifact及尚未完成的产品装配和专项测试边界 |
 | 6 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 装配默认POSIX Workspace Patch、Action/Delivery/Lease状态Owner、Review Provider及Windows诚实省略 |

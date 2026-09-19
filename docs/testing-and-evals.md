@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 7
-code_revision: a263f961a155ba0bd0c4d709f12691fe52e0b971
+version: 8
+code_revision: 4b28fa4010bf1f9590f86a3c2e639916043894c2
 owners:
   - core
 modules:
@@ -377,18 +377,19 @@ flowchart TD
 
 ## 20. 当前证据与限制
 
-当前代码Revision `a263f961a155ba0bd0c4d709f12691fe52e0b971`包含0.9.1e3默认Workspace Patch纵向链及MCP测试预算修复，已完成以下证据：
+当前代码Revision `4b28fa4010bf1f9590f86a3c2e639916043894c2`包含0.9.1e4默认固定Container Process纵向链及后台状态等待稳定化，已完成以下证据：
 
-- `uv run pytest -q`收集3545项测试并以退出码0结束，其中19项按平台或外部服务条件跳过；
+- Linux Python 3.12/3.13全仓测试均为3551 passed、20 skipped；
 - `make lint`、`make readability`、`make typecheck`、`make contracts`和`make documentation`全部通过；
-- [`test_trusted_action_patch.py`](../tests/delivery/test_trusted_action_patch.py)覆盖严格输入、创建/替换/删除、Unicode、完整Review、提交确认丢失、孤儿不可读、Lease竞争、取消后的部分效果、来源漂移和只对账恢复；
-- [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)通过真实SDK路径证明模型仅在能力成立的平台看到Patch，客户端读取完整Diff、提交指纹绑定审批并观察真实文件效果；
-- migration24、`action_review`用途与公开模型历史由Artifact、Session、Context和协议回归共同验证；
+- [`test_process_action.py`](../tests/product_config/test_process_action.py)覆盖固定Profile、能力省略、非零/超时/输出上限、取消UNKNOWN、Lease只对账和输出Artifact；
+- [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py)通过真实产品组合证明Patch与Verified Process来自同一Catalog/Gateway；
+- [`test_product_process_profile.py`](../tests/integration/test_product_process_profile.py)在固定Digest镜像中完成批准后运行、只读Workspace和输出分页，Container Job共3 passed；
+- migration25、`action_output`用途与公共Session反向授权由Artifact、Session、Context和协议回归共同验证；
 - 验证不调用模型API、SSH、远程服务器或新增中间件。
 
-首次文档候选的Windows任务发现MCP写超时测试错误地把0.1秒调用预算复用于目录启动；`a263f96`将启动预算独立固定为2秒，调用预算及UNKNOWN/Reconcile断言保持不变。[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation全矩阵。Windows继续证明Patch能力被诚实省略而不是回退到不安全路径，0.9.1e3据此关闭。
+实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至该Revision，0.9.1e4固定Process产品接线已实现但仍等待全量和七任务CI；以下项目仍不能宣称生产完成：0.9.1e5、0.9.1f2～f3及0.9.2～0.9.6范围的外部Action Config、产品级启动恢复、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至该Revision，0.9.1e4已关闭；以下项目仍不能宣称生产完成：0.9.1e5、0.9.1f2～f3及0.9.2～0.9.6范围的外部Action Config、产品级启动恢复、多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ## 21. 维护与验收标准
 
