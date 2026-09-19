@@ -469,8 +469,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [专项详细设计](changes/m09-1f-single-product-runtime-convergence.md)撤销`serve/worker`、Action HTTP SDK和
   LangGraph Action Adapter的公共产品地位；f1先关闭公共入口并冻结旧调用方白名单，f2把Process、Git Push和
   历史Eval迁入`TrustedActionRouter`，f3再删除HTTP API、Worker Queue、旧Bootstrap、专用Adapter与相关依赖。
-  Policy、Approval、Effect、`UNKNOWN`与Reconcile继续作为Coding Agent进程内Trusted Action Runtime能力。f1公共入口、
-  基础依赖、现行文档、可读性结构治理及本地全仓质量门已经完成，当前为待独立提交和CI验收的发布候选；f2/f3未实施。
+  Policy、Approval、Effect、`UNKNOWN`与Reconcile继续作为Coding Agent进程内Trusted Action Runtime能力。f1实现提交
+  `142dfa8`已由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成七任务全矩阵验收并关闭；
+  f2/f3未实施。
 
 界面可启动或单个Prompt正常返回不能关闭0.9.1。五个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
 可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。

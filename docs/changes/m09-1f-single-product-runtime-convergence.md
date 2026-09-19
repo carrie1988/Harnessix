@@ -300,8 +300,9 @@ f1的公共面整改已经完成：顶层CLI、根包/SDK导出、Makefile、Doc
 部署/架构/运维资料和旧调用方治理门禁已同步；专项CLI、SDK、API/Worker兼容、产品Server、仓库策略及Wheel元数据
 验证通过。集成工作区中的0.9.1e4候选代码已通过职责拆分消除新增超大符号和既有热点增长；只批准产品组合层到
 `processes`、`sandbox`的两条单向依赖，没有放宽复杂度或长度阈值。Ruff、可读性最终报告、文档、Schema、Mypy和
-全量Pytest均在本地以退出码0完成。f1已达到本地候选完成状态；在形成独立提交并取得项目要求的CI证据前仍不标记为
-正式关闭。
+全量Pytest均在本地以退出码0完成。实现提交`142dfa836897f6c13f8168d44ea853b76365e53a`由
+[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成Python 3.12/3.13、macOS、
+Windows、PostgreSQL、固定镜像Container和文档Mermaid全矩阵验收，f1据此正式关闭。
 
 f2依赖0.9.1e4/e5完成固定Container Process和产品Owner，f3尚未开始。每个切片完成后必须回写实际删除范围、
 测试函数、数据兼容结论和对应提交；在旧生产调用方白名单清零前，不得宣称兼容内核已经删除。
