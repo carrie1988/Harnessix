@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import hmac
 import json
@@ -171,9 +172,11 @@ def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
 
 
 def _is_windows_sharing_error(error: OSError) -> bool:
-    """只识别Windows原子替换与并发读取之间可瞬时恢复的共享冲突。"""
+    """识别Win32或CRT投影的Windows瞬时共享/访问冲突。"""
 
-    return getattr(error, "winerror", None) in {5, 32}
+    return getattr(error, "winerror", None) in {5, 32} or (
+        os.name == "nt" and isinstance(error, PermissionError) and error.errno == errno.EACCES
+    )
 
 
 def read_owner_receipt(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -339,6 +340,74 @@ def test_process_owner_receipt_retries_windows_sharing_conflict(
         == receipt
     )
     assert calls == 3
+
+
+def test_process_owner_receipt_retries_windows_crt_access_denied(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    process_id = UUID("00000000-0000-4000-8000-000000000001")
+    receipt = sign_owner_receipt(
+        process_id=process_id,
+        owner_identity="e" * 64,
+        state="running",
+        sequence=1,
+        owner_token="d" * 64,
+        pid=123,
+        started_at=NOW,
+        stdout=empty_process_output(),
+        stderr=empty_process_output(),
+    )
+    path = tmp_path / "receipt.json"
+    write_owner_receipt(path, receipt)
+    read_once = owner_receipt_module._read_owner_receipt_once  # noqa: SLF001
+    calls = 0
+
+    def denied_then_read(candidate: Path):
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            raise PermissionError(errno.EACCES, "access denied")
+        return read_once(candidate)
+
+    monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", denied_then_read)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)
+    monkeypatch.setattr(owner_receipt_module.os, "name", "nt")
+
+    assert (
+        read_owner_receipt(
+            path,
+            owner_token="d" * 64,
+            process_id=process_id,
+            owner_identity="e" * 64,
+        )
+        == receipt
+    )
+    assert calls == 3
+
+
+def test_process_owner_receipt_does_not_retry_posix_access_denied(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = 0
+
+    def denied(_candidate: Path):
+        nonlocal calls
+        calls += 1
+        raise PermissionError(errno.EACCES, "access denied")
+
+    monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", denied)
+    monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)
+    monkeypatch.setattr(owner_receipt_module.os, "name", "posix")
+
+    with pytest.raises(KernelError) as invalid:
+        read_owner_receipt(
+            tmp_path / "receipt.json",
+            owner_token="d" * 64,
+            process_id=UUID("00000000-0000-4000-8000-000000000001"),
+        )
+
+    assert invalid.value.code == "process_owner_receipt_invalid"
+    assert calls == 1
 
 
 def test_process_owner_receipt_bounds_persistent_windows_sharing_conflict(

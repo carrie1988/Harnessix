@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 301,
-    "physical_lines": 68053,
-    "logical_lines": 60553,
+    "physical_lines": 68056,
+    "logical_lines": 60556,
     "documented_modules": 301,
     "classes": 770,
     "documented_classes": 279,
@@ -1239,7 +1239,7 @@
       "path": "src/harnessix/processes/owner_receipt.py",
       "qualname": "ProcessOwnerReceipt.receipt_shape",
       "kind": "function",
-      "line": 47,
+      "line": 48,
       "lines": 26,
       "documented": false,
       "decision_complexity": 23

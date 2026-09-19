@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 13
+code_revision: 634765887237f9bc4d3d2cb6c76f2cc6d554e692
 owners:
   - core
 modules:
@@ -837,7 +837,7 @@ sequenceDiagram
     O->>R: os.replace原子发布
     O->>R: POSIX目录fsync
     S->>R: O_NOFOLLOW读取、64 KiB上限、严格JSON
-    opt Windows WinError 5/32共享冲突
+    opt Windows WinError 5/32或CRT EACCES瞬时冲突
         S->>R: 最长0.912秒有界重读
     end
     S->>S: Process ID/Owner identity/HMAC compare_digest
@@ -845,9 +845,10 @@ sequenceDiagram
 ```
 
 输出必须先持久并同步，回执才能引用该前缀。Receipt最大64 KiB，临时文件使用`O_EXCL`和0600；POSIX读取增加
-`O_NOFOLLOW`。Windows上并发`os.replace`可能让读取端短暂收到WinError 5或32；读取只对这两个共享冲突按
-`0/2/10/50/100/250/500 ms`七次机会有界重读，累计等待不超过0.912秒。文件缺失、长度/JSON/Schema/HMAC错误及
-其他I/O错误仍立即失败关闭，重读不会接受半文件或掩盖持久篡改。最终I/O失败只附加
+`O_NOFOLLOW`。Windows上并发`os.replace`可能让读取端短暂收到WinError 5/32，也可能由CRT只投影成不携带
+`winerror`的`PermissionError(errno=EACCES)`；读取仅对这三种Windows瞬时访问冲突按
+`0/2/10/50/100/250/500 ms`七次机会有界重读，累计等待不超过0.912秒。POSIX `EACCES`、文件缺失、
+长度/JSON/Schema/HMAC错误及其他I/O错误仍立即失败关闭，重读不会接受半文件或掩盖持久篡改。最终I/O失败只附加
 `winerror:errno:attempt`低基数诊断，不记录路径或原始异常正文。HMAC key是Lease中的Owner token，目的是识别本次
 Owner事实并拒绝随机/串线回执，不是抵御能读取状态数据库的同UID攻击者。
 
@@ -1403,7 +1404,7 @@ function agent_observe(plan):
 | `run_tests` Profile限制 | [`test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/processes/test_profiles.py) | `RunTestsAgentBridge` | [`test_test_profiles.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/tests/processes/test_test_profiles.py) | `test_run_tests_only_exposes_profile_and_reports_test_failure`、`test_run_tests_rejects_unknown_profile_and_model_arguments` |
 | ProcessSpec/Lease合同 | [`supervision_contracts.py`](../../src/harnessix/processes/supervision_contracts.py) | `ProcessSpec`、`ProcessLease` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_spec_requires_one_exact_invocation_and_self_digest`、`test_process_lease_binds_plan_spec_capability_and_deadline` |
 | Launch Binding | [`supervision_planner.py`](../../src/harnessix/processes/supervision_planner.py) | `build_process_launch_binding` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_launch_binding_covers_plan_materialization_and_environment` |
-| Receipt HMAC、短读与Windows共享冲突 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks`、`test_process_owner_receipt_retries_windows_sharing_conflict`、`test_process_owner_receipt_bounds_persistent_windows_sharing_conflict`、`test_process_owner_receipt_does_not_retry_invalid_content` |
+| Receipt HMAC、短读与Windows共享冲突 | [`owner_receipt.py`](../../src/harnessix/processes/owner_receipt.py) | `verify_owner_receipt`、`read_owner_receipt` | [`test_supervision_contracts.py`](../../tests/processes/test_supervision_contracts.py) | `test_process_owner_receipt_mac_binds_identity_and_payload`、`test_process_owner_receipt_reads_short_regular_file_chunks`、`test_process_owner_receipt_retries_windows_sharing_conflict`、`test_process_owner_receipt_retries_windows_crt_access_denied`、`test_process_owner_receipt_does_not_retry_posix_access_denied`、`test_process_owner_receipt_bounds_persistent_windows_sharing_conflict`、`test_process_owner_receipt_does_not_retry_invalid_content` |
 | Lease CAS与最新事件完整性 | [`supervision_store.py`](../../src/harnessix/processes/supervision_store.py) | `create`、`transition`、`_decode_current` | [`test_supervision_store.py`](../../tests/processes/test_supervision_store.py) | `test_process_lease_store_is_append_only_durable_and_cas_guarded`、`test_process_lease_store_rejects_index_or_event_divergence` |
 | 平台Owner能力证明 | [`supervisor_capabilities.py`](../../src/harnessix/processes/supervisor_capabilities.py) | `posix_process_implementation_digest`、`windows_process_implementation_digest` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py)、[`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py) | Capability绑定平台、实现文件和可执行文件；不支持平台失败关闭 |
 | 精确环境、Secret脱敏 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py)、[`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `_start_bound`、`CapturedProcessOutput` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_pipe_process_uses_exact_environment_and_redacts_secret` |
@@ -1460,9 +1461,9 @@ function agent_observe(plan):
 12. Windows真机矩阵证明GitHub-hosted runner环境，不等价于全部Windows版本、企业父Job和安全软件组合；
 13. CPU、内存、PID、网络和文件系统逃逸只在Container层验证，Host Supervisor不具备这些隔离；
 14. 0.5 Agent Bridge与0.7 Supervised链尚无统一产品级端到端接入测试；
-15. 托管Windows Runner在Owner并发更新回执期间重复出现`process_owner_receipt_invalid`；当前只对可识别的WinError
-    5/32共享冲突执行最长0.912秒有界重读，其他错误仍失败关闭。高频发布/读取Soak、文件身份观测及安全软件组合证据
-    尚未补齐，不能把这一兼容分支扩大为无条件重试。
+15. 托管Windows Runner在Owner并发更新回执期间重复出现`process_owner_receipt_invalid`；当前仅对WinError 5/32
+    及Windows CRT投影的`PermissionError(errno=EACCES)`执行最长0.912秒有界重读，POSIX `EACCES`和其他错误仍
+    失败关闭。高频发布/读取Soak、文件身份观测及安全软件组合证据尚未补齐，不能扩大为无条件重试。
 
 ## 38. 当前限制与演进方向
 
@@ -1483,7 +1484,7 @@ function agent_observe(plan):
 | Supervised输出无通用Artifact发布 | 产品客户端难分页读取长后台输出 | 增加基于Lease摘要的只读Artifact/cursor，不复制文件正文 |
 | Schema生成未纳入独立CI diff门禁 | 新合同可能与checked-in Schema漂移 | 添加`generate_specs.py`无差异门禁和模块级合同测试 |
 | Windows部署身份边界有限 | 私有目录ACL和父Job兼容性依赖环境 | 加Windows ACL、企业Job、旧Build和恢复安装矩阵 |
-| Windows回执并发读写存在共享冲突 | WinError 5/32使用最长0.912秒有界重读，其他异常仍失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入；不得扩大可重试错误集合 |
+| Windows回执并发读写存在共享冲突 | WinError 5/32及CRT `EACCES`使用最长0.912秒有界重读，POSIX `EACCES`与其他异常仍失败关闭 | 在0.9.3增加高频发布/读取Soak、文件身份观测与故障注入；不得无证据扩大可重试错误集合 |
 
 ## 39. 验收标准
 
@@ -1559,6 +1560,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `634765887237f9bc4d3d2cb6c76f2cc6d554e692` | 2026-09-20 | 根据Windows CI的`receipt_io=0:13:attempt=1`证据补充CRT EACCES有界重读候选，同时固定POSIX EACCES继续失败关闭 |
 | 12 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process Action Saga删除、历史只读兼容和Windows归档修复由CI 35453082992完成全矩阵验收 |
 | 11 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除旧Process执行Saga、历史Session/Artifact只读兼容和稳定拒绝边界 |
 | 10 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论由CI 35446341997验收关闭 |
