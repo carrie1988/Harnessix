@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 6
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 7
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 
 ## 状态
 
-接受，按0.9.1f分阶段实施。f1已经停止独立Action HTTP/Worker产品入口，f2a已完成固定Container Process替代链，f2b直接Trusted Git Push和f2c历史Eval Trusted Action迁移均已通过全矩阵CI并关闭。f3物理删除、历史Session只读兼容和旧数据库离线归档已经形成实现候选，等待全矩阵CI后关闭。
+接受且实施完成。f1停止独立Action HTTP/Worker产品入口，f2a完成固定Container Process替代链，f2b直接Trusted Git Push、f2c历史Eval Trusted Action迁移和f3物理删除/历史只读兼容/旧数据库离线归档均已通过对应全矩阵CI并关闭。
 
 ## 背景
 
@@ -96,7 +96,7 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
 - Agent Session和Trusted Action Router的职责可以清晰解释；
 - HTTP认证、通用Action OpenAPI和分布式Worker不再阻塞1.0；
 - Policy、Approval、Audit、`UNKNOWN`和Reconcile继续作为内部可信执行能力；
-- 后续删除FastAPI、Uvicorn、AsyncPG和LangChain Core具备可验证前置条件。
+- 旧服务对FastAPI、AsyncPG、LangChain Core和Uvicorn的直接依赖已经删除；当前MCP SDK可能传递依赖Uvicorn，但不形成Action HTTP服务入口。
 
 ### 负面后果与债务
 
@@ -133,9 +133,9 @@ Git Push已经改为由`TrustedActionRouter`直接调用专用Executor，Action 
   `GitPushActionExecutor`执行冻结Route。响应丢失进入`unknown`；宿主在Push后硬退出时，重开将`running`转为
   `unknown`并只执行`ls-remote`；真实子进程在效果后`os._exit(97)`，响应丢失用例另以调用计数断言没有第二次Push；实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收；
 - **f2c已关闭**：历史Eval以固定Profile装配专用Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor和Action Output Artifact；响应丢失只补Session结果，Process Lease计数证明不重放；治理白名单从7项缩为6项；实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`已由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收。
-- **f3实现候选**：旧生产调用方集合已清零；API、Worker、旧SDK/Adapter、Journal、Policy、样例Executor、旧Bootstrap、
+- **f3已关闭**：旧生产调用方集合已清零；API、Worker、旧SDK/Adapter、Journal、Policy、样例Executor、旧Bootstrap、
   专用Process桥、依赖、规格、示例和相关测试已删除；旧Session Process事件只读兼容，旧库归档工具和手册已提供。
-  该切片等待全矩阵CI，不在取得远端证据前标记关闭。
+  实现Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`已由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例验收。
 
 治理门禁要求实际旧引用集合严格为空；任何旧模块Import、`legacy-action`依赖组或已删除规格重新出现都会失败。
 

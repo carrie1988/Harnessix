@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 11
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 12
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -1598,7 +1598,8 @@ macOS、Windows、PostgreSQL、固定镜像Container与Documentation七个任务
 - 自动继续部分多文件事务；设计明确要求人工处理，不计划通过重放放宽；
 - 多租户远端控制面、长期Soak和容量降级；分别由0.9.3～1.0处理。
 
-因此e3已经独立关闭，但0.9.1e和0.9.1仍保持进行中。
+因此在e3关闭时，0.9.1e和0.9.1仍保持进行中；后续e4、e5及0.9.1f已经取得各自全矩阵证据，
+0.9.1当前状态以[路线图](../roadmap.md)为准。
 
 ### 22.29 0.9.1e4默认产品实现与验收边界
 

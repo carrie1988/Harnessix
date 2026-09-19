@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 9
-code_revision: pending
+status: current
+version: 10
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -319,7 +319,7 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 
 治理门禁已经从旧调用方精确集合中删除`delivery/git_push.py`，并由“子集”收紧为“完全相等”，防止删除引用后留下可被重新占用的
 白名单额度。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已通过Git Push专项26项、架构治理5项、全仓3565项通过/20项跳过，以及Ruff、Mypy、Schema、可读性、
-文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。本设计继续保持`reviewing`，因为f2c已关闭，f3实现候选已完成本地整改但尚未取得全矩阵CI证据。
+文档静态门禁和87幅变化文档Mermaid真实渲染。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，f2b据此关闭。此后设计曾保持`reviewing`直至f2c和f3分别取得完整远端证据；当前全部切片已关闭。
 
 ### 14.1 f2c实现与关闭证据
 
@@ -329,9 +329,9 @@ Remote和Local OID；进入`running`后只允许一次`git push --force-with-lea
 
 专项回归覆盖Evals、Campaign、Grader、Process绑定/Supervisor/输出、Trusted Action Gateway、Agent审批/崩溃恢复和治理门禁；测试断言首次Router终态后重开Process Lease仍为1，完整修复流程最终为2，证明首个Process没有重放。治理白名单已删除`evals/runner.py`，从7个精确调用方缩为6个。实现Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`本地完成Ruff、Mypy、合同、可读性、文档静态门禁、34个变化路径共591幅Mermaid真实渲染、Wheel构建及全仓3569项通过/20项跳过；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务，f2c据此关闭。
 
-### 14.2 f3实现候选与待关闭证据
+### 14.2 f3实现与关闭证据
 
-f3候选把旧生产Import集合从6项降为0，并物理删除`api`、`storage`、`policy`、`executors`、`adapters`、
+f3把旧生产Import集合从6项降为0，并物理删除`api`、`storage`、`policy`、`executors`、`adapters`、
 旧`runtime/worker/bootstrap/settings`、Action HTTP SDK、专用Process Action桥和其示例、规格及测试。`pyproject.toml`
 不再提供`legacy-action` Extra；CI不再启动只服务旧Journal的PostgreSQL Job。Agent Protocol、Trusted Action Router、
 Execution Plan、Action Audit、Session、Artifact、Workspace和Process Supervisor仍是当前产品链。
@@ -346,14 +346,14 @@ WAL一致备份；工具验证必需表/迁移版本、`integrity_check`、源/�
 PostgreSQL不引入新的运行依赖，停写后使用组织标准`pg_dump`一致性归档。完整步骤见
 [旧Action Plane状态检查与归档手册](../operations/legacy-action-archive.md)。当前产品既不连接也不自动迁移旧数据库。
 
-候选已在执行`uv sync --locked --all-extras --dev`并卸载旧服务直接依赖后完成本地门禁：Ruff格式与Lint、
+实现已在执行`uv sync --locked --all-extras --dev`并卸载旧服务直接依赖后完成本地门禁：Ruff格式与Lint、
 292个源码文件Mypy、生成规格、可读性最终基线、206份文档与5598条链接静态检查、35份变化Markdown中的
 190幅Mermaid真实渲染、14个当前示例、Wheel构建与隔离安装/CLI Help均通过；全仓测试为3472项通过、
 18项跳过。Wheel内容检查确认不包含已退役包、根模块及`harnessix.sdk.client`。本机Docker Daemon未运行，
 固定镜像Container场景保留给远端CI，不能以其他本地测试替代。
 
-远端CI改为Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例；只有
-该矩阵一次通过，才能把f3、本文和路线图状态改为关闭。取得实现提交和CI URL后再回写Revision及远端结果。
+远端CI改为Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，并以
+该矩阵一次通过作为f3、本文和路线图关闭条件。
 
 实现候选`296650216e5ec0f6819d4fb607e297b988a956a7`的首轮
 [CI 35452255760](https://github.com/carrie1988/Harnessix/actions/runs/35452255760)暴露了一个测试基础设施顺序依赖：
@@ -373,4 +373,9 @@ Pytest版本化配置中显式声明`pythonpath = ["."]`，并增加治理断言
 但Windows的`os.fsync`通过`_commit`实现，对只读`rb`描述符返回`Errno 9`。版本9把归档临时文件的
 持久化句柄改为`rb+`；文件内容不变，POSIX和Windows均在硬链接发布前完成同一文件数据刷盘。
 
-每个切片完成后必须回写实际删除范围、测试函数、数据兼容结论和对应提交；在全矩阵CI完成前，不得宣称f3已经关闭。
+最终实现Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`由
+[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)一次通过Linux Python 3.12/3.13、
+macOS、Windows、固定镜像Container和Documentation六个Job实例。Windows归档专项、真实固定镜像Process Profile、
+190幅变化Mermaid及双版本全仓测试均进入远端证据，f3、0.9.1f及0.9.1据此正式关闭。
+
+每个后续切片仍必须回写实际删除范围、测试函数、数据兼容结论和对应提交，不得以局部测试替代全矩阵关闭证据。

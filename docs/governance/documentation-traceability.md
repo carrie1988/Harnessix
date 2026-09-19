@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 61
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 62
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -163,7 +163,7 @@ DOC-1.3与DOC-1.4的当前包级迁移已经完成。整改阶段和责任分组
 [0.8完整历史](../m08-product-runtime-and-extensions-milestone-history.md)。历史资料只用于追溯增量，不能覆盖
 本矩阵列出的当前模块事实源。
 
-[ADR索引](../adr/README.md)当前覆盖80份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
+[ADR索引](../adr/README.md)当前覆盖81份接受决策及其当前事实入口；[源码研究索引](../research/README.md)
 已覆盖30份冻结研究、访问日期和采用结果。DOC-1.5结束时189份Markdown已具备标准YAML元数据；
 加入ADR 0077和DOC-1.6详细设计时共有191份Markdown、30个生产源码包；新增Product UI后曾达到31个包。
-0.9.1f3候选物理删除5个旧服务包，当前26个生产源码包及其源码/测试映射继续由自动门禁持续验证；历史资料不计入当前包覆盖率。
+0.9.1f3已物理删除5个旧服务包，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；当前26个生产源码包及其源码/测试映射继续由自动门禁持续验证，历史资料不计入当前包覆盖率。

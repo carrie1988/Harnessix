@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 15
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 16
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -392,7 +392,7 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至当前已关闭验收Revision `89485f321b1a0f73a2e552818298c24b30e3cb3e`，0.9.1e4/e5、0.9.1f1、f2b Git Push与f2c历史Eval Trusted Action均已关闭。f2c本地全仓3569项通过/20项跳过；Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3已经形成物理删除独立Action服务、历史Session只读兼容和旧数据库归档的本地候选；在锁定依赖同步并卸载旧服务直接依赖后，全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。当前CI矩阵随PostgreSQL旧Journal Job删除而变为六个Job实例，远端验收尚未完成。以下项目仍不能宣称生产完成：f3远端关闭证据以及0.9.2～0.9.6范围的多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至当前已关闭验收Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`，0.9.1e4/e5和0.9.1f1～f3均已关闭。f2c的Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3随后物理删除独立Action服务，保留历史Session只读兼容和旧数据库离线归档；在锁定依赖同步并卸载旧服务直接依赖后，本地全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，0.9.1据此关闭。以下项目仍不能宣称生产完成：0.9.2～0.9.6范围的多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
 
 ### 20.1 0.9.1e5验证矩阵
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 12
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -57,7 +57,7 @@ supersedes: []
 | 下游依赖 | `execution`授权计划、`workspace`快照、`secrets`解析/脱敏、SQLite Lease Store、POSIX进程组、Windows Job Object/ConPTY |
 | 主要持久状态 | Process Lease当前投影与完整快照事件；产品Action以Execution Plan/Action Audit/Lease/Artifact分层持有事实 |
 | 当前产品状态 | 默认产品只条件广告宿主固定、强Container验证通过的`run_profile.<id>`；Eval通过专用Trusted Action组合复用POSIX Supervisor；任意模型`host.process`不进入产品目录 |
-| 代码版本 | f2c公开意图与派生ProcessSpec绑定已验收；0.9.1f3删除旧Action Saga，当前候选Revision由本文关闭提交回填 |
+| 代码版本 | f2c公开意图与派生ProcessSpec绑定已验收；0.9.1f3删除旧Action Saga，Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`已通过六实例全矩阵CI |
 
 Process Runtime解决的不是“如何调用`subprocess`”，而是以下生产问题：命令何时被授权、由谁拥有完整进程树、
 调用方取消或崩溃后谁负责回收、输出如何有界且不泄露Secret、重启后哪些事实可证明，以及何时必须报告
@@ -1559,6 +1559,7 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process Action Saga删除、历史只读兼容和Windows归档修复由CI 35453082992完成全矩阵验收 |
 | 11 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除旧Process执行Saga、历史Session/Artifact只读兼容和稳定拒绝边界 |
 | 10 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论由CI 35446341997验收关闭 |
 | 9 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c Eval Trusted Action对Supervisor的公开意图/派生ProcessSpec绑定、Lease不重放和确定性测试结论候选 |

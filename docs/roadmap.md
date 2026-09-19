@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 27
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 28
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -434,7 +434,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束；0.9.1a～d与0.9.1e1～e5已经全矩阵验收并关闭。为避免历史Action服务与Coding Agent形成双产品边界，0.9.1f1已经撤销旧公共入口，f2a固定Container Process、f2b直接Trusted Git Push和f2c历史Eval迁移均已关闭；f3已形成物理删除独立HTTP/Worker体系、历史Session只读兼容和旧数据库离线归档的实现候选，仍须全矩阵CI验收后关闭。0.9.2～0.9.6未完成。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0、0.9.1及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1a～f已经通过对应全矩阵CI验收；其中f3物理删除独立HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)关闭。0.9.2～0.9.6未完成，因此0.9阶段整体仍保持进行中。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -443,7 +443,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 ### 纵向切片
 
 - [x] **0.9.0 代码可读性、可维护性与结构治理**：建立可复现的源码规模、文档字符串、复杂度、依赖和公共API基线；制定简体中文注释、命名及模块边界规范；按Agent核心状态机、副作用与恢复、产品运行时与扩展、模型/Context/Eval的优先级补齐模块、类、函数和关键不变量说明；在独立ADR和行为保持测试约束下治理超大文件与过重职责；渐进建立新增及变更代码的可读性防退化门禁。不得以机械注释覆盖率替代语义质量，不得把功能开发、公共契约变更或无关重构混入本切片；
-- [ ] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；完成Windows原生只读Coding Tool Runtime与统一Action的产品装配，不以WSL兼容替代原生端口；
+- [x] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；完成Windows原生只读Coding Tool Runtime与统一Action的产品装配，不以WSL兼容替代原生端口；a～f全部子切片已经对应全矩阵CI验收；
 - [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
 - [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
 - [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Action Plane补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
@@ -467,16 +467,16 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   Action Audit、专用效果事实、Sandbox和Reconcile进入默认能力目录；[专项源码研究](research/default-trusted-action-product-composition.md)、
   [ADR 0080](adr/0080-capability-proven-product-action-composition.md)和[详细设计](changes/m09-1e-default-trusted-action-composition.md)
   已完成；e1由[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)验收关闭；e2实现提交`328aa2d`已由[CI 34744116155](https://github.com/carrie1988/Harnessix/actions/runs/34744116155)完成全矩阵验收并关闭；e3实现提交`71a4794`与验证修复`a263f96`已由[CI 34748685155](https://github.com/carrie1988/Harnessix/actions/runs/34748685155)完成POSIX安全多文件Patch纵向链及全矩阵验收并关闭；e4实现提交`f5a3936`与状态等待稳定化提交`4b28fa4`已由[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)完成统一Catalog、Supervisor生命周期、审批执行、输出Artifact、真实固定镜像及七任务全矩阵验收并关闭；e5实现提交`e5b7a8a`接入外部Action Config安全加载、Doctor能力报告、Product/Action双指针原子CAS、上一活动配置恢复Router、`running/reconciling → unknown → reconcile`和统一`ProductActionRuntimeOwner`，已由[CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成七任务全矩阵验收并关闭。
-- [ ] **0.9.1f 单一产品运行时收敛**：按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)和
+- [x] **0.9.1f 单一产品运行时收敛**：按[ADR 0081](adr/0081-single-coding-agent-product-boundary.md)和
   [专项详细设计](changes/m09-1f-single-product-runtime-convergence.md)撤销`serve/worker`、Action HTTP SDK和
   LangGraph Action Adapter的公共产品地位；f1先关闭公共入口并冻结旧调用方白名单，f2把Process、Git Push和
   历史Eval迁入`TrustedActionRouter`，f3再删除HTTP API、Worker Queue、旧Bootstrap、专用Adapter与相关依赖。
   Policy、Approval、Effect、`UNKNOWN`与Reconcile继续作为Coding Agent进程内Trusted Action Runtime能力。f1实现提交
   `142dfa8`已由[CI 35418034976](https://github.com/carrie1988/Harnessix/actions/runs/35418034976)完成七任务全矩阵验收并关闭；
   f2a由0.9.1e4/e5的固定Container Process和启动恢复Owner关闭；f2b实现提交`e2d8c24`已删除Git Push对旧ActionService/Effect Journal的生产依赖，
-  由直接Definition/Executor、exact lease、响应丢失及宿主硬崩溃重开只对账测试建立正式链，并由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收并关闭；f2c实现提交`89485f3`已把历史Eval新运行改为Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor与Action Output Artifact，治理白名单由7项缩为6项，本地3569项通过/20项跳过，并由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收并关闭。f3候选已把旧生产引用集合清零，删除API/Worker/SDK/Adapter/Journal/专用Process Bridge及其依赖、规格、示例和测试；旧Session Process事件仅允许读取并以`legacy_process_state_archived`拒绝继续执行，旧SQLite/PostgreSQL状态按离线归档手册处置。本地3472项通过/18项跳过且190幅变化Mermaid真实渲染通过；该候选尚未取得六实例全矩阵CI证据，因此本项保持未勾选。
+  由直接Definition/Executor、exact lease、响应丢失及宿主硬崩溃重开只对账测试建立正式链，并由[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成七任务全矩阵验收并关闭；f2c实现提交`89485f3`已把历史Eval新运行改为Catalog/Gateway/Router、Execution Plan/Action Audit、POSIX Supervisor与Action Output Artifact，治理白名单由7项缩为6项，本地3569项通过/20项跳过，并由[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)完成七任务全矩阵验收并关闭。f3实现Revision `a81868c`把旧生产引用集合清零，删除API/Worker/SDK/Adapter/Journal/专用Process Bridge及其直接依赖、规格、示例和测试；旧Session Process事件仅允许读取并以`legacy_process_state_archived`拒绝继续执行，旧SQLite/PostgreSQL状态按离线归档手册处置。本地3472项通过/18项跳过且190幅变化Mermaid真实渲染通过；[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)随后通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例矩阵，f3、f及0.9.1据此关闭。
 
-界面可启动或单个Prompt正常返回不能关闭0.9.1。五个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
+界面可启动或单个Prompt正常返回不能关闭0.9.1。六个子切片必须分别完成合同、失败/恢复、取消/超时、持久化、
 可观测性、三平台测试、真实场景和现行文档同步；全部勾选后才可勾选0.9.1总项。
 
 ### DOC-1：设计文档与源码可追溯治理

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
-status: reviewing
-version: 3
-code_revision: pending
+status: current
+version: 4
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -219,6 +219,10 @@ erDiagram
 - [历史Process Session兼容测试](../../tests/agent/test_legacy_process_compatibility.py)
 - [产品运行时收敛门禁](../../tests/governance/test_product_runtime_convergence.py)
 
+实现Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`已由
+[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux、macOS、Windows、
+固定镜像Container和Documentation全矩阵验收；Windows验证覆盖SQLite连接关闭、UTF-8诊断与可写描述符刷盘。
+
 ## 10. 限制、风险与回退
 
 - 脚本只支持已知旧SQLite核心表，不修复损坏数据库；
@@ -226,3 +230,9 @@ erDiagram
 - 归档不是状态迁移，不能让当前版本恢复旧Action执行；
 - 删除前版本若重新上线，必须使用隔离副本并防止与历史实例并发消费同一数据库；
 - 任何恢复旧版本的操作都应先验证二进制、依赖、配置、外部身份和数据库Schema完全匹配。
+
+## 11. 变更记录
+
+| 文档版本 | 代码版本 | 日期 | 变更摘要 |
+|---|---|---|---|
+| 4 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧状态离线归档、Windows文件锁/编码/刷盘兼容及六实例全矩阵验收 |

@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.0路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1a～d以及0.9.1e1～e5已通过对应全矩阵CI。0.9.1f1、f2a、f2b和f2c均已关闭；f3已经形成物理删除、历史Session只读兼容和旧数据库归档候选，等待全矩阵CI关闭。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.1路线图范围和DOC-1.0～DOC-1.6文档治理；81份ADR和冻结源码研究均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container及Documentation六实例验收。0.9.2～0.9.6发布证据仍待完成，不能把当前版本宣称为1.0产品。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -614,7 +614,7 @@ uv run harnessix code /path/to/workspace \
 其stdout只传输Agent Protocol JSONL。Python宿主使用`harnessix.sdk.AgentClient`及进程内或子进程Transport。
 
 独立`harnessix serve`、`harnessix worker`、Action HTTP SDK和LangGraph Action Adapter已经退出1.0产品面，
-相关实现、专用依赖和生成规格已在0.9.1f3候选中物理删除。
+相关实现、专用直接依赖和生成规格已在0.9.1f3中物理删除并通过全矩阵CI验收。
 其他Agent框架若需要接入，应使用版本化Agent Protocol；未来远程执行只会作为Trusted Action Executor后的
 受信适配器立项，不会恢复绕过Thread/Turn的第二套公共Action API。详细迁移边界见
 [0.9.1f设计](docs/changes/m09-1f-single-product-runtime-convergence.md)。

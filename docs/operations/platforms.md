@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 9
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -147,8 +147,8 @@ SQLite用于Agent Session和多种专用账本。每个Store的并发和锁合�
 
 ### 7.2 PostgreSQL
 
-PostgreSQL 17只用于旧Action Worker兼容回归和迁移验证，不是Harnessix Code 1.0运行依赖。完成0.9.1f3后，
-相关Schema仅按归档策略保留；新增产品部署不得建立多Worker Action Journal。
+PostgreSQL 17不再是Harnessix Code 1.0运行或CI依赖。0.9.1f3已删除旧Action Worker兼容回归，
+历史Schema仅按[归档策略](legacy-action-archive.md)保留；新增产品部署不得建立多Worker Action Journal。
 
 ### 7.3 外部Provider
 

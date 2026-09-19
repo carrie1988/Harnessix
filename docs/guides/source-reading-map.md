@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 18
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 19
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -71,7 +71,7 @@ supersedes: []
 
 ## 2. 阅读前提与事实边界
 
-- 本文对应0.9.1f3架构收敛候选：独立Action HTTP/Worker源码已删除，候选仍等待全矩阵CI关闭；
+- 本文对应已关闭的0.9.1f3架构收敛：独立Action HTTP/Worker源码已删除，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
 - Agent Protocol当前为`1.0`；Agent Event当前为`schema_version=20`；Session迁移当前到25；
 - 默认`agent-server`装配Provider、Session、协议服务、只读`CodingToolRuntime`及POSIX能力证明后的`apply_patch_batch`；
 - Patch、Process、Sandbox、Delivery、MCP、Skill、Hook和Trusted Action已实现为可组合库，但不是默认产品能力；
@@ -615,6 +615,6 @@ flowchart LR
 - [总体架构](../architecture.md)：组件、状态、五条时序、数据与安全边界；
 - [Protocol模块设计](../modules/protocol.md)、[App Server模块设计](../modules/app-server.md)、[SDK模块设计](../modules/sdk.md)、[MCP模块设计](../modules/mcp.md)、[Skill模块设计](../modules/skills.md)、[Hook模块设计](../modules/hooks.md)与[Smoke模块设计](../modules/smoke.md)：公共协议、连接、客户端传输、应用编排、扩展目录、调用、内容包、生命周期Hook、受控Provider验证和关闭的现行事实；
 - [文档—源码—测试追踪矩阵](../governance/documentation-traceability.md)：每个包的当前资料和迁移目标；
-- [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：Action Plane稳定契约；
+- [Action Contract](../action-contract.md)与[Action生命周期](../action-lifecycle.md)：已退役Action Plane的冻结历史契约；当前执行治理见[Trusted Actions模块设计](../modules/trusted-actions.md)；
 - [测试与Eval规范](../testing-and-evals.md)：测试分层和发布证据；
 - [文档整改待办](../governance/documentation-remediation-backlog.md)：模块级黄金样例与后续迁移顺序。

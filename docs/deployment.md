@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 14
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 15
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | 能力 | 当前状态 | 生产解释 |
 |---|---|---|
 | 源码开发安装 | 可用 | Python 3.12+，使用锁定`uv.lock`安装 |
-| `harnessix code` | 已实现候选 | TUI、配置向导、Doctor、Client State和stdio子进程监督 |
+| `harnessix code` | 已实现 | TUI、配置向导、Doctor、Client State和stdio子进程监督 |
 | `harnessix agent` | 已实现 | Agent Protocol薄CLI，适合自动化和无TUI使用 |
 | `harnessix agent-server` | 已实现 | 本地Headless App Server；stdout仅传输Agent Protocol JSONL |
 | Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
@@ -65,7 +65,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Wheel与三平台安装器 | 未完成 | 0.9.5形成正式发行物、签名、SBOM与升级证据 |
 | 远程多租户服务 | 非1.0范围 | 不开放网络Agent Server、远程Worker池或集中控制面 |
 
-独立Action HTTP/Worker已经退出产品面，旧`ActionService/ActionWorker`及其Journal、SDK和Adapter已从候选源码物理删除。
+独立Action HTTP/Worker已经退出产品面，旧`ActionService/ActionWorker`及其Journal、SDK和Adapter已从当前源码物理删除。
 历史数据库只允许按[归档手册](operations/legacy-action-archive.md)离线检查和保存；收敛决策见
 [ADR 0081](adr/0081-single-coding-agent-product-boundary.md)。
 
@@ -262,7 +262,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 ## 13. 当前限制与后续工作
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
-- 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档已形成候选，等待六Job实例全矩阵CI验收；
+- 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
 - 0.9.3尚未完成长会话Soak、容量和故障降级基线；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；

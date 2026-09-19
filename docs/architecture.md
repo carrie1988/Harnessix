@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 55
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 56
+code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
 modules:
@@ -86,9 +86,10 @@ Harnessix Code是本地优先、Provider中立的Coding Agent。唯一公共控�
 SDK均通过Headless App Server进入同一个Agent Runtime。高风险副作用统一由Trusted Action Gateway/Router持有计划、
 Policy、审批、执行和对账权威，不存在面向用户的第二套Action HTTP API或独立Worker Queue。
 
-0.9.1f3候选已物理删除旧HTTP API、Action HTTP SDK、LangGraph Action Adapter、Effect Journal、Worker、旧Bootstrap、
+0.9.1f3已物理删除旧HTTP API、Action HTTP SDK、LangGraph Action Adapter、Effect Journal、Worker、旧Bootstrap、
 Demo Executor和服务专用领域合同。旧Process Session事件及旧Process Artifact仅保留只读解码；旧SQLite/PostgreSQL库不
-自动迁移、不自动执行，按[归档手册](operations/legacy-action-archive.md)处置。
+自动迁移、不自动执行，按[归档手册](operations/legacy-action-archive.md)处置。实现Revision `a81868c`已经由
+[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收。
 
 | 能力标签 | 含义 |
 |---|---|
@@ -499,12 +500,13 @@ recover_route(route):
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
 | 旧数据库含敏感正文 | 离线归档、不自动迁移、0600输出 | 运维保留策略 |
 
-0.9.1f3候选关闭了双产品结构，但不等于Harnessix Code已经达到1.0。正式发布仍要求固定Eval/Soak阈值、安全供应链、
+0.9.1f3关闭了双产品结构，但不等于Harnessix Code已经达到1.0。正式发布仍要求固定Eval/Soak阈值、安全供应链、
 签名制品、升级回滚、Beta Dogfooding和最终Go/No-Go证据。
 
 ## 21. 变更记录
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
-| 55 | `pending` | 2026-09-19 | 物理删除独立Action HTTP/Worker体系，重写26包单一Coding Agent架构、历史只读兼容和归档边界 |
+| 56 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录单一Coding Agent架构由CI 35453082992完成Linux双版本、macOS、Windows、Container与文档全矩阵验收 |
+| 55 | `296650216e5ec0f6819d4fb607e297b988a956a7` | 2026-09-19 | 物理删除独立Action HTTP/Worker体系，重写26包单一Coding Agent架构、历史只读兼容和归档边界 |
 | 54 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 历史Eval迁入Trusted Action并通过全矩阵验收 |
