@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 27
-code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
+version: 28
+code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
+  - docs/adr/0087-deterministic-offline-eval-suite-composition.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -34,6 +35,8 @@ related_tests:
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
   - tests/integration/test_task_pack_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_offline_suite_runner.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_config_runtime.py
@@ -266,7 +269,7 @@ flowchart LR
 | `python` | Ubuntu，Python 3.12/3.13 | 锁定依赖、静态检查、全量Pytest、离线示例 | 主语言与默认后端回归 |
 | `coding-tools-macos` | macOS，Python 3.12 | Coding Tools、Artifact、Patch、Process、Eval、Workspace、Sandbox等 | macOS关键纵向切片 |
 | `windows-trusted-execution` | Windows，Python 3.12 | 治理、受信执行、扩展、产品配置和进程相关测试 | 选定契约的Windows兼容性，不等于完整产品支持 |
-| `container-sandbox` | Ubuntu + BusyBox、Node和Python固定Digest镜像 | 容器Sandbox、Product Process及Task Pack双语言检查 | 容器执行边界；不替代真实Provider质量 |
+| `container-sandbox` | Ubuntu + BusyBox、Node和Python固定Digest镜像 | 容器Sandbox、Product Process、Task Pack双语言检查及10 Case × 2 Trial完整离线Suite | 上传脱敏Suite证据；只证明Recorded执行链，不替代真实Provider质量 |
 | `documentation` | Ubuntu + Node/Mermaid CLI | 元数据、链接、追踪、Schema和变化图真实渲染 | 文档与代码同步，不替代运行时测试 |
 
 新增平台能力时，必须先明确“契约可导入”“选定模块可用”和“产品完整支持”三种不同承诺。CI中存在Windows Job不能单独证明安装器、终端交互、进程树终止、文件权限和恢复路径已达到Windows生产支持标准。
@@ -310,8 +313,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
-0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；当前仍不证明
-完整20 Trial离线Suite或真实Provider质量。关闭边界见
+0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；d3已形成
+完整20 Trial候选编排，但固定Container CI与冻结证据尚未完成，因此当前仍不证明完整离线Suite已验收或真实Provider质量。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
@@ -410,8 +413,44 @@ uv run mypy src
 [CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成Linux Python 3.12/3.13、macOS、
 Windows、固定Digest Container和Documentation六实例验收。CI `container-sandbox`预拉Manifest固定Digest镜像并运行同一
 集成测试；两个Trial的检查观察均通过，报告与崩溃恢复断言同时成立。Recorded Provider只在测试侧读取Wheel外Golden来构造
-工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明模型能力。d2据此关闭，d3的
-20 Trial完整Suite、取消、超时、UNKNOWN和Suite级恢复仍未完成。
+工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明模型能力。d2据此关闭；d3
+候选已接通20 Trial、双Suite提交窗口恢复和证据白名单，仍须通过固定Container CI与冻结制品核验后才能关闭。
+
+### 13.5 0.9.2d3 完整离线Suite验证矩阵
+
+d3不得新增第二套Runner，也不得由Golden直接构造通过报告。候选实现使用
+[`build_task_pack_offline_suite_config`](../src/harnessix/evals/task_pack_suite.py)稳定组合10 Case与20 Trial，继续执行
+`run_coding_eval_suite → TaskPackCaseExecutor → run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`唯一主链。
+
+| 验证层 | 必须证明 | 当前候选证据 |
+|---|---|---|
+| 规模与顺序 | Manifest精确10 Case、五类各2个、3仓库、每Case两个Run，顺序不漂移 | `test_task_pack_suite.py` |
+| 确定身份 | Campaign/Run由Suite、Pack、Case和Trial按UUIDv5派生；不同Suite不复用身份 | `test_task_pack_suite.py` |
+| 配置边界 | 只接受已重新核验Pack和受信宿主字段；不接受Provider、Golden、命令、URL或Secret | `task_pack_suite.py`合同测试 |
+| 产品主链 | 20 Trial均由正式Session、审批、Patch、固定Profile、Artifact、Grader和Campaign生成 | `run_engineering_offline_suite.py`，待固定Container CI实跑 |
+| Case提交恢复 | 首Case报告已写、Suite State未推进时崩溃，重开跳过该Case且两个Provider不重开 | `suite.after_case_evidence`故障注入 |
+| 报告提交恢复 | Suite Report已写、终态未提交时崩溃，第三次重开不得调用任何Case | `suite.after_report`故障注入和禁止执行器 |
+| 次数与费用 | 精确20次Provider打开、120请求、1200输入/600输出Token、60自动审批、0人工干预、零费用 | 严格汇总断言，待CI实跑 |
+| 取消/超时/UNKNOWN | Suite取消和停止、Agent真实Timeout、Trusted Action/Product Action `UNKNOWN → reconcile`各由权威状态机验证 | 既有分层回归；聚合层不伪造状态 |
+| 证据隐私 | 只发布Plan、Report、摘要Manifest；拒绝正文、参数、Diff、Secret、Workspace和绝对路径 | `test_offline_suite_runner.py` |
+| CI制品 | 固定Digest无网Container完成后上传与Revision绑定的14天临时证据 | `container-sandbox`工作流，尚待本Revision通过 |
+
+定向入口为：
+
+```bash
+uv run pytest -q \
+  tests/evals/test_task_pack_suite.py \
+  tests/evals/test_offline_suite_runner.py \
+  tests/evals/test_suite_execution.py \
+  tests/evals/test_task_pack_execution.py \
+  tests/integration/test_task_pack_execution.py
+uv run mypy src
+```
+
+完整CI命令由[`ci.yml`](../.github/workflows/ci.yml)传入与Manifest相同的Python/Node固定Digest镜像，运行
+[`run_engineering_offline_suite.py`](../scripts/run_engineering_offline_suite.py)并上传严格白名单证据。本机Docker daemon
+不可用，所以本地只可验证合同、Golden可应用性和非Container恢复；不得把本地集成测试Skip写成20 Trial通过。
+Recorded Provider按Golden驱动确定性动作，只证明执行、持久化和恢复链，不证明模型解决未知任务的能力；后者属于0.9.2e。
 
 ## 14. 真实Provider验证
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 3bf7b7b05254da99a9b9c20618b3dab038836c31
+version: 6
+code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
 owners:
   - core
 modules:
@@ -27,6 +27,8 @@ related_tests:
   - tests/evals/test_task_pack_execution.py
   - tests/evals/test_grader.py
   - tests/integration/test_task_pack_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_offline_suite_runner.py
 supersedes: []
 ---
 
@@ -36,12 +38,12 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | d1数据集与检查闭环、d2正式Case Adapter及双报告窗口恢复均已验收；d3完整Suite待实施 |
-| 本文设计状态 | d1/d2已验收；d3仍为目标设计 |
+| 当前能力 | d1数据集与检查闭环、d2正式Case Adapter及双报告窗口恢复均已验收；d3确定性20 Trial组合、测试侧Recorded Provider、双Suite提交窗口恢复及脱敏证据发布已形成候选实现 |
+| 本文设计状态 | d1/d2已验收；d3候选实现已完成本地合同回归，固定Digest Container CI与冻结验证证据待完成 |
 | 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收；d2实现`a04606b829e6c4a32935b81c8ccc86ee5802d918`由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收 |
 | 影响模块 | Evals、Agent、Session、Trusted Actions、Process、Sandbox、CI和发行通知 |
-| 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0086](../adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) |
-| 关键测试/证据 | `test_task_pack_execution.py`单元测试、同名固定Container集成测试、`test_grader.py`及d1数据集/Profile测试 |
+| 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0086](../adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md)、[0087](../adr/0087-deterministic-offline-eval-suite-composition.md) |
+| 关键测试/证据 | `test_task_pack_execution.py`单元/固定Container集成、`test_task_pack_suite.py`、`test_offline_suite_runner.py`、`test_grader.py`及d1数据集/Profile测试；20 Trial CI制品待生成 |
 
 ## 2. 需求背景
 
@@ -502,9 +504,9 @@ execute_complete_offline_suite():
 | d2 Case Adapter | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、`_load_prefix`、`_recover_campaign_report` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | 计划先行取消、身份漂移 | 现有Suite Case端口 |
 | Product Patch合同解码 | [`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) | `decode_workspace_patch_input` | 同上及产品配置测试 | 自动审批复用正式合同 | 不复制Delivery内部合同 |
 | Grader产品投影 | [`grader.py`](../../src/harnessix/evals/grader.py) | `_test_result`、`_record_tool_result`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Profile终端事实、Finding ID | v1 Schema不变 |
-| d3完整报告 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite` | `test_suite_execution.py` | 20 Trial恢复 | 尚未形成最终基线 |
-| d3确定性组合 | 目标：`task_pack_suite.py` | `build_task_pack_offline_suite_config` | 目标：`test_task_pack_suite.py` | 10 Case、20稳定Run身份 | 设计已冻结，待实现 |
-| d3证据生成 | 目标：开发/CI脚本与测试支持 | Recorded Provider、发布白名单 | 目标：完整Container验收 | 双崩溃窗口、零重放、脱敏报告 | 不进入Wheel，待实现 |
+| d3完整报告 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite` | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) | 20 Trial恢复 | 候选脚本复用现有Runner；最终Container基线待CI |
+| d3确定性组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | `build_task_pack_offline_suite_config` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) | 10 Case、20稳定Run身份 | 已实现并通过本地合同回归 |
+| d3证据生成 | [`recorded_task_pack.py`](../../scripts/recorded_task_pack.py)、[`run_engineering_offline_suite.py`](../../scripts/run_engineering_offline_suite.py) | `RecordedProviderFactory`、`_run_with_recovery`、`_publish_evidence` | [`test_offline_suite_runner.py`](../../tests/evals/test_offline_suite_runner.py)、[CI](../../.github/workflows/ci.yml) | 双崩溃窗口、零重放、脱敏报告 | 测试/CI专用，不进入Wheel；固定Container待验收 |
 
 ## 21. 测试设计与验收标准
 
@@ -519,9 +521,10 @@ execute_complete_offline_suite():
 | 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | d1已验收 |
 | d2执行 | 两个独立Trial经过真实Agent/Session/Product Action/Artifact/Grader/Campaign；Adapter不读Golden | CI 35479723645固定Digest Container验收通过 |
 | d2恢复 | Trial Report与Campaign Report崩溃窗口不重复已完成Provider或Action | CI 35479723645故障注入验收通过 |
-| d3规模 | 10 Case × 2 Trial，完整Suite报告 | 待实施 |
-| d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 待实施 |
-| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)通过 |
+| d3规模 | 10 Case × 2 Trial，完整Suite报告 | 候选实现已严格断言；固定Container CI待运行 |
+| d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 首Case证据与最终报告双崩溃候选已实现；CI待验收 |
+| d3证据 | Plan/Report/摘要清单严格重读，无正文、Diff、Secret或宿主路径 | 本地白名单回归通过；CI上传制品待下载复核和冻结 |
+| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)通过；d3候选待本Revision CI |
 
 0.9.2d只有d3完整20 Trial Suite通过并发布验证证据后才能关闭；d1或d2单独完成均不能勾选路线图总项。
 
@@ -541,6 +544,7 @@ execute_complete_offline_suite():
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 实现确定性10 Case/20 Trial组合、Wheel外Recorded Provider、双Suite提交窗口恢复、严格脱敏证据清单及Container CI步骤；本地合同回归通过，远端验收待完成 |
 | 5 | `pending` | 2026-09-20 | 按ADR 0087冻结d3确定性Suite组合、测试侧Recorded Provider、双报告崩溃恢复与脱敏证据发布边界；尚未形成实现或验收结论 |
 | 4 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2由CI 35479723645完成Linux双版本、macOS、Windows、固定Digest Container与Documentation六实例验收并关闭；d3保持未完成 |
 | 3 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 实现d2正式Case Adapter、Agent/Product Action纵向Trial、自动审批白名单、Review Finding投影及Trial/Campaign双报告窗口恢复；本地门禁通过，固定Container CI待验收 |

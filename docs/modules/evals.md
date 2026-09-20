@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
+version: 14
+code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
+  - docs/adr/0087-deterministic-offline-eval-suite-composition.md
 related_tests:
   - tests/evals/test_grader.py
   - tests/evals/test_historical.py
@@ -40,6 +41,8 @@ related_tests:
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
   - tests/integration/test_task_pack_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_offline_suite_runner.py
 supersedes: []
 ---
 
@@ -50,14 +53,14 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/evals`](../../src/harnessix/evals/) |
-| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case，并从完整Campaign与Turn生成脱敏、可重算聚合报告；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
-| 非职责 | 不提供通用Benchmark平台、运行时动态第三方数据集、LLM Judge、分布式调度、供应商账单、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；正式Case Adapter不等于20 Trial完整Suite或真实Provider质量基线 |
+| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial离线Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case，并从完整Campaign与Turn生成脱敏、可重算聚合报告；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
+| 非职责 | 不提供通用Benchmark平台、运行时动态第三方数据集、LLM Judge、分布式调度、供应商账单、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider和候选20 Trial链不等于真实Provider质量基线，固定Container CI未完成前也不构成d3关闭证据 |
 | 产品入口 | `harnessix coding-eval-campaign`是显式真实Campaign CLI；单次运行、评分、Compaction评测和Eval专用交付仅由库调用 |
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
 | 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭；0.9.2d1工程数据集实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`已由CI 35469387988关闭；d2正式Case Adapter实现`a04606b829e6c4a32935b81c8ccc86ee5802d918`已由CI 35479723645关闭 |
-| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d1/d2已完成；20 Trial离线Suite及受控真实Provider基线仍属d3/e |
+| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d1/d2已完成；d3确定性组合、测试侧Recorded Provider、双崩溃恢复与脱敏证据发布已形成候选实现，固定Container CI和冻结验证证据仍待完成；受控真实Provider基线属于e |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -74,6 +77,7 @@ supersedes: []
 [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py)、
 [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、
 [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py)、
+[`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py)、
 [`compaction.py`](../../src/harnessix/evals/compaction.py)和
 [`delivery.py`](../../src/harnessix/evals/delivery.py)的当前事实源。测试原则和历史验收数字保留在
 [测试与Eval规范](../testing-and-evals.md)，通用工程交付以[Delivery模块设计](delivery.md)为事实源。
@@ -178,6 +182,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Task Pack物化与重开 | 已实现/已验收 | `materialize_task_pack_case` | 安全Tar、固定Git四重身份、脏工作区不覆盖 |
 | Task Pack真实检查 | 已实现/已验收 | `build_task_pack_product_profile` | 固定Digest镜像经审批、只读、无网产品链先失败后通过 |
 | Task Pack正式Case Adapter | 已验收 | `TaskPackCaseExecutor`、`run_task_pack_coding_eval` | 两独立Trial经Agent/Session/Product Action/Artifact/Grader/Campaign；CI 35479723645固定Digest Container通过 |
+| Task Pack完整离线Suite组合 | 候选实现/待CI验收 | `build_task_pack_offline_suite_config` | Manifest顺序、每Case两Trial、UUIDv5稳定身份和零费用Recorded计价；不新增Runner、不读取Golden |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
 | Eval单文件交付 | 已实现/显式调用 | `CodingEvalDeliveryStore` | POSIX、已有UTF-8普通文件 |
@@ -285,15 +290,16 @@ flowchart LR
 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | 安全Tar解包、固定Git重建、清单发布和脏Workspace重开 | 20 |
 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | Agent/Product Action装配、自动审批、Profile观察、Grader与Run恢复 | 21 |
 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | Suite Case端口、Campaign计划/前缀/成本/报告恢复 | 22 |
-| [`taskpacks/v1`](../../src/harnessix/evals/taskpacks/v1) | `harnessix-seed/v1` Manifest和双语言Archive发行资源 | 23 |
-| [`campaign_execution_contracts.py`](../../src/harnessix/evals/campaign_execution_contracts.py) | 真实执行Config、State和白名单CLI结果 | 24 |
-| [`campaign_execution.py`](../../src/harnessix/evals/campaign_execution.py) | 默认禁网、锁、顺序试验、费用停止和恢复 | 25 |
-| [`campaign_cli.py`](../../src/harnessix/evals/campaign_cli.py) | 安全参数、0600配置读取和结果投影 | 26 |
-| [`compaction_contracts.py`](../../src/harnessix/evals/compaction_contracts.py) | Compaction人工语义Oracle合同 | 27 |
-| [`compaction.py`](../../src/harnessix/evals/compaction.py) | 无模型裁判的确定性短语检查 | 28 |
-| [`delivery_contracts.py`](../../src/harnessix/evals/delivery_contracts.py) | 专用Change Package、Plan、Record和状态 | 29 |
-| [`delivery.py`](../../src/harnessix/evals/delivery.py) | 严格通过候选的单文件POSIX写回 | 30 |
-| [`__init__.py`](../../src/harnessix/evals/__init__.py) | 公共导出面 | 31 |
+| [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | 从已核验Pack确定性组合10 Case/20 Trial现有Suite配置 | 23 |
+| [`taskpacks/v1`](../../src/harnessix/evals/taskpacks/v1) | `harnessix-seed/v1` Manifest和双语言Archive发行资源 | 24 |
+| [`campaign_execution_contracts.py`](../../src/harnessix/evals/campaign_execution_contracts.py) | 真实执行Config、State和白名单CLI结果 | 25 |
+| [`campaign_execution.py`](../../src/harnessix/evals/campaign_execution.py) | 默认禁网、锁、顺序试验、费用停止和恢复 | 26 |
+| [`campaign_cli.py`](../../src/harnessix/evals/campaign_cli.py) | 安全参数、0600配置读取和结果投影 | 27 |
+| [`compaction_contracts.py`](../../src/harnessix/evals/compaction_contracts.py) | Compaction人工语义Oracle合同 | 28 |
+| [`compaction.py`](../../src/harnessix/evals/compaction.py) | 无模型裁判的确定性短语检查 | 29 |
+| [`delivery_contracts.py`](../../src/harnessix/evals/delivery_contracts.py) | 专用Change Package、Plan、Record和状态 | 30 |
+| [`delivery.py`](../../src/harnessix/evals/delivery.py) | 严格通过候选的单文件POSIX写回 | 31 |
+| [`__init__.py`](../../src/harnessix/evals/__init__.py) | 公共导出面 | 32 |
 
 ## 7. 组件架构与六条能力链
 
@@ -312,7 +318,8 @@ flowchart TB
         CA --> CR[Campaign Report]
     end
     subgraph Suites[多任务Suite]
-        SP[Suite Plan] --> SE[Sequential Suite Runner]
+        TPConfig[确定性Task Pack组合] --> SP[Suite Plan]
+        SP --> SE[Sequential Suite Runner]
         SE --> CE
         CR --> Case[Case Report]
         Transcript[Transcript Evidence] --> Case
@@ -347,7 +354,7 @@ flowchart TB
 - Historical链产生单次Run事实；
 - Campaign只读取完整Run事实并重算聚合；
 - Suite Runner通过可信Case端口顺序执行/恢复Campaign，只持有跨Case计划、前缀和费用状态，不直接创建Provider或执行工具；
-- Task Pack链通过正式Case Adapter进入现有Agent、产品Action、Campaign和Suite端口；d3仍需形成完整20 Trial基线；
+- Task Pack链通过确定性组合器和正式Case Adapter进入现有Agent、产品Action、Campaign和Suite端口；d3候选已接通完整20 Trial编排，但固定Container CI与冻结证据未完成前仍不关闭；
 - Compaction链不依赖Historical Run或Campaign；
 - Eval Delivery读取严格通过Run，但使用独立JSON账本和文件写协议；
 - 通用[Delivery](delivery.md)的Workspace Transaction、Blob CAS、Git Worktree/Commit/Push不参与Eval专用交付。
@@ -904,7 +911,8 @@ Wheel内`engineering-v1`资源；`make check`逐字节阻断手工Manifest或Arc
 
 Review物化在Git提交前调用`_verify_review_oracle`：按1-based闭区间提取固定UTF-8源码行的原始字节并核对SHA-256。
 路径逃逸、Link、行号越界、编码或摘要不匹配均返回`eval_task_pack_review_oracle_invalid`并删除半成品Run。d1只建立
-数据、检查和权利链；d2已经建立Task Pack到Campaign/Transcript的正式Case Adapter，20 Trial完整Suite仍是d3边界。
+数据、检查和权利链；d2已经建立Task Pack到Campaign/Transcript的正式Case Adapter，d3候选进一步接通20 Trial完整
+Suite组合与CI证据编排，但远端固定Container验收仍是关闭边界。
 完整设计见[0.9.2d详细设计](../changes/m09-2d-multi-repository-offline-baseline.md)。
 
 ### 23.4 Task Pack Trial与正式Case Adapter
@@ -961,6 +969,50 @@ Trial Report已落盘但Run State未提交时，重开从终态Session重算报�
 Campaign前缀未推进时，只重算固定价格成本并推进一次；Campaign Report已落盘但State未提交时，只核对报告摘要并补
 `completed`。成本不完整返回`cost_unknown`，不执行后续Trial。Case目录使用0600单写者锁，Pack、Suite、Campaign、Task
 或Profile身份漂移均在新副作用前失败关闭。
+
+### 23.5 完整离线Suite组合与证据生成
+
+[`build_task_pack_offline_suite_config`](../../src/harnessix/evals/task_pack_suite.py)不执行Case，而是把消费点重新核验后的
+内置Pack转换为现有`CodingEvalSuiteRunConfig`。Case顺序严格来自Manifest；每个Case固定两个Run；Campaign和Run身份
+由调用方`Suite ID`、Pack ID/版本、Case ID与Trial序号按UUIDv5派生。所有Campaign共享同一Revision、平台、
+`fixed-container-no-network`隔离声明、`recorded`模型身份和零费用价格/计费上下文。调用面没有Provider、Golden、命令、
+URL或Secret参数，因此不能借组合器建立新的执行旁路。
+
+完整场景由Wheel外的[`recorded_task_pack.py`](../../scripts/recorded_task_pack.py)与
+[`run_engineering_offline_suite.py`](../../scripts/run_engineering_offline_suite.py)编排。前者只在测试/CI进程中把外置Golden
+应用到独立Oracle Workspace，再生成“基线检查→正式批量Patch→最终检查→Git状态→Git Diff→结构化回答”六步Provider
+事件；事件仍交给正式Agent Runtime消费，测试支持代码不能直接构造Run、Campaign或Suite通过报告。后者复用唯一的
+`run_coding_eval_suite → TaskPackCaseExecutor → run_task_pack_coding_eval`链，执行10 Case × 2 Trial，并验证以下提交窗口：
+
+```mermaid
+sequenceDiagram
+    participant CI as Container CI
+    participant S as Suite Runner
+    participant C as Case Adapter
+    participant P as Recorded Provider
+    participant E as Evidence Publisher
+    CI->>S: 首次运行固定Suite Config
+    S->>C: 执行首Case的两个Trial
+    C->>P: 每个Run打开一次并驱动正式Agent链
+    C-->>S: 完整Case Report
+    S--xCI: after_case_evidence故障注入
+    CI->>S: 以同一Config重开
+    S->>S: 从连续Case证据前缀跳过首Case
+    S->>C: 完成其余九个Case
+    S--xCI: after_report故障注入
+    CI->>S: 第三次以禁止Case执行器重开
+    S->>S: 核对已发布报告并只补终态
+    S->>E: 发布Plan Report Manifest白名单证据
+```
+
+公开证据目录与私有运行目录必须互不包含，只允许Suite Plan、Suite Report和摘要清单；递归检查拒绝Prompt、Arguments、
+Response、Tool Output、Diff、Secret、Workspace、Work Root、宿主绝对路径及私有目录片段。清单绑定Pack摘要、Revision、
+Plan Fingerprint和Report SHA-256，并固定10 Case、20 Trial、20通过、20次Provider打开、120次请求及两个恢复标志。清单以
+0600临时文件写入、`fsync`后原子替换。取消/停止由Suite Runner专项测试承担，真实Turn Timeout由Agent测试承担，
+`UNKNOWN → reconcile`由Trusted Action与Product Action测试承担；聚合层不复制这些权威状态机。
+
+当前本地已通过组合、证据白名单、崩溃点和既有Case/Suite恢复回归，并离线证明十份Golden均可应用；本机Docker daemon
+不可用，因此20 Trial固定Digest Container运行、上传制品核验与正式关闭必须以远端CI和冻结验证证据为准。
 
 ## 24. Campaign执行配置与默认禁网
 
@@ -1528,6 +1580,9 @@ load_materialized_task_pack_case(
 build_task_pack_product_profile(
     loaded, profile_id, container_engine
 ) -> ProductProcessProfile
+build_task_pack_offline_suite_config(
+    loaded, *, suite_id, work_root, harnessix_revision, platform, created_at
+) -> CodingEvalSuiteRunConfig
 await run_task_pack_coding_eval(
     loaded, runs_root, git_executable, container_engine,
     case_id, run_id, provider_factory, environment,
@@ -1763,6 +1818,8 @@ execute():
 | Task Pack自动审批与评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`grader.py`](../../src/harnessix/evals/grader.py) | `_require_allowed_approval`、`_profile_observations`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Product Profile终端事实、Trusted Patch与Review Finding ID正反例 |
 | Task Pack Case计划与身份 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、`_require_plan`、`_require_case_scope` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | `test_case_adapter_persists_plan_before_cancelled_trial_and_reopens`、`test_case_adapter_rejects_suite_identity_drift_before_execution` |
 | Task Pack Campaign恢复 | 同上 | `_load_prefix`、`_recover_campaign_report`、`_publish_campaign` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | Trial Report和Campaign Report崩溃后不重复Provider或Action |
+| Task Pack离线Suite组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | `build_task_pack_offline_suite_config`、`_identity` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) | 精确10 Case/20 Trial、三仓五类、UUIDv5确定性与Suite隔离、零费用、伪造Pack/宿主字段拒绝 |
+| 完整离线Suite证据编排 | [`run_engineering_offline_suite.py`](../../scripts/run_engineering_offline_suite.py)、[`recorded_task_pack.py`](../../scripts/recorded_task_pack.py) | `_run_with_recovery`、`_validate_complete_report`、`_publish_evidence`、`RecordedProviderFactory` | [`test_offline_suite_runner.py`](../../tests/evals/test_offline_suite_runner.py)、[`ci.yml`](../../.github/workflows/ci.yml) | 双崩溃点仅触发一次、公开证据字段/路径拒绝、清单严格绑定；20 Trial固定Container仍待CI实跑 |
 | Campaign执行与重开 | [`campaign_execution.py`](../../src/harnessix/evals/campaign_execution.py) | `run_coding_eval_campaign` | [`test_campaign_execution.py`](../../tests/evals/test_campaign_execution.py) | `test_campaign_runs_two_isolated_trials_persists_report_and_reopens` |
 | 请求前Plan与费用停止 | 同上 | `_require_plan`、`_known_cost` | 同上 | `test_plan_is_durable_before_provider_and_fee_limit_stops_next_trial` |
 | Cost Unknown恢复 | 同上 | `_rebuild_prefix` | 同上 | `test_unknown_cost_stops_and_crash_window_recovers_without_next_trial` |
@@ -1806,8 +1863,9 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 
 - 原生Windows导入、路径、ACL、Lock、Git和Process全链；
 - Linux容器/Namespace或macOS Sandbox下运行不可信第三方历史任务；
-- Task Pack正式Case Adapter的10 Case全量固定Container、非终态Action `UNKNOWN`和超时恢复组合；
-- 10 Case、3仓库、五类各2个的固定Container全量CI验收、20 Trial离线Suite及真实Provider基线；
+- 20 Trial候选编排已建立，但10 Case、3仓库、五类各2个的固定Container全量CI运行和冻结公开证据仍待完成；
+- 非终态Action `UNKNOWN`、Agent Timeout与完整Suite的跨层组合测试尚未在同一20 Trial进程内注入；当前由各权威层专项回归共同证明；
+- 受控真实Provider多任务基线仍待0.9.2e；Recorded Provider只证明执行链正确；
 - Source仓库SHA-256对象格式、超大历史、Submodule、LFS和复杂Attributes；
 - Archive在不同Git/Tar版本下的确定性与恶意边界矩阵；
 - 磁盘满、`fsync`失败、SQLite损坏、Artifact丢失和备份恢复；
@@ -1903,12 +1961,12 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
 | P0 | Historical链无OS Sandbox；Task Pack工程数据集虽有Container但仍是小型派生夹具 | 不能接动态第三方任务或外推大型仓库 | 0.9.2d/0.9.4/0.9.5安全执行 |
-| P0 | 工程Pack与正式Case Adapter已存在，但尚无10 Case × 2 Trial完整报告 | 单Case纵向链不等于完整质量基线 | 0.9.2d3 |
+| P0 | 工程Pack、正式Case Adapter和20 Trial候选编排已存在，但尚无通过CI核验并冻结的完整报告 | 本地无Docker，候选代码不能替代真实固定Container证据 | 0.9.2d3 |
 | P0 | 原生Windows包级导入受`fcntl`阻断 | 与1.0三平台目标冲突 | 0.9.6发行门禁 |
 | P0 | Eval不参与默认发布阻断 | 当前回归可能绕过真实任务 | 0.9.2d～e/0.9.6 |
 | P0 | Eval自动审批不是用户审批 | 不能证明生产权限体验 | 产品E2E Eval |
 | P1 | Historical Runner只支持唯一Profile/Behavior Check | 合同能力与实现不一致 | Runner v2 |
-| P1 | Case Adapter当前只以单Case固定Container纵向测试验收 | 取消、超时、UNKNOWN及完整Suite恢复矩阵仍不足 | 0.9.2d3 |
+| P1 | 双Suite提交窗口已由候选脚本覆盖，但取消、超时、UNKNOWN由不同权威层测试承担 | 尚未形成同一20 Trial进程内的跨层故障组合证据 | 0.9.2d3/后续Soak |
 | P1 | Campaign只支持OpenAI Chat兼容Provider | 无Anthropic与多Provider可比基线 | Provider Eval矩阵 |
 | P1 | 顺序本地主机Campaign，无总时限/Lease/Fencing | 长测吞吐与恢复有限 | Campaign Scheduler |
 | P1 | 费用只是本地试验间停止，无账单对账 | 不能当账户硬预算 | Cost Governance |
@@ -1942,7 +2000,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 
 ### 52.1 当前文档切片
 
-- [x] 24个生产Python文件及内置Task Pack资源目录的职责、边界和阅读顺序已映射；
+- [x] 31个Evals包Python文件、相关产品配置文件及内置Task Pack资源目录的职责、边界和阅读顺序已映射；
 - [x] Historical、Campaign、Suite、Task Pack、Compaction和Eval Delivery六条能力链已分层；
 - [x] Task、Run、Report、Campaign、Suite、Task Pack、Profile、Oracle、Compaction和Delivery合同及重点字段已说明；
 - [x] Materialization、Agent运行、审批、评分、Campaign和交付正常时序已覆盖；
@@ -1988,18 +2046,20 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 17. 阅读`build_task_pack_product_profile`并对照真实容器集成测试；
 18. 跟踪`run_task_pack_coding_eval`的终态Session早返回、自动审批白名单、Profile观察和Report-before-State；
 19. 跟踪`TaskPackCaseExecutor`的计划先行、连续Run前缀、Cost重算和Campaign Report恢复；
-20. 阅读`CodingEvalCampaignPlan.fixed_comparable_scope`；
-21. 从`_require_evidence`跟踪State、Report、Turn、Cost的交叉核对；
-22. 阅读`summarize_campaign_trials`的成本完整性与nearest-rank；
-23. 从`run_coding_eval_campaign`跟踪Plan-before-provider、完成前缀和费用停止；
-24. 对照三个Campaign崩溃测试理解单Run与Campaign双层恢复；
-25. 阅读`campaign_cli.main`，确认禁网路径不读取Config；
-26. 阅读`grade_compaction_semantics`，区分`invalid`与语义`failed`；
-27. 阅读`build_coding_eval_change_package`，确认`passed`仍需重验Workspace；
-28. 跟踪`CodingEvalDeliveryStore.execute/_reconcile_locked`的临时inode归因；
-29. 对比[Delivery模块设计](delivery.md)，列出两套交付模型不能互换的原因；
-30. 最后检查`__init__.py`和`fcntl`顶层导入，验证Windows现状；
-31. 按第47节运行回归，并用第50节评审生产缺口。
+20. 阅读`build_task_pack_offline_suite_config`，核对Manifest顺序、每Case两个Run和UUIDv5命名空间；
+21. 跟踪`run_engineering_offline_suite.py`的双崩溃恢复、Provider计数与公开证据白名单；
+22. 阅读`CodingEvalCampaignPlan.fixed_comparable_scope`；
+23. 从`_require_evidence`跟踪State、Report、Turn、Cost的交叉核对；
+24. 阅读`summarize_campaign_trials`的成本完整性与nearest-rank；
+25. 从`run_coding_eval_campaign`跟踪Plan-before-provider、完成前缀和费用停止；
+26. 对照三个Campaign崩溃测试理解单Run与Campaign双层恢复；
+27. 阅读`campaign_cli.main`，确认禁网路径不读取Config；
+28. 阅读`grade_compaction_semantics`，区分`invalid`与语义`failed`；
+29. 阅读`build_coding_eval_change_package`，确认`passed`仍需重验Workspace；
+30. 跟踪`CodingEvalDeliveryStore.execute/_reconcile_locked`的临时inode归因；
+31. 对比[Delivery模块设计](delivery.md)，列出两套交付模型不能互换的原因；
+32. 最后检查`__init__.py`和`fcntl`顶层导入，验证Windows现状；
+33. 按第47节运行回归，并用第50节评审生产缺口。
 
 ## 54. 维护规则
 
@@ -2015,6 +2075,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 - Campaign Plan、Config、State、主分类、Cost算法、统计或停止线；
 - Suite Plan、Case、Transcript/Test证据、Rate、Summary、报告绑定或隐私字段；
 - Task Pack Catalog、Manifest、Archive、许可证、Profile、Oracle、物化清单、Git身份或目录权限；
+- Task Pack离线Suite组合、UUID派生、Trial数量、Recorded Provider测试支持或公开证据白名单；
 - CLI网络、配置、Secret、输出白名单或退出码；
 - Compaction Oracle类别、匹配算法、结果或持久化；
 - Eval Delivery Package、Plan、Approval、状态、文件提交或归因；
@@ -2029,6 +2090,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 14 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 增加Task Pack确定性10 Case/20 Trial组合、测试侧Recorded Provider、双Suite提交窗口恢复、严格脱敏证据清单和Container CI编排；本地合同回归通过，固定Container CI与冻结证据待验收 |
 | 13 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2正式Case Adapter由CI 35479723645完成固定Digest Container和六实例验收并关闭；d3/e缺口保持不变 |
 | 12 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 增加正式Task Pack Trial与Case Adapter，记录Agent/Product Action装配、自动审批、Review Finding投影、Campaign成本和双报告窗口恢复；固定Container CI待验收 |
 | 11 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | 0.9.2d1由CI 35469387988完成3仓10 Case、确定性生成、Review源码证据、固定Container与六实例验收并关闭 |

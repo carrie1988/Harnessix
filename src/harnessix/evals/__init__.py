@@ -143,6 +143,7 @@ from harnessix.evals.task_pack_materializer import (
     load_materialized_task_pack_case,
     materialize_task_pack_case,
 )
+from harnessix.evals.task_pack_suite import build_task_pack_offline_suite_config
 
 __all__ = [
     "CODING_EVAL_GRADER_VERSION",
@@ -217,6 +218,7 @@ __all__ = [
     "build_coding_eval_task_pack_profile",
     "build_transcript_evidence",
     "build_task_pack_product_profile",
+    "build_task_pack_offline_suite_config",
     "builtin_coding_eval_task_pack",
     "builtin_coding_eval_task_pack_ids",
     "builtin_coding_eval_task_pack_versions",

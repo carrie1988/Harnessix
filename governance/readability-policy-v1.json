@@ -857,6 +857,7 @@
       "build_coding_eval_suite_report_from_cases",
       "build_coding_eval_task_pack",
       "build_coding_eval_task_pack_profile",
+      "build_task_pack_offline_suite_config",
       "build_task_pack_product_profile",
       "build_transcript_evidence",
       "builtin_coding_eval_task_pack",

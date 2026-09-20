@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 17
-code_revision: 3bf7b7b05254da99a9b9c20618b3dab038836c31
+version: 18
+code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
 owners:
   - core
 modules:
@@ -144,9 +144,9 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c/d1/d2已关闭，d3/e待实施 |
 | 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
 | 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受并实施；0.9.2c已由CI 35465458256验收关闭 |
-| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2由CI 35479723645关闭，d3待实施 |
+| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2由CI 35479723645关闭，d3候选待CI验收 |
 | 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受、已实现并由CI 35479723645验收关闭0.9.2d2 |
-| 0087 | [确定性组合完整离线Eval Suite并隔离证据生成](0087-deterministic-offline-eval-suite-composition.md) | 评审中；0.9.2d3实现与全矩阵证据完成前不得接受 |
+| 0087 | [确定性组合完整离线Eval Suite并隔离证据生成](0087-deterministic-offline-eval-suite-composition.md) | 评审中；候选实现与本地合同回归已完成，固定Container CI和冻结证据完成前不得接受 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
-code_revision: pending
+version: 2
+code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
 owners:
   - core
 modules:
@@ -17,6 +17,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
 related_tests:
   - tests/evals/test_suite_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_offline_suite_runner.py
   - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
@@ -25,8 +27,8 @@ supersedes: []
 
 ## 状态
 
-提议，进入0.9.2d3实施。本文只冻结完整离线Suite的组合、恢复和证据发布边界；在20 Trial真实固定Container
-场景及全矩阵CI通过前，不得据此宣称0.9.2d完成。
+评审中。0.9.2d3候选实现已按本文边界完成本地合同与恢复回归；在20 Trial真实固定Container场景、证据制品复核及
+全矩阵CI通过前，不得据此宣称本文已接受或0.9.2d完成。
 
 ## 背景
 

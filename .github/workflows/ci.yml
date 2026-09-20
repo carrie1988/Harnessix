@@ -111,6 +111,18 @@ jobs:
           tests/integration/test_product_process_profile.py
           tests/integration/test_task_pack_profiles.py
           tests/integration/test_task_pack_execution.py
+      - name: 运行20 Trial完整离线Suite
+        run: >-
+          uv run python scripts/run_engineering_offline_suite.py
+          --work-root "${RUNNER_TEMP}/harnessix-offline-suite-work"
+          --evidence-root "${RUNNER_TEMP}/harnessix-offline-suite-evidence"
+      - name: 上传脱敏离线Suite证据
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-engineering-offline-suite-${{ github.sha }}
+          path: ${{ runner.temp }}/harnessix-offline-suite-evidence
+          if-no-files-found: error
+          retention-days: 14
 
   documentation:
     runs-on: ubuntu-latest
