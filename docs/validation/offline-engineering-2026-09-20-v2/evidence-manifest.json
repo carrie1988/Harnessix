@@ -1,0 +1,17 @@
+{
+  "spec_version": "harnessix.offline-suite-evidence/v1",
+  "suite_id": "313e8aa5-8299-563d-a644-d955989e5f0a",
+  "pack_id": "harnessix-engineering",
+  "pack_version": 2,
+  "pack_sha256": "6ab16bf0a305c5d5a590be02f028184a9510e941146f3b8d27a3ef99ee7b7c46",
+  "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+  "plan_fingerprint": "e5ca098c6a7f0354f5b1ce399d2b58da51e29507239ffc66b78fcb5b889958c1",
+  "report_sha256": "374c3c3c89b1dd5eb87acd674e3930cf07f7f532b7841e2cb56c87d8466df3ad",
+  "scheduled_cases": 10,
+  "scheduled_trials": 20,
+  "passed_trials": 20,
+  "provider_open_count": 20,
+  "provider_request_count": 120,
+  "case_evidence_recovery_verified": true,
+  "report_publication_recovery_verified": true
+}

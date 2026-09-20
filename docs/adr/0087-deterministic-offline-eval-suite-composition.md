@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: reviewing
-version: 3
-code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
+status: current
+version: 4
+code_revision: 505bc537f74bd59e891c605ff4114856991f1783
 owners:
   - core
 modules:
@@ -27,8 +27,10 @@ supersedes: []
 
 ## 状态
 
-评审中。0.9.2d3候选实现已按本文边界完成本地合同与恢复回归；在20 Trial真实固定Container场景、证据制品复核及
-全矩阵CI通过前，不得据此宣称本文已接受或0.9.2d完成。
+已接受并实施。实现Revision `505bc537f74bd59e891c605ff4114856991f1783`由
+[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成Linux Python 3.12/3.13、
+macOS、Windows、固定Digest Container和Documentation矩阵验收。完整场景使用工程Pack v2执行10 Case × 2 Trial，
+20/20通过；证据已严格复核并冻结在[验证目录](../validation/offline-engineering-2026-09-20-v2/README.md)。ADR和0.9.2d据此关闭。
 
 ## 背景
 
@@ -135,6 +137,10 @@ UUIDv5派生身份比把随机UUID写入新的配置文件更小：现有Suite P
 6. 证据发布检查证明公开JSON可严格重读、汇总可重算且不包含禁止字段或宿主路径；
 7. Ruff、Mypy、Schema、可读性、文档、全量Pytest和六实例CI全部通过后，才接受本文并关闭0.9.2d3。
 
+上述七项已在Revision `505bc53`完成。固定Container Job首次执行即通过并上传证据；同一CI首次Windows Job的既有
+ConPTY用例在产生正确输出后把租约观察为`UNKNOWN`，失败Job复跑通过，最终CI结论为成功。该间歇现象不改变离线Suite
+事实，但继续作为跨平台可靠性风险跟踪。
+
 ## 关联资料
 
 | 类型 | 路径/链接 | 关系 |
@@ -143,6 +149,7 @@ UUIDv5派生身份比把随机UUID写入新的配置文件更小：现有Suite P
 | 重大变更设计 | [0.9.2d多仓库离线基线](../changes/m09-2d-multi-repository-offline-baseline.md) | d1～d3实施与失败矩阵 |
 | 现行模块设计 | [Evals模块](../modules/evals.md) | 当前合同、Runner、Task Pack和Case Adapter事实源 |
 | 既有测试 | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py)、[`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | Suite恢复与正式产品纵向链 |
+| 冻结证据 | [工程Task Pack v2完整离线Suite](../validation/offline-engineering-2026-09-20-v2/README.md) | 10 Case、20 Trial、双崩溃恢复和低敏摘要 |
 
 ## 被取代关系
 

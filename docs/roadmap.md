@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 40
-code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
+version: 41
+code_revision: 505bc537f74bd59e891c605ff4114856991f1783
 owners:
   - core
 modules:
@@ -509,17 +509,18 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 - [x] **0.9.2c 可恢复Suite Runner**：在任何模型请求前持久化计划，按固定Campaign顺序执行；取消、崩溃和重开只沿用
   同一Run ID补证据，不重复已完成Case，当前Case交由下层Campaign/Run权威事实恢复；成本未知、证据缺失和身份漂移停止后续试验。实现Revision `ffd3db4`交付计划先行、单写者锁、
   连续Case证据前缀、显式停止恢复和报告发布恢复，已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例全矩阵验收并关闭；
-- [ ] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
+- [x] **0.9.2d 多仓库离线基线**：至少10个Case、3个固定仓库、Bug Fix/Feature/Refactor/Test/Review每类至少2个，
   每Case至少2次试验；通过固定Container Profile运行全部检查，形成可复跑的离线Suite报告；
   - [x] **d1 数据集与检查闭环**：`harnessix-engineering/v1`固定3仓10 Case、五类各2个、来源许可证、确定性生成、
     Review源码证据和Wheel外Golden；实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container与六实例全矩阵验收并关闭；
   - [x] **d2 正式Case Adapter**：Task Pack Case经现有Agent、Session、Trusted Action、Process Artifact、Grader和
     Campaign执行/恢复，不另建Eval Agent或旁路审批；实现Revision `a04606b`覆盖Trial Report与Campaign Report发布窗口恢复，
     已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例全矩阵验收并关闭；
-  - [ ] **d3 完整离线Suite**：每Case固定2 Trial，验证取消、超时、崩溃、UNKNOWN、完成前缀和报告发布恢复，发布
-    20 Trial脱敏可重算报告后关闭0.9.2d。候选实现首轮固定Container运行识别出v1两个Test Case依赖未跟踪新文件；
-    修正保持v1 Manifest/Archive原字节，新增只替换受版本控制失败测试基线的v2，并固定以v2运行完整Suite。不得放宽
-    Workspace Patch或Grader；在v2固定Container CI和证据制品复核完成前，本项及0.9.2d保持未关闭；
+  - [x] **d3 完整离线Suite**：每Case固定2 Trial，验证取消、超时、崩溃、UNKNOWN、完成前缀和报告发布恢复，发布
+    20 Trial脱敏可重算报告后关闭0.9.2d。首轮固定Container运行识别出v1两个Test Case依赖未跟踪新文件；修正保持
+    v1 Manifest/Archive原字节，新增只替换受版本控制失败测试基线的v2，未放宽Workspace Patch或Grader。实现Revision
+    `505bc53`由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成v2固定Container、
+    20/20 Trial、双Suite提交窗口恢复和六实例最终验收，[证据已冻结](validation/offline-engineering-2026-09-20-v2/README.md)；
 - [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
   验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret。
 

@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 29
-code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
+version: 30
+code_revision: 505bc537f74bd59e891c605ff4114856991f1783
 owners:
   - core
 modules:
@@ -414,26 +414,26 @@ uv run mypy src
 Windows、固定Digest Container和Documentation六实例验收。CI `container-sandbox`预拉Manifest固定Digest镜像并运行同一
 集成测试；两个Trial的检查观察均通过，报告与崩溃恢复断言同时成立。Recorded Provider只在测试侧读取Wheel外Golden来构造
 工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明模型能力。d2据此关闭；d3
-候选已接通20 Trial、双Suite提交窗口恢复和证据白名单，仍须通过固定Container CI与冻结制品核验后才能关闭。
+已接通20 Trial、双Suite提交窗口恢复和证据白名单，并由CI 35483905418完成固定Container与冻结制品核验。
 
 ### 13.5 0.9.2d3 完整离线Suite验证矩阵
 
-d3不得新增第二套Runner，也不得由Golden直接构造通过报告。候选实现使用工程Pack v2和
+d3不得新增第二套Runner，也不得由Golden直接构造通过报告。正式实现使用工程Pack v2和
 [`build_task_pack_offline_suite_config`](../src/harnessix/evals/task_pack_suite.py)稳定组合10 Case与20 Trial，继续执行
 `run_coding_eval_suite → TaskPackCaseExecutor → run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`唯一主链。
 
-| 验证层 | 必须证明 | 当前候选证据 |
+| 验证层 | 必须证明 | 验收证据 |
 |---|---|---|
 | 规模与顺序 | Manifest精确10 Case、五类各2个、3仓库、每Case两个Run，顺序不漂移 | `test_task_pack_suite.py` |
 | 确定身份 | Campaign/Run由Suite、Pack、Case和Trial按UUIDv5派生；不同Suite不复用身份 | `test_task_pack_suite.py` |
 | 配置边界 | 只接受已重新核验Pack和受信宿主字段；不接受Provider、Golden、命令、URL或Secret | `task_pack_suite.py`合同测试 |
-| 产品主链 | 20 Trial均由正式Session、审批、Patch、固定Profile、Artifact、Grader和Campaign生成 | `run_engineering_offline_suite.py`，待固定Container CI实跑 |
+| 产品主链 | 20 Trial均由正式Session、审批、Patch、固定Profile、Artifact、Grader和Campaign生成 | CI 35483905418固定Container 20/20通过 |
 | Case提交恢复 | 首Case报告已写、Suite State未推进时崩溃，重开跳过该Case且两个Provider不重开 | `suite.after_case_evidence`故障注入 |
 | 报告提交恢复 | Suite Report已写、终态未提交时崩溃，第三次重开不得调用任何Case | `suite.after_report`故障注入和禁止执行器 |
-| 次数与费用 | 精确20次Provider打开、120请求、1200输入/600输出Token、60自动审批、0人工干预、零费用 | 严格汇总断言，待CI实跑 |
+| 次数与费用 | 精确20次Provider打开、120请求、1200输入/600输出Token、60自动审批、0人工干预、零费用 | CI Artifact严格复核并冻结 |
 | 取消/超时/UNKNOWN | Suite取消和停止、Agent真实Timeout、Trusted Action/Product Action `UNKNOWN → reconcile`各由权威状态机验证 | 既有分层回归；聚合层不伪造状态 |
 | 证据隐私 | 只发布Plan、Report、摘要Manifest；拒绝正文、参数、Diff、Secret、Workspace和绝对路径 | `test_offline_suite_runner.py` |
-| CI制品 | 固定Digest无网Container完成后上传与Revision绑定的14天临时证据 | `container-sandbox`工作流，尚待本Revision通过 |
+| CI制品 | 固定Digest无网Container完成后上传与Revision绑定的14天临时证据 | [CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)与[仓库冻结副本](validation/offline-engineering-2026-09-20-v2/README.md) |
 
 首轮v1完整运行不是被重跑掩盖：两个Test Case均在创建`tests/*.py`前稳定中断，因为v1没有受版本控制的父目录/目标文件；
 即使宿主补目录，Grader仍会拒绝Untracked变更。修正保留v1原字节，发布v2并把两份预期失败的测试基线纳入固定Git树，
@@ -453,8 +453,9 @@ uv run mypy src
 ```
 
 完整CI命令由[`ci.yml`](../.github/workflows/ci.yml)传入与Manifest相同的Python/Node固定Digest镜像，运行
-[`run_engineering_offline_suite.py`](../scripts/run_engineering_offline_suite.py)并上传严格白名单证据。本机Docker daemon
-不可用，所以本地只可验证合同、Golden可应用性和非Container恢复；不得把本地集成测试Skip写成20 Trial通过。
+[`run_engineering_offline_suite.py`](../scripts/run_engineering_offline_suite.py)并上传严格白名单证据。本次本机Docker Hub
+鉴权端点返回`EOF`，无法拉取固定镜像；20 Trial通过结论只来自远端固定Container Job及下载后严格重读的冻结证据，
+本地集成测试Skip没有计入通过。
 Recorded Provider按Golden驱动确定性动作，只证明执行、持久化和恢复链，不证明模型解决未知任务的能力；后者属于0.9.2e。
 
 ## 14. 真实Provider验证

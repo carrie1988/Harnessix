@@ -1,0 +1,1967 @@
+{
+  "spec_version": "harnessix.coding-eval-suite-report/v1",
+  "plan": {
+    "spec_version": "harnessix.coding-eval-suite-plan/v1",
+    "suite_id": "313e8aa5-8299-563d-a644-d955989e5f0a",
+    "suite_version": 1,
+    "environment": {
+      "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+      "provider": "recorded",
+      "model": "harnessix-recorded-v1",
+      "platform": "linux",
+      "isolation": "fixed-container-no-network"
+    },
+    "cases": [
+      {
+        "case_id": "agents-dump-compatible-refactor",
+        "task_kind": "refactor",
+        "task_id": "engineering-agents-dump-compatible-refactor",
+        "task_version": 1,
+        "task_fingerprint": "f4e2d35fc91b69cf5c1190d4d7cd394ffe94b3c7e7d9fae57ea93974b7967175",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "3af0f750f83b7fdf54e401fbd1637484aecbb34b1d2a00b4b85d61cbb9121f55"
+      },
+      {
+        "case_id": "agents-normalize-tool-name",
+        "task_kind": "bug_fix",
+        "task_id": "engineering-agents-normalize-tool-name",
+        "task_version": 1,
+        "task_fingerprint": "fff9d6fe482e5935c68da8608344f57e62607e945d3a6771f879b4748589df27",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "7d3fe96c6fb0148f79e20fd2d0253e390dbcccbb09b6aaf674447821b79baaa9"
+      },
+      {
+        "case_id": "agents-payload-bytes-test",
+        "task_kind": "test",
+        "task_id": "engineering-agents-payload-bytes-test",
+        "task_version": 1,
+        "task_fingerprint": "938a5bf790657da88292324e4838c045abb74aa1122dd9eb5001e14694937bf1",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "c87ddf4282ecc626b7ad66daafc68b1d18946fbf12a5005bd044547ba35d1bae"
+      },
+      {
+        "case_id": "agents-secret-redaction-review",
+        "task_kind": "review",
+        "task_id": "engineering-agents-secret-redaction-review",
+        "task_version": 1,
+        "task_fingerprint": "398d8e16ceca0da4e333bbb215926c3b106956d4114645aa43f7b57376d6120b",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "cdb66a2bb9939173a362a09764f13342bb54a80411d56dccf5691f782e698e0a"
+      },
+      {
+        "case_id": "langchain-batch-none-test",
+        "task_kind": "test",
+        "task_id": "engineering-langchain-batch-none-test",
+        "task_version": 1,
+        "task_fingerprint": "8a7be0c6d10a624c800ee2e917d2c85e72b71fe6458303fade7fd0ee520b6705",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "3b9eb1677425f826372f9ce411b121e2ed38078e436426f11ed8121d6376b9f3"
+      },
+      {
+        "case_id": "langchain-storage-replacement",
+        "task_kind": "feature",
+        "task_id": "engineering-langchain-storage-replacement",
+        "task_version": 1,
+        "task_fingerprint": "1b3fc0a293ce29d8a5e3bc627483987efeadfa519a09511d762a85fd4dd33c13",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "479fe1cc76673db7c27a803279fd1d5ba23a985a4f932427b9874f22ed4355ad"
+      },
+      {
+        "case_id": "langchain-stringify-dict-keys",
+        "task_kind": "bug_fix",
+        "task_id": "engineering-langchain-stringify-dict-keys",
+        "task_version": 1,
+        "task_fingerprint": "61cf7bf1ce5aa1d799a8198393647e1f0f60c83a688b88e6210fba7031f500cb",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "b6b831e4af29619a22064315b2301c85dce9585d2d9b96ae6c8195ed72848af8"
+      },
+      {
+        "case_id": "opencode-path-normalization",
+        "task_kind": "feature",
+        "task_id": "engineering-opencode-path-normalization",
+        "task_version": 1,
+        "task_fingerprint": "be712726a47c546c8d86b73f2529f2f35561f0a2e677d79152f04c29a2d5e995",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "b353169dafca2a50833eb1356ca4d46ad4bca4d9af5e7a20d89f0b370e501b59"
+      },
+      {
+        "case_id": "opencode-retry-delay-refactor",
+        "task_kind": "refactor",
+        "task_id": "engineering-opencode-retry-delay-refactor",
+        "task_version": 1,
+        "task_fingerprint": "66203c97dc7a19e7525266680e1b996d48c32169d93824b85a3653720b96a3ba",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "b72c7e77a5edb8faa217b4bf9d6f10acadfc398698751d932f420cb60569e8bc"
+      },
+      {
+        "case_id": "opencode-terminal-url-review",
+        "task_kind": "review",
+        "task_id": "engineering-opencode-terminal-url-review",
+        "task_version": 1,
+        "task_fingerprint": "802139ad275628def7fcde364801b3789546965688e1d7a7a9cd84326db4081b",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "85dde993ac0b1a4138656157783c681b9dc8e58f0fa2a2603f2cd40776b51b8c"
+      }
+    ],
+    "created_at": "2026-09-20T10:24:19+08:00"
+  },
+  "plan_fingerprint": "e5ca098c6a7f0354f5b1ce399d2b58da51e29507239ffc66b78fcb5b889958c1",
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "93bfb63b-1e05-50f0-bb8b-3f8955a47c6d",
+          "task_id": "engineering-agents-dump-compatible-refactor",
+          "task_version": 1,
+          "task_fingerprint": "f4e2d35fc91b69cf5c1190d4d7cd394ffe94b3c7e7d9fae57ea93974b7967175",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "14f4dc33-9417-5970-9eaa-1e83fc4dbc84",
+            "28fcb020-e152-5698-ac2b-c637f41851d8"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "3af0f750f83b7fdf54e401fbd1637484aecbb34b1d2a00b4b85d61cbb9121f55",
+        "trials": [
+          {
+            "run_id": "14f4dc33-9417-5970-9eaa-1e83fc4dbc84",
+            "eval_report_sha256": "61cc046fe4b9c54861153303b2f64e2b888cfe01b0d66ccfd3794d7d3ac09c9c",
+            "turn_id": "01a0bca1-e688-756b-aa40-ac76efbbad02",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.518099,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:22.058463Z",
+            "completed_at": "2026-09-20T02:25:24.576562Z"
+          },
+          {
+            "run_id": "28fcb020-e152-5698-ac2b-c637f41851d8",
+            "eval_report_sha256": "e9db9c9c6daf20c2e374884dcc84ed21d868e00799d34458bbb21a0674ba0f3d",
+            "turn_id": "01a0bca1-f12c-755a-bd0b-df35ad192c0c",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.516792,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:24.781498Z",
+            "completed_at": "2026-09-20T02:25:27.298290Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 2.516792,
+          "elapsed_p50_seconds": 2.516792,
+          "elapsed_p95_seconds": 2.518099,
+          "elapsed_max_seconds": 2.518099,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:27.298290Z"
+      },
+      "campaign_report_fingerprint": "5ba6732a2a0c4259ea09aa22c2d6b55fd599a40e80777b1cac91fbb1ac7156dc",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "14f4dc33-9417-5970-9eaa-1e83fc4dbc84",
+          "turn_id": "01a0bca1-e688-756b-aa40-ac76efbbad02",
+          "turn_status": "completed",
+          "transcript_sha256": "ab16fec5e28e6d4c823dadaa0fb06f5ad1ec1cc4b932f14246f4d912550871bb",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "28fcb020-e152-5698-ac2b-c637f41851d8",
+          "turn_id": "01a0bca1-f12c-755a-bd0b-df35ad192c0c",
+          "turn_status": "completed",
+          "transcript_sha256": "5400f0ed2b77c16bd859c624952810989cffd10ecde14fa099a6a282ad31c5c4",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "14f4dc33-9417-5970-9eaa-1e83fc4dbc84",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "28fcb020-e152-5698-ac2b-c637f41851d8",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "22b62dfc-1363-5974-8a5c-8a754bd51d46",
+          "task_id": "engineering-agents-normalize-tool-name",
+          "task_version": 1,
+          "task_fingerprint": "fff9d6fe482e5935c68da8608344f57e62607e945d3a6771f879b4748589df27",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "9825a799-fc4a-57be-a7cb-d42af989bdd0",
+            "9aa4644e-b23c-55e2-88b8-e1c39642c57e"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "7d3fe96c6fb0148f79e20fd2d0253e390dbcccbb09b6aaf674447821b79baaa9",
+        "trials": [
+          {
+            "run_id": "9825a799-fc4a-57be-a7cb-d42af989bdd0",
+            "eval_report_sha256": "496b7c9e777b9215221c0a2febe91396f12999f5ded9f1b802fbba9a3a638165",
+            "turn_id": "01a0bca1-fbed-7276-a4a2-e40ccb388173",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.137401,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:27.534707Z",
+            "completed_at": "2026-09-20T02:25:29.672108Z"
+          },
+          {
+            "run_id": "9aa4644e-b23c-55e2-88b8-e1c39642c57e",
+            "eval_report_sha256": "c5beb4862d91642f4668e8ff70cd711756a6de8c13a9f83f15a6b281b2dc9320",
+            "turn_id": "01a0bca2-0512-799e-8d29-9144a32e9825",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.255432,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:29.875878Z",
+            "completed_at": "2026-09-20T02:25:32.131310Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 2.137401,
+          "elapsed_p50_seconds": 2.137401,
+          "elapsed_p95_seconds": 2.255432,
+          "elapsed_max_seconds": 2.255432,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:32.131310Z"
+      },
+      "campaign_report_fingerprint": "079ef15f00535f07b4b5e1b8331c97e35ac77e9512b716a7790647e51ad38b44",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "9825a799-fc4a-57be-a7cb-d42af989bdd0",
+          "turn_id": "01a0bca1-fbed-7276-a4a2-e40ccb388173",
+          "turn_status": "completed",
+          "transcript_sha256": "7e995fd3784f4f221aa0637ebd5f628e665c5df469216e636e89c51a6d1c88b0",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "9aa4644e-b23c-55e2-88b8-e1c39642c57e",
+          "turn_id": "01a0bca2-0512-799e-8d29-9144a32e9825",
+          "turn_status": "completed",
+          "transcript_sha256": "741f5ccdbd5b42c304a2c472a8fb26029b56e60e008ad5918670213afb629916",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "9825a799-fc4a-57be-a7cb-d42af989bdd0",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "9aa4644e-b23c-55e2-88b8-e1c39642c57e",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "8f6a2caf-f0d7-5dac-87ee-99b84c1537a2",
+          "task_id": "engineering-agents-payload-bytes-test",
+          "task_version": 1,
+          "task_fingerprint": "938a5bf790657da88292324e4838c045abb74aa1122dd9eb5001e14694937bf1",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "a210015a-1649-5b77-8219-0430a56ec21e",
+            "fb623cef-2d09-51c8-a0b3-5bddb892fd5c"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "c87ddf4282ecc626b7ad66daafc68b1d18946fbf12a5005bd044547ba35d1bae",
+        "trials": [
+          {
+            "run_id": "a210015a-1649-5b77-8219-0430a56ec21e",
+            "eval_report_sha256": "b7a52f16c193abe170c4650ed33c40c7a4eacdbcddfc7bbf6f0b14000db621a9",
+            "turn_id": "01a0bca2-0ec6-75e4-9ef8-1f4dabb1f344",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 3.258428,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:32.360298Z",
+            "completed_at": "2026-09-20T02:25:35.618726Z"
+          },
+          {
+            "run_id": "fb623cef-2d09-51c8-a0b3-5bddb892fd5c",
+            "eval_report_sha256": "4184d8bea0b8ad84cf7c4a2fd51ba08c1bd7784c4b3ee005a70188e4fad0ce65",
+            "turn_id": "01a0bca2-1c4b-7e66-8b16-900d382fe086",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 3.269732,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:35.820625Z",
+            "completed_at": "2026-09-20T02:25:39.090357Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 3.258428,
+          "elapsed_p50_seconds": 3.258428,
+          "elapsed_p95_seconds": 3.269732,
+          "elapsed_max_seconds": 3.269732,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:39.090357Z"
+      },
+      "campaign_report_fingerprint": "09426f3d51fc376d8ab1b7d310e45a1aff118111182a840b131415e9a4a3d679",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "a210015a-1649-5b77-8219-0430a56ec21e",
+          "turn_id": "01a0bca2-0ec6-75e4-9ef8-1f4dabb1f344",
+          "turn_status": "completed",
+          "transcript_sha256": "bcf05d012e892f9af4cb29389cb2572b0a8a2ea79a7e17f7c13aeae41c656b5f",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "fb623cef-2d09-51c8-a0b3-5bddb892fd5c",
+          "turn_id": "01a0bca2-1c4b-7e66-8b16-900d382fe086",
+          "turn_status": "completed",
+          "transcript_sha256": "7849935a2188b8af68b8116202847dc34ed6e795fc7c4b9c8743e529756121cf",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "a210015a-1649-5b77-8219-0430a56ec21e",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "fb623cef-2d09-51c8-a0b3-5bddb892fd5c",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "9eb00e33-638e-501f-a216-fe8fc1a419c2",
+          "task_id": "engineering-agents-secret-redaction-review",
+          "task_version": 1,
+          "task_fingerprint": "398d8e16ceca0da4e333bbb215926c3b106956d4114645aa43f7b57376d6120b",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "5202aeb4-3df6-5a01-a0a0-a61eaba755cb",
+            "4688fcf3-514a-5c5d-9970-9ab55f6c4176"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "cdb66a2bb9939173a362a09764f13342bb54a80411d56dccf5691f782e698e0a",
+        "trials": [
+          {
+            "run_id": "5202aeb4-3df6-5a01-a0a0-a61eaba755cb",
+            "eval_report_sha256": "25323eae877c247c2d66e8e8010e2bbc3df7165575b458d55a4c87e710545a39",
+            "turn_id": "01a0bca2-2a0f-7b1a-b909-15004492eb5b",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.208153,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:39.344935Z",
+            "completed_at": "2026-09-20T02:25:41.553088Z"
+          },
+          {
+            "run_id": "4688fcf3-514a-5c5d-9970-9ab55f6c4176",
+            "eval_report_sha256": "46ba9b6403ad51660d6f64ecf958ff14bfabd4556163302899644763605e2d68",
+            "turn_id": "01a0bca2-337d-74d0-87ac-e8d5e4e1ae76",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.218031,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:41.758787Z",
+            "completed_at": "2026-09-20T02:25:43.976818Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 2.208153,
+          "elapsed_p50_seconds": 2.208153,
+          "elapsed_p95_seconds": 2.218031,
+          "elapsed_max_seconds": 2.218031,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:43.976818Z"
+      },
+      "campaign_report_fingerprint": "d59fb7773ee4fb4f13108696e166aa7b13e945120674f74be469878da6579e73",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "5202aeb4-3df6-5a01-a0a0-a61eaba755cb",
+          "turn_id": "01a0bca2-2a0f-7b1a-b909-15004492eb5b",
+          "turn_status": "completed",
+          "transcript_sha256": "d81b320965819eab0083fa49325f041dc84b092fb797361a51a3fb4af9a07b67",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "4688fcf3-514a-5c5d-9970-9ab55f6c4176",
+          "turn_id": "01a0bca2-337d-74d0-87ac-e8d5e4e1ae76",
+          "turn_status": "completed",
+          "transcript_sha256": "8955526bdf590b4d3c17e472c914164c3207a449bccd9bfb46831ad01c126fed",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "5202aeb4-3df6-5a01-a0a0-a61eaba755cb",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "4688fcf3-514a-5c5d-9970-9ab55f6c4176",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "38c72f12-d0c9-5f85-ab85-b9eee49f4012",
+          "task_id": "engineering-langchain-batch-none-test",
+          "task_version": 1,
+          "task_fingerprint": "8a7be0c6d10a624c800ee2e917d2c85e72b71fe6458303fade7fd0ee520b6705",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "c7cb7275-6a31-550e-af74-7eb2ed549743",
+            "6df430f3-90f9-52b3-a3d1-83e8931cccd0"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "3b9eb1677425f826372f9ce411b121e2ed38078e436426f11ed8121d6376b9f3",
+        "trials": [
+          {
+            "run_id": "c7cb7275-6a31-550e-af74-7eb2ed549743",
+            "eval_report_sha256": "1f6c5d6850438f7ae323f24bf0c76f8e1baa9ecfee101e856cf3a4ef7e33e96c",
+            "turn_id": "01a0bca2-3d0f-7288-b725-eac6f32872b0",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 4.214206,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:44.208843Z",
+            "completed_at": "2026-09-20T02:25:48.423049Z"
+          },
+          {
+            "run_id": "6df430f3-90f9-52b3-a3d1-83e8931cccd0",
+            "eval_report_sha256": "4c1f67ae2e3a109f0067e846b0c0a89355b6731b4d4dec3348812f91ef198ec5",
+            "turn_id": "01a0bca2-4e52-7841-98bc-7603352eefe6",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 4.241574,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:48.628086Z",
+            "completed_at": "2026-09-20T02:25:52.869660Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 4.214206,
+          "elapsed_p50_seconds": 4.214206,
+          "elapsed_p95_seconds": 4.241574,
+          "elapsed_max_seconds": 4.241574,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:52.869660Z"
+      },
+      "campaign_report_fingerprint": "6724c021f6820891a610c3760895b6e55b9885b03715f0b90e524cb419d20f20",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "c7cb7275-6a31-550e-af74-7eb2ed549743",
+          "turn_id": "01a0bca2-3d0f-7288-b725-eac6f32872b0",
+          "turn_status": "completed",
+          "transcript_sha256": "76d887e897eed567aa98cb0e9b91b574943b35cf6e39ca22ab8881e91ab4501d",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "6df430f3-90f9-52b3-a3d1-83e8931cccd0",
+          "turn_id": "01a0bca2-4e52-7841-98bc-7603352eefe6",
+          "turn_status": "completed",
+          "transcript_sha256": "a5d3dd7b719e089baee1d2c94cc6946f61ea5fe985bd399dc54e60db4d165f67",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "c7cb7275-6a31-550e-af74-7eb2ed549743",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "6df430f3-90f9-52b3-a3d1-83e8931cccd0",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "a187531a-2015-5505-b3d2-dbea1470c790",
+          "task_id": "engineering-langchain-storage-replacement",
+          "task_version": 1,
+          "task_fingerprint": "1b3fc0a293ce29d8a5e3bc627483987efeadfa519a09511d762a85fd4dd33c13",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "3ea57e8a-a87a-5eb2-a5da-d5a1a041afee",
+            "f27b153a-7414-5ec1-9519-446ba3892529"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "479fe1cc76673db7c27a803279fd1d5ba23a985a4f932427b9874f22ed4355ad",
+        "trials": [
+          {
+            "run_id": "3ea57e8a-a87a-5eb2-a5da-d5a1a041afee",
+            "eval_report_sha256": "1f42826e2c18ea60ed74fb97ec2aa28de6e5374397ce75ffbdc1bffbcdedf1e1",
+            "turn_id": "01a0bca2-5fc9-7521-a321-4d9753364a54",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.196275,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:53.099422Z",
+            "completed_at": "2026-09-20T02:25:55.295697Z"
+          },
+          {
+            "run_id": "f27b153a-7414-5ec1-9519-446ba3892529",
+            "eval_report_sha256": "031a35dbc7abfb9e0db35c2d69cb16634da2532cbec8172210c61b6fd0eed59b",
+            "turn_id": "01a0bca2-6929-79ea-86cd-3190c6b2b286",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.124612,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:55.499423Z",
+            "completed_at": "2026-09-20T02:25:57.624035Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 2.124612,
+          "elapsed_p50_seconds": 2.124612,
+          "elapsed_p95_seconds": 2.196275,
+          "elapsed_max_seconds": 2.196275,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:25:57.624035Z"
+      },
+      "campaign_report_fingerprint": "e06e57e27c4a7d5a36bf893983747df185761310d989868375ec5cace1895ee3",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "3ea57e8a-a87a-5eb2-a5da-d5a1a041afee",
+          "turn_id": "01a0bca2-5fc9-7521-a321-4d9753364a54",
+          "turn_status": "completed",
+          "transcript_sha256": "701f9672adbd0419cd4a1237b4522c6ad6579f47efa596b91576d358f07b5282",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "f27b153a-7414-5ec1-9519-446ba3892529",
+          "turn_id": "01a0bca2-6929-79ea-86cd-3190c6b2b286",
+          "turn_status": "completed",
+          "transcript_sha256": "9827693d19cb8fbd8fcf46c88f0c400b3f6df4dbe48377ba90f1f2ea5b0f8f87",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "3ea57e8a-a87a-5eb2-a5da-d5a1a041afee",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "f27b153a-7414-5ec1-9519-446ba3892529",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "13b887cd-c89f-5241-abf3-0cc86c6e9e8f",
+          "task_id": "engineering-langchain-stringify-dict-keys",
+          "task_version": 1,
+          "task_fingerprint": "61cf7bf1ce5aa1d799a8198393647e1f0f60c83a688b88e6210fba7031f500cb",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "dd15e44f-50f3-5d69-8f79-5de45bf9a951",
+            "187e3b50-b793-5195-9d30-0b4fa82fc9eb"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "b6b831e4af29619a22064315b2301c85dce9585d2d9b96ae6c8195ed72848af8",
+        "trials": [
+          {
+            "run_id": "dd15e44f-50f3-5d69-8f79-5de45bf9a951",
+            "eval_report_sha256": "730c05c96402d1584b38711ecd73f12ed00a9fa8e7ac2ab1d44c3ea319134e22",
+            "turn_id": "01a0bca2-7259-7440-a33a-664fb4f846cf",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.209706,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:25:57.850926Z",
+            "completed_at": "2026-09-20T02:26:00.060632Z"
+          },
+          {
+            "run_id": "187e3b50-b793-5195-9d30-0b4fa82fc9eb",
+            "eval_report_sha256": "24f3e96be02e77ffd814a464735431d59180e7e752599c66e56da2a774b0332e",
+            "turn_id": "01a0bca2-7bc3-7fbe-a18b-6073db19de7b",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 2.144924,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:00.260686Z",
+            "completed_at": "2026-09-20T02:26:02.405610Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 2.144924,
+          "elapsed_p50_seconds": 2.144924,
+          "elapsed_p95_seconds": 2.209706,
+          "elapsed_max_seconds": 2.209706,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:26:02.405610Z"
+      },
+      "campaign_report_fingerprint": "d1bb71831333a50a6430f069c7cfddab670a780323aa914829b3d5ffba16b5dd",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "dd15e44f-50f3-5d69-8f79-5de45bf9a951",
+          "turn_id": "01a0bca2-7259-7440-a33a-664fb4f846cf",
+          "turn_status": "completed",
+          "transcript_sha256": "a655bb38f52f1443bcbe741b24db8913406029aa3a7b0556d79a00e9336c540e",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "187e3b50-b793-5195-9d30-0b4fa82fc9eb",
+          "turn_id": "01a0bca2-7bc3-7fbe-a18b-6073db19de7b",
+          "turn_status": "completed",
+          "transcript_sha256": "fc6f30bcb158cf0011926566f00c8d9ee16e05d0a11fe5f8b3e8bacb3117fff5",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "dd15e44f-50f3-5d69-8f79-5de45bf9a951",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "187e3b50-b793-5195-9d30-0b4fa82fc9eb",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "01ad8286-8aa6-5fec-a7a5-ed79a20c634d",
+          "task_id": "engineering-opencode-path-normalization",
+          "task_version": 1,
+          "task_fingerprint": "be712726a47c546c8d86b73f2529f2f35561f0a2e677d79152f04c29a2d5e995",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "1c178258-cd2f-5647-9215-64200e6ee084",
+            "623e2c77-a280-5831-bf7d-d9895de00e14"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "b353169dafca2a50833eb1356ca4d46ad4bca4d9af5e7a20d89f0b370e501b59",
+        "trials": [
+          {
+            "run_id": "1c178258-cd2f-5647-9215-64200e6ee084",
+            "eval_report_sha256": "9b57e441b00d4ec0587b6de48c4998ae52c3db8ae2d1816008c0d4f94490fbaa",
+            "turn_id": "01a0bca2-8510-77c0-b8a0-9b106e95806d",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.584739,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:02.641934Z",
+            "completed_at": "2026-09-20T02:26:04.226673Z"
+          },
+          {
+            "run_id": "623e2c77-a280-5831-bf7d-d9895de00e14",
+            "eval_report_sha256": "97577547f4b43cad225684144ca93800dcf20c01923531a3f263de9520636797",
+            "turn_id": "01a0bca2-8c0c-743c-8cea-d16fba049194",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.580984,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:04.429598Z",
+            "completed_at": "2026-09-20T02:26:06.010582Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 1.580984,
+          "elapsed_p50_seconds": 1.580984,
+          "elapsed_p95_seconds": 1.584739,
+          "elapsed_max_seconds": 1.584739,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:26:06.010582Z"
+      },
+      "campaign_report_fingerprint": "7e507dc79a91907327999f291a5f5807d00680be085b3c151f2d072747b200d7",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "1c178258-cd2f-5647-9215-64200e6ee084",
+          "turn_id": "01a0bca2-8510-77c0-b8a0-9b106e95806d",
+          "turn_status": "completed",
+          "transcript_sha256": "1b8488e086936195bfc337b3a59f905cdf010c55f5fbcf3c0fb53a9c815af7a8",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "623e2c77-a280-5831-bf7d-d9895de00e14",
+          "turn_id": "01a0bca2-8c0c-743c-8cea-d16fba049194",
+          "turn_status": "completed",
+          "transcript_sha256": "33996fce3988c0adfa9b1e6ef6e3a48f1daa892681e5f1dcebf623fd4c1b8353",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "1c178258-cd2f-5647-9215-64200e6ee084",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "623e2c77-a280-5831-bf7d-d9895de00e14",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "240a1175-f210-5147-9c30-b59d13c0b123",
+          "task_id": "engineering-opencode-retry-delay-refactor",
+          "task_version": 1,
+          "task_fingerprint": "66203c97dc7a19e7525266680e1b996d48c32169d93824b85a3653720b96a3ba",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "40c21892-b24a-5ed7-82d0-720821b42612",
+            "439fcd26-c504-5cb1-a1bd-e458c932442f"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "b72c7e77a5edb8faa217b4bf9d6f10acadfc398698751d932f420cb60569e8bc",
+        "trials": [
+          {
+            "run_id": "40c21892-b24a-5ed7-82d0-720821b42612",
+            "eval_report_sha256": "d3e7596cb8c3a101f1fbf8ce571d4d8118d7978a7c315d3f39e9b1301ca41c12",
+            "turn_id": "01a0bca2-9321-78ce-840d-f4d1903af8e0",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.583535,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:06.242714Z",
+            "completed_at": "2026-09-20T02:26:07.826249Z"
+          },
+          {
+            "run_id": "439fcd26-c504-5cb1-a1bd-e458c932442f",
+            "eval_report_sha256": "52f2ee6e9596278e1adf32a3f10c2420c168abcb7bcb2d4d1985916132db51f7",
+            "turn_id": "01a0bca2-9a1b-7b18-abef-8df2e5a6a0f8",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.597237,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:08.028881Z",
+            "completed_at": "2026-09-20T02:26:09.626118Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 1.583535,
+          "elapsed_p50_seconds": 1.583535,
+          "elapsed_p95_seconds": 1.597237,
+          "elapsed_max_seconds": 1.597237,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:26:09.626118Z"
+      },
+      "campaign_report_fingerprint": "b2dad932c1b75f54d0d40d907883501f788236a06b32bf11a9eda63dd172249c",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "40c21892-b24a-5ed7-82d0-720821b42612",
+          "turn_id": "01a0bca2-9321-78ce-840d-f4d1903af8e0",
+          "turn_status": "completed",
+          "transcript_sha256": "9df58539bf57851016c49234260e0b410998ff09166f46215bab7b86551d252b",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "439fcd26-c504-5cb1-a1bd-e458c932442f",
+          "turn_id": "01a0bca2-9a1b-7b18-abef-8df2e5a6a0f8",
+          "turn_status": "completed",
+          "transcript_sha256": "f2293f96b56a7d3b627b7638e6e1bb47453ac6d1da2de99cc82152c57b5c01b4",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "40c21892-b24a-5ed7-82d0-720821b42612",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "439fcd26-c504-5cb1-a1bd-e458c932442f",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "dc5a57bc-2749-50fa-9dcf-6c53b47717f0",
+          "task_id": "engineering-opencode-terminal-url-review",
+          "task_version": 1,
+          "task_fingerprint": "802139ad275628def7fcde364801b3789546965688e1d7a7a9cd84326db4081b",
+          "environment": {
+            "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+            "provider": "recorded",
+            "model": "harnessix-recorded-v1",
+            "platform": "linux",
+            "isolation": "fixed-container-no-network"
+          },
+          "run_ids": [
+            "890a0dcb-7da6-54df-b698-53f20ff00ea0",
+            "b9a70b94-4aac-5250-90b2-c42c510a49e3"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "task-pack-recorded-v1",
+            "source_url": "https://harnessix.invalid/pricing/recorded-v1",
+            "billing_provider": "harnessix-recorded",
+            "model": "harnessix-recorded-v1",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "currency": "USD",
+            "valid_from": "2020-01-01T00:00:00Z",
+            "valid_until": "2100-01-01T00:00:00Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": null,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "0"
+            },
+            "output_per_million": "0"
+          },
+          "billing_context": {
+            "billing_provider": "harnessix-recorded",
+            "region": "offline",
+            "service_tier": "eval",
+            "inference_mode": "recorded",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-09-20T10:24:19+08:00"
+        },
+        "plan_fingerprint": "85dde993ac0b1a4138656157783c681b9dc8e58f0fa2a2603f2cd40776b51b8c",
+        "trials": [
+          {
+            "run_id": "890a0dcb-7da6-54df-b698-53f20ff00ea0",
+            "eval_report_sha256": "90b7e8759fca29a25a018ce16c68b8ca0a7deeaa12f8f5246a7fd2ea4be19091",
+            "turn_id": "01a0bca2-a13b-704e-b334-4f4b56b6f66f",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.583903,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:09.852781Z",
+            "completed_at": "2026-09-20T02:26:11.436684Z"
+          },
+          {
+            "run_id": "b9a70b94-4aac-5250-90b2-c42c510a49e3",
+            "eval_report_sha256": "93a32ded43c72da04dba8fe055c61a92d030a2579d628496d2861e2326ed3ee7",
+            "turn_id": "01a0bca2-a84c-7e76-9d3c-b93fb8213089",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "harnessix-recorded-v1"
+            ],
+            "model_attempts": 6,
+            "input_tokens": 60,
+            "output_tokens": 30,
+            "elapsed_seconds": 1.608104,
+            "cost_completeness": "complete",
+            "known_cost_currency": "USD",
+            "known_cost_amount": "0",
+            "started_at": "2026-09-20T02:26:11.662093Z",
+            "completed_at": "2026-09-20T02:26:13.270197Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 12,
+          "input_tokens": 120,
+          "output_tokens": 60,
+          "elapsed_min_seconds": 1.583903,
+          "elapsed_p50_seconds": 1.583903,
+          "elapsed_p95_seconds": 1.608104,
+          "elapsed_max_seconds": 1.608104,
+          "cost_completeness": "complete",
+          "known_cost_currency": "USD",
+          "known_cost_amount": "0",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-09-20T02:26:13.270197Z"
+      },
+      "campaign_report_fingerprint": "cae5ef7ef9f5329d176cee77124bce7f1c0a7d9510537e313b37c7a0dbe5b46f",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "890a0dcb-7da6-54df-b698-53f20ff00ea0",
+          "turn_id": "01a0bca2-a13b-704e-b334-4f4b56b6f66f",
+          "turn_status": "completed",
+          "transcript_sha256": "d6bbd22b3e7dedf533102dff41f779ea26020c8e5205db9711f79601153b169b",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "b9a70b94-4aac-5250-90b2-c42c510a49e3",
+          "turn_id": "01a0bca2-a84c-7e76-9d3c-b93fb8213089",
+          "turn_status": "completed",
+          "transcript_sha256": "e3c86605507613fb834c27af2131f716fc42f8066dd11f1532d77fcabc64e305",
+          "completed_items": 15,
+          "model_steps": 6,
+          "model_attempts": 6,
+          "input_tokens": 60,
+          "output_tokens": 30,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "890a0dcb-7da6-54df-b698-53f20ff00ea0",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "b9a70b94-4aac-5250-90b2-c42c510a49e3",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "scheduled_cases": 10,
+    "repositories": 3,
+    "scheduled_trials": 20,
+    "passed_trials": 20,
+    "tests_applicable_trials": 20,
+    "tests_passed_trials": 20,
+    "human_intervention_trials": 0,
+    "task_success_rate": {
+      "numerator": 20,
+      "denominator": 20,
+      "basis_points": 10000
+    },
+    "test_pass_rate": {
+      "numerator": 20,
+      "denominator": 20,
+      "basis_points": 10000
+    },
+    "human_intervention_rate": {
+      "numerator": 0,
+      "denominator": 20,
+      "basis_points": 0
+    },
+    "model_attempts": 120,
+    "input_tokens": 1200,
+    "output_tokens": 600,
+    "elapsed_min_seconds": 1.580984,
+    "elapsed_p50_seconds": 2.196275,
+    "elapsed_p95_seconds": 4.214206,
+    "elapsed_max_seconds": 4.241574,
+    "cost_completeness": "complete",
+    "known_cost_currency": "USD",
+    "known_cost_amount": "0",
+    "incomplete_cost_run_ids": []
+  },
+  "completed_at": "2026-09-20T02:26:13.270197Z"
+}

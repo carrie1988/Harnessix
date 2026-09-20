@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 75
-code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
+version: 76
+code_revision: 505bc537f74bd59e891c605ff4114856991f1783
 owners:
   - core
 modules:
@@ -57,7 +57,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3完整20 Trial离线Suite已形成候选实现，首轮CI暴露v1两个Test Case与产品Patch/Grader不变量冲突，现保留v1并追加兼容v2，固定Container复验及冻结证据尚未完成；真实Provider基线仍属e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3实现Revision `505bc53`保留不可变v1并新增兼容v2，完整20 Trial固定Container与双提交窗口恢复由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭；真实Provider基线仍属e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -89,7 +89,7 @@ supersedes: []
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
 | 受控Provider验证 | [Smoke模块设计](modules/smoke.md) | `network gate → strict config → fixed scenario → Agent/SQLite/Replay → whitelist report`；重点区分Token边界、金额未知、配置对象安全与端点—凭据未绑定 |
-| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → deterministic suite composition → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack、0.9.2c可恢复Suite Runner、0.9.2d1工程Pack v1及d2正式Case Adapter均已验收；d3保留v1并新增产品Patch兼容v2，确定性20 Trial组合、双提交窗口恢复与脱敏证据发布已形成候选，固定Container CI待验收，d2/d3设计见[专项详细设计](changes/m09-2d-multi-repository-offline-baseline.md)；方法读[测试与Eval规范](testing-and-evals.md)，历史数字读[里程碑测试记录](testing-and-evals-milestone-history.md)，真实Provider结果读[验证证据索引](validation/README.md) |
+| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → deterministic suite composition → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d工程Pack/Case Adapter/完整离线Suite均已验收；d3保留v1并新增产品Patch兼容v2，20 Trial固定Container、双提交窗口恢复与脱敏证据已经[冻结](validation/offline-engineering-2026-09-20-v2/README.md)，d2/d3设计见[专项详细设计](changes/m09-2d-multi-repository-offline-baseline.md)；方法读[测试与Eval规范](testing-and-evals.md)，历史数字与离线/真实Provider结果读[验证证据索引](validation/README.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → Agent/Provider/Trusted Action`；再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
@@ -168,7 +168,7 @@ supersedes: []
 | 0.8 | [产品运行时与扩展历史索引](m08-product-runtime-and-extensions.md)与[完整历史](m08-product-runtime-and-extensions-milestone-history.md) | Protocol、App Server、SDK、MCP、Skill、Hook和Provider配置 |
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
-| 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md) | 进行中；a已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；b已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)关闭；c已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)关闭；d1已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3候选已实现但固定Container CI与冻结证据未验收；e未完成 |
+| 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md) | 进行中；a已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；b已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)关闭；c已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)关闭；d1已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3及d已由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)关闭；e未完成 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

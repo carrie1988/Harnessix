@@ -1,0 +1,155 @@
+{
+  "spec_version": "harnessix.coding-eval-suite-plan/v1",
+  "suite_id": "313e8aa5-8299-563d-a644-d955989e5f0a",
+  "suite_version": 1,
+  "environment": {
+    "harnessix_revision": "505bc537f74bd59e891c605ff4114856991f1783",
+    "provider": "recorded",
+    "model": "harnessix-recorded-v1",
+    "platform": "linux",
+    "isolation": "fixed-container-no-network"
+  },
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "task_kind": "refactor",
+      "task_id": "engineering-agents-dump-compatible-refactor",
+      "task_version": 1,
+      "task_fingerprint": "f4e2d35fc91b69cf5c1190d4d7cd394ffe94b3c7e7d9fae57ea93974b7967175",
+      "repository": {
+        "name": "agents-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+        "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+        "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+      },
+      "campaign_plan_fingerprint": "3af0f750f83b7fdf54e401fbd1637484aecbb34b1d2a00b4b85d61cbb9121f55"
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "task_kind": "bug_fix",
+      "task_id": "engineering-agents-normalize-tool-name",
+      "task_version": 1,
+      "task_fingerprint": "fff9d6fe482e5935c68da8608344f57e62607e945d3a6771f879b4748589df27",
+      "repository": {
+        "name": "agents-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+        "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+        "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+      },
+      "campaign_plan_fingerprint": "7d3fe96c6fb0148f79e20fd2d0253e390dbcccbb09b6aaf674447821b79baaa9"
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "task_kind": "test",
+      "task_id": "engineering-agents-payload-bytes-test",
+      "task_version": 1,
+      "task_fingerprint": "938a5bf790657da88292324e4838c045abb74aa1122dd9eb5001e14694937bf1",
+      "repository": {
+        "name": "agents-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+        "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+        "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+      },
+      "campaign_plan_fingerprint": "c87ddf4282ecc626b7ad66daafc68b1d18946fbf12a5005bd044547ba35d1bae"
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "task_kind": "review",
+      "task_id": "engineering-agents-secret-redaction-review",
+      "task_version": 1,
+      "task_fingerprint": "398d8e16ceca0da4e333bbb215926c3b106956d4114645aa43f7b57376d6120b",
+      "repository": {
+        "name": "agents-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+        "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+        "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+      },
+      "campaign_plan_fingerprint": "cdb66a2bb9939173a362a09764f13342bb54a80411d56dccf5691f782e698e0a"
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "task_kind": "test",
+      "task_id": "engineering-langchain-batch-none-test",
+      "task_version": 1,
+      "task_fingerprint": "8a7be0c6d10a624c800ee2e917d2c85e72b71fe6458303fade7fd0ee520b6705",
+      "repository": {
+        "name": "langchain-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+        "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+        "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+      },
+      "campaign_plan_fingerprint": "3b9eb1677425f826372f9ce411b121e2ed38078e436426f11ed8121d6376b9f3"
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "task_kind": "feature",
+      "task_id": "engineering-langchain-storage-replacement",
+      "task_version": 1,
+      "task_fingerprint": "1b3fc0a293ce29d8a5e3bc627483987efeadfa519a09511d762a85fd4dd33c13",
+      "repository": {
+        "name": "langchain-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+        "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+        "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+      },
+      "campaign_plan_fingerprint": "479fe1cc76673db7c27a803279fd1d5ba23a985a4f932427b9874f22ed4355ad"
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "task_kind": "bug_fix",
+      "task_id": "engineering-langchain-stringify-dict-keys",
+      "task_version": 1,
+      "task_fingerprint": "61cf7bf1ce5aa1d799a8198393647e1f0f60c83a688b88e6210fba7031f500cb",
+      "repository": {
+        "name": "langchain-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+        "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+        "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+      },
+      "campaign_plan_fingerprint": "b6b831e4af29619a22064315b2301c85dce9585d2d9b96ae6c8195ed72848af8"
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "task_kind": "feature",
+      "task_id": "engineering-opencode-path-normalization",
+      "task_version": 1,
+      "task_fingerprint": "be712726a47c546c8d86b73f2529f2f35561f0a2e677d79152f04c29a2d5e995",
+      "repository": {
+        "name": "opencode-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+        "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+        "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+      },
+      "campaign_plan_fingerprint": "b353169dafca2a50833eb1356ca4d46ad4bca4d9af5e7a20d89f0b370e501b59"
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "task_kind": "refactor",
+      "task_id": "engineering-opencode-retry-delay-refactor",
+      "task_version": 1,
+      "task_fingerprint": "66203c97dc7a19e7525266680e1b996d48c32169d93824b85a3653720b96a3ba",
+      "repository": {
+        "name": "opencode-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+        "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+        "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+      },
+      "campaign_plan_fingerprint": "b72c7e77a5edb8faa217b4bf9d6f10acadfc398698751d932f420cb60569e8bc"
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "task_kind": "review",
+      "task_id": "engineering-opencode-terminal-url-review",
+      "task_version": 1,
+      "task_fingerprint": "802139ad275628def7fcde364801b3789546965688e1d7a7a9cd84326db4081b",
+      "repository": {
+        "name": "opencode-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+        "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+        "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+      },
+      "campaign_plan_fingerprint": "85dde993ac0b1a4138656157783c681b9dc8e58f0fa2a2603f2cd40776b51b8c"
+    }
+  ],
+  "created_at": "2026-09-20T10:24:19+08:00"
+}
