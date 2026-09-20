@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 13
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -56,8 +56,8 @@ supersedes: []
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭；0.9.2d1工程数据集实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`已由CI 35469387988关闭；d2正式Case Adapter候选基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`实现，本地`make check`为3536项通过、31项跳过；Docker daemon不可用，固定Container CI待验收 |
-| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d1工程数据集已完成；d2正式Case Adapter已实现并通过本地非Container回归，固定Container CI待验收；20 Trial离线Suite及受控真实Provider基线仍属d3/e |
+| 代码版本 | 0.9.2a实现`d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已由CI 35456635653关闭；0.9.2b Task Pack实现`608c07a54543f436651aa4e55141acb7f76021fc`已由CI 35461708961关闭；0.9.2c Suite Runner实现`ffd3db4e83a807ab3029c479fb4650216240b4f7`已由CI 35465458256关闭；0.9.2d1工程数据集实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`已由CI 35469387988关闭；d2正式Case Adapter实现`a04606b829e6c4a32935b81c8ccc86ee5802d918`已由CI 35479723645关闭 |
+| 当前完成度 | 0.5.5单任务闭环、0.9.1f2c运行时收敛、0.9.2a Suite/Transcript、0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d1/d2已完成；20 Trial离线Suite及受控真实Provider基线仍属d3/e |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -177,7 +177,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Task Pack合同与内置Catalog | 已实现/已验收 | `builtin_coding_eval_task_pack` | 双语言、来源/许可证/Archive/Profile/Oracle/整体摘要 |
 | Task Pack物化与重开 | 已实现/已验收 | `materialize_task_pack_case` | 安全Tar、固定Git四重身份、脏工作区不覆盖 |
 | Task Pack真实检查 | 已实现/已验收 | `build_task_pack_product_profile` | 固定Digest镜像经审批、只读、无网产品链先失败后通过 |
-| Task Pack正式Case Adapter | 已实现/固定Container CI待验收 | `TaskPackCaseExecutor`、`run_task_pack_coding_eval` | 两独立Trial经Agent/Session/Product Action/Artifact/Grader/Campaign；本地非Container回归已通过 |
+| Task Pack正式Case Adapter | 已验收 | `TaskPackCaseExecutor`、`run_task_pack_coding_eval` | 两独立Trial经Agent/Session/Product Action/Artifact/Grader/Campaign；CI 35479723645固定Digest Container通过 |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
 | Eval单文件交付 | 已实现/显式调用 | `CodingEvalDeliveryStore` | POSIX、已有UTF-8普通文件 |
@@ -2029,6 +2029,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2正式Case Adapter由CI 35479723645完成固定Digest Container和六实例验收并关闭；d3/e缺口保持不变 |
 | 12 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 增加正式Task Pack Trial与Case Adapter，记录Agent/Product Action装配、自动审批、Review Finding投影、Campaign成本和双报告窗口恢复；固定Container CI待验收 |
 | 11 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | 0.9.2d1由CI 35469387988完成3仓10 Case、确定性生成、Review源码证据、固定Container与六实例验收并关闭 |
 | 10 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 记录3仓10 Case工程Pack、确定性生成、MIT权利链、Review源码证据、外置Golden与d2/d3剩余边界 |

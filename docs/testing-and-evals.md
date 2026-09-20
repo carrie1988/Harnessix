@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 26
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 27
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -310,7 +310,7 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
-0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已实现且固定Container CI待验收；当前仍不证明
+0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；当前仍不证明
 完整20 Trial离线Suite或真实Provider质量。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
@@ -406,10 +406,12 @@ uv run pytest -q \
 uv run mypy src
 ```
 
-当前本地Docker daemon不可用且固定镜像环境变量未配置，`make check`结果为3536项通过、31项跳过；集成测试的明确Skip只证明非Container合同回归通过，不能
-写成真实纵向验收完成。CI `container-sandbox`预拉Manifest固定Digest镜像并运行同一集成测试。Recorded Provider只在
-测试侧读取Wheel外Golden来构造工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明
-模型能力。d2固定Container CI通过前，路线图保持未勾选。
+实现Revision `a04606b829e6c4a32935b81c8ccc86ee5802d918`已由
+[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成Linux Python 3.12/3.13、macOS、
+Windows、固定Digest Container和Documentation六实例验收。CI `container-sandbox`预拉Manifest固定Digest镜像并运行同一
+集成测试；两个Trial的检查观察均通过，报告与崩溃恢复断言同时成立。Recorded Provider只在测试侧读取Wheel外Golden来构造
+工具调用，Adapter、Wheel和报告均不能读取Golden；该测试只证明产品执行与恢复链，不证明模型能力。d2据此关闭，d3的
+20 Trial完整Suite、取消、超时、UNKNOWN和Suite级恢复仍未完成。
 
 ## 14. 真实Provider验证
 

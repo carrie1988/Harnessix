@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 15
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 16
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -141,11 +141,11 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0051 | [版本化公开Coding Eval最终回答契约](0051-versioned-eval-final-answer-contract.md) | 接受 |
 | 0052 | [Coding Eval受控变更包与显式合入](0052-controlled-eval-change-delivery.md) | 接受 |
 | 0053 | [Tool有界并发与统一错误分类](0053-tool-concurrency-and-error-taxonomy.md) | 接受 |
-| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c/d1已关闭，d2已实现且固定Container CI待验收，d3/e待实施 |
+| 0082 | [采用计划先行的多仓库Eval Suite与脱敏Transcript证据](0082-multi-repository-eval-suite-and-transcript-evidence.md) | 接受；0.9.2a/b/c/d1/d2已关闭，d3/e待实施 |
 | 0083 | [采用内置不可变Coding Eval Task Pack与固定无网检查Profile](0083-built-in-immutable-coding-eval-task-pack.md) | 接受；0.9.2b已由CI 35461708961验收并关闭 |
 | 0084 | [采用顺序单写者、证据前缀恢复的Eval Suite Runner](0084-recoverable-sequential-eval-suite-runner.md) | 接受并实施；0.9.2c已由CI 35465458256验收关闭 |
-| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2已实现且固定Container CI待验收，d3待实施 |
-| 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受并已实现；0.9.2d2固定Container CI待验收 |
+| 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2由CI 35479723645关闭，d3待实施 |
+| 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受、已实现并由CI 35479723645验收关闭0.9.2d2 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

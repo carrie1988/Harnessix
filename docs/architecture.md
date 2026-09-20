@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 65
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 66
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -391,7 +391,7 @@ Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
 显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。
-0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter已经实现：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复；本地非Container门禁已通过，固定Container CI待验收。每Case两次Trial的完整离线Suite和真实Provider Suite仍分别是d3与0.9.2e边界。全部公开证据均不复制
+0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。每Case两次Trial的完整离线Suite和真实Provider Suite仍分别是d3与0.9.2e边界。全部公开证据均不复制
 Prompt、回答、工具正文、Diff或路径。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
@@ -520,7 +520,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集及正式Case Adapter已建立；尚缺d2固定Container验收、20 Trial离线报告和真实Provider基线 | 0.9.2d/e |
+| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集及正式Case Adapter已建立并验收；尚缺20 Trial离线报告和真实Provider基线 | 0.9.2d3/e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -533,6 +533,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 66 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | 0.9.2d2正式Case Adapter由CI 35479723645完成固定Digest Container和六实例验收；d3完整20 Trial离线Suite仍未完成 |
 | 65 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 登记0.9.2d2正式Case Adapter、唯一Agent/Product Action链、受限自动审批、双报告窗口恢复与固定Container CI待验收边界 |
 | 64 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | 0.9.2d1的3仓10 Case工程数据集、确定性生成、Review源码证据和固定Container链由CI 35469387988完成六实例验收并关闭 |
 | 63 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 登记0.9.2d1的3仓10 Case工程数据集、确定性生成与Review源码证据候选，保持单一Coding Agent/Trusted Action拓扑 |

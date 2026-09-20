@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 4
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -35,9 +35,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | d1数据集与检查闭环已验收；d2正式Case Adapter已实现并通过本地静态、类型和非Container回归，固定Container CI待验收；d3完整Suite待实施 |
-| 本文设计状态 | d1已验收；d2实现与恢复合同已同步；d3仍为目标设计 |
-| 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收；d2候选基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`实现，本地`make check`为3536项通过、31项跳过；Docker daemon不可用且固定镜像环境变量未配置，固定Container CI待验收 |
+| 当前能力 | d1数据集与检查闭环、d2正式Case Adapter及双报告窗口恢复均已验收；d3完整Suite待实施 |
+| 本文设计状态 | d1/d2已验收；d3仍为目标设计 |
+| 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收；d2实现`a04606b829e6c4a32935b81c8ccc86ee5802d918`由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收 |
 | 影响模块 | Evals、Agent、Session、Trusted Actions、Process、Sandbox、CI和发行通知 |
 | 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0086](../adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) |
 | 关键测试/证据 | `test_task_pack_execution.py`单元测试、同名固定Container集成测试、`test_grader.py`及d1数据集/Profile测试 |
@@ -476,13 +476,13 @@ execute_case():
 | Review | 两个Finding绑定源码行；篡改后稳定失败 | d1已验收 |
 | 可解性 | 10/10原始检查失败，10/10黄金补丁后通过 | 宿主与固定Container均已验收 |
 | 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | d1已验收 |
-| d2执行 | 两个独立Trial经过真实Agent/Session/Product Action/Artifact/Grader/Campaign；Adapter不读Golden | 本地非Container回归通过；固定Container CI待验收 |
-| d2恢复 | Trial Report与Campaign Report崩溃窗口不重复已完成Provider或Action | 实现及固定Container故障注入已提交；CI待验收 |
+| d2执行 | 两个独立Trial经过真实Agent/Session/Product Action/Artifact/Grader/Campaign；Adapter不读Golden | CI 35479723645固定Digest Container验收通过 |
+| d2恢复 | Trial Report与Campaign Report崩溃窗口不重复已完成Provider或Action | CI 35479723645故障注入验收通过 |
 | d3规模 | 10 Case × 2 Trial，完整Suite报告 | 待实施 |
 | d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 待实施 |
-| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2本地门禁进行中、CI待验收 |
+| 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)通过 |
 
-0.9.2d只有d2固定Container CI与d3完整20 Trial Suite全部通过并发布验证证据后才能关闭；d1或d2单独完成均不能勾选路线图总项。
+0.9.2d只有d3完整20 Trial Suite通过并发布验证证据后才能关闭；d1或d2单独完成均不能勾选路线图总项。
 
 ## 22. 风险、限制与后续工作
 
@@ -500,6 +500,7 @@ execute_case():
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 4 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2由CI 35479723645完成Linux双版本、macOS、Windows、固定Digest Container与Documentation六实例验收并关闭；d3保持未完成 |
 | 3 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 实现d2正式Case Adapter、Agent/Product Action纵向Trial、自动审批白名单、Review Finding投影及Trial/Campaign双报告窗口恢复；本地门禁通过，固定Container CI待验收 |
 | 2 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | d1由CI 35469387988完成Linux双版本、macOS、Windows、固定Container与Documentation六实例验收并关闭；d2/d3保持未完成 |
 | 1 | `0245d117adc7c385a4e42de4e023fd0d22bbb1cd` | 2026-09-20 | 冻结d1～d3架构、数据集、Oracle、恢复和验收边界 |

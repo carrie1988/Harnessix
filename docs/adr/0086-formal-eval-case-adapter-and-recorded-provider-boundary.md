@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b
+version: 2
+code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
 owners:
   - core
 modules:
@@ -27,8 +27,10 @@ supersedes: []
 
 ## 状态
 
-接受并已实现；本地`make check`为3536项通过、31项跳过。由于本地Docker daemon不可用且固定镜像环境变量未配置，固定Digest Container纵向验收由CI完成后关闭
-0.9.2d2。本决策不关闭10 Case × 2 Trial完整离线Suite或真实Provider基线。
+接受、已实现并完成验收。实现Revision `a04606b829e6c4a32935b81c8ccc86ee5802d918`已由
+[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成Linux Python 3.12/3.13、
+macOS、Windows、固定Digest Container和Documentation六实例验收，0.9.2d2据此关闭。本决策不关闭
+10 Case × 2 Trial完整离线Suite或真实Provider基线。
 
 ## 背景
 
