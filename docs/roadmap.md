@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 41
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 42
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -40,6 +41,10 @@ related_tests:
   - tests/evals/test_task_pack_execution.py
   - tests/evals/test_task_pack_suite.py
   - tests/evals/test_offline_suite_runner.py
+  - tests/evals/test_provider_suite_contracts.py
+  - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_evidence.py
   - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
@@ -522,7 +527,9 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
     `505bc53`由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成v2固定Container、
     20/20 Trial、双Suite提交窗口恢复和六实例最终验收，[证据已冻结](validation/offline-engineering-2026-09-20-v2/README.md)；
 - [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
-  验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret。
+  验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret；
+  - [ ] **e1 受控执行与证据候选**：完成通用Task Pack Suite组合、私有Provider配置、默认禁网CLI、Pack/Revision/宿主程序校验、Suite/Case恢复摘要绑定、每Trial独立Provider及白名单证据发布；当前为待提交与CI验收的候选实现，不代表真实质量；
+  - [ ] **e2 真实运行与冻结**：实现提交并通过全矩阵CI后，在精确北京模型和有效价格窗口内运行10 Case × 2 Trial，核对Token/费用/停止原因，严格发布并冻结低敏证据，完成关闭文档与CI。
 
 只有a～e全部满足合同、失败与恢复、持久化、可观测性、完整测试、真实场景和文档同步，且d/e达到上述规模与证据门槛，
 才可勾选0.9.2总项。Schema存在、单元测试通过或只有两个仓库五个Case均不能关闭0.9.2。

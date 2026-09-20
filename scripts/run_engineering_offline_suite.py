@@ -7,7 +7,6 @@ import argparse
 import asyncio
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -23,6 +22,10 @@ from pydantic import Field
 
 from harnessix.domain.models import ContractModel
 from harnessix.evals.execution_fs import ensure_private_directory
+from harnessix.evals.provider_suite_evidence import (
+    distinct_evidence_roots,
+    validate_publishable_suite_evidence,
+)
 from harnessix.evals.report import (
     eval_suite_report_sha256,
     read_eval_suite_plan,
@@ -46,17 +49,6 @@ _ROOT = Path(__file__).resolve().parents[1]
 _PACK_VERSION = 2
 _SOLUTIONS = _ROOT / "benchmarks/taskpacks/harnessix-engineering-v2/solutions"
 _SUITE_NAMESPACE = UUID("345b674d-7711-5774-81aa-f2a038527c4c")
-_FORBIDDEN_KEYS = {
-    "arguments",
-    "diff",
-    "prompt",
-    "response",
-    "secret",
-    "tool_output",
-    "work_root",
-    "workspace",
-}
-_WINDOWS_ABSOLUTE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 class OfflineSuiteEvidenceManifest(ContractModel):
@@ -267,22 +259,6 @@ def _validate_complete_report(
     return report, request_count
 
 
-def _walk_publishable(value: object, forbidden_fragments: tuple[str, ...]) -> None:
-    if isinstance(value, dict):
-        if _FORBIDDEN_KEYS.intersection(value):
-            raise AssertionError("公开Suite证据包含禁止字段")
-        for item in value.values():
-            _walk_publishable(item, forbidden_fragments)
-    elif isinstance(value, list):
-        for item in value:
-            _walk_publishable(item, forbidden_fragments)
-    elif isinstance(value, str):
-        if value.startswith("/") or _WINDOWS_ABSOLUTE.match(value):
-            raise AssertionError("公开Suite证据包含宿主绝对路径")
-        if any(fragment and fragment in value for fragment in forbidden_fragments):
-            raise AssertionError("公开Suite证据包含私有运行身份")
-
-
 def _write_manifest(path: Path, manifest: OfflineSuiteEvidenceManifest) -> None:
     body = (manifest.model_dump_json(indent=2) + "\n").encode("utf-8")
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
@@ -348,7 +324,7 @@ def _publish_evidence(
         report.model_dump(mode="json"),
         manifest.model_dump(mode="json"),
     ):
-        _walk_publishable(value, fragments)
+        validate_publishable_suite_evidence(value, forbidden_fragments=fragments)
     ensure_private_directory(
         evidence_root,
         error_code="eval_suite_evidence_root_invalid",
@@ -368,20 +344,12 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _distinct_roots(work_root: Path, evidence_root: Path) -> tuple[Path, Path]:
-    work = work_root.resolve(strict=False)
-    evidence = evidence_root.resolve(strict=False)
-    if work == evidence or work in evidence.parents or evidence in work.parents:
-        raise RuntimeError("Suite私有运行目录与公开证据目录必须相互分离")
-    return work, evidence
-
-
 def main(argv: Sequence[str] | None = None) -> None:
     arguments = _parser().parse_args(argv)
     git = _executable("git")
     container = _executable("docker")
     revision = _git_text(git, "rev-parse", "HEAD")
-    work_root, evidence_root = _distinct_roots(arguments.work_root, arguments.evidence_root)
+    work_root, evidence_root = distinct_evidence_roots(arguments.work_root, arguments.evidence_root)
     suite_id = arguments.suite_id or uuid5(
         _SUITE_NAMESPACE,
         f"harnessix-engineering:{_PACK_VERSION}:{revision}",

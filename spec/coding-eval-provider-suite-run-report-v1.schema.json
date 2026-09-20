@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "description": "CLI只输出稳定原因、计数和已知金额，不回显配置或第三方正文。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-provider-suite-run-report/v1",
+      "default": "harnessix.coding-eval-provider-suite-run-report/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "completed",
+            "cancelled",
+            "fee_limit_reached",
+            "cost_unknown",
+            "evidence_missing",
+            "runtime_failed"
+          ],
+          "type": "string"
+        },
+        {
+          "enum": [
+            "network_not_enabled",
+            "configuration_invalid",
+            "dependency_missing",
+            "internal_error"
+          ],
+          "type": "string"
+        }
+      ],
+      "title": "Reason"
+    },
+    "suite_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Suite Id"
+    },
+    "scheduled_cases": {
+      "default": 0,
+      "maximum": 50,
+      "minimum": 0,
+      "title": "Scheduled Cases",
+      "type": "integer"
+    },
+    "completed_cases": {
+      "default": 0,
+      "maximum": 50,
+      "minimum": 0,
+      "title": "Completed Cases",
+      "type": "integer"
+    },
+    "current_case_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Case Id"
+    },
+    "report_published": {
+      "default": false,
+      "title": "Report Published",
+      "type": "boolean"
+    },
+    "known_cost_currency": {
+      "anyOf": [
+        {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Cost Currency"
+    },
+    "known_cost_amount": {
+      "anyOf": [
+        {
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Known Cost Amount"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "CodingEvalProviderSuiteRunReport",
+  "type": "object"
+}

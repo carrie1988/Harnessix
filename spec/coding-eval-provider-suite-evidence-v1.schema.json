@@ -1,0 +1,186 @@
+{
+  "additionalProperties": false,
+  "description": "公开目录的低敏索引；不包含Prompt、正文、路径或Secret。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.provider-suite-evidence/v1",
+      "default": "harnessix.provider-suite-evidence/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "suite_id": {
+      "format": "uuid",
+      "title": "Suite Id",
+      "type": "string"
+    },
+    "pack_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "pack_version": {
+      "minimum": 1,
+      "title": "Pack Version",
+      "type": "integer"
+    },
+    "pack_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Pack Sha256",
+      "type": "string"
+    },
+    "harnessix_revision": {
+      "pattern": "^[0-9a-f]{40,64}$",
+      "title": "Harnessix Revision",
+      "type": "string"
+    },
+    "provider": {
+      "const": "openai_chat",
+      "default": "openai_chat",
+      "title": "Provider",
+      "type": "string"
+    },
+    "model": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "region": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Region",
+      "type": "string"
+    },
+    "price_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Price Sha256",
+      "type": "string"
+    },
+    "pricing_source_url": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Pricing Source Url",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    },
+    "scheduled_cases": {
+      "maximum": 50,
+      "minimum": 5,
+      "title": "Scheduled Cases",
+      "type": "integer"
+    },
+    "scheduled_trials": {
+      "maximum": 1000,
+      "minimum": 10,
+      "title": "Scheduled Trials",
+      "type": "integer"
+    },
+    "passed_trials": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Passed Trials",
+      "type": "integer"
+    },
+    "tests_passed_trials": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Tests Passed Trials",
+      "type": "integer"
+    },
+    "human_intervention_trials": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Human Intervention Trials",
+      "type": "integer"
+    },
+    "model_attempts": {
+      "minimum": 0,
+      "title": "Model Attempts",
+      "type": "integer"
+    },
+    "input_tokens": {
+      "minimum": 0,
+      "title": "Input Tokens",
+      "type": "integer"
+    },
+    "output_tokens": {
+      "minimum": 0,
+      "title": "Output Tokens",
+      "type": "integer"
+    },
+    "cost_completeness": {
+      "const": "complete",
+      "default": "complete",
+      "title": "Cost Completeness",
+      "type": "string"
+    },
+    "known_cost_currency": {
+      "enum": [
+        "USD",
+        "CNY"
+      ],
+      "title": "Known Cost Currency",
+      "type": "string"
+    },
+    "known_cost_amount": {
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+      "title": "Known Cost Amount",
+      "type": "string"
+    },
+    "fee_stop_currency": {
+      "enum": [
+        "USD",
+        "CNY"
+      ],
+      "title": "Fee Stop Currency",
+      "type": "string"
+    },
+    "fee_stop_amount": {
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+      "title": "Fee Stop Amount",
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "suite_id",
+    "pack_id",
+    "pack_version",
+    "pack_sha256",
+    "harnessix_revision",
+    "model",
+    "region",
+    "price_sha256",
+    "pricing_source_url",
+    "plan_fingerprint",
+    "report_sha256",
+    "scheduled_cases",
+    "scheduled_trials",
+    "passed_trials",
+    "tests_passed_trials",
+    "human_intervention_trials",
+    "model_attempts",
+    "input_tokens",
+    "output_tokens",
+    "known_cost_currency",
+    "known_cost_amount",
+    "fee_stop_currency",
+    "fee_stop_amount",
+    "completed_at"
+  ],
+  "title": "CodingEvalProviderSuiteEvidenceManifest",
+  "type": "object"
+}

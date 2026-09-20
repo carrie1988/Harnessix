@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 20
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 21
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -21,8 +21,8 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有87份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
-迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0087继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter及确定性完整离线Suite组合边界。
+截至标注代码版本，共有88份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0088继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter、确定性完整离线Suite组合及受控真实Provider完整Suite边界。
 
 ## 2. 状态语义
 
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前86份ADR属于已接受决策，ADR 0087处于评审状态；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前87份ADR属于已接受决策，ADR 0088处于评审状态；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -147,6 +147,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2由CI 35479723645关闭，d3由CI 35483905418关闭 |
 | 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受、已实现并由CI 35479723645验收关闭0.9.2d2 |
 | 0087 | [确定性组合完整离线Eval Suite并隔离证据生成](0087-deterministic-offline-eval-suite-composition.md) | 接受且已实施；工程Pack v2完整20 Trial由CI 35483905418验收并冻结证据 |
+| 0088 | [复用唯一Agent主链执行受控真实Provider完整Suite](0088-controlled-real-provider-suite-baseline.md) | 评审中；候选实现待提交、全矩阵CI及真实Provider证据 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

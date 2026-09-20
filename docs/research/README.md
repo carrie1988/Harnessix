@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 8
-code_revision: 0245d117adc7c385a4e42de4e023fd0d22bbb1cd
+version: 9
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests: []
 supersedes: []
 ---
@@ -27,7 +28,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含31份冻结研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含32份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -83,6 +84,7 @@ flowchart LR
 | [真实Campaign执行与费用边界](eval-campaign-execution.md) | 2026-09-06 | 正文专项基线 | [ADR 0048](../adr/0048-controlled-real-eval-campaign-execution.md) |
 | [多仓库Eval Suite、Transcript与Task Pack证据](eval-suite-and-transcript-baseline.md) | 2026-09-20 | Codex、OpenCode与Claude逆向样本固定Revision；包含独立Task Pack取舍 | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) |
 | [多仓库离线Eval数据集](multi-repository-eval-dataset.md) | 2026-09-20 | OpenAI Agents Python、OpenCode、LangChain固定Revision及MIT权利链 | [ADR 0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0.9.2d详细设计](../changes/m09-2d-multi-repository-offline-baseline.md) |
+| [受控真实Provider完整Suite](controlled-real-provider-suite.md) | 2026-09-20 | Harnessix现有主链及百炼北京官方接入/价格事实 | [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)、[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md) |
 | [Eval Token预算适用性](eval-token-budget-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0049](../adr/0049-versioned-eval-token-budget.md) |
 | [Eval最终回答契约可见性](eval-final-answer-contract-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0051](../adr/0051-versioned-eval-final-answer-contract.md) |
 | [Eval变更交付适用性](eval-change-delivery.md) | 2026-09-07 | 正文专项基线 | [ADR 0052](../adr/0052-controlled-eval-change-delivery.md)、[Delivery模块](../modules/delivery.md) |
@@ -147,6 +149,6 @@ flowchart LR
 ## 7. 当前限制
 
 冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制、0.9.1完整TUI设计所需的产品交互证据，以及0.9.2
-多仓库Eval Suite和脱敏Transcript证据的首轮基线，但不代表持续跟踪上游最新版本。后续切片若涉及三平台发行、
+多仓库Eval Suite、脱敏Transcript证据和受控真实Provider完整Suite接入基线，但不代表持续跟踪上游最新版本。后续切片若涉及三平台发行、
 长期Soak、远程MCP认证或供应链发布，必须先建立
 对应的新版本研究证据，不能继续外推现有冻结结论。

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 76
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 77
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
@@ -41,6 +42,10 @@ related_tests:
   - tests/integration/test_task_pack_execution.py
   - tests/evals/test_task_pack_suite.py
   - tests/evals/test_offline_suite_runner.py
+  - tests/evals/test_provider_suite_contracts.py
+  - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_evidence.py
   - tests/product_ui/test_recoverable_session.py
   - tests/product_ui/test_controller.py
   - tests/product_ui/test_app.py
@@ -57,7 +62,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3实现Revision `505bc53`保留不可变v1并新增兼容v2，完整20 Trial固定Container与双提交窗口恢复由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭；真实Provider基线仍属e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3实现Revision `505bc53`保留不可变v1并新增兼容v2，完整20 Trial固定Container与双提交窗口恢复由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭；0.9.2e默认禁网、私有配置、宿主/恢复绑定和低敏证据发布为候选实现，待提交、全矩阵CI及真实完整Suite证据，不能据此关闭e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 
@@ -89,7 +94,7 @@ supersedes: []
 | Skill扩展 | [Skill模块设计](modules/skills.md) | `source → catalog → progressive load/resource → action gateway`；重点区分内容包、Root/Manifest绑定、早期审计缺口、Secret发布边界和默认产品未装配 |
 | Hook扩展 | [Hook模块设计](modules/hooks.md) | `definition/grant → registry → dispatch/matcher → hook run → trusted action → 双账本`；重点区分捕获时授权、Action执行Timeout、恢复和默认产品未装配 |
 | 受控Provider验证 | [Smoke模块设计](modules/smoke.md) | `network gate → strict config → fixed scenario → Agent/SQLite/Replay → whitelist report`；重点区分Token边界、金额未知、配置对象安全与端点—凭据未绑定 |
-| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → deterministic suite composition → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d工程Pack/Case Adapter/完整离线Suite均已验收；d3保留v1并新增产品Patch兼容v2，20 Trial固定Container、双提交窗口恢复与脱敏证据已经[冻结](validation/offline-engineering-2026-09-20-v2/README.md)，d2/d3设计见[专项详细设计](changes/m09-2d-multi-repository-offline-baseline.md)；方法读[测试与Eval规范](testing-and-evals.md)，历史数字与离线/真实Provider结果读[验证证据索引](validation/README.md) |
+| Eval与发布证据 | [Evals模块设计](modules/evals.md) | `task pack/catalog → deterministic suite composition → materialization → fixed profile → agent run → grader → campaign → suite`；0.9.2b Task Pack、0.9.2c可恢复Suite Runner和0.9.2d工程Pack/Case Adapter/完整离线Suite均已验收；d3保留v1并新增产品Patch兼容v2，20 Trial固定Container、双提交窗口恢复与脱敏证据已经[冻结](validation/offline-engineering-2026-09-20-v2/README.md)，d2/d3设计见[专项详细设计](changes/m09-2d-multi-repository-offline-baseline.md)；0.9.2e候选边界见[详细设计](changes/m09-2e-controlled-real-provider-baseline.md)、[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)及[运维手册](operations/provider-suite-baseline.md)；方法读[测试与Eval规范](testing-and-evals.md)，历史数字与离线/真实Provider结果读[验证证据索引](validation/README.md) |
 | Trace、Metric与日志 | [Observability模块设计](modules/observability.md) | `core port → no-op/OTel adapter → Agent/Provider/Trusted Action`；再读`agent/telemetry.py`的故障隔离 |
 | Agent Protocol与恢复 | [Protocol模块设计](modules/protocol.md) | `contracts → codec → projection → request ledger`；再读App Server的握手、路由与命令顺序 |
 | App Server连接与应用编排 | [App Server模块设计](modules/app-server.md) | `stdio → server → service → runtime/session`；重点区分连接、命令账本、领域事实、Live Delta与关闭生命周期 |
@@ -193,9 +198,9 @@ supersedes: []
 
 ## 5. 架构决策和源码研究
 
-- [ADR索引](adr/README.md)：记录87份长期决策的状态、背景、候选方案、选择和后果；
+- [ADR索引](adr/README.md)：记录88份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code等31份冻结参考实现证据及访问日期；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code及Provider接入等32份冻结或评审中参考证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -207,7 +212,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [受控模型Smoke指南](model-smoke.md)；
 - [部署与运维](deployment.md)：当前部署拓扑和统一入口；
 - [安装与制品](operations/installation.md)、[配置参考](operations/configuration.md)、[升级与回退](operations/upgrade-and-rollback.md)；
-- [故障恢复](operations/recovery.md)、[诊断与可观测性](operations/diagnostics.md)、[平台与运行环境](operations/platforms.md)；
+- [故障恢复](operations/recovery.md)、[诊断与可观测性](operations/diagnostics.md)、[平台与运行环境](operations/platforms.md)、[真实Provider完整Suite运维](operations/provider-suite-baseline.md)；
 - [验证证据索引](validation/README.md)：真实Provider Smoke与Coding Eval证据谱系；
 - [威胁模型](threat-model.md)。
 

@@ -59,20 +59,22 @@ def _execution_fingerprint(
     loaded: LoadedCodingEvalTaskPack,
     case: CodingEvalTaskPackCase,
     campaign: CodingEvalCampaignPlan,
+    provider_binding_sha256: str | None,
 ) -> str:
     profile = loaded.manifest.profile(case.profile_id)
-    return digest(
-        {
-            "spec_version": "harnessix.task-pack-case-execution-binding/v1",
-            "pack_id": loaded.manifest.pack_id,
-            "pack_version": loaded.manifest.pack_version,
-            "pack_sha256": loaded.manifest.pack_sha256,
-            "case_id": case.case_id,
-            "task_fingerprint": case.task.fingerprint,
-            "profile_sha256": profile.profile_sha256,
-            "campaign_plan_fingerprint": campaign.fingerprint,
-        }
-    )
+    binding = {
+        "spec_version": "harnessix.task-pack-case-execution-binding/v1",
+        "pack_id": loaded.manifest.pack_id,
+        "pack_version": loaded.manifest.pack_version,
+        "pack_sha256": loaded.manifest.pack_sha256,
+        "case_id": case.case_id,
+        "task_fingerprint": case.task.fingerprint,
+        "profile_sha256": profile.profile_sha256,
+        "campaign_plan_fingerprint": campaign.fingerprint,
+    }
+    if provider_binding_sha256 is not None:
+        binding["provider_binding_sha256"] = provider_binding_sha256
+    return digest(binding)
 
 
 def _require_case_scope(
@@ -139,6 +141,7 @@ class _CaseExecution:
     git_executable: Path
     container_engine: Path
     provider_factory: TaskPackProviderFactory
+    provider_binding_sha256: str | None
     observability: Observability | None
     fault: Fault
     expected: CodingEvalSuiteCasePlan
@@ -162,7 +165,12 @@ def _require_plan(context: _CaseExecution) -> None:
 
 
 def _load_state(context: _CaseExecution) -> CodingEvalCampaignExecutionState:
-    fingerprint = _execution_fingerprint(context.loaded, context.case, context.campaign)
+    fingerprint = _execution_fingerprint(
+        context.loaded,
+        context.case,
+        context.campaign,
+        context.provider_binding_sha256,
+    )
     if path_present(context.state_path):
         state = read_eval_campaign_execution_state(context.state_path)
     else:
@@ -379,6 +387,7 @@ class TaskPackCaseExecutor:
     git_executable: Path
     container_engine: Path
     provider_factory: TaskPackProviderFactory
+    provider_binding_sha256: str | None = None
     observability: Observability | None = None
     fault: Fault = _fault
 
@@ -412,6 +421,7 @@ class TaskPackCaseExecutor:
                 self.git_executable,
                 self.container_engine,
                 self.provider_factory,
+                self.provider_binding_sha256,
                 self.observability,
                 self.fault,
                 expected,

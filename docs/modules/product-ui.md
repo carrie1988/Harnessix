@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 14
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - product
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/product_ui/test_state_store.py
   - tests/product_ui/test_projection.py
@@ -30,6 +31,7 @@ related_tests:
   - tests/product_ui/test_stdio_product.py
   - tests/product_ui/test_cli.py
   - tests/app_server/test_server_sdk.py
+  - tests/evals/test_provider_suite_cli.py
 supersedes: []
 ---
 
@@ -533,6 +535,8 @@ CLI通过当前Python解释器启动`python -m harnessix agent-server`，不依�
 `code_main`后延迟导入；基础安装缺少依赖时返回`{"code":"tui_dependency_missing",...}`并退出2，不动态下载。
 参数解析前或启动前错误输出为单行、排序、有界JSON，不包含路径、argv、stderr或异常正文。
 
+顶层[`src/harnessix/cli.py`](../../src/harnessix/cli.py)还负责把`coding-eval-campaign`和`coding-eval-suite`分派到Evals模块。后者是默认禁网的受控验证入口，不进入Product UI状态、Textual生命周期或Agent Protocol客户端；其合同和恢复事实归[Evals模块设计](evals.md)所有。
+
 ## 8. 数据结构、重点字段与持久化格式
 
 ### 8.1 `ClientStateV1`
@@ -819,6 +823,7 @@ Controller为整个关闭序列提供1～30秒绝对时限，并将轮询、Inte
 | 专用Modal与错误帮助 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py)四类Screen、[`error_help.py`](../../src/harnessix/product_ui/error_help.py) | [`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)盲批、选项、Escape、输入及脱敏回退 |
 | Textual View生命周期 | [`app.py`](../../src/harnessix/product_ui/app.py) `ProductApp`、[`main_view.py`](../../src/harnessix/product_ui/main_view.py) `ProductMainView` | [`test_app.py`](../../tests/product_ui/test_app.py)基础View；[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py)Approval、Question、Steer、Cancel、陈旧Modal、Usage/Cost与Quit分离 |
 | CLI组合根与可选依赖 | [`cli.py`](../../src/harnessix/product_ui/cli.py) `code_main`、`_server_command` | [`test_cli.py`](../../tests/product_ui/test_cli.py)顶层分派、精确argv和脱敏失败 |
+| 顶层非UI Eval分派 | [`src/harnessix/cli.py`](../../src/harnessix/cli.py) `main` | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py)真实Suite默认禁网与低敏结果 |
 | 跨进程产品恢复 | [`stdio_server.py`](../../tests/product_ui/stdio_server.py)测试Server、[`controller.py`](../../src/harnessix/product_ui/controller.py) | [`test_stdio_product.py`](../../tests/product_ui/test_stdio_product.py)关闭并重开真实JSONL子进程与Store |
 
 ## 14. 测试、验证与验收
@@ -953,6 +958,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 14 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 同步顶层`coding-eval-suite`到Evals模块的默认禁网分派；明确该入口不进入Product UI状态或协议客户端 |
 | 13 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action Config路径、环境覆盖与双配置CAS参数透传由CI 35439332019验收关闭 |
 | 12 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 接入e5候选的Action Config路径、环境覆盖与Product/Action活动CAS前提透传；等待关闭CI |
 | 11 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 接入Secret-free Configure、共享Doctor/Startup Preflight和状态/Transport前阻断；Windows原生只读链通过CI 34735529084 |

@@ -5,8 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import os
-import stat
 from collections.abc import Sequence
 from typing import NoReturn
 
@@ -16,7 +14,7 @@ from harnessix.evals.campaign_execution_contracts import (
     CodingEvalCampaignRunConfig,
     CodingEvalCampaignRunReport,
 )
-from harnessix.models._json import strict_json
+from harnessix.evals.cli_config import read_private_eval_config
 
 _MAX_CONFIG_BYTES = 512 * 1024
 
@@ -28,17 +26,11 @@ class _SafeParser(argparse.ArgumentParser):
 
 
 def _read_config(path: str) -> CodingEvalCampaignRunConfig:
-    descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
-    with os.fdopen(descriptor, "rb") as source:
-        info = os.fstat(source.fileno())
-        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o777 != 0o600:
-            raise ValueError("配置必须是0600普通文件")
-        raw = source.read(_MAX_CONFIG_BYTES + 1)
-    if not raw or len(raw) > _MAX_CONFIG_BYTES:
-        raise ValueError("配置为空或超过上限")
-    text = raw.decode("utf-8")
-    strict_json(text)
-    return CodingEvalCampaignRunConfig.model_validate_json(text, strict=True)
+    return read_private_eval_config(
+        path,
+        CodingEvalCampaignRunConfig,
+        max_bytes=_MAX_CONFIG_BYTES,
+    )
 
 
 def main(argv: Sequence[str]) -> None:

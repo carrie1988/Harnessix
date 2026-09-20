@@ -118,6 +118,44 @@ async def test_case_adapter_persists_plan_before_cancelled_trial_and_reopens(
     assert read_eval_campaign_execution_state(root / "campaign-state.json") == state
 
 
+async def test_case_adapter_rejects_provider_binding_drift_before_provider(
+    tmp_path: Path,
+) -> None:
+    loaded, expected, campaign = _case_and_campaign()
+
+    def provider_factory(*_args):
+        @asynccontextmanager
+        async def context():
+            raise AssertionError("取消或绑定漂移不得创建Provider")
+            yield
+
+        return context()
+
+    root = tmp_path / "case"
+    root.mkdir(mode=0o700)
+    token = CancelToken()
+    token.cancel()
+    initial = TaskPackCaseExecutor(
+        loaded,
+        Path("/missing/git"),
+        Path("/missing/docker"),
+        provider_factory,
+        provider_binding_sha256="a" * 64,
+    )
+    with pytest.raises(TurnCancelled):
+        await initial(expected, campaign, root, token)
+
+    drifted = TaskPackCaseExecutor(
+        loaded,
+        Path("/missing/git"),
+        Path("/missing/docker"),
+        provider_factory,
+        provider_binding_sha256="b" * 64,
+    )
+    with pytest.raises(KernelError, match="Campaign状态漂移"):
+        await drifted(expected, campaign, root, CancelToken())
+
+
 async def test_case_adapter_rejects_suite_identity_drift_before_execution(
     tmp_path: Path,
 ) -> None:

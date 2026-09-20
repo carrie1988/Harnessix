@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 69
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 70
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -39,6 +39,7 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
@@ -64,6 +65,10 @@ related_tests:
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
   - tests/integration/test_task_pack_execution.py
+  - tests/evals/test_provider_suite_contracts.py
+  - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_evidence.py
   - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
   - tests/app_server/test_server_sdk.py
@@ -392,8 +397,8 @@ Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
 显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。
-0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭。真实Provider Suite属于0.9.2e边界。全部公开证据均不复制
-Prompt、回答、工具正文、Diff或路径。
+0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭。0.9.2e候选沿用同一Suite/Case/Agent/Product Action链，增加默认禁网CLI、私有Provider配置、Pack/Revision/宿主程序校验、Suite与Case执行摘要绑定、每Trial独立Provider和低敏证据发布；在真实完整Suite与冻结证据完成前仍不构成真实质量基线。全部公开证据均不复制
+Prompt、回答、工具正文、Diff或路径。详细边界见[0.9.2e设计](changes/m09-2e-controlled-real-provider-baseline.md)和[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
 门禁。0.9.1f3删除PostgreSQL旧服务后，CI不再启动旧Journal服务，当前矩阵为Linux Python 3.12/3.13、macOS、Windows、
@@ -522,7 +527,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集、正式Case Adapter及20 Trial离线基线已验收；不可变v1与产品Patch兼容v2均保留，真实Provider基线仍缺 | 0.9.2e |
+| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集、正式Case Adapter及20 Trial离线基线已验收；真实Provider控制面候选已实现，但固定模型完整运行与证据冻结仍缺 | 0.9.2e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -535,6 +540,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 70 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 登记0.9.2e默认禁网、私有真实Provider配置、宿主/恢复绑定、每Trial独立Provider和低敏证据发布；真实运行与CI待验收 |
 | 69 | `505bc537f74bd59e891c605ff4114856991f1783` | 2026-09-20 | 工程Pack v2完整20 Trial由CI 35483905418完成固定Container、双Suite提交恢复和脱敏证据验收；关闭0.9.2d3/d，真实Provider基线仍属e |
 | 68 | 基于`d5142c8da41356a3f7b5a740b23865e9e42e4798`的候选修正 | 2026-09-20 | 记录首轮完整Suite识别出的v1 Test Case未跟踪文件缺陷；保持v1不可变并新增产品Workspace Patch与Grader兼容的v2，d3固定Container复验及证据冻结仍待完成 |
 | 67 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 登记0.9.2d3确定性20 Trial组合、唯一Agent/Product Action链复用、双Suite提交窗口恢复和脱敏证据CI；固定Container验收待完成 |

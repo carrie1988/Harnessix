@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import Literal
+
+from pydantic import Field
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.domain.models import utc_now
+from harnessix.domain.models import ContractModel, utc_now
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
 from harnessix.evals.execution_fs import (
     ensure_private_directory,
@@ -38,7 +42,7 @@ from harnessix.evals.suite_execution_contracts import (
     SuiteRunReason,
     SuiteStopReason,
 )
-from harnessix.models.pricing import amount_units, format_amount
+from harnessix.models.pricing import amount_units, content_digest, format_amount
 
 SuiteCaseExecutor = Callable[
     [CodingEvalSuiteCasePlan, CodingEvalCampaignPlan, Path, CancelToken],
@@ -70,12 +74,39 @@ def _require_plan(path: Path, config: CodingEvalSuiteRunConfig) -> None:
     write_eval_suite_plan(path, config.plan)
 
 
-def _initial_state(config: CodingEvalSuiteRunConfig) -> CodingEvalSuiteExecutionState:
+def _execution_fingerprint(
+    config: CodingEvalSuiteRunConfig,
+    execution_binding_sha256: str | None,
+) -> str:
+    if execution_binding_sha256 is None:
+        return config.fingerprint
+    return content_digest(
+        _SuiteExecutionBinding(
+            suite_config_sha256=config.fingerprint,
+            host_binding_sha256=execution_binding_sha256,
+        )
+    )
+
+
+class _SuiteExecutionBinding(ContractModel):
+    """把Suite计划配置与宿主/Provider配置摘要绑定为恢复身份。"""
+
+    spec_version: Literal["harnessix.coding-eval-suite-execution-binding/v1"] = (
+        "harnessix.coding-eval-suite-execution-binding/v1"
+    )
+    suite_config_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    host_binding_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+def _initial_state(
+    config: CodingEvalSuiteRunConfig,
+    execution_binding_sha256: str | None,
+) -> CodingEvalSuiteExecutionState:
     now = utc_now()
     return CodingEvalSuiteExecutionState(
         suite_id=config.plan.suite_id,
         plan_fingerprint=config.plan.fingerprint,
-        execution_config_fingerprint=config.fingerprint,
+        execution_config_fingerprint=_execution_fingerprint(config, execution_binding_sha256),
         status="ready",
         completed_case_ids=(),
         known_cost_currency=config.fee_stop_currency,
@@ -88,6 +119,7 @@ def _initial_state(config: CodingEvalSuiteRunConfig) -> CodingEvalSuiteExecution
 def _require_state(
     state: CodingEvalSuiteExecutionState,
     config: CodingEvalSuiteRunConfig,
+    execution_binding_sha256: str | None,
 ) -> None:
     case_ids = tuple(case.case_id for case in config.plan.cases)
     completed = state.completed_case_ids
@@ -95,7 +127,8 @@ def _require_state(
     if (
         state.suite_id != config.plan.suite_id
         or state.plan_fingerprint != config.plan.fingerprint
-        or state.execution_config_fingerprint != config.fingerprint
+        or state.execution_config_fingerprint
+        != _execution_fingerprint(config, execution_binding_sha256)
         or completed != case_ids[: len(completed)]
         or state.known_cost_currency != config.fee_stop_currency
         or state.current_case_id not in {None, next_case}
@@ -275,12 +308,14 @@ def _prepare_case_roots(root: Path, count: int) -> None:
 
 
 def _load_or_create_state(
-    root: Path, config: CodingEvalSuiteRunConfig
+    root: Path,
+    config: CodingEvalSuiteRunConfig,
+    execution_binding_sha256: str | None,
 ) -> CodingEvalSuiteExecutionState:
     state_path = root / _STATE_FILE
     if path_present(state_path):
         return read_eval_suite_execution_state(state_path)
-    state = _initial_state(config)
+    state = _initial_state(config, execution_binding_sha256)
     write_eval_suite_execution_state(state_path, state)
     return state
 
@@ -459,13 +494,14 @@ async def _run_locked_suite(
     token: CancelToken,
     resume: bool,
     fail: Fault,
+    execution_binding_sha256: str | None,
 ) -> CodingEvalSuiteRunReport:
     _require_plan(root / _PLAN_FILE, config)
     fail("suite.after_plan")
     _prepare_case_roots(root, len(config.plan.cases))
-    state = _load_or_create_state(root, config)
+    state = _load_or_create_state(root, config, execution_binding_sha256)
     fail("suite.after_state")
-    _require_state(state, config)
+    _require_state(state, config, execution_binding_sha256)
     state, completed, known_units, all_costs_complete = _reconcile_prefix(root, config, state)
     recovered = _recover_published_report(root, config, state, completed)
     if recovered is not None:
@@ -504,6 +540,7 @@ async def run_coding_eval_suite(
     cancel: CancelToken | None = None,
     resume: bool = False,
     fault: Fault | None = None,
+    execution_binding_sha256: str | None = None,
 ) -> CodingEvalSuiteRunReport:
     """顺序执行固定Case；崩溃只重入当前Case，停止状态必须显式恢复。"""
 
@@ -511,6 +548,10 @@ async def run_coding_eval_suite(
         config = CodingEvalSuiteRunConfig.model_validate_json(config.model_dump_json(), strict=True)
     except ValueError:
         raise KernelError("eval_suite_config_invalid", "Suite执行配置无效") from None
+    if execution_binding_sha256 is not None and not re.fullmatch(
+        r"[0-9a-f]{64}", execution_binding_sha256
+    ):
+        raise KernelError("eval_suite_config_invalid", "Suite执行绑定摘要无效")
     root = Path(config.work_root)
     ensure_private_directory(
         root,
@@ -531,4 +572,5 @@ async def run_coding_eval_suite(
             cancel or CancelToken(),
             resume,
             fault or _fault,
+            execution_binding_sha256,
         )

@@ -73,6 +73,16 @@ from harnessix.evals.materializer import (
     load_materialized_coding_eval,
     materialize_historical_coding_eval,
 )
+from harnessix.evals.provider_suite_contracts import (
+    CodingEvalProviderSuiteEvidenceManifest,
+    CodingEvalProviderSuiteRunConfig,
+    CodingEvalProviderSuiteRunReport,
+)
+from harnessix.evals.provider_suite_evidence import (
+    build_provider_suite_evidence_manifest,
+    publish_provider_suite_evidence,
+)
+from harnessix.evals.provider_suite_execution import run_task_pack_provider_suite
 from harnessix.evals.report import (
     read_eval_campaign_execution_state,
     read_eval_campaign_plan,
@@ -143,7 +153,10 @@ from harnessix.evals.task_pack_materializer import (
     load_materialized_task_pack_case,
     materialize_task_pack_case,
 )
-from harnessix.evals.task_pack_suite import build_task_pack_offline_suite_config
+from harnessix.evals.task_pack_suite import (
+    build_task_pack_offline_suite_config,
+    build_task_pack_suite_config,
+)
 
 __all__ = [
     "CODING_EVAL_GRADER_VERSION",
@@ -168,6 +181,9 @@ __all__ = [
     "CodingEvalDeliveryStore",
     "CodingEvalDeliveryTransition",
     "CodingEvalMaterialization",
+    "CodingEvalProviderSuiteEvidenceManifest",
+    "CodingEvalProviderSuiteRunConfig",
+    "CodingEvalProviderSuiteRunReport",
     "CodingEvalReport",
     "CodingEvalRunState",
     "CodingEvalRate",
@@ -219,6 +235,8 @@ __all__ = [
     "build_transcript_evidence",
     "build_task_pack_product_profile",
     "build_task_pack_offline_suite_config",
+    "build_task_pack_suite_config",
+    "build_provider_suite_evidence_manifest",
     "builtin_coding_eval_task_pack",
     "builtin_coding_eval_task_pack_ids",
     "builtin_coding_eval_task_pack_versions",
@@ -244,10 +262,12 @@ __all__ = [
     "read_eval_campaign_execution_state",
     "read_eval_run_state",
     "read_coding_eval_change_package",
+    "publish_provider_suite_evidence",
     "run_historical_checks",
     "run_historical_coding_eval",
     "run_coding_eval_campaign",
     "run_coding_eval_suite",
+    "run_task_pack_provider_suite",
     "write_eval_report",
     "write_eval_suite_plan",
     "write_eval_suite_case_report",

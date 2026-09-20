@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 15
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 16
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_server_and_cli.py
@@ -28,6 +29,9 @@ related_tests:
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_stdio_product.py
   - tests/tools/test_windows_native_runtime.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_suite_evidence.py
 supersedes: []
 ---
 
@@ -49,6 +53,7 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | Session、Action、Process与Delivery恢复 | [故障恢复](operations/recovery.md) |
 | Doctor、日志、Trace与Metric | [诊断与可观测性](operations/diagnostics.md) |
 | macOS、Linux、Windows与Container | [平台与运行环境](operations/platforms.md) |
+| 受控真实Provider完整Suite | [真实Provider Suite运维手册](operations/provider-suite-baseline.md) |
 
 ## 2. 当前能力与非目标
 
@@ -141,7 +146,7 @@ uv run harnessix code doctor ./workspace \
 ```
 
 Doctor检查配置、Profile、Secret引用、Workspace、状态目录、平台原生读取端口、可选Git、TUI和Action能力。
-Doctor成功不是网络Provider调用证明；真实Provider验证由受控Smoke负责。
+Doctor成功不是网络Provider调用证明；单次模型连通性由受控Smoke负责，完整工程Task Pack真实Provider基线由默认禁网的`coding-eval-suite`及[专项运维手册](operations/provider-suite-baseline.md)负责。候选实现未完成真实运行前不得宣称0.9.2e通过。
 
 ### 5.3 启动TUI
 

@@ -136,6 +136,28 @@ async def test_suite_runs_fixed_order_persists_report_and_reopens_without_case_r
     assert reopened == result
 
 
+async def test_suite_recovery_binds_provider_and_host_configuration(tmp_path: Path) -> None:
+    config, reports = execution_fixture(tmp_path)
+    binding = "a" * 64
+    await run_coding_eval_suite(
+        config,
+        FixtureCaseExecutor(reports),
+        execution_binding_sha256=binding,
+    )
+
+    async def forbidden(*_):
+        pytest.fail("执行绑定漂移不得执行Case")
+
+    with pytest.raises(KernelError, match="执行状态与固定配置不一致"):
+        await run_coding_eval_suite(
+            config,
+            forbidden,
+            execution_binding_sha256="b" * 64,
+        )
+    with pytest.raises(KernelError, match="执行绑定摘要无效"):
+        await run_coding_eval_suite(config, forbidden, execution_binding_sha256="invalid")
+
+
 async def test_suite_plan_is_durable_before_first_case_and_plan_crash_is_recoverable(
     tmp_path: Path,
 ) -> None:

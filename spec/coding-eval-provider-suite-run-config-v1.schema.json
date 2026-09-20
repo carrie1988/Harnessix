@@ -1,0 +1,788 @@
+{
+  "$defs": {
+    "BillingContext": {
+      "additionalProperties": false,
+      "description": "可信宿主核对的计费上下文；不是从 Adapter 类型或请求模型猜测。",
+      "properties": {
+        "billing_provider": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Billing Provider"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "service_tier": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Tier"
+        },
+        "inference_mode": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Mode"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Write Ttl"
+        }
+      },
+      "title": "BillingContext",
+      "type": "object"
+    },
+    "ChatCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "tool_calls": {
+          "default": true,
+          "title": "Tool Calls",
+          "type": "boolean"
+        },
+        "parallel_tool_calls": {
+          "default": true,
+          "title": "Parallel Tool Calls",
+          "type": "boolean"
+        },
+        "streaming_usage": {
+          "const": true,
+          "default": true,
+          "title": "Streaming Usage",
+          "type": "boolean"
+        }
+      },
+      "title": "ChatCapabilities",
+      "type": "object"
+    },
+    "CodingEvalCampaignPlan": {
+      "additionalProperties": false,
+      "description": "在任何真实请求前固定的可比较试验集合与计价上下文。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval-campaign-plan/v1",
+          "default": "harnessix.coding-eval-campaign-plan/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "campaign_id": {
+          "format": "uuid",
+          "title": "Campaign Id",
+          "type": "string"
+        },
+        "task_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "task_version": {
+          "minimum": 1,
+          "title": "Task Version",
+          "type": "integer"
+        },
+        "task_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Task Fingerprint",
+          "type": "string"
+        },
+        "environment": {
+          "$ref": "#/$defs/CodingEvalEnvironment"
+        },
+        "run_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 2,
+          "title": "Run Ids",
+          "type": "array"
+        },
+        "price": {
+          "$ref": "#/$defs/PriceSnapshot"
+        },
+        "billing_context": {
+          "$ref": "#/$defs/BillingContext"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "campaign_id",
+        "task_id",
+        "task_version",
+        "task_fingerprint",
+        "environment",
+        "run_ids",
+        "price",
+        "billing_context",
+        "created_at"
+      ],
+      "title": "CodingEvalCampaignPlan",
+      "type": "object"
+    },
+    "CodingEvalEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "harnessix_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Harnessix Revision",
+          "type": "string"
+        },
+        "provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "platform": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Platform",
+          "type": "string"
+        },
+        "isolation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Isolation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "harnessix_revision",
+        "provider",
+        "model",
+        "platform",
+        "isolation"
+      ],
+      "title": "CodingEvalEnvironment",
+      "type": "object"
+    },
+    "CodingEvalSuiteCasePlan": {
+      "additionalProperties": false,
+      "description": "Suite冻结的单个任务、仓库和Campaign身份。",
+      "properties": {
+        "case_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "task_kind": {
+          "enum": [
+            "bug_fix",
+            "feature",
+            "refactor",
+            "test",
+            "review"
+          ],
+          "title": "Task Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "task_version": {
+          "minimum": 1,
+          "title": "Task Version",
+          "type": "integer"
+        },
+        "task_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Task Fingerprint",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "#/$defs/EvalRepository"
+        },
+        "campaign_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Campaign Plan Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id",
+        "task_kind",
+        "task_id",
+        "task_version",
+        "task_fingerprint",
+        "repository",
+        "campaign_plan_fingerprint"
+      ],
+      "title": "CodingEvalSuiteCasePlan",
+      "type": "object"
+    },
+    "CodingEvalSuitePlan": {
+      "additionalProperties": false,
+      "description": "首个模型请求前固定的多任务、多仓库基线计划。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval-suite-plan/v1",
+          "default": "harnessix.coding-eval-suite-plan/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "suite_id": {
+          "format": "uuid",
+          "title": "Suite Id",
+          "type": "string"
+        },
+        "suite_version": {
+          "minimum": 1,
+          "title": "Suite Version",
+          "type": "integer"
+        },
+        "environment": {
+          "$ref": "#/$defs/CodingEvalEnvironment"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/CodingEvalSuiteCasePlan"
+          },
+          "maxItems": 50,
+          "minItems": 5,
+          "title": "Cases",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "suite_id",
+        "suite_version",
+        "environment",
+        "cases",
+        "created_at"
+      ],
+      "title": "CodingEvalSuitePlan",
+      "type": "object"
+    },
+    "CodingEvalSuiteRunConfig": {
+      "additionalProperties": false,
+      "description": "可信宿主提供的Suite执行配置；不保存Provider凭据或动态命令。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-eval-suite-run-config/v1",
+          "default": "harnessix.coding-eval-suite-run-config/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/CodingEvalSuitePlan"
+        },
+        "campaign_plans": {
+          "items": {
+            "$ref": "#/$defs/CodingEvalCampaignPlan"
+          },
+          "maxItems": 50,
+          "minItems": 5,
+          "title": "Campaign Plans",
+          "type": "array"
+        },
+        "work_root": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Work Root",
+          "type": "string"
+        },
+        "fee_stop_currency": {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "title": "Fee Stop Currency",
+          "type": "string"
+        },
+        "fee_stop_amount": {
+          "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,18})?$",
+          "title": "Fee Stop Amount",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plan",
+        "campaign_plans",
+        "work_root",
+        "fee_stop_currency",
+        "fee_stop_amount"
+      ],
+      "title": "CodingEvalSuiteRunConfig",
+      "type": "object"
+    },
+    "EvalRepository": {
+      "additionalProperties": false,
+      "description": "任务来源身份；不包含访问凭据或可变分支名。",
+      "properties": {
+        "name": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Origin",
+          "type": "string"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40,64}$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "baseline_tree_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Baseline Tree Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "origin",
+        "source_revision",
+        "baseline_tree_sha256"
+      ],
+      "title": "EvalRepository",
+      "type": "object"
+    },
+    "FlatInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "flat",
+          "default": "flat",
+          "title": "Kind",
+          "type": "string"
+        },
+        "per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "per_million"
+      ],
+      "title": "FlatInputPrice",
+      "type": "object"
+    },
+    "OpenAIChatConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "base_url": {
+          "default": "https://api.openai.com/v1",
+          "maxLength": 2048,
+          "title": "Base Url",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Model",
+          "type": "string"
+        },
+        "api_key_env": {
+          "default": "OPENAI_API_KEY",
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/ChatCapabilities"
+        },
+        "max_output_tokens": {
+          "default": 1024,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "io_timeout_seconds": {
+          "default": 30,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Io Timeout Seconds",
+          "type": "number"
+        },
+        "max_attempts": {
+          "default": 2,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "retry_delay_seconds": {
+          "default": 0.5,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Retry Delay Seconds",
+          "type": "number"
+        },
+        "max_request_bytes": {
+          "default": 2097152,
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Request Bytes",
+          "type": "integer"
+        },
+        "max_response_bytes": {
+          "default": 2097152,
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Response Bytes",
+          "type": "integer"
+        },
+        "max_frame_bytes": {
+          "default": 262144,
+          "maximum": 1048576,
+          "minimum": 128,
+          "title": "Max Frame Bytes",
+          "type": "integer"
+        },
+        "max_chunks": {
+          "default": 10000,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Chunks",
+          "type": "integer"
+        },
+        "output_token_parameter": {
+          "default": "max_completion_tokens",
+          "enum": [
+            "max_completion_tokens",
+            "max_tokens"
+          ],
+          "title": "Output Token Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "OpenAIChatConfig",
+      "type": "object"
+    },
+    "PartitionedInputPrice": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "partitioned",
+          "default": "partitioned",
+          "title": "Kind",
+          "type": "string"
+        },
+        "uncached_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Uncached Per Million",
+          "type": "string"
+        },
+        "cache_read_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Read Per Million",
+          "type": "string"
+        },
+        "cache_creation_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Cache Creation Per Million",
+          "type": "string"
+        },
+        "cache_write_ttl": {
+          "anyOf": [
+            {
+              "enum": [
+                "5m",
+                "1h"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cache Write Ttl"
+        }
+      },
+      "required": [
+        "uncached_per_million",
+        "cache_read_per_million",
+        "cache_creation_per_million",
+        "cache_write_ttl"
+      ],
+      "title": "PartitionedInputPrice",
+      "type": "object"
+    },
+    "PriceSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.price/v1",
+          "default": "harnessix.price/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "source_url": {
+          "maxLength": 2048,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "billing_provider": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Billing Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Model",
+          "type": "string"
+        },
+        "region": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Region",
+          "type": "string"
+        },
+        "service_tier": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Service Tier",
+          "type": "string"
+        },
+        "inference_mode": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:/-]+$",
+          "title": "Inference Mode",
+          "type": "string"
+        },
+        "currency": {
+          "enum": [
+            "USD",
+            "CNY"
+          ],
+          "title": "Currency",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "input_tokens_min": {
+          "minimum": 0,
+          "title": "Input Tokens Min",
+          "type": "integer"
+        },
+        "input_tokens_max": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens Max"
+        },
+        "input_price": {
+          "discriminator": {
+            "mapping": {
+              "flat": "#/$defs/FlatInputPrice",
+              "partitioned": "#/$defs/PartitionedInputPrice"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FlatInputPrice"
+            },
+            {
+              "$ref": "#/$defs/PartitionedInputPrice"
+            }
+          ],
+          "title": "Input Price"
+        },
+        "output_per_million": {
+          "maxLength": 25,
+          "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$",
+          "title": "Output Per Million",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "source_url",
+        "billing_provider",
+        "model",
+        "region",
+        "service_tier",
+        "inference_mode",
+        "currency",
+        "valid_from",
+        "valid_until",
+        "input_tokens_min",
+        "input_tokens_max",
+        "input_price",
+        "output_per_million"
+      ],
+      "title": "PriceSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "由可信宿主提供的真实Provider Suite配置；只引用凭据环境变量。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.coding-eval-provider-suite-run-config/v1",
+      "default": "harnessix.coding-eval-provider-suite-run-config/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "suite": {
+      "$ref": "#/$defs/CodingEvalSuiteRunConfig"
+    },
+    "pack_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "pack_version": {
+      "minimum": 1,
+      "title": "Pack Version",
+      "type": "integer"
+    },
+    "pack_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Pack Sha256",
+      "type": "string"
+    },
+    "source_root": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Source Root",
+      "type": "string"
+    },
+    "git_executable": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Git Executable",
+      "type": "string"
+    },
+    "container_engine": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Container Engine",
+      "type": "string"
+    },
+    "provider_config": {
+      "$ref": "#/$defs/OpenAIChatConfig"
+    }
+  },
+  "required": [
+    "suite",
+    "pack_id",
+    "pack_version",
+    "pack_sha256",
+    "source_root",
+    "git_executable",
+    "container_engine",
+    "provider_config"
+  ],
+  "title": "CodingEvalProviderSuiteRunConfig",
+  "type": "object"
+}

@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.1路线图范围和DOC-1.0～DOC-1.6文档治理；87份ADR和冻结源码研究均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container及Documentation六实例验收。0.9.2a已由全矩阵CI关闭；0.9.2b内置不可变Task Pack、固定Git物化与双语言固定Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭。0.9.2d1工程数据集实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成3仓10 Case、确定性生成、Review源码证据、固定Container和六实例验收并关闭；d2正式Case Adapter已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3实现Revision `505bc53`保留不可变v1并发布产品Patch兼容v2，确定性20 Trial、双提交窗口恢复及脱敏证据由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并冻结，0.9.2d据此关闭。真实Provider基线仍属于0.9.2e；0.9.2整体及0.9.3～0.9.6不能据此宣称完成或达到1.0。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.1路线图范围和DOC-1.0～DOC-1.6文档治理；88份ADR和32份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container及Documentation六实例验收。0.9.2a已由全矩阵CI关闭；0.9.2b内置不可变Task Pack、固定Git物化与双语言固定Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭。0.9.2d1工程数据集实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成3仓10 Case、确定性生成、Review源码证据、固定Container和六实例验收并关闭；d2正式Case Adapter已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3实现Revision `505bc53`保留不可变v1并发布产品Patch兼容v2，确定性20 Trial、双提交窗口恢复及脱敏证据由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并冻结，0.9.2d据此关闭。0.9.2e默认禁网、私有配置、宿主/恢复绑定和低敏证据发布为候选实现，真实完整Suite与冻结证据仍未完成；0.9.2整体及0.9.3～0.9.6不能据此宣称完成或达到1.0。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -354,6 +354,24 @@ uv run pytest tests/evals/test_campaign*.py
 ```
 
 费用停止线不是供应商账户硬额度：一个已开始试验可能越过停止线，达线只保证不再启动下一试验。c2b已使用百炼北京精确模型完成三次独立试验，累计费用估算¥0.273748；三次均在读取目标实现前触发任务20000累计Token预算，因此0/3不能解释为模型编码能力。完整结果和后续门禁见[真实基线记录](docs/validation/bailian-2026-09-06-coding-eval/README.md)，设计见[ADR 0047](docs/adr/0047-coding-eval-campaign-evidence.md)和[ADR 0048](docs/adr/0048-controlled-real-eval-campaign-execution.md)。
+
+## 当前候选：工程Task Pack真实Provider完整Suite（0.9.2e）
+
+- `harnessix coding-eval-suite`默认禁网；只有显式`--allow-network`才读取0600私有配置并创建Provider；
+- 固定工程Pack v2、10 Case × 2 Trial、精确模型/地域/价格窗口、串行工具调用和无自动重试；
+- 完整私有配置摘要绑定Suite与Case恢复，端点、模型限制、Key引用、宿主程序或源码Revision漂移均失败关闭；
+- 每Trial使用独立Provider生命周期，执行仍复用唯一Suite Runner、Agent Runtime和产品Trusted Action链；
+- 公开发布只允许Suite Plan、Suite Report和白名单Manifest，拒绝Prompt、回答、工具正文、Diff、代码、绝对路径与Secret。
+
+```bash
+uv run harnessix coding-eval-suite --help
+uv run pytest -q tests/evals/test_provider_suite_*.py
+```
+
+该控制面目前是候选实现；完整真实Suite、全矩阵CI和冻结证据完成前，不能宣称0.9.2e或0.9.2整体完成。设计与操作见
+[0.9.2e详细设计](docs/changes/m09-2e-controlled-real-provider-baseline.md)、
+[ADR 0088](docs/adr/0088-controlled-real-provider-suite-baseline.md)和
+[运维手册](docs/operations/provider-suite-baseline.md)。
 
 ## 当前已实现：真实Eval预算版本化（0.5.5c3a）
 

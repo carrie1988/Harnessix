@@ -12,7 +12,12 @@ from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan, CodingEvalS
 from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunConfig
 from harnessix.evals.task_pack import LoadedCodingEvalTaskPack, _verified_builtin_task_pack
 from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
-from harnessix.models.pricing import BillingContext, FlatInputPrice, PriceSnapshot
+from harnessix.models.pricing import (
+    Amount,
+    BillingContext,
+    FlatInputPrice,
+    PriceSnapshot,
+)
 
 _RECORDED_MODEL = "harnessix-recorded-v1"
 _PRICE_VERSION = "task-pack-recorded-v1"
@@ -57,6 +62,8 @@ def _campaign_plan(
     pack_id: str,
     pack_version: int,
     environment: CodingEvalEnvironment,
+    price: PriceSnapshot,
+    billing_context: BillingContext,
     created_at: datetime,
 ) -> CodingEvalCampaignPlan:
     prefix = f"case:{case.case_id}"
@@ -70,8 +77,8 @@ def _campaign_plan(
             _identity(suite_id, pack_id, pack_version, f"{prefix}:trial:{index}")
             for index in (1, 2)
         ),
-        price=_recorded_price(),
-        billing_context=_recorded_billing(),
+        price=price,
+        billing_context=billing_context,
         created_at=created_at,
     )
 
@@ -91,26 +98,26 @@ def _case_plan(
     )
 
 
-def build_task_pack_offline_suite_config(
+def build_task_pack_suite_config(
     loaded: LoadedCodingEvalTaskPack,
     *,
     suite_id: UUID,
     work_root: Path,
-    harnessix_revision: str,
-    platform: str,
+    environment: CodingEvalEnvironment,
+    price: PriceSnapshot,
+    billing_context: BillingContext,
+    fee_stop_amount: Amount,
     created_at: datetime,
 ) -> CodingEvalSuiteRunConfig:
-    """为内置Pack构造每Case两个Trial的稳定零费用Recorded Suite。"""
+    """为内置Pack构造每Case两个Trial的确定性Suite配置。"""
 
     verified = _verified_builtin_task_pack(loaded)
     manifest = verified.manifest
-    environment = CodingEvalEnvironment(
-        harnessix_revision=harnessix_revision,
-        provider="recorded",
-        model=_RECORDED_MODEL,
-        platform=platform,
-        isolation="fixed-container-no-network",
-    )
+    if environment.model != price.model:
+        raise ValueError("Suite环境模型与价格快照不一致")
+    for field in ("billing_provider", "region", "service_tier", "inference_mode"):
+        if getattr(billing_context, field) != getattr(price, field):
+            raise ValueError("Suite计费上下文与价格快照不一致")
     campaigns = tuple(
         _campaign_plan(
             case,
@@ -118,6 +125,8 @@ def build_task_pack_offline_suite_config(
             pack_id=manifest.pack_id,
             pack_version=manifest.pack_version,
             environment=environment,
+            price=price,
+            billing_context=billing_context,
             created_at=created_at,
         )
         for case in manifest.cases
@@ -136,6 +145,35 @@ def build_task_pack_offline_suite_config(
         plan=plan,
         campaign_plans=campaigns,
         work_root=str(work_root),
-        fee_stop_currency="USD",
+        fee_stop_currency=price.currency,
+        fee_stop_amount=fee_stop_amount,
+    )
+
+
+def build_task_pack_offline_suite_config(
+    loaded: LoadedCodingEvalTaskPack,
+    *,
+    suite_id: UUID,
+    work_root: Path,
+    harnessix_revision: str,
+    platform: str,
+    created_at: datetime,
+) -> CodingEvalSuiteRunConfig:
+    """为内置Pack构造每Case两个Trial的稳定零费用Recorded Suite。"""
+
+    return build_task_pack_suite_config(
+        loaded,
+        suite_id=suite_id,
+        work_root=work_root,
+        environment=CodingEvalEnvironment(
+            harnessix_revision=harnessix_revision,
+            provider="recorded",
+            model=_RECORDED_MODEL,
+            platform=platform,
+            isolation="fixed-container-no-network",
+        ),
+        price=_recorded_price(),
+        billing_context=_recorded_billing(),
         fee_stop_amount="1",
+        created_at=created_at,
     )

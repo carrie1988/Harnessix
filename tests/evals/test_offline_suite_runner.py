@@ -10,9 +10,7 @@ from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from scripts.recorded_task_pack import RecordedSolution, RecordedSolutionProvider
 from scripts.run_engineering_offline_suite import (
     OfflineSuiteEvidenceManifest,
-    _distinct_roots,
     _RecoveryFaults,
-    _walk_publishable,
 )
 
 
@@ -29,18 +27,6 @@ def test_recorded_review_answer_contains_required_finding_as_independent_token()
     assert "agents-api-key-plaintext" in answer["summary"].split()
     assert answer["changed_paths"] == ["src/agent_utils.py"]
     assert answer["tests"] == [{"profile": case.profile_id, "passed": True}]
-
-
-def test_evidence_allowlist_rejects_private_fields_and_absolute_paths() -> None:
-    _walk_publishable({"safe": ["urn:harnessix:test", "relative-id"]}, ())
-    with pytest.raises(AssertionError, match="禁止字段"):
-        _walk_publishable({"prompt": "private"}, ())
-    with pytest.raises(AssertionError, match="绝对路径"):
-        _walk_publishable({"value": "/private/run"}, ())
-    with pytest.raises(AssertionError, match="绝对路径"):
-        _walk_publishable({"value": "C:\\private\\run"}, ())
-    with pytest.raises(AssertionError, match="私有运行身份"):
-        _walk_publishable({"value": "prefix/private-id/suffix"}, ("private-id",))
 
 
 def test_recovery_faults_fire_each_commit_window_exactly_once() -> None:
@@ -80,12 +66,3 @@ def test_evidence_manifest_is_strict_and_digest_bound() -> None:
         OfflineSuiteEvidenceManifest.model_validate(
             {**payload, "report_sha256": "not-a-digest"}, strict=True
         )
-
-
-def test_private_work_and_public_evidence_roots_must_be_disjoint(tmp_path) -> None:
-    work, evidence = _distinct_roots(tmp_path / "work", tmp_path / "evidence")
-    assert work != evidence
-    with pytest.raises(RuntimeError, match="相互分离"):
-        _distinct_roots(tmp_path / "work", tmp_path / "work" / "evidence")
-    with pytest.raises(RuntimeError, match="相互分离"):
-        _distinct_roots(tmp_path / "work" / "nested", tmp_path / "work")

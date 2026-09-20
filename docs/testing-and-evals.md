@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 30
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 31
+code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -37,6 +38,10 @@ related_tests:
   - tests/integration/test_task_pack_execution.py
   - tests/evals/test_task_pack_suite.py
   - tests/evals/test_offline_suite_runner.py
+  - tests/evals/test_provider_suite_contracts.py
+  - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_evidence.py
   - tests/integration
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_config_runtime.py
@@ -313,8 +318,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
-0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；d3已形成
-完整20 Trial候选编排，但固定Container CI与冻结证据尚未完成，因此当前仍不证明完整离线Suite已验收或真实Provider质量。关闭边界见
+0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；d3完整
+20 Trial已由CI 35483905418完成固定Container验收并冻结证据。Recorded结果仍不证明真实Provider质量；0.9.2e控制面为候选实现，完整真实运行和证据尚未完成。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
@@ -470,6 +475,32 @@ Recorded Provider按Golden驱动确定性动作，只证明执行、持久化和
 6. 将结果冻结为不可覆盖的验证证据，并明确只证明了哪些契约。
 
 模型Smoke行为见[模型Smoke模块详细设计](modules/smoke.md)，Campaign与证据聚合见[Eval模块详细设计](modules/evals.md)。真实Provider通过不能替代离线协议回归，单个地域和模型通过也不能外推到所有端点或模型。
+
+### 14.1 0.9.2e完整Suite验证边界
+
+0.9.2e不以单Prompt或单Case通网作为验收。候选实现必须复用`run_coding_eval_suite → TaskPackCaseExecutor →
+run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`，固定工程Pack v2的10 Case × 2 Trial，并满足：
+
+| 验证层 | 必须证明 | 候选测试/证据 |
+|---|---|---|
+| 网络门禁 | 缺少`--allow-network`时不读取配置、环境或创建Provider | `test_provider_suite_cli.py` |
+| 私有配置 | 0600普通文件、no-follow、有界严格JSON，只保存Key环境变量名 | `test_provider_suite_cli.py` |
+| 固定范围 | Pack SHA、精确模型、北京地域、价格/计费、串行Tool、无重试、4096输出上限 | `test_provider_suite_contracts.py` |
+| 宿主身份 | Git/Docker绝对可执行文件、源码HEAD和Pack摘要在Provider前核验 | `test_provider_suite_execution.py` |
+| Trial隔离 | 每Trial新建Provider Context Manager，不共享Session或Client生命周期 | `test_provider_suite_execution.py` |
+| 恢复绑定 | Endpoint、限制、Key引用、程序或源码配置改变时Suite/Case状态不可复用 | `test_suite_execution.py`、`test_task_pack_execution.py` |
+| 兼容 | 省略新增绑定的离线调用保持原Fingerprint和冻结证据 | 同上 |
+| 成本 | 价格只覆盖输入不超过32K；Usage缺失/超区间停止；40元停止线在Trial边界生效 | Campaign/Suite既有费用回归和真实Report |
+| 低敏证据 | 只发布Plan、Report、Manifest；拒绝正文、路径、Secret和私有标识 | `test_provider_suite_evidence.py` |
+| 真实场景 | 固定模型完成或按稳定Reason停止20 Trial，全部Token/费用/时延可重算 | 待冻结真实Provider证据 |
+
+真实运行前必须先提交候选实现并通过默认离线全矩阵CI。运行配置和Work Root保存在仓库外；API Key只临时进入进程环境。
+完整报告只有在`cost_completeness=complete`时才可发布。人民币40元是Harnessix在完整Trial之间执行的本地停止线，不是
+供应商账户硬额度；当前Trial已经开始后可能越线，因此仍需核对实际账单。
+
+候选实现完成而真实Suite未运行时，状态必须表述为“控制面已实现、真实证据待完成”，不得关闭0.9.2e。详细合同、
+故障恢复和操作步骤见[0.9.2e详细设计](changes/m09-2e-controlled-real-provider-baseline.md)、
+[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](operations/provider-suite-baseline.md)。
 
 ## 15. 验证证据生命周期
 
