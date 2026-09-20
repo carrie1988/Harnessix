@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
+version: 5
+code_revision: 3bf7b7b05254da99a9b9c20618b3dab038836c31
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
+  - docs/adr/0087-deterministic-offline-eval-suite-composition.md
 related_tests:
   - tests/evals/test_engineering_task_pack.py
   - tests/evals/test_task_pack.py
@@ -224,6 +225,33 @@ sequenceDiagram
     S->>State: advance prefix exactly once
 ```
 
+### 7.4 d3确定性组合与证据发布
+
+d3不再实现新的Suite Runner。新增组合器只把已核验的`harnessix-engineering/v1` Manifest转换为现有
+`CodingEvalSuiteRunConfig`：Case保持Manifest顺序，每个Campaign固定两个Run，Campaign ID与Run ID使用
+调用方Suite UUID作为命名空间按UUIDv5派生。全部Campaign共享同一代码Revision、平台、`recorded`环境、零费用
+价格快照和Billing Context。组合器不接受Provider、Golden目录、动态命令、外部URL或Secret。
+
+测试/CI侧Recorded Provider读取仓库外部发布包之外的Golden Patch，只把解出的目标文件内容转换为正式
+`apply_patch_batch`工具调用；Review任务的固定Finding ID进入最终回答摘要。Provider事件仍由Agent Runtime消费，
+报告必须从Session、Action、Artifact、Grader和Campaign事实生成，禁止测试夹具直接构造通过报告。
+
+完整场景按以下顺序验证两层提交窗口：
+
+1. 第一个Case的`case-report.json`原子发布后、Suite完成前缀提交前注入宿主退出；
+2. 重开吸收该报告，只执行剩余九个Case；
+3. `suite-report.json`原子发布后、Suite completed状态提交前再次注入宿主退出；
+4. 第三次重开只核对并吸收报告，Case Adapter与Provider均不得再次调用；
+5. 最终断言十Case、二十Trial、五类任务、三仓、成本、Token、人工干预率和测试结论均可重算。
+
+公开证据只复制严格重读后的Suite Plan、Suite Report及低敏摘要。证据发布器拒绝宿主绝对路径、Golden/Patch内容、
+Prompt、模型正文、Tool参数/输出、Diff、环境变量和Secret标记。私有Suite状态、Session、Artifact、Workspace及
+Container输出留在CI临时目录，不上传。
+
+取消与显式恢复由Suite Runner专项测试证明；真实Turn时限由Agent Runtime测试证明；执行响应丢失及
+`UNKNOWN → reconcile`由Trusted Action/Product Action测试证明。聚合层只传播稳定停止原因，不捕获并改写
+身份漂移、证据损坏或未知副作用错误。完整映射见[ADR 0087](../adr/0087-deterministic-offline-eval-suite-composition.md)。
+
 ## 8. 数据流
 
 ```mermaid
@@ -318,6 +346,7 @@ classDiagram
 | `run_task_pack_coding_eval` | Case Adapter | 固定Case/Run/Provider Factory→Trial证据 | Session请求身份唯一 | 从Session/Action账本恢复 | 分层CancelToken与Turn预算 | Report先于Run State | 无Secret、自动审批白名单 |
 | `grade_coding_eval` | Trial执行器 | Turn/Profile观察/Git/Finding IDs→Run Report | 只读取已持久事实 | 缺证据失败关闭 | 不适用 | 纯确定性投影 | 不读取Golden |
 | `run_coding_eval_suite` | CLI/测试 | Suite Config→Run Report | 计划先行、Case顺序固定 | 已有停止/恢复语义 | Case边界检查 | 连续完成前缀 | 0600状态根 |
+| `build_task_pack_offline_suite_config` | CI/测试宿主 | 内置Pack、Suite身份、Revision、平台、目录→Run Config | Pack重新核验、每Case两个Run | 合同校验失败，不执行 | 不适用 | UUIDv5稳定派生 | 不读取Golden/Secret |
 
 ## 12. 数据结构与重点字段
 
@@ -446,6 +475,16 @@ execute_case():
         stop_if_cost_is_incomplete()
     publish_campaign_report_then_completed_state()
     return_suite_case_report()
+
+execute_complete_offline_suite():
+    pack = reload_and_verify_builtin_engineering_pack()
+    config = build_deterministic_suite_config(pack, suite_id, revision, platform)
+    provider_factory = test_side_recorded_provider_from_golden()
+    run_suite(config, TaskPackCaseExecutor(provider_factory), crash_after_first_case_report)
+    resume_suite(config, same_executor, crash_after_final_report)
+    result = reopen_suite(config, provider_forbidden)
+    require_exactly_10_cases_20_trials_and_no_provider_replay(result)
+    publish_allowlisted_plan_report_and_summary()
 ```
 
 ## 20. 源码与测试映射
@@ -464,6 +503,8 @@ execute_case():
 | Product Patch合同解码 | [`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) | `decode_workspace_patch_input` | 同上及产品配置测试 | 自动审批复用正式合同 | 不复制Delivery内部合同 |
 | Grader产品投影 | [`grader.py`](../../src/harnessix/evals/grader.py) | `_test_result`、`_record_tool_result`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Profile终端事实、Finding ID | v1 Schema不变 |
 | d3完整报告 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite` | `test_suite_execution.py` | 20 Trial恢复 | 尚未形成最终基线 |
+| d3确定性组合 | 目标：`task_pack_suite.py` | `build_task_pack_offline_suite_config` | 目标：`test_task_pack_suite.py` | 10 Case、20稳定Run身份 | 设计已冻结，待实现 |
+| d3证据生成 | 目标：开发/CI脚本与测试支持 | Recorded Provider、发布白名单 | 目标：完整Container验收 | 双崩溃窗口、零重放、脱敏报告 | 不进入Wheel，待实现 |
 
 ## 21. 测试设计与验收标准
 
@@ -500,6 +541,7 @@ execute_case():
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | `pending` | 2026-09-20 | 按ADR 0087冻结d3确定性Suite组合、测试侧Recorded Provider、双报告崩溃恢复与脱敏证据发布边界；尚未形成实现或验收结论 |
 | 4 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2由CI 35479723645完成Linux双版本、macOS、Windows、固定Digest Container与Documentation六实例验收并关闭；d3保持未完成 |
 | 3 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 实现d2正式Case Adapter、Agent/Product Action纵向Trial、自动审批白名单、Review Finding投影及Trial/Campaign双报告窗口恢复；本地门禁通过，固定Container CI待验收 |
 | 2 | `ee4d0db757d0371656934254aaaee0c1a56cfab0` | 2026-09-20 | d1由CI 35469387988完成Linux双版本、macOS、Windows、固定Container与Documentation六实例验收并关闭；d2/d3保持未完成 |
