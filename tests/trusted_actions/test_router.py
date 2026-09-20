@@ -84,6 +84,23 @@ class CrashExecutor:
         return ActionExecutionOutcome(kind="manual_intervention", error_code="effect_fact_missing")
 
 
+@dataclass
+class SlowWriteExecutor:
+    calls: int = 0
+    reconciliations: int = 0
+
+    async def execute(self, plan: object, arguments: BaseModel) -> ActionExecutionOutcome:
+        self.calls += 1
+        FileInput.model_validate(arguments)
+        await asyncio.sleep(1)
+        return ActionExecutionOutcome(kind="succeeded")
+
+    async def reconcile(self, plan: object, arguments: BaseModel) -> ActionExecutionOutcome:
+        self.reconciliations += 1
+        FileInput.model_validate(arguments)
+        return ActionExecutionOutcome(kind="succeeded", output={"reconciled": True})
+
+
 def _action_crash_worker(
     plans_path: str,
     audit_path: str,
@@ -803,9 +820,217 @@ def test_audit_store_rejects_unknown_schema(tmp_path: Path) -> None:
     database.execute(
         "CREATE TABLE action_audit_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
     )
-    database.execute("INSERT INTO action_audit_metadata VALUES ('schema_version', '2')")
+    database.execute("INSERT INTO action_audit_metadata VALUES ('schema_version', '3')")
     database.commit()
     database.close()
     with pytest.raises(KernelError) as version:
         SQLiteActionAuditStore(path)
     assert version.value.code == "action_audit_store_version"
+
+
+def test_audit_store_migrates_v1_and_requires_runtime_owner(tmp_path: Path) -> None:
+    path = tmp_path / "audit.db"
+    database = sqlite3.connect(path)
+    database.execute(
+        "CREATE TABLE action_audit_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
+    )
+    database.execute("INSERT INTO action_audit_metadata VALUES ('schema_version', '1')")
+    database.commit()
+    database.close()
+
+    audit = SQLiteActionAuditStore(path, require_runtime_owner=True)
+    assert audit._db.execute(  # noqa: SLF001 - 验证向前迁移
+        "SELECT value FROM action_audit_metadata WHERE key = 'schema_version'"
+    ).fetchone() == ("2",)
+    assert audit._db.execute(  # noqa: SLF001 - 验证恢复表已创建
+        "SELECT name FROM sqlite_master WHERE name = 'action_route_operations'"
+    ).fetchone() == ("action_route_operations",)
+
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("content", encoding="utf-8")
+    plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+    tool = binding()
+    actions = TrustedActionRouter(plans=plans, audit=audit, workspace_root=lambda _: root)
+    actions.register(definition(tool, FakeExecutor(ActionExecutionOutcome(kind="succeeded"))))
+    with pytest.raises(KernelError) as owner:
+        actions.plan(invocation(tool), context(root))
+    assert owner.value.code == "action_runtime_owner_required"
+
+    with audit.runtime_owner() as fence:
+        planned = actions.plan(invocation(tool), context(root))
+        assert fence.generation == 1
+        assert planned.state == "ready"
+    plans.close()
+    audit.close()
+
+
+def test_runtime_fence_rejects_stale_owner_and_competing_process(tmp_path: Path) -> None:
+    path = tmp_path / "audit.db"
+    first = SQLiteActionAuditStore(path, require_runtime_owner=True)
+    with first.runtime_owner() as old_fence:
+        script = (
+            "from harnessix.trusted_actions.store import SQLiteActionAuditStore; "
+            "from harnessix.agent.errors import KernelError; import sys; "
+            "store=SQLiteActionAuditStore(sys.argv[1], require_runtime_owner=True); "
+            "\ntry:\n  with store.runtime_owner(): pass\n"
+            "except KernelError as error:\n  print(error.code)\n  raise SystemExit(0)\n"
+            "raise SystemExit(2)"
+        )
+        competed = subprocess.run(
+            [sys.executable, "-c", script, str(path)],
+            cwd=Path(__file__).parents[2],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        assert competed.returncode == 0
+        assert competed.stdout.strip() == "action_runtime_busy"
+
+    second = SQLiteActionAuditStore(path, require_runtime_owner=True)
+    with second.runtime_owner() as new_fence:
+        assert new_fence.generation == old_fence.generation + 1
+        first._runtime_fence = old_fence  # noqa: SLF001 - 模拟失锁旧宿主迟到提交
+        with pytest.raises(KernelError) as stale:
+            first._assert_runtime_owner()  # noqa: SLF001 - 验证持久Generation栅栏
+        assert stale.value.code == "action_runtime_fence_lost"
+        first._runtime_fence = None  # noqa: SLF001 - 清理故障注入
+    second.close()
+    first.close()
+
+
+async def test_write_route_timeout_enters_unknown_and_only_reconciles(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding(
+        effect=EffectClass.NON_IDEMPOTENT_WRITE,
+        risk=RiskLevel.HIGH,
+        recovery="durable_ledger",
+    )
+    executor = SlowWriteExecutor()
+    plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+    audit = SQLiteActionAuditStore(tmp_path / "audit.db")
+    actions = TrustedActionRouter(
+        plans=plans,
+        audit=audit,
+        workspace_root=lambda _: root,
+        execute_timeout_seconds=0.01,
+    )
+    actions.register(definition(tool, executor))  # type: ignore[arg-type]
+    planned = actions.plan(invocation(tool), context(root))
+    plan_id = planned.plan.execution.plan_id
+    actions.decide(
+        plan_id,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+
+    timed_out = await actions.execute(plan_id)
+    recovered = await actions.reconcile(plan_id)
+
+    assert timed_out.kind == "unknown"
+    assert timed_out.error_code == "write_effect_timeout_unknown"
+    assert recovered.kind == "succeeded"
+    assert executor.calls == executor.reconciliations == 1
+    operations = audit.operations()
+    assert [(item.phase, item.state) for item in operations] == [
+        ("execute", "completed"),
+        ("reconcile", "completed"),
+    ]
+    assert operations[0].completion_code == "write_effect_timeout_unknown"
+    plans.close()
+    audit.close()
+
+
+async def test_reconcile_attempts_are_bounded_without_reexecute(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding(
+        effect=EffectClass.NON_IDEMPOTENT_WRITE,
+        risk=RiskLevel.HIGH,
+        recovery="durable_ledger",
+    )
+    executor = FakeExecutor(
+        ActionExecutionOutcome(kind="unknown", error_code="effect_unknown"),
+        ActionExecutionOutcome(kind="unknown", error_code="still_unknown"),
+    )
+    plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+    audit = SQLiteActionAuditStore(tmp_path / "audit.db")
+    actions = TrustedActionRouter(
+        plans=plans,
+        audit=audit,
+        workspace_root=lambda _: root,
+        max_reconciliation_attempts=2,
+    )
+    actions.register(definition(tool, executor))
+    planned = actions.plan(invocation(tool), context(root))
+    plan_id = planned.plan.execution.plan_id
+    actions.decide(
+        plan_id,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+    assert (await actions.execute(plan_id)).kind == "unknown"
+    assert (await actions.reconcile(plan_id)).kind == "unknown"
+    assert (await actions.reconcile(plan_id)).kind == "unknown"
+
+    exhausted = await actions.reconcile(plan_id)
+
+    assert exhausted.kind == "manual_intervention"
+    assert exhausted.error_code == "reconciliation_attempts_exhausted"
+    assert executor.calls == 1
+    assert executor.reconciliations == 2
+    assert actions.status(plan_id).state == "manual_intervention"
+    plans.close()
+    audit.close()
+
+
+async def test_result_then_audit_failure_recovers_without_duplicate_execute(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding(
+        effect=EffectClass.NON_IDEMPOTENT_WRITE,
+        risk=RiskLevel.HIGH,
+        recovery="durable_ledger",
+    )
+    executor = FakeExecutor(
+        ActionExecutionOutcome(kind="succeeded", output={"effect": "committed"}),
+        ActionExecutionOutcome(kind="succeeded", output={"reconciled": True}),
+    )
+    actions, plans, audit = router(root, definition(tool, executor))
+    planned = actions.plan(invocation(tool), context(root))
+    plan_id = planned.plan.execution.plan_id
+    actions.decide(
+        plan_id,
+        ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"),
+    )
+    original_complete = audit.complete_operation
+    failed = False
+
+    def fail_once(*args: object, **kwargs: object) -> object:
+        nonlocal failed
+        if not failed:
+            failed = True
+            raise KernelError("injected_audit_busy", "故障注入")
+        return original_complete(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(audit, "complete_operation", fail_once)
+    with pytest.raises(KernelError) as interrupted:
+        await actions.execute(plan_id)
+    assert interrupted.value.code == "injected_audit_busy"
+    assert actions.status(plan_id).state == "running"
+
+    recovered_route = actions.recover_interrupted_plan(plan_id)
+    recovered = await actions.reconcile(plan_id)
+
+    assert recovered_route.state == "unknown"
+    assert recovered.kind == "succeeded"
+    assert executor.calls == executor.reconciliations == 1
+    assert [item.state for item in audit.operations()] == ["interrupted", "completed"]
+    plans.close()
+    audit.close()

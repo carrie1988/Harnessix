@@ -370,6 +370,9 @@ class _ProcessObservation:
 
         return self._store.load(process_id)
 
+    def active_leases(self) -> tuple[ProcessLease, ...]:
+        return self._store.active()
+
     async def output(self, process_id: UUID, stream: Literal["stdout", "stderr"]) -> bytes:
         """按Lease摘要读取持久前缀；重启后也不要求原控制句柄仍存在。"""
 
@@ -739,14 +742,11 @@ class WindowsProcessSupervisor(PosixProcessSupervisor):
         startup = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
         startup.lpAttributeList = {"handle_list": [handle]}
         system_root = os.environ.get("SystemRoot", r"C:\Windows")
+        python_dir = str(Path(sys.executable).parent)
+        system32 = str(Path(system_root) / "System32")
+        owner_path = os.pathsep.join((python_dir, system32, system_root))
         owner_environment = {
-            "PATH": os.pathsep.join(
-                (
-                    str(Path(sys.executable).parent),
-                    str(Path(system_root) / "System32"),
-                    system_root,
-                )
-            ),
+            "PATH": owner_path,
             "SystemRoot": system_root,
             "WINDIR": system_root,
         }

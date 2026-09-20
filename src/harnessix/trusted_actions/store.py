@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -12,18 +11,25 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.domain.models import ApprovalOutcome, utc_now
+from harnessix.domain.models import utc_now
 from harnessix.trusted_actions.contracts import (
-    ALLOWED_ROUTE_TRANSITIONS,
     ActionAuditEvent,
     ActionRoutePlan,
     ActionRouteSnapshot,
     ActionRouteState,
-    ReconciliationConclusion,
     build_audit_event,
 )
+from harnessix.trusted_actions.operation_store import (
+    ActionOperationStoreMixin,
+    initialize_action_operation_schema,
+)
+from harnessix.trusted_actions.ownership_store import (
+    ActionOwnershipStoreMixin,
+    initialize_action_owner_schema,
+)
+from harnessix.trusted_actions.transition_store import ActionTransitionStoreMixin
 
-_SCHEMA_VERSION = "1"
+_SCHEMA_VERSION = "2"
 
 
 def _validate_plan(plan: ActionRoutePlan) -> ActionRoutePlan:
@@ -33,12 +39,16 @@ def _validate_plan(plan: ActionRoutePlan) -> ActionRoutePlan:
         raise KernelError("action_route_plan_invalid", "Action Route Plan不符合契约") from None
 
 
-class SQLiteActionAuditStore:
+class SQLiteActionAuditStore(
+    ActionTransitionStoreMixin, ActionOperationStoreMixin, ActionOwnershipStoreMixin
+):
     """不可变Route Plan、当前投影和append-only审计事件。"""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, require_runtime_owner: bool = False) -> None:
         self._path = Path(path)
         self._closed = False
+        self._require_runtime_owner = require_runtime_owner
+        self._runtime_fence = None
         self._prepare_parent()
         self._db = sqlite3.connect(self._path, isolation_level=None, timeout=5)
         try:
@@ -67,12 +77,15 @@ class SQLiteActionAuditStore:
         row = self._db.execute(
             "SELECT value FROM action_audit_metadata WHERE key = 'schema_version'"
         ).fetchone()
+        previous_version: str | None = None
         if row is None:
             self._db.execute(
                 "INSERT INTO action_audit_metadata VALUES ('schema_version', ?)",
                 (_SCHEMA_VERSION,),
             )
-        elif row[0] != _SCHEMA_VERSION:
+        elif row[0] in {"1", _SCHEMA_VERSION}:
+            previous_version = row[0]
+        else:
             raise KernelError("action_audit_store_version", "Action审计存储版本不受支持")
         self._db.executescript(
             """
@@ -101,6 +114,13 @@ class SQLiteActionAuditStore:
             ) STRICT;
             """
         )
+        initialize_action_owner_schema(self._db)
+        initialize_action_operation_schema(self._db)
+        if previous_version == "1":
+            self._db.execute(
+                "UPDATE action_audit_metadata SET value = ? WHERE key = 'schema_version'",
+                (_SCHEMA_VERSION,),
+            )
 
     def save_plan(
         self, plan: ActionRoutePlan, *, initial_state: ActionRouteState
@@ -123,6 +143,7 @@ class SQLiteActionAuditStore:
         )
         try:
             self._db.execute("BEGIN IMMEDIATE")
+            self._assert_runtime_owner()
             row = self._db.execute(
                 "SELECT invocation_id, fingerprint, payload FROM action_route_plans "
                 "WHERE plan_id = ?",
@@ -250,80 +271,6 @@ class SQLiteActionAuditStore:
         ):
             raise KernelError("action_audit_store_corrupt", "Action审计事件链不完整")
         return events
-
-    def transition(
-        self,
-        plan_id: UUID,
-        *,
-        expected: Iterable[ActionRouteState],
-        target: ActionRouteState,
-        approval_outcome: ApprovalOutcome | None = None,
-        approval_actor: str | None = None,
-        executor_id: str | None = None,
-        output_sha256: str | None = None,
-        artifact_sha256: str | None = None,
-        external_action_id: UUID | None = None,
-        error_code: str | None = None,
-        reconciliation: ReconciliationConclusion | None = None,
-        occurred_at: datetime | None = None,
-    ) -> ActionRouteSnapshot:
-        expected_set = frozenset(expected)
-        try:
-            self._db.execute("BEGIN IMMEDIATE")
-            current = self.load(plan_id)
-            if current.state not in expected_set:
-                raise KernelError("action_route_conflict", "Action状态与预期不一致")
-            if target not in ALLOWED_ROUTE_TRANSITIONS[current.state]:
-                raise KernelError("action_route_transition", "Action状态迁移不合法")
-            now = occurred_at or utc_now()
-            event = build_audit_event(
-                current.plan,
-                sequence=current.sequence + 1,
-                from_state=current.state,
-                to_state=target,
-                previous_digest=current.last_event_digest,
-                approval_outcome=approval_outcome,
-                approval_actor=approval_actor,
-                executor_id=executor_id,
-                output_sha256=output_sha256,
-                artifact_sha256=artifact_sha256,
-                external_action_id=external_action_id,
-                error_code=error_code,
-                reconciliation=reconciliation,
-                occurred_at=now,
-            )
-            updated = self._db.execute(
-                "UPDATE action_route_snapshots SET state = ?, sequence = ?, "
-                "last_event_digest = ?, updated_at = ? "
-                "WHERE plan_id = ? AND state = ? AND sequence = ? AND last_event_digest = ?",
-                (
-                    target,
-                    event.sequence,
-                    event.digest,
-                    now.isoformat(),
-                    str(plan_id),
-                    current.state,
-                    current.sequence,
-                    current.last_event_digest,
-                ),
-            )
-            if updated.rowcount != 1:
-                raise KernelError("action_route_conflict", "Action状态并发变化")
-            self._db.execute(
-                "INSERT INTO action_audit_events VALUES (?, ?, ?, ?)",
-                (
-                    str(plan_id),
-                    event.sequence,
-                    event.digest,
-                    event.model_dump_json(warnings="error"),
-                ),
-            )
-            self._db.execute("COMMIT")
-        except BaseException:
-            if self._db.in_transaction:
-                self._db.execute("ROLLBACK")
-            raise
-        return self.load(plan_id)
 
     def active(self) -> tuple[ActionRouteSnapshot, ...]:
         rows = self._db.execute(

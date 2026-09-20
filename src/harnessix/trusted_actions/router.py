@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,12 +12,10 @@ from uuid import UUID
 from pydantic import BaseModel, JsonValue, ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.domain.errors import UncertainEffectError
 from harnessix.domain.models import (
     ApprovalDecision,
     ApprovalOutcome,
     ApprovalRecord,
-    EffectClass,
     PolicyDecisionKind,
     utc_now,
 )
@@ -43,6 +40,12 @@ from harnessix.trusted_actions.contracts import (
     CanonicalActionResource,
     CodingActionInvocation,
     TrustedToolBinding,
+)
+from harnessix.trusted_actions.operation_router import (
+    execute_action,
+    reconcile_action,
+    recover_interrupted_action,
+    recover_interrupted_actions,
 )
 from harnessix.trusted_actions.planning import (
     canonical_json_object,
@@ -130,11 +133,23 @@ class TrustedActionRouter:
         audit: SQLiteActionAuditStore,
         workspace_root: Callable[[str], Path],
         policy: DefaultCodingRiskPolicy | None = None,
+        execute_timeout_seconds: float = 300.0,
+        reconcile_timeout_seconds: float = 30.0,
+        max_reconciliation_attempts: int = 3,
     ) -> None:
+        if (
+            not 0 < execute_timeout_seconds <= 86400
+            or not 0 < reconcile_timeout_seconds <= 3600
+            or not 1 <= max_reconciliation_attempts <= 128
+        ):
+            raise KernelError("action_route_limits_invalid", "Action Route期限或尝试上限无效")
         self._plans = plans
         self._audit = audit
         self._workspace_root = workspace_root
         self._policy = policy or DefaultCodingRiskPolicy()
+        self._execute_timeout_seconds = execute_timeout_seconds
+        self._reconcile_timeout_seconds = reconcile_timeout_seconds
+        self._max_reconciliation_attempts = max_reconciliation_attempts
         self._definitions: dict[tuple[str, str, str], TrustedActionDefinition] = {}
 
     def register(self, definition: TrustedActionDefinition) -> None:
@@ -252,148 +267,24 @@ class TrustedActionRouter:
         return checkpoint.model_copy(deep=True) if checkpoint is not None else None
 
     async def execute(self, plan_id: UUID) -> ActionExecutionOutcome:
-        """Claim已批准计划并执行一次；取消后对账，发送后失败保留未知效果而不重试。"""
-        current, definition, arguments = self._prepare_execution(plan_id)
-        plan = current.plan
-        self._audit.transition(
-            plan_id,
-            expected={"ready"},
-            target="running",
-            executor_id=plan.binding.executor_id,
-            external_action_id=plan.external_action_id,
-        )
-        cancelled: asyncio.CancelledError | None = None
-        try:
-            outcome = await definition.executor.execute(plan, arguments)
-            outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
-            self._validate_outcome_identity(plan, outcome)
-            if outcome.kind == "manual_intervention":
-                raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
-        except asyncio.CancelledError as error:
-            cancelled = error
-            outcome = ActionExecutionOutcome(
-                kind=(
-                    "failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"
-                ),
-                external_action_id=plan.external_action_id,
-                error_code=(
-                    "executor_cancelled"
-                    if plan.binding.effect_class is EffectClass.READ_ONLY
-                    else "cancelled_write_effect_unknown"
-                ),
-            )
-        except UncertainEffectError:
-            outcome = ActionExecutionOutcome(
-                kind="unknown",
-                external_action_id=plan.external_action_id,
-                error_code="uncertain_external_effect",
-            )
-        except Exception:
-            outcome = ActionExecutionOutcome(
-                kind=(
-                    "failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"
-                ),
-                external_action_id=plan.external_action_id,
-                error_code=(
-                    "executor_error"
-                    if plan.binding.effect_class is EffectClass.READ_ONLY
-                    else "unexpected_write_error"
-                ),
-            )
-        target = cast(ActionRouteState, outcome.kind)
-        self._audit.transition(
-            plan_id,
-            expected={"running"},
-            target=target,
-            executor_id=plan.binding.executor_id,
-            output_sha256=(
-                canonical_digest(outcome.output) if outcome.output is not None else None
-            ),
-            artifact_sha256=outcome.artifact_sha256,
-            external_action_id=outcome.external_action_id,
-            error_code=outcome.error_code,
-        )
-        if cancelled is not None:
-            raise cancelled
-        return outcome
+        """在持久Operation期限内执行一次；不确定写效果只允许进入对账。"""
+
+        return await execute_action(self, plan_id)
 
     async def reconcile(self, plan_id: UUID) -> ActionExecutionOutcome:
-        current = self._audit.load(plan_id)
-        plan = current.plan
-        definition = self._matching_definition(plan)
-        if plan.binding.recovery_mode == "none":
-            outcome = ActionExecutionOutcome(
-                kind="manual_intervention", error_code="reconciliation_not_supported"
-            )
-            self._audit.transition(
-                plan_id,
-                expected={"unknown"},
-                target="manual_intervention",
-                error_code=outcome.error_code,
-                reconciliation=outcome.kind,
-            )
-            return outcome
-        try:
-            arguments = decode_action_arguments(definition, plan.invocation.arguments)
-        except (KernelError, ValidationError, ValueError, TypeError):
-            raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
-        self._audit.transition(
-            plan_id,
-            expected={"unknown"},
-            target="reconciling",
-            executor_id=plan.binding.executor_id,
-            external_action_id=plan.external_action_id,
-        )
-        try:
-            outcome = await definition.executor.reconcile(plan, arguments)
-            outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
-            self._validate_outcome_identity(plan, outcome)
-        except Exception:
-            outcome = ActionExecutionOutcome(
-                kind="unknown",
-                external_action_id=plan.external_action_id,
-                error_code="reconciliation_error",
-            )
-        target = cast(ActionRouteState, outcome.kind)
-        self._audit.transition(
-            plan_id,
-            expected={"reconciling"},
-            target=target,
-            executor_id=plan.binding.executor_id,
-            output_sha256=(
-                canonical_digest(outcome.output) if outcome.output is not None else None
-            ),
-            artifact_sha256=outcome.artifact_sha256,
-            external_action_id=outcome.external_action_id,
-            error_code=outcome.error_code,
-            reconciliation=outcome.kind,
-        )
-        return outcome
+        """执行有界对账；不会回调Execute或重放外部写效果。"""
+
+        return await reconcile_action(self, plan_id)
 
     def recover_interrupted(self) -> tuple[UUID, ...]:
-        recovered: list[UUID] = []
-        for current in self._audit.active():
-            was_interrupted = current.state in {"running", "reconciling"}
-            recovered_route = self.recover_interrupted_plan(current.plan.execution.plan_id)
-            if was_interrupted and recovered_route.state == "unknown":
-                recovered.append(current.plan.execution.plan_id)
-        return tuple(recovered)
+        """把全部遗留执行态收敛为UNKNOWN，不调用Executor。"""
+
+        return recover_interrupted_actions(self)
 
     def recover_interrupted_plan(self, plan_id: UUID) -> ActionRouteSnapshot:
-        """把单个失去执行Owner的Route保守收敛为unknown，不触发Executor。"""
+        """把单个遗留执行态收敛为UNKNOWN，不调用Executor。"""
 
-        current = self._audit.load(plan_id)
-        if current.state not in {"running", "reconciling"}:
-            return current
-        return self._audit.transition(
-            plan_id,
-            expected={current.state},
-            target="unknown",
-            executor_id=current.plan.binding.executor_id,
-            external_action_id=current.plan.external_action_id,
-            error_code="host_interrupted",
-            reconciliation=("unknown" if current.state == "reconciling" else None),
-        )
+        return recover_interrupted_action(self, plan_id)
 
     def status(self, plan_id: UUID) -> ActionRouteSnapshot:
         return self._audit.load(plan_id)

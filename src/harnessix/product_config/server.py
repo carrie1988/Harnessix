@@ -241,6 +241,7 @@ async def _serve_product_stdio(
                     artifact_workspace_scope=tools.workspace_scope,
                     recovery_config=recovery_action,
                 ) as action_owner:
+                    config_store.save_action_recovery_scan(action_owner.recovery_scan)
                     config_store.save_action_recovery_report(action_owner.recovery)
                     async with AgentRuntime(
                         sessions,

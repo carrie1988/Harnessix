@@ -48,6 +48,21 @@ class ActionOutputArtifactMixin:
     def policy(self) -> ArtifactPolicy:
         raise NotImplementedError
 
+    async def action_recovery_inventory(self) -> tuple[tuple[str, UUID], ...]:
+        """读取Action专用Artifact的Purpose与Call身份；不返回正文、路径或摘要。"""
+
+        async with self.session._connection() as database:
+            cursor = await database.execute(
+                "SELECT purpose, call_id FROM agent_artifacts "
+                "WHERE purpose IN ('action_review', 'action_output') "
+                "ORDER BY purpose, call_id"
+            )
+            rows = await cursor.fetchall()
+        try:
+            return tuple((row[0], UUID(row[1])) for row in rows)
+        except (TypeError, ValueError):
+            raise KernelError("artifact_corrupt", "Action Artifact索引损坏") from None
+
     async def _check_quota(
         self,
         database: aiosqlite.Connection,

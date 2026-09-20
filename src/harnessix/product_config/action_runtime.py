@@ -28,6 +28,8 @@ from harnessix.product_config.action_contracts import (
     ProductProcessProfile,
     product_action_startup_recovery_report_digest,
 )
+from harnessix.product_config.action_owner import product_action_runtime_lock
+from harnessix.product_config.action_recovery import scan_product_action_recovery
 from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
@@ -36,6 +38,10 @@ from harnessix.sandbox.process_runtime import ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
+from harnessix.trusted_actions.recovery_contracts import (
+    ActionRecoveryScanReport,
+    ActionRuntimeFence,
+)
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
@@ -49,6 +55,8 @@ class ProductActionRuntimeOwner:
 
     composition: ProductActionComposition
     recovery: ProductActionStartupRecoveryReport
+    fence: ActionRuntimeFence
+    recovery_scan: ActionRecoveryScanReport
 
     @property
     def report(self) -> ProductActionCapabilityReport:
@@ -61,6 +69,19 @@ class ProductActionRuntimeOwner:
     @property
     def gateway(self) -> RouterBackedAgentActionGateway | None:
         return self.composition.gateway
+
+
+@dataclass(frozen=True, slots=True)
+class _ProductActionDependencies:
+    """一次产品启动内共享且按逆序关闭的Action基础设施。"""
+
+    plans: SQLiteExecutionPlanStore
+    audit: SQLiteActionAuditStore
+    fence: ActionRuntimeFence
+    transactions: SQLiteWorkspaceTransactionStore
+    leases: WorkspaceLeaseStore
+    supervisor: ProcessSupervisor | None
+    probe_cache: dict[str, ProductProcessProfileProbeResult]
 
 
 def _process_supervisor(state_root: Path) -> ProcessSupervisor:
@@ -81,6 +102,72 @@ def _probe_process_profiles(
     )
 
 
+def _route_execute_timeout(*configs: ProductActionConfigV1) -> float:
+    """Route期限覆盖固定Process期限及Owner清理余量，避免上层提前误判效果。"""
+
+    return float(
+        max(
+            (
+                300,
+                *(
+                    profile.timeout_seconds + 30
+                    for config in configs
+                    for profile in config.process_profiles
+                ),
+            )
+        )
+    )
+
+
+@asynccontextmanager
+async def _open_action_dependencies(
+    state_root: Path,
+    secrets: SecretProvider,
+    *configs: ProductActionConfigV1,
+) -> AsyncIterator[_ProductActionDependencies]:
+    """在单Owner窗口内打开Store、Process Supervisor并冻结Profile探测。"""
+
+    async with AsyncExitStack() as resources:
+        plans = resources.enter_context(SQLiteExecutionPlanStore(state_root / "execution-plans.db"))
+        audit = resources.enter_context(
+            SQLiteActionAuditStore(
+                state_root / "action-audit.db",
+                require_runtime_owner=True,
+            )
+        )
+        fence = resources.enter_context(audit.runtime_owner())
+        transactions = resources.enter_context(
+            SQLiteWorkspaceTransactionStore(state_root / "workspace-transactions")
+        )
+        leases = resources.enter_context(WorkspaceLeaseStore(state_root / "workspace-leases.db"))
+        process_profiles = {
+            profile.profile_sha256: profile
+            for config in configs
+            for profile in config.process_profiles
+        }
+        supervisor: ProcessSupervisor | None = None
+        probe_cache: dict[str, ProductProcessProfileProbeResult] = {}
+        if process_profiles:
+            supervisor = await resources.enter_async_context(_process_supervisor(state_root))
+            profiles = tuple(process_profiles.values())
+            results = await asyncio.to_thread(
+                _probe_process_profiles,
+                profiles,
+                supervisor,
+                secrets,
+            )
+            probe_cache = dict(zip(process_profiles, results, strict=True))
+        yield _ProductActionDependencies(
+            plans,
+            audit,
+            fence,
+            transactions,
+            leases,
+            supervisor,
+            probe_cache,
+        )
+
+
 @asynccontextmanager
 async def open_default_product_action_runtime(
     state_root: Path,
@@ -94,84 +181,89 @@ async def open_default_product_action_runtime(
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
     """持有全部Action资源，先结算旧Route，再发布候选目录。"""
 
-    checked_config = ProductActionConfigV1.model_validate_json(
-        action_config.model_dump_json(warnings="error")
-    )
-    checked_recovery = ProductActionConfigV1.model_validate_json(
-        (recovery_config or checked_config).model_dump_json(warnings="error")
-    )
-    environment = build_fixed_product_action_environment(workspace_root)
-    async with AsyncExitStack() as resources:
-        plans = resources.enter_context(SQLiteExecutionPlanStore(state_root / "execution-plans.db"))
-        audit = resources.enter_context(SQLiteActionAuditStore(state_root / "action-audit.db"))
-        transactions = resources.enter_context(
-            SQLiteWorkspaceTransactionStore(state_root / "workspace-transactions")
+    with product_action_runtime_lock(state_root):
+        checked_config = ProductActionConfigV1.model_validate_json(
+            action_config.model_dump_json(warnings="error")
         )
-        leases = resources.enter_context(WorkspaceLeaseStore(state_root / "workspace-leases.db"))
-        recovery_router = TrustedActionRouter(
-            plans=plans,
-            audit=audit,
-            workspace_root=environment.workspace_root,
+        checked_recovery = ProductActionConfigV1.model_validate_json(
+            (recovery_config or checked_config).model_dump_json(warnings="error")
         )
-        process_profiles = {
-            profile.profile_sha256: profile
-            for profile in (*checked_recovery.process_profiles, *checked_config.process_profiles)
-        }
-        probe_cache: dict[str, ProductProcessProfileProbeResult] = {}
-        if process_profiles:
-            supervisor = await resources.enter_async_context(_process_supervisor(state_root))
-            profiles_to_probe = tuple(process_profiles.values())
-            probe_cache = {
-                digest: result
-                for digest, result in zip(
-                    process_profiles,
-                    await asyncio.to_thread(
-                        _probe_process_profiles,
-                        profiles_to_probe,
-                        supervisor,
-                        secrets,
-                    ),
-                    strict=True,
-                )
-            }
-        recovery_composition = build_product_action_composition(
+        environment = build_fixed_product_action_environment(workspace_root)
+        async with _open_action_dependencies(
+            state_root,
+            secrets,
             checked_recovery,
-            environment,
-            recovery_router,
-            transactions,
-            leases,
-            artifacts,
-            artifact_workspace_scope=artifact_workspace_scope,
-            process_probes=_select_probes(checked_recovery, probe_cache),
-            secrets=secrets,
-        )
-        recovery_report = await _recover_product_actions(
-            recovery_router,
-            audit,
-            candidate_config_sha256=checked_config.config_sha256,
-            recovery_config_sha256=checked_recovery.config_sha256,
-        )
-        if checked_recovery == checked_config:
-            composition = recovery_composition
-        else:
-            candidate_router = TrustedActionRouter(
+            checked_config,
+        ) as dependencies:
+            plans = dependencies.plans
+            audit = dependencies.audit
+            recovery_router = TrustedActionRouter(
                 plans=plans,
                 audit=audit,
                 workspace_root=environment.workspace_root,
+                execute_timeout_seconds=_route_execute_timeout(checked_recovery, checked_config),
             )
-            composition = build_product_action_composition(
-                checked_config,
+            recovery_composition = build_product_action_composition(
+                checked_recovery,
                 environment,
-                candidate_router,
-                transactions,
-                leases,
+                recovery_router,
+                dependencies.transactions,
+                dependencies.leases,
                 artifacts,
                 artifact_workspace_scope=artifact_workspace_scope,
-                process_probes=_select_probes(checked_config, probe_cache),
+                process_probes=_select_probes(checked_recovery, dependencies.probe_cache),
                 secrets=secrets,
             )
-            _verify_active_product_bindings(candidate_router, audit)
-        yield ProductActionRuntimeOwner(composition, recovery_report)
+            recovery_scan = await scan_product_action_recovery(
+                plans=plans,
+                audit=audit,
+                sessions=artifacts.session,
+                artifacts=artifacts,
+                supervisor=dependencies.supervisor,
+                fence=dependencies.fence,
+            )
+            if (
+                recovery_scan.invalid_execution_plans
+                or recovery_scan.session_orphan_references
+                or recovery_scan.process_orphan_leases
+            ):
+                raise KernelError(
+                    "product_action_recovery_integrity",
+                    "Product Action跨Store恢复扫描发现不可修复引用",
+                )
+            recovery_report = await _recover_product_actions(
+                recovery_router,
+                audit,
+                candidate_config_sha256=checked_config.config_sha256,
+                recovery_config_sha256=checked_recovery.config_sha256,
+            )
+            if checked_recovery == checked_config:
+                composition = recovery_composition
+            else:
+                candidate_router = TrustedActionRouter(
+                    plans=plans,
+                    audit=audit,
+                    workspace_root=environment.workspace_root,
+                    execute_timeout_seconds=_route_execute_timeout(checked_config),
+                )
+                composition = build_product_action_composition(
+                    checked_config,
+                    environment,
+                    candidate_router,
+                    dependencies.transactions,
+                    dependencies.leases,
+                    artifacts,
+                    artifact_workspace_scope=artifact_workspace_scope,
+                    process_probes=_select_probes(checked_config, dependencies.probe_cache),
+                    secrets=secrets,
+                )
+                _verify_active_product_bindings(candidate_router, audit)
+            yield ProductActionRuntimeOwner(
+                composition,
+                recovery_report,
+                dependencies.fence,
+                recovery_scan,
+            )
 
 
 def _select_probes(

@@ -1,0 +1,104 @@
+{
+  "additionalProperties": false,
+  "description": "一次Execute/Reconcile的持久期限与Owner绑定。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action-route-operation/v1",
+      "default": "harnessix.action-route-operation/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "plan_id": {
+      "format": "uuid",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "phase": {
+      "enum": [
+        "execute",
+        "reconcile"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "attempt": {
+      "maximum": 128,
+      "minimum": 1,
+      "title": "Attempt",
+      "type": "integer"
+    },
+    "owner_generation": {
+      "minimum": 1,
+      "title": "Owner Generation",
+      "type": "integer"
+    },
+    "owner_token_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Token Sha256",
+      "type": "string"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "deadline": {
+      "format": "date-time",
+      "title": "Deadline",
+      "type": "string"
+    },
+    "state": {
+      "default": "active",
+      "enum": [
+        "active",
+        "completed",
+        "interrupted"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "completion_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completion Code"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed At"
+    }
+  },
+  "required": [
+    "operation_id",
+    "plan_id",
+    "phase",
+    "attempt",
+    "owner_generation",
+    "owner_token_sha256",
+    "started_at",
+    "deadline"
+  ],
+  "title": "ActionRouteOperation",
+  "type": "object"
+}

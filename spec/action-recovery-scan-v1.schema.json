@@ -1,0 +1,88 @@
+{
+  "additionalProperties": false,
+  "description": "启动恢复前后的低敏完整性汇总，不包含Plan ID、路径或错误正文。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action-recovery-scan/v1",
+      "default": "harnessix.action-recovery-scan/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "owner_generation": {
+      "minimum": 1,
+      "title": "Owner Generation",
+      "type": "integer"
+    },
+    "scanned_routes": {
+      "minimum": 0,
+      "title": "Scanned Routes",
+      "type": "integer"
+    },
+    "repaired_execution_plans": {
+      "minimum": 0,
+      "title": "Repaired Execution Plans",
+      "type": "integer"
+    },
+    "invalid_execution_plans": {
+      "minimum": 0,
+      "title": "Invalid Execution Plans",
+      "type": "integer"
+    },
+    "active_operations": {
+      "minimum": 0,
+      "title": "Active Operations",
+      "type": "integer"
+    },
+    "expired_operations": {
+      "minimum": 0,
+      "title": "Expired Operations",
+      "type": "integer"
+    },
+    "process_orphan_leases": {
+      "minimum": 0,
+      "title": "Process Orphan Leases",
+      "type": "integer"
+    },
+    "session_orphan_references": {
+      "minimum": 0,
+      "title": "Session Orphan References",
+      "type": "integer"
+    },
+    "routes_without_session_reference": {
+      "minimum": 0,
+      "title": "Routes Without Session Reference",
+      "type": "integer"
+    },
+    "artifact_orphans": {
+      "minimum": 0,
+      "title": "Artifact Orphans",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Report Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "owner_generation",
+    "scanned_routes",
+    "repaired_execution_plans",
+    "invalid_execution_plans",
+    "active_operations",
+    "expired_operations",
+    "process_orphan_leases",
+    "session_orphan_references",
+    "routes_without_session_reference",
+    "artifact_orphans",
+    "created_at",
+    "report_sha256"
+  ],
+  "title": "ActionRecoveryScanReport",
+  "type": "object"
+}

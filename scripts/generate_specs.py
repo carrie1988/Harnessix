@@ -264,6 +264,10 @@ from harnessix.trusted_actions.contracts import (
     CodingActionInvocation,
     TrustedToolBinding,
 )
+from harnessix.trusted_actions.recovery_contracts import (
+    ActionRecoveryScanReport,
+    ActionRouteOperation,
+)
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 
 
@@ -470,6 +474,8 @@ def generate_specs(output: Path) -> None:
         ("action-execution-outcome", ActionExecutionOutcome),
         ("action-audit-event", ActionAuditEvent),
         ("action-route-snapshot", ActionRouteSnapshot),
+        ("action-route-operation", ActionRouteOperation),
+        ("action-recovery-scan", ActionRecoveryScanReport),
         ("network-destination", NetworkDestination),
         ("network-policy", NetworkPolicy),
         ("network-policy-snapshot", NetworkPolicySnapshot),

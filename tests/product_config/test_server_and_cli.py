@@ -79,6 +79,8 @@ async def test_product_server_starts_and_closes_on_eof_without_model_request(
         assert [event.operation for event in store.config_events()] == ["loaded", "activated"]
         reports = store.action_recovery_reports()
         assert len(reports) == 1 and reports[0].scanned_routes == 0
+        scans = store.action_recovery_scans()
+        assert len(scans) == 1 and scans[0].owner_generation == 1
     assert CANARY not in (state / "product-config.db").read_bytes().decode("utf-8", errors="ignore")
     assert (state / "execution-plans.db").is_file()
     assert (state / "action-audit.db").is_file()

@@ -19,6 +19,7 @@ from harnessix.product_config.action_contracts import (
 )
 from harnessix.product_config.contracts import ConfigAuditEvent, ProductConfigSnapshot
 from harnessix.product_config.store import SQLiteProductConfigStore
+from harnessix.trusted_actions.recovery_contracts import ActionRecoveryScanReport
 
 
 class SQLiteProductRuntimeConfigStore(SQLiteProductConfigStore):
@@ -53,6 +54,14 @@ class SQLiteProductRuntimeConfigStore(SQLiteProductConfigStore):
 
     def action_recovery_reports(self) -> tuple[ProductActionStartupRecoveryReport, ...]:
         return _recovery_reports(self._db)
+
+    def save_action_recovery_scan(
+        self, report: ActionRecoveryScanReport
+    ) -> ActionRecoveryScanReport:
+        return _save_recovery_scan(self._db, report)
+
+    def action_recovery_scans(self) -> tuple[ActionRecoveryScanReport, ...]:
+        return _recovery_scans(self._db)
 
     def activate_runtime(
         self,
@@ -98,6 +107,10 @@ def _initialize_action_store(database: sqlite3.Connection) -> None:
             FOREIGN KEY(config_sha256) REFERENCES product_action_config_snapshots(config_sha256)
         ) STRICT;
         CREATE TABLE IF NOT EXISTS product_action_recovery_reports (
+            report_sha256 TEXT PRIMARY KEY,
+            payload TEXT NOT NULL
+        ) STRICT;
+        CREATE TABLE IF NOT EXISTS product_action_recovery_scans (
             report_sha256 TEXT PRIMARY KEY,
             payload TEXT NOT NULL
         ) STRICT;
@@ -312,6 +325,54 @@ def _recovery_reports(
             reports.append(report)
     except (ValidationError, ValueError, TypeError):
         raise KernelError("product_action_config_store_corrupt", "Action恢复报告正文损坏") from None
+    return tuple(reports)
+
+
+def _save_recovery_scan(
+    database: sqlite3.Connection,
+    report: ActionRecoveryScanReport,
+) -> ActionRecoveryScanReport:
+    checked = ActionRecoveryScanReport.model_validate_json(report.model_dump_json())
+    payload = checked.model_dump_json(warnings="error")
+    try:
+        database.execute("BEGIN IMMEDIATE")
+        row = database.execute(
+            "SELECT payload FROM product_action_recovery_scans WHERE report_sha256 = ?",
+            (checked.report_sha256,),
+        ).fetchone()
+        if row is None:
+            database.execute(
+                "INSERT INTO product_action_recovery_scans VALUES (?, ?)",
+                (checked.report_sha256, payload),
+            )
+        elif len(row) != 1 or row[0] != payload:
+            raise KernelError(
+                "product_action_config_store_corrupt",
+                "Action恢复扫描摘要碰撞或正文损坏",
+            )
+        database.execute("COMMIT")
+        return checked.model_copy(deep=True)
+    except BaseException:
+        _rollback(database)
+        raise
+
+
+def _recovery_scans(database: sqlite3.Connection) -> tuple[ActionRecoveryScanReport, ...]:
+    rows = database.execute(
+        "SELECT report_sha256, payload FROM product_action_recovery_scans ORDER BY rowid"
+    ).fetchall()
+    reports: list[ActionRecoveryScanReport] = []
+    try:
+        for digest, payload in rows:
+            report = ActionRecoveryScanReport.model_validate_json(payload)
+            if report.report_sha256 != digest:
+                raise ValueError
+            reports.append(report)
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError(
+            "product_action_config_store_corrupt",
+            "Action恢复扫描正文损坏",
+        ) from None
     return tuple(reports)
 
 

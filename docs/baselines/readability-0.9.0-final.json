@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 318,
-    "physical_lines": 71924,
-    "logical_lines": 63979,
-    "documented_modules": 318,
-    "classes": 799,
-    "documented_classes": 299,
-    "functions": 2863,
-    "documented_functions": 364,
+    "source_files": 326,
+    "physical_lines": 73046,
+    "logical_lines": 64930,
+    "documented_modules": 326,
+    "classes": 815,
+    "documented_classes": 314,
+    "functions": 2897,
+    "documented_functions": 380,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1312,7 +1312,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 388,
+      "line": 391,
       "lines": 299,
       "documented": false
     },
@@ -1322,7 +1322,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 468,
+      "line": 471,
       "lines": 130,
       "documented": false,
       "decision_complexity": 29
@@ -1621,8 +1621,8 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 123,
-      "lines": 332,
+      "line": 126,
+      "lines": 220,
       "documented": true
     },
     {
@@ -1631,8 +1631,8 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 36,
-      "lines": 310,
+      "line": 42,
+      "lines": 251,
       "documented": true
     },
     {
