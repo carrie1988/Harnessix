@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 33
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 34
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -319,7 +319,8 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 自动Eval Runner审批不计人工干预。报告禁止Prompt、回答、Tool参数/输出、Diff、路径和Actor正文。实现Revision `d42ab6c9c55f7f62da0fe8dade6455bd0b1f0373`已经[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)完成六实例验收。当前证据仅证明
 合同、摘要投影、Campaign绑定、聚合、防篡改及私有原子文件行为。Task Pack已由0.9.2b验收，Suite Runner已由
 0.9.2c验收，3仓10 Case数据集已由0.9.2d1验收，d2正式Case Adapter已由CI 35479723645验收；d3完整
-20 Trial已由CI 35483905418完成固定Container验收并冻结证据。Recorded结果仍不证明真实Provider质量；0.9.2e控制面为候选实现，完整真实运行和证据尚未完成。关闭边界见
+20 Trial已由CI 35483905418完成固定Container验收并冻结证据。Recorded结果不证明真实Provider质量；0.9.2e最终实现
+Revision `fb4a0ea`已由CI 35491527318完成全矩阵验收，真实Provider完整20 Trial也已冻结0/20严格质量证据。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
 0.9.2e首个受控真实Trial进一步证明：真实模型可能在终态前不调用固定Profile。该行为必须以空Baseline/Final进入严格
@@ -331,6 +332,11 @@ Baseline，终态Session重算报告不得重新打开Provider；完整真实Sui
 形成适用失败，测试通过率为0/20而不是不适用；这不会把未执行的Process伪装成真实失败回执。该运行还要求回归证明
 Campaign终态保存精确Run前缀/成本，以及CLI Runtime失败只从身份一致的Suite State公开进度。旧运行绑定旧Revision，
 不得跨版本恢复或计作最终真实基线。
+
+最终修正Revision建立了全新Suite并完成20/20 Trial。20个Turn均正常终结，Provider失败和Agent运行时失败为0；任务成功、
+测试通过均为0/20，人工干预为0。报告记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整
+已知成本。Plan、Report与Manifest已经严格重读并重算摘要，[低敏证据](validation/provider-engineering-2026-09-20-v1/README.md)
+按原始失败冻结。该结果关闭0.9.2e的验证流程，不表示固定模型的软件工程质量已达到生产要求。
 
 ### 13.2 0.9.2b Task Pack验证矩阵
 
@@ -488,10 +494,10 @@ Recorded Provider按Golden驱动确定性动作，只证明执行、持久化和
 
 ### 14.1 0.9.2e完整Suite验证边界
 
-0.9.2e不以单Prompt或单Case通网作为验收。候选实现必须复用`run_coding_eval_suite → TaskPackCaseExecutor →
+0.9.2e不以单Prompt或单Case通网作为验收。正式实现必须复用`run_coding_eval_suite → TaskPackCaseExecutor →
 run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`，固定工程Pack v2的10 Case × 2 Trial，并满足：
 
-| 验证层 | 必须证明 | 候选测试/证据 |
+| 验证层 | 必须证明 | 测试/证据 |
 |---|---|---|
 | 网络门禁 | 缺少`--allow-network`时不读取配置、环境或创建Provider | `test_provider_suite_cli.py` |
 | 私有配置 | 0600普通文件、no-follow、有界严格JSON，只保存Key环境变量名 | `test_provider_suite_cli.py` |
@@ -505,14 +511,15 @@ run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`，固定
 | Campaign提交 | 无故障完成两个Trial后State保留精确Run前缀、成本和Report摘要 | `tests/integration/test_task_pack_execution.py` |
 | 失败进度 | Runtime失败时只投影身份一致的连续Case前缀和已知成本，异源/损坏状态回退为零 | `test_provider_suite_cli.py` |
 | 低敏证据 | 只发布Plan、Report、Manifest；拒绝正文、路径、Secret和私有标识 | `test_provider_suite_evidence.py` |
-| 真实场景 | 固定模型完成或按稳定Reason停止20 Trial，全部Token/费用/时延可重算 | 待冻结真实Provider证据 |
+| 真实场景 | 固定模型完成或按稳定Reason停止20 Trial，全部Token/费用/时延可重算 | [已冻结真实Provider证据](validation/provider-engineering-2026-09-20-v1/README.md) |
 
 真实运行前必须先提交候选实现并通过默认离线全矩阵CI。运行配置和Work Root保存在仓库外；API Key只临时进入进程环境。
 完整报告只有在`cost_completeness=complete`时才可发布。人民币40元是Harnessix在完整Trial之间执行的本地停止线，不是
 供应商账户硬额度；当前Trial已经开始后可能越线，因此仍需核对实际账单。
 
-候选实现完成而真实Suite未运行时，状态必须表述为“控制面已实现、真实证据待完成”，不得关闭0.9.2e。详细合同、
-故障恢复和操作步骤见[0.9.2e详细设计](changes/m09-2e-controlled-real-provider-baseline.md)、
+最终Revision `fb4a0ea`与CI 35491527318已经关闭实现门禁；真实Suite完成20 Trial并以0/20任务/测试通过率冻结证据，
+0.9.2e据此关闭。后续质量改进必须建立新Revision与新Suite，不得重写本次证据。详细合同、故障恢复和操作步骤见
+[0.9.2e详细设计](changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](operations/provider-suite-baseline.md)。
 
 ## 15. 验证证据生命周期

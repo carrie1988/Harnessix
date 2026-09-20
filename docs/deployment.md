@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 16
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 17
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -146,7 +146,7 @@ uv run harnessix code doctor ./workspace \
 ```
 
 Doctor检查配置、Profile、Secret引用、Workspace、状态目录、平台原生读取端口、可选Git、TUI和Action能力。
-Doctor成功不是网络Provider调用证明；单次模型连通性由受控Smoke负责，完整工程Task Pack真实Provider基线由默认禁网的`coding-eval-suite`及[专项运维手册](operations/provider-suite-baseline.md)负责。候选实现未完成真实运行前不得宣称0.9.2e通过。
+Doctor成功不是网络Provider调用证明；单次模型连通性由受控Smoke负责，完整工程Task Pack真实Provider基线由默认禁网的`coding-eval-suite`及[专项运维手册](operations/provider-suite-baseline.md)负责。0.9.2e已完成20 Trial真实运行并[冻结低敏证据](validation/provider-engineering-2026-09-20-v1/README.md)，其0/20严格质量结果不能外推为模型已达生产可用。
 
 ### 5.3 启动TUI
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 9
-code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
+version: 10
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -17,6 +17,8 @@ related_adrs:
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
+  - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/evals/test_suite.py
   - tests/evals/test_campaign.py
@@ -27,6 +29,9 @@ related_tests:
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
   - tests/integration/test_task_pack_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_provider_suite_cli.py
+  - tests/evals/test_provider_suite_evidence.py
 supersedes: []
 ---
 
@@ -424,8 +429,8 @@ atomic_publish(report)
 | 0.9.2c | Suite State/Runner/Lock/Cancel/Resume | Case边界崩溃、发布确认丢失、成本停止均已测试 | CI 35465458256六实例验收并关闭 |
 | 0.9.2d1 | 3仓10 Case数据集、确定性生成、Review源码证据、外置Golden | Baseline失败、Golden通过、固定镜像 | 全量Profile与许可证门禁 |
 | 0.9.2d2 | Task Pack Case Adapter接入正式Agent/Session/Product Action/Campaign | Trial/Campaign报告崩溃窗口已实现；取消、超时和UNKNOWN由d3全Suite补齐 | CI 35479723645六实例验收并关闭 |
-| 0.9.2d3 | 10 Case各2 Trial离线Suite | 前缀恢复、零重放、完整聚合 | 可复跑Suite报告与CI证据 |
-| 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | 报告与验证资料发布 |
+| 0.9.2d3 | 10 Case各2 Trial离线Suite | 前缀恢复、零重放、完整聚合 | CI 35483905418与离线冻结证据完成 |
+| 0.9.2e | 受控真实Provider基线与版本化证据 | 请求预算、无重试、脱敏、完整Cost | CI 35491527318与真实0/20冻结证据完成 |
 
 ## 13. 接口设计与源码测试映射
 
@@ -449,6 +454,8 @@ atomic_publish(report)
 | Suite执行合同 | [`suite_execution_contracts.py`](../../src/harnessix/evals/suite_execution_contracts.py) | Config、Case Result、State、Run Report | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) Schema与身份漂移 |
 | 可恢复Runner | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `run_coding_eval_suite`、前缀重建、停止与发布恢复 | 顺序、锁、取消、崩溃、Cost与零重放测试 |
 | 共用执行文件边界 | [`execution_fs.py`](../../src/harnessix/evals/execution_fs.py) | 0700目录、0600非阻塞独占锁 | Suite锁冲突及Campaign回归 |
+| Task Pack Suite组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | 10 Case/20 Trial稳定身份、离线/真实Provider中立配置 | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) |
+| 真实Provider执行与证据 | [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py)、[`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py) | 宿主/Provider绑定、独立Client、低敏发布 | `test_provider_suite_execution.py`、`test_provider_suite_evidence.py` |
 
 ## 14. 部署、兼容、风险与回退
 
@@ -481,7 +488,7 @@ Manifest和两个Archive。实现Revision `608c07a54543f436651aa4e55141acb7f7602
 0.9.2c已完成：计划先行、单写者锁、连续Case证据前缀、显式停止恢复、Case/最终报告崩溃窗口、成本未知和
 聚合费用停止均已有严格合同、Schema和定向测试；实现细节见[0.9.2c详细设计](m09-2c-recoverable-suite-runner.md)
 与[ADR 0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)。实现Revision `ffd3db4e83a807ab3029c479fb4650216240b4f7`本地全仓为3514项通过/20项跳过，
-[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例，因此0.9.2c关闭；0.9.2d/e和0.9.2总项继续未关闭。
+[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六实例，因此0.9.2c关闭；当时0.9.2d/e尚未关闭。
 
 0.9.2d1已完成：`harnessix-engineering/v1`固定三个MIT派生Benchmark仓库、十个Case、五类各两个、
 十个固定Profile、确定性Archive/Manifest生成器、Review源码行证据校验和Wheel外Golden Patch。实现Revision
@@ -494,3 +501,14 @@ Campaign Report发布窗口故障注入证明重开不重复已完成Provider或
 `a04606b829e6c4a32935b81c8ccc86ee5802d918`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)
 完成Linux Python 3.12/3.13、macOS、Windows、固定Digest Container和Documentation六实例验收，d2据此关闭。
 d3仍负责10 Case × 2 Trial完整Suite，以及取消、超时、UNKNOWN、Suite完成前缀和最终报告发布恢复。
+
+0.9.2d3已完成：工程Pack v2保留不可变v1并修正两个Test Case的受版本控制失败基线；Revision `505bc53`由
+[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container、20/20 Trial、
+双Suite提交窗口恢复与六实例验收，[离线证据已冻结](../validation/offline-engineering-2026-09-20-v2/README.md)。
+
+0.9.2e已完成：最终修正Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`由
+[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收。全新固定北京模型Suite完成
+20/20 Trial，记录81次请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格任务成功与
+测试通过均为0/20，[真实Provider证据已冻结](../validation/provider-engineering-2026-09-20-v1/README.md)。0.9.2a～e全部
+满足合同、失败恢复、持久化、可观测性、完整测试、真实场景和文档同步，0.9.2据此关闭；0/20质量事实转入后续Agent改进，
+不因阶段关闭而改写。

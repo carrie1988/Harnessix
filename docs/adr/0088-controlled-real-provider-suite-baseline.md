@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: reviewing
-version: 3
-code_revision: pending
+status: current
+version: 4
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -28,7 +28,9 @@ supersedes: []
 
 ## 状态
 
-评审中。实现候选已完成本地合同、恢复与脱敏回归；在提交、全矩阵CI和受控真实运行证据完成前，不接受本文，也不关闭0.9.2e。
+已接受。最终实现Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`已由
+[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收；固定北京模型的新Suite完成
+10 Case × 2 Trial并冻结[低敏证据](../validation/provider-engineering-2026-09-20-v1/README.md)。
 
 ## 背景
 
@@ -142,7 +144,7 @@ Plan Fingerprint、执行绑定、Case连续前缀、下一Case和成本币种�
 
 ## 验收条件
 
-本文只有在以下条件全部满足后转为`current`：
+以下验收条件均已满足，本文转为`current`：
 
 1. 私有配置、Schema、CLI、恢复绑定、Provider工厂和证据发布器已合入；
 2. 默认禁网路径证明不会读取配置、环境或创建Provider；
@@ -155,6 +157,15 @@ Plan Fingerprint、执行绑定、Case连续前缀、下一Case和成本币种�
 9. 固定模型完成或按合同停止完整10 Case × 2 Trial真实Suite；
 10. 低敏报告经严格重读和重算后冻结，实际费用不超过授权范围；
 11. 路线图、架构、Evals模块、测试规范、运维和验证索引同步。
+
+## 验收结果
+
+最终Suite的20个Turn均正常终结，Provider失败和Agent运行时失败均为0；严格任务成功与测试通过均为0/20。
+报告记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本，未触发CNY 40停止线。
+Plan、Report与Manifest已由正式合同严格重读并重算摘要，公开目录只包含三份白名单JSON。
+
+本文接受的是单一主链、失败语义、恢复、费用和证据发布决策，不接受“模型质量已达生产水平”的推论。0/20是固定组合的
+正式质量事实，后续只能通过新Revision、新Suite和新证据演进。
 
 ## 关联资料
 

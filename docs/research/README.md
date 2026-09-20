@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 9
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 10
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -84,7 +84,7 @@ flowchart LR
 | [真实Campaign执行与费用边界](eval-campaign-execution.md) | 2026-09-06 | 正文专项基线 | [ADR 0048](../adr/0048-controlled-real-eval-campaign-execution.md) |
 | [多仓库Eval Suite、Transcript与Task Pack证据](eval-suite-and-transcript-baseline.md) | 2026-09-20 | Codex、OpenCode与Claude逆向样本固定Revision；包含独立Task Pack取舍 | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[ADR 0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0.9.2详细设计](../changes/m09-2-eval-suite-and-transcript-baseline.md) |
 | [多仓库离线Eval数据集](multi-repository-eval-dataset.md) | 2026-09-20 | OpenAI Agents Python、OpenCode、LangChain固定Revision及MIT权利链 | [ADR 0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0.9.2d详细设计](../changes/m09-2d-multi-repository-offline-baseline.md) |
-| [受控真实Provider完整Suite](controlled-real-provider-suite.md) | 2026-09-20 | Harnessix现有主链及百炼北京官方接入/价格事实 | [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)、[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md) |
+| [受控真实Provider完整Suite](controlled-real-provider-suite.md) | 2026-09-20 | Harnessix现有主链、百炼北京官方接入/价格事实、三轮诊断与最终0/20严格质量基线 | [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)、[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md)、[冻结证据](../validation/provider-engineering-2026-09-20-v1/README.md) |
 | [Eval Token预算适用性](eval-token-budget-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0049](../adr/0049-versioned-eval-token-budget.md) |
 | [Eval最终回答契约可见性](eval-final-answer-contract-applicability.md) | 2026-09-06 | 正文专项基线 | [ADR 0051](../adr/0051-versioned-eval-final-answer-contract.md) |
 | [Eval变更交付适用性](eval-change-delivery.md) | 2026-09-07 | 正文专项基线 | [ADR 0052](../adr/0052-controlled-eval-change-delivery.md)、[Delivery模块](../modules/delivery.md) |

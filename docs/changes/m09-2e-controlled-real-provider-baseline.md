@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 3
-code_revision: pending
+status: current
+version: 4
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -37,8 +37,8 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 变更目标 | 在不增加第二套Agent、Runner或Action Plane的前提下，通过真实OpenAI兼容Provider执行工程Pack v2完整10 Case × 2 Trial Suite |
-| 当前能力 | 离线Recorded Provider完整Suite已验收；真实Provider私有配置、显式启网、恢复绑定和低敏证据为候选实现 |
-| 完成边界 | 实现提交、全矩阵CI、固定模型真实运行、费用核对、公开证据冻结和文档同步全部完成后才关闭0.9.2e |
+| 当前能力 | 离线Recorded Provider与固定北京真实Provider完整Suite均已验收；私有配置、显式启网、恢复绑定和低敏证据已成为正式能力 |
+| 完成边界 | Revision `fb4a0ea`、CI 35491527318、20 Trial真实运行、CNY 1.46828完整成本、公开证据冻结和文档同步均已完成 |
 | 关键决策 | [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md) |
 | 源码研究 | [受控真实Provider完整Suite研究](../research/controlled-real-provider-suite.md) |
 | 运维手册 | [真实Provider Suite运维](../operations/provider-suite-baseline.md) |
@@ -604,6 +604,23 @@ Trial均没有Final Profile Observation，旧投影把它们标记为`not_applic
 本版本分别修正测试分母、Campaign最新State提交和CLI可信进度投影。旧运行绑定旧Revision，只作为私有诊断事实，
 不得跨Revision恢复、发布或拼接为最终基线；候选通过CI后必须创建新的Suite ID和私有运行根重新验收。
 
+### 18.2 最终验收结果
+
+最终修正Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`由
+[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成Linux Python 3.12/3.13、macOS、
+Windows、固定镜像Container和Documentation六实例验收。随后创建全新Suite ID与私有运行根，在有效北京价格窗口内执行
+10 Case × 2 Trial：
+
+- 20/20 Trial和20/20 Turn完成，Provider失败与Agent运行时失败均为0；
+- 任务成功0/20，适用测试20/20，测试通过0/20；
+- 81次模型请求，318,478输入Token，12,148输出Token；
+- 成本完整性为`complete`，已知成本CNY 1.46828，未触发CNY 40停止线；
+- Plan、Report与Manifest完成正式合同重读、Report摘要重算和递归敏感字段/路径检查；
+- [公开证据](../validation/provider-engineering-2026-09-20-v1/README.md)只包含三份白名单JSON。
+
+该结果关闭执行与证据切片，不掩盖模型质量：0/20是当前固定组合的正式基线。后续提高成功率必须通过新的Agent改进、
+独立Suite和新证据完成，禁止覆盖或选择性重跑本次结果。
+
 ## 19. 风险、限制与后续工作
 
 | 风险/限制 | 当前缓解 | 后续 |
@@ -618,4 +635,5 @@ Trial均没有Final Profile Observation，旧投影把它们标记为`not_applic
 | Runtime失败掩盖已消费费用 | CLI仅从身份一致状态公开连续进度与已知成本 | 继续以私有状态和供应商账单双向核对 |
 | Evidence Report字段未来扩展 | 递归禁止字段和绝对路径，合同版本化 | 新字段必须先通过泄漏审查 |
 
-在真实运行和证据冻结前，本变更保持`reviewing`，不得在README中宣称0.9.2e完成。
+本变更的实现、失败恢复、全矩阵CI、真实运行、成本核对和低敏证据冻结均已完成，状态转为`current`。固定模型0/20的
+质量结果保留为后续0.9.3与0.9.6改进输入，不因切片关闭而改写为成功。

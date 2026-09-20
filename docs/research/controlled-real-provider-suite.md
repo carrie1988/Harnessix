@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
-status: reviewing
-version: 3
-code_revision: pending
+status: current
+version: 4
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -108,6 +108,17 @@ Baseline事实，终态Session恢复只重算报告，不重新请求模型。
 2. Campaign发布使用执行循环返回的最新State，并通过无故障两Trial集成测试固定；
 3. CLI只从Suite ID、Plan Fingerprint、执行绑定、连续Case前缀、下一Case和币种均匹配的0600状态中投影公开进度，任何读取或身份失败回退为零且不泄漏正文。
 
+### 2.6 最终修正与第三轮独立Suite结果
+
+三项修正由Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`实现，并由
+[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收。随后创建新的Suite ID、配置和
+Work Root，未恢复或拼接旧Revision事实。固定北京模型完成10 Case × 2 Trial：20个Turn均正常终结，任务成功与测试通过
+均为0/20，81次请求使用318,478输入Token和12,148输出Token，完整已知成本为CNY 1.46828。
+
+结果证明三项修正达到预期：零通过的适用测试分母可以聚合；最终报告保留全部Case前缀与成本；CLI返回`completed`而不是
+Runtime失败。它同时揭示模型质量仍不满足生产要求，因此0/20必须作为后续Agent策略和工具可发现性改进的基线，而不能用
+基础设施验收通过替代任务质量。
+
 ## 3. 百炼北京官方接入事实
 
 执行前核对的官方资料：
@@ -175,5 +186,5 @@ Baseline事实，终态Session恢复只重算报告，不重新请求模型。
 3. Provider网络从宿主发起，代码检查仍在固定无网Container；这不是模型网络的Container隔离；
 4. 一次北京模型基线不能外推到其他地域、端点、模型或未来价格；
 5. 模型跳过Profile会形成严格`invalid/failed`报告，并在Suite中计为适用测试失败，不等于产品链或评测基础设施故障；
-6. 第二轮运行已经完成20个Trial，但因旧测试分母语义未发布Suite；该运行绑定旧Revision，只是私有诊断事实；
-7. 修正Revision完成新的完整真实运行前，本文不证明模型总体质量或0.9.2e已经关闭。
+6. 第二轮运行完成20个Trial但未发布Suite，只保留为旧Revision私有诊断事实；最终证据来自独立第三轮Suite；
+7. 最终真实基线任务成功与测试通过均为0/20，只证明失败、Token、成本和证据链可审计，不证明模型总体质量已满足生产要求。

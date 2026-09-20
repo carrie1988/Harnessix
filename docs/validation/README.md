@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
-code_revision: 505bc537f74bd59e891c605ff4114856991f1783
+version: 3
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0047-coding-eval-campaign-evidence.md
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/smoke
   - tests/evals
@@ -32,6 +33,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-20 | [工程Task Pack v2真实Provider完整Suite](provider-engineering-2026-09-20-v1/README.md) | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 北京精确模型、3仓10 Case、每Case 2 Trial、无自动重试、CNY 40 Trial边界停止线 | 20/20 Trial终结；任务成功0/20、测试通过0/20；81请求、318,478/12,148输入/输出Token、CNY 1.46828完整已知成本 | 0.9.2e当前冻结真实质量基线；证明失败可审计，不证明模型可用成功率 |
 | 2026-09-20 | [工程Task Pack v2完整离线Suite](offline-engineering-2026-09-20-v2/README.md) | `505bc537f74bd59e891c605ff4114856991f1783` | 3仓10 Case、每Case 2 Trial、固定Digest无网Container、Recorded Provider零费用 | 20/20 Trial通过；120请求、60自动审批；首Case证据与Suite报告两个崩溃窗口均恢复 | 0.9.2d3当前冻结离线证据；不证明真实模型能力 |
 | 2026-09-03 | [百炼北京受控Smoke](bailian-2026-09-03.md) | `9f24961840fa704e7c7a344c648164d8afe793b7` | 北京兼容端点；每请求最多128输出Token；零重试；总计7次请求 | 文本、内存工具、审批重开三个固定场景通过；费用和其他Provider未验证 | Smoke独立证据 |
 | 2026-09-06 | [Coding Eval v1](bailian-2026-09-06-coding-eval/README.md) | `bbfd446707acbd9f945657ad96a6556d24af5df5` | 固定模型；3个Run；16步骤、20000累计Token、600秒；费用停止线¥10 | 0/3，均因任务Token预算结束；不能形成编码成功率 | 被v2诊断推进，但原证据保留 |
@@ -51,6 +53,9 @@ flowchart LR
     V2C --> PromptGap[模型不可见评分Schema]
     PromptGap --> V3[Eval v3]
     V3 --> Baseline[固定任务3/3严格通过]
+    Offline[2026-09-20工程离线Suite] --> OfflineResult[20/20执行与恢复通过]
+    OfflineResult --> Provider[2026-09-20真实Provider Suite]
+    Provider --> ProviderResult[0/20严格质量基线]
 ```
 
 图中的箭头表示问题诊断和任务版本演进，不表示后一个目录覆盖前一个目录。所有失败、预算终止和测量偏差均保留，

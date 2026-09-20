@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 20
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -58,14 +58,14 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/evals`](../../src/harnessix/evals/) |
-| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布候选；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
-| 非职责 | 不提供通用Benchmark平台、运行时动态第三方数据集、LLM Judge、分布式调度、供应商账单、账户级硬费用上限、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider只证明产品执行链，真实Provider候选实现未完成受控实跑前不构成质量基线 |
+| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
+| 非职责 | 不提供通用Benchmark平台、运行时动态第三方数据集、LLM Judge、分布式调度、供应商账单、账户级硬费用上限、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider只证明产品执行链，单一真实Provider基线也不构成通用模型质量结论 |
 | 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；单次运行、评分、Compaction评测和Eval专用交付仅由库调用 |
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
-| 代码版本 | 0.9.2a～c分别由CI 35456635653、35461708961和35465458256关闭；0.9.2d工程Pack v2完整离线Suite由Revision `505bc537f74bd59e891c605ff4114856991f1783`及CI 35483905418关闭；0.9.2e私有真实Suite配置、显式启网、恢复绑定和低敏证据为基于`2983898`的候选实现，待提交、CI及真实运行 |
-| 当前完成度 | 0.5.5单任务闭环及0.9.2a～d均已完成；0.9.2e合同、执行、CLI和证据发布候选已实现并通过本地专项回归，真实模型完整Suite、证据冻结和全矩阵CI尚未完成，因此0.9.2整体仍未关闭 |
+| 代码版本 | 0.9.2a～c分别由CI 35456635653、35461708961和35465458256关闭；0.9.2d工程Pack v2完整离线Suite由Revision `505bc537f74bd59e891c605ff4114856991f1783`及CI 35483905418关闭；0.9.2e最终修正Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`由CI 35491527318关闭 |
+| 当前完成度 | 0.5.5单任务闭环及0.9.2a～e均已完成；20 Trial离线执行链与固定北京模型0/20严格真实质量基线均已冻结，0.9.2整体关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/evals/contracts.py)、
 [`catalog.py`](../../src/harnessix/evals/catalog.py)、
@@ -192,7 +192,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Task Pack真实检查 | 已实现/已验收 | `build_task_pack_product_profile` | 固定Digest镜像经审批、只读、无网产品链先失败后通过 |
 | Task Pack正式Case Adapter | 已验收 | `TaskPackCaseExecutor`、`run_task_pack_coding_eval` | 两独立Trial经Agent/Session/Product Action/Artifact/Grader/Campaign；CI 35479723645固定Digest Container通过 |
 | Task Pack完整离线Suite组合 | 已实现/已验收 | `build_task_pack_offline_suite_config` | Manifest顺序、每Case两Trial、UUIDv5稳定身份和零费用Recorded计价；CI 35483905418完成固定Container验收 |
-| Task Pack真实Provider Suite | 候选实现/待实跑 | `build_task_pack_suite_config`、`run_task_pack_provider_suite`、`harnessix coding-eval-suite` | 固定模型/价格/地域、默认禁网、配置摘要恢复绑定、每Trial独立Provider和低敏证据；尚不构成真实质量基线 |
+| Task Pack真实Provider Suite | 已实现/已验收 | `build_task_pack_suite_config`、`run_task_pack_provider_suite`、`harnessix coding-eval-suite` | 固定模型/价格/地域、默认禁网、配置摘要恢复绑定、每Trial独立Provider和低敏证据；20 Trial真实基线为任务/测试0/20 |
 | 受控真实Campaign | 已实现/显式启用 | CLI + `run_coding_eval_campaign` | OpenAI Chat兼容Provider、顺序执行 |
 | Compaction语义Eval | 已实现/显式调用 | `grade_compaction_semantics` | 人工短语Oracle、无独立持久化 |
 | Eval单文件交付 | 已实现/显式调用 | `CodingEvalDeliveryStore` | POSIX、已有UTF-8普通文件 |
@@ -836,7 +836,7 @@ Token和测试证据交叉绑定。计划指纹、Campaign报告指纹和最终S
 Plan最大512 KiB，Report最大8 MiB，沿用`report.py`的拒绝符号链接、0600、临时文件、文件/目录`fsync`和原子替换。
 
 0.9.2a实现合同、投影、聚合和文件边界；Task Pack已由0.9.2b完成并验收。0.9.2c在这些合同之上增加执行状态机，
-10 Case/3仓库离线基线已经由0.9.2d完成；真实Provider完整Suite仍属于0.9.2e，不能由离线结果外推。
+10 Case/3仓库离线基线已经由0.9.2d完成；0.9.2e又完成相同规模的真实Provider基线。两者分别证明执行链与固定模型质量，不能互相外推。
 
 ### 23.2 Suite执行状态、停止与恢复
 
@@ -1071,13 +1071,18 @@ CLI缺少`--allow-network`时在配置读取前输出`network_not_enabled`。固
 
 公开发布器只从完整私有Suite Plan/Report构建白名单Manifest。公开根与私有根必须相互独立；递归拒绝Prompt、回答、
 Arguments、Tool Output、Diff、Workspace、Secret、POSIX/Windows绝对路径和私有目录片段。成本不完整或Plan不一致时
-不得发布。候选实现及测试已落地，但在真实10 Case × 2 Trial运行、证据冻结和全矩阵CI完成前，0.9.2e仍保持未完成。
+不得发布。最终实现Revision `fb4a0ea`已由CI 35491527318完成全矩阵验收。
 
 真实Provider的第二轮诊断完成20个Trial并记录CNY 1.44998完整已知成本，证明空Profile事实可以到达Case报告阶段，
 同时暴露三处独立语义：Task声明必需检查时空Final不能写成`not_applicable`，而应以声明检查数形成零通过的适用失败；
 `_publish_campaign`必须使用Trial循环返回的最新State，不能用旧快照覆盖Run前缀和成本；CLI捕获Runtime失败时只可从
 Suite ID、Plan Fingerprint、执行绑定、连续Case前缀、下一Case和币种均匹配的私有状态投影进度。读取或身份异常回退为零且不泄漏正文。
 该旧运行绑定旧Revision，不能跨Revision恢复或作为冻结证据。
+
+基于最终Revision创建的新Suite完成20/20 Trial，记录81次模型请求、318,478输入Token、12,148输出Token和
+CNY 1.46828完整已知成本；20个Turn均正常终结，但任务成功与测试通过均为0/20。Plan、Report与Manifest已严格重读并
+冻结为[公开低敏证据](../validation/provider-engineering-2026-09-20-v1/README.md)。该结论关闭0.9.2e的执行与证据边界，
+不表示模型质量达到生产要求。
 
 完整背景、字段、失败恢复和运维步骤见[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](../operations/provider-suite-baseline.md)。
@@ -1933,9 +1938,9 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 
 - 原生Windows导入、路径、ACL、Lock、Git和Process全链；
 - Linux容器/Namespace或macOS Sandbox下运行不可信第三方历史任务；
-- 20 Trial离线编排已完成10 Case、3仓库、五类各2个的固定Container全量CI运行和[公开证据冻结](../validation/offline-engineering-2026-09-20-v2/README.md)；0.9.2e真实Provider控制面为候选实现，真实运行与证据仍待完成；
+- 20 Trial离线编排和真实Provider编排均已完成10 Case、3仓库、五类各2个的全量运行并冻结公开证据；真实Provider严格质量结果为0/20，仍需后续版本提升；
 - 非终态Action `UNKNOWN`、Agent Timeout与完整Suite的跨层组合测试尚未在同一20 Trial进程内注入；当前由各权威层专项回归共同证明；
-- 受控真实Provider多任务基线仍待0.9.2e真实运行与证据冻结；候选CLI和合同不能替代该证据；
+- 真实Provider基线仅覆盖单一北京模型、地域、价格窗口和小型派生仓库，尚无多模型/多地域能力矩阵；
 - Source仓库SHA-256对象格式、超大历史、Submodule、LFS和复杂Attributes；
 - Archive在不同Git/Tar版本下的确定性与恶意边界矩阵；
 - 磁盘满、`fsync`失败、SQLite损坏、Artifact丢失和备份恢复；
@@ -2034,7 +2039,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
 | P0 | Historical链无OS Sandbox；Task Pack工程数据集虽有Container但仍是小型派生夹具 | 不能接动态第三方任务或外推大型仓库 | 0.9.2d/0.9.4/0.9.5安全执行 |
-| P0 | 工程Pack、正式Case Adapter和20 Trial离线报告已由固定Container CI验收并冻结；真实Provider控制面候选已实现 | Recorded Provider和离线合同测试均不证明真实模型能力，仍需完整受控实跑 | 0.9.2e |
+| P0 | 工程Pack离线与真实Provider 20 Trial均已冻结，但真实任务成功与测试通过为0/20 | 证明失败可审计，不证明模型具备生产可用的软件工程能力 | 0.9.3 Agent改进与0.9.6能力矩阵 |
 | P0 | 原生Windows包级导入受`fcntl`阻断 | 与1.0三平台目标冲突 | 0.9.6发行门禁 |
 | P0 | Eval不参与默认发布阻断 | 当前回归可能绕过真实任务 | 0.9.2d～e/0.9.6 |
 | P0 | Eval自动审批不是用户审批 | 不能证明生产权限体验 | 产品E2E Eval |
@@ -2163,6 +2168,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | CI 35491527318关闭三项状态/分母修正；固定北京模型完成20 Trial，冻结81请求、318,478/12,148输入/输出Token、CNY 1.46828及任务/测试0/20的低敏证据，关闭0.9.2e和0.9.2 |
 | 19 | `pending` | 2026-09-20 | 记录第二轮真实Suite完成20 Trial后暴露的空测试分母、Campaign旧State覆盖和CLI零进度问题；补充必需测试失败投影、最新State提交和可信失败进度边界 |
 | 18 | `dd8b9976799d0950f72d44247966cc1e9b535dd2` | 2026-09-20 | 缺失Profile保留为空Observation并进入严格评分，完成状态允许空Baseline事实；由CI 35488863702完成六实例验收 |
 | 17 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 增加0.9.2e真实Provider完整Suite私有合同、显式启网、宿主/Provider恢复绑定、每Trial独立Provider、低敏证据发布和完整源码映射；真实运行与CI待验收 |

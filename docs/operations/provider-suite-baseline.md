@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
-status: reviewing
-version: 3
-code_revision: pending
+status: current
+version: 4
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -159,7 +159,7 @@ unset DASHSCOPE_API_KEY
 在Agent终态后旁路执行检查。工程Pack中的检查均为Task声明的必需检查，因此空Final在Suite中必须计为
 `failed`且进入测试通过率分母，不能解释为`not_applicable`。
 
-### 8.1 已识别的候选运行缺口
+### 8.1 历史诊断运行缺口
 
 候选Revision `dd8b997`的受控运行已经完成10 Case × 2 Trial并记录CNY 1.44998完整已知成本，但没有形成可发布Suite：
 20个Trial均没有Final Profile Observation，旧投影将其错误标记为测试不适用，聚合拒绝零适用分母。该运行同时暴露
@@ -168,6 +168,21 @@ Campaign终态可能被循环前旧State覆盖、CLI Runtime失败固定回报�
 这些事实只用于修正执行器，不是公开质量基线。旧配置与运行根绑定旧代码Revision，禁止使用`--resume`跨Revision继续。
 修正通过全矩阵CI后，应按第5节生成新的Suite ID、配置和Work Root，重新执行完整20 Trial；不得复制旧Case报告或把两次
 运行拼接成完成证据。
+
+### 8.2 当前冻结基线
+
+Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`已经通过
+[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)。基于该Revision创建的全新Suite完成
+10 Case × 2 Trial，公开结果为：
+
+- `reason=completed`、`completed_cases=10`、`report_published=true`；
+- 20个Turn正常终结，Provider失败和Agent运行时失败均为0；
+- 任务成功0/20、测试通过0/20、人工干预0；
+- 81次模型请求、318,478输入Token、12,148输出Token；
+- `cost_completeness=complete`，已知成本CNY 1.46828。
+
+[冻结证据](../validation/provider-engineering-2026-09-20-v1/README.md)已完成正式合同重读、Report摘要重算和递归敏感字段检查。
+该结果是固定组合的质量基线，不是成功率达标声明；后续改进必须建立新Suite，不得恢复、覆盖或挑选本次Trial。
 
 ## 9. 发布低敏证据
 

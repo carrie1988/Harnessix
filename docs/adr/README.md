@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 21
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 22
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前87份ADR属于已接受决策，ADR 0088处于评审状态；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前88份ADR均属于已接受决策；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -147,7 +147,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0085 | [采用版本化第三方派生Eval数据集与隔离黄金答案](0085-versioned-third-party-eval-dataset-and-golden-boundary.md) | 接受且已实施；0.9.2d1由CI 35469387988关闭，d2由CI 35479723645关闭，d3由CI 35483905418关闭 |
 | 0086 | [以正式产品内核执行Task Pack Case并隔离Recorded Provider](0086-formal-eval-case-adapter-and-recorded-provider-boundary.md) | 接受、已实现并由CI 35479723645验收关闭0.9.2d2 |
 | 0087 | [确定性组合完整离线Eval Suite并隔离证据生成](0087-deterministic-offline-eval-suite-composition.md) | 接受且已实施；工程Pack v2完整20 Trial由CI 35483905418验收并冻结证据 |
-| 0088 | [复用唯一Agent主链执行受控真实Provider完整Suite](0088-controlled-real-provider-suite-baseline.md) | 评审中；候选实现待提交、全矩阵CI及真实Provider证据 |
+| 0088 | [复用唯一Agent主链执行受控真实Provider完整Suite](0088-controlled-real-provider-suite-baseline.md) | 已接受；Revision `fb4a0ea`、CI 35491527318及20 Trial真实Provider低敏证据完成 |
 
 ### 4.6 Context、Compaction与会话生命周期
 

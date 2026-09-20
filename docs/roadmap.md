@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 44
-code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
+version: 45
+code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
 owners:
   - core
 modules:
@@ -453,7 +453,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0、0.9.1及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1a～f已经通过对应全矩阵CI验收；其中f3物理删除独立HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)关闭。0.9.2～0.9.6未完成，因此0.9阶段整体仍保持进行中。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把此前持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，最终修正Revision `fb4a0ea`由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3～0.9.6未完成，因此0.9阶段整体仍保持进行中。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
 
 ### 目标
 
@@ -463,7 +463,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 - [x] **0.9.0 代码可读性、可维护性与结构治理**：建立可复现的源码规模、文档字符串、复杂度、依赖和公共API基线；制定简体中文注释、命名及模块边界规范；按Agent核心状态机、副作用与恢复、产品运行时与扩展、模型/Context/Eval的优先级补齐模块、类、函数和关键不变量说明；在独立ADR和行为保持测试约束下治理超大文件与过重职责；渐进建立新增及变更代码的可读性防退化门禁。不得以机械注释覆盖率替代语义质量，不得把功能开发、公共契约变更或无关重构混入本切片；
 - [x] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；完成Windows原生只读Coding Tool Runtime与统一Action的产品装配，不以WSL兼容替代原生端口；a～f全部子切片已经对应全矩阵CI验收；
-- [ ] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；
+- [x] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；离线20/20执行链与真实Provider 0/20严格质量基线均已冻结；
 - [ ] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
 - [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Trusted Action Runtime补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
 - [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
@@ -526,10 +526,10 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
     v1 Manifest/Archive原字节，新增只替换受版本控制失败测试基线的v2，未放宽Workspace Patch或Grader。实现Revision
     `505bc53`由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成v2固定Container、
     20/20 Trial、双Suite提交窗口恢复和六实例最终验收，[证据已冻结](validation/offline-engineering-2026-09-20-v2/README.md)；
-- [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
+- [x] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
   验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret；
-  - [ ] **e1 受控执行与证据候选**：完成通用Task Pack Suite组合、私有Provider配置、默认禁网CLI、Pack/Revision/宿主程序校验、Suite/Case恢复摘要绑定、每Trial独立Provider及白名单证据发布；实现提交`871a3d8`已由[CI 35487023147](https://github.com/carrie1988/Harnessix/actions/runs/35487023147)完成六实例验收。首个受控真实Trial暴露“模型未调用固定Profile被误报为Runner故障”的缺口，空Observation严格评分与完成状态兼容修正`dd8b997`已由[CI 35488863702](https://github.com/carrie1988/Harnessix/actions/runs/35488863702)完成六实例验收。第二轮运行完成20 Trial并记录CNY 1.44998完整已知成本，但暴露空Final被错误标记为测试不适用、Campaign旧State覆盖终态进度和CLI失败固定回报零进度三个问题；测试分母、最新State提交和可信进度投影修正通过全矩阵CI前，e1保持未关闭；
-  - [ ] **e2 真实运行与冻结**：实现提交并通过全矩阵CI后，在精确北京模型和有效价格窗口内运行10 Case × 2 Trial，核对Token/费用/停止原因，严格发布并冻结低敏证据，完成关闭文档与CI。
+  - [x] **e1 受控执行与证据候选**：完成通用Task Pack Suite组合、私有Provider配置、默认禁网CLI、Pack/Revision/宿主程序校验、Suite/Case恢复摘要绑定、每Trial独立Provider及白名单证据发布；首轮与第二轮真实运行分别暴露空Profile评分、测试分母、Campaign旧State和CLI零进度问题。最终修正Revision `fb4a0ea`保持严格Grader与安全边界，由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收；
+  - [x] **e2 真实运行与冻结**：在精确北京模型和有效价格窗口内完成10 Case × 2 Trial，20个Turn均正常终结，记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；任务成功与测试通过均为0/20，未选择性重跑或放宽评分，[低敏证据已冻结](validation/provider-engineering-2026-09-20-v1/README.md)。
 
 只有a～e全部满足合同、失败与恢复、持久化、可观测性、完整测试、真实场景和文档同步，且d/e达到上述规模与证据门槛，
 才可勾选0.9.2总项。Schema存在、单元测试通过或只有两个仓库五个Case均不能关闭0.9.2。
