@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Protocol, Self
 from uuid import UUID, uuid4
 
-from pydantic import JsonValue, ValidationError
+from pydantic import JsonValue
 
 from harnessix.protocol.contracts import (
     AGENT_PROTOCOL_VERSION,
@@ -24,7 +23,6 @@ from harnessix.protocol.contracts import (
     InitializeParams,
     InitializeResult,
     JsonRpcNotification,
-    ProtocolLimits,
     PublicBudget,
     QuestionRespondParams,
     ThreadArchiveParams,
@@ -46,7 +44,8 @@ from harnessix.protocol.contracts import (
 )
 from harnessix.sdk.errors import AgentSDKError as AgentSDKError
 from harnessix.sdk.request import _frame, exchange_agent_request, require_replay_limit
-from harnessix.sdk.response import _decode_response, _validate_result
+from harnessix.sdk.response import _validate_result
+from harnessix.sdk.subprocess import SubprocessAgentTransport as SubprocessAgentTransport
 
 if TYPE_CHECKING:
     from harnessix.app_server.server import AgentProtocolServer
@@ -77,210 +76,6 @@ class InProcessAgentTransport:
 
     async def close(self) -> None:
         await self.server.close()
-
-
-def _frame_id(frame: bytes) -> str | int:
-    """读取SDK自身生成Request的路由ID，不承担完整入站协议校验。"""
-
-    try:
-        wire = json.loads(frame)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        raise AgentSDKError("invalid_request", "Request不是有效JSON") from None
-    if not isinstance(wire, dict):
-        raise AgentSDKError("invalid_request", "Request必须是JSON对象")
-    request_id = wire.get("id")
-    if isinstance(request_id, bool) or not isinstance(request_id, (str, int)):
-        raise AgentSDKError("invalid_request", "Request缺少有效JSON-RPC id")
-    return request_id
-
-
-class SubprocessAgentTransport:
-    """支持并发请求的单进程stdio传输；Response按JSON-RPC id归并。"""
-
-    def __init__(
-        self,
-        command: Sequence[str],
-        *,
-        max_message_bytes: int = 1_048_576,
-    ) -> None:
-        if not command:
-            raise ValueError("App Server命令不能为空")
-        try:
-            checked_limits = ProtocolLimits(max_message_bytes=max_message_bytes)
-        except ValidationError:
-            raise ValueError("App Server Response字节上限无效") from None
-        self.command = tuple(command)
-        self.max_message_bytes = checked_limits.max_message_bytes
-        self._process: asyncio.subprocess.Process | None = None
-        self._start_lock = asyncio.Lock()
-        self._write_lock = asyncio.Lock()
-        self._close_lock = asyncio.Lock()
-        self._pending: dict[str | int, asyncio.Future[bytes]] = {}
-        self._abandoned: set[str | int] = set()
-        self._reader_error: tuple[str, str] | None = None
-        self._reader_task: asyncio.Task[None] | None = None
-        self._stderr_task: asyncio.Task[None] | None = None
-        self._closed = False
-        self.stderr_tail = bytearray()
-
-    async def _start(self) -> asyncio.subprocess.Process:
-        async with self._start_lock:
-            if self._closed:
-                raise AgentSDKError("server_closed", "App Server传输已经关闭")
-            if self._reader_error is not None:
-                raise AgentSDKError(*self._reader_error)
-            if self._process is None:
-                try:
-                    self._process = await asyncio.create_subprocess_exec(
-                        *self.command,
-                        stdin=asyncio.subprocess.PIPE,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
-                        limit=self.max_message_bytes + 1,
-                    )
-                except OSError:
-                    raise AgentSDKError("server_start_failed", "App Server子进程启动失败") from None
-                self._reader_task = asyncio.create_task(
-                    self._read_responses(self._process), name="harnessix-sdk-reader"
-                )
-                self._stderr_task = asyncio.create_task(
-                    self._drain_stderr(self._process), name="harnessix-sdk-stderr"
-                )
-            return self._process
-
-    def _fail_pending(self, code: str, message: str) -> None:
-        if self._reader_error is None:
-            self._reader_error = (code, message)
-        for future in self._pending.values():
-            if not future.done():
-                future.set_exception(AgentSDKError(code, message))
-        self._pending.clear()
-        self._abandoned.clear()
-
-    async def _read_responses(self, process: asyncio.subprocess.Process) -> None:
-        assert process.stdout is not None
-        try:
-            while response := await process.stdout.readline():
-                try:
-                    decoded = _decode_response(
-                        response,
-                        max_message_bytes=self.max_message_bytes,
-                    )
-                except AgentSDKError as error:
-                    self._fail_pending(error.code, error.message)
-                    return
-                response_id = decoded.id
-                if response_id is None:
-                    self._fail_pending("invalid_response", "App Server Response缺少有效id")
-                    return
-                if response_id in self._abandoned:
-                    self._abandoned.remove(response_id)
-                    continue
-                future = self._pending.pop(response_id, None)
-                if future is None:
-                    self._fail_pending("invalid_response", "App Server返回了未知Response id")
-                    return
-                if not future.done():
-                    future.set_result(response)
-        except asyncio.CancelledError:
-            self._fail_pending("server_closed", "App Server响应读取已经停止")
-            raise
-        except ValueError:
-            self._fail_pending("invalid_response", "App Server Response超过字节上限")
-        except (OSError, RuntimeError):
-            self._fail_pending("server_closed", "App Server响应读取失败")
-        else:
-            self._fail_pending("server_closed", "App Server输出流已经关闭")
-
-    async def _drain_stderr(self, process: asyncio.subprocess.Process) -> None:
-        assert process.stderr is not None
-        while chunk := await process.stderr.read(4096):
-            self.stderr_tail.extend(chunk)
-            if len(self.stderr_tail) > 65_536:
-                del self.stderr_tail[:-65_536]
-
-    async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
-        request_id = _frame_id(frame)
-        process = await self._start()
-        assert process.stdin is not None
-        loop = asyncio.get_running_loop()
-        future: asyncio.Future[bytes] = loop.create_future()
-        if request_id in self._pending or request_id in self._abandoned:
-            raise AgentSDKError("duplicate_request_id", "存在相同id的未决Request")
-        self._pending[request_id] = future
-        try:
-            async with self._write_lock:
-                if self._closed:
-                    raise AgentSDKError("server_closed", "App Server传输正在关闭")
-                if self._reader_error is not None:
-                    raise AgentSDKError(*self._reader_error)
-                if process.returncode is not None:
-                    raise AgentSDKError("server_closed", "App Server已经退出")
-                try:
-                    process.stdin.write(frame)
-                    await process.stdin.drain()
-                except (BrokenPipeError, ConnectionResetError, OSError):
-                    raise AgentSDKError("server_closed", "App Server输入流写入失败") from None
-            response = await asyncio.shield(future)
-            return (response,)
-        except asyncio.CancelledError:
-            if self._pending.pop(request_id, None) is not None:
-                future.cancel()
-                self._abandoned.add(request_id)
-            raise
-        except BaseException:
-            if self._pending.pop(request_id, None) is not None:
-                future.cancel()
-            raise
-
-    async def notify(self, frame: bytes) -> None:
-        process = await self._start()
-        assert process.stdin is not None
-        async with self._write_lock:
-            if self._closed:
-                raise AgentSDKError("server_closed", "App Server传输正在关闭")
-            if self._reader_error is not None:
-                raise AgentSDKError(*self._reader_error)
-            if process.returncode is not None:
-                raise AgentSDKError("server_closed", "App Server已经退出")
-            try:
-                process.stdin.write(frame)
-                await process.stdin.drain()
-            except (BrokenPipeError, ConnectionResetError, OSError):
-                raise AgentSDKError("server_closed", "App Server输入流写入失败") from None
-
-    async def close(self) -> None:
-        async with self._close_lock:
-            async with self._start_lock:
-                if self._closed:
-                    return
-                self._closed = True
-                process = self._process
-            if process is None:
-                return
-            async with self._write_lock:
-                if process.stdin is not None:
-                    process.stdin.close()
-                    try:
-                        await process.stdin.wait_closed()
-                    except (BrokenPipeError, ConnectionResetError):
-                        pass
-            try:
-                async with asyncio.timeout(10):
-                    await process.wait()
-            except TimeoutError:
-                process.terminate()
-                try:
-                    async with asyncio.timeout(5):
-                        await process.wait()
-                except TimeoutError:
-                    process.kill()
-                    await process.wait()
-            if self._reader_task is not None:
-                await asyncio.gather(self._reader_task, return_exceptions=True)
-            if self._stderr_task is not None:
-                await self._stderr_task
-            self._fail_pending("server_closed", "App Server传输已经关闭")
 
 
 class AgentClient:

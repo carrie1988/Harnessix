@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 309,
-    "physical_lines": 70118,
-    "logical_lines": 62408,
-    "documented_modules": 309,
-    "classes": 781,
-    "documented_classes": 287,
-    "functions": 2765,
-    "documented_functions": 363,
+    "source_files": 310,
+    "physical_lines": 70415,
+    "logical_lines": 62664,
+    "documented_modules": 310,
+    "classes": 787,
+    "documented_classes": 293,
+    "functions": 2791,
+    "documented_functions": 362,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -237,10 +237,6 @@
     {
       "path": "src/harnessix/protocol/contracts.py",
       "lines": 643
-    },
-    {
-      "path": "src/harnessix/sdk/agent_client.py",
-      "lines": 611
     },
     {
       "path": "src/harnessix/skills/runtime.py",
@@ -1522,18 +1518,8 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "AgentClient",
       "kind": "class",
-      "line": 286,
+      "line": 81,
       "lines": 326,
-      "documented": true
-    },
-    {
-      "id": "harnessix.sdk.agent_client:SubprocessAgentTransport",
-      "module": "harnessix.sdk.agent_client",
-      "path": "src/harnessix/sdk/agent_client.py",
-      "qualname": "SubprocessAgentTransport",
-      "kind": "class",
-      "line": 97,
-      "lines": 187,
       "documented": true
     },
     {

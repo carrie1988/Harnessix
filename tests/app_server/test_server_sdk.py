@@ -531,6 +531,80 @@ async def test_subprocess_transport_fails_all_pending_on_malformed_response() ->
     await transport.close()
 
 
+async def test_subprocess_transport_bounds_cancelled_and_pending_requests() -> None:
+    child = "\n".join(
+        (
+            "import json, sys, time",
+            "for index in range(2):",
+            "    request = json.loads(sys.stdin.buffer.readline())",
+            "    if index == 0:",
+            "        time.sleep(0.2)",
+            "    response = {'jsonrpc': '2.0', 'id': request['id'], 'result': {'index': index}}",
+            "    print(json.dumps(response), flush=True)",
+        )
+    )
+    transport = SubprocessAgentTransport(
+        (sys.executable, "-c", child),
+        max_pending_requests=1,
+    )
+    first = asyncio.create_task(
+        transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"first","params":{}}\n')
+    )
+    await asyncio.sleep(0.02)
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+
+    second = asyncio.create_task(
+        transport.exchange(b'{"jsonrpc":"2.0","id":2,"method":"second","params":{}}\n')
+    )
+    await asyncio.sleep(0.05)
+    assert not second.done()
+    snapshot = transport.snapshot()
+    assert snapshot.abandoned_requests == 1
+    assert snapshot.pending_requests == 0
+    assert snapshot.max_pending_requests == 1
+
+    response = await asyncio.wait_for(second, timeout=1)
+    assert json.loads(response[0])["result"] == {"index": 1}
+    assert transport.snapshot().abandoned_requests == 0
+    await transport.close()
+
+
+async def test_subprocess_transport_close_continues_after_caller_cancel() -> None:
+    child = "import sys,time; sys.stdin.buffer.readline(); time.sleep(0.2)"
+    transport = SubprocessAgentTransport(
+        (sys.executable, "-c", child),
+        graceful_shutdown_timeout_seconds=1,
+        terminate_timeout_seconds=1,
+    )
+    await transport.notify(b'{"jsonrpc":"2.0","method":"ready","params":{}}\n')
+
+    closing = asyncio.create_task(transport.close())
+    await asyncio.sleep(0)
+    closing.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await closing
+
+    await asyncio.wait_for(transport.close(), timeout=1)
+    assert transport.snapshot().state == "closed"
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    (
+        ({"max_pending_requests": 0}, "App Server传输限制无效"),
+        ({"graceful_shutdown_timeout_seconds": 0}, "App Server关闭超时必须大于零"),
+        ({"terminate_timeout_seconds": 0}, "App Server关闭超时必须大于零"),
+    ),
+)
+def test_subprocess_transport_rejects_invalid_resource_limits(
+    kwargs: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        SubprocessAgentTransport((sys.executable, "-c", "pass"), **kwargs)  # type: ignore[arg-type]
+
+
 def test_thread_create_rejects_relative_or_nul_workspace() -> None:
     with pytest.raises(ValueError):
         ThreadCreateParams(request_id="relative", workspace="relative")
@@ -626,6 +700,71 @@ async def test_stdio_long_poll_does_not_block_concurrent_request(tmp_path: Path)
         incoming.close()
 
 
+async def test_stdio_honors_negotiated_pending_request_limit(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    read_fd, write_fd = os.pipe()
+    incoming = os.fdopen(read_fd, "rb", buffering=0)
+    producer = os.fdopen(write_fd, "wb", buffering=0)
+    outgoing = io.BytesIO()
+    try:
+        async with AgentRuntime(store, FakeProvider()) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            cursor = (await store.events(thread.thread_id))[-1].sequence
+            server = AgentProtocolServer(await _service(runtime, store))
+            task = asyncio.create_task(run_stdio(server, incoming, outgoing))
+            producer.write(
+                _request(
+                    "initialize",
+                    {
+                        "protocolVersion": "1.0",
+                        "clientInfo": {"name": "pending-limit-test", "version": "1"},
+                        "clientInstanceId": str(uuid4()),
+                        "limits": {"maxPendingRequests": 1},
+                    },
+                )
+                + b'{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}\n'
+                + _request(
+                    "events/next",
+                    EventsNextParams(
+                        thread_id=thread.thread_id,
+                        after_cursor=cursor,
+                        wait_ms=150,
+                    ).model_dump(mode="json", by_alias=True),
+                    request_id=2,
+                )
+                + _request("thread/list", {}, request_id=3)
+            )
+            producer.flush()
+
+            await asyncio.sleep(0.05)
+            early_ids = {
+                value["id"]
+                for line in outgoing.getvalue().splitlines()
+                if isinstance((value := json.loads(line)).get("id"), int)
+            }
+            assert 2 not in early_ids
+            assert 3 not in early_ids
+
+            for _ in range(100):
+                response_ids = {
+                    value["id"]
+                    for line in outgoing.getvalue().splitlines()
+                    if isinstance((value := json.loads(line)).get("id"), int)
+                }
+                if {2, 3} <= response_ids:
+                    break
+                await asyncio.sleep(0.01)
+            assert {2, 3} <= response_ids
+
+            producer.close()
+            await asyncio.wait_for(task, timeout=2)
+            assert server.state is ConnectionState.CLOSED
+    finally:
+        if not producer.closed:
+            producer.close()
+        incoming.close()
+
+
 async def test_stdio_closes_slow_client_without_session_damage(tmp_path: Path) -> None:
     class BlockingOutput(io.BytesIO):
         def __init__(self) -> None:
@@ -661,11 +800,49 @@ async def test_stdio_closes_slow_client_without_session_damage(tmp_path: Path) -
             run_stdio(server, incoming, outgoing, outbound_timeout_seconds=0.01)
         )
         try:
-            await asyncio.wait_for(task, timeout=1)
+            with pytest.raises(TimeoutError, match="stdio出站写入未在期限内完成"):
+                await asyncio.wait_for(task, timeout=1)
         finally:
             outgoing.release.set()
         assert server.state is ConnectionState.CLOSED
         assert await store.thread_ids() == []
+
+
+async def test_stdio_writer_failure_wakes_open_input_and_closes_server(tmp_path: Path) -> None:
+    class FailingOutput(io.BytesIO):
+        def write(self, value: Buffer) -> int:
+            del value
+            threading.Event().wait(timeout=0.05)
+            raise OSError("simulated stdout failure")
+
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    read_fd, write_fd = os.pipe()
+    incoming = os.fdopen(read_fd, "rb", buffering=0)
+    producer = os.fdopen(write_fd, "wb", buffering=0)
+    outgoing = FailingOutput()
+    try:
+        async with AgentRuntime(store, FakeProvider()) as runtime:
+            server = AgentProtocolServer(await _service(runtime, store))
+            task = asyncio.create_task(run_stdio(server, incoming, outgoing))
+            producer.write(
+                _request(
+                    "initialize",
+                    {
+                        "protocolVersion": "1.0",
+                        "clientInfo": {"name": "writer-failure-test", "version": "1"},
+                        "clientInstanceId": str(uuid4()),
+                    },
+                )
+            )
+            producer.flush()
+
+            with pytest.raises(OSError, match="simulated stdout failure"):
+                await asyncio.wait_for(task, timeout=1)
+            assert server.state is ConnectionState.CLOSED
+            assert not producer.closed
+    finally:
+        producer.close()
+        incoming.close()
 
 
 async def test_sdk_question_response_resumes_background_turn(tmp_path: Path) -> None:
