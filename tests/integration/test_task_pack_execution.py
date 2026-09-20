@@ -26,6 +26,7 @@ from harnessix.agent.usage import (
 from harnessix.domain.models import utc_now
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
 from harnessix.evals.contracts import CodingEvalEnvironment
+from harnessix.evals.report import read_eval_report
 from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
@@ -326,7 +327,17 @@ async def test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_
     result = await recovered(expected, campaign, case_root, CancelToken())
 
     assert result.reason == "completed" and result.report is not None
-    assert result.report.campaign.summary.passed_trials == 2
+    failed_checks = {
+        str(run_id): tuple(
+            check.code
+            for check in read_eval_report(
+                case_root / "runs" / str(run_id) / "report.json"
+            ).checks
+            if not check.passed
+        )
+        for run_id in campaign.run_ids
+    }
+    assert result.report.campaign.summary.passed_trials == 2, failed_checks
     assert result.report.campaign.summary.cost_completeness == "complete"
     assert result.report.campaign.summary.known_cost_amount == "0"
     assert opened_run_ids == set(campaign.run_ids)

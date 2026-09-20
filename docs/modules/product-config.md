@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 15
+code_revision: 7bebf3eb4567db321ffefd82fba1c6c13e8f9f86
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -26,6 +27,8 @@ related_tests:
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
   - tests/integration/test_product_process_profile.py
+  - tests/evals/test_task_pack_execution.py
+  - tests/integration/test_task_pack_execution.py
   - tests/product_config/test_schemas.py
   - tests/product_ui/test_cli.py
   - tests/evals/test_runner.py
@@ -65,6 +68,7 @@ supersedes: []
 [`eval_action.py`](../../src/harnessix/product_config/eval_action.py)、
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)、
 [`process_action.py`](../../src/harnessix/product_config/process_action.py)、
+[`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py)、
 [`server.py`](../../src/harnessix/product_config/server.py)和
 [`cli.py`](../../src/harnessix/product_config/cli.py)的当前事实源。决策理由见
 [ADR 0075](../adr/0075-provider-profile-secret-and-safe-fallback.md)，历史研究证据见
@@ -1852,6 +1856,38 @@ Executor或向新Binding迁移旧批准。
 
 Eval组合不接受任意命令、环境或Secret。Process ID固定等于Execution Plan ID；Router已终态但Session响应丢失时只从同一Lease与Artifact补结果投影，不能再次启动。未完成旧`effects.sqlite`运行由Runner在装配前拒绝，避免新旧账本双重消费。
 
+### 52.1 Workspace Patch公共参数的单一解码边界
+
+[`decode_workspace_patch_input`](../../src/harnessix/product_config/workspace_patch_review.py)
+是产品`apply_patch_batch`公共参数的单一严格解码入口。它继续以
+[`WorkspacePatchInput`](../../src/harnessix/delivery/trusted_action_contracts.py)为唯一数据合同，保留拒绝额外字段、
+非法路径、非法操作、非有限JSON值和字段类型错误的原有失败语义，并统一映射为
+`trusted_action_review_invalid`。本次抽取没有修改Tool Schema、审批文档、执行计划或产品Runtime行为。
+
+正式Task Pack Case Adapter复用该解码入口，只在成功得到产品合同对象后叠加评测专属自动审批约束：
+
+1. 仅允许Task Pack固定Profile且`selectors`为空；
+2. Patch路径必须属于任务的`allowed_changed_paths`，文件数不得超过`max_changed_files`；
+3. 自动评测不批准删除操作，且任何合同解析失败均拒绝审批；
+4. Adapter不导入Delivery内部解析细节，不复制第二套Patch DTO或宽松JSON解释器。
+
+```mermaid
+flowchart LR
+    Call[Agent apply_patch_batch参数] --> Decode[decode_workspace_patch_input]
+    Decode --> Contract[WorkspacePatchInput严格合同]
+    Contract --> ProductReview[产品Review与事务规划]
+    Contract --> EvalGuard[Task Pack允许路径与文件数约束]
+    EvalGuard --> AutoApproval[固定边界内自动审批]
+```
+
+源码与验证映射如下：
+
+| 责任 | 源码 | 验证 |
+|---|---|---|
+| 产品Patch严格解码与稳定错误 | [`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) | [`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) |
+| Task Pack附加审批约束 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| 产品Action、Container Profile与完整恢复链 | [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py) | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) |
+
 ## 53. 相关文档
 
 - [文档中心](../README.md)
@@ -1875,6 +1911,7 @@ Eval组合不接受任意命令、环境或Secret。Process ID固定等于Execut
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 15 | `7bebf3eb4567db321ffefd82fba1c6c13e8f9f86` | 2026-09-20 | 同步Workspace Patch公共参数单一解码入口及正式Task Pack Adapter复用边界；产品Schema与运行语义保持不变 |
 | 14 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 同步跨平台锁原语下沉到Domain；Product Config兼容导入和迁移语义保持不变 |
 | 13 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录历史Eval专用Trusted Action组合根由CI 35446341997完成七任务全矩阵验收 |
 | 12 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 增加历史Eval专用Trusted Action组合根，分离公开Profile到Process物化与Catalog/Router/Owner生命周期，等待验收 |
