@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 18
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 19
+code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
 owners:
   - core
 modules:
@@ -269,7 +269,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
-- 0.9.3a已实现本地传输容量、Writer故障唤醒和取消安全关闭，当前等待全矩阵CI；0.9.3b～d的持久容量、效果恢复和完整Soak尚未完成；
+- 0.9.3a本地传输容量、Writer故障唤醒和取消安全关闭已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b～d的持久容量、效果恢复和完整Soak尚未完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。

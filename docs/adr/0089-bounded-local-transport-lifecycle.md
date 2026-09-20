@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 2
+code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
 owners:
   - core
 modules:
@@ -23,8 +23,9 @@ supersedes: []
 
 ## 状态
 
-接受并由0.9.3a实施。本文只关闭本地stdio App Server与Python Subprocess SDK的传输生命周期，不表示0.9.3
-持久化容量、Trusted Action故障或长会话性能基线已经完成。
+接受并由0.9.3a实施。实现Revision `f113594`与文档Revision `7cbacba`已由
+[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收。本文只关闭本地stdio
+App Server与Python Subprocess SDK的传输生命周期，不表示0.9.3持久化容量、Trusted Action故障或长会话性能基线已经完成。
 
 ## 背景
 

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 23
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 24
+code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
 owners:
   - core
 modules:
@@ -195,7 +195,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0079 | [只读产品诊断与原生Workspace读取端口](0079-preflight-and-native-read-port.md) | 接受；0.9.1d已由CI 34735529084关闭 |
 | 0080 | [能力证明驱动的默认Trusted Action组合根](0080-capability-proven-product-action-composition.md) | 接受；0.9.1e已关闭 |
 | 0081 | [收敛为单一Coding Agent产品边界](0081-single-coding-agent-product-boundary.md) | 接受；独立Action HTTP/Worker已删除并由CI 35453082992关闭 |
-| 0089 | [本地Agent传输采用协商背压、迟到响应容量与取消安全关闭](0089-bounded-local-transport-lifecycle.md) | 接受并由0.9.3a实现；全矩阵CI待完成 |
+| 0089 | [本地Agent传输采用协商背压、迟到响应容量与取消安全关闭](0089-bounded-local-transport-lifecycle.md) | 接受并由0.9.3a实现；CI 35494960166已关闭 |
 
 ### 4.9 可读性与结构治理
 

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 46
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 47
+code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
 owners:
   - core
 modules:
@@ -455,7 +455,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性实现Revision `f113594`已完成本地门禁，当前等待全矩阵CI；0.9.3总项及0.9.4～0.9.6未完成，因此0.9阶段整体仍保持进行中。
+状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性实现Revision `f113594`与文档Revision `7cbacba`已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b～d及0.9.4～0.9.6未完成，因此0.9阶段整体仍保持进行中。
 
 ### 目标
 
@@ -543,10 +543,10 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 [详细设计](changes/m09-3-reliability-and-performance.md)拆成四个连续纵向切片。不得用一次短压测或“未观察到异常”
 替代容量合同、故障恢复与可重算证据：
 
-- [ ] **0.9.3a 本地传输可靠性**：stdio使用守护Reader/Writer泵，握手后执行协商Pending/Outbox上限；SDK以
+- [x] **0.9.3a 本地传输可靠性**：stdio使用守护Reader/Writer泵，握手后执行协商Pending/Outbox上限；SDK以
   `Pending + Abandoned`共享容量保留迟到Response身份，Close由Transport拥有且调用方取消不打断回收；只公开不含
-  ID、路径和stderr正文的资源快照。实现Revision `f113594`已完成本地格式、Lint、类型、专项测试、可读性和规格门禁，
-  待全矩阵CI通过后关闭；
+  ID、路径和stderr正文的资源快照。实现Revision `f113594`与文档Revision `7cbacba`已由
+  [CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例验收；
 - [ ] **0.9.3b 持久容量与保留**：为Session、Protocol Request和Artifact建立版本化容量快照、Plan-first清理、
   活跃/未决/UNKNOWN禁删集合、崩溃恢复、备份与回滚；
 - [ ] **0.9.3c 效果与进程恢复**：补齐Trusted Action/Process单Owner fencing、孤儿扫描、Route Deadline、

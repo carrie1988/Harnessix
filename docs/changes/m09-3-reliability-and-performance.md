@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 2
+code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
 owners:
   - core
 modules:
@@ -38,7 +38,8 @@ supersedes: []
 | 主要模块 | App Server、SDK、Session、Protocol Request、Artifact、Trusted Action、Process、Observability |
 | 兼容级别 | 0.9.3a不改协议/数据库；b/c如需Migration必须前向升级、备份恢复和故障回滚 |
 | 发布单元 | a本地传输；b持久容量；c效果恢复；dSoak与发布基线 |
-| 当前实现Revision | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` |
+| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；关闭文档 `7cbacbaff4f95c010c2fb77142db3778a66fc3bb` |
+| 当前验收 | [CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)六实例通过 |
 
 ## 2. 需求背景与完成定义
 
@@ -133,7 +134,7 @@ flowchart LR
 
 | 切片 | 交付 | 前置 | 当前状态 |
 |---|---|---|---|
-| a | stdio/SDK协商背压、迟到Response、取消安全Close、资源快照 | 0.9.2 | 已完成实现与本地专项验证；待本提交CI |
+| a | stdio/SDK协商背压、迟到Response、取消安全Close、资源快照 | 0.9.2 | 已由CI 35494960166验收关闭 |
 | b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 未实施 |
 | c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 未实施 |
 | d | 固定Soak负载、三平台/Container证据、阈值与发布报告 | b、c | 未实施 |
@@ -450,6 +451,7 @@ StoreCapacitySnapshot
 - [x] SDK Pending+Abandoned共享容量、迟到Response和取消安全Close；
 - [x] Subprocess职责拆分和可读性门禁；
 - [x] App Server、SDK、路线图与索引同步；
+- [x] Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例CI验收；
 - [ ] 0.9.3b容量合同、Migration、清理与恢复；
 - [ ] 0.9.3c Owner fencing、孤儿与Route Deadline；
 - [ ] 0.9.3d完整Soak、性能阈值和冻结证据；
