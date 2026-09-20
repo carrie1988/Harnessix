@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 8
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0078-product-shell-and-recoverable-client-state.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/product_ui/test_recoverable_session.py
@@ -36,13 +37,13 @@ supersedes: []
 | 上游调用者 | 薄Agent CLI、Product UI、Python宿主和测试 |
 | 下游依赖 | Agent分支依赖Protocol公共合同；进程内Transport仅在类型检查时引用App Server |
 | 持久化 | SDK不持久化任何状态；Client Instance ID、Command Request ID、Replay Cursor和Action ID均由调用方保存 |
-| 连接 | Agent子进程Transport惰性启动一个stdio子进程，Response Reader具有构造期字节上限 |
+| 连接 | Agent子进程Transport惰性启动一个stdio子进程，Response Reader具有构造期字节上限，活动与取消后未决Request共享容量 |
 | 平台 | Python逻辑未设平台分支；子进程与HTTP机制可跨平台，但默认Agent产品Windows入口及三平台关闭证据尚未完成 |
 | 公共导出 | `harnessix.sdk`导出`AgentClient`、两种Transport和`AgentSDKError`；根包不导出协议客户端 |
-| 代码版本 | `608c548feb909aa5ae572bab7db35859283d3d01` |
-| 当前完成度 | Agent主链、严格Response/Result、有界Frame、半握手失败关闭、广告方法及协商消息/Replay上限前置门禁已实现；可恢复状态和连接代际由Product UI客户端内核提供；协商并发/出站队列和发布级平台证据仍缺失 |
+| 代码版本 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` |
+| 当前完成度 | Agent主链、严格Response/Result、有界Frame、共享未决容量、迟到Response安全释放、取消安全Close、广告方法及协商消息/Replay上限前置门禁已实现；可恢复状态和连接代际由Product UI客户端内核提供；写入Timeout、进程树所有权和发布级平台证据仍缺失 |
 
-本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、请求/响应辅助模块和
+本文是[`agent_client.py`](../../src/harnessix/sdk/agent_client.py)、[`subprocess.py`](../../src/harnessix/sdk/subprocess.py)、请求/响应辅助模块和
 [`__init__.py`](../../src/harnessix/sdk/__init__.py)的当前事实源。公共JSON字段与兼容规则见
 [Protocol模块设计](protocol.md)，服务端连接与stdio行为见[App Server模块设计](app-server.md)。
 旧HTTP客户端删除决策见[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)。
@@ -154,12 +155,13 @@ flowchart LR
 | 1 | [`errors.py`](../../src/harnessix/sdk/errors.py) | 22行 | Agent SDK跨Transport共享的稳定错误合同 |
 | 2 | [`response.py`](../../src/harnessix/sdk/response.py) | 119行 | 严格Response Envelope/JSON预算和Result错误归一 |
 | 3 | [`request.py`](../../src/harnessix/sdk/request.py) | 82行 | 出站Frame、广告方法、协商消息/Replay上限和唯一Response关联 |
-| 4 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 611行 | Transport端口、子进程并发、握手、Thread/Turn/Event客户端 |
-| 5 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
-| 6 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
-| 7 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1058行 | 35项Client、Transport、Server与Runtime纵向场景，含恶意Response、半握手和协商前置门禁 |
-| 8 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
-| 9 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 验证只公开Agent SDK |
+| 4 | [`subprocess.py`](../../src/harnessix/sdk/subprocess.py) | 349行 | 请求容量、Response路由、子进程标准流和取消安全关闭 |
+| 5 | [`agent_client.py`](../../src/harnessix/sdk/agent_client.py) | 406行 | Transport端口、握手、Thread/Turn/Event客户端及兼容重导出 |
+| 6 | [Protocol模块设计](protocol.md) | 现行设计 | 理解Params、Result、Cursor、兼容与错误合同 |
+| 7 | [App Server模块设计](app-server.md) | 现行设计 | 对照Server握手、乱序响应、关闭和恢复 |
+| 8 | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | 1226行 | Client、Transport、Server与Runtime纵向场景，含容量、取消关闭、恶意Response、半握手和协商门禁 |
+| 9 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) | 190行 | 验证SDK如何被薄交互层消费 |
+| 10 | [`__init__.py`](../../src/harnessix/sdk/__init__.py)与[根包导出](../../src/harnessix/__init__.py) | 公共面 | 验证只公开Agent SDK |
 
 ## 7. Agent SDK内部架构
 
@@ -170,13 +172,17 @@ flowchart TB
         F --> AT["AgentTransport"]
         AT --> IP["InProcess"]
         AT --> SP["Subprocess"]
-        SP --> Pending["pending Futures"]
-        SP --> Reader["single Response Reader"]
-        SP --> Err["stderr tail"]
+        SP --> Capacity["shared pending capacity"]
+        SP --> Router["response router"]
+        SP --> Child["child process owner"]
+        Router --> Pending["pending and abandoned"]
+        Child --> Reader["single Response Reader"]
+        Child --> Err["stderr tail"]
     end
 ```
 
-`agent_client.py`拥有连接级内存状态。SDK包不存在HTTP资源Client，不得新增绕过Agent Protocol的公共Base Client。
+`agent_client.py`拥有协议Client与进程内Transport；`subprocess.py`拥有连接级容量、Response身份和子进程资源。
+SDK包不存在HTTP资源Client，不得新增绕过Agent Protocol的公共Base Client。
 
 ## 8. 公共API与导出边界
 
@@ -249,92 +255,121 @@ sequenceDiagram
 
 ## 11. SubprocessAgentTransport生命周期
 
-Transport没有显式枚举，但字段组合形成以下实际状态：
+`SubprocessAgentTransport`公开状态由`SubprocessTransportSnapshot.state`表达，内部由Closed Flag、Close Task、
+Router Failure和Child Process组合得出：
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: constructed
-    Idle --> Running: first exchange or notify
-    Idle --> Closed: close before start
-    Running --> Poisoned: reader protocol error or stdout EOF
-    Running --> Closing: close
-    Poisoned --> Closing: close
-    Closing --> Closed: process wait or terminate or kill
-    Closed --> [*]
+    [*] --> not_started: constructed
+    not_started --> running: first exchange or notify
+    not_started --> closing: close
+    running --> failed: response or pipe failure
+    running --> exited: child exits before router observes EOF
+    running --> closing: close
+    failed --> closing: close
+    exited --> closing: close
+    closing --> closed: owned close task settles
+    closed --> [*]
 ```
 
-| 状态 | `_process` | `_reader_error` | `_closed` | 行为 |
-|---|---|---|---:|---|
-| Idle | `None` | `None` | `false` | 首次操作惰性启动 |
-| Running | Process | `None` | `false` | 可并发Exchange，写入串行 |
-| Poisoned | Process | `(code,message)` | `false` | 后续`_start`或写入失败，不自动重启 |
-| Closing | Process或None | 任意 | `true` | 拒绝新请求，关闭stdin并等待进程 |
-| Closed | 已退出或从未启动 | 通常`server_closed` | `true` | Close幂等，操作失败 |
+| 快照状态 | 判定 | 行为 |
+|---|---|---|
+| `not_started` | 未关闭、无Router Failure、Child未创建 | 首次操作惰性启动 |
+| `running` | Child存在且未退出 | 可并发Exchange；写入串行 |
+| `exited` | Child Return Code已出现、Reader尚未固定Failure | 下一操作或Reader收敛为失败 |
+| `failed` | Router已固定首个Failure | 新Request及容量等待者失败，不自动重启 |
+| `closing` | Closed且唯一Close Task未完成 | 拒绝新操作；资源回收继续 |
+| `closed` | Close Task已完成 | Close幂等；操作固定失败 |
 
-`_reader_error`采用首次错误优先；后续`_fail_pending`不会覆盖原因。进程退出后`_process`不会清空，当前实例
-不存在重新启动路径。调用方必须创建新Transport和Client，并复用持久业务身份完成恢复。
+Router Failure采用首次错误优先。进程退出后Child引用不清空，当前实例不存在重启路径。调用方必须创建新Transport
+和Client，并复用持久业务身份完成恢复。
 
-## 12. 子进程启动与标准流
+## 12. 子进程传输职责拆分与启动
 
-`_start`由`_start_lock`保护，只创建一次`asyncio.create_subprocess_exec`。命令被保存为不可变Tuple，空命令
-在构造时失败。启动参数不经过Shell，避免Shell元字符解释；当前未设置`cwd`、`env`、`start_new_session`、
-Windows Creation Flags或文件描述符白名单，因此子进程继承父进程工作目录和默认环境。
+0.9.3a把原`agent_client.py`中的子进程实现拆为四个单一职责对象：
 
-构造函数使用`ProtocolLimits`校验`max_message_bytes`，当前允许4 KiB～8 MiB，默认1 MiB；非法值在启动
-子进程前以`ValueError`失败。启动成功后同时创建：
+| 组件 | 唯一职责 | 关键状态 |
+|---|---|---|
+| `_RequestCapacity` | 为Pending与Abandoned分配共享槽位，并在连接失效时唤醒等待者 | `BoundedSemaphore`、Unavailable Event |
+| `_ResponseRouter` | 管理Request ID、Future、迟到墓碑、严格Response解析和首个Failure | Pending Map、Abandoned Set、Capacity、Failure |
+| `_ChildProcess` | 创建直接子进程、串行stdin、排空stdout/stderr并执行关闭升级 | Process、Start/Write Lock、Reader/Stderr Task、Tail |
+| `SubprocessAgentTransport` | 校验配置、组合前三者、定义Exchange/Notify/Close和低敏快照 | Closed、Close Lock、Close Task |
 
-- `harnessix-sdk-reader`：在`max_message_bytes + 1`的`StreamReader`预算内按行读取stdout并归并Response；
-- `harnessix-sdk-stderr`：每次读取4096字节，保留最后65,536字节；
-- PIPE stdin：所有写入通过`_write_lock`；
+`_ChildProcess.start`由`start_lock`保护，只调用一次`asyncio.create_subprocess_exec`。命令保存为不可变Tuple，
+不经过Shell；当前不设置`cwd`、`env`、`start_new_session`、Windows Creation Flags或文件描述符白名单，因此子进程
+继承父进程工作目录和默认环境。
+
+构造参数经`ProtocolLimits`校验：`max_message_bytes`允许4 KiB～8 MiB，`max_pending_requests`使用协议合同范围；
+两个关闭Timeout必须大于零。启动成功后创建：
+
+- `harnessix-sdk-reader`：按`max_message_bytes + 1`读取stdout并交给Router严格归并；
+- `harnessix-sdk-stderr`：每次读取4096字节，内部只保留最近65,536字节；
+- PIPE stdin：所有写入通过`write_lock`；
 - PIPE stdout/stderr：分别由唯一Task读取，避免子进程因缓冲区填满阻塞。
 
-启动`OSError`被转换为`server_start_failed`，不公开底层路径或系统异常。其他创建阶段异常不在该稳定映射
-中。当前没有启动Deadline，也没有验证可执行文件来源、签名或目录权限。
+启动`OSError`映射为`server_start_failed`且不公开系统异常。当前没有启动Deadline，也不验证可执行文件来源、签名或目录权限。
 
-## 13. 并发Request与Response归并
+## 13. 共享未决容量与Response归并
 
 ```mermaid
 sequenceDiagram
     participant A as Caller A
     participant B as Caller B
     participant T as SubprocessTransport
+    participant C as RequestCapacity
     participant P as App Server
-    participant R as Response Reader
-    A->>T: exchange id 1
-    T->>T: pending[1] = future A
-    T->>P: write id 1 under write lock
-    B->>T: exchange id 2
-    T->>T: pending[2] = future B
-    T->>P: write id 2 under write lock
+    participant R as ResponseRouter
+    A->>C: reserve slot
+    C-->>A: slot
+    A->>R: register id 1
+    A->>P: write id 1 under write lock
+    B->>C: reserve slot
+    C-->>B: slot or backpressure
+    B->>R: register id 2
+    B->>P: write id 2 under write lock
     P-->>R: response id 2
-    R->>T: pop pending[2]
-    T-->>B: settle future B
+    R->>C: release slot 2
+    R-->>B: settle future 2
     P-->>R: response id 1
-    R->>T: pop pending[1]
-    T-->>A: settle future A
+    R->>C: release slot 1
+    R-->>A: settle future 1
 ```
 
-### 13.1 写侧
+### 13.1 容量不变量
 
-1. `_frame_id`先用标准`json.loads`取得Request ID；
-2. ID必须是字符串或非布尔整数；
-3. 在任何写入前建立Future并写入`_pending`；
+```text
+len(pending) + len(abandoned) <= max_pending_requests
+```
+
+`exchange`在注册Future和写入前取得一个槽位。重复Request ID在注册处失败并立即归还槽位；正常Response、写前/写中
+非取消失败、迟到Response和连接级Fail各自只释放一次。连接关闭或Reader失败会设置Unavailable Event，使尚在等待容量的
+调用立即检查并获得同一稳定错误，而不是永久挂起。
+
+构造期`max_pending_requests`约束SDK本地内存身份；Server在握手后另行执行协商Pending上限。当前AgentClient不会在
+Initialize Result返回后动态改写Transport容量，产品组合应让客户端构造上限不高于预期服务端上限。即使调用方配置更大，
+Server仍会按协商值背压，不会因此放开服务端并发。
+
+### 13.2 写侧
+
+1. `_frame_id`先解析Request ID，拒绝无效JSON、非对象、布尔或缺失ID；
+2. Child惰性启动；
+3. Router保留一个共享容量槽位并注册Future；
 4. 活跃或Abandoned ID重复时返回`duplicate_request_id`；
-5. `_write_lock`串行执行`stdin.write + drain`；
-6. `asyncio.shield(future)`只保护Response Future不被调用方取消传播。
+5. `write_lock`串行执行`stdin.write + drain`；
+6. `asyncio.shield(future)`阻止调用方取消向Response Future传播。
 
-检查和插入`_pending`之间没有`await`，在单事件循环协作调度中不会被另一协程插入；该字段不是线程安全
-容器，Transport也没有承诺跨事件循环或跨线程调用。
+检查和登记在单事件循环内无`await`，但Transport不承诺跨线程或跨事件循环使用。等待容量的调用Task数量本身由上层
+并发决定；共享上限约束的是需要保留身份的Pending与Abandoned状态。
 
-### 13.2 读侧
+### 13.3 读侧
 
-Reader每次`stdout.readline()`取得一帧，并在路由前调用`_decode_response`校验UTF-8、单对象、重复键、非有限数、
-深度、集合预算、标准JSON-RPC版本、Response联合类型和安全ID。Abandoned ID只被丢弃一次；普通ID从
-`_pending`取出并结算Future。无效Envelope、未知ID、超限帧、EOF或读取错误会调用
-`_fail_pending`，把所有Pending统一失败并固定Sticky Reader Error。
+Router逐行调用`_decode_response`，校验UTF-8、单对象、重复键、非有限数、深度、集合预算、JSON-RPC版本、
+Response联合类型和安全ID。普通Response从Pending取出并结算Future；Abandoned Response只删除墓碑、释放槽位并丢弃正文。
+无效Envelope、未知ID、超限帧、EOF或读取错误会固定首个Failure、失败全部Pending、清空Abandoned、释放所有槽位并唤醒
+容量等待者。
 
-这种Fail-closed策略避免错配Response，但一个未知、畸形或超限帧会终止整条连接上所有并发调用。流Reader在
-换行前阻止超限缓冲继续增长，`_decode_response`再次检查实际帧长，避免自定义Transport绕过相同边界。
+这种Fail-closed策略避免错配Response：一条未知或畸形帧会终止整条连接上的所有并发调用。恢复必须按业务Command ID、
+Thread Snapshot和Replay逐项核对，不能盲目重提。
 
 ## 14. 取消与迟到Response
 
@@ -342,91 +377,89 @@ Reader每次`stdout.readline()`取得一帧，并在路由前调用`_decode_resp
 sequenceDiagram
     participant C as Caller
     participant T as Transport
+    participant R as ResponseRouter
     participant S as Server
     C->>T: exchange id N
+    T->>R: reserve and register N
     T->>S: request N
     C-xT: cancel awaiting coroutine
-    T->>T: remove pending N
-    T->>T: cancel local future
-    T->>T: add N to abandoned
-    S-->>T: late response N
-    T->>T: remove N from abandoned and discard
+    T->>R: pending N becomes abandoned N
+    Note over R: slot remains occupied
+    S-->>R: late response N
+    R->>R: discard body and tombstone
+    R->>R: release slot
 ```
 
-子进程请求写出后，取消等待不等于取消Server业务。`exchange`捕获`CancelledError`，仅移除本地Pending并
-登记Abandoned ID；Server继续执行，调用方必须通过相同Command Request ID、Thread Snapshot和Replay确认
-结果。若迟到Response永不返回，Abandoned集合会保留到Transport Close；高频取消可导致内存增长。
+子进程Request写出后，调用取消不等于Server业务取消。Pending身份转为Abandoned，容量继续占用，直到迟到Response到达
+或连接关闭。这个选择防止未知Response击穿连接，也把高频取消的最坏内存固定在`max_pending_requests`；代价是Server永不
+响应时新Request会持续背压，调用方应关闭连接并按持久身份恢复，而不是TTL淘汰墓碑。
 
-非取消异常会移除Pending但不登记Abandoned。若写入在异常前已部分成功且Server后来返回Response，Reader会把
-该ID视为未知并使整条连接失败。这是保守处理，不是Exactly-once证明。
+非取消异常会从Pending移除身份并释放槽位。若stdin发生不可判定的部分写，后续迟到Response会成为未知ID并使连接失败；
+这是保守失效，不是Exactly-once证明。
 
 ## 15. Notification只写路径
 
-`notify`惰性启动进程并在`_write_lock`内写入帧，不创建Pending Future，也不等待Response。该路径用于
-`notifications/initialized`，避免把协议明确无响应的Notification当作同步交换。
+`notify`惰性启动Child并在`write_lock`内写入帧，不创建Pending Future、不占Request容量，也不等待Response。该路径用于
+`notifications/initialized`。若Server违规回复Notification，Reader会把无效或未知ID固定为连接级`invalid_response`；
+`notify`本次可能已经返回，后续操作观察Sticky Failure。进程内Transport则会在同一次`notify`立即发现非空Response，
+两个Transport的错误时机仍不同。
 
-两个官方Transport检测违规Response的时机不同：
+## 16. stderr诊断与低敏资源快照
 
-| Transport | Server错误回复Notification时 |
-|---|---|
-| InProcess | `notify`当次立即发现非空元组并抛`invalid_response` |
-| Subprocess | `notify`可能已经返回；Reader随后把无效/未知ID当作连接级`invalid_response`，使后续操作失败 |
+`_ChildProcess._drain_stderr`持续排空stderr，内部只保留最近64 KiB。Raw Tail不再作为Transport公共属性暴露；
+`SubprocessAgentTransport.snapshot()`返回冻结`SubprocessTransportSnapshot`：
 
-Subprocess Reader Error不会自动关闭子进程，资源仍需显式`close`。当前Closing App Server会在解码前回复
-Notification，因此关闭竞态可能触发该差异；详见[App Server模块设计](app-server.md)。
+| 字段 | 语义 | 隐私边界 |
+|---|---|---|
+| `state` | 上述六态之一 | 低基数，不含进程身份 |
+| `max_pending_requests` | 构造期共享容量 | 配置数字 |
+| `pending_requests` | 当前活动Future数量 | 不含Request ID |
+| `abandoned_requests` | 当前迟到墓碑数量 | 不含Request ID |
+| `stderr_tail_bytes` | 内部Tail当前字节数 | 不返回正文 |
+| `failure_code` | Router首个稳定错误Code | 不返回异常或Response正文 |
 
-## 16. stderr诊断尾部
-
-`_drain_stderr`持续读取stderr，保留最近64 KiB到公开可读`bytearray stderr_tail`。旧字节从头部删除，
-因此空间上限固定，但可能从任意UTF-8字符中间截断。SDK不解析、不解码、不分类也不输出该数据。
-
-该缓冲的作用是防止stderr Pipe填满并给宿主保留有限诊断上下文，不是安全诊断包：
-
-- 没有Secret Redactor或结构化字段白名单；
-- 没有行数、事件级别或来源边界；
-- 不持久化，进程结束后只存在于Transport对象；
-- 调用方若直接打印可能泄漏路径、配置或下游异常；
-- `_drain_stderr`自身异常会在Close等待时向上传播，当前没有专门错误映射。
-
-正式诊断功能必须在消费前执行脱敏，并明确stderr仅用于本地故障辅助，不能作为Session恢复事实。
+快照不含命令、PID、路径、环境、Request ID、Response或stderr正文，也不是持久恢复事实。Stderr Task自身异常仍可能在
+Close Task结算时传播；正式诊断包还需要0.9.4统一脱敏和来源白名单。
 
 ## 17. 子进程关闭与强制终止
 
 ```mermaid
 flowchart TD
-    Close["close"] --> Lock["close lock then start lock"]
-    Lock --> Mark["set closed true"]
-    Mark --> Started{"process exists"}
-    Started -- No --> Done["return"]
-    Started -- Yes --> Write["under write lock close stdin and wait_closed"]
-    Write --> Wait10["wait process up to 10 seconds"]
-    Wait10 -- Exit --> Join["join reader and stderr tasks"]
-    Wait10 -- Timeout --> Term["process terminate"]
-    Term --> Wait5["wait up to 5 seconds"]
-    Wait5 -- Timeout --> Kill["process kill and wait"]
-    Wait5 -- Exit --> Join
+    Close["public close"] --> Lock["close lock"]
+    Lock --> Existing{"owned close task exists"}
+    Existing -- no --> Mark["mark closed and fail router"]
+    Mark --> Create["create one child shutdown task"]
+    Existing -- yes --> Reuse["reuse same task"]
+    Create --> Shield["await shield close task"]
+    Reuse --> Shield
+    Shield --> Stdin["close stdin under write lock"]
+    Stdin --> Grace["wait configurable graceful deadline"]
+    Grace -- timeout --> Term["terminate direct child"]
+    Term --> TermWait["wait configurable terminate deadline"]
+    TermWait -- timeout --> Kill["kill direct child and wait"]
+    Grace -- exited --> Join["join reader and stderr"]
+    TermWait -- exited --> Join
     Kill --> Join
-    Join --> Fail["fail remaining pending as server_closed"]
-    Fail --> Done
+    Join --> Done["close task settles"]
 ```
 
 ### 17.1 当前保证
 
-- Close由`_close_lock`串行，重复调用返回；
-- Close先标记`_closed`，后续Start/Write失败；
+- 第一次Close在Lock内设置Closed，立即Fail Router并唤醒Pending、Abandoned和容量等待者；
+- Transport只创建一个Close Task，重复Close复用同一Task；
+- 公共等待使用`asyncio.shield`：调用方取消会收到取消，但不能取消资源所有者Task；
+- 后续Close可再次等待同一回收过程；
 - stdin正常关闭给App Server一次EOF优雅退出机会；
-- 10秒后Terminate，追加5秒后Kill；
-- Reader和stderr Task在返回前被等待；
-- 剩余Pending最终统一得到`server_closed`。
+- 优雅和Terminate期限均可配置且必须为正数，超时后逐级Terminate、Kill；
+- Reader和stderr Task在Close Task返回前结算。
 
 ### 17.2 边界
 
-- 10秒与5秒为硬编码，不能按产品关闭预算配置；
-- 只终止直接子进程，没有进程组/Job Object或后代进程树所有权；
-- `close`本身被取消时没有Shield/Finally保证继续清理；
-- `process.kill()`后的Wait无额外Timeout；
-- stderr Task异常可能中断最终`_fail_pending`调用；
-- 当前没有Terminate、Kill、关闭取消、Windows进程语义或后代残留专项测试。
+- 只终止直接子进程，没有进程组/Job Object或任意后代进程树所有权；
+- `process.kill()`后的最终Wait没有额外Timeout；
+- stdin `drain`/`wait_closed`没有独立写入Timeout；
+- stderr Task异常可能成为Close Task异常；
+- 当前专项测试证明调用方取消后Close继续完成，但Terminate/Kill、Windows进程树和后代残留仍待三平台发布验证。
 
 ## 18. AgentClient状态与初始化
 
@@ -586,8 +619,9 @@ Initialize Result被保存到`client.initialized`，包含Methods、Artifact、R
 - Replay/Next的请求`limit`超过`maxReplayEvents`时在写入前失败；
 - `itemDeltas`仍以Server Result为准，Product UI投影只把实际收到的Delta作为临时显示。
 
-当前未实现`maxPendingRequests`和`maxOutboundMessages`客户端Semaphore/队列，也不根据布尔`replay`或
-`artifactPages`单独判断；对应方法是否存在以`capabilities.methods`为最终调用门禁。
+Subprocess Transport已经以构造期`max_pending_requests`限制`Pending + Abandoned`，但当前不会在握手后按
+Initialize Result动态缩小该容量；Server仍执行协商后的真实Pending/Outbox上限。SDK没有Notification出站队列，
+也不根据布尔`replay`或`artifactPages`单独判断；对应方法是否存在以`capabilities.methods`为最终调用门禁。
 
 ## 24. Replay、Delta与watch_thread
 
@@ -734,11 +768,13 @@ flowchart TD
 | Agent Client Instance ID | AgentClient/调用方 | SDK不持久 | 调用方保存并注入新Client |
 | JSON-RPC Sequence | AgentClient | 否 | 新Client从0开始，不影响业务幂等 |
 | Initialize Result | AgentClient | 否 | 新连接重新握手 |
-| Subprocess Handle | SubprocessTransport | 否 | `close`或进程退出 |
-| Pending Future | SubprocessTransport | 否 | Response、Reader失败、取消或Close |
-| Abandoned ID | SubprocessTransport | 否 | 迟到Response或Close |
-| Reader Error | SubprocessTransport | 否 | Sticky到实例结束 |
-| stderr Tail | SubprocessTransport | 否 | 对象释放；不自动清空 |
+| Subprocess Handle | `_ChildProcess` | 否 | Transport Close或进程退出 |
+| Pending Future | `_ResponseRouter` | 否 | Response、非取消失败、Reader失败或Close |
+| Abandoned ID | `_ResponseRouter` | 否 | 迟到Response或Close；与Pending共享容量 |
+| Reader Error | `_ResponseRouter` | 否 | 首个Failure Sticky到实例结束 |
+| Request Capacity | `_RequestCapacity` | 否 | 正常/迟到Response、Request失败或Router Fail释放 |
+| Close Task | `SubprocessAgentTransport` | 否 | 唯一且可重复等待；调用方取消不取消它 |
+| stderr Tail | `_ChildProcess` | 否 | 内部最多64 KiB；公共快照只返回字节数 |
 | Replay Cursor | `watch_thread`局部/调用方 | SDK不持久 | 调用方保存`scannedThrough` |
 | HTTP连接池 | HTTP Client | 否 | Context Exit或Close |
 | Action/Session事实 | Server Store | 是 | SDK只按ID查询，不拥有 |
@@ -755,14 +791,15 @@ Transport因此也关闭注入的Server/Service，说明该适配器把Server生
 |---|---|---|
 | JSON-RPC ID分配 | `_sequence += 1`后构造Request | 同事件循环内无Await；非线程安全 |
 | 进程创建 | `_start_lock`内设置`_process` | 仅一次，不自动重启 |
-| Pending注册 | `_pending[id] = future` | 写帧前完成 |
+| 容量保留 | `_RequestCapacity.reserve` | Pending与Abandoned共享构造期上限；失败时唤醒等待者 |
+| Pending注册 | `_ResponseRouter.register(id)` | 取得槽位后、写帧前完成 |
 | 帧写入 | `_write_lock`内`write + drain` | 无SDK级写Timeout |
-| Response结算 | Reader `pop(_pending[id])` | 可乱序；未知ID全局失败 |
-| 取消登记 | Exchange异常分支移除Pending并加Abandoned | 仅CancelledError添加 |
-| 关闭开始 | `_closed = true` | 拒绝后续Start/Write |
+| Response结算 | Router `pop(pending[id])` | 可乱序；释放槽位；未知ID全局失败 |
+| 取消登记 | Router把Pending转为Abandoned | 槽位不释放，迟到Response或Close释放 |
+| 关闭开始 | `_closed = true`并创建唯一Close Task | 拒绝后续Start/Write，Fail Router并唤醒容量等待者 |
 
-客户端已有构造期Response字节与Reader行长上限，但没有Semaphore、Pending数量上限或Abandoned上限；Server协商
-Limit不会调整这些结构。大量并发会先在客户端创建无界Future并写入Server；大量取消但无响应会增长集合。
+客户端已有构造期Response字节与Reader行长上限，且`Pending + Abandoned`最多为`max_pending_requests`；
+超量调用在注册Future前等待容量。Server协商Limit不会动态调整该结构，因此产品构造值和Server上限仍需保持一致。
 
 ### 31.2 HTTP分支
 
@@ -781,7 +818,9 @@ Limit不会调整这些结构。大量并发会先在客户端创建无界Future
 | stdout非法/超限Envelope | 全部Pending `invalid_response`，Reader Sticky | 各请求未知 | 关闭进程；按业务ID逐项恢复 |
 | stdout EOF | 全部Pending `server_closed` | Session可能已提交 | 新建Client，Snapshot+Replay |
 | 未知Response ID | 整连接失败 | 其他Request可能正常 | 关闭并按每个业务身份恢复 |
-| 调用取消 | Subprocess记Abandoned；InProcess向Server协程传播取消 | 取决于Transport与提交切点 | 查询Thread/Action，不把取消当作回滚 |
+| 调用取消 | Subprocess记Abandoned且保留容量；InProcess向Server协程传播取消 | 取决于Transport与提交切点 | 查询Thread/Action，不把取消当作回滚；必要时关闭连接释放墓碑 |
+| 等待Request容量时连接关闭 | 等待者收到`server_closed` | 尚未写入 | 新建Transport后按原业务意图重试 |
+| Close等待被调用方取消 | 调用方收到取消，Owned Close Task继续 | 已提交事实不变 | 后续再次Close等待同一Task |
 | Initialize Response后Notify失败 | 原错误；当前Client后续固定`handshake_failed` | 无领域命令 | Transport已关闭；新建Client并复用同Client ID |
 | Server返回Error | `AgentSDKError` | 取决于错误 | 依据Code/Retryable及Snapshot |
 | Result结构损坏 | `invalid_result`及首个安全字段路径 | 未知 | 不盲重提；关闭不可信连接并保留业务身份 |
@@ -819,8 +858,8 @@ flowchart LR
 
 - 子进程继承父进程默认环境和当前目录；任意自定义Command可看到父进程凭据；
 - 不验证App Server可执行文件签名、Owner或路径；
-- stdout Response没有完整严格合同和字节/深度上限；
-- stderr Tail、Server稳定Message和HTTP Fallback Body未脱敏；
+- stdout Response有严格Envelope、字节、深度和集合预算，但不认证对端进程身份；
+- 内部stderr Tail、Server稳定Message和历史HTTP Fallback Body未脱敏；公共Snapshot不返回Tail正文；
 - 默认HTTP是明文Loopback，不包含身份认证；自定义远程Base URL没有强制HTTPS；
 - Client Instance ID只是幂等命名空间，不是认证凭据；
 - SDK不提供多租户Thread/Action授权；
@@ -837,7 +876,7 @@ Python支持的平台运行，但当前不能据此宣称产品级三平台完�
 | 平台方面 | 当前事实 | 缺口 |
 |---|---|---|
 | macOS/Linux | 开发与CI覆盖大量Python路径 | 无安装器、升级和长连接发布证据 |
-| Windows | SDK源码无主动拒绝 | 默认Coding Tool Runtime仍在产品启动前失败；Transport关闭无Windows专项证据 |
+| Windows | SDK源码无主动拒绝，默认产品已有原生只读Runtime | Subprocess Transport取消安全关闭尚无Windows专项发布证据 |
 | Python | 要求3.12+ | 仅Python SDK，无跨语言客户端 |
 | Package Version | `pyproject`为0.1.0 | Agent Client默认报告0.8.0，身份元数据漂移 |
 | Agent可执行入口 | 薄CLI传入Server Program与参数 | SDK不自动解析项目配置或验证可执行文件 |
@@ -852,11 +891,14 @@ SDK当前没有注入Observability端口，不创建Span、Metric或结构化日
 
 - `AgentSDKError`的Code、Message、Retryable和Path；
 - `HarnessixAPIError`的HTTP Status、Code和Message；
-- `SubprocessAgentTransport.stderr_tail`原始字节；
+- `SubprocessAgentTransport.snapshot()`的低敏状态、容量计数、stderr字节数和稳定失败Code；
 - 调用方可访问的Initialize Result、Thread/Turn/Event和Action Snapshot；
 - 原始`httpx`传输异常。
 
-### 35.1 建议但尚未实现的低基数信号
+### 35.1 当前快照与建议Telemetry
+
+`snapshot()`已经提供瞬时低敏Gauge来源，但不主动发布Metric，也不持久化。下列信号仍需由后续Observability端口
+从快照和生命周期事件生成：
 
 | 类型 | 信号 | 安全属性 |
 |---|---|---|
@@ -882,17 +924,21 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 | `AgentSDKError` | Agent客户端稳定错误 | code/message/retryable/path | 不自动重试 |
 | `AgentTransport` | Request/Notification/Close端口 | 实现定义 | 端口未固定Timeout和取消隔离 |
 | `InProcessAgentTransport` | 复用完整Server Frame入口 | Server引用 | 取消直达Server协程；Notification Response立即失败 |
-| `SubprocessAgentTransport` | stdio进程、并发和关闭 | Process、Locks、Pending、Abandoned、Reader Error、stderr | Sticky失败；Close逐级终止 |
+| `_RequestCapacity` | Pending与Abandoned共享容量 | Bounded Semaphore、Unavailable Event | Router失败时唤醒等待者；成对释放 |
+| `_ResponseRouter` | Response身份、Future、迟到墓碑和首个失败 | Pending、Abandoned、Failure、Capacity | 严格解析；未知ID/EOF使全连接失败 |
+| `_ChildProcess` | 子进程与标准流所有权 | Process、Locks、Reader/Stderr Task、内部Tail | 启动/写入错误清洗；Close逐级终止 |
+| `SubprocessAgentTransport` | 组合容量、子进程、并发和关闭 | Router、Child、Closed、Owned Close Task | Sticky失败；取消安全Close；低敏Snapshot |
 | `response._decode_response` | 严格解析服务端Envelope | Frame/JSON预算 | 任一非法结构映射`invalid_response` |
 | `response._validate_result` | 兼容读取具体Result | 首个错误路径 | 映射`invalid_result` |
-| `_start` | 惰性且唯一地创建子进程和Reader | `_start_lock` | OSError映射启动失败 |
+| `_ChildProcess.start` | 惰性且唯一地创建子进程和Reader | `start_lock` | OSError映射启动失败 |
 | `_frame_id` | 写前提取ID | 无 | 只做浅层JSON/ID检查 |
-| `_fail_pending` | 连接级失败广播 | Reader Error、Pending、Abandoned | 首错误优先 |
-| `_read_responses` | 有界单Reader按严格ID结算 | Pending/Abandoned | 畸形/超限/未知/EOF使全连接失败 |
-| `_drain_stderr` | 避免Pipe阻塞并保留尾部 | 64 KiB Bytearray | 无脱敏；异常可传播到Close |
+| `_ResponseRouter.fail` | 连接级失败广播 | Failure、Pending、Abandoned、Capacity | 首错误优先并唤醒容量等待者 |
+| `_ResponseRouter.read` | 有界单Reader按严格ID结算 | Pending/Abandoned | 畸形/超限/未知/EOF使全连接失败 |
+| `_ChildProcess._drain_stderr` | 避免Pipe阻塞并保留内部尾部 | 64 KiB Bytearray | 无脱敏；公共快照不返回正文 |
 | `exchange` | 登记、串行写、等待或取消 | Future Map | Cancel登记迟到ID |
 | `notify` | 只写Notification | Write Lock | 不同步等待违规Response |
-| `SubprocessAgentTransport.close` | EOF、Wait、Terminate、Kill | Closed Flag、Tasks | 硬编码15秒分层等待 |
+| `SubprocessAgentTransport.snapshot` | 低敏资源诊断 | 无新增状态 | 不返回ID、命令、PID、路径或stderr正文 |
+| `SubprocessAgentTransport.close` | EOF、Wait、Terminate、Kill | Closed Flag、唯一Close Task | 两段可配置期限；Shield保证调用方取消不打断回收 |
 | `_frame` | Protocol Model到JSONL | 无 | UTF-8、紧凑JSON、禁止NaN |
 | `AgentClient` | 握手、方法、结果和事件 | Sequence、Initialize Lock/Result、Client ID | Transport/Server/模型错误 |
 | `AgentClient._send` | Request总模板 | Sequence | 严格Envelope、ID和类型化Error |
@@ -915,19 +961,21 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 
 | 字段 | 类型 | 不变量/生命周期 |
 |---|---|---|
-| `command` | `tuple[str,...]` | 非空；不经Shell；内容不再变 |
+| `_child.command` | `tuple[str,...]` | 非空；不经Shell；内容不再变 |
 | `max_message_bytes` | `int` | 4 KiB～8 MiB；构造后固定；约束stdout Reader与Response复核 |
-| `_process` | optional Process | 最多赋值一次，不重启、不清空 |
-| `_start_lock` | Async Lock | 串行Create与Close标记 |
-| `_write_lock` | Async Lock | stdin帧完整顺序和Close stdin互斥 |
-| `_close_lock` | Async Lock | Close幂等和单次终止序列 |
-| `_pending` | ID→Future | ID唯一；无数量上限 |
-| `_abandoned` | ID Set | 取消后等待最多一次迟到Response；无期限上限 |
-| `_reader_error` | optional Pair | 首次错误Sticky，后续不覆盖 |
-| `_reader_task` | optional Task | Process创建时同步创建 |
-| `_stderr_task` | optional Task | 持续排空stderr |
-| `_closed` | bool | 一旦true不回退 |
-| `stderr_tail` | Bytearray | 最多65,536字节；原始未脱敏 |
+| `_child.process` | optional Process | 最多赋值一次，不重启、不清空 |
+| `_child.start_lock` | Async Lock | 串行Create与Shutdown读取Child引用 |
+| `_child.write_lock` | Async Lock | stdin帧完整顺序和Close stdin互斥 |
+| `_close_lock` | Async Lock | 唯一Close Task创建与复用 |
+| `max_pending_requests` | `int` | 由Protocol Limits校验；约束Pending与Abandoned总数 |
+| `_router.pending` | ID→Future | ID唯一；与Abandoned共享容量 |
+| `_router.abandoned` | ID Set | 取消后等待一次迟到Response；占用槽位直到Response或Close |
+| `_router.failure` | optional Pair | 首次错误Sticky，后续不覆盖 |
+| `_child.reader_task` | optional Task | Process创建时同步创建 |
+| `_child.stderr_task` | optional Task | 持续排空stderr |
+| `_child.stderr_tail` | Bytearray | 内部最多65,536字节；Snapshot只公开长度 |
+| `_close_task` | optional Task | 第一次Close创建，后续复用；由Transport拥有 |
+| `_closed` | bool | 一旦true不回退；在Close Task创建前设置 |
 
 ### 37.2 AgentClient字段
 
@@ -955,6 +1003,7 @@ Action Arguments、SecretRef解析值、stderr正文或HTTP Fallback Body。观�
 exchange(frame):
     request_id := shallow_json_frame_id(frame)
     process := start_once()
+    reserve one shared pending-or-abandoned slot
     future := new future
     require request_id not in pending or abandoned
     pending[request_id] := future
@@ -971,9 +1020,11 @@ exchange(frame):
             remove pending
             cancel local future
             add request_id to abandoned
+            keep slot reserved until late response or close
         rethrow cancellation
     on other failure:
         remove and cancel local future if still pending
+        release slot
         rethrow
 ```
 
@@ -984,16 +1035,16 @@ while line := stdout.readline():
     reject line over configured byte budget before unbounded buffering
     strictly parse JSON-RPC success-or-error response and safe id
     if id in abandoned:
-        remove id and discard response
+        remove id, discard response and release slot
     else if id in pending:
-        pop future and set raw response bytes
+        pop future, release slot and set raw response bytes
     else:
-        fail every pending request with invalid_response
+        fail every pending request, clear abandoned and release all slots
         store sticky reader error
         return
 
 on EOF or read failure:
-    fail every pending request with server_closed
+    fail every pending request, clear abandoned, release slots and wake capacity waiters
 ```
 
 ### 38.3 Agent Send
@@ -1043,10 +1094,13 @@ return value
 | Thread分页 | `list_threads` | 同上 | `test_thread_list_filters_before_pagination` |
 | Service Close时Client读取终态 | `get_thread/close` | 同上 | `test_service_shutdown_is_bounded_and_persists_cancel` |
 | Notification只写 | `SubprocessAgentTransport.notify` | 同上 | `test_subprocess_notification_does_not_wait_for_response` |
-| Response乱序归并 | `_pending/_read_responses` | 同上 | `test_subprocess_transport_routes_out_of_order_responses` |
-| Malformed Response全局失败 | `_fail_pending/_read_responses` | 同上 | `test_subprocess_transport_fails_all_pending_on_malformed_response` |
+| Response乱序归并 | `_ResponseRouter.pending/read` | 同上 | `test_subprocess_transport_routes_out_of_order_responses` |
+| Malformed Response全局失败 | `_ResponseRouter.fail/read` | 同上 | `test_subprocess_transport_fails_all_pending_on_malformed_response` |
 | 严格Response Envelope | `response._decode_response/AgentClient._send` | 同上 | `test_sdk_rejects_invalid_response_envelopes`六类攻击输入、`test_sdk_rejects_response_over_json_depth_budget` |
 | Response字节上限 | `SubprocessAgentTransport(max_message_bytes=...)` | 同上 | `test_subprocess_transport_rejects_oversized_response_frame` |
+| Pending与Abandoned共享容量 | `_RequestCapacity`、`_ResponseRouter` | 同上 | `test_subprocess_transport_bounds_cancelled_and_pending_requests` |
+| Close取消隔离 | `SubprocessAgentTransport.close`、`_ChildProcess.shutdown` | 同上 | `test_subprocess_transport_close_continues_after_caller_cancel` |
+| Transport配置校验 | `SubprocessAgentTransport.__init__` | 同上 | `test_subprocess_transport_rejects_invalid_resource_limits` |
 | Result错误归一 | `_validate_result` | 同上 | `test_sdk_normalizes_invalid_result_contract` |
 | 半握手失败关闭 | `AgentClient.initialize/_initialize_failed` | 同上 | `test_initialize_notification_failure_makes_connection_unusable` |
 | Question恢复 | `respond_question` | 同上 | `test_sdk_question_response_resumes_background_turn`、`test_completed_question_command_recovers_before_background_spawn` |
@@ -1081,6 +1135,8 @@ return value
 | [ADR 0071](../adr/0071-headless-app-server-and-sdk-lifecycle.md) | 双Transport、Notification只写、恢复责任和stdio生命周期 |
 | [ADR 0072](../adr/0072-durable-interaction-and-pull-live-stream.md) | Next/Delta、Question、Approval和薄CLI消费 |
 | [ADR 0081](../adr/0081-single-coding-agent-product-boundary.md) | 撤销旧HTTP客户端公共产品地位并约束迁移删除顺序 |
+| [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md) | 共享迟到响应容量、取消安全Close与低敏Snapshot |
+| [可靠性与性能研究](../research/reliability-and-performance.md) | Codex/OpenCode/Claude Code固定版本的背压和关闭证据 |
 | [Agent Protocol与产品运行时研究](../research/agent-protocol-product-runtime.md) | Codex/OpenCode/Claude Code固定证据及Harnessix独立结论 |
 | [0.8产品运行时设计](../m08-product-runtime-and-extensions.md) | App Server、SDK、交互与产品装配历史切片 |
 | [Action Plane子系统设计](../subsystems/action-plane.md) | HTTP客户端对应的Action状态、错误和恢复事实 |
@@ -1096,6 +1152,10 @@ return value
 - 一个Malformed stdout帧会使全部Pending得到`invalid_response`；
 - 布尔ID、错误版本、Envelope额外字段、Result/Error共存和重复字段均被拒绝；
 - 超过构造预算的子进程Response在Reader边界失败，不交给业务Result解析；
+- Pending与Abandoned共享容量，高频取消不会让身份集合超过构造上限；
+- 取消后的迟到Response释放墓碑与容量，连接关闭会唤醒容量等待者；
+- Close调用方被取消后，Transport拥有的Close Task继续完成，后续Close可复用同一Task；
+- 非法消息、Pending和关闭Timeout参数均在启动进程前失败；
 - 非法Result统一映射`invalid_result`并携带首个字段路径；
 - Initialize Notification失败后当前Transport被关闭，第二次Initialize不再重复请求；
 - 持久Replay、Live Delta、Gap和Deadline由纵向测试消费；
@@ -1106,15 +1166,12 @@ return value
 ### 40.2 尚未证明范围
 
 - Initialize Response成功而Notification失败后的新Transport自动重建；
-- Subprocess Exchange取消、迟到Response、永不返回导致Abandoned增长；
-- 客户端Pending并发与出站队列上限和Server协商Limit一致；
-- 子进程启动Timeout、写入Timeout和stderr Reader故障；
-- Close被取消、Terminate/Kill升级、子进程后代清理和复合错误优先级；
+- Subprocess容量在Initialize后按协商值动态缩小；当前Server仍执行协商上限；
+- 子进程启动Timeout、stdin写入Timeout和stderr Reader故障；
+- Terminate/Kill真实升级、子进程后代清理和复合错误优先级；
 - Windows原生、macOS/Linux安装产物和长时间真实Pipe测试；
-- HTTP同步Client任何方法；
-- HTTP异步Get/Approval/Reconcile/Events/Tools和所有错误路径；
-- HTTP超时、连接失败、Malformed Success、超大Fallback Body、认证和远端TLS；
-- 大规模并发、长会话、连接池、内存和泄漏Soak；
+- 调用取消后的Server业务自动取消；当前明确要求按持久身份恢复；
+- 大规模并发、长会话、内存和泄漏Soak；
 - SDK级Telemetry、Secret Redaction与诊断包。
 
 ## 41. 已知限制、风险与后续工作
@@ -1123,19 +1180,17 @@ return value
 |---|---|---|---|
 | P2 | SDK本身不自动重建Transport | 直接SDK调用者需自行重连；Product UI的`RecoverableAgentSession`已经管理连接代际 | 保持分层，不下沉产品重试策略 |
 | P2 | SDK不直接保存Client Instance、Command ID和Cursor | 直接调用者仍自行持久化；Product UI Store与Session已提供正式上层实现 | 保持SDK无状态边界 |
-| P1 | Pending、Abandoned和并发无客户端上限，协商Pending/Outbound Limit尚未执行 | 高并发/高取消导致内存与服务压力 | 0.9.3容量、背压和Soak |
-| P1 | Close不可配置、可被取消，且只终止直接进程 | 退出可能残留子进程后代或未结算Future | 0.9.3可靠性、0.9.5平台发行 |
+| P1 | 构造期Pending容量不会按握手协商值动态缩小 | Client可能比Server允许更多并发等待；Server仍会背压 | 0.9.3d并发Soak后决定是否增加可变门禁 |
+| P1 | Close只终止直接进程，不拥有后代进程树 | 自定义App Server生成后代时可能残留 | 0.9.3c进程Owner、0.9.5平台发行 |
+| P1 | stdin写入、`wait_closed`和Kill后的最终Wait没有独立Deadline | 异常平台Pipe可能拖延Owned Close Task | 0.9.3d真实Pipe故障注入 |
 | P1 | 子进程继承默认环境和cwd，自定义Command不校验来源 | 第三方程序可读取父进程凭据和仓库上下文 | 0.9.4供应链与Secret边界 |
-| P1 | stderr Tail、Server Message与HTTP Error Body无统一Redactor | 调用方记录异常时可能泄漏敏感信息 | 0.9.4错误清洗和诊断包 |
-| P1 | HTTP Fallback保存完整无界Body，成功Body错误泄漏底层异常 | 内存、日志和公共异常不稳定 | API/SDK 0.9.1与0.9.4加固 |
-| P1 | HTTP SDK只有Async Submit一个专项测试，Sync和其余方法无覆盖 | 手工同步/异步重复易漂移 | DOC后续API切片和0.9回归补齐 |
+| P1 | 内部stderr Tail和Server Message无统一Redactor | 未来诊断消费若错误输出正文可能泄漏敏感信息 | 0.9.4错误清洗和诊断包 |
 | P2 | 默认Agent Client Version为0.8.0而包版本为0.1.0 | 诊断身份不可信 | 从包元数据读取或统一版本源 |
 | P2 | Notification违规Response在两个Transport的失败时机不同 | 嵌入与子进程错误呈现不一致 | Transport合同测试与统一状态 |
-| P2 | `_abandoned`只靠迟到Response或Close清理 | 永不响应的取消请求长期占内存 | 有界Tombstone/连接代际策略 |
+| P2 | 永不响应的Abandoned会占用容量直到Close | 不再无界增长，但连接可能停止接受新Request | 保守关闭连接并按持久身份恢复 |
 | P2 | `watch_thread`无限Yield Timeout且不识别终态 | 消费者容易忘记退出或退避 | 提供独立高层Follow Helper，不改变底层流 |
 | P2 | 根包不导出Agent SDK但包级导出 | 公共API发现与版本承诺不统一 | 发布API清单决策 |
-| P2 | HTTP Client未封装Health/Ready或服务版本 | 启动诊断由每个宿主重复实现 | Product Config/API设计评估 |
-| P2 | SDK无Telemetry | 连接故障、Pending和恢复无法形成产品SLO | 0.9.3可观测性 |
+| P2 | SDK无Telemetry；Snapshot仅按需读取 | 连接故障与恢复尚未形成产品SLO | 0.9.3d可观测性与Soak |
 
 ## 42. 验收标准
 
@@ -1178,6 +1233,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 8 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a拆分子进程职责，限制Pending与Abandoned总量，增加取消安全Close和低敏资源快照 |
 | 7 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除Action HTTP Client、旧SDK测试和第二公共入口 |
 | 6 | `pending` | 2026-09-19 | 按ADR 0081收敛SDK公共边界，撤销Action HTTP Client包级导出并把遗留实现标记为迁移兼容 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch通过既有SDK Replay、Artifact分页和审批方法完成，不新增客户端权限接口 |

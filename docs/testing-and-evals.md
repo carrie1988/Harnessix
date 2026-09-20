@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 34
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 35
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -50,6 +51,7 @@ related_tests:
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
+  - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 
@@ -658,6 +660,25 @@ f2b不能以“删除旧import”作为完成判定，必须同时证明直接Ro
 590幅Mermaid静态结构、Schema、317个源码文件Mypy及全仓`3565 passed, 20 skipped`，修改涉及的87幅Mermaid另经
 Chrome真实渲染通过。[CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)七个任务全部通过：Linux Python 3.12/3.13各`3565 passed, 20 skipped`，macOS为`2499 passed, 15 skipped`，Windows为`501 passed, 45 skipped`，固定镜像Container为`3 passed`，PostgreSQL为`2 passed`，Documentation完成590幅Mermaid和17条变化路径渲染；f2b据此关闭。公网HTTPS/SSH认证、Known Hosts、代理、限流和Push取消后代清理
 由后续0.9.3/0.9.5验证，不能由bare remote结果外推。
+
+### 20.3 0.9.3a本地传输可靠性矩阵
+
+本地stdio/SDK可靠性不能只以正常EOF通过为依据，必须同时覆盖容量、取消和双向故障：
+
+| 场景 | 必须证明 |
+|---|---|
+| 协商Pending | Server协商为1时，第二个READY Request不越过首个长轮询 |
+| 慢stdout | 出站容量或关闭超过期限后主协程失败，已提交Session事实不损坏 |
+| 断裂stdout + 开放stdin | Writer故障主动唤醒Reader等待，Server关闭并传播原始Writer失败 |
+| 高频取消 | `Pending + Abandoned`不超过构造上限；第三个Request在迟到Response前保持背压 |
+| 迟到Response | 只清除对应墓碑并释放一个槽位，不结算其他Future |
+| 关闭取消 | 调用方取消Close等待时Owned Close Task继续；再次Close复用同一Task |
+| 配置错误 | 非法消息、Pending和关闭Timeout在启动子进程前失败 |
+| 诊断隐私 | Snapshot只含状态、容量计数、stderr字节数和稳定Code，不含ID、命令、路径或正文 |
+
+本矩阵只关闭0.9.3a传输生命周期；进程树Owner、数据库/Artifact清理、Route/Reconcile复合故障和完整Soak属于
+0.9.3b～d。实现、测试与剩余边界见[0.9.3详细设计](changes/m09-3-reliability-and-performance.md)和
+[ADR 0089](adr/0089-bounded-local-transport-lifecycle.md)。
 
 ## 21. 维护与验收标准
 

@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 73
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 74
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -49,6 +49,7 @@ related_adrs:
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -108,6 +109,10 @@ Policy、审批、执行和对账权威，不存在面向用户的第二套Actio
 Demo Executor和服务专用领域合同。旧Process Session事件及旧Process Artifact仅保留只读解码；旧SQLite/PostgreSQL库不
 自动迁移、不自动执行，按[归档手册](operations/legacy-action-archive.md)处置。实现Revision `a81868c`已经由
 [CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收。
+
+0.9.3a不改变单一产品拓扑，只加固`SDK → stdio → App Server`进程边界：Server使用守护Reader/Writer泵，
+握手后执行协商Pending/Outbox上限；SDK让活动Request与取消后的迟到Response墓碑共享构造期容量，并由Transport
+拥有唯一、取消安全的Close Task。资源快照只公开状态、计数、stderr字节数和稳定失败Code，不成为恢复权威。
 
 | 能力标签 | 含义 |
 |---|---|
@@ -397,7 +402,7 @@ Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
 显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。
-0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)。0.9.2e沿用同一主链，增加默认禁网CLI、私有Provider配置、Pack/Revision/宿主程序校验、Suite与Case执行摘要绑定、每Trial独立Provider和低敏证据发布；模型跳过固定Profile时保留空观测进入严格Grader，不补造测试或旁路执行，Task声明的必需检查仍作为适用失败进入Suite分母。Campaign发布使用最新Run前缀与成本，CLI失败结果只从身份一致的私有状态投影进度。最终修正Revision `fb4a0ea`由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收；新Suite随后完成20/20真实Trial，记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本。任务成功与测试通过均为0/20，原始失败已[冻结为低敏证据](validation/provider-engineering-2026-09-20-v1/README.md)，因此0.9.2e和0.9.2关闭，但该结果不表示模型具备可用编码成功率。全部公开证据均不复制Prompt、回答、工具正文、Diff或路径。详细边界见[0.9.2e设计](changes/m09-2e-controlled-real-provider-baseline.md)和[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)。
+0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)。0.9.2e沿用同一主链，增加默认禁网CLI、私有Provider配置、Pack/Revision/宿主程序校验、Suite与Case执行摘要绑定、每Trial独立Provider和低敏证据发布；模型跳过固定Profile时保留空观测进入严格Grader，不补造测试或旁路执行，Task声明的必需检查仍作为适用失败进入Suite分母。Campaign发布使用最新Run前缀与成本，CLI失败结果只从身份一致的私有状态投影进度。最终修正Revision `fb4a0ea`先由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收；新Suite随后完成20/20真实Trial，记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本。任务成功与测试通过均为0/20，原始失败已[冻结为低敏证据](validation/provider-engineering-2026-09-20-v1/README.md)，关闭Revision `6dd391a`再由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，因此0.9.2e和0.9.2关闭，但该结果不表示模型具备可用编码成功率。全部公开证据均不复制Prompt、回答、工具正文、Diff或路径。详细边界见[0.9.2e设计](changes/m09-2e-controlled-real-provider-baseline.md)和[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
 门禁。0.9.1f3删除PostgreSQL旧服务后，CI不再启动旧Journal服务，当前矩阵为Linux Python 3.12/3.13、macOS、Windows、
@@ -419,7 +424,8 @@ flowchart LR
 - Windows：原生Handle只读端口；Patch在完整抗Reparse写端口完成前省略；
 - Container Process：要求固定镜像Digest、Engine能力、Owner、资源/网络策略和Secret证明；
 - 正式Wheel、安装器、签名、SBOM、升级/卸载和Beta证据属于0.9.5；
-- 旧PostgreSQL Journal不是1.0依赖，只有外部归档流程。
+- 旧PostgreSQL Journal不是1.0依赖，只有外部归档流程；
+- stdio Writer故障会唤醒仍在等待stdin的主协程；同步I/O守护线程允许有界退出，但不声明底层系统调用已被强制中断。
 
 ## 16. 源码包边界（26个）
 
@@ -525,7 +531,7 @@ recover_route(route):
 | 风险/缺口 | 当前控制 | 后续切片 |
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
-| 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
+| 长会话容量和退化未固化 | 0.9.3a已限制本地传输未决身份并加固关闭；持久容量、效果恢复和完整Soak仍缺 | 0.9.3b～d |
 | 多仓库Eval真实基线成功率为0% | 固定北京模型已完成20/20 Trial并冻结完整Token、成本和失败证据；不以基础设施完成掩盖0/20任务成功与0/20测试通过 | 0.9.3/0.9.6持续改进与能力矩阵 |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
@@ -539,6 +545,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 74 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a在单一Coding Agent拓扑内增加协商stdio背压、迟到Response共享容量、Writer故障唤醒、取消安全Close和低敏资源快照 |
 | 73 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | Revision与CI关闭真实Suite测试分母、最新状态和可信失败进度修正；固定北京模型完成20 Trial并冻结CNY 1.46828、任务/测试0/20的低敏证据，0.9.2关闭 |
 | 72 | `pending` | 2026-09-20 | 登记第二轮真实Provider运行完成20 Trial和CNY 1.44998已知成本后暴露的空测试分母、Campaign旧State覆盖及CLI零进度问题；收敛必需测试失败、最新状态提交和可信失败进度语义，新Suite待修正CI后建立 |
 | 71 | 基于`871a3d8148a1ee2293344ee10f5035906e2c9fa7`的纠正候选 | 2026-09-20 | 控制面候选由CI 35487023147完成六实例验收；首个真实Trial发现缺失Profile被误报为Runner故障，登记空Observation严格评分、完成状态兼容与不重开Provider边界；完整Suite仍待修正CI后重建 |

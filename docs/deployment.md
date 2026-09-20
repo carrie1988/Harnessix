@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 17
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 18
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_server_and_cli.py
@@ -62,8 +63,8 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 | 源码开发安装 | 可用 | Python 3.12+，使用锁定`uv.lock`安装 |
 | `harnessix code` | 已实现 | TUI、配置向导、Doctor、Client State和stdio子进程监督 |
 | `harnessix agent` | 已实现 | Agent Protocol薄CLI，适合自动化和无TUI使用 |
-| `harnessix agent-server` | 已实现 | 本地Headless App Server；stdout仅传输Agent Protocol JSONL |
-| Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport，不包含Action HTTP Client |
+| `harnessix agent-server` | 已实现 | 本地Headless App Server；stdout仅传输Agent Protocol JSONL；stdio执行协商背压并在Writer故障时唤醒主循环 |
+| Agent Python SDK | 已实现 | `AgentClient`及进程内/子进程Transport；Pending与取消后迟到Response共享容量，Close由Transport拥有；不包含Action HTTP Client |
 | 默认Workspace读取 | macOS/Linux/Windows已实现 | 启动前按平台能力证明，失败时不开放协议 |
 | 默认Workspace Patch | POSIX已实现 | 经Trusted Action、Review Artifact、审批和Delivery事务执行 |
 | 固定Container Process | e4执行链与e5配置/恢复均已验收 | 只有显式Action Config且镜像、Sandbox、Owner、Secret和恢复能力全部证明后才广告 |
@@ -95,7 +96,7 @@ flowchart LR
 - `harnessix code`持有TUI、客户端状态和子进程Transport；
 - `harnessix agent-server`持有双配置Store、Session Store、Artifact Store、Coding Tool、Agent Runtime和
   `ProductActionRuntimeOwner`；
-- stdio EOF、协议错误或父进程退出触发Server关闭，组件按组合根逆序释放；
+- stdio EOF、协议错误、Writer故障或出站Timeout触发Server关闭，组件按组合根逆序释放；同步I/O守护线程允许主协程有界退出，但不强制中断底层系统调用；
 - Container进程由Process Owner负责启动、输出、超时和进程树清理，它是执行后端，不是第二个产品服务；
 - Provider是外部网络边界，Workspace和状态目录是两个必须互不包含的本地信任域。
 
@@ -258,8 +259,8 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 | TUI与子进程启动 | [`product_ui/cli.py`](../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | [`product_ui测试`](../tests/product_ui/) |
 | 产品组合根 | [`product_config/server.py`](../src/harnessix/product_config/server.py) | `run_product_stdio`、`_serve_product_stdio` | [`test_server_and_cli.py`](../tests/product_config/test_server_and_cli.py) |
 | Action配置与双CAS | [`product_config/action_codec.py`](../src/harnessix/product_config/action_codec.py)、[`product_config/action_store.py`](../src/harnessix/product_config/action_store.py) | `load_product_action_config`、`SQLiteProductRuntimeConfigStore` | [`test_action_config_runtime.py`](../tests/product_config/test_action_config_runtime.py) |
-| Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
-| Agent SDK Transport | [`sdk/agent_client.py`](../src/harnessix/sdk/agent_client.py) | `SubprocessAgentTransport` | [`app_server测试`](../tests/app_server/) |
+| Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `_StdioReader`、`_StdioWriter`、`run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
+| Agent SDK Transport | [`sdk/subprocess.py`](../src/harnessix/sdk/subprocess.py) | `_RequestCapacity`、`_ResponseRouter`、`_ChildProcess`、`SubprocessAgentTransport` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `ProductActionRuntimeOwner`、`open_default_product_action_runtime` | [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
 | 单一产品面门禁 | 生产源码树 | 旧内核Import精确集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
 | 显式Git Push能力 | [`delivery/git_push.py`](../src/harnessix/delivery/git_push.py) | `build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../tests/delivery/test_git_push.py) |
@@ -268,7 +269,7 @@ Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
-- 0.9.3尚未完成长会话Soak、容量和故障降级基线；
+- 0.9.3a已实现本地传输容量、Writer故障唤醒和取消安全关闭，当前等待全矩阵CI；0.9.3b～d的持久容量、效果恢复和完整Soak尚未完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 6
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
@@ -36,8 +37,8 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
 | 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
-| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
-| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、有界关闭及薄CLI协商事件页上限已实现；Server侧协商Pending/Outbox/Replay贯穿、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
+| 代码版本 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` |
+| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒和有界关闭已实现；Server侧Replay二次收紧、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
 [`service.py`](../../src/harnessix/app_server/service.py)、
@@ -183,7 +184,7 @@ flowchart LR
 |---:|---|---|---|
 | 1 | [`server.py`](../../src/harnessix/app_server/server.py) | `SERVER_METHODS`、`ConnectionState`、`AgentProtocolServer` | 理解连接、方法与错误边界 |
 | 2 | [`service.py`](../../src/harnessix/app_server/service.py) | `AgentApplicationService`、`_command`、`_spawn`、`next_events` | 理解命令顺序、后台驱动和事件读取 |
-| 3 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `run_stdio`、`_write` | 理解单Reader/Writer、并发、Queue和关闭 |
+| 3 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `_StdioReader`、`_StdioWriter`、`run_stdio` | 理解守护I/O泵、协商背压、故障唤醒和关闭 |
 | 4 | [`artifacts.py`](../../src/harnessix/app_server/artifacts.py) | `ArtifactPageStore`、`ScopedProtocolArtifactReader` | 理解Artifact重新授权 |
 | 5 | [`__init__.py`](../../src/harnessix/app_server/__init__.py) | `__all__` | 查看包级公开构造面 |
 | 6 | [`protocol`](../../src/harnessix/protocol/) | Codec、Contracts、Projection、Request Store | 理解Service调用的外部合同 |
@@ -196,11 +197,11 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Transport["stdio.py"]
-        Reader["唯一输入Reader"]
+        Reader["守护输入Reader泵"]
         Slots["pending Semaphore"]
         Tasks["Request Tasks"]
         Outbox["有界Outbox"]
-        Writer["唯一输出Writer"]
+        Writer["守护输出Writer泵"]
     end
     subgraph Connection["server.py"]
         State["ConnectionState"]
@@ -587,91 +588,90 @@ Question、Tool和终态Session事件；Deadline后再读一次避免边界进�
 ```mermaid
 sequenceDiagram
     participant I as stdin BinaryIO
-    participant R as 唯一Reader协程
+    participant R as _StdioReader daemon thread
+    participant M as capacity-1 inbox
     participant P as pending Request Task
     participant S as AgentProtocolServer
     participant Q as bounded outbox
-    participant W as 唯一Writer Task
+    participant W as _StdioWriter daemon thread
     participant O as stdout BinaryIO
     R->>I: readline(maxMessageBytes + 1)
+    R->>M: run_coroutine_threadsafe put
+    M-->>P: complete frame
     alt 握手前
-        R->>S: process_frame inline
-        S-->>R: 0或1 Response
-        R->>Q: enqueue
+        P->>S: process_frame inline
     else READY
-        R->>R: acquire pending slot
-        R->>P: create dispatch task
-        P->>S: process_frame
-        S-->>P: 0或1 Response
-        P->>Q: enqueue with timeout
-        P->>R: release slot
+        P->>P: acquire negotiated pending slot
+        P->>S: process_frame in request task
     end
-    W->>Q: get one frame
-    W->>O: to_thread(write + flush)
+    S-->>P: 0 or 1 Response
+    P->>Q: enqueue under negotiated limit and deadline
+    Q-->>W: one complete frame
+    W->>O: write and flush in order
 ```
 
-Reader在握手前同步调用Server，确保initialize与initialized通知不会被后续业务Request越过。READY后Reader
-读取一帧、等待Semaphore并创建Task，因此最多有配置数量的Request并发；长轮询不会阻塞后续取消或查询。
-Response进入一个Queue，由唯一Writer按入队顺序写出。业务完成顺序可以与输入顺序不同，客户端必须按
-JSON-RPC ID归并。
+`_StdioReader`和`_StdioWriter`各拥有一个守护线程，分别是stdin和stdout的唯一同步I/O所有者。事件循环只处理
+容量为1的输入Mailbox、有界Outbox、Request Task和关闭信号，不再把不可取消的`readline/write/flush`交给默认线程池。
+守护线程意味着永久阻塞的第三方`BinaryIO`不会阻止主协程或解释器退出；它不表示底层系统调用已经被强制中断。
+
+握手前仍串行调用Server，确保`initialize → notifications/initialized`不被后续Request越过。连接首次进入READY后，
+`run_stdio`才按协商后的`maxPendingRequests`创建Semaphore。Writer的物理Queue使用服务端上限，逐次入队再按当前
+协商`maxOutboundMessages`执行逻辑门禁，因此客户端声明的更小上限会成为真实运行约束。Response完成顺序可以与输入
+顺序不同，客户端继续按JSON-RPC ID归并。
 
 ### 15.2 背压
 
 | 资源 | 当前边界 | 饱和行为 |
 |---|---|---|
-| 单帧输入 | `readline(maxMessageBytes + 1)`，Codec再校验 | 超长帧成为`invalid_request`；Reader不会读取无限行 |
-| pending Request | `asyncio.Semaphore(server.limits.max_pending_requests)` | Reader停在Acquire，向OS Pipe传播背压 |
-| 出站消息 | `asyncio.Queue(maxsize=max_outbound_messages)` | Dispatch等待`outbox_drained`，超过`outbound_timeout_seconds`后设置Stopping |
-| 单次入队等待 | 默认5秒 | 触发Transport停止；不取消已持久领域事实 |
-| Writer关闭等待 | 默认5秒 | 超时取消Writer Task并继续收敛 |
+| 单帧输入 | `readline(maxMessageBytes + 1)`，Codec再校验 | 超长帧成为`invalid_request`；输入Mailbox最多保留1帧 |
+| pending Request | READY后创建`Semaphore(negotiated maxPendingRequests)` | Reader停止从Mailbox消费，背压传播到守护Reader和OS Pipe |
+| 出站消息 | 物理Queue为Server上限；逻辑容量为协商`maxOutboundMessages` | Dispatch等待Writer释放空间，超过期限进入停止流程 |
+| 单次入队等待 | 默认5秒，可由宿主配置为正数 | `run_stdio`最终抛`TimeoutError`；已持久领域事实不回滚 |
+| Writer关闭等待 | 与出站Timeout相同 | 超时停止Writer泵并抛`TimeoutError`，不伪装正常EOF |
 
-Queue和Semaphore在`run_stdio`进入时、initialize之前创建，因此使用Server初始Limit。握手后客户端声明的更小
-`maxPendingRequests/maxOutboundMessages`会出现在Initialize Result，但不会缩小既有对象。这是当前协商
-语义差距。
+输入Mailbox、Outbox和Pending三类容量分别控制同步读取超前量、未写Response和活动Request，不能相互替代。
+出站逻辑Limit在每次入队时读取`server.limits`；Pending Limit在READY后冻结，符合单连接握手结果不再变化的协议事实。
 
 ### 15.3 Writer实现边界
 
-`_write`把`output.write(frame)`和`flush()`放入`asyncio.to_thread`，避免同步BinaryIO直接阻塞事件循环。
-当前实现存在以下精确边界：
+`_StdioWriter`从唯一Outbox顺序取帧并执行同步`write + flush`。主协程同时等待输入、Writer终结和Stopping：
+Writer异常或出站Timeout即使发生在stdin长期保持打开时，也能唤醒主循环并进入统一收敛。清理完成后，底层Writer异常
+原样向宿主重新抛出；排队或关闭超过期限则抛稳定`TimeoutError`。
 
-- `outbound_timeout_seconds`包围“放入Queue”，不包围实际`write + flush`；
-- 关闭阶段等待Writer受同一Timeout限制，取消Task不能终止已经在线程中阻塞的底层OS写操作；
-- `BinaryIO.write`返回的短写长度没有校验；
-- Writer取出Queue项时立即Set `outbox_drained`，即使底层写仍未完成；
-- Writer异常保存在`writer_failure`，正常退出清理后重新抛出，但没有结构化错误映射。
+仍需明确以下边界：
 
-现有慢客户端测试证明有限内存输入结束后关闭阶段可以按Timeout返回且Session不损坏，不等于证明真实管道
-在stdin长期保持打开、stdout永久阻塞时一定及时退出。
+- Python不能通用地强制中断任意第三方`BinaryIO.write`；阻塞调用可能留在守护线程直到OS或流对象返回；
+- `BinaryIO.write`返回的短写长度仍未校验；标准Pipe通常全写，但自定义流可能截断；
+- `_space`表示Writer已经从Queue取走一项，不表示该帧已经刷新到对端；
+- 出站Timeout保证主协程有界收敛，不是“底层写已经终止”或“客户端一定收到Response”的证明；
+- Writer异常当前作为宿主异常传播，尚未形成结构化App Server观测事件。
 
 ## 16. EOF、Writer故障与传输关闭
 
 ```mermaid
 flowchart TD
-    Run["run_stdio"] --> Read{"readline结果"}
-    Read -- EOF --> Finally["进入finally"]
-    Read -- Reader异常 --> Finally
-    Run --> Stop{"writer done或stopping?"}
-    Stop -- 是 --> Finally
-    Finally --> Close["server.close → service.close"]
-    Close --> Pending["gather pending requests"]
-    Pending --> WriterState{"Writer已结束?"}
-    WriterState -- 否 --> Sentinel["有界put None并等待Writer"]
-    Sentinel -- 超时 --> CancelWriter["cancel Writer Task"]
-    WriterState -- 是 --> GatherWriter["gather Writer"]
-    CancelWriter --> Failure{"记录了非取消Writer异常?"}
-    GatherWriter --> Failure
-    Failure -- 是 --> Raise["重新抛出"]
-    Failure -- 否 --> Done["返回"]
+    Run["run_stdio"] --> Race{"input / writer done / stopping"}
+    Race -- input --> Dispatch["inline handshake or bounded request task"]
+    Dispatch --> Run
+    Race -- EOF or failure or stop --> Finally["enter finally"]
+    Finally --> ReaderStop["stop reader pump"]
+    ReaderStop --> Close["server.close then service.close"]
+    Close --> Pending["gather accepted request tasks"]
+    Pending --> WriterClose["bounded enqueue sentinel and wait done"]
+    WriterClose -- timeout --> WriterStop["stop writer pump"]
+    WriterClose -- complete --> WriterFailure{"writer failure exists"}
+    WriterStop --> Timeout["raise TimeoutError"]
+    WriterFailure -- yes --> Raise["rethrow writer failure"]
+    WriterFailure -- no --> Done["return"]
 ```
 
-关闭先调用Server/Service，再等待已经进入的Request，最后关闭Writer。这保证Service关闭会唤醒长轮询，
-Pending Response仍有机会入队，Sentinel位于它们之后。Server在CLOSING/CLOSED状态会先于解码返回
-`server_closing`，因此即使输入本来是合法Notification也会得到ID为空的Error Response；这是与正常
-Notification单向语义不一致的现行缺口。已经进入`process_frame`并跨`await`执行的Request不会在完成前
-再次检查连接状态。
+`_read_until_stopping`为每轮输入创建三个等待：Reader Mailbox、Writer Done和Stopping。任一非输入信号先完成时，
+其余等待被取消，主循环不再依赖阻塞stdin返回。关闭顺序保持“停止接收 → 关闭Server/Service并唤醒长轮询 → 等待已受理
+Request → 排空Writer”，所以连接失败不会撤销已经提交的Session事实，也不会在Response不确定时盲目重放领域操作。
 
-如果stdin是长期阻塞的真实Pipe，Writer在Reader的`to_thread(readline)`期间失败，Reader线程不能被
-`writer_task.done()`主动唤醒；循环要等`readline`返回后才观察故障。该场景尚无真实管道故障测试。
+Reader/Writer线程均为守护线程且`stop()`会取消尚未交付的跨线程Future；这解决生命周期所有权，不解决底层I/O强制取消。
+Server在CLOSING/CLOSED状态仍会在解码前返回`server_closing`，因此合法Notification可能得到ID为空的错误Response；
+已经进入`process_frame`并跨`await`执行的Request也不会在完成前再次检查连接状态，这两项保持为后续协议改进边界。
 
 ## 17. Scoped Artifact读取
 
@@ -852,7 +852,7 @@ Transport并发不等于同Thread并发提交。Service可以同时处理多个R
 | Timeout/取消 | 默认/来源 | 作用对象 | 不做什么 |
 |---|---|---|---|
 | `events/next.waitMs` | 最多30秒，客户端参数 | 当前长轮询Request | 不取消Turn |
-| stdio `outbound_timeout_seconds` | 默认5秒，宿主参数 | Outbox入队和Writer关闭等待 | 不直接限制底层阻塞Write |
+| stdio `outbound_timeout_seconds` | 默认5秒，宿主正数参数 | 出站容量等待和Writer关闭；超时使主协程失败 | 不强制中断仍在守护线程中的底层同步Write |
 | Service `grace_seconds` | 默认5秒 | 后台Turn Task关闭宽限 | 不关闭Runtime组件 |
 | `turn/cancel` | 显式协议Command | 指定Thread/Turn | 不等同连接断开 |
 | Artifact `CancelToken` | Reader内部新建 | 下游Scope/Read合同 | 当前客户端无法触发，且无独立Timeout |
@@ -860,8 +860,8 @@ Transport并发不等于同Thread并发提交。Service可以同时处理多个R
 
 ### 22.2 关闭边界
 
-`run_stdio`的EOF或停止信号会调用`server.close`。Server先进入CLOSING，再等待`service.close`，最后进入
-CLOSED。Service关闭后：
+`run_stdio`在EOF、Writer故障、出站Timeout或Stopping时调用`server.close`。Server先进入CLOSING，再等待
+`service.close`，最后进入CLOSED。Service关闭后：
 
 - 取消Delta订阅；
 - 唤醒所有长轮询；
@@ -869,8 +869,8 @@ CLOSED。Service关闭后：
 - 取消剩余Task并Gather；
 - 不主动拒绝直接Service查询方法，也不清空所有Delta结构；正常调用应由Server状态阻断。
 
-若`service.close`本身抛异常，Server可能停留在CLOSING，`run_stdio`后续Pending/Writer清理也可能被该异常
-中断；当前没有关闭故障注入测试覆盖这一组合。
+I/O泵只由`run_stdio`拥有，关闭后不复用。Writer故障会在Server和Pending完成清理后重新抛出；Writer排空或关闭超时
+会抛`TimeoutError`。若`service.close`本身抛异常，后续Pending/Writer清理仍可能被中断；复合关闭故障优先级尚无完整测试。
 
 ## 23. 资源边界与性能
 
@@ -879,8 +879,9 @@ CLOSED。Service关闭后：
 | 资源 | 边界 |
 |---|---|
 | 输入帧 | Protocol `maxMessageBytes` |
-| READY并发Request | 初始`maxPendingRequests` Semaphore |
-| Outbox消息数 | 初始`maxOutboundMessages` Queue |
+| 输入预读 | `_StdioReader` Mailbox容量1 |
+| READY并发Request | 协商后的`maxPendingRequests` Semaphore |
+| Outbox消息数 | 物理Server上限，逐次入队执行协商后的`maxOutboundMessages` |
 | Replay请求Limit | Protocol 1～1000；AgentClient和薄CLI执行协商值前置门禁，Server Service当前未再次收紧 |
 | 单Thread Delta | 1000条Deque |
 | 单次Delta返回 | Request `limit`，最多1000 |
@@ -888,7 +889,8 @@ CLOSED。Service关闭后：
 | Thread列表页 | 1～200，但实现会加载过滤前尾部Thread |
 | Artifact页 | 1～200记录、24 Ki字符公共合同 |
 | Service关闭宽限 | 默认5秒 |
-| Outbox等待/Writer关闭 | 默认5秒 |
+| Outbox等待/Writer关闭 | 默认5秒，宿主可配置正数 |
+| 同步I/O线程 | 每连接一个Reader与一个Writer，均为daemon |
 
 ### 23.2 未有全局边界
 
@@ -898,11 +900,11 @@ CLOSED。Service关闭后：
 - Session `events`全尾部读取量；
 - Thread List全量ID和聚合加载量；
 - 出站Response实际UTF-8字节；
-- 单Writer底层阻塞线程寿命；
+- 永久阻塞的第三方同步I/O守护线程寿命；
 - accepted Protocol Request历史数量和年龄。
 
-面向大量本地用户的1.0仍需要每实例长会话Soak、数据库增长、内存和关闭延迟基准。当前边界证明“单个
-进程不会无限放大单Thread Delta或Queue消息数”，不证明全服务内存严格有界。
+0.9.3a证明单连接协商Pending/Outbox和I/O主协程生命周期有界，不证明持久数据、全服务Delta、后台Task或
+RSS长期稳定。Session/Protocol/Artifact容量、Trusted Action效果恢复和确定性Soak分别由0.9.3b～d关闭。
 
 ## 24. 安全与隐私边界
 
@@ -957,8 +959,9 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 | `next_events` | Pull-Live长轮询 | Delta Event/Buffer | Wait/Limit → Next Result | Deadline返回Timeout，Close唤醒 |
 | `ArtifactPageStore` | Artifact读取最小端口 | 实现者拥有 | Thread/Scope/Artifact/Page → `ArtifactPage` | 下游定义稳定错误 |
 | `ScopedProtocolArtifactReader` | 重新授权并投影Artifact页 | Session、Store、Access | 公共读取参数 → Page Result | 无客户端取消/独立Timeout |
-| `run_stdio` | 单Reader/Writer与生命周期 | Queue、Semaphore、Tasks、Stopping | BinaryIO + Server → 无 | EOF、入队Timeout、Writer异常和关闭 |
-| `_write` | 阻塞BinaryIO隔离 | 无 | frame → write+flush | 底层异常传播；不校验短写 |
+| `_StdioReader` | 唯一同步stdin读取泵 | 容量1 Mailbox、守护线程、停止标志 | BinaryIO → 完整行或异常 | 底层读取不可强制中断；停止取消待交付Future |
+| `_StdioWriter` | 唯一同步stdout写泵 | 有界Outbox、空间/完成事件、守护线程、Failure | frame/sentinel → 顺序write+flush | 队列/关闭超时；异常延迟到统一清理后传播；不校验短写 |
+| `run_stdio` | 协商背压与连接生命周期 | Reader/Writer、Semaphore、Tasks、Stopping | BinaryIO + Server → 无 | EOF、入队/关闭Timeout、Writer异常和Server关闭 |
 
 ### 25.2 构造不变量
 
@@ -967,7 +970,7 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 | `AgentProtocolServer(service, limits)` | ProtocolLimits模型保证范围；按Reader决定方法表 | Service是否已关闭、是否与Runtime一致 |
 | `AgentApplicationService(runtime, store, requests, reader, workspace)` | fixed Workspace存在并规范化；立即订阅Delta | `runtime.store is store`、Request Store同库、Runtime Tool根与fixed Workspace一致 |
 | `ScopedProtocolArtifactReader(session, artifacts, access)` | `artifacts.session is session` | Access是否与Runtime相同能力源 |
-| `run_stdio(server, streams, timeout)` | 无显式参数模型 | Timeout正数、BinaryIO短写行为、Streams是否真正独占 |
+| `run_stdio(server, streams, timeout)` | Timeout必须大于零；Server Limit已由Protocol模型校验 | BinaryIO短写行为、Streams是否真正独占或可被系统调用中断 |
 
 ### 25.3 包级导出
 
@@ -983,7 +986,7 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 |---|---|---|---|
 | `service` | 构造注入 | 整个连接 | 连接关闭时调用其Close |
 | `methods` | 固定表+Reader | 构造时冻结 | 排序、唯一；公开能力 |
-| `limits` | 服务端默认/注入，initialize后取Min | 当前连接 | 部分协商值未贯穿已创建Transport对象 |
+| `limits` | 服务端默认/注入，initialize后取Min | 当前连接 | Pending和Outbox在READY后使用协商值；Replay仍主要由客户端前置门禁 |
 | `state` | Server转换 | NEW到CLOSED | 进程内，不持久 |
 | `client_instance_id` | initialize Params | 初始化后固定 | 幂等命名空间，不是授权身份 |
 | `item_deltas_enabled` | Client Capability | 初始化后固定 | 控制`events/next`是否消费Delta |
@@ -1063,30 +1066,29 @@ start_turn(client, params):
 
 ```text
 run_stdio(server, input, output):
-    create bounded outbox and pending semaphore from initial server limits
-    start one writer task
+    validate positive outbound timeout
+    start one daemon reader pump with capacity-1 inbox
+    start one daemon writer pump with server-bounded outbox
 
-    while writer alive and not stopping:
-        line := blocking readline in worker thread, bounded by message bytes + 1
-        if EOF: break
+    while input, writer and stopping race remains active:
+        line := await reader inbox
+        if EOF, writer done or stopping: break
 
         if server not READY:
-            process line inline and enqueue any response
+            process line inline and enqueue under current negotiated outbox limit
         else:
-            acquire pending slot
-            spawn request task:
-                process line
-                enqueue each response within outbound timeout
-                always release slot
+            lazily create pending semaphore from negotiated limit
+            acquire one slot and spawn request task
 
     finally:
+        stop reader pump
         close server and wake/cancel background turn tasks
-        await all pending request tasks
+        await all accepted request tasks
         enqueue writer sentinel and await within timeout
-        if timeout: cancel writer task
+        stop writer pump
 
-    if writer failed with non-cancellation error:
-        rethrow it
+    rethrow writer failure after cleanup
+    if queue or close deadline expired: raise TimeoutError
 ```
 
 ### 27.4 Artifact读取
@@ -1142,9 +1144,9 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | Approval恢复驱动 | [`service.py`](../../src/harnessix/app_server/service.py) | `respond_approval` | 同上 | `test_sdk_approval_response_drives_decided_turn` |
 | Replay与长轮询 | [`service.py`](../../src/harnessix/app_server/service.py) | `replay_events`、`_next_snapshot`、`next_events` | 同上 | `test_events_next_delivers_live_delta_then_durable_replay`、`test_events_next_returns_progress_arriving_at_timeout_boundary` |
 | Delta边界 | [`service.py`](../../src/harnessix/app_server/service.py) | `_receive_delta`、`_take_deltas` | 同上 | `test_events_next_marks_bounded_delta_buffer_gap`、`test_events_next_omits_deltas_when_client_did_not_negotiate_them` |
-| stdio生命周期 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `run_stdio` | 同上 | `test_stdio_uses_jsonl_and_closes_on_eof` |
-| READY并发 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `slots`、`dispatch` | 同上 | `test_stdio_long_poll_does_not_block_concurrent_request` |
-| 慢输出收敛 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `enqueue`、Writer关闭 | 同上 | `test_stdio_closes_slow_client_without_session_damage` |
+| stdio生命周期 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `_StdioReader`、`_StdioWriter`、`run_stdio` | 同上 | `test_stdio_uses_jsonl_and_closes_on_eof`、`test_stdio_writer_failure_wakes_open_input_and_closes_server` |
+| READY并发 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `slots`、`dispatch` | 同上 | `test_stdio_long_poll_does_not_block_concurrent_request`、`test_stdio_honors_negotiated_pending_request_limit` |
+| 慢输出收敛 | [`stdio.py`](../../src/harnessix/app_server/stdio.py) | `_StdioWriter.enqueue/close`、`run_stdio` | 同上 | `test_stdio_closes_slow_client_without_session_damage`、`test_stdio_writer_failure_wakes_open_input_and_closes_server` |
 | Artifact重新授权 | [`artifacts.py`](../../src/harnessix/app_server/artifacts.py) | `ScopedProtocolArtifactReader.read` | 同上 | `test_artifact_read_is_advertised_only_with_scoped_reader` |
 | 默认产品装配 | [`product_config/server.py`](../../src/harnessix/product_config/server.py) | `run_product_stdio` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | `test_product_server_starts_and_closes_on_eof_without_model_request`、`test_fixed_workspace_rejects_other_thread_roots` |
 
@@ -1169,6 +1171,8 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | [ADR 0070](../adr/0070-agent-protocol-v1-boundaries.md) | 公共投影、游标、命令身份和兼容 |
 | [ADR 0071](../adr/0071-headless-app-server-and-sdk-lifecycle.md) | 命令顺序、后台驱动、单Reader/Writer和关闭 |
 | [ADR 0072](../adr/0072-durable-interaction-and-pull-live-stream.md) | 持久Question/Steer与Pull-Live Delta |
+| [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md) | 守护I/O泵、协商背压、Writer故障唤醒与有界关闭 |
+| [可靠性与性能研究](../research/reliability-and-performance.md) | Codex/OpenCode/Claude Code固定版本的背压、关闭与长期容量证据 |
 | [Agent Protocol与产品运行时研究](../research/agent-protocol-product-runtime.md) | Codex、OpenCode、Claude Code固定版本证据与独立结论 |
 | [0.8产品运行时设计](../m08-product-runtime-and-extensions.md) | 跨Protocol/App Server/SDK/配置/扩展的里程碑视图 |
 
@@ -1183,6 +1187,9 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - Service关闭宽限后Runtime提交Cancelled；
 - 子进程Notification单向、Response乱序和Malformed Response错误结算；
 - JSONL EOF关闭、长轮询与查询并发、有限输入下慢Writer有界收敛；
+- 协商`maxPendingRequests=1`时第二个READY Request不会越过首个长轮询；
+- stdout失败能在stdin仍打开时唤醒主循环、关闭Server并传播原Writer异常；
+- stdout永久慢写会在期限内返回`TimeoutError`且不损坏Session持久事实；
 - Question和Approval响应后后台执行、已完成Question命令重放恢复；
 - Delta低延迟、持久终态、Deadline边界、1000条溢出Gap和能力门禁；
 - Artifact只在Scoped Reader装配时广告并按页读取；
@@ -1192,10 +1199,9 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 ### 30.2 尚未证明范围
 
 - 非1.0版本返回专用`unsupported_protocol_version`；
-- Server端协商后的Pending/Outbox/Replay Limit与连接级资源控制贯穿；客户端Replay已前置强制；
-- 所有出站Response满足协商UTF-8字节上限；
-- stdin保持打开且stdout永久阻塞/断裂时Reader能主动退出；
-- BinaryIO短写、Service Close异常和Writer/Reader同时失败的优先级；
+- Server端Replay Limit二次收紧及所有出站Response的协商UTF-8字节门禁；
+- `BinaryIO.write`短写、Service Close异常和Writer/Reader同时失败的优先级；
+- 任意第三方永久阻塞I/O线程本身可被强制回收；当前只证明主协程有界退出；
 - CLOSING/CLOSED状态仍保持合法Notification不产生Response；
 - Runtime/Session/Request Store错误装配在构造时失败关闭；
 - 状态目录复用于不同固定Workspace时旧Thread不可见；
@@ -1207,24 +1213,22 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 
 | 优先级 | 限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
-| P0 | 非1.0版本被Literal校验提前归为`invalid_params`，显式版本错误分支不可达 | 错误合同与ADR不一致 | 0.9.1协议/客户端兼容修复 |
-| P0 | 出站Response无协商字节门禁，`protocol_json_size`未使用 | 大结果可超过客户端能力并阻塞Writer | 0.9.1产品协议与Artifact外置 |
-| P0 | Pending/Outbox在握手前构造，Replay未按协商Limit收紧 | 初始化返回Limit并非全部强制事实 | 0.9.1协议实现一致性 |
-| P1 | stdout实际Write不受入队Timeout约束，阻塞线程不可被Task取消终止 | 真实慢/断裂客户端可能拖延线程或退出 | 0.9.3故障注入与Transport重构 |
-| P1 | Reader阻塞期间不能被Writer失败主动唤醒 | stdin长期开启时故障发现延迟 | 0.9.3可靠性 |
-| P1 | Delta只有单Thread上限，无Thread总数/总字节上限，未协商客户端仍缓存 | 长会话多Thread内存增长 | 0.9.3容量治理 |
-| P1 | Replay读取全部事件尾部后截页，Thread List加载全部尾部聚合 | 大历史性能退化 | 0.9.2/0.9.3索引与基准 |
+| P0 | 非1.0版本被Literal校验提前归为`invalid_params`，显式版本错误分支不可达 | 错误合同与ADR不一致 | Protocol兼容修复 |
+| P0 | 出站Response无协商字节门禁，`protocol_json_size`未使用 | 大结果可超过客户端能力并阻塞Writer | Protocol/Artifact外置 |
+| P1 | Reader/Writer底层同步系统调用不能被Python通用强制中断 | 主协程已可有界退出，但第三方流可能留下daemon I/O线程 | 0.9.3d真实Pipe Soak、0.9.5平台发行 |
+| P1 | Delta只有单Thread上限，无Thread总数/总字节上限，未协商客户端仍缓存 | 长会话多Thread内存增长 | 0.9.3b容量治理 |
+| P1 | Replay读取全部事件尾部后截页，Thread List加载全部尾部聚合 | 大历史性能退化 | 0.9.3b索引与基准 |
 | P1 | fixed Workspace只限制Create，状态目录未持久绑定Workspace | 误复用状态根可暴露旧Thread元数据 | 0.9.4安全、0.9.5安装隔离 |
-| P1 | Service不验证Runtime/Session/Request Store/Tool Workspace装配一致 | 自定义宿主误装配可能读写不同事实源 | Product Config/SDK模块加构造不变量 |
+| P1 | Service不验证Runtime/Session/Request Store/Tool Workspace装配一致 | 自定义宿主误装配可能读写不同事实源 | Product Config构造不变量 |
 | P1 | 稳定Kernel/Service错误正文无统一Redactor | 下游错误若携带Secret可能持久并公开 | 0.9.4统一错误清洗 |
-| P1 | Background Task异常只消费、不产生模块级信号 | 若Runtime未形成终态，故障难诊断 | 0.9.3可观测性与恢复扫描 |
-| P2 | `_delta_events`按Thread增长且不删除 | 超长进程积累对象 | 0.9.3清理策略 |
+| P1 | Background Task异常只消费、不产生模块级信号 | 若Runtime未形成终态，故障难诊断 | 0.9.3c可观测性与恢复扫描 |
+| P2 | `_delta_events`按Thread增长且不删除 | 超长进程积累对象 | 0.9.3b清理策略 |
 | P2 | Artifact内部Cancel Token无法由客户端取消且无读Timeout | 慢Store占用pending slot | Artifact/SDK取消合同 |
 | P2 | `turn/resume`在Request内等待完整Runtime恢复 | 长Turn占用一个slot且响应延迟高 | 明确异步接受/查询语义 |
 | P2 | Method能力不按Runtime Question/Approval能力细分 | 客户端可能调用路由存在但领域不可用的方法 | 能力模型演进 |
-| P2 | `run_stdio`不校验短写和Timeout参数 | 非标准BinaryIO行为可能截断帧 | Transport合同加固 |
+| P2 | `run_stdio`不校验短写 | 非标准BinaryIO行为可能截断帧 | Transport合同加固 |
 | P2 | Closing/Closed分支在解码前返回错误，合法Notification也会收到Response | 与正常Notification单向合同不一致 | 调整关闭分支并增加直接Frame回归 |
-| P2 | Service Close错误可中断后续Pending/Writer清理 | 复合故障收敛不完整 | 0.9.3关闭故障测试 |
+| P2 | Service Close错误可中断后续Pending/Writer清理 | 复合故障收敛不完整 | 0.9.3c关闭故障测试 |
 
 ## 32. 验收标准
 
@@ -1283,7 +1287,7 @@ sequenceDiagram
 ```
 
 默认装配不改变Protocol v1请求/响应形状。未知Artifact、其他Thread/Scope、过期、损坏或缺少Session反向引用继续统一失败；
-客户端不能提交Workspace Scope。Reader仍使用内部`CancelToken`且没有连接级读Timeout，这是0.9.3之前保留的可靠性缺口。
+客户端不能提交Workspace Scope。Reader仍使用内部`CancelToken`且没有连接级读Timeout，这是0.9.3a后仍保留的可靠性缺口。
 产品级测试[`test_product_server_advertises_default_scoped_artifact_reader`](../../tests/product_config/test_server_and_cli.py)在不发送
 模型请求的真实stdio生命周期内验证握手与读取路由。
 
@@ -1299,6 +1303,7 @@ Review Artifact与只读Tool Artifact共用Scoped Reader，但用途、反向引
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 6 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a改为守护Reader/Writer泵，贯穿协商Pending/Outbox限制，并让Writer故障与出站Timeout有界唤醒主循环 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步默认POSIX Patch的协议组合、Review分页、审批重放和Windows省略边界 |
 | 4 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认Artifact Reader、动态能力广告、Scope重新授权和剩余取消边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 3 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |

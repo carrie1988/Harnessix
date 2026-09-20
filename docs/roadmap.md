@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 45
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 46
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -46,6 +47,7 @@ related_tests:
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
   - tests/integration/test_task_pack_execution.py
+  - tests/app_server/test_server_sdk.py
 supersedes: []
 ---
 
@@ -453,7 +455,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，最终修正Revision `fb4a0ea`由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3～0.9.6未完成，因此0.9阶段整体仍保持进行中。本阶段把已建立的可维护性与主链模块设计约束应用到后续产品实现，再把持续运行的测试与Eval汇总为可发布、可比较、可长期Dogfooding的产品基线。
+状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性实现Revision `f113594`已完成本地门禁，当前等待全矩阵CI；0.9.3总项及0.9.4～0.9.6未完成，因此0.9阶段整体仍保持进行中。
 
 ### 目标
 
@@ -529,10 +531,31 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 - [x] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
   验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret；
   - [x] **e1 受控执行与证据候选**：完成通用Task Pack Suite组合、私有Provider配置、默认禁网CLI、Pack/Revision/宿主程序校验、Suite/Case恢复摘要绑定、每Trial独立Provider及白名单证据发布；首轮与第二轮真实运行分别暴露空Profile评分、测试分母、Campaign旧State和CLI零进度问题。最终修正Revision `fb4a0ea`保持严格Grader与安全边界，由[CI 35491527318](https://github.com/carrie1988/Harnessix/actions/runs/35491527318)完成六实例验收；
-  - [x] **e2 真实运行与冻结**：在精确北京模型和有效价格窗口内完成10 Case × 2 Trial，20个Turn均正常终结，记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；任务成功与测试通过均为0/20，未选择性重跑或放宽评分，[低敏证据已冻结](validation/provider-engineering-2026-09-20-v1/README.md)。
+  - [x] **e2 真实运行与冻结**：在精确北京模型和有效价格窗口内完成10 Case × 2 Trial，20个Turn均正常终结，记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；任务成功与测试通过均为0/20，未选择性重跑或放宽评分，[低敏证据已冻结](validation/provider-engineering-2026-09-20-v1/README.md)。关闭文档Revision `6dd391a`已由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。
 
 只有a～e全部满足合同、失败与恢复、持久化、可观测性、完整测试、真实场景和文档同步，且d/e达到上述规模与证据门槛，
 才可勾选0.9.2总项。Schema存在、单元测试通过或只有两个仓库五个Case均不能关闭0.9.2。
+
+### 0.9.3实施计划与完成边界
+
+0.9.3按[专项源码研究](research/reliability-and-performance.md)、
+[ADR 0089](adr/0089-bounded-local-transport-lifecycle.md)和
+[详细设计](changes/m09-3-reliability-and-performance.md)拆成四个连续纵向切片。不得用一次短压测或“未观察到异常”
+替代容量合同、故障恢复与可重算证据：
+
+- [ ] **0.9.3a 本地传输可靠性**：stdio使用守护Reader/Writer泵，握手后执行协商Pending/Outbox上限；SDK以
+  `Pending + Abandoned`共享容量保留迟到Response身份，Close由Transport拥有且调用方取消不打断回收；只公开不含
+  ID、路径和stderr正文的资源快照。实现Revision `f113594`已完成本地格式、Lint、类型、专项测试、可读性和规格门禁，
+  待全矩阵CI通过后关闭；
+- [ ] **0.9.3b 持久容量与保留**：为Session、Protocol Request和Artifact建立版本化容量快照、Plan-first清理、
+  活跃/未决/UNKNOWN禁删集合、崩溃恢复、备份与回滚；
+- [ ] **0.9.3c 效果与进程恢复**：补齐Trusted Action/Process单Owner fencing、孤儿扫描、Route Deadline、
+  Reconcile复合故障和零重复外部效果证据；
+- [ ] **0.9.3d 长会话Soak与发布阈值**：用固定场景和环境记录启动时延、操作分位数、峰值RSS、数据库/Artifact增长、
+  清理水位和故障计数，冻结低敏Manifest与独立阈值验证。
+
+只有a～d均通过合同、取消/超时、失败恢复、持久化、可观测性、三平台适用性、完整回归和文档同步，才可勾选
+0.9.3总项。0.9.3不新增独立HTTP/Worker、性能控制面或远程数据库，也不把守护线程误述为底层I/O已被强制中断。
 
 ### DOC-1：设计文档与源码可追溯治理
 

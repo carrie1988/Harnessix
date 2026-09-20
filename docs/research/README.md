@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 10
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 11
+code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests: []
 supersedes: []
 ---
@@ -28,7 +29,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含32份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含33份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -129,6 +130,12 @@ flowchart LR
 | [配置、Preflight与Windows原生只读Runtime](configuration-preflight-and-windows-read-runtime.md) | 2026-09-13 | 0.9.1d专项基线 | [ADR 0079](../adr/0079-preflight-and-native-read-port.md)、[0.9.1d详细设计](../changes/m09-1d-configuration-preflight-windows-read.md) |
 | [默认Trusted Action产品组合](default-trusted-action-product-composition.md) | 2026-09-13 | 0.9.1e专项基线 | [ADR 0080](../adr/0080-capability-proven-product-action-composition.md)、[0.9.1e详细设计](../changes/m09-1e-default-trusted-action-composition.md) |
 
+### 4.9 可靠性与性能
+
+| 主题 | 冻结访问日期 | 参考版本 | 采用结果/当前入口 |
+|---|---|---|---|
+| [可靠性、背压与长期运行](reliability-and-performance.md) | 2026-09-20 | Codex、OpenCode、Claude Code逆向样本及Harnessix 0.9.2关闭Revision | [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md)、[0.9.3详细设计](../changes/m09-3-reliability-and-performance.md) |
+
 ## 5. 推荐阅读顺序
 
 1. 先读[统一研究基线](baselines.md)，理解三个参考项目的固定提交、证据等级和clean-room限制；
@@ -148,7 +155,7 @@ flowchart LR
 
 ## 7. 当前限制
 
-冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制、0.9.1完整TUI设计所需的产品交互证据，以及0.9.2
-多仓库Eval Suite、脱敏Transcript证据和受控真实Provider完整Suite接入基线，但不代表持续跟踪上游最新版本。后续切片若涉及三平台发行、
-长期Soak、远程MCP认证或供应链发布，必须先建立
+冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制、0.9.1产品交互证据、0.9.2多仓库Eval与真实Provider
+完整Suite基线，以及0.9.3首轮本地传输背压、关闭和长期容量问题，但不代表持续跟踪上游最新版本。0.9.3b～d仍须
+以现有专项研究中的未决项继续求证持久容量、效果恢复和真实Soak；三平台发行、远程MCP认证或供应链发布也必须先建立
 对应的新版本研究证据，不能继续外推现有冻结结论。
