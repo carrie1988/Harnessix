@@ -360,7 +360,8 @@ class CodingEvalRunState(EvalContract):
     status: EvalRunStatus
     thread_id: UUID | None = None
     turn_id: UUID | None = None
-    baseline_observations: tuple[EvalTestObservation, ...] = Field(min_length=1, max_length=32)
+    # 终态Agent可能未执行Profile；空集合必须作为可评分事实持久化，不能补造观测。
+    baseline_observations: tuple[EvalTestObservation, ...] = Field(max_length=32)
     environment: CodingEvalEnvironment
     report_file: Literal["report.json"] = "report.json"
     report_sha256: Revision | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")

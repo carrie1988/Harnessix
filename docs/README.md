@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 77
+version: 78
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -62,7 +62,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3实现Revision `505bc53`保留不可变v1并新增兼容v2，完整20 Trial固定Container与双提交窗口恢复由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭；0.9.2e默认禁网、私有配置、宿主/恢复绑定和低敏证据发布为候选实现，待提交、全矩阵CI及真实完整Suite证据，不能据此关闭e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
+当前产品实现已经完成路线图0.1～0.9.1范围，但仍不是1.0正式商用版本。0.9.1a～f已通过对应全矩阵CI并关闭；其中f3物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例验收。0.9.2a多仓库Suite与脱敏Transcript合同已由[CI 35456635653](https://github.com/carrie1988/Harnessix/actions/runs/35456635653)关闭；0.9.2b内置不可变Task Pack、固定Git物化和双语言真实Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭；0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)关闭；d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收并关闭；d3实现Revision `505bc53`保留不可变v1并新增兼容v2，完整20 Trial固定Container与双提交窗口恢复由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭；0.9.2e控制面实现Revision `871a3d8`已由[CI 35487023147](https://github.com/carrie1988/Harnessix/actions/runs/35487023147)完成六实例验收，首个真实Trial发现模型跳过固定Profile时的失败语义缺口，兼容修正与完整Suite证据仍待验收，不能据此关闭e。三平台发行物、固定Eval/Soak阈值、安全供应链和Dogfooding仍属于0.9.2～0.9.6后续工作。当前能力和规划能力以[总体架构](architecture.md)及[路线图](roadmap.md)为准。
 
 ## 2. 推荐阅读路径
 

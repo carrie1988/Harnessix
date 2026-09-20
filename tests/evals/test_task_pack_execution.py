@@ -9,9 +9,10 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.agent.models import ToolCallContent
 from harnessix.domain.models import utc_now
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
-from harnessix.evals.contracts import CodingEvalEnvironment
+from harnessix.evals.contracts import CodingEvalEnvironment, CodingEvalRunState
 from harnessix.evals.report import (
     eval_report_sha256,
     read_eval_campaign_execution_state,
@@ -21,10 +22,10 @@ from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
-from harnessix.evals.task_pack_trial import _require_completed_trial
+from harnessix.evals.task_pack_trial import _profile_observations, _require_completed_trial
 from harnessix.models.pricing import BillingContext, FlatInputPrice, PriceSnapshot
 from tests.evals.test_campaign import evidence
-from tests.evals.test_grader import task
+from tests.evals.test_grader import completed_turn, task
 
 _MODEL = "harnessix-recorded-v1"
 
@@ -209,3 +210,39 @@ def test_completed_trial_rejects_evidence_copied_from_another_run() -> None:
             state.environment,
             uuid4(),
         )
+
+
+def test_missing_profile_calls_remain_empty_grader_evidence() -> None:
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
+    case = loaded.manifest.case("agents-dump-compatible-refactor")
+
+    baseline, final = _profile_observations(completed_turn(), case)
+
+    assert baseline == () and final == ()
+
+
+def test_profile_call_without_trusted_process_terminal_fails_closed() -> None:
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
+    case = loaded.manifest.case("agents-dump-compatible-refactor")
+    current = completed_turn()
+    rewritten = []
+    changed = False
+    for item in current.items:
+        content = item.content
+        if not changed and isinstance(content, ToolCallContent) and content.tool == "run_tests":
+            content = content.model_copy(update={"tool": f"run_profile.{case.profile_id}"})
+            item = item.model_copy(update={"content": content})
+            changed = True
+        rewritten.append(item)
+
+    with pytest.raises(KernelError, match="缺少可信终态"):
+        _profile_observations(current.model_copy(update={"items": tuple(rewritten)}), case)
+
+
+def test_completed_run_state_preserves_empty_baseline_evidence() -> None:
+    payload = evidence(uuid4()).state.model_dump()
+    payload["baseline_observations"] = ()
+
+    state = CodingEvalRunState.model_validate(payload, strict=True)
+
+    assert state.status == "completed" and state.baseline_observations == ()

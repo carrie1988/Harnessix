@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -18,6 +18,7 @@ related_tests:
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
+  - tests/evals/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -76,6 +77,20 @@ API Key环境变量名、Provider限制、Git与Container程序若不进入指�
 
 结论：0.9.2e必须采用保守停止线并在公开证据中披露其语义；不得宣称本地停止线等于账单上限。
 
+### 2.4 终态Agent缺失Profile调用不是Runner故障
+
+候选实现通过全矩阵CI后的首个受控真实Trial形成了正常终态Turn和完整模型Usage，但模型没有调用固定Profile。源码复核发现
+[`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)原先由`_profile_observations`直接抛出
+`eval_baseline_missing`，使已完成的模型行为无法进入Grader，也无法形成Trial成本和Suite连续前缀。Recorded Provider始终按
+Golden脚本调用Baseline/Final，因此离线20 Trial没有暴露这一真实模型分支。
+
+该条件属于可评分的Agent行为缺失，而不是Session、Container或Runner损坏。正确语义是保留空Observation，让既有严格Grader
+判定Baseline、Final、行为和反馈顺序检查失败；不得补造测试结果，也不得在终态后旁路运行Profile。完成状态合同必须允许空
+Baseline事实，终态Session恢复只重算报告，不重新请求模型。
+
+结论：真实Provider验收不仅验证模型质量，也必须验证“模型没有按预期使用工具”时的失败语义。Suite应继续统计Token、成本和
+失败分布，只有Usage/价格未知、身份漂移、权威效果未知等基础设施条件才停止后续收费请求。
+
 ## 3. 百炼北京官方接入事实
 
 执行前核对的官方资料：
@@ -129,6 +144,7 @@ API Key环境变量名、Provider限制、Git与Container程序若不进入指�
 | 复用唯一Suite/Agent链 | [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py) `run_task_pack_provider_suite` | [`test_provider_suite_execution.py`](../../tests/evals/test_provider_suite_execution.py) |
 | 通用Task Pack组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) `build_task_pack_suite_config` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) |
 | 宿主配置绑定恢复 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py)、[`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `test_suite_execution.py`、`test_task_pack_execution.py` |
+| 缺失Profile进入严格评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`contracts.py`](../../src/harnessix/evals/contracts.py) | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
 | 默认禁网及私有配置 | [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py)、[`cli_config.py`](../../src/harnessix/evals/cli_config.py) | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
 | 低敏证据 | [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py) | [`test_provider_suite_evidence.py`](../../tests/evals/test_provider_suite_evidence.py) |
 
@@ -138,4 +154,5 @@ API Key环境变量名、Provider限制、Git与Container程序若不进入指�
 2. 当前固定价格只覆盖单请求输入不超过32K，超过即停止而非跨价阶估算；
 3. Provider网络从宿主发起，代码检查仍在固定无网Container；这不是模型网络的Container隔离；
 4. 一次北京模型基线不能外推到其他地域、端点、模型或未来价格；
-5. 真实运行完成前，本文只证明接入设计可实施，不证明模型质量。
+5. 模型跳过Profile会形成严格`invalid/failed`报告，不等于产品链或评测基础设施故障；
+6. 完整真实运行完成前，本文只证明接入设计可实施和首个失败分支已收敛，不证明模型总体质量。

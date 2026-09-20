@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -16,6 +16,7 @@ related_tests:
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_evidence.py
+  - tests/evals/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -150,6 +151,8 @@ unset DASHSCOPE_API_KEY
 8. 没有通过修改Task Pack、评分器或安全策略换取通过。
 
 真实模型可以出现任务失败。任务失败是质量证据，不应通过重跑挑选最佳结果或改变评分标准来隐藏。
+模型未调用固定Profile同样属于质量证据：报告应保留空Baseline/Final并由严格Grader判定失败，不允许人工补造测试结果或
+在Agent终态后旁路执行检查。
 
 ## 9. 发布低敏证据
 
@@ -186,13 +189,15 @@ rg -n -i 'api[_-]?key|secret|prompt|response|arguments|tool_output|workspace|dif
 | `network_not_enabled` | 确认确需收费验证后增加显式开关 |
 | `configuration_invalid` | 检查0600、JSON、价格窗口和固定合同；不要打印完整配置 |
 | `dependency_missing` | 在同Revision安装锁定依赖后恢复 |
-| `runtime_failed` | 在私有目录查看受限诊断，按Pack/Revision/程序/Provider/Action分类定位 |
+| `runtime_failed` | 在私有目录查看受限诊断，按Pack/Revision/程序/Provider/Action分类定位；终态Turn仅缺少Profile调用时不应返回该原因 |
 | `cancelled` | 确认当前Action终态；使用原配置显式恢复 |
 | `cost_unknown` | 核对Usage、单请求输入是否超过32K、Provider响应是否完整；未确认前不得继续 |
 | `fee_limit_reached` | 停止；核对实际账单和已完成证据，不通过修改原配置提高上限 |
 | Evidence发布拒绝 | 不移动私有文件；定位违规字段或路径，修正发布合同或报告后重新创建空Evidence Root |
 
 Provider错误正文、Session和Artifact可能包含第三方内容，只能在受限宿主本地查看，不复制到Issue、CI日志或公开文档。
+若根因需要修改Harnessix源码，原配置绑定的Revision不得继续恢复；修正实现通过CI后必须生成新配置和新Suite ID，旧私有事实
+仅用于费用与故障审计，禁止跨Revision拼接为完成证据。
 
 ## 11. 回滚与清理
 

@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -20,6 +20,7 @@ related_tests:
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
+  - tests/evals/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -86,7 +87,15 @@ API Key只保存环境变量名。配置、CLI输出、公开证据和日志均�
 
 发布器递归拒绝Prompt、Response、Arguments、Tool Output、Diff、Workspace、Secret、POSIX/Windows绝对路径和调用方指定私有标识。成本不完整不得发布。
 
-### 7. 默认CI不使用真实凭据
+### 7. Agent行为缺失必须进入评分，不能使Runner崩溃
+
+真实模型可能不调用或只调用一次固定Profile。终态Turn出现这类行为时，Task Pack Adapter必须保留空或已观察到的
+Baseline/Final集合，并交给现有严格Grader；不得合成Return Code、不得在模型结束后旁路执行Profile，也不得抛出
+`eval_baseline_missing`使整个Suite丢失Usage与成本。`CodingEvalRunState.baseline_observations`的v1约束因此向后兼容地允许空集合；
+既有Grader会把缺失集合判为`invalid/failed`，终态Session可在不重开Provider的前提下重算并发布报告。
+如果模型已经调用Profile但结果缺少可信Process终态，则仍以`eval_baseline_invalid`失败关闭；执行链故障不能降级成质量分数。
+
+### 8. 默认CI不使用真实凭据
 
 所有合同、恢复、CLI和脱敏行为在离线CI中验证。真实Provider运行是独立、显式、可审计的人工触发验证，不向默认CI注入Secret，也不因CI通过推导真实模型质量。
 
@@ -110,6 +119,7 @@ API Key只保存环境变量名。配置、CLI输出、公开证据和日志均�
 3. 默认不访问网络、不读取凭据，收费行为有显式操作边界；
 4. 公开证据可重算且不复制用户/模型/代码正文；
 5. 离线已冻结指纹和证据保持兼容。
+6. Agent跳过测试时仍能形成严格失败报告、Token和费用证据，而不是误报评测Runtime故障。
 
 ### 代价
 
@@ -127,10 +137,11 @@ API Key只保存环境变量名。配置、CLI输出、公开证据和日志均�
 3. 配置/Pack/源码Revision/程序/Provider字段漂移均失败关闭；
 4. Suite与Case恢复指纹专项回归通过，离线旧指纹不变；
 5. Prompt、回答、工具正文、路径、Secret和私有运行身份泄漏回归通过；
-6. Ruff、Mypy、Schema、文档、Pytest与全矩阵CI通过；
-7. 固定模型完成或按合同停止完整10 Case × 2 Trial真实Suite；
-8. 低敏报告经严格重读和重算后冻结，实际费用不超过授权范围；
-9. 路线图、架构、Evals模块、测试规范、运维和验证索引同步。
+6. 缺失Profile调用可生成严格失败报告，完成状态允许空Baseline事实且恢复不重开Provider；
+7. Ruff、Mypy、Schema、文档、Pytest与全矩阵CI通过；
+8. 固定模型完成或按合同停止完整10 Case × 2 Trial真实Suite；
+9. 低敏报告经严格重读和重算后冻结，实际费用不超过授权范围；
+10. 路线图、架构、Evals模块、测试规范、运维和验证索引同步。
 
 ## 关联资料
 

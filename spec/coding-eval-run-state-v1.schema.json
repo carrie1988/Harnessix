@@ -179,7 +179,6 @@
         "$ref": "#/$defs/EvalTestObservation"
       },
       "maxItems": 32,
-      "minItems": 1,
       "title": "Baseline Observations",
       "type": "array"
     },

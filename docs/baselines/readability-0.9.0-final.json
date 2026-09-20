@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 309,
-    "physical_lines": 70072,
-    "logical_lines": 62369,
+    "physical_lines": 70078,
+    "logical_lines": 62372,
     "documented_modules": 309,
     "classes": 781,
     "documented_classes": 287,
@@ -775,7 +775,7 @@
       "path": "src/harnessix/evals/contracts.py",
       "qualname": "CodingEvalReport.consistent_report",
       "kind": "function",
-      "line": 429,
+      "line": 430,
       "lines": 31,
       "documented": false,
       "decision_complexity": 25

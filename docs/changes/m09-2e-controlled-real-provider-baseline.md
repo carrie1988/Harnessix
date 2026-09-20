@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners:
   - core
@@ -69,7 +69,8 @@ Prompt、回答、工具参数、代码和宿主路径。
 6. 沿用既有费用和成本完整性语义，在Trial边界停止后续请求；
 7. 只发布严格白名单的低敏计划、报告和证据清单；
 8. 对正常、取消、配置错误、身份漂移、成本未知、提交窗口和泄漏路径提供回归测试；
-9. 形成可由运维人员复跑、恢复、发布与清理的正式操作说明。
+9. Agent未调用或少调用固定Profile时，不补造测试事实，也不把质量失败升级为Runner故障；已调用但缺少可信Process终态仍失败关闭；
+10. 形成可由运维人员复跑、恢复、发布与清理的正式操作说明。
 
 ### 3.2 非目标
 
@@ -237,6 +238,10 @@ sequenceDiagram
         C->>S: persist trial evidence and cost unknown
         R->>S: stop subsequent cases
         R-->>L: cost_unknown or runtime_failed
+    else agent omits profile evidence
+        C->>S: persist empty or observed profile facts
+        C->>S: publish strict invalid or failed trial report
+        R->>R: account usage and continue by normal case policy
     else action response lost
         T->>S: retain UNKNOWN authoritative effect
         C->>T: reconcile same action on resume
@@ -263,6 +268,8 @@ sequenceDiagram
 | 程序无效 | Scope Validator | `eval_provider_suite_host_binding_invalid` | 修复绝对程序绑定 |
 | 配置指纹漂移 | Suite/Case Store | 既有执行指纹不匹配 | 只能使用原配置 |
 | Provider超时/协议错误 | Model/Agent | 当前Trial按既有终态和失败分类记录 | 按现有Run恢复，禁止隐式重试 |
+| Agent未调用或调用次数不足 | Trial Adapter/Grader | 空或部分观测进入严格Grader，Trial为`invalid/failed`；不补造、不崩溃 | 终态Session可只读重算报告，不重开Provider |
+| Profile调用存在但缺少可信Process终态 | Trusted Action/Trial Adapter | `eval_baseline_invalid`失败关闭，不伪装为质量分数 | 修复执行链后按固定Revision策略处理 |
 | Usage缺失/超价阶 | Campaign/Suite | `cost_unknown`并停止下一Trial/Case | 需调查；不得直接继续收费 |
 | 达费用停止线 | Suite | `fee_limit_reached`，不开始下一项 | 只能显式评审后处理 |
 | 取消 | Agent/Suite | 稳定取消事实和完成前缀 | 显式`--resume` |
@@ -313,6 +320,7 @@ public-evidence-root/               与私有根相互独立
 - `execution_binding_sha256`把公共Suite配置摘要与私有宿主摘要组合，旧离线调用省略时保留原摘要；
 - `provider_binding_sha256`进入Case执行指纹，防止Case报告复用到另一端点/Key引用/限制；
 - 已完成Case只严格重读报告，不重新创建Provider；
+- 已完成Turn即使没有Profile调用，也以空Observation持久化并生成严格失败报告，不把Agent行为缺失误报为基础设施崩溃；
 - Suite Report发布后进程退出，重开只吸收报告并提交终态。
 
 ## 10. 领域契约、数据结构、类与接口设计
@@ -454,6 +462,12 @@ flowchart LR
 
 Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原算法，既有离线Plan、State、Report和冻结证据无需迁移。真实Provider Run必须始终传入绑定摘要，不能降级省略。
 
+首个真实Trial证明模型可能在终态前完全不调用固定Profile。为避免把该行为事实升级为`runtime_failed`，
+`CodingEvalRunState.baseline_observations`的v1 JSON Schema由“至少一项”放宽为“允许空集合、最多32项”。这是向后兼容的
+读取放宽：既有非空状态原字节仍有效；新状态只在Session已终态且Grader已生成严格报告后写入。Adapter不得合成Return Code、
+不得在模型结束后旁路执行Profile；空Baseline/Final分别使既有`baseline_checks_failed`、`final_check_set_matched`及行为检查失败，
+报告保持可审计的`invalid/failed`结论。
+
 ## 15. 测试设计与验收矩阵
 
 | 层级 | 场景 | 期望 |
@@ -465,6 +479,7 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 | CLI | Kernel错误或内部异常 | 只输出白名单Reason，不泄漏异常正文 |
 | Execution | Pack SHA、源码Revision、程序漂移 | Provider创建前失败 |
 | Execution | 每Trial Provider Factory | 独立Context Manager，不共享状态 |
+| Grading | 终态Agent未调用固定Profile | 空Baseline/Final进入Grader并发布严格失败报告，不抛Runner异常、不重开Provider |
 | Recovery | Suite宿主绑定改变 | 同Run恢复失败 |
 | Recovery | Case Provider绑定改变 | 同Case报告不可复用 |
 | Compatibility | 离线调用不传绑定 | 原执行指纹保持不变 |
@@ -487,7 +502,8 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 | 真实Provider执行 | [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py) | `TaskPackOpenAIChatProviderFactory`、`run_task_pack_provider_suite` | [`test_provider_suite_execution.py`](../../tests/evals/test_provider_suite_execution.py) |
 | 通用Suite组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | `build_task_pack_suite_config` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) |
 | Suite恢复绑定 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `_SuiteExecutionBinding`、`run_coding_eval_suite` | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) |
-| Case恢复绑定 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `_execution_config_fingerprint`、`TaskPackCaseExecutor` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| Case恢复绑定 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `_execution_fingerprint`、`TaskPackCaseExecutor` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| 缺失Profile的可评分恢复 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`contracts.py`](../../src/harnessix/evals/contracts.py) | `_profile_observations`、`CodingEvalRunState.baseline_observations` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py)的空观测与状态合同回归 |
 | 证据发布 | [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py) | `validate_publishable_suite_evidence`、`publish_provider_suite_evidence` | [`test_provider_suite_evidence.py`](../../tests/evals/test_provider_suite_evidence.py) |
 | 配置生成 | [`create_engineering_provider_suite_config.py`](../../scripts/create_engineering_provider_suite_config.py) | `main`、`_price`、`_write_private` | 由合同、CLI和真实操作验收共同覆盖 |
 | 证据发布操作 | [`publish_provider_suite_evidence.py`](../../scripts/publish_provider_suite_evidence.py) | `main` | 证据发布测试及真实证据严格重读 |
@@ -549,6 +565,7 @@ return manifest
 | Provider网络不在Container内 | 显式宿主网络，工具检查无网，Secret最小化 | 0.9.4/0.9.6评估受管出口 |
 | 单模型结果不可泛化 | Manifest固定Provider/模型/地域 | 0.9.6扩展能力矩阵 |
 | 真实模型可能无法完成全部Case | 保存稳定失败和完整低敏指标，不修改评分标准 | 以失败分类驱动后续Agent改进 |
+| 模型可能跳过固定Profile | 空观测进入严格Grader；不补造、不旁路执行、不误报Runner故障 | 用真实失败分布改进Prompt、工具可发现性和Agent策略 |
 | Evidence Report字段未来扩展 | 递归禁止字段和绝对路径，合同版本化 | 新字段必须先通过泄漏审查 |
 
 在真实运行和证据冻结前，本变更保持`reviewing`，不得在README中宣称0.9.2e完成。

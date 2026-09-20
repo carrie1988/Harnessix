@@ -293,15 +293,20 @@ def _profile_observations(
         call = calls.get(content.call_id)
         if call is not None and call.tool == profile_tool:
             results.append(content)
+    # 模型未调用或只调用一次Profile属于可评分行为事实，不能由Adapter补造测试证据。
+    # 已存在调用却缺少可信Process终态仍是执行链故障，继续失败关闭。
     if not results:
-        raise KernelError("eval_baseline_missing", "Task Pack Turn缺少固定Profile基线证据")
+        return (), ()
     baseline = _profile_observation(results[0], case.profile_id, "baseline")
-    if baseline is None or baseline.passed:
-        raise KernelError("eval_baseline_invalid", "Task Pack固定Profile基线未按任务失败")
+    if baseline is None:
+        raise KernelError("eval_baseline_invalid", "Task Pack固定Profile基线缺少可信终态")
     final = (
         _profile_observation(results[-1], case.profile_id, "final") if len(results) > 1 else None
     )
-    return (baseline,), (() if final is None else (final,))
+    return (
+        () if baseline is None else (baseline,),
+        () if final is None else (final,),
+    )
 
 
 def _require_completed_trial(

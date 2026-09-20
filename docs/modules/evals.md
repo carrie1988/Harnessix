@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 17
+version: 18
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -978,6 +978,12 @@ Grader从产品Process终端事实`state=exited`、`stop_reason=exited`和整数
 Profile完整输出仍位于受限Artifact。Review Oracle Finding ID必须作为最终回答`summary`的独立词元出现，避免子串误判且
 不修改公开Final Answer v1 Schema。
 
+真实Provider可能完全跳过Profile或只调用一次。`_profile_observations`在这些情况下保留空集合或可验证的部分集合，并交给
+固定14项Grader；它不合成Return Code，也不在Agent终态后旁路执行检查。空Baseline/Final会使
+基础设施集合、行为和反馈顺序检查按合同失败，Trial成为`invalid/failed`，但终态Session、Usage、Git和工具事实仍可形成报告。
+`CodingEvalRunState.baseline_observations`允许空集合以保存这一事实；报告发布窗口恢复不得重新打开Provider。
+若已有Profile调用但其结果缺少可信Process终态，Adapter继续以`eval_baseline_invalid`失败关闭，避免把执行链损坏降级为模型质量分数。
+
 [`TaskPackCaseExecutor`](../../src/harnessix/evals/task_pack_execution.py)实现Suite现有可信Case调用形状。它先冻结或核对
 Campaign Plan与执行指纹，再从标准Run State、Report和Turn重建连续完成前缀及成本。发布顺序为：
 
@@ -1871,7 +1877,7 @@ execute():
 | 十Case可解性 | [`v2 solutions`](../../benchmarks/taskpacks/harnessix-engineering-v2/solutions) | Wheel外Golden Patch | 同上 | `test_each_engineering_case_fails_then_golden_patch_passes`并拒绝Untracked变更 |
 | 十Case真实容器链 | Product Runtime + Engineering Pack | 固定Profile、Approval、Process Owner、Artifact | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | `test_engineering_task_pack_profiles_fail_then_pass_through_product_runtime` |
 | Task Pack Trial产品链 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | `run_task_pack_coding_eval`、`_drive_turn`、`_completed_session_turn` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | `test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_reopens` |
-| Task Pack自动审批与评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`grader.py`](../../src/harnessix/evals/grader.py) | `_require_allowed_approval`、`_profile_observations`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Product Profile终端事实、Trusted Patch与Review Finding ID正反例 |
+| Task Pack自动审批与评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`grader.py`](../../src/harnessix/evals/grader.py)、[`contracts.py`](../../src/harnessix/evals/contracts.py) | `_require_allowed_approval`、`_profile_observations`、`CodingEvalRunState`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py)、[`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | Product Profile终端事实、缺失Profile空观测、Trusted Patch与Review Finding ID正反例 |
 | Task Pack Case计划与身份 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、`_require_plan`、`_require_case_scope` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | `test_case_adapter_persists_plan_before_cancelled_trial_and_reopens`、`test_case_adapter_rejects_suite_identity_drift_before_execution` |
 | Task Pack Campaign恢复 | 同上 | `_load_prefix`、`_recover_campaign_report`、`_publish_campaign` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | Trial Report和Campaign Report崩溃后不重复Provider或Action |
 | Task Pack Suite组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | `build_task_pack_suite_config`、`build_task_pack_offline_suite_config`、`_identity` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) | 精确10 Case/20 Trial、三仓五类、UUIDv5确定性、Provider/价格/计费绑定及离线兼容 |

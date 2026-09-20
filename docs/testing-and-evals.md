@@ -1,7 +1,7 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 31
+version: 32
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -322,6 +322,10 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 20 Trial已由CI 35483905418完成固定Container验收并冻结证据。Recorded结果仍不证明真实Provider质量；0.9.2e控制面为候选实现，完整真实运行和证据尚未完成。关闭边界见
 [0.9.2详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)。
 
+0.9.2e首个受控真实Trial进一步证明：真实模型可能在终态前不调用固定Profile。该行为必须以空Baseline/Final进入严格
+Grader并形成`invalid/failed`报告，不能抛出Runner异常，也不能补造或旁路执行测试。对应回归要求完成Run State可保存空
+Baseline，终态Session重算报告不得重新打开Provider；完整真实Suite仍须在修正实现通过CI后重新建立独立Revision证据。
+
 ### 13.2 0.9.2b Task Pack验证矩阵
 
 Task Pack不能以“Manifest能解析”作为完成判定，必须同时证明：
@@ -396,7 +400,7 @@ d2不能以“Case Executor接口可以调用”作为完成判定，必须同�
 | 身份/计划 | Pack Case、Suite Case、Task和Campaign指纹一致；Campaign Plan在首个Trial和Provider前持久化 |
 | 产品内核 | 每个Trial经现有Agent Runtime、Session、Coding Tool、产品Trusted Action、Artifact、Grader和Campaign，不新建Eval Runtime |
 | 审批 | 只自动批准精确固定Profile及Case允许路径内、文件数不超限、非删除的正式Workspace Patch；其他调用失败关闭 |
-| 检查证据 | Baseline和Final来自产品Process终端状态与Return Code；完整输出保留在受限Artifact，不复制到Suite报告 |
+| 检查证据 | Baseline和Final只来自模型实际触发的产品Process终端状态与Return Code；缺失调用保存空集合并由Grader严格失败，不补造、不旁路执行；完整输出保留在受限Artifact |
 | Review | v1最终回答`summary`必须含全部Finding ID独立词元；不读取Golden，不通过子串误判 |
 | Trial恢复 | Session请求绑定固定Run ID；Trial Report已写而Run State未写时，不重新打开已完成Run的Provider或重做Action |
 | Campaign恢复 | 完整Run证据形成连续前缀；Cost从Turn与固定Price/Billing Context重算；Campaign Report后崩溃只补State |
