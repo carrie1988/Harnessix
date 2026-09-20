@@ -159,20 +159,23 @@ def build_coding_eval_suite_case_report(
     transcripts = tuple(
         build_transcript_evidence(trial.state.run_id, trial.turn) for trial in completed.trials
     )
+    expected_checks = tuple(sorted((*task.behavior_checks, *task.regression_checks)))
     tests = tuple(
         CodingEvalTrialTestEvidence(
             run_id=trial.state.run_id,
             outcome=(
-                "not_applicable"
-                if not trial.report.final_observations
-                else (
-                    "passed"
-                    if all(item.passed for item in trial.report.final_observations)
-                    else "failed"
-                )
+                "passed"
+                if tuple(item.check_id for item in trial.report.final_observations)
+                == expected_checks
+                and all(item.passed for item in trial.report.final_observations)
+                else "failed"
             ),
-            total_checks=len(trial.report.final_observations),
-            passed_checks=sum(item.passed for item in trial.report.final_observations),
+            total_checks=len(expected_checks),
+            passed_checks=sum(
+                item.passed
+                for item in trial.report.final_observations
+                if item.check_id in expected_checks
+            ),
         )
         for trial in completed.trials
     )

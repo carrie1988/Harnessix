@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 71
+version: 72
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -397,7 +397,7 @@ Profile；Run固定单任务结果，Campaign重复同一任务，Suite按预先
 跨任务指标。0.9.2a已验收从完整Campaign与持久Turn生成摘要、计数和可重算率；0.9.2b已验收Wheel内置双语言
 Pack、安全Git物化和经正式审批的只读Container检查。0.9.2c Suite Runner的计划先行、单写者、连续Case证据前缀、
 显式停止恢复和报告发布恢复已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收；它不创建第二套Provider/审批/工具执行链。
-0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭。0.9.2e候选沿用同一Suite/Case/Agent/Product Action链，增加默认禁网CLI、私有Provider配置、Pack/Revision/宿主程序校验、Suite与Case执行摘要绑定、每Trial独立Provider和低敏证据发布；模型跳过固定Profile时保留空观测进入严格Grader，不补造测试或旁路执行。在真实完整Suite与冻结证据完成前仍不构成真实质量基线。全部公开证据均不复制
+0.9.2d1工程数据集已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成固定Container和六实例验收。d2正式Case Adapter实现Revision `a04606b`已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收：每个固定Run复用现有Agent、Session、产品Trusted Action、Artifact和Grader，Campaign按连续证据前缀恢复。d3实现Revision `505bc53`使用确定性组合器把3仓10 Case映射为20个稳定Run，并复用唯一Suite/Case/Agent/Product Action链验证首Case证据与最终报告两个崩溃窗口；[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)完成固定Container验收并[冻结证据](validation/offline-engineering-2026-09-20-v2/README.md)，0.9.2d据此关闭。0.9.2e候选沿用同一Suite/Case/Agent/Product Action链，增加默认禁网CLI、私有Provider配置、Pack/Revision/宿主程序校验、Suite与Case执行摘要绑定、每Trial独立Provider和低敏证据发布；模型跳过固定Profile时保留空观测进入严格Grader，不补造测试或旁路执行，Task声明的必需检查仍作为适用失败进入Suite分母。Campaign发布使用最新Run前缀与成本，CLI失败结果只从身份一致的私有状态投影进度。第二轮真实运行完成20 Trial并记录CNY 1.44998完整已知成本，但旧测试不适用语义阻止Suite发布；该旧Revision运行仅作诊断。在修正CI、新Suite和冻结证据完成前仍不构成真实质量基线。全部公开证据均不复制
 Prompt、回答、工具正文、Diff或路径。详细边界见[0.9.2e设计](changes/m09-2e-controlled-real-provider-baseline.md)和[ADR 0088](adr/0088-controlled-real-provider-suite-baseline.md)。
 
 测试分为合同、Reducer、集成、故障注入、旧版本升级、三平台、真实Container、Provider Smoke、Coding Eval和文档/Mermaid
@@ -527,7 +527,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集、正式Case Adapter及20 Trial离线基线已验收；真实Provider控制面候选已实现，但固定模型完整运行与证据冻结仍缺 | 0.9.2e |
+| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集、正式Case Adapter及20 Trial离线基线已验收；真实Provider旧Revision完成20 Trial但未发布Suite，测试分母/状态进度修正的CI、新Revision完整运行与证据冻结仍缺 | 0.9.2e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -540,6 +540,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 72 | `pending` | 2026-09-20 | 登记第二轮真实Provider运行完成20 Trial和CNY 1.44998已知成本后暴露的空测试分母、Campaign旧State覆盖及CLI零进度问题；收敛必需测试失败、最新状态提交和可信失败进度语义，新Suite待修正CI后建立 |
 | 71 | 基于`871a3d8148a1ee2293344ee10f5035906e2c9fa7`的纠正候选 | 2026-09-20 | 控制面候选由CI 35487023147完成六实例验收；首个真实Trial发现缺失Profile被误报为Runner故障，登记空Observation严格评分、完成状态兼容与不重开Provider边界；完整Suite仍待修正CI后重建 |
 | 70 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 登记0.9.2e默认禁网、私有真实Provider配置、宿主/恢复绑定、每Trial独立Provider和低敏证据发布；真实运行与CI待验收 |
 | 69 | `505bc537f74bd59e891c605ff4114856991f1783` | 2026-09-20 | 工程Pack v2完整20 Trial由CI 35483905418完成固定Container、双Suite提交恢复和脱敏证据验收；关闭0.9.2d3/d，真实Provider基线仍属e |

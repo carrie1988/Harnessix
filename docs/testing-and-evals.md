@@ -1,7 +1,7 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 32
+version: 33
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -326,6 +326,12 @@ Transcript Evidence只保存Run/Turn身份、完整Turn摘要及结构计数。S
 Grader并形成`invalid/failed`报告，不能抛出Runner异常，也不能补造或旁路执行测试。对应回归要求完成Run State可保存空
 Baseline，终态Session重算报告不得重新打开Provider；完整真实Suite仍须在修正实现通过CI后重新建立独立Revision证据。
 
+第二轮受控运行在Revision `dd8b997`上完成20个Trial并形成CNY 1.44998完整已知成本，但旧Suite投影把20个空Final
+都标记为`not_applicable`，最终因零适用测试分母拒绝聚合。工程Pack Task均声明必需检查，所以空Final必须按声明检查数
+形成适用失败，测试通过率为0/20而不是不适用；这不会把未执行的Process伪装成真实失败回执。该运行还要求回归证明
+Campaign终态保存精确Run前缀/成本，以及CLI Runtime失败只从身份一致的Suite State公开进度。旧运行绑定旧Revision，
+不得跨版本恢复或计作最终真实基线。
+
 ### 13.2 0.9.2b Task Pack验证矩阵
 
 Task Pack不能以“Manifest能解析”作为完成判定，必须同时证明：
@@ -495,6 +501,9 @@ run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`，固定
 | 恢复绑定 | Endpoint、限制、Key引用、程序或源码配置改变时Suite/Case状态不可复用 | `test_suite_execution.py`、`test_task_pack_execution.py` |
 | 兼容 | 省略新增绑定的离线调用保持原Fingerprint和冻结证据 | 同上 |
 | 成本 | 价格只覆盖输入不超过32K；Usage缺失/超区间停止；40元停止线在Trial边界生效 | Campaign/Suite既有费用回归和真实Report |
+| 缺失测试 | Task声明必需检查但Final为空时计入适用分母并失败，不合成Process证据 | `test_suite.py` |
+| Campaign提交 | 无故障完成两个Trial后State保留精确Run前缀、成本和Report摘要 | `tests/integration/test_task_pack_execution.py` |
+| 失败进度 | Runtime失败时只投影身份一致的连续Case前缀和已知成本，异源/损坏状态回退为零 | `test_provider_suite_cli.py` |
 | 低敏证据 | 只发布Plan、Report、Manifest；拒绝正文、路径、Secret和私有标识 | `test_provider_suite_evidence.py` |
 | 真实场景 | 固定模型完成或按稳定Reason停止20 Trial，全部Token/费用/时延可重算 | 待冻结真实Provider证据 |
 

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -16,7 +16,9 @@ related_tests:
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_evidence.py
+  - tests/evals/test_suite.py
   - tests/evals/test_task_pack_execution.py
+  - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
 
@@ -113,6 +115,8 @@ CLI输出是单行JSON，只包含稳定原因、Suite身份、计数和已知�
 | `130` | 操作者中断 |
 
 缺少`--allow-network`时CLI不会读取配置或环境Key，并返回`network_not_enabled`。
+发生已识别的`runtime_failed`或`cancelled`时，CLI会尝试从Suite、Plan和执行绑定身份一致的私有Suite State恢复连续Case进度、当前Case和
+已知成本。状态缺失、损坏、权限错误、Plan不一致或Case前缀不连续时回退为零，不输出读取异常、路径或状态正文。
 
 ## 7. 恢复运行
 
@@ -152,7 +156,18 @@ unset DASHSCOPE_API_KEY
 
 真实模型可以出现任务失败。任务失败是质量证据，不应通过重跑挑选最佳结果或改变评分标准来隐藏。
 模型未调用固定Profile同样属于质量证据：报告应保留空Baseline/Final并由严格Grader判定失败，不允许人工补造测试结果或
-在Agent终态后旁路执行检查。
+在Agent终态后旁路执行检查。工程Pack中的检查均为Task声明的必需检查，因此空Final在Suite中必须计为
+`failed`且进入测试通过率分母，不能解释为`not_applicable`。
+
+### 8.1 已识别的候选运行缺口
+
+候选Revision `dd8b997`的受控运行已经完成10 Case × 2 Trial并记录CNY 1.44998完整已知成本，但没有形成可发布Suite：
+20个Trial均没有Final Profile Observation，旧投影将其错误标记为测试不适用，聚合拒绝零适用分母。该运行同时暴露
+Campaign终态可能被循环前旧State覆盖、CLI Runtime失败固定回报零进度/零成本的问题。
+
+这些事实只用于修正执行器，不是公开质量基线。旧配置与运行根绑定旧代码Revision，禁止使用`--resume`跨Revision继续。
+修正通过全矩阵CI后，应按第5节生成新的Suite ID、配置和Work Root，重新执行完整20 Trial；不得复制旧Case报告或把两次
+运行拼接成完成证据。
 
 ## 9. 发布低敏证据
 
@@ -189,7 +204,7 @@ rg -n -i 'api[_-]?key|secret|prompt|response|arguments|tool_output|workspace|dif
 | `network_not_enabled` | 确认确需收费验证后增加显式开关 |
 | `configuration_invalid` | 检查0600、JSON、价格窗口和固定合同；不要打印完整配置 |
 | `dependency_missing` | 在同Revision安装锁定依赖后恢复 |
-| `runtime_failed` | 在私有目录查看受限诊断，按Pack/Revision/程序/Provider/Action分类定位；终态Turn仅缺少Profile调用时不应返回该原因 |
+| `runtime_failed` | 先读取CLI公开的可信完成前缀与已知成本，再在私有目录查看受限诊断；终态Turn仅缺少Profile调用时不应返回该原因，缺少必需测试应形成失败Suite证据 |
 | `cancelled` | 确认当前Action终态；使用原配置显式恢复 |
 | `cost_unknown` | 核对Usage、单请求输入是否超过32K、Provider响应是否完整；未确认前不得继续 |
 | `fee_limit_reached` | 停止；核对实际账单和已完成证据，不通过修改原配置提高上限 |

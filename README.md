@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.1路线图范围和DOC-1.0～DOC-1.6文档治理；88份ADR和32份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container及Documentation六实例验收。0.9.2a已由全矩阵CI关闭；0.9.2b内置不可变Task Pack、固定Git物化与双语言固定Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭。0.9.2d1工程数据集实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成3仓10 Case、确定性生成、Review源码证据、固定Container和六实例验收并关闭；d2正式Case Adapter已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3实现Revision `505bc53`保留不可变v1并发布产品Patch兼容v2，确定性20 Trial、双提交窗口恢复及脱敏证据由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并冻结，0.9.2d据此关闭。0.9.2e控制面实现Revision `871a3d8`已由[CI 35487023147](https://github.com/carrie1988/Harnessix/actions/runs/35487023147)完成六实例验收；首个真实Trial发现模型跳过固定Profile时的失败语义缺口，兼容修正和完整真实Suite证据仍未完成。0.9.2整体及0.9.3～0.9.6不能据此宣称完成或达到1.0。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
+> 当前状态：已完成0.1～0.9.1路线图范围和DOC-1.0～DOC-1.6文档治理；88份ADR和32份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成Linux Python 3.12/3.13、macOS、Windows、固定镜像Container及Documentation六实例验收。0.9.2a已由全矩阵CI关闭；0.9.2b内置不可变Task Pack、固定Git物化与双语言固定Container检查已由[CI 35461708961](https://github.com/carrie1988/Harnessix/actions/runs/35461708961)完成六实例验收并关闭；0.9.2c可恢复Suite Runner实现Revision `ffd3db4`已由[CI 35465458256](https://github.com/carrie1988/Harnessix/actions/runs/35465458256)完成六实例验收并关闭。0.9.2d1工程数据集实现Revision `ee4d0db`已由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)完成3仓10 Case、确定性生成、Review源码证据、固定Container和六实例验收并关闭；d2正式Case Adapter已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)关闭；d3实现Revision `505bc53`保留不可变v1并发布产品Patch兼容v2，确定性20 Trial、双提交窗口恢复及脱敏证据由[CI 35483905418](https://github.com/carrie1988/Harnessix/actions/runs/35483905418)验收并冻结，0.9.2d据此关闭。0.9.2e控制面实现Revision `871a3d8`已由[CI 35487023147](https://github.com/carrie1988/Harnessix/actions/runs/35487023147)完成六实例验收，空Profile兼容修正`dd8b997`已由[CI 35488863702](https://github.com/carrie1988/Harnessix/actions/runs/35488863702)验收；第二轮真实运行完成20 Trial并记录CNY 1.44998完整已知成本，但旧测试分母语义阻止Suite发布，同时暴露Campaign旧State覆盖和CLI零进度问题。三项修正的CI、新Revision完整Suite及冻结证据完成前，0.9.2e、0.9.2整体及0.9.3～0.9.6均不能宣称完成或达到1.0。当前能力、显式装配能力和规划能力以[文档中心](docs/README.md)及[总体架构](docs/architecture.md)为准。
 
 ```text
               CLI / TUI / Agent SDK
@@ -361,7 +361,8 @@ uv run pytest tests/evals/test_campaign*.py
 - 固定工程Pack v2、10 Case × 2 Trial、精确模型/地域/价格窗口、串行工具调用和无自动重试；
 - 完整私有配置摘要绑定Suite与Case恢复，端点、模型限制、Key引用、宿主程序或源码Revision漂移均失败关闭；
 - 每Trial使用独立Provider生命周期，执行仍复用唯一Suite Runner、Agent Runtime和产品Trusted Action链；
-- 模型未调用固定Profile时保留空观测并进入严格Grader，不补造测试、不旁路执行、不把质量失败误报为Runner故障；
+- 模型未调用固定Profile时保留空观测并进入严格Grader；Task声明的必需检查仍按适用失败进入Suite分母，不补造测试、不旁路执行、不把质量失败误报为Runner故障；
+- Campaign终态保存最新Run前缀和成本；CLI失败只从身份一致的私有Suite状态投影公开进度；
 - 公开发布只允许Suite Plan、Suite Report和白名单Manifest，拒绝Prompt、回答、工具正文、Diff、代码、绝对路径与Secret。
 
 ```bash
@@ -369,7 +370,7 @@ uv run harnessix coding-eval-suite --help
 uv run pytest -q tests/evals/test_provider_suite_*.py
 ```
 
-控制面候选已通过首轮全矩阵CI；空观测兼容修正、修正版本CI、完整真实Suite和冻结证据全部完成前，不能宣称0.9.2e或0.9.2整体完成。设计与操作见
+控制面与空观测兼容修正均已通过全矩阵CI；第二轮运行完成20 Trial后暴露的测试分母、Campaign状态和CLI进度问题正在按同一严格边界修正。修正版本CI、新Suite和冻结证据全部完成前，不能宣称0.9.2e或0.9.2整体完成。设计与操作见
 [0.9.2e详细设计](docs/changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](docs/adr/0088-controlled-real-provider-suite-baseline.md)和
 [运维手册](docs/operations/provider-suite-baseline.md)。

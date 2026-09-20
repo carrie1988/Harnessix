@@ -114,6 +114,7 @@ def _trial(
     run_id: UUID,
     *,
     approval_actor: str | None = None,
+    profile_evidence: bool = True,
 ) -> CompletedCodingEvalTrial:
     model_attempts = tuple(attempt(step=step) for step in range(1, 7))
     turn = completed_turn().model_copy(
@@ -128,7 +129,7 @@ def _trial(
         turn = turn.model_copy(
             update={"items": (*turn.items[:-1], _approval_item(approval_actor), turn.items[-1])}
         )
-    baseline, final = observations()
+    baseline, final = observations() if profile_evidence else ((), ())
     report = grade_coding_eval(
         current_task,
         turn,
@@ -164,7 +165,9 @@ def _trial(
     return CompletedCodingEvalTrial(state=state, report=report, turn=turn, cost=cost)
 
 
-def _suite() -> tuple[CodingEvalSuitePlan, tuple[CompletedCodingEvalSuiteCase, ...]]:
+def _suite(
+    *, profile_evidence: bool = True
+) -> tuple[CodingEvalSuitePlan, tuple[CompletedCodingEvalSuiteCase, ...]]:
     completed: list[CompletedCodingEvalSuiteCase] = []
     cases: list[CodingEvalSuiteCasePlan] = []
     for index, kind in enumerate(EVAL_TASK_KINDS):
@@ -176,8 +179,9 @@ def _suite() -> tuple[CodingEvalSuitePlan, tuple[CompletedCodingEvalSuiteCase, .
                 current_task,
                 run_ids[0],
                 approval_actor="human-reviewer" if index == 0 else None,
+                profile_evidence=profile_evidence,
             ),
-            _trial(current_task, run_ids[1]),
+            _trial(current_task, run_ids[1], profile_evidence=profile_evidence),
         )
         case_id = f"case-{index}"
         cases.append(
@@ -251,6 +255,24 @@ def test_suite_aggregates_quality_intervention_usage_cost_and_latency() -> None:
     assert report.cases[0].transcripts[0].human_approval_interventions == 1
     assert "human-reviewer" not in report.model_dump_json()
     assert "修复缺陷" not in report.model_dump_json()
+
+
+def test_suite_counts_missing_required_profile_evidence_as_failed_tests() -> None:
+    plan, completed = _suite(profile_evidence=False)
+
+    report = build_coding_eval_suite_report(plan, completed)
+
+    assert report.summary.scheduled_trials == 10
+    assert report.summary.tests_applicable_trials == 10
+    assert report.summary.tests_passed_trials == 0
+    assert report.summary.test_pass_rate.numerator == 0
+    assert report.summary.test_pass_rate.denominator == 10
+    assert report.summary.test_pass_rate.basis_points == 0
+    assert all(
+        evidence.outcome == "failed" and evidence.total_checks > 0 and evidence.passed_checks == 0
+        for case in report.cases
+        for evidence in case.tests
+    )
 
 
 def test_transcript_evidence_excludes_automatic_approval_from_human_rate() -> None:

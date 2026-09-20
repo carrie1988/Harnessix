@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -91,6 +91,23 @@ Baseline事实，终态Session恢复只重算报告，不重新请求模型。
 结论：真实Provider验收不仅验证模型质量，也必须验证“模型没有按预期使用工具”时的失败语义。Suite应继续统计Token、成本和
 失败分布，只有Usage/价格未知、身份漂移、权威效果未知等基础设施条件才停止后续收费请求。
 
+### 2.5 空测试分母、Campaign旧快照和CLI零进度是三个独立缺口
+
+空Observation兼容修正通过CI后，第二轮受控运行完成全部10 Case × 2 Trial，完整已知成本为CNY 1.44998。全部Trial
+仍未形成Final Profile Observation，严格Grader正确判定失败，但Suite投影把空Final写成`not_applicable`，最终聚合因
+“至少需要一个适用的测试试验”而拒绝发布。源码核对表明工程Pack每个Task均声明一个必需检查，所以“不运行测试”与“该任务
+没有测试”不能共用不适用语义；前者必须占据测试通过率分母并计为失败。
+
+同一运行还发现两个状态投影问题：`TaskPackCaseExecutor._execute_remaining`在本地更新Campaign State后没有把最新对象
+交给`_publish_campaign`，导致无故障完成路径可能用循环前快照覆盖`completed_run_ids`与成本；Provider Suite CLI捕获
+`KernelError`时固定输出零进度和零成本，掩盖已经完成的Case与已经发生的费用。二者不改变模型质量，却削弱恢复与运维事实。
+
+结论：必须分别修正三层语义，不能用放宽Suite聚合、修改Grader或重跑挑选结果代替：
+
+1. Suite以Task声明的Behavior/Regression Check作为适用集合，缺失Final为零通过的适用失败；
+2. Campaign发布使用执行循环返回的最新State，并通过无故障两Trial集成测试固定；
+3. CLI只从Suite ID、Plan Fingerprint、执行绑定、连续Case前缀、下一Case和币种均匹配的0600状态中投影公开进度，任何读取或身份失败回退为零且不泄漏正文。
+
 ## 3. 百炼北京官方接入事实
 
 执行前核对的官方资料：
@@ -145,7 +162,10 @@ Baseline事实，终态Session恢复只重算报告，不重新请求模型。
 | 通用Task Pack组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) `build_task_pack_suite_config` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) |
 | 宿主配置绑定恢复 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py)、[`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `test_suite_execution.py`、`test_task_pack_execution.py` |
 | 缺失Profile进入严格评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`contracts.py`](../../src/harnessix/evals/contracts.py) | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| 缺失Final仍计适用测试失败 | [`suite.py`](../../src/harnessix/evals/suite.py) | [`test_suite.py`](../../tests/evals/test_suite.py) |
+| Campaign提交最新状态 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) |
 | 默认禁网及私有配置 | [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py)、[`cli_config.py`](../../src/harnessix/evals/cli_config.py) | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
+| Runtime失败保留可信进度 | [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py) `_trusted_progress` | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
 | 低敏证据 | [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py) | [`test_provider_suite_evidence.py`](../../tests/evals/test_provider_suite_evidence.py) |
 
 ## 8. 已知限制
@@ -154,5 +174,6 @@ Baseline事实，终态Session恢复只重算报告，不重新请求模型。
 2. 当前固定价格只覆盖单请求输入不超过32K，超过即停止而非跨价阶估算；
 3. Provider网络从宿主发起，代码检查仍在固定无网Container；这不是模型网络的Container隔离；
 4. 一次北京模型基线不能外推到其他地域、端点、模型或未来价格；
-5. 模型跳过Profile会形成严格`invalid/failed`报告，不等于产品链或评测基础设施故障；
-6. 完整真实运行完成前，本文只证明接入设计可实施和首个失败分支已收敛，不证明模型总体质量。
+5. 模型跳过Profile会形成严格`invalid/failed`报告，并在Suite中计为适用测试失败，不等于产品链或评测基础设施故障；
+6. 第二轮运行已经完成20个Trial，但因旧测试分母语义未发布Suite；该运行绑定旧Revision，只是私有诊断事实；
+7. 修正Revision完成新的完整真实运行前，本文不证明模型总体质量或0.9.2e已经关闭。

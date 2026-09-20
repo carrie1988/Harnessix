@@ -6,9 +6,15 @@ from pathlib import Path
 import pytest
 
 from harnessix.cli import main
+from harnessix.domain.models import utc_now
 from harnessix.evals import provider_suite_cli
 from harnessix.evals.provider_suite_contracts import CodingEvalProviderSuiteRunReport
-from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
+from harnessix.evals.report import write_eval_suite_execution_state
+from harnessix.evals.suite_execution import suite_execution_fingerprint
+from harnessix.evals.suite_execution_contracts import (
+    CodingEvalSuiteExecutionState,
+    CodingEvalSuiteRunReport,
+)
 from tests.evals.provider_suite_helpers import provider_suite_config
 
 CANARY = "PRIVATE-PROVIDER-SUITE-CANARY"
@@ -85,6 +91,98 @@ def test_provider_suite_cli_emits_only_whitelisted_result(
     report = CodingEvalProviderSuiteRunReport.model_validate_json(output.out)
     assert code == 0 and not output.err
     assert report.reason == "completed" and report.known_cost_amount == "1.5"
+
+
+def test_provider_suite_cli_runtime_failure_preserves_trusted_progress(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    config = provider_suite_config(tmp_path)
+    path = tmp_path / "provider-suite.json"
+    path.write_text(config.model_dump_json(), encoding="utf-8")
+    path.chmod(0o600)
+    work_root = Path(config.suite.work_root)
+    work_root.mkdir(mode=0o700)
+    case_ids = tuple(case.case_id for case in config.suite.plan.cases)
+    now = utc_now()
+    write_eval_suite_execution_state(
+        work_root / "suite-state.json",
+        CodingEvalSuiteExecutionState(
+            suite_id=config.suite.plan.suite_id,
+            plan_fingerprint=config.suite.plan.fingerprint,
+            execution_config_fingerprint=suite_execution_fingerprint(
+                config.suite, config.fingerprint
+            ),
+            status="running",
+            completed_case_ids=case_ids[:9],
+            current_case_id=case_ids[9],
+            known_cost_currency=config.suite.fee_stop_currency,
+            known_cost_amount="1.44998",
+            started_at=now,
+            updated_at=now,
+        ),
+    )
+
+    async def fail(*_args, **_kwargs):
+        raise provider_suite_cli.KernelError("test_failure", CANARY)
+
+    monkeypatch.setattr(provider_suite_cli, "run_task_pack_provider_suite", fail)
+    code, output = invoke(["--config", str(path), "--allow-network"], capsys)
+    report = CodingEvalProviderSuiteRunReport.model_validate_json(output.out)
+
+    assert code == 1 and not output.err
+    assert report.reason == "runtime_failed"
+    assert report.completed_cases == 9
+    assert report.current_case_id == case_ids[9]
+    assert report.known_cost_currency == "CNY"
+    assert report.known_cost_amount == "1.44998"
+
+
+@pytest.mark.parametrize("mismatch", ["plan", "execution_binding"])
+def test_provider_suite_cli_ignores_progress_from_another_execution(
+    mismatch: str,
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    config = provider_suite_config(tmp_path)
+    path = tmp_path / "provider-suite.json"
+    path.write_text(config.model_dump_json(), encoding="utf-8")
+    path.chmod(0o600)
+    work_root = Path(config.suite.work_root)
+    work_root.mkdir(mode=0o700)
+    now = utc_now()
+    write_eval_suite_execution_state(
+        work_root / "suite-state.json",
+        CodingEvalSuiteExecutionState(
+            suite_id=config.suite.plan.suite_id,
+            plan_fingerprint=("f" * 64 if mismatch == "plan" else config.suite.plan.fingerprint),
+            execution_config_fingerprint=(
+                "f" * 64
+                if mismatch == "execution_binding"
+                else suite_execution_fingerprint(config.suite, config.fingerprint)
+            ),
+            status="running",
+            completed_case_ids=tuple(case.case_id for case in config.suite.plan.cases[:9]),
+            known_cost_currency=config.suite.fee_stop_currency,
+            known_cost_amount="39",
+            started_at=now,
+            updated_at=now,
+        ),
+    )
+
+    async def fail(*_args, **_kwargs):
+        raise provider_suite_cli.KernelError("test_failure", CANARY)
+
+    monkeypatch.setattr(provider_suite_cli, "run_task_pack_provider_suite", fail)
+    code, output = invoke(["--config", str(path), "--allow-network"], capsys)
+    report = CodingEvalProviderSuiteRunReport.model_validate_json(output.out)
+
+    assert code == 1 and report.reason == "runtime_failed"
+    assert report.completed_cases == 0
+    assert report.current_case_id is None
+    assert report.known_cost_amount == "0"
 
 
 @pytest.mark.parametrize("kind", ["missing", "directory", "fifo", "symlink"])

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 18
+version: 19
 code_revision: 2983898358e6beb0dfb182dc80b5a85341c97d77
 owners:
   - core
@@ -1072,6 +1072,12 @@ CLI缺少`--allow-network`时在配置读取前输出`network_not_enabled`。固
 公开发布器只从完整私有Suite Plan/Report构建白名单Manifest。公开根与私有根必须相互独立；递归拒绝Prompt、回答、
 Arguments、Tool Output、Diff、Workspace、Secret、POSIX/Windows绝对路径和私有目录片段。成本不完整或Plan不一致时
 不得发布。候选实现及测试已落地，但在真实10 Case × 2 Trial运行、证据冻结和全矩阵CI完成前，0.9.2e仍保持未完成。
+
+真实Provider的第二轮诊断完成20个Trial并记录CNY 1.44998完整已知成本，证明空Profile事实可以到达Case报告阶段，
+同时暴露三处独立语义：Task声明必需检查时空Final不能写成`not_applicable`，而应以声明检查数形成零通过的适用失败；
+`_publish_campaign`必须使用Trial循环返回的最新State，不能用旧快照覆盖Run前缀和成本；CLI捕获Runtime失败时只可从
+Suite ID、Plan Fingerprint、执行绑定、连续Case前缀、下一Case和币种均匹配的私有状态投影进度。读取或身份异常回退为零且不泄漏正文。
+该旧运行绑定旧Revision，不能跨Revision恢复或作为冻结证据。
 
 完整背景、字段、失败恢复和运维步骤见[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](../operations/provider-suite-baseline.md)。
@@ -2157,6 +2163,8 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 19 | `pending` | 2026-09-20 | 记录第二轮真实Suite完成20 Trial后暴露的空测试分母、Campaign旧State覆盖和CLI零进度问题；补充必需测试失败投影、最新State提交和可信失败进度边界 |
+| 18 | `dd8b9976799d0950f72d44247966cc1e9b535dd2` | 2026-09-20 | 缺失Profile保留为空Observation并进入严格评分，完成状态允许空Baseline事实；由CI 35488863702完成六实例验收 |
 | 17 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 增加0.9.2e真实Provider完整Suite私有合同、显式启网、宿主/Provider恢复绑定、每Trial独立Provider、低敏证据发布和完整源码映射；真实运行与CI待验收 |
 | 16 | `505bc537f74bd59e891c605ff4114856991f1783` | 2026-09-20 | 工程Pack v2完整20 Trial由CI 35483905418完成固定Container、双Suite提交恢复和脱敏证据验收；冻结证据并关闭0.9.2d3/d |
 | 15 | 基于`d5142c8da41356a3f7b5a740b23865e9e42e4798`的候选修正 | 2026-09-20 | 保留不可变工程Pack v1，新增产品Patch与Grader兼容的v2；两个Test Case由创建未跟踪文件改为替换受版本控制的失败测试基线，d3完整Suite固定使用v2待CI复验 |

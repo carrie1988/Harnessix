@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -268,7 +268,7 @@ sequenceDiagram
 | 程序无效 | Scope Validator | `eval_provider_suite_host_binding_invalid` | 修复绝对程序绑定 |
 | 配置指纹漂移 | Suite/Case Store | 既有执行指纹不匹配 | 只能使用原配置 |
 | Provider超时/协议错误 | Model/Agent | 当前Trial按既有终态和失败分类记录 | 按现有Run恢复，禁止隐式重试 |
-| Agent未调用或调用次数不足 | Trial Adapter/Grader | 空或部分观测进入严格Grader，Trial为`invalid/failed`；不补造、不崩溃 | 终态Session可只读重算报告，不重开Provider |
+| Agent未调用或调用次数不足 | Trial Adapter/Grader/Suite投影 | 空或部分观测进入严格Grader，Trial为`invalid/failed`；任务声明的必需检查仍记为适用且失败，不补造、不崩溃 | 终态Session可只读重算报告，不重开Provider |
 | Profile调用存在但缺少可信Process终态 | Trusted Action/Trial Adapter | `eval_baseline_invalid`失败关闭，不伪装为质量分数 | 修复执行链后按固定Revision策略处理 |
 | Usage缺失/超价阶 | Campaign/Suite | `cost_unknown`并停止下一Trial/Case | 需调查；不得直接继续收费 |
 | 达费用停止线 | Suite | `fee_limit_reached`，不开始下一项 | 只能显式评审后处理 |
@@ -321,6 +321,7 @@ public-evidence-root/               与私有根相互独立
 - `provider_binding_sha256`进入Case执行指纹，防止Case报告复用到另一端点/Key引用/限制；
 - 已完成Case只严格重读报告，不重新创建Provider；
 - 已完成Turn即使没有Profile调用，也以空Observation持久化并生成严格失败报告，不把Agent行为缺失误报为基础设施崩溃；
+- Campaign发布终态必须基于执行循环返回的最新State，完整写入连续Run ID前缀和已知成本，禁止旧快照覆盖进度；
 - Suite Report发布后进程退出，重开只吸收报告并提交终态。
 
 ## 10. 领域契约、数据结构、类与接口设计
@@ -451,6 +452,9 @@ flowchart LR
 - 已知成本币种和金额。
 
 禁止输出配置、绝对路径、响应ID、供应商错误正文、模型回答或Secret。深度诊断保留在受限私有运行目录，由既有诊断和权限边界处理。
+当已识别的取消或Runtime失败发生时，CLI会尝试严格读取私有`suite-state.json`；只有Suite ID、Plan Fingerprint、
+执行绑定、连续Case前缀、下一Case和成本币种全部与当前配置一致，才公开已完成Case数、当前Case及已知成本。状态缺失、损坏或身份不一致
+均回退到零进度，读取错误和私有内容不得进入CLI输出。
 
 ## 14. 兼容与迁移
 
@@ -468,6 +472,11 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 不得在模型结束后旁路执行Profile；空Baseline/Final分别使既有`baseline_checks_failed`、`final_check_set_matched`及行为检查失败，
 报告保持可审计的`invalid/failed`结论。
 
+第二次受控运行进一步证明：空Observation虽然已经可以完成20个Trial，但若Suite把空Final解释为
+`not_applicable`，聚合会因“没有适用测试”失败。工程Pack中的每个Task都声明必需的Behavior/Regression Check，
+因此“模型没有运行测试”必须投影为`outcome=failed`、`total_checks=任务声明检查数`、`passed_checks=0`，而不是不适用。
+该修正不改变Grader、Task成功数或Process证据，也不合成任何测试结果；它只纠正Suite测试分母的业务语义。
+
 ## 15. 测试设计与验收矩阵
 
 | 层级 | 场景 | 期望 |
@@ -477,9 +486,12 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 | Config IO | 非0600、链接、特殊文件、超限、重复键、NaN | 读取失败 |
 | CLI | 缺少`--allow-network`且配置不存在 | 不读取文件，`network_not_enabled` |
 | CLI | Kernel错误或内部异常 | 只输出白名单Reason，不泄漏异常正文 |
+| CLI | Runtime失败且存在身份一致的Suite状态 | 保留连续完成Case数、当前Case和已知成本；损坏或异源状态回退为零 |
 | Execution | Pack SHA、源码Revision、程序漂移 | Provider创建前失败 |
 | Execution | 每Trial Provider Factory | 独立Context Manager，不共享状态 |
 | Grading | 终态Agent未调用固定Profile | 空Baseline/Final进入Grader并发布严格失败报告，不抛Runner异常、不重开Provider |
+| Suite投影 | Task声明必需检查但Final为空 | 该Trial计入适用分母并记失败，完整Suite仍可聚合发布 |
+| Campaign提交 | 两个Trial正常完成 | Campaign状态保存精确Run前缀、成本和Report摘要，不被循环前旧State覆盖 |
 | Recovery | Suite宿主绑定改变 | 同Run恢复失败 |
 | Recovery | Case Provider绑定改变 | 同Case报告不可复用 |
 | Compatibility | 离线调用不传绑定 | 原执行指纹保持不变 |
@@ -498,12 +510,13 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 |---|---|---|---|
 | 私有配置/公开合同 | [`provider_suite_contracts.py`](../../src/harnessix/evals/provider_suite_contracts.py) | `CodingEvalProviderSuiteRunConfig`、`CodingEvalProviderSuiteRunReport`、`CodingEvalProviderSuiteEvidenceManifest` | [`test_provider_suite_contracts.py`](../../tests/evals/test_provider_suite_contracts.py) |
 | 严格配置读取 | [`cli_config.py`](../../src/harnessix/evals/cli_config.py) | `read_private_eval_config` | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
-| CLI网络门禁 | [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py) | `main`、`_public_report` | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
+| CLI网络门禁与失败进度 | [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py) | `main`、`_public_report`、`_trusted_progress` | [`test_provider_suite_cli.py`](../../tests/evals/test_provider_suite_cli.py) |
 | 真实Provider执行 | [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py) | `TaskPackOpenAIChatProviderFactory`、`run_task_pack_provider_suite` | [`test_provider_suite_execution.py`](../../tests/evals/test_provider_suite_execution.py) |
 | 通用Suite组合 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | `build_task_pack_suite_config` | [`test_task_pack_suite.py`](../../tests/evals/test_task_pack_suite.py) |
 | Suite恢复绑定 | [`suite_execution.py`](../../src/harnessix/evals/suite_execution.py) | `_SuiteExecutionBinding`、`run_coding_eval_suite` | [`test_suite_execution.py`](../../tests/evals/test_suite_execution.py) |
-| Case恢复绑定 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `_execution_fingerprint`、`TaskPackCaseExecutor` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
+| Case恢复绑定与Campaign提交 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `_execution_fingerprint`、`_execute_remaining`、`_publish_campaign`、`TaskPackCaseExecutor` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py)、[`Container集成测试`](../../tests/integration/test_task_pack_execution.py) |
 | 缺失Profile的可评分恢复 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`contracts.py`](../../src/harnessix/evals/contracts.py) | `_profile_observations`、`CodingEvalRunState.baseline_observations` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py)的空观测与状态合同回归 |
+| 必需测试的Suite投影 | [`suite.py`](../../src/harnessix/evals/suite.py) | `build_coding_eval_suite_case_report` | [`test_suite.py`](../../tests/evals/test_suite.py)的缺失Profile分母与零通过回归 |
 | 证据发布 | [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py) | `validate_publishable_suite_evidence`、`publish_provider_suite_evidence` | [`test_provider_suite_evidence.py`](../../tests/evals/test_provider_suite_evidence.py) |
 | 配置生成 | [`create_engineering_provider_suite_config.py`](../../scripts/create_engineering_provider_suite_config.py) | `main`、`_price`、`_write_private` | 由合同、CLI和真实操作验收共同覆盖 |
 | 证据发布操作 | [`publish_provider_suite_evidence.py`](../../scripts/publish_provider_suite_evidence.py) | `main` | 证据发布测试及真实证据严格重读 |
@@ -552,9 +565,44 @@ atomically write only plan, report, manifest
 return manifest
 ```
 
+### 17.3 必需测试、Campaign提交与失败进度
+
+```text
+expected_checks = sorted(task.behavior_checks + task.regression_checks)
+observed_final = report.final_observations
+test_outcome = passed only when observed ids exactly equal expected ids and all passed
+otherwise test_outcome = failed
+total_checks = len(expected_checks)
+passed_checks = count passed observations whose id belongs to expected_checks
+
+latest_state, stopped = execute_remaining_trials(state)
+if stopped:
+    return stopped
+publish_campaign(report, latest_state)
+
+on identified CLI failure:
+    state = strictly_read_private_suite_state()
+    if suite, plan, execution_binding, prefix, next_case and currency all match config:
+        expose only completed_count, current_case and known_cost
+    else:
+        expose zero progress without read error details
+```
+
 ## 18. 部署与操作
 
 本能力不增加常驻服务、中间件、数据库或开放端口。运行宿主需要Python环境、固定Docker镜像、Git、Docker Engine和可访问北京百炼兼容端点的HTTPS网络。配置、执行、恢复、发布与销毁步骤见[运维手册](../operations/provider-suite-baseline.md)。
+
+### 18.1 受控运行发现与修正边界
+
+首轮候选运行在一个正常终态Trial中发现模型完全跳过固定Profile，原Adapter以`eval_baseline_missing`终止。
+兼容修正确认空Profile事实应进入严格评分，并由Revision `dd8b997`及[CI 35488863702](https://github.com/carrie1988/Harnessix/actions/runs/35488863702)
+完成六实例验收。
+
+基于该Revision的第二轮运行完成10 Case × 2 Trial并形成CNY 1.44998完整已知成本，但最终Suite聚合失败：20个
+Trial均没有Final Profile Observation，旧投影把它们标记为`not_applicable`，与Suite“至少一个适用测试”的合同冲突。
+同一运行还暴露Campaign发布使用循环前State会覆盖已完成Run前缀，以及CLI在Runtime失败时固定回报零进度/零成本。
+本版本分别修正测试分母、Campaign最新State提交和CLI可信进度投影。旧运行绑定旧Revision，只作为私有诊断事实，
+不得跨Revision恢复、发布或拼接为最终基线；候选通过CI后必须创建新的Suite ID和私有运行根重新验收。
 
 ## 19. 风险、限制与后续工作
 
@@ -566,6 +614,8 @@ return manifest
 | 单模型结果不可泛化 | Manifest固定Provider/模型/地域 | 0.9.6扩展能力矩阵 |
 | 真实模型可能无法完成全部Case | 保存稳定失败和完整低敏指标，不修改评分标准 | 以失败分类驱动后续Agent改进 |
 | 模型可能跳过固定Profile | 空观测进入严格Grader；不补造、不旁路执行、不误报Runner故障 | 用真实失败分布改进Prompt、工具可发现性和Agent策略 |
+| 全部Trial缺失测试会造成零适用分母 | Task声明检查仍按适用失败计数；不改变严格评分 | 用新Revision完整Suite验证0/20等真实结果可以发布 |
+| Runtime失败掩盖已消费费用 | CLI仅从身份一致状态公开连续进度与已知成本 | 继续以私有状态和供应商账单双向核对 |
 | Evidence Report字段未来扩展 | 递归禁止字段和绝对路径，合同版本化 | 新字段必须先通过泄漏审查 |
 
 在真实运行和证据冻结前，本变更保持`reviewing`，不得在README中宣称0.9.2e完成。

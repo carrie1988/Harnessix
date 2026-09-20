@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners:
   - core
@@ -95,7 +95,18 @@ Baseline/Final集合，并交给现有严格Grader；不得合成Return Code、�
 既有Grader会把缺失集合判为`invalid/failed`，终态Session可在不重开Provider的前提下重算并发布报告。
 如果模型已经调用Profile但结果缺少可信Process终态，则仍以`eval_baseline_invalid`失败关闭；执行链故障不能降级成质量分数。
 
-### 8. 默认CI不使用真实凭据
+### 8. 必需测试、Campaign状态和公开失败进度必须保持真实
+
+工程Pack Task声明的Behavior/Regression Check是必需测试集合。Final Observation缺失时，Suite Test Evidence必须记为
+适用且失败，`total_checks`取声明集合大小、`passed_checks=0`；不得标记`not_applicable`以制造零分母，也不得合成
+Process Return Code。只有任务合同本身没有适用检查时才允许不适用语义。
+
+Case Adapter执行完Trial后必须把最新Campaign State传入报告发布事务，保证`completed_run_ids`、已知成本和Report摘要
+来自同一连续事实前缀，禁止循环前旧快照覆盖进度。CLI在取消或Runtime失败时允许公开该低敏前缀，但只信任Suite ID、
+Plan Fingerprint、执行绑定、Case连续前缀、下一Case和成本币种均与当前配置一致的私有状态；读取、权限、格式或身份错误一律回退为
+零进度且不输出异常正文。
+
+### 9. 默认CI不使用真实凭据
 
 所有合同、恢复、CLI和脱敏行为在离线CI中验证。真实Provider运行是独立、显式、可审计的人工触发验证，不向默认CI注入Secret，也不因CI通过推导真实模型质量。
 
@@ -120,6 +131,7 @@ Baseline/Final集合，并交给现有严格Grader；不得合成Return Code、�
 4. 公开证据可重算且不复制用户/模型/代码正文；
 5. 离线已冻结指纹和证据保持兼容。
 6. Agent跳过测试时仍能形成严格失败报告、Token和费用证据，而不是误报评测Runtime故障。
+7. 已发生的Case进度和费用不会被Campaign旧快照或CLI固定零值掩盖。
 
 ### 代价
 
@@ -137,11 +149,12 @@ Baseline/Final集合，并交给现有严格Grader；不得合成Return Code、�
 3. 配置/Pack/源码Revision/程序/Provider字段漂移均失败关闭；
 4. Suite与Case恢复指纹专项回归通过，离线旧指纹不变；
 5. Prompt、回答、工具正文、路径、Secret和私有运行身份泄漏回归通过；
-6. 缺失Profile调用可生成严格失败报告，完成状态允许空Baseline事实且恢复不重开Provider；
-7. Ruff、Mypy、Schema、文档、Pytest与全矩阵CI通过；
-8. 固定模型完成或按合同停止完整10 Case × 2 Trial真实Suite；
-9. 低敏报告经严格重读和重算后冻结，实际费用不超过授权范围；
-10. 路线图、架构、Evals模块、测试规范、运维和验证索引同步。
+6. 缺失Profile调用可生成严格失败报告并计入Suite适用测试失败，完成状态允许空Baseline事实且恢复不重开Provider；
+7. Campaign无故障完成路径提交精确Run前缀与成本，CLI失败路径只投影身份一致的持久进度；
+8. Ruff、Mypy、Schema、文档、Pytest与全矩阵CI通过；
+9. 固定模型完成或按合同停止完整10 Case × 2 Trial真实Suite；
+10. 低敏报告经严格重读和重算后冻结，实际费用不超过授权范围；
+11. 路线图、架构、Evals模块、测试规范、运维和验证索引同步。
 
 ## 关联资料
 

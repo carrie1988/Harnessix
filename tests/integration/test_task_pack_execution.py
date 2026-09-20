@@ -14,7 +14,7 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.domain.models import utc_now
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
 from harnessix.evals.contracts import CodingEvalEnvironment
-from harnessix.evals.report import read_eval_report
+from harnessix.evals.report import read_eval_campaign_execution_state, read_eval_report
 from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
@@ -94,6 +94,44 @@ def _fixed_plan(case, revision: str) -> tuple[CodingEvalSuiteCasePlan, CodingEva
         campaign_plan_fingerprint=campaign.fingerprint,
     )
     return expected, campaign
+
+
+@pytest.mark.skipif(os.name != "posix", reason="Task Pack Container Adapter要求POSIX宿主")
+async def test_task_pack_case_commits_completed_campaign_progress(
+    tmp_path: Path,
+) -> None:
+    docker = _executable("docker")
+    git = _executable("git")
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    case = loaded.manifest.case(_CASE_ID)
+    source_profile = loaded.manifest.profile(case.profile_id)
+    image_environment = (
+        "HARNESSIX_TEST_PYTHON_IMAGE"
+        if source_profile.language == "python"
+        else "HARNESSIX_TEST_NODE_IMAGE"
+    )
+    if os.environ.get(image_environment) != source_profile.image:
+        pytest.skip("未配置Task Pack固定镜像")
+    expected, campaign = _fixed_plan(case, _revision(git))
+    provider_factory = RecordedProviderFactory(
+        loaded,
+        git_executable=git,
+        oracle_root=tmp_path / "oracle",
+        solutions_root=_SOLUTIONS,
+    )
+    provider_factory.prepare((_CASE_ID,))
+    case_root = tmp_path / "case"
+    case_root.mkdir(mode=0o700)
+    executor = TaskPackCaseExecutor(loaded, git, docker, provider_factory)
+
+    result = await executor(expected, campaign, case_root, CancelToken())
+    state = read_eval_campaign_execution_state(case_root / "campaign-state.json")
+
+    assert result.reason == "completed" and result.report is not None
+    assert state.status == "completed"
+    assert state.completed_run_ids == campaign.run_ids
+    assert state.known_cost_amount == "0"
+    assert state.report_sha256 is not None
 
 
 @pytest.mark.skipif(os.name != "posix", reason="Task Pack Container Adapter要求POSIX宿主")

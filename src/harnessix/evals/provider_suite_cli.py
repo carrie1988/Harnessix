@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import logging
 from collections.abc import Sequence
+from pathlib import Path
 from typing import NoReturn
 
 from harnessix.agent.errors import KernelError
@@ -15,7 +16,12 @@ from harnessix.evals.provider_suite_contracts import (
     CodingEvalProviderSuiteRunReport,
 )
 from harnessix.evals.provider_suite_execution import run_task_pack_provider_suite
-from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
+from harnessix.evals.report import read_eval_suite_execution_state
+from harnessix.evals.suite_execution import suite_execution_fingerprint
+from harnessix.evals.suite_execution_contracts import (
+    CodingEvalSuiteExecutionState,
+    CodingEvalSuiteRunReport,
+)
 
 _MAX_CONFIG_BYTES = 2 * 1024 * 1024
 
@@ -51,16 +57,45 @@ def _identified_failure(
     config: CodingEvalProviderSuiteRunConfig,
     reason: str,
 ) -> CodingEvalProviderSuiteRunReport:
+    state = _trusted_progress(config)
     return CodingEvalProviderSuiteRunReport.model_validate(
         {
             "reason": reason,
             "suite_id": config.suite.plan.suite_id,
             "scheduled_cases": len(config.suite.plan.cases),
-            "completed_cases": 0,
-            "known_cost_currency": config.suite.fee_stop_currency,
-            "known_cost_amount": "0",
+            "completed_cases": len(state.completed_case_ids) if state is not None else 0,
+            "current_case_id": state.current_case_id if state is not None else None,
+            "known_cost_currency": (
+                state.known_cost_currency if state is not None else config.suite.fee_stop_currency
+            ),
+            "known_cost_amount": state.known_cost_amount if state is not None else "0",
         }
     )
+
+
+def _trusted_progress(
+    config: CodingEvalProviderSuiteRunConfig,
+) -> CodingEvalSuiteExecutionState | None:
+    """只从与固定计划一致的状态账本恢复公开进度，不传播私有读取错误。"""
+
+    try:
+        state = read_eval_suite_execution_state(Path(config.suite.work_root) / "suite-state.json")
+    except (KernelError, OSError, ValueError):
+        return None
+    case_ids = tuple(case.case_id for case in config.suite.plan.cases)
+    completed = state.completed_case_ids
+    next_case = case_ids[len(completed)] if len(completed) < len(case_ids) else None
+    if (
+        state.suite_id != config.suite.plan.suite_id
+        or state.plan_fingerprint != config.suite.plan.fingerprint
+        or state.execution_config_fingerprint
+        != suite_execution_fingerprint(config.suite, config.fingerprint)
+        or completed != case_ids[: len(completed)]
+        or state.known_cost_currency != config.suite.fee_stop_currency
+        or state.current_case_id not in {None, next_case}
+    ):
+        return None
+    return state
 
 
 def main(argv: Sequence[str]) -> None:

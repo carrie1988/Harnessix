@@ -74,10 +74,12 @@ def _require_plan(path: Path, config: CodingEvalSuiteRunConfig) -> None:
     write_eval_suite_plan(path, config.plan)
 
 
-def _execution_fingerprint(
+def suite_execution_fingerprint(
     config: CodingEvalSuiteRunConfig,
     execution_binding_sha256: str | None,
 ) -> str:
+    """计算Suite配置与可选宿主绑定共同形成的恢复身份。"""
+
     if execution_binding_sha256 is None:
         return config.fingerprint
     return content_digest(
@@ -106,7 +108,7 @@ def _initial_state(
     return CodingEvalSuiteExecutionState(
         suite_id=config.plan.suite_id,
         plan_fingerprint=config.plan.fingerprint,
-        execution_config_fingerprint=_execution_fingerprint(config, execution_binding_sha256),
+        execution_config_fingerprint=suite_execution_fingerprint(config, execution_binding_sha256),
         status="ready",
         completed_case_ids=(),
         known_cost_currency=config.fee_stop_currency,
@@ -128,7 +130,7 @@ def _require_state(
         state.suite_id != config.plan.suite_id
         or state.plan_fingerprint != config.plan.fingerprint
         or state.execution_config_fingerprint
-        != _execution_fingerprint(config, execution_binding_sha256)
+        != suite_execution_fingerprint(config, execution_binding_sha256)
         or completed != case_ids[: len(completed)]
         or state.known_cost_currency != config.fee_stop_currency
         or state.current_case_id not in {None, next_case}

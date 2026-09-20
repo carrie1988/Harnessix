@@ -308,7 +308,7 @@ async def _execute_remaining(
     completed: list[CompletedCodingEvalTrial],
     known_units: int,
     cancel: CancelToken,
-) -> CodingEvalSuiteCaseRunResult | None:
+) -> tuple[CodingEvalCampaignExecutionState, CodingEvalSuiteCaseRunResult | None]:
     for run_id in context.campaign.run_ids[len(completed) :]:
         cancel.checkpoint()
         state = state.model_copy(update={"status": "running", "updated_at": utc_now()})
@@ -340,8 +340,8 @@ async def _execute_remaining(
         write_eval_campaign_execution_state(context.state_path, state)
         context.fault("task_pack_case.after_trial")
         if not complete:
-            return _stop_for_unknown_cost(context, state)
-    return None
+            return state, _stop_for_unknown_cost(context, state)
+    return state, None
 
 
 def _publish_campaign(
@@ -375,7 +375,7 @@ async def _run_locked_case(
         return recovered
     if state.status == "stopped" or not costs_complete:
         return _stop_for_unknown_cost(context, state)
-    stopped = await _execute_remaining(context, state, completed, known_units, cancel)
+    state, stopped = await _execute_remaining(context, state, completed, known_units, cancel)
     return stopped or _publish_campaign(context, state, completed)
 
 
