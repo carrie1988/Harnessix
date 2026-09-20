@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -180,27 +181,58 @@ def _validate_complete_report(
     tests = tuple(item for case in report.cases for item in case.tests)
     request_count = sum(len(provider.requests) for provider in provider_factory.providers)
     expected_run_ids = {run_id for campaign in config.campaign_plans for run_id in campaign.run_ids}
-    if (
-        len(report.cases) != 10
-        or len(trials) != 20
-        or report.summary.repositories != 3
-        or report.summary.scheduled_trials != 20
-        or report.summary.passed_trials != 20
-        or report.summary.tests_passed_trials != 20
-        or report.summary.human_intervention_trials != 0
-        or report.summary.model_attempts != 120
-        or report.summary.input_tokens != 1200
-        or report.summary.output_tokens != 600
-        or report.summary.cost_completeness != "complete"
-        or report.summary.known_cost_amount != "0"
-        or any(item.human_intervention_count for item in transcripts)
-        or any(item.automated_approval_decisions != 3 for item in transcripts)
-        or any(item.outcome != "passed" for item in tests)
-        or provider_factory.opened_run_ids != expected_run_ids
-        or len(provider_factory.providers) != 20
-        or request_count != 120
-    ):
-        raise AssertionError("完整离线Suite汇总、Trial或Provider计数不符合固定基线")
+    observed: dict[str, object] = {
+        "cases": len(report.cases),
+        "trials": len(trials),
+        "repositories": report.summary.repositories,
+        "scheduled_trials": report.summary.scheduled_trials,
+        "passed_trials": report.summary.passed_trials,
+        "tests_passed_trials": report.summary.tests_passed_trials,
+        "human_intervention_trials": report.summary.human_intervention_trials,
+        "model_attempts": report.summary.model_attempts,
+        "input_tokens": report.summary.input_tokens,
+        "output_tokens": report.summary.output_tokens,
+        "cost_completeness": report.summary.cost_completeness,
+        "known_cost_amount": report.summary.known_cost_amount,
+        "human_intervention_counts": sorted(
+            Counter(item.human_intervention_count for item in transcripts).items()
+        ),
+        "automated_approval_counts": sorted(
+            Counter(item.automated_approval_decisions for item in transcripts).items()
+        ),
+        "test_outcomes": sorted(Counter(item.outcome for item in tests).items()),
+        "opened_run_ids_match": provider_factory.opened_run_ids == expected_run_ids,
+        "provider_open_count": len(provider_factory.providers),
+        "provider_request_count": request_count,
+    }
+    expected: dict[str, object] = {
+        "cases": 10,
+        "trials": 20,
+        "repositories": 3,
+        "scheduled_trials": 20,
+        "passed_trials": 20,
+        "tests_passed_trials": 20,
+        "human_intervention_trials": 0,
+        "model_attempts": 120,
+        "input_tokens": 1200,
+        "output_tokens": 600,
+        "cost_completeness": "complete",
+        "known_cost_amount": "0",
+        "human_intervention_counts": [(0, 20)],
+        "automated_approval_counts": [(3, 20)],
+        "test_outcomes": [("passed", 20)],
+        "opened_run_ids_match": True,
+        "provider_open_count": 20,
+        "provider_request_count": 120,
+    }
+    mismatches = {
+        key: {"expected": expected[key], "observed": value}
+        for key, value in observed.items()
+        if value != expected[key]
+    }
+    if mismatches:
+        detail = json.dumps(mismatches, ensure_ascii=False, sort_keys=True)
+        raise AssertionError(f"完整离线Suite固定基线不一致：{detail}")
     return report, request_count
 
 
