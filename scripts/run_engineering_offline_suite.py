@@ -231,6 +231,36 @@ def _validate_complete_report(
         if value != expected[key]
     }
     if mismatches:
+        mismatches["_trial_diagnostics"] = {
+            "observed": [
+                {
+                    "case_id": case.case_id,
+                    "classification": trial.classification,
+                    "eval_outcome": trial.eval_outcome,
+                    "failure_categories": list(trial.failure_categories),
+                    "model_attempts": trial.model_attempts,
+                    "turn_status": trial.turn_status,
+                }
+                for case in report.cases
+                for trial in case.campaign.trials
+                if trial.eval_outcome != "passed"
+            ]
+        }
+        mismatches["_transcript_diagnostics"] = {
+            "observed": [
+                {
+                    "approval_requests": transcript.approval_requests,
+                    "automated_approval_decisions": transcript.automated_approval_decisions,
+                    "case_id": case.case_id,
+                    "model_attempts": transcript.model_attempts,
+                    "model_steps": transcript.model_steps,
+                    "turn_status": transcript.turn_status,
+                }
+                for case in report.cases
+                for transcript in case.transcripts
+                if transcript.model_attempts != 6
+            ]
+        }
         detail = json.dumps(mismatches, ensure_ascii=False, sort_keys=True)
         raise AssertionError(f"完整离线Suite固定基线不一致：{detail}")
     return report, request_count
