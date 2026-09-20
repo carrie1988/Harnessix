@@ -249,7 +249,7 @@ class _RecordedSolutionProvider:
             yield TextStarted(content_id=f"{response_id}-answer")
             yield TextCompleted(content_id=f"{response_id}-answer", text=answer)
             event = None
-            finish = "stop"
+            finish = "completed"
         if event is not None:
             yield event
         yield ModelUsageObserved(
@@ -330,9 +330,7 @@ async def test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_
     failed_checks = {
         str(run_id): tuple(
             check.code
-            for check in read_eval_report(
-                case_root / "runs" / str(run_id) / "report.json"
-            ).checks
+            for check in read_eval_report(case_root / "runs" / str(run_id) / "report.json").checks
             if not check.passed
         )
         for run_id in campaign.run_ids
