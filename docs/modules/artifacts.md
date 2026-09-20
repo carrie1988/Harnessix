@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 12
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0057-tool-result-model-view-and-artifact-binding.md
   - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/artifacts/test_contracts.py
   - tests/artifacts/test_store.py
@@ -33,6 +34,7 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/processes/test_trusted_output.py
   - tests/evals/test_runner.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -42,10 +44,10 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL和显式回收 |
+| 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL、显式回收和Plan-first离线保留 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | 0.9.1f3已关闭；独立Process Action发布器已删除，历史正文保持只读；实现Revision `a81868c` |
+| 代码版本 | 0.9.1f3独立Process Action发布器已删除；0.9.3b增加发布时间、统一显式插入和共库维护；实现Revision `cb3f3ea` |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`ActionOutputArtifactMixin` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
 | 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
@@ -247,6 +249,7 @@ erDiagram
       text state
       blob body
       text purpose
+      text created_at
     }
 ```
 
@@ -260,11 +263,13 @@ erDiagram
 | `size_bytes` | 0～1048576；Published时等于BLOB长度 |
 | `state` | 仅`published`或`expired` |
 | `body` | Published非空；Expired必须为NULL |
-| `purpose` | `tool_result`、`batch_plan`、`batch_effect`、`process_output` |
+| `purpose` | `tool_result`、`batch_plan`、`batch_effect`、历史`process_output`、`action_review`、`action_output` |
+| `created_at` | Migration 26后新写入为真实发布时间；旧行无法还原，保守以`expires_at`回填 |
 
 `UNIQUE(call_id, purpose)`允许同一Patch Batch调用同时拥有Plan和Effect两份证据，但禁止同一用途重复
-发布。Migration 0006创建基础表；0009在事务中迁移为多用途表；0011加入`process_output`。迁移只复制
-既有字节并替换表，不改写Session Event。Artifact公共Schema由`spec/artifact-*.schema.json`和
+发布。Migration 0006创建基础表；0009在事务中迁移为多用途表；0011加入`process_output`；0024/0025加入
+`action_review/action_output`；0026增加`created_at`和索引。迁移只复制或回填列，不改写Session Event。当前所有发布路径
+通过[`persistence.py`](../../src/harnessix/artifacts/persistence.py)的显式列清单插入，避免扩列破坏位置参数。Artifact公共Schema由`spec/artifact-*.schema.json`和
 `spec/read-artifact-*.schema.json`冻结。
 
 ## 10. 标准只读Tool Result发布流程
@@ -388,13 +393,15 @@ stateDiagram-v2
     Protected --> Published: collection skips body
     Published --> Expired: expired time reached and thread inactive
     Expired --> Expired: tombstone retained
-    Expired --> [*]: no automatic deletion contract
+    Expired --> [*]: owning archived thread explicitly deleted by maintenance
 ```
 
 `collect(limit, after)`使用`BEGIN IMMEDIATE`按Artifact ID有界扫描到期Published行。所属Thread存在活跃
 Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避免受保护前缀阻塞同批后续对象。回收
 失败整体回滚，可重试；Tombstone继续占用Manifest配额，且SQLite释放页不等于数据库文件立即缩小。
 图中的Protected是一次回收扫描的决策，不是数据库合法状态；持久`state`始终只有Published和Expired。
+0.9.3b的共库Maintenance在不可变Plan、备份和二次保护下复用相同Tombstone语义，并且只有所属Thread也满足删除条件时才
+删除Manifest；升级、Agent启动和普通`collect`都不会自动删除Tombstone或运行Vacuum。
 
 ## 15. 失败语义与恢复矩阵
 
@@ -530,6 +537,7 @@ collect(limit, after):
 | 模型历史顺序 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_verify_history_artifacts` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py) | `test_invalid_history_stops_before_provider`、`test_verifier_cancellation_timeout_drains_without_provider_or_decision` | 发网前验证与取消排空 |
 | 协议读取 | [`artifacts.py`](../../src/harnessix/app_server/artifacts.py) | `ScopedProtocolArtifactReader.read` | [`test_sdk.py`](../../tests/artifacts/test_sdk.py) | `test_real_sdk_reads_beyond_preview_without_exposing_host_scope` | SDK分页不暴露内部Scope |
 | 数据库迁移 | [`0006_artifacts.sql`](../../src/harnessix/session/migrations/0006_artifacts.sql)、[`0009_batch_diff_artifacts.sql`](../../src/harnessix/session/migrations/0009_batch_diff_artifacts.sql)、[`0011_process_output_artifacts.sql`](../../src/harnessix/session/migrations/0011_process_output_artifacts.sql) | Artifact表v6/v9/v11 | [`test_batch_diff_upgrade.py`](../../tests/artifacts/test_batch_diff_upgrade.py)、[`test_process_output_upgrade.py`](../../tests/artifacts/test_process_output_upgrade.py) | `test_real_migration9_exit_preserves_original_artifact_and_events`、`test_migration11_exit_is_atomic_and_preserves_existing_artifact` | 迁移原子性和旧字节保持 |
+| 发布时间与共库维护 | [`persistence.py`](../../src/harnessix/artifacts/persistence.py)、[`0026_store_maintenance.sql`](../../src/harnessix/session/migrations/0026_store_maintenance.sql)、[`maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py) | `insert_artifact`、`_expire_artifact`、`_delete_session_thread` | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py)及Artifact升级测试 | 容量、accepted保护、批次恢复、Restore | 显式列写入、Body先Tombstone、整Thread后删Manifest |
 | Fork Owner | [`lifecycle.py`](../../src/harnessix/agent/lifecycle.py) | `_artifact_owners` | [`test_thread_lifecycle.py`](../../tests/context/test_thread_lifecycle.py) | `test_nested_fork_keeps_original_artifact_owner_and_inherited_history` | 嵌套Fork保留原归属 |
 
 ### 20.1 推荐源码阅读路线
@@ -542,6 +550,8 @@ collect(limit, after):
 6. 读`processes/output_artifact.py`与`artifacts/sqlite.py`，理解历史`process_output`为何只读；
 7. 读`action_output_store.py`，区分当前可信Process终态正文、Router审计摘要和Session结果引用；
 8. 最后读Agent Runtime、Tool Runtime、Context模型视图和App Server读取器，建立端到端调用链。
+9. 读[`session/maintenance_planning.py`](../../src/harnessix/session/maintenance_planning.py)和
+   [`session/maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py)，理解离线Plan为何比`collect`更保守。
 
 ## 21. 测试设计与验收标准
 
@@ -553,8 +563,9 @@ collect(limit, after):
 | Batch Diff | Plan/Effect两用途、Unknown、预算、配额、引用错绑 | `test_batch_diff.py` |
 | Process证据 | 当前`action_output`发布/授权，以及历史`process_output`二进制、损坏和只读Schema | `test_store.py`、`test_process_output_upgrade.py`、`test_legacy_process_output_reader.py` |
 | 模型历史 | 冻结视图、覆盖证明、全部引用验证、双Provider、发网前失败 | `test_model_history.py` |
-| 升级 | Migration 9/11每个真退出切点、旧Artifact/Event原字节保持 | Upgrade测试和独立Probe |
+| 升级 | Migration 9/11/24/25/26真退出与旧Artifact/Event原字节保持 | Upgrade测试和独立Probe |
 | SDK/协议 | 多页读取、公开投影、Scope不外泄 | `test_sdk.py`、App Server测试 |
+| 共库维护 | Body过期、accepted全局保护、Thread整组删除、候选漂移、批次崩溃和备份恢复 | `test_store_maintenance.py` |
 
 Artifact变更至少运行`tests/artifacts`；若修改Session表、Agent装配、Tool定义、模型历史、Patch或Process合同，
 还必须运行对应模块测试和全量`make check`。精确测试数以当前测试运行报告为准。仅验证Happy Path或内存Fake
@@ -564,13 +575,13 @@ Artifact变更至少运行`tests/artifacts`；若修改Session表、Agent装配�
 
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
-| 默认产品已装配Artifact，但无内建GC调度与容量指标 | 长期本地使用可能达到累计记录或磁盘上限 | 0.9.3容量基准与维护策略 |
+| 已有低敏容量和内部Plan-first维护，但无产品GC调度/命令 | 宿主可审阅和恢复，最终用户尚不能安全自助操作 | 0.9.3d基准与0.9.5维护UX |
 | 仅SQLite、单件1 MiB JSONL | 不适合远端协作、大型媒体或无限构建日志 | 1.x由真实需求驱动对象存储合同 |
 | Fork主动分页不解析原Owner | 子Thread可验证继承引用，但`read_artifact`不能直接取父Thread正文 | 0.9.1/0.9.4补权限安全闭环 |
-| TTL可能使历史不可继续 | 过期引用会在模型发网前失败，长会话和Fork受影响 | 0.9.3保留策略与Soak |
-| Tombstone不删除且计入Manifest | 长期运行最终触达累计行数上限 | 0.9.3增长基准、0.9.5维护命令 |
+| TTL可能使历史不可继续 | 过期引用会在模型发网前失败，长会话和Fork受影响 | 0.9.3d Soak与产品保留默认值 |
+| Tombstone只有随满足条件的归属Thread才删除 | 未归档历史仍累计Manifest | 0.9.3d增长基准、0.9.5维护命令 |
 | 无加密、DLP和安全删除证明 | 源码、相对路径或命令输出可能留在本地数据库/空闲页 | 0.9.4安全审查与部署策略 |
-| 无内建GC调度和Artifact指标 | 宿主必须自行触发回收，容量问题不易提前诊断 | 0.9.3可观测性和可靠性 |
+| 无内建GC调度，容量报告尚未接产品告警 | 宿主必须在维护窗口主动采集 | 0.9.3d可观测性和0.9.5产品化 |
 | Batch/Process允许无归档降级 | 权威效果仍完整，但详细展示证据可能不可用 | 产品UI必须明确“无可用归档” |
 | TTL依赖UTC墙钟 | 时钟跳变可能提前过期或延后回收 | 0.9.3故障注入与诊断 |
 | 没有通用媒体合同 | 图片、音频及任意二进制不能伪装为字符串Artifact | 后续独立ADR和版本化MIME合同 |
@@ -633,10 +644,57 @@ Process ID、Workspace Scope、记录数、正文摘要和Artifact配额，并�
 
 Eval的公开结果允许增加`passed`，但该字段不是Executor可自由提交的扩展值。`trusted_process_public_output`只在调用者显式请求时，根据受信文档的`state=exited`、`stop_reason=exited`和`returncode == 0`确定性派生；`validate_action_output_body`读取Artifact时使用同一函数重算并逐字段比较。任意伪造`passed`、额外字段、摘要、Chunk或Artifact引用仍返回损坏。该设计让测试失败可以反馈为`passed=false`，同时不把Action输出变成可任意扩展的非冻结Schema。
 
-## 26. 变更记录
+## 26. Artifact容量与Plan-first保留（0.9.3b）
+
+### 26.1 两条显式回收路径
+
+| 路径 | 调用边界 | 行为 | 适用场景 |
+|---|---|---|---|
+| `SQLiteArtifactStore.collect` | Artifact Store显式调用 | 有界扫描到期正文；活动Thread保护；保留Manifest | 既有单Store回收 |
+| `SQLiteStoreMaintenance` | Runtime Owner下的静默窗口 | 三类共库一致规划、强制备份、二次保护、批次恢复；可随归属Thread删除Manifest | 长期共库维护 |
+
+两条路径都不自动调度，不运行Vacuum，不删除活动或不确定Thread正文。Maintenance比`collect`额外保护任意`accepted` Protocol
+Request、Fork来源和完整Thread依赖组；它不是旧接口的宽松替代。
+
+### 26.2 Plan与执行数据流
+
+```mermaid
+sequenceDiagram
+    participant H as Maintenance Host
+    participant P as Planner
+    participant D as Session SQLite
+    participant E as Batch Executor
+    H->>P: policy cutoff and max items
+    P->>D: scan Artifact and owning Thread
+    P->>P: protect accepted, active, uncertain and retained
+    P->>D: persist body items before thread item
+    H->>E: execute after verified backup
+    E->>D: reload item and owner in write transaction
+    alt current facts still eligible
+        E->>D: state expired and body null
+    else changed or newly protected
+        E->>D: record skipped progress
+    end
+```
+
+Thread Item只有在无Published正文时才执行。它在同一事务删除该Thread的Artifact Manifest、Event和Projection；因此独立Artifact
+过期始终保留Tombstone，而整个已归档Thread通过维护策略退出保留范围后才移除其Manifest。
+
+### 26.3 发布时间和插入Helper
+
+Migration 26增加`created_at`用于时间水位。标准Tool发布使用事务捕获的`now`；Review直接保存构造Manifest的发布时间；Batch和
+Action Output从`expires_at - policy.ttl_seconds`恢复同一次发布时间，避免第二次取时钟造成TTL不一致。四个写入点统一调用
+`insert_artifact`并显式列名；Helper不拥有事务、配额、审批或Session引用职责。
+
+旧行以`expires_at`回填只用于保守容量统计，清理资格仍读取真实既有`expires_at`。完整禁删矩阵、Backup和Restore见
+[0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)及
+[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。
+
+## 27. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26发布时间、显式列写入、低敏容量和Plan-first Body/Thread保留及备份恢复边界 |
 | 11 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process发布器删除和历史Artifact只读兼容由CI 35453082992完成全矩阵验收 |
 | 9 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录Eval确定性`passed`投影与Action Output重复验证由CI 35446341997完成全矩阵验收 |
 | 8 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步Eval `passed`由可信Process终态确定性派生并在Action Output读取时重复验证的候选合同 |

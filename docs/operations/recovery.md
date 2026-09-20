@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 6
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ modules:
   - delivery
   - product_config
   - trusted_actions
+  - session
 related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
@@ -21,6 +22,7 @@ related_adrs:
   - docs/adr/0035-kernel-batch-approval-and-recovery.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/agent/test_crash_recovery.py
@@ -29,6 +31,7 @@ related_tests:
   - tests/delivery
   - tests/product_config/test_action_config_runtime.py
   - tests/product_config/test_action_runtime.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -62,6 +65,7 @@ supersedes: []
 | Git Push响应丢失 | 远端ref可能已更新 | 使用固定ref和lease查询，禁止直接再Push |
 | 配置激活冲突 | 活动配置CAS不匹配 | 关闭新Runtime，重新读取活动指针后决策 |
 | SQLite损坏/迁移失败 | 初始化错误 | 停止服务，从一致备份恢复，不跳过检查 |
+| Store Maintenance中断 | Plan、Backup摘要和`next_ordinal`已持久化 | 使用同一Plan与Backup续跑；不重新选择候选 |
 
 ## 3. 恢复决策流程
 
@@ -224,6 +228,22 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 6. 重放并核对领域Snapshot、开放工作和外部效果；
 7. 根因关闭并加入回归后再恢复服务。
 
+### 10.1 Session共库Maintenance恢复
+
+Maintenance有两种恢复，不得混淆：
+
+1. **继续执行**：Plan状态为`running`时，验证调用方仍提供Progress记录的同一Backup摘要，从`next_ordinal`继续；每个已提交
+   业务批次和游标同步存在，因此不需要猜测或重放已完成Item；
+2. **完整回滚**：在静默窗口调用`SQLiteStoreMaintenance.restore(backup)`，验证Application ID、`quick_check`和SHA-256，
+   Checkpoint当前WAL后把备份复制到同目录临时文件并原子替换，再重新初始化和扫描容量。
+
+Plan为`planned`但备份已存在，通常表示进程退出发生在备份原子发布后、Progress启动提交前；只有该备份包含同一Plan及Payload
+摘要时才能复用。Plan/Item/Progress损坏、备份不同或Schema变化必须失败关闭。Restore会丢弃备份之后的新Session、Request和
+Artifact事实，不是数据合并；相关Action/Delivery/Process等其他数据库仍需按同一恢复点独立核对。
+
+当前没有公共恢复CLI，生产宿主接入前必须实现停止新命令、排空同进程业务调用、权限确认和备份保留。完整故障窗口见
+[0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)。
+
 ## 11. 恢复验收
 
 | 场景 | 必要断言 |
@@ -238,6 +258,7 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 | Action启动恢复 | 中断Route只Reconcile一次且execute次数为零；仍未知时stdio不开放 |
 | 双配置冲突 | Product或Action任一CAS失败时两个活动指针均保持旧值 |
 | 数据恢复 | 备份可迁移、Replay一致、旧Reader按合同拒绝 |
+| Maintenance恢复 | 备份发布故障可复用；批次提交后从精确Ordinal继续；完整Restore恢复Thread/Artifact/Request |
 
 ## 12. 源码与测试映射
 
@@ -249,6 +270,7 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |
 | 文件交付与默认Patch | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py)、[`delivery/trusted_action.py`](../../src/harnessix/delivery/trusted_action.py) | [`tests/delivery`](../../tests/delivery/)、[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) |
 | 产品Action冷启动恢复 | [`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、[`product_config/action_store.py`](../../src/harnessix/product_config/action_store.py) | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)、[`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
+| Session共库Maintenance | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py)、[`session/maintenance_backup.py`](../../src/harnessix/session/maintenance_backup.py)、[`session/maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py) | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) |
 | Git Push | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | [`tests/delivery/test_git_push.py`](../../tests/delivery/test_git_push.py) |
 
 ## 13. 已知限制

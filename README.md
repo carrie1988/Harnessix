@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.2路线图范围和DOC-1.0～DOC-1.6文档治理；89份ADR和33份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a已实现本地stdio/SDK协商背压、迟到Response共享容量、Writer故障唤醒、取消安全Close和低敏资源快照，实现Revision `f113594`及文档Revision `7cbacba`已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b～d及0.9.4～0.9.6仍未完成，项目尚未达到1.0正式商用状态。
+> 当前状态：已完成0.1～0.9.2路线图范围和DOC-1.0～DOC-1.6文档治理；90份ADR和33份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b实现Revision `cb3f3ea`已增加Session共库低敏容量、Plan-first保留、保守禁删、强制备份和崩溃恢复，本地`make check`通过3589项、跳过32项，全矩阵CI完成前保持未关闭。0.9.3c～d及0.9.4～0.9.6仍未完成，项目尚未达到1.0正式商用状态。
 
 ```text
               CLI / TUI / Agent SDK
@@ -32,6 +32,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 - Context 构建、Token Budget、裁剪和 Compaction；
 - Coding Tool Runtime、[Process Runtime](docs/modules/processes.md)和 Workspace 边界；
 - Session 持久化、取消、恢复和双向客户端协议；
+- Session共库的低敏容量、Plan-first离线保留、强制备份和崩溃续跑；
 - Permission、Approval 与 [Trusted Action Runtime](docs/modules/trusted-actions.md)；
 - MCP、项目指令、Skills 和 Hooks；
 - Coding Evals、故障注入和质量回归。

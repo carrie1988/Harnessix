@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 4
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -13,10 +13,12 @@ modules:
 related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/agent/test_session_upgrade.py
   - tests/governance/test_legacy_action_archive.py
   - tests/product_config/test_migration_and_store.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -34,7 +36,7 @@ Revision支持的操作规则。
 
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
-| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0025 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份 |
+| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0026 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
@@ -101,6 +103,10 @@ PY
 对旧Action归档、Session、配置审计和各专用账本分别执行，并记录SHA-256。若使用文件级快照，必须
 保证所有写进程已停止，并把数据库、`-wal`和`-shm`作为同一状态处理；不得只复制正在运行的主文件。
 
+0.9.3b的`SQLiteStoreMaintenance.execute`会在破坏性Session共库清理前强制创建并验证Plan绑定备份，`restore`可原子恢复
+该`sessions.db`。这只覆盖Session/Protocol/Artifact共库，不替代版本升级所需的Product Config、Action Audit、Delivery、
+Process和Workspace状态整组备份；升级回退不得把Maintenance备份误当完整发布快照。
+
 ### 5.2 Agent状态一致性
 
 `--state-directory`至少包含`sessions.db`和`product-config.db`。若宿主还装配Patch、Process、Delivery、MCP、
@@ -125,7 +131,8 @@ PostgreSQL只服务已退役Action Worker历史数据。先停止全部旧写入
 7. Commit后把文件设为`0600`并启用WAL；
 8. Agent Runtime通过单宿主锁阻止两个活动Runtime共享同一Session。
 
-当前最高Migration是[`0025_trusted_action_output_artifacts.sql`](../../src/harnessix/session/migrations/0025_trusted_action_output_artifacts.sql)。
+当前最高Migration是[`0026_store_maintenance.sql`](../../src/harnessix/session/migrations/0026_store_maintenance.sql)：增加Artifact
+`created_at`并创建不可变Plan/Item及可恢复Progress表；升级不会创建Plan、清理业务数据或运行Vacuum。
 不要修改已经发布Migration文件；新增变化必须追加新编号。
 
 验收：
@@ -133,6 +140,7 @@ PostgreSQL只服务已退役Action Worker历史数据。先停止全部旧写入
 ```bash
 uv run pytest tests/agent/test_session_upgrade.py
 uv run pytest tests/agent/test_store.py
+uv run pytest tests/agent/test_store_maintenance.py
 ```
 
 真正的版本升级证据应由旧Wheel创建数据库，再由新Wheel迁移并由旧Wheel拒绝更高版本；只手工创建表不等价。
@@ -217,6 +225,7 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 | 领域 | 源码 | 测试 |
 |---|---|---|
 | Session Migration | [`session/sqlite.py`](../../src/harnessix/session/sqlite.py)、[`session/migrations`](../../src/harnessix/session/migrations/) | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) |
+| Session维护备份/回滚 | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py)、[`session/maintenance_backup.py`](../../src/harnessix/session/maintenance_backup.py) | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) |
 | 旧SQLite Journal归档 | [`archive_legacy_action_state.py`](../../scripts/archive_legacy_action_state.py) | [`test_legacy_action_archive.py`](../../tests/governance/test_legacy_action_archive.py) |
 | 旧PostgreSQL Journal归档 | [归档手册](legacy-action-archive.md) | 停写后原生`pg_dump`与组织恢复演练 |
 | 配置Migration | [`product_config/migration.py`](../../src/harnessix/product_config/migration.py) | [`test_migration_and_store.py`](../../tests/product_config/test_migration_and_store.py) |
@@ -224,6 +233,6 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 
 ## 14. 未完成项
 
-统一Schema清单、在线备份、跨组件一致性Checkpoint、自动Preflight、Journal Migration Checksum、正式滚动升级兼容窗口、
+统一Schema清单、在线跨组件备份、跨组件一致性Checkpoint、自动Preflight、Journal Migration Checksum、正式滚动升级兼容窗口、
 自动回退、灾难恢复RPO/RTO和三平台安装器升级测试尚未完成。这些能力未落地前，升级必须采用受控停机、完整备份和
 人工发布评审。

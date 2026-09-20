@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 7
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/protocol/test_codec.py
   - tests/protocol/test_contracts.py
@@ -21,6 +22,7 @@ related_tests:
   - tests/protocol/test_schemas.py
   - tests/app_server/test_server_sdk.py
   - tests/governance/test_product_runtime_convergence.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -38,8 +40,8 @@ supersedes: []
 | 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
-| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
-| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射到既有三类公共审批；能力协商只部分驱动运行时，出站字节门禁、请求账本回收、远程安全和协议多版本协商尚未实现 |
+| 代码版本 | `cb3f3ea834624d5a8f84396952eba212650065d1` |
+| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；出站字节门禁、accepted恢复、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
 [`compatibility.py`](../../src/harnessix/protocol/compatibility.py)、
@@ -95,7 +97,7 @@ Session需要持续演进以支持Context压缩、模型尝试、工具执行、
 - 不在协议层解析API Key、OAuth Token或远程用户身份；
 - 不保证实时Delta可靠送达，也不把Delta写入协议账本；
 - 不为每个内部字段提供一一同构的公共表示；
-- 不自动清理`protocol_requests`历史记录；
+- 不在Protocol业务端口或Agent启动中自动清理`protocol_requests`；终态记录只允许由Session共库内部Maintenance在显式Plan、备份和Cutoff下离线删除；
 - 不对所有公开用户内容执行通用DLP或Secret扫描；
 - 不把Schema文件存在等同于App Server已开放对应方法。
 
@@ -976,7 +978,7 @@ Protocol包没有全局事件循环或线程池。并发语义由调用者与SQL
 | `AgentProtocolServer` | 单个stdio客户端连接启动 | EOF、慢客户端或显式关闭 | App Server宿主 |
 | `clientInstanceId`绑定 | initialize成功 | 连接对象销毁；值仍用于持久账本 | Server连接状态 |
 | `SQLiteProtocolRequestStore` | 产品装配Session DB后 | 无显式关闭动作 | 产品宿主；连接按调用关闭 |
-| Protocol Request记录 | 首次Claim | 当前无自动删除 | Session数据库 |
+| Protocol Request记录 | 首次Claim | accepted持续保留；completed/failed可由显式Plan-first离线维护按Cutoff删除 | Session数据库 |
 | Public Replay页面 | 单次查询 | 客户端消费后释放 | App Service/Client |
 | Live Delta | Runtime回调入内存Deque | 被取走、溢出或进程退出 | App Service |
 
@@ -1127,8 +1129,9 @@ Command联合和Query联合共14份Schema。`make spec`应在合同变化后重�
 | `fail` | 同上 | 记录变为failed并保存错误JSON/摘要 | 相同failed结果可重复 | 同complete |
 | `get` | 身份有效 | 返回严格记录或None | 只读 | `invalid_request`、`request_corrupt`、数据库异常 |
 
-端口没有取消、批处理、分页、清理或事务组合API。实现者若新增PostgreSQL等后端，必须保持相同主键、
-指纹、终态和损坏拒绝语义，并明确并发线性化点。
+端口没有取消、批处理、分页、清理或事务组合API。0.9.3b的终态删除属于Session共库内部Maintenance，不扩展公共
+`ProtocolRequestStore`，也不在Command热路径触发。实现者若新增后端，必须保持相同主键、指纹、终态和损坏拒绝语义，
+并明确并发线性化点与等价Maintenance保护。
 
 ### 23.3 Public Protocol辅助函数
 
@@ -1294,7 +1297,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 - 没有Protocol decode/validation/ledger latency的专用Metric；
 - 没有连接、待决请求、outbox占用和Replay滞后的统一Trace；
 - `ProtocolRequestStore`底层数据库异常没有统一稳定分类；
-- accepted记录没有内置年龄告警或恢复扫描；
+- accepted记录会进入低敏容量活动计数并阻止Session/Artifact维护，但仍没有内置年龄告警或目标级恢复扫描；
 - 协商Limit未全部贯穿执行，无法仅凭初始化结果证明真实背压配置；
 - 日志若由上层记录Params或Response，Protocol没有自动脱敏Guard。
 
@@ -1318,6 +1321,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 | 参数指纹 | [`requests.py`](../../src/harnessix/protocol/requests.py) | `request_fingerprint`、`_json` | [`test_requests.py`](../../tests/protocol/test_requests.py)前两项 | 方法与参数规范JSON绑定 |
 | SQLite账本 | [`requests.py`](../../src/harnessix/protocol/requests.py) | `SQLiteProtocolRequestStore` | [`test_requests.py`](../../tests/protocol/test_requests.py)全部 | Claim、终态、重开、损坏检测 |
 | Request表Migration | [`0020_protocol_requests.sql`](../../src/harnessix/session/migrations/0020_protocol_requests.sql) | `protocol_requests` | [`test_requests.py`](../../tests/protocol/test_requests.py) `_ledger` | Session初始化拥有Schema |
+| 终态离线保留 | [`maintenance_planning.py`](../../src/harnessix/session/maintenance_planning.py)、[`maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py) | `_protocol_candidates`、`_delete_protocol_request` | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | completed/failed按Cutoff删除；accepted保留且全局保护Session/Artifact |
 | 旧客户端结果兼容 | [`contracts.py`](../../src/harnessix/protocol/contracts.py) | `validate_server_output` | [`test_contracts.py`](../../tests/protocol/test_contracts.py) `test_old_client_ignores_unknown_outputs_but_known_fields_remain_strict` | 只忽略新增输出字段 |
 | 未知通知兼容 | [`compatibility.py`](../../src/harnessix/protocol/compatibility.py) | `decode_known_notification` | [`test_contracts.py`](../../tests/protocol/test_contracts.py) `test_unknown_notification_is_ignored_after_envelope_validation` | Envelope仍严格 |
 | Schema生成 | [`generate_specs.py`](../../scripts/generate_specs.py) | Protocol模型列表、`TypeAdapter`联合 | [`test_schemas.py`](../../tests/protocol/test_schemas.py) | 14份生成物防漂移 |
@@ -1395,7 +1399,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 | P0 | `InitializeParams.protocol_version`是`Literal["1.0"]`，导致显式`unsupported_protocol_version`分支不可达 | 实际错误码与Server意图、ADR描述不一致，客户端无法稳定区分格式错误与版本不支持 | 调整校验边界并新增非1.0握手回归，再同步Schema与SDK |
 | P0 | `_encode`未强制协商`maxMessageBytes`，`protocol_json_size`未进入生产出站路径 | 极端公共结果可能生成超出客户端声明能力的帧 | 在App Server设计中定义有界错误或Artifact外置，并补出站边界测试 |
 | P0 | 三个非消息Limit未全部贯穿运行时；Queue/Semaphore在握手前建立，Replay未按协商值收紧 | 初始化返回值与实际强制容量存在差异 | 固化Limit语义并在构造/分派处执行一致门禁 |
-| P1 | `protocol_requests`无保留期、分页、GC或accepted恢复扫描 | 长期用户可能导致数据库持续增长，陈旧accepted难运维 | 0.9.3定义容量、年龄指标、在线回收与恢复策略 |
+| P1 | `protocol_requests`已有终态离线保留，但无分页、自动调度或accepted目标恢复 | 终态增长可控；陈旧accepted会全局阻止Session/Artifact清理 | 0.9.3c恢复扫描与0.9.5维护UX；不得放宽保守保护 |
 | P1 | 数据库驱动异常未统一映射，部分异常保留accepted | 客户端只得到`internal_error`，恢复需联合查询Session | 统一存储错误分类，同时保留未知状态的安全恢复语义 |
 | P1 | `outcome_json`读取未在读前重新执行1 MiB大小门禁 | 被越界改写的数据库行可导致额外内存消耗 | 在摘要/JSON解析前检查UTF-8字节长度并测试 |
 | P1 | 公共Tool Result `output`和JSON-RPC `result`没有独立结构/字节上限 | 依赖上游Artifact外置，合同层不能单独保证有界出站 | 明确Result预算并统一Artifact策略 |
@@ -1480,10 +1484,47 @@ e3没有升级Agent Protocol版本或增加方法。内部`apply_patch_batch`继
 
 公共投影不暴露Execution Fingerprint、Policy、规范资源、Lease、Delivery游标或内部异常。Windows目录没有Patch Descriptor，因此协议初始化的工具能力不会暗示写支持。真实协议/SDK链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，投影兼容由[`test_projection.py`](../../tests/protocol/test_projection.py)覆盖。
 
-## 34. 变更记录
+## 34. Protocol Request离线保留（0.9.3b）
+
+### 34.1 为什么不在Request Store增加`delete`端口
+
+Command幂等端口负责`claim → completed/failed → get`，其调用发生在业务热路径。若在该端口增加TTL自动删除，响应丢失后的
+客户端重试可能失去原终态并重新产生业务意图。终态保留因此由
+[`SQLiteStoreMaintenance`](../../src/harnessix/session/maintenance.py)统一编排，先形成不可变Plan和备份，再在短事务内删除；
+Protocol公共v1、Schema和SDK均不变化。
+
+### 34.2 accepted的保守语义
+
+`protocol_requests`只保存参数SHA-256，不保存原始Params或目标Thread/Artifact ID。Maintenance无法证明一个accepted请求与哪条
+Session或Artifact无关，因此采用以下规则：
+
+```text
+if any protocol request is accepted:
+    protect every Session Thread candidate
+    protect every Artifact Body candidate
+always protect the accepted request itself
+allow old completed/failed request items to remain candidates
+```
+
+这会降低清理及时性，但避免把“摘要相同”或Method名称误当作精确业务引用。0.9.3c如增加accepted恢复索引，必须先形成新合同、
+Migration和旧记录兼容策略，不能直接删除这条全局保护。
+
+### 34.3 终态候选与执行复核
+
+规划时，只有`completed/failed`且`updated_at<=cutoff`的行成为`protocol_request` Item；前置摘要覆盖Client、Request、Method、
+Params摘要、State、Outcome摘要和两个时间。执行时重新读取并要求状态仍为终态、摘要未变、时间仍满足Cutoff，然后在同一事务中
+删除该行并推进Maintenance Progress。行已变化或消失只记Skip，不生成替代候选。
+
+容量报告验证accepted没有Outcome，终态必须有合法JSON和匹配摘要，并输出accepted/completed/failed低敏计数。公开Plan和报告
+不返回Client/Request ID、Method或Outcome。完整流程见
+[0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)和
+[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。
+
+## 35. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Protocol Request低敏容量、终态Plan-first离线保留、accepted全局保护和执行前置摘要语义 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 验证默认Patch复用Protocol v1审批、Artifact分页和Tool Result，不泄漏Action/Delivery私有字段 |
 | 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 将Agent Event v20统一Action审批映射到现有`tool/patch_batch/process`，保持Protocol v1合同与Schema不变并增加内部字段不泄漏回归 |
 | 3 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行设计，并将不存在的`AgentClient.stream_events`源码映射修正为实际`watch_thread`方法 |

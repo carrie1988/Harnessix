@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 7
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -25,6 +26,7 @@ related_tests:
   - tests/agent/test_trusted_action_runtime.py
   - tests/context/test_thread_lifecycle.py
   - tests/governance/test_product_runtime_convergence.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -34,11 +36,11 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移和WAL |
+| 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移/WAL，以及共库容量、Plan-first保留和备份恢复 |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` |
+| 代码版本 | `cb3f3ea834624d5a8f84396952eba212650065d1` |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～25连续且校验和不可变 |
+| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～26连续且校验和不可变 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -69,13 +71,14 @@ Runtime Owner关闭上述风险，同时保留从事件重建投影的能力。
 7. Migration连续、幂等、可校验，未来Schema和未知投影版本失败关闭；
 8. SQLite驱动、文件和损坏错误映射为不泄露路径/SQL的稳定`KernelError`；
 9. WAL初始化在真实锁竞争下有界，不重放非幂等Migration。
+10. Session、Protocol Request和Artifact容量可低敏重算，删除前必须Plan-first、备份并可崩溃续跑。
 
 ### 3.2 非目标
 
 1. 当前不提供PostgreSQL、云数据库或跨主机Session Store实现；
 2. Runtime Owner不提供故障转移、分布式选主或高可用SLO；
 3. 本模块不决定Turn状态转换、Retry资格或Fork内容，这些由Agent领域与Lifecycle生成并验证；
-4. 本模块不加密Session正文，也未完成最终用户数据导出、删除和保留策略；
+4. 本模块不加密Session正文；0.9.3b只提供内部离线保留，不等于最终用户数据导出、选择性删除或安全擦除；
 5. 本模块不保存实时`ItemDelta`，断线恢复使用持久Event；
 6. 迁移只有向前执行，没有自动Downgrade或跨版本回滚Schema。
 
@@ -87,7 +90,7 @@ Runtime Owner关闭上述风险，同时保留从事件重建投影的能力。
 | Snapshot | `agent_threads.snapshot_json`中的`Thread`投影 | 可重建缓存，必须校验摘要和Sequence |
 | Sequence | 每Thread从1连续递增的整数 | CAS、游标和事件顺序依据 |
 | Event ID | 全数据库唯一UUID | 相同批次幂等、跨Thread冲突检测 |
-| Projection Version | 当前为19 | 未知未来版本拒绝读取 |
+| Projection Version | 当前为20 | 未知未来版本拒绝读取 |
 | Migration | 文件名版本连续的SQL资源 | 已应用文件摘要变化即失败 |
 | Runtime Owner | 数据库旁路文件锁 | 同一数据库最多一个Agent Runtime宿主 |
 | Fork Snapshot | 来源Thread前缀、历史摘要和Artifact Owner的只读证明 | `authority="none"`，不复制执行权限 |
@@ -105,9 +108,11 @@ flowchart LR
     App[App Server和SDK] -->|get events rebuild| Port
     Port --> SQLite[SQLiteSessionStore]
     SQLite --> Lock[Runtime Owner文件锁]
-    SQLite --> Migration[22个Migration]
+    SQLite --> Migration[26个Migration]
     SQLite --> Events[(agent_events)]
     SQLite --> Snapshot[(agent_threads)]
+    SQLite --> Maintenance[Capacity和Maintenance]
+    Maintenance --> Plan[(maintenance plans/items/progress)]
     Events --> Reducer[Agent Reducer]
     Reducer --> Snapshot
 ```
@@ -119,6 +124,7 @@ flowchart LR
 - [`apply_event/replay`](../../src/harnessix/agent/reducer.py)拥有领域合法性，Store不能放宽状态机；
 - Runtime先获取Owner，再执行`initialize`和活动Thread恢复，避免第二宿主边迁移边驱动；
 - Event表是重建输入，Snapshot表是带摘要的读取加速层。
+- [`SQLiteStoreMaintenance`](../../src/harnessix/session/maintenance.py)只在静默维护窗口组合共库容量、Plan、Backup和批次执行，不成为第二产品服务。
 
 ## 6. 组件职责与禁止边界
 
@@ -128,8 +134,10 @@ flowchart LR
 | `SQLiteSessionStore` | 实现事务、Schema、CAS、摘要、游标、重建 | SQLite文件和Owner Token | aiosqlite、Reducer、文件锁 | 决定业务状态或调用副作用 | 每操作独立连接；写事务串行 |
 | `storage_errors` | 归一化SQLite/OSError | 无 | SQLite错误码 | 包围应用回调或上抛原始路径、SQL和驱动消息 | 仅包围明确I/O边界 |
 | `agent_migrations` | 保存已应用版本和校验和 | 数据库Schema历史 | 内置SQL资源 | 修改已发布Migration | 初始化事务 |
-| `agent_events` | 保存不可变Agent Event | Thread事件序列 | Event v1～19 | 部分批次可见、跳号、跨Thread复用ID | PK约束和单事务 |
+| `agent_events` | 保存不可变Agent Event | Thread事件序列 | Event v1～20 | 部分批次可见、跳号、跨Thread复用ID | PK约束和单事务 |
 | `agent_threads` | 保存Thread投影、摘要、版本 | 最新可重建Snapshot | Thread模型 | 被当成唯一事实源 | 与Event批次原子更新 |
+| `SQLiteStoreMaintenance` | 容量快照、不可变Plan、备份、批次执行与Restore | 三类共库维护进度 | Session内部表合同 | 执行Tool、在线GC、自动Vacuum | Runtime Owner下的静默维护窗口 |
+| `store_maintenance_*` | 保存Plan、按序Item和Progress | 维护审计与恢复游标 | Migration 26 | 保存公开正文或被业务Runtime当作权威 | Plan不可变；Progress与业务变更同事务 |
 
 Session不得导入Provider Adapter、Tool Runtime、Policy或API。Reducer可验证事件语义，但必须保持纯函数，
 不能回调Store或执行外部效果。
@@ -279,7 +287,7 @@ sequenceDiagram
 ```
 
 数据库`application_id`固定为Harnessix Session标识；空文件可初始化，其他应用的非空库和Action
-数据库均拒绝。Migration必须从1连续到23，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
+数据库均拒绝。Migration必须从1连续到26，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
 均失败关闭。SQL按分号拆为普通DDL执行，不使用会隐式提交的`executescript`。只有迁移事务提交后才用
 新连接启用WAL；锁竞争仅重试WAL模式切换，绝不重放Migration。
 
@@ -295,6 +303,8 @@ sequenceDiagram
 | 18～19 | Thread Lifecycle/Fork与Turn Retry |
 | 20～22 | Protocol Request、Deferred Turn与Interactive Turn |
 | 23 | Trusted Action审批与有界效果的Agent Event/Thread v20读取边界 |
+| 24～25 | Action Review和Action Output Artifact用途 |
+| 26 | Artifact发布时间、不可变维护Plan/Item与可恢复Progress |
 
 这些迁移多数通过版本标记推进最低Reader，不代表每个版本都修改物理列。发布后禁止修改旧SQL文件，
 否则校验和会阻断启动。
@@ -375,8 +385,9 @@ Session模块本身不直接发OTel Span/Metric；调用方在Runtime操作中�
 持久Event是审计事实，不应被复制成包含正文的日志。可用于诊断的低敏信号包括Migration版本、公开
 错误码、重建成功/失败、Sequence和操作耗时；不得记录`event_json`、`snapshot_json`、绝对路径或SQL。
 
-当前`SessionStore`没有统计大小、Checkpoint、保留或压缩API；数据库增长、WAL维护、备份恢复和用户
-数据生命周期仍需0.9.3/0.9.5发布工作补齐。
+`SQLiteStoreMaintenance`已经提供低敏逻辑/物理水位、Plan-first保留、强制备份、崩溃续跑和显式Restore；它是宿主内部
+离线端口，不是`SessionStore`公共业务方法。当前仍没有自动Checkpoint、Vacuum、维护调度、用户导出或安全删除，物理空间
+回收与产品化运维入口仍需0.9.3d/0.9.5补齐。
 
 ## 17. 核心业务逻辑伪代码
 
@@ -445,6 +456,9 @@ rebuild(thread):
 | 版本读取 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `_parse_event`、`_snapshot` | [`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py) | `test_old_transcript_migrates_without_rewriting_history`、`test_unknown_projection_version_fails_closed` | Event/投影兼容 |
 | 错误归一化 | [`errors.py`](../../src/harnessix/session/errors.py) | `storage_errors` | [`test_storage_failures.py`](../../tests/agent/test_storage_failures.py) | `test_actual_sqlite_readonly_and_full_errors_are_normalized`、`test_driver_error_mapping_never_exposes_raw_message` | 错误稳定与脱敏 |
 | 物理损坏 | [`sqlite.py`](../../src/harnessix/session/sqlite.py) | `_snapshot`、`_parse_event` | [`test_storage_failures.py`](../../tests/agent/test_storage_failures.py) | `test_physical_corruption_fails_closed`、`test_invalid_database_file_is_structured_error` | 不猜测损坏历史 |
+| 共库容量 | [`capacity.py`](../../src/harnessix/session/capacity.py) | `capacity_report`、`load_thread_facts` | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | `test_capacity_report_is_complete_and_low_sensitive` | 三类Store完整、低敏、读取损坏失败关闭 |
+| Plan与禁删集合 | [`maintenance_planning.py`](../../src/harnessix/session/maintenance_planning.py)、[`maintenance_records.py`](../../src/harnessix/session/maintenance_records.py) | `build_candidates`、`save_plan`、`load_plan_items` | 同上 | Owner/篡改、accepted保护、Plan后新增未决请求 | 不可变候选和保守保护 |
+| 批次与备份恢复 | [`maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py)、[`maintenance_backup.py`](../../src/harnessix/session/maintenance_backup.py) | `run_batches`、`create_or_reuse_backup`、`restore_database` | 同上 | Backup发布故障、批次提交故障、Changed Candidate Skip、Restore | 业务变更与游标同事务；完整回滚 |
 
 ### 18.1 推荐源码阅读路线
 
@@ -455,6 +469,8 @@ rebuild(thread):
 4. 按`append` → `_freeze_batch` → `_append_in_transaction` → `_save`阅读写链；
 5. 按`_snapshot` → `_parse_event` → `events` → `rebuild`阅读损坏与恢复；
 6. 最后读`fork`、`_validated_replay`和Thread Lifecycle测试，理解Fork不继承执行权。
+7. 再读[`maintenance.py`](../../src/harnessix/session/maintenance.py)及其四个职责模块，结合
+   [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py)理解Plan-first、禁删、批次和恢复。
 
 ## 19. 测试设计与验收标准
 
@@ -462,11 +478,12 @@ rebuild(thread):
 |---|---|---|
 | 合同 | 身份幂等、Cursor、CAS、批次、Thread隔离和Fork | `SessionStoreContract`由SQLite实现复用 |
 | 事务故障 | Event后/Projection后/Commit后Fault、非法批次 | `tests/agent/test_store.py` |
-| 迁移兼容 | 1～23历史、Event 1～20、未来版本和摘要变化 | `test_session_upgrade.py`、`test_store.py` |
+| 迁移兼容 | 1～26历史、Event 1～20、未来版本和摘要变化 | `test_session_upgrade.py`、`test_store.py`、真进程升级测试 |
 | WAL竞争 | 首次并发、Busy Deadline、取消、真实Writer竞争 | `test_wal_initialization.py` |
 | 损坏与I/O | Event/Snapshot/索引损坏、只读、磁盘满、错误脱敏 | `test_storage_failures.py` |
 | 生命周期 | Resume、Archive、Fork截止点、嵌套Fork和Artifact Owner | `test_thread_lifecycle.py` |
 | Runtime集成 | 接受后崩溃、审批/Process/Patch恢复 | Agent各崩溃测试 |
+| Store维护 | 低敏容量、Plan篡改、accepted保护、Backup故障、批次恢复、候选漂移和Restore | `test_store_maintenance.py` |
 
 验收命令至少包含上述合同和故障测试；新增`SessionStore`实现必须继承合同套件，并补充该数据库特有的
 事务、迁移、锁和真实故障测试。仅通过内存Fake不构成生产存储验收。
@@ -478,8 +495,8 @@ rebuild(thread):
 | 只有SQLite Session实现 | 不支持远端协作、跨主机接管或云HA | 1.x按真实云需求评估 |
 | Windows默认产品未验收 | Session宿主锁可跨平台不等于Windows Coding Tool链完整可用 | 0.9.1/0.9.5 |
 | 无字段级加密 | 本地文件泄漏会暴露会话和源码 | 0.9.4安全审查及OS存储策略 |
-| 无保留、删除、导出和Vacuum合同 | 长会话数据库持续增长，用户数据生命周期不完整 | 0.9.3/0.9.5/1.0门禁 |
-| 无自动备份和灾难恢复命令 | Event损坏只能依赖外部备份 | 0.9.5 |
+| 内部离线保留已实现，但无用户导出、安全删除和自动Vacuum | 逻辑正文/终态可回收，物理空间和用户生命周期仍不完整 | 0.9.3d/0.9.5/1.0门禁 |
+| 有Plan绑定备份与内部Restore，但无产品维护命令 | 宿主可恢复；最终用户仍缺确认、空间Preflight和诊断UX | 0.9.5 |
 | Migration无Downgrade | 版本回滚需兼容旧Schema的旧Reader或备份恢复 | 发布升级设计 |
 | Snapshot读取不自动重建 | 可用性让位于明确损坏诊断 | 运维命令应显式执行并留证据 |
 
@@ -507,7 +524,7 @@ sequenceDiagram
 
 升级和读取不变量：
 
-1. migration资源序号必须连续到25，旧24数据库只追加新的Migration记录；
+1. migration资源序号必须连续到26，旧25数据库只追加新的Migration记录；
 2. `_snapshot`接受Projection 1～20，未知21及以上失败关闭；
 3. `_parse_event`接受Event 1～20，v19及更早若出现统一Action字段由模型版本守卫拒绝；
 4. 新写入统一使用v20，旧事件序列和摘要不重写；
@@ -534,10 +551,81 @@ Session中唯一终态Tool Result反向引用同一Artifact和Route效果摘要�
 旧库升级、WAL并发升级和输出用途回归由[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、
 [`test_wal_initialization.py`](../../tests/agent/test_wal_initialization.py)与[`tests/artifacts`](../../tests/artifacts/)覆盖。
 
-## 24. 变更记录
+## 24. 共库容量与Maintenance（0.9.3b）
+
+### 24.1 模块边界
+
+[`SQLiteStoreMaintenance`](../../src/harnessix/session/maintenance.py)在Session包内组合三类共库事实：Session Event/Thread、
+Protocol Request和Artifact。它不扩展`SessionStore`业务端口，也不被Agent Runtime在Turn热路径自动调用。宿主必须先排空同进程
+业务操作并持有`runtime_owner()`；Snapshot只读例外。
+
+```mermaid
+stateDiagram-v2
+    [*] --> Planned: plan and ordered items committed
+    Planned --> Running: verified backup digest committed
+    Running --> Running: business batch and cursor commit together
+    Running --> Completed: next ordinal equals total
+    Completed --> [*]
+```
+
+### 24.2 正式数据合同
+
+| 合同 | 用途 | 关键不变量 |
+|---|---|---|
+| `StoreCapacityReport` | 三类逻辑水位及DB/WAL字节 | Store顺序固定；不含业务ID、路径和正文 |
+| `RetentionPolicy` | Cutoff、最大Item和三类动作开关 | 1≤`max_items`≤10000 |
+| `MaintenancePlan` | 公开Dry Run | 候选计数不超过上限；集合摘要绑定全部Item |
+| `MaintenanceProgress` | 可恢复游标 | `applied+skipped=next_ordinal`；running必有Backup摘要 |
+| `MaintenanceExecutionReport` | 执行结果 | 返回原Plan、最终Progress和After容量 |
+| `StoreRestoreReport` | 完整回滚结果 | 备份摘要与恢复后容量可复核 |
+
+内部`PlanItem`保存`kind/key/precondition_sha256`。Key只进入`store_maintenance_items`，不进入公开报告；Plan Payload、Key、候选
+顺序和Progress均在加载时重新校验。
+
+### 24.3 禁删与执行顺序
+
+- 未归档、活动、不确定效果、Fork来源或保留期内Thread禁止删除；
+- 任意`accepted` Protocol Request存在时，Session与Artifact全局保护；
+- Artifact只在Published、到期、Owner非活动且无不确定效果时清空正文；
+- Thread候选必须先包含其全部Published Artifact Body Item；容量不足时整组不选；
+- Protocol只删除满足Cutoff的completed/failed行；
+- 执行时事实变化不重选候选，只将原Item计为Skip。
+
+### 24.4 原子恢复伪代码
+
+```text
+execute(plan_id, backup):
+    require runtime owner and quiet window
+    validate immutable plan/items/progress
+    if planned:
+        create or reuse plan-bound verified backup
+        atomically mark running with backup sha256
+    for batch from next_ordinal:
+        begin immediate
+        reload and validate plan/items/progress
+        apply or skip each item after current protection checks
+        CAS advance ordinal and counts in the same transaction
+        commit
+    return after capacity
+
+restore(backup):
+    verify application id, quick_check and sha256
+    checkpoint current WAL
+    copy backup to same-directory temporary file and fsync
+    atomically replace database and remove stale WAL/SHM
+    initialize and rescan capacity
+```
+
+完整字段、序列图、故障窗口和运维限制见
+[0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)与
+[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。逻辑删除不保证文件缩小；自动Checkpoint/Vacuum仍不属于本模块
+当前热路径。
+
+## 25. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26、三类共库容量、不可变Plan、保守禁删、批次崩溃恢复及Plan绑定备份/Restore |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加migration25与`action_output`用途，记录Trusted Process终态输出发布、授权与确认丢失边界 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加migration24与`action_review`用途，记录Artifact先行、Session授权和双账本恢复边界 |
 | 3 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 增加migration23、Projection v20、统一Action审批/效果读取与旧v19数据库向前升级证据；历史Event不重写 |

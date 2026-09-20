@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
+version: 3
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ modules:
   - observability
 related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_session_contract.py
@@ -23,6 +24,7 @@ related_tests:
   - tests/artifacts/test_runtime.py
   - tests/trusted_actions/test_router.py
   - tests/processes/test_supervision_store.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -34,12 +36,12 @@ supersedes: []
 |---|---|
 | 需求 | 长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准 |
 | 产品边界 | 单一Coding Agent；不恢复独立Action HTTP/Worker，不新增性能控制面服务 |
-| 当前状态 | 0.9.3a已实现；0.9.3b～d尚未完成，0.9.3总项保持进行中 |
+| 当前状态 | 0.9.3a已由CI关闭；0.9.3b实现与本地全仓验证完成、全矩阵CI待完成；0.9.3c～d尚未完成，0.9.3总项保持进行中 |
 | 主要模块 | App Server、SDK、Session、Protocol Request、Artifact、Trusted Action、Process、Observability |
 | 兼容级别 | 0.9.3a不改协议/数据库；b/c如需Migration必须前向升级、备份恢复和故障回滚 |
 | 发布单元 | a本地传输；b持久容量；c效果恢复；dSoak与发布基线 |
-| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；关闭文档 `7cbacbaff4f95c010c2fb77142db3778a66fc3bb` |
-| 当前验收 | [CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)六实例通过 |
+| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；0.9.3b `cb3f3ea834624d5a8f84396952eba212650065d1` |
+| 当前验收 | 0.9.3a由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)六实例关闭；0.9.3b本地`make check`为3589 passed、32 skipped，CI待完成 |
 
 ## 2. 需求背景与完成定义
 
@@ -135,7 +137,7 @@ flowchart LR
 | 切片 | 交付 | 前置 | 当前状态 |
 |---|---|---|---|
 | a | stdio/SDK协商背压、迟到Response、取消安全Close、资源快照 | 0.9.2 | 已由CI 35494960166验收关闭 |
-| b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 未实施 |
+| b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 实现与本地门禁完成；全矩阵CI待完成 |
 | c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 未实施 |
 | d | 固定Soak负载、三平台/Container证据、阈值与发布报告 | b、c | 未实施 |
 
@@ -295,39 +297,82 @@ close():
 | Close取消 | Caller Task | 内部Close继续 | 无 |
 | Graceful退出超时 | Child Owner | Terminate → Kill | 不推断Turn结果 |
 
-## 7. 0.9.3b持久化、事务与容量清理设计边界
+## 7. 0.9.3b持久容量、保留与恢复实现
 
-0.9.3b实施前必须先形成独立ADR和Migration设计。最低合同：
+0.9.3b已形成独立的[详细设计](m09-3b-persistent-capacity-and-retention.md)和
+[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。实现Revision
+`cb3f3ea834624d5a8f84396952eba212650065d1`已通过本地全仓门禁；Linux、macOS、Windows、固定Container和
+Documentation CI完成前，本切片仍保持未关闭。
 
-### 7.1 容量快照
+### 7.1 共库维护边界
 
-```text
-StoreCapacitySnapshot
-  store_kind
-  schema_version
-  database_bytes / wal_bytes
-  logical_rows_by_kind
-  oldest_created_at / newest_created_at
-  active_rows / terminal_rows / unknown_rows
-  artifact_body_bytes
+`SQLiteStoreMaintenance`是唯一Coding Agent宿主内的离线维护端口，不是独立服务。Session、Protocol Request和Artifact仍位于
+同一Harnessix SQLite文件；维护能力只组合它们的容量与保留语义，不执行Tool、模型或外部效果，也不向Agent Protocol注册方法。
+
+```mermaid
+flowchart LR
+    Host[静默维护窗口] --> Owner[Runtime Owner]
+    Owner --> M[SQLiteStoreMaintenance]
+    M --> C[Capacity Scanner]
+    M --> P[Immutable Planner]
+    M --> B[Verified Backup]
+    M --> E[Batch Executor]
+    C --> DB[(Session共库)]
+    P --> DB
+    E --> DB
+    B --> Backup[(Plan绑定备份)]
 ```
 
-字段不得携带Thread ID、路径、Prompt或正文。SQLite文件字节只是物理水位，不能替代逻辑记录数。
+容量快照可以只读获取；Plan、Execute和Restore要求活跃Runtime Owner。Owner只排除第二进程，宿主还必须停止同进程业务
+调用并排空活动操作，不能把SQLite偶然串行化描述为支持在线Maintenance。
 
-### 7.2 保留与清理计划
+### 7.2 容量合同
 
-任何删除前先持久化不可变Plan，至少包含Cutoff、候选数、排除的活跃/UNKNOWN引用、前置Schema/数据库摘要和Dry Run结果。
-执行按小事务分页，崩溃后以Plan ID恢复；Artifact删除必须先证明无Session/Action/Process引用。Vacuum是显式维护操作，
-不得在Agent热路径自动运行。
+`StoreCapacityReport`在同一读事务中固定返回Session、Protocol Request、Artifact三类快照，包含Schema、数据库/WAL字节、
+逻辑分类计数、时间水位、活动/终态/未知数量和Artifact正文总字节。扫描同时验证Thread投影与Event序号、Protocol结果摘要和
+Artifact时间字段；损坏时失败关闭。公开合同不包含Thread/Request/Artifact ID、路径、Prompt或正文。
 
-### 7.3 禁删集合
+### 7.3 Plan-first与禁删集合
 
-- 非终态Thread/Turn；
-- Pending Protocol Command及其关联业务身份；
-- Pending Approval、READY/RUNNING/RECONCILING/UNKNOWN Action；
-- 仍被Session Item、Action Review/Output或Process结果引用的Artifact；
-- 尚未完成备份/导出的保留范围；
-- 审计策略要求保留的Hash链节点。
+`RetentionPolicy`显式给出Cutoff、最多10000个候选和三类动作开关。Planner在`BEGIN IMMEDIATE`内写入不可变Plan、按序Item和
+独立Progress；公开Plan只含候选/保护计数和候选集合SHA-256，内部Key留在Item表。
+
+禁删集合包括：
+
+- 未归档、活动Turn、保留期内或包含不确定效果的Thread；
+- 作为其他Thread Fork来源的Thread；
+- 活动或不确定Thread拥有的Artifact，以及保留期内正文；
+- `accepted` Protocol Request本身；
+- 任意`accepted`存在时的全部Session和Artifact，因为账本只保存参数摘要，不能恢复精确目标。
+
+Thread候选与其Published Artifact Body组成不可拆分依赖组，Item顺序保证先把正文转为Tombstone，再删除Thread所属Manifest、Event和
+Projection。终态Protocol Request按更新时间和Cutoff独立删除。
+
+### 7.4 崩溃恢复和备份
+
+执行前强制创建完整SQLite备份，验证`application_id`、`quick_check`和Plan Payload摘要，再以临时文件、`fsync`和原子替换
+发布。Progress从`planned`CAS到带备份摘要的`running`后才执行第一批。
+
+每批事务重新验证Plan、Item、当前事实和禁删集合；符合条件则Apply，候选变化或新增未决请求则Skip。业务变更与
+`next_ordinal/applied/skipped`同事务提交，进程退出后使用同一Plan和同一Backup从精确Ordinal继续，不重新选择候选。
+
+显式Restore先验证备份，Checkpoint当前WAL，把备份复制到同目录临时文件并复核摘要，再原子替换数据库、删除旧WAL/SHM并
+重新初始化。Restore是完整回滚，不合并备份之后的新事实。
+
+### 7.5 Migration 26与物理空间边界
+
+Migration 26为Artifact增加`created_at`，旧行以`expires_at`保守回填，并新增Plan、Item、Progress三张`STRICT`表。所有当前
+Artifact发布路径经显式列写入Helper保存发布时间。Migration不创建Plan、不删除数据、不修改Event/Thread JSON。
+
+Artifact清理只清空Body并保留Expired Tombstone；Thread满足全部条件后才删除所属记录。SQLite释放页不代表文件立即缩小，
+本切片不自动Checkpoint或Vacuum；锁时长、额外磁盘和三平台性能证据属于0.9.3d。
+
+### 7.6 持久化、事务与数据流程
+
+Plan、Item和Progress持久化在Session共库；规划事务只写候选事实，不修改业务行。首次执行先在事务外生成完整备份，再以短
+事务把备份摘要和`running`状态提交；每个有界批次在同一`BEGIN IMMEDIATE`中完成业务Apply/Skip和Progress游标推进。
+公开数据流只从业务行聚合到计数、时间、字节和摘要，内部Key不离开维护表。完整表结构、提交时序和崩溃窗口见
+[0.9.3b专项详细设计](m09-3b-persistent-capacity-and-retention.md)。
 
 ## 8. 0.9.3c 效果恢复设计边界
 
@@ -438,9 +483,9 @@ StoreCapacitySnapshot
 | stdio I/O泵 | [`app_server/stdio.py`](../../src/harnessix/app_server/stdio.py) | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | [App Server模块](../modules/app-server.md) |
 | SDK子进程 | [`sdk/subprocess.py`](../../src/harnessix/sdk/subprocess.py) | 同上 | [SDK模块](../modules/sdk.md) |
 | Agent Client | [`sdk/agent_client.py`](../../src/harnessix/sdk/agent_client.py) | App Server/Product UI测试 | [SDK模块](../modules/sdk.md) |
-| Session容量 | [`session/sqlite.py`](../../src/harnessix/session/sqlite.py) | [`test_session_contract.py`](../../tests/agent/test_session_contract.py) | [Session模块](../modules/session.md) |
-| Protocol历史 | [`protocol/requests.py`](../../src/harnessix/protocol/requests.py) | [`test_requests.py`](../../tests/protocol/test_requests.py) | [Protocol模块](../modules/protocol.md) |
-| Artifact容量 | [`artifacts/sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | [`tests/artifacts`](../../tests/artifacts/) | [Artifacts模块](../modules/artifacts.md) |
+| 共库容量与维护 | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py)、[`session/capacity.py`](../../src/harnessix/session/capacity.py) | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [0.9.3b详细设计](m09-3b-persistent-capacity-and-retention.md)、[Session模块](../modules/session.md) |
+| Protocol历史 | [`protocol/requests.py`](../../src/harnessix/protocol/requests.py)、[`session/maintenance_planning.py`](../../src/harnessix/session/maintenance_planning.py) | [`test_requests.py`](../../tests/protocol/test_requests.py)、[`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [Protocol模块](../modules/protocol.md) |
+| Artifact容量 | [`artifacts/sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`artifacts/persistence.py`](../../src/harnessix/artifacts/persistence.py) | [`tests/artifacts`](../../tests/artifacts/)、[`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [Artifacts模块](../modules/artifacts.md) |
 | Action恢复 | [`trusted_actions`](../../src/harnessix/trusted_actions/) | [`tests/trusted_actions`](../../tests/trusted_actions/) | [Trusted Actions模块](../modules/trusted-actions.md) |
 
 ## 16. 当前完成清单
@@ -452,7 +497,8 @@ StoreCapacitySnapshot
 - [x] Subprocess职责拆分和可读性门禁；
 - [x] App Server、SDK、路线图与索引同步；
 - [x] Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例CI验收；
-- [ ] 0.9.3b容量合同、Migration、清理与恢复；
+- [x] 0.9.3b容量合同、Migration、清理与恢复实现及本地全仓门禁；
+- [ ] 0.9.3b Linux、macOS、Windows、Container和Documentation全矩阵CI关闭；
 - [ ] 0.9.3c Owner fencing、孤儿与Route Deadline；
 - [ ] 0.9.3d完整Soak、性能阈值和冻结证据；
 - [ ] 0.9.3总项关闭。

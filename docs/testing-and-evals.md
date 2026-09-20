@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 35
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 36
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -26,6 +26,7 @@ related_adrs:
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0089-bounded-local-transport-lifecycle.md
+  - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/governance
   - tests/agent
@@ -52,6 +53,7 @@ related_tests:
   - tests/agent/test_session_upgrade.py
   - tests/protocol/test_projection.py
   - tests/app_server/test_server_sdk.py
+  - tests/agent/test_store_maintenance.py
 supersedes: []
 ---
 
@@ -619,7 +621,7 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至当前已关闭验收Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`，0.9.1e4/e5和0.9.1f1～f3均已关闭。f2c的Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3随后物理删除独立Action服务，保留历史Session只读兼容和旧数据库离线归档；在锁定依赖同步并卸载旧服务直接依赖后，本地全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，0.9.1据此关闭。以下项目仍不能宣称生产完成：0.9.2～0.9.6范围的多仓库Eval、长时间Soak、容量与降级、系统化红队、SBOM与正式安装器矩阵，以及覆盖更多Provider/地域/模型的认证矩阵。上述缺口以[路线图](roadmap.md)和[文档整改追踪矩阵](governance/documentation-traceability.md)为状态事实源。
+截至当前已关闭验收Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`，0.9.1e4/e5和0.9.1f1～f3均已关闭。f2c的Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3随后物理删除独立Action服务，保留历史Session只读兼容和旧数据库离线归档；在锁定依赖同步并卸载旧服务直接依赖后，本地全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，0.9.1据此关闭。此后0.9.2多仓库离线与真实Provider Suite已经关闭；0.9.3a本地传输也由六实例CI关闭。0.9.3b持久容量与保留实现Revision `cb3f3ea`已通过本地`make check`（3589 passed、32 skipped），全矩阵CI仍待关闭。长时间Soak、效果恢复、系统化红队、SBOM、正式安装器矩阵及更多Provider/地域/模型认证仍不能宣称生产完成。上述状态以[路线图](roadmap.md)为事实源。
 
 ### 20.1 0.9.1e5验证矩阵
 
@@ -676,9 +678,36 @@ Chrome真实渲染通过。[CI 35442924441](https://github.com/carrie1988/Harnes
 | 配置错误 | 非法消息、Pending和关闭Timeout在启动子进程前失败 |
 | 诊断隐私 | Snapshot只含状态、容量计数、stderr字节数和稳定Code，不含ID、命令、路径或正文 |
 
-本矩阵只关闭0.9.3a传输生命周期；进程树Owner、数据库/Artifact清理、Route/Reconcile复合故障和完整Soak属于
-0.9.3b～d。实现、测试与剩余边界见[0.9.3详细设计](changes/m09-3-reliability-and-performance.md)和
+本矩阵只关闭0.9.3a传输生命周期；数据库/Artifact维护由下节0.9.3b矩阵独立验收，进程树Owner、Route/Reconcile复合故障和
+完整Soak属于0.9.3c～d。实现、测试与剩余边界见[0.9.3详细设计](changes/m09-3-reliability-and-performance.md)和
 [ADR 0089](adr/0089-bounded-local-transport-lifecycle.md)。
+
+### 20.4 0.9.3b持久容量与保留矩阵
+
+Store维护不能以“删除后行数减少”作为唯一通过条件，必须同时证明计划、禁删、备份、崩溃恢复、低敏输出和Migration：
+
+| 场景 | 必须证明 |
+|---|---|
+| 容量完整性 | Session、Protocol、Artifact三类固定出现；投影/Event、结果摘要和时间损坏失败关闭 |
+| 诊断隐私 | Report/Plan/Progress不含Thread/Request/Artifact ID、路径、Canary或正文 |
+| Plan不可变 | Payload、Item Key、Ordinal、前置条件和候选集合摘要任一变化均阻止执行 |
+| Owner边界 | Plan、Execute和Restore无Runtime Owner时失败；文档明确同进程静默窗口 |
+| accepted保护 | 任意accepted请求全局保护Session/Artifact；旧completed/failed仍可按Cutoff删除 |
+| Thread依赖组 | Published Body Item先于Thread Item；容量不足不选择半组；Fork来源和保留正文不删 |
+| 候选漂移 | 规划后行变化、新accepted或新保护事实只记Skip，不自动补选 |
+| 强制备份 | 第一批前必须有`application_id`、`quick_check`、Plan摘要和文件SHA均通过的备份 |
+| 备份后崩溃 | 备份已发布、Progress仍planned时可复用完全相同的Plan绑定备份 |
+| 批次后崩溃 | 业务变更与`next_ordinal/applied/skipped`同事务；重启从精确下一Item继续 |
+| 完整Restore | 原子替换后Thread、Artifact正文、Protocol记录和容量恢复到备份时点 |
+| Migration 26 | 旧25数据库向前升级、Checksum固定、真进程提交前后原子、WAL竞争不重放Migration |
+| 既有回归 | Tool、Batch Diff、Action Review和Action Output全部写入`created_at`，旧Artifact/Event字节保持 |
+
+主要纵向测试为[`test_store_maintenance.py`](../tests/agent/test_store_maintenance.py)，升级证据来自Session与Artifact真进程测试。
+实现Revision `cb3f3ea834624d5a8f84396952eba212650065d1`的本地`make check`通过Ruff、可读性、文档、规格、Mypy和
+`3589 passed, 32 skipped`。该结果不替代Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation CI；后者
+全部通过并形成关闭提交前，路线图0.9.3b保持未勾选。详细设计见
+[0.9.3b持久容量与保留](changes/m09-3b-persistent-capacity-and-retention.md)和
+[ADR 0090](adr/0090-plan-first-store-maintenance-and-backup.md)。
 
 ## 21. 维护与验收标准
 

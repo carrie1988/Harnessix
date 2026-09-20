@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 24
-code_revision: 7cbacbaff4f95c010c2fb77142db3778a66fc3bb
+version: 25
+code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
 modules:
@@ -21,8 +21,8 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有89份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
-迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0089继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter、确定性完整离线Suite组合、受控真实Provider完整Suite及本地Agent传输生命周期边界。
+截至标注代码版本，共有90份编号ADR。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0090继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter、确定性完整离线Suite组合、受控真实Provider完整Suite、本地Agent传输生命周期，以及共库Plan-first维护与备份恢复边界。
 
 ## 2. 状态语义
 
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前89份ADR均属于已接受决策；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
+当前90份ADR均属于已接受决策；没有发现被后续ADR**整体**取代的记录。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -196,6 +196,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0080 | [能力证明驱动的默认Trusted Action组合根](0080-capability-proven-product-action-composition.md) | 接受；0.9.1e已关闭 |
 | 0081 | [收敛为单一Coding Agent产品边界](0081-single-coding-agent-product-boundary.md) | 接受；独立Action HTTP/Worker已删除并由CI 35453082992关闭 |
 | 0089 | [本地Agent传输采用协商背压、迟到响应容量与取消安全关闭](0089-bounded-local-transport-lifecycle.md) | 接受并由0.9.3a实现；CI 35494960166已关闭 |
+| 0090 | [Session共库采用Plan-first维护、保守禁删与强制备份恢复](0090-plan-first-store-maintenance-and-backup.md) | 接受并由0.9.3b实现；本地全仓通过，全矩阵CI待关闭 |
 
 ### 4.9 可读性与结构治理
 
