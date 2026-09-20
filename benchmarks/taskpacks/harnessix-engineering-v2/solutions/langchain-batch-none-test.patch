@@ -1,0 +1,8 @@
+--- a/tests/test_batch_none.py
++++ b/tests/test_batch_none.py
+@@ -10 +10,4 @@
+-        self.assertEqual(list(batch_iterate(None, [1, 2, 3])), [[1, 2], [3]])
++        self.assertEqual(list(batch_iterate(None, [1, 2, 3])), [[1, 2, 3]])
++
++    def test_none_size_empty_input_returns_no_batch(self) -> None:
++        self.assertEqual(list(batch_iterate(None, [])), [])

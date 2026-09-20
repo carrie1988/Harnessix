@@ -33,7 +33,7 @@ from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.helpers import answer
 
 _PROJECT_ROOT = Path(__file__).parents[2]
-_ENGINEERING_SOLUTIONS = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v1/solutions"
+_ENGINEERING_SOLUTIONS = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v2/solutions"
 
 
 class _NoSecrets:
@@ -250,7 +250,7 @@ async def test_engineering_task_pack_profiles_fail_then_pass_through_product_run
     if not docker or not git or os.name != "posix":
         pytest.skip("未配置Task Pack真实产品Container验收")
 
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
     case = loaded.manifest.case(case_id)
     source_profile = loaded.manifest.profile(case.profile_id)
     image_environment = (

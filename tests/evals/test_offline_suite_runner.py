@@ -17,7 +17,7 @@ from scripts.run_engineering_offline_suite import (
 
 
 def test_recorded_review_answer_contains_required_finding_as_independent_token() -> None:
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
     case = loaded.manifest.case("agents-secret-redaction-review")
     provider = RecordedSolutionProvider(
         RecordedSolution(case=case, before=b"before", content="after", mode=0o644),
@@ -59,7 +59,7 @@ def test_evidence_manifest_is_strict_and_digest_bound() -> None:
     payload = {
         "suite_id": UUID("79f70817-6fa0-5b4a-bf95-684b74f9fcb5"),
         "pack_id": "harnessix-engineering",
-        "pack_version": 1,
+        "pack_version": 2,
         "pack_sha256": "a" * 64,
         "harnessix_revision": "b" * 40,
         "plan_fingerprint": "c" * 64,

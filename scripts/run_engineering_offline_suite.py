@@ -43,7 +43,8 @@ else:
     from recorded_task_pack import RecordedProviderFactory
 
 _ROOT = Path(__file__).resolve().parents[1]
-_SOLUTIONS = _ROOT / "benchmarks/taskpacks/harnessix-engineering-v1/solutions"
+_PACK_VERSION = 2
+_SOLUTIONS = _ROOT / "benchmarks/taskpacks/harnessix-engineering-v2/solutions"
 _SUITE_NAMESPACE = UUID("345b674d-7711-5774-81aa-f2a038527c4c")
 _FORBIDDEN_KEYS = {
     "arguments",
@@ -66,7 +67,7 @@ class OfflineSuiteEvidenceManifest(ContractModel):
     )
     suite_id: UUID
     pack_id: Literal["harnessix-engineering"]
-    pack_version: Literal[1]
+    pack_version: Literal[2]
     pack_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     harnessix_revision: str = Field(pattern=r"^[0-9a-f]{40,64}$")
     plan_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -116,7 +117,7 @@ def _revision_time(git: Path, revision: str) -> datetime:
 
 
 def _require_fixed_images(config: CodingEvalSuiteRunConfig) -> None:
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION)
     expected = {
         "HARNESSIX_TEST_PYTHON_IMAGE": {
             profile.image for profile in loaded.manifest.profiles if profile.language == "python"
@@ -324,7 +325,7 @@ def _publish_evidence(
     work_root = Path(config.work_root)
     plan = read_eval_suite_plan(work_root / "suite-plan.json")
     report = read_eval_suite_report(work_root / "suite-report.json")
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION)
     manifest = OfflineSuiteEvidenceManifest(
         suite_id=plan.suite_id,
         pack_id=loaded.manifest.pack_id,
@@ -381,8 +382,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     container = _executable("docker")
     revision = _git_text(git, "rev-parse", "HEAD")
     work_root, evidence_root = _distinct_roots(arguments.work_root, arguments.evidence_root)
-    suite_id = arguments.suite_id or uuid5(_SUITE_NAMESPACE, f"harnessix-engineering:1:{revision}")
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    suite_id = arguments.suite_id or uuid5(
+        _SUITE_NAMESPACE,
+        f"harnessix-engineering:{_PACK_VERSION}:{revision}",
+    )
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION)
     config = build_task_pack_offline_suite_config(
         loaded,
         suite_id=suite_id,

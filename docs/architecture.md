@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 67
-code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
+version: 68
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -507,7 +507,8 @@ recover_route(route):
 6. [产品收敛门禁](../tests/governance/test_product_runtime_convergence.py)、
    [历史Session兼容](../tests/agent/test_legacy_process_compatibility.py)和
    [旧库归档测试](../tests/governance/test_legacy_action_archive.py)；
-7. [工程Eval数据定义](../benchmarks/taskpacks/harnessix-engineering-v1/definition.json)、
+7. [工程Eval v1数据定义](../benchmarks/taskpacks/harnessix-engineering-v1/definition.json)、
+   [当前v2数据定义](../benchmarks/taskpacks/harnessix-engineering-v2/definition.json)、
    [确定性生成器](../scripts/generate_engineering_task_pack.py)和
    [Task Pack物化器](../src/harnessix/evals/task_pack_materializer.py)、
    [Trial产品链](../src/harnessix/evals/task_pack_trial.py)和
@@ -521,7 +522,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化未固化 | 确定性预算、局部故障测试 | 0.9.3 |
-| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集及正式Case Adapter已验收；20 Trial候选编排已建立但固定Container CI和冻结证据待完成，真实Provider基线仍缺 | 0.9.2d3/e |
+| 多仓库Eval尚无最终真实基线 | Suite合同、Task Pack、可恢复Runner、3仓10 Case数据集及正式Case Adapter已验收；20 Trial候选保留不可变v1并以产品Patch兼容v2执行，固定Container CI和冻结证据待完成，真实Provider基线仍缺 | 0.9.2d3/e |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
@@ -534,6 +535,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 68 | 基于`d5142c8da41356a3f7b5a740b23865e9e42e4798`的候选修正 | 2026-09-20 | 记录首轮完整Suite识别出的v1 Test Case未跟踪文件缺陷；保持v1不可变并新增产品Workspace Patch与Grader兼容的v2，d3固定Container复验及证据冻结仍待完成 |
 | 67 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 登记0.9.2d3确定性20 Trial组合、唯一Agent/Product Action链复用、双Suite提交窗口恢复和脱敏证据CI；固定Container验收待完成 |
 | 66 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | 0.9.2d2正式Case Adapter由CI 35479723645完成固定Digest Container和六实例验收；d3完整20 Trial离线Suite仍未完成 |
 | 65 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 登记0.9.2d2正式Case Adapter、唯一Agent/Product Action链、受限自动审批、双报告窗口恢复与固定Container CI待验收边界 |

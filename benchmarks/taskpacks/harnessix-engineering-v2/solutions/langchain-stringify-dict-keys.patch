@@ -1,0 +1,5 @@
+--- a/src/string_utils.py
++++ b/src/string_utils.py
+@@ -23 +23 @@
+-        text += key + ": " + stringify_value(value) + "\n"
++        text += str(key) + ": " + stringify_value(value) + "\n"

@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 28
-code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
+version: 29
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -418,7 +418,7 @@ Windows、固定Digest Container和Documentation六实例验收。CI `container-
 
 ### 13.5 0.9.2d3 完整离线Suite验证矩阵
 
-d3不得新增第二套Runner，也不得由Golden直接构造通过报告。候选实现使用
+d3不得新增第二套Runner，也不得由Golden直接构造通过报告。候选实现使用工程Pack v2和
 [`build_task_pack_offline_suite_config`](../src/harnessix/evals/task_pack_suite.py)稳定组合10 Case与20 Trial，继续执行
 `run_coding_eval_suite → TaskPackCaseExecutor → run_task_pack_coding_eval → Agent Runtime → Product Trusted Action`唯一主链。
 
@@ -434,6 +434,11 @@ d3不得新增第二套Runner，也不得由Golden直接构造通过报告。候
 | 取消/超时/UNKNOWN | Suite取消和停止、Agent真实Timeout、Trusted Action/Product Action `UNKNOWN → reconcile`各由权威状态机验证 | 既有分层回归；聚合层不伪造状态 |
 | 证据隐私 | 只发布Plan、Report、摘要Manifest；拒绝正文、参数、Diff、Secret、Workspace和绝对路径 | `test_offline_suite_runner.py` |
 | CI制品 | 固定Digest无网Container完成后上传与Revision绑定的14天临时证据 | `container-sandbox`工作流，尚待本Revision通过 |
+
+首轮v1完整运行不是被重跑掩盖：两个Test Case均在创建`tests/*.py`前稳定中断，因为v1没有受版本控制的父目录/目标文件；
+即使宿主补目录，Grader仍会拒绝Untracked变更。修正保留v1原字节，发布v2并把两份预期失败的测试基线纳入固定Git树，
+Golden和Agent只执行同路径`replace`。回归必须同时证明v1仍可显式加载、v2是最新版本、十份Golden最终只产生Tracked
+修改，并且完整Suite证据写明`pack_version=2`；不得通过放宽Workspace Patch或Grader关闭失败。
 
 定向入口为：
 

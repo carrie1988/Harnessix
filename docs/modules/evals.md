@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
+version: 15
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -913,6 +913,11 @@ Review物化在Git提交前调用`_verify_review_oracle`：按1-based闭区间�
 路径逃逸、Link、行号越界、编码或摘要不匹配均返回`eval_task_pack_review_oracle_invalid`并删除半成品Run。d1只建立
 数据、检查和权利链；d2已经建立Task Pack到Campaign/Transcript的正式Case Adapter，d3候选进一步接通20 Trial完整
 Suite组合与CI证据编排，但远端固定Container验收仍是关闭边界。
+
+d3首轮完整场景证明v1两个Test Case依赖创建不存在的`tests/`父目录和Untracked文件，与正式Workspace Patch“不隐式
+创建目录”及Grader“拒绝Untracked”不变量冲突。v1 Manifest和Archive保持原字节并继续支持显式加载；新增
+`harnessix-engineering/v2`只把这两个Case改为替换受版本控制、预期失败的测试基线文件，其余任务语义、Profile、许可证和
+五类配比保持不变。当前完整离线Suite固定使用v2，不通过放宽产品Runtime或评分器掩盖数据集缺陷。
 完整设计见[0.9.2d详细设计](../changes/m09-2d-multi-repository-offline-baseline.md)。
 
 ### 23.4 Task Pack Trial与正式Case Adapter
@@ -973,7 +978,7 @@ Campaign前缀未推进时，只重算固定价格成本并推进一次；Campai
 ### 23.5 完整离线Suite组合与证据生成
 
 [`build_task_pack_offline_suite_config`](../../src/harnessix/evals/task_pack_suite.py)不执行Case，而是把消费点重新核验后的
-内置Pack转换为现有`CodingEvalSuiteRunConfig`。Case顺序严格来自Manifest；每个Case固定两个Run；Campaign和Run身份
+内置v2 Pack转换为现有`CodingEvalSuiteRunConfig`。Case顺序严格来自Manifest；每个Case固定两个Run；Campaign和Run身份
 由调用方`Suite ID`、Pack ID/版本、Case ID与Trial序号按UUIDv5派生。所有Campaign共享同一Revision、平台、
 `fixed-container-no-network`隔离声明、`recorded`模型身份和零费用价格/计费上下文。调用面没有Provider、Golden、命令、
 URL或Secret参数，因此不能借组合器建立新的执行旁路。
@@ -1007,7 +1012,7 @@ sequenceDiagram
 
 公开证据目录与私有运行目录必须互不包含，只允许Suite Plan、Suite Report和摘要清单；递归检查拒绝Prompt、Arguments、
 Response、Tool Output、Diff、Secret、Workspace、Work Root、宿主绝对路径及私有目录片段。清单绑定Pack摘要、Revision、
-Plan Fingerprint和Report SHA-256，并固定10 Case、20 Trial、20通过、20次Provider打开、120次请求及两个恢复标志。清单以
+Plan Fingerprint和Report SHA-256，并固定Pack v2、10 Case、20 Trial、20通过、20次Provider打开、120次请求及两个恢复标志。清单以
 0600临时文件写入、`fsync`后原子替换。取消/停止由Suite Runner专项测试承担，真实Turn Timeout由Agent测试承担，
 `UNKNOWN → reconcile`由Trusted Action与Product Action测试承担；聚合层不复制这些权威状态机。
 
@@ -1810,9 +1815,9 @@ execute():
 | Task Pack恢复与漂移 | 同上 | `load_materialized_task_pack_case` | 同上 | `test_materializes_exact_single_commit_reopens_dirty_workspace`、`test_materialization_detects_changed_head` |
 | Profile投影 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `build_task_pack_product_profile` | 同上 | `test_profile_projection_is_exact_and_engine_is_validated` |
 | 双语言真实容器链 | Product Runtime + Task Pack | 固定Profile、Approval、Process Owner、Artifact | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | `test_builtin_task_pack_profile_fails_then_passes_through_product_runtime` |
-| 工程数据集生成与规模 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py)、[`definition.json`](../../benchmarks/taskpacks/harnessix-engineering-v1/definition.json) | `_generate`、`_repository_identity` | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | `test_engineering_pack_has_balanced_production_scope`、`test_engineering_pack_generation_is_reproducible` |
+| 工程数据集生成与规模 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py)、[`v1 definition`](../../benchmarks/taskpacks/harnessix-engineering-v1/definition.json)、[`v2 definition`](../../benchmarks/taskpacks/harnessix-engineering-v2/definition.json) | `_generate`、`_repository_identity` | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | 平衡范围、v1显式加载、v2默认版本、确定生成 |
 | Review源码证据 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `_verify_review_oracle` | 同上 | `test_review_oracle_rejects_changed_source_evidence` |
-| 十Case可解性 | [`solutions`](../../benchmarks/taskpacks/harnessix-engineering-v1/solutions) | Wheel外Golden Patch | 同上 | `test_each_engineering_case_fails_then_golden_patch_passes` |
+| 十Case可解性 | [`v2 solutions`](../../benchmarks/taskpacks/harnessix-engineering-v2/solutions) | Wheel外Golden Patch | 同上 | `test_each_engineering_case_fails_then_golden_patch_passes`并拒绝Untracked变更 |
 | 十Case真实容器链 | Product Runtime + Engineering Pack | 固定Profile、Approval、Process Owner、Artifact | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | `test_engineering_task_pack_profiles_fail_then_pass_through_product_runtime` |
 | Task Pack Trial产品链 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | `run_task_pack_coding_eval`、`_drive_turn`、`_completed_session_turn` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | `test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_reopens` |
 | Task Pack自动审批与评分 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、[`grader.py`](../../src/harnessix/evals/grader.py) | `_require_allowed_approval`、`_profile_observations`、`grade_coding_eval` | [`test_grader.py`](../../tests/evals/test_grader.py) | Product Profile终端事实、Trusted Patch与Review Finding ID正反例 |
@@ -2090,6 +2095,7 @@ Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 15 | 基于`d5142c8da41356a3f7b5a740b23865e9e42e4798`的候选修正 | 2026-09-20 | 保留不可变工程Pack v1，新增产品Patch与Grader兼容的v2；两个Test Case由创建未跟踪文件改为替换受版本控制的失败测试基线，d3完整Suite固定使用v2待CI复验 |
 | 14 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 增加Task Pack确定性10 Case/20 Trial组合、测试侧Recorded Provider、双Suite提交窗口恢复、严格脱敏证据清单和Container CI编排；本地合同回归通过，固定Container CI与冻结证据待验收 |
 | 13 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2正式Case Adapter由CI 35479723645完成固定Digest Container和六实例验收并关闭；d3/e缺口保持不变 |
 | 12 | 基于`205ee0c3d482d6adbc6cd5642b9d8f4ed9c3c74b`的候选实现 | 2026-09-20 | 增加正式Task Pack Trial与Case Adapter，记录Agent/Product Action装配、自动审批、Review Finding投影、Campaign成本和双报告窗口恢复；固定Container CI待验收 |

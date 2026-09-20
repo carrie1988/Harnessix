@@ -20,7 +20,8 @@ from harnessix.evals.task_pack_materializer import (
 )
 
 _PROJECT_ROOT = Path(__file__).parents[2]
-_SOLUTIONS = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v1/solutions"
+_PACK_VERSION = 2
+_SOLUTIONS = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v2/solutions"
 
 
 def _git() -> Path:
@@ -33,7 +34,7 @@ def _materialize(tmp_path: Path, case_id: str):
     root = tmp_path / "runs"
     root.mkdir(mode=0o700, exist_ok=True)
     return materialize_task_pack_case(
-        builtin_coding_eval_task_pack("harnessix-engineering", 1),
+        builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION),
         root,
         _git(),
         case_id,
@@ -42,7 +43,7 @@ def _materialize(tmp_path: Path, case_id: str):
 
 
 def _host_check(workspace: Path, profile_id: str) -> subprocess.CompletedProcess[bytes]:
-    pack = builtin_coding_eval_task_pack("harnessix-engineering", 1).manifest
+    pack = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION).manifest
     profile = pack.profile(profile_id)
     if profile.language == "python":
         command = (sys.executable, *profile.arguments)
@@ -64,9 +65,9 @@ def _host_check(workspace: Path, profile_id: str) -> subprocess.CompletedProcess
 
 
 def test_engineering_pack_has_balanced_production_scope() -> None:
-    pack = builtin_coding_eval_task_pack("harnessix-engineering", 1).manifest
+    pack = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION).manifest
 
-    assert pack.pack_id == "harnessix-engineering" and pack.pack_version == 1
+    assert pack.pack_id == "harnessix-engineering" and pack.pack_version == _PACK_VERSION
     assert len(pack.repositories) == 3
     assert len(pack.cases) == 10
     assert Counter(case.task_kind for case in pack.cases) == Counter(
@@ -78,6 +79,17 @@ def test_engineering_pack_has_balanced_production_scope() -> None:
     assert all("/tree/" in item.license.provenance_uri for item in pack.repositories)
     assert len(pack.profiles) == len(pack.cases)
     assert sum(case.review_oracle is not None for case in pack.cases) == 2
+
+
+def test_engineering_v1_remains_explicitly_loadable_and_byte_bound() -> None:
+    legacy = builtin_coding_eval_task_pack("harnessix-engineering", 1).manifest
+    current = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION).manifest
+
+    assert legacy.pack_version == 1 and current.pack_version == 2
+    assert legacy.pack_sha256 != current.pack_sha256
+    assert tuple(case.case_id for case in legacy.cases) == tuple(
+        case.case_id for case in current.cases
+    )
 
 
 def test_engineering_pack_generation_is_reproducible() -> None:
@@ -104,13 +116,13 @@ def test_golden_solutions_are_excluded_from_installable_artifacts() -> None:
 def test_engineering_pack_materializes_every_case_and_binds_review_oracles(
     tmp_path: Path,
 ) -> None:
-    pack = builtin_coding_eval_task_pack("harnessix-engineering", 1).manifest
+    pack = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION).manifest
     root = tmp_path / "runs"
     root.mkdir(mode=0o700)
 
     for case in pack.cases:
         item = materialize_task_pack_case(
-            builtin_coding_eval_task_pack("harnessix-engineering", 1),
+            builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION),
             root,
             _git(),
             case.case_id,
@@ -162,7 +174,9 @@ def test_each_engineering_case_fails_then_golden_patch_passes(
         cwd=item.workspace,
         text=True,
     )
-    changed_paths = tuple(line[3:] for line in status.splitlines() if line)
+    status_lines = tuple(line for line in status.splitlines() if line)
+    assert all(not line.startswith("??") for line in status_lines)
+    changed_paths = tuple(line[3:] for line in status_lines)
     assert item.case.task.allowed_changed_paths == changed_paths
 
 

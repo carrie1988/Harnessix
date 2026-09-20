@@ -18,7 +18,7 @@ _CREATED_AT = datetime(2026, 9, 20, tzinfo=UTC)
 
 
 def _config(tmp_path: Path, *, suite_id: UUID = _SUITE_ID):
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
     return build_task_pack_offline_suite_config(
         loaded,
         suite_id=suite_id,
@@ -46,7 +46,7 @@ def test_offline_suite_config_is_deterministic_complete_and_zero_cost(tmp_path: 
     assert len({case.repository.name for case in first.plan.cases}) == 3
     assert tuple(case.case_id for case in first.plan.cases) == tuple(
         case.case_id
-        for case in builtin_coding_eval_task_pack("harnessix-engineering", 1).manifest.cases
+        for case in builtin_coding_eval_task_pack("harnessix-engineering", 2).manifest.cases
     )
     identities = tuple(
         identity
@@ -86,7 +86,7 @@ def test_offline_suite_identity_is_namespaced_by_suite_id(tmp_path: Path) -> Non
 
 
 def test_offline_suite_revalidates_pack_and_rejects_invalid_host_fields(tmp_path: Path) -> None:
-    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 1)
+    loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
     counterfeit = LoadedCodingEvalTaskPack(loaded.manifest, tmp_path)
     with pytest.raises(KernelError) as invalid_pack:
         build_task_pack_offline_suite_config(

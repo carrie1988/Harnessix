@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
+version: 7
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -38,8 +38,8 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | d1数据集与检查闭环、d2正式Case Adapter及双报告窗口恢复均已验收；d3确定性20 Trial组合、测试侧Recorded Provider、双Suite提交窗口恢复及脱敏证据发布已形成候选实现 |
-| 本文设计状态 | d1/d2已验收；d3候选实现已完成本地合同回归，固定Digest Container CI与冻结验证证据待完成 |
+| 当前能力 | d1的v1数据集与检查闭环、d2正式Case Adapter及双报告窗口恢复均已验收；d3确定性20 Trial组合、测试侧Recorded Provider、双Suite提交窗口恢复、脱敏证据发布及产品Patch兼容的工程Pack v2已形成候选实现 |
+| 本文设计状态 | d1/d2已验收；d3首轮Container运行识别出v1 Test Case依赖未跟踪新文件，现按不可变版本规则新增v2而不改写v1；v2固定Digest Container CI与冻结验证证据待完成 |
 | 代码版本 | d1实现`ee4d0db757d0371656934254aaaee0c1a56cfab0`由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)验收；d2实现`a04606b829e6c4a32935b81c8ccc86ee5802d918`由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例验收 |
 | 影响模块 | Evals、Agent、Session、Trusted Actions、Process、Sandbox、CI和发行通知 |
 | 关键ADR | [ADR 0082](../adr/0082-multi-repository-eval-suite-and-transcript-evidence.md)、[0083](../adr/0083-built-in-immutable-coding-eval-task-pack.md)、[0084](../adr/0084-recoverable-sequential-eval-suite-runner.md)、[0085](../adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md)、[0086](../adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md)、[0087](../adr/0087-deterministic-offline-eval-suite-composition.md) |
@@ -64,7 +64,7 @@ Transcript、Git证据和两次Trial形成一致报告。
 
 ### 3.1 目标
 
-1. 发布`harnessix-engineering/v1`，固定3仓、10 Case、五类各2个和10个Case专用Profile；
+1. d1发布不可变`harnessix-engineering/v1`，d3追加产品Patch兼容的v2；两版均固定3仓、10 Case、五类各2个和10个Case专用Profile；
 2. 从受审源树确定生成Archive、Git身份、Review证据和Manifest，生成漂移阻断门禁；
 3. 每个Case证明原始基线失败、唯一允许路径的黄金修复后通过；
 4. d2通过现有Agent Runtime、Session、Tool Catalog、Trusted Action、Process Artifact和Campaign执行Task Pack Case；
@@ -84,13 +84,14 @@ Transcript、Git证据和两次Trial形成一致报告。
 
 | 项目 | 定义 | 影响 |
 |---|---|---|
-| Benchmark源树 | `benchmarks/taskpacks/harnessix-engineering-v1/repositories`中的受审输入 | 开发与审查可见，不由运行时直接加载 |
-| 生成制品 | `src/harnessix/evals/taskpacks/engineering-v1`下Manifest和Archive | 进入Wheel，必须逐字节可复现 |
+| Benchmark源树 | `benchmarks/taskpacks/harnessix-engineering-v1/repositories`保存不可变首版；`harnessix-engineering-v2/repositories`保存当前受审输入 | 开发与审查可见，不由运行时直接加载 |
+| 生成制品 | `src/harnessix/evals/taskpacks/engineering-v1`保留不可变首版，`engineering-v2`保存当前Manifest和Archive | 两版均进入Wheel并必须逐字节可复现 |
 | Golden Patch | `benchmarks/.../solutions`下每Case补丁 | 仅测试使用，不进入Wheel资源根 |
 | Offline Provider | d2通过Factory注入的固定Recorded模型事件源 | 不访问网络，只证明产品链，不证明模型能力 |
 | Case Adapter | 把Task Pack Case投影到正式Run/Campaign端口 | 复用现有Agent/Session/Trusted Action链 |
 | Review Evidence | 固定源码行原始字节的SHA-256 | 物化时验证，不能由自由文本替代 |
 | Trial | 独立Run ID、Session、Workspace和效果账本 | 每Case固定2次，不复用工作树 |
+| Engineering v2 | 保留v1原字节，只把两个Test Case改为替换受版本控制的失败测试基线 | 满足产品Patch既有父目录和Grader禁止Untracked的不变量 |
 
 ## 5. 总体架构
 
@@ -229,7 +230,7 @@ sequenceDiagram
 
 ### 7.4 d3确定性组合与证据发布
 
-d3不再实现新的Suite Runner。新增组合器只把已核验的`harnessix-engineering/v1` Manifest转换为现有
+d3不再实现新的Suite Runner。新增组合器只把已核验的`harnessix-engineering/v2` Manifest转换为现有
 `CodingEvalSuiteRunConfig`：Case保持Manifest顺序，每个Campaign固定两个Run，Campaign ID与Run ID使用
 调用方Suite UUID作为命名空间按UUIDv5派生。全部Campaign共享同一代码Revision、平台、`recorded`环境、零费用
 价格快照和Billing Context。组合器不接受Provider、Golden目录、动态命令、外部URL或Secret。
@@ -237,6 +238,11 @@ d3不再实现新的Suite Runner。新增组合器只把已核验的`harnessix-e
 测试/CI侧Recorded Provider读取仓库外部发布包之外的Golden Patch，只把解出的目标文件内容转换为正式
 `apply_patch_batch`工具调用；Review任务的固定Finding ID进入最终回答摘要。Provider事件仍由Agent Runtime消费，
 报告必须从Session、Action、Artifact、Grader和Campaign事实生成，禁止测试夹具直接构造通过报告。
+
+首轮v1完整场景在两个Test Case的第二个模型步骤稳定中断。字段级低敏诊断证明，这两个Case要求创建不存在的
+`tests/*.py`，而正式Workspace Patch不隐式创建父目录，Grader又拒绝Untracked文件。修正不放宽Runtime或Grader，
+也不覆盖v1：v2在固定Git基线中提交两份预期失败的测试文件，Golden通过同路径`replace`补齐回归断言。v1继续可显式
+加载和重开，d3计划及证据固定`pack_version=2`。
 
 完整场景按以下顺序验证两层提交窗口：
 
@@ -354,7 +360,7 @@ classDiagram
 
 | 结构/字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---|---|---|---|---|---|---|
-| Pack `pack_id/version` | string/int | 是 | definition | `harnessix-engineering/1` | 无 | 低 | Manifest | 不可改写 |
+| Pack `pack_id/version` | string/int | 是 | definition | d1=`harnessix-engineering/1`；d3=`harnessix-engineering/2` | 无 | 低 | Manifest | 既有版本不可改写 |
 | Repository `provenance_uri` | HTTPS | 是 | definition | 固定上游Revision路径 | 无 | 低 | Manifest | 新来源发新版本 |
 | Repository `archive_sha256` | SHA-256 | 是 | generator | Archive原始字节 | 无 | 低 | Manifest | 精确匹配 |
 | Repository `source_revision` | Git OID | 是 | generator | 派生Fixture确定提交 | 无 | 低 | Manifest | 精确匹配 |
@@ -372,7 +378,7 @@ classDiagram
 `Trial Report → Run State → Campaign Report → Campaign State`。d2/d3继续复用既有Campaign和Suite原子报告协议，不新增数据库Schema。
 
 旧`harnessix-seed/v1`保持可读且仍是默认Pack。新增Pack只扩展代码Catalog；不存在就地迁移。未来修正任何Fixture、检查、
-许可证、Profile或Finding均发布`harnessix-engineering/v2`，不得覆盖v1资源。
+许可证、Profile、Finding或产品执行前置条件变化均发布新Pack版本，不得覆盖既有资源。d3已经按此规则保留v1并发布v2。
 
 ## 14. 并发、幂等与一致性
 
@@ -428,7 +434,7 @@ Pack合同和三个公共JSON Schema不变；新增的是同Schema的新Catalog�
 物化，真实检查由Linux固定Container CI执行。Windows本轮只验证Catalog、合同和文档，不把Container证据冒充Windows
 原生执行支持；Windows产品完整门禁仍由0.9.6处理。
 
-Wheel必须包含`engineering-v1/manifest.json`和三个Archive；Wheel不包含Benchmark源树，sdist构建规则显式排除
+Wheel必须同时包含不可变`engineering-v1`、当前`engineering-v2`的Manifest和各三个Archive；Wheel不包含Benchmark源树，sdist构建规则显式排除
 Solutions。回滚时可从Catalog移除新Pack
 并停止新Suite，但已发布v1报告仍按原身份读取；若有报告引用Pack，不删除历史制品。
 
@@ -493,12 +499,12 @@ execute_complete_offline_suite():
 
 | 设计元素 | 源码文件链接 | 关键符号 | 测试文件链接 | 测试函数/合同 | 说明 |
 |---|---|---|---|---|---|
-| 生成定义 | [`definition.json`](../../benchmarks/taskpacks/harnessix-engineering-v1/definition.json) | 3 Repository/10 Case | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | balanced scope | 唯一人工配置源 |
+| 生成定义 | [`v1 definition`](../../benchmarks/taskpacks/harnessix-engineering-v1/definition.json)、[`v2 definition`](../../benchmarks/taskpacks/harnessix-engineering-v2/definition.json) | 3 Repository/10 Case/不可变版本 | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | balanced scope、v1 loadable、v2 latest | v2为当前生成输入，v1冻结 |
 | 确定生成 | [`generate_engineering_task_pack.py`](../../scripts/generate_engineering_task_pack.py) | `_generate/_repository_identity/_review_evidence_sha256` | 同上 | generation reproducible | 不访问网络 |
 | 内置Catalog | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | `_TASK_PACKS/_verified_builtin_task_pack` | [`test_task_pack.py`](../../tests/evals/test_task_pack.py) | IDs/resources | 默认Pack不变 |
 | Review证据 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | `_verify_review_oracle` | [`test_engineering_task_pack.py`](../../tests/evals/test_engineering_task_pack.py) | changed evidence rejected | 初次物化校验 |
 | Archive/Git物化 | 同上 | `materialize_task_pack_case` | 同上 | every case materializes | 四重Git身份 |
-| 黄金闭环 | [`solutions`](../../benchmarks/taskpacks/harnessix-engineering-v1/solutions) | 每Case patch | 同上 | baseline fail/final pass | Wheel外测试资产 |
+| 黄金闭环 | [`v2 solutions`](../../benchmarks/taskpacks/harnessix-engineering-v2/solutions) | 每Case patch | 同上 | baseline fail/final pass、无Untracked | Wheel外测试资产 |
 | 产品Container | [`test_task_pack_profiles.py`](../../tests/integration/test_task_pack_profiles.py) | engineering parameter set | 同文件 | Trusted Action profile | 固定镜像、审批和Artifact |
 | Trial正式产品链 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | `run_task_pack_coding_eval`、`_drive_turn`、`_completed_session_turn` | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) | 两Trial、Trial Report崩溃恢复 | Agent/Session/Action/Artifact/Grader |
 | d2 Case Adapter | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | `TaskPackCaseExecutor`、`_load_prefix`、`_recover_campaign_report` | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) | 计划先行取消、身份漂移 | 现有Suite Case端口 |
@@ -521,7 +527,7 @@ execute_complete_offline_suite():
 | 产品执行 | 10/10经Product Runtime、Approval、Trusted Action和固定Container先失败后通过 | d1已验收 |
 | d2执行 | 两个独立Trial经过真实Agent/Session/Product Action/Artifact/Grader/Campaign；Adapter不读Golden | CI 35479723645固定Digest Container验收通过 |
 | d2恢复 | Trial Report与Campaign Report崩溃窗口不重复已完成Provider或Action | CI 35479723645故障注入验收通过 |
-| d3规模 | 10 Case × 2 Trial，完整Suite报告 | 候选实现已严格断言；固定Container CI待运行 |
+| d3规模 | v2的10 Case × 2 Trial，完整Suite报告 | 候选实现已严格断言；首轮v1失败已闭环到不可变v2，固定Container CI待重跑 |
 | d3复跑 | 同一计划恢复不增加已完成Provider/Action计数 | 首Case证据与最终报告双崩溃候选已实现；CI待验收 |
 | d3证据 | Plan/Report/摘要清单严格重读，无正文、Diff、Secret或宿主路径 | 本地白名单回归通过；CI上传制品待下载复核和冻结 |
 | 全仓门禁 | Ruff、Mypy、Schema、Task Pack、文档、全量Pytest和六实例CI | d1由[CI 35469387988](https://github.com/carrie1988/Harnessix/actions/runs/35469387988)通过；d2由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)通过；d3候选待本Revision CI |
@@ -544,6 +550,7 @@ execute_complete_offline_suite():
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 7 | 基于`d5142c8da41356a3f7b5a740b23865e9e42e4798`的候选修正 | 2026-09-20 | 记录首轮20 Trial CI暴露v1两个Test Case依赖缺失父目录/Untracked文件；保留v1原字节并新增产品Workspace Patch与Grader兼容的v2，d3改用v2待CI复验 |
 | 6 | 基于`9df1c53222709ac98b99156a7aabd936d9351b81`的候选实现 | 2026-09-20 | 实现确定性10 Case/20 Trial组合、Wheel外Recorded Provider、双Suite提交窗口恢复、严格脱敏证据清单及Container CI步骤；本地合同回归通过，远端验收待完成 |
 | 5 | `pending` | 2026-09-20 | 按ADR 0087冻结d3确定性Suite组合、测试侧Recorded Provider、双报告崩溃恢复与脱敏证据发布边界；尚未形成实现或验收结论 |
 | 4 | `a04606b829e6c4a32935b81c8ccc86ee5802d918` | 2026-09-20 | d2由CI 35479723645完成Linux双版本、macOS、Windows、固定Digest Container与Documentation六实例验收并关闭；d3保持未完成 |

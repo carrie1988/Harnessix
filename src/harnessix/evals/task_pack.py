@@ -20,10 +20,11 @@ from harnessix.product_config.action_contracts import (
 _MAX_TASK_PACK_MANIFEST_BYTES = 1024 * 1024
 _TASK_PACKS = {
     ("harnessix-engineering", 1): "engineering-v1",
+    ("harnessix-engineering", 2): "engineering-v2",
     ("harnessix-seed", 1): "v1",
 }
 _TASK_PACK_VERSIONS = {
-    "harnessix-engineering": (1,),
+    "harnessix-engineering": (1, 2),
     "harnessix-seed": (1,),
 }
 

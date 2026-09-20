@@ -1,4 +1,4 @@
-"""从受审Benchmark源树确定性生成harnessix-engineering/v1内置Task Pack。"""
+"""从受审Benchmark源树确定性生成harnessix-engineering/v2内置Task Pack。"""
 
 from __future__ import annotations
 
@@ -30,9 +30,9 @@ from harnessix.evals.task_pack_contracts import (
 )
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_SOURCE_ROOT = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v1"
+_SOURCE_ROOT = _PROJECT_ROOT / "benchmarks/taskpacks/harnessix-engineering-v2"
 _DEFINITION = _SOURCE_ROOT / "definition.json"
-_OUTPUT_ROOT = _PROJECT_ROOT / "src/harnessix/evals/taskpacks/engineering-v1"
+_OUTPUT_ROOT = _PROJECT_ROOT / "src/harnessix/evals/taskpacks/engineering-v2"
 _COMMIT_MESSAGE = "Harnessix Eval Task Pack baseline"
 _IMAGE_BY_LANGUAGE = {
     "python": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
@@ -437,7 +437,7 @@ def _regular_files(root: Path) -> dict[str, bytes]:
 
 def _check() -> int:
     with tempfile.TemporaryDirectory(prefix="harnessix-task-pack-check-") as directory:
-        candidate = Path(directory) / "engineering-v1"
+        candidate = Path(directory) / "engineering-v2"
         _generate(candidate)
         expected = _regular_files(candidate)
     actual = _regular_files(_OUTPUT_ROOT)

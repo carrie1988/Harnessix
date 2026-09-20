@@ -1,0 +1,715 @@
+{
+  "spec_version": "harnessix.coding-eval-task-pack/v1",
+  "pack_id": "harnessix-engineering",
+  "pack_version": 2,
+  "repositories": [
+    {
+      "repository_id": "agents-utils-benchmark",
+      "language": "python",
+      "repository": {
+        "name": "agents-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+        "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+        "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+      },
+      "source_tree_oid": "0c4aea35c58e51a3845c7ea8bbea9fb63ae4084d",
+      "archive_file": "archives/agents-utils-benchmark.tar",
+      "archive_sha256": "b9bb525d50a53f8bb84cb01537d1fcb822fd1ff3d1ffc6a79de587a86a8d0e81",
+      "archive_bytes": 20480,
+      "tracked_files": 9,
+      "commit_created_at": "2026-09-20T02:10:00Z",
+      "license": {
+        "source_kind": "third_party",
+        "spdx_expression": "MIT",
+        "copyright_notice": "Copyright (c) 2025 OpenAI",
+        "provenance_uri": "https://github.com/openai/openai-agents-python/tree/8dfac2aeec56f9f833b316e66f075bd888930646/src/agents/util",
+        "license_file": "LICENSE",
+        "license_sha256": "13df7812ca53ecaae1cb4a868844bb598373047ae1d580e4debfbef1dd5b6915",
+        "reviewed_at": "2026-09-20T02:10:00Z"
+      }
+    },
+    {
+      "repository_id": "langchain-utils-benchmark",
+      "language": "python",
+      "repository": {
+        "name": "langchain-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+        "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+        "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+      },
+      "source_tree_oid": "17e312a96dc8cc5a512f2b276039cb87450d8642",
+      "archive_file": "archives/langchain-utils-benchmark.tar",
+      "archive_sha256": "81955e9e4c253b4c3e261f8afb9b961293c42369bbb5e078e16edadaea5053b8",
+      "archive_bytes": 20480,
+      "tracked_files": 8,
+      "commit_created_at": "2026-09-20T02:10:00Z",
+      "license": {
+        "source_kind": "third_party",
+        "spdx_expression": "MIT",
+        "copyright_notice": "Copyright (c) LangChain, Inc.",
+        "provenance_uri": "https://github.com/langchain-ai/langchain/tree/54a9556f5c89dc734f906aa084426e8a238691ac/libs/core/langchain_core/utils",
+        "license_file": "LICENSE",
+        "license_sha256": "4ec67e4ca6e6721dba849b2ca82261597c86a61ee214bbf21416006b7b2d0478",
+        "reviewed_at": "2026-09-20T02:10:00Z"
+      }
+    },
+    {
+      "repository_id": "opencode-utils-benchmark",
+      "language": "javascript",
+      "repository": {
+        "name": "opencode-utils-benchmark",
+        "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+        "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+        "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+      },
+      "source_tree_oid": "3d65d3259935fb8a70fd8bac1c208de00950efaf",
+      "archive_file": "archives/opencode-utils-benchmark.tar",
+      "archive_sha256": "2089468aee5312c58166b7203119ee076c7429419cb5776cdf4a7fda38b49edf",
+      "archive_bytes": 10240,
+      "tracked_files": 6,
+      "commit_created_at": "2026-09-20T02:10:00Z",
+      "license": {
+        "source_kind": "third_party",
+        "spdx_expression": "MIT",
+        "copyright_notice": "Copyright (c) 2025 opencode",
+        "provenance_uri": "https://github.com/anomalyco/opencode/tree/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/core/src/util",
+        "license_file": "LICENSE",
+        "license_sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+        "reviewed_at": "2026-09-20T02:10:00Z"
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "profile_id": "agents-dump-compatible-refactor-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查序列转换分支合并且行为不回退",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.dump_compatible_refactor"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "d202f0495ef2ff50667d5717bf218a30d46b2ee6e42e2b7d0a9b55a2e990206f"
+    },
+    {
+      "profile_id": "agents-normalize-tool-name-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查合法工具名也统一转为小写",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.normalize_tool_name"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "dc169a2260a9de2c8b13d9b23ca241166a6eb9fbc41739691700c2e4c068f288"
+    },
+    {
+      "profile_id": "agents-payload-bytes-test-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查严格UTF-8载荷的新增回归测试",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.payload_bytes_test"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "4b197f5011a5682529d7cb10bfabe792bd4d8fd6c770d4e2730219a6c7cd9fd6"
+    },
+    {
+      "profile_id": "agents-secret-redaction-review-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查API Key日志泄漏修复",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.secret_redaction_review"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "0a8b33ae37dbbcdb0b2233d28e2e485c05f35651f8b83f7638999ec0f2a1f456"
+    },
+    {
+      "profile_id": "langchain-batch-none-test-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查None批大小边界的新增回归测试",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.batch_none_test"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "7000aa4b6f1f69b411d365b7da77552448c6b6ec46a871c5b2e13b1a41bbd2c9"
+    },
+    {
+      "profile_id": "langchain-storage-replacement-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查NUL字符支持调用方替换文本",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.storage_replacement"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "374883dee132783df8b8f96914658a7a4761e392f16855bfab76d898d0a34de1"
+    },
+    {
+      "profile_id": "langchain-stringify-dict-keys-check",
+      "version": "3.12.11-alpine3.22",
+      "language": "python",
+      "description": "检查非字符串字典键可稳定序列化",
+      "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.stringify_dict_keys"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "aed01adb5cb5a1ffbae7d43c2a10a2590d8f9cfe708f3f85d7d9375a87fe97b9"
+    },
+    {
+      "profile_id": "opencode-path-normalization-check",
+      "version": "22.18.0-alpine3.22",
+      "language": "javascript",
+      "description": "检查Windows路径分隔符标准化",
+      "image": "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/path_normalization.mjs"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "0496cd1c31db3ab5ecb805bfd493ff01352e1636bf24f45bb08a0f12a3f2f0b1"
+    },
+    {
+      "profile_id": "opencode-retry-delay-refactor-check",
+      "version": "22.18.0-alpine3.22",
+      "language": "javascript",
+      "description": "检查重试退避分支消除且行为不变",
+      "image": "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/retry_delay_refactor.mjs"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "640f958d73ca645743879393b04c8af450d5e71959fb09a61a71e19ce0718e69"
+    },
+    {
+      "profile_id": "opencode-terminal-url-review-check",
+      "version": "22.18.0-alpine3.22",
+      "language": "javascript",
+      "description": "检查终端URL用户信息泄漏修复",
+      "image": "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/terminal_url_review.mjs"
+      ],
+      "timeout_seconds": 60,
+      "max_output_bytes": 65536,
+      "cpu_limit": 0.5,
+      "memory_bytes": 134217728,
+      "process_limit": 32,
+      "network_mode": "none",
+      "profile_sha256": "8058ea7433b6a2e9322b42eac6e829c3860b6eaf472807ee6a4b1ae443fed316"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "task_kind": "refactor",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-dump-compatible-refactor-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-agents-dump-compatible-refactor",
+        "task_version": 1,
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "prompt": "重构 to_dump_compatible，合并 list 与 tuple 的重复处理分支，同时保持字典、一般 Iterable 和标量行为不变。只允许修改src/agent_utils.py，运行固定agents-dump-compatible-refactor-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/agent_utils.py\"],\"tests\":[{\"profile\":\"agents-dump-compatible-refactor-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/agent_utils.py"
+        ],
+        "required_test_profiles": [
+          "agents-dump-compatible-refactor-check"
+        ],
+        "baseline_checks": [
+          "agents-dump-compatible-refactor-check"
+        ],
+        "behavior_checks": [
+          "agents-dump-compatible-refactor-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "task_kind": "bug_fix",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-normalize-tool-name-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-agents-normalize-tool-name",
+        "task_version": 1,
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "prompt": "修复 normalize_tool_name：即使输入只包含合法字符，也必须稳定转换为小写函数名。只允许修改src/agent_utils.py，运行固定agents-normalize-tool-name-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/agent_utils.py\"],\"tests\":[{\"profile\":\"agents-normalize-tool-name-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/agent_utils.py"
+        ],
+        "required_test_profiles": [
+          "agents-normalize-tool-name-check"
+        ],
+        "baseline_checks": [
+          "agents-normalize-tool-name-check"
+        ],
+        "behavior_checks": [
+          "agents-normalize-tool-name-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "task_kind": "test",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-payload-bytes-test-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-agents-payload-bytes-test",
+        "task_version": 1,
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "prompt": "为 decode_payload 增加标准库 unittest 回归测试，覆盖合法 UTF-8 与非法字节触发 UnicodeDecodeError。不要修改生产实现。只允许修改tests/test_payload_bytes.py，运行固定agents-payload-bytes-test-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"tests/test_payload_bytes.py\"],\"tests\":[{\"profile\":\"agents-payload-bytes-test-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "tests/test_payload_bytes.py"
+        ],
+        "required_test_profiles": [
+          "agents-payload-bytes-test-check"
+        ],
+        "baseline_checks": [
+          "agents-payload-bytes-test-check"
+        ],
+        "behavior_checks": [
+          "agents-payload-bytes-test-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "task_kind": "review",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-secret-redaction-review-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-agents-secret-redaction-review",
+        "task_version": 1,
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "prompt": "审查并修复 redact_api_key 的敏感信息泄漏；保留前三个字符和末四个字符，中间使用省略号，短值全部遮蔽。最终 summary 必须包含 Finding ID agents-api-key-plaintext。只允许修改src/agent_utils.py，运行固定agents-secret-redaction-review-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/agent_utils.py\"],\"tests\":[{\"profile\":\"agents-secret-redaction-review-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/agent_utils.py"
+        ],
+        "required_test_profiles": [
+          "agents-secret-redaction-review-check"
+        ],
+        "baseline_checks": [
+          "agents-secret-redaction-review-check"
+        ],
+        "behavior_checks": [
+          "agents-secret-redaction-review-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": {
+        "spec_version": "harnessix.coding-eval-review-oracle/v1",
+        "oracle_version": 1,
+        "required_findings": [
+          {
+            "finding_id": "agents-api-key-plaintext",
+            "category": "security",
+            "severity": "high",
+            "path": "src/agent_utils.py",
+            "start_line": 33,
+            "end_line": 36,
+            "evidence_sha256": "d07d58949e7548a3f6c534b60e6499c4a162a0577ede5707aacd19bf401bcf5d"
+          }
+        ],
+        "oracle_sha256": "a8b4a8c8b17bee3d8e302ab57eada7625f9879103c21b17b13252dda1d2df024"
+      }
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "task_kind": "test",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-batch-none-test-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-langchain-batch-none-test",
+        "task_version": 1,
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "prompt": "为 batch_iterate 增加标准库 unittest 回归测试，证明 size=None 时非空输入只产生一个批次，空输入不产生批次。不要修改生产实现。只允许修改tests/test_batch_none.py，运行固定langchain-batch-none-test-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"tests/test_batch_none.py\"],\"tests\":[{\"profile\":\"langchain-batch-none-test-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "tests/test_batch_none.py"
+        ],
+        "required_test_profiles": [
+          "langchain-batch-none-test-check"
+        ],
+        "baseline_checks": [
+          "langchain-batch-none-test-check"
+        ],
+        "behavior_checks": [
+          "langchain-batch-none-test-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "task_kind": "feature",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-storage-replacement-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-langchain-storage-replacement",
+        "task_version": 1,
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "prompt": "扩展 sanitize_for_storage，使 replacement 参数真正决定 NUL 字节替换内容，同时保持默认删除行为。只允许修改src/string_utils.py，运行固定langchain-storage-replacement-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/string_utils.py\"],\"tests\":[{\"profile\":\"langchain-storage-replacement-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/string_utils.py"
+        ],
+        "required_test_profiles": [
+          "langchain-storage-replacement-check"
+        ],
+        "baseline_checks": [
+          "langchain-storage-replacement-check"
+        ],
+        "behavior_checks": [
+          "langchain-storage-replacement-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "task_kind": "bug_fix",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-stringify-dict-keys-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-langchain-stringify-dict-keys",
+        "task_version": 1,
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "prompt": "修复 stringify_dict，使整数等非字符串字典键通过 str 转换后参与输出，并保持嵌套值格式。只允许修改src/string_utils.py，运行固定langchain-stringify-dict-keys-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/string_utils.py\"],\"tests\":[{\"profile\":\"langchain-stringify-dict-keys-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/string_utils.py"
+        ],
+        "required_test_profiles": [
+          "langchain-stringify-dict-keys-check"
+        ],
+        "baseline_checks": [
+          "langchain-stringify-dict-keys-check"
+        ],
+        "behavior_checks": [
+          "langchain-stringify-dict-keys-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "task_kind": "feature",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-path-normalization-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-opencode-path-normalization",
+        "task_version": 1,
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "prompt": "为 normalizePath 增加跨平台路径标准化：把反斜线转换为正斜线，已有 POSIX 路径保持不变。只允许修改src/path_utils.mjs，运行固定opencode-path-normalization-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/path_utils.mjs\"],\"tests\":[{\"profile\":\"opencode-path-normalization-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/path_utils.mjs"
+        ],
+        "required_test_profiles": [
+          "opencode-path-normalization-check"
+        ],
+        "baseline_checks": [
+          "opencode-path-normalization-check"
+        ],
+        "behavior_checks": [
+          "opencode-path-normalization-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "task_kind": "refactor",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-retry-delay-refactor-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-opencode-retry-delay-refactor",
+        "task_version": 1,
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "prompt": "重构 retryDelay，删除 attempt=0/1 的重复特殊分支，用单一表达式保持指数退避结果不变。只允许修改src/path_utils.mjs，运行固定opencode-retry-delay-refactor-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/path_utils.mjs\"],\"tests\":[{\"profile\":\"opencode-retry-delay-refactor-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/path_utils.mjs"
+        ],
+        "required_test_profiles": [
+          "opencode-retry-delay-refactor-check"
+        ],
+        "baseline_checks": [
+          "opencode-retry-delay-refactor-check"
+        ],
+        "behavior_checks": [
+          "opencode-retry-delay-refactor-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": null
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "task_kind": "review",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-terminal-url-review-check",
+      "task": {
+        "spec_version": "harnessix.coding-eval/v1",
+        "task_id": "engineering-opencode-terminal-url-review",
+        "task_version": 1,
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "prompt": "审查并修复 sanitizeTerminalUrl 的 URL 用户名和密码泄漏，保留协议、主机、路径与查询参数。最终 summary 必须包含 Finding ID opencode-terminal-userinfo。只允许修改src/path_utils.mjs，运行固定opencode-terminal-url-review-check检查，并核对Git状态和差异。最终回答正文必须且只能是JSON对象，不得包含Markdown围栏或其他文字，格式为：{\"summary\":\"实现说明\",\"changed_paths\":[\"src/path_utils.mjs\"],\"tests\":[{\"profile\":\"opencode-terminal-url-review-check\",\"passed\":true}]}。",
+        "allowed_changed_paths": [
+          "src/path_utils.mjs"
+        ],
+        "required_test_profiles": [
+          "opencode-terminal-url-review-check"
+        ],
+        "baseline_checks": [
+          "opencode-terminal-url-review-check"
+        ],
+        "behavior_checks": [
+          "opencode-terminal-url-review-check"
+        ],
+        "regression_checks": [],
+        "max_changed_files": 1,
+        "budget": {
+          "max_steps": 16,
+          "max_tokens": 50000,
+          "timeout_seconds": 900.0,
+          "max_output_chars": 65536,
+          "max_tool_calls_per_step": 8
+        },
+        "grader_version": "coding-eval-grader/v1"
+      },
+      "review_oracle": {
+        "spec_version": "harnessix.coding-eval-review-oracle/v1",
+        "oracle_version": 1,
+        "required_findings": [
+          {
+            "finding_id": "opencode-terminal-userinfo",
+            "category": "security",
+            "severity": "high",
+            "path": "src/path_utils.mjs",
+            "start_line": 13,
+            "end_line": 14,
+            "evidence_sha256": "91df2874de3e5cb53e0fd936b99fd58f1ffa191c885702b1fca13ce5ac504361"
+          }
+        ],
+        "oracle_sha256": "a1fa792a67e6a0e8e884e99a93f00168d4119a79c3b40862bc856da1f1725e89"
+      }
+    }
+  ],
+  "created_at": "2026-09-20T02:10:00Z",
+  "pack_sha256": "6ab16bf0a305c5d5a590be02f028184a9510e941146f3b8d27a3ef99ee7b7c46"
+}

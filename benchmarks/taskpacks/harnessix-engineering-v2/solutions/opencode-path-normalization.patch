@@ -1,0 +1,5 @@
+--- a/src/path_utils.mjs
++++ b/src/path_utils.mjs
+@@ -4 +4 @@
+-  return input
++  return input.replaceAll("\\", "/")

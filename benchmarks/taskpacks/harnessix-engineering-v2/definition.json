@@ -1,0 +1,222 @@
+{
+  "pack_id": "harnessix-engineering",
+  "pack_version": 2,
+  "created_at": "2026-09-20T02:10:00Z",
+  "commit_created_at": "2026-09-20T02:10:00Z",
+  "repositories": [
+    {
+      "repository_id": "agents-utils-benchmark",
+      "language": "python",
+      "source_directory": "repositories/agents-utils-benchmark",
+      "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+      "source_kind": "third_party",
+      "spdx_expression": "MIT",
+      "copyright_notice": "Copyright (c) 2025 OpenAI",
+      "provenance_uri": "https://github.com/openai/openai-agents-python/tree/8dfac2aeec56f9f833b316e66f075bd888930646/src/agents/util",
+      "license_file": "LICENSE",
+      "license_sha256": "13df7812ca53ecaae1cb4a868844bb598373047ae1d580e4debfbef1dd5b6915",
+      "reviewed_at": "2026-09-20T02:10:00Z"
+    },
+    {
+      "repository_id": "langchain-utils-benchmark",
+      "language": "python",
+      "source_directory": "repositories/langchain-utils-benchmark",
+      "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+      "source_kind": "third_party",
+      "spdx_expression": "MIT",
+      "copyright_notice": "Copyright (c) LangChain, Inc.",
+      "provenance_uri": "https://github.com/langchain-ai/langchain/tree/54a9556f5c89dc734f906aa084426e8a238691ac/libs/core/langchain_core/utils",
+      "license_file": "LICENSE",
+      "license_sha256": "4ec67e4ca6e6721dba849b2ca82261597c86a61ee214bbf21416006b7b2d0478",
+      "reviewed_at": "2026-09-20T02:10:00Z"
+    },
+    {
+      "repository_id": "opencode-utils-benchmark",
+      "language": "javascript",
+      "source_directory": "repositories/opencode-utils-benchmark",
+      "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+      "source_kind": "third_party",
+      "spdx_expression": "MIT",
+      "copyright_notice": "Copyright (c) 2025 opencode",
+      "provenance_uri": "https://github.com/anomalyco/opencode/tree/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/core/src/util",
+      "license_file": "LICENSE",
+      "license_sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+      "reviewed_at": "2026-09-20T02:10:00Z"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "task_kind": "refactor",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-dump-compatible-refactor-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.dump_compatible_refactor"
+      ],
+      "description": "检查序列转换分支合并且行为不回退",
+      "instruction": "重构 to_dump_compatible，合并 list 与 tuple 的重复处理分支，同时保持字典、一般 Iterable 和标量行为不变。",
+      "allowed_changed_paths": [
+        "src/agent_utils.py"
+      ]
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "task_kind": "bug_fix",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-normalize-tool-name-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.normalize_tool_name"
+      ],
+      "description": "检查合法工具名也统一转为小写",
+      "instruction": "修复 normalize_tool_name：即使输入只包含合法字符，也必须稳定转换为小写函数名。",
+      "allowed_changed_paths": [
+        "src/agent_utils.py"
+      ]
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "task_kind": "test",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-payload-bytes-test-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.payload_bytes_test"
+      ],
+      "description": "检查严格UTF-8载荷的新增回归测试",
+      "instruction": "为 decode_payload 增加标准库 unittest 回归测试，覆盖合法 UTF-8 与非法字节触发 UnicodeDecodeError。不要修改生产实现。",
+      "allowed_changed_paths": [
+        "tests/test_payload_bytes.py"
+      ]
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "task_kind": "review",
+      "repository_id": "agents-utils-benchmark",
+      "profile_id": "agents-secret-redaction-review-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.secret_redaction_review"
+      ],
+      "description": "检查API Key日志泄漏修复",
+      "instruction": "审查并修复 redact_api_key 的敏感信息泄漏；保留前三个字符和末四个字符，中间使用省略号，短值全部遮蔽。最终 summary 必须包含 Finding ID agents-api-key-plaintext。",
+      "allowed_changed_paths": [
+        "src/agent_utils.py"
+      ],
+      "review_finding": {
+        "finding_id": "agents-api-key-plaintext",
+        "category": "security",
+        "severity": "high",
+        "path": "src/agent_utils.py",
+        "start_line": 33,
+        "end_line": 36
+      }
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "task_kind": "test",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-batch-none-test-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.batch_none_test"
+      ],
+      "description": "检查None批大小边界的新增回归测试",
+      "instruction": "为 batch_iterate 增加标准库 unittest 回归测试，证明 size=None 时非空输入只产生一个批次，空输入不产生批次。不要修改生产实现。",
+      "allowed_changed_paths": [
+        "tests/test_batch_none.py"
+      ]
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "task_kind": "feature",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-storage-replacement-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.storage_replacement"
+      ],
+      "description": "检查NUL字符支持调用方替换文本",
+      "instruction": "扩展 sanitize_for_storage，使 replacement 参数真正决定 NUL 字节替换内容，同时保持默认删除行为。",
+      "allowed_changed_paths": [
+        "src/string_utils.py"
+      ]
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "task_kind": "bug_fix",
+      "repository_id": "langchain-utils-benchmark",
+      "profile_id": "langchain-stringify-dict-keys-check",
+      "program": "/usr/local/bin/python",
+      "arguments": [
+        "-m",
+        "checks.stringify_dict_keys"
+      ],
+      "description": "检查非字符串字典键可稳定序列化",
+      "instruction": "修复 stringify_dict，使整数等非字符串字典键通过 str 转换后参与输出，并保持嵌套值格式。",
+      "allowed_changed_paths": [
+        "src/string_utils.py"
+      ]
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "task_kind": "feature",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-path-normalization-check",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/path_normalization.mjs"
+      ],
+      "description": "检查Windows路径分隔符标准化",
+      "instruction": "为 normalizePath 增加跨平台路径标准化：把反斜线转换为正斜线，已有 POSIX 路径保持不变。",
+      "allowed_changed_paths": [
+        "src/path_utils.mjs"
+      ]
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "task_kind": "refactor",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-retry-delay-refactor-check",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/retry_delay_refactor.mjs"
+      ],
+      "description": "检查重试退避分支消除且行为不变",
+      "instruction": "重构 retryDelay，删除 attempt=0/1 的重复特殊分支，用单一表达式保持指数退避结果不变。",
+      "allowed_changed_paths": [
+        "src/path_utils.mjs"
+      ]
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "task_kind": "review",
+      "repository_id": "opencode-utils-benchmark",
+      "profile_id": "opencode-terminal-url-review-check",
+      "program": "/usr/local/bin/node",
+      "arguments": [
+        "checks/terminal_url_review.mjs"
+      ],
+      "description": "检查终端URL用户信息泄漏修复",
+      "instruction": "审查并修复 sanitizeTerminalUrl 的 URL 用户名和密码泄漏，保留协议、主机、路径与查询参数。最终 summary 必须包含 Finding ID opencode-terminal-userinfo。",
+      "allowed_changed_paths": [
+        "src/path_utils.mjs"
+      ],
+      "review_finding": {
+        "finding_id": "opencode-terminal-userinfo",
+        "category": "security",
+        "severity": "high",
+        "path": "src/path_utils.mjs",
+        "start_line": 13,
+        "end_line": 14
+      }
+    }
+  ]
+}

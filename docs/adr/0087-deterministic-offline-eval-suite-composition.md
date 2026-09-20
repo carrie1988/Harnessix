@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
-code_revision: 9df1c53222709ac98b99156a7aabd936d9351b81
+version: 3
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -76,6 +76,18 @@ supersedes: []
    20个Run各自最多打开一次Recorded Provider；
 10. 取消与停止由Suite Runner验证，Turn超时由Agent Runtime验证，效果`UNKNOWN → reconcile`由Trusted Action与
     Product Action验证；d3不在聚合层伪造或吞并这些权威失败。
+
+### 工程Pack v2兼容修正
+
+首轮固定Container完整场景证明，`harnessix-engineering/v1`的两个Test Case把允许路径指向不存在的`tests/`目录和
+未跟踪新文件；正式Workspace Patch不会隐式创建父目录，Grader v1也明确拒绝Untracked变更。修改产品Runtime或放宽
+Grader会改变已验收安全边界，覆盖v1资源又违反不可变Pack合同。因此追加以下决策：
+
+1. 保留`harnessix-engineering/v1`的Manifest和Archive原字节，Catalog继续允许显式重开v1；
+2. 发布`harnessix-engineering/v2`，只为两个Test Case加入受版本控制、预期失败的测试文件基线，Golden在同一路径做
+   受管替换；其余Case语义、五类配比、许可证和固定Profile不变；
+3. d3完整离线Suite固定使用v2，组合身份、证据Manifest和CI制品均显式记录`pack_version=2`；
+4. 不为Eval增加目录创建旁路，不放宽`untracked_paths`评分，也不改写v1历史证据。
 
 ## 理由
 

@@ -1,0 +1,8 @@
+--- a/src/path_utils.mjs
++++ b/src/path_utils.mjs
+@@ -14 +14,4 @@
+-  return value
++  const parsed = new URL(value)
++  parsed.username = ""
++  parsed.password = ""
++  return parsed.toString()

@@ -1,0 +1,7 @@
+--- a/tests/test_payload_bytes.py
++++ b/tests/test_payload_bytes.py
+@@ -11,0 +12,4 @@
++    def test_rejects_invalid_utf8(self) -> None:
++        with self.assertRaises(UnicodeDecodeError):
++            decode_payload(b"\xff")
++

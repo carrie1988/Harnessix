@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 39
-code_revision: a04606b829e6c4a32935b81c8ccc86ee5802d918
+version: 40
+code_revision: d5142c8da41356a3f7b5a740b23865e9e42e4798
 owners:
   - core
 modules:
@@ -22,6 +22,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0083-built-in-immutable-coding-eval-task-pack.md
   - docs/adr/0084-recoverable-sequential-eval-suite-runner.md
+  - docs/adr/0087-deterministic-offline-eval-suite-composition.md
 related_tests:
   - tests/governance
   - tests/product_ui
@@ -37,6 +38,8 @@ related_tests:
   - tests/evals/test_task_pack.py
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
+  - tests/evals/test_task_pack_suite.py
+  - tests/evals/test_offline_suite_runner.py
   - tests/integration/test_task_pack_execution.py
 supersedes: []
 ---
@@ -514,7 +517,9 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
     Campaign执行/恢复，不另建Eval Agent或旁路审批；实现Revision `a04606b`覆盖Trial Report与Campaign Report发布窗口恢复，
     已由[CI 35479723645](https://github.com/carrie1988/Harnessix/actions/runs/35479723645)完成固定Digest Container与六实例全矩阵验收并关闭；
   - [ ] **d3 完整离线Suite**：每Case固定2 Trial，验证取消、超时、崩溃、UNKNOWN、完成前缀和报告发布恢复，发布
-    20 Trial脱敏可重算报告后关闭0.9.2d；
+    20 Trial脱敏可重算报告后关闭0.9.2d。候选实现首轮固定Container运行识别出v1两个Test Case依赖未跟踪新文件；
+    修正保持v1 Manifest/Archive原字节，新增只替换受版本控制失败测试基线的v2，并固定以v2运行完整Suite。不得放宽
+    Workspace Patch或Grader；在v2固定Container CI和证据制品复核完成前，本项及0.9.2d保持未关闭；
 - [ ] **0.9.2e 受控真实Provider基线**：在固定模型、价格、地域、Token和费用预算下执行完整Suite，保存脱敏报告与
   验证证据；不保存Prompt、模型回答、工具参数/输出、代码正文、绝对路径或Secret。
 
