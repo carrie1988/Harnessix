@@ -43,6 +43,7 @@ from harnessix.artifacts.contracts import (
     HistoryArtifactPurpose,
     ReadArtifactInput,
 )
+from harnessix.artifacts.persistence import insert_artifact
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -226,20 +227,16 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 ):
                     raise KernelError("approval_mismatch", "Artifact 发布缺少匹配的批准")
             await self._check_quota(database, thread_id, turn_id, ref.size_bytes)
-            await database.execute(
-                "INSERT INTO agent_artifacts VALUES "
-                "(?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, 'tool_result')",
-                (
-                    str(ref.artifact_id),
-                    str(thread_id),
-                    str(turn_id),
-                    str(call.call_id),
-                    output.workspace_scope,
-                    ref.model_dump_json(),
-                    ref.size_bytes,
-                    ref.expires_at.isoformat(),
-                    output.body,
-                ),
+            await insert_artifact(
+                database,
+                ref,
+                thread_id=thread_id,
+                turn_id=turn_id,
+                call_id=call.call_id,
+                workspace_scope=output.workspace_scope,
+                body=output.body,
+                purpose="tool_result",
+                created_at=now,
             )
             self._fault("artifact.after_insert")
             updated, _ = await self.session._append_in_transaction(

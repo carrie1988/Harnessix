@@ -23,6 +23,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
+from harnessix.artifacts.persistence import insert_artifact
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.trusted_output import (
     parse_trusted_process_output,
@@ -172,6 +173,7 @@ async def publish_action_output(
         workspace_scope=workspace_scope,
         record_count=record_count,
     )
+    published_at = candidate.expires_at - timedelta(seconds=policy.ttl_seconds)
     try:
         async with session._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
@@ -196,20 +198,16 @@ async def publish_action_output(
             ToolExecutionScope.for_pending_call(thread, turn_id, call)
             _require_approved_process_output(thread, turn_id, call, process_id)
             await check_quota(database, thread_id, turn_id, candidate.size_bytes)
-            await database.execute(
-                "INSERT INTO agent_artifacts VALUES "
-                "(?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, 'action_output')",
-                (
-                    str(candidate.artifact_id),
-                    str(thread_id),
-                    str(turn_id),
-                    str(call.call_id),
-                    workspace_scope,
-                    candidate.model_dump_json(),
-                    candidate.size_bytes,
-                    candidate.expires_at.isoformat(),
-                    body,
-                ),
+            await insert_artifact(
+                database,
+                candidate,
+                thread_id=thread_id,
+                turn_id=turn_id,
+                call_id=call.call_id,
+                workspace_scope=workspace_scope,
+                body=body,
+                purpose="action_output",
+                created_at=published_at,
             )
             fault("action_output.after_insert")
             if session._runtime_owner_token is not owner:

@@ -20,6 +20,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
+from harnessix.artifacts.persistence import insert_artifact
 from harnessix.domain.models import EffectClass, utc_now
 from harnessix.session.sqlite import SQLiteSessionStore
 
@@ -53,13 +54,14 @@ async def publish_action_review(
         or not re.fullmatch(r"[0-9a-f]{64}", workspace_scope)
     ):
         raise KernelError("artifact_invalid", "Action Review与写调用或Workspace不匹配")
+    published_at = utc_now()
     candidate = ArtifactRef(
         artifact_id=artifact_id,
         sha256=hashlib.sha256(body).hexdigest(),
         size_bytes=len(body),
         records=record_count,
         complete=True,
-        expires_at=utc_now() + timedelta(seconds=policy.ttl_seconds),
+        expires_at=published_at + timedelta(seconds=policy.ttl_seconds),
     )
     try:
         async with session._connection() as database:
@@ -85,20 +87,16 @@ async def publish_action_review(
             if approval_for(get_turn(thread, turn_id), call) is not None:
                 raise KernelError("approval_mismatch", "Action Review不能替换已有审批")
             await check_quota(database, thread_id, turn_id, candidate.size_bytes)
-            await database.execute(
-                "INSERT INTO agent_artifacts VALUES "
-                "(?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, 'action_review')",
-                (
-                    str(candidate.artifact_id),
-                    str(thread_id),
-                    str(turn_id),
-                    str(call.call_id),
-                    workspace_scope,
-                    candidate.model_dump_json(),
-                    candidate.size_bytes,
-                    candidate.expires_at.isoformat(),
-                    body,
-                ),
+            await insert_artifact(
+                database,
+                candidate,
+                thread_id=thread_id,
+                turn_id=turn_id,
+                call_id=call.call_id,
+                workspace_scope=workspace_scope,
+                body=body,
+                purpose="action_review",
+                created_at=published_at,
             )
             fault("action_review.after_insert")
             if session._runtime_owner_token is not owner:

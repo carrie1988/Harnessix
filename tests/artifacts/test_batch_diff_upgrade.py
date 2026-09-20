@@ -89,7 +89,7 @@ raise AssertionError("未到达退出点")
     assert child.returncode == 83, child.stderr
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            25 if point == "after_commit" else 8
+            26 if point == "after_commit" else 8
         )
         assert list(db.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
         assert [
@@ -112,8 +112,11 @@ raise AssertionError("未到达退出点")
         # 旧只读调用仍不能重复归档；其他两种用途不是放宽旧接口。
         with pytest.raises(sqlite3.IntegrityError):
             db.execute(
-                "INSERT INTO agent_artifacts SELECT ?,thread_id,turn_id,call_id,workspace_scope,"
-                "manifest_json,size_bytes,expires_at,state,body,purpose FROM agent_artifacts",
+                "INSERT INTO agent_artifacts "
+                "(artifact_id,thread_id,turn_id,call_id,workspace_scope,manifest_json,size_bytes,"
+                "expires_at,state,body,purpose,created_at) SELECT ?,thread_id,turn_id,call_id,"
+                "workspace_scope,manifest_json,size_bytes,expires_at,state,body,purpose,created_at "
+                "FROM agent_artifacts",
                 (str(uuid4()),),
             )
     monkeypatch.setattr(

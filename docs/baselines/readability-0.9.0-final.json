@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 310,
-    "physical_lines": 70415,
-    "logical_lines": 62664,
-    "documented_modules": 310,
-    "classes": 787,
-    "documented_classes": 293,
-    "functions": 2791,
-    "documented_functions": 362,
+    "source_files": 318,
+    "physical_lines": 71924,
+    "logical_lines": 63979,
+    "documented_modules": 318,
+    "classes": 799,
+    "documented_classes": 299,
+    "functions": 2863,
+    "documented_functions": 364,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -476,8 +476,8 @@
       "path": "src/harnessix/artifacts/batch_diff.py",
       "qualname": "SQLiteBatchDiffPublisher",
       "kind": "class",
-      "line": 47,
-      "lines": 204,
+      "line": 48,
+      "lines": 202,
       "documented": true
     },
     {
@@ -486,8 +486,8 @@
       "path": "src/harnessix/artifacts/batch_diff.py",
       "qualname": "SQLiteBatchDiffPublisher.append",
       "kind": "function",
-      "line": 150,
-      "lines": 101,
+      "line": 151,
+      "lines": 99,
       "documented": false,
       "decision_complexity": 27
     },
@@ -497,8 +497,8 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore",
       "kind": "class",
-      "line": 123,
-      "lines": 432,
+      "line": 124,
+      "lines": 428,
       "documented": true
     },
     {
@@ -507,7 +507,7 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore._verify_page",
       "kind": "function",
-      "line": 440,
+      "line": 437,
       "lines": 40,
       "documented": false,
       "decision_complexity": 24

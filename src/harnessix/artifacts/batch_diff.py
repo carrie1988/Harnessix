@@ -26,6 +26,7 @@ from harnessix.agent.models import (
 from harnessix.agent.patching import inspection_scope
 from harnessix.agent.reducer import apply_event, get_turn, pending_calls
 from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.artifacts.persistence import insert_artifact
 from harnessix.artifacts.sqlite import SQLiteArtifactStore, records
 from harnessix.domain.models import utc_now
 from harnessix.patches.batch_agent_bridge import ManagedPatchBatchBridge
@@ -202,21 +203,19 @@ class SQLiteBatchDiffPublisher:
                             raise
                         continue
                     ref = publication.ref
-                    await database.execute(
-                        "INSERT INTO agent_artifacts VALUES "
-                        "(?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)",
-                        (
-                            str(ref.artifact_id),
-                            str(thread_id),
-                            str(publication.turn_id),
-                            str(publication.call_id),
-                            publication.scope,
-                            ref.model_dump_json(),
-                            ref.size_bytes,
-                            ref.expires_at.isoformat(),
-                            publication.body,
-                            publication.purpose,
-                        ),
+                    published_at = ref.expires_at - timedelta(
+                        seconds=self.artifacts.policy.ttl_seconds
+                    )
+                    await insert_artifact(
+                        database,
+                        ref,
+                        thread_id=thread_id,
+                        turn_id=publication.turn_id,
+                        call_id=publication.call_id,
+                        workspace_scope=publication.scope,
+                        body=publication.body,
+                        purpose=publication.purpose,
+                        created_at=published_at,
                     )
                     refs[publication.item_id] = ref
                     self.artifacts._fault("batch_diff.after_insert")
