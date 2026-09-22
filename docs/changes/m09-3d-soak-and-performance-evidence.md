@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: 5bcc178de04a01dc90474685b2d1abc7019142b3
+version: 4
+code_revision: ff1976f1db8fecae9b419bb85ba9407cb8c4ac11
 owners:
   - core
 modules:
@@ -26,6 +26,8 @@ related_tests:
   - tests/product_config/test_action_recovery.py
   - tests/trusted_actions/test_router.py
   - tests/artifacts/test_recovery.py
+  - tests/benchmarks/test_soak_provider.py
+  - tests/benchmarks/test_soak_samples.py
 supersedes: []
 ---
 
@@ -35,9 +37,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有不保留请求历史的Soak Provider夹具及10 Turn回归，尚无0.9.3d专项Soak运行器、数值样本/Manifest/Threshold Profile实现或正式性能证据。 |
+| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格单样本合同、Run内序号/计数校验与可重算整数分位数，尚无正式Soak运行器、Manifest/Threshold Profile发布或正式性能证据。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `5bcc178de04a01dc90474685b2d1abc7019142b3` |
+| 代码版本 | `ff1976f1db8fecae9b419bb85ba9407cb8c4ac11` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -235,7 +237,7 @@ sequenceDiagram
 | Reconcile | 执行Replay、引用校验、UNKNOWN/重复效果、孤儿和重启后恢复断言 | 仅计故障计数 | 所有完整性断言通过；失败运行仍须保留失败事实。 |
 | Finalize | 重算统计、写Manifest、校验摘要、原子发布 | 否 | 无未知字段、无摘要冲突、无隐私泄漏。 |
 
-预热次数、正式样本次数、每个指标的样本数和分位数插值规则由独立Threshold Profile或首轮基线前的发布配置冻结；ADR没有给出这些具体值，因此当前设计明确标记为“待基线冻结”，禁止实现者臆造默认值。无论冻结为何值，正式样本必须大于0，且实际长度必须与Manifest/profile合同一致。
+预热次数、正式样本次数和每个指标的样本数由独立Threshold Profile或首轮基线前的发布配置冻结；分位数算法固定为`nearest_rank_v1`，现有样本统计实现已求证。数量和工程余量仍标记为“待基线冻结”，禁止实现者臆造默认值。无论冻结为何值，正式样本必须大于0，且实际长度必须与Manifest/Profile合同一致。
 
 ### 7.4 独立基线与复验时序
 
@@ -250,7 +252,7 @@ sequenceDiagram
     B->>F: 发布原始样本、Manifest、事实统计
     F->>F: 复核环境、门槛、失败事实和低敏字段
     F->>P: 写入基线Run ID与Manifest SHA-256
-    Note over P: 工程余量、样本数、分位数方法待冻结后才可执行
+    Note over P: 工程余量、样本数与阈值待冻结后才可执行；分位数算法固定nearest_rank_v1
     V->>V: 新State Root、新Run ID、同场景门槛与正式样本
     V->>X: 读取样本、Manifest和Profile
     X->>X: 先验签/摘要/Schema/环境/场景校验
@@ -394,7 +396,7 @@ classDiagram
 | 类/组件 | 职责 | 状态所有权 | 线程/进程安全 | 直接依赖 | 扩展点 |
 |---|---|---|---|---|---|
 | `SoakRunner`（规划） | 编排一个场景的Prepare/Warmup/Measure/Reconcile/Finalize | Runner拥有运行状态；业务状态仍由当前Runtime/Store拥有 | 一个Run单写；并发操作必须走SDK/Protocol既有容量 | `AgentClient`、夹具、只读诊断端口、Writer | 场景注册表；不扩展公共协议。 |
-| `SoakSample`（规划） | 表达一条原始数值观测 | 文件Writer拥有 | 单调序号；追加后不可修改 | 测量时钟、RSS Adapter | 新指标必须增加白名单和Profile版本规则。 |
+| `SoakSample`（合同已实现） | 表达一条原始数值观测并校验指标、单位、时钟和RSS归一化 | 当前由测试/调用方构造；文件Writer待实现 | 合同不可变；Run内序号由`validate_sample_series`验证 | 测量时钟、RSS Adapter | 新指标必须增加白名单和Profile版本规则。 |
 | `SoakManifest`（规划） | 索引环境、负载、状态、摘要和故障事实 | Finalizer拥有 | 临时写、校验后一次发布 | Sample文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
 | `ThresholdProfile`（规划） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用。 |
 | `EvidenceValidator`（规划） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile | 增加统计指标必须保留旧字段兼容规则。 |
@@ -418,7 +420,7 @@ classDiagram
 
 | `scenario_id` | v1最低输入与固定操作 | 正式样本/断言 | 当前实现状态 |
 |---|---|---|---|
-| `long_session` | 一个Thread至少1000个本地确定性Turn；固定包含Replay、Context检查，并覆盖Compaction相关事件（若夹具满足现有配置）；Provider必须不保留请求历史，仅保留请求计数 | 启动/Turn本地边界、RSS、Replay一致性、Context/Compaction状态、DB/WAL水位；`replay(events) == projection`；报告Provider请求计数而不报告请求正文 | Agent/Session/Context链和`SoakProvider`夹具当前存在；`ScriptedProvider`会保留请求深拷贝；场景Runner、固定样本和正式1000 Turn证据未实现。 |
+| `long_session` | 一个Thread至少1000个本地确定性Turn；固定包含Replay、Context检查，并覆盖Compaction相关事件（若夹具满足现有配置）；Provider必须不保留请求历史，仅保留请求计数 | 启动/Turn本地边界、RSS、Replay一致性、Context/Compaction状态、DB/WAL水位；`replay(events) == projection`；报告Provider请求计数而不报告请求正文 | Agent/Session/Context链、`SoakProvider`夹具和样本合同当前存在；`ScriptedProvider`会保留请求深拷贝；场景Runner、样本落盘和正式1000 Turn证据未实现。 |
 | `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | 启动P50/P95/P99、列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | `list_threads`和Runtime启动路径当前存在；低效路径是待实测风险。 |
 | `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | SubprocessTransport当前默认64、允许范围1～1024；Soak编排未实现。 |
 | `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | Artifact合同和容量/维护路径当前存在；正式混合负载未实现。 |
@@ -451,26 +453,29 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 | `measured_samples` | 严格正整数 | 是 | 冻结配置 | 正式样本目标数；具体值待基线冻结 | 待冻结 | 低 | Manifest | 实际样本长度必须相等。 |
 | `operations` | 固定有序枚举数组 | 是 | 场景配置 | 规定每种样本测量边界；未知操作拒绝 | 待冻结 | 低 | Manifest | 增加操作升场景/Profile版本。 |
 
-### 12.2 `SoakSample`（`harnessix.soak-sample/v1`，规划）
+### 12.2 `SoakSample`（`harnessix.soak-sample/v1`，单样本合同已实现）
 
-每条原始样本独立写为严格对象；实现应使用Schema `extra=forbid`语义拒绝未知字段。
+[`scripts/soak_samples.py`](../../scripts/soak_samples.py)中的每条原始样本是`extra=forbid`且不可变的严格对象；当前只实现内存中的合同/统计，JSONL落盘和跨文件摘要仍待实现。`SCENARIO_METRICS`固定六个场景允许的指标：`long_session`为`turn_local`与`rss_peak`，`many_threads`为`thread_list_page`与`rss_peak`，`sdk_capacity`为`sdk_roundtrip`与`rss_peak`，`artifact_growth`为`artifact_publish`、`artifact_read`与`rss_peak`，`action_recovery`为`recovery_scan`与`rss_peak`，`restart`为`product_startup`与`rss_peak`。计数与文件水位属于Manifest，不作为分位数样本。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
 | `spec_version` | 固定字符串 | 是 | Writer | 必须为`harnessix.soak-sample/v1` | 无 | 低 | 样本文件 | 变更升版本。 |
 | `run_id` | 不透明Run标识 | 是 | Runner | 只关联本次Run，不得为业务Thread/Request/Action ID | 无 | 低 | 样本文件 | 不可跨Run复用。 |
 | `scenario_id` | 固定枚举 | 是 | Scenario | 必须与Manifest一致 | 无 | 低 | 样本文件 | 不一致拒绝。 |
-| `sample_index` | 严格正整数 | 是 | Writer | 同一Run内从1开始连续递增，无重复/缺口 | 无 | 低 | 样本文件 | 乱序或重复失败关闭。 |
+| `sample_index` | 严格正整数 | 是 | Writer | 整个Run内从1开始连续递增，无重复/缺口；包含预热样本 | 无 | 低 | 样本文件 | 乱序或重复失败关闭。 |
 | `phase` | `warmup`/`measure` | 是 | Runner | 只有`measure`进入正式统计；预热样本可记录但不得混入 | 无 | 低 | 样本文件 | 未知阶段拒绝。 |
-| `metric` | 固定指标枚举 | 是 | Scenario | 例如`startup`、`thread_list_page`、`turn_local`、`artifact_read`、`recovery_scan`、`rss_peak` | 无 | 低 | 样本文件 | 新指标必须更新Profile。 |
-| `value` | 严格非负整数 | 是 | 采样器 | 不允许NaN、Infinity、负数；时延/字节/计数均整数 | 无 | 低 | 样本文件 | 不允许用0代表未采集。 |
-| `unit` | 固定枚举 | 是 | 采样器 | `ns`、`bytes`、`count`；同一Metric单位固定 | 无 | 低 | 样本文件 | 单位变化升版本。 |
+| `metric` | 固定指标枚举 | 是 | Scenario | `turn_local`、`thread_list_page`、`sdk_roundtrip`、`artifact_publish`、`artifact_read`、`recovery_scan`、`product_startup`、`rss_peak`；并受场景映射限制 | 无 | 低 | 样本文件 | 新指标必须更新Profile。 |
+| `value` | 严格非负整数 | 是 | 采样器 | 不允许NaN、Infinity、负数；时延为ns，RSS为归一化bytes | 无 | 低 | 样本文件 | 缺测不能补0；RSS额外要求严格正值。 |
+| `unit` | 固定枚举 | 是 | 采样器 | `ns`或`bytes`；时延固定`ns`，RSS固定`bytes` | 无 | 低 | 样本文件 | 单位变化升版本。 |
 | `clock` | 固定枚举 | 条件 | 采样器 | 时延使用`monotonic_ns`；墙钟只用于Manifest时间 | 无 | 低 | 样本文件 | 不得用墙钟差值作性能样本。 |
 | `rss_source` | 固定枚举 | RSS条件必填 | RSS Adapter | `getrusage`或Windows `GetProcessMemoryInfo`等实际源 | 无 | 低 | 样本文件 | 必须与平台/raw单位校验一致。 |
 | `rss_raw_unit` | 固定枚举 | RSS条件必填 | RSS Adapter | `bytes`或`KiB`；未知即失败关闭 | 无 | 低 | 样本文件 | 不可按平台猜测。 |
 | `rss_normalization` | 固定枚举 | RSS条件必填 | RSS Adapter | `identity`或`kib_times_1024` | 无 | 低 | 样本文件 | 归一化结果统一为bytes。 |
+| `rss_raw_value` | 严格正整数 | RSS条件必填 | RSS Adapter | 平台API返回的原始测量值 | 无 | 低 | 样本文件 | 与raw unit、归一化规则和`rss_bytes`逐项核对。 |
 | `rss_bytes` | 严格正整数 | RSS条件必填 | Adapter | 归一化后的峰值RSS/工作集；不可填0 | 无 | 低 | 样本文件 | 缺失/单位未知使Run`unverified`。 |
 | `observed_at` | UTC时间 | 否 | Writer | 仅诊断顺序；不用于耗时计算 | 无 | 低 | 样本文件 | 不能替代monotonic边界。 |
+
+`validate_sample_series`要求Run身份、场景、全Run连续序号和每个允许指标的正式样本计数精确匹配冻结输入，预热样本不参与统计。`nearest_rank`按非负整数升序，使用1基位置`ceil(p*n/100)`选取P50/P95/P99，不作浮点插值；空集、负数和布尔值均拒绝。该算法现已由[`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)覆盖；未来Profile必须记录`nearest_rank_v1`并据此独立重算，现阶段尚无可发布Profile。
 
 ### 12.3 `SoakManifest`（`harnessix.soak-manifest/v1`，规划）
 
@@ -506,7 +511,7 @@ Run提交标记固定为`COMMITTED.json`，采用严格JSON对象`{"spec_version
 
 ### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，规划）
 
-Profile是独立于Run的只读发布对象。ADR只决定“基线与阈值分离、阈值带工程余量、独立运行验证”，没有决定具体样本数量、分位数插值规则、工程余量数值、平台硬件档位范围或每项指标门槛；这些字段必须在基线冻结时明确填写，冻结前状态只能为`pending_baseline_freeze`。
+Profile是独立于Run的只读发布对象。分位数算法已固定为`nearest_rank_v1`；具体样本数量、工程余量数值、平台硬件档位范围或每项指标门槛仍须在基线冻结时明确填写，冻结前状态只能为`pending_baseline_freeze`。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
@@ -520,7 +525,7 @@ Profile是独立于Run的只读发布对象。ADR只决定“基线与阈值分�
 | `baseline_run_id` | Run标识 | 是 | 基线Manifest | 首次事实基线的身份 | 无 | 低 | Profile | 必须与摘要核对。 |
 | `baseline_manifest_sha256` | 64位摘要 | 是 | Writer/冻结流程 | 绑定完整基线Manifest | 无 | 低 | Profile | 不符拒绝。 |
 | `sample_count` | 严格正整数对象 | 是 | 基线/冻结配置 | 每Metric正式样本数；具体值待冻结且复验必须相等 | 待冻结 | 低 | Profile | 不得运行时改写。 |
-| `quantile_method` | 固定算法枚举 | 是 | 冻结流程 | P50/P95/P99排序、位置和插值规则；具体方法待冻结 | 待冻结 | 低 | Profile | 缺失不得比较。 |
+| `quantile_method` | 固定算法枚举 | 是 | 样本合同 | 固定`nearest_rank_v1`：非负整数升序取1基`ceil(p*n/100)`位置，无插值 | 无 | 低 | Profile | 缺失或不同方法不得比较。 |
 | `margin_policy` | 结构化对象 | 是 | 工程评审 | 基线加工程余量的方向、单位和数值；具体值待冻结 | 待冻结 | 低 | Profile | 禁止自由文本或运行时选择。 |
 | `metric_thresholds` | 固定Metric到上/下限对象 | 是（`frozen`时） | 冻结流程 | 每Metric的单位、统计量、上限/下限和比较方向 | 空（仅待冻结） | 低 | Profile | `frozen`不得为空；缺项为`unverified`。 |
 | `required_platform_validation` | 平台枚举数组 | 是 | 发布策略 | 明确本Profile要求的平台集合 | 待冻结 | 低 | Profile | 缺平台不可声称三平台完成。 |
@@ -691,7 +696,7 @@ run_scenario(scenario, seed, environment):
 | Action跨Store恢复 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | `scan_product_action_recovery` | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py) | Action恢复扫描合同 | 当前实现；固定故障矩阵规划。 |
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
-| 样本/Manifest/Profile | 无（当前Revision未实现） | `SoakSample`、`SoakManifest`、`ThresholdProfile`（规划） | 无（需新增合同/校验测试） | 缺字段、未知字段、NaN/Infinity、负数、重复场景、摘要不符、分位数伪报、环境错配 | 规划；不可写成当前能力。 |
+| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py) | `SoakSample`、`SoakQuantiles`、`validate_sample_series`已实现；`SoakManifest`与`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)；Manifest/Profile测试待增 | 单样本未知字段、NaN、负数、指标/单位/RSS不匹配、Run序号/计数和分位数已测；摘要冲突、自报统计和环境错配待测 | 仅样本合同与内存统计完成；发布证据未完成。 |
 | RSS适配与三平台探针 | 无（当前Revision未实现） | `RSSAdapter`（规划） | 无（需新增Linux/macOS/Windows真实探针测试） | raw unit、normalization、平台缺测失败关闭 | 规划；本节单位事实是设计输入。 |
 | 原子证据发布 | 无（当前Revision未实现） | `EvidenceWriter.publish`（规划） | 无（需新增临时文件/中断/目标冲突测试） | 排他Run目录、`fsync`、SHA-256、最后提交标记、不可覆盖 | 规划。 |
 
@@ -702,7 +707,7 @@ run_scenario(scenario, seed, environment):
 | 层次 | 测试内容 | 固定输入/门槛 | 通过条件 | 当前/规划 |
 |---|---|---|---|---|
 | Schema合同 | Sample/Manifest/Profile字段、类型、extra-forbid、状态和摘要 | v1对象及所有必填字段 | 缺字段、未知字段、NaN/Infinity、负数、错误单位、重复/缺口序号均拒绝 | 规划新增。 |
-| 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | Profile冻结的`sample_count`/`quantile_method` | 自报统计被忽略；摘要冲突失败；方法缺失待冻结 | 规划新增。 |
+| 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | `nearest_rank_v1`已固定；`sample_count`待Profile冻结 | 内存重算、预热排除和计数严格匹配已测；自报统计/摘要冲突仍待Manifest/Validator测试 | 样本级已实现；发布级规划中。 |
 | RSS合同 | Linux KiB、macOS运行时单位差异、Windows bytes和unknown | 三平台真实探针 | source/raw unit/normalization完整；unknown为`unverified`且非零；不填0 | 规划新增。 |
 | 原子发布 | 临时文件、fsync、摘要、目标冲突、进程中断 | 独立Run目录 | 只发布完整不可变Run；失败不产生PASS、不覆盖既有Run | 规划新增。 |
 | 长会话集成 | 真实Agent/SDK/Store链、Replay、Context/Compaction | 单Thread >=1000 Turn | Replay/投影一致、无隐藏失败、样本完整 | 场景规划；现有Runtime测试作为回归。 |
@@ -736,7 +741,7 @@ run_scenario(scenario, seed, environment):
 |---|---|---|---|
 | 当前启动/列表/Action扫描存在全量遍历路径 | 大规模负载可能触发延迟或RSS增长 | 先按本设计实测并定位；优化另立兼容设计，不预先跳过完整性检查 | 0.9.3d；必要时后续版本 |
 | `ScriptedProvider.requests`保留完整请求历史 | 200 Turn预研中的RSS/时延会混入Provider夹具开销，不能代表产品内存基线 | 正式长会话使用仅保留请求计数的无状态确定性Provider；200 Turn数据只作预研，不能进入Manifest/Profile | 0.9.3d |
-| 样本数、分位数方法和余量尚未冻结 | 无法合法生成可执行阈值 | 基线前冻结结构化Profile；待冻结不产生PASS | 0.9.3d发布前 |
+| 样本数、工程余量和门槛尚未冻结 | 无法合法生成可执行阈值 | `nearest_rank_v1`已固定；其余基线前冻结结构化Profile，待冻结不产生PASS | 0.9.3d发布前 |
 | 平台RSS API单位不一致 | RSS比较可能错误 | 记录source/raw unit/normalization；Linux、macOS、Windows分别真实探针；未知失败关闭 | 0.9.3d |
 | macOS旧手册与Python实测单位存在差异 | 直接按文档乘1024会放大/缩小结论 | 使用目标运行时探针；当前已求证观测按bytes处理，峰值与当前RSS分开解释 | 0.9.3d |
 | RSS API或文件系统能力缺失 | 平台证据不完整 | `unverified`而非0；发布门禁不PASS；补充平台适配或重新运行 | 0.9.3d |
@@ -753,3 +758,4 @@ run_scenario(scenario, seed, environment):
 | 1 | `acc68561b3a0b1388b76383e4831d7c5d63fd4cf` | 2026-09-22 | 根据ADR-0092、0.9.3总体设计第9节、专项源码研究第10节和详细设计模板，建立0.9.3d固定Soak、证据合同、独立阈值复验、三平台RSS边界及当前/规划源码映射。 |
 | 2 | `acc68561b3a0b1388b76383e4831d7c5d63fd4cf` | 2026-09-22 | 补充`ScriptedProvider.requests`深拷贝造成的Provider内存污染预研、200 Turn非正式观测及无状态确定性Provider约束。 |
 | 3 | `5bcc178de04a01dc90474685b2d1abc7019142b3` | 2026-09-22 | 明确排他Run目录、末尾`COMMITTED.json`及Manifest摘要无循环引用的提交协议；同步`SoakProvider`夹具与10 Turn回归的部分实现状态。 |
+| 4 | `ff1976f1db8fecae9b419bb85ba9407cb8c4ac11` | 2026-09-23 | 落实单样本严格合同、六场景指标映射、RSS原始值复算、Run内序号与计数校验，以及`nearest_rank_v1`整数分位数算法；Manifest和Profile发布仍待实现。 |
