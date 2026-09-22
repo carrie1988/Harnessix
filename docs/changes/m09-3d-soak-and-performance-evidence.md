@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: e5378212a22b627d7f3f73087c21ca74c0b0aba4
+version: 7
+code_revision: 9620b37697f9d926128f07837ca1198db5a787ac
 owners:
   - core
 modules:
@@ -30,6 +30,7 @@ related_tests:
   - tests/benchmarks/test_soak_samples.py
   - tests/benchmarks/test_soak_sample_file.py
   - tests/benchmarks/test_soak_manifest.py
+  - tests/benchmarks/test_soak_evidence.py
 supersedes: []
 ---
 
@@ -39,9 +40,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest内存合同、有界JSONL样本文件读写和样本独立重算；尚无正式Soak运行器、Manifest/Threshold Profile发布或正式性能证据。 |
+| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、独占Run目录、样本/Manifest/提交标记发布及独立重算；尚无正式Soak场景Runner、Threshold Profile、真实平台负载和正式性能证据。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `e5378212a22b627d7f3f73087c21ca74c0b0aba4` |
+| 代码版本 | `9620b37697f9d926128f07837ca1198db5a787ac` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -61,7 +62,7 @@ supersedes: []
 
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
-本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d当前仅实现Soak Provider、样本读写、样本统计和Manifest内存合同/样本复核；正式Runner、RSS平台适配与探针、Manifest提交协议、Threshold Profile校验器仍待实现。
+本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同和Run提交标记；正式场景Runner、RSS平台适配与探针、Threshold Profile和发布阈值校验器仍待实现。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -130,7 +131,7 @@ flowchart TB
     Runner --> Capacity[当前：capacity_report]
     Runner --> Recovery[当前：scan_product_action_recovery]
     Runner --> Samples[规划：数值样本写入器]
-    Samples --> Manifest[规划：Manifest校验与原子发布]
+    Samples --> Manifest[当前：Manifest校验与Run提交]
     Baseline[第一次独立运行] --> Profile[规划：Threshold Profile冻结]
     Profile --> Validator[规划：独立复验校验器]
     Validator --> Report[规划：低敏发布报告]
@@ -165,7 +166,7 @@ flowchart TB
 | AgentProtocolServer / AgentApplicationService（当前） | Protocol方法校验、请求幂等、Thread列表分页、Turn驱动 | Session Store、AgentRuntime、Artifact/Action端口 | 性能报告逻辑、阈值选择 | 由App Server进程拥有。 |
 | AgentRuntime（当前） | Turn执行、事件持久化、Replay、Context/Compaction、Action恢复 | Session、Provider、Tool/Action、Artifact | Runner专用捷径、跳过持久事实 | 以`async with`打开/关闭；启动恢复现有开放Turn。 |
 | Capacity/Recovery Adapter（当前） | 提供低敏容量报告和Action跨Store恢复扫描 | SQLite共库、Action/Artifact/Session端口 | 返回业务ID、正文、路径 | 只读诊断调用；恢复扫描保持现有语义。 |
-| Evidence Writer/Validator（规划） | 数值样本、Manifest、Profile的严格Schema、SHA-256、原子发布和重算 | 文件系统临时目录、标准时钟、RSS适配器 | 自报PASS、未知字段、覆盖既有Run、读取敏感正文 | 一个Run或一个验证Profile实例。 |
+| Evidence Writer/Validator（部分实现） | 当前已对样本与Manifest执行严格Schema、SHA-256、最后提交标记及独立重算；Profile与发布阈值验证仍待实现 | 私有文件目录、标准时钟；RSS平台探针待实现 | 自报PASS、未知字段、覆盖既有Run、读取敏感正文 | 一个Run单Writer；读取必须验证提交标记和原始样本。 |
 | RSS Adapter（规划） | 读取平台峰值RSS/工作集，记录raw单位并归一化为bytes | Linux/macOS/Windows原生测量接口 | 以0替代未知、跨平台套用未验证单位 | 贯穿Run；至少在预热后和每个正式样本边界采集。 |
 
 ## 7. 核心流程
@@ -399,20 +400,21 @@ classDiagram
 |---|---|---|---|---|---|
 | `SoakRunner`（规划） | 编排一个场景的Prepare/Warmup/Measure/Reconcile/Finalize | Runner拥有运行状态；业务状态仍由当前Runtime/Store拥有 | 一个Run单写；并发操作必须走SDK/Protocol既有容量 | `AgentClient`、夹具、只读诊断端口、Writer | 场景注册表；不扩展公共协议。 |
 | `SoakSample`（合同已实现） | 表达一条原始数值观测并校验指标、单位、时钟和RSS归一化 | 当前由测试/调用方构造；文件Writer待实现 | 合同不可变；Run内序号由`validate_sample_series`验证 | 测量时钟、RSS Adapter | 新指标必须增加白名单和Profile版本规则。 |
-| `SoakManifest`（内存合同已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由调用方构造；Finalizer待实现 | 严格模型已实现；文件写入与提交待实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
+| `SoakManifest`（合同与文件发布已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由调用方构造；正式Runner/Finalizer待实现 | 严格模型、文件写入、最后提交标记和独立重读已实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
 | `ThresholdProfile`（规划） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用。 |
 | `EvidenceValidator`（规划） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile | 增加统计指标必须保留旧字段兼容规则。 |
 | `RSSAdapter`（规划） | 读取raw RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；平台调用串行化 | Linux/macOS/Windows测量API | 平台新API须记录来源和raw单位。 |
 
 ## 11. 接口设计
 
-以下是0.9.3d目标内部/证据接口；当前Revision没有对应公共CLI/SDK方法，不能以本文接口名声称已经可调用。
+以下是0.9.3d内部/证据接口；已实现的样本与Run提交方法仅属于开发/发布脚本，不属于公共CLI/SDK产品协议。
 
 | 接口/方法 | 调用者 | 输入/输出 | 前置/后置条件 | 错误与重试 | 取消/超时 | 幂等/顺序 | 权限 |
 |---|---|---|---|---|---|---|---|
 | `SoakRunner.run(scenario, seed, environment)`（规划） | 发布运行器 | 输入固定Scenario/seed/平台档位；输出已发布Run状态 | 独立State Root、Revision和RSS能力通过；完成后只产生不可变Run | 参数/Schema/平台/业务失败均非零；重试必须新Run ID，不覆盖失败事实 | 取消/超时保留失败事实；不得把已接受请求直接重发 | 一个Run只允许单一Writer；样本序号严格递增 | 发布工程角色；不得访问用户凭据/Workspace。 |
 | `EvidenceWriter.append(sample)`（规划） | Runner | `SoakSample`；无业务正文 | `phase=measuring`且单位/值合法 | 非有限值、负数、未知指标立即失败 | 写入失败不回滚业务事实；Run不能PASS | `sample_index`不重复；文件追加后不可改 | 仅Run临时目录写权限。 |
-| `EvidenceWriter.publish(manifest)`（规划） | Runner/Validator | 已校验Manifest；输出带摘要的提交标记 | 样本摘要、字段白名单和隐私扫描通过，Run目录排他创建 | 目标已存在或fsync失败为失败；不得覆盖 | 取消发生在提交标记前不得留下PASS | 同一Run单Writer，提交标记最后原子写入 | 只允许发布目录。 |
+| `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
+| `read_published_run(run_directory)`（当前） | 发布校验器/未来Profile验证器 | 只读Run目录；输出严格Manifest和其SHA-256 | 文件集合、标记、Manifest、样本和统计全部校验 | 任一缺失/篡改为稳定`soak_run_invalid` | 读取失败不产生PASS | 同一字节输入结果确定 | 只读证据。 |
 | `EvidenceValidator.validate(run, profile)`（规划） | 发布门禁 | 已发布Run和同平台Profile；输出`PASS`/`FAIL`/`unverified`报告 | 先校验原始样本和摘要，再重算，最后比较阈值 | 任一缺失/篡改/环境错配/未知字段失败关闭 | 取消不产生PASS | 同一输入摘要结果确定；报告不可覆盖 | 只读证据与Profile。 |
 | `RSSAdapter.read()`（规划） | Runner | 无业务输入；输出`RSSObservation` | 当前平台、RSS源和raw单位经过验证 | API缺失、读数异常、单位未知为`unverified`；绝不返回0替代 | 单次读取有界；失败不重试为假值 | 同一采样边界最多一个平台读数 | 只读当前Run进程指标。 |
 | `capacity_report(database, path)`（当前） | Runner/维护端口 | 当前SQLite连接和路径；输出三类低敏容量报告 | 同一读事务内校验投影、事件、请求和Artifact字段 | 数据损坏抛出稳定KernelError；不吞错 | 只读；不改变业务结果 | 由当前实现负责三类固定顺序 | Runtime Owner/维护权限。 |
@@ -481,7 +483,7 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 
 ### 12.3 `SoakManifest`（`harnessix.soak-manifest/v1`，内存合同已实现）
 
-[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。文件级Manifest写入、`COMMITTED.json`及独立Profile验证仍未实现。
+[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有单独发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py)执行Run级排他目录、Manifest字节发布和最后提交标记；独立Profile验证仍未实现。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
@@ -509,7 +511,7 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 
 Manifest禁止字段：绝对路径、用户/主机名、Prompt、代码、Tool正文、Secret、stderr、PID、Request/Thread/Action ID以及原始异常文本。`statistics`中的值也不能成为唯一证据；Validator必须从`SoakSample`重算。
 
-Run提交标记固定为`COMMITTED.json`，采用严格JSON对象`{"spec_version":"harnessix.soak-commit/v1","manifest_sha256":"<64位小写十六进制>"}`；拒绝缺失、未知字段和非法摘要。标记只引用Manifest字节摘要，不参与Manifest的`evidence_sha256`，避免循环摘要。存在标记但Manifest、样本或报告摘要不符时，整个Run仍为无效证据，不能恢复性地判PASS。
+Run提交标记固定为`COMMITTED.json`，采用严格JSON对象`{"spec_version":"harnessix.soak-commit/v1","manifest_sha256":"<64位小写十六进制>"}`；拒绝缺失、未知字段和非法摘要。标记只引用Manifest字节摘要，不参与Manifest的`evidence_sha256`，避免循环摘要。当前`read_published_run`只接受目录内恰好有`samples.jsonl`、`manifest.json`和`COMMITTED.json`，并重算全部摘要、统计和RSS。存在标记但任何引用不符时，整个Run仍为无效证据，不能恢复性地判PASS；独立Profile/报告不是该Run目录内文件。
 
 ### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，规划）
 
@@ -541,13 +543,13 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 
 证据发布顺序：
 
-1. 在私有发布根下使用排他创建语义建立唯一Run目录；若目录已存在立即拒绝，不在其中继续写入。在该目录内先创建样本和低敏报告的临时文件，使用固定编码、固定字段顺序和换行规则。
-2. 每个文件写入完成后`flush`、`fsync`，从已落盘字节计算SHA-256。Manifest不能引用尚未落盘或未来会变化的内容。
-3. 根据样本摘要、环境摘要、负载和故障计数构造Manifest；Manifest本身写临时文件、`fsync`，再重新读取验证Schema、字段白名单和所有摘要。
-4. 只有样本、Manifest和必要报告均通过校验，才在同一目录内写入带Manifest SHA-256的临时`COMMITTED.json`，`fsync`后原子替换为固定标记名。标记是唯一提交点；Reader只接受标记与Manifest/样本摘要完全一致的Run。Run目录通过排他创建防止与既有运行冲突；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
-5. Validator只读取有效提交标记的Run目录和Profile，生成新的报告文件；报告发布也使用独立唯一身份、临时文件与提交标记，不修改Run原件。
+1. `publish_run`在0700私有发布根下排他创建以Run ID命名的目录；目录已存在即拒绝。目录内只允许`samples.jsonl`、`manifest.json`和`COMMITTED.json`。
+2. 样本按固定字段顺序写同目录临时文件，使用`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回样本字节的SHA-256、计数和重算统计。
+3. 调用方构造的严格Manifest必须与刚写入的样本摘要和统计一致。`publish_run`再次从磁盘重读样本并核对RSS后，才写入并同步`manifest.json`。
+4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
+5. 独立Profile和发布阈值报告的只读验证与单独发布仍待实现，不修改Run原件。
 
-若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run。重试必须使用新Run ID；旧失败文件保留以便审计，但不能选择性删除失败样本。跨平台只依赖同目录文件原子替换和有效标记校验，不假定目录整体重命名具有排他语义；文件与目录持久化差异仍须通过第18节平台测试。
+若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
 
 ## 14. 并发、幂等与一致性
 
@@ -691,16 +693,16 @@ run_scenario(scenario, seed, environment):
 | SDK公共入口 | [`sdk/agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient.initialize`, `list_threads`, `replay_events`, `read_artifact` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_agent_sdk_drives_turn_replay_and_duplicate_command`、`test_events_next_delivers_live_delta_then_durable_replay` | 当前实现；Runner只复用，不扩展公共API。 |
 | stdio协议服务 | [`app_server/stdio.py`](../../src/harnessix/app_server/stdio.py) | `run_stdio`, `_StdioWriter`, `_StdioReader` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests` | 当前实现。 |
 | Thread列表全量路径 | [`app_server/service.py`](../../src/harnessix/app_server/service.py) | `AgentApplicationService.list_threads` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | Thread列表、Replay和Server SDK合同 | 当前待实测风险；不在本文预先优化。 |
-| 确定性Provider内存边界 | [`models/scripted.py`](../../src/harnessix/models/scripted.py)、[`scripts/soak_provider.py`](../../scripts/soak_provider.py) | `ScriptedProvider.stream`、`SoakProvider.stream` | [`test_soak_provider.py`](../../tests/benchmarks/test_soak_provider.py) | `ScriptedProvider.requests`深拷贝仅用于测试；Soak夹具用`__slots__`仅保留请求计数 | Soak Provider和10 Turn回归已实现；正式Runner、Manifest发布与内存阈值未实现。 |
+| 确定性Provider内存边界 | [`models/scripted.py`](../../src/harnessix/models/scripted.py)、[`scripts/soak_provider.py`](../../scripts/soak_provider.py) | `ScriptedProvider.stream`、`SoakProvider.stream` | [`test_soak_provider.py`](../../tests/benchmarks/test_soak_provider.py) | `ScriptedProvider.requests`深拷贝仅用于测试；Soak夹具用`__slots__`仅保留请求计数 | Soak Provider和10 Turn回归已实现；正式Runner和内存阈值未实现。 |
 | Session容量 | [`session/capacity.py`](../../src/harnessix/session/capacity.py) | `capacity_report`, `load_thread_facts` | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | 容量/维护合同与计划执行测试 | 当前实现；Soak采集复用。 |
 | Store维护与恢复 | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py) | `SQLiteStoreMaintenance`, `plan`, `execute`, `restore` | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | 备份、Plan、Progress、崩溃恢复合同 | 当前实现；Soak不改变删除策略。 |
 | Artifact发布/分页 | [`artifacts/sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`artifacts/action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py) | `SQLiteArtifactStore`, `ActionOutputArtifactMixin.publish_action_output`, `action_recovery_inventory` | [`test_recovery.py`](../../tests/artifacts/test_recovery.py) | `test_cancel_linearizes_with_artifact_transaction` | 当前实现；混合增长/清理场景规划。 |
 | Action跨Store恢复 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | `scan_product_action_recovery` | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py) | Action恢复扫描合同 | 当前实现；固定故障矩阵规划。 |
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
-| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py) | `SoakSample`、`SoakQuantiles`、JSONL读写/摘要核对和`SoakManifest`内存合同/样本复核已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py) | 未知字段、NaN、负数、场景/单位/RSS冲突、Run序号/计数、文件篡改/截断、Manifest伪报统计与错误平台已测 | 合同与重算完成；发布提交、阈值复验及真实负载未完成。 |
+| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 严格字段、Run目录冲突、样本/Manifest/标记篡改、中断不提交、独立重算已测 | Run证据发布完成局部实现；阈值复验及真实负载未完成。 |
 | RSS适配与三平台探针 | 无（当前Revision未实现） | `RSSAdapter`（规划） | 无（需新增Linux/macOS/Windows真实探针测试） | raw unit、normalization、平台缺测失败关闭 | 规划；本节单位事实是设计输入。 |
-| 原子证据发布 | 无（当前Revision未实现） | `EvidenceWriter.publish`（规划） | 无（需新增临时文件/中断/目标冲突测试） | 排他Run目录、`fsync`、SHA-256、最后提交标记、不可覆盖 | 规划。 |
+| 原子证据发布 | [`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `publish_run`、`read_published_run` | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 排他Run目录、文件`fsync`、SHA-256、最后提交标记、不可覆盖及三故障点 | 局部实现；跨平台CI加入`tests/benchmarks`，正式Run/Profile仍待验收。 |
 
 ## 21. 测试设计与验收标准
 
@@ -711,7 +713,7 @@ run_scenario(scenario, seed, environment):
 | Schema合同 | Sample/Manifest/Profile字段、类型、extra-forbid、状态和摘要 | Sample/Manifest v1对象已实现；Profile待实现 | 现有样本和Manifest的缺字段、未知字段、NaN/Infinity、负数、错误单位、错误场景/平台和序号缺口拒绝；Profile待测 | 部分已实现。 |
 | 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | `nearest_rank_v1`已固定；`sample_count`待Profile冻结 | 内存重算、预热排除、计数严格匹配、JSONL摘要、规范序列化及Manifest自报统计冲突已测 | 发布级规划中。 |
 | RSS合同 | Linux KiB、macOS运行时单位差异、Windows bytes和unknown | 三平台真实探针 | source/raw unit/normalization完整；unknown为`unverified`且非零；不填0 | 规划新增。 |
-| 原子发布 | 临时文件、fsync、摘要、目标冲突、进程中断 | 独立Run目录 | 只发布完整不可变Run；失败不产生PASS、不覆盖既有Run | 规划新增。 |
+| 原子发布 | 临时文件、fsync、摘要、目标冲突、发布中断 | 独立Run目录 | 只接受最后标记、Manifest及样本全校验的Run；失败不产生PASS、不覆盖既有Run | 局部实现与故障注入已测；Windows目录持久性和真实进程崩溃仍待验证。 |
 | 长会话集成 | 真实Agent/SDK/Store链、Replay、Context/Compaction | 单Thread >=1000 Turn | Replay/投影一致、无隐藏失败、样本完整 | 场景规划；现有Runtime测试作为回归。 |
 | Provider内存隔离 | 对比`ScriptedProvider`请求历史保留与`SoakProvider`计数夹具 | 200 Turn预研数据仅作污染识别；正式场景使用`deterministic_stateless_v1` | 当前10 Turn回归验证Provider只留请求计数；样本/Manifest无Prompt和ModelRequest正文、预研时延/RSS不进入基线仍待正式Runner验证 | 夹具与局部测试已实现；正式证据规划中。 |
 | 多Thread集成 | 创建、分页、冷/热启动 | >=500 Thread | 全部游标分页可达、列表/启动结果一致、P95可重算 | 场景规划。 |
@@ -763,3 +765,4 @@ run_scenario(scenario, seed, environment):
 | 4 | `ff1976f1db8fecae9b419bb85ba9407cb8c4ac11` | 2026-09-23 | 落实单样本严格合同、六场景指标映射、RSS原始值复算、Run内序号与计数校验，以及`nearest_rank_v1`整数分位数算法；Manifest和Profile发布仍待实现。 |
 | 5 | `5ecdd83d1c9d317674a194816853653eacae7d90` | 2026-09-23 | 增加8 MiB/100000条上限的`samples.jsonl`写入、SHA-256核对、规范序列化和篡改/截断/覆盖回归；此时仍无Run提交协议或正式Soak证据。 |
 | 6 | `e5378212a22b627d7f3f73087c21ca74c0b0aba4` | 2026-09-23 | 建立严格Manifest内存合同、场景/平台/负载边界和从样本文件独立复核统计/RSS；文件发布、Profile及正式运行证据仍待实现。 |
+| 7 | `9620b37697f9d926128f07837ca1198db5a787ac` | 2026-09-23 | 落地排他Run目录、样本/Manifest/最后提交标记的发布与独立读取；增加发布中断/篡改/冲突回归，并把`tests/benchmarks`纳入macOS和Windows CI。 |
