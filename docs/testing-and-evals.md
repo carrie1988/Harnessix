@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 37
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 38
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -623,7 +623,7 @@ flowchart TD
 
 实现提交`f5a3936`的一份重复CI运行暴露SDK测试把0.5秒调度窗口误当协议边界；另一份同Revision运行已全绿，但仍由`4b28fa4`改为5秒单调时钟等待并连续10轮回归，避免以重跑掩盖Flaky。[CI 35434198163](https://github.com/carrie1988/Harnessix/actions/runs/35434198163)随后一次通过Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵，0.9.1e4据此关闭。
 
-截至当前已关闭验收Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`，0.9.1e4/e5和0.9.1f1～f3均已关闭。f2c的Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3随后物理删除独立Action服务，保留历史Session只读兼容和旧数据库离线归档；在锁定依赖同步并卸载旧服务直接依赖后，本地全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，0.9.1据此关闭。此后0.9.2多仓库离线与真实Provider Suite已经关闭；0.9.3a本地传输和0.9.3b持久容量分别由CI 35494960166、35498012926完成六实例验收。0.9.3c实现Revision `0bc942b`已通过本地`make check`（3595 passed、32 skipped），首次CI 35499848035未通过，修复版待验收。长时间Soak、系统化红队、SBOM、正式安装器矩阵及更多Provider/地域/模型认证仍不能宣称生产完成。上述状态以[路线图](roadmap.md)为事实源。
+截至当前已关闭验收Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`，0.9.1e4/e5和0.9.1f1～f3均已关闭。f2c的Evals、Campaign、Process、Gateway、Agent恢复和治理回归证明Router终态响应丢失只补Session投影且Process Lease不增加；[CI 35446341997](https://github.com/carrie1988/Harnessix/actions/runs/35446341997)通过当时的七任务矩阵。f3随后物理删除独立Action服务，保留历史Session只读兼容和旧数据库离线归档；在锁定依赖同步并卸载旧服务直接依赖后，本地全仓3472项通过/18项跳过，35份变化Markdown中的190幅Mermaid真实渲染通过。[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)进一步通过Linux Python 3.12/3.13、macOS、Windows、固定镜像Container和Documentation六个Job实例，0.9.1据此关闭。此后0.9.2多仓库离线与真实Provider Suite已经关闭；0.9.3a本地传输和0.9.3b持久容量分别由CI 35494960166、35498012926完成六实例验收。0.9.3c实现Revision `0bc942b`已通过本地`make check`（3595 passed、32 skipped），首次CI 35499848035未通过，修复版CI 35691402329六实例通过并关闭0.9.3c。长时间Soak、系统化红队、SBOM、正式安装器矩阵及更多Provider/地域/模型认证仍不能宣称生产完成。上述状态以[路线图](roadmap.md)为事实源。
 
 ### 20.1 0.9.1e5验证矩阵
 
@@ -733,8 +733,8 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 | 产品接线 | Agent Runtime开放前依次保存Scan和Startup Recovery Report；完整性错误不激活配置 |
 
 实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`本地`make check`完成Ruff、可读性、文档、Schema、Mypy和
-`3595 passed, 32 skipped`。六实例[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过：Documentation缺同批设计文档，Container因恢复扫描早于Session初始化失败；修复版本地`make check`为3597 passed、32 skipped，六实例验收前，
-路线图0.9.3c保持未勾选。详细设计见[0.9.3c Action Runtime恢复](changes/m09-3c-action-runtime-fencing-and-recovery.md)和
+`3595 passed, 32 skipped`。六实例[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过：Documentation缺同批设计文档，Container因恢复扫描早于Session初始化失败；修复版本地`make check`为3597 passed、32 skipped；[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)
+六实例通过，路线图0.9.3c已关闭。详细设计见[0.9.3c Action Runtime恢复](changes/m09-3c-action-runtime-fencing-and-recovery.md)和
 [ADR 0091](adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。
 
 ## 21. 维护与验收标准

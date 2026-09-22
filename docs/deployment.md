@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 21
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 22
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -312,7 +312,7 @@ resume normal product traffic
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
-- 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，首次CI 35499848035未通过，修复版待验收；0.9.3d完整Soak尚未完成；
+- 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，修复版CI 35691402329六实例验收关闭；0.9.3d完整Soak尚未完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 19
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -49,7 +49,7 @@ supersedes: []
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore` v2保存Route Plan、当前投影、append-only Hash链、Owner Generation和Execute/Reconcile Operation |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
-| 当前完成度 | 核心路由、默认产品组合及扩展适配已实现；独立Action HTTP/Worker已删除；0.9.3c双层Owner、Operation期限、只对账恢复和跨Store扫描首次CI未通过，修复版待六实例验收 |
+| 当前完成度 | 核心路由、默认产品组合及扩展适配已实现；独立Action HTTP/Worker已删除；0.9.3c双层Owner、Operation期限、只对账恢复和跨Store扫描已由CI 35691402329六实例验收关闭 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
@@ -1553,12 +1553,13 @@ Plan可由Route内嵌不可变Plan修复，Plan冲突和Session悬空引用失�
 
 专项测试覆盖v1→v2迁移、产品Owner门禁、两个进程竞争、旧Generation、写超时、有界Reconcile、效果返回后Audit故障、取消恢复、
 Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`本地`make check`为
-3595 passed、32 skipped；CI 35499848035关闭前不把0.9.3c标记为正式验收。
+首版3595 passed、32 skipped；修复版3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例验收关闭。
 
 ## 48. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 19 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 记录Action双层Owner、Operation Deadline与只对账恢复经修复版六实例CI关闭；Router合同不变 |
 | 18 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加双层Owner、Action Audit v2 Operation Deadline、只对账恢复和跨Store扫描；独立Action HTTP/Worker保持删除 |
 | 16 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval统一Router与响应丢失不重放由CI 35446341997完成全矩阵验收 |
 | 15 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c历史Eval新运行迁入统一Catalog、Gateway、Router，补充响应丢失不重放并收缩兼容内核白名单候选 |

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 2
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -27,7 +27,8 @@ supersedes: []
 
 ## 1. 文档目的与变更摘要
 
-本文是0.9.3c实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`的总体及详细设计事实源，回答：
+本文是0.9.3c基础实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`及修复版
+`33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6`的总体及详细设计事实源，回答：
 
 - 为什么Coding Agent内部仍需要Action Runtime，但不需要独立Action Plane HTTP/Worker；
 - 产品宿主、Action Audit和单次Execute/Reconcile如何建立所有权；
@@ -41,12 +42,12 @@ supersedes: []
 | 产品定位 | 单一生产级Coding Agent内部Action执行内核 |
 | 明确删除/不恢复 | Action HTTP API、Worker队列、独立Action服务、第二套认证和部署面 |
 | 核心实现 | 双层Owner、持久Operation、Route Deadline、只对账恢复、跨Store扫描 |
-| 代码Revision | `0bc942bce8aeb22747a06515732936d1a312cd02` |
+| 代码Revision | 基础实现`0bc942bce8aeb22747a06515732936d1a312cd02`；修复验收`33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` |
 | Action Audit Schema | v1前向升级到v2 |
 | 新公开合同Schema | `harnessix.action-route-operation/v1`、`harnessix.action-recovery-scan/v1` |
-| 本地验收 | `make check`通过：3595 passed、32 skipped |
-| CI状态 | [运行35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)的Linux、macOS、Windows通过；Documentation与Container失败，修复版待重新验收 |
-| 路线图状态 | 0.9.3c仍未关闭；必须以修复版六实例CI通过为准 |
+| 本地验收 | 修复版`make check`通过：3597 passed、32 skipped |
+| CI状态 | [首次35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)发现缺陷；修复版[35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例全部通过 |
+| 路线图状态 | 0.9.3c已关闭；0.9.3d及0.9.4～0.9.6仍未完成 |
 
 ## 2. 需求背景
 
@@ -943,7 +944,8 @@ make check
 六实例CI 35499848035已结束：Linux Python 3.12/3.13、macOS和Windows通过；Documentation因代码提交缺少同批设计资料失败，
 Container因恢复扫描早于Session Schema初始化导致15例失败。修复版增加组合根内幂等Session初始化和无Docker回归，
 本详细设计及相关模块文档与修复一同提交。修复版本地`make check`为3597 passed、32 skipped；变化文档的Mermaid已由
-`documentation_check.py --changed-from c7fda9e --render-mermaid`真实渲染通过。修复版六实例CI全部通过前不勾选0.9.3c。
+`documentation_check.py --changed-from c7fda9e --render-mermaid`真实渲染通过。[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)
+六实例全部通过，包含固定Container的20 Trial离线Suite，0.9.3c据此关闭。
 
 ## 18. 源码研究到设计决策映射
 
@@ -959,7 +961,6 @@ Container因恢复扫描早于Session Schema初始化导致15例失败。修复�
 
 | 优先级 | 限制 | 影响 | 后续 |
 |---|---|---|---|
-| P0 | 首次CI的Documentation与Container失败 | 不能关闭0.9.3c | 修复版重新执行六实例验收 |
 | P1 | 启动Session完整扫描尚无规模阈值 | 大库启动时延未知 | 0.9.3d Soak |
 | P1 | Operation无归档/清理 | 长期Action会持续增长 | 0.9.3d容量基线后设计 |
 | P1 | Python Executor Deadline依赖协作取消 | 恶意/错误插件可延迟退出 | 0.9.4扩展进程边界 |
@@ -984,7 +985,7 @@ Container因恢复扫描早于Session Schema初始化导致15例失败。修复�
 - [x] Action Audit v1→v2迁移和未知版本拒绝；
 - [x] JSON Schema、源码注释、测试和可读性基线同步；
 - [x] 本地全仓3595 passed、32 skipped；
-- [ ] 六实例CI全部成功并形成关闭提交；
+- [x] 修复版六实例CI 35691402329全部成功并形成关闭提交；
 - [ ] 0.9.3d冻结规模、时延、增长和积压阈值。
 
 ## 21. 后续维护规则

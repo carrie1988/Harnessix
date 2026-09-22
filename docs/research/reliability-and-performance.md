@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: current
-version: 3
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 5
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -302,7 +302,48 @@ flowchart TD
 | Operation Deadline与原子结算 | [`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py)、[`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py) | 写超时、有界Reconcile、Audit故障后零重复Execute用例 |
 | 跨Store恢复扫描 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | Plan修复、Route/Artifact孤儿和Product Server持久化用例 |
 
-## 10. 研究边界
+## 10. 0.9.3d长会话与性能证据专项源码核查
+
+### 10.1 参考项目如何把性能运行变成可归因证据
+
+| 项目与固定源码 | 已确认的机制 | 本项目取舍 |
+|---|---|---|
+| [Codex `e2e_benchmark.bzl:7-56`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/bazel/rules/e2e_benchmark.bzl#L7-L56) | 基准目标显式声明运行二进制、数据依赖和仓库根，标为手动执行；基准源与普通测试源分离 | 0.9.3d使用独立负载入口和固定环境Manifest，不把长Soak塞进每次快速单元测试，也不允许从调用机隐式继承数据集 |
+| [OpenCode `benchmark.ts:17-50`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/app/e2e/performance/benchmark.ts#L17-L50) | 每次Benchmark必须恰好报告一次，缺失指标会使测试失败；输出带Schema、Run ID、平台、状态和重试信息 | 结果/Manifest必须严格校验，缺失样本、未知状态或重复报告失败关闭；不能把无指标的“成功退出”算通过 |
+| [OpenCode `bench-test-suite.ts:4-52`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/script/bench-test-suite.ts#L4-L52) | 预热次数和测量次数分离；失败立即停止；输出Median/Best/Worst | 固定预热与正式样本，原始样本进入可重算低敏证据；不只保存单一P95，也不以一次运行直接制定通过阈值 |
+
+这些源码提供的是证据组织方式，不证明其他项目已有Harnessix需要的长Session、Action故障和跨Store恢复覆盖；本项目不复制
+其框架或声称横向性能优劣。
+
+### 10.2 当前产品的增长路径与待实测假设
+
+| 入口 | 当前源码事实 | 0.9.3d必须测量/判定 |
+|---|---|---|
+| [`AgentRuntime.__aenter__`](../../src/harnessix/agent/runtime.py#L316-L334) | 启动时遍历全部Thread，逐个读取完整快照并检查活动Turn | 500 Thread和长历史下的冷/热启动P50/P95、内存峰值；不得把扫描耗时隐藏在Provider时间中 |
+| [`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py#L235-L255) | 先读取并投影全部Thread，再按`limit`截取；`archived`过滤也在全量读取后 | 500/5000 Thread下分页时延与RSS；若超发布阈值，应设计Store侧分页及游标/Archive一致性，不得只扩大超时 |
+| [`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py#L46-L109) | 启动时全量装载Route、Session引用和Action Artifact索引；只聚合低敏计数 | Route/Item/Artifact分别增长时的启动时延、峰值RSS、UNKNOWN积压和孤儿计数；必要时转为有界分页扫描但保持完整性结论 |
+| [`SQLiteActionAuditStore.routes`](../../src/harnessix/trusted_actions/operation_store.py#L305-L314) | 返回全量Route元组并逐项`load`；方法名中的“有界”不代表结果集有容量上限 | 实测内存与数据库I/O，若需分页须保持稳定顺序、故障恢复游标和跨页不漏扫 |
+| [`SQLiteArtifactStore.action_recovery_inventory`](../../src/harnessix/artifacts/action_output_store.py#L51-L66) | 一次返回全部Action Artifact身份元组 | 大量Artifact时的内存、扫描时延；报告仍只能公开计数，不能公开Call ID |
+
+上述是由控制流推导的**待测量风险**，不是已经观察到的性能回归。0.9.3d首先冻结场景、样本、环境和失败规则，完成
+实际Soak后才决定是否对特定路径做结构优化；即使优化，也必须以现有完整性与恢复测试作回归门禁。
+
+### 10.3 三平台峰值RSS采集单位核查
+
+- [Linux `getrusage(2)`](https://man7.org/linux/man-pages/man2/getrusage.2.html)明确`ru_maxrss`为KiB；Python
+  [`resource.getrusage`](https://docs.python.org/3/library/resource.html#resource.getrusage)直接返回底层字段，不替各平台统一单位。
+- [Apple归档手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getrusage.2.html)
+  将`ru_maxrss`写为kilobytes；但在2026-09-22本机macOS Python 进程中，`ru_maxrss=18890752`，同时`ps rss=18496 KiB`，
+  两者按**字节**换算接近。归档手册与当前观测不一致，不能仅凭文档假定macOS单位；正式采集器必须固定平台实现、
+  记录采集来源与单位，并在发布环境与独立进程视图交叉校验，无法判定时失败关闭。
+- Windows官方[`GetProcessMemoryInfo`](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)
+  返回`PROCESS_MEMORY_COUNTERS`；[`PeakWorkingSetSize`](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters)
+  的单位是字节。0.9.3d必须在Windows原生CI/发布环境验证`ctypes`结构大小、调用结果和退出路径，不用Unix
+  `resource`替代。
+
+这只是单位与采集源核查，不是0.9.3d正式RSS基线或三平台Soak证据。
+
+## 11. 研究边界
 
 - 未在本研究中测量跨机器绝对性能；阈值必须由0.9.3d固定环境实测产生；
 - 守护线程解决进程退出所有权，不保证底层第三方`BinaryIO.write`可被强制中断；阻塞写不再阻止主流程退出；

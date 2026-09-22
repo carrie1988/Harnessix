@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 76
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 77
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -572,6 +572,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 77 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action恢复扫描的Session初始化顺序；0.9.3c由CI 35691402329六实例验收关闭 |
 | 76 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c在唯一Coding Agent组合根增加双层Action Owner、持久Operation Deadline、只对账恢复与跨Store完整性扫描；独立HTTP/Worker保持删除 |
 | 75 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 0.9.3b在单一Coding Agent内部增加Session共库低敏容量、不可变Plan、保守禁删、批次崩溃恢复和Plan绑定备份/Restore；不新增服务或自动Vacuum |
 | 74 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a在单一Coding Agent拓扑内增加协商stdio背压、迟到Response共享容量、Writer故障唤醒、取消安全Close和低敏资源快照 |

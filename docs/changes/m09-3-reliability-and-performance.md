@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 6
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0092-reproducible-local-soak-and-release-thresholds.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_session_contract.py
@@ -39,12 +40,12 @@ supersedes: []
 |---|---|
 | 需求 | 长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准 |
 | 产品边界 | 单一Coding Agent；不恢复独立Action HTTP/Worker，不新增性能控制面服务 |
-| 当前状态 | 0.9.3a、0.9.3b已由六实例CI关闭；0.9.3c首次CI发现文档同步与Session初始化缺陷，修复版待验收；0.9.3d尚未实施，0.9.3总项保持进行中 |
+| 当前状态 | 0.9.3a～c均已由六实例CI关闭；0.9.3d尚未实施，0.9.3总项保持进行中 |
 | 主要模块 | App Server、SDK、Session、Protocol Request、Artifact、Trusted Action、Process、Observability |
 | 兼容级别 | 0.9.3a不改协议/数据库；b/c如需Migration必须前向升级、备份恢复和故障回滚 |
 | 发布单元 | a本地传输；b持久容量；c效果恢复；dSoak与发布基线 |
-| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；0.9.3b `cb3f3ea834624d5a8f84396952eba212650065d1`；0.9.3c `0bc942bce8aeb22747a06515732936d1a312cd02` |
-| 当前验收 | 0.9.3a由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)关闭；0.9.3b由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)关闭；0.9.3c首次`make check`为3595 passed、32 skipped，[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过，修复版待六实例验收 |
+| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；0.9.3b `cb3f3ea834624d5a8f84396952eba212650065d1`；0.9.3c `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` |
+| 当前验收 | 0.9.3a由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)关闭；0.9.3b由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)关闭；0.9.3c修复版`make check`为3597 passed、32 skipped，[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例通过 |
 
 ## 2. 需求背景与完成定义
 
@@ -141,7 +142,7 @@ flowchart LR
 |---|---|---|---|
 | a | stdio/SDK协商背压、迟到Response、取消安全Close、资源快照 | 0.9.2 | 已由CI 35494960166验收关闭 |
 | b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 已由CI 35498012926验收关闭 |
-| c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 实现与修复进行中；首次CI 35499848035未通过 |
+| c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 已由CI 35691402329六实例验收关闭 |
 | d | 固定Soak负载、三平台/Container证据、阈值与发布报告 | b、c | 未实施 |
 
 ## 6. 0.9.3a接口设计与本地传输可靠性
@@ -391,9 +392,13 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 
 实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`已覆盖两个独立进程竞争、写效果超时、效果返回后Audit故障、
 Owner失效、Plan单边提交、Artifact引用窗口和有界Reconcile；本地`make check`为3595 passed、32 skipped。
-首次CI 35499848035未通过，修复版六实例全部通过前保持未关闭。完整组件、时序、表结构、失败矩阵、安全与部署边界见专项详细设计。
+首次CI 35499848035未通过，修复版[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)
+六实例全部通过后0.9.3c关闭。完整组件、时序、表结构、失败矩阵、安全与部署边界见专项详细设计。
 
 ## 9. 0.9.3d Soak与性能证据
+
+专项证据合同、三平台RSS单位验证、失败恢复和独立阈值复验见[0.9.3d详细设计评审稿](m09-3d-soak-and-performance-evidence.md)与
+[ADR 0092评审稿](../adr/0092-reproducible-local-soak-and-release-thresholds.md)。当前仅完成源码核查和设计，以下场景与阈值尚未实现或验收。
 
 ### 9.1 固定场景
 
@@ -506,6 +511,6 @@ Owner失效、Plan单边提交、Artifact引用窗口和有界Reconcile；本地
 - [x] Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例CI验收；
 - [x] 0.9.3b容量合同、Migration、清理与恢复实现及本地全仓门禁；
 - [x] 0.9.3b Linux、macOS、Windows、Container和Documentation全矩阵CI关闭（CI 35498012926）；
-- [ ] 0.9.3c Owner fencing、孤儿与Route Deadline已实现；首次CI 35499848035暴露文档同步和Session初始化缺陷，修复版待验收；
+- [x] 0.9.3c Owner fencing、孤儿与Route Deadline完成；首次CI 35499848035暴露的缺陷已修复，并由CI 35691402329六实例验收；
 - [ ] 0.9.3d完整Soak、性能阈值和冻结证据；
 - [ ] 0.9.3总项关闭。

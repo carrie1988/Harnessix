@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 84
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 86
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0092-reproducible-local-soak-and-release-thresholds.md
 related_tests:
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
@@ -67,7 +68,7 @@ supersedes: []
 
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
-当前产品实现已经完成路线图0.1～0.9.2范围，但仍不是1.0正式商用版本。0.9.1f3已物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档。0.9.2完成多仓库Suite/Transcript、不可变Task Pack、可恢复Runner、正式Case Adapter、3仓10 Case/20 Trial离线与真实Provider基线；关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型Suite记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本，严格任务成功与测试通过均为0/20；[真实Provider证据](validation/provider-engineering-2026-09-20-v1/README.md)按原始失败冻结。0.9.3a已由CI 35494960166关闭；0.9.3b实现Revision `cb3f3ea`已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收。0.9.3c实现Revision `0bc942b`已增加Action双层Owner、持久Operation期限、只对账恢复和跨Store扫描，本地`make check`为3595 passed、32 skipped，[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过；修复版待验收。完整Soak、三平台发行物、安全供应链、Dogfooding和Provider能力矩阵属于0.9.3d～0.9.6后续工作。
+当前产品实现已经完成路线图0.1～0.9.2范围，但仍不是1.0正式商用版本。0.9.1f3已物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档。0.9.2完成多仓库Suite/Transcript、不可变Task Pack、可恢复Runner、正式Case Adapter、3仓10 Case/20 Trial离线与真实Provider基线；关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型Suite记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本，严格任务成功与测试通过均为0/20；[真实Provider证据](validation/provider-engineering-2026-09-20-v1/README.md)按原始失败冻结。0.9.3a已由CI 35494960166关闭；0.9.3b实现Revision `cb3f3ea`已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收。0.9.3c增加Action双层Owner、Operation期限、只对账恢复与跨Store扫描，修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)完成六实例验收。完整Soak、三平台发行物、安全供应链、Dogfooding和Provider能力矩阵属于0.9.3d～0.9.6后续工作。
 
 ## 2. 推荐阅读路径
 
@@ -179,7 +180,7 @@ supersedes: []
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md)、[0.9.2e真实Provider基线详细设计](changes/m09-2e-controlled-real-provider-baseline.md) | 已关闭；离线20/20与真实Provider 20/20执行证据均已冻结，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收 |
-| 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b持久容量与保留详细设计](changes/m09-3b-persistent-capacity-and-retention.md)、[0.9.3c Action恢复详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md) | 进行中；a/b已分别由CI 35494960166、35498012926关闭；c实现与本地门禁完成、首次CI 35499848035未通过，修复版待验收；d未实施 |
+| 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b持久容量与保留详细设计](changes/m09-3b-persistent-capacity-and-retention.md)、[0.9.3c Action恢复详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)、[0.9.3d Soak与性能证据评审稿](changes/m09-3d-soak-and-performance-evidence.md) | 进行中；a/b已分别由CI 35494960166、35498012926关闭；c由CI 35691402329关闭；d完成设计评审稿但尚未实现或验收 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

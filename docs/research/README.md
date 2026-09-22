@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 12
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 13
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -135,7 +135,7 @@ flowchart LR
 
 | 主题 | 冻结访问日期 | 参考版本 | 采用结果/当前入口 |
 |---|---|---|---|
-| [可靠性、背压与长期运行](reliability-and-performance.md) | 2026-09-20 | Codex、OpenCode、Claude Code逆向样本及Harnessix 0.9.3a/b/c源码事实 | [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)、[0.9.3详细设计](../changes/m09-3-reliability-and-performance.md)、[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md) |
+| [可靠性、背压与长期运行](reliability-and-performance.md) | 2026-09-22 | Codex、OpenCode、Claude Code逆向样本及Harnessix 0.9.3a/b/c源码事实；0.9.3d长会话与性能证据专项源码核查（Soak与阈值实测未完成） | [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)、[0.9.3详细设计](../changes/m09-3-reliability-and-performance.md)、[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md)、[ADR 0092评审稿](../adr/0092-reproducible-local-soak-and-release-thresholds.md)、[0.9.3d详细设计评审稿](../changes/m09-3d-soak-and-performance-evidence.md) |
 
 ## 5. 推荐阅读顺序
 

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 2
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -28,10 +28,11 @@ supersedes: []
 
 ## 状态
 
-接受并由0.9.3c实现。代码Revision为`0bc942bce8aeb22747a06515732936d1a312cd02`，本地全仓门禁为
-`3595 passed, 32 skipped`。[首次六实例CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)
-的Documentation因缺少同批设计资料、Container因Session未初始化而失败；修复版补齐文档并在Action组合根内幂等初始化Session。
-修复版六实例CI通过前不得标记0.9.3c正式关闭。
+接受并由0.9.3c实现。基础实现Revision为`0bc942bce8aeb22747a06515732936d1a312cd02`；修复与文档同步Revision为
+`33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6`，本地全仓门禁为`3597 passed, 32 skipped`。
+[首次CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)的Documentation因缺少同批设计资料、
+Container因Session未初始化而失败；修复版在Action组合根内幂等初始化Session并补齐文档，
+[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例全部通过，0.9.3c据此关闭。
 
 本ADR进一步落实[ADR 0081](0081-single-coding-agent-product-boundary.md)：Action能力是唯一Coding Agent进程内的执行内核，
 不是可独立部署的Action Plane产品。它不恢复HTTP API、Worker队列、独立认证面或第二套外部调用入口。

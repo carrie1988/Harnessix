@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 17
+code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
 modules:
@@ -53,7 +53,7 @@ supersedes: []
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
-| 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复首次CI发现Session初始化缺陷，修复版待六实例验收 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复已由CI 35691402329六实例验收关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -1944,7 +1944,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 [`test_router.py`](../../tests/trusted_actions/test_router.py)。实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`本地
 `make check`为3595 passed、32 skipped。CI 35499848035首次发现未初始化Session的Container/Eval组合缺陷；
 `test_product_action_runtime_initializes_session_before_recovery_scan`已把该启动顺序转为无Docker回归门禁，修复版本地
-`make check`为3597 passed、32 skipped；后续六实例CI成功前保持候选状态。
+`make check`为3597 passed、32 skipped；[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例通过，0.9.3c据此关闭。
 
 ## 54. 相关文档
 
@@ -1969,6 +1969,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
 | 16 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加产品Action最外层Owner、Audit Generation Fence、跨Store恢复扫描、低敏报告持久化与Process期限余量 |
 | 15 | `7bebf3eb4567db321ffefd82fba1c6c13e8f9f86` | 2026-09-20 | 同步Workspace Patch公共参数单一解码入口及正式Task Pack Adapter复用边界；产品Schema与运行语义保持不变 |
 | 14 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 同步跨平台锁原语下沉到Domain；Product Config兼容导入和迁移语义保持不变 |
