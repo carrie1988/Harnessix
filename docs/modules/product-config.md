@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 7bebf3eb4567db321ffefd82fba1c6c13e8f9f86
+version: 16
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -32,6 +33,7 @@ related_tests:
   - tests/product_config/test_schemas.py
   - tests/product_ui/test_cli.py
   - tests/evals/test_runner.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -42,16 +44,16 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；为默认产品及历史Eval装配能力受限的Trusted Action组合；执行安全Fallback与启动只对账恢复；持久化双配置快照、原子活动指针、恢复报告及审计事实 |
+| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；为默认产品及历史Eval装配能力受限的Trusted Action组合；取得产品Action组合根Owner、执行跨Store扫描和启动只对账恢复；持久化双配置快照、原子活动指针、恢复扫描/报告及审计事实 |
 | 非职责 | 不执行Agent Loop或替代Router审批权威；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
 | 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、历史Eval Runner、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 Product Config v2；Product Config v1只允许显式迁移；独立Product Action Config v1可显式加载 |
-| 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链及Action恢复报告 |
+| 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链、Action恢复扫描及启动恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
-| 当前完成度 | 0.9.1d、0.9.1e1～e5均已关闭；f2c Eval专用Catalog/Gateway/Router/Supervisor组合已通过七任务全矩阵CI关闭 |
+| 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复首次CI发现Session初始化缺陷，修复版待六实例验收 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
 [`codec.py`](../../src/harnessix/product_config/codec.py)、
@@ -62,6 +64,8 @@ supersedes: []
 [`action_codec.py`](../../src/harnessix/product_config/action_codec.py)、
 [`action_diagnostics.py`](../../src/harnessix/product_config/action_diagnostics.py)、
 [`action_store.py`](../../src/harnessix/product_config/action_store.py)、
+[`action_owner.py`](../../src/harnessix/product_config/action_owner.py)、
+[`action_recovery.py`](../../src/harnessix/product_config/action_recovery.py)、
 [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、
 [`action_catalog.py`](../../src/harnessix/product_config/action_catalog.py)、
 [`eval_process.py`](../../src/harnessix/product_config/eval_process.py)、
@@ -1806,6 +1810,7 @@ erDiagram
     PRODUCT_CONFIG_EVENTS ||--o| PRODUCT_CONFIG_EVENT_HEAD : chains_to
     PRODUCT_ACTION_CONFIG_EVENTS ||--o| PRODUCT_ACTION_CONFIG_EVENT_HEAD : chains_to
     PRODUCT_ACTION_CONFIG_SNAPSHOTS ||--o{ PRODUCT_ACTION_RECOVERY_REPORTS : identifies
+    PRODUCT_ACTION_CONFIG_SNAPSHOTS ||--o{ PRODUCT_ACTION_RECOVERY_SCANS : observes
 ```
 
 [`SQLiteProductRuntimeConfigStore`](../../src/harnessix/product_config/action_store.py)是现有`SQLiteProductConfigStore`的产品运行时扩展，
@@ -1888,7 +1893,60 @@ flowchart LR
 | Task Pack附加审批约束 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | [`test_task_pack_execution.py`](../../tests/evals/test_task_pack_execution.py) |
 | 产品Action、Container Profile与完整恢复链 | [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py) | [`test_task_pack_execution.py`](../../tests/integration/test_task_pack_execution.py) |
 
-## 53. 相关文档
+## 53. 产品Action双层Owner与恢复扫描（0.9.3c）
+
+[`open_default_product_action_runtime`](../../src/harnessix/product_config/action_runtime.py)现在先取得
+[`product_action_runtime_lock`](../../src/harnessix/product_config/action_owner.py)，再打开Execution Plan、Action Audit、Workspace
+Transaction、Workspace Lease和可选Process Supervisor。Action Audit以`require_runtime_owner=True`打开，并立即取得第二层持久
+Generation Fence。外层锁避免不同Store各自打开后才发现竞争，内层Fence阻止旧宿主迟到提交Action事实。
+
+跨Store扫描读取Session和Artifact索引。组合根因此在Product Lock内先对`artifacts.session`执行幂等初始化，再打开Action Store；
+正式Server可提前初始化同一Store，Eval/Container等直接组合路径则不再依赖“必须先打开AgentRuntime”的隐式顺序。Session Runtime
+Owner仍由后续`AgentRuntime`取得，Action组合根不会因此形成第二个Session执行宿主。
+
+```mermaid
+flowchart TD
+    ProductLock[Product Runtime Lock] --> SessionInit[Idempotent Session Initialization]
+    SessionInit --> Stores[Open Plan and Action Audit Stores]
+    Stores --> Fence[Audit Runtime Fence Generation]
+    Fence --> Process[Optional Process Supervisor and Profile Probe]
+    Process --> Scan[Cross Store Recovery Scan]
+    Scan --> Recover[Previous Config Route Recovery]
+    Recover --> Candidate[Candidate Catalog and Router]
+    Candidate --> Persist[Persist Scan and Recovery Reports]
+    Persist --> Agent[Open Agent Runtime and stdio]
+```
+
+跨Store扫描由[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)完成：
+
+| 引用关系 | 自动动作 | 启动策略 |
+|---|---|---|
+| Route存在但Execution Plan缺失 | 从Route内嵌不可变Plan修复 | 继续 |
+| Route与Execution Plan不同 | 不覆盖 | `product_action_recovery_integrity`失败 |
+| Session引用不存在Route | 不删Session | 失败 |
+| 产品Route无Session引用 | 只计数 | 继续 |
+| Action Review/Output Artifact无Call引用 | 不读/删正文，只计数 | 继续 |
+| Active Process Lease无匹配非终态Route | 调用既有Process Reconcile并计数 | 失败，等待人工核对 |
+| Active/Expired Action Operation | 只聚合计数，Route恢复另行处理 | 继续到只对账恢复 |
+
+`ActionRecoveryScanReport`只含Owner Generation、计数、时间和摘要；不含Plan、Thread、Call、Artifact、Process身份、路径或正文。
+`SQLiteProductRuntimeConfigStore.save_action_recovery_scan`在Agent Runtime开放前保存报告，随后保存既有
+`ProductActionStartupRecoveryReport`。Scan发现不可自动修复的Plan冲突、Session悬空引用或Process孤儿时，不激活候选配置，也不开放
+stdio。
+
+Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定且不低于300秒，避免Router先于Process Owner完成终止和
+输出排空。没有Process Profile时保持300秒默认值。具体Operation、超时和只对账语义属于Trusted Actions模块，见
+[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md)及
+[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。
+
+专项测试位于[`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py)、
+[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)和
+[`test_router.py`](../../tests/trusted_actions/test_router.py)。实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`本地
+`make check`为3595 passed、32 skipped。CI 35499848035首次发现未初始化Session的Container/Eval组合缺陷；
+`test_product_action_runtime_initializes_session_before_recovery_scan`已把该启动顺序转为无Docker回归门禁，修复版本地
+`make check`为3597 passed、32 skipped；后续六实例CI成功前保持候选状态。
+
+## 54. 相关文档
 
 - [文档中心](../README.md)
 - [总体架构](../architecture.md)
@@ -1907,10 +1965,11 @@ flowchart LR
 - [SDK模块设计](sdk.md)
 
 
-## 54. 变更记录
+## 55. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 16 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加产品Action最外层Owner、Audit Generation Fence、跨Store恢复扫描、低敏报告持久化与Process期限余量 |
 | 15 | `7bebf3eb4567db321ffefd82fba1c6c13e8f9f86` | 2026-09-20 | 同步Workspace Patch公共参数单一解码入口及正式Task Pack Adapter复用边界；产品Schema与运行语义保持不变 |
 | 14 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 同步跨平台锁原语下沉到Domain；Product Config兼容导入和迁移语义保持不变 |
 | 13 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录历史Eval专用Trusted Action组合根由CI 35446341997完成七任务全矩阵验收 |

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 20
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 21
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_server_and_cli.py
@@ -38,6 +39,7 @@ related_tests:
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_evidence.py
   - tests/agent/test_store_maintenance.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -184,10 +186,11 @@ uv run harnessix agent-server \
 
 | 状态 | Owner | 事实用途 |
 |---|---|---|
-| `product-config.db` | Product Runtime Config Store | Product/Action配置快照、两条审计链、恢复报告和双活动指针原子CAS |
+| `product-action-runtime.lock` | Product Action组合根 | 在任一Action Store/Process Owner前排除第二产品宿主 |
+| `product-config.db` | Product Runtime Config Store | Product/Action配置快照、两条审计链、恢复扫描/报告和双活动指针原子CAS |
 | `sessions.db` | Session/Protocol/Artifact Store | Thread、Turn、Item、请求幂等、Artifact元数据/内容，以及Maintenance Plan/Item/Progress |
 | `execution-plans.db` | Execution Plan Store | 不可变计划与批准检查点 |
-| `action-audit.db` | Trusted Action Audit Store | Route投影和摘要化Hash链事件 |
+| `action-audit.db`及`.runtime.lock` | Trusted Action Audit Store | Route投影、摘要化Hash链事件、Owner Generation和Execute/Reconcile Operation |
 | `workspace-leases.db` | Workspace Lease Store | Workspace执行所有权和Fencing |
 | `workspace-transactions/` | Delivery Store | 多文件计划、Blob、游标和效果恢复 |
 | Process状态文件 | Process Supervisor/Owner | Process Lease、输出观察、停止原因和恢复证据 |
@@ -206,6 +209,10 @@ select profile and resolve Secret references without persisting material
 build and enter Provider bundle
 initialize Session, Protocol Request and Artifact stores
 load previous active Action snapshot
+acquire Product Action lock before Action Store or Process Owner
+idempotently initialize the bound Session store inside the Product Action root before recovery scan
+open Action Audit with required runtime owner and increment fence generation
+scan Plan, Route, Session, Artifact and Process references; persist low-sensitive report
 build exact recovery router and reconcile unknown routes once; never execute
 build candidate catalog from currently verified executors
 enter Agent Runtime
@@ -297,7 +304,7 @@ resume normal product traffic
 | Agent协议服务 | [`app_server/stdio.py`](../src/harnessix/app_server/stdio.py) | `_StdioReader`、`_StdioWriter`、`run_stdio` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Agent SDK Transport | [`sdk/subprocess.py`](../src/harnessix/sdk/subprocess.py) | `_RequestCapacity`、`_ResponseRouter`、`_ChildProcess`、`SubprocessAgentTransport` | [`test_server_sdk.py`](../tests/app_server/test_server_sdk.py) |
 | Session共库维护 | [`session/maintenance.py`](../src/harnessix/session/maintenance.py)、[`session/maintenance_backup.py`](../src/harnessix/session/maintenance_backup.py) | `SQLiteStoreMaintenance`、`create_or_reuse_backup`、`restore_database` | [`test_store_maintenance.py`](../tests/agent/test_store_maintenance.py) |
-| Trusted Action产品组合 | [`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py) | `ProductActionRuntimeOwner`、`open_default_product_action_runtime` | [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
+| Trusted Action产品组合与恢复 | [`product_config/action_owner.py`](../src/harnessix/product_config/action_owner.py)、[`product_config/action_runtime.py`](../src/harnessix/product_config/action_runtime.py)、[`product_config/action_recovery.py`](../src/harnessix/product_config/action_recovery.py) | `product_action_runtime_lock`、`ProductActionRuntimeOwner`、`scan_product_action_recovery` | [`test_action_runtime.py`](../tests/product_config/test_action_runtime.py)、[`test_action_recovery.py`](../tests/product_config/test_action_recovery.py)、[真实Profile测试](../tests/integration/test_product_process_profile.py) |
 | 单一产品面门禁 | 生产源码树 | 旧内核Import精确集合 | [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py) |
 | 显式Git Push能力 | [`delivery/git_push.py`](../src/harnessix/delivery/git_push.py) | `build_git_push_definition`、`GitPushActionExecutor` | [`test_git_push.py`](../tests/delivery/test_git_push.py) |
 
@@ -305,7 +312,7 @@ resume normal product traffic
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
-- 0.9.3a本地传输容量、Writer故障唤醒和取消安全关闭已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b持久容量、Plan-first保留、备份恢复实现和本地全仓门禁已完成，全矩阵CI待关闭；0.9.3c～d效果恢复和完整Soak尚未完成；
+- 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，首次CI 35499848035未通过，修复版待验收；0.9.3d完整Soak尚未完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。

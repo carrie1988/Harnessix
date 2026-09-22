@@ -834,8 +834,8 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
   启动，而不是触发Host Fallback。正确流程是先结算在途Route，再切换或删除配置/Secret来源。
 - **本地审计篡改**：Action配置事件链和恢复报告可检测偶发损坏与非协作改写，但同UID攻击者可同时修改程序、数据库和摘要；它们不
   构成签名或不可抵赖日志。0.9.4仍需供应链、签名、备份和恶意同UID边界审查。
-- **剩余风险**：恢复扫描当前没有独立跨进程Action Owner Lease；产品依赖Session Runtime Owner避免两个正式Server并发，但活跃自定义
-  宿主仍可能与恢复竞争。故障注入、Owner/Fencing、容量和UNKNOWN告警由0.9.3继续关闭。
+- **后续收敛**：0.9.3c已增加Product Runtime Lock、Action Audit Generation Fence和持久Operation Owner/Deadline，正式产品恢复不再只
+  依赖Session Runtime Owner。活跃自定义宿主若绕过统一组合根仍可能与恢复竞争；容量、Soak和UNKNOWN告警继续由0.9.3d关闭。
 
 源码入口见[`action_codec.py`](../src/harnessix/product_config/action_codec.py)、
 [`action_store.py`](../src/harnessix/product_config/action_store.py)、

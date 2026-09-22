@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 19
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+version: 20
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -31,6 +31,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/app_server/test_server_sdk.py
@@ -49,6 +50,7 @@ related_tests:
   - tests/smoke/test_runner.py
   - tests/smoke/test_cli.py
   - tests/governance/test_product_runtime_convergence.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -110,7 +112,7 @@ src/harnessix/
 6. [src/harnessix/product_ui/controller.py](../../src/harnessix/product_ui/controller.py)：理解单Actor、轮询、快照和有界关闭；
 7. [src/harnessix/product_config/cli.py](../../src/harnessix/product_config/cli.py)：读子进程`agent_server_main`如何解析产品参数；
 8. [src/harnessix/product_config/server.py](../../src/harnessix/product_config/server.py)：逐行跟踪`run_product_stdio`及默认Patch状态Owner；
-9. [src/harnessix/product_config/action_composition.py](../../src/harnessix/product_config/action_composition.py)与[action_runtime.py](../../src/harnessix/product_config/action_runtime.py)：理解POSIX能力证明、Catalog、Router与Store生命周期；
+9. [src/harnessix/product_config/action_owner.py](../../src/harnessix/product_config/action_owner.py)、[action_runtime.py](../../src/harnessix/product_config/action_runtime.py)与[action_recovery.py](../../src/harnessix/product_config/action_recovery.py)：理解产品最外层Owner、Store/Process生命周期、跨Store扫描与恢复顺序；
 10. [src/harnessix/product_config/workspace_patch_review.py](../../src/harnessix/product_config/workspace_patch_review.py)：理解Delivery计划、完整Diff和Review Artifact；
 11. [Product Config模块设计](../modules/product-config.md)：理解双摘要、严格合同、迁移、审计和零暴露Fallback；
 12. [tests/product_ui/test_stdio_product.py](../../tests/product_ui/test_stdio_product.py)：从真实JSONL子进程关闭、重开和完整Replay反证产品链；
@@ -410,12 +412,13 @@ Sandbox顺序：
 2. [execution/store.py](../../src/harnessix/execution/store.py)：计划Store；
 3. [trusted_actions/contracts.py](../../src/harnessix/trusted_actions/contracts.py)：统一工具绑定、计划和审计事件；
 4. [trusted_actions/policy.py](../../src/harnessix/trusted_actions/policy.py)：可信执行策略；
-5. [trusted_actions/router.py](../../src/harnessix/trusted_actions/router.py)：`plan → decide → execute/reconcile`；
-6. [trusted_actions/agent_gateway.py](../../src/harnessix/trusted_actions/agent_gateway.py)：把Agent调用稳定映射到Router身份和状态；
-7. [agent/trusted_action_contracts.py](../../src/harnessix/agent/trusted_action_contracts.py)与[trusted_action_runtime.py](../../src/harnessix/agent/trusted_action_runtime.py)：Gateway端口和Session双账本编排；
-8. [trusted_actions/store.py](../../src/harnessix/trusted_actions/store.py)：路由事实；
-9. [product_config/action_composition.py](../../src/harnessix/product_config/action_composition.py)：默认POSIX Patch的能力报告、目录和环境；
-10. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
+5. [trusted_actions/router.py](../../src/harnessix/trusted_actions/router.py)：`plan → decide → execute/reconcile`薄入口；
+6. [trusted_actions/operation_router.py](../../src/harnessix/trusted_actions/operation_router.py)：Deadline、取消、Effect Class结果和只对账恢复；
+7. [trusted_actions/ownership_store.py](../../src/harnessix/trusted_actions/ownership_store.py)、[operation_store.py](../../src/harnessix/trusted_actions/operation_store.py)与[transition_store.py](../../src/harnessix/trusted_actions/transition_store.py)：Owner Fence、Operation事务与Route Hash链；
+8. [trusted_actions/agent_gateway.py](../../src/harnessix/trusted_actions/agent_gateway.py)：把Agent调用稳定映射到Router身份和状态；
+9. [agent/trusted_action_contracts.py](../../src/harnessix/agent/trusted_action_contracts.py)与[trusted_action_runtime.py](../../src/harnessix/agent/trusted_action_runtime.py)：Gateway端口和Session双账本编排；
+10. [product_config/action_composition.py](../../src/harnessix/product_config/action_composition.py)：默认POSIX Patch的能力报告、目录和环境；
+11. `ExtensionActionPort`：MCP/Skill/Hook只能看到的受限能力面。
 
 对应[Execution Plan测试](../../tests/execution/test_plans.py)、[Store测试](../../tests/execution/test_store.py)、[Agent Gateway测试](../../tests/trusted_actions/test_agent_gateway.py)、[Agent集成恢复测试](../../tests/agent/test_trusted_action_runtime.py)、[默认Patch纵向测试](../../tests/delivery/test_trusted_action_patch.py)和[Trusted Action Router测试](../../tests/trusted_actions/test_router.py)。
 
@@ -574,9 +577,11 @@ flowchart LR
 
 ### 14.4 “Trusted Action执行完成但响应丢失会怎样”
 
-`TrustedActionRouter.execute`先持久化`running`，Executor效果完成但终态响应丢失时Route进入`unknown`；重开后只能按
-稳定资源身份调用`reconcile`，不得再次`execute`。测试落点是[Router响应丢失](../../tests/trusted_actions/test_router.py)、
-[Git Push硬崩溃](../../tests/delivery/test_git_push.py)和[产品恢复](../../tests/product_config/test_action_runtime.py)。
+`TrustedActionRouter.execute`先原子提交`running`与带Owner Generation、Attempt和Deadline的Operation，Executor效果完成但最终Audit
+提交失败时保留Active Operation。新Owner把它标记Interrupted并把Route转为`unknown`，之后只能按稳定资源身份调用
+`reconcile`，不得再次`execute`。测试落点是[Router Operation与Audit故障](../../tests/trusted_actions/test_router.py)、
+[Git Push硬崩溃](../../tests/delivery/test_git_push.py)、[产品恢复](../../tests/product_config/test_action_runtime.py)和
+[跨Store扫描](../../tests/product_config/test_action_recovery.py)。
 
 ### 14.5 “写文件后宿主崩溃能否自动重试”
 

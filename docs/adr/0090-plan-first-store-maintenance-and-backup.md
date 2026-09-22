@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
@@ -28,7 +28,8 @@ supersedes: []
 ## 状态
 
 接受并由0.9.3b实现，代码Revision为`cb3f3ea834624d5a8f84396952eba212650065d1`。本决策的本地全仓门禁为
-`3589 passed, 32 skipped`；三平台、Container和文档CI仍是0.9.3b路线图关闭条件，CI完成前不得把本地结果描述为正式发布验收。
+`3589 passed, 32 skipped`；
+[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)已通过Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation六实例，0.9.3b据此关闭。
 
 本ADR只定义单一Coding Agent内部SQLite共库的离线维护能力，不恢复独立Action Plane、HTTP API、Worker、后台GC服务或
 远程数据库依赖。
@@ -247,7 +248,7 @@ Migration 26：
 7. Restore后Thread、Artifact正文和Protocol记录必须恢复到备份状态；
 8. Migration 26必须通过旧库升级、真进程退出、Checksum和WAL并发回归；
 9. Ruff、Mypy、可读性、文档、规格和全仓测试必须通过；
-10. Linux Python 3.12/3.13、macOS、Windows、固定Container和文档CI全部通过后，才能关闭0.9.3b。
+10. Linux Python 3.12/3.13、macOS、Windows、固定Container和文档CI必须全部通过；该条件已由CI 35498012926满足。
 
 ## 未由本ADR解决
 

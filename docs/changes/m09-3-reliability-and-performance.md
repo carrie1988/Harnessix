@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 4
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ modules:
 related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_session_contract.py
@@ -25,6 +26,8 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/processes/test_supervision_store.py
   - tests/agent/test_store_maintenance.py
+  - tests/product_config/test_action_recovery.py
+  - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
@@ -36,12 +39,12 @@ supersedes: []
 |---|---|
 | 需求 | 长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准 |
 | 产品边界 | 单一Coding Agent；不恢复独立Action HTTP/Worker，不新增性能控制面服务 |
-| 当前状态 | 0.9.3a已由CI关闭；0.9.3b实现与本地全仓验证完成、全矩阵CI待完成；0.9.3c～d尚未完成，0.9.3总项保持进行中 |
+| 当前状态 | 0.9.3a、0.9.3b已由六实例CI关闭；0.9.3c首次CI发现文档同步与Session初始化缺陷，修复版待验收；0.9.3d尚未实施，0.9.3总项保持进行中 |
 | 主要模块 | App Server、SDK、Session、Protocol Request、Artifact、Trusted Action、Process、Observability |
 | 兼容级别 | 0.9.3a不改协议/数据库；b/c如需Migration必须前向升级、备份恢复和故障回滚 |
 | 发布单元 | a本地传输；b持久容量；c效果恢复；dSoak与发布基线 |
-| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；0.9.3b `cb3f3ea834624d5a8f84396952eba212650065d1` |
-| 当前验收 | 0.9.3a由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)六实例关闭；0.9.3b本地`make check`为3589 passed、32 skipped，CI待完成 |
+| 当前实现Revision | 0.9.3a `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5`；0.9.3b `cb3f3ea834624d5a8f84396952eba212650065d1`；0.9.3c `0bc942bce8aeb22747a06515732936d1a312cd02` |
+| 当前验收 | 0.9.3a由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)关闭；0.9.3b由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)关闭；0.9.3c首次`make check`为3595 passed、32 skipped，[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过，修复版待六实例验收 |
 
 ## 2. 需求背景与完成定义
 
@@ -137,8 +140,8 @@ flowchart LR
 | 切片 | 交付 | 前置 | 当前状态 |
 |---|---|---|---|
 | a | stdio/SDK协商背压、迟到Response、取消安全Close、资源快照 | 0.9.2 | 已由CI 35494960166验收关闭 |
-| b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 实现与本地门禁完成；全矩阵CI待完成 |
-| c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 未实施 |
+| b | Session/Protocol/Artifact容量合同、保留计划、清理、崩溃恢复 | a | 已由CI 35498012926验收关闭 |
+| c | Action/Process Owner fencing、孤儿扫描、Route Deadline、恢复信号 | a | 实现与修复进行中；首次CI 35499848035未通过 |
 | d | 固定Soak负载、三平台/Container证据、阈值与发布报告 | b、c | 未实施 |
 
 ## 6. 0.9.3a接口设计与本地传输可靠性
@@ -301,8 +304,8 @@ close():
 
 0.9.3b已形成独立的[详细设计](m09-3b-persistent-capacity-and-retention.md)和
 [ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。实现Revision
-`cb3f3ea834624d5a8f84396952eba212650065d1`已通过本地全仓门禁；Linux、macOS、Windows、固定Container和
-Documentation CI完成前，本切片仍保持未关闭。
+`cb3f3ea834624d5a8f84396952eba212650065d1`已通过本地全仓门禁，并由
+[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation六实例验收，本切片已关闭。
 
 ### 7.1 共库维护边界
 
@@ -374,9 +377,10 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 公开数据流只从业务行聚合到计数、时间、字节和摘要，内部Key不离开维护表。完整表结构、提交时序和崩溃窗口见
 [0.9.3b专项详细设计](m09-3b-persistent-capacity-and-retention.md)。
 
-## 8. 0.9.3c 效果恢复设计边界
+## 8. 0.9.3c 效果恢复实现
 
-本切片不扩大Tool能力，只补足已有Trusted Action/Process的Owner和恢复：
+本切片已经形成[专项详细设计](m09-3c-action-runtime-fencing-and-recovery.md)和
+[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。它不扩大Tool能力，只补足已有Trusted Action/Process的Owner和恢复：
 
 1. 产品Action Runtime启动前取得跨进程Owner Lease/Fence；
 2. 旧Owner或Fence失效后不能继续提交终态；
@@ -385,7 +389,9 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 5. Reconcile每轮有界且不调用Execute；
 6. 所有恢复信号使用低基数字段，原始异常经过0.9.4清洗前不得公开。
 
-必须覆盖两个独立进程竞争、效果后崩溃、审计后Session前崩溃、Artifact发布窗口、Owner失效和数据库Busy。
+实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`已覆盖两个独立进程竞争、写效果超时、效果返回后Audit故障、
+Owner失效、Plan单边提交、Artifact引用窗口和有界Reconcile；本地`make check`为3595 passed、32 skipped。
+首次CI 35499848035未通过，修复版六实例全部通过前保持未关闭。完整组件、时序、表结构、失败矩阵、安全与部署边界见专项详细设计。
 
 ## 9. 0.9.3d Soak与性能证据
 
@@ -473,7 +479,7 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 | Abandoned占满容量 | 有界且可关闭重连 | 是否增加连接级超时/自动换代，不能静默淘汰 |
 | 清理误删恢复证据 | b切片Plan先行和禁删集合 | 审计保留周期与用户导出策略 |
 | Vacuum阻塞交互 | 不在热路径自动执行 | Maintenance窗口和进度/取消合同 |
-| Action双Owner | c切片Fence | 锁文件、SQLite Lease或平台Mutex取舍 |
+| Action双Owner | c切片已采用Product文件锁 + Audit文件锁/Generation Fence | 0.9.3d测量接管、扫描与积压；0.9.4评审同UID威胁 |
 | 绝对性能波动 | 固定平台与相对阈值 | 发布硬件档位与容差 |
 
 ## 15. 源码、测试与文档映射
@@ -486,7 +492,8 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 | 共库容量与维护 | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py)、[`session/capacity.py`](../../src/harnessix/session/capacity.py) | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [0.9.3b详细设计](m09-3b-persistent-capacity-and-retention.md)、[Session模块](../modules/session.md) |
 | Protocol历史 | [`protocol/requests.py`](../../src/harnessix/protocol/requests.py)、[`session/maintenance_planning.py`](../../src/harnessix/session/maintenance_planning.py) | [`test_requests.py`](../../tests/protocol/test_requests.py)、[`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [Protocol模块](../modules/protocol.md) |
 | Artifact容量 | [`artifacts/sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`artifacts/persistence.py`](../../src/harnessix/artifacts/persistence.py) | [`tests/artifacts`](../../tests/artifacts/)、[`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) | [Artifacts模块](../modules/artifacts.md) |
-| Action恢复 | [`trusted_actions`](../../src/harnessix/trusted_actions/) | [`tests/trusted_actions`](../../tests/trusted_actions/) | [Trusted Actions模块](../modules/trusted-actions.md) |
+| Action Owner与Operation恢复 | [`trusted_actions/ownership_store.py`](../../src/harnessix/trusted_actions/ownership_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py)、[`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py) | [`test_router.py`](../../tests/trusted_actions/test_router.py)、[`test_agent_gateway.py`](../../tests/trusted_actions/test_agent_gateway.py) | [0.9.3c详细设计](m09-3c-action-runtime-fencing-and-recovery.md)、[Trusted Actions模块](../modules/trusted-actions.md) |
+| 产品跨Store扫描 | [`product_config/action_owner.py`](../../src/harnessix/product_config/action_owner.py)、[`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py)、[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py) | [0.9.3c详细设计](m09-3c-action-runtime-fencing-and-recovery.md)、[Product Config模块](../modules/product-config.md) |
 
 ## 16. 当前完成清单
 
@@ -498,7 +505,7 @@ Plan、Item和Progress持久化在Session共库；规划事务只写候选事实
 - [x] App Server、SDK、路线图与索引同步；
 - [x] Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例CI验收；
 - [x] 0.9.3b容量合同、Migration、清理与恢复实现及本地全仓门禁；
-- [ ] 0.9.3b Linux、macOS、Windows、Container和Documentation全矩阵CI关闭；
-- [ ] 0.9.3c Owner fencing、孤儿与Route Deadline；
+- [x] 0.9.3b Linux、macOS、Windows、Container和Documentation全矩阵CI关闭（CI 35498012926）；
+- [ ] 0.9.3c Owner fencing、孤儿与Route Deadline已实现；首次CI 35499848035暴露文档同步和Session初始化缺陷，修复版待验收；
 - [ ] 0.9.3d完整Soak、性能阈值和冻结证据；
 - [ ] 0.9.3总项关闭。

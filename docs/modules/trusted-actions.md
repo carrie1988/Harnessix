@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 18
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
@@ -30,6 +31,7 @@ related_tests:
   - tests/hooks/test_runtime.py
   - tests/delivery/test_git_push.py
   - tests/governance/test_product_runtime_convergence.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -40,14 +42,14 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/trusted_actions`](../../src/harnessix/trusted_actions/) |
-| 当前职责 | 把内置、MCP、Skill、Hook和Custom Tool绑定为宿主可信合同；规范化资源；统一完成Policy、Execution Plan、Approval、执行、摘要审计、`UNKNOWN`恢复和Reconcile |
+| 当前职责 | 把内置、MCP、Skill、Hook和Custom Tool绑定为宿主可信合同；规范化资源；统一完成Policy、Execution Plan、Approval、Owner Fence、Operation Deadline、执行、摘要审计、`UNKNOWN`恢复和Reconcile |
 | 非职责 | 不实现模型Agent Loop、Tool发现协议、Secret明文解析、Sandbox执行器、Workspace锁、外部效果本体、集中式多租户认证或分布式任务调度 |
 | 上游调用者 | Agent统一Gateway、受信产品装配、MCP/Skill/Hook Gateway、直接Git Push Definition及直接使用该库的宿主 |
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
-| 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore`保存Route Plan、当前投影和append-only Hash链 |
+| 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore` v2保存Route Plan、当前投影、append-only Hash链、Owner Generation和Execute/Reconcile Operation |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
-| 当前完成度 | 核心路由库、默认产品组合及扩展适配已实现；e1～e5与f2b已通过全矩阵CI；Git Push已关闭旧ActionService桥；f2c历史Eval新运行已迁入同一Catalog/Gateway/Router并通过七任务全矩阵CI关闭 |
+| 当前完成度 | 核心路由、默认产品组合及扩展适配已实现；独立Action HTTP/Worker已删除；0.9.3c双层Owner、Operation期限、只对账恢复和跨Store扫描首次CI未通过，修复版待六实例验收 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
@@ -986,7 +988,7 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 | Resource只比较网络/Secret存在性 | Resolver可映射错误对象 | Resolver受信 | 正式资源授权合同与逐项绑定 |
 | Approval无主体认证/过期 | 本地任意受信调用者可批准 | Fingerprint和冲突检查 | 产品身份、TTL、角色和审计 |
 | Registry无代码来源证明 | 相同Binding可挂接错误实现 | 宿主装配受信 | Executor实现摘要、签名供应链 |
-| 恢复无Owner Lease | 活跃执行可被误标unknown | 冷启动调用约束 | Runtime Owner/Lease/启动互斥 |
+| 自定义宿主绕过产品组合根 | 可能与正式恢复竞争 | 正式产品具备Product Lock、Audit Fence和Operation Owner | 扩展接入必须复用正式组合根或独立进程隔离 |
 
 ## 31. 可观测性
 
@@ -994,8 +996,9 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 
 | 信号 | 当前内容 | 缺失 |
 |---|---|---|
-| Route Snapshot | 状态、序号、更新时间、末Event摘要 | Owner、Deadline、尝试次数、进度 |
-| Audit Event | Plan/资源/Policy/审批Actor摘要/Executor/输出摘要/错误/Reconcile | 原因正文、耗时、队列时间、租约 |
+| Route Snapshot | 状态、序号、更新时间、末Event摘要 | Operation进度与历史趋势 |
+| Action Operation | Owner Generation/Token摘要、Attempt、Deadline、阶段和终态 | 细粒度进度与业务正文 |
+| Audit Event | Plan/资源/Policy/审批Actor摘要/Executor/输出摘要/错误/Reconcile | 原因正文、耗时、队列时间 |
 | Execution Plan | Tool、Workspace、环境Hash、Secret版本、Sandbox、能力和Policy | Secret值、环境值、动态执行事实 |
 | Exception | 固定KernelError或Outcome错误码 | 统一公开投影尚依赖上游 |
 | Trace/Metric/Log | 包内未直接接入OpenTelemetry | Route span、状态计数、Latency、UNKNOWN积压和Store故障指标 |
@@ -1205,19 +1208,18 @@ uv run pytest \
 | P0 | 历史Reader与兼容实现自身仍依赖旧内核 | 单一Coding Agent产品边界尚未完成物理收敛 | 0.9.1f3 |
 | P0 | Router未统一限制/脱敏Outcome正文 | 新Executor可能向调用者传播Secret或超大结果 | 0.9.4安全加固 |
 | P0 | 首次execute不重复显式Decoder | MCP持久参数未按捕获Schema再次验证，和ADR文字不完全一致 | 0.9.4合同收敛 |
-| P0 | 恢复无Owner Lease/启动互斥 | 活跃Action可被误标unknown | 0.9.3可靠性 |
-| P0 | 外部效果与最终Audit非原子 | 效果成功但Event失败时只能保守对账 | 0.9.3故障恢复 |
+| P1 | 外部效果与最终Audit不能原子 | 0.9.3c用Operation、UNKNOWN与只对账恢复防止重复Execute，但不能提供Exactly Once | 外部事实与人工处置UX |
 | P0 | Hook Definition与Port实际来源未交叉校验 | 错误Mapping可执行另一来源Action并形成审计身份混淆 | 0.9.4扩展安全 |
 | P0 | Hook输出接受晚于Action成功结算 | Guard/Schema拒绝时Action与Hook终态分裂 | 0.9.3对账 |
-| P1 | 两个Plan Store跨库非原子且无孤儿治理 | 局部失败留下孤儿或批准/Route短暂不一致 | 0.9.3运维恢复 |
+| P1 | 两个Plan Store跨库非原子 | 0.9.3c可修复缺失Execution Plan并拒绝冲突，仍非全局事务 | 保持保守扫描；0.9.3d测量规模 |
 | P1 | 通用Invocation无复杂度预算 | 深/大参数可消耗CPU、内存和磁盘 | 0.9.4输入防护 |
 | P1 | Resource与Workspace/Secret/网络只做部分一致性 | 受信Resolver错误可能授权错误对象 | 0.9.4资源授权 |
 | P1 | Registry不持久、无原子版本切换和实现证明 | 重启/升级依赖宿主重新装配完全一致对象 | 0.9.1/0.9.4 |
 | P1 | Approval无认证、TTL、角色和撤销 | 不满足多用户正式授权 | 0.9.1/0.9.4 |
-| P1 | 无Route级Timeout/Cancel Token/Progress | 长执行可占用Runtime且诊断不足 | 0.9.3 |
+| P1 | Route Deadline只提供协作取消且无进度流 | 错误插件可吞取消；不可信代码仍须Process/Container强Owner | 0.9.4扩展隔离 |
 | P1 | Hash链无签名且本地文件未加密 | 不抵抗有写权限的恶意主体 | 0.9.4威胁模型 |
 | P1 | 无原生Telemetry | 无法建立SLO、UNKNOWN告警和容量分析 | DOC-1.4/0.9.3 |
-| P1 | Hook Grant仅捕获时有效且恢复无Owner/Action对账 | 过期后继续执行或重启误判处理器事实 | 0.9.3/0.9.4 |
+| P1 | Hook Grant仅捕获时有效，且输出接受晚于Action终态 | Owner/Reconcile已统一，但授权过期与双账本接受仍可能分裂 | 0.9.4 |
 | P2 | Sequence上限无归档策略 | 多次Reconcile后可能触发未归一ValidationError | 运维/存储治理 |
 | P2 | 包根未导出部分构造API | 第三方调用稳定性和文档面不清晰 | API治理 |
 
@@ -1505,10 +1507,59 @@ flowchart TD
 事件继续由Action Audit Hash链保存。专项测试见[`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)；Server顺序见
 [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)。
 
-## 47. 变更记录
+## 47. Owner Fence、Operation Deadline与跨Store恢复（0.9.3c）
+
+0.9.3c保持`TrustedActionRouter`为Coding Agent内部唯一Action执行入口，不恢复独立HTTP/Worker。产品组合根先取得
+`product-action-runtime.lock`，Action Audit再取得数据库旁路锁、递增持久`owner_generation`并替换Token摘要。产品Store以
+`require_runtime_owner=True`打开；直接单元测试或嵌入式非产品Store可显式保留无Owner模式，但不能据此绕过产品接线。
+
+```mermaid
+sequenceDiagram
+    participant R as TrustedActionRouter
+    participant O as Action Operation Store
+    participant E as Executor
+    participant A as Action Audit
+    R->>O: claim execute or reconcile
+    O->>A: fence check and route transition and operation insert
+    A-->>O: commit
+    O-->>R: claim with in-memory token
+    R->>E: invoke under persisted deadline
+    E-->>R: outcome or timeout or cancellation
+    R->>O: complete operation
+    O->>A: token and generation check plus route and operation CAS
+    A-->>O: commit
+    R-->>R: return definite outcome or UNKNOWN
+```
+
+[`operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py)负责Effect Class相关的Deadline、取消和异常映射；
+[`operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)负责Claim/Complete/Interrupt事务；
+[`ownership_store.py`](../../src/harnessix/trusted_actions/ownership_store.py)负责Fence；
+[`transition_store.py`](../../src/harnessix/trusted_actions/transition_store.py)负责Route CAS和连续Hash链。Router自身只保留薄公共方法和
+Plan/Binding/Approval复核。
+
+Action Audit Schema v2新增`action_route_operations`，每行记录Operation、Plan、Phase、Attempt、Owner Generation、Token摘要、
+开始时间、Deadline、状态和稳定完成Code。Claim与`ready -> running`或`unknown -> reconciling`同事务；Complete与Route终态同事务。
+原始Runtime/Operation Token只驻留当前进程，不写数据库、日志或报告。
+
+写效果超时、取消和无法分类异常进入UNKNOWN；Read-only执行可在证据充分时进入failed。Reconcile每轮有独立Deadline，默认最多3次，
+耗尽后进入`manual_intervention`。Executor返回后Audit提交失败会留下Active Operation和执行中Route；新Owner只把Operation标为
+Interrupted、Route改为UNKNOWN并调用Reconcile，绝不重新Execute。
+
+产品启动的跨Store扫描位于[`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py)：缺失Execution
+Plan可由Route内嵌不可变Plan修复，Plan冲突和Session悬空引用失败关闭，无Session引用Route和Action Artifact孤儿只计数，Process
+孤儿Lease调用既有Reconcile后失败关闭。扫描报告只含计数、时间、Generation和摘要，完整规则见
+[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md)及
+[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。
+
+专项测试覆盖v1→v2迁移、产品Owner门禁、两个进程竞争、旧Generation、写超时、有界Reconcile、效果返回后Audit故障、取消恢复、
+Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8aeb22747a06515732936d1a312cd02`本地`make check`为
+3595 passed、32 skipped；CI 35499848035关闭前不把0.9.3c标记为正式验收。
+
+## 48. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 18 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加双层Owner、Action Audit v2 Operation Deadline、只对账恢复和跨Store扫描；独立Action HTTP/Worker保持删除 |
 | 16 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval统一Router与响应丢失不重放由CI 35446341997完成全矩阵验收 |
 | 15 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | 同步f2c历史Eval新运行迁入统一Catalog、Gateway、Router，补充响应丢失不重放并收缩兼容内核白名单候选 |
 | 14 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接Definition/Executor、硬崩溃只对账与旧Action桥删除由CI 35442924441验收关闭 |

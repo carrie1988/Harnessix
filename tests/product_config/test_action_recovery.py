@@ -9,8 +9,11 @@ from harnessix.agent.ids import new_id
 from harnessix.agent.models import EventDraft, ThreadCreated
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.product_config.action_contracts import build_product_action_config
 from harnessix.product_config.action_owner import product_action_runtime_lock
 from harnessix.product_config.action_recovery import scan_product_action_recovery
+from harnessix.product_config.action_runtime import open_default_product_action_runtime
+from harnessix.secrets.provider import SecretMaterial
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome
 from harnessix.trusted_actions.router import TrustedActionRouter
@@ -22,6 +25,11 @@ from tests.trusted_actions.test_router import (
     definition,
     invocation,
 )
+
+
+class _NoSecrets:
+    def resolve(self, name: str) -> SecretMaterial:
+        raise AssertionError(f"无Secret Profile不应解析{name}")
 
 
 def test_product_action_runtime_lock_rejects_competing_process(tmp_path: Path) -> None:
@@ -45,6 +53,26 @@ def test_product_action_runtime_lock_rejects_competing_process(tmp_path: Path) -
 
     assert competed.returncode == 0
     assert competed.stdout.strip() == "action_runtime_busy"
+
+
+async def test_product_action_runtime_initializes_session_before_recovery_scan(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    artifacts = SQLiteArtifactStore(sessions)
+
+    async with open_default_product_action_runtime(
+        tmp_path,
+        workspace,
+        artifacts,
+        _NoSecrets(),
+        build_product_action_config(workspace_patch_enabled=False),
+        artifact_workspace_scope="0" * 64,
+    ) as owner:
+        assert owner.recovery_scan.scanned_routes == 0
+        assert await sessions.thread_ids() == []
 
 
 async def test_recovery_scan_repairs_plan_orphan_without_executing(tmp_path: Path) -> None:

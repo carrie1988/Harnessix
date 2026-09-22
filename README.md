@@ -6,7 +6,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.2路线图范围和DOC-1.0～DOC-1.6文档治理；90份ADR和33份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b实现Revision `cb3f3ea`已增加Session共库低敏容量、Plan-first保留、保守禁删、强制备份和崩溃恢复，本地`make check`通过3589项、跳过32项，全矩阵CI完成前保持未关闭。0.9.3c～d及0.9.4～0.9.6仍未完成，项目尚未达到1.0正式商用状态。
+> 当前状态：已完成0.1～0.9.2路线图范围和DOC-1.0～DOC-1.6文档治理；91份ADR和33份源码研究资料均已进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b持久容量与保留已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c实现Revision `0bc942b`已增加Action双层Owner、持久Operation期限、只对账恢复和跨Store扫描，本地`make check`通过3595项、跳过32项，[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过；修复版待验收。0.9.3d及0.9.4～0.9.6仍未完成，项目尚未达到1.0正式商用状态。
 
 ```text
               CLI / TUI / Agent SDK
@@ -34,6 +34,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 - Session 持久化、取消、恢复和双向客户端协议；
 - Session共库的低敏容量、Plan-first离线保留、强制备份和崩溃续跑；
 - Permission、Approval 与 [Trusted Action Runtime](docs/modules/trusted-actions.md)；
+- Action Runtime双层Owner、持久Operation Deadline、UNKNOWN只对账恢复和跨Store完整性扫描；
 - MCP、项目指令、Skills 和 Hooks；
 - Coding Evals、故障注入和质量回归。
 
@@ -60,6 +61,8 @@ Harnessix Code复用模型供应商SDK、OpenTelemetry、SQLite、Git、系统�
 - Headless App Server复用唯一Agent Runtime和Session Store，支持Thread创建、恢复、分叉、归档，Turn开始、重试、取消、审批、提问与Steering；
 - Python Agent SDK支持进程内和子进程传输；子进程传输以唯一Reader和`id → Future`表归并乱序响应，长轮询不会阻塞控制命令；
 - 0.9.3a为本地传输增加`Pending + Abandoned`共享容量、守护stdio Reader/Writer泵、Writer故障主动唤醒和取消安全Close；资源快照只返回状态、计数、stderr字节数和稳定失败Code；
+- 0.9.3b为Session共库增加低敏容量、不可变清理Plan、保守禁删、批次崩溃恢复和Plan绑定备份/Restore；
+- 0.9.3c在唯一Coding Agent组合根内增加Product/Audit双层Owner、Generation Fence、Execute/Reconcile Operation Deadline、写效果UNKNOWN和只对账恢复；不会恢复独立Action HTTP/Worker；
 - `events/next`把权威持久Replay与最多1000条live-only文本Delta分离；溢出显式报告`liveGap`，客户端回退到完整Item；
 - `ask_user`使用持久Question Request/Answer、`WAITING_INPUT`和配对Tool Result，进程重启后可继续回答，重复、冲突、取消与过期均有稳定语义；
 - Steering绑定预期活动Turn并在模型步骤边界生效，不打断当前Provider请求，也不破坏模型响应、Tool Call、Tool Result和后续用户输入的历史顺序；

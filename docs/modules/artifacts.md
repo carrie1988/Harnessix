@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 13
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0060-thread-lifecycle-and-authority-free-forks.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/artifacts/test_contracts.py
   - tests/artifacts/test_store.py
@@ -35,6 +36,7 @@ related_tests:
   - tests/processes/test_trusted_output.py
   - tests/evals/test_runner.py
   - tests/agent/test_store_maintenance.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -44,7 +46,7 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL、显式回收和Plan-first离线保留 |
+| 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL、显式回收、Plan-first离线保留和Action恢复低敏索引清单 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
 | 代码版本 | 0.9.1f3独立Process Action发布器已删除；0.9.3b增加发布时间、统一显式插入和共库维护；实现Revision `cb3f3ea` |
@@ -690,10 +692,22 @@ Action Output从`expires_at - policy.ttl_seconds`恢复同一次发布时间，�
 [0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)及
 [ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。
 
+### 26.4 Action恢复索引清单（0.9.3c）
+
+[`ActionOutputArtifactMixin.action_recovery_inventory`](../../src/harnessix/artifacts/action_output_store.py)只读取
+`purpose IN ('action_review', 'action_output')`的`purpose/call_id`，按稳定顺序返回给产品启动恢复扫描。它不读取Artifact正文、
+Manifest、路径、摘要或Thread内容，也不修改状态。
+
+恢复扫描把Call ID与Session中正式Approval Request或Trusted Action Tool Result引用集合比较。无引用Artifact只增加低敏
+`artifact_orphans`计数，不自动删除：它可能处于Artifact已经发布而Session最终投影尚未提交的崩溃窗口。自动清理必须在未来形成
+不可变维护Plan、备份、二次保护和用户可见策略，不能复用本只读清单直接执行删除。完整边界见
+[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md)。
+
 ## 27. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加只读Action Artifact purpose/call恢复清单；孤儿只计数、不读取正文或自动删除 |
 | 12 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26发布时间、显式列写入、低敏容量和Plan-first Body/Thread保留及备份恢复边界 |
 | 11 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process发布器删除和历史Artifact只读兼容由CI 35453082992完成全矩阵验收 |
 | 9 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录Eval确定性`passed`投影与Action Output重复验证由CI 35446341997完成全矩阵验收 |

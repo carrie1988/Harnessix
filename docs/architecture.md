@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 75
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 76
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -51,6 +51,7 @@ related_adrs:
   - docs/adr/0071-headless-app-server-and-sdk-lifecycle.md
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -59,6 +60,7 @@ related_tests:
   - tests/product_config/test_action_runtime.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
+  - tests/product_config/test_action_recovery.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_schemas.py
   - tests/evals/test_task_pack.py
@@ -118,8 +120,8 @@ Demo Executor和服务专用领域合同。旧Process Session事件及旧Process
 
 0.9.3b同样不增加服务：`SQLiteStoreMaintenance`只在唯一宿主的静默维护窗口内，对Session、Protocol Request和Artifact
 共库执行低敏容量扫描、不可变Plan、强制备份、有界批次和显式Restore。升级和Agent启动不自动删除；任意未决Protocol
-Request保守保护全部Session/Artifact，逻辑清理也不隐式运行Vacuum。实现Revision `cb3f3ea`已通过本地全仓门禁，正式
-全矩阵CI尚未关闭。
+Request保守保护全部Session/Artifact，逻辑清理也不隐式运行Vacuum。实现Revision `cb3f3ea`已由
+[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收。
 
 | 能力标签 | 含义 |
 |---|---|
@@ -303,6 +305,12 @@ Router持有统一路由状态和Hash链审计；Execution Plan持有冻结参�
 实际效果事实由Workspace Transaction、Process Lease/Receipt、Git远端Ref或外部系统身份持有。重启发现`running`时先转
 `unknown`，只调用`reconcile`，绝不重新调用`execute`。
 
+产品组合根在打开Action Store和Process Owner前取得`product-action-runtime.lock`；Action Audit随后递增持久Owner
+Generation并保存Token摘要。每次Execute/Reconcile在调用Executor前原子写入Route执行态与带Deadline的Operation，完成时再
+原子提交Operation与Route终态。写效果超时、取消或Executor返回后Audit失败均保守进入UNKNOWN；新Owner只中断旧Operation并
+调用Reconcile，不重放Execute。完整流程见[ADR 0091](adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)和
+[0.9.3c详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)。
+
 ## 8. 数据流与持久化架构
 
 ```mermaid
@@ -311,7 +319,7 @@ flowchart LR
     Commands --> Session[(Session Event Log + Snapshot)]
     Session --> Artifacts[(Artifact Store)]
     ToolCall[高风险Tool Call] --> Plan[(Execution Plan Store)]
-    Plan --> Audit[(Action Audit Hash Chain)]
+    Plan --> Audit[(Action Audit Hash Chain和Operation)]
     Audit --> Effects[(Workspace/Process/Git效果事实)]
     Config[Product + Action Config] --> ConfigStore[(Runtime Config Store)]
     ConfigStore --> Plan
@@ -328,6 +336,7 @@ flowchart LR
 | 大正文 | Artifact Store | artifact/hash/owner scope | 校验摘要、分页、TTL和归属 |
 | 执行计划 | Execution Plan Store | `plan_id/fingerprint` | 批准后不可替换参数或资源 |
 | Action路由审计 | Action Audit Store | `plan_id/event hash` | running恢复为unknown，只对账 |
+| Action操作租约 | Action Audit Store | operation/phase/attempt/owner generation | Deadline或宿主中断不重Execute，只进入unknown/reconcile |
 | Workspace写入 | Delivery Store | transaction/lease/fencing | 发布游标恢复或Rollback |
 | Process | Process Lease/Receipt | process/plan/spec/capability | 不凭PID恢复控制权 |
 | 产品配置 | Runtime Config Store | snapshot digest/active pointer | 双配置CAS，上一配置用于恢复 |
@@ -338,6 +347,8 @@ flowchart LR
 
 Session、Protocol Request和Artifact当前物理复用一个SQLite文件，但保持独立表、状态机和模块Owner。0.9.3b的Maintenance是
 该共库的内部离线编排，不改变业务依赖方向，不允许上层绕过Agent Protocol直接访问数据库，也不恢复已删除的Action服务。
+0.9.3c启动扫描只修复Route内嵌Execution Plan可以确定重建的缺口；Session、Artifact和Process孤儿分别报告或失败关闭，
+不把跨Store扫描伪装成全局事务。
 
 ## 9. Context、Model与Artifact边界
 
@@ -547,7 +558,7 @@ recover_route(route):
 | 风险/缺口 | 当前控制 | 后续切片 |
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
-| 长会话容量和退化尚未完成发布基线 | 0.9.3a已限制传输；0.9.3b已实现持久容量、Plan-first保留和备份恢复；效果恢复、物理空间与完整Soak仍缺 | 0.9.3c～d |
+| 长会话容量和退化尚未完成发布基线 | 0.9.3a已限制传输；0.9.3b已实现持久容量、Plan-first保留和备份恢复；0.9.3c已实现Action Owner、Deadline和只对账恢复；物理空间、扫描规模与完整Soak仍缺 | 0.9.3d |
 | 多仓库Eval真实基线成功率为0% | 固定北京模型已完成20/20 Trial并冻结完整Token、成本和失败证据；不以基础设施完成掩盖0/20任务成功与0/20测试通过 | 0.9.3/0.9.6持续改进与能力矩阵 |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
@@ -561,6 +572,7 @@ recover_route(route):
 
 | 版本 | Revision | 日期 | 变更 |
 |---:|---|---|---|
+| 76 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c在唯一Coding Agent组合根增加双层Action Owner、持久Operation Deadline、只对账恢复与跨Store完整性扫描；独立HTTP/Worker保持删除 |
 | 75 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 0.9.3b在单一Coding Agent内部增加Session共库低敏容量、不可变Plan、保守禁删、批次崩溃恢复和Plan绑定备份/Restore；不新增服务或自动Vacuum |
 | 74 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a在单一Coding Agent拓扑内增加协商stdio背压、迟到Response共享容量、Writer故障唤醒、取消安全Close和低敏资源快照 |
 | 73 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | Revision与CI关闭真实Suite测试分母、最新状态和可信失败进度修正；固定北京模型完成20 Trial并冻结CNY 1.46828、任务/测试0/20的低敏证据，0.9.2关闭 |

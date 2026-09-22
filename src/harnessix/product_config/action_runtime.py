@@ -179,9 +179,12 @@ async def open_default_product_action_runtime(
     artifact_workspace_scope: str,
     recovery_config: ProductActionConfigV1 | None = None,
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
-    """持有全部Action资源，先结算旧Route，再发布候选目录。"""
+    """持有全部Action资源，先初始化Session并结算旧Route，再发布候选目录。"""
 
     with product_action_runtime_lock(state_root):
+        # 恢复扫描会读取Session与Artifact索引。调用方尚未打开AgentRuntime时，
+        # Session Schema可能仍不存在；在统一组合根内幂等初始化，避免启动顺序隐式耦合。
+        await artifacts.session.initialize()
         checked_config = ProductActionConfigV1.model_validate_json(
             action_config.model_dump_json(warnings="error")
         )

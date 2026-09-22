@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: current
-version: 2
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 3
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -12,15 +12,20 @@ modules:
   - protocol
   - artifacts
   - trusted_actions
+  - product_config
+  - processes
 related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_session_contract.py
   - tests/protocol/test_requests.py
   - tests/trusted_actions/test_router.py
   - tests/agent/test_store_maintenance.py
+  - tests/product_config/test_action_recovery.py
+  - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
@@ -43,6 +48,7 @@ supersedes: []
 | Harnessix修复前 | `6dd391a61e542158e0e46238a72f4a2c8775bb6b` | 0.9.2关闭后的现状与缺口 |
 | Harnessix 0.9.3a | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 本地传输最小正式修复 |
 | Harnessix 0.9.3b | `cb3f3ea834624d5a8f84396952eba212650065d1` | 共库容量、Plan-first保留、备份与恢复 |
+| Harnessix 0.9.3c | `0bc942bce8aeb22747a06515732936d1a312cd02` | Action双层Owner、持久Operation期限、只对账恢复与跨Store扫描 |
 
 Claude Code仓库不是官方源码，只用于交叉佐证；OpenCode中出现的无界队列也不被当作可直接复制的生产建议。
 本文只提炼行为边界，不复制参考实现。
@@ -168,6 +174,47 @@ Artifact。因此“按Method猜测目标”或“accepted不影响其他表”�
 | SQLite Backup API和原子替换可用 | 执行前Plan绑定完整备份 | 把导出SQL或文件复制建议当正式回滚 |
 | Vacuum可能持长锁 | 0.9.3d单独测量与决策 | Agent热路径自动Vacuum |
 
+### 5.5 0.9.3c实施前源码求证
+
+#### Codex把超时、取消与进程树清理显式建模
+
+Codex固定Revision `a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67`的
+[`codex-rs/core/src/exec.rs`](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/core/src/exec.rs)
+在145～245行附近显式组合超时、取消和执行结果，在1000～1069行附近使用TERM Grace、进程组Kill和有界输出Drain。
+这证明“调用Future超时”与“底层进程已完成回收”是两个事实。Harnessix因此让Route Deadline覆盖固定Process Profile期限和
+30秒清理余量，同时继续由Process Supervisor负责真正的进程树终止，不在Router复制第二套Process控制。
+
+#### OpenCode把Abort能力传递到每个Tool执行
+
+OpenCode固定Revision `69c172e8a7c0086887b1f93ed5a162f14b6aa0c5`的
+[`packages/opencode/src/session/prompt.ts`](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/src/session/prompt.ts)
+在323～374行附近把Abort信号传到Tool执行并更新取消状态，在813～827行附近为单个Tool建立AbortController和中断清理。
+该事实支持取消必须贯穿Tool调用，但不证明取消已撤销外部效果。Harnessix对写操作取消先持久UNKNOWN，再向Agent上层传播取消。
+
+#### Claude Code逆向样本把Tool参数视为敏感并使用显式Timeout Race
+
+逆向样本固定Revision `2ca5ddabfed5f220812ea11f029eda03b21bc4c1`中，`src/services/tools/toolExecution.ts:1134-1157`
+把Tool参数Telemetry设为显式选择，`src/services/mcp/client.ts:3054-3102`组合进度与显式Timeout Race。由于该仓库不是官方源码，
+这里只把它作为“参数不应进入默认诊断、Timeout必须有稳定结算”的交叉佐证，不把其具体实现当成公共合同。
+
+#### Harnessix现有Route与Store边界要求保守恢复
+
+0.9.3c前的[`trusted_actions/router.py`](../../src/harnessix/trusted_actions/router.py)已在Executor前持久`running/reconciling`，
+[`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)也已把遗留执行态收敛为UNKNOWN；但Action Audit
+没有Owner Generation、Operation Deadline或Attempt，Execution Plan、Session、Artifact和Process Lease也没有统一扫描。
+因此实现选择双层Owner、Operation账本和保守扫描，而不是恢复独立Action HTTP/Worker或伪造跨Store全局事务。
+
+#### 采用与拒绝
+
+| 源码事实 | 采用 | 拒绝 |
+|---|---|---|
+| Codex区分Future结果与进程回收 | Route期限覆盖Process清理余量 | Router直接控制第二套进程树 |
+| OpenCode向Tool传递Abort | 取消后先持久保守结果再传播 | 把Cancel当作外部撤销证明 |
+| Tool参数可能敏感 | Operation/Scan只保存身份摘要、计数和稳定Code | 保存参数、路径或异常正文便于调试 |
+| Route已内嵌不可变Execution Plan | 缺失Plan可由Route确定性修复 | 冲突时任意覆盖一侧 |
+| 外部效果不能加入SQLite事务 | Claim/Complete局部事务加UNKNOWN/Reconcile | 宣称Exactly Once或自动重Execute |
+| 产品已删除独立Action服务 | Owner放入唯一Coding Agent组合根 | 重建HTTP/Worker作为恢复组件 |
+
 ## 6. 根因归纳
 
 ```mermaid
@@ -200,6 +247,12 @@ flowchart TD
 10. 任意`accepted`请求全局保护Session/Artifact，执行时再次核对候选；
 11. 维护执行前强制创建Plan绑定备份，崩溃后复用同一Backup和Ordinal；
 12. Artifact正文先Tombstone，Thread满足全套禁删条件后才整组删除。
+13. Product Action Runtime在打开任一Action Store/Process Owner前取得最外层跨进程锁；
+14. Action Audit每次接管递增Generation，所有产品写入校验持久Fence；
+15. Execute/Reconcile以持久Operation记录Phase、Attempt、Owner、Deadline和状态；
+16. Claim与执行态、Complete与终态分别在同一SQLite事务提交；
+17. 写超时/取消/异常进入UNKNOWN，恢复只调用有界Reconcile；
+18. 启动扫描Plan、Route、Session、Artifact和Process Lease，只修复可证明缺口并持久低敏报告。
 
 ### 7.2 拒绝
 
@@ -215,6 +268,11 @@ flowchart TD
 | 候选变化后自动补选另一行 | 破坏Plan可审计性，恢复结果不可重算 |
 | 升级或启动时自动清理 | 把普通启动变为破坏性操作，缺少审核和回滚窗口 |
 | Maintenance内自动Vacuum | 锁时长、额外磁盘和三平台性能尚未建立证据 |
+| 恢复独立Action HTTP/Worker | 扩大产品入口、认证和部署面，违背ADR 0081 |
+| 仅依赖文件锁而无Generation | 新Owner接管后不能拒绝旧对象迟到提交 |
+| 超时后把写效果标记failed并重试 | 不能证明外部写未发生，可能重复真实效果 |
+| 重启时直接再次Execute | 非幂等Action可能重复，必须UNKNOWN后只对账 |
+| 把跨Store扫描描述为全局事务 | 各Store和外部效果没有共同原子提交点 |
 
 ## 8. 0.9.3切片结论
 
@@ -240,6 +298,9 @@ flowchart TD
 | 批次原子恢复 | [`session/maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py) | 单Item批次提交故障与Changed Candidate Skip用例 |
 | 备份与原子Restore | [`session/maintenance_backup.py`](../../src/harnessix/session/maintenance_backup.py) | 备份发布后故障复用及完整恢复用例 |
 | Migration 26与Artifact写入 | [`0026_store_maintenance.sql`](../../src/harnessix/session/migrations/0026_store_maintenance.sql)、[`artifacts/persistence.py`](../../src/harnessix/artifacts/persistence.py) | Session/Artifact升级与发布回归 |
+| Product与Audit双层Owner | [`product_config/action_owner.py`](../../src/harnessix/product_config/action_owner.py)、[`trusted_actions/ownership_store.py`](../../src/harnessix/trusted_actions/ownership_store.py) | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py)、[`test_router.py`](../../tests/trusted_actions/test_router.py)中的竞争进程与旧Fence用例 |
+| Operation Deadline与原子结算 | [`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py)、[`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py) | 写超时、有界Reconcile、Audit故障后零重复Execute用例 |
+| 跨Store恢复扫描 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | Plan修复、Route/Artifact孤儿和Product Server持久化用例 |
 
 ## 10. 研究边界
 
@@ -250,3 +311,5 @@ flowchart TD
 - 远程Agent Protocol、HTTP Gateway和多租户不在0.9.3范围内。
 - 0.9.3b只证明逻辑清理、崩溃恢复和备份边界；未证明SQLite物理文件缩小、在线Maintenance或用户级数据删除；
 - `accepted`全局保护是由现行不可逆参数摘要推导出的保守结论，不表示Protocol已完成孤儿恢复。
+- 0.9.3c只证明单State Root单产品宿主、局部事务和零自动重Execute；不证明外部效果Exactly Once或恶意同UID隔离；
+- 0.9.3c启动扫描当前遍历完整Session和Route集合，规模时延、Operation归档和UNKNOWN告警必须由0.9.3d实测。

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 7
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/governance/test_product_runtime_convergence.py
   - tests/agent/test_crash_recovery.py
@@ -32,6 +33,7 @@ related_tests:
   - tests/product_config/test_action_config_runtime.py
   - tests/product_config/test_action_runtime.py
   - tests/agent/test_store_maintenance.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -200,6 +202,12 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 `running/reconciling`持久转为`unknown`，再对每个UNKNOWN只调用一次Reconcile；仍未知、旧Binding缺失或候选不能承接
 `pending_approval/ready`时启动失败。恢复不会调用Execute，也不会自动续写部分Patch。该能力已由CI 35439332019验收关闭。
 
+0.9.3c在该流程前增加双层Owner与跨Store完整性扫描：最外层`product-action-runtime.lock`必须在任一Action Store/Process Owner
+打开前取得；组合根在锁内幂等初始化绑定的Session Schema与Artifact索引，Action Audit随后递增持久Generation并校验全部产品写入。
+这避免Eval/Container组合在Agent Runtime尚未打开时因Session表不存在而失败。扫描修复Route内嵌Plan可以确定重建的Execution Plan缺口，
+拒绝Plan冲突与Session悬空引用，报告无Session引用Route和Action Artifact孤儿，并对无匹配非终态Route的Active Process Lease
+调用既有Reconcile后失败关闭。Scan和Startup Recovery两份低敏报告均在stdio开放前写入`product-config.db`。
+
 
 ## 9. Product Config恢复
 
@@ -256,6 +264,9 @@ Artifact事实，不是数据合并；相关Action/Delivery/Process等其他数�
 | 发布崩溃 | 部分发布可识别，外部漂移不被覆盖 |
 | 配置冲突 | 新Server不开放stdio，原活动配置保持不变 |
 | Action启动恢复 | 中断Route只Reconcile一次且execute次数为零；仍未知时stdio不开放 |
+| Action Owner接管 | 第二产品/Audit宿主失败；新Generation拒绝旧Owner迟到提交 |
+| Action Operation中断 | Executor返回后Audit故障只把Operation标为interrupted并转UNKNOWN，不再次Execute |
+| 跨Store扫描 | 缺失Plan可修复；冲突、Session悬空和Process孤儿失败；Artifact孤儿只报告 |
 | 双配置冲突 | Product或Action任一CAS失败时两个活动指针均保持旧值 |
 | 数据恢复 | 备份可迁移、Replay一致、旧Reader按合同拒绝 |
 | Maintenance恢复 | 备份发布故障可复用；批次提交后从精确Ordinal继续；完整Restore恢复Thread/Artifact/Request |
@@ -269,12 +280,13 @@ Artifact事实，不是数据合并；相关Action/Delivery/Process等其他数�
 | Patch | [`patches/managed.py`](../../src/harnessix/patches/managed.py)、[`patches/batch_execution.py`](../../src/harnessix/patches/batch_execution.py) | [`tests/patches`](../../tests/patches/) |
 | Process | [`processes/supervisor.py`](../../src/harnessix/processes/supervisor.py) | [`tests/processes`](../../tests/processes/) |
 | 文件交付与默认Patch | [`delivery/filesystem.py`](../../src/harnessix/delivery/filesystem.py)、[`delivery/trusted_action.py`](../../src/harnessix/delivery/trusted_action.py) | [`tests/delivery`](../../tests/delivery/)、[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py) |
-| 产品Action冷启动恢复 | [`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、[`product_config/action_store.py`](../../src/harnessix/product_config/action_store.py) | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)、[`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
+| 产品Action冷启动恢复 | [`product_config/action_owner.py`](../../src/harnessix/product_config/action_owner.py)、[`product_config/action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)、[`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py)、[`product_config/action_store.py`](../../src/harnessix/product_config/action_store.py) | [`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)、[`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py)、[`test_action_config_runtime.py`](../../tests/product_config/test_action_config_runtime.py) |
 | Session共库Maintenance | [`session/maintenance.py`](../../src/harnessix/session/maintenance.py)、[`session/maintenance_backup.py`](../../src/harnessix/session/maintenance_backup.py)、[`session/maintenance_execution.py`](../../src/harnessix/session/maintenance_execution.py) | [`test_store_maintenance.py`](../../tests/agent/test_store_maintenance.py) |
 | Git Push | [`delivery/git_push.py`](../../src/harnessix/delivery/git_push.py) | [`tests/delivery/test_git_push.py`](../../tests/delivery/test_git_push.py) |
 
 ## 13. 已知限制
 
-当前没有统一恢复CLI、支持包、在线状态检查器、自动跨账本一致性扫描、远程效果适配器目录或RPO/RTO承诺。e5启动扫描只处理
-产品内置来源，不接管MCP、Skill、Hook或自定义宿主Route；也没有独立跨进程Action Owner Lease。生产部署必须在0.9后续切片补齐
-操作权限、确认步骤、审计和真实故障演练后，才能把本设计转换为稳定运维产品能力。
+当前没有统一恢复CLI、支持包、在线状态检查器、远程效果适配器目录或RPO/RTO承诺。0.9.3c已有产品Action跨Store启动扫描和
+双层跨进程Owner，但只处理产品内置来源，不接管MCP、Skill、Hook或自定义宿主Route；扫描规模、Operation归档、UNKNOWN告警和
+用户可见人工处置仍未完成。生产部署必须在0.9后续切片补齐操作权限、确认步骤、审计和真实故障演练后，才能把本设计转换为
+稳定运维产品能力。

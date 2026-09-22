@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
@@ -36,7 +36,7 @@ supersedes: []
 | 产品拓扑 | 单一Coding Agent内部能力；不新增HTTP/Worker、Daemon、远程数据库或后台GC服务 |
 | 实现Revision | `cb3f3ea834624d5a8f84396952eba212650065d1` |
 | 数据版本 | Session Migration 26；Agent Event和Thread投影版本不变 |
-| 当前验收 | 本地`make check`通过：3589 passed、32 skipped；全矩阵CI待完成 |
+| 当前验收 | 本地`make check`通过：3589 passed、32 skipped；[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)六实例通过，切片已关闭 |
 | 破坏性边界 | 只有显式Plan、显式Backup Path和活跃Runtime Owner才能执行；升级和启动均不自动删除 |
 | 公开敏感度 | Report/Plan/Progress只含计数、字节、时间、状态和摘要，不含ID、路径或正文 |
 | 关联决策 | [ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md) |
@@ -625,8 +625,8 @@ documentation check: 228 documents, 6235 links and 626 Mermaid blocks passed
 changed-document Mermaid render: 17 changed paths passed with real Chrome rendering
 ```
 
-代码门禁绑定实现Revision `cb3f3ea`；文档门禁绑定本设计的候选关闭工作树。最终六实例CI结果应在0.9.3b关闭提交后更新，
-不得预先填写成功。
+代码门禁绑定实现Revision `cb3f3ea`；
+[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)已通过Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation六实例，验收事实不得外推到0.9.3c～d。
 
 ## 15. 部署、运维与使用边界
 
@@ -709,7 +709,7 @@ changed-document Mermaid render: 17 changed paths passed with real Chrome render
 - [x] 备份发布与批次提交故障恢复；
 - [x] 本地Ruff、Mypy、可读性、规格和全仓测试；
 - [x] 总体、模块、部署、测试和路线图文档同步；
-- [ ] Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation CI；
-- [ ] 0.9.3b关闭提交与路线图勾选。
+- [x] Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation CI（35498012926）；
+- [x] 0.9.3b关闭提交与路线图勾选（CI 35498012926）。
 
 0.9.3b关闭不等于0.9.3完成。Trusted Action/Process效果恢复属于0.9.3c，长会话Soak、物理空间回收和发布阈值属于0.9.3d。

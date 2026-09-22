@@ -457,7 +457,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性实现Revision `f113594`与文档Revision `7cbacba`已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b实现Revision `cb3f3ea`已完成共库容量、Plan-first保留、备份恢复和本地全仓门禁，全矩阵CI待关闭；0.9.3c～d及0.9.4～0.9.6未完成，因此0.9阶段整体仍保持进行中。
+状态：**进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)关闭；0.9.3b实现Revision `cb3f3ea`已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c实现Revision `0bc942b`已完成双层Owner、Operation Deadline、只对账恢复、跨Store扫描和本地全仓门禁，[CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)未通过，修复版待验收；0.9.3d及0.9.4～0.9.6未完成，因此0.9阶段整体仍保持进行中。
 
 ### 目标
 
@@ -541,18 +541,21 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 ### 0.9.3实施计划与完成边界
 
 0.9.3按[专项源码研究](research/reliability-and-performance.md)、
-[ADR 0089](adr/0089-bounded-local-transport-lifecycle.md)和
-[总体详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b专项详细设计](changes/m09-3b-persistent-capacity-and-retention.md)拆成四个连续纵向切片。不得用一次短压测或“未观察到异常”
+[ADR 0089](adr/0089-bounded-local-transport-lifecycle.md)、[ADR 0090](adr/0090-plan-first-store-maintenance-and-backup.md)、
+[ADR 0091](adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)和
+[总体详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b专项详细设计](changes/m09-3b-persistent-capacity-and-retention.md)、
+[0.9.3c专项详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)拆成四个连续纵向切片。不得用一次短压测或“未观察到异常”
 替代容量合同、故障恢复与可重算证据：
 
 - [x] **0.9.3a 本地传输可靠性**：stdio使用守护Reader/Writer泵，握手后执行协商Pending/Outbox上限；SDK以
   `Pending + Abandoned`共享容量保留迟到Response身份，Close由Transport拥有且调用方取消不打断回收；只公开不含
   ID、路径和stderr正文的资源快照。实现Revision `f113594`与文档Revision `7cbacba`已由
   [CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成Linux Python 3.12/3.13、macOS、Windows、Container和文档六实例验收；
-- [ ] **0.9.3b 持久容量与保留**：为Session、Protocol Request和Artifact建立版本化容量快照、Plan-first清理、
-  活跃/未决/UNKNOWN禁删集合、崩溃恢复、备份与回滚；实现Revision `cb3f3ea`及本地`make check`（3589 passed、32 skipped）已完成，Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation CI未全部通过前保持未勾选；
+- [x] **0.9.3b 持久容量与保留**：为Session、Protocol Request和Artifact建立版本化容量快照、Plan-first清理、
+  活跃/未决/UNKNOWN禁删集合、崩溃恢复、备份与回滚；实现Revision `cb3f3ea`及本地`make check`（3589 passed、32 skipped）已完成，并由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)通过Linux Python 3.12/3.13、macOS、Windows、固定Container和Documentation六实例验收；
 - [ ] **0.9.3c 效果与进程恢复**：补齐Trusted Action/Process单Owner fencing、孤儿扫描、Route Deadline、
-  Reconcile复合故障和零重复外部效果证据；
+  Reconcile复合故障和零重复外部效果证据；实现Revision `0bc942b`的本地`make check`为3595 passed、32 skipped，
+  [首次CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)因文档同步和Container组合根Session初始化缺陷未通过；修复版待六实例验收；
 - [ ] **0.9.3d 长会话Soak与发布阈值**：用固定场景和环境记录启动时延、操作分位数、峰值RSS、数据库/Artifact增长、
   清理水位和故障计数，冻结低敏Manifest与独立阈值验证。
 

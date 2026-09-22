@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: 0798d84a6ba76d0b658f912c9c41f60b5645629b
+version: 15
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0043-git-and-controlled-test-feedback.md
   - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
   - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/processes/test_contracts.py
   - tests/processes/test_runtime.py
@@ -35,6 +36,7 @@ related_tests:
   - tests/processes/test_windows_supervisor.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_runner.py
+  - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
 
@@ -50,7 +52,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/processes/`](../../src/harnessix/processes/) |
-| 当前职责 | 定义固定Host Process工具与受监督进程合同，完成POSIX/Windows进程树所有权、pipe/PTY、stdin、输出脱敏与持久化、Lease/CAS、取消/超时/关闭及重启后保守恢复 |
+| 当前职责 | 定义固定Host Process工具与受监督进程合同，完成POSIX/Windows进程树所有权、pipe/PTY、stdin、输出脱敏与持久化、Lease/CAS、取消/超时/关闭及重启后保守恢复；向产品Action恢复扫描提供只读Active Lease清单 |
 | 兼容职责 | 保留旧Process Session事件、Action状态枚举和旧Process Output Artifact的只读解码；不保留旧执行、审批或发布能力 |
 | 非职责 | 不决定模型是否应运行命令，不替代Execution Plan审批，不提供OS文件/网络隔离，不拥有Action Journal或Session Store，不把进程退出码解释为测试/业务成功 |
 | 上游调用者 | Trusted Action/Sandbox、Product Config固定Process与Eval Action、只读Git工具 |
@@ -1556,10 +1558,28 @@ e5把固定Profile探测拆为[`AttestedProductProcessProfile`](../../src/harnes
 失败关闭而不是退回Host Process。该边界由[`test_action_runtime.py`](../../tests/product_config/test_action_runtime.py)与
 [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，真实固定镜像继续由Container集成测试约束。
 
+### 41.2 0.9.3c跨Store孤儿Process扫描
+
+[`PosixProcessSupervisor`](../../src/harnessix/processes/supervisor.py)与`WindowsProcessSupervisor`共享的观察层新增
+`active_leases()`，只返回Lease Store中当前非终态的严格`ProcessLease`副本，不返回PID、输出正文、命令或控制句柄。产品恢复扫描
+通过最小[`ProductProcessSupervisor`](../../src/harnessix/product_config/action_runtime_types.py)协议使用该清单，避免恢复模块依赖具体
+平台实现。
+
+扫描按`lease.plan_id`匹配`executor_id`前缀为`product.process-profile.`的Action Route。只有Route处于
+`running/unknown/reconciling`才视为合法恢复归属；Route缺失或已经终态时，扫描调用既有`supervisor.reconcile(process_id)`观察并
+收敛Lease，同时将其计为`process_orphan_leases`并阻止产品启动。扫描不会按历史PID发送信号，不重新Spawn，也不把Reconcile成功
+外推为Action Route成功。
+
+Action Route的Execute Deadline由所有固定Process Profile最大超时加30秒清理余量决定，且不低于300秒；Process Profile自身Deadline
+仍是进程Owner的权威强制期限。两层期限避免Router先于Supervisor的终止、输出排空和Lease提交把写效果误判为普通失败。完整设计见
+[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md)和
+[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。
+
 ## 42. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 15 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c向产品恢复扫描提供低敏Active Lease清单，明确孤儿Lease只Reconcile、不按PID控制或重Spawn，并让Route期限覆盖Process清理余量 |
 | 14 | `0798d84a6ba76d0b658f912c9c41f60b5645629b` | 2026-09-20 | CRT EACCES有界重读与POSIX失败关闭边界由CI 35472231908完成Linux双版本、macOS、Windows、固定Container和Documentation六实例验收 |
 | 13 | `634765887237f9bc4d3d2cb6c76f2cc6d554e692` | 2026-09-20 | 根据Windows CI的`receipt_io=0:13:attempt=1`证据补充CRT EACCES有界重读候选，同时固定POSIX EACCES继续失败关闭 |
 | 12 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process Action Saga删除、历史只读兼容和Windows归档修复由CI 35453082992完成全矩阵验收 |

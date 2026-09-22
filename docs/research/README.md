@@ -135,7 +135,7 @@ flowchart LR
 
 | 主题 | 冻结访问日期 | 参考版本 | 采用结果/当前入口 |
 |---|---|---|---|
-| [可靠性、背压与长期运行](reliability-and-performance.md) | 2026-09-20 | Codex、OpenCode、Claude Code逆向样本及Harnessix 0.9.3a/b源码事实 | [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[0.9.3详细设计](../changes/m09-3-reliability-and-performance.md) |
+| [可靠性、背压与长期运行](reliability-and-performance.md) | 2026-09-20 | Codex、OpenCode、Claude Code逆向样本及Harnessix 0.9.3a/b/c源码事实 | [ADR 0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR 0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)、[0.9.3详细设计](../changes/m09-3-reliability-and-performance.md)、[0.9.3c详细设计](../changes/m09-3c-action-runtime-fencing-and-recovery.md) |
 
 ## 5. 推荐阅读顺序
 
@@ -157,6 +157,6 @@ flowchart LR
 ## 7. 当前限制
 
 冻结资料覆盖了0.2～0.9.0已经使用的主要参考机制、0.9.1产品交互证据、0.9.2多仓库Eval与真实Provider
-完整Suite基线，以及0.9.3本地传输背压、共库容量、Plan-first保留和长期运行问题，但不代表持续跟踪上游最新版本。0.9.3c～d仍须
-以现有专项研究中的未决项继续求证持久容量、效果恢复和真实Soak；三平台发行、远程MCP认证或供应链发布也必须先建立
+完整Suite基线，以及0.9.3本地传输背压、共库容量、Plan-first保留、Action Owner/Operation恢复和长期运行问题，但不代表持续跟踪上游最新版本。0.9.3d仍须
+以现有专项研究中的未决项继续求证扫描规模、物理容量、UNKNOWN积压和真实Soak；三平台发行、远程MCP认证或供应链发布也必须先建立
 对应的新版本研究证据，不能继续外推现有冻结结论。

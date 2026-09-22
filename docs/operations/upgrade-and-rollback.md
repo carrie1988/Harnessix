@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 5
+code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
 modules:
@@ -14,11 +14,13 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/agent/test_session_upgrade.py
   - tests/governance/test_legacy_action_archive.py
   - tests/product_config/test_migration_and_store.py
   - tests/agent/test_store_maintenance.py
+  - tests/trusted_actions/test_router.py
 supersedes: []
 ---
 
@@ -40,6 +42,7 @@ Revision支持的操作规则。
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
+| 当前Trusted Action Audit | `action_audit_metadata` Schema v2、Route/Event/Operation | v1启动时前向补齐Owner元数据和Operation表 | 不支持Down Migration；恢复升级前完整State Root备份 |
 | Patch/Process/Delivery/扩展账本 | 各模块专用版本或表 | 取决于宿主显式装配 | 必须按模块设计做整组备份和对账 |
 
 旧Action Journal与Agent Session是不同存储合同。当前产品不得初始化或消费旧Journal，也不能把Session的Checksum、`schema_too_new`和`quick_check`能力外推到旧数据。
@@ -106,6 +109,11 @@ PY
 0.9.3b的`SQLiteStoreMaintenance.execute`会在破坏性Session共库清理前强制创建并验证Plan绑定备份，`restore`可原子恢复
 该`sessions.db`。这只覆盖Session/Protocol/Artifact共库，不替代版本升级所需的Product Config、Action Audit、Delivery、
 Process和Workspace状态整组备份；升级回退不得把Maintenance备份误当完整发布快照。
+
+0.9.3c将当前`action-audit.db`从Schema v1前向升级到v2，新增Owner Generation/Token摘要元数据和
+`action_route_operations`。升级保留历史Route Plan/Event原文，不为旧执行态伪造Operation。新版本启动后不得直接用旧二进制打开
+v2库；需要回退时必须恢复升级前包含Execution Plan、Action Audit、Session/Artifact、Product Config、Process和Delivery的完整备份，
+禁止手改`schema_version`或删除Operation表。
 
 ### 5.2 Agent状态一致性
 
@@ -230,6 +238,7 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 | 旧PostgreSQL Journal归档 | [归档手册](legacy-action-archive.md) | 停写后原生`pg_dump`与组织恢复演练 |
 | 配置Migration | [`product_config/migration.py`](../../src/harnessix/product_config/migration.py) | [`test_migration_and_store.py`](../../tests/product_config/test_migration_and_store.py) |
 | 配置活动CAS | [`product_config/store.py`](../../src/harnessix/product_config/store.py) | [`test_migration_and_store.py`](../../tests/product_config/test_migration_and_store.py) |
+| Action Audit v1→v2 | [`trusted_actions/store.py`](../../src/harnessix/trusted_actions/store.py)、[`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/ownership_store.py`](../../src/harnessix/trusted_actions/ownership_store.py) | [`test_router.py`](../../tests/trusted_actions/test_router.py)中的Migration、Owner和Operation故障用例 |
 
 ## 14. 未完成项
 
