@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: cb8d144da1b921424fd3ce661aec6d25051c3849
+version: 9
+code_revision: 7fa787b0f6bd2d2ba19caf960d9f265e62e38a89
 owners:
   - core
 modules:
@@ -32,6 +32,7 @@ related_tests:
   - tests/benchmarks/test_soak_manifest.py
   - tests/benchmarks/test_soak_evidence.py
   - tests/benchmarks/test_soak_rss.py
+  - tests/benchmarks/test_soak_environment.py
 supersedes: []
 ---
 
@@ -41,9 +42,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、独占Run目录、样本/Manifest/提交标记发布、独立重算与三平台RSS读取入口；尚无正式Soak场景Runner、Threshold Profile、三平台正式负载和发布阈值证据。 |
+| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集；尚无正式Soak场景Runner、Threshold Profile、三平台正式负载和发布阈值证据。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `cb8d144da1b921424fd3ce661aec6d25051c3849` |
+| 代码版本 | `7fa787b0f6bd2d2ba19caf960d9f265e62e38a89` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -498,7 +499,7 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 | `provider` | 严格结构化对象 | 是 | Runner/Provider | `mode=deterministic_stateless_v1`、`script_version=harnessix.soak-provider/v1`、非负`request_count`；不得含请求正文 | 无 | 低 | Manifest | Provider模式或脚本变化须升场景/证据版本。 |
 | `platform` | `linux`/`macos`/`windows` | 是 | Runner | 运行平台身份 | 无 | 低 | Manifest | 不跨平台套Profile。 |
 | `python_version` | 规范版本字符串 | 是 | Runner | Python主次/补丁版本 | 无 | 低 | Manifest | Profile必须匹配兼容范围。 |
-| `cpu_count`、`physical_memory_bytes`、`hardware_class` | 严格正整数、严格正整数、受限档位标识 | 是 | Runner/冻结配置 | 记录核数、物理内存字节与档位；不含主机名、用户名或路径 | 无 | 低 | Manifest | 档位规则待基线冻结；来源还需平台探针。 |
+| `cpu_count`、`physical_memory_bytes`、`hardware_class` | 严格正整数、严格正整数、受限档位标识 | 是 | [`read_environment`](../../scripts/soak_environment.py) | 记录核数、物理内存字节与`c{cpu}-m{ceil(memory/GiB)}`档位；不含主机名、用户名或路径 | 无 | 低 | Manifest | 当前为物理主机容量；容器/cgroup有效上限尚未纳入Profile，容器结果不可直接作正式阈值。 |
 | `started_at`/`ended_at` | UTC时间 | 是 | Runner | 墙钟记录运行窗口；`ended_at >= started_at` | 无 | 低 | Manifest | 不参与耗时样本。 |
 | `status` | `baseline`/`failed`/`unverified` | 是 | Runner | Manifest永不自报`verified`；独立复验报告才可给出结论 | 无 | 低 | Manifest | 未知状态拒绝。 |
 | `load` | `SoakLoad`对象 | 是 | Runner | `turn_count`、`thread_count`、`artifact_count`、`pending_limit`、`warmup_count`、`fault_matrix_version`；正式长会话至少1000 Turn/1000正式时延样本，多Thread至少500个，SDK必须有Pending上限，Action必须有故障矩阵版本 | 无 | 低 | Manifest | 不足拒绝正式`baseline`；实际数量来源还需Runner/Store复核。 |
@@ -545,7 +546,7 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 证据发布顺序：
 
 1. `publish_run`在私有发布根下排他创建以Run ID命名的目录；POSIX要求发布根由当前用户所有且模式为0700，Windows拒绝目录符号链接/Junction，ACL配置仍须发行验证。目录已存在即拒绝；目录内只允许`samples.jsonl`、`manifest.json`和`COMMITTED.json`。
-2. 样本按固定字段顺序写同目录临时文件，使用`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回样本字节的SHA-256、计数和重算统计。
+2. 样本按固定字段顺序写同目录临时文件，使用`os.O_BINARY`（Windows）与`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回实际发布字节的SHA-256、计数和重算统计。Manifest和提交标记走同一二进制写入路径。
 3. 调用方构造的严格Manifest必须与刚写入的样本摘要和统计一致。`publish_run`再次从磁盘重读样本并核对RSS后，才写入并同步`manifest.json`。
 4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
 5. 独立Profile和发布阈值报告的只读验证与单独发布仍待实现，不修改Run原件。
@@ -701,7 +702,8 @@ run_scenario(scenario, seed, environment):
 | Action跨Store恢复 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | `scan_product_action_recovery` | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py) | Action恢复扫描合同 | 当前实现；固定故障矩阵规划。 |
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
-| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 严格字段、Run目录冲突、样本/Manifest/标记篡改、中断不提交、独立重算已测 | Run证据发布完成局部实现；阈值复验及真实负载未完成。 |
+| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 严格字段、Run目录冲突、样本/Manifest/标记篡改、中断不提交、独立重算已测；Windows字节发布由CI复验 | Run证据发布完成局部实现；阈值复验及真实负载未完成。 |
+| 低敏环境档位 | [`scripts/soak_environment.py`](../../scripts/soak_environment.py) | `read_environment` | [`test_soak_environment.py`](../../tests/benchmarks/test_soak_environment.py) | Linux `sysconf`、macOS `sysctl hw.memsize`、Windows [`GlobalMemoryStatusEx`](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex)的[`ullTotalPhys`字节字段](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex)；CPU/内存正值与无主机身份 | 已实现；Windows CI和容器有效上限仍待验收。 |
 | RSS适配与三平台探针 | [`scripts/soak_rss.py`](../../scripts/soak_rss.py) | `read_peak_rss`、`_macos_unit` | [`test_soak_rss.py`](../../tests/benchmarks/test_soak_rss.py) | raw unit、normalization、读数正值、未知单位失败关闭；macOS本机通过 | 实现已提交；Linux/Windows真实CI与正式Soak证据仍待验收。 |
 | 原子证据发布 | [`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `publish_run`、`read_published_run` | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 排他Run目录、文件`fsync`、SHA-256、最后提交标记、不可覆盖及三故障点 | 局部实现；跨平台CI加入`tests/benchmarks`，正式Run/Profile仍待验收。 |
 
@@ -768,3 +770,4 @@ run_scenario(scenario, seed, environment):
 | 6 | `e5378212a22b627d7f3f73087c21ca74c0b0aba4` | 2026-09-23 | 建立严格Manifest内存合同、场景/平台/负载边界和从样本文件独立复核统计/RSS；文件发布、Profile及正式运行证据仍待实现。 |
 | 7 | `9620b37697f9d926128f07837ca1198db5a787ac` | 2026-09-23 | 落地排他Run目录、样本/Manifest/最后提交标记的发布与独立读取；增加发布中断/篡改/冲突回归，并把`tests/benchmarks`纳入macOS和Windows CI。 |
 | 8 | `cb8d144da1b921424fd3ce661aec6d25051c3849` | 2026-09-23 | 移除Soak发布脚本对Eval包的导入依赖以修复Windows测试收集失败；增加Linux/macOS/Windows峰值RSS读取、macOS受控子进程探针、Linux `/proc`高水位核对和目录权限回归。 |
+| 9 | `7fa787b0f6bd2d2ba19caf960d9f265e62e38a89` | 2026-09-23 | 修复Windows文本模式导致样本字节/摘要不一致，统一二进制证据写入；新增三平台物理内存与CPU档位采集，明确容器有效资源上限尚未建模。 |
