@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from hashlib import sha256
 
 import pytest
@@ -83,3 +84,24 @@ def test_published_run_rejects_sample_manifest_marker_and_extra_file_tampering(t
     (run_directory / "unexpected.json").write_text("{}", encoding="utf-8")
     with pytest.raises(KernelError, match="Soak Run提交证据无效"):
         read_published_run(run_directory)
+
+
+def test_publish_rejects_symlinked_or_nonprivate_root(tmp_path) -> None:
+    manifest, samples = _input()
+    actual = tmp_path / "actual"
+    actual.mkdir(mode=0o700)
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(actual, target_is_directory=True)
+    except (NotImplementedError, OSError):
+        pytest.skip("当前平台不允许创建目录符号链接")
+    with pytest.raises(KernelError) as error:
+        publish_run(link, manifest, samples)
+    assert error.value.code == "soak_evidence_root_invalid"
+    if os.name == "posix":
+        public = tmp_path / "public"
+        public.mkdir(mode=0o755)
+        public.chmod(0o755)
+        with pytest.raises(KernelError) as error:
+            publish_run(public, manifest, samples)
+        assert error.value.code == "soak_evidence_root_invalid"

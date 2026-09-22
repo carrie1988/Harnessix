@@ -14,7 +14,6 @@ from pydantic import Field, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
-from harnessix.evals.execution_fs import ensure_private_directory
 from scripts.soak_manifest import SoakManifest, verify_manifest_samples
 from scripts.soak_sample_file import SAMPLE_FILENAME, write_sample_file
 from scripts.soak_samples import SoakSample
@@ -31,6 +30,24 @@ class SoakCommit(ContractModel):
 
     spec_version: Literal["harnessix.soak-commit/v1"]
     manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+def _ensure_private_root(path: Path) -> None:
+    """在POSIX检查0700所有权，Windows拒绝重解析目录。"""
+
+    try:
+        if path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)()):
+            raise OSError
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        info = path.stat(follow_symlinks=False)
+        if not stat.S_ISDIR(info.st_mode):
+            raise OSError
+        if os.name == "posix" and (
+            info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700
+        ):
+            raise OSError
+    except OSError:
+        raise KernelError("soak_evidence_root_invalid", "Soak证据根目录不安全") from None
 
 
 def _sync_directory(path: Path) -> None:
@@ -103,11 +120,7 @@ def publish_run(
 ) -> tuple[Path, str]:
     """排他创建Run目录；样本、Manifest校验后最后写入提交标记。"""
 
-    ensure_private_directory(
-        evidence_root,
-        error_code="soak_evidence_root_invalid",
-        label="Soak证据根目录",
-    )
+    _ensure_private_root(evidence_root)
     run_directory = evidence_root / manifest.run_id
     try:
         run_directory.mkdir(mode=0o700, exist_ok=False)
