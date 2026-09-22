@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 3
-code_revision: 9620b37697f9d926128f07837ca1198db5a787ac
+version: 4
+code_revision: 1f5df16cc3ccd29914d6496118acaeff94caa868
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_store_maintenance.py
   - tests/product_config/test_action_recovery.py
+  - tests/benchmarks/test_soak_long_session.py
 supersedes: []
 ---
 
@@ -31,7 +32,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d正式场景实现、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同和最后提交标记的局部证据链；本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记及长会话真实Runtime Runner；缩小负载只产生`unverified`，其余五个场景和正式性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 
