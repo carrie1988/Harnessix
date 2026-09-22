@@ -171,6 +171,26 @@ def test_current_documentation_does_not_revive_retired_action_plane() -> None:
         assert all(fragment in content for fragment in required_fragments), relative_path
 
 
+def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
+    """历史合同和README迁移叙述不得重新宣传已删除的执行入口。"""
+
+    contract = (ROOT / "docs" / "action-contract.md").read_text(encoding="utf-8")
+    subsystem = (ROOT / "docs" / "subsystems" / "action-plane.md").read_text(
+        encoding="utf-8"
+    )
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    historical_process = readme.split("### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）", 1)[
+        1
+    ].split("## 当前已实现：Git与受控测试反馈", 1)[0]
+
+    assert "status: historical" in contract
+    assert "当前版本不接受该合同" in contract
+    assert "status: deprecated" in subsystem
+    assert "当前源码没有可调用的旧运行时" in subsystem
+    assert "宿主现在可以用`process_action_tool(factory)`" not in historical_process
+    assert "该入口在当前版本中不可调用" in historical_process
+
+
 def test_pytest_subsets_can_import_repository_test_support() -> None:
     configuration = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 

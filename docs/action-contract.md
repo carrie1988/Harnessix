@@ -1,7 +1,7 @@
 ---
 doc_type: contract
 status: historical
-version: 2
+version: 3
 code_revision: 3f75747f21dae9bb5c52d62d52a7d10815122f17
 owners:
   - core
@@ -26,7 +26,7 @@ supersedes: []
 
 ## 1. 设计目标
 
-Action Contract 是 Agent Framework 与 Harnessix 之间的稳定边界。上游框架只需要提交结构化 Action，不需要理解内部状态机、Policy 或 Journal。
+删除前，Action Contract 是 Agent Framework 与旧Action服务之间的稳定边界。上游框架提交结构化Action，不需要理解内部状态机、Policy或Journal。当前版本不接受该合同；Coding Agent客户端使用[Agent Protocol](modules/protocol.md)。
 
 ## 2. 请求示例
 
@@ -66,7 +66,7 @@ Action Contract 是 Agent Framework 与 Harnessix 之间的稳定边界。上游
 | `spec_version` | 固定为 `harnessix.action/v1` |
 | `action_id` | 全局唯一 Action 身份；同一 ID 不得绑定不同载荷 |
 | `tool` | 运行时注册的工具名称 |
-| `arguments` | Framework Adapter可先用自身Schema校验；运行时权威校验来自Tool Registry绑定的Pydantic模型。当前Action Service先创建Journal记录再执行该运行时校验，持久化边界见[Domain模块设计](modules/domain.md)与[API模块设计](modules/api.md) |
+| `arguments` | 删除前，Framework Adapter可先用自身Schema校验；运行时权威校验来自Tool Registry绑定的Pydantic模型。旧Action Service先创建Journal记录再执行该运行时校验，历史持久化边界见[Domain模块设计](modules/domain.md)与[API模块设计](modules/api.md) |
 | `principal` | 租户、主体、框架和角色信息 |
 | `context` | 上游 Session、Run 和 Trace 关联信息 |
 | `effect_hint` | 调用方预期值；运行时事实来自 ToolDefinition |
@@ -102,7 +102,7 @@ Agent 提交的 `effect_hint` 不是授权事实。ToolDefinition 由 Harnessix 
 
 调用方提示与运行时定义不一致时，Action 在执行前失败。
 
-当前[LangChain Tool Adapter](modules/adapters.md)的`args_schema`没有与运行时Tool Descriptor版本或摘要绑定，
+删除前的[LangChain Tool Adapter](modules/adapters.md)的`args_schema`没有与运行时Tool Descriptor版本或摘要绑定，
 且Tool Call ID没有持久绑定Action ID；Framework重试、审批等待和恢复不能仅依赖Tool包装层。
 
 ## 6. 运行时 Trace Context

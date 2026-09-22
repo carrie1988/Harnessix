@@ -292,13 +292,15 @@ uv run pytest tests/processes
 
 ### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）
 
-宿主现在可以用`process_action_tool(factory)`将固定进程绑定显式注册到现有Action Plane。命令先持久化，必须提供幂等键并通过Policy/Approval，再进入租约执行；工具版本绑定cwd、程序身份、环境和资源预算。确定结果保存ProcessResult和Effect Receipt，证据不足则UNKNOWN。Task/宿主退出后不自动重放，也不根据历史PID杀进程。
+> 以下b1～b2c3仅记录删除前的迁移与验证事实，不描述当前可调用入口；当前进程与审批链见[Trusted Actions模块设计](docs/modules/trusted-actions.md)。
 
-该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当前不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定和Process Artifact现已通过b2b/b2c2实现；0.5.4c已提供不接受模型argv的`run_tests`，宿主硬退出后的自动进程清理及OS Sandbox仍待后续实现。详见 [ADR 0039](docs/adr/0039-process-action-plane-admission.md)。
+删除前，宿主曾通过`process_action_tool(factory)`将固定进程绑定显式注册到旧Action Plane。命令先持久化，必须提供幂等键并通过Policy/Approval，再进入租约执行；工具版本绑定cwd、程序身份、环境和资源预算。确定结果保存ProcessResult和Effect Receipt，证据不足则UNKNOWN。Task/宿主退出后不自动重放，也不根据历史PID杀进程。该入口在当前版本中不可调用。
+
+删除前，该入口不在默认Bootstrap或模型工具清单中；命令argv会进入持久Journal，当时不支持SecretRef解析，不应承载凭据。Agent Session单一审批绑定和Process Artifact曾通过b2b/b2c2实现；旧Action Plane版`run_tests`桥接器已删除，同名受控工具现由Eval Trusted Action提供。历史设计见[ADR 0039](docs/adr/0039-process-action-plane-admission.md)，当前进程执行见[Trusted Actions模块设计](docs/modules/trusted-actions.md)和[Process Runtime模块设计](docs/modules/processes.md)。
 
 Agent接入的单一审批权威、跨库恢复Saga、WAITING_ACTION和Process Artifact边界已在 [ADR 0040](docs/adr/0040-agent-process-action-saga.md) 冻结。b2b1新增`AgentProcessCallPlan`并确定性绑定调用与Action身份；b2b2新增Agent Event/Thread v9、Session migration10、`ProcessApprovalRequestContent`、`ProcessActionStateContent`及`ToolResult.process`。Session决定只能从已核对的ActionSnapshot投影，Action Journal仍是唯一执行许可；READY/LEASED/RUNNING/RECONCILING保持持久WAITING_ACTION，只有终止观察可恢复工具循环。私有计划、批准与Action证据不会进入模型历史。
 
-b2b2已用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧事件/投影原字节保持以及migration10提交前后硬退出验收。b2c1 新增显式 `ProcessAgentBridge` / `ProcessRuntime`：模型调用只在宿主注入端口后可见，准备只提交稳定 Action，答复只写 Action 的唯一决定并立即进入 WAITING_ACTION，独立 `ActionWorker` 执行后由 `resume_turn` 单次读取并投影 READY/RUNNING/终态。相同决定重试和 Action 已决定但 Session 未投影的窗口只读原事实补齐；重复等待观察不追加事件。模型只取得不含 Base64 正文的流摘要。
+b2b2曾用真实`e0e8498` v8 wheel完成跨安装升级、旧reader拒绝、旧事件/投影原字节保持以及migration10提交前后硬退出验收。b2c1曾新增显式 `ProcessAgentBridge` / `ProcessRuntime`：模型调用只在宿主注入端口后可见，准备只提交稳定 Action，答复只写 Action 的唯一决定并立即进入 WAITING_ACTION，独立 `ActionWorker` 执行后由 `resume_turn` 单次读取并投影 READY/RUNNING/终态。相同决定重试和 Action 已决定但 Session 未投影的窗口只读原事实补齐；重复等待观察不追加事件。模型只取得不含 Base64 正文的流摘要。这些桥接器和Worker均已删除。
 
 b2c2 新增显式 `SQLiteProcessArtifactPublisher`。终态Action已捕获的stdout/stderr以`process-output/v1`规范JSONL保存：唯一摘要和二进制安全Base64分片，正文/manifest/Tool Result引用/终态Session事实同事务。读取复用`read_artifact`的Thread/工作区归属、分页、配额、TTL和清理，并额外核对Process批准、Action身份、双流摘要、分片偏移与正文哈希。单个Artifact无法容纳全部已捕获前缀时省略引用，不二次隐藏截断；归档失败不改变或重放Action。Agent Event仍为v9，Session migration11仅扩展Artifact用途白名单。详见 [ADR 0041](docs/adr/0041-process-output-artifact.md)。
 

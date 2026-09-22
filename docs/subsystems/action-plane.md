@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: deprecated
-version: 8
+version: 9
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -43,12 +43,12 @@ supersedes: []
 | 本文状态 | 冻结历史实现说明；不得作为新增产品能力依据 |
 | 代码版本 | `ffa56de02b372df981d234fafd1feffbb0b870fb` |
 | 存储后端 | SQLite本地单机场景；PostgreSQL多进程Worker Claim场景 |
-| 部署入口 | 无；历史CLI入口已撤销，显式库装配仅供冻结调用方迁移 |
+| 部署入口 | 无；历史CLI和显式库装配入口均已删除 |
 | 稳定合同 | `harnessix.action/v1`；Action状态、事件、审批、效果凭证和公开错误 |
-| 当前安全边界 | API没有实现最终用户认证中间件，`Principal`由调用方提供；只适合受信本地或已由外层认证的部署 |
+| 删除前安全边界 | API没有实现最终用户认证中间件，`Principal`由调用方提供；当时只适合受信本地或已由外层认证的部署 |
 
 独立Action Plane与Agent Runtime曾是两条生命周期。ADR 0081已决定停止并列产品形态：当前产品只保留
-Agent Runtime及进程内Trusted Action Runtime，旧Action状态机只在迁移窗口内服务冻结调用方。
+Agent Runtime及进程内Trusted Action Runtime，旧Action状态机的迁移窗口已经关闭；当前源码没有可调用的旧运行时。
 
 ## 2. 需求背景
 
