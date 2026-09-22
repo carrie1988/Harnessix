@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
-code_revision: 9620b37697f9d926128f07837ca1198db5a787ac
+version: 8
+code_revision: cb8d144da1b921424fd3ce661aec6d25051c3849
 owners:
   - core
 modules:
@@ -31,6 +31,7 @@ related_tests:
   - tests/benchmarks/test_soak_sample_file.py
   - tests/benchmarks/test_soak_manifest.py
   - tests/benchmarks/test_soak_evidence.py
+  - tests/benchmarks/test_soak_rss.py
 supersedes: []
 ---
 
@@ -40,9 +41,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、独占Run目录、样本/Manifest/提交标记发布及独立重算；尚无正式Soak场景Runner、Threshold Profile、真实平台负载和正式性能证据。 |
+| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、独占Run目录、样本/Manifest/提交标记发布、独立重算与三平台RSS读取入口；尚无正式Soak场景Runner、Threshold Profile、三平台正式负载和发布阈值证据。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `9620b37697f9d926128f07837ca1198db5a787ac` |
+| 代码版本 | `cb8d144da1b921424fd3ce661aec6d25051c3849` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -62,7 +63,7 @@ supersedes: []
 
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
-本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同和Run提交标记；正式场景Runner、RSS平台适配与探针、Threshold Profile和发布阈值校验器仍待实现。
+本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同、Run提交标记和RSS适配器；正式场景Runner、阈值Profile和发布阈值校验器仍待实现。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -403,7 +404,7 @@ classDiagram
 | `SoakManifest`（合同与文件发布已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由调用方构造；正式Runner/Finalizer待实现 | 严格模型、文件写入、最后提交标记和独立重读已实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
 | `ThresholdProfile`（规划） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用。 |
 | `EvidenceValidator`（规划） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile | 增加统计指标必须保留旧字段兼容规则。 |
-| `RSSAdapter`（规划） | 读取raw RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；平台调用串行化 | Linux/macOS/Windows测量API | 平台新API须记录来源和raw单位。 |
+| `read_peak_rss`（已实现，平台验收进行中） | 读取raw峰值RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；macOS首次读取前由受控子进程探针判单位 | Linux/macOS的`getrusage`与Windows的`GetProcessMemoryInfo` | 平台API、raw单位和归一化规则必须与样本及Manifest一致。 |
 
 ## 11. 接口设计
 
@@ -416,7 +417,7 @@ classDiagram
 | `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
 | `read_published_run(run_directory)`（当前） | 发布校验器/未来Profile验证器 | 只读Run目录；输出严格Manifest和其SHA-256 | 文件集合、标记、Manifest、样本和统计全部校验 | 任一缺失/篡改为稳定`soak_run_invalid` | 读取失败不产生PASS | 同一字节输入结果确定 | 只读证据。 |
 | `EvidenceValidator.validate(run, profile)`（规划） | 发布门禁 | 已发布Run和同平台Profile；输出`PASS`/`FAIL`/`unverified`报告 | 先校验原始样本和摘要，再重算，最后比较阈值 | 任一缺失/篡改/环境错配/未知字段失败关闭 | 取消不产生PASS | 同一输入摘要结果确定；报告不可覆盖 | 只读证据与Profile。 |
-| `RSSAdapter.read()`（规划） | Runner | 无业务输入；输出`RSSObservation` | 当前平台、RSS源和raw单位经过验证 | API缺失、读数异常、单位未知为`unverified`；绝不返回0替代 | 单次读取有界；失败不重试为假值 | 同一采样边界最多一个平台读数 | 只读当前Run进程指标。 |
+| `read_peak_rss()`（当前） | 未来Runner | 无业务输入；输出`RssObservation` | 当前平台、RSS源和raw单位经过验证；macOS首次调用触发隔离子进程的单位探针 | API缺失、读数异常、单位未知抛稳定错误；不得返回0替代 | macOS探针有15秒上限；采样本身由调用方设置边界 | 同一采样边界最多一个平台读数 | 只读当前进程指标。 |
 | `capacity_report(database, path)`（当前） | Runner/维护端口 | 当前SQLite连接和路径；输出三类低敏容量报告 | 同一读事务内校验投影、事件、请求和Artifact字段 | 数据损坏抛出稳定KernelError；不吞错 | 只读；不改变业务结果 | 由当前实现负责三类固定顺序 | Runtime Owner/维护权限。 |
 | `scan_product_action_recovery(...)`（当前） | Action启动/Soak故障场景 | Plan、Audit、Session、Artifact、Supervisor、Fence；输出低敏扫描报告 | 不重放Action效果 | Store损坏或Fence错误失败关闭 | 扫描有界但当前实现的集合路径须完整核验 | 不执行Execute；重复扫描不新增效果 | Product Action Owner。 |
 
@@ -543,7 +544,7 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 
 证据发布顺序：
 
-1. `publish_run`在0700私有发布根下排他创建以Run ID命名的目录；目录已存在即拒绝。目录内只允许`samples.jsonl`、`manifest.json`和`COMMITTED.json`。
+1. `publish_run`在私有发布根下排他创建以Run ID命名的目录；POSIX要求发布根由当前用户所有且模式为0700，Windows拒绝目录符号链接/Junction，ACL配置仍须发行验证。目录已存在即拒绝；目录内只允许`samples.jsonl`、`manifest.json`和`COMMITTED.json`。
 2. 样本按固定字段顺序写同目录临时文件，使用`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回样本字节的SHA-256、计数和重算统计。
 3. 调用方构造的严格Manifest必须与刚写入的样本摘要和统计一致。`publish_run`再次从磁盘重读样本并核对RSS后，才写入并同步`manifest.json`。
 4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
@@ -615,18 +616,18 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 
 RSS是三平台发布门禁的必需指标，不能因平台API差异而填零。每次Run的Manifest必须同时记录`rss_source`、`rss_raw_unit`、`rss_normalization`、归一化后的`rss_bytes`和单位验证结果。
 
-| 平台 | 规划RSS source | raw unit与依据 | normalization | 三平台实测验证要求 |
+| 平台 | 当前RSS source | raw unit与依据 | normalization | 三平台实测验证要求 |
 |---|---|---|---|---|
-| Linux | `getrusage(RUSAGE_SELF).ru_maxrss`（Linux man7） | `KiB`；[Linux `getrusage(2)`](https://man7.org/linux/man-pages/man2/getrusage.2.html)明确`ru_maxrss`为KiB | `raw * 1024 -> bytes`；必须记录原始整数和换算规则 | 在正式Linux负载前执行单位探针，并与独立OS观测/受控增长结果核对；不得把未核对值作为PASS。 |
+| Linux | `getrusage(RUSAGE_SELF).ru_maxrss` | `KiB`；[Linux `getrusage(2)`](https://man7.org/linux/man-pages/man2/getrusage.2.html)明确`ru_maxrss`为KiB | `raw * 1024 -> bytes`；记录原始整数和换算规则 | 当前适配器与同进程`/proc/self/status`的`VmHWM`高水位交叉核对，差异超出容差失败关闭；正式Linux负载仍待运行。 |
 | macOS | Python `resource.getrusage(RUSAGE_SELF).ru_maxrss`或批准的等价源 | 不能直接采用Apple旧版手册的`kilobytes`描述；已求证本机Python观测：`ru_maxrss = 18,890,752`，同期`ps rss = 18,496 KiB`，运行时行为按本机验证为`bytes`，且两者分别代表峰值与当前值，不要求数值相等。[Apple旧版getrusage手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getrusage.2.html)作为差异来源记录，不作为未经验证的归一化依据。 | 本机验证通过时`identity -> bytes`；若运行时/版本探针不能证明单位，必须为未知并失败关闭 | 在目标macOS/Python组合上重复单位探针，记录raw值、独立`ps`当前RSS和受控内存增长/峰值关系；确认本机实现后才能使用`identity`。不得把Apple旧手册单位直接套用。 |
 | Windows | `GetProcessMemoryInfo`的`PROCESS_MEMORY_COUNTERS.PeakWorkingSetSize` | `bytes`；[Microsoft `GetProcessMemoryInfo`](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)及`PROCESS_MEMORY_COUNTERS`字段以字节表示 | `identity -> bytes` | 在目标Windows版本/Python绑定上运行API探针，与独立进程工作集观测和受控增长核对；API缺失或绑定异常为未知。 |
 
 验证规则：
 
-1. RSS Adapter必须把平台、API源、raw整数、raw unit、归一化公式、结果bytes和`verification_status`作为同一观测记录；`rss_bytes = 0`不是“未知”编码。
+1. 当前`RssObservation`记录API源、raw整数、raw unit、归一化公式、结果bytes和`unit_verified`；平台由Run Manifest记录。`rss_bytes = 0`不是“未知”编码。
 2. Linux、macOS、Windows必须各自完成至少一次真实正式负载验证；单个平台通过不能证明其他平台。三平台采样缺一时，0.9.3d总体证据为`unverified`，不产生发布PASS。
-3. macOS探针必须针对实际Python运行时和目标macOS执行，不能只引用Apple旧手册。给定观测中的`ru_maxrss`是峰值、`ps rss`是当前值，数值差异不能被误报为采集错误，也不能据此跳过单位验证。
-4. RSS源、raw unit或归一化规则任一缺失、未知、不一致、API失败或读数非正时，当前Run为`unverified`并返回非零；不得用`0`、上次值或跨平台换算结果填补。
+3. macOS适配器在首次采样前启动隔离Python子进程，分配64 MiB内存并比较`ru_maxrss`与`ps rss`的KiB读数；只有可区分的倍率才确定单位，探针不在正式测量窗口内运行。两个值分别代表峰值与当前值，不要求完全相等。
+4. RSS源、raw unit或归一化规则任一缺失、未知、不一致、API失败或读数非正时，适配器返回稳定错误；未来Runner必须把当前Run置为`unverified`并返回非零，不得用`0`、上次值或跨平台换算结果填补。
 
 ## 18. 兼容性与发布
 
@@ -637,7 +638,7 @@ RSS是三平台发布门禁的必需指标，不能因平台API差异而填零�
 | RSS | `getrusage.ru_maxrss` raw按KiB归一化为bytes；必须以man7和运行时探针核对 | Python运行时实测单位可能与Apple旧手册不同；必须按目标运行时实测，当前已求证观测按bytes处理 | `GetProcessMemoryInfo/PeakWorkingSetSize` raw bytes，归一化为identity。 |
 | 时钟 | Python `time.perf_counter_ns`单调时钟 | 同上 | 同上；不得用墙钟差值。 |
 | 进程停止 | POSIX信号/子进程等待语义 | POSIX语义但系统实现不同 | 进程终止和进程树收敛使用Windows API/绑定；必须记录失败分类，不假定POSIX信号。 |
-| 文件发布 | 排他创建Run目录、同目录临时文件和最后提交标记；验证文件/目录同步 | 同上，不能假定APFS行为等于Linux | 文件句柄关闭、`os.replace`提交标记和目录持久化语义需实测；目标冲突仍拒绝覆盖。 |
+| 文件发布 | 排他创建Run目录、同目录临时文件、文件与目录`fsync`和最后提交标记 | 同上，不能假定APFS行为等于Linux | 文件`fsync`与最后提交标记已实现；目录元数据同步不可用时依靠重读校验失败关闭，断电持久性和ACL仍须发行测试。 |
 | 路径身份 | POSIX默认区分大小写；证据不写路径 | 默认区分大小写规则由文件系统决定；证据不写路径 | 当前服务对Workspace身份按大小写不敏感规则比较；证据不写路径。 |
 | 缺测处理 | API/权限异常为`unverified` | API/单位探针异常为`unverified` | API/绑定异常为`unverified` | `unverified` |
 
@@ -701,7 +702,7 @@ run_scenario(scenario, seed, environment):
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
 | 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 严格字段、Run目录冲突、样本/Manifest/标记篡改、中断不提交、独立重算已测 | Run证据发布完成局部实现；阈值复验及真实负载未完成。 |
-| RSS适配与三平台探针 | 无（当前Revision未实现） | `RSSAdapter`（规划） | 无（需新增Linux/macOS/Windows真实探针测试） | raw unit、normalization、平台缺测失败关闭 | 规划；本节单位事实是设计输入。 |
+| RSS适配与三平台探针 | [`scripts/soak_rss.py`](../../scripts/soak_rss.py) | `read_peak_rss`、`_macos_unit` | [`test_soak_rss.py`](../../tests/benchmarks/test_soak_rss.py) | raw unit、normalization、读数正值、未知单位失败关闭；macOS本机通过 | 实现已提交；Linux/Windows真实CI与正式Soak证据仍待验收。 |
 | 原子证据发布 | [`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `publish_run`、`read_published_run` | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 排他Run目录、文件`fsync`、SHA-256、最后提交标记、不可覆盖及三故障点 | 局部实现；跨平台CI加入`tests/benchmarks`，正式Run/Profile仍待验收。 |
 
 ## 21. 测试设计与验收标准
@@ -712,7 +713,7 @@ run_scenario(scenario, seed, environment):
 |---|---|---|---|---|
 | Schema合同 | Sample/Manifest/Profile字段、类型、extra-forbid、状态和摘要 | Sample/Manifest v1对象已实现；Profile待实现 | 现有样本和Manifest的缺字段、未知字段、NaN/Infinity、负数、错误单位、错误场景/平台和序号缺口拒绝；Profile待测 | 部分已实现。 |
 | 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | `nearest_rank_v1`已固定；`sample_count`待Profile冻结 | 内存重算、预热排除、计数严格匹配、JSONL摘要、规范序列化及Manifest自报统计冲突已测 | 发布级规划中。 |
-| RSS合同 | Linux KiB、macOS运行时单位差异、Windows bytes和unknown | 三平台真实探针 | source/raw unit/normalization完整；unknown为`unverified`且非零；不填0 | 规划新增。 |
+| RSS合同 | Linux KiB、macOS运行时单位差异、Windows bytes和unknown | 三平台RSS入口和macOS受控探针 | source/raw unit/normalization完整；未知或零读数直接失败关闭、不填0；发布判`unverified`由未来Runner处理 | 本地macOS已测；Linux/Windows CI及正式Runner待验收。 |
 | 原子发布 | 临时文件、fsync、摘要、目标冲突、发布中断 | 独立Run目录 | 只接受最后标记、Manifest及样本全校验的Run；失败不产生PASS、不覆盖既有Run | 局部实现与故障注入已测；Windows目录持久性和真实进程崩溃仍待验证。 |
 | 长会话集成 | 真实Agent/SDK/Store链、Replay、Context/Compaction | 单Thread >=1000 Turn | Replay/投影一致、无隐藏失败、样本完整 | 场景规划；现有Runtime测试作为回归。 |
 | Provider内存隔离 | 对比`ScriptedProvider`请求历史保留与`SoakProvider`计数夹具 | 200 Turn预研数据仅作污染识别；正式场景使用`deterministic_stateless_v1` | 当前10 Turn回归验证Provider只留请求计数；样本/Manifest无Prompt和ModelRequest正文、预研时延/RSS不进入基线仍待正式Runner验证 | 夹具与局部测试已实现；正式证据规划中。 |
@@ -766,3 +767,4 @@ run_scenario(scenario, seed, environment):
 | 5 | `5ecdd83d1c9d317674a194816853653eacae7d90` | 2026-09-23 | 增加8 MiB/100000条上限的`samples.jsonl`写入、SHA-256核对、规范序列化和篡改/截断/覆盖回归；此时仍无Run提交协议或正式Soak证据。 |
 | 6 | `e5378212a22b627d7f3f73087c21ca74c0b0aba4` | 2026-09-23 | 建立严格Manifest内存合同、场景/平台/负载边界和从样本文件独立复核统计/RSS；文件发布、Profile及正式运行证据仍待实现。 |
 | 7 | `9620b37697f9d926128f07837ca1198db5a787ac` | 2026-09-23 | 落地排他Run目录、样本/Manifest/最后提交标记的发布与独立读取；增加发布中断/篡改/冲突回归，并把`tests/benchmarks`纳入macOS和Windows CI。 |
+| 8 | `cb8d144da1b921424fd3ce661aec6d25051c3849` | 2026-09-23 | 移除Soak发布脚本对Eval包的导入依赖以修复Windows测试收集失败；增加Linux/macOS/Windows峰值RSS读取、macOS受控子进程探针、Linux `/proc`高水位核对和目录权限回归。 |
