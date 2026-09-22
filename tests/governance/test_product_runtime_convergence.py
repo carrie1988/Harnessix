@@ -175,9 +175,7 @@ def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
     """历史合同和README迁移叙述不得重新宣传已删除的执行入口。"""
 
     contract = (ROOT / "docs" / "action-contract.md").read_text(encoding="utf-8")
-    subsystem = (ROOT / "docs" / "subsystems" / "action-plane.md").read_text(
-        encoding="utf-8"
-    )
+    subsystem = (ROOT / "docs" / "subsystems" / "action-plane.md").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     historical_process = readme.split("### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）", 1)[
         1
