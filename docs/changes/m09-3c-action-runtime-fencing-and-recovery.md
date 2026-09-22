@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 3
+code_revision: cb5fe4e9bffbc668b0d7259c3beebc3310f27e2c
 owners:
   - core
 modules:
@@ -904,9 +904,11 @@ state-root/
 
 ### 17.2 Deadline与零重复效果
 
+写Action的Operation期限从持久Claim开始计时。若期限短于调度延迟，执行器可能尚未进入；此时`Execute`调用次数为0或1，Route都必须进入`UNKNOWN`，随后只允许一次`Reconcile`。测试断言以持久状态和零重放为准，不以协程已进入作为超时语义的前提。Windows CI 35710840724暴露了原10ms测试对调度时序的过度假设；修订后仍需跨平台CI复验。
+
 | 测试 | 验证 |
 |---|---|
-| [`test_write_route_timeout_enters_unknown_and_only_reconciles`](../../tests/trusted_actions/test_router.py) | 写超时UNKNOWN、Execute/Reconcile各一次、Operation完成 |
+| [`test_write_route_timeout_enters_unknown_and_only_reconciles`](../../tests/trusted_actions/test_router.py) | 写超时UNKNOWN、执行器可能尚未获得调度或至多调用一次、只对账一次、Operation完成；10ms期限不保证执行器已进入。 |
 | [`test_reconcile_attempts_are_bounded_without_reexecute`](../../tests/trusted_actions/test_router.py) | Attempt上限与人工处置、不重Execute |
 | [`test_result_then_audit_failure_recovers_without_duplicate_execute`](../../tests/trusted_actions/test_router.py) | 效果返回后Audit故障、中断Operation、只对账 |
 | [`test_cancellation_after_router_claim_becomes_unknown_then_reconciles`](../../tests/trusted_actions/test_agent_gateway.py) | 取消持久UNKNOWN并由Gateway恢复 |
