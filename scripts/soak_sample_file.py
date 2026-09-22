@@ -30,6 +30,12 @@ def _canonical_body(samples: tuple[SoakSample, ...]) -> bytes:
     return body
 
 
+def sample_sha256(samples: tuple[SoakSample, ...]) -> str:
+    """按文件规范计算摘要，供Manifest构造后由发布器复核。"""
+
+    return sha256(_canonical_body(samples)).hexdigest()
+
+
 def write_sample_file(
     run_directory: Path,
     samples: tuple[SoakSample, ...],
@@ -62,7 +68,11 @@ def write_sample_file(
             raise OSError
         descriptor = os.open(
             temporary,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_BINARY", 0),
             0o600,
         )
         remaining = memoryview(body)
