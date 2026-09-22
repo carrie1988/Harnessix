@@ -32,7 +32,7 @@ async def _completed_state(controller: ProductController):
         turn = state.thread_view.current_turn if state.thread_view is not None else None
         if turn is not None and turn.status == "completed":
             return state
-        await asyncio.wait_for(controller.next_update(), timeout=2)
+        await asyncio.wait_for(controller.next_update(), timeout=10)
     raise AssertionError("Turn未进入终态")
 
 

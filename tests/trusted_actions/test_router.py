@@ -932,7 +932,9 @@ async def test_write_route_timeout_enters_unknown_and_only_reconciles(tmp_path: 
     assert timed_out.kind == "unknown"
     assert timed_out.error_code == "write_effect_timeout_unknown"
     assert recovered.kind == "succeeded"
-    assert executor.calls == executor.reconciliations == 1
+    # 极短期限可能在执行器首次获得调度前到期；仍须只对账且不重放写操作。
+    assert executor.calls in {0, 1}
+    assert executor.reconciliations == 1
     operations = audit.operations()
     assert [(item.phase, item.state) for item in operations] == [
         ("execute", "completed"),
