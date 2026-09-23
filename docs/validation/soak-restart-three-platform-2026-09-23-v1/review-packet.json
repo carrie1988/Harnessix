@@ -1,6 +1,8 @@
 {
+  "candidate_first_attempt_run_id": 35867100728,
   "checks": {
     "attempt_reader": "3/3 committed",
+    "candidate_first_attempt": "linux/macos success; windows preflight profile invalid due Git autocrlf; no three-platform PASS",
     "frozen_profiles": "3/3 sealed and baseline-validated; independent candidates pending",
     "independent_file_sha256": "18/18 matched",
     "independent_stdlib_quantiles": "3/3 matched",

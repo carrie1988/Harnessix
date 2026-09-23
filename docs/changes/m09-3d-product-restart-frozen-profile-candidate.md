@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 172b1ee96a89e981a6332b16f60b86e2db654df1
+version: 2
+code_revision: 64663f262e4b438455965f659c2608b188c69da8
 owners:
   - core
 modules:
@@ -33,7 +33,8 @@ supersedes: []
 | [`run_product_restart`](../../scripts/soak_restart.py) | 真实SDK、完整产品组合根、500 Thread、硬退出与恢复；正式Runner在第一负载前核对干净Revision，`threshold_profile_ref`进入Attempt和Run。 |
 | [`SoakManifestV5`](../../scripts/soak_manifest.py)、[`SoakRestartProof`](../../scripts/soak_restart_proof.py) | 固定`restart/product_startup`、一次EOF、五轮集合/报告/Fence证明；低敏Reader可重算样本与Proof，但不凭文件自行证明外部效果。 |
 | [`SoakAttemptStartV2`](../../scripts/soak_attempt.py) | 候选负载前记录Profile ID/SHA，FINAL绑定Manifest SHA；没有STARTED v2的候选不能获得PASS。 |
-| [`publish_profile`、`verify_and_publish`](../../scripts/soak_threshold.py) | 已对其他场景实现封印Profile、逐分位/水位比较和不可覆盖报告；旧白名单拒绝`restart`，Provider版本模式也不接受`product-no-turn`，必须做受限扩展。 |
+| [`publish_profile`、`verify_and_publish`](../../scripts/soak_threshold.py) | 已对其他场景实现封印Profile、逐分位/水位比较和不可覆盖报告；受限扩展后只接受v5完整重启证明及场景专属`product-no-turn`版本。 |
+| [`.gitattributes`](../../.gitattributes) | 规范Profile、原始Run及Attempt依赖逐字节SHA；Windows的`core.autocrlf=true`必须对这些路径关闭文本换行转换。 |
 
 目标是让Linux、macOS、Windows各自凭自身基线形成不可覆盖Profile，再以同固定负载和新Run ID完成独立候选；每个平台产生`PASS`、`FAIL`或`unverified`，并长期归档全部原始证据。此切片不新增Action HTTP/Worker、不改变生产Agent Protocol、数据库Schema或用户可见CLI，不请求真实模型，也不把三平台托管机结果宣称为C端容量SLA。
 
@@ -121,6 +122,12 @@ return success_only_if(report.status == PASS)
 
 ## 6. 测试、部署、回退与风险
 
-单测必须覆盖三份基线与Profile重读、Provider版本互斥、错误场景/v5拒绝、唯一Profile发现、基线摘要漂移时不启动负载、固定500/1/3和STARTED v2预绑定、CLI脱敏及非PASS退出码。三平台手动候选Job须真实运行新进程、下载原始件、复核Run/Attempt/Report、文件SHA及分位数，再与同Revision常规CI联合评审。仅本地缩小回归或只把工作流写入仓库均不关闭门禁。
+单测必须覆盖三份基线与Profile重读、Provider版本互斥、错误场景/v5拒绝、唯一Profile发现、基线摘要漂移时不启动负载、固定500/1/3和STARTED v2预绑定、CLI脱敏、非PASS退出码及证据路径的Git `text: unset`属性。三平台手动候选Job须真实运行新进程、下载原始件、复核Run/Attempt/Report、文件SHA及分位数，再与同Revision常规CI联合评审。仅本地缩小回归或只把工作流写入仓库均不关闭门禁。
 
 此切片是离线发布工程，不进入产品CLI默认路径或用户部署，也不部署独立Action服务、中间件或远程Worker。回退可停止候选工作流；已冻结Profile和历史Run/Report保留，只读归档，不原地改写。托管机硬件档位、三样本噪声和0副作用矩阵是主要局限；出现环境漂移应记`unverified`并重新设计可比基线，不能删除校验或用更宽阈值追认失败Run。
+
+## 7. 首次三平台候选的Windows字节失败与修复边界
+
+[首次候选工作流 35867100728](https://github.com/carrie1988/Harnessix/actions/runs/35867100728)在Revision `64663f2`的Linux、macOS Job完成，Windows在负载前以`soak_profile_invalid`失败且未产生Attempt。排查确认新证据目录未列入[`.gitattributes`](../../.gitattributes)的`-text`白名单：对该提交执行`core.autocrlf=true`的隔离Checkout后，Windows Profile的`profile.json`出现一处CR，SHA-256由封印的`4b26a7f9...`变为`7cceecf4...`；Git属性为`text: auto`。这是Profile规范字节在Checkout被改写，不是完整产品恢复失败或阈值越限。
+
+修复范围仅为重启基线的`raw/**`、`profiles/**`和后续候选`raw/**`设置Git `-text`，并由[`test_run_restart_soak_candidate.py`](../../tests/benchmarks/test_run_restart_soak_candidate.py)断言属性及三平台Reader。修复提交后须在新的三平台Job重新执行完整候选；首次两平台成功不补写为全平台PASS，也不改变冻结阈值。

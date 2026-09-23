@@ -5,3 +5,6 @@ LICENSE text eol=lf
 docs/validation/soak-sdk-three-platform-2026-09-23-v1/raw/** -text
 docs/validation/soak-sdk-three-platform-2026-09-23-v1/profiles/** -text
 docs/validation/soak-sdk-three-platform-candidate-2026-09-23-v1/raw/** -text
+docs/validation/soak-restart-three-platform-2026-09-23-v1/raw/** -text
+docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/** -text
+docs/validation/soak-restart-three-platform-candidate-2026-09-23-v1/raw/** -text

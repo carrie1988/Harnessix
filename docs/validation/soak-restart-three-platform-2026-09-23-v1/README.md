@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 172b1ee96a89e981a6332b16f60b86e2db654df1
 owners:
   - core
@@ -102,3 +102,5 @@ PY
 | Windows | [profile.json](profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/profile.json) / [SEALED.json](profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/SEALED.json) | `4b26a7f91fc231bc14d534f26eac49ba35faa59fb637b6996913698ba59a46e3` | 12,011,673,000 | 157,108,224 | 2,064,384 |
 
 冻结只是事先确定验收尺度，不构成通过结论。[候选工作流](../../../.github/workflows/restart-soak-candidate.yml)必须在Profile提交后由干净Revision运行；每平台的第二Run须有STARTED v2预绑定、完整V5证明、FINAL和独立封印Report。在第二Run及其原件归档前，本场景发布状态保持`unverified`。
+
+[首次候选工作流 35867100728](https://github.com/carrie1988/Harnessix/actions/runs/35867100728)仅Linux和macOS成功，Windows在负载前因规范Profile文件被Git自动换行转换而报`soak_profile_invalid`，没有Windows候选Attempt。隔离的`core.autocrlf=true` Checkout复现了封印SHA不一致；修复仅对本目录`raw/**`、`profiles/**`及后续候选原件设置`-text`，并增加Git属性回归。诊断和修复边界见[专项设计第7节](../../changes/m09-3d-product-restart-frozen-profile-candidate.md)；三平台候选必须在修复后重新取得，不能把首次两平台成功当成发布PASS。

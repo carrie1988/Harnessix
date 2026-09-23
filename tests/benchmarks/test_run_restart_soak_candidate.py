@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,6 +17,28 @@ from scripts.soak_attempt import SoakAttemptStartV2
 from scripts.soak_evidence import read_published_run
 from scripts.soak_manifest import SoakProfileReference
 from scripts.soak_threshold import SoakThresholdProfile, publish_profile, read_profile
+
+
+@pytest.mark.parametrize("platform", ["linux", "macos", "windows"])
+def test_frozen_restart_evidence_is_not_line_ending_normalized(platform: str) -> None:
+    """规范JSON字节必须跨Windows Checkout保持不变。"""
+
+    root = Path(__file__).resolve().parents[2]
+    profile_dir = run_restart_soak_candidate._only_profile(platform)  # noqa: SLF001
+    profile, _ = read_profile(profile_dir)
+    baseline = (
+        run_restart_soak_candidate._ARCHIVE  # noqa: SLF001
+        / "raw"
+        / platform
+        / profile.baseline_run_id
+        / "manifest.json"
+    )
+    for path in (profile_dir / "profile.json", baseline):
+        relative = path.relative_to(root).as_posix()
+        output = subprocess.check_output(
+            ("git", "check-attr", "text", "--", relative), cwd=root, text=True
+        )
+        assert output.strip() == f"{relative}: text: unset"
 
 
 @pytest.mark.parametrize("platform", ["linux", "macos", "windows"])
