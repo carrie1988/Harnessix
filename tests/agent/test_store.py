@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import sqlite3
 from pathlib import Path
 from uuid import RFC_4122
@@ -15,6 +17,7 @@ from harnessix.agent.models import (
     Budget,
     EventDraft,
     ItemStarted,
+    ThreadArchived,
     ThreadCreated,
     ToolResultContent,
     TurnStarted,
@@ -190,18 +193,151 @@ async def test_snapshot_tamper_detected_and_repaired(tmp_path: Path) -> None:
     assert await store.rebuild(thread.thread_id) == thread
 
 
+async def test_list_thread_page_filters_before_limit_and_bounds_snapshot_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "sessions.db")
+    await store.initialize()
+    ids = []
+    for _ in range(8):
+        thread, _ = await create(store, tmp_path)
+        ids.append(thread.thread_id)
+    ordered = sorted(ids, key=str)
+    archived = set(ordered[::2])
+    for thread_id in archived:
+        await store.append(
+            thread_id,
+            [EventDraft(payload=ThreadArchived(reason=None))],
+            expected_sequence=1,
+        )
+
+    original = store._snapshot
+    loaded = []
+
+    async def observed(database, thread_id):
+        loaded.append(thread_id)
+        return await original(database, thread_id)
+
+    monkeypatch.setattr(store, "_snapshot", observed)
+    active = [thread_id for thread_id in ordered if thread_id not in archived]
+    first, more = await store.list_thread_page(after=None, archived=False, limit=2)
+    assert [thread.thread_id for thread in first] == active[:2]
+    assert more and loaded == active[:2]
+    loaded.clear()
+    second, more = await store.list_thread_page(after=first[-1].thread_id, archived=False, limit=2)
+    assert [thread.thread_id for thread in second] == active[2:]
+    assert not more and loaded == active[2:]
+    archived_page, more = await store.list_thread_page(after=None, archived=True, limit=200)
+    assert [thread.thread_id for thread in archived_page] == sorted(archived, key=str)
+    assert not more
+    empty, more = await store.list_thread_page(after=ordered[-1], archived=None, limit=1)
+    assert not empty and not more
+    first_one, more = await store.list_thread_page(after=None, archived=None, limit=1)
+    assert [thread.thread_id for thread in first_one] == ordered[:1] and more
+    for invalid in (0, 201, True):
+        with pytest.raises(KernelError) as error:
+            await store.list_thread_page(after=None, archived=None, limit=invalid)
+        assert error.value.code == "invalid_limit"
+
+    with sqlite3.connect(store.path) as database:
+        query = (
+            "EXPLAIN QUERY PLAN SELECT thread_id FROM agent_threads "
+            "WHERE COALESCE(json_type(snapshot_json, '$.archive') NOT IN ('null'), 0) = ? "
+            "AND thread_id > ? ORDER BY thread_id LIMIT ?"
+        )
+        plan = database.execute(query, (0, str(ordered[0]), 3)).fetchall()
+    assert any("agent_threads_archive_list_idx" in row[-1] for row in plan)
+
+
+async def test_recovery_scan_still_rejects_corrupt_inactive_thread(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "sessions.db")
+    await store.initialize()
+    first, _ = await create(store, tmp_path)
+    await create(store, tmp_path)
+    assert await store.recovery_threads() == ()
+    with sqlite3.connect(store.path) as database:
+        database.execute(
+            "UPDATE agent_threads SET snapshot_json = '{}' WHERE thread_id = ?",
+            (str(first.thread_id),),
+        )
+    with pytest.raises(KernelError) as error:
+        async with AgentRuntime(store, FakeProvider()):
+            pass
+    assert error.value.code == "projection_corrupt"
+    assert await store.rebuild(first.thread_id) == first
+    async with AgentRuntime(store, FakeProvider()):
+        pass
+
+
+async def test_archive_lookup_migration_upgrades_legacy_projection(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "sessions.db")
+    await store.initialize()
+    active, _ = await create(store, tmp_path)
+    archived, _ = await create(store, tmp_path)
+    await store.append(
+        archived.thread_id,
+        [EventDraft(payload=ThreadArchived(reason=None))],
+        expected_sequence=1,
+    )
+    with sqlite3.connect(store.path) as database:
+        body = database.execute(
+            "SELECT snapshot_json FROM agent_threads WHERE thread_id = ?",
+            (str(active.thread_id),),
+        ).fetchone()[0]
+        legacy = json.loads(body)
+        del legacy["archive"]
+        encoded = json.dumps(legacy, separators=(",", ":"))
+        database.execute("DROP INDEX agent_threads_archive_list_idx")
+        database.execute("DELETE FROM agent_migrations WHERE version = 27")
+        database.execute(
+            "UPDATE agent_threads SET snapshot_json = ?, snapshot_sha256 = ? WHERE thread_id = ?",
+            (encoded, hashlib.sha256(encoded.encode()).hexdigest(), str(active.thread_id)),
+        )
+    await store.initialize()
+    active_page, _ = await store.list_thread_page(after=None, archived=False, limit=10)
+    archived_page, _ = await store.list_thread_page(after=None, archived=True, limit=10)
+    assert [thread.thread_id for thread in active_page] == [active.thread_id]
+    assert [thread.thread_id for thread in archived_page] == [archived.thread_id]
+    with sqlite3.connect(store.path) as database:
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 27
+
+
+async def test_archive_lookup_migration_rejects_invalid_legacy_json(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "sessions.db")
+    await store.initialize()
+    thread, _ = await create(store, tmp_path)
+    with sqlite3.connect(store.path) as database:
+        database.execute("DROP INDEX agent_threads_archive_list_idx")
+        database.execute("DELETE FROM agent_migrations WHERE version = 27")
+        database.execute(
+            "UPDATE agent_threads SET snapshot_json = 'not-json' WHERE thread_id = ?",
+            (str(thread.thread_id),),
+        )
+    with pytest.raises(KernelError) as error:
+        await store.initialize()
+    assert error.value.code == "storage_unavailable"
+    with sqlite3.connect(store.path) as database:
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 26
+        assert (
+            database.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE name = 'agent_threads_archive_list_idx'"
+            ).fetchone()[0]
+            == 0
+        )
+
+
 async def test_migration_idempotent_future_and_checksum(tmp_path: Path) -> None:
     store = SQLiteSessionStore(tmp_path / "sessions.db")
     await asyncio.gather(store.initialize(), SQLiteSessionStore(store.path).initialize())
     assert store.path.stat().st_mode & 0o777 == 0o600
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 26
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 27
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        database.execute("INSERT INTO agent_migrations VALUES (27, 'future')")
+        database.execute("INSERT INTO agent_migrations VALUES (28, 'future')")
     with pytest.raises(KernelError, match="高于"):
         await store.initialize()
     with sqlite3.connect(store.path) as database:
-        database.execute("DELETE FROM agent_migrations WHERE version = 27")
+        database.execute("DELETE FROM agent_migrations WHERE version = 28")
         database.execute("UPDATE agent_migrations SET checksum = 'changed'")
     with pytest.raises(KernelError, match="发生变化"):
         await store.initialize()

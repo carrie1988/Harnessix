@@ -322,10 +322,8 @@ class AgentRuntime:
         self._open = True
         try:
             await self.store.initialize()
-            for thread_id in await self.store.thread_ids():
-                thread = await self.store.get_thread(thread_id)
-                if thread.active_turn_id is not None:
-                    await self._recover(thread)
+            for thread in await self.store.recovery_threads():
+                await self._recover(thread)
         except BaseException:
             self._open = False
             self._owner = None

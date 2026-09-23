@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 8
+version: 9
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -108,7 +108,7 @@ flowchart LR
     App[App Server和SDK] -->|get events rebuild| Port
     Port --> SQLite[SQLiteSessionStore]
     SQLite --> Lock[Runtime Owner文件锁]
-    SQLite --> Migration[26个Migration]
+    SQLite --> Migration[27个Migration]
     SQLite --> Events[(agent_events)]
     SQLite --> Snapshot[(agent_threads)]
     SQLite --> Maintenance[Capacity和Maintenance]
@@ -149,7 +149,9 @@ Session不得导入Provider Adapter、Tool Runtime、Policy或API。Reducer可�
 | `initialize` | Runtime/测试 | 无 → 无 | 创建/识别Harnessix数据库，完成迁移、quick check和WAL | Busy仅WAL切换有界重试；Migration不重放 | 可取消；连接关闭并回滚 | 已应用同摘要Migration跳过 | 需状态目录写权限 |
 | `runtime_owner` | `AgentRuntime.__aenter__` | Context Manager | 先获得跨平台旁路排他锁，退出释放 | 已占用为`runtime_busy`；锁I/O失败归一化 | 进程退出由OS释放；应用异常原样传播 | 单数据库单Owner | 不是用户权限，只是宿主所有权 |
 | `get_thread` | Runtime/App Service | UUID → Thread | Snapshot存在、摘要/版本/Sequence均正确 | 不存在/损坏稳定失败；不自动修复 | SQLite busy受驱动边界 | 只读一致事务 | 可读完整高敏会话 |
-| `thread_ids` | Runtime恢复 | 无 → UUID列表 | 合并Event和Snapshot索引 | 无效ID视为Event损坏 | 同上 | 排序稳定；不丢孤立事实 | 仅宿主内部 |
+| `thread_ids` | 维护/评测与兼容读取 | 无 → UUID列表 | 合并Event和Snapshot索引 | 无效ID视为Event损坏 | 同上 | 排序稳定；不丢孤立事实 | 仅宿主内部 |
+| `recovery_threads` | Runtime启动 | 无 → 已校验的活跃Thread元组 | 同一读事务扫描Event与Snapshot身份全集，非活跃损坏仍失败 | 缺投影/序号缺口/摘要或版本异常失败关闭 | 连接完成/关闭后传播取消 | 不修改Event；仅对活跃Turn调用领域恢复 | 仅宿主内部 |
+| `list_thread_page` | App Server | `after/archived/limit` → `Thread元组/has_more` | 先Archive过滤后UUID游标，SQL只取`limit+1`个ID并校验最多`limit`个投影 | 非法参数与选中投影损坏失败关闭 | 单一读事务；连接关闭后传播取消 | 稳定字典序；跨请求不保证全局快照 | 现有本地State读取权限 |
 | `append` | Runtime | Thread、Draft批次、期望Sequence → Thread | 非空冻结批次；不能包含Fork创建 | 冲突应重新读取，不盲目复用新Event ID | 取消前后由事务判定；调用方按原Event ID查询/重试 | 整批幂等、原子、Sequence连续 | 不替代领域授权 |
 | `fork` | Runtime Lifecycle | 来源/目标、Fork Draft、来源Sequence → Child Thread | 单个Fork Event、同Workspace、来源证明有效 | 来源更新为`sequence_conflict` | 单写事务 | 相同目标和Event幂等；变体冲突 | Fork权威为none |
 | `events` | Protocol/重放 | Thread、after → Event后缀 | after非负 | Event结构/索引/跳号失败关闭 | 只读操作 | 严格Sequence顺序，游标排他 | 可能包含高敏正文 |
@@ -287,7 +289,7 @@ sequenceDiagram
 ```
 
 数据库`application_id`固定为Harnessix Session标识；空文件可初始化，其他应用的非空库和Action
-数据库均拒绝。Migration必须从1连续到26，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
+数据库均拒绝。Migration必须从1连续到27，已应用摘要必须匹配当前资源，数据库含未知更高版本或缺口
 均失败关闭。SQL按分号拆为普通DDL执行，不使用会隐式提交的`executescript`。只有迁移事务提交后才用
 新连接启用WAL；锁竞争仅重试WAL模式切换，绝不重放Migration。
 
@@ -305,9 +307,17 @@ sequenceDiagram
 | 23 | Trusted Action审批与有界效果的Agent Event/Thread v20读取边界 |
 | 24～25 | Action Review和Action Output Artifact用途 |
 | 26 | Artifact发布时间、不可变维护Plan/Item与可恢复Progress |
+| 27 | `agent_threads`归档表达式与Thread ID复合索引；不增加冗余状态列，旧投影保持原始字节 |
 
 这些迁移多数通过版本标记推进最低Reader，不代表每个版本都修改物理列。发布后禁止修改旧SQL文件，
 否则校验和会阻断启动。
+
+Migration 27使用`COALESCE(json_type(snapshot_json, '$.archive') NOT IN ('null'), 0)`作为索引键；历史缺失或
+空归档字段归入未归档，非空对象归入已归档。投影正文仍必须经SHA、模型和Event序号校验；索引不是新的业务
+权威。旧Snapshot包含非法JSON时建索引失败并回滚迁移事务，不得跳过坏行或把该Thread隐藏。列表调用用
+相同表达式及UUID游标先筛选，再在同一读事务中读取不超过一页的完整投影。Runtime启动改用一个批量读事务
+扫描Event/Projection全集并验证每个Thread，仅把活跃Turn交给原有恢复逻辑；对非活跃损坏的失败关闭保持
+不变。设计、SQL、失败窗口和跨平台验收标准见[Thread读路径专项详设](../changes/m09-3d-thread-list-and-recovery-read-path.md)。
 
 ## 13. 损坏检测、失败与恢复
 

@@ -34,7 +34,7 @@ async def test_capacity_report_is_complete_and_low_sensitive(tmp_path: Path) -> 
 
     report = await SQLiteStoreMaintenance(store).snapshot()
 
-    assert report.schema_version == 26
+    assert report.schema_version == 27
     assert tuple(item.store_kind for item in report.stores) == (
         "session",
         "protocol_request",

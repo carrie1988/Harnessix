@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 22
-code_revision: 60d6c1b851789efdd9a3cf5029587ffef0b3077d
+version: 23
+code_revision: c4e85b1c553c2996020ec589547d1019fc96dd07
 owners:
   - core
 modules:
@@ -38,7 +38,9 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
-| 2026-09-23 | [多Thread三平台v6逐轮证明正式基线及封印Profile](soak-many-threads-three-platform-2026-09-23-v2/README.md) | `6e64a5cba2108ac77de90a5726b45773b4482c75` | Linux/macOS/Windows各500 Thread、50条每页、一次预热、三次正式Runtime/App Service重启；无模型请求 | 三平台Run/Attempt与v6 Proof、18份原件SHA、三个ZIP及最近秩统计独立复核通过；[同Revision CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job成功；三份Profile从基线封印并独立重读 | 仅单次正式基线及预冻结阈值；第二独立候选未执行，不判场景PASS |
+| 2026-09-23 | [多Thread三平台修复后候选性能FAIL](soak-many-threads-three-platform-candidate-2026-09-23-v2/README.md) | `807e688988245fcbb269f0c04013ed9a9ca6ea9d` | 同三份冻结Profile、500 Thread/50每页/3正式重启；无模型请求 | 24份原件与三个ZIP、Reader、逐页Proof、分位数和独立报告复验均通过；Linux/Windows PASS，macOS启动P95/P99和分页P99越限FAIL；[同Revision CI 35880201885](https://github.com/carrie1988/Harnessix/actions/runs/35880201885)六Job成功 | 固定多Thread场景门禁开放；不得调高原Profile或丢弃macOS FAIL |
+| 2026-09-23 | [多Thread三平台首轮候选诊断](soak-many-threads-three-platform-candidate-2026-09-23-v1/README.md) | `cadc4e5190dd94e9dbc7760b19b1659090f73cbb` | 同冻结Profile三平台第二Run | 三份报告PASS，24份原件与三个ZIP及独立复验一致；同Revision CI跨平台夹具错误失败 | 不作为正式场景关闭证据；修复后重测见上一行 |
+| 2026-09-23 | [多Thread三平台v6逐轮证明正式基线及封印Profile](soak-many-threads-three-platform-2026-09-23-v2/README.md) | `6e64a5cba2108ac77de90a5726b45773b4482c75` | Linux/macOS/Windows各500 Thread、50条每页、一次预热、三次正式Runtime/App Service重启；无模型请求 | 三平台Run/Attempt与v6 Proof、18份原件SHA、三个ZIP及最近秩统计独立复核通过；[同Revision CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job成功；三份Profile从基线封印并独立重读 | 仅单次正式基线及预冻结阈值，另有第二轮候选macOS FAIL；不判场景PASS |
 | 2026-09-23 | [多Thread三平台一次正式负载基线](soak-many-threads-three-platform-2026-09-23-v1/README.md) | `12bfc1108efc461742712c98fe782ce4b1849f05` | Linux/macOS/Windows各500 Thread、1次预热、3次正式Runtime/App Service重启，50条每页；无模型请求 | 三平台Runner成功；Run/Attempt与15份原件SHA、最近秩统计重算通过；[CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)六Job成功 | v1无逐轮集合Proof，超时排空无独立全局期限；不能冻结Profile或判场景PASS |
 | 2026-09-23 | [完整产品重启三平台冻结阈值第二独立Run](soak-restart-three-platform-candidate-2026-09-23-v1/README.md) | `e81ebada78f67f4c447e4ae0089ec143ccd6cf34` | Linux/macOS/Windows各自预冻结Profile，500 Thread、1次预热、1次受控硬退出、3次正式新进程；Provider零请求 | 三份STARTED v2/Run/Report原件、24份文件摘要及独立数值重算均通过；各平台Report为PASS；[CI 35867509424](https://github.com/carrie1988/Harnessix/actions/runs/35867509424)首次文档Job超时、只重跑失败Job后六Job成功 | 仅固定重启场景工程护栏；不关闭其余0.9.3d或1.0发布门禁 |
 | 2026-09-23 | [完整产品重启三平台正式规模基线](soak-restart-three-platform-2026-09-23-v1/README.md) | `172b1ee96a89e981a6332b16f60b86e2db654df1` | Linux/macOS/Windows Python 3.12、500 Thread、1预热+1硬退出+3正式新进程；Provider零请求 | 三平台Run/Attempt原件及18份文件摘要、分位数、V5 Proof独立复核通过；[CI 35864457452](https://github.com/carrie1988/Harnessix/actions/runs/35864457452)失败文档Job重跑后六Job成功 | 三平台各一次正式基线与封印Profile；第二独立Run与报告见上一条，基线本身不判PASS |

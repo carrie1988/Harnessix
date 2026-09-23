@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 7
+version: 8
 code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
 owners:
   - core
@@ -404,7 +404,7 @@ stateDiagram-v2
 | `initialize` | `InitializeParams → InitializeResult` | 连接控制 | 否 | 固定协议、客户端实例、能力和Limit |
 | `thread/create` | `ThreadCreateParams → ThreadResult` | 写命令 | 是 | 校验绝对Workspace；固定产品可进一步限制根；派生稳定Thread UUID |
 | `thread/get` | `ThreadGetParams → ThreadResult` | 查询 | 否 | 读取并投影Thread Snapshot |
-| `thread/list` | `ThreadListParams → ThreadListResult` | 查询 | 否 | UUID字符串顺序分页，可按归档状态过滤 |
+| `thread/list` | `ThreadListParams → ThreadListResult` | 查询 | 否 | UUID字符串顺序分页，Session先按归档状态过滤再限页；只校验选中页的完整投影 |
 | `thread/resume` | `ThreadResumeParams → ThreadResult` | 恢复控制 | 否 | 恢复Thread并可能重新驱动活动Turn |
 | `thread/fork` | `ThreadForkParams → ThreadResult` | 写命令 | 是 | 从指定Thread和可选Turn边界派生Fork |
 | `thread/archive` | `ThreadArchiveParams → ThreadResult` | 写命令 | 是 | 写入归档事实与可选原因 |

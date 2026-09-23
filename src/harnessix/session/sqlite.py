@@ -96,6 +96,69 @@ def _close_runtime_owner_lock(descriptor: int) -> None:
         os.close(descriptor)
 
 
+def _validated_snapshot(
+    thread_id: UUID, row: sqlite3.Row | None, last_sequence: int, event_count: int
+) -> Thread | None:
+    """逐项校验投影与权威事件序列，供单条读取和批量恢复共用。"""
+
+    if last_sequence != event_count:
+        raise KernelError("event_corrupt", "事件日志存在序号缺口")
+    if row is None:
+        if last_sequence:
+            raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
+        return None
+    encoded: str = row["snapshot_json"]
+    if row["projection_version"] not in range(1, 21):
+        raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
+    if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
+        raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
+    try:
+        thread = Thread.model_validate_json(encoded)
+    except ValidationError:
+        raise KernelError("projection_corrupt", "快照结构损坏，请重建投影") from None
+    if (
+        thread.thread_id != thread_id
+        or thread.sequence != row["sequence"]
+        or thread.sequence != last_sequence
+    ):
+        raise KernelError("projection_corrupt", "投影序号与事件日志不一致")
+    return thread
+
+
+async def _scan_recovery_threads(database: aiosqlite.Connection) -> tuple[Thread, ...]:
+    """批量读取完整身份全集，沿用单条快照的失败关闭校验。"""
+
+    cursor = await database.execute(
+        "WITH ids AS ("
+        "SELECT thread_id FROM agent_events UNION SELECT thread_id FROM agent_threads"
+        "), event_stats AS ("
+        "SELECT thread_id, MAX(sequence) AS last_sequence, COUNT(*) AS event_count "
+        "FROM agent_events GROUP BY thread_id"
+        ") SELECT ids.thread_id AS indexed_thread_id, "
+        "agent_threads.thread_id AS projection_thread_id, "
+        "agent_threads.sequence, agent_threads.snapshot_json, "
+        "agent_threads.snapshot_sha256, agent_threads.projection_version, "
+        "COALESCE(event_stats.last_sequence, 0) AS last_sequence, "
+        "COALESCE(event_stats.event_count, 0) AS event_count "
+        "FROM ids LEFT JOIN agent_threads ON agent_threads.thread_id = ids.thread_id "
+        "LEFT JOIN event_stats ON event_stats.thread_id = ids.thread_id "
+        "ORDER BY ids.thread_id"
+    )
+    active: list[Thread] = []
+    async for row in cursor:
+        try:
+            thread_id = UUID(row["indexed_thread_id"])
+        except ValueError:
+            raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
+        projection = row if row["projection_thread_id"] is not None else None
+        thread = _validated_snapshot(
+            thread_id, projection, row["last_sequence"], row["event_count"]
+        )
+        if thread is not None and thread.active_turn_id is not None:
+            active.append(thread)
+    return tuple(active)
+
+
 class SQLiteSessionStore:
     """事件与聚合投影原子提交；多连接 CAS，单 Runtime 宿主。"""
 
@@ -227,50 +290,7 @@ class SQLiteSessionStore:
         )
         last_row = await cursor.fetchone()
         assert last_row is not None
-        last = last_row[0]
-        if last != last_row[1]:
-            raise KernelError("event_corrupt", "事件日志存在序号缺口")
-        if row is None:
-            if last:
-                raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
-            return None
-        encoded: str = row["snapshot_json"]
-        if row["projection_version"] not in (
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-        ):
-            raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
-        if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
-            raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
-        try:
-            thread = Thread.model_validate_json(encoded)
-        except ValidationError:
-            raise KernelError("projection_corrupt", "快照结构损坏，请重建投影") from None
-        if (
-            thread.thread_id != thread_id
-            or thread.sequence != row["sequence"]
-            or thread.sequence != last
-        ):
-            raise KernelError("projection_corrupt", "投影序号与事件日志不一致")
-        return thread
+        return _validated_snapshot(thread_id, row, last_row[0], last_row[1])
 
     async def get_thread(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:
@@ -290,6 +310,54 @@ class SQLiteSessionStore:
                 return [UUID(row[0]) for row in await cursor.fetchall()]
             except ValueError:
                 raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
+
+    async def recovery_threads(self) -> tuple[Thread, ...]:
+        """一个读事务验证全库Thread，只返回需要恢复的活跃快照。"""
+
+        async with self._connection() as database:
+            await database.execute("BEGIN")
+            return await _scan_recovery_threads(database)
+
+    async def list_thread_page(
+        self, *, after: UUID | None, archived: bool | None, limit: int
+    ) -> tuple[tuple[Thread, ...], bool]:
+        """先按归档与游标筛选，再在同一事务中校验并读取有界一页。"""
+
+        if type(limit) is not int or not 1 <= limit <= 200:
+            raise KernelError("invalid_limit", "Thread列表页大小无效")
+        if after is not None and not isinstance(after, UUID):
+            raise KernelError("invalid_cursor", "Thread列表游标无效")
+        if archived is not None and type(archived) is not bool:
+            raise KernelError("invalid_filter", "Thread归档筛选无效")
+        clauses: list[str] = []
+        parameters: list[str | int] = []
+        if after is not None:
+            clauses.append("thread_id > ?")
+            parameters.append(str(after))
+        if archived is not None:
+            clauses.append("COALESCE(json_type(snapshot_json, '$.archive') NOT IN ('null'), 0) = ?")
+            parameters.append(int(archived))
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        async with self._connection() as database:
+            await database.execute("BEGIN")
+            cursor = await database.execute(
+                "SELECT thread_id FROM agent_threads" + where + " ORDER BY thread_id LIMIT ?",
+                (*parameters, limit + 1),
+            )
+            rows = await cursor.fetchall()
+            try:
+                ids = tuple(UUID(row["thread_id"]) for row in rows)
+            except ValueError:
+                raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
+            selected: list[Thread] = []
+            for thread_id in ids[:limit]:
+                thread = await self._snapshot(database, thread_id)
+                if thread is None or (
+                    archived is not None and (thread.archive is not None) is not archived
+                ):
+                    raise KernelError("projection_corrupt", "Thread列表投影与索引不一致")
+                selected.append(thread)
+            return tuple(selected), len(ids) > limit
 
     async def _save(self, database: aiosqlite.Connection, thread: Thread) -> None:
         encoded = thread.model_dump_json()

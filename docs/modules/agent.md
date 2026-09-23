@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 13
+version: 14
 code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
 owners:
   - core
@@ -424,8 +424,8 @@ sequenceDiagram
     participant S as SQLiteSessionStore
     participant D as 专用副作用端口
     N->>S: 获取runtime_owner并initialize
-    N->>S: 枚举Thread并重放Events
-    S-->>N: 权威Thread投影
+    N->>S: 单事务批量扫描Event与Projection身份全集
+    S-->>N: 全量校验后仅返回活跃Thread投影
     alt ACCEPTED deferred
         N->>S: 保持可安全续跑
     else WAITING_APPROVAL或WAITING_INPUT
@@ -444,6 +444,13 @@ sequenceDiagram
         N->>S: append INTERRUPTED process_interrupted
     end
 ```
+
+[`AgentRuntime.__aenter__`](../../src/harnessix/agent/runtime.py)先取得Session Owner并初始化数据库，再调用
+[`SessionStore.recovery_threads`](../../src/harnessix/session/ports.py)。SQLite实现通过同一读事务核对全部Thread的
+Event最大序号/数量、投影SHA、版本、身份和Sequence；即使损坏Thread没有活跃Turn，启动仍失败关闭并释放
+Owner。只有校验通过且`active_turn_id`非空的Thread进入既有`_recover`分支，避免每个非活跃Thread都新建
+连接和重复读取。批量扫描只优化数据访问形态，**不改变**审批、未知效果、历史Process与取消的恢复决定。
+详细失败边界及500 Thread验证见[Thread读路径专项详设](../changes/m09-3d-thread-list-and-recovery-read-path.md)。
 
 | 崩溃时状态/边界 | 恢复行为 | 防重复依据 |
 |---|---|---|

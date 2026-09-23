@@ -233,22 +233,16 @@ class AgentApplicationService:
         return ThreadResult(thread=project_thread(await self.store.get_thread(params.thread_id)))
 
     async def list_threads(self, params: ThreadListParams) -> ThreadListResult:
-        ids = sorted(await self.store.thread_ids(), key=str)
+        after: UUID | None = None
         if params.cursor is not None:
             try:
                 after = UUID(params.cursor)
             except ValueError:
                 raise AgentServiceError("invalid_cursor", "Thread列表游标无效") from None
-            ids = [thread_id for thread_id in ids if str(thread_id) > str(after)]
-        threads = [await self.store.get_thread(thread_id) for thread_id in ids]
-        if params.archived is not None:
-            threads = [
-                thread for thread in threads if (thread.archive is not None) is params.archived
-            ]
-        selected = threads[: params.limit]
-        next_cursor = (
-            str(selected[-1].thread_id) if len(threads) > len(selected) and selected else None
+        selected, has_more = await self.store.list_thread_page(
+            after=after, archived=params.archived, limit=params.limit
         )
+        next_cursor = str(selected[-1].thread_id) if has_more else None
         return ThreadListResult(
             threads=tuple(project_thread(thread) for thread in selected),
             next_cursor=next_cursor,

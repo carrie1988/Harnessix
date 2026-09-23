@@ -17,6 +17,12 @@ class SessionStore(Protocol):
 
     async def thread_ids(self) -> list[UUID]: ...
 
+    async def recovery_threads(self) -> tuple[Thread, ...]: ...
+
+    async def list_thread_page(
+        self, *, after: UUID | None, archived: bool | None, limit: int
+    ) -> tuple[tuple[Thread, ...], bool]: ...
+
     async def append(
         self,
         thread_id: UUID,

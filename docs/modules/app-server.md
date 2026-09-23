@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 6
+version: 7
 code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
 owners:
   - core
@@ -38,7 +38,7 @@ supersedes: []
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
 | 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
 | 代码版本 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` |
-| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒和有界关闭已实现；Server侧Replay二次收紧、全局Delta内存上限、出站字节门禁、远程安全、可观测性和大规模索引尚未完成 |
+| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、出站字节门禁、远程安全、可观测性和Replay大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
 [`service.py`](../../src/harnessix/app_server/service.py)、
@@ -91,7 +91,7 @@ App Server存在的核心原因是建立一层薄而正式的应用边界，解�
 - 不在当前stdio进程中支持多个独立客户端；
 - 不提供TCP、HTTP、WebSocket、SSE、TLS、OAuth或公网认证；
 - 不保证Live Delta Exactly-once、持久或多订阅者广播；
-- 不保证Thread列表和Replay对大规模历史具有索引级性能；
+- Thread列表已改为Session索引分页，但不保证Replay对大规模历史具有索引级性能；
 - 不提供统一业务日志、Trace、Metric、Dashboard或诊断包；
 - 不把连接关闭自动等同于用户取消Turn。
 
@@ -1298,6 +1298,17 @@ App Server仍只负责协议连接、请求幂等、事件读取和生命周期�
 Review Artifact与只读Tool Artifact共用Scoped Reader，但用途、反向引用和摘要分别校验。客户端断开或重复`approval/respond`不会创建新Action；协议请求账本重放原结果，Router审批Checkpoint仍是执行授权。Windows启动相同协议服务，但工具目录不含Patch。
 
 默认纵向链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，App Server通用重放与关闭仍由[`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)覆盖。
+
+### 35.1 Thread列表的有界页读取（0.9.3d）
+
+[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)只解析Protocol的UUID游标，
+再向[`SessionStore.list_thread_page`](../../src/harnessix/session/ports.py)传入`after/archived/limit`。
+Store先按归档状态和游标过滤，再取`limit+1`个ID，并在同一SQLite只读事务中校验不超过`limit`个
+Thread快照；Service仅负责投影`ThreadView`和从返回页的末项形成`next_cursor`。旧实现每页重读所有剩余
+Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Thread读取；新的读取量按页上限
+约束。Archive表达式索引、完整性失败语义和部署迁移见[Session模块设计](session.md)及
+[专项详设](../changes/m09-3d-thread-list-and-recovery-read-path.md)。协议字段不变；跨请求插入/归档
+仍不提供全局快照语义，且未新增Workspace级多租户授权。
 
 ## 36. 变更记录
 
