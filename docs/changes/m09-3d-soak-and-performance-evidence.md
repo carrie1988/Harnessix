@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 18
-code_revision: 6c9a1577f467c99f0eb1b99d7c8270bc811ca583
+version: 19
+code_revision: d947a57aec68a5f9770a18d1996f58be0237e60d
 owners:
   - core
 modules:
@@ -79,6 +79,12 @@ supersedes: []
 对应[CI 35809702564](https://github.com/carrie1988/Harnessix/actions/runs/35809702564)六实例通过。P95为
 3153631375ns，RSS峰值451936256字节，DB端点从98304增至18366464字节。v1未开启Context/Compaction，
 不能把两次P95直接相减解释为回归。该单平台单次基线仍无独立Profile、第二次复验及其余场景，不宣称发布PASS。
+
+另在干净Revision `d947a57`重新运行500 Thread、1次预热和3次正式重启，[Run/Attempt原件](../validation/soak-macos-2026-09-23-v4/README.md)
+及45条样本通过磁盘Reader和独立标准库重算，启动P95为435170625ns、列表页P95为431874209ns。
+但对应[CI 35813364852](https://github.com/carrie1988/Harnessix/actions/runs/35813364852)的Windows
+Product UI Job有两项提交Prompt后等待Turn状态的测试超时，根因尚未确认。本Run继续按历史诊断原件保存，
+不得作为发行Profile基线或以重新解释`baseline`字段绕过跨平台门禁；修复后须在新干净Revision重跑。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -913,3 +919,4 @@ run_scenario(scenario, seed, environment):
 | 16 | `ed48e4e35133d60b172c268becd9e009eacb9442` | 2026-09-23 | 冻结macOS一次1000 Turn真实Runtime规模诊断的原始Run与Attempt复制件，独立重算1000时延样本、RSS和水位；对应Revision六实例CI通过，但Context/Compaction、独立Profile与三平台正式场景仍未完成，不宣称发布PASS。 |
 | 17 | `9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf` | 2026-09-23 | 按[长会话Context/Compaction证据详设](m09-3d-long-session-context-proof.md)新增v2 Manifest、逐Turn低敏事件Proof和真实摘要Provider缩小负载；v1原件保持可读，三平台1000 Turn正式运行和独立Profile仍未完成。 |
 | 18 | `6c9a1577f467c99f0eb1b99d7c8270bc811ca583` | 2026-09-23 | 冻结macOS一次v2千TurnContext/Compaction规模基线和六份原始文件，独立重算1000次检查、199次压缩、13255个事件标记；实现Revision六实例CI通过，仍不判发布PASS。 |
+| 19 | `d947a57aec68a5f9770a18d1996f58be0237e60d` | 2026-09-23 | 保存macOS 500 Thread重跑的45条原始样本、Run/Attempt及独立重算；对应Revision的Windows Product UI Job两项Turn状态等待超时，原件仅为历史诊断，不得冻结Profile。 |
