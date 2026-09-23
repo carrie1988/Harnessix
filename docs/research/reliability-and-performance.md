@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: current
-version: 5
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 6
+code_revision: 732278e1475dac6e391e81b152a3e73631ba3c5a
 owners:
   - core
 modules:
@@ -26,6 +26,9 @@ related_tests:
   - tests/agent/test_store_maintenance.py
   - tests/product_config/test_action_recovery.py
   - tests/product_config/test_server_and_cli.py
+  - tests/context/test_compaction_runtime.py
+  - tests/context/test_sources.py
+  - tests/benchmarks/test_soak_long_session.py
 supersedes: []
 ---
 
@@ -342,6 +345,27 @@ flowchart TD
   `resource`替代。
 
 这只是单位与采集源核查，不是0.9.3d正式RSS基线或三平台Soak证据。
+
+### 10.4 千Turn诊断后的Context与Compaction覆盖缺口
+
+[macOS千Turn规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)证明当前
+`core_runtime`可在同一Thread完成1000个Turn，并产生可重算的时延、RSS、DB水位和Attempt事实；它没有证明
+Context规划或压缩。源码证据如下：
+
+| 源码/测试入口 | 已核验事实 | 对Soak合同的影响 |
+|---|---|---|
+| [`run_long_session`](../../scripts/soak_long_session.py) | 构造`AgentRuntime(store, provider)`，没有注入`context`、`async_context`、`compaction`或`summary_provider` | 每轮会准备模型历史，但不生成`ContextPrepared`；不触发自动Compaction。不能把1000次模型请求计数当作Context覆盖数。 |
+| [`AgentRuntime.__init__`](../../src/harnessix/agent/runtime.py)与[`validate_runtime_switches`](../../src/harnessix/agent/runtime_configuration.py) | `compaction`与`summary_provider`必须成对配置；缺一个立即失败关闭 | 不能只打开阈值开关而继续复用未装配的Provider。 |
+| [`prepare_and_commit_model_history`](../../src/harnessix/agent/model_history_runtime.py) | 只有显式Compaction配置存在，历史超过触发字节阈值或Provider报告溢出后才调用`_run_compaction` | 需冻结触发窗口、目标预算和预期压缩次数；增大Context窗口以避免触发不构成压缩验收。 |
+| [`AgentRuntime._summary_text`](../../src/harnessix/agent/runtime.py) | 摘要Provider首事件必须是`ModelAttemptStarted`；完整响应还要求持久`ModelUsageObserved`、`ModelAttemptFinished`和与之相符的`ResponseCompleted.usage` | 现有[`SoakProvider.stream`](../../scripts/soak_provider.py)首事件为`ResponseStarted`且无用量事件，不能直接充当摘要Provider；必须提供不保留请求正文、但具备完整尝试/用量账本的确定性摘要夹具。 |
+| [`test_runtime_refreshes_and_persists_source_freshness_each_model_step`](../../tests/context/test_sources.py)与[`test_proactive_compaction_uses_accounted_toolless_request_and_active_window`](../../tests/context/test_compaction_runtime.py) | Context检查和Compaction激活均有持久事件/投影的可核对测试路径 | Soak应从真实Session读取每轮检查、压缩计划/尝试/窗口，并复核Event Replay，而非只检查运行时内存计数。 |
+| [`SoakManifest`](../../scripts/soak_manifest.py)、[`SCENARIO_METRICS`](../../scripts/soak_samples.py)和[`read_published_run`](../../scripts/soak_evidence.py) | v1长会话只声明`turn_local/rss_peak`；Manifest Provider只记录普通请求计数；Reader要求Manifest规范字节与落盘原文完全相同 | v1原件缺少Context/Compaction覆盖证明。直接增加默认字段会改变v1规范序列化并使历史Run读取失败；不能无版本地把旧诊断证据升格。 |
+
+因此下一轮设计必须先解决**版本化证据合同**，再运行新负载：保留v1历史Reader；为具有明确Context窗口、
+摘要Provider尝试/用量、检查次数、压缩次数和活动窗口身份核验的新场景建立可独立验证的合同。不得只增加一个
+`assert len(turn.compactions) > 0`后沿用v1 Manifest，因为临时Session删除后原始数值证据仍无法证明此断言。
+具体采用新的Scenario/Manifest版本，还是单独的受摘要绑定证明文件，需要在专项详设中评审；两种方案都须保留
+低敏字段白名单和旧Run可读，不从性能结果反推阈值。
 
 ## 11. 研究边界
 
