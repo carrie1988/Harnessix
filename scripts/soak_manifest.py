@@ -163,6 +163,15 @@ class SoakManifest(ContractModel):
             )
         ):
             raise ValueError("长会话样本或模型请求数不足")
+        if (
+            self.status == "baseline"
+            and self.scenario_id == "many_threads"
+            and (
+                self.sample_counts["app_service_startup"] < 3
+                or self.sample_counts["thread_list_page"] < 3
+            )
+        ):
+            raise ValueError("多Thread启动或列表样本数不足")
         if self.scenario_id == "sdk_capacity" and self.load.pending_limit is None:
             raise ValueError("SDK场景缺少协商Pending上限")
         if self.scenario_id == "action_recovery" and self.load.fault_matrix_version is None:
