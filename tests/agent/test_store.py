@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 from uuid import RFC_4122
 
+import aiosqlite
 import pytest
 
 from harnessix.agent.errors import KernelError
@@ -30,6 +31,69 @@ async def create(store: SQLiteSessionStore, workspace: Path):
     thread_id = new_id()
     draft = EventDraft(payload=ThreadCreated(workspace=str(workspace)))
     return await store.append(thread_id, [draft], expected_sequence=0), draft
+
+
+async def test_cancel_during_sqlite_connection_open_waits_for_close(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    entered, release = asyncio.Event(), asyncio.Event()
+    connections: list[aiosqlite.Connection] = []
+    original = aiosqlite.Connection.__aenter__
+
+    async def delayed_enter(connection: aiosqlite.Connection) -> aiosqlite.Connection:
+        result = await original(connection)
+        connections.append(connection)
+        entered.set()
+        await release.wait()
+        return result
+
+    monkeypatch.setattr(aiosqlite.Connection, "__aenter__", delayed_enter)
+    store = SQLiteSessionStore(tmp_path / "session.db")
+
+    async def open_connection() -> None:
+        async with store._connection():
+            pass
+
+    task = asyncio.create_task(open_connection())
+    await asyncio.wait_for(entered.wait(), 5)
+    task.cancel()
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, 5)
+    assert len(connections) == 1
+    assert connections[0]._connection is None
+    (tmp_path / "session.db").unlink()
+
+
+async def test_cancel_during_sqlite_connection_close_waits_for_close(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    closing, release = asyncio.Event(), asyncio.Event()
+    connections: list[aiosqlite.Connection] = []
+    original = aiosqlite.Connection.close
+
+    async def delayed_close(connection: aiosqlite.Connection) -> None:
+        connections.append(connection)
+        closing.set()
+        await release.wait()
+        await original(connection)
+
+    monkeypatch.setattr(aiosqlite.Connection, "close", delayed_close)
+    store = SQLiteSessionStore(tmp_path / "session.db")
+
+    async def open_connection() -> None:
+        async with store._connection():
+            pass
+
+    task = asyncio.create_task(open_connection())
+    await asyncio.wait_for(closing.wait(), 5)
+    task.cancel()
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, 5)
+    assert len(connections) == 1
+    assert connections[0]._connection is None
+    (tmp_path / "session.db").unlink()
 
 
 def test_uuid7_layout() -> None:

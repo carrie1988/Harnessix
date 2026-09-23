@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 326,
-    "physical_lines": 73049,
-    "logical_lines": 64931,
+    "physical_lines": 73086,
+    "logical_lines": 64961,
     "documented_modules": 326,
     "classes": 815,
     "documented_classes": 314,
-    "functions": 2897,
-    "documented_functions": 380,
+    "functions": 2899,
+    "documented_functions": 382,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1528,8 +1528,8 @@
       "path": "src/harnessix/session/sqlite.py",
       "qualname": "SQLiteSessionStore",
       "kind": "class",
-      "line": 53,
-      "lines": 418,
+      "line": 99,
+      "lines": 409,
       "documented": true
     },
     {

@@ -26,6 +26,52 @@ _APPLICATION_ID = 0x4858534B
 _WAL_TIMEOUT_SECONDS = 5.0
 
 
+async def _settle_connection_task(task: asyncio.Task[object]) -> bool:
+    """等待SQLite资源任务结算，并返回等待期间是否再次收到取消。"""
+
+    cancelled = False
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            cancelled = True
+            continue
+    task.result()
+    return cancelled
+
+
+@asynccontextmanager
+async def _session_connection(path: Path) -> AsyncIterator[aiosqlite.Connection]:
+    """连接建立和释放均完成后才退出，以便Windows可以立即清理状态目录。"""
+
+    with storage_errors():
+        database = aiosqlite.connect(path)
+        opening = asyncio.create_task(database.__aenter__())
+        try:
+            await asyncio.shield(opening)
+        except asyncio.CancelledError:
+            # 连接线程可能已创建文件句柄；不能让取消跳过连接完成和关闭。
+            try:
+                await _settle_connection_task(opening)
+            finally:
+                await _settle_connection_task(asyncio.create_task(database.close()))
+            raise
+        try:
+            database.row_factory = aiosqlite.Row
+            await database.execute("PRAGMA foreign_keys = ON")
+            await database.execute("PRAGMA busy_timeout = 5000")
+            await database.execute("PRAGMA synchronous = FULL")
+            try:
+                yield database
+            except BaseException:
+                if await _settle_connection_task(asyncio.create_task(database.rollback())):
+                    raise asyncio.CancelledError from None
+                raise
+        finally:
+            if await _settle_connection_task(asyncio.create_task(database.close())):
+                raise asyncio.CancelledError
+
+
 def _open_runtime_owner_lock(path: Path) -> int:
     with storage_errors():
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -60,17 +106,8 @@ class SQLiteSessionStore:
 
     @asynccontextmanager
     async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
-        with storage_errors():
-            async with aiosqlite.connect(self.path) as database:
-                database.row_factory = aiosqlite.Row
-                await database.execute("PRAGMA foreign_keys = ON")
-                await database.execute("PRAGMA busy_timeout = 5000")
-                await database.execute("PRAGMA synchronous = FULL")
-                try:
-                    yield database
-                except BaseException:
-                    await database.rollback()
-                    raise
+        async with _session_connection(self.path) as database:
+            yield database
 
     async def initialize(self) -> None:
         with storage_errors():
