@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
+version: 5
 code_revision: c4c364c059a7b6ea61410fe03ba41ef140fcdd41
 owners:
   - core
@@ -16,6 +16,7 @@ related_adrs:
 related_tests:
   - tests/app_server/test_server_sdk.py
   - tests/benchmarks/test_soak_sdk_capacity.py
+  - tests/benchmarks/test_run_sdk_soak_release.py
   - tests/benchmarks/test_soak_threshold.py
 supersedes: []
 ---
@@ -147,3 +148,7 @@ commit Attempt FINAL only after valid Run exists
 ### 6.1 单平台正式负载与交叉平台合同验收
 
 干净Revision `c4c364c059a7b6ea61410fe03ba41ef140fcdd41`的[macOS SDK容量规模基线](../validation/soak-macos-sdk-2026-09-23-v1/README.md)保存四轮真实64容量阶段证明、20条正式往返样本、父子峰值RSS、规范Run/Attempt及独立数值复核。[CI 35833762475](https://github.com/carrie1988/Harnessix/actions/runs/35833762475)六实例全部成功，覆盖Linux Python 3.12/3.13、Windows原生Benchmark、macOS、固定Container和文档。此前Linux子进程关闭后`soak_rss_unit_unknown`与Windows失败标记换行不一致均已由源码和回归测试关闭。该证据仍仅是macOS单次基线；三平台正式负载、工程阈值Profile和第二独立Run未完成，不能发布PASS。
+
+### 6.2 三平台正式证据采集入口
+
+[固定负载入口与手动工作流详设](m09-3d-sdk-cross-platform-evidence.md)规定统一的64容量、1轮预热、3轮正式轮次和20次正常往返。各平台Job先运行现有Runner，再独立重读Run/Attempt并上传低敏原件；失败Attempt仍保留。该通道不替代冻结阈值或第二独立Run，工作流创建与CI缩小负载通过均不表示Linux/Windows正式规模已验收。
