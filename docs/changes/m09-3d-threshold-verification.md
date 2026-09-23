@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: e81ebada78f67f4c447e4ae0089ec143ccd6cf34
+version: 7
+code_revision: 420dc87af6351a17b23f3b34e02091688d4268c6
 owners:
   - core
 modules:
@@ -29,7 +29,7 @@ supersedes: []
 
 本切片只提供离线、单平台阈值复验内核，不自动选择工程余量，不为历史诊断运行补写Profile，也不把单次`PASS`解释
 为三平台发布门禁。0.9.3d的Action恢复Runner、其他场景Linux/Windows正式负载和总体发布评审仍未完成。当前
-`long_session`仅接受含真实Context/Compaction证明的v2 Run；`many_threads`接受现行v1；`artifact_growth`接受v3完整
+`long_session`仅接受含真实Context/Compaction证明的v2 Run；`many_threads`仅接受[逐轮分页证明v6](m09-3d-many-threads-proof-v6.md)，历史v1只读但不可冻结；`artifact_growth`接受v3完整
 Proof，`sdk_capacity`接受[v4完整Proof](m09-3d-sdk-capacity-soak.md)；`restart`在[三平台正式基线](../validation/soak-restart-three-platform-2026-09-23-v1/README.md)取得后才接受v5完整Proof和场景专属无Turn Provider版本，并已冻结三份Profile。Action恢复仍拒绝冻结；重启的[第二独立候选及三平台PASS报告](../validation/soak-restart-three-platform-candidate-2026-09-23-v1/README.md)已按先冻结后测量顺序取得，不能仅凭手工Manifest给出`PASS`。
 
 设计目标是：冻结前验证基线及阈值来源；复验时严格检查独立Run、环境和全部样本；以低敏不可覆盖文件保留

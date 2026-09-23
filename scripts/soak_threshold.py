@@ -246,6 +246,10 @@ def _verify_profile_baseline(
             and baseline.spec_version != "harnessix.soak-manifest/v2"
         )
         or (
+            profile.scenario_id == "many_threads"
+            and baseline.spec_version != "harnessix.soak-manifest/v6"
+        )
+        or (
             profile.scenario_id == "artifact_growth"
             and baseline.spec_version != "harnessix.soak-manifest/v3"
         )

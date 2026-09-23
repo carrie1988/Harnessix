@@ -14,10 +14,20 @@ from scripts.soak_manifest import (
     SoakFileWatermarks,
     SoakLoad,
     SoakProfileReference,
+    verify_thread_manifest,
 )
 from scripts.soak_provider import SoakProvider
 from scripts.soak_rss import read_peak_rss
 from scripts.soak_run_common import latency_sample, publish_measured_run, rss_sample
+from scripts.soak_sample_file import read_sample_file
+from scripts.soak_thread_proof import (
+    THREAD_PROOF_FILENAME,
+    SoakThreadCycle,
+    SoakThreadPage,
+    SoakThreadProof,
+    thread_set_digest,
+    thread_tag,
+)
 from scripts.soak_threshold import (
     SoakGrowthLimit,
     SoakMetricLimit,
@@ -31,23 +41,50 @@ from scripts.soak_threshold import (
 REVISION = "a" * 40
 
 
-def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None):
+def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None, legacy=False):
     run_id = uuid4().hex
     rss = read_peak_rss()
-    samples = tuple(
-        latency_sample(run_id, "many_threads", index, "measure", metric, latency)
-        for index, metric in enumerate(
-            (
-                "app_service_startup",
-                "thread_list_page",
-                "app_service_startup",
-                "thread_list_page",
-                "app_service_startup",
-                "thread_list_page",
-            ),
-            start=1,
+    tags = tuple(thread_tag(run_id, f"fixture-thread-{index}") for index in range(500))
+    samples_list = []
+    cycles = []
+    for ordinal in range(1, 5):
+        phase = "warmup" if ordinal == 1 else "measure"
+        startup_index = len(samples_list) + 1
+        samples_list.append(
+            latency_sample(
+                run_id, "many_threads", startup_index, phase, "app_service_startup", latency
+            )
         )
-    ) + (rss_sample(run_id, "many_threads", 7, rss),)
+        pages = []
+        for page_index, offset in enumerate(range(0, 500, 50)):
+            index = len(samples_list) + 1
+            samples_list.append(
+                latency_sample(run_id, "many_threads", index, phase, "thread_list_page", latency)
+            )
+            pages.append(
+                SoakThreadPage(
+                    sample_index=index,
+                    thread_tags=tags[offset : offset + 50],
+                    has_next=page_index < 9,
+                )
+            )
+        cycles.append(
+            SoakThreadCycle(
+                ordinal=ordinal,
+                phase=phase,
+                startup_sample_index=startup_index,
+                pages=tuple(pages),
+            )
+        )
+    samples = tuple(samples_list) + (rss_sample(run_id, "many_threads", 45, rss),)
+    proof = SoakThreadProof(
+        spec_version="harnessix.soak-thread-proof/v1",
+        run_id=run_id,
+        thread_count=500,
+        list_limit=50,
+        thread_set_sha256=thread_set_digest(set(tags)),
+        cycles=tuple(cycles),
+    )
     try:
         with attempt_scope(
             root,
@@ -64,7 +101,7 @@ def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None)
                 seed=17,
                 environment=read_environment(),
                 started_at=datetime.now(UTC),
-                load=SoakLoad(turn_count=0, thread_count=500, artifact_count=0, warmup_count=0),
+                load=SoakLoad(turn_count=0, thread_count=500, artifact_count=0, warmup_count=11),
                 samples=samples,
                 provider=SoakProvider(),
                 rss=rss,
@@ -78,6 +115,7 @@ def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None)
                 ),
                 baseline=profile_ref is None,
                 threshold_profile_ref=profile_ref,
+                thread_proof=None if legacy else proof,
             )
             if complete_attempt:
                 attempt.commit(directory)
@@ -88,6 +126,34 @@ def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None)
         if complete_attempt:
             raise
     return directory, manifest
+
+
+def test_historical_v1_remains_readable_but_cannot_freeze_profile(tmp_path) -> None:
+    from scripts.soak_evidence import read_published_run
+
+    baseline_dir, baseline = _run(tmp_path / "legacy", latency=100, legacy=True)
+    restored, digest = read_published_run(baseline_dir)
+    assert restored == baseline
+    assert baseline.spec_version == "harnessix.soak-manifest/v1"
+    with pytest.raises(KernelError) as error:
+        publish_profile(tmp_path / "profiles", _profile(baseline, digest), baseline_dir)
+    assert error.value.code == "soak_profile_baseline_invalid"
+
+
+def test_formal_baseline_rejects_changed_page_limit(tmp_path) -> None:
+    baseline_dir, manifest = _run(tmp_path / "baseline", latency=100)
+    proof = SoakThreadProof.model_validate_json(
+        (baseline_dir / THREAD_PROOF_FILENAME).read_bytes()
+    ).model_copy(update={"list_limit": 51})
+    samples, _, _ = read_sample_file(
+        baseline_dir,
+        expected_sha256=manifest.evidence_sha256["samples.jsonl"],
+        run_id=manifest.run_id,
+        scenario_id="many_threads",
+        expected_measured=manifest.sample_counts,
+    )
+    with pytest.raises(ValueError, match="每页50条"):
+        verify_thread_manifest(manifest, proof, samples)
 
 
 def _profile(manifest, digest, *, margin: int = 1000):

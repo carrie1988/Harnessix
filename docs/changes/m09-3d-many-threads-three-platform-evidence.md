@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: 402ce086b6ab699740829efc8c7b940c372b970e
+version: 5
+code_revision: 420dc87af6351a17b23f3b34e02091688d4268c6
 owners:
   - core
 modules:
@@ -27,7 +27,7 @@ supersedes: []
 
 现有[`run_many_threads`](../../scripts/soak_many_threads.py)使用真实Agent Runtime、Session SQLite和`AgentApplicationService.list_threads`，已经能创建持久Thread、重启、遍历全部游标并发布Run/Attempt。历史[macOS 500 Thread诊断](../validation/soak-macos-2026-09-23-v4/README.md)的Windows Product UI首次超时未定位，不能充当可冻结三平台基线；此前固定三平台的[完整产品重启场景](../validation/soak-restart-three-platform-2026-09-23-v1/README.md)测量的是**`product_startup`**，不能拿其数值替代`app_service_startup`或`thread_list_page`。
 
-本切片只补**不可降配的发布工程入口与三平台独立采集通道**。每个平台在干净源码Revision上运行500 Thread、一次预热和三次正式Runtime/App Service重启；每次全页核对身份集合，最终重读Run与Attempt，失败也保存已持久化的Attempt。[三平台各一次正式负载原件](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)已取得；但尚未冻结Profile或执行第二独立候选，历史v1证据缺逐轮匿名集合Proof；旧发布入口的异常排空无独立全局期限，新入口已增加20分钟进程级硬停止线但尚需三平台新Run，不能标记0.9.3d完成。产品协议、Session Schema、Action边界和用户CLI均不改动，不增加HTTP/Worker独立服务，也不调用真实模型。
+本切片只补**不可降配的发布工程入口与三平台独立采集通道**。每个平台在干净源码Revision上运行500 Thread、一次预热和三次正式Runtime/App Service重启；每次全页核对身份集合，最终重读Run与Attempt，失败也保存已持久化的Attempt。[三平台各一次正式负载原件](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)已取得；但尚未冻结Profile或执行第二独立候选，历史v1证据缺逐轮匿名集合Proof；现行[证明v6设计与实现](m09-3d-many-threads-proof-v6.md)已增加离线Reader及阈值门禁，发布入口也已增加20分钟进程级硬停止线，两者均尚需三平台新Run，不能标记0.9.3d完成。产品协议、Session Schema、Action边界和用户CLI均不改动，不增加HTTP/Worker独立服务，也不调用真实模型。
 
 ## 2. 源码研究与架构决策
 
@@ -35,7 +35,7 @@ supersedes: []
 |---|---|---|
 | [`run_many_threads`](../../scripts/soak_many_threads.py) | 正式负载在写Attempt前执行`check_release_revision`；Thread身份来自实际`create_thread`与持久Store；启动和分页分别计时。 | 发布入口只固定入参，不复制Runtime或分页逻辑。 |
 | [`_restart_and_list`、`_list_all`](../../scripts/soak_many_threads.py) | 每轮重新进入真实`AgentRuntime`并构造`AgentApplicationService`；游标去重、页数上界、完整集合核对；预热样本不计入正式分位数。 | 固定每页50、三次正式轮，正式样本应为3次启动、30页和1个RSS。 |
-| [`SoakManifest`](../../scripts/soak_manifest.py)、[`publish_measured_run`](../../scripts/soak_run_common.py) | `many_threads/app_service`正式基线至少500 Thread及3次启动；样本、Manifest和提交标记有独立Reader；`status=baseline`不是PASS。 | 不另建Manifest版本；沿用v1场景合同和既有规范字节。 |
+| [`SoakManifest`](../../scripts/soak_manifest.py)、[`publish_measured_run`](../../scripts/soak_run_common.py) | `many_threads/app_service`正式基线至少500 Thread及3次启动；样本、Manifest和提交标记有独立Reader；`status=baseline`不是PASS。 | 历史Run保留v1原始字节；现行Runner发布含匿名分页Proof的v6，详见[专项设计](m09-3d-many-threads-proof-v6.md)。 |
 | [`attempt_scope`](../../scripts/soak_attempt.py) | `STARTED`在负载前持久化，正常提交后`FINAL`绑定Manifest摘要；失败记录阶段。 | 入口重读两层提交事实；工作流失败仍上传已存在的Attempt。 |
 | [`run_restart_soak_release`](../../scripts/run_restart_soak_release.py)、[三平台工作流](../../.github/workflows/restart-soak.yml) | 固定入口、只读权限、三平台`fail-fast: false`、低敏日志和14日上传均有先例。 | 保持同一发布运维模式，但不复用其产品重启指标。 |
 
@@ -114,7 +114,7 @@ sequenceDiagram
 | 冻结Profile、负载前绑定第二独立Run、三份报告 | [`soak_threshold.py`](../../scripts/soak_threshold.py) | **未执行**；单次基线不能判PASS。 |
 | 无界排空风险与硬停止线 | 本文第5、8节 | 发布父进程20分钟硬期限及本地失败回归已实现；新Revision三平台Job尚未执行，生产Agent底层I/O取消不在此承诺范围。 |
 
-正式工作流的三平台Artifact已下载，以Run/Attempt Reader和标准库重算15份文件摘要、样本数及最近秩分位数，并保存[Manifest和Review Packet](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)。对应Revision[CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)六Job已成功；补齐场景Proof并在三平台验收进程硬停止线后，以新Revision建立可冻结基线，再冻结各平台Profile并执行第二次独立候选。任一平台失败保留原始Attempt、定位根因并在新提交重跑；不把失败平台以其他平台或缩小负载代替。
+正式工作流的三平台Artifact已下载，以Run/Attempt Reader和标准库重算15份文件摘要、样本数及最近秩分位数，并保存[Manifest和Review Packet](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)。对应Revision[CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)六Job已成功；使用现行v6 Proof并在三平台验收进程硬停止线后，以新Revision建立可冻结基线，再冻结各平台Profile并执行第二次独立候选。任一平台失败保留原始Attempt、定位根因并在新提交重跑；不把失败平台以其他平台或缩小负载代替。
 
 ## 7. 部署、兼容与回退
 
@@ -158,4 +158,4 @@ sequenceDiagram
 
 内部Worker开关只供父进程启动，不作为用户CLI或产品协议；正式工作流不得调用内部模式绕过硬期限。父进程把子进程输出当作不可信字节：成功时要求唯一JSON对象、精确六字段、固定场景与`baseline`状态、合法平台和十六进制Revision/Run/Manifest摘要；不直接回显任意stdout。失败时只接受`KernelError.code`格式，否则统一`soak_worker_failed`。`TimeoutExpired`归类`soak_worker_timeout`，没有`COMMITTED + FINAL`的Attempt不能补写为成功。即使进程级超时可保证发布脚本返回，本次运行也只能降级为诊断；它不是生产Agent对任意I/O强制取消的证明。
 
-[`test_run_many_threads_soak_release.py`](../../tests/benchmarks/test_run_many_threads_soak_release.py)已覆盖固定父子命令、成功摘要白名单、恶意/过长stdout拒绝、业务错误码脱敏、模拟硬超时，以及真实卡住的测试子进程在期限后被杀且开始事实仍可读取；Worker原有Run/Attempt Reader路径继续回归。本地真实父子调用还验证了污染工作树在Attempt前以稳定Code拒绝。手动三平台工作流须在修复后新干净Revision重跑，旧Run继续保留，不能在旧Manifest上补贴新取消能力。新基线取得后，仍需独立的逐轮Thread集合Proof和第二Run才能冻结阈值。
+[`test_run_many_threads_soak_release.py`](../../tests/benchmarks/test_run_many_threads_soak_release.py)已覆盖固定父子命令、成功摘要白名单、恶意/过长stdout拒绝、业务错误码脱敏、模拟硬超时，以及真实卡住的测试子进程在期限后被杀且开始事实仍可读取；Worker原有Run/Attempt Reader路径继续回归。本地真实父子调用还验证了污染工作树在Attempt前以稳定Code拒绝。手动三平台工作流须在修复后新干净Revision重跑，旧Run继续保留，不能在旧Manifest上补贴新取消能力。逐轮Thread集合Proof现已实现；新Revision三平台基线、冻结Profile及第二独立Run仍待执行。

@@ -19,6 +19,7 @@ from scripts.soak_restart_proof import (
 from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file
 from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles, SoakSample
 from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof, verify_sdk_proof
+from scripts.soak_thread_proof import THREAD_PROOF_FILENAME, SoakThreadProof, verify_thread_proof
 
 MeasurementBoundary = Literal[
     "core_runtime",
@@ -177,6 +178,8 @@ class SoakManifest(ContractModel):
             evidence_files.add(SDK_PROOF_FILENAME)
         if self.spec_version == "harnessix.soak-manifest/v5":
             evidence_files.add(RESTART_PROOF_FILENAME)
+        if self.spec_version == "harnessix.soak-manifest/v6":
+            evidence_files.add(THREAD_PROOF_FILENAME)
         if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
@@ -344,6 +347,51 @@ class SoakManifestV5(SoakManifest):
         ):
             raise ValueError("正式重启基线需要500 Thread和至少3次新进程启动")
         return self
+
+
+class SoakManifestV6(SoakManifest):
+    """多Thread逐轮集合证明版；历史v1证据维持可读但不可冻结。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v6"]
+    scenario_version: Literal["harnessix.soak-scenario/v6"]
+    scenario_id: Literal["many_threads"]
+    thread_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.thread_proof_sha256 != self.evidence_sha256[THREAD_PROOF_FILENAME]:
+            raise ValueError("多Thread证明摘要与证据索引不一致")
+        if (
+            self.load.turn_count != 0
+            or self.load.artifact_count != 0
+            or self.load.thread_count == 0
+            or self.load.pending_limit is not None
+            or self.provider.request_count != 0
+            or self.sample_counts["rss_peak"] != 1
+            or any(self.fault_counts.model_dump().values())
+        ):
+            raise ValueError("多Thread场景负载或故障计数无效")
+        return self
+
+
+def verify_thread_manifest(
+    manifest: SoakManifestV6, proof: SoakThreadProof, samples: tuple[SoakSample, ...]
+) -> None:
+    """核对逐页Proof、正式样本数和Manifest负载规模。"""
+
+    if (
+        manifest.status == "baseline" or manifest.threshold_profile_ref is not None
+    ) and proof.list_limit != 50:
+        raise ValueError("正式多Thread证据必须使用每页50条")
+    verify_thread_proof(
+        proof,
+        run_id=manifest.run_id,
+        thread_count=manifest.load.thread_count,
+        warmup_count=manifest.load.warmup_count,
+        measured_restarts=manifest.sample_counts["app_service_startup"],
+        measured_pages=manifest.sample_counts["thread_list_page"],
+        samples=samples,
+    )
 
 
 def verify_restart_manifest(

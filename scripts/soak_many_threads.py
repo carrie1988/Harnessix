@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import perf_counter_ns
+from typing import Literal
 from uuid import uuid4
 
 from harnessix.agent.errors import KernelError
@@ -29,6 +30,13 @@ from scripts.soak_run_common import (
     rss_sample,
 )
 from scripts.soak_samples import SoakSample
+from scripts.soak_thread_proof import (
+    SoakThreadCycle,
+    SoakThreadPage,
+    SoakThreadProof,
+    thread_set_digest,
+    thread_tag,
+)
 
 
 async def _list_all(
@@ -37,13 +45,14 @@ async def _list_all(
     run_id: str,
     expected_ids: frozenset[str],
     limit: int,
-    phase: str,
+    phase: Literal["warmup", "measure"],
     timeout_seconds: float,
     samples: list[SoakSample],
-) -> None:
+) -> tuple[SoakThreadPage, ...]:
     """验证完整游标覆盖后才接受一次列表遍历。"""
 
     seen: set[str] = set()
+    proof_pages: list[SoakThreadPage] = []
     cursor: str | None = None
     max_pages = (len(expected_ids) + limit - 1) // limit + 1
     for _ in range(max_pages):
@@ -72,11 +81,18 @@ async def _list_all(
                 elapsed,
             )
         )
+        proof_pages.append(
+            SoakThreadPage(
+                sample_index=len(samples),
+                thread_tags=tuple(thread_tag(run_id, value) for value in ids),
+                has_next=page.next_cursor is not None,
+            )
+        )
         cursor = page.next_cursor
         if cursor is None:
             if seen != expected_ids:
                 raise KernelError("soak_list_invalid", "多Thread列表分页未覆盖全部Thread")
-            return
+            return tuple(proof_pages)
     raise KernelError("soak_list_invalid", "多Thread列表分页未收敛")
 
 
@@ -88,11 +104,12 @@ async def _restart_and_list(
     run_id: str,
     expected_ids: frozenset[str],
     limit: int,
-    phase: str,
+    phase: Literal["warmup", "measure"],
     startup_timeout_seconds: float,
     page_timeout_seconds: float,
     samples: list[SoakSample],
-) -> None:
+    ordinal: int,
+) -> SoakThreadCycle:
     """逐次新建Runtime/Service，启动与分页均使用同一持久Session。"""
 
     runtime = AgentRuntime(store, provider)
@@ -124,7 +141,7 @@ async def _restart_and_list(
             )
         )
         try:
-            await _list_all(
+            pages = await _list_all(
                 service,
                 run_id=run_id,
                 expected_ids=expected_ids,
@@ -132,6 +149,12 @@ async def _restart_and_list(
                 phase=phase,
                 timeout_seconds=page_timeout_seconds,
                 samples=samples,
+            )
+            return SoakThreadCycle(
+                ordinal=ordinal,
+                phase=phase,
+                startup_sample_index=len(samples) - len(pages),
+                pages=pages,
             )
         finally:
             await service.close()
@@ -186,6 +209,7 @@ async def run_many_threads(
         started_at = datetime.now(UTC)
         provider = SoakProvider()
         samples: list[SoakSample] = []
+        cycles: list[SoakThreadCycle] = []
         attempt.phase = "warming"
         with TemporaryDirectory(prefix="harnessix-soak-") as temporary:
             workspace = Path(temporary)
@@ -203,7 +227,7 @@ async def run_many_threads(
 
             for index in range(restart_count + 1):
                 attempt.phase = "warming" if index == 0 else "measuring"
-                await _restart_and_list(
+                cycle = await _restart_and_list(
                     store,
                     provider,
                     workspace,
@@ -214,7 +238,9 @@ async def run_many_threads(
                     startup_timeout_seconds=startup_timeout_seconds,
                     page_timeout_seconds=page_timeout_seconds,
                     samples=samples,
+                    ordinal=index + 1,
                 )
+                cycles.append(cycle)
                 if index == 0:
                     warmup_count = len(samples)
 
@@ -228,6 +254,16 @@ async def run_many_threads(
             samples.append(rss_sample(run_id, "many_threads", len(samples) + 1, rss))
 
         attempt.phase = "publishing"
+        proof = SoakThreadProof(
+            spec_version="harnessix.soak-thread-proof/v1",
+            run_id=run_id,
+            thread_count=thread_count,
+            list_limit=list_limit,
+            thread_set_sha256=thread_set_digest(
+                {thread_tag(run_id, identity) for identity in expected_ids}
+            ),
+            cycles=tuple(cycles),
+        )
         run_directory, manifest = publish_measured_run(
             evidence_root,
             run_id=run_id,
@@ -255,6 +291,7 @@ async def run_many_threads(
             ),
             baseline=thread_count >= 500 and threshold_profile_ref is None,
             threshold_profile_ref=threshold_profile_ref,
+            thread_proof=proof,
         )
         attempt.commit(run_directory)
         return run_directory, manifest

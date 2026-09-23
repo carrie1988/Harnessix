@@ -22,6 +22,7 @@ from scripts.soak_manifest import (
     SoakManifestV3,
     SoakManifestV4,
     SoakManifestV5,
+    SoakManifestV6,
     SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
@@ -32,6 +33,7 @@ from scripts.soak_rss import RssObservation
 from scripts.soak_sample_file import SAMPLE_FILENAME, sample_sha256
 from scripts.soak_samples import ScenarioId, SoakSample, validate_sample_series
 from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof
+from scripts.soak_thread_proof import THREAD_PROOF_FILENAME, SoakThreadProof
 
 
 def file_bytes(path: Path) -> int:
@@ -125,6 +127,7 @@ def publish_measured_run(
     samples: tuple[SoakSample, ...],
     provider: SoakProvider | None,
     restart_proof: SoakRestartProof | None = None,
+    thread_proof: SoakThreadProof | None = None,
     rss: RssObservation,
     file_watermarks: SoakFileWatermarks,
     baseline: bool,
@@ -134,14 +137,22 @@ def publish_measured_run(
     sdk_proof: SoakSdkProof | None = None,
     fault_counts: SoakFaultCounts | None = None,
     summary_request_count: int | None = None,
-) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4 | SoakManifestV5]:
+) -> tuple[
+    Path,
+    SoakManifest
+    | SoakManifestV2
+    | SoakManifestV3
+    | SoakManifestV4
+    | SoakManifestV5
+    | SoakManifestV6,
+]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
     sample_counts: dict[str, int] = {}
     for sample in samples:
         if sample.phase == "measure":
             sample_counts[sample.metric] = sample_counts.get(sample.metric, 0) + 1
-    proofs = (context_proof, artifact_proof, sdk_proof, restart_proof)
+    proofs = (context_proof, artifact_proof, sdk_proof, restart_proof, thread_proof)
     if sum(proof is not None for proof in proofs) > 1:
         raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
     if restart_proof is not None and (
@@ -158,6 +169,10 @@ def publish_measured_run(
         scenario_id != "sdk_capacity" or summary_request_count is not None
     ):
         raise KernelError("soak_sdk_proof_invalid", "SDK证明与场景不匹配")
+    if thread_proof is not None and (
+        scenario_id != "many_threads" or summary_request_count is not None
+    ):
+        raise KernelError("soak_thread_proof_invalid", "多Thread证明与场景不匹配")
     manifest_data: dict[str, object] = dict(
         spec_version="harnessix.soak-manifest/v1",
         run_id=run_id,
@@ -216,9 +231,35 @@ def publish_measured_run(
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
         threshold_profile_ref=threshold_profile_ref,
     )
-    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4 | SoakManifestV5
-    if artifact_proof is None and sdk_proof is None and restart_proof is None:
+    manifest: (
+        SoakManifest
+        | SoakManifestV2
+        | SoakManifestV3
+        | SoakManifestV4
+        | SoakManifestV5
+        | SoakManifestV6
+    )
+    if (
+        artifact_proof is None
+        and sdk_proof is None
+        and restart_proof is None
+        and thread_proof is None
+    ):
         manifest = SoakManifest.model_validate(manifest_data)
+    elif thread_proof is not None:
+        proof_digest = sha256((thread_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV6.model_validate(
+            {
+                **manifest_data,
+                "spec_version": "harnessix.soak-manifest/v6",
+                "scenario_version": "harnessix.soak-scenario/v6",
+                "thread_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: sample_sha256(samples),
+                    THREAD_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
     elif artifact_proof is not None:
         proof_digest = sha256((artifact_proof.model_dump_json() + "\n").encode()).hexdigest()
         manifest = SoakManifestV3.model_validate(
@@ -290,6 +331,7 @@ def publish_measured_run(
         artifact_proof=artifact_proof,
         sdk_proof=sdk_proof,
         restart_proof=restart_proof,
+        thread_proof=thread_proof,
     )
     restored, _ = read_published_run(run_directory)
     if restored != manifest:
