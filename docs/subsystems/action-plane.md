@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: deprecated
-version: 9
+version: 10
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -97,7 +97,12 @@ Lease和Reconcile。上层框架只提交稳定请求并消费状态，不直接
 | Effect Receipt | Provider、资源身份、幂等键、响应摘要和时间 | 证明已知效果，不保存Secret |
 | Principal | tenant、subject、framework和roles | 当前来自调用方，不代表API已经认证 |
 
-## 5. 系统上下文与部署边界
+## 5. 历史系统上下文与部署边界（已删除）
+
+> **历史拓扑，不可部署。** 下图只说明删除前的独立Action服务。图中的`Action API`、
+> `ActionService`、`EffectJournal`和`ActionWorker`均不在当前产品运行链中；不得据此配置监听端口、
+> 启动Worker或开发新的Action级客户端。现行系统上下文见[Harnessix Code总体架构](../architecture.md#3-系统上下文)，
+> 代码替代链见[Trusted Actions模块设计](../modules/trusted-actions.md)。
 
 ```mermaid
 flowchart LR

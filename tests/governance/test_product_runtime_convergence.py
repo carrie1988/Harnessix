@@ -205,6 +205,9 @@ def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
     assert "当前版本不接受该合同" in contract
     assert "status: deprecated" in subsystem
     assert "当前源码没有可调用的旧运行时" in subsystem
+    assert "## 5. 历史系统上下文与部署边界（已删除）" in subsystem
+    assert "历史拓扑，不可部署" in subsystem
+    assert "../architecture.md#3-系统上下文" in subsystem
     assert "当前实现见[Storage模块]" not in old_milestone
     assert "当前执行治理见[Trusted Actions模块]" in old_milestone
     assert "模型提交argv并经过持久审批与Worker" not in current_tool_contract
