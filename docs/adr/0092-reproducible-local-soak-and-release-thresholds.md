@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 14
-code_revision: 5ab32753aace369387875a75b50802beb3327d98
+version: 15
+code_revision: d376104f751af2b7b6e9835bb59fba66c0ce9d96
 owners:
   - core
 modules:
@@ -28,6 +28,7 @@ related_tests:
   - tests/benchmarks/test_soak_many_threads.py
   - tests/benchmarks/test_soak_attempt.py
   - tests/benchmarks/test_soak_context_proof.py
+  - tests/benchmarks/test_soak_threshold.py
 supersedes: []
 ---
 
@@ -38,6 +39,8 @@ supersedes: []
 提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；两个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)，旧v1证据保持不变；[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)及对应Revision六实例CI通过，但Linux/Windows正式运行和独立阈值复验仍缺失。另一次[macOS 500 Thread正式负载](../validation/soak-macos-2026-09-23-v4/README.md)通过Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项提交后状态等待超时，第二次重跑通过，但根因未明，故仍仅保存为历史诊断，不用于冻结Profile。其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
+
+单平台[阈值独立复验内核](../changes/m09-3d-threshold-verification.md)已实现：冻结Profile必须绑定完整基线Run/Attempt与精确工程余量，候选必须是另一份完整Run/Attempt；原始样本、环境、负载、分位数和文件增长由Reader重新核对，报告以`PASS/FAIL/unverified`和最后提交标记不可覆盖发布。当前只对`long_session` v2及`many_threads` v1开放冻结；尚无经工程评审的正式Profile或三平台独立复验。此事实不改变本文`reviewing`状态，也不把历史诊断升级为发布PASS。
 
 0.9.3a～c已经分别加固本地传输、共库保留、Action效果恢复，但局部故障测试不能证明大量Thread、长历史、
 Artifact增长和反复重启时仍有可接受的启动时延、内存和恢复结果。[可靠性专项源码研究](../research/reliability-and-performance.md#10-093d长会话与性能证据专项源码核查)

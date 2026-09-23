@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 21
-code_revision: 5ab32753aace369387875a75b50802beb3327d98
+version: 22
+code_revision: d376104f751af2b7b6e9835bb59fba66c0ce9d96
 owners:
   - core
 modules:
@@ -37,6 +37,7 @@ related_tests:
   - tests/benchmarks/test_soak_attempt.py
   - tests/benchmarks/test_soak_long_session.py
   - tests/benchmarks/test_soak_many_threads.py
+  - tests/benchmarks/test_soak_threshold.py
 supersedes: []
 ---
 
@@ -46,7 +47,7 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集。`long_session`与`many_threads`真实产品模块场景Runner已实现，均持久记录Attempt开始/失败/提交；缩小负载只发布`unverified`。其他四个场景、Threshold Profile、三平台正式负载和发布阈值证据仍未完成。 |
+| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`和`many_threads`真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，尚无工程评审后冻结的正式Profile。其他四场景、三平台正式负载和发布阈值证据仍未完成。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
 | 代码版本 | `ed48e4e35133d60b172c268becd9e009eacb9442` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
@@ -68,7 +69,7 @@ supersedes: []
 
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
-本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同、Run提交标记、RSS适配器及`long_session`/`many_threads`真实模块场景Runner；其余四场景Runner、阈值Profile和发布阈值校验器仍待实现。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
+本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest、Run/Attempt提交、RSS适配、两个真实模块Runner及[单平台阈值独立复验内核](m09-3d-threshold-verification.md)。其余四场景Runner、正式阈值冻结与三平台复验仍待完成。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
 
 [`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。
 
@@ -163,9 +164,9 @@ flowchart TB
     Runner --> Recovery[当前：scan_product_action_recovery]
     Runner --> Samples[当前：数值样本写入器]
     Samples --> Manifest[当前：Manifest校验与Run提交]
-    Baseline[第一次独立运行] --> Profile[规划：Threshold Profile冻结]
-    Profile --> Validator[规划：独立复验校验器]
-    Validator --> Report[规划：低敏发布报告]
+    Baseline[第一次独立运行] --> Profile[当前：单平台Threshold Profile冻结内核]
+    Profile --> Validator[当前：单平台独立复验校验器]
+    Validator --> Report[当前：低敏单次报告]
 ```
 
 ### 5.1 图示说明
@@ -184,7 +185,7 @@ flowchart TB
 | Agent/SDK/Protocol | SDK、stdio、App Server和Agent Runtime已有真实入口及有界传输 | 仅增加发布专用调用编排，不改公共Protocol/SDK方法。 |
 | Session/Artifact容量 | `capacity_report`和维护合同输出低敏容量/时间/字节水位 | Runner在固定时点采集快照；不增加第二个数据库或改写业务事实。 |
 | Action恢复 | `scan_product_action_recovery`核对Route、Session引用、Artifact引用和Process孤儿 | 故障场景调用现有扫描/对账，不能由Runner直接执行Action效果。 |
-| 证据对象 | 样本、Manifest、Run提交标记和`long_session`/`many_threads`缩小运行已实现；Threshold Profile及正式三平台证据未实现 | 其余场景和独立Profile/报告；字段见第12节。 |
+| 证据对象 | 样本、Manifest、Run/Attempt、两个缩小Runner及单平台Profile/报告内核已实现；正式冻结Profile和三平台证据未完成 | 其余场景、正式工程阈值及跨平台发布汇总；字段见第12节。 |
 | 发布门禁 | 当前没有0.9.3d阈值结论 | 独立复验后只产生`PASS`、`FAIL`或`unverified`，缺失时失败关闭。 |
 
 ## 6. 模块职责与依赖
@@ -197,7 +198,7 @@ flowchart TB
 | AgentProtocolServer / AgentApplicationService（当前） | Protocol方法校验、请求幂等、Thread列表分页、Turn驱动 | Session Store、AgentRuntime、Artifact/Action端口 | 性能报告逻辑、阈值选择 | 由App Server进程拥有。 |
 | AgentRuntime（当前） | Turn执行、事件持久化、Replay、Context/Compaction、Action恢复 | Session、Provider、Tool/Action、Artifact | Runner专用捷径、跳过持久事实 | 以`async with`打开/关闭；启动恢复现有开放Turn。 |
 | Capacity/Recovery Adapter（当前） | 提供低敏容量报告和Action跨Store恢复扫描 | SQLite共库、Action/Artifact/Session端口 | 返回业务ID、正文、路径 | 只读诊断调用；恢复扫描保持现有语义。 |
-| Evidence Writer/Validator（部分实现） | 当前已对样本与Manifest执行严格Schema、SHA-256、最后提交标记及独立重算；Profile与发布阈值验证仍待实现 | 私有文件目录、标准时钟、RSS平台探针 | 自报PASS、未知字段、覆盖既有Run、读取敏感正文 | 一个Run单Writer；读取必须验证提交标记和原始样本。 |
+| Evidence Writer/Validator（部分实现） | 样本、Run、Attempt、单平台冻结Profile与独立阈值报告已实现；正式工程阈值、三平台负载和聚合门禁仍未完成 | 私有文件目录、标准时钟、RSS平台探针 | 自报PASS、未知字段、覆盖既有Run、读取敏感正文 | 一个Run单Writer；复验必须重读两次Run和Attempt。 |
 | RSS Adapter（已实现，正式三平台负载待验收） | 读取平台峰值RSS/工作集，记录raw单位并归一化为bytes | Linux/macOS/Windows原生测量接口 | 以0替代未知、跨平台套用未验证单位 | 当前两个Runner各采集一次进程峰值；其他场景采样边界待实现。 |
 
 ## 7. 核心流程
@@ -432,8 +433,8 @@ classDiagram
 | `SoakRunner`（两个场景部分实现） | `run_long_session`与`run_many_threads`编排实际负载/核验/发布；其余四场景待实现 | Runner拥有临时运行状态；业务状态仍由当前Runtime/Store拥有 | 一个Run单写；并发操作必须走SDK/Protocol既有容量 | `AgentRuntime`、`AgentApplicationService`、`SoakProvider`、RSS适配器、Writer | 场景注册表；不扩展公共协议。 |
 | `SoakSample`（合同与文件发布已实现） | 表达一条原始数值观测并校验指标、单位、时钟和RSS归一化 | 当前由测试/长会话Runner构造 | 合同不可变；Run内序号由`validate_sample_series`验证 | 测量时钟、RSS Adapter | 新指标必须增加白名单和Profile版本规则。 |
 | `SoakManifest`（合同与文件发布已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由测试/长会话Runner构造；其余场景Finalizer待实现 | 严格模型、文件写入、最后提交标记和独立重读已实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
-| `ThresholdProfile`（规划） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用。 |
-| `EvidenceValidator`（规划） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile | 增加统计指标必须保留旧字段兼容规则。 |
+| `ThresholdProfile`（单平台内核已实现） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用；正式Profile尚未冻结。 |
+| `EvidenceValidator`（单平台内核已实现） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile、Attempt | 增加统计指标必须保留旧字段兼容规则；跨平台汇总未实现。 |
 | `read_peak_rss`（已实现，平台验收进行中） | 读取raw峰值RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；macOS首次读取前由受控子进程探针判单位 | Linux/macOS的`getrusage`与Windows的`GetProcessMemoryInfo` | 平台API、raw单位和归一化规则必须与样本及Manifest一致。 |
 
 ## 11. 接口设计
@@ -448,7 +449,7 @@ classDiagram
 | `EvidenceWriter.append(sample)`（规划） | Runner | `SoakSample`；无业务正文 | `phase=measuring`且单位/值合法 | 非有限值、负数、未知指标立即失败 | 写入失败不回滚业务事实；Run不能PASS | `sample_index`不重复；文件追加后不可改 | 仅Run临时目录写权限。 |
 | `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
 | `read_published_run(run_directory)`（当前） | 发布校验器/未来Profile验证器 | 只读Run目录；输出严格Manifest和其SHA-256 | 文件集合、标记、Manifest、样本和统计全部校验 | 任一缺失/篡改为稳定`soak_run_invalid` | 读取失败不产生PASS | 同一字节输入结果确定 | 只读证据。 |
-| `EvidenceValidator.validate(run, profile)`（规划） | 发布门禁 | 已发布Run和同平台Profile；输出`PASS`/`FAIL`/`unverified`报告 | 先校验原始样本和摘要，再重算，最后比较阈值 | 任一缺失/篡改/环境错配/未知字段失败关闭 | 取消不产生PASS | 同一输入摘要结果确定；报告不可覆盖 | 只读证据与Profile。 |
+| `verify_and_publish(profile_directory, baseline_directory, candidate_directory, report_root)`（当前） | 单平台复验 | 两份已提交Run/Attempt和冻结Profile；输出`PASS`/`FAIL`/`unverified`报告 | 先校验原始样本和摘要，再比较场景/负载/环境与阈值 | 缺失/篡改/错配均不产生PASS | 中断缺SEALED则不可读 | 输入事实确定；报告排他目录不可覆盖 | 只读证据与Profile、写报告根。 |
 | `read_peak_rss()`（当前） | 长会话Runner/未来其他Runner | 无业务输入；输出`RssObservation` | 当前平台、RSS源和raw单位经过验证；macOS首次调用触发隔离子进程的单位探针 | API缺失、读数异常、单位未知抛稳定错误；不得返回0替代 | macOS探针有15秒上限；采样本身由调用方设置边界 | 同一采样边界最多一个平台读数 | 只读当前进程指标。 |
 | `capacity_report(database, path)`（当前） | Runner/维护端口 | 当前SQLite连接和路径；输出三类低敏容量报告 | 同一读事务内校验投影、事件、请求和Artifact字段 | 数据损坏抛出稳定KernelError；不吞错 | 只读；不改变业务结果 | 由当前实现负责三类固定顺序 | Runtime Owner/维护权限。 |
 | `scan_product_action_recovery(...)`（当前） | Action启动/Soak故障场景 | Plan、Audit、Session、Artifact、Supervisor、Fence；输出低敏扫描报告 | 不重放Action效果 | Store损坏或Fence错误失败关闭 | 扫描有界但当前实现的集合路径须完整核验 | 不执行Execute；重复扫描不新增效果 | Product Action Owner。 |
@@ -488,7 +489,7 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 
 每个Turn使用独立`request_id`和30秒默认操作期限；完成状态不是`COMPLETED`或发生超时，均抛出稳定`KernelError`，不会写出带提交标记的半成品Run。预热样本保留在JSONL但不进入正式分位数，正式样本计数必须等于输入`turn_count`。文件水位取Runtime打开之后、Thread创建之前，以及全部Turn完成且Runtime关闭之前的DB/WAL文件大小；这是同一进程的区间端点值，**不是**期间最大值。RSS是Runner进程高水位，非Thread独占内存。证据不存Prompt、响应正文、Workspace路径或业务身份；临时Session退出后删除。缩小测试用3个正式Turn、2个预热Turn验证整个提交/重读链，产物状态只能是`unverified`。
 
-本长会话实现并不等于正式0.9.3d验收：macOS v1规模诊断和v2 Context/Compaction规模基线均已归档，但全局运行期限、Linux/Windows正式负载、独立阈值Profile/报告和另外四个场景仍待完成。当前失败会清理临时Session并抛错，同时保留低敏失败Attempt；发布阶段的部分Manifest不能当作有效Run。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
+本长会话实现并不等于正式0.9.3d验收：macOS v1规模诊断和v2 Context/Compaction规模基线均已归档，但全局运行期限、Linux/Windows正式负载、经评审冻结的Profile及独立真实复验和另外四个场景仍待完成。当前失败会清理临时Session并抛错，同时保留低敏失败Attempt；发布阶段的部分Manifest不能当作有效Run。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
 
 ### 11.3 `many_threads`当前执行链与失败语义
 
@@ -658,7 +659,7 @@ except BaseException:
 [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)和
 [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py)。
 
-### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，规划）
+### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，单平台内核已实现）
 
 Profile是独立于Run的只读发布对象。分位数算法已固定为`nearest_rank_v1`；具体样本数量、工程余量数值、平台硬件档位范围或每项指标门槛仍须在基线冻结时明确填写，冻结前状态只能为`pending_baseline_freeze`。
 
@@ -682,6 +683,12 @@ Profile是独立于Run的只读发布对象。分位数算法已固定为`neares
 
 Profile不允许把“基线P95加百分比”写成未展开的自由文本；冻结时必须把具体的统计方法、工程余量和最终数值写入结构化字段。若这些值尚未由批准的基线文件给出，本文只记录待冻结，不臆造通过门槛。
 
+现行[`soak_threshold.py`](../../scripts/soak_threshold.py)已提供`frozen`单平台Profile及独立复验报告合同，
+以Profile缺席表达`pending_baseline_freeze`，不发布可执行的待冻结对象。它要求完整基线Run/Attempt、精确余量公式、
+新的完整复验Run/Attempt，以及全部分位数、三类文件增长和故障计数比较；`SEALED.json`最后提交。
+详细字段、异常矩阵、部署和测试见[阈值复验详设](m09-3d-threshold-verification.md)。当前没有经工程评审冻结的
+正式数值或三平台独立复验，故实现存在不表示发布门禁通过；四个未实现Runner场景也被拒绝冻结。
+
 ## 13. 持久化、事务与迁移
 
 0.9.3d不修改Agent Session/Protocol/Artifact数据库Schema，不新增远程存储。运行事实和证据使用发布专用文件目录；业务State Root为临时夹具，不能与用户状态根混用。
@@ -694,7 +701,7 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 2. 样本按固定字段顺序写同目录临时文件，使用`os.O_BINARY`（Windows）与`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回实际发布字节的SHA-256、计数和重算统计。Manifest和提交标记走同一二进制写入路径。
 3. 调用方构造的严格Manifest必须与刚写入的样本摘要和统计一致。`publish_run`再次从磁盘重读样本并核对RSS后，才写入并同步`manifest.json`。
 4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
-5. Runner从磁盘独立重读已发布Run，核对Attempt的Run ID、Revision、场景及Manifest摘要后，再排他写入`attempts/<run_id>/FINAL.json`的`committed`终态；失败或协作取消在无有效已发布Run时写`failed`，硬退出则保留仅`STARTED`。独立Profile和发布阈值报告的只读验证与单独发布仍待实现，不修改Run原件。
+5. Runner从磁盘独立重读已发布Run，核对Attempt的Run ID、Revision、场景及Manifest摘要后，再排他写入`attempts/<run_id>/FINAL.json`的`committed`终态；失败或协作取消在无有效已发布Run时写`failed`，硬退出则保留仅`STARTED`。独立Profile与单平台阈值报告现由离线校验器只读发布，不修改Run原件；正式Profile和三平台完整复验尚未形成。
 
 若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。若在步骤4与5之间退出，即使Run有有效提交标记，Attempt仍只有`STARTED`，未来发布校验器必须拒绝PASS。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
 
@@ -829,7 +836,7 @@ run_scenario(scenario, seed, environment):
     return baseline_fact_or_independent_validation(manifest)
 ```
 
-实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)。两者都由[`attempt_scope`](../../scripts/soak_attempt.py)持久记录开始、异常与提交事实。其余四场景未来选择[`AgentClient`](../../src/harnessix/sdk/agent_client.py)/[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)、[`run_product_stdio`](../../src/harnessix/product_config/server.py)或现有Artifact/Action端口，并在Manifest标记真实测量边界。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、提交标记和独立重算已实现；其余四个Runner、冻结测量计划和阈值复验仍待实现。
+实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)。两者都由[`attempt_scope`](../../scripts/soak_attempt.py)持久记录开始、异常与提交事实。其余四场景未来选择[`AgentClient`](../../src/harnessix/sdk/agent_client.py)/[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)、[`run_product_stdio`](../../src/harnessix/product_config/server.py)或现有Artifact/Action端口，并在Manifest标记真实测量边界。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、Run/Attempt提交和单平台阈值复验内核已实现；其余四个Runner、正式冻结测量计划与三平台复验仍待完成。
 
 ## 20. 源码与测试映射
 
@@ -850,7 +857,7 @@ run_scenario(scenario, seed, environment):
 | Action跨Store恢复 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | `scan_product_action_recovery` | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py) | Action恢复扫描合同 | 当前实现；固定故障矩阵规划。 |
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
-| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`ThresholdProfile`规划中 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 严格字段、Run目录冲突、样本/Manifest/标记篡改、中断不提交、独立重算已测；Windows字节发布由CI复验 | Run证据发布完成局部实现；正式负载与阈值复验未完成。 |
+| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`SoakThresholdProfile`、`publish_profile`、`verify_and_publish`已实现 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)、[`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py) | 严格字段、Run与Profile目录冲突、样本/Manifest/标记篡改、中断不提交、独立复验已测；Windows字节发布仍待CI复验 | 单平台阈值内核已实现；正式工程Profile、三平台复验与完整负载未完成。 |
 | 低敏环境档位 | [`scripts/soak_environment.py`](../../scripts/soak_environment.py) | `read_environment` | [`test_soak_environment.py`](../../tests/benchmarks/test_soak_environment.py) | Linux `sysconf`、macOS `sysctl hw.memsize`、Windows [`GlobalMemoryStatusEx`](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex)的[`ullTotalPhys`字节字段](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex)；CPU/内存正值与无主机身份 | 已实现；Windows CI和容器有效上限仍待验收。 |
 | RSS适配与三平台探针 | [`scripts/soak_rss.py`](../../scripts/soak_rss.py) | `read_peak_rss`、`_macos_unit` | [`test_soak_rss.py`](../../tests/benchmarks/test_soak_rss.py) | raw unit、normalization、读数正值、未知单位失败关闭；macOS本机通过 | 实现已提交；Linux/Windows真实CI与正式Soak证据仍待验收。 |
 | 原子证据发布 | [`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `publish_run`、`read_published_run` | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 排他Run目录、文件`fsync`、SHA-256、最后提交标记、不可覆盖及三故障点 | 局部实现；跨平台CI加入`tests/benchmarks`，正式Run/Profile仍待验收。 |
@@ -861,8 +868,8 @@ run_scenario(scenario, seed, environment):
 
 | 层次 | 测试内容 | 固定输入/门槛 | 通过条件 | 当前/规划 |
 |---|---|---|---|---|
-| Schema合同 | Sample/Manifest/Profile字段、类型、extra-forbid、状态和摘要 | Sample/Manifest v1对象已实现；Profile待实现 | 现有样本和Manifest的缺字段、未知字段、NaN/Infinity、负数、错误单位、错误场景/平台和序号缺口拒绝；Profile待测 | 部分已实现。 |
-| 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | `nearest_rank_v1`已固定；`sample_count`待Profile冻结 | 内存重算、预热排除、计数严格匹配、JSONL摘要、规范序列化及Manifest自报统计冲突已测 | 发布级规划中。 |
+| Schema合同 | Sample/Manifest/Profile字段、类型、extra-forbid、状态和摘要 | Sample/Manifest及单平台Profile对象已实现 | 缺字段、未知字段、NaN/Infinity、负数、错误单位、错误场景/平台和序号缺口拒绝 | 结构化合同已实现；正式数值待冻结。 |
+| 统计合同 | 原始样本排序、P50/P95/P99重算、单位和样本数 | `nearest_rank_v1`已固定；正式样本数待Profile冻结 | 内存重算、预热排除、计数严格匹配、JSONL摘要、规范序列化及Manifest自报统计冲突已测 | 算法已实现；正式Profile未冻结。 |
 | RSS合同 | Linux KiB、macOS运行时单位差异、Windows bytes和unknown | 三平台RSS入口和macOS受控探针 | source/raw unit/normalization完整；未知或零读数直接失败关闭、不填0；发布判`unverified`由未来Runner处理 | 本地macOS已测；Linux/Windows CI及正式Runner待验收。 |
 | 原子发布 | 临时文件、fsync、摘要、目标冲突、发布中断 | 独立Run目录 | 只接受最后标记、Manifest及样本全校验的Run；失败不产生PASS、不覆盖既有Run | 局部实现与故障注入已测；Windows目录持久性和真实进程崩溃仍待验证。 |
 | 长会话集成 | 真实Agent/SDK/Store链、Replay、Context/Compaction | 单Thread >=1000 Turn | Replay/投影一致、无隐藏失败、样本完整 | 场景规划；现有Runtime测试作为回归。 |
@@ -872,8 +879,8 @@ run_scenario(scenario, seed, environment):
 | Artifact集成 | 1 MiB上限附近混合发布、读取、分页、清理 | 当前`MAX_ARTIFACT_BYTES=1 MiB`和既有Policy | Body/Reference一致、分页完整、孤儿为0、前后水位可解释 | 当前Artifact测试+规划Soak。 |
 | Action故障 | Owner/Fence/Audit/Process/Artifact边界 | 固定故障矩阵版本 | UNKNOWN不重放、重复效果为0、扫描/对账结果稳定 | 当前Router/Recovery测试+规划Soak。 |
 | 重启集成 | 增长前后多次冷/热启动 | 每次新Runtime/Transport | 恢复状态与持久事实一致，无重复效果 | 当前Runtime/SDK测试+规划Soak。 |
-| 隐私回归 | 扫描样本、Manifest、报告、日志 | 敏感字段黑名单 | 无路径、Prompt、代码、Tool正文、Secret、stderr、ID、异常原文 | 规划新增。 |
-| 独立复验 | 新State Root、新Run ID、同平台Profile | 基线/复验分离 | 先摘要和环境校验，再重算，再比阈值；不满足为FAIL/`unverified` | 规划新增。 |
+| 隐私回归 | 扫描样本、Manifest、报告、日志 | 敏感字段黑名单 | 无路径、Prompt、代码、Tool正文、Secret、stderr、业务ID、异常原文 | 报告低敏回归已实现；其余四场景仍待覆盖。 |
+| 独立复验 | 新State Root、新Run ID、同平台Profile | 基线/复验分离 | 先摘要和环境校验，再重算，再比阈值；不满足为FAIL/`unverified` | 单平台内核及合成证据回归已实现；正式Run与三平台复验待完成。 |
 | 平台矩阵 | Linux、macOS、Windows真实运行 | 固定软件/硬件档位 | 每个平台均有正式基线和独立复验；缺一总体不PASS | 规划发布验收。 |
 | 回归 | 0.9.3a～c已有单元/集成/恢复/文档门禁 | 当前全仓合同 | 原有测试通过；无公共接口/Schema/恢复语义回归 | 当前测试+发布门禁。 |
 
