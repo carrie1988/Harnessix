@@ -1,12 +1,14 @@
 {
+  "archive_ci_run_id": 35871758608,
   "checks": {
+    "archive_ci": "6/6 success",
     "attempt_reader": "3/3 committed",
     "frozen_profiles": "not yet",
     "independent_file_sha256": "15/15 matched",
     "independent_stdlib_quantiles": "3/3 matched",
     "privacy_keyword_scan": "3/3 passed",
     "run_reader": "3/3 passed",
-    "standard_ci": "pending",
+    "standard_ci": "6/6 success",
     "workflow_matrix": "3/3 success"
   },
   "classification": "three-platform-single-run-baseline",

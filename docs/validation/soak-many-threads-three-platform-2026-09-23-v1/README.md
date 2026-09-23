@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 3
 code_revision: 12bfc1108efc461742712c98fe782ce4b1849f05
 owners:
   - core
@@ -25,7 +25,7 @@ supersedes: []
 
 ## 1. 结论与证据边界
 
-源码Revision `12bfc1108efc461742712c98fe782ce4b1849f05`的[手动多Thread Soak工作流 35870233482](https://github.com/carrie1988/Harnessix/actions/runs/35870233482)在Linux、macOS和Windows三个独立Job均成功。每个平台通过真实[`AgentRuntime`](../../../src/harnessix/agent/runtime.py)与[`AgentApplicationService.list_threads`](../../../src/harnessix/app_server/service.py)在持久SQLite上创建500个Thread、预热一次、正式重启三次，并在每次重启后遍历10页50条的列表。Run和Attempt原件下载后均由Reader重读，15份原始文件SHA-256与标准库最近秩分位数再次核对；来源见[证据Manifest](bundle-manifest.json)，汇总见[评审包](review-packet.json)。同Revision[常规CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)终态须独立核对，不以手动工作流绿色替代。
+源码Revision `12bfc1108efc461742712c98fe782ce4b1849f05`的[手动多Thread Soak工作流 35870233482](https://github.com/carrie1988/Harnessix/actions/runs/35870233482)在Linux、macOS和Windows三个独立Job均成功。每个平台通过真实[`AgentRuntime`](../../../src/harnessix/agent/runtime.py)与[`AgentApplicationService.list_threads`](../../../src/harnessix/app_server/service.py)在持久SQLite上创建500个Thread、预热一次、正式重启三次，并在每次重启后遍历10页50条的列表。Run和Attempt原件下载后均由Reader重读，15份原始文件SHA-256与标准库最近秩分位数再次核对；来源见[证据Manifest](bundle-manifest.json)，汇总见[评审包](review-packet.json)。同Revision[常规CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)六Job均成功；原件归档提交`402ce08`的[CI 35871758608](https://github.com/carrie1988/Harnessix/actions/runs/35871758608)也六Job成功。这两个结果与手动Soak三Job分开核对。
 
 **证据等级仅为三平台各一次正式负载基线，`manifest.status=baseline`不等于阈值PASS或0.9.3d完成。** 当前v1低敏证据没有单独保存每轮Thread集合摘要或分页Proof；Runner在执行期核对了完整集合，但离线Reader只能验证样本、Manifest和提交事实，无法从归档字节独立重演身份集合。启动与分页超时后当前SQLite任务的自然排空也没有独立全局期限。这两项在冻结Profile和第二独立候选前仍须关闭或形成有证明的发布边界。
 
@@ -80,7 +80,7 @@ PY
 |---|---|---|
 | 三平台真实固定负载 | 通过 | 三个独立Job成功，各自新State和Run ID；没有模型或Action效果。 |
 | Run/Attempt与摘要 | 通过 | Reader、15份原件SHA、标准库分位数和上传ZIP摘要一致。 |
-| 同Revision六实例CI | 待核对 | [CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)须达到终态。 |
+| 同Revision及归档六实例CI | 通过 | [源码CI 35870214455](https://github.com/carrie1988/Harnessix/actions/runs/35870214455)与[归档CI 35871758608](https://github.com/carrie1988/Harnessix/actions/runs/35871758608)各六Job成功；仍不弥补v1场景Proof缺口。 |
 | 场景Proof与超时排空 | 未关闭 | v1缺逐轮匿名集合/分页证明；超时后自然排空无独立全局期限。 |
 | 冻结阈值与独立候选 | 未执行 | 不凭单次基线、其他场景Profile或手工Manifest判PASS。 |
 | 0.9.3d整体 | 未完成 | Action恢复及长会话/Artifact的多平台验收仍独立进行。 |

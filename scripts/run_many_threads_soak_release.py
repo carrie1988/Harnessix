@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -16,6 +17,11 @@ from scripts.soak_evidence import read_published_run
 from scripts.soak_many_threads import run_many_threads
 
 _REPOSITORY = Path(__file__).resolve().parents[1]
+_WORKER_TIMEOUT_SECONDS = 20 * 60
+_SUMMARY_FIELDS = frozenset(
+    {"scenario_id", "platform", "code_revision", "run_id", "manifest_sha256", "status"}
+)
+_ERROR_CODE = re.compile(r"多Thread Soak失败：([a-z][a-z0-9_]*)\n\Z")
 
 
 def _revision() -> str:
@@ -74,12 +80,11 @@ async def run_release(evidence_root: Path) -> dict[str, str]:
     }
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="运行固定的多Thread正式基线")
-    parser.add_argument("--evidence-root", required=True, type=Path)
-    arguments = parser.parse_args(argv)
+def _worker_main(evidence_root: Path) -> int:
+    """仅在受监护的子进程内运行既有正式Runner。"""
+
     try:
-        result = asyncio.run(run_release(arguments.evidence_root))
+        result = asyncio.run(run_release(evidence_root))
     except KernelError as error:
         print(f"多Thread Soak失败：{error.code}", file=sys.stderr)
         return 1
@@ -89,6 +94,87 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
+
+
+def _validated_summary(body: str) -> str | None:
+    """父进程仅转发固定的低敏摘要字段。"""
+
+    try:
+        if len(body.encode("utf-8")) > 4096:
+            return None
+        result = json.loads(body)
+    except (TypeError, UnicodeError, ValueError):
+        return None
+    if (
+        not isinstance(result, dict)
+        or set(result) != _SUMMARY_FIELDS
+        or any(not isinstance(result[key], str) for key in _SUMMARY_FIELDS)
+        or result["scenario_id"] != "many_threads"
+        or result["platform"] not in {"linux", "macos", "windows"}
+        or result["status"] != "baseline"
+        or any(
+            re.fullmatch(pattern, result[key]) is None
+            for key, pattern in (
+                ("code_revision", r"[0-9a-f]{40}"),
+                ("run_id", r"[0-9a-f]{32}"),
+                ("manifest_sha256", r"[0-9a-f]{64}"),
+            )
+        )
+    ):
+        return None
+    return json.dumps(result, sort_keys=True, separators=(",", ":"))
+
+
+def _parent_main(evidence_root: Path) -> int:
+    """以进程级硬期限包住可能无限等待SQLite排空的Runner。"""
+
+    try:
+        completed = subprocess.run(
+            (
+                sys.executable,
+                "-m",
+                "scripts.run_many_threads_soak_release",
+                "--internal-worker",
+                "--evidence-root",
+                str(evidence_root),
+            ),
+            cwd=_REPOSITORY,
+            capture_output=True,
+            text=True,
+            timeout=_WORKER_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print("多Thread Soak失败：soak_worker_timeout", file=sys.stderr)
+        return 1
+    except (OSError, UnicodeError, subprocess.SubprocessError):
+        print("多Thread Soak失败：soak_worker_failed", file=sys.stderr)
+        return 1
+    if completed.returncode != 0:
+        match = (
+            _ERROR_CODE.fullmatch(completed.stderr)
+            if len(completed.stderr.encode("utf-8")) <= 256
+            else None
+        )
+        code = match.group(1) if match is not None else "soak_worker_failed"
+        print(f"多Thread Soak失败：{code}", file=sys.stderr)
+        return 1
+    summary = _validated_summary(completed.stdout) if not completed.stderr else None
+    if summary is None:
+        print("多Thread Soak失败：soak_worker_invalid", file=sys.stderr)
+        return 1
+    print(summary)
+    return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="运行固定的多Thread正式基线")
+    parser.add_argument("--evidence-root", required=True, type=Path)
+    parser.add_argument("--internal-worker", action="store_true", help=argparse.SUPPRESS)
+    arguments = parser.parse_args(argv)
+    if arguments.internal_worker:
+        return _worker_main(arguments.evidence_root)
+    return _parent_main(arguments.evidence_root)
 
 
 if __name__ == "__main__":

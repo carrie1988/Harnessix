@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -133,7 +135,10 @@ def test_cli_redacts_private_error_text(
         raise KernelError("soak_list_timeout", f"private={tmp_path}/secret")
 
     monkeypatch.setattr(run_many_threads_soak_release, "run_release", fail)
-    assert run_many_threads_soak_release.main(["--evidence-root", str(tmp_path)]) == 1
+    assert (
+        run_many_threads_soak_release.main(["--internal-worker", "--evidence-root", str(tmp_path)])
+        == 1
+    )
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "多Thread Soak失败：soak_list_timeout\n"
@@ -154,8 +159,134 @@ def test_cli_emits_only_public_summary(
         }
 
     monkeypatch.setattr(run_many_threads_soak_release, "run_release", finish)
-    assert run_many_threads_soak_release.main(["--evidence-root", str(tmp_path)]) == 0
+    assert (
+        run_many_threads_soak_release.main(["--internal-worker", "--evidence-root", str(tmp_path)])
+        == 0
+    )
     captured = capsys.readouterr()
     assert captured.err == ""
     assert json.loads(captured.out)["status"] == "baseline"
     assert str(tmp_path) not in captured.out
+
+
+def test_parent_runs_fixed_worker_with_hard_deadline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    recorded: dict[str, object] = {}
+    result = {
+        "scenario_id": "many_threads",
+        "platform": "linux",
+        "code_revision": "a" * 40,
+        "run_id": "b" * 32,
+        "manifest_sha256": "c" * 64,
+        "status": "baseline",
+    }
+
+    def worker(command: tuple[str, ...], **kwargs: object) -> SimpleNamespace:
+        recorded["command"] = command
+        recorded.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(result), stderr="")
+
+    monkeypatch.setattr(run_many_threads_soak_release.subprocess, "run", worker)
+    assert run_many_threads_soak_release.main(["--evidence-root", str(tmp_path)]) == 0
+    assert recorded["command"] == (
+        sys.executable,
+        "-m",
+        "scripts.run_many_threads_soak_release",
+        "--internal-worker",
+        "--evidence-root",
+        str(tmp_path),
+    )
+    assert recorded["timeout"] == 20 * 60
+    assert recorded["capture_output"] is True
+    assert recorded["check"] is False
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == result
+    assert captured.err == ""
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stdout", "stderr", "expected"),
+    [
+        (1, "", "多Thread Soak失败：soak_list_timeout\n", "soak_list_timeout"),
+        (1, "", "private=/secret/path", "soak_worker_failed"),
+        (0, "private=/secret/path", "", "soak_worker_invalid"),
+        (0, "x" * 4097, "", "soak_worker_invalid"),
+        (0, '{"platform":[]}', "", "soak_worker_invalid"),
+        (
+            0,
+            json.dumps(
+                {
+                    "scenario_id": "many_threads",
+                    "platform": "linux",
+                    "code_revision": "a" * 40,
+                    "run_id": "b" * 32,
+                    "manifest_sha256": "c" * 64,
+                    "status": "baseline",
+                }
+            ),
+            "private=/secret/path",
+            "soak_worker_invalid",
+        ),
+    ],
+)
+def test_parent_never_echoes_untrusted_worker_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    returncode: int,
+    stdout: str,
+    stderr: str,
+    expected: str,
+) -> None:
+    monkeypatch.setattr(
+        run_many_threads_soak_release.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=returncode, stdout=stdout, stderr=stderr
+        ),
+    )
+    assert run_many_threads_soak_release.main(["--evidence-root", str(tmp_path)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == f"多Thread Soak失败：{expected}\n"
+    assert str(tmp_path) not in captured.err
+
+
+def test_parent_timeout_preserves_failure_classification_without_private_text(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def timeout(*_args: object, **_kwargs: object) -> None:
+        raise subprocess.TimeoutExpired("worker", 20 * 60, stderr=b"private=/secret/path")
+
+    monkeypatch.setattr(run_many_threads_soak_release.subprocess, "run", timeout)
+    assert run_many_threads_soak_release.main(["--evidence-root", str(tmp_path)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "多Thread Soak失败：soak_worker_timeout\n"
+
+
+def test_parent_really_kills_stalled_worker_and_keeps_started_fact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = tmp_path / "scripts"
+    package.mkdir()
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "run_many_threads_soak_release.py").write_text(
+        "import pathlib, sys, time\n"
+        "root = pathlib.Path(sys.argv[-1])\n"
+        "root.mkdir(parents=True, exist_ok=True)\n"
+        "(root / 'STARTED.json').write_text('started', encoding='utf-8')\n"
+        "time.sleep(60)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(run_many_threads_soak_release, "_REPOSITORY", tmp_path)
+    monkeypatch.setattr(run_many_threads_soak_release, "_WORKER_TIMEOUT_SECONDS", 5)
+    evidence_root = tmp_path / "evidence"
+
+    assert run_many_threads_soak_release.main(["--evidence-root", str(evidence_root)]) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "多Thread Soak失败：soak_worker_timeout\n"
+    assert (evidence_root / "STARTED.json").read_text(encoding="utf-8") == "started"
