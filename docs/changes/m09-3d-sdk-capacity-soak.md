@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: c84e78dc1a8a7b95dbe40a8bc209a7442e2ee43a
 owners:
   - core
@@ -63,7 +63,7 @@ flowchart LR
     Commit --> Reader[独立Reader与Attempt核验]
 ```
 
-[`GatedSdkService`](../../scripts/soak_sdk_child.py)只在调用`super().list_threads`之前等待私有标记，不重写协议解析、调度、SQLite读写或SDK Response归并。普通`limit=50`用于正常往返；门闩夹具用`limit=1/2/3`区分普通、被取消和溢出请求，均为合法`ThreadListParams`。门闩目录与业务SQLite位于`TemporaryDirectory`，不进入提交证据。子进程退出前写入低敏RSS和模型请求计数；Runner只把规范化数值写入Run。
+[`GatedSdkService`](../../scripts/soak_sdk_child.py)只在调用`super().list_threads`之前等待私有标记，不重写协议解析、调度、SQLite读写或SDK Response归并。普通`limit=50`用于正常往返；门闩夹具用`limit=1/2/3`区分普通、被取消和溢出请求，均为合法`ThreadListParams`。门闩目录与业务SQLite位于`TemporaryDirectory`，不进入提交证据。子进程退出前写入低敏RSS和模型请求计数；Runner只把规范化数值写入Run。子进程若在关闭或采样阶段退出，只在临时目录写异常类型与稳定Kernel错误码，不保留异常正文；父进程缺少结果文件时以`soak_sdk_child_failed`失败关闭，并把该低敏分类用于诊断，不发布有效Run。
 
 ```mermaid
 sequenceDiagram

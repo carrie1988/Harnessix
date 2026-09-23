@@ -58,6 +58,19 @@ def _snapshot(
     return state
 
 
+def _child_result(gate: Path) -> SoakSdkChildResult:
+    result_path = gate / "child-result.json"
+    if not result_path.is_file():
+        failure_path = gate / "child-failure.txt"
+        reason = "unknown"
+        if failure_path.is_file() and failure_path.stat().st_size <= 128:
+            candidate = failure_path.read_bytes()
+            if re.fullmatch(rb"[A-Za-z][A-Za-z0-9_]*:[a-z0-9_]{1,64}\n", candidate):
+                reason = candidate.decode("ascii").strip()
+        raise KernelError("soak_sdk_child_failed", f"SDK子进程未生成结果：{reason}")
+    return SoakSdkChildResult.model_validate_json(result_path.read_bytes())
+
+
 async def _round(
     client: AgentClient,
     transport: SubprocessAgentTransport,
@@ -227,9 +240,7 @@ async def run_sdk_capacity(
             final = transport.snapshot()
             if final.state != "closed" or final.pending_requests or final.abandoned_requests:
                 raise KernelError("soak_sdk_close_invalid", "SDK子进程关闭后仍有未决容量")
-            child_result = SoakSdkChildResult.model_validate_json(
-                (gate / "child-result.json").read_bytes()
-            )
+            child_result = _child_result(gate)
             attempt.phase = "reconciling"
             client_rss = read_peak_rss()
             server_rss = child_result.rss

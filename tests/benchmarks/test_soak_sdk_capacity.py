@@ -10,10 +10,30 @@ from harnessix.agent.errors import KernelError
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import SoakCommit, read_published_run
 from scripts.soak_manifest import SoakManifestV4
-from scripts.soak_sdk_capacity import run_sdk_capacity
+from scripts.soak_sdk_capacity import _child_result, run_sdk_capacity
 from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof
 
 REVISION = "a" * 40
+
+
+def test_child_failure_marker_contains_only_stable_code(tmp_path, monkeypatch) -> None:
+    from scripts import soak_sdk_child
+
+    async def fail(*_args):
+        raise KernelError("soak_rss_unit_unknown", "private child path and secret")
+
+    monkeypatch.setattr(soak_sdk_child, "_serve", fail)
+    with pytest.raises(SystemExit) as caught:
+        soak_sdk_child._run_with_failure_marker(tmp_path / "db", tmp_path, 2)
+    assert caught.value.code == 1
+    assert (tmp_path / "child-failure.txt").read_text(encoding="ascii") == (
+        "KernelError:soak_rss_unit_unknown\n"
+    )
+    with pytest.raises(KernelError) as reported:
+        _child_result(tmp_path)
+    assert reported.value.code == "soak_sdk_child_failed"
+    assert "KernelError:soak_rss_unit_unknown" in reported.value.message
+    assert "private child path" not in reported.value.message
 
 
 async def test_real_sdk_stdio_capacity_cancel_late_response_and_close(tmp_path) -> None:

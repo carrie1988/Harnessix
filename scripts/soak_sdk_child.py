@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import sys
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from pathlib import Path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
@@ -94,5 +96,20 @@ async def _serve(database: Path, gate_root: Path, pending_limit: int) -> None:
     (gate_root / "child-result.json").write_text(result.model_dump_json() + "\n", encoding="utf-8")
 
 
+def _run_with_failure_marker(database: Path, gate_root: Path, pending_limit: int) -> None:
+    """失败时只在私有夹具目录写异常类型与稳定错误码，不保留异常正文。"""
+
+    try:
+        asyncio.run(_serve(database, gate_root, pending_limit))
+    except Exception as error:
+        code = error.code if isinstance(error, KernelError) else "unknown"
+        if re.fullmatch(r"[a-z0-9_]{1,64}", code) is None:
+            code = "unknown"
+        (gate_root / "child-failure.txt").write_text(
+            f"{type(error).__name__}:{code}\n", encoding="ascii"
+        )
+        raise SystemExit(1) from None
+
+
 if __name__ == "__main__":
-    asyncio.run(_serve(Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])))
+    _run_with_failure_marker(Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]))
