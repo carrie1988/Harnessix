@@ -22,7 +22,13 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from scripts.soak_attempt import attempt_scope
 from scripts.soak_context_proof import SoakContextProof, SoakContextTurn, SoakEventMarker
 from scripts.soak_environment import read_environment
-from scripts.soak_manifest import SoakFileWatermarks, SoakLoad, SoakManifest, SoakManifestV2
+from scripts.soak_manifest import (
+    SoakFileWatermarks,
+    SoakLoad,
+    SoakManifest,
+    SoakManifestV2,
+    SoakProfileReference,
+)
 from scripts.soak_provider import SoakProvider, SoakSummaryProvider
 from scripts.soak_rss import read_peak_rss
 from scripts.soak_run_common import (
@@ -67,6 +73,7 @@ async def run_long_session_context(
     warmup_count: int,
     seed: int = 0,
     turn_timeout_seconds: float = 30.0,
+    threshold_profile_ref: SoakProfileReference | None = None,
 ) -> tuple[Path, SoakManifestV2]:
     """执行真实Context与Compaction并发布v2低敏证明。"""
 
@@ -78,6 +85,7 @@ async def run_long_session_context(
         seed=seed,
         turn_timeout_seconds=turn_timeout_seconds,
         context_mode=True,
+        threshold_profile_ref=threshold_profile_ref,
     )
     assert isinstance(manifest, SoakManifestV2)
     return directory, manifest
@@ -196,6 +204,7 @@ async def _run_long_session(
     seed: int,
     turn_timeout_seconds: float,
     context_mode: bool,
+    threshold_profile_ref: SoakProfileReference | None = None,
 ) -> tuple[Path, SoakManifest | SoakManifestV2]:
     """复用同一采样/Attempt链；模式差异只在Runtime配置与证据版本。"""
 
@@ -210,6 +219,7 @@ async def _run_long_session(
         or type(seed) is not int
         or seed < 0
         or not 0 < turn_timeout_seconds <= 300
+        or (threshold_profile_ref is not None and (not context_mode or turn_count < 1000))
     ):
         raise KernelError("soak_load_invalid", "长会话Soak负载参数无效")
     if turn_count >= 1000:
@@ -313,7 +323,8 @@ async def _run_long_session(
                 artifact_before_bytes=0,
                 artifact_after_bytes=0,
             ),
-            baseline=turn_count >= 1000,
+            baseline=turn_count >= 1000 and threshold_profile_ref is None,
+            threshold_profile_ref=threshold_profile_ref,
             context_proof=proof,
             summary_request_count=(
                 summary_provider.request_count if summary_provider is not None else None

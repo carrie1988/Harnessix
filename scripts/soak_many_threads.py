@@ -18,7 +18,7 @@ from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.session.sqlite import SQLiteSessionStore
 from scripts.soak_attempt import attempt_scope
 from scripts.soak_environment import read_environment
-from scripts.soak_manifest import SoakFileWatermarks, SoakLoad, SoakManifest
+from scripts.soak_manifest import SoakFileWatermarks, SoakLoad, SoakManifest, SoakProfileReference
 from scripts.soak_provider import SoakProvider
 from scripts.soak_rss import read_peak_rss
 from scripts.soak_run_common import (
@@ -149,6 +149,7 @@ async def run_many_threads(
     seed: int = 0,
     startup_timeout_seconds: float = 30.0,
     page_timeout_seconds: float = 30.0,
+    threshold_profile_ref: SoakProfileReference | None = None,
 ) -> tuple[Path, SoakManifest]:
     """填充独立Session，预热一次并测量多次真实启动与完整分页。"""
 
@@ -167,6 +168,7 @@ async def run_many_threads(
         or not 0 < startup_timeout_seconds <= 300
         or not 0 < page_timeout_seconds <= 300
         or (thread_count >= 500 and restart_count < 3)
+        or (threshold_profile_ref is not None and thread_count < 500)
     ):
         raise KernelError("soak_load_invalid", "多Thread Soak负载参数无效")
     if thread_count >= 500:
@@ -247,7 +249,8 @@ async def run_many_threads(
                 artifact_before_bytes=0,
                 artifact_after_bytes=0,
             ),
-            baseline=thread_count >= 500,
+            baseline=thread_count >= 500 and threshold_profile_ref is None,
+            threshold_profile_ref=threshold_profile_ref,
         )
         attempt.commit(run_directory)
         return run_directory, manifest

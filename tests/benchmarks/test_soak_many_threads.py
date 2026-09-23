@@ -11,7 +11,7 @@ from harnessix.app_server.service import AgentApplicationService
 from harnessix.protocol.contracts import ThreadListResult
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
-from scripts.soak_manifest import SoakManifest
+from scripts.soak_manifest import SoakManifest, SoakProfileReference
 from scripts.soak_many_threads import run_many_threads
 from scripts.soak_sample_file import read_sample_file
 
@@ -73,6 +73,19 @@ async def test_baseline_requires_three_measured_restarts(tmp_path) -> None:
     data["load"]["thread_count"] = 500
     with pytest.raises(ValidationError, match="多Thread启动或列表样本数不足"):
         SoakManifest.model_validate(data)
+
+
+async def test_profile_bound_thread_candidate_requires_formal_load(tmp_path) -> None:
+    root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_many_threads(
+            root,
+            code_revision="a" * 40,
+            thread_count=12,
+            threshold_profile_ref=SoakProfileReference(profile_id="a" * 32, sha256="b" * 64),
+        )
+    assert error.value.code == "soak_load_invalid"
+    assert not root.exists()
 
 
 @pytest.mark.parametrize(

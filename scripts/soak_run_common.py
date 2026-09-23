@@ -18,6 +18,7 @@ from scripts.soak_manifest import (
     SoakLoad,
     SoakManifest,
     SoakManifestV2,
+    SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
 )
@@ -120,6 +121,7 @@ def publish_measured_run(
     rss: RssObservation,
     file_watermarks: SoakFileWatermarks,
     baseline: bool,
+    threshold_profile_ref: SoakProfileReference | None = None,
     context_proof: SoakContextProof | None = None,
     summary_request_count: int | None = None,
 ) -> tuple[Path, SoakManifest | SoakManifestV2]:
@@ -176,7 +178,7 @@ def publish_measured_run(
             orphan=0,
         ),
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
-        threshold_profile_ref=None,
+        threshold_profile_ref=threshold_profile_ref,
     )
     if context_proof is not None:
         if summary_request_count is None:

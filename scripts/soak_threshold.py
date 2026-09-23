@@ -134,6 +134,7 @@ class SoakVerificationReport(ContractModel):
         "load_mismatch",
         "fault_mismatch",
         "status_unverified",
+        "profile_mismatch",
     ]
     violations: tuple[str, ...]
     verified_at: datetime
@@ -352,7 +353,13 @@ def verify_and_publish(
                 <= _version(profile.python_max)
             ):
                 reason = "environment_mismatch"
-            elif candidate.status != "baseline":
+            elif (
+                candidate.threshold_profile_ref is None
+                or candidate.threshold_profile_ref.profile_id != profile.profile_id
+                or candidate.threshold_profile_ref.sha256 != profile_sha
+            ):
+                reason = "profile_mismatch"
+            elif candidate.status != "unverified" or not candidate.rss.unit_verified:
                 reason = "status_unverified"
             elif candidate.fault_counts != profile.expected_fault_counts:
                 reason = "fault_mismatch"

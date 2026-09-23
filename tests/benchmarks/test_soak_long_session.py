@@ -9,6 +9,7 @@ from harnessix.agent.runtime import AgentRuntime
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
 from scripts.soak_long_session import run_long_session, run_long_session_context
+from scripts.soak_manifest import SoakProfileReference
 from scripts.soak_provider import SoakSummaryProvider
 from scripts.soak_sample_file import read_sample_file
 
@@ -124,6 +125,20 @@ async def test_formal_baseline_rejects_unverified_revision_before_work(tmp_path)
         )
     assert error.value.code == "soak_revision_invalid"
     assert not (tmp_path / "evidence").exists()
+
+
+async def test_profile_bound_context_candidate_requires_formal_load(tmp_path) -> None:
+    root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_long_session_context(
+            root,
+            code_revision="a" * 40,
+            turn_count=12,
+            warmup_count=0,
+            threshold_profile_ref=SoakProfileReference(profile_id="a" * 32, sha256="b" * 64),
+        )
+    assert error.value.code == "soak_load_invalid"
+    assert not root.exists()
 
 
 async def test_context_run_publishes_event_proof_without_business_text(tmp_path) -> None:

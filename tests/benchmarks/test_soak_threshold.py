@@ -9,7 +9,12 @@ from pydantic import ValidationError
 from harnessix.agent.errors import KernelError
 from scripts.soak_attempt import attempt_scope
 from scripts.soak_environment import read_environment
-from scripts.soak_manifest import SoakFaultCounts, SoakFileWatermarks, SoakLoad
+from scripts.soak_manifest import (
+    SoakFaultCounts,
+    SoakFileWatermarks,
+    SoakLoad,
+    SoakProfileReference,
+)
 from scripts.soak_provider import SoakProvider
 from scripts.soak_rss import read_peak_rss
 from scripts.soak_run_common import latency_sample, publish_measured_run, rss_sample
@@ -26,7 +31,7 @@ from scripts.soak_threshold import (
 REVISION = "a" * 40
 
 
-def _run(root, *, latency: int, complete_attempt: bool = True):
+def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None):
     run_id = uuid4().hex
     rss = read_peak_rss()
     samples = tuple(
@@ -67,7 +72,8 @@ def _run(root, *, latency: int, complete_attempt: bool = True):
                     artifact_before_bytes=0,
                     artifact_after_bytes=0,
                 ),
-                baseline=True,
+                baseline=profile_ref is None,
+                threshold_profile_ref=profile_ref,
             )
             if complete_attempt:
                 attempt.commit(directory)
@@ -142,11 +148,19 @@ def test_independent_run_passes_only_with_frozen_complete_evidence(tmp_path) -> 
     from scripts.soak_evidence import read_published_run
 
     baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
-    candidate_dir, _ = _run(tmp_path / "candidate", latency=105)
     _, digest = read_published_run(baseline_dir)
     profile = _profile(baseline, digest)
     profile_dir, profile_sha = publish_profile(tmp_path / "profiles", profile, baseline_dir)
     assert read_profile(profile_dir) == (profile, profile_sha)
+    candidate_dir, candidate = _run(
+        tmp_path / "candidate",
+        latency=105,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha),
+    )
+    assert candidate.status == "unverified"
+    assert candidate.threshold_profile_ref == SoakProfileReference(
+        profile_id=profile.profile_id, sha256=profile_sha
+    )
 
     report_dir, report = verify_and_publish(
         profile_dir, baseline_dir, candidate_dir, tmp_path / "reports"
@@ -165,10 +179,13 @@ def test_exceeded_limit_and_same_run_fail_closed(tmp_path) -> None:
     from scripts.soak_evidence import read_published_run
 
     baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
-    candidate_dir, _ = _run(tmp_path / "candidate", latency=150)
     _, digest = read_published_run(baseline_dir)
-    profile_dir, _ = publish_profile(
-        tmp_path / "profiles", _profile(baseline, digest), baseline_dir
+    profile = _profile(baseline, digest)
+    profile_dir, profile_sha = publish_profile(tmp_path / "profiles", profile, baseline_dir)
+    candidate_dir, _ = _run(
+        tmp_path / "candidate",
+        latency=150,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha),
     )
     _, report = verify_and_publish(profile_dir, baseline_dir, candidate_dir, tmp_path / "reports")
     assert report.status == "FAIL" and report.reason == "limit_exceeded"
@@ -177,14 +194,37 @@ def test_exceeded_limit_and_same_run_fail_closed(tmp_path) -> None:
     assert repeated.status == "unverified" and repeated.reason == "load_mismatch"
 
 
+def test_candidate_without_bound_profile_cannot_pass(tmp_path) -> None:
+    from scripts.soak_evidence import read_published_run
+
+    baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
+    _, digest = read_published_run(baseline_dir)
+    profile = _profile(baseline, digest)
+    profile_dir, _ = publish_profile(tmp_path / "profiles", profile, baseline_dir)
+    candidate_dir, _ = _run(tmp_path / "candidate", latency=100)
+    _, report = verify_and_publish(profile_dir, baseline_dir, candidate_dir, tmp_path / "reports")
+    assert report.status == "unverified" and report.reason == "profile_mismatch"
+    wrong_dir, _ = _run(
+        tmp_path / "wrong-candidate",
+        latency=100,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256="0" * 64),
+    )
+    _, wrong = verify_and_publish(profile_dir, baseline_dir, wrong_dir, tmp_path / "reports")
+    assert wrong.status == "unverified" and wrong.reason == "profile_mismatch"
+
+
 def test_tamper_incomplete_attempt_and_invalid_profile_cannot_pass(tmp_path) -> None:
     from scripts.soak_evidence import read_published_run
 
     baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
-    candidate_dir, _ = _run(tmp_path / "candidate", latency=100, complete_attempt=False)
     _, digest = read_published_run(baseline_dir)
-    profile_dir, _ = publish_profile(
-        tmp_path / "profiles", _profile(baseline, digest), baseline_dir
+    profile = _profile(baseline, digest)
+    profile_dir, profile_sha = publish_profile(tmp_path / "profiles", profile, baseline_dir)
+    candidate_dir, _ = _run(
+        tmp_path / "candidate",
+        latency=100,
+        complete_attempt=False,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha),
     )
     _, report = verify_and_publish(profile_dir, baseline_dir, candidate_dir, tmp_path / "reports")
     assert report.status == "unverified" and report.reason == "evidence_invalid"
@@ -200,10 +240,13 @@ def test_candidate_tamper_is_persisted_as_unverified_and_report_is_sealed(tmp_pa
     from scripts.soak_evidence import read_published_run
 
     baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
-    candidate_dir, _ = _run(tmp_path / "candidate", latency=100)
     _, digest = read_published_run(baseline_dir)
-    profile_dir, _ = publish_profile(
-        tmp_path / "profiles", _profile(baseline, digest), baseline_dir
+    profile = _profile(baseline, digest)
+    profile_dir, profile_sha = publish_profile(tmp_path / "profiles", profile, baseline_dir)
+    candidate_dir, _ = _run(
+        tmp_path / "candidate",
+        latency=100,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha),
     )
     sample_file = candidate_dir / "samples.jsonl"
     sample_file.write_bytes(sample_file.read_bytes().replace(b'"value":100', b'"value":999', 1))
