@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
+version: 3
 code_revision: 6e64a5cba2108ac77de90a5726b45773b4482c75
 owners:
   - core
@@ -25,7 +25,7 @@ supersedes: []
 
 Revision `6e64a5cba2108ac77de90a5726b45773b4482c75`的[手动多Thread工作流 35876022276](https://github.com/carrie1988/Harnessix/actions/runs/35876022276)在Linux、macOS、Windows各完成一次固定500 Thread、每页50条、预热一次、正式重启三次的真实Runtime/App Service负载。三个平台的Run与Attempt均成功；归档的18份原始文件与三个GitHub ZIP逐字节一致，Run/Attempt Reader、v6逐轮分页Proof、原始样本最近秩分位数均独立复核通过。[证据清单](bundle-manifest.json)绑定来源上传件及每个文件的SHA-256，[评审包](review-packet.json)记录数值与未关闭门禁。
 
-**这是三平台各一次正式基线，不是场景PASS。** `manifest.status=baseline`只表示固定负载及证据合同成立。冻结工程阈值、负载前绑定的第二独立候选和三平台独立报告尚未完成；0.9.3d其他场景及0.9.4～0.9.6亦未由本证据关闭。源码Revision的[常规CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job均成功；此结果与手动Soak三Job分开核对，不能仅以手动工作流绿色替代全仓CI。
+**这是三平台各一次正式基线与预冻结Profile，不是场景PASS。** `manifest.status=baseline`只表示固定负载及证据合同成立；三平台Profile已从该基线独立封印，负载前绑定的第二独立候选和三平台报告尚未完成。0.9.3d其他场景及0.9.4～0.9.6亦未由本证据关闭。源码Revision的[常规CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job均成功；此结果与手动Soak三Job分开核对，不能仅以手动工作流绿色替代全仓CI。
 
 ## 2. 负载、证明与数据流程
 
@@ -78,14 +78,27 @@ for platform in ('linux', 'macos', 'windows'):
 PY
 ```
 
-## 5. 评审状态与后续门禁
+## 5. 三平台预冻结Profile与工程阈值
+
+冻结前已核对基线Revision的六Job CI、三平台v6 Proof、Run/Attempt与18份原件SHA。三平台分别从本平台原始分位数和文件端点计算阈值，使用启动/分页10000 bp（+100%）、RSS及文件正增长5000 bp（+50%）的**预定工程余量**；`_margin_upper`整数向上取整，基线0增长的上限仍为0。故障分类全0且不可放宽。Python范围固定`3.12.0`～`3.12.99`，硬件档位各自绑定。封印Profile的规范原字节与`SEALED.json`见[`profiles`](profiles)，[证据清单](bundle-manifest.json)逐文件记录SHA；Windows路径已配置Git `-text`。
+
+| 平台 | Profile ID / 规范字节SHA-256 | 启动P95上限（ns） | 分页P95上限（ns） | RSS上限（bytes） | DB正增长上限（bytes） |
+|---|---|---:|---:|---:|---:|
+| Linux | [`f5a6494bc97a461e864245873b80ae84`](profiles/linux/f5a6494bc97a461e864245873b80ae84/profile.json) / `1f119ef47cfda91b99291464c24575942e2650173c1f70e1759fe2eacabeba91` | 1,352,060,044 | 1,337,484,978 | 90,703,872 | 737,280 |
+| macOS | [`607c02967b0542ada186d7305dcc7a11`](profiles/macos/607c02967b0542ada186d7305dcc7a11/profile.json) / `9c26c02074e88c4b8cb763c747ae5b2e70c14cb863bcc0ddfdf4feda0c18f628` | 3,795,073,332 | 2,333,598,000 | 98,058,240 | 804,864 |
+| Windows | [`d06409e573654082929ace66e6a53b86`](profiles/windows/d06409e573654082929ace66e6a53b86/profile.json) / `5f7c4e7c5eee4c3a2b5ab915a041002573d8ec87d33691d7290a89eefe8915fb` | 3,475,358,200 | 3,405,941,000 | 93,370,368 | 804,864 |
+
+P50/P99及WAL/Artifact增长上限不能从本表省略推断；正式数值以封印Profile字段为准，`publish_profile`已逐项校验数学来源，随后`read_profile`与`verify_profile_baseline`独立重读。候选必须在负载开始前将本平台Profile ID和SHA写入STARTED v2，再产生新Run与报告；不能拿候选数值倒推阈值。三平台第二Run不存在时，任何Profile本身都不构成PASS。
+
+## 6. 评审状态与后续门禁
 
 | 检查 | 状态 | 边界 |
 |---|---|---|
 | 三平台真实固定负载 | 通过 | 三个独立Job和各自不同的State/Run ID；模型请求数0。 |
 | v6 Proof、Run/Attempt、文件和统计 | 通过 | 18份原件、三个ZIP、四轮分页及45条样本各平台独立复核。 |
 | 同Revision六实例常规CI | 通过 | [CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job成功；仍不代替第二独立候选。 |
-| 三平台冻结Profile与第二Run | 未执行 | 单次基线不判PASS；不得以历史v1或完整产品重启Profile替代。 |
+| 三平台冻结Profile | 通过 | 三份Profile及SEALED原件从各自v6基线形成，完整基线与阈值数学来源已独立重读。 |
+| 负载前绑定的第二独立Run | 未执行 | 单次基线及封印Profile均不判PASS；不得以历史v1或完整产品重启Profile替代。 |
 | 0.9.3d整体 | 未完成 | Action恢复、长会话和Artifact等场景另行验证。 |
 
 GitHub上传件保留14日；本目录归档规范原件与文件摘要。任何平台在后续CI、Proof或阈值复核中发现缺陷，应保留原件作为诊断，修复后在新Revision重新采集，不能原地补写或追认PASS。源码设计及相关失效路径见[逐轮分页证明v6详设](../../changes/m09-3d-many-threads-proof-v6.md)与[三平台采集详设](../../changes/m09-3d-many-threads-three-platform-evidence.md)。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: d2972e13dae199d35f28771873856aa8f5824819
+version: 3
+code_revision: 60d6c1b851789efdd9a3cf5029587ffef0b3077d
 owners:
   - core
 modules:
@@ -120,3 +120,7 @@ return success_only_when(report.status == PASS)
 [`test_run_many_threads_soak_candidate.py`](../../tests/benchmarks/test_run_many_threads_soak_candidate.py)以合成v6基线验证真实Profile封印和阈值报告，覆盖唯一Profile、旧v1拒绝、固定负载参数、STARTED v2绑定、父进程超时与成功/非PASS退出码；基线的真实三平台Reader和逐页Proof已由[归档原件](../validation/soak-many-threads-three-platform-2026-09-23-v2/README.md)复核。发布工作流是手动三平台Job，使用同源码Revision独立执行，不依赖远程数据库或真实模型，不新增Action HTTP/Worker体系。回退只停用手动工作流；保留历史封印Profile/Run/Report为只读证据。
 
 限制包括托管机基线样本有限、20分钟进程硬停止不等于Agent业务取消语义、两次Run不能证明高并发C端SLA、匿名Proof无法重新读取已删除临时SQLite。Profile冻结之前必须检查基线Revision常规CI和18份原件；候选完成后还必须下载并独立核对三个平台的原始文件、报告、样本及同Revision常规CI。只有三份报告均为PASS，才能关闭**固定多Thread场景**的工程阈值门禁；这不关闭0.9.3d整体。
+
+## 6. 当前证据状态
+
+[三平台v6基线归档](../validation/soak-many-threads-three-platform-2026-09-23-v2/README.md)已包含三个从各自基线形成的封印Profile，规范字节SHA、数学余量、文件摘要及来源CI均已复核。第二独立Run和三平台报告尚未产生，固定多Thread场景仍为`unverified`；任何候选FAIL或环境不可比都应如实归档，不得在运行后修改这些Profile。

@@ -122,6 +122,56 @@
       "run_id": "298a7b2494d64ec981ea5f181c6c0715"
     }
   },
+  "profiles": {
+    "linux": {
+      "files": [
+        {
+          "path": "profiles/linux/f5a6494bc97a461e864245873b80ae84/SEALED.json",
+          "sha256": "e004581aba26bcd1aea986a259f274ee54abc3d6904a48c59bdf3c24e79c447e",
+          "size_bytes": 144
+        },
+        {
+          "path": "profiles/linux/f5a6494bc97a461e864245873b80ae84/profile.json",
+          "sha256": "1f119ef47cfda91b99291464c24575942e2650173c1f70e1759fe2eacabeba91",
+          "size_bytes": 1728
+        }
+      ],
+      "profile_id": "f5a6494bc97a461e864245873b80ae84",
+      "profile_sha256": "1f119ef47cfda91b99291464c24575942e2650173c1f70e1759fe2eacabeba91"
+    },
+    "macos": {
+      "files": [
+        {
+          "path": "profiles/macos/607c02967b0542ada186d7305dcc7a11/SEALED.json",
+          "sha256": "7fa13c61232d4fe2cc9aec97275e4ce8be1eb6e83356b5dc865f6819a73cb50d",
+          "size_bytes": 144
+        },
+        {
+          "path": "profiles/macos/607c02967b0542ada186d7305dcc7a11/profile.json",
+          "sha256": "9c26c02074e88c4b8cb763c747ae5b2e70c14cb863bcc0ddfdf4feda0c18f628",
+          "size_bytes": 1728
+        }
+      ],
+      "profile_id": "607c02967b0542ada186d7305dcc7a11",
+      "profile_sha256": "9c26c02074e88c4b8cb763c747ae5b2e70c14cb863bcc0ddfdf4feda0c18f628"
+    },
+    "windows": {
+      "files": [
+        {
+          "path": "profiles/windows/d06409e573654082929ace66e6a53b86/SEALED.json",
+          "sha256": "13c13e8cc5083cc6f99af03f653cb59dc273e276cd03a5d7c4efdef8c8e56515",
+          "size_bytes": 144
+        },
+        {
+          "path": "profiles/windows/d06409e573654082929ace66e6a53b86/profile.json",
+          "sha256": "5f7c4e7c5eee4c3a2b5ab915a041002573d8ec87d33691d7290a89eefe8915fb",
+          "size_bytes": 1731
+        }
+      ],
+      "profile_id": "d06409e573654082929ace66e6a53b86",
+      "profile_sha256": "5f7c4e7c5eee4c3a2b5ab915a041002573d8ec87d33691d7290a89eefe8915fb"
+    }
+  },
   "source_workflow_run_id": 35876022276,
   "spec_version": "harnessix.soak-bundle/v1"
 }

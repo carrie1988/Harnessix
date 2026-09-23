@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: d2972e13dae199d35f28771873856aa8f5824819
+version: 4
+code_revision: 60d6c1b851789efdd9a3cf5029587ffef0b3077d
 owners:
   - core
 modules:
@@ -131,6 +131,6 @@ Runner对空页、重复、缺失Thread或不收敛游标仍产生稳定`soak_li
 | 页重复、缺页、错误终止、集合漂移及重封印索引篡改 | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | Proof模型与Reader均失败关闭。 |
 | 旧v1可读但不可冻结；v6可冻结并复验 | [`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py) | 本地合同回归通过；合成阈值不等于真实平台PASS。 |
 | 固定500 Thread三平台正式新Revision Run | [正式采集工作流](../../.github/workflows/many-threads-soak.yml) | [三平台v6原件](../validation/soak-many-threads-three-platform-2026-09-23-v2/README.md)已归档并独立重读；同Revision常规CI待终态，历史v1不能复用。 |
-| 各平台冻结Profile并在负载前绑定第二独立候选 | [`soak_threshold.py`](../../scripts/soak_threshold.py) | [冻结Profile与候选详设](m09-3d-many-threads-frozen-profile-candidate.md)及入口已实现，本地合同回归通过；三平台真实Profile与第二Run仍待执行，单次基线不判PASS。 |
+| 各平台冻结Profile并在负载前绑定第二独立候选 | [`soak_threshold.py`](../../scripts/soak_threshold.py) | [冻结Profile与候选详设](m09-3d-many-threads-frozen-profile-candidate.md)及入口已实现，本地合同回归通过；[三平台Profile](../validation/soak-many-threads-three-platform-2026-09-23-v2/README.md#5-三平台预冻结profile与工程阈值)已封印并独立重读，第二Run待执行，单次基线不判PASS。 |
 
 发布顺序固定为：完整本地回归与文档门禁 → 干净Revision三平台CI和正式v6基线 → 下载归档并独立重算文件SHA/Proof/样本/Attempt → 审查工程余量并分别封印三平台Profile → 新Revision或同一实现的独立Run在负载前绑定Profile → 三份独立报告及完整评审。0.9.3d还包含Action恢复、长会话和Artifact等场景，不能由多Thread单项完成代表整个阶段完成。
