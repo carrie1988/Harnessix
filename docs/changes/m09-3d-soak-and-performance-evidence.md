@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 23
-code_revision: 005d72d54f94f37e1e0e076e3944e911fa94dcc9
+version: 24
+code_revision: 80653a18c93f59c85c22182b79b49381230500d6
 owners:
   - core
 modules:
@@ -574,7 +574,7 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 
 ### 12.3 `SoakManifest`（`harnessix.soak-manifest/v1`，内存合同已实现）
 
-[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有单独发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py)执行Run级排他目录、Manifest字节发布和最后提交标记；[`soak_threshold.py`](../../scripts/soak_threshold.py)进一步验证候选Manifest预绑定的Profile ID/摘要与完整基线、候选Attempt，正式阈值证据仍待形成。
+[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有单独发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py)执行Run级排他目录、Manifest字节发布和最后提交标记；[`soak_attempt.py`](../../scripts/soak_attempt.py)在候选负载前保存STARTED v2，最终核对与Manifest相同的Profile引用；[`soak_threshold.py`](../../scripts/soak_threshold.py)再验证完整基线、候选Attempt与冻结阈值，正式阈值证据仍待形成。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
@@ -598,18 +598,20 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 | `file_watermarks` | 六个非负字节字段 | 是 | `capacity_report`/文件采样 | DB、WAL、Artifact正文的前后水位 | 无 | 低 | Manifest | 字段缺失拒绝；实际水位来源待Runner复核。 |
 | `fault_counts` | 六个非负计数字段 | 是 | Runner/Recovery | 取消、超时、EOF、UNKNOWN、重复效果、孤儿 | 无 | 低 | Manifest | 未知分类拒绝；实际故障来源待Runner复核。 |
 | `evidence_sha256` | 固定文件摘要映射 | 是 | Writer | 当前v1只接受`samples.jsonl`的64位SHA-256；报告和Profile另行发布 | 无 | 低 | Manifest | 摘要不符失败。 |
-| `threshold_profile_ref` | Profile身份/摘要或空 | 条件 | Runner/Validator | 基线Run为空；候选由正式Runner在执行前提供冻结Profile引用，独立校验器要求与Profile原字节摘要一致 | 无 | 低 | Manifest | 缺失或错配为`unverified`，不得事后配对。 |
+| `threshold_profile_ref` | Profile身份/摘要或空 | 条件 | Runner/Validator | 基线Run为空；候选在STARTED v2与最终Manifest写入相同引用，独立校验器要求与Profile原字节摘要一致 | 无 | 低 | STARTED及Manifest | 缺失或错配为`unverified`，不得事后配对。 |
 
 Manifest禁止字段：绝对路径、用户/主机名、Prompt、代码、Tool正文、Secret、stderr、PID、Request/Thread/Action ID以及原始异常文本。`statistics`中的值也不能成为唯一证据；Validator必须从`SoakSample`重算。
 
 Run提交标记固定为`COMMITTED.json`，采用严格JSON对象`{"spec_version":"harnessix.soak-commit/v1","manifest_sha256":"<64位小写十六进制>"}`；拒绝缺失、未知字段和非法摘要。标记只引用Manifest字节摘要，不参与Manifest的`evidence_sha256`，避免循环摘要。当前`read_published_run`只接受目录内恰好有`samples.jsonl`、`manifest.json`和`COMMITTED.json`，并重算全部摘要、统计和RSS。存在标记但任何引用不符时，整个Run仍为无效证据，不能恢复性地判PASS；独立Profile/报告不是该Run目录内文件。
 
-### 12.3.1 `SoakAttempt`（`harnessix.soak-attempt-*/v1`，现有两个Runner已实现）
+### 12.3.1 `SoakAttempt`（基线STARTED v1、候选STARTED v2、FINAL v1）
 
 [`soak_attempt.py`](../../scripts/soak_attempt.py)在临时业务State Root建立前，把一次运行的低敏开始事实写入
 `<evidence_root>/attempts/<run_id>/STARTED.json`；正常异常、协作取消或未调用`commit`时写入同目录`FINAL.json`的
 `failed`终态。Run发布并从磁盘独立重读成功后，才允许写入`committed`终态。两文件均使用排他创建、规范JSON、
 文件`fsync`及POSIX目录同步，不覆盖既有Run或Attempt。`STARTED`与`FINAL`不是第三种性能样本，不进入Manifest摘要。
+基线保持原始STARTED v1规范字节；有阈值引用的候选在任何负载前写STARTED v2，含冻结Profile ID与原字节SHA-256，
+不得在看到测量结果后只向Manifest补引用。Run提交后，Attempt终态写入前必须核对两处引用及v2启动时间顺序。
 
 ```mermaid
 stateDiagram-v2
@@ -624,28 +626,29 @@ stateDiagram-v2
 
 | 对象/字段 | 类型与约束 | 语义及来源 | 安全/恢复边界 |
 |---|---|---|---|
-| `STARTED.spec_version` | 固定`harnessix.soak-attempt-start/v1` | 开始合同版本 | 未知版本失败关闭。 |
+| `STARTED.spec_version` | 基线固定`harnessix.soak-attempt-start/v1`；候选固定`v2` | 旧基线字节不改写，候选显式选择阈值 | 未知版本失败关闭。 |
 | `STARTED.run_id` | 32位小写十六进制 | 与Attempt目录、Run Manifest共享不透明身份 | 不保存Thread、Request或Action ID。 |
 | `STARTED.code_revision`、`scenario_id` | 40位小写SHA-1、固定六场景枚举 | 绑定被测代码和场景 | `committed`时必须与已发布Manifest一致。 |
 | `STARTED.started_at` | UTC时间 | Attempt建立时墙钟 | 不用于性能时延；硬退出仍可确定曾开始。 |
+| `STARTED v2.threshold_profile_ref` | Profile ID及规范SHA-256 | 负载前持久选择冻结阈值 | 必须与候选Manifest逐字段一致；Manifest开始时间不得早于STARTED。 |
 | `FINAL.outcome`、`phase` | `failed/committed`；`prepared/warming/measuring/reconciling/publishing` | 只描述低敏终态和失败阶段，不保存异常文本 | `committed`仅允许`publishing`阶段；失败不宣称业务效果确定未发生。 |
 | `FINAL.finished_at`、`manifest_sha256` | UTC时间；成功时必填64位摘要 | 成功终态绑定Run Manifest原始字节 | 失败时摘要必须为空；终态时间不得早于开始时间。 |
 
 `read_attempt`要求Attempt目录只有`STARTED.json`和可选`FINAL.json`、文件为非符号链接普通文件、内容不超过
 2048字节且严格符合规范序列化。对`committed`，它重新读取同一根目录下的Run并校验Manifest摘要、Run ID、场景和
-Revision；对`failed`，有效已发布Run不得同时存在。仅有`STARTED`表示**未完成**，包括硬退出与Run已发布但
+Revision及候选Profile预绑定；对`failed`，有效已发布Run不得同时存在。仅有`STARTED`表示**未完成**，包括硬退出与Run已发布但
 Attempt终态尚未落盘的窗口；即使`COMMITTED.json`存在也不能据此判PASS。Attempt文件被篡改时`read_attempt`拒绝；
-不完整Run由`read_published_run`拒绝，后续Validator还须拒绝任何部分Run与Attempt组合。不得自动补写终态或删除证据。当前还没有正式Profile Validator，后续Validator必须把完整Attempt
-作为PASS必要条件，并检查对应Run是否达到场景最低负载。
+不完整Run由`read_published_run`拒绝，现行[`verify_and_publish`](../../scripts/soak_threshold.py)把完整Attempt
+作为PASS必要条件，并核对对应Run的正式场景负载。不得自动补写终态或删除证据。
 
 ```text
 run_id = new_unique_id()
-begin_attempt(root, run_id, revision, scenario)  # 先写STARTED，再采集环境/执行负载
+begin_attempt(root, run_id, revision, scenario, optional_profile_ref)  # 候选写v2；先于负载
 try:
     execute_real_product_load_and_reconcile()
     run_dir = publish_measured_run(...)
     read_published_run(run_dir)                     # commit内部再次核对
-    finish_attempt(COMMITTED, digest)              # FINAL为第二提交边界
+    finish_attempt(COMMITTED, digest)              # 核对STARTED/Manifest绑定后提交FINAL
 except BaseException:
     if no_valid_published_run:
         finish_attempt(FAILED, last_phase)
@@ -658,33 +661,35 @@ except BaseException:
 `prepared`失败。实现与故障注入分别见[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)、
 [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)和
 [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py)。
+STARTED v2仅在受信、只写一次的发布根内记录选择事实；它没有数字签名，不证明具有写权限的恶意发布者未修改文件。
 
 ### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，单平台内核已实现）
 
-Profile是独立于Run的只读发布对象。分位数算法已固定为`nearest_rank_v1`；具体样本数量、工程余量数值、平台硬件档位范围或每项指标门槛仍须在基线冻结时明确填写，冻结前状态只能为`pending_baseline_freeze`。
+Profile是独立于Run的只读发布对象。分位数算法固定为`nearest_rank_v1`；具体样本数、工程余量、平台硬件档位及每项指标门槛必须由基线事实和工程评审明确填写。当前实现只接受`frozen`；冻结前以**没有Profile文件**表示待冻结，不存在可执行的`pending_baseline_freeze`对象。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
 | `spec_version` | 固定字符串 | 是 | Profile Writer | `harnessix.soak-threshold/v1` | 无 | 低 | Profile | 结构变化升版本。 |
 | `profile_id` | 不透明唯一标识 | 是 | 冻结流程 | 非业务标识，不可复用 | 无 | 低 | Profile | 新阈值新身份。 |
-| `status` | `pending_baseline_freeze`/`frozen` | 是 | 冻结流程 | 未填写具体阈值或统计规则时必须为待冻结 | 无 | 低 | Profile | 待冻结Profile不可执行门禁。 |
+| `status` | 固定`frozen` | 是 | 冻结流程 | 未评审数值不得发布Profile | 无 | 低 | Profile | 未冻结以对象缺席表示。 |
 | `scenario_version`/`scenario_id` | 固定字符串/枚举 | 是 | Scenario | 与基线和复验一致 | 无 | 低 | Profile | 不一致为`unverified`。 |
 | `platform` | 平台枚举 | 是 | 基线环境 | 单平台绑定 | 无 | 低 | Profile | 不得跨平台套用。 |
-| `hardware_class` | 已冻结档位标识 | 是 | 基线环境 | CPU/内存档位；具体分档待冻结 | 待冻结 | 低 | Profile | 档位变化需新Profile。 |
-| `python_compatibility` | 版本范围对象 | 是 | 基线环境 | 解释器版本/兼容范围 | 待冻结 | 低 | Profile | 超范围不可PASS。 |
+| `hardware_class` | 已冻结档位标识 | 是 | 基线环境 | CPU/内存档位必须与基线相等 | 无 | 低 | Profile | 档位变化需新Profile。 |
+| `python_min`/`python_max` | 规范版本字符串 | 是 | 工程评审 | 闭区间必须包含基线版本 | 无 | 低 | Profile | 候选超范围不可PASS。 |
 | `baseline_run_id` | Run标识 | 是 | 基线Manifest | 首次事实基线的身份 | 无 | 低 | Profile | 必须与摘要核对。 |
 | `baseline_manifest_sha256` | 64位摘要 | 是 | Writer/冻结流程 | 绑定完整基线Manifest | 无 | 低 | Profile | 不符拒绝。 |
-| `sample_count` | 严格正整数对象 | 是 | 基线/冻结配置 | 每Metric正式样本数；具体值待冻结且复验必须相等 | 待冻结 | 低 | Profile | 不得运行时改写。 |
+| `sample_counts` | Metric到严格正整数的映射 | 是 | 基线 | 与基线完整指标集合和数量相等 | 无 | 低 | Profile | 候选必须相等。 |
 | `quantile_method` | 固定算法枚举 | 是 | 样本合同 | 固定`nearest_rank_v1`：非负整数升序取1基`ceil(p*n/100)`位置，无插值 | 无 | 低 | Profile | 缺失或不同方法不得比较。 |
-| `margin_policy` | 结构化对象 | 是 | 工程评审 | 基线加工程余量的方向、单位和数值；具体值待冻结 | 待冻结 | 低 | Profile | 禁止自由文本或运行时选择。 |
-| `metric_thresholds` | 固定Metric到上/下限对象 | 是（`frozen`时） | 冻结流程 | 每Metric的单位、统计量、上限/下限和比较方向 | 空（仅待冻结） | 低 | Profile | `frozen`不得为空；缺项为`unverified`。 |
-| `required_platform_validation` | 平台枚举数组 | 是 | 发布策略 | 明确本Profile要求的平台集合 | 待冻结 | 低 | Profile | 缺平台不可声称三平台完成。 |
+| `metric_limits` | 每Metric的单位、`upper`方向、显式basis points余量和三个分位数上限 | 是 | 工程评审/基线 | 上限须精确等于`ceil(基线分位数×(10000+余量)/10000)` | 无 | 低 | Profile | 缺指标或公式不符拒绝冻结。 |
+| `growth_limits` | DB/WAL/Artifact各一项正增长字节上限及basis points余量 | 是 | 工程评审/基线 | 独立比较三类文件增长，不以收缩抵扣 | 无 | 低 | Profile | 缺项或公式不符拒绝冻结。 |
+| `expected_fault_counts` | 六类固定故障计数 | 是 | 基线 | 候选必须与冻结事实一致 | 无 | 低 | Profile | 故障计数漂移不可PASS。 |
+| `required_platform_validation` | 平台枚举数组 | 是 | 发布策略 | 精确包含Linux、macOS和Windows；Profile自身仍只绑定一个平台 | 无 | 低 | Profile | 单平台PASS不等于三平台完成。 |
 | `created_at` | UTC时间 | 是 | 冻结流程 | Profile发布时间 | 无 | 低 | Profile | 发布后不可修改。 |
 
 Profile不允许把“基线P95加百分比”写成未展开的自由文本；冻结时必须把具体的统计方法、工程余量和最终数值写入结构化字段。若这些值尚未由批准的基线文件给出，本文只记录待冻结，不臆造通过门槛。
 
 现行[`soak_threshold.py`](../../scripts/soak_threshold.py)已提供`frozen`单平台Profile及独立复验报告合同，
-以Profile缺席表达`pending_baseline_freeze`，不发布可执行的待冻结对象。它要求完整基线Run/Attempt、精确余量公式、
+以Profile缺席表达待冻结，不发布可执行的待冻结对象。它要求完整基线Run/Attempt、精确余量公式、
 新的完整复验Run/Attempt，以及全部分位数、三类文件增长和故障计数比较；`SEALED.json`最后提交。
 详细字段、异常矩阵、部署和测试见[阈值复验详设](m09-3d-threshold-verification.md)。当前没有经工程评审冻结的
 正式数值或三平台独立复验，故实现存在不表示发布门禁通过；四个未实现Runner场景也被拒绝冻结。
@@ -703,7 +708,7 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
 5. Runner从磁盘独立重读已发布Run，核对Attempt的Run ID、Revision、场景及Manifest摘要后，再排他写入`attempts/<run_id>/FINAL.json`的`committed`终态；失败或协作取消在无有效已发布Run时写`failed`，硬退出则保留仅`STARTED`。独立Profile与单平台阈值报告现由离线校验器只读发布，不修改Run原件；正式Profile和三平台完整复验尚未形成。
 
-若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。若在步骤4与5之间退出，即使Run有有效提交标记，Attempt仍只有`STARTED`，未来发布校验器必须拒绝PASS。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
+若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。若在步骤4与5之间退出，即使Run有有效提交标记，Attempt仍只有`STARTED`，现行复验校验器也拒绝PASS。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
 
 ## 14. 并发、幂等与一致性
 
@@ -939,4 +944,5 @@ run_scenario(scenario, seed, environment):
 | 20 | `d947a57aec68a5f9770a18d1996f58be0237e60d` | 2026-09-23 | 补录同Revision Windows Job重跑成功；首次失败原因未明，保持原件诊断属性及Profile冻结阻断。 |
 | 21 | `5ab32753aace369387875a75b50802beb3327d98` | 2026-09-23 | 将SDK容量取消单测的固定sleep改为子进程确认与显式放行，重复30轮及全量回归通过；增加Windows Product UI超时低敏诊断，不将其误报为根因修复。 |
 | 22 | `d376104f751af2b7b6e9835bb59fba66c0ce9d96` | 2026-09-23 | 增加冻结阈值Profile与独立复验内核；明确当前仅支持两类场景且尚无发布级数值证据。 |
-| 23 | `005d72d54f94f37e1e0e076e3944e911fa94dcc9` | 2026-09-23 | 正式候选Runner预绑定Profile身份与摘要，校验器拒绝缺失或不匹配的候选Manifest。 |
+| 23 | `005d72d54f94f37e1e0e076e3944e911fa94dcc9` | 2026-09-23 | 候选Runner由调用参数选择Profile，并在最终Manifest保存引用；该版本尚无负载前的持久选择证据。 |
+| 24 | `80653a18c93f59c85c22182b79b49381230500d6` | 2026-09-23 | 候选STARTED v2在负载前持久预绑定Profile身份/摘要；Attempt提交及复验跨文件核对，保留v1历史字节。 |

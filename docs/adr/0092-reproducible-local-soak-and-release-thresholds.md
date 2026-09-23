@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 16
-code_revision: 005d72d54f94f37e1e0e076e3944e911fa94dcc9
+version: 17
+code_revision: 80653a18c93f59c85c22182b79b49381230500d6
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 
 ## 背景
 
-单平台[阈值独立复验内核](../changes/m09-3d-threshold-verification.md)已实现：冻结Profile必须绑定完整基线Run/Attempt与精确工程余量，候选必须是另一份完整Run/Attempt，并在执行前把Profile ID/原字节摘要写入Manifest；原始样本、环境、负载、分位数和文件增长由Reader重新核对，报告以`PASS/FAIL/unverified`和最后提交标记不可覆盖发布。当前只对`long_session` v2及`many_threads` v1开放冻结；尚无经工程评审的正式Profile或三平台独立复验。此事实不改变本文`reviewing`状态，也不把历史诊断升级为发布PASS。
+单平台[阈值独立复验内核](../changes/m09-3d-threshold-verification.md)已实现：冻结Profile必须绑定完整基线Run/Attempt与精确工程余量，候选必须是另一份完整Run/Attempt；候选在执行前以`STARTED v2`持久绑定Profile ID/原字节摘要，最终Manifest必须使用同一引用。原始样本、环境、负载、分位数和文件增长由Reader重新核对，报告以`PASS/FAIL/unverified`和最后提交标记不可覆盖发布。当前只对`long_session` v2及`many_threads` v1开放冻结；尚无经工程评审的正式Profile或三平台独立复验。此事实不改变本文`reviewing`状态，也不把历史诊断升级为发布PASS。
 
 0.9.3a～c已经分别加固本地传输、共库保留、Action效果恢复，但局部故障测试不能证明大量Thread、长历史、
 Artifact增长和反复重启时仍有可接受的启动时延、内存和恢复结果。[可靠性专项源码研究](../research/reliability-and-performance.md#10-093d长会话与性能证据专项源码核查)
@@ -145,4 +145,5 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 | 13 | 2026-09-23 | 补录同一Revision Windows Job第二次尝试成功；首次超时原因未明，保留失败谱系和诊断属性，不据此冻结Profile。 |
 | 14 | 2026-09-23 | SDK容量取消单测改为子进程确认和显式放行，Windows Product UI测试增加低敏超时诊断；两个变更均不替代正式Soak Runner或故障根因关闭。 |
 | 15 | 2026-09-23 | 定义单平台冻结阈值Profile、独立复验报告与不可覆盖发布；正式数值和三平台复验仍待完成。 |
-| 16 | 2026-09-23 | 要求候选Runner在执行前将冻结Profile身份及摘要写入Manifest，防止事后选择阈值。 |
+| 16 | 2026-09-23 | 候选Runner由调用参数预选Profile并在最终Manifest保存引用；尚未持久证明该选择先于负载。 |
+| 17 | 2026-09-23 | 候选在负载前新增STARTED v2持久预绑定，Attempt终态与独立复验核对其与Manifest的引用和时间顺序；v1历史基线原字节不变。 |

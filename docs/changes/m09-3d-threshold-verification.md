@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 005d72d54f94f37e1e0e076e3944e911fa94dcc9
+version: 3
+code_revision: 80653a18c93f59c85c22182b79b49381230500d6
 owners:
   - core
 modules:
@@ -42,7 +42,7 @@ flowchart LR
     Base[已提交基线Run及Attempt] --> Reader[Run/Attempt独立Reader]
     Frozen[显式Profile及工程余量] --> Profile[Profile校验与SEALED提交]
     Reader --> Profile
-    Candidate[另一Run及Attempt] --> Check[原始样本/场景/环境/负载核对]
+    Candidate[负载前STARTED v2绑定<br/>随后另一Run及FINAL] --> Check[原始样本/场景/环境/负载核对]
     Profile --> Check
     Check --> Compare[分位数和增长上限比较]
     Compare --> Report[PASS/FAIL/unverified报告及SEALED提交]
@@ -56,17 +56,19 @@ flowchart LR
 
 [`verify_and_publish`](../../scripts/soak_threshold.py)重新读取Profile、基线和候选Run，不信任调用方传入的统计值。
 [`run_long_session_context`](../../scripts/soak_long_session.py)和
-[`run_many_threads`](../../scripts/soak_many_threads.py)接收可选`SoakProfileReference`，经
-[`publish_measured_run`](../../scripts/soak_run_common.py)写入候选Manifest；绑定后的Run状态固定为`unverified`，
+[`run_many_threads`](../../scripts/soak_many_threads.py)接收可选`SoakProfileReference`，先由
+[`attempt_scope`](../../scripts/soak_attempt.py)排他写入`harnessix.soak-attempt-start/v2`的`STARTED.json`，再采集环境并执行负载；最后经
+[`publish_measured_run`](../../scripts/soak_run_common.py)写入候选Manifest。`finish_attempt/read_attempt`核对启动绑定与Manifest引用、启动时间顺序，绑定后的Run状态固定为`unverified`，
 不再作为新基线。小于正式1000 Turn或500 Thread的运行不能接受Profile引用，v1无Context证明长会话也不能接受。
 候选Run须有不同Run ID、完整Attempt、相同场景版本/测量边界/种子/负载/样本数/Provider脚本及匹配的单平台环境。
-候选Manifest的`threshold_profile_ref`必须精确匹配冻结Profile ID及其规范字节SHA-256，状态为`unverified`且RSS单位已验证；缺少绑定或把候选伪装为基线均不可PASS。候选正式样本由Run Reader重算；复验比较所有指标的三个分位数、三类文件正增长及固定故障计数。结论写入单独报告，
+候选`STARTED v2`与Manifest的`threshold_profile_ref`都必须精确匹配冻结Profile ID及其规范字节SHA-256，状态为`unverified`且RSS单位已验证；缺少启动绑定、事后只给Manifest补引用或把候选伪装为基线均不可PASS。候选正式样本由Run Reader重算；复验比较所有指标的三个分位数、三类文件正增长及固定故障计数。结论写入单独报告，
 与Agent Session、Workspace和业务数据库无写依赖。
 
 ```mermaid
 sequenceDiagram
     participant E as 发布工程师
     participant P as Profile Publisher
+    participant A as Attempt Writer
     participant R as Run/Attempt Reader
     participant V as Verification
     E->>P: 显式Profile+基线目录
@@ -74,6 +76,9 @@ sequenceDiagram
     R-->>P: 原始字节摘要与重算分位数
     P->>P: 核对余量展开及环境合同
     P-->>E: 冻结profile.json+SEALED.json
+    E->>A: 候选开始前提交STARTED v2(Profile ID+SHA)
+    A-->>E: 持久启动事实
+    E->>E: 执行负载并提交Run+FINAL
     E->>V: 冻结Profile+基线+新Run
     V->>R: 重读两次Run和Attempt
     R-->>V: 经重算的低敏事实
@@ -90,7 +95,7 @@ sequenceDiagram
 | `scenario_id/version/measurement_boundary` | 固定场景及测量边界 | 阻止不同测量对象互比 | 不匹配为`unverified` |
 | `platform/hardware_class/python_min/max` | 单平台、硬件档位与闭区间 | 避免跨平台或解释器范围套用 | 不匹配为`unverified` |
 | `seed/load/provider_script_version/sample_counts` | 与基线精确一致 | 复验不得缩小负载、替换脚本或少取样 | 不匹配为`unverified` |
-| 候选`threshold_profile_ref` | Profile ID及SHA-256 | 在执行前选定阈值，不允许事后配对 | 缺失或错配为`profile_mismatch`，不可PASS |
+| 候选`STARTED v2.threshold_profile_ref`与Manifest同名字段 | Profile ID及SHA-256 | Attempt排他创建时先于负载持久化；最终Run必须与之逐字段相等 | 未预绑定、版本/时间顺序或跨文件错配为无效证据，不可PASS |
 | `metric_limits` | 每指标`unit/direction/margin_basis_points/p50/p95/p99_upper` | 时延用ns、RSS用bytes，现行比较方向仅上限 | 阈值不等于基线余量展开则拒绝冻结；超限为FAIL |
 | `growth_limits` | DB、WAL、Artifact各一项bytes上限 | `max(0, after-before)`；不以数据库收缩抵消增长 | 超限为FAIL |
 | `expected_fault_counts` | 六类低敏计数 | 与场景预期故障事实精确一致 | 不符为`unverified`，不掩盖为性能PASS |
@@ -129,6 +134,8 @@ publish_profile(profile, baseline):
 verify_and_publish(profile, baseline, candidate):
     read_sealed_profile()
     independently_read_both_runs_and_committed_attempts()
+    assert candidate.STARTED_v2.profile_ref == candidate.manifest.profile_ref
+    assert candidate.STARTED_v2.started_at <= candidate.manifest.started_at
     if evidence invalid or profile reference/identity/environment/load differs: unverified
     elif any recomputed quantile or positive growth exceeds frozen upper: FAIL
     else: PASS
@@ -151,7 +158,8 @@ Profile和报告分别以排他目录为事务范围：先写正文文件并`fsy
 | Run提交而Attempt仅有`STARTED` | 保留原样；报告`unverified`，不自动补写FINAL | 否 |
 | Profile基线摘要、阈值余量公式不符 | 冻结前拒绝写目录；已有Profile复验保存`baseline_mismatch` | 否 |
 | 平台、硬件、Python、场景或负载不符 | 保存`environment_mismatch`或`load_mismatch` | 否 |
-| 候选未在Manifest绑定冻结Profile或RSS单位未验证 | 保存`profile_mismatch`或`status_unverified` | 否 |
+| 候选仅在Manifest绑定Profile、STARTED v1/v2与Run错绑或时间倒置 | Attempt提交拒绝；复验保存`evidence_invalid` | 否 |
+| 候选完整Attempt与Manifest绑定了不同Profile或RSS单位未验证 | 保存`profile_mismatch`或`status_unverified` | 否 |
 | 分位数或文件正增长超限 | 保存`FAIL`及固定违规指标名 | 否 |
 | Profile或报告写入中断 | 无最后`SEALED`标记；Reader拒绝，旧目录不覆盖 | 否 |
 | 报告被附加文件、篡改或软链接替换 | Reader拒绝，不能作为发布依据 | 否 |
@@ -164,7 +172,8 @@ Profile文件损坏时不存在可信阈值身份，校验器直接拒绝，不�
 不可比负载，`evidence_invalid`定位提交或摘要缺口。KernelError仅公开稳定Code与低敏消息；不记录绝对路径、
 原始异常正文、样本行或业务ID。报告不包含计时器自报PASS，实际指标仍由原始样本独立重算。
 
-`SEALED.json`和SHA-256证明原始字节与最后提交标记一致，不提供对有写权限攻击者的数字签名或执行来源证明。
+`STARTED v2`提供先于负载的持久阈值选择事实，但不含数字签名；有写权限的恶意发布者仍可重写尚未外部锚定的
+Attempt文件。`SEALED.json`和SHA-256证明原始字节与最后提交标记一致，不提供对有写权限攻击者的数字签名或执行来源证明。
 正式发布仍须人工核对Runner来源Revision、CI全矩阵及基线工程评审；合成测试证据和单个平台PASS不能替代三平台
 真实负载或完整0.9.3d发布门禁。
 
@@ -177,8 +186,8 @@ Profile文件损坏时不存在可信阈值身份，校验器直接拒绝，不�
 ## 6. 验证与维护
 
 [`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py)覆盖独立Run PASS、超限FAIL、同Run复用、
-Attempt提交窗口、候选Profile绑定、样本篡改、Profile/报告篡改、错误余量和不可覆盖目录。
-[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)负责Attempt提交/恢复窗口，
+Attempt提交窗口、候选启动绑定与篡改、样本篡改、Profile/报告篡改、错误余量和不可覆盖目录。
+[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)负责v1历史字节、v2负载前绑定、事后补引用拒绝和Attempt提交/恢复窗口，
 [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)负责Run原始样本、哈希和提交标记。
 本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：其余四个Runner、三平台正式负载、评审后的冻结数值与独立复验
 仍是阻断项。
