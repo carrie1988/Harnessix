@@ -71,7 +71,7 @@ sequenceDiagram
     participant C as AgentClient/Transport
     participant S as stdio Server
     participant G as 夹具门闩
-    R->>C: initialize; 核对协商N
+    R->>C: initialize并核对协商N
     R->>C: N-1个普通列表+1个特殊列表
     C->>S: N个Request
     S->>G: N个调用均在业务操作前等待
