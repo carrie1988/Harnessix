@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 15
-code_revision: 7f6c56bbf871992bacb3cfa4740bcc0097222ed5
+version: 16
+code_revision: ed48e4e35133d60b172c268becd9e009eacb9442
 owners:
   - core
 modules:
@@ -47,7 +47,7 @@ supersedes: []
 |---|---|
 | 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集。`long_session`与`many_threads`真实产品模块场景Runner已实现，均持久记录Attempt开始/失败/提交；缩小负载只发布`unverified`。其他四个场景、Threshold Profile、三平台正式负载和发布阈值证据仍未完成。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `7f6c56bbf871992bacb3cfa4740bcc0097222ed5` |
+| 代码版本 | `ed48e4e35133d60b172c268becd9e009eacb9442` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -69,7 +69,9 @@ supersedes: []
 
 本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同、Run提交标记、RSS适配器及`long_session`/`many_threads`真实模块场景Runner；其余四场景Runner、阈值Profile和发布阈值校验器仍待实现。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
 
-[`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。1000 Turn正式长会话、其他四场景和Linux/Windows正式负载均未形成可接受证据。
+[`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。
+
+在干净Revision `ed48e4e`上，[macOS单Thread连续1000 Turn规模诊断事实](../validation/soak-macos-2026-09-23-v2/README.md)已保存1000个正式Turn时延样本和完整Attempt，复制件经Run/Attempt双重重读；对应[CI 35806501607](https://github.com/carrie1988/Harnessix/actions/runs/35806501607)六实例通过。P95为1173980291ns，RSS峰值344817664字节，DB端点从98304增至10649600字节。该运行证明当前`core_runtime`最低Turn数量可完成，但未专门断言Context/Compaction，不含完整产品启动或独立阈值复验；其余四场景和Linux/Windows正式负载均未形成可接受发布证据。两次诊断Run均不能据此冻结发行Profile。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -433,7 +435,7 @@ classDiagram
 
 | `scenario_id` | v1最低输入与固定操作 | 正式样本/断言 | 当前实现状态 |
 |---|---|---|---|
-| `long_session` | 一个Thread至少1000个本地确定性Turn；固定包含Replay、Context检查，并覆盖Compaction相关事件（若夹具满足现有配置）；Provider必须不保留请求历史，仅保留请求计数 | Turn本地边界、RSS、Replay一致性、Context/Compaction状态、DB/WAL水位；`replay(events) == projection`；报告Provider请求计数而不报告请求正文 | 已实现真实Runtime连续Turn、Replay、DB/WAL水位、RSS和Run发布；缩小负载标记`unverified`。尚未证明正式1000 Turn、Context/Compaction断言、启动时延及失败事实保留。 |
+| `long_session` | 一个Thread至少1000个本地确定性Turn；固定包含Replay、Context检查，并覆盖Compaction相关事件（若夹具满足现有配置）；Provider必须不保留请求历史，仅保留请求计数 | Turn本地边界、RSS、Replay一致性、Context/Compaction状态、DB/WAL水位；`replay(events) == projection`；报告Provider请求计数而不报告请求正文 | 已完成单次macOS连续1000 Turn规模诊断，Run/Attempt可重算；但未专门断言Context/Compaction或完整产品启动，也未完成独立阈值复验。 |
 | `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | `app_service_startup`启动P50/P95/P99、`thread_list_page`列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | 已实现真实`AgentApplicationService.list_threads`完整游标遍历、Runtime重启、持久Thread集合复核、Run发布和失败Attempt；缩小负载仅`unverified`，修复Revision的正式500 Thread尚未重跑。 |
 | `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | SubprocessTransport当前默认64、允许范围1～1024；Soak编排未实现。 |
 | `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | Artifact合同和容量/维护路径当前存在；正式混合负载未实现。 |
@@ -464,7 +466,7 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 
 每个Turn使用独立`request_id`和30秒默认操作期限；完成状态不是`COMPLETED`或发生超时，均抛出稳定`KernelError`，不会写出带提交标记的半成品Run。预热样本保留在JSONL但不进入正式分位数，正式样本计数必须等于输入`turn_count`。文件水位取Runtime打开之后、Thread创建之前，以及全部Turn完成且Runtime关闭之前的DB/WAL文件大小；这是同一进程的区间端点值，**不是**期间最大值。RSS是Runner进程高水位，非Thread独占内存。证据不存Prompt、响应正文、Workspace路径或业务身份；临时Session退出后删除。缩小测试用3个正式Turn、2个预热Turn验证整个提交/重读链，产物状态只能是`unverified`。
 
-本长会话实现并不等于正式0.9.3d验收：1000 Turn真实运行、Context/Compaction断言、全局运行期限、独立阈值Profile/报告和另外四个场景仍待完成。当前失败会清理临时Session并抛错，同时保留低敏失败Attempt；发布阶段的部分Manifest不能当作有效Run。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
+本长会话实现并不等于正式0.9.3d验收：当前已在macOS完成一次1000 Turn真实规模运行，但Context/Compaction断言、全局运行期限、独立阈值Profile/报告和另外四个场景仍待完成。当前失败会清理临时Session并抛错，同时保留低敏失败Attempt；发布阶段的部分Manifest不能当作有效Run。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
 
 ### 11.3 `many_threads`当前执行链与失败语义
 
@@ -812,7 +814,7 @@ run_scenario(scenario, seed, environment):
 | 设计元素 | 源码文件链接 | 关键符号 | 测试文件链接 | 测试函数/合同 | 当前/规划说明 |
 |---|---|---|---|---|---|
 | Agent启动与恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__aenter__`, `AgentRuntime._recover` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_shutdown_cancels_managed_turn`、运行时Replay断言 | 当前实现；长会话Soak已调用，其他场景待实现。 |
-| 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_long_session`、`check_release_revision`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py) | 缩小负载Run提交与重读、负载/Revision拒绝、超时不发布、环境预检失败留存 | 真实Agent Runtime和失败Attempt已覆盖；正式1000 Turn未完成。 |
+| 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_long_session`、`check_release_revision`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py) | 缩小负载Run提交与重读、负载/Revision拒绝、超时不发布、环境预检失败留存 | 真实Agent Runtime和失败Attempt已覆盖；macOS一次1000 Turn规模诊断已完成，Context/Compaction与独立阈值仍未完成。 |
 | 多Thread真实负载 | [`soak_many_threads.py`](../../scripts/soak_many_threads.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_many_threads`、`_list_all`、`_restart_and_list` | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 多次重启、完整分页/集合核对、基线重启数拒绝、空页/超时不发布且保留失败Attempt | 真实Runtime、应用服务和失败Attempt已覆盖；修复Revision的正式500 Thread未完成。 |
 | Attempt失败事实 | [`soak_attempt.py`](../../scripts/soak_attempt.py) | `begin_attempt`、`finish_attempt`、`read_attempt`、`attempt_scope` | [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) | 规范字节、排他身份、异常/硬退出、Run已发布但Attempt未终结、终态篡改 | 当前仅两个Runner接入；完整发布Validator尚未实现。 |
 | SDK并发与取消 | [`sdk/subprocess.py`](../../src/harnessix/sdk/subprocess.py) | `SubprocessAgentTransport.exchange`, `_ResponseRouter`, `_RequestCapacity` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests`、`test_subprocess_transport_close_continues_after_caller_cancel` | 当前实现；固定压力编排规划。 |
@@ -901,3 +903,4 @@ run_scenario(scenario, seed, environment):
 | 13 | `d64054638a03bca008f5b392fd0edf23aa4cd63b` | 2026-09-23 | 归档macOS 500 Thread单次正式规模基线原始文件及重算结果，明确它不构成阈值PASS或三平台验收。 |
 | 14 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` | 2026-09-23 | 根据CI macOS/Windows失败，拆分启动与分页期限，超时后排空在途SQLite任务再清理；把旧Run降为历史诊断证据并登记进程级Watchdog缺口。 |
 | 15 | `7f6c56bbf871992bacb3cfa4740bcc0097222ed5` | 2026-09-23 | 两个现有Runner负载前持久写入Attempt开始，异常/取消写低敏失败终态，硬退出保留未完成事实；Run重读后才提交成功Attempt，补充排他、篡改、硬退出及提交窗口测试。旧500 Thread证据仍仅为历史诊断，四场景与发布Profile未完成。 |
+| 16 | `ed48e4e35133d60b172c268becd9e009eacb9442` | 2026-09-23 | 冻结macOS一次1000 Turn真实Runtime规模诊断的原始Run与Attempt复制件，独立重算1000时延样本、RSS和水位；对应Revision六实例CI通过，但Context/Compaction、独立Profile与三平台正式场景仍未完成，不宣称发布PASS。 |
