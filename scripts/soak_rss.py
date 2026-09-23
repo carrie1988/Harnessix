@@ -17,7 +17,7 @@ from harnessix.domain.models import ContractModel
 class RssObservation(ContractModel):
     """原始读数、单位、归一化结果与单位验证状态。"""
 
-    source: Literal["getrusage", "GetProcessMemoryInfo"]
+    source: Literal["getrusage", "proc_status", "GetProcessMemoryInfo"]
     raw_value: StrictInt = Field(gt=0)
     raw_unit: Literal["bytes", "KiB"]
     normalization: Literal["identity", "kib_times_1024"]
@@ -109,19 +109,19 @@ def _windows_peak_working_set() -> int:
         raise KernelError("soak_rss_unavailable", "Windows进程内存读数不可用") from None
 
 
-def _verify_linux_kib(raw: int) -> None:
-    """与同一进程/proc高水位交叉核对ru_maxrss的KiB单位。"""
+def _linux_peak_kib(status: str) -> int:
+    """只接受/proc状态中唯一、正值且明确标注kB的VmHWM。"""
 
+    values = [line.split() for line in status.splitlines() if line.startswith("VmHWM:")]
+    if len(values) != 1 or len(values[0]) != 3 or values[0][2] != "kB":
+        raise KernelError("soak_rss_unit_unknown", "Linux RSS单位核对失败")
     try:
-        lines = Path("/proc/self/status").read_text(encoding="ascii").splitlines()
-        values = [line.split() for line in lines if line.startswith("VmHWM:")]
-        if len(values) != 1 or len(values[0]) != 3 or values[0][2] != "kB":
-            raise ValueError
-        observed = int(values[0][1])
-        if observed <= 0 or abs(raw - observed) > max(1024, observed // 10):
-            raise ValueError
-    except (OSError, UnicodeError, ValueError):
+        raw = int(values[0][1])
+    except ValueError:
         raise KernelError("soak_rss_unit_unknown", "Linux RSS单位核对失败") from None
+    if raw <= 0:
+        raise KernelError("soak_rss_unit_unknown", "Linux RSS单位核对失败")
+    return raw
 
 
 def read_peak_rss() -> RssObservation:
@@ -131,7 +131,14 @@ def read_peak_rss() -> RssObservation:
         raw = _windows_peak_working_set()
         source: Literal["getrusage", "GetProcessMemoryInfo"] = "GetProcessMemoryInfo"
         raw_unit: Literal["bytes", "KiB"] = "bytes"
-    elif sys.platform in {"linux", "darwin"}:
+    elif sys.platform == "linux":
+        try:
+            raw = _linux_peak_kib(Path("/proc/self/status").read_text(encoding="ascii"))
+        except (OSError, UnicodeError):
+            raise KernelError("soak_rss_unavailable", "Linux RSS读数不可用") from None
+        source = "proc_status"
+        raw_unit = "KiB"
+    elif sys.platform == "darwin":
         import resource
 
         try:
@@ -139,11 +146,7 @@ def read_peak_rss() -> RssObservation:
         except (OSError, ValueError):
             raise KernelError("soak_rss_unavailable", "RSS读数不可用") from None
         source = "getrusage"
-        if sys.platform == "linux":
-            _verify_linux_kib(raw)
-            raw_unit = "KiB"
-        else:
-            raw_unit = _macos_unit()
+        raw_unit = _macos_unit()
     else:
         raise KernelError("soak_rss_unavailable", "当前平台不支持RSS采集")
     if raw <= 0:

@@ -26,9 +26,7 @@ def test_child_failure_marker_contains_only_stable_code(tmp_path, monkeypatch) -
     with pytest.raises(SystemExit) as caught:
         soak_sdk_child._run_with_failure_marker(tmp_path / "db", tmp_path, 2)
     assert caught.value.code == 1
-    assert (tmp_path / "child-failure.txt").read_text(encoding="ascii") == (
-        "KernelError:soak_rss_unit_unknown\n"
-    )
+    assert (tmp_path / "child-failure.txt").read_bytes() == b"KernelError:soak_rss_unit_unknown\n"
     with pytest.raises(KernelError) as reported:
         _child_result(tmp_path)
     assert reported.value.code == "soak_sdk_child_failed"

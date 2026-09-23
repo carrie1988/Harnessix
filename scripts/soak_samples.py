@@ -50,7 +50,7 @@ class SoakSample(ContractModel):
     value: StrictInt = Field(ge=0)
     unit: Literal["ns", "bytes"]
     clock: Literal["monotonic_ns"] | None = None
-    rss_source: Literal["getrusage", "GetProcessMemoryInfo"] | None = None
+    rss_source: Literal["getrusage", "proc_status", "GetProcessMemoryInfo"] | None = None
     rss_raw_unit: Literal["bytes", "KiB"] | None = None
     rss_normalization: Literal["identity", "kib_times_1024"] | None = None
     rss_raw_value: StrictInt | None = Field(default=None, gt=0)

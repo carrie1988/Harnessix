@@ -105,8 +105,8 @@ def _run_with_failure_marker(database: Path, gate_root: Path, pending_limit: int
         code = error.code if isinstance(error, KernelError) else "unknown"
         if re.fullmatch(r"[a-z0-9_]{1,64}", code) is None:
             code = "unknown"
-        (gate_root / "child-failure.txt").write_text(
-            f"{type(error).__name__}:{code}\n", encoding="ascii"
+        (gate_root / "child-failure.txt").write_bytes(
+            f"{type(error).__name__}:{code}\n".encode("ascii")
         )
         raise SystemExit(1) from None
 

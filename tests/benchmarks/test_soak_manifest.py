@@ -15,7 +15,7 @@ RUN_ID = uuid4().hex
 COUNTS = {"turn_local": 1, "rss_peak": 1}
 
 
-def _samples() -> tuple[SoakSample, ...]:
+def _samples(rss_source: str = "getrusage") -> tuple[SoakSample, ...]:
     return (
         SoakSample(
             spec_version="harnessix.soak-sample/v1",
@@ -37,7 +37,7 @@ def _samples() -> tuple[SoakSample, ...]:
             metric="rss_peak",
             value=4096,
             unit="bytes",
-            rss_source="getrusage",
+            rss_source=rss_source,
             rss_raw_unit="KiB",
             rss_normalization="kib_times_1024",
             rss_raw_value=4,
@@ -171,3 +171,35 @@ def test_manifest_requires_frozen_rss_unit_for_baseline(tmp_path) -> None:
     data["rss"] = {**data["rss"], "unit_verified": True}
     with pytest.raises(ValidationError, match="样本或模型请求数不足"):
         SoakManifest.model_validate(data)
+
+
+def test_linux_proc_status_source_does_not_change_historical_getrusage_reader(tmp_path) -> None:
+    historical_root = tmp_path / "historical"
+    historical_root.mkdir()
+    digest, statistics = write_sample_file(
+        historical_root,
+        _samples(),
+        run_id=RUN_ID,
+        scenario_id="long_session",
+        expected_measured=COUNTS,
+    )
+    historical = _manifest_data(digest, statistics)
+    historical_manifest = SoakManifest.model_validate(historical)
+    assert historical_manifest.rss.source == "getrusage"
+    verify_manifest_samples(historical_manifest, historical_root)
+
+    current_root = tmp_path / "current"
+    current_root.mkdir()
+    current_digest, current_statistics = write_sample_file(
+        current_root,
+        _samples("proc_status"),
+        run_id=RUN_ID,
+        scenario_id="long_session",
+        expected_measured=COUNTS,
+    )
+    current = _manifest_data(current_digest, current_statistics)
+    current["rss"] = {**current["rss"], "source": "proc_status"}
+    current_manifest = SoakManifest.model_validate(current)
+    verify_manifest_samples(current_manifest, current_root)
+    with pytest.raises(ValidationError, match="只适用于Linux"):
+        SoakManifest.model_validate({**current, "platform": "macos"})

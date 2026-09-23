@@ -78,7 +78,7 @@ class SoakFaultCounts(ContractModel):
 class SoakRssEvidence(ContractModel):
     """平台RSS单位来源及正式样本中的归一化峰值。"""
 
-    source: Literal["getrusage", "GetProcessMemoryInfo"]
+    source: Literal["getrusage", "proc_status", "GetProcessMemoryInfo"]
     raw_unit: Literal["bytes", "KiB"]
     normalization: Literal["identity", "kib_times_1024"]
     peak_bytes: StrictInt = Field(gt=0)
@@ -201,6 +201,8 @@ class SoakManifest(ContractModel):
                 raise ValueError("Windows RSS来源或单位不匹配")
         elif self.platform == "windows":
             raise ValueError("Windows RSS必须使用原生工作集接口")
+        if self.rss.source == "proc_status" and self.platform != "linux":
+            raise ValueError("proc_status RSS来源只适用于Linux")
         if self.platform == "linux" and (
             self.rss.raw_unit,
             self.rss.normalization,

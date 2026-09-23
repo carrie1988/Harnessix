@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
+version: 3
 code_revision: c84e78dc1a8a7b95dbe40a8bc209a7442e2ee43a
 owners:
   - core
@@ -64,6 +64,8 @@ flowchart LR
 ```
 
 [`GatedSdkService`](../../scripts/soak_sdk_child.py)只在调用`super().list_threads`之前等待私有标记，不重写协议解析、调度、SQLite读写或SDK Response归并。普通`limit=50`用于正常往返；门闩夹具用`limit=1/2/3`区分普通、被取消和溢出请求，均为合法`ThreadListParams`。门闩目录与业务SQLite位于`TemporaryDirectory`，不进入提交证据。子进程退出前写入低敏RSS和模型请求计数；Runner只把规范化数值写入Run。子进程若在关闭或采样阶段退出，只在临时目录写异常类型与稳定Kernel错误码，不保留异常正文；父进程缺少结果文件时以`soak_sdk_child_failed`失败关闭，并把该低敏分类用于诊断，不发布有效Run。
+
+Linux子进程的`ru_maxrss`与`VmHWM`绝对值近似相等校验在真实CI上产生误拒绝。现行Linux采样改为读取`/proc/self/status`唯一、正值且带`kB`标签的`VmHWM`；父子进程必须报告相同来源和归一化公式。旧`getrusage`证据继续只读接受，新Run不使用其跨`execve`保留的高水位代替当前进程观测；平台来源与误差边界见[Soak总设计](m09-3d-soak-and-performance-evidence.md#171-rss来源原始单位与归一化)。
 
 ```mermaid
 sequenceDiagram

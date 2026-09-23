@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 31
+version: 32
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -448,7 +448,7 @@ classDiagram
 | `SoakManifest`（合同与文件发布已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由测试/长会话Runner构造；其余场景Finalizer待实现 | 严格模型、文件写入、最后提交标记和独立重读已实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
 | `ThresholdProfile`（单平台内核已实现） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用；正式Profile尚未冻结。 |
 | `EvidenceValidator`（单平台内核已实现） | 校验Schema/摘要/环境/样本并重算统计 | Validator拥有报告状态 | 只读输入；无业务写权限 | 样本、Manifest、Profile、Attempt | 增加统计指标必须保留旧字段兼容规则；跨平台汇总未实现。 |
-| `read_peak_rss`（已实现，平台验收进行中） | 读取raw峰值RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；macOS首次读取前由受控子进程探针判单位 | Linux/macOS的`getrusage`与Windows的`GetProcessMemoryInfo` | 平台API、raw单位和归一化规则必须与样本及Manifest一致。 |
+| `read_peak_rss`（已实现，平台验收进行中） | 读取raw峰值RSS并归一化为bytes | Adapter不拥有业务状态 | 只读进程指标；macOS首次读取前由受控子进程探针判单位 | Linux的`/proc/self/status`、macOS的`getrusage`与Windows的`GetProcessMemoryInfo` | 平台API、raw单位和归一化规则必须与样本及Manifest一致。 |
 
 ## 11. 接口设计
 
@@ -576,7 +576,7 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 | `value` | 严格非负整数 | 是 | 采样器 | 不允许NaN、Infinity、负数；时延为ns，RSS为归一化bytes | 无 | 低 | 样本文件 | 缺测不能补0；RSS额外要求严格正值。 |
 | `unit` | 固定枚举 | 是 | 采样器 | `ns`或`bytes`；时延固定`ns`，RSS固定`bytes` | 无 | 低 | 样本文件 | 单位变化升版本。 |
 | `clock` | 固定枚举 | 条件 | 采样器 | 时延使用`monotonic_ns`；墙钟只用于Manifest时间 | 无 | 低 | 样本文件 | 不得用墙钟差值作性能样本。 |
-| `rss_source` | 固定枚举 | RSS条件必填 | RSS Adapter | `getrusage`或Windows `GetProcessMemoryInfo`等实际源 | 无 | 低 | 样本文件 | 必须与平台/raw单位校验一致。 |
+| `rss_source` | 固定枚举 | RSS条件必填 | RSS Adapter | Linux `proc_status`、macOS `getrusage`或Windows `GetProcessMemoryInfo`；历史Linux `getrusage`只读兼容 | 无 | 低 | 样本文件 | 必须与平台/raw单位校验一致。 |
 | `rss_raw_unit` | 固定枚举 | RSS条件必填 | RSS Adapter | `bytes`或`KiB`；未知即失败关闭 | 无 | 低 | 样本文件 | 不可按平台猜测。 |
 | `rss_normalization` | 固定枚举 | RSS条件必填 | RSS Adapter | `identity`或`kib_times_1024` | 无 | 低 | 样本文件 | 归一化结果统一为bytes。 |
 | `rss_raw_value` | 严格正整数 | RSS条件必填 | RSS Adapter | 平台API返回的原始测量值 | 无 | 低 | 样本文件 | 与raw unit、归一化规则和`rss_bytes`逐项核对。 |
@@ -607,7 +607,7 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 | `load` | `SoakLoad`对象 | 是 | Runner | `turn_count`、`thread_count`、`artifact_count`、`pending_limit`、`warmup_count`、`fault_matrix_version`；正式长会话至少1000 Turn/1000正式时延样本，多Thread至少500个，SDK必须有Pending上限，Action必须有故障矩阵版本 | 无 | 低 | Manifest | 不足拒绝正式`baseline`；实际数量来源还需Runner/Store复核。 |
 | `sample_counts` | 每Metric计数对象 | 是 | Writer | 实际正式样本数；与样本文件核对 | 无 | 低 | Manifest | 缺样本失败关闭。 |
 | `quantile_method`、`statistics` | 固定`nearest_rank_v1`及每Metric整数分位数对象 | 是 | Writer/Validator | Manifest值只供核对；Validator从样本重算 | 无 | 低 | Manifest | 缺失或伪报拒绝。 |
-| `rss` | 严格源/单位/归一化/峰值/单位验证对象 | 是 | RSS Adapter | Windows只允许`GetProcessMemoryInfo/bytes`；Linux只允许`getrusage/KiB`；基线要求单位已验证 | 无 | 低 | Manifest | 原始样本与Manifest逐项一致；macOS仍需探针。 |
+| `rss` | 严格源/单位/归一化/峰值/单位验证对象 | 是 | RSS Adapter | Windows只允许`GetProcessMemoryInfo/bytes`；Linux新Run为`proc_status/KiB`，旧`getrusage/KiB`只读接受；基线要求单位已验证 | 无 | 低 | Manifest | 原始样本与Manifest逐项一致；macOS仍需探针。 |
 | `file_watermarks` | 六个非负字节字段 | 是 | `capacity_report`/文件采样 | DB、WAL、Artifact正文的前后水位 | 无 | 低 | Manifest | 字段缺失拒绝；实际水位来源待Runner复核。 |
 | `fault_counts` | 六个非负计数字段 | 是 | Runner/Recovery | 取消、超时、EOF、UNKNOWN、重复效果、孤儿 | 无 | 低 | Manifest | 未知分类拒绝；实际故障来源待Runner复核。 |
 | `evidence_sha256` | 固定文件摘要映射 | 是 | Writer | 当前v1只接受`samples.jsonl`的64位SHA-256；报告和Profile另行发布 | 无 | 低 | Manifest | 摘要不符失败。 |
@@ -789,7 +789,7 @@ RSS是三平台发布门禁的必需指标，不能因平台API差异而填零�
 
 | 平台 | 当前RSS source | raw unit与依据 | normalization | 三平台实测验证要求 |
 |---|---|---|---|---|
-| Linux | `getrusage(RUSAGE_SELF).ru_maxrss` | `KiB`；[Linux `getrusage(2)`](https://man7.org/linux/man-pages/man2/getrusage.2.html)明确`ru_maxrss`为KiB | `raw * 1024 -> bytes`；记录原始整数和换算规则 | 当前适配器与同进程`/proc/self/status`的`VmHWM`高水位交叉核对，差异超出容差失败关闭；正式Linux负载仍待运行。 |
+| Linux | `/proc/self/status`的`VmHWM` | `kB`字段按KiB归一化；[Linux内核proc文档](https://docs.kernel.org/filesystems/proc.html)将其定义为进程RSS高水位 | `raw * 1024 -> bytes`；记录原始整数和换算规则 | 字段必须唯一、正值并带`kB`标签，否则失败关闭。旧证据中的`getrusage`来源仍可只读校验，但新运行不再生成该来源；正式Linux负载仍待验证。 |
 | macOS | Python `resource.getrusage(RUSAGE_SELF).ru_maxrss`或批准的等价源 | 不能直接采用Apple旧版手册的`kilobytes`描述；已求证本机Python观测：`ru_maxrss = 18,890,752`，同期`ps rss = 18,496 KiB`，运行时行为按本机验证为`bytes`，且两者分别代表峰值与当前值，不要求数值相等。[Apple旧版getrusage手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/getrusage.2.html)作为差异来源记录，不作为未经验证的归一化依据。 | 本机验证通过时`identity -> bytes`；若运行时/版本探针不能证明单位，必须为未知并失败关闭 | 在目标macOS/Python组合上重复单位探针，记录raw值、独立`ps`当前RSS和受控内存增长/峰值关系；确认本机实现后才能使用`identity`。不得把Apple旧手册单位直接套用。 |
 | Windows | `GetProcessMemoryInfo`的`PROCESS_MEMORY_COUNTERS.PeakWorkingSetSize` | `bytes`；[Microsoft `GetProcessMemoryInfo`](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)及`PROCESS_MEMORY_COUNTERS`字段以字节表示 | `identity -> bytes` | 在目标Windows版本/Python绑定上运行API探针，与独立进程工作集观测和受控增长核对；API缺失或绑定异常为未知。 |
 
@@ -800,13 +800,15 @@ RSS是三平台发布门禁的必需指标，不能因平台API差异而填零�
 3. macOS适配器在首次采样前启动隔离Python子进程，分配64 MiB内存并比较`ru_maxrss`与`ps rss`的KiB读数；只有可区分的倍率才确定单位，探针不在正式测量窗口内运行。两个值分别代表峰值与当前值，不要求完全相等。
 4. RSS源、raw unit或归一化规则任一缺失、未知、不一致、API失败或读数非正时，适配器返回稳定错误；未来Runner必须把当前Run置为`unverified`并返回非零，不得用`0`、上次值或跨平台换算结果填补。
 
+Linux子进程容量场景曾在关闭后因`ru_maxrss`与`VmHWM`的绝对值差异被误判为单位未知，导致结果文件未发布。[Linux `getrusage(2)`](https://man7.org/linux/man-pages/man2/getrusage.2.html)说明资源统计跨`execve`保留，不能把两个高水位强制设为近似相等。新采集路径直接读取`VmHWM`，并以来源、原始整数、`kB`标签和归一化公式形成证据；该内核字段本身是近似值，不把单次读数宣称为精确物理内存上界。旧Manifest和样本的`getrusage`枚举只用于历史只读兼容，不影响新Run源身份。
+
 ## 18. 兼容性与发布
 
 ### 18.1 Linux/macOS/Windows差异
 
 | 维度 | Linux | macOS | Windows |
 |---|---|---|---|
-| RSS | `getrusage.ru_maxrss` raw按KiB归一化为bytes；必须以man7和运行时探针核对 | Python运行时实测单位可能与Apple旧手册不同；必须按目标运行时实测，当前已求证观测按bytes处理 | `GetProcessMemoryInfo/PeakWorkingSetSize` raw bytes，归一化为identity。 |
+| RSS | `/proc/self/status`的`VmHWM`按KiB归一化为bytes，缺失或单位不符失败关闭 | Python运行时实测单位可能与Apple旧手册不同；必须按目标运行时实测，当前已求证观测按bytes处理 | `GetProcessMemoryInfo/PeakWorkingSetSize` raw bytes，归一化为identity。 |
 | 时钟 | Python `time.perf_counter_ns`单调时钟 | 同上 | 同上；不得用墙钟差值。 |
 | 进程停止 | POSIX信号/子进程等待语义 | POSIX语义但系统实现不同 | 进程终止和进程树收敛使用Windows API/绑定；必须记录失败分类，不假定POSIX信号。 |
 | 文件发布 | 排他创建Run目录、同目录临时文件、文件与目录`fsync`和最后提交标记 | 同上，不能假定APFS行为等于Linux | 文件`fsync`与最后提交标记已实现；目录元数据同步不可用时依靠重读校验失败关闭，断电持久性和ACL仍须发行测试。 |
