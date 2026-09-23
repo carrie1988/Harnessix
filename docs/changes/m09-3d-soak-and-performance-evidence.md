@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 37
-code_revision: c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b
+version: 38
+code_revision: a5bd4ffc4f01593c566164d285948b1d3890a9fb
 owners:
   - core
 modules:
@@ -478,7 +478,7 @@ classDiagram
 | `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | [专项详细设计](m09-3d-sdk-capacity-soak.md)中的真实SDK/stdio/Server Runner、v4 Proof与独立Reader已实现；三平台各一次干净Revision正式负载已归档；Profile已冻结，[三平台候选Run及PASS报告](../validation/soak-sdk-three-platform-candidate-2026-09-23-v1/README.md)已归档。 [三平台原始证据](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)可重读。 |
 | `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | [专项详细设计](m09-3d-artifact-growth-soak.md)中的v3 Proof、Manifest、独立Reader及真实Agent/Store Runner已实现；三平台正式运行、复合故障与阈值冻结尚未完成。 |
 | `action_recovery` | 固定故障矩阵循环：Owner/Fence失效、效果写入/返回边界、Audit/Process边界、Artifact引用窗口 | UNKNOWN、重复效果、孤儿、恢复/对账耗时和终态；不调用Execute进行恢复 | Action路由、恢复扫描和测试当前存在；固定Soak矩阵未实现。 |
-| `restart` | 增长前后执行多次冷启动和热启动；每次均使用独立Transport/Runtime生命周期 | 初始化、恢复扫描、Replay、未决Turn/Action状态、RSS；重启后不得重复外部效果 | Runtime和SDK关闭/启动路径当前存在；正式重启编排未实现。 |
+| `restart` | 增长前后执行多次冷启动和热启动；每次均使用独立Transport/Runtime生命周期 | 初始化、恢复扫描、Replay、未决Turn/Action状态、RSS；重启后不得重复外部效果 | Runtime和SDK关闭/启动路径当前存在；正式重启编排未实现；[专项详细设计](m09-3d-product-restart-soak.md)进入评审，Runner、Proof与三平台证据均未实现。 |
 
 以上最低输入是硬门槛；Threshold Profile可以在不改变场景最低输入的前提下要求更高负载，但不能降低1000 Turn或500 Thread。`5000 Thread`等更高规模若被纳入后续Profile，必须作为显式新负载值记录，不能把其结果冒充v1最低场景。
 
