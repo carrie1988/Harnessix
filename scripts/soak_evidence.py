@@ -259,8 +259,8 @@ def read_published_run(
             )
             if sha256(proof_body).hexdigest() != manifest.artifact_proof_sha256:
                 raise ValueError
-            proof = SoakArtifactProof.model_validate_json(proof_body)
-            if proof_body != (proof.model_dump_json() + "\n").encode("utf-8"):
+            artifact_proof = SoakArtifactProof.model_validate_json(proof_body)
+            if proof_body != (artifact_proof.model_dump_json() + "\n").encode("utf-8"):
                 raise ValueError
             samples, _, _ = read_sample_file(
                 run_directory,
@@ -269,9 +269,9 @@ def read_published_run(
                 scenario_id=manifest.scenario_id,
                 expected_measured=manifest.sample_counts,
             )
-            verify_artifact_manifest(manifest, proof)
+            verify_artifact_manifest(manifest, artifact_proof)
             verify_artifact_proof(
-                proof,
+                artifact_proof,
                 run_id=manifest.run_id,
                 artifact_count=manifest.load.artifact_count,
                 warmup_count=manifest.load.warmup_count,

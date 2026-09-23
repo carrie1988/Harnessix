@@ -234,9 +234,16 @@ def _verify_profile_baseline(
     profile: SoakThresholdProfile, baseline: SoakManifest, digest: str
 ) -> None:
     # 尚未实现的场景不能凭手工构造的Manifest获得性能PASS。
-    if profile.scenario_id not in {"long_session", "many_threads"} or (
-        profile.scenario_id == "long_session"
-        and baseline.spec_version != "harnessix.soak-manifest/v2"
+    if (
+        profile.scenario_id not in {"long_session", "many_threads", "artifact_growth"}
+        or (
+            profile.scenario_id == "long_session"
+            and baseline.spec_version != "harnessix.soak-manifest/v2"
+        )
+        or (
+            profile.scenario_id == "artifact_growth"
+            and baseline.spec_version != "harnessix.soak-manifest/v3"
+        )
     ):
         raise KernelError("soak_profile_baseline_invalid", "场景缺少正式负载证明")
     if (
