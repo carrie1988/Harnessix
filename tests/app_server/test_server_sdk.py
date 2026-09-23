@@ -534,11 +534,13 @@ async def test_subprocess_transport_fails_all_pending_on_malformed_response() ->
 async def test_subprocess_transport_bounds_cancelled_and_pending_requests() -> None:
     child = "\n".join(
         (
-            "import json, sys, time",
+            "import json, sys",
             "for index in range(2):",
             "    request = json.loads(sys.stdin.buffer.readline())",
             "    if index == 0:",
-            "        time.sleep(0.2)",
+            "        sys.stderr.write('received\\n'); sys.stderr.flush()",
+            "        release = json.loads(sys.stdin.buffer.readline())",
+            "        assert release['method'] == 'release'",
             "    response = {'jsonrpc': '2.0', 'id': request['id'], 'result': {'index': index}}",
             "    print(json.dumps(response), flush=True)",
         )
@@ -550,7 +552,9 @@ async def test_subprocess_transport_bounds_cancelled_and_pending_requests() -> N
     first = asyncio.create_task(
         transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"first","params":{}}\n')
     )
-    await asyncio.sleep(0.02)
+    async with asyncio.timeout(5):
+        while transport.snapshot().stderr_tail_bytes == 0:  # noqa: ASYNC110 - 子进程确认无可订阅事件
+            await asyncio.sleep(0.01)
     first.cancel()
     with pytest.raises(asyncio.CancelledError):
         await first
@@ -558,13 +562,14 @@ async def test_subprocess_transport_bounds_cancelled_and_pending_requests() -> N
     second = asyncio.create_task(
         transport.exchange(b'{"jsonrpc":"2.0","id":2,"method":"second","params":{}}\n')
     )
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0)
     assert not second.done()
     snapshot = transport.snapshot()
     assert snapshot.abandoned_requests == 1
     assert snapshot.pending_requests == 0
     assert snapshot.max_pending_requests == 1
 
+    await transport.notify(b'{"jsonrpc":"2.0","method":"release","params":{}}\n')
     response = await asyncio.wait_for(second, timeout=1)
     assert json.loads(response[0])["result"] == {"index": 1}
     assert transport.snapshot().abandoned_requests == 0

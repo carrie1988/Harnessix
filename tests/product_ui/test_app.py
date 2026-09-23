@@ -89,13 +89,31 @@ async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: P
                 await pilot.pause()
                 assert composer.has_focus
                 await pilot.press("h", "e", "l", "l", "o", "enter", "enter")
-                await _wait_until(
-                    lambda: (
-                        controller.state.thread_view is not None
-                        and controller.state.thread_view.current_turn is not None
-                        and controller.state.thread_view.current_turn.status == "completed"
+                try:
+                    await _wait_until(
+                        lambda: (
+                            controller.state.thread_view is not None
+                            and controller.state.thread_view.current_turn is not None
+                            and controller.state.thread_view.current_turn.status == "completed"
+                        )
                     )
-                )
+                except TimeoutError:
+                    view = controller.state.thread_view
+                    turn_status = (
+                        None
+                        if view is None or view.current_turn is None
+                        else view.current_turn.status
+                    )
+                    notice = controller.state.last_notice
+                    raise AssertionError(
+                        f"submit_timeout phase={controller.state.phase.value} "
+                        f"turn={turn_status} notice={None if notice is None else notice.code} "
+                        f"command_sequence={store.state().next_command_sequence} "
+                        f"intent_in_flight={app._intent_in_flight} "
+                        f"composer_disabled={composer.disabled} "
+                        f"composer_chars={len(composer.value)} "
+                        f"ui_error={app._last_error_code}"
+                    ) from None
                 assert store.state().next_command_sequence == 4
 
                 await pilot.resize_terminal(50, 20)

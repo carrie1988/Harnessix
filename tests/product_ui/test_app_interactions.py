@@ -85,7 +85,20 @@ async def test_product_app_completes_approval_modal_flow(tmp_path: Path) -> None
                 await _wait_until(lambda: not composer.disabled)
                 composer.focus()
                 await pilot.press("r", "e", "a", "d", "enter")
-                await _wait_until(lambda: _turn_status(controller) == "waiting_approval")
+                try:
+                    await _wait_until(lambda: _turn_status(controller) == "waiting_approval")
+                except TimeoutError:
+                    notice = controller.state.last_notice
+                    raise AssertionError(
+                        f"approval_submit_timeout phase={controller.state.phase.value} "
+                        f"turn={_turn_status(controller)} "
+                        f"notice={None if notice is None else notice.code} "
+                        f"command_sequence={store.state().next_command_sequence} "
+                        f"intent_in_flight={app._intent_in_flight} "
+                        f"composer_disabled={composer.disabled} "
+                        f"composer_chars={len(composer.value)} "
+                        f"ui_error={app._last_error_code}"
+                    ) from None
                 assert composer.disabled
 
                 await pilot.press("ctrl+a")
