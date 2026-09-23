@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import subprocess
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_environment import SoakEnvironment
 from scripts.soak_evidence import publish_run, read_published_run
 from scripts.soak_manifest import (
@@ -15,6 +17,7 @@ from scripts.soak_manifest import (
     SoakFileWatermarks,
     SoakLoad,
     SoakManifest,
+    SoakManifestV2,
     SoakProviderEvidence,
     SoakRssEvidence,
 )
@@ -117,7 +120,9 @@ def publish_measured_run(
     rss: RssObservation,
     file_watermarks: SoakFileWatermarks,
     baseline: bool,
-) -> tuple[Path, SoakManifest]:
+    context_proof: SoakContextProof | None = None,
+    summary_request_count: int | None = None,
+) -> tuple[Path, SoakManifest | SoakManifestV2]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
     sample_counts: dict[str, int] = {}
@@ -173,7 +178,26 @@ def publish_measured_run(
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
         threshold_profile_ref=None,
     )
-    run_directory, _ = publish_run(evidence_root, manifest, samples)
+    if context_proof is not None:
+        if summary_request_count is None:
+            raise KernelError("soak_context_proof_invalid", "缺少摘要Provider请求计数")
+        proof_digest = sha256((context_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV2.model_validate(
+            {
+                **manifest.model_dump(mode="json"),
+                "spec_version": "harnessix.soak-manifest/v2",
+                "scenario_version": "harnessix.soak-scenario/v2",
+                "summary_request_count": summary_request_count,
+                "context_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: manifest.evidence_sha256[SAMPLE_FILENAME],
+                    CONTEXT_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
+    elif summary_request_count is not None:
+        raise KernelError("soak_context_proof_invalid", "v1 Run不得包含摘要Provider请求计数")
+    run_directory, _ = publish_run(evidence_root, manifest, samples, context_proof=context_proof)
     restored, _ = read_published_run(run_directory)
     if restored != manifest:
         raise KernelError("soak_run_invalid", "Soak发布复核失败")

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 16
-code_revision: ed48e4e35133d60b172c268becd9e009eacb9442
+version: 17
+code_revision: 9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/artifacts/test_recovery.py
   - tests/benchmarks/test_soak_provider.py
+  - tests/benchmarks/test_soak_context_proof.py
   - tests/benchmarks/test_soak_samples.py
   - tests/benchmarks/test_soak_sample_file.py
   - tests/benchmarks/test_soak_manifest.py
@@ -904,3 +905,4 @@ run_scenario(scenario, seed, environment):
 | 14 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` | 2026-09-23 | 根据CI macOS/Windows失败，拆分启动与分页期限，超时后排空在途SQLite任务再清理；把旧Run降为历史诊断证据并登记进程级Watchdog缺口。 |
 | 15 | `7f6c56bbf871992bacb3cfa4740bcc0097222ed5` | 2026-09-23 | 两个现有Runner负载前持久写入Attempt开始，异常/取消写低敏失败终态，硬退出保留未完成事实；Run重读后才提交成功Attempt，补充排他、篡改、硬退出及提交窗口测试。旧500 Thread证据仍仅为历史诊断，四场景与发布Profile未完成。 |
 | 16 | `ed48e4e35133d60b172c268becd9e009eacb9442` | 2026-09-23 | 冻结macOS一次1000 Turn真实Runtime规模诊断的原始Run与Attempt复制件，独立重算1000时延样本、RSS和水位；对应Revision六实例CI通过，但Context/Compaction、独立Profile与三平台正式场景仍未完成，不宣称发布PASS。 |
+| 17 | `9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf` | 2026-09-23 | 按[长会话Context/Compaction证据详设](m09-3d-long-session-context-proof.md)新增v2 Manifest、逐Turn低敏事件Proof和真实摘要Provider缩小负载；v1原件保持可读，三平台1000 Turn正式运行和独立Profile仍未完成。 |

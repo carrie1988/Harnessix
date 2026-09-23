@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 9
-code_revision: ed48e4e35133d60b172c268becd9e009eacb9442
+version: 10
+code_revision: 9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_tests:
   - tests/benchmarks/test_soak_long_session.py
   - tests/benchmarks/test_soak_many_threads.py
   - tests/benchmarks/test_soak_attempt.py
+  - tests/benchmarks/test_soak_context_proof.py
 supersedes: []
 ---
 
@@ -34,7 +35,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；两个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；两个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)及缩小负载Runner，旧v1证据保持不变；v2三平台正式负载尚未执行。其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 
@@ -135,3 +136,4 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 | 3 | 2026-09-23 | 同步样本/Manifest合同、Run目录提交标记与独立复核的局部实现；正式Soak及阈值验收仍未完成。 |
 | 4 | 2026-09-23 | 两个已实现Runner在负载前持久写入Attempt开始，异常写失败终态，硬退出留未完成事实；明确Run已发布而Attempt未终结不得判PASS，其他四场景与Profile仍待实现。 |
 | 5 | 2026-09-23 | 登记macOS单Thread连续1000 Turn诊断事实和Run/Attempt双重重算；明确规模完成不等于Context/Compaction、Threshold Profile或三平台发布门禁完成。 |
+| 6 | 2026-09-23 | 为长会话Context/Compaction新增v2低敏事件Proof与Manifest版本，保留v1历史Run逐字节可读；缩小负载可核验，不提前接受三平台发布结论。 |

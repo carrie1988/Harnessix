@@ -9,6 +9,7 @@ from typing import Literal, Self
 from pydantic import Field, StrictBool, StrictInt, model_validator
 
 from harnessix.domain.models import ContractModel
+from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file
 from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles
 
@@ -140,7 +141,10 @@ class SoakManifest(ContractModel):
             for metric, count in self.sample_counts.items()
         ):
             raise ValueError("统计样本数与清单不一致")
-        if set(self.evidence_sha256) != {SAMPLE_FILENAME} or any(
+        evidence_files = {SAMPLE_FILENAME}
+        if self.spec_version == "harnessix.soak-manifest/v2":
+            evidence_files.add(CONTEXT_PROOF_FILENAME)
+        if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
         ):
@@ -190,6 +194,38 @@ class SoakManifest(ContractModel):
         ) != ("KiB", "kib_times_1024"):
             raise ValueError("Linux RSS单位不匹配")
         return self
+
+
+class SoakManifestV2(SoakManifest):
+    """长会话Context证明版；v1序列化和历史证据保持原字节。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v2"]
+    scenario_version: Literal["harnessix.soak-scenario/v2"]
+    scenario_id: Literal["long_session"]
+    summary_request_count: StrictInt = Field(ge=1)
+    context_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.context_proof_sha256 != self.evidence_sha256[CONTEXT_PROOF_FILENAME]:
+            raise ValueError("Context证明摘要与证据索引不一致")
+        return self
+
+
+def verify_context_proof(manifest: SoakManifestV2, proof: SoakContextProof) -> None:
+    """核对独立证明与负载、普通Provider及摘要Provider请求数。"""
+
+    if (
+        proof.run_id != manifest.run_id
+        or len(proof.turns) != manifest.load.warmup_count + manifest.load.turn_count
+        or any(
+            turn.phase != ("warmup" if index < manifest.load.warmup_count else "measure")
+            for index, turn in enumerate(proof.turns)
+        )
+        or proof.model_request_count != manifest.provider.request_count
+        or proof.summary_request_count != manifest.summary_request_count
+    ):
+        raise ValueError("Context证明与Manifest负载或Provider账本不一致")
 
 
 def verify_manifest_samples(manifest: SoakManifest, run_directory: Path) -> None:

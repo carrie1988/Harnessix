@@ -8,7 +8,8 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
-from scripts.soak_long_session import run_long_session
+from scripts.soak_long_session import run_long_session, run_long_session_context
+from scripts.soak_provider import SoakSummaryProvider
 from scripts.soak_sample_file import read_sample_file
 
 
@@ -123,3 +124,67 @@ async def test_formal_baseline_rejects_unverified_revision_before_work(tmp_path)
         )
     assert error.value.code == "soak_revision_invalid"
     assert not (tmp_path / "evidence").exists()
+
+
+async def test_context_run_publishes_event_proof_without_business_text(tmp_path) -> None:
+    directory, manifest = await run_long_session_context(
+        tmp_path / "evidence",
+        code_revision="a" * 40,
+        turn_count=12,
+        warmup_count=2,
+    )
+
+    restored, _ = read_published_run(directory)
+    _, final = read_attempt(tmp_path / "evidence" / "attempts" / manifest.run_id)
+    assert restored == manifest
+    assert final is not None and final.outcome == "committed"
+    assert manifest.status == "unverified"
+    assert manifest.summary_request_count >= 1
+    assert manifest.provider.request_count == 14
+    raw = b"".join(path.read_bytes() for path in directory.iterdir())
+    assert b"context_prepared" in raw and b"compaction_window_activated" in raw
+    assert "固定Soak输入".encode() not in raw
+    assert "保留已完成".encode() not in raw
+    assert b"session.db" not in raw
+
+
+async def test_context_run_without_measured_compaction_fails_closed(tmp_path) -> None:
+    root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_long_session_context(
+            root,
+            code_revision="a" * 40,
+            turn_count=3,
+            warmup_count=0,
+        )
+    assert error.value.code == "soak_context_coverage_invalid"
+    attempt = next((root / "attempts").iterdir())
+    _, final = read_attempt(attempt)
+    assert final is not None and final.outcome == "failed" and final.phase == "reconciling"
+    assert not (root / attempt.name).exists()
+
+
+async def test_summary_provider_without_accounting_cannot_publish_context_run(
+    tmp_path, monkeypatch
+) -> None:
+    async def missing_attempt(self, request, cancel):
+        from harnessix.models.contracts import ResponseStarted
+
+        del request
+        cancel.checkpoint()
+        yield ResponseStarted(response_id="incomplete")
+
+    monkeypatch.setattr(SoakSummaryProvider, "stream", missing_attempt)
+    root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_long_session_context(
+            root,
+            code_revision="a" * 40,
+            turn_count=12,
+            warmup_count=0,
+        )
+    assert error.value.code == "soak_turn_failed"
+    attempt = next((root / "attempts").iterdir())
+    _, final = read_attempt(attempt)
+    assert final is not None and final.outcome == "failed" and final.phase == "measuring"
+    assert not (root / attempt.name).exists()

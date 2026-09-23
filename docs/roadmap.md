@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 56
-code_revision: ed48e4e35133d60b172c268becd9e009eacb9442
+version: 57
+code_revision: 9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf
 owners:
   - core
 modules:
@@ -561,7 +561,7 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   已实现严格样本/Manifest、Run提交与独立重算、三平台RSS适配、长会话真实Runtime及多Thread应用服务
   缩小负载Runner，并补齐多Thread启动恢复时延指标合同。已归档[macOS 500 Thread单次诊断事实](validation/soak-macos-2026-09-23-v1/README.md)，
   但该Revision的跨平台基准Job失败，不能用于冻结Profile；后续拆分启动/分页期限并先排空超时SQLite任务的修复版已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收，旧Run仍仅供诊断。现有两个Runner已在负载前持久写入Attempt开始事实，异常保留失败终态，硬退出保留未完成事实；
-  [macOS单Thread连续1000 Turn规模诊断](validation/soak-macos-2026-09-23-v2/README.md)已在干净Revision完成并经Run/Attempt双重重算，对应六实例CI通过；但尚未专门断言Context/Compaction。其余四场景Runner及其失败事实、Linux/Windows正式负载、Threshold Profile和独立复验仍未完成；
+  [macOS单Thread连续1000 Turn规模诊断](validation/soak-macos-2026-09-23-v2/README.md)已在干净Revision完成并经Run/Attempt双重重算，对应六实例CI通过；该旧Run尚未专门断言Context/Compaction。新的[长会话Context/Compaction v2详设](changes/m09-3d-long-session-context-proof.md)已落地缩小负载Runner、逐Turn事件Proof和v1/v2独立Reader，但尚未完成三平台1000 Turn正式运行。其余四场景Runner及其失败事实、Linux/Windows正式负载、Threshold Profile和独立复验仍未完成；
   单次基线和缩小负载均不得充作发布PASS。
 
 只有a～d均通过合同、取消/超时、失败恢复、持久化、可观测性、三平台适用性、完整回归和文档同步，才可勾选
