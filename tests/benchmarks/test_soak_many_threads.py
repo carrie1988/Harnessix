@@ -9,10 +9,18 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.protocol.contracts import ThreadListResult
+from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
 from scripts.soak_manifest import SoakManifest
 from scripts.soak_many_threads import run_many_threads
 from scripts.soak_sample_file import read_sample_file
+
+
+def _assert_failed_attempt(root, *, phase: str) -> None:
+    attempt_directory = next((root / "attempts").iterdir())
+    _, final = read_attempt(attempt_directory)
+    assert final is not None and final.outcome == "failed" and final.phase == phase
+    assert not (root / attempt_directory.name).exists()
 
 
 async def test_many_threads_smoke_restarts_runtime_and_reads_every_page(tmp_path) -> None:
@@ -33,6 +41,8 @@ async def test_many_threads_smoke_restarts_runtime_and_reads_every_page(tmp_path
         expected_measured=manifest.sample_counts,
     )
     assert restored == manifest
+    _, attempt_final = read_attempt(tmp_path / "evidence" / "attempts" / manifest.run_id)
+    assert attempt_final is not None and attempt_final.outcome == "committed"
     assert manifest.status == "unverified"
     assert manifest.load.thread_count == 12
     assert manifest.load.warmup_count == 4
@@ -94,7 +104,7 @@ async def test_empty_page_and_timeout_fail_without_published_run(tmp_path, monke
     with pytest.raises(KernelError) as error:
         await run_many_threads(root, code_revision="d" * 40, thread_count=2)
     assert error.value.code == "soak_list_invalid"
-    assert not root.exists()
+    _assert_failed_attempt(root, phase="warming")
 
     async def delayed(self, params):
         await asyncio.sleep(1)
@@ -109,7 +119,7 @@ async def test_empty_page_and_timeout_fail_without_published_run(tmp_path, monke
             page_timeout_seconds=0.01,
         )
     assert error.value.code == "soak_list_timeout"
-    assert not root.exists()
+    _assert_failed_attempt(root, phase="warming")
 
 
 async def test_startup_deadline_drains_open_runtime_before_temp_cleanup(
@@ -131,4 +141,4 @@ async def test_startup_deadline_drains_open_runtime_before_temp_cleanup(
             startup_timeout_seconds=0.01,
         )
     assert error.value.code == "soak_startup_timeout"
-    assert not root.exists()
+    _assert_failed_attempt(root, phase="warming")

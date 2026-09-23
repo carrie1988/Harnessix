@@ -6,6 +6,7 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
+from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
 from scripts.soak_long_session import run_long_session
 from scripts.soak_sample_file import read_sample_file
@@ -29,6 +30,8 @@ async def test_long_session_smoke_uses_runtime_replay_and_publishes_only_numbers
         expected_measured=manifest.sample_counts,
     )
     assert restored == manifest
+    _, attempt_final = read_attempt(tmp_path / "evidence" / "attempts" / manifest.run_id)
+    assert attempt_final is not None and attempt_final.outcome == "committed"
     assert manifest.status == "unverified"
     assert manifest.load.turn_count == 3
     assert manifest.load.warmup_count == 2
@@ -85,7 +88,29 @@ async def test_timeout_does_not_publish_partial_run(tmp_path, monkeypatch) -> No
             turn_timeout_seconds=0.01,
         )
     assert error.value.code == "soak_turn_timeout"
-    assert not evidence_root.exists()
+    attempt_directory = next((evidence_root / "attempts").iterdir())
+    _, final = read_attempt(attempt_directory)
+    assert final is not None and final.outcome == "failed" and final.phase == "measuring"
+    assert not (evidence_root / attempt_directory.name).exists()
+
+
+async def test_environment_preflight_failure_persists_failed_attempt(tmp_path, monkeypatch) -> None:
+    def unavailable():
+        raise KernelError("soak_environment_unavailable", "环境信息不可用")
+
+    monkeypatch.setattr("scripts.soak_long_session.read_environment", unavailable)
+    evidence_root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_long_session(
+            evidence_root,
+            code_revision="c" * 40,
+            turn_count=1,
+            warmup_count=0,
+        )
+    assert error.value.code == "soak_environment_unavailable"
+    attempt_directory = next((evidence_root / "attempts").iterdir())
+    _, final = read_attempt(attempt_directory)
+    assert final is not None and final.outcome == "failed" and final.phase == "prepared"
 
 
 async def test_formal_baseline_rejects_unverified_revision_before_work(tmp_path) -> None:

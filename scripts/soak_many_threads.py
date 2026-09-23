@@ -16,6 +16,7 @@ from harnessix.app_server.service import AgentApplicationService
 from harnessix.protocol.contracts import ThreadListParams
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.session.sqlite import SQLiteSessionStore
+from scripts.soak_attempt import attempt_scope
 from scripts.soak_environment import read_environment
 from scripts.soak_manifest import SoakFileWatermarks, SoakLoad, SoakManifest
 from scripts.soak_provider import SoakProvider
@@ -172,72 +173,81 @@ async def run_many_threads(
         check_release_revision(code_revision)
 
     run_id = uuid4().hex
-    environment = read_environment()
-    started_at = datetime.now(UTC)
-    provider = SoakProvider()
-    samples: list[SoakSample] = []
-    with TemporaryDirectory(prefix="harnessix-soak-") as temporary:
-        workspace = Path(temporary)
-        database = workspace / "session.db"
-        wal = workspace / "session.db-wal"
-        store = SQLiteSessionStore(database)
-        async with AgentRuntime(store, provider) as runtime:
-            before_db, before_wal = file_bytes(database), file_bytes(wal)
-            expected_ids: set[str] = set()
-            for _ in range(thread_count):
-                thread = await runtime.create_thread(str(workspace))
-                expected_ids.add(str(thread.thread_id))
-            if {str(identity) for identity in await store.thread_ids()} != expected_ids:
-                raise KernelError("soak_thread_count_invalid", "多Thread持久数量不符")
+    with attempt_scope(
+        evidence_root, run_id=run_id, code_revision=code_revision, scenario_id="many_threads"
+    ) as attempt:
+        environment = read_environment()
+        started_at = datetime.now(UTC)
+        provider = SoakProvider()
+        samples: list[SoakSample] = []
+        attempt.phase = "warming"
+        with TemporaryDirectory(prefix="harnessix-soak-") as temporary:
+            workspace = Path(temporary)
+            database = workspace / "session.db"
+            wal = workspace / "session.db-wal"
+            store = SQLiteSessionStore(database)
+            async with AgentRuntime(store, provider) as runtime:
+                before_db, before_wal = file_bytes(database), file_bytes(wal)
+                expected_ids: set[str] = set()
+                for _ in range(thread_count):
+                    thread = await runtime.create_thread(str(workspace))
+                    expected_ids.add(str(thread.thread_id))
+                if {str(identity) for identity in await store.thread_ids()} != expected_ids:
+                    raise KernelError("soak_thread_count_invalid", "多Thread持久数量不符")
 
-        for index in range(restart_count + 1):
-            await _restart_and_list(
-                store,
-                provider,
-                workspace,
-                run_id=run_id,
-                expected_ids=frozenset(expected_ids),
-                limit=list_limit,
-                phase="warmup" if index == 0 else "measure",
-                startup_timeout_seconds=startup_timeout_seconds,
-                page_timeout_seconds=page_timeout_seconds,
-                samples=samples,
-            )
-            if index == 0:
-                warmup_count = len(samples)
+            for index in range(restart_count + 1):
+                attempt.phase = "warming" if index == 0 else "measuring"
+                await _restart_and_list(
+                    store,
+                    provider,
+                    workspace,
+                    run_id=run_id,
+                    expected_ids=frozenset(expected_ids),
+                    limit=list_limit,
+                    phase="warmup" if index == 0 else "measure",
+                    startup_timeout_seconds=startup_timeout_seconds,
+                    page_timeout_seconds=page_timeout_seconds,
+                    samples=samples,
+                )
+                if index == 0:
+                    warmup_count = len(samples)
 
-        if {
-            str(identity) for identity in await store.thread_ids()
-        } != expected_ids or provider.request_count != 0:
-            raise KernelError("soak_thread_count_invalid", "多Thread恢复后持久数量不符")
-        after_db, after_wal = file_bytes(database), file_bytes(wal)
-        rss = read_peak_rss()
-        samples.append(rss_sample(run_id, "many_threads", len(samples) + 1, rss))
+            attempt.phase = "reconciling"
+            if {
+                str(identity) for identity in await store.thread_ids()
+            } != expected_ids or provider.request_count != 0:
+                raise KernelError("soak_thread_count_invalid", "多Thread恢复后持久数量不符")
+            after_db, after_wal = file_bytes(database), file_bytes(wal)
+            rss = read_peak_rss()
+            samples.append(rss_sample(run_id, "many_threads", len(samples) + 1, rss))
 
-    return publish_measured_run(
-        evidence_root,
-        run_id=run_id,
-        code_revision=code_revision,
-        scenario_id="many_threads",
-        seed=seed,
-        environment=environment,
-        started_at=started_at,
-        load=SoakLoad(
-            turn_count=0,
-            thread_count=thread_count,
-            artifact_count=0,
-            warmup_count=warmup_count,
-        ),
-        samples=tuple(samples),
-        provider=provider,
-        rss=rss,
-        file_watermarks=SoakFileWatermarks(
-            db_before_bytes=before_db,
-            db_after_bytes=after_db,
-            wal_before_bytes=before_wal,
-            wal_after_bytes=after_wal,
-            artifact_before_bytes=0,
-            artifact_after_bytes=0,
-        ),
-        baseline=thread_count >= 500,
-    )
+        attempt.phase = "publishing"
+        run_directory, manifest = publish_measured_run(
+            evidence_root,
+            run_id=run_id,
+            code_revision=code_revision,
+            scenario_id="many_threads",
+            seed=seed,
+            environment=environment,
+            started_at=started_at,
+            load=SoakLoad(
+                turn_count=0,
+                thread_count=thread_count,
+                artifact_count=0,
+                warmup_count=warmup_count,
+            ),
+            samples=tuple(samples),
+            provider=provider,
+            rss=rss,
+            file_watermarks=SoakFileWatermarks(
+                db_before_bytes=before_db,
+                db_after_bytes=after_db,
+                wal_before_bytes=before_wal,
+                wal_after_bytes=after_wal,
+                artifact_before_bytes=0,
+                artifact_after_bytes=0,
+            ),
+            baseline=thread_count >= 500,
+        )
+        attempt.commit(run_directory)
+        return run_directory, manifest
