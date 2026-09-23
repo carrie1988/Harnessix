@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 11
-code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
+version: 12
+code_revision: c4c364c059a7b6ea61410fe03ba41ef140fcdd41
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-23 | [macOS SDK容量单平台规模基线](soak-macos-sdk-2026-09-23-v1/README.md) | `c4c364c059a7b6ea61410fe03ba41ef140fcdd41` | macOS Python 3.13.8、`c16-m48`、容量64、1预热+3正式轮、20次正常往返；固定Provider零请求 | Run/Attempt与独立摘要、样本、Proof复核通过；对应Revision六实例CI成功；往返P95 1407042 ns、父子峰值RSS较大者68845568字节 | 单平台单次基线；未冻结阈值、第二独立Run或Linux/Windows正式负载，不得判发布PASS |
 | 2026-09-23 | [macOS Artifact单平台规模基线](soak-macos-artifact-2026-09-23-v3/README.md) | `5d48b9735c11022743eb56df5da23125702b0140` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt与独立数值重算通过；对应Revision六实例CI成功；发布P95 13654625 ns、读取P95 6604000 ns | 单平台单次基线，可供工程Profile评审；未冻结阈值、未做独立复验或其他平台正式运行，不得判发布PASS |
 | 2026-09-23 | [macOS Artifact第二次规模诊断](soak-macos-artifact-2026-09-23-v2/README.md) | `c63f970f3386632b9720ae33d1a7f056e70c0510` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt重读和独立分位数/覆盖重算通过；对应Windows CI的Turn超时用例出现异步SQLite句柄清理失败 | 历史诊断证据；不得冻结Profile或判发布PASS |
 | 2026-09-23 | [macOS Artifact首次规模诊断](soak-macos-artifact-2026-09-23-v1/README.md) | `784cd54ec2383c6a3679d64db401ad4d3bf9b86a` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt重读和独立数值重算通过；对应Windows CI的只读SQLite连接未关闭 | 历史诊断证据；不得冻结Profile或判发布PASS |

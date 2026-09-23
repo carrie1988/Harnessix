@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: c84e78dc1a8a7b95dbe40a8bc209a7442e2ee43a
+version: 4
+code_revision: c4c364c059a7b6ea61410fe03ba41ef140fcdd41
 owners:
   - core
 modules:
@@ -143,3 +143,7 @@ commit Attempt FINAL only after valid Run exists
 - [`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py)覆盖真实子进程64容量、缩小负载、协商、取消/迟到、关闭、超时失败Attempt、非法负载及Proof篡改；旧v1～v3 Reader测试仍应通过。
 - 基线需在macOS、Linux、Windows各自以正式负载运行，并对每个平台冻结经评审阈值、以第二独立Run预绑定Profile后复验；目前尚无三平台正式数值、工程阈值或发布PASS。SDK场景完成也不关闭其余`action_recovery`和`restart`场景。
 - 进程峰值RSS取较大者，不代表同时总峰值；正常往返窗口可复算完成速率，但尚未冻结吞吐下界。门闩是固定白盒测试替身，不是生产流量分布。若需要用户端到端吞吐、远程Agent Protocol或聚合内存SLO，必须另立正式负载合同。
+
+### 6.1 单平台正式负载与交叉平台合同验收
+
+干净Revision `c4c364c059a7b6ea61410fe03ba41ef140fcdd41`的[macOS SDK容量规模基线](../validation/soak-macos-sdk-2026-09-23-v1/README.md)保存四轮真实64容量阶段证明、20条正式往返样本、父子峰值RSS、规范Run/Attempt及独立数值复核。[CI 35833762475](https://github.com/carrie1988/Harnessix/actions/runs/35833762475)六实例全部成功，覆盖Linux Python 3.12/3.13、Windows原生Benchmark、macOS、固定Container和文档。此前Linux子进程关闭后`soak_rss_unit_unknown`与Windows失败标记换行不一致均已由源码和回归测试关闭。该证据仍仅是macOS单次基线；三平台正式负载、工程阈值Profile和第二独立Run未完成，不能发布PASS。
