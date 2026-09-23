@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 50
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 52
+code_revision: 406aeef55820c70b80768de9ff6aa8462dac4c7b
 owners:
   - core
 modules:
@@ -557,7 +557,10 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   Reconcile复合故障和零重复外部效果证据；实现Revision `0bc942b`的本地`make check`为3595 passed、32 skipped，
   [首次CI 35499848035](https://github.com/carrie1988/Harnessix/actions/runs/35499848035)发现文档同步和Container组合根Session初始化缺陷；修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例验收关闭；
 - [ ] **0.9.3d 长会话Soak与发布阈值**：用固定场景和环境记录启动时延、操作分位数、峰值RSS、数据库/Artifact增长、
-  清理水位和故障计数，冻结低敏Manifest与独立阈值验证。源码核查、ADR和专项详细设计处于评审阶段；运行器、证据合同、三平台正式负载和独立复验尚未完成。
+  清理水位和故障计数，冻结低敏Manifest与独立阈值验证。源码核查、ADR和专项详细设计处于评审阶段；
+  已实现严格样本/Manifest、Run提交与独立重算、三平台RSS适配、长会话真实Runtime及多Thread应用服务
+  缩小负载Runner，并补齐多Thread启动恢复时延指标合同。其余四场景Runner、失败事实留存、三平台正式负载、Threshold Profile
+  和独立复验仍未完成；缩小负载不得充作发布基线。
 
 只有a～d均通过合同、取消/超时、失败恢复、持久化、可观测性、三平台适用性、完整回归和文档同步，才可勾选
 0.9.3总项。0.9.3不新增独立HTTP/Worker、性能控制面或远程数据库，也不把守护线程误述为底层I/O已被强制中断。
