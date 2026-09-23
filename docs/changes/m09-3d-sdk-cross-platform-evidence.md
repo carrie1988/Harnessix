@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 4f9debb649438cc883c00a59ae3464d2376677e3
+version: 2
+code_revision: 70c5161986082b63acd31ab1acf8328c9fad9efd
 owners:
   - core
 modules:
@@ -110,4 +110,8 @@ Run目录与Attempt目录各自排他创建，不共享数据库事务。提交�
 | 参数固定、日志白名单、两层提交复核 | [`run_sdk_soak_release.py`](../../scripts/run_sdk_soak_release.py) | [`test_run_sdk_soak_release.py`](../../tests/benchmarks/test_run_sdk_soak_release.py) |
 | 真实SDK/stdio并发、取消及迟到Response | [`soak_sdk_capacity.py`](../../scripts/soak_sdk_capacity.py)、[`soak_sdk_child.py`](../../scripts/soak_sdk_child.py) | [`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py) |
 | 规范Run、Proof、Attempt读取与摘要 | [`soak_evidence.py`](../../scripts/soak_evidence.py)、[`soak_attempt.py`](../../scripts/soak_attempt.py) | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)、[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) |
-| 三平台正式负载及失败上传 | [`sdk-soak.yml`](../../.github/workflows/sdk-soak.yml) | 工作流实际Run ID、各Job结果和下载件SHA；尚待运行登记，不以源码存在替代验收 |
+| 三平台正式负载及失败上传 | [`sdk-soak.yml`](../../.github/workflows/sdk-soak.yml) | [真实工作流 35838270267](https://github.com/carrie1988/Harnessix/actions/runs/35838270267)、[原始证据与SHA归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)及[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)；仅为三平台各一次基线 |
+
+## 8. 真实运行与证据等级
+
+固定入口的修复Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`在Linux、macOS和Windows的[正式工作流 35838270267](https://github.com/carrie1988/Harnessix/actions/runs/35838270267)均成功；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例成功。下载件经Reader及独立SHA-256/样本/分位数复核，原始文件、评审包和失败工作流历史见[三平台证据归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)。这是三平台各一次基线，不代表阈值、独立复验、Action恢复或重启场景已经通过。

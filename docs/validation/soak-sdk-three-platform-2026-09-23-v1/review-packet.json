@@ -1,0 +1,75 @@
+{
+  "checks": {
+    "attempt_reader": "3/3 committed",
+    "independent_file_sha256": "18/18 matched",
+    "independent_stdlib_quantiles": "3/3 matched",
+    "privacy_keyword_scan": "3/3 passed",
+    "run_reader": "3/3 passed",
+    "standard_ci": "6/6 success",
+    "workflow_matrix": "3/3 success"
+  },
+  "classification": "three-platform-single-run-baseline",
+  "code_revision": "70c5161986082b63acd31ab1acf8328c9fad9efd",
+  "platforms": {
+    "linux": {
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "a7625eeba9225cbbb961f4873dca2ef99b6421f34bda84a95f0e56a225e3e5cf",
+      "p50_ns": 1626258,
+      "p95_ns": 1713349,
+      "p99_ns": 1851137,
+      "provider_requests": 0,
+      "python_version": "3.12.3",
+      "rss_peak_bytes": 66035712,
+      "rss_source": "proc_status",
+      "run_id": "4be017812a684966af5bf00a8f481fa3",
+      "run_status": "baseline",
+      "sample_count": 20
+    },
+    "macos": {
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4,
+      "hardware_class": "c3-m7",
+      "manifest_sha256": "53774ac1296bcd5f6929e8d76806ad4dda22bd7470e44bdd4a1c20ece5e27968",
+      "p50_ns": 4399208,
+      "p95_ns": 8811209,
+      "p99_ns": 9422167,
+      "provider_requests": 0,
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 72728576,
+      "rss_source": "getrusage",
+      "run_id": "221b359e68984b899ae8d5afa7826471",
+      "run_status": "baseline",
+      "sample_count": 20
+    },
+    "windows": {
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "0b40aa9b1a76a4aee153ad1f23ca39822273fafe834a6e18a08a4e9f9d359514",
+      "p50_ns": 3664700,
+      "p95_ns": 3825000,
+      "p99_ns": 3827500,
+      "provider_requests": 0,
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 64774144,
+      "rss_source": "GetProcessMemoryInfo",
+      "run_id": "abae5ca23a244a8680dd3707fc906eca",
+      "run_status": "baseline",
+      "sample_count": 20
+    }
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "profile_engineering_review",
+    "prebound_second_independent_run_per_platform",
+    "single_platform_threshold_reports",
+    "action_recovery_and_restart_soak",
+    "other_0.9_release_gates"
+  ],
+  "scenario_id": "sdk_capacity",
+  "source_workflow_run_id": 35838270267,
+  "spec_version": "harnessix.soak-review-packet/v1",
+  "standard_ci_run_id": 35838258049
+}
