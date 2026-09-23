@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -8,6 +10,7 @@ from harnessix.agent.errors import KernelError
 from scripts.soak_artifact_growth import (
     MeasuredArtifactStore,
     SoakArtifactProvider,
+    _body_counts,
     run_artifact_growth,
 )
 from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
@@ -23,6 +26,26 @@ from scripts.soak_threshold import (
 from tests.benchmarks.test_soak_threshold import _profile
 
 REVISION = "a" * 40
+
+
+def test_artifact_readonly_probe_closes_sqlite_handle(tmp_path, monkeypatch) -> None:
+    database = tmp_path / "session.db"
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute("CREATE TABLE agent_artifacts (body BLOB, state TEXT)")
+        connection.commit()
+    original = sqlite3.connect
+    opened = []
+
+    def track(*args, **kwargs):
+        connection = original(*args, **kwargs)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr("scripts.soak_artifact_growth.sqlite3.connect", track)
+    assert _body_counts(database) == (0, 0, 0)
+    assert len(opened) == 1
+    with pytest.raises(sqlite3.ProgrammingError):
+        opened[0].execute("SELECT 1")
 
 
 async def test_real_agent_artifact_soak_reads_every_page_and_cleans_body(tmp_path) -> None:

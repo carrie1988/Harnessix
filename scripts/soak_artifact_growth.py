@@ -7,6 +7,7 @@ import json
 import re
 import sqlite3
 from collections.abc import AsyncGenerator
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -134,7 +135,8 @@ class MeasuredArtifactStore(SQLiteArtifactStore):
 def _body_counts(database: Path) -> tuple[int, int, int]:
     """只读查询临时业务库的逻辑正文、清理墓碑与Manifest数量。"""
 
-    with sqlite3.connect(f"{database.as_uri()}?mode=ro", uri=True) as connection:
+    # sqlite3.Connection的with只提交/回滚，不关闭句柄；Windows临时库必须显式关闭。
+    with closing(sqlite3.connect(f"{database.as_uri()}?mode=ro", uri=True)) as connection:
         row = connection.execute(
             "SELECT COALESCE(SUM(length(body)), 0), "
             "COALESCE(SUM(state = 'expired'), 0), COUNT(*) FROM agent_artifacts"
