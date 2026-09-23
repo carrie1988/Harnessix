@@ -47,10 +47,14 @@ async def _list_all(
     max_pages = (len(expected_ids) + limit - 1) // limit + 1
     for _ in range(max_pages):
         begin = perf_counter_ns()
+        page_task = asyncio.create_task(
+            service.list_threads(ThreadListParams(cursor=cursor, limit=limit))
+        )
         try:
-            async with asyncio.timeout(timeout_seconds):
-                page = await service.list_threads(ThreadListParams(cursor=cursor, limit=limit))
+            page = await asyncio.wait_for(asyncio.shield(page_task), timeout_seconds)
         except TimeoutError:
+            # SQLite异步调用须先自然收敛，再删除Windows临时数据库。
+            await asyncio.gather(page_task, return_exceptions=True)
             raise KernelError("soak_list_timeout", "多Thread列表操作超时") from None
         elapsed = perf_counter_ns() - begin
         ids = [str(thread.thread_id) for thread in page.threads]
@@ -84,17 +88,21 @@ async def _restart_and_list(
     expected_ids: frozenset[str],
     limit: int,
     phase: str,
-    timeout_seconds: float,
+    startup_timeout_seconds: float,
+    page_timeout_seconds: float,
     samples: list[SoakSample],
 ) -> None:
     """逐次新建Runtime/Service，启动与分页均使用同一持久Session。"""
 
     runtime = AgentRuntime(store, provider)
     begin = perf_counter_ns()
+    startup_task = asyncio.create_task(runtime.__aenter__())
     try:
-        async with asyncio.timeout(timeout_seconds):
-            await runtime.__aenter__()
+        await asyncio.wait_for(asyncio.shield(startup_task), startup_timeout_seconds)
     except TimeoutError:
+        outcome = await asyncio.gather(startup_task, return_exceptions=True)
+        if not isinstance(outcome[0], BaseException):
+            await runtime.__aexit__(None, None, None)
         raise KernelError("soak_startup_timeout", "多Thread启动恢复超时") from None
     try:
         service = AgentApplicationService(
@@ -121,7 +129,7 @@ async def _restart_and_list(
                 expected_ids=expected_ids,
                 limit=limit,
                 phase=phase,
-                timeout_seconds=timeout_seconds,
+                timeout_seconds=page_timeout_seconds,
                 samples=samples,
             )
         finally:
@@ -138,7 +146,8 @@ async def run_many_threads(
     list_limit: int = 50,
     restart_count: int = 3,
     seed: int = 0,
-    operation_timeout_seconds: float = 30.0,
+    startup_timeout_seconds: float = 30.0,
+    page_timeout_seconds: float = 30.0,
 ) -> tuple[Path, SoakManifest]:
     """填充独立Session，预热一次并测量多次真实启动与完整分页。"""
 
@@ -154,7 +163,8 @@ async def run_many_threads(
         or not 1 <= restart_count <= 10
         or type(seed) is not int
         or seed < 0
-        or not 0 < operation_timeout_seconds <= 300
+        or not 0 < startup_timeout_seconds <= 300
+        or not 0 < page_timeout_seconds <= 300
         or (thread_count >= 500 and restart_count < 3)
     ):
         raise KernelError("soak_load_invalid", "多Thread Soak负载参数无效")
@@ -189,7 +199,8 @@ async def run_many_threads(
                 expected_ids=frozenset(expected_ids),
                 limit=list_limit,
                 phase="warmup" if index == 0 else "measure",
-                timeout_seconds=operation_timeout_seconds,
+                startup_timeout_seconds=startup_timeout_seconds,
+                page_timeout_seconds=page_timeout_seconds,
                 samples=samples,
             )
             if index == 0:

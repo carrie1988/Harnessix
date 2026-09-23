@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.protocol.contracts import ThreadListResult
 from scripts.soak_evidence import read_published_run
@@ -105,7 +106,29 @@ async def test_empty_page_and_timeout_fail_without_published_run(tmp_path, monke
             root,
             code_revision="d" * 40,
             thread_count=2,
-            operation_timeout_seconds=0.01,
+            page_timeout_seconds=0.01,
         )
     assert error.value.code == "soak_list_timeout"
+    assert not root.exists()
+
+
+async def test_startup_deadline_drains_open_runtime_before_temp_cleanup(
+    tmp_path, monkeypatch
+) -> None:
+    enter = AgentRuntime.__aenter__
+
+    async def delayed_enter(self):
+        await asyncio.sleep(0.05)
+        return await enter(self)
+
+    monkeypatch.setattr(AgentRuntime, "__aenter__", delayed_enter)
+    root = tmp_path / "evidence"
+    with pytest.raises(KernelError) as error:
+        await run_many_threads(
+            root,
+            code_revision="e" * 40,
+            thread_count=2,
+            startup_timeout_seconds=0.01,
+        )
+    assert error.value.code == "soak_startup_timeout"
     assert not root.exists()
