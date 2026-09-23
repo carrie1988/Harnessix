@@ -5,7 +5,12 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from scripts.soak_samples import SoakSample, nearest_rank, validate_sample_series
+from scripts.soak_samples import (
+    SCENARIO_METRICS,
+    SoakSample,
+    nearest_rank,
+    validate_sample_series,
+)
 
 RUN_ID = uuid4().hex
 
@@ -55,6 +60,83 @@ def test_quantiles_are_recomputed_with_integer_nearest_rank() -> None:
         nearest_rank((1, -1))
     with pytest.raises(ValueError):
         nearest_rank((1, True))
+
+
+def test_many_threads_requires_distinct_app_service_startup_metric() -> None:
+    assert SCENARIO_METRICS["many_threads"] == {
+        "thread_list_page",
+        "app_service_startup",
+        "rss_peak",
+    }
+    with pytest.raises(ValidationError):
+        SoakSample.model_validate(
+            {
+                "spec_version": "harnessix.soak-sample/v1",
+                "run_id": RUN_ID,
+                "scenario_id": "long_session",
+                "sample_index": 1,
+                "phase": "measure",
+                "metric": "app_service_startup",
+                "value": 10,
+                "unit": "ns",
+                "clock": "monotonic_ns",
+            }
+        )
+    samples = (
+        SoakSample(
+            spec_version="harnessix.soak-sample/v1",
+            run_id=RUN_ID,
+            scenario_id="many_threads",
+            sample_index=1,
+            phase="measure",
+            metric="thread_list_page",
+            value=10,
+            unit="ns",
+            clock="monotonic_ns",
+        ),
+        SoakSample(
+            spec_version="harnessix.soak-sample/v1",
+            run_id=RUN_ID,
+            scenario_id="many_threads",
+            sample_index=2,
+            phase="measure",
+            metric="app_service_startup",
+            value=20,
+            unit="ns",
+            clock="monotonic_ns",
+        ),
+        SoakSample(
+            spec_version="harnessix.soak-sample/v1",
+            run_id=RUN_ID,
+            scenario_id="many_threads",
+            sample_index=3,
+            phase="measure",
+            metric="rss_peak",
+            value=4096,
+            unit="bytes",
+            rss_source="getrusage",
+            rss_raw_unit="KiB",
+            rss_normalization="kib_times_1024",
+            rss_raw_value=4,
+            rss_bytes=4096,
+        ),
+    )
+    counts = {metric: 1 for metric in SCENARIO_METRICS["many_threads"]}
+    assert set(
+        validate_sample_series(
+            samples,
+            run_id=RUN_ID,
+            scenario_id="many_threads",
+            expected_measured=counts,
+        )
+    ) == set(counts)
+    with pytest.raises(ValueError):
+        validate_sample_series(
+            samples,
+            run_id=RUN_ID,
+            scenario_id="many_threads",
+            expected_measured={"thread_list_page": 1, "rss_peak": 1},
+        )
 
 
 def test_sample_series_excludes_warmup_and_checks_frozen_counts() -> None:

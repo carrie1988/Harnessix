@@ -20,6 +20,7 @@ ScenarioId = Literal[
 Metric = Literal[
     "turn_local",
     "thread_list_page",
+    "app_service_startup",
     "sdk_roundtrip",
     "artifact_publish",
     "artifact_read",
@@ -29,7 +30,7 @@ Metric = Literal[
 ]
 SCENARIO_METRICS: dict[str, frozenset[str]] = {
     "long_session": frozenset({"turn_local", "rss_peak"}),
-    "many_threads": frozenset({"thread_list_page", "rss_peak"}),
+    "many_threads": frozenset({"thread_list_page", "app_service_startup", "rss_peak"}),
     "sdk_capacity": frozenset({"sdk_roundtrip", "rss_peak"}),
     "artifact_growth": frozenset({"artifact_publish", "artifact_read", "rss_peak"}),
     "action_recovery": frozenset({"recovery_scan", "rss_peak"}),
