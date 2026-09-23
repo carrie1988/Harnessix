@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: pending
+version: 2
+code_revision: 9b527bea9d72b6cff08833245d7ec302ddbfb784
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ related_tests:
   - tests/artifacts/test_runtime.py
   - tests/benchmarks/test_soak_manifest.py
   - tests/benchmarks/test_soak_evidence.py
+  - tests/benchmarks/test_soak_artifact_proof.py
 supersedes: []
 ---
 
@@ -40,7 +41,7 @@ supersedes: []
 ## 2. 设计目标、非目标与验收口径
 
 1. 以临时Workspace和临时Session运行真实`AgentRuntime → CodingToolRuntime.grep → SQLiteArtifactStore.publish/read/collect`；模型端仅为确定性Tool Call夹具。
-2. 正式负载固定混合小件与正文大小处于`[80%, 100%) × MAX_ARTIFACT_BYTES`的近上限件；预热与正式样本分离，具体件数由版本化负载合同冻结，不由运行结果回填。
+2. 正式负载固定2件预热、至少20件正式样本；正式样本至少各含2件小件和近上限件，后者正文大小处于`[80%, 100%) × MAX_ARTIFACT_BYTES`；规模由版本化负载合同冻结，不由运行结果回填。
 3. 发布时延只包围`SQLiteArtifactStore.publish`；读取时延只包围单次`read`页，二者不得冒充Agent整Turn或完整产品时延。
 4. `ArtifactProof`记录每件的匿名序号、阶段、正文大小、记录数、完整分页计数与采样索引，以及清理前后逻辑字节和Tombstone计数；Reader从原始样本及Proof重算总量、索引和Manifest绑定。
 5. 所有成功Run必须有完整Attempt、Replay一致性、正文/引用逐件核验、清理后`artifact_expired`及零孤儿。失败、取消、超时或硬退出不得发布PASS。
@@ -97,10 +98,10 @@ sequenceDiagram
 
 | 对象/字段 | 约束及来源 | 用途与失败语义 |
 |---|---|---|
-| `SoakLoad.artifact_count`、`warmup_count` | 实际发布数；预热和正式件数固定且均为正 | 与Proof条目及Store计数精确相等，规模不足不得标记`baseline` |
+| `SoakLoad.artifact_count`、`warmup_count` | 实际发布总数；每Turn一件、单Thread；正式基线2件预热及至少20件正式样本 | 与Proof条目及Store计数精确相等，规模不足不得标记`baseline` |
 | `SoakSample.artifact_publish/artifact_read/rss_peak` | 时延ns、峰值bytes；正式指标均至少一个样本 | 从原始JSONL重算分位数和RSS，不信任Manifest自报统计 |
 | `ArtifactProof.spec_version/run_id` | 固定`harnessix.soak-artifact-proof/v1`及Run ID | 只与本Run绑定，未知版本/字段拒绝 |
-| `ArtifactProof.entries` | 连续匿名序号、阶段、`size_bytes/records/page_count/read_records`及样本索引范围 | Reader核对发布样本、读取样本与实际件数；不出现业务UUID或路径 |
+| `ArtifactProof.entries` | 连续匿名序号、阶段、大小类别、`size_bytes/record_count/page_count/read_record_count`及发布/每页样本索引 | Reader核对样本唯一性、时间顺序、测量阶段、发布和读取指标覆盖；不出现业务UUID或路径 |
 | `ArtifactProof.cleanup` | 清理前正文逻辑字节、过期件数、保护件数、清理后正文逻辑字节、Tombstone件数 | 清理后应为零活正文，保留全部Manifest；物理DB/WAL不要求缩小 |
 | `SoakManifestV3.artifact_proof_sha256` | 规范Proof文件原始SHA-256 | `evidence_sha256`精确包含样本与Proof；v1/v2 Reader原字节不变 |
 | `SoakFileWatermarks.artifact_before/after_bytes` | 负载前与清理前正文逻辑字节 | 独立Profile比较增长峰值；清理后水位由Proof另记，避免以0掩盖增长 |
@@ -173,11 +174,14 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 
 以真实`grep`捕获产生近上限正文可覆盖模型调用到事务发布的主链，但受搜索扫描成本影响；因此发布时延仅在Store方法内测量，整个Turn耗时另由后续端到端场景覆盖。受控时钟使离线清理测试不必等待TTL，却不能证明真实24小时长期漂移；正式Beta仍需观察真实时间清理。v3 Proof增加证据体积和Reader分支，但避免在现有v1/v2合同中塞入可空字段、破坏历史规范字节。逻辑正文归零不等于物理文件缩小，后者由Store维护和备份/Restore门禁单独验证。
 
-## 7. 实施与验证计划
+## 7. 已实现证据合同与后续实施
 
-1. 冻结v3 Proof合同、严格文件集合和独立Reader；保留现有v1/v2历史Run逐字节可读。
-2. 实现固定Provider、近上限夹具、真实Agent/Artifact发布、全页读取、受控到期清理、Attempt与Run发布。
-3. 覆盖非法负载、上限边界、缺页/重复页、超时/取消、配额、清理受保护、三处发布中断、Proof篡改、旧版本兼容和低敏扫描。
-4. 先在缩小负载执行完整链（只能`unverified`）；正式规模在干净Revision运行，冻结经评审的单平台Profile后再独立复验。Linux/macOS/Windows分别形成证据，不能以模拟平台测试代替。
+证据层已实现[`SoakArtifactProof`](../../scripts/soak_artifact_proof.py)、[`SoakManifestV3`](../../scripts/soak_manifest.py)、[`publish_run/read_published_run`](../../scripts/soak_evidence.py)和[`publish_measured_run`](../../scripts/soak_run_common.py)的v3分支。Proof白名单包含每件序号、阶段、大小类别、正文与记录数量、页数、发布样本索引和逐页读取样本索引，以及清理前后逻辑正文、过期/保护/Tombstone/Manifest计数。Reader在任何PASS判断前核对规范文件字节、SHA-256、精确文件集合、完整样本索引覆盖、阶段和顺序、Manifest负载及请求数；v1/v2原有文件集合和序列化路径不变。[合同回归](../../tests/benchmarks/test_soak_artifact_proof.py)覆盖v3发布/重读、缺失和篡改Proof、重复或缺失样本、清理与页数不一致及正式规模拒绝。当前仅能复核**数值证据合同**，不证明真实Artifact存储链已经被压测。
+
+剩余实施步骤：
+
+1. 实现固定Provider、近上限夹具、真实Agent/Artifact发布、全页读取、受控到期清理、Attempt与Run发布。
+2. 覆盖非法负载、上限边界、缺页/重复页、超时/取消、配额、清理受保护、三处发布中断和低敏扫描。
+3. 先在缩小负载执行完整链（只能`unverified`）；正式规模在干净Revision运行，冻结经评审的单平台Profile后再独立复验。Linux/macOS/Windows分别形成证据，不能以模拟平台测试代替。
 
 设计评审状态不表示Runner已经实现或0.9.3d已通过；源码、测试与现行模块设计须在实现后同步。
