@@ -82,7 +82,9 @@ class SoakThresholdProfile(ContractModel):
     baseline_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     seed: StrictInt = Field(ge=0)
     load: SoakLoad
-    provider_script_version: str = Field(pattern=r"^harnessix\.soak-provider/v[1-9][0-9]*$")
+    provider_script_version: str = Field(
+        pattern=r"^(harnessix\.soak-provider/v[1-9][0-9]*|harnessix\.product-no-turn/v1)$"
+    )
     sample_counts: dict[str, StrictInt]
     quantile_method: Literal["nearest_rank_v1"]
     metric_limits: dict[str, SoakMetricLimit]
@@ -108,6 +110,8 @@ class SoakThresholdProfile(ContractModel):
             or set(self.required_platform_validation) != {"linux", "macos", "windows"}
             or _version(self.python_min) > _version(self.python_max)
             or self.created_at.utcoffset() != UTC.utcoffset(None)
+            or (self.scenario_id == "restart")
+            != (self.provider_script_version == "harnessix.product-no-turn/v1")
         ):
             raise ValueError("Soak阈值Profile不完整或环境范围无效")
         return self
@@ -236,7 +240,7 @@ def _verify_profile_baseline(
     # 尚未实现的场景不能凭手工构造的Manifest获得性能PASS。
     if (
         profile.scenario_id
-        not in {"long_session", "many_threads", "artifact_growth", "sdk_capacity"}
+        not in {"long_session", "many_threads", "artifact_growth", "sdk_capacity", "restart"}
         or (
             profile.scenario_id == "long_session"
             and baseline.spec_version != "harnessix.soak-manifest/v2"
@@ -248,6 +252,10 @@ def _verify_profile_baseline(
         or (
             profile.scenario_id == "sdk_capacity"
             and baseline.spec_version != "harnessix.soak-manifest/v4"
+        )
+        or (
+            profile.scenario_id == "restart"
+            and baseline.spec_version != "harnessix.soak-manifest/v5"
         )
     ):
         raise KernelError("soak_profile_baseline_invalid", "场景缺少正式负载证明")

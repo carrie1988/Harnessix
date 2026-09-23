@@ -1,0 +1,100 @@
+{
+  "checks": {
+    "attempt_reader": "3/3 committed",
+    "frozen_profiles": "3/3 sealed and baseline-validated; independent candidates pending",
+    "independent_file_sha256": "18/18 matched",
+    "independent_stdlib_quantiles": "3/3 matched",
+    "privacy_keyword_scan": "3/3 passed",
+    "run_reader": "3/3 passed",
+    "standard_ci": "6/6 success on attempt 2; documentation attempt 1 Mermaid timeout",
+    "workflow_matrix": "3/3 success"
+  },
+  "classification": "three-platform-single-run-baseline",
+  "code_revision": "172b1ee96a89e981a6332b16f60b86e2db654df1",
+  "platforms": {
+    "linux": {
+      "db_after_bytes": 1277952,
+      "expected_eof": 1,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "c433ad02d3b325546321101fe94dc7c62cdf82b466b3f2f4bba807427c375829",
+      "owner_generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "p50_ns": 2601170547,
+      "p95_ns": 2603270230,
+      "p99_ns": 2603270230,
+      "provider_requests": 0,
+      "python_version": "3.12.3",
+      "rss_peak_bytes": 100696064,
+      "rss_source": "proc_status",
+      "run_id": "0682a0a8a8a64983903ea69523ecfacd",
+      "run_status": "baseline",
+      "sample_count": 3,
+      "thread_count": 500,
+      "wal_after_bytes": 0
+    },
+    "macos": {
+      "db_after_bytes": 1380352,
+      "expected_eof": 1,
+      "hardware_class": "c3-m7",
+      "manifest_sha256": "05f7cc83026b270e3df307ce6b024a7bf280d00522d8cff15b640732081548c0",
+      "owner_generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "p50_ns": 3964092000,
+      "p95_ns": 6157934375,
+      "p99_ns": 6157934375,
+      "provider_requests": 0,
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 108478464,
+      "rss_source": "getrusage",
+      "run_id": "2b0be5e4777246f9bef38b216fbe7710",
+      "run_status": "baseline",
+      "sample_count": 3,
+      "thread_count": 500,
+      "wal_after_bytes": 0
+    },
+    "windows": {
+      "db_after_bytes": 1376256,
+      "expected_eof": 1,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "dda784fd50aebfe53d9c8cda9c1bf646541bfc7042335d46e55a285dfd489be9",
+      "owner_generations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "p50_ns": 5968719100,
+      "p95_ns": 6005836500,
+      "p99_ns": 6005836500,
+      "provider_requests": 0,
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 104738816,
+      "rss_source": "GetProcessMemoryInfo",
+      "run_id": "6857f23f7002484b98d71742cf5df204",
+      "run_status": "baseline",
+      "sample_count": 3,
+      "thread_count": 500,
+      "wal_after_bytes": 0
+    }
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "restart_independent_candidates",
+    "action_recovery_and_other_0.9_release_gates"
+  ],
+  "scenario_id": "restart",
+  "source_workflow_run_id": 35864710532,
+  "spec_version": "harnessix.soak-review-packet/v1",
+  "standard_ci_run_id": 35864457452
+}

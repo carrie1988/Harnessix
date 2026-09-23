@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 38
-code_revision: a5bd4ffc4f01593c566164d285948b1d3890a9fb
+version: 39
+code_revision: 172b1ee96a89e981a6332b16f60b86e2db654df1
 owners:
   - core
 modules:
@@ -50,12 +50,12 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`和`sdk_capacity`真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，仅SDK容量三平台工程Profile已冻结，其他场景尚无正式Profile。Action恢复与重启两个场景Runner、其余场景三平台正式负载和发布阈值证据仍未完成；SDK容量已有三平台基线、冻结Profile与第二独立PASS报告。 |
+| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`和`sdk_capacity`真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，SDK容量和完整产品重启两个场景均已取得三平台正式基线及冻结Profile；SDK容量已完成第二独立PASS报告，重启候选仍待真实执行。Action恢复Runner及其余场景三平台负载和发布阈值证据仍未完成。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `70c5161986082b63acd31ab1acf8328c9fad9efd` |
+| 代码版本 | `172b1ee96a89e981a6332b16f60b86e2db654df1` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
-| 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；SDK三平台各一次正式基线已归档；其余场景三平台负载和独立复验仍待完成。 |
+| 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；SDK与重启场景三平台各一次正式基线已归档；重启候选和其余场景三平台独立复验仍待完成。 |
 
 本文只设计0.9.3d的真实产品链Soak、低敏数值证据和发布阈值复验，不重新决定0.9.3a～c的协议、持久化、恢复或Action语义。当前事实和研究依据见[0.9.3总体设计](m09-3-reliability-and-performance.md)第9节及[可靠性专项源码研究](../research/reliability-and-performance.md)第10节。
 
@@ -72,7 +72,7 @@ supersedes: []
 
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
-本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest、Run/Attempt提交、RSS适配、四个真实模块Runner及[单平台阈值独立复验内核](m09-3d-threshold-verification.md)。[SDK容量v4证明与真实stdio Runner](m09-3d-sdk-capacity-soak.md)已实现；Action恢复和重启两个场景Runner、正式阈值冻结与三平台复验仍待完成。macOS RSS单位已在本机子进程探针验证，SDK容量已在Linux/Windows正式Job真实运行；其他场景仍须各自验收。
+本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest、Run/Attempt提交、RSS适配、五个真实模块Runner及[单平台阈值独立复验内核](m09-3d-threshold-verification.md)。[SDK容量v4证明与真实stdio Runner](m09-3d-sdk-capacity-soak.md)已完成三平台基线、Profile与候选PASS；[完整产品重启v5证明与真实组合根Runner](m09-3d-product-restart-soak.md)已完成三平台基线并冻结Profile，第二Run未完成。Action恢复Runner与其余场景三平台复验仍待完成。macOS RSS单位已在本机子进程探针验证，SDK与重启场景已在Linux/Windows正式Job真实运行。
 
 [macOS Artifact单次规模事实](../validation/soak-macos-artifact-2026-09-23-v1/README.md)完成2件预热、20件正式、22件全部分页与受控到期清理，复制的Run/Attempt可独立重读；但对应[首次CI 35821931723](https://github.com/carrie1988/Harnessix/actions/runs/35821931723)的Windows Benchmark在临时SQLite文件清理时出现`WinError 32`，根因是只读`sqlite3`连接未显式关闭。修复Revision `d257f99`改用`closing()`并增加句柄关闭测试；旧Run保留为诊断原件，不可因后续修复而升级为可冻结Profile的基线，必须在新干净Revision重跑。
 
@@ -200,14 +200,14 @@ flowchart TB
 | Agent/SDK/Protocol | SDK、stdio、App Server和Agent Runtime已有真实入口及有界传输 | 仅增加发布专用调用编排，不改公共Protocol/SDK方法。 |
 | Session/Artifact容量 | `capacity_report`和维护合同输出低敏容量/时间/字节水位 | Runner在固定时点采集快照；不增加第二个数据库或改写业务事实。 |
 | Action恢复 | `scan_product_action_recovery`核对Route、Session引用、Artifact引用和Process孤儿 | 故障场景调用现有扫描/对账，不能由Runner直接执行Action效果。 |
-| 证据对象 | 样本、Manifest、Run/Attempt、四个真实Runner及单平台Profile/报告内核已实现；SDK容量三平台Profile已冻结；其他场景正式Profile和三平台证据未完成 | 其余场景、正式工程阈值及跨平台发布汇总；字段见第12节。 |
+| 证据对象 | 样本、Manifest、Run/Attempt、五个真实Runner及单平台Profile/报告内核已实现；SDK容量和重启三平台Profile已冻结；其他场景正式Profile和三平台证据未完成 | 其余场景、正式工程阈值及跨平台发布汇总；字段见第12节。 |
 | 发布门禁 | 当前没有0.9.3d阈值结论 | 独立复验后只产生`PASS`、`FAIL`或`unverified`，缺失时失败关闭。 |
 
 ## 6. 模块职责与依赖
 
 | 模块 | 职责 | 允许依赖 | 禁止依赖 | 生命周期 |
 |---|---|---|---|---|
-| Soak Runner（四个场景部分实现） | `long_session`、`many_threads`、`artifact_growth`与`sdk_capacity`已接真实模块；四者均在负载前持久记录Attempt，Action恢复与重启两个场景待实现 | 各场景对应的AgentRuntime、AgentClient或`run_product_stdio`现有入口；确定性Provider；只读容量/恢复端口、样本写入器 | 用户Workspace、外部Provider、业务结果重写、绕过Action审批直接执行外部效果 | 一个Run独占；异常保留低敏失败终态，硬退出只保留未终结`STARTED`，均不得判PASS。 |
+| Soak Runner（五个场景已实现） | `long_session`、`many_threads`、`artifact_growth`、`sdk_capacity`与`restart`已接真实模块；均在负载前持久记录Attempt，Action恢复场景待实现 | 各场景对应的AgentRuntime、AgentClient或`run_product_stdio`现有入口；确定性Provider；只读容量/恢复端口、样本写入器 | 用户Workspace、外部Provider、业务结果重写、绕过Action审批直接执行外部效果 | 一个Run独占；异常保留低敏失败终态，硬退出只保留未终结`STARTED`，均不得判PASS。 |
 | Deterministic Fixture（部分实现） | 已有不保留`ModelRequest`/Prompt正文、只记请求计数的`SoakProvider`；固定种子Workspace、Thread、Turn、Artifact和故障编排仍待实现 | 当前产品公开/内部测试入口、固定Policy | 任意用户数据、网络Git、公网凭据、真实模型、请求历史列表 | 每个Run独立创建和销毁；Provider只保留请求计数。 |
 | AgentClient / SubprocessTransport（当前） | 传输初始化、请求并发、取消、迟到Response、关闭和快照 | Agent Protocol | 自动重连、业务重试、绕过服务 | 每次正式运行按既有SDK生命周期打开/关闭。 |
 | AgentProtocolServer / AgentApplicationService（当前） | Protocol方法校验、请求幂等、Thread列表分页、Turn驱动 | Session Store、AgentRuntime、Artifact/Action端口 | 性能报告逻辑、阈值选择 | 由App Server进程拥有。 |
@@ -445,7 +445,7 @@ classDiagram
 
 | 类/组件 | 职责 | 状态所有权 | 线程/进程安全 | 直接依赖 | 扩展点 |
 |---|---|---|---|---|---|
-| `SoakRunner`（四个场景部分实现） | `run_long_session`、`run_many_threads`、`run_artifact_growth`与`run_sdk_capacity`编排真实模块负载/核验/发布；Action恢复与重启待实现 | Runner拥有临时运行状态；业务状态仍由当前Runtime/Store拥有 | 一个Run单写；并发操作必须走既有容量合同 | `AgentRuntime`、`AgentApplicationService`、`SQLiteArtifactStore`、RSS适配器、Writer | 场景注册表；不扩展公共协议。 |
+| `SoakRunner`（五个场景已实现） | `run_long_session`、`run_many_threads`、`run_artifact_growth`、`run_sdk_capacity`与`run_product_restart`编排真实模块负载/核验/发布；Action恢复待实现 | Runner拥有临时运行状态；业务状态仍由当前Runtime/Store拥有 | 一个Run单写；并发操作必须走既有容量合同 | `AgentRuntime`、`AgentApplicationService`、`SQLiteArtifactStore`、RSS适配器、Writer | 场景注册表；不扩展公共协议。 |
 | `SoakSample`（合同与文件发布已实现） | 表达一条原始数值观测并校验指标、单位、时钟和RSS归一化 | 当前由测试/长会话Runner构造 | 合同不可变；Run内序号由`validate_sample_series`验证 | 测量时钟、RSS Adapter | 新指标必须增加白名单和Profile版本规则。 |
 | `SoakManifest`（合同与文件发布已实现） | 索引环境、负载、状态、摘要和故障事实，并限制场景边界与基线门槛 | 目前由测试/长会话Runner构造；其余场景Finalizer待实现 | 严格模型、文件写入、最后提交标记和独立重读已实现 | 样本文件、平台适配器 | 新字段必须版本化；未知字段拒绝。 |
 | `ThresholdProfile`（单平台内核已实现） | 引用独立基线并定义平台/场景阈值 | Profile发布流程拥有 | 只读不可变 | 基线Manifest摘要、统计规则 | 新平台/指标使用新Profile版本，不跨平台复用；正式Profile尚未冻结。 |
@@ -858,7 +858,7 @@ run_scenario(scenario, seed, environment):
     return baseline_fact_or_independent_validation(manifest)
 ```
 
-实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)；[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)经Agent与Coding Tool调用真实[`SQLiteArtifactStore`](../../src/harnessix/artifacts/sqlite.py)，逐页读取并受控到期清理；[`run_sdk_capacity`](../../scripts/soak_sdk_capacity.py)驱动真实[`AgentClient`](../../src/harnessix/sdk/agent_client.py)、[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)与stdio Server。四者都由[`attempt_scope`](../../scripts/soak_attempt.py)持久记录开始、异常与提交事实。Action恢复与重启两个剩余场景未来选择[`run_product_stdio`](../../src/harnessix/product_config/server.py)或现有Action端口，并在Manifest标记真实测量边界。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、Run/Attempt提交和单平台阈值复验内核已实现；剩余两个Runner、正式冻结测量计划与三平台复验仍待完成。
+实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)；[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)经Agent与Coding Tool调用真实[`SQLiteArtifactStore`](../../src/harnessix/artifacts/sqlite.py)，逐页读取并受控到期清理；[`run_sdk_capacity`](../../scripts/soak_sdk_capacity.py)驱动真实[`AgentClient`](../../src/harnessix/sdk/agent_client.py)、[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)与stdio Server。四者与[`run_product_restart`](../../scripts/soak_restart.py)都由[`attempt_scope`](../../scripts/soak_attempt.py)持久记录开始、异常与提交事实。重启场景已通过真实[`run_product_stdio`](../../src/harnessix/product_config/server.py)及SDK完成五轮产品组合根验证；仅Action恢复固定故障矩阵Runner待实现。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、Run/Attempt提交和单平台阈值复验内核已实现；Action恢复Runner、重启第二独立Run及其余场景三平台复验仍待完成。
 
 ## 20. 源码与测试映射
 

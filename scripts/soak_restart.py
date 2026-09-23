@@ -410,7 +410,7 @@ async def run_product_restart(
             restart_proof=proof,
             rss=peak_rss,
             file_watermarks=watermarks,
-            baseline=formal,
+            baseline=formal and threshold_profile_ref is None,
             threshold_profile_ref=threshold_profile_ref,
             fault_counts=SoakFaultCounts(
                 cancelled=0,
