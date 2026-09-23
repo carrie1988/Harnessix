@@ -8,6 +8,7 @@ from subprocess import check_output
 import pytest
 
 from harnessix.agent.errors import KernelError
+from scripts.run_restart_soak_release import main as release_main
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
 from scripts.soak_restart import run_product_restart
@@ -124,3 +125,17 @@ async def test_product_restart_rejects_invalid_load_before_attempt(
         )
     assert error.value.code == "soak_load_invalid"
     assert not root.exists()
+
+
+def test_restart_release_cli_redacts_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    async def fail_release(_: Path) -> dict[str, str]:
+        raise KernelError("soak_revision_invalid", "不得输出的本地路径和凭据")
+
+    monkeypatch.setattr("scripts.run_restart_soak_release.run_release", fail_release)
+    assert release_main(["--evidence-root", str(tmp_path / "evidence")]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "soak_revision_invalid" in captured.err
+    assert "不得输出" not in captured.err
