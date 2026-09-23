@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
+version: 4
+code_revision: cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c
 owners:
   - core
 modules:
@@ -28,7 +28,7 @@ supersedes: []
 
 本切片增加**固定参数的发布专用入口**和手动三平台工作流。每个平台在干净提交上执行一次独立正式负载，输出完整Run、Attempt和低敏日志摘要。工作流不会自动选阈值，也不把单次`baseline`变为`PASS`。`action_recovery`、`restart`以及其他Soak场景不属于这个入口；它们仍按0.9.3d总设计单独验收。
 
-完成定义：入口不能降配；正式Runner核验当前Git提交及干净工作树；发布后重读Run和Attempt；失败上传已持久化的Attempt；三平台任务彼此独立，某平台失败不取消另外两平台。下载和归档已完成，Profile也已冻结；第二次独立复验仍是后续发布门禁，不由一次工作流成功推定。
+完成定义：入口不能降配；正式Runner核验当前Git提交及干净工作树；发布后重读Run和Attempt；失败上传已持久化的Attempt；三平台任务彼此独立，某平台失败不取消另外两平台。下载和归档已完成，Profile也已冻结；第二次独立复验已由固定SDK场景完成；其他场景仍是后续发布门禁，不由一次工作流成功推定。
 
 ## 2. 总体架构与数据流程
 
@@ -97,7 +97,7 @@ Run目录与Attempt目录各自排他创建，不共享数据库事务。提交�
 - `uv sync --locked --all-extras --dev`使用已锁定依赖；Job不会修改源码Revision。证据上传前已经由本机Reader重算，下载后仍需独立重算，避免把上传回执误认为验证完成。
 - 工作流与入口仅是发布工程设施，不是产品安装命令。失败回滚为保留原Run/Attempt并在**新**Git提交或独立新Run ID下重跑；不得覆盖、修补失败证据或降低规模。
 - [`test_run_sdk_soak_release.py`](../../tests/benchmarks/test_run_sdk_soak_release.py)验证固定参数、错误与缺失Attempt拒绝、日志脱敏；[`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py)验证真实stdio及64容量阶段，Reader与Attempt回归验证跨文件一致性。Linux/macOS/Windows正式Job运行结果和Artifact SHA在各自验证目录登记前，本切片只能称为**采集通道已实现**。
-- 三平台各一次正式Run和单平台工程Profile已归档；仍须负载前预绑定Profile执行第二独立Run并生成报告；三个单平台PASS也需单独聚合发布门禁。Action恢复、重启场景仍缺正式Runner，0.9.3d与0.9总体保持进行中。
+- 三平台各一次正式Run和单平台工程Profile已归档；已负载前预绑定Profile执行第二独立Run并生成报告，其他场景仍须分别完成；三个单平台PASS也需单独聚合发布门禁。Action恢复、重启场景仍缺正式Runner，0.9.3d与0.9总体保持进行中。
 
 ## 6. 部署、兼容与回退
 
@@ -115,3 +115,7 @@ Run目录与Attempt目录各自排他创建，不共享数据库事务。提交�
 ## 8. 真实运行与证据等级
 
 固定入口的修复Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`在Linux、macOS和Windows的[正式工作流 35838270267](https://github.com/carrie1988/Harnessix/actions/runs/35838270267)均成功；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例成功。下载件经Reader及独立SHA-256/样本/分位数复核，原始文件、评审包和失败工作流历史见[三平台证据归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)。这是三平台各一次基线，不代表阈值、独立复验、Action恢复或重启场景已经通过。
+
+## 9. 后续阈值复验事实
+
+[三平台候选Run及PASS报告](../validation/soak-sdk-three-platform-candidate-2026-09-23-v1/README.md)在Revision `cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c`完成三平台预绑定、第二独立Run与独立报告重读；该事实不改写首次基线原件，也不替代长会话、多Thread、Artifact、Action恢复和重启场景的独立门禁。

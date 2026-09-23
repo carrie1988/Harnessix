@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 14
-code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
+version: 15
+code_revision: cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c
 owners:
   - core
 modules:
@@ -38,7 +38,8 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
-| 2026-09-23 | [SDK容量三平台正式规模基线](soak-sdk-three-platform-2026-09-23-v1/README.md) | `70c5161986082b63acd31ab1acf8328c9fad9efd` | Linux/macOS/Windows Python 3.12、容量64、各1预热+3正式轮、各20次往返；Provider零请求 | 三平台Run/Attempt原件及18份文件摘要、分位数、Proof独立复核通过；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例成功 | 三平台各一次正式基线与签封Profile；第二独立Run及报告尚未生成，不得判场景发布PASS |
+| 2026-09-23 | [SDK容量三平台冻结阈值第二独立Run](soak-sdk-three-platform-candidate-2026-09-23-v1/README.md) | `cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c` | Linux/macOS/Windows各自预冻结Profile，固定64容量、1预热+3正式轮、20次往返；Provider零请求 | 三份STARTED v2/Run/Report原件、24份文件摘要和独立数值重算均通过；各平台Report为PASS；[CI 35843734178](https://github.com/carrie1988/Harnessix/actions/runs/35843734178)六实例成功 | 仅SDK容量固定场景工程护栏；不关闭其余0.9.3d或1.0发布门禁 |
+| 2026-09-23 | [SDK容量三平台正式规模基线](soak-sdk-three-platform-2026-09-23-v1/README.md) | `70c5161986082b63acd31ab1acf8328c9fad9efd` | Linux/macOS/Windows Python 3.12、容量64、各1预热+3正式轮、各20次往返；Provider零请求 | 三平台Run/Attempt原件及18份文件摘要、分位数、Proof独立复核通过；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例成功 | 三平台各一次正式基线与签封Profile；第二独立Run与报告单独见上一条，不得由基线本身判PASS |
 | 2026-09-23 | [macOS SDK容量单平台规模基线](soak-macos-sdk-2026-09-23-v1/README.md) | `c4c364c059a7b6ea61410fe03ba41ef140fcdd41` | macOS Python 3.13.8、`c16-m48`、容量64、1预热+3正式轮、20次正常往返；固定Provider零请求 | Run/Attempt与独立摘要、样本、Proof复核通过；对应Revision六实例CI成功；往返P95 1407042 ns、父子峰值RSS较大者68845568字节 | 单平台单次基线；未冻结阈值、第二独立Run或Linux/Windows正式负载，不得判发布PASS |
 | 2026-09-23 | [macOS Artifact单平台规模基线](soak-macos-artifact-2026-09-23-v3/README.md) | `5d48b9735c11022743eb56df5da23125702b0140` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt与独立数值重算通过；对应Revision六实例CI成功；发布P95 13654625 ns、读取P95 6604000 ns | 单平台单次基线，可供工程Profile评审；未冻结阈值、未做独立复验或其他平台正式运行，不得判发布PASS |
 | 2026-09-23 | [macOS Artifact第二次规模诊断](soak-macos-artifact-2026-09-23-v2/README.md) | `c63f970f3386632b9720ae33d1a7f056e70c0510` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt重读和独立分位数/覆盖重算通过；对应Windows CI的Turn超时用例出现异步SQLite句柄清理失败 | 历史诊断证据；不得冻结Profile或判发布PASS |

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
+version: 2
+code_revision: cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c
 owners:
   - core
 modules:
@@ -131,4 +131,8 @@ Profile和原始基线位于只读仓库验证目录；候选Run/Attempt、报�
 | 冻结阈值与摘要封印 | [`soak_threshold.py`](../../scripts/soak_threshold.py)、[`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py) |
 | 负载前绑定和真实SDK候选执行 | [`run_sdk_soak_candidate.py`](../../scripts/run_sdk_soak_candidate.py)、[`soak_sdk_capacity.py`](../../scripts/soak_sdk_capacity.py)、[`test_run_sdk_soak_candidate.py`](../../tests/benchmarks/test_run_sdk_soak_candidate.py) |
 | 三平台独立Job与失败证据留存 | [`sdk-soak-candidate.yml`](../../.github/workflows/sdk-soak-candidate.yml)；实际运行ID须在验收后登记 |
-| 原基线、三份Profile与评审事实 | [验证归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)；候选原件和报告尚待正式运行 |
+| 原基线、三份Profile与评审事实 | [验证归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)；[三平台候选Run及PASS报告](../validation/soak-sdk-three-platform-candidate-2026-09-23-v1/README.md)已重读；[CI 35843734178](https://github.com/carrie1988/Harnessix/actions/runs/35843734178)六实例成功 |
+
+## 7. 三平台真实候选结果
+
+Revision `cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c`的[手动候选工作流 35843752933](https://github.com/carrie1988/Harnessix/actions/runs/35843752933)三个Job均成功。[三平台候选Run及PASS报告](../validation/soak-sdk-three-platform-candidate-2026-09-23-v1/README.md)保存各平台新Run ID、STARTED v2、Report封印及24份原始文件摘要；上传件下载后再次执行Reader、标准库分位数重算和独立`verify_and_publish`，三份新报告均为PASS。对应源码[常规CI 35843734178](https://github.com/carrie1988/Harnessix/actions/runs/35843734178)已六实例成功；仅将固定SDK场景的三平台阈值复验门禁标为关闭，不扩张为0.9.3d整体发布完成。

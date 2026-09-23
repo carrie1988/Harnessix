@@ -1,0 +1,71 @@
+{
+  "spec_version": "harnessix.soak-candidate-review/v1",
+  "classification": "three-platform-prebound-independent-verification",
+  "source_workflow_run_id": 35843752933,
+  "source_code_revision": "cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c",
+  "standard_ci_run_id": 35843734178,
+  "checks": {
+    "workflow_matrix": "3/3 success",
+    "candidate_run_reader": "3/3 passed",
+    "attempt_reader": "3/3 committed and prebound",
+    "report_reader": "3/3 PASS",
+    "independent_quantiles": "3/3 matched",
+    "file_sha256": "24/24 matched",
+    "standard_ci": "6/6 success"
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "other_0.9.3d_scenarios",
+    "0.9.4_to_0.9.6_release_gates"
+  ],
+  "platforms": {
+    "linux": {
+      "candidate_run_id": "49908b03512544838dc220eebd6b7b39",
+      "report_id": "777fb150c5f44ccfbf1de09df353678a",
+      "report_status": "PASS",
+      "report_reason": "within_limits",
+      "manifest_sha256": "be6574968c89a330cce4683faff06fa9fee5b3607493d7b75600f59099afa11b",
+      "profile_id": "e7fc115add194e589d35fb9574bfa5c9",
+      "hardware_class": "c4-m16",
+      "python_version": "3.12.3",
+      "p50_ns": 1293585,
+      "p95_ns": 1410068,
+      "p99_ns": 1455887,
+      "rss_peak_bytes": 66301952,
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4
+    },
+    "macos": {
+      "candidate_run_id": "28b84da9f0f247e0a48aca088a51609d",
+      "report_id": "71a9ff2cdbb245e3a08f735ea43e8e36",
+      "report_status": "PASS",
+      "report_reason": "within_limits",
+      "manifest_sha256": "330ab9df4256b9acdf84520cb3ea8c9f6fbb614d8b0cf5514ff5f69bd4d754fb",
+      "profile_id": "167f432a612f4c58b2e0bc7c80aea4a3",
+      "hardware_class": "c3-m7",
+      "python_version": "3.12.10",
+      "p50_ns": 2625250,
+      "p95_ns": 3124417,
+      "p99_ns": 3168250,
+      "rss_peak_bytes": 75120640,
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4
+    },
+    "windows": {
+      "candidate_run_id": "48b70212e1bd43ee842cda638f7f26cb",
+      "report_id": "51b74eaef8fd48ed8c657684647c690d",
+      "report_status": "PASS",
+      "report_reason": "within_limits",
+      "manifest_sha256": "9932836e7d362940ffb208967492bd25aeef24f32c78f05a02885c610c0ec16b",
+      "profile_id": "5bcdf40d1baf48279ffa1ba9c7bd46c0",
+      "hardware_class": "c4-m16",
+      "python_version": "3.12.10",
+      "p50_ns": 2613800,
+      "p95_ns": 2791900,
+      "p99_ns": 3114300,
+      "rss_peak_bytes": 64749568,
+      "db_after_bytes": 98304,
+      "expected_cancelled": 4
+    }
+  }
+}

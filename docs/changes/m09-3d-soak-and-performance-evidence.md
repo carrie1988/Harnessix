@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 34
-code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
+version: 35
+code_revision: cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c
 owners:
   - core
 modules:
@@ -50,7 +50,7 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`和`sdk_capacity`真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，仅SDK容量三平台工程Profile已冻结，其他场景尚无正式Profile。Action恢复与重启两个场景Runner、其余场景三平台正式负载和发布阈值证据仍未完成；SDK容量已有三平台各一次正式基线。 |
+| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`和`sdk_capacity`真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，仅SDK容量三平台工程Profile已冻结，其他场景尚无正式Profile。Action恢复与重启两个场景Runner、其余场景三平台正式负载和发布阈值证据仍未完成；SDK容量已有三平台基线、冻结Profile与第二独立PASS报告。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
 | 代码版本 | `70c5161986082b63acd31ab1acf8328c9fad9efd` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
@@ -473,7 +473,7 @@ classDiagram
 |---|---|---|---|
 | `long_session` | 一个Thread至少1000个本地确定性Turn；v2固定装配Context与Compaction，普通和摘要Provider均不保留请求历史 | Turn本地边界、RSS、Replay一致性、逐Turn低敏事件Proof、DB/WAL水位；`replay(events) == projection`；普通与摘要请求分账 | v1规模诊断保留；macOS一次v2千Turn已证明1000次Context检查、199次压缩及Run/Attempt双重重读；完整产品启动、Linux/Windows和独立阈值复验仍未完成。 |
 | `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | `app_service_startup`启动P50/P95/P99、`thread_list_page`列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | 已实现真实`AgentApplicationService.list_threads`完整游标遍历、Runtime重启、持久Thread集合复核、Run发布和失败Attempt；缩小负载仅`unverified`，修复Revision的正式500 Thread尚未重跑。 |
-| `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | [专项详细设计](m09-3d-sdk-capacity-soak.md)中的真实SDK/stdio/Server Runner、v4 Proof与独立Reader已实现；三平台各一次干净Revision正式负载已归档；Profile已冻结，第二独立Run尚未完成。 [三平台原始证据](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)可重读。 |
+| `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | [专项详细设计](m09-3d-sdk-capacity-soak.md)中的真实SDK/stdio/Server Runner、v4 Proof与独立Reader已实现；三平台各一次干净Revision正式负载已归档；Profile已冻结，[三平台候选Run及PASS报告](../validation/soak-sdk-three-platform-candidate-2026-09-23-v1/README.md)已归档。 [三平台原始证据](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)可重读。 |
 | `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | [专项详细设计](m09-3d-artifact-growth-soak.md)中的v3 Proof、Manifest、独立Reader及真实Agent/Store Runner已实现；三平台正式运行、复合故障与阈值冻结尚未完成。 |
 | `action_recovery` | 固定故障矩阵循环：Owner/Fence失效、效果写入/返回边界、Audit/Process边界、Artifact引用窗口 | UNKNOWN、重复效果、孤儿、恢复/对账耗时和终态；不调用Execute进行恢复 | Action路由、恢复扫描和测试当前存在；固定Soak矩阵未实现。 |
 | `restart` | 增长前后执行多次冷启动和热启动；每次均使用独立Transport/Runtime生命周期 | 初始化、恢复扫描、Replay、未决Turn/Action状态、RSS；重启后不得重复外部效果 | Runtime和SDK关闭/启动路径当前存在；正式重启编排未实现。 |
@@ -865,7 +865,7 @@ run_scenario(scenario, seed, environment):
 | Agent启动与恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__aenter__`, `AgentRuntime._recover` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_shutdown_cancels_managed_turn`、运行时Replay断言 | 当前实现；长会话Soak已调用，其他场景待实现。 |
 | 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py)、[`soak_context_proof.py`](../../scripts/soak_context_proof.py) | `run_long_session`、`run_long_session_context`、`_context_proof`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)、[`test_soak_context_proof.py`](../../tests/benchmarks/test_soak_context_proof.py) | v1/v2重读、低敏证明、缺压缩/用量失败、负载/Revision拒绝及超时Attempt | macOS一次v2千TurnContext/Compaction基线和六实例CI已完成；Linux/Windows正式负载与独立Profile仍未完成。 |
 | 多Thread真实负载 | [`soak_many_threads.py`](../../scripts/soak_many_threads.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_many_threads`、`_list_all`、`_restart_and_list` | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 多次重启、完整分页/集合核对、基线重启数拒绝、空页/超时不发布且保留失败Attempt | 真实Runtime、应用服务和失败Attempt已覆盖；修复Revision的正式500 Thread未完成。 |
-| SDK容量真实负载 | [`soak_sdk_capacity.py`](../../scripts/soak_sdk_capacity.py)、[`soak_sdk_child.py`](../../scripts/soak_sdk_child.py)、[`soak_sdk_proof.py`](../../scripts/soak_sdk_proof.py) | `run_sdk_capacity`、`GatedSdkService`、`SoakSdkProof`、`verify_sdk_proof` | [`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py) | 真实64容量、取消后墓碑、迟到Response释放、溢出请求因果确认、关闭、失败Attempt与篡改拒绝 | v4独立Reader与Profile接入已实现；Linux/macOS/Windows各一次正式规模Run已归档，冻结Profile已归档，第二独立Run未完成。 |
+| SDK容量真实负载 | [`soak_sdk_capacity.py`](../../scripts/soak_sdk_capacity.py)、[`soak_sdk_child.py`](../../scripts/soak_sdk_child.py)、[`soak_sdk_proof.py`](../../scripts/soak_sdk_proof.py) | `run_sdk_capacity`、`GatedSdkService`、`SoakSdkProof`、`verify_sdk_proof` | [`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py) | 真实64容量、取消后墓碑、迟到Response释放、溢出请求因果确认、关闭、失败Attempt与篡改拒绝 | v4独立Reader与Profile接入已实现；Linux/macOS/Windows各一次正式规模Run已归档，冻结Profile与第二独立Run的三平台PASS报告已归档。 |
 | Attempt失败事实 | [`soak_attempt.py`](../../scripts/soak_attempt.py) | `begin_attempt`、`finish_attempt`、`read_attempt`、`attempt_scope` | [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) | 规范字节、排他身份、异常/硬退出、Run已发布但Attempt未终结、终态篡改 | 当前四个Runner接入；三平台发布Validator尚未实现。 |
 | SDK并发与取消 | [`sdk/subprocess.py`](../../src/harnessix/sdk/subprocess.py) | `SubprocessAgentTransport.exchange`, `_ResponseRouter`, `_RequestCapacity` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests`、`test_subprocess_transport_close_continues_after_caller_cancel` | 当前实现；[真实SDK容量编排](m09-3d-sdk-capacity-soak.md)已接入。 |
 | SDK公共入口 | [`sdk/agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient.initialize`, `list_threads`, `replay_events`, `read_artifact` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_agent_sdk_drives_turn_replay_and_duplicate_command`、`test_events_next_delivers_live_delta_then_durable_replay` | 当前实现；Runner只复用，不扩展公共API。 |
@@ -878,7 +878,7 @@ run_scenario(scenario, seed, environment):
 | Action跨Store恢复 | [`product_config/action_recovery.py`](../../src/harnessix/product_config/action_recovery.py) | `scan_product_action_recovery` | [`test_action_recovery.py`](../../tests/product_config/test_action_recovery.py) | Action恢复扫描合同 | 当前实现；固定故障矩阵规划。 |
 | Action路由/UNKNOWN | [`trusted_actions/operation_store.py`](../../src/harnessix/trusted_actions/operation_store.py)、[`trusted_actions/operation_router.py`](../../src/harnessix/trusted_actions/operation_router.py) | `routes`, `operations`, `reconcile`相关入口 | [`test_router.py`](../../tests/trusted_actions/test_router.py) | `test_cancellation_after_router_claim_becomes_unknown_then_reconciles`、`test_real_host_exit_recovers_to_unknown_without_replaying_effect` | 当前实现；Soak只测不重放和重复效果。 |
 | 低基数Telemetry | [`agent/telemetry.py`](../../src/harnessix/agent/telemetry.py) | `KernelTelemetry.operation` | [`test_telemetry.py`](../../tests/agent/test_telemetry.py) | `test_cancellation_closes_spans_and_provider_failure_retains_category` | 当前实现；证据Writer独立规划。 |
-| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`SoakThresholdProfile`、`publish_profile`、`verify_and_publish`已实现 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)、[`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py) | 严格字段、Run与Profile目录冲突、样本/Manifest/标记篡改、中断不提交、独立复验已测；Windows字节发布仍待CI复验 | 单平台阈值内核已实现；SDK正式工程Profile已冻结；三平台复验与其他场景完整负载未完成。 |
+| 样本/Manifest/Profile | [`scripts/soak_samples.py`](../../scripts/soak_samples.py)、[`scripts/soak_sample_file.py`](../../scripts/soak_sample_file.py)、[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)、[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `SoakSample`、`SoakManifest`、`publish_run`、`read_published_run`已实现；`SoakThresholdProfile`、`publish_profile`、`verify_and_publish`已实现 | [`test_soak_samples.py`](../../tests/benchmarks/test_soak_samples.py)、[`test_soak_sample_file.py`](../../tests/benchmarks/test_soak_sample_file.py)、[`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)、[`test_soak_threshold.py`](../../tests/benchmarks/test_soak_threshold.py) | 严格字段、Run与Profile目录冲突、样本/Manifest/标记篡改、中断不提交、独立复验已测；Windows字节发布仍待CI复验 | 单平台阈值内核已实现；SDK正式工程Profile与三平台复验已归档；其他场景完整负载未完成。 |
 | 低敏环境档位 | [`scripts/soak_environment.py`](../../scripts/soak_environment.py) | `read_environment` | [`test_soak_environment.py`](../../tests/benchmarks/test_soak_environment.py) | Linux `sysconf`、macOS `sysctl hw.memsize`、Windows [`GlobalMemoryStatusEx`](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex)的[`ullTotalPhys`字节字段](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex)；CPU/内存正值与无主机身份 | 已实现；Windows CI和容器有效上限仍待验收。 |
 | RSS适配与三平台探针 | [`scripts/soak_rss.py`](../../scripts/soak_rss.py) | `read_peak_rss`、`_macos_unit` | [`test_soak_rss.py`](../../tests/benchmarks/test_soak_rss.py) | raw unit、normalization、读数正值、未知单位失败关闭；macOS本机通过 | SDK容量已有Linux/Windows真实CI与正式Soak证据；其余场景仍待验收。 |
 | 原子证据发布 | [`scripts/soak_evidence.py`](../../scripts/soak_evidence.py) | `publish_run`、`read_published_run` | [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py) | 排他Run目录、文件`fsync`、SHA-256、最后提交标记、不可覆盖及三故障点 | 局部实现；跨平台CI加入`tests/benchmarks`，正式Run/Profile仍待验收。 |
@@ -902,7 +902,7 @@ run_scenario(scenario, seed, environment):
 | 重启集成 | 增长前后多次冷/热启动 | 每次新Runtime/Transport | 恢复状态与持久事实一致，无重复效果 | 当前Runtime/SDK测试+规划Soak。 |
 | 隐私回归 | 扫描样本、Manifest、报告、日志 | 敏感字段黑名单 | 无路径、Prompt、代码、Tool正文、Secret、stderr、业务ID、异常原文 | Artifact和SDK样本/Manifest/Proof低敏回归已实现；剩余两个场景仍待覆盖。 |
 | 独立复验 | 新State Root、新Run ID、同平台Profile | 基线/复验分离 | 先摘要和环境校验，再重算，再比阈值；不满足为FAIL/`unverified` | 单平台内核及合成证据回归已实现；正式Run与三平台复验待完成。 |
-| 平台矩阵 | Linux、macOS、Windows真实运行 | 固定软件/硬件档位 | 每个平台均有正式基线和独立复验；缺一总体不PASS | SDK容量三平台各一次正式基线已归档；独立复验和其余场景仍待发布验收。 |
+| 平台矩阵 | Linux、macOS、Windows真实运行 | 固定软件/硬件档位 | 每个平台均有正式基线和独立复验；缺一总体不PASS | SDK容量三平台基线与独立PASS报告已归档；其余场景仍待发布验收。 |
 | 回归 | 0.9.3a～c已有单元/集成/恢复/文档门禁 | 当前全仓合同 | 原有测试通过；无公共接口/Schema/恢复语义回归 | 当前测试+发布门禁。 |
 
 ### 21.2 可执行验收标准
