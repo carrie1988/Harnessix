@@ -1,8 +1,8 @@
 ---
 doc_type: documentation-standard
 status: current
-version: 4
-code_revision: d5ca38ce742d5574094f9ebbf2cd8ec236e23937
+version: 5
+code_revision: e81ebada78f67f4c447e4ae0089ec143ccd6cf34
 owners:
   - core
 modules:
@@ -203,6 +203,8 @@ flowchart LR
 5. 图后必须有“图示说明”和“源码映射”，说明图中的组件对应哪些包、类或函数；
 6. 超过20个节点的图应拆分为上下文图和局部图，避免不可读的全景图；
 7. 图展示设计结构，真实接口字段、状态值和错误码仍以表格或契约为准。
+
+变化文档的Mermaid图必须在CI用真实渲染器生成SVG。每图60秒独立上限覆盖托管Runner上首次启动Chrome的冷启动抖动；该上限不跳过渲染、不把超时改记为成功。若仍超时，文档Job失败并保留路径与图块行号；图内容错误必须修图，环境抖动可只重跑失败Job，不重跑无关测试矩阵。
 
 ## 9. 源码与测试链接规范
 

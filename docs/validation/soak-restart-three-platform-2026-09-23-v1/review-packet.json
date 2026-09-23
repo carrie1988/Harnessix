@@ -1,9 +1,11 @@
 {
   "candidate_first_attempt_run_id": 35867100728,
+  "candidate_success_workflow_run_id": 35867540361,
   "checks": {
     "attempt_reader": "3/3 committed",
     "candidate_first_attempt": "linux/macos success; windows preflight profile invalid due Git autocrlf; no three-platform PASS",
     "frozen_profiles": "3/3 sealed and baseline-validated; independent candidates pending",
+    "independent_candidates": "3/3 PASS, see separate candidate archive; corresponding standard CI six jobs final success after rerunning failed documentation job",
     "independent_file_sha256": "18/18 matched",
     "independent_stdlib_quantiles": "3/3 matched",
     "privacy_keyword_scan": "3/3 passed",
@@ -92,7 +94,6 @@
   },
   "release_status": "unverified",
   "remaining_gates": [
-    "restart_independent_candidates",
     "action_recovery_and_other_0.9_release_gates"
   ],
   "scenario_id": "restart",

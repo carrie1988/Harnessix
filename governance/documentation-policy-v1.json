@@ -47,7 +47,7 @@
     "max_mermaid_blocks_per_document": 256,
     "max_mermaid_block_bytes": 262144,
     "git_timeout_seconds": 15,
-    "mermaid_timeout_seconds": 30
+    "mermaid_timeout_seconds": 60
   },
   "required_sections": {
     "module-design": [

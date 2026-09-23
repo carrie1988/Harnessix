@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
+version: 3
 code_revision: 172b1ee96a89e981a6332b16f60b86e2db654df1
 owners:
   - core
@@ -29,7 +29,7 @@ supersedes: []
 
 源码Revision `172b1ee96a89e981a6332b16f60b86e2db654df1`的[手动产品重启Soak工作流](https://github.com/carrie1988/Harnessix/actions/runs/35864710532)在Linux、macOS和Windows三个独立Job中均成功。每个平台执行固定500 Thread、一次空State预热、一次有持久State的受控硬退出、三次新进程正式启动；五个周期均经过真实`run_product_stdio`组合根、SDK与Agent Protocol，重启后核对完整Thread集合、持久恢复扫描/报告及递增的Owner Fence。所有平台均有完整Run、`COMMITTED`和Attempt `FINAL(committed)`，原始文件位于本目录的[`raw`](raw)。上传件来源及18份文件摘要见[证据Manifest](bundle-manifest.json)，跨平台核验结果见[评审包](review-packet.json)。
 
-**证据等级仅为三平台各一次正式规模基线**：`manifest.status=baseline`不等于性能阈值PASS，也不等于0.9.3d整体完成。三平台Profile虽已按此基线冻结，但尚未运行第二独立候选或完成`action_recovery`故障矩阵。该无Turn场景不产生真实Action效果；故障计数中的`duplicate_effect=0`不能代替Action恢复验证。
+**本目录的证据等级仅为三平台各一次正式规模基线**：`manifest.status=baseline`不等于性能阈值PASS，也不等于0.9.3d整体完成。三平台Profile已按此基线冻结；[第二独立候选及三份PASS报告](../soak-restart-three-platform-candidate-2026-09-23-v1/README.md)另行归档，不能写回基线Run。`action_recovery`故障矩阵仍未完成。该无Turn场景不产生真实Action效果；故障计数中的`duplicate_effect=0`不能代替Action恢复验证。
 
 ## 2. 调用链、环境与数值
 
@@ -86,7 +86,7 @@ PY
 | 故障与恢复 | 通过本场景 | 每平台精确一次ACK→EOF、三次恢复后正式新进程启动、五轮持久扫描/报告与Fence代际递增。 |
 | 低敏提交与数值 | 通过 | 18份原件SHA、Run/Attempt、最近秩统计独立复核一致。 |
 | 常规CI | 通过，保留首次故障 | 对应Revision的[常规CI](https://github.com/carrie1988/Harnessix/actions/runs/35864457452)首次仅文档Job因Mermaid渲染超时失败，其余五Job成功；失败Job重跑后六Job均成功。渲染超时排他根因尚未证明，不把重跑成功解释为原因消失。 |
-| 冻结阈值与候选 | Profile已冻结，候选未完成 | 三个平台的Profile原件与封印已入本目录；负载前预绑定的第二Run及独立PASS/FAIL报告尚未取得。 |
+| 冻结阈值与候选 | 本目录Profile已冻结，候选另册通过 | 三个平台的Profile原件与封印已入本目录；[第二Run与独立PASS报告](../soak-restart-three-platform-candidate-2026-09-23-v1/README.md)在另一个Revision取得，不能从基线本身推出。 |
 | 0.9.3d总体 | 未完成 | `action_recovery`等剩余场景和总体发布评审另行完成。 |
 
 源码与失败语义见[重启场景详细设计](../../changes/m09-3d-product-restart-soak.md)。上传件保留14天；本目录保留原始规范字节和清单供长期重核。出现证据、测量边界或源码兼容问题时保留诊断事实，不能将此单次基线升格为性能PASS。
@@ -101,6 +101,6 @@ PY
 | macOS | [profile.json](profiles/macos/f002516ffd0f4c309f1e0f6cadcde49e/profile.json) / [SEALED.json](profiles/macos/f002516ffd0f4c309f1e0f6cadcde49e/SEALED.json) | `6fa09ca8e87520a9992b4ad5ec8ab054b9fb00d83b5594a98ff0b1e011a86f02` | 12,315,868,750 | 162,717,696 | 2,070,528 |
 | Windows | [profile.json](profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/profile.json) / [SEALED.json](profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/SEALED.json) | `4b26a7f91fc231bc14d534f26eac49ba35faa59fb637b6996913698ba59a46e3` | 12,011,673,000 | 157,108,224 | 2,064,384 |
 
-冻结只是事先确定验收尺度，不构成通过结论。[候选工作流](../../../.github/workflows/restart-soak-candidate.yml)必须在Profile提交后由干净Revision运行；每平台的第二Run须有STARTED v2预绑定、完整V5证明、FINAL和独立封印Report。在第二Run及其原件归档前，本场景发布状态保持`unverified`。
+冻结只是事先确定验收尺度，不构成通过结论。[候选工作流](../../../.github/workflows/restart-soak-candidate.yml)已在Profile提交后由干净Revision运行；每平台的第二Run均有STARTED v2预绑定、完整V5证明、FINAL和独立封印Report，原件见[候选归档](../soak-restart-three-platform-candidate-2026-09-23-v1/README.md)。本目录评审包的`release_status=unverified`表示基线本身不是发布PASS，也不改变为候选结论。
 
-[首次候选工作流 35867100728](https://github.com/carrie1988/Harnessix/actions/runs/35867100728)仅Linux和macOS成功，Windows在负载前因规范Profile文件被Git自动换行转换而报`soak_profile_invalid`，没有Windows候选Attempt。隔离的`core.autocrlf=true` Checkout复现了封印SHA不一致；修复仅对本目录`raw/**`、`profiles/**`及后续候选原件设置`-text`，并增加Git属性回归。诊断和修复边界见[专项设计第7节](../../changes/m09-3d-product-restart-frozen-profile-candidate.md)；三平台候选必须在修复后重新取得，不能把首次两平台成功当成发布PASS。
+[首次候选工作流 35867100728](https://github.com/carrie1988/Harnessix/actions/runs/35867100728)仅Linux和macOS成功，Windows在负载前因规范Profile文件被Git自动换行转换而报`soak_profile_invalid`，没有Windows候选Attempt。隔离的`core.autocrlf=true` Checkout复现了封印SHA不一致；修复仅对本目录`raw/**`、`profiles/**`及后续候选原件设置`-text`，并增加Git属性回归。诊断和修复边界见[专项设计第7节](../../changes/m09-3d-product-restart-frozen-profile-candidate.md)；三平台候选已在修复后重新取得；首次两平台成功没有并入后续PASS。

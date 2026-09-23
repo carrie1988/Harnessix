@@ -1,0 +1,72 @@
+{
+  "checks": {
+    "attempt_reader": "3/3 committed and prebound",
+    "candidate_run_reader": "3/3 passed",
+    "file_sha256": "24/24 matched",
+    "independent_quantiles": "3/3 matched",
+    "privacy_keyword_scan": "3/3 passed",
+    "report_reader": "3/3 PASS",
+    "standard_ci": "first documentation job Mermaid timeout; rerun failed job succeeded; six jobs final success",
+    "workflow_matrix": "3/3 success"
+  },
+  "classification": "three-platform-prebound-independent-verification",
+  "platforms": {
+    "linux": {
+      "candidate_run_id": "66772f5e6db84d479315898b4c4c9444",
+      "db_after_bytes": 1277952,
+      "expected_eof": 1,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "25552f3478121900afc1a4b35a0f26dc341098bb818244ecfd322b3d491f2ab9",
+      "p50_ns": 2678184742,
+      "p95_ns": 2686291295,
+      "p99_ns": 2686291295,
+      "profile_id": "33e970328c664aac8dcbd63f329b33e1",
+      "python_version": "3.12.3",
+      "report_id": "eb830d67d28f4bb7b8691a776c34ed05",
+      "report_reason": "within_limits",
+      "report_status": "PASS",
+      "rss_peak_bytes": 100937728
+    },
+    "macos": {
+      "candidate_run_id": "bba25f244dc043e78b950c492f147aef",
+      "db_after_bytes": 1376256,
+      "expected_eof": 1,
+      "hardware_class": "c3-m7",
+      "manifest_sha256": "a657f1297bad1c9df231e648bb3254a9e18d7ce544ea06d67fbbfbfad776dfa9",
+      "p50_ns": 4439189292,
+      "p95_ns": 7322346958,
+      "p99_ns": 7322346958,
+      "profile_id": "f002516ffd0f4c309f1e0f6cadcde49e",
+      "python_version": "3.12.10",
+      "report_id": "cff880f179cc45a79ab6b8649dacc19d",
+      "report_reason": "within_limits",
+      "report_status": "PASS",
+      "rss_peak_bytes": 107954176
+    },
+    "windows": {
+      "candidate_run_id": "c4e5fbeb3ecc410fa83b260bd1cff8fb",
+      "db_after_bytes": 1376256,
+      "expected_eof": 1,
+      "hardware_class": "c4-m16",
+      "manifest_sha256": "42f98b19ab22fbdae42394c58b2ddd110e05ef8cc35baa1c3daf2809e413b713",
+      "p50_ns": 5606725100,
+      "p95_ns": 5840673600,
+      "p99_ns": 5840673600,
+      "profile_id": "87d7b6a0e45c4bdebb02eedef21c2f83",
+      "python_version": "3.12.10",
+      "report_id": "c61d424d1c874d4d8ba8ffaba1deb3ca",
+      "report_reason": "within_limits",
+      "report_status": "PASS",
+      "rss_peak_bytes": 105148416
+    }
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "other_0.9.3d_scenarios",
+    "0.9.4_to_0.9.6_release_gates"
+  ],
+  "source_code_revision": "e81ebada78f67f4c447e4ae0089ec143ccd6cf34",
+  "source_workflow_run_id": 35867540361,
+  "spec_version": "harnessix.soak-candidate-review/v1",
+  "standard_ci_run_id": 35867509424
+}

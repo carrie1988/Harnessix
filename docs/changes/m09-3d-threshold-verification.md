@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 172b1ee96a89e981a6332b16f60b86e2db654df1
+version: 6
+code_revision: e81ebada78f67f4c447e4ae0089ec143ccd6cf34
 owners:
   - core
 modules:
@@ -30,7 +30,7 @@ supersedes: []
 本切片只提供离线、单平台阈值复验内核，不自动选择工程余量，不为历史诊断运行补写Profile，也不把单次`PASS`解释
 为三平台发布门禁。0.9.3d的Action恢复Runner、其他场景Linux/Windows正式负载和总体发布评审仍未完成。当前
 `long_session`仅接受含真实Context/Compaction证明的v2 Run；`many_threads`接受现行v1；`artifact_growth`接受v3完整
-Proof，`sdk_capacity`接受[v4完整Proof](m09-3d-sdk-capacity-soak.md)；`restart`在[三平台正式基线](../validation/soak-restart-three-platform-2026-09-23-v1/README.md)取得后才接受v5完整Proof和场景专属无Turn Provider版本，并已冻结三份Profile。Action恢复仍拒绝冻结；重启的第二独立候选尚未完成，不能仅凭手工Manifest给出`PASS`。
+Proof，`sdk_capacity`接受[v4完整Proof](m09-3d-sdk-capacity-soak.md)；`restart`在[三平台正式基线](../validation/soak-restart-three-platform-2026-09-23-v1/README.md)取得后才接受v5完整Proof和场景专属无Turn Provider版本，并已冻结三份Profile。Action恢复仍拒绝冻结；重启的[第二独立候选及三平台PASS报告](../validation/soak-restart-three-platform-candidate-2026-09-23-v1/README.md)已按先冻结后测量顺序取得，不能仅凭手工Manifest给出`PASS`。
 
 设计目标是：冻结前验证基线及阈值来源；复验时严格检查独立Run、环境和全部样本；以低敏不可覆盖文件保留
 `PASS/FAIL/unverified`；任何证据缺口不能被解释为性能通过。非目标是验证签名来源、替代CI评审或决定工程余量。
@@ -189,4 +189,4 @@ Attempt文件。`SEALED.json`和SHA-256证明原始字节与最后提交标记�
 Attempt提交窗口、候选启动绑定与篡改、样本篡改、Profile/报告篡改、错误余量和不可覆盖目录。
 [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)负责v1历史字节、v2负载前绑定、事后补引用拒绝和Attempt提交/恢复窗口，
 [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)负责Run原始样本、哈希和提交标记。
-本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：Action恢复Runner、其他场景的三平台正式负载与冻结复验、重启第二独立Run，以及总体发布评审仍是阻断项。重启Profile的场景受限扩展与候选计划见[专项设计](m09-3d-product-restart-frozen-profile-candidate.md)。
+本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：Action恢复Runner、其他场景的三平台正式负载与冻结复验，以及总体发布评审仍是阻断项；重启第二独立Run已取得三平台PASS；对应Revision常规CI首次文档Job超时，失败Job重跑后六Job成功。重启Profile的场景受限扩展与候选计划见[专项设计](m09-3d-product-restart-frozen-profile-candidate.md)。

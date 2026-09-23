@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: 64663f262e4b438455965f659c2608b188c69da8
+version: 3
+code_revision: e81ebada78f67f4c447e4ae0089ec143ccd6cf34
 owners:
   - core
 modules:
@@ -131,3 +131,7 @@ return success_only_if(report.status == PASS)
 [首次候选工作流 35867100728](https://github.com/carrie1988/Harnessix/actions/runs/35867100728)在Revision `64663f2`的Linux、macOS Job完成，Windows在负载前以`soak_profile_invalid`失败且未产生Attempt。排查确认新证据目录未列入[`.gitattributes`](../../.gitattributes)的`-text`白名单：对该提交执行`core.autocrlf=true`的隔离Checkout后，Windows Profile的`profile.json`出现一处CR，SHA-256由封印的`4b26a7f9...`变为`7cceecf4...`；Git属性为`text: auto`。这是Profile规范字节在Checkout被改写，不是完整产品恢复失败或阈值越限。
 
 修复范围仅为重启基线的`raw/**`、`profiles/**`和后续候选`raw/**`设置Git `-text`，并由[`test_run_restart_soak_candidate.py`](../../tests/benchmarks/test_run_restart_soak_candidate.py)断言属性及三平台Reader。修复提交后须在新的三平台Job重新执行完整候选；首次两平台成功不补写为全平台PASS，也不改变冻结阈值。
+
+## 8. 修复后三平台候选的真实验证结果
+
+Revision `e81ebad`的[候选工作流 35867540361](https://github.com/carrie1988/Harnessix/actions/runs/35867540361)在Linux、macOS、Windows三个Job均取得独立Run与`PASS/within_limits`封印报告。[候选证据归档](../validation/soak-restart-three-platform-candidate-2026-09-23-v1/README.md)保存三份STARTED v2、V5 Run、FINAL、Report及24份文件摘要；下载后再次通过Reader、标准库最近秩分位数与`verify_and_publish`独立复核。首次Windows失败的SHA偏差没有在修复后的候选中复现；这只关闭固定完整产品重启场景的候选性能护栏，不能替代`action_recovery`或其他Soak场景。对应Revision的[常规CI 35867509424](https://github.com/carrie1988/Harnessix/actions/runs/35867509424)首次文档Job因Mermaid冷启动超时失败，其余五Job成功；只重跑失败Job后六Job最终成功。首次失败保留为诊断，不把候选绿色直接当成全仓CI绿色。

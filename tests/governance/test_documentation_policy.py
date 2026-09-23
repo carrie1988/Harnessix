@@ -537,6 +537,11 @@ def test_mermaid_renderer_timeout_is_bounded(
     assert _finding_codes(findings) == {"mermaid_render_timeout"}
 
 
+def test_mermaid_cold_renderer_has_bounded_sixty_second_budget() -> None:
+    module = _documentation_module()
+    assert _policy(module).limits["mermaid_timeout_seconds"] == 60
+
+
 def test_cli_text_and_json_reports_have_stable_exit_status(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
