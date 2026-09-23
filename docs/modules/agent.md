@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 14
-code_revision: a81868cae5b8092d565a6f465e8a9441b0e1c67b
+code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
 modules:
@@ -40,9 +40,9 @@ supersedes: []
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复、统一Trusted Action Gateway，以及历史Process等待事实的只读兼容 |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | 0.9.1f3实现Revision `a81868cae5b8092d565a6f465e8a9441b0e1c67b`；[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收 |
+| 代码版本 | 当前实现Revision `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`；0.9.1f3单Runtime边界由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到25 |
+| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到27 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。当前Process能力经统一Trusted Action组合进入Agent，
@@ -758,6 +758,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 14 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 启动恢复改用Session全库单事务校验后仅恢复活跃Turn；多Thread三平台冻结候选及同Revision常规CI通过 |
 | 13 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录Agent单一运行时边界由CI 35453082992完成Linux双版本、macOS、Windows、Container和文档全矩阵验收 |
 | 12 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 登记0.9.1f3独立Action Plane执行服务删除后的Agent边界：当前Process统一经Trusted Action进入，历史Process审批及WAITING_ACTION仅可读取且命令稳定拒绝 |
 | 11 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录Trusted Action终态响应丢失恢复与不重放由CI 35446341997完成全矩阵验收 |

@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 7
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
 modules:
@@ -37,7 +37,7 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
 | 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
-| 代码版本 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` |
+| 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、出站字节门禁、远程安全、可观测性和Replay大规模索引尚未完成 |
 
 本文是[`server.py`](../../src/harnessix/app_server/server.py)、
@@ -1314,6 +1314,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 7 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表委托Session有界索引页读取，保持游标与公开投影合同不变；跨平台候选与CI验收见专项详设 |
 | 6 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a改为守护Reader/Writer泵，贯穿协商Pending/Outbox限制，并让Writer故障与出站Timeout有界唤醒主循环 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步默认POSIX Patch的协议组合、Review分页、审批重放和Windows省略边界 |
 | 4 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认Artifact Reader、动态能力广告、Scope重新授权和剩余取消边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |

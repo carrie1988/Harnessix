@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: c4e85b1c553c2996020ec589547d1019fc96dd07
+status: current
+version: 2
+code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
 modules:
@@ -160,3 +160,9 @@ recovery_threads():
 3. 迁移：旧版本Archive为空/非空、新库、重复初始化、Checksum变更、未来版本与非法旧JSON；Linux/macOS/Windows真实SQLite驱动都须通过。
 4. 性能：同一封印Profile的500 Thread三平台新Revision重跑，采集Run/Attempt/Report原件和同Revision常规CI；首轮FAIL不得覆盖或从统计中剔除。若新候选仍失败，继续调查宿主资源与数据库阶段时延；单次PASS也不能抹去旧FAIL或证明商业SLA。
 5. 文档：同步本详设、Session模块设计、Protocol模块接口、路线图和证据归档。新特性未取得上述取消、失败恢复、跨平台回归及真实负载证据前，不标记生产完成。
+
+## 7. 实现与验证结果
+
+[`Migration 27`](../../src/harnessix/session/migrations/0027_thread_list_lookup.sql)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py)、[`AgentRuntime.__aenter__`](../../src/harnessix/agent/runtime.py)及[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)已在Revision `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`实现。`tests/agent/test_store.py`覆盖索引查询计划、归档过滤优先、每页快照读取上限、坏的非活跃Thread启动失败和旧库迁移。该Revision本地全量`pytest -x -q`通过；Lint、Readability、文档、合同、Task Pack及Mypy门禁通过。
+
+[同Revision常规CI 35883976180](https://github.com/carrie1988/Harnessix/actions/runs/35883976180)的Linux Python 3.12/3.13、macOS、Windows、Container及文档六Job均成功；[三平台冻结候选35884026632](https://github.com/carrie1988/Harnessix/actions/runs/35884026632)三Job成功，三份报告`PASS/within_limits`。下载ZIP、24份规范原件、逐轮Proof、最近秩统计与独立再复验结果见[候选归档](../validation/soak-many-threads-three-platform-candidate-2026-09-23-v3/README.md)。因此本设计对应的**固定500 Thread场景工程护栏已通过**；历史macOS性能FAIL仍在[v2原件](../validation/soak-many-threads-three-platform-candidate-2026-09-23-v2/README.md)保存。此结论不关闭其它0.9.3d场景、0.9.4～0.9.6或生产容量/SLA验收。

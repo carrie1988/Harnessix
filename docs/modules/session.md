@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 9
-code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
+code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
 modules:
@@ -38,9 +38,9 @@ supersedes: []
 |---|---|
 | 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移/WAL，以及共库容量、Plan-first保留和备份恢复 |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `cb3f3ea834624d5a8f84396952eba212650065d1` |
+| 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～26连续且校验和不可变 |
+| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～27连续且校验和不可变 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -645,6 +645,7 @@ restore(backup):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 增加Migration 27归档表达式索引、Thread有界分页和全库单事务恢复扫描；保留非活跃损坏启动失败语义 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26、三类共库容量、不可变Plan、保守禁删、批次崩溃恢复及Plan绑定备份/Restore |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加migration25与`action_output`用途，记录Trusted Process终态输出发布、授权与确认丢失边界 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加migration24与`action_review`用途，记录Artifact先行、Session授权和双账本恢复边界 |

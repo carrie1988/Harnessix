@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 8
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 | 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
-| 代码版本 | `cb3f3ea834624d5a8f84396952eba212650065d1` |
+| 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
 | 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；出站字节门禁、accepted恢复、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
@@ -1524,6 +1524,7 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 8 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表保持Protocol 1.0公开字段，由Session提供先筛选后分页与稳定游标；不增加外部Action服务 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Protocol Request低敏容量、终态Plan-first离线保留、accepted全局保护和执行前置摘要语义 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 验证默认Patch复用Protocol v1审批、Artifact分页和Tool Result，不泄漏Action/Delivery私有字段 |
 | 4 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 将Agent Event v20统一Action审批映射到现有`tool/patch_batch/process`，保持Protocol v1合同与Schema不变并增加内部字段不泄漏回归 |
