@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: 9b527bea9d72b6cff08833245d7ec302ddbfb784
+version: 3
+code_revision: 85aadeaf16826bc15e284b67c2fcd99ed5c3a947
 owners:
   - core
 modules:
@@ -18,6 +18,8 @@ related_tests:
   - tests/benchmarks/test_soak_manifest.py
   - tests/benchmarks/test_soak_evidence.py
   - tests/benchmarks/test_soak_artifact_proof.py
+  - tests/benchmarks/test_soak_artifact_growth.py
+  - tests/benchmarks/test_soak_threshold.py
 supersedes: []
 ---
 
@@ -25,7 +27,7 @@ supersedes: []
 
 ## 1. 需求背景与源码求证
 
-0.9.3d要求混合小件和接近单件上限的Artifact，测量发布与分页读取分位数、RSS及持久增长，并证明到期清理不会把历史引用变成空成功。现有[总体设计](m09-3d-soak-and-performance-evidence.md)只定义`artifact_growth → artifact_store`测量边界和指标白名单，尚无真实Runner；手工构造数值Manifest不能代替生产存储链。
+0.9.3d要求混合小件和接近单件上限的Artifact，测量发布与分页读取分位数、RSS及持久增长，并证明到期清理不会把历史引用变成空成功。现有[总体设计](m09-3d-soak-and-performance-evidence.md)定义`artifact_growth → artifact_store`测量边界和指标白名单；当前[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)已接入真实Agent/Tool/Artifact链。手工构造数值Manifest不能代替生产存储链；发布证据仍以干净Revision正式负载和独立复验为准。
 
 | 已核对的源码事实 | 对设计的约束 |
 |---|---|
@@ -98,7 +100,7 @@ sequenceDiagram
 
 | 对象/字段 | 约束及来源 | 用途与失败语义 |
 |---|---|---|
-| `SoakLoad.artifact_count`、`warmup_count` | 实际发布总数；每Turn一件、单Thread；正式基线2件预热及至少20件正式样本 | 与Proof条目及Store计数精确相等，规模不足不得标记`baseline` |
+| `SoakLoad.artifact_count`、`turn_count`、`warmup_count` | 两个总数字段均为实际发布总数；每Turn一件、单Thread；正式基线2件预热及至少20件正式样本 | 与Proof条目及Store计数精确相等，规模不足不得标记`baseline` |
 | `SoakSample.artifact_publish/artifact_read/rss_peak` | 时延ns、峰值bytes；正式指标均至少一个样本 | 从原始JSONL重算分位数和RSS，不信任Manifest自报统计 |
 | `ArtifactProof.spec_version/run_id` | 固定`harnessix.soak-artifact-proof/v1`及Run ID | 只与本Run绑定，未知版本/字段拒绝 |
 | `ArtifactProof.entries` | 连续匿名序号、阶段、大小类别、`size_bytes/record_count/page_count/read_record_count`及发布/每页样本索引 | Reader核对样本唯一性、时间顺序、测量阶段、发布和读取指标覆盖；不出现业务UUID或路径 |
@@ -113,10 +115,10 @@ sequenceDiagram
 
 | 接口 | 输入与输出 | 前置条件及失败语义 |
 |---|---|---|
-| `run_artifact_growth(evidence_root, code_revision, artifact_count, warmup_count, seed, timeout)`（规划） | 固定负载；返回Run目录和严格Manifest v3 | 正式规模校验当前干净Revision；失败保留Attempt且不输出PASS |
-| `SoakArtifactProvider.stream(request, cancel)`（规划） | 真实ModelRequest；输出固定`grep`调用或固定完成事件 | 不保留Request/历史；未知Step、缺失受信Tool或取消失败关闭 |
-| `MeasuredArtifactStore.publish(...)`（规划） | 与现有Store完全相同的调用和返回 | 只包围`super().publish`记录ns；不改变事务、异常或授权 |
-| `read_artifact_proof(directory)`（规划） | 私有Run目录；返回严格Proof | 限制大小、规范字节、摘要及与Manifest/样本交叉核对 |
+| [`run_artifact_growth`](../../scripts/soak_artifact_growth.py) | `evidence_root`、Revision、正式Turn数、预热数、Seed、Turn/Page期限、可选Profile引用；返回Run目录和Manifest v3 | 至少20正式件时先核对干净Revision；失败保留Attempt且不输出PASS；最多50正式Turn |
+| [`SoakArtifactProvider.stream`](../../scripts/soak_artifact_growth.py) | 真实ModelRequest；Step1输出固定`grep`，Step2输出固定文本 | 不保留Request/历史；未知Step、缺失受信Tool或取消失败关闭 |
+| [`MeasuredArtifactStore.publish`](../../scripts/soak_artifact_growth.py) | 与现有Store完全相同的调用和返回 | 只包围`super().publish`记录ns；不改变事务、异常或授权 |
+| [`read_published_run`](../../scripts/soak_evidence.py) v3分支 | 私有Run目录；返回严格Manifest | 限制大小、精确文件集、规范字节、摘要及Proof与原始样本交叉核对 |
 | `publish_run/read_published_run`（扩展） | v1/v2保持原合同；v3额外Proof | 文件集合与版本精确匹配；缺Proof、摘要错或重算不符拒绝 |
 
 ## 5. 核心逻辑伪代码与事务边界
@@ -146,7 +148,7 @@ read_published_run(run)
 finish_attempt(committed, manifest_digest)
 ```
 
-正文与Session结果仍由产品原事务提交，Runner不直接写`agent_artifacts`。到期时钟只在所有Turn终态后、单Runner隔离进程内替换`artifacts.sqlite.utc_now`，随后恢复；它不改变真实用户TTL、数据库到期字段或公共API。证据根与临时业务库分离；`COMMITTED`和`FINAL`仍是两个提交边界，缺一即不可PASS。
+正文与Session结果仍由产品原事务提交，Runner只读查询`agent_artifacts`的逻辑字节、墓碑和Manifest数量，不直接写表。到期时钟只在所有Turn终态后、单Runner隔离进程内替换`artifacts.sqlite.utc_now`，随后恢复；它不改变真实用户TTL、数据库到期字段或公共API。当前`collect(limit=100)`覆盖Runner最大52件，逐件读取必须返回`artifact_expired`。证据根与临时业务库分离；`COMMITTED`和`FINAL`仍是两个提交边界，缺一即不可PASS。
 
 ### 5.1 可观测性与错误分类
 
@@ -176,12 +178,14 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 
 ## 7. 已实现证据合同与后续实施
 
-证据层已实现[`SoakArtifactProof`](../../scripts/soak_artifact_proof.py)、[`SoakManifestV3`](../../scripts/soak_manifest.py)、[`publish_run/read_published_run`](../../scripts/soak_evidence.py)和[`publish_measured_run`](../../scripts/soak_run_common.py)的v3分支。Proof白名单包含每件序号、阶段、大小类别、正文与记录数量、页数、发布样本索引和逐页读取样本索引，以及清理前后逻辑正文、过期/保护/Tombstone/Manifest计数。Reader在任何PASS判断前核对规范文件字节、SHA-256、精确文件集合、完整样本索引覆盖、阶段和顺序、Manifest负载及请求数；v1/v2原有文件集合和序列化路径不变。[合同回归](../../tests/benchmarks/test_soak_artifact_proof.py)覆盖v3发布/重读、缺失和篡改Proof、重复或缺失样本、清理与页数不一致及正式规模拒绝。当前仅能复核**数值证据合同**，不证明真实Artifact存储链已经被压测。
+证据层已实现[`SoakArtifactProof`](../../scripts/soak_artifact_proof.py)、[`SoakManifestV3`](../../scripts/soak_manifest.py)、[`publish_run/read_published_run`](../../scripts/soak_evidence.py)和[`publish_measured_run`](../../scripts/soak_run_common.py)的v3分支。Proof白名单包含每件序号、阶段、大小类别、正文与记录数量、页数、发布样本索引和逐页读取样本索引，以及清理前后逻辑正文、过期/保护/Tombstone/Manifest计数。Reader在任何PASS判断前核对规范文件字节、SHA-256、精确文件集合、完整样本索引覆盖、阶段和顺序、Manifest负载及请求数；v1/v2原有文件集合和序列化路径不变。[合同回归](../../tests/benchmarks/test_soak_artifact_proof.py)覆盖v3发布/重读、缺失和篡改Proof、重复或缺失样本、清理与页数不一致及正式规模拒绝。
 
-剩余实施步骤：
+真实负载层已实现[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)：固定Workspace文件产生3行小件和2500行近上限件，`Seed`只改变正式Turn的大小件顺序，不影响预热；Step1固定调用`grep`，Step2结束Turn。每件从真实ToolResult提取引用，校验发布次数、完整性和大小类别，随后调用真实`SQLiteArtifactStore.read`读完所有页并测量每页时延。Session事件必须重放得到相同投影；到期前逻辑正文必须等于所有引用大小之和，到期后正文归零、墓碑与Manifest数量等于发布数，历史引用逐件返回`artifact_expired`。[Runner回归](../../tests/benchmarks/test_soak_artifact_growth.py)覆盖混合件/全页、Replay、清理、非法规模、取消、Turn/Page超时、分页污染、清理不符、负载前Revision拒绝和阈值复验合同；Page超时先排空在途SQLite任务，再清理Windows临时库。测试中的Revision检查替身只验证合同路径，不能成为正式基线来源。
 
-1. 实现固定Provider、近上限夹具、真实Agent/Artifact发布、全页读取、受控到期清理、Attempt与Run发布。
-2. 覆盖非法负载、上限边界、缺页/重复页、超时/取消、配额、清理受保护、三处发布中断和低敏扫描。
-3. 先在缩小负载执行完整链（只能`unverified`）；正式规模在干净Revision运行，冻结经评审的单平台Profile后再独立复验。Linux/macOS/Windows分别形成证据，不能以模拟平台测试代替。
+剩余发布验证步骤：
 
-设计评审状态不表示Runner已经实现或0.9.3d已通过；源码、测试与现行模块设计须在实现后同步。
+1. 补齐配额失败、受保护清理、真实进程硬退出与Run/Attempt提交窗口等复合故障验证；确认近上限夹具在三平台产生相同字节区间。
+2. 在干净Revision执行正式规模，保存低敏原始Run/Attempt和三平台证据；不能以工作区内禁用Revision检查的合同测试替代。
+3. 由发布工程独立评审并冻结每平台数值Profile，使用新Run复验；其他Soak场景及0.9.4～0.9.6仍须各自通过。
+
+Runner实现不表示0.9.3d或1.0已通过；当前文档保持`reviewing`，正式三平台负载和独立阈值仍待完成。

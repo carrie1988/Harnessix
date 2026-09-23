@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 66
-code_revision: 9b527bea9d72b6cff08833245d7ec302ddbfb784
+version: 67
+code_revision: 85aadeaf16826bc15e284b67c2fcd99ed5c3a947
 owners:
   - core
 modules:
@@ -561,8 +561,8 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
   已实现严格样本/Manifest、Run提交与独立重算、三平台RSS适配、长会话真实Runtime及多Thread应用服务
   缩小负载Runner，并补齐多Thread启动恢复时延指标合同。已归档[macOS 500 Thread单次诊断事实](validation/soak-macos-2026-09-23-v1/README.md)，
   但该Revision的跨平台基准Job失败，不能用于冻结Profile；后续拆分启动/分页期限并先排空超时SQLite任务的修复版已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收，旧Run仍仅供诊断。现有两个Runner已在负载前持久写入Attempt开始事实，异常保留失败终态，硬退出保留未完成事实；
-  [macOS单Thread连续1000 Turn规模诊断](validation/soak-macos-2026-09-23-v2/README.md)已在干净Revision完成并经Run/Attempt双重重算，对应六实例CI通过；该旧Run尚未专门断言Context/Compaction。新的[长会话Context/Compaction v2详设](changes/m09-3d-long-session-context-proof.md)已落地逐Turn事件Proof和v1/v2独立Reader；[macOS一次v2千Turn规模基线](validation/soak-macos-2026-09-23-v3/README.md)已完成1000次正式Context检查、199次压缩摘要/窗口及Run/Attempt重读，实现Revision六实例CI通过。新的[500 Thread正式负载诊断](validation/soak-macos-2026-09-23-v4/README.md)完成Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项超时、第二次重跑成功，原因未明，不能升级为可冻结Profile的基线。其余四场景Runner及其失败事实、Linux/Windows正式负载、正式Threshold Profile冻结和三平台独立复验仍未完成；
-  [单平台阈值独立复验内核](changes/m09-3d-threshold-verification.md)已实现冻结Profile与完整Attempt双重核验；候选在负载前将Profile ID/摘要持久写入STARTED v2，最终Manifest必须同值；显式工程余量、全部分位数/文件增长比较及不可覆盖报告已具备。[Artifact增长场景详设](changes/m09-3d-artifact-growth-soak.md)进入评审，v3低敏Proof、Manifest和独立Reader合同已实现，但真实发布/全页读取/逻辑清理Runner尚未实施。尚未冻结任何经工程评审的正式数值，也没有三平台独立复验，其他四场景仍被拒绝冻结。SDK容量取消单测已将时间sleep改为子进程确认和显式放行，并补充Windows Product UI超时低敏诊断；这不等于SDK正式Soak或UI偶发超时根因关闭。单次基线和缩小负载均不得充作发布PASS。
+  [macOS单Thread连续1000 Turn规模诊断](validation/soak-macos-2026-09-23-v2/README.md)已在干净Revision完成并经Run/Attempt双重重算，对应六实例CI通过；该旧Run尚未专门断言Context/Compaction。新的[长会话Context/Compaction v2详设](changes/m09-3d-long-session-context-proof.md)已落地逐Turn事件Proof和v1/v2独立Reader；[macOS一次v2千Turn规模基线](validation/soak-macos-2026-09-23-v3/README.md)已完成1000次正式Context检查、199次压缩摘要/窗口及Run/Attempt重读，实现Revision六实例CI通过。新的[500 Thread正式负载诊断](validation/soak-macos-2026-09-23-v4/README.md)完成Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项超时、第二次重跑成功，原因未明，不能升级为可冻结Profile的基线。Artifact真实Runner已有本地合同与失败回归；其余三个场景Runner及其失败事实、Linux/Windows正式负载、正式Threshold Profile冻结和三平台独立复验仍未完成；
+  [单平台阈值独立复验内核](changes/m09-3d-threshold-verification.md)已实现冻结Profile与完整Attempt双重核验；候选在负载前将Profile ID/摘要持久写入STARTED v2，最终Manifest必须同值；显式工程余量、全部分位数/文件增长比较及不可覆盖报告已具备。[Artifact增长场景详设](changes/m09-3d-artifact-growth-soak.md)进入评审，v3低敏Proof、Manifest、独立Reader和真实Agent/Tool/Store Runner已实现，包含混合件、全页读取与逻辑到期清理；正式三平台负载、复合故障和工程阈值仍未验收。尚未冻结任何经工程评审的正式数值，也没有三平台独立复验，另外三个未实现Runner场景仍被拒绝冻结。SDK容量取消单测已将时间sleep改为子进程确认和显式放行，并补充Windows Product UI超时低敏诊断；这不等于SDK正式Soak或UI偶发超时根因关闭。单次基线和缩小负载均不得充作发布PASS。
 
 只有a～d均通过合同、取消/超时、失败恢复、持久化、可观测性、三平台适用性、完整回归和文档同步，才可勾选
 0.9.3总项。0.9.3不新增独立HTTP/Worker、性能控制面或远程数据库，也不把守护线程误述为底层I/O已被强制中断。
