@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 24
-code_revision: 80653a18c93f59c85c22182b79b49381230500d6
+version: 25
+code_revision: d3f2eb13fbf18dafcc76472c368debf566fb4c06
 owners:
   - core
 modules:
@@ -461,7 +461,7 @@ classDiagram
 | `long_session` | 一个Thread至少1000个本地确定性Turn；v2固定装配Context与Compaction，普通和摘要Provider均不保留请求历史 | Turn本地边界、RSS、Replay一致性、逐Turn低敏事件Proof、DB/WAL水位；`replay(events) == projection`；普通与摘要请求分账 | v1规模诊断保留；macOS一次v2千Turn已证明1000次Context检查、199次压缩及Run/Attempt双重重读；完整产品启动、Linux/Windows和独立阈值复验仍未完成。 |
 | `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | `app_service_startup`启动P50/P95/P99、`thread_list_page`列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | 已实现真实`AgentApplicationService.list_threads`完整游标遍历、Runtime重启、持久Thread集合复核、Run发布和失败Attempt；缩小负载仅`unverified`，修复Revision的正式500 Thread尚未重跑。 |
 | `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | SubprocessTransport当前默认64、允许范围1～1024；Soak编排未实现。 |
-| `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | Artifact合同和容量/维护路径当前存在；正式混合负载未实现。 |
+| `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | Artifact合同和容量/维护路径当前存在；[专项详细设计](m09-3d-artifact-growth-soak.md)进入评审，Runner尚未实现。 |
 | `action_recovery` | 固定故障矩阵循环：Owner/Fence失效、效果写入/返回边界、Audit/Process边界、Artifact引用窗口 | UNKNOWN、重复效果、孤儿、恢复/对账耗时和终态；不调用Execute进行恢复 | Action路由、恢复扫描和测试当前存在；固定Soak矩阵未实现。 |
 | `restart` | 增长前后执行多次冷启动和热启动；每次均使用独立Transport/Runtime生命周期 | 初始化、恢复扫描、Replay、未决Turn/Action状态、RSS；重启后不得重复外部效果 | Runtime和SDK关闭/启动路径当前存在；正式重启编排未实现。 |
 
@@ -946,3 +946,4 @@ run_scenario(scenario, seed, environment):
 | 22 | `d376104f751af2b7b6e9835bb59fba66c0ce9d96` | 2026-09-23 | 增加冻结阈值Profile与独立复验内核；明确当前仅支持两类场景且尚无发布级数值证据。 |
 | 23 | `005d72d54f94f37e1e0e076e3944e911fa94dcc9` | 2026-09-23 | 候选Runner由调用参数选择Profile，并在最终Manifest保存引用；该版本尚无负载前的持久选择证据。 |
 | 24 | `80653a18c93f59c85c22182b79b49381230500d6` | 2026-09-23 | 候选STARTED v2在负载前持久预绑定Profile身份/摘要；Attempt提交及复验跨文件核对，保留v1历史字节。 |
+| 25 | `d3f2eb13fbf18dafcc76472c368debf566fb4c06` | 2026-09-23 | Artifact增长、全页读取、逻辑清理与v3低敏Proof进入专项设计评审；未将规划Runner写为当前能力。 |
