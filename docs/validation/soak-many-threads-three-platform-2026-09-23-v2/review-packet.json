@@ -7,7 +7,7 @@
     "independent_stdlib_quantiles": "3/3 matched",
     "privacy_keyword_scan": "3/3 passed",
     "run_reader": "3/3 v6 passed",
-    "standard_ci": "pending",
+    "standard_ci": "6/6 success",
     "thread_proof": "3/3 four cycles, 40 pages, 500 unique tags per cycle",
     "workflow_matrix": "3/3 success"
   },
@@ -89,7 +89,6 @@
   },
   "release_status": "unverified",
   "remaining_gates": [
-    "source_ci_terminal_success",
     "frozen_profiles_and_independent_candidates",
     "other_0.9.3d_scenarios",
     "0.9.4_to_0.9.6_release_gates"

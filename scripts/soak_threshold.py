@@ -314,6 +314,16 @@ def publish_profile(
     return directory, sha256(body).hexdigest()
 
 
+def verify_profile_baseline(
+    profile: SoakThresholdProfile, baseline_directory: Path
+) -> tuple[SoakManifest, str]:
+    """候选启动前重读完整基线与冻结阈值，拒绝赛后补证据。"""
+
+    baseline, digest = _complete_run(baseline_directory)
+    _verify_profile_baseline(profile, baseline, digest)
+    return baseline, digest
+
+
 def read_profile(directory: Path) -> tuple[SoakThresholdProfile, str]:
     """只接受规范字节与精确文件集。"""
 

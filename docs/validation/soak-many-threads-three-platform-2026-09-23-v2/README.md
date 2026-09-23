@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 6e64a5cba2108ac77de90a5726b45773b4482c75
 owners:
   - core
@@ -25,7 +25,7 @@ supersedes: []
 
 Revision `6e64a5cba2108ac77de90a5726b45773b4482c75`的[手动多Thread工作流 35876022276](https://github.com/carrie1988/Harnessix/actions/runs/35876022276)在Linux、macOS、Windows各完成一次固定500 Thread、每页50条、预热一次、正式重启三次的真实Runtime/App Service负载。三个平台的Run与Attempt均成功；归档的18份原始文件与三个GitHub ZIP逐字节一致，Run/Attempt Reader、v6逐轮分页Proof、原始样本最近秩分位数均独立复核通过。[证据清单](bundle-manifest.json)绑定来源上传件及每个文件的SHA-256，[评审包](review-packet.json)记录数值与未关闭门禁。
 
-**这是三平台各一次正式基线，不是场景PASS。** `manifest.status=baseline`只表示固定负载及证据合同成立。冻结工程阈值、负载前绑定的第二独立候选和三平台独立报告尚未完成；0.9.3d其他场景及0.9.4～0.9.6亦未由本证据关闭。源码Revision的[常规CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)须与手动Soak分开核对终态，不以三平台工作流绿色替代全仓CI。
+**这是三平台各一次正式基线，不是场景PASS。** `manifest.status=baseline`只表示固定负载及证据合同成立。冻结工程阈值、负载前绑定的第二独立候选和三平台独立报告尚未完成；0.9.3d其他场景及0.9.4～0.9.6亦未由本证据关闭。源码Revision的[常规CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job均成功；此结果与手动Soak三Job分开核对，不能仅以手动工作流绿色替代全仓CI。
 
 ## 2. 负载、证明与数据流程
 
@@ -84,7 +84,7 @@ PY
 |---|---|---|
 | 三平台真实固定负载 | 通过 | 三个独立Job和各自不同的State/Run ID；模型请求数0。 |
 | v6 Proof、Run/Attempt、文件和统计 | 通过 | 18份原件、三个ZIP、四轮分页及45条样本各平台独立复核。 |
-| 同Revision六实例常规CI | 待终态 | [CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)独立检查，不用手动Soak替代。 |
+| 同Revision六实例常规CI | 通过 | [CI 35876009038](https://github.com/carrie1988/Harnessix/actions/runs/35876009038)六Job成功；仍不代替第二独立候选。 |
 | 三平台冻结Profile与第二Run | 未执行 | 单次基线不判PASS；不得以历史v1或完整产品重启Profile替代。 |
 | 0.9.3d整体 | 未完成 | Action恢复、长会话和Artifact等场景另行验证。 |
 

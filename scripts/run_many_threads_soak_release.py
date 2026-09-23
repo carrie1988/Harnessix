@@ -15,13 +15,13 @@ from harnessix.agent.errors import KernelError
 from scripts.soak_attempt import read_attempt
 from scripts.soak_evidence import read_published_run
 from scripts.soak_many_threads import run_many_threads
+from scripts.soak_worker_guard import guarded_worker
 
 _REPOSITORY = Path(__file__).resolve().parents[1]
 _WORKER_TIMEOUT_SECONDS = 20 * 60
 _SUMMARY_FIELDS = frozenset(
     {"scenario_id", "platform", "code_revision", "run_id", "manifest_sha256", "status"}
 )
-_ERROR_CODE = re.compile(r"多Thread Soak失败：([a-z][a-z0-9_]*)\n\Z")
 
 
 def _revision() -> str:
@@ -128,38 +128,17 @@ def _validated_summary(body: str) -> str | None:
 def _parent_main(evidence_root: Path) -> int:
     """以进程级硬期限包住可能无限等待SQLite排空的Runner。"""
 
-    try:
-        completed = subprocess.run(
-            (
-                sys.executable,
-                "-m",
-                "scripts.run_many_threads_soak_release",
-                "--internal-worker",
-                "--evidence-root",
-                str(evidence_root),
-            ),
-            cwd=_REPOSITORY,
-            capture_output=True,
-            text=True,
-            timeout=_WORKER_TIMEOUT_SECONDS,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        print("多Thread Soak失败：soak_worker_timeout", file=sys.stderr)
+    output, error_code = guarded_worker(
+        "scripts.run_many_threads_soak_release",
+        arguments=("--evidence-root", str(evidence_root)),
+        repository=_REPOSITORY,
+        timeout_seconds=_WORKER_TIMEOUT_SECONDS,
+        error_prefix="多Thread Soak失败",
+    )
+    if error_code is not None:
+        print(f"多Thread Soak失败：{error_code}", file=sys.stderr)
         return 1
-    except (OSError, UnicodeError, subprocess.SubprocessError):
-        print("多Thread Soak失败：soak_worker_failed", file=sys.stderr)
-        return 1
-    if completed.returncode != 0:
-        match = (
-            _ERROR_CODE.fullmatch(completed.stderr)
-            if len(completed.stderr.encode("utf-8")) <= 256
-            else None
-        )
-        code = match.group(1) if match is not None else "soak_worker_failed"
-        print(f"多Thread Soak失败：{code}", file=sys.stderr)
-        return 1
-    summary = _validated_summary(completed.stdout) if not completed.stderr else None
+    summary = _validated_summary(output) if output is not None else None
     if summary is None:
         print("多Thread Soak失败：soak_worker_invalid", file=sys.stderr)
         return 1
