@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: a8fc8d607eee4be1113b64ec72249424384c1056
+version: 2
+code_revision: 12bfc1108efc461742712c98fe782ce4b1849f05
 owners:
   - core
 modules:
@@ -27,7 +27,7 @@ supersedes: []
 
 现有[`run_many_threads`](../../scripts/soak_many_threads.py)使用真实Agent Runtime、Session SQLite和`AgentApplicationService.list_threads`，已经能创建持久Thread、重启、遍历全部游标并发布Run/Attempt。历史[macOS 500 Thread诊断](../validation/soak-macos-2026-09-23-v4/README.md)的Windows Product UI首次超时未定位，不能充当可冻结三平台基线；此前固定三平台的[完整产品重启场景](../validation/soak-restart-three-platform-2026-09-23-v1/README.md)测量的是**`product_startup`**，不能拿其数值替代`app_service_startup`或`thread_list_page`。
 
-本切片只补**不可降配的发布工程入口与三平台独立采集通道**。目标是让每个平台在干净源码Revision上运行500 Thread、一次预热和三次正式Runtime/App Service重启；每次全页核对身份集合，最终重读Run与Attempt，失败也保存已持久化的Attempt。此切片**尚未取得三平台新Run、冻结Profile或第二独立候选PASS**；工作流的存在不代表0.9.3d完成。产品协议、Session Schema、Action边界和用户CLI均不改动，不增加HTTP/Worker独立服务，也不调用真实模型。
+本切片只补**不可降配的发布工程入口与三平台独立采集通道**。每个平台在干净源码Revision上运行500 Thread、一次预热和三次正式Runtime/App Service重启；每次全页核对身份集合，最终重读Run与Attempt，失败也保存已持久化的Attempt。[三平台各一次正式负载原件](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)已取得；但尚未冻结Profile或执行第二独立候选，现行v1证据缺逐轮匿名集合Proof且异常排空无独立全局期限，不能标记0.9.3d完成。产品协议、Session Schema、Action边界和用户CLI均不改动，不增加HTTP/Worker独立服务，也不调用真实模型。
 
 ## 2. 源码研究与架构决策
 
@@ -110,11 +110,11 @@ sequenceDiagram
 |---|---|---|
 | 固定参数、两层提交、样本数和低敏日志 | [`test_run_many_threads_soak_release.py`](../../tests/benchmarks/test_run_many_threads_soak_release.py) | 本地合同测试；不等于正式规模。 |
 | 真实Runtime/App Service小负载、空页/超时/失败Attempt | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 缩小回归状态只能是`unverified`。 |
-| Git干净正式500 Thread三平台负载 | [`many-threads-soak.yml`](../../.github/workflows/many-threads-soak.yml) | **未执行**；需要三平台独立Run/Attempt原件。 |
+| Git干净正式500 Thread三平台负载 | [`many-threads-soak.yml`](../../.github/workflows/many-threads-soak.yml) | [三平台各一次原件](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)已归档，Runner成功；同Revision CI终态须单独核对。 |
 | 冻结Profile、负载前绑定第二独立Run、三份报告 | [`soak_threshold.py`](../../scripts/soak_threshold.py) | **未执行**；单次基线不能判PASS。 |
 | 无界排空风险与硬停止线 | 本文第5节 | **未关闭**；不得标记生产完成。 |
 
-正式工作流成功后，先下载各平台Artifact，以Run/Attempt Reader和标准库重算文件摘要、样本数和最近秩分位数，保存独立Manifest/Review Packet及原始证据；再由对应Revision常规CI核对六实例终态，冻结各平台Profile并执行第二次独立候选。任一平台失败保留原始Attempt、定位根因并在新提交重跑；不把失败平台以其他平台或缩小负载代替。
+正式工作流的三平台Artifact已下载，以Run/Attempt Reader和标准库重算15份文件摘要、样本数及最近秩分位数，并保存[Manifest和Review Packet](../validation/soak-many-threads-three-platform-2026-09-23-v1/README.md)。后续须核对对应Revision常规CI六实例终态，补齐场景Proof与有界失败语义后，以新Revision建立可冻结基线，再冻结各平台Profile并执行第二次独立候选。任一平台失败保留原始Attempt、定位根因并在新提交重跑；不把失败平台以其他平台或缩小负载代替。
 
 ## 7. 部署、兼容与回退
 

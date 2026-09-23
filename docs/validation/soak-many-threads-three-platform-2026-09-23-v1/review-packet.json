@@ -1,0 +1,90 @@
+{
+  "checks": {
+    "attempt_reader": "3/3 committed",
+    "frozen_profiles": "not yet",
+    "independent_file_sha256": "15/15 matched",
+    "independent_stdlib_quantiles": "3/3 matched",
+    "privacy_keyword_scan": "3/3 passed",
+    "run_reader": "3/3 passed",
+    "standard_ci": "pending",
+    "workflow_matrix": "3/3 success"
+  },
+  "classification": "three-platform-single-run-baseline",
+  "code_revision": "12bfc1108efc461742712c98fe782ce4b1849f05",
+  "platforms": {
+    "linux": {
+      "db_after_bytes": 589824,
+      "db_before_bytes": 98304,
+      "hardware_class": "c4-m16",
+      "list_page_p50_ns": 332042832,
+      "list_page_p95_ns": 657744564,
+      "list_page_p99_ns": 659543741,
+      "manifest_sha256": "3b1b2215473c8dae6f081769d07b9b02e2bfb10d98fa590cc65d9028cce11d0b",
+      "python_version": "3.12.3",
+      "rss_peak_bytes": 64577536,
+      "run_id": "c5f3d2416cc140ef80d95f773049fb44",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 669132362,
+      "startup_p95_ns": 795810024,
+      "startup_p99_ns": 795810024,
+      "wal_after_bytes": 0
+    },
+    "macos": {
+      "db_after_bytes": 634880,
+      "db_before_bytes": 98304,
+      "hardware_class": "c3-m7",
+      "list_page_p50_ns": 639261416,
+      "list_page_p95_ns": 1444554750,
+      "list_page_p99_ns": 1551159416,
+      "manifest_sha256": "2e27d4f9d3fb2f09ddac03a260c4ac175e6a4753d6a62848820b2eb3db2b3856",
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 73793536,
+      "run_id": "fc77033b2f5448bdad16aee4c698e108",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 1432157583,
+      "startup_p95_ns": 1455887125,
+      "startup_p99_ns": 1455887125,
+      "wal_after_bytes": 0
+    },
+    "windows": {
+      "db_after_bytes": 634880,
+      "db_before_bytes": 98304,
+      "hardware_class": "c4-m16",
+      "list_page_p50_ns": 817336000,
+      "list_page_p95_ns": 1596449200,
+      "list_page_p99_ns": 1617821600,
+      "manifest_sha256": "1e2825182d6f811d8122e28b491a0ad709e4aa070259026e699b9c5fa54b841e",
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 64749568,
+      "run_id": "1eec212404234751900fe3cbfac14618",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 1592203100,
+      "startup_p95_ns": 1628829100,
+      "startup_p99_ns": 1628829100,
+      "wal_after_bytes": 0
+    }
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "bounded_timeout_drain",
+    "frozen_profiles_and_independent_candidates",
+    "other_0.9.3d_scenarios",
+    "0.9.4_to_0.9.6_release_gates"
+  ],
+  "scenario_id": "many_threads",
+  "source_workflow_run_id": 35870233482,
+  "spec_version": "harnessix.soak-review-packet/v1",
+  "standard_ci_run_id": 35870214455
+}

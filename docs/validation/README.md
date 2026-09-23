@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 17
-code_revision: 823ceac0c7ec250bb36cd0009946949ad8f094d2
+version: 18
+code_revision: 12bfc1108efc461742712c98fe782ce4b1849f05
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-23 | [多Thread三平台一次正式负载基线](soak-many-threads-three-platform-2026-09-23-v1/README.md) | `12bfc1108efc461742712c98fe782ce4b1849f05` | Linux/macOS/Windows各500 Thread、1次预热、3次正式Runtime/App Service重启，50条每页；无模型请求 | 三平台Runner成功；Run/Attempt与15份原件SHA、最近秩统计重算通过；同Revision CI待终态 | v1无逐轮集合Proof，超时排空无独立全局期限；不能冻结Profile或判场景PASS |
 | 2026-09-23 | [完整产品重启三平台冻结阈值第二独立Run](soak-restart-three-platform-candidate-2026-09-23-v1/README.md) | `e81ebada78f67f4c447e4ae0089ec143ccd6cf34` | Linux/macOS/Windows各自预冻结Profile，500 Thread、1次预热、1次受控硬退出、3次正式新进程；Provider零请求 | 三份STARTED v2/Run/Report原件、24份文件摘要及独立数值重算均通过；各平台Report为PASS；[CI 35867509424](https://github.com/carrie1988/Harnessix/actions/runs/35867509424)首次文档Job超时、只重跑失败Job后六Job成功 | 仅固定重启场景工程护栏；不关闭其余0.9.3d或1.0发布门禁 |
 | 2026-09-23 | [完整产品重启三平台正式规模基线](soak-restart-three-platform-2026-09-23-v1/README.md) | `172b1ee96a89e981a6332b16f60b86e2db654df1` | Linux/macOS/Windows Python 3.12、500 Thread、1预热+1硬退出+3正式新进程；Provider零请求 | 三平台Run/Attempt原件及18份文件摘要、分位数、V5 Proof独立复核通过；[CI 35864457452](https://github.com/carrie1988/Harnessix/actions/runs/35864457452)失败文档Job重跑后六Job成功 | 三平台各一次正式基线与封印Profile；第二独立Run与报告见上一条，基线本身不判PASS |
 | 2026-09-23 | [Windows Product UI退出期限诊断](product-quit-windows-2026-09-23-v1/README.md) | `823ceac0c7ec250bb36cd0009946949ad8f094d2` | [CI 35845010214](https://github.com/carrie1988/Harnessix/actions/runs/35845010214) Windows原生Job，首次与第二次尝试 | 首次511通过/1失败/45跳过，重跑512通过/45跳过；外层10秒小于子进程默认10+5秒关闭预算 | 仅诊断，预算倒挂修复由[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧首次失败排他根因仍未确认，不宣称整体稳定 |
