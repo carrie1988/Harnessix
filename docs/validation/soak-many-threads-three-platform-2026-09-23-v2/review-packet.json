@@ -1,0 +1,101 @@
+{
+  "checks": {
+    "archive_zip_bytes": "3/3 matched",
+    "attempt_reader": "3/3 committed",
+    "frozen_profiles": "not yet",
+    "independent_file_sha256": "18/18 matched",
+    "independent_stdlib_quantiles": "3/3 matched",
+    "privacy_keyword_scan": "3/3 passed",
+    "run_reader": "3/3 v6 passed",
+    "standard_ci": "pending",
+    "thread_proof": "3/3 four cycles, 40 pages, 500 unique tags per cycle",
+    "workflow_matrix": "3/3 success"
+  },
+  "classification": "three-platform-v6-single-run-baseline",
+  "code_revision": "6e64a5cba2108ac77de90a5726b45773b4482c75",
+  "platforms": {
+    "linux": {
+      "db_after_bytes": 589824,
+      "db_before_bytes": 98304,
+      "hardware_class": "c4-m16",
+      "list_page_p50_ns": 335773337,
+      "list_page_p95_ns": 668742489,
+      "list_page_p99_ns": 669079487,
+      "manifest_sha256": "8064b6772c3a088561bc4393c4224891e42b450d130b43a8448c4c97252a449a",
+      "python_version": "3.12.3",
+      "rss_peak_bytes": 60469248,
+      "run_id": "f8ea8f00fbaf49328709bc1f7f6a2a96",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 673383291,
+      "startup_p95_ns": 676030022,
+      "startup_p99_ns": 676030022,
+      "thread_count": 500,
+      "thread_proof_sha256": "0fffee552f40602663e1b4c8d4a0f99134675527fda69a5eef1eee7270d13f9c",
+      "wal_after_bytes": 0,
+      "warmup_samples": 11
+    },
+    "macos": {
+      "db_after_bytes": 634880,
+      "db_before_bytes": 98304,
+      "hardware_class": "c3-m7",
+      "list_page_p50_ns": 588565875,
+      "list_page_p95_ns": 1166799000,
+      "list_page_p99_ns": 1381205916,
+      "manifest_sha256": "1639f2f0c6d062682cf662b46affd14d591d6b4700ede05487bb1d65a6570185",
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 65372160,
+      "run_id": "7addaab82c124924988a90f430c09bb0",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 1287078709,
+      "startup_p95_ns": 1897536666,
+      "startup_p99_ns": 1897536666,
+      "thread_count": 500,
+      "thread_proof_sha256": "d2c5d1493d62d844bba328c7e09aa442dd840f1e2ab30b71ae1de8fc06371484",
+      "wal_after_bytes": 0,
+      "warmup_samples": 11
+    },
+    "windows": {
+      "db_after_bytes": 634880,
+      "db_before_bytes": 98304,
+      "hardware_class": "c4-m16",
+      "list_page_p50_ns": 827828600,
+      "list_page_p95_ns": 1702970500,
+      "list_page_p99_ns": 1844074400,
+      "manifest_sha256": "284e18862770849d66d395e99ed2ae31bfe6de59852847580f7fc0d2882579eb",
+      "python_version": "3.12.10",
+      "rss_peak_bytes": 62246912,
+      "run_id": "298a7b2494d64ec981ea5f181c6c0715",
+      "sample_counts": {
+        "app_service_startup": 3,
+        "rss_peak": 1,
+        "thread_list_page": 30
+      },
+      "startup_p50_ns": 1687470000,
+      "startup_p95_ns": 1737679100,
+      "startup_p99_ns": 1737679100,
+      "thread_count": 500,
+      "thread_proof_sha256": "77db44e2889aa878cf851cd68b5d74c10585aa25f13c24b3d8b26a2a69349912",
+      "wal_after_bytes": 0,
+      "warmup_samples": 11
+    }
+  },
+  "release_status": "unverified",
+  "remaining_gates": [
+    "source_ci_terminal_success",
+    "frozen_profiles_and_independent_candidates",
+    "other_0.9.3d_scenarios",
+    "0.9.4_to_0.9.6_release_gates"
+  ],
+  "scenario_id": "many_threads",
+  "source_workflow_run_id": 35876022276,
+  "spec_version": "harnessix.soak-review-packet/v1",
+  "standard_ci_run_id": 35876009038
+}
