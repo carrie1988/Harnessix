@@ -24,7 +24,7 @@ supersedes: []
 
 修复跨平台测试夹具后的Revision `807e688988245fcbb269f0c04013ed9a9ca6ea9d`执行[候选工作流35880201307](https://github.com/carrie1988/Harnessix/actions/runs/35880201307)。Linux和Windows分别取得`PASS/within_limits`，macOS取得**`FAIL/limit_exceeded`**；macOS的启动P95/P99和分页P99超过预冻结阈值，因此整体工作流失败，固定多Thread场景门禁保持开放。不能以[前一Revision诊断中的三份PASS](../soak-many-threads-three-platform-candidate-2026-09-23-v1/README.md)替代本Revision的FAIL，也不能事后提高[已封印Profile](../soak-many-threads-three-platform-2026-09-23-v2/README.md)上限。
 
-三平台下载ZIP与归档原件逐字节一致；24份Run、Attempt、Report原件逐文件SHA校验、Reader、v6逐轮Proof、45条原始样本最近秩统计、阈值逐项重算和新报告独立再复验均与原结论一致。[证据清单](bundle-manifest.json)保存来源与原件SHA，[评审包](review-packet.json)保存量化结果及未关闭门禁。Provider请求数0，无真实模型费用。对应源码的[常规CI 35880201885](https://github.com/carrie1988/Harnessix/actions/runs/35880201885)须与此性能结论分别评审；常规CI成功不能把macOS的FAIL变成PASS。
+三平台下载ZIP与归档原件逐字节一致；24份Run、Attempt、Report原件逐文件SHA校验、Reader、v6逐轮Proof、45条原始样本最近秩统计、阈值逐项重算和新报告独立再复验均与原结论一致。[证据清单](bundle-manifest.json)保存来源与原件SHA，[评审包](review-packet.json)保存量化结果及未关闭门禁。Provider请求数0，无真实模型费用。对应源码的[常规CI 35880201885](https://github.com/carrie1988/Harnessix/actions/runs/35880201885)六Job均成功，但常规CI成功不能把macOS的性能FAIL变成PASS。
 
 ## 2. 固定负载、数据链与失败语义
 
