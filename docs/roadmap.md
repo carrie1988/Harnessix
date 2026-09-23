@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 52
-code_revision: 406aeef55820c70b80768de9ff6aa8462dac4c7b
+version: 54
+code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
 owners:
   - core
 modules:
@@ -559,8 +559,10 @@ Suite在其上负责跨任务、跨仓库身份冻结、证据核对和可重算
 - [ ] **0.9.3d 长会话Soak与发布阈值**：用固定场景和环境记录启动时延、操作分位数、峰值RSS、数据库/Artifact增长、
   清理水位和故障计数，冻结低敏Manifest与独立阈值验证。源码核查、ADR和专项详细设计处于评审阶段；
   已实现严格样本/Manifest、Run提交与独立重算、三平台RSS适配、长会话真实Runtime及多Thread应用服务
-  缩小负载Runner，并补齐多Thread启动恢复时延指标合同。其余四场景Runner、失败事实留存、三平台正式负载、Threshold Profile
-  和独立复验仍未完成；缩小负载不得充作发布基线。
+  缩小负载Runner，并补齐多Thread启动恢复时延指标合同。已归档[macOS 500 Thread单次诊断事实](validation/soak-macos-2026-09-23-v1/README.md)，
+  但该Revision的跨平台基准Job失败，不能用于冻结Profile；现已拆分启动/分页期限并先排空超时SQLite任务，待新CI复验。
+  但其余四场景Runner、失败事实留存、1000 Turn与Linux/Windows正式负载、Threshold Profile和独立复验仍未完成；
+  单次基线和缩小负载均不得充作发布PASS。
 
 只有a～d均通过合同、取消/超时、失败恢复、持久化、可观测性、三平台适用性、完整回归和文档同步，才可勾选
 0.9.3总项。0.9.3不新增独立HTTP/Worker、性能控制面或远程数据库，也不把守护线程误述为底层I/O已被强制中断。

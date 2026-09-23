@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 3
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 5
+code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
 owners:
   - core
 modules:
@@ -15,9 +15,11 @@ related_adrs:
   - docs/adr/0048-controlled-real-eval-campaign-execution.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0092-reproducible-local-soak-and-release-thresholds.md
 related_tests:
   - tests/smoke
   - tests/evals
+  - tests/benchmarks/test_soak_many_threads.py
 supersedes: []
 ---
 
@@ -33,6 +35,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-23 | [macOS 500 Thread单次Soak诊断事实](soak-macos-2026-09-23-v1/README.md) | `d64054638a03bca008f5b392fd0edf23aa4cd63b` | macOS Python 3.13.8、`c16-m48`、500 Thread、3次正式重启、30个列表页样本；无模型请求 | Manifest和原始数值已独立重算；启动P95 440247292 ns、列表页P95 427911708 ns；对应Revision跨平台CI未通过 | 历史诊断证据，不用于冻结Profile，不关闭Soak或商用发布门禁 |
 | 2026-09-20 | [工程Task Pack v2真实Provider完整Suite](provider-engineering-2026-09-20-v1/README.md) | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 北京精确模型、3仓10 Case、每Case 2 Trial、无自动重试、CNY 40 Trial边界停止线 | 20/20 Trial终结；任务成功0/20、测试通过0/20；81请求、318,478/12,148输入/输出Token、CNY 1.46828完整已知成本 | 0.9.2e当前冻结真实质量基线；证明失败可审计，不证明模型可用成功率 |
 | 2026-09-20 | [工程Task Pack v2完整离线Suite](offline-engineering-2026-09-20-v2/README.md) | `505bc537f74bd59e891c605ff4114856991f1783` | 3仓10 Case、每Case 2 Trial、固定Digest无网Container、Recorded Provider零费用 | 20/20 Trial通过；120请求、60自动审批；首Case证据与Suite报告两个崩溃窗口均恢复 | 0.9.2d3当前冻结离线证据；不证明真实模型能力 |
 | 2026-09-03 | [百炼北京受控Smoke](bailian-2026-09-03.md) | `9f24961840fa704e7c7a344c648164d8afe793b7` | 北京兼容端点；每请求最多128输出Token；零重试；总计7次请求 | 文本、内存工具、审批重开三个固定场景通过；费用和其他Provider未验证 | Smoke独立证据 |

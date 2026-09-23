@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 5
-code_revision: 406aeef55820c70b80768de9ff6aa8462dac4c7b
+version: 7
+code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
 owners:
   - core
 modules:
@@ -33,7 +33,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；缩小负载只产生`unverified`，其余四个场景和正式性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile。当前修复尚待新CI复验；其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 

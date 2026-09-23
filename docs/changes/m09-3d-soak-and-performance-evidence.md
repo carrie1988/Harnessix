@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 12
-code_revision: 406aeef55820c70b80768de9ff6aa8462dac4c7b
+version: 14
+code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
 owners:
   - core
 modules:
@@ -46,7 +46,7 @@ supersedes: []
 |---|---|
 | 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集。`long_session`与`many_threads`真实产品模块场景Runner已实现，缩小负载只发布`unverified`；其他四个场景、Threshold Profile、三平台正式负载和发布阈值证据仍未完成。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `406aeef55820c70b80768de9ff6aa8462dac4c7b` |
+| 代码版本 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -67,6 +67,8 @@ supersedes: []
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
 本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同、Run提交标记、RSS适配器及`long_session`/`many_threads`真实模块场景Runner；其余四场景Runner、阈值Profile和发布阈值校验器仍待实现。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
+
+[`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。当前Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；修复仍待新CI验证。原Run保留为**历史诊断事实**，不能用于冻结发行Profile。1000 Turn正式长会话、其他四场景和Linux/Windows正式负载均未形成可接受证据。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -416,7 +418,7 @@ classDiagram
 | 接口/方法 | 调用者 | 输入/输出 | 前置/后置条件 | 错误与重试 | 取消/超时 | 幂等/顺序 | 权限 |
 |---|---|---|---|---|---|---|---|
 | `run_long_session(evidence_root, code_revision, turn_count, warmup_count, seed, turn_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入固定负载和显式Revision；输出已发布Run目录及Manifest | 单次临时State Root、真实Agent Runtime和无状态Provider；`>=1000` Turn的基线运行须Git HEAD匹配且工作树干净 | 参数、Revision、Runtime、RSS、Replay或发布失败抛稳定错误；不发布PASS | 每Turn用`asyncio.timeout`；超时使运行失败且不发布部分Run；失败事实持久化待补 | Run ID新建、样本全局序号连续；失败重试必须新Run | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
-| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, operation_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；不发布PASS | 每次启动/列表请求有独立期限；超时不发布部分Run；失败事实持久化待补 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
+| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, startup_timeout_seconds, page_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数和两个独立期限；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；不发布PASS | 启动与页面独立计时；超过期限后先排空对应异步SQLite任务再报超时，不发布部分Run；排空的全局上限尚未实现 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
 | `SoakRunner.run(scenario, seed, environment)`（其余场景规划） | 发布运行器 | 输入固定Scenario/seed/平台档位；输出已发布Run状态 | 独立State Root、Revision和RSS能力通过；完成后只产生不可变Run | 参数/Schema/平台/业务失败均非零；重试必须新Run ID，不覆盖失败事实 | 取消/超时须保留失败事实；不得把已接受请求直接重发 | 一个Run只允许单一Writer；样本序号严格递增 | 发布工程角色；不得访问用户凭据/Workspace。 |
 | `EvidenceWriter.append(sample)`（规划） | Runner | `SoakSample`；无业务正文 | `phase=measuring`且单位/值合法 | 非有限值、负数、未知指标立即失败 | 写入失败不回滚业务事实；Run不能PASS | `sample_index`不重复；文件追加后不可改 | 仅Run临时目录写权限。 |
 | `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
@@ -497,6 +499,8 @@ sequenceDiagram
 ```
 
 Runner把初始创建的Thread ID集合只保存在临时内存，不写入证据；每轮分页必须与该集合完全相等，不能只比较总数。空页、重复、缺页、游标不收敛、启动/列表超时均抛稳定错误且不能发布部分Run。正式基线参数要求至少500 Thread、至少三次正式重启，且与当前干净Git Revision一致；缩小CI负载仅为`unverified`。[`publish_measured_run`](../../scripts/soak_run_common.py)复用与长会话相同的Manifest组装、样本校验、最后提交标记及磁盘重读，不增加第二套证据格式。当前场景尚不测完整产品启动、不执行Action故障矩阵，也尚未保存异常结束的低敏失败事实。
+
+启动/分页测量分别采用`startup_timeout_seconds`和`page_timeout_seconds`。超时只将本次测量分类为失败，不立即取消正在执行SQLite I/O的Task；先`shield`并等待该Task自然收敛，再关闭Runtime和临时目录，避免Windows将仍在使用的`session.db`误删。**这不是硬退出保证**：若底层I/O永久不返回，排空仍可能无限等待；独立进程级Watchdog、失败Run留存和真实Windows压力验证属于0.9.3d未关闭工作。不能把本地通过或旧Revision的单次macOS数值解释为这些失败边界已达生产要求。
 
 ## 12. 数据结构与重点字段
 
@@ -835,3 +839,5 @@ run_scenario(scenario, seed, environment):
 | 10 | `1f5df16cc3ccd29914d6496118acaeff94caa868` | 2026-09-23 | 实现真实Agent Runtime长会话场景的预热、正式采样、Replay、RSS/DB/WAL水位及Run发布/重读；缩小负载仅`unverified`，正式Revision须干净，失败事实持久化及其他场景仍未完成。 |
 | 11 | `8d94aa8d6d4d6fa1fdc7fab32b8235a057cd5720` | 2026-09-23 | 补齐多Thread场景冷/热启动测量与样本白名单之间的合同缺口，增加独立`app_service_startup`指标，并明确其与完整产品`product_startup`不可比较。 |
 | 12 | `406aeef55820c70b80768de9ff6aa8462dac4c7b` | 2026-09-23 | 增加多Thread真实应用服务分页、启动恢复和集合核对Runner；抽取两个场景共用的低敏采样/Manifest发布逻辑，保留缩小负载非正式状态。 |
+| 13 | `d64054638a03bca008f5b392fd0edf23aa4cd63b` | 2026-09-23 | 归档macOS 500 Thread单次正式规模基线原始文件及重算结果，明确它不构成阈值PASS或三平台验收。 |
+| 14 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` | 2026-09-23 | 根据CI macOS/Windows失败，拆分启动与分页期限，超时后排空在途SQLite任务再清理；把旧Run降为历史诊断证据并登记进程级Watchdog缺口。 |
