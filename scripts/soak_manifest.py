@@ -11,6 +11,11 @@ from pydantic import Field, StrictBool, StrictInt, model_validator
 from harnessix.domain.models import ContractModel
 from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
+from scripts.soak_restart_proof import (
+    RESTART_PROOF_FILENAME,
+    SoakRestartProof,
+    verify_restart_proof,
+)
 from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file
 from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles, SoakSample
 from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof, verify_sdk_proof
@@ -37,9 +42,18 @@ SCENARIO_BOUNDARY: dict[str, str] = {
 class SoakProviderEvidence(ContractModel):
     """只记录模型脚本身份和请求计数。"""
 
-    mode: Literal["deterministic_stateless_v1"]
-    script_version: Literal["harnessix.soak-provider/v1"]
+    mode: Literal["deterministic_stateless_v1", "product_no_turn_v1"]
+    script_version: Literal["harnessix.soak-provider/v1", "harnessix.product-no-turn/v1"]
     request_count: StrictInt = Field(ge=0)
+
+    @model_validator(mode="after")
+    def matching_mode(self) -> Self:
+        if self.mode == "product_no_turn_v1":
+            if self.script_version != "harnessix.product-no-turn/v1" or self.request_count != 0:
+                raise ValueError("无Turn产品证据不得记录模型请求")
+        elif self.script_version != "harnessix.soak-provider/v1":
+            raise ValueError("确定性模型脚本版本不匹配")
+        return self
 
 
 class SoakLoad(ContractModel):
@@ -134,6 +148,10 @@ class SoakManifest(ContractModel):
             raise ValueError("Artifact增长场景必须携带v3证明")
         if self.scenario_id == "sdk_capacity" and self.spec_version != "harnessix.soak-manifest/v4":
             raise ValueError("SDK容量场景必须携带v4证明")
+        if self.scenario_id == "restart" and self.spec_version != "harnessix.soak-manifest/v5":
+            raise ValueError("产品重启场景必须携带v5证明")
+        if (self.scenario_id == "restart") != (self.provider.mode == "product_no_turn_v1"):
+            raise ValueError("重启场景必须使用无Turn产品Provider证据")
         if (
             self.started_at.utcoffset() != UTC.utcoffset(None)
             or self.ended_at.utcoffset() != UTC.utcoffset(None)
@@ -157,6 +175,8 @@ class SoakManifest(ContractModel):
             evidence_files.add(ARTIFACT_PROOF_FILENAME)
         if self.spec_version == "harnessix.soak-manifest/v4":
             evidence_files.add(SDK_PROOF_FILENAME)
+        if self.spec_version == "harnessix.soak-manifest/v5":
+            evidence_files.add(RESTART_PROOF_FILENAME)
         if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
@@ -288,6 +308,63 @@ class SoakManifestV4(SoakManifest):
         ):
             raise ValueError("正式SDK基线需要协商64容量、一次预热及三轮正式负载")
         return self
+
+
+class SoakManifestV5(SoakManifest):
+    """完整产品重启阶段证明版；v1～v4的原始证据不改变。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v5"]
+    scenario_version: Literal["harnessix.soak-scenario/v5"]
+    scenario_id: Literal["restart"]
+    restart_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.restart_proof_sha256 != self.evidence_sha256[RESTART_PROOF_FILENAME]:
+            raise ValueError("重启证明摘要与证据索引不一致")
+        if (
+            self.load.turn_count != 0
+            or self.load.thread_count == 0
+            or self.load.artifact_count != 0
+            or self.load.pending_limit is not None
+            or self.load.fault_matrix_version != "product-restart-v1"
+            or self.load.warmup_count != 1
+            or self.fault_counts.eof != 1
+            or self.sample_counts["rss_peak"] != 1
+            or self.file_watermarks.db_after_bytes == 0
+            or self.file_watermarks.artifact_before_bytes != 0
+            or self.file_watermarks.artifact_after_bytes != 0
+            or any(
+                value != 0 for key, value in self.fault_counts.model_dump().items() if key != "eof"
+            )
+        ):
+            raise ValueError("产品重启负载或故障计数无效")
+        if self.status == "baseline" and (
+            self.load.thread_count < 500 or self.sample_counts["product_startup"] < 3
+        ):
+            raise ValueError("正式重启基线需要500 Thread和至少3次新进程启动")
+        return self
+
+
+def verify_restart_manifest(
+    manifest: SoakManifestV5, proof: SoakRestartProof, samples: tuple[SoakSample, ...]
+) -> None:
+    """从正式样本与产品文件水位交叉核验完整产品重启证明。"""
+
+    verify_restart_proof(
+        proof,
+        run_id=manifest.run_id,
+        thread_count=manifest.load.thread_count,
+        warmup_count=manifest.load.warmup_count,
+        measured_restarts=manifest.sample_counts["product_startup"],
+        fault_eof=manifest.fault_counts.eof,
+        rss_peak_bytes=manifest.rss.peak_bytes,
+        db_before_bytes=manifest.file_watermarks.db_before_bytes,
+        db_after_bytes=manifest.file_watermarks.db_after_bytes,
+        wal_before_bytes=manifest.file_watermarks.wal_before_bytes,
+        wal_after_bytes=manifest.file_watermarks.wal_after_bytes,
+        samples=samples,
+    )
 
 
 def verify_sdk_manifest(

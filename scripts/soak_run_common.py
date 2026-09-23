@@ -21,11 +21,13 @@ from scripts.soak_manifest import (
     SoakManifestV2,
     SoakManifestV3,
     SoakManifestV4,
+    SoakManifestV5,
     SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
 )
 from scripts.soak_provider import SoakProvider
+from scripts.soak_restart_proof import RESTART_PROOF_FILENAME, SoakRestartProof
 from scripts.soak_rss import RssObservation
 from scripts.soak_sample_file import SAMPLE_FILENAME, sample_sha256
 from scripts.soak_samples import ScenarioId, SoakSample, validate_sample_series
@@ -121,7 +123,8 @@ def publish_measured_run(
     started_at: datetime,
     load: SoakLoad,
     samples: tuple[SoakSample, ...],
-    provider: SoakProvider,
+    provider: SoakProvider | None,
+    restart_proof: SoakRestartProof | None = None,
     rss: RssObservation,
     file_watermarks: SoakFileWatermarks,
     baseline: bool,
@@ -131,15 +134,22 @@ def publish_measured_run(
     sdk_proof: SoakSdkProof | None = None,
     fault_counts: SoakFaultCounts | None = None,
     summary_request_count: int | None = None,
-) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4]:
+) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4 | SoakManifestV5]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
     sample_counts: dict[str, int] = {}
     for sample in samples:
         if sample.phase == "measure":
             sample_counts[sample.metric] = sample_counts.get(sample.metric, 0) + 1
-    if sum(proof is not None for proof in (context_proof, artifact_proof, sdk_proof)) > 1:
+    proofs = (context_proof, artifact_proof, sdk_proof, restart_proof)
+    if sum(proof is not None for proof in proofs) > 1:
         raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
+    if restart_proof is not None and (
+        scenario_id != "restart" or summary_request_count is not None
+    ):
+        raise KernelError("soak_restart_proof_invalid", "重启证明与场景不匹配")
+    if (restart_proof is None) == (provider is None):
+        raise KernelError("soak_evidence_invalid", "模型场景与无Turn产品场景的Provider不匹配")
     if artifact_proof is not None and (
         scenario_id != "artifact_growth" or summary_request_count is not None
     ):
@@ -156,10 +166,18 @@ def publish_measured_run(
         scenario_id=scenario_id,
         measurement_boundary=SCENARIO_BOUNDARY[scenario_id],
         seed=seed,
-        provider=SoakProviderEvidence(
-            mode="deterministic_stateless_v1",
-            script_version=SoakProvider.SCRIPT_VERSION,
-            request_count=provider.request_count,
+        provider=(
+            SoakProviderEvidence(
+                mode="product_no_turn_v1",
+                script_version="harnessix.product-no-turn/v1",
+                request_count=0,
+            )
+            if restart_proof is not None
+            else SoakProviderEvidence(
+                mode="deterministic_stateless_v1",
+                script_version=SoakProvider.SCRIPT_VERSION,
+                request_count=provider.request_count if provider is not None else 0,
+            )
         ),
         platform=environment.platform,
         python_version=environment.python_version,
@@ -198,8 +216,8 @@ def publish_measured_run(
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
         threshold_profile_ref=threshold_profile_ref,
     )
-    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4
-    if artifact_proof is None and sdk_proof is None:
+    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4 | SoakManifestV5
+    if artifact_proof is None and sdk_proof is None and restart_proof is None:
         manifest = SoakManifest.model_validate(manifest_data)
     elif artifact_proof is not None:
         proof_digest = sha256((artifact_proof.model_dump_json() + "\n").encode()).hexdigest()
@@ -215,7 +233,7 @@ def publish_measured_run(
                 },
             }
         )
-    else:
+    elif sdk_proof is not None:
         assert sdk_proof is not None
         proof_digest = sha256((sdk_proof.model_dump_json() + "\n").encode()).hexdigest()
         manifest = SoakManifestV4.model_validate(
@@ -227,6 +245,21 @@ def publish_measured_run(
                 "evidence_sha256": {
                     SAMPLE_FILENAME: sample_sha256(samples),
                     SDK_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
+    else:
+        assert restart_proof is not None
+        proof_digest = sha256((restart_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV5.model_validate(
+            {
+                **manifest_data,
+                "spec_version": "harnessix.soak-manifest/v5",
+                "scenario_version": "harnessix.soak-scenario/v5",
+                "restart_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: sample_sha256(samples),
+                    RESTART_PROOF_FILENAME: proof_digest,
                 },
             }
         )
@@ -256,6 +289,7 @@ def publish_measured_run(
         context_proof=context_proof,
         artifact_proof=artifact_proof,
         sdk_proof=sdk_proof,
+        restart_proof=restart_proof,
     )
     restored, _ = read_published_run(run_directory)
     if restored != manifest:

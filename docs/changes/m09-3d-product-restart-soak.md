@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: a5bd4ffc4f01593c566164d285948b1d3890a9fb
 owners:
   - core
@@ -22,6 +22,7 @@ related_tests:
   - tests/benchmarks/test_soak_many_threads.py
   - tests/benchmarks/test_soak_evidence.py
   - tests/benchmarks/test_soak_threshold.py
+  - tests/benchmarks/test_soak_restart_proof.py
 supersedes: []
 ---
 
@@ -33,7 +34,7 @@ supersedes: []
 |---|---|
 | 需求 | 在真实`harnessix agent-server`产品组合根上，以相同持久State验证首次启动、500 Thread增长、受控硬退出后的恢复和多次新进程重启，并形成可独立读取的低敏发布证据。 |
 | 当前差距 | 现有[`run_many_threads`](../../scripts/soak_many_threads.py)只测Agent Runtime与App Service，不包含Product Config预检、Trusted Action扫描、stdio握手和完整产品装配；`restart`场景虽然已在样本白名单中预留，但没有Runner、Proof或正式阈值。 |
-| 本设计状态 | 评审中；本文件定义实现合同，不宣称Runner或三平台正式运行已完成。 |
+| 本设计状态 | 评审中；V5 Proof、Manifest、发布器和独立Reader已实现，真实产品Runner、三平台正式运行及冻结阈值尚未完成。 |
 | 测量边界 | `product_startup`：新子进程首次`client.initialize()`开始至Agent Protocol完成握手，随后以全量列表、持久恢复报告和关闭结果证明可用。 |
 | 发布边界 | 基线、单平台Profile、负载前预绑定的第二独立Run、报告及常规CI分别验收；单次运行永不自称PASS。 |
 
@@ -119,6 +120,12 @@ sequenceDiagram
 
 正式Profile冻结必须要求相同平台、Python小版本范围、硬件档位和确切负载，不得跨平台共享绝对时延数值。当前[`soak_threshold.py`](../../scripts/soak_threshold.py)拒绝`restart`；只有V5 Proof/Reader和真实基线完成后才允许扩展白名单。
 
+### 6.2 已实现的V5证据合同
+
+[`SoakRestartProof`](../../scripts/soak_restart_proof.py)包含一段空State预热、一段受控硬退出和至少三段独立正式启动；每段保存完整Thread集合摘要、Owner代际、产品配置库中可重读的低敏恢复扫描/报告合同，以及正常关闭或硬退出状态。扫描/报告沿用生产合同自校验的摘要；Reader核对周期顺序、代际严格递增、集合摘要不漂移和ACK与EOF同时成立，不把普通子进程异常计为计划内故障。此证据只能证明Runner声称并发布的低敏事实内部一致；实际进程、SQLite和Thread列表的真实性仍须由待实现Runner在采集时读取验证，不能从Manifest自行推导。
+
+`SoakManifestV5`强制`restart/product_startup`、无Turn Provider身份、模型请求零、一次预热、一次预期EOF、RSS正式样本一件、Artifact水位零和全部产品SQLite逻辑文件白名单。正式基线还要求500 Thread、至少三次新进程测量和已验证RSS单位。旧v1～v4模型、文件集合与规范序列化不改动；V5仅额外写入`restart-proof.json`，并在最后写入`COMMITTED.json`。发布器先交叉验证Proof、样本索引、RSS及逐文件DB/WAL水位总和；独立Reader从磁盘重新验证规范字节、摘要、场景不变量、样本统计和Proof。证据文件摘要不能证明子进程曾真实运行；该边界由下一切片的跨进程回归与正式Run补齐。
+
 ## 7. 数据流、持久化、事务与幂等
 
 私有临时根将配置、固定Workspace、持久产品State、受控退出门闩和子进程RSS夹具分离；配置不放进Workspace，State与Workspace互不包含。Session Thread由真实SDK在预热进程创建，后续启动只读核对，不重发创建命令。故障门闩只由包装器读，不进入Agent Protocol。Product State包含Session、Product Config、Execution Plan、Action Audit、Workspace Lease及Transaction等固定SQLite文件；主文件和WAL的总端点水位按白名单统计，新增未知文件拒绝或显式版本升级，不能静默忽略。
@@ -168,7 +175,7 @@ on_failure: converge_child_and_record_failed_attempt_without_partial_pass()
 | 顺序 | 当前事实与将修改位置 | 验收 |
 |---|---|---|
 | 1 | [`product_config/server.py`](../../src/harnessix/product_config/server.py)当前真实组合根保持不变；新增独立子进程包装器，仅调用其公共入口 | 小负载在macOS/Linux/Windows均能握手、创建、关闭和重开同一State，Provider零请求。 |
-| 2 | [`soak_manifest.py`](../../scripts/soak_manifest.py)、[`soak_evidence.py`](../../scripts/soak_evidence.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py)新增V5字段、Proof白名单和Reader；历史v1～v4不变 | 摘要篡改、阶段数、Fence、Thread摘要、RSS和故障计数错误均被拒绝。 |
+| 2 | [`soak_manifest.py`](../../scripts/soak_manifest.py)、[`soak_evidence.py`](../../scripts/soak_evidence.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py)已新增V5字段、Proof白名单和Reader；历史v1～v4不变 | [V5证据回归](../../tests/benchmarks/test_soak_restart_proof.py)覆盖发布/重读、摘要篡改、负载门槛与Thread集合漂移；真实Runner验收待完成。 |
 | 3 | 新增Restart Runner及回归；复用[`soak_attempt.py`](../../scripts/soak_attempt.py)、[`soak_rss.py`](../../scripts/soak_rss.py) | 真实负载、超时/硬退出/失败Attempt、无部分Run、Windows句柄清理。 |
 | 4 | [`soak_threshold.py`](../../scripts/soak_threshold.py)只在V5可独立重算且正式基线归档后扩展 | 三平台各自冻结Profile，第二独立Run在负载前预绑定，独立报告PASS/FAIL且不可覆盖。 |
 
