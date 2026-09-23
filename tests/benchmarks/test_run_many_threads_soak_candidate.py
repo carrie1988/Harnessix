@@ -8,6 +8,7 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from scripts import run_many_threads_soak_candidate as candidate_script
+from scripts.soak_environment import read_environment
 from scripts.soak_manifest import SoakProfileReference
 from scripts.soak_threshold import publish_profile, read_profile
 from tests.benchmarks.test_soak_threshold import REVISION, _profile, _run
@@ -131,12 +132,10 @@ def test_worker_redacts_private_failure_text(
 async def test_candidate_reuses_sealed_baseline_and_publishes_independent_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    platform = "macos"
+    # 合成基线使用当前平台采集；预检平台必须与该原件一致。
+    platform = read_environment().platform
     archive = tmp_path / "archive"
     monkeypatch.setattr(candidate_script, "_ARCHIVE", archive)
-    monkeypatch.setattr(
-        candidate_script, "read_environment", lambda: SimpleNamespace(platform=platform)
-    )
     monkeypatch.setattr(candidate_script, "_revision", lambda: REVISION)
     baseline_directory, baseline = _run(archive / "raw" / platform, latency=100)
     from scripts.soak_evidence import read_published_run
