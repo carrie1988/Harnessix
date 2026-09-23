@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
+version: 5
 code_revision: 60d6c1b851789efdd9a3cf5029587ffef0b3077d
 owners:
   - core
@@ -126,3 +126,5 @@ return success_only_when(report.status == PASS)
 [三平台v6基线归档](../validation/soak-many-threads-three-platform-2026-09-23-v2/README.md)已包含三个从各自基线形成的封印Profile，规范字节SHA、数学余量、文件摘要及来源CI均已复核。[候选工作流35879251986](https://github.com/carrie1988/Harnessix/actions/runs/35879251986)三平台均生成`PASS/within_limits`原始报告；ZIP、Run、Attempt、Profile、逐页证明、样本分位数及独立重算报告均已核对。但是同Revision的常规CI在Linux Python 3.13和Windows失败，故该候选**不作为场景关闭证据**；冻结Profile保持原样，修复后须在新Revision重新执行第二独立候选。
 
 失败定位到[`test_candidate_reuses_sealed_baseline_and_publishes_independent_pass`](../../tests/benchmarks/test_run_many_threads_soak_candidate.py)：测试辅助函数[`_run`](../../tests/benchmarks/test_soak_threshold.py)按实际宿主平台写入合成基线，原测试却把候选入口的平台强制设为`macos`。非macOS环境因此在负载前命中`soak_profile_baseline_invalid`，并非候选运行期性能越限。现行测试改为使用实际平台作为Profile与候选入口的共同身份，保留生产预检的严格平台匹配；新Revision仍需完整矩阵CI和真实三平台候选复验。[旧Revision的24份候选原件](../validation/soak-many-threads-three-platform-candidate-2026-09-23-v1/README.md)已归档为诊断，不可把测试修复追认成旧Revision的CI成功。
+
+Revision `807e688988245fcbb269f0c04013ed9a9ca6ea9d`重新执行了同一封印Profile的[三平台候选](../validation/soak-many-threads-three-platform-candidate-2026-09-23-v2/README.md)：Linux/Windows报告PASS，macOS报告`FAIL/limit_exceeded`。越限项为启动P95/P99和分页P99；完整原始Run/Attempt/Report、逐轮页样本及独立复验均确认该结论。四轮中的第二轮正式重启与首个分页出现最大时延，但当前原件未记录足以排他归因的主机CPU/I/O数据；不将环境抖动或产品回归任一假说冒充根因。本轮FAIL保留为正式诊断，不能改写冻结阈值或只挑通过轮次。下一步需补充分段计时及宿主资源证据，再据根因决定修复、环境失配判定或采样/阈值设计重审。
