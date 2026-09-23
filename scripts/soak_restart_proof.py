@@ -9,10 +9,19 @@ from pydantic import Field, StrictBool, StrictInt, model_validator
 from harnessix.domain.models import ContractModel
 from harnessix.product_config.action_contracts import ProductActionStartupRecoveryReport
 from harnessix.trusted_actions.recovery_contracts import ActionRecoveryScanReport
+from scripts.soak_rss import RssObservation
 from scripts.soak_samples import SoakSample
 
 RESTART_PROOF_FILENAME = "restart-proof.json"
 MAX_RESTART_PROOF_BYTES = 128 * 1024
+
+
+class SoakRestartChildResult(ContractModel):
+    """正常退出的完整产品子进程峰值RSS，仅作为私有采集夹具。"""
+
+    spec_version: Literal["harnessix.soak-restart-child/v1"]
+    rss: RssObservation
+
 
 # 固定当前产品组合根的SQLite文件，不把宿主路径写入证据。
 PRODUCT_DB_FILES = frozenset(
