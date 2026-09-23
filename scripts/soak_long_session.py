@@ -227,7 +227,11 @@ async def _run_long_session(
 
     run_id = uuid4().hex
     with attempt_scope(
-        evidence_root, run_id=run_id, code_revision=code_revision, scenario_id="long_session"
+        evidence_root,
+        run_id=run_id,
+        code_revision=code_revision,
+        scenario_id="long_session",
+        threshold_profile_ref=threshold_profile_ref,
     ) as attempt:
         environment = read_environment()
         started_at = datetime.now(UTC)

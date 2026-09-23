@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -20,7 +21,7 @@ from scripts.soak_evidence import (
     _write_file,
     read_published_run,
 )
-from scripts.soak_manifest import SoakManifest
+from scripts.soak_manifest import SoakManifest, SoakProfileReference
 from scripts.soak_samples import ScenarioId
 
 STARTED_FILENAME = "STARTED.json"
@@ -43,6 +44,13 @@ class SoakAttemptStart(ContractModel):
         if self.started_at.utcoffset() != UTC.utcoffset(None):
             raise ValueError("Attempt启动时间必须为UTC")
         return self
+
+
+class SoakAttemptStartV2(SoakAttemptStart):
+    """候选负载开始前持久绑定冻结阈值，v1历史字节保持不变。"""
+
+    spec_version: Literal["harnessix.soak-attempt-start/v2"]
+    threshold_profile_ref: SoakProfileReference
 
 
 class SoakAttemptFinal(ContractModel):
@@ -71,17 +79,30 @@ def _canonical(value: ContractModel) -> bytes:
 
 
 def begin_attempt(
-    evidence_root: Path, *, run_id: str, code_revision: str, scenario_id: ScenarioId
+    evidence_root: Path,
+    *,
+    run_id: str,
+    code_revision: str,
+    scenario_id: ScenarioId,
+    threshold_profile_ref: SoakProfileReference | None = None,
 ) -> Path:
     """排他创建Attempt目录；STARTED落盘后才允许真实负载。"""
 
-    started = SoakAttemptStart(
-        spec_version="harnessix.soak-attempt-start/v1",
-        run_id=run_id,
-        code_revision=code_revision,
-        scenario_id=scenario_id,
-        started_at=datetime.now(UTC),
-    )
+    fields = {
+        "run_id": run_id,
+        "code_revision": code_revision,
+        "scenario_id": scenario_id,
+        "started_at": datetime.now(UTC),
+    }
+    started: SoakAttemptStart | SoakAttemptStartV2
+    if threshold_profile_ref is None:
+        started = SoakAttemptStart(spec_version="harnessix.soak-attempt-start/v1", **fields)
+    else:
+        started = SoakAttemptStartV2(
+            spec_version="harnessix.soak-attempt-start/v2",
+            threshold_profile_ref=threshold_profile_ref,
+            **fields,
+        )
     _ensure_private_root(evidence_root)
     attempts_root = evidence_root / "attempts"
     _ensure_private_root(attempts_root)
@@ -95,15 +116,27 @@ def begin_attempt(
     return attempt_directory
 
 
-def _started(attempt_directory: Path) -> SoakAttemptStart:
+def _started(attempt_directory: Path) -> SoakAttemptStart | SoakAttemptStartV2:
     try:
         body = _read_file(attempt_directory, STARTED_FILENAME, MAX_ATTEMPT_BYTES)
-        started = SoakAttemptStart.model_validate_json(body)
+        envelope = json.loads(body)
+        if not isinstance(envelope, dict):
+            raise ValueError
+        if envelope.get("spec_version") == "harnessix.soak-attempt-start/v2":
+            started = SoakAttemptStartV2.model_validate_json(body)
+        elif envelope.get("spec_version") == "harnessix.soak-attempt-start/v1":
+            started = SoakAttemptStart.model_validate_json(body)
+        else:
+            raise ValueError
         if body != _canonical(started) or started.run_id != attempt_directory.name:
             raise ValueError
     except (KernelError, ValueError):
         raise KernelError("soak_attempt_invalid", "Soak Attempt启动证据无效") from None
     return started
+
+
+def _bound_profile(started: SoakAttemptStart | SoakAttemptStartV2) -> SoakProfileReference | None:
+    return started.threshold_profile_ref if isinstance(started, SoakAttemptStartV2) else None
 
 
 def _published_manifest(attempt_directory: Path) -> tuple[SoakManifest, str] | None:
@@ -134,6 +167,10 @@ def finish_attempt(
             or manifest.run_id != started.run_id
             or manifest.scenario_id != started.scenario_id
             or manifest.code_revision != started.code_revision
+            or manifest.threshold_profile_ref != _bound_profile(started)
+            or (
+                isinstance(started, SoakAttemptStartV2) and manifest.started_at < started.started_at
+            )
         ):
             raise KernelError("soak_attempt_invalid", "Attempt与已提交Run不一致")
     elif published is not None:
@@ -149,7 +186,9 @@ def finish_attempt(
     _write_file(attempt_directory, FINAL_FILENAME, _canonical(final), MAX_ATTEMPT_BYTES)
 
 
-def read_attempt(attempt_directory: Path) -> tuple[SoakAttemptStart, SoakAttemptFinal | None]:
+def read_attempt(
+    attempt_directory: Path,
+) -> tuple[SoakAttemptStart | SoakAttemptStartV2, SoakAttemptFinal | None]:
     """严格读取；只有STARTED表示硬退出或终态提交窗口中断。"""
 
     try:
@@ -168,6 +207,16 @@ def read_attempt(attempt_directory: Path) -> tuple[SoakAttemptStart, SoakAttempt
             body != _canonical(final)
             or final.run_id != started.run_id
             or final.finished_at < started.started_at
+            or (
+                published is not None
+                and (
+                    published[0].threshold_profile_ref != _bound_profile(started)
+                    or (
+                        isinstance(started, SoakAttemptStartV2)
+                        and published[0].started_at < started.started_at
+                    )
+                )
+            )
             or (
                 final.outcome == "committed"
                 and (published is None or published[1] != final.manifest_sha256)
@@ -212,7 +261,12 @@ class AttemptHandle:
 
 @contextmanager
 def attempt_scope(
-    evidence_root: Path, *, run_id: str, code_revision: str, scenario_id: ScenarioId
+    evidence_root: Path,
+    *,
+    run_id: str,
+    code_revision: str,
+    scenario_id: ScenarioId,
+    threshold_profile_ref: SoakProfileReference | None = None,
 ) -> Iterator[AttemptHandle]:
     """任意异常保留失败事实；硬退出至少保留STARTED。"""
 
@@ -222,6 +276,7 @@ def attempt_scope(
             run_id=run_id,
             code_revision=code_revision,
             scenario_id=scenario_id,
+            threshold_profile_ref=threshold_profile_ref,
         )
     )
     try:

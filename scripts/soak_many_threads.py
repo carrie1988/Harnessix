@@ -176,7 +176,11 @@ async def run_many_threads(
 
     run_id = uuid4().hex
     with attempt_scope(
-        evidence_root, run_id=run_id, code_revision=code_revision, scenario_id="many_threads"
+        evidence_root,
+        run_id=run_id,
+        code_revision=code_revision,
+        scenario_id="many_threads",
+        threshold_profile_ref=threshold_profile_ref,
     ) as attempt:
         environment = read_environment()
         started_at = datetime.now(UTC)

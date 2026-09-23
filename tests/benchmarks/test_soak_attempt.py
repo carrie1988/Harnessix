@@ -10,12 +10,14 @@ from harnessix.agent.errors import KernelError
 from scripts.soak_attempt import (
     FINAL_FILENAME,
     STARTED_FILENAME,
+    SoakAttemptStartV2,
     attempt_scope,
     begin_attempt,
     finish_attempt,
     read_attempt,
 )
 from scripts.soak_evidence import publish_run
+from scripts.soak_manifest import SoakProfileReference
 from tests.benchmarks.test_soak_evidence import _input
 
 
@@ -31,6 +33,10 @@ def test_started_only_is_incomplete_and_failure_is_durable(tmp_path) -> None:
 
     started, final = read_attempt(directory)
     assert started.run_id == manifest.run_id
+    assert (
+        directory.joinpath(STARTED_FILENAME).read_bytes()
+        == (started.model_dump_json() + "\n").encode()
+    )
     assert final is None
     assert {path.name for path in directory.iterdir()} == {STARTED_FILENAME}
 
@@ -160,3 +166,52 @@ def test_run_published_before_terminal_attempt_remains_incomplete(tmp_path) -> N
     assert (root / manifest.run_id / "COMMITTED.json").exists()
     _, final = read_attempt(root / "attempts" / manifest.run_id)
     assert final is None
+
+
+def test_candidate_profile_must_be_bound_before_run_publication(tmp_path) -> None:
+    manifest, samples = _input()
+    root = tmp_path / "evidence"
+    reference = SoakProfileReference(profile_id="a" * 32, sha256="b" * 64)
+    candidate = manifest.model_copy(
+        update={"status": "unverified", "threshold_profile_ref": reference}
+    )
+
+    with pytest.raises(KernelError) as uncommitted:
+        with attempt_scope(
+            root,
+            run_id=manifest.run_id,
+            code_revision=manifest.code_revision,
+            scenario_id=manifest.scenario_id,
+        ) as attempt:
+            run_directory, _ = publish_run(root, candidate, samples)
+            with pytest.raises(KernelError) as error:
+                attempt.commit(run_directory)
+            assert error.value.code == "soak_attempt_invalid"
+    assert uncommitted.value.code == "soak_attempt_uncommitted"
+
+    started, final = read_attempt(root / "attempts" / manifest.run_id)
+    assert not isinstance(started, SoakAttemptStartV2)
+    assert final is None
+
+
+def test_candidate_start_v2_is_durable_before_load_and_rejects_mismatched_run(tmp_path) -> None:
+    manifest, samples = _input()
+    root = tmp_path / "evidence"
+    reference = SoakProfileReference(profile_id="a" * 32, sha256="b" * 64)
+    directory = begin_attempt(
+        root,
+        run_id=manifest.run_id,
+        code_revision=manifest.code_revision,
+        scenario_id=manifest.scenario_id,
+        threshold_profile_ref=reference,
+    )
+    started, final = read_attempt(directory)
+    assert isinstance(started, SoakAttemptStartV2)
+    assert started.threshold_profile_ref == reference
+    assert final is None
+
+    _, digest = publish_run(root, manifest, samples)
+    with pytest.raises(KernelError) as error:
+        finish_attempt(directory, outcome="committed", phase="publishing", manifest_sha256=digest)
+    assert error.value.code == "soak_attempt_invalid"
+    assert read_attempt(directory)[1] is None

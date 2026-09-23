@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from scripts.soak_attempt import attempt_scope
+from scripts.soak_attempt import SoakAttemptStartV2, attempt_scope, read_attempt
 from scripts.soak_environment import read_environment
 from scripts.soak_manifest import (
     SoakFaultCounts,
@@ -50,7 +50,11 @@ def _run(root, *, latency: int, complete_attempt: bool = True, profile_ref=None)
     ) + (rss_sample(run_id, "many_threads", 7, rss),)
     try:
         with attempt_scope(
-            root, run_id=run_id, code_revision=REVISION, scenario_id="many_threads"
+            root,
+            run_id=run_id,
+            code_revision=REVISION,
+            scenario_id="many_threads",
+            threshold_profile_ref=profile_ref,
         ) as attempt:
             directory, manifest = publish_measured_run(
                 root,
@@ -161,6 +165,10 @@ def test_independent_run_passes_only_with_frozen_complete_evidence(tmp_path) -> 
     assert candidate.threshold_profile_ref == SoakProfileReference(
         profile_id=profile.profile_id, sha256=profile_sha
     )
+    started, _ = read_attempt(candidate_dir.parent / "attempts" / candidate.run_id)
+    assert isinstance(started, SoakAttemptStartV2)
+    assert started.threshold_profile_ref == candidate.threshold_profile_ref
+    assert started.started_at <= candidate.started_at
 
     report_dir, report = verify_and_publish(
         profile_dir, baseline_dir, candidate_dir, tmp_path / "reports"
@@ -211,6 +219,28 @@ def test_candidate_without_bound_profile_cannot_pass(tmp_path) -> None:
     )
     _, wrong = verify_and_publish(profile_dir, baseline_dir, wrong_dir, tmp_path / "reports")
     assert wrong.status == "unverified" and wrong.reason == "profile_mismatch"
+
+
+def test_candidate_start_binding_tamper_cannot_pass(tmp_path) -> None:
+    from scripts.soak_evidence import read_published_run
+
+    baseline_dir, baseline = _run(tmp_path / "baseline", latency=100)
+    _, digest = read_published_run(baseline_dir)
+    profile = _profile(baseline, digest)
+    profile_dir, profile_sha = publish_profile(tmp_path / "profiles", profile, baseline_dir)
+    candidate_dir, candidate = _run(
+        tmp_path / "candidate",
+        latency=100,
+        profile_ref=SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha),
+    )
+    started_file = candidate_dir.parent / "attempts" / candidate.run_id / "STARTED.json"
+    started_file.write_bytes(started_file.read_bytes().replace(profile_sha.encode(), b"0" * 64))
+
+    with pytest.raises(KernelError) as error:
+        read_attempt(started_file.parent)
+    assert error.value.code == "soak_attempt_invalid"
+    _, report = verify_and_publish(profile_dir, baseline_dir, candidate_dir, tmp_path / "reports")
+    assert report.status == "unverified" and report.reason == "evidence_invalid"
 
 
 def test_tamper_incomplete_attempt_and_invalid_profile_cannot_pass(tmp_path) -> None:
