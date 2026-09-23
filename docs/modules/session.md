@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: cb3f3ea834624d5a8f84396952eba212650065d1
+version: 8
+code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
 modules:
@@ -351,12 +351,22 @@ Session恢复只重建领域投影，不自动重放Provider、Tool、Patch或Pr
 - 读操作使用独立连接和`BEGIN`，写操作使用`BEGIN IMMEDIATE`；SQLite负责跨连接串行写；
 - `busy_timeout=5000`应用于普通连接，WAL切换使用显式5秒Deadline；
 - Runtime Owner是进程级跨平台文件锁，进程异常退出由OS释放；对象Token只保护同实例退出清理；
-- `storage_errors`只包围锁目录、打开、获取和关闭I/O，不跨越`yield`包围Runtime应用生命周期；应用产生的
-  `OSError`或`TimeoutError`必须保持原类型，不能伪装成Session存储故障；
+- Runtime Owner中的`storage_errors`只包围锁目录、打开、获取和关闭I/O，不跨越`yield`包围Runtime应用生命周期；
+  该作用域内应用产生的`OSError`或`TimeoutError`保持原类型，不伪装成Session存储故障。Session连接作用域
+  另对SQLite驱动及文件系统操作执行稳定错误归一化；
 - `append/fork/rebuild`在异常或`CancelledError`下由连接Context回滚；Commit已成功但响应丢失时靠Event ID幂等；
+- `_session_connection`把`aiosqlite`连接建立和关闭作为受保护资源任务：调用方在打开期间取消，先等待连接任务结算并关闭；
+  在回滚或关闭期间再次取消，先等待资源任务结算再传播取消。`_connection`只委托该资源作用域，不能把
+  `async with aiosqlite.connect(...)`的入口取消留给驱动线程异步收尾，否则Windows临时数据库可能仍被占用。
+  该保证是连接句柄生命周期，不改变已提交事务的结果，也不把取消后的写入自动重试；
 - Store不实现无限内部重试，避免在调用方取消或超时后继续写入；
 - `PRAGMA synchronous=FULL`强化本地提交持久性，但不替代文件系统备份或灾难恢复；
 - Event顺序是强一致的Thread内序列，不声明不同Thread间的全局时间顺序。
+
+连接资源取消回归位于[`test_store.py`](../../tests/agent/test_store.py)：分别在真实连接已打开但入口尚未
+返回、以及真实关闭任务尚未结束时取消调用方，确认取消仍向上传播、连接已经关闭且状态文件可立即删除。
+Artifact Soak的Turn超时回归随后通过真实Agent/Store链验证失败Attempt及Windows临时目录清理；
+单平台本地通过不等于Windows发布验收，仍以对应Revision的原生CI为准。
 
 ## 15. 安全与隐私
 

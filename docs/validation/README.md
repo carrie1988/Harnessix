@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 9
-code_revision: d947a57aec68a5f9770a18d1996f58be0237e60d
+version: 10
+code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
 modules:
@@ -38,6 +38,8 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-23 | [macOS Artifact第二次规模诊断](soak-macos-artifact-2026-09-23-v2/README.md) | `c63f970f3386632b9720ae33d1a7f056e70c0510` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt重读和独立分位数/覆盖重算通过；对应Windows CI的Turn超时用例出现异步SQLite句柄清理失败 | 历史诊断证据；不得冻结Profile或判发布PASS |
+| 2026-09-23 | [macOS Artifact首次规模诊断](soak-macos-artifact-2026-09-23-v1/README.md) | `784cd54ec2383c6a3679d64db401ad4d3bf9b86a` | macOS Python 3.13.8、`c16-m48`、2预热+20正式件、20发布/195正式读取样本；无模型网络请求 | Run/Attempt重读和独立数值重算通过；对应Windows CI的只读SQLite连接未关闭 | 历史诊断证据；不得冻结Profile或判发布PASS |
 | 2026-09-23 | [macOS 500 Thread正式负载诊断](soak-macos-2026-09-23-v4/README.md) | `d947a57aec68a5f9770a18d1996f58be0237e60d` | macOS Python 3.13.8、`c16-m48`、500 Thread、3次正式重启、30个列表页样本；无模型请求 | Run/Attempt及独立标准库重算通过；启动P95 435170625 ns、列表页P95 431874209 ns；Windows Product UI首次尝试两项超时、第二次重跑成功 | 历史诊断证据；首次失败原因未明，不得冻结Profile或判断发布PASS |
 | 2026-09-23 | [macOS千Turn Context/Compaction v2规模基线](soak-macos-2026-09-23-v3/README.md) | `6c9a1577f467c99f0eb1b99d7c8270bc811ca583` | macOS、单Thread、5预热+1000正式Turn、无网络模型；1000时延和1个RSS样本、13255条低敏事件标记 | Run/Attempt复制件双重重读，正式Context检查1000、摘要及窗口199；P95 3153631375 ns、RSS峰值451936256字节；六实例CI通过 | 单平台单次基线；不得直接冻结Profile或判发布PASS |
 | 2026-09-23 | [macOS单Thread连续1000 Turn诊断事实](soak-macos-2026-09-23-v2/README.md) | `ed48e4e35133d60b172c268becd9e009eacb9442` | macOS Python 3.13.8、`c16-m48`、5预热+1000正式Turn、1000时延样本与1个RSS样本；无网络模型请求 | Run及Attempt复制件独立重算，P95 1173980291 ns、RSS峰值344817664字节；Revision六实例CI通过，但缺Context/Compaction专门断言 | 真实规模诊断事实，不用于冻结Profile，不关闭0.9.3d发布门禁 |

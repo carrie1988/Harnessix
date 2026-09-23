@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: d257f99b78a27fe70fbc16dc1d493494d1e7dfde
+version: 5
+code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
 modules:
@@ -161,7 +161,7 @@ finish_attempt(committed, manifest_digest)
 | 夹具生成超限或近上限正文不足 | `STARTED`及低敏失败阶段 | 不调整测试门槛来获得成功；修正有版本的夹具后用新Run |
 | Provider/Tool/Artifact发布失败或配额不足 | 原事务结果与失败Attempt | 不伪造Artifact；不发布有效Run |
 | 单件分页重复、缺页、引用或SHA不一致 | 失败Attempt | 不以首屏或条目数替代全页校验 |
-| 单次发布/读取超过显式期限 | 失败Attempt；在途SQLite任务先自然收敛 | 不在异步任务仍操作数据库时删除Windows临时目录；无法收敛需进程级隔离 |
+| 单次发布/读取超过显式期限 | 失败Attempt；在途SQLite任务先自然收敛 | `SQLiteSessionStore._session_connection`在打开/关闭时屏蔽提前退出，确保句柄完成关闭再清理Windows临时目录；无法收敛需进程级隔离 |
 | 清理仍受活动Turn保护或Tombstone/正文计数不符 | 失败Attempt | 不直接修改表或跳过引用校验 |
 | Run已提交而Attempt未提交 | 原样保留`STARTED`和Run | Reader可读Run，但独立阈值复验不得PASS |
 | 样本、Proof或Manifest缺失/篡改 | Reader拒绝 | 新Run，不覆盖或修补旧证据 |
@@ -181,6 +181,15 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 证据层已实现[`SoakArtifactProof`](../../scripts/soak_artifact_proof.py)、[`SoakManifestV3`](../../scripts/soak_manifest.py)、[`publish_run/read_published_run`](../../scripts/soak_evidence.py)和[`publish_measured_run`](../../scripts/soak_run_common.py)的v3分支。Proof白名单包含每件序号、阶段、大小类别、正文与记录数量、页数、发布样本索引和逐页读取样本索引，以及清理前后逻辑正文、过期/保护/Tombstone/Manifest计数。Reader在任何PASS判断前核对规范文件字节、SHA-256、精确文件集合、完整样本索引覆盖、阶段和顺序、Manifest负载及请求数；v1/v2原有文件集合和序列化路径不变。[合同回归](../../tests/benchmarks/test_soak_artifact_proof.py)覆盖v3发布/重读、缺失和篡改Proof、重复或缺失样本、清理与页数不一致及正式规模拒绝。
 
 真实负载层已实现[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)：固定Workspace文件产生3行小件和2500行近上限件，`Seed`只改变正式Turn的大小件顺序，不影响预热；Step1固定调用`grep`，Step2结束Turn。每件从真实ToolResult提取引用，校验发布次数、完整性和大小类别，随后调用真实`SQLiteArtifactStore.read`读完所有页并测量每页时延。Session事件必须重放得到相同投影；到期前逻辑正文必须等于所有引用大小之和，到期后正文归零、墓碑与Manifest数量等于发布数，历史引用逐件返回`artifact_expired`。[Runner回归](../../tests/benchmarks/test_soak_artifact_growth.py)覆盖混合件/全页、Replay、清理、非法规模、取消、Turn/Page超时、分页污染、清理不符、负载前Revision拒绝和阈值复验合同；Page超时先排空在途SQLite任务，再清理Windows临时库。只读`sqlite3`水位查询使用`closing()`显式释放连接；Python连接上下文只管理事务而不关闭句柄，缺失关闭在[首次Windows CI](https://github.com/carrie1988/Harnessix/actions/runs/35821931723)触发`WinError 32`，对应回归现检查查询后连接已关闭。测试中的Revision检查替身只验证合同路径，不能成为正式基线来源。
+
+[第二次macOS规模诊断](../validation/soak-macos-artifact-2026-09-23-v2/README.md)在只读句柄修复后完成同规模真实负载，
+但[对应CI 35822751423](https://github.com/carrie1988/Harnessix/actions/runs/35822751423)的Windows Benchmark
+仍在10毫秒Turn超时回归中出现`session.db`占用。此时旧同步只读连接已关闭；新增缺口位于
+[`SQLiteSessionStore._session_connection`](../../src/harnessix/session/sqlite.py)原先直接使用的异步连接入口：
+若取消发生在`aiosqlite.__aenter__`尚未返回时，驱动线程可能持有已打开的文件句柄，而调用方已离开
+`TemporaryDirectory`作用域。现将打开、回滚、关闭各自作为可等待的资源任务，打开期取消先排空并关闭，
+关闭期取消先完成关闭再传播；[Session连接回归](../../tests/agent/test_store.py)注入两个边界并断言可立即删除
+数据库文件。这个修复不得追认旧诊断Run；Windows原生CI和新Revision正式重跑仍是发行基线前置条件。
 
 剩余发布验证步骤：
 
