@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 823ceac0c7ec250bb36cd0009946949ad8f094d2
 owners:
   - product
@@ -30,7 +30,9 @@ Revision `823ceac0c7ec250bb36cd0009946949ad8f094d2`的[CI Run 35845010214](https
 
 [`ProductApp`](../../../src/harnessix/product_ui/app.py)当时传入10秒退出总期限；[`SubprocessAgentTransport`](../../../src/harnessix/sdk/subprocess.py)默认允许10秒优雅关闭加5秒终止收尾；[`AgentApplicationService`](../../../src/harnessix/app_server/service.py)给活动Turn 5秒自然收敛。外层总预算低于底层允许的进程收尾预算，是独立成立的合同不一致。该不一致**可能**解释慢速Windows环境的误报，但首次日志不足以建立排他性因果。
 
-[退出期限详细设计](../../changes/m09-3d-product-quit-close-budget.md)选择两个Product App退出路径共用20秒；不改Server 5秒、Transport 10+5秒或领域`turn/cancel`语义。修复候选必须用新Revision在Windows完整Job验证；旧Revision的首次失败保留为诊断，不因后续绿灯改写。
+[退出期限详细设计](../../changes/m09-3d-product-quit-close-budget.md)选择两个Product App退出路径共用20秒；不改Server 5秒、Transport 10+5秒或领域`turn/cancel`语义。新Revision的Windows完整Job已复验；旧Revision的首次失败保留为诊断，不因后续绿灯改写。
+
+修复Revision `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b`的[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)原始尝试与两次重跑六Job均成功，Windows用例连续三次通过；本地全量回归3725 passed、32 skipped，macOS单例重复10次通过。它验证预算调整在现有跨平台回归下有效，**不证明首次失败唯一原因**，也不替代0.9.3d其他场景验收。
 
 ## 3. 复核与限制
 

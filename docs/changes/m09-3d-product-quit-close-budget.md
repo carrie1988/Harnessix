@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: 823ceac0c7ec250bb36cd0009946949ad8f094d2
+status: current
+version: 2
+code_revision: c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b
 owners:
   - product
 modules:
@@ -119,3 +119,9 @@ quit:
 ## 9. 源码映射与后续边界
 
 这是0.9.3d的**可靠性阻断修复**，不是新增Soak场景，也不替代Action恢复/重启Runner、三平台阈值Profile及独立候选复验。若20秒预算仍出现相同失败，应先区分`asyncio.timeout`取消与底层`ProductUIError`，并核查SQLite/stdio具体收尾阶段；不能继续盲目加大期限。
+
+## 10. 实现与复验结论
+
+修复Revision `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b`在[`app.py`](../../src/harnessix/product_ui/app.py)统一两个退出路径的20秒期限；[`test_app_interactions.py`](../../tests/product_ui/test_app_interactions.py)增加外层大于Transport默认10+5秒的合同测试，并在既有慢Provider退出测试失败时报告稳定错误码和实际耗时。设计没有改动Controller、Session或Transport的持久化/取消合同。
+
+本地`make check`为3725 passed、32 skipped，macOS慢Provider单例另连续10次通过；[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)在原始尝试和两次重跑中六个Job均成功，Windows Product UI测试三次均通过。此结果验收**预算倒挂修复及该Revision现有回归**，不构成对旧Revision单次失败排他根因的证明，也不关闭0.9.3d总体门禁。[诊断归档](../validation/product-quit-windows-2026-09-23-v1/README.md)保留首次失败事实。

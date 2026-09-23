@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 823ceac0c7ec250bb36cd0009946949ad8f094d2
+version: 16
+code_revision: c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b
 owners:
   - product
 modules:
@@ -49,8 +49,8 @@ supersedes: []
 | 持久化 | `client-state.json`只保存身份、Command序列、选择、Cursor、关闭标志、Revision和摘要；排他锁文件为`.client-state.lock` |
 | 平台 | 文件锁和原子替换按macOS/Linux/Windows分支实现；POSIX额外校验Owner与精确权限；Windows行为由CI验证，不以WSL替代 |
 | 公共导出 | 包根导出状态合同、Store、投影Reducer、连接、Controller、冻结交互绑定/证据/Intent、纯交互投影和稳定错误帮助；Textual App与Screen从具体模块导入以保持可选依赖隔离 |
-| 当前完成度 | 0.9.1a～f已由对应三平台CI关闭；0.9.3d退出期限分层为新候选，仍待新Revision全矩阵CI验收 |
-| 代码版本 | 已验收单一产品架构基线见[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)；本次退出期限候选基于`823ceac0c7ec250bb36cd0009946949ad8f094d2` |
+| 当前完成度 | 0.9.1a～f已由对应三平台CI关闭；0.9.3d退出期限分层由[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收，但不关闭0.9.3d整体 |
+| 代码版本 | 已验收单一产品架构基线见[ADR 0081](../adr/0081-single-coding-agent-product-boundary.md)；退出期限修复Revision `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` |
 
 本模块是终端表现层与Agent Protocol之间的**可恢复客户端应用层**。Agent Session和Protocol Request Ledger仍是
 领域事实源；客户端文件不是Session副本，内存投影也不能反向修改Agent状态。
@@ -960,6 +960,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 16 | `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` | 2026-09-23 | 记录Product App 20秒退出期限经本地全量回归和[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧Revision首次Windows失败的排他根因仍未证实。 |
 | 15 | `823ceac0c7ec250bb36cd0009946949ad8f094d2`后续候选 | 2026-09-23 | 统一Product App Ctrl+Q/卸载的20秒关闭期限，覆盖Transport默认10+5秒收尾预算；记录Windows首次CI失败和独立回归边界，不将单次重跑成功等同根因证明。 |
 | 14 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 同步顶层`coding-eval-suite`到Evals模块的默认禁网分派；明确该入口不进入Product UI状态或协议客户端 |
 | 13 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录Action Config路径、环境覆盖与双配置CAS参数透传由CI 35439332019验收关闭 |
