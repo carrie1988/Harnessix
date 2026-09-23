@@ -275,7 +275,7 @@ uv run python -m examples.batch_diff
 uv run pytest tests/artifacts/test_batch_diff*.py
 ```
 
-设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，当时部署见[部署里程碑历史](docs/deployment-milestone-history.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈、真实Coding Eval和受控单文件合入已由后续0.5.4c/0.5.5交付。任意Shell字符串被正式排除，非交互命令由受控`host.process`承担；OS Sandbox仍属于后续版本。
+设计见 [ADR 0037](docs/adr/0037-batch-diff-transaction-publication.md)，当时部署见[部署里程碑历史](docs/deployment-milestone-history.md#当前-session-v8--migration9-升级053c3c2)。0.5.3c 范围已交付；Git/测试反馈、真实Coding Eval和受控单文件合入已由后续0.5.4c/0.5.5交付。当时排除了任意Shell字符串入口，非交互命令曾由旧`host.process`链承接；当前进程准入见[Trusted Actions模块设计](docs/modules/trusted-actions.md)，Sandbox实现见[Sandbox模块设计](docs/modules/sandbox.md)。
 
 ## 当前已实现：受信宿主进程运行层（0.5.4a）
 
@@ -288,7 +288,7 @@ uv run python -m examples.host_process
 uv run pytest tests/processes
 ```
 
-**边界**：这是受信宿主基础API，不是模型Shell工具或OS Sandbox。脱组后代、宿主硬崩溃和不可中断内核等待仍需后续设计；测试明确验证缺口并清理夹具。下节0.5.4b1已接Action Plane持久准入，b2已完成Agent绑定/当前范围恢复，0.5.4c已在同一链路上接入固定Git读取和测试Profile。设计见 [ADR 0038](docs/adr/0038-host-process-lifecycle.md)，Agent/Session格式及原工具定义不变。
+**边界**：这是受信宿主基础API，不是模型Shell工具或OS Sandbox。脱组后代、宿主硬崩溃和不可中断内核等待属于当时记录的缺口，不代表当前进程监督的全部状态。后续0.5.4b1/b2曾接入旧Action Plane，现已退役；当前进程监督与恢复见[Process Runtime模块设计](docs/modules/processes.md)。0.5.4c当时已接入固定Git读取和测试Profile。历史设计见[ADR 0038](docs/adr/0038-host-process-lifecycle.md)。
 
 ### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）
 
@@ -309,7 +309,7 @@ b2c3 补齐完整恢复与取消：Runtime可从“ToolCall已提交但Session�
 删除前实现、测试和Schema可从0.9.1f3前Git Revision读取。当前版本只保证旧Session事件和Process Artifact可读，
 `reply_approval`或`resume_turn`会以`legacy_process_state_archived`失败关闭且不修改历史事实。
 
-默认 Agent 仍不暴露 `host.process`，桥接明确拒绝 `auto_execute=True`，审批答复不运行命令或无限轮询。Process Artifact和Session取消都不是执行许可撤销、OS Sandbox、DLP、孤儿进程监督或同UID防篡改边界。
+历史默认Agent未暴露旧`host.process`，当时的桥接器拒绝`auto_execute=True`，审批答复不会直接运行命令或无限轮询。当前版本不再提供该桥接器；现行进程准入、取消与恢复边界见[Trusted Actions模块设计](docs/modules/trusted-actions.md)和[Process Runtime模块设计](docs/modules/processes.md)。
 
 ## 当前已实现：Git与受控测试反馈（0.5.4c）
 
@@ -455,7 +455,7 @@ Campaign合计294662输入、4803输出Token，完整已知估算费用¥1.25549
 - 并发执行结果按Provider顺序持久化；任一异常立即取消并排空兄弟任务，Turn取消和Runtime关闭不遗留后台读取；
 - `CodingToolRuntime`再以有界信号量限制文件、搜索、Git和Artifact读取，避免外部调用形成无界线程/FD占用；
 - Patch、Process、Artifact、Test、Git和Workspace稳定错误统一归为`tool`类别，更具体的中断、审批、冲突和存储分类保持不变；
-- 非交互命令由现有结构化`host.process`承担：宿主预绑定程序/cwd/env，模型提交argv并经过持久审批与Worker；不新增任意Shell字符串入口。
+- 0.5.6阶段的非交互命令曾由结构化`host.process`经持久审批与旧Worker执行；该旧入口已于0.9.1f3删除。当前受控进程能力须显式装配并通过能力证明，再经[Trusted Actions模块设计](docs/modules/trusted-actions.md)描述的统一路由准入；不新增任意Shell字符串入口。
 
 完整源码依据、失败语义、兼容和边界见[专项研究](docs/research/tool-scheduling-and-errors.md)与[ADR 0053](docs/adr/0053-tool-concurrency-and-error-taxonomy.md)。本次并发是单Runtime进程边界，不是跨进程Workspace锁或OS Sandbox。
 

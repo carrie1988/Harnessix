@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: historical
-version: 1
+version: 2
 code_revision: 1cb15efdd154f16e0f894e70998d26670ca60d04
 owners:
   - core
@@ -18,7 +18,8 @@ related_tests:
 supersedes: []
 ---
 
-> **历史里程碑**：本文保留对应阶段的增量设计和当时验收，不再作为当前模块事实源。当前实现见[Storage模块](modules/storage.md)、[API模块](modules/api.md)与[部署入口](deployment.md)。
+> **历史里程碑**：本文保留独立Action HTTP/Worker阶段的增量设计和当时验收，不再作为当前模块或部署事实源。旧[Storage模块](modules/storage.md)与[API模块](modules/api.md)仅供历史阅读；当前执行治理见[Trusted Actions模块](modules/trusted-actions.md)，当前部署见[部署入口](deployment.md)。
+
 # M1 独立 Worker 与 PostgreSQL 设计
 
 ## 1. 目标

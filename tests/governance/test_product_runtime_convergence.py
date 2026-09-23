@@ -68,8 +68,16 @@ _CURRENT_DOCUMENTATION_EXPECTATIONS = {
         ("相邻当前事实：[Trusted Actions模块设计]",),
     ),
     "docs/modules/trusted-actions.md": (
-        ("兼容Action Plane继续承诺", "与Execution及兼容Action Plane的关系"),
-        ("与Execution及已删除Action Plane的历史边界", "仅离线归档和历史文档"),
+        (
+            "兼容Action Plane继续承诺",
+            "与Execution及兼容Action Plane的关系",
+            "0.9.1f待删除兼容内核",
+        ),
+        (
+            "与Execution及已删除Action Plane的历史边界",
+            "仅离线归档和历史文档",
+            "0.9.1f3已删除的历史实现",
+        ),
     ),
     "docs/modules/hooks.md": (
         ("在统一Action Plane之外形成第二条执行通道",),
@@ -185,6 +193,10 @@ def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
     contract = (ROOT / "docs" / "action-contract.md").read_text(encoding="utf-8")
     subsystem = (ROOT / "docs" / "subsystems" / "action-plane.md").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    old_milestone = (ROOT / "docs" / "m1-worker-postgresql.md").read_text(encoding="utf-8")
+    current_tool_contract = readme.split("## 当前已实现：Tool Contract与有界调度收口", 1)[1].split(
+        "## 当前已实现：Context规划", 1
+    )[0]
     historical_process = readme.split("### 持久命令准入（0.5.4b1历史实现，已于0.9.1f3删除）", 1)[
         1
     ].split("## 当前已实现：Git与受控测试反馈", 1)[0]
@@ -193,6 +205,10 @@ def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
     assert "当前版本不接受该合同" in contract
     assert "status: deprecated" in subsystem
     assert "当前源码没有可调用的旧运行时" in subsystem
+    assert "当前实现见[Storage模块]" not in old_milestone
+    assert "当前执行治理见[Trusted Actions模块]" in old_milestone
+    assert "模型提交argv并经过持久审批与Worker" not in current_tool_contract
+    assert "该旧入口已于0.9.1f3删除" in current_tool_contract
     assert "宿主现在可以用`process_action_tool(factory)`" not in historical_process
     assert "该入口在当前版本中不可调用" in historical_process
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 19
+version: 20
 code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
@@ -51,7 +51,7 @@ supersedes: []
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
 | 当前完成度 | 核心路由、默认产品组合及扩展适配已实现；独立Action HTTP/Worker已删除；0.9.3c双层Owner、Operation期限、只对账恢复和跨Store扫描已由CI 35691402329六实例验收关闭 |
 
-本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker仅属于0.9.1f待删除兼容内核，以
+本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker属于0.9.1f3已删除的历史实现，以
 [Action Plane子系统设计](../subsystems/action-plane.md)为历史迁移事实源；不可变执行计划以
 [Execution Plan模块设计](execution.md)为事实源；Sandbox、Secret、Workspace和Delivery分别以
 [Sandbox模块设计](sandbox.md)、[Secrets模块设计](secrets.md)及后续独立模块设计为事实源。
@@ -1559,6 +1559,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-23 | 澄清独立Action Request/Journal/Worker是已删除的历史实现，当前只保留进程内Trusted Action执行治理 |
 | 19 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 记录Action双层Owner、Operation Deadline与只对账恢复经修复版六实例CI关闭；Router合同不变 |
 | 18 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加双层Owner、Action Audit v2 Operation Deadline、只对账恢复和跨Store扫描；独立Action HTTP/Worker保持删除 |
 | 16 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval统一Router与响应丢失不重放由CI 35446341997完成全矩阵验收 |
