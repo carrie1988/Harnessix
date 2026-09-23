@@ -1,0 +1,24 @@
+{
+  "spec_version": "harnessix.validation-external-log-manifest/v1",
+  "code_revision": "823ceac0c7ec250bb36cd0009946949ad8f094d2",
+  "workflow_run_id": 35845010214,
+  "logs_archived": false,
+  "jobs": [
+    {
+      "attempt": 1,
+      "job_id": 107128937548,
+      "name": "windows-trusted-execution",
+      "conclusion": "failure",
+      "downloaded_log_size_bytes": 33585,
+      "downloaded_log_sha256": "f008a9b9c39a5a10f74bfe2e55d3e3cdf04f17baf3194dedfa26a81e8141d713"
+    },
+    {
+      "attempt": 2,
+      "job_id": 107133118724,
+      "name": "windows-trusted-execution",
+      "conclusion": "success",
+      "downloaded_log_size_bytes": 29061,
+      "downloaded_log_sha256": "8f9ae1e28d9af338129097bf8c1393955123fac7eba57f95d73d8a278f386813"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "spec_version": "harnessix.validation-review-packet/v1",
+  "classification": "intermittent-windows-product-quit-failure",
+  "source_code_revision": "823ceac0c7ec250bb36cd0009946949ad8f094d2",
+  "workflow_run_id": 35845010214,
+  "checks": {
+    "first_attempt_windows": "511 passed, 1 failed, 45 skipped",
+    "first_attempt_other_jobs": "5/5 success",
+    "rerun_windows": "512 passed, 45 skipped",
+    "static_close_budget": "outer 10s < transport graceful 10s + terminate 5s",
+    "root_cause": "unconfirmed"
+  },
+  "release_status": "diagnostic_only",
+  "remaining_gates": [
+    "new_revision_windows_full_ci",
+    "repeated_close_stability",
+    "distinguish_timeout_from_underlying_close_error_if_recurrent"
+  ]
+}

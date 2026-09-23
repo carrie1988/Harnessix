@@ -28,6 +28,8 @@ from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_presenter import InteractionPresenter
 from harnessix.product_ui.main_view import ProductMainView
 
+PRODUCT_QUIT_DEADLINE_SECONDS = 20.0
+
 
 class ControllerUpdated(Message):
     """把Controller快照送回Textual消息循环。"""
@@ -212,7 +214,7 @@ class ProductApp(App[CloseReport]):
         )
 
     async def _close_and_exit(self) -> None:
-        report = await self.controller.close(deadline_seconds=10)
+        report = await self.controller.close(deadline_seconds=PRODUCT_QUIT_DEADLINE_SECONDS)
         self.exit(report)
 
     async def on_unmount(self) -> None:
@@ -220,4 +222,4 @@ class ProductApp(App[CloseReport]):
             self._watch_task.cancel()
             await asyncio.gather(self._watch_task, return_exceptions=True)
         if self.controller.state.phase is not ControllerPhase.CLOSED:
-            await self.controller.close(deadline_seconds=10)
+            await self.controller.close(deadline_seconds=PRODUCT_QUIT_DEADLINE_SECONDS)

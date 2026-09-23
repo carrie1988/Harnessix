@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from time import monotonic
 
 import pytest
 from textual.widgets import Button, Input, Static
@@ -12,7 +13,7 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
-from harnessix.product_ui.app import ProductApp
+from harnessix.product_ui.app import PRODUCT_QUIT_DEADLINE_SECONDS, ProductApp
 from harnessix.product_ui.controller import (
     CreateThreadIntent,
     ProductController,
@@ -25,6 +26,7 @@ from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk import InProcessAgentTransport
+from harnessix.sdk.subprocess import SubprocessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer, tool_step
 
@@ -38,6 +40,13 @@ class _RecordingTransport(InProcessAgentTransport):
         wire = json.loads(frame)
         self._methods.append(wire["method"])
         return await super().exchange(frame)
+
+
+def test_product_quit_budget_covers_transport_shutdown() -> None:
+    transport = SubprocessAgentTransport(("unused-agent-server",))
+    assert PRODUCT_QUIT_DEADLINE_SECONDS > (
+        transport.graceful_shutdown_timeout_seconds + transport.terminate_timeout_seconds
+    )
 
 
 async def _wait_until(predicate, *, timeout_seconds: float = 10) -> None:
@@ -355,9 +364,12 @@ async def test_product_quit_does_not_send_turn_cancel(
             await controller.dispatch(SubmitPromptIntent("slow"))
             assert active_turn_control(controller.state.thread_view) is not None
 
+            close_started = monotonic()
             await app._close_and_exit()
+            close_elapsed = monotonic() - close_started
 
-            assert len(exits) == 1 and exits[0].clean
+            assert len(exits) == 1
+            assert exits[0].clean, f"code={exits[0].error_code} elapsed_seconds={close_elapsed:.3f}"
             assert any(
                 binding.key == "ctrl+q" and binding.action == "quit_product"
                 for binding in ProductApp.BINDINGS

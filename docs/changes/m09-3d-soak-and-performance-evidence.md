@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 35
-code_revision: cf7e6b4dba5357354abcd3822bcb2c1e2215bd7c
+version: 36
+code_revision: 823ceac0c7ec250bb36cd0009946949ad8f094d2
 owners:
   - core
 modules:
@@ -108,6 +108,8 @@ Product UI Job在首次尝试有两项提交Prompt后等待Turn状态的测试�
 **SDK容量单测**，该提交当时尚未实现`SDK容量Soak Runner`，不增加正式样本或阈值证据；后续[v4 Runner](m09-3d-sdk-capacity-soak.md)单独实现。另两项Windows Product UI
 交互测试在超时后新增低敏状态快照（阶段、Turn状态、错误码、命令序号、输入长度和in-flight）；这只是
 下一次失败的定位手段，不证明首次超时已修复，也不记录Prompt或Workspace路径。
+
+SDK三平台候选原件归档Revision `823ceac`触发的[CI 35845010214](https://github.com/carrie1988/Harnessix/actions/runs/35845010214)首次尝试中，Windows另一项Product UI退出测试返回`controller_connection_close_failed`，其余五个Job成功；第二次仅重跑Windows通过。与此前“等待Turn状态”超时并非同一用例，不应合并为单一已证实根因。[Windows退出诊断归档](../validation/product-quit-windows-2026-09-23-v1/README.md)仅保存Job摘要。源码确认Product App外层10秒关闭期限短于SDK子进程默认10秒优雅退出加5秒终止收尾，[退出期限专项设计](m09-3d-product-quit-close-budget.md)把预算倒挂作为独立可靠性缺口修复；仍须由新Revision三平台CI验证，不能凭旧Revision重跑绿色推断稳定性。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 

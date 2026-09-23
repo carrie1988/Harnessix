@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 326,
-    "physical_lines": 73086,
-    "logical_lines": 64961,
+    "physical_lines": 73088,
+    "logical_lines": 64962,
     "documented_modules": 326,
     "classes": 815,
     "documented_classes": 314,
@@ -1405,7 +1405,7 @@
       "path": "src/harnessix/product_ui/app.py",
       "qualname": "ProductApp",
       "kind": "class",
-      "line": 40,
+      "line": 42,
       "lines": 184,
       "documented": true
     },
