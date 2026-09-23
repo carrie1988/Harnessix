@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 22
-code_revision: d376104f751af2b7b6e9835bb59fba66c0ce9d96
+version: 23
+code_revision: 005d72d54f94f37e1e0e076e3944e911fa94dcc9
 owners:
   - core
 modules:
@@ -443,8 +443,8 @@ classDiagram
 
 | 接口/方法 | 调用者 | 输入/输出 | 前置/后置条件 | 错误与重试 | 取消/超时 | 幂等/顺序 | 权限 |
 |---|---|---|---|---|---|---|---|
-| `run_long_session(evidence_root, code_revision, turn_count, warmup_count, seed, turn_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入固定负载和显式Revision；输出已发布Run目录及Manifest | 单次临时State Root、真实Agent Runtime和无状态Provider；`>=1000` Turn的基线运行须Git HEAD匹配且工作树干净 | 参数、Revision、Runtime、RSS、Replay或发布失败抛稳定错误；不发布PASS | 每Turn用`asyncio.timeout`；超时使运行失败且不发布部分Run；Attempt异常终态持久化，硬退出保留未终结开始事实 | Run ID新建、样本全局序号连续；失败重试必须新Run | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
-| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, startup_timeout_seconds, page_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数和两个独立期限；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；Attempt保留低敏失败阶段，不发布PASS | 启动与页面独立计时；超过期限后先排空对应异步SQLite任务再报超时，不发布部分Run；排空的全局上限尚未实现 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
+| `run_long_session(evidence_root, code_revision, turn_count, warmup_count, seed, turn_timeout_seconds)`与`run_long_session_context(..., threshold_profile_ref=None)`（当前） | 发布专用脚本/缩小CI回归 | 输入固定负载和显式Revision；输出已发布Run目录及Manifest | 单次临时State Root、真实Agent Runtime和无状态Provider；`>=1000` Turn的基线运行须Git HEAD匹配且工作树干净 | 参数、Revision、Runtime、RSS、Replay或发布失败抛稳定错误；不发布PASS | 每Turn用`asyncio.timeout`；超时使运行失败且不发布部分Run；Attempt异常终态持久化，硬退出保留未终结开始事实 | Run ID新建、样本全局序号连续；失败重试必须新Run | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
+| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, startup_timeout_seconds, page_timeout_seconds, threshold_profile_ref=None)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数和两个独立期限；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；Attempt保留低敏失败阶段，不发布PASS | 启动与页面独立计时；超过期限后先排空对应异步SQLite任务再报超时，不发布部分Run；排空的全局上限尚未实现 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
 | `SoakRunner.run(scenario, seed, environment)`（其余场景规划） | 发布运行器 | 输入固定Scenario/seed/平台档位；输出已发布Run状态 | 独立State Root、Revision和RSS能力通过；完成后只产生不可变Run | 参数/Schema/平台/业务失败均非零；重试必须新Run ID，不覆盖失败事实 | 取消/超时须保留失败事实；不得把已接受请求直接重发 | 一个Run只允许单一Writer；样本序号严格递增 | 发布工程角色；不得访问用户凭据/Workspace。 |
 | `EvidenceWriter.append(sample)`（规划） | Runner | `SoakSample`；无业务正文 | `phase=measuring`且单位/值合法 | 非有限值、负数、未知指标立即失败 | 写入失败不回滚业务事实；Run不能PASS | `sample_index`不重复；文件追加后不可改 | 仅Run临时目录写权限。 |
 | `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
@@ -574,7 +574,7 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 
 ### 12.3 `SoakManifest`（`harnessix.soak-manifest/v1`，内存合同已实现）
 
-[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有单独发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py)执行Run级排他目录、Manifest字节发布和最后提交标记；独立Profile验证仍未实现。
+[`scripts/soak_manifest.py`](../../scripts/soak_manifest.py)已定义严格字段和跨字段校验：调用方构造的Manifest没有单独发布权，`verify_manifest_samples`必须从`samples.jsonl`核对SHA-256、重新计算P50/P95/P99与RSS峰值，拒绝自报统计不一致。[`scripts/soak_evidence.py`](../../scripts/soak_evidence.py)执行Run级排他目录、Manifest字节发布和最后提交标记；[`soak_threshold.py`](../../scripts/soak_threshold.py)进一步验证候选Manifest预绑定的Profile ID/摘要与完整基线、候选Attempt，正式阈值证据仍待形成。
 
 | 字段 | 类型 | 必填 | 来源 | 语义/约束 | 默认值 | 敏感级别 | 持久化 | 兼容规则 |
 |---|---|---:|---|---|---|---|---|---|
@@ -598,7 +598,7 @@ Runner把初始创建的Thread ID集合只保存在临时内存，不写入证�
 | `file_watermarks` | 六个非负字节字段 | 是 | `capacity_report`/文件采样 | DB、WAL、Artifact正文的前后水位 | 无 | 低 | Manifest | 字段缺失拒绝；实际水位来源待Runner复核。 |
 | `fault_counts` | 六个非负计数字段 | 是 | Runner/Recovery | 取消、超时、EOF、UNKNOWN、重复效果、孤儿 | 无 | 低 | Manifest | 未知分类拒绝；实际故障来源待Runner复核。 |
 | `evidence_sha256` | 固定文件摘要映射 | 是 | Writer | 当前v1只接受`samples.jsonl`的64位SHA-256；报告和Profile另行发布 | 无 | 低 | Manifest | 摘要不符失败。 |
-| `threshold_profile_ref` | Profile身份/摘要或空 | 条件 | Validator | 基线Run为空；复验Run必须同平台Profile | 无 | 低 | Manifest | 不得以自报阈值通过。 |
+| `threshold_profile_ref` | Profile身份/摘要或空 | 条件 | Runner/Validator | 基线Run为空；候选由正式Runner在执行前提供冻结Profile引用，独立校验器要求与Profile原字节摘要一致 | 无 | 低 | Manifest | 缺失或错配为`unverified`，不得事后配对。 |
 
 Manifest禁止字段：绝对路径、用户/主机名、Prompt、代码、Tool正文、Secret、stderr、PID、Request/Thread/Action ID以及原始异常文本。`statistics`中的值也不能成为唯一证据；Validator必须从`SoakSample`重算。
 
@@ -938,3 +938,5 @@ run_scenario(scenario, seed, environment):
 | 19 | `d947a57aec68a5f9770a18d1996f58be0237e60d` | 2026-09-23 | 保存macOS 500 Thread重跑的45条原始样本、Run/Attempt及独立重算；对应Revision的Windows Product UI Job两项Turn状态等待超时，原件仅为历史诊断，不得冻结Profile。 |
 | 20 | `d947a57aec68a5f9770a18d1996f58be0237e60d` | 2026-09-23 | 补录同Revision Windows Job重跑成功；首次失败原因未明，保持原件诊断属性及Profile冻结阻断。 |
 | 21 | `5ab32753aace369387875a75b50802beb3327d98` | 2026-09-23 | 将SDK容量取消单测的固定sleep改为子进程确认与显式放行，重复30轮及全量回归通过；增加Windows Product UI超时低敏诊断，不将其误报为根因修复。 |
+| 22 | `d376104f751af2b7b6e9835bb59fba66c0ce9d96` | 2026-09-23 | 增加冻结阈值Profile与独立复验内核；明确当前仅支持两类场景且尚无发布级数值证据。 |
+| 23 | `005d72d54f94f37e1e0e076e3944e911fa94dcc9` | 2026-09-23 | 正式候选Runner预绑定Profile身份与摘要，校验器拒绝缺失或不匹配的候选Manifest。 |
