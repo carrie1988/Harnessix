@@ -235,7 +235,8 @@ def _verify_profile_baseline(
 ) -> None:
     # 尚未实现的场景不能凭手工构造的Manifest获得性能PASS。
     if (
-        profile.scenario_id not in {"long_session", "many_threads", "artifact_growth"}
+        profile.scenario_id
+        not in {"long_session", "many_threads", "artifact_growth", "sdk_capacity"}
         or (
             profile.scenario_id == "long_session"
             and baseline.spec_version != "harnessix.soak-manifest/v2"
@@ -243,6 +244,10 @@ def _verify_profile_baseline(
         or (
             profile.scenario_id == "artifact_growth"
             and baseline.spec_version != "harnessix.soak-manifest/v3"
+        )
+        or (
+            profile.scenario_id == "sdk_capacity"
+            and baseline.spec_version != "harnessix.soak-manifest/v4"
         )
     ):
         raise KernelError("soak_profile_baseline_invalid", "场景缺少正式负载证明")

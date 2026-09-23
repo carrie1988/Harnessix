@@ -12,7 +12,8 @@ from harnessix.domain.models import ContractModel
 from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file
-from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles
+from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles, SoakSample
+from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof, verify_sdk_proof
 
 MeasurementBoundary = Literal[
     "core_runtime",
@@ -131,6 +132,8 @@ class SoakManifest(ContractModel):
             and self.spec_version != "harnessix.soak-manifest/v3"
         ):
             raise ValueError("Artifact增长场景必须携带v3证明")
+        if self.scenario_id == "sdk_capacity" and self.spec_version != "harnessix.soak-manifest/v4":
+            raise ValueError("SDK容量场景必须携带v4证明")
         if (
             self.started_at.utcoffset() != UTC.utcoffset(None)
             or self.ended_at.utcoffset() != UTC.utcoffset(None)
@@ -152,6 +155,8 @@ class SoakManifest(ContractModel):
             evidence_files.add(CONTEXT_PROOF_FILENAME)
         if self.spec_version == "harnessix.soak-manifest/v3":
             evidence_files.add(ARTIFACT_PROOF_FILENAME)
+        if self.spec_version == "harnessix.soak-manifest/v4":
+            evidence_files.add(SDK_PROOF_FILENAME)
         if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
@@ -243,6 +248,65 @@ class SoakManifestV3(SoakManifest):
         ):
             raise ValueError("正式Artifact基线需要2件预热和至少20件正式样本")
         return self
+
+
+class SoakManifestV4(SoakManifest):
+    """SDK容量阶段证明版；v1～v3历史证据保持原字节。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v4"]
+    scenario_version: Literal["harnessix.soak-scenario/v4"]
+    scenario_id: Literal["sdk_capacity"]
+    sdk_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.sdk_proof_sha256 != self.evidence_sha256[SDK_PROOF_FILENAME]:
+            raise ValueError("SDK证明摘要与证据索引不一致")
+        if (
+            self.load.pending_limit is None
+            or self.load.pending_limit < 2
+            or self.load.turn_count != 0
+            or self.load.thread_count != 0
+            or self.load.artifact_count != 0
+            or self.provider.request_count != 0
+            or self.load.fault_matrix_version != "sdk-capacity-v1"
+            or self.fault_counts.cancelled <= self.load.warmup_count
+            or any(
+                value != 0
+                for key, value in self.fault_counts.model_dump().items()
+                if key != "cancelled"
+            )
+        ):
+            raise ValueError("SDK容量场景负载或故障计数无效")
+        if self.status == "baseline" and (
+            self.load.pending_limit != 64
+            or self.fault_counts.cancelled < 4
+            or self.load.warmup_count != 1
+            or self.sample_counts["sdk_roundtrip"] < 20
+        ):
+            raise ValueError("正式SDK基线需要协商64容量、一次预热及三轮正式负载")
+        return self
+
+
+def verify_sdk_manifest(
+    manifest: SoakManifestV4,
+    proof: SoakSdkProof,
+    samples: tuple[SoakSample, ...],
+) -> None:
+    """用原始样本核对Proof与Manifest的负载、故障和进程内存。"""
+
+    assert manifest.load.pending_limit is not None
+    verify_sdk_proof(
+        proof,
+        run_id=manifest.run_id,
+        pending_limit=manifest.load.pending_limit,
+        warmup_count=manifest.load.warmup_count,
+        measured_rounds=manifest.fault_counts.cancelled - manifest.load.warmup_count,
+        roundtrip_count=manifest.sample_counts["sdk_roundtrip"],
+        cancelled_count=manifest.fault_counts.cancelled,
+        rss_peak_bytes=manifest.rss.peak_bytes,
+        samples=samples,
+    )
 
 
 def verify_artifact_manifest(manifest: SoakManifestV3, proof: SoakArtifactProof) -> None:

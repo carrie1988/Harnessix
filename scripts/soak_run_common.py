@@ -20,6 +20,7 @@ from scripts.soak_manifest import (
     SoakManifest,
     SoakManifestV2,
     SoakManifestV3,
+    SoakManifestV4,
     SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
@@ -28,6 +29,7 @@ from scripts.soak_provider import SoakProvider
 from scripts.soak_rss import RssObservation
 from scripts.soak_sample_file import SAMPLE_FILENAME, sample_sha256
 from scripts.soak_samples import ScenarioId, SoakSample, validate_sample_series
+from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof
 
 
 def file_bytes(path: Path) -> int:
@@ -126,20 +128,26 @@ def publish_measured_run(
     threshold_profile_ref: SoakProfileReference | None = None,
     context_proof: SoakContextProof | None = None,
     artifact_proof: SoakArtifactProof | None = None,
+    sdk_proof: SoakSdkProof | None = None,
+    fault_counts: SoakFaultCounts | None = None,
     summary_request_count: int | None = None,
-) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3]:
+) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
     sample_counts: dict[str, int] = {}
     for sample in samples:
         if sample.phase == "measure":
             sample_counts[sample.metric] = sample_counts.get(sample.metric, 0) + 1
-    if context_proof is not None and artifact_proof is not None:
+    if sum(proof is not None for proof in (context_proof, artifact_proof, sdk_proof)) > 1:
         raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
     if artifact_proof is not None and (
         scenario_id != "artifact_growth" or summary_request_count is not None
     ):
         raise KernelError("soak_artifact_proof_invalid", "Artifact证明与场景不匹配")
+    if sdk_proof is not None and (
+        scenario_id != "sdk_capacity" or summary_request_count is not None
+    ):
+        raise KernelError("soak_sdk_proof_invalid", "SDK证明与场景不匹配")
     manifest_data: dict[str, object] = dict(
         spec_version="harnessix.soak-manifest/v1",
         run_id=run_id,
@@ -178,7 +186,8 @@ def publish_measured_run(
             unit_verified=rss.unit_verified,
         ),
         file_watermarks=file_watermarks,
-        fault_counts=SoakFaultCounts(
+        fault_counts=fault_counts
+        or SoakFaultCounts(
             cancelled=0,
             timed_out=0,
             eof=0,
@@ -189,10 +198,10 @@ def publish_measured_run(
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
         threshold_profile_ref=threshold_profile_ref,
     )
-    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3
-    if artifact_proof is None:
+    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3 | SoakManifestV4
+    if artifact_proof is None and sdk_proof is None:
         manifest = SoakManifest.model_validate(manifest_data)
-    else:
+    elif artifact_proof is not None:
         proof_digest = sha256((artifact_proof.model_dump_json() + "\n").encode()).hexdigest()
         manifest = SoakManifestV3.model_validate(
             {
@@ -203,6 +212,21 @@ def publish_measured_run(
                 "evidence_sha256": {
                     SAMPLE_FILENAME: sample_sha256(samples),
                     ARTIFACT_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
+    else:
+        assert sdk_proof is not None
+        proof_digest = sha256((sdk_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV4.model_validate(
+            {
+                **manifest_data,
+                "spec_version": "harnessix.soak-manifest/v4",
+                "scenario_version": "harnessix.soak-scenario/v4",
+                "sdk_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: sample_sha256(samples),
+                    SDK_PROOF_FILENAME: proof_digest,
                 },
             }
         )
@@ -231,6 +255,7 @@ def publish_measured_run(
         samples,
         context_proof=context_proof,
         artifact_proof=artifact_proof,
+        sdk_proof=sdk_proof,
     )
     restored, _ = read_published_run(run_directory)
     if restored != manifest:

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 80653a18c93f59c85c22182b79b49381230500d6
 owners:
   - core
@@ -28,9 +28,9 @@ supersedes: []
 复验报告，执行顺序固定为**基线Run → 显式工程余量及数值阈值 → 冻结Profile → 新Run → 校验报告**。
 
 本切片只提供离线、单平台阈值复验内核，不自动选择工程余量，不为历史诊断运行补写Profile，也不把单次`PASS`解释
-为三平台发布门禁。0.9.3d的其余四个场景Runner、Linux/Windows正式负载、跨平台汇总及工程评审仍未完成。当前
-`long_session`仅接受含真实Context/Compaction证明的v2 Run；`many_threads`接受现行v1；其他四场景拒绝冻结，
-避免尚无正式Runner时仅凭手工Manifest给出`PASS`。
+为三平台发布门禁。0.9.3d的Action恢复与重启两个场景Runner、Linux/Windows正式负载、跨平台汇总及工程评审仍未完成。当前
+`long_session`仅接受含真实Context/Compaction证明的v2 Run；`many_threads`接受现行v1；`artifact_growth`接受v3完整
+Proof，`sdk_capacity`接受[v4完整Proof](m09-3d-sdk-capacity-soak.md)。Action恢复与重启仍拒绝冻结，防止仅凭手工Manifest给出`PASS`。
 
 设计目标是：冻结前验证基线及阈值来源；复验时严格检查独立Run、环境和全部样本；以低敏不可覆盖文件保留
 `PASS/FAIL/unverified`；任何证据缺口不能被解释为性能通过。非目标是验证签名来源、替代CI评审或决定工程余量。
@@ -189,5 +189,5 @@ Attempt文件。`SEALED.json`和SHA-256证明原始字节与最后提交标记�
 Attempt提交窗口、候选启动绑定与篡改、样本篡改、Profile/报告篡改、错误余量和不可覆盖目录。
 [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)负责v1历史字节、v2负载前绑定、事后补引用拒绝和Attempt提交/恢复窗口，
 [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)负责Run原始样本、哈希和提交标记。
-本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：其余四个Runner、三平台正式负载、评审后的冻结数值与独立复验
+本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：其余两个Runner、三平台正式负载、评审后的冻结数值与独立复验
 仍是阻断项。
