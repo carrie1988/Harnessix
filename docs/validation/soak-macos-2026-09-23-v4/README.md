@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: historical
-version: 1
+version: 3
 code_revision: d947a57aec68a5f9770a18d1996f58be0237e60d
 owners:
   - core
@@ -32,10 +32,12 @@ Run与Attempt均已由磁盘Reader重读，并由独立标准库程序重算摘�
 这只是macOS单平台、单次`app_service`边界的规模事实，不测stdio、TUI或完整产品组合根。
 Manifest中的`baseline`表示规模、干净Revision和RSS单位检查通过，**不是性能PASS**。尚无事先冻结的
 Threshold Profile、冻结后的独立复验或Linux/Windows正式运行；不能用本次数字反推发布阈值。
-对应[CI 35813364852](https://github.com/carrie1988/Harnessix/actions/runs/35813364852)的Windows
-`windows-trusted-execution` Job有两项Product UI交互测试在提交Prompt后等待Turn状态时超时；因此本Run
-**不得用于冻结发行Threshold Profile**。失败发生在当前Revision的跨平台验收，不能因本机Run/Attempt可重算而
-忽略。该Job的Benchmarks子集已通过；超时根因尚未确认，不能据此断言Soak Runner或TUI实现无缺陷。
+对应[CI 35813364852](https://github.com/carrie1988/Harnessix/actions/runs/35813364852)的**首次尝试**中，
+Windows `windows-trusted-execution` Job有两项Product UI交互测试在提交Prompt后等待Turn状态时超时；
+同一Revision的**第二次尝试**重跑该Job成功，最终六个Job均为成功。另一个仅增补本证据文档的Revision
+`1bdbbeb`的Windows Job也通过。上述对照说明失败未稳定复现，但未确定原因或排除真实竞态。
+本Run仍按诊断证据保存，**在故障原因与稳定性门禁闭环前不得用于冻结发行Threshold Profile**。
+首次失败不能因重跑成功而从谱系中抹去；该Job的Benchmarks子集在首次尝试也已通过。
 早期[500 Thread诊断](../soak-macos-2026-09-23-v1/README.md)对应Revision的跨平台CI失败，
 其原始失败谱系不被本目录覆盖。
 
@@ -43,7 +45,7 @@ Threshold Profile、冻结后的独立复验或Linux/Windows正式运行；不�
 
 | 项目 | 原始事实 |
 |---|---|
-| 源码Revision | `d947a57aec68a5f9770a18d1996f58be0237e60d`；运行前工作树干净；Windows CI Job失败 |
+| 源码Revision | `d947a57aec68a5f9770a18d1996f58be0237e60d`；运行前工作树干净；Windows CI首次尝试失败、第二次尝试成功 |
 | Run ID | `a83f5001531048968b4428a9c660f854` |
 | 运行时间（UTC） | 2026-09-23 03:14:09.029937 至 03:14:20.777155；约11.75秒 |
 | 场景与边界 | `many_threads → app_service`，`harnessix.soak-scenario/v1` |
@@ -102,6 +104,8 @@ assert final is not None and final.outcome == 'committed' and final.manifest_sha
 PY
 ```
 
-本Revision的Windows Product UI超时须先定位和修复，再从通过全矩阵CI的干净新Revision重新采集。
+本Revision的Windows Product UI偶发超时须先定位并证明稳定性，再从干净新Revision重新采集。
+后续测试Revision `5ab32753aace369387875a75b50802beb3327d98`仅为这两项测试补充不含Prompt和路径的
+超时状态快照，未改变本Run的源码或原始证据，也不构成首次失败的根因修复。
 正式发布仍需事先冻结独立Threshold Profile，在**新Run**中复验，并在Linux和Windows运行对应正式负载。
 SDK容量、Artifact增长、Action故障和完整产品重启场景尚未完成；本目录不能独立关闭0.9.3d。
