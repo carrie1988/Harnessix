@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: current
-version: 6
-code_revision: 732278e1475dac6e391e81b152a3e73631ba3c5a
+version: 7
+code_revision: 6c9a1577f467c99f0eb1b99d7c8270bc811ca583
 owners:
   - core
 modules:
@@ -29,6 +29,7 @@ related_tests:
   - tests/context/test_compaction_runtime.py
   - tests/context/test_sources.py
   - tests/benchmarks/test_soak_long_session.py
+  - tests/benchmarks/test_soak_context_proof.py
 supersedes: []
 ---
 
@@ -361,11 +362,11 @@ Context规划或压缩。源码证据如下：
 | [`test_runtime_refreshes_and_persists_source_freshness_each_model_step`](../../tests/context/test_sources.py)与[`test_proactive_compaction_uses_accounted_toolless_request_and_active_window`](../../tests/context/test_compaction_runtime.py) | Context检查和Compaction激活均有持久事件/投影的可核对测试路径 | Soak应从真实Session读取每轮检查、压缩计划/尝试/窗口，并复核Event Replay，而非只检查运行时内存计数。 |
 | [`SoakManifest`](../../scripts/soak_manifest.py)、[`SCENARIO_METRICS`](../../scripts/soak_samples.py)和[`read_published_run`](../../scripts/soak_evidence.py) | v1长会话只声明`turn_local/rss_peak`；Manifest Provider只记录普通请求计数；Reader要求Manifest规范字节与落盘原文完全相同 | v1原件缺少Context/Compaction覆盖证明。直接增加默认字段会改变v1规范序列化并使历史Run读取失败；不能无版本地把旧诊断证据升格。 |
 
-因此下一轮设计必须先解决**版本化证据合同**，再运行新负载：保留v1历史Reader；为具有明确Context窗口、
-摘要Provider尝试/用量、检查次数、压缩次数和活动窗口身份核验的新场景建立可独立验证的合同。不得只增加一个
-`assert len(turn.compactions) > 0`后沿用v1 Manifest，因为临时Session删除后原始数值证据仍无法证明此断言。
-具体采用新的Scenario/Manifest版本，还是单独的受摘要绑定证明文件，需要在专项详设中评审；两种方案都须保留
-低敏字段白名单和旧Run可读，不从性能结果反推阈值。
+该缺口已按[版本化专项详设](../changes/m09-3d-long-session-context-proof.md)采用v2 Scenario/Manifest和
+受摘要绑定的独立低敏事件Proof处理，保留v1历史Reader。新的
+[macOS一次千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)通过真实Context和Compaction
+运行并在临时Session删除前核验Replay、窗口链与完整事件数。Proof允许外部复核脱敏事件序号/类型和计数，
+但不能替代原始业务Session重放或独立阈值复验；不从性能结果反推阈值。
 
 ## 11. 研究边界
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: 9d0e337f8078bdf0ecf9b9dd128ac3340eac6acf
+status: current
+version: 2
+code_revision: 6c9a1577f467c99f0eb1b99d7c8270bc811ca583
 owners:
   - core
 modules:
@@ -30,7 +30,9 @@ supersedes: []
 
 本切片增加**独立的v2长会话入口与证据合同**。v1入口、历史Run和两种诊断原件保持原字节可读；v2调用
 真实Context Engine、真实自动Compaction及持久Session。本文的实现完成不等于0.9.3d发布验收完成：
-仍需干净Revision的三平台1000 Turn正式运行、其余四场景、独立Threshold Profile及复验。
+仍需Linux/Windows固定环境的1000 Turn正式运行、其余四场景、独立Threshold Profile及复验。
+当前[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)已在干净Revision完成，
+实现对应六实例CI通过；这里的“三平台”尚欠Linux和Windows，且第二次同平台阈值复验尚未执行。
 
 ### 1.1 目标
 
@@ -166,7 +168,7 @@ Thread/Turn/Compaction UUID仅存在临时Session，不进入发布目录。文�
 | [`soak_manifest.py`](../../scripts/soak_manifest.py)、[`soak_evidence.py`](../../scripts/soak_evidence.py) | v2 Manifest、精确文件集合、双版本Reader | [`test_soak_manifest.py`](../../tests/benchmarks/test_soak_manifest.py)、[`test_soak_context_proof.py`](../../tests/benchmarks/test_soak_context_proof.py) |
 
 缩小负载测试必须覆盖成功、缺Compaction、缺摘要用量、事件/文件篡改、旧v1读取和低敏扫描；
-正式发布还须干净Revision、单Thread不少于1000 Turn、三平台固定环境、独立Threshold Profile和
+正式发布还须Linux/Windows固定环境正式运行、独立Threshold Profile和
 另外四个Soak场景。当前局部实现不得作为发布PASS。
 
 ## 6. 风险与取舍
