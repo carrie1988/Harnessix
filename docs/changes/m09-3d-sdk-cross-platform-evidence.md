@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 70c5161986082b63acd31ab1acf8328c9fad9efd
+version: 3
+code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
 owners:
   - core
 modules:
@@ -28,7 +28,7 @@ supersedes: []
 
 本切片增加**固定参数的发布专用入口**和手动三平台工作流。每个平台在干净提交上执行一次独立正式负载，输出完整Run、Attempt和低敏日志摘要。工作流不会自动选阈值，也不把单次`baseline`变为`PASS`。`action_recovery`、`restart`以及其他Soak场景不属于这个入口；它们仍按0.9.3d总设计单独验收。
 
-完成定义：入口不能降配；正式Runner核验当前Git提交及干净工作树；发布后重读Run和Attempt；失败上传已持久化的Attempt；三平台任务彼此独立，某平台失败不取消另外两平台。下载、归档、工程阈值和第二次独立复验是后续发布门禁，不由一次工作流成功推定。
+完成定义：入口不能降配；正式Runner核验当前Git提交及干净工作树；发布后重读Run和Attempt；失败上传已持久化的Attempt；三平台任务彼此独立，某平台失败不取消另外两平台。下载和归档已完成，Profile也已冻结；第二次独立复验仍是后续发布门禁，不由一次工作流成功推定。
 
 ## 2. 总体架构与数据流程
 
@@ -97,7 +97,7 @@ Run目录与Attempt目录各自排他创建，不共享数据库事务。提交�
 - `uv sync --locked --all-extras --dev`使用已锁定依赖；Job不会修改源码Revision。证据上传前已经由本机Reader重算，下载后仍需独立重算，避免把上传回执误认为验证完成。
 - 工作流与入口仅是发布工程设施，不是产品安装命令。失败回滚为保留原Run/Attempt并在**新**Git提交或独立新Run ID下重跑；不得覆盖、修补失败证据或降低规模。
 - [`test_run_sdk_soak_release.py`](../../tests/benchmarks/test_run_sdk_soak_release.py)验证固定参数、错误与缺失Attempt拒绝、日志脱敏；[`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py)验证真实stdio及64容量阶段，Reader与Attempt回归验证跨文件一致性。Linux/macOS/Windows正式Job运行结果和Artifact SHA在各自验证目录登记前，本切片只能称为**采集通道已实现**。
-- 后续必须在三平台分别完成两次独立正式Run，冻结与基线绑定且有工程余量的单平台Profile，再以负载前预绑定的候选Run生成报告；三个单平台PASS也需单独聚合发布门禁。Action恢复、重启场景仍缺正式Runner，0.9.3d与0.9总体保持进行中。
+- 三平台各一次正式Run和单平台工程Profile已归档；仍须负载前预绑定Profile执行第二独立Run并生成报告；三个单平台PASS也需单独聚合发布门禁。Action恢复、重启场景仍缺正式Runner，0.9.3d与0.9总体保持进行中。
 
 ## 6. 部署、兼容与回退
 

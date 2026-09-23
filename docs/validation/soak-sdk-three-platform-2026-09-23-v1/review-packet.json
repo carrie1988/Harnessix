@@ -6,7 +6,9 @@
     "privacy_keyword_scan": "3/3 passed",
     "run_reader": "3/3 passed",
     "standard_ci": "6/6 success",
-    "workflow_matrix": "3/3 success"
+    "workflow_matrix": "3/3 success",
+    "frozen_profiles": "3/3 sealed and baseline-validated",
+    "archive_ci": "6/6 success"
   },
   "classification": "three-platform-single-run-baseline",
   "code_revision": "70c5161986082b63acd31ab1acf8328c9fad9efd",
@@ -62,7 +64,6 @@
   },
   "release_status": "unverified",
   "remaining_gates": [
-    "profile_engineering_review",
     "prebound_second_independent_run_per_platform",
     "single_platform_threshold_reports",
     "action_recovery_and_restart_soak",
@@ -71,5 +72,6 @@
   "scenario_id": "sdk_capacity",
   "source_workflow_run_id": 35838270267,
   "spec_version": "harnessix.soak-review-packet/v1",
-  "standard_ci_run_id": 35838258049
+  "standard_ci_run_id": 35838258049,
+  "archive_ci_run_id": 35841260994
 }

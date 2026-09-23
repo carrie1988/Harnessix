@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 70c5161986082b63acd31ab1acf8328c9fad9efd
 owners:
   - core
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0092-reproducible-local-soak-and-release-thresholds.md
 related_tests:
   - tests/benchmarks/test_run_sdk_soak_release.py
+  - tests/benchmarks/test_run_sdk_soak_candidate.py
   - tests/benchmarks/test_soak_sdk_capacity.py
   - tests/benchmarks/test_soak_evidence.py
   - tests/benchmarks/test_soak_attempt.py
@@ -25,9 +26,9 @@ supersedes: []
 
 ## 1. 结论与证据等级
 
-源码Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`的[手动SDK Soak工作流](https://github.com/carrie1988/Harnessix/actions/runs/35838270267)在Linux、macOS和Windows三个独立Job中均完成固定**协商容量64、1轮预热、3轮正式容量轮次、20次正常往返**；同Revision的[常规CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例全部成功。每个平台均保存独立Run和Attempt；上传件在仓库外重新下载，随后本地Reader复核三次，另用标准库重算18份原始文件SHA-256、正式样本数与最近秩分位数，结果一致。汇总数据见[评审包](review-packet.json)，上传件来源与每份原始文件摘要见[证据Manifest](bundle-manifest.json)。
+源码Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`的[手动SDK Soak工作流](https://github.com/carrie1988/Harnessix/actions/runs/35838270267)在Linux、macOS和Windows三个独立Job中均完成固定**协商容量64、1轮预热、3轮正式容量轮次、20次正常往返**；同Revision的[常规CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例全部成功；原始证据归档提交`1e4d053`的[CI 35841260994](https://github.com/carrie1988/Harnessix/actions/runs/35841260994)同样六实例成功。每个平台均保存独立Run和Attempt；上传件在仓库外重新下载，随后本地Reader复核三次，另用标准库重算18份原始文件SHA-256、正式样本数与最近秩分位数，结果一致。汇总数据见[评审包](review-packet.json)，上传件来源与每份原始文件摘要见[证据Manifest](bundle-manifest.json)。
 
-**证据等级是三平台各一次正式规模基线，不是性能阈值PASS，也不是0.9.3d或1.0发布完成。** 三个平台使用不同硬件档位，不跨平台比较绝对时延；GitHub托管机型的可用资源也不等于终端用户环境。`manifest.status=baseline`只表明冻结输入和证据完整性达到最低条件。工程余量、各平台Profile、负载前绑定Profile的第二独立Run及其报告均未完成；`action_recovery`和`restart`两个场景Runner同样未完成。
+**证据等级是三平台各一次正式规模基线，不是性能阈值PASS，也不是0.9.3d或1.0发布完成。** 三个平台使用不同硬件档位，不跨平台比较绝对时延；GitHub托管机型的可用资源也不等于终端用户环境。`manifest.status=baseline`只表明冻结输入和证据完整性达到最低条件。工程余量及各平台Profile已按[冻结阈值详设](../../changes/m09-3d-sdk-frozen-profile-candidate.md)形成封印原件；负载前绑定Profile的第二独立Run及其报告尚未完成；`action_recovery`和`restart`两个场景Runner同样未完成。
 
 首次新增工作流的提交`f4398ac`在GitHub解析阶段因job级`runner.temp`不可用而失败，[失败Run 35838197410](https://github.com/carrie1988/Harnessix/actions/runs/35838197410)未启动任何Soak。修复提交`70c5161`将该上下文移入步骤级；本目录只归档修复后真实运行的三份原件，不把解析失败改写为负载成功。
 
@@ -86,7 +87,19 @@ PY
 | Run/Attempt提交与摘要 | 通过 | 三份原件下载后Reader通过；18份文件SHA及Manifest SHA复核一致。 |
 | 负载规模与取消/迟到语义 | 通过 | 每平台64容量、四轮Proof、4次预期取消和20条正式往返。 |
 | 常规六实例CI | 通过 | 对应Revision的[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)已达终态，六个Job全部成功；不以Soak绿色替代全仓门禁。 |
-| 工程阈值与独立复验 | 未完成 | 三个平台分别评审Profile，在新的正式Run开始前持久绑定；逐一生成报告。 |
+| 工程阈值与独立复验 | 部分完成 | 三平台Profile已冻结并经完整基线重验；新的正式Run仍须负载前持久绑定，逐一生成独立报告。 |
 | 0.9.3d其他场景 | 未完成 | Action恢复、重启Runner及长会话/多Thread/Artifact三平台正式验收另行完成。 |
 
 若后续发现证据完整性或测量语义错误，本目录保留为诊断事实，不提升为可冻结阈值的基线。GitHub上传件保留期14日；仓库中的原始规范字节与Manifest是长期复核依据。设计与失败语义见[三平台采集详设](../../changes/m09-3d-sdk-cross-platform-evidence.md)和[SDK容量详设](../../changes/m09-3d-sdk-capacity-soak.md)。
+
+## 5. 冻结阈值Profile与后续复验
+
+以下Profile在第二独立Run前分别由完整Run/Attempt调用`publish_profile`产生，含不可覆盖的`SEALED.json`；复核见[`test_run_sdk_soak_candidate.py`](../../../tests/benchmarks/test_run_sdk_soak_candidate.py)。工程余量、环境范围、整数阈值和风险取舍见[专项详设](../../changes/m09-3d-sdk-frozen-profile-candidate.md)。Profile冻结不等于候选通过，原始Run/Attempt的18份文件Manifest仍仅覆盖基线原件。
+
+| 平台 | Profile原件 | Profile SHA-256 | 时延P99上限（ns） | RSS峰值上限（bytes） | DB增长上限（bytes） |
+|---|---|---|---:|---:|---:|
+| Linux | [profile.json](profiles/linux/e7fc115add194e589d35fb9574bfa5c9/profile.json) / [SEALED.json](profiles/linux/e7fc115add194e589d35fb9574bfa5c9/SEALED.json) | `8fbc557ce99d99f002b63c39f01654756e2abc23c2e4449dde4ebcc8349c5c55` | 3702274 | 99053568 | 147456 |
+| macOS | [profile.json](profiles/macos/167f432a612f4c58b2e0bc7c80aea4a3/profile.json) / [SEALED.json](profiles/macos/167f432a612f4c58b2e0bc7c80aea4a3/SEALED.json) | `9a5793b79399810fa7e3f3dab9449f9ce99a73ed4582c03647fe2202c3719b90` | 18844334 | 109092864 | 147456 |
+| Windows | [profile.json](profiles/windows/5bcdf40d1baf48279ffa1ba9c7bd46c0/profile.json) / [SEALED.json](profiles/windows/5bcdf40d1baf48279ffa1ba9c7bd46c0/SEALED.json) | `368469b0770590d042ba83c837dd7b8b3a1387abeeb44f185bd22281555a8774` | 7655000 | 97161216 | 147456 |
+
+候选将由[三平台手动工作流](../../../.github/workflows/sdk-soak-candidate.yml)在干净Revision运行；`STARTED v2`必须先记录Profile ID/SHA，独立Report必须是PASS才可关闭SDK单场景的阈值复验。工作流尚未运行，因此没有第二Run、报告或性能PASS。

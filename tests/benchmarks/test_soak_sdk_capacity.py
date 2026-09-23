@@ -7,9 +7,9 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from scripts.soak_attempt import read_attempt
+from scripts.soak_attempt import SoakAttemptStartV2, read_attempt
 from scripts.soak_evidence import SoakCommit, read_published_run
-from scripts.soak_manifest import SoakManifestV4
+from scripts.soak_manifest import SoakManifestV4, SoakProfileReference
 from scripts.soak_sdk_capacity import _child_result, run_sdk_capacity
 from scripts.soak_sdk_proof import SDK_PROOF_FILENAME, SoakSdkProof
 
@@ -90,6 +90,33 @@ async def test_formal_sdk_load_contract_uses_full_negotiated_capacity(
         "measure",
     ]
     assert len(proof.roundtrip_sample_indices) == 20
+
+
+async def test_formal_sdk_candidate_binds_profile_before_real_load(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("scripts.soak_sdk_capacity.check_release_revision", lambda _: None)
+    reference = SoakProfileReference(profile_id="b" * 32, sha256="c" * 64)
+    evidence = tmp_path / "evidence"
+
+    directory, manifest = await run_sdk_capacity(
+        evidence,
+        code_revision=REVISION,
+        measured_rounds=3,
+        warmup_count=1,
+        roundtrip_count=20,
+        pending_limit=64,
+        timeout_seconds=20,
+        threshold_profile_ref=reference,
+    )
+
+    started, final = read_attempt(evidence / "attempts" / manifest.run_id)
+    assert isinstance(started, SoakAttemptStartV2)
+    assert started.threshold_profile_ref == reference
+    assert started.started_at <= manifest.started_at
+    assert manifest.status == "unverified"
+    assert manifest.threshold_profile_ref == reference
+    assert manifest.fault_counts.cancelled == 4
+    assert final is not None and final.outcome == "committed"
+    assert read_published_run(directory)[0] == manifest
 
 
 @pytest.mark.parametrize(

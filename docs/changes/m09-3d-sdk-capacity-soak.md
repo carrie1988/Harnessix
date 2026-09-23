@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: 70c5161986082b63acd31ab1acf8328c9fad9efd
+version: 7
+code_revision: 1e4d05316baeaac7ae9af314fc8ac9f583c578ec
 owners:
   - core
 modules:
@@ -142,12 +142,12 @@ commit Attempt FINAL only after valid Run exists
 - 不保存JSON-RPC帧、请求ID、Workspace路径、stderr正文、Provider输入、凭据或Thread内容。失败只保存Attempt固定阶段和Outcome；测试检查证据无临时路径。
 - 可观测性以`SDK snapshot`的状态、Pending/Abandoned计数、稳定失败Code和正式样本/Proof为界；不记录请求正文或错误堆栈。超时以`soak_sdk_timeout`、协商不符以`soak_sdk_limit_invalid`、容量阶段不符以`soak_sdk_capacity_invalid`、关闭残留以`soak_sdk_close_invalid`分类，Run Reader对篡改统一返回`soak_run_invalid`。这些错误分类只用于发布工程诊断，不改变Agent业务错误合同。
 - [`test_soak_sdk_capacity.py`](../../tests/benchmarks/test_soak_sdk_capacity.py)覆盖真实子进程64容量、缩小负载、协商、取消/迟到、关闭、超时失败Attempt、非法负载及Proof篡改；旧v1～v3 Reader测试仍应通过。
-- 基线需在macOS、Linux、Windows各自以正式负载运行，并对每个平台冻结经评审阈值、以第二独立Run预绑定Profile后复验；三平台各一次正式数值已归档，但尚无工程阈值或发布PASS。SDK场景完成也不关闭其余`action_recovery`和`restart`场景。
+- 基线需在macOS、Linux、Windows各自以正式负载运行，并对每个平台冻结经评审阈值、以第二独立Run预绑定Profile后复验；三平台各一次正式数值已归档，三平台Profile已冻结，但尚无第二独立Run或发布PASS。SDK场景完成也不关闭其余`action_recovery`和`restart`场景。
 - 进程峰值RSS取较大者，不代表同时总峰值；正常往返窗口可复算完成速率，但尚未冻结吞吐下界。门闩是固定白盒测试替身，不是生产流量分布。若需要用户端到端吞吐、远程Agent Protocol或聚合内存SLO，必须另立正式负载合同。
 
 ### 6.1 单平台正式负载与交叉平台合同验收
 
-干净Revision `c4c364c059a7b6ea61410fe03ba41ef140fcdd41`的[macOS SDK容量规模基线](../validation/soak-macos-sdk-2026-09-23-v1/README.md)保存四轮真实64容量阶段证明、20条正式往返样本、父子峰值RSS、规范Run/Attempt及独立数值复核。[CI 35833762475](https://github.com/carrie1988/Harnessix/actions/runs/35833762475)六实例全部成功，覆盖Linux Python 3.12/3.13、Windows原生Benchmark、macOS、固定Container和文档。此前Linux子进程关闭后`soak_rss_unit_unknown`与Windows失败标记换行不一致均已由源码和回归测试关闭。该证据仍仅是当时的macOS单次基线；后续三平台各一次正式负载已经归档，工程阈值Profile和第二独立Run仍未完成，不能发布PASS。
+干净Revision `c4c364c059a7b6ea61410fe03ba41ef140fcdd41`的[macOS SDK容量规模基线](../validation/soak-macos-sdk-2026-09-23-v1/README.md)保存四轮真实64容量阶段证明、20条正式往返样本、父子峰值RSS、规范Run/Attempt及独立数值复核。[CI 35833762475](https://github.com/carrie1988/Harnessix/actions/runs/35833762475)六实例全部成功，覆盖Linux Python 3.12/3.13、Windows原生Benchmark、macOS、固定Container和文档。此前Linux子进程关闭后`soak_rss_unit_unknown`与Windows失败标记换行不一致均已由源码和回归测试关闭。该证据仍仅是当时的macOS单次基线；后续三平台各一次正式负载已经归档且Profile已冻结，第二独立Run仍未完成，不能发布PASS。
 
 ### 6.2 三平台正式证据采集入口
 
@@ -155,4 +155,8 @@ commit Attempt FINAL only after valid Run exists
 
 ### 6.3 三平台正式基线验收
 
-Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`的[三平台SDK容量原始证据归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)保存Linux、macOS和Windows各一次真实64容量正式负载、Run/Attempt原件与18份文件的独立SHA-256复核；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例全部成功。首次工作流因job级`runner.temp`解析失败而未执行负载，修复后新Run才被归档。三个平台只形成各自一次基线，不建立跨平台性能阈值；Profile评审、负载前绑定Profile的第二独立Run及其他Soak场景仍是阻断项。
+Revision `70c5161986082b63acd31ab1acf8328c9fad9efd`的[三平台SDK容量原始证据归档](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)保存Linux、macOS和Windows各一次真实64容量正式负载、Run/Attempt原件与18份文件的独立SHA-256复核；[CI 35838258049](https://github.com/carrie1988/Harnessix/actions/runs/35838258049)六实例全部成功。首次工作流因job级`runner.temp`解析失败而未执行负载，修复后新Run才被归档。三个平台只形成各自一次基线，不建立跨平台性能阈值；Profile已冻结；负载前绑定Profile的第二独立Run及其他Soak场景仍是阻断项。
+
+### 6.4 冻结阈值和候选入口
+
+[三平台SDK容量基线与冻结Profile](../validation/soak-sdk-three-platform-2026-09-23-v1/README.md)已记录各平台签封Profile和工程余量，[第二独立Run详设](m09-3d-sdk-frozen-profile-candidate.md)明确Profile在候选负载前由STARTED v2绑定，三平台手动工作流与候选入口已实现。正式第二Run和独立Report尚待执行；Profile存在不等于性能PASS。
