@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
+version: 6
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -189,7 +189,7 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 若取消发生在`aiosqlite.__aenter__`尚未返回时，驱动线程可能持有已打开的文件句柄，而调用方已离开
 `TemporaryDirectory`作用域。现将打开、回滚、关闭各自作为可等待的资源任务，打开期取消先排空并关闭，
 关闭期取消先完成关闭再传播；[Session连接回归](../../tests/agent/test_store.py)注入两个边界并断言可立即删除
-数据库文件。这个修复不得追认旧诊断Run；Windows原生CI和新Revision正式重跑仍是发行基线前置条件。
+数据库文件。这个修复不得追认旧诊断Run；修复Revision `5d48b97`已由[CI 35824543623](https://github.com/carrie1988/Harnessix/actions/runs/35824543623)六实例验收；[新macOS单平台规模Run](../validation/soak-macos-artifact-2026-09-23-v3/README.md)经独立重算后可作为Profile候选来源，但没有阈值复验或Linux/Windows正式负载。
 
 剩余发布验证步骤：
 

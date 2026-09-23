@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 18
+version: 19
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -36,7 +36,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话、多Thread和Artifact增长三个真实模块Runner；三个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)，旧v1证据保持不变；[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)及对应Revision六实例CI通过，但Linux/Windows正式运行和独立阈值复验仍缺失。另一次[macOS 500 Thread正式负载](../validation/soak-macos-2026-09-23-v4/README.md)通过Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项提交后状态等待超时，第二次重跑通过，但根因未明，故仍仅保存为历史诊断，不用于冻结Profile。两次macOS Artifact规模运行对应Revision的Windows CI均失败，只能作为诊断；其余三个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话、多Thread和Artifact增长三个真实模块Runner；三个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)，旧v1证据保持不变；[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)及对应Revision六实例CI通过，但Linux/Windows正式运行和独立阈值复验仍缺失。另一次[macOS 500 Thread正式负载](../validation/soak-macos-2026-09-23-v4/README.md)通过Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项提交后状态等待超时，第二次重跑通过，但根因未明，故仍仅保存为历史诊断，不用于冻结Profile。两次macOS Artifact规模运行对应Revision的Windows CI均失败，只能作为诊断；[macOS Artifact单平台规模基线](../validation/soak-macos-artifact-2026-09-23-v3/README.md)已在修复Revision完成Run/Attempt重算并由六实例CI验收；其余三个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 
@@ -107,7 +107,7 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 唯一Run目录，先写入并校验样本和Manifest，最后以原子替换写入固定文件`COMMITTED.json`。标记只含版本和Manifest的SHA-256，
 不纳入Manifest自身摘要，避免循环引用。Validator只接受有效提交标记，
 不依赖跨平台“目录整体原子重命名”或覆盖既有运行。受控测试只使用临时Workspace；故障注入不得触碰用户仓库、
-公网Git或外部凭据。两个现有Runner先写`STARTED.json`，异常、取消或超时写低敏`FINAL.json/failed`并返回非零；硬退出保留未终结开始事实。`COMMITTED.json`之后、Attempt成功终态之前的崩溃仍不得判PASS。其余四场景尚未接入Attempt合同，不把不完整样本判定为通过。
+公网Git或外部凭据。三个现有Runner先写`STARTED.json`，异常、取消或超时写低敏`FINAL.json/failed`并返回非零；硬退出保留未终结开始事实。`COMMITTED.json`之后、Attempt成功终态之前的崩溃仍不得判PASS。其余三场景尚未接入Attempt合同，不把不完整样本判定为通过。
 
 ## 验证方式
 

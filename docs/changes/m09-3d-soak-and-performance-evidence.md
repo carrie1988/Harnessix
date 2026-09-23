@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 29
+version: 30
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -81,7 +81,7 @@ supersedes: []
 Windows Benchmark的10毫秒Turn超时回归仍在异步SQLite连接与目录清理路径报`WinError 32`。
 原同步只读句柄问题已修复；定位指向取消落在异步连接建立或关闭窗口，但CI日志不含精确交错。源码改为等待资源任务
 真正结算，增加入口/关闭取消回归。第二次Run同样仅为诊断，不得冻结Profile；修复须由新Revision的
-Windows原生CI验证并重新生成正式负载。
+[CI 35824543623](https://github.com/carrie1988/Harnessix/actions/runs/35824543623)已完成六实例验收；[新macOS Artifact规模基线](../validation/soak-macos-artifact-2026-09-23-v3/README.md)在干净修复Revision重跑并独立重算，仍无阈值复验。
 
 [`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。
 
@@ -211,7 +211,7 @@ flowchart TB
 | AgentRuntime（当前） | Turn执行、事件持久化、Replay、Context/Compaction、Action恢复 | Session、Provider、Tool/Action、Artifact | Runner专用捷径、跳过持久事实 | 以`async with`打开/关闭；启动恢复现有开放Turn。 |
 | Capacity/Recovery Adapter（当前） | 提供低敏容量报告和Action跨Store恢复扫描 | SQLite共库、Action/Artifact/Session端口 | 返回业务ID、正文、路径 | 只读诊断调用；恢复扫描保持现有语义。 |
 | Evidence Writer/Validator（部分实现） | 样本、Run、Attempt、单平台冻结Profile与独立阈值报告已实现；正式工程阈值、三平台负载和聚合门禁仍未完成 | 私有文件目录、标准时钟、RSS平台探针 | 自报PASS、未知字段、覆盖既有Run、读取敏感正文 | 一个Run单Writer；复验必须重读两次Run和Attempt。 |
-| RSS Adapter（已实现，正式三平台负载待验收） | 读取平台峰值RSS/工作集，记录raw单位并归一化为bytes | Linux/macOS/Windows原生测量接口 | 以0替代未知、跨平台套用未验证单位 | 当前两个Runner各采集一次进程峰值；其他场景采样边界待实现。 |
+| RSS Adapter（已实现，正式三平台负载待验收） | 读取平台峰值RSS/工作集，记录raw单位并归一化为bytes | Linux/macOS/Windows原生测量接口 | 以0替代未知、跨平台套用未验证单位 | 当前三个Runner各采集一次进程峰值；其他场景采样边界待实现。 |
 
 ## 7. 核心流程
 
@@ -668,7 +668,7 @@ except BaseException:
 ```
 
 开始证据不能证明负载已执行，失败阶段不能证明外部效果不存在，成功Attempt也不等于阈值PASS。Run与Attempt不是跨文件
-原子事务：在两次提交间崩溃留下`STARTED`加有效Run，需原样保留供复核；不能悄悄将其升级为成功。当前两个Runner
+原子事务：在两次提交间崩溃留下`STARTED`加有效Run，需原样保留供复核；不能悄悄将其升级为成功。当前三个Runner
 仅在显式负载/Revision校验之后创建Attempt，因此非法输入不会建立证据目录；环境预检失败已在Attempt范围内并记录
 `prepared`失败。实现与故障注入分别见[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)、
 [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)和
@@ -862,7 +862,7 @@ run_scenario(scenario, seed, environment):
 | Agent启动与恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__aenter__`, `AgentRuntime._recover` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_shutdown_cancels_managed_turn`、运行时Replay断言 | 当前实现；长会话Soak已调用，其他场景待实现。 |
 | 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py)、[`soak_context_proof.py`](../../scripts/soak_context_proof.py) | `run_long_session`、`run_long_session_context`、`_context_proof`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)、[`test_soak_context_proof.py`](../../tests/benchmarks/test_soak_context_proof.py) | v1/v2重读、低敏证明、缺压缩/用量失败、负载/Revision拒绝及超时Attempt | macOS一次v2千TurnContext/Compaction基线和六实例CI已完成；Linux/Windows正式负载与独立Profile仍未完成。 |
 | 多Thread真实负载 | [`soak_many_threads.py`](../../scripts/soak_many_threads.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_many_threads`、`_list_all`、`_restart_and_list` | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 多次重启、完整分页/集合核对、基线重启数拒绝、空页/超时不发布且保留失败Attempt | 真实Runtime、应用服务和失败Attempt已覆盖；修复Revision的正式500 Thread未完成。 |
-| Attempt失败事实 | [`soak_attempt.py`](../../scripts/soak_attempt.py) | `begin_attempt`、`finish_attempt`、`read_attempt`、`attempt_scope` | [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) | 规范字节、排他身份、异常/硬退出、Run已发布但Attempt未终结、终态篡改 | 当前仅两个Runner接入；完整发布Validator尚未实现。 |
+| Attempt失败事实 | [`soak_attempt.py`](../../scripts/soak_attempt.py) | `begin_attempt`、`finish_attempt`、`read_attempt`、`attempt_scope` | [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) | 规范字节、排他身份、异常/硬退出、Run已发布但Attempt未终结、终态篡改 | 当前三个Runner接入；完整发布Validator尚未实现。 |
 | SDK并发与取消 | [`sdk/subprocess.py`](../../src/harnessix/sdk/subprocess.py) | `SubprocessAgentTransport.exchange`, `_ResponseRouter`, `_RequestCapacity` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests`、`test_subprocess_transport_close_continues_after_caller_cancel` | 当前实现；固定压力编排规划。 |
 | SDK公共入口 | [`sdk/agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient.initialize`, `list_threads`, `replay_events`, `read_artifact` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_agent_sdk_drives_turn_replay_and_duplicate_command`、`test_events_next_delivers_live_delta_then_durable_replay` | 当前实现；Runner只复用，不扩展公共API。 |
 | stdio协议服务 | [`app_server/stdio.py`](../../src/harnessix/app_server/stdio.py) | `run_stdio`, `_StdioWriter`, `_StdioReader` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests` | 当前实现。 |
@@ -963,3 +963,4 @@ run_scenario(scenario, seed, environment):
 | 27 | `85aadeaf16826bc15e284b67c2fcd99ed5c3a947` | 2026-09-23 | Artifact场景接入真实Agent/Tool/Store负载、全页读取、逻辑清理与Threshold v3分支；正式三平台负载和工程阈值仍待验收。 |
 | 28 | `d257f99b78a27fe70fbc16dc1d493494d1e7dfde` | 2026-09-23 | 首次Artifact macOS规模Run按诊断原件归档；对应Revision的Windows Benchmark因只读SQLite句柄未显式关闭失败，修复加`closing()`与连接关闭回归；新Revision的跨平台CI和重跑仍待验收。 |
 | 29 | `70e5107ba8e301650f8b59dec0b7ad1246ee4571` | 2026-09-23 | 第二次Artifact规模Run归档为诊断：对应Revision Windows Turn超时取消后SQLite异步连接句柄仍占用；Session连接建立、回滚、关闭改为取消后先结算资源任务，新增两个连接阶段回归。修复版Windows CI及新规模Run待验收。 |
+| 30 | `5d48b9735c11022743eb56df5da23125702b0140` | 2026-09-23 | 修复Revision六实例CI成功；第三次macOS Artifact 2+20件正式规模Run完成原字节归档、独立分位数/分页/清理重算，作为单平台单次基线；工程Profile、第二Run及Linux/Windows正式负载未完成。 |

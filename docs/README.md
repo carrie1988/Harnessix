@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 92
+version: 93
 code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
 owners:
   - core
@@ -180,7 +180,7 @@ supersedes: []
 | 0.9.0 | [代码可维护性治理](m09-code-maintainability.md) | 历史增量；代码说明、职责拆分、复杂度与依赖基线 |
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md)、[0.9.2e真实Provider基线详细设计](changes/m09-2e-controlled-real-provider-baseline.md) | 已关闭；离线20/20与真实Provider 20/20执行证据均已冻结，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收 |
-| 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b持久容量与保留详细设计](changes/m09-3b-persistent-capacity-and-retention.md)、[0.9.3c Action恢复详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)、[0.9.3d Soak与性能证据评审稿](changes/m09-3d-soak-and-performance-evidence.md)、[阈值独立复验详设](changes/m09-3d-threshold-verification.md)、[Artifact增长Soak评审稿](changes/m09-3d-artifact-growth-soak.md)、[macOS Artifact首次诊断](validation/soak-macos-artifact-2026-09-23-v1/README.md)、[第二次诊断](validation/soak-macos-artifact-2026-09-23-v2/README.md) | 进行中；a/b/c已由对应全矩阵CI关闭；d已有长会话、多Thread、Artifact真实Runner及单平台复验内核；两次Artifact规模Run对应Revision的Windows CI分别暴露同步只读句柄和异步连接取消清理问题，均只保留诊断；修复后须新Revision重跑；另三场景Runner、三平台正式负载和冻结阈值验收未完成 |
+| 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[0.9.3b持久容量与保留详细设计](changes/m09-3b-persistent-capacity-and-retention.md)、[0.9.3c Action恢复详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)、[0.9.3d Soak与性能证据评审稿](changes/m09-3d-soak-and-performance-evidence.md)、[阈值独立复验详设](changes/m09-3d-threshold-verification.md)、[Artifact增长Soak评审稿](changes/m09-3d-artifact-growth-soak.md)、[macOS Artifact首次诊断](validation/soak-macos-artifact-2026-09-23-v1/README.md)、[第二次诊断](validation/soak-macos-artifact-2026-09-23-v2/README.md)、[macOS单平台规模基线](validation/soak-macos-artifact-2026-09-23-v3/README.md) | 进行中；a/b/c已由对应全矩阵CI关闭；d已有长会话、多Thread、Artifact真实Runner及单平台复验内核；两次Artifact规模Run对应Revision的Windows CI分别暴露同步只读句柄和异步连接取消清理问题，均只保留诊断；修复Revision已由六实例CI验收并生成macOS单平台Artifact规模基线；另三场景Runner、Linux/Windows正式负载和冻结阈值验收未完成 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 
