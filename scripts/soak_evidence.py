@@ -15,6 +15,12 @@ from pydantic import Field, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
+from scripts.soak_artifact_proof import (
+    ARTIFACT_PROOF_FILENAME,
+    MAX_ARTIFACT_PROOF_BYTES,
+    SoakArtifactProof,
+    verify_artifact_proof,
+)
 from scripts.soak_context_proof import (
     CONTEXT_PROOF_FILENAME,
     MAX_CONTEXT_PROOF_BYTES,
@@ -23,10 +29,12 @@ from scripts.soak_context_proof import (
 from scripts.soak_manifest import (
     SoakManifest,
     SoakManifestV2,
+    SoakManifestV3,
+    verify_artifact_manifest,
     verify_context_proof,
     verify_manifest_samples,
 )
-from scripts.soak_sample_file import SAMPLE_FILENAME, write_sample_file
+from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file, write_sample_file
 from scripts.soak_samples import SoakSample
 
 MANIFEST_FILENAME = "manifest.json"
@@ -35,6 +43,7 @@ MAX_MANIFEST_BYTES = 128 * 1024
 MAX_COMMIT_BYTES = 1024
 _RUN_FILES_V1 = frozenset({SAMPLE_FILENAME, MANIFEST_FILENAME, COMMIT_FILENAME})
 _RUN_FILES_V2 = _RUN_FILES_V1 | {CONTEXT_PROOF_FILENAME}
+_RUN_FILES_V3 = _RUN_FILES_V1 | {ARTIFACT_PROOF_FILENAME}
 
 
 class SoakCommit(ContractModel):
@@ -129,14 +138,36 @@ def _read_file(directory: Path, name: str, max_bytes: int) -> bytes:
 
 def publish_run(
     evidence_root: Path,
-    manifest: SoakManifest | SoakManifestV2,
+    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3,
     samples: tuple[SoakSample, ...],
     *,
     context_proof: SoakContextProof | None = None,
+    artifact_proof: SoakArtifactProof | None = None,
     fault: Callable[[str], None] | None = None,
 ) -> tuple[Path, str]:
     """排他创建Run目录；样本、Manifest校验后最后写入提交标记。"""
 
+    if isinstance(manifest, SoakManifestV3):
+        if artifact_proof is None or context_proof is not None:
+            raise KernelError("soak_artifact_proof_invalid", "v3 Run缺少Artifact证明")
+        try:
+            verify_artifact_manifest(manifest, artifact_proof)
+            verify_artifact_proof(
+                artifact_proof,
+                run_id=manifest.run_id,
+                artifact_count=manifest.load.artifact_count,
+                warmup_count=manifest.load.warmup_count,
+                samples=samples,
+                artifact_before_bytes=manifest.file_watermarks.artifact_before_bytes,
+                artifact_after_bytes=manifest.file_watermarks.artifact_after_bytes,
+            )
+        except ValueError:
+            raise KernelError("soak_artifact_proof_invalid", "Artifact证明与样本不一致") from None
+        proof_body = (artifact_proof.model_dump_json() + "\n").encode("utf-8")
+        if sha256(proof_body).hexdigest() != manifest.artifact_proof_sha256:
+            raise KernelError("soak_artifact_proof_invalid", "Artifact证明摘要不匹配")
+    elif artifact_proof is not None:
+        raise KernelError("soak_artifact_proof_invalid", "非v3 Run不得包含Artifact证明")
     if isinstance(manifest, SoakManifestV2):
         if context_proof is None:
             raise KernelError("soak_context_proof_invalid", "v2 Run缺少Context证明")
@@ -165,6 +196,8 @@ def publish_run(
     verify_manifest_samples(manifest, run_directory)
     if context_proof is not None:
         _write_file(run_directory, CONTEXT_PROOF_FILENAME, proof_body, MAX_CONTEXT_PROOF_BYTES)
+    if artifact_proof is not None:
+        _write_file(run_directory, ARTIFACT_PROOF_FILENAME, proof_body, MAX_ARTIFACT_PROOF_BYTES)
     if fault is not None:
         fault("after_samples")
     body = (manifest.model_dump_json() + "\n").encode("utf-8")
@@ -183,14 +216,16 @@ def publish_run(
     return run_directory, manifest_digest
 
 
-def read_published_run(run_directory: Path) -> tuple[SoakManifest | SoakManifestV2, str]:
+def read_published_run(
+    run_directory: Path,
+) -> tuple[SoakManifest | SoakManifestV2 | SoakManifestV3, str]:
     """提交标记、Manifest和样本全部可重算时才接受Run。"""
 
     try:
         if not stat.S_ISDIR(run_directory.stat(follow_symlinks=False).st_mode):
             raise OSError
         names = {path.name for path in run_directory.iterdir()}
-        if names not in (_RUN_FILES_V1, _RUN_FILES_V2):
+        if names not in (_RUN_FILES_V1, _RUN_FILES_V2, _RUN_FILES_V3):
             raise OSError
         marker_body = _read_file(run_directory, COMMIT_FILENAME, MAX_COMMIT_BYTES)
         marker = SoakCommit.model_validate_json(marker_body)
@@ -215,6 +250,35 @@ def read_published_run(run_directory: Path) -> tuple[SoakManifest | SoakManifest
             if proof_body != (proof.model_dump_json() + "\n").encode("utf-8"):
                 raise ValueError
             verify_context_proof(manifest, proof)
+        elif version == "harnessix.soak-manifest/v3":
+            manifest = SoakManifestV3.model_validate_json(manifest_body)
+            if names != _RUN_FILES_V3:
+                raise ValueError
+            proof_body = _read_file(
+                run_directory, ARTIFACT_PROOF_FILENAME, MAX_ARTIFACT_PROOF_BYTES
+            )
+            if sha256(proof_body).hexdigest() != manifest.artifact_proof_sha256:
+                raise ValueError
+            proof = SoakArtifactProof.model_validate_json(proof_body)
+            if proof_body != (proof.model_dump_json() + "\n").encode("utf-8"):
+                raise ValueError
+            samples, _, _ = read_sample_file(
+                run_directory,
+                expected_sha256=manifest.evidence_sha256[SAMPLE_FILENAME],
+                run_id=manifest.run_id,
+                scenario_id=manifest.scenario_id,
+                expected_measured=manifest.sample_counts,
+            )
+            verify_artifact_manifest(manifest, proof)
+            verify_artifact_proof(
+                proof,
+                run_id=manifest.run_id,
+                artifact_count=manifest.load.artifact_count,
+                warmup_count=manifest.load.warmup_count,
+                samples=samples,
+                artifact_before_bytes=manifest.file_watermarks.artifact_before_bytes,
+                artifact_after_bytes=manifest.file_watermarks.artifact_after_bytes,
+            )
         else:
             raise ValueError
         if manifest_body != (manifest.model_dump_json() + "\n").encode("utf-8"):
@@ -222,6 +286,6 @@ def read_published_run(run_directory: Path) -> tuple[SoakManifest | SoakManifest
         if run_directory.name != manifest.run_id:
             raise ValueError
         verify_manifest_samples(manifest, run_directory)
-    except (OSError, ValueError, KeyError, TypeError, ValidationError, KernelError):
+    except (OSError, ValueError, KeyError, TypeError, UnicodeError, ValidationError, KernelError):
         raise KernelError("soak_run_invalid", "Soak Run提交证据无效") from None
     return manifest, marker.manifest_sha256

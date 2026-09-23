@@ -8,6 +8,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_environment import SoakEnvironment
 from scripts.soak_evidence import publish_run, read_published_run
@@ -18,6 +19,7 @@ from scripts.soak_manifest import (
     SoakLoad,
     SoakManifest,
     SoakManifestV2,
+    SoakManifestV3,
     SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
@@ -123,15 +125,22 @@ def publish_measured_run(
     baseline: bool,
     threshold_profile_ref: SoakProfileReference | None = None,
     context_proof: SoakContextProof | None = None,
+    artifact_proof: SoakArtifactProof | None = None,
     summary_request_count: int | None = None,
-) -> tuple[Path, SoakManifest | SoakManifestV2]:
+) -> tuple[Path, SoakManifest | SoakManifestV2 | SoakManifestV3]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
     sample_counts: dict[str, int] = {}
     for sample in samples:
         if sample.phase == "measure":
             sample_counts[sample.metric] = sample_counts.get(sample.metric, 0) + 1
-    manifest = SoakManifest(
+    if context_proof is not None and artifact_proof is not None:
+        raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
+    if artifact_proof is not None and (
+        scenario_id != "artifact_growth" or summary_request_count is not None
+    ):
+        raise KernelError("soak_artifact_proof_invalid", "Artifact证明与场景不匹配")
+    manifest_data: dict[str, object] = dict(
         spec_version="harnessix.soak-manifest/v1",
         run_id=run_id,
         code_revision=code_revision,
@@ -180,6 +189,23 @@ def publish_measured_run(
         evidence_sha256={SAMPLE_FILENAME: sample_sha256(samples)},
         threshold_profile_ref=threshold_profile_ref,
     )
+    manifest: SoakManifest | SoakManifestV2 | SoakManifestV3
+    if artifact_proof is None:
+        manifest = SoakManifest.model_validate(manifest_data)
+    else:
+        proof_digest = sha256((artifact_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV3.model_validate(
+            {
+                **manifest_data,
+                "spec_version": "harnessix.soak-manifest/v3",
+                "scenario_version": "harnessix.soak-scenario/v3",
+                "artifact_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: sample_sha256(samples),
+                    ARTIFACT_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
     if context_proof is not None:
         if summary_request_count is None:
             raise KernelError("soak_context_proof_invalid", "缺少摘要Provider请求计数")
@@ -199,7 +225,13 @@ def publish_measured_run(
         )
     elif summary_request_count is not None:
         raise KernelError("soak_context_proof_invalid", "v1 Run不得包含摘要Provider请求计数")
-    run_directory, _ = publish_run(evidence_root, manifest, samples, context_proof=context_proof)
+    run_directory, _ = publish_run(
+        evidence_root,
+        manifest,
+        samples,
+        context_proof=context_proof,
+        artifact_proof=artifact_proof,
+    )
     restored, _ = read_published_run(run_directory)
     if restored != manifest:
         raise KernelError("soak_run_invalid", "Soak发布复核失败")

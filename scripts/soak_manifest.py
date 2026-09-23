@@ -9,6 +9,7 @@ from typing import Literal, Self
 from pydantic import Field, StrictBool, StrictInt, model_validator
 
 from harnessix.domain.models import ContractModel
+from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_sample_file import SAMPLE_FILENAME, read_sample_file
 from scripts.soak_samples import SCENARIO_METRICS, ScenarioId, SoakQuantiles
@@ -126,6 +127,11 @@ class SoakManifest(ContractModel):
         if self.measurement_boundary != SCENARIO_BOUNDARY[self.scenario_id]:
             raise ValueError("场景测量边界不匹配")
         if (
+            self.scenario_id == "artifact_growth"
+            and self.spec_version != "harnessix.soak-manifest/v3"
+        ):
+            raise ValueError("Artifact增长场景必须携带v3证明")
+        if (
             self.started_at.utcoffset() != UTC.utcoffset(None)
             or self.ended_at.utcoffset() != UTC.utcoffset(None)
             or self.ended_at < self.started_at
@@ -144,6 +150,8 @@ class SoakManifest(ContractModel):
         evidence_files = {SAMPLE_FILENAME}
         if self.spec_version == "harnessix.soak-manifest/v2":
             evidence_files.add(CONTEXT_PROOF_FILENAME)
+        if self.spec_version == "harnessix.soak-manifest/v3":
+            evidence_files.add(ARTIFACT_PROOF_FILENAME)
         if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
@@ -210,6 +218,45 @@ class SoakManifestV2(SoakManifest):
         if self.context_proof_sha256 != self.evidence_sha256[CONTEXT_PROOF_FILENAME]:
             raise ValueError("Context证明摘要与证据索引不一致")
         return self
+
+
+class SoakManifestV3(SoakManifest):
+    """Artifact增长证明版；旧v1/v2证据不增字段。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v3"]
+    scenario_version: Literal["harnessix.soak-scenario/v3"]
+    scenario_id: Literal["artifact_growth"]
+    artifact_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.artifact_proof_sha256 != self.evidence_sha256[ARTIFACT_PROOF_FILENAME]:
+            raise ValueError("Artifact证明摘要与证据索引不一致")
+        if (
+            self.load.artifact_count < self.load.warmup_count + 1
+            or self.load.turn_count != self.load.artifact_count
+            or self.load.thread_count != 1
+        ):
+            raise ValueError("Artifact负载必须每Turn发布一件并包含正式样本")
+        if self.status == "baseline" and (
+            self.load.warmup_count != 2 or self.load.artifact_count < self.load.warmup_count + 20
+        ):
+            raise ValueError("正式Artifact基线需要2件预热和至少20件正式样本")
+        return self
+
+
+def verify_artifact_manifest(manifest: SoakManifestV3, proof: SoakArtifactProof) -> None:
+    """核对正式负载是否混合大小件，并绑定Provider请求计数。"""
+
+    if manifest.provider.request_count != manifest.load.artifact_count * 2:
+        raise ValueError("Artifact模型请求计数不一致")
+    if manifest.status == "baseline":
+        measured = [entry for entry in proof.entries if entry.phase == "measure"]
+        if (
+            sum(entry.size_class == "near_limit" for entry in measured) < 2
+            or sum(entry.size_class == "small" for entry in measured) < 2
+        ):
+            raise ValueError("正式Artifact基线缺少混合大小件")
 
 
 def verify_context_proof(manifest: SoakManifestV2, proof: SoakContextProof) -> None:
