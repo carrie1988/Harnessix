@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: deprecated
-version: 4
+version: 5
 code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
 owners:
   - core
@@ -40,7 +40,7 @@ supersedes: []
 | 默认部署 | 无；顶层CLI、Docker默认命令和正式运维资料均不再启动该服务 |
 | 当前导出 | 无；`harnessix.api`包已删除 |
 | 代码版本 | `3480ee8d15c0de0f2f182a3dceafd37cb59a32d7` |
-| 当前完成度 | 基础Action资源、inline/queued状态投影、生命周期与HTTP观测已实现；身份、授权、输入输出预算、错误统一、分页、并发控制、稳定Trace校验和生产网络门禁未完成 |
+| 删除前完成度 | 基础Action资源、inline/queued状态投影、生命周期与HTTP观测已实现；身份、授权、输入输出预算、错误统一、分页、并发控制、稳定Trace校验和生产网络门禁未完成 |
 
 本文冻结记录[`api/app.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/app.py)与
 [`api/__init__.py`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/api/__init__.py)删除前的事实。Action状态机、事务与副作用恢复见
@@ -63,7 +63,7 @@ Action Plane提供framework-agnostic副作用治理，但仅有Python应用服�
 9. 大请求、长执行、断连、并发审批和历史事件增长如何限制资源；
 10. OpenAPI、Python SDK与运行时路由如何保持一致。
 
-当前API是Action Plane的薄HTTP Adapter，不是完整公网产品Gateway。它把合法HTTP输入交给`ActionService`，但仍有
+删除前该API是Action Plane的薄HTTP Adapter，不是完整公网产品Gateway。它把合法HTTP输入交给`ActionService`，但仍有
 若干关键生产控制未实现，必须由本文明确而不能由部署者从“FastAPI可运行”推导出来。
 
 ## 3. 设计目标、非目标与术语
@@ -859,7 +859,7 @@ Worker只有部分Metric故障路径具备隔离测试；不能外推到API全�
 
 ## 32. 历史兼容：Python HTTP SDK
 
-以下行为只解释待删除兼容源码。[`HarnessixClient`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py)和
+以下行为只解释已删除历史源码。[`HarnessixClient`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py)和
 [`HarnessixAsyncClient`](https://github.com/carrie1988/Harnessix/blob/3f37fe8ae0646d3327254ce9677110b94f7c5e80/src/harnessix/sdk/client.py)提供Submit、Get、Approval、Reconcile、Events和Tools。
 
 当前客户端：

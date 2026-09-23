@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 8
+code_revision: 9e593b739afd63a24a10825f23b9820a4ab7c966
 owners:
   - core
 modules:
@@ -33,7 +33,7 @@ supersedes: []
 ## 1. 诊断目标
 
 诊断应回答“哪个部署面、哪个持久身份、哪个状态边界、哪类失败、是否可能发生外部效果”，而不是只收集进程日志。
-Journal、Session Event和专用账本是业务事实；Log、Trace和Metric用于关联与告警，丢失时不得改变领域结果。
+Session Event、Action Audit/Execution Plan和专用效果账本是当前产品的业务事实；Log、Trace和Metric用于关联与告警，丢失时不得改变领域结果。
 
 当前产品以Product Config离线诊断、启动Preflight、Agent Protocol握手、Session事件和Product UI状态为诊断主链。Product UI状态行显示连接代际、Turn、Token、费用未知原因、待决交互和稳定Notice，并通过`F1`提供静态脱敏错误自助。
 Coding Agent产品入口已有共享的离线`harnessix code doctor`和Startup Preflight；自动支持包与完整观测装配尚未实现。
@@ -123,7 +123,7 @@ OTLP实现外推为当前产品能力。
 
 ## 7. 旧Action观测兼容边界
 
-旧HTTP Span、Worker Metric、Queue Gauge和8787端点只存在于待删除兼容源码及历史测试中。它们不得写入当前部署清单、
+旧HTTP Span、Worker Metric、Queue Gauge和8787端点只属于已删除实现的历史资料或历史测试证据。它们不得写入当前部署清单、
 健康探针或SLO。读取旧数据库时应停写、制作备份，并按迁移文档核对Action ID、事件序号和Receipt；不得重新启动
 公开HTTP/Worker拓扑来完成日常诊断。
 

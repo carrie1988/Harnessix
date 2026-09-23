@@ -86,6 +86,14 @@ _CURRENT_DOCUMENTATION_EXPECTATIONS = {
             "为Trusted Action Runtime补齐Policy/Executor/Reconcile",
         ),
     ),
+    "docs/operations/recovery.md": (
+        ("Worker在Claim前退出", "Worker在执行中退出", "| Worker崩溃 |"),
+        ("Action执行中宿主退出", "新Owner只对账且Execute次数不增加"),
+    ),
+    "docs/operations/diagnostics.md": (
+        ("待删除兼容源码",),
+        ("已删除实现的历史资料",),
+    ),
 }
 
 

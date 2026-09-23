@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: deprecated
-version: 3
+version: 4
 code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
 owners:
   - core
@@ -550,7 +550,7 @@ sequenceDiagram
 | 无Ready Action | 返回`None` | 不阻塞等待，不提供通知机制 |
 | Claim成功 | Status=`LEASED`，Version+1，追加事件 | 未暴露队列等待年龄或Claim延迟 |
 
-当前调用方`ActionWorker`会生成非空Worker ID并使用正Lease时长，但端口和后端自身没有固化这些前置条件。
+删除前的调用方`ActionWorker`会生成非空Worker ID并使用正Lease时长，但端口和后端自身没有固化这些前置条件。
 任何新增直接调用者都可能创建立即过期或不可归属的Lease。
 
 ## 13. Lease续期、竞争与版本

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 8
+code_revision: 9e593b739afd63a24a10825f23b9820a4ab7c966
 owners:
   - core
 modules:
@@ -44,7 +44,7 @@ supersedes: []
 恢复目标不是“让任务继续跑”，而是在不重复未知副作用的前提下，根据持久事实把Action、Turn、Tool、Process和交付
 收敛到可解释状态。恢复必须遵守：
 
-1. Journal/Event/专用账本和外部系统观察共同决定结果；
+1. Session Event、Action Audit/Execution Plan、专用效果账本和外部系统观察共同决定结果；已退役的Effect Journal不参与当前产品恢复；
 2. 只有确定未执行或具有稳定幂等身份的操作才能继续；
 3. 效果可能发生但结果未持久化时保持`UNKNOWN`或`interrupted`并对账；
 4. 审批只对原计划、原资源Snapshot和原身份有效；
@@ -55,9 +55,9 @@ supersedes: []
 
 | 故障 | 可观测事实 | 默认处理 |
 |---|---|---|
-| API进程退出 | Journal已提交状态仍存在 | 重启后Readiness检查；不重建Action身份 |
-| Worker在Claim前退出 | Action仍为`READY` | 其他Worker可Claim |
-| Worker在执行中退出 | Lease到期，原调用结果未知 | `recover_expired`转`UNKNOWN`，随后Reconcile |
+| Agent Server在接受请求后退出 | Protocol Request与Session已提交事实仍存在 | 重新握手并按原`requestId`读取/恢复；不重建用户意图身份 |
+| Action在领取执行前宿主退出 | Route仍为`ready`，冻结Plan和原审批仍需核对 | 启动扫描与配置绑定校验后保守处理；不得绕过原Plan直接执行 |
+| Action执行中宿主退出 | Route/Operation保留执行中事实，外部效果可能已发生 | 新Owner先转`unknown`并只调用Reconcile；不得重新Execute |
 | Agent在Provider前退出 | Turn可能仍为deferred `ACCEPTED` | 显式`thread/resume`或`turn/resume`继续 |
 | Agent在模型流中退出 | 已有模型事件但终态未完成 | 启动恢复为`INTERRUPTED`，不自动重发 |
 | Agent等待审批/输入时退出 | 请求已持久化 | 重开后继续等待；Deadline耗尽则失败 |
@@ -74,7 +74,7 @@ supersedes: []
 ```mermaid
 flowchart TD
     Incident[检测到中断或不一致] --> Freeze[停止新副作用并保全证据]
-    Freeze --> Facts[读取Journal、Event、账本、Lease和外部观察]
+    Freeze --> Facts[读取Session Event、Action Audit、效果账本、Lease和外部观察]
     Facts --> Known{结果是否可证明?}
     Known -- 成功 --> Commit[提交成功或恢复投影]
     Known -- 确定未执行 --> Safe{是否允许继续?}
@@ -90,7 +90,9 @@ flowchart TD
     Manual --> Verify
 ```
 
-“可证明”必须由稳定身份、持久事件和外部事实共同支持，不能由日志缺失、进程不存在或操作员直觉推出。
+“可证明”必须由稳定身份、持久事件和外部事实共同支持，不能由日志缺失、进程不存在或操作员直觉推出。当前
+产品的Route/Operation恢复由[`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)和
+[`TrustedActionRouter`](../../src/harnessix/trusted_actions/router.py)执行；本节流程不表示存在独立Worker。
 
 ## 4. 旧Action Plane归档恢复边界
 
@@ -114,8 +116,8 @@ flowchart TD
 | `WAITING_INPUT`且Deadline有效 | 继续等待持久Answer |
 | `WAITING_INPUT`且Deadline耗尽 | 失败为`time_budget_exceeded` |
 | 安全的Question Tool等待 | 保留等待 |
-| Process Action待创建/审批 | 使用稳定身份恢复准入，或缺少端口时保留原状态 |
-| `WAITING_ACTION` | 保留，等待显式`resume`做有界观察 |
+| 历史Process Action待创建/审批 | 仅按旧Session兼容合同读取；不创建或批准已删除的Action服务请求 |
+| 历史`WAITING_ACTION` | 保留历史事实；继续执行稳定拒绝`legacy_process_state_archived` |
 | `WAITING_APPROVAL`且有效 | 继续等待原审批 |
 | 其他开放执行 | 收敛为`INTERRUPTED/process_interrupted` |
 
@@ -155,7 +157,7 @@ Process Supervisor以Owner、Lease、平台进程树和签名回执判断结果�
 - Owner丢失但有可验证完成回执时可提交终态；
 - 进程不存在不证明命令未产生效果；
 - 不能验证Owner或效果时保持`UNKNOWN`；
-- Agent侧对`WAITING_ACTION`只做显式有界观察，不在启动时后台轮询或再次启动命令。
+- 历史`WAITING_ACTION`只读兼容；当前固定Process通过Trusted Action Route恢复，不由旧Process Saga再次启动命令。
 
 当前默认`agent-server`只装配外部Action Config中通过强Container能力证明的固定Process Profile；任意Host Process与旧兼容Saga仍不进入产品目录。
 
@@ -256,7 +258,7 @@ Artifact事实，不是数据合并；相关Action/Delivery/Process等其他数�
 
 | 场景 | 必要断言 |
 |---|---|
-| Worker崩溃 | 过期Lease转`UNKNOWN`，效果次数不增加，对账收敛 |
+| Action Owner在执行中崩溃 | 旧Operation中断、Route转`unknown`，新Owner只对账且Execute次数不增加 |
 | Agent崩溃 | 等待状态保留，其余开放执行中断，不自动Provider重发 |
 | 审批重开 | 原Fingerprint和身份有效，替换计划被拒绝 |
 | Patch崩溃 | 文件事实、账本游标和Agent恢复Item一致 |
