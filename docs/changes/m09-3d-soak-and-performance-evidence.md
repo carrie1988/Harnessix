@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 14
-code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
+version: 15
+code_revision: 7f6c56bbf871992bacb3cfa4740bcc0097222ed5
 owners:
   - core
 modules:
@@ -33,6 +33,7 @@ related_tests:
   - tests/benchmarks/test_soak_evidence.py
   - tests/benchmarks/test_soak_rss.py
   - tests/benchmarks/test_soak_environment.py
+  - tests/benchmarks/test_soak_attempt.py
   - tests/benchmarks/test_soak_long_session.py
   - tests/benchmarks/test_soak_many_threads.py
 supersedes: []
@@ -44,9 +45,9 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集。`long_session`与`many_threads`真实产品模块场景Runner已实现，缩小负载只发布`unverified`；其他四个场景、Threshold Profile、三平台正式负载和发布阈值证据仍未完成。 |
+| 当前能力 | 0.9.3a～c已经提供有界本地传输、Session/Protocol/Artifact容量与维护合同，以及Trusted Action效果恢复；当前Revision已有Soak Provider夹具、严格样本与Manifest合同、二进制字节发布与独立重算、三平台RSS读取及低敏硬件环境采集。`long_session`与`many_threads`真实产品模块场景Runner已实现，均持久记录Attempt开始/失败/提交；缩小负载只发布`unverified`。其他四个场景、Threshold Profile、三平台正式负载和发布阈值证据仍未完成。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
-| 代码版本 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` |
+| 代码版本 | `7f6c56bbf871992bacb3cfa4740bcc0097222ed5` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)；传输、容量维护和效果恢复分别见[ADR-0089](../adr/0089-bounded-local-transport-lifecycle.md)、[ADR-0090](../adr/0090-plan-first-store-maintenance-and-backup.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有运行时、SDK、维护、Action恢复和Artifact恢复测试；0.9.3d正式证据仍待三平台正式负载和独立复验生成。 |
@@ -68,7 +69,7 @@ supersedes: []
 
 本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest合同、Run提交标记、RSS适配器及`long_session`/`many_threads`真实模块场景Runner；其余四场景Runner、阈值Profile和发布阈值校验器仍待实现。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
 
-[`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。当前Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；修复仍待新CI验证。原Run保留为**历史诊断事实**，不能用于冻结发行Profile。1000 Turn正式长会话、其他四场景和Linux/Windows正式负载均未形成可接受证据。
+[`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。1000 Turn正式长会话、其他四场景和Linux/Windows正式负载均未形成可接受证据。
 
 源码与预研还确认：[`ScriptedProvider.stream`](../../src/harnessix/models/scripted.py)每次接收完整`ModelRequest`时，会将深拷贝追加到`self.requests`。因此它适合失败/恢复测试，不适合作为正式长会话内存基线；`self.requests`会保留Prompt及请求历史，使RSS随请求数量增长而混入Provider夹具开销。一次临时200 Turn试跑的末次时延和RSS观测如下，仅用于识别污染源，不属于正式Soak、基线或阈值证据：
 
@@ -166,7 +167,7 @@ flowchart TB
 
 | 模块 | 职责 | 允许依赖 | 禁止依赖 | 生命周期 |
 |---|---|---|---|---|
-| Soak Runner（两个场景部分实现） | `long_session`已测连续Turn/Replay；`many_threads`已测真实应用服务列表完整游标与Runtime重启；其他场景及失败证据保留仍待实现 | 各场景对应的AgentRuntime、AgentClient或`run_product_stdio`现有入口；确定性Provider；只读容量/恢复端口、样本写入器 | 用户Workspace、外部Provider、业务结果重写、绕过Action审批直接执行外部效果 | 一个Run独占；现有场景失败不发布Run，尚未满足失败事实留存要求。 |
+| Soak Runner（两个场景部分实现） | `long_session`已测连续Turn/Replay；`many_threads`已测真实应用服务列表完整游标与Runtime重启；两者均在负载前持久记录Attempt，其他四场景待实现 | 各场景对应的AgentRuntime、AgentClient或`run_product_stdio`现有入口；确定性Provider；只读容量/恢复端口、样本写入器 | 用户Workspace、外部Provider、业务结果重写、绕过Action审批直接执行外部效果 | 一个Run独占；异常保留低敏失败终态，硬退出只保留未终结`STARTED`，均不得判PASS。 |
 | Deterministic Fixture（部分实现） | 已有不保留`ModelRequest`/Prompt正文、只记请求计数的`SoakProvider`；固定种子Workspace、Thread、Turn、Artifact和故障编排仍待实现 | 当前产品公开/内部测试入口、固定Policy | 任意用户数据、网络Git、公网凭据、真实模型、请求历史列表 | 每个Run独立创建和销毁；Provider只保留请求计数。 |
 | AgentClient / SubprocessTransport（当前） | 传输初始化、请求并发、取消、迟到Response、关闭和快照 | Agent Protocol | 自动重连、业务重试、绕过服务 | 每次正式运行按既有SDK生命周期打开/关闭。 |
 | AgentProtocolServer / AgentApplicationService（当前） | Protocol方法校验、请求幂等、Thread列表分页、Turn驱动 | Session Store、AgentRuntime、Artifact/Action端口 | 性能报告逻辑、阈值选择 | 由App Server进程拥有。 |
@@ -297,7 +298,7 @@ sequenceDiagram
 - `AgentRuntime.__aenter__`按现有逻辑初始化Store、遍历Thread并恢复开放Turn；接受但尚未驱动的deferred Turn、等待输入和UNKNOWN按现有状态处理，不由Runner强制成功或自动重放外部效果。
 - Action效果未知、Owner失效、Audit/Process故障进入当前UNKNOWN/对账语义；恢复扫描不调用Execute。重复效果计数非零、未知状态未收敛或跨Store引用不一致时，运行不能PASS。
 - Artifact发布按当前Body/Reference事务语义校验完整性；读取/清理失败不得删除正文或伪造水位。
-- Runner自身取消、超时、崩溃或校验异常保留可得到的失败Manifest/运行记录并返回非零；若无法安全完成Manifest，保留不可判PASS的失败标记或临时目录，不覆盖任何既有运行。
+- 已实现的两个Runner在协作取消、超时或校验异常时保留低敏失败Attempt并返回非零；硬退出至少留下`STARTED`。其余四场景接入时必须遵守同一失败事实合同，不覆盖任何既有运行。
 
 ## 8. 数据流
 
@@ -323,7 +324,7 @@ flowchart LR
 | 容量/恢复快照 | 当前诊断端口 | 业务只读观测 | Manifest/低敏报告 | 与Run同生命周期 | 只保留计数、字节、状态分类和摘要。 |
 | Manifest | Writer根据白名单构造 | 可验证索引 | Run发布目录 | 不覆盖、不可变 | 禁止绝对路径、用户、ID、正文、Secret、stderr。 |
 | Threshold Profile | 独立基线冻结 | 发布配置 | Profile目录/版本库 | 版本化保留 | 只保留基线摘要、阈值和平台档位；无自由文本。 |
-| 错误事实 | Runner状态和计数 | 低敏运行事实 | 失败Manifest/报告 | 不选择性删除 | 仅使用稳定错误分类和计数，不写异常原文。 |
+| 错误事实 | Runner状态和计数 | 低敏运行事实 | 当前两个场景的Attempt；后续独立报告 | 不选择性删除 | 仅使用稳定阶段和计数，不写异常原文。 |
 
 ## 9. 状态机
 
@@ -417,8 +418,8 @@ classDiagram
 
 | 接口/方法 | 调用者 | 输入/输出 | 前置/后置条件 | 错误与重试 | 取消/超时 | 幂等/顺序 | 权限 |
 |---|---|---|---|---|---|---|---|
-| `run_long_session(evidence_root, code_revision, turn_count, warmup_count, seed, turn_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入固定负载和显式Revision；输出已发布Run目录及Manifest | 单次临时State Root、真实Agent Runtime和无状态Provider；`>=1000` Turn的基线运行须Git HEAD匹配且工作树干净 | 参数、Revision、Runtime、RSS、Replay或发布失败抛稳定错误；不发布PASS | 每Turn用`asyncio.timeout`；超时使运行失败且不发布部分Run；失败事实持久化待补 | Run ID新建、样本全局序号连续；失败重试必须新Run | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
-| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, startup_timeout_seconds, page_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数和两个独立期限；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；不发布PASS | 启动与页面独立计时；超过期限后先排空对应异步SQLite任务再报超时，不发布部分Run；排空的全局上限尚未实现 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
+| `run_long_session(evidence_root, code_revision, turn_count, warmup_count, seed, turn_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入固定负载和显式Revision；输出已发布Run目录及Manifest | 单次临时State Root、真实Agent Runtime和无状态Provider；`>=1000` Turn的基线运行须Git HEAD匹配且工作树干净 | 参数、Revision、Runtime、RSS、Replay或发布失败抛稳定错误；不发布PASS | 每Turn用`asyncio.timeout`；超时使运行失败且不发布部分Run；Attempt异常终态持久化，硬退出保留未终结开始事实 | Run ID新建、样本全局序号连续；失败重试必须新Run | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
+| `run_many_threads(evidence_root, code_revision, thread_count, list_limit, restart_count, seed, startup_timeout_seconds, page_timeout_seconds)`（当前） | 发布专用脚本/缩小CI回归 | 输入独立Thread数量、页上限、启动次数和两个独立期限；输出已发布Run目录及Manifest | 临时State Root先创建Thread；随后新Runtime/Service预热一次并正式重启；`>=500` Thread须至少3次正式重启且Git HEAD匹配、工作树干净 | 游标重复、缺页、Thread集合不等或证据不一致均失败；Attempt保留低敏失败阶段，不发布PASS | 启动与页面独立计时；超过期限后先排空对应异步SQLite任务再报超时，不发布部分Run；排空的全局上限尚未实现 | 每轮必须遍历完整列表；样本全局序号连续 | 只访问临时Session与证据根；不接收用户Workspace/凭据。 |
 | `SoakRunner.run(scenario, seed, environment)`（其余场景规划） | 发布运行器 | 输入固定Scenario/seed/平台档位；输出已发布Run状态 | 独立State Root、Revision和RSS能力通过；完成后只产生不可变Run | 参数/Schema/平台/业务失败均非零；重试必须新Run ID，不覆盖失败事实 | 取消/超时须保留失败事实；不得把已接受请求直接重发 | 一个Run只允许单一Writer；样本序号严格递增 | 发布工程角色；不得访问用户凭据/Workspace。 |
 | `EvidenceWriter.append(sample)`（规划） | Runner | `SoakSample`；无业务正文 | `phase=measuring`且单位/值合法 | 非有限值、负数、未知指标立即失败 | 写入失败不回滚业务事实；Run不能PASS | `sample_index`不重复；文件追加后不可改 | 仅Run临时目录写权限。 |
 | `publish_run(evidence_root, manifest, samples)`（当前） | 发布脚本/未来Runner | 严格Manifest与样本；输出Run目录和Manifest摘要 | 创建0700私有根与排他Run目录，重算样本摘要/统计/RSS后写Manifest和提交标记 | 目标冲突或写入失败均非零；失败目录保留，重试新Run ID | 提交标记前中断不能留下可读Run | 同一Run单Writer；最后写标记 | 只允许发布根目录。 |
@@ -433,7 +434,7 @@ classDiagram
 | `scenario_id` | v1最低输入与固定操作 | 正式样本/断言 | 当前实现状态 |
 |---|---|---|---|
 | `long_session` | 一个Thread至少1000个本地确定性Turn；固定包含Replay、Context检查，并覆盖Compaction相关事件（若夹具满足现有配置）；Provider必须不保留请求历史，仅保留请求计数 | Turn本地边界、RSS、Replay一致性、Context/Compaction状态、DB/WAL水位；`replay(events) == projection`；报告Provider请求计数而不报告请求正文 | 已实现真实Runtime连续Turn、Replay、DB/WAL水位、RSS和Run发布；缩小负载标记`unverified`。尚未证明正式1000 Turn、Context/Compaction断言、启动时延及失败事实保留。 |
-| `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | `app_service_startup`启动P50/P95/P99、`thread_list_page`列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | 已实现真实`AgentApplicationService.list_threads`完整游标遍历、Runtime重启、持久Thread集合复核与Run发布；缩小负载仅`unverified`，正式500 Thread及失败事实留存未完成。 |
+| `many_threads` | 至少500个Thread；按稳定游标请求列表直到遍历完成，随后冷/热启动恢复 | `app_service_startup`启动P50/P95/P99、`thread_list_page`列表页时延、页数、Thread总量、RSS、恢复扫描计数；不能只测首屏 | 已实现真实`AgentApplicationService.list_threads`完整游标遍历、Runtime重启、持久Thread集合复核、Run发布和失败Attempt；缩小负载仅`unverified`，修复Revision的正式500 Thread尚未重跑。 |
 | `sdk_capacity` | 以当前协商`max_pending_requests`为上限，在上限附近提交并取消请求；实际协商值写入Manifest | Pending/Abandoned峰值、迟到Response、吞吐、错误分类、连接关闭收敛；不得业务重试 | SubprocessTransport当前默认64、允许范围1～1024；Soak编排未实现。 |
 | `artifact_growth` | 小Artifact与接近当前`MAX_ARTIFACT_BYTES = 1 MiB`单件限制的混合发布；使用当前分页上限和清理计划 | 发布/读取分页P50/P95/P99、正文/Manifest/DB/WAL字节、清理前后水位、孤儿数；不改变现有Artifact限制 | Artifact合同和容量/维护路径当前存在；正式混合负载未实现。 |
 | `action_recovery` | 固定故障矩阵循环：Owner/Fence失效、效果写入/返回边界、Audit/Process边界、Artifact引用窗口 | UNKNOWN、重复效果、孤儿、恢复/对账耗时和终态；不调用Execute进行恢复 | Action路由、恢复扫描和测试当前存在；固定Soak矩阵未实现。 |
@@ -454,16 +455,16 @@ v1测量边界固定为：`long_session → core_runtime`、`many_threads → ap
 实现入口为[`run_long_session`](../../scripts/soak_long_session.py)，对应回归为[`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)。此函数仅是发布/测试脚本，不是用户产品命令。它先检查负载与Revision格式；当`turn_count >= 1000`时，额外核对当前Git HEAD和干净工作树。随后读取[`SoakEnvironment`](../../scripts/soak_environment.py)并创建一次性临时State Root；[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py)和[`AgentRuntime`](../../src/harnessix/agent/runtime.py)组成实际被测链，模型端仅替换成不保留请求的[`SoakProvider`](../../scripts/soak_provider.py)。
 
 ```text
-校验负载/正式Revision → 采集平台档位 → 创建临时Session
+校验负载/正式Revision → 排他持久STARTED → 采集平台档位 → 创建临时Session
 → 打开AgentRuntime → 创建Thread → 预热Turn → 正式Turn
 → 逐Turn monotonic_ns采样 → Store投影/事件Replay/Provider计数核验
 → 采集DB/WAL字节和进程峰值RSS → 构造严格Manifest
-→ publish_run排他提交 → read_published_run从磁盘重算
+→ publish_run排他提交 → read_published_run从磁盘重算 → 持久FINAL/committed
 ```
 
 每个Turn使用独立`request_id`和30秒默认操作期限；完成状态不是`COMPLETED`或发生超时，均抛出稳定`KernelError`，不会写出带提交标记的半成品Run。预热样本保留在JSONL但不进入正式分位数，正式样本计数必须等于输入`turn_count`。文件水位取Runtime打开之后、Thread创建之前，以及全部Turn完成且Runtime关闭之前的DB/WAL文件大小；这是同一进程的区间端点值，**不是**期间最大值。RSS是Runner进程高水位，非Thread独占内存。证据不存Prompt、响应正文、Workspace路径或业务身份；临时Session退出后删除。缩小测试用3个正式Turn、2个预热Turn验证整个提交/重读链，产物状态只能是`unverified`。
 
-本长会话实现并不等于正式0.9.3d验收：1000 Turn真实运行、Context/Compaction断言、失败运行的低敏持久事实、全局运行期限、独立阈值Profile/报告和另外四个场景仍待完成。当前失败会清理临时Session并抛错，但不会保留失败Manifest；此限制须在正式发布入口启用前补齐。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
+本长会话实现并不等于正式0.9.3d验收：1000 Turn真实运行、Context/Compaction断言、全局运行期限、独立阈值Profile/报告和另外四个场景仍待完成。当前失败会清理临时Session并抛错，同时保留低敏失败Attempt；发布阶段的部分Manifest不能当作有效Run。`baseline`也仅表示输入达到规模且Revision已核对，不表示已通过发布阈值。
 
 ### 11.3 `many_threads`当前执行链与失败语义
 
@@ -498,7 +499,7 @@ sequenceDiagram
     R->>R: RSS/DB/WAL/Manifest/提交重读
 ```
 
-Runner把初始创建的Thread ID集合只保存在临时内存，不写入证据；每轮分页必须与该集合完全相等，不能只比较总数。空页、重复、缺页、游标不收敛、启动/列表超时均抛稳定错误且不能发布部分Run。正式基线参数要求至少500 Thread、至少三次正式重启，且与当前干净Git Revision一致；缩小CI负载仅为`unverified`。[`publish_measured_run`](../../scripts/soak_run_common.py)复用与长会话相同的Manifest组装、样本校验、最后提交标记及磁盘重读，不增加第二套证据格式。当前场景尚不测完整产品启动、不执行Action故障矩阵，也尚未保存异常结束的低敏失败事实。
+Runner把初始创建的Thread ID集合只保存在临时内存，不写入证据；每轮分页必须与该集合完全相等，不能只比较总数。空页、重复、缺页、游标不收敛、启动/列表超时均抛稳定错误且不能发布部分Run。正式基线参数要求至少500 Thread、至少三次正式重启，且与当前干净Git Revision一致；缩小CI负载仅为`unverified`。[`publish_measured_run`](../../scripts/soak_run_common.py)复用与长会话相同的Manifest组装、样本校验、最后提交标记及磁盘重读，不增加第二套证据格式。当前场景尚不测完整产品启动或Action故障矩阵；异常结束已保存低敏Attempt，但不发布不完整Run。
 
 启动/分页测量分别采用`startup_timeout_seconds`和`page_timeout_seconds`。超时只将本次测量分类为失败，不立即取消正在执行SQLite I/O的Task；先`shield`并等待该Task自然收敛，再关闭Runtime和临时目录，避免Windows将仍在使用的`session.db`误删。**这不是硬退出保证**：若底层I/O永久不返回，排空仍可能无限等待；独立进程级Watchdog、失败Run留存和真实Windows压力验证属于0.9.3d未关闭工作。不能把本地通过或旧Revision的单次macOS数值解释为这些失败边界已达生产要求。
 
@@ -578,6 +579,61 @@ Manifest禁止字段：绝对路径、用户/主机名、Prompt、代码、Tool�
 
 Run提交标记固定为`COMMITTED.json`，采用严格JSON对象`{"spec_version":"harnessix.soak-commit/v1","manifest_sha256":"<64位小写十六进制>"}`；拒绝缺失、未知字段和非法摘要。标记只引用Manifest字节摘要，不参与Manifest的`evidence_sha256`，避免循环摘要。当前`read_published_run`只接受目录内恰好有`samples.jsonl`、`manifest.json`和`COMMITTED.json`，并重算全部摘要、统计和RSS。存在标记但任何引用不符时，整个Run仍为无效证据，不能恢复性地判PASS；独立Profile/报告不是该Run目录内文件。
 
+### 12.3.1 `SoakAttempt`（`harnessix.soak-attempt-*/v1`，现有两个Runner已实现）
+
+[`soak_attempt.py`](../../scripts/soak_attempt.py)在临时业务State Root建立前，把一次运行的低敏开始事实写入
+`<evidence_root>/attempts/<run_id>/STARTED.json`；正常异常、协作取消或未调用`commit`时写入同目录`FINAL.json`的
+`failed`终态。Run发布并从磁盘独立重读成功后，才允许写入`committed`终态。两文件均使用排他创建、规范JSON、
+文件`fsync`及POSIX目录同步，不覆盖既有Run或Attempt。`STARTED`与`FINAL`不是第三种性能样本，不进入Manifest摘要。
+
+```mermaid
+stateDiagram-v2
+    [*] --> STARTED: begin_attempt先持久化
+    STARTED --> FAILED: 异常/取消/未提交且无有效Run
+    STARTED --> COMMITTED: Run已独立重读且身份/摘要一致
+    STARTED --> INCOMPLETE: 硬退出或Run提交到Attempt提交间中断
+    FAILED --> [*]
+    COMMITTED --> [*]
+    INCOMPLETE --> [*]: 保留原始事实；不得判PASS
+```
+
+| 对象/字段 | 类型与约束 | 语义及来源 | 安全/恢复边界 |
+|---|---|---|---|
+| `STARTED.spec_version` | 固定`harnessix.soak-attempt-start/v1` | 开始合同版本 | 未知版本失败关闭。 |
+| `STARTED.run_id` | 32位小写十六进制 | 与Attempt目录、Run Manifest共享不透明身份 | 不保存Thread、Request或Action ID。 |
+| `STARTED.code_revision`、`scenario_id` | 40位小写SHA-1、固定六场景枚举 | 绑定被测代码和场景 | `committed`时必须与已发布Manifest一致。 |
+| `STARTED.started_at` | UTC时间 | Attempt建立时墙钟 | 不用于性能时延；硬退出仍可确定曾开始。 |
+| `FINAL.outcome`、`phase` | `failed/committed`；`prepared/warming/measuring/reconciling/publishing` | 只描述低敏终态和失败阶段，不保存异常文本 | `committed`仅允许`publishing`阶段；失败不宣称业务效果确定未发生。 |
+| `FINAL.finished_at`、`manifest_sha256` | UTC时间；成功时必填64位摘要 | 成功终态绑定Run Manifest原始字节 | 失败时摘要必须为空；终态时间不得早于开始时间。 |
+
+`read_attempt`要求Attempt目录只有`STARTED.json`和可选`FINAL.json`、文件为非符号链接普通文件、内容不超过
+2048字节且严格符合规范序列化。对`committed`，它重新读取同一根目录下的Run并校验Manifest摘要、Run ID、场景和
+Revision；对`failed`，有效已发布Run不得同时存在。仅有`STARTED`表示**未完成**，包括硬退出与Run已发布但
+Attempt终态尚未落盘的窗口；即使`COMMITTED.json`存在也不能据此判PASS。Attempt文件被篡改时`read_attempt`拒绝；
+不完整Run由`read_published_run`拒绝，后续Validator还须拒绝任何部分Run与Attempt组合。不得自动补写终态或删除证据。当前还没有正式Profile Validator，后续Validator必须把完整Attempt
+作为PASS必要条件，并检查对应Run是否达到场景最低负载。
+
+```text
+run_id = new_unique_id()
+begin_attempt(root, run_id, revision, scenario)  # 先写STARTED，再采集环境/执行负载
+try:
+    execute_real_product_load_and_reconcile()
+    run_dir = publish_measured_run(...)
+    read_published_run(run_dir)                     # commit内部再次核对
+    finish_attempt(COMMITTED, digest)              # FINAL为第二提交边界
+except BaseException:
+    if no_valid_published_run:
+        finish_attempt(FAILED, last_phase)
+    raise                                           # 硬退出不会运行此分支
+```
+
+开始证据不能证明负载已执行，失败阶段不能证明外部效果不存在，成功Attempt也不等于阈值PASS。Run与Attempt不是跨文件
+原子事务：在两次提交间崩溃留下`STARTED`加有效Run，需原样保留供复核；不能悄悄将其升级为成功。当前两个Runner
+仅在显式负载/Revision校验之后创建Attempt，因此非法输入不会建立证据目录；环境预检失败已在Attempt范围内并记录
+`prepared`失败。实现与故障注入分别见[`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)、
+[`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py)和
+[`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py)。
+
 ### 12.4 `ThresholdProfile`（`harnessix.soak-threshold/v1`，规划）
 
 Profile是独立于Run的只读发布对象。分位数算法已固定为`nearest_rank_v1`；具体样本数量、工程余量数值、平台硬件档位范围或每项指标门槛仍须在基线冻结时明确填写，冻结前状态只能为`pending_baseline_freeze`。
@@ -608,13 +664,15 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 
 证据发布顺序：
 
+已通过显式参数/Revision检查后，两个现有Runner先排他创建`attempts/<run_id>/STARTED.json`并同步，再执行环境探测、临时State Root和真实负载；预检异常也进入Attempt失败终态。其他四场景尚未接入此合同。
+
 1. `publish_run`在私有发布根下排他创建以Run ID命名的目录；POSIX要求发布根由当前用户所有且模式为0700，Windows拒绝目录符号链接/Junction，ACL配置仍须发行验证。目录已存在即拒绝；目录内只允许`samples.jsonl`、`manifest.json`和`COMMITTED.json`。
 2. 样本按固定字段顺序写同目录临时文件，使用`os.O_BINARY`（Windows）与`os.write`完整写入并`fsync`，再`os.replace`到固定文件名；写入器返回实际发布字节的SHA-256、计数和重算统计。Manifest和提交标记走同一二进制写入路径。
 3. 调用方构造的严格Manifest必须与刚写入的样本摘要和统计一致。`publish_run`再次从磁盘重读样本并核对RSS后，才写入并同步`manifest.json`。
 4. 最后写入带Manifest字节SHA-256的`COMMITTED.json`并同步。标记是唯一提交点；`read_published_run`只有在目录文件集合、标记、Manifest规范字节和样本摘要/统计/RSS全都一致时接受Run。Run目录排他创建是身份冲突边界；同一Run只允许单Writer，不能把`os.replace`误当成跨进程排他创建。
-5. 独立Profile和发布阈值报告的只读验证与单独发布仍待实现，不修改Run原件。
+5. Runner从磁盘独立重读已发布Run，核对Attempt的Run ID、Revision、场景及Manifest摘要后，再排他写入`attempts/<run_id>/FINAL.json`的`committed`终态；失败或协作取消在无有效已发布Run时写`failed`，硬退出则保留仅`STARTED`。独立Profile和发布阈值报告的只读验证与单独发布仍待实现，不修改Run原件。
 
-若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
+若进程在步骤2～4中退出，留下的对象只能被识别为未提交/失败事实，不能被扫描器误认为完整Run；故障注入已覆盖样本后、Manifest后和标记前中断。若在步骤4与5之间退出，即使Run有有效提交标记，Attempt仍只有`STARTED`，未来发布校验器必须拒绝PASS。重试必须使用新Run ID，旧失败文件保留以便审计。POSIX写入后同步目录元数据；Windows目前同步文件并依靠重启后的完整标记校验拒绝缺失/损坏证据，目录元数据断电持久性仍须第18节平台验证。跨平台不假定目录整体重命名具有排他语义。
 
 ## 14. 并发、幂等与一致性
 
@@ -630,7 +688,7 @@ Profile不允许把“基线P95加百分比”写成未展开的自由文本；�
 
 | 故障点 | 可观测事实 | 对外错误/状态 | 是否重试 | 恢复动作 | 最终状态 | 防重复证明 |
 |---|---|---|---|---|---|---|
-| 预热初始化失败 | Agent/SDK错误分类、无完整正式样本 | 非零、`failed` | 可新Run重试 | 关闭Runtime/Transport，保留失败Manifest | 不可PASS | 新Run ID；不复用半成品。 |
+| 预热初始化失败 | Agent/SDK错误分类、无完整正式样本 | 非零、`failed` | 可新Run重试 | 关闭Runtime/Transport，已接入场景保留失败Attempt；其他场景须接入同一合同 | 不可PASS | 新Run ID；不复用半成品。 |
 | SDK请求取消 | Pending/Abandoned计数、请求未决 | 取消；不推断业务未提交 | 不直接重发 | 新连接查询Protocol/Turn持久事实 | 事实由业务决定；Run按断言结果 | 复用当前requestId查询，非盲重试。 |
 | stdout EOF/非法Response | Transport sticky failure和待处理数 | `server_closed`/`invalid_response` | 关闭后新Run或新连接 | 查询持久事实；完整性不明则失败 | `failed`或`unverified` | 不根据客户端等待结果产生成功。 |
 | Runner超时/取消 | 已写样本数量、最后状态、水位 | 非零、`failed` | 新Run | 收敛业务进程，发布失败事实 | 不可PASS | 不覆盖旧Run。 |
@@ -747,15 +805,16 @@ run_scenario(scenario, seed, environment):
     return baseline_fact_or_independent_validation(manifest)
 ```
 
-实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)。其余四场景未来选择[`AgentClient`](../../src/harnessix/sdk/agent_client.py)/[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)、[`run_product_stdio`](../../src/harnessix/product_config/server.py)或现有Artifact/Action端口，并在Manifest标记真实测量边界。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、提交标记和独立重算已实现；其余四个Runner、冻结测量计划、失败事实持久化和阈值复验仍待实现。
+实现映射：当前[`run_long_session`](../../scripts/soak_long_session.py)选择[`AgentRuntime`](../../src/harnessix/agent/runtime.py)与Session共库；[`run_many_threads`](../../scripts/soak_many_threads.py)在相同持久Session上真实重启Runtime并调用[`AgentApplicationService.list_threads`](../../src/harnessix/app_server/service.py)。两者都由[`attempt_scope`](../../scripts/soak_attempt.py)持久记录开始、异常与提交事实。其余四场景未来选择[`AgentClient`](../../src/harnessix/sdk/agent_client.py)/[`SubprocessAgentTransport`](../../src/harnessix/sdk/subprocess.py)、[`run_product_stdio`](../../src/harnessix/product_config/server.py)或现有Artifact/Action端口，并在Manifest标记真实测量边界。业务恢复调用当前`AgentRuntime.__aenter__`和`_recover`；容量调用当前[`capacity_report`](../../src/harnessix/session/capacity.py)；Action恢复调用当前[`scan_product_action_recovery`](../../src/harnessix/product_config/action_recovery.py)。样本/Manifest合同、RSS适配、文件摘要、提交标记和独立重算已实现；其余四个Runner、冻结测量计划和阈值复验仍待实现。
 
 ## 20. 源码与测试映射
 
 | 设计元素 | 源码文件链接 | 关键符号 | 测试文件链接 | 测试函数/合同 | 当前/规划说明 |
 |---|---|---|---|---|---|
 | Agent启动与恢复 | [`agent/runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__aenter__`, `AgentRuntime._recover` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_shutdown_cancels_managed_turn`、运行时Replay断言 | 当前实现；长会话Soak已调用，其他场景待实现。 |
-| 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_long_session`、`check_release_revision`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py) | 缩小负载Run提交与重读、负载/Revision拒绝、超时不发布 | 真实Agent Runtime路径已覆盖；正式1000 Turn与失败事实持久化未完成。 |
-| 多Thread真实负载 | [`soak_many_threads.py`](../../scripts/soak_many_threads.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_many_threads`、`_list_all`、`_restart_and_list` | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 多次重启、完整分页/集合核对、基线重启数拒绝、空页/超时不发布 | 真实Runtime与应用服务路径已覆盖；正式500 Thread和失败事实持久化未完成。 |
+| 长会话真实负载 | [`soak_long_session.py`](../../scripts/soak_long_session.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_long_session`、`check_release_revision`、`publish_measured_run` | [`test_soak_long_session.py`](../../tests/benchmarks/test_soak_long_session.py) | 缩小负载Run提交与重读、负载/Revision拒绝、超时不发布、环境预检失败留存 | 真实Agent Runtime和失败Attempt已覆盖；正式1000 Turn未完成。 |
+| 多Thread真实负载 | [`soak_many_threads.py`](../../scripts/soak_many_threads.py)、[`soak_run_common.py`](../../scripts/soak_run_common.py) | `run_many_threads`、`_list_all`、`_restart_and_list` | [`test_soak_many_threads.py`](../../tests/benchmarks/test_soak_many_threads.py) | 多次重启、完整分页/集合核对、基线重启数拒绝、空页/超时不发布且保留失败Attempt | 真实Runtime、应用服务和失败Attempt已覆盖；修复Revision的正式500 Thread未完成。 |
+| Attempt失败事实 | [`soak_attempt.py`](../../scripts/soak_attempt.py) | `begin_attempt`、`finish_attempt`、`read_attempt`、`attempt_scope` | [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py) | 规范字节、排他身份、异常/硬退出、Run已发布但Attempt未终结、终态篡改 | 当前仅两个Runner接入；完整发布Validator尚未实现。 |
 | SDK并发与取消 | [`sdk/subprocess.py`](../../src/harnessix/sdk/subprocess.py) | `SubprocessAgentTransport.exchange`, `_ResponseRouter`, `_RequestCapacity` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests`、`test_subprocess_transport_close_continues_after_caller_cancel` | 当前实现；固定压力编排规划。 |
 | SDK公共入口 | [`sdk/agent_client.py`](../../src/harnessix/sdk/agent_client.py) | `AgentClient.initialize`, `list_threads`, `replay_events`, `read_artifact` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_agent_sdk_drives_turn_replay_and_duplicate_command`、`test_events_next_delivers_live_delta_then_durable_replay` | 当前实现；Runner只复用，不扩展公共API。 |
 | stdio协议服务 | [`app_server/stdio.py`](../../src/harnessix/app_server/stdio.py) | `run_stdio`, `_StdioWriter`, `_StdioReader` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) | `test_subprocess_transport_bounds_cancelled_and_pending_requests` | 当前实现。 |
@@ -841,3 +900,4 @@ run_scenario(scenario, seed, environment):
 | 12 | `406aeef55820c70b80768de9ff6aa8462dac4c7b` | 2026-09-23 | 增加多Thread真实应用服务分页、启动恢复和集合核对Runner；抽取两个场景共用的低敏采样/Manifest发布逻辑，保留缩小负载非正式状态。 |
 | 13 | `d64054638a03bca008f5b392fd0edf23aa4cd63b` | 2026-09-23 | 归档macOS 500 Thread单次正式规模基线原始文件及重算结果，明确它不构成阈值PASS或三平台验收。 |
 | 14 | `4097229e9fca700ba6a70c2d05de02cf0bb53a9b` | 2026-09-23 | 根据CI macOS/Windows失败，拆分启动与分页期限，超时后排空在途SQLite任务再清理；把旧Run降为历史诊断证据并登记进程级Watchdog缺口。 |
+| 15 | `7f6c56bbf871992bacb3cfa4740bcc0097222ed5` | 2026-09-23 | 两个现有Runner负载前持久写入Attempt开始，异常/取消写低敏失败终态，硬退出保留未完成事实；Run重读后才提交成功Attempt，补充排他、篡改、硬退出及提交窗口测试。旧500 Thread证据仍仅为历史诊断，四场景与发布Profile未完成。 |

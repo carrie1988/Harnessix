@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 7
-code_revision: 4097229e9fca700ba6a70c2d05de02cf0bb53a9b
+version: 8
+code_revision: 7f6c56bbf871992bacb3cfa4740bcc0097222ed5
 owners:
   - core
 modules:
@@ -26,6 +26,7 @@ related_tests:
   - tests/product_config/test_action_recovery.py
   - tests/benchmarks/test_soak_long_session.py
   - tests/benchmarks/test_soak_many_threads.py
+  - tests/benchmarks/test_soak_attempt.py
 supersedes: []
 ---
 
@@ -33,7 +34,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile。当前修复尚待新CI复验；其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话和多Thread真实模块Runner；两个Runner已在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。其余四个场景和完整三平台性能证据仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 
@@ -102,7 +103,7 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 唯一Run目录，先写入并校验样本和Manifest，最后以原子替换写入固定文件`COMMITTED.json`。标记只含版本和Manifest的SHA-256，
 不纳入Manifest自身摘要，避免循环引用。Validator只接受有效提交标记，
 不依赖跨平台“目录整体原子重命名”或覆盖既有运行。受控测试只使用临时Workspace；故障注入不得触碰用户仓库、
-公网Git或外部凭据。Runner异常、取消或超时保留失败事实并返回非零，不把不完整样本判定为通过。
+公网Git或外部凭据。两个现有Runner先写`STARTED.json`，异常、取消或超时写低敏`FINAL.json/failed`并返回非零；硬退出保留未终结开始事实。`COMMITTED.json`之后、Attempt成功终态之前的崩溃仍不得判PASS。其余四场景尚未接入Attempt合同，不把不完整样本判定为通过。
 
 ## 验证方式
 
@@ -132,3 +133,4 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 | 1 | 2026-09-22 | 建立独立基线、阈值复验与三平台Soak决策。 |
 | 2 | 2026-09-22 | 明确排他Run目录和末尾提交标记；不依赖跨平台目录原子重命名。 |
 | 3 | 2026-09-23 | 同步样本/Manifest合同、Run目录提交标记与独立复核的局部实现；正式Soak及阈值验收仍未完成。 |
+| 4 | 2026-09-23 | 两个已实现Runner在负载前持久写入Attempt开始，异常写失败终态，硬退出留未完成事实；明确Run已发布而Attempt未终结不得判PASS，其他四场景与Profile仍待实现。 |
