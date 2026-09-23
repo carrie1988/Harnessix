@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: 85aadeaf16826bc15e284b67c2fcd99ed5c3a947
+version: 4
+code_revision: d257f99b78a27fe70fbc16dc1d493494d1e7dfde
 owners:
   - core
 modules:
@@ -180,7 +180,7 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 
 证据层已实现[`SoakArtifactProof`](../../scripts/soak_artifact_proof.py)、[`SoakManifestV3`](../../scripts/soak_manifest.py)、[`publish_run/read_published_run`](../../scripts/soak_evidence.py)和[`publish_measured_run`](../../scripts/soak_run_common.py)的v3分支。Proof白名单包含每件序号、阶段、大小类别、正文与记录数量、页数、发布样本索引和逐页读取样本索引，以及清理前后逻辑正文、过期/保护/Tombstone/Manifest计数。Reader在任何PASS判断前核对规范文件字节、SHA-256、精确文件集合、完整样本索引覆盖、阶段和顺序、Manifest负载及请求数；v1/v2原有文件集合和序列化路径不变。[合同回归](../../tests/benchmarks/test_soak_artifact_proof.py)覆盖v3发布/重读、缺失和篡改Proof、重复或缺失样本、清理与页数不一致及正式规模拒绝。
 
-真实负载层已实现[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)：固定Workspace文件产生3行小件和2500行近上限件，`Seed`只改变正式Turn的大小件顺序，不影响预热；Step1固定调用`grep`，Step2结束Turn。每件从真实ToolResult提取引用，校验发布次数、完整性和大小类别，随后调用真实`SQLiteArtifactStore.read`读完所有页并测量每页时延。Session事件必须重放得到相同投影；到期前逻辑正文必须等于所有引用大小之和，到期后正文归零、墓碑与Manifest数量等于发布数，历史引用逐件返回`artifact_expired`。[Runner回归](../../tests/benchmarks/test_soak_artifact_growth.py)覆盖混合件/全页、Replay、清理、非法规模、取消、Turn/Page超时、分页污染、清理不符、负载前Revision拒绝和阈值复验合同；Page超时先排空在途SQLite任务，再清理Windows临时库。测试中的Revision检查替身只验证合同路径，不能成为正式基线来源。
+真实负载层已实现[`run_artifact_growth`](../../scripts/soak_artifact_growth.py)：固定Workspace文件产生3行小件和2500行近上限件，`Seed`只改变正式Turn的大小件顺序，不影响预热；Step1固定调用`grep`，Step2结束Turn。每件从真实ToolResult提取引用，校验发布次数、完整性和大小类别，随后调用真实`SQLiteArtifactStore.read`读完所有页并测量每页时延。Session事件必须重放得到相同投影；到期前逻辑正文必须等于所有引用大小之和，到期后正文归零、墓碑与Manifest数量等于发布数，历史引用逐件返回`artifact_expired`。[Runner回归](../../tests/benchmarks/test_soak_artifact_growth.py)覆盖混合件/全页、Replay、清理、非法规模、取消、Turn/Page超时、分页污染、清理不符、负载前Revision拒绝和阈值复验合同；Page超时先排空在途SQLite任务，再清理Windows临时库。只读`sqlite3`水位查询使用`closing()`显式释放连接；Python连接上下文只管理事务而不关闭句柄，缺失关闭在[首次Windows CI](https://github.com/carrie1988/Harnessix/actions/runs/35821931723)触发`WinError 32`，对应回归现检查查询后连接已关闭。测试中的Revision检查替身只验证合同路径，不能成为正式基线来源。
 
 剩余发布验证步骤：
 

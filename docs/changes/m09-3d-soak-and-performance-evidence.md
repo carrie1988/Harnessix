@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 27
-code_revision: 85aadeaf16826bc15e284b67c2fcd99ed5c3a947
+version: 28
+code_revision: d257f99b78a27fe70fbc16dc1d493494d1e7dfde
 owners:
   - core
 modules:
@@ -72,6 +72,8 @@ supersedes: []
 [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)明确要求：负载必须调用当前Agent/SDK/Store/Trusted Action真实入口；第一次运行只冻结事实基线；阈值必须来自独立、带来源摘要的Profile，并由后续独立运行验证。因而本文不把单次P95、人工观察或从结果反推的门槛写成发布结论。
 
 本Revision中的以下源码路径是被测的当前入口或当前容量事实：`AgentRuntime.__aenter__`启动时读取Thread并恢复活动Turn；`AgentApplicationService.list_threads`先枚举并读取Thread再分页；`capacity_report`重算三类Store水位；`scan_product_action_recovery`执行跨Store低敏完整性扫描。0.9.3d已实现Soak Provider、样本读写/统计、Manifest、Run/Attempt提交、RSS适配、三个真实模块Runner及[单平台阈值独立复验内核](m09-3d-threshold-verification.md)。SDK容量、Action恢复和重启三个场景Runner、正式阈值冻结与三平台复验仍待完成。macOS RSS单位已在本机子进程探针验证，Linux/Windows适配须由各自CI真实运行确认。
+
+[macOS Artifact单次规模事实](../validation/soak-macos-artifact-2026-09-23-v1/README.md)完成2件预热、20件正式、22件全部分页与受控到期清理，复制的Run/Attempt可独立重读；但对应[首次CI 35821931723](https://github.com/carrie1988/Harnessix/actions/runs/35821931723)的Windows Benchmark在临时SQLite文件清理时出现`WinError 32`，根因是只读`sqlite3`连接未显式关闭。修复Revision `d257f99`改用`closing()`并增加句柄关闭测试；旧Run保留为诊断原件，不可因后续修复而升级为可冻结Profile的基线，必须在新干净Revision重跑。
 
 [`macOS 500 Thread单次诊断事实`](../validation/soak-macos-2026-09-23-v1/README.md)已在干净Revision `d640546`上执行并保存完整数值样本、Manifest和提交标记；3次正式启动、30个正式列表页样本和1个RSS样本可从复制后的原始文件重算。但该Revision的[CI 35804027413](https://github.com/carrie1988/Harnessix/actions/runs/35804027413)在macOS/Windows基准测试Job失败：共用的10毫秒测试期限可在Runtime启动而非目标列表操作时到期，Windows随后出现异步SQLite句柄与临时目录清理竞态。修复Revision拆分启动/分页预算，并在超时分类后先等待在途SQLite操作自然收敛再清理；已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例验收。原Run保留为**历史诊断事实**，不能因修复版CI通过而升级为发行Profile基线。
 
@@ -951,3 +953,4 @@ run_scenario(scenario, seed, environment):
 | 25 | `d3f2eb13fbf18dafcc76472c368debf566fb4c06` | 2026-09-23 | Artifact增长、全页读取、逻辑清理与v3低敏Proof进入专项设计评审；未将规划Runner写为当前能力。 |
 | 26 | `9b527bea9d72b6cff08833245d7ec302ddbfb784` | 2026-09-23 | Artifact场景新增v3 Proof、Manifest、Run发布与独立重读合同及失真/中断回归；真实负载Runner和正式阈值仍未实现。 |
 | 27 | `85aadeaf16826bc15e284b67c2fcd99ed5c3a947` | 2026-09-23 | Artifact场景接入真实Agent/Tool/Store负载、全页读取、逻辑清理与Threshold v3分支；正式三平台负载和工程阈值仍待验收。 |
+| 28 | `d257f99b78a27fe70fbc16dc1d493494d1e7dfde` | 2026-09-23 | 首次Artifact macOS规模Run按诊断原件归档；对应Revision的Windows Benchmark因只读SQLite句柄未显式关闭失败，修复加`closing()`与连接关闭回归；新Revision的跨平台CI和重跑仍待验收。 |
