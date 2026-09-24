@@ -9,6 +9,7 @@ from typing import Literal, Self
 from pydantic import Field, StrictBool, StrictInt, model_validator
 
 from harnessix.domain.models import ContractModel
+from scripts.soak_action_proof import ACTION_PROOF_FILENAME, SoakActionProof, verify_action_proof
 from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_restart_proof import (
@@ -151,6 +152,11 @@ class SoakManifest(ContractModel):
             raise ValueError("SDK容量场景必须携带v4证明")
         if self.scenario_id == "restart" and self.spec_version != "harnessix.soak-manifest/v5":
             raise ValueError("产品重启场景必须携带v5证明")
+        if (
+            self.scenario_id == "action_recovery"
+            and self.spec_version != "harnessix.soak-manifest/v7"
+        ):
+            raise ValueError("Action恢复场景必须携带v7证明")
         if (self.scenario_id == "restart") != (self.provider.mode == "product_no_turn_v1"):
             raise ValueError("重启场景必须使用无Turn产品Provider证据")
         if (
@@ -180,6 +186,8 @@ class SoakManifest(ContractModel):
             evidence_files.add(RESTART_PROOF_FILENAME)
         if self.spec_version == "harnessix.soak-manifest/v6":
             evidence_files.add(THREAD_PROOF_FILENAME)
+        if self.spec_version == "harnessix.soak-manifest/v7":
+            evidence_files.add(ACTION_PROOF_FILENAME)
         if set(self.evidence_sha256) != evidence_files or any(
             len(value) != 64 or any(char not in "0123456789abcdef" for char in value)
             for value in self.evidence_sha256.values()
@@ -372,6 +380,57 @@ class SoakManifestV6(SoakManifest):
         ):
             raise ValueError("多Thread场景负载或故障计数无效")
         return self
+
+
+class SoakManifestV7(SoakManifest):
+    """Action恢复故障矩阵证明版；历史v1～v6证据维持原字节可读。"""
+
+    spec_version: Literal["harnessix.soak-manifest/v7"]
+    scenario_version: Literal["harnessix.soak-scenario/v7"]
+    scenario_id: Literal["action_recovery"]
+    action_proof_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def proof_reference(self) -> Self:
+        if self.action_proof_sha256 != self.evidence_sha256[ACTION_PROOF_FILENAME]:
+            raise ValueError("Action证明摘要与证据索引不一致")
+        if (
+            self.load.turn_count != 0
+            or self.load.thread_count != 0
+            or self.load.artifact_count != 0
+            or self.load.pending_limit is not None
+            or self.load.fault_matrix_version != "action-recovery-v1"
+            or self.provider.request_count != 0
+            or self.sample_counts["rss_peak"] != 1
+            or self.fault_counts.unknown_effect
+            != (self.load.warmup_count + self.sample_counts["recovery_scan"]) * 2
+            or self.fault_counts.duplicate_effect != 0
+            or self.fault_counts.orphan != 0
+            or self.fault_counts.cancelled != 0
+            or self.fault_counts.timed_out != 0
+            or self.fault_counts.eof != 0
+        ):
+            raise ValueError("Action恢复场景负载或故障计数无效")
+        if self.status == "baseline" and (
+            self.load.warmup_count != 2 or self.sample_counts["recovery_scan"] < 20
+        ):
+            raise ValueError("正式Action基线需要2轮预热和至少20轮正式故障矩阵")
+        return self
+
+
+def verify_action_manifest(
+    manifest: SoakManifestV7, proof: SoakActionProof, samples: tuple[SoakSample, ...]
+) -> None:
+    """从原始样本与故障计数交叉核验Action恢复证明。"""
+
+    verify_action_proof(
+        proof,
+        run_id=manifest.run_id,
+        cycle_count=manifest.sample_counts["recovery_scan"],
+        warmup_count=manifest.load.warmup_count,
+        unknown_effect=manifest.fault_counts.unknown_effect,
+        samples=samples,
+    )
 
 
 def verify_thread_manifest(

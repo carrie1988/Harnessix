@@ -1,0 +1,44 @@
+name: Action恢复正式Soak
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action-recovery:
+    name: Action恢复 ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+          - platform: macos
+            runner: macos-latest
+          - platform: windows
+            runner: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 固定22轮Action故障矩阵真实恢复扫描并重读Run和Attempt
+        run: uv run python -m scripts.run_action_recovery_soak_release --evidence-root "$SOAK_EVIDENCE_ROOT"
+        shell: bash
+        env:
+          SOAK_EVIDENCE_ROOT: ${{ runner.temp }}/harnessix-action-soak-evidence
+      - name: 保留已提交Run或失败Attempt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-action-soak-${{ matrix.platform }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harnessix-action-soak-evidence
+          if-no-files-found: ignore
+          retention-days: 14

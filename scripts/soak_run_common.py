@@ -8,6 +8,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from scripts.soak_action_proof import ACTION_PROOF_FILENAME, SoakActionProof
 from scripts.soak_artifact_proof import ARTIFACT_PROOF_FILENAME, SoakArtifactProof
 from scripts.soak_context_proof import CONTEXT_PROOF_FILENAME, SoakContextProof
 from scripts.soak_environment import SoakEnvironment
@@ -23,6 +24,7 @@ from scripts.soak_manifest import (
     SoakManifestV4,
     SoakManifestV5,
     SoakManifestV6,
+    SoakManifestV7,
     SoakProfileReference,
     SoakProviderEvidence,
     SoakRssEvidence,
@@ -128,6 +130,7 @@ def publish_measured_run(
     provider: SoakProvider | None,
     restart_proof: SoakRestartProof | None = None,
     thread_proof: SoakThreadProof | None = None,
+    action_proof: SoakActionProof | None = None,
     rss: RssObservation,
     file_watermarks: SoakFileWatermarks,
     baseline: bool,
@@ -144,7 +147,8 @@ def publish_measured_run(
     | SoakManifestV3
     | SoakManifestV4
     | SoakManifestV5
-    | SoakManifestV6,
+    | SoakManifestV6
+    | SoakManifestV7,
 ]:
     """按固定白名单组装Manifest，发布后独立重读。"""
 
@@ -152,7 +156,7 @@ def publish_measured_run(
     for sample in samples:
         if sample.phase == "measure":
             sample_counts[sample.metric] = sample_counts.get(sample.metric, 0) + 1
-    proofs = (context_proof, artifact_proof, sdk_proof, restart_proof, thread_proof)
+    proofs = (context_proof, artifact_proof, sdk_proof, restart_proof, thread_proof, action_proof)
     if sum(proof is not None for proof in proofs) > 1:
         raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
     if restart_proof is not None and (
@@ -173,6 +177,10 @@ def publish_measured_run(
         scenario_id != "many_threads" or summary_request_count is not None
     ):
         raise KernelError("soak_thread_proof_invalid", "多Thread证明与场景不匹配")
+    if action_proof is not None and (
+        scenario_id != "action_recovery" or summary_request_count is not None
+    ):
+        raise KernelError("soak_action_proof_invalid", "Action证明与场景不匹配")
     manifest_data: dict[str, object] = dict(
         spec_version="harnessix.soak-manifest/v1",
         run_id=run_id,
@@ -238,14 +246,30 @@ def publish_measured_run(
         | SoakManifestV4
         | SoakManifestV5
         | SoakManifestV6
+        | SoakManifestV7
     )
     if (
         artifact_proof is None
         and sdk_proof is None
         and restart_proof is None
         and thread_proof is None
+        and action_proof is None
     ):
         manifest = SoakManifest.model_validate(manifest_data)
+    elif action_proof is not None:
+        proof_digest = sha256((action_proof.model_dump_json() + "\n").encode()).hexdigest()
+        manifest = SoakManifestV7.model_validate(
+            {
+                **manifest_data,
+                "spec_version": "harnessix.soak-manifest/v7",
+                "scenario_version": "harnessix.soak-scenario/v7",
+                "action_proof_sha256": proof_digest,
+                "evidence_sha256": {
+                    SAMPLE_FILENAME: sample_sha256(samples),
+                    ACTION_PROOF_FILENAME: proof_digest,
+                },
+            }
+        )
     elif thread_proof is not None:
         proof_digest = sha256((thread_proof.model_dump_json() + "\n").encode()).hexdigest()
         manifest = SoakManifestV6.model_validate(
@@ -332,6 +356,7 @@ def publish_measured_run(
         sdk_proof=sdk_proof,
         restart_proof=restart_proof,
         thread_proof=thread_proof,
+        action_proof=action_proof,
     )
     restored, _ = read_published_run(run_directory)
     if restored != manifest:

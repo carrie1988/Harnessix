@@ -1,0 +1,50 @@
+name: Action恢复冻结阈值复验
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action-recovery-candidate:
+    name: Action恢复复验 ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+          - platform: macos
+            runner: macos-latest
+          - platform: windows
+            runner: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 使用已冻结Profile运行第二独立Action恢复Run与复验
+        run: >-
+          uv run python -m scripts.run_action_recovery_soak_candidate
+          --evidence-root "$SOAK_EVIDENCE_ROOT"
+          --report-root "$SOAK_REPORT_ROOT"
+        shell: bash
+        env:
+          SOAK_EVIDENCE_ROOT: ${{ runner.temp }}/harnessix-action-candidate-evidence
+          SOAK_REPORT_ROOT: ${{ runner.temp }}/harnessix-action-candidate-reports
+      - name: 保留候选Run、失败Attempt与报告
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-action-candidate-${{ matrix.platform }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/harnessix-action-candidate-evidence
+            ${{ runner.temp }}/harnessix-action-candidate-reports
+          if-no-files-found: ignore
+          retention-days: 14

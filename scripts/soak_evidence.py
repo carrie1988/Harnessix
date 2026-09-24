@@ -15,6 +15,11 @@ from pydantic import Field, ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
+from scripts.soak_action_proof import (
+    ACTION_PROOF_FILENAME,
+    MAX_ACTION_PROOF_BYTES,
+    SoakActionProof,
+)
 from scripts.soak_artifact_proof import (
     ARTIFACT_PROOF_FILENAME,
     MAX_ARTIFACT_PROOF_BYTES,
@@ -33,6 +38,8 @@ from scripts.soak_manifest import (
     SoakManifestV4,
     SoakManifestV5,
     SoakManifestV6,
+    SoakManifestV7,
+    verify_action_manifest,
     verify_artifact_manifest,
     verify_context_proof,
     verify_manifest_samples,
@@ -60,6 +67,7 @@ _RUN_FILES_V3 = _RUN_FILES_V1 | {ARTIFACT_PROOF_FILENAME}
 _RUN_FILES_V4 = _RUN_FILES_V1 | {SDK_PROOF_FILENAME}
 _RUN_FILES_V5 = _RUN_FILES_V1 | {RESTART_PROOF_FILENAME}
 _RUN_FILES_V6 = _RUN_FILES_V1 | {THREAD_PROOF_FILENAME}
+_RUN_FILES_V7 = _RUN_FILES_V1 | {ACTION_PROOF_FILENAME}
 
 
 class SoakCommit(ContractModel):
@@ -159,7 +167,8 @@ def publish_run(
     | SoakManifestV3
     | SoakManifestV4
     | SoakManifestV5
-    | SoakManifestV6,
+    | SoakManifestV6
+    | SoakManifestV7,
     samples: tuple[SoakSample, ...],
     *,
     context_proof: SoakContextProof | None = None,
@@ -167,6 +176,7 @@ def publish_run(
     sdk_proof: SoakSdkProof | None = None,
     restart_proof: SoakRestartProof | None = None,
     thread_proof: SoakThreadProof | None = None,
+    action_proof: SoakActionProof | None = None,
     fault: Callable[[str], None] | None = None,
 ) -> tuple[Path, str]:
     """排他创建Run目录；样本、Manifest校验后最后写入提交标记。"""
@@ -174,11 +184,30 @@ def publish_run(
     if (
         sum(
             proof is not None
-            for proof in (context_proof, artifact_proof, sdk_proof, restart_proof, thread_proof)
+            for proof in (
+                context_proof,
+                artifact_proof,
+                sdk_proof,
+                restart_proof,
+                thread_proof,
+                action_proof,
+            )
         )
         > 1
     ):
         raise KernelError("soak_evidence_invalid", "同一Run不能混用场景证明")
+    if isinstance(manifest, SoakManifestV7):
+        if action_proof is None:
+            raise KernelError("soak_action_proof_invalid", "v7 Run缺少Action证明")
+        try:
+            verify_action_manifest(manifest, action_proof, samples)
+        except ValueError:
+            raise KernelError("soak_action_proof_invalid", "Action证明与样本不一致") from None
+        action_body = (action_proof.model_dump_json() + "\n").encode("utf-8")
+        if sha256(action_body).hexdigest() != manifest.action_proof_sha256:
+            raise KernelError("soak_action_proof_invalid", "Action证明摘要不匹配")
+    elif action_proof is not None:
+        raise KernelError("soak_action_proof_invalid", "非v7 Run不得包含Action证明")
     if isinstance(manifest, SoakManifestV6):
         if thread_proof is None:
             raise KernelError("soak_thread_proof_invalid", "v6 Run缺少多Thread证明")
@@ -272,6 +301,8 @@ def publish_run(
         _write_file(run_directory, RESTART_PROOF_FILENAME, restart_body, MAX_RESTART_PROOF_BYTES)
     if thread_proof is not None:
         _write_file(run_directory, THREAD_PROOF_FILENAME, thread_body, MAX_THREAD_PROOF_BYTES)
+    if action_proof is not None:
+        _write_file(run_directory, ACTION_PROOF_FILENAME, action_body, MAX_ACTION_PROOF_BYTES)
     if fault is not None:
         fault("after_samples")
     body = (manifest.model_dump_json() + "\n").encode("utf-8")
@@ -298,7 +329,8 @@ def read_published_run(
     | SoakManifestV3
     | SoakManifestV4
     | SoakManifestV5
-    | SoakManifestV6,
+    | SoakManifestV6
+    | SoakManifestV7,
     str,
 ]:
     """提交标记、Manifest和样本全部可重算时才接受Run。"""
@@ -314,6 +346,7 @@ def read_published_run(
             _RUN_FILES_V4,
             _RUN_FILES_V5,
             _RUN_FILES_V6,
+            _RUN_FILES_V7,
         ):
             raise OSError
         marker_body = _read_file(run_directory, COMMIT_FILENAME, MAX_COMMIT_BYTES)
@@ -422,6 +455,24 @@ def read_published_run(
                 expected_measured=manifest.sample_counts,
             )
             verify_thread_manifest(manifest, thread_proof, samples)
+        elif version == "harnessix.soak-manifest/v7":
+            manifest = SoakManifestV7.model_validate_json(manifest_body)
+            if names != _RUN_FILES_V7:
+                raise ValueError
+            proof_body = _read_file(run_directory, ACTION_PROOF_FILENAME, MAX_ACTION_PROOF_BYTES)
+            if sha256(proof_body).hexdigest() != manifest.action_proof_sha256:
+                raise ValueError
+            action_proof = SoakActionProof.model_validate_json(proof_body)
+            if proof_body != (action_proof.model_dump_json() + "\n").encode("utf-8"):
+                raise ValueError
+            samples, _, _ = read_sample_file(
+                run_directory,
+                expected_sha256=manifest.evidence_sha256[SAMPLE_FILENAME],
+                run_id=manifest.run_id,
+                scenario_id=manifest.scenario_id,
+                expected_measured=manifest.sample_counts,
+            )
+            verify_action_manifest(manifest, action_proof, samples)
         else:
             raise ValueError
         if manifest_body != (manifest.model_dump_json() + "\n").encode("utf-8"):
