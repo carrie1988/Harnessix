@@ -1,0 +1,177 @@
+{
+ "code_revision": "5f1b3c1152c2eb7577b9265efa63f2ec1f186cdc",
+ "platforms": {
+  "linux": {
+   "artifact_digest": "sha256:e33a5194ef6519a230b4ec9ceb8cd8a809a1f4856f651fd1f81a0306637f520b",
+   "artifact_id": 10794191200,
+   "artifact_name": "harnessix-artifact-soak-linux-5f1b3c1152c2eb7577b9265efa63f2ec1f186cdc-35965259787-1",
+   "artifact_size_bytes": 10480,
+   "files": [
+    {
+     "path": "raw/linux/a4df000d9bf24189bae800e9f0c72265/COMMITTED.json",
+     "sha256": "89017c9612a4a46b5f10794e4ce766b931be5466a50b5284b28f09eec31bc35f",
+     "size_bytes": 129
+    },
+    {
+     "path": "raw/linux/a4df000d9bf24189bae800e9f0c72265/artifact-proof.json",
+     "sha256": "492ec94f40a24d9df11c1f1b397fb037efbe2644e1193c7898dcf8754f49e503",
+     "size_bytes": 13663
+    },
+    {
+     "path": "raw/linux/a4df000d9bf24189bae800e9f0c72265/manifest.json",
+     "sha256": "c17e50948bd1363ea3b6fd9a1b30fa299c7ee2c755c990f1ed0d548e8c087e54",
+     "size_bytes": 1821
+    },
+    {
+     "path": "raw/linux/a4df000d9bf24189bae800e9f0c72265/samples.jsonl",
+     "sha256": "d447a968ed72879700998695b18a2d9c0dc07f2e2b4c01354b5977795aff097e",
+     "size_bytes": 152226
+    },
+    {
+     "path": "raw/linux/attempts/a4df000d9bf24189bae800e9f0c72265/FINAL.json",
+     "sha256": "9ff29999615e15ae251dda6b9b14c60f3aa7d83919699980858ab465137d508b",
+     "size_bytes": 267
+    },
+    {
+     "path": "raw/linux/attempts/a4df000d9bf24189bae800e9f0c72265/STARTED.json",
+     "sha256": "ade3ab12fa04b468461d88cffd36e1c68077ac731f966fe2c734068573860953",
+     "size_bytes": 229
+    }
+   ],
+   "manifest_sha256": "c17e50948bd1363ea3b6fd9a1b30fa299c7ee2c755c990f1ed0d548e8c087e54",
+   "run_id": "a4df000d9bf24189bae800e9f0c72265"
+  },
+  "macos": {
+   "artifact_digest": "sha256:5a0e3a0ac8f84ea18116b615ac129da2fd5f8c50a221cd3be3d1ada6543d736e",
+   "artifact_id": 10793608507,
+   "artifact_name": "harnessix-artifact-soak-macos-5f1b3c1152c2eb7577b9265efa63f2ec1f186cdc-35965259787-1",
+   "artifact_size_bytes": 10071,
+   "files": [
+    {
+     "path": "raw/macos/0229f1e9808f41d6901d0e40e98ab4b7/COMMITTED.json",
+     "sha256": "7a60e6092aa86f7d485673250c62529a77a371cb772e1ba40a7b25bd34bbf5ef",
+     "size_bytes": 129
+    },
+    {
+     "path": "raw/macos/0229f1e9808f41d6901d0e40e98ab4b7/artifact-proof.json",
+     "sha256": "6a871a9985af8c5ae146a0363741c9a66e0afe8b09dfc2c7658f3b50663dd508",
+     "size_bytes": 13663
+    },
+    {
+     "path": "raw/macos/0229f1e9808f41d6901d0e40e98ab4b7/manifest.json",
+     "sha256": "3abf6aa52ddda0564a187adaacaa9eab16dbe627bcb0c013d1f7a3ead565ec9a",
+     "size_bytes": 1817
+    },
+    {
+     "path": "raw/macos/0229f1e9808f41d6901d0e40e98ab4b7/samples.jsonl",
+     "sha256": "517dedaf402fa1c8836da96afed2454cb9d24ace11d7370c9ff731d2307fff0e",
+     "size_bytes": 151935
+    },
+    {
+     "path": "raw/macos/attempts/0229f1e9808f41d6901d0e40e98ab4b7/FINAL.json",
+     "sha256": "1c7f922552194cbff9090bc2f9ddfd1f6b068e31fa4d508eb6e90875e6f54857",
+     "size_bytes": 267
+    },
+    {
+     "path": "raw/macos/attempts/0229f1e9808f41d6901d0e40e98ab4b7/STARTED.json",
+     "sha256": "0bf5b1981b70d936ab9809eb12e23adacdff886ac4011ed306b183ead5b7d762",
+     "size_bytes": 229
+    }
+   ],
+   "manifest_sha256": "3abf6aa52ddda0564a187adaacaa9eab16dbe627bcb0c013d1f7a3ead565ec9a",
+   "run_id": "0229f1e9808f41d6901d0e40e98ab4b7"
+  },
+  "windows": {
+   "artifact_digest": "sha256:b09f71c6c9043c0ac55e42ee81c9ee4b6e0e0fac3cffa9cbf09fbe76b216ee9e",
+   "artifact_id": 10794021412,
+   "artifact_name": "harnessix-artifact-soak-windows-5f1b3c1152c2eb7577b9265efa63f2ec1f186cdc-35965259787-1",
+   "artifact_size_bytes": 9875,
+   "files": [
+    {
+     "path": "raw/windows/7316e536dcd24e229f6a4991f0e5e0a8/COMMITTED.json",
+     "sha256": "423ceb73e657efcf2d4b2f90fd385a0db42099f2f4c3d62110fdbabb3d1ddf15",
+     "size_bytes": 129
+    },
+    {
+     "path": "raw/windows/7316e536dcd24e229f6a4991f0e5e0a8/artifact-proof.json",
+     "sha256": "910f9b692c2394e3e55b0d5ea89f3c7289b260c458e916b873a6846915348d0b",
+     "size_bytes": 13663
+    },
+    {
+     "path": "raw/windows/7316e536dcd24e229f6a4991f0e5e0a8/manifest.json",
+     "sha256": "8c9594c4dd46b1f11e8e937331d3ce6718d640ced3a7b26db1b4ef52cec580ed",
+     "size_bytes": 1832
+    },
+    {
+     "path": "raw/windows/7316e536dcd24e229f6a4991f0e5e0a8/samples.jsonl",
+     "sha256": "088a29dba3b861299cfa1287e0cec49d55fd0ab47cd325d0a541f136a6b63aa9",
+     "size_bytes": 152128
+    },
+    {
+     "path": "raw/windows/attempts/7316e536dcd24e229f6a4991f0e5e0a8/FINAL.json",
+     "sha256": "3adbf09d684bdee31b3677e5f2211dd94bae927d0c25dfe9dc0ca21b5ed1b54f",
+     "size_bytes": 267
+    },
+    {
+     "path": "raw/windows/attempts/7316e536dcd24e229f6a4991f0e5e0a8/STARTED.json",
+     "sha256": "a61044226a4f6c5e853725cc50094931636642058ea3a39789304d8a8d691fa4",
+     "size_bytes": 229
+    }
+   ],
+   "manifest_sha256": "8c9594c4dd46b1f11e8e937331d3ce6718d640ced3a7b26db1b4ef52cec580ed",
+   "run_id": "7316e536dcd24e229f6a4991f0e5e0a8"
+  }
+ },
+ "profiles": {
+  "linux": {
+   "files": [
+    {
+     "path": "profiles/linux/41dd000b3b3b46e6bc69541702ebf49b/SEALED.json",
+     "sha256": "e5c5b55e0f13264e12b03aa5296cdc2fd29bff4a876ad42b93152f37d7819d7b",
+     "size_bytes": 144
+    },
+    {
+     "path": "profiles/linux/41dd000b3b3b46e6bc69541702ebf49b/profile.json",
+     "sha256": "26c8f39a61a543d57ae0d1c1e9bc98ec309769c1e5565cfaff9cf61da083bf9f",
+     "size_bytes": 1726
+    }
+   ],
+   "profile_id": "41dd000b3b3b46e6bc69541702ebf49b",
+   "profile_sha256": "26c8f39a61a543d57ae0d1c1e9bc98ec309769c1e5565cfaff9cf61da083bf9f"
+  },
+  "macos": {
+   "files": [
+    {
+     "path": "profiles/macos/f8be1a64e12645d4a942e1c3abb2010e/SEALED.json",
+     "sha256": "f4c5914b3632bc8bcb20c7c88d6cb5852c87356775032e0ee463c63080eb7f9e",
+     "size_bytes": 144
+    },
+    {
+     "path": "profiles/macos/f8be1a64e12645d4a942e1c3abb2010e/profile.json",
+     "sha256": "b20907862d0184c81e3dd80d9b673861111c26b494b04be17178430b2a6729ce",
+     "size_bytes": 1724
+    }
+   ],
+   "profile_id": "f8be1a64e12645d4a942e1c3abb2010e",
+   "profile_sha256": "b20907862d0184c81e3dd80d9b673861111c26b494b04be17178430b2a6729ce"
+  },
+  "windows": {
+   "files": [
+    {
+     "path": "profiles/windows/a7d523345763463088dd676baf084fc7/SEALED.json",
+     "sha256": "a7d33b4f524c41137957d29614ebf4b513d4335d11c62857436cc0d35492754a",
+     "size_bytes": 144
+    },
+    {
+     "path": "profiles/windows/a7d523345763463088dd676baf084fc7/profile.json",
+     "sha256": "3a683d78de6eed15f6fad51b5782fa563fe10a4e5107a27506656f1fc94b8303",
+     "size_bytes": 1731
+    }
+   ],
+   "profile_id": "a7d523345763463088dd676baf084fc7",
+   "profile_sha256": "3a683d78de6eed15f6fad51b5782fa563fe10a4e5107a27506656f1fc94b8303"
+  }
+ },
+ "source_workflow_run_id": 35965259787,
+ "spec_version": "harnessix.soak-validation-bundle/v1"
+}
