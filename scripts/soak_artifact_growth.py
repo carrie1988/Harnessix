@@ -23,7 +23,12 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolCallContent, ToolResultContent, Turn, TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, ArtifactRef, ArtifactToolResult
+from harnessix.artifacts.contracts import (
+    MAX_ARTIFACT_BYTES,
+    ArtifactPolicy,
+    ArtifactRef,
+    ArtifactToolResult,
+)
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.models.contracts import (
     ModelRequest,
@@ -105,8 +110,8 @@ class SoakArtifactProvider(SoakProvider):
 class MeasuredArtifactStore(SQLiteArtifactStore):
     """仅记录真实发布方法的单调时钟耗时，不修改事务。"""
 
-    def __init__(self, session: SQLiteSessionStore) -> None:
-        super().__init__(session)
+    def __init__(self, session: SQLiteSessionStore, policy: ArtifactPolicy | None = None) -> None:
+        super().__init__(session, policy=policy)
         self.publish_ns: list[int] = []
 
     async def publish(
@@ -217,7 +222,13 @@ async def run_artifact_growth(
             database = state_root / "session.db"
             wal = state_root / "session.db-wal"
             session = SQLiteSessionStore(database)
-            artifacts = MeasuredArtifactStore(session)
+            artifacts = MeasuredArtifactStore(
+                session,
+                policy=ArtifactPolicy(
+                    max_turn_count=1000,
+                    max_live_bytes=128 * MAX_ARTIFACT_BYTES,
+                ),
+            )
             async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
                 async with AgentRuntime(
                     session, provider, scoped_tools=tools, artifacts=artifacts

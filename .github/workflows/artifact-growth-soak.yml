@@ -10,7 +10,7 @@ jobs:
   artifact-growth:
     name: Artifact增长 ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

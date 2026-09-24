@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: d4a3ee20a8e17fab466c690e86a9a48991430398
+version: 9
+code_revision: 539844e6d9491cf775ca4234cc9815d003c13156
 owners:
   - core
 modules:
@@ -210,3 +210,7 @@ Runner实现不表示0.9.3d或1.0已通过；当前文档保持`reviewing`，正
 ## 9. 第二轮候选FAIL与300件负载
 
 [60件负载第二轮候选](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v2/README.md)的macOS/Windows取得PASS，Linux因单件近限发布约780毫秒I/O停顿以`artifact_publish.p99`越限FAIL：60件时`p99`等于近限件子样本最大值，单点停顿直接顶破上限，同候选`p50`/`p95`均在限内，产品代码无回归。第二轮负载修复预登记为正式负载300件（近限件约75件，`p99`为子样本第3高值、`p95`为第15高值），预热与阈值方法不变；两轮FAIL原件与全部旧Profile保持只读。
+
+## 10. 300件首轮基线的配额失败与夹具Policy
+
+按300件负载执行的首轮三平台基线（工作流35969187237）在约六成进度后以`soak_artifact_invalid`失败：默认`ArtifactPolicy.max_turn_count=128`在第129件发布时拒绝，三个平台均未产生Run，失败Attempt仅保留在GitHub上传件诊断。该失败暴露负载修复未核对既有配额合同；Runner现显式构造`ArtifactPolicy(max_turn_count=1000, max_live_bytes=128 MiB)`（约76 MiB正式正文的两倍余量内），单件上限、TTL与测量边界不变。该Policy是负载夹具的显式组成部分，v3基线归档时如实记录；首轮失败运行不升级为任何形式基线。工作流超时时长随300件负载由30分钟调整为45分钟。
