@@ -1,0 +1,93 @@
+{
+ "checks": {
+  "attempt_reader": "3/3 committed with STARTED v2 prebinding",
+  "fail_diagnosis": "linux publish p99 780141535ns vs frozen 177263366ns; single near-limit publish stall ~8.8x baseline max with p50/p95 within limits; p99 at n=60 equals cohort maximum and cannot absorb single I/O stall; remediation raises measured load to 300 so p99 is third-highest of ~75 near-limit samples",
+  "independent_file_sha256": "24/24 matched",
+  "privacy_keyword_scan": "3/3 passed",
+  "run_reader": "3/3 passed",
+  "standard_ci": "6/6 success on the candidate revision",
+  "workflow_matrix": "3/3 completed (1 FAIL report, 2 PASS reports)"
+ },
+ "classification": "three-platform-independent-candidate",
+ "code_revision": "d4a3ee20a8e17fab466c690e86a9a48991430398",
+ "platforms": {
+  "linux": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "86ca83f15ce2139d8b0b78ef5db2d792eb248028c0c400e15f4cab84eba3da48",
+   "profile_id": "41dd000b3b3b46e6bc69541702ebf49b",
+   "publish_p50_ns": 38878401,
+   "publish_p95_ns": 60762945,
+   "publish_p99_ns": 780141535,
+   "read_p99_ns": 42880046,
+   "report_id": "e8e0eec0644448ed949275d26c798156",
+   "report_reason": "limit_exceeded",
+   "report_status": "FAIL",
+   "run_id": "b03ab6342b864ab6987aca09db327bb7",
+   "run_status": "unverified",
+   "violations": [
+    "artifact_publish.p99"
+   ]
+  },
+  "macos": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "d1b858e27eb44c5e69b19b2b5ecf40fcb4d2628ecca7568dbe2d252dcf2bcb4c",
+   "profile_id": "f8be1a64e12645d4a942e1c3abb2010e",
+   "publish_p50_ns": 21776375,
+   "publish_p95_ns": 39007583,
+   "publish_p99_ns": 48949458,
+   "read_p99_ns": 27243625,
+   "report_id": "ed69dc46729e49d589a6a39c61812964",
+   "report_reason": "within_limits",
+   "report_status": "PASS",
+   "run_id": "93e6f05720a949f7860b708bd2cb5ee6",
+   "run_status": "unverified",
+   "violations": []
+  },
+  "windows": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "6e46201319bd9a66b95a0b4ed46e3196b2f00cb24df4eba1ef2defbb73b839bc",
+   "profile_id": "a7d523345763463088dd676baf084fc7",
+   "publish_p50_ns": 140614100,
+   "publish_p95_ns": 227469700,
+   "publish_p99_ns": 261473500,
+   "read_p99_ns": 38988900,
+   "report_id": "28aa69c616634b31b2eadcddbd4e482d",
+   "report_reason": "within_limits",
+   "report_status": "PASS",
+   "run_id": "2f29273ee17643bbaf02bec7d9eb6641",
+   "run_status": "unverified",
+   "violations": []
+  }
+ },
+ "release_status": "candidate_failed_limits",
+ "remaining_gates": [
+  "new_baseline_after_load_remediation_300",
+  "independent_candidate",
+  "other_0.9.3d_release_gates"
+ ],
+ "scenario_id": "artifact_growth",
+ "source_workflow_run_id": 35966178443,
+ "spec_version": "harnessix.soak-review-packet/v1",
+ "standard_ci_run_id": 35966150370
+}

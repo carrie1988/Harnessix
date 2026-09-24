@@ -28,8 +28,8 @@ def _manifest(revision: str) -> SimpleNamespace:
         spec_version="harnessix.soak-manifest/v3",
         platform="linux",
         run_id="b" * 32,
-        load=SimpleNamespace(warmup_count=2, artifact_count=62),
-        sample_counts={"artifact_publish": 60, "artifact_read": 78, "rss_peak": 1},
+        load=SimpleNamespace(warmup_count=2, artifact_count=302),
+        sample_counts={"artifact_publish": 300, "artifact_read": 390, "rss_peak": 1},
         fault_counts=SimpleNamespace(model_dump=lambda: dict(_ZERO_FAULTS)),
     )
 
@@ -62,7 +62,7 @@ async def test_release_uses_fixed_load_and_rechecks_both_commits(
 
     assert recorded == {
         "code_revision": revision,
-        "turn_count": 60,
+        "turn_count": 300,
         "warmup_count": 2,
         "seed": 0,
     }

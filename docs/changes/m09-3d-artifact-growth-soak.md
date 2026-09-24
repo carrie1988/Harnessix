@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
-code_revision: 65cbcc5caab2ba167763844e974c9cd7c036ed0d
+version: 8
+code_revision: d4a3ee20a8e17fab466c690e86a9a48991430398
 owners:
   - core
 modules:
@@ -115,7 +115,7 @@ sequenceDiagram
 
 | 接口 | 输入与输出 | 前置条件及失败语义 |
 |---|---|---|
-| [`run_artifact_growth`](../../scripts/soak_artifact_growth.py) | `evidence_root`、Revision、正式Turn数、预热数、Seed、Turn/Page期限、可选Profile引用；返回Run目录和Manifest v3 | 至少20正式件时先核对干净Revision；失败保留Attempt且不输出PASS；最多100正式Turn |
+| [`run_artifact_growth`](../../scripts/soak_artifact_growth.py) | `evidence_root`、Revision、正式Turn数、预热数、Seed、Turn/Page期限、可选Profile引用；返回Run目录和Manifest v3 | 至少20正式件时先核对干净Revision；失败保留Attempt且不输出PASS；最多500正式Turn |
 | [`SoakArtifactProvider.stream`](../../scripts/soak_artifact_growth.py) | 真实ModelRequest；Step1输出固定`grep`，Step2输出固定文本 | 不保留Request/历史；未知Step、缺失受信Tool或取消失败关闭 |
 | [`MeasuredArtifactStore.publish`](../../scripts/soak_artifact_growth.py) | 与现有Store完全相同的调用和返回 | 只包围`super().publish`记录ns；不改变事务、异常或授权 |
 | [`read_published_run`](../../scripts/soak_evidence.py) v3分支 | 私有Run目录；返回严格Manifest | 限制大小、精确文件集、规范字节、摘要及Proof与原始样本交叉核对 |
@@ -206,3 +206,7 @@ Runner实现不表示0.9.3d或1.0已通过；当前文档保持`reviewing`，正
 根因判定：两Revision间产品代码一致，三个平台候选的发布/读取P50均与基线一致，不存在实现回归；发布指标为小件与近限件的双峰分布，20件正式样本中近限件仅5件，`p95`/`p99`落在近限件最高两名，共享Runner磁盘条件2～4倍漂移即可移动分位数。基线恰在平静条件下取得，候选遇到噪声条件；Windows基线本身在噪声条件下取得，故同档候选通过。该失败机制是基线与候选之间的环境漂移，不允许调高已封印Profile或删除FAIL原件。
 
 修复只调整负载设计：正式负载由20件提高到60件（Runner上限相应由50提高到100），近限件由5件增至15件，`p95`成为近限件子样本的第3高值而非第2高值；预热2件与阈值方法（时延上浮100%、RSS与文件增长上浮50%）不变，`p99`仍为近限件最高值，残余环境风险在新基线归档时如实记录。新基线归档为独立v2目录，旧基线、旧Profile与首轮FAIL全部保持只读。
+
+## 9. 第二轮候选FAIL与300件负载
+
+[60件负载第二轮候选](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v2/README.md)的macOS/Windows取得PASS，Linux因单件近限发布约780毫秒I/O停顿以`artifact_publish.p99`越限FAIL：60件时`p99`等于近限件子样本最大值，单点停顿直接顶破上限，同候选`p50`/`p95`均在限内，产品代码无回归。第二轮负载修复预登记为正式负载300件（近限件约75件，`p99`为子样本第3高值、`p95`为第15高值），预热与阈值方法不变；两轮FAIL原件与全部旧Profile保持只读。
