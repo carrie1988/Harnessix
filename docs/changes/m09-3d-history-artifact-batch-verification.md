@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
+version: 3
+code_revision: 39dda2bb218baed30dcf9b1326f899a3133f497b
 owners:
   - core
 modules:
@@ -27,7 +27,7 @@ supersedes: []
 |---|---|
 | 当前能力 | 0.6.2c起每个模型步骤前由`_verify_history_artifacts`逐条调用`verify_reference`验证历史中全部Artifact引用；单条验证包含归属行查询、完整Thread快照加载、Session引用一致性、正文SHA-256与记录数、分页/省略覆盖核对，5秒总预算超时即`context_artifact_timeout`失败关闭。 |
 | 实测缺陷 | 300件Artifact增长Soak在Linux/macOS/Windows一致于第278～291轮失败：逐条路径每步加载N份完整Thread快照并线性查Turn，单步成本O(N²)，约280个引用时超出5秒预算。三个平台失败Attempt与本地复现错误`context_artifact_timeout`一致。 |
-| 本文设计状态 | `reviewing`；目标设计，不表示批量验证已实现。 |
+| 本文设计状态 | `reviewing`；批量入口已实现并有语义等价回归，300件Artifact增长Soak三平台基线与第二独立PASS已归档（见[基线](../validation/soak-artifact-growth-three-platform-2026-09-24-v3/README.md)与[候选](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v3/README.md)）；其余场景的推广评审另行决定。 |
 | 影响模块 | `artifacts`（批量验证实现）、`agent`（历史验证调用点）、`context`（调用方语义不变）。 |
 | 关键ADR | [ADR-0057](../adr/0057-tool-result-model-view-and-artifact-binding.md)（引用验证合同）、[ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)（实测来源）。 |
 
@@ -149,3 +149,4 @@ verify_references(entries, workspace_scope):
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `46ca9a2006b5f857ecb55924ba969cf2e331187e` | 2026-09-24 | 根据300件Artifact增长Soak三平台失败与本地复现，建立历史Artifact批量验证设计；实现与复验待完成。 |
+| 3 | `39dda2bb218baed30dcf9b1326f899a3133f497b` | 2026-09-24 | 批量入口按模块提取形态实现（`artifacts/batch_verify.py`），语义等价回归与既有套件通过；可读性基线按流程重新生成且只降不升；300件Artifact增长Soak三平台基线与候选PASS验证修复有效。 |

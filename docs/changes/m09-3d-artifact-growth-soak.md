@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 9
-code_revision: 539844e6d9491cf775ca4234cc9815d003c13156
+status: current
+version: 10
+code_revision: 39dda2bb218baed30dcf9b1326f899a3133f497b
 owners:
   - core
 modules:
@@ -214,3 +214,7 @@ Runner实现不表示0.9.3d或1.0已通过；当前文档保持`reviewing`，正
 ## 10. 300件首轮基线的配额失败与夹具Policy
 
 按300件负载执行的首轮三平台基线（工作流35969187237）在约六成进度后以`soak_artifact_invalid`失败：默认`ArtifactPolicy.max_turn_count=128`在第129件发布时拒绝，三个平台均未产生Run，失败Attempt仅保留在GitHub上传件诊断。该失败暴露负载修复未核对既有配额合同；Runner现显式构造`ArtifactPolicy(max_turn_count=1000, max_live_bytes=128 MiB)`（约76 MiB正式正文的两倍余量内），单件上限、TTL与测量边界不变。该Policy是负载夹具的显式组成部分，v3基线归档时如实记录；首轮失败运行不升级为任何形式基线。工作流超时时长随300件负载由30分钟调整为45分钟。
+
+## 11. 300件三平台基线、冻结Profile与第二独立Run结果
+
+[300件三平台v3基线](../validation/soak-artifact-growth-three-platform-2026-09-24-v3/README.md)在Revision `6f55e74`完成（对应常规CI 36009364391六实例成功）：302件发布、2925次正式分页与分批到期清理全部完成；[历史Artifact批量验证](m09-3d-history-artifact-batch-verification.md)使300件规模不再触发`context_artifact_timeout`。三份Profile按基线冻结封印。[第二独立Run](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v3/README.md)在Revision `39dda2b`完成，三平台均获`PASS/within_limits`并经独立复验再生确认（对应常规CI 36015746312六实例成功）。固定Artifact增长场景（300件负载）的工程护栏据此关闭；20件/60件两轮候选FAIL、v1/v2基线与全部旧Profile保持只读，不被本结果改写。

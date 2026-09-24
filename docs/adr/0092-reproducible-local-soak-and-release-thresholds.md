@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: reviewing
-version: 20
-code_revision: 2cc255ef52ef46196946352a1483bd0606dc545e
+version: 21
+code_revision: 39dda2bb218baed30dcf9b1326f899a3133f497b
 owners:
   - core
 modules:
@@ -36,7 +36,7 @@ supersedes: []
 
 ## 状态
 
-提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话、多Thread、Artifact增长、SDK容量、完整产品重启和Action恢复六个真实模块Runner；全部Runner均在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)，旧v1证据保持不变；[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)及对应Revision六实例CI通过，但Linux/Windows正式运行和独立阈值复验仍缺失。另一次[macOS 500 Thread正式负载](../validation/soak-macos-2026-09-23-v4/README.md)通过Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项提交后状态等待超时，第二次重跑通过，但根因未明，故仍仅保存为历史诊断，不用于冻结Profile。两次macOS Artifact规模运行对应Revision的Windows CI均失败，只能作为诊断；[macOS Artifact单平台规模基线](../validation/soak-macos-artifact-2026-09-23-v3/README.md)已在修复Revision完成Run/Attempt重算并由六实例CI验收；SDK容量、完整产品重启与多Thread三个场景已完成三平台基线、冻结Profile与第二独立PASS报告。Action恢复场景已按[专项详设](../changes/m09-3d-action-recovery-soak.md)实现固定四故障矩阵Runner、v7 Proof与发布入口并有本地回归；长会话、Artifact增长与Action恢复的三平台正式负载、冻结Profile与独立复验仍未完成。本文不表示当前版本已经通过Soak或达到发布阈值。
+提议，待0.9.3d全部正式场景、三平台真实运行与独立阈值复验后接受。当前已实现低敏样本、Manifest合同、最后提交标记，以及长会话、多Thread、Artifact增长、SDK容量、完整产品重启和Action恢复六个真实模块Runner；全部Runner均在负载前保留Attempt开始，异常留存失败终态，硬退出留存未完成事实。缩小负载只产生`unverified`。[macOS 500 Thread单次诊断事实](../validation/soak-macos-2026-09-23-v1/README.md)已归档，但其Revision跨平台CI失败，不能用于冻结Profile；后续修复已由[CI 35804642232](https://github.com/carrie1988/Harnessix/actions/runs/35804642232)六实例通过，不改变旧证据属性。[macOS 1000 Turn长会话规模诊断](../validation/soak-macos-2026-09-23-v2/README.md)的Revision六实例CI通过，复制件Run/Attempt可重算，但没有专门Context/Compaction断言或独立阈值复验，仍不用于冻结Profile。现已新增[版本化Context/Compaction Proof](../changes/m09-3d-long-session-context-proof.md)，旧v1证据保持不变；[macOS一次v2千Turn规模基线](../validation/soak-macos-2026-09-23-v3/README.md)及对应Revision六实例CI通过，但Linux/Windows正式运行和独立阈值复验仍缺失。另一次[macOS 500 Thread正式负载](../validation/soak-macos-2026-09-23-v4/README.md)通过Run/Attempt和45条样本重算；对应Revision的Windows Product UI首次尝试两项提交后状态等待超时，第二次重跑通过，但根因未明，故仍仅保存为历史诊断，不用于冻结Profile。两次macOS Artifact规模运行对应Revision的Windows CI均失败，只能作为诊断；[macOS Artifact单平台规模基线](../validation/soak-macos-artifact-2026-09-23-v3/README.md)已在修复Revision完成Run/Attempt重算并由六实例CI验收；SDK容量、完整产品重启与多Thread三个场景已完成三平台基线、冻结Profile与第二独立PASS报告。Action恢复场景已完成[三平台基线](../validation/soak-action-recovery-three-platform-2026-09-24-v1/README.md)与[第二独立PASS](../validation/soak-action-recovery-three-platform-candidate-2026-09-24-v1/README.md)，固定场景工程护栏关闭。Artifact增长场景经两轮候选FAIL（20件/60件，原件保留）与负载修复后，[300件三平台基线](../validation/soak-artifact-growth-three-platform-2026-09-24-v3/README.md)与[第二独立PASS](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v3/README.md)均已归档；其300件负载实测暴露的历史Artifact逐条验证O(N²)缺陷已由[批量验证专项](../changes/m09-3d-history-artifact-batch-verification.md)修复。长会话场景已有[Linux/macOS千Turn基线与Windows诊断](../validation/soak-long-session-two-platform-2026-09-24-v1/README.md)；首次三平台运行Windows在30秒防挂起期限失败（保留诊断），调整防挂起预算后的三平台基线曾在Revision `70846f5`完成但该Revision治理门禁未过，已按先例降级为诊断并在绿色Revision整体重跑；长会话场景冻结Profile与独立复验仍未完成，本文保持评审中，不表示当前版本已经通过Soak或达到发布阈值。
 
 ## 背景
 
@@ -148,3 +148,4 @@ Soak入口仅面向开发与发布，不加入CLI/SDK公共产品协议；不改
 | 16 | 2026-09-23 | 候选Runner由调用参数预选Profile并在最终Manifest保存引用；尚未持久证明该选择先于负载。 |
 | 17 | 2026-09-23 | 候选在负载前新增STARTED v2持久预绑定，Attempt终态与独立复验核对其与Manifest的引用和时间顺序；v1历史基线原字节不变。 |
 | 20 | 2026-09-24 | Action恢复固定故障矩阵Runner、v7 Proof与发布入口已实现并有本地回归；六个场景Runner全部接入Attempt合同，长会话、Artifact增长与Action恢复的三平台负载与独立复验仍待完成。 |
+| 21 | 2026-09-24 | Action恢复与Artifact增长（300件）两个场景完成三平台基线、冻结Profile与第二独立PASS并关闭固定场景工程护栏；历史Artifact批量验证修复300件规模O(N²)验证墙；长会话两平台基线归档、Windows经防挂起预算调整后重跑，其三平台基线与候选复验仍待完成。 |

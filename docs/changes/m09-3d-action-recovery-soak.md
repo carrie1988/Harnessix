@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 2
-code_revision: 2cc255ef52ef46196946352a1483bd0606dc545e
+status: current
+version: 3
+code_revision: 65cbcc5caab2ba167763844e974c9cd7c036ed0d
 owners:
   - core
 modules:
@@ -374,3 +374,7 @@ run_action_recovery(...):
 |---|---|---|---|
 | 1 | `18ffe02426eb19ec0bc2f0e1ed12325333f8a435` | 2026-09-24 | 建立Action恢复固定故障矩阵Soak的场景合同、Proof、v7证据版本、Runner与发布入口设计；实现与三平台验收待完成。 |
 | 2 | `2cc255ef52ef46196946352a1483bd0606dc545e` | 2026-09-24 | Runner、Proof、v7接线、发布入口与六个工作流已实现，本地缩小回归及`make check`通过；三平台正式基线、Profile冻结与独立复验仍待完成。 |
+
+## 24. 三平台基线、冻结Profile与第二独立Run结果
+
+[三平台正式规模基线](../validation/soak-action-recovery-three-platform-2026-09-24-v1/README.md)在Revision `b3e0d6f`完成（对应常规CI 35960330442六实例成功）：每平台2轮预热与20轮正式故障矩阵、44次预期UNKNOWN、零重复效果，三份Profile按基线冻结封印。[第二独立Run](../validation/soak-action-recovery-three-platform-candidate-2026-09-24-v1/README.md)在Revision `65cbcc5`完成，三平台均获`PASS/within_limits`并经独立复验再生确认（对应常规CI 35961875693六实例成功）。固定Action恢复故障矩阵场景的工程护栏据此关闭；首轮`2cc255e`基线因该Revision常规CI的Windows基准失败未归档，仅保留为GitHub上传件诊断。本场景关闭不扩张为0.9.3d整体完成。
