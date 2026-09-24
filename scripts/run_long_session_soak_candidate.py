@@ -21,7 +21,7 @@ from scripts.soak_threshold import read_profile, read_report, verify_and_publish
 
 _ARCHIVE = (
     Path(__file__).resolve().parents[1]
-    / "docs/validation/soak-long-session-three-platform-2026-09-24-v1"
+    / "docs/validation/soak-long-session-two-platform-2026-09-24-v1"
 )
 
 
