@@ -25,3 +25,5 @@ docs/validation/soak-artifact-growth-three-platform-2026-09-24-v2/profiles/** -t
 docs/validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v2/raw/** -text
 docs/validation/soak-long-session-two-platform-2026-09-24-v1/raw/** -text
 docs/validation/soak-long-session-two-platform-2026-09-24-v1/profiles/** -text
+docs/validation/soak-artifact-growth-three-platform-2026-09-24-v3/raw/** -text
+docs/validation/soak-artifact-growth-three-platform-2026-09-24-v3/profiles/** -text
