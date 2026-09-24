@@ -178,7 +178,7 @@ async def run_artifact_growth(
         or not isinstance(code_revision, str)
         or re.fullmatch(r"[0-9a-f]{40}", code_revision) is None
         or type(turn_count) is not int
-        or not 1 <= turn_count <= 50
+        or not 1 <= turn_count <= 100
         or type(warmup_count) is not int
         or not 0 <= warmup_count <= 2
         or type(seed) is not int

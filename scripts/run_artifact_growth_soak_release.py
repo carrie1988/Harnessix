@@ -17,13 +17,13 @@ from scripts.soak_evidence import read_published_run
 
 
 async def run_release(evidence_root: Path) -> dict[str, str]:
-    """固定2件预热与20件正式混合大小件，不接受降配。"""
+    """固定2件预热与60件正式混合大小件，不接受降配。"""
 
     revision = _revision()
     run_directory, manifest = await run_artifact_growth(
         evidence_root,
         code_revision=revision,
-        turn_count=20,
+        turn_count=60,
         warmup_count=2,
         seed=0,
     )
@@ -35,9 +35,9 @@ async def run_release(evidence_root: Path) -> dict[str, str]:
         or manifest.status != "baseline"
         or manifest.spec_version != "harnessix.soak-manifest/v3"
         or manifest.load.warmup_count != 2
-        or manifest.load.artifact_count != 22
-        or manifest.sample_counts["artifact_publish"] != 20
-        or manifest.sample_counts["artifact_read"] < 20
+        or manifest.load.artifact_count != 62
+        or manifest.sample_counts["artifact_publish"] != 60
+        or manifest.sample_counts["artifact_read"] < 60
         or manifest.sample_counts["rss_peak"] != 1
         or any(manifest.fault_counts.model_dump().values())
         or final is None

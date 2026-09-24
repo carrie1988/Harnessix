@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: 70e5107ba8e301650f8b59dec0b7ad1246ee4571
+version: 7
+code_revision: 65cbcc5caab2ba167763844e974c9cd7c036ed0d
 owners:
   - core
 modules:
@@ -43,7 +43,7 @@ supersedes: []
 ## 2. 设计目标、非目标与验收口径
 
 1. 以临时Workspace和临时Session运行真实`AgentRuntime → CodingToolRuntime.grep → SQLiteArtifactStore.publish/read/collect`；模型端仅为确定性Tool Call夹具。
-2. 正式负载固定2件预热、至少20件正式样本；正式样本至少各含2件小件和近上限件，后者正文大小处于`[80%, 100%) × MAX_ARTIFACT_BYTES`；规模由版本化负载合同冻结，不由运行结果回填。
+2. 正式负载固定2件预热、至少20件正式样本；正式样本至少各含2件小件和近上限件，后者正文大小处于`[80%, 100%) × MAX_ARTIFACT_BYTES`；规模由版本化负载合同冻结，不由运行结果回填。首轮三平台候选FAIL后的负载修复见第8节：正式基线负载固定为60件正式样本，合同下限不变。
 3. 发布时延只包围`SQLiteArtifactStore.publish`；读取时延只包围单次`read`页，二者不得冒充Agent整Turn或完整产品时延。
 4. `ArtifactProof`记录每件的匿名序号、阶段、正文大小、记录数、完整分页计数与采样索引，以及清理前后逻辑字节和Tombstone计数；Reader从原始样本及Proof重算总量、索引和Manifest绑定。
 5. 所有成功Run必须有完整Attempt、Replay一致性、正文/引用逐件核验、清理后`artifact_expired`及零孤儿。失败、取消、超时或硬退出不得发布PASS。
@@ -115,7 +115,7 @@ sequenceDiagram
 
 | 接口 | 输入与输出 | 前置条件及失败语义 |
 |---|---|---|
-| [`run_artifact_growth`](../../scripts/soak_artifact_growth.py) | `evidence_root`、Revision、正式Turn数、预热数、Seed、Turn/Page期限、可选Profile引用；返回Run目录和Manifest v3 | 至少20正式件时先核对干净Revision；失败保留Attempt且不输出PASS；最多50正式Turn |
+| [`run_artifact_growth`](../../scripts/soak_artifact_growth.py) | `evidence_root`、Revision、正式Turn数、预热数、Seed、Turn/Page期限、可选Profile引用；返回Run目录和Manifest v3 | 至少20正式件时先核对干净Revision；失败保留Attempt且不输出PASS；最多100正式Turn |
 | [`SoakArtifactProvider.stream`](../../scripts/soak_artifact_growth.py) | 真实ModelRequest；Step1输出固定`grep`，Step2输出固定文本 | 不保留Request/历史；未知Step、缺失受信Tool或取消失败关闭 |
 | [`MeasuredArtifactStore.publish`](../../scripts/soak_artifact_growth.py) | 与现有Store完全相同的调用和返回 | 只包围`super().publish`记录ns；不改变事务、异常或授权 |
 | [`read_published_run`](../../scripts/soak_evidence.py) v3分支 | 私有Run目录；返回严格Manifest | 限制大小、精确文件集、规范字节、摘要及Proof与原始样本交叉核对 |
@@ -198,3 +198,11 @@ Runner仅作为发布工程脚本运行，不加入`harnessix code`、Agent Prot
 3. 由发布工程独立评审并冻结每平台数值Profile，使用新Run复验；其他Soak场景及0.9.4～0.9.6仍须各自通过。
 
 Runner实现不表示0.9.3d或1.0已通过；当前文档保持`reviewing`，正式三平台负载和独立阈值仍待完成。
+
+## 8. 三平台基线、首轮候选FAIL与负载修复
+
+[三平台正式规模基线](../validation/soak-artifact-growth-three-platform-2026-09-24-v1/README.md)已在Revision `b3e0d6f`完成并冻结三份Profile；[首轮三平台候选](../validation/soak-artifact-growth-three-platform-candidate-2026-09-24-v1/README.md)在Revision `65cbcc5`取得完整证据：Windows PASS，Linux与macOS为`FAIL/limit_exceeded`，越限项为发布与读取的尾部分位数。
+
+根因判定：两Revision间产品代码一致，三个平台候选的发布/读取P50均与基线一致，不存在实现回归；发布指标为小件与近限件的双峰分布，20件正式样本中近限件仅5件，`p95`/`p99`落在近限件最高两名，共享Runner磁盘条件2～4倍漂移即可移动分位数。基线恰在平静条件下取得，候选遇到噪声条件；Windows基线本身在噪声条件下取得，故同档候选通过。该失败机制是基线与候选之间的环境漂移，不允许调高已封印Profile或删除FAIL原件。
+
+修复只调整负载设计：正式负载由20件提高到60件（Runner上限相应由50提高到100），近限件由5件增至15件，`p95`成为近限件子样本的第3高值而非第2高值；预热2件与阈值方法（时延上浮100%、RSS与文件增长上浮50%）不变，`p99`仍为近限件最高值，残余环境风险在新基线归档时如实记录。新基线归档为独立v2目录，旧基线、旧Profile与首轮FAIL全部保持只读。

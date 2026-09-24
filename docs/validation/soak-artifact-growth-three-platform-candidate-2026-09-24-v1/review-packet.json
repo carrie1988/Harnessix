@@ -1,0 +1,106 @@
+{
+ "checks": {
+  "attempt_reader": "3/3 committed with STARTED v2 prebinding",
+  "fail_diagnosis": "publish/read tail quantiles exceeded on linux/macos with stable p50 and identical product code; shared-runner I/O variance at 20 measured artifacts; baseline tails were atypically calm",
+  "independent_file_sha256": "24/24 matched",
+  "privacy_keyword_scan": "3/3 passed",
+  "run_reader": "3/3 passed",
+  "standard_ci": "6/6 success on the candidate revision",
+  "workflow_matrix": "3/3 completed (2 FAIL reports, 1 PASS report)"
+ },
+ "classification": "three-platform-independent-candidate",
+ "code_revision": "65cbcc5caab2ba167763844e974c9cd7c036ed0d",
+ "platforms": {
+  "linux": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c4-m16",
+   "manifest_sha256": "840de313ba87a8dd0a9d5d74f899015b17e260791e471cb96b9825541ef93f6b",
+   "profile_id": "71671f84684c4f90bf9f93039be67129",
+   "publish_p50_ns": 17605008,
+   "publish_p95_ns": 177564480,
+   "publish_p99_ns": 198661743,
+   "python_version": "3.12.3",
+   "read_p99_ns": 11798368,
+   "report_id": "8bfa3f75f2e04d3cb3a211c1f17ade56",
+   "report_reason": "limit_exceeded",
+   "report_status": "FAIL",
+   "rss_peak_bytes": 83017728,
+   "run_id": "3c502835b6c546af847c9358b58badb0",
+   "run_status": "unverified",
+   "violations": [
+    "artifact_publish.p95",
+    "artifact_publish.p99"
+   ]
+  },
+  "macos": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c3-m7",
+   "manifest_sha256": "0057bb4f3597164240f194504049faa46e6694c9cf9b7b1462d880221994ac11",
+   "profile_id": "38d3138e83d0486fa579ba16a152e69b",
+   "publish_p50_ns": 12529125,
+   "publish_p95_ns": 27424500,
+   "publish_p99_ns": 74492834,
+   "python_version": "3.12.10",
+   "read_p99_ns": 41531291,
+   "report_id": "675487dc98ee4dae9fd65cda8a4bdf49",
+   "report_reason": "limit_exceeded",
+   "report_status": "FAIL",
+   "rss_peak_bytes": 94601216,
+   "run_id": "cbe080e8f09c4153a21337b2f1374a5c",
+   "run_status": "unverified",
+   "violations": [
+    "artifact_publish.p99",
+    "artifact_read.p99"
+   ]
+  },
+  "windows": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c4-m16",
+   "manifest_sha256": "4cd6d5997032e8dded325eb61978c1948abbb59649122add73af84c06705e867",
+   "profile_id": "fd33e868aa834a5faf1776f45ab5b734",
+   "publish_p50_ns": 84980800,
+   "publish_p95_ns": 156030600,
+   "publish_p99_ns": 173691700,
+   "python_version": "3.12.10",
+   "read_p99_ns": 26046700,
+   "report_id": "f6bcbc0c25de4b7d88e0cd8a46101af4",
+   "report_reason": "within_limits",
+   "report_status": "PASS",
+   "rss_peak_bytes": 80781312,
+   "run_id": "1b0bc3dcd6424e0d9c1ff6ed4c71c68c",
+   "run_status": "unverified",
+   "violations": []
+  }
+ },
+ "release_status": "candidate_failed_limits",
+ "remaining_gates": [
+  "new_baseline_after_load_remediation",
+  "independent_candidate",
+  "other_0.9.3d_release_gates"
+ ],
+ "scenario_id": "artifact_growth",
+ "source_workflow_run_id": 35961898619,
+ "spec_version": "harnessix.soak-review-packet/v1",
+ "standard_ci_run_id": 35961875693
+}

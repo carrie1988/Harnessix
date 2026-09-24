@@ -71,7 +71,7 @@ async def test_real_agent_artifact_soak_reads_every_page_and_cleans_body(tmp_pat
     assert b"needle" not in body and str(tmp_path).encode() not in body
 
 
-@pytest.mark.parametrize("turn_count,warmup", [(0, 0), (51, 0), (1, 3), (20, 1)])
+@pytest.mark.parametrize("turn_count,warmup", [(0, 0), (101, 0), (1, 3), (20, 1)])
 async def test_invalid_artifact_load_does_not_begin_attempt(
     tmp_path, turn_count: int, warmup: int
 ) -> None:

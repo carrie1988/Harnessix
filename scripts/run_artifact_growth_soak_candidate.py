@@ -21,7 +21,7 @@ from scripts.soak_threshold import read_profile, read_report, verify_and_publish
 
 _ARCHIVE = (
     Path(__file__).resolve().parents[1]
-    / "docs/validation/soak-artifact-growth-three-platform-2026-09-24-v1"
+    / "docs/validation/soak-artifact-growth-three-platform-2026-09-24-v2"
 )
 
 
@@ -62,8 +62,8 @@ async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str
         or baseline_final.outcome != "committed"
         or baseline_final.manifest_sha256 != baseline_sha
         or baseline.load.warmup_count != 2
-        or baseline.load.artifact_count != 22
-        or baseline.sample_counts["artifact_publish"] != 20
+        or baseline.load.artifact_count != 62
+        or baseline.sample_counts["artifact_publish"] != 60
         or any(baseline.fault_counts.model_dump().values())
     ):
         raise KernelError("soak_profile_baseline_invalid", "Artifact冻结基线不完整")
@@ -73,7 +73,7 @@ async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str
     candidate_directory, candidate = await run_artifact_growth(
         evidence_root,
         code_revision=revision,
-        turn_count=20,
+        turn_count=60,
         warmup_count=2,
         seed=0,
         threshold_profile_ref=reference,
