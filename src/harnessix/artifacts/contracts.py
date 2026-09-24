@@ -99,6 +99,17 @@ class ArtifactToolResult:
 
 
 @dataclass(frozen=True, slots=True)
+class HistoryReferenceCheck:
+    """单条模型历史Artifact引用的批量验证输入；字段与逐条实参一一对应。"""
+
+    owner_thread_id: UUID
+    call_id: UUID
+    reference: ArtifactRef
+    purpose: HistoryArtifactPurpose
+    omitted_field: ArtifactOmittedField | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class CollectionReport:
     examined: int
     expired: int

@@ -66,7 +66,7 @@ async def test_release_uses_fixed_load_and_rechecks_both_commits(
         "turn_count": 1000,
         "warmup_count": 5,
         "seed": 0,
-        "turn_timeout_seconds": 30,
+        "turn_timeout_seconds": 120,
     }
     assert result == {
         "scenario_id": "long_session",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from uuid import UUID
 
@@ -41,6 +41,7 @@ from harnessix.artifacts.contracts import (
     ArtifactToolResult,
     CollectionReport,
     HistoryArtifactPurpose,
+    HistoryReferenceCheck,
     ReadArtifactInput,
 )
 from harnessix.artifacts.persistence import insert_artifact
@@ -385,6 +386,68 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             text="".join(selected),
             next_offset=end if end < len(lines) else None,
         )
+
+    async def verify_references(
+        self,
+        entries: Sequence[HistoryReferenceCheck],
+        *,
+        workspace_scope: str,
+    ) -> None:
+        """一次连接与每归属一次快照完成同步骤全部历史引用验证；逐引用语义与单条路径一致。"""
+
+        if not entries:
+            return
+        for entry in entries:
+            if entry.purpose not in _HISTORY_ARTIFACT_PURPOSES:
+                raise KernelError("artifact_invalid", "Artifact用途不符合契约")
+        async with self.session._connection() as database:
+            await database.execute("BEGIN")
+            rows: dict[str, aiosqlite.Row] = {}
+            identities = sorted({str(entry.reference.artifact_id) for entry in entries})
+            for start in range(0, len(identities), 100):
+                chunk = identities[start : start + 100]
+                marks = ", ".join("?" for _ in chunk)
+                cursor = await database.execute(
+                    f"SELECT * FROM agent_artifacts WHERE artifact_id IN ({marks}) "  # noqa: S608
+                    "AND workspace_scope = ?",
+                    (*chunk, workspace_scope),
+                )
+                for row in await cursor.fetchall():
+                    rows[row["artifact_id"]] = row
+            snapshots: dict[UUID, Thread | None] = {}
+            for entry in entries:
+                if entry.owner_thread_id not in snapshots:
+                    snapshots[entry.owner_thread_id] = await self.session._snapshot(
+                        database, entry.owner_thread_id
+                    )
+            for entry in entries:
+                record = rows.get(str(entry.reference.artifact_id))
+                if record is None or record["thread_id"] != str(entry.owner_thread_id):
+                    raise KernelError("artifact_not_found", "Artifact不存在或不属于当前作用域")
+                if entry.purpose != "artifact_page" and (
+                    record["call_id"] != str(entry.call_id) or record["purpose"] != entry.purpose
+                ):
+                    raise KernelError("artifact_not_found", "Artifact不存在或不属于当前作用域")
+                thread = snapshots[entry.owner_thread_id]
+                if thread is None:
+                    raise KernelError("artifact_corrupt", "Artifact归属不存在")
+                try:
+                    stored = self._reference(record, thread)
+                except KernelError as error:
+                    if error.code == "artifact_unreferenced":
+                        raise KernelError(
+                            "artifact_not_found", "Artifact不存在或不属于当前作用域"
+                        ) from None
+                    raise
+                if stored != entry.reference:
+                    raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
+                lines = self._body(record, thread, stored)
+                if entry.purpose == "artifact_page":
+                    self._verify_page(thread, entry.call_id, stored, lines)
+                if entry.omitted_field is not None:
+                    if entry.purpose != "tool_result" or not stored.complete:
+                        raise KernelError("artifact_corrupt", "局部Artifact不能证明结果省略")
+                    self._verify_coverage(thread, entry.call_id, lines, entry.omitted_field)
 
     async def verify_reference(
         self,

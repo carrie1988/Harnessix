@@ -100,7 +100,7 @@ from harnessix.agent.trusted_action_runtime import (
     synchronize_waiting_action,
 )
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
-from harnessix.artifacts.contracts import ArtifactToolResult
+from harnessix.artifacts.contracts import ArtifactToolResult, HistoryReferenceCheck
 from harnessix.artifacts.ports import (
     ArtifactAccessScope,
     ArtifactPublisher,
@@ -1317,6 +1317,22 @@ class AgentRuntime:
         try:
             async with asyncio.timeout(HISTORY_ARTIFACT_TIMEOUT_SECONDS):
                 scope = await token.run(access.artifact_workspace_scope(thread.workspace, token))
+                batch = getattr(verifier, "verify_references", None)
+                if batch is not None:
+                    entries = tuple(
+                        HistoryReferenceCheck(
+                            owner_thread_id=reference.owner_thread_id or thread.thread_id,
+                            call_id=reference.call_id,
+                            reference=reference.binding.artifact,
+                            purpose=reference.binding.purpose,
+                            omitted_field=reference.omitted_field,
+                        )
+                        for reference in prepared.references
+                    )
+                    token.checkpoint()
+                    await token.run(batch(entries, workspace_scope=scope))
+                    token.checkpoint()
+                    return
                 for reference in prepared.references:
                     token.checkpoint()
                     await token.run(

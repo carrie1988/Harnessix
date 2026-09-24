@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 6c9a1577f467c99f0eb1b99d7c8270bc811ca583
+version: 3
+code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
 modules:
@@ -191,3 +191,7 @@ Thread/Turn/Compaction UUID仅存在临时Session，不进入发布目录。文�
 v2原件原样保存但旧Reader会因未知文件集合拒绝读取，不能删除Proof后伪装为v1。
 发布环境需要Python 3.12+、可写的独立私有证据目录与足量临时磁盘；macOS、Linux、Windows分别
 完成固定环境验收前，不对任一平台宣称性能阈值通过。
+
+## 附：首次三平台运行的Windows期限与防挂起预算
+
+首次三平台正式运行（工作流35973891664，Revision `46ca9a2`）的macOS/Linux正常推进，Windows在第9分钟以`soak_turn_timeout`失败：固定30秒单Turn防挂起预算不能覆盖Windows共享Runner上Context构建、压缩摘要与SQLite写入叠加后的单Turn尾部。该预算只是防挂起护栏，性能判定仍由样本与冻结Profile承担；正式发布入口的单Turn预算由30秒调整为120秒（约为macOS v2基线P95的38倍、Windows预期P95的4～10倍），1000 Turn门槛与测量边界不变。该Revision的Windows运行不升级为任何基线；Linux/macOS如完成仅保留为GitHub上传件诊断，正式三平台基线在调整后的新Revision整体重跑。首次120分钟工作流硬期限同时由120分钟调整为300分钟。

@@ -76,7 +76,7 @@ async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str
         turn_count=1000,
         warmup_count=5,
         seed=0,
-        turn_timeout_seconds=30,
+        turn_timeout_seconds=120,
         threshold_profile_ref=reference,
     )
     restored, candidate_sha = read_published_run(candidate_directory)

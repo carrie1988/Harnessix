@@ -26,7 +26,7 @@ async def run_release(evidence_root: Path) -> dict[str, str]:
         turn_count=1000,
         warmup_count=5,
         seed=0,
-        turn_timeout_seconds=30,
+        turn_timeout_seconds=120,
     )
     restored, manifest_sha256 = read_published_run(run_directory)
     _, final = read_attempt(evidence_root / "attempts" / manifest.run_id)

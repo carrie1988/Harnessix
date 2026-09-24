@@ -1,0 +1,86 @@
+{
+ "checks": {
+  "attempt_reader": "2/2 committed + 1 failed attempt archived as diagnostic",
+  "frozen_profiles": "2/3 sealed (linux/macos); windows has no baseline and no profile",
+  "independent_candidates": "pending for linux/macos; windows unverified",
+  "independent_file_sha256": "14/14 matched",
+  "independent_stdlib_quantiles": "2/2 matched",
+  "privacy_keyword_scan": "3/3 passed",
+  "run_reader": "2/2 passed",
+  "standard_ci": "6/6 success on the same revision",
+  "workflow_matrix": "2/3 success (linux/macos baseline; windows failed soak_turn_timeout at measuring phase)"
+ },
+ "classification": "two-platform-baseline-with-windows-diagnostic",
+ "code_revision": "46ca9a2006b5f857ecb55924ba969cf2e331187e",
+ "platforms": {
+  "linux": {
+   "db_after_bytes": 18370560,
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c4-m16",
+   "manifest_sha256": "f7f3cddc13d5d4aca4a77073349fe0a5c54a216576fb3ff31687ec1a6ef0e9f4",
+   "p50_ns": 3922978337,
+   "p95_ns": 9573853163,
+   "p99_ns": 12202611425,
+   "profile_id": "ba9ecd527e0d4694b75891c5c8111199",
+   "profile_sha256": "59988f35f98a11270b65ca22d5fac48a2fa296c7da1570acbcb15a69e1e4126b",
+   "python_version": "3.12.3",
+   "rss_peak_bytes": 259420160,
+   "rss_source": "proc_status",
+   "run_id": "630fd3827b8e4dab8d16768ad77d7ff0",
+   "run_status": "baseline",
+   "sample_count": 1000,
+   "summary_request_count": 199,
+   "wal_after_bytes": 0
+  },
+  "macos": {
+   "db_after_bytes": 18370560,
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c3-m7",
+   "manifest_sha256": "3beb123f183686a66c58d02bd7b16f3afbb43dc573c8eba81b798c1df8175865",
+   "p50_ns": 3056506791,
+   "p95_ns": 7152122584,
+   "p99_ns": 9609343500,
+   "profile_id": "8a93bc6860334396a5f4a6c0a6075c1a",
+   "profile_sha256": "423cba1670463aab83af90978967a6243b1febcfe74e42ad4cfca1f2a4ee2a3d",
+   "python_version": "3.12.10",
+   "rss_peak_bytes": 399523840,
+   "rss_source": "getrusage",
+   "run_id": "2c9eb96d850041059b25bf017da921de",
+   "run_status": "baseline",
+   "sample_count": 1000,
+   "summary_request_count": 199,
+   "wal_after_bytes": 0
+  }
+ },
+ "release_status": "unverified",
+ "remaining_gates": [
+  "windows_formal_baseline_blocked_by_session_append_io",
+  "independent_candidate_linux_macos",
+  "other_0.9.3d_release_gates"
+ ],
+ "scenario_id": "long_session",
+ "source_workflow_run_id": 35973891664,
+ "spec_version": "harnessix.soak-review-packet/v1",
+ "standard_ci_run_id": 35971925613,
+ "windows_diagnostic": {
+  "analysis": "linux turn p99 12.2s and macos 9.6s leave no headroom for the 30s per-turn cap under windows CI SQLite I/O cost; session append path rewrites the full snapshot per batch (O(N^2) total) and is the documented scaling boundary; no product defect found in turn semantics",
+  "attempt_run_id": "eb27dd535bca4635837535b4d098e9ab",
+  "error_code": "soak_turn_timeout",
+  "outcome": "failed",
+  "phase": "measuring"
+ }
+}
