@@ -339,168 +339,173 @@ async def run_action_recovery(
             artifacts = SQLiteArtifactStore(sessions)
             plans = SQLiteExecutionPlanStore(root / "plans.db")
             audit = SQLiteActionAuditStore(root / "audit.db")
-            unknown_executor = UnknownOutcomeExecutor()
-            crash_reconciler = CrashReconcileExecutor()
-            router = TrustedActionRouter(
-                plans=plans,
-                audit=audit,
-                workspace_root=lambda _: workspace,
-            )
-            router.register(unknown_definition(unknown_executor))
-            router.register(crash_definition(crash_reconciler))
-            before_db, before_wal = _state_bytes(root)
-            cumulative_repaired = 0
-            for ordinal in range(1, total + 1):
-                phase = "warmup" if ordinal <= warmup_count else "measure"
-                attempt.phase = "warming" if phase == "warmup" else "measuring"
-                context = _planning_context(workspace)
-                unknown_route = router.plan(_invocation(_UNKNOWN_TOOL, ordinal, "unknown"), context)
-                unknown_plan_id = unknown_route.plan.execution.plan_id
-                router.decide(unknown_plan_id, _approval())
-                outcome = await router.execute(unknown_plan_id)
-                if outcome.kind != "unknown" or audit.load(unknown_plan_id).state != "unknown":
-                    raise KernelError("soak_action_fault_invalid", "UNKNOWN故障未进入未知效果")
-                calls_before = unknown_executor.calls
-                reconciled = await router.reconcile(unknown_plan_id)
-                if (
-                    reconciled.kind != "succeeded"
-                    or unknown_executor.calls != calls_before
-                    or audit.load(unknown_plan_id).state != "succeeded"
-                ):
-                    raise KernelError("soak_action_fault_invalid", "UNKNOWN对账重放了效果")
-                crash_route = router.plan(_invocation(_CRASH_TOOL, ordinal, "crash"), context)
-                crash_plan_id = crash_route.plan.execution.plan_id
-                router.decide(crash_plan_id, _approval())
-                marker = fixture / f"marker-{ordinal}.bin"
-                completed = await asyncio.to_thread(
-                    subprocess.run,
-                    [
-                        sys.executable,
-                        str(_CHILD),
-                        str(root / "plans.db"),
-                        str(root / "audit.db"),
-                        str(workspace),
-                        str(crash_plan_id),
-                        str(marker),
-                    ],
-                    capture_output=True,
-                    timeout=120,
+            try:
+                unknown_executor = UnknownOutcomeExecutor()
+                crash_reconciler = CrashReconcileExecutor()
+                router = TrustedActionRouter(
+                    plans=plans,
+                    audit=audit,
+                    workspace_root=lambda _: workspace,
                 )
-                if completed.returncode != CRASH_EXIT_CODE or not marker.is_file():
-                    raise KernelError("soak_action_crash_invalid", "受控崩溃子进程合同失败")
-                crash_reconciler.marker = marker
-                with audit.runtime_owner() as fence:
-                    recovered = router.recover_interrupted()
-                    if set(recovered) != {crash_plan_id}:
-                        raise KernelError(
-                            "soak_action_recovery_invalid", "宿主中断未收敛为唯一UNKNOWN"
-                        )
-                    outcome_crash = await router.reconcile(crash_plan_id)
+                router.register(unknown_definition(unknown_executor))
+                router.register(crash_definition(crash_reconciler))
+                before_db, before_wal = _state_bytes(root)
+                cumulative_repaired = 0
+                for ordinal in range(1, total + 1):
+                    phase = "warmup" if ordinal <= warmup_count else "measure"
+                    attempt.phase = "warming" if phase == "warmup" else "measuring"
+                    context = _planning_context(workspace)
+                    unknown_route = router.plan(
+                        _invocation(_UNKNOWN_TOOL, ordinal, "unknown"), context
+                    )
+                    unknown_plan_id = unknown_route.plan.execution.plan_id
+                    router.decide(unknown_plan_id, _approval())
+                    outcome = await router.execute(unknown_plan_id)
+                    if outcome.kind != "unknown" or audit.load(unknown_plan_id).state != "unknown":
+                        raise KernelError("soak_action_fault_invalid", "UNKNOWN故障未进入未知效果")
+                    calls_before = unknown_executor.calls
+                    reconciled = await router.reconcile(unknown_plan_id)
                     if (
-                        outcome_crash.kind != "succeeded"
-                        or marker.read_bytes() != _MARKER_BODY
-                        or audit.load(crash_plan_id).state != "succeeded"
+                        reconciled.kind != "succeeded"
+                        or unknown_executor.calls != calls_before
+                        or audit.load(unknown_plan_id).state != "succeeded"
+                    ):
+                        raise KernelError("soak_action_fault_invalid", "UNKNOWN对账重放了效果")
+                    crash_route = router.plan(_invocation(_CRASH_TOOL, ordinal, "crash"), context)
+                    crash_plan_id = crash_route.plan.execution.plan_id
+                    router.decide(crash_plan_id, _approval())
+                    marker = fixture / f"marker-{ordinal}.bin"
+                    completed = await asyncio.to_thread(
+                        subprocess.run,
+                        [
+                            sys.executable,
+                            str(_CHILD),
+                            str(root / "plans.db"),
+                            str(root / "audit.db"),
+                            str(workspace),
+                            str(crash_plan_id),
+                            str(marker),
+                        ],
+                        capture_output=True,
+                        timeout=120,
+                    )
+                    if completed.returncode != CRASH_EXIT_CODE or not marker.is_file():
+                        raise KernelError("soak_action_crash_invalid", "受控崩溃子进程合同失败")
+                    crash_reconciler.marker = marker
+                    with audit.runtime_owner() as fence:
+                        recovered = router.recover_interrupted()
+                        if set(recovered) != {crash_plan_id}:
+                            raise KernelError(
+                                "soak_action_recovery_invalid", "宿主中断未收敛为唯一UNKNOWN"
+                            )
+                        outcome_crash = await router.reconcile(crash_plan_id)
+                        if (
+                            outcome_crash.kind != "succeeded"
+                            or marker.read_bytes() != _MARKER_BODY
+                            or audit.load(crash_plan_id).state != "succeeded"
+                        ):
+                            raise KernelError(
+                                "soak_action_recovery_invalid", "崩溃Route对账未观察一次性效果"
+                            )
+                        plans._db.execute(  # noqa: SLF001 - 与恢复测试相同的受控崩溃窗口
+                            "DELETE FROM execution_approvals WHERE plan_id = ?",
+                            (str(unknown_plan_id),),
+                        )
+                        plans._db.execute(  # noqa: SLF001
+                            "DELETE FROM execution_plans WHERE plan_id = ?",
+                            (str(unknown_plan_id),),
+                        )
+                        plans._db.commit()  # noqa: SLF001
+                        await _insert_orphan_artifact(sessions, thread_id, ordinal)
+                        start = perf_counter_ns()
+                        try:
+                            async with asyncio.timeout(scan_timeout_seconds):
+                                report = await scan_product_action_recovery(
+                                    plans=plans,
+                                    audit=audit,
+                                    sessions=sessions,
+                                    artifacts=artifacts,
+                                    supervisor=None,
+                                    fence=fence,
+                                )
+                        except TimeoutError:
+                            raise KernelError("soak_action_timeout", "Action恢复扫描超时") from None
+                        elapsed = perf_counter_ns() - start
+                    cumulative_repaired += report.repaired_execution_plans
+                    if (
+                        report.scanned_routes != ordinal * 2
+                        or cumulative_repaired != ordinal
+                        or report.invalid_execution_plans != 0
+                        or report.session_orphan_references != 0
+                        or report.routes_without_session_reference != ordinal * 2
+                        or report.artifact_orphans != ordinal
+                        or report.process_orphan_leases != 0
+                        or report.owner_generation != fence.generation
                     ):
                         raise KernelError(
-                            "soak_action_recovery_invalid", "崩溃Route对账未观察一次性效果"
+                            "soak_action_recovery_invalid", "Action恢复扫描报告与轮次不一致"
                         )
-                    plans._db.execute(  # noqa: SLF001 - 与恢复测试相同的受控崩溃窗口
-                        "DELETE FROM execution_approvals WHERE plan_id = ?",
-                        (str(unknown_plan_id),),
+                    samples.append(
+                        latency_sample(
+                            run_id,
+                            "action_recovery",
+                            len(samples) + 1,
+                            phase,
+                            "recovery_scan",
+                            elapsed,
+                        )
                     )
-                    plans._db.execute(  # noqa: SLF001
-                        "DELETE FROM execution_plans WHERE plan_id = ?",
-                        (str(unknown_plan_id),),
-                    )
-                    plans._db.commit()  # noqa: SLF001
-                    await _insert_orphan_artifact(sessions, thread_id, ordinal)
-                    start = perf_counter_ns()
-                    try:
-                        async with asyncio.timeout(scan_timeout_seconds):
-                            report = await scan_product_action_recovery(
-                                plans=plans,
-                                audit=audit,
-                                sessions=sessions,
-                                artifacts=artifacts,
-                                supervisor=None,
-                                fence=fence,
-                            )
-                    except TimeoutError:
-                        raise KernelError("soak_action_timeout", "Action恢复扫描超时") from None
-                    elapsed = perf_counter_ns() - start
-                cumulative_repaired += report.repaired_execution_plans
-                if (
-                    report.scanned_routes != ordinal * 2
-                    or cumulative_repaired != ordinal
-                    or report.invalid_execution_plans != 0
-                    or report.session_orphan_references != 0
-                    or report.routes_without_session_reference != ordinal * 2
-                    or report.artifact_orphans != ordinal
-                    or report.process_orphan_leases != 0
-                    or report.owner_generation != fence.generation
-                ):
-                    raise KernelError(
-                        "soak_action_recovery_invalid", "Action恢复扫描报告与轮次不一致"
-                    )
-                samples.append(
-                    latency_sample(
-                        run_id,
-                        "action_recovery",
-                        len(samples) + 1,
-                        phase,
-                        "recovery_scan",
-                        elapsed,
-                    )
-                )
-                cycles.append(
-                    SoakActionCycle(
-                        ordinal=ordinal,
-                        phase=phase,
-                        faults=(
-                            SoakActionFault(
-                                kind="unknown_outcome",
-                                execute_calls=1,
-                                reconcile_calls=1,
-                                terminal_state="succeeded",
+                    cycles.append(
+                        SoakActionCycle(
+                            ordinal=ordinal,
+                            phase=phase,
+                            faults=(
+                                SoakActionFault(
+                                    kind="unknown_outcome",
+                                    execute_calls=1,
+                                    reconcile_calls=1,
+                                    terminal_state="succeeded",
+                                ),
+                                SoakActionFault(
+                                    kind="host_crash",
+                                    execute_calls=1,
+                                    reconcile_calls=1,
+                                    terminal_state="succeeded",
+                                ),
+                                SoakActionFault(
+                                    kind="plan_orphan",
+                                    execute_calls=0,
+                                    reconcile_calls=0,
+                                    terminal_state="none",
+                                ),
+                                SoakActionFault(
+                                    kind="artifact_orphan",
+                                    execute_calls=0,
+                                    reconcile_calls=0,
+                                    terminal_state="none",
+                                ),
                             ),
-                            SoakActionFault(
-                                kind="host_crash",
-                                execute_calls=1,
-                                reconcile_calls=1,
-                                terminal_state="succeeded",
-                            ),
-                            SoakActionFault(
-                                kind="plan_orphan",
-                                execute_calls=0,
-                                reconcile_calls=0,
-                                terminal_state="none",
-                            ),
-                            SoakActionFault(
-                                kind="artifact_orphan",
-                                execute_calls=0,
-                                reconcile_calls=0,
-                                terminal_state="none",
-                            ),
-                        ),
-                        owner_generation=fence.generation,
-                        scanned_routes=report.scanned_routes,
-                        repaired_execution_plans=cumulative_repaired,
-                        artifact_orphans=report.artifact_orphans,
-                        scan_report_sha256=report.report_sha256,
-                        scan_sample_index=len(samples),
+                            owner_generation=fence.generation,
+                            scanned_routes=report.scanned_routes,
+                            repaired_execution_plans=cumulative_repaired,
+                            artifact_orphans=report.artifact_orphans,
+                            scan_report_sha256=report.report_sha256,
+                            scan_sample_index=len(samples),
+                        )
                     )
-                )
 
-            attempt.phase = "reconciling"
-            if (
-                unknown_executor.calls != total
-                or unknown_executor.reconciliations != total
-                or crash_reconciler.reconciliations != total
-            ):
-                raise KernelError("soak_action_fault_invalid", "Action执行或对账计数漂移")
-            after_db, after_wal = _state_bytes(root)
-            plans.close()
-            audit.close()
+                attempt.phase = "reconciling"
+                if (
+                    unknown_executor.calls != total
+                    or unknown_executor.reconciliations != total
+                    or crash_reconciler.reconciliations != total
+                ):
+                    raise KernelError("soak_action_fault_invalid", "Action执行或对账计数漂移")
+                after_db, after_wal = _state_bytes(root)
+            finally:
+                # Windows下失败路径也必须先释放SQLite句柄，临时目录才能清理。
+                plans.close()
+                audit.close()
 
         rss = read_peak_rss()
         samples.append(rss_sample(run_id, "action_recovery", len(samples) + 1, rss))

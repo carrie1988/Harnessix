@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 18ffe02426eb19ec0bc2f0e1ed12325333f8a435
+version: 2
+code_revision: 2cc255ef52ef46196946352a1483bd0606dc545e
 owners:
   - core
 modules:
@@ -30,8 +30,8 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | `TrustedActionRouter`已提供计划/审批/执行/对账统一入口；0.9.3c已提供双层Owner、持久Operation Deadline、`running/reconciling → unknown`只对账恢复和`scan_product_action_recovery`跨Store低敏扫描；样本、Manifest、Run/Attempt、阈值Profile与独立复验内核已实现；`long_session`、`many_threads`、`artifact_growth`、`sdk_capacity`、`restart`五个场景Runner已实现，其中SDK容量、重启与多Thread已完成三平台基线、冻结Profile与第二独立PASS。 |
-| 本文设计状态 | `reviewing`；目标设计，不表示Action恢复Runner已实现、基线已运行或阈值已冻结。 |
-| 代码版本 | `18ffe02426eb19ec0bc2f0e1ed12325333f8a435` |
+| 本文设计状态 | `reviewing`；Runner、Proof合同、v7证据版本与发布入口已实现并有本地回归；三平台正式负载、冻结Profile与独立复验仍未完成，不表示发布门禁已通过。 |
+| 代码版本 | `2cc255ef52ef46196946352a1483bd0606dc545e` |
 | 影响模块 | Trusted Actions、Execution Plan、Session、Artifact、Product Config恢复扫描、Soak证据合同与发布工程；不改变任何生产协议、数据库Schema或公共CLI。 |
 | 关键ADR | [ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)、[ADR-0091](../adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)。 |
 | 关键测试/证据 | 现有Router/恢复扫描测试；本文新增的Runner回归、Proof合同与发布入口测试。 |
@@ -373,3 +373,4 @@ run_action_recovery(...):
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `18ffe02426eb19ec0bc2f0e1ed12325333f8a435` | 2026-09-24 | 建立Action恢复固定故障矩阵Soak的场景合同、Proof、v7证据版本、Runner与发布入口设计；实现与三平台验收待完成。 |
+| 2 | `2cc255ef52ef46196946352a1483bd0606dc545e` | 2026-09-24 | Runner、Proof、v7接线、发布入口与六个工作流已实现，本地缩小回归及`make check`通过；三平台正式基线、Profile冻结与独立复验仍待完成。 |
