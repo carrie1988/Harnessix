@@ -1,0 +1,87 @@
+{
+ "checks": {
+  "attempt_reader": "3/3 committed with STARTED v2 prebinding",
+  "independent_file_sha256": "24/24 matched",
+  "independent_verify_and_publish": "3/3 PASS regenerated",
+  "privacy_keyword_scan": "3/3 passed",
+  "run_reader": "3/3 passed",
+  "standard_ci": "6/6 success on the candidate revision",
+  "workflow_matrix": "3/3 success"
+ },
+ "classification": "three-platform-independent-candidate",
+ "code_revision": "39dda2bb218baed30dcf9b1326f899a3133f497b",
+ "platforms": {
+  "linux": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "125ec654d60005789aa27629ba054e2887481dbcd84040a62957022aa8a6a7c0",
+   "profile_id": "70a57857f5e04d189f64ebb65473f6bd",
+   "publish_p50_ns": 164266424,
+   "publish_p95_ns": 367356791,
+   "publish_p99_ns": 412586533,
+   "read_p99_ns": 93288726,
+   "report_id": "fe3cae06ff6f43449e6cc38d8579cdda",
+   "report_status": "PASS",
+   "rss_peak_bytes": 219439104,
+   "run_id": "d2d4117a7fa84f2b9f8da2c46a943813",
+   "run_status": "unverified"
+  },
+  "macos": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "a65d34264e5c0b31761ae531bb18c99fe387a57cfa25380a7b6acb49a5f68be9",
+   "profile_id": "a59713b864dd4064851658b03ca886f8",
+   "publish_p50_ns": 121036667,
+   "publish_p95_ns": 244064042,
+   "publish_p99_ns": 285553167,
+   "read_p99_ns": 62139666,
+   "report_id": "4eb75d43d041478da5fcc1eb5aa34e3b",
+   "report_status": "PASS",
+   "rss_peak_bytes": 372097024,
+   "run_id": "0be33e77ab3046f8bb194e655e12a623",
+   "run_status": "unverified"
+  },
+  "windows": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "manifest_sha256": "e62ee5d583e8434947925d31971592a3e6bcc339045fc0d6951855a61fb023d6",
+   "profile_id": "6a58fce7813e4593b2af9d25c9b8add4",
+   "publish_p50_ns": 419651600,
+   "publish_p95_ns": 866445400,
+   "publish_p99_ns": 985078100,
+   "read_p99_ns": 83492800,
+   "report_id": "f7051682dc454e34bb3d2977258fbcec",
+   "report_status": "PASS",
+   "rss_peak_bytes": 188526592,
+   "run_id": "ce55a8f55afa494aa7b9268f53c8f987",
+   "run_status": "unverified"
+  }
+ },
+ "release_status": "scenario_gate_passed",
+ "remaining_gates": [
+  "long_session_candidate",
+  "other_0.9.3d_release_gates"
+ ],
+ "scenario_id": "artifact_growth",
+ "source_workflow_run_id": 36015746449,
+ "spec_version": "harnessix.soak-review-packet/v1",
+ "standard_ci_run_id": 36015746312
+}
