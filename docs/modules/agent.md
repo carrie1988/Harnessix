@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
+version: 15
+code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
 modules:
@@ -292,6 +292,9 @@ sequenceDiagram
 
 关键顺序是“意图先于副作用，结果先于下一决策”。Context准备结果、Model Attempt、Tool Call、Tool
 Result和终态均先进入Session，再向后推进。流式Delta可提前显示，但不能替代完成后的持久文本。
+每个模型步骤前的历史Artifact引用验证由Runtime委托`artifacts/batch_verify.py`执行：`SQLiteArtifactStore`
+经批量入口共享只读连接与每归属一次快照，其他Verifier回退逐条路径；5秒预算、错误码与首个失败优先级
+与逐条语义一致（见[Artifact模块设计](artifacts.md)第13.2节）。
 
 ## 12. 多Tool调度
 

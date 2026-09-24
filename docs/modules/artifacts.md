@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 14
+code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
 modules:
@@ -374,10 +374,15 @@ TTL、正文类型、长度、SHA-256、JSONL和记录数；Process用途再验�
 
 ### 13.2 模型历史验证
 
-模型历史准备得到的引用在每次Provider请求前逐个调用`verify_reference`。`tool_result`可额外要求
+模型历史准备得到的引用在每次Provider请求前由`artifacts/batch_verify.py`的
+`verify_history_references`统一验证：`SQLiteArtifactStore`走`verify_references`批量入口——一次只读连接、
+分批`IN`归属行查询、每个归属Thread只加载一次快照，再按原顺序逐条执行与单条`verify_reference`完全相同的
+检查与错误码（归属、用途、manifest一致性、正文SHA-256/记录数、分页/省略覆盖）；其他`ArtifactReferenceVerifier`
+实现回退逐条`verify_reference`循环，端口契约不变。批量入口是规模修复：逐条路径每步为N个引用加载N份完整
+Thread快照，单步成本O(N²)，约280个引用时超过5秒预算（0.9.3d Artifact增长Soak实测）。`tool_result`可额外要求
 `omitted_field`覆盖证明；`batch_effect`和`process_output`只能证明各自证据，不可替换整个通用结果。
 `artifact_page`验证新的分页Tool Call参数、真实切片和结果完全一致。整组验证由Agent Runtime限制为5秒，
-失败、取消或超时均发生在Provider发网前。
+失败、取消或超时均发生在Provider发网前；正文逐字节校验成本随历史正文总量线性增长，超出预算的历史规模仍失败关闭。
 
 ### 13.3 Fork所有权
 
@@ -527,7 +532,7 @@ collect(limit, after):
 | 配额并发 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `_check_quota` | [`test_store.py`](../../tests/artifacts/test_store.py) | `test_concurrent_publish_cannot_overdraw_global_quota`、`test_byte_quota_failure_rolls_back_result_and_content` | 写事务内配额 |
 | 读取与损坏 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `read`、`_reference`、`_body` | [`test_store.py`](../../tests/artifacts/test_store.py) | `test_archive_beyond_preview_reopen_integrity_and_replay`、`test_tampering_is_corruption_not_empty_success` | 分页、重开和反向绑定 |
 | 归属隐藏 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `read` | [`test_store.py`](../../tests/artifacts/test_store.py) | `test_unknown_and_cross_owner_have_same_failure` | Thread/Scope/Missing等价失败 |
-| 引用和覆盖验证 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `verify_reference`、`_verify_page`、`_verify_coverage` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py) | `test_artifact_verifier_checks_every_binding_and_body`、`test_reduction_requires_actual_coverage_not_just_complete_manifest` | 发网前完整证据 |
+| 引用和覆盖验证 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`batch_verify.py`](../../src/harnessix/artifacts/batch_verify.py) | `verify_reference`、`verify_references`、`_verify_page`、`_verify_coverage` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py)、[`test_batch_verify.py`](../../tests/artifacts/test_batch_verify.py) | `test_artifact_verifier_checks_every_binding_and_body`、`test_batch_verify_rejects_same_errors_as_single`、`test_reduction_requires_actual_coverage_not_just_complete_manifest` | 发网前完整证据；批量入口共享连接与快照且语义等价 |
 | TTL和回收 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `collect` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_gc_protects_active_thread_and_cursor_does_not_starve_others` | Active保护、游标与Tombstone |
 | Runtime装配 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__init__`、`_record_tool_result` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_misconfigured_publisher_is_not_silently_used`、`test_default_definitions_unchanged_and_artifact_policy_is_versioned` | 同Session/Scoped绑定与工具版本 |
 | 搜索捕获和读取Tool | [`runtime.py`](../../src/harnessix/tools/runtime.py) | `execute_scoped`、`_read_artifact`、`artifact_workspace_scope` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_glob_archive_and_incomplete_grep_are_truthful`、`test_read_tool_uses_actual_thread_and_rebound_workspace` | 受信Scope和真实完整性 |
