@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 24
-code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
+version: 25
+code_revision: b3e0d6f731d29b2749aab2827a9ebb302c2e87d6
 owners:
   - core
 modules:
@@ -38,6 +38,8 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-24 | [Action恢复三平台正式规模基线](soak-action-recovery-three-platform-2026-09-24-v1/README.md) | `b3e0d6f731d29b2749aab2827a9ebb302c2e87d6` | Linux/macOS/Windows Python 3.12、2预热+20正式轮固定四故障矩阵、44次预期UNKNOWN；Provider零请求 | 三平台Run/Attempt原件及18份文件摘要、分位数、v7 Proof独立复核通过；[CI 35960330442](https://github.com/carrie1988/Harnessix/actions/runs/35960330442)六实例成功 | 三平台各一次正式基线与封印Profile；第二独立Run与报告待复验，基线本身不判PASS |
+| 2026-09-24 | [Artifact增长三平台正式规模基线](soak-artifact-growth-three-platform-2026-09-24-v1/README.md) | `b3e0d6f731d29b2749aab2827a9ebb302c2e87d6` | Linux/macOS/Windows Python 3.12、2预热+20正式混合大小件、195次正式分页；确定性Provider | 三平台Run/Attempt原件及18份文件摘要、分位数、v3 Proof独立复核通过；[CI 35960330442](https://github.com/carrie1988/Harnessix/actions/runs/35960330442)六实例成功 | 三平台各一次正式基线与封印Profile；第二独立Run与报告待复验，基线本身不判PASS |
 | 2026-09-23 | [多Thread读路径收敛后三平台候选原件](soak-many-threads-three-platform-candidate-2026-09-23-v3/README.md) | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 原三份封印Profile、500 Thread/50每页/3正式重启；Provider零请求 | 三平台Run/Attempt/Report 24份原件、三个ZIP、逐轮Proof、最近秩与独立报告复验均为PASS；[同Revision CI 35883976180](https://github.com/carrie1988/Harnessix/actions/runs/35883976180)六Job成功 | 固定多Thread场景工程护栏通过；旧macOS FAIL原件保留，不外推到产品发布 |
 | 2026-09-23 | [多Thread三平台修复后候选性能FAIL](soak-many-threads-three-platform-candidate-2026-09-23-v2/README.md) | `807e688988245fcbb269f0c04013ed9a9ca6ea9d` | 同三份冻结Profile、500 Thread/50每页/3正式重启；无模型请求 | 24份原件与三个ZIP、Reader、逐页Proof、分位数和独立报告复验均通过；Linux/Windows PASS，macOS启动P95/P99和分页P99越限FAIL；[同Revision CI 35880201885](https://github.com/carrie1988/Harnessix/actions/runs/35880201885)六Job成功 | 该Revision固定场景候选FAIL；不得调高原Profile或丢弃macOS FAIL，新Revision验收见首行 |
 | 2026-09-23 | [多Thread三平台首轮候选诊断](soak-many-threads-three-platform-candidate-2026-09-23-v1/README.md) | `cadc4e5190dd94e9dbc7760b19b1659090f73cbb` | 同冻结Profile三平台第二Run | 三份报告PASS，24份原件与三个ZIP及独立复验一致；同Revision CI跨平台夹具错误失败 | 不作为正式场景关闭证据；修复后重测见上一行 |
