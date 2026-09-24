@@ -366,8 +366,18 @@ async def run_artifact_growth(
                         raise KernelError("soak_artifact_cleanup_invalid", "清理前Artifact数量无效")
                     future = max(ref.expires_at for ref in references) + timedelta(seconds=1)
                     with patch("harnessix.artifacts.sqlite.utc_now", return_value=future):
-                        report = await artifacts.collect(limit=100)
-                        if report.expired != total or report.protected or report.next_after:
+                        expired_total, cursor = 0, None
+                        while True:
+                            report = await artifacts.collect(limit=100, after=cursor)
+                            if report.protected:
+                                raise KernelError(
+                                    "soak_artifact_cleanup_invalid", "Artifact到期清理受保护"
+                                )
+                            expired_total += report.expired
+                            if report.next_after is None:
+                                break
+                            cursor = report.next_after
+                        if expired_total != total:
                             raise KernelError(
                                 "soak_artifact_cleanup_invalid", "Artifact到期清理不完整"
                             )
