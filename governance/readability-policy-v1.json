@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 849,
-    "src/harnessix/agent/runtime.py": 2806,
+    "src/harnessix/agent/runtime.py": 2794,
     "src/harnessix/context/sources.py": 844,
     "src/harnessix/delivery/git.py": 1041,
     "src/harnessix/delivery/git_push.py": 609,
@@ -20,7 +20,6 @@
     "src/harnessix/mcp/runtime.py": 643,
     "src/harnessix/processes/supervisor.py": 776,
     "src/harnessix/protocol/contracts.py": 643,
-    "src/harnessix/sdk/agent_client.py": 611,
     "src/harnessix/skills/runtime.py": 644
   },
   "approved_oversized_symbols": {
@@ -45,7 +44,7 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 2634,
+      "max_lines": 2621,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
@@ -105,19 +104,19 @@
       "max_decision_complexity": 0
     },
     "harnessix.app_server.service:AgentApplicationService": {
-      "max_lines": 465,
+      "max_lines": 459,
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher": {
-      "max_lines": 204,
+      "max_lines": 202,
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher.append": {
-      "max_lines": 101,
+      "max_lines": 99,
       "max_decision_complexity": 27
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore": {
-      "max_lines": 432,
+      "max_lines": 428,
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.sqlite:SQLiteArtifactStore._verify_page": {
@@ -241,8 +240,8 @@
       "max_decision_complexity": 29
     },
     "harnessix.evals.grader:grade_coding_eval": {
-      "max_lines": 164,
-      "max_decision_complexity": 15
+      "max_lines": 159,
+      "max_decision_complexity": 10
     },
     "harnessix.evals.materializer:materialize_historical_coding_eval": {
       "max_lines": 115,
@@ -508,12 +507,8 @@
       "max_lines": 326,
       "max_decision_complexity": 0
     },
-    "harnessix.sdk.agent_client:SubprocessAgentTransport": {
-      "max_lines": 187,
-      "max_decision_complexity": 0
-    },
     "harnessix.session.sqlite:SQLiteSessionStore": {
-      "max_lines": 418,
+      "max_lines": 414,
       "max_decision_complexity": 0
     },
     "harnessix.skills.contracts:SkillCatalogSnapshot.canonical_catalog": {
@@ -549,11 +544,11 @@
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.router:TrustedActionRouter": {
-      "max_lines": 332,
+      "max_lines": 220,
       "max_decision_complexity": 0
     },
     "harnessix.trusted_actions.store:SQLiteActionAuditStore": {
-      "max_lines": 310,
+      "max_lines": 251,
       "max_decision_complexity": 0
     },
     "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources": {

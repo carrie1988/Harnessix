@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
@@ -93,8 +93,8 @@ flowchart LR
 | 接口 | 输入/输出 | 语义与失败 |
 |---|---|---|
 | `HistoryReferenceCheck`（`artifacts/contracts.py`新增合同） | `owner_thread_id`、`call_id`、`reference`、`purpose`、`omitted_field` | 冻结合同；与运行时逐条实参一一对应。 |
-| `SQLiteArtifactStore.verify_references(entries, *, workspace_scope)` | 有序检查条目序列；无返回 | 空序列直接返回；任一`purpose`非法先按顺序报`artifact_invalid`；逐条目复刻单条检查顺序与错误码；首个失败即抛出。 |
-| `AgentRuntime._verify_history_artifacts` | 不变 | `getattr(verifier, "verify_references", None)`存在时走批量入口，否则回退逐条循环；超时与取消语义不变。 |
+| `artifacts/batch_verify.py:verify_references(store, entries, *, workspace_scope)` | 有序检查条目序列；无返回 | 空序列直接返回；任一`purpose`非法先按顺序报`artifact_invalid`；逐条目复刻单条检查顺序与错误码；首个失败即抛出。 |
+| `artifacts/batch_verify.py:verify_history_references(verifier, access, thread, references, token)` | Runtime委托调用 | `SQLiteArtifactStore`走批量入口，其他Verifier回退逐条循环；超时与取消语义不变，端口无需新增方法。 |
 
 批量入口的检查顺序（与`verify_reference`逐条一致）：`purpose`白名单 → 归属行存在且`thread_id`匹配（否则`artifact_not_found`）→ 非分页用途的`call_id/purpose`匹配 → 归属Thread快照存在（否则`artifact_corrupt`）→ `validate_artifact_reference`（`artifact_unreferenced`映射为`artifact_not_found`）→ 存储引用与历史引用相等 → `_body`状态/TTL/SHA-256/记录数 → 分页调用核对 → 省略覆盖核对。
 
@@ -124,7 +124,7 @@ verify_references(entries, workspace_scope):
 ## 8. 失败、错误分类、兼容与观测
 
 - 错误码、异常类型与首个失败优先级与逐条路径一致；Timeout/Cancel由Runtime现有边界处理。
-- 旧版本Verifier无批量方法时行为完全不变；`tests/context`与`tests/artifacts`既有套件即是回归。
+- 其他Verifier实现无批量入口时行为完全不变；`tests/context`与`tests/artifacts`既有套件即是回归。批量实现提取为独立模块`artifacts/batch_verify.py`，`AgentRuntime`与`SQLiteArtifactStore`两个既有冻结热点不增长；`docs/baselines/readability-0.9.0-final.json`与`governance/readability-policy-v1.json`按既定流程在本变更中重新生成，代码行数类基线只降不升。
 - 新增`tests/artifacts/test_batch_verify.py`：批量与逐条结果逐案例等价（合法、缺行、错用途、错归属、manifest漂移、正文篡改、过期、分页、省略覆盖、空序列、首个失败优先级）。
 - 可观测性不新增信号；验证失败仍由`context_artifact_*`稳定错误码体现。
 

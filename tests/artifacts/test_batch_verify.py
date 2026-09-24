@@ -13,6 +13,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts import sqlite as artifact_sqlite
+from harnessix.artifacts.batch_verify import verify_references
 from harnessix.artifacts.contracts import ArtifactRef, HistoryReferenceCheck
 from harnessix.models.scripted import FakeProvider
 from harnessix.tools.runtime import CodingToolRuntime
@@ -36,8 +37,8 @@ async def test_batch_verify_accepts_valid_entries_and_empty(tmp_path) -> None:
     store, artifacts, scope, thread, turn = await exercise(tmp_path, count=2)
     result = results(turn)[0]
     entry = _entry(thread, result, scope)
-    await artifacts.verify_references((), workspace_scope=scope)
-    await artifacts.verify_references((entry, entry), workspace_scope=scope)
+    await verify_references(artifacts, (), workspace_scope=scope)
+    await verify_references(artifacts, (entry, entry), workspace_scope=scope)
     await artifacts.verify_reference(
         thread.thread_id,
         result.call_id,
@@ -82,7 +83,7 @@ async def test_batch_verify_rejects_same_errors_as_single(tmp_path, monkeypatch,
         with sqlite3.connect(store.path) as db:
             db.execute("DELETE FROM agent_artifacts")
     with pytest.raises(KernelError) as error:
-        await artifacts.verify_references((entry,), workspace_scope=scope_value)
+        await verify_references(artifacts, (entry,), workspace_scope=scope_value)
     assert error.value.code == (
         "artifact_corrupt"
         if kind in {"manifest", "body"}
@@ -104,7 +105,7 @@ async def test_batch_verify_rejects_unknown_purpose(tmp_path) -> None:
         omitted_field=None,
     )
     with pytest.raises(KernelError) as error:
-        await artifacts.verify_references((entry,), workspace_scope=scope)
+        await verify_references(artifacts, (entry,), workspace_scope=scope)
     assert error.value.code == "artifact_invalid"
 
 
@@ -119,7 +120,7 @@ async def test_batch_verify_first_failure_precedence(tmp_path) -> None:
         reference=valid.reference.model_copy(update={"artifact_id": uuid4()}),
     )
     with pytest.raises(KernelError) as error:
-        await artifacts.verify_references((missing, valid), workspace_scope=scope)
+        await verify_references(artifacts, (missing, valid), workspace_scope=scope)
     assert error.value.code == "artifact_not_found"
     corrupt = _entry(
         thread,
@@ -128,7 +129,7 @@ async def test_batch_verify_first_failure_precedence(tmp_path) -> None:
         reference=valid.reference.model_copy(update={"sha256": "0" * 64}),
     )
     with pytest.raises(KernelError) as error:
-        await artifacts.verify_references((valid, corrupt), workspace_scope=scope)
+        await verify_references(artifacts, (valid, corrupt), workspace_scope=scope)
     assert error.value.code == "artifact_corrupt"
 
 
@@ -145,7 +146,7 @@ async def test_batch_verify_loads_snapshot_once_per_owner(tmp_path, monkeypatch)
         return await original(database, thread_id)
 
     monkeypatch.setattr(store, "_snapshot", counting)  # noqa: SLF001
-    await artifacts.verify_references((entry, entry), workspace_scope=scope)
+    await verify_references(artifacts, (entry, entry), workspace_scope=scope)
     assert calls == 1
 
 

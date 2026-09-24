@@ -244,8 +244,7 @@ async def test_verifier_cancellation_timeout_drains_without_provider_or_decision
             await asyncio.sleep(0)
             cleaned.set()
 
-    monkeypatch.setattr(artifacts, "verify_references", block)
-    monkeypatch.setattr(artifacts, "verify_reference", block)
+    monkeypatch.setattr("harnessix.artifacts.batch_verify.verify_references", block)
     if kind == "timeout":
         monkeypatch.setattr(runtime_module, "HISTORY_ARTIFACT_TIMEOUT_SECONDS", 0.05)
     provider = FakeProvider()
