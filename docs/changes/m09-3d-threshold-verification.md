@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 8
-code_revision: 2cc255ef52ef46196946352a1483bd0606dc545e
+version: 9
+code_revision: a2245f568ff3cab71c63e97869e66c93a8ebc529
 owners:
   - core
 modules:
@@ -190,4 +190,4 @@ Attempt文件。`SEALED.json`和SHA-256证明原始字节与最后提交标记�
 Attempt提交窗口、候选启动绑定与篡改、样本篡改、Profile/报告篡改、错误余量和不可覆盖目录。
 [`test_soak_attempt.py`](../../tests/benchmarks/test_soak_attempt.py)负责v1历史字节、v2负载前绑定、事后补引用拒绝和Attempt提交/恢复窗口，
 [`test_soak_evidence.py`](../../tests/benchmarks/test_soak_evidence.py)负责Run原始样本、哈希和提交标记。
-本切片只关闭阈值**实现**的一部分，不关闭0.9.3d：Action恢复Runner已实现并有本地回归，长会话、Artifact增长与Action恢复的三平台正式负载与冻结复验，以及总体发布评审仍是阻断项；重启第二独立Run已取得三平台PASS；对应Revision常规CI首次文档Job超时，失败Job重跑后六Job成功。重启Profile的场景受限扩展与候选计划见[专项设计](m09-3d-product-restart-frozen-profile-candidate.md)。
+本切片只关闭阈值**实现**本身。此后六个场景均已按本内核完成冻结Profile与第二独立Run：SDK容量、完整产品重启、多Thread、Action恢复、Artifact增长（300件）与长会话（1000 Turn）的三平台候选报告均为PASS并经独立复验再生确认，0.9.3d关闭；重启Profile的场景受限扩展与候选计划见[专项设计](m09-3d-product-restart-frozen-profile-candidate.md)。

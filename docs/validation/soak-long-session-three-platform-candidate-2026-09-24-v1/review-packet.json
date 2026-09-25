@@ -1,0 +1,93 @@
+{
+ "checks": {
+  "attempt_reader": "3/3 committed with STARTED v2 prebinding",
+  "independent_file_sha256": "24/24 matched",
+  "independent_verify_and_publish": "3/3 PASS regenerated",
+  "privacy_keyword_scan": "3/3 passed",
+  "run_reader": "3/3 passed",
+  "workflow_matrix": "3/3 success (second attempt; first windows candidate cancelled at 300-minute workflow budget)"
+ },
+ "classification": "three-platform-independent-candidate",
+ "code_revision": "a2245f568ff3cab71c63e97869e66c93a8ebc529",
+ "platforms": {
+  "linux": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c4-m16",
+   "manifest_sha256": "4c34a32a3c64a8efd269eefbee110e6ea2f3ce53a41cb75b1f8dbabbc1d7b172",
+   "p50_ns": 3934880672,
+   "p95_ns": 8871976562,
+   "p99_ns": 12265436820,
+   "profile_id": "ddf402fdfa7942858ef73672e8d8e7ec",
+   "python_version": "3.12.3",
+   "report_id": "fc3c7bb272f04cbbb120f885a9c4335a",
+   "report_status": "PASS",
+   "rss_peak_bytes": 261234688,
+   "run_id": "633b321bede74f6a8fcdaea8390bdb87",
+   "run_status": "unverified",
+   "sample_count": 1000,
+   "summary_request_count": 199
+  },
+  "macos": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c3-m7",
+   "manifest_sha256": "f0ae0a25e5e6e5288f98e8ffa9ae4d94a605f92bd87e21e5c5d58c53cac735b1",
+   "p50_ns": 2643118709,
+   "p95_ns": 8361755250,
+   "p99_ns": 11212638417,
+   "profile_id": "bd9d171ff98c4352b53f85ff0983b19c",
+   "python_version": "3.12.10",
+   "report_id": "63370d7fbd76436694b79db2f9731386",
+   "report_status": "PASS",
+   "rss_peak_bytes": 399917056,
+   "run_id": "dd19437f632942ad849198f737d5a58c",
+   "run_status": "unverified",
+   "sample_count": 1000,
+   "summary_request_count": 199
+  },
+  "windows": {
+   "fault_counts": {
+    "cancelled": 0,
+    "duplicate_effect": 0,
+    "eof": 0,
+    "orphan": 0,
+    "timed_out": 0,
+    "unknown_effect": 0
+   },
+   "hardware_class": "c4-m16",
+   "manifest_sha256": "7b6aa4e9c73e2c74595afe973f13303c31dfc64a055c4ff8846ee191cf4fb5fb",
+   "p50_ns": 11476706500,
+   "p95_ns": 27778880300,
+   "p99_ns": 35393061900,
+   "profile_id": "bc65dc97d9ee4663904cfc138747d728",
+   "python_version": "3.12.10",
+   "report_id": "e5ef1a3794a84c36b25362c15dedb365",
+   "report_status": "PASS",
+   "rss_peak_bytes": 224227328,
+   "run_id": "b57e3fad4e404ffe8f3298ddf8c940c9",
+   "run_status": "unverified",
+   "sample_count": 1000,
+   "summary_request_count": 199
+  }
+ },
+ "release_status": "scenario_gate_passed",
+ "remaining_gates": [
+  "other_0.9.3d_release_gates_review"
+ ],
+ "scenario_id": "long_session",
+ "source_workflow_run_id": 36101668671,
+ "spec_version": "harnessix.soak-review-packet/v1"
+}

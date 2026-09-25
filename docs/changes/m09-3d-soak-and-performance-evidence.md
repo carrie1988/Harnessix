@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 48
-code_revision: 39dda2bb218baed30dcf9b1326f899a3133f497b
+status: current
+version: 49
+code_revision: a2245f568ff3cab71c63e97869e66c93a8ebc529
 owners:
   - core
 modules:
@@ -52,7 +52,7 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`、`sdk_capacity`、`restart`和`action_recovery`六个真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，SDK容量、完整产品重启、多Thread、Action恢复与Artifact增长（300件）五个场景均已取得三平台正式基线、冻结Profile及第二独立PASS报告；300件Artifact负载实测暴露的历史Artifact逐条验证O(N²)缺陷已由批量验证专项修复。长会话场景已有Linux/macOS千Turn基线与Windows诊断，其三平台基线整体重跑与候选复验仍未完成。 |
+| 当前能力 | 0.9.3a～c已提供有界本地传输、共库容量与可信效果恢复；0.9.3d已有低敏样本/Manifest/Run/Attempt、三平台RSS适配，以及`long_session`、`many_threads`、`artifact_growth`、`sdk_capacity`、`restart`和`action_recovery`六个真实模块Runner。单平台冻结Threshold Profile、独立Run复验与不可覆盖报告内核已实现，SDK容量、完整产品重启、多Thread、Action恢复与Artifact增长（300件）五个场景均已取得三平台正式基线、冻结Profile及第二独立PASS报告；300件Artifact负载实测暴露的历史Artifact逐条验证O(N²)缺陷已由批量验证专项修复。长会话场景亦已完成[三平台基线](../validation/soak-long-session-three-platform-2026-09-24-v1/README.md)与[第二独立PASS](../validation/soak-long-session-three-platform-candidate-2026-09-24-v1/README.md)；六个场景全部完成三平台正式负载、冻结Profile与第二独立PASS，[ADR-0092](../adr/0092-reproducible-local-soak-and-release-thresholds.md)已接受，0.9.3d关闭。 |
 | 本文设计状态 | `reviewing`；目标设计，不表示Soak已经运行、阈值已经冻结或发布门禁已经通过。 |
 | 代码版本 | `172b1ee96a89e981a6332b16f60b86e2db654df1` |
 | 影响模块 | Agent Runtime、App Server、SDK、Session共库、Artifact、Trusted Action、Product Config、发布证据与文档治理。 |
@@ -974,3 +974,4 @@ run_scenario(scenario, seed, environment):
 | 30 | `5d48b9735c11022743eb56df5da23125702b0140` | 2026-09-23 | 修复Revision六实例CI成功；第三次macOS Artifact 2+20件正式规模Run完成原字节归档、独立分位数/分页/清理重算，作为单平台单次基线；工程Profile、第二Run及Linux/Windows正式负载未完成。 |
 | 47 | `2cc255ef52ef46196946352a1483bd0606dc545e` | 2026-09-24 | 按[Action恢复专项详设](m09-3d-action-recovery-soak.md)实现固定四故障矩阵Runner、受控崩溃子进程、v7 Proof/Manifest/证据Reader与阈值门禁，六个场景Runner全部接入Attempt合同；新增长会话与Artifact增长正式基线/候选入口及三场景三平台手动工作流；本地`make check`为3831 passed、32 skipped；三平台正式负载、冻结Profile与独立复验仍待完成。 |
 | 48 | `39dda2bb218baed30dcf9b1326f899a3133f497b` | 2026-09-24 | Action恢复与Artifact增长（300件）两个场景完成三平台基线、冻结Profile与第二独立PASS并归档；300件负载暴露的历史Artifact逐条验证O(N²)由[批量验证专项](m09-3d-history-artifact-batch-verification.md)修复，两轮Artifact候选FAIL与首轮长会话Windows诊断保留；长会话两平台基线归档，三平台基线在绿色Revision整体重跑中，候选复验待完成。 |
+| 49 | `a2245f568ff3cab71c63e97869e66c93a8ebc529` | 2026-09-25 | 长会话1000 Turn完成三平台基线、冻结Profile与第二独立PASS（首轮Windows候选在300分钟工作流期限取消后于480分钟期限完整重跑）；六个场景全部完成三平台正式负载、冻结Profile与第二独立PASS，ADR-0092接受，0.9.3d关闭；全部历史失败证据保持只读。 |

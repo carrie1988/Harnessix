@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
+version: 4
+code_revision: a2245f568ff3cab71c63e97869e66c93a8ebc529
 owners:
   - core
 modules:
@@ -195,3 +195,7 @@ v2原件原样保存但旧Reader会因未知文件集合拒绝读取，不能删
 ## 附：首次三平台运行的Windows期限与防挂起预算
 
 首次三平台正式运行（工作流35973891664，Revision `46ca9a2`）的macOS/Linux正常推进，Windows在第9分钟以`soak_turn_timeout`失败：固定30秒单Turn防挂起预算不能覆盖Windows共享Runner上Context构建、压缩摘要与SQLite写入叠加后的单Turn尾部。该预算只是防挂起护栏，性能判定仍由样本与冻结Profile承担；正式发布入口的单Turn预算由30秒调整为120秒（约为macOS v2基线P95的38倍、Windows预期P95的4～10倍），1000 Turn门槛与测量边界不变。该Revision的Windows运行不升级为任何基线；Linux/macOS如完成仅保留为GitHub上传件诊断，正式三平台基线在调整后的新Revision整体重跑。首次120分钟工作流硬期限同时由120分钟调整为300分钟。
+
+## 附：三平台基线与第二独立Run结果
+
+[三平台正式基线](../validation/soak-long-session-three-platform-2026-09-24-v1/README.md)在Revision `39dda2b`完成（对应常规CI 36015746312六实例成功）：三平台各1000 Turn、199次压缩摘要、逐Turn事件Proof与Replay一致性核验全部通过，三份Profile按基线冻结封印；70846f5同场景运行因该Revision治理门禁未过降级为诊断。[第二独立Run](../validation/soak-long-session-three-platform-candidate-2026-09-24-v1/README.md)在Revision `a2245f5`完成，三平台均获`PASS/within_limits`并经独立复验再生确认；首轮Windows候选在300分钟工作流期限取消，480分钟期限下完整重跑。固定长会话场景（1000 Turn）工程护栏据此关闭。
