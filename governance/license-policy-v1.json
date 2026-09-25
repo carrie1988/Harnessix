@@ -1,0 +1,53 @@
+{
+  "spec_version": "harnessix.license-policy/v1",
+  "review": "0.9.4b供应链许可证评审：仅允许宽松许可证与MPL-2.0文件级弱Copyleft；GPL/LGPL/SSPL/专有许可证一律拒绝；平台条件包由overrides登记人工复核结论。",
+  "self_packages": ["harnessix"],
+  "allow": [
+    "MIT",
+    "MIT-0",
+    "BSD-2-CLAUSE",
+    "BSD-3-CLAUSE",
+    "3-CLAUSE BSD LICENSE",
+    "APACHE-2.0",
+    "APACHE-2.0 OR BSD-2-CLAUSE",
+    "APACHE-2.0 OR BSD-3-CLAUSE",
+    "PSF-2.0",
+    "MPL-2.0",
+    "MPL-2.0 AND MIT",
+    "MOZILLA PUBLIC LICENSE 2.0 (MPL 2.0)",
+    "APACHE SOFTWARE LICENSE",
+    "BSD LICENSE",
+    "MIT LICENSE"
+  ],
+  "deny": [
+    "GPL-2.0-ONLY",
+    "GPL-2.0-OR-LATER",
+    "GPL-3.0-ONLY",
+    "GPL-3.0-OR-LATER",
+    "LGPL-2.1-ONLY",
+    "LGPL-2.1-OR-LATER",
+    "LGPL-3.0-ONLY",
+    "LGPL-3.0-OR-LATER",
+    "SSPL-1.0",
+    "CC-BY-NC-4.0",
+    "CC-BY-NC-SA-4.0",
+    "PROPRIETARY"
+  ],
+  "overrides": [
+    {
+      "name": "colorama",
+      "declared_license": "BSD-3-Clause",
+      "review_note": "Windows平台条件包，本机无安装元数据；上游项目页面声明BSD-3-Clause。"
+    },
+    {
+      "name": "pywin32",
+      "declared_license": "PSF-2.0",
+      "review_note": "Windows平台条件包，本机无安装元数据；上游项目声明PSF许可证。"
+    },
+    {
+      "name": "httpx2-jsfetch",
+      "declared_license": "BSD-3-Clause",
+      "review_note": "httpx2的可选传输依赖（Pyodide/JS fetch），Pydantic维护；与httpx2同族BSD许可证。"
+    }
+  ]
+}

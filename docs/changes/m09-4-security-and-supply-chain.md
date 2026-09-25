@@ -196,3 +196,5 @@ sequenceDiagram
 |---|---|---|---|
 | 1 | `668598220aa0cf328cb2e678bf16661550423804` | 2026-09-25 | 建立0.9.4总体设计与a～d子切片分解；实现与验收待完成。 |
 | 2 | `668598220aa0cf328cb2e678bf16661550423804` | 2026-09-25 | 0.9.4a实现：新增`trusted_actions/public_errors.py`统一公开错误合同；计划阶段Resolver/Policy异常收敛为`action_plan_failed`，执行/对账异常映射统一收口；新增五公开面×四式样泄漏回归；Trusted Actions模块设计同步。 |
+| 3 | x | 2026-09-25 | 0.9.4b实现：许可证白名单扫描（74包全过，平台条件包登记overrides）、CycloneDX SBOM漂移门禁、Secret扫描（零命中+正例自检）、CI动作全部SHA固定、httpx2/httpx2-jsfetch补登记、许可证权利链与安装/扩展来源两份审查文档；make supply-chain纳入check链与CI。 |
+| 3 | `7a39f28bfb0d82e75a9e7a8b677c642d7733f845` | 2026-09-25 | 0.9.4b实现：许可证白名单扫描（74包全过，平台条件包登记overrides）、CycloneDX SBOM漂移门禁、Secret扫描（零命中+正例自检）、CI动作全部SHA固定、httpx2/httpx2-jsfetch补登记、许可证权利链与安装/扩展来源两份审查文档；make supply-chain纳入check链与CI。 |

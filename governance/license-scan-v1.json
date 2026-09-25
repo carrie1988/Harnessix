@@ -1,0 +1,380 @@
+{
+  "spec_version": "harnessix.license-scan/v1",
+  "lock_file": "uv.lock",
+  "policy_file": "governance/license-policy-v1.json",
+  "package_count": 74,
+  "violation_count": 0,
+  "entries": [
+    {
+      "name": "aiosqlite",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "annotated-types",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "anthropic",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "anyio",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "attrs",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "certifi",
+      "declared_license": "Mozilla Public License 2.0 (MPL 2.0)",
+      "status": "allow"
+    },
+    {
+      "name": "cffi",
+      "declared_license": "MIT-0",
+      "status": "allow"
+    },
+    {
+      "name": "charset-normalizer",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "click",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "colorama",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "cryptography",
+      "declared_license": "Apache-2.0 OR BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "distro",
+      "declared_license": "Apache Software License",
+      "status": "allow"
+    },
+    {
+      "name": "docstring-parser",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "googleapis-common-protos",
+      "declared_license": "Apache Software License",
+      "status": "allow"
+    },
+    {
+      "name": "h11",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "harnessix",
+      "declared_license": "SELF",
+      "status": "self"
+    },
+    {
+      "name": "httpcore",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "httpcore2",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "httpx",
+      "declared_license": "BSD License",
+      "status": "allow"
+    },
+    {
+      "name": "httpx2",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "httpx2-jsfetch",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "idna",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "iniconfig",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "jiter",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "jsonschema",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "jsonschema-specifications",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "librt",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "linkify-it-py",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "markdown-it-py",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "mcp",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "mcp-types",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "mdit-py-plugins",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "mdurl",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "mypy",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "mypy-extensions",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "openai",
+      "declared_license": "Apache Software License",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-api",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-common",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-http",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-proto",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-sdk",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "opentelemetry-semantic-conventions",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "packaging",
+      "declared_license": "Apache-2.0 OR BSD-2-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "pathspec",
+      "declared_license": "Mozilla Public License 2.0 (MPL 2.0)",
+      "status": "allow"
+    },
+    {
+      "name": "platformdirs",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "pluggy",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "protobuf",
+      "declared_license": "3-Clause BSD License",
+      "status": "allow"
+    },
+    {
+      "name": "pycparser",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "pydantic",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "pydantic-core",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "pygments",
+      "declared_license": "BSD-2-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "pyjwt",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "pytest",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "pytest-asyncio",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "python-multipart",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "pywin32",
+      "declared_license": "PSF-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "pyyaml",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "referencing",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "requests",
+      "declared_license": "Apache Software License",
+      "status": "allow"
+    },
+    {
+      "name": "rich",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "rpds-py",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "ruff",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "sniffio",
+      "declared_license": "Apache Software License AND MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "sse-starlette",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "starlette",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    },
+    {
+      "name": "textual",
+      "declared_license": "MIT License",
+      "status": "allow"
+    },
+    {
+      "name": "tqdm",
+      "declared_license": "MPL-2.0 AND MIT",
+      "status": "allow"
+    },
+    {
+      "name": "truststore",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "types-jsonschema",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "types-pyyaml",
+      "declared_license": "Apache-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "typing-extensions",
+      "declared_license": "PSF-2.0",
+      "status": "allow"
+    },
+    {
+      "name": "typing-inspection",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "urllib3",
+      "declared_license": "MIT",
+      "status": "allow"
+    },
+    {
+      "name": "uvicorn",
+      "declared_license": "BSD-3-Clause",
+      "status": "allow"
+    }
+  ],
+  "violations": []
+}

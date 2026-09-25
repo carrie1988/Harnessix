@@ -19,6 +19,8 @@ Harnessix Code依赖第三方开源组件。各组件仍由各自权利人所有
 | OpenTelemetry Python | Trace与Metrics | Apache-2.0 | [open-telemetry/opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python) |
 | OpenAI Python | OpenAI-compatible Provider SDK | Apache-2.0 | [openai/openai-python](https://github.com/openai/openai-python) |
 | Anthropic Python | Anthropic Provider SDK | MIT | [anthropics/anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python) |
+| HTTPX2 | Anthropic适配器直接使用的HTTP客户端（HTTPX延续项目） | BSD-3-Clause | [pydantic/httpx2](https://github.com/pydantic/httpx2) |
+| httpx2-jsfetch | HTTPX2的可选传输依赖（Pyodide/JS fetch） | BSD-3-Clause | [pydantic/httpx2](https://github.com/pydantic/httpx2) |
 
 ## 内置Eval数据
 

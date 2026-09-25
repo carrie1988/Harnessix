@@ -1,4 +1,4 @@
-.PHONY: install format lint readability documentation contracts taskpacks typecheck test check run spec
+.PHONY: install format lint readability documentation contracts taskpacks supply-chain typecheck test check run spec
 
 install:
 	uv sync --all-extras --dev
@@ -23,13 +23,19 @@ contracts:
 taskpacks:
 	uv run python scripts/generate_engineering_task_pack.py --check
 
+supply-chain:
+	uv run python scripts/license_scan.py --check
+	uv run python scripts/sbom_generate.py --check
+	uv run python scripts/secret_scan.py --self-check
+	uv run python scripts/secret_scan.py
+
 typecheck:
 	uv run mypy src
 
 test:
 	uv run pytest
 
-check: lint readability documentation contracts taskpacks typecheck test
+check: lint readability documentation contracts taskpacks supply-chain typecheck test
 
 run:
 	uv run harnessix code
