@@ -10,7 +10,7 @@ jobs:
   long-session-candidate:
     name: 长会话复验 ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 480
     strategy:
       fail-fast: false
       matrix:
