@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 21
+code_revision: 668598220aa0cf328cb2e678bf16661550423804
 owners:
   - core
 modules:
@@ -956,9 +956,13 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 `executor_error`、`unexpected_write_error`、`reconciliation_error`、`host_interrupted`和
 `reconciliation_not_supported`。Executor可返回自己的稳定码。
 
-当前错误归一并不覆盖所有受信构造阶段：Resolver/Policy/Workspace Root Provider抛出的异常、资源超过
-512导致的最终ValidationError、不可JSON资源的原生异常可能直接传播。公开产品入口必须继续做固定错误
-投影，后续安全加固应收敛这些边界。
+当前错误归一由[`public_errors.py`](../../src/harnessix/trusted_actions/public_errors.py)统一持有公开错误合同：
+计划阶段Resolver/Policy抛出的非KernelError异常一律收敛为`action_plan_failed`固定消息，不携带任何内部原因；
+执行期异常经`execute_exception_outcome`、对账期异常经`reconcile_exception_code`映射为稳定公开码；已具备公开纪律的
+KernelError原样传播。资源超过512导致的最终ValidationError、不可JSON资源的原生异常仍可能直接传播，
+公开产品入口必须继续做固定错误投影。泄漏回归[`test_public_error_leakage.py`](../../tests/trusted_actions/test_public_error_leakage.py)
+按五类公开面×四类敏感式样（伪Secret、POSIX/Windows路径、argv、内部异常正文）注入Plan Resolver、Policy、
+Execute、Reconcile与UncertainEffectError，断言式样不进入公开错误、Route Snapshot、Audit事件或持久Store文件。
 
 ## 30. 安全与隐私分析
 
@@ -1000,7 +1004,7 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 | Action Operation | Owner Generation/Token摘要、Attempt、Deadline、阶段和终态 | 细粒度进度与业务正文 |
 | Audit Event | Plan/资源/Policy/审批Actor摘要/Executor/输出摘要/错误/Reconcile | 原因正文、耗时、队列时间 |
 | Execution Plan | Tool、Workspace、环境Hash、Secret版本、Sandbox、能力和Policy | Secret值、环境值、动态执行事实 |
-| Exception | 固定KernelError或Outcome错误码 | 统一公开投影尚依赖上游 |
+| Exception | 固定KernelError或Outcome错误码 | public_errors统一公开合同；不可JSON/超限资源原生异常仍依赖上游 |
 | Trace/Metric/Log | 包内未直接接入OpenTelemetry | Route span、状态计数、Latency、UNKNOWN积压和Store故障指标 |
 
 生产装配至少需要按低基数记录source、tool、effect、risk、policy decision、终态、错误码和reconcile结论；

@@ -29,6 +29,7 @@ from harnessix.trusted_actions.contracts import (
     action_route_plan_fingerprint,
 )
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
+from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import WorkspaceSnapshot
 from harnessix.workspace.snapshot import capture_workspace_snapshot
@@ -79,9 +80,15 @@ def plan_action(
         and checked.idempotency_key is None
     ):
         raise KernelError("idempotency_key_required", "该Action必须携带幂等键")
-    resolved = definition.resolve(arguments, context)
+    try:
+        resolved = definition.resolve(arguments, context)
+    except Exception as error:
+        raise sanitize_plan_exception(error) from None
     resources = _canonical_resources(resolved.resources)
-    decision = policy.evaluate(binding, resources, context.sandbox, context.secrets)
+    try:
+        decision = policy.evaluate(binding, resources, context.sandbox, context.secrets)
+    except Exception as error:
+        raise sanitize_plan_exception(error) from None
     workspace = capture_workspace_snapshot(
         context.workspace_root,
         cwd=context.cwd,

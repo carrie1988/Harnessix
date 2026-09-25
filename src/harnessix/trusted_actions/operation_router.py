@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.errors import UncertainEffectError
-from harnessix.domain.models import EffectClass, utc_now
+from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
@@ -19,6 +19,10 @@ from harnessix.trusted_actions.contracts import (
     ActionRouteState,
 )
 from harnessix.trusted_actions.planning import decode_action_arguments
+from harnessix.trusted_actions.public_errors import (
+    execute_exception_outcome,
+    reconcile_exception_code,
+)
 
 if TYPE_CHECKING:
     from harnessix.trusted_actions.router import TrustedActionRouter
@@ -41,42 +45,34 @@ async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionEx
         router._validate_outcome_identity(plan, outcome)
         if outcome.kind == "manual_intervention":
             raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
-    except TimeoutError:
+    except TimeoutError as error:
+        kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
-            kind=("failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"),
+            kind=kind,
             external_action_id=plan.external_action_id,
-            error_code=(
-                "executor_timeout"
-                if plan.binding.effect_class is EffectClass.READ_ONLY
-                else "write_effect_timeout_unknown"
-            ),
+            error_code=code,
         )
     except asyncio.CancelledError as error:
         cancelled = error
+        kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
-            kind=("failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"),
+            kind=kind,
             external_action_id=plan.external_action_id,
-            error_code=(
-                "executor_cancelled"
-                if plan.binding.effect_class is EffectClass.READ_ONLY
-                else "cancelled_write_effect_unknown"
-            ),
+            error_code=code,
         )
-    except UncertainEffectError:
+    except UncertainEffectError as error:
+        kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
-            kind="unknown",
+            kind=kind,
             external_action_id=plan.external_action_id,
-            error_code="uncertain_external_effect",
+            error_code=code,
         )
-    except Exception:
+    except Exception as error:
+        kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
-            kind=("failed" if plan.binding.effect_class is EffectClass.READ_ONLY else "unknown"),
+            kind=kind,
             external_action_id=plan.external_action_id,
-            error_code=(
-                "executor_error"
-                if plan.binding.effect_class is EffectClass.READ_ONLY
-                else "unexpected_write_error"
-            ),
+            error_code=code,
         )
     target = cast(ActionRouteState, outcome.kind)
     router._audit.complete_operation(
@@ -144,24 +140,24 @@ async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> Action
             outcome = await definition.executor.reconcile(plan, arguments)
         outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
         router._validate_outcome_identity(plan, outcome)
-    except TimeoutError:
+    except TimeoutError as error:
         outcome = ActionExecutionOutcome(
             kind="unknown",
             external_action_id=plan.external_action_id,
-            error_code="reconciliation_timeout",
+            error_code=reconcile_exception_code(error),
         )
     except asyncio.CancelledError as error:
         cancelled = error
         outcome = ActionExecutionOutcome(
             kind="unknown",
             external_action_id=plan.external_action_id,
-            error_code="reconciliation_cancelled",
+            error_code=reconcile_exception_code(error),
         )
-    except Exception:
+    except Exception as error:
         outcome = ActionExecutionOutcome(
             kind="unknown",
             external_action_id=plan.external_action_id,
-            error_code="reconciliation_error",
+            error_code=reconcile_exception_code(error),
         )
     target = cast(ActionRouteState, outcome.kind)
     router._audit.complete_operation(
