@@ -27,7 +27,8 @@ supply-chain:
 	uv run python scripts/license_scan.py --check
 	uv run python scripts/sbom_generate.py --check
 	uv run python scripts/secret_scan.py --self-check
-	uv run python scripts/secret_scan.py
+	uv build --offline --out-dir dist/secret-gate
+	uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
 
 typecheck:
 	uv run mypy src

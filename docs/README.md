@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 116
-code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
+version: 117
+code_revision: 0601ede74c01039411c8be85e4297debe9dff478
 owners:
   - core
 modules:
@@ -181,7 +181,7 @@ supersedes: []
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md)、[0.9.2e真实Provider基线详细设计](changes/m09-2e-controlled-real-provider-baseline.md) | 已关闭；离线20/20与真实Provider 20/20执行证据均已冻结，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收 |
 | 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[六场景Soak设计](changes/m09-3d-soak-and-performance-evidence.md)、[证据索引](validation/README.md) | 已登记关闭；长会话、多Thread、Artifact增长、SDK容量、完整产品重启、Action恢复均有三平台基线、预冻结Profile与第二独立PASS；关闭Revision `6685982`由[CI 36123848005](https://github.com/carrie1988/Harnessix/actions/runs/36123848005)验收。固定工程场景不外推为C端规模或SLA，历史失败保留。 |
-| 0.9.4 | [安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)、[可复现SBOM整改详设](changes/m09-4b-reproducible-sbom.md)、[计划错误信任边界详设](changes/m09-4a-plan-error-trust-boundary.md)、[治理合同导入边界](changes/m09-4b-governance-contract-import-boundary.md)、[阶段验证报告](validation/security-governance-2026-09-27-v1/README.md) | 进行中；a5fd57e本地3904 passed/32 skipped，修复版CI的原Windows编码失败消失、仍有两项POSIX合同导入失败，依赖隔离候选正在验收；许可证版本绑定、压缩件Secret扫描、攻击套件和远端MCP未完成，不标记0.9.4完成。 |
+| 0.9.4 | [安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)、[可复现SBOM](changes/m09-4b-reproducible-sbom.md)、[计划错误信任边界](changes/m09-4a-plan-error-trust-boundary.md)、[治理合同导入](changes/m09-4b-governance-contract-import-boundary.md)、[有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)、[前序阶段证据](validation/security-governance-2026-09-27-v1/README.md) | 进行中；0601ede六作业CI成功，Windows编码/合同导入整改已验证；Secret v2补齐归档和失败关闭并进入候选验收。许可证版本来源、安装输入、攻击套件和远端MCP仍开放，不标记0.9.4完成。 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

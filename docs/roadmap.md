@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 93
-code_revision: 78ab30069ab4f63d58d9bafad903a7bfd660c257
+version: 94
+code_revision: 0601ede74c01039411c8be85e4297debe9dff478
 owners:
   - core
 modules:
@@ -483,8 +483,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   已按阶段有限码表重建固定错误并补真实集成回归，提交后完整验收及Execute/Reconcile全面审查仍须通过；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
-  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)首轮五作业通过，Windows中文管道编码修复进入验证；历史失败不追认通过。
-  许可证版本绑定、压缩件扫描、示例文件整文件豁免及未固定安装输入仍须关闭；
+  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。
+  [有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)取消整文件豁免并增加真实发行物、归档、预算和未完成阻断，进入候选验收；
+  许可证版本来源绑定、不可变安装输入和权利审查仍须关闭；
 - [ ] **0.9.4c 编号化攻击回归**：TM-01～TM-13及子编号均须对应真实攻击输入、具体控制、预期拒绝、
   不变副作用和三平台适用边界，不用不存在的接口、空构造或宽泛异常断言冒充回归；
 - [ ] **0.9.4d 远端MCP**：Streamable HTTP、独立目标身份、OAuth获取/刷新/撤销与Secret最小作用域、

@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 2
-code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
+version: 3
+code_revision: 0601ede74c01039411c8be85e4297debe9dff478
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
 related_tests:
   - tests/governance/test_supply_chain.py
+  - tests/governance/test_secret_scan.py
 supersedes: []
 ---
 
@@ -31,7 +32,8 @@ supersedes: []
 | `make install` / `uv sync --locked --all-extras --dev` | `make install`与CI均使用`--locked`，依赖由`uv.lock`的发行Archive SHA-256约束；这不证明解释器或构建后端自身已固定。 |
 | [Dockerfile](../../Dockerfile) | 基础镜像`python:3.12-slim`，非root（uid 10001），安装`.[observability]`；镜像标签和pip依赖解析未固定，是后续发行供应链门禁，不声明已关闭。 |
 | CI工作流（13个） | 全部第三方动作按完整40位SHA固定，由[`test_workflow_actions_are_sha_pinned`](../../tests/governance/test_supply_chain.py)持续门禁；`setup-uv`按SHA固定并锁定Python 3.12。 |
-| 发布Wheel | `pyproject.toml`声明依赖范围；sdist排除`benchmarks/taskpacks/*/solutions`，不携带Golden Patch。 |
+| 发布Wheel/sdist | `pyproject.toml`声明依赖范围；sdist排除`benchmarks/taskpacks/*/solutions`，不携带Golden Patch；构建后端仍为未精确锁定的hatchling，离线缓存不等于版本来源固定。 |
+| Secret发行门禁 | [有界扫描v2](../changes/m09-4b-bounded-secret-scan.md)要求三平台先`uv build --offline --out-dir dist/secret-gate`，再扫描显式目录；缺失/空目录、未支持格式、坏包及预算超限阻断。当前为候选验收，固定六规则不能证明所有Secret均不存在。 |
 
 ## 3. 扩展来源
 
@@ -46,7 +48,7 @@ supersedes: []
 ## 4. 持续门禁
 
 - 工作流动作SHA固定由测试门禁持续执行；新增动作必须按完整SHA引用。
-- 许可证/SBOM/Secret扫描见[许可证权利链审查](license-rights-chain-v1.md)第4节。
+- 许可证/SBOM见[许可证权利链审查](license-rights-chain-v1.md)第4节；Secret门禁输入、预算和公开诊断合同见[有界扫描详细设计](../changes/m09-4b-bounded-secret-scan.md)。
 - 新增扩展来源（如0.9.4d远端MCP）必须先完成目标身份、凭据生命周期与受管出口设计，再进入目录。
 
 ## 5. 边界
