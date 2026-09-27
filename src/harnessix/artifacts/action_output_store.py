@@ -23,7 +23,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
-from harnessix.artifacts.persistence import insert_artifact
+from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.trusted_output import (
@@ -208,6 +208,7 @@ async def publish_action_output(
                     body=body,
                     record_count=record_count,
                     complete=candidate.complete,
+                    publication=publication,
                 )
                 await database.commit()
                 return matched
@@ -250,6 +251,7 @@ async def publish_action_output(
                     body=body,
                     record_count=record_count,
                     complete=candidate.complete,
+                    publication=publication,
                 )
         raise
 
@@ -259,7 +261,7 @@ async def _stored_output(
     call_id: UUID,
 ) -> aiosqlite.Row | None:
     cursor = await database.execute(
-        "SELECT * FROM agent_artifacts WHERE call_id = ? AND purpose = 'action_output'",
+        ARTIFACT_READ_SELECT + " WHERE call_id = ? AND purpose = 'action_output'",
         (str(call_id),),
     )
     return await cursor.fetchone()
@@ -276,10 +278,13 @@ def matching_action_output(
     body: bytes,
     record_count: int,
     complete: bool,
+    publication: ArtifactPublicationGuard | None = None,
 ) -> ArtifactRef:
     """精确匹配稳定身份、作用域、正文、完整性和原始TTL。"""
 
     try:
+        if publication is not None:
+            publication.require_proof(row)
         ref = ArtifactRef.model_validate_json(row["manifest_json"])
         if (
             row["state"] != "published"

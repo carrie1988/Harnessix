@@ -227,3 +227,13 @@ class EventPublicationAuthority:
         if not self._closed:
             self._key[:] = b"\0" * len(self._key)
             self._closed = True
+
+
+def original_artifact_scope_digest(
+    authority: EventPublicationAuthority, protection: PublicOutputProtection
+) -> str:
+    """新Artifact必须复用Session冻结Scope，不能由另一个弱保护替身签发。"""
+    authority._ensure_original_scope()
+    if protection is not authority._protection:
+        raise _failure("publication_scope_changed")
+    return authority._context_sha256

@@ -17,6 +17,7 @@ from harnessix.artifacts.contracts import (
     HistoryArtifactPurpose,
     HistoryReferenceCheck,
 )
+from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT
 from harnessix.artifacts.ports import ArtifactAccessScope, ArtifactReferenceVerifier
 from harnessix.artifacts.sqlite import _HISTORY_ARTIFACT_PURPOSES, SQLiteArtifactStore
 
@@ -62,7 +63,7 @@ async def _fetch_rows(
         chunk = identities[start : start + _ROW_CHUNK]
         marks = ", ".join("?" for _ in chunk)
         cursor = await database.execute(
-            f"SELECT * FROM agent_artifacts WHERE artifact_id IN ({marks}) "  # noqa: S608
+            f"{ARTIFACT_READ_SELECT} WHERE artifact_id IN ({marks}) "  # noqa: S608
             "AND workspace_scope = ?",
             (*chunk, workspace_scope),
         )
@@ -89,6 +90,7 @@ async def _check_entry(
     thread = snapshots[entry.owner_thread_id]
     if thread is None:
         raise KernelError("artifact_corrupt", "Artifact归属不存在")
+    store._publication.require_proof(record)  # noqa: SLF001
     try:
         stored = store._reference(record, thread)  # noqa: SLF001
     except KernelError as error:
@@ -97,7 +99,6 @@ async def _check_entry(
         raise
     if stored != entry.reference:
         raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
-    store._publication.require_proof(record)  # noqa: SLF001
     lines = store._body(record, thread, stored)  # noqa: SLF001
     await store._publication.check_body(record["body"], purpose=record["purpose"])  # noqa: SLF001
     if entry.purpose == "artifact_page":

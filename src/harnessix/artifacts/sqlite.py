@@ -45,7 +45,7 @@ from harnessix.artifacts.contracts import (
     ReadArtifactInput,
     artifact_store_contract,
 )
-from harnessix.artifacts.persistence import insert_artifact
+from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
@@ -138,7 +138,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         self._session = session
         self._policy = policy or ArtifactPolicy()
         self._fault = fault or (lambda _: None)
-        self._publication = ArtifactPublicationGuard(public_output_protection)
+        self._publication = ArtifactPublicationGuard(public_output_protection, session._publication)
 
     @property
     def session(self) -> SQLiteSessionStore:
@@ -349,7 +349,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         async with self.session._connection() as database:
             await database.execute("BEGIN")
             cursor = await database.execute(
-                "SELECT * FROM agent_artifacts WHERE artifact_id = ? "
+                ARTIFACT_READ_SELECT + " WHERE artifact_id = ? "
                 "AND thread_id = ? AND workspace_scope = ?",
                 (str(artifact_id), str(thread_id), workspace_scope),
             )
@@ -359,6 +359,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             thread = await self.session._snapshot(database, thread_id)
             if thread is None:
                 raise KernelError("artifact_corrupt", "Artifact 归属不存在")
+            self._publication.require_proof(row)
             try:
                 ref = self._reference(row, thread)
             except KernelError as error:
@@ -367,7 +368,6 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                         "artifact_not_found", "Artifact不存在或不属于当前作用域"
                     ) from None
                 raise
-            self._publication.require_proof(row)
             lines = self._body(row, thread, ref)
             await self._publication.check_body(row["body"], purpose=row["purpose"])
         if offset > len(lines):
@@ -402,7 +402,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         async with self.session._connection() as database:
             await database.execute("BEGIN")
             cursor = await database.execute(
-                "SELECT * FROM agent_artifacts WHERE artifact_id = ? AND thread_id = ? "
+                ARTIFACT_READ_SELECT + " WHERE artifact_id = ? AND thread_id = ? "
                 "AND workspace_scope = ?",
                 (str(reference.artifact_id), str(thread_id), workspace_scope),
             )
@@ -416,6 +416,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             thread = await self.session._snapshot(database, thread_id)
             if thread is None:
                 raise KernelError("artifact_corrupt", "Artifact归属不存在")
+            self._publication.require_proof(row)
             try:
                 stored = self._reference(row, thread)
             except KernelError as error:
@@ -426,7 +427,6 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 raise
             if stored != reference:
                 raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
-            self._publication.require_proof(row)
             lines = self._body(row, thread, stored)
             await self._publication.check_body(row["body"], purpose=row["purpose"])
             if purpose == "artifact_page":
@@ -520,7 +520,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         async with self.session._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
             cursor = await database.execute(
-                "SELECT * FROM agent_artifacts WHERE state = 'published' AND expires_at <= ? "
+                ARTIFACT_READ_SELECT + " WHERE state = 'published' AND expires_at <= ? "
                 "AND artifact_id > ? ORDER BY artifact_id LIMIT ?",
                 (now.isoformat(), str(after) if after else "", limit),
             )

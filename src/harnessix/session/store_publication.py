@@ -1,4 +1,4 @@
-"""Session逻辑身份与认证事件前缀派生投影；不把来源认证当作当前公开许可。"""
+"""Session逻辑身份、认证事件/投影和Artifact正文；来源认证不授予公开许可。"""
 
 from __future__ import annotations
 
@@ -13,10 +13,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
+from harnessix.agent.publication import PublicOutputProtection
 from harnessix.session.publication_seal import (
     Digest,
     EventPublicationAuthority,
     PublicationScope,
+    original_artifact_scope_digest,
 )
 
 EMPTY_PREFIX = "0" * 64
@@ -24,6 +26,7 @@ MAX_PROJECTION_BYTES = 64 * 1024 * 1024
 MAX_HISTORY_BYTES = 64 * 1024 * 1024
 MAX_HISTORY_EVENTS = 100_000
 _DOMAIN = b"harnessix.session-store-publication/v1\x00"
+_ARTIFACT_DOMAIN = b"harnessix.artifact-publication/v1\x00"
 
 
 def unproven() -> KernelError:
@@ -74,9 +77,36 @@ class ProjectionPublicationSeal(_Identity):
     snapshot_sha256: Digest
 
 
-def _claims(value: _Identity) -> bytes:
+class ArtifactPublicationSeal(_Identity):
+    """认证原始Artifact行身份、正文和Manifest；不授予当前公开读取权限。"""
+
+    purpose: Literal["artifact_body"] = "artifact_body"
+    artifact_id: UUID
+    thread_id: UUID
+    turn_id: UUID
+    call_id: UUID
+    workspace_scope: Digest
+    artifact_purpose: Literal[
+        "tool_result",
+        "batch_plan",
+        "batch_effect",
+        "process_output",
+        "action_review",
+        "action_output",
+    ]
+    publication_epoch: UUID
+    publication_policy: Literal["harnessix.public-output-protection/v1"]
+    scope_sha256: Digest
+    manifest_sha256: Digest
+    body_sha256: Digest
+    size_bytes: Annotated[int, Field(ge=0, le=1024 * 1024)]
+    expires_at: Annotated[str, Field(min_length=1, max_length=64)]
+    created_at: Annotated[str, Field(min_length=1, max_length=64)]
+
+
+def _claims(value: _Identity, domain: bytes = _DOMAIN) -> bytes:
     return (
-        _DOMAIN
+        domain
         + json.dumps(
             value.model_dump(mode="json", exclude={"tag"}),
             sort_keys=True,
@@ -87,16 +117,21 @@ def _claims(value: _Identity) -> bytes:
     )
 
 
-def _signed[T: _Identity](value: T, key: bytearray) -> bytes:
+def _signed[T: _Identity](value: T, key: bytearray, domain: bytes = _DOMAIN) -> bytes:
     return (
-        value.model_copy(update={"tag": hmac.digest(key, _claims(value), "sha256").hex()})
+        value.model_copy(update={"tag": hmac.digest(key, _claims(value, domain), "sha256").hex()})
         .model_dump_json()
         .encode()
     )
 
 
 def _verified[T: _Identity](
-    kind: type[T], body: object, key: bytearray, store_id: UUID, key_id: UUID
+    kind: type[T],
+    body: object,
+    key: bytearray,
+    store_id: UUID,
+    key_id: UUID,
+    domain: bytes = _DOMAIN,
 ) -> T:
     if type(body) is not bytes or not 1 <= len(body) <= 4096:
         raise unproven()
@@ -107,10 +142,52 @@ def _verified[T: _Identity](
     if (
         value.store_id != store_id
         or value.key_id != key_id
-        or not hmac.compare_digest(value.tag, hmac.digest(key, _claims(value), "sha256").hex())
+        or not hmac.compare_digest(
+            value.tag, hmac.digest(key, _claims(value, domain), "sha256").hex()
+        )
     ):
         raise unproven()
     return value
+
+
+class ArtifactPublicationAuthority:
+    """只处理Artifact签发与验真；共享Binding密钥生命周期，不另复制密钥。"""
+
+    def __init__(self, binding: SessionPublicationBinding) -> None:
+        self._binding = binding
+
+    def identity(self) -> tuple[UUID, UUID]:
+        self._binding._ensure_open()
+        return self._binding._store_id, self._binding._key_id
+
+    def scope_digest(self, protection: PublicOutputProtection) -> str:
+        self._binding._ensure_open()
+        return original_artifact_scope_digest(self._binding._events, protection)
+
+    def issue(self, claims: ArtifactPublicationSeal, protection: PublicOutputProtection) -> bytes:
+        if (claims.store_id, claims.key_id) != self.identity():
+            raise unproven()
+        scope = self.scope_digest(protection)
+        return _signed(
+            claims.model_copy(update={"scope_sha256": scope}),
+            self._binding._key,
+            _ARTIFACT_DOMAIN,
+        )
+
+    def verify(self, body: object, claims: ArtifactPublicationSeal) -> None:
+        store_id, key_id = self.identity()
+        actual = _verified(
+            ArtifactPublicationSeal,
+            body,
+            self._binding._key,
+            store_id,
+            key_id,
+            _ARTIFACT_DOMAIN,
+        )
+        if actual.model_dump(exclude={"tag", "scope_sha256"}) != claims.model_dump(
+            exclude={"tag", "scope_sha256"}
+        ):
+            raise unproven()
 
 
 class SessionPublicationBinding:
@@ -125,6 +202,7 @@ class SessionPublicationBinding:
         self._store_id, self._key_id = store_id, key_id
         self._key = bytearray(key)
         self._closed = False
+        self.artifact = ArtifactPublicationAuthority(self)
 
     def _ensure_open(self) -> None:
         if self._closed:
