@@ -60,8 +60,42 @@
     ]
   },
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "exit_code": 0,
+    "fixed_code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 5189,
+    "seconds": 419.28,
+    "size_bytes": 5885,
+    "skipped": 32,
+    "source_input_scope": {
+      "additional_paths": [
+        "pyproject.toml",
+        "uv.lock",
+        "Makefile",
+        "docs/baselines/readability-0.9.0-final.json"
+      ],
+      "canonical_format": "JSON object path to SHA256, ensure_ascii=false, sort_keys=true, indent=2, trailing LF",
+      "prefixes": [
+        "src/",
+        "tests/",
+        "spec/",
+        "scripts/",
+        "governance/",
+        ".github/"
+      ]
+    },
+    "source_inputs_canonical_sha256": "47063fb057f5bba1ca8c3206c26cb1bc5e6965842fb2b79ea32b7aca56e4f209",
+    "source_inputs_count": 1333,
+    "source_inputs_same_as_fixed_revision": true,
+    "status": "passed",
+    "stdout_sha256": "2dd8960ae35e06c47b41ed57123f07cb0b09c9d855346526974a005e564b96c8",
+    "test_run_commit": "63fc3f4a02b33999894df180cea4512f0515d138",
+    "test_run_tree": "30a67338f57f006a2c12af84cabc4ce5db31ced3",
+    "tracked_inputs_count": 2426,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 420.73
   },
   "gates": {
     "contracts": {
@@ -85,13 +119,13 @@
         "python",
         "scripts/documentation_check.py",
         "--changed-from",
-        "24e4e9c987055fe3a1590d3d0eada8f60574efa7"
+        "24e4e9c"
       ],
       "exit_code": 0,
       "passed": true,
       "size_bytes": 103,
-      "stdout_sha256": "00fa1756be55ef9dbdb8757eadf43033ef8cc1a84addbcd438bc10d32520619a",
-      "stdout_summary": "文档门禁通过：331份文档、8513条链接、774幅Mermaid、26个源码包、37个变化路径"
+      "stdout_sha256": "3f3e74046f1081fff2277cbf2d338905dc21774f90fff416de09a14200459548",
+      "stdout_summary": "文档门禁通过：331份文档、8517条链接、774幅Mermaid、26个源码包、38个变化路径"
     },
     "format": {
       "command": [

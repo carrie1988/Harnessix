@@ -3,7 +3,7 @@
   "current_ci_accepted": false,
   "decision": "release_blocked",
   "delivered": "explicit_authenticated_sqlite_session_library_contract",
-  "full_regression_acceptance_pending": true,
+  "full_regression_acceptance_pending": false,
   "overall_0_9_complete": false,
   "phase_0_9_4a_complete": false,
   "release_blockers": [

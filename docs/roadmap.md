@@ -816,3 +816,8 @@ Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Ru
 资源预算、取消、响应丢失与真实OS进程退出均已验证。
 [详细设计](changes/m09-4a-authenticated-sqlite-session.md)区分显式库合同与默认产品。
 默认Root/Key Backend、Artifact持久正文/二进制证明与备份/安装仍未接入，0.9.4a和整体0.9不勾选完成。
+
+认证SQLite显式库固定实现`857ce38`新增42项Store和2项证据治理测试，
+完整5189/32回归、四幅实际渲染图、候选Wheel双OS消费者已冻结。
+[验证目录](validation/authenticated-sqlite-session-2026-09-28-v1/README.md)与正式详设固定原字节和全部来源边界。
+当前未启用默认Root、正式Key Backend或Artifact正文跨重启，继续保持0.9.4a与整体0.9开放。

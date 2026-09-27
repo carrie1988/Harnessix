@@ -1,6 +1,6 @@
 ---
 doc_type: validation-evidence
-status: draft
+status: current
 version: 1
 code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
 owners: [core]
@@ -44,8 +44,24 @@ supersedes: []
 
 ## 4. 待冻结验证与发布边界
 
-完整回归尚待执行，本报告为草案；不会把未运行验证作为通过。
+完整回归已执行并冻结；只验收当前显式库合同，不声明产品历史认证整体关闭。
 CI在批量推送后后台运行，不逐提交等待；当前本机验证不代表Linux/macOS/Windows CI已通过。
 已为macOS/Windows添加Session核心与实际认证Store测试入口，正式三平台状态按精确Revision另行记录。
 产品密钥托管、Artifact正文来源认证、Owner/全部Provider/SDK相关ID、远端MCP、
 来源权利、真实安装与Provider成本继续按路线图推进。
+
+## 5. 完整回归冻结
+
+- 固定实现：`857ce38444d89fef69a860946f92764c6d3adf9f`。
+- 运行提交：`63fc3f4a02b33999894df180cea4512f0515d138`；Tree：`30a67338f57f006a2c12af84cabc4ce5db31ced3`。
+- **5189 passed / 32 skipped / 419.28秒**；运行前后2426个跟踪文件原字节和Git状态不变。
+- 1333个核心输入与固定实现逐字节一致；后续只冻结文档，不回写旧证据。
+- 专项88项＝42项真实Store＋46项原Seal核心；32项证据治理单独执行。各组与1405项相关和完整回归重叠，不相加。
+- 九项离线工程门禁通过；许可证门禁仍因12件Archive权利阻断，未声明`make check`整体通过。
+- 候选Wheel/sdist经Secret扫描；Wheel双进程隔离消费者通过。构建复用本机依赖缓存，非三平台正式发行验收。
+
+## 6. 后续正式产品实施顺序
+
+独立稳定Key Backend与默认Root强制Binding → 全部历史及模型前消费入口
+→ Artifact正文与二进制持久认证 → 升级、密钥备份迁移及三平台真实验收。
+旧未证明历史必须保持原数据并失败关闭，不允许在当前Scope下追认补签。

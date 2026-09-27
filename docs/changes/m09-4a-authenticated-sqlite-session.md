@@ -243,7 +243,8 @@ replay_and_rebuild:
 两个真实连接CAS、三类真实OS进程退出、响应丢失及真实Runtime/Fork/Artifact混合事务。
 旧迁移退出、已固定1～28摘要、Legacy Transcript和Artifact不回写验证同步追加29摘要，不能减少原断言。
 Linux全量运行；macOS/Windows新增实际执行tests/session与认证Store测试的CI入口，状态需按相应Revision记录，
-仅本机通过不代表三平台验收。固定源码与候选Wheel、完整回归和六文件证据另行冻结。
+仅本机通过不代表三平台验收。固定源码`857ce38`与候选Wheel、完整5189/32回归已冻结；
+[六文件证据](../validation/authenticated-sqlite-session-2026-09-28-v1/README.md)明确显式库与默认产品边界。
 
 仍须完成：默认Root强制Key Backend、全部Provider材料、Artifact正文/二进制持久证明、
 Owner归属/阻塞、SDK Scope-loss相关ID、编号TM攻击、远端MCP、12件Archive权利、三平台真实安装与真实Provider成本。

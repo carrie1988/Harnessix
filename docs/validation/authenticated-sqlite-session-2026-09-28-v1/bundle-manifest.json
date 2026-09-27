@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "0616eb4a313afb81d5be3e9e18edcb407d25880814263f5ed75c7454164f454a",
-      "size_bytes": 3068
+      "sha256": "a99ff922ec66ec9133aa5409649e8b28e8fcc68caa918914a796034576b7a855",
+      "size_bytes": 4243
     },
     {
       "path": "ci-observation.json",
@@ -18,13 +18,13 @@
     },
     {
       "path": "review-packet.json",
-      "sha256": "02edb54259351b13aaad82608702df5d18a71bab69800c91c81b35ff9009eee0",
-      "size_bytes": 777
+      "sha256": "50ab6bc38fdcbc5e25a8ec71aa9022bc9255a2effcc556f440ca74096c74bb94",
+      "size_bytes": 778
     },
     {
       "path": "verification.json",
-      "sha256": "373bf22893765ae06e4d19f5e55ee4214225317d0e5a1e8fc0d53c87d952c14a",
-      "size_bytes": 8381
+      "sha256": "fd55d634162fe6fcfe452e5d47069afb00c60aade772d85710e8123295c73c83",
+      "size_bytes": 9581
     }
   ],
   "manifest_self_excluded": true,

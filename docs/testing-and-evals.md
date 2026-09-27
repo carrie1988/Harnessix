@@ -2,7 +2,7 @@
 doc_type: test-and-eval-design
 status: current
 version: 38
-code_revision: 829dabf8b7051b1242de2202ca9b1df99dc015bc
+code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
 owners:
   - core
 modules:
@@ -757,3 +757,11 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 不验收生产同事务Seal、默认Root历史认证、正式Key Backend或三平台密钥权限。
 [完整证据](validation/event-seal-core-2026-09-28-v1/README.md)和[设计](changes/m09-4a-authenticated-history-and-seal.md)
 保留默认旧历史/SHA替换开放观察与12项Archive权利阻断。
+
+## 认证SQLite Session固定回归
+
+固定实现`857ce38444d89fef69a860946f92764c6d3adf9f`：42项新Store、原Seal46项、32项证据治理、相关1405项和完整5189 passed/32 skipped。
+各组重叠不相加。两个隔离Wheel消费者OS进程使用真实SQLite新CAS、原字节与同事务证明，
+但独立持久Key仍是消费者fixture，不验收产品Key Backend、默认Root或三平台安装。
+[完整证据](validation/authenticated-sqlite-session-2026-09-28-v1/README.md)和
+[总体与详设](changes/m09-4a-authenticated-sqlite-session.md)保留Artifact正文、全部Provider与来源权利等发布阻断。
