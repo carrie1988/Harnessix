@@ -121,3 +121,5 @@ flowchart LR
 6. 当前结论必须同时核对对应模块设计、路线图和最新CI，不得直接引用历史数字作为发布状态。
 
 - [用户输入持久前与命令回执保护](input-persistence-2026-09-28-v1/README.md)：原Runtime入口、Claim前、回执和批准审计边界；历史授权及Protocol原始帧出口独立开放。
+
+- [原协议帧与握手提交证据](protocol-frame-publication-2026-09-28-v1/README.md)。

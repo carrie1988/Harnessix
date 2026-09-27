@@ -521,7 +521,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [独立证据](validation/input-persistence-2026-09-28-v1/README.md)区分旧版实际Runtime/SQLite/SDK负例和整改，
   固定156专项（57新增功能合同、2项开放元数据观察）、另2项新增治理及4969 passed/32 skipped完整回归；
   干净发行物及Wheel隔离导入、683个历史验证文件原字节和源码等价分别冻结。
-  原始JSON-RPC id/错误path回显已确认开放，Scope丢失后的SDK cancel可用性、旧历史及跨重启证明仍需独立治理。
+  原始JSON-RPC id/错误path的基线开放观察由[原帧切片](changes/m09-4a-protocol-frame-publication.md)修复当前材料出口，Scope丢失后的SDK相关ID可用性、未知旧历史及跨重启证明仍需独立治理。
   全部Provider凭据和Secret端到端、历史Session/其他公开出口、跨重启正文安全恢复、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
@@ -777,3 +777,12 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 10. 至少有一个跨组件集成验证；涉及模型或编码行为的切片还需真实Provider或真实仓库验证；
 11. 代码来源、许可证、版权、商标和第三方通知与实际发布物一致；
 12. Git Diff仅包含该迭代必要变更，发布声明能够追溯到测试、Eval或运行证据。
+
+
+## 0.9.4a 原协议帧子切片进展
+
+原相关id与完整封套先于分派准入，完整响应原UTF8字节受协商限额与当前材料保护；
+initialize使用纯候选，公开检查通过后原子提交连接状态，关闭Notification不响应。
+[详细设计](changes/m09-4a-protocol-frame-publication.md)与[固定证据](validation/protocol-frame-publication-2026-09-28-v1/README.md)
+包含旧基线负例、修复后同脚本观察、61项帧测试和1项真实产品CLI子进程验证。
+其中未登记旧历史观察仍开放，直接Service查询、全部Provider材料与跨重启Seal未关闭，0.9.4a不勾选完成。

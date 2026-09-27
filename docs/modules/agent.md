@@ -811,4 +811,16 @@ Scope关闭后SDK命令拒绝的可用性边界未合并。
 
 [完整详设](../changes/m09-4a-input-persistence-boundary.md)覆盖架构、流程、两种时序、数据流、字段、伪代码与源码阅读路径。
 [ADR-0099](../adr/0099-input-persistence-and-command-publication.md)和[证据目录](../validation/input-persistence-2026-09-28-v1/README.md)
-区分本次入口保护与历史授权；原始Protocol id/path、旧历史和全部凭据仍开放。
+区分入口保护与历史授权；Protocol原id/path在[后续帧详设](../changes/m09-4a-protocol-frame-publication.md)中保护，旧历史授权和全部凭据仍开放。
+
+
+## 0.9.4a 原封套与完整原帧公开边界
+
+原协议id先单独检查，再检查完整原封套含method、未知字段和键；准入先于类型化Params、ACK、握手与Store。
+`validate_public_frame`复用纯`protect_jsonl`，`publish_frame`对完整原UTF8含换行响应检查协商限额和当前材料。
+initialize由`prepare_initialization`返回未提交候选，检查通过后Server复核NEW/关闭状态再原子提交；通知拒绝无响应。
+动态错误路径亦受原字节检查；固定紧急控制错误是有限例外，不回显未检查字段、不递归使用失效保护器。
+
+完整架构、五图、接口/字段、取消/超时/并发、部署与源码导航见[原帧详细设计](../changes/m09-4a-protocol-frame-publication.md)。
+[ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
+仍保留旧历史授权、直接Service查询、全部Provider和跨重启Seal开放边界，不授予整个0.9发布。

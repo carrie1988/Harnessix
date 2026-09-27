@@ -456,6 +456,49 @@ ROOT = Path(__file__).resolve().parents[2]
                 "uv.lock",
             },
         ),
+        (
+            "protocol-frame-publication-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "uv.lock",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/errors.py",
+                "src/harnessix/agent/input_publication.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/app_server/frame_publication.py",
+                "src/harnessix/app_server/handshake.py",
+                "src/harnessix/app_server/server.py",
+                "src/harnessix/app_server/command_runtime.py",
+                "src/harnessix/app_server/service.py",
+                "src/harnessix/app_server/stdio.py",
+                "src/harnessix/product_config/runtime.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/protocol/contracts.py",
+                "src/harnessix/protocol/codec.py",
+                "src/harnessix/sdk/agent_client.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/sqlite.py",
+                "tests/app_server/test_frame_publication.py",
+                "tests/app_server/test_command_publication.py",
+                "tests/product_config/test_protocol_publication_cli.py",
+                "tests/agent/test_input_publication_runtime.py",
+                "tests/governance/test_security_governance_evidence.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -965,3 +1008,52 @@ def test_input_persistence_evidence_keeps_raw_protocol_history_and_release_gates
         ci["prior_success_is_current_acceptance"] is False
         and ci["waiting_for_ci_per_local_commit"] is False
     )
+
+
+def test_protocol_frame_bundle_keeps_history_and_release_scope_explicit() -> None:
+    bundle = ROOT / "docs/validation/protocol-frame-publication-2026-09-28-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    manifest = json.loads((bundle / "bundle-manifest.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert {item["code_revision"] for item in (facts, verification, review, manifest, ci)} == {
+        manifest["code_revision"]
+    }
+    assert review["decision"] == "release_blocked"
+    assert review["overall_0_9_complete"] is False
+    assert facts["new_protocol_tests"] == 61 and facts["new_actual_cli_tests"] == 1
+    assert facts["unknown_history_gap_observations"] == 1
+    assert facts["special_regression"]["passed"] == 161
+    assert facts["real_model_requests"] == 0
+    assert facts["unknown_history_authorization_closed"] is False
+    assert facts["direct_service_query_publication_closed"] is False
+    assert facts["cross_restart_seal_closed"] is False
+    assert facts["archive_rights_blockers"] == 12
+    assert facts["historical_validation_files_unchanged"] is True
+    old = {item["case"]: item for item in facts["independent_baseline"]["records"]}
+    fixed = {item["case"]: item for item in facts["fixed_observation"]["records"]}
+    assert facts["independent_baseline"]["module_source_verified"] is True
+    assert facts["fixed_observation"]["module_source_verified"] is True
+    for name in ("rpc_id", "param_key", "replay"):
+        assert old[name]["response_contains_original_material"] is True
+        assert fixed[name]["response_contains_original_material"] is False
+        assert fixed[name]["private_history_unchanged"] is True
+        assert fixed[name]["provider_requests"] == 0
+    assert fixed["unknown_history"]["response_contains_original_material"] is True
+    assert fixed["unknown_history"]["unknown_history_authorization_claimed"] is False
+    assert facts["actual_product_cli"]["no_thread_or_turn_accepted"] is True
+    assert facts["actual_product_cli"]["os_stdio_pipes"] is True
+    assert facts["untracked_attack_draft_excluded"] is True
+    full = verification["full_regression"]
+    assert full["status"] in {"pending", "passed"}
+    if full["status"] == "passed":
+        assert full["passed"] == 5033 and full["skipped"] == 32
+        assert full["tracked_inputs_unchanged_during_run"] is True
+    else:
+        assert full["is_acceptance"] is False
+    assert verification["diagrams"]["each_png_visually_inspected"] is True
+    assert verification["wheel_smoke"]["isolated_from_source_and_tests"] is True
+    assert verification["wheel_smoke"]["original_sensitive_id_and_key_rejected"] is True
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_revision_acceptance"] is False

@@ -38,9 +38,13 @@ supersedes: []
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
 | 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
 | 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
-| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、出站字节门禁、远程安全、可观测性和Replay大规模索引尚未完成 |
+| 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、远程安全、可观测性和Replay大规模索引尚未完成 |
 
-本文是[`server.py`](../../src/harnessix/app_server/server.py)、
+原封套准入、完整响应UTF8协商限额和纯握手候选提交已实现，有限当前材料检查不构成历史授权。
+
+本文是[`frame_publication.py`](../../src/harnessix/app_server/frame_publication.py)、
+[`handshake.py`](../../src/harnessix/app_server/handshake.py)、
+[`command_runtime.py`](../../src/harnessix/app_server/command_runtime.py)和[`server.py`](../../src/harnessix/app_server/server.py)、
 [`service.py`](../../src/harnessix/app_server/service.py)、
 [`stdio.py`](../../src/harnessix/app_server/stdio.py)、
 [`artifacts.py`](../../src/harnessix/app_server/artifacts.py)和
@@ -268,7 +272,7 @@ stateDiagram-v2
 
 1. `NEW`状态只允许`initialize`产生成功；其他Request返回`not_initialized`；
 2. initialize严格解析Client Info、实例ID、能力和Limit；
-3. 成功后Server先绑定Client和状态，再返回产品版本、能力、方法和有效Limit；
+3. 构造原响应与纯候选，经协商字节限额和保护检查后，复核NEW并无await提交Client、能力、Limit和状态；
 4. 客户端必须发送无Response的`notifications/initialized`；
 5. 该Notification只在`INITIALIZED_PENDING_ACK`生效，参数非法则静默忽略；
 6. READY后Request进入并发调度，正常解码路径中的Notification不返回任何帧。
@@ -276,7 +280,7 @@ stateDiagram-v2
 ### 8.3 当前版本错误差异
 
 `InitializeParams.protocol_version`本身是`Literal["1.0"]`。因此非1.0值会在
-`validate_protocol_input`阶段先返回`invalid_params`，`AgentProtocolServer._initialize`中计划返回
+`validate_protocol_input`阶段先返回`invalid_params`，`prepare_initialization`中计划返回
 `unsupported_protocol_version`的显式分支当前实际上不可达。ADR描述的稳定版本错误码尚未由测试覆盖，
 客户端当前只能可靠依赖`-32602`，不能依赖该细分`data.code`。
 
@@ -298,13 +302,21 @@ flowchart TD
     Frame["bytes"] --> Codec["Protocol decode"]
     Codec -- 失败 --> ParseError["parse_error / invalid_request"]
     Codec --> Envelope["Request / Notification"]
-    Envelope --> State{"连接状态与方法存在?"}
+    Envelope --> Admission["原id与完整封套保护"]
+    Admission -- 拒绝 --> InputError["固定输入错误或通知无响应"]
+    Admission --> State{"连接状态与方法存在?"}
     State -- 否 --> StateError["not_initialized / method_not_found"]
     State -- 是 --> Params["_params + exact ProtocolModel"]
     Params -- ValidationError --> Invalid["invalid_params + first path"]
     Params --> Service["应用服务"]
     Service -- Stable error --> DomainError["-32010 / -32011"]
     Service -- Unexpected --> Internal["-32603 fixed message"]
+    Service --> Output["完整原响应字节 限额与保护"]
+    Invalid --> Output
+    Internal --> Output
+    DomainError --> Output
+    StateError --> Output
+    Output --> Wire["原安全帧或固定保护错误"]
 ```
 
 `_params`只把方法Params的`ValidationError`包装为`InvalidProtocolParams`。如果Service内部因为实现缺陷产生
@@ -325,7 +337,7 @@ flowchart TD
 | 未预期异常 | `-32603` | `internal_error` | 固定“原始异常未公开”消息 |
 | Closing/Closed入口 | `-32015` | `server_closing` | 固定消息，Response ID为空 |
 
-稳定`KernelError`正文会直接进入协议，App Server没有统一Redactor；所有下游稳定错误消息必须自行保证不含
+稳定`KernelError`原正文经完整帧保护后才进入协议，不使用替换型Redactor；有限检查不能识别未登记
 Secret、完整环境、Provider Header或不应公开的路径。未预期异常才由Server统一隐藏原文。
 
 ## 10. 方法分派与应用边界
@@ -343,8 +355,8 @@ Secret、完整环境、Provider Header或不应公开的路径。未预期异�
 | Replay/Next | 能力决定是否包含Delta | Session扫描、投影、等待与Buffer消费 | Session持久事件、Runtime产生Delta |
 | Artifact | 仅在能力存在时路由 | 委托Scoped Reader | Thread归属、Workspace能力和Artifact读取 |
 
-Server返回Result时重新以Protocol模型的线上别名序列化。当前`_encode`不调用
-`protocol_json_size`，也不比较协商`maxMessageBytes`，因此出站字节硬门禁不是本模块已完成能力。
+Server返回Result时重新以Protocol模型的线上别名序列化，`publish_frame`比较完整UTF8含换行字节与
+协商`maxMessageBytes`，超限返回`response_too_large`，合规后继续检查原帧。`protocol_json_size`不是生产门禁路径。
 
 ## 11. 写命令事务编排
 
@@ -670,8 +682,8 @@ flowchart TD
 Request → 排空Writer”，所以连接失败不会撤销已经提交的Session事实，也不会在Response不确定时盲目重放领域操作。
 
 Reader/Writer线程均为守护线程且`stop()`会取消尚未交付的跨线程Future；这解决生命周期所有权，不解决底层I/O强制取消。
-Server在CLOSING/CLOSED状态仍会在解码前返回`server_closing`，因此合法Notification可能得到ID为空的错误Response；
-已经进入`process_frame`并跨`await`执行的Request也不会在完成前再次检查连接状态，这两项保持为后续协议改进边界。
+Server在CLOSING/CLOSED状态使用有界Codec区分合法Notification并保持无响应；请求只发固定null关闭错误。
+完整封套检查后复核关闭，握手原响应保护后再复核关闭与NEW，避免复活连接。已进入领域操作的普通请求不据此撤销已有事实。
 
 ## 17. Scoped Artifact读取
 
@@ -800,7 +812,7 @@ Transport并发不等于同Thread并发提交。Service可以同时处理多个R
 
 | 行为 | 线性化/权威点 |
 |---|---|
-| 连接初始化 | `_initialize`把State设为`INITIALIZED_PENDING_ACK` |
+| 连接初始化 | 原响应保护通过后`process_frame`无await提交候选并设为`INITIALIZED_PENDING_ACK` |
 | 连接Ready | `_notification`把State设为`READY` |
 | 命令键占用 | `ProtocolRequestStore.claim`事务提交 |
 | Thread/Turn业务接受 | Runtime对应Session Event事务提交 |
@@ -840,7 +852,7 @@ Transport并发不等于同Thread并发提交。Service可以同时处理多个R
 | stdout Queue饱和 | 入队等待到Timeout后Stopping | 已提交领域事实不回滚 | 重连并Replay |
 | Writer异常 | 停止并在清理后重抛 | Session保持 | 修复管道，重连恢复 |
 | stdin EOF | 有界关闭Service、pending和Writer | Session保持 | 新进程重连 |
-| Closing/Closed时收到Notification | 当前在解码前返回`server_closing` Error Response | 无 | 客户端关闭连接；服务端需修复单向语义 |
+| Closing/Closed时收到Notification | 有界解码后合法Notification无响应 | 无 | 关闭语义保持单向，不访问已关闭Scope |
 | 关闭时Provider慢 | 宽限后取消后台Task | Runtime提交CANCELLED | 读取终态；新意图显式Retry |
 | Artifact无Reader | 方法不广告；直接Service调用为`artifact_not_enabled` | 无 | 正确装配Scoped Reader |
 | Artifact Scope/Store失败 | 稳定或内部错误 | Artifact/Session不由App Server改写 | 修复授权或存储后重读 |
@@ -899,7 +911,7 @@ I/O泵只由`run_stdio`拥有，关闭后不复用。Writer故障会在Server和
 - 后台Turn Task总数，除领域/调用量自然约束外没有Service级上限；
 - Session `events`全尾部读取量；
 - Thread List全量ID和聚合加载量；
-- 出站Response实际UTF-8字节；
+- 出站Response实际UTF-8字节已在`publish_frame`受协商限额约束，不属于此处无界项；
 - 永久阻塞的第三方同步I/O守护线程寿命；
 - accepted Protocol Request历史数量和年龄。
 
@@ -924,7 +936,8 @@ RSS长期稳定。Session/Protocol/Artifact容量、Trusted Action效果恢复�
 ### 24.2 当前暴露面
 
 App Server会向本地客户端返回Protocol允许的Workspace、用户内容、Tool参数/输出、Approval信息、错误消息
-和Artifact页。稳定`KernelError`或`AgentServiceError`正文没有统一Secret Guard。内存中Service还持有：
+和Artifact页。稳定`KernelError`或`AgentServiceError`的原code、正文及path也经过完整帧保护；
+有限当前材料检查不构成任意DLP或旧历史授权。内存中Service还持有：
 
 - Delta正文；
 - Thread/Turn ID；
@@ -1199,7 +1212,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 ### 30.2 尚未证明范围
 
 - 非1.0版本返回专用`unsupported_protocol_version`；
-- Server端Replay Limit二次收紧及所有出站Response的协商UTF-8字节门禁；
+- Server端Replay Limit二次收紧；所有原出站Response的协商UTF-8字节门禁已实现；
 - `BinaryIO.write`短写、Service Close异常和Writer/Reader同时失败的优先级；
 - 任意第三方永久阻塞I/O线程本身可被强制回收；当前只证明主协程有界退出；
 - CLOSING/CLOSED状态仍保持合法Notification不产生Response；
@@ -1214,20 +1227,20 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | 优先级 | 限制/风险 | 影响 | 后续归属 |
 |---|---|---|---|
 | P0 | 非1.0版本被Literal校验提前归为`invalid_params`，显式版本错误分支不可达 | 错误合同与ADR不一致 | Protocol兼容修复 |
-| P0 | 出站Response无协商字节门禁，`protocol_json_size`未使用 | 大结果可超过客户端能力并阻塞Writer | Protocol/Artifact外置 |
+| 已关闭 | 原出站Response协商UTF8门禁 | `publish_frame`超限返回`response_too_large`，无原字节进入Writer | [帧详设](../changes/m09-4a-protocol-frame-publication.md) |
 | P1 | Reader/Writer底层同步系统调用不能被Python通用强制中断 | 主协程已可有界退出，但第三方流可能留下daemon I/O线程 | 0.9.3d真实Pipe Soak、0.9.5平台发行 |
 | P1 | Delta只有单Thread上限，无Thread总数/总字节上限，未协商客户端仍缓存 | 长会话多Thread内存增长 | 0.9.3b容量治理 |
 | P1 | Replay读取全部事件尾部后截页，Thread List加载全部尾部聚合 | 大历史性能退化 | 0.9.3b索引与基准 |
 | P1 | fixed Workspace只限制Create，状态目录未持久绑定Workspace | 误复用状态根可暴露旧Thread元数据 | 0.9.4安全、0.9.5安装隔离 |
 | P1 | Service不验证Runtime/Session/Request Store/Tool Workspace装配一致 | 自定义宿主误装配可能读写不同事实源 | Product Config构造不变量 |
-| P1 | 稳定Kernel/Service错误正文无统一Redactor | 下游错误若携带Secret可能持久并公开 | 0.9.4统一错误清洗 |
+| 部分关闭 | 稳定Kernel/Service错误完整原帧受当前材料保护 | 未登记历史与直接Service出口仍开放，不以替换改变身份 | 原帧详设及后续历史授权 |
 | P1 | Background Task异常只消费、不产生模块级信号 | 若Runtime未形成终态，故障难诊断 | 0.9.3c可观测性与恢复扫描 |
 | P2 | `_delta_events`按Thread增长且不删除 | 超长进程积累对象 | 0.9.3b清理策略 |
 | P2 | Artifact内部Cancel Token无法由客户端取消且无读Timeout | 慢Store占用pending slot | Artifact/SDK取消合同 |
 | P2 | `turn/resume`在Request内等待完整Runtime恢复 | 长Turn占用一个slot且响应延迟高 | 明确异步接受/查询语义 |
 | P2 | Method能力不按Runtime Question/Approval能力细分 | 客户端可能调用路由存在但领域不可用的方法 | 能力模型演进 |
 | P2 | `run_stdio`不校验短写 | 非标准BinaryIO行为可能截断帧 | Transport合同加固 |
-| P2 | Closing/Closed分支在解码前返回错误，合法Notification也会收到Response | 与正常Notification单向合同不一致 | 调整关闭分支并增加直接Frame回归 |
+| 已关闭 | Closing/Closed合法Notification | 有界Codec区分后无响应，请求固定null关闭错误 | `test_frame_publication.py`关闭回归 |
 | P2 | Service Close错误可中断后续Pending/Writer清理 | 复合故障收敛不完整 | 0.9.3c关闭故障测试 |
 
 ## 32. 验收标准
@@ -1330,4 +1343,17 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 入站拒绝不生成请求回执；Claim后拒绝不能覆盖旧completed事实。`AgentServiceError`仍从原service路径导入。
 
 [输入与回执详设](../changes/m09-4a-input-persistence-boundary.md)给出调用链、字段、错误和恢复边界。
-原始JSON-RPC id及非法参数key的校验path发生在类型校验之前，仍有独立开放出口；不以命令保护宣称整个Protocol安全。
+原始JSON-RPC id、非法参数key校验path及查询原响应在后续[帧详设](../changes/m09-4a-protocol-frame-publication.md)中统一保护；
+命令保护本身不覆盖这些边界，有限当前材料检查也不授权旧历史或全部Protocol安全。
+
+
+## 0.9.4a 原封套与完整原帧公开边界
+
+原协议id先单独检查，再检查完整原封套含method、未知字段和键；准入先于类型化Params、ACK、握手与Store。
+`validate_public_frame`复用纯`protect_jsonl`，`publish_frame`对完整原UTF8含换行响应检查协商限额和当前材料。
+initialize由`prepare_initialization`返回未提交候选，检查通过后Server复核NEW/关闭状态再原子提交；通知拒绝无响应。
+动态错误路径亦受原字节检查；固定紧急控制错误是有限例外，不回显未检查字段、不递归使用失效保护器。
+
+完整架构、五图、接口/字段、取消/超时/并发、部署与源码导航见[原帧详细设计](../changes/m09-4a-protocol-frame-publication.md)。
+[ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
+仍保留旧历史授权、直接Service查询、全部Provider和跨重启Seal开放边界，不授予整个0.9发布。

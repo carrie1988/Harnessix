@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from enum import StrEnum
 from importlib.metadata import PackageNotFoundError, version
 from uuid import UUID
@@ -10,20 +9,26 @@ from uuid import UUID
 from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.app_server.frame_publication import (
+    admit_message,
+    closing_response,
+    error_frame,
+    publish_frame,
+)
+from harnessix.app_server.frame_publication import encode as _encode
+from harnessix.app_server.handshake import (
+    PreparedInitialization,
+    prepare_initialization,
+    validation_path,
+)
 from harnessix.app_server.service import AgentApplicationService, AgentServiceError
 from harnessix.protocol.codec import ProtocolDecodeError, decode_client_frame
 from harnessix.protocol.contracts import (
-    AGENT_PROTOCOL_VERSION,
     ApprovalRespondParams,
     ArtifactReadParams,
     EventsNextParams,
     EventsReplayParams,
     InitializedParams,
-    InitializeParams,
-    InitializeResult,
-    JsonRpcError,
-    JsonRpcErrorData,
-    JsonRpcErrorResponse,
     JsonRpcId,
     JsonRpcNotification,
     JsonRpcRequest,
@@ -31,8 +36,6 @@ from harnessix.protocol.contracts import (
     ProtocolLimits,
     ProtocolModel,
     QuestionRespondParams,
-    ServerCapabilities,
-    ServerInfo,
     ThreadArchiveParams,
     ThreadCreateParams,
     ThreadForkParams,
@@ -97,18 +100,6 @@ def _product_version() -> str:
         return "0.0.0+source"
 
 
-def _encode(message: ProtocolModel) -> bytes:
-    return (
-        json.dumps(
-            message.model_dump(mode="json", by_alias=True),
-            ensure_ascii=False,
-            allow_nan=False,
-            separators=(",", ":"),
-        ).encode()
-        + b"\n"
-    )
-
-
 class AgentProtocolServer:
     """单客户端JSON-RPC会话；领域状态与执行权仍归AgentRuntime。"""
 
@@ -142,77 +133,7 @@ class AgentProtocolServer:
         retryable: bool = False,
         path: tuple[str | int, ...] = (),
     ) -> bytes:
-        return _encode(
-            JsonRpcErrorResponse(
-                id=request_id,
-                error=JsonRpcError(
-                    code=rpc_code,
-                    message=message,
-                    data=JsonRpcErrorData(
-                        code=code,
-                        retryable=retryable,
-                        path=path,
-                    ),
-                ),
-            )
-        )
-
-    @staticmethod
-    def _validation_path(error: ValidationError) -> tuple[str | int, ...]:
-        first = error.errors(include_url=False, include_context=False)[0]
-        return tuple(first.get("loc", ()))[:64]
-
-    def _initialize(self, request: JsonRpcRequest) -> bytes:
-        if self.state is not ConnectionState.NEW:
-            return self._error(request.id, -32600, "already_initialized", "连接已经执行初始化")
-        try:
-            params = validate_protocol_input(InitializeParams, request.params)
-        except (ValidationError, TypeError, ValueError) as error:
-            path = self._validation_path(error) if isinstance(error, ValidationError) else ()
-            return self._error(
-                request.id,
-                -32602,
-                "invalid_params",
-                "initialize参数无效",
-                path=path,
-            )
-        if params.protocol_version != AGENT_PROTOCOL_VERSION:
-            return self._error(
-                request.id,
-                -32602,
-                "unsupported_protocol_version",
-                "不支持的Agent Protocol版本",
-                path=("protocolVersion",),
-            )
-        self.client_instance_id = params.client_instance_id
-        self.item_deltas_enabled = params.capabilities.item_deltas
-        self.state = ConnectionState.INITIALIZED_PENDING_ACK
-        effective_limits = ProtocolLimits(
-            max_message_bytes=min(self.limits.max_message_bytes, params.limits.max_message_bytes),
-            max_pending_requests=min(
-                self.limits.max_pending_requests, params.limits.max_pending_requests
-            ),
-            max_outbound_messages=min(
-                self.limits.max_outbound_messages, params.limits.max_outbound_messages
-            ),
-            max_replay_events=min(self.limits.max_replay_events, params.limits.max_replay_events),
-        )
-        self.limits = effective_limits
-        result = InitializeResult(
-            server_info=ServerInfo(version=_product_version()),
-            capabilities=ServerCapabilities(
-                methods=self.methods,
-                artifact_pages=self.service.artifact_reader is not None,
-                item_deltas=params.capabilities.item_deltas,
-            ),
-            limits=effective_limits,
-        )
-        return _encode(
-            JsonRpcSuccessResponse(
-                id=request.id,
-                result=result.model_dump(mode="json", by_alias=True),
-            )
-        )
+        return error_frame(request_id, rpc_code, code, message, retryable=retryable, path=path)
 
     def _notification(self, notification: JsonRpcNotification) -> None:
         if notification.method == "notifications/initialized":
@@ -265,77 +186,107 @@ class AgentProtocolServer:
             return await self.service.read_artifact(_params(ArtifactReadParams, params))
         raise AgentServiceError("method_not_found", "方法未实现")
 
-    async def process_frame(self, frame: bytes) -> tuple[bytes, ...]:
-        """处理单帧；Notification无响应，Request恰好产生一个Response。"""
+    async def _handle_request(self, message: JsonRpcRequest) -> bytes | PreparedInitialization:
+        """原业务分派与错误映射；握手只准备候选，所有动态响应由外层统一保护。"""
+        if message.method == "initialize":
+            return prepare_initialization(
+                message,
+                is_new=self.state is ConnectionState.NEW,
+                limits=self.limits,
+                methods=self.methods,
+                artifact_pages=self.service.artifact_reader is not None,
+                version=_product_version(),
+            )
+        if self.state is not ConnectionState.READY:
+            return self._error(message.id, -32012, "not_initialized", "连接尚未完成初始化")
+        if message.method not in self.methods:
+            return self._error(message.id, -32601, "method_not_found", "协议方法不存在")
+        try:
+            result = await self._dispatch(message.method, message.params)
+        except InvalidProtocolParams as invalid:
+            return self._error(
+                message.id,
+                -32602,
+                "invalid_params",
+                "协议参数无效",
+                path=validation_path(invalid.error),
+            )
+        except AgentServiceError as error:
+            rpc_code = -32011 if error.code == "idempotency_conflict" else -32010
+            return self._error(
+                message.id, rpc_code, error.code, error.message, retryable=error.retryable
+            )
+        except KernelError as error:
+            return self._error(
+                message.id, -32010, error.code, str(error), retryable=error.retryable
+            )
+        except Exception:
+            return self._error(
+                message.id, -32603, "internal_error", "服务端内部错误；原始异常未公开"
+            )
+        return _encode(
+            JsonRpcSuccessResponse(
+                id=message.id, result=result.model_dump(mode="json", by_alias=True)
+            )
+        )
 
+    async def process_frame(self, frame: bytes) -> tuple[bytes, ...]:
+        """完整原封套先准入，原响应字节先保护；通知无响应，拒绝不回显未授权身份。"""
         if self.state in {ConnectionState.CLOSING, ConnectionState.CLOSED}:
-            return (self._error(None, -32015, "server_closing", "服务端正在关闭"),)
+            return closing_response(frame, max_message_bytes=self.limits.max_message_bytes)
         try:
             message = decode_client_frame(frame, max_message_bytes=self.limits.max_message_bytes)
         except ProtocolDecodeError as error:
+            # 解析/关闭控制帧仅含固定字段，无原id、键、正文或第三方诊断。
             return (self._error(None, error.rpc_code, error.code, error.message),)
+        rejected = await admit_message(self.service.runtime, message)
+        if rejected is not None:
+            return rejected
+        if self.state in {ConnectionState.CLOSING, ConnectionState.CLOSED}:
+            return (
+                ()
+                if isinstance(message, JsonRpcNotification)
+                else (self._error(None, -32015, "server_closing", "服务端正在关闭"),)
+            )
         if isinstance(message, JsonRpcNotification):
             try:
                 self._notification(message)
             except (ValidationError, TypeError, ValueError):
-                return ()
+                pass
             return ()
-        if message.method == "initialize":
-            return (self._initialize(message),)
-        if self.state is not ConnectionState.READY:
-            return (self._error(message.id, -32012, "not_initialized", "连接尚未完成初始化"),)
-        if message.method not in self.methods:
-            return (self._error(message.id, -32601, "method_not_found", "协议方法不存在"),)
         try:
-            result = await self._dispatch(message.method, message.params)
-        except InvalidProtocolParams as invalid:
-            return (
-                self._error(
-                    message.id,
-                    -32602,
-                    "invalid_params",
-                    "协议参数无效",
-                    path=self._validation_path(invalid.error),
-                ),
-            )
-        except AgentServiceError as error:
-            rpc_code = -32011 if error.code == "idempotency_conflict" else -32010
-            return (
-                self._error(
-                    message.id,
-                    rpc_code,
-                    error.code,
-                    error.message,
-                    retryable=error.retryable,
-                ),
-            )
-        except KernelError as error:
-            return (
-                self._error(
-                    message.id,
-                    -32010,
-                    error.code,
-                    str(error),
-                    retryable=error.retryable,
-                ),
-            )
+            candidate = await self._handle_request(message)
         except Exception:
-            return (
-                self._error(
-                    message.id,
-                    -32603,
-                    "internal_error",
-                    "服务端内部错误；原始异常未公开",
-                ),
+            candidate = self._error(
+                message.id, -32603, "internal_error", "服务端内部错误；原始异常未公开"
             )
-        return (
-            _encode(
-                JsonRpcSuccessResponse(
-                    id=message.id,
-                    result=result.model_dump(mode="json", by_alias=True),
-                )
-            ),
+        original = candidate.frame if isinstance(candidate, PreparedInitialization) else candidate
+        output_limit = (
+            candidate.limits if isinstance(candidate, PreparedInitialization) else self.limits
         )
+        published, accepted = await publish_frame(
+            self.service.runtime,
+            original,
+            message.id,
+            max_message_bytes=output_limit.max_message_bytes,
+        )
+        if accepted and isinstance(candidate, PreparedInitialization):
+            if self.state in {ConnectionState.CLOSING, ConnectionState.CLOSED}:
+                return (self._error(None, -32015, "server_closing", "服务端正在关闭"),)
+            if self.state is not ConnectionState.NEW:
+                conflict_response, _ = await publish_frame(
+                    self.service.runtime,
+                    self._error(message.id, -32600, "already_initialized", "连接已经执行初始化"),
+                    message.id,
+                    max_message_bytes=self.limits.max_message_bytes,
+                )
+                return (conflict_response,)
+            # 无await提交已保护候选；失败/取消时原NEW、身份、能力和协商限额均不变。
+            self.client_instance_id = candidate.client_instance_id
+            self.item_deltas_enabled = candidate.item_deltas_enabled
+            self.limits = candidate.limits
+            self.state = ConnectionState.INITIALIZED_PENDING_ACK
+        return (published,)
 
     async def close(self) -> None:
         if self.state is ConnectionState.CLOSED:

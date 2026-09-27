@@ -41,7 +41,7 @@ supersedes: []
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
 | 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
 | 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
-| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；出站字节门禁、accepted恢复、远程安全和协议多版本协商尚未实现 |
+| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；accepted恢复、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
 [`compatibility.py`](../../src/harnessix/protocol/compatibility.py)、
@@ -353,7 +353,7 @@ stateDiagram-v2
 6. 进入`READY`前的业务Request返回`-32012 not_initialized`。
 
 当前存在一个实现与错误合同不一致点：非`1.0`值会在步骤2的Pydantic校验阶段直接返回
-`-32602 invalid_params`，因此[`AgentProtocolServer._initialize`](../../src/harnessix/app_server/server.py)
+`-32602 invalid_params`，因此[`prepare_initialization`](../../src/harnessix/app_server/handshake.py)
 后续用于返回`unsupported_protocol_version`的显式比较分支不可达。现行客户端必须把该场景按
 `invalid_params`处理；专用版本错误码只能在合同类型与Server分支同步修复并增加回归测试后对外承诺。
 
@@ -382,7 +382,7 @@ stateDiagram-v2
 
 | Limit | 合同范围/默认 | 当前实际使用 | 已知差距 |
 |---|---|---|---|
-| `maxMessageBytes` | 4096～8 MiB；默认1 MiB | 握手后Codec与stdio后续`readline`使用协商最小值 | 出站Response未用`protocol_json_size`强制同一字节上限 |
+| `maxMessageBytes` | 4096～8 MiB；默认1 MiB | 握手后Codec与stdio后续`readline`使用协商最小值 | `publish_frame`检查完整UTF8含换行字节，超限返回`response_too_large` |
 | `maxPendingRequests` | 1～1024；默认64 | stdio以Server构造时的值建立Semaphore | Queue在握手前创建，客户端提出的更小值不会缩小已创建Semaphore |
 | `maxOutboundMessages` | 8～4096；默认256 | stdio以Server构造时的值建立有界Queue | 同样在握手前创建，客户端更小值不改变Queue容量 |
 | `maxReplayEvents` | 1～1000；默认256 | 协商值写入结果 | `AgentApplicationService`当前按请求`limit`执行，未再按协商值收紧 |
@@ -873,7 +873,7 @@ sequenceDiagram
 | Agent Runtime稳定失败 | `-32010`与领域`code/retryable` | 可能已写领域事实 | 按领域错误和Snapshot决定Retry/Resume |
 | 未预期异常 | `-32603 internal_error`，不公开原异常 | 未知 | 读取持久Thread/Replay和账本状态后恢复 |
 | Server关闭 | `-32015 server_closing`或连接EOF | 不保证 | 重连新进程，使用相同客户端实例和命令ID |
-| Closing/Closed时发送Notification | 当前在解码前返回`server_closing` Error Response | 否 | 客户端关闭连接；服务端需恢复Notification单向合同 |
+| Closing/Closed时发送Notification | 有界解码后合法Notification无响应 | 否 | 保持Notification单向合同 |
 | 实时Delta溢出 | `liveGap=true` | 领域执行继续 | 丢弃增量完整性假设，依赖持久Item Replay |
 | `events/next`无进展到期 | `timedOut=true` | 无变更 | 继续轮询、退避或按客户端生命周期取消等待 |
 
@@ -1136,7 +1136,7 @@ Command联合和Query联合共14份Schema。`make spec`应在合同变化后重�
 ### 23.3 Public Protocol辅助函数
 
 `protocol_json_size`返回一个`ProtocolModel`按线上别名、键排序、紧凑JSON编码后的UTF-8字节数，可供传输
-门禁复用。当前生产Server `_encode`没有调用它，也没有在出站前比较协商`maxMessageBytes`；它是已实现
+门禁复用。生产编码不调用它，但`publish_frame`直接比较实际原帧字节与协商`maxMessageBytes`；它是已实现
 但尚未贯穿产品传输的辅助能力。
 
 ## 24. 重点数据结构与字段设计
@@ -1330,7 +1330,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 
 | 行为 | 源码 | 关键符号 | 测试 |
 |---|---|---|---|
-| 两步握手与方法分派 | [`app_server/server.py`](../../src/harnessix/app_server/server.py) | `AgentProtocolServer._initialize`、`_notification`、`_dispatch` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_handshake_enforces_state_version_and_params` |
+| 两步握手与方法分派 | [`app_server/handshake.py`](../../src/harnessix/app_server/handshake.py)与[`server.py`](../../src/harnessix/app_server/server.py) | `prepare_initialization`、`_notification`、`_dispatch` | [`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py) `test_handshake_enforces_state_version_and_params` |
 | 并发初始化串行 | App Server/SDK | Server状态、SDK初始化锁 | `test_sdk_serializes_concurrent_initialize_calls` |
 | 写命令账本顺序 | [`app_server/service.py`](../../src/harnessix/app_server/service.py) | `AgentApplicationService._command` | `test_agent_sdk_drives_turn_replay_and_duplicate_command` |
 | 同键换Prompt冲突 | App Service + Ledger | `_command`、`claim` | `test_same_command_key_with_different_prompt_returns_conflict` |
@@ -1397,7 +1397,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 | 优先级 | 当前限制/风险 | 影响 | 后续方向 |
 |---|---|---|---|
 | P0 | `InitializeParams.protocol_version`是`Literal["1.0"]`，导致显式`unsupported_protocol_version`分支不可达 | 实际错误码与Server意图、ADR描述不一致，客户端无法稳定区分格式错误与版本不支持 | 调整校验边界并新增非1.0握手回归，再同步Schema与SDK |
-| P0 | `_encode`未强制协商`maxMessageBytes`，`protocol_json_size`未进入生产出站路径 | 极端公共结果可能生成超出客户端声明能力的帧 | 在App Server设计中定义有界错误或Artifact外置，并补出站边界测试 |
+| 已关闭 | 原帧协商`maxMessageBytes` | `publish_frame`对实际UTF8字节含换行执行门禁，超限稳定小错误 | 原4095/4096/4097字节及过大Replay回归 |
 | P0 | 三个非消息Limit未全部贯穿运行时；Queue/Semaphore在握手前建立，Replay未按协商值收紧 | 初始化返回值与实际强制容量存在差异 | 固化Limit语义并在构造/分派处执行一致门禁 |
 | P1 | `protocol_requests`已有终态离线保留，但无分页、自动调度或accepted目标恢复 | 终态增长可控；陈旧accepted会全局阻止Session/Artifact清理 | 0.9.3c恢复扫描与0.9.5维护UX；不得放宽保守保护 |
 | P1 | 数据库驱动异常未统一映射，部分异常保留accepted | 客户端只得到`internal_error`，恢复需联合查询Session | 统一存储错误分类，同时保留未知状态的安全恢复语义 |
@@ -1410,7 +1410,7 @@ Protocol包当前不直接记录日志、不创建Trace/Metric，也不注入Obs
 | P2 | 已知Server Notification集合与当前Pull-only Server能力脱节 | 阅读者可能误判推送能力 | 在SDK模块文档说明历史兼容用途；未来删除或正式实现需版本决策 |
 | P2 | `clientInfo`目前不持久、不参与策略；`clientInstanceId`由客户端自声明 | 无法作为安全身份 | 保持其仅幂等命名空间，禁止用于授权 |
 | P2 | `protocol_json_size`的规范排序与Server `_encode`非排序输出不完全同字节表示 | 辅助函数值不等于当前实际帧逐字节长度 | 统一单一编码器后再作为硬门禁 |
-| P2 | App Server在Closing/Closed时先于解码返回错误，合法Notification也会收到Response | 偏离Notification单向合同 | 调整关闭分支并增加直接Frame回归 |
+| 已关闭 | Closing/Closed合法Notification | 有界Codec区分后不响应；请求返回固定null关闭错误 | 原关闭Frame回归 |
 
 上述差距是现行实现边界，不影响已有v1本地stdio合同的基本可运行性，但在1.0商用、多用户规模和远程
 产品化前必须纳入0.9.1～0.9.5对应切片并形成独立设计与故障测试。
@@ -1531,3 +1531,15 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 | 3 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行设计，并将不存在的`AgentClient.stream_events`源码映射修正为实际`watch_thread`方法 |
 | 2 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 根据App Server源码反向求证，修正非1.0版本错误分支不可达及Closing状态回复Notification的实现偏差 |
 | 1 | `b71682da19b54e93b225c54c594e2583fd648e70` | 2026-09-12 | 建立Protocol现行模块设计，覆盖合同、严格解码、公共投影、Replay、命令账本、兼容、Schema、失败恢复和真实实现差距 |
+
+
+## 0.9.4a 原封套与完整原帧公开边界
+
+原协议id先单独检查，再检查完整原封套含method、未知字段和键；准入先于类型化Params、ACK、握手与Store。
+`validate_public_frame`复用纯`protect_jsonl`，`publish_frame`对完整原UTF8含换行响应检查协商限额和当前材料。
+initialize由`prepare_initialization`返回未提交候选，检查通过后Server复核NEW/关闭状态再原子提交；通知拒绝无响应。
+动态错误路径亦受原字节检查；固定紧急控制错误是有限例外，不回显未检查字段、不递归使用失效保护器。
+
+完整架构、五图、接口/字段、取消/超时/并发、部署与源码导航见[原帧详细设计](../changes/m09-4a-protocol-frame-publication.md)。
+[ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
+仍保留旧历史授权、直接Service查询、全部Provider和跨重启Seal开放边界，不授予整个0.9发布。

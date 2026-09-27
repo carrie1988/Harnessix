@@ -83,6 +83,7 @@ from harnessix.agent.publication import (
     begin_text_step,
     close_text_step,
     protect_json,
+    protect_jsonl,
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
@@ -480,6 +481,11 @@ class AgentRuntime:
         """新Receipt或Fork投影的完整检查，不据此授权未登记版本的历史正文。"""
         self._ensure_open()
         await protect_json(self._public_output_protection, value, CancelToken())
+
+    async def validate_public_frame(self, body: bytes) -> None:
+        """检查编码后的完整协议JSONL原字节；不根据预览或部分字段授权响应。"""
+        self._ensure_open()
+        await protect_jsonl(self._public_output_protection, body, CancelToken())
 
     async def create_thread(self, workspace: str, *, thread_id: UUID | None = None) -> Thread:
         self._ensure_open()

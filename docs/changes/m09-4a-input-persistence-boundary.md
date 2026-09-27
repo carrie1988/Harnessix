@@ -1,6 +1,6 @@
 ---
 doc_type: change-design
-status: current
+status: historical
 version: 1
 code_revision: 246b353337fbf9c9a625a2a310159fa8d4e04f51
 owners: [core]
@@ -16,6 +16,8 @@ supersedes: []
 ---
 
 # 0.9.4a 用户输入持久前与协议命令回执保护详细设计
+
+> 本文记录固定`246b353`输入与命令切片。原id/path及查询出口的后续实现见[原帧详设](m09-4a-protocol-frame-publication.md)；冻结证据仍保持原字节和原范围。
 
 ## 1. 变更摘要、需求背景与证据
 

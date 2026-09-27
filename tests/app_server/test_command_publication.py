@@ -261,7 +261,7 @@ async def test_closed_scope_blocks_sdk_command_but_direct_cancel_still_settles(t
 
 
 @pytest.mark.parametrize("surface", ["rpc_id", "extra_param_key"])
-async def test_open_raw_protocol_metadata_gap_is_independently_observable(tmp_path, surface):
+async def test_raw_protocol_metadata_rejection_does_not_echo_registered_values(tmp_path, surface):
     with protected() as scope:
         async with AgentRuntime(
             SQLiteSessionStore(tmp_path / "s.db"),
@@ -291,6 +291,8 @@ async def test_open_raw_protocol_metadata_gap_is_independently_observable(tmp_pa
                 + "\n"
             ).encode()
             response = await server.process_frame(frame)
-            # 此断言记录未关闭出口，不能用来宣称整个Protocol凭据保护完成。
-            assert CANARY.encode() in response[0]
+            # 固定旧版证据保留，现行实现必须在握手变更前拒绝原封套。
+            assert CANARY.encode() not in response[0]
+            assert json.loads(response[0])["error"]["data"]["code"] == "public_input_secret_leak"
+            assert server.state.value == "new"
             await server.close()

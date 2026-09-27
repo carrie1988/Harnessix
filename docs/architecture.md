@@ -610,4 +610,6 @@ Runtime在原用户字段进入接受事务、问答事务和批准审计前复�
 先于协议账本Claim检查，原缓存和新结果在公开前检查。原正文、幂等身份、Hash、Schema和CAS顺序不变。
 完整边界与源码映射见[输入持久前与回执详设](changes/m09-4a-input-persistence-boundary.md)。
 模型出站拒绝不能代替入站保护；当前有限材料检查也不授予旧历史或跨重启对象授权。
-原始JSON-RPC id和校验path、保护器丢失后的SDK cancel可用性仍独立开放，不据此宣称全部公开出口安全。
+原始JSON-RPC id和动态校验path由[原帧边界](changes/m09-4a-protocol-frame-publication.md)统一保护；
+只读查询、Replay和动态错误在完整UTF8原字节发布点检查，握手保护通过后再原子提交候选。
+旧未登记历史、直接Service查询和保护器丢失后的SDK相关ID可用性仍独立开放，不宣称全部出口安全。
