@@ -1,0 +1,25 @@
+{
+  "code_revision": "acf9122fe2bd1bcb3ea3bd788f469d805a48fafb",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "已确认用户输入直接持久化与SDK回放",
+    "历史Session公开授权",
+    "跨重启正文证明",
+    "12件Archive许可证",
+    "Owner同步资源和Store归属",
+    "TM编号化攻击回归",
+    "远端MCP身份OAuth受管出口",
+    "三平台真实安装升级Beta",
+    "真实Provider成本与发布验证"
+  ],
+  "required_review_focus": [
+    "流式安全前缀与原文终值一致",
+    "全步骤累计工作和UTF8字节",
+    "CAS前完整事件检查与主摘要出站检查",
+    "模型意图和已提交用量保持",
+    "历史用户入口与公开授权仍开放"
+  ]
+}

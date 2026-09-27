@@ -1,0 +1,24 @@
+{
+  "code_revision": "acf9122fe2bd1bcb3ea3bd788f469d805a48fafb",
+  "external_model_requests": 0,
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "passed": false
+  },
+  "make_check_passed": false,
+  "new_automation_created": false,
+  "related_regression": {
+    "includes_all_later_special_tests": false,
+    "passed": 1837,
+    "seconds": 82.09
+  },
+  "source_inputs_count": 32,
+  "special_regression": {
+    "passed": 110,
+    "seconds": 2.07
+  }
+}

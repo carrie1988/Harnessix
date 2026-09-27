@@ -1,0 +1,7 @@
+{
+  "code_revision": "acf9122fe2bd1bcb3ea3bd788f469d805a48fafb",
+  "current_ci_accepted": false,
+  "current_ci_status": "not_started_at_freeze",
+  "prior_success_is_current_acceptance": false,
+  "waiting_for_ci_per_local_commit": false
+}

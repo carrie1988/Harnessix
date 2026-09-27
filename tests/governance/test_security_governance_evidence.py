@@ -376,6 +376,44 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/trusted_actions/test_publication_recovery.py",
             },
         ),
+        (
+            "model-text-publication-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/attempt_accounting.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/model_text.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/app_server/service.py",
+                "src/harnessix/models/contracts.py",
+                "src/harnessix/product_config/runtime.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/sdk/agent_client.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/secrets/text_publication.py",
+                "src/harnessix/session/sqlite.py",
+                "tests/agent/test_model_publication_runtime.py",
+                "tests/agent/test_text_publication.py",
+                "tests/artifacts/test_binary_publication.py",
+                "tests/governance/test_security_governance_evidence.py",
+                "tests/product_config/test_publication_scope.py",
+                "uv.lock",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -755,3 +793,70 @@ def test_typed_binary_evidence_preserves_contracts_and_platform_release_boundari
         assert verification["full_regression"]["untracked_attack_draft_excluded"] is True
     else:
         assert verification["full_regression"]["is_acceptance"] is False
+
+
+def test_model_text_evidence_separates_new_publication_from_input_and_history_gaps():
+    bundle = ROOT / "docs/validation/model-text-publication-2026-09-28-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert (
+        facts["code_revision"]
+        == verification["code_revision"]
+        == review["code_revision"]
+        == ci["code_revision"]
+    )
+    assert facts["special_tests"] == 110 and facts["functional_new_tests"] == 66
+    assert facts["new_governance_tests"] == 2
+    for field in (
+        "whole_step_byte_and_work_budget",
+        "per_content_id_window_utf8",
+        "original_text_not_rewritten",
+        "safe_prefix_before_response_completion",
+        "actual_sdk_live_replay_sqlite_and_next_request_checked",
+        "event_batches_guarded_before_cas",
+        "main_and_summary_requests_guarded_before_provider",
+        "attempt_intent_precedes_transport",
+        "committed_usage_preserved_on_rejection",
+        "compaction_summary_rejection_prevents_activation",
+        "provider_and_guard_closed_on_cancel",
+        "configured_protection_missing_stream_capability_denied",
+    ):
+        assert facts[field] is True
+    for field in (
+        "original_public_schemas_changed",
+        "database_migration_added",
+        "readability_policy_relaxed",
+        "arbitrary_transformation_or_cross_content_inference_claimed",
+        "legacy_session_replay_authorization_complete",
+        "all_session_write_entries_guarded",
+        "cross_restart_publication_proof_complete",
+        "real_stdio_bytes_network_provider_or_three_platform_install_claimed",
+    ):
+        assert facts[field] is False
+    assert facts["new_package_dependency_edges"] == facts["new_dependency_cycles"] == []
+    old = facts["independent_clean_prior_revision_observation"]
+    new = facts["current_direct_model_observation"]
+    assert old["first_turn"] == "completed" and old["exposures"]["session_events"]
+    assert new["first_turn"] == "failed" and new["first_failure"] == "public_output_secret_leak"
+    assert new["second_turn"] == "completed" and not any(new["exposures"].values())
+    assert new["provider_requests"] == new["closed_streams"] == 2
+    assert old["real_model_requests"] == new["real_model_requests"] == 0
+    assert new["telemetry_span_count"] > 0
+    gap = facts["next_input_persistence_gap"]
+    assert gap["provider_requests"] == 0 and gap["failure_code"] == "public_output_secret_leak"
+    assert gap["input_persisted"] and gap["sdk_replay_contains_registered_value"]
+    assert gap["sqlite_files_contain_registered_value"]
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert review["current_ci_accepted"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert (
+        verification["external_model_requests"] == 0 and verification["make_check_passed"] is False
+    )
+    assert verification["license_gate"]["blocked_archive_count"] == 12
+    full = verification["full_regression"]
+    assert full["status"] in {"pending", "passed"}
+    if full["status"] == "passed":
+        assert full["tracked_inputs_unchanged_during_run"] is True
+        assert full["untracked_attack_draft_excluded"] is True
