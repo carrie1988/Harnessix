@@ -369,7 +369,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 raise
             self._publication.require_proof(row)
             lines = self._body(row, thread, ref)
-            await self._publication.check_body(row["body"])
+            await self._publication.check_body(row["body"], purpose=row["purpose"])
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
         selected, size = [], 0
@@ -428,7 +428,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
             self._publication.require_proof(row)
             lines = self._body(row, thread, stored)
-            await self._publication.check_body(row["body"])
+            await self._publication.check_body(row["body"], purpose=row["purpose"])
             if purpose == "artifact_page":
                 self._verify_page(thread, call_id, stored, lines)
             if omitted_field is not None:

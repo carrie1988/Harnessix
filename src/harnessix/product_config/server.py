@@ -247,6 +247,7 @@ async def _serve_product_stdio(
                     startup.actions.config,
                     artifact_workspace_scope=tools.workspace_scope,
                     recovery_config=recovery_action,
+                    output_redaction=public_scope,
                 ) as action_owner:
                     config_store.save_action_recovery_scan(action_owner.recovery_scan)
                     config_store.save_action_recovery_report(action_owner.recovery)

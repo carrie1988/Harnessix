@@ -11,8 +11,10 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.publication import (
     PUBLIC_PROTECTION_POLICY,
     PublicOutputProtection,
+    protect_binary_jsonl,
     protect_jsonl,
 )
+from harnessix.artifacts.binary_projection import decode_process_artifact
 
 
 class ArtifactPublicationGuard:
@@ -24,8 +26,16 @@ class ArtifactPublicationGuard:
     def policy(self) -> str | None:
         return PUBLIC_PROTECTION_POLICY if self.protection is not None else None
 
-    async def check_body(self, body: bytes) -> None:
-        await protect_jsonl(self.protection, body, CancelToken())
+    async def check_body(self, body: bytes, *, purpose: str = "tool_result") -> None:
+        if purpose in {"action_output", "process_output"}:
+            await protect_binary_jsonl(
+                self.protection,
+                body,
+                lambda data, checkpoint: decode_process_artifact(data, purpose, checkpoint),
+                CancelToken(),
+            )
+        else:
+            await protect_jsonl(self.protection, body, CancelToken())
 
     def require_proof(self, row: aiosqlite.Row) -> None:
         if self.protection is not None and (

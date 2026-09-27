@@ -14,6 +14,7 @@ from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.domain.models import utc_now
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.processes.owner_protocol import OutputRedactionSource
 from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
 from harnessix.product_config.action_catalog import ProductActionCatalog
 from harnessix.product_config.action_composition import (
@@ -84,12 +85,16 @@ class _ProductActionDependencies:
     probe_cache: dict[str, ProductProcessProfileProbeResult]
 
 
-def _process_supervisor(state_root: Path) -> ProcessSupervisor:
+def _process_supervisor(
+    state_root: Path, output_redaction: OutputRedactionSource | None = None
+) -> ProcessSupervisor:
     """选择当前平台唯一受支持的Process Owner，不提供Host降级执行路径。"""
 
     if os.name == "nt":
-        return WindowsProcessSupervisor(state_root / "process-owner")
-    return PosixProcessSupervisor(state_root / "process-owner")
+        return WindowsProcessSupervisor(
+            state_root / "process-owner", output_redaction=output_redaction
+        )
+    return PosixProcessSupervisor(state_root / "process-owner", output_redaction=output_redaction)
 
 
 def _probe_process_profiles(
@@ -124,6 +129,7 @@ async def _open_action_dependencies(
     state_root: Path,
     secrets: SecretProvider,
     *configs: ProductActionConfigV1,
+    output_redaction: OutputRedactionSource | None = None,
 ) -> AsyncIterator[_ProductActionDependencies]:
     """在单Owner窗口内打开Store、Process Supervisor并冻结Profile探测。"""
 
@@ -148,7 +154,9 @@ async def _open_action_dependencies(
         supervisor: ProcessSupervisor | None = None
         probe_cache: dict[str, ProductProcessProfileProbeResult] = {}
         if process_profiles:
-            supervisor = await resources.enter_async_context(_process_supervisor(state_root))
+            supervisor = await resources.enter_async_context(
+                _process_supervisor(state_root, output_redaction)
+            )
             profiles = tuple(process_profiles.values())
             results = await asyncio.to_thread(
                 _probe_process_profiles,
@@ -178,6 +186,7 @@ async def open_default_product_action_runtime(
     *,
     artifact_workspace_scope: str,
     recovery_config: ProductActionConfigV1 | None = None,
+    output_redaction: OutputRedactionSource | None = None,
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
     """持有全部Action资源，先初始化Session并结算旧Route，再发布候选目录。"""
 
@@ -193,6 +202,7 @@ async def open_default_product_action_runtime(
                 secrets,
                 checked_recovery,
                 checked_config,
+                output_redaction=output_redaction,
             ) as dependencies,
             AsyncExitStack() as protection,
         ):

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import io
 import sqlite3
+from contextlib import asynccontextmanager
 
 import pytest
 
@@ -39,6 +40,7 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
     path = write_config(tmp_path / "config.json", config)
     state = tmp_path / "state"
     selected = []
+    action_scopes = []
     held = []
     keys = []
     providers = []
@@ -83,6 +85,19 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
         finally:
             await client.close()
 
+    from harnessix.product_config.server import open_default_product_action_runtime
+
+    @asynccontextmanager
+    async def open_actions(*args, **kwargs):
+        action_scopes.append(kwargs["output_redaction"])
+        assert kwargs["output_redaction"] is selected[0]
+        assert CANARY.encode() in kwargs["output_redaction"].output_redaction_values()
+        async with open_default_product_action_runtime(*args, **kwargs) as runtime:
+            yield runtime
+
+    monkeypatch.setattr(
+        "harnessix.product_config.server.open_default_product_action_runtime", open_actions
+    )
     monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
     monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
     arguments = dict(
@@ -99,6 +114,7 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
         assert error.value.code == "product_provider_unavailable"
     else:
         await run_product_stdio(**arguments)
+        assert action_scopes == [selected[0]]
         assert keys == [("primary", CANARY), ("backup", "backup-original-model-key")]
         assert all(CANARY.encode() not in p.read_bytes() for p in state.rglob("*.db*"))
         with sqlite3.connect(state / "sessions.db") as db:
@@ -119,3 +135,23 @@ async def test_provider_reference_selection_does_not_capture_unused_profile(tmp_
     refs = provider_secret_references(snapshot, select_profile(snapshot, "backup"))
     assert [(r.name, r.version) for r in refs] == [("backup-api-key", "v2")]
     assert all(not hasattr(r, "target") for r in refs)
+
+
+async def test_process_dependencies_receive_same_model_protection_without_injection(tmp_path):
+    from harnessix.product_config.action_contracts import build_product_action_config
+    from harnessix.product_config.action_runtime import _open_action_dependencies
+    from tests.agent.test_publication import protected
+    from tests.product_config.test_process_action import _fake_engine, _NoSecrets, _profile
+
+    config = build_product_action_config(process_profiles=(_profile(_fake_engine(tmp_path)),))
+    with protected() as scope:
+        async with _open_action_dependencies(
+            tmp_path / "state", _NoSecrets(), config, output_redaction=scope
+        ) as dependencies:
+            assert dependencies.supervisor is not None
+            assert dependencies.supervisor._output_redaction is scope
+            assert dependencies.supervisor._output_redaction.output_redaction_values() == (
+                CANARY.encode(),
+            )
+            assert all(not item.verified for item in dependencies.probe_cache.values())
+            # 实际Supervisor已装配；无真实引擎的Profile仍不进入执行目录或退回Host。

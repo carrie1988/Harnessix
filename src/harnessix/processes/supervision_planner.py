@@ -24,6 +24,7 @@ from harnessix.processes.supervision_contracts import (
     ProcessTerminal,
     empty_process_output,
 )
+from harnessix.secrets.provider import ResolvedSecretEnvironment
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
@@ -222,3 +223,42 @@ def prepare_process_lease(
         )
     except (ValidationError, ValueError, TypeError):
         raise KernelError("process_lease_invalid", "Process Lease不符合契约") from None
+
+
+def build_host_process_binding(
+    plan: ExecutionPlanV2,
+    spec: ProcessSpec,
+    capability: ProcessCapabilityProbe,
+    environment: Mapping[str, str],
+    intent_arguments: Mapping[str, JsonValue] | None,
+) -> ProcessLaunchBinding:
+    return build_process_launch_binding(
+        plan,
+        spec,
+        capability,
+        kind="host",
+        environment=dict(environment),
+        intent_arguments=intent_arguments,
+    )
+
+
+def materialize_owner_environment(
+    plan: ExecutionPlanV2,
+    binding: ProcessLaunchBinding,
+    environment: Mapping[str, str],
+    secrets: ResolvedSecretEnvironment | None,
+    platform: PlatformKind,
+) -> tuple[dict[str, str], tuple[str, ...]]:
+    """原批准环境与注入绑定精确匹配；公开保护值不得混入目标环境。"""
+    checked_environment = dict(environment)
+    if bind_environment(checked_environment, platform=platform) != binding.environment:
+        raise KernelError("execution_plan_stale", "Process物化环境与启动绑定不一致")
+    secret_values = {} if secrets is None else secrets.as_text()
+    actual_bindings = () if secrets is None else secrets.bindings()
+    expected_bindings = tuple(
+        sorted((binding.target, binding.name, binding.version) for binding in plan.secrets)
+    )
+    if actual_bindings != expected_bindings or set(checked_environment) & set(secret_values):
+        raise KernelError("secret_binding_mismatch", "Secret注入与Execution Plan不一致")
+    checked_environment.update(secret_values)
+    return checked_environment, tuple(sorted(secret_values))

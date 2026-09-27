@@ -27,8 +27,12 @@ from harnessix.execution.contracts import (
     ExecutionPlanV2,
     execution_is_approved,
 )
-from harnessix.execution.planner import bind_environment
-from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwnerStart
+from harnessix.processes.owner_protocol import (
+    OutputRedactionSource,
+    ProcessOwnerCommand,
+    ProcessOwnerStart,
+    protected_owner_start,
+)
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt, read_owner_receipt
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
@@ -37,7 +41,10 @@ from harnessix.processes.supervision_contracts import (
     ProcessSpec,
 )
 from harnessix.processes.supervision_planner import (
-    build_process_launch_binding,
+    build_host_process_binding as _host_binding,
+)
+from harnessix.processes.supervision_planner import (
+    materialize_owner_environment,
     prepare_process_lease,
 )
 from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
@@ -50,23 +57,6 @@ from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 _TERMINAL_STATES = frozenset({"exited", "failed", "unknown"})
 _WINDOWS_SPAWN_LOCK = threading.Lock()
-
-
-def _host_binding(
-    plan: ExecutionPlanV2,
-    spec: ProcessSpec,
-    capability: ProcessCapabilityProbe,
-    environment: Mapping[str, str],
-    intent_arguments: Mapping[str, JsonValue] | None,
-) -> ProcessLaunchBinding:
-    return build_process_launch_binding(
-        plan,
-        spec,
-        capability,
-        kind="host",
-        environment=dict(environment),
-        intent_arguments=intent_arguments,
-    )
 
 
 def _validated_lease(lease: ProcessLease, **changes: object) -> ProcessLease:
@@ -389,7 +379,13 @@ class _ProcessObservation:
 
 
 class PosixProcessSupervisor(_ProcessObservation):
-    def __init__(self, state_root: str | Path, *, terminate_grace_seconds: float = 0.5) -> None:
+    def __init__(
+        self,
+        state_root: str | Path,
+        *,
+        terminate_grace_seconds: float = 0.5,
+        output_redaction: OutputRedactionSource | None = None,
+    ) -> None:
         if os.name != "posix":
             raise KernelError("process_platform_unsupported", "POSIX Process Supervisor不可用")
         if not 0 <= terminate_grace_seconds <= 5:
@@ -398,6 +394,7 @@ class PosixProcessSupervisor(_ProcessObservation):
         self._runs = _safe_state_root(self._root / "runs")
         self._store = SQLiteProcessLeaseStore(self._root / "process-leases.db")
         self._terminate_grace = terminate_grace_seconds
+        self._output_redaction = output_redaction
         self._platform: Literal["posix", "windows"] = "posix"
         self._capability = probe_posix_process_capability()
         self._handles: dict[UUID, SupervisedProcess] = {}
@@ -502,17 +499,9 @@ class PosixProcessSupervisor(_ProcessObservation):
                 raise KernelError("process_lease_conflict", "Process ID已绑定其他执行计划")
             raise KernelError("process_already_exists", "Process已经创建；禁止自动重放")
         verify_workspace_snapshot(plan.workspace, workspace)
-        checked_environment = dict(environment)
-        if bind_environment(checked_environment, platform=self._platform) != binding.environment:
-            raise KernelError("execution_plan_stale", "Process物化环境与启动绑定不一致")
-        secret_values = {} if secrets is None else secrets.as_text()
-        actual_bindings = () if secrets is None else secrets.bindings()
-        expected_bindings = tuple(
-            sorted((binding.target, binding.name, binding.version) for binding in plan.secrets)
+        checked_environment, secret_names = materialize_owner_environment(
+            plan, binding, environment, secrets, self._platform
         )
-        if actual_bindings != expected_bindings or set(checked_environment) & set(secret_values):
-            raise KernelError("secret_binding_mismatch", "Secret注入与Execution Plan不一致")
-        checked_environment.update(secret_values)
         lease = prepare_process_lease(plan, spec, capability, binding=binding)
         owner_identity = os.urandom(32).hex()
         try:
@@ -525,7 +514,7 @@ class PosixProcessSupervisor(_ProcessObservation):
                     Path(workspace) / ("" if plan.workspace.cwd == "." else plan.workspace.cwd)
                 ),
                 environment=checked_environment,
-                secret_names=tuple(sorted(secret_values)),
+                secret_names=secret_names,
                 terminal=spec.terminal,
                 stdin=spec.stdin,
                 deadline=lease.deadline,
@@ -537,6 +526,7 @@ class PosixProcessSupervisor(_ProcessObservation):
             )
         except (ValidationError, ValueError, TypeError):
             raise KernelError("process_spec_invalid", "Process owner启动请求无效") from None
+        owner_request = protected_owner_start(request, self._output_redaction)
         self._store.create(lease)
         run_directory = self._runs / str(spec.process_id)
         try:
@@ -559,7 +549,7 @@ class PosixProcessSupervisor(_ProcessObservation):
             owner = await asyncio.to_thread(self._spawn_owner, read_fd, run_directory)
             os.close(read_fd)
             read_fd = -1
-            body = request.model_dump_json(warnings="error").encode("utf-8") + b"\n"
+            body = owner_request.model_dump_json(warnings="error").encode("utf-8") + b"\n"
             await asyncio.to_thread(SupervisedProcess._write_all, write_fd, body)
         except (OSError, ValueError, subprocess.SubprocessError):
             if owner is not None:
@@ -690,7 +680,13 @@ class PosixProcessSupervisor(_ProcessObservation):
 
 
 class WindowsProcessSupervisor(PosixProcessSupervisor):
-    def __init__(self, state_root: str | Path, *, terminate_grace_seconds: float = 0.5) -> None:
+    def __init__(
+        self,
+        state_root: str | Path,
+        *,
+        terminate_grace_seconds: float = 0.5,
+        output_redaction: OutputRedactionSource | None = None,
+    ) -> None:
         if os.name != "nt":
             raise KernelError("process_platform_unsupported", "Windows Process Supervisor不可用")
         if not 0 <= terminate_grace_seconds <= 5:
@@ -699,6 +695,7 @@ class WindowsProcessSupervisor(PosixProcessSupervisor):
         self._runs = _safe_state_root(self._root / "runs")
         self._store = SQLiteProcessLeaseStore(self._root / "process-leases.db")
         self._terminate_grace = terminate_grace_seconds
+        self._output_redaction = output_redaction
         self._platform = "windows"
         self._capability = probe_windows_process_capability()
         self._handles = {}

@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 from collections.abc import Sequence
 from dataclasses import replace
@@ -55,6 +56,7 @@ from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActio
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from tests.agent.helpers import answer
+from tests.agent.test_publication import CANARY, protected
 
 
 class _NoSecrets:
@@ -550,8 +552,10 @@ def test_product_composition_omits_unverified_profile_without_host_fallback(
 
 
 @pytest.mark.skipif(os.name != "posix", reason="固定Container Profile集成使用POSIX Owner能力")
+@pytest.mark.parametrize("case", ["safe", "leak1", "leak2", "leak_split"])
 async def test_product_composition_executes_approved_profile_and_publishes_output_once(
     tmp_path: Path,
+    case: str,
 ) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -565,118 +569,146 @@ async def test_product_composition_executes_approved_profile_and_publishes_outpu
             probe_runner=_probe_runner,
         )
         assert probe.verified is not None
-        runtime = _TerminalRuntime(probe.verified.runtime.capability)
+        payload = (
+            b"tests passed\n"
+            if case == "safe"
+            else b"x" * {"leak1": 1, "leak2": 2, "leak_split": 12280}[case]
+            + CANARY.encode()
+            + b"\n"
+        )
+        runtime = _TerminalRuntime(probe.verified.runtime.capability, stdout=payload)
         verified = replace(probe.verified, runtime=cast(Any, runtime))
 
-    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
-    confirmation_lost = False
+    with protected() as scope:
+        sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+        confirmation_lost = False
 
-    def lose_first_confirmation(point: str) -> None:
-        nonlocal confirmation_lost
-        if point == "action_output.after_commit" and not confirmation_lost:
-            confirmation_lost = True
-            raise OSError("模拟Action输出提交确认丢失")
+        def lose_first_confirmation(point: str) -> None:
+            nonlocal confirmation_lost
+            if point == "action_output.after_commit" and not confirmation_lost:
+                confirmation_lost = True
+                raise OSError("模拟Action输出提交确认丢失")
 
-    artifacts = SQLiteArtifactStore(sessions, fault=lose_first_confirmation)
-    environment = build_fixed_product_action_environment(workspace)
-    plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
-    audit = SQLiteActionAuditStore(tmp_path / "audit.db")
-    transactions = SQLiteWorkspaceTransactionStore(tmp_path / "delivery")
-    leases = WorkspaceLeaseStore(tmp_path / "leases.db")
-    router = TrustedActionRouter(
-        plans=plans,
-        audit=audit,
-        workspace_root=environment.workspace_root,
-    )
-    action = [
-        ResponseStarted(response_id="profile-response"),
-        ToolCallCompleted(
-            call_id="profile-call",
-            tool="run_profile.unit-tests",
-            arguments={"profile": "unit-tests", "selectors": ["tests/unit"]},
-        ),
-        ResponseCompleted(finish_reason="tool_calls"),
-    ]
-    provider = ScriptedProvider([action, answer("测试完成")])
-
-    async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
-        composition = build_product_action_composition(
-            build_product_action_config(
-                workspace_patch_enabled=False,
-                process_profiles=(profile,),
-            ),
-            environment,
-            router,
-            transactions,
-            leases,
-            artifacts,
-            artifact_workspace_scope=tools.workspace_scope,
-            process_probes=(
-                ProductProcessProfileProbeResult(
-                    profile=profile,
-                    reason_code="verified",
-                    verified=verified,
-                ),
-            ),
-            secrets=secrets,
+        artifacts = SQLiteArtifactStore(
+            sessions, fault=lose_first_confirmation, public_output_protection=scope
         )
-        assert composition.gateway is not None
-        assert [item.name for item in composition.catalog.definitions()] == [
-            "run_profile.unit-tests"
+        environment = build_fixed_product_action_environment(workspace)
+        plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+        audit = SQLiteActionAuditStore(tmp_path / "audit.db")
+        transactions = SQLiteWorkspaceTransactionStore(tmp_path / "delivery")
+        leases = WorkspaceLeaseStore(tmp_path / "leases.db")
+        router = TrustedActionRouter(
+            plans=plans,
+            audit=audit,
+            workspace_root=environment.workspace_root,
+        )
+        action = [
+            ResponseStarted(response_id="profile-response"),
+            ToolCallCompleted(
+                call_id="profile-call",
+                tool="run_profile.unit-tests",
+                arguments={"profile": "unit-tests", "selectors": ["tests/unit"]},
+            ),
+            ResponseCompleted(finish_reason="tool_calls"),
         ]
-        async with AgentRuntime(
-            sessions,
-            provider,
-            scoped_tools=tools,
-            artifacts=artifacts,
-            trusted_actions=composition.gateway,
-        ) as agent:
-            thread = await agent.create_thread(str(workspace))
-            waiting = await agent.run_turn(
-                thread.thread_id,
-                "运行单元测试",
-                request_id="run-profile",
-            )
-            approval = next(
-                item.content
-                for item in waiting.items
-                if isinstance(item.content, TrustedActionApprovalRequestContent)
-            )
-            assert waiting.status is TurnStatus.WAITING_APPROVAL
-            assert approval.presentation == "process" and approval.diff_artifact is None
-            await agent.reply_approval(
-                thread.thread_id,
-                waiting.turn_id,
-                approval.approval_id,
-                fingerprint=approval.request_fingerprint,
-                decision=ApprovalDecision(
-                    outcome=ApprovalOutcome.APPROVED,
-                    actor="process-reviewer",
-                ),
-            )
-            completed = await agent.resume_turn(thread.thread_id, waiting.turn_id)
-            result = next(
-                item.content
-                for item in completed.items
-                if isinstance(item.content, ToolResultContent)
-            )
-            assert completed.status is TurnStatus.COMPLETED
-            assert result.outcome == "succeeded"
-            assert isinstance(result.output, dict)
-            artifact = result.output["artifact"]
-            page = await artifacts.read(
-                thread.thread_id,
-                tools.workspace_scope,
-                artifact["artifact_id"],
-                limit=200,
-            )
-            assert "tests passed" not in result.output
-            document = parse_trusted_process_output(page.text.encode())
-            assert b"".join(item.data() for item in document.chunks) == b"tests passed\n"
+        provider = ScriptedProvider([action, answer("测试完成")])
 
-    assert confirmation_lost
-    assert runtime.run_calls == 1 and runtime.reconcile_calls == 0
-    plans.close()
-    audit.close()
-    transactions.close()
-    leases.close()
+        async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
+            composition = build_product_action_composition(
+                build_product_action_config(
+                    workspace_patch_enabled=False,
+                    process_profiles=(profile,),
+                ),
+                environment,
+                router,
+                transactions,
+                leases,
+                artifacts,
+                artifact_workspace_scope=tools.workspace_scope,
+                process_probes=(
+                    ProductProcessProfileProbeResult(
+                        profile=profile,
+                        reason_code="verified",
+                        verified=verified,
+                    ),
+                ),
+                secrets=secrets,
+            )
+            assert composition.gateway is not None
+            assert [item.name for item in composition.catalog.definitions()] == [
+                "run_profile.unit-tests"
+            ]
+            async with AgentRuntime(
+                sessions,
+                provider,
+                scoped_tools=tools,
+                artifacts=artifacts,
+                trusted_actions=composition.gateway,
+                public_output_protection=scope,
+            ) as agent:
+                thread = await agent.create_thread(str(workspace))
+                waiting = await agent.run_turn(
+                    thread.thread_id,
+                    "运行单元测试",
+                    request_id="run-profile",
+                )
+                approval = next(
+                    item.content
+                    for item in waiting.items
+                    if isinstance(item.content, TrustedActionApprovalRequestContent)
+                )
+                assert waiting.status is TurnStatus.WAITING_APPROVAL
+                assert approval.presentation == "process" and approval.diff_artifact is None
+                await agent.reply_approval(
+                    thread.thread_id,
+                    waiting.turn_id,
+                    approval.approval_id,
+                    fingerprint=approval.request_fingerprint,
+                    decision=ApprovalDecision(
+                        outcome=ApprovalOutcome.APPROVED,
+                        actor="process-reviewer",
+                    ),
+                )
+                completed = await agent.resume_turn(thread.thread_id, waiting.turn_id)
+                result = next(
+                    item.content
+                    for item in completed.items
+                    if isinstance(item.content, ToolResultContent)
+                )
+                assert completed.status is (
+                    TurnStatus.COMPLETED if case == "safe" else TurnStatus.FAILED
+                )
+                assert CANARY not in completed.model_dump_json()
+                assert all(CANARY not in item.model_dump_json() for item in provider.requests)
+                assert runtime.lease is not None
+                assert router.status(runtime.lease.plan_id).state == "succeeded"
+                if case == "safe":
+                    assert result.outcome == "succeeded" and isinstance(result.output, dict)
+                    artifact = result.output["artifact"]
+                    page = await artifacts.read(
+                        thread.thread_id, tools.workspace_scope, artifact["artifact_id"], limit=200
+                    )
+                    document = parse_trusted_process_output(page.text.encode())
+                    assert b"".join(item.data() for item in document.chunks) == payload
+                    assert confirmation_lost and len(provider.requests) == 2
+                else:
+                    assert result.output is None and result.trusted_action.state == "succeeded"
+                    assert result.trusted_action.artifact_sha256 is None
+                    assert completed.error.code == "public_output_secret_leak"
+                    assert not confirmation_lost and len(provider.requests) == 1
+                    events_before = router.events(runtime.lease.plan_id)
+                    assert await agent.resume_turn(thread.thread_id, waiting.turn_id) == completed
+                    assert router.events(runtime.lease.plan_id) == events_before
+
+        assert runtime.run_calls == 1 and runtime.reconcile_calls == 0
+        with sqlite3.connect(sessions.path) as db:
+            assert db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0] == (
+                1 if case == "safe" else 0
+            )
+        files = await asyncio.to_thread(lambda: list(tmp_path.glob("*.db*")))
+        assert all(CANARY.encode() not in path.read_bytes() for path in files)
+
+        plans.close()
+        audit.close()
+        transactions.close()
+        leases.close()

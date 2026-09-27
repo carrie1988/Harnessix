@@ -6,6 +6,7 @@ import hashlib
 import os
 from pathlib import Path
 
+from harnessix.processes.owner_protocol import ProcessOwnerStart
 from harnessix.processes.supervision_contracts import ProcessOutputObservation
 from harnessix.secrets.redaction import StreamingSecretRedactor
 
@@ -17,8 +18,8 @@ class CapturedProcessOutput:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
-        self._fd = os.open(path, flags, 0o600)
         self._redactor = StreamingSecretRedactor(secrets)
+        self._fd = os.open(path, flags, 0o600)
         self._digest = hashlib.sha256()
         self._persisted_digest = hashlib.sha256()
         self._observed = 0
@@ -76,3 +77,16 @@ class CapturedProcessOutput:
             truncated=self._persisted < self._observed,
             eof=self.eof,
         )
+
+
+def capture_process_streams(
+    root: Path, request: ProcessOwnerStart, protected: tuple[bytes, ...]
+) -> tuple[CapturedProcessOutput, CapturedProcessOutput]:
+    """双平台共用原捕获策略；第二流创建失败时回收第一流FD。"""
+    values = (*protected, *(request.environment[name].encode() for name in request.secret_names))
+    stdout = CapturedProcessOutput(root / "stdout.bin", values)
+    try:
+        return stdout, CapturedProcessOutput(root / "stderr.bin", values)
+    except BaseException:
+        stdout.close()
+        raise

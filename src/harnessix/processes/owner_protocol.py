@@ -6,11 +6,12 @@ import base64
 import os
 import re
 from datetime import datetime
-from typing import Literal, Self
+from typing import Annotated, Literal, Protocol, Self
 from uuid import UUID
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, TypeAdapter, field_validator, model_validator
 
+from harnessix.agent.errors import KernelError
 from harnessix.processes.supervision_contracts import (
     MAX_PROCESS_ARGUMENT_BYTES,
     MAX_PROCESS_INPUT_BYTES,
@@ -20,6 +21,8 @@ from harnessix.processes.supervision_contracts import (
     ProcessTerminal,
     SupervisionContract,
 )
+from harnessix.secrets.provider import MAX_SECRET_BYTES
+from harnessix.secrets.redaction import secret_patterns
 from harnessix.tools.contracts import Revision
 
 MAX_OWNER_CONTROL_FRAME_BYTES = 1024 * 1024
@@ -78,6 +81,87 @@ class ProcessOwnerStart(SupervisionContract):
         ):
             raise ValueError("Process owner环境无效")
         return self
+
+
+class OutputRedactionSource(Protocol):
+    """持久前保护材料的只读结构端口；不存在环境注入target。"""
+
+    def output_redaction_values(self) -> tuple[bytes, ...]: ...
+
+
+class ProcessOwnerStartV2(SupervisionContract):
+    """私有控制管道的新封套，保留原v1 Start字段及目标环境不变。"""
+
+    spec_version: Literal["harnessix.process-owner-start/v2"] = "harnessix.process-owner-start/v2"
+    start: ProcessOwnerStart = Field(repr=False)
+    output_redaction_base64: tuple[
+        Annotated[str, Field(min_length=8, max_length=4 * ((MAX_SECRET_BYTES + 2) // 3))], ...
+    ] = Field(max_length=32, repr=False)
+
+    def output_values(self) -> tuple[bytes, ...]:
+        """解码限定材料，保持模型保护值与目标环境严格隔离。"""
+        return tuple(
+            base64.b64decode(value, validate=True) for value in self.output_redaction_base64
+        )
+
+    @model_validator(mode="after")
+    def bounded_protection(self) -> Self:
+        # 在Base64分配前限制整个编码池，允许各项规范填充的最多两字节余量。
+        encoded_limit = 4 * ((MAX_SECRET_BYTES + 2 * len(self.output_redaction_base64)) // 3)
+        if sum(map(len, self.output_redaction_base64)) > encoded_limit:
+            raise ValueError("Process保护编码池超过上限")
+        values = self.output_values()
+        if (
+            sum(map(len, values)) > MAX_SECRET_BYTES
+            or any(len(value) < 4 or b"\0" in value for value in values)
+            or tuple(base64.b64encode(value).decode("ascii") for value in values)
+            != self.output_redaction_base64
+        ):
+            raise ValueError("Process持久前保护材料无效")
+        injected = tuple(self.start.environment[name].encode() for name in self.start.secret_names)
+        try:
+            secret_patterns((*injected, *values))
+        except KernelError:
+            raise ValueError("Process联合保护模式超过上限") from None
+        return self
+
+
+def protected_owner_start(
+    start: ProcessOwnerStart, source: OutputRedactionSource | None
+) -> ProcessOwnerStart | ProcessOwnerStartV2:
+    """父进程在创建Lease及Owner前检查快照和完整封套；无保护时保留v1字节合同。"""
+    if source is None:
+        return start
+    try:
+        values = source.output_redaction_values()
+        if (
+            type(values) is not tuple
+            or len(values) > 32
+            or any(type(value) is not bytes for value in values)
+            or sum(map(len, values)) > MAX_SECRET_BYTES
+        ):
+            raise ValueError
+        packet = ProcessOwnerStartV2(
+            start=start,
+            output_redaction_base64=tuple(base64.b64encode(value).decode() for value in values),
+        )
+        if len(packet.model_dump_json().encode()) + 1 > MAX_OWNER_CONTROL_FRAME_BYTES:
+            raise ValueError
+        return packet
+    except Exception:
+        raise KernelError(
+            "process_output_protection_unavailable", "Process缺少有效持久前保护能力"
+        ) from None
+
+
+def decode_owner_start(body: bytes) -> tuple[ProcessOwnerStart, tuple[bytes, ...]]:
+    """显式版本分派；不接受旧Owner静默忽略的新保护字段。"""
+    packet: ProcessOwnerStart | ProcessOwnerStartV2 = TypeAdapter(
+        Annotated[ProcessOwnerStart | ProcessOwnerStartV2, Field(discriminator="spec_version")]
+    ).validate_json(body)
+    if isinstance(packet, ProcessOwnerStartV2):
+        return packet.start, packet.output_values()
+    return packet, ()
 
 
 class ProcessOwnerCommand(SupervisionContract):

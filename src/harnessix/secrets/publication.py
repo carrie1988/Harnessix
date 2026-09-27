@@ -11,6 +11,7 @@ from typing import Protocol, Self
 from pydantic import JsonValue
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.publication import BinaryStreamDecoder
 from harnessix.execution.contracts import SecretVersionBinding
 from harnessix.secrets.provider import MAX_SECRET_BYTES, SecretMaterial, SecretProvider
 from harnessix.secrets.redaction import secret_patterns
@@ -96,6 +97,13 @@ class _ScanBudget:
             encoded = text.encode("utf-8")
         except UnicodeError:
             raise KernelError("trusted_action_output_mismatch", "公开结果类型无效") from None
+        self.scan_bytes(encoded, patterns, account_size=account_size)
+
+    def scan_bytes(
+        self, encoded: bytes, patterns: tuple[bytes, ...], *, account_size: bool = True
+    ) -> None:
+        """二进制流无需UTF8解码；原JSON和解码字节共用工作量计数。"""
+        remaining = MAX_SCAN_BYTES - self.size if account_size else MAX_SCAN_BYTES
         if account_size:
             self.size += len(encoded)
         if len(encoded) > remaining or self.size > MAX_SCAN_BYTES:
@@ -160,7 +168,9 @@ def _unique_object(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
     return result
 
 
-def _scan_jsonl(body: bytes, patterns: tuple[bytes, ...], checkpoint: Callable[[], None]) -> None:
+def _scan_jsonl(
+    body: bytes, patterns: tuple[bytes, ...], checkpoint: Callable[[], None]
+) -> _ScanBudget:
     if type(body) is not bytes or len(body) > MAX_SCAN_BYTES:
         _ScanBudget.reject()
     budget = _ScanBudget(checkpoint, max_nodes=MAX_SCAN_BYTES)
@@ -175,6 +185,55 @@ def _scan_jsonl(body: bytes, patterns: tuple[bytes, ...], checkpoint: Callable[[
     except (ValueError, UnicodeError, RecursionError):
         raise KernelError("trusted_action_output_mismatch", "公开结果类型无效") from None
     checkpoint()
+    return budget
+
+
+def _assert_binary_jsonl(
+    body: bytes,
+    patterns: tuple[bytes, ...],
+    decoder: BinaryStreamDecoder,
+    checkpoint: Callable[[], None],
+) -> None:
+    """在已检查原JSON预算内调用受信解码桥，二进制字节不要求UTF8。"""
+    budget = _scan_jsonl(body, patterns, checkpoint)
+    checkpoint()
+    streams = decoder(body, checkpoint)
+    checkpoint()
+    if (
+        type(streams) is not tuple
+        or len(streams) > 2
+        or any(type(stream) is not bytes for stream in streams)
+        or sum(map(len, streams)) > MAX_SCAN_BYTES
+    ):
+        _ScanBudget.reject()
+    for stream in streams:
+        budget.scan_bytes(stream, patterns, account_size=False)
+    checkpoint()
+
+
+def _capture_scope_materials(
+    bindings: Sequence[SecretVersionReference], provider: SecretProvider
+) -> dict[str, SecretMaterial]:
+    """按身份去重并限制原材料池；任何捕获失败都清零已接收材料。"""
+    materials: dict[str, SecretMaterial] = {}
+    total = 0
+    try:
+        for binding in bindings:
+            existing = materials.get(binding.name)
+            if existing is not None:
+                if existing.version != binding.version:
+                    raise _unavailable()
+                continue
+            if len(materials) >= MAX_SCOPE_NAMES:
+                raise _unavailable()
+            material = _capture_material(provider, binding, MAX_SECRET_BYTES - total)
+            materials[binding.name] = material
+            total += len(material.value)
+        return materials
+    except BaseException:
+        for material in materials.values():
+            material.clear()
+        raise
 
 
 class SecretPublicationScope:
@@ -188,19 +247,8 @@ class SecretPublicationScope:
         self._closed = False
         if len(bindings) > MAX_SCOPE_BINDINGS:
             raise _unavailable()
-        total = 0
         try:
-            for binding in bindings:
-                existing = self._materials.get(binding.name)
-                if existing is not None:
-                    if existing.version != binding.version:
-                        raise _unavailable()
-                    continue
-                if len(self._materials) >= MAX_SCOPE_NAMES:
-                    raise _unavailable()
-                material = _capture_material(provider, binding, MAX_SECRET_BYTES - total)
-                self._materials[binding.name] = material
-                total += len(material.value)
+            self._materials = _capture_scope_materials(bindings, provider)
             self._patterns = secret_patterns(
                 tuple(bytes(m.value) for m in self._materials.values())
             )
@@ -247,6 +295,18 @@ class SecretPublicationScope:
         """检查全部原始JSONL与解码键值；仅预览不能授权Artifact全文。"""
         self._ensure_open()
         _scan_jsonl(body, self._patterns, checkpoint)
+
+    def assert_public_binary_jsonl(
+        self, body: bytes, decoder: BinaryStreamDecoder, *, checkpoint: Callable[[], None]
+    ) -> None:
+        """原JSON和正式解码双流共享预算，检查同一流跨Chunk值。"""
+        self._ensure_open()
+        _assert_binary_jsonl(body, self._patterns, decoder, checkpoint)
+
+    def output_redaction_values(self) -> tuple[bytes, ...]:
+        """仅提供持久前保护原值副本；不授予目标进程任何环境注入权限。"""
+        self._ensure_open()
+        return tuple(bytes(material.value) for material in self._materials.values())
 
     def close(self) -> None:
         """幂等清零可变材料并丢弃模式；不承诺Python不可变副本已被完全擦除。"""

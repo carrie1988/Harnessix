@@ -99,7 +99,7 @@ async def _check_entry(
         raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
     store._publication.require_proof(record)  # noqa: SLF001
     lines = store._body(record, thread, stored)  # noqa: SLF001
-    await store._publication.check_body(record["body"])  # noqa: SLF001
+    await store._publication.check_body(record["body"], purpose=record["purpose"])  # noqa: SLF001
     if entry.purpose == "artifact_page":
         store._verify_page(thread, entry.call_id, stored, lines)  # noqa: SLF001
     if entry.omitted_field is not None:

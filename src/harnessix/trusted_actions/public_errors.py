@@ -70,6 +70,17 @@ _ARTIFACT_PUBLICATION_ERRORS = {
     "approval_mismatch": "Action Artifact发布缺少匹配批准",
     "tool_output_too_large": "Action Artifact引用超过输出上限",
 }
+# 仅固定公开保护拒绝码可在效果已验真的恢复中省略正文；不授权任何Artifact。
+PUBLIC_OUTPUT_REJECTIONS = frozenset(
+    (
+        "public_output_secret_leak",
+        "public_output_secret_unavailable",
+        "public_output_limit",
+        "public_output_timeout",
+        "public_output_protection_failed",
+        "public_output_binary_capability_missing",
+    )
+)
 _GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
     "context": {},
     "review": {
@@ -79,6 +90,7 @@ _GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
     },
     "output": {
         **_ARTIFACT_PUBLICATION_ERRORS,
+        **dict.fromkeys(PUBLIC_OUTPUT_REJECTIONS, "公开结果未通过保护校验"),
         "trusted_action_output_mismatch": "Action输出与审计终态不匹配",
         "trusted_action_output_limit": "Action输出投影超过资源上限",
         "trusted_action_output_timeout": "Action输出投影超时",

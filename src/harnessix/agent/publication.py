@@ -15,11 +15,21 @@ from harnessix.agent.errors import KernelError
 PUBLIC_PROTECTION_POLICY = "harnessix.public-output-protection/v1"
 PUBLIC_PROTECTION_TIMEOUT = 10.0
 
+BinaryStreamDecoder = Callable[[bytes, Callable[[], None]], tuple[bytes, ...]]
+
 
 class PublicOutputProtection(Protocol):
     def assert_public_json(self, value: JsonValue, *, checkpoint: Callable[[], None]) -> None: ...
 
     def assert_public_jsonl(self, body: bytes, *, checkpoint: Callable[[], None]) -> None: ...
+
+
+class PublicBinaryOutputProtection(Protocol):
+    """原JSONL和正式解码双流共享同一预算；解码器由受信Artifact层提供。"""
+
+    def assert_public_binary_jsonl(
+        self, body: bytes, decoder: BinaryStreamDecoder, *, checkpoint: Callable[[], None]
+    ) -> None: ...
 
 
 async def _protect(check: Callable[[Callable[[], None]], None], cancel: CancelToken) -> None:
@@ -50,6 +60,7 @@ async def _protect(check: Callable[[Callable[[], None]], None], cancel: CancelTo
             "trusted_action_secret_unavailable": "public_output_secret_unavailable",
             "trusted_action_output_limit": "public_output_limit",
             "public_output_timeout": "public_output_timeout",
+            "public_output_binary_capability_missing": "public_output_binary_capability_missing",
         }.get(error.code, "public_output_protection_failed")
         raise KernelError(code, "公开结果未通过保护校验") from None
     except Exception:
@@ -72,3 +83,19 @@ async def protect_jsonl(
         await _protect(
             lambda checkpoint: protection.assert_public_jsonl(body, checkpoint=checkpoint), cancel
         )
+
+
+async def protect_binary_jsonl(
+    protection: PublicOutputProtection | None,
+    body: bytes,
+    decoder: BinaryStreamDecoder,
+    cancel: CancelToken,
+) -> None:
+    """已知二进制输出必须显式具备解码保护能力，不能静默降级为字符串扫描。"""
+    if protection is not None:
+        method = getattr(protection, "assert_public_binary_jsonl", None)
+        if not callable(method):
+            raise KernelError(
+                "public_output_binary_capability_missing", "公开结果缺少二进制保护能力"
+            )
+        await _protect(lambda checkpoint: method(body, decoder, checkpoint=checkpoint), cancel)

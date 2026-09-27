@@ -30,7 +30,10 @@ from harnessix.trusted_actions.output_budget import (
     bounded_projection,
     projection_checkpointer,
 )
-from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
+from harnessix.trusted_actions.public_errors import (
+    PUBLIC_OUTPUT_REJECTIONS,
+    sanitize_gateway_exception,
+)
 from harnessix.trusted_actions.public_outcomes import (
     normalize_failure_outcome,
     public_success_schema,
@@ -139,6 +142,7 @@ async def terminal_result(
     origin: Literal["execution", "recovery"],
     approval: TrustedActionApprovalRequestContent | None = None,
     descriptor: ToolDescriptor | None = None,
+    metadata_only_on_rejection: bool = False,
 ) -> ToolResultContent:
     """核对Router终态摘要后，由配置的Owner重建正文并发布引用。"""
 
@@ -170,19 +174,32 @@ async def terminal_result(
             origin=origin,
             approval=approval,
         )
-    projected = await _project_output(
-        provider,
-        route,
-        thread,
-        turn,
-        call,
-        outcome,
-        cancel,
-        output_sha256=event.output_sha256,
-        artifact_sha256=event.artifact_sha256,
-        descriptor=descriptor,
-        secret_scope=getattr(state, "secret_scope", None),
-    )
+    try:
+        projected = await _project_output(
+            provider,
+            route,
+            thread,
+            turn,
+            call,
+            outcome,
+            cancel,
+            output_sha256=event.output_sha256,
+            artifact_sha256=event.artifact_sha256,
+            descriptor=descriptor,
+            secret_scope=getattr(state, "secret_scope", None),
+        )
+    except KernelError as error:
+        if not metadata_only_on_rejection or error.code not in PUBLIC_OUTPUT_REJECTIONS:
+            raise
+        # 原Router终态和双Hash已在上方验真；拒绝正文不等于效果未知，也不能再次执行。
+        return build_result(
+            route,
+            call,
+            outcome.model_copy(update={"output": None, "artifact_sha256": None}),
+            origin=origin,
+            approval=approval,
+        )
+
     return build_result(
         route,
         call,

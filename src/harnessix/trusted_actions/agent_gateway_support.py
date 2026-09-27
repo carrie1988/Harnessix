@@ -350,6 +350,7 @@ async def recover_action(
         # Router已在原执行中形成确定终态时这里只补Session投影；只有对账所得终态
         # 才属于recovery效果，继续受Turn成功守卫约束。
         origin="execution" if terminal_before_recovery else "recovery",
+        metadata_only_on_rejection=True,
         approval=approval,
     )
 
@@ -561,6 +562,7 @@ async def _project_status(
     *,
     origin: Literal["execution", "recovery"],
     approval: TrustedActionApprovalRequestContent | None = None,
+    metadata_only_on_rejection: bool = False,
 ) -> ToolResultContent:
     if route.state not in {"denied", "succeeded", "failed", "unknown", "manual_intervention"}:
         raise KernelError("trusted_action_not_terminal", "Trusted Action尚未形成可投影终态")
@@ -586,4 +588,5 @@ async def _project_status(
         origin=origin,
         approval=approval,
         descriptor=state.definitions.get(call.tool),
+        metadata_only_on_rejection=metadata_only_on_rejection,
     )

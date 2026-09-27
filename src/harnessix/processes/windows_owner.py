@@ -14,11 +14,12 @@ from typing import Literal, cast
 
 from pydantic import ValidationError
 
-from harnessix.processes.owner_output import CapturedProcessOutput
+from harnessix.processes.owner_output import capture_process_streams
 from harnessix.processes.owner_protocol import (
     MAX_OWNER_CONTROL_FRAME_BYTES,
     ProcessOwnerCommand,
     ProcessOwnerStart,
+    decode_owner_start,
 )
 from harnessix.processes.owner_receipt import sign_owner_receipt, write_owner_receipt
 from harnessix.processes.supervision_contracts import ProcessStopReason
@@ -39,7 +40,7 @@ _PROGRESS_INTERVAL_SECONDS = 0.25
 _Event = tuple[str, bytes | None]
 
 
-def _read_start(control_fd: int) -> tuple[ProcessOwnerStart, bytearray]:
+def _read_start(control_fd: int) -> tuple[ProcessOwnerStart, tuple[bytes, ...], bytearray]:
     buffer = bytearray()
     while b"\n" not in buffer:
         chunk = os.read(control_fd, min(_READ_CHUNK_BYTES, MAX_OWNER_CONTROL_FRAME_BYTES + 1))
@@ -49,7 +50,8 @@ def _read_start(control_fd: int) -> tuple[ProcessOwnerStart, bytearray]:
         if len(buffer) > MAX_OWNER_CONTROL_FRAME_BYTES:
             raise ValueError("start frame too large")
     line, remainder = buffer.split(b"\n", 1)
-    return ProcessOwnerStart.model_validate_json(line), bytearray(remainder)
+    request, protected_values = decode_owner_start(bytes(line))
+    return request, protected_values, bytearray(remainder)
 
 
 def _safe_run_directory(value: str) -> Path:
@@ -67,15 +69,14 @@ class _Owner:
         control_fd: int,
         initial_controls: bytearray,
         run_directory: Path,
+        protected_values: tuple[bytes, ...] = (),
     ) -> None:
         self.request = request
         self.control_fd = control_fd
         self.initial_controls = bytearray()
         self._initial_remainder = initial_controls
         self.receipt_path = run_directory / "receipt.json"
-        values = tuple(request.environment[name].encode("utf-8") for name in request.secret_names)
-        self.stdout = CapturedProcessOutput(run_directory / "stdout.bin", values)
-        self.stderr = CapturedProcessOutput(run_directory / "stderr.bin", values)
+        self.stdout, self.stderr = capture_process_streams(run_directory, request, protected_values)
         self.events: queue.Queue[_Event] = queue.Queue(maxsize=64)
         self.stdin_events: queue.Queue[bytes | None] = queue.Queue(maxsize=32)
         self.process: subprocess.Popen[bytes] | WindowsConPtyProcess | None = None
@@ -439,10 +440,10 @@ def _run(control_handle: int, run_directory: str) -> int:
     try:
         directory = _safe_run_directory(run_directory)
         descriptor = _control_descriptor(control_handle)
-        request, remainder = _read_start(descriptor)
+        request, protected_values, remainder = _read_start(descriptor)
         if directory.name != str(request.process_id):
             raise ValueError("run directory does not match process id")
-        return _Owner(request, descriptor, remainder, directory).run()
+        return _Owner(request, descriptor, remainder, directory, protected_values).run()
     except (OSError, ValueError, ValidationError):
         return 2
 

@@ -174,7 +174,11 @@ from harnessix.processes.contracts import (
     ProcessStream,
 )
 from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
-from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwnerStart
+from harnessix.processes.owner_protocol import (
+    ProcessOwnerCommand,
+    ProcessOwnerStart,
+    ProcessOwnerStartV2,
+)
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt
 from harnessix.processes.public_output import (
     PublicEvalOutputSummary,
@@ -532,6 +536,9 @@ def generate_specs(output: Path) -> None:
         ("provider-fallback-decision", ProviderFallbackDecision),
     ):
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
+    write_json(
+        output / "process-owner-start-v2.schema.json", ProcessOwnerStartV2.model_json_schema()
+    )
     write_json(
         output / "model-history-inspection-v2.schema.json",
         ModelHistoryInspectionV2.model_json_schema(),

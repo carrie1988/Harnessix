@@ -19,6 +19,7 @@ from harnessix.domain.models import utc_now
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.test_publication import CANARY, protected
+from tests.artifacts.test_binary_publication import binary_document
 
 
 @pytest.mark.parametrize("purpose", ["tool_result", "action_review", "action_output", "batch_plan"])
@@ -30,11 +31,15 @@ async def test_guard_and_proof_share_insert_transaction(tmp_path, purpose, case)
         async with AgentRuntime(store, ScriptedProvider([])) as agent:
             thread = await agent.create_thread(str(tmp_path))
             body = ('{"text":"' + (CANARY if case == "leak" else "benign") + '"}\n').encode()
+            if purpose == "action_output":
+                body = binary_document(
+                    purpose, b"x" + (CANARY.encode() if case == "leak" else b"benign")
+                )
             ref = ArtifactRef(
                 artifact_id=uuid4(),
                 sha256=hashlib.sha256(body).hexdigest(),
                 size_bytes=len(body),
-                records=1,
+                records=len(body.splitlines()),
                 complete=True,
                 expires_at=utc_now() + timedelta(hours=1),
             )

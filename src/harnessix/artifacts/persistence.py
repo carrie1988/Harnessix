@@ -27,7 +27,7 @@ async def insert_artifact(
     """使用显式列名写入正文与Manifest，避免Migration扩列破坏调用方。"""
 
     if publication is not None:
-        await publication.check_body(body)
+        await publication.check_body(body, purpose=purpose)
     await database.execute(
         "INSERT INTO agent_artifacts "
         "(artifact_id,thread_id,turn_id,call_id,workspace_scope,manifest_json,size_bytes,"
