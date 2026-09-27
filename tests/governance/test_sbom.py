@@ -102,7 +102,8 @@ def test_cli_check_works_without_dist_or_installed_project(tmp_path: Path) -> No
     lock, project = _inputs(tmp_path)
     scripts = tmp_path / "scripts"
     scripts.mkdir()
-    shutil.copyfile(ROOT / "scripts/sbom_generate.py", scripts / "sbom_generate.py")
+    for name in ("sbom_generate.py", "cli_console.py"):
+        shutil.copyfile(ROOT / "scripts" / name, scripts / name)
     shutil.copytree(SCHEMA_ROOT, tmp_path / "governance/schemas/cyclonedx-1.5")
     expected = tmp_path / "governance/sbom.cyclonedx.json"
     expected.write_bytes(canonical_bytes(build_sbom(lock, project)))

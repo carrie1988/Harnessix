@@ -9,6 +9,12 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+if __package__ or __spec__ is not None:
+    from scripts.cli_console import configure_utf8_console
+else:
+    from cli_console import configure_utf8_console
+
+
 SCAN_VERSION = "harnessix.secret-scan/v1"
 
 # 固定规则集：私钥块、常见云/平台凭据与通用高熵赋值；版本化后规则变更必须升版本。
@@ -68,6 +74,7 @@ def scan_paths(paths: Sequence[Path]) -> list[dict[str, object]]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    configure_utf8_console()
     parser = argparse.ArgumentParser(description="仓库与产物Secret扫描")
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--self-check", action="store_true")

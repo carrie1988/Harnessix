@@ -15,6 +15,12 @@ from urllib.parse import quote, urlsplit
 from jsonschema import Draft7Validator, FormatChecker
 from referencing import Registry, Resource
 
+if __package__ or __spec__ is not None:
+    from scripts.cli_console import configure_utf8_console
+else:
+    from cli_console import configure_utf8_console
+
+
 SBOM_VERSION = "harnessix.sbom/v2"
 OUTPUT_FILENAME = "governance/sbom.cyclonedx.json"
 SCHEMA_ROOT = Path(__file__).resolve().parents[1] / "governance/schemas/cyclonedx-1.5"
@@ -166,6 +172,7 @@ def canonical_bytes(sbom: dict) -> bytes:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    configure_utf8_console()
     parser = argparse.ArgumentParser(description="生成或校验锁定依赖CycloneDX SBOM")
     parser.add_argument("--lock", type=Path, default=Path("uv.lock"))
     parser.add_argument("--project", type=Path, default=Path("pyproject.toml"))

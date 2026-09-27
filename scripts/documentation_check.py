@@ -21,6 +21,12 @@ from yaml.constructor import ConstructorError
 from yaml.nodes import MappingNode
 from yaml.tokens import AliasToken, AnchorToken
 
+if __package__ or __spec__ is not None:
+    from scripts.cli_console import configure_utf8_console
+else:
+    from cli_console import configure_utf8_console
+
+
 DEFAULT_POLICY = "governance/documentation-policy-v1.json"
 POLICY_VERSION = "harnessix.documentation-policy/v1"
 DOCUMENT_TYPES = frozenset(
@@ -170,18 +176,6 @@ class CheckReport:
 
 class PolicyError(ValueError):
     """表示策略文件无法形成安全、确定的检查合同。"""
-
-
-def _configure_utf8_console() -> None:
-    """统一Windows和POSIX CLI编码，避免中文诊断在旧代码页写出失败。"""
-
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if callable(reconfigure):
-            try:
-                reconfigure(encoding="utf-8")
-            except (OSError, ValueError):
-                pass
 
 
 def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -1305,7 +1299,7 @@ def _argument_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    _configure_utf8_console()
+    configure_utf8_console()
     args = _argument_parser().parse_args(argv)
     root = args.root.resolve()
     try:

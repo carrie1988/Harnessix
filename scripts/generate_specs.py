@@ -270,17 +270,10 @@ from harnessix.trusted_actions.recovery_contracts import (
 )
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 
-
-def _configure_utf8_console() -> None:
-    """统一Windows和POSIX CLI编码，确保中文检查结果可写出。"""
-
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if callable(reconfigure):
-            try:
-                reconfigure(encoding="utf-8")
-            except (OSError, ValueError):
-                pass
+if __package__ or __spec__ is not None:
+    from scripts.cli_console import configure_utf8_console
+else:
+    from cli_console import configure_utf8_console
 
 
 def write_json(path: Path, value: object) -> None:
@@ -599,7 +592,7 @@ def _argument_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    _configure_utf8_console()
+    configure_utf8_console()
     args = _argument_parser().parse_args(argv)
     if args.check:
         findings = check_specs(args.output)

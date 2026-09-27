@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
+version: 2
+code_revision: b06396ad05f9e1d725d01ad9f37c898ab80853ab
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
 related_tests:
   - tests/governance/test_sbom.py
   - tests/governance/test_supply_chain.py
+  - tests/governance/test_cli_console.py
 supersedes: []
 ---
 
@@ -130,6 +131,30 @@ Schema本身由源码评审与来源清单定位，不能凭成功消息推断�
 显式生成中断产生的文件可被后续完整字节检查识别为缺失/漂移，不能据文件存在放行。
 SBOM字节Hash证明完整性，不等同来源签名或不存在上游漏洞。
 
+### 6.2 Windows治理CLI输出边界
+
+Revision `b06396a`的[CI 36284121012](https://github.com/carrie1988/Harnessix/actions/runs/36284121012)
+已完成：两个Linux Python、macOS、文档和Container作业通过，Windows治理测试为5 failed、537 passed、
+45 skipped。五个失败共同来自Python管道默认`cp1252`：SBOM、许可证、Secret扫描输出中文时发生
+UnicodeEncodeError，stderr自动转义又使漂移消息断言失配。文件换行和SBOM Schema验证不是该失败的根因。
+
+整改复用原文档/合同CLI已采用的UTF-8流重配行为，收敛到[`cli_console.configure_utf8_console`](../../scripts/cli_console.py)。
+五个入口（SBOM、许可证、Secret、文档、合同生成）在`main`进入argparse和业务逻辑前调用公共函数；
+module/direct-script两种启动模式均指向同一实现，动态importlib加载的治理测试也使用仓库模块入口。
+共享函数不修改环境变量，不改变文件、Schema、JSON基准或Hash；仅重配可配置的stdout/stderr为UTF-8。
+StringIO等嵌入式捕获流原样保留，不用替换全局流对象的方式破坏宿主。不可重配或已关闭流不被替换，
+后续真实写失败仍会按原行为失败，不生成伪成功。
+
+正式输出契约为UTF-8；接收方必须显式按UTF-8解码，而不能假设父进程本地代码页与子进程输出一致。
+[`test_supply_chain.py`](../../tests/governance/test_supply_chain.py)的真实子进程Reader同步指定该编码。
+成功结果退出0，库存缺失/漂移仍退出1并输出中文固定stderr；不把错误转换为英文或跳过Windows门禁。
+干净目录测试同时复制SBOM脚本和公共控制台模块，不依赖已安装的Harnessix项目；无需新增运行时依赖。
+
+[`test_cli_console.py`](../../tests/governance/test_cli_console.py)在子进程显式强制
+`PYTHONIOENCODING=cp1252:strict`及`PYTHONUTF8=0`，覆盖五入口×两种启动方式、失败stderr/退出码、
+不写缺失基准和StringIO嵌入行为。12条本地通过；真实Windows修复版CI结果另行登记，不将本机代码页模拟
+描述为Windows系统验收，也不将旧失败改写为通过。
+
 ## 7. 测试、评审与验收
 
 [`test_sbom.py`](../../tests/governance/test_sbom.py)覆盖固定上游Schema与来源SHA、非法serial/hash算法、
@@ -143,3 +168,10 @@ SBOM字节Hash证明完整性，不等同来源签名或不存在上游漏洞。
 0.9.4b仍需固定许可证证据的包版本/来源而非只信本机安装名称，审查压缩发行物的Secret扫描覆盖，
 纠正安装/镜像/动作的来源声明与实际锁定范围。0.9.4c攻击测试草稿和0.9.4d远端MCP尚未验收；
 0.9.5安装与真实用户验证、0.9.6真实Provider发布证据独立评审。任何库存/Schema绿灯都不能替代这些门禁。
+
+## 9. 变更记录
+
+| 文档版本 | 代码基线 | 日期 | 变更 |
+|---|---|---|---|
+| 1 | `880c306` | 2026-09-27 | 固定版本化pre-build库存、上游Schema、图和Archive身份，建立只读干净检出门禁。 |
+| 2 | `b06396a` | 2026-09-27 | 登记首轮真实CI的Windows管道编码失败；统一五个治理CLI的UTF-8输出、真实子进程Reader与干净目录依赖，补代码页正反例。 |

@@ -20,6 +20,7 @@ def _run(module: str, *args: str) -> subprocess.CompletedProcess:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=False,
         timeout=60,
     )

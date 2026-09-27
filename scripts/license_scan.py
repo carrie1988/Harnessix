@@ -10,6 +10,12 @@ from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, metadata
 from pathlib import Path
 
+if __package__ or __spec__ is not None:
+    from scripts.cli_console import configure_utf8_console
+else:
+    from cli_console import configure_utf8_console
+
+
 POLICY_FILENAME = "governance/license-policy-v1.json"
 REPORT_FILENAME = "governance/license-scan-v1.json"
 
@@ -91,6 +97,7 @@ def build_report(lock_path: Path, policy: dict[str, object]) -> dict[str, object
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    configure_utf8_console()
     parser = argparse.ArgumentParser(description="第三方许可证白名单扫描")
     parser.add_argument("--lock", type=Path, default=Path("uv.lock"))
     parser.add_argument("--policy", type=Path, default=Path(POLICY_FILENAME))
