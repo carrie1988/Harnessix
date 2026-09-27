@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 126
-code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
+version: 127
+code_revision: 648f5f1b7b422462979f25df036994802f0b553f
 owners:
   - core
 modules:
@@ -257,3 +257,6 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 
 - [自定义成功正文公开合同详设](changes/m09-4a-custom-success-contract.md)：显式字段授权、完整描述指纹、MCP独立出口与旧终态兼容。
 - [自定义成功合同验收](validation/custom-success-2026-09-27-v1/README.md)：固定实现、独立旧版负例/旧SQLite重开、专项与完整回归；Secret值和整体发布仍阻断。
+
+- [版本化Secret公开保护详设](changes/m09-4a-versioned-secret-publication.md)：同一执行/保护快照、有界值/键/规范JSON、取消和仅元数据恢复。
+- [版本化Secret验收](validation/secret-publication-2026-09-27-v1/README.md)：实际Runtime/MCP、产品快照/生命周期、原版本负例及发布开放范围。

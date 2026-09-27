@@ -1,0 +1,26 @@
+{
+  "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "12件受限许可Archive",
+    "全部Provider凭据及历史Session/Artifact公开治理",
+    "Owner/Store内部资源与归属",
+    "跨重启Secret正文安全恢复",
+    "TM编号攻击及平台证据",
+    "远端MCP身份/OAuth/出口",
+    "三平台实际安装/升级/卸载/Beta",
+    "真实Provider发布及成本适用性"
+  ],
+  "required_review_focus": [
+    "同一显式原版本快照供执行与公开",
+    "键/标量/规范JSON原生预算和有限模式",
+    "缺能力默认拒绝，原Hash和效果不变",
+    "Owner发布前与重建后及父Task取消",
+    "只恢复已核验效果元数据，不以版本相同授权旧正文",
+    "组合根正常与启动失败回收，不把Container替身当实际安装",
+    "未登记Provider凭据、历史Session和Artifact范围仍开放"
+  ]
+}
