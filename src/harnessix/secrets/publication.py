@@ -186,7 +186,7 @@ class SecretPublicationScope:
         *,
         checkpoint: Callable[[], None],
     ) -> None:
-        """扫描原生树的键和值；不序列化、转换或替换正文，所有模式共用工作预算。"""
+        """扫描原生树与规范JSON；不执行用户钩子或替换正文，所有模式共用工作预算。"""
         self.require(bindings)
         _scan_native(value, self._patterns, checkpoint)
 
