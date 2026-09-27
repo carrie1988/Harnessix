@@ -1,0 +1,116 @@
+{
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "b35e0b5f7ab389d04f64572d9b8b1bb39985a1a2d1cb20b27a2cb8a81c98e395",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2337个输入完整覆盖且固定规则零命中"
+  },
+  "clean_source_build": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 277,
+    "stdout_sha256": "cdb3ad11ffb762da9301280f8103b66cdcd685db77743f91f7ddca130677025a",
+    "stdout_summary": "Successfully built /private/tmp/harnessix-product-publication-dist-final/harnessix-0.1.0-py3-none-any.whl"
+  },
+  "code_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+  "diagram_visual_review": {
+    "status": "not_reviewed_at_seed"
+  },
+  "external_model_requests": 0,
+  "full_regression": {
+    "status": "not_run_at_seed"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "make_check_passed": false,
+  "new_automation_created": false,
+  "related_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": true,
+    "passed_count": 408,
+    "seconds": 31.51,
+    "size_bytes": 501,
+    "stdout_sha256": "557edf592dbc26a7260a27a0126f5999f203c8b95bfc3ca8b2b1e27e564f4608",
+    "stdout_summary": "408 passed in 31.51s"
+  },
+  "special_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": true,
+    "passed_count": 46,
+    "seconds": 2.61,
+    "size_bytes": 99,
+    "stdout_sha256": "9ef1b4dad08dd2c326ab3fd336aba77143e6fd386479ecc54177f14fe466f469",
+    "stdout_summary": "46 passed in 2.61s"
+  },
+  "static_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f",
+      "stdout_summary": "1130 files already formatted"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "a0fbfaea061e55171b066a51ea6508441137b962b5a8618aec8abebab86edb33",
+      "stdout_summary": "Success: no issues found in 339 source files"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "sbom": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret-self": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    }
+  },
+  "untracked_security_draft_modified_or_staged": false,
+  "upgrade_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": true,
+    "passed_count": 24,
+    "seconds": 2.7,
+    "size_bytes": 99,
+    "stdout_sha256": "28d4007a5ebaaf7097c39a7b415a76ed0c5661dd365ccd1d4e3e48aec79c9a79",
+    "stdout_summary": "24 passed in 2.70s"
+  }
+}

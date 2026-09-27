@@ -1,0 +1,91 @@
+{
+  "all_four_producers_business_integration_claimed": false,
+  "all_provider_credentials_and_public_outputs_closed": false,
+  "artifacts": [
+    {
+      "filename": "harnessix-0.1.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "2ff6d66908420aa37e4a4dec294aa2a0d8f47ff18364e0c52bc72b3f135c0a77",
+      "size_bytes": 956569,
+      "source_kind": "clean_git_archive",
+      "source_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+      "untracked_security_draft_present": false
+    },
+    {
+      "filename": "harnessix-0.1.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "bce4c8e59dbf794dfaf5c160061e553343539433c7f2059d98d1cc841b822821",
+      "size_bytes": 7066650,
+      "source_kind": "clean_git_archive",
+      "source_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+      "untracked_security_draft_present": false
+    }
+  ],
+  "base_revision": "3c5f6e36d9c9ce98709c5c37ae2316709c443001",
+  "code_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+  "confirmed_file_write_and_audit_preserved": true,
+  "cross_restart_artifact_body_recovery_complete": false,
+  "crypto_or_database_admin_tamper_proof_claimed": false,
+  "guard_and_proof_same_insert_transaction": true,
+  "hard_preemption_or_python_immutable_erasure_claimed": false,
+  "historical_session_body_retroactively_cleaned": false,
+  "jsonl_complete_raw_and_decoded_shared_budget": true,
+  "legacy_other_epoch_and_tampered_proof_denied": true,
+  "migration_sha256": "d5dc14568d8ba6dfdcc94a060a17fc5b9c6929d12cba33a562a8ccd5d25d0098",
+  "migration_version": 28,
+  "model_secret_has_no_process_injection_target": true,
+  "new_dependency_cycles": [],
+  "new_package_dependency_edges": [],
+  "new_special_tests": 46,
+  "ordinary_protocol_and_artifact_contracts_changed": false,
+  "prior_component_observation": {
+    "acceptance_pass_claimed": false,
+    "actual_sdk_artifact_page_nonempty": true,
+    "artifact_page_limit": 1,
+    "artifact_page_offset": 149,
+    "artifact_records": 300,
+    "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+    "complete_product_stdio_startup_claimed": false,
+    "credential_reference": {
+      "name": "primary-api-key",
+      "version": "v1"
+    },
+    "first_protocol_replay_contains_credential": false,
+    "first_protocol_snapshot_contains_credential": false,
+    "first_tool_preview_contains_credential": false,
+    "nonempty_otel_contains_credential": false,
+    "provider_factory_received_primary_original_credential": true,
+    "provider_request_count": 4,
+    "real_model_requests": 0,
+    "sdk_artifact_page_contains_credential": true,
+    "second_model_history_contains_credential": true,
+    "second_protocol_replay_contains_credential": true,
+    "second_session_contains_credential": true,
+    "status": "confirmed_open_gap"
+  },
+  "readability_policy_relaxed": false,
+  "real_old27_binary_and_atomic_migration28_preserve_bytes": true,
+  "real_stdio_byte_transport_in_product_test_claimed": false,
+  "real_windows_container_or_install_acceptance_claimed": false,
+  "reconciliations_after_publication_failure": 0,
+  "reexecutions_after_publication_failure": 0,
+  "reproducible_build_claimed": false,
+  "runtime_sdk_model_history_and_otel_nonempty_checked": true,
+  "scan_limits": {
+    "depth": 64,
+    "json_bytes": 1048576,
+    "jsonl_shared_nodes": 1048576,
+    "native_dto_nodes": 10256,
+    "pattern_work_bytes": 67108864,
+    "seconds": 10
+  },
+  "selected_provider_original_snapshot_shared": true,
+  "special_test_breakdown": {
+    "actual_runtime": 8,
+    "agent_port": 20,
+    "central_persistence": 12,
+    "old_binary_migration": 2,
+    "product_composition": 4
+  },
+  "special_tests": 46
+}

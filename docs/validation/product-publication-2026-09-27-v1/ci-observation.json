@@ -1,0 +1,14 @@
+{
+  "code_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+  "current_ci_status": "not_started_at_freeze",
+  "no_per_commit_wait": true,
+  "prior_revision": {
+    "conclusion": null,
+    "head_sha": "3c5f6e36d9c9ce98709c5c37ae2316709c443001",
+    "observed_once": true,
+    "run_id": 36328297856,
+    "status": "in_progress",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36328297856"
+  },
+  "prior_success_is_current_acceptance": false
+}

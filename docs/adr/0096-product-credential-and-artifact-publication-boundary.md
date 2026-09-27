@@ -2,7 +2,7 @@
 doc_type: adr
 status: current
 version: 1
-code_revision: 3c5f6e36d9c9ce98709c5c37ae2316709c443001
+code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
 owners: [core]
 modules: [agent, artifacts, secrets, product_config, session, trusted_actions]
 related_adrs:
