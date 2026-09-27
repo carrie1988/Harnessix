@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 28
+code_revision: f7566bf0e594833bd10a1af7d9d8b51a098cfad9
 owners:
   - core
 modules:
@@ -1669,3 +1669,17 @@ Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Pat
 专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
 六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
 custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。
+
+
+## 自定义成功正文公开权限与旧终态观察
+
+[成功合同入口](../../src/harnessix/trusted_actions/public_outcomes.py)按冻结Binding选择来源；
+正式来源保留内核DTO，custom必须有精确Tool描述指纹和闭合公开Schema，不能从输出自报权限。
+[Gateway](../../src/harnessix/trusted_actions/agent_gateway_output.py)正常内联、Owner发布前和重建后
+共用此合同，仍绑定Audit/Artifact及原预算；错误不改写已确认效果，不重复执行。
+[旧终态观察](../../src/harnessix/trusted_actions/legacy_projection.py)只处理同来源、原调用/审批
+请求身份一致的custom succeeded/failed，无正文、无Artifact授权；非终态及跨来源不走兼容执行。
+[旧二进制测试](../../tests/trusted_actions/test_custom_success_legacy_binary.py)从f7566bf独立归档
+创建真实SQLite记录并重开，未声明旧描述维持原字节和全部摘要。
+[完整详设](../changes/m09-4a-custom-success-contract.md)区分字段权限与Secret安全；旧Session
+公开视图、Secret版本/值、Owner内部预算/所有权、其他公开错误和完整0.9.4a仍开放。

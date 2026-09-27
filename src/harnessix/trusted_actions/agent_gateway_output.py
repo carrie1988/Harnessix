@@ -21,6 +21,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
+from harnessix.domain.models import ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
 from harnessix.trusted_actions.output_budget import (
@@ -31,6 +32,7 @@ from harnessix.trusted_actions.output_budget import (
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.public_outcomes import (
     normalize_failure_outcome,
+    public_success_schema,
     validate_public_projection,
     validate_success_summary,
 )
@@ -118,6 +120,7 @@ async def terminal_result(
     *,
     origin: Literal["execution", "recovery"],
     approval: TrustedActionApprovalRequestContent | None = None,
+    descriptor: ToolDescriptor | None = None,
 ) -> ToolResultContent:
     """核对Router终态摘要后，由配置的Owner重建正文并发布引用。"""
 
@@ -127,7 +130,7 @@ async def terminal_result(
         return build_result(route, call, outcome, origin=origin, approval=approval)
     if provider is None or route.state == "denied":
         if outcome.kind == "succeeded" and outcome.output is not None:
-            outcome = await _inline_success(state, route, outcome, cancel)
+            outcome = await _inline_success(state, route, outcome, cancel, descriptor)
         return build_result(route, call, outcome, origin=origin, approval=approval)
     event = state.router.events(route.plan.execution.plan_id)[-1]
     if event.output_sha256 is None and event.artifact_sha256 is None:
@@ -150,6 +153,7 @@ async def terminal_result(
         cancel,
         output_sha256=event.output_sha256,
         artifact_sha256=event.artifact_sha256,
+        descriptor=descriptor,
     )
     return build_result(
         route,
@@ -165,6 +169,7 @@ async def _inline_success(
     route: ActionRouteSnapshot,
     outcome: ActionExecutionOutcome,
     cancel: CancelToken,
+    descriptor: ToolDescriptor | None,
 ) -> ActionExecutionOutcome:
     """无Owner的正文仍有投影预算、审计Hash和正式摘要检查；不改写已确认效果。"""
 
@@ -178,7 +183,12 @@ async def _inline_success(
             event = state.router.events(route.plan.execution.plan_id)[-1]
             if event.to_state != route.state or canonical_digest(projected) != event.output_sha256:
                 raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配")
-            validate_success_summary(route.plan, projected)
+            validate_success_summary(
+                route.plan,
+                projected,
+                descriptor=descriptor,
+                checkpoint=lambda: projection_checkpoint(cancel, deadline),
+            )
             projection_checkpoint(cancel, deadline)
             await asyncio.sleep(0)
             projection_checkpoint(cancel, deadline)
@@ -204,6 +214,7 @@ async def _project_output(
     *,
     output_sha256: str,
     artifact_sha256: str,
+    descriptor: ToolDescriptor | None,
 ) -> JsonValue:
     """回调、序列化及正式合同共用投影时限；不改写已持久化的动作事实。"""
 
@@ -211,12 +222,20 @@ async def _project_output(
     deadline = monotonic() + budget.timeout_seconds
     try:
         async with asyncio.timeout(budget.timeout_seconds) as timer:
+            if outcome.kind == "succeeded":
+                # 即使恢复没有原正文，也不允许无公开合同的Owner先发布工件。
+                public_success_schema(route.plan, descriptor)
             if outcome.kind == "succeeded" and outcome.output is not None:
                 # 正式摘要在Owner发布工件之前验证；恢复缺少正文时再核对Owner重建值。
                 preview = bounded_projection(
                     outcome.output, budget=budget, cancel=cancel, deadline=deadline
                 )
-                validate_success_summary(route.plan, preview)
+                validate_success_summary(
+                    route.plan,
+                    preview,
+                    descriptor=descriptor,
+                    checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                )
                 projection_checkpoint(cancel, deadline)
             raw = await cancel.run(
                 provider.output(
@@ -236,6 +255,8 @@ async def _project_output(
                 projected,
                 expected_output_sha256=output_sha256,
                 expected_artifact_sha256=artifact_sha256,
+                descriptor=descriptor,
+                checkpoint=lambda: projection_checkpoint(cancel, deadline),
             )
             projection_checkpoint(cancel, deadline)
             return projected

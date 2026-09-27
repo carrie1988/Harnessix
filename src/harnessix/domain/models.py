@@ -6,7 +6,18 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
+
+from harnessix.domain.public_output_schema import capture_public_output_schema
 
 
 def utc_now() -> datetime:
@@ -113,6 +124,21 @@ class ToolDescriptor(ContractModel):
     requires_approval: bool
     supports_reconciliation: bool
     supports_parallel_calls: bool = False
+    public_output_schema: dict[str, JsonValue] | None = None
+
+    @field_validator("public_output_schema", mode="before")
+    @classmethod
+    def closed_public_schema(cls, value: object) -> dict[str, JsonValue] | None:
+        """新公开授权必须先捕获有界独立副本；缺省不授予custom正文权限。"""
+        return None if value is None else capture_public_output_schema(value)
+
+    @model_serializer(mode="wrap")
+    def preserve_legacy_descriptor(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        """旧描述不增加null字段，保持既有Tool、Binding、Route及审批指纹。"""
+        result: dict[str, Any] = handler(self)
+        if self.public_output_schema is None:
+            result.pop("public_output_schema", None)
+        return result
 
     @model_validator(mode="after")
     def parallel_calls_are_read_only(self) -> Self:

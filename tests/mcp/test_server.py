@@ -8,7 +8,7 @@ from mcp import Client
 from pydantic import BaseModel, ConfigDict
 
 from harnessix.agent.errors import KernelError
-from harnessix.domain.models import EffectClass, RiskLevel
+from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import SandboxBindingV2, canonical_digest
 from harnessix.execution.planner import build_capability_evidence_v2
 from harnessix.execution.store import SQLiteExecutionPlanStore
@@ -78,12 +78,29 @@ def exported_server(
 ) -> HarnessixMcpServer:
     root = tmp_path / "workspace"
     root.mkdir()
+    descriptor = ToolDescriptor(
+        name="echo.read",
+        version="1",
+        description="返回输入文本",
+        input_schema=EchoInput.model_json_schema(),
+        effect_class=effect_class,
+        risk_level=risk_level,
+        requires_idempotency=False,
+        requires_approval=effect_class is not EffectClass.READ_ONLY,
+        supports_reconciliation=recovery_mode != "none",
+        public_output_schema={
+            "type": "object",
+            "properties": {"echo": {"type": "string", "maxLength": 4096}},
+            "required": ["echo"],
+            "additionalProperties": False,
+        },
+    )
     binding = build_trusted_tool_binding(
         source="custom",
         source_id="exporter",
         tool="echo.read",
         tool_version="1",
-        tool_fingerprint=canonical_digest("echo.read/v1"),
+        tool_fingerprint=canonical_digest(descriptor.model_dump(mode="json")),
         input_schema_sha256=canonical_digest(EchoInput.model_json_schema()),
         effect_class=effect_class,
         risk_level=risk_level,
@@ -116,6 +133,7 @@ def exported_server(
                 binding_name="echo.read",
                 description="返回输入文本",
                 input_schema=EchoInput.model_json_schema(),
+                descriptor=descriptor,
             ),
         ),
     )
@@ -152,3 +170,66 @@ def test_optional_server_rejects_write_action_export(tmp_path: Path) -> None:
             recovery_mode="external_reconcile",
         )
     assert caught.value.code == "mcp_export_policy_invalid"
+
+
+@pytest.mark.parametrize("case", ["undeclared", "extra", "valid"])
+async def test_mcp_export_has_its_own_bound_public_output_contract(tmp_path, case):
+    from harnessix.mcp.server import McpExportedTool
+    from tests.trusted_actions.test_public_error_leakage import _assert_no_leak, _payload
+
+    server = exported_server(tmp_path)
+    original = server._exports[0]
+    if case == "undeclared":
+        # 旧导出没有公开描述；不能因只读、Schema匹配或执行成功而泄漏正文。
+        exported = McpExportedTool(
+            original.public_name, original.binding_name, original.description, original.input_schema
+        )
+        server = HarnessixMcpServer(port=server._port, exports=(exported,))
+    actions = server._port._ExtensionActionPort__router
+    definition = next(iter(actions._definitions.values()))
+
+    class BodyExecutor:
+        calls = 0
+
+        async def execute(self, plan, arguments):
+            self.calls += 1
+            body = {"echo": "public"}
+            if case != "valid":
+                body["diagnostic"] = _payload()
+            return ActionExecutionOutcome(kind="succeeded", output=body)
+
+    executor = BodyExecutor()
+    import dataclasses
+
+    actions._definitions[next(iter(actions._definitions))] = dataclasses.replace(
+        definition, executor=executor
+    )
+    try:
+        async with Client(server.low_level_server, cache=None) as client:
+            result = await client.call_tool("echo", {"text": "hello"})
+            assert result.is_error is (case != "valid")
+            if case == "valid":
+                assert result.structured_content == {"echo": "public"}
+            _assert_no_leak(result.model_dump_json())
+        assert executor.calls == 1
+    finally:
+        actions._audit.close()
+        actions._plans.close()
+
+
+def test_mcp_export_rejects_descriptor_not_bound_to_registered_fingerprint(tmp_path):
+    import dataclasses
+
+    server = exported_server(tmp_path)
+    original = server._exports[0]
+    forged = original.descriptor.model_copy(update={"description": "changed"})
+    try:
+        with pytest.raises(KernelError) as caught:
+            HarnessixMcpServer(
+                port=server._port, exports=(dataclasses.replace(original, descriptor=forged),)
+            )
+        assert caught.value.code == "mcp_export_contract_invalid"
+    finally:
+        actions = server._port._ExtensionActionPort__router
+        actions._audit.close()
+        actions._plans.close()

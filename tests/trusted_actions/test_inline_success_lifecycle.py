@@ -33,8 +33,8 @@ async def test_inline_projection_stops_after_validation_without_reexecution(
         original = agent_gateway_output.validate_success_summary
         clock = [agent_gateway_output.monotonic()]
 
-        def validate(plan, body):
-            original(plan, body)
+        def validate(plan, body, **kwargs):
+            original(plan, body, **kwargs)
             if mode == "timeout":
                 clock[0] += 20
             elif mode == "token":

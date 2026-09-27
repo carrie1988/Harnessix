@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 4
+code_revision: f7566bf0e594833bd10a1af7d9d8b51a098cfad9
 owners:
   - core
 modules:
@@ -1626,3 +1626,15 @@ Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Pat
 专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
 六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
 custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。
+
+
+## 本地Server导出的独立公开合同
+
+[McpExportedTool](../../src/harnessix/mcp/server.py)可携带完整ToolDescriptor独立副本，
+构造、目录和调用阶段核对与实际Binding相同的工具名称、版本及完整指纹；公开标准outputSchema。
+custom成功正文先经过与Gateway相同的公开字段合同，再成为TextContent/structured_content，
+未声明描述或额外诊断字段按固定错误拒绝，低风险只读及Schema匹配本身不授予正文公开权。
+[实际MCP Client回归](../../tests/mcp/test_server.py)分别覆盖无描述、额外字段、合法结果和
+错误描述指纹；已有目录/读调用/写导出拒绝保持。未产生任何远端HTTP/OAuth验收结论。
+[完整详设](../changes/m09-4a-custom-success-contract.md)追踪指纹、字段、数据流、失败及
+恢复；本地字段合同不替代上游Producer的Secret脱敏，也不替代远端目标身份和出口治理。

@@ -21,7 +21,7 @@ from mcp.types import (
 from pydantic import JsonValue
 
 from harnessix.agent.errors import KernelError
-from harnessix.domain.models import EffectClass, RiskLevel
+from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
 from harnessix.mcp.schema import (
     bounded_mcp_output,
@@ -29,6 +29,7 @@ from harnessix.mcp.schema import (
     validate_mcp_input_schema,
 )
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, TrustedToolBinding
+from harnessix.trusted_actions.public_outcomes import validate_success_summary
 from harnessix.trusted_actions.router import ExtensionActionPort
 
 
@@ -40,6 +41,7 @@ class McpExportedTool:
     binding_name: str
     description: str
     input_schema: dict[str, JsonValue]
+    descriptor: ToolDescriptor | None = None
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,127}", self.public_name):
@@ -47,6 +49,8 @@ class McpExportedTool:
         if not self.description or len(self.description) > 16384:
             raise KernelError("mcp_export_invalid", "MCP导出Tool描述无效")
         object.__setattr__(self, "input_schema", validate_mcp_input_schema(self.input_schema))
+        if self.descriptor is not None:
+            object.__setattr__(self, "descriptor", self.descriptor.model_copy(deep=True))
 
 
 class HarnessixMcpServer:
@@ -69,7 +73,7 @@ class HarnessixMcpServer:
             binding = bindings.get(exported.binding_name)
             if binding is None:
                 raise KernelError("mcp_export_not_registered", "MCP导出Tool未通过可信Action注册")
-            self._validate_binding(binding, exported)
+            _validate_export_binding(binding, exported)
         self._port = port
         self._exports = tuple(sorted(exports, key=lambda item: item.public_name))
         self._bindings = bindings
@@ -104,12 +108,17 @@ class HarnessixMcpServer:
             binding = current.get(exported.binding_name)
             if binding is None:
                 continue
-            self._validate_binding(binding, exported)
+            _validate_export_binding(binding, exported)
             tools.append(
                 Tool(
                     name=exported.public_name,
                     description=exported.description,
                     input_schema=cast(dict[str, Any], exported.input_schema),
+                    output_schema=(
+                        None
+                        if exported.descriptor is None
+                        else exported.descriptor.public_output_schema
+                    ),
                 )
             )
         return ListToolsResult(tools=tools, ttl_ms=0, cache_scope="private")
@@ -129,7 +138,7 @@ class HarnessixMcpServer:
         if binding is None:
             return _tool_error("mcp_export_not_registered")
         try:
-            self._validate_binding(binding, exported)
+            _validate_export_binding(binding, exported)
             parsed = validate_mcp_arguments(exported.input_schema, params.arguments or {})
             plan = self._port.plan(
                 invocation_id=uuid4(),
@@ -145,24 +154,34 @@ class HarnessixMcpServer:
                     else "mcp_export_denied"
                 )
             outcome = await self._port.execute(plan.plan.execution.plan_id)
+            if outcome.kind == "succeeded" and outcome.output is not None:
+                # MCP导出是独立公开路径，必须核对同一冻结Binding的字段授权。
+                validate_success_summary(plan.plan, outcome.output, descriptor=exported.descriptor)
         except KernelError as error:
             return _tool_error(error.code)
         if outcome.kind != "succeeded":
             return _tool_error(outcome.error_code or "mcp_export_execution_failed")
         return _tool_success(outcome)
 
-    @staticmethod
-    def _validate_binding(binding: TrustedToolBinding, exported: McpExportedTool) -> None:
-        if (
-            binding.effect_class is not EffectClass.READ_ONLY
-            or binding.risk_level is not RiskLevel.LOW
-            or binding.recovery_mode != "none"
-            or binding.input_schema_sha256 != canonical_digest(exported.input_schema)
-        ):
-            raise KernelError(
-                "mcp_export_policy_invalid",
-                "MCP Server只允许导出低风险只读且Schema一致的Action",
-            )
+
+def _validate_export_binding(binding: TrustedToolBinding, exported: McpExportedTool) -> None:
+    if (
+        binding.effect_class is not EffectClass.READ_ONLY
+        or binding.risk_level is not RiskLevel.LOW
+        or binding.recovery_mode != "none"
+        or binding.input_schema_sha256 != canonical_digest(exported.input_schema)
+    ):
+        raise KernelError(
+            "mcp_export_policy_invalid",
+            "MCP Server只允许导出低风险只读且Schema一致的Action",
+        )
+    descriptor = exported.descriptor
+    if descriptor is not None and (
+        descriptor.name != binding.tool
+        or descriptor.version != binding.tool_version
+        or canonical_digest(descriptor.model_dump(mode="json")) != binding.tool_fingerprint
+    ):
+        raise KernelError("mcp_export_contract_invalid", "MCP导出描述与可信Action绑定不一致")
 
 
 def _tool_success(outcome: ActionExecutionOutcome) -> CallToolResult:

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 17e20691cf38c5dd1e2130de5f31c002dd6ac261
+version: 7
+code_revision: f7566bf0e594833bd10a1af7d9d8b51a098cfad9
 owners:
   - core
 modules:
@@ -242,3 +242,15 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 |---:|---|---|---|
 | 6 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 将既有跨平台文件描述符锁下沉为Domain原语，根级导入保持兼容，供Campaign与Suite复用 |
 | 5 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 按单一Coding Agent边界移除退役Action Service领域合同并保留历史事件兼容 |
+
+
+## 自定义成功输出的纯领域合同
+
+[ToolDescriptor](../../src/harnessix/domain/models.py)增加可选public_output_schema。
+[有限合同实现](../../src/harnessix/domain/public_output_schema.py)在任何JSON序列化前检查原生树，
+返回独立副本；32KiB/16层/512节点，128属性、256数组项、4096字符和8个anyOf分支，
+正文验证各分支共享32768次节点工作预算。拒绝引用、正则和未支持关键词，不转换字段或填默认值。
+未声明字段序列化时省略，独立旧二进制创建的Tool/Binding/Route/Audit及审批仍按原JSON/Hash验真。
+显式新Schema进入既有完整Tool指纹；领域层不导入执行器/Owner/Runtime，也不授予Secret权限。
+[完整详设](../changes/m09-4a-custom-success-contract.md)和[合同测试](../../tests/domain/test_public_output_schema.py)
+说明字段、流程、伪代码、预算、取消和兼容边界。

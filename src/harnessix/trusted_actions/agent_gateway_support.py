@@ -42,6 +42,7 @@ from harnessix.trusted_actions.contracts import (
     CodingActionInvocation,
     TrustedToolBinding,
 )
+from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
 
@@ -268,6 +269,7 @@ async def execute_action(
             cancel,
             origin="recovery",
             approval=approval,
+            descriptor=state.definitions.get(call.tool),
         )
     return await _project_status(
         state,
@@ -292,7 +294,16 @@ async def recover_action(
 ) -> ToolResultContent | None:
     """观察或核对旧计划；pending/ready不在终结路径中启动副作用。"""
 
-    binding = _validate_call(state, call)
+    try:
+        binding = _validate_call(state, call)
+    except KernelError as error:
+        if error.code != "trusted_tool_contract_changed":
+            raise
+        # 新描述不能重用旧批准；已确认效果只补无正文元数据。
+        legacy = project_legacy_terminal(state, thread, turn, call, approval, cancel)
+        if legacy is not None:
+            return legacy
+        raise
     plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
     try:
         route = state.router.status(plan_id)
@@ -323,6 +334,7 @@ async def recover_action(
             cancel,
             origin="recovery",
             approval=approval,
+            descriptor=state.definitions.get(call.tool),
         )
     return await _project_status(
         state,
@@ -531,6 +543,7 @@ async def _execute_ready(
         cancel,
         origin=origin,
         approval=approval,
+        descriptor=state.definitions.get(call.tool),
     )
 
 
@@ -568,4 +581,5 @@ async def _project_status(
         cancel,
         origin=origin,
         approval=approval,
+        descriptor=state.definitions.get(call.tool),
     )

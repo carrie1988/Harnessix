@@ -117,6 +117,11 @@ def descriptor() -> ToolDescriptor:
         version="1",
         description="事务修改Workspace内一个有界文本文件",
         input_schema=FileInput.model_json_schema(),
+        public_output_schema={
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {"summary": {"type": "string", "maxLength": 128}},
+        },
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
         requires_idempotency=True,

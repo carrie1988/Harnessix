@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from typing import Literal, cast
 
 from pydantic import JsonValue
@@ -11,6 +12,11 @@ from pydantic import JsonValue
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.domain.models import ToolDescriptor
+from harnessix.domain.public_output_schema import (
+    capture_public_output_schema,
+    validate_public_output,
+)
 from harnessix.execution.contracts import canonical_digest
 from harnessix.processes.public_output import PublicEvalOutputSummary, PublicProcessOutputSummary
 from harnessix.trusted_actions.builtin_success import validate_builtin_success
@@ -310,6 +316,8 @@ def validate_public_projection(
     *,
     expected_output_sha256: str,
     expected_artifact_sha256: str,
+    descriptor: ToolDescriptor | None = None,
+    checkpoint: Callable[[], None] | None = None,
 ) -> None:
     """所有Owner投影都绑定双摘要；成功也不能授权追加任意正文。"""
 
@@ -323,7 +331,7 @@ def validate_public_projection(
                 raise ValueError
             _validate_process_failure(plan, outcome, summary)
         else:
-            validate_success_summary(plan, summary)
+            validate_success_summary(plan, summary, descriptor=descriptor, checkpoint=checkpoint)
         # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。
         reference = ArtifactRef.model_validate_json(json.dumps(projected.get("artifact")))
         if (
@@ -333,12 +341,50 @@ def validate_public_projection(
             raise ValueError
     except TurnCancelled:
         raise
+    except KernelError as error:
+        if error.code == "trusted_action_output_timeout":
+            raise KernelError(error.code, "Action输出投影超时") from None
+        raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
     except Exception:
         raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
 
 
-def validate_success_summary(plan: ActionRoutePlan, output: JsonValue) -> None:
-    """固定来源共用正式成功合同；尚无正式合同的custom不在本函数中被追认授权。"""
+def public_success_schema(
+    plan: ActionRoutePlan, descriptor: ToolDescriptor | None
+) -> dict[str, JsonValue] | None:
+    """custom公开授权必须来自与冻结Binding精确匹配的宿主描述。"""
+
+    if failure_family(plan) != "custom":
+        return None
+    binding = plan.binding
+    try:
+        if descriptor is None or descriptor.public_output_schema is None:
+            raise ValueError
+        # 先限制新增Schema，再计算完整描述Hash，避免新字段先进入序列化。
+        schema = capture_public_output_schema(descriptor.public_output_schema)
+        if (
+            descriptor.name != binding.tool
+            or descriptor.version != binding.tool_version
+            or canonical_digest(descriptor.model_dump(mode="json")) != binding.tool_fingerprint
+        ):
+            raise ValueError
+        return schema
+    except TurnCancelled:
+        raise
+    except Exception:
+        raise KernelError(
+            "trusted_action_output_mismatch", "Action输出缺少匹配的公开合同"
+        ) from None
+
+
+def validate_success_summary(
+    plan: ActionRoutePlan,
+    output: JsonValue,
+    *,
+    descriptor: ToolDescriptor | None = None,
+    checkpoint: Callable[[], None] | None = None,
+) -> None:
+    """正式来源不可被扩展Schema放宽；custom无显式、精确绑定合同则拒绝正文。"""
 
     family = failure_family(plan)
     try:
@@ -348,8 +394,16 @@ def validate_success_summary(plan: ActionRoutePlan, output: JsonValue) -> None:
             validate_builtin_success(
                 plan, cast(Literal["patch", "git", "mcp", "skill"], family), output
             )
+        else:
+            schema = public_success_schema(plan, descriptor)
+            assert schema is not None
+            validate_public_output(schema, output, checkpoint=checkpoint)
     except TurnCancelled:
         raise
+    except KernelError as error:
+        if error.code == "trusted_action_output_timeout":
+            raise KernelError(error.code, "Action输出投影超时") from None
+        raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
     except Exception:
         raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
 

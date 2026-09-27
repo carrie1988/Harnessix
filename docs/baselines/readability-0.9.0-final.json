@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 334,
-    "physical_lines": 74514,
-    "logical_lines": 66175,
-    "documented_modules": 334,
-    "classes": 824,
-    "documented_classes": 323,
-    "functions": 2947,
-    "documented_functions": 418,
+    "source_files": 336,
+    "physical_lines": 75006,
+    "logical_lines": 66605,
+    "documented_modules": 336,
+    "classes": 826,
+    "documented_classes": 324,
+    "functions": 2970,
+    "documented_functions": 424,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -942,8 +942,8 @@
       "path": "src/harnessix/mcp/server.py",
       "qualname": "HarnessixMcpServer",
       "kind": "class",
-      "line": 52,
-      "lines": 114,
+      "line": 56,
+      "lines": 109,
       "documented": true
     },
     {
