@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "c233ca135bf107246d7e8e712845aec80502110a93b0b278be4234a4aa6e0156",
-      "size_bytes": 9055
+      "sha256": "285ecf4b68ba1cae077c874a720d9d057ded1c547566a7f4ad8d768a44719ca2",
+      "size_bytes": 11324
     },
     {
       "path": "ci-observation.json",
@@ -13,8 +13,8 @@
     },
     {
       "path": "contract-facts.json",
-      "sha256": "775b9b17c8cb01fa2a8f6c40e7f7415837c1b105a64d2160c7fb0496353a9c95",
-      "size_bytes": 3027
+      "sha256": "0c846f2600b51493a794316c64ec5fc409b7e213a23133b7f928a13a1dae7d57",
+      "size_bytes": 5978
     },
     {
       "path": "review-packet.json",
@@ -23,8 +23,8 @@
     },
     {
       "path": "verification.json",
-      "sha256": "b7d79cd15a961c000cc5f16c1cd40bbc4bd1d4707a1b6f58c075df0c12283a75",
-      "size_bytes": 6885
+      "sha256": "d6937c78d4250fd43cf4d419bf00353a0f6df8facd0d91be8e9462d72ac80f30",
+      "size_bytes": 9165
     }
   ],
   "manifest_self_excluded": true,

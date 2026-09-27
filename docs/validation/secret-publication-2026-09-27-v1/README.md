@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
-status: reviewing
-version: 1
+status: current
+version: 2
 code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners: [core]
 modules: [secrets, trusted_actions, product_config, mcp]
@@ -33,8 +33,10 @@ Product Process执行与公开检查使用同一实例；检查原摘要和Owner
 
 专项 **62 passed，1.03秒**（56新增、6项原MCP回归），相关回归 **814 passed，15.81秒**，
 两者与完整回归重叠，不相加。首次完整回归1 failed、4696 passed、32 skipped（397.12秒）发现取消历史计数误判；
-修复后78项针对性回归通过，含4个新增取消基线用例。修复版完整回归待运行，不以首次失败作通过。当前仅为限定作用域实现与专项验证，
-不声明全量验收、全部Secret端到端安全、跨重启正文安全恢复或整体0.9完成。
+修复后78项针对性回归通过，含4个新增取消基线用例。稳定测试树完整回归 **4701 passed、32 skipped，409.57秒，exit=0**。
+测试树`8e47909ddfebde93d4243b13680a0b29e9ef7fd6`，Git Tree `dc0d22ccbb3beb1b54fc3e77af8237dd2acc872d`；跟踪输入运行期间无变化，生产源码、
+Schema、脚本、政策与基线同实现Revision，全部测试同实现Revision，含两项本切片证据治理用例。当前验收限定于本次作用域，
+不声明产品全量验收、全部Secret端到端安全、跨重启正文安全恢复或整体0.9完成。
 真实模型请求0，无新增定时任务；未跟踪安全草稿不修改、不提交、不计作TM编号验收。
 
 ## 2. 独立旧版负例
@@ -102,14 +104,36 @@ Ruff规则/格式、Mypy **337源文件**、生成合同、可读性/依赖门�
 
 许可证门禁仍 **exit=1、12件受限Archive**；未放宽既有拒绝政策，不声明make check通过。
 详细设计4图及报告1图已实际渲染为非空PNG并逐图目视复核；
-文档门禁实际渲染变化文档通过，覆盖305份文档、8061条链接、735幅Mermaid、26个源码包。完整回归和冻结后检查待登记；
-所有未完成项在[验证](verification.json)明确记录，不用预测数量代替实际结果。
+文档门禁实际渲染变化文档通过，覆盖305份文档、8064条链接、735幅Mermaid、26个源码包。完整回归已登记，冻结后治理检查独立登记；
+实际结果在[验证](verification.json)登记；32项跳过不等于三平台安装验收，不累计重叠测试数量。
 
 ## 6. 开放风险、CI与复核材料
 
 有限模式不解决任意变形、拆分推断或未登记Secret。全部模型Provider凭据、历史Session和Artifact
 公开治理、Owner/Store内部字节与归属、跨重启安全正文恢复仍开放。Python不可变内存不承诺擦除；
 超界宿主材料不复制，也不进行超界全量清零，保留宿主所有权。Provider任意同步阻塞不承诺硬抢占。
+
+### 6.1 模型凭据与Artifact历史的独立开放观察
+
+在本实现Revision，按正式Product配置primary-api-key/v1由EnvironmentSecretProvider向
+build_provider_bundle工厂提供合成值；实际SQLite Runtime使用该Bundle、CodingToolRuntime及Artifact Store。
+测试Workspace的300条grep记录中，第150条人工放置同值，首个工具仅预览2条。实际SDK
+artifact/read（offset149/limit1）返回该值；下一Turn合法read_artifact的结果进入持久Session、
+下一Scripted请求历史和Protocol回放。首个预览、初始snapshot/回放没有该值，非空OTel仍无该值。
+共4次Scripted请求，真实模型请求0；事实及8项版本输入Hash见[事实](contract-facts.json)。
+
+这是公开边界缺口，不是验收通过。实验按组件装配，不代表完整Product stdio启动；值人工置于授权
+Workspace，不证明真实凭据可被未授权读取。Gateway作用域不经过只读Tool/Artifact分页路径，
+只保护Action绑定材料不足以关闭模型凭据与历史治理。
+
+后续须让Provider实际解析与所有公开检查共享显式原版本材料，在Artifact全部正文发布前及分页出口
+建立有界保护，不能仅扫preview。历史数据无原值证明时不得以当前同版本环境授权；需独立安全
+证明/恢复设计，Append-only Session/Audit原账本不回写，取消、期限、归属和Hash仍按正式合同核验。
+[Provider解析](../../../src/harnessix/product_config/runtime.py)、
+[Product组合](../../../src/harnessix/product_config/server.py)、
+[结果提交](../../../src/harnessix/agent/runtime.py)、
+[Artifact Store](../../../src/harnessix/artifacts/sqlite.py)及
+[SDK分页](../../../src/harnessix/app_server/artifacts.py)分别形成独立边界。
 
 12件许可权利链、TM编号攻击证据、远端MCP身份/OAuth/出口、三平台实际安装/升级/卸载/Beta及
 真实Provider发布/成本适用性仍阻断正式发布。32项历史跳过不能作为平台验收。
@@ -120,3 +144,4 @@ Ruff规则/格式、Mypy **337源文件**、生成合同、可读性/依赖门�
 复核材料集中本目录：[Manifest](bundle-manifest.json)、[事实](contract-facts.json)、
 [验证](verification.json)、[Review Packet](review-packet.json)、[CI观察](ci-observation.json)。
 Manifest记录5个交付文件及29项实现Revision输入Hash，自身排除；旧冻结材料不回写追认。
+冻结后证据治理16项通过，Ruff/格式、合同、可读性与文档门禁均通过；版本输入和交付文件Hash再次独立复核。

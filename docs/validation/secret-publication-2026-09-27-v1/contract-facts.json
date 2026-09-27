@@ -62,6 +62,74 @@
   "processed_parent_cancel_count_does_not_block_reconcile": true,
   "product_startup_and_normal_exit_release_scope": true,
   "product_tests": 4,
+  "provider_credential_history_artifact_open_gap": {
+    "acceptance_pass_claimed": false,
+    "actual_sdk_artifact_page_nonempty": true,
+    "artifact_page_limit": 1,
+    "artifact_page_offset": 149,
+    "artifact_records": 300,
+    "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+    "complete_product_stdio_startup_claimed": false,
+    "credential_reference": {
+      "name": "primary-api-key",
+      "version": "v1"
+    },
+    "first_protocol_replay_contains_credential": false,
+    "first_protocol_snapshot_contains_credential": false,
+    "first_tool_preview_contains_credential": false,
+    "nonempty_otel_contains_credential": false,
+    "probe_source_sha256": "0ed7729d79be546c0bc0f8cf890b783a34cc15c3327a794af23cb6c1e9208e7f",
+    "provider_factory_received_primary_original_credential": true,
+    "provider_request_count": 4,
+    "real_model_requests": 0,
+    "sdk_artifact_page_contains_credential": true,
+    "second_model_history_contains_credential": true,
+    "second_protocol_replay_contains_credential": true,
+    "second_session_contains_credential": true,
+    "source_inputs": [
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/product_config/runtime.py",
+        "sha256": "3109c5f02953afb6ad9d4934d23537c383efb272fbeaf211dc5129a4a69434fd"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/product_config/server.py",
+        "sha256": "505898d66f665118569c724591d5cde58c260091e875775df6bce53004e570d4"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/tools/runtime.py",
+        "sha256": "490d20ad7ab221ca99aae91cdfe5f3c6713181be78832b2f3094bd8f725f6e18"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/agent/runtime.py",
+        "sha256": "622c17bd56c1557db71c19e55403f3f83fe6716dcd255812338bb462972745c4"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/artifacts/sqlite.py",
+        "sha256": "7a5a5eee2c07c911a1806e318b2916f834ba10774350dc4327cacece1f5da2ed"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "src/harnessix/app_server/artifacts.py",
+        "sha256": "42b7320378d0e7bb3a7b58c7c22aef671237b35b64e57bde81f67e1abb778db7"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "tests/artifacts/helpers.py",
+        "sha256": "eb5f2c42c2ba6638320680969e25d65c1e68ebc1f81d85052bc61c1e586ccc2f"
+      },
+      {
+        "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+        "path": "tests/product_config/conftest.py",
+        "sha256": "54a2e9324d18facaf97fda8176fc5e39c27044ed27fded946897e3d408326a67"
+      }
+    ],
+    "status": "confirmed_open_gap"
+  },
   "python_immutable_memory_erasure_claimed": false,
   "readability_policy_relaxed": false,
   "real_container_or_windows_install_acceptance_claimed": false,

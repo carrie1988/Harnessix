@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
+status: current
+version: 2
 code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners: [core]
 modules: [secrets, trusted_actions, product_config, mcp]
@@ -216,3 +216,5 @@ Secret扫描和Owner前后检查，只在当前累计计数大于基线时传播
 Router原始返回验证仍使用Token和期限；不以已处理的父取消污染后续只对账恢复。
 新增两个纯检查点正负例和两个实际Gateway内联/Owner用例，分别验证已处理计数不触发、
 基线后的新取消会触发，以及原效果/一次执行/Owner调用不变；原补丁取消后对账用例必须通过。
+
+限定作用域[验收](../validation/secret-publication-2026-09-27-v1/README.md)冻结62专项、814相关和4701 passed/32 skipped完整回归，实际图渲染已复核。模型凭据经只读Artifact分页与历史传播的新观察保持开放，不将该缺口追认通过。

@@ -497,7 +497,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [冻结报告](validation/custom-success-2026-09-27-v1/README.md)记录91专项（89新增）、631相关及4641 passed/32 skipped版本绑定完整回归。
   [版本化Secret公开保护](changes/m09-4a-versioned-secret-publication.md)已补同一快照执行/保护、
   值/键/标量及规范JSON检查、Owner前后验证、父Task取消和仅元数据恢复；产品启动失败也清理。
-  [验收目录](validation/secret-publication-2026-09-27-v1/README.md)冻结60专项（54新增）、802相关及版本绑定完整回归。
+  [验收目录](validation/secret-publication-2026-09-27-v1/README.md)冻结62专项（56新增）、814相关及4701 passed/32 skipped版本绑定完整回归；
+  新观察确认模型凭据同值可经只读Artifact分页与历史传播，非完整产品启动或真实模型验收。
   全部Provider凭据和Secret端到端、历史Session/Artifact正文、跨重启正文安全恢复、Owner内部同步阻塞及Store/其他公开边界仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。

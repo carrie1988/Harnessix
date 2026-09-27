@@ -62,13 +62,13 @@
   "documentation_render_gate": {
     "documents": 305,
     "exit_code": 0,
-    "links": 8061,
+    "links": 8064,
     "mermaid": 735,
     "passed": true,
     "size_bytes": 103,
     "source_packages": 26,
-    "stdout_sha256": "41f3aeef9bf8e4fb2fc3025cb7873b09c7fa90222e60bb8d0b38f1eaa100afd9",
-    "stdout_summary": "文档门禁通过：305份文档、8061条链接、735幅Mermaid、26个源码包、34个变化路径"
+    "stdout_sha256": "09a0352c48e55bb87563e60cbca5aa0351e7596a0e0e340c5bf1a2074d1005d9",
+    "stdout_summary": "文档门禁通过：305份文档、8064条链接、735幅Mermaid、26个源码包、35个变化路径"
   },
   "external_model_requests": 0,
   "failed_full_regressions": [
@@ -91,7 +91,20 @@
     }
   ],
   "full_regression": {
-    "status": "not_run_after_fix"
+    "exit_code": 0,
+    "only_test_delta_from_code_revision": "无；全部测试同实现Revision",
+    "passed": 4701,
+    "production_spec_scripts_policy_and_baseline_match_code_revision": true,
+    "seconds": 409.57,
+    "size_bytes": 5325,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "fc9f6193458fd35245cd3fd309415c5f10de9fcbd032999b1e6c9029f48f5736",
+    "stdout_summary": "4701 passed, 32 skipped in 409.57s (0:06:49)",
+    "test_git_tree": "dc0d22ccbb3beb1b54fc3e77af8237dd2acc872d",
+    "test_tree_revision": "8e47909ddfebde93d4243b13680a0b29e9ef7fd6",
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true
   },
   "independent_negative_replay": {
     "constructor_errors_counted": false,
@@ -116,6 +129,56 @@
   },
   "make_check_passed": false,
   "new_automation_created": false,
+  "post_freeze_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "docs": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "f580d4516a6d55734b9cc5b8c8387b68dbf5c34196e958b4174a93e697908b77",
+      "stdout_summary": "文档门禁通过：305份文档、8071条链接、735幅Mermaid、26个源码包、35个变化路径"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "49af16032ea9fde198ad4d615ba9e92c35fc91374ade44c56ae61b6d1b84517a",
+      "stdout_summary": "1121 files already formatted"
+    },
+    "governance": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "289c25cf0069c1a620a63f30995ebd159a21d21da40c2a125783a253cbd33220",
+      "stdout_summary": "16 passed in 2.22s"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    }
+  },
+  "post_freeze_documentation_coverage": {
+    "documents": 305,
+    "links": 8071,
+    "mermaid": 735,
+    "source_packages": 26
+  },
   "related_regression": {
     "exit_code": 0,
     "overlaps_full_regression": true,
