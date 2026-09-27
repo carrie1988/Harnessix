@@ -2,7 +2,7 @@
 doc_type: source-research
 status: draft
 version: 1
-code_revision: 24e4e9c987055fe3a1590d3d0eada8f60574efa7
+code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
 owners: [core]
 modules: [session, agent, artifacts, secrets]
 related_adrs:

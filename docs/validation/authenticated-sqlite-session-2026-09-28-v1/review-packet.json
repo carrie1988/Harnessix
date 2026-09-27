@@ -1,0 +1,18 @@
+{
+  "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "delivered": "explicit_authenticated_sqlite_session_library_contract",
+  "full_regression_acceptance_pending": true,
+  "overall_0_9_complete": false,
+  "phase_0_9_4a_complete": false,
+  "release_blockers": [
+    "默认产品Root强制独立Key Backend与密钥备份迁移",
+    "Artifact原JSONL与二进制正文持久认证、跨Epoch重开",
+    "全部Provider材料、Owner阻塞与归属、SDK Scope失效相关ID",
+    "Request Store物理身份、编号威胁模型与远端MCP受管出口",
+    "12件Archive来源权利",
+    "三平台真实安装升级卸载、备份恢复和Beta",
+    "真实Provider能力及成本验收"
+  ]
+}

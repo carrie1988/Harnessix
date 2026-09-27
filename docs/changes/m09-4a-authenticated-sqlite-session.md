@@ -2,7 +2,7 @@
 doc_type: change-design
 status: draft
 version: 1
-code_revision: 24e4e9c987055fe3a1590d3d0eada8f60574efa7
+code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
 owners: [core]
 modules: [session, agent, artifacts, secrets]
 related_adrs:
@@ -256,3 +256,31 @@ Owner归属/阻塞、SDK Scope-loss相关ID、编号TM攻击、远端MCP、12件
 4. [sqlite_publication.py](../../src/harnessix/session/sqlite_publication.py)：Enrollment、Snapshot/前缀认证与有界恢复。
 5. [sqlite.py](../../src/harnessix/session/sqlite.py)：真实公共Store入口、原事务与Fork生命周期。
 6. [Migration 0029](../../src/harnessix/session/migrations/0029_authenticated_session_history.sql)、[测试](../../tests/agent/test_authenticated_store.py)。
+
+### 13.1 固定版本符号导航
+
+- [`src/harnessix/session/store_publication.py`：`original_bytes`，L33–L40](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L33-L40)。
+- [`src/harnessix/session/store_publication.py`：`extend_prefix`，L43–L47](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L43-L47)。
+- [`src/harnessix/session/store_publication.py`：`StoreIdentitySeal`，L59–L62](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L59-L62)。
+- [`src/harnessix/session/store_publication.py`：`ProjectionPublicationSeal`，L65–L74](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L65-L74)。
+- [`src/harnessix/session/store_publication.py`：`_verified`，L98–L113](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L98-L113)。
+- [`src/harnessix/session/store_publication.py`：`SessionPublicationBinding`，L116–L193](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L116-L193)。
+- [`src/harnessix/session/store_publication.py`：`projection`，L164–L180](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L164-L180)。
+- [`src/harnessix/session/store_publication.py`：`close`，L189–L193](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/store_publication.py#L189-L193)。
+- [`src/harnessix/session/sqlite_publication.py`：`verify_store`，L28–L66](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L28-L66)。
+- [`src/harnessix/session/sqlite_publication.py`：`checkpoint`，L69–L84](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L69-L84)。
+- [`src/harnessix/session/sqlite_publication.py`：`verify_snapshot`，L87–L121](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L87-L121)。
+- [`src/harnessix/session/sqlite_publication.py`：`verified_event`，L124–L147](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L124-L147)。
+- [`src/harnessix/session/sqlite_publication.py`：`persist_event`，L150–L175](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L150-L175)。
+- [`src/harnessix/session/sqlite_publication.py`：`authenticated_events`，L194–L243](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L194-L243)。
+- [`src/harnessix/session/sqlite_publication.py`：`save_projection`，L246–L275](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_publication.py#L246-L275)。
+- [`src/harnessix/session/sqlite_append.py`：`AppendStore`，L18–L33](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_append.py#L18-L33)。
+- [`src/harnessix/session/sqlite_append.py`：`append_in_transaction`，L36–L91](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite_append.py#L36-L91)。
+- [`src/harnessix/session/sqlite.py`：`_session_connection`，L52–L80](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L52-L80)。
+- [`src/harnessix/session/sqlite.py`：`_initialize`，L206–L269](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L206-L269)。
+- [`src/harnessix/session/sqlite.py`：`_snapshot`，L310–L330](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L310-L330)。
+- [`src/harnessix/session/sqlite.py`：`recovery_threads`，L354–L359](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L354-L359)。
+- [`src/harnessix/session/sqlite.py`：`fork`，L432–L479](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L432-L479)。
+- [`src/harnessix/session/sqlite.py`：`rebuild`，L542–L548](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L542-L548)。
+- [`src/harnessix/session/sqlite.py`：`_validated_replay`，L550–L574](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/sqlite.py#L550-L574)。
+- [`src/harnessix/session/publication_seal.py`：`issue_new_event`，L156–L200](https://github.com/carrie1988/Harnessix/blob/857ce38444d89fef69a860946f92764c6d3adf9f/src/harnessix/session/publication_seal.py#L156-L200)。

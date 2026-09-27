@@ -1,0 +1,253 @@
+{
+  "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "0616eb4a313afb81d5be3e9e18edcb407d25880814263f5ed75c7454164f454a",
+      "size_bytes": 3068
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "1519ade66bf71992b429551f4c611f152238c22b096f562a9e2224e4f74088f6",
+      "size_bytes": 530
+    },
+    {
+      "path": "contract-facts.json",
+      "sha256": "a64d8cdd32194e961fd40a50c0d7e63b942edf449b57d6b80d0faa14eea7c27f",
+      "size_bytes": 2024
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "02edb54259351b13aaad82608702df5d18a71bab69800c91c81b35ff9009eee0",
+      "size_bytes": 777
+    },
+    {
+      "path": "verification.json",
+      "sha256": "373bf22893765ae06e4d19f5e55ee4214225317d0e5a1e8fc0d53c87d952c14a",
+      "size_bytes": 8381
+    }
+  ],
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "113a282d542290d43fea3a385e607fe4d1d765b61d8870b7419fd217406026f9"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "docs/baselines/readability-0.9.0-final.json",
+      "sha256": "c7dabcf69f32427b1837c17c9ec07b1a7ce3b452b98720efbf2d19317dc9ea48"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "governance/documentation-policy-v1.json",
+      "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "governance/readability-policy-v1.json",
+      "sha256": "b5a145762c1594346413fed897d505a3f3dedb7120551635d52f95af98d70740"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "pyproject.toml",
+      "sha256": "f46a005fe7cd6d6a81c716f15f5d8b6daa1945343d98d627a1b9514023d38481"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/documentation_check.py",
+      "sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/generate_specs.py",
+      "sha256": "baaddd355dd3b1f2cd52e39f7e6e95256501a7d0573a82a9cd20a1b9d980e9e8"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/license_scan.py",
+      "sha256": "cb76a1a022da5f4a5911de4abaf18ec45c0ff49c4f58e43a2f1446f5123d125b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/readability_report.py",
+      "sha256": "73dd083211e553f774e6b8f8a44b857a6e741546c9777c401f809dd9d1c1325b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/sbom_generate.py",
+      "sha256": "e4586d4b64dbea1487839e9907d7a5fe07bd24d921b9633fedcfd3dede4a588e"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "scripts/secret_scan.py",
+      "sha256": "826b35da6b942045e5fda1a9b9e38864b79b9a24942100060dbd900a0d6965a1"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/cancellation.py",
+      "sha256": "e8e830e6a0349a141917fee735a041f59bb6f85b7b80696b52d56ce95291aa25"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/errors.py",
+      "sha256": "65c0d9f5a3cc7d9adc05e836a73ea38c372f25606f98cc9bf9467a6553e4c67f"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/models.py",
+      "sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/publication.py",
+      "sha256": "34e9601a3e75b912afcf4510153b02fe05bfe5290178eb47365dd3c00ab3171f"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/reducer.py",
+      "sha256": "fa5e03c060868b097c3c9bfa743cd8921b08cc4eb77ae555c93b6dcae8e11592"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/agent/runtime.py",
+      "sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/artifacts/persistence.py",
+      "sha256": "b65dd0fabc7448c6c13438d919e009b8a3a83f72af47839187e05d4cc9593bb4"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/artifacts/sqlite.py",
+      "sha256": "79459e2d8f6c96bb6362a45b5dd1f74122a04ebc713ba957adce8098172ce019"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/file_lock.py",
+      "sha256": "5f8965b1763151bdc394d0bec68671dfefb53737d5799aae25956766c70ede1f"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/secrets/provider.py",
+      "sha256": "bbe17b6ec72d53928a2cded0ddeffd74393763bc403a19e3d8d1d53a8136a51b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/secrets/publication.py",
+      "sha256": "effc5de4380bfa4193f786512842782b332d430312eeec0410c4ed366e8a628b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/secrets/redaction.py",
+      "sha256": "eec9dc685b94300e9b21120c36eaec3bb031e20211e0d6d51c4e1d22c5a01551"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/errors.py",
+      "sha256": "c8515c11a04501542f969f99b31122c7c30cd317c2a2e7a4ae1b0430d36d5c09"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/migrations/0029_authenticated_session_history.sql",
+      "sha256": "4aab60066b1bde339ac5964f51b21a5bfa56469f57d2fff99dadf665b193fe2e"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/ports.py",
+      "sha256": "a179bff37fc3e743f42e1446a78e9fd839385776fc2d9f29c40208f0b1af58ce"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/publication_seal.py",
+      "sha256": "f1a681469540ccb1169a5ee27d37dce1b15584f4d02fb2780a32415be742a29d"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/sqlite.py",
+      "sha256": "eb92e8778ea6f3c7f6ac81550585ad99f0f73da1c8cf4858ebfba345712c0e2b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/sqlite_append.py",
+      "sha256": "17fc0d9c6e3b2e685c2a7a94fe8cdf977c0fa8fd35cf020bfc437b37f803851d"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/sqlite_publication.py",
+      "sha256": "6dc9acb8e22ed3943e29b1a8444ceebd8ffb1ecf13df58bcf7e7f2cafaf96e04"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "src/harnessix/session/store_publication.py",
+      "sha256": "92e8582e7150eb15c1f92da19ce102db112ee394767487556c08e351f38bd07a"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_authenticated_store.py",
+      "sha256": "f857cca628ab20ff0d5e25d4e27a9deb95b6e8362697bf7b4d410f43a31ccd28"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_batch_session_upgrade.py",
+      "sha256": "95f9d2defea96eff241d4109ddb25b1e297aa72e5fad78b69d2890aba959639e"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_process_session_upgrade.py",
+      "sha256": "aba44c0e21575d313a400493a40baebd8c5327d171cc44267a6b073ebacb0c0f"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_session_upgrade.py",
+      "sha256": "5025c9cb1438d9d2e44b4abb57bd514f481d027faa060c608fac8fb8afc06a3b"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_store.py",
+      "sha256": "d07c4da6544e70ac48be16420913aa7ef129eba35295028e47ba6fd397a40641"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_store_maintenance.py",
+      "sha256": "c0dcac080b43c8e76e1be9cf6cd4c05bde75aa6e8a2743100dfab688d84f12c4"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/agent/test_wal_initialization.py",
+      "sha256": "0e81cca1b827e15adb9335308de2455369a1861bded1ace6b3e4f7e794f21d0a"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/artifacts/test_batch_diff_upgrade.py",
+      "sha256": "e2d653d90267ba2b564efb8d1c97d3cf2cf82e7695f427cb6dd5f008e3a36cd9"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/artifacts/test_process_output_upgrade.py",
+      "sha256": "fcf69a267ed6f565757ba63fe0c428ee588317aae07aa4ddb9e2625a18e62db6"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/artifacts/test_publication_upgrade.py",
+      "sha256": "10dadd20ca74a0dfb37d79a541c96c98aab8eabd4b6f59d67309d68d4bedd33a"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/governance/test_security_governance_evidence.py",
+      "sha256": "b7573895e87c785922b1cb3004490ac123cfa33cf1dd4f34ee10638da64b1629"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "tests/session/test_publication_seal.py",
+      "sha256": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956"
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "path": "uv.lock",
+      "sha256": "9a64451b9b7d3140fd5baddc84e42f171feed3b66e93c8f92609596634d45083"
+    }
+  ]
+}

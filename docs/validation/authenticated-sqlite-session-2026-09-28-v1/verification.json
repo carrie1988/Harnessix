@@ -1,0 +1,269 @@
+{
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "d817d69960afaa2c31fadfb57a1d270e0b0aa0e80a0e088d20d8db42e1339cba",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2423个输入完整覆盖且固定规则零命中"
+  },
+  "build": {
+    "clean_machine_install_claimed": false,
+    "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+    "dependencies_reused_local_environment": true,
+    "exit_code": 0,
+    "passed": true,
+    "release_artifacts": false,
+    "reproducible_build_claimed": false,
+    "size_bytes": 247,
+    "source_archive_docs_are_pre_full_freeze": true,
+    "stdout_sha256": "82575b3e585e3c63787f925bd1f12708a4cfcd808b11972abc054057a1297c23",
+    "stdout_summary": "Successfully built /private/tmp/harnessix-auth-store-dist/harnessix-0.1.0-py3-none-any.whl"
+  },
+  "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+  "diagrams": {
+    "diagrams": 4,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-authenticated-sqlite-session.md",
+        "exit_code": 0,
+        "png_sha256": "3aeb26aa56b3c09ca49451b21f9c6b7c19b637083b856cf3a3f4c6041e51edec",
+        "png_size_bytes": 47464,
+        "source_sha256": "faeb46b0b4e8a341b2ce0295dcae87426aeb9a417225b5b8db872086a77e0a5c"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-authenticated-sqlite-session.md",
+        "exit_code": 0,
+        "png_sha256": "af65acf51c06901a4543b71e91215aff2eb03746a1a7fb0a58278bb724eb13ec",
+        "png_size_bytes": 77200,
+        "source_sha256": "22753cd219cb8659f05fbb2acbb5dc3b1ad128f5b86413b9fb9c9b8196719b55"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-authenticated-sqlite-session.md",
+        "exit_code": 0,
+        "png_sha256": "5f8dbb124fa7f7e141ab6953ec14c9c923e279be65cd277c6474e1aa5430be34",
+        "png_size_bytes": 32038,
+        "source_sha256": "a09d48aaeed6714e264427c3587ee19b5ce2dfde7f95db50ddc1175466c1760a"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-authenticated-sqlite-session.md",
+        "exit_code": 0,
+        "png_sha256": "4cad2719c2986d0a847f6153cb803922dd24a460d172d56146469f87e7c95c30",
+        "png_size_bytes": 55555,
+        "source_sha256": "b2845f48b16c1156b8d83bf8ce885f72961f6e74c2eb4c74f053df67c4d00587"
+      }
+    ]
+  },
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "gates": {
+    "contracts": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_specs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/documentation_check.py",
+        "--changed-from",
+        "24e4e9c987055fe3a1590d3d0eada8f60574efa7"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "00fa1756be55ef9dbdb8757eadf43033ef8cc1a84addbcd438bc10d32520619a",
+      "stdout_summary": "文档门禁通过：331份文档、8513条链接、774幅Mermaid、26个源码包、37个变化路径"
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "edebe8b5dfc5edd112bd2a2d16584f45eb0c8a137aab976e5e49035c2c73e0b5",
+      "stdout_summary": "1180 files already formatted"
+    },
+    "lint": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "mypy": {
+      "command": [
+        "uv",
+        "run",
+        "mypy",
+        "src"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "e2aaa895ba0bf5e57df40e2897c4a13c940328ba53b9ff6f50de1e264259bf9e",
+      "stdout_summary": "Success: no issues found in 352 source files"
+    },
+    "readability": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/readability_report.py",
+        "--check",
+        "--check-final-report",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    },
+    "sbom": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/sbom_generate.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret_self": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/secret_scan.py",
+        "--self-check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_engineering_task_pack.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    }
+  },
+  "license_gate": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/license_scan.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "real_model_requests": 0,
+  "related_regression": {
+    "overlaps_store_tests": true,
+    "passed": 1405,
+    "scope": [
+      "tests/agent",
+      "tests/artifacts",
+      "tests/context",
+      "tests/product_config",
+      "tests/app_server",
+      "tests/session"
+    ],
+    "seconds": 79.03,
+    "size_bytes": 1632,
+    "source_semantics_unchanged_after_run": true,
+    "stdout_sha256": "00d9aa30a53db62b61258cb589cead57bb06c63e411af0d8d80d36ff2c435495"
+  },
+  "wheel_consumer": {
+    "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+    "default_product_authentication_claimed": false,
+    "fixture_persistent_key": true,
+    "isolated_from_source_and_tests": true,
+    "module_bytes_match_fixed_revision": true,
+    "passed": true,
+    "production_key_backend_claimed": false,
+    "real_model_requests": 0,
+    "records": [
+      {
+        "actual_production_store_contract": true,
+        "all_four_facts_committed_together": true,
+        "default_product_authentication_claimed": false,
+        "exact_original_event_bytes": true,
+        "fixture_key_backend": true,
+        "isolated_python": true,
+        "module_origin_verified": true,
+        "passed": true,
+        "script_sha256": "340bdf839dc8b23721c90902ff1d58a7a35a71b94c38f8c9fa0721e656092b6d"
+      },
+      {
+        "default_product_authentication_claimed": false,
+        "forged_snapshot_and_plain_hash_rejected": true,
+        "isolated_python": true,
+        "module_origin_verified": true,
+        "new_process_and_scope_reopen": true,
+        "passed": true,
+        "production_key_backend_claimed": false,
+        "real_model_requests": 0,
+        "rebuild_from_original_proven_events": true,
+        "script_sha256": "340bdf839dc8b23721c90902ff1d58a7a35a71b94c38f8c9fa0721e656092b6d",
+        "unsigned_reopen_rejected": true
+      }
+    ],
+    "separate_os_processes": true
+  }
+}

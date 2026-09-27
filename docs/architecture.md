@@ -2,7 +2,7 @@
 doc_type: system-architecture
 status: current
 version: 78
-code_revision: 829dabf8b7051b1242de2202ca9b1df99dc015bc
+code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
 owners:
   - core
 modules:

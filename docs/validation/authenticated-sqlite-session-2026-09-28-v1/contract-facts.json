@@ -1,0 +1,50 @@
+{
+  "archive_rights_blockers": 12,
+  "artifact_body_cross_restart_authentication_implemented": false,
+  "artifact_release_claimed": false,
+  "artifacts": [
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "filename": "harnessix-0.1.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "08fcdfd988c8db03b410541709dcc2cf6ede7108129109b450556359cb50ceec",
+      "size_bytes": 983922
+    },
+    {
+      "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+      "filename": "harnessix-0.1.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "0ddcb4bf3af1ac978dee14c3d0b7076982bd0cdd9e160f8dd3169cf35decded7",
+      "size_bytes": 7275115
+    }
+  ],
+  "authentication_is_public_authorization": false,
+  "clean_machine_install_claimed": false,
+  "code_revision": "857ce38444d89fef69a860946f92764c6d3adf9f",
+  "complete_thread_deletion_detection_claimed": false,
+  "default_product_history_authentication_enabled": false,
+  "explicit_library_authentication_implemented": true,
+  "historical_validation_files": 707,
+  "historical_validation_files_unchanged": true,
+  "history_body_and_seal_bytes_limit": 67108864,
+  "history_event_limit": 100000,
+  "legacy_unproven_history_resigned": false,
+  "migration_version": 29,
+  "new_governance_tests": 2,
+  "new_store_tests": 42,
+  "original_event_codec_and_public_dto_unchanged": true,
+  "original_migrations_1_to_28_preserved": true,
+  "package_exports_and_dependency_edges_unchanged": true,
+  "physical_database_identity_proven": false,
+  "production_atomic_seal_write_implemented": true,
+  "production_key_backend_implemented": false,
+  "real_model_requests": 0,
+  "reproducible_build_claimed": false,
+  "shared_write_and_read_limits": true,
+  "snapshot_proof_is_full_history_rescan": false,
+  "strict_nested_json_contract_bug_fixed": true,
+  "structure_thresholds_unchanged": true,
+  "unknown_legacy_history_authorization_closed": false,
+  "untracked_attack_draft_excluded": true,
+  "whole_valid_database_rollback_detection_claimed": false
+}
