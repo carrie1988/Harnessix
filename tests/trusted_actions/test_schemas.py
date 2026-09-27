@@ -6,6 +6,11 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from harnessix.delivery.git_contracts import GitPushActionInput, GitPushIntent, GitPushReceipt
+from harnessix.processes.public_output import (
+    PublicEvalOutputSummary,
+    PublicProcessOutputSummary,
+    PublicProcessStreamSummary,
+)
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
     ActionExecutionOutcome,
@@ -29,6 +34,9 @@ def test_action_plane_public_schemas_match_generated_contracts() -> None:
         "git-push-intent": GitPushIntent,
         "git-push-action-input": GitPushActionInput,
         "git-push-receipt": GitPushReceipt,
+        "public-process-stream-summary": PublicProcessStreamSummary,
+        "public-process-output-summary": PublicProcessOutputSummary,
+        "public-eval-output-summary": PublicEvalOutputSummary,
     }
     root = Path(__file__).parents[2] / "spec"
     for name, model in contracts.items():

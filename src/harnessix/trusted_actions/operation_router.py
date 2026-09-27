@@ -23,6 +23,7 @@ from harnessix.trusted_actions.public_errors import (
     execute_exception_outcome,
     reconcile_exception_code,
 )
+from harnessix.trusted_actions.public_outcomes import normalize_failure_outcome
 
 if TYPE_CHECKING:
     from harnessix.trusted_actions.router import TrustedActionRouter
@@ -45,6 +46,7 @@ async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionEx
         router._validate_outcome_identity(plan, outcome)
         if outcome.kind == "manual_intervention":
             raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
+        outcome = normalize_failure_outcome(plan, outcome, stage="execute")
     except TimeoutError as error:
         kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
@@ -140,6 +142,7 @@ async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> Action
             outcome = await definition.executor.reconcile(plan, arguments)
         outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
         router._validate_outcome_identity(plan, outcome)
+        outcome = normalize_failure_outcome(plan, outcome, stage="reconcile")
     except TimeoutError as error:
         outcome = ActionExecutionOutcome(
             kind="unknown",

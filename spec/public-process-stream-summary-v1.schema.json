@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "description": "公开观察摘要；持久流有上限，观察字节数可能因最后一批输出越过上限。",
+  "properties": {
+    "observed_bytes": {
+      "minimum": 0,
+      "title": "Observed Bytes",
+      "type": "integer"
+    },
+    "observed_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Observed Sha256",
+      "type": "string"
+    },
+    "persisted_bytes": {
+      "maximum": 67108864,
+      "minimum": 0,
+      "title": "Persisted Bytes",
+      "type": "integer"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "eof": {
+      "title": "Eof",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "observed_bytes",
+    "observed_sha256",
+    "persisted_bytes",
+    "truncated",
+    "eof"
+  ],
+  "title": "PublicProcessStreamSummary",
+  "type": "object"
+}

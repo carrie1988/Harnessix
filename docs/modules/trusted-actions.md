@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: 3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d
 owners:
   - core
@@ -975,8 +975,20 @@ Gateway的规划Context Factory、审批Review和终态Output回调异常由`san
 [`test_public_error_leakage.py`](../../tests/trusted_actions/test_public_error_leakage.py)覆盖原执行/对账故障与
 固定错误合同；[`test_plan_error_boundaries.py`](../../tests/trusted_actions/test_plan_error_boundaries.py)
 使用真实Runtime、ModelRequest历史、SQLite Session、Protocol Server/SDK、Span及Metrics验证计划回调链路，
-检查原式样及JSON转义表示，不以空导出作为通过条件。资源规模/Store故障、结构化Outcome或全部扩展输出
+检查原式样及JSON转义表示，不以空导出作为通过条件。资源规模/Store故障、成功Outcome或全部扩展输出
 不因本专项而获得完整无泄漏证明；0.9.4a整体状态仍以[总体详设](../changes/m09-4-security-and-supply-chain.md)为准。
+
+### 29.1 正常返回失败的正式公开合同
+
+[`public_outcomes.py`](../../src/harnessix/trusted_actions/public_outcomes.py)在Router完成Operation前收敛失败码，
+来源与阶段有限表不接受动态注册或码前缀；失败JSON与Artifact默认不公开。只有内置Process/Eval的
+正式有界DTO、计划Profile/Process ID及失败状态匹配时保留原JSON与摘要。UNKNOWN/MANUAL和外部ID不改。
+Gateway恢复旧Audit时再次归一公开分类、不重写原链，正常返回失败投影再核对DTO、输出SHA与ArtifactRef SHA。
+成功业务输出仍沿用原合同；Eval非零退出仍SUCCEEDED且passed=false。
+
+有限码表、来源身份、核心伪代码、三图、字段约束、旧数据边界与测试矩阵见
+[结构化失败详设](../changes/m09-4a-returned-failure-boundary.md)及[ADR 0093](../adr/0093-kernel-owned-public-failure-contract.md)。
+依赖仅增加Process和Artifact只读DTO，不导入Owner运行时或SQLite Store，不增加独立服务。
 
 ## 30. 安全与隐私分析
 

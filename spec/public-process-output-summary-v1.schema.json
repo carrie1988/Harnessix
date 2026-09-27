@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "PublicProcessStreamSummary": {
+      "additionalProperties": false,
+      "description": "公开观察摘要；持久流有上限，观察字节数可能因最后一批输出越过上限。",
+      "properties": {
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "observed_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Observed Sha256",
+          "type": "string"
+        },
+        "persisted_bytes": {
+          "maximum": 67108864,
+          "minimum": 0,
+          "title": "Persisted Bytes",
+          "type": "integer"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_bytes",
+        "observed_sha256",
+        "persisted_bytes",
+        "truncated",
+        "eof"
+      ],
+      "title": "PublicProcessStreamSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "与既有public_output形状相同；验证使用原JSON，不重编码审计摘要。",
+  "properties": {
+    "version": {
+      "const": "trusted-process-output/v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Profile",
+      "type": "string"
+    },
+    "process_id": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Process Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "exited",
+        "failed",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "returncode": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Returncode"
+    },
+    "stop_reason": {
+      "enum": [
+        "exited",
+        "timeout",
+        "cancelled",
+        "closed",
+        "output_limit",
+        "input_limit",
+        "io_error",
+        "host_lost",
+        "launch_failed",
+        "cleanup_failed",
+        "unknown"
+      ],
+      "title": "Stop Reason",
+      "type": "string"
+    },
+    "stdout": {
+      "$ref": "#/$defs/PublicProcessStreamSummary"
+    },
+    "stderr": {
+      "$ref": "#/$defs/PublicProcessStreamSummary"
+    },
+    "complete": {
+      "title": "Complete",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "version",
+    "profile",
+    "process_id",
+    "state",
+    "returncode",
+    "stop_reason",
+    "stdout",
+    "stderr",
+    "complete"
+  ],
+  "title": "PublicProcessOutputSummary",
+  "type": "object"
+}

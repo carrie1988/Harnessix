@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 15
+version: 16
 code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
 owners:
   - core
@@ -1594,3 +1594,18 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 | 3 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 将Windows共享冲突重读扩展为最长0.912秒，并为最终I/O失败增加不含路径与正文的低基数诊断 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 根据三平台CI故障增加仅限WinError 5/32的回执有界重读合同及正反故障注入 |
 | 1 | `c7449164a2bbf08164472a36c11102dc408ebb15` | 2026-09-12 | 建立Process Runtime现行事实源，区分0.5兼容Saga与0.7跨平台Supervisor，覆盖合同、Lease/CAS、Owner协议、POSIX/Windows/PTY、输出脱敏、取消恢复、Container复用、测试和已知限制 |
+
+## 26. 正式公开失败摘要与诊断工件边界
+
+[`public_output.py`](../../src/harnessix/processes/public_output.py)定义严格额外字段拒绝的
+PublicProcessStreamSummary、PublicProcessOutputSummary与PublicEvalOutputSummary；
+与[`trusted_output.py`](../../src/harnessix/processes/trusted_output.py)的既有public_output形状一致，
+不改变JSONL文档或canonical_digest。公开流只含字节计数、摘要、截断与EOF，不含stdout正文。
+失败摘要须绑定计划Profile与Process ID，停止原因受有限ProcessStopReason约束；Eval passed只由终态派生。
+complete=false可能来自归档截断，不能因此误报持久流损坏；complete=true要求双流EOF且无持久截断。
+
+Router只保留通过合同的失败元数据，诊断字节继续由Owner重建并在所属Session中发布Artifact。
+Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节完整性、Store所属域及权限。
+详细架构、字段、正常/失败/恢复时序、兼容与测试映射见
+[结构化失败详设](../changes/m09-4a-returned-failure-boundary.md)及[正式回归](../../tests/trusted_actions/test_process_failure_projection.py)。
+成功Eval测试不通过仍为业务结果，不改变FAILED/UNKNOWN恢复语义，不增加新部署组件。

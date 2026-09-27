@@ -22,6 +22,10 @@ from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
+from harnessix.trusted_actions.public_outcomes import (
+    normalize_failure_outcome,
+    validate_failure_projection,
+)
 from harnessix.trusted_actions.router import TrustedActionRouter
 
 
@@ -109,7 +113,10 @@ async def terminal_result(
 ) -> ToolResultContent:
     """核对Router终态摘要后，由配置的Owner重建正文并发布引用。"""
 
+    outcome = normalize_failure_outcome(route.plan, outcome, stage=None, allow_pending_output=True)
     provider = state.outputs.get(call.tool)
+    if outcome.kind != "succeeded" and outcome.artifact_sha256 is None:
+        return build_result(route, call, outcome, origin=origin, approval=approval)
     if provider is None or route.state == "denied":
         return build_result(route, call, outcome, origin=origin, approval=approval)
     event = state.router.events(route.plan.execution.plan_id)[-1]
@@ -139,6 +146,13 @@ async def terminal_result(
         raise
     except Exception as error:
         raise sanitize_gateway_exception(error, stage="output") from None
+    validate_failure_projection(
+        route.plan,
+        outcome,
+        projected,
+        expected_output_sha256=event.output_sha256,
+        expected_artifact_sha256=event.artifact_sha256,
+    )
     return build_result(
         route,
         call,

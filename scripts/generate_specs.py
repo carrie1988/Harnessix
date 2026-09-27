@@ -175,6 +175,11 @@ from harnessix.processes.contracts import (
 from harnessix.processes.output_artifact import ProcessOutputDocument, ProcessOutputRecord
 from harnessix.processes.owner_protocol import ProcessOwnerCommand, ProcessOwnerStart
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt
+from harnessix.processes.public_output import (
+    PublicEvalOutputSummary,
+    PublicProcessOutputSummary,
+    PublicProcessStreamSummary,
+)
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
     ProcessLaunchBinding,
@@ -375,6 +380,9 @@ def generate_specs(output: Path) -> None:
         ("process-launch-binding", ProcessLaunchBinding),
         ("process-lease", ProcessLease),
         ("process-output-observation", ProcessOutputObservation),
+        ("public-process-stream-summary", PublicProcessStreamSummary),
+        ("public-process-output-summary", PublicProcessOutputSummary),
+        ("public-eval-output-summary", PublicEvalOutputSummary),
         ("process-owner-start", ProcessOwnerStart),
         ("process-owner-command", ProcessOwnerCommand),
         ("process-owner-receipt", ProcessOwnerReceipt),
