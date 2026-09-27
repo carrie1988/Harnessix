@@ -508,10 +508,12 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   保护专用Owner v2封套、真实本机退出/超时/取消及已验真效果元数据恢复；
   [固定版本证据](validation/typed-binary-publication-2026-09-28-v1/README.md)单独冻结，旧缺口报告保持不变；
   不将本机进程、Owner替身或离线检查当作Windows、实际容器、真实Provider与整体发布验收。
-  同一固定版本进一步确认模型直接文本进入Session、SDK回放与下一次模型历史，Thread摘要及非空遥测未命中；
+  前序固定版本进一步确认模型直接文本进入Session、SDK回放与下一次模型历史，Thread摘要及非空遥测未命中；
   [模型流式文本与事件持久前保护](changes/m09-4a-model-text-publication.md)独立治理该来源：安全前缀持续输出，
   单步骤跨块/UTF8/共享预算，事件批次CAS前检查及主/摘要模型完整请求检查；
   保持原文、尝试意图、用量、Hash和Schema，不把它等同于全部Session持久入口或历史授权关闭。
+  [模型文本验收](validation/model-text-publication-2026-09-28-v1/README.md)记录独立旧版负例、即时安全前缀和实际消费链；
+  另确认用户prompt已被直接持久化和SDK回放，即使出站拒绝且Provider调用为0，入站边界仍须整改。
   全部Provider凭据和Secret端到端、历史Session/其他公开出口、跨重启正文安全恢复、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。

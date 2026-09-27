@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: b9443cc9bb9252d51ec79214357de081100949ae
 owners: [core]
 modules: [agent, secrets, product_config, app_server, session]
 related_adrs:
@@ -20,6 +20,7 @@ supersedes: []
 ## 1. 固定范围与总体结论
 
 [完整总体及详细设计](../../changes/m09-4a-model-text-publication.md)包含四幅图、正式接口、字段、伪代码、失败恢复与源码导航。
+固定源码及正式测试绑定`b9443cc9bb9252d51ec79214357de081100949ae`，实现提交`acf9122`；后续仅增加两项治理测试。
 模型流式文本按原模式保留尾窗，安全前缀在模型未完成时经SDK输出；事件批次在CAS前检查，
 主模型和摘要模型完整请求在Provider消费前检查。不改原正文、Hash、公开Schema或尝试账本顺序。
 本报告只验证该来源；完整0.9.4a、0.9及商用发布仍未完成，许可证12件仍阻断。

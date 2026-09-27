@@ -1,13 +1,135 @@
 {
-  "code_revision": "acf9122fe2bd1bcb3ea3bd788f469d805a48fafb",
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "07f247e9e8673001bf9a6a1d2049bc7ac6c9d14f6c29529129acc33de930922c"
+  },
+  "clean_source_build": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 249,
+    "stdout_sha256": "6f3fa63ecd46caf52123d37d26f484218cb7597f94b067073727c8210b6932fb"
+  },
+  "code_revision": "b9443cc9bb9252d51ec79214357de081100949ae",
+  "diagram_visual_review": {
+    "diagrams": 5,
+    "documents": 2,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-model-text-publication.md",
+        "exit_code": 0,
+        "png_sha256": "a3fba313b14a99c143c5219070e59418866e44948a45b94f35e19aa73830ebfd",
+        "png_size_bytes": 58789,
+        "source_sha256": "a36618a69c241b2d8e0f39cfcb8aac994972f68c6185905f84f3a1cc9a1fae88"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-model-text-publication.md",
+        "exit_code": 0,
+        "png_sha256": "ec19deccd57f3ebb809e38dcf5edcfc28895e1eb139dd8825942a9720d35e1a3",
+        "png_size_bytes": 79930,
+        "source_sha256": "7932b0ac65825c2d6c4848c94e35bd99e14122d0bc7b638688b38ec403dd9fab"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-model-text-publication.md",
+        "exit_code": 0,
+        "png_sha256": "c7009ded9c13bb1cf221750d662d0f15c5f78080209fab4cd217e6319e3ec9e3",
+        "png_size_bytes": 79523,
+        "source_sha256": "72f8bfeef3b1e00aefe5c9c26d2f64e671cce0512ffa1077efa0c1f1b7bc998d"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-model-text-publication.md",
+        "exit_code": 0,
+        "png_sha256": "d569c5df155db2fea974d541c244ead66018014c75dda0388715d6cfb47e8b0e",
+        "png_size_bytes": 43029,
+        "source_sha256": "f0bc7962501251852e9e97dc8dfca8a06f2f9739c673159aa6199af019ee0b43"
+      },
+      {
+        "diagram": 1,
+        "document": "docs/validation/model-text-publication-2026-09-28-v1/README.md",
+        "exit_code": 0,
+        "png_sha256": "64fd999e89f1e6073c6c07f3a4df624850421f14d4e493a6b8d2e7be5ab875ca",
+        "png_size_bytes": 21400,
+        "source_sha256": "0aab31d79da92521a5a833b2a23c73d018576e8346be0755937bc6cdda7a3df3"
+      }
+    ],
+    "unchanged_existing_diagrams_rerendered": false
+  },
   "external_model_requests": 0,
   "full_regression": {
     "is_acceptance": false,
     "status": "pending"
   },
+  "gates": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 102,
+      "stdout_sha256": "fa604f5bb59932cd1aadde10eb55e3e5726da61d90f9f15bdf503cd01eb73e60",
+      "stdout_summary": "文档门禁通过：314份文档、8217条链接、750幅Mermaid、26个源码包、0个变化路径"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "55ebd15e0d7f4264fd627f7487857f94c1f6118b369c4ec8f1c21c5694bc7204",
+      "stdout_summary": "1145 files already formatted"
+    },
+    "lint": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "0f914c8bf550848f3d995e3da18cfb4d06181b6036e1bd52696089496cdaf2cb",
+      "stdout_summary": "Success: no issues found in 342 source files"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    },
+    "sbom": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "taskpacks": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    }
+  },
   "license_gate": {
     "blocked_archive_count": 12,
-    "passed": false
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b"
   },
   "make_check_passed": false,
   "new_automation_created": false,
@@ -15,6 +137,12 @@
     "includes_all_later_special_tests": false,
     "passed": 1837,
     "seconds": 82.09
+  },
+  "secret_self_check": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 56,
+    "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
   },
   "source_inputs_count": 32,
   "special_regression": {

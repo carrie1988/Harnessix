@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: b9443cc9bb9252d51ec79214357de081100949ae
 owners: [core]
 modules: [agent, secrets, product_config, app_server, session]
 related_adrs:
@@ -110,6 +110,7 @@ flowchart TD
   Commit --> Tail[发布最后安全尾部]
   Kind -- 工具或用量 --> Guard[持久事件批次检查]
   Guard --> Ledger[原工具意图或尝试账本]
+  Start --> Event
   Emit --> Event
   Tail --> Event
   Ledger --> Event
