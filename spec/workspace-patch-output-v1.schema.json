@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "description": "既有五字段成功摘要；只公开事务身份、成员数、固定终态及Diff摘要。",
+  "properties": {
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "files": {
+      "maximum": 16,
+      "minimum": 1,
+      "title": "Files",
+      "type": "integer"
+    },
+    "state": {
+      "const": "published",
+      "title": "State",
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "execution",
+        "recovery"
+      ],
+      "title": "Origin",
+      "type": "string"
+    },
+    "diff_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Diff Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "files",
+    "state",
+    "origin",
+    "diff_sha256"
+  ],
+  "title": "PublicWorkspacePatchOutput",
+  "type": "object"
+}

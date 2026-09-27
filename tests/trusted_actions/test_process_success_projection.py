@@ -16,13 +16,14 @@ from tests.trusted_actions.test_process_failure_projection import ProcessExecuto
 from tests.trusted_actions.test_success_projection_boundaries import output_reference
 
 
+@pytest.mark.parametrize("delivery", ["owner", "inline"])
 @pytest.mark.parametrize("evaluation,returncode", [(False, 0), (True, 0), (True, 1)])
 @pytest.mark.parametrize("recovery", [False, True])
 @pytest.mark.parametrize(
     "case", ["valid", "profile", "process_id", "extra", "state", "stop", "returncode", "passed"]
 )
 async def test_success_process_summary_requires_formal_semantics_even_when_audit_hash_matches(
-    tmp_path, evaluation, returncode, recovery, case
+    tmp_path, evaluation, returncode, recovery, case, delivery
 ):
     class Returning(ProcessExecutor):
         async def execute(self, plan, arguments):
@@ -60,7 +61,9 @@ async def test_success_process_summary_requires_formal_semantics_even_when_audit
         route = actions.status(initial.plan.execution.plan_id)
         projected = {**summary, "artifact": output_reference(outcome.artifact_sha256)}
         output = FixedOutput(projected)
-        state = SimpleNamespace(router=actions, outputs={route.plan.binding.tool: output})
+        state = SimpleNamespace(
+            router=actions, outputs={route.plan.binding.tool: output} if delivery == "owner" else {}
+        )
         thread, turn, call = agent_state(root)
         call = call.model_copy(update={"tool": route.plan.binding.tool})
         before = actions.events(route.plan.execution.plan_id)
@@ -71,11 +74,16 @@ async def test_success_process_summary_requires_formal_semantics_even_when_audit
                 thread,
                 turn,
                 call,
-                outcome.model_copy(update={"output": None}) if recovery else outcome,
+                outcome.model_copy(update={"output": None})
+                if recovery and delivery == "owner"
+                else outcome,
                 CancelToken(),
                 origin="recovery" if recovery else "execution",
             )
-            assert result.output == projected and result.outcome == "succeeded"
+            assert (
+                result.output == (projected if delivery == "owner" else summary)
+                and result.outcome == "succeeded"
+            )
             if evaluation:
                 assert result.output["passed"] is (returncode == 0)
         else:
@@ -86,13 +94,17 @@ async def test_success_process_summary_requires_formal_semantics_even_when_audit
                     thread,
                     turn,
                     call,
-                    outcome.model_copy(update={"output": None}) if recovery else outcome,
+                    outcome.model_copy(update={"output": None})
+                    if recovery and delivery == "owner"
+                    else outcome,
                     CancelToken(),
                     origin="recovery" if recovery else "execution",
                 )
             assert caught.value.code == "trusted_action_output_mismatch"
         assert actions.events(route.plan.execution.plan_id) == before
-        assert executor.calls == 1 and output.calls == 1
+        assert executor.calls == 1 and output.calls == (
+            delivery == "owner" and (recovery or case == "valid")
+        )
     finally:
         plans.close()
         audit.close()

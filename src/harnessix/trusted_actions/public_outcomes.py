@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import JsonValue
 
@@ -13,6 +13,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.execution.contracts import canonical_digest
 from harnessix.processes.public_output import PublicEvalOutputSummary, PublicProcessOutputSummary
+from harnessix.trusted_actions.builtin_success import validate_builtin_success
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRoutePlan
 from harnessix.trusted_actions.public_errors import PublicActionStage
 
@@ -321,8 +322,8 @@ def validate_public_projection(
             if family not in {"process", "eval"}:
                 raise ValueError
             _validate_process_failure(plan, outcome, summary)
-        elif family in {"process", "eval"}:
-            _validate_process_success(plan, summary)
+        else:
+            validate_success_summary(plan, summary)
         # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。
         reference = ArtifactRef.model_validate_json(json.dumps(projected.get("artifact")))
         if (
@@ -330,6 +331,23 @@ def validate_public_projection(
             or reference.sha256 != expected_artifact_sha256
         ):
             raise ValueError
+    except TurnCancelled:
+        raise
+    except Exception:
+        raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
+
+
+def validate_success_summary(plan: ActionRoutePlan, output: JsonValue) -> None:
+    """固定来源共用正式成功合同；尚无正式合同的custom不在本函数中被追认授权。"""
+
+    family = failure_family(plan)
+    try:
+        if family in {"process", "eval"}:
+            _validate_process_success(plan, output)
+        elif family in {"patch", "git", "mcp", "skill"}:
+            validate_builtin_success(
+                plan, cast(Literal["patch", "git", "mcp", "skill"], family), output
+            )
     except TurnCancelled:
         raise
     except Exception:

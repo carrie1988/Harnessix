@@ -6,17 +6,18 @@ import ntpath
 import posixpath
 import re
 from datetime import datetime
-from typing import Annotated, Literal, Self
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from harnessix.delivery.contracts import DeliveryContract
 from harnessix.execution.contracts import canonical_digest
+from harnessix.execution.public_tool_contracts import GitObjectId as GitObjectId
+from harnessix.execution.public_tool_contracts import GitPushReceipt as GitPushReceipt
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
-GitObjectId = Annotated[str, Field(pattern=r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")]
 GitWorktreeState = Literal["prepared", "creating", "ready", "diverged", "unknown"]
 GitCommitState = Literal[
     "prepared", "committing", "interrupted", "committed", "diverged", "unknown"
@@ -137,25 +138,6 @@ class GitPushActionInput(DeliveryContract):
     route_plan_fingerprint: Revision
     external_action_id: UUID
     intent: GitPushIntent
-
-
-class GitPushReceipt(DeliveryContract):
-    spec_version: Literal["harnessix.git-push-receipt/v1"] = "harnessix.git-push-receipt/v1"
-    push_id: UUID
-    remote_name: str
-    remote_ref: str
-    remote_oid: GitObjectId
-    remote_url_sha256: Revision
-    observed_at: AwareDatetime
-    digest: Revision
-
-    @model_validator(mode="after")
-    def complete_receipt(self) -> Self:
-        if self.digest != canonical_digest(
-            self.model_dump(mode="json", exclude={"digest"}, warnings="error")
-        ):
-            raise ValueError("Git Push Receipt摘要不一致")
-        return self
 
 
 class ManagedGitWorktreePlan(DeliveryContract):

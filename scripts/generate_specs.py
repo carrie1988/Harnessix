@@ -64,6 +64,7 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreeRecord,
 )
 from harnessix.delivery.trusted_action_contracts import (
+    PublicWorkspacePatchOutput,
     WorkspaceActionReviewRecord,
     WorkspacePatchInput,
 )
@@ -347,6 +348,10 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "workspace-patch-input-v1.schema.json",
         WorkspacePatchInput.model_json_schema(),
+    )
+    write_json(
+        output / "workspace-patch-output-v1.schema.json",
+        PublicWorkspacePatchOutput.model_json_schema(),
     )
     write_json(
         output / "workspace-action-review-record-v1.schema.json",

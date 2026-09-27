@@ -32,6 +32,7 @@ from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.public_outcomes import (
     normalize_failure_outcome,
     validate_public_projection,
+    validate_success_summary,
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
 
@@ -125,6 +126,8 @@ async def terminal_result(
     if outcome.kind != "succeeded" and outcome.artifact_sha256 is None:
         return build_result(route, call, outcome, origin=origin, approval=approval)
     if provider is None or route.state == "denied":
+        if outcome.kind == "succeeded" and outcome.output is not None:
+            outcome = await _inline_success(state, route, outcome, cancel)
         return build_result(route, call, outcome, origin=origin, approval=approval)
     event = state.router.events(route.plan.execution.plan_id)[-1]
     if event.output_sha256 is None and event.artifact_sha256 is None:
@@ -157,6 +160,39 @@ async def terminal_result(
     )
 
 
+async def _inline_success(
+    state: GatewayOutputState,
+    route: ActionRouteSnapshot,
+    outcome: ActionExecutionOutcome,
+    cancel: CancelToken,
+) -> ActionExecutionOutcome:
+    """无Owner的正文仍有投影预算、审计Hash和正式摘要检查；不改写已确认效果。"""
+
+    budget = DEFAULT_OUTPUT_BUDGET
+    deadline = monotonic() + budget.timeout_seconds
+    try:
+        async with asyncio.timeout(budget.timeout_seconds) as timer:
+            projected = bounded_projection(
+                outcome.output, budget=budget, cancel=cancel, deadline=deadline
+            )
+            event = state.router.events(route.plan.execution.plan_id)[-1]
+            if event.to_state != route.state or canonical_digest(projected) != event.output_sha256:
+                raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配")
+            validate_success_summary(route.plan, projected)
+            projection_checkpoint(cancel, deadline)
+            await asyncio.sleep(0)
+            projection_checkpoint(cancel, deadline)
+            return outcome.model_copy(update={"output": projected})
+    except TurnCancelled:
+        raise
+    except TimeoutError as error:
+        if timer.expired():
+            raise KernelError("trusted_action_output_timeout", "Action输出投影超时") from None
+        raise sanitize_gateway_exception(error, stage="output") from None
+    except Exception as error:
+        raise sanitize_gateway_exception(error, stage="output") from None
+
+
 async def _project_output(
     provider: TrustedActionOutputProvider,
     route: ActionRouteSnapshot,
@@ -175,6 +211,13 @@ async def _project_output(
     deadline = monotonic() + budget.timeout_seconds
     try:
         async with asyncio.timeout(budget.timeout_seconds) as timer:
+            if outcome.kind == "succeeded" and outcome.output is not None:
+                # 正式摘要在Owner发布工件之前验证；恢复缺少正文时再核对Owner重建值。
+                preview = bounded_projection(
+                    outcome.output, budget=budget, cancel=cancel, deadline=deadline
+                )
+                validate_success_summary(route.plan, preview)
+                projection_checkpoint(cancel, deadline)
             raw = await cancel.run(
                 provider.output(
                     route,

@@ -2,30 +2,26 @@
 
 from __future__ import annotations
 
-import hashlib
 from datetime import datetime
 from typing import Literal, Self
 
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from harnessix.execution.contracts import ExecutionContract, canonical_digest
+from harnessix.execution.public_tool_contracts import (
+    SkillContent as SkillContent,
+)
+from harnessix.execution.public_tool_contracts import (
+    SkillResourceContent as SkillResourceContent,
+)
+from harnessix.execution.public_tool_contracts import (
+    skill_relative_path as _valid_relative_path,
+)
 from harnessix.tools.contracts import Revision
 
 SkillSourceKind = Literal["bundled", "user", "workspace"]
 SkillAccessOperation = Literal["load", "read_resource"]
 SkillAccessOutcome = Literal["succeeded", "failed"]
-
-
-def _valid_relative_path(value: str) -> str:
-    if (
-        not value
-        or value.startswith("/")
-        or "\\" in value
-        or "\x00" in value
-        or any(part in {"", ".", ".."} for part in value.split("/"))
-    ):
-        raise ValueError("Skill路径必须是规范相对路径")
-    return value
 
 
 class SkillSourceSnapshot(ExecutionContract):
@@ -183,61 +179,6 @@ class SkillResourceReadInput(SkillLoadInput):
     @classmethod
     def valid_path(cls, value: str) -> str:
         return _valid_relative_path(value)
-
-
-class SkillContent(ExecutionContract):
-    spec_version: Literal["harnessix.skill-content/v1"] = "harnessix.skill-content/v1"
-    catalog_sha256: Revision
-    manifest_sha256: Revision
-    qualified_name: str = Field(pattern=r"^[a-z][a-z0-9_.-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}$")
-    effective_version: str = Field(min_length=1, max_length=128)
-    content: str = Field(min_length=1, max_length=262_144)
-    content_sha256: Revision
-    resources: tuple[str, ...] = Field(max_length=64)
-
-    @field_validator("resources")
-    @classmethod
-    def canonical_resources(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        if list(value) != sorted(value) or len(set(value)) != len(value):
-            raise ValueError("Skill资源路径必须规范排序且唯一")
-        for path in value:
-            _valid_relative_path(path)
-        return value
-
-    @model_validator(mode="after")
-    def content_matches_digest(self) -> Self:
-        if (
-            len(self.content.encode()) > 262_144
-            or hashlib.sha256(self.content.encode()).hexdigest() != self.content_sha256
-        ):
-            raise ValueError("Skill正文摘要不一致")
-        return self
-
-
-class SkillResourceContent(ExecutionContract):
-    spec_version: Literal["harnessix.skill-resource-content/v1"] = (
-        "harnessix.skill-resource-content/v1"
-    )
-    catalog_sha256: Revision
-    manifest_sha256: Revision
-    qualified_name: str = Field(pattern=r"^[a-z][a-z0-9_.-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}$")
-    path: str = Field(min_length=1, max_length=4096)
-    content: str = Field(max_length=65_536)
-    content_sha256: Revision
-
-    @field_validator("path")
-    @classmethod
-    def valid_path(cls, value: str) -> str:
-        return _valid_relative_path(value)
-
-    @model_validator(mode="after")
-    def content_matches_digest(self) -> Self:
-        if (
-            len(self.content.encode()) > 65_536
-            or hashlib.sha256(self.content.encode()).hexdigest() != self.content_sha256
-        ):
-            raise ValueError("Skill资源摘要不一致")
-        return self
 
 
 class SkillAccessEvent(ExecutionContract):

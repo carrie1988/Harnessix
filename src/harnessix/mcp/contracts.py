@@ -8,6 +8,7 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, JsonValue, model_validator
 
 from harnessix.execution.contracts import ExecutionContract, canonical_digest
+from harnessix.execution.public_tool_contracts import McpToolCallOutput as McpToolCallOutput
 from harnessix.tools.contracts import Revision
 
 MCP_PROTOCOL_VERSION = "2026-07-28"
@@ -170,10 +171,3 @@ class McpConnectionSnapshot(ExecutionContract):
         if self.state not in {"failed", "schema_changed"} and self.error_code is not None:
             raise ValueError("MCP非失败快照不能携带错误码")
         return self
-
-
-class McpToolCallOutput(ExecutionContract):
-    spec_version: Literal["harnessix.mcp-tool-call-output/v1"] = "harnessix.mcp-tool-call-output/v1"
-    content: tuple[JsonValue, ...] = Field(max_length=256)
-    structured_content: JsonValue | None = None
-    is_error: bool = False

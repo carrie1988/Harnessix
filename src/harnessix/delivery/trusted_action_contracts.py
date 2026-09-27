@@ -15,9 +15,14 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
 )
 from harnessix.domain.models import ContractModel
+from harnessix.execution.public_tool_contracts import (
+    MAX_WORKSPACE_PATCH_FILES as MAX_WORKSPACE_PATCH_FILES,
+)
+from harnessix.execution.public_tool_contracts import (
+    PublicWorkspacePatchOutput as PublicWorkspacePatchOutput,
+)
 from harnessix.tools.contracts import Revision
 
-MAX_WORKSPACE_PATCH_FILES = 16
 MAX_WORKSPACE_PATCH_INPUT_BYTES = 512 * 1024
 MAX_WORKSPACE_ACTION_REVIEW_BYTES = 1024 * 1024
 MAX_REVIEW_CHUNK_CHARACTERS = 3000
