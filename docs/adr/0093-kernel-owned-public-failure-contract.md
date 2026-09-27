@@ -2,7 +2,7 @@
 doc_type: adr
 status: current
 version: 1
-code_revision: a0a136e8123bb2ed4db368917bcf61f218ab013f
+code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
 owners:
   - core
 modules:

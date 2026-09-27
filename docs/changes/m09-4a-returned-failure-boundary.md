@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 1
-code_revision: a0a136e8123bb2ed4db368917bcf61f218ab013f
+code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
 owners:
   - core
 modules:
@@ -80,10 +80,10 @@ Fingerprint及审批恢复将发生兼容性变化，需要真正的版本迁移
 架构保持Agent Runtime → Gateway → Router → Owner。新增函数是进程内边界，不是第二条执行路径。
 
 ```mermaid
-flowchart LR
+flowchart TD
   E[受信绑定的执行器] --> N[失败结果归一]
   N --> A[Action Audit摘要记账]
-  N --> G[Gateway投影]
+  A --> G[Gateway投影]
   A --> R[恢复读取原摘要链]
   R --> G
   G --> P[Process或Eval Owner重建]
@@ -248,3 +248,6 @@ Sourcefamily相关首次回归为504 passed/5 skipped，后续正式来源/摘�
 首次正式Process夹具调用不存在的approve接口以及启动失败Lease身份未清空产生测试失败，
 均依据实际decide与ProcessLease合同修正夹具，不放宽生产状态机或Owner身份约束。
 Runtime崩溃恢复FAILED不一定进入COMPLETED，测试按实际恢复合同修正断言，未修改Runtime实现。
+
+专项目标的固定源码输入、独立旧版本负例重放、干净发行物、CI观察、Manifest与Review Packet见
+[结构化失败验收包](../validation/returned-failures-2026-09-27-v1/README.md)。证据不追认旧版本成功，不闭合其他发布条件。

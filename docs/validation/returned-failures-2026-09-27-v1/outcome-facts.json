@@ -1,0 +1,79 @@
+{
+  "clean_build": {
+    "artifact_records": [
+      {
+        "contains_untracked_security_draft": false,
+        "kind": "wheel",
+        "members": 373,
+        "name": "harnessix-0.1.0-py3-none-any.whl",
+        "sha256": "d0a262668f43f7ef81f5be2eb9abe4bfea8b9b93c68ea71ca667d068c521a0a5",
+        "size_bytes": 932156
+      },
+      {
+        "contains_untracked_security_draft": false,
+        "kind": "sdist",
+        "members": 2231,
+        "name": "harnessix-0.1.0.tar.gz",
+        "sha256": "a46d9c40449ff2cb4ba0139c05dcc43d3ca7e32751873599dbb110bac8ae4d1d",
+        "size_bytes": 6900878
+      }
+    ],
+    "build_input": "git archive exact revision",
+    "code_revision": "4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac",
+    "reproducible_build_claimed": false,
+    "secret_scan_result": "Secret扫描通过（harnessix.secret-scan/v2）：2253个输入完整覆盖且固定规则零命中"
+  },
+  "code_revision": "4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac",
+  "matrix": {
+    "boundary_and_legacy": 12,
+    "existing_schema_consistency": 1,
+    "new_tests": 106,
+    "process_eval_and_provider_projection": 56,
+    "runtime_public_surfaces": 18,
+    "source_and_stage_policy": 20,
+    "special_total": 107
+  },
+  "policy_version": "harnessix.public-action-failure/v1",
+  "process_fixture_scope": "real typed ProcessLease and trusted document builder; synthetic executor, no additional process/container deployment",
+  "public_failure_body_policy": "deny by default; only formal builtin Process/Eval terminal metadata and bound artifact references",
+  "public_projection_does_not_clean_legacy_private_storage": true,
+  "rejected_build_attempts": [
+    {
+      "contains_untracked_security_draft": true,
+      "scope": "initial working-tree sdist",
+      "used_as_clean_distribution_evidence": false
+    },
+    {
+      "cause": "verified /tmp symbolic ancestor; canonical /private/tmp paths accepted without relaxing scanner",
+      "code": "scan_input_unsupported",
+      "exit_code": 2,
+      "scope": "initial explicit artifact scan through macOS /tmp alias"
+    }
+  ],
+  "remaining_scope": [
+    "successful business output contracts",
+    "structured-return CPU/memory budget",
+    "Store and other public boundaries",
+    "TM numbered attacks",
+    "immutable installation inputs",
+    "remote MCP",
+    "three-platform release and controlled Beta",
+    "real Provider release evidence"
+  ],
+  "runtime_scope": "actual AgentRuntime/SQLite/Protocol Server+SDK/OTel; ScriptedProvider, no billed model requests",
+  "source_only_secret_scan": {
+    "complete": true,
+    "findings": 0,
+    "input_count": 2250,
+    "rules": 6,
+    "scope": "tracked source inputs before freeze files staged; not distribution acceptance"
+  },
+  "state_invariants": {
+    "eval_nonzero_exit_remains_business_success": true,
+    "external_action_identity_not_cleared": true,
+    "legacy_audit_hash_chain_not_rewritten": true,
+    "no_reexecution": true,
+    "outcome_kind_unchanged": true,
+    "unknown_never_downgraded_to_failed": true
+  }
+}

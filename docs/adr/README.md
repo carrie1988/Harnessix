@@ -2,7 +2,7 @@
 doc_type: governance-index
 status: current
 version: 28
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
 owners:
   - core
 modules:
@@ -199,6 +199,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0090 | [Session共库采用Plan-first维护、保守禁删与强制备份恢复](0090-plan-first-store-maintenance-and-backup.md) | 接受并由0.9.3b实现；CI 35498012926已关闭 |
 | 0091 | [Action Runtime采用双层Owner栅栏、持久Operation期限与只对账恢复](0091-action-runtime-fencing-and-bounded-reconciliation.md) | 接受并由0.9.3c实现；修复版Revision `33fcf02`由CI 35691402329六实例验收关闭 |
 | 0092 | [本地Coding Agent长期运行采用可重算证据与独立阈值复验](0092-reproducible-local-soak-and-release-thresholds.md) | 已接受；0.9.3d三平台正式负载与独立阈值复验已关闭 |
+| 0093 | [内核持有有限公开失败合同，Owner保留合法诊断归档](0093-kernel-owned-public-failure-contract.md) | 已接受；新Audit失败归一与Gateway恢复再验证，无v1指纹迁移 |
 
 ### 4.9 可读性与结构治理
 
@@ -209,7 +210,6 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0076 | [代码可读性、可维护性与结构治理](0076-code-readability-and-structural-governance.md) | 接受 |
 | 0077 | [版本化文档合同与分层阻断门禁](0077-versioned-documentation-contract-and-gates.md) | 接受并已实施；DOC-1.6完成 |
 
-| 0093 | [内核持有有限公开失败合同，Owner保留合法诊断归档](0093-kernel-owned-public-failure-contract.md) | 已接受；新Audit失败归一与Gateway恢复再验证，无v1指纹迁移 |
 
 ## 5. 维护规则
 

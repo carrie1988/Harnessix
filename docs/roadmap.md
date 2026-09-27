@@ -2,7 +2,7 @@
 doc_type: roadmap
 status: current
 version: 99
-code_revision: 3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d
+code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
 owners:
   - core
 modules:
@@ -484,6 +484,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   治理Context/Review/Output异常，补读写Execute/Reconcile五公开面集成与取消回收验证；
   [冻结报告](validation/gateway-errors-2026-09-27-v1/README.md)记录4113 passed/32 skipped、57专项与结构化结果已确认缺口。
   [结构化失败整改](changes/m09-4a-returned-failure-boundary.md)已实现有限码、新Audit归一、正式Process/Eval摘要、失败Provider正常返回再验证及旧链兼容；
+  [专项冻结报告](validation/returned-failures-2026-09-27-v1/README.md)记录4220 passed/32 skipped、107专项及干净4492a66 Wheel/sdist，当前新合同CI仍待后台验证；
   成功业务输出、返回值预算、Store与其他公开边界的完整审查仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。

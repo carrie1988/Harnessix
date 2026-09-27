@@ -81,6 +81,37 @@ ROOT = Path(__file__).resolve().parents[2]
                 "docs/baselines/readability-0.9.0-final.json",
             },
         ),
+        (
+            "returned-failures-2026-09-27-v1",
+            "outcome-facts.json",
+            {
+                "src/harnessix/trusted_actions/router.py",
+                "src/harnessix/trusted_actions/public_errors.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "src/harnessix/processes/trusted_output.py",
+                "spec/public-eval-output-summary-v1.schema.json",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+                "src/harnessix/artifacts/contracts.py",
+                "src/harnessix/product_config/eval_action.py",
+                "tests/trusted_actions/test_returned_failure_boundaries.py",
+                "spec/public-process-stream-summary-v1.schema.json",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "tests/trusted_actions/test_process_failure_projection.py",
+                "src/harnessix/product_config/process_action.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/trusted_actions/agent_gateway_support.py",
+                "tests/trusted_actions/test_schemas.py",
+                "src/harnessix/processes/public_output.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "scripts/generate_specs.py",
+                "src/harnessix/trusted_actions/public_outcomes.py",
+                "src/harnessix/trusted_actions/operation_router.py",
+                "tests/trusted_actions/test_failure_policy_sources.py",
+                "spec/public-process-output-summary-v1.schema.json",
+                "tests/trusted_actions/test_returned_failure_runtime.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -174,3 +205,39 @@ def test_security_governance_bundle_files_and_source_inputs_match_manifest(
         assert gap["provider_requests"] == 2 and gap["real_model_requests"] == 0
         assert gap["surfaces"]["protocol"]["unregistered_code_present"] is True
         assert gap["surfaces"]["telemetry"]["diagnostic_payload_present"] is False
+
+
+def test_returned_failure_bundle_keeps_scope_and_release_blockers_explicit() -> None:
+    bundle = ROOT / "docs/validation/returned-failures-2026-09-27-v1"
+    facts = json.loads((bundle / "outcome-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    assert (
+        facts["code_revision"]
+        == review["code_revision"]
+        == ci["current_code_revision"]
+        == verification["code_revision"]
+    )
+    assert facts["matrix"]["new_tests"] == 106 and facts["matrix"]["special_total"] == 107
+    assert all(facts["state_invariants"].values())
+    assert facts["public_projection_does_not_clean_legacy_private_storage"] is True
+    assert facts["clean_build"]["reproducible_build_claimed"] is False
+    assert len(facts["clean_build"]["artifact_records"]) == 2
+    assert all(
+        not item["contains_untracked_security_draft"]
+        for item in facts["clean_build"]["artifact_records"]
+    )
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert review["current_ci_accepted"] is False
+    assert (
+        verification["external_model_requests"] == 0 and verification["make_check_passed"] is False
+    )
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["previous_success_is_current_failure_contract_acceptance"] is False
+    assert (
+        ci["previous_revision"]["status"] == "completed"
+        and ci["previous_revision"]["conclusion"] == "failure"
+    )
+    assert sum(item["conclusion"] == "success" for item in ci["previous_revision"]["jobs"]) == 4
+    assert ci["previous_python_failure"]["blocked_archive_count"] == 12

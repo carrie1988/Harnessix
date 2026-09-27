@@ -1,0 +1,27 @@
+{
+  "code_revision": "4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "new_automation_created": false,
+  "no_real_model_calls": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "pywin32 12 archive restricted-license evidence requires substitution or completed rights/obligation review",
+    "0.9.4a remaining successful output and budget/public boundaries",
+    "TM-01 through TM-13 numbered attack acceptance",
+    "remote MCP target identity/OAuth/managed egress",
+    "real three-platform installation/upgrade/uninstall and controlled Beta",
+    "real Provider release validation"
+  ],
+  "required_review_focus": [
+    "finite source/stage selection, no dynamic error prefix allowance",
+    "Process/Eval strict DTO with bound profile/process identity",
+    "preserve UNKNOWN/manual and external identity",
+    "normal Provider return validated against both audit hashes",
+    "old private audit immutable, no historical-cleanliness claim",
+    "DTO dependencies only; no Owner/SQLite imports into router",
+    "clean archive build excludes untracked security draft"
+  ],
+  "slice": "SEC-094-A3 structured failure public boundary"
+}

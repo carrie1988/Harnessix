@@ -1,0 +1,101 @@
+{
+  "code_revision": "4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac",
+  "environment": {
+    "machine": "arm64",
+    "platform": "Darwin",
+    "python": "3.13.8",
+    "uv": "uv 0.9.1 (Homebrew 2025-10-09)"
+  },
+  "external_model_requests": 0,
+  "final_evidence_recheck": {
+    "overlaps_post_freeze_recheck": true,
+    "passed": 29,
+    "seconds": 1.7,
+    "stdout_sha256": "bf8889602bf85c8088c130c0e2099f83a3fc6abced599fed008bb1cd126f80f4",
+    "stdout_summary": "29 passed in 1.70s"
+  },
+  "full_regression": {
+    "before_evidence_parameter_added": true,
+    "command": "uv run pytest --ignore=tests/security -q -o addopts=''",
+    "passed": 4220,
+    "seconds": 356.65,
+    "size_bytes": 4845,
+    "skipped": 32,
+    "stdout_sha256": "347bf69a648403ff355f2e78919509ce37812cc324b2b8e83727d9ba45730e15",
+    "stdout_summary": "4220 passed, 32 skipped in 356.65s (0:05:56)",
+    "untracked_attack_draft_excluded": true
+  },
+  "independent_negative_replay": {
+    "command": "PYTHONPATH=<a0 archive>/src:<a0 archive> <python> -m pytest <current>/tests/trusted_actions/test_returned_failure_boundaries.py --import-mode=importlib -k test_returned_failure_is_normalized_before_audit --tb=no -q -o addopts='' ",
+    "deselected": 2,
+    "exit_code": 1,
+    "failed": 10,
+    "runtime_module_matches_archive": true,
+    "seconds": 0.45,
+    "size_bytes": 2436,
+    "source_revision": "a0a136e8123bb2ed4db368917bcf61f218ab013f",
+    "stdout_sha256": "c805332d211ce2d204ad8fcb9030158ad1c5eb65668bedc843b1de7058479a12",
+    "stdout_summary": "10 failed, 2 deselected in 0.45s"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "make_check_passed": false,
+  "post_freeze_recheck": {
+    "new_evidence_tests_after_full_regression": 2,
+    "overlaps_full_and_special_regression": true,
+    "passed": 136,
+    "seconds": 4.29,
+    "status": "passed",
+    "stdout_sha256": "0ccc895815b24b5a3a2f88050e50657605292036b709c9deba6a1ff79efb5ba4",
+    "stdout_summary": "136 passed in 4.29s"
+  },
+  "special_regression": {
+    "overlaps_full_regression": true,
+    "passed": 107,
+    "seconds": 2.56,
+    "size_bytes": 180,
+    "stdout_sha256": "8a5ac1ffd5140d476649f14382e5a9ec56254a314d126cb6486d7c803768c2bd",
+    "stdout_summary": "107 passed in 2.56s"
+  },
+  "static_checks": {
+    "contracts": "passed",
+    "documentation_and_changed_mermaid": {
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "1724a8e94f36b8574c6adca4a85b1afe4e9eef8ab28ca4d70112f5a22c88a47b",
+      "stdout_summary": "文档门禁通过：292份文档、7776条链接、709幅Mermaid、26个源码包、24个变化路径"
+    },
+    "final_freeze_documentation": {
+      "links": 7789,
+      "mermaid_diagrams": 710,
+      "passed": true,
+      "source_document_count": 293,
+      "source_packages": 26,
+      "stdout_summary": "文档门禁通过：293份文档、7789条链接、710幅Mermaid、26个源码包、0个变化路径"
+    },
+    "mypy": "passed; 330 source files",
+    "new_freeze_mermaid_render": {
+      "output_png_sha256": "c800d8462521b082ae1071b825f2f6333dfc3c5b05736426cf88cdb1384de5e8",
+      "passed": true,
+      "source_sha256": "80f8efe605ab1b4725171f184ccb16aa028657c475ce2a9c3e36fadffbddd85a",
+      "visual_inspection": true
+    },
+    "readability": "passed; only two ADR justified DTO edges, no threshold or cycle waivers",
+    "revised_design_architecture_mermaid": {
+      "output_png_sha256": "8ebf2b52bc5cf91bb4ddaebd4c0ff7995016f6fce3da374cad73bf2835416f0e",
+      "passed": true,
+      "source_sha256": "b8ef9423334f5ff62307ce939073b4c301516c48ff505c61bd29827090fbb8be",
+      "visual_inspection": true
+    },
+    "ruff": "passed; --exclude tests/security",
+    "sbom_schema_and_drift": "passed",
+    "secret_self_check": "passed; 6 fixed rules",
+    "taskpacks": "passed"
+  }
+}

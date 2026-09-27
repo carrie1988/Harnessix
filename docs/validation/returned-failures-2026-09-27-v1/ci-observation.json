@@ -1,0 +1,51 @@
+{
+  "ci_restart_requested": false,
+  "current_ci_status": "not_started_at_freeze",
+  "current_code_revision": "4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac",
+  "previous_python_failure": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "failed_step": "license_scan.py --check",
+    "log_sha256": "a28a967a6fcd2b68327967739db0fd938c6248c313bd9277892cecdc7267e090"
+  },
+  "previous_revision": {
+    "code_revision": "a0a136e8123bb2ed4db368917bcf61f218ab013f",
+    "conclusion": "failure",
+    "jobs": [
+      {
+        "conclusion": "cancelled",
+        "name": "python (3.12)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "container-sandbox",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "name": "python (3.13)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "coding-tools-macos",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "windows-trusted-execution",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "documentation",
+        "status": "completed"
+      }
+    ],
+    "run_id": 36293402289,
+    "status": "completed",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36293402289"
+  },
+  "previous_success_is_current_failure_contract_acceptance": false
+}
