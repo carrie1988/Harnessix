@@ -44,7 +44,8 @@ from tests.product_config.test_process_action import (
 
 
 @pytest.mark.skipif(os.name != "posix", reason="该产品Container Owner合同装配仅适用于POSIX")
-async def test_product_executor_uses_same_frozen_secret_after_host_rotation(tmp_path):
+@pytest.mark.parametrize("case", ["live", "closed"])
+async def test_product_executor_uses_same_frozen_secret_after_host_rotation(tmp_path, case):
     root = tmp_path / "workspace"
     root.mkdir()
     plain = "frozen-product-scope-original-value"
@@ -125,9 +126,17 @@ async def test_product_executor_uses_same_frozen_secret_after_host_rotation(tmp_
                 route.plan.execution.plan_id,
                 ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="test"),
             )
+            if case == "closed":
+                scope.close()
             outcome = await router.execute(route.plan.execution.plan_id)
-            assert outcome.kind == "succeeded" and runtime.run_calls == 1
-            scope.assert_safe(outcome.output, route.plan.execution.secrets, checkpoint=lambda: None)
+            if case == "closed":
+                assert outcome.kind == "failed" and outcome.error_code == "process_preflight_failed"
+                assert runtime.run_calls == runtime.reconcile_calls == 0
+            else:
+                assert outcome.kind == "succeeded" and runtime.run_calls == 1
+                scope.assert_safe(
+                    outcome.output, route.plan.execution.secrets, checkpoint=lambda: None
+                )
             _close_composition(composition)
             with pytest.raises(KernelError) as closed:
                 scope.resolve("TOKEN")

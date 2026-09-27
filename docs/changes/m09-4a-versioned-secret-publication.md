@@ -140,7 +140,7 @@ flowchart LR
 不新增数据库表、Plan/Binding/Audit字段或持久Secret副本。target仍由ExecutionPlan冻结，
 快照按name/version复用材料而不扩大注入目标。新旧指纹保持；跨重启原值证明缺失明确拒绝正文。
 
-## 7. 类、接口及数据结构设计
+## 7. 类设计、接口设计及数据结构设计
 
 | 类/接口 | 入参、结果、职责和源码 |
 |---|---|
@@ -193,7 +193,8 @@ MCP独立Client与真实产品Process装配分别验证；完整回归、干净�
 
 ## 12. 现行用例与剩余边界
 
-专项57项，51新增及6原MCP项：纯快照30、Gateway14、实际Runtime3、实际MCP新增3、产品组合1。
+专项58项，52新增及6原MCP项：纯快照30、Gateway14、实际Runtime3、实际MCP新增3、产品组合2。
+产品组合同时覆盖快照关闭后原执行Provider前置失败：无Lease时failed/process_preflight_failed，run/reconcile均为0，不误标未知效果。
 独立58e51aa归档的4个未配置能力负例均DID NOT RAISE（0.26秒）；构造、导入或配置失配失败不计证据。
 旧归档为选择False参数的四项而省去未选择新作用域的导入，实际Gateway模块路径已核实。
 产品组合使用实际Router/Executor/Plan/Audit/SQLite与Secret解析，Container Owner为Lease合同替身，

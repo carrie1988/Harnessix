@@ -393,6 +393,7 @@ async def _process_execution_failure(
             "secret_binding_mismatch",
             "secret_unavailable",
             "secret_version_changed",
+            "trusted_action_secret_unavailable",
         }
         return ActionExecutionOutcome(
             kind="failed" if error.code in deterministic else "unknown",
