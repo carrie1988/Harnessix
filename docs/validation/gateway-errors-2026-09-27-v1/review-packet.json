@@ -1,0 +1,24 @@
+{
+  "callback_exception_candidate_only": true,
+  "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+  "decision": "release_blocked",
+  "external_model_requests": 0,
+  "limits": [
+    "只关闭抛异常的Context/Review/Output边界",
+    "已确认结构化失败结果仍可传播未登记码及合成诊断",
+    "合法业务输出不因本专项被整体删除",
+    "本地验证不替代新代码三平台验收"
+  ],
+  "open_gates": [
+    "SEC-094-A3结构化Outcome与正文宿主合同",
+    "Provider正常返回与其他公开边界审查",
+    "pywin32受限许可证处置及商业权利链",
+    "不可变安装/镜像输入",
+    "TM-01至TM-13编号攻击回归",
+    "远端MCP身份/OAuth/出口/故障恢复",
+    "真实三平台安装/升级/卸载及受控Beta",
+    "真实Provider发布证据"
+  ],
+  "overall_0_9_complete": false,
+  "spec_version": "harnessix.gateway-error-review/v1"
+}

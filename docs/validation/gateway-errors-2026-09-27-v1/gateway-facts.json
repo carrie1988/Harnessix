@@ -1,0 +1,83 @@
+{
+  "action_fingerprint_changed": false,
+  "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+  "complete_outcome_or_body_confidentiality_claimed": false,
+  "default_messages": {
+    "context": "Action规划上下文构造失败；内部原因不公开",
+    "output": "Action终态输出投影失败；内部原因不公开",
+    "review": "Action审批预览生成失败；内部原因不公开"
+  },
+  "external_model_requests": 0,
+  "new_test_counts": {
+    "direct_and_cancellation": 33,
+    "runtime_callbacks": 15,
+    "runtime_operations": 9,
+    "total": 57
+  },
+  "phase_registry": {
+    "context": {},
+    "output": {
+      "approval_mismatch": "Action Artifact发布缺少匹配批准",
+      "artifact_corrupt": "Action Artifact校验失败",
+      "artifact_invalid": "Action Artifact不符合公开契约",
+      "artifact_quota_exceeded": "Action Artifact配额不足",
+      "artifact_runtime_required": "Action Artifact发布需要活跃Session",
+      "artifact_store_mismatch": "Action Artifact发布器绑定不一致",
+      "process_not_terminal": "Action Process尚未形成终态输出",
+      "process_output_corrupt": "Action Process终态输出校验失败",
+      "sequence_conflict": "Action Artifact发布时Session已变化",
+      "tool_output_too_large": "Action Artifact引用超过输出上限",
+      "trusted_action_output_mismatch": "Action输出与审计终态不匹配"
+    },
+    "review": {
+      "action_review_limit": "Action审批预览超过上限",
+      "approval_mismatch": "Action Artifact发布缺少匹配批准",
+      "artifact_corrupt": "Action Artifact校验失败",
+      "artifact_invalid": "Action Artifact不符合公开契约",
+      "artifact_quota_exceeded": "Action Artifact配额不足",
+      "artifact_runtime_required": "Action Artifact发布需要活跃Session",
+      "artifact_store_mismatch": "Action Artifact发布器绑定不一致",
+      "sequence_conflict": "Action Artifact发布时Session已变化",
+      "tool_output_too_large": "Action Artifact引用超过输出上限",
+      "trusted_action_review_invalid": "Action审批预览不符合契约"
+    }
+  },
+  "pure_approval_projection_moved_without_contract_change": true,
+  "schema_migration": false,
+  "spec_version": "harnessix.gateway-error-facts/v1",
+  "structured_outcome_open_gap": {
+    "acceptance_pass_claimed": false,
+    "executor_calls": 1,
+    "provider_requests": 2,
+    "real_credentials_used": false,
+    "real_model_requests": 0,
+    "reconciliations": 0,
+    "route_state": "failed",
+    "scope": "synthetic_failure_outcome_not_callback_exception",
+    "spec_version": "harnessix.structured-outcome-reproduction/v1",
+    "status": "confirmed_open_gap",
+    "surfaces": {
+      "audit": {
+        "diagnostic_payload_present": false,
+        "unregistered_code_present": true
+      },
+      "model_history": {
+        "diagnostic_payload_present": true,
+        "unregistered_code_present": true
+      },
+      "protocol": {
+        "diagnostic_payload_present": true,
+        "unregistered_code_present": true
+      },
+      "session": {
+        "diagnostic_payload_present": true,
+        "unregistered_code_present": true
+      },
+      "telemetry": {
+        "diagnostic_payload_present": false,
+        "unregistered_code_present": false
+      }
+    },
+    "turn_status": "completed"
+  }
+}

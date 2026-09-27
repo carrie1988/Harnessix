@@ -44,3 +44,4 @@ governance/license-scan-v2.json -text
 governance/license-evidence-v2/** -text
 governance/license-evidence-v2/blobs/** -diff -merge
 docs/validation/license-evidence-2026-09-27-v1/** -text
+docs/validation/gateway-errors-2026-09-27-v1/** -text

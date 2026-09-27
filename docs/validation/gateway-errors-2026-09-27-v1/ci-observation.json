@@ -1,0 +1,61 @@
+{
+  "current_ci_status": "not_started_at_freeze",
+  "current_code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+  "previous_revision": {
+    "conclusion": "failure",
+    "head_sha": "6677e549e4883704856dbf55162b00b2ff7291b3",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "windows-trusted-execution",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "name": "python (3.12)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "cancelled",
+        "name": "python (3.13)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "documentation",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "container-sandbox",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "coding-tools-macos",
+        "status": "completed"
+      }
+    ],
+    "python_312_license_step": {
+      "archive_violations": 12,
+      "exit_code": 1
+    },
+    "python_313": "matrix_cancelled",
+    "run_id": 36291475364,
+    "status": "completed",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36291475364",
+    "windows": {
+      "actual_wheel_and_sdist_build": "passed",
+      "benchmark_passed": 225,
+      "benchmark_seconds": 229.09,
+      "secret_scan_inputs": 2232,
+      "selected_passed": 723,
+      "selected_seconds": 254.12,
+      "selected_skipped": 48,
+      "six_rule_hits": 0
+    }
+  },
+  "previous_windows_success_is_new_gateway_acceptance": false,
+  "raw_host_paths_or_credential_config_logs_published": false,
+  "spec_version": "harnessix.gateway-error-ci/v1"
+}

@@ -1,0 +1,144 @@
+{
+  "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+  "environment": {
+    "machine": "arm64",
+    "platform": "Darwin",
+    "python": "3.13.8",
+    "uv": "uv 0.9.1 (Homebrew 2025-10-09)"
+  },
+  "external_model_requests": 0,
+  "final_freeze_recheck": {
+    "overlaps_post_freeze_governance": true,
+    "passed": 27,
+    "seconds": 1.51,
+    "stdout_summary": "27 passed in 1.51s"
+  },
+  "full_regression": {
+    "before_evidence_parameter_added": true,
+    "command": "uv run pytest --ignore=tests/security -q -o addopts=''",
+    "passed": 4113,
+    "seconds": 362.49,
+    "skipped": 32,
+    "stdout_sha256": "283f1314c502b88b3f2cb285f3e024cc58326a48e84b6b59aaf5b053946a2b12",
+    "stdout_summary": "4113 passed, 32 skipped in 362.49s (0:06:02)",
+    "untracked_attack_draft_excluded": true
+  },
+  "independent_negative_replay": {
+    "command": "PYTHONPATH=<archive>/src:<archive> python -m pytest tests/trusted_actions/test_gateway_error_boundaries.py -k test_gateway_callback_errors_are_fixed --tb=no -q -o addopts=''",
+    "deselected": 17,
+    "exit_code": 1,
+    "failed": 16,
+    "production_revision": "6677e549e4883704856dbf55162b00b2ff7291b3",
+    "production_source_records": [
+      {
+        "path": "src/harnessix/trusted_actions/public_errors.py",
+        "sha256": "cb1198779b6e76550c6229241b2bb6d1260bfd1979aede3ca09f355cab050f08"
+      },
+      {
+        "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
+        "sha256": "fcd5246d3769ab567a170d42265df6e375e8be690334110ce4c5fe9b54a65905"
+      },
+      {
+        "path": "src/harnessix/trusted_actions/agent_gateway_output.py",
+        "sha256": "9700fae1022e640d7f14368e442337fa1d87b2ae98e4371a96d44d319af81f97"
+      }
+    ],
+    "seconds": 0.36,
+    "selected_tests_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+    "stdout": [
+      "FFFFFFFFFFFFFFFF                                                         [100%]",
+      "=========================== short test summary info ============================",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[unknown-context]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[unknown-review]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[unknown-output-execution]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[unknown-output-recovery]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[cross_stage-context]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[cross_stage-review]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[cross_stage-output-execution]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[cross_stage-output-recovery]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[runtime-context]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[runtime-review]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[runtime-output-execution]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[runtime-output-recovery]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[timeout-context]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[timeout-review]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[timeout-output-execution]",
+      "FAILED tests/trusted_actions/test_gateway_error_boundaries.py::test_gateway_callback_errors_are_fixed_and_keep_durable_facts[timeout-output-recovery]",
+      "16 failed, 17 deselected in 0.36s"
+    ],
+    "stdout_sha256": "661b30f9dd53e08fcdda73b0b6ec3ce445c4c1278b9083176e3067421a3d1fb8",
+    "test_compatibility_transformation": "仅移除旧版本无Gateway码表的导入；这些码表单测已deselect，16项负例断言未改"
+  },
+  "initial_explicit_empty_artifact_scan": {
+    "exit_code": 2,
+    "fixed_code": "scan_artifact_missing",
+    "pass_claimed": false,
+    "scanner_or_required_artifact_policy_relaxed": false
+  },
+  "license_gate": {
+    "archive_violations": 12,
+    "exit_code": 1,
+    "release_pass_claimed": false
+  },
+  "make_check_pass_claimed": false,
+  "negative_before_fix": {
+    "cancellation_controls_passed": 8,
+    "failed": 16,
+    "raw_tracebacks_published": false
+  },
+  "post_freeze_governance": {
+    "new_manifest_parameter_count": 1,
+    "overlaps_full": true,
+    "passed": 287,
+    "seconds": 21.47,
+    "status": "passed",
+    "stdout_sha256": "54bed3aac9de05e7c8f305b5e548ad64ae5e6d2c148b4ab6818e4e5bea9f389b",
+    "stdout_summary": "287 passed in 21.47s"
+  },
+  "related_regression": {
+    "overlaps_full": true,
+    "passed": 153,
+    "seconds": 4.24,
+    "stdout_summary": "153 passed in 4.24s"
+  },
+  "source_only_secret_audit": {
+    "method": "scan_paths(_tracked_files(root))",
+    "release_artifact_coverage_claimed": false,
+    "scope": "Git tracked inputs only, not distributions",
+    "status": "passed",
+    "stdout": "源码单独审计通过（harnessix.secret-scan/v2）：2239个Git输入、六固定规则零命中；未声明发行物覆盖"
+  },
+  "spec_version": "harnessix.gateway-error-verification/v1",
+  "specialized_regression": {
+    "overlaps_full": true,
+    "passed": 57,
+    "seconds": 2.1,
+    "stdout_summary": "57 passed in 2.10s"
+  },
+  "static_checks": {
+    "changed_mermaid_actual_chrome_render": "passed",
+    "contracts": "passed",
+    "documentation_final_recheck": {
+      "documents": 290,
+      "links": 7733,
+      "mermaid": 706,
+      "source_packages": 26,
+      "status": "passed"
+    },
+    "mypy_source_files": 328,
+    "readability": "passed_without_new_waivers",
+    "ruff_python_files": 767,
+    "sbom_schema_and_drift": "passed",
+    "secret_self_check_rules": 6,
+    "stdout": [
+      "767 files already formatted",
+      "All checks passed!",
+      "Success: no issues found in 328 source files",
+      "合同一致性检查通过",
+      "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b",
+      "Secret扫描自检通过：6条固定规则逐项验证",
+      "文档门禁通过：290份文档、7733条链接、706幅Mermaid、26个源码包、23个变化路径"
+    ],
+    "taskpacks": "passed"
+  }
+}

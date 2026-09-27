@@ -1,0 +1,114 @@
+{
+  "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a998ee93edd6284c4ee3a4ead72381652d90c68e705a8833efe92e954209462a",
+      "size_bytes": 7191
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "605d2574057ed58be032a7bef7c6e73477889eb4efc58f7874e38b2c420c7f15",
+      "size_bytes": 1693
+    },
+    {
+      "path": "gateway-facts.json",
+      "sha256": "f4f923ad3f957946ab8c27994859ca9f481815e54e1b4ece08ce9c08b04c13e0",
+      "size_bytes": 3356
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "d7e3eb59743b16fb4dddd014426f6b08c50f5bc8a10630da9c57c15afa363695",
+      "size_bytes": 924
+    },
+    {
+      "path": "verification.json",
+      "sha256": "66aa854e831b433d1f84ce064eb2ff56eaf35ad5e142cfa5d16ad90a7a064006",
+      "size_bytes": 7216
+    }
+  ],
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/public_errors.py",
+      "sha256": "1ab7451751c15c00999cff08358dc9bd72b3bf1ce5b71cd6b6d8392ef9f42363"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
+      "sha256": "3968a6ab99d7df46947ec5f8bdb31c93edd0d11813f168ed91634c7c550977ab"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/agent_gateway_output.py",
+      "sha256": "fc09b69eeec5ce2dc27bd6486d8fcde074f6fa4e1e5e740ef0c42e2634e37617"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/operation_router.py",
+      "sha256": "445d0d9fbe3c8def26c103022d6d976bed66ec932004bb7eb4eecbfb7ba5f8a8"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/router.py",
+      "sha256": "b4ca375c089229c6ba3e01aa6f7c9ee0189706fcd871105ff2a32c4ca764f379"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/trusted_actions/contracts.py",
+      "sha256": "85adc84c38615f91fa9d2479e3922db043c296bfc2d8fd3345fc8fdffcc0b70e"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/agent/cancellation.py",
+      "sha256": "e5e22739f98e3e095113e154fd5640c60dbb53a7e882f59b40efbe311fc6b6e0"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/agent/trusted_action_session.py",
+      "sha256": "e5ad2dcacbae3673d2eaadb2817d7b63b25e39d18b6835c5e9981269f8721662"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "src/harnessix/agent/runtime.py",
+      "sha256": "622c17bd56c1557db71c19e55403f3f83fe6716dcd255812338bb462972745c4"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_agent_gateway.py",
+      "sha256": "a261d6768867329d8d1faf5cd7f1171a50e828c7ff9a9c01e1f53172f4b7aabb"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_gateway_error_boundaries.py",
+      "sha256": "e76c5319091c258ddd4bf26b0807fe0584e85b853225be2b6a89af85556374bb"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_gateway_error_runtime.py",
+      "sha256": "304f8242227d905eed3f5666119d7841a6bc7a94393820719ec9067fa9223a4a"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_operation_error_runtime.py",
+      "sha256": "a08904683d37b0607e77080199b4c2e96632a7e53e2f69919a727ea680b30cdd"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_public_error_leakage.py",
+      "sha256": "ab666fc0382ddbac45471bde81f4426cbff2bb6d076873c1557a386c577c6d89"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "tests/trusted_actions/test_plan_error_boundaries.py",
+      "sha256": "16b64b21dabf0e7a9bf9a99a2a71ba2344fdfe945101d1873558bac7033f71d3"
+    },
+    {
+      "code_revision": "3ebf0a37d47ce54ddd64d2e90c3f72fc3b9ccd7d",
+      "path": "docs/baselines/readability-0.9.0-final.json",
+      "sha256": "b7e224604df85dcccf34bce92d3e94e239179f02ccf78084434ee1f7ab2f1340"
+    }
+  ],
+  "spec_version": "harnessix.gateway-error-bundle/v1"
+}

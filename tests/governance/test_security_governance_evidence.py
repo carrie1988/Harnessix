@@ -59,6 +59,28 @@ ROOT = Path(__file__).resolve().parents[2]
                 ".github/workflows/ci.yml",
             },
         ),
+        (
+            "gateway-errors-2026-09-27-v1",
+            "gateway-facts.json",
+            {
+                "src/harnessix/trusted_actions/public_errors.py",
+                "src/harnessix/trusted_actions/agent_gateway_support.py",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/operation_router.py",
+                "src/harnessix/trusted_actions/router.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/agent/runtime.py",
+                "tests/trusted_actions/test_agent_gateway.py",
+                "tests/trusted_actions/test_gateway_error_boundaries.py",
+                "tests/trusted_actions/test_gateway_error_runtime.py",
+                "tests/trusted_actions/test_operation_error_runtime.py",
+                "tests/trusted_actions/test_public_error_leakage.py",
+                "tests/trusted_actions/test_plan_error_boundaries.py",
+                "docs/baselines/readability-0.9.0-final.json",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -126,3 +148,29 @@ def test_security_governance_bundle_files_and_source_inputs_match_manifest(
         assert sum(item["size_bytes"] for item in records) == facts["unique_blob_size_bytes"]
         body = (json.dumps(records, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
         assert hashlib.sha256(body).hexdigest() == facts["blob_records_canonical_sha256"]
+    if directory.startswith("gateway-errors"):
+        facts = json.loads((bundle / facts_name).read_bytes())
+        review = json.loads((bundle / "review-packet.json").read_bytes())
+        ci = json.loads((bundle / "ci-observation.json").read_bytes())
+        verification = json.loads((bundle / "verification.json").read_bytes())
+        assert facts["code_revision"] == review["code_revision"] == manifest["code_revision"]
+        assert (
+            verification["code_revision"]
+            == ci["current_code_revision"]
+            == manifest["code_revision"]
+        )
+        assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+        assert ci["current_ci_status"] == "not_started_at_freeze"
+        assert ci["previous_revision"]["conclusion"] == "failure"
+        assert ci["previous_windows_success_is_new_gateway_acceptance"] is False
+        assert facts["phase_registry"]["context"] == {}
+        assert facts["schema_migration"] is False and facts["action_fingerprint_changed"] is False
+        assert facts["new_test_counts"]["total"] == 57
+        assert verification["full_regression"]["passed"] == 4113
+        assert verification["full_regression"]["skipped"] == 32
+        assert verification["full_regression"]["untracked_attack_draft_excluded"] is True
+        gap = facts["structured_outcome_open_gap"]
+        assert gap["status"] == "confirmed_open_gap" and gap["acceptance_pass_claimed"] is False
+        assert gap["provider_requests"] == 2 and gap["real_model_requests"] == 0
+        assert gap["surfaces"]["protocol"]["unregistered_code_present"] is True
+        assert gap["surfaces"]["telemetry"]["diagnostic_payload_present"] is False
