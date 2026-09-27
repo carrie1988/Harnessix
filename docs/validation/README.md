@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 26
-code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
+version: 27
+code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-27 | [有界Secret扫描整改](secret-scan-2026-09-27-v1/README.md) | `ad2f8e226b674e4787ad0002f0d038a2a81ccfef` | macOS arm64、Python 3.13.8；精确Git归档，真实模型0请求 | 87专项、195有重叠回归、3996 passed/32 skipped；干净源码Wheel/sdist固定六规则零命中；前序0601ede六CI成功不外推到扫描候选 | 当前扫描CI未纳入终态；保留前序失败证据，0.9.4与后续发布门禁仍开放 |
 | 2026-09-27 | [安全治理阶段证据](security-governance-2026-09-27-v1/README.md) | 候选`21b5eb1d57055f32ba2178c165b3ad46060ee7c7`，前序完整回归与CI为`a5fd57e` | POSIX本地；固定ScriptedProvider，真实模型请求0；原字节Manifest和CI身份 | 前序3904 passed/32 skipped；候选16/214/107三个有重叠专项组通过；前序CI五成功、Windows两项导入失败，修复版CI未纳入终态 | 仅候选专项证据，不关闭0.9.4或发布门禁，不把旧版本完整回归外推到新版本 |
 | 2026-09-25 | [长会话Context三平台冻结阈值第二独立Run](soak-long-session-three-platform-candidate-2026-09-24-v1/README.md) | `a2245f568ff3cab71c63e97869e66c93a8ebc529` | Linux/macOS/Windows各自预冻结Profile，1000 Turn、5预热、199次压缩摘要；确定性Provider | 三份STARTED v2/Run/Report原件、24份文件摘要及独立复验再生报告均PASS；首轮Windows候选在300分钟工作流期限取消已登记 | 固定长会话场景（1000 Turn）工程护栏通过；0.9.3d六场景全部完成三平台基线与第二独立PASS |
 | 2026-09-24 | [长会话Context三平台正式规模基线](soak-long-session-three-platform-2026-09-24-v1/README.md) | `39dda2bb218baed30dcf9b1326f899a3133f497b` | Linux/macOS/Windows Python 3.12、1000 Turn、5预热、199次压缩摘要；确定性Provider | 三平台Run/Attempt原件及18份文件摘要、1000条Turn样本最近秩重算通过；[CI 36015746312](https://github.com/carrie1988/Harnessix/actions/runs/36015746312)六实例成功 | 三平台基线与封印Profile；70846f5旧运行降级为诊断，第二独立Run待复验 |

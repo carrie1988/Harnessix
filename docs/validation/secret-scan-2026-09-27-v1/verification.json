@@ -1,0 +1,87 @@
+{
+  "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+  "diagnostic_caveat": "500个公开内容变异包含合法元数据变化；65次完整扫描不计为攻击拒绝，无未分类Python异常逃逸；不是威胁模型正式验收。",
+  "environment": {
+    "architecture": "arm64",
+    "os": "Darwin",
+    "python": "3.13.8"
+  },
+  "gates": {
+    "bundle_raw_bytes_after_simulated_crlf_checkout": "五份原字节匹配；不是Windows实际运行",
+    "existing_license_baseline": "通过；SEC-094-B3仍开放",
+    "mypy": "通过",
+    "mypy_src_files": 328,
+    "new_design_mermaid_render": "通过；使用已安装Chrome，首次默认Puppeteer缺浏览器是环境失败而非语法结论",
+    "readability_and_final_report": "通过",
+    "ruff_check_tracked_and_candidate": "通过",
+    "ruff_format_tracked_and_candidate": "通过",
+    "sbom_schema_and_drift": "通过",
+    "specs_read_only_check": "通过",
+    "taskpacks_read_only_check": "通过"
+  },
+  "live_model_requests": 0,
+  "mutation_diagnostic": {
+    "mutations": 500,
+    "outcomes": {
+      "complete": 65,
+      "scan_archive_entry_unsupported": 1,
+      "scan_archive_invalid": 411,
+      "scan_archive_limit": 4,
+      "scan_archive_unsupported": 18,
+      "scan_member_limit": 1
+    },
+    "positive_format_baselines": 2,
+    "raw_errors": 0,
+    "seed": 942
+  },
+  "spec_version": "harnessix.secret-scan-verification/v1",
+  "tests": [
+    {
+      "failed": 4,
+      "failure_names": [
+        "示例文件豁免",
+        "NUL跳过",
+        "压缩Wheel漏扫",
+        "缺失文件静默放行"
+      ],
+      "passed": 0,
+      "scope": "v1四项缺陷复现",
+      "skipped": 0
+    },
+    {
+      "failed": 0,
+      "passed": 87,
+      "scope": "v2扫描专项",
+      "skipped": 0
+    },
+    {
+      "command": "uv run pytest tests/governance tests/trusted_actions/test_plan_error_boundaries.py tests/trusted_actions/test_public_error_leakage.py -q -o addopts=''",
+      "failed": 0,
+      "overlaps_other_groups": true,
+      "passed": 195,
+      "scope": "治理与前序计划错误回归",
+      "seconds": 17.83,
+      "skipped": 0
+    },
+    {
+      "command": "uv run pytest --ignore=tests/security -q -o addopts=''",
+      "entire_raw_working_tree_make_check_claimed": false,
+      "failed": 0,
+      "passed": 3996,
+      "scope": "全部已跟踪本地回归与候选新增测试",
+      "seconds": 352.07,
+      "skipped": 32,
+      "untracked_attack_draft_included": false
+    },
+    {
+      "command": "uv run pytest tests/governance tests/trusted_actions/test_plan_error_boundaries.py tests/trusted_actions/test_public_error_leakage.py -q -o addopts=''",
+      "failed": 0,
+      "overlaps_other_groups": true,
+      "passed": 196,
+      "scope": "证据冻结与清单补充后的专项回归",
+      "seconds": 18.14,
+      "skipped": 0,
+      "working_tree_delta": "运行时源码不变，仅文档与清单测试增加一项"
+    }
+  ]
+}

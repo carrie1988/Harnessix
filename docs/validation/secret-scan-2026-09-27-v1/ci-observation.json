@@ -1,0 +1,58 @@
+{
+  "current_scanner_ci_status": "not_started_at_freeze",
+  "current_scanner_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+  "prior_bundle_preserved": "docs/validation/security-governance-2026-09-27-v1",
+  "prior_revision": {
+    "conclusion": "success",
+    "head_sha": "0601ede74c01039411c8be85e4297debe9dff478",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 108528355244,
+        "name": "container-sandbox",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355244"
+      },
+      {
+        "conclusion": "success",
+        "id": 108528355332,
+        "name": "python (3.12)",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355332"
+      },
+      {
+        "conclusion": "success",
+        "id": 108528355343,
+        "name": "coding-tools-macos",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355343"
+      },
+      {
+        "conclusion": "success",
+        "id": 108528355351,
+        "name": "documentation",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355351"
+      },
+      {
+        "conclusion": "success",
+        "id": 108528355389,
+        "name": "windows-trusted-execution",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355389"
+      },
+      {
+        "conclusion": "success",
+        "id": 108528355447,
+        "name": "python (3.13)",
+        "status": "completed",
+        "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536/job/108528355447"
+      }
+    ],
+    "run_id": 36286571536,
+    "status": "completed",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36286571536"
+  },
+  "prior_success_is_current_scanner_acceptance": false,
+  "spec_version": "harnessix.secret-scan-ci-observation/v1"
+}

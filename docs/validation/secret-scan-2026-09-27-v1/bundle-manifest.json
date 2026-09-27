@@ -1,0 +1,75 @@
+{
+  "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "29f254d89d5141d9dab57122fa32f2572753038ec713aca89dc326680038ce50",
+      "size_bytes": 7537
+    },
+    {
+      "path": "artifact-facts.json",
+      "sha256": "1ba4d4ada5cead9509d6484ebd43fd3ceee214b64e361b952db191f7c11f08bc",
+      "size_bytes": 1274
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "a7568d85e68f93e68761271baef008ac90ecd0db1787f40581a3be547ccc525f",
+      "size_bytes": 2066
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "afc427c5778778df547d4b55dd12985dc64b949d0facf3bfdee43503cd09ba32",
+      "size_bytes": 998
+    },
+    {
+      "path": "verification.json",
+      "sha256": "b9b354320c655b546e6a40c73de491802c6753b0c46cfe7237ef751b6ef84cf7",
+      "size_bytes": 2972
+    }
+  ],
+  "manifest_self_excluded": true,
+  "raw_logs_archived": false,
+  "source_inputs": [
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "scripts/secret_scan.py",
+      "sha256": "826b35da6b942045e5fda1a9b9e38864b79b9a24942100060dbd900a0d6965a1"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "scripts/secret_scan_archives.py",
+      "sha256": "5bcc46206c9da2fd05b26d928c2b3e8478386621dd8f1f2f92763c7848f0b43f"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "scripts/secret_scan_contracts.py",
+      "sha256": "03ca5a23bf471aac55d689bb13375c789ee60ff482ce9941baad7d4f0b56069d"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "tests/governance/test_secret_scan.py",
+      "sha256": "d67a6482f01257f72e451b597dd8f05b708f2a3c58495e8b4c9b84fd86c55a2d"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "Makefile",
+      "sha256": "d9feb39c35bc85b9ece3fcc14eb48989e14062c3aecdfcf97b5a1b929a869209"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "fdbfd9e51151a31291ea1334cbfab47daf1665c4fcb2525e071ee978836b3615"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "uv.lock",
+      "sha256": "3ad02ec651a8f0116d491f31d661235572972a7683c7514a3a5fc95dc090ce61"
+    },
+    {
+      "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+      "path": "pyproject.toml",
+      "sha256": "fc7b281ab58539c0e5c3ff547518c9fc441adfec4aee7ff1949d9bdc0ae6bb6c"
+    }
+  ],
+  "spec_version": "harnessix.secret-scan-evidence-manifest/v1"
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: 0601ede74c01039411c8be85e4297debe9dff478
+version: 9
+code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
 owners:
   - core
 modules:
@@ -191,7 +191,7 @@ sequenceDiagram
 | 编号 | 当前行为与可复现边界 | 必须完成的整改 |
 |---|---|---|
 | SEC-094-A1 | 原实现按类型透传任意KernelError；已由三个失败负例复现。当前候选按decode/resolve/policy有限合同重建固定错误，不继承消息/retry提示。 | [专项详设](m09-4a-plan-error-trust-boundary.md)及真实Runtime/Model历史/Session/Audit/Protocol/Telemetry回归已建立；本地完整回归3904 passed/32 skipped及五公开面专项通过；0601ede六作业CI成功已验证该窄计划边界；0.9.4a的Execute/Reconcile及结构化输出全面审查仍独立开放。 |
-| SEC-094-B2 | v1对NUL二进制和`.env.example`跳过、压缩Wheel不读取成员，缺失输入静默放行；四项负例均失败。v2已删除skip路径，新增有界ZIP/TAR/压缩流、BOM视图与固定未完成合同。 | [有界扫描详设](m09-4b-bounded-secret-scan.md)覆盖坏包、隐藏尾部、预算、取消/超时及真实包门禁；当前候选需完整回归、干净源码发行物及三平台CI终态，不能以源码零命中替代发行验证。 |
+| SEC-094-B2 | v1对NUL二进制和`.env.example`跳过、压缩Wheel不读取成员，缺失输入静默放行；四项负例均失败。v2已删除skip路径，新增有界ZIP/TAR/压缩流、BOM视图与固定未完成合同。 | [有界扫描详设](m09-4b-bounded-secret-scan.md)覆盖坏包、隐藏尾部、预算、取消/超时及真实包门禁；[冻结报告](../validation/secret-scan-2026-09-27-v1/README.md)记录3996 passed/32 skipped、87专项与干净源码Wheel/sdist；三平台CI终态仍待核验，不标记整体0.9.4b完成。 |
 | SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | 精确包版本/来源/证据绑定、平台条件证据与许可证表达式决策；版本升级不能沿用未验证的旧许可结论。 |
 
 上述行为是离线合成输入已确认的控制缺口，不表示发现或保存了真实凭据；尚未通过端到端回归的

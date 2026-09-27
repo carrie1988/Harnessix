@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: pending
+version: 2
+code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
 owners:
   - core
 modules:
@@ -323,3 +323,6 @@ make supply-chain
 与v1成功接口相容，失败行为按固定未完成合同收紧。新增归档预检没有单独服务或业务持久化；TAR仅支持受审查子集，
 完整压缩流检查额外阻断了标准Reader可能忽略的隐藏尾部。当前为实现候选；准确源码版本、干净归档发行哈希、
 测试统计及CI终态在后续独立证据包固定，未完成验收不得追认通过。
+
+实现版本`ad2f8e2`的87专项、3996 passed/32 skipped及精确提交干净源码发行物已经完成本地验证；
+[独立冻结报告](../validation/secret-scan-2026-09-27-v1/README.md)保留包哈希、原字节清单和当前CI未验收边界。

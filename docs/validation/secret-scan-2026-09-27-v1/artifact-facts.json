@@ -1,0 +1,36 @@
+{
+  "additional_scanned_artifact_files": [
+    ".gitignore"
+  ],
+  "artifact_bytes_committed": false,
+  "artifacts": [
+    {
+      "golden_solution_member_count": 0,
+      "kind": "wheel",
+      "member_count": 371,
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "59611155f684d89605b364198bcdb6d37fc17d490b1dcd234afd7a162cb88944",
+      "size_bytes": 925658
+    },
+    {
+      "golden_solution_member_count": 0,
+      "kind": "sdist",
+      "member_count": 1985,
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "ea23d26595d1bee2ea135dc7afa26b6479d061a5c320e497589bf34a653ac357",
+      "size_bytes": 6256014
+    }
+  ],
+  "build_command": "uv build --offline --python <既有Python环境> --out-dir dist",
+  "build_dependency_versions_fully_pinned": false,
+  "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+  "findings": 0,
+  "physical_input_count": 2007,
+  "python": "3.13.8",
+  "reproducible_build_claimed": false,
+  "scan_command": "python scripts/secret_scan.py --root <干净源码归档> --artifact-dir <干净源码归档>/dist",
+  "scan_returncode": 0,
+  "scanner_version": "harnessix.secret-scan/v2",
+  "source": "精确提交的git archive，仅包含已跟踪文件",
+  "spec_version": "harnessix.secret-artifact-facts/v1"
+}

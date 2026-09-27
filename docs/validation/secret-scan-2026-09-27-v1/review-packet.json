@@ -1,0 +1,31 @@
+{
+  "closed_locally": [
+    "v1四项覆盖缺陷",
+    "受支持归档与BOM覆盖",
+    "有界格式与输入失败语义",
+    "精确提交源码构建Wheel/sdist扫描",
+    "UTF-8命中和失败诊断"
+  ],
+  "code_revision": "ad2f8e226b674e4787ad0002f0d038a2a81ccfef",
+  "credential_content_saved": false,
+  "decision": "candidate_only",
+  "not_claimed": [
+    "不存在未知凭据模式",
+    "生产完成",
+    "0.9.4完成",
+    "0.9完成",
+    "完整当前工作树make check"
+  ],
+  "open_release_gates": [
+    "当前扫描候选三平台CI终态",
+    "SEC-094-B3许可证版本来源证据",
+    "不可变构建/安装/镜像/文档工具输入",
+    "0.9.4a Execute/Reconcile/结构化输出全面审查",
+    "0.9.4c TM-01～TM-13编号攻击",
+    "0.9.4d远端MCP身份/OAuth/Egress",
+    "0.9.5安装/升级/Dogfooding",
+    "0.9.6 Provider和最终发行证据"
+  ],
+  "raw_logs_saved_in_repository": false,
+  "spec_version": "harnessix.secret-scan-review-packet/v1"
+}
