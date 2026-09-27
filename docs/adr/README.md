@@ -242,3 +242,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR-0101 查询原DTO与Session宿主绑定](0101-query-publication-and-session-host-binding.md)。
 
 - [ADR-0102 认证历史与Event Seal核心](0102-authenticated-history-and-event-seal-core.md)（总体评审草案，默认装配未完成）。
+
+- [ADR-0103：认证SQLite提交](0103-authenticated-sqlite-session-commit.md)：真实CAS、同事务证明与原前缀恢复；默认Key托管和产品启用未完成。

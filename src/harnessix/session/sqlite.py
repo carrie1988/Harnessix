@@ -18,9 +18,17 @@ from pydantic import ValidationError
 from harnessix.agent.errors import KernelError
 from harnessix.agent.lifecycle import validate_fork_snapshot
 from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
-from harnessix.agent.reducer import apply_event, replay
+from harnessix.agent.reducer import replay
 from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session.errors import storage_errors
+from harnessix.session.sqlite_append import append_in_transaction
+from harnessix.session.sqlite_publication import (
+    authenticated_events,
+    save_projection,
+    verify_snapshot,
+    verify_store,
+)
+from harnessix.session.store_publication import SessionPublicationBinding
 
 _APPLICATION_ID = 0x4858534B
 _WAL_TIMEOUT_SECONDS = 5.0
@@ -125,7 +133,9 @@ def _validated_snapshot(
     return thread
 
 
-async def _scan_recovery_threads(database: aiosqlite.Connection) -> tuple[Thread, ...]:
+async def _scan_recovery_threads(
+    database: aiosqlite.Connection, publication: SessionPublicationBinding | None
+) -> tuple[Thread, ...]:
     """批量读取完整身份全集，沿用单条快照的失败关闭校验。"""
 
     cursor = await database.execute(
@@ -136,8 +146,13 @@ async def _scan_recovery_threads(database: aiosqlite.Connection) -> tuple[Thread
         "FROM agent_events GROUP BY thread_id"
         ") SELECT ids.thread_id AS indexed_thread_id, "
         "agent_threads.thread_id AS projection_thread_id, "
-        "agent_threads.sequence, agent_threads.snapshot_json, "
-        "agent_threads.snapshot_sha256, agent_threads.projection_version, "
+        "agent_threads.sequence, "
+        + (
+            "substr(agent_threads.snapshot_json,1,67108865) AS snapshot_json, "
+            if publication is not None
+            else "agent_threads.snapshot_json, "
+        )
+        + "agent_threads.snapshot_sha256, agent_threads.projection_version, "
         "COALESCE(event_stats.last_sequence, 0) AS last_sequence, "
         "COALESCE(event_stats.event_count, 0) AS event_count "
         "FROM ids LEFT JOIN agent_threads ON agent_threads.thread_id = ids.thread_id "
@@ -151,6 +166,7 @@ async def _scan_recovery_threads(database: aiosqlite.Connection) -> tuple[Thread
         except ValueError:
             raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
         projection = row if row["projection_thread_id"] is not None else None
+        await verify_snapshot(database, publication, thread_id, projection)
         thread = _validated_snapshot(
             thread_id, projection, row["last_sequence"], row["event_count"]
         )
@@ -162,14 +178,25 @@ async def _scan_recovery_threads(database: aiosqlite.Connection) -> tuple[Thread
 class SQLiteSessionStore:
     """事件与聚合投影原子提交；多连接 CAS，单 Runtime 宿主。"""
 
-    def __init__(self, path: str | Path, *, fault: Callable[[str], None] | None = None) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        fault: Callable[[str], None] | None = None,
+        publication: SessionPublicationBinding | None = None,
+    ) -> None:
         self.path = Path(path).resolve()
+        self._publication = publication
         self._fault = fault or (lambda _: None)
         self._runtime_owner_token: object | None = None
 
     @asynccontextmanager
-    async def _connection(self) -> AsyncIterator[aiosqlite.Connection]:
+    async def _connection(
+        self, *, authenticate: bool = True
+    ) -> AsyncIterator[aiosqlite.Connection]:
         async with _session_connection(self.path) as database:
+            if authenticate:
+                await verify_store(database, self._publication)
             yield database
 
     async def initialize(self) -> None:
@@ -184,7 +211,7 @@ class SQLiteSessionStore:
             pass
         else:
             os.close(descriptor)
-        async with self._connection() as database:
+        async with self._connection(authenticate=False) as database:
             await database.execute("BEGIN IMMEDIATE")
             cursor = await database.execute("PRAGMA application_id")
             row = await cursor.fetchone()
@@ -235,6 +262,7 @@ class SQLiteSessionStore:
             assert row is not None
             if row[0] != "ok":
                 raise KernelError("database_corrupt", "Session 数据库完整性检查失败")
+            await verify_store(database, self._publication, enroll=True)
             await database.commit()
             self.path.chmod(0o600)
         # 先释放迁移连接的全部游标/锁，避免与另一初始化连接的模式切换形成锁升级冲突。
@@ -280,8 +308,16 @@ class SQLiteSessionStore:
             _close_runtime_owner_lock(descriptor)
 
     async def _snapshot(self, database: aiosqlite.Connection, thread_id: UUID) -> Thread | None:
+        fields = (
+            (
+                "thread_id,sequence,substr(snapshot_json,1,67108865) AS snapshot_json,"
+                "snapshot_sha256,projection_version"
+            )
+            if self._publication is not None
+            else "*"
+        )
         cursor = await database.execute(
-            "SELECT * FROM agent_threads WHERE thread_id = ?", (str(thread_id),)
+            "SELECT " + fields + " FROM agent_threads WHERE thread_id = ?", (str(thread_id),)
         )
         row = await cursor.fetchone()
         cursor = await database.execute(
@@ -290,6 +326,7 @@ class SQLiteSessionStore:
         )
         last_row = await cursor.fetchone()
         assert last_row is not None
+        await verify_snapshot(database, self._publication, thread_id, row)
         return _validated_snapshot(thread_id, row, last_row[0], last_row[1])
 
     async def get_thread(self, thread_id: UUID) -> Thread:
@@ -302,6 +339,9 @@ class SQLiteSessionStore:
 
     async def thread_ids(self) -> list[UUID]:
         async with self._connection() as database:
+            await database.execute("BEGIN")
+            if self._publication is not None:
+                await _scan_recovery_threads(database, self._publication)
             cursor = await database.execute(
                 "SELECT thread_id FROM agent_events UNION "
                 "SELECT thread_id FROM agent_threads ORDER BY thread_id"
@@ -316,7 +356,7 @@ class SQLiteSessionStore:
 
         async with self._connection() as database:
             await database.execute("BEGIN")
-            return await _scan_recovery_threads(database)
+            return await _scan_recovery_threads(database, self._publication)
 
     async def list_thread_page(
         self, *, after: UUID | None, archived: bool | None, limit: int
@@ -359,22 +399,15 @@ class SQLiteSessionStore:
                 selected.append(thread)
             return tuple(selected), len(ids) > limit
 
-    async def _save(self, database: aiosqlite.Connection, thread: Thread) -> None:
-        encoded = thread.model_dump_json()
-        await database.execute(
-            "INSERT INTO agent_threads "
-            "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-            "VALUES (?, ?, ?, ?, 20) "
-            "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
-            "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
-            "projection_version = excluded.projection_version",
-            (
-                str(thread.thread_id),
-                thread.sequence,
-                encoded,
-                hashlib.sha256(encoded.encode()).hexdigest(),
-            ),
-        )
+    async def _save(
+        self,
+        database: aiosqlite.Connection,
+        thread: Thread,
+        *,
+        prefix: str | None = None,
+        history_bytes: int | None = None,
+    ) -> None:
+        await save_projection(database, self._publication, thread, prefix, history_bytes)
 
     async def append(
         self,
@@ -429,6 +462,10 @@ class SQLiteSessionStore:
                 raise KernelError("thread_not_found", "Fork来源Thread不存在")
             if source.sequence != expected_source_sequence:
                 raise KernelError("sequence_conflict", "Fork来源Thread已更新")
+            if self._publication is not None:
+                await authenticated_events(
+                    database, self._publication, source_thread_id, source.sequence
+                )
             if payload.workspace != source.workspace:
                 raise KernelError("thread_fork_invalid", "Fork不能改变来源Workspace")
             validate_fork_snapshot(source, payload.snapshot)
@@ -463,47 +500,7 @@ class SQLiteSessionStore:
         expected_sequence: int,
     ) -> tuple[Thread, bool]:
         """接收私有冻结批次；调用方负责 BEGIN、COMMIT 和回滚。"""
-        matched: list[AgentEvent] = []
-        for draft in batch:
-            cursor = await database.execute(
-                "SELECT * FROM agent_events WHERE event_id = ?",
-                (str(draft.event_id),),
-            )
-            row = await cursor.fetchone()
-            if row is not None:
-                event = self._parse_event(row)
-                stored = EventDraft.model_validate(
-                    event.model_dump(exclude={"thread_id", "sequence"})
-                )
-                if stored != draft or event.thread_id != thread_id:
-                    raise KernelError("event_conflict", "同一事件 ID 已绑定不同载荷")
-                matched.append(event)
-        if matched:
-            if len(matched) != len(batch) or any(
-                event.sequence != expected_sequence + index
-                for index, event in enumerate(matched, 1)
-            ):
-                raise KernelError("event_conflict", "事件批次部分重复或顺序冲突")
-            thread = await self._snapshot(database, thread_id)
-            assert thread is not None
-            return thread, False
-        thread = await self._snapshot(database, thread_id)
-        sequence = thread.sequence if thread else 0
-        if sequence != expected_sequence:
-            raise KernelError("sequence_conflict", "Thread 已更新，请重新读取 sequence")
-        for draft in batch:
-            sequence += 1
-            event = AgentEvent(**draft.model_dump(), thread_id=thread_id, sequence=sequence)
-            thread = apply_event(thread, event)
-            await database.execute(
-                "INSERT INTO agent_events VALUES (?, ?, ?, ?)",
-                (str(thread_id), sequence, str(event.event_id), event.model_dump_json()),
-            )
-        assert thread is not None
-        self._fault("session.after_events")
-        await self._save(database, thread)
-        self._fault("session.after_projection")
-        return thread, True
+        return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
 
     @staticmethod
     def _parse_event(row: aiosqlite.Row) -> AgentEvent:
@@ -522,6 +519,8 @@ class SQLiteSessionStore:
     async def _events(
         self, database: aiosqlite.Connection, thread_id: UUID, after: int
     ) -> list[AgentEvent]:
+        if self._publication is not None:
+            return await authenticated_events(database, self._publication, thread_id, after)
         cursor = await database.execute(
             "SELECT * FROM agent_events WHERE thread_id = ? AND sequence > ? ORDER BY sequence",
             (str(thread_id), after),

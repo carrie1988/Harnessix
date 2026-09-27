@@ -162,3 +162,5 @@ flowchart LR
 对应的新版本研究证据，不能继续外推现有冻结结论。
 
 - [认证历史与跨重启保护](authenticated-history-and-seal.md)：实际持久入口、默认Root开放观察和独立认证边界。
+
+- [认证SQLite提交与派生恢复研究](authenticated-sqlite-session.md)：真实CAS、同事务证明与原前缀恢复；默认Key托管和产品启用未完成。

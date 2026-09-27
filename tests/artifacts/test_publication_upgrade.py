@@ -123,7 +123,7 @@ raise AssertionError('未到达28版迁移退出点')
     with sqlite3.connect(path) as db:
         assert db.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert db.execute("SELECT MAX(version) FROM agent_migrations").fetchone()[0] == (
-            27 if point == "before_commit" else 28
+            27 if point == "before_commit" else 29
         )
     store = SQLiteSessionStore(path)
     await store.initialize()

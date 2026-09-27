@@ -165,8 +165,8 @@ class EventPublicationAuthority:
         ):
             raise _failure("publication_event_invalid")
         try:
-            native = event.model_dump(mode="json", warnings="error")
-            frozen = AgentEvent.model_validate(native)
+            frozen = event.model_copy(deep=True)
+            native = frozen.model_dump(mode="json", warnings="error")
         except Exception:
             raise _failure("publication_event_invalid") from None
         # 先对整个原生树执行既有预算，不能先把无限嵌套正文编码成巨型字节串。
@@ -176,6 +176,8 @@ class EventPublicationAuthority:
             body = frozen.model_dump_json(warnings="error").encode()
             if len(body) > 1024 * 1024:
                 raise ValueError
+            # 严格嵌套合同允许JSON UUID/时间，不接受Python模式强制转换。
+            frozen = AgentEvent.model_validate_json(body)
         except Exception:
             raise _failure("publication_event_invalid") from None
         await protect_jsonl(self._protection, body, cancel)

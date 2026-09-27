@@ -630,3 +630,9 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 
 Event Seal前置核心已实现，默认Root仍未接入，旧未知历史风险保持开放。总体方案覆盖事件链、派生投影、Artifact、独立Key Backend及备份，不能以普通SHA或扫描当前凭据补签旧行。
 完整现行状态及总体/详细设计见[认证历史详设](changes/m09-4a-authenticated-history-and-seal.md)。
+
+## 显式认证SQLite Session合同
+
+[完整设计](changes/m09-4a-authenticated-sqlite-session.md)接入独立Binding、Migration 0029、新事件CAS同事务Seal、认证前缀与派生Checkpoint。
+Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session事实均已测试。
+默认Root与Key Backend未接入，Artifact正文/二进制原Epoch边界未放宽，备份迁移、三平台正式部署与整体0.9未完成。

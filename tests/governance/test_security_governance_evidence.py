@@ -500,6 +500,56 @@ ROOT = Path(__file__).resolve().parents[2]
             },
         ),
         (
+            "authenticated-sqlite-session-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/errors.py",
+                "src/harnessix/agent/models.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/reducer.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/artifacts/persistence.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/migrations/0029_authenticated_session_history.sql",
+                "src/harnessix/session/ports.py",
+                "src/harnessix/session/publication_seal.py",
+                "src/harnessix/session/sqlite.py",
+                "src/harnessix/session/sqlite_append.py",
+                "src/harnessix/session/sqlite_publication.py",
+                "src/harnessix/session/store_publication.py",
+                "tests/agent/test_authenticated_store.py",
+                "tests/agent/test_batch_session_upgrade.py",
+                "tests/agent/test_process_session_upgrade.py",
+                "tests/agent/test_session_upgrade.py",
+                "tests/agent/test_store.py",
+                "tests/agent/test_store_maintenance.py",
+                "tests/agent/test_wal_initialization.py",
+                "tests/artifacts/test_batch_diff_upgrade.py",
+                "tests/artifacts/test_process_output_upgrade.py",
+                "tests/artifacts/test_publication_upgrade.py",
+                "tests/governance/test_security_governance_evidence.py",
+                "tests/session/test_publication_seal.py",
+                "uv.lock",
+                "src/harnessix/artifacts/sqlite.py",
+                "src/harnessix/session/errors.py",
+                "src/harnessix/file_lock.py",
+            },
+        ),
+        (
             "event-seal-core-2026-09-28-v1",
             "contract-facts.json",
             {
@@ -1240,6 +1290,60 @@ def test_event_seal_bundle_does_not_claim_default_history_authorization() -> Non
         assert review["full_regression_acceptance_pending"] is True
     else:
         assert full["passed"] >= 5145 and full["skipped"] == 32
+        assert full["tracked_inputs_unchanged_during_run"] is True
+        assert full["source_inputs_same_as_fixed_revision"] is True
+        assert "\nstatus: current\n" in metadata
+        assert review["full_regression_acceptance_pending"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_revision_acceptance"] is False
+
+
+def test_authenticated_store_bundle_does_not_claim_default_product_closure() -> None:
+    bundle = ROOT / "docs/validation/authenticated-sqlite-session-2026-09-28-v1"
+    items = {
+        name: json.loads((bundle / name).read_bytes())
+        for name in (
+            "contract-facts.json",
+            "verification.json",
+            "review-packet.json",
+            "bundle-manifest.json",
+            "ci-observation.json",
+        )
+    }
+    facts, verification = items["contract-facts.json"], items["verification.json"]
+    review, ci = items["review-packet.json"], items["ci-observation.json"]
+    assert len({item["code_revision"] for item in items.values()}) == 1
+    assert facts["new_store_tests"] == 42 and facts["new_governance_tests"] == 2
+    assert facts["real_model_requests"] == 0 and facts["archive_rights_blockers"] == 12
+    assert facts["production_atomic_seal_write_implemented"] is True
+    assert facts["explicit_library_authentication_implemented"] is True
+    assert facts["snapshot_proof_is_full_history_rescan"] is False
+    assert facts["production_key_backend_implemented"] is False
+    assert facts["default_product_history_authentication_enabled"] is False
+    assert facts["artifact_body_cross_restart_authentication_implemented"] is False
+    assert facts["legacy_unproven_history_resigned"] is False
+    assert facts["historical_validation_files_unchanged"] is True
+    assert facts["untracked_attack_draft_excluded"] is True
+    assert verification["related_regression"]["passed"] == 1405
+    consumer = verification["wheel_consumer"]
+    assert consumer["passed"] and consumer["separate_os_processes"]
+    assert consumer["fixture_persistent_key"] is True
+    assert consumer["production_key_backend_claimed"] is False
+    assert consumer["default_product_authentication_claimed"] is False
+    assert all(item["module_origin_verified"] for item in consumer["records"])
+    assert consumer["records"][0]["all_four_facts_committed_together"] is True
+    assert consumer["records"][1]["unsigned_reopen_rejected"] is True
+    assert verification["diagrams"]["each_png_visually_inspected"] is True
+    assert verification["diagrams"]["diagrams"] == 4
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    full = verification["full_regression"]
+    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    assert full["status"] in {"pending", "passed"}
+    if full["status"] == "pending":
+        assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False
+        assert review["full_regression_acceptance_pending"] is True
+    else:
+        assert full["passed"] >= 5189 and full["skipped"] == 32
         assert full["tracked_inputs_unchanged_during_run"] is True
         assert full["source_inputs_same_as_fixed_revision"] is True
         assert "\nstatus: current\n" in metadata

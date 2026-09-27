@@ -808,3 +808,11 @@ initialize使用纯候选，公开检查通过后原子提交连接状态，关�
 五幅实际渲染图及5145/32完整回归。相关1128项与专项76项相互重叠。
 这仍是前置组件：当前默认Root旧历史和普通投影SHA风险保持开放，
 独立Key、SQLite同事务与认证投影、Artifact和三平台部署必须继续完成，发布门禁不变。
+
+## 0.9.4a 显式认证SQLite Session子切片
+
+真实SQLite新事件CAS、原Seal、完整前缀与派生Checkpoint已进入同一事务；
+Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Runtime/Fork、Artifact混合事务、
+资源预算、取消、响应丢失与真实OS进程退出均已验证。
+[详细设计](changes/m09-4a-authenticated-sqlite-session.md)区分显式库合同与默认产品。
+默认Root/Key Backend、Artifact持久正文/二进制证明与备份/安装仍未接入，0.9.4a和整体0.9不勾选完成。
