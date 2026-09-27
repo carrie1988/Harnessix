@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: draft
 version: 1
-code_revision: d105d6212b374c20ffef5b20d95cc2de6a88d48f
+code_revision: 2ae7caf3e2a6b53431ef352ff3520f3cf1358282
 owners: [core]
 modules: [app_server, agent, protocol, secrets, session, product_config]
 related_adrs:
@@ -20,7 +20,7 @@ supersedes: []
 
 六查询原Params/DTO/稳定错误保护、恢复回调后置、构造同一Session对象和原长轮询。
 专项181项通过，含62新增功能/观察＋119既有，其中1项是未登记旧历史开放观察，不计历史授权通过。
-完整回归、固定来源候选构建、Wheel与证据Hash仍待最终冻结，草案不作整体发布验收。
+完整回归与证据最终冻结尚待执行，候选构建和Wheel消费已核验；草案不作整体发布验收。
 
 ## 六文件证据与限制
 
@@ -29,3 +29,11 @@ supersedes: []
 [详细设计](../../changes/m09-4a-query-publication-boundary.md)含五图、字段、伪代码及源码定位。
 默认Root验证的模型工厂和驱动是替身，不冒充真实网络Provider、三平台安装或完整C端验收。
 未知历史/Seal、全部Provider、内部聚合权限和12项Archive权利仍开放，整个0.9保持未完成。
+
+## 独立核验与完整回归状态
+
+专项181项、相关2302项通过；两组重叠，不相加。清洁固定Git归档构建Wheel与sdist，Secret扫描通过。
+`python -I`直接消费压缩Wheel中的新模块，真实Runtime/SQLite/导出Service拒绝五查询，
+安全独立Session的原DTO和SDK Replay往返通过，不导入项目源码或测试助手。
+发行物为固定源码测试候选，源归档文档为全量冻结前版本，不声明正式发布、干净机器安装或三平台验收。
+完整回归尚待执行；本草案不作完整回归通过或0.9发布声明。

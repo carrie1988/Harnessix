@@ -1,5 +1,276 @@
 {
-  "code_revision": "d105d6212b374c20ffef5b20d95cc2de6a88d48f",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "all_provider_credentials_closed": false,
+  "arbitrary_dlp_claimed": false,
+  "archive_rights_blockers": 12,
+  "artifact_release_claimed": false,
+  "artifact_scope": "fixed_source_build_candidate",
+  "artifacts": [
+    {
+      "changed_module_bytes_same_as_fixed_revision": true,
+      "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+      "kind": "wheel",
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "cce831dd491f8d351da8c168d481a6c0fc32b1d5d271fe8e0a1657ea64aef784",
+      "size_bytes": 973109,
+      "untracked_security_draft_present": false
+    },
+    {
+      "changed_module_bytes_same_as_fixed_revision": true,
+      "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+      "kind": "sdist",
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "2d33c99bf7eca20e6380e8c357b4d9e2d5ba4984c75cfff943785582ac8fb48b",
+      "size_bytes": 7219882,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "clean_machine_install_claimed": false,
+  "closed_cached_command_acceptance_is_execution_guarantee": false,
+  "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+  "cross_restart_seal_closed": false,
+  "default_product_root": {
+    "actual_config_scope_sqlite_default_action_and_read_only_host": true,
+    "current_material_five_queries_rejected": true,
+    "direct_service_no_transport_proxy": true,
+    "factory_and_stdio_driver_are_fixtures": true,
+    "legacy_private_database_intentionally_contains_synthetic_material": true,
+    "legacy_private_history_unchanged": true,
+    "no_new_turn_accepted_or_background_task": true,
+    "original_materials_cleared": true,
+    "os_stdio_pipes_claimed": false,
+    "passed": true,
+    "provider_requests": 0
+  },
+  "delta_lossless_replay_claimed": false,
+  "direct_service_current_registered_material_protected": true,
+  "fixed_observation": {
+    "bindings": [
+      {
+        "accepted": false,
+        "actual_sqlite_store_instances": true,
+        "binding": "different_store",
+        "real_model_requests": 0
+      },
+      {
+        "accepted": false,
+        "actual_sqlite_store_instances": true,
+        "binding": "same_path_other_instance",
+        "real_model_requests": 0
+      }
+    ],
+    "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+    "module_source_verified": true,
+    "records": [
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": "public_output_secret_leak",
+        "original_registered_material_exported": false,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "get",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": "public_output_secret_leak",
+        "original_registered_material_exported": false,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "list",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": "public_output_secret_leak",
+        "original_registered_material_exported": false,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "resume",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": "public_output_secret_leak",
+        "original_registered_material_exported": false,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "replay",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": "public_output_secret_leak",
+        "original_registered_material_exported": false,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "next",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      }
+    ],
+    "script_sha256": "1f873ba94b6becd8912b0772057326d6ced24c6079b955d07948e0854c997c96",
+    "unknown_history": [
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "unknown_history",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      }
+    ]
+  },
+  "hard_preemption_claimed": false,
+  "historical_validation_files": 695,
+  "historical_validation_files_unchanged": true,
+  "independent_baseline": {
+    "bindings": [
+      {
+        "accepted": true,
+        "actual_sqlite_store_instances": true,
+        "binding": "different_store",
+        "real_model_requests": 0
+      },
+      {
+        "accepted": true,
+        "actual_sqlite_store_instances": true,
+        "binding": "same_path_other_instance",
+        "real_model_requests": 0
+      }
+    ],
+    "code_revision": "d105d6212b374c20ffef5b20d95cc2de6a88d48f",
+    "module_source_verified": true,
+    "records": [
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "get",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "list",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "resume",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "replay",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "next",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      }
+    ],
+    "script_sha256": "1f873ba94b6becd8912b0772057326d6ced24c6079b955d07948e0854c997c96",
+    "unknown_history": [
+      {
+        "actual_runtime_sqlite_exported_service": true,
+        "failure_code": null,
+        "original_registered_material_exported": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "unknown_history",
+        "transport_guard_used": false,
+        "unknown_history_authorization_claimed": false
+      }
+    ]
+  },
+  "internal_store_aggregate_authorization_closed": false,
+  "module_exports_schema_dependency_edges_and_cycles_unchanged": true,
+  "new_governance_tests": 2,
+  "new_product_root_tests": 1,
+  "new_query_tests": 61,
+  "original_dto_hash_and_schema_unchanged": true,
+  "real_model_requests": 0,
+  "related_regression": {
+    "command": [
+      "uv",
+      "run",
+      "pytest",
+      "-q",
+      "tests/agent",
+      "tests/app_server",
+      "tests/protocol",
+      "tests/product_config",
+      "tests/secrets",
+      "tests/models",
+      "tests/artifacts",
+      "tests/trusted_actions",
+      "tests/product_ui"
+    ],
+    "count_source": "实际pytest成功进度中通过标记总数；双quiet未输出耗时",
+    "exit_code": 0,
+    "passed": 2302,
+    "seconds": null,
+    "size_bytes": 2560,
+    "stdout_sha256": "5ad33a55699de80f1a6b5c544ca68f60a3dbb598b1df3743fd823d7d4ba9a503"
+  },
+  "reproducible_build_claimed": false,
+  "request_store_physical_identity_proven": false,
+  "runtime_session_reader_object_binding_checked": true,
+  "schema_migration": false,
+  "source_archive_docs_are_pre_full_freeze": true,
+  "special_regression": {
+    "existing_tests": 119,
+    "exit_code": 0,
+    "new_tests": 62,
+    "passed": 181,
+    "seconds": 5.18,
+    "size_bytes": 260,
+    "stdout_sha256": "a4a2c5b7dcfb78ac402c5479580c55c2b0526275594745041a5963695b27385d"
+  },
+  "stable_python_errors_normalized_to_AgentServiceError": true,
+  "structure_policy_thresholds_unchanged": true,
+  "unknown_history_authorization_closed": false,
+  "unknown_history_gap_observations": 1,
+  "untracked_attack_draft_excluded": true
 }

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: draft
+status: current
 version: 1
-code_revision: d105d6212b374c20ffef5b20d95cc2de6a88d48f
+code_revision: 2ae7caf3e2a6b53431ef352ff3520f3cf1358282
 owners: [core]
 modules: [app_server, agent, protocol, secrets, session, product_config]
 related_adrs:

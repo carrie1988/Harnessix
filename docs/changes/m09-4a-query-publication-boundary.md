@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: d105d6212b374c20ffef5b20d95cc2de6a88d48f
+code_revision: 2ae7caf3e2a6b53431ef352ff3520f3cf1358282
 owners: [core]
 modules: [app_server, agent, protocol, secrets, session, product_config]
 related_adrs:
@@ -300,3 +300,27 @@ Owner同步阻塞、Scope不可用SDK相关ID、12项Archive权利、编号威�
 3. [`server.py`](../../src/harnessix/app_server/server.py)：UnexpectedQueryError映射与完整原帧门禁。
 4. [`查询测试`](../../tests/app_server/test_query_publication.py)及[`默认Root验证`](../../tests/product_config/test_query_publication_root.py)：输入零IO、输出零恢复、原事实不变、开放旧历史。
 5. [ADR-0101](../adr/0101-query-publication-and-session-host-binding.md)及[六文件证据](../validation/query-publication-2026-09-28-v1/README.md)：固定来源、检查口径、剩余发布阻塞。
+
+### 13.1 固定源码符号逐项导航
+
+- [`src/harnessix/app_server/query_runtime.py`：`UnexpectedQueryError`，L22–L26](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/query_runtime.py#L22-L26)。
+- [`src/harnessix/app_server/query_runtime.py`：`execute_query`，L29–L67](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/query_runtime.py#L29-L67)。
+- [`src/harnessix/app_server/query_runtime.py`：`replay_snapshot`，L70–L80](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/query_runtime.py#L70-L80)。
+- [`src/harnessix/app_server/query_runtime.py`：`poll_events`，L83–L118](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/query_runtime.py#L83-L118)。
+- [`src/harnessix/app_server/service.py`：`__init__`，L64–L87](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L64-L87)。
+- [`src/harnessix/app_server/service.py`：`_spawn`，L97–L115](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L97-L115)。
+- [`src/harnessix/app_server/service.py`：`get_thread`，L184–L190](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L184-L190)。
+- [`src/harnessix/app_server/service.py`：`list_threads`，L192–L209](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L192-L209)。
+- [`src/harnessix/app_server/service.py`：`resume_thread`，L211–L234](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L211-L234)。
+- [`src/harnessix/app_server/service.py`：`replay_events`，L399–L402](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L399-L402)。
+- [`src/harnessix/app_server/service.py`：`read_artifact`，L404–L412](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L404-L412)。
+- [`src/harnessix/app_server/service.py`：`_next_snapshot`，L432–L455](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L432-L455)。
+- [`src/harnessix/app_server/service.py`：`next_events`，L457–L481](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/service.py#L457-L481)。
+- [`src/harnessix/app_server/server.py`：`process_frame`，L236–L292](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/server.py#L236-L292)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_input`，L475–L478](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/agent/runtime.py#L475-L478)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_output`，L480–L483](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/agent/runtime.py#L480-L483)。
+- [`tests/app_server/test_query_publication.py`：`test_query_host_binding_rejected_before_delta_subscription`，L221–L239](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/tests/app_server/test_query_publication.py#L221-L239)。
+- [`tests/app_server/test_query_publication.py`：`test_resume_checks_public_snapshot_before_background_recovery_and_close_race`，L245–L309](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/tests/app_server/test_query_publication.py#L245-L309)。
+- [`tests/product_config/test_query_publication_root.py`：`test_default_root_guards_exported_queries_without_transport_proxy`，L27–L93](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/tests/product_config/test_query_publication_root.py#L27-L93)。
+- [`src/harnessix/app_server/server.py`：`_handle_request`，L190–L234](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/src/harnessix/app_server/server.py#L190-L234)。
+- [`tests/app_server/test_query_publication.py`：`test_current_scope_cannot_authorize_unregistered_old_direct_query_history`，L509–L532](https://github.com/carrie1988/Harnessix/blob/2ae7caf3e2a6b53431ef352ff3520f3cf1358282/tests/app_server/test_query_publication.py#L509-L532)。

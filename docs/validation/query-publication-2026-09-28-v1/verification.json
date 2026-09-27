@@ -1,5 +1,257 @@
 {
-  "code_revision": "d105d6212b374c20ffef5b20d95cc2de6a88d48f",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "b601476ab6bcf563d63826eba0020d081af007417228658038923221c70ac9be"
+  },
+  "clean_source_build": {
+    "artifact_scope": "fixed_source_build_candidate",
+    "clean_machine_install_claimed": false,
+    "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+    "dependencies_reused_local_environment": true,
+    "exit_code": 0,
+    "passed": true,
+    "release_artifacts": false,
+    "reproducible_build_claimed": false,
+    "size_bytes": 249,
+    "source_archive_docs_are_pre_full_freeze": true,
+    "stdout_sha256": "0f9d83456c0a53a315ccf9762a079eb0bbfb4194a2a68357ea003353f7ac9cac"
+  },
+  "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+  "diagrams": {
+    "diagrams": 6,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-query-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "f479cf5a8467510c57517c218fed19557c6804d208720488892289f413c9d8b6",
+        "png_size_bytes": 68479,
+        "source_sha256": "e6d0af8a515add286551dec4276d3ed1e79e24b75c05ee160def37c6ddf05535"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-query-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "1b4b3e96abe9621fea8f4213e40d7a90d5f5f1129039a292bf305d4906425e52",
+        "png_size_bytes": 75528,
+        "source_sha256": "bc965b24a1e76b136b801343a2de8bab70fbdb9228c29740a72b6e2f13406442"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-query-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "fefc7b60bc3238c6b1a516fd152a87be64aceae2bc5a96fc004e4826df5e0dd1",
+        "png_size_bytes": 54143,
+        "source_sha256": "7b49a0bd20aeef411ee29b468cf9f504d01ceb806c6381c70d33e724ffddcd6b"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-query-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "25af344d547788251de21d610c65376e1302b6a62e1ffbb579759aeae166c534",
+        "png_size_bytes": 75097,
+        "source_sha256": "31713d66b4dd464425542bebbd626716e86001020965240d87bc3ac7c15a7678"
+      },
+      {
+        "diagram": 5,
+        "document": "docs/changes/m09-4a-query-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "96593dc72f0bb7f6f5b7079a1abf1f0f902648619bb1c7b760bb3b52ccdc7ef6",
+        "png_size_bytes": 37364,
+        "source_sha256": "9e502513153017237697e2031dc96016294fd691d2da721f10e3e38508d538f6"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/modules/app-server.md",
+        "exit_code": 0,
+        "png_sha256": "9e1a652f52650be696e53d7cebba268cf3a0c877ec1429c9dd6ad6a08592e004",
+        "png_size_bytes": 76023,
+        "source_sha256": "d42298044500c4115f97968192c59ea1a35125db93f2879ef9c7c5ca564f1533"
+      }
+    ]
+  },
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "gates": {
+    "contracts": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_specs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/documentation_check.py",
+        "--changed-from",
+        "d105d6212b374c20ffef5b20d95cc2de6a88d48f"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "01507732ebdea1b6bd7108cd90da6b02e3ef1f915d4e1537e7fd6c83f212c67d",
+      "stdout_summary": "文档门禁通过：323份文档、8398条链接、765幅Mermaid、26个源码包、25个变化路径"
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "b7d79ca30bf3d9ca7fc4b94d262a88bf925f4b6c1c3e9d2df3ca1239a6131d95",
+      "stdout_summary": "1166 files already formatted"
+    },
+    "lint": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "mypy": {
+      "command": [
+        "uv",
+        "run",
+        "mypy",
+        "src"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "e7fbe2a22ed8104bc3ef0e1e5975b89b6bdd99918ddb3f276a2f54fbcf404117",
+      "stdout_summary": "Success: no issues found in 348 source files"
+    },
+    "readability": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/readability_report.py",
+        "--check",
+        "--check-final-report",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    },
+    "sbom": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/sbom_generate.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret_self": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/secret_scan.py",
+        "--self-check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_engineering_task_pack.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    }
+  },
+  "license_gate": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/license_scan.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "wheel_smoke": {
+    "actual_runtime_sqlite_sdk": true,
+    "five_direct_queries_rejected_before_return": true,
+    "full_product_stdio_network_or_install_acceptance_claimed": false,
+    "isolated_from_source_and_tests": true,
+    "legacy_query_provider_requests": 0,
+    "module_names": [
+      "harnessix.agent.runtime",
+      "harnessix.agent.publication",
+      "harnessix.app_server.query_runtime",
+      "harnessix.app_server.server",
+      "harnessix.app_server.service",
+      "harnessix.secrets.publication"
+    ],
+    "passed": true,
+    "private_historical_thread_unchanged": true,
+    "provider_requests": 1,
+    "real_model_requests": 0,
+    "runtime_store_mismatch_rejected": true,
+    "safe_direct_dtos_and_sdk_replay_passed": true,
+    "smoke_script_sha256": "d074ee04f5df89bb4d5d976c5ae8562be329a78a96450c207da3c036b8958fc9",
+    "stable_missing_thread_service_error_passed": true,
+    "transport_guard_used_for_direct_queries": false,
+    "unknown_history_authorization_claimed": false,
+    "wheel_modules_imported": true,
+    "wheel_sha256": "cce831dd491f8d351da8c168d481a6c0fc32b1d5d271fe8e0a1657ea64aef784"
+  }
 }

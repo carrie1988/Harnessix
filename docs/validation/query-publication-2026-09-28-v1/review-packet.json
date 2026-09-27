@@ -1,5 +1,24 @@
 {
-  "code_revision": "d105d6212b374c20ffef5b20d95cc2de6a88d48f",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "full_regression_acceptance_pending": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "未知旧Session授权、内部聚合/Store权限与跨重启Seal",
+    "全部Provider材料、Scope失效的SDK相关ID",
+    "Owner同步阻塞、Store归属及自定义Request Store物理身份",
+    "12项Archive权利",
+    "编号威胁场景及远程MCP身份和出口",
+    "三平台真实安装升级与Beta",
+    "真实Provider成本验证"
+  ],
+  "reviewed_invariants": [
+    "完整原查询Params早于IO或信号注册",
+    "完整原DTO和稳定错误早于公开",
+    "恢复回调后置、父取消和关闭不新增Task",
+    "构造同一Session对象早于订阅",
+    "原DTO/Hash/Schema及私有历史不变",
+    "既有长轮询与Delta可丢失语义不变"
+  ]
 }
