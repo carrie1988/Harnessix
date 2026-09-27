@@ -234,3 +234,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR-0097：类型化二进制公开与Owner持久前保护](0097-typed-binary-publication-and-owner-protection.md)
 
 - [ADR-0098：模型原文流式发布与事件持久前边界](0098-model-stream-publication-boundary.md)
+
+- [ADR-0099：用户原输入持久前与命令原结果公开保护](0099-input-persistence-and-command-publication.md)

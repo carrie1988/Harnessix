@@ -1321,3 +1321,13 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 | 3 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 薄CLI按握手协商值限制Replay和Next事件页，避免SDK前置门禁暴露后继续发送超量请求 |
 | 2 | `658e04d216d7d7efb01cd2e6a9db9788917552b9` | 2026-09-12 | 接入SDK现行模块设计，明确客户端传输、响应归并与恢复责任的后续阅读入口 |
 | 1 | `8cd3358bdf0e8f550d7584ee3d81b5e5f7ae4e3e` | 2026-09-12 | 建立App Server现行模块设计，覆盖连接、应用服务、stdio、Artifact、并发背压、关闭恢复、默认装配及真实实现差距 |
+
+
+## 37. 命令持久前与回执公开保护
+
+`command_runtime.execute_command`承载原Claim、缓存重放和Complete/Fail生命周期；`service._command`仅装配。
+完整原clientId、method和参数在Store任何访问前检查；已有completed/failed原结果与本次原投影检查后才能返回。
+入站拒绝不生成请求回执；Claim后拒绝不能覆盖旧completed事实。`AgentServiceError`仍从原service路径导入。
+
+[输入与回执详设](../changes/m09-4a-input-persistence-boundary.md)给出调用链、字段、错误和恢复边界。
+原始JSON-RPC id及非法参数key的校验path发生在类型校验之前，仍有独立开放出口；不以命令保护宣称整个Protocol安全。

@@ -12,6 +12,8 @@ from types import TracebackType
 from typing import Literal, Self, cast
 from uuid import UUID, uuid5
 
+from pydantic import JsonValue
+
 from harnessix.agent import batch_patching
 from harnessix.agent.approvals import (
     approval_action_id,
@@ -27,6 +29,7 @@ from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
+from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
 from harnessix.agent.model_text import ModelTextPublication, protect_request
@@ -81,6 +84,7 @@ from harnessix.agent.publication import (
     close_text_step,
     protect_json,
 )
+from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
@@ -467,8 +471,19 @@ class AgentRuntime:
                 # live-only消费者故障不能破坏Provider流或持久Session。
                 continue
 
+    async def validate_public_input(self, value: JsonValue) -> None:
+        """协议和直接调用共用入站保护；独立父取消，不借用其他活跃Turn的Token。"""
+        self._ensure_open()
+        await protect_input(self._public_output_protection, value, CancelToken())
+
+    async def validate_public_output(self, value: JsonValue) -> None:
+        """新Receipt或Fork投影的完整检查，不据此授权未登记版本的历史正文。"""
+        self._ensure_open()
+        await protect_json(self._public_output_protection, value, CancelToken())
+
     async def create_thread(self, workspace: str, *, thread_id: UUID | None = None) -> Thread:
         self._ensure_open()
+        await self.validate_public_input({"workspace": workspace})
         identity = thread_id or new_id()
         if thread_id is not None:
             try:
@@ -513,6 +528,7 @@ class AgentRuntime:
         try:
             if not request_id or len(request_id) > 256:
                 raise KernelError("thread_fork_invalid", "Fork request_id长度必须为1到256")
+            await self.validate_public_input({"request_id": request_id})
             destination_thread_id = uuid5(
                 source_thread_id, f"harnessix.thread-fork/v1:{request_id}"
             )
@@ -533,6 +549,7 @@ class AgentRuntime:
                     occurred_at=source.updated_at,
                     payload=ThreadForked(workspace=source.workspace, snapshot=prepared.snapshot),
                 )
+                await self.validate_public_output(draft.payload.model_dump(mode="json"))
                 forked = await self.store.fork(
                     source_thread_id,
                     destination_thread_id,
@@ -552,6 +569,7 @@ class AgentRuntime:
     async def archive_thread(self, thread_id: UUID, *, reason: str | None = None) -> Thread:
         """将无活跃Turn的Thread原子标记为只读归档；重复请求返回已有状态。"""
         self._ensure_open()
+        await self.validate_public_input({"reason": reason})
         try:
             async with self._lock(thread_id):
                 thread = await self.store.get_thread(thread_id)
@@ -644,6 +662,9 @@ class AgentRuntime:
             budget=budget,
             trace_context=trace_context,
         )
+        await self.validate_public_input(
+            {"start": start.model_dump(mode="json"), "content": content.model_dump(mode="json")}
+        )
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             if thread.archive is not None:
@@ -698,6 +719,8 @@ class AgentRuntime:
         trace_context: TraceContext | None = None,
     ) -> Turn:
         self._ensure_open()
+        if trace_context is not None:
+            await self.validate_public_input(trace_context.model_dump(mode="json"))
         limits = budget or Budget()
         turn_id = new_id()
         token = CancelToken()
@@ -765,6 +788,8 @@ class AgentRuntime:
     ) -> Turn:
         """从最新可重试终态创建新Turn；不重开来源，也不自动越过未知效果。"""
         self._ensure_open()
+        if trace_context is not None:
+            await self.validate_public_input(trace_context.model_dump(mode="json"))
         limits = budget or Budget()
         turn_id = new_id()
         token = CancelToken()
@@ -1007,6 +1032,7 @@ class AgentRuntime:
             raise KernelError("steering_invalid", "Steering request_id长度必须为1到256")
         if not text or len(text) > 1_000_000:
             raise KernelError("steering_invalid", "Steering正文长度必须为1到1000000")
+        await self.validate_public_input({"text": text, "request_id": request_id})
         content = TextContent(kind="user_message", text=text)
         item_id = uuid5(turn_id, f"harnessix.turn-steering/v1:{request_id}")
         async with self._lock(thread_id):
@@ -1062,6 +1088,7 @@ class AgentRuntime:
             raise KernelError("question_not_enabled", "当前Runtime未启用提问能力")
         if not answer or len(answer) > 4000:
             raise KernelError("question_answer_invalid", "提问回答长度必须为1到4000")
+        await self.validate_public_input({"answer": answer})
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             turn = get_turn(thread, turn_id)
@@ -1102,50 +1129,9 @@ class AgentRuntime:
                 raise KernelError("question_mismatch", "提问与当前Tool Call不匹配")
             call = calls[0]
             self._validate_tool_contract(call)
-            answer_content = QuestionAnswerContent(
-                question_id=question_id,
-                call_id=call.call_id,
-                answer=answer,
-            )
-            result = ToolResultContent(
-                call_id=call.call_id,
-                outcome="succeeded",
-                output={"answer": answer},
-            )
-            answer_item_id = uuid5(question_id, "harnessix.question-answer/v1")
-            result_item_id = uuid5(question_id, "harnessix.question-result/v1")
             updated = await self.store.append(
                 thread_id,
-                [
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=ItemStarted(item_id=answer_item_id, content=answer_content),
-                    ),
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=ItemFinished(
-                            item_id=answer_item_id,
-                            content=answer_content,
-                            status=ItemStatus.COMPLETED,
-                        ),
-                    ),
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=TurnStateChanged(status=TurnStatus.EXECUTING_TOOLS),
-                    ),
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=ItemStarted(item_id=result_item_id, content=result),
-                    ),
-                    EventDraft(
-                        turn_id=turn_id,
-                        payload=ItemFinished(
-                            item_id=result_item_id,
-                            content=result,
-                            status=ItemStatus.COMPLETED,
-                        ),
-                    ),
-                ],
+                question_answer_events(turn_id, question_id, call.call_id, answer),
                 expected_sequence=thread.sequence,
             )
             return get_turn(updated, turn_id)
@@ -1175,6 +1161,10 @@ class AgentRuntime:
         decision: ApprovalDecision,
     ) -> Turn:
         self._ensure_open()
+        decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
+        await self.validate_public_input(
+            {"fingerprint": fingerprint, "decision": decision.model_dump(mode="json")}
+        )
         turn = get_turn(await self.store.get_thread(thread_id), turn_id)
         with self._telemetry.operation(
             "approval",
@@ -1203,7 +1193,6 @@ class AgentRuntime:
     ) -> Turn:
         """核对审批身份和请求指纹后持久化唯一决定，再恢复或终止对应执行流。"""
         self._ensure_open()
-        decision = ApprovalDecision.model_validate_json(decision.model_dump_json())
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             turn = get_turn(thread, turn_id)

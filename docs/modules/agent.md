@@ -799,4 +799,16 @@ AgentRuntime新增可选`public_output_protection`纯端口，在ToolResult提�
 
 [完整详细设计](../changes/m09-4a-model-text-publication.md)包含架构、流程、时序、数据流、类/接口/字段、
 伪代码、错误、取消、预算及源码导航；[ADR-0098](../adr/0098-model-stream-publication-boundary.md)说明取舍。
-当前值旧历史出站拒绝不授权旧正文；直接store.append入口、历史Replay、跨重启证明和全部公开出口仍独立开放。
+当前值旧历史出站拒绝不授权旧正文；历史Replay、跨重启证明和全部公开出口仍独立开放。
+
+
+## 0.9.4a 用户输入持久前保护
+
+原prompt、请求身份、预算与有效Trace在接受事务前检查；create/archive/fork/steer/question/approval原字段
+在持久或审批副作用前检查。原调用方Trace和批准决定先于新观测操作检查。问答仍由原CAS事务一次提交五条事件。
+安全检查不改原文、Hash或Schema；拒绝不虚构失败Turn，不覆盖原等待状态。直接cancel/宿主排空仍独立，
+Scope关闭后SDK命令拒绝的可用性边界未合并。
+
+[完整详设](../changes/m09-4a-input-persistence-boundary.md)覆盖架构、流程、两种时序、数据流、字段、伪代码与源码阅读路径。
+[ADR-0099](../adr/0099-input-persistence-and-command-publication.md)和[证据目录](../validation/input-persistence-2026-09-28-v1/README.md)
+区分本次入口保护与历史授权；原始Protocol id/path、旧历史和全部凭据仍开放。

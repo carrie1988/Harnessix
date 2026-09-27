@@ -8,10 +8,11 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID, uuid5
 
-from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Budget, ItemDelta, Turn, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
+from harnessix.app_server.command_runtime import AgentServiceError as AgentServiceError
+from harnessix.app_server.command_runtime import execute_command
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.protocol.contracts import (
     ApprovalRespondParams,
@@ -39,21 +40,10 @@ from harnessix.protocol.contracts import (
     TurnRetryParams,
     TurnStartParams,
     TurnSteerParams,
-    validate_protocol_input,
 )
 from harnessix.protocol.projection import project_replay, project_thread, project_turn
-from harnessix.protocol.requests import ProtocolRequestError, ProtocolRequestStore
+from harnessix.protocol.requests import ProtocolRequestStore
 from harnessix.session.ports import SessionStore
-
-
-class AgentServiceError(RuntimeError):
-    """App Server业务命令返回的稳定服务错误。"""
-
-    def __init__(self, code: str, message: str, *, retryable: bool = False) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-        self.retryable = retryable
 
 
 def _budget(value: object) -> Budget | None:
@@ -134,14 +124,6 @@ class AgentApplicationService:
             if pending:
                 await asyncio.gather(*pending, return_exceptions=True)
 
-    @staticmethod
-    def _raise(error: KernelError | ProtocolRequestError) -> AgentServiceError:
-        return AgentServiceError(
-            error.code,
-            str(error),
-            retryable=isinstance(error, KernelError) and error.retryable,
-        )
-
     async def _command[Params: CommandParams, Result: ProtocolModel](
         self,
         client_instance_id: UUID,
@@ -152,53 +134,16 @@ class AgentApplicationService:
         *,
         after_result: Callable[[Result], None] | None = None,
     ) -> Result:
-        wire = params.model_dump(mode="json", by_alias=True)
-        try:
-            claim = await self.requests.claim(
-                client_instance_id,
-                params.request_id,
-                method,
-                wire,
-            )
-            if claim.record.state == "completed":
-                result = validate_protocol_input(result_model, claim.record.outcome)
-                if after_result is not None:
-                    after_result(result)
-                return result
-            if claim.record.state == "failed":
-                outcome = claim.record.outcome
-                if isinstance(outcome, dict):
-                    raise AgentServiceError(
-                        str(outcome.get("code", "command_failed")),
-                        str(outcome.get("message", "协议命令失败")),
-                        retryable=outcome.get("retryable") is True,
-                    )
-                raise AgentServiceError("command_failed", "协议命令失败")
-            result = await operation()
-            await self.requests.complete(
-                client_instance_id,
-                params.request_id,
-                result.model_dump(mode="json", by_alias=True),
-            )
-            if after_result is not None:
-                after_result(result)
-            return result
-        except (KernelError, ProtocolRequestError) as error:
-            service_error = self._raise(error)
-            if error.code != "idempotency_conflict":
-                try:
-                    await self.requests.fail(
-                        client_instance_id,
-                        params.request_id,
-                        {
-                            "code": service_error.code,
-                            "message": service_error.message,
-                            "retryable": service_error.retryable,
-                        },
-                    )
-                except ProtocolRequestError:
-                    pass
-            raise service_error from None
+        return await execute_command(
+            self.runtime,
+            self.requests,
+            client_instance_id,
+            method,
+            params,
+            operation,
+            result_model,
+            after_result=after_result,
+        )
 
     async def create_thread(
         self, client_instance_id: UUID, params: ThreadCreateParams

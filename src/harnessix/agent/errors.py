@@ -30,6 +30,8 @@ def failure_category(code: str) -> FailureCategory:
     if code in {"process_interrupted", "uncertain_effect", "retry_unsafe_effect"}:
         return FailureCategory.INTERRUPTED
     if code in {
+        "public_input_limit",
+        "public_input_timeout",
         "budget_exceeded",
         "time_budget_exceeded",
         "model_output_too_large",
@@ -75,6 +77,7 @@ def failure_category(code: str) -> FailureCategory:
     ) or code in {"unknown_tool", "duplicate_tool"}:
         return FailureCategory.TOOL
     if code in {
+        "public_input_secret_leak",
         "invalid_event",
         "invalid_batch",
         "invalid_cursor",
