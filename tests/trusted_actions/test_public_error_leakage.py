@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -41,7 +42,8 @@ def _assert_no_leak(*blobs: str | bytes) -> None:
     for blob in blobs:
         data = blob if isinstance(blob, bytes) else blob.encode()
         for pattern in PATTERNS:
-            assert pattern.encode() not in data
+            for representation in (pattern, json.dumps(pattern, ensure_ascii=False)[1:-1]):
+                assert representation.encode() not in data
 
 
 @dataclass
@@ -214,9 +216,33 @@ async def test_reconcile_exception_leaves_only_public_codes(tmp_path: Path) -> N
     )
 
 
-def test_kernel_error_passes_through_and_other_exceptions_are_closed() -> None:
-    original = KernelError("stable_code", "稳定公开消息")
-    assert sanitize_plan_exception(original) is original
+def test_unregistered_kernel_error_cannot_publish_code_message_or_retry_hint() -> None:
+    original = KernelError("secret_in_code_canary", _payload(), retryable=True)
+    sanitized = sanitize_plan_exception(original)
+    assert sanitized is not original
+    assert sanitized.code == "action_plan_failed"
+    assert sanitized.message == "Action计划阶段失败；内部原因不公开"
+    assert not sanitized.retryable
+    _assert_no_leak(str(sanitized), repr(sanitized))
     sanitized = sanitize_plan_exception(RuntimeError(_payload()))
     assert sanitized.code == "action_plan_failed"
+    _assert_no_leak(str(sanitized), repr(sanitized))
+
+
+def test_registered_resolver_code_reconstructs_a_fixed_public_error() -> None:
+    original = KernelError("workspace_path_denied", _payload(), retryable=True)
+    sanitized = sanitize_plan_exception(original, stage="resolve")
+    assert sanitized is not original
+    assert sanitized.code == "workspace_path_denied"
+    assert sanitized.message == "Workspace路径不允许访问"
+    assert not sanitized.retryable
+    _assert_no_leak(str(sanitized), repr(sanitized))
+
+
+def test_policy_cannot_spoof_a_registered_resolver_error() -> None:
+    sanitized = sanitize_plan_exception(
+        KernelError("workspace_path_denied", _payload(), retryable=True), stage="policy"
+    )
+    assert sanitized.code == "action_plan_failed"
+    assert not sanitized.retryable
     _assert_no_leak(str(sanitized), repr(sanitized))

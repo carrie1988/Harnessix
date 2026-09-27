@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 92
-code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
+version: 93
+code_revision: 78ab30069ab4f63d58d9bafad903a7bfd660c257
 owners:
   - core
 modules:
@@ -479,11 +479,11 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 代码存在和扫描零命中不是完成条件，所有已复现缺口先进入发布阻断清单。
 
 - [ ] **0.9.4a 公开错误与泄漏回归**：统一Resolver/Policy/Executor/Reconcile的公开码与固定消息，
-  校验模型、Session、Audit、Protocol与Telemetry五个公开面。现有实现仍原样透传`KernelError`，
-  已复现不可信错误文本/码不能仅凭异常类名获得公开资格，须整改并完成完整集成回归；
+  校验模型、Session、Audit、Protocol与Telemetry五个公开面。[计划回调整改](changes/m09-4a-plan-error-trust-boundary.md)
+  已按阶段有限码表重建固定错误并补真实集成回归，提交后完整验收及Execute/Reconcile全面审查仍须通过；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
-  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)进入验证；旧CI的未跟踪产物失败不追认通过。
+  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)首轮五作业通过，Windows中文管道编码修复进入验证；历史失败不追认通过。
   许可证版本绑定、压缩件扫描、示例文件整文件豁免及未固定安装输入仍须关闭；
 - [ ] **0.9.4c 编号化攻击回归**：TM-01～TM-13及子编号均须对应真实攻击输入、具体控制、预期拒绝、
   不变副作用和三平台适用边界，不用不存在的接口、空构造或宽泛异常断言冒充回归；

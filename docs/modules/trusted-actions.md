@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: 668598220aa0cf328cb2e678bf16661550423804
+version: 22
+code_revision: 78ab30069ab4f63d58d9bafad903a7bfd660c257
 owners:
   - core
 modules:
@@ -956,13 +956,20 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 `executor_error`、`unexpected_write_error`、`reconciliation_error`、`host_interrupted`和
 `reconciliation_not_supported`。Executor可返回自己的稳定码。
 
-当前错误归一由[`public_errors.py`](../../src/harnessix/trusted_actions/public_errors.py)统一持有公开错误合同：
-计划阶段Resolver/Policy抛出的非KernelError异常一律收敛为`action_plan_failed`固定消息，不携带任何内部原因；
-执行期异常经`execute_exception_outcome`、对账期异常经`reconcile_exception_code`映射为稳定公开码；已具备公开纪律的
-KernelError原样传播。资源超过512导致的最终ValidationError、不可JSON资源的原生异常仍可能直接传播，
-公开产品入口必须继续做固定错误投影。泄漏回归[`test_public_error_leakage.py`](../../tests/trusted_actions/test_public_error_leakage.py)
-按五类公开面×四类敏感式样（伪Secret、POSIX/Windows路径、argv、内部异常正文）注入Plan Resolver、Policy、
-Execute、Reconcile与UncertainEffectError，断言式样不进入公开错误、Route Snapshot、Audit事件或持久Store文件。
+当前错误归一由[`public_errors.py`](../../src/harnessix/trusted_actions/public_errors.py)统一持有公开错误合同。
+计划回调的`KernelError`本身不证明内容可公开：Decoder/Resolver只可选择阶段有限码表中的固定消息，
+未知码和所有Policy异常收敛为`action_plan_failed`，均重建新错误且不继承原重试提示。
+[`planning.py`](../../src/harnessix/trusted_actions/planning.py)分别传入decode/resolve/policy阶段，
+保留原生参数验证分支和CancelledError传播；执行期/对账期异常仍由`execute_exception_outcome`与
+`reconcile_exception_code`映射，不改变写效果UNKNOWN语义。成功路径和Store Schema均不变。
+
+详细码表、实际内置Resolver来源、流程/时序、伪代码与兼容边界见
+[计划错误信任边界详设](../changes/m09-4a-plan-error-trust-boundary.md)。
+[`test_public_error_leakage.py`](../../tests/trusted_actions/test_public_error_leakage.py)覆盖原执行/对账故障与
+固定错误合同；[`test_plan_error_boundaries.py`](../../tests/trusted_actions/test_plan_error_boundaries.py)
+使用真实Runtime、ModelRequest历史、SQLite Session、Protocol Server/SDK、Span及Metrics验证计划回调链路，
+检查原式样及JSON转义表示，不以空导出作为通过条件。资源规模/Store故障、结构化Outcome或全部扩展输出
+不因本专项而获得完整无泄漏证明；0.9.4a整体状态仍以[总体详设](../changes/m09-4-security-and-supply-chain.md)为准。
 
 ## 30. 安全与隐私分析
 
@@ -1563,6 +1570,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 22 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 计划回调按阶段有限码表重建固定错误，显式Decoder异常收口；补真实五公开面、取消/超时和固定码全量回归，专项等待提交后验收 |
 | 20 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-23 | 澄清独立Action Request/Journal/Worker是已删除的历史实现，当前只保留进程内Trusted Action执行治理 |
 | 19 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 记录Action双层Owner、Operation Deadline与只对账恢复经修复版六实例CI关闭；Router合同不变 |
 | 18 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加双层Owner、Action Audit v2 Operation Deadline、只对账恢复和跨Store扫描；独立Action HTTP/Worker保持删除 |

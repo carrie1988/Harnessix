@@ -83,12 +83,12 @@ def plan_action(
     try:
         resolved = definition.resolve(arguments, context)
     except Exception as error:
-        raise sanitize_plan_exception(error) from None
+        raise sanitize_plan_exception(error, stage="resolve") from None
     resources = _canonical_resources(resolved.resources)
     try:
         decision = policy.evaluate(binding, resources, context.sandbox, context.secrets)
     except Exception as error:
-        raise sanitize_plan_exception(error) from None
+        raise sanitize_plan_exception(error, stage="policy") from None
     workspace = capture_workspace_snapshot(
         context.workspace_root,
         cwd=context.cwd,
@@ -161,6 +161,9 @@ def _normalize_invocation(
         normalized = cast(dict[str, JsonValue], dumped)
     except (ValidationError, ValueError, TypeError):
         raise KernelError("tool_invalid_arguments", "Action参数不符合Trusted Tool契约") from None
+    except Exception as error:
+        # 显式Decoder同样是回调边界，不能凭KernelError类型公开内部正文。
+        raise sanitize_plan_exception(error, stage="decode") from None
     return invocation.model_copy(update={"arguments": normalized}), arguments
 
 
