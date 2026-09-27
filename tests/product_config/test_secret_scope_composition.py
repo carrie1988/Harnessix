@@ -146,3 +146,71 @@ async def test_product_executor_uses_same_frozen_secret_after_host_rotation(tmp_
         audit.close()
         transactions.close()
         leases.close()
+
+
+@pytest.mark.parametrize("mode", ["normal", "startup-failure"])
+async def test_product_owner_scope_cleanup_even_without_agent_runtime(tmp_path, monkeypatch, mode):
+    from types import SimpleNamespace
+
+    from harnessix.product_config import action_runtime
+    from harnessix.secrets.publication import SecretPublicationScope
+    from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
+    from harnessix.trusted_actions.contracts import ActionExecutionOutcome
+    from tests.trusted_actions.test_agent_gateway import (
+        FakeExecutor,
+        build_gateway,
+        descriptor,
+        runtime_context,
+    )
+    from tests.trusted_actions.test_secret_publication import BINDING, source
+
+    root = tmp_path / "workspace"
+    root.mkdir()
+    scope = SecretPublicationScope((BINDING,), source())
+    _, action_router, plans, audit = build_gateway(
+        root, FakeExecutor(ActionExecutionOutcome(kind="succeeded"))
+    )
+    gate = RouterBackedAgentActionGateway(
+        action_router,
+        (descriptor(),),
+        lambda *_: runtime_context(root),
+        secret_scope=scope,
+        owns_secret_scope=True,
+    )
+    # 组合替身只隔离能力构造；Owner、Gateway、Scope、SQLite和资源退出均运行真实实现。
+    monkeypatch.setattr(
+        action_runtime,
+        "build_product_action_composition",
+        lambda *_args, **_kwargs: SimpleNamespace(gateway=gate),
+    )
+    if mode == "startup-failure":
+
+        async def fail_scan(**_kwargs):
+            raise KernelError("test_startup_failure", "启动扫描故障")
+
+        monkeypatch.setattr(action_runtime, "scan_product_action_recovery", fail_scan)
+    session = SQLiteSessionStore(tmp_path / "sessions.db")
+    artifacts = SQLiteArtifactStore(session)
+    try:
+        context = action_runtime.open_default_product_action_runtime(
+            tmp_path / "owner",
+            root,
+            artifacts,
+            source(),
+            build_product_action_config(workspace_patch_enabled=False),
+            artifact_workspace_scope="fixture-scope",
+        )
+        if mode == "startup-failure":
+            with pytest.raises(KernelError, match="启动扫描故障"):
+                async with context:
+                    pytest.fail("失败启动不可发布Owner")
+        else:
+            async with context as owner:
+                assert owner.gateway is gate and not scope._closed
+        with pytest.raises(KernelError) as caught:
+            scope.resolve("registry")
+        assert caught.value.code == "trusted_action_secret_unavailable" and scope._closed
+    finally:
+        gate.close()
+        plans.close()
+        audit.close()

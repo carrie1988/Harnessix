@@ -193,7 +193,8 @@ MCP独立Client与真实产品Process装配分别验证；完整回归、干净�
 
 ## 12. 现行用例与剩余边界
 
-专项58项，52新增及6原MCP项：纯快照30、Gateway14、实际Runtime3、实际MCP新增3、产品组合2。
+专项60项，54新增及6原MCP项：纯快照30、Gateway14、实际Runtime3、实际MCP新增3、产品组合4。
+两项组合替身仅隔离能力构造，实际Owner/SQLite/Gateway/Scope验证无AgentRuntime时正常和启动失败退出均清理材料。
 产品组合同时覆盖快照关闭后原执行Provider前置失败：无Lease时failed/process_preflight_failed，run/reconcile均为0，不误标未知效果。
 独立58e51aa归档的4个未配置能力负例均DID NOT RAISE（0.26秒）；构造、导入或配置失配失败不计证据。
 旧归档为选择False参数的四项而省去未选择新作用域的导入，实际Gateway模块路径已核实。
