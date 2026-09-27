@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 22
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 23
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners:
   - core
 modules:
@@ -188,6 +188,7 @@ uv run harnessix agent-server \
 |---|---|---|
 | `product-action-runtime.lock` | Product Action组合根 | 在任一Action Store/Process Owner前排除第二产品宿主 |
 | `product-config.db` | Product Runtime Config Store | Product/Action配置快照、两条审计链、恢复扫描/报告和双活动指针原子CAS |
+| `session-auth/key.v1` | 独立本机Session Key Backend | 稳定Store ID、Key ID与认证密钥；不从模型凭据派生，不进入公开配置或诊断包 |
 | `sessions.db` | Session/Protocol/Artifact Store | Thread、Turn、Item、请求幂等、Artifact元数据/内容，以及Maintenance Plan/Item/Progress |
 | `execution-plans.db` | Execution Plan Store | 不可变计划与批准检查点 |
 | `action-audit.db`及`.runtime.lock` | Trusted Action Audit Store | Route投影、摘要化Hash链事件、Owner Generation和Execute/Reconcile Operation |
@@ -206,8 +207,11 @@ reject overlap, links, invalid ownership or permissions
 run shared offline preflight
 strictly reload Product/Action Config and compare preflight digests
 select profile and resolve Secret references without persisting material
+freeze selected Provider material in a private publication scope
+load stable managed Session key; settle the same worker on cancellation
+initialize and authenticate Session before constructing Provider
 build and enter Provider bundle
-initialize Session, Protocol Request and Artifact stores
+initialize Protocol Request and Artifact stores
 load previous active Action snapshot
 acquire Product Action lock before Action Store or Process Owner
 idempotently initialize the bound Session store inside the Product Action root before recovery scan
@@ -239,12 +243,17 @@ on any failure: close entered components in reverse order; never open partial pr
 ## 9. 升级、备份与回滚
 
 升级前至少备份Product Config、Session数据库、Artifact内容、Execution Plan、Action Audit、Delivery、Workspace Lease和
-Process状态。升级先在副本运行Schema/Doctor检查，再停止旧Server并启动新版本；不得在两个版本之间共享可写状态目录。
+Process状态，并识别独立`session-auth/key.v1`的保护与可恢复性。仅复制数据库不等于可恢复；
+密钥保护导出、跨机器迁移及维护CLI托管Binding仍未完成。旧库无Key、未证明原历史或损坏Key会在开放协议前拒绝，
+不得删除原库、生成替代Key或补签旧历史。升级先在副本运行Schema/Doctor检查，再停止旧Server并启动新版本；不得在两个版本之间共享可写状态目录。
 
 回滚只能由能够读取当前数据版本的旧版本执行。新事件或迁移已写入后，旧Reader若不认识必须失败关闭，不能跳过字段继续。
 旧Action数据库不参与新产品启动；其归档步骤见[旧Action Plane状态检查与归档手册](operations/legacy-action-archive.md)。
 
 ### 9.1 Session共库维护窗口
+
+默认产品已强制认证Session；当前维护入口尚未装配托管Binding，也未完成认证证明的维护删除与恢复验收。
+以下是显式宿主的原维护合同，不是当前默认产品可直接执行的CLI流程；不得用无Binding的Store绕过认证。
 
 0.9.3b提供[`SQLiteStoreMaintenance`](../src/harnessix/session/maintenance.py)内部端口，但尚未发布最终用户CLI。生产宿主接入时
 必须遵循以下顺序：
@@ -312,7 +321,15 @@ resume normal product traffic
 
 - 0.9.1e4固定Container Process产品链与e5外部Action Config、Doctor、双配置CAS及统一启动恢复Owner已分别通过七任务CI；
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
-- 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，修复版CI 35691402329六实例验收关闭；0.9.3d完整Soak尚未完成；
+- 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，修复版CI 35691402329六实例验收关闭；0.9.3d六场景三平台正式负载与第二独立PASS已完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
 - 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。
+
+## 默认产品Session密钥准入边界
+
+本机新状态先持久化独立Key，再建立认证库。macOS/Linux规范目录700、文件600、Owner/no-follow及单硬链接；
+Darwin额外检查扩展ACL。Windows采用当前用户DPAPI与受保护DACL，实际平台测试与安装验收仍开放。
+`code doctor`的配置/能力预检通过不证明已有Session或Key可恢复，正式启动仍执行原库认证。
+[完整设计](changes/m09-4a-managed-session-key-and-root.md)和[固定证据](validation/managed-session-key-2026-09-28-v1/README.md)
+记录缺Key、旧历史、损坏、取消、原候选恢复及三平台发布边界。

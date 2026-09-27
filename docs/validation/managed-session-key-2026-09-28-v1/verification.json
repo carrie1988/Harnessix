@@ -86,8 +86,42 @@
     "updated_library_diagrams": 1
   },
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "exit_code": 0,
+    "fixed_code_revision": "cef1b17cf63a5bed7d7740d5cbea5bc67728deb2",
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 5234,
+    "seconds": 421.86,
+    "size_bytes": 5965,
+    "skipped": 38,
+    "source_input_scope": {
+      "additional_paths": [
+        "pyproject.toml",
+        "uv.lock",
+        "Makefile",
+        "docs/baselines/readability-0.9.0-final.json"
+      ],
+      "canonical_format": "JSON object path to SHA256, ensure_ascii=false, sort_keys=true, indent=2, trailing LF",
+      "prefixes": [
+        "src/",
+        "tests/",
+        "spec/",
+        "scripts/",
+        "governance/",
+        ".github/"
+      ]
+    },
+    "source_inputs_canonical_sha256": "9c1adc5477abe90f2766fc68989127c718a485823db3441e7f121905baa3b3cc",
+    "source_inputs_count": 1345,
+    "source_inputs_same_as_fixed_revision": true,
+    "status": "passed",
+    "stdout_sha256": "13cc4921f533f74af02d5b9d7b8cf106636fc7fa3594ae87cda25b857fd0e1f1",
+    "test_run_commit": "b4e398159c96352feaa9b3b95cf0bff0d0833524",
+    "test_run_tree": "5172e263c016c98aae85551c9019d39b673cfcc6",
+    "tracked_inputs_count": 2447,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 423.55
   },
   "gates": {
     "contracts": {
@@ -111,13 +145,13 @@
         "python",
         "scripts/documentation_check.py",
         "--changed-from",
-        "ae560ad26899ae8ecb55bfc5c0ff2539727f5088"
+        "ae560ad"
       ],
       "exit_code": 0,
       "passed": true,
       "size_bytes": 103,
-      "stdout_sha256": "b02cd921f9a38369fb30062b3c606e77f0bec9b0e15165f566f300499085567e",
-      "stdout_summary": "文档门禁通过：335份文档、8588条链接、778幅Mermaid、26个源码包、38个变化路径"
+      "stdout_sha256": "a070461bf98942e3594c25002e121f57bdb0ff9c2e304d505893ebc4901d8819",
+      "stdout_summary": "文档门禁通过：335份文档、8598条链接、778幅Mermaid、26个源码包、43个变化路径"
     },
     "format": {
       "command": [
@@ -224,6 +258,12 @@
       "stdout_summary": ""
     }
   },
+  "governance_regression": {
+    "overlaps_full_regression": true,
+    "passed": 34,
+    "size_bytes": 99,
+    "stdout_sha256": "ff79d9336d93e7eea4050cbcd42133be47cef816c4e9b286a6735e0d6cf1ad9e"
+  },
   "key_root_regression": {
     "passed": 43,
     "scope": "49 new key, ABI, platform and Root cases",
@@ -245,6 +285,22 @@
     "size_bytes": 31,
     "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
     "stdout_summary": "许可证违规：12个Archive"
+  },
+  "operational_documentation": {
+    "current_startup_sequence_synchronized": true,
+    "diagrams": 1,
+    "each_png_visually_inspected": true,
+    "install_upgrade_backup_boundaries_synchronized": true,
+    "records": [
+      {
+        "diagram": 15,
+        "document": "docs/modules/product-config.md",
+        "exit_code": 0,
+        "png_sha256": "0c3e93d949427cd1fd17c6e295ddcecabe162af05f122e28951b87824699595b",
+        "png_size_bytes": 96934,
+        "source_sha256": "13e1316d4de28d3cdf25b880db19897477c487ae17b879ebb5bc29013e0d1b08"
+      }
+    ]
   },
   "real_model_requests": 0,
   "related_regression": {

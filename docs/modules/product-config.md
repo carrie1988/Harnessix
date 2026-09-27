@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 21
+version: 22
 code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners:
   - core
@@ -1028,48 +1028,53 @@ sequenceDiagram
     participant C as Config
     participant P as Product Runtime
     participant DB as Config Store
+    participant K as Managed Session Key
     participant M as Provider Bundle
     participant S as Session Store
     participant T as Coding Tools
+    participant AO as Product Action Owner
     participant A as Agent Runtime
     participant IO as stdio Server
     CLI->>C: 安全加载v2 Snapshot
     CLI->>P: 选择Profile并离线诊断
     CLI->>CLI: 校验Workspace/配置/状态隔离与平台
     CLI->>DB: 打开Store并save_snapshot
-    CLI->>M: 构造全部Provider候选
-    CLI->>M: enter managed lifecycle
-    CLI->>S: initialize sessions and request ledger
-    CLI->>T: enter fixed-workspace tools
-    CLI->>A: enter runtime owner
-    CLI->>DB: activation CAS
-    DB-->>CLI: active committed
+    CLI->>K: 冻结Scope并加载原持久Key
+    CLI->>S: 强制Binding初始化并验证原库
+    CLI->>M: 构造Provider候选
+    CLI->>M: 进入Provider托管生命周期
+    CLI->>S: 初始化请求账本与Artifact Store
+    CLI->>T: 进入固定Workspace工具
+    CLI->>AO: 进入恢复与候选目录托管生命周期
+    CLI->>A: 取得Runtime Owner并验证恢复事实
+    CLI->>DB: 活动指针CAS
+    DB-->>CLI: 活动配置已提交
     CLI->>IO: 构造Service并开放stdio
-    IO-->>CLI: EOF / close / failure
-    CLI->>A: reverse close
-    CLI->>T: reverse close
-    CLI->>M: reverse close
-    CLI->>DB: close
+    IO-->>CLI: EOF、关闭或失败
+    CLI->>A: 关闭Runtime
+    CLI->>AO: 关闭Action Owner
+    CLI->>T: 关闭Tools
+    CLI->>M: 关闭Provider
+    CLI->>K: 清零自有Binding与材料
+    CLI->>DB: 关闭Store
 ```
 
 [`run_product_stdio`](../../src/harnessix/product_config/server.py)的精确顺序为：
 
-1. 安全加载配置，v1返回`product_config_migration_required`；
-2. 构造Selection；
-3. 在线程中严格解析Workspace；
-4. 再解析配置路径并拒绝配置文件位于Workspace；
-5. 构造Environment Secret Provider并离线诊断；
-6. 在创建前以绝对候选路径拒绝状态目录与Workspace互相包含；
-7. 执行POSIX Coding Tool平台门禁；
-8. 建立/验证私有状态根，解析后再次执行重叠检查；
-9. 可选解析Git可执行文件；
-10. 打开Config Store并保存Snapshot；
-11. 构造全部Provider并进入Bundle生命周期；
-12. 初始化Session Store和Protocol Request Store；
-13. 进入Coding Tool Runtime与Agent Runtime Owner生命周期；
-14. 以调用方期望旧指针执行activation CAS；
-15. 构造固定Workspace的Application Service和Protocol Server；
-16. 运行stdio直到EOF或失败，随后逆序关闭。
+1. 执行共享配置、Workspace、平台与依赖预检；
+2. 严格重载v2 Product Config，拒绝v1及预检后摘要改变；
+3. 选择Profile，严格解析Workspace并拒绝配置/Action文件重叠；
+4. 构造Environment Secret Provider、冻结Action快照并校验预检摘要，执行离线诊断；
+5. 创建或验证私有状态根，前后拒绝Workspace包含关系，可选解析Git程序；
+6. 打开Config Store，保存Product/Action快照，读取上一活动Action配置；
+7. 冻结选定Provider材料Scope并加载独立持久Session Key；
+8. 以托管Binding初始化并认证Session，未知原历史在Provider工厂之前拒绝；
+9. 构造Provider Bundle并进入生命周期，创建Protocol Request和唯一Artifact Store；
+10. 进入Coding Tool及默认Product Action Owner，扫描原恢复事实、对账与构造目录；
+11. Agent Runtime取得单宿主Owner后，认证Snapshot与恢复事实；
+12. 全部组件成功后以调用方期望执行Product/Action双活动指针CAS；
+13. 构造固定Workspace Service及Protocol Server，运行stdio；
+14. EOF或失败后逆序关闭Runtime、Action、Tools、Bundle、Binding、Scope和Config Store。
 
 Provider构造、Session初始化、Tool/Runtime Owner或CAS任一步失败都不会开放stdio。Snapshot的`loaded`事件可能已
 持久化，但active pointer保持不变。
@@ -1734,6 +1739,8 @@ Supervisor并执行阻塞能力探测；Agent Runtime退出后先关闭Gateway�
 
 ```text
 state-root/
+├── session-auth/
+│   └── key.v1                    # 独立原身份与认证Key，不进入诊断包
 ├── sessions.db
 ├── execution-plans.db
 ├── action-audit.db

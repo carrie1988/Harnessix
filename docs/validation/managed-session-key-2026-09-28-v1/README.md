@@ -1,6 +1,6 @@
 ---
 doc_type: validation-evidence
-status: draft
+status: current
 version: 1
 code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners: [core]
@@ -52,9 +52,29 @@ Codec字段、类/接口、原持久流程、伪代码、异常、取消、恢�
 
 ## 4. 完整回归、CI及发布边界
 
-完整回归尚待固定源码执行，本报告为草案；不把尚未执行的结果作为通过。
+完整回归已在固定源码执行并冻结；仅验收当前macOS合同，不声明Windows、三平台正式部署或整体0.9完成。
 CI仅在本地批量提交后推送一次并后台检查精确HEAD，不逐提交等待。
 认证不等于公开授权；POSIX私有文件不声称密文或不可导出Keyring。
 不包含同UID任意代码隔离、管理员防御、物理DB身份、完整有效库回滚或整Thread共同删除检测。
 5秒为Key准入期限；OS任务结算可延后，不宣称硬抢占文件IO。
 密钥恢复及维护CLI、Artifact持久正文、全部Provider/Owner/SDK/MCP、三平台部署、Beta和成本继续开放。
+
+## 5. 完整回归冻结
+
+- 固定实现：`cef1b17cf63a5bed7d7740d5cbea5bc67728deb2`。
+- 运行提交：`b4e398159c96352feaa9b3b95cf0bff0d0833524`；Tree：`5172e263c016c98aae85551c9019d39b673cfcc6`。
+- **5234 passed / 38 skipped / 421.86秒**。
+- 运行前后2447个跟踪文件原字节和Git状态不变；1345个核心输入与固定实现逐字节一致。
+- 专项43通过/6跳过、相关1448通过/6跳过、证据治理34通过；各组重叠，不相加。
+- 九项离线工程门禁通过；许可证门禁仍因12件Archive来源权利失败，不声明`make check`整体通过。
+- 候选Wheel/sdist通过Secret扫描；真实产品CLI/SDK双OS消费者通过。平台仅为实际macOS，不以ABI替身替代Windows原生测试。
+- 后续冻结文档不回写713个旧证据文件；CI在单次批量推送后后台观察精确HEAD。
+
+## 6. 后续实施顺序
+
+Artifact原JSONL/二进制与原归属持久认证 → 密钥保护备份/迁移与维护CLI
+→ 全部Provider/Owner/SDK及编号攻击/远端MCP → 三平台安装、Beta与真实成本验收。
+不得通过沿用Epoch、以当前扫描无命中补签旧正文、清空旧库或静默更换Key关闭这些任务。
+
+安装、部署、升级与产品配置主启动顺序同步原Key/旧库准入及维护开放边界；
+另1幅主启动时序图已实际渲染并检查，单独记录在验证文件的`operational_documentation`，不混入前述5幅设计图计数。

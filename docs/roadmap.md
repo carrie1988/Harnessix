@@ -829,3 +829,8 @@ Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Ru
 [总体与详设](changes/m09-4a-managed-session-key-and-root.md)区分本机实际验证、Windows原生测试入口与正式部署。
 Key备份/维护CLI、Artifact持久正文、全Provider/Owner/SDK/MCP、12件来源权利及三平台安装仍开放，
 不勾选0.9.4a、0.9.5、0.9.6或整体0.9。
+
+默认产品持久Key与强制认证Root固定实现`cef1b17`完成49项新合同（实际macOS43通过/Windows原生6跳过）与2项新证据治理；
+完整5234/38回归、相关1448/6、五幅实际渲染图及候选Wheel真实CLI/SDK双进程已冻结。
+并发读旧Checkpoint/新Event混读已用确定性双连接测试定位，独立events读事务修复不放宽任何认证。
+[正式验证目录](validation/managed-session-key-2026-09-28-v1/README.md)保留Windows、密钥恢复/维护CLI、Artifact正文及整体0.9发布边界。

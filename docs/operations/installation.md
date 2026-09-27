@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 6
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners:
   - core
 modules:
@@ -204,3 +204,16 @@ docker run --rm harnessix:<revision>
 
 0.9后续必须补齐三平台正式安装器、版本通道、升级/回退编排、签名与验证、SBOM、来源证明、恶意依赖扫描、
 离线安装策略和自动更新失败恢复。在这些门禁关闭前，源码安装和本地Wheel只用于开发、审计和受控候选验证。
+
+## 默认产品首次启动与持久密钥
+
+`agent-server`及TUI托管Server在独立私有状态中创建`session-auth/key.v1`；稳定Store ID/Key ID与32字节认证Key
+独立随机生成，不从Provider API Key派生。模型配置不增加原Key正文，安装配置与诊断包不得包含密钥文件。
+macOS/Linux检查Owner、规范权限和对象身份，Darwin额外拒绝扩展ACL；Windows实现用户DPAPI/私有DACL，
+原生测试与三平台正式安装仍须独立验收。POSIX私有Key文件不声称密文或不可导出Keyring。
+仅全新无库状态可以生成新Key。存在原DB/WAL/SHM而无Key、未证明历史、Key格式或权限失效均拒绝启动；
+不得通过清空原状态、改权限追认旧事实、生成替代Key或手工补签解除门禁。
+Doctor成功只代表配置及能力预检，不证明原Key/Session有效。现阶段没有正式密钥备份/跨机器迁移工具，
+不把复制DB或本地Wheel消费者视为安装与恢复完成。
+[总体与详细设计](../changes/m09-4a-managed-session-key-and-root.md)、
+[固定macOS验证](../validation/managed-session-key-2026-09-28-v1/README.md)与[升级边界](upgrade-and-rollback.md)是当前操作依据。

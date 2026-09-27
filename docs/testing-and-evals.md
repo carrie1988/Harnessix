@@ -2,7 +2,7 @@
 doc_type: test-and-eval-design
 status: current
 version: 38
-code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners:
   - core
 modules:
@@ -765,3 +765,14 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 但独立持久Key仍是消费者fixture，不验收产品Key Backend、默认Root或三平台安装。
 [完整证据](validation/authenticated-sqlite-session-2026-09-28-v1/README.md)和
 [总体与详设](changes/m09-4a-authenticated-sqlite-session.md)保留Artifact正文、全部Provider与来源权利等发布阻断。
+
+## 默认产品托管Session Key固定回归
+
+固定实现`cef1b17cf63a5bed7d7740d5cbea5bc67728deb2`：49项新Key/Root合同，macOS43通过、Windows原生6项跳过；
+包含6项便携DPAPI ABI替身和3项真实Darwin ACL输入，不能把替身计作Windows验收。
+相关1448通过/6跳过、证据治理34通过、完整5234通过/38跳过，各组重叠不相加。
+两个隔离Wheel消费者启动实际产品CLI和SDK管道，使用真实托管Key而非持久Key fixture；
+稳定身份与五账本原字节跨OS进程重开，三类损坏和两类Legacy在开放协议前拒绝。
+独立events读入口通过两项确定性双连接测试修复读版本混用，不自动重试、不重签历史、不降低篡改断言。
+[完整证据](validation/managed-session-key-2026-09-28-v1/README.md)与
+[总体/详细设计](changes/m09-4a-managed-session-key-and-root.md)明确密钥恢复、Artifact正文和三平台正式发行仍未完成。

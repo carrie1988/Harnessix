@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 0bc942bce8aeb22747a06515732936d1a312cd02
+version: 6
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ Revision支持的操作规则。
 
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
-| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0026 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
+| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0029 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
@@ -117,7 +117,10 @@ v2库；需要回退时必须恢复升级前包含Execution Plan、Action Audit�
 
 ### 5.2 Agent状态一致性
 
-`--state-directory`至少包含`sessions.db`和`product-config.db`。若宿主还装配Patch、Process、Delivery、MCP、
+`--state-directory`包括`sessions.db`、`product-config.db`及独立`session-auth/key.v1`。
+认证库的有效恢复必须保留匹配的原逻辑Store/Key身份；仅DB备份不含独立Key，不代表完整产品恢复。
+POSIX文件权限保护不等于加密；Windows用户DPAPI文件复制不构成跨用户/机器可解密保证。
+当前尚无正式Key导出、轮换、保护恢复包或跨机器迁移命令，不提供绕过认证的无Key恢复方案。若宿主还装配Patch、Process、Delivery、MCP、
 Skill或Hook账本，应在同一停机窗口备份。Product Config源文件不在状态目录内，也必须和其源摘要一起归档。
 
 ## 6. 旧Action PostgreSQL归档
@@ -139,8 +142,11 @@ PostgreSQL只服务已退役Action Worker历史数据。先停止全部旧写入
 7. Commit后把文件设为`0600`并启用WAL；
 8. Agent Runtime通过单宿主锁阻止两个活动Runtime共享同一Session。
 
-当前最高Migration是[`0026_store_maintenance.sql`](../../src/harnessix/session/migrations/0026_store_maintenance.sql)：增加Artifact
-`created_at`并创建不可变Plan/Item及可恢复Progress表；升级不会创建Plan、清理业务数据或运行Vacuum。
+当前最高Migration是[`0029_authenticated_session_history.sql`](../../src/harnessix/session/migrations/0029_authenticated_session_history.sql)：
+仅增加空认证头、Event Seal及派生Checkpoint结构，原Migration 1～28摘要、Event/Artifact/Projection字节不改写。
+默认产品先加载独立原Key，再初始化认证库；没有证明的非空历史拒绝激活，不自动补签或导入。
+Migration 0026的维护Plan/Item/Progress仍保留，升级不创建Plan、清理业务数据或运行Vacuum。
+当前维护实现未完成认证证明删除/恢复及托管Key装配，不能把旧显式宿主测试当作认证产品的维护验收。
 不要修改已经发布Migration文件；新增变化必须追加新编号。
 
 验收：
@@ -245,3 +251,14 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 统一Schema清单、在线跨组件备份、跨组件一致性Checkpoint、自动Preflight、Journal Migration Checksum、正式滚动升级兼容窗口、
 自动回退、灾难恢复RPO/RTO和三平台安装器升级测试尚未完成。这些能力未落地前，升级必须采用受控停机、完整备份和
 人工发布评审。
+
+## 默认产品认证升级的失败语义
+
+- 原库无Key：`publication_key_unavailable`，不生成替代身份，不删除DB/WAL/SHM。
+- 原Key权限、ACL、对象或闭合封套失效：同一有限失败，不自动修复危险原对象或回退明文。
+- 未证明历史、错误认证身份、Snapshot/普通SHA替换：`publication_history_unproven`，不开放协议、不补签。
+- 读者与并发新CAS：原Checkpoint/Event/Seal保持同一读快照，不把合法并发当作篡改。
+- 备份恢复：必须匹配原Key与全部共库事实；正式保护恢复及三平台安装未完成，不承诺旧库可无损自动迁入。
+新程序失败关闭不等于旧无保护程序可以安全恢复运行。保留原数据隔离副本，禁止删除证明表、迁移标记或换Key。
+[完整设计](../changes/m09-4a-managed-session-key-and-root.md)与
+[验证报告](../validation/managed-session-key-2026-09-28-v1/README.md)明确当前支持及尚未验收的操作范围。
