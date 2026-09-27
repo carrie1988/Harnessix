@@ -1,0 +1,61 @@
+{
+  "actual_low_risk_mcp_client_tested": true,
+  "actual_runtime_public_surfaces_nonempty": true,
+  "artifact_scan": {
+    "all_inputs_covered": true,
+    "exit_code": 0,
+    "fixed_rules": 6,
+    "input_count": 2308,
+    "size_bytes": 101,
+    "stdout_sha256": "9826ffcec02896ce99a456b8b0c731d67b9991f14bfd1b38fc2440bce19772e9",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2308个输入完整覆盖且固定规则零命中"
+  },
+  "artifacts": [
+    {
+      "kind": "wheel",
+      "members": 379,
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "96b32fb7565ab66fa96c69a02af63479c7ecb4bb9f1e049007845a16b5d86f99",
+      "size_bytes": 947361,
+      "untracked_security_draft_present": false
+    },
+    {
+      "kind": "sdist",
+      "members": 2286,
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "cf92d3e45e1379facd2b3c2ad0865b513a8dcdab0ba29374009a0d25632ae6c5",
+      "size_bytes": 7002821,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "binding_route_or_audit_schema_migration": false,
+  "builtin_contract_priority_preserved": true,
+  "code_revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
+  "confirmed_audit_success_preserved": true,
+  "custom_success_field_authorization_closed_for_current_gateway_and_mcp": true,
+  "existing_generated_schema_drift": false,
+  "extra_fields_not_dropped": true,
+  "full_descriptor_fingerprint_checked": true,
+  "hard_preemption_claimed": false,
+  "independent_old_binary_sqlite_plan_approval_audit_unchanged": true,
+  "missing_contract_defaults_to_deny": true,
+  "new_dependency_cycles": [],
+  "new_descriptor_optional_field": true,
+  "new_package_dependencies": [],
+  "new_special_tests": 89,
+  "nonterminal_contract_drift_denied": true,
+  "old_descriptor_json_and_fingerprint_unchanged": true,
+  "owner_internal_budget_closed": false,
+  "persisted_old_session_public_body_retroactively_cleaned": false,
+  "prior_mcp_tests": 2,
+  "public_export_names_changed": false,
+  "raw_summary_checked_before_owner_publication": true,
+  "readability_policy_relaxed": false,
+  "recovery_summary_contract_and_hash_checked": true,
+  "reexecutions_after_projection_failure": 0,
+  "remote_mcp_oauth_egress_claimed": false,
+  "reproducible_build_claimed": false,
+  "secret_end_to_end_public_authorization_closed": false,
+  "special_tests": 91,
+  "terminal_contract_drift_has_no_body_artifact_execution_or_reconciliation": true
+}

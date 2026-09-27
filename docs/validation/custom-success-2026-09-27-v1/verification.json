@@ -1,0 +1,138 @@
+{
+  "code_revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
+  "diagram_visual_review": {
+    "design_diagrams": 4,
+    "external_images_not_packaged": true,
+    "images": [
+      {
+        "name": "design-1.png",
+        "sha256": "4f8ba42d4ecdf7abf759c6d8da1eec4a5e43629ae2c67a29412e8bb13ac70998",
+        "size_bytes": 54739
+      },
+      {
+        "name": "design-2.png",
+        "sha256": "b65298284cd6e23cd74ee8dc316b7b9dd46ca232ec20d73b5440e834cc452d67",
+        "size_bytes": 48439
+      },
+      {
+        "name": "design-3.png",
+        "sha256": "9769e67bdf0d7c96f2a2a3f8265c7908e8eff846e6d96b6e88df6c1b3734bd47",
+        "size_bytes": 75892
+      },
+      {
+        "name": "design-4.png",
+        "sha256": "7c3c8ff7f969afd8a8079f8ab44760ca22075e10eb6b6becae41e6975047cdff",
+        "size_bytes": 24520
+      },
+      {
+        "name": "report-1.png",
+        "sha256": "340a4e2052ffadda015c46e28c3c3a156942f2e39d908c4e2066e0c88b149b0e",
+        "size_bytes": 55784
+      }
+    ],
+    "passed": true,
+    "report_diagrams": 1,
+    "scope": "changed custom success design and report only"
+  },
+  "external_model_requests": 0,
+  "full_regression": {
+    "status": "not_run"
+  },
+  "independent_negative_replay": {
+    "exit_code": 1,
+    "failed": 8,
+    "runtime_module_matches_archive": true,
+    "seconds": 0.23,
+    "size_bytes": 4687,
+    "source_revision": "f7566bf0e594833bd10a1af7d9d8b51a098cfad9",
+    "stdout_sha256": "ac9067c448f81e31015b1741dd02c562ae995c910aaf83e8758d7277bba4b3fb",
+    "stdout_summary": "8 failed in 0.23s"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "make_check_passed": false,
+  "new_automation_created": false,
+  "related_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": 631,
+    "seconds": 16.73,
+    "size_bytes": 741,
+    "stdout_sha256": "78fe15e15f0e153d15024c779a2f77d9295ce5b560ea289bb946f3ae8da22639",
+    "stdout_summary": "631 passed in 16.73s"
+  },
+  "special_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": 91,
+    "seconds": 1.92,
+    "size_bytes": 179,
+    "stdout_sha256": "97930651f6306afba730d221d5dfb1d7f050c125178a3a5563f464fc2b54564b",
+    "stdout_summary": "91 passed in 1.92s"
+  },
+  "static_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation_render": {
+      "changed_from": "f7566bf0e594833bd10a1af7d9d8b51a098cfad9",
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "6d22bb8c5657252348417e2b09134aa40c7275e0fdefc72a6e6d4574a05e8576",
+      "stdout_summary": "文档门禁通过：302份文档、8010条链接、730幅Mermaid、26个源码包、31个变化路径"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "389dea18735f63e66e1bfdf855eec8c8b5447c2600d97c9112d2c6c72527b562",
+      "stdout_summary": "1112 files already formatted"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "158d87132d5dc04d5dd95fef22d87053cc7badcc106dfafd777dad0b105aa008",
+      "stdout_summary": "Success: no issues found in 336 source files"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "sbom": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret-self": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    }
+  }
+}

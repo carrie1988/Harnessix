@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 125
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 126
+code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners:
   - core
 modules:
@@ -254,3 +254,6 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - [正式来源成功正文合同与内联投影详设](changes/m09-4a-builtin-success-contracts.md)：共享DTO、计划绑定、发布前校验及保留效果事实；custom和整体发布权限不追认关闭。
 
 - [正式来源成功合同与内联投影验收](validation/builtin-success-2026-09-27-v1/README.md)：固定实现输入、旧版负例、专项/完整回归及未关闭范围。
+
+- [自定义成功正文公开合同详设](changes/m09-4a-custom-success-contract.md)：显式字段授权、完整描述指纹、MCP独立出口与旧终态兼容。
+- [自定义成功合同验收](validation/custom-success-2026-09-27-v1/README.md)：固定实现、独立旧版负例/旧SQLite重开、专项与完整回归；Secret值和整体发布仍阻断。

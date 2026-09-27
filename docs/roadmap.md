@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 102
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 103
+code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners:
   - core
 modules:
@@ -492,7 +492,10 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [专项冻结报告](validation/executor-output-2026-09-27-v1/README.md)记录78专项、独立24负例、真实文件/进程退出恢复及版本绑定完整回归。
   [正式来源成功合同](changes/m09-4a-builtin-success-contracts.md)已补内联/Owner统一DTO、计划身份及发布前检查；
   167专项包含119新增及48原Owner项，四个既有Schema、原导出和依赖门禁保持；
-  custom成功JSON、Secret端到端公开权限、Owner内部同步阻塞及Store/其他公开边界仍开放，不标记0.9.4a完成；
+  [自定义成功合同](changes/m09-4a-custom-success-contract.md)已补显式闭合Schema、完整描述指纹、
+  内联/Owner/恢复与独立MCP导出字段授权，以及旧版SQLite计划/审批/Audit原样重开；
+  [冻结报告](validation/custom-success-2026-09-27-v1/README.md)记录91专项（89新增）、631相关及版本绑定完整回归。
+  Secret端到端值权限、历史Session正文、Owner内部同步阻塞及Store/其他公开边界仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
   [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。

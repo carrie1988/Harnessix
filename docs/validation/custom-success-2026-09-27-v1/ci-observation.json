@@ -1,0 +1,43 @@
+{
+  "code_revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
+  "current_ci_status": "not_started_at_freeze",
+  "prior_revision": {
+    "conclusion": "",
+    "headSha": "f7566bf0e594833bd10a1af7d9d8b51a098cfad9",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "documentation",
+        "status": "completed"
+      },
+      {
+        "conclusion": "cancelled",
+        "name": "python (3.12)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "container-sandbox",
+        "status": "completed"
+      },
+      {
+        "conclusion": "",
+        "name": "windows-trusted-execution",
+        "status": "in_progress"
+      },
+      {
+        "conclusion": "success",
+        "name": "coding-tools-macos",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "name": "python (3.13)",
+        "status": "completed"
+      }
+    ],
+    "status": "in_progress",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36311488976"
+  },
+  "prior_success_is_current_acceptance": false
+}

@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 1
-code_revision: f7566bf0e594833bd10a1af7d9d8b51a098cfad9
+code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners: [core]
 modules: [domain, trusted_actions, agent]
 related_adrs:

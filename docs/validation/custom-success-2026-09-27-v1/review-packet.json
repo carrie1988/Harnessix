@@ -1,0 +1,24 @@
+{
+  "code_revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "12件受限许可Archive",
+    "Secret端到端公开权限及历史Session正文",
+    "Owner/Store内部资源与工件归属",
+    "TM编号攻击及平台证据",
+    "远端MCP身份/OAuth/受管出口",
+    "三平台真实安装/升级/卸载与Beta",
+    "真实Provider发布与成本适用证明"
+  ],
+  "required_review_focus": [
+    "精确描述指纹与闭合字段授权",
+    "无合同及不合法正文不调用Owner发布",
+    "MCP独立公开路径及低风险实际Client",
+    "旧版实际SQLite审批/计划/Audit原样读取及不重执行",
+    "Schema工作预算、期限、Token与父Task取消",
+    "字段权限不替代Secret值检查和旧Session历史治理"
+  ]
+}

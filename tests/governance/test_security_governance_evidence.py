@@ -211,6 +211,40 @@ ROOT = Path(__file__).resolve().parents[2]
                 "src/harnessix/execution/public_tool_contracts.py",
             },
         ),
+        (
+            "custom-success-2026-09-27-v1",
+            "contract-facts.json",
+            {
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+                "scripts/generate_specs.py",
+                "spec/action-output-budget-v1.schema.json",
+                "src/harnessix/agent/approvals.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/domain/models.py",
+                "src/harnessix/domain/public_output_schema.py",
+                "src/harnessix/execution/contracts.py",
+                "src/harnessix/mcp/schema.py",
+                "src/harnessix/mcp/server.py",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/agent_gateway_support.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "src/harnessix/trusted_actions/legacy_projection.py",
+                "src/harnessix/trusted_actions/output_budget.py",
+                "src/harnessix/trusted_actions/public_outcomes.py",
+                "src/harnessix/trusted_actions/router.py",
+                "tests/domain/test_public_output_schema.py",
+                "tests/mcp/test_server.py",
+                "tests/trusted_actions/test_agent_gateway.py",
+                "tests/trusted_actions/test_custom_success_authorization.py",
+                "tests/trusted_actions/test_custom_success_legacy_binary.py",
+                "tests/trusted_actions/test_custom_success_runtime.py",
+                "tests/trusted_actions/test_custom_success_schema.py",
+                "tests/trusted_actions/test_inline_success_lifecycle.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -415,6 +449,45 @@ def test_builtin_success_evidence_does_not_waive_custom_or_release_boundaries():
     assert facts["custom_gap_observation"]["acceptance_pass_claimed"] is False
     assert facts["schema_migration"] is False and facts["hard_preemption_claimed"] is False
     assert facts["readability_policy_relaxed"] is False
+    assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
+
+
+def test_custom_success_contract_evidence_does_not_waive_value_or_release_boundaries():
+    bundle = ROOT / "docs/validation/custom-success-2026-09-27-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert facts["special_tests"] == 91 and facts["new_special_tests"] == 89
+    assert facts["prior_mcp_tests"] == 2
+    assert facts["custom_success_field_authorization_closed_for_current_gateway_and_mcp"] is True
+    assert facts["missing_contract_defaults_to_deny"] is True
+    assert facts["extra_fields_not_dropped"] is True
+    assert facts["full_descriptor_fingerprint_checked"] is True
+    assert facts["builtin_contract_priority_preserved"] is True
+    assert facts["raw_summary_checked_before_owner_publication"] is True
+    assert facts["recovery_summary_contract_and_hash_checked"] is True
+    assert facts["confirmed_audit_success_preserved"] is True
+    assert facts["reexecutions_after_projection_failure"] == 0
+    assert facts["actual_runtime_public_surfaces_nonempty"] is True
+    assert facts["actual_low_risk_mcp_client_tested"] is True
+    assert facts["independent_old_binary_sqlite_plan_approval_audit_unchanged"] is True
+    assert facts["old_descriptor_json_and_fingerprint_unchanged"] is True
+    assert facts["terminal_contract_drift_has_no_body_artifact_execution_or_reconciliation"] is True
+    assert facts["nonterminal_contract_drift_denied"] is True
+    assert facts["secret_end_to_end_public_authorization_closed"] is False
+    assert facts["persisted_old_session_public_body_retroactively_cleaned"] is False
+    assert facts["owner_internal_budget_closed"] is False
+    assert facts["existing_generated_schema_drift"] is False
+    assert facts["binding_route_or_audit_schema_migration"] is False
+    assert facts["new_package_dependencies"] == facts["new_dependency_cycles"] == []
+    assert facts["readability_policy_relaxed"] is False
+    assert facts["hard_preemption_claimed"] is False
+    assert facts["reproducible_build_claimed"] is False
+    assert facts["remote_mcp_oauth_egress_claimed"] is False
     assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
     assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
     assert ci["current_ci_status"] == "not_started_at_freeze"
