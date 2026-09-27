@@ -327,6 +327,55 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/product_config/test_publication_scope.py",
             },
         ),
+        (
+            "typed-binary-publication-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+                "scripts/generate_specs.py",
+                "spec/process-lease-v1.schema.json",
+                "spec/process-owner-start-v1.schema.json",
+                "spec/process-owner-start-v2.schema.json",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/runtime_recovery.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/artifacts/action_output_store.py",
+                "src/harnessix/artifacts/batch_verify.py",
+                "src/harnessix/artifacts/binary_projection.py",
+                "src/harnessix/artifacts/contracts.py",
+                "src/harnessix/artifacts/persistence.py",
+                "src/harnessix/artifacts/publication.py",
+                "src/harnessix/artifacts/sqlite.py",
+                "src/harnessix/processes/output_artifact.py",
+                "src/harnessix/processes/owner_output.py",
+                "src/harnessix/processes/owner_protocol.py",
+                "src/harnessix/processes/owner_receipt.py",
+                "src/harnessix/processes/posix_owner.py",
+                "src/harnessix/processes/supervision_planner.py",
+                "src/harnessix/processes/supervisor.py",
+                "src/harnessix/processes/trusted_output.py",
+                "src/harnessix/processes/windows_owner.py",
+                "src/harnessix/product_config/action_runtime.py",
+                "src/harnessix/product_config/process_action.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/migrations/0028_artifact_publication_proof.sql",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/agent_gateway_support.py",
+                "src/harnessix/trusted_actions/public_errors.py",
+                "tests/artifacts/test_binary_publication.py",
+                "tests/artifacts/test_publication_persistence.py",
+                "tests/governance/test_security_governance_evidence.py",
+                "tests/processes/test_output_protection.py",
+                "tests/product_config/test_process_action.py",
+                "tests/product_config/test_publication_scope.py",
+                "tests/trusted_actions/test_publication_recovery.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -666,3 +715,43 @@ def test_product_publication_evidence_keeps_current_epoch_and_recovery_limits():
     assert verification["new_automation_created"] is False
     assert verification["make_check_passed"] is False
     assert verification["license_gate"]["blocked_archive_count"] == 12
+
+
+def test_typed_binary_evidence_preserves_contracts_and_platform_release_boundaries():
+    bundle = ROOT / "docs/validation/typed-binary-publication-2026-09-28-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert verification["code_revision"] == facts["code_revision"]
+    assert facts["formal_binary_purposes"] == ["action_output", "process_output"]
+    assert facts["same_stream_cross_chunk_checked"] is True
+    assert facts["decoded_and_original_work_budget_shared"] is True
+    assert facts["model_protection_values_in_target_environment"] is False
+    assert facts["owner_protection_precedes_lease_creation"] is True
+    assert facts["owner_v1_schema_changed"] is False
+    assert facts["database_migration_added"] is False
+    assert facts["public_rejection_preserves_confirmed_effect_without_reexecution"] is True
+    assert facts["effect_origin_independent_of_recovery_policy"] is True
+    assert facts["cross_restart_artifact_body_recovery_complete"] is False
+    assert facts["arbitrary_base64_field_decoding_claimed"] is False
+    assert facts["real_windows_container_or_full_stdio_acceptance_claimed"] is False
+    assert facts["all_provider_credentials_and_public_outputs_closed"] is False
+    assert facts["readability_policy_relaxed"] is False
+    assert facts["new_package_dependency_edges"] == facts["new_dependency_cycles"] == []
+    assert facts["functional_new_tests"] == 91
+    assert facts["special_tests"] == 108
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert review["current_ci_accepted"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
+    assert verification["external_model_requests"] == 0
+    assert verification["new_automation_created"] is False
+    assert verification["make_check_passed"] is False
+    assert verification["full_regression"]["status"] in {"pending", "passed"}
+    if verification["full_regression"]["status"] == "passed":
+        assert verification["full_regression"]["tracked_inputs_unchanged_during_run"] is True
+        assert verification["full_regression"]["untracked_attack_draft_excluded"] is True
+    else:
+        assert verification["full_regression"]["is_acceptance"] is False
