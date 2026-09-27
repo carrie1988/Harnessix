@@ -37,6 +37,72 @@
   "new_dependency_cycles": [],
   "new_package_dependency_edges": [],
   "new_special_tests": 46,
+  "next_typed_binary_output_gap": {
+    "actual_approval_runtime_store_read_probe": {
+      "actual_runtime_approval_router_sqlite_artifact_read": true,
+      "artifact_complete": true,
+      "artifact_records": 2,
+      "base_test_source_sha256": "8b2ffc5d8c1a1a54160608d6c2b1c3119992236b58f977ff689a174a592694f6",
+      "code_revision": "d7079d520d52074263b5025fad76a07d65e374e8",
+      "commit_confirmation_loss_recovered": true,
+      "decoded_page_contains_registered_value": true,
+      "implementation_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+      "owner_kind": "formal_contract_double",
+      "owner_reconcile_calls": 0,
+      "owner_run_calls": 1,
+      "prefix_bytes": 1,
+      "probe_source_sha256": "15db412f8331372737fc5dc6f36377a2e12f77706c21cc691cbc6002ab461a7e",
+      "provider_requests": 2,
+      "provider_secret_reference": {
+        "name": "api",
+        "version": "9"
+      },
+      "raw_page_contains_registered_value": false,
+      "real_container_or_complete_product_startup_claimed": false,
+      "real_model_requests": 0,
+      "turn_status": "completed"
+    },
+    "base_test_path": "tests/product_config/test_process_action.py",
+    "bounded_json_record_probe": {
+      "actual_product_or_sdk_acceptance_claimed": false,
+      "code_revision": "d7079d520d52074263b5025fad76a07d65e374e8",
+      "component_only": true,
+      "implementation_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
+      "observations": [
+        {
+          "complete": true,
+          "decoded_chunk_contains_registered_value": true,
+          "error_code": "public_output_secret_leak",
+          "formal_document_valid": true,
+          "jsonl_body_sha256": "ad0d44afff4cef0a3020e736634c61095e8070b20465a5705f18c99b824bb90b",
+          "prefix_bytes": 0,
+          "public_check_accepted": false
+        },
+        {
+          "complete": true,
+          "decoded_chunk_contains_registered_value": true,
+          "error_code": null,
+          "formal_document_valid": true,
+          "jsonl_body_sha256": "86c4172c07ef67012cdb9427a366b75b5e88c5c7c24b06d14c4866be44aa005f",
+          "prefix_bytes": 1,
+          "public_check_accepted": true
+        },
+        {
+          "complete": true,
+          "decoded_chunk_contains_registered_value": true,
+          "error_code": null,
+          "formal_document_valid": true,
+          "jsonl_body_sha256": "f1813c59469b55537e9e0cedc6f247b301acf48d177abf3232320f3ff16d006d",
+          "prefix_bytes": 2,
+          "public_check_accepted": true
+        }
+      ],
+      "real_model_requests": 0
+    },
+    "complete": false,
+    "interpretation": "有限整值Base64模式不能代替正式Process二进制分片解码；前缀位移可通过当前检查，解码页包含已登记值。不是实际容器或完整产品启动验收。",
+    "reproduction_script": "import asyncio,inspect,tempfile,json,hashlib,subprocess\nfrom pathlib import Path\nfrom tests.product_config import test_process_action as original\nfrom tests.agent.test_publication import CANARY,protected\nsource=inspect.getsource(original.test_product_composition_executes_approved_profile_and_publishes_output_once)\nsource=source.replace('runtime = _TerminalRuntime(probe.verified.runtime.capability)', 'runtime = _TerminalRuntime(probe.verified.runtime.capability, stdout=b\"x\"+CANARY.encode()+b\"\\\\n\")')\nsource=source.replace('fault=lose_first_confirmation)', 'fault=lose_first_confirmation, public_output_protection=_scope)')\nsource=source.replace('trusted_actions=composition.gateway,','trusted_actions=composition.gateway,\\n            public_output_protection=_scope,')\nsource=source.replace('assert completed.status is TurnStatus.COMPLETED', 'assert completed.status is TurnStatus.COMPLETED, (completed.status.value, completed.error.code if completed.error else None)')\nsource=source.replace('assert b\"\".join(item.data() for item in document.chunks) == b\"tests passed\\\\n\"','assert CANARY.encode() in b\"\".join(item.data() for item in document.chunks)\\n            facts.update(turn_status=completed.status.value,artifact_complete=document.summary.complete,artifact_records=page.artifact.records,decoded_page_contains_registered_value=True,raw_page_contains_registered_value=CANARY in page.text,provider_requests=len(provider.requests))')\nsource=source.replace('assert runtime.run_calls == 1 and runtime.reconcile_calls == 0','assert runtime.run_calls == 1 and runtime.reconcile_calls == 0\\n    facts.update(owner_run_calls=runtime.run_calls,owner_reconcile_calls=runtime.reconcile_calls,commit_confirmation_loss_recovered=confirmation_lost)')\nfacts=dict(code_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),implementation_revision='5a9e81f87ae6117d72099455e774ffd400423886',real_model_requests=0,real_container_or_complete_product_startup_claimed=False,owner_kind='formal_contract_double',actual_runtime_approval_router_sqlite_artifact_read=True,provider_secret_reference={'name':'api','version':'9'},prefix_bytes=1,base_test_source_sha256=hashlib.sha256(inspect.getsource(original.test_product_composition_executes_approved_profile_and_publishes_output_once).encode()).hexdigest(),probe_source_sha256=hashlib.sha256(source.encode()).hexdigest())\nnamespace=dict(vars(original),CANARY=CANARY,facts=facts)\nwith tempfile.TemporaryDirectory(prefix='harnessix-typed-binary-probe-') as directory:\n with protected() as scope:\n  namespace['_scope']=scope\n  exec(compile(source,'<explicit-process-publication-probe>','exec'),namespace)\n  asyncio.run(namespace['test_product_composition_executes_approved_profile_and_publishes_output_once'](Path(directory).resolve()))\nprint(json.dumps(facts,indent=2))\n"
+  },
   "ordinary_protocol_and_artifact_contracts_changed": false,
   "prior_component_observation": {
     "acceptance_pass_claimed": false,

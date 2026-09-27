@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
 owners: [core]
 modules: [agent, artifacts, secrets, product_config, session, trusted_actions]
@@ -288,3 +288,13 @@ SQL CHECK明确检查policy非NULL，避免SQLite三值逻辑允许半份证明�
 开放工作：历史Session全文治理、用户/模型/Context/Compaction出口、跨重启旧正文安全恢复、
 Owner/Store内部阻塞和资源归属、TM攻击编号及平台验收、远端MCP身份/OAuth/出口、12件许可阻断、
 三平台实际安装/升级/卸载与Beta以及真实Provider验证。当前切片不关闭整体0.9.4a或整体0.9。
+
+### 11.1 正式Process二进制输出的已确认限制
+
+[固定版本观察](../validation/product-publication-2026-09-27-v1/README.md)确认：
+正式Process的`data_base64`记录在原值前增加1或2字节后，可通过当前有限模式检查，而解码正文包含已登记值。
+进一步通过正式Owner合同替身、审批、Runtime、Router、SQLite与Artifact读取复现；不是实际容器或完整产品启动。
+这是已知二进制合同缺少类型化解码桥的公开保护缺口，不应仅归为未知任意变换。
+当前原生JSONL检查只扫描原字节和JSON解码后的字符串，并不解码正式Process分片或拼接跨Chunk原值。
+后续必须研究`processes.trusted_output`、Process持久前保护与Artifact消费桥，明确同一总预算、原Hash保持、取消和恢复语义。
+这一限制阻断整体公开安全发布；当前46项专项通过不关闭该缺口。

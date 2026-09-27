@@ -15,11 +15,82 @@
   },
   "code_revision": "5a9e81f87ae6117d72099455e774ffd400423886",
   "diagram_visual_review": {
-    "status": "not_reviewed_at_seed"
+    "diagrams": 5,
+    "documents": 2,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-product-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "80b1cfe3918f3f2d1b3504ae58c3a887b0659d59006aed17090b1d8c02120b3a",
+        "png_size_bytes": 45599,
+        "source_sha256": "f522aa61e4740cc26d288f4f2c0d2cc749d029aece2df21af17e46b1f6b00965"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-product-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "12f9586f8226e6e5320441c45f7b81ec4f6ae8dee4433e30c8984863f5b604f0",
+        "png_size_bytes": 57470,
+        "source_sha256": "abbd66c1139f21479109cbba274502b50603e9f64f7c9a7b0d773de2505eac32"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-product-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "0ba6f162c4a91df485f3309c1098b03afdead6e387cf34d598098ff1bff373f2",
+        "png_size_bytes": 99868,
+        "source_sha256": "187780ecd5f935bc16a19218d2981436a3e73587b4ac9aefdf7a0555b1aef779"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-product-publication-boundary.md",
+        "exit_code": 0,
+        "png_sha256": "356d44c65032052c888398c814cbbe7a9d7769eec636af813f0689fcc39d7baa",
+        "png_size_bytes": 34428,
+        "source_sha256": "22458fc7005ac8c98f5a115be33a05350e16f366d8aacc4b14422b4fef98d9db"
+      },
+      {
+        "diagram": 1,
+        "document": "docs/validation/product-publication-2026-09-27-v1/README.md",
+        "exit_code": 0,
+        "png_sha256": "fdcdc46d9fc2c196fe6432d3ffd4617242cdbac9018fffb1ce9381f12a29151c",
+        "png_size_bytes": 42766,
+        "source_sha256": "54d00da1ac6cdfa2316bc2e89632acb00ae36b873bf2b48549c05d02b61cb862"
+      }
+    ],
+    "unchanged_existing_diagrams_rerendered": false
   },
   "external_model_requests": 0,
   "full_regression": {
-    "status": "not_run_at_seed"
+    "all_production_contract_script_policy_baseline_and_tests_same_as_implementation": true,
+    "exit_code": 0,
+    "passed": 4749,
+    "seconds": 410.6,
+    "size_bytes": 5405,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "cb0c7551bbe5aafd3551251c848314212899fa93441867be8cfc1082a3d0c864",
+    "stdout_summary": "4749 passed, 32 skipped in 410.60s (0:06:50)",
+    "test_revision": "d7079d520d52074263b5025fad76a07d65e374e8",
+    "test_tree": "ea0c99891b4d5f4d57595dbbd7b4307fb9c359b9",
+    "tracked_inputs_unchanged_during_run": true
+  },
+  "incomplete_previous_run": {
+    "code_revision": "a73cdec38f1f4c0e8c441445f6febf0a37e097d4",
+    "exit_code": 2,
+    "failed": 9,
+    "intentionally_interrupted": true,
+    "is_acceptance": false,
+    "passed": 407,
+    "reason": "证据构建误读构建器.gitignore导致证据未生成；发现旧最新版/降级夹具假设仍为27版后停止，修复夹具与编排并重新构建稳定测试树",
+    "seconds": 30.31,
+    "size_bytes": 5383,
+    "stdout_sha256": "67bcc30c042e30754c617a69e816fd02fd012dc3022b85d5a08947549279762c",
+    "stdout_summary": "9 failed, 407 passed in 30.31s",
+    "test_tree": "9a08566a2093351382197620c2f7fc3b51864a12"
   },
   "license_gate": {
     "blocked_archive_count": 12,
@@ -31,6 +102,56 @@
   },
   "make_check_passed": false,
   "new_automation_created": false,
+  "post_freeze_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "docs": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "63aa5770e6c644ec53783a5650e36e9344281f6718e2f308cdf380d29942572d",
+      "stdout_summary": "文档门禁通过：308份文档、8129条链接、740幅Mermaid、26个源码包、51个变化路径"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "60cd6265bed52650ece7b9dabcdc5a2ef7c9afe7b9f0c5669a15e3bb8e93468c",
+      "stdout_summary": "1131 files already formatted"
+    },
+    "governance": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "45ce10076a71cc887e76ca2e89a8834ec0ef9ad608dc823ef55dd0557bc88084",
+      "stdout_summary": "18 passed in 2.35s"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    }
+  },
+  "post_freeze_documentation_coverage": {
+    "documents": 308,
+    "links": 8129,
+    "mermaid": 740,
+    "source_packages": 26
+  },
   "related_regression": {
     "exit_code": 0,
     "overlaps_full_regression": true,
@@ -40,6 +161,15 @@
     "size_bytes": 501,
     "stdout_sha256": "557edf592dbc26a7260a27a0126f5999f203c8b95bfc3ca8b2b1e27e564f4608",
     "stdout_summary": "408 passed in 31.51s"
+  },
+  "schema_fix_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed_count": 43,
+    "seconds": 2.57,
+    "size_bytes": 99,
+    "stdout_sha256": "dfb04a4a879ca6e50e445d38706dc27fbb7f87fb6d2da3273ddcaa159f5ce35d",
+    "stdout_summary": "43 passed in 2.57s"
   },
   "special_regression": {
     "exit_code": 0,
@@ -72,6 +202,13 @@
       "size_bytes": 45,
       "stdout_sha256": "a0fbfaea061e55171b066a51ea6508441137b962b5a8618aec8abebab86edb33",
       "stdout_summary": "Success: no issues found in 339 source files"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
     },
     "ruff": {
       "exit_code": 0,
@@ -112,5 +249,6 @@
     "size_bytes": 99,
     "stdout_sha256": "28d4007a5ebaaf7097c39a7b415a76ed0c5661dd365ccd1d4e3e48aec79c9a79",
     "stdout_summary": "24 passed in 2.70s"
-  }
+  },
+  "verification_recorded_at_utc": "2026-09-27 16:00:46 UTC"
 }

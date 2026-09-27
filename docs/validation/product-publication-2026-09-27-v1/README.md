@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
 owners: [core]
 modules: [agent, artifacts, secrets, product_config, session, trusted_actions]
@@ -28,7 +28,9 @@ supersedes: []
 [ADR-0096](../../adr/0096-product-credential-and-artifact-publication-boundary.md)记录决策。
 
 新增专项 **46 passed，2.61秒**，相关 **408 passed，31.51秒**，原升级 **24 passed，2.7秒**；均与完整回归重叠，不能相加。
-验证种子阶段完整回归尚未运行，不把前序4701 passed/32 skipped当作本实现验收；完整结果需版本绑定后冻结。
+稳定测试树完整回归 **4749 passed、32 skipped，410.6秒，exit=0**。
+测试树`d7079d520d52074263b5025fad76a07d65e374e8`，Git Tree `ea0c99891b4d5f4d57595dbbd7b4307fb9c359b9`；运行期间跟踪输入不变，生产源码、全部测试、合同、脚本、政策与基线同实现Revision。
+前序4701 passed/32 skipped仅是旧版本记录，不当作本实现验收。
 整体0.9.4a与整体0.9未完成，生产发布仍阻断。真实模型请求0，不新增定时任务；未跟踪安全草稿不修改、不提交、不计作TM编号证据。
 
 ## 2. 公开边界与数据流
@@ -78,8 +80,10 @@ JSONL原字节、解码键/值与规范JSON检查共享字节、节点及工作�
 
 ## 5. 完整回归、静态门禁与发行物
 
-完整回归：验证种子阶段尚未运行，待稳定测试树冻结。
-Ruff、格式、Mypy339源文件、合同、可读性、SBOM、Secret自检与Task Pack通过；文档与图需冻结前复核。
+完整回归冻结为4749 passed/32 skipped/410.6秒。首次不完整运行9 failed、407 passed、30.31秒，主动中断，不能作为完整验收。
+其原因是证据构建误把构建器.gitignore当作tar，及旧最新版/降级夹具仍假设27版；43项迁移/容量/WAL专项通过后，重新建立稳定测试树。
+这些是夹具/证据编排问题，原失败不追认通过；详细日志摘要和Hash保留在verification。
+Ruff、格式、Mypy339源文件、合同、可读性、SBOM、Secret自检与Task Pack通过；两份文档五幅图已实际渲染并逐幅视觉检查，冻结后文档门禁另行复核。
 干净实现Git Archive构建Wheel/sdist，发行物名称、大小、SHA256与安全草稿缺失事实写入contract-facts；
 发行物Secret扫描通过。构建来自同一源码不等于位级可复现，未声明reproducible build。
 许可证门禁仍为**12件Archive违规**；不得声称make check或完整CI矩阵通过。
@@ -103,3 +107,16 @@ Ruff、格式、Mypy339源文件、合同、可读性、SBOM、Secret自检与Ta
 5. Epoch不是签名、租户ACL或数据库管理员防篡改证明；无不可变内存清零、硬抢占、历史数据库擦除或任意编码/分片推断保证。
 
 下一步应先研究历史公开与旧材料证明，明确可恢复持久合同后实现跨重启恢复与失败测试；不得简单取消Epoch校验或改写旧正文/Hash。
+
+## 8. 已确认的下一公开保护缺口：正式二进制分片
+
+固定实现版本下使用正式`TrustedProcessOutputDocument`与原Scope：无前缀时拒绝，增加1或2字节前缀后JSONL检查通过，但正式解码Chunk包含已登记值。
+进一步复用`test_process_action.py`的真实审批、Router、Runtime、SQLite和Artifact读取链：Owner为正式Lease合同替身，
+stdout增加1字节前缀，Turn completed、完整Artifact两条记录可读，解码正文包含已登记值，原页文字不含原值；
+两次Scripted请求、Owner Run=1、Reconcile=0、提交确认丢失按原身份恢复。该观察不是实际容器、字节级stdio或完整产品启动验收。
+
+contract-facts保存原测试源码摘要、探针转换代码、预算观察与适用范围，均以固定实现版本为基础；不增加正式专项计数。
+早期探针因临时目录符号链接产生tool_workspace_mismatch，物理路径重建后复现；路径失败不是此安全负例。
+有限整值Base64匹配不能代替已知正式二进制输出的类型化解码，更不能推导跨Chunk值安全。
+后续先明确原生JSON与正式二进制投影的不同合同、解码总预算、跨Chunk窗口、持久前保护和效果语义，再补真实消费链回归；
+不得通过删除Base64记录、修改原Hash或事后重签正文关闭问题。整体安全发布继续阻断。

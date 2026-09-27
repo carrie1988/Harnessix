@@ -43,7 +43,7 @@ supersedes: []
 | 下游依赖 | `agent.errors.KernelError`、`execution.SecretVersionBinding`、`workspace.PlatformKind`、宿主环境变量和调用方生命周期 |
 | 持久化 | 包自身不持久化；其他模块只保存Secret名称、版本、目标或宿主环境变量定位，不应保存明文值 |
 | 平台 | 解析和脱敏合同平台中立；Windows注入目标按大小写不敏感去重；真实进程输出在POSIX和Windows Supervisor验证 |
-| 代码版本 | `d655c60f54f94823f671d18080573e1b56c433d9` |
+| 代码版本 | `5a9e81f87ae6117d72099455e774ffd400423886` |
 | 当前完成度 | 默认Product Config已使用环境Provider构造模型Provider；Process、Container、MCP、Skill和Hook可显式复用；尚未形成统一Secret Service或所有输出边界的强制装配 |
 
 本文描述[`provider.py`](../../src/harnessix/secrets/provider.py)、

@@ -6,6 +6,7 @@
   "overall_0_9_complete": false,
   "release_blockers": [
     "12件许可Archive",
+    "正式Process二进制输出Base64位移与分片解码保护缺口",
     "历史Session及模型/用户/Context/Compaction公开治理",
     "跨重启Secret及Artifact正文安全恢复",
     "Owner/Store内部资源与归属",
@@ -21,6 +22,7 @@
     "旧27版原字节保持，半份证明拒绝",
     "已确认文件写入与Audit保留，不再执行",
     "固定错误与取消计数增量",
-    "独立宿主兼容边界与其他出口开放"
+    "独立宿主兼容边界与其他出口开放",
+    "正式二进制输出须经类型化解码检查，不能将有限编码模式视为通用解码安全"
   ]
 }
