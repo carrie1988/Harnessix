@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from time import monotonic
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
@@ -15,11 +16,18 @@ from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
+    ActionRoutePlan,
     ActionRouteSnapshot,
     ActionRouteState,
 )
+from harnessix.trusted_actions.outcome_validation import (
+    outcome_checkpoint,
+    validate_executor_outcome,
+)
+from harnessix.trusted_actions.output_budget import DEFAULT_OUTPUT_BUDGET
 from harnessix.trusted_actions.planning import decode_action_arguments
 from harnessix.trusted_actions.public_errors import (
+    PublicActionStage,
     execute_exception_outcome,
     reconcile_exception_code,
 )
@@ -39,14 +47,17 @@ async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionEx
         timeout_seconds=router._execute_timeout_seconds,
     )
     cancelled: asyncio.CancelledError | None = None
+    output_sha256: str | None = None
     try:
-        async with asyncio.timeout(remaining_action_seconds(claim.operation.deadline)):
-            outcome = await definition.executor.execute(plan, arguments)
-        outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
-        router._validate_outcome_identity(plan, outcome)
-        if outcome.kind == "manual_intervention":
-            raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
-        outcome = normalize_failure_outcome(plan, outcome, stage="execute")
+        seconds = remaining_action_seconds(claim.operation.deadline)
+        operation_deadline = monotonic() + seconds
+        async with asyncio.timeout(seconds):
+            raw = await definition.executor.execute(plan, arguments)
+            deadline = min(operation_deadline, monotonic() + DEFAULT_OUTPUT_BUDGET.timeout_seconds)
+            outcome, output_sha256 = _validated_output(router, plan, raw, "execute", deadline)
+            # 返回后的校验也必须允许父Task取消到达；确认期限后才提交终态。
+            await asyncio.sleep(0)
+            outcome_checkpoint(deadline)
     except TimeoutError as error:
         kind, code = execute_exception_outcome(error, plan.binding.effect_class)
         outcome = ActionExecutionOutcome(
@@ -76,12 +87,14 @@ async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionEx
             external_action_id=plan.external_action_id,
             error_code=code,
         )
+    if outcome.output is None:
+        output_sha256 = None
     target = cast(ActionRouteState, outcome.kind)
     router._audit.complete_operation(
         claim,
         target=target,
         executor_id=plan.binding.executor_id,
-        output_sha256=(canonical_digest(outcome.output) if outcome.output is not None else None),
+        output_sha256=output_sha256,
         artifact_sha256=outcome.artifact_sha256,
         external_action_id=outcome.external_action_id,
         error_code=outcome.error_code,
@@ -137,12 +150,16 @@ async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> Action
         )
         return outcome
     cancelled: asyncio.CancelledError | None = None
+    output_sha256: str | None = None
     try:
-        async with asyncio.timeout(remaining_action_seconds(claim.operation.deadline)):
-            outcome = await definition.executor.reconcile(plan, arguments)
-        outcome = ActionExecutionOutcome.model_validate_json(outcome.model_dump_json())
-        router._validate_outcome_identity(plan, outcome)
-        outcome = normalize_failure_outcome(plan, outcome, stage="reconcile")
+        seconds = remaining_action_seconds(claim.operation.deadline)
+        operation_deadline = monotonic() + seconds
+        async with asyncio.timeout(seconds):
+            raw = await definition.executor.reconcile(plan, arguments)
+            deadline = min(operation_deadline, monotonic() + DEFAULT_OUTPUT_BUDGET.timeout_seconds)
+            outcome, output_sha256 = _validated_output(router, plan, raw, "reconcile", deadline)
+            await asyncio.sleep(0)
+            outcome_checkpoint(deadline)
     except TimeoutError as error:
         outcome = ActionExecutionOutcome(
             kind="unknown",
@@ -162,12 +179,14 @@ async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> Action
             external_action_id=plan.external_action_id,
             error_code=reconcile_exception_code(error),
         )
+    if outcome.output is None:
+        output_sha256 = None
     target = cast(ActionRouteState, outcome.kind)
     router._audit.complete_operation(
         claim,
         target=target,
         executor_id=plan.binding.executor_id,
-        output_sha256=(canonical_digest(outcome.output) if outcome.output is not None else None),
+        output_sha256=output_sha256,
         artifact_sha256=outcome.artifact_sha256,
         external_action_id=outcome.external_action_id,
         error_code=outcome.error_code,
@@ -176,6 +195,26 @@ async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> Action
     if cancelled is not None:
         raise cancelled
     return outcome
+
+
+def _validated_output(
+    router: TrustedActionRouter,
+    plan: ActionRoutePlan,
+    raw: object,
+    stage: PublicActionStage,
+    deadline: float,
+) -> tuple[ActionExecutionOutcome, str | None]:
+    """身份、阶段语义、公开失败策略及摘要共用返回处理期限，不先编码原值。"""
+
+    outcome = validate_executor_outcome(raw, deadline=deadline)
+    router._validate_outcome_identity(plan, outcome)
+    if stage == "execute" and outcome.kind == "manual_intervention":
+        raise KernelError("action_outcome_invalid", "首次执行不能直接进入人工处置终态")
+    outcome = normalize_failure_outcome(plan, outcome, stage=stage)
+    outcome_checkpoint(deadline)
+    digest = canonical_digest(outcome.output) if outcome.output is not None else None
+    outcome_checkpoint(deadline)
+    return outcome, digest
 
 
 def recover_interrupted_actions(router: TrustedActionRouter) -> tuple[UUID, ...]:

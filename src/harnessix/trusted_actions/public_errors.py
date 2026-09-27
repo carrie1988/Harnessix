@@ -7,11 +7,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Literal
+from typing import Literal, cast
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.errors import UncertainEffectError
 from harnessix.domain.models import EffectClass
+from harnessix.trusted_actions.outcome_validation import (
+    OutcomeRejectionReason,
+    OutcomeValidationError,
+)
 
 PublicActionStage = Literal["execute", "reconcile"]
 PublicOutcomeKind = Literal["succeeded", "failed", "unknown", "manual_intervention"]
@@ -121,6 +125,10 @@ def execute_exception_outcome(
     """把执行期异常映射为公开（kind, error_code）；不读取异常内容。"""
 
     read_only = effect_class is EffectClass.READ_ONLY
+    if type(error) is OutcomeValidationError:
+        reason = _rejection_reason(error)
+        code = f"executor_output_{reason}" if read_only else f"write_output_{reason}_unknown"
+        return ("failed" if read_only else "unknown"), code
     if isinstance(error, UncertainEffectError):
         return "unknown", _UNCERTAIN_EFFECT
     if isinstance(error, TimeoutError):
@@ -142,8 +150,21 @@ def execute_exception_outcome(
 def reconcile_exception_code(error: BaseException) -> str:
     """把对账期异常映射为公开error_code；不读取异常内容。"""
 
+    if type(error) is OutcomeValidationError:
+        reason = _rejection_reason(error)
+        return f"reconciliation_output_{reason}"
     if isinstance(error, TimeoutError):
         return _RECONCILE_TIMEOUT
     if isinstance(error, asyncio.CancelledError):
         return _RECONCILE_CANCELLED
     return _RECONCILE_ERROR
+
+
+def _rejection_reason(error: OutcomeValidationError) -> OutcomeRejectionReason:
+    """只允许内核有限原因，拒绝扩展属性类型或伪造的任意分类字符串。"""
+
+    values = vars(error)
+    reason = values.get("reason") if type(values) is dict else None
+    if type(reason) is not str or reason not in {"invalid", "limit", "timeout"}:
+        return "invalid"
+    return cast(OutcomeRejectionReason, reason)

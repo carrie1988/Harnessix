@@ -1,6 +1,6 @@
 {
   "additionalProperties": false,
-  "description": "宿主持有的终态投影预算，不能由模型参数或Provider返回值修改。",
+  "description": "宿主持有的终态返回/投影预算，不能由模型参数或回调返回值修改。",
   "properties": {
     "spec_version": {
       "const": "harnessix.action-output-budget/v1",

@@ -1,4 +1,4 @@
-"""Owner投影的序列化前预算；不替代执行器及Owner内部工作量限制。"""
+"""Action返回值与Owner投影的序列化前预算；不替代回调内部工作量限制。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from harnessix.execution.contracts import ExecutionContract
 
 
 class ActionOutputBudget(ExecutionContract):
-    """宿主持有的终态投影预算，不能由模型参数或Provider返回值修改。"""
+    """宿主持有的终态返回/投影预算，不能由模型参数或回调返回值修改。"""
 
     spec_version: Literal["harnessix.action-output-budget/v1"] = "harnessix.action-output-budget/v1"
     max_bytes: int = Field(default=1024 * 1024, ge=1, le=1024 * 1024)

@@ -17,11 +17,20 @@ from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRo
 from harnessix.trusted_actions.public_errors import PublicActionStage
 
 FailureFamily = Literal["custom", "patch", "git", "process", "eval", "mcp", "skill"]
-PUBLIC_FAILURE_POLICY_VERSION = "harnessix.public-action-failure/v1"
+PUBLIC_FAILURE_POLICY_VERSION = "harnessix.public-action-failure/v2"
 
 # 内核生成的分类同样需要在恢复投影时保留；不接受任意error_code前缀。
 _COMMON_CODES = frozenset(
     {
+        "executor_output_invalid",
+        "executor_output_limit",
+        "executor_output_timeout",
+        "write_output_invalid_unknown",
+        "write_output_limit_unknown",
+        "write_output_timeout_unknown",
+        "reconciliation_output_invalid",
+        "reconciliation_output_limit",
+        "reconciliation_output_timeout",
         "action_failed",
         "action_effect_unknown",
         "action_manual_intervention",
