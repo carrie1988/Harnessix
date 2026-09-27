@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 24
-code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
+version: 25
+code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
 owners:
   - core
 modules:
@@ -1609,3 +1609,26 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 | 3 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 将Skill现行事实下沉到独立模块设计，并明确读取事件、Secret Guard、跨账本关联和Definition生命周期缺口 |
 | 2 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 将MCP现行事实下沉到独立模块设计并更新交叉引用 |
 | 1 | `a6c2082c40bd159ea00e16ada877bb2dc03088bc` | 2026-09-12 | 建立Trusted Actions现行模块设计，覆盖宿主Binding、资源/Policy、Execution/Approval、Route状态、SQLite Hash链、取消/恢复、扩展端口和MCP/Skill/Hook/Git消费路径 |
+
+
+## 51. 成功Owner投影与序列化前预算（0.9.4a）
+
+配置Output Provider的成功和失败返回值共用[`validate_public_projection`](../../src/harnessix/trusted_actions/public_outcomes.py)：
+除顶层artifact外的原摘要必须匹配Audit output_sha256，完整[`ArtifactRef`](../../src/harnessix/artifacts/contracts.py)
+必须匹配artifact_sha256。Process/Eval还必须满足正式DTO、计划profile/process_id和终态语义；
+成功Process要求零退出，Eval非零退出仍是基础设施成功且passed=false。摘要相等不能替代业务语义。
+
+[`_project_output`](../../src/harnessix/trusted_actions/agent_gateway_output.py)给Owner回调和后置校验独立10秒
+协作式期限；[`ActionOutputBudget / bounded_projection`](../../src/harnessix/trusted_actions/output_budget.py)在
+通用JSON编码器之前限制1MiB、64层、10256节点及128-bit整数，拒绝环、扩展类型、非法键、NaN和
+代理项；通过后复制有界JSON，避免返回原对象别名。节点含字典键，根深度为1。
+
+投影不匹配、资源越界和本层超时分别公开固定output_mismatch/output_limit/output_timeout码。
+CancelToken与父Task取消原样传播并回收子Task。Owner自己抛出的TimeoutError但本层未过期仍按
+既有output_failed归一。效果已经发生时，Audit保持SUCCEEDED；写反馈无法确认导致Session
+INTERRUPTED，不允许因此重新Execute。Runtime故障终结查询优先补偿一次，保存结果后resume稳定。
+
+完整架构、时序、数据流、字段、伪代码、测试和边界见[详细设计](../changes/m09-4a-success-output-projection-boundary.md)、
+[ADR 0094](../adr/0094-audit-bound-bounded-owner-projection.md)及[冻结报告](../validation/owner-projections-2026-09-27-v1/README.md)。
+未配置Provider的成功JSON、执行器原始Outcome序列化、Owner内部预算及不协作同步阻塞仍开放；
+本层不是硬杀扩展进程的Sandbox，不宣称整体0.9.4a完成。

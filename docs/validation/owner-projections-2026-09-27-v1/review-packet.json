@@ -1,0 +1,29 @@
+{
+  "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "new_automation_created": false,
+  "no_real_model_calls": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "pywin32 12 Archive restricted-license decision",
+    "raw Executor outcome serialization/CPU budget",
+    "unconfigured successful output and other public boundaries",
+    "Owner internal budgets and noncooperative synchronous work",
+    "TM-01 through TM-13 acceptance",
+    "remote MCP identity/OAuth/managed egress",
+    "real three-platform install/Beta",
+    "real Provider release validation"
+  ],
+  "required_review_focus": [
+    "all configured Provider projections match Audit summary and formal ArtifactRef SHA",
+    "Process/Eval success semantics even with matching hash",
+    "native JSON inspection precedes general serialization/DTO/hash",
+    "cancel and callback timeout collect child tasks without reexecution",
+    "Runtime query-first compensation once vs stable saved-result resume",
+    "no new dependency edges, thresholds or cycle waivers",
+    "clean archive artifacts exclude untracked attack draft"
+  ],
+  "slice": "SEC-094-A4 bounded successful Owner projection"
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 99
-code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
+version: 100
+code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
 owners:
   - core
 modules:
@@ -485,7 +485,10 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [冻结报告](validation/gateway-errors-2026-09-27-v1/README.md)记录4113 passed/32 skipped、57专项与结构化结果已确认缺口。
   [结构化失败整改](changes/m09-4a-returned-failure-boundary.md)已实现有限码、新Audit归一、正式Process/Eval摘要、失败Provider正常返回再验证及旧链兼容；
   [专项冻结报告](validation/returned-failures-2026-09-27-v1/README.md)记录4220 passed/32 skipped、107专项及干净4492a66 Wheel/sdist，当前新合同CI仍待后台验证；
-  成功业务输出、返回值预算、Store与其他公开边界的完整审查仍开放，不标记0.9.4a完成；
+  [成功Owner投影](changes/m09-4a-success-output-projection-boundary.md)已补双摘要/正式引用、Process/Eval成功语义、序列化前预算、独立期限和取消回收；
+  [冻结报告](validation/owner-projections-2026-09-27-v1/README.md)区分专项、完整回归、独立旧版负例及新代码CI状态。
+  前序e748a7d的[CI 36295859840](https://github.com/carrie1988/Harnessix/actions/runs/36295859840)已终态：Windows/macOS/文档/容器成功，Python3.12许可证12件失败、Python3.13取消；不称矩阵通过。
+  未配置Provider的成功JSON、执行器原始返回值预算、Owner内部同步阻塞及Store/其他公开边界仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
   [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。

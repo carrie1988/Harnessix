@@ -1,0 +1,158 @@
+{
+  "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "d2e39f25c480bc497dc0233000e98670f59265399f29b1b0b78e4f400d378386",
+      "size_bytes": 9456
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "75c6364611721f35bd797019d57be27f3b13e8e464368dca761b8b24769dc851",
+      "size_bytes": 1238
+    },
+    {
+      "path": "projection-facts.json",
+      "sha256": "180b123f49c7773c0b89b5586f293eb6ca4283d6c269696c37706454e046ba9d",
+      "size_bytes": 1529
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "fa7a5c63fbfb28d6b77270750389973207413fcd71a76891be958e5ad60c34a7",
+      "size_bytes": 1274
+    },
+    {
+      "path": "verification.json",
+      "sha256": "f9fdc314ec202767c9f5aa44b88351f4c9e5549793288680fead27f83cf2494d",
+      "size_bytes": 4856
+    }
+  ],
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "docs/baselines/readability-0.9.0-final.json",
+      "sha256": "9506219c1e32da6e8f22431e7508cd228c8e6b99767fe69a39b925967bc7b5bc"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "governance/readability-policy-v1.json",
+      "sha256": "b5a145762c1594346413fed897d505a3f3dedb7120551635d52f95af98d70740"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "scripts/generate_specs.py",
+      "sha256": "5d6deac2363da0b29ae9aa3b1569673f057af6214edd22d0c45530db011d4fc7"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "spec/action-output-budget-v1.schema.json",
+      "sha256": "138f76649c8eeb14b5d05a9648864f2babc613e24eaad384185873553567aebf"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/agent/cancellation.py",
+      "sha256": "e5e22739f98e3e095113e154fd5640c60dbb53a7e882f59b40efbe311fc6b6e0"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/agent/trusted_action_session.py",
+      "sha256": "e5ad2dcacbae3673d2eaadb2817d7b63b25e39d18b6835c5e9981269f8721662"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/artifacts/contracts.py",
+      "sha256": "c57c957d70001d001ca26872ca05dc23af5238af34d1b3c60a6b406b62b7ec8a"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/execution/contracts.py",
+      "sha256": "6e6d5932bf1c762b7d01986d16f09552f166d2aff16d84fd2068b7a13ab38e41"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/processes/public_output.py",
+      "sha256": "827320c1fc9731e280431337b05f4034a25a17bc7afbe2faa1f71aa904821a05"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/product_config/eval_action.py",
+      "sha256": "3d5c3374c7b1a9bc559f0b8ef93fe45fb3f11a2c1e224609aea8b123d6527bc4"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/product_config/process_action.py",
+      "sha256": "18c96541c73e37d53dd326d69c41d694ae0e66ebe1601a8c1aa8446fadc6b20f"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/agent_gateway_output.py",
+      "sha256": "743304699d8018ac26eab5cb4b0b0d044c4f0d4b8eb9d3fc7ec7d8d1f1e7c498"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/contracts.py",
+      "sha256": "85adc84c38615f91fa9d2479e3922db043c296bfc2d8fd3345fc8fdffcc0b70e"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/operation_router.py",
+      "sha256": "bf023e8a1745250ba4ea451e40156793bf42a5d183e764d9a0e2b8656238d6b6"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/output_budget.py",
+      "sha256": "03210cd36890c15091424e2088c862e33b290eafb50bdbf9d575c42295c5dd8c"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/public_errors.py",
+      "sha256": "80fb52265d8420e7951f41f30576d5c6c18d2f427f420aa5db7329813b5fad10"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "src/harnessix/trusted_actions/public_outcomes.py",
+      "sha256": "783c16169807ef1cddb6cb9fde919cbef751ebd6722083be9c082a713ef6ccf3"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_agent_gateway.py",
+      "sha256": "61e44cfb1738e8ab2caf3ebedf35b3bcc0f94c8f8737e8ea68ecc3b4d7a70b0e"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_output_budget.py",
+      "sha256": "e77a07b2e12bedd5a35f4f4926c540fac5dfad00b300b26491773522601366bb"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_process_failure_projection.py",
+      "sha256": "ed93e84052ced8334056fab7bdfc9bea99c544380e890d544fc8ce17ed8fbdf6"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_process_success_projection.py",
+      "sha256": "c8591c87174ce8dd675675c235e4f57986180f7f86c18c866645ee5b43d6b87c"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_projection_lifecycle.py",
+      "sha256": "9f5c48ce058e529df95c4042a0bbdd6fb7ae137709803f179eea43450e83a8dc"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_schemas.py",
+      "sha256": "e132af59a6f2621c1817311f1358b9d447a0c8730bd595b63aca995e6f887677"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_success_projection_boundaries.py",
+      "sha256": "283c04c90bce3f4d8dd5206521570c7066191490c3b4a3dccd1c1d81a6e78bc2"
+    },
+    {
+      "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+      "path": "tests/trusted_actions/test_success_projection_runtime.py",
+      "sha256": "447ba84d9e53fa3ac03f2cd92615296e64be33073c0c9e1af8176d5d97b594af"
+    }
+  ]
+}

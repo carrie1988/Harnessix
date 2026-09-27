@@ -1,0 +1,43 @@
+{
+  "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+  "current_ci_status": "not_started_at_freeze",
+  "prior_revision": {
+    "conclusion": "failure",
+    "confirmed_failure": "license gate: 12 Archive, exit 1",
+    "failure_log": {
+      "size_bytes": 32140,
+      "stdout_sha256": "8ec438439082e59bb81981ccceb3676fb845637ab58992fb0f36ee6ea8521b96",
+      "stdout_summary": "python (3.12)\tUNKNOWN STEP\t2026-09-27T04:59:05.3583118Z Cleaning up orphan processes"
+    },
+    "head_sha": "e748a7d6dcae9fd35291d6c0f3a4045959e3d9bc",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "windows-trusted-execution"
+      },
+      {
+        "conclusion": "cancelled",
+        "name": "python (3.13)"
+      },
+      {
+        "conclusion": "success",
+        "name": "container-sandbox"
+      },
+      {
+        "conclusion": "failure",
+        "name": "python (3.12)"
+      },
+      {
+        "conclusion": "success",
+        "name": "coding-tools-macos"
+      },
+      {
+        "conclusion": "success",
+        "name": "documentation"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36295859840"
+  },
+  "prior_success_is_current_acceptance": false
+}

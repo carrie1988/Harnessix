@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
 owners:
   - core
 modules:
@@ -25,7 +25,7 @@ supersedes: []
 
 ## 状态与背景
 
-实施候选。完整接口、数据、时序、失败和测试见[详细设计](../changes/m09-4a-success-output-projection-boundary.md)。
+接受；不代表发布门禁已关闭。完整接口、数据、时序、失败和测试见[详细设计](../changes/m09-4a-success-output-projection-boundary.md)。
 成功Outcome只是动作效果事实，不授权Provider追加任意内容。前序版本14个负例证明成功投影跳过
 验证，且JSON大小检查若位于序列化之后不能约束进一步分配与类型回调。
 

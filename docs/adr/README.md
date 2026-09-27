@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 28
-code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
+version: 29
+code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
 owners:
   - core
 modules:
@@ -21,7 +21,7 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有93份编号ADR，均已接受。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+截至标注代码版本，共有94份编号ADR，均已接受。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
 迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0091继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter、确定性完整离线Suite组合、受控真实Provider完整Suite、本地Agent传输生命周期、共库Plan-first维护与备份恢复，以及Action Owner Fence和有界Reconcile边界。
 
 ## 2. 状态语义
@@ -33,7 +33,7 @@ supersedes: []
 | `superseded` | 后续ADR明确整体取代本决策 | 保留历史并双向登记取代关系 |
 | `deprecated` | 决策保留兼容背景但禁止新实现采用 | 新增实现不得继续依赖 |
 
-当前93份已接受ADR没有发现被后续ADR**整体**取代的记录；ADR 0092已随0.9.3d三平台正式负载验收接受；当前发布仍要求对应Revision的新证据。ADR 0005的macOS/Linux平台条款由
+当前94份已接受ADR没有发现被后续ADR**整体**取代的记录；ADR 0092已随0.9.3d三平台正式负载验收接受；当前发布仍要求对应Revision的新证据。ADR 0005的macOS/Linux平台条款由
 ADR 0063扩展到Windows，但其本地优先产品方向仍有效，因此两者均保持`current`；后续若发生整体取代，必须
 同时更新旧ADR的YAML状态、新ADR的`supersedes`和本索引。
 
@@ -200,6 +200,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0091 | [Action Runtime采用双层Owner栅栏、持久Operation期限与只对账恢复](0091-action-runtime-fencing-and-bounded-reconciliation.md) | 接受并由0.9.3c实现；修复版Revision `33fcf02`由CI 35691402329六实例验收关闭 |
 | 0092 | [本地Coding Agent长期运行采用可重算证据与独立阈值复验](0092-reproducible-local-soak-and-release-thresholds.md) | 已接受；0.9.3d三平台正式负载与独立阈值复验已关闭 |
 | 0093 | [内核持有有限公开失败合同，Owner保留合法诊断归档](0093-kernel-owned-public-failure-contract.md) | 已接受；新Audit失败归一与Gateway恢复再验证，无v1指纹迁移 |
+| 0094 | [成功Owner投影绑定审计双摘要并在序列化前有界](0094-audit-bound-bounded-owner-projection.md) | 已接受；成功/失败投影共用合同、资源与时限，不改变动作事实 |
 
 ### 4.9 可读性与结构治理
 

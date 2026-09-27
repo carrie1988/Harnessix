@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 4492a66bd41314d35dd20999f1cf0f7d9a2cf1ac
+version: 17
+code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
 owners:
   - core
 modules:
@@ -1609,3 +1609,15 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 详细架构、字段、正常/失败/恢复时序、兼容与测试映射见
 [结构化失败详设](../changes/m09-4a-returned-failure-boundary.md)及[正式回归](../../tests/trusted_actions/test_process_failure_projection.py)。
 成功Eval测试不通过仍为业务结果，不改变FAILED/UNKNOWN恢复语义，不增加新部署组件。
+
+
+## 34. 成功Process与Eval反馈的Owner投影合同
+
+[`PublicProcessOutputSummary / PublicEvalOutputSummary`](../../src/harnessix/processes/public_output.py)仍只包含
+有界元数据，诊断字节继续由Owner归档。Gateway成功投影不再跳过校验：要求计划profile、process_id、
+正式Artifact引用和审计双SHA一致。Process零退出成功，Eval非零退出仍SUCCEEDED但passed=false。
+
+投影独立预算为1MiB/64层/10256节点/10秒，不改变Process运行、I/O收集和归档自身预算；不能用
+投影超时证明Process已失败。实际动作Audit保持事实，Runtime反馈失败走查询优先终结，不重启命令。
+参见[成功输出投影详设](../changes/m09-4a-success-output-projection-boundary.md)及
+[正式Lease形状回归](../../tests/trusted_actions/test_process_success_projection.py)。

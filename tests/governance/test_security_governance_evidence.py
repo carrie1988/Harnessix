@@ -112,6 +112,37 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/trusted_actions/test_returned_failure_runtime.py",
             },
         ),
+        (
+            "owner-projections-2026-09-27-v1",
+            "projection-facts.json",
+            {
+                "src/harnessix/trusted_actions/output_budget.py",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/public_outcomes.py",
+                "src/harnessix/trusted_actions/public_errors.py",
+                "src/harnessix/trusted_actions/operation_router.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/processes/public_output.py",
+                "src/harnessix/artifacts/contracts.py",
+                "src/harnessix/product_config/process_action.py",
+                "src/harnessix/product_config/eval_action.py",
+                "src/harnessix/execution/contracts.py",
+                "tests/trusted_actions/test_output_budget.py",
+                "tests/trusted_actions/test_success_projection_boundaries.py",
+                "tests/trusted_actions/test_projection_lifecycle.py",
+                "tests/trusted_actions/test_process_success_projection.py",
+                "tests/trusted_actions/test_success_projection_runtime.py",
+                "tests/trusted_actions/test_process_failure_projection.py",
+                "tests/trusted_actions/test_agent_gateway.py",
+                "tests/trusted_actions/test_schemas.py",
+                "spec/action-output-budget-v1.schema.json",
+                "scripts/generate_specs.py",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -241,3 +272,26 @@ def test_returned_failure_bundle_keeps_scope_and_release_blockers_explicit() -> 
     )
     assert sum(item["conclusion"] == "success" for item in ci["previous_revision"]["jobs"]) == 4
     assert ci["previous_python_failure"]["blocked_archive_count"] == 12
+
+
+def test_owner_projection_evidence_preserves_unclosed_scope_and_effect_facts():
+    bundle = ROOT / "docs/validation/owner-projections-2026-09-27-v1"
+    facts = json.loads((bundle / "projection-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert facts["executor_calls_per_scenario"] == 1
+    assert facts["reconciliation_calls_per_scenario"] == 0
+    assert facts["runtime_projection_calls_before_saved_result"] == 2
+    assert facts["gateway_single_attempt_projection_calls"] == 1
+    assert facts["audit_success_preserved"] is True
+    assert facts["raw_executor_output_budget_closed"] is False
+    assert facts["non_cooperative_provider_hard_kill_claimed"] is False
+    assert facts["reproducible_build_claimed"] is False
+    assert facts["untracked_security_draft_excluded"] is True
+    assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
+    assert ci["prior_revision"]["conclusion"] == "failure"
+    assert sum(item["conclusion"] == "success" for item in ci["prior_revision"]["jobs"]) == 4

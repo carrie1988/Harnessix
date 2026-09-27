@@ -1,0 +1,42 @@
+{
+  "artifact_build_exit_code": 0,
+  "artifact_scan": {
+    "complete": true,
+    "exit_code": 0,
+    "fixed_rule_hits": 0,
+    "input_count": 2268,
+    "size_bytes": 101,
+    "stdout_sha256": "fc2e1897df45c4d498034d374129b478a8157b23cfa2c8c41ec7fd4cfbffd8d1",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2268个输入完整覆盖且固定规则零命中"
+  },
+  "artifacts": [
+    {
+      "kind": "wheel",
+      "members": 374,
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "e6994262ba6e10ba4d268a828af642b2c67bfdf3f1250a55cd7e3f9f6346685e",
+      "size_bytes": 934905,
+      "untracked_security_draft_present": false
+    },
+    {
+      "kind": "sdist",
+      "members": 2246,
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "a214a0528a20cfdecc2af182bfd87cb22a40dfde26f55ae34ac56ab70c6202d2",
+      "size_bytes": 6926043,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "audit_success_preserved": true,
+  "clean_build_source": "git archive 7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+  "code_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+  "executor_calls_per_scenario": 1,
+  "gateway_single_attempt_projection_calls": 1,
+  "non_cooperative_provider_hard_kill_claimed": false,
+  "owner_byte_proof_replaced_by_hash": false,
+  "raw_executor_output_budget_closed": false,
+  "reconciliation_calls_per_scenario": 0,
+  "reproducible_build_claimed": false,
+  "runtime_projection_calls_before_saved_result": 2,
+  "untracked_security_draft_excluded": true
+}
