@@ -1,0 +1,114 @@
+{
+  "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+  "diagram_visual_review": {
+    "design_diagrams": 4,
+    "external_images_not_packaged": true,
+    "passed": true,
+    "report_diagrams": 1,
+    "scope": "changed builtin design and validation report only"
+  },
+  "external_model_requests": 0,
+  "full_regression": {
+    "status": "pending_stable_tree_run"
+  },
+  "independent_negative_replay": {
+    "exit_code": 1,
+    "failed": 35,
+    "passed": 15,
+    "runtime_module_matches_archive": true,
+    "seconds": 1.16,
+    "size_bytes": 12246,
+    "source_revision": "9ffbb846e63f10cb8c22dbea8ec2abe3a877c3cf",
+    "stdout_sha256": "ba34e80702b3ce7283bb467c509d9d8fb20acabb1bccb3c83e40efd711b3b5af",
+    "stdout_summary": "35 failed, 15 passed in 1.16s"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "make_check_passed": false,
+  "new_automation_created": false,
+  "related_regression": {
+    "before_final_shared_schema_comments_and_format": true,
+    "overlaps_full_regression": true,
+    "passed": 798,
+    "seconds": 31.68,
+    "size_bytes": 981,
+    "stdout_sha256": "36ba9a4dd5af4fd81f1125ba46786f484fb3fc8ae545875cd65879a475b90e0d",
+    "stdout_summary": "798 passed in 31.68s"
+  },
+  "special_regression": {
+    "overlaps_full_regression": true,
+    "passed": 167,
+    "seconds": 5.65,
+    "size_bytes": 260,
+    "stdout_sha256": "bb819e302b0af043c24445937305ec8d406606d802b1e2d02f2d368e0e288d03",
+    "stdout_summary": "167 passed in 5.65s"
+  },
+  "static_checks": {
+    "contracts": {
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation_render": {
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "1469dc7022a913ed7e106090a0146f8cacb7a63c1b15edaeb38f93afe12d7032",
+      "stdout_summary": "文档门禁通过：300份文档、7959条链接、725幅Mermaid、26个源码包、34个变化路径"
+    },
+    "governance_preflight": {
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "dc2b62ae097ddb8382145cff297599190c678b7053c63da84b7abf55b0b61bed",
+      "stdout_summary": "12 passed in 1.54s"
+    },
+    "mypy": {
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "f54b94bdf0b2914927b3d1ef02f2bf1de8ebc56e456f0fcf7b7e7f4a06f811fd",
+      "stdout_summary": "Success: no issues found in 334 source files"
+    },
+    "readability": {
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff": {
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "ruff_format": {
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "ac9a94f1a0a17e149c58e86b90342b20bd986175f4edbc136585411546dbfad6",
+      "stdout_summary": "1104 files already formatted"
+    },
+    "sbom": {
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret_self_check": {
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    }
+  }
+}

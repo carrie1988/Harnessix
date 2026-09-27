@@ -1,0 +1,193 @@
+{
+  "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "c1d74f454795c16c7393bd2607265989399766000e9bc666ddf24dfe0cdf9834",
+      "size_bytes": 7284
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "a13a53fd5468ca47f7035fcb5849c1ac807e113fe94d8ccbd5ee4e5ff9759561",
+      "size_bytes": 1094
+    },
+    {
+      "path": "contract-facts.json",
+      "sha256": "3519913e891baa801e8b777338245f1a306b15811047e66328a70e30358ea965",
+      "size_bytes": 3243
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "7f35ea87304d57d232b60463b8c37eff7044ad760eb041e732a8cc7e46fa7776",
+      "size_bytes": 1029
+    },
+    {
+      "path": "verification.json",
+      "sha256": "43e24db120267af7e380ee0194537919e7c44631eacf2b6d6aed0cdde57a52f0",
+      "size_bytes": 4064
+    }
+  ],
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "docs/baselines/readability-0.9.0-final.json",
+      "sha256": "0d65fbe729d4f0a47ab666debd4d6778b830de1e0d2dad9fbfd3f395b8154a89"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "governance/readability-policy-v1.json",
+      "sha256": "b5a145762c1594346413fed897d505a3f3dedb7120551635d52f95af98d70740"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "scripts/generate_specs.py",
+      "sha256": "6555df150b54819deb60c5ee3d76d1477ba2c45da84fa7c9725b9a73f125bf65"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "spec/git-push-receipt-v1.schema.json",
+      "sha256": "51823681d8aa40f994711e8be361c1396b127a07d738b5f3e5e31c0cb30d2711"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "spec/mcp-tool-call-output-v1.schema.json",
+      "sha256": "9a68a31c9bc785b9680f05a43d6f0fb090635ccd1e7ea1952d8284e526a97131"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "spec/skill-content-v1.schema.json",
+      "sha256": "9fbb8599f81d7dca00ef90603fdc4919e72475481dd1f0ad9647e6241bb31e66"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "spec/skill-resource-content-v1.schema.json",
+      "sha256": "679249e21838ececf20ce69e6bae6385b6b7ed256ba5d52b4b72f7141e32bc17"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "spec/workspace-patch-output-v1.schema.json",
+      "sha256": "02312bb87d49f69f3a73c74f0bc32575a0828af674ee3a28710a4ad903de69ca"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/agent/cancellation.py",
+      "sha256": "e5e22739f98e3e095113e154fd5640c60dbb53a7e882f59b40efbe311fc6b6e0"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/agent/runtime.py",
+      "sha256": "622c17bd56c1557db71c19e55403f3f83fe6716dcd255812338bb462972745c4"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/agent/trusted_action_session.py",
+      "sha256": "e5ad2dcacbae3673d2eaadb2817d7b63b25e39d18b6835c5e9981269f8721662"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/delivery/git_contracts.py",
+      "sha256": "e11e6bb63758cdbbca2cd7c77b8108df12a082b60cda46a29ddbd9113bf83a8e"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/delivery/trusted_action.py",
+      "sha256": "f692c9195d3045b984a95b23ab7d070bf839defb3b00aa1bb40a2c1cf82ff4cb"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/delivery/trusted_action_contracts.py",
+      "sha256": "c9ffa18775fe43c0a8e114ed0d9234ce552c9e5fdb97677eb5b0072c4fdb8010"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/execution/public_tool_contracts.py",
+      "sha256": "781c3ad88d9608646532863ee46179f06c090cf36b9c4de493ae142e9f5dfa14"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/mcp/contracts.py",
+      "sha256": "98bbeded14b3a3e4458e0847e48ca82a1c27e6282a975e828522bb19e042412f"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/mcp/runtime.py",
+      "sha256": "1294fe67d63b607323061f8e9a5c5185b577055adcb1ccfd8af8f6ae9593f3fc"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/processes/public_output.py",
+      "sha256": "827320c1fc9731e280431337b05f4034a25a17bc7afbe2faa1f71aa904821a05"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/skills/contracts.py",
+      "sha256": "29285d4ab346902151d7e7f99df8899a3dbb63ba7739be89bf981b0c4ff3ef49"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/skills/runtime.py",
+      "sha256": "543e68b7f307d63fab3f5f04ca4bb5280a8bec3fcba42e3cefd5f5c8854837a0"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/agent_gateway_output.py",
+      "sha256": "4e7c2c86a826d4134119dfe882092142b7a5364f325f7a6067d4f98e6ca8b893"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/builtin_success.py",
+      "sha256": "b23ac61ab4f2b791b2674c87272e8129a1e7d754c1bf199c10b1e14a598c7b70"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/contracts.py",
+      "sha256": "85adc84c38615f91fa9d2479e3922db043c296bfc2d8fd3345fc8fdffcc0b70e"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/output_budget.py",
+      "sha256": "c60954857c35d850e6f42c43ea194d51af8ce567d855a92b57647087a8721d91"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/public_errors.py",
+      "sha256": "7f3240ae9c547b6d7626307fc58087aa60e1004ce442b1d0912f9995621f611c"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/public_outcomes.py",
+      "sha256": "447cb71aff375160ea7fdba3f6178da4d472a67deb6ba952d3c3bb9c851f2111"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "src/harnessix/trusted_actions/router.py",
+      "sha256": "b4ca375c089229c6ba3e01aa6f7c9ee0189706fcd871105ff2a32c4ca764f379"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "tests/execution/test_public_tool_contracts.py",
+      "sha256": "25c6891069d74030f785a3dc903967796a74eb4df43abbb42ae970751d53abae"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "tests/trusted_actions/test_builtin_success_contracts.py",
+      "sha256": "ee2d5c114ffd50fba65cf305d8c71e9cbf9dd6f2ccc444e584c6fc8a3f1643ad"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "tests/trusted_actions/test_builtin_success_runtime.py",
+      "sha256": "c30cbd26536c59b21dbfb8a348c308dcc2852cf7ffba26596dcf18650ab817f3"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "tests/trusted_actions/test_inline_success_lifecycle.py",
+      "sha256": "1bfb4e15090d1fecf951e8f9253a60e474e1f1c828d8dd27ada9b745e3f6094b"
+    },
+    {
+      "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+      "path": "tests/trusted_actions/test_process_success_projection.py",
+      "sha256": "b0e6de2aca9146d9ccdbe6120704eba5ccbd774189ebed6a5ea8ab4311fcdd1d"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 3
+code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
 modules:
@@ -1725,3 +1725,20 @@ flowchart TD
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 1 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 建立Skill现行模块设计，覆盖本地来源、发现预算、Frontmatter、目录摘要、渐进加载、安全Reader、SQLite事件、Action Gateway、Secret边界、失败恢复、平台和生产差距 |
+
+## 正式来源成功反馈合同与纯合同层
+
+[完整详细设计](../changes/m09-4a-builtin-success-contracts.md)给出架构、流程、时序、数据流、五字段Patch摘要、
+Git批准意图、MCP封套、Skill目录/清单/路径绑定及Process/Eval语义。
+[共享DTO](../../src/harnessix/execution/public_tool_contracts.py)只定义字段与值约束，
+Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Patch新Schema](../../spec/workspace-patch-output-v1.schema.json)
+记录新增正式五字段摘要，不改变生产输出JSON形状。Producer仍负责实际效果、Secret与工件所属域。
+
+[来源校验](../../src/harnessix/trusted_actions/builtin_success.py)使用冻结Plan/Binding，而非正文自报version选择权限；
+[Gateway](../../src/harnessix/trusted_actions/agent_gateway_output.py)为内联正文补齐预算、当前Audit Hash、正式摘要、
+同步期限及取消协作。已有成功摘要在Owner发布前验证，恢复重建后再次验证；公开故障不改Audit SUCCEEDED，
+不Execute/Reconcile确定成功。无Owner且正文缺失的恢复只投影成功效果元数据，Turn仍保留固定投影失败。
+
+专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
+六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
+custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。

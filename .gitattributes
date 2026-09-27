@@ -50,3 +50,6 @@ docs/validation/returned-failures-2026-09-27-v1/** -text
 docs/validation/owner-projections-2026-09-27-v1/** -text
 
 docs/validation/executor-output-2026-09-27-v1/** -text
+
+# 正式成功合同证据按原字节校验。
+docs/validation/builtin-success-2026-09-27-v1/** -text

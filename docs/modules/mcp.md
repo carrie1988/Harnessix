@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 991b6f267671f5a86870672e9c97a5fbb3991a39
+version: 3
+code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
 modules:
@@ -1609,3 +1609,20 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 |---|---|---|---|
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 启用DOC-1.6严格文档门禁；MCP产品能力边界不变 |
 | 1 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 建立MCP现行模块设计，覆盖Target、目录、Schema、SQLite、调用新鲜度、Trusted Action、UNKNOWN、反向Server、取消、部署、安全、测试和已知风险 |
+
+## 正式来源成功反馈合同与纯合同层
+
+[完整详细设计](../changes/m09-4a-builtin-success-contracts.md)给出架构、流程、时序、数据流、五字段Patch摘要、
+Git批准意图、MCP封套、Skill目录/清单/路径绑定及Process/Eval语义。
+[共享DTO](../../src/harnessix/execution/public_tool_contracts.py)只定义字段与值约束，
+Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Patch新Schema](../../spec/workspace-patch-output-v1.schema.json)
+记录新增正式五字段摘要，不改变生产输出JSON形状。Producer仍负责实际效果、Secret与工件所属域。
+
+[来源校验](../../src/harnessix/trusted_actions/builtin_success.py)使用冻结Plan/Binding，而非正文自报version选择权限；
+[Gateway](../../src/harnessix/trusted_actions/agent_gateway_output.py)为内联正文补齐预算、当前Audit Hash、正式摘要、
+同步期限及取消协作。已有成功摘要在Owner发布前验证，恢复重建后再次验证；公开故障不改Audit SUCCEEDED，
+不Execute/Reconcile确定成功。无Owner且正文缺失的恢复只投影成功效果元数据，Turn仍保留固定投影失败。
+
+专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
+六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
+custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。

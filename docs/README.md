@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 124
-code_revision: 7fd1187f07fa415ecf48211bc0149aff0d7a6191
+version: 125
+code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
 modules:
@@ -250,3 +250,7 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - `deprecated`：仍保留兼容背景但不应继续采用。
 
 仓库内Markdown均受DOC-1.6严格门禁约束。文档是否可作为现行依据仍必须同时核对YAML状态、`code_revision`、当前模块设计和验证证据，不能仅凭正文中的“完成”字样判断。
+
+- [正式来源成功正文合同与内联投影详设](changes/m09-4a-builtin-success-contracts.md)：共享DTO、计划绑定、发布前校验及保留效果事实；custom和整体发布权限不追认关闭。
+
+- [正式来源成功合同与内联投影验收](validation/builtin-success-2026-09-27-v1/README.md)：固定实现输入、旧版负例、专项/完整回归及未关闭范围。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 9
+code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
 modules:
@@ -1626,3 +1626,20 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 接入默认Trusted Workspace Patch，定义Action/Delivery同身份、Review Artifact、逐成员提交、取消与只观察恢复 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows已知平台限制；Delivery运行合同不变 |
 | 1 | `ac05a74fb953ff6f56c8bc8a6736dd2f95fe9ce7` | 2026-09-12 | 建立Delivery现行模块设计，覆盖Workspace Transaction、私有Blob、POSIX发布与恢复、Rollback、Diff、Git Worktree/Checkpoint/Commit、Push统一Route和生产缺口 |
+
+## 正式来源成功反馈合同与纯合同层
+
+[完整详细设计](../changes/m09-4a-builtin-success-contracts.md)给出架构、流程、时序、数据流、五字段Patch摘要、
+Git批准意图、MCP封套、Skill目录/清单/路径绑定及Process/Eval语义。
+[共享DTO](../../src/harnessix/execution/public_tool_contracts.py)只定义字段与值约束，
+Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Patch新Schema](../../spec/workspace-patch-output-v1.schema.json)
+记录新增正式五字段摘要，不改变生产输出JSON形状。Producer仍负责实际效果、Secret与工件所属域。
+
+[来源校验](../../src/harnessix/trusted_actions/builtin_success.py)使用冻结Plan/Binding，而非正文自报version选择权限；
+[Gateway](../../src/harnessix/trusted_actions/agent_gateway_output.py)为内联正文补齐预算、当前Audit Hash、正式摘要、
+同步期限及取消协作。已有成功摘要在Owner发布前验证，恢复重建后再次验证；公开故障不改Audit SUCCEEDED，
+不Execute/Reconcile确定成功。无Owner且正文缺失的恢复只投影成功效果元数据，Turn仍保留固定投影失败。
+
+专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
+六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
+custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。

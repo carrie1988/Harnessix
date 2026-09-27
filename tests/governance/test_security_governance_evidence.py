@@ -173,6 +173,44 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/trusted_actions/test_schemas.py",
             },
         ),
+        (
+            "builtin-success-2026-09-27-v1",
+            "contract-facts.json",
+            {
+                "spec/workspace-patch-output-v1.schema.json",
+                "spec/git-push-receipt-v1.schema.json",
+                "src/harnessix/mcp/contracts.py",
+                "src/harnessix/trusted_actions/output_budget.py",
+                "src/harnessix/trusted_actions/router.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/delivery/trusted_action.py",
+                "src/harnessix/trusted_actions/public_errors.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "scripts/generate_specs.py",
+                "tests/trusted_actions/test_process_success_projection.py",
+                "src/harnessix/delivery/git_contracts.py",
+                "src/harnessix/trusted_actions/public_outcomes.py",
+                "src/harnessix/processes/public_output.py",
+                "spec/skill-resource-content-v1.schema.json",
+                "spec/skill-content-v1.schema.json",
+                "docs/baselines/readability-0.9.0-final.json",
+                "src/harnessix/delivery/trusted_action_contracts.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/skills/contracts.py",
+                "tests/trusted_actions/test_inline_success_lifecycle.py",
+                "tests/execution/test_public_tool_contracts.py",
+                "spec/mcp-tool-call-output-v1.schema.json",
+                "src/harnessix/agent/cancellation.py",
+                "tests/trusted_actions/test_builtin_success_runtime.py",
+                "src/harnessix/skills/runtime.py",
+                "src/harnessix/trusted_actions/builtin_success.py",
+                "tests/trusted_actions/test_builtin_success_contracts.py",
+                "governance/readability-policy-v1.json",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/mcp/runtime.py",
+                "src/harnessix/execution/public_tool_contracts.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -349,6 +387,34 @@ def test_executor_output_evidence_distinguishes_declaration_and_confirmed_fact()
     assert facts["valid_small_success_json_public_authorization_closed"] is False
     assert facts["noncooperative_hard_kill_claimed"] is False
     assert facts["reproducible_build_claimed"] is False
+    assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
+
+
+def test_builtin_success_evidence_does_not_waive_custom_or_release_boundaries():
+    bundle = ROOT / "docs/validation/builtin-success-2026-09-27-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert facts["special_tests"] == 167 and facts["new_special_tests"] == 119
+    assert facts["prior_owner_tests"] == 48
+    assert facts["builtin_formal_contracts_checked"] is True
+    assert facts["inline_and_owner_checked"] is True
+    assert facts["raw_summary_checked_before_owner_publication"] is True
+    assert facts["owner_exports_are_same_class"] is True and facts["existing_schema_drift"] is False
+    assert facts["new_package_dependencies"] == facts["new_dependency_cycles"] == []
+    assert facts["confirmed_audit_success_preserved"] is True
+    assert facts["inline_fault_has_failed_turn_and_known_success_effect"] is True
+    assert facts["reexecutions_after_projection_failure"] == 0
+    assert facts["custom_public_authorization_closed"] is False
+    assert facts["secret_end_to_end_public_authorization_closed"] is False
+    assert facts["custom_gap_observation"]["observed_open_gap"] is True
+    assert facts["custom_gap_observation"]["acceptance_pass_claimed"] is False
+    assert facts["schema_migration"] is False and facts["hard_preemption_claimed"] is False
+    assert facts["readability_policy_relaxed"] is False
     assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
     assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
     assert ci["current_ci_status"] == "not_started_at_freeze"

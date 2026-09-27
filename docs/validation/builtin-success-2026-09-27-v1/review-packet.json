@@ -1,0 +1,26 @@
+{
+  "code_revision": "1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "12 restricted-license Archive",
+    "custom success body field authorization and migration",
+    "Secret end-to-end disclosure proof",
+    "Owner/Store/internal resource boundaries",
+    "TM numbered attacks",
+    "remote MCP identity/OAuth/managed egress",
+    "real installation/Beta",
+    "real Provider release proof"
+  ],
+  "required_review_focus": [
+    "native inline copy and current Audit Hash",
+    "strict builtin DTO and plan identity",
+    "pre-publication raw summary and recovery rebuilt summary",
+    "pure shared classes and unchanged public exports/schema/approved dependency graph",
+    "preserved confirmed Audit, no repeated Execute or Reconcile",
+    "actual failed Turn with known successful effect on inline recovery",
+    "custom and end-to-end Secret boundaries not claimed closed"
+  ]
+}
