@@ -11,7 +11,7 @@ from typing import Protocol, Self
 from pydantic import JsonValue
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.publication import BinaryStreamDecoder
+from harnessix.agent.publication import BinaryStreamDecoder, PublicTextStep
 from harnessix.execution.contracts import SecretVersionBinding
 from harnessix.secrets.provider import MAX_SECRET_BYTES, SecretMaterial, SecretProvider
 from harnessix.secrets.redaction import secret_patterns
@@ -236,6 +236,13 @@ def _capture_scope_materials(
         raise
 
 
+def _scope_patterns(materials: dict[str, SecretMaterial]) -> tuple[bytes, ...]:
+    patterns = secret_patterns(tuple(bytes(m.value) for m in materials.values()))
+    if sum(map(len, patterns)) > MAX_PATTERN_BYTES:
+        raise _unavailable()
+    return patterns
+
+
 class SecretPublicationScope:
     """显式宿主作用域；不枚举环境、不持久化值，关闭后拒绝解析或公开检查。"""
 
@@ -249,11 +256,7 @@ class SecretPublicationScope:
             raise _unavailable()
         try:
             self._materials = _capture_scope_materials(bindings, provider)
-            self._patterns = secret_patterns(
-                tuple(bytes(m.value) for m in self._materials.values())
-            )
-            if sum(map(len, self._patterns)) > MAX_PATTERN_BYTES:
-                raise _unavailable()
+            self._patterns = _scope_patterns(self._materials)
         except BaseException:
             self.close()
             raise
@@ -302,6 +305,13 @@ class SecretPublicationScope:
         """原JSON和正式解码双流共享预算，检查同一流跨Chunk值。"""
         self._ensure_open()
         _assert_binary_jsonl(body, self._patterns, decoder, checkpoint)
+
+    def begin_public_text_step(self, *, checkpoint: Callable[[], None]) -> PublicTextStep:
+        from harnessix.secrets.text_publication import SecretTextStep
+
+        self._ensure_open()
+        checkpoint()
+        return SecretTextStep(self._patterns, self._ensure_open)
 
     def output_redaction_values(self) -> tuple[bytes, ...]:
         """仅提供持久前保护原值副本；不授予目标进程任何环境注入权限。"""

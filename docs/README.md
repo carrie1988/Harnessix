@@ -268,3 +268,6 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - [正式二进制公开与持久前保护详设](changes/m09-4a-typed-binary-output-publication.md)：按用途解码、共享预算、Owner v2保护专用封套及效果元数据恢复。
 - [ADR-0097](adr/0097-typed-binary-publication-and-owner-protection.md)：正式二进制合同与原目标环境边界。
 - [类型化二进制验收](validation/typed-binary-publication-2026-09-28-v1/README.md)：独立旧版、真实本机Owner、产品消费链与固定测试树，不宣称整体0.9完成。
+
+- [模型流式文本与事件持久前保护详设](changes/m09-4a-model-text-publication.md)：原文安全前缀、步骤预算、事件批次和完整请求检查。
+- [ADR-0098](adr/0098-model-stream-publication-boundary.md)：不关闭历史授权或整体生产发布。

@@ -25,7 +25,7 @@ from tests.artifacts.helpers import step
 from tests.product_config.conftest import write_config
 
 
-@pytest.mark.parametrize("case", ["safe", "leak", "startup_failure"])
+@pytest.mark.parametrize("case", ["safe", "leak", "text_leak", "startup_failure"])
 async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
     tmp_path, config, monkeypatch, case
 ):
@@ -55,7 +55,9 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
             keys.append((definition.provider_id, key))
             monkeypatch.setenv("PRIMARY_API_KEY", "rotated-current-model-key")
             monkeypatch.setenv("BACKUP_API_KEY", "rotated-backup-model-key")
-            provider = ScriptedProvider([step(), answer("产品读取结束")])
+            provider = ScriptedProvider(
+                [answer(CANARY)] if case == "text_leak" else [step(), answer("产品读取结束")]
+            )
             providers.append(provider)
             return provider
 
@@ -78,10 +80,12 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
                     }:
                         break
                     await asyncio.sleep(0.01)
-            assert snapshot.latest_turn.status == ("failed" if case == "leak" else "completed")
+            assert snapshot.latest_turn.status == (
+                "failed" if case in {"leak", "text_leak"} else "completed"
+            )
             replay = await client.replay_events(thread.thread_id, limit=200)
             assert replay.events and CANARY not in replay.model_dump_json()
-            assert len(providers[0].requests) == (1 if case == "leak" else 2)
+            assert len(providers[0].requests) == (1 if case in {"leak", "text_leak"} else 2)
         finally:
             await client.close()
 
@@ -121,7 +125,7 @@ async def test_product_root_owns_selected_provider_snapshot_and_clears_on_exit(
             rows = db.execute(
                 "SELECT publication_epoch, publication_policy FROM agent_artifacts"
             ).fetchall()
-        assert len(rows) == (0 if case == "leak" else 1)
+        assert len(rows) == (0 if case in {"leak", "text_leak"} else 1)
         if rows:
             assert rows[0][0] and rows[0][1] == "harnessix.public-output-protection/v1"
     assert selected and held and all(not any(m.value) for m in held)

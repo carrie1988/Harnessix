@@ -2004,3 +2004,14 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 [完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
 [固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
 普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。
+
+
+## 0.9.4a 模型直接文本公开保护
+
+模型流式文本使用纯可选保护器，所有content_id共享输入字节和模式工作预算，独立尾窗保留跨增量模式，
+对齐UTF8后发布原文安全前缀。完整原事件批次在CAS前检查，主模型/摘要模型完整请求在消费Provider前检查。
+保留原尝试意图、用量结算、批准身份、原Hash与公开Schema，失败或取消均关闭流和窗口。
+
+[完整详细设计](../changes/m09-4a-model-text-publication.md)包含架构、流程、时序、数据流、类/接口/字段、
+伪代码、错误、取消、预算及源码导航；[ADR-0098](../adr/0098-model-stream-publication-boundary.md)说明取舍。
+当前值旧历史出站拒绝不授权旧正文；直接store.append入口、历史Replay、跨重启证明和全部公开出口仍独立开放。

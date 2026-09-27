@@ -29,6 +29,7 @@ from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
 from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
+from harnessix.agent.model_text import ModelTextPublication, protect_request
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     AgentFailure,
@@ -73,7 +74,13 @@ from harnessix.agent.ports import (
     ToolRuntime,
     TrustedActionGateway,
 )
-from harnessix.agent.publication import PublicOutputProtection, protect_json
+from harnessix.agent.publication import (
+    PublicOutputProtection,
+    PublicTextStep,
+    begin_text_step,
+    close_text_step,
+    protect_json,
+)
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
@@ -570,7 +577,14 @@ class AgentRuntime:
     async def _commit(
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
-        """在Thread互斥锁内按期望序号原子追加事件并返回最新投影。"""
+        """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。"""
+        if self._public_output_protection is not None:
+            active = self._active.get(turn_id)
+            await protect_json(
+                self._public_output_protection,
+                [payload.model_dump(mode="json") for payload in payloads],
+                active[1] if active else CancelToken(),
+            )
         async with self._lock(thread_id):
             thread = await self.store.get_thread(thread_id)
             return await (self._batch_diffs or self.store).append(
@@ -1391,8 +1405,8 @@ class AgentRuntime:
             )
             accounted = current
 
-        stream = self._summary_provider.stream(request, token)
-        async with aclosing(stream):
+        await protect_request(request, self._public_output_protection, token)
+        async with aclosing(self._summary_provider.stream(request, token)) as stream:
             try:
                 first = await token.run(anext(stream))
             except StopAsyncIteration:
@@ -2417,16 +2431,23 @@ class AgentRuntime:
             turn_id=request.turn_id,
             step=request.step,
         ):
-            await self._sample_events(request, token)
+            await protect_request(request, self._public_output_protection, token)
+            protection = await begin_text_step(self._public_output_protection, token)
+            failed = True
+            try:
+                await self._sample_events(request, token, protection)
+                failed = False
+            finally:
+                close_text_step(protection, failed=failed)
 
-    async def _sample_events(self, request: ModelRequest, token: CancelToken) -> None:
+    async def _sample_events(
+        self, request: ModelRequest, token: CancelToken, protection: PublicTextStep | None
+    ) -> None:
         """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
         completed: ResponseCompleted | None = None
-        text_items: dict[str, tuple[UUID, str, bool]] = {}
+        texts = ModelTextPublication(request, token, protection, self._commit, self._emit_delta)
         call_ids: set[str] = set()
-        characters = 0
-        stream_sequence = 0
         event_count = 0
         attempt_mode = False
         open_attempt: UUID | None = None
@@ -2511,72 +2532,15 @@ class AgentRuntime:
                     continue
                 if not started:
                     raise KernelError("invalid_provider_output", "Provider 尚未开始响应")
-                if isinstance(event, TextStarted):
-                    if len(text_items) >= 128:
-                        raise KernelError("provider_item_limit", "模型步骤文本块数量超过上限")
-                    if event.content_id in text_items:
-                        raise KernelError("invalid_provider_output", "文本块 ID 重复")
-                    item_id = new_id()
-                    text_items[event.content_id] = (item_id, "", False)
-                    await self._commit(
-                        request.thread_id,
-                        request.turn_id,
-                        [
-                            ItemStarted(
-                                item_id=item_id, content=TextContent(kind="assistant_message")
-                            )
-                        ],
-                    )
-                elif isinstance(event, TextDelta | TextCompleted):
-                    part = text_items.get(event.content_id)
-                    if part is None or part[2]:
-                        raise KernelError("invalid_provider_output", "文本块未开始或已结束")
-                    item_id, buffer, _ = part
-                    if isinstance(event, TextDelta):
-                        characters += len(event.delta)
-                        if characters > request.budget.max_output_chars:
-                            raise KernelError("model_output_too_large", "模型输出超过上限")
-                        buffer += event.delta
-                        text_items[event.content_id] = (item_id, buffer, False)
-                        stream_sequence += 1
-                        self._emit_delta(
-                            ItemDelta(
-                                thread_id=request.thread_id,
-                                turn_id=request.turn_id,
-                                item_id=item_id,
-                                model_step=request.step,
-                                stream_sequence=stream_sequence,
-                                delta=event.delta,
-                            )
-                        )
-                    else:
-                        if buffer and buffer != event.text:
-                            raise KernelError("invalid_provider_output", "文本终值与增量不一致")
-                        if not buffer:
-                            characters += len(event.text)
-                        if characters > request.budget.max_output_chars:
-                            raise KernelError("model_output_too_large", "模型输出超过上限")
-                        text_items[event.content_id] = (item_id, event.text, True)
-                        await self._commit(
-                            request.thread_id,
-                            request.turn_id,
-                            [
-                                ItemFinished(
-                                    item_id=item_id,
-                                    status=ItemStatus.COMPLETED,
-                                    content=TextContent(kind="assistant_message", text=event.text),
-                                )
-                            ],
-                        )
+                if isinstance(event, TextStarted | TextDelta | TextCompleted):
+                    await texts.accept(event)
                 elif isinstance(event, ToolCallCompleted):
                     if event.call_id in call_ids:
                         raise KernelError("invalid_provider_output", "Provider Tool Call ID 重复")
                     call_ids.add(event.call_id)
                     if len(call_ids) > request.budget.max_tool_calls_per_step:
                         raise KernelError("tool_call_limit", "单步骤 Tool Call 数量超过上限")
-                    characters += len(event.model_dump_json())
-                    if characters > request.budget.max_output_chars:
-                        raise KernelError("model_output_too_large", "工具参数超过模型输出上限")
+                    texts.account(len(event.model_dump_json()))
                     definition = self._definitions.get(event.tool)
                     call = ToolCallContent(
                         call_id=new_id(),
@@ -2603,7 +2567,7 @@ class AgentRuntime:
                     )
                     self._fault("runtime.after_tool_call")
                 elif isinstance(event, ResponseCompleted):
-                    if any(not part[2] for part in text_items.values()):
+                    if not texts.all_completed:
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
                     try:
                         snapshot = await self._commit(
@@ -2623,7 +2587,7 @@ class AgentRuntime:
                         raise KernelError("provider_" + event.finish_reason, "模型未正常完成")
                     if bool(call_ids) != (event.finish_reason == "tool_calls"):
                         raise KernelError("invalid_provider_output", "停止原因与 Tool Call 不一致")
-                    if not call_ids and not any(part[1] for part in text_items.values()):
+                    if not call_ids and not texts.has_content:
                         raise KernelError("invalid_provider_output", "模型响应没有语义内容")
                     completed = event
                 else:
