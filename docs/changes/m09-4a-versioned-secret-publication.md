@@ -193,7 +193,7 @@ MCP独立Client与真实产品Process装配分别验证；完整回归、干净�
 
 ## 12. 现行用例与剩余边界
 
-专项60项，54新增及6原MCP项：纯快照30、Gateway14、实际Runtime3、实际MCP新增3、产品组合4。
+专项62项，56新增及6原MCP项：纯快照30、Gateway16、实际Runtime3、实际MCP新增3、产品组合4。
 两项组合替身仅隔离能力构造，实际Owner/SQLite/Gateway/Scope验证无AgentRuntime时正常和启动失败退出均清理材料。
 产品组合同时覆盖快照关闭后原执行Provider前置失败：无Lease时failed/process_preflight_failed，run/reconcile均为0，不误标未知效果。
 独立58e51aa归档的4个未配置能力负例均DID NOT RAISE（0.26秒）；构造、导入或配置失配失败不计证据。
@@ -201,3 +201,18 @@ MCP独立Client与真实产品Process装配分别验证；完整回归、干净�
 产品组合使用实际Router/Executor/Plan/Audit/SQLite与Secret解析，Container Owner为Lease合同替身，
 不得宣称真实容器或Windows安装验收。历史Session/Artifact字节、API Provider密钥全局作用域、
 跨重启正文安全恢复、许可证及其他0.9.4～0.9.6项仍未关闭。
+
+## 13. 父Task取消计数与后续对账的独立语义
+
+首次完整回归发现：Task.cancelling()是累计请求计数，不是“尚未交付取消”的布尔值。
+补丁操作捕获CancelledError后，同一Task合法继续Reconcile时仍可能计数为1；将全局非零视为
+待取消会阻断已确认前缀效果的观察，不能修改测试以清除计数掩盖回归。
+
+[projection_checkpointer](../../src/harnessix/trusted_actions/output_budget.py)在一次公开处理进入时
+捕获当前Task和initial_count。异步入口先sleep(0)交付此前仍待交付的取消；原生树、字段、
+Secret扫描和Owner前后检查，只在当前累计计数大于基线时传播新增父取消。Token及期限继续
+走projection_checkpoint。不开私有Task字段、不调用uncancel，也不把历史计数当作新请求。
+
+Router原始返回验证仍使用Token和期限；不以已处理的父取消污染后续只对账恢复。
+新增两个纯检查点正负例和两个实际Gateway内联/Owner用例，分别验证已处理计数不触发、
+基线后的新取消会触发，以及原效果/一次执行/Owner调用不变；原补丁取消后对账用例必须通过。

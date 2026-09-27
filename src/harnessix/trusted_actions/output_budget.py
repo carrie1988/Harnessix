@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+from collections.abc import Callable
 from time import monotonic
 from typing import Literal, cast
 
@@ -32,14 +33,22 @@ def projection_checkpoint(cancel: CancelToken, deadline: float) -> None:
     """同步有界处理也检查取消和时限，不依赖事件循环及时运行超时回调。"""
 
     cancel.checkpoint()
-    try:
-        task = asyncio.current_task()
-    except RuntimeError:
-        task = None
-    if task is not None and task.cancelling():
-        raise asyncio.CancelledError
     if monotonic() >= deadline:
         raise KernelError("trusted_action_output_timeout", "Action输出投影超时")
+
+
+def projection_checkpointer(cancel: CancelToken, deadline: float) -> Callable[[], None]:
+    """只识别本次公开处理新增的父Task取消；已处理计数不污染后续对账。"""
+
+    task = asyncio.current_task()
+    initial_count = task.cancelling() if task is not None else 0
+
+    def checkpoint() -> None:
+        projection_checkpoint(cancel, deadline)
+        if task is not None and task.cancelling() > initial_count:
+            raise asyncio.CancelledError
+
+    return checkpoint
 
 
 def _string_bytes(value: str, remaining: int) -> int:

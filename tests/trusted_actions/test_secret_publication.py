@@ -238,3 +238,42 @@ async def test_secret_scan_is_inside_deadline_and_cancel_before_owner(tmp_path, 
         plans.close()
         audit.close()
         scope.close()
+
+
+@pytest.mark.parametrize("with_owner", [False, True])
+async def test_completed_parent_cancellation_does_not_block_next_publication(tmp_path, with_owner):
+    import asyncio
+
+    scope = SecretPublicationScope((BINDING,), source())
+    owner = FixedOutput({"summary": "completed", "artifact": output_reference("4" * 64)})
+    gate, router, plans, audit, executor = secret_gateway(
+        tmp_path / "workspace",
+        {"summary": "completed"},
+        scope=scope,
+        owner=owner if with_owner else None,
+    )
+    if with_owner:
+        executor.artifact = "4" * 64
+
+    async def publish():
+        thread, turn, call, decision = await approved(gate, tmp_path / "workspace")
+        task = asyncio.current_task()
+        assert task is not None
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.sleep(0)
+        assert task.cancelling() == 1
+        result = await gate.execute(thread, turn, call, decision, CancelToken())
+        assert result.output == (owner.projected if with_owner else {"summary": "completed"})
+        assert router.status(decision.plan_id).state == "succeeded"
+        assert owner.calls == int(with_owner)
+        assert executor.calls == 1 and executor.reconciliations == 0
+        assert task.cancelling() == 1
+
+    try:
+        await asyncio.create_task(publish())
+    finally:
+        gate.close()
+        plans.close()
+        audit.close()
+        scope.close()

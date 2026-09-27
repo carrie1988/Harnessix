@@ -274,6 +274,7 @@ ROOT = Path(__file__).resolve().parents[2]
                 "src/harnessix/mcp/server.py",
                 "tests/secrets/test_publication.py",
                 "tests/trusted_actions/test_secret_publication.py",
+                "tests/trusted_actions/test_output_budget.py",
                 "tests/trusted_actions/test_secret_publication_runtime.py",
                 "tests/product_config/test_secret_scope_composition.py",
                 "tests/mcp/test_server.py",
@@ -536,7 +537,7 @@ def test_secret_publication_evidence_preserves_explicit_scope_and_release_bounda
     verification = json.loads((bundle / "verification.json").read_bytes())
     assert facts["code_revision"] == review["code_revision"] == verification["code_revision"]
     assert facts["code_revision"] == ci["code_revision"]
-    assert facts["special_tests"] == 60 and facts["new_special_tests"] == 54
+    assert facts["special_tests"] == 62 and facts["new_special_tests"] == 56
     assert facts["prior_mcp_tests"] == 6
     assert facts["default_deny_missing_secret_capability"] is True
     assert facts["original_version_required"] is True

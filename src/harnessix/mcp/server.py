@@ -40,7 +40,7 @@ from harnessix.trusted_actions.contracts import (
 from harnessix.trusted_actions.output_budget import (
     DEFAULT_OUTPUT_BUDGET,
     bounded_projection,
-    projection_checkpoint,
+    projection_checkpointer,
 )
 from harnessix.trusted_actions.public_outcomes import validate_success_summary
 from harnessix.trusted_actions.router import ExtensionActionPort
@@ -193,11 +193,11 @@ async def _validate_export_output(
     deadline = monotonic() + budget.timeout_seconds
     cancel = CancelToken()
 
-    def checkpoint() -> None:
-        projection_checkpoint(cancel, deadline)
+    checkpoint = projection_checkpointer(cancel, deadline)
 
     try:
         async with asyncio.timeout(budget.timeout_seconds):
+            await asyncio.sleep(0)
             public = bounded_projection(output, budget=budget, cancel=cancel, deadline=deadline)
             validate_success_summary(plan, public, descriptor=descriptor, checkpoint=checkpoint)
             if scope is not None:

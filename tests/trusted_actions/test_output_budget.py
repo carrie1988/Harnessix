@@ -141,3 +141,34 @@ def test_sync_deadline_and_cancel_checkpoint():
 def test_budget_contract_cannot_disable_host_caps(limits):
     with pytest.raises(ValidationError):
         ActionOutputBudget(**limits)
+
+
+@pytest.mark.parametrize("new_request", [False, True])
+async def test_projection_scope_ignores_consumed_cancel_but_detects_new_request(new_request):
+    import asyncio
+
+    from harnessix.trusted_actions.output_budget import projection_checkpointer
+
+    async def operation():
+        task = asyncio.current_task()
+        assert task is not None
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.sleep(0)
+        assert task.cancelling() == 1
+        checkpoint = projection_checkpointer(CancelToken(), monotonic() + 5)
+        checkpoint()
+        assert bounded({"summary": "confirmed"}) == {"summary": "confirmed"}
+        if new_request:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                checkpoint()
+            # 交付取消信号而不调用uncancel，不把同步检查误当作事件循环已经消费。
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.sleep(0)
+            assert task.cancelling() == 2
+        else:
+            await asyncio.sleep(0)
+            checkpoint()
+
+    await asyncio.create_task(operation())

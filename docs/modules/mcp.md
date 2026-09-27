@@ -1642,3 +1642,5 @@ custom成功正文先经过与Gateway相同的公开字段合同，再成为Text
 ## 现行版本化Secret公开保护
 
 [版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)为[Server](../../src/harnessix/mcp/server.py)提供显式secret_scope；独立有界副本共用字段和Secret检查，含后置期限和父Task取消。低风险/只读条件不变；默认不枚举宿主凭据或声称未登记值安全。
+
+独立成功出口进入时交付待取消，字段与Secret扫描检查本次基线后的父Task取消增量；累计旧计数不作为新的取消信号，不操作Task私有状态，见[Secret详设](../changes/m09-4a-versioned-secret-publication.md)第13节。

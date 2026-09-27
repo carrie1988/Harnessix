@@ -28,7 +28,7 @@ from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRo
 from harnessix.trusted_actions.output_budget import (
     DEFAULT_OUTPUT_BUDGET,
     bounded_projection,
-    projection_checkpoint,
+    projection_checkpointer,
 )
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.public_outcomes import (
@@ -203,8 +203,10 @@ async def _inline_success(
 
     budget = DEFAULT_OUTPUT_BUDGET
     deadline = monotonic() + budget.timeout_seconds
+    checkpoint = projection_checkpointer(cancel, deadline)
     try:
         async with asyncio.timeout(budget.timeout_seconds) as timer:
+            await asyncio.sleep(0)
             projected = bounded_projection(
                 outcome.output, budget=budget, cancel=cancel, deadline=deadline
             )
@@ -215,17 +217,17 @@ async def _inline_success(
                 route.plan,
                 projected,
                 descriptor=descriptor,
-                checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                checkpoint=checkpoint,
             )
             _check_secret_output(
                 getattr(state, "secret_scope", None),
                 route,
                 projected,
-                lambda: projection_checkpoint(cancel, deadline),
+                checkpoint,
             )
-            projection_checkpoint(cancel, deadline)
+            checkpoint()
             await asyncio.sleep(0)
-            projection_checkpoint(cancel, deadline)
+            checkpoint()
             return outcome.model_copy(update={"output": projected})
     except TurnCancelled:
         raise
@@ -255,8 +257,10 @@ async def _project_output(
 
     budget = DEFAULT_OUTPUT_BUDGET
     deadline = monotonic() + budget.timeout_seconds
+    checkpoint = projection_checkpointer(cancel, deadline)
     try:
         async with asyncio.timeout(budget.timeout_seconds) as timer:
+            await asyncio.sleep(0)
             if outcome.output is None and route.plan.execution.secrets:
                 # 只有Hash的旧正文无法证明原Secret值；在Owner发布前拒绝恢复正文。
                 raise KernelError(
@@ -270,17 +274,15 @@ async def _project_output(
                 preview = bounded_projection(
                     outcome.output, budget=budget, cancel=cancel, deadline=deadline
                 )
-                _check_secret_output(
-                    secret_scope, route, preview, lambda: projection_checkpoint(cancel, deadline)
-                )
+                _check_secret_output(secret_scope, route, preview, checkpoint)
                 if outcome.kind == "succeeded":
                     validate_success_summary(
                         route.plan,
                         preview,
                         descriptor=descriptor,
-                        checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                        checkpoint=checkpoint,
                     )
-                projection_checkpoint(cancel, deadline)
+                checkpoint()
             raw = await cancel.run(
                 provider.output(
                     route,
@@ -293,9 +295,7 @@ async def _project_output(
                 )
             )
             projected = bounded_projection(raw, budget=budget, cancel=cancel, deadline=deadline)
-            _check_secret_output(
-                secret_scope, route, projected, lambda: projection_checkpoint(cancel, deadline)
-            )
+            _check_secret_output(secret_scope, route, projected, checkpoint)
             validate_public_projection(
                 route.plan,
                 outcome,
@@ -303,9 +303,9 @@ async def _project_output(
                 expected_output_sha256=output_sha256,
                 expected_artifact_sha256=artifact_sha256,
                 descriptor=descriptor,
-                checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                checkpoint=checkpoint,
             )
-            projection_checkpoint(cancel, deadline)
+            checkpoint()
             return projected
     except TurnCancelled:
         raise

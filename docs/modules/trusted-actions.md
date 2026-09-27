@@ -1687,3 +1687,5 @@ custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完
 ## 现行版本化Secret公开保护
 
 [版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)增加纯SecretOutputProtection宿主端口（无新增Secrets实现依赖）；原生副本和字段/Hash检查后、Owner发布前及重建后检查值。缺能力/命中固定错误；Secret绑定的仅Hash恢复经当前Audit核验后只补无正文元数据，不调用Owner、不重执行。
+
+Secret公开处理的父Task检查按本次进入时累计取消基线捕获，仅新增计数触发；异步入口先交付待取消。已捕获旧CancelledError的Task仍可合法执行后续Reconcile，不调用uncancel或读取私有Task字段，见[版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)第13节。
