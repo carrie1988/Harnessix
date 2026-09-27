@@ -1124,3 +1124,12 @@ Scope新增正式二进制保护与原材料只读保护端口；原JSON和解�
 [完整详细设计](../changes/m09-4a-model-text-publication.md)包含架构、流程、时序、数据流、类/接口/字段、
 伪代码、错误、取消、预算及源码导航；[ADR-0098](../adr/0098-model-stream-publication-boundary.md)说明取舍。
 当前值旧历史出站拒绝不授权旧正文；直接store.append入口、历史Replay、跨重启证明和全部公开出口仍独立开放。
+
+
+## 原版本材料的用户输入与命令回执复用
+
+`agent.input_publication.protect_input`只复用既有纯JSON端口并映射有限输入错误码，不新增扫描器或重新读取环境。
+Runtime原字段、有效TurnStarted/content和批准决定先于持久与审计检查；App Server命令整体先于Claim，
+原缓存和新投影先于公开检查。Scope生命周期及原材料来源不变，当前快照不能授权未知历史版本。
+[输入与回执详设](../changes/m09-4a-input-persistence-boundary.md)说明预算、取消、失败、字段和源码；
+原始Protocol出口、历史授权、全部Provider材料和Scope丢失后的SDK cancel可用性仍独立开放。

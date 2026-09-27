@@ -42,7 +42,11 @@ AgentClient和InProcessAgentTransport，Provider是确定性替身：
 `_reply_approval`可先写Trusted Action审计再写Session；`AgentApplicationService._command`原先在保护前Claim。
 既有[原版本公开保护决策](../adr/0095-versioned-secret-publication-scope.md)和
 [模型原文保护](../adr/0098-model-stream-publication-boundary.md)是复用依据，不复制上游Agent Loop。
-上游有限模式输出保护不蕴含本产品用户输入安全；本次结论来自以上真实本地调用链。
+固定本地Codex `a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67`的
+[`secrets/src/sanitizer.rs` L4–25](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/secrets/src/sanitizer.rs#L4-L25)
+使用有限正则做best-effort正文替换，不构成本产品原输入、批准或持久身份授权。
+本设计保持原值并拒绝命中，不将替换后的正文绑定到原审批指纹，也不复制上游代码。
+上游输出保护不蕴含本产品用户输入安全；本次结论来自以上真实本地调用链。
 
 ## 2. 设计目标、非目标、方案与架构取舍
 
@@ -315,14 +319,6 @@ approval(original_decision):
 | 9 | [server](../../src/harnessix/app_server/server.py)：process_frame/_validation_path | 类型校验前的原始出口仍开放。 |
 | 10 | [输入测试](../../tests/agent/test_input_publication_runtime.py)与[命令测试](../../tests/app_server/test_command_publication.py) | 与实际SQLite、审计和SDK结果结合阅读。 |
 
-## 13. 风险、取舍和剩余工作
-
-当前材料集合有限且仅包含已登记版本；输入保护不是全局DLP，也不能授予历史对象可信性。
-Scope丢失后SDK cancel被安全拒绝的可用性边界已用测试公开，宿主直接cancel/shutdown仍可排空。
-原始Protocol id/path出口、历史Replay/查询、跨重启正文证明、所有Provider凭据和Owner同步阻塞边界仍开放。
-0.9.4b权利证据、TM攻击场景、远程MCP身份、三平台真实发布与受控Beta仍是独立任务。
-本切片不得关闭0.9.4a、0.9.4整体或整个0.9。
-
 ### 12.1 固定源码符号逐项导航
 
 - [`src/harnessix/agent/input_publication.py`：`protect_input`，L20–L28](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/input_publication.py#L20-L28)。
@@ -346,3 +342,20 @@ Scope丢失后SDK cancel被安全拒绝的可用性边界已用测试公开，�
 - [`src/harnessix/app_server/service.py`：`archive_thread`，L222–L231](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L222-L231)。
 - [`src/harnessix/app_server/service.py`：`retry_turn`，L256–L277](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L256-L277)。
 - [`src/harnessix/app_server/service.py`：`steer_turn`，L295–L311](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L295-L311)。
+
+
+## 13. 风险、取舍和剩余工作
+
+当前材料集合有限且仅包含已登记版本；输入保护不是全局DLP，也不能授予历史对象可信性。
+Scope丢失后SDK cancel被安全拒绝的可用性边界已用测试公开，宿主直接cancel/shutdown仍可排空。
+原始Protocol id/path出口、历史Replay/查询、跨重启正文证明、所有Provider凭据和Owner同步阻塞边界仍开放。
+0.9.4b权利证据、TM攻击场景、远程MCP身份、三平台真实发布与受控Beta仍是独立任务。
+本切片不得关闭0.9.4a、0.9.4整体或整个0.9。
+
+## 14. 固定验收结果
+
+[正式验收](../validation/input-persistence-2026-09-28-v1/README.md)冻结156专项（57新增功能合同＋99既有）、
+2项新增证据治理、4969 passed/32 skipped完整回归、2378个文件运行中不漂移、1306个源码测试输入版本等价、
+683个历史验证文件保持原字节（索引独立更新）、五幅实际渲染图和干净Wheel/sdist及隔离导入消费链。
+相关1358回归早于最后UTF8用例，不与最终全量相加。原RPC id/path从同一Wheel独立复现，继续作为明确开放边界。
+许可证12项未关闭，make check及正式发布仍不通过；没有真实Provider调用或三平台安装验收声明。

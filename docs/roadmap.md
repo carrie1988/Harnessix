@@ -519,6 +519,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   [用户输入持久前与命令回执保护](changes/m09-4a-input-persistence-boundary.md)独立补Runtime原字段、
   完整命令Claim前检查、原缓存/结果公开检查、批准审计前检查和原Trace前检查；
   [独立证据](validation/input-persistence-2026-09-28-v1/README.md)区分旧版实际Runtime/SQLite/SDK负例和整改，
+  固定156专项（57新增功能合同、2项开放元数据观察）、另2项新增治理及4969 passed/32 skipped完整回归；
+  干净发行物及Wheel隔离导入、683个历史验证文件原字节和源码等价分别冻结。
   原始JSON-RPC id/错误path回显已确认开放，Scope丢失后的SDK cancel可用性、旧历史及跨重启证明仍需独立治理。
   全部Provider凭据和Secret端到端、历史Session/其他公开出口、跨重启正文安全恢复、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、

@@ -602,3 +602,12 @@ recover_route(route):
 单一Coding Agent组合根捕获所选模型Profile链原材料，Agent通过纯端口检查结果；Artifact全文与当前Epoch证明同事务写入，所有正文消费入口复验。没有恢复独立Action Plane HTTP/Worker。当前Epoch明确拒绝不同Store或旧NULL证明；跨重启正文安全恢复、历史Session及其他公开出口仍属发布开放工作。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+
+## 原输入、持久事实与命令公开边界
+
+Runtime在原用户字段进入接受事务、问答事务和批准审计前复用纯保护端口；App Server完整原命令参数
+先于协议账本Claim检查，原缓存和新结果在公开前检查。原正文、幂等身份、Hash、Schema和CAS顺序不变。
+完整边界与源码映射见[输入持久前与回执详设](changes/m09-4a-input-persistence-boundary.md)。
+模型出站拒绝不能代替入站保护；当前有限材料检查也不授予旧历史或跨重启对象授权。
+原始JSON-RPC id和校验path、保护器丢失后的SDK cancel可用性仍独立开放，不据此宣称全部公开出口安全。

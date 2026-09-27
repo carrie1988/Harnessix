@@ -63,7 +63,25 @@
       }
     ]
   },
-  "full_test_completed": false,
+  "full_test": {
+    "exit_code": 0,
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 4969,
+    "seconds": 408.69,
+    "size_bytes": 5645,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "dfe5517e8479d0bf26aa9332ffe79079f1600bcfbe0d10aa27afab0a3f74ede8",
+    "test_run_commit": "35c1c1eaff7bf81fa2291c792b9cea4c993c72b6",
+    "test_run_tree": "20bac84523b198bbdc0431d3a9e7ace91a26f924",
+    "tracked_inputs_count": 2378,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 410.13
+  },
+  "full_test_completed": true,
+  "full_test_inputs_sha256": "ebf0cd2291699be594f0284ac591f3f3ebba6c37d2572cbc1327d0765266d08a",
   "gates": {
     "contracts": {
       "command": [
@@ -218,11 +236,20 @@
     "passed": 1358,
     "seconds": 46.93
   },
+  "revision_equivalence": {
+    "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
+    "core_input_count": 1306,
+    "core_inputs_same_as_full_test_seed": true,
+    "historical_validation_files": 683,
+    "historical_validation_files_unchanged": true,
+    "untracked_security_draft_untouched_and_excluded": true,
+    "validation_index_separately_updated": true
+  },
   "special_tests": {
     "log_sha256": "7997ac0f1cc35d233de61f6373f24760e730f8a4a963ef007f57d8280da3cd02",
     "passed": 156
   },
-  "status": "pre_full",
+  "status": "frozen",
   "wheel_smoke": {
     "actual_runtime_sqlite_sdk": true,
     "direct_failure_code": "public_input_secret_leak",

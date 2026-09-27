@@ -64,6 +64,9 @@
   },
   "full_product_or_network_provider_claimed": false,
   "full_raw_protocol_security_claimed": false,
+  "full_test_passed": 4969,
+  "full_test_skipped": 32,
+  "full_test_source_inputs_same_as_fixed_revision": true,
   "guarded_cache_rejection_preserves_historical_receipt": true,
   "hard_preemption_claimed": false,
   "historical_validation_files": 683,
@@ -118,6 +121,31 @@
   "original_fields_fingerprints_and_schema_preserved": true,
   "original_question_five_events_and_uuid5_preserved": true,
   "overall_0_9_complete": false,
+  "raw_protocol_independent_wheel_gap": {
+    "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
+    "records": [
+      {
+        "acceptance_pass_claimed": false,
+        "actual_wheel_runtime_sqlite_server": true,
+        "observed_open_gap": true,
+        "original_id_echoed": true,
+        "real_model_requests": 0,
+        "surface": "rpc_id",
+        "validation_path_contains_registered_key": false
+      },
+      {
+        "acceptance_pass_claimed": false,
+        "actual_wheel_runtime_sqlite_server": true,
+        "observed_open_gap": true,
+        "original_id_echoed": false,
+        "real_model_requests": 0,
+        "surface": "validation_path",
+        "validation_path_contains_registered_key": true
+      }
+    ],
+    "script_sha256": "08c8568dfb47cdb6436a80687b9e3754bdba51d63fd975da379b1acb6b23aec8",
+    "wheel_sha256": "1e7774ad921d500be164df71d4d53a078bb60e3eb0b734c773b9ea6772b088fe"
+  },
   "readability_policy_relaxed": false,
   "real_model_requests": 0,
   "schema_migration": false,
