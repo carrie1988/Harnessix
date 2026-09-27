@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 7
-code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
+code_revision: 6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0
 owners:
   - core
 modules:
@@ -37,7 +37,7 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
 | 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
-| 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
+| 代码版本 | `6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、远程安全、可观测性和Replay大规模索引尚未完成 |
 
 原封套准入、完整响应UTF8协商限额和纯握手候选提交已实现，有限当前材料检查不构成历史授权。

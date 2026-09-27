@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: 735f2e9dcafbe863e36a2890fac1364c4283bca8
+code_revision: 6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0
 owners: [core]
 modules: [agent, app_server, protocol, secrets]
 related_adrs:
@@ -294,3 +294,20 @@ Owner同步阻塞/Store归属、12项Archive权利、编号威胁场景、远程
 4. [`runtime.py`](../../src/harnessix/agent/runtime.py)的`validate_public_frame`及[`publication.py`](../../src/harnessix/agent/publication.py)的`protect_jsonl`：纯可选端口与取消/失败语义。
 5. [`test_frame_publication.py`](../../tests/app_server/test_frame_publication.py)和[`真实CLI测试`](../../tests/product_config/test_protocol_publication_cli.py)：从拒绝无状态变化、等待窗、旧历史开放和实际管道四条路径阅读。
 6. [ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[六文件证据目录](../validation/protocol-frame-publication-2026-09-28-v1/README.md)：区分固定来源、当前观察和发布范围。
+
+### 13.1 固定源码符号逐项导航
+
+- [`src/harnessix/app_server/frame_publication.py`：`encode`，L32–L42](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/frame_publication.py#L32-L42)。
+- [`src/harnessix/app_server/frame_publication.py`：`error_frame`，L45–L64](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/frame_publication.py#L45-L64)。
+- [`src/harnessix/app_server/frame_publication.py`：`admit_message`，L67–L86](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/frame_publication.py#L67-L86)。
+- [`src/harnessix/app_server/frame_publication.py`：`publish_frame`，L89–L107](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/frame_publication.py#L89-L107)。
+- [`src/harnessix/app_server/frame_publication.py`：`closing_response`，L110–L118](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/frame_publication.py#L110-L118)。
+- [`src/harnessix/app_server/handshake.py`：`PreparedInitialization`，L25–L31](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/handshake.py#L25-L31)。
+- [`src/harnessix/app_server/handshake.py`：`validation_path`，L34–L37](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/handshake.py#L34-L37)。
+- [`src/harnessix/app_server/handshake.py`：`prepare_initialization`，L40–L96](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/handshake.py#L40-L96)。
+- [`src/harnessix/app_server/server.py`：`_handle_request`，L189–L231](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/server.py#L189-L231)。
+- [`src/harnessix/app_server/server.py`：`process_frame`，L233–L289](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/server.py#L233-L289)。
+- [`src/harnessix/app_server/server.py`：`close`，L291–L296](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/app_server/server.py#L291-L296)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_input`，L475–L478](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/agent/runtime.py#L475-L478)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_frame`，L485–L488](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/agent/runtime.py#L485-L488)。
+- [`tests/product_config/test_protocol_publication_cli.py`：`test_actual_product_cli_does_not_echo_sensitive_rpc_metadata`，L23–L107](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/tests/product_config/test_protocol_publication_cli.py#L23-L107)。

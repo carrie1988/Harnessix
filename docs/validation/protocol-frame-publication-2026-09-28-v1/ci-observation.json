@@ -1,5 +1,15 @@
 {
-  "code_revision": "735f2e9dcafbe863e36a2890fac1364c4283bca8",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+  "current_ci_accepted": false,
+  "current_ci_status": "not_started_at_freeze",
+  "current_code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+  "prior_observed_run": {
+    "head_sha": "735f2e9dcafbe863e36a2890fac1364c4283bca8",
+    "observation_scope": "本切片开工快照，不替代最终状态",
+    "run_id": 36340715417,
+    "status": "in_progress",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36340715417"
+  },
+  "prior_success_is_current_revision_acceptance": false,
+  "waiting_for_ci_per_local_commit": false
 }

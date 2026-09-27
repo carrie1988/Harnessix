@@ -1,5 +1,173 @@
 {
-  "code_revision": "735f2e9dcafbe863e36a2890fac1364c4283bca8",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "actual_product_cli": {
+    "actual_product_config_scope_sqlite": true,
+    "no_thread_or_turn_accepted": true,
+    "original_sensitive_id_and_key_rejected": true,
+    "os_stdio_pipes": true,
+    "passed": true,
+    "provider_constructed_but_no_network_request": true,
+    "stderr_empty": true,
+    "stdout_and_database_registered_material_absent": true
+  },
+  "all_provider_credentials_closed": false,
+  "arbitrary_dlp_claimed": false,
+  "archive_rights_blockers": 12,
+  "artifacts": [
+    {
+      "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+      "kind": "wheel",
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "27d681cd81d5d8298270f50acb19eddc085e7c91d4b44bc1df6c930241cb8e5e",
+      "size_bytes": 971092,
+      "untracked_security_draft_present": false
+    },
+    {
+      "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+      "kind": "sdist",
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "2ba5446ff7ea36efc47e608c4a27a352a9b534669134f7d730570b757b50ca88",
+      "size_bytes": 7191858,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "clean_machine_install_claimed": false,
+  "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+  "completed_domain_fact_not_rolled_back": true,
+  "cross_restart_seal_closed": false,
+  "direct_service_query_publication_closed": false,
+  "fixed_emergency_controls_are_explicit_exception": true,
+  "fixed_observation": {
+    "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+    "module_source_verified": true,
+    "records": [
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "rpc_id",
+        "failure_code": "public_input_secret_leak",
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": false,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "new",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "param_key",
+        "failure_code": "public_input_secret_leak",
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": false,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "new",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "replay",
+        "failure_code": "public_output_secret_leak",
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": false,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "ready",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "unknown_history",
+        "failure_code": null,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": true,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "ready",
+        "unknown_history_authorization_claimed": false
+      }
+    ],
+    "script_sha256": "fcc6469991bc3481ae91655032394ee0d316603a88a5e7a6cab49f3bf5bacba0"
+  },
+  "hard_preemption_claimed": false,
+  "historical_validation_files": 689,
+  "historical_validation_files_unchanged": true,
+  "independent_baseline": {
+    "code_revision": "735f2e9dcafbe863e36a2890fac1364c4283bca8",
+    "module_source_verified": true,
+    "records": [
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "rpc_id",
+        "failure_code": null,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": true,
+        "response_id_unchecked_material_echoed": true,
+        "server_state": "initialized_pending_ack",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "param_key",
+        "failure_code": "invalid_params",
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": true,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "new",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "replay",
+        "failure_code": null,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": true,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "ready",
+        "unknown_history_authorization_claimed": false
+      },
+      {
+        "actual_runtime_sqlite_protocol_server": true,
+        "case": "unknown_history",
+        "failure_code": null,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "response_contains_original_material": true,
+        "response_id_unchecked_material_echoed": false,
+        "server_state": "ready",
+        "unknown_history_authorization_claimed": false
+      }
+    ],
+    "script_sha256": "fcc6469991bc3481ae91655032394ee0d316603a88a5e7a6cab49f3bf5bacba0"
+  },
+  "negotiated_original_utf8_bytes_including_newline_enforced": true,
+  "new_actual_cli_tests": 1,
+  "new_governance_tests": 2,
+  "new_protocol_tests": 61,
+  "public_api_and_schema_unchanged": true,
+  "real_model_requests": 0,
+  "related_regression": {
+    "passed": 2169,
+    "seconds": 85.91
+  },
+  "reproducible_build_claimed": false,
+  "schema_migration": false,
+  "special_regression": {
+    "existing_tests": 99,
+    "new_tests": 62,
+    "passed": 161,
+    "seconds": 4.77
+  },
+  "unknown_history_authorization_closed": false,
+  "unknown_history_gap_observations": 1,
+  "untracked_attack_draft_excluded": true
 }

@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: draft
 version: 1
-code_revision: 735f2e9dcafbe863e36a2890fac1364c4283bca8
+code_revision: 6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0
 owners: [core]
 modules: [agent, app_server, protocol, secrets]
 related_adrs:
@@ -30,3 +30,10 @@ supersedes: []
 完整实现与五图见[详细设计](../../changes/m09-4a-protocol-frame-publication.md)。
 真实CLI使用实际ProductConfig/Scope/SQLite与OS管道，合成材料，不接受Turn，不调用真实网络模型。
 旧未登记历史、直接Service查询、全部Provider、跨重启Seal和12项Archive权利仍开放；整个0.9不标记完成。
+
+## 已完成独立核验
+
+相关矩阵2169项通过；专项161项通过。清洁固定Git归档构建Wheel与sdist，发布物Secret扫描通过。
+隔离模式`python -I`直接从压缩Wheel导入新模块，实际Runtime/SQLite/SDK验证敏感id/键拒绝、
+当前登记材料的旧Replay拒绝和安全原文往返；不是干净机器安装验收，不使用项目源码或测试助手。
+完整测试尚待运行，当前草案不作全量通过声明。
