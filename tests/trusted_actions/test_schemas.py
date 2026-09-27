@@ -20,6 +20,7 @@ from harnessix.trusted_actions.contracts import (
     CodingActionInvocation,
     TrustedToolBinding,
 )
+from harnessix.trusted_actions.output_budget import ActionOutputBudget
 
 
 def test_action_plane_public_schemas_match_generated_contracts() -> None:
@@ -34,6 +35,7 @@ def test_action_plane_public_schemas_match_generated_contracts() -> None:
         "git-push-intent": GitPushIntent,
         "git-push-action-input": GitPushActionInput,
         "git-push-receipt": GitPushReceipt,
+        "action-output-budget": ActionOutputBudget,
         "public-process-stream-summary": PublicProcessStreamSummary,
         "public-process-output-summary": PublicProcessOutputSummary,
         "public-eval-output-summary": PublicEvalOutputSummary,

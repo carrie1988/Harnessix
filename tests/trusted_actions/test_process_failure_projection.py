@@ -79,7 +79,7 @@ class ProcessExecutor:
             kind, code = "unknown", "process_state_unknown"
         elif self.state == "failed":
             kind, code = "failed", "process_launch_failed"
-        elif self.stop == "exited" and self.evaluation:
+        elif self.stop == "exited" and (self.evaluation or self.returncode == 0):
             kind, code = "succeeded", None
         else:
             kind, code = (

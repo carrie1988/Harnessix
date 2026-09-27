@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from time import monotonic
 from typing import Literal, Protocol
 from uuid import uuid5
 
@@ -21,10 +23,15 @@ from harnessix.agent.models import (
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
+from harnessix.trusted_actions.output_budget import (
+    DEFAULT_OUTPUT_BUDGET,
+    bounded_projection,
+    projection_checkpoint,
+)
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.public_outcomes import (
     normalize_failure_outcome,
-    validate_failure_projection,
+    validate_public_projection,
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
 
@@ -130,28 +137,16 @@ async def terminal_result(
         or (outcome.output is not None and canonical_digest(outcome.output) != event.output_sha256)
     ):
         raise KernelError("trusted_action_output_mismatch", "Action输出与Router审计终态不匹配")
-    try:
-        projected = await cancel.run(
-            provider.output(
-                route,
-                thread,
-                turn,
-                call,
-                expected_output_sha256=event.output_sha256,
-                expected_artifact_sha256=event.artifact_sha256,
-                cancel=cancel,
-            )
-        )
-    except TurnCancelled:
-        raise
-    except Exception as error:
-        raise sanitize_gateway_exception(error, stage="output") from None
-    validate_failure_projection(
-        route.plan,
+    projected = await _project_output(
+        provider,
+        route,
+        thread,
+        turn,
+        call,
         outcome,
-        projected,
-        expected_output_sha256=event.output_sha256,
-        expected_artifact_sha256=event.artifact_sha256,
+        cancel,
+        output_sha256=event.output_sha256,
+        artifact_sha256=event.artifact_sha256,
     )
     return build_result(
         route,
@@ -160,6 +155,55 @@ async def terminal_result(
         origin=origin,
         approval=approval,
     )
+
+
+async def _project_output(
+    provider: TrustedActionOutputProvider,
+    route: ActionRouteSnapshot,
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    outcome: ActionExecutionOutcome,
+    cancel: CancelToken,
+    *,
+    output_sha256: str,
+    artifact_sha256: str,
+) -> JsonValue:
+    """回调、序列化及正式合同共用投影时限；不改写已持久化的动作事实。"""
+
+    budget = DEFAULT_OUTPUT_BUDGET
+    deadline = monotonic() + budget.timeout_seconds
+    try:
+        async with asyncio.timeout(budget.timeout_seconds) as timer:
+            raw = await cancel.run(
+                provider.output(
+                    route,
+                    thread,
+                    turn,
+                    call,
+                    expected_output_sha256=output_sha256,
+                    expected_artifact_sha256=artifact_sha256,
+                    cancel=cancel,
+                )
+            )
+            projected = bounded_projection(raw, budget=budget, cancel=cancel, deadline=deadline)
+            validate_public_projection(
+                route.plan,
+                outcome,
+                projected,
+                expected_output_sha256=output_sha256,
+                expected_artifact_sha256=artifact_sha256,
+            )
+            projection_checkpoint(cancel, deadline)
+            return projected
+    except TurnCancelled:
+        raise
+    except TimeoutError as error:
+        if timer.expired():
+            raise KernelError("trusted_action_output_timeout", "Action输出投影超时") from None
+        raise sanitize_gateway_exception(error, stage="output") from None
+    except Exception as error:
+        raise sanitize_gateway_exception(error, stage="output") from None
 
 
 def build_result(

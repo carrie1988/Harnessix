@@ -76,6 +76,8 @@ _GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
     "output": {
         **_ARTIFACT_PUBLICATION_ERRORS,
         "trusted_action_output_mismatch": "Action输出与审计终态不匹配",
+        "trusted_action_output_limit": "Action输出投影超过资源上限",
+        "trusted_action_output_timeout": "Action输出投影超时",
         "process_not_terminal": "Action Process尚未形成终态输出",
         "process_output_corrupt": "Action Process终态输出校验失败",
     },

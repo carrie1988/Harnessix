@@ -366,7 +366,19 @@ async def test_configured_output_provider_projects_audited_terminal_body(
     (root / "file.txt").write_text("before", encoding="utf-8")
     summary: dict[str, JsonValue] = {"summary": "changed"}
     artifact_sha256 = "b" * 64
-    output = FixedOutput({**summary, "artifact": {"sha256": artifact_sha256}})
+    output = FixedOutput(
+        {
+            **summary,
+            "artifact": ArtifactRef(
+                artifact_id=uuid4(),
+                sha256=artifact_sha256,
+                size_bytes=1024,
+                records=2,
+                complete=True,
+                expires_at=utc_now() + timedelta(days=1),
+            ).model_dump(mode="json"),
+        }
+    )
     executor = FakeExecutor(
         ActionExecutionOutcome(
             kind="succeeded",
@@ -407,7 +419,19 @@ async def test_terminal_recovery_reconstructs_output_without_reexecution(tmp_pat
     (root / "file.txt").write_text("before", encoding="utf-8")
     summary: dict[str, JsonValue] = {"summary": "persisted"}
     artifact_sha256 = "c" * 64
-    output = FixedOutput({**summary, "artifact": {"sha256": artifact_sha256}})
+    output = FixedOutput(
+        {
+            **summary,
+            "artifact": ArtifactRef(
+                artifact_id=uuid4(),
+                sha256=artifact_sha256,
+                size_bytes=1024,
+                records=2,
+                complete=True,
+                expires_at=utc_now() + timedelta(days=1),
+            ).model_dump(mode="json"),
+        }
+    )
     executor = FakeExecutor(
         ActionExecutionOutcome(
             kind="succeeded",

@@ -1,0 +1,42 @@
+{
+  "additionalProperties": false,
+  "description": "宿主持有的终态投影预算，不能由模型参数或Provider返回值修改。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.action-output-budget/v1",
+      "default": "harnessix.action-output-budget/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "max_bytes": {
+      "default": 1048576,
+      "maximum": 1048576,
+      "minimum": 1,
+      "title": "Max Bytes",
+      "type": "integer"
+    },
+    "max_depth": {
+      "default": 64,
+      "maximum": 64,
+      "minimum": 1,
+      "title": "Max Depth",
+      "type": "integer"
+    },
+    "max_nodes": {
+      "default": 10256,
+      "maximum": 10256,
+      "minimum": 1,
+      "title": "Max Nodes",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "default": 10.0,
+      "maximum": 30.0,
+      "minimum": 0.001,
+      "title": "Timeout Seconds",
+      "type": "number"
+    }
+  },
+  "title": "ActionOutputBudget",
+  "type": "object"
+}

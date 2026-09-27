@@ -269,6 +269,7 @@ from harnessix.trusted_actions.contracts import (
     CodingActionInvocation,
     TrustedToolBinding,
 )
+from harnessix.trusted_actions.output_budget import ActionOutputBudget
 from harnessix.trusted_actions.recovery_contracts import (
     ActionRecoveryScanReport,
     ActionRouteOperation,
@@ -380,6 +381,7 @@ def generate_specs(output: Path) -> None:
         ("process-launch-binding", ProcessLaunchBinding),
         ("process-lease", ProcessLease),
         ("process-output-observation", ProcessOutputObservation),
+        ("action-output-budget", ActionOutputBudget),
         ("public-process-stream-summary", PublicProcessStreamSummary),
         ("public-process-output-summary", PublicProcessOutputSummary),
         ("public-eval-output-summary", PublicEvalOutputSummary),

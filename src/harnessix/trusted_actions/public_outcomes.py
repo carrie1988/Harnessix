@@ -232,17 +232,7 @@ def _validate_process_failure(
     """严格验证摘要及计划/状态事实；不把验证模型的默认字段重写进原JSON。"""
 
     family = failure_family(plan)
-    model = PublicEvalOutputSummary if family == "eval" else PublicProcessOutputSummary
-    summary = model.model_validate(output)
-    if (
-        summary.profile != plan.invocation.arguments.get("profile")
-        or summary.process_id != str(plan.execution.plan_id)
-        or (
-            family == "process"
-            and plan.binding.executor_id != f"product.process-profile.{summary.profile}"
-        )
-    ):
-        raise ValueError("失败Process摘要与计划身份不匹配")
+    summary = _process_summary(plan, output)
     if summary.state == "unknown":
         valid = (
             outcome.kind in {"unknown", "manual_intervention"}
@@ -303,7 +293,7 @@ def normalize_failure_outcome(
     )
 
 
-def validate_failure_projection(
+def validate_public_projection(
     plan: ActionRoutePlan,
     outcome: ActionExecutionOutcome,
     projected: JsonValue,
@@ -311,15 +301,19 @@ def validate_failure_projection(
     expected_output_sha256: str,
     expected_artifact_sha256: str,
 ) -> None:
-    """验证正常返回的失败投影；不替代Owner正文哈希与Artifact所属域验证。"""
+    """所有Owner投影都绑定双摘要；成功也不能授权追加任意正文。"""
 
-    if outcome.kind == "succeeded":
-        return
     try:
-        if failure_family(plan) not in {"process", "eval"} or not isinstance(projected, dict):
+        if not isinstance(projected, dict):
             raise ValueError
         summary = {key: value for key, value in projected.items() if key != "artifact"}
-        _validate_process_failure(plan, outcome, summary)
+        family = failure_family(plan)
+        if outcome.kind != "succeeded":
+            if family not in {"process", "eval"}:
+                raise ValueError
+            _validate_process_failure(plan, outcome, summary)
+        elif family in {"process", "eval"}:
+            _validate_process_success(plan, summary)
         # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。
         reference = ArtifactRef.model_validate_json(json.dumps(projected.get("artifact")))
         if (
@@ -331,3 +325,34 @@ def validate_failure_projection(
         raise
     except Exception:
         raise KernelError("trusted_action_output_mismatch", "Action输出与审计终态不匹配") from None
+
+
+def _validate_process_success(plan: ActionRoutePlan, output: JsonValue) -> None:
+    """Process成功要求零退出；Eval非零退出仍是合法业务结论。"""
+
+    family = failure_family(plan)
+    summary = _process_summary(plan, output)
+    if (
+        summary.state != "exited"
+        or summary.stop_reason != "exited"
+        or (family == "process" and summary.returncode != 0)
+    ):
+        raise ValueError("成功Process摘要与计划或终态不匹配")
+
+
+def _process_summary(plan: ActionRoutePlan, output: JsonValue) -> PublicProcessOutputSummary:
+    """成功与失败共用正式DTO及计划身份检查，不重写用于摘要的原JSON。"""
+
+    family = failure_family(plan)
+    model = PublicEvalOutputSummary if family == "eval" else PublicProcessOutputSummary
+    summary = model.model_validate(output)
+    if (
+        summary.profile != plan.invocation.arguments.get("profile")
+        or summary.process_id != str(plan.execution.plan_id)
+        or (
+            family == "process"
+            and plan.binding.executor_id != f"product.process-profile.{summary.profile}"
+        )
+    ):
+        raise ValueError("Process摘要与计划身份不匹配")
+    return summary
