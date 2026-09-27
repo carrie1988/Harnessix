@@ -3,13 +3,13 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "c871f606af45ed2bd9e203bdb205ed06f9f86fe10049b4c195b4bdd485de09ab",
-      "size_bytes": 7977
+      "sha256": "70eaf30b7a2500db658a744a3e181bb47a21af5eeb39617fa521682ca41eec49",
+      "size_bytes": 8842
     },
     {
       "path": "budget-facts.json",
-      "sha256": "683e9a6b1c28be5c7ebf20ea3ed27aaf382990f5232499cdc1063304368189ba",
-      "size_bytes": 1896
+      "sha256": "1af4190545b1f3ecf394646e232e5b1eea5e5690f9a98974a024c22e6da0ec78",
+      "size_bytes": 3631
     },
     {
       "path": "ci-observation.json",
@@ -23,8 +23,8 @@
     },
     {
       "path": "verification.json",
-      "sha256": "9aabefea506bd49e7d2c88ebd21b08ff4b6e581e1fda68aeaa1a44157653fa99",
-      "size_bytes": 3450
+      "sha256": "351ad1ad7d39762b41e78839d73ca7852b3837189c6c1ff919cb4f28ded27903",
+      "size_bytes": 5104
     }
   ],
   "manifest_self_excluded": true,

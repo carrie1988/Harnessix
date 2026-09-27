@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 7fd1187f07fa415ecf48211bc0149aff0d7a6191
 owners:
   - core
@@ -29,7 +29,9 @@ supersedes: []
 [完整详细设计](../../changes/m09-4a-executor-output-budget.md)提供需求、源码研究、架构、流程、时序、
 数据流、6字段头部、类/接口、9个有限码、伪代码、取消/事务/恢复及部署边界。
 
-专项 **78 passed，1.30秒**；完整回归等待在稳定测试树上冻结。公开失败策略v2新增9个有限码，
+专项 **78 passed，1.30秒**；稳定测试树完整回归 **4429 passed、32 skipped，384.47秒**。
+测试树Revision：`416b4a9e40be5d7e9ab420bdac185788ae139855`；实现至测试树的生产代码、合同及可读性规则无差异，
+运行中未修改跟踪文件，冻结证据后仅重放证据门禁，不将其冒充又一次完整回归。公开失败策略v2新增9个有限码，
 v1计划、Binding、Audit及数据库Schema不变。本轮真实模型API请求为0，无新增定时任务。
 
 本专项关闭原始返回的编码前资源检查及后置处理期限，不关闭整个0.9.4a/0.9。有效小型成功JSON
@@ -78,6 +80,12 @@ flowchart TD
 专项不与完整回归相加，相关688 passed/6 skipped在物理退出用例最终补充前运行，不称覆盖最后全部
 新增代码。新增完整证据治理测试在最终完整回归前纳入稳定测试树；未跟踪攻击草稿不修改、不提交、不计TM。
 
+两个独立实际Runtime观察（只读、批准写调用）进一步确认：合法174字节成功JSON的未登记diagnostic
+字段可直接进入Model历史、Session和Protocol；Audit仅保存摘要，非空Telemetry未出现该诊断。
+每场景Execute=1、Reconcile=0、Output回调=0、Scripted请求=2；这些是开放边界的反例观察，
+不计为本专项新增通过用例，不宣称泄漏真实凭据或已声明Secret Binding。后续整改必须保留已确认
+SUCCEEDED事实，不能借公开投影失败改写效果或再次执行。
+
 ## 5. 源码、文档及发行物
 
 - [outcome_validation](../../../src/harnessix/trusted_actions/outcome_validation.py)：不调用返回实例的serializer，整个JSON封套先预算再DTO。
@@ -85,8 +93,8 @@ flowchart TD
 - [public_errors](../../../src/harnessix/trusted_actions/public_errors.py)、[public_outcomes](../../../src/harnessix/trusted_actions/public_outcomes.py)：有限拒绝原因、9个固定码与v2恢复分类。
 - [output_budget](../../../src/harnessix/trusted_actions/output_budget.py)：复用原生JSON预算，1MiB/64层/10256节点/128-bit及10秒，模型不可修改。
 
-Ruff、Mypy 332源文件、合同、可读性、Task Pack、SBOM Schema/漂移、Secret自检均要求通过；图形需
-实际渲染并目视检查。发行物来自实现Revision的干净git archive而非含草稿的工作树，Wheel/sdist
+Ruff、Mypy 332源文件、合同、可读性、Task Pack、SBOM Schema/漂移、Secret自检均已通过；详细设计4幅图及本报告1幅图
+均已实际渲染并目视检查。发行物来自实现Revision的干净git archive而非含草稿的工作树，Wheel/sdist
 成员与Hash见[budget-facts](budget-facts.json)；不声明位级可复现或许可证通过。
 
 ## 6. CI与风险阻断

@@ -17,7 +17,21 @@
   },
   "external_model_requests": 0,
   "full_regression": {
-    "status": "pending_stable_tree_run"
+    "command": "uv run pytest --ignore=tests/security -q --tb=short -o addopts=''",
+    "exit_code": 0,
+    "passed": 4429,
+    "seconds": 384.47,
+    "size_bytes": 5005,
+    "skipped": 32,
+    "source_inputs_unchanged_between_implementation_and_test_tree": true,
+    "source_revision": "7fd1187f07fa415ecf48211bc0149aff0d7a6191",
+    "status": "passed",
+    "stdout_sha256": "67631be2edfe100764aa720436a176c7a7c1f2313a877ebbc064f5dbf2c12efd",
+    "stdout_summary": "4429 passed, 32 skipped in 384.47s (0:06:24)",
+    "test_tree_git_object": "97348b16fc4dd6eb4bcb973cc78149904906ae25",
+    "test_tree_revision": "416b4a9e40be5d7e9ab420bdac185788ae139855",
+    "tracked_tree_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true
   },
   "governance_preflight": {
     "overlaps_full_regression": true,
@@ -43,6 +57,23 @@
     "stdout_summary": "许可证违规：12个Archive"
   },
   "make_check_passed": false,
+  "post_freeze_checks": {
+    "documentation": {
+      "overlaps_full_regression": false,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "76b982bacd640d781df38b86fe8ece07a8bbaff727b2c894f8272c0be5507aef",
+      "stdout_summary": "文档门禁通过：298份文档、7894条链接、720幅Mermaid、26个源码包、26个变化路径"
+    },
+    "evidence_governance": {
+      "overlaps_full_regression": true,
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "6d97c2d09fd6e45e041267688c17323e17d7cc29a69c4f02b3ff00b18f29486c",
+      "stdout_summary": "10 passed in 1.09s",
+      "test_count": 10
+    }
+  },
   "readability_passed": true,
   "readability_policy_relaxed": false,
   "related_regression": {
@@ -69,6 +100,12 @@
       "size_bytes": 28,
       "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
       "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "76b982bacd640d781df38b86fe8ece07a8bbaff727b2c894f8272c0be5507aef",
+      "stdout_summary": "文档门禁通过：298份文档、7894条链接、720幅Mermaid、26个源码包、26个变化路径"
     },
     "mypy": {
       "passed": true,

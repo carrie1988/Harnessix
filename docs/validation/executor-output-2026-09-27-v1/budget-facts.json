@@ -47,6 +47,58 @@
   "scripted_runtime_public_surfaces_nonempty": true,
   "store_reopen_owner_reconciliation_count": 1,
   "untracked_security_draft_excluded": true,
+  "valid_small_success_json_observation": {
+    "acceptance_pass_claimed": false,
+    "observed_open_gap": true,
+    "scenarios": [
+      {
+        "audit_state": "succeeded",
+        "body_bytes": 174,
+        "execute_calls": 1,
+        "output_callback_calls": 0,
+        "provider_requests": 2,
+        "read_only": true,
+        "real_model_requests": 0,
+        "reconcile_calls": 0,
+        "surfaces": {
+          "audit": false,
+          "model_history": true,
+          "protocol": true,
+          "session": true,
+          "telemetry": false
+        },
+        "telemetry_nonempty": true,
+        "tool_result_outcome": "succeeded",
+        "turn_status": "completed",
+        "workspace_unchanged": true
+      },
+      {
+        "audit_state": "succeeded",
+        "body_bytes": 174,
+        "execute_calls": 1,
+        "output_callback_calls": 0,
+        "provider_requests": 2,
+        "read_only": false,
+        "real_model_requests": 0,
+        "reconcile_calls": 0,
+        "surfaces": {
+          "audit": false,
+          "model_history": true,
+          "protocol": true,
+          "session": true,
+          "telemetry": false
+        },
+        "telemetry_nonempty": true,
+        "tool_result_outcome": "succeeded",
+        "turn_status": "completed",
+        "workspace_unchanged": true
+      }
+    ],
+    "script_sha256": "2e1c1696debe814250e058e0ed54761a333994eb10e29fb1e17769d94a167a1c",
+    "semantic_scope": "unregistered diagnostic field passed without a public field contract; no real credential or declared Secret-binding leakage claimed",
+    "source_revision": "7fd1187f07fa415ecf48211bc0149aff0d7a6191",
+    "stdout_sha256": "bd981287f76cf11895d36d39b341f602b26302b42b1baab249b0ebb40773999e"
+  },
   "valid_small_success_json_public_authorization_closed": false,
   "write_rejection_is_unknown": true
 }
