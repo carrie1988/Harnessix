@@ -97,6 +97,7 @@
     "sqlite_files_contain_registered_value": true,
     "turn_status": "failed"
   },
+  "original_evidence_files_preserved": 678,
   "original_public_schemas_changed": false,
   "original_text_not_rewritten": true,
   "per_content_id_window_utf8": true,
@@ -105,5 +106,6 @@
   "real_stdio_bytes_network_provider_or_three_platform_install_claimed": false,
   "safe_prefix_before_response_completion": true,
   "special_tests": 110,
+  "stable_test_tree_matches_fixed_source_inputs": true,
   "whole_step_byte_and_work_budget": true
 }

@@ -1,4 +1,13 @@
 {
+  "additional_finite_window_diagnostic": {
+    "cases": 168,
+    "formal_pytest_count_increment": 0,
+    "random_seed": 90498,
+    "real_model_requests": 0,
+    "registered_patterns": 7,
+    "rejected_before_full_value_publication": true,
+    "script_sha256": "5a30355ae491d4ff26a0a5b40b2a7239ed0c2103e010134b2a7242979a0eed22"
+  },
   "artifact_scan": {
     "exit_code": 0,
     "passed": true,
@@ -63,8 +72,23 @@
   },
   "external_model_requests": 0,
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "all_production_contract_script_policy_baseline_and_tests_same_as_fixed_source": true,
+    "exit_code": 0,
+    "fixed_source_comparison_inputs": 1302,
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 4910,
+    "seconds": 399.23,
+    "size_bytes": 5565,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "fab01127fbe9ceda665c5188c62e60d874c56781bf570c406c783a0a3cf60ef8",
+    "test_run_commit": "53f0f901027e39d80568332f033424dcf1825e86",
+    "test_run_tree": "7b2a99e43aeda9c69af9313fe2055091d9fff5d2",
+    "tracked_inputs_count": 2365,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 400.65
   },
   "gates": {
     "contracts": {
@@ -124,6 +148,30 @@
       "stdout_summary": ""
     }
   },
+  "historical_evidence_preservation": {
+    "all_original_bytes_unchanged": true,
+    "base_revision": "96a0b7955d50cee6f8980ff0e9878251e9c989a9",
+    "files": 678
+  },
+  "isolated_wheel_consumer_smoke": {
+    "actual_runtime_sqlite_sdk": true,
+    "failure_code": "public_output_secret_leak",
+    "full_product_stdio_network_or_install_acceptance_claimed": false,
+    "module_names": [
+      "harnessix.agent.publication",
+      "harnessix.agent.model_text",
+      "harnessix.agent.runtime",
+      "harnessix.secrets.publication",
+      "harnessix.secrets.text_publication"
+    ],
+    "passed": true,
+    "project_tests_or_sources_used": false,
+    "provider_requests": 1,
+    "real_model_requests": 0,
+    "smoke_script_sha256": "a05c954c63f1f25b6badd8ce55640b8522369776c1820d051db745c8858677f6",
+    "wheel_modules_imported": true,
+    "wheel_sha256": "1979b4e3be7b0b9ac6783f5736f65fcd47812f7fabde3cdfc7f2d2f8b8585680"
+  },
   "license_gate": {
     "blocked_archive_count": 12,
     "exit_code": 1,
@@ -133,6 +181,11 @@
   },
   "make_check_passed": false,
   "new_automation_created": false,
+  "new_governance_tests": {
+    "formal_pytest_count_increment": 2,
+    "new": 2,
+    "passed": 22
+  },
   "related_regression": {
     "includes_all_later_special_tests": false,
     "passed": 1837,

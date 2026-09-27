@@ -286,6 +286,14 @@ flowchart LR
 
 ## 12. 源码阅读路径与维护规则
 
+核心入口使用固定源码永久链接：[纯端口与能力工厂](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/agent/publication.py#L35)、
+[文本生命周期](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/agent/model_text.py#L41)、
+[窗口与累计预算](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/secrets/text_publication.py#L11)、
+[事件批次保护](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/agent/runtime.py#L577)、
+[模型采样装配](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/agent/runtime.py#L2427)、
+[摘要出站检查](https://github.com/carrie1988/Harnessix/blob/b9443cc9bb9252d51ec79214357de081100949ae/src/harnessix/agent/runtime.py#L1387)。
+以下本地文件链接用于继续阅读当前代码，永久链接用于复核此验收版本。
+
 | 阅读顺序 | 源码及重点 |
 |---|---|
 | 1 | [`publication.py`](../../src/harnessix/agent/publication.py)：纯可选能力、工厂回收、泛型保护、固定码。 |
