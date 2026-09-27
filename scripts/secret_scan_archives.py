@@ -197,7 +197,7 @@ def _decompress(body: bytes, kind: str, budget: ScanBudget) -> bytes:
     return data
 
 
-def _preflight_tar(body: bytes, budget: ScanBudget) -> None:
+def _preflight_tar(body: bytes, budget: ScanBudget, *, skip_links: bool = False) -> None:
     """有界检查实际TAR块；元数据记录同样计数，拒绝无终止块和隐藏尾部。"""
 
     offset, count = 0, 0
@@ -216,9 +216,10 @@ def _preflight_tar(body: bytes, budget: ScanBudget) -> None:
             raise ScanIncompleteError("scan_archive_unsupported")
         size = int(size_field, 8)
         entry_type = header[156:157]
-        if entry_type not in (b"0", b"\x00", b"5", b"x", b"g", b"L"):
+        allowed = (b"0", b"\x00", b"5", b"x", b"g", b"L")
+        if entry_type not in allowed and not (skip_links and entry_type in (b"1", b"2")):
             raise ScanIncompleteError("scan_archive_entry_unsupported")
-        if entry_type == b"5" and size:
+        if entry_type in (b"5", b"1", b"2") and size:
             raise ScanIncompleteError("scan_archive_invalid")
         cap = 65536 if entry_type in (b"x", b"g", b"L") else budget.limits.member_bytes
         if size > cap:
@@ -227,13 +228,18 @@ def _preflight_tar(body: bytes, budget: ScanBudget) -> None:
     raise ScanIncompleteError("scan_archive_invalid")
 
 
-def _tar_members(body: bytes, budget: ScanBudget) -> Iterator[tuple[str, bytes]]:
-    _preflight_tar(body, budget)
+def _tar_members(
+    body: bytes, budget: ScanBudget, *, skip_links: bool = False
+) -> Iterator[tuple[str, bytes]]:
+    # 许可证据采集可以跳过无载荷链接，但不解析目标；Secret扫描始终使用默认拒绝合同。
+    _preflight_tar(body, budget, skip_links=skip_links)
     with tarfile.open(fileobj=io.BytesIO(body), mode="r|") as archive:
         for entry in archive:
             budget.entry(member=True)
             _validate_member_name(entry.name)
             if entry.isdir():
+                continue
+            if skip_links and (entry.issym() or entry.islnk()):
                 continue
             if not entry.isfile() or entry.sparse is not None:
                 raise ScanIncompleteError("scan_archive_entry_unsupported")

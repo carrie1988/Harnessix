@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 9
-code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
+version: 10
+code_revision: 747fe9b6a40bb6596c23772fab686b5df0b1db74
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway输出已脱敏、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
-| 本文设计状态 | `reviewing`；a/b已有实现候选；0601ede六作业CI成功，Windows编码与POSIX合同导入污染修复通过。Secret v2归档/失败关闭进入候选验证；许可证版本来源、安装输入及c/d尚未验收。 |
+| 本文设计状态 | `reviewing`；a/b已有实现候选；0601ede六作业CI成功，Windows编码与POSIX合同导入污染修复通过。Secret v2在747fe9b CI五作业成功/Windows夹具失败，修复候选待验证；许可v2绑定777件，pywin32 12件受限正文冲突仍阻断，安装输入及c/d尚未验收。 |
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |
 
@@ -191,8 +191,8 @@ sequenceDiagram
 | 编号 | 当前行为与可复现边界 | 必须完成的整改 |
 |---|---|---|
 | SEC-094-A1 | 原实现按类型透传任意KernelError；已由三个失败负例复现。当前候选按decode/resolve/policy有限合同重建固定错误，不继承消息/retry提示。 | [专项详设](m09-4a-plan-error-trust-boundary.md)及真实Runtime/Model历史/Session/Audit/Protocol/Telemetry回归已建立；本地完整回归3904 passed/32 skipped及五公开面专项通过；0601ede六作业CI成功已验证该窄计划边界；0.9.4a的Execute/Reconcile及结构化输出全面审查仍独立开放。 |
-| SEC-094-B2 | v1对NUL二进制和`.env.example`跳过、压缩Wheel不读取成员，缺失输入静默放行；四项负例均失败。v2已删除skip路径，新增有界ZIP/TAR/压缩流、BOM视图与固定未完成合同。 | [有界扫描详设](m09-4b-bounded-secret-scan.md)覆盖坏包、隐藏尾部、预算、取消/超时及真实包门禁；[冻结报告](../validation/secret-scan-2026-09-27-v1/README.md)记录3996 passed/32 skipped、87专项与干净源码Wheel/sdist；三平台CI终态仍待核验，不标记整体0.9.4b完成。 |
-| SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | 精确包版本/来源/证据绑定、平台条件证据与许可证表达式决策；版本升级不能沿用未验证的旧许可结论。 |
+| SEC-094-B2 | v1对NUL二进制和`.env.example`跳过、压缩Wheel不读取成员，缺失输入静默放行；四项负例均失败。v2已删除skip路径，新增有界ZIP/TAR/压缩流、BOM视图与固定未完成合同。 | [有界扫描详设](m09-4b-bounded-secret-scan.md)覆盖坏包、隐藏尾部、预算、取消/超时及真实包门禁；[冻结报告](../validation/secret-scan-2026-09-27-v1/README.md)记录3996 passed/32 skipped、87专项与干净源码Wheel/sdist；747fe9b CI五成功/Windows夹具失败，[夹具详设](m09-4b-secret-fixture-portability.md)保留旧失败并补身份自检，候选仍需新Windows终态；不标记整体0.9.4b完成。 |
+| SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | [Archive级许可详设](m09-4b-archive-license-evidence.md)建立777件实际元数据/通知原字节、锁版本/来源/摘要绑定和离线SPDX/收据门禁。实际pywin32 12件包含LGPL正文复核信号，现有拒绝策略保持；替换或例外及义务评审未完成，发布仍阻断。 |
 
 上述行为是离线合成输入已确认的控制缺口，不表示发现或保存了真实凭据；尚未通过端到端回归的
 整改不得标记关闭。SBOM格式与干净检出整改只解决库存交付，不替代这些独立安全门禁。
@@ -217,3 +217,5 @@ sequenceDiagram
 | 7 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定阶段证据、当前源代码及候选导入隔离回归；0.9.4全部发布门禁保持未完成 |
 
 | 8 | `0601ede74c01039411c8be85e4297debe9dff478` | 2026-09-27 | 登记前序六作业CI终态成功；Secret v2归档/失败关闭候选建立正式详设、四项缺陷负例及真实发行物门禁，不关闭其他子切片。 |
+
+| 10 | 修复候选 | 2026-09-27 | 登记747fe9b真实Windows夹具失败；稳定短ID与ZIP双记录原名自检。许可门禁迁移Archive级v2、全部777件采集与离线重读；pywin32 12件保持实际许可发布阻断。 |

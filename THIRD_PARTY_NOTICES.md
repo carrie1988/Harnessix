@@ -45,3 +45,13 @@ Harnessix生产实现依赖，也不代表上游项目当前行为。
 版本解析以`uv.lock`和实际发行物为准。依赖表不替代各组件发行包中的完整许可证与版权通知，也不代表已经完成全部传递依赖审计。0.9发布门禁将生成机器可读SBOM、传递依赖许可证报告和发行物内通知集合；发现不兼容、未知或缺失许可证时必须阻断1.0发布。
 
 Git、系统Shell、搜索工具、Container Runtime、WSL2和Docker Desktop等外部程序不由Harnessix Code发行包捆绑，其安装、使用和许可证由对应平台与用户环境管理。
+
+## 精确发行物原字节证据与当前阻断
+
+[`license-evidence-v2/index.json`](governance/license-evidence-v2/index.json)登记73个锁定第三方组件的777份发行件，
+对应METADATA/PKG-INFO、声明许可证和候选通知原字节保存在同目录blobs中，完整版权与许可文本未改写。
+[报告v2](governance/license-scan-v2.json)提供每件身份及策略结果，不替代实际发行内容和完整义务审查。
+开发工具`packaging 26.3`用于SPDX表达式解析，明确登记为直接开发依赖，元数据声明为Apache-2.0 OR BSD-2-Clause。
+
+Windows条件依赖`pywin32 312`实际包含adodbapi的LGPL-2.1正文，不能以元数据PSF概括其全部附属内容。
+当前策略保持拒绝，12个锁定Wheel均阻断发布；依赖替换或精确例外与分发义务评审完成前不得认定全部依赖获准。

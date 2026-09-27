@@ -1,0 +1,65 @@
+{
+  "allow": [
+    "MIT",
+    "MIT-0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Apache-2.0",
+    "PSF-2.0",
+    "MPL-2.0"
+  ],
+  "allow_exceptions": [],
+  "deny": [
+    "GPL-2.0-only",
+    "GPL-2.0-or-later",
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "LGPL-2.1-only",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+    "SSPL-1.0",
+    "CC-BY-NC-4.0",
+    "CC-BY-NC-SA-4.0"
+  ],
+  "review": "仅准许明确SPDX原子；AND与OR均要求所有原子获准。未知声明、受限正文复核信号和没有精确Archive绑定的人工结论阻断发布。",
+  "reviews": [
+    {
+      "basis": "原始LICENSE.txt含源/二进制保留通知、禁止借名背书三项条件及免责条款；两份精确Archive分别复核，不继承包名级覆盖。",
+      "binding": {
+        "kind": "wheel",
+        "metadata_sha256": "7baed29eb50c3b29bdb33ff84e3177bf1bc05784f7685ecdcaa4471c7dd810cc",
+        "name": "colorama",
+        "notice_sha256": [
+          "cac35c02686e5d04a5a7140bfb3b36e73aed496656e891102e428886d7930318"
+        ],
+        "registry": "https://pypi.org/simple",
+        "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+        "size_bytes": 25335,
+        "url": "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl",
+        "version": "0.4.6"
+      },
+      "expression": "BSD-3-Clause",
+      "review_id": "colorama-0.4.6-wheel"
+    },
+    {
+      "basis": "原始LICENSE.txt含源/二进制保留通知、禁止借名背书三项条件及免责条款；两份精确Archive分别复核，不继承包名级覆盖。",
+      "binding": {
+        "kind": "sdist",
+        "metadata_sha256": "7baed29eb50c3b29bdb33ff84e3177bf1bc05784f7685ecdcaa4471c7dd810cc",
+        "name": "colorama",
+        "notice_sha256": [
+          "cac35c02686e5d04a5a7140bfb3b36e73aed496656e891102e428886d7930318"
+        ],
+        "registry": "https://pypi.org/simple",
+        "sha256": "08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
+        "size_bytes": 27697,
+        "url": "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz",
+        "version": "0.4.6"
+      },
+      "expression": "BSD-3-Clause",
+      "review_id": "colorama-0.4.6-sdist"
+    }
+  ],
+  "spec_version": "harnessix.license-policy/v2"
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 95
-code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
+version: 96
+code_revision: 747fe9b6a40bb6596c23772fab686b5df0b1db74
 owners:
   - core
 modules:
@@ -485,7 +485,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
   [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。
   [有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)取消整文件豁免并增加真实发行物、归档、预算和未完成阻断；
-  [本地3996 passed/32 skipped及干净源码发行物](validation/secret-scan-2026-09-27-v1/README.md)已通过，当前三平台CI终态待验证；
+  [本地3996 passed/32 skipped及干净源码发行物](validation/secret-scan-2026-09-27-v1/README.md)已通过；747fe9b CI五成功、Windows夹具失败，[夹具修复](changes/m09-4b-secret-fixture-portability.md)等待新Windows终态。
+  [Archive许可证据](changes/m09-4b-archive-license-evidence.md)已采集全部777件并形成离线门禁候选，
+  pywin32 12件含LGPL复核信号，原拒绝策略保持不变，许可发布门禁仍失败；
   许可证版本来源绑定、不可变安装输入和权利审查仍须关闭；
 - [ ] **0.9.4c 编号化攻击回归**：TM-01～TM-13及子编号均须对应真实攻击输入、具体控制、预期拒绝、
   不变副作用和三平台适用边界，不用不存在的接口、空构造或宽泛异常断言冒充回归；

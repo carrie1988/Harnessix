@@ -29,22 +29,22 @@ def _cp1252_run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.parametrize("mode", ["module", "script"])
 @pytest.mark.parametrize(
-    ("name", "arguments", "message"),
+    ("name", "arguments", "message", "returncode"),
     [
-        ("sbom_generate", ["--check"], "SBOM一致且Schema有效"),
-        ("license_scan", ["--check"], "许可证扫描通过"),
-        ("secret_scan", ["--self-check"], "Secret扫描自检通过"),
-        ("documentation_check", ["--help"], "门禁"),
-        ("generate_specs", ["--help"], "usage:"),
+        ("sbom_generate", ["--check"], "SBOM一致且Schema有效", 0),
+        ("license_scan", ["--check"], "许可证违规", 1),
+        ("secret_scan", ["--self-check"], "Secret扫描自检通过", 0),
+        ("documentation_check", ["--help"], "门禁", 0),
+        ("generate_specs", ["--help"], "usage:", 0),
     ],
 )
 def test_cli_succeeds_with_cp1252_output_environment(
-    name: str, arguments: list[str], message: str, mode: str
+    name: str, arguments: list[str], message: str, returncode: int, mode: str
 ) -> None:
     entry = ["-m", f"scripts.{name}"] if mode == "module" else [f"scripts/{name}.py"]
     result = _cp1252_run([*entry, *arguments])
-    assert result.returncode == 0, result.stderr
-    assert message in result.stdout
+    assert result.returncode == returncode, result.stderr
+    assert message in (result.stdout if returncode == 0 else result.stderr)
     assert "UnicodeEncodeError" not in result.stderr
 
 

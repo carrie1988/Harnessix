@@ -108,6 +108,7 @@ def test_supported_archive_members_are_scanned(tmp_path: Path, format: str) -> N
         (_zip(b""), ".zip"),
         (_tar(b""), ".tar"),
     ],
+    ids=["wheel-public", "tar-public", "zip-empty-member", "tar-empty-member"],
 )
 def test_benign_archives_are_clean(tmp_path: Path, body: bytes, suffix: str) -> None:
     assert _scan(tmp_path, body, suffix) == []
@@ -276,10 +277,34 @@ def test_zip_compression_tail_cannot_hide_another_payload(tmp_path: Path) -> Non
 def test_unsafe_archive_paths_block_without_extraction(
     tmp_path: Path, name: str, format: str
 ) -> None:
-    body = _zip(b"public", name=name) if format == "zip" else _tar(b"public", name=name)
+    body = _zip_with_raw_name(name) if format == "zip" else _tar(b"public", name=name)
     with pytest.raises(secret_scan.ScanIncompleteError, match="scan_archive_entry_unsupported"):
         _scan(tmp_path, body, "." + format)
     assert sorted(path.name for path in tmp_path.iterdir()) == ["artifact." + format]
+
+
+def _zip_with_raw_name(name: str) -> bytes:
+    """在本地头与中央目录写入原字节，避免Windows写入器把反斜杠规范化。"""
+
+    encoded = name.encode("ascii")
+    body = bytearray(_zip(b"public", name="a" * len(encoded)))
+    central = body.index(b"PK\x01\x02")
+    body[30 : 30 + len(encoded)] = encoded
+    body[central + 46 : central + 46 + len(encoded)] = encoded
+    return bytes(body)
+
+
+@pytest.mark.parametrize("name", ["../config.py", "/config.py", "C:/config.py", "dir\\config.py"])
+def test_hostile_zip_fixture_preserves_both_raw_names(name: str) -> None:
+    body = _zip_with_raw_name(name)
+    encoded = name.encode("ascii")
+    central = body.index(b"PK\x01\x02")
+    assert struct.unpack_from("<H", body, 26)[0] == len(encoded)
+    assert struct.unpack_from("<H", body, central + 28)[0] == len(encoded)
+    assert body[30 : 30 + len(encoded)] == encoded
+    assert body[central + 46 : central + 46 + len(encoded)] == encoded
+    with zipfile.ZipFile(io.BytesIO(body)) as archive:
+        assert archive.infolist()[0].orig_filename == name
 
 
 def test_tar_link_metadata_limits_and_trailing_data_block(tmp_path: Path) -> None:

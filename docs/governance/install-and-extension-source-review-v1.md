@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 4
-code_revision: ad2f8e226b674e4787ad0002f0d038a2a81ccfef
+version: 5
+code_revision: 747fe9b6a40bb6596c23772fab686b5df0b1db74
 owners:
   - core
 modules:
@@ -54,3 +54,9 @@ supersedes: []
 ## 5. 边界
 
 本审查不评估上游动作与镜像自身的内容安全性（以SHA与Digest固定版本并复用上游安全更新流程）；不覆盖用户自行安装的第三方MCP Server/Skill内容；不替代1.0前的完整渗透测试。
+
+## 6. 许可证门禁与安装可复现性的分离
+
+[Archive许可证据v2](../changes/m09-4b-archive-license-evidence.md)绑定所有锁定平台发行件，
+正常CI不再依赖本机已安装许可证元数据。pywin32附属LGPL正文引发12件真实发布阻断；
+脚本测试通过不能替代许可门禁通过，也不能替代Docker/构建后端/文档工具传递依赖的不可变输入整改。

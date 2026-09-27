@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.license_scan import build_report
+from scripts.license_decisions import decide
 from scripts.sbom_generate import build_sbom, canonical_bytes, validate_sbom
 from scripts.secret_scan import scan_paths
 
@@ -52,46 +52,26 @@ def test_sbom_check_passes_for_committed_file() -> None:
     assert completed.returncode == 0
 
 
-def test_license_report_blocks_unknown_and_denied(tmp_path: Path) -> None:
-    lock = tmp_path / "uv.lock"
-    lock.write_text(
-        'version = 1\n[[package]]\nname = "evil-lib"\nversion = "1.0"\n'
-        '[[package]]\nname = "unknown-lib"\nversion = "2.0"\n',
-        encoding="utf-8",
-    )
-    policy = {
-        "spec_version": "harnessix.license-policy/v1",
-        "allow": ["MIT"],
-        "deny": ["GPL-3.0-ONLY"],
-        "overrides": [{"name": "evil-lib", "declared_license": "GPL-3.0-only"}],
-    }
-    report = build_report(lock, policy)
-    statuses = {entry["name"]: entry["status"] for entry in report["entries"]}
-    assert statuses == {"evil-lib": "violation", "unknown-lib": "violation"}
-    assert report["violation_count"] == 2
+def test_license_report_blocks_unknown_and_denied() -> None:
+    policy = {"allow": ["MIT"], "deny": ["GPL-3.0-only"]}
+    assert decide("GPL-3.0-only", policy)[0] == "violation"
+    assert decide("UNKNOWN", policy)[0] == "violation"
 
 
-def test_license_and_logic_requires_all_parts(tmp_path: Path) -> None:
-    lock = tmp_path / "uv.lock"
-    lock.write_text(
-        'version = 1\n[[package]]\nname = "dual-lic"\nversion = "1.0"\n',
-        encoding="utf-8",
-    )
-    policy = {
-        "spec_version": "harnessix.license-policy/v1",
-        "allow": ["MIT"],
-        "deny": [],
-        "overrides": [{"name": "dual-lic", "declared_license": "MIT AND Apache-2.0"}],
-    }
-    report = build_report(lock, policy)
-    assert report["violation_count"] == 1
-    policy["allow"] = ["MIT", "APACHE-2.0"]
-    assert build_report(lock, policy)["violation_count"] == 0
+def test_license_and_logic_requires_all_parts() -> None:
+    policy = {"allow": ["MIT"], "deny": []}
+    assert decide("MIT AND Apache-2.0", policy)[0] == "violation"
+    policy["allow"] = ["MIT", "Apache-2.0"]
+    assert decide("MIT AND Apache-2.0", policy)[0] == "allow"
 
 
-def test_committed_license_report_is_clean() -> None:
+def test_committed_license_report_keeps_restricted_archives_blocked() -> None:
+    # 工具正确性与发布资格不同：测试证明失败关闭，CI许可门禁仍真实失败。
     completed = _run("scripts.license_scan", "--check")
-    assert completed.returncode == 0, completed.stderr
+    report = json.loads((ROOT / "governance/license-scan-v2.json").read_bytes())
+    assert completed.returncode == 1, completed.stderr
+    assert report["violation_count"] == 12
+    assert "许可证违规" in completed.stderr
 
 
 def test_secret_rules_hit_sensitive_and_miss_benign(tmp_path: Path) -> None:

@@ -33,6 +33,7 @@ tui = [
 
 [dependency-groups]
 dev = [
+    "packaging>=26.3,<27",
     "mypy>=1.17,<2",
     "pytest>=8.4,<9",
     "pytest-asyncio>=1.1,<2",

@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: httpx2-jsfetch
+Version: 1.0
+Summary: httpx2 transports for Emscripten/Pyodide, backed by the JavaScript fetch API.
+Author-email: Hood Chatham <roberthoodchatham@gmail.com>
+License-Expression: BSD-3-Clause
+License-File: LICENSE.md
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Web Environment
+Classifier: Framework :: AsyncIO
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Classifier: Topic :: Internet :: WWW/HTTP
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+
+httpx2 transports for Pyodide

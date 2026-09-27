@@ -8519,6 +8519,7 @@
         "pkg:pypi/opentelemetry-api@1.44.0",
         "pkg:pypi/opentelemetry-exporter-otlp-proto-http@1.44.0",
         "pkg:pypi/opentelemetry-sdk@1.44.0",
+        "pkg:pypi/packaging@26.3",
         "pkg:pypi/pydantic@2.13.5",
         "pkg:pypi/pytest-asyncio@1.4.0",
         "pkg:pypi/pytest@8.4.2",
@@ -8927,11 +8928,11 @@
       },
       {
         "name": "harnessix:lock_sha256",
-        "value": "3ad02ec651a8f0116d491f31d661235572972a7683c7514a3a5fc95dc090ce61"
+        "value": "9a64451b9b7d3140fd5baddc84e42f171feed3b66e93c8f92609596634d45083"
       },
       {
         "name": "harnessix:project_sha256",
-        "value": "fc7b281ab58539c0e5c3ff547518c9fc441adfec4aee7ff1949d9bdc0ae6bb6c"
+        "value": "f46a005fe7cd6d6a81c716f15f5d8b6daa1945343d98d627a1b9514023d38481"
       }
     ]
   },
