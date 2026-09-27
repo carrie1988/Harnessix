@@ -1,0 +1,356 @@
+{
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "4d493fe1aac0e84ef8e9572080abd73631e726cf305e2b7adb5f788be219f255",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2444个输入完整覆盖且固定规则零命中"
+  },
+  "build": {
+    "clean_machine_install_claimed": false,
+    "code_revision": "cef1b17cf63a5bed7d7740d5cbea5bc67728deb2",
+    "dependencies_reused_local_environment": true,
+    "exit_code": 0,
+    "passed": true,
+    "release_artifacts": false,
+    "reproducible_build_claimed": false,
+    "size_bytes": 249,
+    "source_archive_docs_are_pre_full_freeze": true,
+    "stdout_sha256": "7a90c907a066783f6fd3f7ad038d8d9a2de84be5df57186d0306c83972ea9be8",
+    "stdout_summary": "Successfully built /private/tmp/harnessix-managed-key-dist/harnessix-0.1.0-py3-none-any.whl"
+  },
+  "code_revision": "cef1b17cf63a5bed7d7740d5cbea5bc67728deb2",
+  "deterministic_read_reproduction": {
+    "fixed_run": {
+      "size_bytes": 98,
+      "stdout_sha256": "ffb3305f26bdab2c9e7281d98ecc2849070a45bdf1f7f41a25e4a0d31b752002",
+      "stdout_summary": "9 passed in 0.85s"
+    },
+    "fixed_source_passed": 9,
+    "old_run": {
+      "size_bytes": 11704,
+      "stdout_sha256": "644cb5224b2e82a43564cc668ff79250db2486d90346b68f73e49a156e610c8e",
+      "stdout_summary": "2 failed, 6 deselected in 0.15s"
+    },
+    "old_source_failed": 2,
+    "overlaps_key_root_tests": true,
+    "scope": "checkpoint held, real second connection committed"
+  },
+  "diagrams": {
+    "diagrams": 5,
+    "each_png_visually_inspected": true,
+    "new_managed_key_diagrams": 4,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-managed-session-key-and-root.md",
+        "exit_code": 0,
+        "png_sha256": "a53610d2d3628e99af7a31419d73f1c1ebb26092ab8bd7194280bbf4a7888dd2",
+        "png_size_bytes": 66314,
+        "source_sha256": "f4f7b3c43cfc3ce0e56886477bc50860be77e84d3657b9f24fedf5e301761d65"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-managed-session-key-and-root.md",
+        "exit_code": 0,
+        "png_sha256": "fb9ef2723149d1ad484f31f996970b6ba084c4f29f61702201d499600dd56d56",
+        "png_size_bytes": 76965,
+        "source_sha256": "be4cc2a7c8b49896a4dac8720864735696dacee4b7040461e70118aa4f695ac5"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-managed-session-key-and-root.md",
+        "exit_code": 0,
+        "png_sha256": "018a8de909edce3acc515cb06d8694831b2fd7747aed548045fbe2fb5653e61a",
+        "png_size_bytes": 81132,
+        "source_sha256": "f9ac17ba888455259cae17a48fd066eee302f1b200d140162698cfe9d5c689e6"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-managed-session-key-and-root.md",
+        "exit_code": 0,
+        "png_sha256": "ea38019b27bae2c8c2ca11d9de22e6e96825181ee8198ba27572630d36a14690",
+        "png_size_bytes": 63934,
+        "source_sha256": "6f2696832910171620442952f06edce6853ae018691457a29c3046b740847f2e"
+      },
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-authenticated-sqlite-session.md",
+        "exit_code": 0,
+        "png_sha256": "07936d4d6eebd7e39d3217c3ea474cf7ace6b7f9db4f890a46944d19606f3fc9",
+        "png_size_bytes": 48857,
+        "source_sha256": "7532ea1d45f2a4809237097d0e86704393762d268968ac9d8e60f25f97db8246"
+      }
+    ],
+    "updated_library_diagrams": 1
+  },
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "gates": {
+    "contracts": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_specs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/documentation_check.py",
+        "--changed-from",
+        "ae560ad26899ae8ecb55bfc5c0ff2539727f5088"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "b02cd921f9a38369fb30062b3c606e77f0bec9b0e15165f566f300499085567e",
+      "stdout_summary": "文档门禁通过：335份文档、8588条链接、778幅Mermaid、26个源码包、38个变化路径"
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "9b0e1c15341d6fc580863c6927859d911af92fb9646149767a0ee2f221a348e8",
+      "stdout_summary": "1196 files already formatted"
+    },
+    "lint": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "mypy": {
+      "command": [
+        "uv",
+        "run",
+        "mypy",
+        "src"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "72e284de2e30fb34eecefac429acb634bc00f8803dd7cf07c888996d96fbe24d",
+      "stdout_summary": "Success: no issues found in 360 source files"
+    },
+    "readability": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/readability_report.py",
+        "--check",
+        "--check-final-report",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    },
+    "sbom": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/sbom_generate.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret_self": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/secret_scan.py",
+        "--self-check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_engineering_task_pack.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    }
+  },
+  "key_root_regression": {
+    "passed": 43,
+    "scope": "49 new key, ABI, platform and Root cases",
+    "size_bytes": 110,
+    "skipped": 6,
+    "stdout_sha256": "2a53ea6893774bebc183e9cd2394d4eff2cb4ef0fd263d8d990492ce1c3bcb16",
+    "stdout_summary": "43 passed, 6 skipped in 1.40s"
+  },
+  "license_gate": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/license_scan.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "real_model_requests": 0,
+  "related_regression": {
+    "overlaps_key_root_tests": true,
+    "passed": 1448,
+    "scope": [
+      "tests/agent",
+      "tests/artifacts",
+      "tests/context",
+      "tests/product_config",
+      "tests/app_server",
+      "tests/session"
+    ],
+    "seconds": 82.54,
+    "size_bytes": 1723,
+    "skipped": 6,
+    "source_semantics_unchanged_after_run": true,
+    "stdout_sha256": "0afcb85f74d1544ef87ee54e1585c5cea3db4496083dc013fd6eff6b6d2b64e9"
+  },
+  "wheel_consumer": {
+    "actual_product_cli": true,
+    "actual_sdk_os_pipes": true,
+    "clean_machine_install_claimed": false,
+    "code_revision": "cef1b17cf63a5bed7d7740d5cbea5bc67728deb2",
+    "default_product_authentication_claimed": true,
+    "fixture_persistent_key": false,
+    "isolated_from_source_and_tests": true,
+    "module_bytes_match_fixed_revision": true,
+    "passed": true,
+    "platform": "macos",
+    "production_key_backend_claimed": true,
+    "real_model_requests": 0,
+    "records": [
+      {
+        "actual_product_cli": true,
+        "actual_sdk_os_pipes": true,
+        "all_four_session_facts_committed_together": true,
+        "fixture_persistent_key": false,
+        "isolated_python": true,
+        "key_identity": {
+          "key_id": "0873b5dd-59ce-4c0b-9b60-a94b882f4b3a",
+          "store_id": "a70bffe7-d413-445f-8fa9-5b0de9c01745"
+        },
+        "managed_key_backend": true,
+        "module_origin_verified": true,
+        "passed": true,
+        "private_owned_material_cleared": true,
+        "real_model_requests": 0,
+        "script_sha256": "0ae31b733ea7be5062052c6ecd89274fd23d10d3d7495c10c69bcca3b314bea8"
+      },
+      {
+        "actual_product_cli": true,
+        "actual_sdk_os_pipes": true,
+        "fixture_persistent_key": false,
+        "isolated_python": true,
+        "key_identity": {
+          "key_id": "0873b5dd-59ce-4c0b-9b60-a94b882f4b3a",
+          "store_id": "a70bffe7-d413-445f-8fa9-5b0de9c01745"
+        },
+        "managed_key_backend": true,
+        "module_origin_verified": true,
+        "original_five_ledgers_preserved_across_os_processes": true,
+        "passed": true,
+        "real_model_requests": 0,
+        "rejected": [
+          {
+            "error_code": "publication_key_unavailable",
+            "exit_code": 2,
+            "no_protocol_output": true,
+            "original_five_ledgers_unchanged": true,
+            "scenario": "missing_key"
+          },
+          {
+            "error_code": "publication_key_unavailable",
+            "exit_code": 2,
+            "no_protocol_output": true,
+            "original_five_ledgers_unchanged": true,
+            "scenario": "damaged_key"
+          },
+          {
+            "error_code": "publication_history_unproven",
+            "exit_code": 2,
+            "no_protocol_output": true,
+            "original_five_ledgers_unchanged": true,
+            "scenario": "snapshot_and_sha"
+          },
+          {
+            "error_code": "publication_key_unavailable",
+            "exit_code": 2,
+            "no_protocol_output": true,
+            "original_five_ledgers_unchanged": true,
+            "scenario": "legacy_without_key"
+          },
+          {
+            "error_code": "publication_history_unproven",
+            "exit_code": 2,
+            "no_protocol_output": true,
+            "original_five_ledgers_unchanged": true,
+            "scenario": "legacy_with_key"
+          }
+        ],
+        "script_sha256": "0ae31b733ea7be5062052c6ecd89274fd23d10d3d7495c10c69bcca3b314bea8",
+        "stable_independent_key_identity": true
+      }
+    ],
+    "separate_os_processes": true,
+    "windows_native_acceptance_claimed": false
+  }
+}

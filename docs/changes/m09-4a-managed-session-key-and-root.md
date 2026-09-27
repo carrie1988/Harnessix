@@ -2,7 +2,7 @@
 doc_type: change-design
 status: draft
 version: 1
-code_revision: ae560ad26899ae8ecb55bfc5c0ff2539727f5088
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners: [core]
 modules: [product_config, session, secrets]
 related_adrs:
@@ -276,3 +276,29 @@ Key导出、保护恢复包、轮换、跨用户/机器迁移、卸载与诊断�
    [原生文件](../../src/harnessix/product_config/session_key_windows_files.py)、[Windows组合](../../src/harnessix/product_config/session_key_windows.py)。
 4. [Owner](../../src/harnessix/product_config/session_key.py)与[默认Root](../../src/harnessix/product_config/server.py)。
 5. [既有SQLite认证设计](m09-4a-authenticated-sqlite-session.md)与[来源研究](../research/managed-session-key-and-root.md)。
+
+### 12.1 固定版本符号导航
+
+- [`src/harnessix/product_config/session_key.py`：`_load_owned`，L19–L34](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key.py#L19-L34)。
+- [`src/harnessix/product_config/session_key.py`：`open_product_session_binding`，L38–L55](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key.py#L38-L55)。
+- [`src/harnessix/product_config/session_key_codec.py`：`OwnedSessionKey`，L22–L30](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_codec.py#L22-L30)。
+- [`src/harnessix/product_config/session_key_codec.py`：`create_payload`，L33–L34](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_codec.py#L33-L34)。
+- [`src/harnessix/product_config/session_key_codec.py`：`decode_payload`，L37–L40](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_codec.py#L37-L40)。
+- [`src/harnessix/product_config/session_key_store.py`：`load_session_key`，L12–L27](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_store.py#L12-L27)。
+- [`src/harnessix/product_config/session_key_posix.py`：`_private_acl`，L49–L66](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_posix.py#L49-L66)。
+- [`src/harnessix/product_config/session_key_posix.py`：`_read`，L84–L101](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_posix.py#L84-L101)。
+- [`src/harnessix/product_config/session_key_posix.py`：`_publish`，L125–L153](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_posix.py#L125-L153)。
+- [`src/harnessix/product_config/session_key_posix.py`：`_load_locked`，L156–L168](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_posix.py#L156-L168)。
+- [`src/harnessix/product_config/session_key_posix.py`：`load_posix_key`，L171–L203](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_posix.py#L171-L203)。
+- [`src/harnessix/product_config/session_key_dpapi.py`：`transform`，L39–L64](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_dpapi.py#L39-L64)。
+- [`src/harnessix/product_config/session_key_windows_security.py`：`PrivateKeySecurity`，L62–L156](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_security.py#L62-L156)。
+- [`src/harnessix/product_config/session_key_windows_security.py`：`verify`，L107–L133](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_security.py#L107-L133)。
+- [`src/harnessix/product_config/session_key_windows_security.py`：`_verify_aces`，L135–L151](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_security.py#L135-L151)。
+- [`src/harnessix/product_config/session_key_windows_files.py`：`WindowsKeyFiles`，L16–L100](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_files.py#L16-L100)。
+- [`src/harnessix/product_config/session_key_windows_files.py`：`_read_key_file`，L103–L121](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_files.py#L103-L121)。
+- [`src/harnessix/product_config/session_key_windows_files.py`：`_write_new_key_file`，L124–L147](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_files.py#L124-L147)。
+- [`src/harnessix/product_config/session_key_windows_files.py`：`_lock_key_file`，L150–L160](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows_files.py#L150-L160)。
+- [`src/harnessix/product_config/session_key_windows.py`：`_decode`，L30–L39](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows.py#L30-L39)。
+- [`src/harnessix/product_config/session_key_windows.py`：`load_windows_key`，L72–L104](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/session_key_windows.py#L72-L104)。
+- [`src/harnessix/product_config/server.py`：`_serve_product_stdio`，L201–L279](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/product_config/server.py#L201-L279)。
+- [`src/harnessix/session/sqlite.py`：`events`，L536–L542](https://github.com/carrie1988/Harnessix/blob/cef1b17cf63a5bed7d7740d5cbea5bc67728deb2/src/harnessix/session/sqlite.py#L536-L542)。

@@ -2,7 +2,7 @@
 doc_type: source-research
 status: draft
 version: 1
-code_revision: ae560ad26899ae8ecb55bfc5c0ff2539727f5088
+code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
 owners: [core]
 modules: [product_config, session, secrets]
 related_adrs:

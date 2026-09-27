@@ -1,0 +1,18 @@
+{
+  "code_revision": "cef1b17cf63a5bed7d7740d5cbea5bc67728deb2",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "delivered": "managed_independent_session_key_and_mandatory_default_product_binding",
+  "full_regression_acceptance_pending": true,
+  "overall_0_9_complete": false,
+  "phase_0_9_4a_complete": false,
+  "release_blockers": [
+    "Windows原生DPAPI/ACL测试与三平台真实安装",
+    "密钥保护备份恢复、迁移及维护CLI托管Binding",
+    "Artifact原JSONL与二进制正文持久认证、跨Epoch重开",
+    "全部Provider材料、Owner归属阻塞与SDK Scope-loss相关ID",
+    "编号TM攻击、远端MCP/OAuth及受管出口",
+    "12件Archive来源权利",
+    "实际Beta、Provider能力及成本验收"
+  ]
+}

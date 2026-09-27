@@ -129,3 +129,5 @@ flowchart LR
 - [认证历史与Event Seal核心](event-seal-core-2026-09-28-v1/README.md)：核心验证与实际默认Root开放观察，非发布验收。
 
 - [认证SQLite Session](authenticated-sqlite-session-2026-09-28-v1/README.md)：真实同事务显式库合同，默认产品与Key Backend验收独立开放。
+
+- [默认产品持久Session密钥](managed-session-key-2026-09-28-v1/README.md)：强制认证Root、实际macOS保护与真实CLI/SDK重开；Windows和发行验收独立开放。
