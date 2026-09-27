@@ -785,4 +785,12 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 initialize使用纯候选，公开检查通过后原子提交连接状态，关闭Notification不响应。
 [详细设计](changes/m09-4a-protocol-frame-publication.md)与[固定证据](validation/protocol-frame-publication-2026-09-28-v1/README.md)
 包含旧基线负例、修复后同脚本观察、61项帧测试和1项真实产品CLI子进程验证。
-其中未登记旧历史观察仍开放，直接Service查询、全部Provider材料与跨重启Seal未关闭，0.9.4a不勾选完成。
+该固定版本中直接Service查询未关闭；后续查询边界进展见下一节。未登记旧历史、全部Provider材料与跨重启Seal仍开放，0.9.4a不勾选完成。
+
+
+## 0.9.4a 导出查询与同一Session宿主子切片
+
+[查询原DTO详设](changes/m09-4a-query-publication-boundary.md)将六个导出Service查询纳入原Params/DTO/错误保护，
+恢复调度后置且关闭不新增Task，构造时Session对象绑定先于Delta订阅。61项查询测试含1开放旧历史观察，
+另1项默认产品Root直调验证和2项治理回归；专项181项通过，完整结果以[固定报告](validation/query-publication-2026-09-28-v1/README.md)为准。
+未知历史/Seal、全部Provider、内部聚合权限及Request Store物理归属仍开放，0.9.4a保持未完成。

@@ -226,11 +226,16 @@ flowchart TB
     Reader --> State --> Decode --> Dispatch --> Commands
     Reader --> Slots --> Tasks --> Dispatch
     Commands --> Background
-    Dispatch --> Replay
-    Dispatch --> Scope --> Pages
-    Dispatch --> Errors --> Outbox --> Writer
-    Replay --> Outbox
-    Deltas --> Replay
+    Dispatch --> QueryInput["原查询Params准入"]
+    QueryInput --> Replay
+    QueryInput --> Scope --> Pages
+    Dispatch --> Errors --> FrameGate["完整原响应帧保护与限额"]
+    Commands --> FrameGate
+    Replay --> QueryDTO["原查询DTO与错误保护"]
+    Pages --> QueryDTO
+    Deltas --> QueryDTO
+    QueryDTO --> FrameGate
+    FrameGate --> Outbox --> Writer
 ```
 
 模块拆分以“字节生命周期—连接生命周期—应用生命周期—Artifact能力边界”为轴。`server.py`不创建Task
@@ -418,7 +423,7 @@ accepted自动解释为“业务未发生”。
 
 ### 12.1 Task Registry
 
-`AgentApplicationService._tasks`以`turn_id`为键。`_spawn`发现同Turn已有未完成Task时直接返回，否则创建
+`AgentApplicationService._tasks`以`turn_id`为键。`_spawn`在Service已closed时不创建Task；发现同Turn已有未完成Task时直接返回，否则创建
 名为`harnessix-turn-<turn-id>`的Task并调用`runtime.resume_turn(thread_id, turn_id)`。完成回调：
 
 - 仅当Registry仍指向该Task时删除键；
@@ -951,7 +956,7 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 ### 24.3 授权假设
 
 当前stdio进程信任启动它的本地父进程。同一Session数据库中的所有Thread可被知道ID或调用List的连接查询，
-`clientInstanceId`只用于幂等命名空间，不是安全身份。固定Workspace也只在Create时检查。任何多租户或
+`clientInstanceId`只用于幂等命名空间，不是安全身份。构造同一Session对象校验不等于Tenant或物理DB授权。固定Workspace也只在Create时检查。任何多租户或
 远程部署必须新增：认证、Thread所有权、Tenant分区、速率限制、Origin/TLS、消息审计和状态目录隔离。
 
 ## 25. 重点类、函数与接口
@@ -965,7 +970,7 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 | `AgentProtocolServer.process_frame` | 单帧总入口 | 读取/更新连接状态 | bytes → tuple[bytes] | Closing、Decode、Method和业务分支 |
 | `AgentProtocolServer.close` | 关闭连接服务 | State | 无 → 无 | Service失败会向上传播 |
 | `AgentServiceError` | 稳定应用错误 | code/message/retryable | Exception | Server映射为`-32010/-32011` |
-| `AgentApplicationService` | 协议到领域的应用编排 | Tasks、Delta Buffers、Events、fixed Workspace、closed | Params → Protocol Result | Runtime/Store错误转换或传播 |
+| `AgentApplicationService` | 协议到领域的应用编排 | Tasks、Delta Buffers、Events、fixed Workspace、closed | Params → Protocol Result | 原Params、DTO与稳定错误保护；底层稳定错误转换为AgentServiceError |
 | `_command` | 写命令幂等模板 | 无独立状态 | Operation + Result模型 → Result | 尽力持久failed |
 | `_spawn` | 进程内Turn驱动去重 | `_tasks` | Thread/Turn ID | Task异常消费，不主动通知 |
 | `replay_events` | 持久Event页面 | 无 | Cursor/Limit → Replay | Session和投影错误 |
@@ -980,8 +985,8 @@ App Server会向本地客户端返回Protocol允许的Workspace、用户内容�
 
 | 构造 | 当前验证 | 未验证 |
 |---|---|---|
-| `AgentProtocolServer(service, limits)` | ProtocolLimits模型保证范围；按Reader决定方法表 | Service是否已关闭、是否与Runtime一致 |
-| `AgentApplicationService(runtime, store, requests, reader, workspace)` | fixed Workspace存在并规范化；立即订阅Delta | `runtime.store is store`、Request Store同库、Runtime Tool根与fixed Workspace一致 |
+| `AgentProtocolServer(service, limits)` | ProtocolLimits模型保证范围；按Reader决定方法表 | Service是否已关闭；构造后宿主动态改写引用不属支持配置 |
+| `AgentApplicationService(runtime, store, requests, reader, workspace)` | Runtime.store与store、Reader.session与store必须为同一对象；拒绝先于fixed Workspace规范化与Delta订阅 | 自定义Request Store物理身份、Runtime Tool根与fixed Workspace一致、Tenant身份 |
 | `ScopedProtocolArtifactReader(session, artifacts, access)` | `artifacts.session is session` | Access是否与Runtime相同能力源 |
 | `run_stdio(server, streams, timeout)` | Timeout必须大于零；Server Limit已由Protocol模型校验 | BinaryIO短写行为、Streams是否真正独占或可被系统调用中断 |
 
@@ -1233,7 +1238,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | P1 | Replay读取全部事件尾部后截页，Thread List加载全部尾部聚合 | 大历史性能退化 | 0.9.3b索引与基准 |
 | P1 | fixed Workspace只限制Create，状态目录未持久绑定Workspace | 误复用状态根可暴露旧Thread元数据 | 0.9.4安全、0.9.5安装隔离 |
 | P1 | Service不验证Runtime/Session/Request Store/Tool Workspace装配一致 | 自定义宿主误装配可能读写不同事实源 | Product Config构造不变量 |
-| 部分关闭 | 稳定Kernel/Service错误完整原帧受当前材料保护 | 未登记历史与直接Service出口仍开放，不以替换改变身份 | 原帧详设及后续历史授权 |
+| 部分关闭 | 稳定Kernel/Service错误完整原帧受当前材料保护 | 未登记历史仍开放；当前材料的Service错误保护见后续查询详设，不以替换改变身份 | 原帧详设及后续历史授权 |
 | P1 | Background Task异常只消费、不产生模块级信号 | 若Runtime未形成终态，故障难诊断 | 0.9.3c可观测性与恢复扫描 |
 | P2 | `_delta_events`按Thread增长且不删除 | 超长进程积累对象 | 0.9.3b清理策略 |
 | P2 | Artifact内部Cancel Token无法由客户端取消且无读Timeout | 慢Store占用pending slot | Artifact/SDK取消合同 |
@@ -1356,4 +1361,16 @@ initialize由`prepare_initialization`返回未提交候选，检查通过后Serv
 
 完整架构、五图、接口/字段、取消/超时/并发、部署与源码导航见[原帧详细设计](../changes/m09-4a-protocol-frame-publication.md)。
 [ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
-仍保留旧历史授权、直接Service查询、全部Provider和跨重启Seal开放边界，不授予整个0.9发布。
+该固定版本证据保留直接Service查询等开放边界；后续[查询边界详设](../changes/m09-4a-query-publication-boundary.md)补齐当前材料的Service原DTO保护。
+旧历史授权、全部Provider和跨重启Seal仍开放，不授予整个0.9发布。
+
+
+## 导出查询原DTO保护与Session宿主绑定
+
+六查询在Store/Reader/恢复与Live信号注册之前检查完整原Params，原DTO及稳定错误在返回之前检查；
+恢复回调晚于完整公开快照检查，取消/拒绝/关闭竞态不新增后台Turn。Runtime.store、查询Session、
+Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解析及Delta订阅。
+未新增Schema、数据库或服务；内部Replay候选不构成授权，50ms长轮询只在最终返回点执行完整公开检查。
+
+完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](../changes/m09-4a-query-publication-boundary.md)。
+旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。

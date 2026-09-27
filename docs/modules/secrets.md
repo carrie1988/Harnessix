@@ -1144,4 +1144,16 @@ initialize由`prepare_initialization`返回未提交候选，检查通过后Serv
 
 完整架构、五图、接口/字段、取消/超时/并发、部署与源码导航见[原帧详细设计](../changes/m09-4a-protocol-frame-publication.md)。
 [ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
-仍保留旧历史授权、直接Service查询、全部Provider和跨重启Seal开放边界，不授予整个0.9发布。
+该固定版本证据保留直接Service查询等开放边界；后续[查询边界详设](../changes/m09-4a-query-publication-boundary.md)补齐当前材料的Service原DTO保护。
+旧历史授权、全部Provider和跨重启Seal仍开放，不授予整个0.9发布。
+
+
+## 导出查询原DTO保护与Session宿主绑定
+
+六查询在Store/Reader/恢复与Live信号注册之前检查完整原Params，原DTO及稳定错误在返回之前检查；
+恢复回调晚于完整公开快照检查，取消/拒绝/关闭竞态不新增后台Turn。Runtime.store、查询Session、
+Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解析及Delta订阅。
+未新增Schema、数据库或服务；内部Replay候选不构成授权，50ms长轮询只在最终返回点执行完整公开检查。
+
+完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](../changes/m09-4a-query-publication-boundary.md)。
+旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。

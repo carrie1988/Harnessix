@@ -21,6 +21,7 @@ from harnessix.app_server.handshake import (
     prepare_initialization,
     validation_path,
 )
+from harnessix.app_server.query_runtime import UnexpectedQueryError
 from harnessix.app_server.service import AgentApplicationService, AgentServiceError
 from harnessix.protocol.codec import ProtocolDecodeError, decode_client_frame
 from harnessix.protocol.contracts import (
@@ -211,6 +212,8 @@ class AgentProtocolServer:
                 "协议参数无效",
                 path=validation_path(invalid.error),
             )
+        except UnexpectedQueryError as error:
+            return self._error(message.id, -32603, error.code, error.message)
         except AgentServiceError as error:
             rpc_code = -32011 if error.code == "idempotency_conflict" else -32010
             return self._error(

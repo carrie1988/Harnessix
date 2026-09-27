@@ -499,6 +499,49 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/governance/test_security_governance_evidence.py",
             },
         ),
+        (
+            "query-publication-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "uv.lock",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/errors.py",
+                "src/harnessix/agent/input_publication.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/app_server/artifacts.py",
+                "src/harnessix/app_server/query_runtime.py",
+                "src/harnessix/app_server/command_runtime.py",
+                "src/harnessix/app_server/frame_publication.py",
+                "src/harnessix/app_server/server.py",
+                "src/harnessix/app_server/service.py",
+                "src/harnessix/app_server/stdio.py",
+                "src/harnessix/product_config/runtime.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/protocol/contracts.py",
+                "src/harnessix/protocol/projection.py",
+                "src/harnessix/protocol/requests.py",
+                "src/harnessix/sdk/agent_client.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/session/ports.py",
+                "src/harnessix/session/sqlite.py",
+                "tests/app_server/test_query_publication.py",
+                "tests/product_config/test_query_publication_root.py",
+                "tests/governance/test_security_governance_evidence.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -1055,5 +1098,69 @@ def test_protocol_frame_bundle_keeps_history_and_release_scope_explicit() -> Non
     assert verification["diagrams"]["each_png_visually_inspected"] is True
     assert verification["wheel_smoke"]["isolated_from_source_and_tests"] is True
     assert verification["wheel_smoke"]["original_sensitive_id_and_key_rejected"] is True
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_revision_acceptance"] is False
+
+
+def test_query_bundle_keeps_current_scope_and_host_binding_limits_explicit() -> None:
+    bundle = ROOT / "docs/validation/query-publication-2026-09-28-v1"
+    manifest = json.loads((bundle / "bundle-manifest.json").read_bytes())
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert {item["code_revision"] for item in (manifest, facts, verification, review, ci)} == {
+        manifest["code_revision"]
+    }
+    assert facts["new_query_tests"] == 61 and facts["new_product_root_tests"] == 1
+    assert facts["new_governance_tests"] == 2 and facts["unknown_history_gap_observations"] == 1
+    assert facts["special_regression"]["passed"] == 181
+    assert facts["real_model_requests"] == 0
+    assert facts["original_dto_hash_and_schema_unchanged"] is True
+    assert facts["runtime_session_reader_object_binding_checked"] is True
+    assert facts["request_store_physical_identity_proven"] is False
+    assert facts["unknown_history_authorization_closed"] is False
+    assert facts["internal_store_aggregate_authorization_closed"] is False
+    assert facts["cross_restart_seal_closed"] is False
+    assert facts["historical_validation_files_unchanged"] is True
+    assert facts["untracked_attack_draft_excluded"] is True
+    old, fixed = facts["independent_baseline"], facts["fixed_observation"]
+    assert old["module_source_verified"] and fixed["module_source_verified"]
+    assert old["script_sha256"] == fixed["script_sha256"]
+    assert len(old["records"]) == len(fixed["records"]) == 5
+    for before, after in zip(old["records"], fixed["records"], strict=True):
+        assert before["surface"] == after["surface"]
+        assert before["original_registered_material_exported"] is True
+        assert after["original_registered_material_exported"] is False
+        assert after["failure_code"] == "public_output_secret_leak"
+        assert after["private_history_unchanged"] and after["provider_requests"] == 0
+        assert after["transport_guard_used"] is False
+    assert fixed["unknown_history"][0]["original_registered_material_exported"] is True
+    assert fixed["unknown_history"][0]["unknown_history_authorization_claimed"] is False
+    assert all(item["accepted"] for item in old["bindings"])
+    assert all(not item["accepted"] for item in fixed["bindings"])
+    assert facts["default_product_root"]["direct_service_no_transport_proxy"] is True
+    assert facts["default_product_root"]["provider_requests"] == 0
+    assert facts["default_product_root"]["original_materials_cleared"] is True
+    assert facts["default_product_root"]["factory_and_stdio_driver_are_fixtures"] is True
+    assert verification["diagrams"]["each_png_visually_inspected"] is True
+    assert verification["wheel_smoke"]["isolated_from_source_and_tests"] is True
+    assert verification["wheel_smoke"]["five_direct_queries_rejected_before_return"] is True
+    assert verification["wheel_smoke"]["runtime_store_mismatch_rejected"] is True
+    assert review["decision"] == "release_blocked" and not review["overall_0_9_complete"]
+    assert facts["archive_rights_blockers"] == 12
+    full = verification["full_regression"]
+    assert full["status"] in {"pending", "passed"}
+    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    if full["status"] == "pending":
+        assert "\nstatus: draft\n" in metadata
+        assert full["is_acceptance"] is False
+        assert review["full_regression_acceptance_pending"] is True
+    else:
+        assert full["passed"] == 5097 and full["skipped"] == 32
+        assert full["tracked_inputs_unchanged_during_run"] is True
+        assert full["source_inputs_same_as_fixed_revision"] is True
+        assert "\nstatus: current\n" in metadata
+        assert review["full_regression_acceptance_pending"] is False
     assert ci["current_ci_status"] == "not_started_at_freeze"
     assert ci["prior_success_is_current_revision_acceptance"] is False

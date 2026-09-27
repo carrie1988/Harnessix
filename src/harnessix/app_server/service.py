@@ -8,11 +8,12 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID, uuid5
 
-from harnessix.agent.models import Budget, ItemDelta, Turn, TurnStatus
+from harnessix.agent.models import Budget, ItemDelta, Thread, Turn, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.command_runtime import AgentServiceError as AgentServiceError
 from harnessix.app_server.command_runtime import execute_command
+from harnessix.app_server.query_runtime import execute_query, poll_events, replay_snapshot
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.protocol.contracts import (
     ApprovalRespondParams,
@@ -41,7 +42,7 @@ from harnessix.protocol.contracts import (
     TurnStartParams,
     TurnSteerParams,
 )
-from harnessix.protocol.projection import project_replay, project_thread, project_turn
+from harnessix.protocol.projection import project_thread, project_turn
 from harnessix.protocol.requests import ProtocolRequestStore
 from harnessix.session.ports import SessionStore
 
@@ -68,6 +69,10 @@ class AgentApplicationService:
         artifact_reader: ScopedProtocolArtifactReader | None = None,
         workspace: str | Path | None = None,
     ) -> None:
+        if runtime.store is not store:
+            raise ValueError("App Server必须绑定Agent Runtime的同一Session")
+        if artifact_reader is not None and artifact_reader.session is not store:
+            raise ValueError("Artifact Reader必须绑定App Server的同一Session")
         self.runtime = runtime
         self.store = store
         self.requests = requests
@@ -90,6 +95,8 @@ class AgentApplicationService:
         self._delta_events.setdefault(delta.thread_id, asyncio.Event()).set()
 
     def _spawn(self, thread_id: UUID, turn_id: UUID) -> None:
+        if self._closed:
+            return
         existing = self._tasks.get(turn_id)
         if existing is not None and not existing.done():
             return
@@ -175,36 +182,56 @@ class AgentApplicationService:
         )
 
     async def get_thread(self, params: ThreadGetParams) -> ThreadResult:
-        return ThreadResult(thread=project_thread(await self.store.get_thread(params.thread_id)))
+        async def operation() -> ThreadResult:
+            return ThreadResult(
+                thread=project_thread(await self.store.get_thread(params.thread_id))
+            )
+
+        return await execute_query(self.runtime, params, operation)
 
     async def list_threads(self, params: ThreadListParams) -> ThreadListResult:
-        after: UUID | None = None
-        if params.cursor is not None:
-            try:
-                after = UUID(params.cursor)
-            except ValueError:
-                raise AgentServiceError("invalid_cursor", "Thread列表游标无效") from None
-        selected, has_more = await self.store.list_thread_page(
-            after=after, archived=params.archived, limit=params.limit
-        )
-        next_cursor = str(selected[-1].thread_id) if has_more else None
-        return ThreadListResult(
-            threads=tuple(project_thread(thread) for thread in selected),
-            next_cursor=next_cursor,
-        )
+        async def operation() -> ThreadListResult:
+            after: UUID | None = None
+            if params.cursor is not None:
+                try:
+                    after = UUID(params.cursor)
+                except ValueError:
+                    raise AgentServiceError("invalid_cursor", "Thread列表游标无效") from None
+            selected, has_more = await self.store.list_thread_page(
+                after=after, archived=params.archived, limit=params.limit
+            )
+            next_cursor = str(selected[-1].thread_id) if has_more else None
+            return ThreadListResult(
+                threads=tuple(project_thread(thread) for thread in selected),
+                next_cursor=next_cursor,
+            )
+
+        return await execute_query(self.runtime, params, operation)
 
     async def resume_thread(self, params: ThreadResumeParams) -> ThreadResult:
-        thread = await self.runtime.resume_thread(params.thread_id)
-        if thread.active_turn_id is not None:
-            turn = next(item for item in thread.turns if item.turn_id == thread.active_turn_id)
-            if turn.status in {
-                TurnStatus.ACCEPTED,
-                TurnStatus.EXECUTING_TOOLS,
-                TurnStatus.WAITING_APPROVAL,
-                TurnStatus.WAITING_ACTION,
-            }:
-                self._spawn(thread.thread_id, turn.turn_id)
-        return ThreadResult(thread=project_thread(thread))
+        thread: Thread | None = None
+
+        async def operation() -> ThreadResult:
+            nonlocal thread
+            thread = await self.runtime.resume_thread(params.thread_id)
+            return ThreadResult(thread=project_thread(thread))
+
+        def drive(_result: ThreadResult) -> None:
+            # 原聚合决定恢复对象；完整公开DTO检查通过前不得调度后台Turn。
+            assert thread is not None
+            if thread.active_turn_id is not None:
+                turn = next(item for item in thread.turns if item.turn_id == thread.active_turn_id)
+                if turn.status in {
+                    TurnStatus.ACCEPTED,
+                    TurnStatus.EXECUTING_TOOLS,
+                    TurnStatus.WAITING_APPROVAL,
+                    TurnStatus.WAITING_ACTION,
+                }:
+                    if self._closed:
+                        raise AgentServiceError("server_closing", "服务端正在关闭")
+                    self._spawn(thread.thread_id, turn.turn_id)
+
+        return await execute_query(self.runtime, params, operation, after_result=drive)
 
     async def fork_thread(self, client_instance_id: UUID, params: ThreadForkParams) -> ThreadResult:
         async def operation() -> ThreadResult:
@@ -370,25 +397,19 @@ class AgentApplicationService:
         )
 
     async def replay_events(self, params: EventsReplayParams) -> EventsReplayResult:
-        events = await self.store.events(params.thread_id, after=params.after_cursor)
-        page = events[: params.limit]
-        scanned = page[-1].sequence if page else params.after_cursor
-        return project_replay(
-            params.thread_id,
-            page,
-            scanned_through=scanned,
-            has_more=len(events) > len(page),
+        return await execute_query(
+            self.runtime, params, lambda: replay_snapshot(self.store, params)
         )
 
     async def read_artifact(self, params: ArtifactReadParams) -> ArtifactPageResult:
-        if self.artifact_reader is None:
-            raise AgentServiceError("artifact_not_enabled", "App Server未配置Artifact读取端口")
-        return await self.artifact_reader.read(
-            params.thread_id,
-            params.artifact_id,
-            offset=params.offset,
-            limit=params.limit,
-        )
+        async def operation() -> ArtifactPageResult:
+            if self.artifact_reader is None:
+                raise AgentServiceError("artifact_not_enabled", "App Server未配置Artifact读取端口")
+            return await self.artifact_reader.read(
+                params.thread_id, params.artifact_id, offset=params.offset, limit=params.limit
+            )
+
+        return await execute_query(self.runtime, params, operation)
 
     def _take_deltas(
         self, thread_id: UUID, limit: int
@@ -411,12 +432,13 @@ class AgentApplicationService:
     async def _next_snapshot(
         self, params: EventsNextParams, *, include_deltas: bool
     ) -> EventsNextResult | None:
-        replay = await self.replay_events(
+        replay = await replay_snapshot(
+            self.store,
             EventsReplayParams(
                 thread_id=params.thread_id,
                 after_cursor=params.after_cursor,
                 limit=params.limit,
-            )
+            ),
         )
         if replay.scanned_through > params.after_cursor or replay.has_more:
             return EventsNextResult(replay=replay)
@@ -435,39 +457,25 @@ class AgentApplicationService:
     async def next_events(
         self, params: EventsNextParams, *, include_deltas: bool = True
     ) -> EventsNextResult:
-        """长轮询公开事件；Replay是事实，Delta只提供可丢失的低延迟显示。"""
+        """先准入查询再注册信号；最终原Replay/Delta统一保护，Delta仍为可丢失显示。"""
+        if type(include_deltas) is not bool:
+            raise AgentServiceError("invalid_params", "协议参数无效")
 
-        loop = asyncio.get_running_loop()
-        deadline = loop.time() + params.wait_ms / 1000
-        signal = self._delta_events.setdefault(params.thread_id, asyncio.Event())
-        while True:
-            ready = await self._next_snapshot(params, include_deltas=include_deltas)
-            if ready is not None:
-                return ready
-            remaining = deadline - loop.time()
-            if remaining <= 0 or self._closed:
-                break
-            signal.clear()
-            # clear与wait之间重新读取，避免Delta恰在注册窗口到达而沉睡；
-            # 50ms轮询用于观察不产生Delta的审批、提问、Tool和终态事件。
-            ready = await self._next_snapshot(params, include_deltas=include_deltas)
-            if ready is not None:
-                return ready
-            try:
-                async with asyncio.timeout(min(0.05, remaining)):
-                    await signal.wait()
-            except TimeoutError:
-                pass
-        ready = await self._next_snapshot(params, include_deltas=include_deltas)
-        if ready is not None:
-            return ready
-        replay = await self.replay_events(
-            EventsReplayParams(
-                thread_id=params.thread_id,
-                after_cursor=params.after_cursor,
-                limit=params.limit,
+        async def operation() -> EventsNextResult:
+            signal = self._delta_events.setdefault(params.thread_id, asyncio.Event())
+            return await poll_events(
+                params,
+                signal=signal,
+                snapshot=lambda: self._next_snapshot(params, include_deltas=include_deltas),
+                replay=lambda: replay_snapshot(
+                    self.store,
+                    EventsReplayParams(
+                        thread_id=params.thread_id,
+                        after_cursor=params.after_cursor,
+                        limit=params.limit,
+                    ),
+                ),
+                closed=lambda: self._closed,
             )
-        )
-        if replay.scanned_through > params.after_cursor or replay.has_more:
-            return EventsNextResult(replay=replay)
-        return EventsNextResult(replay=replay, timed_out=True)
+
+        return await execute_query(self.runtime, params, operation)

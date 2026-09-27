@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 347,
-    "physical_lines": 76539,
-    "logical_lines": 67899,
-    "documented_modules": 347,
-    "classes": 841,
-    "documented_classes": 335,
-    "functions": 3063,
-    "documented_functions": 473,
+    "source_files": 348,
+    "physical_lines": 76668,
+    "logical_lines": 68008,
+    "documented_modules": 348,
+    "classes": 842,
+    "documented_classes": 336,
+    "functions": 3067,
+    "documented_functions": 476,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -445,8 +445,8 @@
       "path": "src/harnessix/app_server/server.py",
       "qualname": "AgentProtocolServer",
       "kind": "class",
-      "line": 103,
-      "lines": 194,
+      "line": 104,
+      "lines": 196,
       "documented": true
     },
     {
@@ -455,8 +455,8 @@
       "path": "src/harnessix/app_server/service.py",
       "qualname": "AgentApplicationService",
       "kind": "class",
-      "line": 60,
-      "lines": 414,
+      "line": 61,
+      "lines": 421,
       "documented": true
     },
     {

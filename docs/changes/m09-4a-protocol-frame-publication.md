@@ -1,6 +1,6 @@
 ---
 doc_type: change-design
-status: current
+status: historical
 version: 1
 code_revision: 6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0
 owners: [core]
@@ -15,6 +15,8 @@ supersedes: []
 ---
 
 # 0.9.4a 原协议封套、完整响应字节与握手提交详细设计
+
+> 本文记录固定6b5f559的Protocol切片与原开放观察。导出Service查询的后续边界见[查询详设](m09-4a-query-publication-boundary.md)，冻结证据仍保持原字节和范围。
 
 ## 1. 需求背景与源码研究
 
