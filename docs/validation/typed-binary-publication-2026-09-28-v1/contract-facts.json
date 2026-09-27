@@ -70,6 +70,35 @@
   "new_dependency_cycles": [],
   "new_governance_tests": 2,
   "new_package_dependency_edges": [],
+  "next_direct_model_output_gap": {
+    "complete": false,
+    "initial_probe_error": "初次组件探针未传应用服务所需Session/Request Store；核验实际构造签名并修正后完成观察，不将初次API错误作为业务验收。",
+    "interpretation": "当前纯公开保护端口仅覆盖ToolResult和Artifact；模型直接文本进入实际Session、SDK回放与后续模型历史。SDK Thread摘要未包含值，非空遥测未命中；不推导全部出口。非完整产品启动或真实网络模型验收。",
+    "observation": {
+      "actual_sqlite_runtime_sdk_replay": true,
+      "code_revision": "5402621ab7700f55382d78fa95681dfe3485c960",
+      "exposures": {
+        "first_turn": true,
+        "sdk_replay": true,
+        "sdk_snapshot": false,
+        "second_model_history": true,
+        "session_events": true,
+        "sqlite_files": true,
+        "telemetry_metrics": false,
+        "telemetry_spans": false
+      },
+      "first_turn": "completed",
+      "full_product_stdio_or_network_provider_claimed": false,
+      "provider_requests": 2,
+      "real_model_requests": 0,
+      "scope_registered_model_material": true,
+      "script_sha256": "72ae195d835a19803cd739156d6e0a05349e00fa976764de74628d466c79fc53",
+      "second_turn": "completed",
+      "telemetry_span_count": 6
+    },
+    "reproduction_script": "import asyncio,json,tempfile,subprocess,hashlib\nfrom pathlib import Path\nfrom harnessix.agent.runtime import AgentRuntime\nfrom harnessix.models.scripted import ScriptedProvider\nfrom harnessix.session.sqlite import SQLiteSessionStore\nfrom harnessix.protocol.requests import SQLiteProtocolRequestStore\nfrom harnessix.app_server.server import AgentProtocolServer\nfrom harnessix.app_server.service import AgentApplicationService\nfrom harnessix.sdk.agent_client import AgentClient,InProcessAgentTransport\nfrom tests.agent.helpers import answer\nfrom tests.agent.test_publication import CANARY,protected\nfrom tests.agent.test_telemetry import instrumented\n\nasync def observe(root):\n    store=SQLiteSessionStore(root/'s.db')\n    provider=ScriptedProvider([answer(CANARY),answer('safe second response')])\n    observer,exporter,reader=instrumented()\n    with protected() as scope:\n        try:\n            async with AgentRuntime(store,provider,public_output_protection=scope,observability=observer) as agent:\n                thread=await agent.create_thread(str(root))\n                first=await agent.run_turn(thread.thread_id,'synthetic output validation',request_id='first')\n                first_events=await store.events(thread.thread_id)\n                client=AgentClient(InProcessAgentTransport(AgentProtocolServer(AgentApplicationService(agent,store,SQLiteProtocolRequestStore(store.path)))))\n                await client.initialize()\n                try:\n                    snapshot=await client.get_thread(thread.thread_id)\n                    replay=await client.replay_events(thread.thread_id,limit=200)\n                finally:\n                    await client.close()\n                second=await agent.run_turn(thread.thread_id,'continue with safe response',request_id='second')\n                spans=exporter.get_finished_spans();metrics=reader.get_metrics_data()\n                facts=dict(first_turn=first.status.value,second_turn=second.status.value,provider_requests=len(provider.requests),real_model_requests=0,scope_registered_model_material=True,actual_sqlite_runtime_sdk_replay=True,full_product_stdio_or_network_provider_claimed=False,exposures=dict(first_turn=CANARY in first.model_dump_json(),session_events=any(CANARY in e.model_dump_json() for e in first_events),sdk_snapshot=CANARY in snapshot.model_dump_json(),sdk_replay=CANARY in replay.model_dump_json(),second_model_history=CANARY in provider.requests[1].model_dump_json(),telemetry_spans=any(CANARY in s.to_json() for s in spans),telemetry_metrics=CANARY in metrics.to_json()),telemetry_span_count=len(spans))\n            facts['exposures']['sqlite_files']=any(CANARY.encode() in p.read_bytes() for p in root.glob('*.db*'))\n            return facts\n        finally:\n            observer.close()\nwith tempfile.TemporaryDirectory(prefix='harnessix-next-model-surface-') as temp:\n    result=asyncio.run(observe(Path(temp).resolve()))\nresult['code_revision']='5402621ab7700f55382d78fa95681dfe3485c960'\nresult['script_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()\nprint(json.dumps(result,ensure_ascii=False,indent=2))\n",
+    "status": "confirmed_open_gap"
+  },
   "owner_protection_precedes_lease_creation": true,
   "owner_v1_schema_changed": false,
   "public_rejection_preserves_confirmed_effect_without_reexecution": true,

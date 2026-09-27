@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners: [core]
 modules: [agent, artifacts, processes, secrets, product_config, trusted_actions]
@@ -65,7 +65,12 @@ Owner为正式Lease合同替身。结果为Turn completed、两条Artifact记录
 产品Process四场景使用实际审批、Router、Agent、SQLite和安全正文分页，Owner为合同替身；
 泄漏拒绝没有Artifact行和后续模型请求，确认效果及原Audit保持，终态再次resume不重执行。
 
-完整回归当前为验证种子待运行状态，不计入本实现验收。稳定测试树及完整结果须另行冻结。
+完整回归 **4842 passed、32 skipped、401.51秒，exit=0**。
+稳定测试提交`b1c173845775a65e223bd8aab7ce091dcd82e951`，Git Tree `f01cfc6b6f4aa64da66bb87fe7935b2a2e2e612a`；
+2353个跟踪输入在运行前后Hash与状态均一致，未跟踪安全草稿不参与。
+所有生产源码、合同、脚本、政策、基线与全部测试同固定源码；测试树只增加设计和验证种子文档。
+93项新增由91功能用例及2治理用例构成；专项/相关计数不与完整回归相加。
+原4842项结果不代替后续修改后的源码验收。
 初期相关运行4 failed、1225 passed、5 skipped、51.71秒：恢复代码错误地从effect origin推定恢复策略，
 以及测试引用不存在的probes字段。修复为显式内部策略和实际probe_cache后重新验证；原失败不追认通过。
 恢复码白名单只适用于output，其他阶段继续固定归一；错误文本不透传合成值。
@@ -100,3 +105,17 @@ CI后台运行，不逐个本地提交等待、不主动重跑；冻结时本实
 TM编号化攻击与三平台证据、远端MCP身份/OAuth/出口、真实安装/Beta、真实Provider发布/成本及许可证12件仍开放。
 无保护独立宿主仅保持兼容，不能证明默认产品端到端安全；未知编码与跨流推断不在当前解码合同内。
 未新增真实模型请求或定时任务；总目标及路线图完成条件保持不变。
+
+## 8. 已确认的下一公开边界：模型直接文本
+
+固定源码的独立组件探针注册同一模型材料类型的合成值，两个Scripted响应；第一回复直接输出登记值，
+第二回复为安全文本。两Turn completed，值进入实际Session事件、SQLite文件、SDK事件回放和第二次模型请求历史。
+SDK Thread摘要未包含值；六个非空OTel Span及Metrics未命中，不由此宣称全部遥测或全部公开面安全。
+探针使用实际Runtime、SQLite、SDK和应用服务，非完整产品启动、字节级stdio或真实网络模型验收。
+[合同事实](contract-facts.json)保留独立观察、可执行组件探针及源Hash；不将探针加进108专项或4842回归统计。
+初次探针遗漏应用服务所需Store参数，修正为真实签名后完成；初次API错误不当作公开边界业务结果。
+
+这一缺口与本切片修复的ToolResult/正式Process Artifact边界分开：模型TextDelta/完成文本、
+用户输入、Context、Compaction及历史出口还需要按来源、授权、同一原材料、流式边界和持久前校验独立设计。
+不得只在最终UI或单次回复上事后过滤，也不得重签旧历史或用当前环境新值追认原材料。
+下一切片先研究正式事件提交与模型历史装配，再定义取消、预算、恢复和流式发布合同；整体发布继续阻断。

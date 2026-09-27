@@ -65,10 +65,25 @@
   },
   "external_model_requests": 0,
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "all_production_contract_script_policy_baseline_and_tests_same_as_fixed_source": true,
+    "exit_code": 0,
+    "is_acceptance": true,
+    "passed": 4842,
+    "seconds": 401.51,
+    "size_bytes": 5485,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "0dc92e896d7ef649562e6677e24dca2691c4caa714176c4dc762a3ab196337fb",
+    "stdout_summary": "4842 passed, 32 skipped in 401.51s (0:06:41)",
+    "test_revision": "b1c173845775a65e223bd8aab7ce091dcd82e951",
+    "test_tree": "f01cfc6b6f4aa64da66bb87fe7935b2a2e2e612a",
+    "tracked_input_count": 2353,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true
   },
+  "historical_validation_files_unchanged": 672,
   "initial_intermediate_related_failure": {
+    "exact_source_revision_available": false,
     "exit_code": 1,
     "failed": 4,
     "is_acceptance": false,
@@ -78,6 +93,7 @@
     "seconds": 51.71,
     "size_bytes": 23600,
     "skipped": 5,
+    "source_kind": "uncommitted_pre_implementation_working_tree",
     "status": "failed",
     "stdout_sha256": "25f00e540e4a66c92078d8e4de98f01f9bc0b2f3b86a937c873c72979780d99a",
     "stdout_summary": "4 failed, 1225 passed, 5 skipped in 51.71s"
@@ -92,6 +108,71 @@
   },
   "make_check_passed": false,
   "new_automation_created": false,
+  "post_freeze_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "docs": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "2a14fa09009810574115d705f1d81a2da9c4d697e6e8a357b3ed08caf914bc73",
+      "stdout_summary": "文档门禁通过：311份文档、8188条链接、745幅Mermaid、26个源码包、47个变化路径"
+    },
+    "format": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "5e98e98b07c70e5066e71cdd3b48e6bbf1776aa2befa2670eaf27fc5a829fab3",
+      "stdout_summary": "1138 files already formatted"
+    },
+    "governance": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "bee75c5bd79a714fc5745dfbd687412b09b7603026f030aaf4fc0e9dca868555",
+      "stdout_summary": "20 passed in 2.77s"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "f803e14073444eca38b5a647c79b0b66bca29cc32cd495a36373a95ef8b4c6cf",
+      "stdout_summary": "Success: no issues found in 340 source files"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "sbom": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 101,
+      "stdout_sha256": "df5da54d6c42c6f59fb9143f12d7d2a1ecdaaa8298d19f8b6baa87ad1301e640",
+      "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2356个输入完整覆盖且固定规则零命中"
+    }
+  },
   "related_regression": {
     "exit_code": 0,
     "overlaps_full_regression": true,

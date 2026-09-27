@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners: [core]
 modules: [agent, artifacts, processes, secrets, product_config, trusted_actions]
@@ -318,3 +318,12 @@ Lease、回执、Audit、配置快照或外部日志。Base64是传输表示，�
 历史Session和其他公开出口、跨重启原材料证明、Owner/Store内部资源归属、许可证12件、
 TM编号化攻击、远端MCP身份/OAuth/受管出口、三平台真实安装/Beta和真实Provider成本与发布验证仍开放。
 本切片实现不关闭0.9.4a、0.9.4或0.9整体完成状态。
+
+### 15.1 已确认模型直接文本与当前切片的界限
+
+[固定版本报告](../validation/typed-binary-publication-2026-09-28-v1/README.md)的独立组件观察确认：
+Scope登记的合成值由Scripted模型直接输出后进入Session、SDK回放与下一次模型历史；SDK Thread摘要未命中，
+非空遥测未命中。该观察不是完整产品或真实网络模型验收，不增加本切片正式测试统计。
+当前`protect_json`仅检查ToolResult，`protect_binary_jsonl`检查正式Artifact；
+[Agent Runtime](../../src/harnessix/agent/runtime.py)的模型流事件提交尚未使用这一保护端口。
+后续必须把模型流、输入/Context和历史的来源与持久前边界单独设计，不能推导本切片已经闭合所有公开面。

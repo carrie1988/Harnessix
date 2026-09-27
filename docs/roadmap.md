@@ -508,6 +508,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   保护专用Owner v2封套、真实本机退出/超时/取消及已验真效果元数据恢复；
   [固定版本证据](validation/typed-binary-publication-2026-09-28-v1/README.md)单独冻结，旧缺口报告保持不变；
   不将本机进程、Owner替身或离线检查当作Windows、实际容器、真实Provider与整体发布验收。
+  同一固定版本进一步确认模型直接文本进入Session、SDK回放与下一次模型历史，Thread摘要及非空遥测未命中；
+  这一来源仍须独立治理，不把正式Process二进制边界的回归通过等同于全部公开面关闭。
   全部Provider凭据和Secret端到端、历史Session/其他公开出口、跨重启正文安全恢复、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。

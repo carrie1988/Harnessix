@@ -6,6 +6,7 @@
   "overall_0_9_complete": false,
   "release_blockers": [
     "12件许可证Archive",
+    "已确认模型直接文本进入Session SDK回放和后续模型历史",
     "历史Session和其他公开出口治理",
     "跨重启原材料及Artifact正文安全恢复",
     "Owner及Store资源和归属",
@@ -21,6 +22,7 @@
     "原v1 Schema及所有原Hash保持",
     "已验真效果与拒绝正文分离 不再Execute",
     "恢复策略不从effect origin猜测",
-    "本机Owner与容器替身证据明确区分"
+    "本机Owner与容器替身证据明确区分",
+    "模型直接文本开放缺口与工具 Artifact已修复范围严格分开"
   ]
 }
