@@ -1,5 +1,14 @@
 {
-  "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+  "cancel_fix_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": 78,
+    "seconds": 0.93,
+    "size_bytes": 179,
+    "stdout_sha256": "6de50c5f242aab394dea6ad11fd4057e70611eca478243286d64cfffe44cdbff",
+    "stdout_summary": "78 passed in 0.93s"
+  },
+  "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
   "diagram_visual_review": {
     "diagrams": 5,
     "documents": 2,
@@ -62,8 +71,27 @@
     "stdout_summary": "文档门禁通过：305份文档、8061条链接、735幅Mermaid、26个源码包、34个变化路径"
   },
   "external_model_requests": 0,
+  "failed_full_regressions": [
+    {
+      "acceptance_pass_claimed": false,
+      "exit_code": 1,
+      "failed": 1,
+      "failed_test": "tests/delivery/test_trusted_action_patch.py::test_cancel_between_members_keeps_prefix_and_reconcile_never_replays",
+      "passed": 4696,
+      "root_cause": "累计Task.cancelling计数被误认为当前待取消；后续对账误拒绝",
+      "seconds": 397.12,
+      "size_bytes": 7169,
+      "skipped": 32,
+      "source_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "status": "failed",
+      "stdout_sha256": "15f3818a6c1d86bed2f9480f2ed08145572510b006bb2ddc2b648716a9e31284",
+      "stdout_summary": "1 failed, 4696 passed, 32 skipped in 397.12s (0:06:37)",
+      "test_git_tree": "9185d1fd947f92a7abb914d13e74c9d1c34ec0c5",
+      "test_tree_revision": "b4d87229d22b021bcda53e1e30c05714ba96e320"
+    }
+  ],
   "full_regression": {
-    "status": "not_run"
+    "status": "not_run_after_fix"
   },
   "independent_negative_replay": {
     "constructor_errors_counted": false,
@@ -89,24 +117,22 @@
   "make_check_passed": false,
   "new_automation_created": false,
   "related_regression": {
-    "code_revision": "3dc72c058a5fe39dd0594343b94b5f8d5e6ce093",
     "exit_code": 0,
-    "only_production_delta_to_current_revision": "Scope扫描注释更正，无逻辑变化",
     "overlaps_full_regression": true,
-    "passed": 802,
-    "seconds": 15.35,
+    "passed": 814,
+    "seconds": 15.81,
     "size_bytes": 981,
-    "stdout_sha256": "874e613e3ea77e2bd611b2421bc2fb8fee4894ab670f47e70ea4d37aa35e3cf3",
-    "stdout_summary": "802 passed in 15.35s"
+    "stdout_sha256": "020847e1711ca1e3a90aa12e3cfbeb66f22f0f858c2cbf250dffeeaaaec7e204",
+    "stdout_summary": "814 passed in 15.81s"
   },
   "special_regression": {
     "exit_code": 0,
     "overlaps_full_regression": true,
-    "passed": 60,
-    "seconds": 1.51,
+    "passed": 62,
+    "seconds": 1.03,
     "size_bytes": 99,
-    "stdout_sha256": "0528189aeeb90528796085ebd470793bd3edee6f7fecd1e16e29d65bbcd7c852",
-    "stdout_summary": "60 passed in 1.51s"
+    "stdout_sha256": "8fa84d0d15b4e729a4033910b1f78176cbc165bffc20d169220fde57ae23bc44",
+    "stdout_summary": "62 passed in 1.03s"
   },
   "static_checks": {
     "contracts": {

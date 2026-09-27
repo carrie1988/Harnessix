@@ -1,173 +1,178 @@
 {
-  "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+  "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
   "files": [
     {
       "path": "README.md",
-      "sha256": "00c9f405cba8f16d53b5a9d212d10db63d28b1d09468ff68d43243d6794e8630",
-      "size_bytes": 8778
+      "sha256": "c233ca135bf107246d7e8e712845aec80502110a93b0b278be4234a4aa6e0156",
+      "size_bytes": 9055
     },
     {
       "path": "ci-observation.json",
-      "sha256": "488fe240992ddc65d37b19f5872622180ede828ecd33b12aaf467146c4902f27",
+      "sha256": "f4892dacd90588f359a4ec234c7e3fbe568dcfa0fa2da5b0cbcb3a39d60b386f",
       "size_bytes": 1078
     },
     {
       "path": "contract-facts.json",
-      "sha256": "a1ee943995cbbdd97aeee9f64104189448e93adc39043f32967e96ffc7fe445d",
-      "size_bytes": 2785
+      "sha256": "775b9b17c8cb01fa2a8f6c40e7f7415837c1b105a64d2160c7fb0496353a9c95",
+      "size_bytes": 3027
     },
     {
       "path": "review-packet.json",
-      "sha256": "ba4160b2d12738f75af40ed77f1f5ee87b313ec7a05d44426efb92ad23775796",
+      "sha256": "94dde9153cb21ff1ab70d25569ac7d20ac39de9d74498a57d408c805c6b9ff74",
       "size_bytes": 1039
     },
     {
       "path": "verification.json",
-      "sha256": "b3eb908cec5dfea5d44d9509f53035aa4d9fd042a369835234c7c293fb2f9fdd",
-      "size_bytes": 5879
+      "sha256": "b7d79cd15a961c000cc5f16c1cd40bbc4bd1d4707a1b6f58c075df0c12283a75",
+      "size_bytes": 6885
     }
   ],
   "manifest_self_excluded": true,
   "source_inputs": [
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "docs/baselines/readability-0.9.0-final.json",
-      "sha256": "5644d27f65acf8f6b5e86d51052bdee47656f59fa53b41bc490d96ecde78680d"
+      "sha256": "2a587b1437044441f500d8dda89e3f01ed8596825bd86e6c2be0836866555672"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "governance/readability-policy-v1.json",
       "sha256": "b5a145762c1594346413fed897d505a3f3dedb7120551635d52f95af98d70740"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "scripts/generate_specs.py",
       "sha256": "6555df150b54819deb60c5ee3d76d1477ba2c45da84fa7c9725b9a73f125bf65"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "spec/action-output-budget-v1.schema.json",
       "sha256": "311a3abf4555ec599bd5e062ae7472cf16a4dc3d27f63633161f471d8ae397f4"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/secrets/provider.py",
       "sha256": "bbe17b6ec72d53928a2cded0ddeffd74393763bc403a19e3d8d1d53a8136a51b"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/secrets/redaction.py",
       "sha256": "eec9dc685b94300e9b21120c36eaec3bb031e20211e0d6d51c4e1d22c5a01551"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/secrets/publication.py",
       "sha256": "4c0423fe83be74d0e1de4e29cde6527e00ac36f4f491cd2d38a3490ecfffc710"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/agent/cancellation.py",
       "sha256": "e5e22739f98e3e095113e154fd5640c60dbb53a7e882f59b40efbe311fc6b6e0"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/agent/runtime.py",
       "sha256": "622c17bd56c1557db71c19e55403f3f83fe6716dcd255812338bb462972745c4"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/agent/trusted_action_session.py",
       "sha256": "e5ad2dcacbae3673d2eaadb2817d7b63b25e39d18b6835c5e9981269f8721662"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/execution/contracts.py",
       "sha256": "6e6d5932bf1c762b7d01986d16f09552f166d2aff16d84fd2068b7a13ab38e41"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/contracts.py",
       "sha256": "85adc84c38615f91fa9d2479e3922db043c296bfc2d8fd3345fc8fdffcc0b70e"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/router.py",
       "sha256": "b4ca375c089229c6ba3e01aa6f7c9ee0189706fcd871105ff2a32c4ca764f379"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/agent_gateway.py",
       "sha256": "bab2e07c099f18731c4b71abb43b37091fe7fcd12ca64c4ab9c0db5f9d8959fa"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/agent_gateway_output.py",
-      "sha256": "0660fa98a91f5138c276bbed5b9814817614276e986fcc534f245ea5f2c364d6"
+      "sha256": "5f01ec2145e10f5c246aa7f2ee8d0850619c12d75bc12fbd35a976d4359a6ef0"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
       "sha256": "1506437a67ff401210f3a15f5b6a39a1445c761f7a97436aad9223380de659b8"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/output_budget.py",
-      "sha256": "ddbad74c2d9f1683488b58f95a9e2ac57f0e8140ec056321d201c4b3b9273b41"
+      "sha256": "5db126be685f3ceb4bc473c806a61e41a11088c66314df6b9be87d15f1b366c3"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/public_errors.py",
       "sha256": "45de23e34c1ace332c044799fff0a38726b0d19f216db2973c24d2c09718ffcb"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/trusted_actions/public_outcomes.py",
       "sha256": "f4ac582d46bd99424cffe674bcdab213ef6cdb55e5a482b7cafca2b58db196ba"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/product_config/action_composition.py",
       "sha256": "5a504dbc0107d5d9ed2bb1f5b206cc827becb7a55102f23978dd6f8c39808df4"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/product_config/action_runtime.py",
       "sha256": "8ce8b3183c631a1de84dfb80e663c52df420511b3f4780557dce3c40e8e9ff91"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/product_config/process_action.py",
       "sha256": "23f83c92824c98b27eadbf0b9866ef075688f9e787389414d0ed81567f9a5fe2"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "src/harnessix/mcp/server.py",
-      "sha256": "541cf5247c46542e3e99ce46c8500cb8d9d5e61454a1c9cb5a4ba128f80c09ff"
+      "sha256": "28f939f053b744806571f59c612249f8a7e0df252ff7137c5da7aeac1436690b"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "tests/secrets/test_publication.py",
       "sha256": "84ad43beac59210edc4bb842fcb0e093a9c4611f3ab02a80b5bb16a7a0566c0a"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "tests/trusted_actions/test_secret_publication.py",
-      "sha256": "a1547d26ab6ee3762779255d3e19dddf29e4c3807127315b95be92627febaccf"
+      "sha256": "e198e2852442f04ed2e79fb19d587e31683e311ca673171ae7fa05ca7946e63f"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "tests/trusted_actions/test_secret_publication_runtime.py",
       "sha256": "e4e7d24b9508c65de6f0fd0fad82e7db565bb40bb8ec7e150f75296925f34721"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "tests/product_config/test_secret_scope_composition.py",
       "sha256": "f260cdb8bdda021e344337f2f271a2a549105d45727a56791db824d95f1bdf9e"
     },
     {
-      "code_revision": "648f5f1b7b422462979f25df036994802f0b553f",
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
       "path": "tests/mcp/test_server.py",
       "sha256": "2ce7eba454bed3f22fa6073384bf0a7d003d48d4ed3b5788cf014b8df00df246"
+    },
+    {
+      "code_revision": "e730f4858c76dbbb614a81b1b3e12184c433266c",
+      "path": "tests/trusted_actions/test_output_budget.py",
+      "sha256": "583c7e70c52cbf036e10595c42e501b1963f49150cf0bd6dead01a24c6c9a1c9"
     }
   ]
 }

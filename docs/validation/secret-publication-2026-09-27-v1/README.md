@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: reviewing
 version: 1
-code_revision: 648f5f1b7b422462979f25df036994802f0b553f
+code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners: [core]
 modules: [secrets, trusted_actions, product_config, mcp]
 related_adrs:
@@ -22,7 +22,7 @@ supersedes: []
 
 ## 1. 范围、背景与结论
 
-实现Revision：`648f5f1b7b422462979f25df036994802f0b553f`。
+实现Revision：`e730f4858c76dbbb614a81b1b3e12184c433266c`。
 [完整详细设计](../../changes/m09-4a-versioned-secret-publication.md)和
 [ADR-0095](../../adr/0095-versioned-secret-publication-scope.md)说明需求、上游源码研究、方案取舍、
 架构、流程、时序、数据流、类与接口、字段、伪代码、错误、取消、期限、恢复、安全和部署。
@@ -31,9 +31,9 @@ supersedes: []
 仍可进入Session、下一模型请求和SDK回放。本次引入宿主显式版本化内存快照：仅解析登记绑定，
 Product Process执行与公开检查使用同一实例；检查原摘要和Owner重建结果，拒绝正文而保留已确认效果。
 
-专项 **60 passed，1.51秒**（54新增、6项原MCP回归），相关回归 **802 passed，15.35秒**，
-相关回归取自此前3dc72c0源码；两版生产差异仅Scope扫描注释更正，不影响逻辑。
-两者与完整回归重叠，不相加。完整回归尚未运行，当前仅为限定作用域实现与专项验证，
+专项 **62 passed，1.03秒**（56新增、6项原MCP回归），相关回归 **814 passed，15.81秒**，
+两者与完整回归重叠，不相加。首次完整回归1 failed、4696 passed、32 skipped（397.12秒）发现取消历史计数误判；
+修复后78项针对性回归通过，含4个新增取消基线用例。修复版完整回归待运行，不以首次失败作通过。当前仅为限定作用域实现与专项验证，
 不声明全量验收、全部Secret端到端安全、跨重启正文安全恢复或整体0.9完成。
 真实模型请求0，无新增定时任务；未跟踪安全草稿不修改、不提交、不计作TM编号验收。
 
@@ -68,7 +68,8 @@ flowchart TD
 环境旋转不替换运行中已捕获值。Scope关闭后，Process在无Lease时归类确定前置失败，Run/Reconcile=0。
 
 原生树、规范JSON和有限模式使用共用工作量及取消检查点；Owner发布前与重建后均检查。
-[Gateway检查点](../../../src/harnessix/trusted_actions/output_budget.py)识别Token、期限和父Task取消，
+[Gateway检查点](../../../src/harnessix/trusted_actions/output_budget.py)识别Token、期限和本次新增父Task取消；
+异步入口交付待取消，已消费取消计数不阻断后续对账，不调用uncancel或读取私有Task状态，
 终止时不启动Owner；实际取消不等于任意同步Provider或不协作Owner可被硬抢占。
 
 只有Hash且绑定Secret的恢复，不以同名同版本新环境值授权旧正文。原Binding和Audit核验后仅返回
@@ -80,7 +81,7 @@ flowchart TD
 | 文件及用例数 | 证据、边界与负例 |
 |---|---|
 | [Scope 30项](../../../tests/secrets/test_publication.py) | 键/字符串/标量、已有有限编码、规范JSON凭据、版本缺失、宿主异常、材料类型/长度、环境旋转、清零和关闭；原生循环/钩子/深度/节点/字节/共享工作预算。 |
-| [Gateway 14项](../../../tests/trusted_actions/test_secret_publication.py) | 原值及编码×默认拒绝/显式快照共8项；Owner安全/命中/仅Hash恢复3项；受控时钟、Token和父Task取消3项。Audit保持成功，Execute=1、Reconcile=0，恢复不再执行。 |
+| [Gateway 16项](../../../tests/trusted_actions/test_secret_publication.py) | 原值及编码×默认拒绝/显式快照共8项；Owner安全/命中/仅Hash恢复3项；受控时钟、Token和父Task取消3项，历史取消后内联/Owner发布2项。Audit保持成功，Execute=1、Reconcile=0，恢复不再执行。 |
 | [实际Runtime 3项](../../../tests/trusted_actions/test_secret_publication_runtime.py) | 缺能力/命中/合法值，实际SQLite、已审批Action、非空SDK回放及OTel、下一Scripted请求和全部数据库字节；拒绝Turn失败但已确认效果成功，无第二次模型请求，恢复无重复。合成Executor和Scripted模型不代表真实Provider发布。 |
 | [Product 4项](../../../tests/product_config/test_secret_scope_composition.py) | POSIX实际Executor+Scope/Router/Plan，旋转后仍解析原值；关闭后无Lease不Run。正常及启动失败组合根退出2项使用真实Gateway/Scope/SQLite及Container构造替身，不代表实际容器安装或Windows安装。 |
 | [MCP 9项](../../../tests/mcp/test_server.py) | 6项既有回归，3新增实际Client安全/命中/Scope关闭；独立MCP Server有界字段+值检查，不借用Gateway结果，也不覆盖远端HTTP/OAuth。 |
@@ -95,9 +96,9 @@ flowchart TD
 Ruff规则/格式、Mypy **337源文件**、生成合同、可读性/依赖门禁、SBOM及Secret自检通过。
 既有生成Schema无漂移，无新增包、依赖边或环，不放宽可读性政策，不迁移Plan Binding/Audit。
 
-干净实现Revision的git archive离线构建Wheel **380成员**与sdist **2299成员**；
+干净实现Revision的git archive离线构建Wheel **380成员**与sdist **2305成员**；
 原字节Hash见[事实](contract-facts.json)，均不含未跟踪安全草稿。
-实际Secret扫描 **2321输入**完整覆盖、固定6规则零命中，不等于全部语义泄漏或位级可复现。
+实际Secret扫描 **2327输入**完整覆盖、固定6规则零命中，不等于全部语义泄漏或位级可复现。
 
 许可证门禁仍 **exit=1、12件受限Archive**；未放宽既有拒绝政策，不声明make check通过。
 详细设计4图及报告1图已实际渲染为非空PNG并逐图目视复核；
@@ -118,4 +119,4 @@ Ruff规则/格式、Mypy **337源文件**、生成合同、可读性/依赖门�
 
 复核材料集中本目录：[Manifest](bundle-manifest.json)、[事实](contract-facts.json)、
 [验证](verification.json)、[Review Packet](review-packet.json)、[CI观察](ci-observation.json)。
-Manifest记录5个交付文件及28项实现Revision输入Hash，自身排除；旧冻结材料不回写追认。
+Manifest记录5个交付文件及29项实现Revision输入Hash，自身排除；旧冻结材料不回写追认。
