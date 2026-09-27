@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: b06396ad05f9e1d725d01ad9f37c898ab80853ab
+version: 3
+code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
 owners:
   - core
 modules:
@@ -155,6 +155,13 @@ StringIO等嵌入式捕获流原样保留，不用替换全局流对象的方式
 不写缺失基准和StringIO嵌入行为。12条本地通过；真实Windows修复版CI结果另行登记，不将本机代码页模拟
 描述为Windows系统验收，也不将旧失败改写为通过。
 
+### 6.3 平台无关合同与执行依赖的进一步边界
+
+Revision a5fd57e的Windows编码旧失败已消失，但新控制台测试发现合同生成器在help之前通过Eval包
+导入POSIX执行模块，剩余两项失败。该导入污染及九个延迟执行导出的整改见
+[专项详设](m09-4b-governance-contract-import-boundary.md)，不通过跳过Windows启动检查获得通过。
+原Eval执行器的平台能力、锁与ACL仍是独立发行门禁；合同读取可启动不表示Windows历史执行已实现。
+
 ## 7. 测试、评审与验收
 
 [`test_sbom.py`](../../tests/governance/test_sbom.py)覆盖固定上游Schema与来源SHA、非法serial/hash算法、
@@ -175,3 +182,4 @@ StringIO等嵌入式捕获流原样保留，不用替换全局流对象的方式
 |---|---|---|---|
 | 1 | `880c306` | 2026-09-27 | 固定版本化pre-build库存、上游Schema、图和Archive身份，建立只读干净检出门禁。 |
 | 2 | `b06396a` | 2026-09-27 | 登记首轮真实CI的Windows管道编码失败；统一五个治理CLI的UTF-8输出、真实子进程Reader与干净目录依赖，补代码页正反例。 |
+| 3 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 登记Windows中文编码修复后仍存在的两项Eval包执行依赖污染；合同导入边界独立设计和验证，保留原失败证据。 |

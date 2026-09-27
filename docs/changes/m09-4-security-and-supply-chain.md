@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
-code_revision: 78ab30069ab4f63d58d9bafad903a7bfd660c257
+version: 6
+code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway输出已脱敏、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
-| 本文设计状态 | `reviewing`；a/b已有实现候选，b的库存整改首轮CI五作业通过、Windows中文管道输出失败，UTF-8修复及a的计划错误信任边界正在验收；c/d尚未验收。 |
+| 本文设计状态 | `reviewing`；a/b已有实现候选，a5fd57e本地完整回归3904 passed/32 skipped，修复版Windows原编码失败消失，合同生成器另有两项POSIX导入污染，依赖隔离候选待验收；c/d尚未验收。 |
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |
 
@@ -190,7 +190,7 @@ sequenceDiagram
 
 | 编号 | 当前行为与可复现边界 | 必须完成的整改 |
 |---|---|---|
-| SEC-094-A1 | 原实现按类型透传任意KernelError；已由三个失败负例复现。当前候选按decode/resolve/policy有限合同重建固定错误，不继承消息/retry提示。 | [专项详设](m09-4a-plan-error-trust-boundary.md)及真实Runtime/Model历史/Session/Audit/Protocol/Telemetry回归已建立；完整回归与三平台提交后验收完成前保持未关闭。 |
+| SEC-094-A1 | 原实现按类型透传任意KernelError；已由三个失败负例复现。当前候选按decode/resolve/policy有限合同重建固定错误，不继承消息/retry提示。 | [专项详设](m09-4a-plan-error-trust-boundary.md)及真实Runtime/Model历史/Session/Audit/Protocol/Telemetry回归已建立；本地完整回归3904 passed/32 skipped及五公开面专项通过；CI的两个治理合同导入失败修复及三平台终态核验前保持未关闭。 |
 | SEC-094-B2 | [`scan_paths`](../../scripts/secret_scan.py)对含NUL的二进制跳过，对`.env.example`整文件豁免。压缩Wheel成员和示例文件写入同一可命中假值，均得到空结果。 | 有界归档成员检查、取消整文件豁免、扫描不完整失败关闭；每条固定规则均有正反例，不以零命中冒充覆盖。 |
 | SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | 精确包版本/来源/证据绑定、平台条件证据与许可证表达式决策；版本升级不能沿用未验证的旧许可结论。 |
 
@@ -213,3 +213,4 @@ sequenceDiagram
 | 3 | `7a39f28bfb0d82e75a9e7a8b677c642d7733f845` | 2026-09-25 | 0.9.4b实现：许可证白名单扫描（74包全过，平台条件包登记overrides）、CycloneDX SBOM漂移门禁、Secret扫描（零命中+正例自检）、CI动作全部SHA固定、httpx2/httpx2-jsfetch补登记、许可证权利链与安装/扩展来源两份审查文档；make supply-chain纳入check链与CI。 |
 | 4 | `880c3065482c00d4b0761c739c3ff94f7a7d00cb` | 2026-09-27 | 登记旧CI的未跟踪SBOM与文档链接失败；整改候选增加版本化pre-build库存、固定上游Schema、归档/图身份和干净检出回归；不追认旧实现完成。 |
 | 5 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 登记库存首轮CI的Windows管道编码根因及UTF-8整改；按阶段有限合同修复KernelError类型信任和显式Decoder异常边界，补源码绑定专项详设及五公开面端到端回归。 |
+| 6 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 本地完整回归及五公开面/治理编码测试通过；真实Windows剩余两项合同生成器fcntl导入污染，隔离九个Eval执行导出，不广告Windows历史执行支持。 |

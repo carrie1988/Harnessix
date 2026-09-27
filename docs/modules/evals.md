@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 21
+code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
 owners:
   - core
 modules:
@@ -63,7 +63,7 @@ supersedes: []
 | 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；单次运行、评分、Compaction评测和Eval专用交付仅由库调用 |
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
-| 平台 | 当前实现是POSIX专用；`evals.__init__`会立即导入`fcntl`依赖模块，原生Windows连包级导入也不能保证 |
+| 平台 | 执行实现仍有POSIX专用边界；包入口已把九个执行导出改为按需加载，合同导入与执行能力分离，真实Windows治理验收仍待修复版CI |
 | 代码版本 | 0.9.2a～c分别由CI 35456635653、35461708961和35465458256关闭；0.9.2d工程Pack v2完整离线Suite由Revision `505bc537f74bd59e891c605ff4114856991f1783`及CI 35483905418关闭；0.9.2e最终修正Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`由CI 35491527318关闭 |
 | 当前完成度 | 0.5.5单任务闭环及0.9.2a～e均已完成；20 Trial离线执行链与固定北京模型0/20严格真实质量基线均已冻结，0.9.2整体关闭 |
 
@@ -198,7 +198,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 | Eval单文件交付 | 已实现/显式调用 | `CodingEvalDeliveryStore` | POSIX、已有UTF-8普通文件 |
 | 默认产品质量门禁 | 未装配 | 无 | 发布不依赖固定Eval阈值 |
 | 动态数据集/第三方任务 | 未实现 | 无 | 仅允许Wheel内置且权利链已审查的Pack |
-| 原生Windows | 未实现 | 包级导入受`fcntl`阻断 | 无Windows CI证据 |
+| 原生Windows | 历史执行未实现 | 合同导入候选已与POSIX执行分离 | 修复版Windows合同门禁待验收，不代表历史Eval执行支持 |
 | OS Sandbox | 未实现 | 环境值明确为`private-managed-copy-no-os-sandbox` | 仍有宿主用户权限 |
 
 ## 5. 模块上下文与信任边界
@@ -1490,7 +1490,7 @@ CLI刻意把Kernel细节压缩为`runtime_failed`，便于防泄漏，但降低�
 
 1. `private-managed-copy-no-os-sandbox`明确表示被测代码和测试拥有宿主用户权限及网络能力；
 2. 当前安全成立依赖Catalog只包含评审过的Harnessix自身历史代码，不能扩展到不可信第三方任务；
-3. `harnessix.evals`包在Windows因`fcntl`顶层导入不可用；
+3. `harnessix.evals`合同导入已通过候选的执行依赖隔离整改；Windows执行器本身仍不具备等价实现；
 4. Campaign Lock和Delivery Lock仅同一POSIX主机有效，无Fencing；
 5. Materializer/Report/Delivery大量依赖POSIX权限和`O_NOFOLLOW/O_DIRECTORY`，无Windows ACL等价实现；
 6. 单次Report Reader没有强制0600；
@@ -2015,11 +2015,11 @@ Run/Campaign/Delivery JSON没有Migration链；未知版本由严格Literal拒�
 
 | 能力 | macOS | Linux | Windows |
 |---|---|---|---|
-| `harnessix.evals`包导入 | 支持 | 支持 | 当前可能因`fcntl`失败 |
+| `harnessix.evals`合同导入 | 支持 | 支持 | 候选不再立即导入执行依赖，真实Windows CI待验收 |
 | Historical Materialization | 已测试 | CI覆盖 | 未实现 |
 | Hidden Check/Runner | 已测试 | CI覆盖 | 未实现 |
 | Campaign/Suite单写者文件锁 | 支持 | 支持 | 合同存在；执行未验收 |
-| Task Pack合同/内置资源读取 | 支持 | 支持 | 包级导入当前受`fcntl`阻断 |
+| Task Pack合同/内置资源读取 | 支持 | 支持 | 合同导入候选已解耦；实际资源IO需独立Windows验证 |
 | Task Pack Git物化 | 已测试 | CI普通测试覆盖 | 未实现 |
 | Task Pack固定Container检查 | 本地Docker未启用 | CI固定镜像验收 | 未实现 |
 | Eval Delivery | 支持 | 支持 | 不支持 |
@@ -2040,7 +2040,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 |---|---|---|---|
 | P0 | Historical链无OS Sandbox；Task Pack工程数据集虽有Container但仍是小型派生夹具 | 不能接动态第三方任务或外推大型仓库 | 0.9.2d/0.9.4/0.9.5安全执行 |
 | P0 | 工程Pack离线与真实Provider 20 Trial均已冻结，但真实任务成功与测试通过为0/20 | 证明失败可审计，不证明模型具备生产可用的软件工程能力 | 0.9.3 Agent改进与0.9.6能力矩阵 |
-| P0 | 原生Windows包级导入受`fcntl`阻断 | 与1.0三平台目标冲突 | 0.9.6发行门禁 |
+| P0 | 原生Windows历史执行无等价ACL/锁/Process/Git证据 | 合同导入整改不提供执行替身 | 0.9.6发行门禁 |
 | P0 | Eval不参与默认发布阻断 | 当前回归可能绕过真实任务 | 0.9.2d～e/0.9.6 |
 | P0 | Eval自动审批不是用户审批 | 不能证明生产权限体验 | 产品E2E Eval |
 | P1 | Historical Runner只支持唯一Profile/Behavior Check | 合同能力与实现不一致 | Runner v2 |
@@ -2136,7 +2136,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 29. 阅读`build_coding_eval_change_package`，确认`passed`仍需重验Workspace；
 30. 跟踪`CodingEvalDeliveryStore.execute/_reconcile_locked`的临时inode归因；
 31. 对比[Delivery模块设计](delivery.md)，列出两套交付模型不能互换的原因；
-32. 最后检查`__init__.py`和`fcntl`顶层导入，验证Windows现状；
+32. 最后检查`__init__.py`九个按需执行导出与`fcntl`实际执行边界，区分Windows合同导入和执行现状；
 33. 按第47节运行回归，并用第50节评审生产缺口。
 
 ## 54. 维护规则
@@ -2164,10 +2164,22 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 Managed Copy描述为OS Sandbox，不得把自动Eval审批描述为用户授权，不得把费用停止线描述为供应商硬额度，
 不得把三次单任务通过描述为生产级Coding Agent总体质量，也不得把Eval专用单文件写回描述为通用事务交付。
 
+## 平台无关合同导入与执行边界
+
+九个历史执行相关公共导出经包级`__getattr__`按需加载原实现；合同/数据入口保持原直接导出，
+方法调用能力不因导入成功而扩大。`__dir__`保留完整公共名称，不触发执行模块导入。
+TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒绝，执行依赖缺失时不创建替身。
+五组原模块、九个名称、兼容边界与失败/负例设计见
+[治理合同导入边界详设](../changes/m09-4b-governance-contract-import-boundary.md)；
+[`test_contract_import_boundary.py`](../../tests/governance/test_contract_import_boundary.py)
+在新进程禁止加载六个执行模块，检查合同导入、名称发现、Generator help及只读check。
+合同/CLI负例在三平台都运行；原POSIX执行对象身份回归的适用范围不能冒充Windows执行支持。
+
 ## 55. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 21 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 分离平台无关合同与九个POSIX执行导出，保留原对象、类型和公共dir；修复候选等待真实Windows治理验收，0.9.6执行门禁保留 |
 | 20 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | CI 35491527318关闭三项状态/分母修正；固定北京模型完成20 Trial，冻结81请求、318,478/12,148输入/输出Token、CNY 1.46828及任务/测试0/20的低敏证据，关闭0.9.2e和0.9.2 |
 | 19 | `pending` | 2026-09-20 | 记录第二轮真实Suite完成20 Trial后暴露的空测试分母、Campaign旧State覆盖和CLI零进度问题；补充必需测试失败投影、最新State提交和可信失败进度边界 |
 | 18 | `dd8b9976799d0950f72d44247966cc1e9b535dd2` | 2026-09-20 | 缺失Profile保留为空Observation并进入严格评分，完成状态允许空Baseline事实；由CI 35488863702完成六实例验收 |

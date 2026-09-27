@@ -1,4 +1,7 @@
-"""可复现 Coding Eval 的任务、证据和报告契约。"""
+"""Coding Eval公共契约；平台执行入口按需导入，不污染合同读取链路。"""
+
+from importlib import import_module
+from typing import TYPE_CHECKING
 
 from harnessix.evals.campaign import (
     CompletedCodingEvalTrial,
@@ -10,7 +13,6 @@ from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignSummary,
     CodingEvalCampaignTrial,
 )
-from harnessix.evals.campaign_execution import run_coding_eval_campaign
 from harnessix.evals.campaign_execution_contracts import (
     CodingEvalCampaignExecutionState,
     CodingEvalCampaignRunConfig,
@@ -50,12 +52,6 @@ from harnessix.evals.contracts import (
     EvalGitEvidence,
     EvalTestObservation,
 )
-from harnessix.evals.delivery import (
-    CodingEvalDeliveryStore,
-    build_coding_eval_change_package,
-    read_coding_eval_change_package,
-    write_coding_eval_change_package,
-)
 from harnessix.evals.delivery_contracts import (
     CHANGE_PACKAGE_SPEC_VERSION,
     DELIVERY_PLAN_SPEC_VERSION,
@@ -82,7 +78,6 @@ from harnessix.evals.provider_suite_evidence import (
     build_provider_suite_evidence_manifest,
     publish_provider_suite_evidence,
 )
-from harnessix.evals.provider_suite_execution import run_task_pack_provider_suite
 from harnessix.evals.report import (
     read_eval_campaign_execution_state,
     read_eval_campaign_plan,
@@ -102,7 +97,6 @@ from harnessix.evals.report import (
     write_eval_suite_report,
 )
 from harnessix.evals.run_state import read_eval_run_state, write_eval_run_state
-from harnessix.evals.runner import HistoricalCodingEvalResult, run_historical_coding_eval
 from harnessix.evals.suite import (
     CompletedCodingEvalSuiteCase,
     build_coding_eval_suite_case_report,
@@ -121,7 +115,6 @@ from harnessix.evals.suite_contracts import (
     CodingEvalTranscriptEvidence,
     CodingEvalTrialTestEvidence,
 )
-from harnessix.evals.suite_execution import run_coding_eval_suite
 from harnessix.evals.suite_execution_contracts import (
     CodingEvalSuiteCaseRunResult,
     CodingEvalSuiteExecutionState,
@@ -157,6 +150,19 @@ from harnessix.evals.task_pack_suite import (
     build_task_pack_offline_suite_config,
     build_task_pack_suite_config,
 )
+
+if TYPE_CHECKING:
+    from harnessix.evals.campaign_execution import run_coding_eval_campaign
+    from harnessix.evals.delivery import (
+        CodingEvalDeliveryStore,
+        build_coding_eval_change_package,
+        read_coding_eval_change_package,
+        write_coding_eval_change_package,
+    )
+    from harnessix.evals.provider_suite_execution import run_task_pack_provider_suite
+    from harnessix.evals.runner import HistoricalCodingEvalResult, run_historical_coding_eval
+    from harnessix.evals.suite_execution import run_coding_eval_suite
+
 
 __all__ = [
     "CODING_EVAL_GRADER_VERSION",
@@ -279,3 +285,34 @@ __all__ = [
     "write_eval_run_state",
     "write_coding_eval_change_package",
 ]
+
+
+# 仅延迟实际执行依赖，其他合同/纯数据入口保持原导出；不提供Windows执行替身。
+_LAZY_EXECUTION_EXPORTS = {
+    "run_coding_eval_campaign": "harnessix.evals.campaign_execution",
+    "CodingEvalDeliveryStore": "harnessix.evals.delivery",
+    "build_coding_eval_change_package": "harnessix.evals.delivery",
+    "read_coding_eval_change_package": "harnessix.evals.delivery",
+    "write_coding_eval_change_package": "harnessix.evals.delivery",
+    "run_task_pack_provider_suite": "harnessix.evals.provider_suite_execution",
+    "HistoricalCodingEvalResult": "harnessix.evals.runner",
+    "run_historical_coding_eval": "harnessix.evals.runner",
+    "run_coding_eval_suite": "harnessix.evals.suite_execution",
+}
+
+
+def __getattr__(name: str) -> object:
+    """首次访问执行导出时加载原实现并缓存；合同导入不触发平台专用依赖。"""
+
+    module_name = _LAZY_EXECUTION_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_name), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    """列出完整公共导出名，但不为名称发现加载平台执行模块。"""
+
+    return sorted(set(globals()) | set(__all__))
