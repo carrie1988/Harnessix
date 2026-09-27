@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 25
-code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
+version: 26
+code_revision: 7fd1187f07fa415ecf48211bc0149aff0d7a6191
 owners:
   - core
 modules:
@@ -1632,3 +1632,23 @@ INTERRUPTED，不允许因此重新Execute。Runtime故障终结查询优先补�
 [ADR 0094](../adr/0094-audit-bound-bounded-owner-projection.md)及[冻结报告](../validation/owner-projections-2026-09-27-v1/README.md)。
 未配置Provider的成功JSON、执行器原始Outcome序列化、Owner内部预算及不协作同步阻塞仍开放；
 本层不是硬杀扩展进程的Sandbox，不宣称整体0.9.4a完成。
+
+
+## 52. 执行器原始返回合同与后置期限（0.9.4a）
+
+[`validate_executor_outcome`](../../src/harnessix/trusted_actions/outcome_validation.py)在通用编码器之前验证
+精确DTO实例和6字段原生头部，不调用返回实例的serializer；整个封套复用1MiB/64层/10256节点/
+128-bit整数预算，再作严格JSON DTO验证。输出、头部与UUID的完整字段约束见
+[详细设计](../changes/m09-4a-executor-output-budget.md)。
+
+[`operation_router._validated_output`](../../src/harnessix/trusted_actions/operation_router.py)把身份、阶段、
+有限失败归一和Hash纳入返回处理期限：取操作剩余期限与10秒较短者，前后同步检查，再提供父Task
+取消协作点。任何后置超时/取消都会清空已算正文SHA；Operation与固定终态同事务，取消在记账后传播。
+
+原始kind在完整验证前不是Audit事实：只读拒绝FAILED，写拒绝UNKNOWN，对账拒绝UNKNOWN，只能
+读取Owner事实恢复，不能再次Execute。已经确认的Audit SUCCEEDED后发生Owner投影失败则保留
+原事实，两条边界不得混同。[78项专项及物理退出恢复](../validation/executor-output-2026-09-27-v1/README.md)
+覆盖真实文件只追加一次、Store重开、实际子进程exit=73和Runtime/Protocol/非空遥测。
+
+公开失败策略增至v2，新增invalid/limit/timeout九个内核有限码，不改Plan/Binding/Audit v1合同、
+指纹和Hash链。有效小型成功JSON的公开权限、回调/Store内部预算和不协作扩展隔离仍独立开放。

@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 1
-code_revision: pending
+code_revision: 7fd1187f07fa415ecf48211bc0149aff0d7a6191
 owners:
   - core
 modules:
@@ -162,6 +162,8 @@ Store后先Interrupt到UNKNOWN，再读取Owner事实完成对账。缺少终态
 ```mermaid
 flowchart TD
     Instance[精确ActionExecutionOutcome实例] --> Fields[只读原生dict：固定6字段]
+    Fields --> Body[原生正文引用：尚未编码]
+    Body --> Envelope
     Fields --> UUID[UUID仅接受精确内核类型并编码为字符串]
     Fields --> Strings[头部字符串长度上限：32 / 64 / 128]
     UUID --> Envelope[含头部与正文的完整JSON封套]

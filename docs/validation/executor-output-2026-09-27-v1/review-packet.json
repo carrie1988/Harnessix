@@ -1,0 +1,30 @@
+{
+  "code_revision": "7fd1187f07fa415ecf48211bc0149aff0d7a6191",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "new_automation_created": false,
+  "no_real_model_calls": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "12 restricted-license Archive",
+    "valid small successful JSON public authorization",
+    "Owner/Store/internal callback boundaries",
+    "noncooperative extension isolation",
+    "TM numbered attacks",
+    "remote MCP identity/OAuth/managed egress",
+    "real installation/Beta",
+    "real Provider release proof"
+  ],
+  "required_review_focus": [
+    "native header and full-envelope budget before any serializer",
+    "strict v1 DTO and plan identity before adopting declaration",
+    "normalize/hash/cancel checkpoint within post-return deadline",
+    "stale SHA cleared on late rejection",
+    "read FAILED/write UNKNOWN/reconcile UNKNOWN, no repeated Execute",
+    "actual fsync/store reopen/exit 73 recovery",
+    "no new Store schema or authority table",
+    "old audit success retained on later Owner projection failure"
+  ],
+  "slice": "SEC-094-A5 bounded raw executor return"
+}

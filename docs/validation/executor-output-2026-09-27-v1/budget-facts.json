@@ -1,0 +1,52 @@
+{
+  "artifact_scan": {
+    "complete": true,
+    "exit_code": 0,
+    "fixed_rule_hits": 0,
+    "input_count": 2280,
+    "size_bytes": 101,
+    "stdout_sha256": "208d41025a20f0eeeb12c9371c21570ac62f6b0f22c48e9cd68c8025c368d9f8",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2280个输入完整覆盖且固定规则零命中"
+  },
+  "artifacts": [
+    {
+      "kind": "wheel",
+      "members": 375,
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "5cf242eef191fb2b92620f00e942a1fb16ce4df3f2c9459bd1a91d1993bec4db",
+      "size_bytes": 937438,
+      "untracked_security_draft_present": false
+    },
+    {
+      "kind": "sdist",
+      "members": 2258,
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "ad11627b63054ed0f0009d1935283fa379df567ebcf7e8512be720dddf47af52",
+      "size_bytes": 6950644,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "clean_build_source": "git archive 7fd1187f07fa415ecf48211bc0149aff0d7a6191",
+  "code_revision": "7fd1187f07fa415ecf48211bc0149aff0d7a6191",
+  "confirmed_audit_fact_rewritten": false,
+  "hard_exit_after_budget_rejection_before_complete": true,
+  "hard_exit_code": 73,
+  "hard_exit_recovery_operation_states": [
+    "interrupted",
+    "completed"
+  ],
+  "hard_exit_recovery_reexecutions": 0,
+  "invalid_return_is_not_confirmed_effect": true,
+  "new_finite_error_codes": 9,
+  "noncooperative_hard_kill_claimed": false,
+  "post_return_deadline_closed": true,
+  "public_failure_policy_version": "harnessix.public-action-failure/v2",
+  "raw_envelope_budget_closed": true,
+  "real_file_append_count": 1,
+  "reproducible_build_claimed": false,
+  "scripted_runtime_public_surfaces_nonempty": true,
+  "store_reopen_owner_reconciliation_count": 1,
+  "untracked_security_draft_excluded": true,
+  "valid_small_success_json_public_authorization_closed": false,
+  "write_rejection_is_unknown": true
+}

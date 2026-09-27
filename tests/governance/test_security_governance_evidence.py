@@ -143,6 +143,36 @@ ROOT = Path(__file__).resolve().parents[2]
                 "governance/readability-policy-v1.json",
             },
         ),
+        (
+            "executor-output-2026-09-27-v1",
+            "budget-facts.json",
+            {
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+                "scripts/generate_specs.py",
+                "spec/action-output-budget-v1.schema.json",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/agent/trusted_action_session.py",
+                "src/harnessix/execution/contracts.py",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/agent_gateway_support.py",
+                "src/harnessix/trusted_actions/contracts.py",
+                "src/harnessix/trusted_actions/operation_router.py",
+                "src/harnessix/trusted_actions/operation_store.py",
+                "src/harnessix/trusted_actions/outcome_validation.py",
+                "src/harnessix/trusted_actions/output_budget.py",
+                "src/harnessix/trusted_actions/public_errors.py",
+                "src/harnessix/trusted_actions/public_outcomes.py",
+                "src/harnessix/trusted_actions/router.py",
+                "tests/trusted_actions/test_executor_output_boundaries.py",
+                "tests/trusted_actions/test_executor_output_lifecycle.py",
+                "tests/trusted_actions/test_executor_output_runtime.py",
+                "tests/trusted_actions/test_outcome_validation.py",
+                "tests/trusted_actions/test_router.py",
+                "tests/trusted_actions/test_schemas.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -295,3 +325,31 @@ def test_owner_projection_evidence_preserves_unclosed_scope_and_effect_facts():
     assert ci["prior_success_is_current_acceptance"] is False
     assert ci["prior_revision"]["conclusion"] == "failure"
     assert sum(item["conclusion"] == "success" for item in ci["prior_revision"]["jobs"]) == 4
+
+
+def test_executor_output_evidence_distinguishes_declaration_and_confirmed_fact():
+    bundle = ROOT / "docs/validation/executor-output-2026-09-27-v1"
+    facts = json.loads((bundle / "budget-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert facts["public_failure_policy_version"] == "harnessix.public-action-failure/v2"
+    assert facts["new_finite_error_codes"] == 9
+    assert (
+        facts["raw_envelope_budget_closed"] is True and facts["post_return_deadline_closed"] is True
+    )
+    assert facts["confirmed_audit_fact_rewritten"] is False
+    assert facts["invalid_return_is_not_confirmed_effect"] is True
+    assert facts["write_rejection_is_unknown"] is True
+    assert facts["real_file_append_count"] == 1 and facts["hard_exit_code"] == 73
+    assert facts["hard_exit_after_budget_rejection_before_complete"] is True
+    assert facts["hard_exit_recovery_reexecutions"] == 0
+    assert facts["hard_exit_recovery_operation_states"] == ["interrupted", "completed"]
+    assert facts["scripted_runtime_public_surfaces_nonempty"] is True
+    assert facts["valid_small_success_json_public_authorization_closed"] is False
+    assert facts["noncooperative_hard_kill_claimed"] is False
+    assert facts["reproducible_build_claimed"] is False
+    assert all(not item["untracked_security_draft_present"] for item in facts["artifacts"])
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
