@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
+status: current
+version: 2
 code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners: [core]
-modules: [domain, trusted_actions, agent]
+modules: [domain, trusted_actions, agent, mcp]
 related_adrs:
   - docs/adr/0093-kernel-owned-public-failure-contract.md
   - docs/adr/0094-audit-bound-bounded-owner-projection.md
@@ -230,3 +230,12 @@ ToolDescriptor增加可选Python/JSON字段；未声明字段的旧描述保持�
 Artifact的公开视图、Secret轮换/缺版本、Owner/Store同步阻塞与工件所属域、其他扩展公开错误
 和TM编号攻击仍需关闭。许可证12件、远端MCP身份/OAuth/受管出口、三平台真实安装/Beta及
 Provider发布证据保持阻断；本设计不将整个0.9.4a或0.9认定完成。
+
+## 13. 版本绑定验收结果
+
+实现`7adfa3ea86b3b3961e67df9140895e48f2aab8fc`，稳定测试树`99247d85c0b6fd1ff748022d01c77a0ad35d0d23`；
+完整回归4641 passed/32 skipped，391.79秒；专项91（89新增）、相关631均与完整回归重叠。
+四幅设计图及验收报告一图已实际渲染和目视检查，
+[统一验收目录](../validation/custom-success-2026-09-27-v1/README.md)冻结输入、产物Hash、独立负例、
+旧SQLite兼容及完整回归。合法字段含正式Secret绑定值的实际Runtime观察仍为开放缺口；
+许可门禁12件未通过，当前实现CI未验收，整个0.9.4a/0.9未完成。

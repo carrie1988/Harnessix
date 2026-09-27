@@ -36,7 +36,21 @@
   },
   "external_model_requests": 0,
   "full_regression": {
-    "status": "not_run"
+    "command": "uv run pytest --ignore=tests/security -q --tb=short -o addopts=''",
+    "exit_code": 0,
+    "only_test_difference_from_code_revision": "tests/governance/test_security_governance_evidence.py",
+    "passed": 4641,
+    "production_schema_script_and_policy_tree_matches_code_revision": true,
+    "seconds": 391.79,
+    "size_bytes": 5245,
+    "skipped": 32,
+    "status": "passed",
+    "stdout_sha256": "84af938d971fa1ec34f24c29d4cc3d346ad051923b37fa773367e657aa38d55f",
+    "stdout_summary": "4641 passed, 32 skipped in 391.79s (0:06:31)",
+    "test_tree_revision": "99247d85c0b6fd1ff748022d01c77a0ad35d0d23",
+    "tested_git_tree_sha": "a1f91e490d99c8ce02fb3f8c8fc8910b4f8a1b74",
+    "tracked_tree_changed_during_run": false,
+    "untracked_attack_draft_excluded": true
   },
   "independent_negative_replay": {
     "exit_code": 1,
@@ -58,6 +72,29 @@
   },
   "make_check_passed": false,
   "new_automation_created": false,
+  "postfreeze_checks": {
+    "documentation": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "9b7711c7bbeccb79b4663f920bc317c86ad8c0282ee03614c30d1944ca7d8610",
+      "stdout_summary": "文档门禁通过：302份文档、8012条链接、730幅Mermaid、26个源码包、31个变化路径"
+    },
+    "evidence_governance": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 99,
+      "stdout_sha256": "f5f02c7cbe4cc7912ef15d5f197297a9f649ed1c7c798f7fc5602766d73db965",
+      "stdout_summary": "14 passed in 1.82s"
+    },
+    "readability": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    }
+  },
   "related_regression": {
     "exit_code": 0,
     "overlaps_full_regression": true,

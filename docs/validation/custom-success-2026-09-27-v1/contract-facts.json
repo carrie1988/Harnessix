@@ -33,6 +33,35 @@
   "code_revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
   "confirmed_audit_success_preserved": true,
   "custom_success_field_authorization_closed_for_current_gateway_and_mcp": true,
+  "declared_secret_gap_observation": {
+    "acceptance_pass_claimed": false,
+    "audit_contains_bound_value": false,
+    "declared_secret_versions": [
+      [
+        "registry",
+        "7",
+        "TOKEN"
+      ]
+    ],
+    "execute_calls": 1,
+    "external_observation_not_counted_as_passing_tests": true,
+    "observation_sha256": "3c7dcb35cc22a4e328c13f53a7ca1f202ec1d393ed8f714e612105dc8c707382",
+    "observed_open_gap": true,
+    "probe_program_sha256": "230acd54e618b49b0c4c407a7b1d2cdb36f352961331e7a96df99d3442230fd4",
+    "protocol_replay_contains_bound_value": true,
+    "protocol_snapshot_contains_bound_value": false,
+    "provider_resolution_used": true,
+    "public_tool_result_contains_bound_value": true,
+    "real_model_requests": 0,
+    "reconcile_calls": 0,
+    "revision": "7adfa3ea86b3b3961e67df9140895e48f2aab8fc",
+    "scope": "synthetic Executor with actual declared SecretVersionBinding and EnvironmentSecretProvider; actual SQLite AgentRuntime, SDK Protocol and nonempty OTel; observation is not acceptance",
+    "scripted_next_model_history_contains_bound_value": true,
+    "telemetry_contains_bound_value": false,
+    "telemetry_nonempty": true,
+    "turn_session_contains_bound_value": true,
+    "turn_status": "completed"
+  },
   "existing_generated_schema_drift": false,
   "extra_fields_not_dropped": true,
   "full_descriptor_fingerprint_checked": true,

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 26
+version: 27
 code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners:
   - core
@@ -31,7 +31,7 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway输出已脱敏、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
+| 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway公开错误、效果摘要及字段授权已分步约束（Secret值和历史正文未验收）、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
 | 本文设计状态 | `reviewing`；a/b已有实现候选；0601ede六作业CI成功，Windows编码与POSIX合同导入污染修复通过。Secret v2在747fe9b CI五作业成功/Windows夹具失败，修复候选待验证；许可v2绑定777件，pywin32 12件受限正文冲突仍阻断，安装输入及c/d尚未验收。 |
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |

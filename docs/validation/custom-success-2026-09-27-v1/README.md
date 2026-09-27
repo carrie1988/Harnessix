@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
-status: reviewing
-version: 1
+status: current
+version: 2
 code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
 owners: [core]
 modules: [domain, trusted_actions, agent, mcp]
@@ -28,7 +28,9 @@ supersedes: []
 时序、数据流、字段、接口、伪代码、持久化、异常、期限、取消、恢复、安全、部署与测试矩阵。
 
 专项 **91 passed，1.92秒**，其中89新增、2项原MCP回归；相关回归 **631 passed，16.73秒**。
-两者与完整回归重叠，不相加。稳定测试树完整回归尚待运行，不借用上一实现的4550项结果。
+两者与完整回归重叠，不相加。稳定测试树完整回归 **4641 passed、32 skipped，391.79秒，exit=0**。
+测试树`99247d85c0b6fd1ff748022d01c77a0ad35d0d23`，Git Tree `a1f91e490d99c8ce02fb3f8c8fc8910b4f8a1b74`；
+运行期间跟踪输入未变化，生产源码/Schema/脚本/政策/基线与实现Revision相同，另含两项证据治理测试。
 未跟踪攻击草稿不提交、不作为TM编号验收；真实模型请求0，无新增定时任务。
 
 已实现当前Gateway及独立MCP公开出口的自定义成功**字段授权**，不宣称Secret值端到端安全、
@@ -92,15 +94,21 @@ Gateway在Owner发布前检查原摘要，恢复后检查重建合同、双Hash�
 原拒绝策略未放宽，make check不宣称通过。
 
 Ruff格式/规则、Mypy 336源文件、生成合同、可读性/依赖门禁、SBOM与Secret自检通过；现有生成
-Schema无漂移、无新增依赖或环。完整回归、图渲染、稳定树和冻结后治理检查在
-[verification](verification.json)中登记实际结果，不以估算计数代替运行。
+Schema无漂移、无新增依赖或环。详细设计4图和报告1图已用Chrome实际渲染并目视检查；文档门禁覆盖302份文档、8012条链接、730幅Mermaid、26个源码包。
+完整回归、图渲染、稳定树和冻结后治理检查在[verification](verification.json)登记实际结果；32项跳过不等于平台验收。
 
 ## 6. CI、开放风险与复核
 
 当前实现CI冻结时尚未启动；[CI观察](ci-observation.json)中的f7566bf历史运行不作为当前验收，
 也不逐提交等待后台CI。发布需要实际版本绑定终态，不取消失败作业或用本地结果替代平台证据。
 
-字段合同仅决定哪些键和类型可以公开，允许字符串可能仍包含受保护Secret值。旧Session/公开
+独立离线观察以当前实现的正式SecretVersionBinding `registry/7/TOKEN`、EnvironmentSecretProvider
+和合成Executor返回合法summary，实际SQLite Runtime的ToolResult、持久Session、下一次Scripted
+请求历史及SDK Protocol回放均出现绑定Canary值。Protocol Snapshot未携带该正文，Audit仅有Hash，
+非空OTel没有该值；Execute=1、Reconcile=0、真实模型请求=0。观察仅保留布尔标志和版本身份，
+无Secret值写入本报告，见[事实](contract-facts.json)；这是**开放缺口，不是验收通过**。
+
+字段合同仅决定哪些键和类型可以公开，不替代受保护Secret值鉴别。旧Session/公开
 Artifact历史不追溯清理；Owner/Store内部资源与工件归属、其他扩展公开错误、12件许可权利链、
 TM编号攻击、远端MCP身份/OAuth/出口、三平台真实安装/升级/卸载/Beta及真实Provider发布仍阻断。
 
