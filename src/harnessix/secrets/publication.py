@@ -7,6 +7,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Protocol, Self
+from uuid import UUID, uuid4
 
 from pydantic import JsonValue
 
@@ -243,12 +244,24 @@ def _scope_patterns(materials: dict[str, SecretMaterial]) -> tuple[bytes, ...]:
     return patterns
 
 
+def _publication_context(identity: UUID, materials: dict[str, SecretMaterial]) -> dict[str, object]:
+    """每次重建无材料值的元数据副本，不暴露Scope持有的可变容器。"""
+    return {
+        "scope_id": str(identity),
+        "bindings": [
+            {"name": material.name, "version": material.version}
+            for _, material in sorted(materials.items())
+        ],
+    }
+
+
 class SecretPublicationScope:
     """显式宿主作用域；不枚举环境、不持久化值，关闭后拒绝解析或公开检查。"""
 
     def __init__(
         self, bindings: Sequence[SecretVersionReference], provider: SecretProvider
     ) -> None:
+        self._publication_context_id = uuid4()
         self._materials: dict[str, SecretMaterial] = {}
         self._patterns: tuple[bytes, ...] = ()
         self._closed = False
@@ -312,6 +325,11 @@ class SecretPublicationScope:
         self._ensure_open()
         checkpoint()
         return SecretTextStep(self._patterns, self._ensure_open)
+
+    def publication_context(self) -> dict[str, object]:
+        """冻结快照的独立身份与版本元数据；没有材料值，不据此重新授权旧正文。"""
+        self._ensure_open()
+        return _publication_context(self._publication_context_id, self._materials)
 
     def output_redaction_values(self) -> tuple[bytes, ...]:
         """仅提供持久前保护原值副本；不授予目标进程任何环境注入权限。"""

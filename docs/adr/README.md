@@ -240,3 +240,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR-0100 原封套与原帧发布](0100-protocol-frame-and-handshake-publication.md)。
 
 - [ADR-0101 查询原DTO与Session宿主绑定](0101-query-publication-and-session-host-binding.md)。
+
+- [ADR-0102 认证历史与Event Seal核心](0102-authenticated-history-and-event-seal-core.md)（总体评审草案，默认装配未完成）。

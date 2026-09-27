@@ -740,3 +740,9 @@ Migration 0028新增可空`publication_epoch`和`publication_policy`。首次INS
 [完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
 [固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
 普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。
+
+
+## 跨重启来源认证边界
+
+当前Artifact Epoch仍只认可本次Store实例；新的Event Seal核心没有放宽该边界，Artifact持久来源/二进制依据及备份恢复尚待实施。
+完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。

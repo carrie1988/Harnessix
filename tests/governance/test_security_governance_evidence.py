@@ -500,6 +500,35 @@ ROOT = Path(__file__).resolve().parents[2]
             },
         ),
         (
+            "event-seal-core-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "uv.lock",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/errors.py",
+                "src/harnessix/agent/models.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/sqlite.py",
+                "src/harnessix/session/publication_seal.py",
+                "tests/session/test_publication_seal.py",
+                "tests/governance/test_security_governance_evidence.py",
+            },
+        ),
+        (
             "query-publication-2026-09-28-v1",
             "contract-facts.json",
             {
@@ -1158,6 +1187,59 @@ def test_query_bundle_keeps_current_scope_and_host_binding_limits_explicit() -> 
         assert review["full_regression_acceptance_pending"] is True
     else:
         assert full["passed"] == 5097 and full["skipped"] == 32
+        assert full["tracked_inputs_unchanged_during_run"] is True
+        assert full["source_inputs_same_as_fixed_revision"] is True
+        assert "\nstatus: current\n" in metadata
+        assert review["full_regression_acceptance_pending"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_revision_acceptance"] is False
+
+
+def test_event_seal_bundle_does_not_claim_default_history_authorization() -> None:
+    bundle = ROOT / "docs/validation/event-seal-core-2026-09-28-v1"
+    manifest = json.loads((bundle / "bundle-manifest.json").read_bytes())
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert {item["code_revision"] for item in (manifest, facts, verification, review, ci)} == {
+        manifest["code_revision"]
+    }
+    assert facts["core_tests"] == 46 and facts["new_governance_tests"] == 2
+    assert facts["real_model_requests"] == 0
+    assert facts["production_key_backend_implemented"] is False
+    assert facts["production_atomic_seal_write_implemented"] is False
+    assert facts["default_product_history_authentication_enabled"] is False
+    assert facts["snapshot_artifact_authentication_implemented"] is False
+    assert facts["unknown_legacy_history_authorization_closed"] is False
+    assert facts["cross_restart_production_acceptance_claimed"] is False
+    assert facts["historical_validation_files_unchanged"] is True
+    assert facts["archive_rights_blockers"] == 12
+    baseline = facts["independent_default_root_gap"]
+    assert baseline["module_source_verified"] is True
+    assert len(baseline["default_root"]["records"]) == 5
+    assert all(
+        item["unregistered_old_material_exported"] for item in baseline["default_root"]["records"]
+    )
+    assert baseline["snapshot_hash_replacement"]["accepted"] is True
+    assert baseline["history_authorization_closed"] is False
+    consumer = verification["wheel_consumer"]
+    assert consumer["passed"] is True and consumer["separate_os_processes"] is True
+    assert consumer["fixture_persistent_key"] is True
+    assert consumer["production_atomic_proof_claimed"] is False
+    assert all(item["module_origin_verified"] for item in consumer["records"])
+    assert consumer["records"][1]["same_original_bytes_verified"] is True
+    assert verification["diagrams"]["each_png_visually_inspected"] is True
+    assert verification["diagrams"]["diagrams"] == 5
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    full = verification["full_regression"]
+    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    assert full["status"] in {"pending", "passed"}
+    if full["status"] == "pending":
+        assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False
+        assert review["full_regression_acceptance_pending"] is True
+    else:
+        assert full["passed"] >= 5145 and full["skipped"] == 32
         assert full["tracked_inputs_unchanged_during_run"] is True
         assert full["source_inputs_same_as_fixed_revision"] is True
         assert "\nstatus: current\n" in metadata

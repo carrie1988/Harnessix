@@ -658,3 +658,9 @@ restore(backup):
 Migration 0028在原事务增加两个可空内部证明列，原Artifact/Manifest、Session Snapshot/事件不改写。旧行证明NULL，28版检查半份和未知policy，不能追认旧正文安全。独立27版程序生成Artifact并验证28版提交前/后退出与原字节保持；仅新增公开证明，不升级历史事件合同。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+
+## 事件认证与持久保护前置核心
+
+Event Seal核心绑定原身份/版本/原字节与可信Scope，未接入SQLite新写、读取、派生投影或默认Root。普通SHA、事件数量与随机Epoch不能替代认证。
+完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。

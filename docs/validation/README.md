@@ -125,3 +125,5 @@ flowchart LR
 - [原协议帧与握手提交证据](protocol-frame-publication-2026-09-28-v1/README.md)。
 
 - [导出查询边界验证证据](query-publication-2026-09-28-v1/README.md)。
+
+- [认证历史与Event Seal核心](event-seal-core-2026-09-28-v1/README.md)：核心验证与实际默认Root开放观察，非发布验收。

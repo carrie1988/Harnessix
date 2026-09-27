@@ -160,3 +160,5 @@ flowchart LR
 完整Suite基线，以及0.9.3本地传输背压、共库容量、Plan-first保留、Action Owner/Operation恢复和长期运行问题，但不代表持续跟踪上游最新版本。0.9.3d仍须
 以现有专项研究中的未决项继续求证扫描规模、物理容量、UNKNOWN积压和真实Soak；三平台发行、远程MCP认证或供应链发布也必须先建立
 对应的新版本研究证据，不能继续外推现有冻结结论。
+
+- [认证历史与跨重启保护](authenticated-history-and-seal.md)：实际持久入口、默认Root开放观察和独立认证边界。

@@ -825,3 +825,9 @@ initialize由`prepare_initialization`返回未提交候选，检查通过后Serv
 [ADR-0100](../adr/0100-protocol-frame-and-handshake-publication.md)与[固定证据](../validation/protocol-frame-publication-2026-09-28-v1/README.md)
 该固定版本证据保留直接Service查询等开放边界；后续[查询边界详设](../changes/m09-4a-query-publication-boundary.md)补齐当前材料的Service原DTO保护。
 旧历史授权、全部Provider和跨重启Seal仍开放，不授予整个0.9发布。
+
+
+## 历史来源认证与当前出口许可
+
+事件认证核心验证原保护完成候选，不证明原事件已提交或当前公开许可；Runtime恢复和模型请求前的持久证明检查尚待实施。
+完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。

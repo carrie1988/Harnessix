@@ -794,3 +794,12 @@ initialize使用纯候选，公开检查通过后原子提交连接状态，关�
 恢复调度后置且关闭不新增Task，构造时Session对象绑定先于Delta订阅。61项查询测试含1开放旧历史观察，
 另1项默认产品Root直调验证和2项治理回归；专项181项通过，完整结果以[固定报告](validation/query-publication-2026-09-28-v1/README.md)为准。
 未知历史/Seal、全部Provider、内部聚合权限及Request Store物理归属仍开放，0.9.4a保持未完成。
+
+
+## 0.9.4a 认证历史与跨重启保护实施边界
+
+[源码研究](research/authenticated-history-and-seal.md)、[总体与详细设计](changes/m09-4a-authenticated-history-and-seal.md)和
+[ADR-0102草案](adr/0102-authenticated-history-and-event-seal-core.md)覆盖独立Key、原Scope来源、新事件CAS、认证事件链、
+派生投影、全部恢复读取、Artifact和备份迁移。Event Seal核心与41项测试已实现，但不代表当前默认Root已启用。
+独立实际Root五查询仍可公开未知旧值，无密钥SHA替换仍被接受；SQLite/Root/Key Backend与三平台完整验收必须继续完成，
+不得从当前扫描无命中或核心MAC通过推导旧历史授权。0.9.4a及0.9总阶段保持未完成。

@@ -624,3 +624,9 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 
 完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](changes/m09-4a-query-publication-boundary.md)。
 旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。
+
+
+## 认证历史与独立持久密钥
+
+Event Seal前置核心已实现，默认Root仍未接入，旧未知历史风险保持开放。总体方案覆盖事件链、派生投影、Artifact、独立Key Backend及备份，不能以普通SHA或扫描当前凭据补签旧行。
+完整现行状态及总体/详细设计见[认证历史详设](changes/m09-4a-authenticated-history-and-seal.md)。

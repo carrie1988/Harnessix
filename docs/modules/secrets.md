@@ -1157,3 +1157,9 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 
 完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](../changes/m09-4a-query-publication-boundary.md)。
 旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。
+
+
+## 冻结Scope保护上下文
+
+publication_context提供独立捕获UUID和name/version副本，不返回材料值；用于原Scope摘要绑定，不授予历史正文授权。
+完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。
