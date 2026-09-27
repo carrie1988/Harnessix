@@ -347,7 +347,7 @@ stateDiagram-v2
 
 1. Client发送`initialize` Request；
 2. Server严格校验`InitializeParams`；该模型当前把`protocolVersion`声明为`Literal["1.0"]`；
-3. Server固定`clientInstanceId`、协商Limit并返回`InitializeResult`；
+3. Server准备原身份/能力/Limit候选，对完整响应执行协商字节与保护检查；复核NEW/关闭状态后无await提交并返回原`InitializeResult`；
 4. Client发送`notifications/initialized` Notification；
 5. Server校验空`InitializedParams`后进入`READY`；
 6. 进入`READY`前的业务Request返回`-32012 not_initialized`。

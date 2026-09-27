@@ -77,7 +77,7 @@ flowchart TD
 `frame_publication.py`负责线上编码、有限控制错误、封套准入和完整响应字节检查。
 `handshake.py`只校验initialize合同、协商限额、构造候选与提取既有错误path，不保存连接状态。
 `server.py`拥有状态、显式分派和候选CAS；`AgentRuntime.validate_public_frame`提供纯端口，复用`protect_jsonl`。
-Runtime不导入Secrets实现；产品Scope由组合根注入。没有新增一级依赖边或依赖环，未扩大公共API/Schema。
+Runtime不导入Secrets实现；产品Scope由组合根注入。没有新增一级依赖边或依赖环，原模块导出和Protocol Schema不变；Runtime新增纯校验方法，不改变既有调用签名。
 
 ## 4. 核心流程图与完整描述
 
@@ -255,7 +255,8 @@ process_frame(original):
 
 保护继续遵守既有输入字节、模式工作预算、期限与取消，不新增线程或硬抢占保证。
 原Protocol最小4096与Scope自身检查预算不同；字节合规不等于保护预算合规。
-直接Application Service查询未经过该传输边界，禁止据此对所有Python直调出口宣称安全。
+直接Application Service查询未经过该传输边界。独立固定源码探针确认get/list/resume/replay/next五个原DTO仍含当前已登记材料，
+原历史不变、Provider为0，不计为安全验收。禁止据此对所有Python直调出口宣称安全。
 
 ## 11. 测试、验证与验收证据
 
@@ -311,3 +312,4 @@ Owner同步阻塞/Store归属、12项Archive权利、编号威胁场景、远程
 - [`src/harnessix/agent/runtime.py`：`validate_public_input`，L475–L478](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/agent/runtime.py#L475-L478)。
 - [`src/harnessix/agent/runtime.py`：`validate_public_frame`，L485–L488](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/src/harnessix/agent/runtime.py#L485-L488)。
 - [`tests/product_config/test_protocol_publication_cli.py`：`test_actual_product_cli_does_not_echo_sensitive_rpc_metadata`，L23–L107](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/tests/product_config/test_protocol_publication_cli.py#L23-L107)。
+- [`tests/app_server/test_frame_publication.py`：`test_unknown_historical_material_remains_unproven_not_authorized_by_current_scope`，L519–L551](https://github.com/carrie1988/Harnessix/blob/6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0/tests/app_server/test_frame_publication.py#L519-L551)。

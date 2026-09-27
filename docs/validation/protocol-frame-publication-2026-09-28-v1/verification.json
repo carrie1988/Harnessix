@@ -6,11 +6,13 @@
     "stdout_sha256": "fda1582cd0b2abff3dec2d661dac4adbae2ccfaeb23eb987d99254127c35cb49"
   },
   "clean_source_build": {
+    "artifact_scope": "fixed_source_build_candidate",
     "clean_machine_install_claimed": false,
     "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
     "dependencies_reused_local_environment": true,
     "exit_code": 0,
     "passed": true,
+    "release_artifacts": false,
     "reproducible_build_claimed": false,
     "size_bytes": 255,
     "stdout_sha256": "91398cdf64a476af86f001c2942f04d159ba6089490c1b64bf2d30062096db35"
@@ -72,8 +74,25 @@
     ]
   },
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "exit_code": 0,
+    "fixed_code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 5033,
+    "seconds": 403.86,
+    "size_bytes": 5725,
+    "skipped": 32,
+    "source_inputs_canonical_sha256": "c8762380cbe2f58d9925eda6dfc9b5a87142bb0f77b5bfeee6c5a779ae5fc693",
+    "source_inputs_count": 1325,
+    "source_inputs_same_as_fixed_revision": true,
+    "status": "passed",
+    "stdout_sha256": "264ea1015d7b82549e1aedee5e305ebc4f7e9d5fbd11eccde201d13a230d4564",
+    "test_run_commit": "213790e8cc085715dfd722d611b231867469bd68",
+    "test_run_tree": "b69731d7304d33315c1e57111f9930305b014aa1",
+    "tracked_inputs_count": 2390,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 405.33
   },
   "gates": {
     "contracts": {
@@ -223,6 +242,13 @@
     "size_bytes": 31,
     "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
     "stdout_summary": "许可证违规：12个Archive"
+  },
+  "post_freeze_governance": {
+    "passed": true,
+    "seconds": 3.68,
+    "size_bytes": 99,
+    "stdout_sha256": "46f2e7b119b0df4fd048dad4adac5a931425ffca864046ab6904e673d21e12f5",
+    "tests": 26
   },
   "wheel_smoke": {
     "actual_runtime_sqlite_sdk": true,

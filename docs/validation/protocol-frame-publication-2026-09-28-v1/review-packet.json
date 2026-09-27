@@ -2,7 +2,8 @@
   "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
   "current_ci_accepted": false,
   "decision": "release_blocked",
-  "full_regression_acceptance_pending": true,
+  "full_regression_acceptance_pending": false,
+  "local_full_regression_accepted": true,
   "overall_0_9_complete": false,
   "release_blockers": [
     "旧Session授权与跨重启Seal",

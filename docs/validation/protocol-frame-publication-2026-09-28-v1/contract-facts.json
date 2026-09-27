@@ -12,6 +12,7 @@
   "all_provider_credentials_closed": false,
   "arbitrary_dlp_claimed": false,
   "archive_rights_blockers": 12,
+  "artifact_release_claimed": false,
   "artifacts": [
     {
       "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
@@ -34,6 +35,64 @@
   "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
   "completed_domain_fact_not_rolled_back": true,
   "cross_restart_seal_closed": false,
+  "direct_service_query_gap_observation": {
+    "code_revision": "6b5f5591d4dbe8cb31f99752b3e8950ae62a8bd0",
+    "module_source_verified": true,
+    "records": [
+      {
+        "acceptance_pass_claimed": false,
+        "actual_runtime_sqlite_exported_service": true,
+        "current_registered_material_in_original_dto": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "get",
+        "transport_guard_used": false
+      },
+      {
+        "acceptance_pass_claimed": false,
+        "actual_runtime_sqlite_exported_service": true,
+        "current_registered_material_in_original_dto": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "list",
+        "transport_guard_used": false
+      },
+      {
+        "acceptance_pass_claimed": false,
+        "actual_runtime_sqlite_exported_service": true,
+        "current_registered_material_in_original_dto": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "resume",
+        "transport_guard_used": false
+      },
+      {
+        "acceptance_pass_claimed": false,
+        "actual_runtime_sqlite_exported_service": true,
+        "current_registered_material_in_original_dto": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "replay",
+        "transport_guard_used": false
+      },
+      {
+        "acceptance_pass_claimed": false,
+        "actual_runtime_sqlite_exported_service": true,
+        "current_registered_material_in_original_dto": true,
+        "private_history_unchanged": true,
+        "provider_requests": 0,
+        "real_model_requests": 0,
+        "surface": "next",
+        "transport_guard_used": false
+      }
+    ],
+    "script_sha256": "f392a06b5ec00e68d4d139d9bfee18dc5700548ab2be27dd73c6de2694ad526b",
+    "status": "confirmed_open_gap"
+  },
   "direct_service_query_publication_closed": false,
   "fixed_emergency_controls_are_explicit_exception": true,
   "fixed_observation": {
@@ -91,6 +150,9 @@
     ],
     "script_sha256": "fcc6469991bc3481ae91655032394ee0d316603a88a5e7a6cab49f3bf5bacba0"
   },
+  "full_test_passed": 5033,
+  "full_test_skipped": 32,
+  "full_test_source_inputs_same_as_fixed_revision": true,
   "hard_preemption_claimed": false,
   "historical_validation_files": 689,
   "historical_validation_files_unchanged": true,
@@ -149,17 +211,18 @@
     ],
     "script_sha256": "fcc6469991bc3481ae91655032394ee0d316603a88a5e7a6cab49f3bf5bacba0"
   },
+  "module_exports_and_schema_unchanged": true,
   "negotiated_original_utf8_bytes_including_newline_enforced": true,
   "new_actual_cli_tests": 1,
   "new_governance_tests": 2,
   "new_protocol_tests": 61,
-  "public_api_and_schema_unchanged": true,
   "real_model_requests": 0,
   "related_regression": {
     "passed": 2169,
     "seconds": 85.91
   },
   "reproducible_build_claimed": false,
+  "runtime_additive_boundary_method": "validate_public_frame",
   "schema_migration": false,
   "special_regression": {
     "existing_tests": 99,
