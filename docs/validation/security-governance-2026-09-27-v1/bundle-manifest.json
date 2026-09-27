@@ -1,0 +1,49 @@
+{
+  "code_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "1ba7fa05b35a9d4ca6014167c21166f6c44b0b559249ea28b6c6c560cf7a2a16",
+      "size_bytes": 9319
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "0fcb69d2fc18db15de0774e12766edca5e84c8491a4e1088312e03afc2f6892e",
+      "size_bytes": 1286
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "cef077be7be0f706c44a0c3c3ce01106b702f4387aa413d3453941e212594f7f",
+      "size_bytes": 1255
+    },
+    {
+      "path": "sbom-facts.json",
+      "sha256": "aee30248659fbad0d23efdb38bd6424f467b12dff114697191a569354063bcd5",
+      "size_bytes": 408
+    },
+    {
+      "path": "verification.json",
+      "sha256": "1fec5e60a6a13fe375ab2b4ebc1004b5fc1798e17937b6d884960dcc82e19f33",
+      "size_bytes": 2252
+    }
+  ],
+  "logs_archived": false,
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+      "path": "uv.lock",
+      "sha256": "3ad02ec651a8f0116d491f31d661235572972a7683c7514a3a5fc95dc090ce61"
+    },
+    {
+      "code_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+      "path": "pyproject.toml",
+      "sha256": "fc7b281ab58539c0e5c3ff547518c9fc441adfec4aee7ff1949d9bdc0ae6bb6c"
+    },
+    {
+      "code_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+      "path": "governance/sbom.cyclonedx.json",
+      "sha256": "daa484faf46cdd85fc1f485f817d326f0be39866b1802a9af6e73117dc6bb380"
+    }
+  ]
+}

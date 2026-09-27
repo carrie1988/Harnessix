@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
+version: 2
+code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
 owners:
   - core
 modules:
@@ -169,7 +169,7 @@ dir():
 | 原规范漂移回归 | 生成器check、历史规范保留、缺失/变化检测；规范字节必须保持不变。 |
 | Ruff/Mypy/Readability/文档门禁 | 维持类型与源码说明，同步结构统计而不降低原阈值。 |
 
-最新修复的16条导入/控制台专项已在POSIX本机通过；原Eval回归及修复版真实Windows CI另行登记。
+Revision 21b5eb1的16条导入/控制台专项、214条Eval及相关专项、107条治理/计划错误回归在POSIX本机通过；这些组有重叠，不累计为不重复总数。修复版真实Windows CI终态另行登记。
 缺少POSIX模块的子进程负例不是Windows实际系统测试，两种证据不能互相冒充。
 
 ## 9. 部署、兼容与风险
@@ -186,3 +186,4 @@ Python版本与依赖不变；无新增库、服务、配置或网络请求。�
 | 文档版本 | 代码基线 | 日期 | 变更 |
 |---|---|---|---|
 | 1 | `a5fd57e` | 2026-09-27 | 登记真实Windows导入失败，隔离九个Eval执行导出，保留公共名称/原对象/类型；建立合同与执行的独立负例和兼容测试。 |
+| 2 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定候选实现及本地专项结果，保留Windows执行缺口和提交后CI门禁 |

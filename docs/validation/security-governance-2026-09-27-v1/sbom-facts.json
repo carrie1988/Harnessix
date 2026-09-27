@@ -1,0 +1,10 @@
+{
+  "archives": 777,
+  "components": 73,
+  "graph_edges": 131,
+  "graph_nodes": 74,
+  "lock_sha256": "3ad02ec651a8f0116d491f31d661235572972a7683c7514a3a5fc95dc090ce61",
+  "project_sha256": "fc7b281ab58539c0e5c3ff547518c9fc441adfec4aee7ff1949d9bdc0ae6bb6c",
+  "sbom_sha256": "daa484faf46cdd85fc1f485f817d326f0be39866b1802a9af6e73117dc6bb380",
+  "source_revision": "a5fd57eda953ba9f04f8e4673d1432306adac6a9"
+}

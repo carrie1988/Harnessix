@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: b06396ad05f9e1d725d01ad9f37c898ab80853ab
+version: 2
+code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
 owners:
   - core
 modules:
@@ -221,7 +221,9 @@ Store的Schema元数据和独立Runtime Owner记录不要求为空。端到端�
 | OpenTelemetry | 真实SpanExporter与MetricReader必须产生数据，再检查不含式样；空导出不能使测试通过。 |
 | 既有Agent/Trusted Action/Delivery/Profile测试 | 确保路径拒绝、审批、UNKNOWN、恢复、幂等及Owner语义未被固定消息整改破坏。 |
 
-本切片相关新增/调整测试与治理CLI编码测试合计38条本地通过；完整本地回归和提交后CI结果独立登记，
+本切片相关新增/调整测试与治理CLI编码测试合计38条本地通过；a5fd57e完整本地回归3904 passed/32 skipped，
+阶段证据及该Revision的Windows治理导入失败见[验证报告](../validation/security-governance-2026-09-27-v1/README.md)。
+最新导入隔离候选的提交后CI结果独立登记，
 未完成的跨平台结果不写为通过。现有未提交攻击草稿不是本修复验收证据。
 
 ## 10. 风险、发布门禁与变更记录
@@ -235,3 +237,4 @@ Store的Schema元数据和独立Runtime Owner记录不要求为空。端到端�
 | 文档版本 | 代码基线 | 日期 | 变更 |
 |---|---|---|---|
 | 1 | `b06396a` | 2026-09-27 | 建立计划回调阶段信任边界、有限固定消息、显式Decoder收口及真实五公开面回归；专项处于验收中。 |
+| 2 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 登记前序完整3904/32与真实CI治理失败，链接冻结验证报告；不将前序全量结果外推至导入隔离候选 |

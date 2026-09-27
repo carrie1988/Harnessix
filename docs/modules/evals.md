@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
+version: 22
+code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
 owners:
   - core
 modules:
@@ -2179,6 +2179,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 22 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定实际导入隔离实现Revision、16/214/107有重叠专项和阶段证据；前序CI失败保留，最新候选真实Windows终态未外推 |
 | 21 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 分离平台无关合同与九个POSIX执行导出，保留原对象、类型和公共dir；修复候选等待真实Windows治理验收，0.9.6执行门禁保留 |
 | 20 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | CI 35491527318关闭三项状态/分母修正；固定北京模型完成20 Trial，冻结81请求、318,478/12,148输入/输出Token、CNY 1.46828及任务/测试0/20的低敏证据，关闭0.9.2e和0.9.2 |
 | 19 | `pending` | 2026-09-20 | 记录第二轮真实Suite完成20 Trial后暴露的空测试分母、Campaign旧State覆盖和CLI零进度问题；补充必需测试失败投影、最新State提交和可信失败进度边界 |

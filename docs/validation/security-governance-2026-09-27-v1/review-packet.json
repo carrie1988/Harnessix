@@ -1,0 +1,28 @@
+{
+  "checks": {
+    "all_registered_plan_error_codes": "15 verified",
+    "clean_committed_sbom_archive": "passed",
+    "five_public_surfaces_plan_errors": "passed",
+    "governance_cli_cp1252_cases": "12 passed",
+    "import_boundary_local": "16 targeted, 214 Eval and related, 107 governance and plan errors passed; groups overlap",
+    "local_full_suite": "3904 passed, 32 skipped",
+    "windows_final": "2 failed, 572 passed, 45 skipped",
+    "workflow_current_conclusion": "failure",
+    "workflow_current_status": "completed"
+  },
+  "classification": "security-governance-narrow-slice",
+  "logs_archived": false,
+  "release_status": "candidate_only",
+  "remaining_gates": [
+    "修复版三平台CI终态核验",
+    "0.9.4a其他公开边界完整审查",
+    "SEC-094-B2发行物、示例文件、二进制、读失败与规则全量自检",
+    "SEC-094-B3许可证版本、来源和表达式证据",
+    "0.9.4c攻击回归及0.9.4d远端MCP",
+    "0.9.5安装/Beta与0.9.6真实Provider发布证据"
+  ],
+  "source_code_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+  "spec_version": "harnessix.validation-review-packet/v1",
+  "workflow_run_id": 36285345506,
+  "workflow_source_revision": "a5fd57eda953ba9f04f8e4673d1432306adac6a9"
+}

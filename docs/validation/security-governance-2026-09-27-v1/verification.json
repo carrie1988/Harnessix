@@ -1,0 +1,65 @@
+{
+  "clean_archive": {
+    "cp1252_strict_environment": "passed",
+    "direct_script_without_installed_project_or_dist": "passed",
+    "sbom_sha256": "daa484faf46cdd85fc1f485f817d326f0be39866b1802a9af6e73117dc6bb380",
+    "source_revision": "a5fd57eda953ba9f04f8e4673d1432306adac6a9"
+  },
+  "delta_regressions": {
+    "contract_and_console": {
+      "passed": 16,
+      "scope": "POSIX本地；合同/help/check用例无Windows豁免，POSIX原执行对象身份适用范围独立"
+    },
+    "eval_and_related": {
+      "duration_seconds": 87.61,
+      "passed": 214
+    },
+    "full_current_revision_local_run": false,
+    "governance_and_plan_errors": {
+      "duration_seconds": 11.69,
+      "passed": 107
+    },
+    "overlapping_groups": true,
+    "source_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7"
+  },
+  "environment": {
+    "platform": "darwin",
+    "python": "3.13.8"
+  },
+  "full_regression": {
+    "command": "uv run pytest --ignore=tests/security -q -o addopts=''",
+    "duration_seconds": 347.88,
+    "exit_code": 0,
+    "failed": 0,
+    "log_archived": false,
+    "observed_log_sha256": "da77d57041ed86869f8c2c256277f1b60e98f16de84f8671277c55ac7f827baa",
+    "passed": 3904,
+    "scope": "全部已提交测试；未提交tests/security攻击草稿不作为验收证据",
+    "skipped": 32,
+    "source_revision": "a5fd57eda953ba9f04f8e4673d1432306adac6a9"
+  },
+  "gates": {
+    "changed_mermaid_render": "passed",
+    "contracts": "passed",
+    "current_supply_chain_commands": "passed",
+    "documentation": "passed",
+    "mypy_source_files": 328,
+    "readability": "passed",
+    "ruff": "passed",
+    "ruff_format": "passed",
+    "source_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+    "taskpacks": "passed"
+  },
+  "limitations": [
+    "扫描命令通过仅证明现有规则运行，不证明Secret覆盖完整",
+    "许可证版本和来源绑定仍未完成",
+    "现有攻击草稿未提交且失败，不纳入完整已提交代码回归计数"
+  ],
+  "real_provider_requests": 0,
+  "source_revision": "21b5eb1d57055f32ba2178c165b3ad46060ee7c7",
+  "targeted": {
+    "governance_tests": 77,
+    "public_error_and_console_tests": 38,
+    "source_revision": "a5fd57eda953ba9f04f8e4673d1432306adac6a9"
+  }
+}

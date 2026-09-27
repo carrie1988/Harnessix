@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
+version: 4
+code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
 owners:
   - core
 modules:
@@ -183,3 +183,4 @@ Revision a5fd57e的Windows编码旧失败已消失，但新控制台测试发现
 | 1 | `880c306` | 2026-09-27 | 固定版本化pre-build库存、上游Schema、图和Archive身份，建立只读干净检出门禁。 |
 | 2 | `b06396a` | 2026-09-27 | 登记首轮真实CI的Windows管道编码失败；统一五个治理CLI的UTF-8输出、真实子进程Reader与干净目录依赖，补代码页正反例。 |
 | 3 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 登记Windows中文编码修复后仍存在的两项Eval包执行依赖污染；合同导入边界独立设计和验证，保留原失败证据。 |
+| 4 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定导入隔离候选Revision；SBOM库存字节不变，许可证与Secret独立门禁不关闭 |

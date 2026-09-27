@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: a5fd57eda953ba9f04f8e4673d1432306adac6a9
+version: 7
+code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
 owners:
   - core
 modules:
@@ -214,3 +214,4 @@ sequenceDiagram
 | 4 | `880c3065482c00d4b0761c739c3ff94f7a7d00cb` | 2026-09-27 | 登记旧CI的未跟踪SBOM与文档链接失败；整改候选增加版本化pre-build库存、固定上游Schema、归档/图身份和干净检出回归；不追认旧实现完成。 |
 | 5 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 登记库存首轮CI的Windows管道编码根因及UTF-8整改；按阶段有限合同修复KernelError类型信任和显式Decoder异常边界，补源码绑定专项详设及五公开面端到端回归。 |
 | 6 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 本地完整回归及五公开面/治理编码测试通过；真实Windows剩余两项合同生成器fcntl导入污染，隔离九个Eval执行导出，不广告Windows历史执行支持。 |
+| 7 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定阶段证据、当前源代码及候选导入隔离回归；0.9.4全部发布门禁保持未完成 |
