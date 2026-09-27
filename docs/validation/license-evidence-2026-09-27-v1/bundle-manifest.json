@@ -1,0 +1,129 @@
+{
+  "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "094cb714d58dbfaaed8109870e275ef67f03762452f81277482502a978d054bc",
+      "size_bytes": 8098
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "ec125dacdb7f721333572353f81699b889663cbf602b1e5fda5862e8a0ba721d",
+      "size_bytes": 1802
+    },
+    {
+      "path": "license-facts.json",
+      "sha256": "61f846ac7b805b78bf0f876bfca43e2f6054bf2128f519ca6f1c5c0344ee9d2b",
+      "size_bytes": 27338
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "918bf110ad96d780ecdaf94ab2ffcff7e62fffb31f38e44af2c31c2f1fb40d70",
+      "size_bytes": 1230
+    },
+    {
+      "path": "verification.json",
+      "sha256": "e87471de6e9a1fd20acaf07a472d71a0dfc6d555f796564b7d87a3e00f40c1bc",
+      "size_bytes": 1851
+    }
+  ],
+  "manifest_self_excluded": true,
+  "source_inputs": [
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/license_scan.py",
+      "sha256": "cb76a1a022da5f4a5911de4abaf18ec45c0ff49c4f58e43a2f1446f5123d125b"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/license_contracts.py",
+      "sha256": "14bd5fbaa445941a16052ce4fc8a4a24bbc7454279465dd9f172a72799d05148"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/license_decisions.py",
+      "sha256": "83cdeeddfa18040fcfd26ed4cdf9688dd34b0453dd2d00bede82365cc33549b0"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/license_inventory.py",
+      "sha256": "5073d09665b3dc77ae5bf4576d27727605b7077061e28a74531273605d1935db"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/secret_scan_archives.py",
+      "sha256": "d4bcc2f7cf4741a25d4a819c9bce7f0979f6c6e2fbdc565ab5e994155e650675"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "scripts/secret_scan_contracts.py",
+      "sha256": "03ca5a23bf471aac55d689bb13375c789ee60ff482ce9941baad7d4f0b56069d"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "tests/governance/test_license_archive_evidence.py",
+      "sha256": "72a5c0122cf6a575a91272cc86a96fdd8a1968057bd66e1f25865ec06f981f56"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "tests/governance/test_secret_scan.py",
+      "sha256": "4855ad5c69e2da911493df6f1ae9837b19c8d1f36ec3c9f9ede7b032a4ab0da9"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "tests/governance/test_supply_chain.py",
+      "sha256": "28abf3f88770c88964388921a2b2709257a823f9def3e2cd417651ac2ccc2b42"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "tests/governance/test_cli_console.py",
+      "sha256": "1d57cb9f4e5ff11e34e55a79c9d7c93e2c64a204e533109f3658e17a7a86876d"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "uv.lock",
+      "sha256": "9a64451b9b7d3140fd5baddc84e42f171feed3b66e93c8f92609596634d45083"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "pyproject.toml",
+      "sha256": "f46a005fe7cd6d6a81c716f15f5d8b6daa1945343d98d627a1b9514023d38481"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "governance/license-policy-v2.json",
+      "sha256": "5a0d17d2ca1963f93fb7e463e495cfb2ed15e321af70516eca96e9a43a29292b"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "governance/license-scan-v2.json",
+      "sha256": "d741a6c7091cdb583f51edafa584ecc3d62cbd84c2b8c10c8c6943ec4964c3ff"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "governance/license-evidence-v2/index.json",
+      "sha256": "d3a7658c6742666f6a9a9bc074bd4857a8ccd45fd092eb500ff1a32c09e6ddcd"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "governance/sbom.cyclonedx.json",
+      "sha256": "3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": ".gitattributes",
+      "sha256": "69b844df2ca1603377c30865e3385253898be59ad00f908958f7d3e2b972f385"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": "Makefile",
+      "sha256": "d9feb39c35bc85b9ece3fcc14eb48989e14062c3aecdfcf97b5a1b929a869209"
+    },
+    {
+      "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "fdbfd9e51151a31291ea1334cbfab47daf1665c4fcb2525e071ee978836b3615"
+    }
+  ],
+  "spec_version": "harnessix.evidence-bundle/v1"
+}

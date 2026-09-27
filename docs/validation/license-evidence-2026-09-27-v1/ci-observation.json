@@ -1,0 +1,65 @@
+{
+  "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+  "current_ci_status": "not_started_at_freeze",
+  "current_license_step_expected_result": "policy_failure_for_12_restricted_archives",
+  "current_windows_fix_acceptance": "pending_actual_windows_terminal",
+  "prior_revision": {
+    "conclusion": "failure",
+    "jobs": [
+      {
+        "conclusion": "failure",
+        "job_id": 108534067473,
+        "name": "windows-trusted-execution",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 108534067560,
+        "name": "python (3.13)",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 108534067568,
+        "name": "container-sandbox",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 108534067589,
+        "name": "coding-tools-macos",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 108534067627,
+        "name": "documentation",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 108534067644,
+        "name": "python (3.12)",
+        "status": "completed"
+      }
+    ],
+    "run_attempt": 1,
+    "run_id": 36288580538,
+    "sha": "747fe9b6a40bb6596c23772fab686b5df0b1db74",
+    "status": "completed",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36288580538"
+  },
+  "prior_success_is_current_acceptance": false,
+  "spec_version": "harnessix.ci-observation/v1",
+  "windows_prior": {
+    "build_and_secret_scan": "success",
+    "errors": 4,
+    "failed": 1,
+    "passed": 661,
+    "pytest_failure_causes": [
+      "long_bytes_parameter_ids",
+      "writer_normalized_backslash_before_scan"
+    ],
+    "skipped": 48
+  }
+}

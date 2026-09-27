@@ -1,0 +1,29 @@
+{
+  "candidate_implementation_verified_locally": true,
+  "closed_local_controls": [
+    "完整锁定Archive身份与实际元数据/通知原字节绑定",
+    "禁止本机安装元数据或名称级人工覆盖",
+    "SPDX原子/组合/例外及精确收据",
+    "采集/报告缺失畸形预算取消变更失败关闭",
+    "Windows短参数ID与ZIP双记录原字节夹具"
+  ],
+  "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+  "decision": "release_blocked",
+  "full_commercial_release_claimed": false,
+  "gate_relaxed_to_force_success": false,
+  "open_gates": [
+    "pywin32受限附属许可：替换可行性或精确例外与分发义务评审",
+    "当前Windows夹具修复真实CI终态",
+    "Docker/构建后端/文档工具不可变安装输入",
+    "自有历史贡献权利链独立核查",
+    "0.9.4a Execute/Reconcile与结构化结果完整公开边界",
+    "0.9.4c编号攻击套件",
+    "0.9.4d远端MCP身份OAuth受管出口",
+    "0.9.5新装升级卸载与受控Beta",
+    "0.9.6真实Provider发布证据"
+  ],
+  "overall_0_9_complete": false,
+  "policy_exception_approved": false,
+  "spec_version": "harnessix.review-packet/v1",
+  "untracked_attack_draft_is_acceptance": false
+}

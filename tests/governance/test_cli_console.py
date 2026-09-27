@@ -38,7 +38,7 @@ def _cp1252_run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
         ("generate_specs", ["--help"], "usage:", 0),
     ],
 )
-def test_cli_succeeds_with_cp1252_output_environment(
+def test_cli_preserves_expected_status_with_cp1252_output_environment(
     name: str, arguments: list[str], message: str, returncode: int, mode: str
 ) -> None:
     entry = ["-m", f"scripts.{name}"] if mode == "module" else [f"scripts/{name}.py"]

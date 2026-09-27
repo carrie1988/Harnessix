@@ -34,6 +34,31 @@ ROOT = Path(__file__).resolve().parents[2]
                 "pyproject.toml",
             },
         ),
+        (
+            "license-evidence-2026-09-27-v1",
+            "license-facts.json",
+            {
+                "scripts/license_scan.py",
+                "scripts/license_contracts.py",
+                "scripts/license_decisions.py",
+                "scripts/license_inventory.py",
+                "scripts/secret_scan_archives.py",
+                "scripts/secret_scan_contracts.py",
+                "tests/governance/test_license_archive_evidence.py",
+                "tests/governance/test_secret_scan.py",
+                "tests/governance/test_supply_chain.py",
+                "tests/governance/test_cli_console.py",
+                "uv.lock",
+                "pyproject.toml",
+                "governance/license-policy-v2.json",
+                "governance/license-scan-v2.json",
+                "governance/license-evidence-v2/index.json",
+                "governance/sbom.cyclonedx.json",
+                ".gitattributes",
+                "Makefile",
+                ".github/workflows/ci.yml",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -83,3 +108,21 @@ def test_security_governance_bundle_files_and_source_inputs_match_manifest(
         assert ci["current_scanner_ci_status"] == "not_started_at_freeze"
         assert facts["reproducible_build_claimed"] is False
         assert {item["kind"] for item in facts["artifacts"]} == {"wheel", "sdist"}
+    if directory.startswith("license-evidence"):
+        facts = json.loads((bundle / facts_name).read_bytes())
+        review = json.loads((bundle / "review-packet.json").read_bytes())
+        ci = json.loads((bundle / "ci-observation.json").read_bytes())
+        assert facts["code_revision"] == review["code_revision"] == manifest["code_revision"]
+        assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+        assert facts["archive_count"] == 777 and facts["unique_blob_count"] == 203
+        assert facts["blocked_archive_count"] == 12
+        assert facts["independent_cache_reextraction_matches_committed_index"] is True
+        assert facts["offline_check_reextracts_archives"] is False
+        assert ci["current_ci_status"] == "not_started_at_freeze"
+        assert ci["prior_revision"]["conclusion"] == "failure"
+        assert sum(item["conclusion"] == "success" for item in ci["prior_revision"]["jobs"]) == 5
+        records = facts["blob_records"]
+        assert len(records) == len({item["sha256"] for item in records}) == 203
+        assert sum(item["size_bytes"] for item in records) == facts["unique_blob_size_bytes"]
+        body = (json.dumps(records, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+        assert hashlib.sha256(body).hexdigest() == facts["blob_records_canonical_sha256"]

@@ -1,0 +1,70 @@
+{
+  "code_revision": "1f483ceb267fe2d15ca4d53f794184fd6aa76ecc",
+  "environment": {
+    "machine": "arm64",
+    "platform": "Darwin",
+    "python": "3.13.8",
+    "uv": "0.9.1"
+  },
+  "full_regression": {
+    "before_evidence_parameter_added": true,
+    "command": "uv run pytest --ignore=tests/security -q -o addopts=''",
+    "passed": 4055,
+    "seconds": 353.44,
+    "skipped": 32,
+    "untracked_attack_draft_excluded": true
+  },
+  "initial_full_regression": {
+    "failed": 1,
+    "passed": 4048,
+    "reason": "设计文档初稿缺12项语义章节；已补齐后独立重跑，不将旧失败改写为通过",
+    "seconds": 350.56,
+    "skipped": 32,
+    "status": "failed"
+  },
+  "license_gate": {
+    "archive_violations": 12,
+    "exit_code": 1,
+    "expected_policy_block": true,
+    "release_pass_claimed": false
+  },
+  "negative_before_fix": {
+    "scope": "假安装版本及名称级覆盖均不能获准",
+    "v1_failed_tests": 3
+  },
+  "post_freeze_governance": {
+    "new_manifest_parameter_count": 1,
+    "overlaps_full_regression": true,
+    "passed": 229,
+    "seconds": 19.24
+  },
+  "provider_requests": 0,
+  "provider_validation_started": false,
+  "spec_version": "harnessix.governance-verification/v1",
+  "static_checks": {
+    "changed_mermaid_actual_render": "passed",
+    "contracts": "passed",
+    "documentation_after_freeze": {
+      "documents": 288,
+      "links": 7691,
+      "mermaid": 703
+    },
+    "documentation_before_freeze": {
+      "documents": 287,
+      "links": 7673,
+      "mermaid": 703
+    },
+    "mypy_source_files": 328,
+    "readability": "passed",
+    "ruff_python_files": 764,
+    "sbom_schema_and_drift": "passed",
+    "taskpacks": "passed"
+  },
+  "targeted_regression": {
+    "license_tests": 54,
+    "overlaps_full": true,
+    "passed": 167,
+    "seconds": 11.83,
+    "secret_tests": 91
+  }
+}

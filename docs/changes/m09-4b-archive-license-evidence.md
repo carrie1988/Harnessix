@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: pending
+version: 2
+code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
 owners:
   - core
 modules:
@@ -241,7 +241,7 @@ colorama两个Archive各自的BSD三条款原字节复核形成两张收据，�
 - 离线报告去重Blob共享4096项、64MiB和60秒预算；相同SHA的大小声明仍单独核对，不能缓存后绕过。
 - 原子临时文件写入、flush/fsync和replace；索引最后发布。没有业务数据库Schema迁移或后台恢复任务。
 - 输出只使用摘要文件名，拒绝输出目录链接/Windows reparse；不把Archive成员当路径或可执行资源。
-- Git `.gitattributes`保存证据和v2报告原字节，Windows CRLF转换不得改变哈希。
+- Git `.gitattributes`保存证据和v2报告原字节，Windows CRLF转换不得改变哈希；Blob禁止文本diff/merge，原始CRLF或RST分隔符不做格式清洗。该属性不是Secret扫描豁免，原字节仍全部检查。
 - 正常CI不访问采集网络；受评审原字节证据不应被泛化为第三方所有法律权利的自动证明。
 
 ## 7. 验证方案、当前风险与发布条件
@@ -260,6 +260,11 @@ MCP的Windows条件依赖引入`pywin32 312`。其12个Wheel实际包含`adodbap
 原字节SHA为`5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e`，
 正文包含GNU LESSER GENERAL PUBLIC LICENSE及Version 2.1。元数据仅写`PSF`不足以覆盖附属许可。
 当前拒绝策略保持不变，12件均为`license_notice_review_required`，不得生成零违规结论。
+
+经锁SHA核验的MCP 2.2.0 Wheel包含`mcp/os/win32/utilities.py`，
+模块SHA为`98e87c776a14cf326e63f8da007119156d3ad643ae7fbf27e9b6e6ef1dc534bf`。
+其Windows标准句柄重定向及进程Job Object创建/归属/终止真实调用win32api、win32con和win32job。
+不能仅从锁文件删除pywin32而声称保留相同Windows进程树契约，也不得取消Windows支持来绕过许可审查。
 
 后续必须完成依赖替换可行性评估，或精确发行物例外与实际分发义务评审；未经决策不得改变拒绝策略。
 扫描器测试通过但`make supply-chain`/CI许可发布步骤失败是正确的失败关闭，不把失败改成continue-on-error。

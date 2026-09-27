@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 5
-code_revision: 747fe9b6a40bb6596c23772fab686b5df0b1db74
+version: 6
+code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
 owners:
   - core
 modules:
