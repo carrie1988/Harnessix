@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
@@ -29,11 +29,14 @@ supersedes: []
 ## 1. 实现、验收与完整范围
 
 实现Revision：`1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c`。
+完整回归测试树：`6f6b5d2e955110ef698355081d17a6863a67b579`，Git Tree `b922cb384d88ccb2283c9cc0eef0bc2a6c6f78be`。
 [完整详细设计](../../changes/m09-4a-builtin-success-contracts.md)包含需求、源码研究、架构、流程、时序、
 数据流、字段、接口、伪代码、失败/取消/超时/恢复、可观测性、安全、部署及完整测试矩阵。
 
 专项 **167 passed，5.65秒**，包含119新增和48原Owner测试；相关798 passed在最终纯合同注释及
-格式调整前运行。完整回归等待稳定测试树冻结；专项与相关结果均不与完整回归相加。
+格式调整前运行。稳定测试树完整回归 **4550 passed、32 skipped，381.87秒，exit=0**；
+运行期间未修改任何跟踪输入，未跟踪攻击草稿明确排除。生产源码、Schema、脚本、基线及政策
+与实现Revision相同，测试树另包含两项证据治理新增用例。专项与相关结果均不与完整回归相加。
 
 已实现正式来源（Patch/Git/Process/Eval/MCP/Skill）的内联及Owner成功摘要字段/计划检查，
 内联独立预算、当前Audit Hash、取消及后置期限，已有摘要在Owner工件发布前检查。纯DTO共用，
@@ -96,7 +99,9 @@ Wheel和sdist从实现Revision的干净git archive离线构建，成员数、原
 可复现或许可证通过。许可证检查仍exit=1，12件Archive阻断，没有改动拒绝策略。
 
 Mypy 334源文件、Ruff、合同、原Schema、共享别名、可读性依赖门禁、SBOM与Secret自检通过。
-详细设计4图和报告1图已实际渲染并目视检查；完整回归及证据治理须在稳定测试树进行，未跟踪攻击草稿不提交、不计TM。
+文档门禁通过：300份文档、7959条链接、725幅Mermaid、26个源码包；变化文档已实际渲染，
+详细设计4图和报告1图已目视检查。稳定测试树完整回归已通过，冻结后仅更新文档/JSON证据，
+证据治理与文档门禁再复核；未跟踪攻击草稿不提交、不计TM。32项跳过不计作平台验收通过。
 
 ## 6. 开放风险、CI与复核
 
