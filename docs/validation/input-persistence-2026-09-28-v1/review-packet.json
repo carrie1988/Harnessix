@@ -1,4 +1,24 @@
 {
-  "status": "draft",
-  "code_revision": "pending"
+  "code_revision": "2d27761632fd297d84004dbb1e06545d04ea973d",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "原始Protocol id和错误path回显",
+    "旧Session授权与跨重启正文证明",
+    "全部Provider凭据",
+    "Scope关闭后SDK cancel可用性",
+    "Owner同步阻塞及Store归属",
+    "12项Archive权利",
+    "TM攻击场景及远程MCP身份",
+    "三平台真实安装升级与Beta",
+    "真实Provider成本验证"
+  ],
+  "reviewed_invariants": [
+    "原输入持久前拒绝",
+    "原命令Claim前拒绝",
+    "原批准决定审计前拒绝",
+    "问答五事件事务保持",
+    "原结果及缓存公开保护"
+  ]
 }

@@ -414,6 +414,48 @@ ROOT = Path(__file__).resolve().parents[2]
                 "uv.lock",
             },
         ),
+        (
+            "input-persistence-2026-09-28-v1",
+            "contract-facts.json",
+            {
+                ".github/workflows/ci.yml",
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/documentation-policy-v1.json",
+                "governance/readability-policy-v1.json",
+                "pyproject.toml",
+                "scripts/documentation_check.py",
+                "scripts/generate_specs.py",
+                "scripts/license_scan.py",
+                "scripts/readability_report.py",
+                "scripts/sbom_generate.py",
+                "scripts/secret_scan.py",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/errors.py",
+                "src/harnessix/agent/input_publication.py",
+                "src/harnessix/agent/lifecycle.py",
+                "src/harnessix/agent/models.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/question_events.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/app_server/command_runtime.py",
+                "src/harnessix/app_server/server.py",
+                "src/harnessix/app_server/service.py",
+                "src/harnessix/product_config/runtime.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/protocol/contracts.py",
+                "src/harnessix/protocol/projection.py",
+                "src/harnessix/protocol/requests.py",
+                "src/harnessix/sdk/agent_client.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/sqlite.py",
+                "tests/agent/test_input_publication_runtime.py",
+                "tests/app_server/test_command_publication.py",
+                "tests/governance/test_security_governance_evidence.py",
+                "uv.lock",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -860,3 +902,66 @@ def test_model_text_evidence_separates_new_publication_from_input_and_history_ga
     if full["status"] == "passed":
         assert full["tracked_inputs_unchanged_during_run"] is True
         assert full["untracked_attack_draft_excluded"] is True
+
+
+def test_input_persistence_evidence_keeps_raw_protocol_history_and_release_gates_open():
+    bundle = ROOT / "docs/validation/input-persistence-2026-09-28-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    assert (
+        facts["code_revision"]
+        == review["code_revision"]
+        == verification["code_revision"]
+        == ci["code_revision"]
+    )
+    assert facts["special_tests"] == 156 and facts["new_functional_tests"] == 57
+    assert facts["new_governance_tests"] == 2 and facts["existing_special_tests"] == 99
+    assert facts["known_raw_protocol_gap_tests"] == 2 and facts["known_raw_protocol_gaps_observed"]
+    assert facts["full_raw_protocol_security_claimed"] is False
+    assert facts["no_new_turn_receipt_or_provider_on_input_rejection"] is True
+    assert facts["approval_checked_before_gateway_decision_audit"] is True
+    assert facts["original_question_five_events_and_uuid5_preserved"] is True
+    assert facts["trace_checked_before_new_operation"] is True
+    assert facts["original_fields_fingerprints_and_schema_preserved"] is True
+    assert facts["guarded_cache_rejection_preserves_historical_receipt"] is True
+    assert facts["scope_lost_sdk_cancel_available"] is False
+    assert facts["direct_cancel_and_host_drain_remain_independent"] is True
+    assert facts["unknown_historical_authorization_closed"] is False
+    assert facts["cross_restart_seal_closed"] is False
+    assert facts["all_provider_credentials_closed"] is False
+    assert facts["schema_migration"] is False and facts["hard_preemption_claimed"] is False
+    assert facts["readability_policy_relaxed"] is False
+    assert facts["new_package_dependencies"] == facts["new_dependency_cycles"] == []
+    assert (
+        facts["real_model_requests"] == 0
+        and facts["full_product_or_network_provider_claimed"] is False
+    )
+    assert facts["license_archive_blockers"] == 12
+    old = facts["independent_baseline"]
+    fixed = facts["fixed_runtime_sqlite_sdk_observation"]
+    assert old["code_revision"] == "45b801a0db99764b4ddcefa5da83a6ec9a12387e"
+    assert old["module_source_verified"] and fixed["module_source_verified"]
+    assert old["script_sha256"] == fixed["script_sha256"]
+    assert len(old["records"]) == len(fixed["records"]) == 2
+    assert all(
+        item["input_persisted"] and item["sdk_replay_contains_registered_value"]
+        for item in old["records"]
+    )
+    assert old["records"][1]["receipt_contains_registered_value"] is True
+    assert all(
+        item["error_code"] == "public_input_secret_leak"
+        and item["provider_requests"] == 0
+        and item["original_rejected_thread_unchanged"]
+        and not item["request_receipt_exists"]
+        and not item["sqlite_files_contain_registered_value"]
+        and not item["sdk_replay_contains_registered_value"]
+        for item in fixed["records"]
+    )
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze" and ci["current_ci_accepted"] is False
+    assert (
+        ci["prior_success_is_current_acceptance"] is False
+        and ci["waiting_for_ci_per_local_commit"] is False
+    )

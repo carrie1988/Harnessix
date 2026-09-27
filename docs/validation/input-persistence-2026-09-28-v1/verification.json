@@ -1,4 +1,14 @@
 {
-  "status": "draft",
-  "code_revision": "pending"
+  "code_revision": "2d27761632fd297d84004dbb1e06545d04ea973d",
+  "full_test_completed": false,
+  "related_tests": {
+    "before_last_utf8_case": true,
+    "passed": 1358,
+    "seconds": 46.93
+  },
+  "special_tests": {
+    "log_sha256": "7997ac0f1cc35d233de61f6373f24760e730f8a4a963ef007f57d8280da3cd02",
+    "passed": 156
+  },
+  "status": "pre_full"
 }

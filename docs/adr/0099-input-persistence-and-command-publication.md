@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: 2d27761632fd297d84004dbb1e06545d04ea973d
 owners: [core]
 modules: [agent, app_server, protocol, session, secrets]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/agent/test_input_publication_runtime.py
   - tests/app_server/test_command_publication.py
+  - tests/governance/test_security_governance_evidence.py
 supersedes: []
 ---
 
