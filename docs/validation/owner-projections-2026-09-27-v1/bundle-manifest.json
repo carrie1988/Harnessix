@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "d2e39f25c480bc497dc0233000e98670f59265399f29b1b0b78e4f400d378386",
-      "size_bytes": 9456
+      "sha256": "6c9eeeed87beb1d06495aea54a82213142cf8124f0dc6345bbf977b2f3455685",
+      "size_bytes": 9840
     },
     {
       "path": "ci-observation.json",
@@ -23,8 +23,8 @@
     },
     {
       "path": "verification.json",
-      "sha256": "f9fdc314ec202767c9f5aa44b88351f4c9e5549793288680fead27f83cf2494d",
-      "size_bytes": 4856
+      "sha256": "5e0f5a40caf5d39f034d2a8bda76b8214f6c965c7873f54fbc90a6b7fffb61a2",
+      "size_bytes": 7624
     }
   ],
   "manifest_self_excluded": true,
@@ -154,5 +154,7 @@
       "path": "tests/trusted_actions/test_success_projection_runtime.py",
       "sha256": "447ba84d9e53fa3ac03f2cd92615296e64be33073c0c9e1af8176d5d97b594af"
     }
-  ]
+  ],
+  "test_tree_git_object": "fd305074dbacc0a032b4ab870f56016387508e6e",
+  "test_tree_revision": "9097743a4ab33e87e86619ba27b75d2145109de2"
 }

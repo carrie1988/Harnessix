@@ -7,6 +7,27 @@
     "uv": "uv 0.9.1 (Homebrew 2025-10-09)"
   },
   "external_model_requests": 0,
+  "final_evidence_recheck": {
+    "overlaps_full_and_special_regression": true,
+    "passed": 157,
+    "stdout_sha256": "095bee936e42c12cbb8609d6117a97c0cadf36770d9db365af7c413829c743ce",
+    "stdout_summary": "157 passed in 3.65s"
+  },
+  "full_regression": {
+    "command": "uv run pytest --ignore=tests/security -q --tb=short -o addopts=''",
+    "commit_recorded_during_run_without_file_changes": true,
+    "new_evidence_tests_included": 2,
+    "passed": 4349,
+    "production_source_revision": "7be9fa218ff6eef275f1b82d65ed36c066df34ba",
+    "seconds": 365.04,
+    "size_bytes": 4925,
+    "skipped": 32,
+    "stdout_sha256": "158e6c6b2fd957e117f32daa8cc7cca7ac179c130fa424a0737eb8edf1e5f866",
+    "stdout_summary": "4349 passed, 32 skipped in 365.04s (0:06:05)",
+    "test_tree_git_object": "fd305074dbacc0a032b4ab870f56016387508e6e",
+    "test_tree_revision": "9097743a4ab33e87e86619ba27b75d2145109de2",
+    "untracked_attack_draft_excluded": true
+  },
   "independent_negative_replay": {
     "exit_code": 1,
     "failed": 14,
@@ -36,7 +57,24 @@
     "stdout_summary": "许可证违规：12个Archive"
   },
   "make_check_passed": false,
+  "preliminary_evidence_recheck": {
+    "overlaps_full_and_special_regression": true,
+    "passed": 157,
+    "seconds": 3.89,
+    "size_bytes": 260,
+    "stdout_sha256": "435850a2a601e3a4854fa4f430d4f620af4321fa4141a70af5834e0cf9fe07ff",
+    "stdout_summary": "157 passed in 3.89s"
+  },
   "readability_policy_relaxed": false,
+  "related_regression": {
+    "overlaps_full_regression": true,
+    "passed": 616,
+    "seconds": 17.56,
+    "size_bytes": 752,
+    "skipped": 6,
+    "stdout_sha256": "9bcecf8a2237a4aab3e208fddb923b445346f35d7ac5980cb5a6a274cdbd586e",
+    "stdout_summary": "616 passed, 6 skipped in 17.56s"
+  },
   "second_full_regression": {
     "failed": 1,
     "failure": "documentation links observed before evidence directory existed; no production test failure",
@@ -62,6 +100,21 @@
       "size_bytes": 28,
       "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
       "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation_and_changed_mermaid": {
+      "documents": 296,
+      "links": 7848,
+      "mermaid_diagrams": 715,
+      "passed": true,
+      "size_bytes": 103,
+      "source_packages": 26,
+      "stdout_sha256": "2e50c0578f9fdb56c8e92d5151534174f1d80390b90d18fe31244ace81b3be0c",
+      "stdout_summary": "文档门禁通过：296份文档、7848条链接、715幅Mermaid、26个源码包、33个变化路径"
+    },
+    "final_documentation": {
+      "passed": true,
+      "stdout_sha256": "2e50c0578f9fdb56c8e92d5151534174f1d80390b90d18fe31244ace81b3be0c",
+      "stdout_summary": "文档门禁通过：296份文档、7848条链接、715幅Mermaid、26个源码包、33个变化路径"
     },
     "mypy": {
       "passed": true,
@@ -101,6 +154,12 @@
       "passed": true,
       "visual_inspection": true
     },
+    "readability": {
+      "new_cycle_waivers": 0,
+      "new_dependency_edges": 0,
+      "passed": true,
+      "policy_relaxed": false
+    },
     "ruff": {
       "passed": true,
       "size_bytes": 19,
@@ -124,6 +183,15 @@
       "size_bytes": 56,
       "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
       "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "tracked_and_default_dist_scan": {
+      "complete": true,
+      "fixed_rule_hits": 0,
+      "inputs": 2278,
+      "passed": true,
+      "size_bytes": 101,
+      "stdout_sha256": "f3016853b7399c29789f6369b66f6356856cf68a10a8cf578edbb970f0366496",
+      "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2278个输入完整覆盖且固定规则零命中"
     }
   },
   "taskpacks_passed": true
