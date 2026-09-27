@@ -185,19 +185,17 @@ async def open_default_product_action_runtime(
         # 恢复扫描会读取Session与Artifact索引。调用方尚未打开AgentRuntime时，
         # Session Schema可能仍不存在；在统一组合根内幂等初始化，避免启动顺序隐式耦合。
         await artifacts.session.initialize()
-        checked_config = ProductActionConfigV1.model_validate_json(
-            action_config.model_dump_json(warnings="error")
-        )
-        checked_recovery = ProductActionConfigV1.model_validate_json(
-            (recovery_config or checked_config).model_dump_json(warnings="error")
-        )
+        checked_config, checked_recovery = _validated_action_configs(action_config, recovery_config)
         environment = build_fixed_product_action_environment(workspace_root)
-        async with _open_action_dependencies(
-            state_root,
-            secrets,
-            checked_recovery,
-            checked_config,
-        ) as dependencies:
+        async with (
+            _open_action_dependencies(
+                state_root,
+                secrets,
+                checked_recovery,
+                checked_config,
+            ) as dependencies,
+            AsyncExitStack() as protection,
+        ):
             plans = dependencies.plans
             audit = dependencies.audit
             recovery_router = TrustedActionRouter(
@@ -217,6 +215,7 @@ async def open_default_product_action_runtime(
                 process_probes=_select_probes(checked_recovery, dependencies.probe_cache),
                 secrets=secrets,
             )
+            protection.callback(_close_composition, recovery_composition)
             recovery_scan = await scan_product_action_recovery(
                 plans=plans,
                 audit=audit,
@@ -260,6 +259,7 @@ async def open_default_product_action_runtime(
                     process_probes=_select_probes(checked_config, dependencies.probe_cache),
                     secrets=secrets,
                 )
+                protection.callback(_close_composition, composition)
                 _verify_active_product_bindings(candidate_router, audit)
             yield ProductActionRuntimeOwner(
                 composition,
@@ -267,6 +267,26 @@ async def open_default_product_action_runtime(
                 dependencies.fence,
                 recovery_scan,
             )
+
+
+def _validated_action_configs(
+    action_config: ProductActionConfigV1,
+    recovery_config: ProductActionConfigV1 | None,
+) -> tuple[ProductActionConfigV1, ProductActionConfigV1]:
+    """独立校验候选与恢复配置，保持组合根只负责Owner资源装配顺序。"""
+    checked = ProductActionConfigV1.model_validate_json(
+        action_config.model_dump_json(warnings="error")
+    )
+    recovery = ProductActionConfigV1.model_validate_json(
+        (recovery_config or checked).model_dump_json(warnings="error")
+    )
+    return checked, recovery
+
+
+def _close_composition(composition: ProductActionComposition) -> None:
+    """启动故障及Owner正常退出都回收组合拥有的Secret作用域。"""
+    if composition.gateway is not None:
+        composition.gateway.close()
 
 
 def _select_probes(

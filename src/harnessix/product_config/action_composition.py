@@ -46,6 +46,7 @@ from harnessix.product_config.process_profile import (
 )
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
 from harnessix.secrets.provider import SecretProvider
+from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
 from harnessix.workspace.contracts import PlatformKind
@@ -271,7 +272,7 @@ def _planning_context(
     )
 
 
-def build_product_action_composition(
+def _compose_product_actions(
     config: ProductActionConfigV1,
     environment: FixedProductActionEnvironment,
     router: TrustedActionRouter,
@@ -282,6 +283,7 @@ def build_product_action_composition(
     artifact_workspace_scope: str,
     process_probes: tuple[ProductProcessProfileProbeResult, ...] = (),
     secrets: SecretProvider | None = None,
+    secret_scope: SecretPublicationScope | None = None,
 ) -> ProductActionComposition:
     """从统一配置和探测结果原子安装Patch及固定Container Process能力。"""
 
@@ -338,8 +340,52 @@ def build_product_action_composition(
         presentations=presentations,
         reviews=reviews,
         outputs=outputs,
+        secret_scope=secret_scope,
+        owns_secret_scope=True,
     )
     return ProductActionComposition(report, catalog, gateway)
+
+
+def build_product_action_composition(
+    config: ProductActionConfigV1,
+    environment: FixedProductActionEnvironment,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    leases: WorkspaceLeaseStore,
+    artifacts: SQLiteArtifactStore,
+    *,
+    artifact_workspace_scope: str,
+    process_probes: tuple[ProductProcessProfileProbeResult, ...] = (),
+    secrets: SecretProvider | None = None,
+) -> ProductActionComposition:
+    """已验证Profile的执行与公开共用原版本快照；失败和Gateway关闭均释放材料。"""
+    bindings = tuple(
+        binding
+        for probe in process_probes
+        if probe.verified is not None
+        for binding in probe.verified.secret_bindings
+    )
+    scope = SecretPublicationScope(bindings, secrets) if bindings and secrets is not None else None
+    try:
+        result = _compose_product_actions(
+            config,
+            environment,
+            router,
+            transactions,
+            leases,
+            artifacts,
+            artifact_workspace_scope=artifact_workspace_scope,
+            process_probes=process_probes,
+            secrets=scope if scope is not None else secrets,
+            secret_scope=scope,
+        )
+        if result.gateway is None and scope is not None:
+            scope.close()
+        return result
+    except BaseException:
+        if scope is not None:
+            scope.close()
+        raise
 
 
 def build_workspace_patch_composition(

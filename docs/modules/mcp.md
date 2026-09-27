@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
+version: 5
+code_revision: 58e51aa7d7ca42db8accb1b84b9911e589caf2d3
 owners:
   - core
 modules:
@@ -1638,3 +1638,7 @@ custom成功正文先经过与Gateway相同的公开字段合同，再成为Text
 错误描述指纹；已有目录/读调用/写导出拒绝保持。未产生任何远端HTTP/OAuth验收结论。
 [完整详设](../changes/m09-4a-custom-success-contract.md)追踪指纹、字段、数据流、失败及
 恢复；本地字段合同不替代上游Producer的Secret脱敏，也不替代远端目标身份和出口治理。
+
+## 现行版本化Secret公开保护
+
+[版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)为[Server](../../src/harnessix/mcp/server.py)提供显式secret_scope；独立有界副本共用字段和Secret检查，含后置期限和父Task取消。低风险/只读条件不变；默认不枚举宿主凭据或声称未登记值安全。

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Sequence
 from time import monotonic
 from typing import Literal, Protocol
 from uuid import uuid5
@@ -22,7 +23,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.domain.models import ToolDescriptor
-from harnessix.execution.contracts import canonical_digest
+from harnessix.execution.contracts import SecretVersionBinding, canonical_digest
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
 from harnessix.trusted_actions.output_budget import (
     DEFAULT_OUTPUT_BUDGET,
@@ -55,6 +56,20 @@ class TrustedActionOutputProvider(Protocol):
     ) -> JsonValue: ...
 
 
+class SecretOutputProtection(Protocol):
+    """宿主注入的公开保护能力；纯接口避免Trusted Actions依赖具体Secret Provider。"""
+
+    def assert_safe(
+        self,
+        value: JsonValue,
+        bindings: Sequence[SecretVersionBinding],
+        *,
+        checkpoint: Callable[[], None],
+    ) -> None: ...
+
+    def close(self) -> None: ...
+
+
 class GatewayOutputState(Protocol):
     """输出投影只依赖Router和按Tool冻结的输出Provider。"""
 
@@ -63,6 +78,9 @@ class GatewayOutputState(Protocol):
 
     @property
     def outputs(self) -> dict[str, TrustedActionOutputProvider]: ...
+
+    @property
+    def secret_scope(self) -> SecretOutputProtection | None: ...
 
 
 def build_approval(
@@ -143,6 +161,15 @@ async def terminal_result(
         or (outcome.output is not None and canonical_digest(outcome.output) != event.output_sha256)
     ):
         raise KernelError("trusted_action_output_mismatch", "Action输出与Router审计终态不匹配")
+    if outcome.output is None and route.plan.execution.secrets:
+        # 历史Hash不能证明原Secret值；只恢复已验真的效果元数据，不授予工件或正文。
+        return build_result(
+            route,
+            call,
+            outcome.model_copy(update={"artifact_sha256": None}),
+            origin=origin,
+            approval=approval,
+        )
     projected = await _project_output(
         provider,
         route,
@@ -154,6 +181,7 @@ async def terminal_result(
         output_sha256=event.output_sha256,
         artifact_sha256=event.artifact_sha256,
         descriptor=descriptor,
+        secret_scope=getattr(state, "secret_scope", None),
     )
     return build_result(
         route,
@@ -189,6 +217,12 @@ async def _inline_success(
                 descriptor=descriptor,
                 checkpoint=lambda: projection_checkpoint(cancel, deadline),
             )
+            _check_secret_output(
+                getattr(state, "secret_scope", None),
+                route,
+                projected,
+                lambda: projection_checkpoint(cancel, deadline),
+            )
             projection_checkpoint(cancel, deadline)
             await asyncio.sleep(0)
             projection_checkpoint(cancel, deadline)
@@ -215,6 +249,7 @@ async def _project_output(
     output_sha256: str,
     artifact_sha256: str,
     descriptor: ToolDescriptor | None,
+    secret_scope: SecretOutputProtection | None,
 ) -> JsonValue:
     """回调、序列化及正式合同共用投影时限；不改写已持久化的动作事实。"""
 
@@ -222,20 +257,29 @@ async def _project_output(
     deadline = monotonic() + budget.timeout_seconds
     try:
         async with asyncio.timeout(budget.timeout_seconds) as timer:
+            if outcome.output is None and route.plan.execution.secrets:
+                # 只有Hash的旧正文无法证明原Secret值；在Owner发布前拒绝恢复正文。
+                raise KernelError(
+                    "trusted_action_secret_unavailable", "Action输出缺少匹配的Secret保护能力"
+                )
             if outcome.kind == "succeeded":
                 # 即使恢复没有原正文，也不允许无公开合同的Owner先发布工件。
                 public_success_schema(route.plan, descriptor)
-            if outcome.kind == "succeeded" and outcome.output is not None:
+            if outcome.output is not None:
                 # 正式摘要在Owner发布工件之前验证；恢复缺少正文时再核对Owner重建值。
                 preview = bounded_projection(
                     outcome.output, budget=budget, cancel=cancel, deadline=deadline
                 )
-                validate_success_summary(
-                    route.plan,
-                    preview,
-                    descriptor=descriptor,
-                    checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                _check_secret_output(
+                    secret_scope, route, preview, lambda: projection_checkpoint(cancel, deadline)
                 )
+                if outcome.kind == "succeeded":
+                    validate_success_summary(
+                        route.plan,
+                        preview,
+                        descriptor=descriptor,
+                        checkpoint=lambda: projection_checkpoint(cancel, deadline),
+                    )
                 projection_checkpoint(cancel, deadline)
             raw = await cancel.run(
                 provider.output(
@@ -249,6 +293,9 @@ async def _project_output(
                 )
             )
             projected = bounded_projection(raw, budget=budget, cancel=cancel, deadline=deadline)
+            _check_secret_output(
+                secret_scope, route, projected, lambda: projection_checkpoint(cancel, deadline)
+            )
             validate_public_projection(
                 route.plan,
                 outcome,
@@ -268,6 +315,21 @@ async def _project_output(
         raise sanitize_gateway_exception(error, stage="output") from None
     except Exception as error:
         raise sanitize_gateway_exception(error, stage="output") from None
+
+
+def _check_secret_output(
+    scope: SecretOutputProtection | None,
+    route: ActionRouteSnapshot,
+    value: JsonValue,
+    checkpoint: Callable[[], None],
+) -> None:
+    """未配置能力的Secret绑定正文默认拒绝；显式宿主快照同时扫描键和值。"""
+    checkpoint()
+    if scope is not None:
+        scope.assert_safe(value, route.plan.execution.secrets, checkpoint=checkpoint)
+    elif route.plan.execution.secrets:
+        raise KernelError("trusted_action_secret_unavailable", "Action输出缺少匹配的Secret保护能力")
+    checkpoint()
 
 
 def build_result(

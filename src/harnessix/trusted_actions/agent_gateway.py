@@ -15,6 +15,9 @@ from harnessix.agent.models import (
 )
 from harnessix.domain.models import ApprovalDecision, ToolDescriptor
 from harnessix.trusted_actions.agent_gateway_output import (
+    SecretOutputProtection,
+)
+from harnessix.trusted_actions.agent_gateway_output import (
     TrustedActionOutputProvider as TrustedActionOutputProvider,
 )
 from harnessix.trusted_actions.agent_gateway_support import (
@@ -50,6 +53,8 @@ class RouterBackedAgentActionGateway:
         | Mapping[str, TrustedActionReviewProvider]
         | None = None,
         outputs: Mapping[str, TrustedActionOutputProvider] | None = None,
+        secret_scope: SecretOutputProtection | None = None,
+        owns_secret_scope: bool = False,
     ) -> None:
         self._state = build_gateway_state(
             router,
@@ -60,7 +65,9 @@ class RouterBackedAgentActionGateway:
             presentations=presentations,
             reviews=reviews,
             outputs=outputs,
+            secret_scope=secret_scope,
         )
+        self._owns_secret_scope = owns_secret_scope
         self._closed = False
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
@@ -120,6 +127,8 @@ class RouterBackedAgentActionGateway:
         """关闭能力视图；底层Router及Stores仍由产品组合Owner关闭。"""
 
         self._closed = True
+        if self._owns_secret_scope and self._state.secret_scope is not None:
+            self._state.secret_scope.close()
 
     def _ensure_open(self) -> None:
         if self._closed:

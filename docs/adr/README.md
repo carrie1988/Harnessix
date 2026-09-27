@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 29
-code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
+version: 30
+code_revision: 58e51aa7d7ca42db8accb1b84b9911e589caf2d3
 owners:
   - core
 modules:
@@ -226,3 +226,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 本次状态迁移没有把早期ADR机械扩写成现行详细设计。部分早期正文只具备背景、决策和结果三个章节，
 其当前实现细节已由30份模块设计和Action兼容内核子系统设计承接。结构补写仅在决策本身发生复审或取代时进行，
 避免通过批量改写破坏历史真实性。
+
+- [ADR 0095：执行与公开复用同一版本化Secret内存快照](0095-versioned-secret-publication-scope.md)：显式宿主材料、有界检查、同一执行Provider及仅元数据恢复；不关闭整体安全发布门禁。

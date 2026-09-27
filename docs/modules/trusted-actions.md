@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
+version: 29
+code_revision: 58e51aa7d7ca42db8accb1b84b9911e589caf2d3
 owners:
   - core
 modules:
@@ -1683,3 +1683,7 @@ custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完
 创建真实SQLite记录并重开，未声明旧描述维持原字节和全部摘要。
 [完整详设](../changes/m09-4a-custom-success-contract.md)区分字段权限与Secret安全；旧Session
 公开视图、Secret版本/值、Owner内部预算/所有权、其他公开错误和完整0.9.4a仍开放。
+
+## 现行版本化Secret公开保护
+
+[版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)增加纯SecretOutputProtection宿主端口（无新增Secrets实现依赖）；原生副本和字段/Hash检查后、Owner发布前及重建后检查值。缺能力/命中固定错误；Secret绑定的仅Hash恢复经当前Audit核验后只补无正文元数据，不调用Owner、不重执行。

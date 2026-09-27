@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: aba924677dd7bdac5f2087058b483e3474bffc05
+version: 4
+code_revision: 58e51aa7d7ca42db8accb1b84b9911e589caf2d3
 owners:
   - core
 modules:
@@ -1093,3 +1093,7 @@ Material清零描述成所有副本的安全擦除。
 |---|---|---|---|
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正统一Secret Guard缺口的路线图归属；运行合同不变 |
 | 1 | `d655c60f54f94823f671d18080573e1b56c433d9` | 2026-09-12 | 建立Secrets现行模块设计，覆盖引用合同、环境Provider、作用域、流式脱敏、结构化Guard、跨模块消费路径及生产缺口 |
+
+## 现行版本化Secret公开保护
+
+新增[版本化公开快照详设](../changes/m09-4a-versioned-secret-publication.md)与[实现](../../src/harnessix/secrets/publication.py)：显式name/version材料、同一执行Provider、独立副本和有界键/值/规范JSON扫描；关闭清零合法可变材料。宿主违规超限材料不复制或全量清零，明文由宿主回收；不可变副本擦除、未登记值和任意转换不属于证明范围。

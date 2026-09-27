@@ -233,3 +233,32 @@ def test_mcp_export_rejects_descriptor_not_bound_to_registered_fingerprint(tmp_p
         actions = server._port._ExtensionActionPort__router
         actions._audit.close()
         actions._plans.close()
+
+
+@pytest.mark.parametrize("case", ["safe", "leak", "closed"])
+async def test_explicit_secret_scope_at_independent_mcp_client(tmp_path, case):
+    from harnessix.secrets.publication import SecretPublicationScope
+    from tests.trusted_actions.test_secret_publication import BINDING, CANARY, source
+
+    scope = SecretPublicationScope((BINDING,), source())
+    prior = exported_server(tmp_path)
+    server = HarnessixMcpServer(port=prior._port, exports=prior._exports, secret_scope=scope)
+    if case == "closed":
+        scope.close()
+    try:
+        async with Client(server.low_level_server, cache=None) as client:
+            result = await client.call_tool(
+                "echo", {"text": "completed" if case == "safe" else CANARY}
+            )
+        assert bool(result.is_error) == (case != "safe")
+        assert CANARY not in result.model_dump_json()
+        if case == "safe":
+            assert result.structured_content == {"echo": "completed"}
+        else:
+            assert (
+                "trusted_action_secret_leak"
+                if case == "leak"
+                else "trusted_action_secret_unavailable"
+            ) in result.content[0].text
+    finally:
+        scope.close()

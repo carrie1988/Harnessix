@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, cast
 from uuid import uuid4
 
@@ -20,6 +22,7 @@ from mcp.types import (
 )
 from pydantic import JsonValue
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
@@ -28,7 +31,17 @@ from harnessix.mcp.schema import (
     validate_mcp_arguments,
     validate_mcp_input_schema,
 )
-from harnessix.trusted_actions.contracts import ActionExecutionOutcome, TrustedToolBinding
+from harnessix.secrets.publication import SecretPublicationScope
+from harnessix.trusted_actions.contracts import (
+    ActionExecutionOutcome,
+    ActionRoutePlan,
+    TrustedToolBinding,
+)
+from harnessix.trusted_actions.output_budget import (
+    DEFAULT_OUTPUT_BUDGET,
+    bounded_projection,
+    projection_checkpoint,
+)
 from harnessix.trusted_actions.public_outcomes import validate_success_summary
 from harnessix.trusted_actions.router import ExtensionActionPort
 
@@ -63,6 +76,7 @@ class HarnessixMcpServer:
         exports: tuple[McpExportedTool, ...],
         name: str = "Harnessix Code",
         version: str = "0.8.4",
+        secret_scope: SecretPublicationScope | None = None,
     ) -> None:
         if not exports:
             raise KernelError("mcp_export_invalid", "MCP Server至少需要一个导出Tool")
@@ -75,6 +89,7 @@ class HarnessixMcpServer:
                 raise KernelError("mcp_export_not_registered", "MCP导出Tool未通过可信Action注册")
             _validate_export_binding(binding, exported)
         self._port = port
+        self._secret_scope = secret_scope
         self._exports = tuple(sorted(exports, key=lambda item: item.public_name))
         self._bindings = bindings
         self._by_public_name = {item.public_name: item for item in self._exports}
@@ -156,12 +171,47 @@ class HarnessixMcpServer:
             outcome = await self._port.execute(plan.plan.execution.plan_id)
             if outcome.kind == "succeeded" and outcome.output is not None:
                 # MCP导出是独立公开路径，必须核对同一冻结Binding的字段授权。
-                validate_success_summary(plan.plan, outcome.output, descriptor=exported.descriptor)
+                public = await _validate_export_output(
+                    plan.plan, outcome.output, exported.descriptor, self._secret_scope
+                )
+                outcome = outcome.model_copy(update={"output": public})
         except KernelError as error:
             return _tool_error(error.code)
         if outcome.kind != "succeeded":
             return _tool_error(outcome.error_code or "mcp_export_execution_failed")
         return _tool_success(outcome)
+
+
+async def _validate_export_output(
+    plan: ActionRoutePlan,
+    output: JsonValue,
+    descriptor: ToolDescriptor | None,
+    scope: SecretPublicationScope | None,
+) -> JsonValue:
+    """MCP独立公开出口在相同有界副本上检查字段、Secret、取消及后置期限。"""
+    budget = DEFAULT_OUTPUT_BUDGET
+    deadline = monotonic() + budget.timeout_seconds
+    cancel = CancelToken()
+
+    def checkpoint() -> None:
+        projection_checkpoint(cancel, deadline)
+
+    try:
+        async with asyncio.timeout(budget.timeout_seconds):
+            public = bounded_projection(output, budget=budget, cancel=cancel, deadline=deadline)
+            validate_success_summary(plan, public, descriptor=descriptor, checkpoint=checkpoint)
+            if scope is not None:
+                scope.assert_safe(public, plan.execution.secrets, checkpoint=checkpoint)
+            elif plan.execution.secrets:
+                raise KernelError(
+                    "trusted_action_secret_unavailable", "Action输出缺少匹配的Secret保护能力"
+                )
+            checkpoint()
+            await asyncio.sleep(0)
+            checkpoint()
+            return public
+    except TimeoutError:
+        raise KernelError("trusted_action_output_timeout", "Action输出投影超时") from None
 
 
 def _validate_export_binding(binding: TrustedToolBinding, exported: McpExportedTool) -> None:

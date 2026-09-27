@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 from time import monotonic
@@ -31,6 +32,12 @@ def projection_checkpoint(cancel: CancelToken, deadline: float) -> None:
     """同步有界处理也检查取消和时限，不依赖事件循环及时运行超时回调。"""
 
     cancel.checkpoint()
+    try:
+        task = asyncio.current_task()
+    except RuntimeError:
+        task = None
+    if task is not None and task.cancelling():
+        raise asyncio.CancelledError
     if monotonic() >= deadline:
         raise KernelError("trusted_action_output_timeout", "Action输出投影超时")
 

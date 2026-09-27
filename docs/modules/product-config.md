@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 18
+code_revision: 58e51aa7d7ca42db8accb1b84b9911e589caf2d3
 owners:
   - core
 modules:
@@ -1983,3 +1983,8 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 6 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 装配默认POSIX Workspace Patch、Action/Delivery/Lease状态Owner、Review Provider及Windows诚实省略 |
 | 5 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 交付0.9.1e1 Action配置/能力报告、同源目录、默认Artifact所有权与失败关闭边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 4 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 记录0.9.1d三平台只读产品链完成全矩阵CI验收 |
+
+## 现行Secret快照与组合生命周期
+
+[版本化公开详设](../changes/m09-4a-versioned-secret-publication.md)在[统一装配](../../src/harnessix/product_config/action_composition.py)中只捕获已验证Process Profile显式引用；同一SecretPublicationScope传入Executor和Gateway，构造失败清零，Gateway拥有并关闭。
+[产品Owner](../../src/harnessix/product_config/action_runtime.py)用AsyncExitStack登记候选/恢复组合关闭，启动扫描或绑定验证失败也回收。旧配置JSON、能力指纹和恢复原Approval不变；Secret绑定的旧Hash正文不追认安全，只恢复效果元数据。真实产品测试使用Lease合同替身，不等于真实Container或Windows发行验收。

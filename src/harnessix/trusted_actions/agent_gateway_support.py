@@ -32,6 +32,7 @@ from harnessix.domain.models import (
 )
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.agent_gateway_output import (
+    SecretOutputProtection,
     TrustedActionOutputProvider,
     build_approval,
     terminal_result,
@@ -74,6 +75,7 @@ class AgentActionGatewayState:
     presentations: dict[str, TrustedActionPresentation]
     reviews: dict[str, TrustedActionReviewProvider]
     outputs: dict[str, TrustedActionOutputProvider]
+    secret_scope: SecretOutputProtection | None = None
 
 
 def build_gateway_state(
@@ -86,6 +88,7 @@ def build_gateway_state(
     presentations: Mapping[str, TrustedActionPresentation] | None,
     reviews: TrustedActionReviewProvider | Mapping[str, TrustedActionReviewProvider] | None,
     outputs: Mapping[str, TrustedActionOutputProvider] | None,
+    secret_scope: SecretOutputProtection | None = None,
 ) -> AgentActionGatewayState:
     copied = tuple(item.model_copy(deep=True) for item in definitions)
     if len({item.name for item in copied}) != len(copied):
@@ -122,6 +125,7 @@ def build_gateway_state(
         presentations={item.name: requested.get(item.name, "tool") for item in copied},
         reviews=review_providers,
         outputs=output_providers,
+        secret_scope=secret_scope,
     )
 
 
