@@ -75,8 +75,25 @@
     ]
   },
   "full_regression": {
-    "is_acceptance": false,
-    "status": "pending"
+    "exit_code": 0,
+    "fixed_code_revision": "2ae7caf3e2a6b53431ef352ff3520f3cf1358282",
+    "git_status_unchanged_during_run": true,
+    "is_acceptance": true,
+    "passed": 5097,
+    "seconds": 405.0,
+    "size_bytes": 5805,
+    "skipped": 32,
+    "source_inputs_canonical_sha256": "014210ec43afe9a9ce921485530c81259c56f0f98b313f3b90e6c91888495545",
+    "source_inputs_count": 1328,
+    "source_inputs_same_as_fixed_revision": true,
+    "status": "passed",
+    "stdout_sha256": "67db7fc1ea6f159ff796d0ed3911682447fb7da0f520afb4cfaacbb855cf91cb",
+    "test_run_commit": "05cadd2dba69a9f02679d9f72ae07bdb6c1bd5ff",
+    "test_run_tree": "190fd94b5f6a6eee05ad61b4508b6fdaaeca9d5d",
+    "tracked_inputs_count": 2401,
+    "tracked_inputs_unchanged_during_run": true,
+    "untracked_attack_draft_excluded": true,
+    "wall_seconds": 407.05
   },
   "gates": {
     "contracts": {
@@ -105,8 +122,8 @@
       "exit_code": 0,
       "passed": true,
       "size_bytes": 103,
-      "stdout_sha256": "01507732ebdea1b6bd7108cd90da6b02e3ef1f915d4e1537e7fd6c83f212c67d",
-      "stdout_summary": "文档门禁通过：323份文档、8398条链接、765幅Mermaid、26个源码包、25个变化路径"
+      "stdout_sha256": "aada0e631dde8533fcdd6703c32d353acf0ea78bb3c4b19044d03643f4de4c4e",
+      "stdout_summary": "文档门禁通过：323份文档、8399条链接、765幅Mermaid、26个源码包、25个变化路径"
     },
     "format": {
       "command": [
@@ -226,6 +243,13 @@
     "size_bytes": 31,
     "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
     "stdout_summary": "许可证违规：12个Archive"
+  },
+  "post_freeze_governance": {
+    "passed": true,
+    "seconds": 4.01,
+    "size_bytes": 99,
+    "stdout_sha256": "1b4bc14fb9bd310e4463583d05be97300363c4333c4070a0200df9163131bf02",
+    "tests": 28
   },
   "wheel_smoke": {
     "actual_runtime_sqlite_sdk": true,

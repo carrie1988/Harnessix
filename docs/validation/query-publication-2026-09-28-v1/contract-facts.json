@@ -132,9 +132,13 @@
       }
     ]
   },
+  "full_test_passed": 5097,
+  "full_test_skipped": 32,
+  "full_test_source_inputs_same_as_fixed_revision": true,
   "hard_preemption_claimed": false,
   "historical_validation_files": 695,
   "historical_validation_files_unchanged": true,
+  "immutable_python_copy_erasure_claimed": false,
   "independent_baseline": {
     "bindings": [
       {

@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "a37133b4a99ea503c0958447b36758b31faa0707e26192b20d314cda52d19a5e",
-      "size_bytes": 2137
+      "sha256": "b4b3be64827ea6b54f55cc7814e3b334d8731818f0584ddd484d90b0450a7aa9",
+      "size_bytes": 8871
     },
     {
       "path": "ci-observation.json",
@@ -13,18 +13,18 @@
     },
     {
       "path": "contract-facts.json",
-      "sha256": "0d47361ed611a235d4c1e0df8db35f2103e469d917318ecb8d4d49d044840340",
-      "size_bytes": 9641
+      "sha256": "3633f38de89c2f5606713b37a7d82e3f71d2024082d15fe01524e398b32226ca",
+      "size_bytes": 9804
     },
     {
       "path": "review-packet.json",
-      "sha256": "119493247cfa347b9f613e17335ea170985ec6c0b99fc878577a33c74e3bca60",
-      "size_bytes": 932
+      "sha256": "84c98d321d6d6d509c7c1be707498797992a25bdfe78dac7a0acec94c72a8bc6",
+      "size_bytes": 975
     },
     {
       "path": "verification.json",
-      "sha256": "9fb27022105078ce13201eec1afc97e5b6006a65c041292498214021d7fa4647",
-      "size_bytes": 8133
+      "sha256": "d52f1ff2fc7e3139005485944a7e08a40fc3774c526a78303c32fc88b46bb207",
+      "size_bytes": 9121
     }
   ],
   "manifest_self_excluded": true,
