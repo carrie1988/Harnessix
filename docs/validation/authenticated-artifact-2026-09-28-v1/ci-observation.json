@@ -1,0 +1,9 @@
+{
+  "code_revision": "33a2fd25bf6f529d1019cf584e02673734369299",
+  "current_ci_accepted": false,
+  "current_ci_status": "not_started_at_local_freeze",
+  "previous_revision_success_not_inherited": true,
+  "push_policy": "batch_local_commits_then_single_push",
+  "three_platform_acceptance_claimed": false,
+  "waiting_for_ci_per_commit": false
+}

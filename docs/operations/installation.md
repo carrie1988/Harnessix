@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 7
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -213,7 +213,10 @@ macOS/Linux检查Owner、规范权限和对象身份，Darwin额外拒绝扩展A
 原生测试与三平台正式安装仍须独立验收。POSIX私有Key文件不声称密文或不可导出Keyring。
 仅全新无库状态可以生成新Key。存在原DB/WAL/SHM而无Key、未证明历史、Key格式或权限失效均拒绝启动；
 不得通过清空原状态、改权限追认旧事实、生成替代Key或手工补签解除门禁。
-Doctor成功只代表配置及能力预检，不证明原Key/Session有效。现阶段没有正式密钥备份/跨机器迁移工具，
+Doctor成功只代表配置及能力预检，不证明原Key/Session有效。现阶段没有正式密钥备份/跨机器迁移工具。
+新Artifact正文在同一逻辑Store/Key重启后依赖Migration 0030原行Seal恢复，旧NULL行不能因此被读取；
+安装与升级应将数据库/WAL一致状态和独立Key作为同一保留单元，不能只复制数据库或重建Key。
 不把复制DB或本地Wheel消费者视为安装与恢复完成。
 [总体与详细设计](../changes/m09-4a-managed-session-key-and-root.md)、
+[Artifact原行来源认证](../changes/m09-4a-authenticated-artifact-body.md)、
 [固定macOS验证](../validation/managed-session-key-2026-09-28-v1/README.md)与[升级边界](upgrade-and-rollback.md)是当前操作依据。

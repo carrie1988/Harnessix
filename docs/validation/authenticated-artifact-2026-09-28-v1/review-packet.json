@@ -1,0 +1,17 @@
+{
+  "code_revision": "33a2fd25bf6f529d1019cf584e02673734369299",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "delivered": "new_artifact_body_persistent_authentication_and_cross_restart_read",
+  "full_regression_passed": true,
+  "overall_0_9_complete": false,
+  "phase_0_9_4a_complete": false,
+  "release_blockers": [
+    "旧Artifact行无来源Seal，正式迁移/隔离策略未完成",
+    "Windows原生Key及三平台正式安装升级尚未验收",
+    "Key保护备份、跨机迁移及维护CLI托管Binding未实现",
+    "全部Provider/SDK/MCP及Owner同步阻塞未关闭",
+    "编号攻击回归、远端MCP OAuth及Beta/成本验收未完成",
+    "12件Archive来源权利阻断许可证门禁"
+  ]
+}

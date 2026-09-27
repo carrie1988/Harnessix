@@ -1,0 +1,94 @@
+{
+  "candidate_artifacts": [
+    {
+      "kind": "wheel",
+      "migration_0030_included": true,
+      "sha256": "cd661b484a495cf4ec988c4cd12fa6ef82b7f25fa7dfae236b4797aabb4132d4"
+    },
+    {
+      "kind": "sdist",
+      "sha256": "0961c44cf67de7dd2d59c8f064f644fd9e6de8d8fa0a566c58ac0ad9d25971ea"
+    }
+  ],
+  "code_revision": "33a2fd25bf6f529d1019cf584e02673734369299",
+  "documents": {
+    "changed_path_render_gate_exit_code": 0,
+    "changed_paths": 21,
+    "gate_log_sha256": "01f112026f2809eb187b82fd1ac2c140c5b4b3cb0a754772c8f9333c4e2ebe22",
+    "new_design_mermaid_rendered_and_visually_reviewed": 4
+  },
+  "full_regression": {
+    "command": "uv run pytest -q --ignore=tests/security",
+    "exit_code": 0,
+    "failed": 0,
+    "passed": 5245,
+    "progress_log_sha256": "c7d329e3e2e1e12307891a41daed770cb53dc042265a43aa9f2ca9e4b8d9b286",
+    "skipped": 38,
+    "tracked_files": 2449,
+    "tracked_sha256_before_after": "e9589f7c4aee78c03629f17b6e3f00019e321be2a3a9bb43933ccba71c943853",
+    "untracked_security_excluded": true
+  },
+  "gates": {
+    "contracts": {
+      "exit_code": 0,
+      "output_sha256": "adadcc9fe99a01f2f0fe019db35541cbc794da0278be73e06faa797fe082f8b9"
+    },
+    "documentation": {
+      "exit_code": 0,
+      "output_sha256": "5728611dc484466bab29ccde3adc29854c85102b93313f58041137d6fb3fea09"
+    },
+    "format": {
+      "exit_code": 0,
+      "output_sha256": "283d351fe17b4a7d87113b46399f4d70fab400757ed468d0917dd4f2b2d37828"
+    },
+    "license": {
+      "exit_code": 1,
+      "output_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b"
+    },
+    "lint": {
+      "exit_code": 0,
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "readability": {
+      "exit_code": 0,
+      "output_sha256": "00647888785ce0284e3b6212cb42d85416145a5bf6e4737f5b024625b411cffc"
+    },
+    "sbom": {
+      "exit_code": 0,
+      "output_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4"
+    },
+    "secret-artifacts": {
+      "exit_code": 0,
+      "output_sha256": "86508a4ce067c72e3a49636d86b3171b324970e92a2997e38fd9609944c73b6d"
+    },
+    "secret-self": {
+      "exit_code": 0,
+      "output_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+    },
+    "taskpacks": {
+      "exit_code": 0,
+      "output_sha256": "29dfbf6c9e7eeab6c697634f06b031bd629538c9a5021e3f457cb5a7b9f0f0bd"
+    },
+    "typecheck": {
+      "exit_code": 0,
+      "output_sha256": "8d51d787c1db95794630e6cfcf61b2279bb29670f10daa29306231bf6d00e335"
+    }
+  },
+  "isolated_wheel_consumer": {
+    "clean_machine_install_claimed": false,
+    "locked_dependencies": true,
+    "original_row_digest_unchanged": "093f9bf814cc31438ac1114fc49bb200de0be6db1ab651f2bcd623d84e6f0fb1",
+    "read_and_history_verified": true,
+    "same_key_different_epoch": true,
+    "separate_os_processes": 2,
+    "site_packages_not_checkout": true,
+    "three_platform_install_claimed": false
+  },
+  "license_expected_blockers": 12,
+  "platform": {
+    "arch": "arm64",
+    "os": "macOS",
+    "python": "3.13.8"
+  },
+  "prior_validation_files_modified": false
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 31
-code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
+version: 32
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -246,3 +246,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR-0103：认证SQLite提交](0103-authenticated-sqlite-session-commit.md)：真实CAS、同事务证明与原前缀恢复；默认Key托管和产品启用未完成。
 
 - [0104 默认产品持久Session密钥](0104-managed-session-key-and-default-root.md)。
+
+- [ADR-0105 Artifact原正文持久来源认证](0105-authenticated-artifact-body.md)：复用独立Key、同事务原行Seal、旧行不追认与当前Scope复验。

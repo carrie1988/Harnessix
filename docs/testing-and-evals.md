@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 38
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 39
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -776,3 +776,12 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 独立events读入口通过两项确定性双连接测试修复读版本混用，不自动重试、不重签历史、不降低篡改断言。
 [完整证据](validation/managed-session-key-2026-09-28-v1/README.md)与
 [总体/详细设计](changes/m09-4a-managed-session-key-and-root.md)明确密钥恢复、Artifact正文和三平台正式发行仍未完成。
+
+## 新Artifact原正文持久认证回归
+
+固定实现`33a2fd25bf6f529d1019cf584e02673734369299`使用Migration 0030与独立Session Key
+给新发布原正文签名；`tests/artifacts/test_authenticated_body.py`覆盖真实Runtime发布、同Key不同Epoch重开、
+当前Secret轮换后拒绝、错Scope替身、旧29版行无Seal、原行/证明篡改和超限BLOB限长读取。
+升级旧行不自动补签；原Action、Batch与历史入口相关回归及完整固定版本结果见
+[单独验证目录](validation/authenticated-artifact-2026-09-28-v1/README.md)。
+上一节证据中的Artifact未完成是其固定旧版本事实，不外推到当前源码；三平台正式安装、Key备份和其他安全门禁仍开放。

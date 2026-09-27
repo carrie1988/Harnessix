@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
+version: 17
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -727,15 +727,15 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 | 2 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |
 
-## 当前运行Artifact公开证明
+## Migration 0028运行Epoch阶段记录
 
-Migration 0028新增可空`publication_epoch`和`publication_policy`。首次INSERT完整JSONL检查成功后同事务写证明；原body、Manifest、Hash、TTL和公开contract不变。分页、单件和批量历史验证要求当前Store证明并再次检查全文。旧NULL证明或不同Store Epoch不得返回正文；无保护独立宿主仅保留兼容行为。新Store拒绝旧正文影响跨重启长会话和Fork，跨重启正文恢复未完成。
+Migration 0028新增可空`publication_epoch`和`publication_policy`。首次INSERT完整JSONL检查成功后同事务写证明；原body、Manifest、Hash、TTL和公开contract不变。当时分页、单件和批量历史验证要求当前Store证明并再次检查全文；不同Store Epoch拒绝原正文。该阶段的跨重启正文缺口由后续Migration 0030只对新行修复；旧NULL仍拒绝。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
 
 ## 0.9.4a 类型化二进制公开与持久前保护
 
-`ArtifactPublicationGuard.check_body`按持久purpose选择正式Process解码桥。`action_output`与旧只读`process_output`分别用既有规范解析器；集中写入、分页、单件及批量历史验证均传实际用途。原正文/Hash及Migration 0028当前Epoch不变。
+`ArtifactPublicationGuard.check_body`按持久purpose选择正式Process解码桥。`action_output`与旧只读`process_output`分别用既有规范解析器；集中写入、分页、单件及批量历史验证均传实际用途。原正文/Hash及Migration 0028历史Epoch字段保持；有Key分支由后续Migration 0030认证。
 
 [完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
 [固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
@@ -744,11 +744,23 @@ Migration 0028新增可空`publication_epoch`和`publication_policy`。首次INS
 
 ## 跨重启来源认证边界
 
-当前Artifact Epoch仍只认可本次Store实例；新的Event Seal核心没有放宽该边界，Artifact持久来源/二进制依据及备份恢复尚待实施。
-完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。
+此段记录Migration 0029时的边界：当时Artifact Epoch只认可本次Store实例。
+现行Migration 0030为新原正文提供持久来源认证，旧无Seal行仍拒绝；Key保护备份与迁移仍待实施。
+当前合同、字段和故障语义见[Artifact持久来源认证详设](../changes/m09-4a-authenticated-artifact-body.md)。
 
 ## 显式认证SQLite Session合同
 
 [完整设计](../changes/m09-4a-authenticated-sqlite-session.md)接入独立Binding、Migration 0029、新事件CAS同事务Seal、认证前缀与派生Checkpoint。
 Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session事实均已测试。
-默认Root与Key Backend未接入，Artifact正文/二进制原Epoch边界未放宽，备份迁移、三平台正式部署与整体0.9未完成。
+此处原切片的Root与Epoch结论为历史阶段状态；当前默认Root已强制托管Binding，新Artifact原正文由Migration 0030认证，旧正文不补签。备份迁移、三平台正式部署与整体0.9未完成。
+
+## 现行Artifact来源认证与读取合同
+
+默认产品复用独立Session Key，原Scope检查、原行Seal与正文同一事务提交；Tool/Batch的Session引用同事务，Review/Output须待后续反向引用授权。
+`ArtifactPublicationGuard`区分有Key原行MAC和无Key独立库运行Epoch；
+分页、单条与批量模型历史先验来源，再验证Session反向引用、当前作用域、TTL、正文与当前Secret。
+原Review/Output确认丢失的重试必须验签原收据，不新建或刷新期限；过期Tombstone不恢复正文。
+读取在SQLite返回前限制BLOB/Manifest/Seal，旧无Seal行不按新Scope重签。
+[总体与详设](../changes/m09-4a-authenticated-artifact-body.md)包含四图、字段、伪代码与源码导航；
+[测试](../../tests/artifacts/test_authenticated_body.py)和[固定版本验收](../validation/authenticated-artifact-2026-09-28-v1/README.md)
+限定当前证据范围，不宣称0.9.4a完成。

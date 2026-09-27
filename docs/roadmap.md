@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 105
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 106
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -522,7 +522,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
   固定156专项（57新增功能合同、2项开放元数据观察）、另2项新增治理及4969 passed/32 skipped完整回归；
   干净发行物及Wheel隔离导入、683个历史验证文件原字节和源码等价分别冻结。
   原始JSON-RPC id/错误path的基线开放观察由[原帧切片](changes/m09-4a-protocol-frame-publication.md)修复当前材料出口，Scope丢失后的SDK相关ID可用性、未知旧历史及跨重启证明仍需独立治理。
-  全部Provider凭据和Secret端到端、历史Session/其他公开出口、跨重启正文安全恢复、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
+  [Artifact正文持久来源认证](changes/m09-4a-authenticated-artifact-body.md)现已使用Migration 0030与独立Session Key签新行，
+  同一逻辑Store合法重启可核验原正文；旧无Seal行仍拒绝，当前Scope、Session引用和TTL继续独立校验。
+  全部Provider凭据和Secret端到端、历史Session/其他公开出口、Key备份/维护CLI、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
   [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。
@@ -820,7 +822,8 @@ Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Ru
 认证SQLite显式库固定实现`857ce38`新增42项Store和2项证据治理测试，
 完整5189/32回归、四幅实际渲染图、候选Wheel双OS消费者已冻结。
 [验证目录](validation/authenticated-sqlite-session-2026-09-28-v1/README.md)与正式详设固定原字节和全部来源边界。
-当前未启用默认Root、正式Key Backend或Artifact正文跨重启，继续保持0.9.4a与整体0.9开放。
+默认Root及正式Key Backend由后续托管切片启用；新Artifact正文来源证明由Migration 0030接入。
+本段保留原阶段边界，当前仍因旧行、备份/维护、其他出口及三平台验证保持0.9.4a与整体0.9开放。
 
 ## 0.9.4a 默认产品托管Session Key子切片
 

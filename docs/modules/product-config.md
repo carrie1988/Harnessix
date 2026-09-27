@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 23
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -2029,4 +2029,5 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
 默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
 Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
-Artifact正文跨重启、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+新Artifact正文复用托管Session Key完成跨重启来源认证，见[详设](../changes/m09-4a-authenticated-artifact-body.md)。
+旧无Seal正文、Key保护备份/维护、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。

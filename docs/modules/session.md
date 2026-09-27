@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 11
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -669,7 +669,7 @@ Event Seal核心绑定原身份/版本/原字节与可信Scope；显式SQLite装
 
 [完整设计](../changes/m09-4a-authenticated-sqlite-session.md)接入独立Binding、Migration 0029、新事件CAS同事务Seal、认证前缀与派生Checkpoint。
 Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session事实均已测试。
-默认Root与独立本机Key Backend已实现；Windows原生验收尚待实际平台记录。Artifact正文/二进制原Epoch边界未放宽，备份迁移、三平台正式部署与整体0.9未完成。
+默认Root与独立本机Key Backend已实现；Windows原生验收尚待实际平台记录。新Artifact正文由Migration 0030同事务持久认证，原Epoch不再限制同Key合法重启，旧行不补签；备份迁移、三平台正式部署与整体0.9未完成。
 
 ## 默认产品托管Session Key与原库准入
 
@@ -677,7 +677,7 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
 默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
 Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
-Artifact正文跨重启、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+新Artifact正文来源认证见[详设](../changes/m09-4a-authenticated-artifact-body.md)；旧正文、Key备份/维护、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
 
 独立`events`读取与`get/list/recovery`一样使用显式读事务；原Checkpoint、Event和Seal固定于
 同一SQLite版本。另一连接的完整新CAS只在后续新读中可见，防止合法并发审批被误报为历史篡改。

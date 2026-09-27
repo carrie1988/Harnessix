@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 857ce38444d89fef69a860946f92764c6d3adf9f
+version: 19
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -836,4 +836,12 @@ initialize由`prepare_initialization`返回未提交候选，检查通过后Serv
 
 [完整设计](../changes/m09-4a-authenticated-sqlite-session.md)接入独立Binding、Migration 0029、新事件CAS同事务Seal、认证前缀与派生Checkpoint。
 Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session事实均已测试。
-默认Root与Key Backend未接入，Artifact正文/二进制原Epoch边界未放宽，备份迁移、三平台正式部署与整体0.9未完成。
+此处原切片的Root/Epoch结论为历史阶段状态；当前默认Root已强制托管Binding，新Artifact正文经Migration 0030持久认证。
+旧无Seal正文仍不可供模型历史使用；备份迁移、三平台正式部署与整体0.9未完成。
+
+## 当前模型历史Artifact来源条件
+
+有Key产品恢复后，模型历史中的Artifact引用按[持久来源认证详设](../changes/m09-4a-authenticated-artifact-body.md)
+先验证原行MAC和Session权威引用，再复验当前Workspace、TTL、全文及当前Secret。
+同Key重启不以新Epoch拒绝已签新行；旧无Seal行、错Key或篡改导致历史准备失败且不调用Provider。
+这不授权旧Session历史、全部Provider材料或其他公开出口。

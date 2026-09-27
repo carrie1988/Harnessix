@@ -1,0 +1,31 @@
+{
+  "code_revision": "33a2fd25bf6f529d1019cf584e02673734369299",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "d74cb908c97a56fe586822205f0ec7e708796d18f1753bccf47cc6b9e07124a0",
+      "size_bytes": 3743
+    },
+    {
+      "path": "ci-observation.json",
+      "sha256": "f55881453e4975e0f19bfee90663f251570fd8f5e147940ca4a7df072a7f1ddf",
+      "size_bytes": 344
+    },
+    {
+      "path": "contract-facts.json",
+      "sha256": "62e725e055c7d5797ed190db2971cfaf68417289b3b1da734e828140d3711922",
+      "size_bytes": 1009
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "0ec75f478dc5f1e1f6b82250fee3a7e66a73ee97b5f67869166c60ae0ac89f6c",
+      "size_bytes": 740
+    },
+    {
+      "path": "verification.json",
+      "sha256": "ed7c6be0dfbbbb782e5fd5b5e9de81de727181174304cd63105568d1e564cdf0",
+      "size_bytes": 3153
+    }
+  ],
+  "manifest_self_excluded": true
+}

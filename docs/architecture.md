@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 78
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 79
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -599,7 +599,7 @@ recover_route(route):
 
 ## 当前运行模型凭据与Artifact公开边界
 
-单一Coding Agent组合根捕获所选模型Profile链原材料，Agent通过纯端口检查结果；Artifact全文与当前Epoch证明同事务写入，所有正文消费入口复验。没有恢复独立Action Plane HTTP/Worker。当前Epoch明确拒绝不同Store或旧NULL证明；跨重启正文安全恢复、历史Session及其他公开出口仍属发布开放工作。
+单一Coding Agent组合根捕获所选模型Profile链原材料，Agent通过纯端口检查结果；Artifact全文经原Scope保护并与Session引用同事务写入，所有正文消费入口复验。没有恢复独立Action Plane HTTP/Worker。无Key独立库沿用运行Epoch；有Key产品由Migration 0030认证新正文并允许同Key合法重启，旧NULL仍拒绝。历史Session和其他公开出口仍属发布开放工作。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](adr/0096-product-credential-and-artifact-publication-boundary.md)。
 
@@ -623,7 +623,7 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 未新增Schema、数据库或服务；内部Replay候选不构成授权，50ms长轮询只在最终返回点执行完整公开检查。
 
 完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](changes/m09-4a-query-publication-boundary.md)。
-旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。
+旧未登记历史与旧Artifact无Seal、全部Provider、Key保护备份/维护、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。
 
 
 ## 认证历史与独立持久密钥
@@ -635,7 +635,7 @@ Event Seal、真实SQLite认证和默认Root独立本机Key已实现；未知未
 
 [完整设计](changes/m09-4a-authenticated-sqlite-session.md)接入独立Binding、Migration 0029、新事件CAS同事务Seal、认证前缀与派生Checkpoint。
 Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session事实均已测试。
-默认Root与独立本机Key Backend已实现；Windows原生验收尚待实际平台记录。Artifact正文/二进制原Epoch边界未放宽，备份迁移、三平台正式部署与整体0.9未完成。
+默认Root与独立本机Key Backend已实现；Windows原生验收尚待实际平台记录。新Artifact正文与二进制由Migration 0030同事务持久认证，旧NULL仍拒绝；备份迁移、三平台正式部署与整体0.9未完成。
 
 ## 默认产品托管Session Key与原库准入
 
@@ -643,4 +643,4 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
 默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
 Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
-Artifact正文跨重启、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+新Artifact跨重启原正文来源认证见[总体与详设](changes/m09-4a-authenticated-artifact-body.md)；旧行、Key保护备份/维护CLI、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。

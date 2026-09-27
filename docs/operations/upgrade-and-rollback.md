@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 7
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ Revision支持的操作规则。
 
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
-| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0029 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
+| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0030 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
@@ -142,8 +142,10 @@ PostgreSQL只服务已退役Action Worker历史数据。先停止全部旧写入
 7. Commit后把文件设为`0600`并启用WAL；
 8. Agent Runtime通过单宿主锁阻止两个活动Runtime共享同一Session。
 
-当前最高Migration是[`0029_authenticated_session_history.sql`](../../src/harnessix/session/migrations/0029_authenticated_session_history.sql)：
-仅增加空认证头、Event Seal及派生Checkpoint结构，原Migration 1～28摘要、Event/Artifact/Projection字节不改写。
+Migration 0029增加空认证头、Event Seal及派生Checkpoint结构；当前最高Migration
+[`0030_authenticated_artifact_body.sql`](../../src/harnessix/session/migrations/0030_authenticated_artifact_body.sql)
+仅增加可空Artifact Seal列，原Migration 1～29摘要及Event/Artifact/Projection原字节不改写。
+有Key产品新Artifact原正文跨同Key重启可验；升级前旧行的Seal仍为NULL，不得在当前Scope下补签或公开读取。
 默认产品先加载独立原Key，再初始化认证库；没有证明的非空历史拒绝激活，不自动补签或导入。
 Migration 0026的维护Plan/Item/Progress仍保留，升级不创建Plan、清理业务数据或运行Vacuum。
 当前维护实现未完成认证证明删除/恢复及托管Key装配，不能把旧显式宿主测试当作认证产品的维护验收。

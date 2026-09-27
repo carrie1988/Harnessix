@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 13
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+version: 14
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -23,6 +23,9 @@ supersedes: []
 ---
 
 # Harnessix Code 源码研究索引
+
+[Artifact正文持久来源认证研究](authenticated-artifact-body.md)固定Codex/OpenCode参考提交与Harnessix原Epoch缺口，
+区分主流会话持久化事实和本项目独立MAC安全取舍。
 
 ## 1. 文档定位
 

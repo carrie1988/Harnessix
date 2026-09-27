@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 23
-code_revision: cef1b17cf63a5bed7d7740d5cbea5bc67728deb2
+version: 24
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -50,6 +50,10 @@ supersedes: []
 本文是当前安装、配置、启动、升级、恢复、诊断和平台资料的统一入口。Harnessix Code 1.0只有一套本地优先
 Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action HTTP API不再是产品部署方式。
 0.1～0.8时期的旧命令和队列运维证据冻结在[部署里程碑历史](deployment-milestone-history.md)，不得作为当前手册。
+
+新Artifact正文随Session托管Key按[来源认证详设](changes/m09-4a-authenticated-artifact-body.md)跨同Key重启验证；
+升级旧库不会补签旧Artifact，旧正文在有Key产品中继续失败关闭。
+恢复单元必须同时保存数据库/WAL一致状态与独立Key；当前保护性Key备份/跨机迁移和正式三平台升级仍未实现。
 
 具体操作分别由以下资料维护：
 

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 128
-code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
+version: 129
+code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
 modules:
@@ -273,3 +273,7 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - [ADR-0098](adr/0098-model-stream-publication-boundary.md)：不关闭历史授权或整体生产发布。
 
 - [模型文本验收报告](validation/model-text-publication-2026-09-28-v1/README.md)：真实SDK流式、独立旧版及用户输入持久缺口分开记录。
+
+- [Artifact正文持久来源认证总体与详设](changes/m09-4a-authenticated-artifact-body.md)：独立Key用途域、Migration 0030、四图、原字节字段、同事务签发、读侧授权及失败/恢复。
+- [ADR-0105](adr/0105-authenticated-artifact-body.md)与[源码研究](research/authenticated-artifact-body.md)：原Epoch与持久MAC边界、参考源码事实和独立取舍。
+- [固定版本验收](validation/authenticated-artifact-2026-09-28-v1/README.md)：新行跨重启、旧行拒绝、篡改、当前Scope及平台/发行边界。
