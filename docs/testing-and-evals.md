@@ -2,7 +2,7 @@
 doc_type: test-and-eval-design
 status: current
 version: 38
-code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
+code_revision: 829dabf8b7051b1242de2202ca9b1df99dc015bc
 owners:
   - core
 modules:
@@ -749,3 +749,11 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 6. 相对链接、Mermaid和YAML元数据可由自动门禁验证；
 7. Skip、Flaky、UNKNOWN和未运行项均不被表述为通过；
 8. 预算、停止条件、脱敏和证据保存范围与执行配置同步。
+
+## Event Seal核心固定回归
+
+固定实现`829dabf8b7051b1242de2202ca9b1df99dc015bc`：46项核心单测、30项证据治理、相关1128项及完整5145 passed/32 skipped。
+各组重叠不相加。两个独立Wheel消费者OS进程重开真实SQLite事件，但证明与密钥是fixture，
+不验收生产同事务Seal、默认Root历史认证、正式Key Backend或三平台密钥权限。
+[完整证据](validation/event-seal-core-2026-09-28-v1/README.md)和[设计](changes/m09-4a-authenticated-history-and-seal.md)
+保留默认旧历史/SHA替换开放观察与12项Archive权利阻断。
