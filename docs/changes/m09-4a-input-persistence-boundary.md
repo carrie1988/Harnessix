@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 1
-code_revision: 2d27761632fd297d84004dbb1e06545d04ea973d
+code_revision: 246b353337fbf9c9a625a2a310159fa8d4e04f51
 owners: [core]
 modules: [agent, app_server, protocol, session, secrets]
 related_adrs:
@@ -322,3 +322,27 @@ Scope丢失后SDK cancel被安全拒绝的可用性边界已用测试公开，�
 原始Protocol id/path出口、历史Replay/查询、跨重启正文证明、所有Provider凭据和Owner同步阻塞边界仍开放。
 0.9.4b权利证据、TM攻击场景、远程MCP身份、三平台真实发布与受控Beta仍是独立任务。
 本切片不得关闭0.9.4a、0.9.4整体或整个0.9。
+
+### 12.1 固定源码符号逐项导航
+
+- [`src/harnessix/agent/input_publication.py`：`protect_input`，L20–L28](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/input_publication.py#L20-L28)。
+- [`src/harnessix/agent/question_events.py`：`question_answer_events`，L17–L43](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/question_events.py#L17-L43)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_input`，L474–L477](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L474-L477)。
+- [`src/harnessix/agent/runtime.py`：`validate_public_output`，L479–L482](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L479-L482)。
+- [`src/harnessix/agent/runtime.py`：`create_thread`，L484–L502](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L484-L502)。
+- [`src/harnessix/agent/runtime.py`：`fork_thread`，L519–L567](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L519-L567)。
+- [`src/harnessix/agent/runtime.py`：`archive_thread`，L569–L593](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L569-L593)。
+- [`src/harnessix/agent/runtime.py`：`_accept`，L628–L710](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L628-L710)。
+- [`src/harnessix/agent/runtime.py`：`run_turn`，L712–L754](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L712-L754)。
+- [`src/harnessix/agent/runtime.py`：`retry_turn`，L780–L823](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L780-L823)。
+- [`src/harnessix/agent/runtime.py`：`steer_turn`，L1020–L1074](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L1020-L1074)。
+- [`src/harnessix/agent/runtime.py`：`reply_question`，L1076–L1137](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L1076-L1137)。
+- [`src/harnessix/agent/runtime.py`：`reply_approval`，L1154–L1183](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L1154-L1183)。
+- [`src/harnessix/agent/runtime.py`：`_reply_approval`，L1185–L1286](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/agent/runtime.py#L1185-L1286)。
+- [`src/harnessix/app_server/command_runtime.py`：`execute_command`，L31–L110](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/command_runtime.py#L31-L110)。
+- [`src/harnessix/app_server/service.py`：`_command`，L127–L146](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L127-L146)。
+- [`src/harnessix/app_server/service.py`：`create_thread`，L148–L175](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L148-L175)。
+- [`src/harnessix/app_server/service.py`：`fork_thread`，L209–L220](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L209-L220)。
+- [`src/harnessix/app_server/service.py`：`archive_thread`，L222–L231](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L222-L231)。
+- [`src/harnessix/app_server/service.py`：`retry_turn`，L256–L277](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L256-L277)。
+- [`src/harnessix/app_server/service.py`：`steer_turn`，L295–L311](https://github.com/carrie1988/Harnessix/blob/246b353337fbf9c9a625a2a310159fa8d4e04f51/src/harnessix/app_server/service.py#L295-L311)。

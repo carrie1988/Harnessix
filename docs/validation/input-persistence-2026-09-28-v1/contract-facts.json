@@ -1,12 +1,30 @@
 {
   "all_provider_credentials_closed": false,
   "approval_checked_before_gateway_decision_audit": true,
-  "code_revision": "2d27761632fd297d84004dbb1e06545d04ea973d",
+  "artifacts": [
+    {
+      "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
+      "kind": "wheel",
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "sha256": "1e7774ad921d500be164df71d4d53a078bb60e3eb0b734c773b9ea6772b088fe",
+      "size_bytes": 967630,
+      "untracked_security_draft_present": false
+    },
+    {
+      "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
+      "kind": "sdist",
+      "name": "harnessix-0.1.0.tar.gz",
+      "sha256": "5a08ca3e87d3286ca60cf69cfa1a84bfb03e26e564b82e286ca68cd6ded87496",
+      "size_bytes": 7167089,
+      "untracked_security_draft_present": false
+    }
+  ],
+  "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
   "cross_restart_seal_closed": false,
   "direct_cancel_and_host_drain_remain_independent": true,
   "existing_special_tests": 99,
   "fixed_runtime_sqlite_sdk_observation": {
-    "code_revision": "2d27761632fd297d84004dbb1e06545d04ea973d",
+    "code_revision": "246b353337fbf9c9a625a2a310159fa8d4e04f51",
     "module_source_verified": true,
     "records": [
       {
@@ -48,6 +66,8 @@
   "full_raw_protocol_security_claimed": false,
   "guarded_cache_rejection_preserves_historical_receipt": true,
   "hard_preemption_claimed": false,
+  "historical_validation_files": 683,
+  "historical_validation_files_unchanged": true,
   "independent_baseline": {
     "code_revision": "45b801a0db99764b4ddcefa5da83a6ec9a12387e",
     "module_source_verified": true,
