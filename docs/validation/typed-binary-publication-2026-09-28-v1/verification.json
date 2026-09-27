@@ -1,0 +1,174 @@
+{
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "85c4ee0a4cc5611c97d0d148954529dfb54e002580deba30bc1afc351001bbc5",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2348个输入完整覆盖且固定规则零命中"
+  },
+  "clean_source_build": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 251,
+    "stdout_sha256": "1000da72dfa9c543e7137d9ba0faeb291e5c7bc19fb036ead430cc9c728a7681",
+    "stdout_summary": "Successfully built /private/tmp/harnessix-binary-dist-final/harnessix-0.1.0-py3-none-any.whl"
+  },
+  "code_revision": "5402621ab7700f55382d78fa95681dfe3485c960",
+  "diagram_visual_review": {
+    "diagrams": 5,
+    "documents": 2,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-typed-binary-output-publication.md",
+        "exit_code": 0,
+        "png_sha256": "13683c5ade2b15fe62a72d783924c6c66043c2a5e26c7e0f7ba75b75ae1195ba",
+        "png_size_bytes": 63566,
+        "source_sha256": "a2cf190164d55193429f475ec3df6cb0c76caa2bfc84a78617e50a03fd4d6418"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-typed-binary-output-publication.md",
+        "exit_code": 0,
+        "png_sha256": "2893cf11a1cf5365090fa31c6c3439f52254314611a250810019378f497dc2d5",
+        "png_size_bytes": 72028,
+        "source_sha256": "8a1366f3794c33ef572169f0e3b3550457b07c39c3f333176cb9ba6c4476d991"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-typed-binary-output-publication.md",
+        "exit_code": 0,
+        "png_sha256": "f9482a41e5dd660f1b99d9b2a05c0bd62176dd72f29bd3087dcbc21e7b4feb53",
+        "png_size_bytes": 96022,
+        "source_sha256": "c4a4f06f60192ad4c9501708f8d07856ad1953d6efb3d023d5a16fa94e4203e1"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-typed-binary-output-publication.md",
+        "exit_code": 0,
+        "png_sha256": "74f184e23727a57f3b4f1b8cd99272c78d701383ebc67b1cd12720e49e0d4597",
+        "png_size_bytes": 39861,
+        "source_sha256": "ca3c3695c75d9081ceff2448e7fbcb10ca69c4ad36fa527025e35692db59a263"
+      },
+      {
+        "diagram": 1,
+        "document": "docs/validation/typed-binary-publication-2026-09-28-v1/README.md",
+        "exit_code": 0,
+        "png_sha256": "867edcd88eda2ba09b032edaa0ef2b789e05d2d9f347c81a634de53e18f0b8b1",
+        "png_size_bytes": 25959,
+        "source_sha256": "721d1de8841606fc7cffe0bcfbeb213e834aeab329610750d499bfeaa77f9223"
+      }
+    ],
+    "unchanged_existing_diagrams_rerendered": false
+  },
+  "external_model_requests": 0,
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "initial_intermediate_related_failure": {
+    "exit_code": 1,
+    "failed": 4,
+    "is_acceptance": false,
+    "passed": false,
+    "passed_count": 1225,
+    "reason": "新恢复路径用effect origin误判恢复策略，及依赖测试访问错误字段；明确内部恢复参数及实际probe_cache后重新验证",
+    "seconds": 51.71,
+    "size_bytes": 23600,
+    "skipped": 5,
+    "status": "failed",
+    "stdout_sha256": "25f00e540e4a66c92078d8e4de98f01f9bc0b2f3b86a937c873c72979780d99a",
+    "stdout_summary": "4 failed, 1225 passed, 5 skipped in 51.71s"
+  },
+  "license_gate": {
+    "blocked_archive_count": 12,
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "make_check_passed": false,
+  "new_automation_created": false,
+  "related_regression": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed_count": 1254,
+    "seconds": 51.22,
+    "size_bytes": 1473,
+    "skipped": 5,
+    "status": "passed",
+    "stdout_sha256": "ef32fb812bce0415504650f8d011e87055c6c02b964f47edb920e4b1658660c6",
+    "stdout_summary": "1254 passed, 5 skipped in 51.22s"
+  },
+  "special": {
+    "exit_code": 0,
+    "overlaps_full_regression": true,
+    "passed": true,
+    "passed_count": 108,
+    "seconds": 3.5,
+    "size_bytes": 180,
+    "stdout_sha256": "39df708cf8db782b7f35bd7fae666e87604e66066b8a3a89da89cc4400d63961",
+    "stdout_summary": "108 passed in 3.50s"
+  },
+  "static_checks": {
+    "contracts": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "format-final": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "af310bdfef9d5b58f769fc6cac015666ee5a2d62d76d639b977b7f96e0f5fd25",
+      "stdout_summary": "1137 files already formatted"
+    },
+    "mypy-final": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "f803e14073444eca38b5a647c79b0b66bca29cc32cd495a36373a95ef8b4c6cf",
+      "stdout_summary": "Success: no issues found in 340 source files"
+    },
+    "readability-final": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    },
+    "ruff-final": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "sbom": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret-self": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpack": {
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": "exit=0; quiet output"
+    }
+  }
+}

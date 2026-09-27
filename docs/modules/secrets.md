@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
+version: 6
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
   - secrets
 related_adrs:
+  - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0069-unified-coding-action-risk-route.md
@@ -16,6 +17,7 @@ related_adrs:
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/processes/test_output_protection.py
   - tests/secrets/test_provider.py
   - tests/processes/test_supervisor.py
   - tests/processes/test_windows_supervisor.py
@@ -1103,3 +1105,11 @@ Material清零描述成所有副本的安全擦除。
 SecretPublicationScope接受仅name/version的结构引用，保留原Process绑定兼容；实现`assert_public_json`与`assert_public_jsonl`纯保护端口。JSONL原字节、每条唯一键解码记录与规范JSON共用预算，不以预览授权全文。原值/有限编码命中、无效结构、取消、期限、字节/深度/工作量失败均默认拒绝，不替换原Hash或持久化原值。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+## 0.9.4a 类型化二进制公开与持久前保护
+
+Scope新增正式二进制保护与原材料只读保护端口；原JSON和解码双流共享工作预算。精确bytes无需UTF8，同流跨Chunk检查，双流不拼接。原材料捕获按身份去重、失败清零，关闭后拒绝提供副本。
+
+[完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
+[固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
+普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。

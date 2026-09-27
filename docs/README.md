@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 127
-code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
+version: 128
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
@@ -264,3 +264,7 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - [产品模型凭据与Artifact公开详设](changes/m09-4a-product-publication-boundary.md)：原Profile材料快照、完整JSONL、同事务Epoch、旧正文失败语义与源码测试映射。
 
 - [产品公开边界验收](validation/product-publication-2026-09-27-v1/README.md)：46新增专项、独立27版迁移、当前Epoch边界与完整回归冻结。
+
+- [正式二进制公开与持久前保护详设](changes/m09-4a-typed-binary-output-publication.md)：按用途解码、共享预算、Owner v2保护专用封套及效果元数据恢复。
+- [ADR-0097](adr/0097-typed-binary-publication-and-owner-protection.md)：正式二进制合同与原目标环境边界。
+- [类型化二进制验收](validation/typed-binary-publication-2026-09-28-v1/README.md)：独立旧版、真实本机Owner、产品消费链与固定测试树，不宣称整体0.9完成。

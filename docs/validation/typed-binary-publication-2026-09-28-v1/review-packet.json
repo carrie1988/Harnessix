@@ -1,0 +1,26 @@
+{
+  "code_revision": "5402621ab7700f55382d78fa95681dfe3485c960",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "implemented": true,
+  "overall_0_9_complete": false,
+  "release_blockers": [
+    "12件许可证Archive",
+    "历史Session和其他公开出口治理",
+    "跨重启原材料及Artifact正文安全恢复",
+    "Owner及Store资源和归属",
+    "TM编号化攻击与平台证据",
+    "远端MCP身份 OAuth及受管出口",
+    "三平台实际安装 升级 卸载 Beta",
+    "真实Provider成本与发布验证"
+  ],
+  "required_review_focus": [
+    "正式purpose选择既有解析器而非字段猜测",
+    "原JSON与解码双流共享预算和取消",
+    "模型保护材料不增加目标环境权限",
+    "原v1 Schema及所有原Hash保持",
+    "已验真效果与拒绝正文分离 不再Execute",
+    "恢复策略不从effect origin猜测",
+    "本机Owner与容器替身证据明确区分"
+  ]
+}

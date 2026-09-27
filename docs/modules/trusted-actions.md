@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
+version: 31
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
   - trusted_actions
 related_adrs:
+  - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
@@ -18,6 +19,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/trusted_actions/test_publication_recovery.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
   - tests/product_config/test_action_catalog.py
@@ -1695,3 +1697,12 @@ Secret公开处理的父Task检查按本次进入时累计取消基线捕获，�
 公开保护与原输出预算复用`agent.cancellation.parent_cancel_checkpointer`；只判断本次新增取消计数，入口仍异步交付待取消。不调用uncancel或Task私有状态，不把已消费取消计数误判为新的停止请求。已确认写入在产品全局结果拒绝后仍由原恢复路径保留效果元数据；不重Execute/Reconcile。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+## 0.9.4a 公开拒绝与已确认效果元数据恢复
+
+`terminal_result`先核验Router终态及双Hash，终结恢复明确设置`metadata_only_on_rejection`；
+六个有限公开保护拒绝码只在output阶段保留固定消息，恢复仅返回原效果，删除output和artifact_sha256。
+原效果`origin=execution`与本次恢复策略彼此独立；不因拒绝正文把已验真动作误归UNKNOWN或再次执行。
+普通执行仍抛公开拒绝并使Turn失败，未知错误/合同或Hash失败维持原保守边界。
+[完整详设与源码映射](../changes/m09-4a-typed-binary-output-publication.md)说明接口、伪代码及状态不变性；
+[集中验证](../validation/typed-binary-publication-2026-09-28-v1/README.md)记录版本绑定与开放范围。

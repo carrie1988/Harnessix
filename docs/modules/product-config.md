@@ -1,19 +1,21 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
+version: 20
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
   - product_config
 related_adrs:
+  - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_publication_scope.py
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_action_config_runtime.py
@@ -1994,3 +1996,11 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 `provider_secret_references`核验Snapshot/Selection后只返回所选Profile链name/version引用；组合根在任何模型工厂前捕获原值，同一Scope用于Provider构造、Runtime和Artifact Store。Process原作用域保持独立，模型引用不授予Process注入权限。正常退出与启动故障均关闭Scope；环境旋转不会替换运行中快照。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+## 0.9.4a 类型化二进制公开与持久前保护
+
+产品模型工厂前原快照经Action Runtime依赖生命周期传至实际POSIX/Windows Supervisor的保护端口。原Process Secret Provider和环境批准仍独立；启动失败及退出回收快照，配置不含新材料字段或新增服务。
+
+[完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
+[固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
+普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。

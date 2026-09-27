@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
+version: 17
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ modules:
   - models
   - tools
 related_adrs:
+  - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0006-thread-turn-item-event-model.md
   - docs/adr/0007-agent-loop-and-cancellation.md
   - docs/adr/0008-provider-event-model.md
@@ -20,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/artifacts/test_binary_publication.py
   - tests/agent/test_runtime.py
   - tests/agent/test_store.py
   - tests/agent/test_semantic_items.py
@@ -42,7 +44,7 @@ supersedes: []
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
 | 代码版本 | 当前实现Revision `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`；0.9.1f3单Runtime边界由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到27 |
+| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到28 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。当前Process能力经统一Trusted Action组合进入Agent，
@@ -779,3 +781,11 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 AgentRuntime新增可选`public_output_protection`纯端口，在ToolResult提交前检查原DTO；Artifact预览与完整正文分别检查。命中进入原失败结算，已确认Trusted Action只补核验后的效果元数据，不再Execute。历史用户/模型/Session已保存正文不是该入口的保护范围。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
+
+## 0.9.4a 类型化二进制公开与持久前保护
+
+纯`PublicBinaryOutputProtection`端口与`protect_binary_jsonl`使用原公开期限和父Task取消，不导入正式解析器；已配置普通能力不能静默代替二进制能力。
+
+[完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
+[固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
+普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。

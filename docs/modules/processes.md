@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: 7be9fa218ff6eef275f1b82d65ed36c066df34ba
+version: 18
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ modules:
   - artifacts
   - sandbox
 related_adrs:
+  - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0038-host-process-lifecycle.md
   - docs/adr/0039-process-action-plane-admission.md
   - docs/adr/0040-agent-process-action-saga.md
@@ -22,6 +23,7 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_output_protection.py
   - tests/processes/test_contracts.py
   - tests/processes/test_runtime.py
   - tests/processes/test_lifecycle.py
@@ -1621,3 +1623,11 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 投影超时证明Process已失败。实际动作Audit保持事实，Runtime反馈失败走查询优先终结，不重启命令。
 参见[成功输出投影详设](../changes/m09-4a-success-output-projection-boundary.md)及
 [正式Lease形状回归](../../tests/trusted_actions/test_process_success_projection.py)。
+
+## 0.9.4a 类型化二进制公开与持久前保护
+
+新增独立Start v2私有封套，嵌套原v1并携带仅保护用途的有界瞬时原材料。父Supervisor在创建Lease前验证池、联合模式与控制帧，Owner先脱敏再计量、Hash及落盘；模型材料不进入目标环境、argv、Lease或回执。
+
+[完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
+[固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
+普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。

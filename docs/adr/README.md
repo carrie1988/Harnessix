@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 30
-code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
+version: 31
+code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
 owners:
   - core
 modules:
@@ -21,7 +21,7 @@ supersedes: []
 本目录保存长期架构决策的背景、候选方案、选择和后果。ADR回答“为什么这样选择”，不替代当前模块设计、
 外部契约或运维手册。判断当前源码行为时，应从本页“当前事实源”进入对应模块设计，再用ADR追溯决策原因。
 
-截至标注代码版本，共有94份编号ADR，均已接受。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
+截至标注代码版本，共有97份编号ADR，均已接受。DOC-1.5迁移保持前76份决策正文不变，只增加标准元数据、可解析状态、
 迁移前最近维护的代码版本和源码测试责任域；ADR 0077～0091继续定义文档门禁、可恢复终端产品、Preflight/原生只读端口、默认Trusted Action组合、单一Coding Agent产品边界、多仓库Eval Suite、不可变Task Pack和可恢复Suite Runner、版本化工程数据集、正式Task Pack Case Adapter、确定性完整离线Suite组合、受控真实Provider完整Suite、本地Agent传输生命周期、共库Plan-first维护与备份恢复，以及Action Owner Fence和有界Reconcile边界。
 
 ## 2. 状态语义
@@ -230,3 +230,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0095：执行与公开复用同一版本化Secret内存快照](0095-versioned-secret-publication-scope.md)：显式宿主材料、有界检查、同一执行Provider及仅元数据恢复；不关闭整体安全发布门禁。
 
 - [ADR 0096：产品模型原凭据与当前运行Artifact公开证明](0096-product-credential-and-artifact-publication-boundary.md)：同一快照、纯保护端口、全文与证明复验；跨重启恢复仍开放。
+
+- [ADR-0097：类型化二进制公开与Owner持久前保护](0097-typed-binary-publication-and-owner-protection.md)
