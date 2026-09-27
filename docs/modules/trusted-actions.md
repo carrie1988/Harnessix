@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: 78ab30069ab4f63d58d9bafad903a7bfd660c257
+version: 23
+code_revision: 6677e549e4883704856dbf55162b00b2ff7291b3
 owners:
   - core
 modules:
@@ -965,6 +965,13 @@ Outcome和Audit只接受`[a-z][a-z0-9_]{0,127}`错误码。Router自身使用
 
 详细码表、实际内置Resolver来源、流程/时序、伪代码与兼容边界见
 [计划错误信任边界详设](../changes/m09-4a-plan-error-trust-boundary.md)。
+Gateway的规划Context Factory、审批Review和终态Output回调异常由`sanitize_gateway_exception`
+按context/review/output有限合同重建，未知码分别为`trusted_action_context_failed`、
+`trusted_action_review_failed`、`trusted_action_output_failed`。不继承原消息与重试提示，
+领域取消和Task取消仍传播；Output投影失败不改写Audit原终态、不重执行、不对确定终态盲对账。
+审批纯投影移至`agent_gateway_output.build_approval`，核心编排保持小于600行，无Schema迁移。
+完整字段、阶段码表、三图和读写恢复差异见
+[Gateway回调详设](../changes/m09-4a-gateway-callback-error-boundary.md)。
 [`test_public_error_leakage.py`](../../tests/trusted_actions/test_public_error_leakage.py)覆盖原执行/对账故障与
 固定错误合同；[`test_plan_error_boundaries.py`](../../tests/trusted_actions/test_plan_error_boundaries.py)
 使用真实Runtime、ModelRequest历史、SQLite Session、Protocol Server/SDK、Span及Metrics验证计划回调链路，

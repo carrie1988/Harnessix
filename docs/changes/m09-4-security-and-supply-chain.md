@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 20
-code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
+version: 21
+code_revision: pending
 owners:
   - core
 modules:
@@ -191,6 +191,8 @@ sequenceDiagram
 | 编号 | 当前行为与可复现边界 | 必须完成的整改 |
 |---|---|---|
 | SEC-094-A1 | 原实现按类型透传任意KernelError；已由三个失败负例复现。当前候选按decode/resolve/policy有限合同重建固定错误，不继承消息/retry提示。 | [专项详设](m09-4a-plan-error-trust-boundary.md)及真实Runtime/Model历史/Session/Audit/Protocol/Telemetry回归已建立；本地完整回归3904 passed/32 skipped及五公开面专项通过；0601ede六作业CI成功已验证该窄计划边界；0.9.4a的Execute/Reconcile及结构化输出全面审查仍独立开放。 |
+| SEC-094-A2 | Context Factory、审批Review与终态Output直接透传回调异常；四条调用路径×四类异常共16项负例失败。 | [Gateway专项详设](m09-4a-gateway-callback-error-boundary.md)建立阶段有限合同、取消传播和不变Audit终态；新增57项直接/取消/真实Runtime/执行对账集成回归。只治理抛出的异常，不关闭结构化Outcome或正常返回正文审查。 |
+| SEC-094-A3 | Executor直接返回的结构化失败结果只受码格式约束；离线真实Runtime复现未登记码进入Model历史/Session/Audit/Protocol回放，合成诊断正文进入Model历史/Session/Protocol。 | 抛异常边界不覆盖正常返回对象；有限失败码、Owner正文合同与恢复兼容仍待设计和实现。不因Gateway57项专项通过而关闭该缺口。 |
 | SEC-094-B2 | v1对NUL二进制和`.env.example`跳过、压缩Wheel不读取成员，缺失输入静默放行；四项负例均失败。v2已删除skip路径，新增有界ZIP/TAR/压缩流、BOM视图与固定未完成合同。 | [有界扫描详设](m09-4b-bounded-secret-scan.md)覆盖坏包、隐藏尾部、预算、取消/超时及真实包门禁；[冻结报告](../validation/secret-scan-2026-09-27-v1/README.md)记录3996 passed/32 skipped、87专项与干净源码Wheel/sdist；747fe9b CI五成功/Windows夹具失败，[夹具详设](m09-4b-secret-fixture-portability.md)保留旧失败并补身份自检，候选仍需新Windows终态；不标记整体0.9.4b完成。 |
 | SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | [Archive级许可详设](m09-4b-archive-license-evidence.md)建立777件实际元数据/通知原字节、锁版本/来源/摘要绑定和离线SPDX/收据门禁。实际pywin32 12件包含LGPL正文复核信号，现有拒绝策略保持；替换或例外及义务评审未完成，发布仍阻断。 |
 

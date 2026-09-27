@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
+version: 3
+code_revision: 6677e549e4883704856dbf55162b00b2ff7291b3
 owners:
   - core
 modules:
@@ -96,7 +96,9 @@ assert scanner raises fixed unsupported_entry
 
 - 修复后本地91项Secret专项全部通过；正常用例ID均为短名，专项最长节点ID119字符。
 - 与CLI编码及供应链相关组共113 passed，10.69秒；这些组重叠，不能相加作为独立总数。
-- 这些本地结果不能替代真实Windows。当前修复候选尚需下一批提交的Windows后台CI。
+- 这些本地结果不能替代真实Windows。[CI 36291475364](https://github.com/carrie1988/Harnessix/actions/runs/36291475364)
+  精确对应6677e549e4883704856dbf55162b00b2ff7291b3：Windows作业终态成功；
+  macOS、文档、容器作业也成功。Python 3.12因12件Archive许可违规exit 1，3.13矩阵取消；不能称全矩阵通过。
 - 旧失败日志、前序冻结包和当时“CI未开始”事实保留；新证据单独冻结，不改写历史。
 
 许可证专项复用TAR读取时新增的显式链接跳过仅适用于许可证采集，Secret默认仍拒绝，

@@ -6,15 +6,13 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Protocol, cast
-from uuid import uuid5
 
 from harnessix.agent.approvals import (
     approval_matches,
     tool_fingerprint,
     trusted_action_invocation_id,
-    trusted_action_request_fingerprint,
 )
-from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Thread,
@@ -35,6 +33,7 @@ from harnessix.domain.models import (
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.agent_gateway_output import (
     TrustedActionOutputProvider,
+    build_approval,
     terminal_result,
 )
 from harnessix.trusted_actions.contracts import (
@@ -43,6 +42,7 @@ from harnessix.trusted_actions.contracts import (
     CodingActionInvocation,
     TrustedToolBinding,
 )
+from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
 
 type TrustedActionPresentation = Literal["tool", "patch_batch", "process"]
@@ -142,14 +142,27 @@ async def prepare_action(
     cancel.checkpoint()
     binding = _validate_call(state, call)
     invocation = _build_invocation(state, thread, turn, call, binding)
-    route = state.router.plan(invocation, state.context(thread, turn, call))
+    try:
+        context = state.context(thread, turn, call)
+    except TurnCancelled:
+        raise
+    except Exception as error:
+        raise sanitize_gateway_exception(error, stage="context") from None
+    route = state.router.plan(invocation, context)
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
         review = TrustedActionReview()
         provider = state.reviews.get(call.tool)
         if provider is not None:
-            review = await cancel.run(provider.review(route, thread, turn, call, cancel))
-        return _build_approval(state, thread, turn, call, route, review)
+            try:
+                review = await cancel.run(provider.review(route, thread, turn, call, cancel))
+            except TurnCancelled:
+                raise
+            except Exception as error:
+                raise sanitize_gateway_exception(error, stage="review") from None
+        return build_approval(
+            thread, turn, call, route, review, presentation=state.presentations[call.tool]
+        )
     if route.state == "ready":
         return await _execute_ready(state, route, thread, turn, call, cancel, origin="execution")
     return await _project_status(state, route, thread, turn, call, cancel, origin="execution")
@@ -400,48 +413,6 @@ def _build_invocation(
         tool_fingerprint=binding.tool_fingerprint,
         arguments=call.arguments,
         idempotency_key=idempotency_key,
-    )
-
-
-def _build_approval(
-    state: AgentActionGatewayState,
-    thread: Thread,
-    turn: Turn,
-    call: ToolCallContent,
-    route: ActionRouteSnapshot,
-    review: TrustedActionReview,
-) -> TrustedActionApprovalRequestContent:
-    presentation = state.presentations[call.tool]
-    diff = review.diff_artifact
-    if presentation == "patch_batch" and diff is None:
-        raise KernelError("trusted_action_review_missing", "Patch审批缺少Diff Artifact")
-    if presentation == "process" and diff is not None:
-        raise KernelError("trusted_action_review_invalid", "Process审批不能携带Diff Artifact")
-    plan = route.plan
-    fingerprint = trusted_action_request_fingerprint(
-        thread,
-        turn,
-        call,
-        plan_id=plan.execution.plan_id,
-        plan_fingerprint=plan.fingerprint,
-        execution_fingerprint=plan.execution.fingerprint,
-        policy_id=plan.execution.policy.policy_id,
-        policy_version=plan.execution.policy.version,
-        presentation=presentation,
-        diff_sha256=diff.sha256 if diff is not None else None,
-    )
-    return TrustedActionApprovalRequestContent(
-        approval_id=uuid5(plan.execution.plan_id, "harnessix.agent-trusted-action-approval/v1"),
-        call_id=call.call_id,
-        presentation=presentation,
-        plan_id=plan.execution.plan_id,
-        plan_fingerprint=plan.fingerprint,
-        execution_fingerprint=plan.execution.fingerprint,
-        request_fingerprint=fingerprint,
-        policy_id=plan.execution.policy.policy_id,
-        policy_version=plan.execution.policy.version,
-        route_state="pending_approval",
-        diff_artifact=diff,
     )
 
 

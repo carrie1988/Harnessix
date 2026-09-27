@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
-status: current
-version: 97
-code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
+status: reviewing
+version: 98
+code_revision: pending
 owners:
   - core
 modules:
@@ -480,12 +480,16 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 - [ ] **0.9.4a 公开错误与泄漏回归**：统一Resolver/Policy/Executor/Reconcile的公开码与固定消息，
   校验模型、Session、Audit、Protocol与Telemetry五个公开面。[计划回调整改](changes/m09-4a-plan-error-trust-boundary.md)
-  已按阶段有限码表重建固定错误并补真实集成回归，提交后完整验收及Execute/Reconcile全面审查仍须通过；
+  已按阶段有限码表重建固定错误并补真实集成回归；[Gateway回调专项](changes/m09-4a-gateway-callback-error-boundary.md)
+  治理Context/Review/Output异常，补读写Execute/Reconcile五公开面集成与取消回收验证。
+  结构化Outcome码/失败正文、Provider成功返回值与其他公开边界的完整审查仍开放；
 - [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
   仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
   [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。
   [有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)取消整文件豁免并增加真实发行物、归档、预算和未完成阻断；
-  [本地3996 passed/32 skipped及干净源码发行物](validation/secret-scan-2026-09-27-v1/README.md)已通过；747fe9b CI五成功、Windows夹具失败，[夹具修复](changes/m09-4b-secret-fixture-portability.md)等待新Windows终态。
+  [本地3996 passed/32 skipped及干净源码发行物](validation/secret-scan-2026-09-27-v1/README.md)已通过；747fe9b CI五成功、Windows夹具失败；
+  [夹具修复](changes/m09-4b-secret-fixture-portability.md)由6677e54的[CI 36291475364](https://github.com/carrie1988/Harnessix/actions/runs/36291475364)
+  Windows作业验证，macOS/文档/容器作业也成功，Python 3.12因12件许可违规失败、3.13矩阵取消，不称完整CI通过。
   [Archive许可证据](changes/m09-4b-archive-license-evidence.md)已采集全部777件并形成离线门禁候选，
   pywin32 12件含LGPL复核信号，原拒绝策略保持不变，许可发布门禁仍失败；
   许可证版本来源绑定、不可变安装输入和权利审查仍须关闭；

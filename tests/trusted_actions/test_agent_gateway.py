@@ -158,13 +158,14 @@ def build_gateway(
     presentation: str = "tool",
     review: FixedReview | None = None,
     output: FixedOutput | None = None,
+    tool: ToolDescriptor | None = None,
 ) -> tuple[
     RouterBackedAgentActionGateway,
     TrustedActionRouter,
     SQLiteExecutionPlanStore,
     SQLiteActionAuditStore,
 ]:
-    tool = descriptor()
+    tool = tool or descriptor()
     binding = build_trusted_tool_binding(
         source="builtin",
         source_id="harnessix.product",
@@ -174,7 +175,7 @@ def build_gateway(
         input_schema_sha256=canonical_digest(tool.input_schema),
         effect_class=tool.effect_class,
         risk_level=tool.risk_level,
-        recovery_mode="durable_ledger",
+        recovery_mode="none" if tool.effect_class is EffectClass.READ_ONLY else "durable_ledger",
         executor_id="product.workspace-patch",
     )
 
@@ -184,11 +185,16 @@ def build_gateway(
             resources=(
                 canonical_action_resource(
                     kind="workspace",
-                    access="write",
+                    access="read" if tool.effect_class is EffectClass.READ_ONLY else "write",
                     identifier={"location": "workspace", "path": checked.path},
                 ),
             ),
-            workspace_resources=(WorkspaceResourceRequest(path=checked.path, access="write"),),
+            workspace_resources=(
+                WorkspaceResourceRequest(
+                    path=checked.path,
+                    access="read" if tool.effect_class is EffectClass.READ_ONLY else "write",
+                ),
+            ),
         )
 
     plans = SQLiteExecutionPlanStore(root.parent / "state/plans.db")

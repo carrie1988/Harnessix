@@ -16,6 +16,7 @@ from harnessix.domain.models import EffectClass
 PublicActionStage = Literal["execute", "reconcile"]
 PublicOutcomeKind = Literal["succeeded", "failed", "unknown", "manual_intervention"]
 PublicPlanningStage = Literal["decode", "resolve", "policy"]
+PublicGatewayStage = Literal["context", "review", "output"]
 
 _EXECUTE_TIMEOUT_FAILURE = "executor_timeout"
 _EXECUTE_TIMEOUT_UNKNOWN = "write_effect_timeout_unknown"
@@ -53,6 +54,47 @@ _RESOLVER_ERRORS = {
     "eval_test_profile_arguments_invalid": "Eval测试Profile参数不一致",
     "eval_test_profile_context_mismatch": "Eval测试Profile规划上下文不匹配",
 }
+
+# 只保留实际Owner的固定发布分类；Provider不能用Resolver码扩大公开权限。
+_ARTIFACT_PUBLICATION_ERRORS = {
+    "artifact_invalid": "Action Artifact不符合公开契约",
+    "artifact_corrupt": "Action Artifact校验失败",
+    "artifact_quota_exceeded": "Action Artifact配额不足",
+    "artifact_runtime_required": "Action Artifact发布需要活跃Session",
+    "artifact_store_mismatch": "Action Artifact发布器绑定不一致",
+    "sequence_conflict": "Action Artifact发布时Session已变化",
+    "approval_mismatch": "Action Artifact发布缺少匹配批准",
+    "tool_output_too_large": "Action Artifact引用超过输出上限",
+}
+_GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
+    "context": {},
+    "review": {
+        **_ARTIFACT_PUBLICATION_ERRORS,
+        "trusted_action_review_invalid": "Action审批预览不符合契约",
+        "action_review_limit": "Action审批预览超过上限",
+    },
+    "output": {
+        **_ARTIFACT_PUBLICATION_ERRORS,
+        "trusted_action_output_mismatch": "Action输出与审计终态不匹配",
+        "process_not_terminal": "Action Process尚未形成终态输出",
+        "process_output_corrupt": "Action Process终态输出校验失败",
+    },
+}
+_GATEWAY_DEFAULT_MESSAGES: dict[PublicGatewayStage, str] = {
+    "context": "Action规划上下文构造失败；内部原因不公开",
+    "review": "Action审批预览生成失败；内部原因不公开",
+    "output": "Action终态输出投影失败；内部原因不公开",
+}
+
+
+def sanitize_gateway_exception(error: Exception, *, stage: PublicGatewayStage) -> KernelError:
+    """仅归一回调异常，不改变动作事实；调用方必须先传播取消信号。"""
+
+    if isinstance(error, KernelError) and type(error.code) is str:
+        message = _GATEWAY_ERRORS[stage].get(error.code)
+        if message is not None:
+            return KernelError(error.code, message)
+    return KernelError(f"trusted_action_{stage}_failed", _GATEWAY_DEFAULT_MESSAGES[stage])
 
 
 def sanitize_plan_exception(
