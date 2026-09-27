@@ -1,5 +1,20 @@
 {
-  "code_revision": "2b49bb1fa7df4df4171e650c2e42d514a0b64f51",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+  "current_ci_accepted": false,
+  "decision": "release_blocked",
+  "delivered": "protected_event_seal_core_only",
+  "full_regression_acceptance_pending": true,
+  "overall_0_9_complete": false,
+  "phase_0_9_4a_complete": false,
+  "release_blockers": [
+    "独立Key Backend、逻辑Store认证头与可信归属",
+    "新事件CAS与Seal同事务、前缀链与派生投影",
+    "全部历史/恢复/Fork/模型前入口、Artifact原JSONL和二进制来源认证",
+    "全部Provider材料与Scope失效的SDK相关ID",
+    "Owner同步阻塞和Request Store物理身份",
+    "12项Archive来源权利",
+    "编号威胁、远端MCP身份/受管出口",
+    "三平台真实安装升级、备份迁移和Beta",
+    "真实Provider能力及成本验收"
+  ]
 }

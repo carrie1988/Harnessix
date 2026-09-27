@@ -1,5 +1,274 @@
 {
-  "code_revision": "2b49bb1fa7df4df4171e650c2e42d514a0b64f51",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "artifact_scan": {
+    "exit_code": 0,
+    "passed": true,
+    "size_bytes": 101,
+    "stdout_sha256": "e6b08bf0381319d1f02ccee6fdd2a4109884371c1777e05025fe86bb53681645",
+    "stdout_summary": "Secret扫描通过（harnessix.secret-scan/v2）：2415个输入完整覆盖且固定规则零命中"
+  },
+  "build": {
+    "clean_machine_install_claimed": false,
+    "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+    "dependencies_reused_local_environment": true,
+    "exit_code": 0,
+    "passed": true,
+    "release_artifacts": false,
+    "reproducible_build_claimed": false,
+    "size_bytes": 247,
+    "source_archive_docs_are_pre_full_freeze": true,
+    "stdout_sha256": "8a8810f814caafb5cdd65406f62a549103c9026aa1a2488c2b5020c5e517e494",
+    "stdout_summary": "Successfully built /private/tmp/harnessix-seal-dist-final/harnessix-0.1.0-py3-none-any.whl"
+  },
+  "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+  "diagrams": {
+    "diagrams": 5,
+    "each_png_visually_inspected": true,
+    "passed": true,
+    "records": [
+      {
+        "diagram": 1,
+        "document": "docs/changes/m09-4a-authenticated-history-and-seal.md",
+        "exit_code": 0,
+        "png_sha256": "ae9d6d98d42218883081aeca88b78bbdf3fc485ed26c78f7ec5a824d886cf056",
+        "png_size_bytes": 46024,
+        "source_sha256": "43b92bccffcb62412b71f7fda6a45a93af3b51dac8e2554acd4e39ee50f71976"
+      },
+      {
+        "diagram": 2,
+        "document": "docs/changes/m09-4a-authenticated-history-and-seal.md",
+        "exit_code": 0,
+        "png_sha256": "cc58ad109fcd86094547457c0d9816dbc2de580af2e990c3a83c86487712385d",
+        "png_size_bytes": 46257,
+        "source_sha256": "c6a1c441e710899bd9709f3e437c928f1b01ed42040bd62bbe959fe0bb0ed452"
+      },
+      {
+        "diagram": 3,
+        "document": "docs/changes/m09-4a-authenticated-history-and-seal.md",
+        "exit_code": 0,
+        "png_sha256": "f38ed7fb1be8a56c4e99f43b837431dc77e79d306098376c9078ae97f196f179",
+        "png_size_bytes": 58273,
+        "source_sha256": "15437fb08b99dc44d135e3172ac9ce3896dba95f90d15bd4963d23c9e524ac55"
+      },
+      {
+        "diagram": 4,
+        "document": "docs/changes/m09-4a-authenticated-history-and-seal.md",
+        "exit_code": 0,
+        "png_sha256": "02c88955018b57310c570ef9f307c2a959c0ad9cf66ae3a5a017f6d847af835f",
+        "png_size_bytes": 57493,
+        "source_sha256": "bd57432014f64bc2022605db86675689e10d285a2157c121cd54803e9bc99703"
+      },
+      {
+        "diagram": 5,
+        "document": "docs/changes/m09-4a-authenticated-history-and-seal.md",
+        "exit_code": 0,
+        "png_sha256": "fe3b1fe7b0aa244e5ac698f1b1ee142f26d6e4e7f92d68cf60bba57207b580c6",
+        "png_size_bytes": 26366,
+        "source_sha256": "1c1dc58d02a53ae85a409be2304a70894a138d3f25a5355224b5675ca5505355"
+      }
+    ]
+  },
+  "full_regression": {
+    "is_acceptance": false,
+    "status": "pending"
+  },
+  "gates": {
+    "contracts": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_specs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 28,
+      "stdout_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "stdout_summary": "合同一致性检查通过"
+    },
+    "documentation": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/documentation_check.py",
+        "--changed-from",
+        "2b49bb1fa7df4df4171e650c2e42d514a0b64f51"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 103,
+      "stdout_sha256": "0bcbd894afd1fc624d5829db053bfdd5c600941d0ba0d40c2a212b33eef333c9",
+      "stdout_summary": "文档门禁通过：327份文档、8459条链接、770幅Mermaid、26个源码包、24个变化路径"
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 29,
+      "stdout_sha256": "47a55f2017ba324243494f4b64d963b2181c76fe20e1b4aa14447fa6086690f8",
+      "stdout_summary": "1172 files already formatted"
+    },
+    "lint": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "--exclude",
+        "tests/security",
+        "."
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 19,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stdout_summary": "All checks passed!"
+    },
+    "mypy": {
+      "command": [
+        "uv",
+        "run",
+        "mypy",
+        "src"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 45,
+      "stdout_sha256": "fa90f58ea2e40ef5424ec06f8db8a61d4224106976e83585d020fcb4436fc2df",
+      "stdout_summary": "Success: no issues found in 349 source files"
+    },
+    "readability": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/readability_report.py",
+        "--check",
+        "--check-final-report",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    },
+    "sbom": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/sbom_generate.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 93,
+      "stdout_sha256": "e30d75d4b43b5e3c55341cc4cd5241c7cdbcd6c6257d2075c32a5372c49a9ef4",
+      "stdout_summary": "SBOM一致且Schema有效：3c322eabd3a0a4dba4bde597e69083039988ede3807ab1a465a8087f853e095b"
+    },
+    "secret_self": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/secret_scan.py",
+        "--self-check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 56,
+      "stdout_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+      "stdout_summary": "Secret扫描自检通过：6条固定规则逐项验证"
+    },
+    "taskpacks": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/generate_engineering_task_pack.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "size_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_summary": ""
+    }
+  },
+  "license_gate": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/license_scan.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "passed": false,
+    "size_bytes": 31,
+    "stdout_sha256": "6f63e7a7d8eb3dda0a666b6d98ee05d063d3237ee506256781479a4e2b01b94b",
+    "stdout_summary": "许可证违规：12个Archive"
+  },
+  "real_model_requests": 0,
+  "related_regression": {
+    "overlaps_core_tests": true,
+    "passed": 1128,
+    "seconds": 59.81,
+    "size_bytes": 1302,
+    "stdout_sha256": "ad98311dd062daf3a37c9bc28caa6a8fc77453ea5ab6009a3336687ffbe6d0e7"
+  },
+  "special_regression": {
+    "overlaps_related_regression": true,
+    "passed": 76,
+    "seconds": 4.6,
+    "size_bytes": 179,
+    "stdout_sha256": "8b9e8bb6d17197d6f9dc7ed118fd0734b0087cde512ac377aed1e819a7ee944b"
+  },
+  "wheel_consumer": {
+    "clean_machine_install_claimed": false,
+    "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+    "dependencies_reused_local_environment": true,
+    "fixture_persistent_key": true,
+    "passed": true,
+    "production_atomic_proof_claimed": false,
+    "real_model_requests": 0,
+    "records": [
+      {
+        "actual_sqlite_event_codec_exact": true,
+        "consumer_script_sha256": "11a616dc57b12e0969507edaf4849c28553ec00ef851e39e0e020afc297e24c4",
+        "isolated_from_source_tests": true,
+        "module_origin_verified": true,
+        "passed": true,
+        "persisted_fixture_receipt": true,
+        "production_atomic_receipt_claimed": false
+      },
+      {
+        "actual_sqlite_reopened": true,
+        "consumer_script_sha256": "11a616dc57b12e0969507edaf4849c28553ec00ef851e39e0e020afc297e24c4",
+        "fixture_key_backend": true,
+        "isolated_from_source_tests": true,
+        "module_origin_verified": true,
+        "new_scope_safe_original_body_passed_current_guard": true,
+        "passed": true,
+        "production_default_authentication_claimed": false,
+        "production_key_backend_claimed": false,
+        "real_model_requests": 0,
+        "same_original_bytes_verified": true,
+        "wrong_bindings_body_and_key_rejected": true
+      }
+    ],
+    "separate_os_processes": true,
+    "wheel_sha256": "54f8bf359c8675887c8b756fa47741fa295593d44be452bcdc1f809462f047a1"
+  }
 }

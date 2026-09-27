@@ -2,7 +2,7 @@
 doc_type: change-design
 status: draft
 version: 1
-code_revision: 2b49bb1fa7df4df4171e650c2e42d514a0b64f51
+code_revision: 829dabf8b7051b1242de2202ca9b1df99dc015bc
 owners: [core]
 modules: [session, agent, secrets, artifacts, app_server, product_config]
 related_adrs:
@@ -254,3 +254,28 @@ HMAC与compare_digest使用[Python标准库合同](https://docs.python.org/3.12/
 3. [核心测试](../../tests/session/test_publication_seal.py)：失败语义及“认证通过但仍拒绝新材料公开”。
 4. [session/sqlite.py](../../src/harnessix/session/sqlite.py)与[Artifact写入](../../src/harnessix/artifacts/persistence.py)：后续同事务挂接点，当前尚未挂接。
 5. [研究](../research/authenticated-history-and-seal.md)、[ADR](../adr/0102-authenticated-history-and-event-seal-core.md)与[证据](../validation/event-seal-core-2026-09-28-v1/README.md)。
+
+### 14.1 固定版本符号导航
+
+- [`src/harnessix/session/publication_seal.py`：`PublicationScope`，L28–L31](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L28-L31)。
+- [`src/harnessix/session/publication_seal.py`：`EventPublicationSeal`，L34–L51](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L34-L51)。
+- [`src/harnessix/session/publication_seal.py`：`_claims`，L58–L69](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L58-L69)。
+- [`src/harnessix/session/publication_seal.py`：`_context`，L72–L92](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L72-L92)。
+- [`src/harnessix/session/publication_seal.py`：`_verify_event`，L95–L130](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L95-L130)。
+- [`src/harnessix/session/publication_seal.py`：`EventPublicationAuthority`，L133–L227](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L133-L227)。
+- [`src/harnessix/session/publication_seal.py`：`issue_new_event`，L156–L198](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L156-L198)。
+- [`src/harnessix/session/publication_seal.py`：`verify_event`，L200–L221](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L200-L221)。
+- [`src/harnessix/session/publication_seal.py`：`close`，L223–L227](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/publication_seal.py#L223-L227)。
+- [`src/harnessix/secrets/publication.py`：`_publication_context`，L247–L255](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/secrets/publication.py#L247-L255)。
+- [`src/harnessix/secrets/publication.py`：`publication_context`，L329–L332](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/secrets/publication.py#L329-L332)。
+- [`src/harnessix/session/sqlite.py`：`_validated_snapshot`，L99–L125](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L99-L125)。
+- [`src/harnessix/session/sqlite.py`：`_scan_recovery_threads`，L128–L159](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L128-L159)。
+- [`src/harnessix/session/sqlite.py`：`_append_in_transaction`，L457–L506](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L457-L506)。
+- [`src/harnessix/session/sqlite.py`：`_events`，L522–L535](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L522-L535)。
+- [`src/harnessix/session/sqlite.py`：`rebuild`，L543–L549](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L543-L549)。
+- [`src/harnessix/session/sqlite.py`：`_validated_replay`，L551–L575](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/src/harnessix/session/sqlite.py#L551-L575)。
+- [`tests/session/test_publication_seal.py`：`test_proven_original_event_is_not_permission_to_export_new_registered_material`，L198–L210](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/tests/session/test_publication_seal.py#L198-L210)。
+- [`tests/session/test_publication_seal.py`：`test_parent_cancel_during_real_guard_has_no_receipt`，L236–L253](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/tests/session/test_publication_seal.py#L236-L253)。
+- [`tests/session/test_publication_seal.py`：`test_candidate_preserves_existing_pydantic_event_encoding`，L346–L361](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/tests/session/test_publication_seal.py#L346-L361)。
+- [`tests/session/test_publication_seal.py`：`test_native_guard_cannot_rewrite_the_frozen_candidate`，L364–L380](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/tests/session/test_publication_seal.py#L364-L380)。
+- [`tests/session/test_publication_seal.py`：`test_caller_mutation_during_guard_does_not_change_original_identity`，L383–L399](https://github.com/carrie1988/Harnessix/blob/829dabf8b7051b1242de2202ca9b1df99dc015bc/tests/session/test_publication_seal.py#L383-L399)。

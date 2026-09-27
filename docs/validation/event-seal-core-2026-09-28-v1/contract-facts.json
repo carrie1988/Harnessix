@@ -1,5 +1,219 @@
 {
-  "code_revision": "2b49bb1fa7df4df4171e650c2e42d514a0b64f51",
-  "status": "draft",
-  "release_acceptance_claimed": false
+  "archive_rights_blockers": 12,
+  "artifact_release_claimed": false,
+  "artifact_scope": "fixed_source_build_candidate",
+  "artifacts": [
+    {
+      "changed_module_bytes_match_fixed_source": true,
+      "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+      "contains_untracked_security_draft": false,
+      "kind": "wheel",
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "release_artifact": false,
+      "sha256": "54f8bf359c8675887c8b756fa47741fa295593d44be452bcdc1f809462f047a1",
+      "size_bytes": 976459
+    },
+    {
+      "changed_module_bytes_match_fixed_source": true,
+      "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+      "contains_untracked_security_draft": false,
+      "kind": "sdist",
+      "name": "harnessix-0.1.0.tar.gz",
+      "release_artifact": false,
+      "sha256": "124a767302d218f01b881200bfa2e489ec41e7313bd7d23a0cb718449447bc7f",
+      "size_bytes": 7248888
+    }
+  ],
+  "candidate_is_committed_fact": false,
+  "clean_machine_install_claimed": false,
+  "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+  "core_tests": 46,
+  "cross_restart_production_acceptance_claimed": false,
+  "default_product_history_authentication_enabled": false,
+  "fixed_default_root_gap": {
+    "code_revision": "829dabf8b7051b1242de2202ca9b1df99dc015bc",
+    "columns": {
+      "agent_artifacts": [
+        "artifact_id",
+        "thread_id",
+        "turn_id",
+        "call_id",
+        "workspace_scope",
+        "manifest_json",
+        "size_bytes",
+        "expires_at",
+        "state",
+        "body",
+        "purpose",
+        "created_at",
+        "publication_epoch",
+        "publication_policy"
+      ],
+      "agent_events": [
+        "thread_id",
+        "sequence",
+        "event_id",
+        "event_json"
+      ],
+      "agent_threads": [
+        "thread_id",
+        "sequence",
+        "snapshot_json",
+        "snapshot_sha256",
+        "projection_version"
+      ]
+    },
+    "default_root": {
+      "actual_config_scope_sqlite_default_root": true,
+      "factory_and_stdio_driver_are_fixtures": true,
+      "os_pipe_or_model_network_claimed": false,
+      "provider_requests": 0,
+      "records": [
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "get",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "list",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "resume",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "replay",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "next",
+          "unregistered_old_material_exported": true
+        }
+      ]
+    },
+    "history_authorization_closed": false,
+    "module_source_verified": true,
+    "real_model_requests": 0,
+    "script_sha256": "7d142dfc46df875b4e331e3312780749cdec477a9e68ed998af6f83f1f483b64",
+    "snapshot_hash_replacement": {
+      "accepted": true,
+      "adversary_access": "拥有测试数据库写权限；不证明正常Workspace可访问状态目录",
+      "event_bytes_unchanged": true
+    }
+  },
+  "fixture_key_is_production_key_backend": false,
+  "historical_validation_files": 701,
+  "historical_validation_files_unchanged": true,
+  "independent_default_root_gap": {
+    "code_revision": "2b49bb1fa7df4df4171e650c2e42d514a0b64f51",
+    "columns": {
+      "agent_artifacts": [
+        "artifact_id",
+        "thread_id",
+        "turn_id",
+        "call_id",
+        "workspace_scope",
+        "manifest_json",
+        "size_bytes",
+        "expires_at",
+        "state",
+        "body",
+        "purpose",
+        "created_at",
+        "publication_epoch",
+        "publication_policy"
+      ],
+      "agent_events": [
+        "thread_id",
+        "sequence",
+        "event_id",
+        "event_json"
+      ],
+      "agent_threads": [
+        "thread_id",
+        "sequence",
+        "snapshot_json",
+        "snapshot_sha256",
+        "projection_version"
+      ]
+    },
+    "default_root": {
+      "actual_config_scope_sqlite_default_root": true,
+      "factory_and_stdio_driver_are_fixtures": true,
+      "os_pipe_or_model_network_claimed": false,
+      "provider_requests": 0,
+      "records": [
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "get",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "list",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "resume",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "replay",
+          "unregistered_old_material_exported": true
+        },
+        {
+          "background_tasks": 0,
+          "original_history_unchanged": true,
+          "surface": "next",
+          "unregistered_old_material_exported": true
+        }
+      ]
+    },
+    "history_authorization_closed": false,
+    "module_source_verified": true,
+    "real_model_requests": 0,
+    "script_sha256": "7d142dfc46df875b4e331e3312780749cdec477a9e68ed998af6f83f1f483b64",
+    "snapshot_hash_replacement": {
+      "accepted": true,
+      "adversary_access": "拥有测试数据库写权限；不证明正常Workspace可访问状态目录",
+      "event_bytes_unchanged": true
+    }
+  },
+  "new_governance_tests": 2,
+  "original_event_codec_preserved": true,
+  "package_exports_and_dependency_edges_unchanged": true,
+  "production_atomic_seal_write_implemented": false,
+  "production_key_backend_implemented": false,
+  "real_model_requests": 0,
+  "related_regression": {
+    "overlaps_core_tests": true,
+    "passed": 1128,
+    "seconds": 59.81,
+    "size_bytes": 1302,
+    "stdout_sha256": "ad98311dd062daf3a37c9bc28caa6a8fc77453ea5ab6009a3336687ffbe6d0e7"
+  },
+  "reproducible_build_claimed": false,
+  "schema_migration": false,
+  "seal_authentication_is_public_authorization": false,
+  "snapshot_artifact_authentication_implemented": false,
+  "source_archive_docs_are_pre_full_freeze": true,
+  "structure_thresholds_unchanged": true,
+  "unknown_legacy_history_authorization_closed": false,
+  "untracked_attack_draft_excluded": true
 }
