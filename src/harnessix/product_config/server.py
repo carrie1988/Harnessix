@@ -34,10 +34,12 @@ from harnessix.product_config.runtime import (
     build_provider_bundle,
     diagnose_configuration,
     environment_secret_provider,
+    provider_secret_references,
     select_profile,
 )
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.secrets.provider import SecretProvider
+from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 
@@ -206,7 +208,12 @@ async def _serve_product_stdio(
 ) -> None:
     """在单一产品进程内持有Provider、Tool、Action和Agent完整生命周期。"""
 
-    with SQLiteProductRuntimeConfigStore(startup.state_root / "product-config.db") as config_store:
+    with (
+        SQLiteProductRuntimeConfigStore(startup.state_root / "product-config.db") as config_store,
+        SecretPublicationScope(
+            provider_secret_references(startup.config, startup.profile), startup.secrets
+        ) as public_scope,
+    ):
         config_store.save_snapshot(startup.config)
         config_store.save_action_snapshot(startup.actions)
         previous_action_sha256 = config_store.active_action()
@@ -218,7 +225,7 @@ async def _serve_product_stdio(
         bundle = await build_provider_bundle(
             startup.config,
             startup.profile,
-            startup.secrets,
+            public_scope,
             audit=config_store,
         )
         async with bundle:
@@ -226,7 +233,7 @@ async def _serve_product_stdio(
             sessions = SQLiteSessionStore(startup.state_root / "sessions.db")
             await sessions.initialize()
             requests = SQLiteProtocolRequestStore(sessions.path)
-            artifacts = SQLiteArtifactStore(sessions)
+            artifacts = SQLiteArtifactStore(sessions, public_output_protection=public_scope)
             async with CodingToolRuntime(
                 startup.workspace_root,
                 artifacts=artifacts,
@@ -248,6 +255,7 @@ async def _serve_product_stdio(
                         bundle,
                         scoped_tools=tools,
                         artifacts=artifacts,
+                        public_output_protection=public_scope,
                         trusted_actions=action_owner.gateway,
                     ) as runtime:
                         # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。

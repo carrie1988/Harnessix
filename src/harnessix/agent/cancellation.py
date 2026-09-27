@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
 T = TypeVar("T")
@@ -42,3 +42,16 @@ class CancelToken:
                 if not child.done():
                     child.cancel()
             await asyncio.gather(task, waiter, return_exceptions=True)
+
+
+def parent_cancel_checkpointer(check: Callable[[], None]) -> Callable[[], None]:
+    """只传播本次操作新增的父Task取消；入口仍须异步交付既有待取消。"""
+    task = asyncio.current_task()
+    initial_count = task.cancelling() if task is not None else 0
+
+    def checkpoint() -> None:
+        check()
+        if task is not None and task.cancelling() > initial_count:
+            raise asyncio.CancelledError
+
+    return checkpoint

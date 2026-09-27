@@ -24,6 +24,7 @@ from harnessix.agent.models import (
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
 from harnessix.artifacts.persistence import insert_artifact
+from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.trusted_output import (
     parse_trusted_process_output,
@@ -39,6 +40,7 @@ class ActionOutputArtifactMixin:
     """把Trusted Process输出发布职责从通用SQLite Store中隔离。"""
 
     _fault: FaultInjector
+    _publication: ArtifactPublicationGuard
 
     @property
     def session(self) -> SQLiteSessionStore:
@@ -100,6 +102,7 @@ class ActionOutputArtifactMixin:
             workspace_scope=workspace_scope,
             expected_sequence=expected_sequence,
             record_count=len(records(body)),
+            publication=self._publication,
         )
 
 
@@ -174,6 +177,7 @@ async def publish_action_output(
     workspace_scope: str,
     expected_sequence: int,
     record_count: int,
+    publication: ArtifactPublicationGuard | None = None,
 ) -> ArtifactRef:
     """发布或查询同一终态输出收据；Session结果提交前正文不可见。"""
 
@@ -223,6 +227,7 @@ async def publish_action_output(
                 body=body,
                 purpose="action_output",
                 created_at=published_at,
+                publication=publication,
             )
             fault("action_output.after_insert")
             if session._runtime_owner_token is not owner:

@@ -8,6 +8,7 @@ from uuid import UUID
 import aiosqlite
 
 from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.artifacts.publication import ArtifactPublicationGuard
 
 
 async def insert_artifact(
@@ -21,13 +22,17 @@ async def insert_artifact(
     body: bytes,
     purpose: str,
     created_at: datetime,
+    publication: ArtifactPublicationGuard | None = None,
 ) -> None:
     """使用显式列名写入正文与Manifest，避免Migration扩列破坏调用方。"""
 
+    if publication is not None:
+        await publication.check_body(body)
     await database.execute(
         "INSERT INTO agent_artifacts "
         "(artifact_id,thread_id,turn_id,call_id,workspace_scope,manifest_json,size_bytes,"
-        "expires_at,state,body,purpose,created_at) VALUES (?,?,?,?,?,?,?,?,'published',?,?,?)",
+        "expires_at,state,body,purpose,created_at,publication_epoch,publication_policy) "
+        "VALUES (?,?,?,?,?,?,?,?,'published',?,?,?,?,?)",
         (
             str(ref.artifact_id),
             str(thread_id),
@@ -40,5 +45,7 @@ async def insert_artifact(
             body,
             purpose,
             created_at.isoformat(),
+            publication.epoch if publication is not None else None,
+            publication.policy if publication is not None else None,
         ),
     )

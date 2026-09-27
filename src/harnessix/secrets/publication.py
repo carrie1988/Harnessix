@@ -6,7 +6,7 @@ import json
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Self
+from typing import Protocol, Self
 
 from pydantic import JsonValue
 
@@ -18,10 +18,16 @@ from harnessix.secrets.redaction import secret_patterns
 MAX_SCOPE_BINDINGS = 1024
 MAX_SCOPE_NAMES = 32
 MAX_PATTERN_BYTES = 2 * 1024 * 1024
-MAX_SCAN_BYTES = 1024 * 1024
-MAX_SCAN_NODES = 10256
-MAX_SCAN_DEPTH = 64
-MAX_SCAN_WORK = 64 * 1024 * 1024
+
+
+class SecretVersionReference(Protocol):
+    """仅材料身份，不把模型凭据伪装成Process环境注入目标。"""
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def version(self) -> str: ...
 
 
 def _unavailable() -> KernelError:
@@ -29,7 +35,7 @@ def _unavailable() -> KernelError:
 
 
 def _capture_material(
-    provider: SecretProvider, binding: SecretVersionBinding, remaining: int
+    provider: SecretProvider, binding: SecretVersionReference, remaining: int
 ) -> SecretMaterial:
     raw = None
     try:
@@ -54,17 +60,28 @@ def _capture_material(
             raw.clear()
 
 
+MAX_SCAN_BYTES = 1024 * 1024
+MAX_SCAN_NODES = 10256
+MAX_SCAN_DEPTH = 64
+MAX_SCAN_WORK = 64 * 1024 * 1024
+
+
 @dataclass
 class _ScanBudget:
     checkpoint: Callable[[], None]
     nodes: int = 0
     size: int = 0
     work: int = 0
+    max_nodes: int | None = None
+
+    @property
+    def node_limit(self) -> int:
+        return MAX_SCAN_NODES if self.max_nodes is None else self.max_nodes
 
     def step(self, depth: int) -> None:
         self.checkpoint()
         self.nodes += 1
-        if self.nodes > MAX_SCAN_NODES or depth > MAX_SCAN_DEPTH:
+        if self.nodes > self.node_limit or depth > MAX_SCAN_DEPTH:
             self.reject()
 
     @staticmethod
@@ -78,7 +95,7 @@ class _ScanBudget:
         try:
             encoded = text.encode("utf-8")
         except UnicodeError:
-            raise _unavailable() from None
+            raise KernelError("trusted_action_output_mismatch", "公开结果类型无效") from None
         if account_size:
             self.size += len(encoded)
         if len(encoded) > remaining or self.size > MAX_SCAN_BYTES:
@@ -94,10 +111,14 @@ class _ScanBudget:
 
 
 def _scan_native(
-    value: JsonValue, patterns: tuple[bytes, ...], checkpoint: Callable[[], None]
+    value: JsonValue,
+    patterns: tuple[bytes, ...],
+    checkpoint: Callable[[], None],
+    *,
+    budget: _ScanBudget | None = None,
 ) -> None:
     """有界原生树扫描与快照生命周期分离，预算作用于全部键、标量和模式。"""
-    budget = _ScanBudget(checkpoint)
+    budget = budget or _ScanBudget(checkpoint)
     stack: list[tuple[object, int]] = [(value, 1)]
     while stack:
         node, depth = stack.pop()
@@ -105,14 +126,14 @@ def _scan_native(
         if type(node) is str:
             budget.scan(node, patterns)
         elif type(node) is dict:
-            if budget.nodes + len(stack) + len(node) * 2 > MAX_SCAN_NODES:
+            if budget.nodes + len(stack) + len(node) * 2 > budget.node_limit:
                 budget.reject()
             for key, child in node.items():
                 if type(key) is not str:
-                    raise _unavailable()
+                    raise KernelError("trusted_action_output_mismatch", "公开结果类型无效")
                 stack.extend(((key, depth + 1), (child, depth + 1)))
         elif type(node) is list:
-            if budget.nodes + len(stack) + len(node) > MAX_SCAN_NODES:
+            if budget.nodes + len(stack) + len(node) > budget.node_limit:
                 budget.reject()
             stack.extend((child, depth + 1) for child in node)
         elif node is None or type(node) is bool:
@@ -122,7 +143,7 @@ def _scan_native(
         elif type(node) is float and math.isfinite(node):
             budget.scan(json.dumps(node, allow_nan=False), patterns)
         else:
-            raise _unavailable()
+            raise KernelError("trusted_action_output_mismatch", "公开结果类型无效")
     checkpoint()
     # 树已被原生预算验证；规范JSON再检查结构边界，避免数字或整段JSON凭据旁路。
     serialized = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -130,10 +151,38 @@ def _scan_native(
     checkpoint()
 
 
+def _unique_object(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
+    result: dict[str, JsonValue] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("重复JSON键")
+        result[key] = value
+    return result
+
+
+def _scan_jsonl(body: bytes, patterns: tuple[bytes, ...], checkpoint: Callable[[], None]) -> None:
+    if type(body) is not bytes or len(body) > MAX_SCAN_BYTES:
+        _ScanBudget.reject()
+    budget = _ScanBudget(checkpoint, max_nodes=MAX_SCAN_BYTES)
+    checkpoint()
+    try:
+        text = body.decode("utf-8")
+        budget.scan(text, patterns, account_size=False)
+        for line in text.splitlines():
+            checkpoint()
+            value = json.loads(line, object_pairs_hook=_unique_object)
+            _scan_native(value, patterns, checkpoint, budget=budget)
+    except (ValueError, UnicodeError, RecursionError):
+        raise KernelError("trusted_action_output_mismatch", "公开结果类型无效") from None
+    checkpoint()
+
+
 class SecretPublicationScope:
     """显式宿主作用域；不枚举环境、不持久化值，关闭后拒绝解析或公开检查。"""
 
-    def __init__(self, bindings: Sequence[SecretVersionBinding], provider: SecretProvider) -> None:
+    def __init__(
+        self, bindings: Sequence[SecretVersionReference], provider: SecretProvider
+    ) -> None:
         self._materials: dict[str, SecretMaterial] = {}
         self._patterns: tuple[bytes, ...] = ()
         self._closed = False
@@ -189,6 +238,15 @@ class SecretPublicationScope:
         """扫描原生树与规范JSON；不执行用户钩子或替换正文，所有模式共用工作预算。"""
         self.require(bindings)
         _scan_native(value, self._patterns, checkpoint)
+
+    def assert_public_json(self, value: JsonValue, *, checkpoint: Callable[[], None]) -> None:
+        """保护宿主登记的全部值，不增加执行计划的Secret注入权限。"""
+        self.assert_safe(value, (), checkpoint=checkpoint)
+
+    def assert_public_jsonl(self, body: bytes, *, checkpoint: Callable[[], None]) -> None:
+        """检查全部原始JSONL与解码键值；仅预览不能授权Artifact全文。"""
+        self._ensure_open()
+        _scan_jsonl(body, self._patterns, checkpoint)
 
     def close(self) -> None:
         """幂等清零可变材料并丢弃模式；不承诺Python不可变副本已被完全擦除。"""

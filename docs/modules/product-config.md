@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 18
+version: 19
 code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners:
   - core
@@ -1988,3 +1988,9 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 [版本化公开详设](../changes/m09-4a-versioned-secret-publication.md)在[统一装配](../../src/harnessix/product_config/action_composition.py)中只捕获已验证Process Profile显式引用；同一SecretPublicationScope传入Executor和Gateway，构造失败清零，Gateway拥有并关闭。
 [产品Owner](../../src/harnessix/product_config/action_runtime.py)用AsyncExitStack登记候选/恢复组合关闭，启动扫描或绑定验证失败也回收。旧配置JSON、能力指纹和恢复原Approval不变；Secret绑定的旧Hash正文不追认安全，只恢复效果元数据。真实产品测试使用Lease合同替身，不等于真实Container或Windows发行验收。
+
+## 模型原凭据与产品公开作用域
+
+`provider_secret_references`核验Snapshot/Selection后只返回所选Profile链name/version引用；组合根在任何模型工厂前捕获原值，同一Scope用于Provider构造、Runtime和Artifact Store。Process原作用域保持独立，模型引用不授予Process注入权限。正常退出与启动故障均关闭Scope；环境旋转不会替换运行中快照。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。

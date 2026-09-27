@@ -260,3 +260,5 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 
 - [版本化Secret公开保护详设](changes/m09-4a-versioned-secret-publication.md)：同一执行/保护快照、有界值/键/规范JSON、取消和仅元数据恢复。
 - [版本化Secret验收](validation/secret-publication-2026-09-27-v1/README.md)：实际Runtime/MCP、产品快照/生命周期、原版本负例及发布开放范围。
+
+- [产品模型凭据与Artifact公开详设](changes/m09-4a-product-publication-boundary.md)：原Profile材料快照、完整JSONL、同事务Epoch、旧正文失败语义与源码测试映射。

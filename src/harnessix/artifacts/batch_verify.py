@@ -71,7 +71,7 @@ async def _fetch_rows(
     return rows
 
 
-def _check_entry(
+async def _check_entry(
     store: SQLiteArtifactStore,
     rows: dict[str, aiosqlite.Row],
     snapshots: dict[UUID, Thread | None],
@@ -97,7 +97,9 @@ def _check_entry(
         raise
     if stored != entry.reference:
         raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
+    store._publication.require_proof(record)  # noqa: SLF001
     lines = store._body(record, thread, stored)  # noqa: SLF001
+    await store._publication.check_body(record["body"])  # noqa: SLF001
     if entry.purpose == "artifact_page":
         store._verify_page(thread, entry.call_id, stored, lines)  # noqa: SLF001
     if entry.omitted_field is not None:
@@ -129,7 +131,7 @@ async def verify_references(
                     database, entry.owner_thread_id
                 )
         for entry in entries:
-            _check_entry(store, rows, snapshots, entry)
+            await _check_entry(store, rows, snapshots, entry)
 
 
 def _entry(reference: _PreparedReference, thread: Thread) -> HistoryReferenceCheck:

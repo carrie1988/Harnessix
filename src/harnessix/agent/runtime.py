@@ -73,9 +73,11 @@ from harnessix.agent.ports import (
     ToolRuntime,
     TrustedActionGateway,
 )
+from harnessix.agent.publication import PublicOutputProtection, protect_json
 from harnessix.agent.reducer import get_turn, pending_calls
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
+    select_artifact_verifier,
     uses_approval_boundary,
     validate_runtime_switches,
 )
@@ -185,6 +187,7 @@ class AgentRuntime:
         patches: PatchRuntime | None = None,
         patch_batches: PatchBatchRuntime | None = None,
         artifacts: ArtifactPublisher | None = None,
+        public_output_protection: PublicOutputProtection | None = None,
         artifact_verifier: ArtifactReferenceVerifier | None = None,
         artifact_access: ArtifactAccessScope | None = None,
         batch_diffs: BatchDiffPublisher | None = None,
@@ -216,6 +219,7 @@ class AgentRuntime:
             raise KernelError("artifact_store_mismatch", "差异发布必须绑定原 Session 和整组端口")
         self._batch_diffs = batch_diffs
         self._artifacts = artifacts
+        self._public_output_protection = public_output_protection
         self.store = store
         self._telemetry = KernelTelemetry(observability or NoOpObservability())
         self.provider = provider
@@ -273,21 +277,9 @@ class AgentRuntime:
                     supports_parallel_calls=False,
                 ),
             )
-        verifiers = tuple(
-            verifier
-            for verifier in (
-                artifact_verifier,
-                artifacts,
-                batch_diffs.artifacts if batch_diffs is not None else None,
-            )
-            if verifier is not None
+        self._artifact_verifier = select_artifact_verifier(
+            store, (artifact_verifier, artifacts, batch_diffs.artifacts if batch_diffs else None)
         )
-        if any(verifier.session is not store for verifier in verifiers):
-            raise KernelError(
-                "artifact_store_mismatch",
-                "模型历史Artifact验证器必须绑定同一Session和发布存储",
-            )
-        self._artifact_verifier = verifiers[0] if verifiers else None
         self._artifact_access = artifact_access or next(
             (
                 cast(ArtifactAccessScope, access)
@@ -2271,6 +2263,9 @@ class AgentRuntime:
         if isinstance(result, ArtifactToolResult):
             if self._artifacts is None:
                 raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
+            await protect_json(
+                self._public_output_protection, result.result.model_dump(mode="json"), CancelToken()
+            )
             async with self._lock(thread_id):
                 current = await self.store.get_thread(thread_id)
                 thread = await self._artifacts.publish(
@@ -2283,6 +2278,9 @@ class AgentRuntime:
                 )
             return thread, result.result
         checked = self._validate_result(result, call, max_output_chars)
+        await protect_json(
+            self._public_output_protection, checked.model_dump(mode="json"), CancelToken()
+        )
         item_id = new_id()
         thread = await self._commit(
             thread_id,

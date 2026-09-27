@@ -280,6 +280,50 @@ ROOT = Path(__file__).resolve().parents[2]
                 "tests/mcp/test_server.py",
             },
         ),
+        (
+            "product-publication-2026-09-27-v1",
+            "contract-facts.json",
+            {
+                "docs/baselines/readability-0.9.0-final.json",
+                "governance/readability-policy-v1.json",
+                "scripts/generate_specs.py",
+                "spec/artifact-ref-v1.schema.json",
+                "src/harnessix/agent/cancellation.py",
+                "src/harnessix/agent/publication.py",
+                "src/harnessix/agent/runtime.py",
+                "src/harnessix/agent/runtime_configuration.py",
+                "src/harnessix/agent/runtime_recovery.py",
+                "src/harnessix/artifacts/action_output_store.py",
+                "src/harnessix/artifacts/action_review_store.py",
+                "src/harnessix/artifacts/batch_diff.py",
+                "src/harnessix/artifacts/batch_verify.py",
+                "src/harnessix/artifacts/contracts.py",
+                "src/harnessix/artifacts/persistence.py",
+                "src/harnessix/artifacts/ports.py",
+                "src/harnessix/artifacts/publication.py",
+                "src/harnessix/artifacts/sqlite.py",
+                "src/harnessix/product_config/runtime.py",
+                "src/harnessix/product_config/server.py",
+                "src/harnessix/secrets/provider.py",
+                "src/harnessix/secrets/publication.py",
+                "src/harnessix/secrets/redaction.py",
+                "src/harnessix/session/migrations/0028_artifact_publication_proof.sql",
+                "src/harnessix/trusted_actions/agent_gateway.py",
+                "src/harnessix/trusted_actions/agent_gateway_output.py",
+                "src/harnessix/trusted_actions/output_budget.py",
+                "tests/agent/test_batch_session_upgrade.py",
+                "tests/agent/test_process_session_upgrade.py",
+                "tests/agent/test_publication.py",
+                "tests/agent/test_publication_runtime.py",
+                "tests/agent/test_session_upgrade.py",
+                "tests/artifacts/test_batch_diff_upgrade.py",
+                "tests/artifacts/test_process_output_upgrade.py",
+                "tests/artifacts/test_publication_persistence.py",
+                "tests/artifacts/test_publication_upgrade.py",
+                "tests/governance/test_security_governance_evidence.py",
+                "tests/product_config/test_publication_scope.py",
+            },
+        ),
     ],
 )
 def test_security_governance_bundle_files_and_source_inputs_match_manifest(
@@ -576,3 +620,46 @@ def test_secret_publication_evidence_preserves_explicit_scope_and_release_bounda
     assert verification["make_check_passed"] is False
     assert verification["license_gate"]["blocked_archive_count"] == 12
     assert verification["external_model_requests"] == 0
+
+
+def test_product_publication_evidence_keeps_current_epoch_and_recovery_limits():
+    bundle = ROOT / "docs/validation/product-publication-2026-09-27-v1"
+    facts = json.loads((bundle / "contract-facts.json").read_bytes())
+    review = json.loads((bundle / "review-packet.json").read_bytes())
+    ci = json.loads((bundle / "ci-observation.json").read_bytes())
+    verification = json.loads((bundle / "verification.json").read_bytes())
+    assert facts["code_revision"] == review["code_revision"] == ci["code_revision"]
+    assert verification["code_revision"] == facts["code_revision"]
+    assert facts["special_tests"] == facts["new_special_tests"] == 46
+    assert facts["selected_provider_original_snapshot_shared"] is True
+    assert facts["model_secret_has_no_process_injection_target"] is True
+    assert facts["jsonl_complete_raw_and_decoded_shared_budget"] is True
+    assert facts["runtime_sdk_model_history_and_otel_nonempty_checked"] is True
+    assert facts["guard_and_proof_same_insert_transaction"] is True
+    assert facts["legacy_other_epoch_and_tampered_proof_denied"] is True
+    assert facts["real_old27_binary_and_atomic_migration28_preserve_bytes"] is True
+    assert facts["confirmed_file_write_and_audit_preserved"] is True
+    assert facts["reexecutions_after_publication_failure"] == 0
+    assert facts["reconciliations_after_publication_failure"] == 0
+    assert facts["migration_version"] == 28
+    assert facts["ordinary_protocol_and_artifact_contracts_changed"] is False
+    assert facts["new_package_dependency_edges"] == facts["new_dependency_cycles"] == []
+    assert facts["readability_policy_relaxed"] is False
+    assert facts["cross_restart_artifact_body_recovery_complete"] is False
+    assert facts["historical_session_body_retroactively_cleaned"] is False
+    assert facts["all_provider_credentials_and_public_outputs_closed"] is False
+    assert facts["crypto_or_database_admin_tamper_proof_claimed"] is False
+    assert facts["all_four_producers_business_integration_claimed"] is False
+    assert facts["real_stdio_byte_transport_in_product_test_claimed"] is False
+    assert facts["real_windows_container_or_install_acceptance_claimed"] is False
+    assert facts["hard_preemption_or_python_immutable_erasure_claimed"] is False
+    assert facts["reproducible_build_claimed"] is False
+    assert all(not artifact["untracked_security_draft_present"] for artifact in facts["artifacts"])
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    assert review["current_ci_accepted"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_acceptance"] is False
+    assert verification["external_model_requests"] == 0
+    assert verification["new_automation_created"] is False
+    assert verification["make_check_passed"] is False
+    assert verification["license_gate"]["blocked_archive_count"] == 12

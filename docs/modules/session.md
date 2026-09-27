@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 9
+version: 10
 code_revision: aa3372c0eb0c3b4ab674b19d26754a80dd035b46
 owners:
   - core
@@ -652,3 +652,9 @@ restore(backup):
 | 3 | `328aa2d6c8ee85a75ab2baef51b80869dc4089a8` | 2026-09-13 | 增加migration23、Projection v20、统一Action审批/效果读取与旧v19数据库向前升级证据；历史Event不重写 |
 | 2 | `e717a87e21d7d03b46a44a59ab203f3a8c80f9e9` | 2026-09-13 | 收窄`storage_errors`作用域，明确Runtime Owner跨平台锁边界，并增加应用`OSError/TimeoutError`不得误归类的回归合同 |
 | 1 | `8321ef383f2cbb3ab76191a1cc3db361a52e92ef` | 2026-09-12 | DOC-1.3 Wave A Session模块设计初版 |
+
+## Artifact公开证明迁移
+
+Migration 0028在原事务增加两个可空内部证明列，原Artifact/Manifest、Session Snapshot/事件不改写。旧行证明NULL，28版检查半份和未知policy，不能追认旧正文安全。独立27版程序生成Artifact并验证28版提交前/后退出与原字节保持；仅新增公开证明，不升级历史事件合同。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。

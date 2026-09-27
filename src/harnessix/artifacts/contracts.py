@@ -116,3 +116,16 @@ class CollectionReport:
     protected: int
     collected_at: datetime
     next_after: UUID | None
+
+
+def artifact_store_contract(policy: ArtifactPolicy) -> dict[str, object]:
+    """纯存储能力合同；运行Epoch不改变既有Tool指纹或公开ArtifactRef。"""
+    return {
+        "version": "sqlite-artifact/v1",
+        "policy": policy.model_dump(mode="json"),
+        "max_bytes": MAX_ARTIFACT_BYTES,
+        "max_records": MAX_ARTIFACT_RECORDS,
+        "page_bytes": MAX_PAGE_BYTES,
+        "reference": ArtifactRef.model_json_schema(),
+        "page": ArtifactPage.model_json_schema(),
+    }

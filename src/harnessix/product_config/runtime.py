@@ -29,6 +29,7 @@ from harnessix.product_config.contracts import (
     ProductConfigV2,
     ProfileSelection,
     ProviderDefinition,
+    SecretReference,
     build_profile_selection,
     diagnostic_report_digest,
 )
@@ -361,6 +362,16 @@ class SafeFallbackProvider:
 
     async def __aexit__(self, *_: object) -> None:
         await self.aclose()
+
+
+def provider_secret_references(
+    snapshot: ProductConfigSnapshot, selection: ProfileSelection
+) -> tuple[SecretReference, ...]:
+    """只捕获已冻结候选链实际使用的材料，不枚举无关来源或创建Process target。"""
+    _verify_selection(snapshot, selection)
+    profiles = {p.profile_id: p for p in snapshot.config.profiles}
+    providers = {p.provider_id: p for p in snapshot.config.providers}
+    return tuple(providers[profiles[p].provider_id].credential for p in selection.profile_chain)
 
 
 async def build_provider_bundle(

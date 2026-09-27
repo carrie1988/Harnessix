@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     ItemContent,
@@ -10,6 +12,8 @@ from harnessix.agent.models import (
     ProcessApprovalRequestContent,
     TrustedActionApprovalRequestContent,
 )
+from harnessix.artifacts.ports import ArtifactReferenceVerifier
+from harnessix.session.ports import SessionStore
 
 
 def validate_runtime_switches(
@@ -68,3 +72,15 @@ def ensure_approval_runtime(
         )
     if isinstance(content, TrustedActionApprovalRequestContent) and not trusted_action_enabled:
         raise KernelError("trusted_action_not_enabled", "持久Trusted Action审批缺少原Gateway")
+
+
+def select_artifact_verifier(
+    store: SessionStore, candidates: Sequence[ArtifactReferenceVerifier | None]
+) -> ArtifactReferenceVerifier | None:
+    """校验所有候选归属后选定首个验证器；不能跳过未选候选的同Session约束。"""
+    verifiers = tuple(v for v in candidates if v is not None)
+    if any(v.session is not store for v in verifiers):
+        raise KernelError(
+            "artifact_store_mismatch", "模型历史Artifact验证器必须绑定同一Session和发布存储"
+        )
+    return verifiers[0] if verifiers else None

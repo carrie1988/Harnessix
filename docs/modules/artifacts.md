@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 14
+version: 15
 code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
@@ -724,3 +724,9 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 | 3 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 增加`action_review`用途、确定性发布、Session反向授权、孤儿不可读与migration24兼容链 |
 | 2 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 2026-09-13 | 同步0.9.1e1默认产品单一Artifact Owner、协议能力广告、失败关闭及剩余容量边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 1 | `7a325f2ef11bb369f396c739992ea170cfcce8ac` | 2026-09-12 | DOC-1.3 Wave A Artifact模块设计初版 |
+
+## 当前运行Artifact公开证明
+
+Migration 0028新增可空`publication_epoch`和`publication_policy`。首次INSERT完整JSONL检查成功后同事务写证明；原body、Manifest、Hash、TTL和公开contract不变。分页、单件和批量历史验证要求当前Store证明并再次检查全文。旧NULL证明或不同Store Epoch不得返回正文；无保护独立宿主仅保留兼容行为。新Store拒绝旧正文影响跨重启长会话和Fork，跨重启正文恢复未完成。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。

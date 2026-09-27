@@ -21,6 +21,7 @@ from harnessix.agent.models import (
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
 from harnessix.artifacts.persistence import insert_artifact
+from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import EffectClass, utc_now
 from harnessix.session.sqlite import SQLiteSessionStore
 
@@ -42,6 +43,7 @@ async def publish_action_review(
     workspace_scope: str,
     expected_sequence: int,
     record_count: int,
+    publication: ArtifactPublicationGuard | None = None,
 ) -> ArtifactRef:
     """发布或查询同一Review收据；提交确认丢失时不得生成新身份。"""
 
@@ -97,6 +99,7 @@ async def publish_action_review(
                 body=body,
                 purpose="action_review",
                 created_at=published_at,
+                publication=publication,
             )
             fault("action_review.after_insert")
             if session._runtime_owner_token is not owner:

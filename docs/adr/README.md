@@ -228,3 +228,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 避免通过批量改写破坏历史真实性。
 
 - [ADR 0095：执行与公开复用同一版本化Secret内存快照](0095-versioned-secret-publication-scope.md)：显式宿主材料、有界检查、同一执行Provider及仅元数据恢复；不关闭整体安全发布门禁。
+
+- [ADR 0096：产品模型原凭据与当前运行Artifact公开证明](0096-product-credential-and-artifact-publication-boundary.md)：同一快照、纯保护端口、全文与证明复验；跨重启恢复仍开放。

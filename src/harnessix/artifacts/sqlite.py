@@ -25,6 +25,7 @@ from harnessix.agent.models import (
     ToolCallContent,
     ToolResultContent,
 )
+from harnessix.agent.publication import PublicOutputProtection
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.action_output_store import (
     ActionOutputArtifactMixin,
@@ -42,8 +43,10 @@ from harnessix.artifacts.contracts import (
     CollectionReport,
     HistoryArtifactPurpose,
     ReadArtifactInput,
+    artifact_store_contract,
 )
 from harnessix.artifacts.persistence import insert_artifact
+from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -130,10 +133,12 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         *,
         policy: ArtifactPolicy | None = None,
         fault: Callable[[str], None] | None = None,
+        public_output_protection: PublicOutputProtection | None = None,
     ) -> None:
         self._session = session
         self._policy = policy or ArtifactPolicy()
         self._fault = fault or (lambda _: None)
+        self._publication = ArtifactPublicationGuard(public_output_protection)
 
     @property
     def session(self) -> SQLiteSessionStore:
@@ -144,15 +149,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         return self._policy
 
     def contract(self) -> dict[str, object]:
-        return {
-            "version": "sqlite-artifact/v1",
-            "policy": self.policy.model_dump(mode="json"),
-            "max_bytes": MAX_ARTIFACT_BYTES,
-            "max_records": MAX_ARTIFACT_RECORDS,
-            "page_bytes": MAX_PAGE_BYTES,
-            "reference": ArtifactRef.model_json_schema(),
-            "page": ArtifactPage.model_json_schema(),
-        }
+        return artifact_store_contract(self.policy)
 
     async def publish(
         self,
@@ -237,6 +234,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 body=output.body,
                 purpose="tool_result",
                 created_at=now,
+                publication=self._publication,
             )
             self._fault("artifact.after_insert")
             updated, _ = await self.session._append_in_transaction(
@@ -278,6 +276,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             workspace_scope=workspace_scope,
             expected_sequence=expected_sequence,
             record_count=len(lines),
+            publication=self._publication,
         )
 
     async def _check_quota(
@@ -368,7 +367,9 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                         "artifact_not_found", "Artifact不存在或不属于当前作用域"
                     ) from None
                 raise
+            self._publication.require_proof(row)
             lines = self._body(row, thread, ref)
+            await self._publication.check_body(row["body"])
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
         selected, size = [], 0
@@ -425,7 +426,9 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                 raise
             if stored != reference:
                 raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
+            self._publication.require_proof(row)
             lines = self._body(row, thread, stored)
+            await self._publication.check_body(row["body"])
             if purpose == "artifact_page":
                 self._verify_page(thread, call_id, stored, lines)
             if omitted_field is not None:

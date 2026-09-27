@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 29
+version: 30
 code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners:
   - core
@@ -1689,3 +1689,9 @@ custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完
 [版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)增加纯SecretOutputProtection宿主端口（无新增Secrets实现依赖）；原生副本和字段/Hash检查后、Owner发布前及重建后检查值。缺能力/命中固定错误；Secret绑定的仅Hash恢复经当前Audit核验后只补无正文元数据，不调用Owner、不重执行。
 
 Secret公开处理的父Task检查按本次进入时累计取消基线捕获，仅新增计数触发；异步入口先交付待取消。已捕获旧CancelledError的Task仍可合法执行后续Reconcile，不调用uncancel或读取私有Task字段，见[版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)第13节。
+
+## 共享新增父Task取消检查
+
+公开保护与原输出预算复用`agent.cancellation.parent_cancel_checkpointer`；只判断本次新增取消计数，入口仍异步交付待取消。不调用uncancel或Task私有状态，不把已消费取消计数误判为新的停止请求。已确认写入在产品全局结果拒绝后仍由原恢复路径保留效果元数据；不重Execute/Reconcile。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。

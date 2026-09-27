@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 77
+version: 78
 code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
@@ -596,3 +596,9 @@ recover_route(route):
 | 56 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录单一Coding Agent架构由CI 35453082992完成Linux双版本、macOS、Windows、Container与文档全矩阵验收 |
 | 55 | `296650216e5ec0f6819d4fb607e297b988a956a7` | 2026-09-19 | 物理删除独立Action HTTP/Worker体系，重写26包单一Coding Agent架构、历史只读兼容和归档边界 |
 | 54 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 历史Eval迁入Trusted Action并通过全矩阵验收 |
+
+## 当前运行模型凭据与Artifact公开边界
+
+单一Coding Agent组合根捕获所选模型Profile链原材料，Agent通过纯端口检查结果；Artifact全文与当前Epoch证明同事务写入，所有正文消费入口复验。没有恢复独立Action Plane HTTP/Worker。当前Epoch明确拒绝不同Store或旧NULL证明；跨重启正文安全恢复、历史Session及其他公开出口仍属发布开放工作。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](adr/0096-product-credential-and-artifact-publication-boundary.md)。

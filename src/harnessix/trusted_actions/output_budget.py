@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import math
 from collections.abc import Callable
@@ -11,7 +10,7 @@ from typing import Literal, cast
 
 from pydantic import Field, JsonValue
 
-from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import ExecutionContract
 
@@ -40,15 +39,7 @@ def projection_checkpoint(cancel: CancelToken, deadline: float) -> None:
 def projection_checkpointer(cancel: CancelToken, deadline: float) -> Callable[[], None]:
     """只识别本次公开处理新增的父Task取消；已处理计数不污染后续对账。"""
 
-    task = asyncio.current_task()
-    initial_count = task.cancelling() if task is not None else 0
-
-    def checkpoint() -> None:
-        projection_checkpoint(cancel, deadline)
-        if task is not None and task.cancelling() > initial_count:
-            raise asyncio.CancelledError
-
-    return checkpoint
+    return parent_cancel_checkpointer(lambda: projection_checkpoint(cancel, deadline))
 
 
 def _string_bytes(value: str, remaining: int) -> int:

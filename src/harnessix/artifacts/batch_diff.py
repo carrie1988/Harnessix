@@ -152,16 +152,7 @@ class SQLiteBatchDiffPublisher:
         self, thread_id: UUID, drafts: Sequence[EventDraft], *, expected_sequence: int
     ) -> Thread:
         batch = self.session._freeze_batch(drafts)
-        candidates = [
-            d
-            for d in batch
-            if isinstance(d.payload, ItemStarted)
-            and (
-                isinstance(d.payload.content, PatchBatchApprovalRequestContent)
-                or isinstance(d.payload.content, ToolResultContent)
-                and d.payload.content.patch_batch is not None
-            )
-        ]
+        candidates = _report_candidates(batch)
         if not candidates:
             return await self.session.append(thread_id, batch, expected_sequence=expected_sequence)
         owner = self.session._runtime_owner_token
@@ -216,6 +207,7 @@ class SQLiteBatchDiffPublisher:
                         body=publication.body,
                         purpose=publication.purpose,
                         created_at=published_at,
+                        publication=self.artifacts._publication,
                     )
                     refs[publication.item_id] = ref
                     self.artifacts._fault("batch_diff.after_insert")
@@ -247,3 +239,17 @@ class SQLiteBatchDiffPublisher:
                 raise
             # 正文事务已回滚，只结算原事实。若 Session 本身不可用，让其明确失败。
             return await self.session.append(thread_id, batch, expected_sequence=expected_sequence)
+
+
+def _report_candidates(batch: Sequence[EventDraft]) -> list[EventDraft]:
+    """仅选择正式整组审批或效果事件，其他Session事实不触发报告发布。"""
+    return [
+        d
+        for d in batch
+        if isinstance(d.payload, ItemStarted)
+        and (
+            isinstance(d.payload.content, PatchBatchApprovalRequestContent)
+            or isinstance(d.payload.content, ToolResultContent)
+            and d.payload.content.patch_batch is not None
+        )
+    ]

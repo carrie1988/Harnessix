@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 4
+version: 5
 code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
 owners:
   - core
@@ -1097,3 +1097,9 @@ Material清零描述成所有副本的安全擦除。
 ## 现行版本化Secret公开保护
 
 新增[版本化公开快照详设](../changes/m09-4a-versioned-secret-publication.md)与[实现](../../src/harnessix/secrets/publication.py)：显式name/version材料、同一执行Provider、独立副本和有界键/值/规范JSON扫描；关闭清零合法可变材料。宿主违规超限材料不复制或全量清零，明文由宿主回收；不可变副本擦除、未登记值和任意转换不属于证明范围。
+
+## 原生JSON与完整JSONL保护
+
+SecretPublicationScope接受仅name/version的结构引用，保留原Process绑定兼容；实现`assert_public_json`与`assert_public_jsonl`纯保护端口。JSONL原字节、每条唯一键解码记录与规范JSON共用预算，不以预览授权全文。原值/有限编码命中、无效结构、取消、期限、字节/深度/工作量失败均默认拒绝，不替换原Hash或持久化原值。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。

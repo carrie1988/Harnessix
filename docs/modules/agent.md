@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 15
+version: 16
 code_revision: 46ca9a2006b5f857ecb55924ba969cf2e331187e
 owners:
   - core
@@ -773,3 +773,9 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 | 3 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录0.9.1c Steering历史重备实现、取消协作语义、测试同步提交`84ffd59`及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 2 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 同步0.9.1c Steering与模型历史验证/提交竞态治理，增加乐观重备算法、源码、时序和确定性回归映射 |
 | 1 | `7c50a5815e3d859fcdd93176d8a5019bf419b6bc` | 2026-09-12 | DOC-1.2 Agent Runtime黄金样例初版 |
+
+## 产品公开结果保护
+
+AgentRuntime新增可选`public_output_protection`纯端口，在ToolResult提交前检查原DTO；Artifact预览与完整正文分别检查。命中进入原失败结算，已确认Trusted Action只补核验后的效果元数据，不再Execute。历史用户/模型/Session已保存正文不是该入口的保护范围。
+
+完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
