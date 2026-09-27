@@ -1163,3 +1163,11 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 
 publication_context提供独立捕获UUID和name/version副本，不返回材料值；用于原Scope摘要绑定，不授予历史正文授权。
 完整现行状态及总体/详细设计见[认证历史详设](../changes/m09-4a-authenticated-history-and-seal.md)。
+
+## 默认产品托管Session Key与原库准入
+
+[总体与详设](../changes/m09-4a-managed-session-key-and-root.md)定义独立Key与默认Root强制认证、
+闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
+默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
+Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
+Artifact正文跨重启、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。

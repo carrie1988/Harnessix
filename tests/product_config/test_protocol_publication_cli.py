@@ -14,8 +14,9 @@ from harnessix.product_config.contracts import (
     ProviderDefinition,
     SecretReference,
 )
+from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.session.sqlite import SQLiteSessionStore
-from tests.agent.test_publication import CANARY
+from tests.agent.test_publication import CANARY, protected
 from tests.app_server.test_frame_publication import frame, initialization
 from tests.product_config.conftest import write_config
 
@@ -98,8 +99,13 @@ async def test_actual_product_cli_does_not_echo_sensitive_rpc_metadata(tmp_path,
         assert process.returncode == 0 and not stderr
         assert CANARY.encode() not in b"".join(responses)
         # 无Thread和Turn接受，真实Provider仅构造/关闭，不触发网络模型消费。
-        store = SQLiteSessionStore(state / "sessions.db")
-        assert await store.list_thread_page(after=None, archived=None, limit=200) == ((), False)
+        with protected() as scope:
+            async with open_product_session_binding(state, scope) as binding:
+                store = SQLiteSessionStore(state / "sessions.db", publication=binding)
+                assert await store.list_thread_page(after=None, archived=None, limit=200) == (
+                    (),
+                    False,
+                )
         assert not any(CANARY.encode() in p.read_bytes() for p in state.rglob("*.db*"))
     finally:
         if process.returncode is None:

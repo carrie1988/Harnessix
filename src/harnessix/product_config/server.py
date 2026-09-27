@@ -37,6 +37,7 @@ from harnessix.product_config.runtime import (
     provider_secret_references,
     select_profile,
 )
+from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.secrets.provider import SecretProvider
 from harnessix.secrets.publication import SecretPublicationScope
@@ -222,60 +223,60 @@ async def _serve_product_stdio(
             if previous_action_sha256 is None
             else config_store.load_action_snapshot(previous_action_sha256).config
         )
-        bundle = await build_provider_bundle(
-            startup.config,
-            startup.profile,
-            public_scope,
-            audit=config_store,
-        )
-        async with bundle:
-            # Provider Bundle先进入托管生命周期，确保后续初始化失败时仍会关闭全部SDK Client。
-            sessions = SQLiteSessionStore(startup.state_root / "sessions.db")
+        async with open_product_session_binding(startup.state_root, public_scope) as binding:
+            # 原事实和稳定Key先验真；未知历史、丢失密钥不得构造Provider或开放协议。
+            sessions = SQLiteSessionStore(startup.state_root / "sessions.db", publication=binding)
             await sessions.initialize()
-            requests = SQLiteProtocolRequestStore(sessions.path)
-            artifacts = SQLiteArtifactStore(sessions, public_output_protection=public_scope)
-            async with CodingToolRuntime(
-                startup.workspace_root,
-                artifacts=artifacts,
-                git_executable=startup.git_path,
-            ) as tools:
-                async with open_default_product_action_runtime(
-                    startup.state_root,
+            bundle = await build_provider_bundle(
+                startup.config, startup.profile, public_scope, audit=config_store
+            )
+            async with bundle:
+                requests = SQLiteProtocolRequestStore(sessions.path)
+                artifacts = SQLiteArtifactStore(sessions, public_output_protection=public_scope)
+                async with CodingToolRuntime(
                     startup.workspace_root,
-                    artifacts,
-                    startup.secrets,
-                    startup.actions.config,
-                    artifact_workspace_scope=tools.workspace_scope,
-                    recovery_config=recovery_action,
-                    output_redaction=public_scope,
-                ) as action_owner:
-                    config_store.save_action_recovery_scan(action_owner.recovery_scan)
-                    config_store.save_action_recovery_report(action_owner.recovery)
-                    async with AgentRuntime(
-                        sessions,
-                        bundle,
-                        scoped_tools=tools,
-                        artifacts=artifacts,
-                        public_output_protection=public_scope,
-                        trusted_actions=action_owner.gateway,
-                    ) as runtime:
-                        # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
-                        config_store.activate_runtime(
-                            startup.config,
-                            startup.profile.selected_profile,
-                            startup.actions,
-                            expected_active_sha256=expected_active_sha256,
-                            expected_active_profile=expected_active_profile,
-                            expected_active_action_sha256=expected_active_action_sha256,
-                        )
-                        service = AgentApplicationService(
-                            runtime,
+                    artifacts=artifacts,
+                    git_executable=startup.git_path,
+                ) as tools:
+                    async with open_default_product_action_runtime(
+                        startup.state_root,
+                        startup.workspace_root,
+                        artifacts,
+                        startup.secrets,
+                        startup.actions.config,
+                        artifact_workspace_scope=tools.workspace_scope,
+                        recovery_config=recovery_action,
+                        output_redaction=public_scope,
+                    ) as action_owner:
+                        config_store.save_action_recovery_scan(action_owner.recovery_scan)
+                        config_store.save_action_recovery_report(action_owner.recovery)
+                        async with AgentRuntime(
                             sessions,
-                            requests,
-                            ScopedProtocolArtifactReader(sessions, artifacts, tools),
-                            workspace=startup.workspace_root,
-                        )
-                        await run_stdio(AgentProtocolServer(service), input_stream, output_stream)
+                            bundle,
+                            scoped_tools=tools,
+                            artifacts=artifacts,
+                            public_output_protection=public_scope,
+                            trusted_actions=action_owner.gateway,
+                        ) as runtime:
+                            # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
+                            config_store.activate_runtime(
+                                startup.config,
+                                startup.profile.selected_profile,
+                                startup.actions,
+                                expected_active_sha256=expected_active_sha256,
+                                expected_active_profile=expected_active_profile,
+                                expected_active_action_sha256=expected_active_action_sha256,
+                            )
+                            service = AgentApplicationService(
+                                runtime,
+                                sessions,
+                                requests,
+                                ScopedProtocolArtifactReader(sessions, artifacts, tools),
+                                workspace=startup.workspace_root,
+                            )
+                            await run_stdio(
+                                AgentProtocolServer(service), input_stream, output_stream
+                            )
 
 
 async def run_product_stdio(

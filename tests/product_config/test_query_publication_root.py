@@ -9,8 +9,10 @@ import pytest
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.service import AgentServiceError
 from harnessix.models.scripted import ScriptedProvider
+from harnessix.product_config.contracts import SecretReference
 from harnessix.product_config.runtime import build_provider_bundle
 from harnessix.product_config.server import run_product_stdio
+from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.protocol.contracts import (
     EventsNextParams,
     EventsReplayParams,
@@ -18,6 +20,8 @@ from harnessix.protocol.contracts import (
     ThreadListParams,
     ThreadResumeParams,
 )
+from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
+from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import answer
 from tests.agent.test_publication import CANARY
@@ -32,10 +36,19 @@ async def test_default_root_guards_exported_queries_without_transport_proxy(
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     state = tmp_path / "state"
-    sessions = SQLiteSessionStore(state / "sessions.db")
-    async with AgentRuntime(sessions, ScriptedProvider([answer(CANARY)])) as legacy:
-        thread = await legacy.create_thread(str(workspace / CANARY))
-        await legacy.run_turn(thread.thread_id, "safe", request_id="legacy")
+    state.mkdir(mode=0o700)
+    old_provider = EnvironmentSecretProvider(
+        (EnvironmentSecretSource("old", "1", "OLD"),),
+        environment={"OLD": "different-original-provider-material"},
+    )
+    with SecretPublicationScope(
+        (SecretReference(name="old", version="1"),), old_provider
+    ) as old_scope:
+        async with open_product_session_binding(state, old_scope) as binding:
+            sessions = SQLiteSessionStore(state / "sessions.db", publication=binding)
+            async with AgentRuntime(sessions, ScriptedProvider([answer(CANARY)])) as original:
+                thread = await original.create_thread(str(workspace / CANARY))
+                await original.run_turn(thread.thread_id, "safe", request_id="original")
     path = write_config(tmp_path / "config.json", config)
     providers, held, scopes = [], [], []
     codes = []
@@ -89,5 +102,5 @@ async def test_default_root_guards_exported_queries_without_transport_proxy(
     assert codes == ["public_output_secret_leak"] * 5
     assert scopes and held and all(not any(material.value) for material in held)
     assert providers and all(not provider.requests for provider in providers)
-    # 既有私有历史故意包含合成材料；公开拒绝不能清洗、删除或重新授权它。
+    # 原Scope下已证明的历史不授予当前材料公开许可；原字节不得清洗或重签。
     assert CANARY.encode() in (state / "sessions.db").read_bytes()

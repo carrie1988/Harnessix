@@ -2015,3 +2015,11 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 [完整详细设计](../changes/m09-4a-model-text-publication.md)包含架构、流程、时序、数据流、类/接口/字段、
 伪代码、错误、取消、预算及源码导航；[ADR-0098](../adr/0098-model-stream-publication-boundary.md)说明取舍。
 当前值旧历史出站拒绝不授权旧正文；直接store.append入口、历史Replay、跨重启证明和全部公开出口仍独立开放。
+
+## 默认产品托管Session Key与原库准入
+
+[总体与详设](../changes/m09-4a-managed-session-key-and-root.md)定义独立Key与默认Root强制认证、
+闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
+默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
+Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
+Artifact正文跨重启、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。

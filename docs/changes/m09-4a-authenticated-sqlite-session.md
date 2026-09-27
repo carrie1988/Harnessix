@@ -33,10 +33,12 @@ Event Seal候选不能证明同事务提交。当前Scope未命中也不能追�
 | Migration 0029、逻辑Store认证头、事件证明侧表与投影Checkpoint | 已实现，迁移不补签历史 |
 | Artifact混合事务中的Session事实 | 已接入；真实Runtime归档发布和故障回滚测试 |
 | Artifact正文/二进制持久来源证明与跨Epoch重开 | 未完成，不放宽原Epoch |
-| 默认产品Root、独立Key Backend、密钥备份迁移与三平台正式安装 | 未完成 |
+| 默认产品Root、独立本机Key Backend | 已由后续托管切片实现；原生Windows验收独立记录 |
+| 密钥备份迁移、维护CLI与三平台正式安装 | 未完成 |
 
 显式装配需要独立32字节密钥、稳定Key ID/逻辑Store ID和冻结Scope，不生成临时产品密钥。
-当前默认Root仍使用兼容无认证装配；不能从库测试推导产品历史授权已关闭。
+当前默认Root已由[独立本机托管切片](m09-4a-managed-session-key-and-root.md)强制Binding；
+不允许从本库切片测试推导三平台部署、完整历史授权或Key迁移已关闭。
 认证库正常重开不允许省略Binding。它不保护故意绕过私有API的宿主、不认证Tenant/物理路径，
 不检测整Thread及证明一起删除或整库有效回滚，不提供正文加密和任意DLP。
 0.9.4a、0.9.5/Beta和0.9.6均不因本合同关闭；12件Archive来源权利继续阻塞发布。
@@ -55,7 +57,7 @@ flowchart TD
   Replay --> Consumer[Runtime Fork SDK消费者]
   Snapshot --> Consumer
   Consumer --> Guard[当前Scope出口检查]
-  Future[默认Root与Key Backend 待接入] -.-> Host
+  Future[库级固定版本外 默认Root与Key Backend] -.-> Host
 ```
 
 Store持有事务，不持有模型Credential；Binding拥有独立MAC密钥副本与原Scope。
@@ -230,7 +232,8 @@ replay_and_rebuild:
 ## 11. 部署、迁移、回退与兼容
 
 显式库调用方持有Binding完整生命周期，并保证Key/Store ID/Key ID跨重启稳定。
-默认产品的自动托管、POSIX owner/no-follow、Windows原生保护/ACL、密钥备份/跨机器迁移尚未接入。
+默认产品的自动托管、POSIX owner/no-follow/Darwin ACL与Windows用户DPAPI/原生ACL已由后续切片实现。
+Windows原生验收和密钥备份/跨机器迁移仍独立开放。
 兼容无认证库迁移只产生空证明结构，原旧Event/Artifact/Projection字节保持不变。
 不为已有无证明历史自动激活认证；需要后续正式隔离/恢复流程，不静默丢弃。
 旧28版程序不能打开29版Schema，不提供清除迁移标记、删除证明或退回无保护程序的安全回退方案。
@@ -246,8 +249,13 @@ Linux全量运行；macOS/Windows新增实际执行tests/session与认证Store�
 仅本机通过不代表三平台验收。固定源码`857ce38`与候选Wheel、完整5189/32回归已冻结；
 [六文件证据](../validation/authenticated-sqlite-session-2026-09-28-v1/README.md)明确显式库与默认产品边界。
 
-仍须完成：默认Root强制Key Backend、全部Provider材料、Artifact正文/二进制持久证明、
+默认Root强制Key Backend已由[持久密钥切片](m09-4a-managed-session-key-and-root.md)实现；其Windows原生验收与密钥恢复仍开放。
+仍须完成：全部Provider材料、Artifact正文/二进制持久证明、
 Owner归属/阻塞、SDK Scope-loss相关ID、编号TM攻击、远端MCP、12件Archive权利、三平台真实安装与真实Provider成本。
+
+固定库版本的独立`events`多SELECT未建立一致读快照；默认产品启用后发现合法并发追加可造成
+旧Checkpoint与新Event混读。后续[持久密钥切片7.1](m09-4a-managed-session-key-and-root.md#71-并发追加与认证读版本)
+通过两项确定性双连接测试定位，并在该入口增加读事务。原固定验证目录保留，不回写为新的并发验收。
 
 ## 13. 源码阅读顺序
 

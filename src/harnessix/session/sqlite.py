@@ -537,6 +537,8 @@ class SQLiteSessionStore:
         if after < 0:
             raise KernelError("invalid_cursor", "事件游标不能为负数")
         async with self._connection() as database:
+            # Checkpoint、原事件及Seal必须来自同一读版本，不能混入并发CAS的新前缀。
+            await database.execute("BEGIN")
             return await self._events(database, thread_id, after)
 
     async def rebuild(self, thread_id: UUID) -> Thread:

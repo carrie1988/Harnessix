@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 352,
-    "physical_lines": 77473,
-    "logical_lines": 68710,
-    "documented_modules": 352,
-    "classes": 850,
-    "documented_classes": 343,
-    "functions": 3107,
-    "documented_functions": 488,
+    "source_files": 360,
+    "physical_lines": 78285,
+    "logical_lines": 69402,
+    "documented_modules": 360,
+    "classes": 857,
+    "documented_classes": 346,
+    "functions": 3149,
+    "documented_functions": 492,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1518,7 +1518,7 @@
       "qualname": "SQLiteSessionStore",
       "kind": "class",
       "line": 178,
-      "lines": 397,
+      "lines": 399,
       "documented": true
     },
     {

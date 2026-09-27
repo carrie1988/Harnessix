@@ -11,10 +11,66 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 
+MANAGED_SESSION_KEY_INPUTS = {
+    ".github/workflows/ci.yml",
+    "docs/baselines/readability-0.9.0-final.json",
+    "governance/documentation-policy-v1.json",
+    "governance/readability-policy-v1.json",
+    "pyproject.toml",
+    "uv.lock",
+    "scripts/documentation_check.py",
+    "scripts/generate_specs.py",
+    "scripts/generate_engineering_task_pack.py",
+    "scripts/license_scan.py",
+    "scripts/readability_report.py",
+    "scripts/sbom_generate.py",
+    "scripts/secret_scan.py",
+    "src/harnessix/agent/errors.py",
+    "src/harnessix/agent/runtime.py",
+    "src/harnessix/app_server/server.py",
+    "src/harnessix/app_server/service.py",
+    "src/harnessix/app_server/stdio.py",
+    "src/harnessix/file_lock.py",
+    "src/harnessix/product_config/cli.py",
+    "src/harnessix/product_config/contracts.py",
+    "src/harnessix/product_config/runtime.py",
+    "src/harnessix/product_config/server.py",
+    "src/harnessix/product_config/session_key.py",
+    "src/harnessix/product_config/session_key_codec.py",
+    "src/harnessix/product_config/session_key_dpapi.py",
+    "src/harnessix/product_config/session_key_posix.py",
+    "src/harnessix/product_config/session_key_store.py",
+    "src/harnessix/product_config/session_key_windows.py",
+    "src/harnessix/product_config/session_key_windows_files.py",
+    "src/harnessix/product_config/session_key_windows_security.py",
+    "src/harnessix/sdk/agent_client.py",
+    "src/harnessix/sdk/subprocess.py",
+    "src/harnessix/secrets/provider.py",
+    "src/harnessix/secrets/publication.py",
+    "src/harnessix/session/publication_seal.py",
+    "src/harnessix/session/sqlite.py",
+    "src/harnessix/session/sqlite_publication.py",
+    "src/harnessix/session/store_publication.py",
+    "src/harnessix/workspace/windows.py",
+    "tests/governance/test_security_governance_evidence.py",
+    "tests/product_config/test_managed_session_root.py",
+    "tests/product_config/test_protocol_publication_cli.py",
+    "tests/product_config/test_query_publication_root.py",
+    "tests/product_config/test_server_and_cli.py",
+    "tests/product_config/test_session_key.py",
+    "tests/product_config/test_session_key_dpapi.py",
+    "tests/product_config/test_session_key_windows.py",
+}
+
 
 @pytest.mark.parametrize(
     ("directory", "facts_name", "input_paths"),
     [
+        (
+            "managed-session-key-2026-09-28-v1",
+            "contract-facts.json",
+            MANAGED_SESSION_KEY_INPUTS,
+        ),
         (
             "security-governance-2026-09-27-v1",
             "sbom-facts.json",
@@ -1344,6 +1400,67 @@ def test_authenticated_store_bundle_does_not_claim_default_product_closure() -> 
         assert review["full_regression_acceptance_pending"] is True
     else:
         assert full["passed"] >= 5189 and full["skipped"] == 32
+        assert full["tracked_inputs_unchanged_during_run"] is True
+        assert full["source_inputs_same_as_fixed_revision"] is True
+        assert "\nstatus: current\n" in metadata
+        assert review["full_regression_acceptance_pending"] is False
+    assert ci["current_ci_status"] == "not_started_at_freeze"
+    assert ci["prior_success_is_current_revision_acceptance"] is False
+
+
+def test_managed_session_key_evidence_keeps_platform_and_release_boundaries() -> None:
+    bundle = ROOT / "docs/validation/managed-session-key-2026-09-28-v1"
+    items = {
+        name: json.loads((bundle / name).read_bytes())
+        for name in (
+            "contract-facts.json",
+            "verification.json",
+            "review-packet.json",
+            "bundle-manifest.json",
+            "ci-observation.json",
+        )
+    }
+    facts, verification = items["contract-facts.json"], items["verification.json"]
+    review, ci = items["review-packet.json"], items["ci-observation.json"]
+    assert len({item["code_revision"] for item in items.values()}) == 1
+    assert facts["new_key_and_root_tests"] == 49 and facts["new_governance_tests"] == 2
+    assert facts["production_key_backend_implemented"] is True
+    assert facts["default_product_history_authentication_enabled"] is True
+    assert facts["key_derived_from_provider_credential"] is False
+    assert facts["windows_native_tests"] == 6
+    assert facts["windows_native_acceptance_claimed"] is False
+    assert facts["portable_dpapi_abi_tests"] == 6
+    assert facts["macos_real_acl_tests"] == 3
+    assert facts["legacy_unproven_history_resigned"] is False
+    assert facts["key_backup_migration_implemented"] is False
+    assert facts["maintenance_cli_managed_binding_implemented"] is False
+    assert facts["artifact_body_cross_restart_authentication_implemented"] is False
+    assert facts["real_model_requests"] == 0 and facts["archive_rights_blockers"] == 12
+    assert facts["historical_validation_files"] == 713
+    assert facts["historical_validation_files_unchanged"] is True
+    assert facts["untracked_attack_draft_excluded"] is True
+    consumer = verification["wheel_consumer"]
+    assert consumer["passed"] and consumer["separate_os_processes"]
+    assert consumer["fixture_persistent_key"] is False
+    assert consumer["actual_product_cli"] and consumer["actual_sdk_os_pipes"]
+    records = consumer["records"]
+    assert len(records) == 2 and all(item["module_origin_verified"] for item in records)
+    assert records[0]["all_four_session_facts_committed_together"] is True
+    assert records[1]["original_five_ledgers_preserved_across_os_processes"] is True
+    assert records[0]["key_identity"] == records[1]["key_identity"]
+    assert len(records[1]["rejected"]) == 5
+    assert all(item["original_five_ledgers_unchanged"] for item in records[1]["rejected"])
+    assert verification["diagrams"]["each_png_visually_inspected"] is True
+    assert verification["diagrams"]["diagrams"] == 5
+    assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
+    full = verification["full_regression"]
+    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    assert full["status"] in {"pending", "passed"}
+    if full["status"] == "pending":
+        assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False
+        assert review["full_regression_acceptance_pending"] is True
+    else:
+        assert full["passed"] >= 5234 and full["skipped"] == 38
         assert full["tracked_inputs_unchanged_during_run"] is True
         assert full["source_inputs_same_as_fixed_revision"] is True
         assert "\nstatus: current\n" in metadata

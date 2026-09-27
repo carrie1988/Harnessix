@@ -33,12 +33,14 @@ from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
 from harnessix.product_config.process_profile import probe_product_process_profile
 from harnessix.product_config.server import run_product_stdio
+from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.protocol.contracts import ApprovalRespondParams, PublicApprovalDecision
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import answer
+from tests.agent.test_publication import protected
 from tests.product_config.conftest import write_config
 from tests.product_config.test_migration_and_store import legacy_body
 
@@ -542,7 +544,7 @@ async def test_provider_construction_failure_does_not_activate_config(
         assert [event.operation for event in store.config_events()] == ["loaded"]
 
 
-async def test_session_initialization_failure_closes_provider_bundle(
+async def test_session_initialization_failure_never_constructs_provider_bundle(
     tmp_path: Path,
     config: ProductConfigV2,
     monkeypatch: pytest.MonkeyPatch,
@@ -565,7 +567,10 @@ async def test_session_initialization_failure_closes_provider_bundle(
 
     bundle = TrackingBundle()
 
+    constructed = []
+
     async def build(*_args: object, **_kwargs: object):
+        constructed.append(bundle)
         return bundle
 
     async def fail_initialize(_store: SQLiteSessionStore) -> None:
@@ -583,7 +588,7 @@ async def test_session_initialization_failure_closes_provider_bundle(
             output_stream=io.BytesIO(),
         )
     assert error.value.code == "storage_unavailable"
-    assert bundle.closed
+    assert not constructed and not bundle.closed  # Session失效先于Provider构造。
     with SQLiteProductConfigStore(state / "product-config.db") as store:
         assert store.active() is None
 
@@ -598,20 +603,23 @@ async def test_runtime_owner_conflict_does_not_activate_or_open_protocol(
     workspace.mkdir()
     state = tmp_path / "state"
     path = write_config(tmp_path / "config.json", config)
-    sessions = SQLiteSessionStore(state / "sessions.db")
-    await sessions.initialize()
-    output = io.BytesIO()
+    state.mkdir(mode=0o700)
+    with protected() as scope:
+        async with open_product_session_binding(state, scope) as binding:
+            sessions = SQLiteSessionStore(state / "sessions.db", publication=binding)
+            await sessions.initialize()
+            output = io.BytesIO()
 
-    async with sessions.runtime_owner():
-        with pytest.raises(KernelError) as error:
-            await run_product_stdio(
-                config_path=path,
-                profile_id=None,
-                workspace=workspace,
-                state_directory=state,
-                input_stream=io.BytesIO(),
-                output_stream=output,
-            )
+            async with sessions.runtime_owner():
+                with pytest.raises(KernelError) as error:
+                    await run_product_stdio(
+                        config_path=path,
+                        profile_id=None,
+                        workspace=workspace,
+                        state_directory=state,
+                        input_stream=io.BytesIO(),
+                        output_stream=output,
+                    )
     assert error.value.code == "runtime_busy"
     assert output.getvalue() == b""
     with SQLiteProductConfigStore(state / "product-config.db") as store:

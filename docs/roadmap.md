@@ -821,3 +821,11 @@ Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Ru
 完整5189/32回归、四幅实际渲染图、候选Wheel双OS消费者已冻结。
 [验证目录](validation/authenticated-sqlite-session-2026-09-28-v1/README.md)与正式详设固定原字节和全部来源边界。
 当前未启用默认Root、正式Key Backend或Artifact正文跨重启，继续保持0.9.4a与整体0.9开放。
+
+## 0.9.4a 默认产品托管Session Key子切片
+
+默认Root已强制独立本机Key与认证Session，先验原库再构造Provider和开放Protocol。
+缺Key、旧未证明历史不补签/不删除；规范文件/ACL、原候选恢复、超时取消单任务结算有测试。
+[总体与详设](changes/m09-4a-managed-session-key-and-root.md)区分本机实际验证、Windows原生测试入口与正式部署。
+Key备份/维护CLI、Artifact持久正文、全Provider/Owner/SDK/MCP、12件来源权利及三平台安装仍开放，
+不勾选0.9.4a、0.9.5、0.9.6或整体0.9。
