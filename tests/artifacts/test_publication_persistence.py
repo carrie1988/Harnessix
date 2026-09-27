@@ -85,7 +85,7 @@ async def test_migration_rejects_partial_or_unknown_publication_proof(tmp_path, 
     store = SQLiteSessionStore(tmp_path / "s.db")
     await store.initialize()
     with sqlite3.connect(store.path) as db:
-        with pytest.raises(sqlite3.IntegrityError):
+        with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
             db.execute(
                 "INSERT INTO agent_artifacts "
                 "(artifact_id,thread_id,turn_id,call_id,workspace_scope,manifest_json,size_bytes,"

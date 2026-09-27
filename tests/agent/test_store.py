@@ -288,7 +288,9 @@ async def test_archive_lookup_migration_upgrades_legacy_projection(tmp_path: Pat
         del legacy["archive"]
         encoded = json.dumps(legacy, separators=(",", ":"))
         database.execute("DROP INDEX agent_threads_archive_list_idx")
-        database.execute("DELETE FROM agent_migrations WHERE version = 27")
+        database.execute("ALTER TABLE agent_artifacts DROP COLUMN publication_policy")
+        database.execute("ALTER TABLE agent_artifacts DROP COLUMN publication_epoch")
+        database.execute("DELETE FROM agent_migrations WHERE version >= 27")
         database.execute(
             "UPDATE agent_threads SET snapshot_json = ?, snapshot_sha256 = ? WHERE thread_id = ?",
             (encoded, hashlib.sha256(encoded.encode()).hexdigest(), str(active.thread_id)),
@@ -299,7 +301,7 @@ async def test_archive_lookup_migration_upgrades_legacy_projection(tmp_path: Pat
     assert [thread.thread_id for thread in active_page] == [active.thread_id]
     assert [thread.thread_id for thread in archived_page] == [archived.thread_id]
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 27
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 28
 
 
 async def test_archive_lookup_migration_rejects_invalid_legacy_json(tmp_path: Path) -> None:
@@ -308,7 +310,9 @@ async def test_archive_lookup_migration_rejects_invalid_legacy_json(tmp_path: Pa
     thread, _ = await create(store, tmp_path)
     with sqlite3.connect(store.path) as database:
         database.execute("DROP INDEX agent_threads_archive_list_idx")
-        database.execute("DELETE FROM agent_migrations WHERE version = 27")
+        database.execute("ALTER TABLE agent_artifacts DROP COLUMN publication_policy")
+        database.execute("ALTER TABLE agent_artifacts DROP COLUMN publication_epoch")
+        database.execute("DELETE FROM agent_migrations WHERE version >= 27")
         database.execute(
             "UPDATE agent_threads SET snapshot_json = 'not-json' WHERE thread_id = ?",
             (str(thread.thread_id),),
@@ -331,13 +335,13 @@ async def test_migration_idempotent_future_and_checksum(tmp_path: Path) -> None:
     await asyncio.gather(store.initialize(), SQLiteSessionStore(store.path).initialize())
     assert store.path.stat().st_mode & 0o777 == 0o600
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 27
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 28
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        database.execute("INSERT INTO agent_migrations VALUES (28, 'future')")
+        database.execute("INSERT INTO agent_migrations VALUES (29, 'future')")
     with pytest.raises(KernelError, match="高于"):
         await store.initialize()
     with sqlite3.connect(store.path) as database:
-        database.execute("DELETE FROM agent_migrations WHERE version = 28")
+        database.execute("DELETE FROM agent_migrations WHERE version = 29")
         database.execute("UPDATE agent_migrations SET checksum = 'changed'")
     with pytest.raises(KernelError, match="发生变化"):
         await store.initialize()

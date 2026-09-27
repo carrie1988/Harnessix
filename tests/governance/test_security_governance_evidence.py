@@ -284,6 +284,9 @@ ROOT = Path(__file__).resolve().parents[2]
             "product-publication-2026-09-27-v1",
             "contract-facts.json",
             {
+                "tests/agent/test_store.py",
+                "tests/agent/test_store_maintenance.py",
+                "tests/agent/test_wal_initialization.py",
                 "docs/baselines/readability-0.9.0-final.json",
                 "governance/readability-policy-v1.json",
                 "scripts/generate_specs.py",
