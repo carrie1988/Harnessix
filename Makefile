@@ -1,7 +1,7 @@
 .PHONY: install format lint readability documentation contracts taskpacks supply-chain typecheck test check run spec
 
 install:
-	uv sync --all-extras --dev
+	uv sync --locked --all-extras --dev
 
 format:
 	uv run ruff format .

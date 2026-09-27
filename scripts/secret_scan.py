@@ -17,18 +17,20 @@ RULES: tuple[tuple[str, re.Pattern[bytes]], ...] = (
     ("aws_access_key", re.compile(rb"\bAKIA[0-9A-Z]{16}\b")),
     ("github_token", re.compile(rb"\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\b")),
     ("slack_token", re.compile(rb"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
-    ("generic_api_assignment", re.compile(
-        rb"(?i)(api[_-]?key|secret[_-]?key|access[_-]?token)\s*[:=]\s*['\"][A-Za-z0-9/+_=-]{24,}['\"]"
-    )),
+    (
+        "generic_api_assignment",
+        re.compile(
+            rb"(?i)(api[_-]?key|secret[_-]?key|access[_-]?token)\s*[:=]\s*['\"][A-Za-z0-9/+_=-]{24,}['\"]"
+        ),
+    ),
     ("bearer_literal", re.compile(rb"(?i)bearer\s+[A-Za-z0-9._~+/=-]{24,}")),
 )
 
 # 明确豁免：文档中的占位说明与公共示例不属于泄漏。
-ALLOWLIST_PATHS = (
-    ".env.example",
-)
+ALLOWLIST_PATHS = (".env.example",)
 
-POSITIVE_FIXTURE = b'api_key = "AbCdEfGhIjKlMnOpQrStUvWx123456"'
+# 自检在内存构造可命中的假值；不把自身源码豁免于真实扫描。
+POSITIVE_FIXTURE = b'api_key = "' + b"A" * 32 + b'"'
 
 
 def _tracked_files(root: Path) -> list[Path]:
@@ -61,9 +63,7 @@ def scan_paths(paths: Sequence[Path]) -> list[dict[str, object]]:
         for rule_name, pattern in RULES:
             for match in pattern.finditer(body):
                 line = body.count(b"\n", 0, match.start()) + 1
-                findings.append(
-                    {"rule": rule_name, "path": str(path), "line": line}
-                )
+                findings.append({"rule": rule_name, "path": str(path), "line": line})
     return findings
 
 

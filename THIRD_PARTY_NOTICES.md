@@ -22,6 +22,14 @@ Harnessix Code依赖第三方开源组件。各组件仍由各自权利人所有
 | HTTPX2 | Anthropic适配器直接使用的HTTP客户端（HTTPX延续项目） | BSD-3-Clause | [pydantic/httpx2](https://github.com/pydantic/httpx2) |
 | httpx2-jsfetch | HTTPX2的可选传输依赖（Pyodide/JS fetch） | BSD-3-Clause | [pydantic/httpx2](https://github.com/pydantic/httpx2) |
 
+## 构建校验Schema
+
+[`governance/schemas/cyclonedx-1.5`](governance/schemas/cyclonedx-1.5/PROVENANCE.json)保存
+CycloneDX官方规范仓库Revision `c320fc0f0b46873864927d9d5684eea7ba439728`的三个未修改JSON Schema，
+仅用于离线验证pre-build依赖库存。来源为[官方规范仓库](https://github.com/CycloneDX/specification/tree/c320fc0f0b46873864927d9d5684eea7ba439728/schema)，
+许可证为Apache-2.0，完整许可证随[Schema目录](governance/schemas/cyclonedx-1.5/LICENSE)保存；
+来源路径与逐文件摘要记录在`PROVENANCE.json`。这些Schema不属于运行时依赖，也不随Agent Wheel装配。
+
 ## 内置Eval数据
 
 `harnessix-engineering/v1`包含三个只用于离线Coding Eval的最小派生Benchmark Archive。每个Archive均携带对应

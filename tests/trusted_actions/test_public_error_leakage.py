@@ -88,15 +88,19 @@ def test_plan_resolve_exception_is_sanitized(tmp_path: Path) -> None:
         raise RuntimeError(_payload())
 
     actions, plans, audit = router(root)
-    actions.register(TrustedActionDefinition(tool, FileInput, resolve, FakeExecutor(
-        ActionExecutionOutcome(kind="succeeded")
-    )))
+    actions.register(
+        TrustedActionDefinition(
+            tool, FileInput, resolve, FakeExecutor(ActionExecutionOutcome(kind="succeeded"))
+        )
+    )
     with pytest.raises(KernelError) as caught:
         actions.plan(invocation(tool), context(root))
     assert caught.value.code == "action_plan_failed"
-    _assert_no_leak(str(caught.value), repr(caught.value), *_store_bytes(
-        root.parent / "state" / "plans.db", root.parent / "state" / "audit.db"
-    ))
+    _assert_no_leak(
+        str(caught.value),
+        repr(caught.value),
+        *_store_bytes(root.parent / "state" / "plans.db", root.parent / "state" / "audit.db"),
+    )
 
 
 def test_plan_policy_exception_is_sanitized(tmp_path: Path) -> None:

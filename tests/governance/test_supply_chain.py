@@ -7,11 +7,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
-from scripts.license_scan import build_report, locked_names
-from scripts.sbom_generate import build_sbom, canonical_bytes
-from scripts.secret_scan import RULES, scan_paths
+from scripts.license_scan import build_report
+from scripts.sbom_generate import build_sbom, canonical_bytes, validate_sbom
+from scripts.secret_scan import scan_paths
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -35,8 +33,9 @@ def test_sbom_is_deterministic_and_complete() -> None:
     document = json.loads(first)
     names = [item["name"] for item in document["components"]]
     assert names == sorted(names)
-    assert len(names) >= 70
+    assert len(names) == 73
     assert document["bomFormat"] == "CycloneDX" and document["specVersion"] == "1.5"
+    validate_sbom(document)
 
 
 def test_sbom_check_fails_on_drift(tmp_path: Path) -> None:
@@ -96,9 +95,9 @@ def test_committed_license_report_is_clean() -> None:
 
 def test_secret_rules_hit_sensitive_and_miss_benign(tmp_path: Path) -> None:
     secret = tmp_path / "secret.txt"
-    secret.write_bytes(b'api_key = "AbCdEfGhIjKlMnOpQrStUvWx123456"')
+    secret.write_bytes(b'api_key = "' + b"A" * 32 + b'"')
     benign = tmp_path / "benign.txt"
-    benign.write_bytes(b"api_key = \"${ENVIRONMENT_REFERENCE}\"\n")
+    benign.write_bytes(b'api_key = "${ENVIRONMENT_REFERENCE}"\n')
     findings = scan_paths([secret, benign])
     assert [item["path"] for item in findings] == [str(secret)]
     assert findings[0]["rule"] == "generic_api_assignment"
@@ -126,3 +125,8 @@ def test_workflow_actions_are_sha_pinned() -> None:
             assert len(ref) == 40 and all(char in "0123456789abcdef" for char in ref), (
                 f"{path.name}: {uses} 未按完整SHA固定"
             )
+
+
+def test_make_install_consumes_locked_dependencies() -> None:
+    install = (ROOT / "Makefile").read_text().split("install:\n", 1)[1].split("\n\n", 1)[0]
+    assert "uv sync --locked --all-extras --dev" in install

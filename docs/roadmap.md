@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 91
-code_revision: a2245f568ff3cab71c63e97869e66c93a8ebc529
+version: 92
+code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
 owners:
   - core
 modules:
@@ -472,6 +472,26 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Trusted Action Runtime补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
 - [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
 - [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
+
+### 0.9.4实施计划与完成边界
+
+按[安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)分为四个子切片；
+代码存在和扫描零命中不是完成条件，所有已复现缺口先进入发布阻断清单。
+
+- [ ] **0.9.4a 公开错误与泄漏回归**：统一Resolver/Policy/Executor/Reconcile的公开码与固定消息，
+  校验模型、Session、Audit、Protocol与Telemetry五个公开面。现有实现仍原样透传`KernelError`，
+  已复现不可信错误文本/码不能仅凭异常类名获得公开资格，须整改并完成完整集成回归；
+- [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
+  仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
+  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)进入验证；旧CI的未跟踪产物失败不追认通过。
+  许可证版本绑定、压缩件扫描、示例文件整文件豁免及未固定安装输入仍须关闭；
+- [ ] **0.9.4c 编号化攻击回归**：TM-01～TM-13及子编号均须对应真实攻击输入、具体控制、预期拒绝、
+  不变副作用和三平台适用边界，不用不存在的接口、空构造或宽泛异常断言冒充回归；
+- [ ] **0.9.4d 远端MCP**：Streamable HTTP、独立目标身份、OAuth获取/刷新/撤销与Secret最小作用域、
+  受管出口、会话/Schema漂移及UNKNOWN对账；默认产品不自动装配，完整离线合同与故障测试须通过。
+
+只有四项均通过源码研究、正式设计、实现、失败/取消/超时/恢复测试、三平台相关门禁和文档同步，
+才可关闭0.9.4；这不替代0.9.5的真实安装/Beta及0.9.6 Provider发布证据。
 
 ### 0.9.1实施计划与完成边界
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 668598220aa0cf328cb2e678bf16661550423804
+version: 4
+code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
 owners:
   - core
 modules:
@@ -32,7 +32,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway输出已脱敏、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
-| 本文设计状态 | `reviewing`；目标设计，不表示任何子切片已实现。 |
+| 本文设计状态 | `reviewing`；a/b已有实现候选，b的旧CI因缺失未跟踪SBOM失败，整改与三平台验收未完成；c/d尚未验收。 |
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |
 
@@ -186,15 +186,29 @@ sequenceDiagram
 
 ## 13. 风险、限制与后续工作
 
+### 13.1 已复现的发布阻断缺口
+
+| 编号 | 当前行为与可复现边界 | 必须完成的整改 |
+|---|---|---|
+| SEC-094-A1 | [`sanitize_plan_exception`](../../src/harnessix/trusted_actions/public_errors.py)按异常类型原样信任`KernelError`。注入自定义错误码/内部消息时仍返回原对象；类型本身不证明错误内容可以公开。 | 固定公开码与消息的信任边界，补Resolver/Policy经模型、Session、Audit、Protocol和Telemetry的带式样集成回归，不依赖异常类名。 |
+| SEC-094-B2 | [`scan_paths`](../../scripts/secret_scan.py)对含NUL的二进制跳过，对`.env.example`整文件豁免。压缩Wheel成员和示例文件写入同一可命中假值，均得到空结果。 | 有界归档成员检查、取消整文件豁免、扫描不完整失败关闭；每条固定规则均有正反例，不以零命中冒充覆盖。 |
+| SEC-094-B3 | [`build_report`](../../scripts/license_scan.py)只按包名读已安装元数据，不存锁定版本。相同包名的`0.0.0`与`999.0.0`两个锁输入生成相同报告。 | 精确包版本/来源/证据绑定、平台条件证据与许可证表达式决策；版本升级不能沿用未验证的旧许可结论。 |
+
+上述行为是离线合成输入已确认的控制缺口，不表示发现或保存了真实凭据；尚未通过端到端回归的
+整改不得标记关闭。SBOM格式与干净检出整改只解决库存交付，不替代这些独立安全门禁。
+
 - 扫描与攻击回归覆盖的是已知模式，不证明无未知漏洞；1.0发布仍需0.9.5安装证据与0.9.6 Provider证据。
 - 远端MCP的公网真实联调需要受控目标与凭据，属0.9.5 Dogfooding候选，不阻塞本切片离线合同。
 - 0.9.5受控Beta与0.9.6真实Provider凭据是外部依赖，届时逐项登记。
 
 ## 14. 变更记录
 
+0.9.4b的干净检出、CycloneDX格式和版本化输入整改见[可复现SBOM专项详设](m09-4b-reproducible-sbom.md)。
+该整改不替代后续许可证来源、发行物Secret扫描、攻击回归或远端MCP验收。
+
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 1 | `668598220aa0cf328cb2e678bf16661550423804` | 2026-09-25 | 建立0.9.4总体设计与a～d子切片分解；实现与验收待完成。 |
 | 2 | `668598220aa0cf328cb2e678bf16661550423804` | 2026-09-25 | 0.9.4a实现：新增`trusted_actions/public_errors.py`统一公开错误合同；计划阶段Resolver/Policy异常收敛为`action_plan_failed`，执行/对账异常映射统一收口；新增五公开面×四式样泄漏回归；Trusted Actions模块设计同步。 |
-| 3 | x | 2026-09-25 | 0.9.4b实现：许可证白名单扫描（74包全过，平台条件包登记overrides）、CycloneDX SBOM漂移门禁、Secret扫描（零命中+正例自检）、CI动作全部SHA固定、httpx2/httpx2-jsfetch补登记、许可证权利链与安装/扩展来源两份审查文档；make supply-chain纳入check链与CI。 |
 | 3 | `7a39f28bfb0d82e75a9e7a8b677c642d7733f845` | 2026-09-25 | 0.9.4b实现：许可证白名单扫描（74包全过，平台条件包登记overrides）、CycloneDX SBOM漂移门禁、Secret扫描（零命中+正例自检）、CI动作全部SHA固定、httpx2/httpx2-jsfetch补登记、许可证权利链与安装/扩展来源两份审查文档；make supply-chain纳入check链与CI。 |
+| 4 | `880c3065482c00d4b0761c739c3ff94f7a7d00cb` | 2026-09-27 | 登记旧CI的未跟踪SBOM与文档链接失败；整改候选增加版本化pre-build库存、固定上游Schema、归档/图身份和干净检出回归；不追认旧实现完成。 |

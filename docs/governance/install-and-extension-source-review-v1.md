@@ -1,8 +1,8 @@
 ---
 doc_type: governance
 status: current
-version: 1
-code_revision: 7a39f28bfb0d82e75a9e7a8b677c642d7733f845
+version: 2
+code_revision: 880c3065482c00d4b0761c739c3ff94f7a7d00cb
 owners:
   - core
 modules:
@@ -22,14 +22,14 @@ supersedes: []
 
 ## 1. 审查范围与结论
 
-本次审查覆盖全部安装入口（源码安装、Makefile、uv锁定、Dockerfile、CI工作流）与全部扩展来源（MCP Target、Skill Root、Hook注册、内置Task Pack）。结论：安装链输入全部可锁定、可校验；CI动作全部按完整SHA固定；扩展来源均受目录摘要/白名单约束，默认产品不自动装配任何远端或第三方可执行内容。审查同时发现并关闭两类缺口：`actions/checkout`此前按版本标签而非SHA固定（已全部固定为`1af3b93b6815bc44a9784bd300feb67ff0d1eeb3`）；Anthropic适配器直接使用的`httpx2`与`httpx2-jsfetch`未在[THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)登记（已补充）。
+本次审查登记源码安装、Makefile、uv锁定、Dockerfile、CI工作流及MCP/Skill/Hook/内置Task Pack来源。CI动作已按完整SHA固定；但Docker基础镜像仍用可变标签，镜像内安装未消费`uv.lock`，文档工具的传递依赖也未形成完整固定清单，因此不能认定安装链全部可复现。扩展按各自显式装配与摘要边界执行，默认产品不自动装配任意远端执行内容。`actions/checkout`已固定为`1af3b93b6815bc44a9784bd300feb67ff0d1eeb3`；Anthropic适配器使用的`httpx2`与`httpx2-jsfetch`已补充到[THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)，不等同于其全部发行许可证义务已核验。
 
 ## 2. 安装入口
 
 | 入口 | 约束与复核结论 |
 |---|---|
-| `make install` / `uv sync --locked --all-extras --dev` | 全部依赖由`uv.lock`逐包SHA-256固定；CI使用`--locked`禁止解析漂移。 |
-| [Dockerfile](../../Dockerfile) | 基础镜像`python:3.12-slim`，非root（uid 10001），仅安装`.[observability]`；无构建期网络脚本。 |
+| `make install` / `uv sync --locked --all-extras --dev` | `make install`与CI均使用`--locked`，依赖由`uv.lock`的发行Archive SHA-256约束；这不证明解释器或构建后端自身已固定。 |
+| [Dockerfile](../../Dockerfile) | 基础镜像`python:3.12-slim`，非root（uid 10001），安装`.[observability]`；镜像标签和pip依赖解析未固定，是后续发行供应链门禁，不声明已关闭。 |
 | CI工作流（13个） | 全部第三方动作按完整40位SHA固定，由[`test_workflow_actions_are_sha_pinned`](../../tests/governance/test_supply_chain.py)持续门禁；`setup-uv`按SHA固定并锁定Python 3.12。 |
 | 发布Wheel | `pyproject.toml`声明依赖范围；sdist排除`benchmarks/taskpacks/*/solutions`，不携带Golden Patch。 |
 
