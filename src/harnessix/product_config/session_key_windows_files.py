@@ -6,13 +6,22 @@ import ctypes
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.session_key_codec import MAX_KEY_FILE_BYTES, unavailable
 from harnessix.product_config.session_key_windows_security import PrivateKeySecurity
 from harnessix.workspace.windows import WindowsWorkspaceRoot, _api_path
 from harnessix.workspace.windows_private_security import PrivateWindowsSecurity
+
+
+def _raise_open_failure(error: int, *, metadata_only: bool, exclusive: bool) -> NoReturn:
+    """仅观察性缺失返回类型化错误，保留密钥正文及权限、共享冲突的原拒绝。"""
+    if metadata_only and error in {2, 3}:
+        raise FileNotFoundError("私有元数据目标不存在")
+    if exclusive and error in {32, 33}:
+        raise KernelError("publication_key_busy", "Session密钥初始化正在进行")
+    raise unavailable()
 
 
 class WindowsKeyFiles:
@@ -76,9 +85,13 @@ class WindowsKeyFiles:
             None,
         )
         if handle is None or handle == ctypes.c_void_p(-1).value:
-            if exclusive and ctypes.__dict__["get_last_error"]() in {32, 33}:
-                raise KernelError("publication_key_busy", "Session密钥初始化正在进行")
-            raise unavailable()
+            # 只为元数据观察保留真实缺失类型，供备份盘点处理已识别的SQLite生命周期文件。
+            # 普通密钥读取、权限不足和共享冲突仍按原固定错误拒绝，不能当作安全删除。
+            _raise_open_failure(
+                ctypes.__dict__["get_last_error"](),
+                metadata_only=metadata_only,
+                exclusive=exclusive,
+            )
         owned = int(handle)
         try:
             info = self.root._information(owned)

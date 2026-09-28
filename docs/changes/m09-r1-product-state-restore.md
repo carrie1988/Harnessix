@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 95115fa58bf91e3b503a3e709a47d76e75511f26
+version: 3
+code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -12,6 +12,7 @@ related_tests:
   - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_product_state_backup.py
   - tests/product_config/test_product_backup_files_windows.py
+  - tests/product_config/test_windows_metadata_contracts.py
 supersedes: []
 ---
 
@@ -280,10 +281,12 @@ harnessix state recover --state-directory "$STATE_ROOT" \
 
 专项[`test_product_state_restore.py`](../../tests/product_config/test_product_state_restore.py)
 复用原默认stdio产品、Agent Client、真实SQLite、认证Artifact及事务CAS的Fixture，不使用单库替身。
-该模块与原备份模块对POSIX/Windows均执行；Windows原生CI先运行两模块的84项完整业务状态用例，
+该模块与原备份模块对POSIX/Windows均执行；Windows原生CI先运行两模块的84项完整业务状态用例及26项错误分类正反例，
 再执行原宽范围回归。模型返回使用固定Scripted步骤，不访问供应商API，不降低恢复验真或私有权限要求。
 原生结果需覆盖实际Artifact查询、事务Blob、可选本机Process回执及真实子进程硬退出；
 源码外空会话恢复不能替代本组业务状态用例，Windows Server结果也不能外推Windows11消费者发行。
+原生首轮82通过/2失败及严格元数据缺失修复见[备份详设](m09-r1-product-state-backup.md#101-windows元数据缺失与合法错key负对照)；
+保留原失败，恢复本身的来源、Journal和目录切换合同不改变。
 
 | 验证项 | 重点测试函数 | 对应组件 |
 |---|---|---|

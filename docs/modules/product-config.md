@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
+version: 38
+code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
 owners:
   - core
 modules:
@@ -2125,6 +2125,22 @@ Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改
 完整字段、流程、失败及测试映射见同一详设第18节；原生未通过前仍是实现候选。
 文件集合枚举在Windows只申请原元数据访问，不与原排他运行锁重新争用正文读权；仍逐项检查所有生命周期文件，
 随后才由原布局分类排除锁正文复制。不能扩大原锁共享或跳过对象验权，完整合同及正反测试见详设第19节。
+
+## Windows完整业务状态与元数据盘点错误分类
+
+完整备份和恢复共享原正式Runtime、认证Artifact及事务Blob用例，不再整体跳过Windows。
+可选Process回执采用实际Windows Job Object及原Windows Plan；CI在宽范围回归前执行84项业务状态用例与26项错误分类正反例。
+原生首轮82通过/2失败保持原判定，不能由本地通过或空会话恢复推导全部通过。
+
+[`session_key_windows_files.py`](../../src/harnessix/product_config/session_key_windows_files.py)
+的`_raise_open_failure`只在元数据观察模式中将Win32 2/3保留为无私有路径的FileNotFoundError。
+[`state_backup_files.py`](../../src/harnessix/product_config/state_backup_files.py)沿用原Transient规则，仅忽略已消失的SQLite生命周期文件；
+普通数据库、Key或Blob缺失仍拒绝，权限/共享错误不变成合法删除。原Root、父链、Reparse、单链及DACL检查不减少。
+Key正文读取仍保持固定错误；测试使用另一实例的合法原平台编码区分错Key与损坏DPAPI密文，不放宽错误码断言。
+
+完整接口、字段、错误分流图、原始失败及测试映射见[备份详设](../changes/m09-r1-product-state-backup.md#101-windows元数据缺失与合法错key负对照)
+和[恢复详设](../changes/m09-r1-product-state-restore.md)。本增量不迁移数据、不换用户Key、不重放效果，
+也不关闭Windows11发行、真实模型编码、独立Beta或R1/R4整体。
 
 ## Windows Process物理输出与完整备份验真
 

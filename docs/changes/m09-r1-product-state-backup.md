@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 95115fa58bf91e3b503a3e709a47d76e75511f26
+version: 3
+code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/product_config/test_product_state_backup.py
   - tests/product_config/test_product_backup_files_windows.py
+  - tests/product_config/test_windows_metadata_contracts.py
 supersedes: []
 ---
 
@@ -298,8 +299,42 @@ Windows使用`WindowsProcessSupervisor`和原Windows执行Plan，POSIX使用原P
 Workspace拒绝、独立Writer拒绝、唯一线程重复取消、超时、三个普通发布故障窗口及只读Store禁止初始化。
 另有真实原生Rename后确认丢失场景，验证回执保留和完整制品只读验真，不把函数返回异常视为发布未发生。
 Windows端口用例继续单独验证大文件、不可覆盖目录、硬链接和Junction；macOS结果中的skip不得算作Windows通过。
-完整备份与恢复两个模块不再整体跳过Windows；原生CI在宽范围回归前执行同一组84项用例，
+完整备份与恢复两个模块不再整体跳过Windows；原生CI在宽范围回归前执行同一组84项业务用例及26项错误分类正反例，
 任何平台实际失败均保留，不以新增选择器或源码存在代替实际通过。
+
+### 10.1 Windows元数据缺失与合法错Key负对照
+
+固定`c38e806`的[原生CI](https://github.com/carrie1988/Harnessix/actions/runs/36477355105)
+实际为82通过、2失败：错Key测试破坏DPAPI密文而非生成合法错Key；
+SHM在只读连接关闭后正常消失，却被底层统一转换为密钥不可用，无法进入已有的生命周期文件缺失分支。
+这两个问题分别属于测试输入语义和生产错误分类，不能通过扩大允许错误码集合或吞掉所有KernelError处理。
+
+[`WindowsKeyFiles.open`](../../src/harnessix/product_config/session_key_windows_files.py)
+在CreateFileW失败后立即读取原GetLastError。只有`metadata_only=True`且错误码为2/3时返回
+无文件名及私有路径的FileNotFoundError；普通密钥正文读取仍使用原固定拒绝，5/32/33等错误不会变成缺失。
+错误码含义依据[Microsoft Win32官方定义](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)。
+
+```mermaid
+flowchart TD
+    Open[原CreateFileW失败] --> Code[立即取得原GetLastError]
+    Code --> Gate{仅元数据且错误为2或3}
+    Gate -->|否| Refuse[原固定KernelError 拒绝]
+    Gate -->|是| Missing[无私有路径的FileNotFoundError]
+    Missing --> Inventory[原tree_files盘点]
+    Inventory --> Allowed{原Transient规则识别SQLite生命周期文件}
+    Allowed -->|是| Skip[忽略已消失的非备份文件]
+    Allowed -->|否| Invalid[备份拒绝 原状态不变]
+```
+
+**流程说明：** 原父链、Root身份、Reparse、单硬链接和DACL检查继续执行。
+只有原Transient回调识别的WAL/SHM等生命周期文件可被忽略；数据库、Key、Blob及未声明文件缺失仍使备份失败。
+权限或共享错误不能仅因文件后来消失而被追认为合法删除，不新增持久事实或恢复重放。
+
+错Key测试通过原`create_private_tree`及`open_product_session_binding`创建另一临时实例的合法材料，
+再替换被测当前Key文件；Windows采用原DPAPI编码，POSIX采用原明文封装。
+两平台均要求原`product_backup_key_mismatch`且备份字节不变，不接受损坏格式作为错Key成功证据。
+[`test_windows_metadata_contracts.py`](../../tests/product_config/test_windows_metadata_contracts.py)
+覆盖两种无效Handle、缺失、普通密钥读取、权限/共享/参数错误和原排他冲突；适配器测试不替代Windows实机复验。
 
 固定Source Revision、两种Python环境的精确结果、原RED、实际图示、Wheel字节证明、资料Manifest及评审包
 见[集中验证目录](../validation/product-state-backup-2026-09-28-v1/README.md)。

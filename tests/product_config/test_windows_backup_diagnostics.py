@@ -12,19 +12,24 @@ from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
 from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics
 
 
-@pytest.mark.parametrize("location", ["publication", "backup"])
+@pytest.mark.parametrize("location", ["publication", "backup", "metadata"])
 def test_native_diagnostics_keep_original_error_and_exclude_body(monkeypatch, capsys, location):
     original_error = OSError(32, "PRIVATE-DIAGNOSTIC-BODY /private/canary/not-for-log")
 
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise original_error
 
     monkeypatch.setitem(ctypes.__dict__, "get_last_error", lambda: 32)
     monkeypatch.setattr(WindowsKeyFiles, "publish", fail)
+    monkeypatch.setattr(WindowsKeyFiles, "open", fail)
     install_backup_diagnostics(monkeypatch)
     if location == "publication":
         with pytest.raises(OSError) as caught:
             object.__new__(WindowsKeyFiles).publish(None, None)
+        assert caught.value is original_error
+    elif location == "metadata":
+        with pytest.raises(OSError) as caught:
+            object.__new__(WindowsKeyFiles).open(None, metadata_only=True)
         assert caught.value is original_error
     else:
         with pytest.raises(backup.KernelError) as caught:

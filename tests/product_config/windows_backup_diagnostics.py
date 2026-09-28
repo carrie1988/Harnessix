@@ -13,6 +13,7 @@ from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
 
 def install_backup_diagnostics(monkeypatch):
     original_publish = WindowsKeyFiles.publish
+    original_key_open = WindowsKeyFiles.open
     original_errors = backup._backup_errors
     original_open = WindowsFileOperations.open_existing
     original_rename = WindowsFileOperations.rename
@@ -29,6 +30,14 @@ def install_backup_diagnostics(monkeypatch):
             return original_open(self, path, **arguments)
         except Exception as error:
             _emit("private-object-open", error)
+            raise
+
+    def open_key(self, path, **arguments):
+        try:
+            return original_key_open(self, path, **arguments)
+        except Exception as error:
+            if arguments.get("metadata_only"):
+                _emit("private-metadata-open", error, ctypes.__dict__["get_last_error"]())
             raise
 
     def rename_private(self, handle, name, **arguments):
@@ -48,6 +57,7 @@ def install_backup_diagnostics(monkeypatch):
                 raise
 
     monkeypatch.setattr(WindowsKeyFiles, "publish", publish)
+    monkeypatch.setattr(WindowsKeyFiles, "open", open_key)
     monkeypatch.setattr(backup, "_backup_errors", errors)
     monkeypatch.setattr(WindowsFileOperations, "open_existing", open_private)
     monkeypatch.setattr(WindowsFileOperations, "rename", rename_private)

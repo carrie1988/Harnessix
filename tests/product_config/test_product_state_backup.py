@@ -290,12 +290,20 @@ async def test_valid_backup_requires_original_external_receipt(complete_state, t
 
 
 async def test_wrong_current_key_is_rejected_without_resigning_backup(complete_state, tmp_path):
+    from harnessix.product_config.session_key import open_product_session_binding
     from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+    from harnessix.product_config.state_backup_files import create_private_tree
+    from tests.agent.test_publication import protected
 
     root, _ = complete_state
     await backup_product_state(root, tmp_path / "backup")
-    original = (root / "session-auth" / "key.v1").read_bytes()
-    (root / "session-auth" / "key.v1").write_bytes(original[:-32] + bytes(range(32)))
+    alternate = tmp_path / "alternate-state"
+    create_private_tree(alternate)
+    with protected() as scope:
+        async with open_product_session_binding(alternate, scope):
+            pass
+    # 用原平台合法编码的另一实例材料构造错Key；修改DPAPI密文只会测试损坏格式。
+    (root / "session-auth/key.v1").write_bytes((alternate / "session-auth/key.v1").read_bytes())
     before = (tmp_path / "backup" / "state" / "session-auth" / "key.v1").read_bytes()
     with pytest.raises(KernelError) as error:
         await verify_product_backup(root, tmp_path / "backup")
@@ -345,6 +353,11 @@ async def test_readonly_connection_closing_during_sidecar_inventory_is_safe(
 ):
     from harnessix.product_config.state_backup import backup_product_state
     from harnessix.product_config.state_backup_files import PrivateStateTree
+
+    if os.name == "nt":
+        from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics
+
+        install_backup_diagnostics(monkeypatch)
 
     root, _ = complete_state
     reader = sqlite3.connect(root / "sessions.db", check_same_thread=False)
