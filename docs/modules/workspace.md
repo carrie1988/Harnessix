@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 7
+code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
 owners:
   - core
 modules:
@@ -1215,3 +1215,12 @@ WindowsWorkspaceRoot父链及叶句柄，不引入第二套Win32 API。
 状态目录创建前固定已有原生父链，不能先resolve隐藏Junction。
 该Host Guarded边界不是防恶意同UID配置篡改的原子CAS，详细约束见
 [Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。
+
+## Windows私有状态与完整恢复增量
+
+[总体与详细设计](../changes/m09-r1-windows-private-state.md)统一Windows产品Root、SQLite、
+事务Blob及Process目录/输出的创建与备份验权：新受管目录采用用户Owner、protected用户/SYSTEM
+可继承双ACE；非Key子文件采用有限TokenOwner和精确私有继承形态。
+原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
+既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
+原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。

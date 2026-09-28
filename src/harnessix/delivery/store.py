@@ -368,7 +368,12 @@ def _fsync_directory(path: Path) -> None:
 
 def _prepare_directory(path: Path) -> None:
     try:
-        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if os.name == "nt":
+            from harnessix.workspace.windows_private_directory import private_state_directory
+
+            private_state_directory(path, parents=True, exist_ok=True)
+        else:
+            path.mkdir(mode=0o700, parents=True, exist_ok=True)
         info = path.stat(follow_symlinks=False)
         if not stat.S_ISDIR(info.st_mode) or path.is_symlink():
             raise OSError
@@ -377,5 +382,5 @@ def _prepare_directory(path: Path) -> None:
             info = path.stat(follow_symlinks=False)
             if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
                 raise OSError
-    except OSError:
+    except (OSError, KernelError):
         raise KernelError("delivery_store_invalid", "Workspace事务私有目录无效") from None

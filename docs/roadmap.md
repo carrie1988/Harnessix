@@ -851,3 +851,10 @@ Key备份/维护CLI、Artifact持久正文、全Provider/Owner/SDK/MCP、12件�
 [Git/Owner验证报告](validation/windows-native-git-read-2026-09-28-v1/README.md)保留三轮原生失败及修复证据。
 下一主线是R1 Windows默认状态创建与备份私有权限合同统一，随后推进R3真实质量和R4安装；不降低恢复安全契约。
 R1/R3/R4/R5仍按真实证据验收，许可证等不阻塞功能研发及内部验证。
+
+### R1：Windows私有状态与完整恢复实现候选
+
+[详细设计](changes/m09-r1-windows-private-state.md)从原生低敏ACL诊断定位创建/验权不一致，
+统一产品Root、SQLite、Blob和Process受管目录的私有继承合同；原Key精确合同及原恢复意图不变。
+旧式或公开权限只拒绝、不自动改权；默认SDK用例进一步要求完整备份、恢复、原Key保留及重开不重放。
+原生实现候选仍需实际焦点与完整回归，R1/R4继续开放；许可证等治理任务不阻挡功能修复。

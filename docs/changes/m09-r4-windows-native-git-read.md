@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 4b643f13fc54ae70050a9507ec29bf884ac9eda4
+version: 5
+code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
 owners: [core]
 modules: [tools, processes, workspace, context, product_config]
 related_adrs:
@@ -426,3 +426,46 @@ assign_suspended:
 线程启动失败、原Handle核验顺序和拒绝后不恢复；这些模拟API测试不证明真实Windows可用。
 原生回归：[`test_windows_git.py`](../../tests/tools/test_windows_git.py)保持未观察终态的冷Receipt退出条件，
 [`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py)以12个真实快速命令验证原退出码和双流EOF。
+
+## 11. Windows完整备份权限缺口的原生诊断
+
+实现`4b643f1`的Git/Owner原生回归为34通过、5跳过、1失败，失败发生于完整备份打开原状态Root。
+对应原件保留在[固定验证目录](../validation/windows-native-git-read-2026-09-28-v1/README.md)。
+实现`1b3c63f`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36432844625/job/108963154965)
+保留同一失败并输出低敏Owner/ACL诊断，不能计作备份验收成功。
+
+### 11.1 已确认的实际合同冲突
+
+[`server._private_root`](../../src/harnessix/product_config/server.py)在该诊断Revision使用普通
+`mkdir(mode=0o700)`，原备份端口则要求当前TokenUser Owner及用户/SYSTEM精确双ACE。
+实际Runner的TokenOwner为Administrators：Root和Process目录为该Owner、protected三ACE；
+六库、Process Lease库及首个Run的三件文件为该Owner、非protected继承三ACE，
+授权身份为SYSTEM、Administrators及Owner Rights。
+原Key目录与Key文件的Owner为当前用户、protected双ACE、无继承，正确符合原严格合同。
+
+[CPython 3.12.10原始实现](https://github.com/python/cpython/blob/v3.12.10/Modules/posixmodule.c#L5024-L5040)
+对Windows0700确实采用上述三条可继承ACE，未显式指定TokenUser为Owner；
+[Python正式文档](https://docs.python.org/3.12/library/os.html#os.mkdir)亦说明Windows平台语义。
+[Microsoft Owner规则](https://learn.microsoft.com/en-us/windows/win32/secauthz/owner-of-a-new-object)
+说明默认Owner来自TokenOwner，不能等同TokenUser。实际原生诊断与源码一致。
+
+### 11.2 有限诊断接口、数据与安全边界
+
+[`state_permission_facts`](../../tests/product_config/windows_state_permissions.py)只在原生SDK完整备份
+抛出`KernelError`时读取固定受管样本，随后重新抛出原异常；不修复或忽略失败。
+输出TokenOwner角色、对象Owner角色、DACL存在/保护位及最多16条ACE的kind/flags/mask/角色。
+对象范围为Root、六库、Process库、Key目录/文件、Process目录以及首个Run的固定四件对象；
+最多枚举16个Run，不进行全树采集。原生路径链先固定，再核对观察Handle身份。
+不保存实际SID、账号、绝对路径、文件正文、Secret、MAC、Key或完整SDDL。
+
+```mermaid
+flowchart TD
+  S[默认SDK Git与脱敏断言] --> B[原完整备份]
+  B -->|成功| P[继续原来源验真与恢复断言]
+  B -->|KernelError| C[原Handle链读取有限权限元数据]
+  C --> F[重新抛出原异常 / 用例仍失败]
+```
+
+后继功能整改见[Windows私有状态与完整恢复详设](m09-r1-windows-private-state.md)。
+Key严格合同保持独立，状态Root、SQLite、Blob和Process创建统一后重新执行原生完整链；
+既有失败不被覆盖，也不以本地非Windowsskip关闭R1/R4。

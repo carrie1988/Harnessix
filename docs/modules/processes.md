@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 23
-code_revision: 4b643f13fc54ae70050a9507ec29bf884ac9eda4
+version: 24
+code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
 owners:
   - core
 modules:
@@ -1659,3 +1659,12 @@ Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process
 `4b643f1`原生焦点34通过、5跳过、1失败，Owner及固定读取回归已通过，完整备份来源Root权限仍失败；
 实际原件与Go/No-Go见[Git与Owner验证报告](../validation/windows-native-git-read-2026-09-28-v1/README.md)。
 详见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。
+
+## Windows私有状态与完整恢复增量
+
+[总体与详细设计](../changes/m09-r1-windows-private-state.md)统一Windows产品Root、SQLite、
+事务Blob及Process目录/输出的创建与备份验权：新受管目录采用用户Owner、protected用户/SYSTEM
+可继承双ACE；非Key子文件采用有限TokenOwner和精确私有继承形态。
+原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
+既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
+原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。

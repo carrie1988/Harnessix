@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import subprocess
+from contextlib import closing
 
 import pytest
 
@@ -18,6 +20,67 @@ from harnessix.product_config.state_backup_files import (
 from harnessix.session.maintenance_io import MaintenanceIOControl
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="仅在原生Windows验证Handle与DACL")
+
+
+def test_running_state_directory_and_sqlite_children_have_private_inheritance(tmp_path):
+    from harnessix.product_config.server import _private_root
+
+    root = _private_root(tmp_path / "state")
+    with closing(sqlite3.connect(root / "database.db")) as database:
+        database.execute("CREATE TABLE private_state (value TEXT)")
+        database.commit()
+        database.execute("INSERT INTO private_state VALUES ('private fixture')")
+        # 真实SQLite保留写锁时，原Handle读取必须兼容其读写共享，不允许DELETE共享。
+        assert (root / "database.db-journal").exists()
+        with PrivateStateTree(root) as tree:
+            assert tree.files(MaintenanceIOControl()) == ("database.db", "database.db-journal")
+            assert read_small(tree, "database.db", 65536).startswith(b"SQLite format 3")
+        database.rollback()
+
+
+def test_ordinary_mkdir_acl_is_rejected_without_repair(tmp_path):
+    from harnessix.product_config.server import _private_root
+
+    root = tmp_path / "legacy"
+    root.mkdir(mode=0o700)
+    before = subprocess.run(["icacls", str(root)], capture_output=True, check=True).stdout
+    with pytest.raises(KernelError):
+        _private_root(root)
+    after = subprocess.run(["icacls", str(root)], capture_output=True, check=True).stdout
+    assert after == before
+
+
+@pytest.mark.parametrize("target", ["root", "file"])
+def test_public_acl_is_rejected_without_repairing_existing_state(tmp_path, target):
+    from harnessix.product_config.server import _private_root
+
+    root = _private_root(tmp_path / "state")
+    path = root / "fixture.bin"
+    path.write_bytes(b"private fixture")
+    changed = root if target == "root" else path
+    subprocess.run(
+        ["icacls", str(changed), "/grant", "*S-1-1-0:R"], capture_output=True, check=True
+    )
+    before = subprocess.run(["icacls", str(changed)], capture_output=True, check=True).stdout
+    with pytest.raises(KernelError):
+        with PrivateStateTree(root) as tree:
+            read_small(tree, "fixture.bin", 64)
+    after = subprocess.run(["icacls", str(changed)], capture_output=True, check=True).stdout
+    assert after == before and path.read_bytes() == b"private fixture"
+
+
+@pytest.mark.parametrize("directory", ["session-auth", "SESSION-AUTH"])
+def test_key_subtree_never_accepts_ordinary_state_acl(tmp_path, directory):
+    root = tmp_path / "private"
+    create_private_tree(root)
+    from harnessix.workspace.windows_private_directory import private_state_directory
+
+    # 即便仅用户/SYSTEM可访问，Key目录的可继承形态也不能代替原Key精确合同。
+    private_state_directory(root / "session-auth")
+    with PrivateStateTree(root) as tree:
+        with pytest.raises(KernelError):
+            write_new(tree, f"{directory}/key.v1", b"not-a-key")
+    assert not (root / "session-auth/key.v1").exists()
 
 
 def test_private_large_file_uses_native_handle_not_key_size_limit(tmp_path):

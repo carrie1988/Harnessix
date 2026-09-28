@@ -149,6 +149,49 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
     assert any(item.path == "process-owner/process-leases.db" for item in manifest.files)
     verified = await verify_product_backup(state, tmp_path / "backup")
     assert verified == manifest
+    from hashlib import sha256
+    from uuid import uuid4
+
+    from harnessix.product_config.state_backup_files import PrivateStateTree, write_new
+    from harnessix.product_config.state_restore import restore_product_state
+
+    original_key = (state / "session-auth/key.v1").read_bytes()
+    marker = b"post-backup-private-state"
+    added = "workspace-transactions/blobs/" + sha256(marker).hexdigest()
+    with PrivateStateTree(state) as tree:
+        write_new(tree, added, marker)
+    restore_id = uuid4()
+    restored = await restore_product_state(
+        state, tmp_path / "backup", restore_id=restore_id, confirm_backup_id=manifest.backup_id
+    )
+    assert restored.status == "restored" and restored.retained_previous_state
+    assert not (state / added).exists()
+    previous = state.parent / f".harnessix-restore-{restore_id}.previous"
+    assert (previous / added).read_bytes() == marker
+    assert (state / "session-auth/key.v1").read_bytes() == original_key
+    assert await verify_product_backup(state, tmp_path / "backup") == manifest
+
+    async def reopen(server: AgentProtocolServer, *_streams: object) -> None:
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+        threads = await client.list_threads(limit=10)
+        assert len(threads.threads) == 1
+        history = await client.replay_events(threads.threads[0].thread_id, limit=100)
+        assert CANARY not in history.model_dump_json()
+        assert len(bundle.requests) == 2  # 只恢复旧事实，不重放原Git或请求新模型。
+        await client.close()
+
+    monkeypatch.setattr("harnessix.product_config.server.run_stdio", reopen)
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        git_executable=_git(),
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    assert len(list((state / "process-owner/runs").iterdir())) == 3
 
 
 def _credentials(monkeypatch: pytest.MonkeyPatch) -> None:

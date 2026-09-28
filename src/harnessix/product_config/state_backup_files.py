@@ -59,6 +59,7 @@ class PrivateStateTree:
         self.path = path
         self._resources = ExitStack()
         self._windows: Any = None
+        self._windows_keys: Any = None
         self._windows_root_handle = self._root_fd = -1
         self._identity = (0, 0)
         _initialize_tree(self)
@@ -73,7 +74,15 @@ class PrivateStateTree:
             _private(info, directory=True)
             _private_acl(self._root_fd)
         elif os.name == "nt":
-            self._windows.security.verify(self._windows_root_handle)
+            self._windows.security.verify_root(self._windows_root_handle)
+
+    def _windows_port(self, relative: str) -> Any:
+        """Key目录及其文件始终走原严格端口，不能按普通状态继承形态接受。"""
+        return (
+            self._windows_keys
+            if _parts(relative)[0].casefold() == "session-auth"
+            else self._windows
+        )
 
     def directory(self, relative: str) -> None:
         parts = _parts(relative)
@@ -85,9 +94,10 @@ class PrivateStateTree:
             current = self.path
             for part in parts:
                 current /= part
-                self._windows.create_directory(current)
-                handle = self._windows.open(current, directory=True)
-                self._windows.kernel.CloseHandle(handle)
+                files = self._windows_port(current.relative_to(self.path).as_posix())
+                files.create_directory(current)
+                handle = files.open(current, directory=True)
+                files.kernel.CloseHandle(handle)
 
     def open_file(
         self, relative: str, *, create: bool = False, writable: bool = False
@@ -130,9 +140,10 @@ def create_private_tree(path: Path) -> None:
     elif os.name == "nt":
         from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
         from harnessix.workspace.windows import WindowsWorkspaceRoot
+        from harnessix.workspace.windows_private_security import PrivateStateSecurity
 
         root = WindowsWorkspaceRoot(path.parent)
-        files = WindowsKeyFiles(root)
+        files = WindowsKeyFiles(root, security_factory=PrivateStateSecurity)
         try:
             if os.path.lexists(path):
                 raise FileExistsError
@@ -315,9 +326,12 @@ def _open_private_file(
 
             chain, _ = tree._windows.root._open_chain("/".join(parts[:-1]) or ".", data=False)
             resources.callback(tree._windows.root._close_all, chain)
-            for directory in chain[-len(parts) :]:
-                tree._windows.security.verify(directory)
-            handle = tree._windows.open(
+            # 原根必须是当前用户Owner；Key父目录继续执行无继承精确双ACE校验。
+            for index, directory in enumerate(chain[-len(parts) :]):
+                files = tree._windows_port("/".join(parts[:index])) if index else tree._windows
+                files.security.verify(directory)
+            files = tree._windows_port(relative)
+            handle = files.open(
                 tree.path / relative,
                 create=1 if create else 3,
                 writable=create or writable,
@@ -345,7 +359,7 @@ def _open_private_file(
             os.fsync(parent) if create else None
         else:
             # Windows元数据时间不替代DACL证明，读后独立复核原生句柄权限。
-            tree._windows.security.verify(handle)
+            files.security.verify(handle)
 
 
 def _tree_files(
@@ -366,8 +380,9 @@ def _tree_files(
                 with _posix_directory(tree, _parts(prefix)):
                     pass
             else:
-                handle = tree._windows.open(tree.path / prefix, directory=True)
-                tree._windows.kernel.CloseHandle(handle)
+                files = tree._windows_port(prefix)
+                handle = files.open(tree.path / prefix, directory=True)
+                files.kernel.CloseHandle(handle)
         for name in sorted(os.listdir(tree.path / prefix)):
             count += 1
             if count > MAX_STATE_FILES * 2:
@@ -410,14 +425,21 @@ def _initialize_tree(tree: PrivateStateTree) -> None:
         elif os.name == "nt":
             from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
             from harnessix.workspace.windows import WindowsWorkspaceRoot
+            from harnessix.workspace.windows_private_security import PrivateStateSecurity
 
             root = WindowsWorkspaceRoot(tree.path)
             tree._resources.callback(root.close)
-            tree._windows = WindowsKeyFiles(root)
+            # SQLite保留原连接与锁时允许读写共享，但不允许DELETE共享或替换原对象。
+            tree._windows = WindowsKeyFiles(
+                root, security_factory=PrivateStateSecurity, shared_reads=True
+            )
             tree._resources.callback(tree._windows.close)
+            tree._windows_keys = WindowsKeyFiles(root)
+            tree._resources.callback(tree._windows_keys.close)
             handle = tree._windows.open(tree.path, directory=True)
             tree._windows_root_handle = handle
             tree._resources.callback(tree._windows.kernel.CloseHandle, handle)
+            tree._windows.security.verify_root(handle)
         else:
             raise file_error()
         info = tree.path.lstat()

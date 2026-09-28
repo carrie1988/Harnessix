@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -11,17 +12,25 @@ from harnessix.agent.errors import KernelError
 from harnessix.product_config.session_key_codec import MAX_KEY_FILE_BYTES, unavailable
 from harnessix.product_config.session_key_windows_security import PrivateKeySecurity
 from harnessix.workspace.windows import WindowsWorkspaceRoot, _api_path
+from harnessix.workspace.windows_private_security import PrivateWindowsSecurity
 
 
 class WindowsKeyFiles:
     """借用既有Workspace句柄身份端口，不复刻另一套路径和Reparse解析器。"""
 
-    def __init__(self, root: WindowsWorkspaceRoot) -> None:
+    def __init__(
+        self,
+        root: WindowsWorkspaceRoot,
+        *,
+        security_factory: Callable[[Any, Any], PrivateWindowsSecurity] = PrivateKeySecurity,
+        shared_reads: bool = False,
+    ) -> None:
         self.root = root
         self.kernel = root._kernel32
+        self._read_share = 3 if shared_reads else 1
         self._configure()
         advapi = ctypes.__dict__["WinDLL"]("advapi32", use_last_error=True)
-        self.security = PrivateKeySecurity(advapi, self.kernel)
+        self.security = security_factory(advapi, self.kernel)
 
     def _configure(self) -> None:
         p, u, b = ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int
@@ -57,7 +66,7 @@ class WindowsKeyFiles:
         handle = self.kernel.CreateFileW(
             _api_path(path),
             access,
-            0 if exclusive else 1,
+            0 if exclusive else self._read_share,
             ctypes.byref(self.security.attributes) if create != 3 else None,
             create,
             0x00200000 | (0x02000000 if directory else 0),

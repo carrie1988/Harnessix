@@ -69,6 +69,11 @@ def _is_link_or_junction(path: Path) -> bool:
 def _private_root(path: str | Path) -> Path:
     candidate = Path(path).absolute()
     try:
+        if os.name == "nt":
+            from harnessix.workspace.windows_private_directory import private_state_directory
+
+            private_state_directory(candidate, parents=True, exist_ok=True)
+            return candidate.resolve(strict=True)
         if candidate.exists() or _is_link_or_junction(candidate):
             info = candidate.lstat()
             if not stat.S_ISDIR(info.st_mode) or _is_link_or_junction(candidate):
@@ -82,7 +87,7 @@ def _private_root(path: str | Path) -> Path:
                 raise OSError
             root.chmod(0o700)
         return root
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, KernelError):
         raise KernelError("product_state_invalid", "产品状态目录权限或身份无效") from None
 
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 16
+code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
 owners:
   - core
 modules:
@@ -1665,3 +1665,12 @@ Plan身份及每个before/after文件引用的长度与SHA。所有受管Blob以
 单独复制事务数据库不构成完整备份。备份不得落入原认证Thread所属Git Workspace，避免原Key进入项目仓库。
 备份不写Workspace、不Commit、不回滚业务文件；整个产品状态恢复仍需后续独立实现。
 详见[产品备份的接口、数据流和失败语义](../changes/m09-r1-product-state-backup.md)。
+
+## Windows私有状态与完整恢复增量
+
+[总体与详细设计](../changes/m09-r1-windows-private-state.md)统一Windows产品Root、SQLite、
+事务Blob及Process目录/输出的创建与备份验权：新受管目录采用用户Owner、protected用户/SYSTEM
+可继承双ACE；非Key子文件采用有限TokenOwner和精确私有继承形态。
+原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
+既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
+原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。

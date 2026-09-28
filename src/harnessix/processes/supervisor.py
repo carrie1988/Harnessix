@@ -7,7 +7,6 @@ import base64
 import hashlib
 import os
 import shutil
-import stat
 import subprocess
 import sys
 import threading
@@ -34,6 +33,7 @@ from harnessix.processes.owner_protocol import (
     protected_owner_start,
 )
 from harnessix.processes.owner_receipt import ProcessOwnerReceipt, read_owner_receipt
+from harnessix.processes.state_directory import _create_run_directory, _safe_state_root
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
     ProcessLaunchBinding,
@@ -65,23 +65,6 @@ def _validated_lease(lease: ProcessLease, **changes: object) -> ProcessLease:
         return ProcessLease.model_validate_json(candidate.model_dump_json(warnings="error"))
     except (ValidationError, ValueError, TypeError):
         raise KernelError("process_lease_invalid", "Process Lease状态事实无效") from None
-
-
-def _safe_state_root(value: str | Path) -> Path:
-    path = Path(value)
-    try:
-        path.mkdir(parents=True, exist_ok=True, mode=0o700)
-        info = path.lstat()
-        if not path.is_absolute() or not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
-            raise ValueError
-        if os.name == "posix":
-            path.chmod(0o700)
-            info = path.stat()
-            if info.st_uid != os.getuid() or info.st_mode & 0o077:
-                raise ValueError
-    except (OSError, ValueError):
-        raise KernelError("process_state_invalid", "Process状态目录无效") from None
-    return path
 
 
 def _materialize_argv(spec: ProcessSpec) -> tuple[str, ...]:
@@ -530,8 +513,8 @@ class PosixProcessSupervisor(_ProcessObservation):
         self._store.create(lease)
         run_directory = self._runs / str(spec.process_id)
         try:
-            run_directory.mkdir(mode=0o700)
-        except OSError:
+            _create_run_directory(run_directory)
+        except (OSError, KernelError):
             failed = _validated_lease(
                 lease,
                 state="failed",
