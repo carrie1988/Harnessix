@@ -36,6 +36,12 @@ def _identity(info: os.stat_result) -> tuple[int, ...]:
     )
 
 
+def _directory_identity(info: os.stat_result) -> tuple[int, ...]:
+    """目录安全身份不绑定条目、大小或时间；权限与ACL仍独立复核。"""
+
+    return info.st_dev, info.st_ino, info.st_mode, info.st_uid
+
+
 def _private(info: os.stat_result, *, directory: bool = False, links: int = 1) -> None:
     if (
         info.st_uid != os.getuid()
@@ -176,7 +182,7 @@ def load_posix_key(path: Path, fault: Callable[[str], None]) -> bytes:
         root_info = os.fstat(root)
         _private(root_info, directory=True)
         _private_acl(root)
-        if _identity(root_info) != _identity(path.lstat()):
+        if _directory_identity(root_info) != _directory_identity(path.lstat()):
             raise unavailable()
         if not _exists(root, "session-auth"):
             os.mkdir("session-auth", 0o700, dir_fd=root)
@@ -186,11 +192,15 @@ def load_posix_key(path: Path, fault: Callable[[str], None]) -> bytes:
         _private(parent_info, directory=True)
         _private_acl(parent)
         body = _load_locked(root, parent, fault)
+        # 已读取Key仍不能越过期间发生的目录权限或ACL变化。
+        _private(os.fstat(root), directory=True)
+        _private_acl(root)
+        _private(os.fstat(parent), directory=True)
+        _private_acl(parent)
         current = os.stat("session-auth", dir_fd=root, follow_symlinks=False)
-        if (parent_info.st_dev, parent_info.st_ino) != (current.st_dev, current.st_ino) or (
-            root_info.st_dev,
-            root_info.st_ino,
-        ) != (path.lstat().st_dev, path.lstat().st_ino):
+        if _directory_identity(parent_info) != _directory_identity(current) or (
+            _directory_identity(root_info) != _directory_identity(path.lstat())
+        ):
             raise unavailable()
         return body
     except BlockingIOError:

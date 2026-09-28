@@ -71,6 +71,104 @@ def test_material_key_is_independent_stable_and_cleared(tmp_path):
     assert not any(first.key) and not any(second.key)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX私有目录观察")
+@pytest.mark.parametrize("change", ["file_entry", "directory_entry", "timestamps"])
+def test_key_root_allows_ordinary_metadata_change_without_changing_identity(
+    tmp_path, monkeypatch, change
+):
+    from harnessix.product_config import session_key_posix
+
+    root = state_root(tmp_path)
+    first = load_session_key(root)
+    expected = first.store_id, first.key_id
+    first.close()
+    identity = root.stat().st_dev, root.stat().st_ino
+    original = session_key_posix._private_acl
+    changed = False
+
+    def alter_metadata(descriptor):
+        nonlocal changed
+        info = os.fstat(descriptor)
+        if not changed and (info.st_dev, info.st_ino) == identity:
+            changed = True
+            if change == "file_entry":
+                (root / "ordinary-state-file").touch()
+            elif change == "directory_entry":
+                (root / "ordinary-state-directory").mkdir()
+            else:
+                os.utime(root, ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000))
+        original(descriptor)
+
+    monkeypatch.setattr(session_key_posix, "_private_acl", alter_metadata)
+    material = load_session_key(root)
+    try:
+        assert changed and (material.store_id, material.key_id) == expected
+    finally:
+        material.close()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX私有目录返回前安全复核")
+@pytest.mark.parametrize("directory", ["root", "auth"])
+def test_key_loading_rechecks_directory_permissions_after_read(tmp_path, directory):
+    root = state_root(tmp_path)
+    load_session_key(root).close()
+
+    def change_permissions(stage):
+        if stage == "key.before_return":
+            (root if directory == "root" else root / "session-auth").chmod(0o755)
+
+    with pytest.raises(KernelError) as failed:
+        load_session_key(root, fault=change_permissions).close()
+    assert failed.value.code == "publication_key_unavailable"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX目录FD与路径身份复核")
+@pytest.mark.parametrize("directory", ["root", "auth"])
+def test_key_loading_refuses_replaced_private_directory_after_read(tmp_path, directory):
+    root = state_root(tmp_path)
+    load_session_key(root).close()
+    original = (root / "session-auth/key.v1").read_bytes()
+    target = root if directory == "root" else root / "session-auth"
+    moved = tmp_path / "moved-original"
+
+    def replace_directory(stage):
+        if stage == "key.before_return":
+            target.rename(moved)
+            target.mkdir(mode=0o700)
+
+    with pytest.raises(KernelError) as failed:
+        load_session_key(root, fault=replace_directory).close()
+    assert failed.value.code == "publication_key_unavailable"
+    key = moved / "session-auth/key.v1" if directory == "root" else moved / "key.v1"
+    assert key.read_bytes() == original
+    assert not (root / "session-auth/key.v1").exists()
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="实际Darwin返回前扩展ACL复核")
+@pytest.mark.parametrize("directory", ["root", "auth"])
+def test_key_loading_rechecks_native_directory_acl_after_read(tmp_path, directory):
+    import subprocess
+
+    root = state_root(tmp_path)
+    load_session_key(root).close()
+    target = root if directory == "root" else root / "session-auth"
+    original = (root / "session-auth/key.v1").read_bytes()
+
+    def grant_acl(stage):
+        if stage == "key.before_return":
+            subprocess.run(["chmod", "+a", "everyone allow read,execute", str(target)], check=True)
+
+    try:
+        with pytest.raises(KernelError) as failed:
+            load_session_key(root, fault=grant_acl).close()
+        assert failed.value.code == "publication_key_unavailable"
+        assert target.stat().st_mode & 0o777 == 0o700
+        assert (root / "session-auth/key.v1").read_bytes() == original
+    finally:
+        # 只移除自有临时Fixture的ACL，产品不会自动修复危险权限。
+        subprocess.run(["chmod", "-N", str(target)], check=True)
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX原生文件身份合同")
 @pytest.mark.parametrize("case", ["permissions", "hardlink", "symlink", "directory", "corrupt"])
 def test_existing_key_is_not_repaired_or_replaced(tmp_path, case):
