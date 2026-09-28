@@ -1,0 +1,70 @@
+{
+  "spec_version": "harnessix.product-provider-independent-verification/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "product_code_revision": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "observed_at": "2026-09-28T23:22:26.831545+00:00",
+  "result": "PASS",
+  "checks": [
+    "original_driver_and_source_identity",
+    "offline_approval_and_cancel",
+    "original_scope_negative_refused_without_effect",
+    "original_real_approval_and_cancel",
+    "authenticated_original_model_mode_and_write_conditions",
+    "complete_usage_recalculation_and_original_budget_owner"
+  ],
+  "original_driver_unchanged": true,
+  "negative_original_fail_preserved": true,
+  "request_count": 5,
+  "input_tokens": 22626,
+  "output_tokens": 634,
+  "independently_estimated_cny": "0.100648",
+  "original_period": "d973352f-0392-4d81-a324-8cb58f229a39",
+  "budget_reset": false,
+  "original_period_known_estimated_cny": "0.250024",
+  "unresolved": 0,
+  "authentication_metadata": {
+    "sdk-read-approve-patch": {
+      "authenticated_original_store_read": true,
+      "successful_original_reads": 1,
+      "original_patch_calls": [
+        {
+          "strict_original_decoder": true,
+          "read_precedes_patch": true,
+          "operation_replace": true,
+          "only_allowed_path": true,
+          "expected_digest_matches_original_before": true,
+          "complete_body_matches_expected_after": true,
+          "mode_explicitly_present": true,
+          "mode_nonnull_decimal_420": true
+        }
+      ],
+      "approval_items": 1,
+      "raw_values_recorded": false,
+      "new_model_requests": 0,
+      "effects_executed_by_verifier": 0
+    },
+    "sdk-read-patch-cancel": {
+      "authenticated_original_store_read": true,
+      "successful_original_reads": 1,
+      "original_patch_calls": [
+        {
+          "strict_original_decoder": true,
+          "read_precedes_patch": true,
+          "operation_replace": true,
+          "only_allowed_path": true,
+          "expected_digest_matches_original_before": true,
+          "complete_body_matches_expected_after": true,
+          "mode_explicitly_present": true,
+          "mode_nonnull_decimal_420": true
+        }
+      ],
+      "approval_items": 1,
+      "raw_values_recorded": false,
+      "new_model_requests": 0,
+      "effects_executed_by_verifier": 0
+    }
+  },
+  "verifier_model_requests": 0,
+  "quality_trials_counted": 0,
+  "commercial_release": false
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 32
-code_revision: 6a686fdd00162babd0dbaa8b0785186dd15c3cbc
+version: 33
+code_revision: c8033e08a260cfde793bf9809f6979a833fc92d5
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-29 | [操作Schema整改后默认产品真实模型合同](product-provider-operation-schema-2026-09-29-v1/README.md) | 验收`c8033e08a260cfde793bf9809f6979a833fc92d5`、产品`6a686fd` | 原驱动SHA、北京精确快照、70元原周期、1024输出Token/单次尝试；一次两个场景 | 离线两场景与越界负对照通过；真实审批修改及取消通过，5请求、22626/634 Token、估算0.100648元；原认证Store/Usage独立复核通过 | 有限产品合同GO；原0/20、完整20 Trial、Beta、Windows11及商用门禁仍开放 |
 | 2026-09-29 | [Workspace Patch操作Schema与旧批准边界](workspace-patch-operation-schema-2026-09-29-v1/README.md) | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 双Python受影响回归；原Schema和正式Adapter；模型请求0 | 336字段组合及17焦点通过；双Python各2890通过/70跳过；原校验与旧批准拒绝保持 | 离线专项GO；旧真实FAIL、0/20及商用门禁保持，新的线上认证另行验证 |
 | 2026-09-29 | [显式预算修复与默认产品真实Provider诊断](public-budget-product-provider-2026-09-29-v1/README.md) | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 双Python；实际stdio；原70元周期和官方北京快照；7个已结算请求 | 原预算红例修复，离线审批/取消通过；真实首场景缺mode失败、第二场景停止；新增估算0.149308元 | 不关闭有限认证、20 Trial、Beta或商用门禁；原失败保留 |
 | 2026-09-29 | [Windows复杂业务状态备份恢复与严格原生分类](windows-business-state-recovery-2026-09-29-v1/README.md) | `dc3692abb08ebe9e2e9bf4d971af9eee395cf590` | 原生Windows Runner；本地Python3.12/3.13；零模型请求 | 保留原生82通过/2失败；合法错Key及元数据2/3分类修复；四个原生步骤成功，全Job按实际状态登记 | 专项GO，R1/R4及商用仍未关闭；不替代真实编码、Win11或不同版本升级 |

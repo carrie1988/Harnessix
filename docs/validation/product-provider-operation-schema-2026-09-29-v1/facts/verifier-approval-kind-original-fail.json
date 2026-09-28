@@ -1,0 +1,44 @@
+{
+  "result": "FAIL",
+  "error_type": "AssertionError",
+  "fixed_error_code": "original_history_shape_mismatch",
+  "frames": [
+    {
+      "file": "<stdin>",
+      "function": "<module>",
+      "line": 7
+    },
+    {
+      "file": "runners.py",
+      "function": "run",
+      "line": 194
+    },
+    {
+      "file": "runners.py",
+      "function": "run",
+      "line": 118
+    },
+    {
+      "file": "base_events.py",
+      "function": "run_until_complete",
+      "line": 687
+    },
+    {
+      "file": "verify-outcomes-pagination-fixed-fail.py",
+      "function": "verify",
+      "line": 131
+    },
+    {
+      "file": "verify-outcomes-pagination-fixed-fail.py",
+      "function": "authenticated_metadata",
+      "line": 85
+    },
+    {
+      "file": "verify-outcomes-pagination-fixed-fail.py",
+      "function": "require",
+      "line": 19
+    }
+  ],
+  "model_requests": 0,
+  "raw_values_recorded": false
+}

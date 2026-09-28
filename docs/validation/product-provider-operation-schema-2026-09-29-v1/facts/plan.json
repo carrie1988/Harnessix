@@ -1,0 +1,104 @@
+{
+  "spec_version": "harnessix.product-provider-certification-plan/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "model": "qwen3-coder-plus-2025-09-23",
+  "region": "cn-beijing",
+  "provider": "openai_chat",
+  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "price_source": "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+  "price_verified_at": "2026-09-28T23:04:10.462232+00:00",
+  "valid_from": "2026-09-28T23:03:10.462232+00:00",
+  "valid_until": "2026-09-29T01:04:10.462232+00:00",
+  "max_output_tokens": 1024,
+  "max_attempts": 1,
+  "max_requests_per_case": 8,
+  "original_budget_period_required": true,
+  "scenarios": [
+    {
+      "id": "sdk-read-approve-patch",
+      "allowed_modified_paths": [
+        "calculator.py"
+      ],
+      "requirements": [
+        "original_stdio_and_sdk",
+        "original_product_composition_and_official_adapter",
+        "trusted_file_read_before_patch",
+        "complete_diff_before_approval",
+        "no_change_before_approval",
+        "approved_exact_fixture_change",
+        "complete_known_usage_and_original_budget_settlement"
+      ]
+    },
+    {
+      "id": "sdk-read-patch-cancel",
+      "allowed_modified_paths": [],
+      "requirements": [
+        "original_stdio_and_sdk",
+        "original_product_composition_and_official_adapter",
+        "trusted_read_before_patch",
+        "waiting_approval_before_cancel",
+        "cancel_interrupted",
+        "fixture_unchanged",
+        "no_new_model_request_after_cancel",
+        "complete_known_usage_and_original_budget_settlement"
+      ]
+    }
+  ],
+  "failure_policy": "stop_without_retry_preserve_failure_and_unknown_reservations",
+  "quality_trials_counted": 0,
+  "task_pack_grader_unchanged": true,
+  "commercial_release": false,
+  "driver_sha256": "0d30f2a73783e5b2b44315e2ab96f66efe232124ca7636ee07aee3cbb41e1c1f",
+  "planned_network_cases": 2,
+  "total_max_requests": 16,
+  "sdk_budget": {
+    "maxSteps": 8,
+    "maxTokens": 32000,
+    "timeoutSeconds": 120.0,
+    "maxOutputChars": 32000,
+    "maxToolCallsPerStep": 1
+  },
+  "fixture": {
+    "before_sha256": "04116a181d6ea8a1f4728c1b84d884d8101cb69527f4642e3b6615296f7b5e93",
+    "after_sha256": "424ca16a0f4857dbf09065e84c0b7e00c59230a86558181672a47abe2d849976"
+  },
+  "same_price_window": true,
+  "source_tree_clean": true,
+  "budget_total_cny": "70.00",
+  "product_code_revision": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "plan_revision": 3,
+  "previous_failed_source_revision": "184fb125f6159de4202a64a525f6b5cc99f0ab97",
+  "workspace_patch_tool_fingerprint": "18481fab01037cf0ca27286dedc71c1d35c36a85993d33128d03ee45287c2ae9",
+  "official_price_snapshot": {
+    "tiers": [
+      [
+        32000,
+        4,
+        16
+      ],
+      [
+        128000,
+        6,
+        24
+      ],
+      [
+        256000,
+        10,
+        40
+      ],
+      [
+        1000000,
+        20,
+        200
+      ]
+    ],
+    "currency": "CNY",
+    "unit": "million_tokens",
+    "max_input_tokens": 997952,
+    "max_output_tokens": 65536,
+    "function_calling": true,
+    "model_snapshot": "2025-09-23",
+    "region": "cn-beijing",
+    "cache_used": false
+  }
+}

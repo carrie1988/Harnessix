@@ -1,0 +1,44 @@
+{
+  "result": "FAIL",
+  "error_type": "AssertionError",
+  "fixed_error_code": "original_thread_scope_changed",
+  "frames": [
+    {
+      "file": "<stdin>",
+      "function": "<module>",
+      "line": 8
+    },
+    {
+      "file": "runners.py",
+      "function": "run",
+      "line": 194
+    },
+    {
+      "file": "runners.py",
+      "function": "run",
+      "line": 118
+    },
+    {
+      "file": "base_events.py",
+      "function": "run_until_complete",
+      "line": 687
+    },
+    {
+      "file": "verify_outcomes-first-fail.py",
+      "function": "verify",
+      "line": 131
+    },
+    {
+      "file": "verify_outcomes-first-fail.py",
+      "function": "authenticated_metadata",
+      "line": 51
+    },
+    {
+      "file": "verify_outcomes-first-fail.py",
+      "function": "require",
+      "line": 19
+    }
+  ],
+  "model_requests": 0,
+  "raw_values_recorded": false
+}

@@ -1,0 +1,33 @@
+{
+  "spec_version": "harnessix.product-provider-certification-result/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "cases": [
+    {
+      "case": "sdk-read-approve-patch",
+      "mode": "fixture_controller_only",
+      "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+      "quality_trials_counted": 0,
+      "commercial_release": false,
+      "result": "FAIL",
+      "failure_type": "RuntimeError",
+      "failure_stage": "read_approval_events",
+      "failure_code": "unexpected_patch_file_set",
+      "transport_closed": true,
+      "child": {
+        "model_requests": 0,
+        "provider_invocations": 2,
+        "budget_guard_used": false,
+        "request_limit": 8,
+        "request_facts": []
+      }
+    }
+  ],
+  "budget_before": null,
+  "budget_after": null,
+  "task_pack_grader_unchanged": true,
+  "quality_trials_counted": 0,
+  "commercial_release": false,
+  "budget_settlement_complete": true,
+  "usage_complete": true,
+  "result": "FAIL"
+}

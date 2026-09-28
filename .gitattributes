@@ -96,3 +96,8 @@ docs/validation/public-budget-product-provider-2026-09-29-v1/logs/*.xml -diff -m
 docs/validation/workspace-patch-operation-schema-2026-09-29-v1/** -text
 docs/validation/workspace-patch-operation-schema-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/workspace-patch-operation-schema-2026-09-29-v1/logs/*.xml -diff -merge
+
+# 默认产品线上合同原件保持字节身份，日志与JUnit不参与文本合并。
+docs/validation/product-provider-operation-schema-2026-09-29-v1/** -text
+docs/validation/product-provider-operation-schema-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/product-provider-operation-schema-2026-09-29-v1/logs/*.xml -diff -merge

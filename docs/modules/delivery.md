@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 6a686fdd00162babd0dbaa8b0785186dd15c3cbc
+version: 19
+code_revision: c8033e08a260cfde793bf9809f6979a833fc92d5
 owners:
   - core
 modules:
@@ -1699,3 +1699,10 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 [完整详设](../changes/m09-r1-windows-private-state.md#203-总体架构模块归属与源码定位)说明归属、
 同目录发布及失败恢复；[原IO回归](../../tests/delivery/test_windows_io_contracts.py)同时验证
 原导入身份、权限共享、ABI、部分写入、完成状态和构建边界。没有新增Delivery到Process的业务耦合。
+
+## 操作Schema的有限线上验收
+
+[固定`c8033e0`的真实模型报告](../validation/product-provider-operation-schema-2026-09-29-v1/README.md)
+复用原默认产品和验收驱动，一次通过审批精确修改及等待审批取消两个场景。原认证Session读取证明
+模型显式提供mode420、原读取SHA及正确完整正文；宿主未补参数，原Router和文件执行边界未改。
+五次官方请求Usage完整、原周期结算无未决。该证据不计完整工程20 Trial，也不追认旧批准、旧FAIL或商用支持。

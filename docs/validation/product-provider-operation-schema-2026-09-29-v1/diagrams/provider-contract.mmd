@@ -1,0 +1,13 @@
+flowchart TB
+    SDK[原SDK与验收控制器] --> STDIO[原stdio App Server]
+    STDIO --> Runtime[默认Agent Runtime与Context]
+    Runtime --> Guard[原预算Owner与请求Guard]
+    Guard --> Provider[官方Adapter与北京固定快照]
+    Provider --> Decode[模型提案与原严格解码]
+    Decode --> Plan[原Router与Patch计划]
+    Plan --> Diff[完整Diff Artifact]
+    Diff --> Pending[等待指纹绑定审批]
+    Pending --> Approve[原SDK批准]
+    Approve --> Execute[原Executor精确修改]
+    Pending --> Cancel[原SDK取消]
+    Cancel --> Unchanged[文件不变且无后续模型请求]

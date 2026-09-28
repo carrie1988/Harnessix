@@ -1,0 +1,18 @@
+{
+  "existing_frozen_drivers_reused": true,
+  "references": [
+    {
+      "path": "docs/validation/public-budget-product-provider-2026-09-29-v1/diagnostics/validation_host.py",
+      "bytes": 21331,
+      "sha256": "0d30f2a73783e5b2b44315e2ab96f66efe232124ca7636ee07aee3cbb41e1c1f",
+      "private_execution_copy_identical": true
+    },
+    {
+      "path": "docs/validation/public-budget-product-provider-2026-09-29-v1/diagnostics/scope_negative_controller.py",
+      "bytes": 21071,
+      "sha256": "f031f1b728bca08e101ce886503c1e3f2e2e87850dbfcc29651b3ccc92ec3632",
+      "private_execution_copy_identical": true
+    }
+  ],
+  "new_driver_implementation": false
+}

@@ -1,0 +1,44 @@
+{
+  "source": "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+  "observed_at": "2026-09-28T23:23:31.219529+00:00",
+  "model": "qwen3-coder-plus-2025-09-23",
+  "region": "cn-beijing",
+  "same_as_frozen_plan": true,
+  "snapshot": {
+    "tiers": [
+      [
+        32000,
+        4,
+        16
+      ],
+      [
+        128000,
+        6,
+        24
+      ],
+      [
+        256000,
+        10,
+        40
+      ],
+      [
+        1000000,
+        20,
+        200
+      ]
+    ],
+    "currency": "CNY",
+    "unit": "million_tokens",
+    "max_input_tokens": 997952,
+    "max_output_tokens": 65536,
+    "function_calling": true,
+    "model_snapshot": "2025-09-23",
+    "region": "cn-beijing",
+    "cache_used": false
+  },
+  "function_calling": true,
+  "structured_output": true,
+  "context_cache_supported": false,
+  "price_window_extended": false,
+  "paid_requests_by_price_check": 0
+}

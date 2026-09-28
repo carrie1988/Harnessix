@@ -1,0 +1,12 @@
+{
+  "spec_version": "harnessix.scope-negative-verification/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "result": "PASS",
+  "original_controller_result": "FAIL",
+  "failure_code": "unexpected_patch_file_set",
+  "original_unchanged": true,
+  "unapproved_file_absent": true,
+  "model_requests": 0,
+  "quality_trials_counted": 0,
+  "commercial_release": false
+}

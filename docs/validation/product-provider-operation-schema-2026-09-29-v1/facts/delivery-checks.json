@@ -1,0 +1,14 @@
+{
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "documentation_findings": 0,
+  "actual_mermaid_rendered": true,
+  "png_visually_inspected": true,
+  "governance": {
+    "tests": 276,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "product_code_changed": false,
+  "original_documentation_failure_preserved": true
+}

@@ -1,0 +1,27 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "product_code_revision": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "decision": "FINITE_DEFAULT_PRODUCT_CONTRACT_GO_ENGINEERING_QUALITY_AND_COMMERCIAL_NO_GO",
+  "design": "../../changes/m09-r3-workspace-patch-operation-schema.md",
+  "original_driver_sha256": "0d30f2a73783e5b2b44315e2ab96f66efe232124ca7636ee07aee3cbb41e1c1f",
+  "original_failures_preserved": true,
+  "required_checks": [
+    "默认产品离线审批和取消",
+    "原越界负对照拒绝且文件不变",
+    "一次真实模型两个场景",
+    "原认证Store证明模型显式提供mode及正确写前条件",
+    "原Usage独立费用重算及70元原周期结算",
+    "资料完整性与源码身份"
+  ],
+  "quality_trials_counted": 0,
+  "commercial_release": false,
+  "still_open": [
+    "原3仓10Case20Trial完整真实评测至少12/20",
+    "原固定Python及Node镜像执行环境",
+    "R1空间增长及正式入口安全收口",
+    "Windows11和真正不同版本升级",
+    "独立开发者Beta",
+    "必要许可处置及同候选正式封板"
+  ]
+}

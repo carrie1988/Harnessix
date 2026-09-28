@@ -1,0 +1,56 @@
+{
+  "observed_at": "2026-09-28T23:21:34.327489+00:00",
+  "run_id": 36494933926,
+  "head_sha": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "status": "in_progress",
+  "conclusion": null,
+  "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/36494933926",
+  "jobs": [
+    {
+      "job_id": 109172175919,
+      "name": "coding-tools-macos",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    },
+    {
+      "job_id": 109172176149,
+      "name": "python (3.12)",
+      "status": "completed",
+      "conclusion": "failure",
+      "failed_steps": [
+        "Run uv run python scripts/license_scan.py --check"
+      ]
+    },
+    {
+      "job_id": 109172176154,
+      "name": "container-sandbox",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    },
+    {
+      "job_id": 109172176163,
+      "name": "windows-trusted-execution",
+      "status": "in_progress",
+      "conclusion": null,
+      "failed_steps": []
+    },
+    {
+      "job_id": 109172176173,
+      "name": "python (3.13)",
+      "status": "completed",
+      "conclusion": "failure",
+      "failed_steps": [
+        "Run uv run python scripts/license_scan.py --check"
+      ]
+    },
+    {
+      "job_id": 109172176218,
+      "name": "documentation",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    }
+  ]
+}

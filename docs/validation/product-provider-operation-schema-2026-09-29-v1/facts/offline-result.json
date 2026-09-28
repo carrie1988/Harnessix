@@ -1,0 +1,64 @@
+{
+  "spec_version": "harnessix.product-provider-certification-result/v1",
+  "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+  "cases": [
+    {
+      "case": "sdk-read-approve-patch",
+      "mode": "fixture_controller_only",
+      "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+      "quality_trials_counted": 0,
+      "commercial_release": false,
+      "approval_seen": true,
+      "complete_diff": true,
+      "trusted_read_seen": true,
+      "exact_proposal_scope": true,
+      "unchanged_before_approval": true,
+      "approved_exact_change": true,
+      "turn_completed": true,
+      "result": "PASS",
+      "transport_closed": true,
+      "child": {
+        "model_requests": 0,
+        "provider_invocations": 3,
+        "budget_guard_used": false,
+        "request_limit": 8,
+        "request_facts": []
+      },
+      "only_fixture_path_present": true
+    },
+    {
+      "case": "sdk-read-patch-cancel",
+      "mode": "fixture_controller_only",
+      "source_revision": "c8033e08a260cfde793bf9809f6979a833fc92d5",
+      "quality_trials_counted": 0,
+      "commercial_release": false,
+      "approval_seen": true,
+      "complete_diff": true,
+      "trusted_read_seen": true,
+      "exact_proposal_scope": true,
+      "unchanged_before_approval": true,
+      "provider_invocations_before_cancel": 2,
+      "cancel_interrupted": true,
+      "fixture_unchanged": true,
+      "result": "PASS",
+      "transport_closed": true,
+      "child": {
+        "model_requests": 0,
+        "provider_invocations": 2,
+        "budget_guard_used": false,
+        "request_limit": 8,
+        "request_facts": []
+      },
+      "only_fixture_path_present": true,
+      "no_new_provider_request_after_cancel": true
+    }
+  ],
+  "budget_before": null,
+  "budget_after": null,
+  "task_pack_grader_unchanged": true,
+  "quality_trials_counted": 0,
+  "commercial_release": false,
+  "budget_settlement_complete": null,
+  "usage_complete": null,
+  "result": "PASS"
+}
