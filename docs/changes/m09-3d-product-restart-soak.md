@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 9
-code_revision: 126131c6bab642f247c2d384142c460e73637061
+version: 10
+code_revision: d470ca62ae208b9232ac7d3e36f3423b04f539dd
 owners:
   - core
 modules:
@@ -290,3 +290,15 @@ publish_original_v5_proof_and_commit_attempt()
 [原V5证明](../../tests/benchmarks/test_soak_restart_proof.py)和[CI](../../.github/workflows/ci.yml)。
 这是受影响Runner的一致性修复；完整原生结果、真实编码质量、发行安装和Beta未通过前，
 R1/R4及商用发布整体仍开放，不从本次较小场景推导生产完成。
+
+### 13.5 固定修复候选的实际验证与后继阻断
+
+`d470ca6`的Windows实际产品/Runner两个文件共10项通过（23.25秒），包含普通mkdir的真实
+`product_state_invalid`负对照、ACL/Sentinel不变、缺Key/Store，以及修复后的原五周期正例。
+这共同确认Runner预建Root与正式私有创建合同不一致，而不是产品需要自动修复既有ACL。
+同一候选在两个独立Python环境的Benchmark及Product Config范围各590通过、30跳过；
+macOS的跳过没有计作Windows原生通过。
+
+该候选随后被源码制品嵌套验证Wheel触发的`scan_archive_depth_limit`阻断，后继完整Windows
+Benchmark及全量回归未执行。制品边界修复见[安装与制品第5.2节](../operations/installation.md#52-源码制品与验证制品边界)，
+不提高扫描限额、不删除原件或跳过完整Windows回归；实际后继结果另行固定归档。

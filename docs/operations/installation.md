@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 12
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 13
+code_revision: d470ca62ae208b9232ac7d3e36f3423b04f539dd
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/governance/test_distribution_artifact_boundary.py
   - tests/product_config/test_product_state_restore.py
   - tests/governance/test_repository_policy.py
   - tests/unit/test_cli_license.py
@@ -36,6 +37,8 @@ supersedes: []
 “可以从源码运行”表述为“产品已经完成安装交付”。
 后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
+后继[Git/Owner与完整恢复原生焦点](../validation/windows-private-state-2026-09-28-v1/README.md)
+已完成有限场景验证；不能从本地锁定Wheel导入、离线Doctor或焦点通过推导三平台正式安装完成。
 
 ## 2. 前置条件
 
@@ -64,8 +67,8 @@ flowchart TD
     Configure --> Diagnose[code doctor离线预检]
     Diagnose --> Platform{macOS/Linux/Windows?}
     Platform -- macOS/Linux --> Posix[POSIX只读Runtime]
-    Platform -- Windows --> Win[Handle读取与本地NTFS审批Patch候选]
-    Win --> GitGate[默认Git失败关闭；完整安装待R4验收]
+    Platform -- Windows --> Win[Handle读取 受管Git与本地NTFS审批Patch]
+    Win --> GitGate[原生焦点已验证；完整安装待R4验收]
 ```
 
 当前没有可直接下载的官方二进制。任何第三方Wheel、镜像或安装脚本必须单独核对来源、Revision、许可证和摘要。
@@ -144,6 +147,23 @@ Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel�
 - 没有PyPI发布证据；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
 - Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；0.9.1d仅验证原生四项只读能力。
+
+### 5.2 源码制品与验证制品边界
+
+首发正式通道仍只有Wheel；CI同时构建的源码制品属于开发/扫描输入，不新增正式渠道承诺。
+Hatch源码制品继续包含源码、正式文档及验证README/Manifest等可读资料，排除
+`docs/validation/**/artifacts`内已经构建的验证制品，并保留原Task Pack解答目录排除规则。
+实际验证Wheel仍以原字节保留在Git及对应交付Manifest中，不删除、不重签、不改摘要。
+
+需求来自`d470ca6`的实际CI失败：新归档验证Wheel被默认源码制品再次打包，形成
+gzip→tar→wheel层级，现行Secret扫描正确返回`scan_archive_depth_limit`，而非完成覆盖。
+不提高扫描深度、不忽略扫描失败；分离源码与已构建输出才是边界修复。
+仓库扫描仍以`git ls-files`覆盖原验证Wheel，发行物扫描仍覆盖每个实际产物。
+
+[实际构建回归](../../tests/governance/test_distribution_artifact_boundary.py)在独立临时项目中
+运行同一Hatch配置的离线源码构建，验证源码/正式安装文档/验证README仍存在、制品目录不存在；
+同时让仓库扫描发现原验证Wheel并捕获其中的合成规则命中，证明该排除不是Secret扫描白名单。
+真实发行物完整扫描未通过前，不宣称源码或Wheel已通过发布门禁。
 
 ## 6. 开发命令镜像
 

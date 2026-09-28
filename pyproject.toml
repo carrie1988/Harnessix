@@ -58,7 +58,8 @@ build-backend = "hatchling.build"
 packages = ["src/harnessix"]
 
 [tool.hatch.build.targets.sdist]
-exclude = ["benchmarks/taskpacks/*/solutions"]
+# 验证制品保留在Git原件中，不递归打入源码制品；仓库Secret扫描仍覆盖它们。
+exclude = ["benchmarks/taskpacks/*/solutions", "docs/validation/**/artifacts"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
