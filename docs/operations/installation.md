@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 12
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -257,3 +257,10 @@ POSIX完整产品验证与Windows原生端口测试分开，源码存在和Wheel
 两个方向不能顺序执行。恢复成功保留Previous，当前不自动删除。
 [完整操作与失败说明](recovery.md#完整产品停机恢复与明确结算)及
 [正式设计](../changes/m09-r1-product-state-restore.md)定义原来源、取消、确认丢失和平台边界。
+
+## 原生Windows Git读取验收入口
+
+安装候选可显式绑定本机Git for Windows绝对EXE后运行Doctor及固定Status/Diff。
+Native SDK、取消、签名观察、输出保护和原备份验证入口见
+[Windows Git读取详设](../changes/m09-r4-windows-native-git-read.md)。
+目前仅增加实现候选，不宣称脱离源码Wheel安装、三平台升级恢复或完整商用发布已通过。

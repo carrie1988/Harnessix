@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 812ae7cfa1978acd53a278637b19f936ebac4a14
+version: 5
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -534,3 +534,10 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 |---|---|---|---|
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |
+
+## Git Source跨平台读取边界
+
+[`GitContextSource`](../../src/harnessix/context/sources.py)仍复用固定Git Read Runtime，
+Windows宿主可显式提供`git_state_directory`，不创建另一套Git查询、解析或恢复机制。
+当前默认产品并未自动增加Git Source；模型通过已注册Git Tool主动检查实际仓库。
+接口、失败与宿主状态边界见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

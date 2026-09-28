@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -43,6 +42,7 @@ from harnessix.tools.git_contracts import (
     GitStatusInput,
     GitStatusOutput,
 )
+from harnessix.tools.read_backend import build_read_backend
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
@@ -52,10 +52,10 @@ from harnessix.tools.search_contracts import (
     GrepOutput,
     SearchInput,
 )
-from harnessix.tools.workspace import ReadOperation, Workspace, digest, run_read_operation
+from harnessix.tools.workspace import ReadOperation, digest, run_read_operation
 
 if TYPE_CHECKING:
-    from harnessix.tools.windows_read import WindowsReadRuntime
+    from harnessix.processes.owner_protocol import OutputRedactionSource
 
 
 async def _drain[T](task: asyncio.Task[T]) -> None:
@@ -163,41 +163,10 @@ def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) ->
     )
 
 
-@dataclass(frozen=True, slots=True)
-class _ReadBackend:
-    workspace: Workspace | None
-    windows: WindowsReadRuntime | None
-    implementation: str
-
-
-def _build_read_backend(
-    root: Path,
-    denied_paths: tuple[str, ...],
-    git_executable: Path | None,
-) -> _ReadBackend:
-    if os.name == "nt":
-        if git_executable is not None:
-            raise KernelError(
-                "product_git_platform_unsupported",
-                "Windows原生Git读取尚未开放",
-            )
-        from harnessix.tools.windows_read import WindowsReadRuntime
-
-        return _ReadBackend(
-            workspace=None,
-            windows=WindowsReadRuntime(root, denied_paths=denied_paths),
-            implementation="coding-read/windows-v1",
-        )
-    if os.name == "posix" and hasattr(os, "O_NOFOLLOW"):
-        return _ReadBackend(
-            workspace=Workspace(root, denied_paths=denied_paths),
-            windows=None,
-            implementation="coding-read/v1",
-        )
-    raise KernelError(
-        "product_tools_platform_unsupported",
-        "内置只读Coding Tool Runtime不支持该宿主平台",
-    )
+def _read_semaphore(limit: int) -> asyncio.BoundedSemaphore:
+    if type(limit) is not int or not 1 <= limit <= 16:
+        raise KernelError("tool_concurrency_invalid", "只读工具并发上限必须在1到16之间")
+    return asyncio.BoundedSemaphore(limit)
 
 
 def _descriptor(
@@ -259,7 +228,9 @@ def _binding_rules(
             rules["output"] = output.model_json_schema()
     if binding in _GIT_BINDINGS:
         assert git_runtime is not None
-        rules.update(implementation="git-read/v1", git=git_runtime.contract())
+        rules.update(
+            implementation=git_runtime.contract()["implementation"], git=git_runtime.contract()
+        )
     return rules
 
 
@@ -342,21 +313,20 @@ class CodingToolRuntime:
         require_approval: bool = False,
         artifacts: SQLiteArtifactStore | None = None,
         git_executable: Path | None = None,
+        git_state_directory: Path | None = None,
+        git_output_redaction: OutputRedactionSource | None = None,
         max_concurrent_reads: int = 4,
     ) -> None:
-        if type(max_concurrent_reads) is not int or not 1 <= max_concurrent_reads <= 16:
-            raise KernelError("tool_concurrency_invalid", "只读工具并发上限必须在1到16之间")
-        backend = _build_read_backend(root, denied_paths, git_executable)
+        self._lock = _read_semaphore(max_concurrent_reads)
+        backend = build_read_backend(
+            root, denied_paths, git_executable, git_state_directory, git_output_redaction
+        )
         self._workspace = backend.workspace
         self._windows = backend.windows
         self._max_concurrent_reads = max_concurrent_reads
-        self._lock = asyncio.BoundedSemaphore(max_concurrent_reads)
         self._closed = False
         self._artifacts = artifacts
-        self._git: git.GitReadRuntime | None = None
-        if git_executable is not None:
-            assert self._workspace is not None
-            self._git = git.GitReadRuntime(self._workspace.root, git_executable)
+        self._git = backend.git_runtime
         self._definitions = _build_definitions(
             scope=self.workspace_scope,
             implementation=backend.implementation,

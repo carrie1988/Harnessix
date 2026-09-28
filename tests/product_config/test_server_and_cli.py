@@ -56,6 +56,85 @@ from tests.product_config.test_migration_and_store import legacy_body
 CANARY = "product-cli-secret-canary"
 
 
+@pytest.mark.skipif(os.name != "nt", reason="原生Windows默认产品Git/SDK装配")
+async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.tools.test_windows_git import _git, _repository
+
+    _credentials(monkeypatch)
+    workspace, state = tmp_path / "workspace", tmp_path / "state"
+    _repository(workspace)
+    (workspace / "main.py").write_bytes((CANARY + "\n").encode())
+    path = write_config(tmp_path / "config.json", config)
+    bundle = ScriptedProvider(
+        (
+            (
+                ResponseStarted(response_id="git-response"),
+                ToolCallCompleted(call_id="git-call", tool="git_diff", arguments={}),
+                ResponseCompleted(finish_reason="tool_calls"),
+            ),
+            answer("差异检查完成"),
+        )
+    )
+
+    async def build(*_args: object, **_kwargs: object) -> ScriptedProvider:
+        return bundle
+
+    async def drive(server: AgentProtocolServer, *_streams: object) -> None:
+        client = AgentClient(InProcessAgentTransport(server))
+        await client.initialize()
+        thread = await client.create_thread(str(workspace), request_id="windows-git-create")
+        await client.start_turn(thread.thread_id, "检查代码差异", request_id="windows-git-start")
+        for _ in range(1500):
+            current = await client.get_thread(thread.thread_id)
+            if current.latest_turn is not None and current.latest_turn.status == "completed":
+                break
+            if current.latest_turn is not None and current.latest_turn.status in {
+                "failed",
+                "interrupted",
+            }:
+                raise AssertionError("Windows默认Git编码链失败")
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("Windows默认Git编码链未在期限内结束")
+        replay = await client.replay_events(thread.thread_id, limit=100)
+        assert CANARY not in replay.model_dump_json()
+        assert len(bundle.requests) == 2
+        result = next(
+            item.content
+            for item in reversed(bundle.requests[-1].history)
+            if isinstance(item.content, ToolResultContent)
+        )
+        assert result.outcome == "succeeded" and isinstance(result.output, dict)
+        assert "[REDACTED]" in result.output["text"]
+        await client.close()
+
+    monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
+    monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
+    await run_product_stdio(
+        config_path=path,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=state,
+        git_executable=_git(),
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    assert (state / "process-owner/process-leases.db").is_file()
+    captures = list((state / "process-owner/runs").glob("*/stdout.bin"))
+    assert len(captures) == 3
+    assert all(CANARY.encode() not in capture.read_bytes() for capture in captures)
+    from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+
+    manifest = await backup_product_state(state, tmp_path / "backup")
+    assert any(item.path == "process-owner/process-leases.db" for item in manifest.files)
+    verified = await verify_product_backup(state, tmp_path / "backup")
+    assert verified == manifest
+
+
 def _credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PRIMARY_API_KEY", CANARY)
     monkeypatch.setenv("BACKUP_API_KEY", "backup-secret")

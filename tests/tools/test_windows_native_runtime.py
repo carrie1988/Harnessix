@@ -142,7 +142,7 @@ async def test_windows_runtime_enforces_revision_denial_and_long_paths(tmp_path:
         assert denied.error.code == "tool_path_denied"
 
 
-async def test_windows_runtime_rejects_junction_and_explicit_git(tmp_path: Path) -> None:
+async def test_windows_runtime_rejects_junction_and_relative_git(tmp_path: Path) -> None:
     outside = tmp_path.parent / f"{tmp_path.name}-outside"
     outside.mkdir()
     (outside / "secret.txt").write_text("canary", encoding="utf-8")
@@ -160,7 +160,7 @@ async def test_windows_runtime_rejects_junction_and_explicit_git(tmp_path: Path)
                 assert "canary" not in denied.model_dump_json()
         with pytest.raises(KernelError) as git:
             CodingToolRuntime(tmp_path, git_executable=Path("git.exe"))
-        assert git.value.code == "product_git_platform_unsupported"
+        assert git.value.code == "product_git_invalid"
     finally:
         if (tmp_path / "junction").exists():
             await asyncio.to_thread(

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 20
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -1643,3 +1643,12 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 验真不构造Supervisor，不读取历史PID的当前系统归属，不杀进程，也不再次执行命令。
 原生端口存在不证明完整Windows产品可用；平台限制和实际验收分别记录。
 完整持久化、取消、故障及测试范围见[产品备份详设](../changes/m09-r1-product-state-backup.md)。
+
+## 固定Windows Git只读进程装配
+
+[`git_read_windows.py`](../../src/harnessix/processes/git_read_windows.py)提供固定Git查询的宿主装配：
+原完整Execution Plan先落盘，随后由原WindowsProcessSupervisor启动唯一Owner；
+取消包括启动线程期间取消，先通过私有Token请求停机并排空，再交付原取消信号。
+Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process-owner/`。
+启动只收敛source_id=`harnessix.git_read`的旧只读查询，不重放、不用历史数字PID控制进程。
+详见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

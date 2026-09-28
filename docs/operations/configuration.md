@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 12
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -373,8 +373,8 @@ Thread，不启动Transport，也不进行Provider网络请求。
 
 直接运行`harnessix code WORKSPACE`时，同一Preflight在加载Textual、打开Client State和启动子进程前执行。子进程中的
 `run_product_stdio`再次执行Preflight，并继续执行两个配置重读及摘要核对、Workspace/State隔离、Provider/Action Owner构造、旧Route恢复和原子激活CAS；不要把Doctor旧报告
-作为跳过Server校验的授权材料。Windows原生提供文件/搜索及可信快照读取，满足本地固定NTFS条件时另外装配审批Patch；显式Git返回
-`product_git_platform_unsupported`。
+作为跳过Server校验的授权材料。Windows原生提供文件/搜索及可信快照读取，满足本地固定NTFS条件时另外装配审批Patch；
+显式Git由[原生读取候选](../changes/m09-r4-windows-native-git-read.md)核对绝对EXE及实际Owner能力。
 
 ## 12.1 默认Patch配置边界
 
@@ -414,3 +414,13 @@ Owner、Sandbox和Secret版本可证明。若旧`pending_approval/ready`的Bindi
 [CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成三平台及完整矩阵验收。e5配置、
 Doctor、原子CAS和启动恢复绑定实现Revision `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`，并由
 [CI 35439332019](https://github.com/carrie1988/Harnessix/actions/runs/35439332019)完成七任务全矩阵验收后关闭。
+
+## Windows Git宿主状态与安全配置
+
+Windows `--git-executable`必须是绝对普通EXE，默认stdio复用现有产品私有状态Root。
+独立CodingToolRuntime/GitContextSource宿主需显式传入外部私有`git_state_directory`。
+该Root内沿用`execution-plans.db`及`process-owner/`，需满足私有权限和所有权要求，
+不得与Workspace互相包含或经Junction改指。
+Provider保护材料由默认产品传入原Owner，先保护输出后计量和落盘；不把凭据作为Git环境注入。
+仓库可执行Filter和外部Include被拒绝，而不是静默接受后运行。完整合同见
+[Windows Git读取详设](../changes/m09-r4-windows-native-git-read.md)。

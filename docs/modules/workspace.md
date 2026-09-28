@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 6
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -1206,3 +1206,12 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 | 3 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；CI 34735529084通过 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |
 | 1 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` | 2026-09-12 | 建立Workspace现行模块设计，覆盖逻辑路径、选择资源Snapshot、POSIX/Windows原生端口、Secure Reader、SQLite Fencing Lease和跨模块消费边界 |
+
+## Windows Git原生绑定
+
+[`git_windows_binding.py`](../../src/harnessix/workspace/git_windows_binding.py)复用
+WindowsWorkspaceRoot父链及叶句柄，不引入第二套Win32 API。
+宿主绑定绝对普通EXE，拒绝Junction、非EXE和多硬链接；命令期间保留原根与EXE句柄并核对身份。
+状态目录创建前固定已有原生父链，不能先resolve隐藏Junction。
+该Host Guarded边界不是防恶意同UID配置篡改的原子CAS，详细约束见
+[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

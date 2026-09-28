@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 84
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 85
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -667,3 +667,12 @@ Root Owner覆盖缺失窗口；有界私有候选沿原Manifest和回执验真�
 Plan/Pointer/粘性回退/Result记录位于原Root外，状态机只按实际对象身份执行必要Rename。
 正常产品启动在任何Root/Key/Store初始化之前拒绝活动指针，恢复不构造Executor或操作历史PID。
 详见[整体恢复架构、时序及数据流](changes/m09-r1-product-state-restore.md)。
+
+## Windows Git读取与原状态融合
+
+原生Git读取候选遵循同一Coding Agent目录：Read Backend → 固定Git Read Runtime →
+既有Windows Process Owner/Job。完整只读Plan及原签名Lease/输出进入现有私有Root，
+不新增独立Git服务或状态拓扑。所有平台查询前拒绝可执行Filter及外部Include，
+默认产品启动仅观察旧Git查询，不重放。系统、时序、数据流与Host Guarded约束见
+[Windows Git读取详设](changes/m09-r4-windows-native-git-read.md)。
+原生焦点验收、真实模型质量、脱离源码安装升级和真实用户Beta仍须分别确认。

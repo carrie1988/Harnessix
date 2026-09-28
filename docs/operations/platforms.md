@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 12
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -80,8 +80,9 @@ supersedes: []
 
 当前没有桌面平台达到完整1.0“产品支持”等级。Windows
 原生Handle四项只读Tool已经由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)
-验证，Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝；Windows显式Git仍返回
-`product_git_platform_unsupported`。历史读取证据不能外推到写入、Process、Delivery、安装或长期终端稳定性。
+验证，Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝。后继
+[原生Git读取候选](../changes/m09-r4-windows-native-git-read.md)允许实际EXE绑定，不再统一拒绝显式Git；
+历史读取证据不能外推到写入、Process、Delivery、安装或长期终端稳定性。
 后继`87f9353`已经独立补齐本地NTFS普通文件与默认审批专项，见[固定版本报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 该报告仍不关闭Windows完整产品或消费者目标OS验收。
 
@@ -246,3 +247,12 @@ POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞�
 - 正式Agent镜像延期，不阻断首发；实际发布Wheel及Container执行后端的必要门禁保留；
 - macOS ARM64须实测；额外架构、网络文件系统及特殊离线环境没有正式支持承诺；
 - Provider网络与系统代理/证书缺少统一配置合同。
+
+## Windows原生Git读取候选边界
+
+显式`--git-executable`进入原生Git读取候选，必须绑定本机Git for Windows绝对普通EXE。
+实际宿主Doctor核对原生EXE及Process Owner；模拟平台结果不算能力证明。
+只开放固定Status/Diff，拒绝可执行Filter/Include，关闭子模块辅助查询；
+不开放任意Git命令、自动Commit/Push或一般宿主Shell。
+状态、取消、备份与原生测试入口见[详设](../changes/m09-r4-windows-native-git-read.md)。
+本项不关闭R4完整编码、脱离源码安装、升级及Beta边界。

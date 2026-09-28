@@ -454,6 +454,7 @@ class GitContextSource:
         denied_paths: tuple[str, ...] = (),
         status_limit: int = 100,
         max_content_bytes: int = MAX_GIT_CONTEXT_BYTES,
+        git_state_directory: Path | None = None,
     ) -> None:
         if type(status_limit) is not int or not 1 <= status_limit <= 200:
             raise ValueError("Git Context状态条目上限必须为1到200")
@@ -462,9 +463,8 @@ class GitContextSource:
         self._root = root.resolve(strict=True)
         self._working_directory = working_directory
         self._denied_paths = denied_paths
-        self._status_limit = status_limit
-        self._max_content_bytes = max_content_bytes
-        self._runtime = GitReadRuntime(self._root, executable)
+        self._status_limit, self._max_content_bytes = status_limit, max_content_bytes
+        self._runtime = GitReadRuntime(self._root, executable, state_directory=git_state_directory)
 
     async def observe(
         self, request: ContextBuildInput, cancel: CancelToken

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import ntpath
+import os
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
 
@@ -25,6 +28,8 @@ from harnessix.tools.git_contracts import (
 )
 
 if TYPE_CHECKING:
+    from harnessix.processes.git_read_windows import WindowsGitReadProcess
+    from harnessix.processes.owner_protocol import OutputRedactionSource
     from harnessix.processes.runtime import HostProcessRuntime
 
 _TIMEOUT_SECONDS: Final = 5.0
@@ -55,17 +60,31 @@ _GLOBAL_ARGUMENTS: Final = (
 class GitReadRuntime:
     """对一个明确仓库根和一个受信Git可执行文件提供两项只读能力。"""
 
-    def __init__(self, root: Path, executable: Path) -> None:
-        self._root = root.resolve(strict=True)
+    def __init__(
+        self,
+        root: Path,
+        executable: Path,
+        *,
+        state_directory: Path | None = None,
+        output_redaction: OutputRedactionSource | None = None,
+    ) -> None:
+        self._root = root.absolute() if os.name == "nt" else root.resolve(strict=True)
         if any(ord(character) < 32 or ord(character) == 127 for character in str(self._root)):
             raise KernelError("git_workspace_denied", "Git工作区路径包含控制字符")
         self._executable = executable
+        self._state_directory = state_directory
+        self._output_redaction = output_redaction
+        self._global_arguments: tuple[str, ...] = _GLOBAL_ARGUMENTS
+        if os.name == "nt":
+            from harnessix.processes.git_read_windows import WINDOWS_GIT_ARGUMENTS
+
+            self._global_arguments = WINDOWS_GIT_ARGUMENTS
         sample = self._runtime()
         self._binding_fingerprint = sample.binding_fingerprint
 
     def contract(self) -> dict[str, object]:
         return {
-            "implementation": "git-read/v1",
+            "implementation": "git-read/windows-job-v1" if os.name == "nt" else "git-read/v1",
             "binding": self._binding_fingerprint,
             "timeout_seconds": _TIMEOUT_SECONDS,
             "max_capture_bytes": MAX_CAPTURE_BYTES,
@@ -76,46 +95,41 @@ class GitReadRuntime:
             "external_diff": False,
             "textconv": False,
             "fsmonitor": False,
+            "executable_filters": False,
+            "configuration_includes": False,
+            "submodule_queries": False,
         }
 
-    def _runtime(self) -> HostProcessRuntime:
-        # 延迟导入避免processes.runtime复用tools.runtime._drain时形成初始化环。
-        from harnessix.processes.runtime import HostProcessRuntime
-
-        return HostProcessRuntime(
-            self._root,
-            {"git": self._executable},
-            environment=_ENVIRONMENT,
-            limits=ProcessLimits(
-                max_timeout_seconds=_TIMEOUT_SECONDS,
-                stdout_bytes=MAX_CAPTURE_BYTES,
-                stderr_bytes=_STDERR_BYTES,
-                stop_output_bytes=8 * MAX_CAPTURE_BYTES,
-            ),
+    def _runtime(self) -> HostProcessRuntime | WindowsGitReadProcess:
+        return _build_git_process(
+            self._root, self._executable, self._state_directory, self._output_redaction
         )
 
     async def execute(
         self, args: GitStatusInput | GitDiffInput, cancel: CancelToken
     ) -> ReadContract:
         await self._require_repository_root(cancel)
+        await _reject_git_helpers(self, cancel)
         if isinstance(args, GitStatusInput):
             result = await self._run(
                 (
-                    *_GLOBAL_ARGUMENTS,
+                    *self._global_arguments,
                     "status",
                     "--porcelain=v2",
                     "--branch",
                     "--untracked-files=all",
+                    "--ignore-submodules=all",
                     "-z",
                 ),
                 cancel,
             )
             return _status(result, args.limit)
         diff_args = [
-            *_GLOBAL_ARGUMENTS,
+            *self._global_arguments,
             "diff",
             "--no-ext-diff",
             "--no-textconv",
+            "--ignore-submodules=all",
             f"--unified={args.context_lines}",
         ]
         if args.target == "staged":
@@ -126,13 +140,13 @@ class GitReadRuntime:
 
     async def _require_repository_root(self, cancel: CancelToken) -> None:
         result = await self._run(
-            (*_GLOBAL_ARGUMENTS, "rev-parse", "--show-toplevel"), cancel, repository_check=True
+            (*self._global_arguments, "rev-parse", "--show-toplevel"), cancel, repository_check=True
         )
         try:
             root = result.stdout.data().decode("utf-8", errors="strict")
         except UnicodeError:
             raise ReadToolError("invalid_utf8") from None
-        if root.removesuffix("\n") != str(self._root):
+        if not repository_root_matches(root, str(self._root), windows=os.name == "nt"):
             raise ReadToolError("path_denied")
 
     async def _run(
@@ -142,27 +156,97 @@ class GitReadRuntime:
         *,
         repository_check: bool = False,
     ) -> ProcessResult:
-        async with self._runtime() as runtime:
+        return await _run_git_process(
+            self._runtime(), self._binding_fingerprint, arguments, cancel, repository_check
+        )
+
+
+async def _run_git_process(
+    process: HostProcessRuntime | WindowsGitReadProcess,
+    fingerprint: str,
+    arguments: tuple[str, ...],
+    cancel: CancelToken,
+    repository_check: bool,
+) -> ProcessResult:
+    async with process as runtime:
+        if runtime.binding_fingerprint != fingerprint:
+            raise KernelError("process_binding_changed", "Git只读宿主绑定已变化")
+        try:
             result = await runtime.run(
                 ProcessRequest(
                     program="git", arguments=arguments, timeout_seconds=_TIMEOUT_SECONDS
                 ),
                 cancel,
             )
-        if result.stop_reason == "cancelled":
-            raise TurnCancelled
-        if result.stop_reason == "timeout":
-            raise ReadToolError("timeout")
-        if (
-            result.stop_reason != "exited"
-            or result.returncode != 0
-            or not result.stdout.eof
-            or not result.stderr.eof
-        ):
-            if repository_check:
-                raise ReadToolError("not_found")
-            raise ReadToolError("io_failed")
-        return result
+        except ReadToolError as error:
+            if error.code == "not_found" and not repository_check:
+                raise ReadToolError("io_failed") from None
+            raise
+    if result.stop_reason == "cancelled":
+        raise TurnCancelled
+    if result.stop_reason == "timeout":
+        raise ReadToolError("timeout")
+    if (
+        result.stop_reason != "exited"
+        or result.returncode != 0
+        or not result.stdout.eof
+        or not result.stderr.eof
+    ):
+        if repository_check:
+            raise ReadToolError("not_found")
+        raise ReadToolError("io_failed")
+    return result
+
+
+async def _reject_git_helpers(runtime: GitReadRuntime, cancel: CancelToken) -> None:
+    # 只读取配置键名，避免把HTTP Header等配置值持久写入Process输出。
+    result = await runtime._run(  # noqa: SLF001 - 固定查询是同一Git端口的前置条件
+        (*runtime._global_arguments, "config", "--no-includes", "--null", "--name-only", "--list"),
+        cancel,
+    )
+    if result.stdout.truncated:
+        raise ReadToolError("limit_exceeded")
+    for key in result.stdout.data().split(b"\0"):
+        if re.match(rb"^(?:include(?:if)?\.|filter\..*\.(?:clean|smudge|process)$)", key.lower()):
+            raise ReadToolError("path_denied")
+
+
+def _build_git_process(
+    root: Path,
+    executable: Path,
+    state_directory: Path | None,
+    output_redaction: OutputRedactionSource | None,
+) -> HostProcessRuntime | WindowsGitReadProcess:
+    if os.name == "nt":
+        from harnessix.processes.git_read_windows import WindowsGitReadProcess
+
+        return WindowsGitReadProcess(root, executable, state_directory, output_redaction)
+    # 延迟导入避免processes.runtime复用tools.runtime._drain时形成初始化环。
+    from harnessix.processes.runtime import HostProcessRuntime
+
+    return HostProcessRuntime(
+        root,
+        {"git": executable},
+        environment=_ENVIRONMENT,
+        limits=ProcessLimits(
+            max_timeout_seconds=_TIMEOUT_SECONDS,
+            stdout_bytes=MAX_CAPTURE_BYTES,
+            stderr_bytes=_STDERR_BYTES,
+            stop_output_bytes=8 * MAX_CAPTURE_BYTES,
+        ),
+    )
+
+
+def repository_root_matches(observed: str, expected: str, *, windows: bool) -> bool:
+    """只移除一个行结束符；Windows容纳Git正斜杠和大小写，不接受父仓库。"""
+    value = observed[:-2] if windows and observed.endswith("\r\n") else observed.removesuffix("\n")
+    if any(ord(character) < 32 or ord(character) == 127 for character in value):
+        return False
+    if windows:
+        return ntpath.isabs(value) and ntpath.normcase(ntpath.normpath(value)) == ntpath.normcase(
+            ntpath.normpath(expected)
+        )
+    return value == expected
 
 
 def _decode(data: bytes) -> str:

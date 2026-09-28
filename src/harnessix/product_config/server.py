@@ -108,6 +108,10 @@ def _absolute_path(path: str | Path) -> Path:
 
 
 def _git_path(path: str | Path) -> Path:
+    if os.name == "nt":
+        from harnessix.workspace.git_windows_binding import validate_windows_git_executable
+
+        return validate_windows_git_executable(Path(path))
     try:
         executable = Path(path).resolve(strict=True)
     except (OSError, RuntimeError):
@@ -135,7 +139,7 @@ def _preflight_request(
         profile_id=profile_id,
         workspace=Path(workspace).absolute(),
         state_directory=Path(state_directory).absolute(),
-        git_executable=Path(git_executable).absolute() if git_executable is not None else None,
+        git_executable=Path(git_executable) if git_executable is not None else None,
         require_tui=False,
     )
 
@@ -261,6 +265,8 @@ async def _serve_product_stdio(
                     startup.workspace_root,
                     artifacts=artifacts,
                     git_executable=startup.git_path,
+                    git_state_directory=startup.state_root,
+                    git_output_redaction=public_scope,
                 ) as tools:
                     async with open_default_product_action_runtime(
                         startup.state_root,
@@ -275,6 +281,12 @@ async def _serve_product_stdio(
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)
+                        if os.name == "nt":
+                            from harnessix.processes.git_read_windows import (
+                                reconcile_windows_git_reads,
+                            )
+
+                            await reconcile_windows_git_reads(startup.state_root)
                         context = build_product_agent_context(
                             tools.workspace_root,
                             max_output_tokens=max(

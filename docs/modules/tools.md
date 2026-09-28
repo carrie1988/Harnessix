@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 812ae7cfa1978acd53a278637b19f936ebac4a14
+version: 6
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -51,7 +51,7 @@ supersedes: []
 | 显式能力 | 绑定Git可执行文件后增加`git_status`、`git_diff`；绑定Artifact Store后增加归档搜索和`read_artifact`；默认产品现已绑定Artifact Store |
 | 权限来源 | 宿主构造的Workspace能力、版本化`ToolDescriptor`和Kernel注入的`ToolExecutionScope` |
 | 并发模型 | 单Runtime有界并行读取，默认4，合法范围1～16；持久结果仍由Agent按Provider调用顺序提交 |
-| 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle四工具端口；Windows不广告Git |
+| 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle文件端口；显式Git进入原生读取候选 |
 | 代码版本 | `812ae7cfa1978acd53a278637b19f936ebac4a14` |
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
@@ -98,7 +98,7 @@ Session事实，也不把未提交结果当作已经发生。
 4. 不对同权限恶意宿主、管理员、挂载替换、inode重用或特殊网络文件系统提供安全证明；
 5. 不把5秒协作Deadline声明为不可中断内核I/O的硬超时；
 6. 默认产品除Session绑定Artifact外，只在POSIX能力证明成立时启用独立Trusted Workspace Patch；不自动启用任意Git路径或其他高风险能力；
-7. Windows已提供原生Handle只读Workspace端口；默认Trusted Patch会诚实省略，仍不提供Git、写入、Process或Delivery；
+7. Windows已有原生文件读取、条件式NTFS审批Patch和显式Git读取候选；只读Runtime本身不提供写入、Process或Delivery；
 8. 不在工具层决定Agent重试、Turn恢复、模型历史裁剪或Artifact事务提交顺序。
 
 ## 4. 术语、信任边界与固定上限
@@ -864,7 +864,7 @@ close_runtime():
 |---|---|---|
 | macOS | 当前支持POSIX只读Runtime | 本地套件及macOS CI |
 | Linux | 当前支持POSIX只读Runtime | Python 3.12/3.13 CI |
-| Windows | 原生Handle只读支持`list_files/read_file/glob/grep`并已通过真实Runner；Git不广告 | Fake Port合同测试与Windows真实Runner/Server/SDK测试；CI 34735529084通过 |
+| Windows | 原生Handle四工具已有真实Runner；Git读取候选的原生证明须单独确认 | Fake Port合同测试与Windows真实Runner/Server/SDK测试；CI 34735529084通过 |
 | WSL2 | 可作为Linux环境使用，不等于Windows原生支持 | 平台边界见ADR 0063 |
 
 Windows实现通过`WindowsWorkspaceRoot`逐段Handle身份与Reparse拒绝建立根能力，不复用POSIX FD，也不以
@@ -881,7 +881,7 @@ Turn并排空在途调用；未完成调用若版本漂移会失败关闭。Arti
 
 | 限制/风险 | 当前影响 | 路线图归属 |
 |---|---|---|
-| Windows只读以外能力未装配 | 当前证据不覆盖Windows Git、写入、Process或Delivery | 0.9.1e、0.9.5 |
+| Windows完整编码未验收 | 后继NTFS/Git有候选，历史四工具证明不覆盖其验收 | R4 |
 | Workspace不是OS Sandbox | 同权限恶意代码可攻击宿主文件和进程边界 | 0.9.4及Sandbox模块 |
 | 协作Deadline不能终止永久内核阻塞 | 极端文件系统故障可能延长取消/关闭 | 0.9.3可靠性 |
 | revision不是内容哈希或原子快照 | 只证明当前定义的元数据观察一致性 | 保持明确合同；未来快照能力另行设计 |
@@ -933,13 +933,14 @@ flowchart LR
 
 ### 25.3 平台失败语义与验证
 
-Windows只广告四项读取工具。显式Git返回`product_git_platform_unsupported`，因为现有Git端口依赖POSIX受管Process语义。
+原`532e59b`切片仅广告Windows四工具；当前后继显式Git使用[原生读取候选](../changes/m09-r4-windows-native-git-read.md)。
+相对或非EXE绑定仍被拒绝，不把历史四工具CI当作新Git验收。
 `WindowsReadRuntime.close()`释放根Handle；`CodingToolRuntime.aclose()`先阻止新调用，再取得全部并发许可并关闭后端。
 
 - [`test_windows_read_adapter.py`](../../tests/tools/test_windows_read_adapter.py)在所有平台使用Fake Root，覆盖分页、Revision、
   Glob/Grep/Capture、敏感路径、链接、二进制、取消、超时和关闭；
 - [`test_windows_native_runtime.py`](../../tests/tools/test_windows_native_runtime.py)只在Windows Runner执行真实长路径、Junction、
-  ADS、保留名、多硬链接、四工具、重开Revision、显式Git拒绝和关闭后调用；
+  ADS、保留名、多硬链接、四工具、重开Revision、相对Git拒绝和关闭后调用；
 - 既有`tests/tools`继续证明POSIX合同没有行为或版本规则回退。
 
 主体实现绑定提交`532e59b346f50657518d11225102bc6999c301e6`，最终验证Revision为`93723773676349fbfbe0ef42c26d9000cce379c8`；[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)已完成原生Windows与全矩阵验收。
@@ -969,3 +970,13 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 | 3 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
 | 1 | `efc7d82062681469651925bff411134c95d89a01` | 建立Tools包现行事实源，覆盖文件、搜索、Git、Artifact、Scope、并发、取消、恢复、安全、平台和源码测试映射 |
+
+## Windows原生Git读取候选
+
+原生后端装配移入[`read_backend.py`](../../src/harnessix/tools/read_backend.py)，
+[`GitReadRuntime`](../../src/harnessix/tools/git.py)共享固定仓库根验证、配置键名检查及Status/Diff解析。
+Windows复用原Process Owner，独立SDK需显式传入外部私有`git_state_directory`；默认stdio由产品Root注入。
+所有平台拒绝可执行Filter和配置Include，关闭子模块辅助查询，并拒绝Catalog之后的EXE绑定漂移。
+完整架构、流程、时序、字段、失败与源码—测试映射见
+[Windows Git详设](../changes/m09-r4-windows-native-git-read.md)。
+该实现候选不等于原生平台验收或R4完成。

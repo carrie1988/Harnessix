@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from dataclasses import replace
 from pathlib import Path
 
@@ -322,7 +323,7 @@ def test_tui_and_git_requirement_semantics(
     )
     git_check = _checks(explicit_git)["product_git_binding"]
     if os.name == "nt":
-        assert git_check.code == "product_git_platform_unsupported"
+        assert git_check.code == "product_git_invalid"
     else:
         assert git_check.status == "passed" and git_check.requirement == "required"
 
@@ -340,8 +341,28 @@ def test_windows_explicit_git_is_rejected_without_exposing_path(
         workspace_probe=lambda workspace, _platform: workspace.resolve(strict=True),
     )
     check = _checks(report)["product_git_binding"]
-    assert check.status == "failed" and check.code == "product_git_platform_unsupported"
+    assert check.status == "failed"
+    expected = "product_git_invalid" if os.name == "nt" else "product_git_platform_unsupported"
+    assert check.code == expected
     assert "secret-git-path" not in report.model_dump_json()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="原生Windows Git只读Doctor")
+def test_windows_doctor_accepts_native_git_without_creating_process_state(
+    tmp_path: Path,
+    config: ProductConfigV2,
+) -> None:
+    executable = shutil.which("git.exe")
+    assert executable is not None
+    path = write_config(tmp_path / "config.json", config)
+    report = run_product_preflight(
+        _request(tmp_path, path, git_executable=Path(executable)),
+        dependency_finder=_dependencies,
+        environment=_ENVIRONMENT,
+    )
+    check = _checks(report)["product_git_binding"]
+    assert check.status == "passed" and check.requirement == "required"
+    assert not list(tmp_path.rglob("process-leases.db"))
 
 
 def test_unknown_probe_failure_is_redacted_and_independent_checks_continue(

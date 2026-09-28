@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 382,
-    "physical_lines": 82395,
-    "logical_lines": 72947,
-    "documented_modules": 382,
-    "classes": 878,
-    "documented_classes": 362,
-    "functions": 3331,
-    "documented_functions": 587,
+    "source_files": 385,
+    "physical_lines": 82932,
+    "logical_lines": 73419,
+    "documented_modules": 385,
+    "classes": 881,
+    "documented_classes": 364,
+    "functions": 3351,
+    "documented_functions": 594,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1569,8 +1569,8 @@
       "path": "src/harnessix/tools/git.py",
       "qualname": "GitReadRuntime",
       "kind": "class",
-      "line": 55,
-      "lines": 111,
+      "line": 60,
+      "lines": 102,
       "documented": true
     },
     {
@@ -1579,7 +1579,7 @@
       "path": "src/harnessix/tools/git.py",
       "qualname": "_status",
       "kind": "function",
-      "line": 175,
+      "line": 259,
       "lines": 79,
       "documented": false,
       "decision_complexity": 25
@@ -1590,8 +1590,8 @@
       "path": "src/harnessix/tools/runtime.py",
       "qualname": "CodingToolRuntime",
       "kind": "class",
-      "line": 334,
-      "lines": 259,
+      "line": 305,
+      "lines": 258,
       "documented": true
     },
     {

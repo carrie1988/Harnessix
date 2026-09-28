@@ -66,7 +66,12 @@ def _state_layout(path: Path, workspace: Path) -> None:
 
 def _git_binding(path: Path, platform: PreflightPlatform) -> None:
     if platform == "windows":
-        raise KernelError("product_git_platform_unsupported", "Windows原生Git读取尚未开放")
+        from harnessix.processes.supervisor_capabilities import probe_windows_process_capability
+        from harnessix.workspace.git_windows_binding import validate_windows_git_executable
+
+        validate_windows_git_executable(path)
+        probe_windows_process_capability()
+        return
     try:
         executable = path.resolve(strict=True)
         if not stat.S_ISREG(executable.stat().st_mode):

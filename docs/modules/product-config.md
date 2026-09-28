@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 29
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 30
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -150,7 +150,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 - 不把Hash链声明为抵御同用户恶意进程的密码学签名日志；
 - 不提供任意配置编辑器、配置热加载、集中式配置服务或多租户控制面；Configure只生成单Provider/单Profile安全起始配置；
 - 不默认装配任意Shell、Commit、Push、远端MCP或公网Git认证；
-- Windows Git读取仍未广告；Workspace Patch只在本地固定NTFS及原生端口检查成立时广告，详见[R4原生文件事务设计](../changes/m09-r4-windows-native-file-transactions.md)。固定Container Process只有能力证明成立才广告。
+- Windows显式Git进入[原生读取候选](../changes/m09-r4-windows-native-git-read.md)；Workspace Patch只在本地固定NTFS及原生端口检查成立时广告，详见[R4原生文件事务设计](../changes/m09-r4-windows-native-file-transactions.md)。固定Container Process只有能力证明成立才广告。
 
 ### 3.3 关键术语
 
@@ -186,7 +186,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 | Fallback | 零暴露、三类失败、先审计后切换 | 是 | 熔断、健康评分、跨进程路由 |
 | 配置Store | Snapshot、active CAS、双Hash链 | 是 | 容量/保留策略、签名、备份编排 |
 | v1→v2迁移 | 文件锁、CAS、备份、原子替换 | CLI显式执行 | 配置DB与文件跨资源原子事务 |
-| stdio组合根 | Preflight后固定Workspace只读Tool与Artifact产品路径 | macOS/Linux/Windows | Windows Git与完整写工具 |
+| stdio组合根 | Preflight后固定Workspace只读Tool、条件式Patch及Artifact路径；Windows显式Git读取候选 | macOS/Linux/Windows | 完整编码、安装升级与原生Git验收 |
 | Product Action合同/目录 | 严格Action Config、固定Process Profile、短时能力报告、同源Descriptor/Binding目录 | 默认Patch；外部配置可启用已证明Process Profile | 热加载、远端配置与任意命令 |
 | Action配置/恢复Store | 来源快照、Hash链、恢复报告、双配置原子CAS | e5已验收 | 签名日志、保留策略和跨机器配置控制面 |
 | Artifact | Session绑定的SQLite Store、Tool/Agent共享Owner和Scoped协议Reader | 默认产品已启用`artifact/read` | GC调度、指标和长期容量治理 |
@@ -2095,3 +2095,11 @@ Windows端口测试不能替代Windows完整产品安装、升级和恢复验收
 终态但活动指针仍在时重新核对目录身份和原快照；已清除指针的重复请求只返回原历史元数据。
 完整字段、类、接口、状态表、失败/取消/超时和测试映射见[总体与详设](../changes/m09-r1-product-state-restore.md)。
 Windows原生安装、升级、完整恢复和R1整体保持开放。
+
+## Windows Git默认产品装配候选
+
+[`server.py`](../../src/harnessix/product_config/server.py)从原产品私有Root注入Git状态及公开输出保护，
+在Root Owner持有下、开放Agent协议前核对旧只读Git查询的原签名终态。
+[`preflight_environment.py`](../../src/harnessix/product_config/preflight_environment.py)只读检查实际EXE及Owner能力，
+不启动Git或新建Process数据库；模拟平台不能充当原生证明。
+完整设计和SDK/备份验收入口见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

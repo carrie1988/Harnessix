@@ -838,3 +838,11 @@ Key备份/维护CLI、Artifact持久正文、全Provider/Owner/SDK/MCP、12件�
 完整5234/38回归、相关1448/6、五幅实际渲染图及候选Wheel真实CLI/SDK双进程已冻结。
 并发读旧Checkpoint/新Event混读已用确定性双连接测试定位，独立events读事务修复不放宽任何认证。
 [正式验证目录](validation/managed-session-key-2026-09-28-v1/README.md)保留Windows、密钥恢复/维护CLI、Artifact正文及整体0.9发布边界。
+
+### R4：原生Windows Git读取实现候选
+
+[固定读取详设](changes/m09-r4-windows-native-git-read.md)对应原生Status/Diff、
+原Process Owner整树回收、完整Plan与原备份目录融合及启动只观察恢复。
+共享查询同时补齐可执行Filter/Include拒绝与Catalog后EXE绑定漂移拒绝。
+原生焦点回归先提供反馈，完整Windows回归保留期限和阻塞诊断；失败不能计作门禁关闭。
+R1/R3/R4/R5仍按真实证据验收，许可证等不阻塞功能研发及内部验证。

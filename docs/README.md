@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 137
-code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
+version: 138
+code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
 modules:
@@ -316,3 +316,9 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
   原来源/Key、有界候选、整体目录身份状态机、启动前保护、稳定ID和原目录保留；三平台实际恢复及R1整体仍开放。
 - [完整恢复固定源码与独立验证](validation/product-state-restore-2026-09-28-v1/README.md)：
   双Python专项和八目录回归、原失败、实际Wheel、三幅渲染图、Manifest与Review Packet统一归档。
+
+## 原生Windows Git读取设计
+
+[Windows Git读取、取消回收与原状态融合详设](changes/m09-r4-windows-native-git-read.md)
+给出源码研究、架构、流程/时序/数据流、Plan/Lease数据、辅助程序拒绝、部署和测试映射。
+实现候选不等于完整Windows或1.0商用验收；许可证等分发材料继续保持低优先级并行处置。
