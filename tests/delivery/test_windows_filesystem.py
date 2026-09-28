@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.delivery import filesystem
+from harnessix.delivery import filesystem, windows_filesystem
 from harnessix.delivery.filesystem import WorkspaceTransactionRuntime
 from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -48,12 +48,19 @@ raise AssertionError('未到达原生硬退出切点')
 def test_native_rename_api_compatibility_matrix(tmp_path: Path) -> None:
     results = {}
     with _parent(tmp_path, "probe.py") as (native, operations, parent, directory, _):
-        for kind in ("relative", "relative-nul", "absolute-nul"):
+        for kind in ("relative", "relative-nul", "absolute-nul", "native-same-parent"):
             path = directory / f"{kind}.tmp"
             handle = operations.create_temporary(path)
             try:
                 operations.write_and_flush(handle, b"probe")
                 name = f"{kind}.py"
+                if kind == "native-same-parent":
+                    try:
+                        operations.rename(handle, name, replace=False)
+                        results[kind] = {"accepted": True, "errno": 0}
+                    except OSError as error:
+                        results[kind] = {"accepted": False, "errno": error.errno}
+                    continue
                 root = parent
                 if kind == "absolute-nul":
                     root = 0
@@ -69,7 +76,7 @@ def test_native_rename_api_compatibility_matrix(tmp_path: Path) -> None:
                 results[kind] = {"accepted": accepted, "errno": 0 if accepted else _last_error()}
             finally:
                 operations.kernel.CloseHandle(handle)
-    assert results["relative-nul"]["accepted"], results
+    assert results["native-same-parent"]["accepted"], results
 
 
 @pytest.fixture
@@ -289,12 +296,17 @@ def test_native_rename_confirmation_lost_reconciles_once_without_deleting_publis
     original = WindowsFileOperations.rename
     calls = []
 
-    def lost(self, handle, parent, name, *, replace):
-        original(self, handle, parent, name, replace=replace)
+    def lost(self, handle, name, *, replace):
+        original(self, handle, name, replace=replace)
         calls.append(name)
         raise OSError("原生Rename已提交但确认丢失")
 
     monkeypatch.setattr(WindowsFileOperations, "rename", lost)
+    monkeypatch.setattr(
+        windows_filesystem,
+        "_discard_owned_temporary",
+        lambda *_: pytest.fail("Rename请求后不得清理"),
+    )
     record = _publish(state, tmp_path, {"target.py": DesiredWorkspaceFile(b"after", 0o644)})
     assert record.state == "published" and calls == ["target.py"]
     assert (tmp_path / "target.py").read_bytes() == b"after"

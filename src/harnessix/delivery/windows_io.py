@@ -1,4 +1,4 @@
-"""Windows文件事务的最小Win32 IO：句柄写入、Flush和同目录名称提交。"""
+"""Windows文件事务的最小原生IO：Win32写入/Flush与NT同目录句柄Rename。"""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ _OPEN_EXISTING = 3
 _CREATE_NEW = 1
 _OPEN_REPARSE_POINT = 0x00200000
 _BACKUP_SEMANTICS = 0x02000000
-_FILE_RENAME_INFO_EX = 22
+_FILE_RENAME_INFORMATION_EX = 65
 _FILE_DISPOSITION_INFO_EX = 21
 _REPLACE_IF_EXISTS = 0x1
 _POSIX_SEMANTICS = 0x2
@@ -35,18 +35,63 @@ class _RenameInfo(ctypes.Structure):
     ]
 
 
+class _IoStatus(ctypes.Union):
+    _fields_ = [("status", ctypes.c_int32), ("pointer", ctypes.c_void_p)]
+
+
+class _IoStatusBlock(ctypes.Structure):
+    _fields_ = [("result", _IoStatus), ("information", ctypes.c_size_t)]
+
+
 def _rename_buffer(parent: int, name: str, *, replace: bool) -> ctypes.Array[ctypes.c_char]:
-    """按Win32 ABI编码UTF-16变长结构；不使用宿主c_wchar宽度推断Windows布局。"""
+    """按NT ABI编码UTF-16结构及尾部空间；名称字节长度不含终止字符。"""
 
     body = name.encode("utf-16-le")
     offset = _RenameInfo.name.offset
-    buffer = ctypes.create_string_buffer(max(ctypes.sizeof(_RenameInfo), offset + len(body)))
+    buffer = ctypes.create_string_buffer(ctypes.sizeof(_RenameInfo) + len(body) + 2)
     header = _RenameInfo.from_buffer(buffer)
     header.flags = (_REPLACE_IF_EXISTS | _POSIX_SEMANTICS) if replace else 0
     header.root = parent
     header.name_bytes = len(body)
     ctypes.memmove(ctypes.addressof(buffer) + offset, body, len(body))
     return buffer
+
+
+def _native_rename_api() -> Any:
+    """只配置有安全访问检查的用户态NT Rename；不使用BypassAccessCheck信息类。"""
+
+    native = ctypes.__dict__["WinDLL"]("ntdll", use_last_error=True)
+    native.NtSetInformationFile.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(_IoStatusBlock),
+        ctypes.c_void_p,
+        ctypes.c_uint32,
+        ctypes.c_int,
+    ]
+    native.NtSetInformationFile.restype = ctypes.c_int32
+    native.RtlNtStatusToDosError.argtypes = [ctypes.c_int32]
+    native.RtlNtStatusToDosError.restype = ctypes.c_uint32
+    return native
+
+
+def _rename_same_directory(native: Any, handle: int, name: str, *, replace: bool) -> None:
+    """只允许同目录叶名称；返回值与IO完成状态都必须确认，未决效果不降级重试。"""
+
+    if not name or name in {".", ".."} or any(char in name for char in "/\\:\x00"):
+        raise ValueError("Windows同目录Rename只接受叶名称")
+    buffer = _rename_buffer(0, name, replace=replace)
+    completion = _IoStatusBlock()
+    completion.result.status = 0x103
+    status = int(
+        native.NtSetInformationFile(
+            handle, ctypes.byref(completion), buffer, len(buffer), _FILE_RENAME_INFORMATION_EX
+        )
+    )
+    # 同步文件句柄必须确认完成；PENDING或完成状态失败都交给原事务观察结算。
+    failure = status or completion.result.status
+    if failure:
+        error = int(native.RtlNtStatusToDosError(failure))
+        raise OSError(error, "Windows同目录句柄Rename失败")
 
 
 def _raise_io_error() -> None:
@@ -90,6 +135,7 @@ class WindowsFileOperations:
     def __init__(self, kernel: Any) -> None:
         self.kernel = kernel
         _configure(kernel)
+        self._native = _native_rename_api()
 
     def require_local_ntfs(self, parent: int, anchor: str) -> None:
         """首发写端口仅接受本地固定NTFS卷；共享盘和其他文件系统失败关闭。"""
@@ -161,14 +207,10 @@ class WindowsFileOperations:
         if not self.kernel.SetFilePointerEx(handle, 0, None, 0):
             _raise_io_error()
 
-    def rename(self, handle: int, parent: int, name: str, *, replace: bool) -> None:
-        """提交一个名称效果；创建绝不覆盖，替换只允许调用方已验证的before。"""
+    def rename(self, handle: int, name: str, *, replace: bool) -> None:
+        """同目录Rename由临时句柄定位父对象；调用方须保持原父链与before固定。"""
 
-        buffer = _rename_buffer(parent, name, replace=replace)
-        if not self.kernel.SetFileInformationByHandle(
-            handle, _FILE_RENAME_INFO_EX, buffer, len(buffer)
-        ):
-            _raise_io_error()
+        _rename_same_directory(self._native, handle, name, replace=replace)
 
     def delete(self, handle: int) -> None:
         """按既有句柄标记POSIX式删除；从不绕过只读属性或删除路径上的后继对象。"""

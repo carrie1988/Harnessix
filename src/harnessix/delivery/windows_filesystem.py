@@ -129,7 +129,6 @@ def _discard_owned_temporary(
 def _replace_member(
     native: WindowsWorkspaceRoot,
     operations: WindowsFileOperations,
-    parent_handle: int,
     parent: Path,
     name: str,
     before_handle: int | None,
@@ -142,6 +141,7 @@ def _replace_member(
 
     path = parent / temporary
     handle = operations.create_temporary(path)
+    rename_requested = False
     try:
         native._assert_under_root(native._final_path(handle))
         checkpoint("windows_temporary_created")
@@ -150,10 +150,12 @@ def _replace_member(
         _check_current_target(native, operations, parent / name, before_handle, mutation.before)
         if before_handle is not None:
             WindowsFileSecurity(operations.kernel).require_equal(before_handle, handle)
-        operations.rename(handle, parent_handle, name, replace=before_handle is not None)
+        rename_requested = True
+        operations.rename(handle, name, replace=before_handle is not None)
         checkpoint("windows_namespace_changed")
     finally:
-        _discard_owned_temporary(native, operations, handle, path)
+        if not rename_requested:
+            _discard_owned_temporary(native, operations, handle, path)
         operations.kernel.CloseHandle(handle)
 
 
@@ -200,7 +202,7 @@ def apply_windows_mutation(
         with _parent(root, mutation.path, source) as (
             native,
             operations,
-            parent_handle,
+            _,
             parent,
             name,
         ):
@@ -222,7 +224,6 @@ def apply_windows_mutation(
                     _replace_member(
                         native,
                         operations,
-                        parent_handle,
                         parent,
                         name,
                         handle,

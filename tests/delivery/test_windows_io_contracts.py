@@ -11,7 +11,12 @@ from harnessix.delivery import windows_io
 from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.trusted_action import resolve_workspace_patch
 from harnessix.delivery.trusted_action_contracts import WorkspacePatchFile, WorkspacePatchInput
-from harnessix.delivery.windows_io import WindowsFileOperations, _rename_buffer, _RenameInfo
+from harnessix.delivery.windows_io import (
+    WindowsFileOperations,
+    _IoStatusBlock,
+    _rename_buffer,
+    _RenameInfo,
+)
 
 
 @pytest.mark.parametrize("replace", [False, True])
@@ -24,6 +29,44 @@ def test_rename_abi_uses_relative_parent_handle_and_exact_utf16(name: str, repla
     assert header.root == 123 and header.flags == (3 if replace else 0)
     assert header.name_bytes == len(body)
     assert buffer.raw[_RenameInfo.name.offset : _RenameInfo.name.offset + len(body)] == body
+    assert len(buffer) >= ctypes.sizeof(_RenameInfo) + len(body)
+    assert buffer.raw[_RenameInfo.name.offset + len(body) :][:2] == b"\0\0"
+
+
+@pytest.mark.parametrize(
+    "returned, completed", [(0, 0), (-1073741811, 0), (0, -1073741811), (259, 259)]
+)
+def test_native_rename_uses_same_parent_nt_abi_and_checks_completion(returned, completed) -> None:
+    calls = []
+
+    def rename(handle, completion, buffer, size, information_class):
+        header = _RenameInfo.from_buffer(buffer)
+        assert header.root is None and header.flags == 3
+        assert size == len(buffer) and information_class == 65 and handle == 17
+        ctypes.cast(completion, ctypes.POINTER(_IoStatusBlock)).contents.result.status = completed
+        calls.append(header.name_bytes)
+        return returned
+
+    operations = WindowsFileOperations.__new__(WindowsFileOperations)
+    operations._native = SimpleNamespace(
+        NtSetInformationFile=rename, RtlNtStatusToDosError=lambda _: 87
+    )
+    if returned or completed:
+        with pytest.raises(OSError) as failed:
+            operations.rename(17, "项目 😀.py", replace=True)
+        assert failed.value.errno == 87
+    else:
+        operations.rename(17, "项目 😀.py", replace=True)
+    assert calls == [len("项目 😀.py".encode("utf-16-le"))]
+    assert ctypes.sizeof(_IoStatusBlock) == 2 * ctypes.sizeof(ctypes.c_void_p)
+
+
+@pytest.mark.parametrize("name", ["", ".", "..", "a/b", "a\\b", "a:b", "a\x00b"])
+def test_native_rename_rejects_non_leaf_names_before_any_effect(name) -> None:
+    operations = WindowsFileOperations.__new__(WindowsFileOperations)
+    operations._native = SimpleNamespace()
+    with pytest.raises(ValueError, match="叶名称"):
+        operations.rename(17, name, replace=False)
 
 
 def test_partial_writes_are_completed_before_single_flush() -> None:

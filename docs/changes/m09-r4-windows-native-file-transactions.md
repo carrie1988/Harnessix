@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [delivery, workspace, product_config, trusted_actions]
@@ -59,6 +59,12 @@ Windows只读能力不能满足“修改代码→运行检查→审查→交付�
   [GetSecurityInfo](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo)。
   Win32枚举`FileRenameInfoEx=22`、`FileDispositionInfoEx=21`不是NT内部的同名枚举值；
   变长文件名按UTF-16LE字节长度和ABI字段偏移编码，不能用macOS的`c_wchar`宽度推断Windows结构。
+- 原生名称提交采用
+  [NtSetInformationFile](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntsetinformationfile)
+  与[FileRenameInformationEx=65](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ne-wdm-_file_information_class)。
+  同目录改名使用`RootDirectory=NULL`和单个叶名称，由源临时句柄确定父目录；不经过进程当前目录解析，
+  不使用`BypassAccessCheck`信息类，不存在字符串路径或另一API的自动降级。
+  同步句柄要求返回状态及`IO_STATUS_BLOCK`完成状态均成功；PENDING不视为已确认。
 
 参考接口支持方案选择，只有真实NTFS上的失败与恢复测试才能证明本实现行为。
 
@@ -94,6 +100,11 @@ flowchart LR
 根因是发布端口缺失，而非Provider、模型规划、Policy或SQLite不能运行。
 复用Windows读取代码只解决对象观察；写入还必须定义名称提交、权限保留、失败确认与崩溃处理。
 
+原生CI进一步定位了初始候选的接口兼容失败：提交`a5d42ab164ac277e9fac957f957b522e22dd4b08`
+中，相对父句柄的Win32 Rename返回87；增加尾部空间仍返回87；绝对名称转换后返回32。
+因此该候选不能作为Windows可用性证明。修正选用有正式同目录语义的NT句柄调用，
+不关闭父链或原叶句柄来回避冲突；其可用性仍必须由修正候选的原生全部场景证明。
+
 ## 5. 方案、总体架构与变更边界
 
 ```mermaid
@@ -123,7 +134,7 @@ flowchart TB
 | `observe_windows_file(root, path, source=...)` | 返回不可变`WorkspaceFileVersion`；在已知Source下同时检查Root身份；从不写入 |
 | `apply_windows_mutation(store, root, transaction_id, index, mutation, source, checkpoint)` | 最多一个成员；正文来自CAS；checkpoint仅供受管故障测试 |
 | `WindowsWorkspaceRoot` | 固定根与所有父段、检查Volume/File ID和最终路径、拒绝Reparse；退出关闭全部句柄 |
-| `WindowsFileOperations` | 配置最小Win32 ABI；排他临时创建、部分写、Flush、相对父句柄Rename与句柄删除 |
+| `WindowsFileOperations` | 配置最小Win32/NT ABI；排他临时创建、部分写、Flush、NT同目录句柄Rename与句柄删除 |
 | `WindowsFileSecurity` | 短期读取Owner/Group/DACL为比较摘要；`LocalFree`释放系统分配；不改ACL、不提权 |
 | `windows_workspace_transaction_supported(root)` | 无写入探测Windows构建、本地固定卷、NTFS及Root绑定；失败则Catalog省略 |
 | `workspace_patch_executor_evidence()` | Windows使用独立执行语义标识；POSIX原标识保持不变 |
@@ -164,7 +175,7 @@ before/after正文由CAS保存，公开Plan只持摘要。审批Artifact绑定�
 | 普通字符串`replace/unlink` | 简单但不提供成员期间父链固定及叶句柄归属 | 拒绝 |
 | 新Windows事务Runtime | 产生第二套审批、账本、取消和UNKNOWN语义 | 拒绝 |
 | WSL执行POSIX后端 | 可用于明确隔离后端，但不证明原生文件工作流 | 不替代本切片 |
-| 共享FSM加Win32成员端口 | 保留既有契约，把复杂性限制在三个底层模块 | 采用 |
+| 共享FSM加Windows原生成员端口 | 保留既有契约，把复杂性限制在三个底层模块 | 采用 |
 
 ## 6. 正常、失败与恢复时序
 
@@ -185,7 +196,7 @@ sequenceDiagram
     W->>F: CREATE_NEW临时文件并WriteFile
     W->>F: FlushFileBuffers
     W->>F: 复核叶对象before与Owner Group DACL
-    W->>F: 相对父句柄RenameInfoEx
+    W->>F: NT同目录句柄RenameInformationEx
     W-->>R: 关闭句柄后返回
     R->>W: 重观察成员after
     R->>S: 持久cursor加一
@@ -216,7 +227,9 @@ sequenceDiagram
 
 `reconcile()`保留既有顺序规则：全部after且没有原started事实不能追认；不是有序after前缀则diverged；
 无法可靠观察则错误/人工处置，不根据上一API是否返回成功盲重放。
-Rename已生效而确认丢失时，清理只比较**自有临时句柄的最终名称**；不删除已改名的发布文件。
+调用Rename前若失败，清理只比较自有临时句柄的最终名称；一旦请求名称提交，就不再调用清理删除。
+因此Rename已生效而确认丢失时，不依赖最终名称查询是否及时更新来决定删除，不能误删发布目标。
+Rename请求失败但效果未确定时，也保留可能的自有临时文件作为诊断事实，不用清理覆盖歧义。
 临时Flush后硬退出的孤立临时文件保留，不通过扫描`.harnessix-*`进行泛路径GC。
 
 ### 6.3 取消与超时
@@ -239,7 +252,8 @@ Router取消/期限后进入既有UNKNOWN和只观察恢复，Lease在Executor�
 | `cursor` | 已确认after的成员前缀，不表示多文件原子提交 | 原Record |
 | `started_at/state` | 原意图确已开始的证据；不能据全after补签旧prepared | 原Record |
 | `owner_id/fencing_token/expires_at` | 仍使用原Workspace Lease；过期不能开始下一成员 | 原Lease DB |
-| `RenameInfo.flags/root/name_bytes` | 创建flags=0，替换flags=3；Root为固定父句柄，名称只含叶名，长度为UTF-16LE字节 | 临时内存 |
+| `RenameInfo.flags/root/name_bytes` | 创建flags=0，替换flags=3；Root为NULL表示源句柄同目录改名；名称只含叶名，长度为UTF-16LE字节且不含终止字符 | 临时内存 |
+| `IO_STATUS_BLOCK` | 原生返回状态及完成状态都必须确认成功；PENDING或失败进入原事务观察结算 | 临时内存 |
 | `security digest` | Owner/Group/DACL与继承控制比较，完整SID/SDDL不进入公开输出或持久记录 | 临时内存 |
 
 普通属性只接受Archive/Normal，拒绝Readonly、Reparse、Directory、隐藏、压缩及加密等未支持属性。
@@ -293,8 +307,9 @@ publish_next(original_plan, approval, current_lease):
             FlushFileBuffers
             recheck original leaf name, File ID and before
             require equal Owner Group DACL for replacement
-            rename temporary handle relative to pinned parent
-            cleanup only if handle still has its own temporary name
+            request NT same-directory rename of temporary handle
+            never clean up a handle after rename has been requested
+            before request: clean up only its verified temporary name
         verify actual after; durably record cursor
     between members: check cancellation and lease again
 
