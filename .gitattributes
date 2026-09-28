@@ -66,3 +66,10 @@ docs/validation/windows-private-state-2026-09-28-v1/logs/*.log -diff -merge
 docs/validation/product-restart-release-boundary-2026-09-29-v1/** -text
 docs/validation/product-restart-release-boundary-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/*.log -diff -merge
+
+# 三平台安装生命周期原件保持字节与平台换行，不参与日志文本合并。
+docs/validation/installed-product-three-platform-2026-09-29-v1/** -text
+docs/validation/installed-product-three-platform-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/installed-product-three-platform-2026-09-29-v1/raw/**/*.log -diff -merge
+# Windows原件的CRLF属于行终止符；其余尾随空格/空行检查仍保留。
+docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

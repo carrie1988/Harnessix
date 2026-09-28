@@ -1,0 +1,43 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "e08d2480dfe42eeca0cf32f913890505d1dc34a0",
+  "slice_decision": "GO-three-native-installed-state-lifecycles-on-independently-built-wheels",
+  "overall_decision": "NO_GO_FOR_COMMERCIAL_RELEASE",
+  "requirements": {
+    "isolated_installed_runtime": "three-native-jobs-passed",
+    "full_state_restore_and_owner_refusal": "three-native-jobs-passed",
+    "uninstall_preserves_state": "three-native-jobs-passed",
+    "same_wheel_reinstall_reads_original_threads": "three-native-jobs-passed",
+    "single_canonical_release_wheel_cross_platform": "not_proven-windows-build-hash-differs",
+    "version_upgrade_and_consumer_os": "not_proven",
+    "real_coding_quality": "not_completed",
+    "independent_beta": "not_completed",
+    "licenses": "12-archive-gate-remains-open"
+  },
+  "risks": [
+    {
+      "id": "R4-CANONICAL-WHEEL",
+      "description": "需固定一份规范发行Wheel再做三平台验收；本次Windows摘要不同，不推导可复现。"
+    },
+    {
+      "id": "R4-CONSUMER",
+      "description": "Windows Server CI不替代Windows11用户设备，版本升级及真实编码仍需验证。"
+    },
+    {
+      "id": "R3-QUALITY",
+      "description": "旧严格0/20没有新合格真实运行替代，原费用账本和固定镜像准备仍开放。"
+    },
+    {
+      "id": "AUTH-PROFILE",
+      "description": "当前认证状态的重启数据库增长FAIL及正式安全收口保持阻断，不改旧Profile。"
+    },
+    {
+      "id": "R5-BETA",
+      "description": "需要独立真实开发者及至少15个任务，不以自动化Job替代。"
+    }
+  ],
+  "preserved_failures": true,
+  "old_frozen_deliveries_modified": false,
+  "private_keys_or_database_exported": false,
+  "provider_turn_requests": 0
+}

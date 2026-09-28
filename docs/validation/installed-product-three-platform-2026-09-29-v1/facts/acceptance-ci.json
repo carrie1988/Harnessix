@@ -1,0 +1,33 @@
+{
+  "run_id": 36458377113,
+  "source_revision": "e08d2480dfe42eeca0cf32f913890505d1dc34a0",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/carrie1988/Harnessix/actions/runs/36458377113",
+  "jobs": [
+    {
+      "id": 109050448163,
+      "name": "安装与恢复 linux",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T17:28:39Z",
+      "completed_at": "2026-09-28T17:29:10Z"
+    },
+    {
+      "id": 109050448551,
+      "name": "安装与恢复 windows",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T17:28:39Z",
+      "completed_at": "2026-09-28T17:29:27Z"
+    },
+    {
+      "id": 109050448564,
+      "name": "安装与恢复 macos",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T17:28:41Z",
+      "completed_at": "2026-09-28T17:29:08Z"
+    }
+  ]
+}

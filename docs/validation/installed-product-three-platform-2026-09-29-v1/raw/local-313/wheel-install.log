@@ -1,0 +1,4 @@
+Using Python 3.13.8 environment at: /private/tmp/harnessix-installed-lifecycle-20260929-313/venv
+Resolved 1 package in 0.92ms
+Installed 1 package in 5ms
+ + harnessix==0.1.0 (from file:///private/tmp/harnessix-restart-root-20260929/1bc3794-artifacts/harnessix-0.1.0-py3-none-any.whl)

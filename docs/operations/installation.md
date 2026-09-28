@@ -181,6 +181,10 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 执行始终使用安装解释器`-I -m harnessix`，不把构建Checkout放入产品导入路径。
 三平台实际结果、版本升级及消费者目标OS未验收前仍不关闭R4。
 
+[当前三平台独立生命周期实测](../validation/installed-product-three-platform-2026-09-29-v1/README.md)
+已完成源码外安装、完整备份恢复、指定venv卸载与同Wheel重装；原Key、库、备份和Workspace保持。
+三平台各自构建，Windows摘要不同；规范单一发行Wheel及消费者目标OS、真实编码和版本升级仍需验收。
+
 ## 6. 开发命令镜像
 
 ```bash

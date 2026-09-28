@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 1
-code_revision: d6b32c4637e4099114f3a9fe56a999e87474d660
+status: current
+version: 2
+code_revision: e08d2480dfe42eeca0cf32f913890505d1dc34a0
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -200,3 +200,8 @@ Windows使用专用`venv/Scripts/python.exe`，产品CLI仍走`-I -m harnessix`�
 正式三平台支持仍受有限目标OS、原生核心编码、版本升级和Beta门禁约束。
 选择固定Wheel而不是多个安装器降低组合数，选择真实Server/CLI而不是Store模拟保留数据保护语义。
 小规模无模型生命周期不能替代真实编码，必须继续完成R3/R4/R5；R1～R6及1.0整体不因本切片自动关闭。
+
+实际`e08d248`三平台独立Job已完成上述生命周期，原件见
+[统一验证报告](../validation/installed-product-three-platform-2026-09-29-v1/README.md)。
+三平台分别构建，Windows Wheel摘要与另两平台不同，不称为单一规范发行Wheel三平台验收或可复现构建；
+Windows Server CI也不替代消费者Windows11。后继格式边界源码为`101f71e`，活动Runner及产品源码未改变。

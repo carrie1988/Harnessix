@@ -900,3 +900,6 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-acceptance.md)复用实际Wheel、
 原SDK/CLI及完整状态恢复，增加三平台独立入口和不丢状态的卸载/同Wheel重装。
 这是安装验收增量，不代替真实编码、版本升级、消费者OS验收及独立Beta。
+固定`e08d248`已取得[三平台原生生命周期成功原件](validation/installed-product-three-platform-2026-09-29-v1/README.md)，
+分别完成源码外安装、原CLI/SDK完整恢复、卸载不丢状态及重装会话读取。Windows制品摘要与另两平台不同，
+规范单一发行Wheel、消费者目标OS、版本升级和真实编码仍开放；R4及整体1.0不勾选完成。

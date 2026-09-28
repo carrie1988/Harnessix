@@ -1,0 +1,14 @@
+{
+  "source_revision": "d6b32c4637e4099114f3a9fe56a999e87474d660",
+  "acceptance_runner_sha256": "5a739c0b9bb743b1fa6de1aecece9e82885b3b81ec53fc8d16e2acf0e0ebe843",
+  "controls": [
+    {
+      "scope": "local-source-d6b32c4-with-current-runner-guard-before-commit",
+      "result": "raw/local-312/result.json"
+    },
+    {
+      "scope": "local-source-d6b32c4-with-current-runner-guard-before-commit",
+      "result": "raw/local-313/result.json"
+    }
+  ]
+}
