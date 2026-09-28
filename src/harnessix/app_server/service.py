@@ -51,7 +51,8 @@ def _budget(value: object) -> Budget | None:
     if value is None:
         return None
     assert isinstance(value, ProtocolModel)
-    return Budget.model_validate(value.model_dump())
+    # 公共JSON保持驼峰；领域模型只接收Python字段名，不能继承协议默认别名。
+    return Budget.model_validate(value.model_dump(by_alias=False))
 
 
 def _resolved_workspace(value: str) -> Path:

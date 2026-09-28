@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 2ae7caf3e2a6b53431ef352ff3520f3cf1358282
+version: 8
+code_revision: cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0089-bounded-local-transport-lifecycle.md
 related_tests:
+  - tests/app_server/test_budget_mapping.py
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
   - tests/product_config/test_server_and_cli.py
@@ -35,9 +36,9 @@ supersedes: []
 | 下游依赖 | Protocol合同/Codec/投影/请求账本、`AgentRuntime`、`SessionStore`、可选`ArtifactPageStore`与`ArtifactAccessScope` |
 | 持久化 | 模块自身不拥有独立数据库；命令终态写`ProtocolRequestStore`，Agent事实写`SessionStore`，Artifact由外部Store拥有 |
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
-| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、Session、共享Artifact Store、只读Coding Tool Runtime、POSIX Trusted Workspace Patch、Agent Runtime和Scoped Artifact Reader |
-| 平台 | App Server逻辑平台中立；默认产品在macOS/Linux使用POSIX只读端口及能力证明后的Patch，Windows使用原生Handle四项只读端口并省略Patch，Artifact分页三平台通用 |
-| 代码版本 | `2ae7caf3e2a6b53431ef352ff3520f3cf1358282` |
+| 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、认证Session、共享Artifact Store、Coding Tool Runtime、受管Patch、Agent Runtime和Scoped Artifact Reader；Process/MCP/Skill/Hook按正式配置显式装配 |
+| 平台 | App Server逻辑平台中立；macOS/Linux使用POSIX端口，Windows使用原生Handle读取及NTFS文件事务；平台实现与专项通过不代表完整商用平台认证 |
+| 代码版本 | `cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1`基线；预算转换修复身份由专项验证固定 |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、远程安全、可观测性和Replay大规模索引尚未完成 |
 
 原封套准入、完整响应UTF8协商限额和纯握手候选提交已实现，有限当前材料检查不构成历史授权。
@@ -1311,9 +1312,9 @@ sequenceDiagram
 
 ## 35. 默认Patch协议组合（0.9.1e3）
 
-App Server仍只负责协议连接、请求幂等、事件读取和生命周期，不拥有Patch权限。产品组合根把已经闭合的Agent Gateway注入`AgentRuntime`后，模型可在POSIX目录看到`apply_patch_batch`；App Server把Session中的已有`patch_batch`审批、`artifact/read`和最终Tool Result原样投影给客户端。
+App Server仍只负责协议连接、请求幂等、事件读取和生命周期，不拥有Patch权限。产品组合根把Agent Gateway注入`AgentRuntime`后，模型可在受支持的POSIX或Windows原生NTFS Workspace看到`apply_patch_batch`；App Server把Session中的已有`patch_batch`审批、`artifact/read`和最终Tool Result原样投影给客户端。
 
-Review Artifact与只读Tool Artifact共用Scoped Reader，但用途、反向引用和摘要分别校验。客户端断开或重复`approval/respond`不会创建新Action；协议请求账本重放原结果，Router审批Checkpoint仍是执行授权。Windows启动相同协议服务，但工具目录不含Patch。
+Review Artifact与只读Tool Artifact共用Scoped Reader，但用途、反向引用和摘要分别校验。客户端断开或重复`approval/respond`不会创建新Action；协议请求账本重放原结果，Router审批Checkpoint仍是执行授权。Windows文件事务与审批编码专项见[原生NTFS设计](../changes/m09-r4-windows-native-file-transactions.md)，不据此声明Windows 11完整编码已认证。
 
 默认纵向链由[`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)覆盖，App Server通用重放与关闭仍由[`test_server_sdk.py`](../../tests/app_server/test_server_sdk.py)覆盖。
 
@@ -1328,10 +1329,32 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 [专项详设](../changes/m09-3d-thread-list-and-recovery-read-path.md)。协议字段不变；跨请求插入/归档
 仍不提供全局快照语义，且未新增Workspace级多租户授权。
 
+### 35.2 公开预算的无损领域转换
+
+`start_turn`和`retry_turn`在原命令Operation中调用
+[`service._budget`](../../src/harnessix/app_server/service.py)。输入`PublicBudget`已经通过严格协议校验；
+转换必须显式`model_dump(by_alias=False)`，再交给原`Budget.model_validate`。
+公共模型默认导出驼峰JSON，领域模型没有这些别名；直接使用默认导出会产生内部校验失败。
+
+| 公共JSON | 内部领域字段 | 责任边界 |
+|---|---|---|
+| `maxSteps` | `max_steps` | 不改步骤上限 |
+| `maxTokens` | `max_tokens` | 不改Token上限或计价 |
+| `timeoutSeconds` | `timeout_seconds` | 保留有限正数及原期限语义 |
+| `maxOutputChars` | `max_output_chars` | 不扩大输出预算 |
+| `maxToolCallsPerStep` | `max_tool_calls_per_step` | 不改变工具并行或审批权限 |
+
+`None`仍交由Runtime选择默认预算；合法显式预算不能静默降级为默认值。
+原公共请求指纹、Claim/Complete顺序、公开响应和Session事件均不变，不需要数据迁移。
+同幂等键改变预算仍冲突；非法预算在Claim和Turn之前拒绝。
+[专项设计](../changes/m09-r3-public-budget-domain-mapping.md)及
+[回归](../../tests/app_server/test_budget_mapping.py)覆盖五字段、启动、Retry、Session重开及原拒绝边界。
+
 ## 36. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 8 | `cfcbe2a`基线，修复身份由专项固定 | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |
 | 7 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表委托Session有界索引页读取，保持游标与公开投影合同不变；跨平台候选与CI验收见专项详设 |
 | 6 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a改为守护Reader/Writer泵，贯穿协商Pending/Outbox限制，并让Writer故障与出站Timeout有界唤醒主循环 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步默认POSIX Patch的协议组合、Review分页、审批重放和Windows省略边界 |

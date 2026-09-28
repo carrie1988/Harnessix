@@ -17,7 +17,7 @@
   },
   "summary": {
     "source_files": 392,
-    "physical_lines": 83589,
+    "physical_lines": 83590,
     "logical_lines": 73959,
     "documented_modules": 392,
     "classes": 884,
@@ -455,7 +455,7 @@
       "path": "src/harnessix/app_server/service.py",
       "qualname": "AgentApplicationService",
       "kind": "class",
-      "line": 61,
+      "line": 62,
       "lines": 421,
       "documented": true
     },
