@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 9
+code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
 owners:
   - core
 modules:
@@ -21,6 +21,8 @@ related_tests:
   - tests/sandbox/test_network_isolation.py
   - tests/sandbox/test_process_runtime.py
   - tests/sandbox/test_profile_store.py
+  - tests/sandbox/test_resource_admission.py
+  - tests/mcp/test_container_resource_admission.py
   - tests/integration/test_container_sandbox.py
   - tests/integration/test_product_process_profile.py
   - tests/product_config/test_process_action.py
@@ -119,10 +121,10 @@ Sandbox模块通过“严格合同 → 能力证据 → Execution Plan绑定 →
 | 能力 | 当前状态 | 默认产品状态 | 证据边界 |
 |---|---|---|---|
 | 严格Sandbox/Network合同 | 已实现 | 可被显式宿主复用 | Pydantic合同和Schema |
-| Docker/Podman引擎探测 | 已实现 | 未由Product Config自动运行 | 确定性测试；Linux真实Docker间接使用 |
+| Docker/Podman引擎探测 | 已实现，强能力准入必须包含资源机制 | 显式固定Process Profile的Doctor与启动装配复用 | 确定性测试；Linux真实Docker集成 |
 | Seatbelt/Bubblewrap探测 | 已实现 | 未装配 | 只证明预检结果，不提供命令执行器 |
-| Container固定argv | 已实现 | 未装配到默认Agent Tool | 单元测试和Linux真实Container |
-| Container Process Runtime | 已实现 | 未装配到默认Agent Tool | POSIX确定性监督测试；无Windows真实Container运行 |
+| Container固定argv | 已实现，返回前实时复核资源 | 验真固定Process Profile使用 | 单元测试和Linux真实Container |
+| Container Process Runtime | 已实现 | 固定Process Profile的统一Action使用 | POSIX确定性监督测试；无Windows真实Container运行 |
 | MCP Container Stdio | 可显式构造 | 默认Server没有自动配置入口 | Linux真实MCP Container集成测试 |
 | DNS快照/选择性授权 | 已实现 | 未装配 | 确定性测试 |
 | Managed Egress Gateway | 转发逻辑已实现 | 没有内建Service生命周期 | 本机asyncio回环测试，不是Docker端到端出口测试 |
@@ -130,11 +132,11 @@ Sandbox模块通过“严格合同 → 能力证据 → Execution Plan绑定 →
 | Profile Store | 已实现 | 没有生产调用点强制使用 | SQLite确定性测试 |
 | 三平台强隔离发行 | 未完成 | 不可宣称支持 | 0.9.5发布门禁 |
 
-对生产源码调用点的反向检索显示：Sandbox包之外，当前只有
-[`mcp/runtime.py`](../../src/harnessix/mcp/runtime.py)直接消费`PreparedContainerLaunch`、
-`ContainerExecutionSpec`和`ContainerSandboxProfile`；`ContainerProcessRuntime`、Profile Store、能力
-探测与Egress Gateway没有默认Bootstrap/Product Config装配。`sandbox/__init__.py`也不导出公共类型，
-调用者当前通过具体子模块导入。
+生产调用方包含[`mcp/runtime.py`](../../src/harnessix/mcp/runtime.py)的显式Container Target与
+[`product_config/process_profile.py`](../../src/harnessix/product_config/process_profile.py)的固定Process Profile。
+后者在Doctor及正式启动装配中探测引擎、镜像和资源，只广告可验证的Tool；没有配置Profile时不自动创建
+通用Shell或容器能力。Profile Store与Egress Gateway仍为显式宿主组合能力。
+`sandbox/__init__.py`不导出公共类型，调用方通过具体子模块导入。
 
 ## 5. 模块上下文与信任边界
 
@@ -314,13 +316,18 @@ sequenceDiagram
     D-->>P: Client|Server版本
     P->>D: info --format（15秒）
     D-->>P: Security Options或Rootless
+    P->>D: info固定资源字段（15秒）
+    D-->>P: Docker四布尔或Podman v2控制器
     P->>P: 校验返回码、格式、输出上限并计算Digest
     P-->>H: ContainerEngineProbe
 ```
 
 **图示说明：** Docker解析Security Options列表并检查是否含`rootless`；Podman解析严格`true/false`。
 Rootless是证据字段，不是`container_strong`的强制前置条件。任何启动、超时、非零、版本格式、安全信息或
-输出上限异常统一为`sandbox_unavailable`，不自动重试。
+输出上限异常为`sandbox_unavailable`，不自动重试。资源查询只读取Docker的MemoryLimit、CPUCfsPeriod、
+CPUCfsQuota、PidsLimit，四项必须严格true；Podman只读取CgroupVersion及Controllers，必须为v2且包含
+cpu/memory/pids。资源能力缺失、超时、非零或无效响应为`sandbox_resources_unavailable`。
+原v1 Probe字段与Digest不变，独立解析旧Probe不提供实时资源准入；Builder每次准备都会重新验证。
 
 **源码映射：** [`capabilities.py`](../../src/harnessix/sandbox/capabilities.py)的
 `probe_container_engine`、`executable_identity_digest`和`ContainerEngineProbe`；测试见
@@ -584,6 +591,7 @@ sequenceDiagram
     participant B as ContainerCommandBuilder
     participant W as Workspace
     participant N as Network Inspect
+    participant E as Engine资源查询
     C->>B: Plan/Approval/Profile/Command/Intent/Env/Secret/Egress
     B->>B: 复核Engine文件身份
     B->>B: execution_is_approved
@@ -598,16 +606,19 @@ sequenceDiagram
         B->>N: 即时docker network inspect
         N-->>B: 当前证明必须等于Binding
     end
+    B->>E: 固定资源字段并复核CLI身份
+    E-->>B: 必需资源能力全部可用
     B-->>C: PreparedContainerLaunch
 ```
 
-**图示说明：** 任一批准、后端、环境、Secret、Workspace、Permission或Network事实变化均在Spawn前拒绝。
+**图示说明：** 任一批准、后端、环境、Secret、Workspace、Permission、Network或资源能力事实变化均在Spawn前拒绝。
 通用调用默认以Command合同作为Plan Intent；固定Product Process可另传只含`profile/selectors`的
 `intent_arguments`，使模型公共意图与宿主派生的Container/Process合同分离，但两者仍必须分别与同一Plan精确匹配。
 `external_roots`即使能由Workspace Snapshot表达，Container后端当前也明确拒绝，因为尚无外部根挂载合同。
 
 **源码映射：** [`container.py`](../../src/harnessix/sandbox/container.py)的
-`ContainerCommandBuilder.prepare`、`_verify_binding`、`_network`与`_reattest_network`。
+`ContainerCommandBuilder.prepare`、`_verify_launch_capabilities`、`_network`与`_reattest_network`；
+`_ContainerEngineAccess`集中拥有CLI身份、`verify_resource_limits`及原有有界控制IO。
 
 ### 15.2 Environment与Secret
 
@@ -672,8 +683,10 @@ Named Volume、Socket或设备挂载。
 
 ### 16.3 资源限制边界
 
-CPU、Memory、PIDs和Tmpfs具备类型与上下限，argv单测验证精确值。真实Linux测试在Cgroup文件存在时验证
-Memory/PID，并尝试超过Tmpfs；CPU只验证参数，不执行可量化Throttle测试。Workspace读写挂载没有磁盘
+CPU、Memory、PIDs和Tmpfs具备类型与上下限，argv单测验证精确值。Engine初次探测及每次Prepare必须证明
+Memory、CPU CFS和PIDs机制可用，MCP连接前再次复核缓存启动对象。真实Linux测试必须读取cgroup v1/v2的
+Memory/PID及CPU Period/Quota文件并核对值，缺失不能跳过；Tmpfs继续做有界超限负对照。
+CPU并未执行可量化Throttle基准，物理内存上限不是Swap总量承诺。Workspace读写挂载没有磁盘
 Quota，工作负载在Read-Write Profile下可耗尽宿主Workspace所在文件系统。
 
 ## 17. Container Process监督
@@ -912,7 +925,8 @@ sequenceDiagram
 
 | 操作 | 当前Timeout | 总Deadline问题 |
 |---|---:|---|
-| Engine version/info | 各15秒 | 两次顺序执行，合计可超过15秒 |
+| Engine version/security/resources | 各15秒 | 三次顺序执行，没有统一15秒总期限 |
+| 启动前资源info | 15秒 | 每次Prepare及MCP连接重新执行，无自动重试 |
 | Host Sandbox预检 | 5秒 | 单次 |
 | Network Inspect | 5秒 | 调用前后还有其他同步检查 |
 | Container List | 5秒 | Cleanup可能查询两次 |
@@ -1179,6 +1193,7 @@ prepare(plan, checkpoint, profile, command, workspace, environment, secrets, egr
     reject caller override of managed proxy environment
     build fixed engine argv with immutable image and resource controls
     when supervised selective execution, re-inspect network immediately
+    reverify bound engine identity and current memory / CPU CFS / pids support
     return prepared launch with secret values outside argv and repr
 ```
 
@@ -1398,3 +1413,9 @@ Sandbox构造逻辑，但只接收平台Owner能力证明，不创建Process Lea
 | 3 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加Product Process公共Intent与派生Container合同分离的复核路径，并同步Runtime只读恢复接口 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Sandbox运行合同不变 |
 | 1 | `49c798bb6a9b18052f298258ef28bc3e4ef73104` | 2026-09-12 | 建立Sandbox现行模块设计，覆盖合同、能力、Container、网络/Egress、Process监督、持久化、平台证据和产品装配缺口 |
+
+## 33. Container资源准入补充
+
+[资源准入总体与详细设计](../changes/m09-r1-container-resource-admission.md)定义固定字段、类型及大小限制、
+Profile省略原因、启动前复核、MCP取消结算和真实cgroup验收。不新增Probe字段、Store或Migration；旧Probe
+不能越过实时准入。资源能力失效不阻断按标签清理。Podman v1及不完整控制器响应拒绝使用，不静默回退Host。

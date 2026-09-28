@@ -514,6 +514,9 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 R2中的许可证、权利链和其他不直接改变功能的治理工作低优先并行处理，不阻挡功能研发与内部验证；
 正式发行前仍必须完成必要处置，不能把未处置事项标记为已通过。不得新增不必要的治理平台。
 
+R1已补[Container资源能力准入](changes/m09-r1-container-resource-admission.md)，拒绝缺少内存、CPU CFS或
+PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整体或真实编码发布门禁。
+
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
 固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
 该增量不关闭R4：Windows默认Git读取/交付、三平台脱离源码安装、升级恢复、独立Beta与最终同候选门禁仍需完成。

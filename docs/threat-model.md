@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 12
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 13
+code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
 owners:
   - core
 modules:
@@ -865,3 +865,12 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 [`test_product_runtime_convergence.py`](../tests/governance/test_product_runtime_convergence.py)。完整设计见
 [0.9.1f单一产品运行时收敛](changes/m09-1f-single-product-runtime-convergence.md)。实现Revision `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`已由
 [CI 35442924441](https://github.com/carrie1988/Harnessix/actions/runs/35442924441)完成Linux Python 3.12/3.13、macOS、Windows、PostgreSQL、固定镜像Container和Documentation七任务全矩阵验收，f2b据此关闭。
+
+## Container资源能力准入补充
+
+- **限制参数未生效**：只传入memory/cpus/pids参数不足以证明强限制。正式Engine初次探测和Builder每次准备均要求必需资源机制；Docker四布尔严格true，Podman v2且CPU/Memory/PIDs控制器齐备，其他响应失败关闭。
+- **缓存能力漂移**：原Probe及Prepared对象不能作为后续启动的实时证明；MCP创建Client前再次查询，不相信可覆盖的transport文字字段。取消结算唯一只读Probe，不触发延迟启动或重试。
+- **拒绝阻断回收**：资源能力失效只拒绝新启动；原标签绑定的查询、清理和对账继续允许，避免留下不可回收孤儿实例。
+- **残留边界**：依赖受信Daemon报告，不提供原子info/run、恶意Daemon防护、Swap总量或Workspace磁盘Quota。stdout先缓存后检查的既有Probe风险不在本次关闭。
+
+详设及正反例见[资源能力准入](changes/m09-r1-container-resource-admission.md)，真实Linux集成必须读取Memory/PIDs及CPU CFS的cgroup值，文件缺失不得跳过成功。该专项不替代R1整体安全审查。

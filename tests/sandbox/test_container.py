@@ -42,8 +42,18 @@ NOW = datetime(2026, 9, 8, tzinfo=UTC)
 def _runner(argv, timeout):
     assert timeout == 15.0
     assert argv[1] in {"version", "info"}
-    output = "28.3.2|28.3.2\n" if argv[1] == "version" else '["name=seccomp"]\n'
+    if argv[1] == "version":
+        output = "28.3.2|28.3.2\n"
+    elif argv[-1] == "{{json .SecurityOptions}}":
+        output = '["name=seccomp"]\n'
+    else:
+        output = "[true,true,true,true]"
     return subprocess.CompletedProcess(argv, 0, output, "")
+
+
+def _inspect(argv, timeout):
+    completed = _runner(argv, timeout)
+    return subprocess.CompletedProcess(argv, completed.returncode, completed.stdout.encode(), b"")
 
 
 def _fixtures(root: Path, mode="none"):
@@ -152,7 +162,7 @@ def test_container_argv_is_fixed_and_never_contains_secret_value(tmp_path: Path)
             policy=plan.policy,
             capabilities=plan.capabilities,
         )
-        launch = ContainerCommandBuilder(engine, probe).prepare(
+        launch = ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
             plan,
             None,
             profile,
@@ -199,7 +209,7 @@ def test_container_rechecks_workspace_environment_profile_and_approval(tmp_path:
     ) as secret:
         changed_command = build_container_command(("python", "-VV"), profile_digest=profile.digest)
         with pytest.raises(KernelError) as changed:
-            ContainerCommandBuilder(engine, probe).prepare(
+            ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
                 plan,
                 None,
                 profile,
@@ -211,7 +221,7 @@ def test_container_rechecks_workspace_environment_profile_and_approval(tmp_path:
         assert changed.value.code == "sandbox_capability_mismatch"
 
         with pytest.raises(KernelError) as environment:
-            ContainerCommandBuilder(engine, probe).prepare(
+            ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
                 plan,
                 None,
                 profile,
@@ -224,7 +234,7 @@ def test_container_rechecks_workspace_environment_profile_and_approval(tmp_path:
 
         target.write_text("after", encoding="utf-8")
         with pytest.raises(KernelError) as workspace:
-            ContainerCommandBuilder(engine, probe).prepare(
+            ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
                 plan,
                 None,
                 profile,
@@ -247,7 +257,7 @@ def test_selective_network_fails_without_matching_internal_gateway(tmp_path: Pat
         plan.secrets, provider, platform=plan.workspace.platform
     ) as secret:
         with pytest.raises(KernelError) as missing:
-            ContainerCommandBuilder(engine, probe).prepare(
+            ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
                 plan,
                 None,
                 profile,
@@ -265,7 +275,7 @@ def test_selective_network_fails_without_matching_internal_gateway(tmp_path: Pat
             gateway_digest=profile.egress_gateway_digest,
             internal_network_attestation="d" * 64,
         )
-        launch = ContainerCommandBuilder(engine, probe).prepare(
+        launch = ContainerCommandBuilder(engine, probe, inspect_runner=_inspect).prepare(
             plan,
             None,
             profile,

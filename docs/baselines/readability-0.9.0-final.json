@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 391,
-    "physical_lines": 83415,
-    "logical_lines": 73816,
-    "documented_modules": 391,
-    "classes": 883,
-    "documented_classes": 366,
-    "functions": 3375,
-    "documented_functions": 609,
+    "source_files": 392,
+    "physical_lines": 83576,
+    "logical_lines": 73950,
+    "documented_modules": 392,
+    "classes": 884,
+    "documented_classes": 367,
+    "functions": 3382,
+    "documented_functions": 616,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -228,7 +228,7 @@
     },
     {
       "path": "src/harnessix/mcp/runtime.py",
-      "lines": 643
+      "lines": 634
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
@@ -921,7 +921,7 @@
       "path": "src/harnessix/mcp/runtime.py",
       "qualname": "McpClientConnection",
       "kind": "class",
-      "line": 197,
+      "line": 201,
       "lines": 257,
       "documented": true
     },
@@ -1434,8 +1434,8 @@
       "path": "src/harnessix/sandbox/container.py",
       "qualname": "ContainerCommandBuilder",
       "kind": "class",
-      "line": 140,
-      "lines": 338,
+      "line": 211,
+      "lines": 300,
       "documented": true
     },
     {
@@ -1444,10 +1444,10 @@
       "path": "src/harnessix/sandbox/container.py",
       "qualname": "ContainerCommandBuilder.prepare",
       "kind": "function",
-      "line": 171,
-      "lines": 146,
+      "line": 214,
+      "lines": 145,
       "documented": false,
-      "decision_complexity": 36
+      "decision_complexity": 35
     },
     {
       "id": "harnessix.sandbox.egress:ManagedEgressGateway",

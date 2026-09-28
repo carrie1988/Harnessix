@@ -23,7 +23,12 @@ from harnessix.execution.contracts import (
     execution_is_approved,
 )
 from harnessix.execution.planner import bind_environment
-from harnessix.sandbox.capabilities import ContainerEngineProbe, executable_identity_digest
+from harnessix.sandbox.capabilities import (
+    ContainerEngineProbe,
+    container_resource_probe_command,
+    executable_identity_digest,
+    verify_container_resource_support,
+)
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
     ContainerExecutionSpec,
@@ -137,8 +142,8 @@ def _verify_file_identity(path: Path, expected: tuple[int, ...]) -> None:
         raise KernelError("sandbox_binding_changed", "容器引擎绑定已经变化") from None
 
 
-class ContainerCommandBuilder:
-    """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。"""
+class _ContainerEngineAccess:
+    """拥有固定CLI身份、资源探测及有界控制IO，不解释执行意图。"""
 
     def __init__(
         self,
@@ -167,6 +172,44 @@ class ContainerCommandBuilder:
         self._version = probe.server_version
         self._capability_digest = probe.digest
         self._inspect_runner = inspect_runner
+
+    def _verify_binding(self) -> None:
+        _verify_file_identity(self._path, self._identity)
+
+    def verify_resource_limits(self) -> None:
+        """启动前重新证明资源能力；旧Probe不能授权无内存或CPU限制的执行。"""
+
+        self._verify_binding()
+        try:
+            completed = self._inspect_runner(
+                container_resource_probe_command(self._path, engine=self._engine), 15.0
+            )
+        except (OSError, ValueError, subprocess.SubprocessError):
+            raise KernelError("sandbox_resources_unavailable", "容器引擎资源能力探测失败") from None
+        self._verify_binding()
+        verify_container_resource_support(self._engine, completed)
+
+    def _run_control(
+        self, argv: Sequence[str], timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        self._verify_binding()
+        try:
+            completed = self._inspect_runner(argv, timeout)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            raise KernelError("process_cleanup_failed", "Container生命周期命令失败") from None
+        self._verify_binding()
+        if (
+            type(completed.stdout) is not bytes
+            or type(completed.stderr) is not bytes
+            or len(completed.stdout) > 64 * 1024
+            or len(completed.stderr) > 64 * 1024
+        ):
+            raise KernelError("process_cleanup_failed", "Container生命周期响应无效")
+        return completed
+
+
+class ContainerCommandBuilder(_ContainerEngineAccess):
+    """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。"""
 
     def prepare(
         self,
@@ -303,8 +346,7 @@ class ContainerCommandBuilder:
                 *target_command.argv[1:],
             )
         )
-        if reattest_network:
-            self._reattest_network(profile, egress)
+        self._verify_launch_capabilities(profile, egress, reattest_network)
         return PreparedContainerLaunch(
             argv=tuple(arguments),
             base_environment=MappingProxyType(checked_environment),
@@ -315,8 +357,17 @@ class ContainerCommandBuilder:
             container_name=None if execution is None else self.container_name(execution),
         )
 
-    def _verify_binding(self) -> None:
-        _verify_file_identity(self._path, self._identity)
+    def _verify_launch_capabilities(
+        self,
+        profile: ContainerSandboxProfile,
+        egress: ManagedEgressBinding | None,
+        reattest_network: bool,
+    ) -> None:
+        """在返回启动对象前重新证明选择性网络及所有必需资源机制。"""
+
+        if reattest_network:
+            self._reattest_network(profile, egress)
+        self.verify_resource_limits()
 
     def ensure_container_absent(self, execution: ContainerExecutionSpec) -> None:
         if self._container_rows(execution):
@@ -367,24 +418,6 @@ class ContainerCommandBuilder:
                 raise KernelError("process_cleanup_failed", "Container执行身份证明无效")
             identifiers.append(match.group("id").decode())
         return tuple(identifiers)
-
-    def _run_control(
-        self, argv: Sequence[str], timeout: float
-    ) -> subprocess.CompletedProcess[bytes]:
-        self._verify_binding()
-        try:
-            completed = self._inspect_runner(argv, timeout)
-        except (OSError, ValueError, subprocess.SubprocessError):
-            raise KernelError("process_cleanup_failed", "Container生命周期命令失败") from None
-        self._verify_binding()
-        if (
-            type(completed.stdout) is not bytes
-            or type(completed.stderr) is not bytes
-            or len(completed.stdout) > 64 * 1024
-            or len(completed.stderr) > 64 * 1024
-        ):
-            raise KernelError("process_cleanup_failed", "Container生命周期响应无效")
-        return completed
 
     @staticmethod
     def container_name(execution: ContainerExecutionSpec) -> str:

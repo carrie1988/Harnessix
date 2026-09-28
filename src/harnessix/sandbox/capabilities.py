@@ -85,6 +85,75 @@ def _run_probe(argv: Sequence[str], timeout: float) -> subprocess.CompletedProce
     )
 
 
+def container_resource_probe_command(
+    executable: str | Path, *, engine: ContainerEngineKind
+) -> tuple[str, ...]:
+    """只查询资源强制所需字段，避免读取可能携带代理配置的完整info。"""
+
+    template = (
+        "[{{json .MemoryLimit}},{{json .CPUCfsPeriod}},{{json .CPUCfsQuota}},{{json .PidsLimit}}]"
+        if engine == "docker"
+        else '{"version":{{json .Host.CgroupVersion}},'
+        '"controllers":{{json .Host.CgroupControllers}}}'
+    )
+    return (str(executable), "info", "--format", template)
+
+
+def verify_container_resource_support(
+    engine: ContainerEngineKind,
+    completed: subprocess.CompletedProcess[str] | subprocess.CompletedProcess[bytes],
+) -> None:
+    """严格验证受信引擎报告；参数被接受不等于内核资源限制可用。"""
+
+    try:
+        if type(completed.stdout) not in {str, bytes} or type(completed.stderr) not in {str, bytes}:
+            raise ValueError
+        output = (
+            completed.stdout.encode("utf-8")
+            if isinstance(completed.stdout, str)
+            else completed.stdout
+        )
+        errors = (
+            completed.stderr.encode("utf-8")
+            if isinstance(completed.stderr, str)
+            else completed.stderr
+        )
+        if completed.returncode != 0 or len(output) > 4096 or len(errors) > 16384:
+            raise ValueError
+        value = json.loads(output.decode("utf-8"))
+        if engine == "docker":
+            supported = (
+                type(value) is list and len(value) == 4 and all(item is True for item in value)
+            )
+        else:
+            supported = _podman_resources_supported(value)
+        if not supported:
+            raise ValueError
+    except (UnicodeError, ValueError, TypeError, RecursionError):
+        raise KernelError(
+            "sandbox_resources_unavailable", "容器引擎无法证明必需资源限制能力"
+        ) from None
+
+
+def _podman_resources_supported(value: object) -> bool:
+    """只接受有界v2控制器证明，不把Rootless或宿主CPU数量当作限制能力。"""
+
+    if (
+        type(value) is not dict
+        or set(value) != {"version", "controllers"}
+        or value["version"] != "v2"
+    ):
+        return False
+    controllers = value["controllers"]
+    if type(controllers) is not list or len(controllers) > 32:
+        return False
+    return all(type(item) is str and 1 <= len(item) <= 64 for item in controllers) and {
+        "cpu",
+        "memory",
+        "pids",
+    }.issubset(controllers)
+
+
 def probe_container_engine(
     executable: str | Path,
     *,
@@ -147,6 +216,14 @@ def probe_container_engine(
             rootless = value == "true"
     except (json.JSONDecodeError, ValueError, TypeError):
         raise KernelError("sandbox_unavailable", "容器引擎安全能力响应无效") from None
+    try:
+        resources = runner(
+            container_resource_probe_command(path, engine=engine),
+            _CONTAINER_ENGINE_PROBE_TIMEOUT_SECONDS,
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        raise KernelError("sandbox_resources_unavailable", "容器引擎资源能力探测失败") from None
+    verify_container_resource_support(engine, resources)
     payload = {
         "spec_version": "harnessix.container-engine-probe/v1",
         "platform": native_platform(),

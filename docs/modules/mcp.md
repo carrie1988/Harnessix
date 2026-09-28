@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 7
+code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
 owners:
   - core
 modules:
@@ -22,6 +22,7 @@ related_tests:
   - tests/mcp/test_server.py
   - tests/mcp/test_stdio_faults.py
   - tests/mcp/test_schemas.py
+  - tests/mcp/test_container_resource_admission.py
   - tests/integration/test_container_sandbox.py
 supersedes: []
 ---
@@ -1646,3 +1647,14 @@ custom成功正文先经过与Gateway相同的公开字段合同，再成为Text
 [版本化Secret详设](../changes/m09-4a-versioned-secret-publication.md)为[Server](../../src/harnessix/mcp/server.py)提供显式secret_scope；独立有界副本共用字段和Secret检查，含后置期限和父Task取消。低风险/只读条件不变；默认不枚举宿主凭据或声称未登记值安全。
 
 独立成功出口进入时交付待取消，字段与Secret扫描检查本次基线后的父Task取消增量；累计旧计数不作为新的取消信号，不操作Task私有状态，见[Secret详设](../changes/m09-4a-versioned-secret-publication.md)第13节。
+
+## Container连接前资源准入
+
+[`McpClientConnection.connect`](../../src/harnessix/mcp/runtime.py)委托
+[`startup.py`](../../src/harnessix/mcp/startup.py)在创建Client前对规范Container Target执行Builder的实时资源检查。
+Target可能长期保存Prepared对象，旧Probe与transport文字字段都不能跳过准入。Docker必须支持物理内存、CPU CFS
+及PIDs；Podman要求v2及三个必需控制器。初次准备成功不等于后续连接已通过。
+
+只读资源查询在唯一后台线程中执行，固定期限15秒，不重试。父取消（包括重复取消）等待原查询结算后传播，
+不创建Client；稳定失败与原清理由既有MCP Store和生命周期拥有。资源失效不阻断按身份清理。
+详细字段、源码研究、流程/时序/数据流及测试见[资源准入详设](../changes/m09-r1-container-resource-admission.md)。

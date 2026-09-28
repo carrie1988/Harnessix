@@ -72,10 +72,19 @@ async def test_real_container_enforces_read_only_no_network_limits_and_secret_bo
             "cat /workspace/main.txt; touch /tmp/allowed; "
             "if touch /denied 2>/dev/null; then exit 21; fi; "
             "if echo changed >>/workspace/main.txt 2>/dev/null; then exit 22; fi; "
-            "if [ -f /sys/fs/cgroup/pids.max ]; then "
-            'test "$(cat /sys/fs/cgroup/pids.max)" = 16; fi; '
-            "if [ -f /sys/fs/cgroup/memory.max ]; then "
-            'test "$(cat /sys/fs/cgroup/memory.max)" = 67108864; fi; '
+            "if [ -f /sys/fs/cgroup/cgroup.controllers ]; then "
+            'test "$(cat /sys/fs/cgroup/pids.max)" = 16; '
+            'test "$(cat /sys/fs/cgroup/memory.max)" = 67108864; '
+            "set -- $(cat /sys/fs/cgroup/cpu.max); "
+            'test "$1" = 50000; test "$2" = 100000; '
+            "else "
+            'test "$(cat /sys/fs/cgroup/pids/pids.max)" = 16; '
+            'test "$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)" = 67108864; '
+            "cpu_root=/sys/fs/cgroup/cpu; "
+            'if [ ! -f "$cpu_root/cpu.cfs_period_us" ]; then '
+            "cpu_root=/sys/fs/cgroup/cpu,cpuacct; fi; "
+            'test "$(cat "$cpu_root/cpu.cfs_quota_us")" = 50000; '
+            'test "$(cat "$cpu_root/cpu.cfs_period_us")" = 100000; fi; '
             "if dd if=/dev/zero of=/tmp/overrun bs=1048576 count=32 2>/dev/null; "
             "then exit 23; fi; rm -f /tmp/overrun; echo resource-limit-enforced; "
             "printf '%s\\n' \"$TOKEN\"",

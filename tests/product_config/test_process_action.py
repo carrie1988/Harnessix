@@ -231,7 +231,11 @@ def _probe_runner(argv: Sequence[str], timeout: float) -> subprocess.CompletedPr
     if argv[1] == "version":
         output = "28.3.2|28.3.2\n"
     elif argv[1] == "info":
-        output = '["name=seccomp"]\n'
+        output = (
+            '["name=seccomp"]\n'
+            if argv[-1] == "{{json .SecurityOptions}}"
+            else "[true,true,true,true]"
+        )
     else:
         assert argv[1:3] == ("image", "inspect")
         image = argv[-1]
@@ -497,6 +501,30 @@ async def test_process_profile_probe_omits_unattested_image(tmp_path: Path) -> N
         )
     assert probe.verified is None
     assert probe.reason_code == "container_image_unavailable"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="该Profile负对照使用POSIX Process Owner")
+@pytest.mark.parametrize("missing", range(4))
+async def test_process_profile_omits_unenforceable_resources_before_image_or_secrets(
+    tmp_path: Path, missing: int
+) -> None:
+    calls = []
+
+    def unsupported(argv, timeout):
+        calls.append(tuple(argv))
+        if argv[1] == "info" and argv[-1] != "{{json .SecurityOptions}}":
+            output = json.dumps([False if index == missing else True for index in range(4)])
+            return subprocess.CompletedProcess(argv, 0, output, "")
+        assert argv[1] != "image"
+        return _probe_runner(argv, timeout)
+
+    async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
+        probe = probe_product_process_profile(
+            _profile(_fake_engine(tmp_path)), supervisor, _NoSecrets(), probe_runner=unsupported
+        )
+    assert probe.verified is None
+    assert probe.reason_code == "profile_limits_unenforceable"
+    assert [item[1] for item in calls] == ["version", "info", "info"]
 
 
 def test_product_composition_omits_unverified_profile_without_host_fallback(

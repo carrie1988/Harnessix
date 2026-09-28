@@ -446,7 +446,11 @@ async def test_product_server_catalog_includes_only_verified_process_profile(
         if argv[1] == "version":
             output = "28.3.2|28.3.2\n"
         elif argv[1] == "info":
-            output = '["name=seccomp"]\n'
+            output = (
+                '["name=seccomp"]\n'
+                if argv[-1] == "{{json .SecurityOptions}}"
+                else "[true,true,true,true]"
+            )
         else:
             output = json.dumps([image]) + "\n"
         return subprocess.CompletedProcess(argv, 0, output, "")

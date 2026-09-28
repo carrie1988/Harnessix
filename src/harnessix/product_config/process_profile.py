@@ -246,6 +246,7 @@ def _profile_probe_reason(error: KernelError) -> str:
     reasons = {
         "container_engine_unsupported": "container_engine_unsupported",
         "sandbox_unavailable": "container_unavailable",
+        "sandbox_resources_unavailable": "profile_limits_unenforceable",
         "sandbox_binding_invalid": "container_unavailable",
         "container_image_unavailable": "container_image_unavailable",
         "profile_limits_unenforceable": "profile_limits_unenforceable",

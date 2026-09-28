@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
+version: 37
+code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
 owners:
   - core
 modules:
@@ -2135,3 +2135,15 @@ Process捕获及读取已改为显式二进制模式；旧摘要不符仍拒绝�
 共享原生IO，原不覆盖目录发布合同保持；
 [第20节详设](../changes/m09-r1-windows-private-state.md#20-原始字节持久化与windows回执并发发布)
 覆盖新捕获、Receipt并发、原生正反例及三平台恢复尚待验收的边界。
+
+## 固定Process Profile资源能力准入
+
+[`process_profile.py`](../../src/harnessix/product_config/process_profile.py)的Doctor Attestation与正式装配
+继续共用Engine探测。内存、CPU CFS或PIDs机制缺失、超时或响应无效时，
+`sandbox_resources_unavailable`映射到原`profile_limits_unenforceable`省略原因；此时不继续证明镜像或
+解析Secret，也不广告执行Tool、不提供Host回退。
+
+Profile通过启动探测后，每次执行仍由Builder实时复核资源能力；旧Probe不能越过后续拒绝。原Profile、
+Plan、Approval、Store与错误公开合同均不增加字段。
+[完整详设](../changes/m09-r1-container-resource-admission.md)说明固定字段、接口、流程、失败和测试；
+该增量不构成真实编码质量或R1整体发布验收。

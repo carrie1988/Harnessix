@@ -88,6 +88,9 @@ R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenan
 原投影Seal先于解析，认证Store拒绝旧式GC/Restore，旧式候选恢复先预检并结算原工作线程。
 完整认证产品备份/Key、三平台恢复及其他R1门禁仍未关闭。
 
+Container执行的当前补充见[资源能力准入与启动前复核](changes/m09-r1-container-resource-admission.md)：
+固定资源字段、严格Docker/Podman判定、Profile省略、MCP连接前复核及取消结算；资源不可用不回退Host。
+
 R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/m09-r3-product-context-composition.md)：
 默认产品与正式Task Pack采用同一Factory，来源读取复用POSIX FD/Windows Handle安全端口。
 离线回归、默认装配或API鉴权不替代完整真实任务质量验收，历史0/20保持原样。

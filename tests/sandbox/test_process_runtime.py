@@ -51,8 +51,18 @@ from harnessix.workspace.snapshot import capture_workspace_snapshot
 
 def _probe_runner(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
     assert timeout == 15.0
-    output = "28.3.2|28.3.2\n" if argv[1] == "version" else '["name=seccomp"]\n'
+    if argv[1] == "version":
+        output = "28.3.2|28.3.2\n"
+    elif argv[-1] == "{{json .SecurityOptions}}":
+        output = '["name=seccomp"]\n'
+    else:
+        output = "[true,true,true,true]"
     return subprocess.CompletedProcess(argv, 0, output, "")
+
+
+def _resource_inspect(argv, timeout):
+    completed = _probe_runner(argv, timeout)
+    return subprocess.CompletedProcess(argv, completed.returncode, completed.stdout.encode(), b"")
 
 
 def _execution_plan(
@@ -170,7 +180,8 @@ async def test_container_execution_materializes_exact_supervised_process(tmp_pat
     async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
         (probe, profile), execution, plan = _execution_plan(workspace, supervisor)
         runtime = ContainerProcessRuntime(
-            ContainerCommandBuilder(Path(sys.executable), probe), supervisor
+            ContainerCommandBuilder(Path(sys.executable), probe, inspect_runner=_resource_inspect),
+            supervisor,
         )
         prepared = runtime.prepare(
             plan,
@@ -199,7 +210,8 @@ async def test_container_execution_rejects_owner_or_plan_drift(tmp_path: Path) -
     async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
         (probe, profile), execution, plan = _execution_plan(workspace, supervisor)
         runtime = ContainerProcessRuntime(
-            ContainerCommandBuilder(Path(sys.executable), probe), supervisor
+            ContainerCommandBuilder(Path(sys.executable), probe, inspect_runner=_resource_inspect),
+            supervisor,
         )
         changed_owner = execution.model_copy(update={"owner_capability_digest": "f" * 64})
         with pytest.raises(KernelError) as owner:
@@ -250,7 +262,8 @@ async def test_container_execution_accepts_only_exact_public_intent_arguments(
             intent_arguments=public,
         )
         runtime = ContainerProcessRuntime(
-            ContainerCommandBuilder(Path(sys.executable), probe), supervisor
+            ContainerCommandBuilder(Path(sys.executable), probe, inspect_runner=_resource_inspect),
+            supervisor,
         )
         prepared = runtime.prepare(
             plan,
@@ -314,6 +327,8 @@ async def test_container_selective_network_is_reattested_immediately(tmp_path: P
 
         def inspect(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[bytes]:
             calls.append(tuple(argv))
+            if argv[1] == "info":
+                return _resource_inspect(argv, timeout)
             assert timeout == 5.0
             return subprocess.CompletedProcess(argv, 0, body, b"")
 
@@ -352,7 +367,8 @@ async def test_container_selective_network_is_reattested_immediately(tmp_path: P
                 environment={"LANG": "C"},
                 egress=binding,
             )
-    assert len(calls) == 1 and calls[0][1:] == ("network", "inspect", name)
+    assert len(calls) == 2 and calls[0][1:] == ("network", "inspect", name)
+    assert calls[1][1] == "info"
     assert binding.network_name in prepared.process.argv
     assert changed.value.code == "network_policy_unenforceable"
 
@@ -414,6 +430,8 @@ async def test_container_start_failure_still_verifies_cleanup(
 
         def control(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[bytes]:
             calls.append(tuple(argv))
+            if argv[1] == "info":
+                return _resource_inspect(argv, timeout)
             assert tuple(argv[1:3]) == ("container", "ls") and timeout == 5.0
             return subprocess.CompletedProcess(argv, 0, b"", b"")
 
@@ -435,4 +453,4 @@ async def test_container_start_failure_still_verifies_cleanup(
                 environment={"LANG": "C"},
             )
     assert failed.value.code == "process_launch_failed"
-    assert len(calls) == 2
+    assert [item[1] for item in calls] == ["container", "info", "container"]

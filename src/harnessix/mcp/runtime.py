@@ -35,6 +35,11 @@ from harnessix.mcp.schema import (
     validate_mcp_input_schema,
     validate_mcp_structured_output,
 )
+from harnessix.mcp.startup import (
+    DEFAULT_MCP_CLOSE_TIMEOUT_SECONDS,
+    _close_failed_start,
+    build_preflight_client,
+)
 from harnessix.mcp.store import SQLiteMcpStore
 from harnessix.sandbox.container import ContainerCommandBuilder, PreparedContainerLaunch
 from harnessix.sandbox.contracts import ContainerExecutionSpec, ContainerSandboxProfile
@@ -45,7 +50,6 @@ MAX_MCP_TOOLS = 2048
 MAX_MCP_DEFINITION_BYTES = 256 * 1024
 DEFAULT_MCP_STARTUP_TIMEOUT_SECONDS = 30.0
 DEFAULT_MCP_CALL_TIMEOUT_SECONDS = 300.0
-DEFAULT_MCP_CLOSE_TIMEOUT_SECONDS = 10.0
 
 _MODEL_NAME_INVALID = re.compile(r"[^A-Za-z0-9_.-]")
 
@@ -223,7 +227,7 @@ class McpClientConnection:
         store.begin_connect(target.server_id)
         stack = AsyncExitStack()
         try:
-            client = target.build_client(stack)
+            client = await build_preflight_client(target, stack, McpContainerStdioTarget)
             await asyncio.wait_for(
                 stack.enter_async_context(client), timeout=target.startup_timeout_seconds
             )
@@ -451,19 +455,6 @@ class McpClientConnection:
 
     async def __aexit__(self, *_: object) -> None:
         await self.aclose()
-
-
-async def _close_failed_start(stack: AsyncExitStack, target: McpClientTarget) -> bool:
-    cleanup_error = False
-    try:
-        await asyncio.wait_for(stack.aclose(), timeout=DEFAULT_MCP_CLOSE_TIMEOUT_SECONDS)
-    except Exception:
-        cleanup_error = True
-    try:
-        await asyncio.wait_for(target.cleanup(), timeout=DEFAULT_MCP_CLOSE_TIMEOUT_SECONDS)
-    except Exception:
-        cleanup_error = True
-    return cleanup_error
 
 
 async def _capture_catalog(
