@@ -1,0 +1,20 @@
+{
+  "spec_version": "harnessix.wheel-observation/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "name": "harnessix-0.1.0-py3-none-any.whl",
+  "size": 1073485,
+  "sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+  "member_count": 437,
+  "checked_source_members": [
+    "processes/owner_output.py",
+    "processes/owner_receipt.py",
+    "processes/supervisor.py",
+    "processes/windows_receipt.py",
+    "delivery/windows_io.py",
+    "workspace/windows_file_io.py",
+    "product_config/state_backup_windows.py"
+  ],
+  "excluded_test_members": true,
+  "published": false,
+  "version": "0.1.0"
+}

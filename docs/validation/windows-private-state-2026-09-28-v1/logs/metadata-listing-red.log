@@ -1,0 +1,19 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+__ test_listing_observes_every_file_with_native_metadata_only_on_windows[nt] ___
+tests/product_config/test_state_metadata_listing_contracts.py:32: in test_listing_observes_every_file_with_native_metadata_only_on_windows
+    assert backup._tree_files(tree, MaintenanceIOControl()) == paths
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<fixed-pre-repair-metadata-listing>:433: in _tree_files
+    ???
+../../../.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/product_config/test_state_metadata_listing_contracts.py:26: in open_file
+    assert metadata_only is (platform == "nt")
+E   AssertionError: assert False is ('nt' == 'nt'
+E     
+E       nt)
+=========================== short test summary info ============================
+FAILED tests/product_config/test_state_metadata_listing_contracts.py::test_listing_observes_every_file_with_native_metadata_only_on_windows[nt]
+1 failed, 1 passed, 2 deselected in 0.04s

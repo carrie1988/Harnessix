@@ -879,3 +879,9 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 原快速退出重复及默认SDK完整备份恢复均通过。剩余持有旧CRT Reader的共享拒绝保留，
 正式Receipt Reader后继改为只读ShareRead/Delete、无Write共享，以原MAC快照协调受控发布；
 外部不兼容共享继续拒绝且不自动重放。该增量未替代三平台完整门禁、真实编码及Beta验收。
+
+固定实现`9186cb2`原生事务/审批60通过，Git/Owner/完整备份焦点119通过/5跳过，Session认证88通过。
+后继基准223通过/2失败，完整产品重启启动仍失败，后续完整Windows回归未执行；整体Job仍为FAIL。
+[统一验证交付](validation/windows-private-state-2026-09-28-v1/README.md)保存七轮原始事实、双Python、
+实际图示、Wheel、Manifest、Review Packet及macOS ARM64源码外锁定安装/离线Doctor。
+下一功能收口核对重启Runner预建Root与正式私有创建合同，不降低拒绝或重启标准；R1～R6继续开放。

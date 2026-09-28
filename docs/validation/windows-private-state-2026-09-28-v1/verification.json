@@ -1,0 +1,199 @@
+{
+  "spec_version": "harnessix.windows-private-state-verification/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "native_runs": [
+    {
+      "revision": "2c285c0",
+      "focus": {
+        "passed": 82,
+        "skipped": 5,
+        "failed": 4
+      },
+      "raw_log": "logs/2c285c0-native-job.log",
+      "summaries": [
+        "59 passed in 21.61s",
+        "================== 4 failed, 82 passed, 5 skipped in 31.12s ==================="
+      ]
+    },
+    {
+      "revision": "8b5944d",
+      "focus": {
+        "passed": 87,
+        "skipped": 5,
+        "failed": 2
+      },
+      "raw_log": "logs/8b5944d-native-job.log",
+      "summaries": [
+        "59 passed in 16.15s",
+        "================== 2 failed, 87 passed, 5 skipped in 28.15s ==================="
+      ],
+      "run_id": 36438408439,
+      "job_id": 108982218858
+    },
+    {
+      "revision": "c4f062a",
+      "focus": {
+        "passed": 87,
+        "skipped": 5,
+        "failed": 2
+      },
+      "raw_log": "logs/c4f062a-native-job.log",
+      "summaries": [
+        "59 passed in 17.54s",
+        "================== 2 failed, 87 passed, 5 skipped in 29.44s ==================="
+      ],
+      "run_id": 36439318231,
+      "job_id": 108985371132
+    },
+    {
+      "revision": "a13cec8",
+      "focus": {
+        "passed": 88,
+        "skipped": 5,
+        "failed": 1
+      },
+      "raw_log": "logs/a13cec8-native-job.log",
+      "summaries": [
+        "59 passed in 15.58s",
+        "================== 1 failed, 88 passed, 5 skipped in 29.27s ==================="
+      ],
+      "run_id": 36440581974,
+      "job_id": 108989695092
+    },
+    {
+      "revision": "d615a7b",
+      "focus": {
+        "passed": 88,
+        "skipped": 5,
+        "failed": 2
+      },
+      "raw_log": "logs/d615a7b-native-job.log",
+      "summaries": [
+        "59 passed in 23.38s",
+        "================== 2 failed, 88 passed, 5 skipped in 32.09s ==================="
+      ],
+      "run_id": 36441634528,
+      "job_id": 108993320151
+    },
+    {
+      "revision": "f3363f7",
+      "focus": {
+        "passed": 110,
+        "skipped": 5,
+        "failed": 1
+      },
+      "raw_log": "logs/f3363f7-native-job.log",
+      "summaries": [
+        "60 passed in 21.49s",
+        "================== 1 failed, 110 passed, 5 skipped in 34.44s =================="
+      ],
+      "run_id": 36445077226,
+      "job_id": 109005154753
+    },
+    {
+      "revision": "9186cb2",
+      "focus": {
+        "passed": 119,
+        "skipped": 5,
+        "failed": 0
+      },
+      "raw_log": "logs/9186cb2-native-job.log",
+      "summaries": [
+        "60 passed in 19.82s",
+        "======================= 119 passed, 5 skipped in 33.76s =======================",
+        "88 passed in 11.11s",
+        "2 failed, 223 passed in 194.82s (0:03:14)"
+      ],
+      "run_id": 36446720079,
+      "job_id": 109010809438
+    }
+  ],
+  "current_native": {
+    "transaction_and_approval": {
+      "passed": 60,
+      "failed": 0
+    },
+    "git_owner_backup_focus": {
+      "passed": 119,
+      "skipped": 5,
+      "failed": 0
+    },
+    "authenticated_session": {
+      "passed": 88,
+      "failed": 0
+    },
+    "benchmarks": {
+      "passed": 223,
+      "failed": 2,
+      "duration_seconds": 194.82
+    },
+    "full_regression": "not_executed_after_benchmark_failure",
+    "job_status": "completed",
+    "job_conclusion": "failure"
+  },
+  "local": [
+    {
+      "source_revision": "f3363f7",
+      "python": "3.12.7",
+      "passed": 3381,
+      "skipped": 85,
+      "seconds": 232.0,
+      "scope": "affected-12-directories",
+      "log": "logs/output-receipt-python312-affected.log"
+    },
+    {
+      "source_revision": "f3363f7",
+      "python": "3.13.8",
+      "passed": 3381,
+      "skipped": 85,
+      "seconds": 222.89,
+      "scope": "affected-12-directories",
+      "log": "logs/output-receipt-python313-affected.log"
+    },
+    {
+      "source_revision": "9186cb2",
+      "python": "3.12.7",
+      "passed": 280,
+      "skipped": 26,
+      "seconds": 31.95,
+      "scope": "processes-and-backup-restore",
+      "log": "logs/receipt-reader-scoped-312.log"
+    },
+    {
+      "source_revision": "9186cb2",
+      "python": "3.13.8",
+      "passed": 280,
+      "skipped": 26,
+      "seconds": 31.85,
+      "scope": "processes-and-backup-restore",
+      "log": "logs/receipt-reader-scoped-313-final.log"
+    }
+  ],
+  "static": {
+    "mypy_source_files": 391,
+    "schema_frozen": true,
+    "readability_policy_unchanged": true
+  },
+  "installation": {
+    "platform": "macOS ARM64",
+    "python": "3.12.7",
+    "isolated": true,
+    "runtime_distribution_count": 59,
+    "locked_input": true,
+    "hashes_required": true,
+    "offline": true,
+    "doctor_ready": true,
+    "scope": "import-CLI-configure-offline-doctor",
+    "real_model_task": false
+  },
+  "provider_requests": 0,
+  "release_gate_status": {
+    "R1": "open",
+    "R2": "open",
+    "R3": "open",
+    "R4": "open",
+    "R5": "open",
+    "R6": "open"
+  },
+  "commercial_go_no_go": "NO_GO"
+}

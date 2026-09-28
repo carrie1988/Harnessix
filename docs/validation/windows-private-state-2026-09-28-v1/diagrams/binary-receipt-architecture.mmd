@@ -1,0 +1,12 @@
+flowchart LR
+  O[Owner 输出读线程] --> R[原流式脱敏和额度]
+  R --> B[CapturedProcessOutput 显式二进制FD]
+  B --> F[部分写入完成 原物理字节 Flush]
+  F --> M[原MAC回执 原序号及摘要]
+  M --> P[Windows Receipt Publisher]
+  P --> W[Workspace 共享Win32和NT IO]
+  D[原Delivery兼容导入] --> W
+  S[完整备份目录发布] --> W
+  W --> N[原同目录NT名称切换]
+  N --> C[新Reader验证新MAC]
+  Q[正式旧Reader 只读 ShareRead和Delete 无Write] --> V[旧MAC快照不变]

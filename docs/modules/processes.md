@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: f3363f7c865dfadc7ef9876c18714aa61680cb2d
+version: 27
+code_revision: 9186cb2a6c9135adf44be82759e0be21baada0d6
 owners:
   - core
 modules:
@@ -1688,3 +1688,7 @@ NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原
 旧FD保留原MAC，名称切换后的新读者验证新MAC。外部不兼容CRT Reader仍拒绝，不自动绕过。
 原Key、锁及备份源共享不变；转换后的FD与转换前原Handle各有唯一关闭归属。
 详见[原生后继事实和读取合同](../changes/m09-r1-windows-private-state.md#208-后继原生事实与正式reader合同)。
+
+固定实现`9186cb2`原生Git/Owner/完整备份焦点119通过、5跳过，原事务/审批60通过，Session认证88通过。
+后继产品重启基准仍有2个启动失败，整体Windows Job失败；
+[完整原件与评审结论](../validation/windows-private-state-2026-09-28-v1/README.md)保留失败，不关闭首发门禁。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 8
-code_revision: f3363f7c865dfadc7ef9876c18714aa61680cb2d
+version: 9
+code_revision: 9186cb2a6c9135adf44be82759e0be21baada0d6
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -727,3 +727,20 @@ Publisher只附固定数值IO码，无错误正文、路径或Token。原外部C
 另以实际正式Reader持有旧FD验证名称切换及双MAC快照，不能用删除负例获得通过。
 新增转换前/后关闭、缺失、Reparse、目录、Hardlink及消费正文异常模拟合同；模拟结果不代替原生共享验证。
 新增读取端口的原生验收未完成前，R1/R4继续开放。
+
+## 21. 固定源码原生验证结果与剩余失败
+
+实现`9186cb2`的[Windows Job](https://github.com/carrie1988/Harnessix/actions/runs/36446720079/job/109010809438)
+完成原NTFS事务/审批60通过、Git/Owner/完整备份焦点119通过/5跳过，Session认证88通过。
+正式Receipt Reader并发、外部不兼容Reader拒绝、转换前后资源关闭及默认SDK完整备份恢复均通过。
+后继基准223通过/2失败，产品重启在启动阶段失败，后续完整Windows回归没有执行；整个Job仍为FAIL。
+
+源码排查发现重启Runner在正式产品准备之前以普通`mkdir(0700)`预建State Root；
+需取得子进程固定故障码并核对原私有目录合同，不能仅凭关联推断全部失败已归因。
+不提高期限、删除重启用例或放宽旧Root拒绝。
+
+[统一验证报告与交付目录](../validation/windows-private-state-2026-09-28-v1/README.md)保存七轮原生事实、
+原始失败、双Python回归、实际图示、当前Wheel、锁定安装输入、Review Packet与逐文件Manifest。
+两个Python环境的后继专项各280通过/26跳过；前一固定实现广范围各3381通过/85跳过，不能跨版本相加。
+macOS ARM64/Python3.12.7在源码外新环境的锁定离线安装、Configure和Doctor通过，不替代真实模型任务、
+Windows/Linux安装、升级恢复、独立Beta或商用封板。R1～R6继续开放。

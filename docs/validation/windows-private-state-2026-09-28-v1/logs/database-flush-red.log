@@ -1,0 +1,20 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_database_flush_uses_writable_handle_on_windows_after_connections_close[nt] _
+tests/product_config/test_state_database_flush_contracts.py:60: in test_database_flush_uses_writable_handle_on_windows_after_connections_close
+    backup._copy_database(source, target, "sessions.db", MaintenanceIOControl())
+<fixed-pre-repair-database-copy>:168: in _copy_database
+    ???
+../../../.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/product_config/test_state_database_flush_contracts.py:31: in target_file
+    assert arguments.get("writable", False) is (platform == "nt")
+E   AssertionError: assert False is ('nt' == 'nt'
+E    +  where False = <built-in method get of dict object at 0x10c983740>('writable', False)
+E    +    where <built-in method get of dict object at 0x10c983740> = {}.get
+E     
+E       nt)
+=========================== short test summary info ============================
+FAILED tests/product_config/test_state_database_flush_contracts.py::test_database_flush_uses_writable_handle_on_windows_after_connections_close[nt]
+1 failed, 1 passed in 0.04s

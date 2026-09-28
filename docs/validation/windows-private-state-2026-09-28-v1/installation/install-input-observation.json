@@ -1,0 +1,19 @@
+{
+  "spec_version": "harnessix.install-input-observation/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "locked": true,
+  "dependency_hashes_required": true,
+  "offline": true,
+  "all_extras": true,
+  "development_dependencies": false,
+  "python": "3.12.7",
+  "platform": "macOS ARM64",
+  "fresh_environment": true,
+  "provider_calls": 0,
+  "doctor_ready": true,
+  "official_distribution": false,
+  "files": {
+    "requirements.txt": "b5542ecf09ea0badf5200c25b7ebc4275b7ecd13eddd2351477ed12c9a3c5937",
+    "wheel-requirement.txt": "1dec2fd78d30dddecdb023afafa2e20a1fc7f79f5a91b0f183aacd93357b5ac0"
+  }
+}

@@ -1,0 +1,24 @@
+usage: harnessix code [-h] [--config CONFIG] [--action-config ACTION_CONFIG]
+                      [--profile PROFILE] [--state-directory STATE_DIRECTORY]
+                      [--resume THREAD_ID] [--git-executable GIT_EXECUTABLE]
+                      [--expected-active-sha256 EXPECTED_ACTIVE_SHA256]
+                      [--expected-active-profile EXPECTED_ACTIVE_PROFILE]
+                      [--expected-active-action-sha256 EXPECTED_ACTIVE_ACTION_SHA256]
+                      [workspace]
+
+启动Harnessix Code全屏终端产品
+
+positional arguments:
+  workspace
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG
+  --action-config ACTION_CONFIG
+  --profile PROFILE
+  --state-directory STATE_DIRECTORY
+  --resume THREAD_ID
+  --git-executable GIT_EXECUTABLE
+  --expected-active-sha256 EXPECTED_ACTIVE_SHA256
+  --expected-active-profile EXPECTED_ACTIVE_PROFILE
+  --expected-active-action-sha256 EXPECTED_ACTIVE_ACTION_SHA256

@@ -1,0 +1,30 @@
+usage: harnessix code configure [-h] [--config CONFIG]
+                                [--provider-kind {openai_chat,anthropic}]
+                                [--provider-id PROVIDER_ID]
+                                [--profile-id PROFILE_ID]
+                                [--base-url BASE_URL] [--model MODEL]
+                                [--secret-name SECRET_NAME]
+                                [--secret-version SECRET_VERSION]
+                                [--api-key-env API_KEY_ENV]
+                                [--output-token-parameter {max_completion_tokens,max_tokens}]
+                                [--replace]
+                                [--expected-source-sha256 EXPECTED_SOURCE_SHA256]
+                                [--non-interactive]
+
+生成不含API Key值的Harnessix Code产品配置
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG
+  --provider-kind {openai_chat,anthropic}
+  --provider-id PROVIDER_ID
+  --profile-id PROFILE_ID
+  --base-url BASE_URL
+  --model MODEL
+  --secret-name SECRET_NAME
+  --secret-version SECRET_VERSION
+  --api-key-env API_KEY_ENV
+  --output-token-parameter {max_completion_tokens,max_tokens}
+  --replace
+  --expected-source-sha256 EXPECTED_SOURCE_SHA256
+  --non-interactive

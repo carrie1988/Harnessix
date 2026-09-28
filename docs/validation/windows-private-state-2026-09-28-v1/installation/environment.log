@@ -1,0 +1,3 @@
+Using CPython 3.12.7 interpreter at: /Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/.venv/bin/python
+Creating virtual environment at: /private/tmp/harnessix-windows-private-state/9186cb2-install/venv
+Activate with: source /private/tmp/harnessix-windows-private-state/9186cb2-install/venv/bin/activate

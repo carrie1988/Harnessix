@@ -1,0 +1,14 @@
+{
+  "spec_version": "harnessix.clean-install-observation/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "version": "0.1.0",
+  "python": "3.12.7",
+  "platform": "Darwin",
+  "machine": "arm64",
+  "import_location": "/private/tmp/harnessix-windows-private-state/9186cb2-install/venv/lib/python3.12/site-packages/harnessix/__init__.py",
+  "isolated": true,
+  "source_checkout_in_sys_path": false,
+  "dependency_count": 59,
+  "API_requests": 0,
+  "commercial_release": false
+}

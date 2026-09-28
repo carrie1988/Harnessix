@@ -1,0 +1,5 @@
+Using Python 3.12.7 environment at: /private/tmp/harnessix-windows-private-state/9186cb2-install/venv
+Resolved 1 package in 0.92ms
+Prepared 1 package in 45ms
+Installed 1 package in 6ms
+ + harnessix==0.1.0 (from file:///private/tmp/harnessix-windows-private-state/9186cb2-wheel/harnessix-0.1.0-py3-none-any.whl)

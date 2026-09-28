@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant O as Owner
+  participant S as 输出文件
+  participant T as 新临时Receipt Handle
+  participant N as NT名称切换
+  participant R as 正式旧Receipt Reader 无Write共享
+  O->>S: 二进制写入脱敏字节 完成部分写并Flush
+  O->>T: 原MAC正文 二进制WriteFile并Flush
+  R->>R: 保持原Handle及原序号快照
+  O->>N: 同目录Replace 原信息类和完成状态检查
+  N-->>O: 确认发布或错误 未决
+  alt 发布确认
+    O->>T: 关闭原Handle
+    R->>R: 旧MAC仍验证 原快照不变
+    O->>N: 新Reader按名称取得新Receipt并验证MAC
+  else Rename错误或未决
+    O->>T: 关闭Handle 保留未知效果 不自动删除重试
+  end

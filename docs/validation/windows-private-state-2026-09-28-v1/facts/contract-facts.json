@@ -1,0 +1,32 @@
+{
+  "spec_version": "harnessix.windows-private-state-contract-facts/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "native_io_relocated_nodes": [
+    "WindowsFileOperations",
+    "_IoStatus",
+    "_IoStatusBlock",
+    "_RenameInfo",
+    "_configure",
+    "_native_rename_api",
+    "_raise_io_error",
+    "_rename_buffer",
+    "_rename_same_directory"
+  ],
+  "native_io_AST_identical": true,
+  "readability_policy_unchanged": true,
+  "readability_policy_sha256": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6",
+  "public_schema_changed": false,
+  "owner_receipt_spec": "harnessix.process-owner-receipt/v1",
+  "private_key_acl": "original-token-user-protected-two-ACE-flags-zero",
+  "state_root_acl": "token-user-protected-user-system-two-inheritable-ACE",
+  "output_file_mode": "binary",
+  "receipt_read_access": "read-data-read-attributes-read-control",
+  "receipt_read_share": "read-delete-no-write",
+  "publisher_unknown_effect": "no-retry-no-delete-no-path-fallback",
+  "budget_scope": {
+    "provider_requests": 0,
+    "ledger_modified": false,
+    "provider_credentials_read": false
+  },
+  "commercial_release": false
+}

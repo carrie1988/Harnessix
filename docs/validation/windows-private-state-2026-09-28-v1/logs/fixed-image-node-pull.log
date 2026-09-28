@@ -1,0 +1,1 @@
+Error response from daemon: Get "https://registry-1.docker.io/v2/library/node/manifests/sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b": Get "https://auth.docker.io/token?scope=repository%3Alibrary%2Fnode%3Apull&service=registry.docker.io": EOF

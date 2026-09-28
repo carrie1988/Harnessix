@@ -1,0 +1,22 @@
+usage: harnessix code doctor [-h] [--config CONFIG]
+                             [--action-config ACTION_CONFIG]
+                             [--profile PROFILE]
+                             [--state-directory STATE_DIRECTORY]
+                             [--git-executable GIT_EXECUTABLE] [--no-tui]
+                             [--json]
+                             [workspace]
+
+离线检查Harnessix Code启动条件
+
+positional arguments:
+  workspace
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG
+  --action-config ACTION_CONFIG
+  --profile PROFILE
+  --state-directory STATE_DIRECTORY
+  --git-executable GIT_EXECUTABLE
+  --no-tui
+  --json

@@ -1,0 +1,625 @@
+﻿2026-09-28T15:11:05.9192077Z Current runner version: '2.337.0'
+2026-09-28T15:11:05.9226180Z ##[group]Runner Image Provisioner
+2026-09-28T15:11:05.9227017Z Hosted Compute Agent
+2026-09-28T15:11:05.9227603Z Version: 20260828.587
+2026-09-28T15:11:05.9228209Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-28T15:11:05.9229153Z Build Date: 2026-08-28T16:44:25Z
+2026-09-28T15:11:05.9229878Z Worker ID: {ed41efda-5704-41ce-8805-77b188f5de79}
+2026-09-28T15:11:05.9230544Z Azure Region: eastus
+2026-09-28T15:11:05.9231077Z ##[endgroup]
+2026-09-28T15:11:05.9232511Z ##[group]Operating System
+2026-09-28T15:11:05.9233119Z Microsoft Windows Server 2025
+2026-09-28T15:11:05.9233717Z 10.0.26100
+2026-09-28T15:11:05.9234189Z Datacenter
+2026-09-28T15:11:05.9234673Z ##[endgroup]
+2026-09-28T15:11:05.9235190Z ##[group]Runner Image
+2026-09-28T15:11:05.9235787Z Image: windows-2025-vs2026
+2026-09-28T15:11:05.9236352Z Version: 20260922.246.2
+2026-09-28T15:11:05.9237772Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260922.246/images/windows/Windows2025-VS2026-Readme.md
+2026-09-28T15:11:05.9239355Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260922.246
+2026-09-28T15:11:05.9240294Z ##[endgroup]
+2026-09-28T15:11:05.9241336Z ##[group]GITHUB_TOKEN Permissions
+2026-09-28T15:11:05.9243285Z Contents: read
+2026-09-28T15:11:05.9244281Z Metadata: read
+2026-09-28T15:11:05.9244797Z ##[endgroup]
+2026-09-28T15:11:05.9246922Z Secret source: Actions
+2026-09-28T15:11:05.9247848Z Cache mode: write
+2026-09-28T15:11:05.9248505Z Prepare workflow directory
+2026-09-28T15:11:05.9648354Z Prepare all required actions
+2026-09-28T15:11:05.9698195Z Getting action download info
+2026-09-28T15:11:06.1538406Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+2026-09-28T15:11:06.2986710Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+2026-09-28T15:11:06.6862877Z Complete job name: windows-trusted-execution
+2026-09-28T15:11:06.8325335Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+2026-09-28T15:11:06.8326596Z with:
+2026-09-28T15:11:06.8326996Z   fetch-depth: 0
+2026-09-28T15:11:06.8327423Z   repository: carrie1988/Harnessix
+2026-09-28T15:11:06.8331128Z   token: ***
+2026-09-28T15:11:06.8331519Z   ssh-strict: true
+2026-09-28T15:11:06.8331923Z   ssh-user: git
+2026-09-28T15:11:06.8332836Z   persist-credentials: true
+2026-09-28T15:11:06.8333300Z   clean: true
+2026-09-28T15:11:06.8333708Z   sparse-checkout-cone-mode: true
+2026-09-28T15:11:06.8334186Z   fetch-tags: false
+2026-09-28T15:11:06.8334584Z   show-progress: true
+2026-09-28T15:11:06.8334979Z   lfs: false
+2026-09-28T15:11:06.8335352Z   submodules: false
+2026-09-28T15:11:06.8335760Z   set-safe-directory: true
+2026-09-28T15:11:06.8336469Z ##[endgroup]
+2026-09-28T15:11:06.9907778Z Syncing repository: carrie1988/Harnessix
+2026-09-28T15:11:06.9909581Z ##[group]Getting Git version info
+2026-09-28T15:11:06.9910243Z Working directory is 'D:\a\Harnessix\Harnessix'
+2026-09-28T15:11:07.0961760Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-09-28T15:11:07.4840323Z git version 2.55.0.windows.5
+2026-09-28T15:11:07.4903334Z ##[endgroup]
+2026-09-28T15:11:07.4930808Z Temporarily overriding HOME='D:\a\_temp\207be69e-cebe-49dd-806c-208306e78daa' before making global git config changes
+2026-09-28T15:11:07.4933278Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T15:11:07.4943542Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+2026-09-28T15:11:07.5605639Z Deleting the contents of 'D:\a\Harnessix\Harnessix'
+2026-09-28T15:11:07.5612816Z ##[group]Initializing the repository
+2026-09-28T15:11:07.5621427Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Harnessix\Harnessix
+2026-09-28T15:11:07.6552257Z Initialized empty Git repository in D:/a/Harnessix/Harnessix/.git/
+2026-09-28T15:11:07.6602072Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/carrie1988/Harnessix
+2026-09-28T15:11:07.7263572Z ##[endgroup]
+2026-09-28T15:11:07.7264833Z ##[group]Disabling automatic garbage collection
+2026-09-28T15:11:07.7273401Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-09-28T15:11:07.7675923Z ##[endgroup]
+2026-09-28T15:11:07.7678119Z ##[group]Setting up auth
+2026-09-28T15:11:07.7679778Z Removing SSH command configuration
+2026-09-28T15:11:07.7689163Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T15:11:07.8033025Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-09-28T15:11:09.2983219Z Removing HTTP extra header
+2026-09-28T15:11:09.2993728Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T15:11:09.3312981Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-09-28T15:11:09.9314521Z Removing includeIf entries pointing to credentials config files
+2026-09-28T15:11:09.9327357Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T15:11:09.9712707Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-09-28T15:11:10.5521818Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-09-28T15:11:10.5876253Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:11:10.6212323Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:11:10.6586149Z ##[endgroup]
+2026-09-28T15:11:10.6586642Z ##[group]Fetching the repository
+2026-09-28T15:11:10.6610595Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-28T15:11:12.7303653Z From https://github.com/carrie1988/Harnessix
+2026-09-28T15:11:12.7304466Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+2026-09-28T15:11:12.7305000Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+2026-09-28T15:11:12.7305565Z  * [new branch]      main                    -> origin/main
+2026-09-28T15:11:12.7371691Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+2026-09-28T15:11:12.7774920Z   origin/main
+2026-09-28T15:11:12.7827284Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+2026-09-28T15:11:12.8111380Z d615a7b521d6441d12e412c2214dca7713ba2ac8
+2026-09-28T15:11:12.8148821Z ##[endgroup]
+2026-09-28T15:11:12.8149907Z ##[group]Determining the checkout info
+2026-09-28T15:11:12.8151074Z ##[endgroup]
+2026-09-28T15:11:12.8160476Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-09-28T15:11:12.8619795Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-09-28T15:11:12.8931691Z ##[group]Checking out the ref
+2026-09-28T15:11:12.8940847Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-09-28T15:11:13.8709449Z Switched to a new branch 'main'
+2026-09-28T15:11:13.8773957Z branch 'main' set up to track 'origin/main'.
+2026-09-28T15:11:13.8846627Z ##[endgroup]
+2026-09-28T15:11:13.9312572Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-09-28T15:11:13.9626551Z d615a7b521d6441d12e412c2214dca7713ba2ac8
+2026-09-28T15:11:14.0183338Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+2026-09-28T15:11:14.0183812Z with:
+2026-09-28T15:11:14.0184006Z   python-version: 3.12
+2026-09-28T15:11:14.0184234Z   activate-environment: false
+2026-09-28T15:11:14.0184464Z   no-project: false
+2026-09-28T15:11:14.0184700Z   working-directory: D:\a\Harnessix\Harnessix
+2026-09-28T15:11:14.0187324Z   github-token: ***
+2026-09-28T15:11:14.0187532Z   enable-cache: auto
+2026-09-28T15:11:14.0188105Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+**/*.py.lock
+
+2026-09-28T15:11:14.0188728Z   restore-cache: true
+2026-09-28T15:11:14.0188974Z   save-cache: true
+2026-09-28T15:11:14.0189166Z   prune-cache: false
+2026-09-28T15:11:14.0189361Z   cache-python: false
+2026-09-28T15:11:14.0189569Z   ignore-nothing-to-cache: false
+2026-09-28T15:11:14.0189814Z   ignore-empty-workdir: false
+2026-09-28T15:11:14.0190102Z   download-from-astral-mirror: true
+2026-09-28T15:11:14.0190356Z   add-problem-matchers: true
+2026-09-28T15:11:14.0190565Z   quiet: false
+2026-09-28T15:11:14.0190753Z   resolution-strategy: highest
+2026-09-28T15:11:14.0190979Z ##[endgroup]
+2026-09-28T15:11:14.2216391Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\uv.toml
+2026-09-28T15:11:14.2217262Z Could not find file: D:\a\Harnessix\Harnessix\uv.toml
+2026-09-28T15:11:14.2217951Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\pyproject.toml
+2026-09-28T15:11:14.2228190Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+2026-09-28T15:11:14.2235336Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+2026-09-28T15:11:14.2896191Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-pc-windows-msvc.zip" ...
+2026-09-28T15:11:14.9883527Z [command]C:\Windows\system32\tar.exe x -C D:\a\_temp\d9ede916-91dc-4c8c-b096-1df1cb36d58b -f D:\a\_temp\0a983f05-329c-4551-ba67-89242900dae6
+2026-09-28T15:11:15.1635283Z Set UV_TOOL_BIN_DIR to D:\a\_temp\uv-tool-bin-dir
+2026-09-28T15:11:15.1638851Z Added D:\a\_temp\uv-tool-bin-dir to the path
+2026-09-28T15:11:15.1648084Z Added C:\hostedtoolcache\windows\uv\0.12.19\x86_64 to the path
+2026-09-28T15:11:15.1650854Z Set UV_TOOL_DIR to D:\a\_temp\uv-tool-dir
+2026-09-28T15:11:15.1653786Z Set UV_PYTHON_INSTALL_DIR to D:\a\_temp\uv-python-dir
+2026-09-28T15:11:15.1657129Z Added D:\a\_temp\uv-python-dir to the path
+2026-09-28T15:11:15.1660493Z Set UV_PYTHON to 3.12
+2026-09-28T15:11:15.1688425Z Set UV_CACHE_DIR to D:\a\_temp\setup-uv-cache
+2026-09-28T15:11:15.1688983Z Successfully installed uv version 0.12.19
+2026-09-28T15:11:15.1691344Z Searching files using cache dependency glob: D:\a\Harnessix\Harnessix\**\*requirements*.txt,D:\a\Harnessix\Harnessix\**\*requirements*.in,D:\a\Harnessix\Harnessix\**\*constraints*.txt,D:\a\Harnessix\Harnessix\**\*constraints*.in,D:\a\Harnessix\Harnessix\**\pyproject.toml,D:\a\Harnessix\Harnessix\**\uv.lock,D:\a\Harnessix\Harnessix\**\*.py.lock
+2026-09-28T15:11:15.8348182Z D:\a\Harnessix\Harnessix\pyproject.toml
+2026-09-28T15:11:16.1046522Z D:\a\Harnessix\Harnessix\uv.lock
+2026-09-28T15:11:16.1067036Z Found 2 files to hash.
+2026-09-28T15:11:16.1081846Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T15:11:16.3892808Z Cache hit for: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T15:11:16.7408579Z Received 39670141 of 39670141 (100.0%), 119.0 MBs/sec
+2026-09-28T15:11:16.7410408Z Cache Size: ~38 MB (39670141 B)
+2026-09-28T15:11:16.7438898Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/7a02fd97-e8ed-4f76-893b-2b0cf086b1df/cache.tzst -P -C D:/a/Harnessix/Harnessix --force-local --use-compress-program "zstd -d"
+2026-09-28T15:11:20.0419106Z Cache restored successfully
+2026-09-28T15:11:20.0451534Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T15:11:20.1819576Z ##[group]Run uv sync --locked --all-extras --dev
+2026-09-28T15:11:20.1820055Z [36;1muv sync --locked --all-extras --dev[0m
+2026-09-28T15:11:20.2208414Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T15:11:20.2208928Z env:
+2026-09-28T15:11:20.2209223Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T15:11:20.2210115Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T15:11:20.2210524Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T15:11:20.2210889Z   UV_PYTHON: 3.12
+2026-09-28T15:11:20.2211149Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T15:11:20.2211491Z ##[endgroup]
+2026-09-28T15:11:20.6935208Z Using CPython 3.12.10 interpreter at: C:\hostedtoolcache\windows\Python\3.12.10\x64\python3.exe
+2026-09-28T15:11:20.6936634Z Creating virtual environment at: .venv
+2026-09-28T15:11:20.7484132Z Resolved 74 packages in 2ms
+2026-09-28T15:11:20.7598167Z    Building harnessix @ file:///D:/a/Harnessix/Harnessix
+2026-09-28T15:11:23.0416251Z       Built harnessix @ file:///D:/a/Harnessix/Harnessix
+2026-09-28T15:11:23.0460486Z Prepared 1 package in 2.28s
+2026-09-28T15:11:23.6780733Z Installed 73 packages in 631ms
+2026-09-28T15:11:23.6783364Z  + aiosqlite==0.22.1
+2026-09-28T15:11:23.6784492Z  + annotated-types==0.8.0
+2026-09-28T15:11:23.6786221Z  + anthropic==1.3.0
+2026-09-28T15:11:23.6787520Z  + anyio==4.14.2
+2026-09-28T15:11:23.6789097Z  + attrs==26.1.0
+2026-09-28T15:11:23.6790957Z  + certifi==2026.7.22
+2026-09-28T15:11:23.6791669Z  + cffi==2.1.1
+2026-09-28T15:11:23.6794031Z  + charset-normalizer==3.5.1
+2026-09-28T15:11:23.6795243Z  + click==8.5.0
+2026-09-28T15:11:23.6797149Z  + colorama==0.4.6
+2026-09-28T15:11:23.6798467Z  + cryptography==50.0.1
+2026-09-28T15:11:23.6800355Z  + distro==1.9.0
+2026-09-28T15:11:23.6802072Z  + docstring-parser==0.18.0
+2026-09-28T15:11:23.6802772Z  + googleapis-common-protos==1.75.2
+2026-09-28T15:11:23.6804369Z  + h11==0.16.0
+2026-09-28T15:11:23.6809176Z  + harnessix==0.1.0 (from file:///D:/a/Harnessix/Harnessix)
+2026-09-28T15:11:23.6810708Z  + httpcore==1.0.9
+2026-09-28T15:11:23.6811884Z  + httpcore2==2.12.0
+2026-09-28T15:11:23.6813149Z  + httpx==0.28.1
+2026-09-28T15:11:23.6814286Z  + httpx2==2.12.0
+2026-09-28T15:11:23.6814888Z  + idna==3.19
+2026-09-28T15:11:23.6816745Z  + iniconfig==2.3.0
+2026-09-28T15:11:23.6818226Z  + jiter==0.16.0
+2026-09-28T15:11:23.6818866Z  + jsonschema==4.26.0
+2026-09-28T15:11:23.6821795Z  + jsonschema-specifications==2025.9.1
+2026-09-28T15:11:23.6822342Z  + librt==0.15.0
+2026-09-28T15:11:23.6824752Z  + linkify-it-py==2.2.0
+2026-09-28T15:11:23.6826285Z  + markdown-it-py==4.2.0
+2026-09-28T15:11:23.6826935Z  + mcp==2.2.0
+2026-09-28T15:11:23.6828749Z  + mcp-types==2.2.0
+2026-09-28T15:11:23.6830321Z  + mdit-py-plugins==0.6.1
+2026-09-28T15:11:23.6831125Z  + mdurl==0.1.2
+2026-09-28T15:11:23.6832935Z  + mypy==1.20.2
+2026-09-28T15:11:23.6834489Z  + mypy-extensions==1.1.0
+2026-09-28T15:11:23.6835299Z  + openai==2.54.0
+2026-09-28T15:11:23.6836977Z  + opentelemetry-api==1.44.0
+2026-09-28T15:11:23.6838272Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+2026-09-28T15:11:23.6839810Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+2026-09-28T15:11:23.6840659Z  + opentelemetry-proto==1.44.0
+2026-09-28T15:11:23.6842293Z  + opentelemetry-sdk==1.44.0
+2026-09-28T15:11:23.6843185Z  + opentelemetry-semantic-conventions==0.65b0
+2026-09-28T15:11:23.6844663Z  + packaging==26.3
+2026-09-28T15:11:23.6845826Z  + pathspec==1.1.1
+2026-09-28T15:11:23.6847407Z  + platformdirs==4.11.8
+2026-09-28T15:11:23.6848645Z  + pluggy==1.6.0
+2026-09-28T15:11:23.6850283Z  + protobuf==7.36.1
+2026-09-28T15:11:23.6850876Z  + pycparser==3.0
+2026-09-28T15:11:23.6852629Z  + pydantic==2.13.5
+2026-09-28T15:11:23.6853908Z  + pydantic-core==2.46.5
+2026-09-28T15:11:23.6855315Z  + pygments==2.21.0
+2026-09-28T15:11:23.6856504Z  + pyjwt==2.13.0
+2026-09-28T15:11:23.6857590Z  + pytest==8.4.2
+2026-09-28T15:11:23.6859042Z  + pytest-asyncio==1.4.0
+2026-09-28T15:11:23.6863350Z  + python-multipart==0.0.32
+2026-09-28T15:11:23.6863887Z  + pywin32==312
+2026-09-28T15:11:23.6864224Z  + pyyaml==6.0.3
+2026-09-28T15:11:23.6864974Z  + referencing==0.37.0
+2026-09-28T15:11:23.6866376Z  + requests==2.34.2
+2026-09-28T15:11:23.6867056Z  + rich==15.0.0
+2026-09-28T15:11:23.6868567Z  + rpds-py==2026.6.3
+2026-09-28T15:11:23.6869448Z  + ruff==0.16.5
+2026-09-28T15:11:23.6870623Z  + sniffio==1.3.1
+2026-09-28T15:11:23.6871378Z  + sse-starlette==3.4.11
+2026-09-28T15:11:23.6873191Z  + starlette==1.6.0
+2026-09-28T15:11:23.6873924Z  + textual==8.2.8
+2026-09-28T15:11:23.6875395Z  + tqdm==4.70.0
+2026-09-28T15:11:23.6876053Z  + truststore==0.10.4
+2026-09-28T15:11:23.6877788Z  + types-jsonschema==4.26.0.20260518
+2026-09-28T15:11:23.6878648Z  + types-pyyaml==6.0.12.20260906
+2026-09-28T15:11:23.6880062Z  + typing-extensions==4.16.0
+2026-09-28T15:11:23.6880787Z  + typing-inspection==0.4.4
+2026-09-28T15:11:23.6882084Z  + urllib3==2.7.0
+2026-09-28T15:11:23.6883304Z  + uvicorn==0.52.4
+2026-09-28T15:11:23.8768112Z ##[group]Run uv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
+2026-09-28T15:11:23.8770105Z [36;1muv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch[0m
+2026-09-28T15:11:23.8847478Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T15:11:23.8847836Z env:
+2026-09-28T15:11:23.8848046Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T15:11:23.8848342Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T15:11:23.8848627Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T15:11:23.8848899Z   UV_PYTHON: 3.12
+2026-09-28T15:11:23.8849163Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T15:11:23.8849416Z ##[endgroup]
+2026-09-28T15:11:50.6230686Z ...........................................................              [100%]
+2026-09-28T15:11:50.6231439Z 59 passed in 23.38s
+2026-09-28T15:11:50.8635974Z ##[group]Run uv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/processes/test_windows_owner_lifecycle.py tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_product_backup_files_windows.py tests/product_config/test_session_key_windows.py tests/workspace/test_windows_private_security_contracts.py tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -vv -o faulthandler_timeout=60
+2026-09-28T15:11:50.8640820Z [36;1muv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/processes/test_windows_owner_lifecycle.py tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_product_backup_files_windows.py tests/product_config/test_session_key_windows.py tests/workspace/test_windows_private_security_contracts.py tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -vv -o faulthandler_timeout=60[0m
+2026-09-28T15:11:50.8715677Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T15:11:50.8716032Z env:
+2026-09-28T15:11:50.8716236Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T15:11:50.8716516Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T15:11:50.8716807Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T15:11:50.8717090Z   UV_PYTHON: 3.12
+2026-09-28T15:11:50.8717291Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T15:11:50.8717543Z ##[endgroup]
+2026-09-28T15:11:52.1544615Z ============================= test session starts =============================
+2026-09-28T15:11:52.1545760Z platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- D:\a\Harnessix\Harnessix\.venv\Scripts\python.exe
+2026-09-28T15:11:52.1546707Z cachedir: .pytest_cache
+2026-09-28T15:11:52.1547105Z rootdir: D:\a\Harnessix\Harnessix
+2026-09-28T15:11:52.1547918Z configfile: pyproject.toml
+2026-09-28T15:11:52.1548350Z plugins: anyio-4.14.2, asyncio-1.4.0
+2026-09-28T15:11:52.1549357Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+2026-09-28T15:11:52.6426400Z collecting ... collected 95 items
+2026-09-28T15:11:52.6426753Z 
+2026-09-28T15:11:58.3373686Z tests/tools/test_windows_git.py::test_windows_git_unicode_status_staged_diff_and_persistent_receipts PASSED [  1%]
+2026-09-28T15:12:00.0141789Z tests/tools/test_windows_git.py::test_windows_git_rejects_parent_repository_and_preserves_nonrepo_failure PASSED [  2%]
+2026-09-28T15:12:01.5671559Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[filter.fixture.clean] PASSED [  3%]
+2026-09-28T15:12:03.0268923Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[filter.fixture.process] PASSED [  4%]
+2026-09-28T15:12:04.5098720Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[include.path] PASSED [  5%]
+2026-09-28T15:12:04.5262062Z tests/tools/test_windows_git.py::test_windows_git_requires_external_state_and_rejects_relative_or_script_binding PASSED [  6%]
+2026-09-28T15:12:06.4912847Z tests/tools/test_windows_git.py::test_windows_git_diff_prefix_keeps_complete_observation PASSED [  7%]
+2026-09-28T15:12:07.6378152Z tests/tools/test_windows_git.py::test_windows_git_recovery_reconciles_original_receipt_without_relaunch PASSED [  8%]
+2026-09-28T15:12:09.9222419Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout] PASSED [  9%]
+2026-09-28T15:12:10.6411921Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token] PASSED [ 10%]
+2026-09-28T15:12:11.3011804Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task] PASSED [ 11%]
+2026-09-28T15:12:12.2500713Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch] PASSED [ 12%]
+2026-09-28T15:12:12.3268512Z tests/tools/test_git_platform_contracts.py::test_windows_read_plan_contract_with_simulated_snapshot PASSED [ 13%]
+2026-09-28T15:12:12.5016444Z tests/tools/test_git_platform_contracts.py::test_unknown_git_read_remains_rejected_on_repeated_startup PASSED [ 14%]
+2026-09-28T15:12:12.9072507Z tests/tools/test_git_platform_contracts.py::test_git_recovery_limit_rejects_before_observing_any_receipt PASSED [ 15%]
+2026-09-28T15:12:12.9174036Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n-c:\\work\\\u5de5\u7a0b-True-True] PASSED [ 16%]
+2026-09-28T15:12:12.9176866Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\r\n-c:\\work\\\u5de5\u7a0b-True-True] PASSED [ 17%]
+2026-09-28T15:12:12.9179307Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n\r\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 18%]
+2026-09-28T15:12:12.9181734Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 20%]
+2026-09-28T15:12:12.9183060Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\x00\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 21%]
+2026-09-28T15:12:12.9184408Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 22%]
+2026-09-28T15:12:12.9191737Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:work/\u5de5\u7a0b\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 23%]
+2026-09-28T15:12:12.9205304Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/Root\n-/work/root-False-False] PASSED [ 24%]
+2026-09-28T15:12:12.9219334Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/root\n-/work/root-False-True] PASSED [ 25%]
+2026-09-28T15:12:12.9232847Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/root\r\n-/work/root-False-False] PASSED [ 26%]
+2026-09-28T15:12:12.9245280Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_replacement_after_catalog_binding SKIPPED [ 27%]
+2026-09-28T15:12:12.9256550Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[clean] SKIPPED [ 28%]
+2026-09-28T15:12:12.9267096Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[process] SKIPPED [ 29%]
+2026-09-28T15:12:12.9280226Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[include] SKIPPED [ 30%]
+2026-09-28T15:12:12.9292099Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[includeif] SKIPPED [ 31%]
+2026-09-28T15:12:12.9377870Z tests/processes/test_windows_owner_lifecycle.py::test_control_descriptor_close_has_exactly_one_owner[False] PASSED [ 32%]
+2026-09-28T15:12:12.9417185Z tests/processes/test_windows_owner_lifecycle.py::test_control_descriptor_close_has_exactly_one_owner[True] PASSED [ 33%]
+2026-09-28T15:12:12.9454609Z tests/processes/test_windows_owner_lifecycle.py::test_failed_control_thread_start_keeps_descriptor_with_owner PASSED [ 34%]
+2026-09-28T15:12:12.9472828Z tests/processes/test_windows_owner_lifecycle.py::test_job_membership_is_verified_on_original_handle_before_resume[True] PASSED [ 35%]
+2026-09-28T15:12:12.9489607Z tests/processes/test_windows_owner_lifecycle.py::test_job_membership_is_verified_on_original_handle_before_resume[False] PASSED [ 36%]
+2026-09-28T15:12:14.6813771Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[0] FAILED [ 37%]
+2026-09-28T15:12:16.2941409Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[17] PASSED [ 38%]
+2026-09-28T15:12:17.8923834Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[128] PASSED [ 40%]
+2026-09-28T15:12:17.9261210Z tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state PASSED [ 41%]
+2026-09-28T15:12:17.9714406Z tests/product_config/test_product_backup_files_windows.py::test_running_state_directory_and_sqlite_children_have_private_inheritance PASSED [ 42%]
+2026-09-28T15:12:17.9892013Z tests/product_config/test_product_backup_files_windows.py::test_private_listing_observes_metadata_without_reopening_exclusive_lock_data PASSED [ 43%]
+2026-09-28T15:12:18.0163870Z tests/product_config/test_product_backup_files_windows.py::test_ordinary_mkdir_acl_is_rejected_without_repair PASSED [ 44%]
+2026-09-28T15:12:18.0492743Z tests/product_config/test_product_backup_files_windows.py::test_public_acl_is_rejected_without_repairing_existing_state[root] PASSED [ 45%]
+2026-09-28T15:12:18.0875635Z tests/product_config/test_product_backup_files_windows.py::test_public_acl_is_rejected_without_repairing_existing_state[file] PASSED [ 46%]
+2026-09-28T15:12:18.1183074Z tests/product_config/test_product_backup_files_windows.py::test_key_subtree_never_accepts_ordinary_state_acl[session-auth] PASSED [ 47%]
+2026-09-28T15:12:18.1274273Z tests/product_config/test_product_backup_files_windows.py::test_key_subtree_never_accepts_ordinary_state_acl[SESSION-AUTH] PASSED [ 48%]
+2026-09-28T15:12:18.1789580Z tests/product_config/test_product_backup_files_windows.py::test_private_large_file_uses_native_handle_not_key_size_limit PASSED [ 49%]
+2026-09-28T15:12:18.1992770Z tests/product_config/test_product_backup_files_windows.py::test_directory_publication_never_replaces_existing_target PASSED [ 50%]
+2026-09-28T15:12:18.2221133Z tests/product_config/test_product_backup_files_windows.py::test_private_reader_rejects_hardlink PASSED [ 51%]
+2026-09-28T15:12:18.2376821Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[none] PASSED [ 52%]
+2026-09-28T15:12:18.2593741Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[body] PASSED [ 53%]
+2026-09-28T15:12:18.2756932Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[verification] PASSED [ 54%]
+2026-09-28T15:12:18.3057591Z tests/product_config/test_product_backup_files_windows.py::test_private_reader_rejects_junction_before_reading PASSED [ 55%]
+2026-09-28T15:12:18.3087986Z tests/product_config/test_session_key_windows.py::test_native_user_dpapi_roundtrip_and_corrupt_ciphertext_are_not_plaintext_fallback PASSED [ 56%]
+2026-09-28T15:12:18.3379378Z tests/product_config/test_session_key_windows.py::test_native_key_is_private_ciphertext_and_reopens_with_same_user PASSED [ 57%]
+2026-09-28T15:12:18.3682413Z tests/product_config/test_session_key_windows.py::test_native_world_read_acl_is_rejected_without_silent_repair[key.v1] PASSED [ 58%]
+2026-09-28T15:12:18.4047391Z tests/product_config/test_session_key_windows.py::test_native_world_read_acl_is_rejected_without_silent_repair[.] PASSED [ 60%]
+2026-09-28T15:12:18.4446632Z tests/product_config/test_session_key_windows.py::test_native_hardlinked_key_is_rejected PASSED [ 61%]
+2026-09-28T15:12:18.4607997Z tests/product_config/test_session_key_windows.py::test_native_junction_key_directory_never_enrolls_target PASSED [ 62%]
+2026-09-28T15:12:18.4622583Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-True-0] PASSED [ 63%]
+2026-09-28T15:12:18.4636256Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-True-3] PASSED [ 64%]
+2026-09-28T15:12:18.4652392Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-False-16] PASSED [ 65%]
+2026-09-28T15:12:18.4665674Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-False-19] PASSED [ 66%]
+2026-09-28T15:12:18.4679632Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-True-0] PASSED [ 67%]
+2026-09-28T15:12:18.4693006Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-True-3] PASSED [ 68%]
+2026-09-28T15:12:18.4707775Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-False-16] PASSED [ 69%]
+2026-09-28T15:12:18.4721254Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-False-19] PASSED [ 70%]
+2026-09-28T15:12:18.4734514Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes0] PASSED [ 71%]
+2026-09-28T15:12:18.4747445Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes1] PASSED [ 72%]
+2026-09-28T15:12:18.4759879Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes2] PASSED [ 73%]
+2026-09-28T15:12:18.4773382Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes3] PASSED [ 74%]
+2026-09-28T15:12:18.4786674Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes4] PASSED [ 75%]
+2026-09-28T15:12:18.4799255Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes5] PASSED [ 76%]
+2026-09-28T15:12:18.4812720Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes6] PASSED [ 77%]
+2026-09-28T15:12:18.4825306Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes7] PASSED [ 78%]
+2026-09-28T15:12:18.4837629Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes8] PASSED [ 80%]
+2026-09-28T15:12:18.4850689Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes9] PASSED [ 81%]
+2026-09-28T15:12:18.4863577Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes10] PASSED [ 82%]
+2026-09-28T15:12:18.4876518Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes11] PASSED [ 83%]
+2026-09-28T15:12:18.4890568Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes12] PASSED [ 84%]
+2026-09-28T15:12:18.4903581Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes13] PASSED [ 85%]
+2026-09-28T15:12:18.4917319Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes14] PASSED [ 86%]
+2026-09-28T15:12:18.4930327Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes15] PASSED [ 87%]
+2026-09-28T15:12:18.4942644Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes0] PASSED [ 88%]
+2026-09-28T15:12:18.4955438Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes1] PASSED [ 89%]
+2026-09-28T15:12:18.4968838Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes2] PASSED [ 90%]
+2026-09-28T15:12:18.4980556Z tests/workspace/test_windows_private_security_contracts.py::test_key_original_exact_contract_remains_valid PASSED [ 91%]
+2026-09-28T15:12:18.4994887Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[administrators-True-3] PASSED [ 92%]
+2026-09-28T15:12:18.5008833Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[user-False-19] PASSED [ 93%]
+2026-09-28T15:12:18.5023260Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[user-True-0] PASSED [ 94%]
+2026-09-28T15:12:18.5036118Z tests/workspace/test_windows_private_security_contracts.py::test_explicit_private_running_root_is_valid PASSED [ 95%]
+2026-09-28T15:12:18.5049525Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[session-auth/key.v1] PASSED [ 96%]
+2026-09-28T15:12:18.5061930Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[SESSION-AUTH/key.v1] PASSED [ 97%]
+2026-09-28T15:12:18.5076012Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[Session-Auth/.lock] PASSED [ 98%]
+2026-09-28T15:12:24.2375237Z tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner FAILED [100%]
+2026-09-28T15:12:24.2376238Z 
+2026-09-28T15:12:24.2376504Z ================================== FAILURES ===================================
+2026-09-28T15:12:24.2377314Z ______ test_windows_fast_exit_keeps_verified_job_and_original_status[0] _______
+2026-09-28T15:12:24.2377876Z 
+2026-09-28T15:12:24.2378979Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-1/test_windows_fast_exit_keeps_v0')
+2026-09-28T15:12:24.2380049Z exit_code = 0
+2026-09-28T15:12:24.2380245Z 
+2026-09-28T15:12:24.2380477Z     @pytest.mark.parametrize("exit_code", [0, 17, 128])
+2026-09-28T15:12:24.2381278Z     async def test_windows_fast_exit_keeps_verified_job_and_original_status(
+2026-09-28T15:12:24.2381923Z         tmp_path: Path, exit_code: int
+2026-09-28T15:12:24.2382336Z     ) -> None:
+2026-09-28T15:12:24.2382657Z         workspace = tmp_path / "workspace"
+2026-09-28T15:12:24.2383116Z         workspace.mkdir()
+2026-09-28T15:12:24.2383704Z         async with WindowsProcessSupervisor(tmp_path / "state") as supervisor:
+2026-09-28T15:12:24.2384409Z             for _ in range(4):
+2026-09-28T15:12:24.2384836Z                 spec = build_process_spec(
+2026-09-28T15:12:24.2385496Z                     invocation="cmd", shell_source=f"exit /b {exit_code}", timeout_seconds=5
+2026-09-28T15:12:24.2386073Z                 )
+2026-09-28T15:12:24.2386447Z                 handle = await supervisor.start(
+2026-09-28T15:12:24.2386941Z                     _plan(workspace, spec, supervisor),
+2026-09-28T15:12:24.2387384Z                     spec,
+2026-09-28T15:12:24.2387739Z                     supervisor.capability,
+2026-09-28T15:12:24.2389158Z                     workspace=workspace,
+2026-09-28T15:12:24.2389460Z                     environment={},
+2026-09-28T15:12:24.2389700Z                 )
+2026-09-28T15:12:24.2389965Z                 lease = await asyncio.wait_for(handle.wait(), timeout=8)
+2026-09-28T15:12:24.2390403Z >               assert lease.state == "exited" and lease.stop_reason == "exited"
+2026-09-28T15:12:24.2390817Z E               AssertionError: assert ('unknown' == 'exited'
+2026-09-28T15:12:24.2391121Z E                 
+2026-09-28T15:12:24.2391312Z E                 - exited
+2026-09-28T15:12:24.2391520Z E                 + unknown)
+2026-09-28T15:12:24.2391665Z 
+2026-09-28T15:12:24.2391828Z tests\processes\test_windows_supervisor.py:217: AssertionError
+2026-09-28T15:12:24.2392291Z ________ test_windows_product_sdk_git_diff_uses_private_redacted_owner ________
+2026-09-28T15:12:24.2392589Z 
+2026-09-28T15:12:24.2392994Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-1/test_windows_product_sdk_git_d0')
+2026-09-28T15:12:24.2394270Z config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+2026-09-28T15:12:24.2395630Z monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216AD5128A0>
+2026-09-28T15:12:24.2395936Z 
+2026-09-28T15:12:24.2396236Z     @pytest.mark.skipif(os.name != "nt", reason="\u539f\u751fWindows\u9ed8\u8ba4\u4ea7\u54c1Git/SDK\u88c5\u914d")
+2026-09-28T15:12:24.2396816Z     async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
+2026-09-28T15:12:24.2397192Z         tmp_path: Path,
+2026-09-28T15:12:24.2397413Z         config: ProductConfigV2,
+2026-09-28T15:12:24.2397665Z         monkeypatch: pytest.MonkeyPatch,
+2026-09-28T15:12:24.2397911Z     ) -> None:
+2026-09-28T15:12:24.2398230Z         from harnessix.processes.git_read_windows import WindowsGitReadProcess
+2026-09-28T15:12:24.2399117Z         from tests.tools.test_windows_git import _git, _repository
+2026-09-28T15:12:24.2399441Z     
+2026-09-28T15:12:24.2399619Z         _credentials(monkeypatch)
+2026-09-28T15:12:24.2399918Z         original_git_run = WindowsGitReadProcess.run
+2026-09-28T15:12:24.2400189Z     
+2026-09-28T15:12:24.2400407Z         async def observe_git_failure(self, request, cancel):
+2026-09-28T15:12:24.2400705Z             try:
+2026-09-28T15:12:24.2400947Z                 return await original_git_run(self, request, cancel)
+2026-09-28T15:12:24.2401278Z             except KernelError as error:
+2026-09-28T15:12:24.2401569Z                 print("WINDOWS_GIT_FAILURE_CODE=" + error.code)
+2026-09-28T15:12:24.2401859Z                 raise
+2026-09-28T15:12:24.2402033Z     
+2026-09-28T15:12:24.2402323Z         monkeypatch.setattr(WindowsGitReadProcess, "run", observe_git_failure)
+2026-09-28T15:12:24.2402776Z         workspace, state = tmp_path / "workspace", tmp_path / "state"
+2026-09-28T15:12:24.2403105Z         _repository(workspace)
+2026-09-28T15:12:24.2403394Z         (workspace / "main.py").write_bytes((CANARY + "\n").encode())
+2026-09-28T15:12:24.2403770Z         path = write_config(tmp_path / "config.json", config)
+2026-09-28T15:12:24.2404058Z     
+2026-09-28T15:12:24.2404235Z         class GitBundle(ScriptedProvider):
+2026-09-28T15:12:24.2404496Z             async def __aenter__(self):
+2026-09-28T15:12:24.2404741Z                 return self
+2026-09-28T15:12:24.2404936Z     
+2026-09-28T15:12:24.2405142Z             async def __aexit__(self, *_args: object) -> None:
+2026-09-28T15:12:24.2405427Z                 return None
+2026-09-28T15:12:24.2405693Z     
+2026-09-28T15:12:24.2405854Z         bundle = GitBundle(
+2026-09-28T15:12:24.2406046Z             (
+2026-09-28T15:12:24.2406219Z                 (
+2026-09-28T15:12:24.2406455Z                     ResponseStarted(response_id="git-response"),
+2026-09-28T15:12:24.2407053Z                     ToolCallCompleted(call_id="git-call", tool="git_diff", arguments={}),
+2026-09-28T15:12:24.2407500Z                     ResponseCompleted(finish_reason="tool_calls"),
+2026-09-28T15:12:24.2407799Z                 ),
+2026-09-28T15:12:24.2408028Z                 answer("\u5dee\u5f02\u68c0\u67e5\u5b8c\u6210"),
+2026-09-28T15:12:24.2408301Z             )
+2026-09-28T15:12:24.2408463Z         )
+2026-09-28T15:12:24.2408620Z     
+2026-09-28T15:12:24.2408862Z         async def build(*_args: object, **_kwargs: object) -> GitBundle:
+2026-09-28T15:12:24.2409197Z             return bundle
+2026-09-28T15:12:24.2409385Z     
+2026-09-28T15:12:24.2409662Z         async def drive(server: AgentProtocolServer, *_streams: object) -> None:
+2026-09-28T15:12:24.2410115Z             client = AgentClient(InProcessAgentTransport(server))
+2026-09-28T15:12:24.2410441Z             await client.initialize()
+2026-09-28T15:12:24.2410857Z             thread = await client.create_thread(str(workspace), request_id="windows-git-create")
+2026-09-28T15:12:24.2411533Z             await client.start_turn(thread.thread_id, "\u68c0\u67e5\u4ee3\u7801\u5dee\u5f02", request_id="windows-git-start")
+2026-09-28T15:12:24.2412069Z             for _ in range(1500):
+2026-09-28T15:12:24.2412478Z                 current = await client.get_thread(thread.thread_id)
+2026-09-28T15:12:24.2412930Z                 if current.latest_turn is not None and current.latest_turn.status == "completed":
+2026-09-28T15:12:24.2413345Z                     break
+2026-09-28T15:12:24.2413661Z                 if current.latest_turn is not None and current.latest_turn.status in {
+2026-09-28T15:12:24.2414031Z                     "failed",
+2026-09-28T15:12:24.2414254Z                     "interrupted",
+2026-09-28T15:12:24.2414492Z                 }:
+2026-09-28T15:12:24.2414829Z                     code = current.latest_turn.error.code if current.latest_turn.error else "none"
+2026-09-28T15:12:24.2415425Z                     raise AssertionError(f"Windows\u9ed8\u8ba4Git\u7f16\u7801\u94fe\u5931\u8d25\uff1a{code}")
+2026-09-28T15:12:24.2415878Z                 await asyncio.sleep(0.01)
+2026-09-28T15:12:24.2416130Z             else:
+2026-09-28T15:12:24.2416547Z                 raise AssertionError("Windows\u9ed8\u8ba4Git\u7f16\u7801\u94fe\u672a\u5728\u671f\u9650\u5185\u7ed3\u675f")
+2026-09-28T15:12:24.2417132Z             replay = await client.replay_events(thread.thread_id, limit=100)
+2026-09-28T15:12:24.2417522Z             assert CANARY not in replay.model_dump_json()
+2026-09-28T15:12:24.2417840Z             assert len(bundle.requests) == 2
+2026-09-28T15:12:24.2418100Z             result = next(
+2026-09-28T15:12:24.2418312Z                 item.content
+2026-09-28T15:12:24.2418944Z                 for item in reversed(bundle.requests[-1].history)
+2026-09-28T15:12:24.2419330Z                 if isinstance(item.content, ToolResultContent)
+2026-09-28T15:12:24.2419617Z             )
+2026-09-28T15:12:24.2419937Z             assert result.outcome == "succeeded" and isinstance(result.output, dict)
+2026-09-28T15:12:24.2420366Z             assert "[REDACTED]" in result.output["text"]
+2026-09-28T15:12:24.2420659Z             await client.close()
+2026-09-28T15:12:24.2420874Z     
+2026-09-28T15:12:24.2421225Z         monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
+2026-09-28T15:12:24.2421787Z         monkeypatch.setattr("harnessix.product_config.server.run_stdio", drive)
+2026-09-28T15:12:24.2422180Z         await run_product_stdio(
+2026-09-28T15:12:24.2422409Z             config_path=path,
+2026-09-28T15:12:24.2422632Z             profile_id=None,
+2026-09-28T15:12:24.2422853Z             workspace=workspace,
+2026-09-28T15:12:24.2423094Z             state_directory=state,
+2026-09-28T15:12:24.2423327Z             git_executable=_git(),
+2026-09-28T15:12:24.2423566Z             input_stream=io.BytesIO(),
+2026-09-28T15:12:24.2423817Z             output_stream=io.BytesIO(),
+2026-09-28T15:12:24.2424059Z         )
+2026-09-28T15:12:24.2424439Z         assert (state / "process-owner/process-leases.db").is_file()
+2026-09-28T15:12:24.2424875Z         captures = list((state / "process-owner/runs").glob("*/stdout.bin"))
+2026-09-28T15:12:24.2425232Z         assert len(captures) == 3
+2026-09-28T15:12:24.2425615Z         assert all(CANARY.encode() not in capture.read_bytes() for capture in captures)
+2026-09-28T15:12:24.2426200Z         from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+2026-09-28T15:12:24.2426827Z         from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics
+2026-09-28T15:12:24.2427228Z     
+2026-09-28T15:12:24.2427415Z         install_backup_diagnostics(monkeypatch)
+2026-09-28T15:12:24.2427665Z     
+2026-09-28T15:12:24.2427818Z         try:
+2026-09-28T15:12:24.2428084Z >           manifest = await backup_product_state(state, tmp_path / "backup")
+2026-09-28T15:12:24.2428462Z                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2428672Z 
+2026-09-28T15:12:24.2428786Z tests\product_config\test_server_and_cli.py:156: 
+2026-09-28T15:12:24.2429116Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+2026-09-28T15:12:24.2429634Z src\harnessix\product_config\state_backup.py:390: in backup_product_state
+2026-09-28T15:12:24.2430007Z     return await run_maintenance_io(
+2026-09-28T15:12:24.2430328Z src\harnessix\session\maintenance_io.py:51: in run_maintenance_io
+2026-09-28T15:12:24.2430677Z     return await asyncio.shield(task)
+2026-09-28T15:12:24.2430912Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2431282Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\threads.py:25: in to_thread
+2026-09-28T15:12:24.2431723Z     return await loop.run_in_executor(None, func_call)
+2026-09-28T15:12:24.2432021Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2432425Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\concurrent\futures\thread.py:59: in run
+2026-09-28T15:12:24.2432875Z     result = self.fn(*self.args, **self.kwargs)
+2026-09-28T15:12:24.2433142Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2433461Z src\harnessix\product_config\state_backup.py:391: in <lambda>
+2026-09-28T15:12:24.2433788Z     lambda control: _controlled(
+2026-09-28T15:12:24.2434091Z src\harnessix\product_config\state_backup.py:417: in _controlled
+2026-09-28T15:12:24.2434415Z     return operation()
+2026-09-28T15:12:24.2434610Z            ^^^^^^^^^^^
+2026-09-28T15:12:24.2434870Z src\harnessix\product_config\state_backup.py:392: in <lambda>
+2026-09-28T15:12:24.2435310Z     lambda: _backup(owner, destination, control, fault or (lambda _: None)), control
+2026-09-28T15:12:24.2435727Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2436090Z src\harnessix\product_config\state_backup.py:245: in _backup
+2026-09-28T15:12:24.2436471Z     manifest = _manifest(copied, paths, control)
+2026-09-28T15:12:24.2436752Z                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2437077Z src\harnessix\product_config\state_backup.py:179: in _manifest
+2026-09-28T15:12:24.2437477Z     store_id, key_id = validate_product_state(target, paths, control)
+2026-09-28T15:12:24.2437827Z                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-28T15:12:24.2438245Z src\harnessix\product_config\state_backup_validation.py:188: in validate_product_state
+2026-09-28T15:12:24.2439003Z     validate_state_records(tree, threads, paths, control)
+2026-09-28T15:12:24.2439506Z src\harnessix\product_config\state_backup_records.py:270: in validate_state_records
+2026-09-28T15:12:24.2439927Z     _processes(tree, paths, control)
+2026-09-28T15:12:24.2440280Z src\harnessix\product_config\state_backup_records.py:213: in _processes
+2026-09-28T15:12:24.2440667Z     _process_files(tree, paths, leases, control)
+2026-09-28T15:12:24.2441099Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+2026-09-28T15:12:24.2441343Z 
+2026-09-28T15:12:24.2441628Z tree = <harnessix.product_config.state_backup_files.PrivateStateTree object at 0x00000216AD4B4290>
+2026-09-28T15:12:24.2442832Z paths = ('action-audit.db', 'execution-plans.db', 'process-owner/process-leases.db', 'process-owner/runs/7ce5d458-7f94-4b39-9c...458-7f94-4b39-9c2e-3135775d5d8c/stderr.bin', 'process-owner/runs/7ce5d458-7f94-4b39-9c2e-3135775d5d8c/stdout.bin', ...)
+2026-09-28T15:12:24.2444556Z leases = {'7ce5d458-7f94-4b39-9c2e-3135775d5d8c': ProcessLease(spec_version='harnessix.process-lease/v1', process_id=UUID('7ce5...855', persisted_sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', truncated=False, eof=True))}
+2026-09-28T15:12:24.2445727Z control = <harnessix.session.maintenance_io.MaintenanceIOControl object at 0x00000216AD505EE0>
+2026-09-28T15:12:24.2446103Z 
+2026-09-28T15:12:24.2446185Z     def _process_files(
+2026-09-28T15:12:24.2446393Z         tree: PrivateStateTree,
+2026-09-28T15:12:24.2446630Z         paths: tuple[str, ...],
+2026-09-28T15:12:24.2446862Z         leases: dict[str, ProcessLease],
+2026-09-28T15:12:24.2447129Z         control: MaintenanceIOControl,
+2026-09-28T15:12:24.2447362Z     ) -> None:
+2026-09-28T15:12:24.2447969Z         """\u4ec5\u9a8c\u539fReceipt MAC\u548c\u539f\u8f93\u51fa\uff1b\u4e0d\u67e5PID\u3001\u4e0d\u534f\u8c03Owner\u3001\u4e0d\u6740\u8fdb\u7a0b\u3002"""
+2026-09-28T15:12:24.2448552Z         for path in paths:
+2026-09-28T15:12:24.2448809Z             if not path.startswith("process-owner/runs/"):
+2026-09-28T15:12:24.2449093Z                 continue
+2026-09-28T15:12:24.2449305Z             identity = path.split("/")[2]
+2026-09-28T15:12:24.2449573Z             linked_lease = leases.get(identity)
+2026-09-28T15:12:24.2449844Z             if linked_lease is None:
+2026-09-28T15:12:24.2450082Z                 raise _invalid()
+2026-09-28T15:12:24.2450319Z             if path.endswith("receipt.json"):
+2026-09-28T15:12:24.2450647Z                 receipt = ProcessOwnerReceipt.model_validate_json(
+2026-09-28T15:12:24.2451010Z                     read_small(tree, path, MAX_OWNER_RECEIPT_BYTES)
+2026-09-28T15:12:24.2451292Z                 )
+2026-09-28T15:12:24.2451480Z                 verify_owner_receipt(
+2026-09-28T15:12:24.2451717Z                     receipt,
+2026-09-28T15:12:24.2451962Z                     owner_token=linked_lease.owner_token,
+2026-09-28T15:12:24.2452264Z                     process_id=linked_lease.process_id,
+2026-09-28T15:12:24.2452604Z                     owner_identity=linked_lease.owner_identity,
+2026-09-28T15:12:24.2452879Z                 )
+2026-09-28T15:12:24.2453073Z                 if receipt.state == "running":
+2026-09-28T15:12:24.2453560Z                     raise KernelError("product_backup_not_quiet", "Process\u539f\u56de\u6267\u4ecd\u4e3a\u8fd0\u884c\u4e2d")
+2026-09-28T15:12:24.2454035Z             else:
+2026-09-28T15:12:24.2454218Z                 observation = (
+2026-09-28T15:12:24.2454584Z                     linked_lease.stdout if path.endswith("stdout.bin") else linked_lease.stderr
+2026-09-28T15:12:24.2454974Z                 )
+2026-09-28T15:12:24.2455198Z                 if file_digest(tree, path, control) != (
+2026-09-28T15:12:24.2455516Z                     observation.persisted_bytes,
+2026-09-28T15:12:24.2455806Z                     observation.persisted_sha256,
+2026-09-28T15:12:24.2456062Z                 ):
+2026-09-28T15:12:24.2456254Z >                   raise _invalid()
+2026-09-28T15:12:24.2456844Z E                   harnessix.agent.errors.KernelError: \u4ea7\u54c1\u5907\u4efdSchema\u3001\u539f\u6765\u6e90\u6216\u8de8Store\u4e8b\u5b9e\u4e0d\u5b8c\u6574
+2026-09-28T15:12:24.2457389Z 
+2026-09-28T15:12:24.2457566Z src\harnessix\product_config\state_backup_records.py:257: KernelError
+2026-09-28T15:12:24.2458017Z ---------------------------- Captured stdout call -----------------------------
+2026-09-28T15:12:24.2460276Z WINDOWS_BACKUP_FAILURE_FACTS={"spec_version": "harnessix.windows-backup-diagnostic/v1", "location": "complete-backup", "exception_type": "KernelError", "operations": ["_backup", "_manifest", "validate_product_state"]}
+2026-09-28T15:12:24.2473640Z WINDOWS_STATE_PERMISSION_FACTS={"spec_version": "harnessix.windows-state-permission-diagnostic/v1", "token_default_owner_role": "administrators", "objects": {"root": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "system"}]}, "action-audit.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "execution-plans.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "product-config.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "sessions.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "workspace-leases.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "workspace-transactions/transactions.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "process-owner/process-leases.db": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "session-auth": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 0, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 0, "mask": 2032127, "principal_role": "system"}]}, "session-auth/key.v1": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 0, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 0, "mask": 2032127, "principal_role": "system"}]}, "process-owner": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "system"}]}, "process-runs": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "system"}]}, "process-run": {"owner_role": "current_user", "dacl_present": true, "dacl_protected": true, "aces": [{"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 3, "mask": 2032127, "principal_role": "system"}]}, "receipt.json": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "stdout.bin": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}, "stderr.bin": {"owner_role": "administrators", "dacl_present": true, "dacl_protected": false, "aces": [{"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "current_user"}, {"kind": 0, "flags": 16, "mask": 2032127, "principal_role": "system"}]}}}
+2026-09-28T15:12:24.2486847Z =========================== short test summary info ===========================
+2026-09-28T15:12:24.2487643Z FAILED tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[0] - AssertionError: assert ('unknown' == 'exited'
+2026-09-28T15:12:24.2488313Z   
+2026-09-28T15:12:24.2488474Z   - exited
+2026-09-28T15:12:24.2488632Z   + unknown)
+2026-09-28T15:12:24.3901487Z FAILED tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner - harnessix.agent.errors.KernelError: \u4ea7\u54c1\u5907\u4efdSchema\u3001\u539f\u6765\u6e90\u6216\u8de8Store\u4e8b\u5b9e\u4e0d\u5b8c\u6574
+2026-09-28T15:12:24.3903034Z ================== 2 failed, 88 passed, 5 skipped in 32.09s ===================
+2026-09-28T15:12:24.6248563Z ##[error]Process completed with exit code 1.
+2026-09-28T15:12:24.6557618Z Post job cleanup.
+2026-09-28T15:12:24.8627538Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-09-28T15:12:24.8908359Z git version 2.55.0.windows.5
+2026-09-28T15:12:24.8976514Z Temporarily overriding HOME='D:\a\_temp\86f95e78-be17-41a1-9f7f-0257c0c333f8' before making global git config changes
+2026-09-28T15:12:24.8977521Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T15:12:24.8988458Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+2026-09-28T15:12:24.9299065Z Removing SSH command configuration
+2026-09-28T15:12:24.9310458Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T15:12:24.9632213Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-09-28T15:12:25.5883923Z Removing HTTP extra header
+2026-09-28T15:12:25.5894194Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T15:12:25.6219650Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-09-28T15:12:26.1640368Z Removing includeIf entries pointing to credentials config files
+2026-09-28T15:12:26.1652153Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T15:12:26.1945430Z includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+2026-09-28T15:12:26.1946094Z includeif.gitdir:/github/workspace/.git.path
+2026-09-28T15:12:26.1989561Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+2026-09-28T15:12:26.2270470Z D:\a\_temp\git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:12:26.2316992Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:12:26.2627354Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-28T15:12:26.2903162Z /github/runner_temp/git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:12:26.2957363Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config
+2026-09-28T15:12:26.3315514Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-09-28T15:12:26.8994843Z Removing credentials config 'D:\a\_temp\git-credentials-98029d01-2c0e-438f-963b-635abcdeb1ae.config'
+2026-09-28T15:12:26.9222618Z Cleaning up orphan processes

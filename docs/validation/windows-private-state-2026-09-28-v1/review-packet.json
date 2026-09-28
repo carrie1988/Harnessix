@@ -1,0 +1,44 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "9186cb2a6c9135adf44be82759e0be21baada0d6",
+  "overall_decision": "NO_GO_FOR_COMMERCIAL_RELEASE",
+  "slice_decision": "native-binary-receipt-and-default-sdk-backup-restore-passed",
+  "design": "../../changes/m09-r1-windows-private-state.md",
+  "requirements": {
+    "private_permissions": "native-positive-negative-tests-passed",
+    "binary_output": "physical-byte-and-original-lease-hash-passed",
+    "receipt_publication": "cooperative-readers-passed-uncooperative-reader-refused",
+    "default_sdk_backup_restore": "passed",
+    "full_windows_regression": "blocked-by-restart-benchmark-failures",
+    "three_platform_install": "not_completed",
+    "real_coding_quality": "not_completed",
+    "independent_beta": "not_completed",
+    "licenses": "12-archive-gate-remains-open"
+  },
+  "risks": [
+    {
+      "id": "WIN-RESTART",
+      "severity": "release-blocking",
+      "description": "完整产品重启Soak有2个启动阶段失败；需核对Runner预创建Root与正式私有创建合同，尚未完成归因。"
+    },
+    {
+      "id": "R3-QUALITY",
+      "severity": "release-blocking",
+      "description": "真实编码新20 Trial及有限Provider认证尚未完成，历史0/20仍保留。"
+    },
+    {
+      "id": "R4-INSTALL",
+      "severity": "release-blocking",
+      "description": "本记录仅macOS ARM64安装准备；原生Windows/Linux完整安装、升级、恢复和卸载仍须验收。"
+    },
+    {
+      "id": "R2-RIGHTS",
+      "severity": "release-blocking-before-distribution",
+      "description": "12件Archive许可复核低优先并行；不关闭或绕过现有失败。"
+    }
+  ],
+  "preserved_failures": true,
+  "old_frozen_delivery_modified": false,
+  "provider_requests": 0,
+  "real_credentials_included": false
+}

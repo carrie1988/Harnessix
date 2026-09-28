@@ -1,0 +1,26 @@
+.............sss........F.............s.............................     [100%]
+=================================== FAILURES ===================================
+_________ test_process_owner_receipt_retries_windows_crt_access_denied _________
+/Users/zhangjinhui/Downloads/sources/Harnessix/tests/processes/test_supervision_contracts.py:377: in test_process_owner_receipt_retries_windows_crt_access_denied
+    read_owner_receipt(
+/Users/zhangjinhui/Downloads/sources/Harnessix/src/harnessix/processes/owner_receipt.py:202: in read_owner_receipt
+    receipt = _read_owner_receipt_once(path)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/zhangjinhui/Downloads/sources/Harnessix/tests/processes/test_supervision_contracts.py:370: in denied_then_read
+    return read_once(candidate)
+           ^^^^^^^^^^^^^^^^^^^^
+/Users/zhangjinhui/Downloads/sources/Harnessix/src/harnessix/processes/owner_receipt.py:159: in _read_owner_receipt_once
+    descriptor = resources.enter_context(open_owner_receipt(path))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:530: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/Users/zhangjinhui/Downloads/sources/Harnessix/src/harnessix/processes/windows_receipt.py:33: in open_owner_receipt
+    import msvcrt
+E   ModuleNotFoundError: No module named 'msvcrt'
+=========================== short test summary info ============================
+FAILED tests/processes/test_supervision_contracts.py::test_process_owner_receipt_retries_windows_crt_access_denied
+1 failed, 63 passed, 4 skipped in 0.44s

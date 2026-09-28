@@ -1,0 +1,16 @@
+FF........s.                                                             [100%]
+=================================== FAILURES ===================================
+______________ test_output_requests_explicit_binary_mode[capture] ______________
+tests/processes/test_output_binary_contracts.py:47: in test_output_requests_explicit_binary_mode
+    assert len(calls) == 1 and calls[0] & binary_flag
+E   assert (1 == 1 and (2817 & 67108864))
+E    +  where 1 = len([2817])
+_______________ test_output_requests_explicit_binary_mode[read] ________________
+tests/processes/test_output_binary_contracts.py:47: in test_output_requests_explicit_binary_mode
+    assert len(calls) == 1 and calls[0] & binary_flag
+E   assert (1 == 1 and (256 & 67108864))
+E    +  where 1 = len([256])
+=========================== short test summary info ============================
+FAILED tests/processes/test_output_binary_contracts.py::test_output_requests_explicit_binary_mode[capture]
+FAILED tests/processes/test_output_binary_contracts.py::test_output_requests_explicit_binary_mode[read]
+2 failed, 9 passed, 1 skipped in 0.11s

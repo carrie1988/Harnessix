@@ -1,0 +1,153 @@
+FFFFFFFFFFFFFFFFFFFFFFFFF                                                [100%]
+=================================== FAILURES ===================================
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-None] _
+tests/product_config/test_state_windows_file_contracts.py:72: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-volume_serial] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-file_index_high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-file_index_low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-attributes] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-links] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-size_high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-size_low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-write_time.high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-write_time.low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-creation_time.high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-creation_time.low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-None] _
+tests/product_config/test_state_windows_file_contracts.py:72: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-volume_serial] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-file_index_high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-file_index_low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-attributes] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-links] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-size_high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-size_low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-write_time.high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-write_time.low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-creation_time.high] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_ test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-creation_time.low] _
+tests/product_config/test_state_windows_file_contracts.py:70: in test_native_file_revision_binds_path_and_original_handle_and_always_closes
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+_______ test_native_file_permission_failure_still_closes_metadata_handle _______
+tests/product_config/test_state_windows_file_contracts.py:97: in test_native_file_permission_failure_still_closes_metadata_handle
+    backup._verify_windows_file(tree, "session-auth/key.v1", 11)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'harnessix.product_config.state_backup_files' has no attribute '_verify_windows_file'
+=========================== short test summary info ============================
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-None]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-volume_serial]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-file_index_high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-file_index_low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-attributes]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-links]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-size_high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-size_low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-write_time.high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-write_time.low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-creation_time.high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[path-creation_time.low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-None]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-volume_serial]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-file_index_high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-file_index_low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-attributes]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-links]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-size_high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-size_low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-write_time.high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-write_time.low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-creation_time.high]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_revision_binds_path_and_original_handle_and_always_closes[original-after-creation_time.low]
+FAILED tests/product_config/test_state_windows_file_contracts.py::test_native_file_permission_failure_still_closes_metadata_handle
