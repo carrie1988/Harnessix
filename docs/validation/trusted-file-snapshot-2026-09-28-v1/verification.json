@@ -1,0 +1,176 @@
+{
+  "spec_version": "harnessix.trusted-file-snapshot-verification/v1",
+  "final_source_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+  "snapshot_code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+  "observed_at_utc": "2026-09-28T03:38:54.943094+00:00",
+  "host_platform": "Darwin",
+  "architecture": "arm64",
+  "primary_python": "3.13.8",
+  "runs": [
+    {
+      "name": "snapshot-red",
+      "code_revision": "dad92183605740933c47e958a484c074ecf47cf4",
+      "status": "red",
+      "original_log_bytes": 6304,
+      "original_log_sha256": "112f202080626e1e99c17f450576736570c50a5492e688f3930d4db960521268",
+      "retained_artifact": "artifacts/snapshot-red-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "6 failed, 1 passed in 0.22s"
+    },
+    {
+      "name": "snapshot-final-focus",
+      "code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+      "status": "pass",
+      "original_log_bytes": 99,
+      "original_log_sha256": "fe1ca92b733fe22215e63ea2cdf070a3efb89a1a05dfb4594f718e020baf8ba0",
+      "retained_artifact": "artifacts/snapshot-final-focus-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "32 passed in 2.11s"
+    },
+    {
+      "name": "snapshot-primary-affected",
+      "code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+      "status": "pass",
+      "original_log_bytes": 1164,
+      "original_log_sha256": "7449c3b604a853427b923d3067fe985bc47c24c112d3b11bdb3e68ccdd6a9406",
+      "retained_artifact": "artifacts/snapshot-primary-affected-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "974 passed, 13 skipped in 141.72s (0:02:21)"
+    },
+    {
+      "name": "snapshot-protocol-regression",
+      "code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+      "status": "pass",
+      "original_log_bytes": 2112,
+      "original_log_sha256": "2420d890dfa2a3b17c3d13892caf2d24d256faef183ccce67b29a5cd1d311273",
+      "retained_artifact": "artifacts/snapshot-protocol-regression-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "1861 passed in 65.20s (0:01:05)"
+    },
+    {
+      "name": "independent-py312-original",
+      "code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+      "status": "fail",
+      "original_log_bytes": 3533,
+      "original_log_sha256": "8ba875861e3125c26c4b993df69bde26971991ce7595ed46d93ed7f2ce6219fd",
+      "retained_artifact": "artifacts/independent-py312-original-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "1 failed, 974 passed, 13 skipped in 158.82s (0:02:38)"
+    },
+    {
+      "name": "key-directory-red",
+      "code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+      "status": "red",
+      "original_log_bytes": 11670,
+      "original_log_sha256": "90f342e94cd83184fc67daecfb3b67376817d784c1a3030d5d435ce5d6cea362",
+      "retained_artifact": "artifacts/key-directory-red-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "5 failed, 29 deselected in 0.08s"
+    },
+    {
+      "name": "key-directory-final-focus",
+      "code_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+      "status": "pass",
+      "original_log_bytes": 99,
+      "original_log_sha256": "6d0ce68969742f3c208371d800cc84636ea62cff95a9a15938ba33641cfe432d",
+      "retained_artifact": "artifacts/key-directory-final-focus-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "46 passed in 1.55s"
+    },
+    {
+      "name": "independent-py312-fixed",
+      "code_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+      "status": "pass",
+      "original_log_bytes": 1164,
+      "original_log_sha256": "372ff5f37b2b4e8b3333804cbbdc4ed1fbc310d23fab547ba8981a07258b7f96",
+      "retained_artifact": "artifacts/independent-py312-fixed-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "984 passed, 13 skipped in 153.67s (0:02:33)"
+    },
+    {
+      "name": "source-types",
+      "code_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+      "status": "pass",
+      "original_log_bytes": 45,
+      "original_log_sha256": "1695340b816f28980deafb8d151dfd5cab89cbc29c5a3ccb925a4a814dcc5a75",
+      "retained_artifact": "artifacts/source-types-summary.txt",
+      "retained_filter": "pytest_failure_ids_and_result_summary_or_mypy_result",
+      "summary": "Success: no issues found in 364 source files"
+    }
+  ],
+  "independent_python": "3.12.7",
+  "affected_directories": [
+    "tests/tools",
+    "tests/context",
+    "tests/product_config",
+    "tests/delivery",
+    "tests/evals"
+  ],
+  "primary_affected_collection_before_final_bom_test": true,
+  "final_bom_test_verified_by_final_focus_and_independent_fixed_run": true,
+  "independent_original_fail_preserved": true,
+  "isolated_original_case_pass_does_not_replace_batch_failure": true,
+  "independent_fixed": {
+    "passed": 984,
+    "failed": 0,
+    "skipped": 13,
+    "duration_seconds": 153.67,
+    "code_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d"
+  },
+  "key_directory_fixed_focus": {
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 1.55,
+    "code_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d"
+  },
+  "mypy": {
+    "passed": true,
+    "source_files": 364
+  },
+  "schema_check": {
+    "passed": true,
+    "all_preexisting_schema_bytes_preserved": true
+  },
+  "mermaid": {
+    "rendered": 4,
+    "visually_checked": 4,
+    "artifact_scope": "3_new_snapshot_diagrams_and_1_modified_key_flow"
+  },
+  "real_engineering_suite": {
+    "status": "not_started",
+    "trials": 0,
+    "api_calls": 0,
+    "frozen_container_image_available": false
+  },
+  "full_repository_regression_executed_for_this_batch": false,
+  "native_windows_verified_for_this_batch": false,
+  "commercial_release_ready": false,
+  "documentation_check": {
+    "changed_path_count": 50,
+    "document_count": 346,
+    "link_count": 8763,
+    "mermaid_count": 794,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26,
+    "passed": true
+  },
+  "documentation_and_readability_governance": {
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 3.37,
+    "test_files": [
+      "tests/governance/test_documentation_policy.py",
+      "tests/governance/test_readability_policy.py"
+    ]
+  },
+  "ruff": {
+    "passed": true,
+    "format_check_passed": true,
+    "scope": "src_and_explicit_affected_tracked_test_directories"
+  },
+  "readability_final_report_check": {
+    "passed": true
+  }
+}

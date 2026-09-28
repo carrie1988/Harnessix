@@ -1,0 +1,7 @@
+FAILED tests/tools/test_file_snapshot.py::test_read_tool_exposes_complete_raw_content_digest[]
+FAILED tests/tools/test_file_snapshot.py::test_read_tool_exposes_complete_raw_content_digest[tail]
+FAILED tests/tools/test_file_snapshot.py::test_read_tool_exposes_complete_raw_content_digest[first\r\nsecond\n]
+FAILED tests/tools/test_file_snapshot.py::test_read_tool_exposes_complete_raw_content_digest[\xe4\xb8\xad\xe6\x96\x87\n\xe5\xb0\xbe\xe8\xa1\x8c]
+FAILED tests/tools/test_file_snapshot.py::test_digest_covers_full_file_even_when_text_is_paginated
+FAILED tests/tools/test_file_snapshot.py::test_large_file_remains_readable_without_fabricated_digest
+6 failed, 1 passed in 0.22s

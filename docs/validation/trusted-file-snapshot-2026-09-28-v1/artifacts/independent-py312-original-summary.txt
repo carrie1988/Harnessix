@@ -1,0 +1,2 @@
+FAILED tests/product_config/test_managed_session_root.py::test_default_root_refuses_original_unproven_history_before_provider_or_protocol[True]
+1 failed, 974 passed, 13 skipped in 158.82s (0:02:38)

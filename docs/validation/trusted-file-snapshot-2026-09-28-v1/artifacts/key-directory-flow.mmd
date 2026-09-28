@@ -1,0 +1,14 @@
+flowchart TD
+  Begin[验证Root与私有目录<br/>原生对象身份] --> Lock[取得独立非阻塞初始化锁]
+  Lock --> Exists{正式Key存在}
+  Exists -->|存在| Verify[只读验证原对象<br/>及闭合Codec]
+  Exists -->|不存在| DB{原DB WAL SHM是否存在}
+  DB -->|存在| Refuse[拒绝生成替代身份 保留原库]
+  DB -->|不存在| Pending{完整原候选是否存在}
+  Pending -->|存在| Recover[验证并复用原候选<br/>不重新随机生成]
+  Pending -->|不存在| Create[独立RNG与身份编码<br/>写候选并同步]
+  Recover --> Publish[不可覆盖发布<br/>同步平台支持的提交]
+  Create --> Publish
+  Publish --> Verify
+  Verify --> Recheck[复核目录安全属性<br/>及原路径身份]
+  Recheck --> Return[返回自有Key材料<br/>释放文件和锁]

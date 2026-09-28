@@ -1,0 +1,11 @@
+flowchart LR
+    Model[模型] --> Kernel[唯一Agent Runtime]
+    Kernel --> Read[read_file Tool 2.contract]
+    Read --> POSIX[POSIX 同一FD 摘要与文本页]
+    Read --> Win[Windows 原生稳定字节观察]
+    POSIX --> Out[ReadFileSnapshotOutput v1]
+    Win --> Out
+    Out --> Model
+    Model --> Patch[受管Patch expected_sha256]
+    Patch --> Approval[既有Review与审批]
+    Approval --> CAS[既有写前内容复核<br/>及持久事务]

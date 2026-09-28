@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: 812ae7cfa1978acd53a278637b19f936ebac4a14
 owners:
   - core
 modules:
@@ -47,11 +47,12 @@ supersedes: []
 | 模块职责 | 向Agent提供绑定单一Workspace的有界只读文件、搜索、Git和Artifact读取能力 |
 | 核心门面 | `CodingToolRuntime` |
 | 默认工具 | `list_files`、`read_file`、`glob`、`grep` |
+| 文件修改前置数据 | 默认`read_file` 2.x返回独立快照v1；`content_sha256`为完整原始文件摘要，不能用分页`revision`替代 |
 | 显式能力 | 绑定Git可执行文件后增加`git_status`、`git_diff`；绑定Artifact Store后增加归档搜索和`read_artifact`；默认产品现已绑定Artifact Store |
 | 权限来源 | 宿主构造的Workspace能力、版本化`ToolDescriptor`和Kernel注入的`ToolExecutionScope` |
 | 并发模型 | 单Runtime有界并行读取，默认4，合法范围1～16；持久结果仍由Agent按Provider调用顺序提交 |
 | 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle四工具端口；Windows不广告Git |
-| 代码版本 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` |
+| 代码版本 | `812ae7cfa1978acd53a278637b19f936ebac4a14` |
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
 Process、测试执行和事务性交付由各自的可信执行模块负责，不能通过本模块的`READ_ONLY`声明旁路。
@@ -108,8 +109,9 @@ Session事实，也不把未提交结果当作已经发生。
 |---|---|---|
 | Workspace Root | 宿主创建Runtime时选择并严格解析的目录 | 模型可以覆盖的`cwd`参数 |
 | Workspace Scope | 根路径、根设备/inode及拒绝策略等事实的SHA-256 | 密码学授权令牌或OS隔离 |
-| Tool Version | `1.<contract_sha256>`形式的能力合同版本 | 手写语义版本或仅代码版本 |
+| Tool Version | `<major>.<contract_sha256>`形式；默认read_file为2，其余只读目录保持1 | 手写语义版本或仅代码版本 |
 | Revision | 一次文件/目录/Git观察的稳定摘要 | 文件内容哈希或锁定快照 |
+| Content SHA-256 | 新快照中的完整原始文件摘要；仅complete时可用作Patch前置数据 | 分页revision、权限或全文件文本已读证明 |
 | Execution Scope | Kernel构造的Thread/Turn/Call/Workspace归属 | Tool Input或可序列化给模型的权限 |
 | Preview | 受模型结果预算约束的有界搜索结果 | 必然覆盖全部搜索记录 |
 | Search Artifact | 搜索过程中捕获的完整有界JSONL记录流 | 任意文件备份或跨会话共享对象 |
@@ -124,6 +126,7 @@ Session事实，也不把未提交结果当作已经发生。
 | 单次文件返回正文 | 24 KiB | 成功并标记`byte_limit`，至少保留完整行 |
 | 单行读取 | 4 KiB | 文件读取失败；Grep跳过并计数 |
 | 文件扫描 | 2 MiB | `tool_limit_exceeded` |
+| 完整文件摘要 | 额外最多2 MiB；与文本分页共享原5秒Deadline | POSIX大文件摘要省略；Windows保留原快照超限失败 |
 | 目录条目/名称字节 | 10000项/2 MiB | `tool_limit_exceeded` |
 | 单页目录/搜索结果 | 200项 | 截断或按输入`limit/max_results`限制 |
 | 搜索深度 | 32级 | `tool_limit_exceeded` |
@@ -261,6 +264,18 @@ Diff上限。`read_artifact`绑定Workspace Scope、Artifact合同、分页Schem
 | `revision` | 64位hex | Workspace与文件状态 | 搜索命中可直接复用同一算法 |
 | `truncation_reason` | `line_limit/byte_limit/null` | 读取器 | 与`truncated`严格一致 |
 | `next_line` | `int`或`null` | 读取器 | 截断时为`end_line + 1` |
+| `spec_version` | 固定值 | 新快照合同 | 默认模型目录返回`harnessix.read-file-snapshot/v1` |
+| `file_bytes` | 严格非负整数 | 同一文件观察 | 完整原始文件字节数，不是正文页长度 |
+| `content_sha256` | 64位hex或`null` | 完整原始字节 | 只有`digest_status=complete`时可用于Patch的`expected_sha256` |
+| `digest_status` | `complete/omitted_limit` | 摘要读取器 | 与文本`truncated`相互独立；不得对可见片段伪造完整摘要 |
+
+库级`files.read_file`与`WindowsReadRuntime.read_file`继续返回旧`ReadFileOutput`；
+默认Runtime改为调用`read_file_snapshot`并严格验证独立新输出。
+POSIX在同一已拥有FD中先有界摘要、复位偏移、复用旧分页并在返回前验证对象和路径链；
+Windows由一份原生稳定观察字节同时生成分页与SHA，保持原2 MiB快照上限。
+POSIX超2 MiB文件仍可读有界前页，但不提供完整修改摘要；Windows仍固定拒绝超限观察。
+既有输入、输出v1 Schema逐字保持，新增快照Schema；新Tool主版本使旧批准/指纹不能在新目录重用。
+完整架构、流程、字段、竞态、取消及产品读写验证见[R3可信文件快照详设](../changes/m09-r3-trusted-file-snapshot.md)。
 
 ### 8.3 `glob`与`grep`
 

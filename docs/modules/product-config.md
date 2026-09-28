@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 24
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 25
+code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链、Action恢复扫描及启动恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | 已验收基线`e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58`；f2c Eval组合`89485f321b1a0f73a2e552818298c24b30e3cb3e`已由CI 35446341997验收关闭 |
+| 代码版本 | `8340ff1cbc6375ad4064b8be6bd4c7bd708c559d` |
 | 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复已由CI 35691402329六实例验收关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、
@@ -91,6 +91,11 @@ Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
 费用与Secret公开保护沿用已有合同。没有新增配置v3或SQLite迁移，全部公共Schema保持不变。
 完整设计、失败语义和测试见[R3产品Context统一装配](../changes/m09-r3-product-context-composition.md)。
+
+编码指令当前为`harnessix.coding-instructions/v2`：替换/删除前置条件只允许使用默认
+`read_file`在`digest_status=complete`时返回的`content_sha256`；分页revision和可见片段摘要不得替代。
+此规则不授予写权限，审批、事务及写前复核保持原合同；新公开快照合同见
+[可信文件快照及受管修改详设](../changes/m09-r3-trusted-file-snapshot.md)。
 
 ## 2. 需求背景
 
@@ -2040,6 +2045,9 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 [总体与详设](../changes/m09-4a-managed-session-key-and-root.md)定义独立Key与默认Root强制认证、
 闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
 默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
-Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
+Key不入Workspace、DB或公共配置；自有副本退出清零。POSIX目录使用dev/ino/mode/uid安全身份，
+不因合法DB条目或时间变化误拒绝；读取后仍重验Root与私有子目录的owner、700、Darwin ACL及路径身份。
+Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL变化仍拒绝。
 新Artifact正文复用托管Session Key完成跨重启来源认证，见[详设](../changes/m09-4a-authenticated-artifact-body.md)。
-旧无Seal正文、Key保护备份/维护、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+旧无Seal正文不追认；完整产品同机备份、Windows原生验收、物理DB归属与整体发布仍未关闭。
+跨机Key迁移和通用维护CLI按[首发范围](../changes/m09-to-v1-release-scope-convergence.md)延期；危险未装配入口拒绝。

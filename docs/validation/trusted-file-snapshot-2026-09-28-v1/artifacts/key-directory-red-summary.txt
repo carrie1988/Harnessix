@@ -1,0 +1,6 @@
+FAILED tests/product_config/test_session_key.py::test_key_root_allows_ordinary_metadata_change_without_changing_identity[file_entry]
+FAILED tests/product_config/test_session_key.py::test_key_root_allows_ordinary_metadata_change_without_changing_identity[directory_entry]
+FAILED tests/product_config/test_session_key.py::test_key_root_allows_ordinary_metadata_change_without_changing_identity[timestamps]
+FAILED tests/product_config/test_session_key.py::test_key_loading_rechecks_directory_permissions_after_read[root]
+FAILED tests/product_config/test_session_key.py::test_key_loading_rechecks_directory_permissions_after_read[auth]
+5 failed, 29 deselected in 0.08s

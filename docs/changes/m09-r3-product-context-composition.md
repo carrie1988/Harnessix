@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 2
+code_revision: 812ae7cfa1978acd53a278637b19f936ebac4a14
 owners: [core]
 modules: [context, product_config, agent, evals]
 related_adrs:
@@ -35,8 +35,9 @@ system消息，Anthropic Adapter也没有该字段。库中存在完整Context�
 
 另一项已确认的开放缺口：现行[`ReadFileOutput`](../../src/harnessix/tools/contracts.py)的`revision`是
 分页和Workspace观察指纹，不是完整文件内容SHA-256；而[`WorkspacePatchFile.expected_sha256`](../../src/harnessix/delivery/trusted_action_contracts.py)
-要求完整内容摘要。当前默认读目录没有提供该摘要，模型不能凭空计算或用分页revision替代。
-本次先避免指令混淆；可信完整摘要的模型可达读写闭环仍需独立合同与实现，必须在真实编码质量验收前补齐。
+要求完整内容摘要。Context整改的固定版本尚未提供该摘要，模型不能凭空计算或用分页revision替代。
+后续[可信文件快照切片](m09-r3-trusted-file-snapshot.md)增加独立合同及默认读工具装配；
+不能将该读写前置数据补齐解释为真实模型质量已验收。
 
 ### 1.1 源码研究与架构依据
 
@@ -258,7 +259,7 @@ Context不是保密沙箱，Prompt也不是授权体系。读路径、凭据保�
 执行顺序为受影响单测、Context/Product/Eval回归、完整源码类型检查、Schema不变检查、文档/可读性门禁，
 再在干净固定Revision中做Container集成和真实Suite。证据不覆盖未执行环境或真实Beta。
 
-固定源码的受影响回归为666通过、7跳过；另一个干净工作树使用独立Python 3.12.7环境重复同一组回归，
+此前Context整改固定源码`4ec6fff`的受影响回归为666通过、7跳过；另一个干净工作树使用独立Python 3.12.7环境重复同一组回归，
 同样为666通过、7跳过。完整环境、检查范围、费用及未执行项见[低敏验证报告](../validation/product-context-2026-09-28-v1/README.md)。
 
 ## 9. 限制、风险与发布门禁
@@ -267,7 +268,8 @@ Context不是保密沙箱，Prompt也不是授权体系。读路径、凭据保�
 2. 本文不覆盖新的模型计价矩阵；费用按真实Usage和地域价格匹配，未知成本不得写为零。
 3. 根指令自动加载不等于全部子目录规范已自动理解；仍需任务相关源码阅读和受控工具检查。
 4. 认证备份、许可复核、三平台正式安装/核心链及真实Beta仍属于开放工作包；不得据此发布1.0标签。
-5. 完整内容SHA-256的模型可达读取尚待补齐；当前装配不解决替换文件前置指纹来源，不能据此宣称可用编码闭环。
+5. 本文固定Context整改不解决替换文件前置指纹来源；该能力由后续可信文件快照切片提供。
+   新装配和离线Provider结果仍不能替代完整真实工程Suite。
 
 阅读顺序：共享Factory → Source双观察 → 跨平台Reader → Runtime Context提交 → 既有压缩账本 →
 产品/Task Pack装配及测试。完整R1～R6退出条件见[发布范围计划](m09-to-v1-release-scope-convergence.md)。

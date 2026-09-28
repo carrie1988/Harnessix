@@ -1,0 +1,13 @@
+flowchart TD
+    Snapshot[稳定文件快照] --> Page[有界text及分页revision]
+    Snapshot --> Digest[完整原始字节SHA-256<br/>与文件字节数]
+    Page --> Continue[需要时用revision续页]
+    Digest --> Gate{digest_status为complete}
+    Gate -->|否| Block[报告修改前置条件不可用]
+    Gate -->|是| Propose[content_sha256填入expected_sha256]
+    Continue --> Propose
+    Propose --> Review[持久计划 Diff Review与批准]
+    Review --> Recheck[写前重新读取完整前镜像]
+    Recheck --> Match{实际SHA与expected一致}
+    Match -->|否| Refuse[拒绝写入 原文件保留]
+    Match -->|是| Apply[既有事务执行与效果核对]

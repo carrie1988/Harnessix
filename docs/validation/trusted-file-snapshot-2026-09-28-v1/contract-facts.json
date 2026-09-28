@@ -1,0 +1,69 @@
+{
+  "spec_version": "harnessix.trusted-file-snapshot-facts/v1",
+  "snapshot_code_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+  "final_source_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+  "output_spec": "harnessix.read-file-snapshot/v1",
+  "coding_instructions_version": "harnessix.coding-instructions/v2",
+  "read_tool_major": 2,
+  "other_read_tool_major": 1,
+  "raw_complete_content_sha256": true,
+  "legacy_library_contract_preserved": true,
+  "existing_schema_files_verified_byte_identical": 254,
+  "schemas": [
+    {
+      "path": "spec/read-file-input-v1.schema.json",
+      "bytes": 791,
+      "sha256": "02de8c19904dbd60df97f5d0b57828df9d26c90433315cc7bdb179834de1b165"
+    },
+    {
+      "path": "spec/read-file-output-v1.schema.json",
+      "bytes": 1488,
+      "sha256": "00de561ee3c379d76d4feb63d32a3014309bf22d5b3a68998536951c41eca78f"
+    },
+    {
+      "path": "spec/read-file-snapshot-output-v1.schema.json",
+      "bytes": 2561,
+      "sha256": "14f334d90095e324ac19d7c6e6df8bfe47ccfa8524079d2fef4a6d0343c05d83"
+    }
+  ],
+  "limits": {
+    "max_digest_bytes": 2097152,
+    "max_text_bytes": 24576,
+    "max_line_bytes": 4096,
+    "max_result_bytes": 60000,
+    "cooperative_timeout_seconds": 5,
+    "posix_digest_and_page_separate_scan_limits": true
+  },
+  "oversize": {
+    "posix": "omitted_limit_and_null_digest_with_bounded_page",
+    "windows": "tool_limit_exceeded"
+  },
+  "observed_synthetic_snapshot": {
+    "raw_content_hex": "66697273740d0a7365636f6e640a",
+    "output": {
+      "path": "fixture.py",
+      "text": "first\r\n",
+      "start_line": 1,
+      "end_line": 1,
+      "utf8_bytes": 7,
+      "revision": "ba16870f83701efc46f1955516de4c4509dbcc950b11ba89f7fa58ea7260c82c",
+      "truncated": true,
+      "truncation_reason": "line_limit",
+      "next_line": 2,
+      "spec_version": "harnessix.read-file-snapshot/v1",
+      "file_bytes": 14,
+      "content_sha256": "285e4b03332b9f0915c75a094fc20a00ec1c7d2bcdbf3d915031bf698e041d53",
+      "digest_status": "complete"
+    }
+  },
+  "session_migration_added": false,
+  "existing_task_pack_or_grading_changed": false,
+  "posix_key_directory_identity": [
+    "dev",
+    "ino",
+    "mode",
+    "uid"
+  ],
+  "key_file_identity_checks_reduced": false,
+  "root_and_auth_directory_permissions_and_acl_rechecked_after_read": true
+}

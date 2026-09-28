@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 132
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 133
+code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
 owners:
   - core
 modules:
@@ -84,6 +84,11 @@ R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenan
 R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/m09-r3-product-context-composition.md)：
 默认产品与正式Task Pack采用同一Factory，来源读取复用POSIX FD/Windows Handle安全端口。
 离线回归、默认装配或API鉴权不替代完整真实任务质量验收，历史0/20保持原样。
+
+[可信文件快照与受管修改详设](changes/m09-r3-trusted-file-snapshot.md)说明默认read_file 2.x的
+完整原始摘要、分页兼容、POSIX/Windows端口、有界失败及真实产品SDK审批链。
+[统一验证目录](validation/trusted-file-snapshot-2026-09-28-v1/README.md)保留原独立FAIL、目录观察确定性复现、
+后继固定源码984通过/13跳过、结构化资料与实际渲染图；不宣称真实质量或商用发布已通过。
 
 ## 2. 推荐阅读路径
 

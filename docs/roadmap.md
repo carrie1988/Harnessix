@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 109
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 110
+code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
 owners:
   - core
 modules:
@@ -698,6 +698,10 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 公共Schema保留版本/兼容/废弃策略；现有数据库及Artifact变更仍需迁移和失败恢复证据。
 R3已补[产品与评测的共享Context、编码指令及持久压缩装配](changes/m09-r3-product-context-composition.md)。
 该整改保持Task Pack v2及评分合同不变；默认产品接线、离线回归或API鉴权均不能替代完整真实任务质量验收。
+后续[R3可信文件快照](changes/m09-r3-trusted-file-snapshot.md)补齐默认模型读取至受管Patch前置摘要的来源；
+旧分页合同保留，新目录版本化，读取/审批后文件漂移不得覆盖实际内容。该切片不关闭真实质量或Windows写入门禁。
+[独立验证资料](validation/trusted-file-snapshot-2026-09-28-v1/README.md)保留原Python 3.12相关回归FAIL，
+后继源码修复POSIX目录观察后984项通过/13项跳过；同机完整备份恢复及R1整体仍未关闭。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

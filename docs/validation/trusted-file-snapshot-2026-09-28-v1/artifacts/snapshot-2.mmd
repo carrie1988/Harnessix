@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant K as Kernel
+    participant T as CodingToolRuntime
+    participant W as Workspace
+    participant F as 已验证文件FD
+    K->>T: read_file(path, expected_revision)
+    T->>W: no-follow逐段打开普通单链接文件
+    W-->>T: 已拥有FD及初始身份
+    T->>T: 校验分页revision与完整文件大小
+    alt 文件不超过2 MiB
+        T->>F: 有界分块读取原始字节并计算SHA-256
+        T->>F: lseek回到起始位置
+    else 文件超过2 MiB
+        T->>T: digest_status=omitted_limit, content_sha256=null
+    end
+    T->>F: 既有有界文本分页
+    T->>W: 离开观察并复核根、链、身份及状态
+    W-->>T: 稳定或失败
+    T->>T: 严格新输出合同与结果字节校验
+    T-->>K: 成功快照或固定错误

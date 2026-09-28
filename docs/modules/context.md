@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 3
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 4
+code_revision: 812ae7cfa1978acd53a278637b19f936ebac4a14
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ supersedes: []
 |---|---|
 | 当前能力 | 固定与动态Context规划、显式优先级/信任、输入预算、Project/Workspace/Git/Environment Source、Tool Result模型视图、Compaction计划/账本/活动窗口 |
 | 本文状态 | 当前实现；`context`包现行实现的事实源 |
-| 代码版本 | `6c5f310346afa3fa176f51707722467f46811b35` |
+| 代码版本 | `812ae7cfa1978acd53a278637b19f936ebac4a14` |
 | 默认产品装配 | 默认stdio产品及正式Task Pack统一装配中文Coding指令、Project/Workspace/Environment三Source及自动Compaction；Git Source仍由宿主显式接入 |
 | 稳定版本 | Context Inspection v1/v2/v3、Source Snapshot v1、Tool Result Model View v1、Compaction Policy/Plan/Summary/Window/Runtime v1 |
 | 持久事实 | 无动态来源正文的Inspection/Snapshot、模型历史决定、Compaction账本和活动窗口；原始Session历史不被删除 |
@@ -59,6 +59,11 @@ Windows Handle只读后端。POSIX目录revision算法不变；Windows不回退�
 Provider生命周期，仍经过取消、deadline、凭据出站保护及完整尝试用量记账。
 
 完整接口、流程图、时序图、字段、恢复语义和测试追踪见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
+
+当前Coding指令版本为`harnessix.coding-instructions/v2`，明确完整修改摘要只能取自默认
+read_file快照的`content_sha256`，而不是分页revision或可见片段。新快照仅影响模型工具输出；
+Context Source继续使用旧库级read_file分页，保持Source预算及跨平台观察合同。
+相关读写边界见[可信文件快照详设](../changes/m09-r3-trusted-file-snapshot.md)。
 装配完成不代表真实编码质量、全部子目录指令自动加载或Windows原生完整编码流程已验收。
 
 ## 2. 需求背景

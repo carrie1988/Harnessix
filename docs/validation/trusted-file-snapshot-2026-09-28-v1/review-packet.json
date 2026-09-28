@@ -1,0 +1,44 @@
+{
+  "spec_version": "harnessix.trusted-file-snapshot-review/v1",
+  "final_source_revision": "8340ff1cbc6375ad4064b8be6bd4c7bd708c559d",
+  "snapshot_source_revision": "812ae7cfa1978acd53a278637b19f936ebac4a14",
+  "scope": [
+    "model_reachable_complete_file_digest",
+    "versioned_read_snapshot_output",
+    "guarded_patch_precondition",
+    "posix_key_directory_identity_and_post_read_checks"
+  ],
+  "review_findings": [
+    "完整字节摘要与分页revision严格区分",
+    "旧读取库接口及所有既有Schema字节保留",
+    "旧目录版本不能执行新输出",
+    "读取、审批后文件漂移均不可覆盖现存内容",
+    "Key普通文件完整观察未减弱",
+    "Root及私有子目录的权限、ACL与对象替换反例真实执行"
+  ],
+  "failed_evidence_retained": true,
+  "original_independent_failure_exclusive_cause_proven": false,
+  "deterministic_directory_metadata_false_rejection_reproduced": true,
+  "deterministic_post_read_permission_gap_reproduced": true,
+  "open_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "remaining_blockers": [
+    "原冻结Container镜像未就绪",
+    "原3仓10 Case/20 Trial尚无整改后完整真实成绩",
+    "Windows原生写入与三平台安装升级未验收",
+    "完整产品同机同用户备份恢复未完成",
+    "许可复核及实际发行物输入仍开放",
+    "独立开发者Beta未完成"
+  ],
+  "historical_quality_results_overwritten": false,
+  "task_pack_or_threshold_relaxed": false,
+  "model_calls_or_incremental_provider_cost_in_this_batch": 0,
+  "sensitive_payloads_in_bundle": false,
+  "untracked_security_drafts_read_or_executed_or_modified_or_packaged": false
+}
