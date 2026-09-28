@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import subprocess
 import sys
@@ -13,8 +14,10 @@ from harnessix.delivery.filesystem import WorkspaceTransactionRuntime
 from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import workspace_patch_supported
-from harnessix.delivery.windows_io import WindowsFileOperations
+from harnessix.delivery.windows_filesystem import _parent
+from harnessix.delivery.windows_io import WindowsFileOperations, _rename_buffer
 from harnessix.workspace.leases import WorkspaceLeaseStore
+from harnessix.workspace.windows import _last_error
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="原生Windows NTFS句柄写入与故障恢复")
 
@@ -40,6 +43,33 @@ with SQLiteWorkspaceTransactionStore(Path(state) / 'transactions') as store:
             approval_fingerprint=record.plan.fingerprint, lease=lease)
 raise AssertionError('未到达原生硬退出切点')
 """
+
+
+def test_native_rename_api_compatibility_matrix(tmp_path: Path) -> None:
+    results = {}
+    with _parent(tmp_path, "probe.py") as (native, operations, parent, directory, _):
+        for kind in ("relative", "relative-nul", "absolute-nul"):
+            path = directory / f"{kind}.tmp"
+            handle = operations.create_temporary(path)
+            try:
+                operations.write_and_flush(handle, b"probe")
+                name = f"{kind}.py"
+                root = parent
+                if kind == "absolute-nul":
+                    root = 0
+                    name = native._final_path(parent) + "\\" + name
+                original = _rename_buffer(root, name, replace=False)
+                buffer = original
+                if kind.endswith("nul"):
+                    buffer = ctypes.create_string_buffer(len(original) + 8)
+                    ctypes.memmove(buffer, original, len(original))
+                accepted = bool(
+                    operations.kernel.SetFileInformationByHandle(handle, 22, buffer, len(buffer))
+                )
+                results[kind] = {"accepted": accepted, "errno": 0 if accepted else _last_error()}
+            finally:
+                operations.kernel.CloseHandle(handle)
+    assert results["relative-nul"]["accepted"], results
 
 
 @pytest.fixture
