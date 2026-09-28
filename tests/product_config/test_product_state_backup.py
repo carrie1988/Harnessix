@@ -26,7 +26,7 @@ from tests.artifacts.helpers import step
 from tests.product_config.conftest import write_config
 
 pytestmark = pytest.mark.skipif(
-    os.name != "posix", reason="完整默认产品备份的POSIX验收；Windows原生完整产品仍由R4验收"
+    os.name not in {"posix", "nt"}, reason="完整产品备份只验证POSIX和Windows原生端口"
 )
 
 
@@ -375,13 +375,19 @@ async def test_optional_actual_process_receipt_and_output_are_backed_up(complete
 
     from harnessix.execution.store import SQLiteExecutionPlanStore
     from harnessix.processes.supervision_planner import build_process_spec
-    from harnessix.processes.supervisor import PosixProcessSupervisor
+    from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
     from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
-    from tests.processes.test_supervisor import _plan
+
+    if os.name == "nt":
+        from tests.processes.test_windows_supervisor import _plan
+    else:
+        from tests.processes.test_supervisor import _plan
 
     root, _ = complete_state
     workspace = tmp_path / "workspace"
-    async with PosixProcessSupervisor(root / "process-owner") as supervisor:
+    # 运行实际平台Owner和对应Plan，不用POSIX能力声明替代Windows Job Object事实。
+    supervisor_type = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
+    async with supervisor_type(root / "process-owner") as supervisor:
         spec = build_process_spec(
             invocation="argv", argv=(sys.executable, "-I", "-c", "print('ok')"), output_bytes=4096
         )

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 2
+code_revision: 95115fa58bf91e3b503a3e709a47d76e75511f26
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -32,7 +32,8 @@ supersedes: []
 
 **本固定备份切片不交付整体Root替换、Restore Journal或恢复命令。**
 后继实现与原意图结算见[完整恢复详设](m09-r1-product-state-restore.md)；R1/R4整体仍开放。
-macOS实际验证与Windows原生端口用例分开记录；端口实现、源码存在和本机skip均不构成Windows完整产品验收。
+POSIX和Windows复用同一完整业务状态Fixture与备份合同，实际结果按平台分别记录。
+端口实现、源码存在和本机skip均不构成Windows完整产品验收。
 
 ## 2. 设计目标、不变量与非目标
 
@@ -279,21 +280,26 @@ harnessix state verify --state-directory "$STATE_DIRECTORY" \
 
 制品包含私有原Key、会话和Process事实，不进入Git、公共日志或普通诊断导出。
 原Root外的信任锚点必须保留；只保留制品而丢失锚点，不会自动重新授权。
-当前没有`state restore`，不得手工逐库覆盖或用旧单库维护接口冒充完整恢复。
-Windows要求规范私有DACL；默认产品Root/普通数据文件的完整原生装配与实际发行验收仍由R4完成，
-不能因四个原生端口用例已定义而宣称Windows完整产品备份可用。
+恢复使用后继正式`state restore/recover`合同，见[完整恢复详设](m09-r1-product-state-restore.md)；
+不得手工逐库覆盖或用旧单库维护接口冒充完整恢复。
+Windows要求规范私有DACL；完整业务状态回归与实际发行安装分别验收，
+不能因几个文件端口用例或空会话恢复成功而宣称完整产品备份可用。
 
 ## 10. 测试、验收、风险与取舍
 
 真实默认产品fixture通过正式Server、Client、Runtime、工具和认证Artifact生成六库；
 真实事务产生before/after Blob；可选Process场景启动实际本机受监督子进程并核验原签名回执和输出。
+Windows使用`WindowsProcessSupervisor`和原Windows执行Plan，POSIX使用原POSIX实现；
+不得用POSIX能力字段替代实际Job Object及Windows Workspace事实。
 不使用单库替身，不将Scripted Provider视作线上模型认证。
 
 测试覆盖完整捕获、原证明逐字节保持、Root丢失、Key/回执拒绝、源损坏、
 已提交WAL、只读连接关闭时SHM消失、复制后Blob漂移、目标不覆盖、回执碰撞、
 Workspace拒绝、独立Writer拒绝、唯一线程重复取消、超时、三个普通发布故障窗口及只读Store禁止初始化。
 另有真实原生Rename后确认丢失场景，验证回执保留和完整制品只读验真，不把函数返回异常视为发布未发生。
-Windows端口用例单独验证大文件、不可覆盖目录、硬链接和Junction；macOS结果中的skip不得算作Windows通过。
+Windows端口用例继续单独验证大文件、不可覆盖目录、硬链接和Junction；macOS结果中的skip不得算作Windows通过。
+完整备份与恢复两个模块不再整体跳过Windows；原生CI在宽范围回归前执行同一组84项用例，
+任何平台实际失败均保留，不以新增选择器或源码存在代替实际通过。
 
 固定Source Revision、两种Python环境的精确结果、原RED、实际图示、Wheel字节证明、资料Manifest及评审包
 见[集中验证目录](../validation/product-state-backup-2026-09-28-v1/README.md)。

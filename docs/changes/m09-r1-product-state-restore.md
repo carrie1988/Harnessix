@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 2
+code_revision: 95115fa58bf91e3b503a3e709a47d76e75511f26
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -29,7 +29,7 @@ supersedes: []
 不构造Executor、不重放UNKNOWN、不控制备份中的旧PID。Workspace源码不在状态备份中；
 产品状态回退不是项目代码回退。
 
-POSIX完整产品恢复与Windows原生端口分开验证。共享代码和跳过用例不能证明Windows产品可用；
+POSIX和Windows复用完整产品恢复用例，平台文件端口另有原生负对照。共享代码和跳过用例不能证明Windows产品可用；
 三平台实际安装、升级、恢复以及R1整体、R2～R6仍受各自发布退出条件约束。
 
 ## 2. 设计目标、不变量与非目标
@@ -280,6 +280,10 @@ harnessix state recover --state-directory "$STATE_ROOT" \
 
 专项[`test_product_state_restore.py`](../../tests/product_config/test_product_state_restore.py)
 复用原默认stdio产品、Agent Client、真实SQLite、认证Artifact及事务CAS的Fixture，不使用单库替身。
+该模块与原备份模块对POSIX/Windows均执行；Windows原生CI先运行两模块的84项完整业务状态用例，
+再执行原宽范围回归。模型返回使用固定Scripted步骤，不访问供应商API，不降低恢复验真或私有权限要求。
+原生结果需覆盖实际Artifact查询、事务Blob、可选本机Process回执及真实子进程硬退出；
+源码外空会话恢复不能替代本组业务状态用例，Windows Server结果也不能外推Windows11消费者发行。
 
 | 验证项 | 重点测试函数 | 对应组件 |
 |---|---|---|

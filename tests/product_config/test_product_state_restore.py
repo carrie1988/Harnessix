@@ -26,7 +26,9 @@ from tests.product_config.test_product_state_backup import complete_state as _co
 # 共享原真实产品Fixture，不复制第二套六库、Key和Artifact装配过程。
 complete_state = _complete_state
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="完整POSIX产品恢复；Windows由R4原生验收")
+pytestmark = pytest.mark.skipif(
+    os.name not in {"posix", "nt"}, reason="完整产品恢复只验证POSIX和Windows原生端口"
+)
 
 
 async def test_restore_switches_all_state_and_preserves_previous_root(complete_state, tmp_path):
