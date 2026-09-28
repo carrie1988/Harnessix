@@ -403,7 +403,7 @@ async def test_native_adapter_wire_is_reserved_before_transport_and_closed(
                 retry_delay_seconds=0,
                 output_token_parameter="max_tokens",
             ),
-            api_key="verification-fixture-key",
+            api_key="fixture-SECRET-CANARY",
             transport=httpx.MockTransport(transport),
         ) as provider:
             guard = GuardedVerificationProvider(provider, ledger, bounds(), token)

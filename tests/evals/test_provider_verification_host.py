@@ -170,7 +170,7 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(tmp_pa
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     monkeypatch.setattr(host, "_require_scope", lambda *_: None)
     monkeypatch.setattr(host, "_require_images", lambda *_: None)
-    monkeypatch.setattr(host, "_credential", lambda *_: "verification-fixture-key")
+    monkeypatch.setattr(host, "_credential", lambda *_: "fixture-SECRET-CANARY")
     parts = [
         chunk({"role": "assistant", "content": "fixture"}),
         chunk(finish="stop"),
@@ -186,7 +186,7 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(tmp_pa
         return response(wire)
 
     def native(provider_config, *, api_key):
-        assert api_key == "verification-fixture-key"
+        assert api_key == "fixture-SECRET-CANARY"
         return OpenAIChatProvider(
             provider_config, api_key=api_key, transport=httpx.MockTransport(transport)
         )
