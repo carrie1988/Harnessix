@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 10
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/governance/test_repository_policy.py
   - tests/unit/test_cli_license.py
   - tests/product_config/test_server_and_cli.py
@@ -216,7 +217,7 @@ macOS/Linux检查Owner、规范权限和对象身份，Darwin额外拒绝扩展A
 仅全新无库状态可以生成新Key。存在原DB/WAL/SHM而无Key、未证明历史、Key格式或权限失效均拒绝启动；
 不得通过清空原状态、改权限追认旧事实、生成替代Key或手工补签解除门禁。
 Doctor成功只代表配置及能力预检，不证明原Key/Session有效。完整产品备份与原来源验真见下文；
-整体状态恢复和跨机器Key迁移尚未交付。
+同机整体状态恢复见本手册末节；跨机器Key迁移继续延期。
 新Artifact正文在同一逻辑Store/Key重启后依赖Migration 0030原行Seal恢复，旧NULL行不能因此被读取；
 安装与升级应将数据库/WAL一致状态和独立Key作为同一保留单元，不能只复制数据库或重建Key。
 不把复制DB或本地Wheel消费者视为安装与恢复完成。
@@ -238,7 +239,18 @@ harnessix state verify --state-directory "$STATE_DIRECTORY" \
 
 备份保存完整受管库、原Key、事务Blob和可选Process事实。制品与原Root外私有信任锚点共同保留，
 不加入Git或普通诊断包；仅制品自带Key不足以取得原来源授权。
-当前没有`state restore`，不得逐库覆盖或用旧单库维护接口代替完整产品恢复。
+整体恢复使用`state restore/recover`，见下节；不得逐库覆盖或用旧单库维护接口代替。
 POSIX完整产品验证与Windows原生端口测试分开，源码存在和Wheel可安装不代表三平台商用支持。
 [完整设计](../changes/m09-r1-product-state-backup.md)、[固定验证资料](../validation/product-state-backup-2026-09-28-v1/README.md)
 与[恢复手册](recovery.md)分别说明操作合同、实际证据和仍开放的恢复要求。
+
+## 完整停机恢复与安装前未决状态
+
+先停止使用原Root的产品实例，保存原备份、根外锚点及显式恢复UUID，执行
+`harnessix state restore --state-directory "$STATE_DIRECTORY" --backup-directory "$BACKUP_DIRECTORY"
+--restore-id "$RESTORE_ID" --confirm-backup "$BACKUP_ID"`（命令参数写在同一行）。
+指针未决时产品拒绝启动，不在缺失窗口生成新Key；必须以原UUID执行
+`state recover --confirm-restore "$RESTORE_ID" --mode complete`或`--mode rollback`，并提供原状态目录。
+两个方向不能顺序执行。恢复成功保留Previous，当前不自动删除。
+[完整操作与失败说明](recovery.md#完整产品停机恢复与明确结算)及
+[正式设计](../changes/m09-r1-product-state-restore.md)定义原来源、取消、确认丢失和平台边界。

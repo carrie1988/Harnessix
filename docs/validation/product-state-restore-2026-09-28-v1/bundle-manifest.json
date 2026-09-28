@@ -1,0 +1,135 @@
+{
+  "source_revision": "7564a1384eeeabb667b74efdae9a40513713be10",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 8963,
+      "sha256": "bd044df6c9a4dd242905382d7122d5929f2abb4ad4a818dc14d8a7cca288a38c"
+    },
+    {
+      "path": "contract-facts.json",
+      "size": 1116,
+      "sha256": "0f83215dcf5b2ebc61d53cd695aa3caed23b51db49d3f278357367fd893fb30a"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "size": 594,
+      "sha256": "99816b9af4e6486efa3e9022e5be1419b7001a06ebdb5ea9ec58bd01c38bb641"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "size": 53859,
+      "sha256": "19d92d68e06cf3cb99d5ae4fde73f9e8cf4d2e54f9b976ab78724c7ba5006278"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "size": 575,
+      "sha256": "b8668ef44049d75c9c0b8fcd3c7048bf80dab263f41c75982135638b46f9868c"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "size": 51778,
+      "sha256": "74e125db622664b74de7536a4d7534b8d69972a0d8bb5405f141e16874f8c433"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "size": 754,
+      "sha256": "3669881067516ce1447a3b31553c6e86fd77ba15d9cec5ca993a52ad744e093a"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "size": 83342,
+      "sha256": "5eae60b6211c6ac53cb3d67a5b99d3e7354d26461511bf14f2a6c95f84bd704f"
+    },
+    {
+      "path": "logs/affected-python313.txt",
+      "size": 1965,
+      "sha256": "920a5bbb2820dd8b692e19335e742fc8f07c45bd12f31e3145982e6650ce5c88"
+    },
+    {
+      "path": "logs/cli-compatibility.txt",
+      "size": 98,
+      "sha256": "edcdda1cde6f19537942f62aa6d82d2aaf5dd88b87a8332c1833280caa2fb10a"
+    },
+    {
+      "path": "logs/documentation-draft.json",
+      "size": 728,
+      "sha256": "0e51a39ebe2b893bbb61a639d8cabcd4fa3ec6d874f5e47545e584d2a865bf3e"
+    },
+    {
+      "path": "logs/documentation-final.json",
+      "size": 207,
+      "sha256": "574859ae11638c13f56c82502f1b10d633bf3fc2b919df7b4ac3f8c79db3838d"
+    },
+    {
+      "path": "logs/focused-python313.txt",
+      "size": 191,
+      "sha256": "f86226ea635dbc972fc8fb265b735e0564b3dd335e5856f3404b0b698082fece"
+    },
+    {
+      "path": "logs/governance-final.txt",
+      "size": 99,
+      "sha256": "79b904df52faf445444ebd070c02bd5f3968c7be842f0fc89907453e1309ba1c"
+    },
+    {
+      "path": "logs/governance-initial-red.txt",
+      "size": 1364,
+      "sha256": "da8e29e2cfd755d3598f220a27181f2167b039f00a84641fd50248bb6a971e22"
+    },
+    {
+      "path": "logs/independent-affected-python312.txt",
+      "size": 1965,
+      "sha256": "fe172e6ac0a440c908990a3b1f6b15cffa3d4cda1a2cc17ad05d29a16e6b3d73"
+    },
+    {
+      "path": "logs/independent-focused-python312.txt",
+      "size": 191,
+      "sha256": "24d8c55000ec93aaf9c3b4f450c956c376311a9ff9a6ca4c662f7449a311727c"
+    },
+    {
+      "path": "logs/restore-api-red.txt",
+      "size": 12693,
+      "sha256": "3d6459025816c0b61daf6e59e6a1ab402bcc5541de69e4734101b16251d842aa"
+    },
+    {
+      "path": "logs/restore-expanded-red.txt",
+      "size": 4163,
+      "sha256": "9785b98b8d3c3ed68d5cc311f7eb66f6e06c20f03e7ef74f41c8edcfa881e380"
+    },
+    {
+      "path": "logs/secret-scan-final.txt",
+      "size": 101,
+      "sha256": "c3e3a491f1df529e8d6aed36a1d223a741d8b8eb52b5bb45ff1a7a76c995b5a2"
+    },
+    {
+      "path": "logs/secret-selfcheck.txt",
+      "size": 56,
+      "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+    },
+    {
+      "path": "logs/static.txt",
+      "size": 119,
+      "sha256": "ff71afe82569c581eb115371ad4fef28dc68df4393ed8aeda1ea63967f19382b"
+    },
+    {
+      "path": "logs/wheel-build.txt",
+      "size": 101,
+      "sha256": "0b9443402c10116497dd5c64e6e49693ecb291cad02a15d4e2eec42e453cdbef"
+    },
+    {
+      "path": "review-packet.md",
+      "size": 4168,
+      "sha256": "cd4a7a115d244ebba39faf0ff2cb7538053a0d7355db553f51e990fbdc7777a8"
+    },
+    {
+      "path": "verification.json",
+      "size": 4948,
+      "sha256": "4fa914a67ffa2daf724bc89f2fa8e21606221a3fdb1ced28371930de63930bc9"
+    },
+    {
+      "path": "wheel-observation.json",
+      "size": 2267,
+      "sha256": "3df3469111694b6dd9dd98f587de5999dcb0e5f9182600cead9fe6395370fe77"
+    }
+  ]
+}

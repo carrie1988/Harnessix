@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant U as 操作者
+    participant E as 恢复协调器
+    participant V as 原来源与候选验真
+    participant J as 根外 Journal
+    participant N as 同父目录命名空间
+    U->>E: 明确 restore_id 与 confirm_backup_id
+    E->>E: 取得原 Owner 和唯一工作线程
+    E->>V: 原回执 Manifest 当前 Key 静默预检
+    V->>N: 创建并完整核验私有 candidate
+    E->>J: 耐久发布 Plan 与活动指针
+    E->>N: 原 Root 改名为 Previous
+    E->>N: candidate 改名为 Root
+    E->>V: 核验恢复 Root 的完整状态
+    E->>J: 耐久发布 Result 后清除活动指针
+    E-->>U: 返回低敏原请求结果
+    Note over E,N: 任意返回确认丢失时由实际身份核对 不盲重放

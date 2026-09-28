@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 81
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 82
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -53,6 +53,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
   - tests/product_config/test_server_and_cli.py
@@ -654,4 +655,13 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实�
 全部库保留写锁、SQLite Backup、私有有界文件端口、原Schema/MAC/引用只读核验和独立本机回执
 见[总体及详细设计](changes/m09-r1-product-state-backup.md)。既有领域Store的只读分支不初始化或补签。
 备份不是第二个服务；共享只读SQLite端口只依赖标准库，不改变Agent Runtime和Action执行链。
-整体Root恢复发布与Restore Journal尚未交付，Windows端口不等于默认产品完整原生验收。
+整体Root恢复、根外Journal及启动前未决保护见[完整恢复详设](changes/m09-r1-product-state-restore.md)。
+Windows端口不等于默认产品完整原生验收，R1/R4整体仍开放。
+
+### 整体恢复的根外意图与明确结算
+
+恢复是单一Coding Agent的离线状态生命周期，不增加Action Plane或后台恢复服务。
+Root Owner覆盖缺失窗口；有界私有候选沿原Manifest和回执验真；
+Plan/Pointer/粘性回退/Result记录位于原Root外，状态机只按实际对象身份执行必要Rename。
+正常产品启动在任何Root/Key/Store初始化之前拒绝活动指针，恢复不构造Executor或操作历史PID。
+详见[整体恢复架构、时序及数据流](changes/m09-r1-product-state-restore.md)。

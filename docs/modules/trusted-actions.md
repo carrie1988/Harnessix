@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 32
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 33
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/trusted_actions/test_publication_recovery.py
   - tests/trusted_actions/test_router.py
   - tests/trusted_actions/test_agent_gateway.py
@@ -1719,3 +1720,10 @@ Secret公开处理的父Task检查按本次进入时累计取消基线捕获，�
 产品Route不得成为未引用的孤儿记录；Route中的执行计划必须与原Plan匹配。
 `UNKNOWN`等未知效果原样保留，可信备份不等于效果已确定成功，更不授权重放。
 完整领域与持久化边界见[产品备份详设](../changes/m09-r1-product-state-backup.md)。
+
+## 完整状态恢复的Action边界
+
+整体Root恢复原样复制Audit、Plan和引用，不构造Router/Executor、不重放UNKNOWN，也不杀备份中的旧PID。
+独立及借用[`Action Owner`](../../src/harnessix/product_config/action_owner.py)在正式装配前拒绝未决恢复，
+Root缺失不再被当作空Store初始化机会。后续正常启动仍沿既有保守对账合同，
+状态快照可信不表示外部效果已确定，见[完整恢复设计](../changes/m09-r1-product-state-restore.md)。

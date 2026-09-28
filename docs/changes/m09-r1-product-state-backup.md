@@ -30,7 +30,8 @@ supersedes: []
 - 原状态Root外的本机可信回执；原Root丢失后仍能核验已有备份；
 - `harnessix state backup`和`harnessix state verify`两个正式入口。
 
-**不交付整体Root替换、Restore Journal或发布中断后的恢复命令。完整恢复及R1/R4仍开放。**
+**本固定备份切片不交付整体Root替换、Restore Journal或恢复命令。**
+后继实现与原意图结算见[完整恢复详设](m09-r1-product-state-restore.md)；R1/R4整体仍开放。
 macOS实际验证与Windows原生端口用例分开记录；端口实现、源码存在和本机skip均不构成Windows完整产品验收。
 
 ## 2. 设计目标、不变量与非目标

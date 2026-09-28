@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 9
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/agent/test_session_upgrade.py
   - tests/governance/test_legacy_action_archive.py
   - tests/product_config/test_migration_and_store.py
@@ -250,8 +251,9 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 
 ## 14. 未完成项
 
-首发必需：当前认证候选到1.0的版本/Schema清单、停机一致备份（全部受管状态与原Key）、迁移预检、失败保留、
-同机同用户恢复及三平台实际演练。当前仍未完成，不能以只备份SQLite替代完整匹配状态单元。
+完整受管状态/原Key的停机备份和同机整体恢复已有正式命令；
+首发仍需关闭当前认证候选到1.0的版本/Schema清单、迁移预检、失败保留及三平台实际演练。
+不能以只备份SQLite或替换程序文件代替完整匹配状态单元。
 在线跨组件快照、滚动升级、自动回退、跨机Key迁移、通用维护CLI和灾难恢复RPO/RTO平台延期1.1+；
 不必先实现这些平台化能力才能采用安全的受控停机、完整备份及人工升级流程。详见[首发收敛计划](../changes/m09-to-v1-release-scope-convergence.md)。
 
@@ -261,7 +263,14 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 - 原Key权限、ACL、对象或闭合封套失效：同一有限失败，不自动修复危险原对象或回退明文。
 - 未证明历史、错误认证身份、Snapshot/普通SHA替换：`publication_history_unproven`，不开放协议、不补签。
 - 读者与并发新CAS：原Checkpoint/Event/Seal保持同一读快照，不把合法并发当作篡改。
-- 备份恢复：必须匹配原Key与全部共库事实；正式保护恢复及三平台安装未完成，不承诺旧库可无损自动迁入。
+- 备份恢复：必须匹配原Key与全部共库事实；同机整体恢复已有显式命令，但三平台实际安装/升级/恢复未验收，不承诺旧库可无损自动迁入。
 新程序失败关闭不等于旧无保护程序可以安全恢复运行。保留原数据隔离副本，禁止删除证明表、迁移标记或换Key。
 [完整设计](../changes/m09-4a-managed-session-key-and-root.md)与
 [验证报告](../validation/managed-session-key-2026-09-28-v1/README.md)明确当前支持及尚未验收的操作范围。
+
+## 完整Root的停机回退边界
+
+`state restore/recover`复用原Key和全状态备份，恢复中断可明确继续或回退原目录对象，
+不是程序版本自动回退，也不授权旧Reader读取新Schema。原Root保留于Previous，
+目录切换前Plan/指针耐久，回退决定粘性，详见[恢复设计](../changes/m09-r1-product-state-restore.md)。
+当前尚不能据此宣称候选至1.0三平台升级或旧未证明历史迁移完成。

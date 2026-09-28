@@ -1,0 +1,11 @@
+flowchart LR
+    CLI[离线 state restore 或 recover] --> Entry[恢复协调入口与唯一 IO 线程]
+    Entry --> Owner[原地址根外 ProductStateOwner]
+    Entry --> Prepare[有界私有候选准备]
+    Prepare --> Verify[原备份验真与领域 Reader]
+    Entry --> Journal[根外 Plan 指针 回退决定 结果]
+    Entry --> Flow[按实际目录身份结算]
+    Flow --> Root[完整 Root 与同父目录候选 Previous]
+    Start[正常产品启动] --> Guard[require_ready 启动保护]
+    Guard --> Journal
+    Guard --> Stores[仅无未决恢复时准备 Key Store Provider]

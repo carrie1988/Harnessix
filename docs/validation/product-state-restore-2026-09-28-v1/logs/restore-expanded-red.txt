@@ -1,0 +1,87 @@
+.....................................F..F...                             [100%]
+=================================== FAILURES ===================================
+_______ test_activation_failure_cleans_only_uncommitted_candidate[False] _______
+
+complete_state = (PosixPath('<受控测试路径> 4245, tzinfo=datetime.timezone.utc), fingerprint='fb4204de301af895cc1bf383e85a8a695080e7df23085203184446d7cd7347c3')))
+tmp_path = PosixPath('<受控测试路径>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c930280>
+committed = False
+
+    @pytest.mark.parametrize("committed", [False, True])
+    async def test_activation_failure_cleans_only_uncommitted_candidate(
+        complete_state, tmp_path, monkeypatch, committed
+    ):
+        from harnessix.product_config import state_restore_journal
+        from harnessix.product_config.state_restore import (
+            recover_product_state_restore,
+            restore_product_state,
+        )
+
+        root, _ = complete_state
+        manifest = await backup_product_state(root, tmp_path / "backup")
+        restore_id = uuid4()
+        original = state_restore_journal.publish_tree
+        failed = False
+
+        def fail_active_publication(source, target):
+            nonlocal failed
+            if target.name == "restore-active.json" and not failed:
+                failed = True
+                if committed:
+                    original(source, target)
+                raise OSError("controlled active publication failure")
+            original(source, target)
+
+        monkeypatch.setattr(state_restore_journal, "publish_tree", fail_active_publication)
+        identity = root.stat().st_dev, root.stat().st_ino
+        with pytest.raises(KernelError):
+            await restore_product_state(
+                root, tmp_path / "backup", restore_id=restore_id, confirm_backup_id=manifest.backup_id
+            )
+        assert identity == (root.stat().st_dev, root.stat().st_ino)
+        candidate = root.parent / f".harnessix-restore-{restore_id}.candidate"
+        assert (state_owner_anchor(root) / "restore-active.json").exists() == committed
+>       assert candidate.exists() == committed
+E       AssertionError: assert True == False
+E        +  where True = exists()
+E        +    where exists = PosixPath('<受控测试路径>').exists
+
+tests/product_config/test_product_state_restore.py:654: AssertionError
+_______ test_invalid_recover_mode_does_not_create_state_or_owner[mode1] ________
+
+tmp_path = PosixPath('<受控测试路径>')
+mode = []
+
+    @pytest.mark.parametrize("mode", ["unknown", [], None])
+    async def test_invalid_recover_mode_does_not_create_state_or_owner(tmp_path, mode):
+        from harnessix.product_config.state_restore import recover_product_state_restore
+
+        root = tmp_path / "missing-state"
+        with pytest.raises(KernelError) as error:
+>           await recover_product_state_restore(root, confirm_restore_id=uuid4(), mode=mode)
+
+tests/product_config/test_product_state_restore.py:668:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+state_root = PosixPath('<受控测试路径>')
+
+    async def recover_product_state_restore(
+        state_root: Path,
+        *,
+        confirm_restore_id: UUID,
+        mode: RestoreMode,
+        budget_seconds: float = 120.0,
+        fault: Callable[[str], None] | None = None,
+    ) -> ProductStateRestoreResult:
+        """沿原耐久计划明确继续或回退；已完成请求只返回原结果，不再切换任何目录。"""
+        _require_budget(budget_seconds)
+        _require_ids(confirm_restore_id)
+>       if mode not in {"complete", "rollback"}:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unhashable type: 'list'
+
+src/harnessix/product_config/state_restore.py:123: TypeError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_restore.py::test_activation_failure_cleans_only_uncommitted_candidate[False]
+FAILED tests/product_config/test_product_state_restore.py::test_invalid_recover_mode_does_not_create_state_or_owner[mode1]
+2 failed, 42 passed in 16.19s

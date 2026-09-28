@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 134
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 135
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -26,6 +26,7 @@ related_adrs:
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0092-reproducible-local-soak-and-release-thresholds.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/governance/test_documentation_policy.py
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -304,3 +305,8 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 
 - [完整产品停机备份与原来源验真详设](changes/m09-r1-product-state-backup.md)：六库、原Key、CAS/Process、根外可信回执、闭合路径、只读Reader、取消结算及不可覆盖发布。
 - [固定备份验证资料](validation/product-state-backup-2026-09-28-v1/README.md)：真实默认产品、原文件漂移、SHM生命周期、发布确认丢失、独立检出和Wheel字节证明；完整恢复及R1/R4仍开放。
+
+- [完整停机恢复、耐久Journal与显式回退详设](changes/m09-r1-product-state-restore.md)：
+  原来源/Key、有界候选、整体目录身份状态机、启动前保护、稳定ID和原目录保留；三平台实际恢复及R1整体仍开放。
+- [完整恢复固定源码与独立验证](validation/product-state-restore-2026-09-28-v1/README.md)：
+  双Python专项和八目录回归、原失败、实际Wheel、三幅渲染图、Manifest与Review Packet统一归档。

@@ -1,0 +1,11 @@
+flowchart TD
+    Receipt[原地址根外本机备份回执] --> Manifest[原 Manifest 字节及原备份身份]
+    Bundle[备份 state 全部文件] --> Copy[私有候选]
+    Manifest --> Copy
+    Copy --> Check[摘要 Schema 原 MAC 跨 Store 引用]
+    Key[当前 Root 原 Key 或 Root 缺失事实] --> Check
+    Check --> Plan[Plan 原字节与目录对象身份]
+    Plan --> Pointer[活动指针 plan_sha256]
+    Pointer --> Settle[按实际位置继续或回退]
+    Settle --> Result[耐久终态 元数据]
+    Result --> Guard[重新核对后撤销启动阻断]

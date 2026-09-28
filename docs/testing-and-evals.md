@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 41
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 42
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -29,6 +29,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/governance
   - tests/agent
   - tests/evals
@@ -808,4 +809,16 @@ SQLite写入者、不可覆盖发布和发布前后故障窗口。Schema/证明�
 两组结果的范围和重叠独立记录，不相加计为全仓或三平台商用验收。
 
 测试使用Scripted Provider验证产品执行与状态合同，不形成真实模型质量成绩。
-[完整设计及开放项](changes/m09-r1-product-state-backup.md)明确：整体Restore Journal、完整恢复、Windows产品验收和R1/R4仍未完成。
+该固定备份切片不包含恢复。后继[完整恢复设计](changes/m09-r1-product-state-restore.md)
+增加整体切换、耐久Journal与显式结算；Windows产品验收和R1/R4整体仍未完成。
+
+## 完整产品恢复的故障与独立验证策略
+
+[`test_product_state_restore.py`](../tests/product_config/test_product_state_restore.py)复用真实默认产品六库、
+认证Session/Artifact和事务CAS，覆盖整体切换、缺失Root、原Key保留、损坏/空库原字节、
+Plan/指针/回执篡改、陌生目录、粘性回退、四阶段中断、实际子进程硬退出、
+真实线程重复取消、合作期限、Native确认丢失、终态再验真和历史结果不覆盖新状态。
+合作期限使用受控单线程时钟；硬退出不是硬件掉电；恢复后从正式产品读取原Thread及Artifact。
+固定源码分别执行本机Python3.13和干净独立Python3.12专项与八目录受影响回归，
+治理、旧CLI合同、类型/Schema、实际Wheel及Secret检查分开记录，测试组重叠不累加。
+[总体及详细设计](changes/m09-r1-product-state-restore.md)明确Windows、真实模型质量、Beta及整体发布尚未关闭。

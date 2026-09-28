@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 11
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/governance/test_product_runtime_convergence.py
   - tests/agent/test_crash_recovery.py
   - tests/agent/test_legacy_process_compatibility.py
@@ -78,7 +79,8 @@ supersedes: []
 
 默认认证产品不使用该旧式入口。其恢复单元必须包含完整受管状态、相应私有Blob及原独立Key；
 仅复制`sessions.db`不能证明备份一致，也不能覆盖当前状态后再补Key。
-完整停机备份、候选到1.0升级及实际三平台恢复仍属于R1/R4未关闭项，通用维护CLI继续延期。
+完整停机备份及同机整体恢复已有正式命令，见本手册末节；候选到1.0升级、
+实际三平台恢复及R1/R4整体仍未关闭，通用维护CLI继续延期。
 
 ## 3. 恢复决策流程
 
@@ -323,5 +325,32 @@ harnessix state verify --state-directory "$STATE_DIRECTORY" --backup-directory "
 
 目标父目录必须受信且已存在；目标不覆盖、不与产品Root/锚点/受管Workspace重叠。
 制品与根外锚点都属于私有数据，不进入Git或公开诊断。已知WAL/SHM合法消失不等于业务数据消失。
-当前尚无整体`state restore`；不得逐库覆盖、复制锁文件或调用旧认证Store拒绝的单库维护路径作为替代。
-整体目录发布、Restore Journal、旧Root保留、崩溃结算及三平台实际恢复仍是R1/R4必需工作。
+整体目录发布、Restore Journal、旧Root保留及显式结算已进入正式停机恢复入口，见下节。
+不得逐库覆盖、复制锁文件或调用旧认证Store拒绝的单库维护路径作为替代；三平台实际恢复及R1/R4仍开放。
+
+## 完整产品停机恢复与明确结算
+
+先停止同Root实例，取得原备份ID，生成并持久保存本次恢复UUID；重复请求沿用原ID。
+备份、根外锚点、原Key和整体状态须共同保留，不能独立重建回执或换Key。
+
+```bash
+harnessix state restore --state-directory "$STATE_DIRECTORY" --backup-directory "$BACKUP_DIRECTORY" \
+  --restore-id "$RESTORE_ID" --confirm-backup "$BACKUP_ID" --timeout 120
+harnessix state recover --state-directory "$STATE_DIRECTORY" \
+  --confirm-restore "$RESTORE_ID" --mode complete --timeout 120
+```
+
+若明确选择撤销未决恢复，将第二条的模式改为`rollback`，而不是依次运行两个方向。
+原Root存在但错/缺Key时拒绝且保持原数据；需先在原地址之外明确保留整个原Root，
+再依原地址根外回执恢复缺失Root，不能自动删除损坏库或补签历史。
+
+恢复先核验完整候选，原Root整体移至同父目录Previous；活动指针在正常启动准备任何状态之前生效。
+中断后通过原Plan、回执和实际目录身份明确结算。终态仍有指针时须再次验真；
+终态且无指针时重复请求只返回历史结果，不覆盖较新的业务状态。
+回退保留原损坏字节，`rolled_back`不表示原数据库健康；原Root缺失时回退后仍缺失。
+
+Previous、候选及Journal都是私有数据；不自动清理、不提交Git，不在公开诊断包含Key或正文。
+恢复不执行Agent、Reconcile或旧PID；状态恢复不恢复Workspace源码。
+[完整状态机、字段与源码导航](../changes/m09-r1-product-state-restore.md)及
+[`test_product_state_restore.py`](../../tests/product_config/test_product_state_restore.py)说明故障、取消和来源边界。
+POSIX产品验证不代替Windows完整产品验收，R1/R4仍开放。

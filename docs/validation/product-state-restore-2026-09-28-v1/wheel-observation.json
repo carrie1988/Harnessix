@@ -1,0 +1,61 @@
+{
+  "source_revision": "7564a1384eeeabb667b74efdae9a40513713be10",
+  "wheel": "harnessix-0.1.0-py3-none-any.whl",
+  "wheel_sha256": "16bc1b56d41ac67487336a496878c56ac48cb4423fbc76af7ed0a8314ac2fc06",
+  "changed_source_files": [
+    {
+      "path": "src/harnessix/product_config/action_owner.py",
+      "sha256": "d8f37a743113f58438b06c42b646e4788783ec4683efbd25e13ed21678ede732",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/server.py",
+      "sha256": "4c89229b449633998158cfad26ec6b823a7f5f53e2eb109e2292484c7292c488",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup.py",
+      "sha256": "692313a516e9b32405c9820a665b640fc8f92b739b45ce45755fa6248aa570c8",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_cli.py",
+      "sha256": "fcfef97811ccf96072a30e515448f0f3ede50160bc7cd7b31c9117c9cd2f1d7a",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_owner.py",
+      "sha256": "11f31507ae14fdfad6d5cc9ddacbf8ead84272884fa765fd87a0a6f13145b423",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore.py",
+      "sha256": "28315bcc167e4c94aa94fe80898f10c0cbfda500bc2210673ad5fa13b8813ec5",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore_contracts.py",
+      "sha256": "324fcf1a9fa104a154773e705a25c70cbee0f9cfb6181eb286d0b0fd12ea80c6",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore_flow.py",
+      "sha256": "93a9b68a457a2f43ceee888da005111ed620323d2d92318b216fd865e8415f0f",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore_journal.py",
+      "sha256": "b1be62fac6417e58f29f58e8567b99da6c9b1202ff6cf56ed16f67b66aa0692d",
+      "source_matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore_prepare.py",
+      "sha256": "3eb1c98fc057d4068996f988fc2546dab94a3ca0a24a720b464f8a247b917bb3",
+      "source_matches": true
+    }
+  ],
+  "contains_tests": false,
+  "sdist_built": false,
+  "commercial_release_artifact": false,
+  "package_version": "0.1.0"
+}

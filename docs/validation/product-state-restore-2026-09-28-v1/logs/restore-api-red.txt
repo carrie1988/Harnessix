@@ -1,0 +1,180 @@
+FFFFFFFFFFFF                                                             [100%]
+=================================== FAILURES ===================================
+_________ test_restore_switches_all_state_and_preserves_previous_root __________
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='cf8e4d910b098d2558712dbeeaac9415af80c3bfd681c4e0bd7a93ccd31fe924')))
+tmp_path = PosixPath('<受控测试路径>')
+
+    async def test_restore_switches_all_state_and_preserves_previous_root(complete_state, tmp_path):
+>       from harnessix.product_config.state_restore import restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:24: ModuleNotFoundError
+__________ test_missing_root_restores_original_key_without_enrollment __________
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='2f8cd5c246c6ec4a39958eacf5f613ef475e1b773c0fa90481a97cf6f288dd69')))
+tmp_path = PosixPath('<受控测试路径>')
+
+    async def test_missing_root_restores_original_key_without_enrollment(complete_state, tmp_path):
+>       from harnessix.product_config.state_restore import restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:48: ModuleNotFoundError
+__________ test_invalid_restore_never_changes_current_state[database] __________
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='09e04d475d5551ab98ab84f14fcd0df9fe17f6a32691551fc75d8de88117f6fb')))
+tmp_path = PosixPath('<受控测试路径>')
+damage = 'database'
+
+    @pytest.mark.parametrize("damage", ["database", "key", "receipt"])
+    async def test_invalid_restore_never_changes_current_state(complete_state, tmp_path, damage):
+>       from harnessix.product_config.state_restore import restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:64: ModuleNotFoundError
+____________ test_invalid_restore_never_changes_current_state[key] _____________
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='5bb102590e27655e33d7d16fa475a4c45432308010c51564c86abcb16ce0a237')))
+tmp_path = PosixPath('<受控测试路径>')
+damage = 'key'
+
+    @pytest.mark.parametrize("damage", ["database", "key", "receipt"])
+    async def test_invalid_restore_never_changes_current_state(complete_state, tmp_path, damage):
+>       from harnessix.product_config.state_restore import restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:64: ModuleNotFoundError
+__________ test_invalid_restore_never_changes_current_state[receipt] ___________
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='77b2335ae169ab4590cb6f74020bf070228ad6e4f8b5151fa5e2d141866b061f')))
+tmp_path = PosixPath('<受控测试路径>')
+damage = 'receipt'
+
+    @pytest.mark.parametrize("damage", ["database", "key", "receipt"])
+    async def test_invalid_restore_never_changes_current_state(complete_state, tmp_path, damage):
+>       from harnessix.product_config.state_restore import restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:64: ModuleNotFoundError
+_ test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_intent] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='79f25008d51f3658cefcdac79814d11ed18f74a8b371c3852c53348b7dc5b9cd')))
+tmp_path = PosixPath('<受控测试路径>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a443e30>
+config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+phase = 'restore.after_intent'
+
+    @pytest.mark.parametrize(
+        "phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish", "restore.after_result"]
+    )
+    async def test_interruption_blocks_startup_before_root_preparation_and_recovers(
+        complete_state, tmp_path, monkeypatch, config, phase
+    ):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:88: ModuleNotFoundError
+_ test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_previous] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='b322b77b8614e15e1e30414735952c38fbdefa734a0127ab3f3ede04e54ae3a5')))
+tmp_path = PosixPath('<受控测试路径>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a71fbf0>
+config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+phase = 'restore.after_previous'
+
+    @pytest.mark.parametrize(
+        "phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish", "restore.after_result"]
+    )
+    async def test_interruption_blocks_startup_before_root_preparation_and_recovers(
+        complete_state, tmp_path, monkeypatch, config, phase
+    ):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:88: ModuleNotFoundError
+_ test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_publish] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='63f5d625fb5b9d5eaf697daa50c93378653299b6a3a001e82e78e5687fce5cc7')))
+tmp_path = PosixPath('<受控测试路径>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a5c73f0>
+config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+phase = 'restore.after_publish'
+
+    @pytest.mark.parametrize(
+        "phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish", "restore.after_result"]
+    )
+    async def test_interruption_blocks_startup_before_root_preparation_and_recovers(
+        complete_state, tmp_path, monkeypatch, config, phase
+    ):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:88: ModuleNotFoundError
+_ test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_result] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='cefde34798a7518e21895da488b2910b1b2c9507bc571a01566bdd4ef1f15e3f')))
+tmp_path = PosixPath('<受控测试路径>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a617070>
+config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+phase = 'restore.after_result'
+
+    @pytest.mark.parametrize(
+        "phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish", "restore.after_result"]
+    )
+    async def test_interruption_blocks_startup_before_root_preparation_and_recovers(
+        complete_state, tmp_path, monkeypatch, config, phase
+    ):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:88: ModuleNotFoundError
+_ test_explicit_rollback_returns_original_root_identity[restore.after_intent] __
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='db4a80de04aa0e18dbc026ee5889218ae5353267953e7f4d79b7263da7d9916b')))
+tmp_path = PosixPath('<受控测试路径>')
+phase = 'restore.after_intent'
+
+    @pytest.mark.parametrize("phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish"])
+    async def test_explicit_rollback_returns_original_root_identity(complete_state, tmp_path, phase):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:123: ModuleNotFoundError
+_ test_explicit_rollback_returns_original_root_identity[restore.after_previous] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='678e56cf60ec79993e147b476d59aa60e7ce96d12fa97ffb646024bcfabf9e86')))
+tmp_path = PosixPath('<受控测试路径>')
+phase = 'restore.after_previous'
+
+    @pytest.mark.parametrize("phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish"])
+    async def test_explicit_rollback_returns_original_root_identity(complete_state, tmp_path, phase):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:123: ModuleNotFoundError
+_ test_explicit_rollback_returns_original_root_identity[restore.after_publish] _
+
+complete_state = (PosixPath('<受控测试路径> tzinfo=datetime.timezone.utc), fingerprint='2ca8ddb462310ee8384cdb1fd023bc0a83892a576394e9906f4699b72a0f95ca')))
+tmp_path = PosixPath('<受控测试路径>')
+phase = 'restore.after_publish'
+
+    @pytest.mark.parametrize("phase", ["restore.after_intent", "restore.after_previous", "restore.after_publish"])
+    async def test_explicit_rollback_returns_original_root_identity(complete_state, tmp_path, phase):
+>       from harnessix.product_config.state_restore import recover_product_state_restore, restore_product_state
+E       ModuleNotFoundError: No module named 'harnessix.product_config.state_restore'
+
+tests/product_config/test_product_state_restore.py:123: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_restore.py::test_restore_switches_all_state_and_preserves_previous_root
+FAILED tests/product_config/test_product_state_restore.py::test_missing_root_restores_original_key_without_enrollment
+FAILED tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state[database]
+FAILED tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state[key]
+FAILED tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state[receipt]
+FAILED tests/product_config/test_product_state_restore.py::test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_intent]
+FAILED tests/product_config/test_product_state_restore.py::test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_previous]
+FAILED tests/product_config/test_product_state_restore.py::test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_publish]
+FAILED tests/product_config/test_product_state_restore.py::test_interruption_blocks_startup_before_root_preparation_and_recovers[restore.after_result]
+FAILED tests/product_config/test_product_state_restore.py::test_explicit_rollback_returns_original_root_identity[restore.after_intent]
+FAILED tests/product_config/test_product_state_restore.py::test_explicit_rollback_returns_original_root_identity[restore.after_previous]
+FAILED tests/product_config/test_product_state_restore.py::test_explicit_rollback_returns_original_root_identity[restore.after_publish]
+12 failed in 3.48s

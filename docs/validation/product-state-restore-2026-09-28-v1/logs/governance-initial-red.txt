@@ -1,0 +1,22 @@
+..................................F..                                    [100%]
+=================================== FAILURES ===================================
+_______ test_current_documentation_does_not_revive_retired_action_plane ________
+
+    def test_current_documentation_does_not_revive_retired_action_plane() -> None:
+        """现行事实源不得把已删除服务写成仍可部署或仍参与运行。"""
+
+        for relative_path, (
+            retired_fragments,
+            required_fragments,
+        ) in _CURRENT_DOCUMENTATION_EXPECTATIONS.items():
+            content = (ROOT / relative_path).read_text(encoding="utf-8")
+            assert all(fragment not in content for fragment in retired_fragments), relative_path
+>           assert all(fragment in content for fragment in required_fragments), relative_path
+E           AssertionError: docs/roadmap.md
+E           assert False
+E            +  where False = all(<generator object test_current_documentation_does_not_revive_retired_action_plane.<locals>.<genexpr> at 0x109753370>)
+
+tests/governance/test_product_runtime_convergence.py:187: AssertionError
+=========================== short test summary info ============================
+FAILED tests/governance/test_product_runtime_convergence.py::test_current_documentation_does_not_revive_retired_action_plane
+1 failed, 36 passed in 4.10s

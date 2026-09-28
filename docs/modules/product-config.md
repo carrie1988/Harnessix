@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 27
+code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_publication_scope.py
   - tests/product_config/test_action_contracts.py
   - tests/product_config/test_action_catalog.py
@@ -2063,7 +2064,8 @@ Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL�
 
 [完整详设](../changes/m09-r1-product-state-ownership.md)包含背景、七类状态盘点、三种图、字段与接口、
 源代码导航、失败/取消及原生平台边界。Root锁不替代原Session/Artifact认证、Audit Generation或静默确认。
-完整恢复、整体状态目录替换及崩溃恢复尚未交付，R1不关闭。
+后继[整体恢复](../changes/m09-r1-product-state-restore.md)复用同一Owner、候选验真和原Key，
+增加根外Journal及明确结算；R1整体和三平台实际恢复仍未关闭。
 
 ## 完整产品停机备份与原来源验真
 
@@ -2079,4 +2081,17 @@ Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL�
 正式命令为`harnessix state backup`及`harnessix state verify`；原Root丢失时仍可沿原地址根外回执验真。
 取消和超时由唯一工作线程协作，线程结算后才释放Owner；不将客户端确认丢失解释为允许覆盖或重放。
 [完整详设](../changes/m09-r1-product-state-backup.md)提供类、字段、接口、三种图、源码导航和失败语义。
-当前不提供整体恢复命令；Windows端口测试不能替代Windows完整产品安装、升级和恢复验收。
+正式停机恢复入口为`state restore/recover`，完整契约与目录状态机见下节。
+Windows端口测试不能替代Windows完整产品安装、升级和恢复验收。
+
+## 完整产品停机恢复与启动前未决保护
+
+[`state_restore.py`](../../src/harnessix/product_config/state_restore.py)取得根外Owner后先验原回执、
+完整副本及当前Key，再通过耐久Plan/活动指针与同父目录Rename替换整个Root，原目录保留。
+回退决定先落盘且不可改向；客户端确认丢失按原UUID结算，不重复切换。
+
+[`server.py`](../../src/harnessix/product_config/server.py)的`require_ready`先于Root、Key、Store和Provider准备；
+[`action_owner.py`](../../src/harnessix/product_config/action_owner.py)的独立及借用Owner同样拒绝未决恢复。
+终态但活动指针仍在时重新核对目录身份和原快照；已清除指针的重复请求只返回原历史元数据。
+完整字段、类、接口、状态表、失败/取消/超时和测试映射见[总体与详设](../changes/m09-r1-product-state-restore.md)。
+Windows原生安装、升级、完整恢复和R1整体保持开放。
