@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
+version: 2
+code_revision: a894055986bc41a10621c3002684dcc757769da3
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_state_windows_parent_contracts.py
   - tests/workspace/test_windows_private_security_contracts.py
   - tests/product_config/test_product_backup_files_windows.py
   - tests/product_config/test_session_key_windows.py
@@ -285,3 +286,30 @@ Windows默认产品新Root使用明确私有ACL，不依赖CPython0700的系统�
 原生诊断已确认旧式Root与子对象三ACE来源；新实现的本地模拟、POSIX回归和原生完整结果应分别归档。
 已知管理员可接管对象、同UID恶意修改、非本地文件系统和硬件掉电均不得表述为已隔离。
 不通过放宽Key合同、批准额外授权ACE、跳过失败或提高既有测试期限生成通过结果。
+
+## 16. 原生候选失败与父链READ_CONTROL修复
+
+实现`a894055`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36435366814/job/108971785462)
+为80通过、5跳过、6失败；其中五项在`PrivateStateTree`父链验证调用`GetSecurityInfo`时失败，
+另一个默认SDK用例在Git Turn失败，尚未进入完整备份。两套独立本地环境各1214通过、79跳过，
+这些结果不能替代原生成功，旧失败必须保留。
+
+原Workspace句柄链只有FILE_READ_ATTRIBUTES/data权限，用于身份和Reparse核验；
+[GetSecurityInfo正式要求](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo)
+读取Owner/DACL的句柄必须在打开时拥有READ_CONTROL。已保护Root并不自动向先前句柄追加该权限。
+
+`_verify_windows_parent_chain`对每个受管父段另用原私有文件端口打开READ_CONTROL句柄，
+执行原Key/状态精确校验，并与原元数据句柄的对象身份逐一比较；全部新句柄归原ExitStack关闭。
+原Workspace读取端口的权限及签名不变，不能为了备份扩大模型Workspace读取权限。
+[父链正反合同测试](../../tests/product_config/test_state_windows_parent_contracts.py)
+覆盖通过、身份变化拒绝、原句柄关闭及Key父段选路。默认SDK仅补固定公开失败码及Git端口固定错误码，
+不输出工具正文或降低Turn、备份、恢复断言。
+
+```text
+for each managed parent in original metadata chain:
+    permission_handle = original private port.open(parent, directory=True)
+    original port performs Owner/DACL checks using READ_CONTROL
+    bind permission_handle identity to original metadata handle identity
+    register permission_handle closure with original ExitStack
+identity mismatch -> refuse, without ACL repair or Workspace permission widening
+```

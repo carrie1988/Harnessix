@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
+version: 32
+code_revision: a894055986bc41a10621c3002684dcc757769da3
 owners:
   - core
 modules:
@@ -2112,3 +2112,7 @@ Windows原生安装、升级、完整恢复和R1整体保持开放。
 原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
 既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
 原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。
+
+备份父链的原Workspace元数据Handle不具有READ_CONTROL；私有端口另开权限Handle，
+执行精确DACL验证并逐一绑定原链身份，不扩大模型Workspace读取权限。
+原生候选失败和父链修复边界见同一详设第16节。

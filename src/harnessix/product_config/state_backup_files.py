@@ -326,10 +326,7 @@ def _open_private_file(
 
             chain, _ = tree._windows.root._open_chain("/".join(parts[:-1]) or ".", data=False)
             resources.callback(tree._windows.root._close_all, chain)
-            # 原根必须是当前用户Owner；Key父目录继续执行无继承精确双ACE校验。
-            for index, directory in enumerate(chain[-len(parts) :]):
-                files = tree._windows_port("/".join(parts[:index])) if index else tree._windows
-                files.security.verify(directory)
+            _verify_windows_parent_chain(tree, parts, chain, resources)
             files = tree._windows_port(relative)
             handle = files.open(
                 tree.path / relative,
@@ -360,6 +357,21 @@ def _open_private_file(
         else:
             # Windows元数据时间不替代DACL证明，读后独立复核原生句柄权限。
             files.security.verify(handle)
+
+
+def _verify_windows_parent_chain(
+    tree: PrivateStateTree, parts: tuple[str, ...], chain: list[int], resources: ExitStack
+) -> None:
+    """元数据Handle不能读DACL；为受管父段另开READ_CONTROL句柄并绑定原链身份。"""
+    root = tree._windows.root
+    for index, directory in enumerate(chain[-len(parts) :]):
+        files = tree._windows_port("/".join(parts[:index])) if index else tree._windows
+        checked = files.open(tree.path.joinpath(*parts[:index]), directory=True)
+        resources.callback(files.kernel.CloseHandle, checked)
+        if root._object_identity(root._information(checked)) != root._object_identity(
+            root._information(directory)
+        ):
+            raise file_error()
 
 
 def _tree_files(

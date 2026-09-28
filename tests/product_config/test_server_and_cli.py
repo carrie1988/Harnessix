@@ -62,9 +62,20 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
     config: ProductConfigV2,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from harnessix.processes.git_read_windows import WindowsGitReadProcess
     from tests.tools.test_windows_git import _git, _repository
 
     _credentials(monkeypatch)
+    original_git_run = WindowsGitReadProcess.run
+
+    async def observe_git_failure(self, request, cancel):
+        try:
+            return await original_git_run(self, request, cancel)
+        except KernelError as error:
+            print("WINDOWS_GIT_FAILURE_CODE=" + error.code)
+            raise
+
+    monkeypatch.setattr(WindowsGitReadProcess, "run", observe_git_failure)
     workspace, state = tmp_path / "workspace", tmp_path / "state"
     _repository(workspace)
     (workspace / "main.py").write_bytes((CANARY + "\n").encode())
@@ -104,7 +115,8 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
                 "failed",
                 "interrupted",
             }:
-                raise AssertionError("Windows默认Git编码链失败")
+                code = current.latest_turn.error.code if current.latest_turn.error else "none"
+                raise AssertionError(f"Windows默认Git编码链失败：{code}")
             await asyncio.sleep(0.01)
         else:
             raise AssertionError("Windows默认Git编码链未在期限内结束")
