@@ -367,6 +367,7 @@ async def run_product_stdio(
     # 只读路径预检先于创建根外锁，拒绝Workspace重叠时不向用户仓库写入锚点。
     await asyncio.to_thread(_check_state_overlap, state_directory, workspace_root)
     with product_state_owner(Path(state_directory)) as owner:
+        owner.require_ready(owner.state_root)
         state_root, git_path = await _validated_runtime_paths(
             workspace_root=workspace_root,
             state_directory=owner.state_root,

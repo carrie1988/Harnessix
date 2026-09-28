@@ -93,6 +93,8 @@ def _quiet_databases(
     tree: PrivateStateTree,
     paths: tuple[str, ...],
     control: MaintenanceIOControl,
+    *,
+    tolerate_corrupt: bool = False,
 ) -> Iterator[None]:
     """同时持有所有库的保留写锁；不提交业务变更、不推进Fence或清理UNKNOWN。"""
     with ExitStack() as resources:
@@ -119,13 +121,20 @@ def _quiet_databases(
             try:
                 database.execute("BEGIN IMMEDIATE")
             except sqlite3.OperationalError as error:
-                if getattr(error, "sqlite_errorcode", None) in {
+                if getattr(error, "sqlite_errorcode", 0) & 0xFF in {
                     sqlite3.SQLITE_BUSY,
                     sqlite3.SQLITE_LOCKED,
                 }:
                     raise KernelError(
                         "product_backup_not_quiet", "产品数据库仍有活跃写入者"
                     ) from None
+                raise
+            except sqlite3.DatabaseError as error:
+                if tolerate_corrupt and getattr(error, "sqlite_errorcode", 0) & 0xFF in {
+                    sqlite3.SQLITE_CORRUPT,
+                    sqlite3.SQLITE_NOTADB,
+                }:
+                    continue
                 raise
         yield
         control.checkpoint()
@@ -300,6 +309,43 @@ def _require_budget(budget_seconds: float) -> None:
         raise KernelError("product_backup_budget_invalid", "产品备份期限必须在零至300秒之间")
 
 
+def trusted_backup_manifest(owner: ProductStateOwner, body: bytes) -> ProductStateBackupManifest:
+    """原Manifest字节必须匹配根外回执；Journal不能用重新序列化或自带Key冒充来源。"""
+    manifest = ProductStateBackupManifest.model_validate_json(body)
+    if manifest.platform != os.name:
+        raise KernelError("product_backup_platform_mismatch", "备份仅支持原平台同机同用户验真")
+    with PrivateStateTree(state_owner_anchor(owner.state_root)) as anchor:
+        receipt = ProductStateBackupReceipt.model_validate_json(
+            read_small(anchor, f"backup-{manifest.backup_id}.json", 4096)
+        )
+    if receipt != ProductStateBackupReceipt(
+        backup_id=manifest.backup_id,
+        manifest_sha256=hashlib.sha256(body).hexdigest(),
+        store_id=manifest.store_id,
+        key_id=manifest.key_id,
+    ):
+        raise KernelError("product_backup_untrusted", "备份缺少原状态根外的匹配本机回执")
+    return manifest
+
+
+def verify_state_snapshot(
+    state: PrivateStateTree, manifest: ProductStateBackupManifest, control: MaintenanceIOControl
+) -> None:
+    """备份与恢复共用原Schema/MAC/引用核验；副本必须保持原文件集合及版本。"""
+    paths = tuple(entry.path for entry in manifest.files)
+    if _paths(state, control) != paths:
+        raise KernelError("product_backup_layout_invalid", "产品状态与备份清单不匹配")
+    revisions = file_revisions(state, paths, control)
+    for entry in manifest.files:
+        control.checkpoint()
+        if file_digest(state, entry.path, control) != (entry.size_bytes, entry.sha256):
+            raise KernelError("product_backup_changed", "产品备份原文件与可信清单不匹配")
+    if validate_product_state(state, paths, control) != (manifest.store_id, manifest.key_id):
+        raise KernelError("product_backup_key_mismatch", "备份Key与原Store身份不匹配")
+    if revisions != file_revisions(state, paths, control):
+        raise KernelError("product_backup_changed", "状态在只读验真期间发生变化")
+
+
 def _verify(
     owner: ProductStateOwner,
     destination: Path,
@@ -308,25 +354,9 @@ def _verify(
     owner.require(owner.state_root)
     target = absolute_address(destination)
     with PrivateStateTree(target) as bundle:
-        body = read_small(bundle, "manifest.json", MAX_BACKUP_MANIFEST_BYTES)
-        manifest = ProductStateBackupManifest.model_validate_json(body)
-        if manifest.platform != os.name:
-            raise KernelError("product_backup_platform_mismatch", "备份仅支持原平台同机同用户验真")
-        with PrivateStateTree(state_owner_anchor(owner.state_root)) as anchor:
-            receipt = ProductStateBackupReceipt.model_validate_json(
-                read_small(
-                    anchor,
-                    f"backup-{manifest.backup_id}.json",
-                    4096,
-                )
-            )
-        if receipt != ProductStateBackupReceipt(
-            backup_id=manifest.backup_id,
-            manifest_sha256=hashlib.sha256(body).hexdigest(),
-            store_id=manifest.store_id,
-            key_id=manifest.key_id,
-        ):
-            raise KernelError("product_backup_untrusted", "备份缺少原状态根外的匹配本机回执")
+        manifest = trusted_backup_manifest(
+            owner, read_small(bundle, "manifest.json", MAX_BACKUP_MANIFEST_BYTES)
+        )
         expected = ("manifest.json", *("state/" + entry.path for entry in manifest.files))
         actual = bundle.files(
             control,
@@ -337,19 +367,8 @@ def _verify(
         if actual != tuple(sorted(expected)):
             raise KernelError("product_backup_layout_invalid", "备份目录与受管清单不匹配")
         with PrivateStateTree(target / "state") as state:
-            paths = tuple(entry.path for entry in manifest.files)
-            revisions = file_revisions(state, paths, control)
-            for entry in manifest.files:
-                control.checkpoint()
-                if file_digest(state, entry.path, control) != (entry.size_bytes, entry.sha256):
-                    raise KernelError("product_backup_changed", "产品备份原文件与可信清单不匹配")
-            if validate_product_state(
-                state, tuple(entry.path for entry in manifest.files), control
-            ) != (manifest.store_id, manifest.key_id):
-                raise KernelError("product_backup_key_mismatch", "备份Key与原Store身份不匹配")
+            verify_state_snapshot(state, manifest, control)
             _verify_current_key(owner, state)
-            if revisions != file_revisions(state, paths, control):
-                raise KernelError("product_backup_changed", "备份在只读验真期间发生变化")
     owner.require(owner.state_root)
     control.checkpoint()
     return manifest
@@ -365,6 +384,7 @@ async def backup_product_state(
     """停机捕获完整产品事实；只有原工作线程结算后才能释放根外Owner。"""
     _require_budget(budget_seconds)
     with _backup_errors(), product_state_owner(state_root) as owner:
+        owner.require_ready(owner.state_root)
         return await run_maintenance_io(
             lambda control: _controlled(
                 lambda: _backup(owner, destination, control, fault or (lambda _: None)), control
@@ -382,6 +402,7 @@ async def verify_product_backup(
     """原根丢失时仍从独立本机回执验真；不修改备份、当前状态或原证明。"""
     _require_budget(budget_seconds)
     with _backup_errors(), product_state_owner(state_root) as owner:
+        owner.require_ready(owner.state_root)
         return await run_maintenance_io(
             lambda control: _controlled(lambda: _verify(owner, destination, control), control),
             budget_seconds=budget_seconds,

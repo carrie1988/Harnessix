@@ -16,7 +16,7 @@ def product_action_runtime_lock(
 ) -> Iterator[None]:
     """已有产品Owner时只借用；独立调用保留原竞争错误，不建立第二套锁。"""
     if root_owner is not None:
-        root_owner.require(state_root)
+        root_owner.require_ready(state_root)
         yield
         return
     with _standalone_owner(state_root):
@@ -28,7 +28,7 @@ def _standalone_owner(state_root: Path) -> Iterator[None]:
     # 仅转换取得锁时的错误；不得把Action业务抛出的同名错误误认为启动失败。
     with ExitStack() as resources:
         try:
-            resources.enter_context(product_state_owner(state_root))
+            owner = resources.enter_context(product_state_owner(state_root))
         except KernelError as error:
             code = (
                 "action_runtime_busy"
@@ -36,4 +36,5 @@ def _standalone_owner(state_root: Path) -> Iterator[None]:
                 else "action_runtime_owner_unavailable"
             )
             raise KernelError(code, "产品Action宿主锁不可用") from None
+        owner.require_ready(owner.state_root)
         yield

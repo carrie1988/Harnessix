@@ -99,6 +99,14 @@ class ProductStateOwner:
         except (OSError, KernelError, ValueError):
             raise KernelError("product_state_owner_invalid", "产品状态Owner身份无效") from None
 
+    def require_ready(self, state_root: Path) -> None:
+        """恢复意图未结算时禁止初始化Root/Key/Store；恢复命令只借用原require。"""
+        self.require(state_root)
+        if os.path.lexists(state_owner_anchor(self.state_root) / "restore-active.json"):
+            raise KernelError(
+                "product_state_restore_pending", "产品状态存在未决恢复，请先明确完成或回退"
+            )
+
 
 @contextmanager
 def product_state_owner(state_root: Path) -> Iterator[ProductStateOwner]:
