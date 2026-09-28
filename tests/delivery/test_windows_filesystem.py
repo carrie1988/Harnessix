@@ -213,7 +213,14 @@ def test_replacement_target_renamed_during_flush_is_rejected_without_overwriting
 
     def retarget(point: str):
         if point == "windows_temporary_flushed":
-            target.rename(tmp_path / "original.py")
+            # 使用同目录原生句柄模拟名称漂移；路径Rename自身会受到父链共享约束。
+            with _parent(tmp_path, "target.py") as (_, operations, _, _, _):
+                handle = operations.open_existing(target, delete=True)
+                assert handle is not None
+                try:
+                    operations.rename(handle, "original.py", replace=False)
+                finally:
+                    operations.kernel.CloseHandle(handle)
             target.write_bytes(b"foreign")
 
     monkeypatch.setattr(filesystem, "_fault", retarget)
