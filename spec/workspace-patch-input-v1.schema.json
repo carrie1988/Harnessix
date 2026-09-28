@@ -3,6 +3,68 @@
     "WorkspacePatchFile": {
       "additionalProperties": false,
       "description": "一个带来源前置条件的创建、替换或删除意图。",
+      "oneOf": [
+        {
+          "properties": {
+            "operation": {
+              "const": "create"
+            },
+            "expected_sha256": {
+              "type": "null"
+            },
+            "content": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "content",
+            "mode"
+          ]
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "replace"
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "expected_sha256",
+            "content",
+            "mode"
+          ]
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "delete"
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "content": {
+              "type": "null"
+            },
+            "mode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "expected_sha256"
+          ]
+        }
+      ],
       "properties": {
         "operation": {
           "enum": [
@@ -30,6 +92,7 @@
             }
           ],
           "default": null,
+          "description": "replace/delete必填，使用可信读取返回的完整SHA-256；create省略或null。",
           "title": "Expected Sha256"
         },
         "content": {
@@ -43,6 +106,7 @@
             }
           ],
           "default": null,
+          "description": "create/replace必填且非null，提供完整新文件正文，可为空字符串；delete省略或null。",
           "title": "Content"
         },
         "mode": {
@@ -59,6 +123,7 @@
             }
           ],
           "default": null,
+          "description": "create/replace必填且非null，JSON十进制整数420或493；Windows只支持420；delete省略或null。",
           "title": "Mode"
         }
       },

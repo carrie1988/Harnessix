@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import sqlite3
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -39,7 +40,8 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchInput,
     parse_workspace_action_review,
 )
-from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, ToolDescriptor
+from harnessix.execution.contracts import canonical_digest
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.contracts import (
     ProviderEvent,
@@ -55,7 +57,11 @@ from harnessix.product_config.action_composition import (
 from harnessix.product_config.action_contracts import build_product_action_config
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
-from harnessix.trusted_actions.contracts import ActionRouteSnapshot, CodingActionInvocation
+from harnessix.trusted_actions.contracts import (
+    ActionRouteSnapshot,
+    CodingActionInvocation,
+    build_trusted_tool_binding,
+)
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import WorkspaceLease
@@ -116,6 +122,8 @@ def _planned_action(
     root: Path,
     parent: Path,
     proposal: WorkspacePatchInput,
+    *,
+    descriptor: ToolDescriptor | None = None,
 ) -> tuple[
     TrustedActionRouter,
     WorkspacePatchActionExecutor,
@@ -141,9 +149,31 @@ def _planned_action(
         leases,
         environment.workspace_root,
     )
+    if descriptor is not None:
+        # 用既有成对Schema/Decoder端口登记冻结旧合同，不绕过原注册摘要校验。
+        original = definition.binding
+        definition = replace(
+            definition,
+            input_schema=descriptor.input_schema,
+            decode_arguments=lambda value: WorkspacePatchInput.model_validate_json(
+                json.dumps(value)
+            ),
+            binding=build_trusted_tool_binding(
+                source=original.source,
+                source_id=original.source_id,
+                tool=descriptor.name,
+                tool_version=descriptor.version,
+                tool_fingerprint=tool_fingerprint(descriptor),
+                input_schema_sha256=canonical_digest(descriptor.input_schema),
+                effect_class=original.effect_class,
+                risk_level=original.risk_level,
+                recovery_mode=original.recovery_mode,
+                executor_id=original.executor_id,
+            ),
+        )
     assert isinstance(definition.executor, WorkspacePatchActionExecutor)
     router.register(definition)
-    descriptor = workspace_patch_descriptor()
+    descriptor = descriptor or workspace_patch_descriptor()
     route = router.plan(
         CodingActionInvocation(
             invocation_id=uuid4(),
@@ -217,6 +247,60 @@ def test_workspace_patch_public_schemas_match_runtime_contracts() -> None:
         )
         == TypeAdapter(WorkspaceActionReviewRecord).json_schema()
     )
+
+
+async def test_workspace_patch_legacy_approval_is_not_rebound_or_executed(
+    tmp_path: Path,
+) -> None:
+    """旧公开合同的真实持久批准不能被新Descriptor重绑定或执行。"""
+
+    root = tmp_path / "workspace"
+    (root / "src").mkdir(parents=True)
+    (root / "tests").mkdir()
+    (root / "src/modified.py").write_bytes(b"old\n")
+    (root / "tests/deleted.txt").write_bytes(b"remove\n")
+    legacy = ToolDescriptor.model_validate_json(
+        (
+            Path(__file__).parent / "fixtures/workspace-patch-descriptor-pre-discovery-v1.json"
+        ).read_bytes()
+    )
+    old, _, _, plans, audit, transactions, leases, route = _planned_action(
+        root, tmp_path, _proposal(), descriptor=legacy
+    )
+    plan_id = route.plan.execution.plan_id
+    approval = old.approval(plan_id)
+    original_route = old.status(plan_id)
+    original_events = old.events(plan_id)
+    original_transaction = transactions.load(plan_id)
+    environment = build_fixed_product_action_environment(root)
+    current = TrustedActionRouter(
+        plans=plans, audit=audit, workspace_root=environment.workspace_root
+    )
+    current.register(
+        build_workspace_patch_definition(transactions, leases, environment.workspace_root)
+    )
+    with pytest.raises(KernelError, match="绑定已经变化") as changed:
+        await current.execute(plan_id)
+    assert changed.value.code == "trusted_tool_contract_changed"
+    with pytest.raises(KernelError) as old_invocation:
+        current.plan(route.plan.invocation, environment.context(str(root)))
+    assert old_invocation.value.code == "trusted_tool_contract_changed"
+    # 保持原Invocation ID但换成新指纹，仍不能覆盖已持久的旧批准与计划。
+    with pytest.raises(KernelError) as rebound:
+        current.plan(
+            route.plan.invocation.model_copy(
+                update={"tool_fingerprint": tool_fingerprint(workspace_patch_descriptor())}
+            ),
+            environment.context(str(root)),
+        )
+    assert rebound.value.code == "action_invocation_conflict"
+    assert current.status(plan_id) == original_route
+    assert current.events(plan_id) == original_events
+    assert current.approval(plan_id) == approval
+    assert transactions.load(plan_id) == original_transaction
+    assert (root / "src/modified.py").read_bytes() == b"old\n"
+    assert (root / "tests/deleted.txt").read_bytes() == b"remove\n"
+    assert not (root / "src/新增.py").exists()
 
 
 async def test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain(

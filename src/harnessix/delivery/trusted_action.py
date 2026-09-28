@@ -67,7 +67,11 @@ def workspace_patch_descriptor() -> ToolDescriptor:
         version=WORKSPACE_PATCH_VERSION,
         description=(
             "以一个需审批、可恢复的事务创建、替换或删除最多16个Workspace文本文件；"
-            "replace/delete必须携带读取到的完整SHA-256前置条件。"
+            "create必填完整content及mode，expected_sha256省略或null；"
+            "replace必填可信读取的完整expected_sha256、完整新文件content及mode；"
+            "delete必填可信读取的expected_sha256，content和mode省略或null。"
+            "content可为空字符串，不是Diff。mode必须为JSON十进制整数420（0644）或493（0755），"
+            "Windows只支持420；不得省略必填字段或使用字符串模式。"
         ),
         input_schema=WorkspacePatchInput.model_json_schema(),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,

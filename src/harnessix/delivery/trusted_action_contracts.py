@@ -7,7 +7,7 @@ import json
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import Field, TypeAdapter, field_validator, model_validator
+from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from harnessix.delivery.contracts import (
     FileMode,
@@ -31,11 +31,56 @@ MAX_REVIEW_CHUNK_CHARACTERS = 3000
 class WorkspacePatchFile(ContractModel):
     """一个带来源前置条件的创建、替换或删除意图。"""
 
+    # 公开原组合校验的条件；字段默认值与实际解码仍由下方原模型负责。
+    model_config = ConfigDict(
+        json_schema_extra={
+            "oneOf": [
+                {
+                    "properties": {
+                        "operation": {"const": "create"},
+                        "expected_sha256": {"type": "null"},
+                        "content": {"type": "string"},
+                        "mode": {"type": "integer"},
+                    },
+                    "required": ["content", "mode"],
+                },
+                {
+                    "properties": {
+                        "operation": {"const": "replace"},
+                        "expected_sha256": {"type": "string"},
+                        "content": {"type": "string"},
+                        "mode": {"type": "integer"},
+                    },
+                    "required": ["expected_sha256", "content", "mode"],
+                },
+                {
+                    "properties": {
+                        "operation": {"const": "delete"},
+                        "expected_sha256": {"type": "string"},
+                        "content": {"type": "null"},
+                        "mode": {"type": "null"},
+                    },
+                    "required": ["expected_sha256"],
+                },
+            ]
+        }
+    )
+
     operation: Literal["create", "replace", "delete"]
     path: str = Field(min_length=1, max_length=4096)
-    expected_sha256: Revision | None = None
-    content: str | None = Field(default=None, max_length=MAX_WORKSPACE_PATCH_INPUT_BYTES)
-    mode: FileMode | None = None
+    expected_sha256: Revision | None = Field(
+        default=None,
+        description="replace/delete必填，使用可信读取返回的完整SHA-256；create省略或null。",
+    )
+    content: str | None = Field(
+        default=None,
+        max_length=MAX_WORKSPACE_PATCH_INPUT_BYTES,
+        description="create/replace必填且非null，提供完整新文件正文，可为空字符串；delete省略或null。",
+    )
+    mode: FileMode | None = Field(
+        default=None,
+        description="create/replace必填且非null，JSON十进制整数420或493；Windows只支持420；delete省略或null。",
+    )
 
     @field_validator("content")
     @classmethod

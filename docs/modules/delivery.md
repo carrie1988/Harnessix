@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
+version: 18
+code_revision: 258d24c7387a3b4649e60c9b5136de7252e66443
 owners:
   - core
 modules:
@@ -1602,6 +1602,17 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 
 [`trusted_action_contracts.py`](../../src/harnessix/delivery/trusted_action_contracts.py)定义严格`WorkspacePatchInput`和Review JSONL。提案最多16个文件、512 KiB UTF-8正文，操作必须为带前置条件的`create/replace/delete`。每个规范文件生成写资源和父目录读资源；操作、before/after SHA及模式进入Action资源属性。
 
+模型可见Schema通过三个`oneOf`分支发布既有操作组合：create需要非null完整content和mode，
+expected_sha256省略或null；replace需要非null完整expected_sha256、content和mode；
+delete需要expected_sha256，content/mode省略或null。原`operation_shape`仍是实际解码边界，
+宿主不补默认mode。mode必须是JSON十进制整数420或493，空正文合法；Windows只支持420。
+Descriptor明确说明完整正文不是Diff；两类Adapter原样发布同一Schema。
+总UTF-8字节、控制字符、重复路径和平台能力仍由运行时检查，不能仅凭Schema合法授予执行权限。
+
+[操作Schema详设](../changes/m09-r3-workspace-patch-operation-schema.md)说明原真实失败、
+字段矩阵和身份兼容。Schema/描述改变Tool Fingerprint及Binding，但不改变字段导出、Tool版本或数据表。
+旧Invocation/持久Route由原合同变化错误拒绝，不迁移旧批准或自动重放；重新提案必须使用当前Workspace并再次审批。
+
 [`WorkspacePatchTransactionPlanner`](../../src/harnessix/delivery/trusted_action.py)令`transaction_id == plan_id`、`request_id == action:<plan_id>`，从Execution Plan中复核工具、Executor、Invocation、参数、资源和Snapshot，再调用既有Delivery Store保存Prepared计划与内容寻址Blob。重放只返回逐字段相同的既有事务，任何差异拒绝覆盖。
 
 ### 46.2 Review、执行与恢复
@@ -1612,7 +1623,8 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 ### 46.3 平台与验证
 
-该组合只在POSIX no-follow能力成立时构造；Windows明确省略。默认状态位于`workspace-transactions/transactions.db`与`blobs/`，必须和Execution、Audit、Lease、Session数据库一致备份。
+该组合按当前能力证据装配：POSIX复核no-follow，Windows使用已交付的原生NTFS端口并拒绝不支持的模式和元数据。
+原生专项通过不等于Windows11消费者完整编码验收。默认状态位于`workspace-transactions/transactions.db`与`blobs/`，必须和Execution、Audit、Lease、Session数据库一致备份。
 
 专项回归[`test_trusted_action_patch.py`](../../tests/delivery/test_trusted_action_patch.py)覆盖合同、正常链、提交确认丢失、审批孤儿、Lease竞争、取消部分效果、来源漂移和不重放；既有[`test_filesystem.py`](../../tests/delivery/test_filesystem.py)继续证明逐故障点文件系统语义。
 
@@ -1623,13 +1635,14 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 避免在诊断层重复手写Source、Tool、Risk、Policy、Recovery和Executor身份。Doctor只取Binding
 摘要和平台能力证据，不创建Transaction Store、Workspace Lease或文件效果。
 
-[`test_preflight.py`](../../tests/product_config/test_preflight.py)验证POSIX可用与Windows/不可用平台的
-`verified/omitted`语义；此变更不修改Delivery事务、发布、取消或恢复算法。
+[`test_preflight.py`](../../tests/product_config/test_preflight.py)验证当前POSIX/Windows能力证据及不满足准入时的
+`verified/omitted`语义；无状态诊断不修改Delivery事务、发布、取消或恢复算法。
 
 ## 47. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 18 | `258d24c7387a3b4649e60c9b5136de7252e66443`基线上的实现候选 | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；保留原校验、序列化和旧批准拒绝；线上认证另行验证 |
 | 7 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b直接Trusted Git Push由CI 35442924441完成七任务全矩阵验收并关闭 |
 | 6 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b直接Trusted Git Push、硬崩溃只对账与旧Action依赖删除候选；等待全矩阵CI |
 | 5 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录同源Workspace Patch Binding诊断由CI 35439332019验收关闭 |
