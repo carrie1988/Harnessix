@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 10
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -1493,7 +1493,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 | P1 | Diff无Artifact/模型视图接线 | 审批与模型上下文可能过大/泄漏 | Product UI与Artifact |
 | P1 | Expected Remote OID无正式观察合同 | Push旧值来源不可追溯 | Remote Read Action |
 | P2 | Implementation Digest覆盖不完整 | 依赖变化未必使旧Binding失效 | 能力版本规范 |
-| P2 | Schema漂移门禁在Windows尚未执行 | Windows发布前可能遗漏平台相关生成差异 | 0.9.6关闭Evals POSIX依赖后纳入Windows |
+| P2 | Schema漂移门禁在Windows尚未执行 | Windows发布前可能遗漏平台相关生成差异 | 1.1+评估开发生成器原生适配；R4验证Windows消费及核心产品链 |
 | P2 | Request ID允许纯空白 | 诊断和幂等质量不足 | 输入合同收紧 |
 | P2 | 错误异常/终态返回风格不统一 | 协议映射复杂 | 统一Delivery Result |
 

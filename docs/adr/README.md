@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 32
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 33
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -248,3 +248,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [0104 默认产品持久Session密钥](0104-managed-session-key-and-default-root.md)。
 
 - [ADR-0105 Artifact原正文持久来源认证](0105-authenticated-artifact-body.md)：复用独立Key、同事务原行Seal、旧行不追认与当前Scope复验。
+
+- [ADR 0106：1.0首发范围与风险分层发布门禁](0106-v1-release-scope-and-risk-based-gates.md)：六个剩余工作包、有限支持矩阵和延期能力拒绝；不降低商用核心门禁。

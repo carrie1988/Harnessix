@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
+version: 23
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -2039,7 +2039,7 @@ Campaign均通过，证明当时固定提交、模型和环境下的纵向链可
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
 | P0 | Historical链无OS Sandbox；Task Pack工程数据集虽有Container但仍是小型派生夹具 | 不能接动态第三方任务或外推大型仓库 | 0.9.2d/0.9.4/0.9.5安全执行 |
-| P0 | 工程Pack离线与真实Provider 20 Trial均已冻结，但真实任务成功与测试通过为0/20 | 证明失败可审计，不证明模型具备生产可用的软件工程能力 | 0.9.3 Agent改进与0.9.6能力矩阵 |
+| P0 | 工程Pack离线与真实Provider 20 Trial均已冻结，但真实任务成功与测试通过为0/20 | 证明失败可审计，不证明模型具备生产可用的软件工程能力 | R3先归因0/20并完成固定质量门槛；不扩评测平台 |
 | P0 | 原生Windows历史执行无等价ACL/锁/Process/Git证据 | 合同导入整改不提供执行替身 | 0.9.6发行门禁 |
 | P0 | Eval不参与默认发布阻断 | 当前回归可能绕过真实任务 | 0.9.2d～e/0.9.6 |
 | P0 | Eval自动审批不是用户审批 | 不能证明生产权限体验 | 产品E2E Eval |

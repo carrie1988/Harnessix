@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 8
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -153,7 +153,7 @@ docker run --rm harnessix:<revision>
 运行真实Agent仍需显式提供Workspace、Product Config、Provider Extra和受控状态目录；Container Sandbox的被执行镜像与
 该开发命令镜像是两个不同信任域。
 
-0.9.5前仍需补齐签名、SBOM、只读RootFS、资源限制、状态卷、Provider/Sandbox装配和升级回退验证，才能发布正式镜像。
+正式Agent容器镜像延期1.1+，不作为1.0发行物；未来发布前仍需上述装配、来源、资源、状态卷及升级验证。受管Container Sandbox后端不因镜像延期而取消。
 
 ## 7. 目录与权限
 
@@ -202,8 +202,10 @@ docker run --rm harnessix:<revision>
 
 ## 11. 未完成的制品治理
 
-0.9后续必须补齐三平台正式安装器、版本通道、升级/回退编排、签名与验证、SBOM、来源证明、恶意依赖扫描、
-离线安装策略和自动更新失败恢复。在这些门禁关闭前，源码安装和本地Wheel只用于开发、审计和受控候选验证。
+首发按[范围收敛计划](../changes/m09-to-v1-release-scope-convergence.md)采用统一Wheel通道和有限三平台目标：
+固定版本、精确安装输入、来源/校验、实际发行物SBOM/依赖/Secret检查、脱离源码安装、手动升级及同机恢复必须通过。
+MSI/DMG、多包管理器、自动更新、额外架构和正式Agent镜像延期1.1+，不能被误列为首发前置条件。
+当前Wheel仍是开发/候选制品，不因计划收敛自动变为正式商用发行物。
 
 ## 默认产品首次启动与持久密钥
 

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 24
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 25
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -54,6 +54,10 @@ Coding Agent产品拓扑；历史`harnessix serve`、`harnessix worker`和Action
 新Artifact正文随Session托管Key按[来源认证详设](changes/m09-4a-authenticated-artifact-body.md)跨同Key重启验证；
 升级旧库不会补签旧Artifact，旧正文在有Key产品中继续失败关闭。
 恢复单元必须同时保存数据库/WAL一致状态与独立Key；当前保护性Key备份/跨机迁移和正式三平台升级仍未实现。
+
+首发按[范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)采用统一Wheel通道、有限三平台目标和手动停机升级。
+同机同用户完整状态/Key备份与恢复仍必须验收；跨机迁移、在线快照、自动更新、正式Agent镜像及远端扩展进入1.1+。
+这些是范围调整，不改变当前能力尚未通过正式发行验证的事实。
 
 具体操作分别由以下资料维护：
 

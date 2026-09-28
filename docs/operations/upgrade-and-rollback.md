@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 8
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -250,9 +250,10 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 
 ## 14. 未完成项
 
-统一Schema清单、在线跨组件备份、跨组件一致性Checkpoint、自动Preflight、Journal Migration Checksum、正式滚动升级兼容窗口、
-自动回退、灾难恢复RPO/RTO和三平台安装器升级测试尚未完成。这些能力未落地前，升级必须采用受控停机、完整备份和
-人工发布评审。
+首发必需：当前认证候选到1.0的版本/Schema清单、停机一致备份（全部受管状态与原Key）、迁移预检、失败保留、
+同机同用户恢复及三平台实际演练。当前仍未完成，不能以只备份SQLite替代完整匹配状态单元。
+在线跨组件快照、滚动升级、自动回退、跨机Key迁移、通用维护CLI和灾难恢复RPO/RTO平台延期1.1+；
+不必先实现这些平台化能力才能采用安全的受控停机、完整备份及人工升级流程。详见[首发收敛计划](../changes/m09-to-v1-release-scope-convergence.md)。
 
 ## 默认产品认证升级的失败语义
 

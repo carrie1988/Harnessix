@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
+version: 6
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -27,6 +27,8 @@ supersedes: []
 ---
 
 # MCP模块设计
+
+首发范围以[ADR 0106](../adr/0106-v1-release-scope-and-risk-based-gates.md)为准：保留受控本地stdio MCP；远端Streamable HTTP/OAuth进入1.1+，不再是0.9.4关闭前置条件。本文远端目标属于后续候选，正式入口拒绝证明仍属R1。
 
 ## 1. 模块摘要
 

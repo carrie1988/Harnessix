@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 39
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 40
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -557,7 +557,16 @@ make check
 
 `make check`当前依次执行Ruff格式检查、Ruff规则检查、可读性治理、文档静态门禁、公共合同和工程Task Pack逐字节漂移检查、Mypy和全量Pytest；`make spec`重新生成契约产物，提交前还必须确认`spec/`没有非预期Git差异。命令定义以[`Makefile`](../Makefile)为准，锁定依赖以[`uv.lock`](../uv.lock)为准。
 
-文档结构、链接、元数据、生命周期、源码同步和Mermaid结构已由DOC-1.6自动门禁覆盖；Linux文档CI对变化图执行真实渲染。公共合同生成检查在Linux/macOS执行；Windows继续执行文档静态门禁和治理套件，但因Evals现有POSIX `fcntl`依赖显式跳过合同生成测试，该限制由0.9.6关闭。
+文档结构、链接、元数据、生命周期、源码同步和Mermaid结构已由DOC-1.6自动门禁覆盖；Linux文档CI对变化图执行真实渲染。公共合同生成检查在Linux/macOS执行；Windows继续执行文档静态门禁和治理套件，但因Evals现有POSIX `fcntl`依赖显式跳过合同生成测试，生成器额外原生适配进入1.1+；首发Schema由Linux统一生成冻结，但Windows协议消费、导入及核心产品链必须在R4真实验证。
+
+## 16.1 首发验证范围与反馈层级
+
+以[六个工作包](changes/m09-to-v1-release-scope-convergence.md)和[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)为当前发布门禁集合。
+开发批次执行受影响契约、故障回归和静态检查；固定候选执行完整必要离线回归、三平台核心链、真实Provider/任务与Beta验收。
+不逐提交等待六实例，不为已延期能力新增首发矩阵；仍可达的高风险入口必须修复或正式拒绝。
+已关闭Soak按代码、负载和配置影响复核，只重跑受影响场景；既有失败和原始证据不改写。
+R3先复核原0/20失败归因和Task Pack适用性，再预注册完整运行与阈值；规划目标为现有20 Trial严格任务及必需检查均至少12/20，三仓均有成功。
+重大变更文档及源码/测试映射保留；固定候选集中交付Release Packet，不重复生成每个小修复的全套证明包。
 
 ## 17. 发布判定
 

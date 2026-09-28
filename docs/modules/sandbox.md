@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58
+version: 8
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -1317,7 +1317,7 @@ BusyBox SHA-256、预拉镜像并执行这两个用例；跨平台普通CI还运
 | P1 | Sandbox无直接Telemetry | 无法量化拒绝、清理失败和残留 | 0.9.2/0.9.3 |
 | P2 | `sandbox/__init__.py`无公开导出 | 调用方耦合具体文件，公共API边界不明确 | 0.9.0结构治理后续 |
 | P2 | Probe Capture Output先完整缓存后检查大小 | 15秒内异常输出可能占用过多内存 | 0.9.3 |
-| P2 | Schema生成门禁未覆盖Windows | Windows发布前可能遗漏平台相关生成差异 | 0.9.6关闭Evals POSIX依赖后纳入Windows |
+| P2 | Schema生成门禁未覆盖Windows | Windows发布前可能遗漏平台相关生成差异 | 1.1+评估开发生成器原生适配；R4验证Windows消费及核心产品链 |
 
 ## 31. 验收标准
 

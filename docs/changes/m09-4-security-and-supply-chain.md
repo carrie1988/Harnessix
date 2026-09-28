@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 28
-code_revision: e730f4858c76dbbb614a81b1b3e12184c433266c
+version: 29
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -27,6 +27,14 @@ supersedes: []
 
 # 0.9.4 安全、许可证与供应链详细设计
 
+## 0. 当前首发范围与原设计适用性
+
+[ADR 0106](../adr/0106-v1-release-scope-and-risk-based-gates.md)将首发安全工作收敛到R1/R2。
+本文a/b/c只对正式装配可达路径及实际发行输入形成首发门禁；复用已有控制和测试。
+**d远端MCP/OAuth延期1.1+**。本文远端领域/流程保留为后续候选设计，不再是0.9关闭或1.0发布前置条件。
+延期能力必须不装配或正式拒绝；已复现的首发可达高风险缺口仍阻断发布。
+完整逐项处置见[收敛计划](m09-to-v1-release-scope-convergence.md)。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |
@@ -36,7 +44,7 @@ supersedes: []
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |
 
-0.9.4把"功能完整"收口为"攻击面有回归、供应链可审计、公开错误不泄漏"。路线图固定范围为：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查、Trusted Action Runtime公开错误清洗与泄漏回归、远端MCP Streamable HTTP/OAuth（独立目标身份、凭据生命周期、受管出口）。本切片按a～d四个连续纵向子切片实施，任何子切片不得绕过前置项。
+0.9.4把"功能完整"收口为"攻击面有回归、供应链可审计、公开错误不泄漏"。路线图固定范围为：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查、Trusted Action Runtime公开错误清洗与泄漏回归、远端MCP Streamable HTTP/OAuth（独立目标身份、凭据生命周期、受管出口）。原a～d完整设计保留供追溯；当前只执行首发a/b/c必要边界，d延期后独立实施。
 
 ## 2. 需求背景
 
@@ -49,7 +57,7 @@ supersedes: []
 1. **0.9.4a 公开错误清洗统一化**：Policy/Executor/Reconcile异常在全部公开边界（模型ToolResult、Session失败、Action Audit结果、Agent Protocol错误、遥测标签）只产生稳定公开码；注入含路径/argv/Secret式样/内部异常正文的故障，逐边界断言不泄漏。
 2. **0.9.4b 依赖、许可证与SBOM**：版本化依赖清单与许可证审计、CycloneDX SBOM、仓库与产物Secret扫描、安装脚本与扩展来源审查、AGPL/商业双许可权利链复核，全部产物进入CI门禁。
 3. **0.9.4c 攻击测试套件**：按TM-01～TM-13建立编号化攻击回归，覆盖威胁模型第6节每组威胁的当前控制；失败关闭语义可复现。
-4. **0.9.4d 远端MCP Streamable HTTP/OAuth**：独立目标身份（固定origin/证书摘要/不允许隐式宿主凭据）、OAuth凭据生命周期（获取、存储引用、刷新、撤销、失败关闭）、受管出口（复用Sandbox Egress合同），离线契约与故障注入测试，默认产品不装配。
+4. **1.1+候选：原0.9.4d远端MCP Streamable HTTP/OAuth**：独立目标身份（固定origin/证书摘要/不允许隐式宿主凭据）、OAuth凭据生命周期（获取、存储引用、刷新、撤销、失败关闭）、受管出口（复用Sandbox Egress合同），离线契约与故障注入测试，默认产品不装配。
 
 ### 3.2 非目标
 
@@ -90,7 +98,7 @@ flowchart TB
     subgraph C[0.9.4c 攻击回归]
         TM[TM-01～TM-13控制] --> ATK[编号化攻击测试]
     end
-    subgraph D[0.9.4d 远端MCP]
+    subgraph D[1.1后远端MCP候选]
         ID[目标身份+证书摘要] --> OAUTH[OAuth凭据生命周期]
         OAUTH --> EGR[受管Egress]
         EGR --> CONN[Streamable HTTP Connection]
@@ -126,7 +134,7 @@ sequenceDiagram
     Note over P: 泄漏回归注入器扫描全部公开面
 ```
 
-### 7.2 0.9.4d 远端MCP时序
+### 7.2 1.1后远端MCP候选时序
 
 ```mermaid
 sequenceDiagram
@@ -161,7 +169,7 @@ sequenceDiagram
 | 公开错误合同 | `src/harnessix/trusted_actions/public_errors.py`（规划） | `tests/trusted_actions/test_public_errors.py`（规划） |
 | 泄漏回归注入 | `tests/trusted_actions/leak_fixtures.py`（规划） | 五公开面×四式样矩阵 |
 | 供应链扫描 | `scripts/license_scan.py`、`scripts/sbom_generate.py`、`scripts/secret_scan.py`（规划） | `tests/governance/`对应正反例（规划） |
-| 编号攻击回归 | 既有`tests/`下按TM编号聚合 | `tests/security/test_tm_*.py`（规划） |
+| 编号攻击回归 | 既有模块测试到TM编号映射 | 原模块补缺失用例，不建设重复测试包 |
 | 远端MCP | `src/harnessix/mcp/`目标身份、OAuth、Egress扩展（规划） | `tests/mcp/test_remote_*.py`（规划） |
 
 ## 10. 失败、错误分类、兼容与观测
@@ -181,7 +189,7 @@ sequenceDiagram
 1. 0.9.4a：泄漏回归覆盖五类公开面 × 四类敏感式样；既有Trusted Action/网关测试全部通过。
 2. 0.9.4b：许可证白名单复核通过、SBOM可重生成且逐字节稳定、Secret扫描零命中且包含正例自检。
 3. 0.9.4c：TM-01～TM-13每组至少一个编号攻击回归在CI三平台通过。
-4. 0.9.4d：离线契约（目标身份、凭据生命周期、Egress、Schema漂移、UNKNOWN对账）与故障注入全部通过；默认产品不装配的证明测试。
+4. 1.0：证明远端配置未支持且正式入口拒绝；1.1+启用远端MCP前再完成目标身份、OAuth、Egress、Schema漂移及UNKNOWN故障验收。
 5. 每个子切片完成须同步现行模块设计与威胁模型链接，`make check`全链通过。
 
 ## 13. 风险、限制与后续工作
@@ -200,7 +208,7 @@ sequenceDiagram
 整改不得标记关闭。SBOM格式与干净检出整改只解决库存交付，不替代这些独立安全门禁。
 
 - 扫描与攻击回归覆盖的是已知模式，不证明无未知漏洞；1.0发布仍需0.9.5安装证据与0.9.6 Provider证据。
-- 远端MCP的公网真实联调需要受控目标与凭据，属0.9.5 Dogfooding候选，不阻塞本切片离线合同。
+- 远端MCP的离线实现和公网真实联调均进入1.1+；本地stdio MCP仍须满足首发安全边界。
 - 0.9.5受控Beta与0.9.6真实Provider凭据是外部依赖，届时逐项登记。
 
 ## 14. 变更记录

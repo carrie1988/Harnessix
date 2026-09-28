@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 5
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -314,7 +314,7 @@ POSIX比较键保持规范路径原值，大小写不同是不同资源。`norma
 
 两个Schema由[`scripts/generate_specs.py`](../../scripts/generate_specs.py)生成。DOC-1.6已增加临时目录重建和
 逐字节比较，Linux/macOS的`make check`与CI会阻断漂移；Windows因Evals现有POSIX `fcntl`依赖显式Skip，
-该平台合同生成能力由0.9.6关闭。
+该开发生成器的额外Windows适配进入1.1+；首发由Linux统一冻结Schema，Windows原生消费/核心产品链由R4验证。
 
 ## 10. Resource Request与External Root
 

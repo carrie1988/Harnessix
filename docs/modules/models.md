@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 684a17ecc013549e3472978f1c0e8c1eca4db92e
+version: 5
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -681,7 +681,7 @@ estimate_cost(attempt, price, verified_context):
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
 | 仅Chat Completions与Messages | 缺OpenAI Responses、原生推理、多模态和结构化输出 | 1.x按真实任务与官方合同独立设计 |
-| Provider真实Smoke证据有限 | 离线SDK通过不能证明所有线上兼容端点 | 0.9.6能力矩阵和受控验证 |
+| Provider真实Smoke证据有限 | 离线SDK通过不能证明所有线上兼容端点 | R3有限配置认证；更多模型/地域矩阵延期1.1+ |
 | Base URL只做HTTPS语法校验 | 恶意配置仍可指向私网或错误目标 | 0.9.4目标身份、DNS和受管出口 |
 | 无全局限流/Circuit Breaker | 大量C端并发可能触发平台限流和雪崩 | 0.9.3容量基准后设计调度层 |
 | 部分/未知Usage无法硬限费用 | 已知Token预算只是消费下界 | 0.9.2/0.9.6预算与账单证据 |

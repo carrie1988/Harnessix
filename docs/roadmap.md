@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 106
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 107
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -75,6 +75,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 不按功能数量判断完成度。没有取消、超时、恢复、安全边界和完备测试的功能，不得标记为生产完成。
 重大变更必须在实现前形成可评审的正式设计，并在合入前同步现行模块设计、源码与测试映射；
 文档角色、结构和完成门槛以[文档工程规范](governance/documentation-standard.md)为准。
+
+**首发范围收敛**：0.9～1.0剩余工作以[六个发布工作包与逐项处置](changes/m09-to-v1-release-scope-convergence.md)及[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)为准。保留完整本地编码产品、三平台原生核心流程、安全/恢复、权利及真实质量；远端MCP/OAuth、公网Git自动Push、通用维护平台、全模型/价格矩阵、自动更新与多安装渠道后置。延期不计作已完成，也不允许已知危险入口继续暴露。
 
 ## 2. 历史基线：0.1 Action Plane
 
@@ -208,7 +210,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 6. 0.4：Model Runtime
 
-状态：**核心运行能力已交付，整体0.4仍待0.4.3c计价适用性验收后关闭**。0.4.1 / 0.4.2a / 0.4.2b1/b2 / 0.4.3a/b1/b2已完成离线验收，双Adapter、尝试账本、SDK用量/计费元数据映射、显式价格绑定的成本报告和受控Smoke/白名单诊断已经实现；百炼文本、内存工具和审批重开已实测通过。0.4.3c作为跨版本发布证据继续跟踪，不阻断已经独立验收的0.5/0.6，但必须最迟在0.9发布候选阶段关闭，未关闭时不得发布1.0。见[0.4实施计划](m04-model-runtime.md)。
+状态：**核心运行能力已交付；0.4.3c按首发最小范围并入R3，扩大计价研究延期**。双Adapter、尝试账本、显式价格估算及固定Smoke已经实现；旧计价验证记录保留。1.0必须验证正式认证配置的真实功能、Usage、凭据保护与估算适用边界，但不以全地域/服务等级价格矩阵或供应商账单对账为前置条件。未知价格不能报零或冒充人民币硬预算。历史实现见[0.4实施计划](m04-model-runtime.md)，当前发布条件见[R3](changes/m09-to-v1-release-scope-convergence.md#5-六个发布工作包与退出条件)。
 
 ### 目标
 
@@ -237,7 +239,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] Retry 不重复提交已经交给 Tool Runtime 的调用；
 - [x] 普通认证/错误路径的 Session 与诊断 canary 验证；Smoke 不输出任意语义内容，不承诺对恶意供应商反射做通用 DLP；
 - [x] 显式启用的 Smoke 入口与默认离线 CI 分离；
-- [ ] 0.4.3c：真实 API、Usage/计费上下文与脱敏证据验收；百炼文本/内存工具/审批重开已通过，计价适用性未收口，见 [验证记录](validation/bailian-2026-09-03.md)。
+- [ ] 0.4.3c首发边界（R3）：有限认证配置的真实API、Usage、脱敏与估算适用性；全计价组合延期。旧[验证记录](validation/bailian-2026-09-03.md)保留，不因范围修改自动通过。
 
 ### 验收标准
 
@@ -457,7 +459,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 ## 11. 0.9：Release Candidate与质量工程
 
-状态：**0.9.3已完成；0.9.4～0.9.6进行中**。0.9.0、0.9.1、0.9.2及DOC-1.0～DOC-1.6已完成，当前26/26个生产源码包均有独立现行模块设计，仓库内文档受版本化元数据、职责、生命周期、链接、追踪和差异同步门禁约束。0.9.1f3物理删除独立HTTP/Worker体系；0.9.2完成3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收，真实Suite的0/20严格结果已[冻结](validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)关闭；0.9.3b实现Revision `cb3f3ea`已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c修复版Revision `33fcf02`已完成双层Owner、Operation Deadline、只对账恢复、跨Store扫描并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)六实例关闭；0.9.3d六个场景已全部完成三平台正式负载、冻结Profile与第二独立PASS（[ADR 0092](adr/0092-reproducible-local-soak-and-release-thresholds.md)已接受），0.9.3阶段关闭；0.9.4～0.9.6未完成，0.9阶段整体仍保持进行中。
+状态：**0.9.0～0.9.3已完成；0.9.4～0.9.6按收敛范围继续，整体0.9未完成**。
+DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20基线](validation/provider-engineering-2026-09-20-v1/README.md)和当前许可/Windows失败保持原判定。范围缩减不是验收通过。
+后续执行以R1～R6为活动队列，不根据附录中的历史开放项恢复已延期功能。
 
 ### 目标
 
@@ -469,79 +473,36 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 - [x] **0.9.1 CLI/TUI产品体验**：完整交互、流式消息、计划、工具进度、Diff、审批、成本、会话管理、配置向导、环境检查和错误自助；完成Windows原生只读Coding Tool Runtime与统一Action的产品装配，不以WSL兼容替代原生端口；a～f全部子切片已经对应全矩阵CI验收；
 - [x] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；离线20/20执行链与真实Provider 0/20严格质量基线均已冻结；
 - [x] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
-- [ ] **0.9.4 安全、许可证与供应链**：攻击测试、AGPL/商业双许可权利链、依赖和许可证扫描、SBOM、Secret扫描、安装脚本与扩展来源审查；为Trusted Action Runtime补齐Policy/Executor/Reconcile异常的统一公开错误清洗和泄漏回归测试；远端MCP Streamable HTTP/OAuth须在本切片建立独立目标身份、凭据生命周期和受管出口；
-- [ ] **0.9.5 安装、升级与Dogfooding**：macOS/Linux/Windows发行物、全新安装、跨版本升级、备份恢复、卸载、诊断包、受控Beta和缺陷关闭；公网Git认证须在本切片完成独立Secret作用域、known-hosts/凭据Helper和三平台验收；
-- [ ] **0.9.6 Provider发布证据**：关闭0.4.3c计价适用性，完成受控真实Provider Smoke、能力矩阵、成本适用边界和脱敏验证。
+- [ ] **0.9.4 安全、许可证与供应链（R1/R2）**：首发实际可达的公开输出/凭据、Owner/取消/恢复、高风险副作用、许可证/权利链、锁定安装输入、SBOM与发行物扫描；复用现有TM相关测试，不建设重复安全平台；
+- [ ] **0.9.5 三平台发行、停机升级与小批Beta（R4/R5）**：统一Wheel通道，全新安装、当前认证候选升级、数据库与Key同机恢复、卸载、低敏诊断、3～5名真实开发者及至少15个任务；公网Git认证和自动更新后置；
+- [ ] **0.9.6 真实编码与有限Provider发布证据（R3）**：原0/20归因及主链整改，现有Task Pack固定质量运行；至少一份认证配置的真实功能、Usage、取消、凭据保护与价格适用边界；不扩大模型/地域/计价矩阵。
 
-### 0.9.4实施计划与完成边界
+### 0.9.4收敛后的完成边界
 
-按[安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)分为四个子切片；
-代码存在和扫描零命中不是完成条件，所有已复现缺口先进入发布阻断清单。
+- [ ] **0.9.4a（R1）**：首发装配的模型、Tool/Action、Session/Artifact、Protocol/SDK及诊断入口；当前Key/Store来源认证和同机备份恢复。未知旧历史不补签，危险维护入口须正式拒绝。
+- [ ] **0.9.4b（R2）**：处理12件Archive许可复核，补商业权利及实际发行输入；复用现有扫描、库存和SBOM，不放宽现有拒绝策略。
+- [ ] **0.9.4c（R1）**：建立首发可达TM风险到既有测试的映射，只补真正缺失的正反例，不另建重复测试平台。
+- **0.9.4d：延期1.1+**。远端MCP Streamable HTTP/OAuth不再阻断1.0；本地stdio MCP保留，未支持远端配置必须在正式入口拒绝。
 
-- [ ] **0.9.4a 公开错误与泄漏回归**：统一Resolver/Policy/Executor/Reconcile的公开码与固定消息，
-  校验模型、Session、Audit、Protocol与Telemetry五个公开面。[计划回调整改](changes/m09-4a-plan-error-trust-boundary.md)
-  已按阶段有限码表重建固定错误并补真实集成回归；[Gateway回调专项](changes/m09-4a-gateway-callback-error-boundary.md)
-  治理Context/Review/Output异常，补读写Execute/Reconcile五公开面集成与取消回收验证；
-  [冻结报告](validation/gateway-errors-2026-09-27-v1/README.md)记录4113 passed/32 skipped、57专项与结构化结果已确认缺口。
-  [结构化失败整改](changes/m09-4a-returned-failure-boundary.md)已实现有限码、新Audit归一、正式Process/Eval摘要、失败Provider正常返回再验证及旧链兼容；
-  [专项冻结报告](validation/returned-failures-2026-09-27-v1/README.md)记录4220 passed/32 skipped、107专项及干净4492a66 Wheel/sdist，当前新合同CI仍待后台验证；
-  [成功Owner投影](changes/m09-4a-success-output-projection-boundary.md)已补双摘要/正式引用、Process/Eval成功语义、序列化前预算、独立期限和取消回收；
-  [冻结报告](validation/owner-projections-2026-09-27-v1/README.md)区分专项、完整回归、独立旧版负例及新代码CI状态。
-  前序e748a7d的[CI 36295859840](https://github.com/carrie1988/Harnessix/actions/runs/36295859840)已终态：Windows/macOS/文档/容器成功，Python3.12许可证12件失败、Python3.13取消；不称矩阵通过。
-  [执行器原始返回预算](changes/m09-4a-executor-output-budget.md)已补整个封套编码前校验、完整后置期限和取消记账；
-  [专项冻结报告](validation/executor-output-2026-09-27-v1/README.md)记录78专项、独立24负例、真实文件/进程退出恢复及版本绑定完整回归。
-  [正式来源成功合同](changes/m09-4a-builtin-success-contracts.md)已补内联/Owner统一DTO、计划身份及发布前检查；
-  167专项包含119新增及48原Owner项，四个既有Schema、原导出和依赖门禁保持；
-  [自定义成功合同](changes/m09-4a-custom-success-contract.md)已补显式闭合Schema、完整描述指纹、
-  内联/Owner/恢复与独立MCP导出字段授权，以及旧版SQLite计划/审批/Audit原样重开；
-  [冻结报告](validation/custom-success-2026-09-27-v1/README.md)记录91专项（89新增）、631相关及4641 passed/32 skipped版本绑定完整回归。
-  [版本化Secret公开保护](changes/m09-4a-versioned-secret-publication.md)已补同一快照执行/保护、
-  值/键/标量及规范JSON检查、Owner前后验证、父Task取消和仅元数据恢复；产品启动失败也清理。
-  [验收目录](validation/secret-publication-2026-09-27-v1/README.md)冻结62专项（56新增）、814相关及4701 passed/32 skipped版本绑定完整回归；
-  新观察确认模型凭据同值可经只读Artifact分页与历史传播，非完整产品启动或真实模型验收。
-  [产品公开边界](changes/m09-4a-product-publication-boundary.md)补选定模型Profile链原材料、普通ToolResult与完整Artifact JSONL保护，
-  Migration 0028同事务证明及分页/历史全文复验；旧NULL或不同Store Epoch拒绝正文，不重写历史。
-  当前运行证明不是跨重启安全Seal，已确认写入保留元数据且不再执行。
-  [固定版本验收](validation/product-publication-2026-09-27-v1/README.md)进一步确认正式Process二进制Base64前缀位移可通过当前有限检查，
-  经实际审批/Runtime/SQLite/Artifact读取及正式Owner替身复现，解码页含已登记值。
-  [类型化二进制公开与持久前保护](changes/m09-4a-typed-binary-output-publication.md)已补按用途正式解码、同流跨Chunk、共享预算、
-  保护专用Owner v2封套、真实本机退出/超时/取消及已验真效果元数据恢复；
-  [固定版本证据](validation/typed-binary-publication-2026-09-28-v1/README.md)单独冻结，旧缺口报告保持不变；
-  不将本机进程、Owner替身或离线检查当作Windows、实际容器、真实Provider与整体发布验收。
-  前序固定版本进一步确认模型直接文本进入Session、SDK回放与下一次模型历史，Thread摘要及非空遥测未命中；
-  [模型流式文本与事件持久前保护](changes/m09-4a-model-text-publication.md)独立治理该来源：安全前缀持续输出，
-  单步骤跨块/UTF8/共享预算，事件批次CAS前检查及主/摘要模型完整请求检查；
-  保持原文、尝试意图、用量、Hash和Schema，不把它等同于全部Session持久入口或历史授权关闭。
-  [模型文本验收](validation/model-text-publication-2026-09-28-v1/README.md)冻结110专项（66新增功能）、两项新增治理测试，
-  完整4910 passed/32 skipped、稳定测试树、干净Wheel/sdist和发行物隔离导入消费链；
-  独立旧版负例、即时安全前缀和实际消费链分开记录；
-  另确认用户prompt已被直接持久化和SDK回放，即使出站拒绝且Provider调用为0，入站边界仍须整改。
-  [用户输入持久前与命令回执保护](changes/m09-4a-input-persistence-boundary.md)独立补Runtime原字段、
-  完整命令Claim前检查、原缓存/结果公开检查、批准审计前检查和原Trace前检查；
-  [独立证据](validation/input-persistence-2026-09-28-v1/README.md)区分旧版实际Runtime/SQLite/SDK负例和整改，
-  固定156专项（57新增功能合同、2项开放元数据观察）、另2项新增治理及4969 passed/32 skipped完整回归；
-  干净发行物及Wheel隔离导入、683个历史验证文件原字节和源码等价分别冻结。
-  原始JSON-RPC id/错误path的基线开放观察由[原帧切片](changes/m09-4a-protocol-frame-publication.md)修复当前材料出口，Scope丢失后的SDK相关ID可用性、未知旧历史及跨重启证明仍需独立治理。
-  [Artifact正文持久来源认证](changes/m09-4a-authenticated-artifact-body.md)现已使用Migration 0030与独立Session Key签新行，
-  同一逻辑Store合法重启可核验原正文；旧无Seal行仍拒绝，当前Scope、Session引用和TTL继续独立校验。
-  全部Provider凭据和Secret端到端、历史Session/其他公开出口、Key备份/维护CLI、Owner内部同步阻塞及Store归属仍开放，不标记0.9.4a完成；
-- [ ] **0.9.4b 许可证与供应链**：锁定依赖、版本/来源许可证证据、有效且可重生成的SBOM、
-  仓库与发行物Secret检查、安装/镜像/扩展来源和权利声明审查。
-  [可复现SBOM整改](changes/m09-4b-reproducible-sbom.md)、Windows编码与合同导入由0601ede六作业CI验证；历史失败不追认通过。
-  [有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)取消整文件豁免并增加真实发行物、归档、预算和未完成阻断；
-  [本地3996 passed/32 skipped及干净源码发行物](validation/secret-scan-2026-09-27-v1/README.md)已通过；747fe9b CI五成功、Windows夹具失败；
-  [夹具修复](changes/m09-4b-secret-fixture-portability.md)由6677e54的[CI 36291475364](https://github.com/carrie1988/Harnessix/actions/runs/36291475364)
-  Windows作业验证，macOS/文档/容器作业也成功，Python 3.12因12件许可违规失败、3.13矩阵取消，不称完整CI通过。
-  [Archive许可证据](changes/m09-4b-archive-license-evidence.md)已采集全部777件并形成离线门禁候选，
-  pywin32 12件含LGPL复核信号，原拒绝策略保持不变，许可发布门禁仍失败；
-  许可证版本来源绑定、不可变安装输入和权利审查仍须关闭；
-- [ ] **0.9.4c 编号化攻击回归**：TM-01～TM-13及子编号均须对应真实攻击输入、具体控制、预期拒绝、
-  不变副作用和三平台适用边界，不用不存在的接口、空构造或宽泛异常断言冒充回归；
-- [ ] **0.9.4d 远端MCP**：Streamable HTTP、独立目标身份、OAuth获取/刷新/撤销与Secret最小作用域、
-  受管出口、会话/Schema漂移及UNKNOWN对账；默认产品不自动装配，完整离线合同与故障测试须通过。
+当前实现依据：[托管Session Key](changes/m09-4a-managed-session-key-and-root.md)、
+[认证SQLite](changes/m09-4a-authenticated-sqlite-session.md)、[Artifact原正文认证](changes/m09-4a-authenticated-artifact-body.md)、
+[安全/供应链详设](changes/m09-4-security-and-supply-chain.md)。既有固定验证目录不修改。
+安全阶段仅在R1/R2必要门禁通过后关闭；延期能力不能标记为实现完成。
 
-只有四项均通过源码研究、正式设计、实现、失败/取消/超时/恢复测试、三平台相关门禁和文档同步，
-才可关闭0.9.4；这不替代0.9.5的真实安装/Beta及0.9.6 Provider发布证据。
+### 六个剩余发布工作包
+
+| 顺序 | 工作包 | 明确完成结果 |
+|---|---|---|
+| R1 | 核心安全与恢复收口 | 正式入口安全；取消/超时及恢复确定；错Key/坏备份不破坏原状态；延期危险能力拒绝 |
+| R2 | 权利与发布输入 | 许可证/商业权利处置、锁定安装输入、实际发行物SBOM/Secret/通知一致 |
+| R3 | 真实编码质量与有限模型认证 | 原0/20归因；现有20 Trial按预注册门槛验证；至少一份真实认证配置 |
+| R4 | 三平台发行与手动升级 | 脱离源码安装，原生编码闭环，认证候选升级、同机恢复和卸载通过 |
+| R5 | 小批真实Beta与文档 | 3～5名独立开发者、至少15任务及三平台使用；P0/P1处置；用户可独立操作 |
+| R6 | 1.0正式封板 | 同一候选必要门禁通过，版本/制品/支持矩阵与商业授权资料交付 |
+
+R1高风险收口与R3失败归因优先，R2并行；R4准备无需等待更多扩展功能。
+详细逐项处置、退出阈值、依赖及延期表见[发布范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)。
+
 
 ### 0.9.1实施计划与完成边界
 
@@ -704,8 +665,8 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 ### 验收标准
 
 - 0.9.0可维护性基线和渐进门禁完成，新增功能不再扩大未解释的核心职责或文档债务；
-- 多仓库任务集覆盖五类软件工程任务，并为不同难度、语言生态和工具链输出可复现分层结果；
-- 每次关键变更能够输出与固定基线比较的Eval报告，不以单一任务或单次模型结果宣称质量；
+- 复用既有3仓10 Case/20 Trial Task Pack，按运行前冻结的R3阈值验证，不新增语言生态或评测平台；
+- 编码行为变更补受影响回归；固定候选统一进行真实Eval，不对不影响编码行为的文档/局部修复反复调用模型；
 - 连续故障注入和Soak后无Session损坏、孤儿进程、未归因文件和重复外部副作用；
 - 受控Beta发现的发布阻塞缺陷已关闭或有明确降级边界；
 - 新用户仅依据正式文档即可完成安装、配置、首个真实任务、恢复和卸载。
@@ -714,33 +675,28 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 
 ### 发布范围
 
-- [ ] 稳定的Agent、Tool、Provider、Context、Session和Protocol v1契约；
-- [ ] OpenAI-compatible与Anthropic Provider，以及明确的能力和计价适用边界；
-- [ ] 读取、搜索、通用进程、多文件修改、测试、Diff、Checkpoint、Rollback和Git交付闭环；
-- [ ] 持久Session、Resume、Fork、Retry、Archive与Context Compaction；
-- [ ] Host/Container执行、安全策略、审批、网络和Secret；
-- [ ] MCP、项目指令、Skills和Hooks；
-- [ ] CLI/TUI、Headless App Server和Python Agent SDK；
-- [ ] Trusted Action Runtime外部副作用治理；
-- [ ] macOS、Linux和Windows安装、升级、恢复、卸载和诊断；
-- [ ] 可复现Eval、质量报告、安全文档和运维资料。
+- [ ] 版本化Agent/Tool/Provider/Context/Session/Protocol；现有CLI/TUI、stdio和Python SDK；
+- [ ] 三平台Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit、Checkpoint和Rollback闭环；
+- [ ] 持久会话、恢复、取消、审批、压缩、当前状态认证以及同机同用户数据库/Key备份；
+- [ ] 两类Provider Adapter与离线契约；至少一份真实认证配置及明确的Usage/估算边界；
+- [ ] 受控本地stdio MCP、项目指令、Skills/Hooks、Host等级及一种Container后端；
+- [ ] 统一Wheel通道、有限三平台目标、手动升级/回退、删除/卸载、低敏诊断、支持文档与商业授权。
 
 ### 发布门禁
 
-- [ ] 所有公共Schema有版本、兼容窗口和废弃策略；
-- [ ] 所有数据库及持久Artifact变更有向前迁移、备份恢复和回滚说明；
-- [ ] macOS、Linux和Windows全新安装、跨版本升级、失败回滚和卸载验证通过；
-- [ ] 用户数据导出、删除、保留和诊断脱敏策略经过测试；
-- [ ] 安全文档、Threat Model v2、Sandbox、网络、Secret及扩展供应链完成审查；
-- [ ] 默认CI完全离线，受控真实Provider门禁独立且可审计；
-- [ ] 0.4.3c及所有跨版本发布债务已经关闭；
-- [ ] 不存在未分类或未处置的发布阻塞级可靠性与安全缺陷；
-- [ ] README中的每项当前能力声明都有可运行证据；
-- [ ] 发布物可复现并具备版本、校验摘要、SBOM、Changelog、迁移说明和支持矩阵；
-- [ ] AGPL社区许可证、商业授权边界、贡献权利链、商标规则和第三方通知完成发布审查；
-- [ ] 0.9固定Eval、Soak和受控Beta达到预先冻结的发布阈值，不在看到结果后降低标准。
+- [ ] **R1**：正式装配安全与失败恢复通过；没有可达但未经处置的高风险延期入口；
+- [ ] **R2**：自有权利链、12件许可复核、精确安装输入和实际发行物扫描/SBOM/通知通过；
+- [ ] **R3**：真实编码结果达到预注册阈值，认证配置的功能/Usage/保护通过；0/20不能视为商用质量；
+- [ ] **R4**：三平台核心链、脱离源码全新安装、当前认证候选升级、同机恢复及卸载通过；
+- [ ] **R5**：小批真实Beta及正式资料完成，无未处置P0/P1；
+- [ ] **R6**：同一候选Revision的必要离线/原生/真实门禁通过，版本、校验、Changelog、迁移和支持矩阵一致。
 
-1.0的规模声明限定为大量相互独立的macOS、Linux和Windows本地实例。该版本不宣称多租户隔离、云端高可用、远程执行池或集中式服务SLO。
+公共Schema保留版本/兼容/废弃策略；现有数据库及Artifact变更仍需迁移和失败恢复证据。
+固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
+0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
+
+1.0限定为大量独立本地实例，不宣称多租户、云端高可用、远程执行池或集中服务SLO。
+Windows原生核心编码承诺不取消；具体有限OS/架构和模型支持表由[R4及认证白名单](changes/m09-to-v1-release-scope-convergence.md#3-首发产品边界与总体架构)定义，未验收不广告支持。
 
 ## 13. 1.x与后续演进
 
@@ -756,6 +712,12 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 
 ### 产品与能力候选
 
+- 远端MCP Streamable HTTP/OAuth及扩展市场；
+- Agent公网HTTPS/SSH Git认证、known-hosts、凭据Helper和Push装配；
+- 更多Provider/模型/地域/模式认证、全面计价、供应商账单对账及实时费用硬上限；
+- 通用保留/GC与维护CLI、跨机Key导出/轮换和旧无证明历史有权导入；
+- 原生安装器、多包管理器、自动更新、正式Agent镜像及额外OS/架构；
+- 在线一致性快照、滚动升级、自动回退和扩大Beta/评测生态；
 - Subagent、Reviewer和并行任务；
 - IDE、桌面客户端和Web；
 - LSP、代码索引和大型Monorepo优化；
@@ -774,14 +736,18 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 5. 正常、失败、取消、超时、崩溃和恢复路径按风险完成测试；
 6. 日志、Trace、指标、Artifact和诊断资料不包含明文凭据；
 7. 数据库及持久Artifact变更包含迁移、兼容、备份恢复和旧Reader测试；
-8. `make check`通过；
+8. 受影响检查通过；固定候选及阶段关闭执行完整必要门禁，局部修复不逐提交等待全部CI；正式发布不豁免失败的安全、许可或核心恢复检查；
 9. 相关README、架构、部署、安全、测试和运维文档与实现同步；
 10. 至少有一个跨组件集成验证；涉及模型或编码行为的切片还需真实Provider或真实仓库验证；
 11. 代码来源、许可证、版权、商标和第三方通知与实际发布物一致；
 12. Git Diff仅包含该迭代必要变更，发布声明能够追溯到测试、Eval或运行证据。
 
 
-## 0.9.4a 原协议帧子切片进展
+## 附录：0.9.4a既有切片证据
+
+以下记录对应各自固定版本，不是新增活动任务。旧段落中的开放项按R1～R6重新分类；延期项不因历史文字重入首发。
+
+### 0.9.4a 原协议帧子切片进展
 
 原相关id与完整封套先于分派准入，完整响应原UTF8字节受协商限额与当前材料保护；
 initialize使用纯候选，公开检查通过后原子提交连接状态，关闭Notification不响应。
@@ -790,7 +756,7 @@ initialize使用纯候选，公开检查通过后原子提交连接状态，关�
 该固定版本中直接Service查询未关闭；后续查询边界进展见下一节。未登记旧历史、全部Provider材料与跨重启Seal仍开放，0.9.4a不勾选完成。
 
 
-## 0.9.4a 导出查询与同一Session宿主子切片
+### 0.9.4a 导出查询与同一Session宿主子切片
 
 [查询原DTO详设](changes/m09-4a-query-publication-boundary.md)将六个导出Service查询纳入原Params/DTO/错误保护，
 恢复调度后置且关闭不新增Task，构造时Session对象绑定先于Delta订阅。61项查询测试含1开放旧历史观察，
@@ -798,7 +764,7 @@ initialize使用纯候选，公开检查通过后原子提交连接状态，关�
 未知历史/Seal、全部Provider、内部聚合权限及Request Store物理归属仍开放，0.9.4a保持未完成。
 
 
-## 0.9.4a 认证历史与跨重启保护实施边界
+### 0.9.4a 认证历史与跨重启保护实施边界
 
 [源码研究](research/authenticated-history-and-seal.md)、[总体与详细设计](changes/m09-4a-authenticated-history-and-seal.md)和
 [ADR-0102草案](adr/0102-authenticated-history-and-event-seal-core.md)覆盖独立Key、原Scope来源、新事件CAS、认证事件链、
@@ -811,7 +777,7 @@ initialize使用纯候选，公开检查通过后原子提交连接状态，关�
 这仍是前置组件：当前默认Root旧历史和普通投影SHA风险保持开放，
 独立Key、SQLite同事务与认证投影、Artifact和三平台部署必须继续完成，发布门禁不变。
 
-## 0.9.4a 显式认证SQLite Session子切片
+### 0.9.4a 显式认证SQLite Session子切片
 
 真实SQLite新事件CAS、原Seal、完整前缀与派生Checkpoint已进入同一事务；
 Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Runtime/Fork、Artifact混合事务、
@@ -825,7 +791,7 @@ Migration 0029不补签/回写旧历史，原缺失证明失败关闭。实际Ru
 默认Root及正式Key Backend由后续托管切片启用；新Artifact正文来源证明由Migration 0030接入。
 本段保留原阶段边界，当前仍因旧行、备份/维护、其他出口及三平台验证保持0.9.4a与整体0.9开放。
 
-## 0.9.4a 默认产品托管Session Key子切片
+### 0.9.4a 默认产品托管Session Key子切片
 
 默认Root已强制独立本机Key与认证Session，先验原库再构造Provider和开放Protocol。
 缺Key、旧未证明历史不补签/不删除；规范文件/ACL、原候选恢复、超时取消单任务结算有测试。

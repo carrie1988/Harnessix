@@ -1,8 +1,8 @@
 ---
 doc_type: product-charter
 status: current
-version: 2
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 3
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -46,12 +46,15 @@ supersedes: []
 - 提供CLI/TUI、无界面的App Server和Python Agent SDK；
 - 单个 Workspace 对应一个明确的文件系统边界；
 - 支持交互式会话和一次性 Headless 任务；
-- 支持 OpenAI-compatible 与 Anthropic 两类 Provider；
+- 保留OpenAI-compatible与Anthropic两类Adapter和统一契约；正式模型支持按有限认证白名单，首发至少一份真实配置认证；
 - 支持读取、搜索、通用进程、多文件事务修改、Shell、Git、测试、Checkpoint和Rollback闭环；
 - 支持持久会话、恢复、取消、审批和上下文压缩；
-- 支持 MCP、项目指令和 Skills；
+- 支持受控本地stdio MCP、项目指令和Skills/Hooks；远端HTTP MCP及OAuth进入1.1+；
 - 支持Host安全级别与至少一种Container隔离执行后端；
-- 高风险文件、进程、Git和外部副作用由内部Trusted Action Runtime统一治理。
+- 高风险文件、进程、Git和外部副作用由内部Trusted Action Runtime统一治理；首发Git交付止于本地审查/Commit，公网Push由用户在Agent外执行。
+- 首发采用统一Wheel通道、有限OS/架构、手动停机升级和同机同用户数据库/Key备份；多安装器、自动更新和跨机Key迁移不作为发布前置条件。
+
+具体范围、逐项延期和六个发布工作包见[首发范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)及[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)。延期能力不能以实验性名义继续开放已知危险入口。
 
 1.0面向大量相互独立的本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。Windows必须具备原生Workspace、Git、Process和CLI能力；强隔离优先使用受管WSL2或Docker Desktop后端，不能把仅能在WSL2运行声明为Windows原生支持。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
@@ -113,16 +116,16 @@ Harnessix Code 1.0 必须满足：
 
 1. 能在非示例仓库中完成“理解—规划—多文件修改—执行—测试—审查—Git交付”的闭环；
 2. 支持交互式与 Headless 两种运行方式；
-3. 支持至少两个 Provider 家族，并通过统一契约测试；
+3. 保留至少两个Provider Adapter家族的统一契约；至少一份线上配置通过正式认证，其余不宣称商用模型支持；
 4. 支持会话恢复、用户取消、Tool 超时和上下文压缩；
 5. 具备Workspace边界、通用进程监督、命令审批、网络策略、Secret最小化注入和至少一种隔离执行后端；
-6. 支持 MCP、项目指令和 Skills；
+6. 支持受控本地stdio MCP、项目指令和Skills/Hooks；
 7. 有稳定、版本化的 App Server 协议；
 8. 有单元、契约、集成、端到端、故障注入和真实仓库 Eval；
-9. 提供macOS、Linux和Windows安装、跨版本升级、备份恢复、卸载、配置、诊断和安全文档；
+9. 提供有限目标下macOS、Linux和Windows原生核心流程、统一安装、当前认证候选升级、同机备份恢复、卸载、配置、诊断和安全文档；
 10. 提供用户数据导出、删除、保留及诊断脱敏能力；
-11. 发布可复现的质量、成本、延迟、任务成功率和人工干预率基线；
-12. 通过长会话Soak、故障注入、安全测试和受控真实用户Dogfooding门禁。
+11. 使用既有固定Task Pack达到运行前冻结的真实质量门槛；报告Usage、时延、人工干预及显式适用的估算费用，未知不能报零；
+12. 复用仍适用的已关闭Soak，补受影响故障/安全回归；小批真实Beta和同一候选完整必要门禁通过。
 
 ## 7. 项目能力摘要
 

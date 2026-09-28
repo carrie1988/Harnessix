@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 129
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 130
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -69,6 +69,13 @@ supersedes: []
 本页是Harnessix Code正式资料的统一入口。文档按“当前事实、历史决策、研究证据、验证证据”分层，避免读者通过里程碑历史拼接当前实现。
 
 当前产品实现已经完成路线图0.1～0.9.2范围，但仍不是1.0正式商用版本。0.9.1f3已物理删除独立Action HTTP/Worker实现，保留历史Session只读兼容和旧数据库离线归档。0.9.2完成多仓库Suite/Transcript、不可变Task Pack、可恢复Runner、正式Case Adapter、3仓10 Case/20 Trial离线与真实Provider基线；关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型Suite记录81次模型请求、318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本，严格任务成功与测试通过均为0/20；[真实Provider证据](validation/provider-engineering-2026-09-20-v1/README.md)按原始失败冻结。0.9.3a已由CI 35494960166关闭；0.9.3b实现Revision `cb3f3ea`已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收。0.9.3c增加Action双层Owner、Operation期限、只对账恢复与跨Store扫描，修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)完成六实例验收。完整Soak、三平台发行物、安全供应链、Dogfooding和Provider能力矩阵属于0.9.3d～0.9.6后续工作。
+
+## 1.1 当前商用发布计划
+
+当前未完成的0.9～1.0工作已按[首发范围收敛总体与详细计划](changes/m09-to-v1-release-scope-convergence.md)重审，
+以R1～R6为执行队列。远端MCP/OAuth、公网Push、全模型/计价矩阵、通用维护平台和自动更新后置；
+已实现功能的安全、原生三平台核心链、真实编码质量、权利和受控Beta不降低。
+本节是当前范围；下表及历史固定验证记录中的更广开放项不自动成为首发前置条件。
 
 ## 2. 推荐阅读路径
 
@@ -181,7 +188,7 @@ supersedes: []
 | 0.9.1 | [CLI/TUI产品体验详细设计](changes/m09-1-cli-tui-product-experience.md)；[0.9.1c完整领域交互详细设计](changes/m09-1c-domain-interactions.md)；[0.9.1d配置与Windows只读链详细设计](changes/m09-1d-configuration-preflight-windows-read.md)；[0.9.1e默认Trusted Action组合详细设计](changes/m09-1e-default-trusted-action-composition.md)；[0.9.1f单一产品收敛](changes/m09-1f-single-product-runtime-convergence.md) | 已关闭；a～f全部子切片通过对应全矩阵CI，f3由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 0.9.2 | [Eval Suite与Transcript基线详细设计](changes/m09-2-eval-suite-and-transcript-baseline.md)、[0.9.2c可恢复Suite Runner详细设计](changes/m09-2c-recoverable-suite-runner.md)、[0.9.2d多仓库离线基线详细设计](changes/m09-2d-multi-repository-offline-baseline.md)、[0.9.2e真实Provider基线详细设计](changes/m09-2e-controlled-real-provider-baseline.md) | 已关闭；离线20/20与真实Provider 20/20执行证据均已冻结，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收 |
 | 0.9.3 | [可靠性与性能详细设计](changes/m09-3-reliability-and-performance.md)、[六场景Soak设计](changes/m09-3d-soak-and-performance-evidence.md)、[证据索引](validation/README.md) | 已登记关闭；长会话、多Thread、Artifact增长、SDK容量、完整产品重启、Action恢复均有三平台基线、预冻结Profile与第二独立PASS；关闭Revision `6685982`由[CI 36123848005](https://github.com/carrie1988/Harnessix/actions/runs/36123848005)验收。固定工程场景不外推为C端规模或SLA，历史失败保留。 |
-| 0.9.4 | [安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)、[可复现SBOM](changes/m09-4b-reproducible-sbom.md)、[计划错误信任边界](changes/m09-4a-plan-error-trust-boundary.md)、[Gateway回调错误边界](changes/m09-4a-gateway-callback-error-boundary.md)、[结构化失败结果](changes/m09-4a-returned-failure-boundary.md)、[有界成功Owner投影](changes/m09-4a-success-output-projection-boundary.md)、[执行器原始返回预算](changes/m09-4a-executor-output-budget.md)、[原始返回冻结报告](validation/executor-output-2026-09-27-v1/README.md)、[Owner投影冻结报告](validation/owner-projections-2026-09-27-v1/README.md)、[结构化失败冻结报告](validation/returned-failures-2026-09-27-v1/README.md)、[Gateway专项冻结报告](validation/gateway-errors-2026-09-27-v1/README.md)、[治理合同导入](changes/m09-4b-governance-contract-import-boundary.md)、[有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)、[跨平台夹具](changes/m09-4b-secret-fixture-portability.md)、[Archive许可证据](changes/m09-4b-archive-license-evidence.md)、[扫描验证报告](validation/secret-scan-2026-09-27-v1/README.md)、[许可及夹具冻结报告](validation/license-evidence-2026-09-27-v1/README.md)、[前序阶段证据](validation/security-governance-2026-09-27-v1/README.md) | 进行中；0601ede六作业CI成功，Windows编码/合同导入整改已验证；Secret v2本地3996 passed/32 skipped及干净源码Wheel/sdist通过，747fe9b CI五成功/Windows夹具失败，6677e54后台CI的Windows/macOS/文档/容器作业成功，Python许可门禁12件违规失败、另一Python作业取消，不称全矩阵成功。Gateway新增57项异常/取消/真实集成专项通过，结构化失败结果已建立有限公开合同及正式诊断工件边界；成功Owner投影已补双摘要、正式DTO、序列化前预算和时限/取消；原始返回已补封套预算与完整后置期限，有效成功JSON公开权限和其他边界仍开放。许可证v2绑定全部777件，pywin32 12件受限正文冲突保持发布阻断；安装输入、攻击套件和远端MCP仍开放，不标记0.9.4完成。 |
+| 0.9.4 | [安全与供应链总体详设](changes/m09-4-security-and-supply-chain.md)、[可复现SBOM](changes/m09-4b-reproducible-sbom.md)、[计划错误信任边界](changes/m09-4a-plan-error-trust-boundary.md)、[Gateway回调错误边界](changes/m09-4a-gateway-callback-error-boundary.md)、[结构化失败结果](changes/m09-4a-returned-failure-boundary.md)、[有界成功Owner投影](changes/m09-4a-success-output-projection-boundary.md)、[执行器原始返回预算](changes/m09-4a-executor-output-budget.md)、[原始返回冻结报告](validation/executor-output-2026-09-27-v1/README.md)、[Owner投影冻结报告](validation/owner-projections-2026-09-27-v1/README.md)、[结构化失败冻结报告](validation/returned-failures-2026-09-27-v1/README.md)、[Gateway专项冻结报告](validation/gateway-errors-2026-09-27-v1/README.md)、[治理合同导入](changes/m09-4b-governance-contract-import-boundary.md)、[有界Secret扫描](changes/m09-4b-bounded-secret-scan.md)、[跨平台夹具](changes/m09-4b-secret-fixture-portability.md)、[Archive许可证据](changes/m09-4b-archive-license-evidence.md)、[扫描验证报告](validation/secret-scan-2026-09-27-v1/README.md)、[许可及夹具冻结报告](validation/license-evidence-2026-09-27-v1/README.md)、[前序阶段证据](validation/security-governance-2026-09-27-v1/README.md) | 进行中；0601ede六作业CI成功，Windows编码/合同导入整改已验证；Secret v2本地3996 passed/32 skipped及干净源码Wheel/sdist通过，747fe9b CI五成功/Windows夹具失败，6677e54后台CI的Windows/macOS/文档/容器作业成功，Python许可门禁12件违规失败、另一Python作业取消，不称全矩阵成功。Gateway新增57项异常/取消/真实集成专项通过，结构化失败结果已建立有限公开合同及正式诊断工件边界；成功Owner投影已补双摘要、正式DTO、序列化前预算和时限/取消；原始返回已补封套预算与完整后置期限，有效成功JSON公开权限和其他边界仍开放。许可证v2绑定全部777件，pywin32 12件受限正文冲突保持发布阻断；安装输入及首发攻击回归仍开放，不标记0.9.4完成；远端MCP按ADR 0106延期1.1+。 |
 
 0.6专题历史设计包括[窗口规划](compaction-window-planning.md)、[Compaction运行时与活动窗口](compaction-runtime-and-windows.md)、[摘要尝试账本](compaction-attempt-ledger.md)、[Thread生命周期](thread-lifecycle.md)和[Turn Retry/Provider切换](turn-retry-and-provider-switch.md)。这些资料解释对应切片的形成过程；当前行为统一由Context、Agent、Session、Models和Artifacts模块设计维护。
 

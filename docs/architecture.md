@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 79
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 80
+code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
 modules:
@@ -559,7 +559,7 @@ recover_route(route):
 |---|---|---|
 | 三平台发行物未完成 | 源码与CI矩阵验证 | 0.9.5 |
 | 长会话容量和退化尚未完成发布基线 | 0.9.3a已限制传输；0.9.3b已实现持久容量、Plan-first保留和备份恢复；0.9.3c已实现Action Owner、Deadline和只对账恢复；物理空间、扫描规模与完整Soak仍缺 | 0.9.3d |
-| 多仓库Eval真实基线成功率为0% | 固定北京模型已完成20/20 Trial并冻结完整Token、成本和失败证据；不以基础设施完成掩盖0/20任务成功与0/20测试通过 | 0.9.3/0.9.6持续改进与能力矩阵 |
+| 多仓库Eval真实基线成功率为0% | 固定北京模型已完成20/20 Trial并冻结完整Token、成本和失败证据；不以基础设施完成掩盖0/20任务成功与0/20测试通过 | R3失败归因与有限认证质量门禁 |
 | 真实攻击面覆盖不足 | 威胁模型、路径/Secret/网络门禁 | 0.9.4 |
 | 默认产品扩展面仍有限 | 显式组合、能力证明、失败关闭 | 0.9.1/0.9.4 |
 | 历史Process事件仍占当前模型 | 只读Codec与稳定拒绝错误 | 后续兼容清理窗口 |
