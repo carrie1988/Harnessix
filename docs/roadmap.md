@@ -513,6 +513,8 @@ R2中的许可证、权利链和其他不直接改变功能的治理工作低优
 正式发行前仍必须完成必要处置，不能把未处置事项标记为已通过。不得新增不必要的治理平台。
 
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
+固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
+该增量不关闭R4：Windows默认Git读取/交付、三平台脱离源码安装、升级恢复、独立Beta与最终同候选门禁仍需完成。
 该切片复用原审批、Lease和Transaction状态机；原生验证、Git产品装配及三平台发行退出条件仍分别验收。
 详细逐项处置、退出阈值、依赖及延期表见[发布范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)。
 

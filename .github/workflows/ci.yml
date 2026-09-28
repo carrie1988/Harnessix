@@ -11,6 +11,8 @@ jobs:
   python:
     runs-on: ubuntu-latest
     strategy:
+      # 独立矩阵完整产出功能反馈，不因另一矩阵末尾的发行治理失败而中止。
+      fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
     steps:

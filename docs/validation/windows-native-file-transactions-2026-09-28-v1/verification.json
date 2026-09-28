@@ -1,0 +1,151 @@
+{
+  "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+  "runs": [
+    {
+      "name": "affected-python313",
+      "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+      "host": "macOS ARM64",
+      "python": "3.13.8",
+      "command": ".venv/bin/pytest tests/delivery tests/product_config tests/trusted_actions tests/workspace tests/tools/test_windows_native_runtime.py tests/execution",
+      "passed": 1119,
+      "skipped": 50,
+      "seconds": 65.67,
+      "exit_code": 0,
+      "log": "logs/affected-python313.txt"
+    },
+    {
+      "name": "independent-affected-python312",
+      "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+      "host": "macOS ARM64",
+      "python": "3.12.7",
+      "command": ".venv/bin/pytest tests/delivery tests/product_config tests/trusted_actions tests/workspace tests/tools/test_windows_native_runtime.py tests/execution",
+      "passed": 1119,
+      "skipped": 50,
+      "seconds": 65.37,
+      "exit_code": 0,
+      "log": "logs/affected-python312.txt"
+    },
+    {
+      "name": "native-windows-focused",
+      "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+      "host": "GitHub native Windows runner",
+      "command": "uv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch",
+      "run_id": 36417499774,
+      "job_id": 108912040299,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36417499774",
+      "step": {
+        "completedAt": "2026-09-28T11:45:38Z",
+        "conclusion": "success",
+        "name": "验证原生NTFS文件事务与审批编码写链",
+        "number": 5,
+        "startedAt": "2026-09-28T11:45:16Z",
+        "status": "completed"
+      },
+      "result": "success",
+      "collected_cases": 59,
+      "passed": null,
+      "skipped": null,
+      "raw_job_log_available": false,
+      "evidence_type": "completed_step_metadata",
+      "job_and_workflow_complete": false
+    }
+  ],
+  "test_groups_overlap": true,
+  "full_repository_regression": false,
+  "native_windows_consumer_installation_acceptance": false,
+  "three_platform_commercial_support": false,
+  "commercial_release_complete": false,
+  "open_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "governance": {
+    "command": ".venv/bin/pytest tests/governance/test_repository_policy.py tests/governance/test_documentation_policy.py tests/governance/test_readability_policy.py tests/governance/test_product_runtime_convergence.py tests/governance/test_secret_scan.py",
+    "passed": 128,
+    "seconds": 4.37,
+    "exit_code": 0,
+    "log": "logs/governance.txt"
+  },
+  "legacy_retirement": {
+    "command": ".venv/bin/pytest tests/governance/test_legacy_action_archive.py -o addopts='' -q",
+    "passed": 3,
+    "seconds": 0.3,
+    "exit_code": 0
+  },
+  "mypy_source_files": 382,
+  "public_schema_unchanged": true,
+  "readability_policy_weakened": false,
+  "wheel_matching_changed_production_files": 10,
+  "diagram_images_rendered": 5,
+  "diagram_images_visually_checked": [
+    "architecture",
+    "sequence",
+    "dataflow"
+  ],
+  "changed_mermaid_render_log": "logs/changed-mermaid-render.txt",
+  "existing_chrome_used": true,
+  "browser_download_or_user_profile_reuse": false,
+  "real_provider_calls": 0,
+  "credentials_read": false,
+  "budget_ledger_created_or_reset": false,
+  "secret_scan": {
+    "covered_inputs": 2651,
+    "findings": 0,
+    "rule_self_checks": 6,
+    "log": "logs/secret-scan-source-wheel.txt"
+  },
+  "untracked_files_or_unmanaged_tests_included": false,
+  "workflow_documentation_initial_failure": {
+    "category": "external_pypi_503_build_dependency_resolution",
+    "failed_job_id": 108912040253,
+    "documentation_checks_started": false,
+    "rerun_pending_workflow_completion": true
+  },
+  "license_work_priority": "low_parallel_not_blocking_functional_development",
+  "license_release_gate_waived": false,
+  "remote_ci_functional_regression": {
+    "linux_python312": {
+      "python": "3.12.3",
+      "passed": 5522,
+      "skipped": 80,
+      "seconds": 784.65,
+      "functional_regression_complete": true,
+      "whole_job_result": "failure",
+      "failure_category": "existing_12_archive_license_violations",
+      "log": "logs/ci-linux-python312-functional-and-license.txt"
+    },
+    "macos_python312": {
+      "python": "3.12.10",
+      "selected_modules_passed": 3623,
+      "selected_modules_skipped": 56,
+      "selected_modules_seconds": 689.43,
+      "whole_job_result": "success",
+      "log": "logs/ci-macos-functional.txt"
+    },
+    "linux_python313": {
+      "whole_job_result": "cancelled",
+      "cause": "python_matrix_fail_fast_after_license_failure",
+      "full_functional_success_claimed": false,
+      "followup_ci_fail_fast_disabled": true
+    },
+    "full_linux_tracked_repository_regression_observed": true,
+    "all_platforms_or_complete_workflow_success": false
+  },
+  "final_staged_delivery_secret_scan": {
+    "covered_inputs": 2682,
+    "findings": 0,
+    "log": "logs/final-staged-secret-scan.txt",
+    "scan_before_self_log_archival": true
+  },
+  "final_documentation_render": {
+    "document_count": 361,
+    "links": 9077,
+    "mermaid_blocks_in_repository": 811,
+    "changed_paths_at_check": 56,
+    "log": "logs/final-documentation-render.txt"
+  }
+}

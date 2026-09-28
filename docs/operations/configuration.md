@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: 3f37fe8ae0646d3327254ce9677110b94f7c5e80
+version: 11
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -373,15 +373,17 @@ Thread，不启动Transport，也不进行Provider网络请求。
 
 直接运行`harnessix code WORKSPACE`时，同一Preflight在加载Textual、打开Client State和启动子进程前执行。子进程中的
 `run_product_stdio`再次执行Preflight，并继续执行两个配置重读及摘要核对、Workspace/State隔离、Provider/Action Owner构造、旧Route恢复和原子激活CAS；不要把Doctor旧报告
-作为跳过Server校验的授权材料。Windows原生当前只允许四项文件/搜索读取；显式Git返回
+作为跳过Server校验的授权材料。Windows原生提供文件/搜索及可信快照读取，满足本地固定NTFS条件时另外装配审批Patch；显式Git返回
 `product_git_platform_unsupported`。
 
 ## 12.1 默认Patch配置边界
 
-省略外部Action文件时使用内建`workspace_patch_enabled=true/process_profiles=[]`。POSIX安全端口成立时广告
-`apply_patch_batch`；Windows或缺少no-follow原语时生成`omitted/platform_not_supported`，产品仍可只读启动。显式Action文件可将
+省略外部Action文件时使用内建`workspace_patch_enabled=true/process_profiles=[]`。POSIX安全端口成立，或Windows原生构建及真实Root的本地固定NTFS探测通过时，广告
+`apply_patch_batch`；不支持的宿主/卷或POSIX缺少no-follow原语时生成`omitted/platform_not_supported`，产品仍可只读启动。显式Action文件可将
 `workspace_patch_enabled`设为`false`，但切换已激活配置必须提交上一Action摘要。模型配置v2、Provider选择和Secret引用不会隐式
 获得写权限字段。
+Windows仅支持普通文件逻辑0644、默认数据流与权限一致替换；支持广告不是免审批权限，也不是完整Windows商业支持。
+具体流程、错误、取消及恢复见[原生NTFS详设](../changes/m09-r4-windows-native-file-transactions.md)。
 
 Doctor中的单项省略是Advisory，不等于Runtime一定会使用旧报告。正式启动重新探测能力并构造同源Catalog；报告最多有效600秒，
 Catalog安装前再次检查过期、Schema、Binding与Executor Evidence。

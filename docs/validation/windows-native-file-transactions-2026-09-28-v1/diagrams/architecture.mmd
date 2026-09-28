@@ -1,0 +1,16 @@
+flowchart TB
+    Client[CLI TUI SDK] --> Server[默认stdio App Server]
+    Server --> Agent[同一Agent Runtime]
+    Agent --> Gateway[Catalog Gateway Router]
+    Gateway --> Review[Plan Diff Approval]
+    Review --> Transaction[WorkspaceTransactionRuntime]
+    Transaction --> Journal[(SQLite事务事实与CAS)]
+    Transaction --> Lease[(Workspace Lease)]
+    Transaction --> Posix[既有POSIX成员端口]
+    Transaction --> Win[windows_filesystem]
+    Win --> Root[复用WindowsWorkspaceRoot父链]
+    Win --> IO[windows_io句柄操作]
+    Win --> Metadata[windows_metadata边界]
+    IO --> NTFS[本地NTFS普通文件]
+    Doctor[只读Doctor] --> Probe[原生Root与卷探测]
+    Probe --> Root

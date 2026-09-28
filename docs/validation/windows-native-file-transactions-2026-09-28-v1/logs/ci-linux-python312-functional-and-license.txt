@@ -1,0 +1,5 @@
+2026-09-28T11:45:06.7738556Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+2026-09-28T11:45:25.8176198Z All checks passed!
+2026-09-28T11:45:43.2902383Z Success: no issues found in 382 source files
+2026-09-28T11:58:50.1899908Z 5522 passed, 80 skipped in 784.65s (0:13:04)
+2026-09-28T11:58:57.9716324Z 许可证违规：12个Archive

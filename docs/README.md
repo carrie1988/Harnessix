@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
-status: reviewing
-version: 136
-code_revision: pending
+status: current
+version: 137
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -81,6 +81,7 @@ supersedes: []
 功能主线优先处理真实编码质量、核心安全恢复、Windows原生编码和安装升级。
 许可证/权利链等治理工作低优先并行，不阻挡功能研发；必要发行处置仍在正式发布前完成。
 当前R4增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)，
+固定源码与原生专项证据见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 其中源码、数据结构、原生句柄时序、恢复伪代码及测试位置集中给出；候选实现不等于三平台商用验收。
 
 R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenance-safety.md)：

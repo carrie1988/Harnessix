@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: current
 version: 2
-code_revision: pending
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners: [core]
 modules: [delivery, workspace, product_config, trusted_actions]
 related_adrs:
@@ -29,7 +29,7 @@ supersedes: []
 | 原缺口 | 已有Windows安全读取、Snapshot、Job Object与SQLite账本；普通文件发布仅POSIX，默认Windows产品省略`apply_patch_batch` |
 | 本切片 | 在共享Workspace事务状态机下增加原生NTFS成员端口，接入默认Catalog与只读Doctor探测 |
 | 数据变化 | 不新增数据库、状态机或Schema；沿用Transaction v1、before/after CAS、Workspace Snapshot及Lease |
-| 当前证据 | 本地POSIX回归与ABI单元测试；原生结果以固定候选的Windows执行记录为准 |
+| 当前证据 | 固定源码双Python受影响回归各1119通过/50跳过；原生专项成功，完整平台发布边界见验证报告 |
 | 发布单元 | Python Wheel内三个Windows端口模块及共享装配；不是第二服务或Sidecar |
 
 实现候选不等于R4完成。原生Git读取/交付产品装配、受管测试命令、脱离源码安装、升级、状态恢复和真实Beta仍需独立验证。
@@ -369,4 +369,5 @@ CI先运行本端口和默认审批写链的精确测试，便于快速定位，
 为保持权限边界，首发采用“继承权限必须相同，否则拒绝”，而非扩展为通用ACL复制器。
 因此受保护自定义DACL文件不在本端口可写范围；该约束有明确原生反例，不能把失败关闭描述成支持。
 当前未增加独立ADR、服务、Store或Windows FSM；现行Delivery和产品装配资料同步说明该切片与R4完整商用支持的区别。
-最终固定Source、测试计数与原生证据在本切片验证目录登记；没有这些证据不能标记为生产完成。
+固定Source、测试计数、原生证据及未关闭边界在[本切片验证目录](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)登记。
+文件事务专项不等于完整Windows产品验收；没有R4其余安装、Git和恢复证据不能标记为生产完成。

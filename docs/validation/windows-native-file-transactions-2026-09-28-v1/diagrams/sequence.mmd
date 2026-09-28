@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant A as Agent与Router
+    participant R as Transaction Runtime
+    participant S as Transaction Store
+    participant W as NTFS成员端口
+    participant F as 本地文件系统
+    A->>R: 原批准指纹与当前Lease
+    R->>R: 平台一致、来源Snapshot仍有效
+    R->>S: 先持久publishing与cursor
+    R->>W: 最多一个Mutation及原Source
+    W->>F: 固定Root父链与原叶句柄
+    W->>F: CREATE_NEW临时文件并WriteFile
+    W->>F: FlushFileBuffers
+    W->>F: 复核叶对象before与Owner Group DACL
+    W->>F: NT同目录句柄RenameInformationEx
+    W-->>R: 关闭句柄后返回
+    R->>W: 重观察成员after
+    R->>S: 持久cursor加一
+    R-->>A: 成员或事务已结算

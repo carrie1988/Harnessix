@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant W as 原宿主
+    participant F as NTFS
+    participant S as SQLite
+    participant N as 重开宿主
+    W->>S: publishing cursor等于零
+    W->>F: 首成员名称提交
+    Note over W: 在确认或cursor记账前硬退出
+    N->>S: 读取原Transaction
+    N->>F: 仅观察原Root及全部before after
+    N->>S: interrupted及实际after前缀
+    N-->>N: 不调用写端口
+    Note over N: 只有新的显式执行继续剩余成员

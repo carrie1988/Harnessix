@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 11
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -34,6 +34,8 @@ supersedes: []
 
 本文描述当前源码安装、开发环境、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
+后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
+这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
 
 ## 2. 前置条件
 
@@ -62,7 +64,8 @@ flowchart TD
     Configure --> Diagnose[code doctor离线预检]
     Diagnose --> Platform{macOS/Linux/Windows?}
     Platform -- macOS/Linux --> Posix[POSIX只读Runtime]
-    Platform -- Windows --> Win[Handle只读已验证；Git失败关闭]
+    Platform -- Windows --> Win[Handle读取与本地NTFS审批Patch候选]
+    Win --> GitGate[默认Git失败关闭；完整安装待R4验收]
 ```
 
 当前没有可直接下载的官方二进制。任何第三方Wheel、镜像或安装脚本必须单独核对来源、Revision、许可证和摘要。

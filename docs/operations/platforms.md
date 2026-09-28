@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 11
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_windows_native_runtime.py
+  - tests/delivery/test_windows_filesystem.py
   - tests/product_ui
 supersedes: []
 ---
@@ -51,7 +52,7 @@ supersedes: []
 |---|---|---|---|
 | macOS ARM64 | 经验证的3.12补丁 | 脱离源码安装、原生Git编码闭环、进程、手动升级、匹配Key备份恢复及Beta | 正式发行门禁未关闭 |
 | Ubuntu x86_64 | 同上 | 同上；必要受管Container后端 | 正式发行门禁未关闭 |
-| Windows 11 x86_64 | 同上 | 原生写入/测试/进程/终端/恢复，不能仅以只读Tool或WSL2代替 | 正式发行门禁未关闭；最近认证Artifact测试失败 |
+| Windows 11 x86_64 | 同上 | 原生写入/测试/进程/终端/恢复，不能仅以只读Tool或WSL2代替 | 文件事务专项已有原生证据；完整产品与正式发行门禁未关闭 |
 
 最近固定Revision `ffdc641`的[CI 36359755491](https://github.com/carrie1988/Harnessix/actions/runs/36359755491)
 不是全矩阵成功。已关闭0.9.3d三平台Soak保持原结论，不替代当前候选的安装、模型质量及真实Beta。
@@ -66,21 +67,23 @@ supersedes: []
 |---|---|---|---|---|
 | Python基础包/Coding Agent | CI主路径 | 候选测试 | 选定测试 | 可构建开发命令镜像 |
 | Textual View/Controller与领域交互 | CI候选 | CI候选 | CI候选 | 非容器默认入口 |
-| `harnessix code`完整子进程链 | CI候选 | CI候选 | 原生只读候选，当前提交待CI | 当前镜像未装配 |
-| `agent-server`默认入口 | 候选可用 | 候选可用 | 四项只读Tool候选；显式Git失败关闭 | 当前镜像未装配 |
-| 只读Coding Tool | POSIX实现 | POSIX实现 | Win32 Handle实现`list/read/glob/grep`，待本轮CI | 需显式宿主装配 |
+| `harnessix code`完整子进程链 | CI候选 | CI候选 | 原生读取与本地NTFS审批写链候选；完整终端待验收 | 当前镜像未装配 |
+| `agent-server`默认入口 | 候选可用 | 候选可用 | 原生读取与NTFS Patch候选；显式Git失败关闭 | 当前镜像未装配 |
+| 只读Coding Tool | POSIX实现 | POSIX实现 | Win32 Handle实现文件/搜索及可信完整快照读取 | 需显式宿主装配 |
 | Workspace安全观察 | POSIX FD/no-follow | POSIX FD/no-follow | Win32 Handle/Reparse Point端口 | 取决于宿主/挂载 |
 | Process Supervisor | Session/Process Group | Session/Process Group | Job Object/ConPTY候选 | Container Owner可显式装配 |
-| 普通目录事务发布 | POSIX候选 | POSIX候选 | 缺少抗Reparse竞态，失败关闭 | 取决于挂载语义 |
+| 普通文件事务发布 | POSIX候选 | POSIX候选 | 固定父链、同目录NT Rename与只观察恢复；本地固定NTFS限制 | 取决于挂载语义 |
 | Git Worktree/Commit | 跨平台候选 | 跨平台候选 | 跨平台候选 | 需Git和持久卷 |
 | Git Push | 本地bare remote受控验证 | 同类逻辑 | 平台测试有限 | 公网认证未开放 |
 | 强Container Sandbox | Docker兼容后端 | Docker兼容后端 | 后端能力依赖宿主 | 容器内再嵌套不默认支持 |
 | 正式安装器/自动更新 | 未实现 | 未实现 | 未实现 | 无签名发布镜像 |
 
-截至最终验证Revision `93723773676349fbfbe0ef42c26d9000cce379c8`，没有桌面平台达到完整1.0“产品支持”等级。Windows
+当前没有桌面平台达到完整1.0“产品支持”等级。Windows
 原生Handle四项只读Tool已经由[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)
 验证，Product Preflight、`agent-server`和`harnessix code`不再由POSIX平台门拒绝；Windows显式Git仍返回
-`product_git_platform_unsupported`。该证据不能外推到写入、Process、Delivery、安装器或长期终端稳定性。
+`product_git_platform_unsupported`。历史读取证据不能外推到写入、Process、Delivery、安装或长期终端稳定性。
+后继`87f9353`已经独立补齐本地NTFS普通文件与默认审批专项，见[固定版本报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
+该报告仍不关闭Windows完整产品或消费者目标OS验收。
 
 ## 3. CI证据矩阵
 
@@ -119,11 +122,13 @@ CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。
 
 - Workspace观察通过Win32 Handle、File ID和Reparse Point检查提供底层能力；
 - Process通过挂起创建、不可Breakaway Job Object和ConPTY管理进程树；
-- 普通目录事务发布尚无与POSIX等价的抗Reparse Point竞态实现；
+- 普通文件事务复用原父句柄链，拒绝Reparse/Junction、特殊属性、附加流与不一致权限；只接受本地固定NTFS；
+- 同目录名称提交采用NT源句柄语义；替换源不共享Write，只额外共享Delete，提交前复核原File ID；
+- 逻辑模式仅0644，不模拟POSIX可执行位；不是针对不合作同UID写者的原子CAS或硬件掉电保证；
 - Product Config的POSIX Owner/Mode检查在Windows不执行；
 - 0.9.1d固定版本默认入口装配四项Windows只读Tool；当时Git、普通目录写与完整Delivery失败关闭，不代表后续候选已通过原生写入验收。
 
-Windows只读入口必须使用`WindowsWorkspaceRoot`的逐段Handle、Final Path、File ID和Reparse检查；不得替换为
+Windows读取及文件事务入口必须使用`WindowsWorkspaceRoot`的逐段Handle、Final Path、File ID和Reparse检查；不得替换为
 字符串前缀或把POSIX权限位映射到Windows。正式发行须验证当前配置/状态/Key ACL及实际Wheel来源、校验和安装，不要求额外安装器。
 
 ### 4.3 大小写与Unicode
@@ -208,7 +213,8 @@ flowchart LR
 ## 9.1 历史默认Workspace Patch平台矩阵
 
 以下是0.9.1阶段默认端口边界；首发Git仓库写入和三平台完整编码闭环以R4候选证据为准。
-普通非Git目录的新事务后端延期，不降低已装配写入能力的安全要求。
+后继Windows本地NTFS端口由第2节与专项报告描述，不应继续按以下历史表推断当前Catalog。
+新增文件系统后端及通用目录维护平台继续延期，不降低既有主链的取消、恢复、审批和回归要求。
 
 | 平台 | 默认能力 | 安全端口 | 当前结论 |
 |---|---|---|---|
@@ -233,7 +239,7 @@ POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞�
 
 ## 11. 当前风险
 
-- Windows原生核心写入/测试/进程、实际发行安装与恢复仍属R4；最近固定CI失败未被历史只读Tool验收关闭；
+- Windows文件事务专项有原生证据；默认Git、完整编码/测试、实际发行安装与恢复仍属R4，不由专项或历史只读验收代替；
 - 既有0.9.1交互及0.9.3d Soak证据保留，但TUI仍需小批真实用户终端和正式发行物验证；
 - 三平台统一Wheel发行和真实Beta未关闭，源码候选不能视为正式产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；

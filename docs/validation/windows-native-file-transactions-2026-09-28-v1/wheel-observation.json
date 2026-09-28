@@ -1,0 +1,82 @@
+{
+  "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+  "filename": "harnessix-0.1.0-py3-none-any.whl",
+  "sha256": "deb2178e39c8d046f08d3f51101500d6d138104fd7fc132ebe34d22a0385cdf8",
+  "package_version": "0.1.0",
+  "wheel_only": true,
+  "sdist_built": false,
+  "independent_detached_checkout": true,
+  "source_members": [
+    {
+      "source_path": "src/harnessix/delivery/filesystem.py",
+      "wheel_path": "harnessix/delivery/filesystem.py",
+      "size": 17725,
+      "sha256": "acb3906eb53e97dfa6c0b6757e2a2c6a8c31de4ec2c6cfe4f7cec9156292f49b",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/delivery/planner.py",
+      "wheel_path": "harnessix/delivery/planner.py",
+      "size": 9574,
+      "sha256": "6ecdadd6122a4fe04a197c437f108fc6d95d6e5f70bcd11f76e16798dc4ee8d8",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/delivery/trusted_action.py",
+      "wheel_path": "harnessix/delivery/trusted_action.py",
+      "size": 18048,
+      "sha256": "d7b9ad62e60a088a0fa19e1dda029dc837b1b1382b96b0cd9b45ff8e11837831",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/delivery/windows_filesystem.py",
+      "wheel_path": "harnessix/delivery/windows_filesystem.py",
+      "size": 10154,
+      "sha256": "66ec7b863e26a288ef6dffb4ad98a97ae3f40b2a2e7807d590a3e6b2ae74e017",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/delivery/windows_io.py",
+      "wheel_path": "harnessix/delivery/windows_io.py",
+      "size": 8804,
+      "sha256": "f6de00c9896a6a644f3a722f4244979b170e692d0ef32e45eac1e459c6e45a33",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/delivery/windows_metadata.py",
+      "wheel_path": "harnessix/delivery/windows_metadata.py",
+      "size": 3783,
+      "sha256": "887a85b04c23b3857e4bce37796bb3fa55ced197304f03a29b0786553020cd59",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/product_config/action_composition.py",
+      "wheel_path": "harnessix/product_config/action_composition.py",
+      "size": 14447,
+      "sha256": "0d75666ac5e416e8347a9cf11acd55317ecdeab64e7de0f10ac8bfb4f15e5dea",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/product_config/action_diagnostics.py",
+      "wheel_path": "harnessix/product_config/action_diagnostics.py",
+      "size": 4490,
+      "sha256": "c96bdf663afb19f6f01e4792973dac7328ddf96b38b61aac284bd2aad1bb895a",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/product_config/preflight.py",
+      "wheel_path": "harnessix/product_config/preflight.py",
+      "size": 4030,
+      "sha256": "15ce86026b8210a79119e6e095ced7255b3d1369178974ad07a372ca145aaa9f",
+      "byte_equal": true
+    },
+    {
+      "source_path": "src/harnessix/product_config/preflight_actions.py",
+      "wheel_path": "harnessix/product_config/preflight_actions.py",
+      "size": 5644,
+      "sha256": "01c58dc29b3370d214a89fc66d82f9c42ba9af049ca3c58ba49564ec88a4fb59",
+      "byte_equal": true
+    }
+  ],
+  "commercial_release_artifact": false
+}

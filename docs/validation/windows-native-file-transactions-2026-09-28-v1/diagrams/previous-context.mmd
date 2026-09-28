@@ -1,0 +1,6 @@
+flowchart LR
+    Intent[模型文件修改意图] --> Catalog[原Windows Catalog省略Patch]
+    Planner[已有跨平台Planner] --> Store[(已有Transaction与CAS)]
+    Store --> Runtime[已有共享发布状态机]
+    Runtime --> Gate[原POSIX平台限定]
+    Gate --> Reject[Windows拒绝发布]

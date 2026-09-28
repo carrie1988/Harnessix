@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
-status: reviewing
-version: 83
-code_revision: pending
+status: current
+version: 84
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -453,6 +453,7 @@ flowchart LR
 - macOS/Linux：原生只读文件端口；满足no-follow条件时可广告Workspace Patch；
 - Windows：原生Handle读取；新增本地固定NTFS文件事务候选，复用同一审批、Lease、CAS和发布FSM，非支持卷省略Patch。
   接线、完整时序及失败边界见[原生NTFS文件事务详设](changes/m09-r4-windows-native-file-transactions.md)；原生Git、安装升级和R4整体不因此关闭；
+  [固定源码验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)登记原生文件事务专项和双Python回归，不把它们扩展为完整三平台商业支持；
 - Container Process：要求固定镜像Digest、Engine能力、Owner、资源/网络策略和Secret证明；
 - 正式Wheel、安装器、签名、SBOM、升级/卸载和Beta证据属于0.9.5；
 - 旧PostgreSQL Journal不是1.0依赖，只有外部归档流程；

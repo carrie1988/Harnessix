@@ -1,0 +1,31 @@
+2026-09-28T11:23:44.0136368Z E       AssertionError: {'absolute-nul': {'accepted': False, 'errno': 32}, 'relative': {'accepted': False, 'errno': 87}, 'relative-nul': {'accepted': False, 'errno': 87}}
+2026-09-28T11:23:44.0196621Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0248456Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0297863Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0355444Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0406566Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0457353Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0509431Z E               Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.0557300Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.0567345Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.0577527Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.0596471Z E       AssertionError: assert <TurnStatus.INTERRUPTED: 'interrupted'> is <TurnStatus.COMPLETED: 'completed'>
+2026-09-28T11:23:44.0632467Z E       AssertionError: assert 'interrupted' == 'completed'
+2026-09-28T11:23:44.0632990Z =========================== short test summary info ===========================
+2026-09-28T11:23:44.0633733Z FAILED tests/delivery/test_windows_filesystem.py::test_native_rename_api_compatibility_matrix - AssertionError: {'absolute-nul': {'accepted': False, 'errno': 32}, 'relative': {'accepted': False, 'errno': 87}, 'relative-nul': {'accepted': False, 'errno': 87}}
+2026-09-28T11:23:44.2437811Z FAILED tests/delivery/test_windows_filesystem.py::test_native_create_replace_delete_rollback_and_idempotent_result - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2439585Z FAILED tests/delivery/test_windows_filesystem.py::test_empty_and_multi_chunk_binary_files_have_exact_bytes[empty] - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2440696Z FAILED tests/delivery/test_windows_filesystem.py::test_empty_and_multi_chunk_binary_files_have_exact_bytes[multiple-chunks] - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2442094Z FAILED tests/delivery/test_windows_filesystem.py::test_unicode_spaces_long_path_uses_same_pinned_parent - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2443173Z FAILED tests/delivery/test_windows_filesystem.py::test_pinned_parent_leaf_and_temporary_refuse_concurrent_rename_or_write - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2444335Z FAILED tests/delivery/test_windows_filesystem.py::test_native_rename_confirmation_lost_reconciles_once_without_deleting_published_file - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2445472Z FAILED tests/delivery/test_windows_filesystem.py::test_replaced_workspace_root_never_accepts_copied_member_facts - Failed: native IO failure: code=delivery_storage_unavailable; win32_errno=87
+2026-09-28T11:23:44.2446555Z FAILED tests/delivery/test_windows_filesystem.py::test_expired_lease_stops_before_next_native_member - AssertionError: assert 'delivery_storage_unavailable' == 'workspace_lease_lost'
+2026-09-28T11:23:44.2448367Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[windows_temporary_flushed-0] - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:23:44.2449793Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[windows_namespace_changed-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.2464034Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[effect_applied:0-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.2472944Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[member_recorded:0-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:23:44.2482311Z FAILED tests/delivery/test_trusted_action_patch.py::test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain - AssertionError: assert <TurnStatus.INTERRUPTED: 'interrupted'> is <TurnStatus.COMPLETED: 'completed'>
+2026-09-28T11:23:44.2485765Z FAILED tests/delivery/test_trusted_action_patch.py::test_cancel_between_members_keeps_prefix_and_reconcile_never_replays - Failed: DID NOT RAISE <class 'asyncio.exceptions.CancelledError'>
+2026-09-28T11:23:44.2486850Z FAILED tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch[False] - AssertionError: assert 'interrupted' == 'completed'
+2026-09-28T11:23:44.2488050Z 16 failed, 25 passed in 16.80s

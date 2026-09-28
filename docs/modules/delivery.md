@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: c7741aa71883e507b452653869032ee13a0727f3
+version: 15
+code_revision: 87f93533713a7b640b0d41f4c1b781693c6616ee
 owners:
   - core
 modules:
@@ -304,6 +304,7 @@ Windows成员端口、Win32/NT ABI、数据流、类/接口、元数据边界、
 此替换不是对任意不合作同UID写者的原子Compare-and-Swap；未经原生验收的候选不广告Windows商用支持。
 Windows执行语义证明采用`windows-ntfs-v2`并绑定NT同目录Rename、替换源共享模式及提交后禁止清理；
 不能复用初始Win32候选的执行摘要。POSIX证明及公共Action/Transaction Schema不变。
+固定源码的回归、真实原生专项、历史失败与完整发布边界见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
 
 ## 9. Workspace文件与Mutation合同
 

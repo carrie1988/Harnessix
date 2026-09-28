@@ -1,0 +1,16 @@
+flowchart LR
+    Input[修改意图与读取SHA] --> Normalize[平台路径及模式校验]
+    Existing[原Workspace字节与对象身份] --> Snapshot[原Source快照]
+    Normalize --> Plan[不可变Mutation Plan]
+    Snapshot --> Plan
+    Plan --> Review[完整Diff审批Artifact]
+    Existing --> Before[(before CAS)]
+    Input --> After[(after CAS)]
+    Plan --> Ledger[(Transaction Record)]
+    Review --> Approved[原批准指纹]
+    Approved --> Publish[单成员原生发布]
+    After --> Publish
+    Ledger --> Publish
+    Publish --> Actual[NTFS实际before或after]
+    Actual --> Reconcile[只观察对账]
+    Reconcile --> Ledger

@@ -1,0 +1,165 @@
+{
+  "source_revision": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 9830,
+      "sha256": "a619574a10a858f537a0df2030dbf9c79091cf870f588c3aea5f139211ba71b9"
+    },
+    {
+      "path": "ci-snapshot.json",
+      "size": 38121,
+      "sha256": "80232077a0fc2563275e6dc01dabad4cdebc48c258bff112ba8d0165de7ba15f"
+    },
+    {
+      "path": "contract-facts.json",
+      "size": 1320,
+      "sha256": "850e8585300f3f6feb04c05a95800721bc2a496df33d0736eb08d8b16da8d6ef"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "size": 708,
+      "sha256": "225780bc35c64e09ca2633ba112d990eb1a6c28fb9cc1a2f56284bf3b8e4309e"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "size": 60893,
+      "sha256": "061fba44bda4565bbdfef0fe6c98ba9cac3871f2217363b0b6aa88176f46df8d"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "size": 648,
+      "sha256": "bd606d4340161b66dd4994b3b9fec6e26f39dfe71dfa9523259de77d7e8639d4"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "size": 41953,
+      "sha256": "60a2ce96ff78dcb76ceec9d805ec425c9be0b78d861c22ce68bf0c81224c3c47"
+    },
+    {
+      "path": "diagrams/previous-context.mmd",
+      "size": 301,
+      "sha256": "d24a02fd366753782b0fbfaf00ad33e9fd5b22ef130bbfdf22ffd6504729a269"
+    },
+    {
+      "path": "diagrams/previous-context.png",
+      "size": 25521,
+      "sha256": "d5d3edf24155d623ca414f0312258d5ad815d4baea32ba7b0482a14528b59209"
+    },
+    {
+      "path": "diagrams/recovery.mmd",
+      "size": 475,
+      "sha256": "340a50eb773e930ab138453c8791424fd3a3192f061dd9ed162cc14ee8b6f1c9"
+    },
+    {
+      "path": "diagrams/recovery.png",
+      "size": 44898,
+      "sha256": "42eea587a06cd9fe730c0a49781fae63d346a94c1a03dc29595c926ae0b81923"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "size": 735,
+      "sha256": "098fe3d888792362cd1a03e0af02ae3a2ca3876b70a8c528f9207069c3864f25"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "size": 76584,
+      "sha256": "17ad9c432e8ace4b27c011c423a59faa00763f5c57590f1bf2220b50ea141ccc"
+    },
+    {
+      "path": "logs/affected-python312.txt",
+      "size": 1404,
+      "sha256": "abc6c42696bb10f4acb0159bd140fdc917a2a164db3431004c63ef376aa665d9"
+    },
+    {
+      "path": "logs/affected-python313.txt",
+      "size": 1404,
+      "sha256": "a1147304c045ed1e9d83c3c80a4350b9138e1ecc3e85e4062873a55b38837842"
+    },
+    {
+      "path": "logs/changed-mermaid-render.txt",
+      "size": 103,
+      "sha256": "a8c35c73190ef8fe80038d1e7222ff4a55dcbe15b072a2046ddc3842efa2c6a5"
+    },
+    {
+      "path": "logs/ci-linux-python312-functional-and-license.txt",
+      "size": 342,
+      "sha256": "ba41e100d46bcfb0b14e5be6dd4e3513687deb42f31d66b21ce4f8490ed5b006"
+    },
+    {
+      "path": "logs/ci-macos-functional.txt",
+      "size": 325,
+      "sha256": "27209811acd022b00be88f45c06bdab677646e02736adbeacc58d71063717a76"
+    },
+    {
+      "path": "logs/documentation-initial-pypi-503.txt",
+      "size": 18035,
+      "sha256": "885b30110be59a7754f54746867637c61d70e01dce02d8898c4a6d3427fcb23a"
+    },
+    {
+      "path": "logs/final-documentation-render.txt",
+      "size": 103,
+      "sha256": "63def1a09e007904d5038493f17e38ca0f8b6f24afacafc3c548d3ee9ec8b63a"
+    },
+    {
+      "path": "logs/final-staged-secret-scan.txt",
+      "size": 101,
+      "sha256": "439bc876d3cc4533fdeb8b4b8ad7a441d90568f8b6009ac80ef7c9c99ab6fe06"
+    },
+    {
+      "path": "logs/governance.txt",
+      "size": 180,
+      "sha256": "6157e049ceeeb081017a30da386558b481dcd80b97b225ea43f827e316cdbf52"
+    },
+    {
+      "path": "logs/native-238b022-failure-excerpts.txt",
+      "size": 4026,
+      "sha256": "d526999d569ea016b5b57639a807d47923b419c05293f72bde5149091ce4c909"
+    },
+    {
+      "path": "logs/native-a0d51e5-failure-excerpts.txt",
+      "size": 3778,
+      "sha256": "f5dcf5d88448d64cef2034d4a2dc77da1c350581985553802cb9078628061548"
+    },
+    {
+      "path": "logs/native-a5d42ab-failure-excerpts.txt",
+      "size": 5394,
+      "sha256": "a2744afa00e1d1bc46c54cc7c36232dbf234eb5333dfda06b05f36031abba110"
+    },
+    {
+      "path": "logs/native-b0e4102-failure-excerpts.txt",
+      "size": 538,
+      "sha256": "b82ca385b9eb471061eb50b1ca027575d6921135ac48e0a42d32190bf957442d"
+    },
+    {
+      "path": "logs/native-cbf20d4-failure-excerpts.txt",
+      "size": 4906,
+      "sha256": "00574a9cf73b974d32fce5ef78477e937a59fe8283a6264166c2f4fd5bd2e54c"
+    },
+    {
+      "path": "logs/secret-scan-source-wheel.txt",
+      "size": 101,
+      "sha256": "c92ad59003825c985a5f51c7e68b075479ef56e16b4b7caaf25150e782ad1a7a"
+    },
+    {
+      "path": "retained-failures.json",
+      "size": 3275,
+      "sha256": "c836f6df62b0ef5fa09b9d5383f0b188cd39c48c2deb2f739a346a5ac7871345"
+    },
+    {
+      "path": "review-packet.md",
+      "size": 2800,
+      "sha256": "07f7074b8904de47781bfa40762c9eba1f0e26aa08268c7719e72aaf8ca8c5c9"
+    },
+    {
+      "path": "verification.json",
+      "size": 5474,
+      "sha256": "bf54d92bb5b8139d8230b5ca9cb4e1f552e51086e78f66cd6f3f847238822df7"
+    },
+    {
+      "path": "wheel-observation.json",
+      "size": 3097,
+      "sha256": "d974fb5262a8a5ea31a96be76746aad76b0494b8275052e87e62f187711d71d8"
+    }
+  ]
+}

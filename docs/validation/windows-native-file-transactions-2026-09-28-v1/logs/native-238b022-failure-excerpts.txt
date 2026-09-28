@@ -1,0 +1,22 @@
+2026-09-28T11:11:50.3680519Z E       AssertionError: assert 'delivery_storage_unavailable' == 'delivery_source_changed'
+2026-09-28T11:11:50.3775740Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.3808031Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.3845104Z E       AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.3919331Z E       AssertionError: assert <TurnStatus.INTERRUPTED: 'interrupted'> is <TurnStatus.COMPLETED: 'completed'>
+2026-09-28T11:11:50.3978781Z E       AssertionError: assert 'interrupted' == 'completed'
+2026-09-28T11:11:50.3979498Z =========================== short test summary info ===========================
+2026-09-28T11:11:50.3980230Z FAILED tests/delivery/test_windows_filesystem.py::test_native_create_replace_delete_rollback_and_idempotent_result - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3980936Z FAILED tests/delivery/test_windows_filesystem.py::test_empty_and_multi_chunk_binary_files_have_exact_bytes[] - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3981554Z FAILED tests/delivery/test_windows_filesystem.py::test_unicode_spaces_long_path_uses_same_pinned_parent - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3982238Z FAILED tests/delivery/test_windows_filesystem.py::test_pinned_parent_leaf_and_temporary_refuse_concurrent_rename_or_write - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3982975Z FAILED tests/delivery/test_windows_filesystem.py::test_native_rename_confirmation_lost_reconciles_once_without_deleting_published_file - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3983601Z FAILED tests/delivery/test_windows_filesystem.py::test_replaced_workspace_root_never_accepts_copied_member_facts - AssertionError: assert 'delivery_storage_unavailable' == 'delivery_source_changed'
+2026-09-28T11:11:50.3984461Z FAILED tests/delivery/test_windows_filesystem.py::test_expired_lease_stops_before_next_native_member - AssertionError: assert 'delivery_storage_unavailable' == 'workspace_lease_lost'
+2026-09-28T11:11:50.3985713Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[windows_temporary_flushed-0] - harnessix.agent.errors.KernelError: Windows\u4e8b\u52a1\u6210\u5458\u5199\u5165\u5931\u8d25
+2026-09-28T11:11:50.3986317Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[windows_namespace_changed-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.3996455Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[effect_applied:0-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.4000806Z FAILED tests/delivery/test_windows_filesystem.py::test_real_exit_reopen_only_observes_then_explicitly_resumes[member_recorded:0-1] - AssertionError: Traceback (most recent call last):
+2026-09-28T11:11:50.4005868Z FAILED tests/delivery/test_trusted_action_patch.py::test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain - AssertionError: assert <TurnStatus.INTERRUPTED: 'interrupted'> is <TurnStatus.COMPLETED: 'completed'>
+2026-09-28T11:11:50.4008082Z FAILED tests/delivery/test_trusted_action_patch.py::test_cancel_between_members_keeps_prefix_and_reconcile_never_replays - Failed: DID NOT RAISE <class 'asyncio.exceptions.CancelledError'>
+2026-09-28T11:11:50.4008653Z FAILED tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch[False] - AssertionError: assert 'interrupted' == 'completed'
+2026-09-28T11:11:50.6161216Z 14 failed, 25 passed, 2 errors in 23.58s

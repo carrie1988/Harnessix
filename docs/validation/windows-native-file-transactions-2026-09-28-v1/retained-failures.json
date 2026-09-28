@@ -1,0 +1,85 @@
+{
+  "failures": [
+    {
+      "source_revision": "238b0223a24250cc74136df4cc78086064a164b6",
+      "run_id": 36414116601,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36414116601",
+      "failed": 14,
+      "passed": 25,
+      "errors": 2,
+      "category": "initial_native_write_failure_and_binary_parameter_environment_length",
+      "log": "logs/native-238b022-failure-excerpts.txt",
+      "log_kind": "bounded_diagnostic_excerpts",
+      "original_job_log_sha256": "a50f9dc4dc8dfd3e9c70ea2016ac8f3b3281633e1516bb4e61f00445a8a4c099",
+      "tests_or_policy_weakened": false
+    },
+    {
+      "source_revision": "cbf20d49b9707c3d92230f5aeb86e384c03f3ccc",
+      "run_id": 36414791869,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36414791869",
+      "failed": 15,
+      "passed": 25,
+      "errors": 0,
+      "category": "win32_relative_rename_errno_87",
+      "log": "logs/native-cbf20d4-failure-excerpts.txt",
+      "log_kind": "bounded_diagnostic_excerpts",
+      "original_job_log_sha256": "1c504d577dd10ebf151a4f05447d50777f9afea7446a4fa7b64c5bc43ebd67fa",
+      "tests_or_policy_weakened": false
+    },
+    {
+      "source_revision": "a5d42ab164ac277e9fac957f957b522e22dd4b08",
+      "run_id": 36415319341,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36415319341",
+      "failed": 16,
+      "passed": 25,
+      "errors": 0,
+      "category": "relative_rename_87_and_absolute_rename_32",
+      "log": "logs/native-a5d42ab-failure-excerpts.txt",
+      "log_kind": "bounded_diagnostic_excerpts",
+      "original_job_log_sha256": "0235157ba40e515c99042e3cb487f55a0e10eddc53d9cdc3d0462b0338504cf3",
+      "tests_or_policy_weakened": false
+    },
+    {
+      "source_revision": "a0d51e5c588b5cf49076c4d93e09164d1948b434",
+      "run_id": 36416468311,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36416468311",
+      "failed": 11,
+      "passed": 41,
+      "errors": 0,
+      "category": "replacement_leaf_delete_sharing_conflict_32",
+      "log": "logs/native-a0d51e5-failure-excerpts.txt",
+      "log_kind": "bounded_diagnostic_excerpts",
+      "original_job_log_sha256": "0685a7c4d30e48a7355273c69aa3060d94d690a726361e97990fd383c3a1ee4d",
+      "tests_or_policy_weakened": false
+    },
+    {
+      "source_revision": "b0e4102a31c4c9bf4a273917fbfbd9349bf0fc33",
+      "run_id": 36416889767,
+      "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36416889767",
+      "failed": 1,
+      "passed": 57,
+      "errors": 0,
+      "category": "native_drift_fixture_path_wrapper_sharing_failure",
+      "log": "logs/native-b0e4102-failure-excerpts.txt",
+      "log_kind": "bounded_diagnostic_excerpts",
+      "original_job_log_sha256": "a8d64ca20bd65f94d47ac3cb3b9ccfbf7b48abfeafdf69fed9bb929fc4af6122",
+      "tests_or_policy_weakened": false
+    }
+  ],
+  "api_matrix_at_a5d42ab": {
+    "relative": {
+      "accepted": false,
+      "errno": 87
+    },
+    "relative_nul": {
+      "accepted": false,
+      "errno": 87
+    },
+    "absolute_nul": {
+      "accepted": false,
+      "errno": 32
+    }
+  },
+  "subsequent_59_case_collection_and_native_step_success_bound_to_source": "87f93533713a7b640b0d41f4c1b781693c6616ee",
+  "full_release_pass_claimed": false
+}
