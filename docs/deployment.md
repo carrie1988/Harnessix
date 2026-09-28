@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 25
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -194,7 +194,7 @@ uv run harnessix agent-server \
 
 | 状态 | Owner | 事实用途 |
 |---|---|---|
-| `product-action-runtime.lock` | Product Action组合根 | 在任一Action Store/Process Owner前排除第二产品宿主 |
+| Root父目录的`.harnessix-state-owner-<名称摘要>/.lock` | Product State Owner | 在创建Root及任一Store/Provider前排除第二产品宿主；Action借用原Owner |
 | `product-config.db` | Product Runtime Config Store | Product/Action配置快照、两条审计链、恢复扫描/报告和双活动指针原子CAS |
 | `session-auth/key.v1` | 独立本机Session Key Backend | 稳定Store ID、Key ID与认证密钥；不从模型凭据派生，不进入公开配置或诊断包 |
 | `sessions.db` | Session/Protocol/Artifact Store | Thread、Turn、Item、请求幂等、Artifact元数据/内容，以及Maintenance Plan/Item/Progress |
@@ -203,6 +203,11 @@ uv run harnessix agent-server \
 | `workspace-leases.db` | Workspace Lease Store | Workspace执行所有权和Fencing |
 | `workspace-transactions/` | Delivery Store | 多文件计划、Blob、游标和效果恢复 |
 | Process状态文件 | Process Supervisor/Owner | Process Lease、输出观察、停止原因和恢复证据 |
+
+根外锚点使用稳定私有目录及锁inode，运行/退出不删除。POSIX父目录须当前用户拥有且Group/Other不可写；
+Windows使用原生父链及私有DACL。升级须先停止旧产品，旧根内锁不再作为当前Owner依据，新旧程序不支持并发运行。
+完整边界、状态盘点和取消结算见[全状态Owner详设](changes/m09-r1-product-state-ownership.md)。
+取得Root锁不等于完整备份恢复已完成，不得据此直接复制WAL库或逐库覆盖现行产品状态。
 
 旧Action Plane的SQLite/PostgreSQL Journal不属于新状态布局。已有旧数据库由原版本或归档工具只读处理，
 新产品不会自动导入、执行或删除其中的READY/RUNNING记录。

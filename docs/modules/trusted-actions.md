@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 31
-code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -1542,7 +1542,9 @@ flowchart TD
 ## 47. Owner Fence、Operation Deadline与跨Store恢复（0.9.3c）
 
 0.9.3c保持`TrustedActionRouter`为Coding Agent内部唯一Action执行入口，不恢复独立HTTP/Worker。产品组合根先取得
-`product-action-runtime.lock`，Action Audit再取得数据库旁路锁、递增持久`owner_generation`并替换Token摘要。产品Store以
+全状态根外锁，默认Server中的Action组合根借用原Owner；独立Action组合根取得同一互斥地址。
+旧`product-action-runtime.lock`不再取得，现行宿主边界见[全状态Owner详设](../changes/m09-r1-product-state-ownership.md)。
+Action Audit再取得数据库旁路锁、递增持久`owner_generation`并替换Token摘要。产品Store以
 `require_runtime_owner=True`打开；直接单元测试或嵌入式非产品Store可显式保留无Owner模式，但不能据此绕过产品接线。
 
 ```mermaid

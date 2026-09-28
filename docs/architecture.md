@@ -2,7 +2,7 @@
 doc_type: system-architecture
 status: current
 version: 80
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -305,11 +305,14 @@ Router持有统一路由状态和Hash链审计；Execution Plan持有冻结参�
 实际效果事实由Workspace Transaction、Process Lease/Receipt、Git远端Ref或外部系统身份持有。重启发现`running`时先转
 `unknown`，只调用`reconcile`，绝不重新调用`execute`。
 
-产品组合根在打开Action Store和Process Owner前取得`product-action-runtime.lock`；Action Audit随后递增持久Owner
+产品组合根在创建状态Root和打开任何Store/Provider前取得Root父目录中的稳定私有锁；
+Action组合根借用原`ProductStateOwner`，不重复取得OS锁。独立Action宿主取得同一根外互斥。
+旧根内`product-action-runtime.lock`不再使用；完整装配及取消结算见[全状态Owner详设](changes/m09-r1-product-state-ownership.md)。
+Action Audit随后递增持久Owner
 Generation并保存Token摘要。每次Execute/Reconcile在调用Executor前原子写入Route执行态与带Deadline的Operation，完成时再
 原子提交Operation与Route终态。写效果超时、取消或Executor返回后Audit失败均保守进入UNKNOWN；新Owner只中断旧Operation并
 调用Reconcile，不重放Execute。完整流程见[ADR 0091](adr/0091-action-runtime-fencing-and-bounded-reconciliation.md)和
-[0.9.3c详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)。
+[0.9.3c详细设计](changes/m09-3c-action-runtime-fencing-and-recovery.md)。根外互斥不是完整备份恢复验收，R1仍开放。
 
 ## 8. 数据流与持久化架构
 

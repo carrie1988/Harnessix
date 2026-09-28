@@ -1,0 +1,11 @@
+flowchart LR
+    Address[State Root目录地址] --> Normalize[NFC casefold与规范父目录]
+    Normalize --> Anchor[根外私有锚点]
+    Anchor --> FD[原锁FD或Handle]
+    FD --> Mutex[OS非阻塞独占]
+    Mutex --> Borrow[内存Owner借用检查]
+    Borrow --> Lifecycle[受管Store与Runtime生命周期]
+    Key[独立Session Key] --> Auth[原Event Artifact认证]
+    Lifecycle --> Auth
+    Generation[原Audit Generation] --> Action[Action事实CAS]
+    Lifecycle --> Action

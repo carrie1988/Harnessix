@@ -1,0 +1,19 @@
+{
+  "source_revision": "1df5aceb995fe96419ca2ea04b046a3be022f965",
+  "root_owner_location": "outside managed state root",
+  "lock_removal_on_exit": false,
+  "root_created_by_owner": false,
+  "borrowed_owner_reacquires_os_lock": false,
+  "borrowed_scope_closes_outer_owner": false,
+  "case_unicode_aliases_share_lock": true,
+  "cancellation_waits_original_writer": true,
+  "private_posix_and_native_windows_ports": true,
+  "previous_inner_action_lock_used": false,
+  "changed_public_schema": false,
+  "changed_session_key_format": false,
+  "complete_product_backup_restore_implemented": false,
+  "native_windows_executed_in_this_bundle": false,
+  "new_real_provider_requests": 0,
+  "additional_provider_cost_cny": "0",
+  "release_work_packages_closed": []
+}

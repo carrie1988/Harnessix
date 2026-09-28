@@ -1,0 +1,17 @@
+{
+  "source_revision": "1df5aceb995fe96419ca2ea04b046a3be022f965",
+  "package_version": "0.1.0",
+  "filename": "harnessix-0.1.0-py3-none-any.whl",
+  "size": 1015348,
+  "sha256": "ed20065fe6f9d817adb630ce764329556e858c4c57a74a2878bd884ca451c5d2",
+  "production_source_bytes_match": {
+    "product_config/state_owner.py": true,
+    "product_config/state_owner_posix.py": true,
+    "product_config/state_owner_windows.py": true,
+    "product_config/action_owner.py": true,
+    "product_config/action_runtime.py": true,
+    "product_config/server.py": true
+  },
+  "tests_in_wheel": false,
+  "release_acceptance": false
+}

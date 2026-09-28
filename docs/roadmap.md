@@ -2,7 +2,7 @@
 doc_type: roadmap
 status: current
 version: 110
-code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -705,6 +705,9 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 [R3验证请求预算](changes/m09-r3-verification-request-budget.md)复用正式Suite、Case和官方Adapter，
 原周期账本先预留后发送，未知费用停止整个Suite；默认执行路径兼容，恢复身份包含有限Guard范围。
 该机制仅保护受控验证请求，不恢复延期的通用计价平台、不降低原20 Trial门槛或关闭R3。
+[R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
+Action借用同一Owner，取消结算唯一目录线程后释放。完整跨Store/Artifact及原Key备份恢复、整体目录发布与三平台实际恢复仍开放；
+该前置实现不关闭R1或R4。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

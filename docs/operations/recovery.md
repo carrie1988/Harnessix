@@ -2,7 +2,7 @@
 doc_type: deployment-design
 status: current
 version: 9
-code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -215,11 +215,16 @@ e5在`agent-server`开放stdio前全局扫描`builtin/harnessix.product`来源Ro
 `running/reconciling`持久转为`unknown`，再对每个UNKNOWN只调用一次Reconcile；仍未知、旧Binding缺失或候选不能承接
 `pending_approval/ready`时启动失败。恢复不会调用Execute，也不会自动续写部分Patch。该能力已由CI 35439332019验收关闭。
 
-0.9.3c在该流程前增加双层Owner与跨Store完整性扫描：最外层`product-action-runtime.lock`必须在任一Action Store/Process Owner
+0.9.3c在该流程前增加双层Owner与跨Store完整性扫描；现行最外层锁已由[全状态Owner](../changes/m09-r1-product-state-ownership.md)
+前移至创建Root及打开任何产品Store/Provider之前，并使用Root之外的稳定地址。Action借用原Owner，独立组合取得同一锁。
+必须在任一Action Store/Process Owner
 打开前取得；组合根在锁内幂等初始化绑定的Session Schema与Artifact索引，Action Audit随后递增持久Generation并校验全部产品写入。
 这避免Eval/Container组合在Agent Runtime尚未打开时因Session表不存在而失败。扫描修复Route内嵌Plan可以确定重建的Execution Plan缺口，
 拒绝Plan冲突与Session悬空引用，报告无Session引用Route和Action Artifact孤儿，并对无匹配非终态Route的Active Process Lease
 调用既有Reconcile后失败关闭。Scan和Startup Recovery两份低敏报告均在stdio开放前写入`product-config.db`。
+
+当前根外锁已覆盖默认产品静默窗口，仍未提供完整产品备份制品及整体目录恢复。不得把旧式单Session备份
+或普通文件SHA当作跨Store及原Key恢复授权。R1完整备份恢复和R4三平台实际恢复继续开放。
 
 
 ## 9. Product Config恢复

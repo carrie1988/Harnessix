@@ -1,0 +1,104 @@
+{
+  "source_revision": "1df5aceb995fe96419ca2ea04b046a3be022f965",
+  "environments": [
+    "macOS ARM64 Python3.13.8 main checkout",
+    "macOS ARM64 Python3.12.7 clean independent editable checkout"
+  ],
+  "runs": [
+    {
+      "name": "original product startup order red",
+      "source_revision": "09d2256061287b43da54673c2a37e2b75b10e52b",
+      "failed": 1,
+      "log": "logs/source-order-red.txt",
+      "timing_note": "原pytest日志未记录测试执行时长"
+    },
+    {
+      "name": "final focused",
+      "python": "3.13.8",
+      "passed": 53,
+      "skipped": 7,
+      "seconds": 3.33,
+      "log": "logs/focused.txt"
+    },
+    {
+      "name": "affected regression",
+      "python": "3.13.8",
+      "passed": 1578,
+      "skipped": 33,
+      "seconds": 161.77,
+      "log": "logs/affected-python313-final.txt"
+    },
+    {
+      "name": "independent focused",
+      "python": "3.12.7",
+      "passed": 53,
+      "skipped": 7,
+      "seconds": 4.12,
+      "log": "logs/independent-focused-python312.txt"
+    },
+    {
+      "name": "independent affected regression",
+      "python": "3.12.7",
+      "passed": 1578,
+      "skipped": 33,
+      "seconds": 168.12,
+      "log": "logs/independent-affected-python312.txt"
+    },
+    {
+      "name": "documentation and repository governance",
+      "passed": 26,
+      "seconds": 1.4,
+      "log": "logs/governance.txt"
+    },
+    {
+      "name": "owner-only final",
+      "python": "3.13.8",
+      "passed": 27,
+      "skipped": 7,
+      "seconds": 0.61,
+      "log": "logs/owner-only-python313.txt"
+    }
+  ],
+  "test_groups_overlap": true,
+  "full_repository_regression": false,
+  "mypy_source_files": 367,
+  "mypy_passed": true,
+  "schema_and_task_pack_unchanged": true,
+  "static_mermaid_check": true,
+  "actually_rendered_and_visually_checked_mermaid_diagrams": 3,
+  "retained_failures": [
+    {
+      "reason": "invalid test directory sdk",
+      "exit": 4,
+      "product_tests_executed": 0,
+      "log": "logs/affected-python313.txt"
+    },
+    {
+      "reason": "temporary readability hotspot and report drift",
+      "log": "logs/readability-first.txt"
+    }
+  ],
+  "raw_logs_local_only": true,
+  "published_logs_remove_private_temp_or_checkout_paths": true,
+  "release_acceptance": false,
+  "final_governance": {
+    "passed": 26,
+    "seconds": 1.27,
+    "log": "logs/governance-final.txt"
+  },
+  "final_secret_scan": {
+    "inputs": 2577,
+    "hits": 0,
+    "rules_changed": false,
+    "log": "logs/secret-scan-final.txt"
+  },
+  "published_log_cleanup": [
+    "private temporary and checkout paths",
+    "trailing whitespace; original local logs unchanged"
+  ],
+  "renderer_environment": {
+    "default_puppeteer_chrome_missing": true,
+    "existing_system_chrome_used": true,
+    "browser_download_or_user_profile_reuse": false
+  }
+}

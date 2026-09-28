@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant H as 默认产品宿主
+    participant O as 根外Owner
+    participant W as 唯一目录工作线程
+    participant S as 配置 Key Session Provider
+    participant A as Action Runtime
+    H->>H: 只读预检和Workspace重叠检查
+    H->>O: 非阻塞取得原锁
+    alt 已有宿主或私有对象无效
+        O-->>H: 固定失败 不创建Root或Store
+    else 取得Owner
+        H->>W: 单次派发目录准备
+        W-->>H: 原目录结果
+        H->>S: 初始化认证状态和Provider
+        H->>A: 传入原Owner
+        A->>O: require 不重新加锁
+        H->>H: Agent就绪 开放stdio
+        H->>A: 关闭Gateway Process Store
+        H->>S: 关闭Provider Binding和公开作用域
+        H->>O: 撤销借用 关闭原锁句柄
+    end

@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 25
-code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -1926,6 +1926,9 @@ flowchart LR
 Transaction、Workspace Lease和可选Process Supervisor。Action Audit以`require_runtime_owner=True`打开，并立即取得第二层持久
 Generation Fence。外层锁避免不同Store各自打开后才发现竞争，内层Fence阻止旧宿主迟到提交Action事实。
 
+现行外层互斥已前移到默认Server的目录准备之前，并放在Root之外；Action子生命周期借用同一
+`ProductStateOwner`，独立Action调用则取得同一根外锁。原根内锁不再使用，详见[全状态Owner](../changes/m09-r1-product-state-ownership.md)。
+
 跨Store扫描读取Session和Artifact索引。组合根因此在Product Lock内先对`artifacts.session`执行幂等初始化，再打开Action Store；
 正式Server可提前初始化同一Store，Eval/Container等直接组合路径则不再依赖“必须先打开AgentRuntime”的隐式顺序。Session Runtime
 Owner仍由后续`AgentRuntime`取得，Action组合根不会因此形成第二个Session执行宿主。
@@ -2051,3 +2054,13 @@ Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL�
 新Artifact正文复用托管Session Key完成跨重启来源认证，见[详设](../changes/m09-4a-authenticated-artifact-body.md)。
 旧无Seal正文不追认；完整产品同机备份、Windows原生验收、物理DB归属与整体发布仍未关闭。
 跨机Key迁移和通用维护CLI按[首发范围](../changes/m09-to-v1-release-scope-convergence.md)延期；危险未装配入口拒绝。
+
+## 产品全状态Owner与完整备份前置静默窗口
+
+默认产品从创建私有Root之前至全部资源关闭之后持有根外稳定Owner；第二宿主在配置、Key、Session或Provider
+构造之前拒绝。Action Runtime显式借用原Owner，借用结束不关闭外层Owner。独立组合入口仍使用同一互斥地址。
+目录准备复用`run_maintenance_io`，父取消和重复取消结算唯一原线程之后才释放Owner，不遗留无锁写入者。
+
+[完整详设](../changes/m09-r1-product-state-ownership.md)包含背景、七类状态盘点、三种图、字段与接口、
+源代码导航、失败/取消及原生平台边界。Root锁不替代原Session/Artifact认证、Audit Generation或静默确认。
+完整备份、原Key恢复授权、整体目录发布及崩溃恢复尚未交付，R1不关闭。

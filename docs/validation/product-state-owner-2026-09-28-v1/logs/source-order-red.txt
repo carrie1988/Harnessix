@@ -1,0 +1,51 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_second_product_startup_refuses_before_any_state_store __________
+
+tmp_path = PosixPath('<private-test-path>')
+config = ProductConfigV2(spec_version='harnessix.product-config/v2', active_profile='primary', secret_sources=(EnvironmentSecre...y_delay_seconds=0.5, max_request_bytes=2097152, max_response_bytes=2097152, max_frame_bytes=262144, max_chunks=10000)))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ccd4d60>
+
+    async def test_second_product_startup_refuses_before_any_state_store(
+        tmp_path: Path, config: ProductConfigV2, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        state = tmp_path / "state"
+        path = write_config(tmp_path / "config.json", config)
+        monkeypatch.setenv("PRIMARY_API_KEY", "fixture-SECRET-CANARY")
+        monkeypatch.setenv("BACKUP_API_KEY", "fixture-SECRET-CANARY")
+
+        def forbidden_store(*_args: object, **_kwargs: object) -> None:
+            raise AssertionError("第二产品宿主在全状态Owner拒绝之前构造了配置Store")
+
+        monkeypatch.setattr(server, "SQLiteProductRuntimeConfigStore", forbidden_store)
+        with product_action_runtime_lock(state), pytest.raises(KernelError) as caught:
+>           await server.run_product_stdio(
+                config_path=path,
+                profile_id=None,
+                workspace=workspace,
+                state_directory=state,
+                input_stream=io.BytesIO(),
+                output_stream=io.BytesIO(),
+            )
+
+tests/product_config/test_product_state_owner.py:32:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/harnessix/product_config/server.py:357: in run_product_stdio
+    await _serve_product_stdio(
+src/harnessix/product_config/server.py:214: in _serve_product_stdio
+    SQLiteProductRuntimeConfigStore(startup.state_root / "product-config.db") as config_store,
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+_args = (PosixPath('<private-test-path>'),)
+_kwargs = {}
+
+    def forbidden_store(*_args: object, **_kwargs: object) -> None:
+>       raise AssertionError("第二产品宿主在全状态Owner拒绝之前构造了配置Store")
+E       AssertionError: 第二产品宿主在全状态Owner拒绝之前构造了配置Store
+
+tests/product_config/test_product_state_owner.py:28: AssertionError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_owner.py::test_second_product_startup_refuses_before_any_state_store

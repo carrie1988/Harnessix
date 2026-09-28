@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: cb5fe4e9bffbc668b0d7259c3beebc3310f27e2c
+version: 4
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -24,6 +24,11 @@ supersedes: []
 ---
 
 # 0.9.3c Action Runtime所有权、期限与效果恢复详细设计
+
+现行宿主锁边界已由[全状态Owner](m09-r1-product-state-ownership.md)扩展：
+默认Server在Root准备及全部Store/Provider之前取得根外稳定互斥，Action借用同一Owner，旧根内锁不再取得。
+本文件原Action Generation、Operation Deadline、Reconcile及固定历史验证结论保留；
+下文原根内路径或早期启动顺序仅用于对应版本追溯，不作为完整产品静默或备份恢复证据。
 
 ## 1. 文档目的与变更摘要
 

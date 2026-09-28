@@ -1,0 +1,15 @@
+flowchart TD
+    Preflight[只读配置和Workspace预检] --> Outer[根外Product State Owner]
+    Outer --> Platform{平台原生端口}
+    Platform --> POSIX[目录FD 私有权限 Darwin ACL]
+    Platform --> Windows[逐段Handle 私有DACL 不共享锁]
+    Outer --> Prepare[唯一目录准备线程 取消结算]
+    Prepare --> Config[Product Config Store]
+    Config --> Key[原Session Key与Binding]
+    Key --> Session[Session Protocol Artifact]
+    Session --> Provider[Provider和Coding Tools]
+    Provider --> Borrow[Action借用原Owner]
+    Borrow --> Audit[原Action Audit Generation Fence]
+    Audit --> Runtime[Agent Runtime和stdio]
+    Runtime --> Close[逆序关闭全部资源]
+    Close --> Release[撤销借用 关闭根外锁句柄]

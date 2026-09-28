@@ -2,7 +2,7 @@
 doc_type: test-and-eval-design
 status: current
 version: 40
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
 modules:
@@ -725,7 +725,7 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 
 | 场景 | 必须证明 |
 |---|---|
-| Product组合根竞争 | 第二进程在任一Action Store/Process Owner打开前以`action_runtime_busy`失败 |
+| Product组合根竞争 | 第二默认产品在创建Root及任何Store/Provider前以`product_state_busy`拒绝；独立Action调用保留`action_runtime_busy` |
 | Audit Owner竞争 | 第二Audit宿主不能取得文件锁；新Generation使旧Fence迟到提交失败 |
 | Schema迁移 | Action Audit v1无损升级v2并创建Operation表；未知版本失败关闭 |
 | Operation Claim | Route执行态、Operation、Owner Generation、Token摘要和Deadline同事务提交 |
