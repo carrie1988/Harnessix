@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: a13cec8c264a10411fe8c35421192dc6f7716adb
+version: 36
+code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
 owners:
   - core
 modules:
@@ -2125,3 +2125,13 @@ Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改
 完整字段、流程、失败及测试映射见同一详设第18节；原生未通过前仍是实现候选。
 文件集合枚举在Windows只申请原元数据访问，不与原排他运行锁重新争用正文读权；仍逐项检查所有生命周期文件，
 随后才由原布局分类排除锁正文复制。不能扩大原锁共享或跳过对象验权，完整合同及正反测试见详设第19节。
+
+## Windows Process物理输出与完整备份验真
+
+[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py)继续对原输出文件的
+完整物理字节比较原Lease长度/SHA及Receipt MAC，不使用可能文本转换的公开前缀读取规避失败。
+Process捕获及读取已改为显式二进制模式；旧摘要不符仍拒绝，不能自动转换或重新签名。
+[`state_backup_windows.py`](../../src/harnessix/product_config/state_backup_windows.py)改为复用Workspace
+共享原生IO，原不覆盖目录发布合同保持；
+[第20节详设](../changes/m09-r1-windows-private-state.md#20-原始字节持久化与windows回执并发发布)
+覆盖新捕获、Receipt并发、原生正反例及三平台恢复尚待验收的边界。

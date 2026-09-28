@@ -186,7 +186,7 @@ class SupervisedProcess:
         observation = self._lease.stdout if stream == "stdout" else self._lease.stderr
         path = self._run_directory / f"{stream}.bin"
         try:
-            flags = os.O_RDONLY
+            flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
             if hasattr(os, "O_NOFOLLOW"):
                 flags |= os.O_NOFOLLOW
             descriptor = os.open(path, flags)

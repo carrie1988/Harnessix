@@ -111,6 +111,8 @@ jobs:
           uv run pytest tests/tools/test_windows_git.py
           tests/tools/test_git_platform_contracts.py
           tests/processes/test_windows_owner_lifecycle.py
+          tests/processes/test_output_binary_contracts.py
+          tests/processes/test_windows_receipt_contracts.py
           tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status
           tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state
           tests/product_config/test_product_backup_files_windows.py

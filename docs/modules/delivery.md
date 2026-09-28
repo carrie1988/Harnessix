@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
+version: 17
+code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_windows_io_contracts.py
   - tests/delivery/test_planner.py
   - tests/delivery/test_store.py
   - tests/delivery/test_diff.py
@@ -1674,3 +1675,14 @@ Plan身份及每个before/after文件引用的长度与SHA。所有受管Blob以
 原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
 既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
 原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。
+
+## Windows低层IO共享与兼容导入
+
+[`windows_io.py`](../../src/harnessix/delivery/windows_io.py)保留`WindowsFileOperations`、原NT结构/编码函数
+及Windows版本支持声明。实现归属迁到
+[`workspace/windows_file_io.py`](../../src/harnessix/workspace/windows_file_io.py)，Delivery文件事务、
+Owner Receipt和私有备份目录发布共享同一个类；原事务效果状态机及Executor证据内容不变。
+
+[完整详设](../changes/m09-r1-windows-private-state.md#203-总体架构模块归属与源码定位)说明归属、
+同目录发布及失败恢复；[原IO回归](../../tests/delivery/test_windows_io_contracts.py)同时验证
+原导入身份、权限共享、ABI、部分写入、完成状态和构建边界。没有新增Delivery到Process的业务耦合。

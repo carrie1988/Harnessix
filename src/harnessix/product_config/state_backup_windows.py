@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import cast
 
 from harnessix.agent.errors import KernelError
-from harnessix.delivery.windows_io import WindowsFileOperations
 from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
 from harnessix.workspace.windows import WindowsWorkspaceRoot
+from harnessix.workspace.windows_file_io import WindowsFileOperations
 from harnessix.workspace.windows_private_security import PrivateStateSecurity
 
 

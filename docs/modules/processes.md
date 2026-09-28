@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 24
-code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
+version: 25
+code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
 owners:
   - core
 modules:
@@ -23,6 +23,8 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_output_binary_contracts.py
+  - tests/processes/test_windows_receipt_contracts.py
   - tests/processes/test_output_protection.py
   - tests/processes/test_contracts.py
   - tests/processes/test_runtime.py
@@ -1668,3 +1670,16 @@ Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process
 原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
 既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
 原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。
+
+## Windows原始字节输出与并发Receipt发布
+
+[`owner_output.py`](../../src/harnessix/processes/owner_output.py)及
+[`supervisor.py`](../../src/harnessix/processes/supervisor.py)明确采用二进制FD，确保LF/CRLF、Ctrl-Z、
+NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原MAC仍按实际持久前缀计量。
+[`windows_receipt.py`](../../src/harnessix/processes/windows_receipt.py)通过Workspace的原生低层IO
+完成Flush后的单次NT名称切换；旧Reader保留旧MAC快照，新Reader获得新回执，原序号/CAS推进规则不变。
+写入前失败仅清理本次临时Handle；Rename错误或未决不自动删、重试或降级。
+
+[完整详设第20节](../changes/m09-r1-windows-private-state.md#20-原始字节持久化与windows回执并发发布)
+包含需求、数据流、时序、字段、伪代码及失败/部署边界；原快速退出与SDK完整恢复仍须原生验收。
+历史摘要不符只拒绝，不转换旧文件或补签。共享IO不引入Process到Delivery依赖，也不修改治理阈值。

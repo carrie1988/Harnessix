@@ -147,7 +147,7 @@ def verify_owner_receipt(
 
 
 def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
-    flags = os.O_RDONLY
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     descriptor = os.open(path, flags)
@@ -222,10 +222,21 @@ def write_owner_receipt(path: Path, receipt: ProcessOwnerReceipt) -> None:
     body = receipt.model_dump_json(warnings="error").encode("utf-8")
     if len(body) > MAX_OWNER_RECEIPT_BYTES:
         raise KernelError("process_owner_receipt_invalid", "Process owner回执超过字节上限")
+    if os.name == "nt":
+        from harnessix.processes.windows_receipt import publish_owner_receipt
+
+        try:
+            publish_owner_receipt(path, body)
+        except (KernelError, OSError, ValueError):
+            raise KernelError(
+                "process_owner_receipt_write_failed", "Process owner回执写入失败"
+            ) from None
+        return
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     descriptor: int | None = None
     try:
-        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(temporary, flags, 0o600)
         view = memoryview(body)
         while view:
             written = os.write(descriptor, view)

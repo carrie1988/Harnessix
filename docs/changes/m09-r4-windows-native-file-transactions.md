@@ -348,7 +348,7 @@ reconcile(original_record):
 |---|---|---|
 | 共享FSM分派 | [`filesystem.py`](../../src/harnessix/delivery/filesystem.py)：`_observe/_apply/_prepare_publication/reconcile` | [`test_filesystem.py`](../../tests/delivery/test_filesystem.py)、原生文件测试 |
 | 原生父链与版本 | [`windows_filesystem.py`](../../src/harnessix/delivery/windows_filesystem.py)：`_parent/_version/_check_current_target` | [`test_windows_filesystem.py`](../../tests/delivery/test_windows_filesystem.py)：Root替换、Junction、原生pin竞争 |
-| ABI和句柄IO | [`windows_io.py`](../../src/harnessix/delivery/windows_io.py)：`_RenameInfo/WindowsFileOperations` | [`test_windows_io_contracts.py`](../../tests/delivery/test_windows_io_contracts.py)：UTF-16、部分写、零进展、构建边界 |
+| ABI和句柄IO | [`workspace/windows_file_io.py`](../../src/harnessix/workspace/windows_file_io.py)：`_RenameInfo/WindowsFileOperations`；[`windows_io.py`](../../src/harnessix/delivery/windows_io.py)保留兼容导入 | [`test_windows_io_contracts.py`](../../tests/delivery/test_windows_io_contracts.py)：UTF-16、部分写、零进展、构建边界 |
 | 元数据 | [`windows_metadata.py`](../../src/harnessix/delivery/windows_metadata.py)：`check_regular_file/WindowsFileSecurity` | 原生只读、ADS、硬链接、隐藏、自定义权限拒绝 |
 | 规划及Mode | [`planner.py`](../../src/harnessix/delivery/planner.py)：`prepare_workspace_transaction/_read_existing`；[`trusted_action.py`](../../src/harnessix/delivery/trusted_action.py)：`_normalized_files` | Mode拒绝、来源漂移与完整SHA前置条件 |
 | 默认装配 | [`action_composition.py`](../../src/harnessix/product_config/action_composition.py)：`_workspace_patch_component` | [`test_server_and_cli.py`](../../tests/product_config/test_server_and_cli.py)：`test_product_server_sdk_approves_review_and_applies_workspace_patch` |

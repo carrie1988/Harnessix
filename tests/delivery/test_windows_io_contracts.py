@@ -21,6 +21,15 @@ from harnessix.delivery.windows_io import (
 from harnessix.execution.contracts import canonical_digest
 
 
+def test_delivery_and_workspace_share_one_native_io_implementation():
+    from harnessix.workspace import windows_file_io
+
+    assert WindowsFileOperations is windows_file_io.WindowsFileOperations
+    assert _RenameInfo is windows_file_io._RenameInfo
+    assert _IoStatusBlock is windows_file_io._IoStatusBlock
+    assert _rename_buffer is windows_file_io._rename_buffer
+
+
 @pytest.mark.parametrize("replace", [False, True])
 @pytest.mark.parametrize("name", ["target.py", "项目 😀.py"])
 def test_rename_abi_uses_relative_parent_handle_and_exact_utf16(name: str, replace: bool) -> None:

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: a13cec8c264a10411fe8c35421192dc6f7716adb
+version: 7
+code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,9 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/processes/test_output_binary_contracts.py
+  - tests/processes/test_windows_receipt_contracts.py
+  - tests/delivery/test_windows_io_contracts.py
   - tests/product_config/test_state_metadata_listing_contracts.py
   - tests/product_config/test_state_database_flush_contracts.py
   - tests/product_config/test_state_windows_publication_contracts.py
@@ -437,7 +440,8 @@ POSIX继续原只读FD同步行为。
 
 [`state_backup_windows.publish_private_object(source, target)`](../../src/harnessix/product_config/state_backup_windows.py)
 是内部私有状态发布端口，复用
-[`WindowsFileOperations`](../../src/harnessix/delivery/windows_io.py)，不复制WinAPI结构、NT ABI或Workspace路径解析。
+[`WindowsFileOperations`](../../src/harnessix/workspace/windows_file_io.py)，不复制WinAPI结构、NT ABI或Workspace路径解析；
+原Delivery路径保留兼容导入，共享IO归属见第20节。
 Windows调用必须是同一绝对父目录；当前备份临时目录、Root恢复切换及Restore Journal均满足此合同。
 支持既有私有文件和目录，不把Journal文件误当目录，不授予跨目录、跨卷或覆盖能力。
 
@@ -542,3 +546,150 @@ POSIX原只读访问、逐项包括锁文件及变更组合在对象操作前拒
 原生端口新增活跃排他锁下成功列举，同时正式正文读取仍拒绝的正反断言。
 原Key和状态ACL、Hardlink/Junction、取消、原来源认证、恢复状态机及未知效果均不豁免。
 新原生候选成功前仍保留默认SDK完整链失败，R1/R4不关闭。
+
+## 20. 原始字节持久化与Windows回执并发发布
+
+### 20.1 需求背景、证据与归因边界
+
+实现`d615a7b`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36441634528/job/108993320151)
+为88通过、5跳过、2失败，前置文件事务与审批写链59通过。元数据枚举不再与原排他锁冲突；
+默认SDK完整备份进入`_process_files`，因为物理输出文件与原Lease的字节数/摘要不一致而拒绝。
+另一个失败为快速退出码0的进程偶发获得`unknown`终态；原生报告不能证明该失败已完全归因。
+两个本地Python环境各3362通过、82跳过，不代替上述原生失败。
+
+[`CapturedProcessOutput`](../../src/harnessix/processes/owner_output.py)原创建标志未包含`O_BINARY`；
+[`SupervisedProcess.output`](../../src/harnessix/processes/supervisor.py)原读取同样未指定二进制模式。
+[CPython的`os.open`实现](https://github.com/python/cpython/blob/v3.12.10/Modules/posixmodule.c)
+在Windows调用CRT `_wopen`，不替调用方添加二进制标志。
+[微软CRT文件模式](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/open-wopen?view=msvc-170)
+明确区分原样字节与文本转换；未指定模式会依赖全局默认值。原输出摘要在脱敏后、写入前的字节上计算，
+若写入转换LF、读取又转换CRLF，产品读取可表面一致，但原生备份按物理字节验真必然发现分叉。
+新增原生`O_TEXT`负对照与独立物理读取正例，不以该推断替代原生证据。
+
+原Receipt发布使用路径`os.replace`。旧CRT读Handle没有Delete共享时，普通替换会被共享保护拒绝；
+Owner异常分支可因此转入`unknown`。这是源码可达的并发发布缺口，不把它直接等同于已经证明的
+全部快速退出失败原因。新测试在确定持有旧Reader时比较普通路径替换与正式发布，保留原快速退出重复用例。
+
+### 20.2 目标、不变量与非目标
+
+| ID | 必须满足的合同 |
+|---|---|
+| WS-9 | `stdout.bin`/`stderr.bin`是脱敏后的原始字节，不接受CRT换行、Ctrl-Z或编码转换 |
+| WS-10 | `persisted_bytes`及`persisted_sha256`对应物理落盘前缀；公开读取必须校验原摘要 |
+| WS-11 | 输出先Flush，再签名、发布Receipt；原MAC、Process ID、Owner身份、序号及终态Schema不变 |
+| WS-12 | 新Receipt通过同目录原子名称替换发布；旧Reader只保留旧不可变MAC快照，不读取拼接的新旧正文 |
+| WS-13 | 写入前失败只清理当前创建的临时Handle；Rename已尝试后不能自动删除或重放未确认效果 |
+| WS-14 | 复用单一原生IO实现，不增加`processes -> delivery`依赖或扩大既有依赖环 |
+
+不新增回执侧文件、数据库、补签算法、模型请求或价格机制，不延长原生门禁期限、不减少快速退出重复次数。
+原生NTFS、本机原用户及Windows 11首发边界保持。文件Flush不声称硬件掉电后全卷原子性。
+
+### 20.3 总体架构、模块归属与源码定位
+
+原生低层IO迁至[`workspace/windows_file_io.py`](../../src/harnessix/workspace/windows_file_io.py)：
+原`WindowsFileOperations`、NT结构、共享标志、部分写入循环、Flush和完成状态核验保持同一实现。
+[`delivery/windows_io.py`](../../src/harnessix/delivery/windows_io.py)保留既有类/结构/编码函数导入与
+Windows版本支持声明；[`state_backup_windows.py`](../../src/harnessix/product_config/state_backup_windows.py)
+与新[`windows_receipt.py`](../../src/harnessix/processes/windows_receipt.py)直接复用Workspace端口。
+该归属避免为Owner依赖上层Delivery引入新大环；可读性策略的阈值、允许依赖边及允许环不修改。
+
+```mermaid
+flowchart LR
+  O[Owner 输出读线程] --> R[原流式脱敏和额度]
+  R --> B[CapturedProcessOutput 显式二进制FD]
+  B --> F[部分写入完成 原物理字节 Flush]
+  F --> M[原MAC回执 原序号及摘要]
+  M --> P[Windows Receipt Publisher]
+  P --> W[Workspace 共享Win32和NT IO]
+  D[原Delivery兼容导入] --> W
+  S[完整备份目录发布] --> W
+  W --> N[原同目录NT名称切换]
+  N --> C[新Reader验证新MAC]
+  Q[既有Reader持有旧Handle] --> V[旧MAC快照不变]
+```
+
+图中低层依赖向Workspace收敛，Owner与Delivery不互相依赖。字节流只走脱敏、限额、Flush和原MAC，
+没有平台换行规范化或对旧结果重签。备份继续比较全文件物理字节，不采用公开输出前缀读取来规避校验。
+
+### 20.4 接口、类职责和重点字段
+
+| 源码/接口 | 职责、输入输出及关键约束 |
+|---|---|
+| `CapturedProcessOutput.__init__/feed/_publish` | `O_BINARY`只控制CRT模式；原`O_EXCL`、`O_NOFOLLOW`、0600、脱敏、部分写入与额度保持 |
+| `SupervisedProcess.output(stream)` | 按原`persisted_bytes`读取二进制前缀，原SHA不匹配固定拒绝；不得转换后接受 |
+| `write_owner_receipt(path, receipt)` | 原64KiB限长及MAC正文；Windows装配原生Publisher，POSIX仍原写入/fsync/replace/目录fsync |
+| `publish_owner_receipt(path, body)` | 接受调用方已限长的UTF-8回执；固定父链、本地NTFS、排他创建、Flush、同目录Replace；不返回新业务事实 |
+| `rename_attempted` | 只标记是否已经发出名称切换；`False`时可清理当前临时对象，`True`时错误/未决不得按Handle自动删除 |
+| `WindowsFileOperations.rename(..., replace=True)` | 原信息类65及标志3，不使用BypassAccessCheck，不忽略只读属性，不依赖路径重开父目录 |
+| `sequence`/`mac`/`persisted_sha256` | 均沿用原模型和签名；Supervisor仍只以单调序号/CAS推进Lease，旧Reader不能覆盖新事实 |
+
+公开`__all__`、SQLite Schema、回执规格、备份清单和Runtime错误代码保持。原Delivery类与Workspace类
+是同一个对象，不构造复制实现或第二套NT结构。
+
+### 20.5 时序、数据流及核心伪代码
+
+```mermaid
+sequenceDiagram
+  participant O as Owner
+  participant S as 输出文件
+  participant T as 新临时Receipt Handle
+  participant N as NT名称切换
+  participant R as 已打开旧Receipt的Reader
+  O->>S: 二进制写入脱敏字节 完成部分写并Flush
+  O->>T: 原MAC正文 二进制WriteFile并Flush
+  R->>R: 保持原Handle及原序号快照
+  O->>N: 同目录Replace 原信息类和完成状态检查
+  N-->>O: 确认发布或错误 未决
+  alt 发布确认
+    O->>T: 关闭原Handle
+    R->>R: 旧MAC仍验证 原快照不变
+    O->>N: 新Reader按名称取得新Receipt并验证MAC
+  else Rename错误或未决
+    O->>T: 关闭Handle 保留未知效果 不自动删除重试
+  end
+```
+
+[微软同目录Rename语义](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information)
+允许替换名称而不使既有目标Handle失效；该端口仍执行用户态访问检查。
+旧Reader得到已签名的旧事实不是损坏；原Supervisor序号规则决定是否推进，不能强行改成新序号。
+
+```text
+capture output:
+    stream redactor -> allowance prefix -> binary descriptor partial writes
+    measure and hash exactly those bytes -> fsync
+read output:
+    binary descriptor -> original persisted prefix -> original length and SHA check
+publish receipt on Windows:
+    bind original parent chain; require local fixed NTFS
+    exclusively create same-parent temporary Handle; register resource closure
+    try write all original bounded MAC body and Flush
+    if write fails: best-effort delete only that unpublished Handle; preserve original failure
+    mark rename_attempted; invoke original NT replace-on-name exactly once
+    if rename fails or is pending: no automatic delete, fallback or repeated publication
+    close temporary Handle, parent chain and root on every exit
+```
+
+### 20.6 失败恢复、安全、部署与兼容性
+
+写入失败或已有同名临时对象不能覆盖旧Receipt；清理只能针对本次成功创建的Handle。
+NT返回值与IO完成状态均需确认，不能把异常当作成功；未决临时物仍会触发原备份布局/静默验证，
+不能在恢复时无证明删除。现有取消、超时、控制FD归属、Job-before-resume及UNKNOWN不重放策略不变。
+Windows写入端口错误统一映射原`process_owner_receipt_write_failed`，不输出路径、正文或Token。
+
+历史文件若已被CRT转写而与原签名事实不符，继续拒绝备份/验真，不自动转换、补摘要或重新签名。
+该修复只保证新捕获的字节；不得承诺修复所有既有受损历史。旧原件与已有可信备份须保留。
+安装依赖、配置参数和存储布局不变；三平台脱离源码安装与完整恢复仍须独立验收。
+
+### 20.7 测试映射及完成边界
+
+| 测试 | 证明范围 |
+|---|---|
+| [二进制输出合同](../../tests/processes/test_output_binary_contracts.py) | 显式标志负例；LF/CRLF、Ctrl-Z、NUL、无效UTF-8；0/1/4/128额度；部分写入；实际Owner双流物理字节及Lease摘要 |
+| 同文件原生CRT负对照 | 明确`O_TEXT`导致物理转换；不能以POSIX模拟宣称原生通过 |
+| [Receipt合同](../../tests/processes/test_windows_receipt_contracts.py) | NTFS/创建/写入/Rename/清理故障、一次发布、未决不删、所有Handle关闭 |
+| 同文件原生旧Reader正反例 | 普通路径替换确实拒绝；正式发布成功，旧MAC和新MAC分别可验；部分写入不破坏旧事实 |
+| [原Delivery IO合同](../../tests/delivery/test_windows_io_contracts.py) | 共享类/结构/函数身份相同；原ABI、UTF-16、部分写入、完成状态和权限拒绝不变 |
+| [原快速退出](../../tests/processes/test_windows_supervisor.py)及默认SDK | 原0/17/128四次重复、原Git私有输出及完整备份恢复全部保留 |
+
+原生候选未通过前不关闭R1/R4，未得真实任务新成绩不关闭R3。
+本修复不是1.0发布证据；最终门禁要求同一候选的三平台、质量、安装和真实用户结果。

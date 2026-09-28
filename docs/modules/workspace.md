@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 1b3c63f23567e97005aff7d86b91bdb069c8b620
+version: 8
+code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
+  - tests/delivery/test_windows_io_contracts.py
+  - tests/processes/test_windows_receipt_contracts.py
   - tests/workspace/test_paths.py
   - tests/workspace/test_snapshot.py
   - tests/tools/test_windows_read_adapter.py
@@ -1224,3 +1226,15 @@ WindowsWorkspaceRoot父链及叶句柄，不引入第二套Win32 API。
 原Key目录/Key仍要求用户Owner、protected、双ACE flags=0，不能使用状态例外。
 既有旧式或公开权限目录只拒绝，不自动修改ACL。原Root锁、SQLite锁、备份清单、来源验真及恢复状态机不变。
 原生默认SDK验收扩展至完整备份、同机Root恢复及重开读取旧事实；部分断言或本地skip不构成通过。
+
+## Windows共享原生文件IO归属
+
+[`windows_file_io.py`](../../src/harnessix/workspace/windows_file_io.py)承载现有Win32部分写入/Flush、
+NT同目录Rename/Delete及本地NTFS核验；它不包含Delivery状态机、Process状态或备份业务。
+Delivery旧导入、私有状态目录发布和Owner Receipt直接复用同一个类及原ABI，不复制结构或WinAPI封装。
+只迁移低层实现归属，原权限、共享设置、UTF-16结构与返回/完成状态检查保持。
+
+[详设与资源关闭合同](../changes/m09-r1-windows-private-state.md#203-总体架构模块归属与源码定位)
+说明新旧Reader快照及未决发布边界；
+[同一实现测试](../../tests/delivery/test_windows_io_contracts.py)验证兼容路径的类、结构和编码函数身份一致。
+原Workspace路径/Handle身份端口与NTFS范围不改变，不新增一级包依赖边或扩大依赖环。

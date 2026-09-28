@@ -15,7 +15,8 @@ class CapturedProcessOutput:
     """先脱敏再计量和落盘的单流有界输出。"""
 
     def __init__(self, path: Path, secrets: tuple[bytes, ...]) -> None:
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        # CRT文本转换会让物理字节与Receipt摘要分叉；不能依赖宿主默认模式。
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
         self._redactor = StreamingSecretRedactor(secrets)
