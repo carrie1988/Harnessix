@@ -61,3 +61,8 @@ docs/validation/windows-native-git-read-2026-09-28-v1/logs/*native-job.log -diff
 # Windows私有状态交付件保持原字节；外部Job日志不做文本Diff/合并。
 docs/validation/windows-private-state-2026-09-28-v1/** -text
 docs/validation/windows-private-state-2026-09-28-v1/logs/*.log -diff -merge
+
+# 重启与发行边界交付按原字节校验；外部Job日志不参与文本合并。
+docs/validation/product-restart-release-boundary-2026-09-29-v1/** -text
+docs/validation/product-restart-release-boundary-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/*.log -diff -merge

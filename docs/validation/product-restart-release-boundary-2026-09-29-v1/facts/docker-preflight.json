@@ -1,0 +1,28 @@
+{
+  "http_proxy": {
+    "scheme": "http",
+    "host": "127.0.0.1",
+    "port": 7890,
+    "credentials_present": false
+  },
+  "https_proxy": {
+    "scheme": "http",
+    "host": "127.0.0.1",
+    "port": 7890,
+    "credentials_present": false
+  },
+  "docker": {
+    "ServerVersion": "28.3.2",
+    "OSType": "linux",
+    "Architecture": "aarch64",
+    "proxies": {}
+  },
+  "python": {
+    "digest_present": false,
+    "exit_code": 1
+  },
+  "node": {
+    "digest_present": false,
+    "exit_code": 1
+  }
+}

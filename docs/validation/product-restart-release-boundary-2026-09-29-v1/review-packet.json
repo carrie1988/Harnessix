@@ -1,0 +1,49 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "1bc3794bfbdb9ce5fa58103d372c68de4401f90a",
+  "overall_decision": "NO_GO_FOR_COMMERCIAL_RELEASE",
+  "slice_decision": "windows-root-boundary-and-macos-installed-state-restore-passed",
+  "requirements": {
+    "windows_unsafe_existing_root": "native-refusal-preserved",
+    "windows_five_cycle_restart": "passed",
+    "source_artifact_scan": "complete-2798-inputs-zero-rule-hits",
+    "macos_isolated_install_restore": "passed-without-model-turn",
+    "three_platform_frozen_restart_profile": "FAIL-db_growth-on-all-three-platforms",
+    "full_windows_regression": "pending-terminal-job-109027821031",
+    "three_platform_install_upgrade_uninstall": "not_completed",
+    "real_coding_quality": "not_completed",
+    "independent_beta": "not_completed",
+    "licenses": "12-archive-gate-remains-open"
+  },
+  "risks": [
+    {
+      "id": "AUTH-STORAGE-PROFILE",
+      "severity": "release-blocking",
+      "description": "新增认证状态使旧重启Profile数据库增长超限；需先明确版本化负载基线或正式存储优化，保留旧FAIL及认证。"
+    },
+    {
+      "id": "R3-QUALITY",
+      "severity": "release-blocking",
+      "description": "历史真实严格成绩0/20，新固定20 Trial及有限Provider认证尚未完成；固定镜像客户端观察失败，原费用周期账本未确认。"
+    },
+    {
+      "id": "R4-INSTALL",
+      "severity": "release-blocking",
+      "description": "目前只完成macOS源码外完整状态恢复；其他两平台、实际编码、升级和卸载未完成。"
+    },
+    {
+      "id": "R5-BETA",
+      "severity": "release-blocking",
+      "description": "独立开发者Beta与至少15个真实任务尚未完成。"
+    },
+    {
+      "id": "R2-RIGHTS",
+      "severity": "release-blocking-before-distribution",
+      "description": "12件Archive许可与商业权利低优先并行，正式发布前仍须处置。"
+    }
+  ],
+  "preserved_failures": true,
+  "old_frozen_delivery_modified": false,
+  "provider_requests": 0,
+  "real_credentials_included": false
+}

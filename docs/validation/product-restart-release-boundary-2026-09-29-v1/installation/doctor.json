@@ -1,0 +1,193 @@
+{
+  "action_config_sha256": "dd596d190941b4545b115bc824bb8fc33aeeac539a8a29d3666fd09327d6e876",
+  "actions": {
+    "capabilities": [
+      {
+        "binding_digest": "d8a553e37fec0c983008ad5457c66c2dc9ff579507e506dba222bcb47a3561b4",
+        "capability_id": "apply_patch_batch",
+        "evidence_sha256": "013e70cb8007822d3aebc54ca581319faee91a23f41fcaa0f79fda1c4cf3522f",
+        "executor_evidence_digest": "fb98843af4080adecf8141401c26870781ab127c38282390235b3d9dac269a88",
+        "expires_at": "2026-09-28T16:41:14.192796Z",
+        "kind": "workspace_patch",
+        "platform": "posix",
+        "probed_at": "2026-09-28T16:36:14.192796Z",
+        "reason_code": "verified",
+        "spec_version": "harnessix.product-action-capability/v1",
+        "status": "verified"
+      }
+    ],
+    "config_sha256": "dd596d190941b4545b115bc824bb8fc33aeeac539a8a29d3666fd09327d6e876",
+    "created_at": "2026-09-28T16:36:14.192867Z",
+    "report_sha256": "396278509228332830472bbc8520e9e373ebfa7f424f009f1123ee216afdb515",
+    "spec_version": "harnessix.product-action-capability-report/v1"
+  },
+  "checks": [
+    {
+      "category": "action",
+      "check_id": "product_action_apply_patch_batch_d995ba59",
+      "code": "product_action_capability_ready",
+      "duration_ms": 3,
+      "remediation_id": null,
+      "requirement": "advisory",
+      "status": "passed"
+    },
+    {
+      "category": "action",
+      "check_id": "product_action_capability_catalog",
+      "code": "product_action_capability_catalog_ready",
+      "duration_ms": 3,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "action",
+      "check_id": "product_action_config_source",
+      "code": "product_action_config_builtin",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "config",
+      "check_id": "product_config_contract",
+      "code": "product_config_contract_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "config",
+      "check_id": "product_config_file",
+      "code": "product_config_file_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "git",
+      "check_id": "product_git_binding",
+      "code": "product_git_not_configured",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "advisory",
+      "status": "skipped"
+    },
+    {
+      "category": "platform",
+      "check_id": "product_platform_read_port",
+      "code": "product_platform_read_port_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "profile",
+      "check_id": "product_profile_selection",
+      "code": "product_profile_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "dependency",
+      "check_id": "product_provider_dependencies",
+      "code": "product_provider_dependencies_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "secret",
+      "check_id": "product_provider_secrets",
+      "code": "product_provider_secrets_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "state",
+      "check_id": "product_state_layout",
+      "code": "product_state_layout_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "tui",
+      "check_id": "product_tui_dependency",
+      "code": "product_tui_dependency_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    },
+    {
+      "category": "workspace",
+      "check_id": "product_workspace_binding",
+      "code": "product_workspace_ready",
+      "duration_ms": 0,
+      "remediation_id": null,
+      "requirement": "required",
+      "status": "passed"
+    }
+  ],
+  "config_sha256": "8e7495528d31824b7526520976402830d57b45bb22c3070025f3a28ee2823182",
+  "configuration": {
+    "checks": [
+      {
+        "code": "config_contract_valid",
+        "scope": "config",
+        "status": "passed",
+        "subject_id": "product"
+      },
+      {
+        "code": "config_dependency_available",
+        "scope": "dependency",
+        "status": "passed",
+        "subject_id": "primary"
+      },
+      {
+        "code": "config_capabilities_satisfied",
+        "scope": "profile",
+        "status": "passed",
+        "subject_id": "primary"
+      },
+      {
+        "code": "config_provider_auth_usable",
+        "scope": "provider",
+        "status": "passed",
+        "subject_id": "primary"
+      },
+      {
+        "code": "config_secret_version_available",
+        "scope": "secret",
+        "status": "passed",
+        "subject_id": "model-api-key"
+      }
+    ],
+    "config_sha256": "8e7495528d31824b7526520976402830d57b45bb22c3070025f3a28ee2823182",
+    "generated_at": "2026-09-28T16:36:14.189721Z",
+    "ready": true,
+    "report_sha256": "64de3265808fa754eabe80e0c1292bb6796fa00cf5ae7d572a190e25db6cdee1",
+    "selected_profile": "primary",
+    "selection_sha256": "74397e3bf8dab4dc8a37d1408e09b325469720a11e2d068e7477af2fd7e69a42",
+    "spec_version": "harnessix.configuration-diagnostic/v1"
+  },
+  "generated_at": "2026-09-28T16:36:14.193437Z",
+  "mode": "doctor",
+  "platform": "posix",
+  "ready": true,
+  "report_sha256": "896c383b45d088a7396220b62f864a3ba4c7e4b7e7141ec6d8bb3d7f86c0bf59",
+  "selected_profile": "primary",
+  "spec_version": "harnessix.product-preflight/v1",
+  "workspace_fingerprint": "05124e4c5acd3b8e2d4ad2965027ec0cb799901b75a1052d702f760b5eb1a9c0"
+}

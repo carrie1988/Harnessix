@@ -1,0 +1,528 @@
+windows-trusted-execution	Set up job	﻿2026-09-28T16:21:16.8923683Z Current runner version: '2.337.0'
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8978692Z ##[group]Runner Image Provisioner
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8980017Z Hosted Compute Agent
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8980955Z Version: 20260828.587
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8981941Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8984272Z Build Date: 2026-08-28T16:44:25Z
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8985446Z Worker ID: {d045f9e8-4a54-4090-9200-d39dc071e044}
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8986653Z Azure Region: northcentralus
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8987699Z ##[endgroup]
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8990026Z ##[group]Operating System
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8991039Z Microsoft Windows Server 2025
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8991982Z 10.0.26100
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8992831Z Datacenter
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8993646Z ##[endgroup]
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8994456Z ##[group]Runner Image
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8995573Z Image: windows-2025-vs2026
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8996581Z Version: 20260922.246.2
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.8998660Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260922.246/images/windows/Windows2025-VS2026-Readme.md
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9001160Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260922.246
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9003229Z ##[endgroup]
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9005082Z ##[group]GITHUB_TOKEN Permissions
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9008337Z Contents: read
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9009311Z Metadata: read
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9010568Z ##[endgroup]
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9013728Z Secret source: Actions
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9015210Z Cache mode: write
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9016526Z Prepare workflow directory
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9563034Z Prepare all required actions
+windows-trusted-execution	Set up job	2026-09-28T16:21:16.9637124Z Getting action download info
+windows-trusted-execution	Set up job	2026-09-28T16:21:17.2286268Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+windows-trusted-execution	Set up job	2026-09-28T16:21:17.3913123Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+windows-trusted-execution	Set up job	2026-09-28T16:21:17.9569909Z Complete job name: windows-trusted-execution
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-28T16:21:18.1381901Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1383141Z with:
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1383533Z   fetch-depth: 0
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1384349Z   repository: carrie1988/Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1388045Z   token: ***
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1388436Z   ssh-strict: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1388832Z   ssh-user: git
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1389230Z   persist-credentials: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1389674Z   clean: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1390080Z   sparse-checkout-cone-mode: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1390552Z   fetch-tags: false
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1390947Z   show-progress: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1391349Z   lfs: false
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1391718Z   submodules: false
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1392126Z   set-safe-directory: true
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.1392842Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.3560304Z Syncing repository: carrie1988/Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.3566685Z ##[group]Getting Git version info
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.3569062Z Working directory is 'D:\a\Harnessix\Harnessix'
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.4795830Z [command]"C:\Program Files\Git\bin\git.exe" version
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.9263210Z git version 2.55.0.windows.5
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.9271544Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.9284194Z Temporarily overriding HOME='D:\a\_temp\6d49d1e1-b62b-4435-b782-1ea200b81152' before making global git config changes
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.9287304Z Adding repository directory to the temporary git global config as a safe directory
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:18.9296536Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.0748716Z Deleting the contents of 'D:\a\Harnessix\Harnessix'
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.0755146Z ##[group]Initializing the repository
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.0769213Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Harnessix\Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.1898901Z Initialized empty Git repository in D:/a/Harnessix/Harnessix/.git/
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.1970099Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/carrie1988/Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.3385663Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.3387953Z ##[group]Disabling automatic garbage collection
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.3396951Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.4076116Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.4078236Z ##[group]Setting up auth
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.4079746Z Removing SSH command configuration
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.4091899Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:19.5292593Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:21.9139793Z Removing HTTP extra header
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:21.9153227Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.0999715Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.8962688Z Removing includeIf entries pointing to credentials config files
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.8974894Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:24.0874430Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.8763509Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:26.0153749Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:26.2128672Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:26.4170193Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:26.4182618Z ##[group]Fetching the repository
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:26.4191692Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3010367Z From https://github.com/carrie1988/Harnessix
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3011340Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3012203Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3013079Z  * [new branch]      main                    -> origin/main
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3064697Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3413420Z   origin/main
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3452648Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3712521Z d470ca62ae208b9232ac7d3e36f3423b04f539dd
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3746565Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3747240Z ##[group]Determining the checkout info
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3748785Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.3758067Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.4239183Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.4556430Z ##[group]Checking out the ref
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:29.4565306Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:30.4530535Z Switched to a new branch 'main'
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:30.4586992Z branch 'main' set up to track 'origin/main'.
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:30.4664022Z ##[endgroup]
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:30.5091620Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+windows-trusted-execution	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:30.5456925Z d470ca62ae208b9232ac7d3e36f3423b04f539dd
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-28T16:21:30.6311162Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6311713Z with:
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6311911Z   python-version: 3.12
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6312146Z   activate-environment: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6312391Z   no-project: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6312636Z   working-directory: D:\a\Harnessix\Harnessix
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6315121Z   github-token: ***
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6315334Z   enable-cache: auto
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6315888Z   cache-dependency-glob: **/*requirements*.txt
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*requirements*.in
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.txt
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.in
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/pyproject.toml
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/uv.lock
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*.py.lock
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6316527Z   restore-cache: true
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6316781Z   save-cache: true
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6316964Z   prune-cache: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6317152Z   cache-python: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6317364Z   ignore-nothing-to-cache: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6317602Z   ignore-empty-workdir: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6317841Z   download-from-astral-mirror: true
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6318195Z   add-problem-matchers: true
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6318415Z   quiet: false
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6318600Z   resolution-strategy: highest
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.6318818Z ##[endgroup]
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.8583531Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\uv.toml
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.8584344Z Could not find file: D:\a\Harnessix\Harnessix\uv.toml
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.8585081Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\pyproject.toml
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.8592057Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.8597537Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:30.9143601Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-pc-windows-msvc.zip" ...
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.6194422Z [command]C:\Windows\system32\tar.exe x -C D:\a\_temp\c0435153-35ad-40f1-9c38-38fd4331b1a2 -f D:\a\_temp\e317818a-8f3e-427f-bcdf-c9dd1d307146
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7868407Z Set UV_TOOL_BIN_DIR to D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7872512Z Added D:\a\_temp\uv-tool-bin-dir to the path
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7881317Z Added C:\hostedtoolcache\windows\uv\0.12.19\x86_64 to the path
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7884234Z Set UV_TOOL_DIR to D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7887127Z Set UV_PYTHON_INSTALL_DIR to D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7891135Z Added D:\a\_temp\uv-python-dir to the path
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7894535Z Set UV_PYTHON to 3.12
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7915367Z Set UV_CACHE_DIR to D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7915744Z Successfully installed uv version 0.12.19
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:31.7917035Z Searching files using cache dependency glob: D:\a\Harnessix\Harnessix\**\*requirements*.txt,D:\a\Harnessix\Harnessix\**\*requirements*.in,D:\a\Harnessix\Harnessix\**\*constraints*.txt,D:\a\Harnessix\Harnessix\**\*constraints*.in,D:\a\Harnessix\Harnessix\**\pyproject.toml,D:\a\Harnessix\Harnessix\**\uv.lock,D:\a\Harnessix\Harnessix\**\*.py.lock
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:32.4377547Z D:\a\Harnessix\Harnessix\docs\validation\windows-private-state-2026-09-28-v1\installation\requirements.txt
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:32.4988344Z D:\a\Harnessix\Harnessix\pyproject.toml
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:32.7770728Z D:\a\Harnessix\Harnessix\uv.lock
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:32.7790042Z Found 3 files to hash.
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:32.7802350Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-833c9abc0b836ba8770633624216faddc020fb740fe3246e65023945d421804e
+windows-trusted-execution	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:33.0197288Z No GitHub Actions cache found for key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-833c9abc0b836ba8770633624216faddc020fb740fe3246e65023945d421804e
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	﻿2026-09-28T16:21:33.1562540Z ##[group]Run uv sync --locked --all-extras --dev
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1563283Z ^[[36;1muv sync --locked --all-extras --dev^[[0m
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1949559Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1949995Z env:
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1950230Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1950556Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1950874Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1951195Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1951420Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:33.1951701Z ##[endgroup]
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.5058514Z Using CPython 3.12.10 interpreter at: C:\hostedtoolcache\windows\Python\3.12.10\x64\python3.exe
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.5059648Z Creating virtual environment at: .venv
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.5347412Z Resolved 74 packages in 2ms
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.5639741Z    Building harnessix @ file:///D:/a/Harnessix/Harnessix
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.6749451Z Downloading cryptography (3.7MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.6755754Z Downloading openai (1.6MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7045780Z Downloading pydantic-core (1.9MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7047396Z Downloading pygments (1.2MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7065610Z Downloading anthropic (1.2MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7098768Z Downloading mypy (10.4MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7102337Z Downloading ruff (10.0MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:34.7323591Z Downloading pywin32 (6.6MiB)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.1531340Z  Downloaded pydantic-core
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.1742759Z  Downloaded pygments
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.2857436Z  Downloaded cryptography
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.3585198Z  Downloaded ruff
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.5914363Z  Downloaded pywin32
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.6302808Z  Downloaded anthropic
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.6614855Z  Downloaded openai
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:35.7638714Z  Downloaded mypy
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:36.9792840Z       Built harnessix @ file:///D:/a/Harnessix/Harnessix
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:36.9826802Z Prepared 73 packages in 2.44s
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5815409Z Installed 73 packages in 598ms
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5817610Z  + aiosqlite==0.22.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5818994Z  + annotated-types==0.8.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5820327Z  + anthropic==1.3.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5821826Z  + anyio==4.14.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5823112Z  + attrs==26.1.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5825329Z  + certifi==2026.7.22
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5826842Z  + cffi==2.1.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5828680Z  + charset-normalizer==3.5.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5829194Z  + click==8.5.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5832150Z  + colorama==0.4.6
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5833459Z  + cryptography==50.0.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5833953Z  + distro==1.9.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5837326Z  + docstring-parser==0.18.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5838903Z  + googleapis-common-protos==1.75.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5840448Z  + h11==0.16.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5842252Z  + harnessix==0.1.0 (from file:///D:/a/Harnessix/Harnessix)
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5843481Z  + httpcore==1.0.9
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5845364Z  + httpcore2==2.12.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5845626Z  + httpx==0.28.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5847392Z  + httpx2==2.12.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5848406Z  + idna==3.19
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5849788Z  + iniconfig==2.3.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5851039Z  + jiter==0.16.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5852318Z  + jsonschema==4.26.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5853590Z  + jsonschema-specifications==2025.9.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5854790Z  + librt==0.15.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5856015Z  + linkify-it-py==2.2.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5857147Z  + markdown-it-py==4.2.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5858781Z  + mcp==2.2.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5860051Z  + mcp-types==2.2.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5861341Z  + mdit-py-plugins==0.6.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5863573Z  + mdurl==0.1.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5865065Z  + mypy==1.20.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5866264Z  + mypy-extensions==1.1.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5867551Z  + openai==2.54.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5868907Z  + opentelemetry-api==1.44.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5870400Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5871803Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5874881Z  + opentelemetry-proto==1.44.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5875156Z  + opentelemetry-sdk==1.44.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5876542Z  + opentelemetry-semantic-conventions==0.65b0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5877670Z  + packaging==26.3
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5878903Z  + pathspec==1.1.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5880150Z  + platformdirs==4.11.8
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5881416Z  + pluggy==1.6.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5883023Z  + protobuf==7.36.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5884043Z  + pycparser==3.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5885243Z  + pydantic==2.13.5
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5886526Z  + pydantic-core==2.46.5
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5887823Z  + pygments==2.21.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5889002Z  + pyjwt==2.13.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5890308Z  + pytest==8.4.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5891634Z  + pytest-asyncio==1.4.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5892819Z  + python-multipart==0.0.32
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5893543Z  + pywin32==312
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5895142Z  + pyyaml==6.0.3
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5896369Z  + referencing==0.37.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5897621Z  + requests==2.34.2
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5898834Z  + rich==15.0.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5900104Z  + rpds-py==2026.6.3
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5901315Z  + ruff==0.16.5
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5902730Z  + sniffio==1.3.1
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5904112Z  + sse-starlette==3.4.11
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5905355Z  + starlette==1.6.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5906656Z  + textual==8.2.8
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5907904Z  + tqdm==4.70.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5909127Z  + truststore==0.10.4
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5910615Z  + types-jsonschema==4.26.0.20260518
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5912144Z  + types-pyyaml==6.0.12.20260906
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5913307Z  + typing-extensions==4.16.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5914508Z  + typing-inspection==0.4.4
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5915871Z  + urllib3==2.7.0
+windows-trusted-execution	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:37.5917093Z  + uvicorn==0.52.4
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	﻿2026-09-28T16:21:37.7866062Z ##[group]Run uv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7868082Z ^[[36;1muv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch^[[0m
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7941541Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7941886Z env:
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7942091Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7942383Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7942661Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7942934Z   UV_PYTHON: 3.12
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7943133Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:37.7943449Z ##[endgroup]
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:58.9956504Z ............................................................             [100%]
+windows-trusted-execution	验证原生NTFS文件事务与审批编码写链	2026-09-28T16:21:58.9957254Z 60 passed in 17.95s
+windows-trusted-execution	验证原生Git读取与取消回收	﻿2026-09-28T16:21:59.2133872Z ##[group]Run uv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/processes/test_windows_owner_lifecycle.py tests/processes/test_output_binary_contracts.py tests/processes/test_windows_receipt_contracts.py tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_product_backup_files_windows.py tests/product_config/test_session_key_windows.py tests/workspace/test_windows_private_security_contracts.py tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -vv -o faulthandler_timeout=60
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2140493Z ^[[36;1muv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/processes/test_windows_owner_lifecycle.py tests/processes/test_output_binary_contracts.py tests/processes/test_windows_receipt_contracts.py tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_product_backup_files_windows.py tests/product_config/test_session_key_windows.py tests/workspace/test_windows_private_security_contracts.py tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -vv -o faulthandler_timeout=60^[[0m
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2211878Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2212224Z env:
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2212430Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2212721Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2213016Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2213291Z   UV_PYTHON: 3.12
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2213486Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:21:59.2213743Z ##[endgroup]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4769584Z ============================= test session starts =============================
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4770752Z platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- D:\a\Harnessix\Harnessix\.venv\Scripts\python.exe
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4771663Z cachedir: .pytest_cache
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4772058Z rootdir: D:\a\Harnessix\Harnessix
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4772882Z configfile: pyproject.toml
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4773317Z plugins: anyio-4.14.2, asyncio-1.4.0
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:00.4774295Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:01.0036354Z collecting ... collected 124 items
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:01.0036768Z 
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:05.7387003Z tests/tools/test_windows_git.py::test_windows_git_unicode_status_staged_diff_and_persistent_receipts PASSED [  0%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:07.1405641Z tests/tools/test_windows_git.py::test_windows_git_rejects_parent_repository_and_preserves_nonrepo_failure PASSED [  1%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:08.4676876Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[filter.fixture.clean] PASSED [  2%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:09.7954714Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[filter.fixture.process] PASSED [  3%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:11.1491006Z tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[include.path] PASSED [  4%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:11.1704122Z tests/tools/test_windows_git.py::test_windows_git_requires_external_state_and_rejects_relative_or_script_binding PASSED [  4%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:12.9731802Z tests/tools/test_windows_git.py::test_windows_git_diff_prefix_keeps_complete_observation PASSED [  5%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:14.0693869Z tests/tools/test_windows_git.py::test_windows_git_recovery_reconciles_original_receipt_without_relaunch PASSED [  6%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:16.3294441Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout] PASSED [  7%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:16.9545596Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token] PASSED [  8%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:17.5408069Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task] PASSED [  8%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.4543869Z tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch] PASSED [  9%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.5474572Z tests/tools/test_git_platform_contracts.py::test_windows_read_plan_contract_with_simulated_snapshot PASSED [ 10%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.6854862Z tests/tools/test_git_platform_contracts.py::test_unknown_git_read_remains_rejected_on_repeated_startup PASSED [ 11%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9684371Z tests/tools/test_git_platform_contracts.py::test_git_recovery_limit_rejects_before_observing_any_receipt PASSED [ 12%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9700059Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n-c:\\work\\\u5de5\u7a0b-True-True] PASSED [ 12%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9715212Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\r\n-c:\\work\\\u5de5\u7a0b-True-True] PASSED [ 13%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9728396Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n\r\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 14%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9741924Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\n\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 15%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9755006Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work/\u5de5\u7a0b\x00\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 16%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9767948Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:/work\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 16%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9781268Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[C:work/\u5de5\u7a0b\n-c:\\work\\\u5de5\u7a0b-True-False] PASSED [ 17%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9794689Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/Root\n-/work/root-False-False] PASSED [ 18%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9807846Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/root\n-/work/root-False-True] PASSED [ 19%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9821883Z tests/tools/test_git_platform_contracts.py::test_repository_root_comparison_is_platform_specific[/work/root\r\n-/work/root-False-False] PASSED [ 20%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9833422Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_replacement_after_catalog_binding SKIPPED [ 20%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9843508Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[clean] SKIPPED [ 21%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9857061Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[process] SKIPPED [ 22%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9867618Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[include] SKIPPED [ 23%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9880178Z tests/tools/test_git_platform_contracts.py::test_git_rejects_executable_filters_and_configuration_includes[includeif] SKIPPED [ 24%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9939896Z tests/processes/test_windows_owner_lifecycle.py::test_control_descriptor_close_has_exactly_one_owner[False] PASSED [ 25%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:18.9980477Z tests/processes/test_windows_owner_lifecycle.py::test_control_descriptor_close_has_exactly_one_owner[True] PASSED [ 25%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0020107Z tests/processes/test_windows_owner_lifecycle.py::test_failed_control_thread_start_keeps_descriptor_with_owner PASSED [ 26%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0036854Z tests/processes/test_windows_owner_lifecycle.py::test_job_membership_is_verified_on_original_handle_before_resume[True] PASSED [ 27%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0053853Z tests/processes/test_windows_owner_lifecycle.py::test_job_membership_is_verified_on_original_handle_before_resume[False] PASSED [ 28%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0183344Z tests/processes/test_output_binary_contracts.py::test_output_requests_explicit_binary_mode[capture] PASSED [ 29%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0237570Z tests/processes/test_output_binary_contracts.py::test_output_requests_explicit_binary_mode[read] PASSED [ 29%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0330506Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[False-0] PASSED [ 30%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0740521Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[False-1] PASSED [ 31%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0840721Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[False-4] PASSED [ 32%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.0966758Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[False-128] PASSED [ 33%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1040099Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[True-0] PASSED [ 33%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1212822Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[True-1] PASSED [ 34%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1306112Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[True-4] PASSED [ 35%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1411442Z tests/processes/test_output_binary_contracts.py::test_capture_physical_bytes_match_persisted_observation[True-128] PASSED [ 36%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1478114Z tests/processes/test_output_binary_contracts.py::test_windows_crt_text_mode_changes_the_physical_output PASSED [ 37%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.1553461Z tests/processes/test_output_binary_contracts.py::test_output_preserves_lf_crlf_control_z_and_invalid_utf8 PASSED [ 37%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6539731Z tests/processes/test_output_binary_contracts.py::test_real_owner_binary_files_and_lease_observations_are_identical PASSED [ 38%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6570665Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[None] PASSED [ 39%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6601108Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[ntfs] PASSED [ 40%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6636371Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[create] PASSED [ 41%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6667684Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[write] PASSED [ 41%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6704351Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[rename] PASSED [ 42%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6736212Z tests/processes/test_windows_receipt_contracts.py::test_receipt_publication_closes_resources_and_never_replays_unknown[cleanup] PASSED [ 43%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6784521Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[success] PASSED [ 44%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6816836Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[body-fails] PASSED [ 45%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6849477Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[missing] PASSED [ 45%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6886116Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[reparse] PASSED [ 46%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6917930Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[directory] PASSED [ 47%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6950328Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[hardlink] PASSED [ 48%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.6982536Z tests/processes/test_windows_receipt_contracts.py::test_receipt_reader_releases_exact_descriptor_or_original_handle[convert] PASSED [ 49%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.7216561Z tests/processes/test_windows_receipt_contracts.py::test_windows_uncooperative_crt_reader_is_not_bypassed_or_retried PASSED [ 50%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.7416545Z tests/processes/test_windows_receipt_contracts.py::test_windows_product_receipt_reader_keeps_original_mac_during_publication PASSED [ 50%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:19.7612020Z tests/processes/test_windows_receipt_contracts.py::test_windows_partial_receipt_write_preserves_original_and_removes_only_own_temporary PASSED [ 51%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:21.4275211Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[0] PASSED [ 52%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:23.0899521Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[17] PASSED [ 53%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.7541053Z tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status[128] PASSED [ 54%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.7886859Z tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state PASSED [ 54%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.8456677Z tests/product_config/test_product_backup_files_windows.py::test_running_state_directory_and_sqlite_children_have_private_inheritance PASSED [ 55%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.8613990Z tests/product_config/test_product_backup_files_windows.py::test_private_listing_observes_metadata_without_reopening_exclusive_lock_data PASSED [ 56%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.8864792Z tests/product_config/test_product_backup_files_windows.py::test_ordinary_mkdir_acl_is_rejected_without_repair PASSED [ 57%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.9220295Z tests/product_config/test_product_backup_files_windows.py::test_public_acl_is_rejected_without_repairing_existing_state[root] PASSED [ 58%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.9559172Z tests/product_config/test_product_backup_files_windows.py::test_public_acl_is_rejected_without_repairing_existing_state[file] PASSED [ 58%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.9653562Z tests/product_config/test_product_backup_files_windows.py::test_key_subtree_never_accepts_ordinary_state_acl[session-auth] PASSED [ 59%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:24.9741418Z tests/product_config/test_product_backup_files_windows.py::test_key_subtree_never_accepts_ordinary_state_acl[SESSION-AUTH] PASSED [ 60%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0260190Z tests/product_config/test_product_backup_files_windows.py::test_private_large_file_uses_native_handle_not_key_size_limit PASSED [ 61%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0432470Z tests/product_config/test_product_backup_files_windows.py::test_directory_publication_never_replaces_existing_target PASSED [ 62%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0575719Z tests/product_config/test_product_backup_files_windows.py::test_private_reader_rejects_hardlink PASSED [ 62%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0703563Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[none] PASSED [ 63%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0821217Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[body] PASSED [ 64%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.0957989Z tests/product_config/test_product_backup_files_windows.py::test_native_fd_and_file_handles_close_before_tree_exit[verification] PASSED [ 65%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.1235561Z tests/product_config/test_product_backup_files_windows.py::test_private_reader_rejects_junction_before_reading PASSED [ 66%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.1265602Z tests/product_config/test_session_key_windows.py::test_native_user_dpapi_roundtrip_and_corrupt_ciphertext_are_not_plaintext_fallback PASSED [ 66%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.1454902Z tests/product_config/test_session_key_windows.py::test_native_key_is_private_ciphertext_and_reopens_with_same_user PASSED [ 67%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.1783838Z tests/product_config/test_session_key_windows.py::test_native_world_read_acl_is_rejected_without_silent_repair[key.v1] PASSED [ 68%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2035930Z tests/product_config/test_session_key_windows.py::test_native_world_read_acl_is_rejected_without_silent_repair[.] PASSED [ 69%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2251931Z tests/product_config/test_session_key_windows.py::test_native_hardlinked_key_is_rejected PASSED [ 70%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2439607Z tests/product_config/test_session_key_windows.py::test_native_junction_key_directory_never_enrolls_target PASSED [ 70%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2457327Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-True-0] PASSED [ 71%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2471474Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-True-3] PASSED [ 72%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2484689Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-False-16] PASSED [ 73%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2499465Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[user-False-19] PASSED [ 74%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2513784Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-True-0] PASSED [ 75%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2526907Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-True-3] PASSED [ 75%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2540340Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-False-16] PASSED [ 76%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2553625Z tests/workspace/test_windows_private_security_contracts.py::test_state_accepts_only_two_private_explicit_or_inherited_aces[administrators-False-19] PASSED [ 77%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2565855Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes0] PASSED [ 78%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2578241Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes1] PASSED [ 79%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2590701Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes2] PASSED [ 79%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2602896Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes3] PASSED [ 80%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2615900Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes4] PASSED [ 81%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2628163Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes5] PASSED [ 82%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2641400Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes6] PASSED [ 83%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2654529Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes7] PASSED [ 83%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2666741Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes8] PASSED [ 84%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2679671Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes9] PASSED [ 85%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2692457Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes10] PASSED [ 86%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2704522Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes11] PASSED [ 87%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2717353Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes12] PASSED [ 87%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2729551Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes13] PASSED [ 88%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2741805Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes14] PASSED [ 89%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2754417Z tests/workspace/test_windows_private_security_contracts.py::test_state_rejects_public_or_unsupported_forms_and_frees_descriptor[changes15] PASSED [ 90%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2766518Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes0] PASSED [ 91%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2779298Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes1] PASSED [ 91%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2791755Z tests/workspace/test_windows_private_security_contracts.py::test_key_never_adopts_the_state_inheritance_or_default_owner_exception[changes2] PASSED [ 92%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2802866Z tests/workspace/test_windows_private_security_contracts.py::test_key_original_exact_contract_remains_valid PASSED [ 93%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2816836Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[administrators-True-3] PASSED [ 94%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2830140Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[user-False-19] PASSED [ 95%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2843309Z tests/workspace/test_windows_private_security_contracts.py::test_running_root_requires_explicit_user_owner_and_inheritable_protected_acl[user-True-0] PASSED [ 95%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2855181Z tests/workspace/test_windows_private_security_contracts.py::test_explicit_private_running_root_is_valid PASSED [ 96%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2867513Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[session-auth/key.v1] PASSED [ 97%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2879957Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[SESSION-AUTH/key.v1] PASSED [ 98%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:25.2893560Z tests/workspace/test_windows_private_security_contracts.py::test_key_port_selection_is_case_insensitive_on_windows[Session-Auth/.lock] PASSED [ 99%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:32.8943024Z tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner PASSED [100%]
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:32.8944186Z 
+windows-trusted-execution	验证原生Git读取与取消回收	2026-09-28T16:22:32.8944514Z ======================= 119 passed, 5 skipped in 32.31s =======================
+windows-trusted-execution	验证原生产品重启与State创建边界	﻿2026-09-28T16:22:33.1326791Z ##[group]Run uv run pytest tests/benchmarks/test_soak_restart_child.py tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1328589Z ^[[36;1muv run pytest tests/benchmarks/test_soak_restart_child.py tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60^[[0m
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1424311Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1424890Z env:
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1425233Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1425705Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1426172Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1426640Z   UV_PYTHON: 3.12
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1426966Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.1427387Z ##[endgroup]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8046229Z ============================= test session starts =============================
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8047015Z platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- D:\a\Harnessix\Harnessix\.venv\Scripts\python.exe
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8047713Z cachedir: .pytest_cache
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8048208Z rootdir: D:\a\Harnessix\Harnessix
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8048576Z configfile: pyproject.toml
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8048928Z plugins: anyio-4.14.2, asyncio-1.4.0
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:33.8049855Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:34.6556574Z collecting ... collected 10 items
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:34.6557029Z 
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:40.5842846Z tests/benchmarks/test_soak_restart_child.py::test_real_product_restart_child_closes_and_hard_exits_without_turn PASSED [ 10%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:41.4997771Z tests/benchmarks/test_soak_restart_child.py::test_windows_child_refuses_precreated_state_without_repair PASSED [ 20%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:53.2799975Z tests/benchmarks/test_soak_restart.py::test_product_restart_uses_real_product_and_publishes_unverified_small_load PASSED [ 30%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:55.9639746Z tests/benchmarks/test_soak_restart.py::test_product_restart_failure_keeps_failed_attempt_without_run PASSED [ 40%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:56.9060898Z tests/benchmarks/test_soak_restart.py::test_product_restart_startup_failure_has_stable_code_and_failed_attempt PASSED [ 50%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:56.9402924Z tests/benchmarks/test_soak_restart.py::test_product_restart_rejects_invalid_load_before_attempt[0-1-3-30] PASSED [ 60%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:56.9748418Z tests/benchmarks/test_soak_restart.py::test_product_restart_rejects_invalid_load_before_attempt[2-0-3-30] PASSED [ 70%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:57.0092341Z tests/benchmarks/test_soak_restart.py::test_product_restart_rejects_invalid_load_before_attempt[2-1-2-30] PASSED [ 80%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:57.0432440Z tests/benchmarks/test_soak_restart.py::test_product_restart_rejects_invalid_load_before_attempt[2-1-3-19] PASSED [ 90%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:57.1509952Z tests/benchmarks/test_soak_restart.py::test_restart_release_cli_redacts_failure PASSED [100%]
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:57.1512576Z 
+windows-trusted-execution	验证原生产品重启与State创建边界	2026-09-28T16:22:57.1513237Z ============================= 10 passed in 23.25s =============================
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	﻿2026-09-28T16:22:57.3798672Z ##[group]Run uv run python scripts/readability_report.py --check --check-final-report --quiet
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3799435Z ^[[36;1muv run python scripts/readability_report.py --check --check-final-report --quiet^[[0m
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3869641Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3870272Z env:
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3870491Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3870784Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3871074Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3871362Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3871766Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:22:57.3872027Z ##[endgroup]
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	﻿2026-09-28T16:23:00.7554485Z ##[group]Run uv run python scripts/documentation_check.py
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7555002Z ^[[36;1muv run python scripts/documentation_check.py^[[0m
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7624292Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7624653Z env:
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7625093Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7625412Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7625711Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7625989Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7626213Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:00.7626478Z ##[endgroup]
+windows-trusted-execution	Run uv run python scripts/documentation_check.py	2026-09-28T16:23:08.2745804Z 文档门禁通过：366份文档、9284条链接、829幅Mermaid、26个源码包、0个变化路径
+windows-trusted-execution	Run uv run python -c "import harnessix"	﻿2026-09-28T16:23:08.4079908Z ##[group]Run uv run python -c "import harnessix"
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4080367Z ^[[36;1muv run python -c "import harnessix"^[[0m
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4150428Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4150789Z env:
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4151000Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4151285Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4151570Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4151842Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4152044Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv run python -c "import harnessix"	2026-09-28T16:23:08.4152358Z ##[endgroup]
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	﻿2026-09-28T16:23:08.8760391Z ##[group]Run uv build --offline --out-dir dist/secret-gate
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8760903Z ^[[36;1muv build --offline --out-dir dist/secret-gate^[[0m
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8833307Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8833844Z env:
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8834143Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8834554Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8834984Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8835413Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8835753Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:08.8836534Z ##[endgroup]
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:09.1714468Z Building source distribution...
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:14.4926838Z Building wheel from source distribution...
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:15.5690349Z Successfully built dist\secret-gate\harnessix-0.1.0.tar.gz
+windows-trusted-execution	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:23:15.5691321Z Successfully built dist\secret-gate\harnessix-0.1.0-py3-none-any.whl
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	﻿2026-09-28T16:23:15.6919208Z ##[group]Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6919893Z ^[[36;1muv run python scripts/secret_scan.py --artifact-dir dist/secret-gate^[[0m
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6993427Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6994059Z env:
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6994389Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6994868Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6995364Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6995850Z   UV_PYTHON: 3.12
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6996204Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:15.6996621Z ##[endgroup]
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:36.8216304Z Secret扫描未完成：scan_archive_depth_limit
+windows-trusted-execution	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:23:36.9373375Z ##[error]Process completed with exit code 1.
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-28T16:23:36.9660762Z Post job cleanup.
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.1623458Z [command]"C:\Program Files\Git\bin\git.exe" version
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.1897114Z git version 2.55.0.windows.5
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.1967942Z Temporarily overriding HOME='D:\a\_temp\a4d973cb-d1a5-4d92-92f1-3b863cd76788' before making global git config changes
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.1969288Z Adding repository directory to the temporary git global config as a safe directory
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.1979090Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.2282290Z Removing SSH command configuration
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.2293698Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.2632523Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.8317337Z Removing HTTP extra header
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.8329060Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:37.8622336Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.3891343Z Removing includeIf entries pointing to credentials config files
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.3903451Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4156606Z includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4157544Z includeif.gitdir:/github/workspace/.git.path
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4199140Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4451879Z D:\a\_temp\git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4499928Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.4798180Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.5111195Z /github/runner_temp/git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.5165193Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:38.5477244Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+windows-trusted-execution	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:23:39.1026883Z Removing credentials config 'D:\a\_temp\git-credentials-1e60092d-24e5-4a51-9b34-7ea790d44447.config'
+windows-trusted-execution	Complete job	﻿2026-09-28T16:23:39.1222325Z Cleaning up orphan processes

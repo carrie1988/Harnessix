@@ -1,0 +1,21 @@
+usage: harnessix [-h]
+                 {model-smoke,coding-eval-campaign,coding-eval-suite,agent,code,agent-server,config,state,license}
+                 ...
+
+Harnessix Code
+
+positional arguments:
+  {model-smoke,coding-eval-campaign,coding-eval-suite,agent,code,agent-server,config,state,license}
+    model-smoke         运行显式启用的固定场景模型验收
+    coding-eval-campaign
+                        运行显式启用的固定历史任务真实模型Campaign
+    coding-eval-suite   运行显式启用的固定Task Pack真实Provider Suite
+    agent               通过stdio App Server运行薄Agent CLI
+    code                启动全屏Coding Agent终端产品
+    agent-server        按产品配置运行stdio App Server
+    config              诊断或迁移产品配置
+    state               停机备份并验证完整产品状态
+    license             显示社区许可证、源代码和商业许可信息
+
+options:
+  -h, --help            show this help message and exit

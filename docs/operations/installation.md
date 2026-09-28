@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 13
-code_revision: d470ca62ae208b9232ac7d3e36f3423b04f539dd
+version: 14
+code_revision: 1bc3794bfbdb9ce5fa58103d372c68de4401f90a
 owners:
   - core
 modules:
@@ -66,7 +66,7 @@ flowchart TD
     Agent --> Configure[code configure生成配置]
     Configure --> Diagnose[code doctor离线预检]
     Diagnose --> Platform{macOS/Linux/Windows?}
-    Platform -- macOS/Linux --> Posix[POSIX只读Runtime]
+    Platform -- macOS/Linux --> Posix[POSIX受管编码与审批执行]
     Platform -- Windows --> Win[Handle读取 受管Git与本地NTFS审批Patch]
     Win --> GitGate[原生焦点已验证；完整安装待R4验收]
 ```
@@ -156,7 +156,7 @@ Hatch源码制品继续包含源码、正式文档及验证README/Manifest等可
 实际验证Wheel仍以原字节保留在Git及对应交付Manifest中，不删除、不重签、不改摘要。
 
 需求来自`d470ca6`的实际CI失败：新归档验证Wheel被默认源码制品再次打包，形成
-gzip→tar→wheel层级，现行Secret扫描正确返回`scan_archive_depth_limit`，而非完成覆盖。
+gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确返回`scan_archive_depth_limit`，而非完成覆盖。
 不提高扫描深度、不忽略扫描失败；分离源码与已构建输出才是边界修复。
 仓库扫描仍以`git ls-files`覆盖原验证Wheel，发行物扫描仍覆盖每个实际产物。
 
@@ -164,6 +164,16 @@ gzip→tar→wheel层级，现行Secret扫描正确返回`scan_archive_depth_lim
 运行同一Hatch配置的离线源码构建，验证源码/正式安装文档/验证README仍存在、制品目录不存在；
 同时让仓库扫描发现原验证Wheel并捕获其中的合成规则命中，证明该排除不是Secret扫描白名单。
 真实发行物完整扫描未通过前，不宣称源码或Wheel已通过发布门禁。
+
+### 5.3 当前源码外安装与完整恢复证据
+
+固定`1bc3794`Wheel已在macOS ARM64/Python3.12.7全新环境中安装；实际依赖从锁文件导出，
+以精确哈希及`--no-deps`安装，执行工作目录与源码分离，正式产品由`python -I -m harnessix agent-server`启动。
+实际SDK握手、Thread持久化、活跃Owner备份拒绝、停机六库及独立Key备份/验真、整体Root恢复、
+原Key保留与相同restore ID不回退新状态均通过。数据和Key未进入公开交付。
+详见[安装与恢复原件](../validation/product-restart-release-boundary-2026-09-29-v1/README.md#6-脱离源码安装与完整状态恢复)。
+该结果没有真实模型Turn，不证明真实编码任务、Linux/Windows安装、版本升级、卸载或Beta。
+三平台消费者安装验收、正式来源证明和1.0发行仍开放；开发Wheel不可称为已发布商用包。
 
 ## 6. 开发命令镜像
 

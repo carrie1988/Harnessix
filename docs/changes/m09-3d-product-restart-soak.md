@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 10
-code_revision: d470ca62ae208b9232ac7d3e36f3423b04f539dd
+version: 11
+code_revision: 1bc3794bfbdb9ce5fa58103d372c68de4401f90a
 owners:
   - core
 modules:
@@ -302,3 +302,10 @@ macOS的跳过没有计作Windows原生通过。
 该候选随后被源码制品嵌套验证Wheel触发的`scan_archive_depth_limit`阻断，后继完整Windows
 Benchmark及全量回归未执行。制品边界修复见[安装与制品第5.2节](../operations/installation.md#52-源码制品与验证制品边界)，
 不提高扫描限额、不删除原件或跳过完整Windows回归；实际后继结果另行固定归档。
+
+后继`1bc3794`已完成固定500 Thread三平台原五周期与Thread恢复，但三份原冻结Profile报告
+均因`db_growth`越限保持FAIL；唯一增长库为`sessions.db`，各平台增量约0.70 MiB。
+干净Checkout只读诊断发现新增认证表/索引/Store身份占708,608字节、空闲页0，
+完整计数与边界见[统一报告第7节](../validation/product-restart-release-boundary-2026-09-29-v1/README.md#7-三平台500-thread正式复验及认证存储诊断)。
+本次不修改旧Profile、不删除认证、不从历史PASS推导当前候选通过；认证负载版本化基线或存储优化
+必须先明确负载合同与取舍，再完成独立基线和候选复验。0.9.3历史工程结论保留，当前发布候选门禁仍开放。

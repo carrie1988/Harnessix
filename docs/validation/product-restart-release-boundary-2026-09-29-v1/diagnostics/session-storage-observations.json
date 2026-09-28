@@ -1,0 +1,260 @@
+{
+  "spec_version": "harnessix.session-storage-diagnostic/v1",
+  "source_revision": "1bc3794bfbdb9ce5fa58103d372c68de4401f90a",
+  "run_id": "98bd22edea884a38900a9faf2c8a87d1",
+  "diagnostic_only": true,
+  "observer": "read-only SQLite object/page aggregate after all original cycles",
+  "provider_requests": 0,
+  "observations": [
+    {
+      "page_count": 457,
+      "page_size": 4096,
+      "freelist_count": 0,
+      "schema_version": 0,
+      "table_counts": [
+        {
+          "table": "agent_artifacts",
+          "row_count": 0
+        },
+        {
+          "table": "agent_event_publications",
+          "row_count": 500
+        },
+        {
+          "table": "agent_events",
+          "row_count": 500
+        },
+        {
+          "table": "agent_migrations",
+          "row_count": 30
+        },
+        {
+          "table": "agent_projection_publications",
+          "row_count": 500
+        },
+        {
+          "table": "agent_publication_store",
+          "row_count": 1
+        },
+        {
+          "table": "agent_threads",
+          "row_count": 500
+        },
+        {
+          "table": "protocol_requests",
+          "row_count": 500
+        },
+        {
+          "table": "store_maintenance_items",
+          "row_count": 0
+        },
+        {
+          "table": "store_maintenance_plans",
+          "row_count": 0
+        },
+        {
+          "table": "store_maintenance_progress",
+          "row_count": 0
+        }
+      ],
+      "object_pages": [
+        {
+          "object": "protocol_requests",
+          "pages": 101,
+          "page_bytes": 413696,
+          "payload_bytes": 349892,
+          "unused_bytes": 59352
+        },
+        {
+          "object": "agent_event_publications",
+          "pages": 85,
+          "page_bytes": 348160,
+          "payload_bytes": 323500,
+          "unused_bytes": 20460
+        },
+        {
+          "object": "agent_projection_publications",
+          "pages": 73,
+          "page_bytes": 299008,
+          "payload_bytes": 265500,
+          "unused_bytes": 29497
+        },
+        {
+          "object": "agent_threads",
+          "pages": 64,
+          "page_bytes": 262144,
+          "payload_bytes": 250500,
+          "unused_bytes": 7774
+        },
+        {
+          "object": "agent_events",
+          "pages": 57,
+          "page_bytes": 233472,
+          "payload_bytes": 210500,
+          "unused_bytes": 19213
+        },
+        {
+          "object": "sqlite_autoindex_protocol_requests_1",
+          "pages": 10,
+          "page_bytes": 40960,
+          "payload_bytes": 32264,
+          "unused_bytes": 7080
+        },
+        {
+          "object": "protocol_requests_state_idx",
+          "pages": 8,
+          "page_bytes": 32768,
+          "payload_bytes": 23372,
+          "unused_bytes": 7804
+        },
+        {
+          "object": "sqlite_autoindex_agent_threads_1",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20372,
+          "unused_bytes": 6720
+        },
+        {
+          "object": "sqlite_autoindex_agent_projection_publications_1",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20372,
+          "unused_bytes": 6720
+        },
+        {
+          "object": "sqlite_autoindex_agent_events_2",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20872,
+          "unused_bytes": 6220
+        },
+        {
+          "object": "sqlite_autoindex_agent_events_1",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20372,
+          "unused_bytes": 6720
+        },
+        {
+          "object": "sqlite_autoindex_agent_event_publications_1",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20372,
+          "unused_bytes": 6720
+        },
+        {
+          "object": "agent_threads_archive_list_idx",
+          "pages": 7,
+          "page_bytes": 28672,
+          "payload_bytes": 20872,
+          "unused_bytes": 6220
+        },
+        {
+          "object": "sqlite_schema",
+          "pages": 3,
+          "page_bytes": 12288,
+          "payload_bytes": 6339,
+          "unused_bytes": 5693
+        },
+        {
+          "object": "store_maintenance_progress",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "store_maintenance_plans",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "store_maintenance_items",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "sqlite_autoindex_store_maintenance_progress_1",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "sqlite_autoindex_store_maintenance_plans_1",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "sqlite_autoindex_store_maintenance_items_1",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "sqlite_autoindex_agent_artifacts_2",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "sqlite_autoindex_agent_artifacts_1",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "agent_publication_store",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 215,
+          "unused_bytes": 3868
+        },
+        {
+          "object": "agent_migrations",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 2040,
+          "unused_bytes": 1928
+        },
+        {
+          "object": "agent_artifacts_owner",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "agent_artifacts_expiry",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "agent_artifacts_created_at",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        },
+        {
+          "object": "agent_artifacts",
+          "pages": 1,
+          "page_bytes": 4096,
+          "payload_bytes": 0,
+          "unused_bytes": 4088
+        }
+      ]
+    }
+  ]
+}

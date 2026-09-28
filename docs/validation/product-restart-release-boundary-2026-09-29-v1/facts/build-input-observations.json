@@ -1,0 +1,23 @@
+{
+  "source_revision": "1bc3794bfbdb9ce5fa58103d372c68de4401f90a",
+  "production_delta_from_9186cb2": [],
+  "artifacts": [
+    {
+      "name": "harnessix-0.1.0-py3-none-any.whl",
+      "bytes": 1073485,
+      "sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+      "members": 437,
+      "all_package_members_match_fixed_source": true,
+      "contains_tests": false,
+      "byte_identical_to_retained_9186cb2_wheel": true
+    },
+    {
+      "name": "harnessix-0.1.0.tar.gz",
+      "bytes": 9075391,
+      "sha256": "3f41c5148c2111f7f6c4430ee897438baea03100874d9c65cffccd16560d705f",
+      "members": 2758,
+      "nested_validation_artifacts": false,
+      "validation_readme_retained": true
+    }
+  ]
+}

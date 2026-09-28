@@ -1,0 +1,15 @@
+flowchart TD
+    Attempt[持久STARTED] --> Setup[创建Workspace和离线Config]
+    Setup --> Address[只绑定尚不存在的State地址]
+    Address --> Watermark[六库及WAL初始水位为0]
+    Watermark --> Child[经SDK启动正式产品子进程]
+    Child --> Owner[取得根外稳定全状态Owner]
+    Owner --> Validate{Root是否已存在}
+    Validate -->|不存在| Create[正式端口创建平台私有Root]
+    Validate -->|存在| Check[原身份和权限验真]
+    Check -->|不符| Refuse[固定失败 不改ACL或正文]
+    Check -->|符合| Runtime[打开Key Store Runtime和Protocol]
+    Create --> Runtime
+    Runtime --> Cycles[原预热 硬退出 三次测量]
+    Cycles --> Proof[独立重读六库水位和V5证明]
+    Refuse --> Failed[原失败Attempt 不发布Run]

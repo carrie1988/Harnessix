@@ -1,0 +1,10 @@
+{
+  "spec_version": "harnessix.install-fixture-setup/v1",
+  "initial_configuration_failure": "product_config_permissions",
+  "cause": "new acceptance environment parent initially used mode0755",
+  "operator_action": "explicitly set the new owned acceptance directory to mode0700 before configuration",
+  "product_permission_validation_changed": false,
+  "real_provider_credentials_read": false,
+  "real_provider_requests": 0,
+  "product_database_or_key_copied_into_delivery": false
+}

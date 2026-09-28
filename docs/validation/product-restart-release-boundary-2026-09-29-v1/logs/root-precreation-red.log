@@ -1,0 +1,57 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_product_restart_uses_real_product_and_publishes_unverified_small_load __
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-79/test_product_restart_uses_real0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108244e90>
+
+    async def test_product_restart_uses_real_product_and_publishes_unverified_small_load(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scripts import soak_restart
+    
+        original = soak_restart._new_client
+        starts = []
+    
+        def observe_state(config, workspace, state, gate):
+            # 首次Root必须由持有全状态Owner的正式组合根创建，而不是Runner预建。
+            assert state.exists() is bool(starts)
+            starts.append(state)
+            return original(config, workspace, state, gate)
+    
+        monkeypatch.setattr(soak_restart, "_new_client", observe_state)
+        root = tmp_path / "evidence"
+>       run_directory, manifest = await run_product_restart(
+            root,
+            code_revision=_revision(),
+            thread_count=3,
+            warmup_count=1,
+            measured_restarts=3,
+            timeout_seconds=30,
+        )
+
+tests/benchmarks/test_soak_restart.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/soak_restart.py:338: in run_product_restart
+    cycle, sample, expected, rss = await _cycle(
+scripts/soak_restart.py:206: in _cycle
+    client, transport = _new_client(config, workspace, state, gate)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config = PosixPath('/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/harnessix-restart-soak-jqvww_b5/config.json')
+workspace = PosixPath('/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/harnessix-restart-soak-jqvww_b5/workspace')
+state = PosixPath('/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/harnessix-restart-soak-jqvww_b5/state')
+gate = PosixPath('/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/harnessix-restart-soak-jqvww_b5/gate-1')
+
+    def observe_state(config, workspace, state, gate):
+        # 首次Root必须由持有全状态Owner的正式组合根创建，而不是Runner预建。
+>       assert state.exists() is bool(starts)
+E       AssertionError: assert True is False
+E        +  where True = exists()
+E        +    where exists = PosixPath('/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/harnessix-restart-soak-jqvww_b5/state').exists
+E        +  and   False = bool([])
+
+tests/benchmarks/test_soak_restart.py:32: AssertionError
+=========================== short test summary info ============================
+FAILED tests/benchmarks/test_soak_restart.py::test_product_restart_uses_real_product_and_publishes_unverified_small_load

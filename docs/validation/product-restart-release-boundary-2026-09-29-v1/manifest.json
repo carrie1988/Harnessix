@@ -1,0 +1,387 @@
+{
+  "spec_version": "harnessix.delivery-manifest/v1",
+  "source_revision": "1bc3794bfbdb9ce5fa58103d372c68de4401f90a",
+  "self_excluded": "manifest.json",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 16100,
+      "sha256": "718c0fa15eb35527e34cab43f4fadef38420ca44012c3ea64218f04354a0dfc3"
+    },
+    {
+      "path": "diagnostics/session-storage-observations.json",
+      "bytes": 6804,
+      "sha256": "78c13d197d6931684051405b9860e240ceadc591dbccb9be20365fed5e7fbe35"
+    },
+    {
+      "path": "diagnostics/session_storage_probe.py",
+      "bytes": 2875,
+      "sha256": "1c402fb202582c9842b6025380809fd2ef268f0cdd5898d63cc22af168ecc48f"
+    },
+    {
+      "path": "diagrams/installation-flow.mmd",
+      "bytes": 656,
+      "sha256": "1b693e823b9bdfc3fad52fc27f7b3fc76c039acdfeab712c394803f15382c462"
+    },
+    {
+      "path": "diagrams/installation-flow.png",
+      "bytes": 50356,
+      "sha256": "ba7e96e957b798327243a06f2cb662317b336e09b533899d840449256242887c"
+    },
+    {
+      "path": "diagrams/root-creation.mmd",
+      "bytes": 801,
+      "sha256": "7d12f9368fa15e7b303f7bf1d7f50a9e9444d0fdd4de7be0a77789a49477e1df"
+    },
+    {
+      "path": "diagrams/root-creation.png",
+      "bytes": 68305,
+      "sha256": "326844540a412710538b3e363756bca405cf6927bd295e5be7f558f561e8ba71"
+    },
+    {
+      "path": "facts/1bc3794-restart-candidate-status.json",
+      "bytes": 5975,
+      "sha256": "4a966aa3c73a9a35607a258c07fb6f5ea797cda16db87e29351474b7d6bb8738"
+    },
+    {
+      "path": "facts/1bc3794-status-before-terminal.json",
+      "bytes": 1647,
+      "sha256": "90fc941e3871084ad62d6754604f7f4cf62f9eecb027f274d46fdb1246630946"
+    },
+    {
+      "path": "facts/1bc3794-windows-job-observation.json",
+      "bytes": 3520,
+      "sha256": "2fe26aa4cc0e77dfa29b59d9b6fdcf493eb1a8454ed60807618d54f495c69951"
+    },
+    {
+      "path": "facts/build-input-observations.json",
+      "bytes": 730,
+      "sha256": "6add5440c3654a92ee751efd2d1f42926d7c20a3bbb15ca6fa37d91125387209"
+    },
+    {
+      "path": "facts/docker-preflight.json",
+      "bytes": 500,
+      "sha256": "7d0f0257cff7695c6467d0c748d8a2b268cbae72e40ef24884eaa58ddb560c0d"
+    },
+    {
+      "path": "facts/fixed-manifest-probe.json",
+      "bytes": 387,
+      "sha256": "b83cd1a998fe4fee3bc123589b09df1df511afb3058a1b54baac3f8396daaf07"
+    },
+    {
+      "path": "facts/installation-setup.json",
+      "bytes": 484,
+      "sha256": "4d6eb0fb9b245148a6b1311d7a0a2cbace616d90abc6198dd92bba12bbb2c967"
+    },
+    {
+      "path": "facts/restart-reader-verification.json",
+      "bytes": 1745,
+      "sha256": "90bd4cfe96715a496a8b13504a13a369d20f35483cee8927f500b43996d42352"
+    },
+    {
+      "path": "facts/restart-three-platform-deltas.json",
+      "bytes": 3776,
+      "sha256": "b858c25efc62e6a97c30465ef0d29fd061a5d5325059e061e14672621bd4b0e4"
+    },
+    {
+      "path": "facts/sdist-members.json",
+      "bytes": 208355,
+      "sha256": "442c19c50d4ce18533cf4e7f39d24bfef4b1a114cba3d31443903808994ca6af"
+    },
+    {
+      "path": "installation/cli-help.log",
+      "bytes": 1006,
+      "sha256": "966bcdc8de3de8ed9abe3d0a35e4019aa875c941d4345dd5b207b89d51a3dd61"
+    },
+    {
+      "path": "installation/configure.json",
+      "bytes": 419,
+      "sha256": "2a812b40a1460dcb1fa17ca8d96a8d14f393a52f1a98c51043379ec11e42ae8b"
+    },
+    {
+      "path": "installation/configure.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "installation/dependencies.log",
+      "bytes": 1491,
+      "sha256": "e15e13e18d9bb5cf761c0d2ce32c7e851811a5be912f6b65a9de965b37da8180"
+    },
+    {
+      "path": "installation/doctor.json",
+      "bytes": 6048,
+      "sha256": "663f63e15c2813dd7e5bbdfdbbf8dc78e75b5798d7f72b7906cc4ce045345158"
+    },
+    {
+      "path": "installation/export.log",
+      "bytes": 56788,
+      "sha256": "c699fcd67641b44b471702e8752aea2230948dd7c0702bc5c88bb0080c57923e"
+    },
+    {
+      "path": "installation/import-observation.json",
+      "bytes": 505,
+      "sha256": "ac3805f97ccb94d3823a8064ce91323f957b0022a8492c522d7615793aae7a7f"
+    },
+    {
+      "path": "installation/installed-state-observation.json",
+      "bytes": 992,
+      "sha256": "576b9737667ec2700eb160dd5dda50e022a8765886fbdefebf516286ce842f51"
+    },
+    {
+      "path": "installation/installed-state.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "installation/installed_state_acceptance.py",
+      "bytes": 7128,
+      "sha256": "74f265e6b335af665f857c1fd92ef444ddddfb1f9a75dbe5b48fb2e315c0d267"
+    },
+    {
+      "path": "installation/requirements.txt",
+      "bytes": 56760,
+      "sha256": "e282ff4c544f8da6bd8ddd0ffc32b4fd083f1fe93a3d008cb8e94ec8d16fdc1b"
+    },
+    {
+      "path": "installation/wheel-install.log",
+      "bytes": 313,
+      "sha256": "eaadd45263143c2bbe7658bb6404f10db5cc498dd8142729a4bc4a531518c0b4"
+    },
+    {
+      "path": "installation/wheel-requirement.txt",
+      "bytes": 194,
+      "sha256": "44d4cafda6606e39cfde9c0e895b9095ee3fa22a6d1dd70820fc2b2daecce64f"
+    },
+    {
+      "path": "logs/1bc3794-macos-job.log",
+      "bytes": 45479,
+      "sha256": "4ac9bde64aea51949d01fbc4aee3681938856c464a5f8ba50e951a701477fff8"
+    },
+    {
+      "path": "logs/1bc3794-python312-job.log",
+      "bytes": 46076,
+      "sha256": "972881033ed1904dc2324286c80a7110937fca75146f23dd143e889998f384dd"
+    },
+    {
+      "path": "logs/1bc3794-python313-job.log",
+      "bytes": 46224,
+      "sha256": "41909ee1d9f44dec2888656f7b9a617d8ae4568dfb8de8171a1d9f1aaa6c059c"
+    },
+    {
+      "path": "logs/1bc3794-restart-linux-job.log",
+      "bytes": 50407,
+      "sha256": "b3bccd11c44b892629b188f928e1eeec21f64b142c46bc9e832f6685063745c9"
+    },
+    {
+      "path": "logs/1bc3794-restart-macos-job.log",
+      "bytes": 51667,
+      "sha256": "181e637350e9707c3d4f362f2b778c94c81d5d1c7cd44da323ae6e838ccc9860"
+    },
+    {
+      "path": "logs/1bc3794-restart-windows-job.log",
+      "bytes": 51373,
+      "sha256": "dea3165ad10068ed050e22b9f40ba9bf1c03ca9cb6b2c3a12aad204f168bbb6c"
+    },
+    {
+      "path": "logs/1bc3794-source-and-wheel-secret-scan.log",
+      "bytes": 101,
+      "sha256": "6e7a7859e43ef1666a0b106b29cdb0eeefd2d494e5132edd0dbe6ce7a3bbb046"
+    },
+    {
+      "path": "logs/d470ca6-macos-job.log",
+      "bytes": 51299,
+      "sha256": "a7ca880a80281950b049bafc038f7bfcc738bc76d67c82d83ba6e04b52e77605"
+    },
+    {
+      "path": "logs/d470ca6-native-job.log",
+      "bytes": 91933,
+      "sha256": "2e6887feaebca789b7369b27bec4118904902e01c3f03105e1bf40281a13eb77"
+    },
+    {
+      "path": "logs/documentation-check.log",
+      "bytes": 103,
+      "sha256": "c1f8aa89275c128bf29a644c62efb56cdb601a648e036606f79b9a9826a566da"
+    },
+    {
+      "path": "logs/ec82de4-source-and-wheel-secret-scan.log",
+      "bytes": 101,
+      "sha256": "6e7a7859e43ef1666a0b106b29cdb0eeefd2d494e5132edd0dbe6ce7a3bbb046"
+    },
+    {
+      "path": "logs/readability-check.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/restart-affected-python312.log",
+      "bytes": 763,
+      "sha256": "4b0b4f9ee9629841a26c45475d9340dbcb1b7b80d5e112d042758b626a3a96fd"
+    },
+    {
+      "path": "logs/restart-affected-python313.log",
+      "bytes": 763,
+      "sha256": "6df6cfd2affa9554e8d70d8636a694962b863b92acf60145e5f787a7dadd3d99"
+    },
+    {
+      "path": "logs/restart-focused-python313.log",
+      "bytes": 110,
+      "sha256": "39ea5fdfd208ba608c075e501938866a0f17392697d0237d586edce41085def4"
+    },
+    {
+      "path": "logs/root-precreation-red.log",
+      "bytes": 3048,
+      "sha256": "1201f3e9b83bb588b05191e0293aca57079d9da36032f5975056763bc526e093"
+    },
+    {
+      "path": "logs/sdist-boundary-green.log",
+      "bytes": 179,
+      "sha256": "77d42e73d8c12f9e69f91512a068fac7f1c9b3ece7b15a8d98b428fa7bbeab87"
+    },
+    {
+      "path": "logs/sdist-boundary-red.log",
+      "bytes": 2955,
+      "sha256": "be60f64285e09389d14e91da78caa6755640b56616cf3efc75181506340f0f58"
+    },
+    {
+      "path": "logs/sdist-duplicate-observation-fail.log",
+      "bytes": 3355,
+      "sha256": "ac4bb1965701f95bc8dadf61d08a1b2aca9073aa819525516e7db47bf7f42362"
+    },
+    {
+      "path": "logs/session-storage-diagnostic.log",
+      "bytes": 6804,
+      "sha256": "78c13d197d6931684051405b9860e240ceadc591dbccb9be20365fed5e7fbe35"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 2106,
+      "sha256": "1ab683dc2d3391a1c8f7e11946f398f0091edbd47677de3f92b2b981c5e9269c"
+    },
+    {
+      "path": "soak/raw/linux/attempts/c0e6589457a94d06914cf3ec36ea6604/FINAL.json",
+      "bytes": 267,
+      "sha256": "8569038d44d6087113ad59fc40c0737d640789bb04c7dc7585cb3d8ad87daaa2"
+    },
+    {
+      "path": "soak/raw/linux/attempts/c0e6589457a94d06914cf3ec36ea6604/STARTED.json",
+      "bytes": 371,
+      "sha256": "d1e7fe9c80ba800e0e2ce1ac0e63a4235958edcbf6a6ee152cff362c45f1dc28"
+    },
+    {
+      "path": "soak/raw/linux/c0e6589457a94d06914cf3ec36ea6604/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "eb6ebe9418c769c0d3bffafc71d61547e5b45339156c487a4ddcfaf1f895ce13"
+    },
+    {
+      "path": "soak/raw/linux/c0e6589457a94d06914cf3ec36ea6604/manifest.json",
+      "bytes": 1834,
+      "sha256": "be17cd94d3bd4cb0c6f1a8e1e85812fcc99c6cfad0f0416879b924453205050b"
+    },
+    {
+      "path": "soak/raw/linux/c0e6589457a94d06914cf3ec36ea6604/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "8aeb8e80346db07422c1fe8fd58297cd918396fa384cc7bb575ccfcc1a412297"
+    },
+    {
+      "path": "soak/raw/linux/c0e6589457a94d06914cf3ec36ea6604/samples.jsonl",
+      "bytes": 1240,
+      "sha256": "4b70ee81344cecc33c502d768dc863d339d68ad952f0bb4353218c709b7049df"
+    },
+    {
+      "path": "soak/raw/macos/attempts/ca743cd4e1a44b17849a070c8c99f0aa/FINAL.json",
+      "bytes": 267,
+      "sha256": "2c9d1123d991f1aa403f33a2c9a4a68936330da4c7660f71fa52731920946fe7"
+    },
+    {
+      "path": "soak/raw/macos/attempts/ca743cd4e1a44b17849a070c8c99f0aa/STARTED.json",
+      "bytes": 371,
+      "sha256": "32f023c8c37ec5a68203673e185849f30ccb4ffb39ecb9cd9b33b584149edc14"
+    },
+    {
+      "path": "soak/raw/macos/ca743cd4e1a44b17849a070c8c99f0aa/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "11d32fba689d7a749ae9a91144a5b4e9ebbf84fd3a173edb9ab6f4536d1a6c2a"
+    },
+    {
+      "path": "soak/raw/macos/ca743cd4e1a44b17849a070c8c99f0aa/manifest.json",
+      "bytes": 1827,
+      "sha256": "d84651154b902368bc93c2d8e61ddf1c57712cb172f24af0378f7ecb5fe847f4"
+    },
+    {
+      "path": "soak/raw/macos/ca743cd4e1a44b17849a070c8c99f0aa/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "d6cf587e4b1f57f331c1c015636fa61a760edb8ff3fcf19d88ae2905e0199c9b"
+    },
+    {
+      "path": "soak/raw/macos/ca743cd4e1a44b17849a070c8c99f0aa/samples.jsonl",
+      "bytes": 1238,
+      "sha256": "0ff1e86f2f5d535ebee384c1137faf33483fc7d2658910cacdac3546fe25db57"
+    },
+    {
+      "path": "soak/raw/windows/98bc71d6188b44298445cd6c49c97ae4/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "dda9617212652901252ac41c6865a6032c68b1f91c8e9fd01a3570ce6c7b218b"
+    },
+    {
+      "path": "soak/raw/windows/98bc71d6188b44298445cd6c49c97ae4/manifest.json",
+      "bytes": 1842,
+      "sha256": "60a6d0684ad1aa9db68e0da665c5e43385fd02cab79f7cf172f2d1e0a6b367bf"
+    },
+    {
+      "path": "soak/raw/windows/98bc71d6188b44298445cd6c49c97ae4/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "789aa8ae3cab399a9787c4ae4034ba704266e9b368f47addee1fbb514a1c97cf"
+    },
+    {
+      "path": "soak/raw/windows/98bc71d6188b44298445cd6c49c97ae4/samples.jsonl",
+      "bytes": 1249,
+      "sha256": "d9e4badd228569a65832eab2440bf5671c200e89fbfd9514d84147b8d0a28b1b"
+    },
+    {
+      "path": "soak/raw/windows/attempts/98bc71d6188b44298445cd6c49c97ae4/FINAL.json",
+      "bytes": 267,
+      "sha256": "ab656d4a7fbac9acaa2a79e24c9c5fa86457c5bedad35f24833fd55cd973c938"
+    },
+    {
+      "path": "soak/raw/windows/attempts/98bc71d6188b44298445cd6c49c97ae4/STARTED.json",
+      "bytes": 371,
+      "sha256": "7ae75968b00d8274f7c5b6bab99cf44e974dde8f26c2fe14b2d3d48df5b1652f"
+    },
+    {
+      "path": "soak/reports/linux/4c8541a490114d8caf4be73e87f93829/SEALED.json",
+      "bytes": 143,
+      "sha256": "8f9235dc3cc1275456e0859516c23bd46f37bb851ec2c946d6c94eb5141434a7"
+    },
+    {
+      "path": "soak/reports/linux/4c8541a490114d8caf4be73e87f93829/report.json",
+      "bytes": 638,
+      "sha256": "b000925b302885435015fbd98175e3755b5c71fac20ff5644e7963838940c603"
+    },
+    {
+      "path": "soak/reports/macos/ff903250cc9e496aaf78ec1994fc5299/SEALED.json",
+      "bytes": 143,
+      "sha256": "479cc03d634ad7b818e8e4caa39abd1c42a627e3090830e8e75290486141ae37"
+    },
+    {
+      "path": "soak/reports/macos/ff903250cc9e496aaf78ec1994fc5299/report.json",
+      "bytes": 638,
+      "sha256": "4dd304be1c54ce64309de40cfe42609331c8d739213cc4638162d8064c3ee260"
+    },
+    {
+      "path": "soak/reports/windows/7ad39dc306894f17b9198f3fe6e0ca33/SEALED.json",
+      "bytes": 143,
+      "sha256": "02f7f988f0037bcdfb2c99379494bb876152e6cae6d413449ee2ef2fc5ed356b"
+    },
+    {
+      "path": "soak/reports/windows/7ad39dc306894f17b9198f3fe6e0ca33/report.json",
+      "bytes": 638,
+      "sha256": "358f8d89f1d52fadbc1a319dae11e0f6460bfc22df840a7e5ee9de12c3f22313"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 5704,
+      "sha256": "1ba509c88bf79dc9731b3e7afaaed0aa1e7376d12051abaec9e273aba4a60e35"
+    }
+  ]
+}

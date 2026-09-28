@@ -885,3 +885,14 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 [统一验证交付](validation/windows-private-state-2026-09-28-v1/README.md)保存七轮原始事实、双Python、
 实际图示、Wheel、Manifest、Review Packet及macOS ARM64源码外锁定安装/离线Doctor。
 下一功能收口核对重启Runner预建Root与正式私有创建合同，不降低拒绝或重启标准；R1～R6继续开放。
+
+### R1/R4：完整产品重启、发行边界与源码外恢复
+
+`d470ca6`已让原Runner由正式产品创建首次私有Root，Windows真实正反例10项通过，
+既有宽ACL仍拒绝且不改权；后继源码制品边界修复不再递归携带验证Wheel，扫描限额保持。
+固定`1bc3794`已完成实际构建和2798输入完整Secret扫描、macOS源码外安装与六库/原Key完整恢复。
+实际[三平台500 Thread复验](https://github.com/carrie1988/Harnessix/actions/runs/36453376381)
+五周期与Thread恢复均完成，但三份原Profile报告唯一`db_growth`越限，均保持FAIL。
+增长主要来自新增认证证明表和索引，版本化认证基线或存储优化尚待正式处置；不得弱化认证或改旧失败。
+[统一交付](validation/product-restart-release-boundary-2026-09-29-v1/README.md)分别记录原生、制品、安装和性能边界，
+不把这些增量推导为三平台完整安装、真实质量、Beta或1.0完成；R1～R6仍开放。

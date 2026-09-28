@@ -1,0 +1,143 @@
+[
+  {
+    "platform": "linux",
+    "status": "FAIL",
+    "reason": "limit_exceeded",
+    "violations": [
+      "db_growth"
+    ],
+    "profile_sha256": "02af474d46740a41aad7c7195fd0e9f92913effc940363d987885ab648f9920a",
+    "baseline_db_after_bytes": 1277952,
+    "candidate_db_after_bytes": 2015232,
+    "database_deltas": {
+      "action-audit.db": {
+        "baseline_bytes": 61440,
+        "candidate_bytes": 61440,
+        "delta_bytes": 0
+      },
+      "execution-plans.db": {
+        "baseline_bytes": 32768,
+        "candidate_bytes": 32768,
+        "delta_bytes": 0
+      },
+      "product-config.db": {
+        "baseline_bytes": 98304,
+        "candidate_bytes": 98304,
+        "delta_bytes": 0
+      },
+      "sessions.db": {
+        "baseline_bytes": 1036288,
+        "candidate_bytes": 1773568,
+        "delta_bytes": 737280
+      },
+      "workspace-leases.db": {
+        "baseline_bytes": 12288,
+        "candidate_bytes": 12288,
+        "delta_bytes": 0
+      },
+      "workspace-transactions/transactions.db": {
+        "baseline_bytes": 36864,
+        "candidate_bytes": 36864,
+        "delta_bytes": 0
+      }
+    },
+    "all_five_cycles_committed": true,
+    "thread_count": 500,
+    "hard_exit_ack": true,
+    "hard_exit_eof": true
+  },
+  {
+    "platform": "macos",
+    "status": "FAIL",
+    "reason": "limit_exceeded",
+    "violations": [
+      "db_growth"
+    ],
+    "profile_sha256": "6fa09ca8e87520a9992b4ad5ec8ab054b9fb00d83b5594a98ff0b1e011a86f02",
+    "baseline_db_after_bytes": 1380352,
+    "candidate_db_after_bytes": 2121728,
+    "database_deltas": {
+      "action-audit.db": {
+        "baseline_bytes": 61440,
+        "candidate_bytes": 61440,
+        "delta_bytes": 0
+      },
+      "execution-plans.db": {
+        "baseline_bytes": 32768,
+        "candidate_bytes": 32768,
+        "delta_bytes": 0
+      },
+      "product-config.db": {
+        "baseline_bytes": 98304,
+        "candidate_bytes": 98304,
+        "delta_bytes": 0
+      },
+      "sessions.db": {
+        "baseline_bytes": 1138688,
+        "candidate_bytes": 1880064,
+        "delta_bytes": 741376
+      },
+      "workspace-leases.db": {
+        "baseline_bytes": 12288,
+        "candidate_bytes": 12288,
+        "delta_bytes": 0
+      },
+      "workspace-transactions/transactions.db": {
+        "baseline_bytes": 36864,
+        "candidate_bytes": 36864,
+        "delta_bytes": 0
+      }
+    },
+    "all_five_cycles_committed": true,
+    "thread_count": 500,
+    "hard_exit_ack": true,
+    "hard_exit_eof": true
+  },
+  {
+    "platform": "windows",
+    "status": "FAIL",
+    "reason": "limit_exceeded",
+    "violations": [
+      "db_growth"
+    ],
+    "profile_sha256": "4b26a7f91fc231bc14d534f26eac49ba35faa59fb637b6996913698ba59a46e3",
+    "baseline_db_after_bytes": 1376256,
+    "candidate_db_after_bytes": 2113536,
+    "database_deltas": {
+      "action-audit.db": {
+        "baseline_bytes": 61440,
+        "candidate_bytes": 61440,
+        "delta_bytes": 0
+      },
+      "execution-plans.db": {
+        "baseline_bytes": 32768,
+        "candidate_bytes": 32768,
+        "delta_bytes": 0
+      },
+      "product-config.db": {
+        "baseline_bytes": 98304,
+        "candidate_bytes": 98304,
+        "delta_bytes": 0
+      },
+      "sessions.db": {
+        "baseline_bytes": 1134592,
+        "candidate_bytes": 1871872,
+        "delta_bytes": 737280
+      },
+      "workspace-leases.db": {
+        "baseline_bytes": 12288,
+        "candidate_bytes": 12288,
+        "delta_bytes": 0
+      },
+      "workspace-transactions/transactions.db": {
+        "baseline_bytes": 36864,
+        "candidate_bytes": 36864,
+        "delta_bytes": 0
+      }
+    },
+    "all_five_cycles_committed": true,
+    "thread_count": 500,
+    "hard_exit_ack": true,
+    "hard_exit_eof": true
+  }
+]

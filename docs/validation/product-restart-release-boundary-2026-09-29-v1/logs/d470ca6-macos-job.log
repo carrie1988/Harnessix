@@ -1,0 +1,349 @@
+coding-tools-macos	Set up job	﻿2026-09-28T16:21:21.0869350Z Current runner version: '2.337.0'
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0887200Z ##[group]Runner Image Provisioner
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0887870Z Hosted Compute Agent
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0888250Z Version: 20260828.587
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0888660Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0889130Z Build Date: 2026-08-28T16:44:25Z
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0889660Z Worker ID: {ea99749e-ecf3-4f5c-add6-bb5ebd036a70}
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0890150Z Azure Region: westus
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0890520Z ##[endgroup]
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0891760Z ##[group]Operating System
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0892170Z macOS
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0892500Z 26.6.2
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0892850Z 25G83
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0893190Z ##[endgroup]
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0893540Z ##[group]Runner Image
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0893910Z Image: macos-26-arm64
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0894270Z Version: 20260907.0351.1
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0895000Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260907.0351/images/macos/macos-26-arm64-Readme.md
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0896210Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260907.0351
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0896860Z ##[endgroup]
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0897610Z ##[group]GITHUB_TOKEN Permissions
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0899100Z Contents: read
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0899690Z Metadata: read
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0900100Z ##[endgroup]
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0901660Z Secret source: Actions
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0902230Z Cache mode: write
+coding-tools-macos	Set up job	2026-09-28T16:21:21.0902670Z Prepare workflow directory
+coding-tools-macos	Set up job	2026-09-28T16:21:21.1139860Z Prepare all required actions
+coding-tools-macos	Set up job	2026-09-28T16:21:21.1180810Z Getting action download info
+coding-tools-macos	Set up job	2026-09-28T16:21:21.4990490Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+coding-tools-macos	Set up job	2026-09-28T16:21:21.7451630Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+coding-tools-macos	Set up job	2026-09-28T16:21:22.6477100Z Complete job name: coding-tools-macos
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-28T16:21:22.6972210Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6972980Z with:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6973320Z   fetch-depth: 0
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6973680Z   repository: carrie1988/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6976750Z   token: ***
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6977080Z   ssh-strict: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6977420Z   ssh-user: git
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6977770Z   persist-credentials: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6978140Z   clean: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6978490Z   sparse-checkout-cone-mode: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6978910Z   fetch-tags: false
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6979240Z   show-progress: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6979590Z   lfs: false
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6979910Z   submodules: false
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6980280Z   set-safe-directory: true
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:22.6980780Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0463950Z Syncing repository: carrie1988/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0466270Z ##[group]Getting Git version info
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0466900Z Working directory is '/Users/runner/work/Harnessix/Harnessix'
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0467940Z [command]/opt/homebrew/bin/git version
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0951190Z git version 2.55.0
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0970930Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0983550Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/04f55259-ed80-4141-a82f-40353a0088b6/.gitconfig'
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0991520Z Temporarily overriding HOME='/Users/runner/work/_temp/04f55259-ed80-4141-a82f-40353a0088b6' before making global git config changes
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0992710Z Adding repository directory to the temporary git global config as a safe directory
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.0995260Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1107660Z Deleting the contents of '/Users/runner/work/Harnessix/Harnessix'
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1109940Z ##[group]Initializing the repository
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1114120Z [command]/opt/homebrew/bin/git init /Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1382150Z hint: Using 'master' as the name for the initial branch. This default branch name
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1383370Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1384180Z hint: to use in all of your new repositories, which will suppress this warning,
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1384800Z hint: call:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1385220Z hint:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1385680Z hint: 	git config --global init.defaultBranch <name>
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1386210Z hint:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1386750Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1387510Z hint: 'development'. The just-created branch can be renamed via this command:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1388110Z hint:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1388450Z hint: 	git branch -m <name>
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1388850Z hint:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1389500Z hint: Disable this message with "git config set advice.defaultBranchName false"
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1390350Z Initialized empty Git repository in /Users/runner/work/Harnessix/Harnessix/.git/
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1391890Z [command]/opt/homebrew/bin/git remote add origin https://github.com/carrie1988/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1462530Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1463460Z ##[group]Disabling automatic garbage collection
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1464230Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1521740Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1522420Z ##[group]Setting up auth
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1523210Z Removing SSH command configuration
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1526860Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.1584770Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.2597130Z Removing HTTP extra header
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.2600750Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.2658420Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.3353020Z Removing includeIf entries pointing to credentials config files
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.3357040Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.3410570Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4291300Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4382870Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path /Users/runner/work/_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4548900Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4655320Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4657490Z ##[group]Fetching the repository
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:23.4662060Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4466040Z From https://github.com/carrie1988/Harnessix
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4472980Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4478780Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4497170Z  * [new branch]      main                    -> origin/main
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4500160Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4588760Z   origin/main
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4594990Z [command]/opt/homebrew/bin/git rev-parse refs/remotes/origin/main
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4665850Z d470ca62ae208b9232ac7d3e36f3423b04f539dd
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4673610Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4676340Z ##[group]Determining the checkout info
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4679300Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4681240Z [command]/opt/homebrew/bin/git sparse-checkout disable
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4785460Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4858620Z ##[group]Checking out the ref
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.4859920Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.9719450Z Switched to a new branch 'main'
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.9720800Z branch 'main' set up to track 'origin/main'.
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.9729730Z ##[endgroup]
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.9838360Z [command]/opt/homebrew/bin/git log -1 --format=%H
+coding-tools-macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:21:25.9920430Z d470ca62ae208b9232ac7d3e36f3423b04f539dd
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-28T16:21:26.0198440Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0198900Z with:
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0199060Z   python-version: 3.12
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0199420Z   activate-environment: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0199690Z   no-project: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0199940Z   working-directory: /Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0202130Z   github-token: ***
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0202290Z   enable-cache: auto
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0202830Z   cache-dependency-glob: **/*requirements*.txt
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*requirements*.in
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.txt
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.in
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/pyproject.toml
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/uv.lock
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*.py.lock
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0203370Z   restore-cache: true
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0203610Z   save-cache: true
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0203820Z   prune-cache: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0204020Z   cache-python: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0204220Z   ignore-nothing-to-cache: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0204820Z   ignore-empty-workdir: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0205040Z   download-from-astral-mirror: true
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0205330Z   add-problem-matchers: true
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0205520Z   quiet: false
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0205700Z   resolution-strategy: highest
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.0205880Z ##[endgroup]
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2064630Z Trying to find version for uv in: /Users/runner/work/Harnessix/Harnessix/uv.toml
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2065360Z Could not find file: /Users/runner/work/Harnessix/Harnessix/uv.toml
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2066070Z Trying to find version for uv in: /Users/runner/work/Harnessix/Harnessix/pyproject.toml
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2070580Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2072890Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.2847800Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-aarch64-apple-darwin.tar.gz" ...
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.5478580Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/94e9bf9c-614e-42f8-b3fc-a161c27eb2c2 -f /Users/runner/work/_temp/609c5fc4-06ce-4b00-bf5c-78e6d66802e2
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7234020Z Added /Users/runner/.local/bin to the path
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7252690Z Added /Users/runner/hostedtoolcache/uv/0.12.19/aarch64 to the path
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7253730Z Set UV_PYTHON_INSTALL_DIR to /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7256010Z Added /Users/runner/work/_temp/uv-python-dir to the path
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7287980Z Set UV_PYTHON to 3.12
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7338890Z Set UV_CACHE_DIR to /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7339280Z Successfully installed uv version 0.12.19
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:26.7340880Z Searching files using cache dependency glob: /Users/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/Users/runner/work/Harnessix/Harnessix/**/*requirements*.in,/Users/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/Users/runner/work/Harnessix/Harnessix/**/*constraints*.in,/Users/runner/work/Harnessix/Harnessix/**/pyproject.toml,/Users/runner/work/Harnessix/Harnessix/**/uv.lock,/Users/runner/work/Harnessix/Harnessix/**/*.py.lock
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.0316900Z /Users/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.0505110Z /Users/runner/work/Harnessix/Harnessix/pyproject.toml
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.1380360Z /Users/runner/work/Harnessix/Harnessix/uv.lock
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.1483030Z Found 3 files to hash.
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.1518690Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-aarch64-apple-darwin-macos-16-3.12-833c9abc0b836ba8770633624216faddc020fb740fe3246e65023945d421804e
+coding-tools-macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-28T16:21:27.3342970Z No GitHub Actions cache found for key: setup-uv-2-aarch64-apple-darwin-macos-16-3.12-833c9abc0b836ba8770633624216faddc020fb740fe3246e65023945d421804e
+coding-tools-macos	Run uv sync --locked --all-extras --dev	﻿2026-09-28T16:21:27.4496690Z ##[group]Run uv sync --locked --all-extras --dev
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4497370Z ^[[36;1muv sync --locked --all-extras --dev^[[0m
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4557160Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4557540Z env:
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4557850Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4558150Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4558490Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.4558800Z ##[endgroup]
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.9068810Z Using CPython 3.12.10 interpreter at: /usr/local/bin/python3.12
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.9069710Z Creating virtual environment at: .venv
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.9151680Z Resolved 74 packages in 5ms
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:27.9309670Z    Building harnessix @ file:///Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1216770Z Downloading openai (1.6MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1219910Z Downloading cryptography (3.8MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1231190Z Downloading pygments (1.2MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1249120Z Downloading ruff (9.4MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1251050Z Downloading anthropic (1.2MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1252080Z Downloading pydantic-core (1.8MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.1252600Z Downloading mypy (12.7MiB)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.7093090Z  Downloaded pydantic-core
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.9102530Z  Downloaded cryptography
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:28.9205240Z  Downloaded pygments
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.0550330Z  Downloaded ruff
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.1080370Z  Downloaded anthropic
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.1475460Z  Downloaded openai
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.3728530Z  Downloaded mypy
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.6330620Z       Built harnessix @ file:///Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.6358240Z Prepared 71 packages in 1.71s
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7440910Z Installed 71 packages in 107ms
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7444970Z  + aiosqlite==0.22.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7445290Z  + annotated-types==0.8.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7445580Z  + anthropic==1.3.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7445800Z  + anyio==4.14.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7446090Z  + attrs==26.1.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7446430Z  + certifi==2026.7.22
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7446670Z  + cffi==2.1.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7446880Z  + charset-normalizer==3.5.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7447080Z  + click==8.5.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7447370Z  + cryptography==50.0.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7449300Z  + distro==1.9.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7449830Z  + docstring-parser==0.18.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7450480Z  + googleapis-common-protos==1.75.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7451100Z  + h11==0.16.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7451700Z  + harnessix==0.1.0 (from file:///Users/runner/work/Harnessix/Harnessix)
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7452400Z  + httpcore==1.0.9
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7452880Z  + httpcore2==2.12.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7453580Z  + httpx==0.28.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7454200Z  + httpx2==2.12.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7455020Z  + idna==3.19
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7455530Z  + iniconfig==2.3.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7456460Z  + jiter==0.16.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7458190Z  + jsonschema==4.26.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7459010Z  + jsonschema-specifications==2025.9.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7459600Z  + librt==0.15.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7460190Z  + linkify-it-py==2.2.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7466950Z  + markdown-it-py==4.2.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7467200Z  + mcp==2.2.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7467410Z  + mcp-types==2.2.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7467740Z  + mdit-py-plugins==0.6.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7467950Z  + mdurl==0.1.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7468210Z  + mypy==1.20.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7468400Z  + mypy-extensions==1.1.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7468710Z  + openai==2.54.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7468960Z  + opentelemetry-api==1.44.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7469390Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7469830Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7470200Z  + opentelemetry-proto==1.44.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7470490Z  + opentelemetry-sdk==1.44.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7470800Z  + opentelemetry-semantic-conventions==0.65b0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7472130Z  + packaging==26.3
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7472460Z  + pathspec==1.1.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7472780Z  + platformdirs==4.11.8
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7473510Z  + pluggy==1.6.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7473760Z  + protobuf==7.36.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7473950Z  + pycparser==3.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7474140Z  + pydantic==2.13.5
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7474330Z  + pydantic-core==2.46.5
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7474630Z  + pygments==2.21.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7474800Z  + pyjwt==2.13.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7475040Z  + pytest==8.4.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7475310Z  + pytest-asyncio==1.4.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7475600Z  + python-multipart==0.0.32
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7503920Z  + pyyaml==6.0.3
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7504230Z  + referencing==0.37.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7504540Z  + requests==2.34.2
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7504820Z  + rich==15.0.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7505060Z  + rpds-py==2026.6.3
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7505290Z  + ruff==0.16.5
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7505530Z  + sniffio==1.3.1
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7505780Z  + sse-starlette==3.4.11
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7505990Z  + starlette==1.6.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7506360Z  + textual==8.2.8
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7506620Z  + tqdm==4.70.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7506850Z  + truststore==0.10.4
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7507090Z  + types-jsonschema==4.26.0.20260518
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7507370Z  + types-pyyaml==6.0.12.20260906
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7507600Z  + typing-extensions==4.16.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7507830Z  + typing-inspection==0.4.4
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7508030Z  + urllib3==2.7.0
+coding-tools-macos	Run uv sync --locked --all-extras --dev	2026-09-28T16:21:29.7508290Z  + uvicorn==0.52.4
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	﻿2026-09-28T16:21:29.7712050Z ##[group]Run uv run python scripts/readability_report.py --check --check-final-report --quiet
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7712770Z ^[[36;1muv run python scripts/readability_report.py --check --check-final-report --quiet^[[0m
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7754670Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7754920Z env:
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7755210Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7755510Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7755740Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv run python scripts/readability_report.py --check --check-final-report --quiet	2026-09-28T16:21:29.7756030Z ##[endgroup]
+coding-tools-macos	Run uv run python scripts/documentation_check.py	﻿2026-09-28T16:21:32.0464680Z ##[group]Run uv run python scripts/documentation_check.py
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0465360Z ^[[36;1muv run python scripts/documentation_check.py^[[0m
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0504770Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0505060Z env:
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0505420Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0505740Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0505960Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:32.0506210Z ##[endgroup]
+coding-tools-macos	Run uv run python scripts/documentation_check.py	2026-09-28T16:21:34.8841910Z 文档门禁通过：366份文档、9284条链接、829幅Mermaid、26个源码包、0个变化路径
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	﻿2026-09-28T16:21:34.8988720Z ##[group]Run uv run python scripts/generate_specs.py --check
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.8989180Z ^[[36;1muv run python scripts/generate_specs.py --check^[[0m
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9024340Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9024600Z env:
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9024860Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9025140Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9025420Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:34.9026080Z ##[endgroup]
+coding-tools-macos	Run uv run python scripts/generate_specs.py --check	2026-09-28T16:21:38.2375870Z 合同一致性检查通过
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	﻿2026-09-28T16:21:38.4097930Z ##[group]Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4098700Z ^[[36;1muv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py^[[0m
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4142600Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4142820Z env:
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4143070Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4143390Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4143590Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:38.4143860Z ##[endgroup]
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:39.5817160Z ........................................................................ [ 69%]
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:45.5065670Z ...............................                                          [100%]
+coding-tools-macos	Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py	2026-09-28T16:21:45.5075280Z 103 passed in 6.25s
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	﻿2026-09-28T16:21:45.5481350Z ##[group]Run uv build --offline --out-dir dist/secret-gate
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5481840Z ^[[36;1muv build --offline --out-dir dist/secret-gate^[[0m
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5513550Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5513920Z env:
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5514160Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5514450Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5514650Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.5514910Z ##[endgroup]
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:45.6215530Z Building source distribution...
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:50.2630710Z Building wheel from source distribution...
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:51.0122380Z Successfully built dist/secret-gate/harnessix-0.1.0.tar.gz
+coding-tools-macos	Run uv build --offline --out-dir dist/secret-gate	2026-09-28T16:21:51.0149880Z Successfully built dist/secret-gate/harnessix-0.1.0-py3-none-any.whl
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	﻿2026-09-28T16:21:51.0258910Z ##[group]Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0259700Z ^[[36;1muv run python scripts/secret_scan.py --artifact-dir dist/secret-gate^[[0m
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0310140Z shell: /bin/bash -e {0}
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0310540Z env:
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0310810Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0311180Z   UV_PYTHON: 3.12
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0311410Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:21:51.0311650Z ##[endgroup]
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:22:01.4543580Z Secret扫描未完成：scan_archive_depth_limit
+coding-tools-macos	Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate	2026-09-28T16:22:01.4690200Z ##[error]Process completed with exit code 2.
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-28T16:22:01.4895900Z Post job cleanup.
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9356510Z [command]/opt/homebrew/bin/git version
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9495140Z git version 2.55.0
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9515820Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/0b13a613-ce1f-44f7-af34-09c035c1dbd4/.gitconfig'
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9525030Z Temporarily overriding HOME='/Users/runner/work/_temp/0b13a613-ce1f-44f7-af34-09c035c1dbd4' before making global git config changes
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9526040Z Adding repository directory to the temporary git global config as a safe directory
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9528600Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Harnessix/Harnessix
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9714750Z Removing SSH command configuration
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9721030Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:01.9806530Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.0991560Z Removing HTTP extra header
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.0992850Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.1063270Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2158610Z Removing includeIf entries pointing to credentials config files
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2164070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2281490Z includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2282660Z includeif.gitdir:/github/workspace/.git.path
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2289940Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2375520Z /Users/runner/work/_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2391810Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path /Users/runner/work/_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2478370Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2546130Z /github/runner_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2550790Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.2621980Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+coding-tools-macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-28T16:22:02.3566680Z Removing credentials config '/Users/runner/work/_temp/git-credentials-7b955ff7-651f-49c6-99ae-05c84b365713.config'
+coding-tools-macos	Complete job	﻿2026-09-28T16:22:02.3767920Z Cleaning up orphan processes

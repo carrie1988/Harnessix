@@ -1,0 +1,11 @@
+flowchart TD
+    Start[选择运行目标] --> Product{目标入口}
+    Product -- 开发或源码审计 --> Source[锁定Revision并uv sync]
+    Product -- 开发命令镜像 --> Image[按Dockerfile本地构建]
+    Product -- Coding Agent --> Agent[源码安装含Provider Extra]
+    Agent --> Configure[code configure生成配置]
+    Configure --> Diagnose[code doctor离线预检]
+    Diagnose --> Platform{macOS/Linux/Windows?}
+    Platform -- macOS/Linux --> Posix[POSIX受管编码与审批执行]
+    Platform -- Windows --> Win[Handle读取 受管Git与本地NTFS审批Patch]
+    Win --> GitGate[原生焦点已验证；完整安装待R4验收]

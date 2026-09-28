@@ -1,0 +1,31 @@
+{
+  "spec_version": "harnessix.installed-state-acceptance/v1",
+  "source_revision": "1bc3794bfbdb9ce5fa58103d372c68de4401f90a",
+  "platform": "Darwin",
+  "machine": "arm64",
+  "python": "3.12.7",
+  "import_location": "/private/tmp/harnessix-restart-root-20260929/clean-install/venv/lib/python3.12/site-packages/harnessix/__init__.py",
+  "isolated": true,
+  "source_checkout_in_sys_path": false,
+  "doctor_ready": true,
+  "active_owner_backup_refused": true,
+  "full_backup_verified": true,
+  "backup_file_count": 7,
+  "original_key_retained": true,
+  "old_thread_restored": true,
+  "post_snapshot_thread_removed": true,
+  "prior_root_retained": true,
+  "same_restore_id_has_same_terminal_result": true,
+  "same_restore_id_does_not_rewind_new_state": true,
+  "workspace_unchanged": true,
+  "provider_turn_requests": 0,
+  "commercial_release": false,
+  "not_proven": [
+    "real_coding_task",
+    "version_upgrade",
+    "uninstall",
+    "linux_install",
+    "windows_install",
+    "beta"
+  ]
+}

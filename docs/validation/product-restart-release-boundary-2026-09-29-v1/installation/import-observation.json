@@ -1,0 +1,11 @@
+{
+  "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+  "version": "0.1.0",
+  "import_file": "/private/tmp/harnessix-restart-root-20260929/clean-install/venv/lib/python3.12/site-packages/harnessix/__init__.py",
+  "sys_path": [
+    "/opt/anaconda3/lib/python312.zip",
+    "/opt/anaconda3/lib/python3.12",
+    "/opt/anaconda3/lib/python3.12/lib-dynload",
+    "/private/tmp/harnessix-restart-root-20260929/clean-install/venv/lib/python3.12/site-packages"
+  ]
+}
