@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 15
-code_revision: d6b32c4637e4099114f3a9fe56a999e87474d660
+version: 16
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/governance/test_secret_scan.py
   - tests/governance/test_installed_product_acceptance.py
   - tests/governance/test_distribution_artifact_boundary.py
   - tests/product_config/test_product_state_restore.py
@@ -147,7 +148,12 @@ Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel�
 - 没有Release签名、来源证明、SBOM或可复现构建声明；
 - 没有PyPI发布证据；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
-- Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；0.9.1d仅验证原生四项只读能力。
+- Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；原生读取、NTFS审批写入及业务恢复专项也不能替代Windows 11完整编码验收。
+
+正式首发通道是单一Wheel。三个源码CI构建入口和`Makefile`的`supply-chain`使用
+`uv build --offline --wheel --out-dir dist/secret-gate`，随后扫描全部受管源码及实际Wheel。
+不额外构建或发布未认证的Sdist，不修改Secret扫描4096条Archive记录等原上限。
+既有目录残留的其他制品仍由原扫描器严格检查，不隐式删除、忽略或豁免；正式构建使用干净检出。
 
 ### 5.2 源码制品与验证制品边界
 

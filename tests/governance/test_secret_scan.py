@@ -513,12 +513,14 @@ def test_gate_builds_real_artifacts_before_scanning() -> None:
         .split("supply-chain:\n", 1)[1]
         .split("\n\n", 1)[0]
     )
-    assert makefile.index("uv build --offline") < makefile.index("--artifact-dir dist/secret-gate")
+    assert makefile.index("uv build --offline --wheel") < makefile.index(
+        "--artifact-dir dist/secret-gate"
+    )
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
     for name in ("python", "coding-tools-macos", "windows-trusted-execution"):
         steps = workflow["jobs"][name]["steps"]
         commands = [step.get("run", "") for step in steps]
-        build = commands.index("uv build --offline --out-dir dist/secret-gate")
+        build = commands.index("uv build --offline --wheel --out-dir dist/secret-gate")
         scan = commands.index(
             "uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate"
         )

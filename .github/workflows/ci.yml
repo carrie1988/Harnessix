@@ -27,7 +27,7 @@ jobs:
       - run: uv run python scripts/documentation_check.py
       - run: uv run python scripts/generate_specs.py --check
       - run: uv run python scripts/secret_scan.py --self-check
-      - run: uv build --offline --out-dir dist/secret-gate
+      - run: uv build --offline --wheel --out-dir dist/secret-gate
         timeout-minutes: 2
       - run: uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
         timeout-minutes: 2
@@ -66,7 +66,7 @@ jobs:
       - run: uv run python scripts/documentation_check.py
       - run: uv run python scripts/generate_specs.py --check
       - run: uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py
-      - run: uv build --offline --out-dir dist/secret-gate
+      - run: uv build --offline --wheel --out-dir dist/secret-gate
         timeout-minutes: 2
       - run: uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
         timeout-minutes: 2
@@ -136,7 +136,7 @@ jobs:
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"
-      - run: uv build --offline --out-dir dist/secret-gate
+      - run: uv build --offline --wheel --out-dir dist/secret-gate
         timeout-minutes: 2
       - run: uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
         timeout-minutes: 2
