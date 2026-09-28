@@ -114,6 +114,51 @@ async def test_unknown_git_read_remains_rejected_on_repeated_startup(
         assert leases.load(spec.process_id) == unknown
 
 
+async def test_git_recovery_limit_rejects_before_observing_any_receipt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, _, _, environment = _simulated_read_plan(tmp_path, monkeypatch)
+    state = config.state
+    with (
+        SQLiteExecutionPlanStore(state / "execution-plans.db") as plans,
+        SQLiteProcessLeaseStore(state / "process-owner/process-leases.db") as store,
+    ):
+        for _ in range(17):
+            spec = build_process_spec(invocation="argv", argv=(str(config.executable), "status"))
+            plan = _git_read_plan(config, spec, environment)
+            plans.save_plan(plan)
+            store.create(prepare_process_lease(plan, spec, config.capability))
+        active = store.active()
+
+    class ObservationOnlySupervisor:
+        def __init__(self, _root):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_error):
+            pass
+
+        def active_leases(self):
+            return active
+
+        async def reconcile(self, _identity):
+            pytest.fail("超过恢复上限时不应观察Receipt或改变Lease")
+
+    monkeypatch.setattr(
+        "harnessix.processes.git_read_windows.WindowsProcessSupervisor", ObservationOnlySupervisor
+    )
+    with pytest.raises(KernelError) as error:
+        await reconcile_windows_git_reads(state)
+    assert error.value.code == "product_git_recovery_limit"
+    with SQLiteProcessLeaseStore(
+        state / "process-owner/process-leases.db", read_only=True
+    ) as store:
+        assert store.active() == active
+
+
 @pytest.mark.parametrize(
     ("observed", "expected", "windows", "matches"),
     [

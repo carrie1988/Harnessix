@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 385,
-    "physical_lines": 82958,
-    "logical_lines": 73440,
+    "physical_lines": 82978,
+    "logical_lines": 73454,
     "documented_modules": 385,
     "classes": 881,
     "documented_classes": 364,
-    "functions": 3353,
-    "documented_functions": 594,
+    "functions": 3355,
+    "documented_functions": 596,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1338,23 +1338,13 @@
       "decision_complexity": 20
     },
     {
-      "id": "harnessix.processes.windows_job:WindowsJobObject",
-      "module": "harnessix.processes.windows_job",
-      "path": "src/harnessix/processes/windows_job.py",
-      "qualname": "WindowsJobObject",
-      "kind": "class",
-      "line": 65,
-      "lines": 102,
-      "documented": false
-    },
-    {
       "id": "harnessix.processes.windows_owner:_Owner",
       "module": "harnessix.processes.windows_owner",
       "path": "src/harnessix/processes/windows_owner.py",
       "qualname": "_Owner",
       "kind": "class",
-      "line": 65,
-      "lines": 362,
+      "line": 73,
+      "lines": 363,
       "documented": false
     },
     {

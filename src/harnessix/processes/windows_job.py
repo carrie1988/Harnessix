@@ -62,6 +62,21 @@ def _kernel32() -> Any:
     return ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
 
 
+def _contains_handle(job: int, process: int) -> bool:
+    """用仍持有的目标Handle核验指定Job归属；不重新按数字PID获取启动证明。"""
+    kernel32 = _kernel32()
+    result = wintypes.BOOL()
+    kernel32.IsProcessInJob.argtypes = (
+        wintypes.HANDLE,
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.BOOL),
+    )
+    kernel32.IsProcessInJob.restype = wintypes.BOOL
+    if not kernel32.IsProcessInJob(process, job, ctypes.byref(result)):
+        raise KernelError("process_job_query_failed", "Windows Job Object查询失败")
+    return bool(result.value)
+
+
 class WindowsJobObject:
     def __init__(self) -> None:
         kernel32 = _kernel32()
@@ -111,6 +126,11 @@ class WindowsJobObject:
             kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
             if not kernel32.AssignProcessToJobObject(self._handle, process):
                 raise KernelError("process_job_assignment_failed", "Windows进程未加入Job Object")
+            # 归属验真必须在恢复挂起进程之前；快速退出后重新按PID查询会误判启动失败。
+            if not _contains_handle(self._handle, process):
+                raise KernelError(
+                    "process_job_assignment_failed", "Windows进程未确认Job Object归属"
+                )
             ntdll = ctypes.WinDLL("ntdll")  # type: ignore[attr-defined]
             ntdll.NtResumeProcess.argtypes = (wintypes.HANDLE,)
             ntdll.NtResumeProcess.restype = ctypes.c_long
@@ -127,16 +147,7 @@ class WindowsJobObject:
         if not process:
             return False
         try:
-            result = wintypes.BOOL()
-            kernel32.IsProcessInJob.argtypes = (
-                wintypes.HANDLE,
-                wintypes.HANDLE,
-                ctypes.POINTER(wintypes.BOOL),
-            )
-            kernel32.IsProcessInJob.restype = wintypes.BOOL
-            if not kernel32.IsProcessInJob(process, self._handle, ctypes.byref(result)):
-                raise KernelError("process_job_query_failed", "Windows Job Object查询失败")
-            return bool(result.value)
+            return _contains_handle(self._handle, process)
         finally:
             self._close_handle(process)
 

@@ -40,6 +40,14 @@ _PROGRESS_INTERVAL_SECONDS = 0.25
 _Event = tuple[str, bytes | None]
 
 
+def _close_descriptor(descriptor: int) -> None:
+    """由FD当前所有者执行关闭；主线程不能抢占已移交控制读线程的FD。"""
+    try:
+        os.close(descriptor)
+    except OSError:
+        pass
+
+
 def _read_start(control_fd: int) -> tuple[ProcessOwnerStart, tuple[bytes, ...], bytearray]:
     buffer = bytearray()
     while b"\n" not in buffer:
@@ -90,6 +98,7 @@ class _Owner:
         self.stdin_closed = request.stdin == "closed"
         self.streams_open = {"stdout", "stderr"}
         self.io_failed = False
+        self._control_reader_started = False
 
     def run(self) -> int:
         try:
@@ -158,10 +167,6 @@ class _Owner:
             finally:
                 self.process.wait()
             raise
-        if not self.job.contains(self.process.pid):
-            self.process.kill()
-            self.process.wait()
-            raise RuntimeError("target is not in owner job")
         self.started_at = datetime.now(UTC)
         self._start_reader("control", self.control_fd, self._initial_remainder)
         assert self.process.stdout is not None and self.process.stderr is not None
@@ -172,11 +177,14 @@ class _Owner:
         self._publish("running")
 
     def _start_reader(self, name: str, descriptor: int, initial: bytearray) -> None:
-        threading.Thread(
+        reader = threading.Thread(
             target=self._reader,
             args=(name, descriptor, initial),
             daemon=True,
-        ).start()
+        )
+        reader.start()
+        # 只有start成功后移交控制FD归属，后续stdout/stderr读线程不能重置该事实。
+        self._control_reader_started = self._control_reader_started or name == "control"
 
     def _reader(self, name: str, descriptor: int, initial: bytearray) -> None:
         try:
@@ -190,6 +198,9 @@ class _Owner:
                 self.events.put((name, data))
         except OSError:
             self.events.put((f"{name}_error", None))
+        finally:
+            if name == "control":
+                _close_descriptor(descriptor)
 
     def _stdin_writer(self) -> None:
         assert self.process is not None
@@ -418,10 +429,8 @@ class _Owner:
             self.job = None
         if isinstance(self.process, WindowsConPtyProcess):
             self.process.close()
-        try:
-            os.close(self.control_fd)
-        except OSError:
-            pass
+        if not self._control_reader_started:
+            _close_descriptor(self.control_fd)
         self.stdout.close()
         self.stderr.close()
 

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
+version: 3
+code_revision: b5a4b8adc388a0deb88ffb740c8e10375b7bc63a
 owners: [core]
 modules: [tools, processes, workspace, context, product_config]
 related_adrs:
@@ -19,6 +19,8 @@ related_tests:
   - tests/product_config/test_preflight.py
   - tests/product_config/test_server_and_cli.py
   - tests/product_config/test_product_state_backup.py
+  - tests/processes/test_windows_owner_lifecycle.py
+  - tests/processes/test_windows_supervisor.py
 supersedes: []
 ---
 
@@ -294,6 +296,23 @@ Windows焦点CI先运行本切片，不等待许可证检查或全量回归完�
 
 原失败与后继运行分别保留，不重跑旧Revision以替换失败结论。
 
+### 8.2 有界诊断结果与修复合同
+
+诊断提交`b5a4b8a`的[Windows Job](https://github.com/carrie1988/Harnessix/actions/runs/36426925995/job/108943062627)
+在51.47秒结束：3项失败、23项通过、5项跳过。NTFS焦点59项通过。原三分钟中断已被有界失败替代，
+但这仍是失败结果，不能关闭R4。
+
+- 大Diff、正确Include夹具、四种超时/取消、原生Doctor均通过。
+- 冷Receipt失败获得两次相同Owner栈：控制读线程在`os.read`，主线程在`os.close(control_fd)`。
+  Controller未刷新Receipt也未关闭写端，形成实际退出阻塞；修复不能要求Controller先关闭写端才算Owner独立退出。
+- 非仓库返回偶发`tool_io_failed`。源码还发现`assign_suspended`已经恢复目标后，Owner才按PID重新检查归属；
+  快速程序可先退出，造成归属误判。归属检查前移到原已打开句柄、目标尚挂起时，随后才恢复执行。
+  此路径增加调用顺序正反例以及0、17、128退出码各四次原生快速命令回归，不把单次成功视为竞态关闭。
+- 默认SDK夹具返回的`ScriptedProvider`缺少产品Provider Bundle异步资源接口；补齐测试Bundle的上下文协议，
+  不修改正式Provider契约、不绕过资源关闭。
+
+后继修复仍须通过新的原生用例和共享模块回归；旧失败不能被更新后的文档或新日志覆盖。
+
 ## 9. 安全、部署、兼容与发布边界
 
 Windows宿主显式提供Git for Windows绝对普通EXE。stdio产品沿用现有`--git-executable`，
@@ -307,3 +326,84 @@ Config检查与后续Git查询之间仍可能被恶意同UID外部进程篡改�
 
 本切片不关闭R1整体恢复、R3真实任务质量、R4三平台脱离源码安装升级或R5真实用户Beta。
 许可证及分发材料保持低优先级并行工作，不占用功能研发主线；正式分发前仍需完成发行条件核对。
+
+## 10. Windows Owner退出与快速命令竞态修复详设
+
+### 10.1 资源归属、字段与状态边界
+
+| 资源或字段 | 创建者 / 关闭者 | 含义与失败边界 |
+|---|---|---|
+| Controller控制写FD | 原Supervisor / 原`SupervisedProcess` | 原控制权限；关闭表示宿主丢失，不是命令完成的必要握手 |
+| Owner控制读FD，读线程未成功启动 | 原`_Owner` / 原主线程 | 线程创建失败时仍由Owner收尾，不能泄漏无读者FD |
+| Owner控制读FD，读线程成功启动 | 原`_Owner` / 控制读线程 | EOF或读错误后的`finally`关闭；主线程不并发关闭阻塞中的CRT FD |
+| `_control_reader_started: bool` | Owner内存字段，初值false | 仅线程`start()`成功后置true；表示关闭归属已移交，不是业务进程状态 |
+| Job Handle | 原`WindowsJobObject` / Owner | 签名终态前完成停止，退出收尾释放原Handle，保持kill-on-close |
+| 查询进程Handle | 原`assign_suspended` | 一次打开，完成加入Job和归属核验后恢复；在`finally`关闭，不重新按PID证明启动 |
+
+Windows同步管道读在写端仍打开时可以继续阻塞；进程终止会由OS关闭其剩余Handle，见
+[管道Handle与EOF规则](https://learn.microsoft.com/en-us/windows/win32/ipc/pipe-handle-inheritance)和
+[CRT关闭语义](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/close?view=msvc-170)。
+控制读线程为原有Daemon线程；Owner发布终态后不等待Controller继续输入，也不等待线程收到EOF。
+仍阻塞的私有读Handle随唯一Owner进程终止由OS回收；正常宿主丢失时读线程自行关闭。
+此策略只适用于即将退出的Owner进程，不可推广为长期服务中的FD关闭策略。
+
+### 10.2 正常终态和宿主丢失的时序
+
+```mermaid
+sequenceDiagram
+  participant C as Controller
+  participant M as Owner主线程
+  participant R as 控制读线程
+  participant J as 原Job
+  C->>M: 原Start帧
+  M->>R: start成功后移交读FD关闭归属
+  R->>R: 等待控制输入或EOF
+  M->>J: 命令退出后停止原Job
+  M->>M: 输出EOF与签名终态发布
+  M->>J: 关闭Job Handle
+  M->>M: 关闭输出，退出Owner，不抢占控制读FD
+  Note over C,M: Controller不观察终态也不得阻止Owner退出
+  C->>C: 后续仅观察原Receipt，保留原Process ID
+```
+
+若宿主先关闭写端，控制读线程收到EOF，发布`control_eof`并在自身`finally`关闭读FD；
+原事件循环仍执行`host_lost`、Job停止及完整输出收尾。线程启动失败则主线程保留关闭责任。
+Job/Receipt/Lease状态模型、Schema版本、HMAC、CancelToken和POSIX Owner不变。
+
+### 10.3 归属核验的前后顺序
+
+```mermaid
+flowchart LR
+  P[CREATE_SUSPENDED目标] --> H[打开原目标Handle]
+  H --> A[AssignProcessToJobObject]
+  A --> Q[原Handle IsProcessInJob]
+  Q -->|确认归属| R[NtResumeProcess]
+  Q -->|失败或未归属| F[不恢复目标 / 原失败收尾]
+  R --> E[允许快速退出并保留原退出码]
+```
+
+[`IsProcessInJob`](https://learn.microsoft.com/en-us/windows/win32/api/jobapi/nf-jobapi-isprocessinjob)
+使用原Handle的查询权限。`contains(pid)`仍保留只读查询接口，调用同一Handle级校验函数；
+它不再作为目标恢复后的启动成功前置条件，避免瞬时程序退出后重新打开数字PID。
+
+### 10.4 核心伪代码与源码测试映射
+
+```text
+start_control_reader:
+    创建原Daemon读线程并启动
+    仅启动成功后将关闭归属移交读线程
+control_reader_finally:
+    仅本控制读线程关闭其FD，stdout/stderr仍由原管道所有者关闭
+owner_close:
+    关闭原Job及输出捕获
+    只有控制读线程未启动时才关闭控制FD
+assign_suspended:
+    使用原Handle加入Job；核验归属；核验成功才恢复目标；finally关闭原Handle
+```
+
+源码：[`windows_owner._start_reader/_reader/_close`](../../src/harnessix/processes/windows_owner.py)，
+[`windows_job.assign_suspended/_contains_handle`](../../src/harnessix/processes/windows_job.py)。
+合同回归：[`test_windows_owner_lifecycle.py`](../../tests/processes/test_windows_owner_lifecycle.py)覆盖关闭归属、
+线程启动失败、原Handle核验顺序和拒绝后不恢复；这些模拟API测试不证明真实Windows可用。
+原生回归：[`test_windows_git.py`](../../tests/tools/test_windows_git.py)保持未观察终态的冷Receipt退出条件，
+[`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py)以12个真实快速命令验证原退出码和双流EOF。

@@ -137,7 +137,9 @@ async def test_windows_git_rejects_parent_repository_and_preserves_nonrepo_failu
             git_state_directory=tmp_path / f"state-{workspace.name}",
         ) as tools:
             result = await execute(tools, "git_status")
-        assert result.error.code == code
+        facts = _leases(tmp_path / f"state-{workspace.name}")
+        observed = [(item.state, item.stop_reason, item.returncode) for item in facts]
+        assert result.error.code == code, observed
         assert str(workspace) not in result.model_dump_json()
 
 
@@ -240,8 +242,8 @@ async def test_windows_git_recovery_reconciles_original_receipt_without_relaunch
             # 即使退出断言失败，也关闭原控制写端并有界回收，避免测试自身无限挂起。
             handle._close_control()
             await asyncio.to_thread(owner.wait, timeout=5)
+            supervisor._handles.pop(spec.process_id)
         await handle._reap_owner()
-        supervisor._handles.pop(spec.process_id)
         await reconcile_windows_git_reads(state)
         assert _leases(state)[0].state == "exited"
         assert len(_leases(state)) == 1

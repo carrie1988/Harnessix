@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
+version: 22
+code_revision: b5a4b8adc388a0deb88ffb740c8e10375b7bc63a
 owners:
   - core
 modules:
@@ -1653,4 +1653,7 @@ Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process
 启动只收敛source_id=`harnessix.git_read`的旧只读查询，不重放、不用历史数字PID控制进程。
 该类`UNKNOWN`在后继启动继续拒绝；单次启动最多收敛16件本类活动Lease，超过上限在收敛前拒绝。
 首轮原生焦点失败独立保留，冷Receipt退出回归增加Owner线程栈与有界回收，不能将CI中断计作完成。
+有界诊断确认Windows主线程关闭阻塞读FD导致Owner不能独立退出；读线程成功启动后持有该FD关闭责任。
+快速命令归属核验前移到恢复挂起目标之前，并使用原已打开Handle，不在恢复后重新按PID判定启动结果。
+共享Lease/Receipt状态及POSIX Owner不变；原生冷Receipt、快速退出码、取消与产品备份仍由实际Windows运行验收。
 详见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

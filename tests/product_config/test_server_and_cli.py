@@ -69,7 +69,15 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
     _repository(workspace)
     (workspace / "main.py").write_bytes((CANARY + "\n").encode())
     path = write_config(tmp_path / "config.json", config)
-    bundle = ScriptedProvider(
+
+    class GitBundle(ScriptedProvider):
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    bundle = GitBundle(
         (
             (
                 ResponseStarted(response_id="git-response"),
@@ -80,7 +88,7 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
         )
     )
 
-    async def build(*_args: object, **_kwargs: object) -> ScriptedProvider:
+    async def build(*_args: object, **_kwargs: object) -> GitBundle:
         return bundle
 
     async def drive(server: AgentProtocolServer, *_streams: object) -> None:

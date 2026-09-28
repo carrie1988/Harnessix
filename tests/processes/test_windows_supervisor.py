@@ -195,6 +195,30 @@ async def test_windows_timeout_terminates_complete_job_tree(tmp_path: Path) -> N
     await _wait_stopped(child_pid)
 
 
+@pytest.mark.parametrize("exit_code", [0, 17, 128])
+async def test_windows_fast_exit_keeps_verified_job_and_original_status(
+    tmp_path: Path, exit_code: int
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    async with WindowsProcessSupervisor(tmp_path / "state") as supervisor:
+        for _ in range(4):
+            spec = build_process_spec(
+                invocation="cmd", shell_source=f"exit /b {exit_code}", timeout_seconds=5
+            )
+            handle = await supervisor.start(
+                _plan(workspace, spec, supervisor),
+                spec,
+                supervisor.capability,
+                workspace=workspace,
+                environment={},
+            )
+            lease = await asyncio.wait_for(handle.wait(), timeout=8)
+            assert lease.state == "exited" and lease.stop_reason == "exited"
+            assert lease.returncode == exit_code
+            assert lease.stdout.eof and lease.stderr.eof
+
+
 async def test_windows_conpty_unicode_input_resize_and_tree_owner(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
