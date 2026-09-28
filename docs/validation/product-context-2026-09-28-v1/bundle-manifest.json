@@ -1,0 +1,31 @@
+{
+  "spec_version": "harnessix.product-context-bundle/v1",
+  "code_revision": "4ec6fffafb553b5e09852cb91bb126c311e0b134",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7325,
+      "sha256": "341bcff82ed816d957c3e701e002dd12668cd2376b27c794427a8ed28f1e65f3"
+    },
+    {
+      "path": "contract-facts.json",
+      "bytes": 1205,
+      "sha256": "bfe927be87104eb400cf7c0e84a5fde564a1cc9ded5519091695d806e45350ab"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1589,
+      "sha256": "1113fef5807f9843250e9779e55a31c27962c4bea400e490f0b28c07cb83e694"
+    },
+    {
+      "path": "provider-probe.json",
+      "bytes": 1141,
+      "sha256": "88c514d124784ff9592c5490ec5a06e5d8cf543706f599ceb8f13bb0a2fdc344"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1158,
+      "sha256": "744745b4b542cb6a57791232c376bfbfb461f0e05409276c7788802b0f53f91f"
+    }
+  ]
+}

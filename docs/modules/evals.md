@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 23
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 24
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 owners:
   - core
 modules:
@@ -90,6 +90,16 @@ supersedes: []
 [`compaction.py`](../../src/harnessix/evals/compaction.py)和
 [`delivery.py`](../../src/harnessix/evals/delivery.py)的当前事实源。测试原则和历史验收数字保留在
 [测试与Eval规范](../testing-and-evals.md)，通用工程交付以[Delivery模块设计](delivery.md)为事实源。
+
+### 1.1 正式Task Pack的Coding Context
+
+[`task_pack_trial._run_agent`](../../src/harnessix/evals/task_pack_trial.py)与默认stdio产品复用
+[`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py)，安装相同版本化Coding指令、
+Project/Workspace/Environment双观察及既有持久Compaction。没有含Task答案的评测system Prompt，也不修改
+冻结Pack、ModelAdapter、Profile观察提取、Grader或成功分母。
+
+首末检查仍来自模型真实工具调用和可信执行终态。缺失事实仍失败，历史0/20保持原样；新质量结论必须使用
+新的预注册完整Suite。完整流程、预算估算及异常边界见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
 
 ## 2. 需求背景
 

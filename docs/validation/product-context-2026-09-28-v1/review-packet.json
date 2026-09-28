@@ -1,0 +1,39 @@
+{
+  "spec_version": "harnessix.product-context-review-packet/v1",
+  "code_revision": "4ec6fffafb553b5e09852cb91bb126c311e0b134",
+  "design_document": "../../changes/m09-r3-product-context-composition.md",
+  "scope": [
+    "shared coding instructions and Context composition",
+    "native Windows Context read adapter",
+    "existing durable compaction assembly"
+  ],
+  "reviewed_boundaries": [
+    "unchanged Task Pack and grading",
+    "closed-history/Source-trust separation",
+    "no raw source body in Context inspection",
+    "no environment credential harvesting",
+    "existing outbound secret protection",
+    "one owned Provider lifecycle"
+  ],
+  "evidence_files": [
+    "contract-facts.json",
+    "verification.json",
+    "provider-probe.json"
+  ],
+  "open_release_packages": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "open_r3_items": [
+    "complete content SHA-256 available to model read path",
+    "frozen check image readiness",
+    "new complete preregistered engineering Suite",
+    "finite model certification"
+  ],
+  "unrelated_work_excluded": true,
+  "credentials_or_provider_response_bodies_published": false
+}

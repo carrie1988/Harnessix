@@ -31,6 +31,7 @@ Harnessix Code的目标是独立实现面向真实软件工程任务的生产级
 详见[范围收敛与逐项处置](docs/changes/m09-to-v1-release-scope-convergence.md)及[路线图](docs/roadmap.md)。
 
 R1已增加[认证容量与旧式维护安全边界](docs/changes/m09-r1-store-maintenance-safety.md)；
+R3补齐[默认产品与正式评测的共享Context、编码指令及自动压缩装配](docs/changes/m09-r3-product-context-composition.md)，不改写历史0/20结果。
 完整产品状态/Key备份、真实编码质量、权利及正式发行门禁仍未关闭。
 
 ## 项目边界

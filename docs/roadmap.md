@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 108
-code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
+version: 109
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 owners:
   - core
 modules:
@@ -696,6 +696,8 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 - [ ] **R6**：同一候选Revision的必要离线/原生/真实门禁通过，版本、校验、Changelog、迁移和支持矩阵一致。
 
 公共Schema保留版本/兼容/废弃策略；现有数据库及Artifact变更仍需迁移和失败恢复证据。
+R3已补[产品与评测的共享Context、编码指令及持久压缩装配](changes/m09-r3-product-context-composition.md)。
+该整改保持Task Pack v2及评分合同不变；默认产品接线、离线回归或API鉴权均不能替代完整真实任务质量验收。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

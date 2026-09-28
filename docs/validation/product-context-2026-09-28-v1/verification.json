@@ -1,0 +1,69 @@
+{
+  "spec_version": "harnessix.product-context-verification/v1",
+  "code_revision": "4ec6fffafb553b5e09852cb91bb126c311e0b134",
+  "host_platform": "darwin",
+  "architecture": "arm64",
+  "python": "3.13.8",
+  "affected_regression": {
+    "directories": [
+      "tests/context",
+      "tests/product_config",
+      "tests/evals"
+    ],
+    "passed": 666,
+    "skipped": 7,
+    "failed": 0,
+    "duration_seconds": 115.3
+  },
+  "final_focus": {
+    "passed": 30,
+    "skipped": 1,
+    "failed": 0,
+    "duration_seconds": 2.68
+  },
+  "new_contract_tests": {
+    "passed": 16,
+    "skipped": 1,
+    "failed": 0,
+    "duration_seconds": 0.89
+  },
+  "mypy": {
+    "source_files": 364,
+    "passed": true
+  },
+  "ruff": {
+    "passed": true
+  },
+  "schema_check": {
+    "passed": true,
+    "public_schema_changed": false
+  },
+  "mermaid_render": {
+    "new_diagrams": 3,
+    "rendered": 3,
+    "visually_checked": 3
+  },
+  "independent_python312_regression": {
+    "status": "passed",
+    "python": "3.12.7",
+    "host_platform": "darwin",
+    "architecture": "arm64",
+    "code_revision": "4ec6fffafb553b5e09852cb91bb126c311e0b134",
+    "passed": 666,
+    "skipped": 7,
+    "failed": 0,
+    "duration_seconds": 125.01
+  },
+  "real_engineering_suite": {
+    "status": "not_started",
+    "blocking_conditions": [
+      "frozen_container_image_unavailable",
+      "complete_file_content_digest_read_gap"
+    ],
+    "trials_executed": 0,
+    "api_calls": 0
+  },
+  "full_repository_regression_executed": false,
+  "native_windows_verified_in_this_bundle": false,
+  "commercial_release_ready": false
+}

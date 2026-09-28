@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 23
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 24
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 owners:
   - core
 modules:
@@ -29,6 +29,7 @@ related_tests:
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_agent_context.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_task_pack_execution.py
   - tests/integration/test_task_pack_execution.py
@@ -46,7 +47,7 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/product_config`](../../src/harnessix/product_config/) |
-| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；为默认产品及历史Eval装配能力受限的Trusted Action组合；取得产品Action组合根Owner、执行跨Store扫描和启动只对账恢复；持久化双配置快照、原子活动指针、恢复扫描/报告及审计事实 |
+| 当前职责 | 严格加载和迁移产品配置；安全加载独立Action配置；从非敏感草案原子创建或CAS替换v2文件；选择模型Profile并解析版本化Secret；生成共享Preflight/Doctor与Action能力报告；构造Provider Bundle和同源Action目录；统一装配默认产品及正式Task Pack的Coding指令、动态Context和持久压缩；装配能力受限的Trusted Action组合；取得产品Action组合根Owner、执行跨Store扫描和启动只对账恢复；持久化双配置快照、原子活动指针、恢复扫描/报告及审计事实 |
 | 非职责 | 不执行Agent Loop或替代Router审批权威；不保存Secret值；不实现配置热加载、远端配置中心、Keychain/KMS、模型目录发现、价格治理或通用依赖注入容器 |
 | 上游调用者 | `harnessix config`、`harnessix agent-server`、0.9.1b的`harnessix code`stdio组合根、历史Eval Runner、自定义产品组合根和测试宿主 |
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
@@ -79,6 +80,17 @@ supersedes: []
 [`cli.py`](../../src/harnessix/product_config/cli.py)的当前事实源。决策理由见
 [ADR 0075](../adr/0075-provider-profile-secret-and-safe-fallback.md)，历史研究证据见
 [Provider、Profile、配置与安全Fallback源码研究](../research/provider-profile-config-and-safe-fallback.md)。
+
+### 1.1 正式Coding Context装配
+
+默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
+[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source。
+输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留；输入估算由宿主固定策略控制。
+Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
+
+正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
+费用与Secret公开保护沿用已有合同。没有新增配置v3或SQLite迁移，全部公共Schema保持不变。
+完整设计、失败语义和测试见[R3产品Context统一装配](../changes/m09-r3-product-context-composition.md)。
 
 ## 2. 需求背景
 

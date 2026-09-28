@@ -1,8 +1,8 @@
 ---
 doc_type: source-reading-guide
 status: current
-version: 1
-code_revision: 809ed2b1a10f5cb462989a12dddf44f83a9d01ab
+version: 2
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 related_adrs:
   - docs/adr/0054-context-planning-and-inspection.md
   - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
@@ -14,6 +14,8 @@ related_tests:
   - tests/context/test_compaction.py
   - tests/context/test_compaction_runtime.py
   - tests/context/test_compaction_runtime_recovery.py
+  - tests/context/test_windows_sources.py
+  - tests/product_config/test_agent_context.py
 supersedes: []
 owners: [core]
 modules: [context, agent, artifacts, session]
@@ -45,7 +47,7 @@ modules: [context, agent, artifacts, session]
 | 摘要调用可能收费，进程可能崩溃 | 先落计划和 Attempt，再生成候选，最后激活窗口 | 重开后无条件重发摘要 |
 | Steering 可能改变历史 | 验证 Artifact 后加锁重算，匹配才提交 | 用验证前的旧快照直接发布 |
 
-实现依据：[`ContextEngine`](../../src/harnessix/context/engine.py#L94)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L96)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)、[`_closed_group_steps`](../../src/harnessix/context/compaction.py#L84)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L74)。
+实现依据：[`ContextEngine`](../../src/harnessix/context/engine.py#L94)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L94)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)、[`_closed_group_steps`](../../src/harnessix/context/compaction.py#L84)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L74)。
 
 ## 3. 设计目标、不变量与取舍
 
@@ -68,7 +70,7 @@ modules: [context, agent, artifacts, session]
 - 压缩保留第一条原始用户消息，以满足现有 Provider 协议前缀约束；保留当前用户与宿主锚点，不把摘要当作新指令。
 - 使用多个小的 Pydantic 合同分离静态合法性、纯算法证据与运行时发布权限。合同通过不等于 Artifact 存在，也不等于数据库 CAS 成功。
 
-源码：[`estimate_tokens`](../../src/harnessix/context/engine.py#L46)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L115)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)。
+源码：[`estimate_tokens`](../../src/harnessix/context/engine.py#L46)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L113)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)。
 
 ## 4. 总体架构与上下游关系
 
@@ -105,6 +107,7 @@ flowchart TD
 | `ports.py` | 同步/异步规划协议 | 服务定位或自动发现 |
 | `engine.py` | 排序、预算、JSON instructions、无正文证据 | 自动压缩、Provider 调用 |
 | `sources.py` | 动态来源及观测一致性 | 提升来源信任 |
+| `read_workspace.py` | Source复用POSIX FD或Windows Handle读取、分页及revision | 任意Path读取或新增文件权限 |
 | `tool_result_contracts.py` | 结果策略、绑定、决定、历史检查记录 | 归档读取 |
 | `tool_result_view.py` | 提取语义历史、应用冻结决定、枚举待验证引用 | 验证 Artifact 真实字节 |
 | `compaction.py` | 闭合组规划、锚点验证、候选重算、同步 replay | 网络和数据库 I/O |
@@ -260,7 +263,7 @@ sequenceDiagram
 - Snapshot 记录 source、revision、utf8_bytes、fragment_id，不保存原文。Inspection v2/v3 还核对这些 ID 是否属于 decisions，kind/source/大小是否匹配。
 - Engine 的纯 `prepare_sourced` 也强制多来源提供一致性快照，不能直接绕过编排契约。
 
-源码：[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L115)、[`ContextSourceObservation`](../../src/harnessix/context/contracts.py#L102)、[`ContextInspectionV3`](../../src/harnessix/context/contracts.py#L320)。
+源码：[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L113)、[`ContextSourceObservation`](../../src/harnessix/context/contracts.py#L102)、[`ContextInspectionV3`](../../src/harnessix/context/contracts.py#L320)。
 
 ### 7.2 ProjectInstructionSource
 
@@ -287,13 +290,13 @@ flowchart TD
     K -- 是 --> M[返回 Observation]
 ```
 
-源码：[`ProjectInstructionSource._observe_sync`](../../src/harnessix/context/sources.py#L258)、[`ProjectInstructionSource._read_document`](../../src/harnessix/context/sources.py#L324)。
+源码：[`ProjectInstructionSource._observe_sync`](../../src/harnessix/context/sources.py#L256)、[`ProjectInstructionSource._read_document`](../../src/harnessix/context/sources.py#L323)。
 
 ### 7.3 WorkspaceContextSource
 
-只提供根目录和 working_directory 的一级概览，去重后逐个调用 `files.list_files`；不是递归索引，也不读取所有文件内容。默认每目录最多 64 条（可配置 1—200）、内容预算 12 KiB（可配置 512—32768 字节）。再用 expected_revision 重读，避免目录结构竞态。`_workspace_content` 负责有界展示及截断信息；目录很大不等于可以返回无限正文。
+只提供根目录和 working_directory 的一级概览，去重后逐个调用 `ContextReadWorkspace.list_files`：POSIX委托原`files.list_files`，Windows委托原生Handle端口；不是递归索引，也不读取所有文件内容。默认每目录最多 64 条（可配置 1—200）、内容预算 12 KiB（可配置 512—32768 字节）。再用 expected_revision 重读，避免目录结构竞态。`_workspace_content` 负责有界展示及截断信息；目录很大不等于可以返回无限正文。
 
-源码：[`WorkspaceContextSource._observe_sync`](../../src/harnessix/context/sources.py#L396)、[`_workspace_content`](../../src/harnessix/context/sources.py#L725)。
+源码：[`WorkspaceContextSource._observe_sync`](../../src/harnessix/context/sources.py#L394)、[`_workspace_content`](../../src/harnessix/context/sources.py#L720)。
 
 ### 7.4 GitContextSource
 
@@ -301,7 +304,7 @@ flowchart TD
 
 默认 status_limit=100（1—200）、正文 16 KiB（1024—32768）。source_revision 同时绑定 runtime 合同、工作目录 revision、Git status revision 和最终文档 revision。超时、启动失败、绑定变化有明确错误映射，不把任何 Git 错误一概视为“干净仓库”。
 
-源码：[`GitContextSource.observe`](../../src/harnessix/context/sources.py#L473)、[`_visible_git_status`](../../src/harnessix/context/sources.py#L787)、[`_git_content`](../../src/harnessix/context/sources.py#L758)。
+源码：[`GitContextSource.observe`](../../src/harnessix/context/sources.py#L469)、[`_visible_git_status`](../../src/harnessix/context/sources.py#L782)、[`_git_content`](../../src/harnessix/context/sources.py#L753)。
 
 ### 7.5 EnvironmentContextSource
 
@@ -309,7 +312,7 @@ flowchart TD
 
 allowlist 最多 32 项、必须唯一、名称符合大写变量命名规则，拒绝 TOKEN/SECRET/PASSWORD/AUTH/KEY 等 secret 类名称。单值最多 1024 字节；整体正文默认 4 KiB、可配置 512—4096。正文还含 os.name、sys.platform、working_directory。名称过滤只是准入规则，并不证明普通名称下的内容一定无敏感信息，宿主仍应选择可公开事实。
 
-源码：[`EnvironmentContextSource`](../../src/harnessix/context/sources.py#L553)、[`_validated_environment_value`](../../src/harnessix/context/sources.py#L812)。
+源码：[`EnvironmentContextSource`](../../src/harnessix/context/sources.py#L549)、[`_validated_environment_value`](../../src/harnessix/context/sources.py#L807)。
 
 ## 8. 工具结果：原始事实到稳定模型视图
 
@@ -606,7 +609,7 @@ Fork 继承的语义历史位于 fork_snapshot；`active_model_history_source` �
 | validate_compaction | 原 Thread, plan, summary, cancel | ValidatedCompaction | 重算证据；尚未发布 |
 | replay_compaction_plan/candidate | 原快照与已存合同 | 重算结果 | 同步纯算法用于重放 |
 
-接口源码：[`ContextPlanner`](../../src/harnessix/context/ports.py#L9)、[`AsyncContextPlanner`](../../src/harnessix/context/ports.py#L15)、[`ContextSource`](../../src/harnessix/context/sources.py#L82)、[`plan_compaction`](../../src/harnessix/context/compaction.py#L405)。
+接口源码：[`ContextPlanner`](../../src/harnessix/context/ports.py#L9)、[`AsyncContextPlanner`](../../src/harnessix/context/ports.py#L15)、[`ContextSource`](../../src/harnessix/context/sources.py#L80)、[`plan_compaction`](../../src/harnessix/context/compaction.py#L405)。
 
 ### 13.2 最小纯规划调用
 
@@ -687,7 +690,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 | context_compaction_window_conflict | 候选与当前发布边界不相邻 | 核对并发事件顺序 |
 | context_compaction_window_invalid | 链尾、引用、哈希或决定失配 | 从 Session/reducer 和原账本排查 |
 
-抛错位置集中于 [`ContextEngine._prepare`](../../src/harnessix/context/engine.py#L126)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L115)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)、[`_window_source`](../../src/harnessix/context/compaction_window.py#L96)。`retryable` 是上层策略输入，不意味着纯 Engine 自动重试。
+抛错位置集中于 [`ContextEngine._prepare`](../../src/harnessix/context/engine.py#L126)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L113)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)、[`_window_source`](../../src/harnessix/context/compaction_window.py#L96)。`retryable` 是上层策略输入，不意味着纯 Engine 自动重试。
 
 ## 15. 安全、资源与部署边界
 
@@ -698,7 +701,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 - **显式装配**：配置 CompactionPolicy 不启动付费请求；RuntimeConfig 与对应 Provider 才构成运行能力。本文不假定任意 CLI 或产品启动入口已经启用这些端口。
 - **审计与隐私**：来源快照无正文但 source 路径、大小、指纹仍可能有敏感性；日志应复用检查记录和错误代码，不输出完整动态 instructions。摘要正文与原始消息是另一类持久数据，应按 Session 数据管理。
 
-源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L206)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1571)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
+源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1571)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
 
 ## 16. 测试地图与维护检查表
 
@@ -1379,7 +1382,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 | [contracts.py](../../src/harnessix/context/contracts.py#L1) | [`ContextFragmentKind`](../../src/harnessix/context/contracts.py#L34)、[`ContextTrust`](../../src/harnessix/context/contracts.py#L43)、[`ContextFragment`](../../src/harnessix/context/contracts.py#L50)、[`ContextSourceDocument`](../../src/harnessix/context/contracts.py#L72)、[`ContextSourceObservation`](../../src/harnessix/context/contracts.py#L102)、[`ContextSourceDocumentSnapshot`](../../src/harnessix/context/contracts.py#L118)、[`ContextSourceSnapshot`](../../src/harnessix/context/contracts.py#L136)、[`ContextConsistencySnapshot`](../../src/harnessix/context/contracts.py#L163)、[`ContextLimits`](../../src/harnessix/context/contracts.py#L173)、[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ContextFragmentDecision`](../../src/harnessix/context/contracts.py#L224)、[`ContextInspection`](../../src/harnessix/context/contracts.py#L241)、[`ContextInspectionV2`](../../src/harnessix/context/contracts.py#L268)、[`ContextInspectionV3`](../../src/harnessix/context/contracts.py#L320)、[`PreparedContext`](../../src/harnessix/context/contracts.py#L385)、[`ContextPrepared`](../../src/harnessix/context/contracts.py#L399) |
 | [engine.py](../../src/harnessix/context/engine.py#L1) | [`ContextPreparationError`](../../src/harnessix/context/engine.py#L37)、[`estimate_tokens`](../../src/harnessix/context/engine.py#L46)、[`_render`](../../src/harnessix/context/engine.py#L51)、[`_copy_and_order`](../../src/harnessix/context/engine.py#L74)、[`ContextEngine`](../../src/harnessix/context/engine.py#L94) |
 | [ports.py](../../src/harnessix/context/ports.py#L1) | [`ContextPlanner`](../../src/harnessix/context/ports.py#L9)、[`AsyncContextPlanner`](../../src/harnessix/context/ports.py#L15) |
-| [sources.py](../../src/harnessix/context/sources.py#L1) | [`ContextSourceError`](../../src/harnessix/context/sources.py#L72)、[`ContextSource`](../../src/harnessix/context/sources.py#L82)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L96)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L206)、[`WorkspaceContextSource`](../../src/harnessix/context/sources.py#L357)、[`GitContextSource`](../../src/harnessix/context/sources.py#L446)、[`EnvironmentContextSource`](../../src/harnessix/context/sources.py#L553)、[`_canonical_json`](../../src/harnessix/context/sources.py#L668)、[`_content_revision`](../../src/harnessix/context/sources.py#L674)、[`_require_bound_root`](../../src/harnessix/context/sources.py#L678)、[`_workspace_binding`](../../src/harnessix/context/sources.py#L689)、[`_workspace_binding_sync`](../../src/harnessix/context/sources.py#L709)、[`_workspace_content`](../../src/harnessix/context/sources.py#L725)、[`_git_content`](../../src/harnessix/context/sources.py#L758)、[`_visible_git_status`](../../src/harnessix/context/sources.py#L787)、[`_validated_environment_value`](../../src/harnessix/context/sources.py#L812)、[`_mapped_read_error`](../../src/harnessix/context/sources.py#L828)、[`_mapped_os_error`](../../src/harnessix/context/sources.py#L838) |
+| [sources.py](../../src/harnessix/context/sources.py#L1) | [`ContextSourceError`](../../src/harnessix/context/sources.py#L70)、[`ContextSource`](../../src/harnessix/context/sources.py#L80)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L94)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`WorkspaceContextSource`](../../src/harnessix/context/sources.py#L355)、[`GitContextSource`](../../src/harnessix/context/sources.py#L442)、[`EnvironmentContextSource`](../../src/harnessix/context/sources.py#L549)、[`_canonical_json`](../../src/harnessix/context/sources.py#L664)、[`_content_revision`](../../src/harnessix/context/sources.py#L670)、[`_require_bound_root`](../../src/harnessix/context/sources.py#L674)、[`_workspace_binding`](../../src/harnessix/context/sources.py#L685)、[`_workspace_binding_sync`](../../src/harnessix/context/sources.py#L705)、[`_workspace_content`](../../src/harnessix/context/sources.py#L720)、[`_git_content`](../../src/harnessix/context/sources.py#L753)、[`_visible_git_status`](../../src/harnessix/context/sources.py#L782)、[`_validated_environment_value`](../../src/harnessix/context/sources.py#L807)、[`_mapped_read_error`](../../src/harnessix/context/sources.py#L823)、[`_mapped_os_error`](../../src/harnessix/context/sources.py#L833) |
 | [tool_result_contracts.py](../../src/harnessix/context/tool_result_contracts.py#L1) | [`ToolResultViewPolicy`](../../src/harnessix/context/tool_result_contracts.py#L27)、[`ToolResultArtifactBinding`](../../src/harnessix/context/tool_result_contracts.py#L32)、[`ToolResultViewDecision`](../../src/harnessix/context/tool_result_contracts.py#L44)、[`ModelHistoryInspection`](../../src/harnessix/context/tool_result_contracts.py#L110)、[`ModelHistoryInspectionV2`](../../src/harnessix/context/tool_result_contracts.py#L138) |
 | [tool_result_view.py](../../src/harnessix/context/tool_result_view.py#L1) | [`ModelHistoryArtifactReference`](../../src/harnessix/context/tool_result_view.py#L38)、[`PreparedModelHistory`](../../src/harnessix/context/tool_result_view.py#L46)、[`_canonical`](../../src/harnessix/context/tool_result_view.py#L53)、[`_digest`](../../src/harnessix/context/tool_result_view.py#L68)、[`history_items`](../../src/harnessix/context/tool_result_view.py#L72)、[`history_document`](../../src/harnessix/context/tool_result_view.py#L84)、[`_public_result`](../../src/harnessix/context/tool_result_view.py#L93)、[`_artifact`](../../src/harnessix/context/tool_result_view.py#L100)、[`_bindings`](../../src/harnessix/context/tool_result_view.py#L110)、[`_preview_metadata`](../../src/harnessix/context/tool_result_view.py#L150)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_new_decision`](../../src/harnessix/context/tool_result_view.py#L213)、[`_apply_decision`](../../src/harnessix/context/tool_result_view.py#L256)、[`prepare_model_history`](../../src/harnessix/context/tool_result_view.py#L311)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)、[`_omitted_field`](../../src/harnessix/context/tool_result_view.py#L444)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L452) |
 

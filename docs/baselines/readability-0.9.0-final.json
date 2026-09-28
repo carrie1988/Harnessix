@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 362,
-    "physical_lines": 78734,
-    "logical_lines": 69798,
-    "documented_modules": 362,
-    "classes": 860,
-    "documented_classes": 349,
-    "functions": 3168,
-    "documented_functions": 500,
+    "source_files": 364,
+    "physical_lines": 78934,
+    "logical_lines": 69942,
+    "documented_modules": 364,
+    "classes": 862,
+    "documented_classes": 351,
+    "functions": 3177,
+    "documented_functions": 506,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 144
+    "package_dependency_edges": 145
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -208,7 +208,7 @@
     },
     {
       "path": "src/harnessix/context/sources.py",
-      "lines": 844
+      "lines": 839
     },
     {
       "path": "src/harnessix/delivery/git.py",
@@ -572,7 +572,7 @@
       "path": "src/harnessix/context/sources.py",
       "qualname": "EnvironmentContextSource",
       "kind": "class",
-      "line": 553,
+      "line": 549,
       "lines": 113,
       "documented": true
     },
@@ -582,7 +582,7 @@
       "path": "src/harnessix/context/sources.py",
       "qualname": "GitContextSource",
       "kind": "class",
-      "line": 446,
+      "line": 442,
       "lines": 105,
       "documented": true
     },
@@ -592,7 +592,7 @@
       "path": "src/harnessix/context/sources.py",
       "qualname": "ProjectInstructionSource",
       "kind": "class",
-      "line": 206,
+      "line": 204,
       "lines": 149,
       "documented": true
     },
@@ -602,7 +602,7 @@
       "path": "src/harnessix/context/sources.py",
       "qualname": "SourcedContextEngine",
       "kind": "class",
-      "line": 96,
+      "line": 94,
       "lines": 108,
       "documented": true
     },
@@ -1773,6 +1773,7 @@
     "product_config->agent",
     "product_config->app_server",
     "product_config->artifacts",
+    "product_config->context",
     "product_config->delivery",
     "product_config->domain",
     "product_config->execution",

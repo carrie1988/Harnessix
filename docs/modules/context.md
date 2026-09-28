@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 2
-code_revision: 71a479439edcdd29b863ec3a9bad7a52586dd1bf
+version: 3
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 owners:
   - core
 modules:
@@ -23,6 +23,8 @@ related_tests:
   - tests/context/test_compaction_runtime_recovery.py
   - tests/context/test_compaction_window.py
   - tests/context/test_long_session_recovery.py
+  - tests/context/test_windows_sources.py
+  - tests/product_config/test_agent_context.py
 supersedes: []
 ---
 
@@ -37,13 +39,27 @@ supersedes: []
 | 当前能力 | 固定与动态Context规划、显式优先级/信任、输入预算、Project/Workspace/Git/Environment Source、Tool Result模型视图、Compaction计划/账本/活动窗口 |
 | 本文状态 | 当前实现；`context`包现行实现的事实源 |
 | 代码版本 | `6c5f310346afa3fa176f51707722467f46811b35` |
-| 默认产品装配 | 当前默认薄CLI没有装配Context Source或自动Compaction；能力通过`AgentRuntime`端口显式装配 |
+| 默认产品装配 | 默认stdio产品及正式Task Pack统一装配中文Coding指令、Project/Workspace/Environment三Source及自动Compaction；Git Source仍由宿主显式接入 |
 | 稳定版本 | Context Inspection v1/v2/v3、Source Snapshot v1、Tool Result Model View v1、Compaction Policy/Plan/Summary/Window/Runtime v1 |
 | 持久事实 | 无动态来源正文的Inspection/Snapshot、模型历史决定、Compaction账本和活动窗口；原始Session历史不被删除 |
 
 Context不是“把尽可能多的文本拼进Prompt”。它在每个Model Step前生成有界、可解释、可重放验证的
 模型视图，并把来源、预算和省略决定持久化。模型摘要属于低信任派生数据，不能覆盖原始历史或携带
 执行权限。
+
+### 1.1 默认产品与正式评测装配
+
+[`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py)固定生成版本化中文Coding
+指令、Project/Workspace/Environment三Source和Compaction配置。默认stdio组合根与正式Task Pack复用该函数，
+每模型步骤双观察后保存无正文Inspection；不枚举进程环境，不插入任务答案。输入估算上限262,144，
+历史触发131,072、目标65,536；这些是宿主`utf8-bytes/v1`策略，不是Provider真实Tokenizer或窗口认证。
+
+[`ContextReadWorkspace`](../../src/harnessix/context/read_workspace.py)让项目、目录及环境绑定复用POSIX FD或
+Windows Handle只读后端。POSIX目录revision算法不变；Windows不回退普通Path读取。摘要与主模型复用同一
+Provider生命周期，仍经过取消、deadline、凭据出站保护及完整尝试用量记账。
+
+完整接口、流程图、时序图、字段、恢复语义和测试追踪见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
+装配完成不代表真实编码质量、全部子目录指令自动加载或Windows原生完整编码流程已验收。
 
 ## 2. 需求背景
 
@@ -74,7 +90,7 @@ Context模块把该问题分成四层：纯规划器只处理受界文本；Sour
 2. Context Engine不执行语义检索、向量索引、RAG或全仓库自动索引；
 3. Source不提供任意环境变量、任意Shell或未受控网络读取；
 4. Compaction不修改Session原始历史，不保证摘要语义绝对正确，也不授予Tool权限；
-5. 当前默认产品未启用自动Compaction，本文不能被解读为最终用户默认已经获得长会话压缩；
+5. 默认自动Compaction不保证任意巨型闭合组可压缩；Provider组合的真实窗口与质量仍需认证；
 6. Context Source正文没有独立持久副本；重放证明保存Revision和决策，原内容仍来自工作区或Session。
 
 ## 4. 约束、假设与术语
@@ -491,7 +507,7 @@ compact(thread, step, cancel):
 
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
-| 默认产品未装配Context/Compaction | 代码库能力尚非最终用户默认体验 | 0.9.1产品装配 |
+| 默认产品Context/Compaction已接线但真实质量未验收 | 装配能力不等于真实任务成功 | R3固定完整Suite |
 | UTF-8字节估算偏保守且非真实Tokenizer | 可能提前省略Context或触发Compaction | 0.9.2用Eval证明后再引入版本化估算器 |
 | Source串行双观测 | Source多时增加Model Step前延迟 | 0.9.3基准；不可牺牲一致性盲目并行 |
 | 无语义代码索引/RAG | 大仓库发现依赖Tool Loop和有界布局 | 1.x按真实任务证据评估 |

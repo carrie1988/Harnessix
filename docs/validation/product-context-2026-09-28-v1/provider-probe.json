@@ -1,0 +1,33 @@
+{
+  "spec_version": "harnessix.provider-credential-probe/v1",
+  "code_revision": "7568eee82f78cb936717068f121ff32a4058b3be",
+  "started_at": "2026-09-28T01:56:05.126244+00:00",
+  "completed_at": "2026-09-28T01:56:06.693648+00:00",
+  "credential_source": "macos-keychain",
+  "credential_value_published": false,
+  "provider": "openai_chat",
+  "requested_model": "qwen3-coder-plus-2025-09-23",
+  "actual_model": "qwen3-coder-plus-2025-09-23",
+  "region": "cn-beijing",
+  "max_attempts": 1,
+  "attempt_outcomes": [
+    "completed"
+  ],
+  "failure_codes": [],
+  "max_output_tokens": 128,
+  "response_matches_probe": true,
+  "input_tokens": 13,
+  "output_tokens": 1,
+  "currency": "CNY",
+  "cost_estimate": "0.000068",
+  "cost_basis": "list-price-upper-estimate; no cache/free-quota discount",
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/model-pricing",
+  "budget_snapshot": {
+    "allocation": "70.00",
+    "known_cost_estimate": "0.000068",
+    "unknown_reserved_cost": "0.00",
+    "remaining_after_reservations": "69.999932"
+  },
+  "coding_task_quality_verified": false,
+  "new_context_composition_verified_online": false
+}

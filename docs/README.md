@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 131
-code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
+version: 132
+code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
 owners:
   - core
 modules:
@@ -80,6 +80,10 @@ supersedes: []
 R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenance-safety.md)：
 原投影Seal先于解析，认证Store拒绝旧式GC/Restore，旧式候选恢复先预检并结算原工作线程。
 完整认证产品备份/Key、三平台恢复及其他R1门禁仍未关闭。
+
+R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/m09-r3-product-context-composition.md)：
+默认产品与正式Task Pack采用同一Factory，来源读取复用POSIX FD/Windows Handle安全端口。
+离线回归、默认装配或API鉴权不替代完整真实任务质量验收，历史0/20保持原样。
 
 ## 2. 推荐阅读路径
 

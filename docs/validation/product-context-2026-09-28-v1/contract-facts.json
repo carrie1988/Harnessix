@@ -1,0 +1,32 @@
+{
+  "spec_version": "harnessix.product-context-facts/v1",
+  "code_revision": "4ec6fffafb553b5e09852cb91bb126c311e0b134",
+  "instructions_version": "harnessix.coding-instructions/v1",
+  "instructions_sha256": "c09ce43aa2b65b4d3c15c5d2efd5c510e2f0c4898f57a4dec43ad469e83ca348",
+  "estimator": "utf8-bytes/v1",
+  "available_input_estimate": 262144,
+  "dynamic_source_ids": [
+    "project/instructions",
+    "workspace/layout",
+    "environment/runtime"
+  ],
+  "observation_rounds": 2,
+  "automatic_compaction": {
+    "spec_version": "harnessix.compaction-runtime/v1",
+    "policy": {
+      "spec_version": "harnessix.compaction-policy/v1",
+      "target_history_tokens": 65536,
+      "summary_reserve_tokens": 12288,
+      "max_summary_input_tokens": 262144,
+      "retain_recent_groups": 2,
+      "min_savings_tokens": 256
+    },
+    "trigger_history_tokens": 131072,
+    "max_summary_output_tokens": 2048
+  },
+  "public_schema_changed": false,
+  "sqlite_migration_added": false,
+  "unchanged_engineering_pack_sha256": "6ab16bf0a305c5d5a590be02f028184a9510e941146f3b8d27a3ef99ee7b7c46",
+  "default_read_file_complete_content_sha256_available": false,
+  "read_pagination_revision_is_content_sha256": false
+}
