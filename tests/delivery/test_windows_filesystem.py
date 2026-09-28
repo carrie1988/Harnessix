@@ -53,9 +53,18 @@ def _publish(state, workspace: Path, desired: dict[str, DesiredWorkspaceFile]):
     store, leases, runtime = state
     record = store.save(prepare_workspace_transaction(workspace, desired, request_id="native"))
     lease = leases.acquire(record.plan.source.workspace_id, "native-owner", ttl_seconds=60)
-    return runtime.publish(
-        record.transaction_id, workspace, approval_fingerprint=record.plan.fingerprint, lease=lease
-    )
+    try:
+        return runtime.publish(
+            record.transaction_id,
+            workspace,
+            approval_fingerprint=record.plan.fingerprint,
+            lease=lease,
+        )
+    except KernelError as error:
+        cause = error.__context__
+        if isinstance(cause, OSError):
+            pytest.fail(f"native IO failure: code={error.code}; win32_errno={cause.errno}")
+        raise
 
 
 def test_native_create_replace_delete_rollback_and_idempotent_result(tmp_path: Path, state) -> None:
@@ -96,7 +105,7 @@ def test_native_create_replace_delete_rollback_and_idempotent_result(tmp_path: P
     assert not (root / "src/新增 😀.py").exists()
 
 
-@pytest.mark.parametrize("body", [b"", b"\x00\xff" * 32_771])
+@pytest.mark.parametrize("body", [b"", b"\x00\xff" * 32_771], ids=["empty", "multiple-chunks"])
 def test_empty_and_multi_chunk_binary_files_have_exact_bytes(tmp_path: Path, state, body: bytes):
     record = _publish(state, tmp_path, {"binary.dat": DesiredWorkspaceFile(body, 0o644)})
     assert record.state == "published" and (tmp_path / "binary.dat").read_bytes() == body
