@@ -1,0 +1,10 @@
+flowchart TD
+    Flat[共享字段 基础Schema] --> Before[变更前 Nullable字段没有操作必填条件]
+    Before --> Missing[模型可省略mode]
+    Missing --> Reject[原解码拒绝]
+    Flat --> After[变更后 三个oneOf操作分支及字段描述]
+    After --> Descriptor[正式Descriptor和新Fingerprint]
+    Descriptor --> Adapter[两类Adapter实际请求]
+    Adapter --> Proposal[模型提交原JSON提案]
+    Proposal --> Decode[原严格解码与操作组合校验]
+    Decode --> Route[原Policy Approval与Delivery链]

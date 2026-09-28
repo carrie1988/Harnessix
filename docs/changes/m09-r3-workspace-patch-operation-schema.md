@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: historical
 version: 1
-code_revision: 258d24c7387a3b4649e60c9b5136de7252e66443
+code_revision: 6a686fdd00162babd0dbaa8b0785186dd15c3cbc
 owners: [core]
 modules: [delivery, models, trusted_actions, product_config]
 related_adrs:
@@ -240,3 +240,6 @@ Python3.13首轮同范围出现2项Task Pack导入失败，原日志保留；启
 后继夹具使用既有成对Schema/Decoder端口登记冻结旧Schema，原解码约束不变。
 错误的`tests/sdk`命令路径导致一次收集失败；SDK回归实际位于`tests/app_server`，收集失败不计通过。
 所有原失败与后继结果分别保留，当前记录不关闭线上认证或商用发布。
+
+固定源码、原JUnit、源码边界审计、图和制品身份见
+[统一验证报告](../validation/workspace-patch-operation-schema-2026-09-29-v1/README.md)。

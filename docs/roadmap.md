@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 115
-code_revision: 258d24c7387a3b4649e60c9b5136de7252e66443
+version: 116
+code_revision: 6a686fdd00162babd0dbaa8b0785186dd15c3cbc
 owners:
   - core
 modules:
@@ -752,10 +752,12 @@ Action借用同一Owner，取消结算唯一目录线程后释放。该前置由
 真实首场景在三次Patch缺少必需mode后失败，未进入审批，第二场景按原计划停止。
 7次请求Usage和原预算结算完整，新增估算0.149308元，无未知预留；历史20 Trial成绩不变，R3继续开放。
 下一质量整改需公开操作相关必填字段并保留严格解码，不在宿主补mode或改写模型提案以凑成功。
-[R3操作Schema整改](changes/m09-r3-workspace-patch-operation-schema.md)已形成实现候选：
+[R3操作Schema整改](changes/m09-r3-workspace-patch-operation-schema.md)已固定在`6a686fd`：
 三个互斥分支与正式工具说明公开create/replace/delete的原字段条件，原Validator、审批和事务不放宽。
 新旧工具指纹不同，旧批准不可继承；焦点17项及336个字段组合通过，
 Python3.12/3.13受影响回归各2890项通过、70项跳过；3.13原导入环境失败单独保留。
+[统一验证资料](validation/workspace-patch-operation-schema-2026-09-29-v1/README.md)登记原失败、
+Schema/源码/制品身份、原Validator不变及旧持久批准拒绝；本专项新增模型请求和费用均为0。
 真实Provider认证和完整20 Trial尚未复验，不据此改变原FAIL或关闭R3。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。

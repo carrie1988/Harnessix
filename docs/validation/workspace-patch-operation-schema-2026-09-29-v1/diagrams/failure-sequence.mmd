@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant C as 调用或旧状态
+    participant T as 原Router
+    participant S as 原Store
+    participant W as Workspace
+    alt create replace缺mode或字段组合错误
+        C->>T: 非法新提案
+        T-->>C: tool_invalid_arguments
+        Note over S,W: 不创建审批 不修改文件
+    else 旧Invocation或旧Route绑定
+        C->>T: 原旧Fingerprint
+        T-->>C: trusted_tool_contract_changed
+        Note over S,W: 保留历史 不自动迁移或重放
+    end

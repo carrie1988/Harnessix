@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 18
-code_revision: 258d24c7387a3b4649e60c9b5136de7252e66443
+code_revision: 6a686fdd00162babd0dbaa8b0785186dd15c3cbc
 owners:
   - core
 modules:
@@ -1642,7 +1642,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 18 | `258d24c7387a3b4649e60c9b5136de7252e66443`基线上的实现候选 | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；保留原校验、序列化和旧批准拒绝；线上认证另行验证 |
+| 18 | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；焦点及受影响双Python通过，原校验/序列化/旧批准拒绝保持；线上认证另行验证 |
 | 7 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b直接Trusted Git Push由CI 35442924441完成七任务全矩阵验收并关闭 |
 | 6 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b直接Trusted Git Push、硬崩溃只对账与旧Action依赖删除候选；等待全矩阵CI |
 | 5 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录同源Workspace Patch Binding诊断由CI 35439332019验收关闭 |

@@ -1,0 +1,91 @@
+{
+  "spec_version": "harnessix.workspace-patch-operation-schema-verification/v1",
+  "source_revision": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "source_base": "258d24c7387a3b4649e60c9b5136de7252e66443",
+  "product_version": "0.1.0",
+  "operation_field_combinations": 336,
+  "junit": {
+    "affected-312": {
+      "tests": 2960,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 70
+    },
+    "affected-313-import-scope-fixed": {
+      "tests": 2960,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 70
+    },
+    "affected-313": {
+      "tests": 2960,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 70
+    },
+    "affected-invalid-sdk-path": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "focused-final": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "import-scope-control-313": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "schema-compatibility-fixture-registration-fail": {
+      "tests": 17,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "schema-green": {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "schema-red": {
+      "tests": 8,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0
+    },
+    "governance-final": {
+      "tests": 276,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "old_approval_rebound": false,
+  "runtime_validator_ast_unchanged": true,
+  "only_changed_schema": [
+    "spec/workspace-patch-input-v1.schema.json"
+  ],
+  "source_and_wheel_scan_complete": true,
+  "scanner_limits_changed": false,
+  "diagrams_visually_reviewed": true,
+  "actual_model_requests": 0,
+  "estimated_new_provider_cost_cny": "0",
+  "quality_trials_counted": 0,
+  "real_provider_certified": false,
+  "commercial_release": false,
+  "new_candidate_full_ci_passed": false,
+  "original_nonpassing_results": {
+    "schema-red": "FAIL",
+    "schema-compatibility-fixture-registration-fail": "FAIL",
+    "affected-invalid-sdk-path": "COLLECTION_FAILED_EXIT_4",
+    "affected-313": "FAIL"
+  },
+  "final_documentation_actual_render_passed": true,
+  "final_governance_passed": true
+}

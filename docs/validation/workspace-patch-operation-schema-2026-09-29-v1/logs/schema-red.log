@@ -1,0 +1,181 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_____ test_operation_field_matrix_matches_original_runtime_decoder[create] _____
+
+operation = 'create'
+
+    @pytest.mark.parametrize("operation", ["create", "replace", "delete"])
+    def test_operation_field_matrix_matches_original_runtime_decoder(operation: str) -> None:
+        """省略、null、合法值与非法值分别验证；不把必填字段设为默认值。"""
+    
+        validator = Draft202012Validator(workspace_patch_descriptor().input_schema)
+        for sha, content, mode in itertools.product(
+            [_OMITTED, None, "a" * 64, "invalid"],
+            [_OMITTED, None, "", "new\n"],
+            [_OMITTED, None, 420, 493, 777, True, "420"],
+        ):
+            file: dict[str, object] = {"operation": operation, "path": "a.py"}
+            for key, value in (("expected_sha256", sha), ("content", content), ("mode", mode)):
+                if value is not _OMITTED:
+                    file[key] = value
+            proposal = {"files": [file]}
+            try:
+                WorkspacePatchInput.model_validate_json(json.dumps(proposal))
+                decoded = True
+            except ValidationError:
+                decoded = False
+>           assert validator.is_valid(proposal) is decoded, file
+E           AssertionError: {'operation': 'create', 'path': 'a.py'}
+E           assert True is False
+E            +  where True = is_valid({'files': [{'operation': 'create', 'path': 'a.py'}]})
+E            +    where is_valid = Draft202012Validator(schema={'$defs': {'WorkspacePatchFile': {'additionalProperties': False, 'description': '一个带来源前置条件...v1', 'default': 'harnessix.wo...atch-input/v1', 'title': 'Spec Version', 'type': 'string'}}, ...}, format_checker=None).is_valid
+
+tests/delivery/test_patch_input_schema.py:45: AssertionError
+____ test_operation_field_matrix_matches_original_runtime_decoder[replace] _____
+
+operation = 'replace'
+
+    @pytest.mark.parametrize("operation", ["create", "replace", "delete"])
+    def test_operation_field_matrix_matches_original_runtime_decoder(operation: str) -> None:
+        """省略、null、合法值与非法值分别验证；不把必填字段设为默认值。"""
+    
+        validator = Draft202012Validator(workspace_patch_descriptor().input_schema)
+        for sha, content, mode in itertools.product(
+            [_OMITTED, None, "a" * 64, "invalid"],
+            [_OMITTED, None, "", "new\n"],
+            [_OMITTED, None, 420, 493, 777, True, "420"],
+        ):
+            file: dict[str, object] = {"operation": operation, "path": "a.py"}
+            for key, value in (("expected_sha256", sha), ("content", content), ("mode", mode)):
+                if value is not _OMITTED:
+                    file[key] = value
+            proposal = {"files": [file]}
+            try:
+                WorkspacePatchInput.model_validate_json(json.dumps(proposal))
+                decoded = True
+            except ValidationError:
+                decoded = False
+>           assert validator.is_valid(proposal) is decoded, file
+E           AssertionError: {'operation': 'replace', 'path': 'a.py'}
+E           assert True is False
+E            +  where True = is_valid({'files': [{'operation': 'replace', 'path': 'a.py'}]})
+E            +    where is_valid = Draft202012Validator(schema={'$defs': {'WorkspacePatchFile': {'additionalProperties': False, 'description': '一个带来源前置条件...v1', 'default': 'harnessix.wo...atch-input/v1', 'title': 'Spec Version', 'type': 'string'}}, ...}, format_checker=None).is_valid
+
+tests/delivery/test_patch_input_schema.py:45: AssertionError
+_____ test_operation_field_matrix_matches_original_runtime_decoder[delete] _____
+
+operation = 'delete'
+
+    @pytest.mark.parametrize("operation", ["create", "replace", "delete"])
+    def test_operation_field_matrix_matches_original_runtime_decoder(operation: str) -> None:
+        """省略、null、合法值与非法值分别验证；不把必填字段设为默认值。"""
+    
+        validator = Draft202012Validator(workspace_patch_descriptor().input_schema)
+        for sha, content, mode in itertools.product(
+            [_OMITTED, None, "a" * 64, "invalid"],
+            [_OMITTED, None, "", "new\n"],
+            [_OMITTED, None, 420, 493, 777, True, "420"],
+        ):
+            file: dict[str, object] = {"operation": operation, "path": "a.py"}
+            for key, value in (("expected_sha256", sha), ("content", content), ("mode", mode)):
+                if value is not _OMITTED:
+                    file[key] = value
+            proposal = {"files": [file]}
+            try:
+                WorkspacePatchInput.model_validate_json(json.dumps(proposal))
+                decoded = True
+            except ValidationError:
+                decoded = False
+>           assert validator.is_valid(proposal) is decoded, file
+E           AssertionError: {'operation': 'delete', 'path': 'a.py'}
+E           assert True is False
+E            +  where True = is_valid({'files': [{'operation': 'delete', 'path': 'a.py'}]})
+E            +    where is_valid = Draft202012Validator(schema={'$defs': {'WorkspacePatchFile': {'additionalProperties': False, 'description': '一个带来源前置条件...v1', 'default': 'harnessix.wo...atch-input/v1', 'title': 'Spec Version', 'type': 'string'}}, ...}, format_checker=None).is_valid
+
+tests/delivery/test_patch_input_schema.py:45: AssertionError
+__________ test_public_schema_exposes_each_operation_required_fields ___________
+
+    def test_public_schema_exposes_each_operation_required_fields() -> None:
+        schema = workspace_patch_descriptor().input_schema
+        Draft202012Validator.check_schema(schema)
+        file_schema = schema["$defs"]["WorkspacePatchFile"]
+        assert file_schema["additionalProperties"] is False
+        branches = {
+            branch["properties"]["operation"]["const"]: branch
+>           for branch in file_schema["oneOf"]
+                          ^^^^^^^^^^^^^^^^^^^^
+        }
+E       KeyError: 'oneOf'
+
+tests/delivery/test_patch_input_schema.py:55: KeyError
+______ test_patch_descriptor_explains_complete_content_and_decimal_modes _______
+
+    def test_patch_descriptor_explains_complete_content_and_decimal_modes() -> None:
+        description = workspace_patch_descriptor().description
+>       assert all(word in description for word in ("create", "replace", "delete", "mode", "420", "493"))
+E       assert False
+E        +  where False = all(<generator object test_patch_descriptor_explains_complete_content_and_decimal_modes.<locals>.<genexpr> at 0x114401630>)
+
+tests/delivery/test_patch_input_schema.py:65: AssertionError
+________ test_actual_provider_payload_preserves_operation_schema[chat] _________
+
+adapter = 'chat'
+
+    @pytest.mark.parametrize("adapter", ["chat", "anthropic"])
+    def test_actual_provider_payload_preserves_operation_schema(adapter: str) -> None:
+        descriptor = workspace_patch_descriptor()
+        request = model_request().model_copy(update={"tools": (descriptor,)})
+        if adapter == "chat":
+            body, _ = chat_request(request, OpenAIChatConfig(model="test", api_key_env="TEST_KEY"))
+            published = body["tools"][0]["function"]["parameters"]
+        else:
+            body, _ = anthropic_request(request, AnthropicConfig(model="test", api_key_env="TEST_KEY"))
+            published = body["tools"][0]["input_schema"]
+        assert published == descriptor.input_schema
+>       assert "oneOf" in published["$defs"]["WorkspacePatchFile"]
+E       AssertionError: assert 'oneOf' in {'additionalProperties': False, 'description': '一个带来源前置条件的创建、替换或删除意图。', 'properties': {'content': {'anyOf': [{'maxLeng...['create', 'replace', 'delete'], 'title': 'Operation', 'type': 'string'}, ...}, 'required': ['operation', 'path'], ...}
+
+tests/delivery/test_patch_input_schema.py:81: AssertionError
+______ test_actual_provider_payload_preserves_operation_schema[anthropic] ______
+
+adapter = 'anthropic'
+
+    @pytest.mark.parametrize("adapter", ["chat", "anthropic"])
+    def test_actual_provider_payload_preserves_operation_schema(adapter: str) -> None:
+        descriptor = workspace_patch_descriptor()
+        request = model_request().model_copy(update={"tools": (descriptor,)})
+        if adapter == "chat":
+            body, _ = chat_request(request, OpenAIChatConfig(model="test", api_key_env="TEST_KEY"))
+            published = body["tools"][0]["function"]["parameters"]
+        else:
+            body, _ = anthropic_request(request, AnthropicConfig(model="test", api_key_env="TEST_KEY"))
+            published = body["tools"][0]["input_schema"]
+        assert published == descriptor.input_schema
+>       assert "oneOf" in published["$defs"]["WorkspacePatchFile"]
+E       AssertionError: assert 'oneOf' in {'additionalProperties': False, 'description': '一个带来源前置条件的创建、替换或删除意图。', 'properties': {'content': {'anyOf': [{'maxLeng...['create', 'replace', 'delete'], 'title': 'Operation', 'type': 'string'}, ...}, 'required': ['operation', 'path'], ...}
+
+tests/delivery/test_patch_input_schema.py:81: AssertionError
+___ test_operation_schema_does_not_change_legacy_valid_json_or_tool_version ____
+
+    def test_operation_schema_does_not_change_legacy_valid_json_or_tool_version() -> None:
+        legacy = ToolDescriptor.model_validate_json(
+            (Path(__file__).parent / "fixtures/workspace-patch-descriptor-pre-discovery-v1.json").read_bytes()
+        )
+        current = workspace_patch_descriptor()
+        assert current.name == legacy.name and current.version == legacy.version
+>       assert tool_fingerprint(current) != tool_fingerprint(legacy)
+E       AssertionError: assert 'e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca' != 'e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca'
+E        +  where 'e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca' = tool_fingerprint(ToolDescriptor(name='apply_patch_batch', version='harnessix.workspace-patch/v1', description='以一个需审批、可恢复的事务创建、替换或删除最多1...y=True, requires_approval=True, supports_reconciliation=True, supports_parallel_calls=False, public_output_schema=None))
+E        +  and   'e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca' = tool_fingerprint(ToolDescriptor(name='apply_patch_batch', version='harnessix.workspace-patch/v1', description='以一个需审批、可恢复的事务创建、替换或删除最多1...y=True, requires_approval=True, supports_reconciliation=True, supports_parallel_calls=False, public_output_schema=None))
+
+tests/delivery/test_patch_input_schema.py:90: AssertionError
+- generated xml file: /private/tmp/harnessix-patch-contract-20260929/schema-red.xml -
+=========================== short test summary info ============================
+FAILED tests/delivery/test_patch_input_schema.py::test_operation_field_matrix_matches_original_runtime_decoder[create]
+FAILED tests/delivery/test_patch_input_schema.py::test_operation_field_matrix_matches_original_runtime_decoder[replace]
+FAILED tests/delivery/test_patch_input_schema.py::test_operation_field_matrix_matches_original_runtime_decoder[delete]
+FAILED tests/delivery/test_patch_input_schema.py::test_public_schema_exposes_each_operation_required_fields
+FAILED tests/delivery/test_patch_input_schema.py::test_patch_descriptor_explains_complete_content_and_decimal_modes
+FAILED tests/delivery/test_patch_input_schema.py::test_actual_provider_payload_preserves_operation_schema[chat]
+FAILED tests/delivery/test_patch_input_schema.py::test_actual_provider_payload_preserves_operation_schema[anthropic]
+FAILED tests/delivery/test_patch_input_schema.py::test_operation_schema_does_not_change_legacy_valid_json_or_tool_version

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant P as 原Provider
+    participant D as 原Trusted Action解码
+    participant R as 原Route与Review
+    participant U as 用户审批
+    participant E as 原事务Executor
+    P->>D: 原JSON create replace或delete提案
+    D->>D: JSON类型 字段组合 总量与路径检查
+    D->>R: 已校验原模型和资源身份
+    R-->>U: 完整绑定Diff与审批请求
+    U->>R: 当前Fingerprint批准
+    R->>E: 重新核对绑定 SHA及Workspace
+    E-->>R: 原逐成员发布与持久结果

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="17" time="0.684" timestamp="2026-09-29T06:39:32.208307+08:00" hostname="MacBook-Pro.local"><testcase classname="tests.delivery.test_patch_input_schema" name="test_operation_field_matrix_matches_original_runtime_decoder[create]" time="0.010" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_operation_field_matrix_matches_original_runtime_decoder[replace]" time="0.009" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_operation_field_matrix_matches_original_runtime_decoder[delete]" time="0.009" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_public_schema_exposes_each_operation_required_fields" time="0.004" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_patch_descriptor_explains_complete_content_and_decimal_modes" time="0.001" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_actual_provider_payload_preserves_operation_schema[chat]" time="0.001" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_actual_provider_payload_preserves_operation_schema[anthropic]" time="0.001" /><testcase classname="tests.delivery.test_patch_input_schema" name="test_operation_schema_does_not_change_legacy_valid_json_or_tool_version" time="0.001" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_workspace_patch_input_rejects_ambiguous_operations_and_total_budget" time="0.000" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_workspace_patch_public_schemas_match_runtime_contracts" time="0.002" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_workspace_patch_legacy_approval_is_not_rebound_or_executed" time="0.011"><failure message="harnessix.agent.errors.KernelError: Trusted Tool输入Schema摘要不匹配">tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-142/test_workspace_patch_legacy_ap0')
+
+    async def test_workspace_patch_legacy_approval_is_not_rebound_or_executed(
+        tmp_path: Path,
+    ) -&gt; None:
+        """旧公开合同的真实持久批准不能被新Descriptor重绑定或执行。"""
+    
+        root = tmp_path / "workspace"
+        (root / "src").mkdir(parents=True)
+        (root / "tests").mkdir()
+        (root / "src/modified.py").write_bytes(b"old\n")
+        (root / "tests/deleted.txt").write_bytes(b"remove\n")
+        legacy = ToolDescriptor.model_validate_json(
+            (
+                Path(__file__).parent / "fixtures/workspace-patch-descriptor-pre-discovery-v1.json"
+            ).read_bytes()
+        )
+&gt;       old, _, _, plans, audit, transactions, leases, route = _planned_action(
+            root, tmp_path, _proposal(), descriptor=legacy
+        )
+
+tests/delivery/test_trusted_action_patch.py:262: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/delivery/test_trusted_action_patch.py:170: in _planned_action
+    router.register(definition)
+src/harnessix/trusted_actions/router.py:156: in register
+    self.register_many((definition,))
+src/harnessix/trusted_actions/router.py:161: in register_many
+    checked = tuple(_validated_definition(item) for item in definitions)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/trusted_actions/router.py:161: in &lt;genexpr&gt;
+    checked = tuple(_validated_definition(item) for item in definitions)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+definition = TrustedActionDefinition(binding=TrustedToolBinding(spec_version='harnessix.trusted-tool-binding/v1', source='builtin',....delivery.trusted_action.WorkspacePatchActionExecutor object at 0x10609f290&gt;, input_schema=None, decode_arguments=None)
+
+    def _validated_definition(definition: TrustedActionDefinition) -&gt; TrustedActionDefinition:
+        binding = TrustedToolBinding.model_validate_json(definition.binding.model_dump_json())
+        if (definition.input_schema is None) != (definition.decode_arguments is None):
+            raise KernelError(
+                "trusted_tool_decoder_invalid",
+                "显式Trusted Tool Schema必须同时提供参数解码器",
+            )
+        schema = (
+            definition.input_model.model_json_schema()
+            if definition.input_schema is None
+            else canonical_json_object(definition.input_schema)
+        )
+        schema_digest = canonical_digest(schema)
+        if schema_digest != binding.input_schema_sha256:
+&gt;           raise KernelError("trusted_tool_schema_mismatch", "Trusted Tool输入Schema摘要不匹配")
+E           harnessix.agent.errors.KernelError: Trusted Tool输入Schema摘要不匹配
+
+src/harnessix/trusted_actions/router.py:433: KernelError</failure></testcase><testcase classname="tests.delivery.test_trusted_action_patch" name="test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain" time="0.178" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_review_committed_before_session_approval_is_not_readable" time="0.070" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_disabled_patch_is_omitted_without_router_binding" time="0.008" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_workspace_lease_contention_never_starts_effect_and_reconciles_failed" time="0.022" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_cancel_between_members_keeps_prefix_and_reconcile_never_replays" time="0.028" /><testcase classname="tests.delivery.test_trusted_action_patch" name="test_post_approval_source_drift_fails_before_router_claim_or_effect" time="0.019" /></testsuite></testsuites>

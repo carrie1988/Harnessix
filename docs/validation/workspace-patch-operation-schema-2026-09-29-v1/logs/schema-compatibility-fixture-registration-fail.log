@@ -1,0 +1,62 @@
+..........F......                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_workspace_patch_legacy_approval_is_not_rebound_or_executed ________
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-142/test_workspace_patch_legacy_ap0')
+
+    async def test_workspace_patch_legacy_approval_is_not_rebound_or_executed(
+        tmp_path: Path,
+    ) -> None:
+        """旧公开合同的真实持久批准不能被新Descriptor重绑定或执行。"""
+    
+        root = tmp_path / "workspace"
+        (root / "src").mkdir(parents=True)
+        (root / "tests").mkdir()
+        (root / "src/modified.py").write_bytes(b"old\n")
+        (root / "tests/deleted.txt").write_bytes(b"remove\n")
+        legacy = ToolDescriptor.model_validate_json(
+            (
+                Path(__file__).parent / "fixtures/workspace-patch-descriptor-pre-discovery-v1.json"
+            ).read_bytes()
+        )
+>       old, _, _, plans, audit, transactions, leases, route = _planned_action(
+            root, tmp_path, _proposal(), descriptor=legacy
+        )
+
+tests/delivery/test_trusted_action_patch.py:262: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/delivery/test_trusted_action_patch.py:170: in _planned_action
+    router.register(definition)
+src/harnessix/trusted_actions/router.py:156: in register
+    self.register_many((definition,))
+src/harnessix/trusted_actions/router.py:161: in register_many
+    checked = tuple(_validated_definition(item) for item in definitions)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/trusted_actions/router.py:161: in <genexpr>
+    checked = tuple(_validated_definition(item) for item in definitions)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+definition = TrustedActionDefinition(binding=TrustedToolBinding(spec_version='harnessix.trusted-tool-binding/v1', source='builtin',....delivery.trusted_action.WorkspacePatchActionExecutor object at 0x10609f290>, input_schema=None, decode_arguments=None)
+
+    def _validated_definition(definition: TrustedActionDefinition) -> TrustedActionDefinition:
+        binding = TrustedToolBinding.model_validate_json(definition.binding.model_dump_json())
+        if (definition.input_schema is None) != (definition.decode_arguments is None):
+            raise KernelError(
+                "trusted_tool_decoder_invalid",
+                "显式Trusted Tool Schema必须同时提供参数解码器",
+            )
+        schema = (
+            definition.input_model.model_json_schema()
+            if definition.input_schema is None
+            else canonical_json_object(definition.input_schema)
+        )
+        schema_digest = canonical_digest(schema)
+        if schema_digest != binding.input_schema_sha256:
+>           raise KernelError("trusted_tool_schema_mismatch", "Trusted Tool输入Schema摘要不匹配")
+E           harnessix.agent.errors.KernelError: Trusted Tool输入Schema摘要不匹配
+
+src/harnessix/trusted_actions/router.py:433: KernelError
+- generated xml file: /private/tmp/harnessix-patch-contract-20260929/schema-compatibility-green.xml -
+=========================== short test summary info ============================
+FAILED tests/delivery/test_trusted_action_patch.py::test_workspace_patch_legacy_approval_is_not_rebound_or_executed

@@ -1,0 +1,42 @@
+{
+  "source_base": "258d24c7387a3b4649e60c9b5136de7252e66443",
+  "legacy_descriptor_sha256": "5d0f0b1059596db38f57b73bd16976c315ed3ce538f569e8d37b5e35bdf37c7b",
+  "legacy_fingerprint": "e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca",
+  "candidate_fingerprint": "18481fab01037cf0ca27286dedc71c1d35c36a85993d33128d03ee45287c2ae9",
+  "candidate_binding": "7aaa8a9cf1010767f80f8aae3f2ce6621c184b130eedc2e9ca1b18c556315bc7",
+  "tool_version_unchanged": true,
+  "operation_field_combinations": 336,
+  "runtime_validator_ast_unchanged": {
+    "operation_shape": {
+      "ast_sha256": "432d73c390c1be59add81f214ee82ba438b4d642b5d16c0d1b0d0625aedbaf29",
+      "unchanged": true
+    },
+    "safe_utf8_text": {
+      "ast_sha256": "9faa8392ad6965f5237e4103533c8d0d9fc7d31c4960c82d6cf1198757617aa0",
+      "unchanged": true
+    },
+    "bounded_unique_files": {
+      "ast_sha256": "b894a4023b41a0eb2b74044af5fd2e48c029b5aa0c36e344d45763fb6010ed68",
+      "unchanged": true
+    },
+    "src/harnessix/trusted_actions/planning.py": {
+      "sha256": "5b878b26af3137ca37cace85461ae6d42b4ae67b3551b2c6ee41f0b6df2e00fc",
+      "unchanged": true
+    },
+    "src/harnessix/trusted_actions/router.py": {
+      "sha256": "b4ca375c089229c6ba3e01aa6f7c9ee0189706fcd871105ff2a32c4ca764f379",
+      "unchanged": true
+    },
+    "src/harnessix/delivery/filesystem.py": {
+      "sha256": "acb3906eb53e97dfa6c0b6757e2a2c6a8c31de4ec2c6cfe4f7cec9156292f49b",
+      "unchanged": true
+    },
+    "src/harnessix/delivery/windows_filesystem.py": {
+      "sha256": "66ec7b863e26a288ef6dffb4ad98a97ae3f40b2a2e7807d590a3e6b2ae74e017",
+      "unchanged": true
+    }
+  },
+  "all_model_requests": 0,
+  "quality_trials_counted": 0,
+  "commercial_release": false
+}

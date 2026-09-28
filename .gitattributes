@@ -93,3 +93,6 @@ docs/validation/windows-business-state-recovery-2026-09-29-v1/logs/*.log -diff -
 docs/validation/public-budget-product-provider-2026-09-29-v1/** -text
 docs/validation/public-budget-product-provider-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/public-budget-product-provider-2026-09-29-v1/logs/*.xml -diff -merge
+docs/validation/workspace-patch-operation-schema-2026-09-29-v1/** -text
+docs/validation/workspace-patch-operation-schema-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/workspace-patch-operation-schema-2026-09-29-v1/logs/*.xml -diff -merge

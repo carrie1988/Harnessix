@@ -1,0 +1,23 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "6a686fdd00162babd0dbaa8b0785186dd15c3cbc",
+  "decision": "OPERATION_CONTRACT_OFFLINE_PASS_REAL_PROVIDER_AND_COMMERCIAL_NO_GO",
+  "design": "../../changes/m09-r3-workspace-patch-operation-schema.md",
+  "original_failures_preserved": true,
+  "required_checks": [
+    "336组合与原严格JSON解码一致",
+    "两类Adapter实际Schema保留",
+    "旧批准旧Route及事务不变",
+    "原Validator与发布代码未改",
+    "受影响双Python及原失败保留",
+    "实际Schema图渲染和视觉检查"
+  ],
+  "still_open": [
+    "新计划线上审批与取消认证",
+    "正式20 Trial至少12/20",
+    "R1认证空间增长和安全映射",
+    "Windows11和真正版本升级",
+    "独立Beta与许可处置",
+    "最终同候选门禁"
+  ]
+}

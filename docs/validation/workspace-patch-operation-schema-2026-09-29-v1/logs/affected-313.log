@@ -1,0 +1,183 @@
+........................................................................ [  2%]
+......sssssssssssssssssssssss........................................... [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+................................................s...................ssss [ 29%]
+ssssssssss.............................................................. [ 31%]
+.....sssssss............................................................ [ 34%]
+....................s................................................... [ 36%]
+........ssssss.......................................................... [ 38%]
+........................................................................ [ 41%]
+....................................F.F................................. [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+..........................ssssssssssssssssss............................ [ 99%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+_ test_each_engineering_case_fails_then_golden_patch_passes[agents-payload-bytes-test] _
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-144/test_each_engineering_case_fai2')
+case_id = 'agents-payload-bytes-test'
+
+    @pytest.mark.parametrize(
+        "case_id",
+        [
+            "agents-dump-compatible-refactor",
+            "agents-normalize-tool-name",
+            "agents-payload-bytes-test",
+            "agents-secret-redaction-review",
+            "langchain-batch-none-test",
+            "langchain-storage-replacement",
+            "langchain-stringify-dict-keys",
+            "opencode-path-normalization",
+            "opencode-retry-delay-refactor",
+            "opencode-terminal-url-review",
+        ],
+    )
+    def test_each_engineering_case_fails_then_golden_patch_passes(
+        tmp_path: Path,
+        case_id: str,
+    ) -> None:
+        item = _materialize(tmp_path, case_id)
+        baseline = _host_check(item.workspace, item.case.profile_id)
+        assert baseline.returncode != 0
+    
+        patch = _SOLUTIONS / f"{case_id}.patch"
+        applied = subprocess.run(
+            (_git(), "apply", "--unidiff-zero", "--whitespace=nowarn", str(patch)),
+            cwd=item.workspace,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+            timeout=30,
+        )
+        assert applied.returncode == 0, applied.stdout.decode("utf-8", errors="replace")
+        final = _host_check(item.workspace, item.case.profile_id)
+>       assert final.returncode == 0, final.stdout.decode("utf-8", errors="replace")
+E       AssertionError: Traceback (most recent call last):
+E           File "<frozen runpy>", line 198, in _run_module_as_main
+E           File "<frozen runpy>", line 88, in _run_code
+E           File "/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-144/test_each_engineering_case_fai2/runs/ca353438-6744-4fd4-bf8e-16bcb9f239a8/workspace/checks/payload_bytes_test.py", line 18, in <module>
+E             assert result.returncode == 0, result.stdout.decode("utf-8", errors="replace")
+E                    ^^^^^^^^^^^^^^^^^^^^^^
+E         AssertionError: E
+E         ======================================================================
+E         ERROR: test_payload_bytes (unittest.loader._FailedTest.test_payload_bytes)
+E         ----------------------------------------------------------------------
+E         ImportError: Failed to import test module: test_payload_bytes
+E         Traceback (most recent call last):
+E           File "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/unittest/loader.py", line 137, in loadTestsFromName
+E             module = __import__(module_name)
+E         ModuleNotFoundError: No module named 'tests.test_payload_bytes'
+E         
+E         
+E         ----------------------------------------------------------------------
+E         Ran 1 test in 0.000s
+E         
+E         FAILED (errors=1)
+E         
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=('/Users/zhangjinhui/Downloads/sources/Harnessix/.venv/bin/python', '-m', 'checks.payload_bytes_...----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n\n').returncode
+
+tests/evals/test_engineering_task_pack.py:171: AssertionError
+_ test_each_engineering_case_fails_then_golden_patch_passes[langchain-batch-none-test] _
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-144/test_each_engineering_case_fai4')
+case_id = 'langchain-batch-none-test'
+
+    @pytest.mark.parametrize(
+        "case_id",
+        [
+            "agents-dump-compatible-refactor",
+            "agents-normalize-tool-name",
+            "agents-payload-bytes-test",
+            "agents-secret-redaction-review",
+            "langchain-batch-none-test",
+            "langchain-storage-replacement",
+            "langchain-stringify-dict-keys",
+            "opencode-path-normalization",
+            "opencode-retry-delay-refactor",
+            "opencode-terminal-url-review",
+        ],
+    )
+    def test_each_engineering_case_fails_then_golden_patch_passes(
+        tmp_path: Path,
+        case_id: str,
+    ) -> None:
+        item = _materialize(tmp_path, case_id)
+        baseline = _host_check(item.workspace, item.case.profile_id)
+        assert baseline.returncode != 0
+    
+        patch = _SOLUTIONS / f"{case_id}.patch"
+        applied = subprocess.run(
+            (_git(), "apply", "--unidiff-zero", "--whitespace=nowarn", str(patch)),
+            cwd=item.workspace,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+            timeout=30,
+        )
+        assert applied.returncode == 0, applied.stdout.decode("utf-8", errors="replace")
+        final = _host_check(item.workspace, item.case.profile_id)
+>       assert final.returncode == 0, final.stdout.decode("utf-8", errors="replace")
+E       AssertionError: Traceback (most recent call last):
+E           File "<frozen runpy>", line 198, in _run_module_as_main
+E           File "<frozen runpy>", line 88, in _run_code
+E           File "/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-144/test_each_engineering_case_fai4/runs/8213624e-ea41-4f7d-8d70-a04e11655151/workspace/checks/batch_none_test.py", line 18, in <module>
+E             assert result.returncode == 0, result.stdout.decode("utf-8", errors="replace")
+E                    ^^^^^^^^^^^^^^^^^^^^^^
+E         AssertionError: E
+E         ======================================================================
+E         ERROR: test_batch_none (unittest.loader._FailedTest.test_batch_none)
+E         ----------------------------------------------------------------------
+E         ImportError: Failed to import test module: test_batch_none
+E         Traceback (most recent call last):
+E           File "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/unittest/loader.py", line 137, in loadTestsFromName
+E             module = __import__(module_name)
+E         ModuleNotFoundError: No module named 'tests.test_batch_none'
+E         
+E         
+E         ----------------------------------------------------------------------
+E         Ran 1 test in 0.000s
+E         
+E         FAILED (errors=1)
+E         
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=('/Users/zhangjinhui/Downloads/sources/Harnessix/.venv/bin/python', '-m', 'checks.batch_none_tes...----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n\n').returncode
+
+tests/evals/test_engineering_task_pack.py:171: AssertionError
+- generated xml file: /private/tmp/harnessix-patch-contract-20260929/affected-313.xml -
+=========================== short test summary info ============================
+FAILED tests/evals/test_engineering_task_pack.py::test_each_engineering_case_fails_then_golden_patch_passes[agents-payload-bytes-test]
+FAILED tests/evals/test_engineering_task_pack.py::test_each_engineering_case_fails_then_golden_patch_passes[langchain-batch-none-test]
