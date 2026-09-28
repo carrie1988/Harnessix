@@ -27802,7 +27802,7 @@
   "lock_sha256": "9a64451b9b7d3140fd5baddc84e42f171feed3b66e93c8f92609596634d45083",
   "package_count": 74,
   "policy_sha256": "5a0d17d2ca1963f93fb7e463e495cfb2ed15e321af70516eca96e9a43a29292b",
-  "project_sha256": "f46a005fe7cd6d6a81c716f15f5d8b6daa1945343d98d627a1b9514023d38481",
+  "project_sha256": "83ca404669c5635c3d99c966520758d29668e36ad6768cf11e4d3bc416910f8f",
   "root": {
     "license": "AGPL-3.0-only",
     "license_file_sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
