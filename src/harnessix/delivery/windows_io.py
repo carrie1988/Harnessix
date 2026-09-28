@@ -150,14 +150,16 @@ class WindowsFileOperations:
         if filesystem.value.upper() != "NTFS":
             raise KernelError("delivery_platform_unsupported", "Windows事务要求本地固定NTFS卷")
 
-    def open_existing(self, path: Path, *, delete: bool = False) -> int | None:
-        """固定既有叶对象且阻止新增写句柄；不存在只返回None，不创建父目录。"""
+    def open_existing(
+        self, path: Path, *, delete: bool = False, replace: bool = False
+    ) -> int | None:
+        """禁止新增写句柄；替换时仅共享Delete以允许内核移除旧名称，不创建父目录。"""
 
         access = _READ_DATA | _READ_ATTRIBUTES | _READ_CONTROL | (_DELETE if delete else 0)
         handle = self.kernel.CreateFileW(
             _api_path(path),
             access,
-            1,
+            1 | (4 if replace else 0),
             None,
             _OPEN_EXISTING,
             _OPEN_REPARSE_POINT | _BACKUP_SEMANTICS,

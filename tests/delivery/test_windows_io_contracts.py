@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -67,6 +68,17 @@ def test_native_rename_rejects_non_leaf_names_before_any_effect(name) -> None:
     operations._native = SimpleNamespace()
     with pytest.raises(ValueError, match="叶名称"):
         operations.rename(17, name, replace=False)
+
+
+@pytest.mark.parametrize("replace", [False, True])
+@pytest.mark.parametrize("delete", [False, True])
+def test_leaf_share_write_is_never_enabled_and_share_delete_is_only_for_replace(replace, delete):
+    calls = []
+    operations = WindowsFileOperations.__new__(WindowsFileOperations)
+    operations.kernel = SimpleNamespace(CreateFileW=lambda *args: calls.append(args) or 17)
+    assert operations.open_existing(Path("target.py"), delete=delete, replace=replace) == 17
+    assert len(calls) == 1 and calls[0][2] == (5 if replace else 1)
+    assert calls[0][1] & 0x10000 == (0x10000 if delete else 0)
 
 
 def test_partial_writes_are_completed_before_single_flush() -> None:

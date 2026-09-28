@@ -193,6 +193,38 @@ def test_source_drift_and_approval_fencing_leave_before_untouched(tmp_path: Path
     assert target.read_bytes() == b"changed-by-user"
 
 
+def test_empty_parent_chain_is_pinned_before_any_temporary_creation(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    parent = root / "src"
+    parent.mkdir(parents=True)
+    with _parent(root, "src/new.py"):
+        with pytest.raises(OSError):
+            parent.rename(root / "moved")
+        with pytest.raises(OSError):
+            root.rename(tmp_path / "moved-workspace")
+    assert parent.is_dir() and not list(parent.iterdir())
+
+
+def test_replacement_target_renamed_during_flush_is_rejected_without_overwriting_foreign_file(
+    tmp_path: Path, state, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target.py"
+    target.write_bytes(b"before")
+
+    def retarget(point: str):
+        if point == "windows_temporary_flushed":
+            target.rename(tmp_path / "original.py")
+            target.write_bytes(b"foreign")
+
+    monkeypatch.setattr(filesystem, "_fault", retarget)
+    with pytest.raises(KernelError) as changed:
+        _publish(state, tmp_path, {"target.py": DesiredWorkspaceFile(b"after", 0o644)})
+    assert changed.value.code == "delivery_source_changed"
+    assert target.read_bytes() == b"foreign"
+    assert (tmp_path / "original.py").read_bytes() == b"before"
+    assert not list(tmp_path.glob(".harnessix-*.tmp"))
+
+
 @pytest.mark.parametrize("kind", ["readonly", "ads", "hardlink", "hidden"])
 def test_special_source_metadata_is_not_discarded(tmp_path: Path, state, kind: str) -> None:
     target = tmp_path / "target.txt"

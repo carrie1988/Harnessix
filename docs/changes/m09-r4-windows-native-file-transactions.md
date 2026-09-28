@@ -65,6 +65,9 @@ Windows只读能力不能满足“修改代码→运行检查→审查→交付�
   同目录改名使用`RootDirectory=NULL`和单个叶名称，由源临时句柄确定父目录；不经过进程当前目录解析，
   不使用`BypassAccessCheck`信息类，不存在字符串路径或另一API的自动降级。
   同步句柄要求返回状态及`IO_STATUS_BLOCK`完成状态均成功；PENDING不视为已确认。
+- [CreateFile共享语义](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew)
+  约束每一个打开句柄。替换源须允许内核Delete访问，故只有替换读取句柄设置`ShareRead|ShareDelete`；
+  观察、删除与临时文件仍只共享Read，任何端口均不共享Write。替换前重新检查当前名称的File ID和内容。
 
 参考接口支持方案选择，只有真实NTFS上的失败与恢复测试才能证明本实现行为。
 
@@ -104,6 +107,9 @@ flowchart LR
 中，相对父句柄的Win32 Rename返回87；增加尾部空间仍返回87；绝对名称转换后返回32。
 因此该候选不能作为Windows可用性证明。修正选用有正式同目录语义的NT句柄调用，
 不关闭父链或原叶句柄来回避冲突；其可用性仍必须由修正候选的原生全部场景证明。
+提交`a0d51e5c588b5cf49076c4d93e09164d1948b434`已通过原生创建、空/二进制文件和同目录API验证，
+但替换原叶句柄不共享Delete导致32，原生专项为41通过、11失败。后继候选仅对替换源启用Delete共享，
+保留禁止Write、父链固定、当前名称重新核对和权限相同要求，并增加名称漂移反例。
 
 ## 5. 方案、总体架构与变更边界
 
@@ -278,12 +284,15 @@ Flush确认内容已提交给操作系统；真实测试覆盖宿主进程硬退
 
 - Windows 11对应构建边界及之后的原生宿主、本地固定NTFS卷；不以WSL或远端共享卷替代。
 - 父链来自既有`WindowsWorkspaceRoot`，所有父段拒绝Reparse且不共享Delete；不创建缺失父目录。
-- 既有叶对象只开放所需Read/ReadControl及删除操作的Delete；临时文件排他创建，不共享写与删除。
+- 既有叶对象只开放所需Read/ReadControl及删除操作的Delete；替换源共享Delete但不共享Write，
+  普通观察、删除和排他临时文件不共享Write/Delete。
 - 创建不覆盖；替换前重新按名称核对原File ID；原文件版本、权限不满足时停止。
 - 不使用`IGNORE_READONLY_ATTRIBUTE`、不提权、不注入Provider Secret、不运行模型提供的Shell。
 - 公开错误只用固定Kernel代码和正式提示，不输出Win32完整错误正文、宿主绝对路径、SID或DACL。
 - 复用Action Audit、Transaction state/cursor/error、Operation/Plan身份；不新增高基数指标或第二日志系统。
 - 同一用户可绕过协作Lease直接调用原生API仍在既有Host Guarded信任边界之外，不宣称恶意同用户进程完全隔离。
+  ShareDelete允许外部改名，因此重新核对File ID可以拒绝提交前可观察的名称漂移；
+  最后检查与Rename之间不构成针对不合作写者的原子Compare-and-Swap，不扩大既有信任边界。
 
 ## 10. 核心业务伪代码
 

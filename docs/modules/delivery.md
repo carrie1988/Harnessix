@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 01fa983ffcdcaf45f7604487a4852b3844a11dee
+version: 13
+code_revision: a0d51e5c588b5cf49076c4d93e09164d1948b434
 owners:
   - core
 modules:
@@ -296,9 +296,12 @@ Planner返回的`PreparedWorkspaceTransaction.blobs`仍位于内存；只有`sto
 本地批准机制不属于Delivery Store，调用方必须先将Plan/Diff送入正式审批系统，再把相同Fingerprint传给
 Runtime。默认产品通过同一Workspace Patch装配POSIX端口与Windows本地NTFS候选；Git交付仍未进入默认产品。
 
-Windows成员端口、Win32 ABI、数据流、类/接口、元数据边界、失败与恢复时序及源码/测试映射统一见
+Windows成员端口、Win32/NT ABI、数据流、类/接口、元数据边界、失败与恢复时序及源码/测试映射统一见
 [R4专项详细设计](../changes/m09-r4-windows-native-file-transactions.md)。
 该端口不增加第二FSM或Store；Windows模式仅逻辑0644，创建不覆盖，替换需权限一致，恢复只观察。
+名称提交固定采用NT同目录源句柄语义；普通观察和删除保持只共享Read，替换源只额外共享Delete，
+不共享Write。父链仍固定，名称提交前重核当前叶File ID和before；一旦请求Rename，不清理可能已经成为目标的句柄。
+此替换不是对任意不合作同UID写者的原子Compare-and-Swap；未经原生验收的候选不广告Windows商用支持。
 
 ## 9. Workspace文件与Mutation合同
 

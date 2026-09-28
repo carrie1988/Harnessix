@@ -207,7 +207,9 @@ def apply_windows_mutation(
             name,
         ):
             handle = operations.open_existing(
-                parent / name, delete=mutation.after.presence == "absent"
+                parent / name,
+                delete=mutation.after.presence == "absent",
+                replace=mutation.after.presence == "file",
             )
             try:
                 if handle is not None:
