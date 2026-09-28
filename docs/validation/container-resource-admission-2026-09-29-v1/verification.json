@@ -1,0 +1,81 @@
+{
+  "spec_version": "harnessix.container-resource-verification/v1",
+  "source_revision": "753d6a82ec3fbd1f30f065703684a8e9869fe8f0",
+  "initial_regression": {
+    "result": "FAIL",
+    "failure_count": 23,
+    "reason": "old_probe_did_not_check_resources"
+  },
+  "python312_full": {
+    "result": "PASS",
+    "passed": 5724,
+    "skipped": 105,
+    "seconds": 492.64
+  },
+  "python313_affected": {
+    "result": "PASS",
+    "passed": 1404,
+    "skipped": 29,
+    "seconds": 78.5
+  },
+  "focused_functional": {
+    "result": "PASS",
+    "passed": 140,
+    "skipped": 1
+  },
+  "generated_report_and_cancellation": {
+    "result": "PASS",
+    "passed": 15
+  },
+  "actual_linux_container": {
+    "result": "PASS",
+    "integration_passed": 17,
+    "cgroup_memory_pids_cpu_values_required": true,
+    "offline_trials_passed": 20,
+    "offline_trials_scheduled": 20,
+    "provider": "scripted",
+    "scripted_request_count": 120
+  },
+  "actual_local_default_probe": "PASS",
+  "kernel_negative_only": true,
+  "remote_engine_negative_not_proven": true,
+  "mermaid": {
+    "rendered": 3,
+    "visually_reviewed": 3
+  },
+  "readability_policy_unchanged": true,
+  "uv_lock_unchanged": true,
+  "schema_unchanged": true,
+  "historical_quality": {
+    "strict_success": 0,
+    "trials": 20,
+    "new_real_quality_run": false
+  },
+  "external_model_requests": 0,
+  "model_credentials_read": false,
+  "budget_ledger_created_or_reset": false,
+  "global_docker_or_proxy_modified": false,
+  "existing_user_containers_restarted": false,
+  "remote_kernel_modified": false,
+  "commercial_release": false,
+  "release_gate_status": {
+    "R1": "OPEN",
+    "R2": "OPEN",
+    "R3": "OPEN",
+    "R4": "OPEN",
+    "R5": "OPEN",
+    "R6": "OPEN"
+  },
+  "canonical_wheel_lifecycle": {
+    "result": "PASS",
+    "run_id": 36472999447,
+    "builder_job": 109099691699,
+    "linux_job": 109099895473,
+    "macos_job": 109099895603,
+    "windows_job": 109099895691,
+    "same_sha256": "9db72b51007045396bfee0f1e7d88675f6c13002a3c444698884d9fb01a8318a",
+    "package_members": 433,
+    "windows_environment": "Windows Server 2025",
+    "original_result_not_proven_preserved": true
+  }
+}

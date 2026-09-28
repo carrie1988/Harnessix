@@ -90,6 +90,8 @@ R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenan
 
 Container执行的当前补充见[资源能力准入与启动前复核](changes/m09-r1-container-resource-admission.md)：
 固定资源字段、严格Docker/Podman判定、Profile省略、MCP连接前复核及取消结算；资源不可用不回退Host。
+[固定源码专项验收](validation/container-resource-admission-2026-09-29-v1/README.md)包含原失败、双Python回归、
+真实Linux资源限制及同一新Wheel三平台安装生命周期；不替代真实编码、版本升级或Beta。
 
 R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/m09-r3-product-context-composition.md)：
 默认产品与正式Task Pack采用同一Factory，来源读取复用POSIX FD/Windows Handle安全端口。

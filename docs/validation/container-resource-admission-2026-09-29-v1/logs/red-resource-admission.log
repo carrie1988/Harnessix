@@ -1,0 +1,141 @@
+FFFFFFFFFFFFFFFFFFFFFFF                                                  [100%]
+=================================== FAILURES ===================================
+_ test_container_probe_refuses_missing_resource_support[docker-[false, true, true, true]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true, false, true, true]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true, true, false, true]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true, true, true, false]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_______ test_container_probe_refuses_missing_resource_support[docker-[]] _______
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true,true,true]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true,true,true,true,true]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true,true,true,"true"]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true,true,true,1]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[true,true,true,null]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+______ test_container_probe_refuses_missing_resource_support[docker-true] ______
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_______ test_container_probe_refuses_missing_resource_support[docker-{}] _______
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+____ test_container_probe_refuses_missing_resource_support[docker-not-json] ____
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[docker-[                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "pids"]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["memory", "pids"]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "memory"]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": []}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "memory", "pids", 1]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version":"v1","controllers":["cpu","memory","pids"]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"controllers":["cpu","memory","pids"]}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_ test_container_probe_refuses_missing_resource_support[podman-{"version":"v2","controllers":"cpu memory pids"}] _
+tests/sandbox/test_capabilities.py:111: in test_container_probe_refuses_missing_resource_support
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+_____________ test_container_resource_probe_timeout_does_not_retry _____________
+tests/sandbox/test_capabilities.py:129: in test_container_resource_probe_timeout_does_not_retry
+    with pytest.raises(KernelError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+=========================== short test summary info ============================
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[false, true, true, true]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true, false, true, true]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true, true, false, true]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true, true, true, false]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true,true,true]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true,true,true,true,true]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true,true,true,"true"]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true,true,true,1]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[true,true,true,null]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-true]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-{}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-not-json]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[docker-[                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ]]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "pids"]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["memory", "pids"]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "memory"]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": []}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version": "v2", "controllers": ["cpu", "memory", "pids", 1]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version":"v1","controllers":["cpu","memory","pids"]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"controllers":["cpu","memory","pids"]}]
+FAILED tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support[podman-{"version":"v2","controllers":"cpu memory pids"}]
+FAILED tests/sandbox/test_capabilities.py::test_container_resource_probe_timeout_does_not_retry

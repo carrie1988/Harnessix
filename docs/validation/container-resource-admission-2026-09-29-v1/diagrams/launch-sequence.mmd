@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant H as 已批准调用宿主
+    participant B as Container Builder
+    participant E as 受信Engine
+    participant O as 原Process Owner
+    H->>B: prepare 原Plan Profile与Execution
+    B->>B: 原Approval Binding Workspace及Secret校验
+    B->>E: 固定info资源字段 15秒
+    E-->>B: 有界布尔或控制器响应
+    alt 缺失 超时 畸形或能力不可用
+        B-->>H: sandbox_resources_unavailable
+    else 能力齐备且CLI身份未变
+        B-->>H: 原PreparedContainerLaunch
+        H->>O: 原start_prepared
+    end

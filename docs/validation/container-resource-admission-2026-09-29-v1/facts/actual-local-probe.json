@@ -1,0 +1,10 @@
+{
+  "scenario": "actual-local-default-probe",
+  "model_requests": 0,
+  "container_creations": 0,
+  "result": "PASS",
+  "engine": "docker",
+  "client_version": "28.3.2",
+  "server_version": "28.3.2",
+  "rootless": false
+}

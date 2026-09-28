@@ -1,0 +1,1244 @@
+﻿2026-09-28T19:33:40.5997648Z Current runner version: '2.337.0'
+2026-09-28T19:33:40.6021524Z ##[group]Runner Image Provisioner
+2026-09-28T19:33:40.6022318Z Hosted Compute Agent
+2026-09-28T19:33:40.6022836Z Version: 20260828.587
+2026-09-28T19:33:40.6023424Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-28T19:33:40.6024089Z Build Date: 2026-08-28T16:44:25Z
+2026-09-28T19:33:40.6024703Z Worker ID: {92b77d80-905e-473e-aaf1-e4b14242d186}
+2026-09-28T19:33:40.6025366Z Azure Region: westus3
+2026-09-28T19:33:40.6025867Z ##[endgroup]
+2026-09-28T19:33:40.6027278Z ##[group]Operating System
+2026-09-28T19:33:40.6027871Z Ubuntu
+2026-09-28T19:33:40.6028365Z 24.04.5
+2026-09-28T19:33:40.6028850Z LTS
+2026-09-28T19:33:40.6029599Z ##[endgroup]
+2026-09-28T19:33:40.6030179Z ##[group]Runner Image
+2026-09-28T19:33:40.6030736Z Image: ubuntu-24.04
+2026-09-28T19:33:40.6031238Z Version: 20260920.314.1
+2026-09-28T19:33:40.6032687Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260920.314/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-28T19:33:40.6034062Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260920.314
+2026-09-28T19:33:40.6034943Z ##[endgroup]
+2026-09-28T19:33:40.6035953Z ##[group]GITHUB_TOKEN Permissions
+2026-09-28T19:33:40.6038015Z Contents: read
+2026-09-28T19:33:40.6038539Z Metadata: read
+2026-09-28T19:33:40.6039104Z ##[endgroup]
+2026-09-28T19:33:40.6041258Z Secret source: Actions
+2026-09-28T19:33:40.6042163Z Cache mode: write
+2026-09-28T19:33:40.6042813Z Prepare workflow directory
+2026-09-28T19:33:40.6341974Z Prepare all required actions
+2026-09-28T19:33:40.6394124Z Getting action download info
+2026-09-28T19:33:41.0046572Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+2026-09-28T19:33:41.1169825Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+2026-09-28T19:33:41.9367275Z Download action repository 'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093' (SHA:d3f86a106a0bac45b974a628896c90dbdf5c8093)
+2026-09-28T19:33:42.6062575Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-09-28T19:33:42.8206960Z Complete job name: 安装与恢复 linux
+2026-09-28T19:33:42.9160451Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+2026-09-28T19:33:42.9162095Z with:
+2026-09-28T19:33:42.9162845Z   fetch-depth: 0
+2026-09-28T19:33:42.9163681Z   repository: carrie1988/Harnessix
+2026-09-28T19:33:42.9171534Z   token: ***
+2026-09-28T19:33:42.9172306Z   ssh-strict: true
+2026-09-28T19:33:42.9173094Z   ssh-user: git
+2026-09-28T19:33:42.9173901Z   persist-credentials: true
+2026-09-28T19:33:42.9174777Z   clean: true
+2026-09-28T19:33:42.9175584Z   sparse-checkout-cone-mode: true
+2026-09-28T19:33:42.9176531Z   fetch-tags: false
+2026-09-28T19:33:42.9177336Z   show-progress: true
+2026-09-28T19:33:42.9178168Z   lfs: false
+2026-09-28T19:33:42.9178983Z   submodules: false
+2026-09-28T19:33:42.9179948Z   set-safe-directory: true
+2026-09-28T19:33:42.9181099Z env:
+2026-09-28T19:33:42.9181816Z   GIT_CONFIG_COUNT: 2
+2026-09-28T19:33:42.9182678Z   GIT_CONFIG_KEY_0: core.autocrlf
+2026-09-28T19:33:42.9183624Z   GIT_CONFIG_VALUE_0: false
+2026-09-28T19:33:42.9184570Z   GIT_CONFIG_KEY_1: core.eol
+2026-09-28T19:33:42.9185467Z   GIT_CONFIG_VALUE_1: lf
+2026-09-28T19:33:42.9186299Z ##[endgroup]
+2026-09-28T19:33:43.0271598Z Syncing repository: carrie1988/Harnessix
+2026-09-28T19:33:43.0275728Z ##[group]Getting Git version info
+2026-09-28T19:33:43.0277921Z Working directory is '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T19:33:43.0281483Z [command]/usr/bin/git version
+2026-09-28T19:33:43.0299353Z git version 2.55.0
+2026-09-28T19:33:43.0322332Z ##[endgroup]
+2026-09-28T19:33:43.0336083Z Temporarily overriding HOME='/home/runner/work/_temp/09ff184e-a674-4684-9e3a-242c0a51a0aa' before making global git config changes
+2026-09-28T19:33:43.0341277Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T19:33:43.0345891Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T19:33:43.0393144Z Deleting the contents of '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T19:33:43.0401959Z ##[group]Initializing the repository
+2026-09-28T19:33:43.0404875Z [command]/usr/bin/git init /home/runner/work/Harnessix/Harnessix
+2026-09-28T19:33:43.0487790Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-28T19:33:43.0489801Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-28T19:33:43.0491481Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-28T19:33:43.0492785Z hint: call:
+2026-09-28T19:33:43.0493576Z hint:
+2026-09-28T19:33:43.0495109Z hint: 	git config --global init.defaultBranch <name>
+2026-09-28T19:33:43.0496804Z hint:
+2026-09-28T19:33:43.0498288Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-28T19:33:43.0502707Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-28T19:33:43.0504866Z hint:
+2026-09-28T19:33:43.0506048Z hint: 	git branch -m <name>
+2026-09-28T19:33:43.0507402Z hint:
+2026-09-28T19:33:43.0509475Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-28T19:33:43.0512472Z Initialized empty Git repository in /home/runner/work/Harnessix/Harnessix/.git/
+2026-09-28T19:33:43.0519363Z [command]/usr/bin/git remote add origin https://github.com/carrie1988/Harnessix
+2026-09-28T19:33:43.0570392Z ##[endgroup]
+2026-09-28T19:33:43.0573086Z ##[group]Disabling automatic garbage collection
+2026-09-28T19:33:43.0575450Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-28T19:33:43.0601906Z ##[endgroup]
+2026-09-28T19:33:43.0604339Z ##[group]Setting up auth
+2026-09-28T19:33:43.0606264Z Removing SSH command configuration
+2026-09-28T19:33:43.0608903Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T19:33:43.0638679Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T19:33:43.0944435Z Removing HTTP extra header
+2026-09-28T19:33:43.0953487Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T19:33:43.0986339Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T19:33:43.1176216Z Removing includeIf entries pointing to credentials config files
+2026-09-28T19:33:43.1181775Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T19:33:43.1212540Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T19:33:43.1395652Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-28T19:33:43.1431549Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:33:43.1463920Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:33:43.1491083Z ##[endgroup]
+2026-09-28T19:33:43.1493330Z ##[group]Fetching the repository
+2026-09-28T19:33:43.1502373Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-28T19:33:45.6262436Z From https://github.com/carrie1988/Harnessix
+2026-09-28T19:33:45.6263681Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+2026-09-28T19:33:45.6264485Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+2026-09-28T19:33:45.6265190Z  * [new branch]      main                    -> origin/main
+2026-09-28T19:33:45.6275690Z [command]/usr/bin/git branch --list --remote origin/main
+2026-09-28T19:33:45.6305682Z   origin/main
+2026-09-28T19:33:45.6313820Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+2026-09-28T19:33:45.6333678Z 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
+2026-09-28T19:33:45.6339883Z ##[endgroup]
+2026-09-28T19:33:45.6340523Z ##[group]Determining the checkout info
+2026-09-28T19:33:45.6341194Z ##[endgroup]
+2026-09-28T19:33:45.6343857Z [command]/usr/bin/git sparse-checkout disable
+2026-09-28T19:33:45.6386776Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-28T19:33:45.6411508Z ##[group]Checking out the ref
+2026-09-28T19:33:45.6415011Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-28T19:33:45.8553607Z Switched to a new branch 'main'
+2026-09-28T19:33:45.8555939Z branch 'main' set up to track 'origin/main'.
+2026-09-28T19:33:45.8570571Z ##[endgroup]
+2026-09-28T19:33:45.8614283Z [command]/usr/bin/git log -1 --format=%H
+2026-09-28T19:33:45.8636971Z 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
+2026-09-28T19:33:45.8880833Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+2026-09-28T19:33:45.8881210Z with:
+2026-09-28T19:33:45.8881411Z   python-version: 3.12
+2026-09-28T19:33:45.8881644Z   activate-environment: false
+2026-09-28T19:33:45.8881880Z   no-project: false
+2026-09-28T19:33:45.8882162Z   working-directory: /home/runner/work/Harnessix/Harnessix
+2026-09-28T19:33:45.8884682Z   github-token: ***
+2026-09-28T19:33:45.8884892Z   enable-cache: auto
+2026-09-28T19:33:45.8885428Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+**/*.py.lock
+
+2026-09-28T19:33:45.8886046Z   restore-cache: true
+2026-09-28T19:33:45.8886284Z   save-cache: true
+2026-09-28T19:33:45.8886487Z   prune-cache: false
+2026-09-28T19:33:45.8886728Z   cache-python: false
+2026-09-28T19:33:45.8886964Z   ignore-nothing-to-cache: false
+2026-09-28T19:33:45.8887233Z   ignore-empty-workdir: false
+2026-09-28T19:33:45.8887536Z   download-from-astral-mirror: true
+2026-09-28T19:33:45.8887803Z   add-problem-matchers: true
+2026-09-28T19:33:45.8888030Z   quiet: false
+2026-09-28T19:33:45.8888234Z   resolution-strategy: highest
+2026-09-28T19:33:45.8888466Z ##[endgroup]
+2026-09-28T19:33:46.0586767Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T19:33:46.0587526Z Could not find file: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T19:33:46.0588024Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T19:33:46.0595668Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+2026-09-28T19:33:46.0601345Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+2026-09-28T19:33:46.1521179Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+2026-09-28T19:33:48.7714749Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/b28da2f1-41a5-4e4f-bb82-d9fdf7f0ac4e -f /home/runner/work/_temp/2dbf6d40-a3bd-4dbc-888e-89e73ec610e2
+2026-09-28T19:33:49.1578518Z Added /home/runner/.local/bin to the path
+2026-09-28T19:33:49.1581940Z Added /opt/hostedtoolcache/uv/0.12.19/x86_64 to the path
+2026-09-28T19:33:49.1583076Z Set UV_PYTHON_INSTALL_DIR to /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:49.1584208Z Added /home/runner/work/_temp/uv-python-dir to the path
+2026-09-28T19:33:49.1584728Z Set UV_PYTHON to 3.12
+2026-09-28T19:33:49.1610241Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:49.1611164Z Successfully installed uv version 0.12.19
+2026-09-28T19:33:49.1613898Z Searching files using cache dependency glob: /home/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/home/runner/work/Harnessix/Harnessix/**/*requirements*.in,/home/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/home/runner/work/Harnessix/Harnessix/**/*constraints*.in,/home/runner/work/Harnessix/Harnessix/**/pyproject.toml,/home/runner/work/Harnessix/Harnessix/**/uv.lock,/home/runner/work/Harnessix/Harnessix/**/*.py.lock
+2026-09-28T19:33:49.2248793Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T19:33:49.2281062Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T19:33:49.2297625Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T19:33:49.2374710Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T19:33:49.2391269Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-312/requirements.txt
+2026-09-28T19:33:49.2406429Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-313/requirements.txt
+2026-09-28T19:33:49.2420001Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T19:33:49.2435785Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T19:33:49.2528639Z /home/runner/work/Harnessix/Harnessix/docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/requirements.txt
+2026-09-28T19:33:49.4347504Z /home/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+2026-09-28T19:33:49.4574162Z /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T19:33:49.5525483Z /home/runner/work/Harnessix/Harnessix/uv.lock
+2026-09-28T19:33:49.5536699Z Found 12 files to hash.
+2026-09-28T19:33:49.5594672Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-b0cd87c0438933b3ae96592663af45678ba0a6ee964146b392f92e22c87b17b6
+2026-09-28T19:33:49.7756959Z Cache hit for: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-b0cd87c0438933b3ae96592663af45678ba0a6ee964146b392f92e22c87b17b6
+2026-09-28T19:33:51.0457996Z Received 25165824 of 39654414 (63.5%), 24.0 MBs/sec
+2026-09-28T19:33:51.1580825Z Received 39654414 of 39654414 (100.0%), 34.0 MBs/sec
+2026-09-28T19:33:51.1581571Z Cache Size: ~38 MB (39654414 B)
+2026-09-28T19:33:51.1620619Z [command]/usr/bin/tar -xf /home/runner/work/_temp/1362d516-f435-4200-89c6-75a52a73432d/cache.tzst -P -C /home/runner/work/Harnessix/Harnessix --use-compress-program unzstd
+2026-09-28T19:33:51.4699759Z Cache restored successfully
+2026-09-28T19:33:51.4718710Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-b0cd87c0438933b3ae96592663af45678ba0a6ee964146b392f92e22c87b17b6
+2026-09-28T19:33:51.5837151Z ##[group]Run uv sync --locked --all-extras --dev
+2026-09-28T19:33:51.5837656Z [36;1muv sync --locked --all-extras --dev[0m
+2026-09-28T19:33:51.6016439Z shell: /usr/bin/bash -e {0}
+2026-09-28T19:33:51.6016720Z env:
+2026-09-28T19:33:51.6017013Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:51.6017346Z   UV_PYTHON: 3.12
+2026-09-28T19:33:51.6017598Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:51.6017890Z ##[endgroup]
+2026-09-28T19:33:51.6181575Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+2026-09-28T19:33:51.6182411Z Creating virtual environment at: .venv
+2026-09-28T19:33:51.6212635Z Resolved 74 packages in 1ms
+2026-09-28T19:33:51.6246420Z    Building harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T19:33:51.9194110Z       Built harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T19:33:51.9211308Z Prepared 1 package in 296ms
+2026-09-28T19:33:51.9767712Z Installed 71 packages in 55ms
+2026-09-28T19:33:51.9768211Z  + aiosqlite==0.22.1
+2026-09-28T19:33:51.9768603Z  + annotated-types==0.8.0
+2026-09-28T19:33:51.9768993Z  + anthropic==1.3.0
+2026-09-28T19:33:51.9769454Z  + anyio==4.14.2
+2026-09-28T19:33:51.9769776Z  + attrs==26.1.0
+2026-09-28T19:33:51.9770110Z  + certifi==2026.7.22
+2026-09-28T19:33:51.9770445Z  + cffi==2.1.1
+2026-09-28T19:33:51.9770797Z  + charset-normalizer==3.5.1
+2026-09-28T19:33:51.9771195Z  + click==8.5.0
+2026-09-28T19:33:51.9771536Z  + cryptography==50.0.1
+2026-09-28T19:33:51.9771919Z  + distro==1.9.0
+2026-09-28T19:33:51.9772276Z  + docstring-parser==0.18.0
+2026-09-28T19:33:51.9772699Z  + googleapis-common-protos==1.75.2
+2026-09-28T19:33:51.9773136Z  + h11==0.16.0
+2026-09-28T19:33:51.9773635Z  + harnessix==0.1.0 (from file:///home/runner/work/Harnessix/Harnessix)
+2026-09-28T19:33:51.9774257Z  + httpcore==1.0.9
+2026-09-28T19:33:51.9774595Z  + httpcore2==2.12.0
+2026-09-28T19:33:51.9774930Z  + httpx==0.28.1
+2026-09-28T19:33:51.9775248Z  + httpx2==2.12.0
+2026-09-28T19:33:51.9775590Z  + idna==3.19
+2026-09-28T19:33:51.9775901Z  + iniconfig==2.3.0
+2026-09-28T19:33:51.9776225Z  + jiter==0.16.0
+2026-09-28T19:33:51.9776553Z  + jsonschema==4.26.0
+2026-09-28T19:33:51.9776937Z  + jsonschema-specifications==2025.9.1
+2026-09-28T19:33:51.9777376Z  + librt==0.15.0
+2026-09-28T19:33:51.9777714Z  + linkify-it-py==2.2.0
+2026-09-28T19:33:51.9778078Z  + markdown-it-py==4.2.0
+2026-09-28T19:33:51.9778431Z  + mcp==2.2.0
+2026-09-28T19:33:51.9778763Z  + mcp-types==2.2.0
+2026-09-28T19:33:51.9779223Z  + mdit-py-plugins==0.6.1
+2026-09-28T19:33:51.9779597Z  + mdurl==0.1.2
+2026-09-28T19:33:51.9779910Z  + mypy==1.20.2
+2026-09-28T19:33:51.9780258Z  + mypy-extensions==1.1.0
+2026-09-28T19:33:51.9780628Z  + openai==2.54.0
+2026-09-28T19:33:51.9780982Z  + opentelemetry-api==1.44.0
+2026-09-28T19:33:51.9781469Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+2026-09-28T19:33:51.9782084Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+2026-09-28T19:33:51.9782619Z  + opentelemetry-proto==1.44.0
+2026-09-28T19:33:51.9783050Z  + opentelemetry-sdk==1.44.0
+2026-09-28T19:33:51.9783499Z  + opentelemetry-semantic-conventions==0.65b0
+2026-09-28T19:33:51.9783993Z  + packaging==26.3
+2026-09-28T19:33:51.9784344Z  + pathspec==1.1.1
+2026-09-28T19:33:51.9784705Z  + platformdirs==4.11.8
+2026-09-28T19:33:51.9785078Z  + pluggy==1.6.0
+2026-09-28T19:33:51.9785421Z  + protobuf==7.36.1
+2026-09-28T19:33:51.9785786Z  + pycparser==3.0
+2026-09-28T19:33:51.9786116Z  + pydantic==2.13.5
+2026-09-28T19:33:51.9786417Z  + pydantic-core==2.46.5
+2026-09-28T19:33:51.9786724Z  + pygments==2.21.0
+2026-09-28T19:33:51.9787019Z  + pyjwt==2.13.0
+2026-09-28T19:33:51.9787328Z  + pytest==8.4.2
+2026-09-28T19:33:51.9787631Z  + pytest-asyncio==1.4.0
+2026-09-28T19:33:51.9787969Z  + python-multipart==0.0.32
+2026-09-28T19:33:51.9788313Z  + pyyaml==6.0.3
+2026-09-28T19:33:51.9788601Z  + referencing==0.37.0
+2026-09-28T19:33:51.9788901Z  + requests==2.34.2
+2026-09-28T19:33:51.9789451Z  + rich==15.0.0
+2026-09-28T19:33:51.9789745Z  + rpds-py==2026.6.3
+2026-09-28T19:33:51.9790331Z  + ruff==0.16.5
+2026-09-28T19:33:51.9790654Z  + sniffio==1.3.1
+2026-09-28T19:33:51.9790976Z  + sse-starlette==3.4.11
+2026-09-28T19:33:51.9791343Z  + starlette==1.6.0
+2026-09-28T19:33:51.9791792Z  + textual==8.2.8
+2026-09-28T19:33:51.9792164Z  + tqdm==4.70.0
+2026-09-28T19:33:51.9792479Z  + truststore==0.10.4
+2026-09-28T19:33:51.9792822Z  + types-jsonschema==4.26.0.20260518
+2026-09-28T19:33:51.9793246Z  + types-pyyaml==6.0.12.20260906
+2026-09-28T19:33:51.9793636Z  + typing-extensions==4.16.0
+2026-09-28T19:33:51.9794019Z  + typing-inspection==0.4.4
+2026-09-28T19:33:51.9794405Z  + urllib3==2.7.0
+2026-09-28T19:33:51.9794732Z  + uvicorn==0.52.4
+2026-09-28T19:33:51.9862921Z ##[group]Run uv run pytest tests/governance/test_installed_product_acceptance.py
+2026-09-28T19:33:51.9863666Z [36;1muv run pytest tests/governance/test_installed_product_acceptance.py[0m
+2026-09-28T19:33:51.9900239Z shell: /usr/bin/bash -e {0}
+2026-09-28T19:33:51.9900627Z env:
+2026-09-28T19:33:51.9901077Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:51.9901482Z   UV_PYTHON: 3.12
+2026-09-28T19:33:51.9901835Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:51.9902242Z ##[endgroup]
+2026-09-28T19:33:53.9962326Z ...............                                                          [100%]
+2026-09-28T19:33:53.9963083Z 15 passed in 1.17s
+2026-09-28T19:33:54.0978940Z ##[group]Run uv run python -c 'import os; from pathlib import Path; Path(os.environ["ACCEPTANCE_ROOT"]).mkdir(mode=0o700)'
+2026-09-28T19:33:54.0980088Z [36;1muv run python -c 'import os; from pathlib import Path; Path(os.environ["ACCEPTANCE_ROOT"]).mkdir(mode=0o700)'[0m
+2026-09-28T19:33:54.0980978Z [36;1muv export --locked --no-dev --all-extras --no-emit-project --format requirements.txt --output-file "$ACCEPTANCE_ROOT/requirements.txt"[0m
+2026-09-28T19:33:54.0981764Z [36;1muv venv --python 3.12 "$ACCEPTANCE_ROOT/venv"[0m
+2026-09-28T19:33:54.1019890Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-28T19:33:54.1020300Z env:
+2026-09-28T19:33:54.1020706Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:54.1021119Z   UV_PYTHON: 3.12
+2026-09-28T19:33:54.1021467Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:54.1021969Z   ACCEPTANCE_ROOT: /home/runner/work/_temp/harnessix-installed-product
+2026-09-28T19:33:54.1022518Z ##[endgroup]
+2026-09-28T19:33:54.1516227Z Resolved 74 packages in 1ms
+2026-09-28T19:33:54.1517286Z # This file was autogenerated by uv via the following command:
+2026-09-28T19:33:54.1518880Z #    uv export --locked --no-dev --all-extras --no-emit-project --format requirements.txt --output-file /home/runner/work/_temp/harnessix-installed-product/requirements.txt
+2026-09-28T19:33:54.1520468Z aiosqlite==0.22.1 \
+2026-09-28T19:33:54.1521288Z     --hash=sha256:043e0bd78d32888c0a9ca90fc788b38796843360c855a7262a532813133a0650 \
+2026-09-28T19:33:54.1522282Z     --hash=sha256:21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb
+2026-09-28T19:33:54.1523094Z     # via harnessix
+2026-09-28T19:33:54.1523548Z annotated-types==0.8.0 \
+2026-09-28T19:33:54.1524249Z     --hash=sha256:13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7 \
+2026-09-28T19:33:54.1525281Z     --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
+2026-09-28T19:33:54.1526019Z     # via pydantic
+2026-09-28T19:33:54.1526519Z anthropic==1.3.0 \
+2026-09-28T19:33:54.1527063Z     --hash=sha256:6873492a77ede8849a161ab1bc78bc9a1e492a006d0b5bb4c57ac77845df838a \
+2026-09-28T19:33:54.1527684Z     --hash=sha256:e7e7dbebf9f3c84a23954ab989378af6ae10a4d1804c81e9fea4b5ced695ce75
+2026-09-28T19:33:54.1528177Z     # via harnessix
+2026-09-28T19:33:54.1528537Z anyio==4.14.2 \
+2026-09-28T19:33:54.1529355Z     --hash=sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494 \
+2026-09-28T19:33:54.1625225Z     --hash=sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f
+2026-09-28T19:33:54.1625969Z     # via
+2026-09-28T19:33:54.1626608Z     #   anthropic
+2026-09-28T19:33:54.1626967Z     #   httpx
+2026-09-28T19:33:54.1627295Z     #   httpx2
+2026-09-28T19:33:54.1627630Z     #   mcp
+2026-09-28T19:33:54.1627954Z     #   openai
+2026-09-28T19:33:54.1628228Z     #   sse-starlette
+2026-09-28T19:33:54.1628543Z     #   starlette
+2026-09-28T19:33:54.1628896Z attrs==26.1.0 \
+2026-09-28T19:33:54.1629663Z     --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309 \
+2026-09-28T19:33:54.1630530Z     --hash=sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
+2026-09-28T19:33:54.1631087Z     # via
+2026-09-28T19:33:54.1631371Z     #   jsonschema
+2026-09-28T19:33:54.1631664Z     #   referencing
+2026-09-28T19:33:54.1631993Z certifi==2026.7.22 \
+2026-09-28T19:33:54.1632812Z     --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
+2026-09-28T19:33:54.1633684Z     --hash=sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
+2026-09-28T19:33:54.1634378Z     # via
+2026-09-28T19:33:54.1634676Z     #   httpcore
+2026-09-28T19:33:54.1634994Z     #   httpx
+2026-09-28T19:33:54.1635309Z     #   requests
+2026-09-28T19:33:54.1635844Z cffi==2.1.1 ; platform_python_implementation != 'PyPy' \
+2026-09-28T19:33:54.1636667Z     --hash=sha256:046bfc24911b37851ee1b51aab8bffe713d89c68c6a057b09484ce9fd5f69b4e \
+2026-09-28T19:33:54.1637935Z     --hash=sha256:06c72bb76605a4b0cd0aad6930b69d4baf7dd5d806cfc409b824191099700e66 \
+2026-09-28T19:33:54.1639056Z     --hash=sha256:0beceaabe56af686895136a2de78db54ecd8e4046b236b8fd6d6cb61389e9bf2 \
+2026-09-28T19:33:54.1640247Z     --hash=sha256:19ee6127ee34de7d83ce3d371ebc5ed91addbdcc39f9ab15ce4eb35a4e534971 \
+2026-09-28T19:33:54.1641267Z     --hash=sha256:1a18a57b58cfb21fc28d72e876acf10eaed67a1ed96226f92af4df681d571c4c \
+2026-09-28T19:33:54.1642248Z     --hash=sha256:1aa5645c30469b09530c4ebca77ebf8f17618293c58f8549cb1a543a50236e7d \
+2026-09-28T19:33:54.1643140Z     --hash=sha256:208f941bb9d18e768138677f0a6d2ce01f590df56043dda1df1535ac57c88517 \
+2026-09-28T19:33:54.1643991Z     --hash=sha256:210019b6c7cf07f081b4c54635c8cf744377001350e29cc0f81c4377b4797735 \
+2026-09-28T19:33:54.1644808Z     --hash=sha256:246fa40ce8645a614ff682e0b70f37134e460eaf93a775e0cbe3cca585a67a80 \
+2026-09-28T19:33:54.1645560Z     --hash=sha256:25792eac27877609e7bb06d42ff88278a6624fff2ba9bbb523c09616b117e80f \
+2026-09-28T19:33:54.1646279Z     --hash=sha256:27350daa11d4f10c540e6e89dada4c54feb7256ad03e9a4dc075ebad7ba360d1 \
+2026-09-28T19:33:54.1646996Z     --hash=sha256:28907ab9bfb6aa13184cfc17c6b8e1023c5ab6fd7076d8c20a35e59fe04f8f29 \
+2026-09-28T19:33:54.1647916Z     --hash=sha256:2ae64be792b8966f2c69538199728b290e34726562896df1e5dc8ffd8d8188e8 \
+2026-09-28T19:33:54.1648791Z     --hash=sha256:31348097ff5bbe827ccc41795d4dd099d9f0625e7def00ee653c137a490c2a6c \
+2026-09-28T19:33:54.1649842Z     --hash=sha256:3143d81e29e1e20a9ce10901ec369012947876596f75a222235965f2b7ae832e \
+2026-09-28T19:33:54.1650819Z     --hash=sha256:3222ba5d678f80a030e6afbcc33dc1ae5cb45facabb61cee2c7016b8432fde48 \
+2026-09-28T19:33:54.1651638Z     --hash=sha256:334644fbac4eff73d985a17a91226df55d0f394160c4cfb880e084c8f7161cac \
+2026-09-28T19:33:54.1652148Z     --hash=sha256:363e05fa78e15116c3c32c210ee36884fd6b9afa6d440e47112c3bd511d64cb6 \
+2026-09-28T19:33:54.1652651Z     --hash=sha256:42a494cee34437f05546455144f2b5d9ac09b1face62bcfce597d2e521066688 \
+2026-09-28T19:33:54.1653176Z     --hash=sha256:456a61fa52d579ebf9df2e9552ead5129855dbaff6c1e5a9b1bc408809bdc062 \
+2026-09-28T19:33:54.1653691Z     --hash=sha256:471cee653ae88de62096552e6d24ccb4a5adb8c8c9f10b5054d0122c15bf2779 \
+2026-09-28T19:33:54.1654207Z     --hash=sha256:49cbc70e6542d4ccccb936558d1064a8012541e78f821f955cff24e357776c94 \
+2026-09-28T19:33:54.1654722Z     --hash=sha256:4a7c934f7360e8cd64fe9efadcbd10c7c6364f531e432b9a4bf5ccbc9e0e8b50 \
+2026-09-28T19:33:54.1655252Z     --hash=sha256:4be96343e422f2dfcd12ab5c9f5aebe03f82f737c6bffeca6830b3875cb44aab \
+2026-09-28T19:33:54.1655771Z     --hash=sha256:4f42141fc14250de6dde5ee7ea4432be017252d91f19c5ad043c084cea629cac \
+2026-09-28T19:33:54.1656278Z     --hash=sha256:507a24c282e0f42f8ed737cf048572cbf580468da5555764a8331735e9c736b6 \
+2026-09-28T19:33:54.1656791Z     --hash=sha256:51b31d1c98274844cfd7838ce00bfc27c7423a4dc00fc0772fc3331c2cc90676 \
+2026-09-28T19:33:54.1657303Z     --hash=sha256:58acb8ab8e295e6c5ea12f888cbb13cf21511ef2a3303a23f4325c29d17fe5c1 \
+2026-09-28T19:33:54.1657812Z     --hash=sha256:5c58fe613dc5e5336357eff555824a314d8e43282600435c8d1cb6a7a2fedd13 \
+2026-09-28T19:33:54.1658321Z     --hash=sha256:5e7cecbaadb83884793e05828cee59b210b24583b9c7425d0ba6a754fe22eb4e \
+2026-09-28T19:33:54.1658842Z     --hash=sha256:616f097f2fe415bc92a247f02e11f634e1f9e9a83d327e3c915c15089c87869e \
+2026-09-28T19:33:54.1659570Z     --hash=sha256:63bbfd5ded17c4840ac07cd8f1c21ba9d9708141f840b324f422f41b207e3973 \
+2026-09-28T19:33:54.1660249Z     --hash=sha256:64faea20f4e2613363a1a9b9c7dd73058f3ecd00133a511e72ad7c511658f527 \
+2026-09-28T19:33:54.1660775Z     --hash=sha256:661c298b4821edebead0c91edd2b00374d67ad7c5a1f7a91d4442633b79d6a72 \
+2026-09-28T19:33:54.1661283Z     --hash=sha256:68e62fe11f30d5ca8289242866f0a5291402d8529ca2178ab8afc5c9694ae890 \
+2026-09-28T19:33:54.1661790Z     --hash=sha256:6a8dddef476fab96d066d578fc88526767b836ab5ab21754e1d5bf3879c31c7c \
+2026-09-28T19:33:54.1662307Z     --hash=sha256:770de9db11e84213beec501cfcaa013b019820ca881e03344dea5844f7876d94 \
+2026-09-28T19:33:54.1662913Z     --hash=sha256:7750c6449dff7864bb9bb27ddfb0267756189201a3afc911d82b3caacd70dfc3 \
+2026-09-28T19:33:54.1663435Z     --hash=sha256:7bde5e4cc5c10140859842b9d383af292b22639a4dffb725314baf45968cef80 \
+2026-09-28T19:33:54.1663959Z     --hash=sha256:7da0c5eff80f0197f3b3d1232ec5a682a9325f4ae9016a78f5f5ca35f9ced1f5 \
+2026-09-28T19:33:54.1664476Z     --hash=sha256:7dbb61fe3a7699468030f71bbe5f8a0e326a151daa91beb11a6fc1f980c55e1c \
+2026-09-28T19:33:54.1665001Z     --hash=sha256:811bd1e21d32de12efca32393a0ab3f5133b54fce9bd44b8bd77ab07da14bf6a \
+2026-09-28T19:33:54.1665517Z     --hash=sha256:8ef53b2de9bcb9197d31854256575d59dbac0cba72ac627bb291ef5eceb74be4 \
+2026-09-28T19:33:54.1666042Z     --hash=sha256:937c0052c05a31ca1daf18de3158eed4dbfcb9cc107adbea227728d647be701e \
+2026-09-28T19:33:54.1666567Z     --hash=sha256:9d2055050ea716bd38b7f7f1579c275386646b4894c155a3e2f3cd62ed41b7c6 \
+2026-09-28T19:33:54.1667086Z     --hash=sha256:a2d7755bef5a12ed488f4ef1f1b69ee9191d7396083b755a5d2295f6edb4768b \
+2026-09-28T19:33:54.1667614Z     --hash=sha256:a4f00aa42f75d6e4595e8866e748cc1705adc0cddfeb2ca86d0d03993d63ba03 \
+2026-09-28T19:33:54.1668134Z     --hash=sha256:a730a083190634c65cca36ba5f489531576ebd79bcd5c8e172130f6453127231 \
+2026-09-28T19:33:54.1668645Z     --hash=sha256:a931079504ecc49efed7744c476a5c343a92fabf66dec2db95edb1b2fdc770e2 \
+2026-09-28T19:33:54.1669282Z     --hash=sha256:aa9511c62d14da7aacc9b4bf51f3f697a621e83b2d6919008243c3aad168eea3 \
+2026-09-28T19:33:54.1669818Z     --hash=sha256:ab36d55f9ed2d067327667c2fea18dda018eb628dd6347aa01dda6cf1f5d3836 \
+2026-09-28T19:33:54.1670337Z     --hash=sha256:ad2c86c495b899d862ea0f4b42891b8713a3bd45dd4105c7fd51c2a72f39f3a5 \
+2026-09-28T19:33:54.1670871Z     --hash=sha256:aeae0e330c9f6acd681f647d46cefd30c29f93e3392882e792e82080c9691399 \
+2026-09-28T19:33:54.1671392Z     --hash=sha256:b0431303acaea1089ad4b3e9ce4e6518193def1118d4073ca848635ee4ea2e96 \
+2026-09-28T19:33:54.1671920Z     --hash=sha256:b5bdfd1c873d4e093aabc0ca84c4ca6dbc4f752afb5c86f146d9742580c9da2e \
+2026-09-28T19:33:54.1672445Z     --hash=sha256:c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf \
+2026-09-28T19:33:54.1672949Z     --hash=sha256:c26608d2222fb1e94487e4a387d85f13eb55d5ed725cb25a0c589ac4ee60e7bc \
+2026-09-28T19:33:54.1673455Z     --hash=sha256:c8c69575568085ba0b1b10c0249d779a214aea6f6522e949a0fc9fb0fcb449d0 \
+2026-09-28T19:33:54.1673975Z     --hash=sha256:cc572dace3f60ef98d7b12ff411d20f5362feb31a0439eab0085bbfd349982d7 \
+2026-09-28T19:33:54.1674515Z     --hash=sha256:d18e5ac0f2f03f4f518d3e23db0f0cad7faa1da8620e9c09461d443bbf6e6692 \
+2026-09-28T19:33:54.1675029Z     --hash=sha256:d28630f5854ab07ab1fd4aba756de52326c82e6be15d414b12793f1975048b54 \
+2026-09-28T19:33:54.1675538Z     --hash=sha256:d9c275eaacd24aa73f94ffd6de08fc3f932424d8b6c376f4bed7cde376fe7bc3 \
+2026-09-28T19:33:54.1676050Z     --hash=sha256:da0e573f9f97159390c89d9f1a9e41908b66d408cc5b58d08cf3847d844c531b \
+2026-09-28T19:33:54.1676562Z     --hash=sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be \
+2026-09-28T19:33:54.1677081Z     --hash=sha256:dddad92b554513a31f272570678ba307fb9f618f05e3d4a5eacafff9eae03e1d \
+2026-09-28T19:33:54.1677591Z     --hash=sha256:df423d40ee8654634421812bc3b196da3f9bd7d32929da813f8394c4348a5358 \
+2026-09-28T19:33:54.1678106Z     --hash=sha256:e0bcb7e0f677f543555d2adff3bf19c05f66cdb4796e5ff602442ab2fe3c4ef7 \
+2026-09-28T19:33:54.1678614Z     --hash=sha256:e2d65b31f36619cda3999b78b2aa9632e76b78448e7a56fc4240824200e7c4fc \
+2026-09-28T19:33:54.1679376Z     --hash=sha256:e6e8cff14d6fb0be70a09c0bdc58096f501952d04624ebf867e0e56da2df8960 \
+2026-09-28T19:33:54.1679894Z     --hash=sha256:f16c709686a78c727bbbf059f92b0bf41c6fc60deec706d2dc19f529175a6125 \
+2026-09-28T19:33:54.1680410Z     --hash=sha256:f24fb43132a4c6b4cb4eb029492919b2db645be6808d738f244fd146c03c32cb \
+2026-09-28T19:33:54.1680918Z     --hash=sha256:f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a \
+2026-09-28T19:33:54.1681429Z     --hash=sha256:f81b3b8f3d4e343550fa4baa0e479bba9f2d29ce9c2e9b51d1ce1718d7442fcf \
+2026-09-28T19:33:54.1682045Z     --hash=sha256:fb92203a88b3d3053034db775110081c49d28be6551923805e039924093761e4 \
+2026-09-28T19:33:54.1682553Z     --hash=sha256:fcd22650c908d7b7da162bbfaab594a1227a15d1643a98c68b122ac642fa2264
+2026-09-28T19:33:54.1682951Z     # via cryptography
+2026-09-28T19:33:54.1683194Z charset-normalizer==3.5.1 \
+2026-09-28T19:33:54.1683575Z     --hash=sha256:01e93745f7f219b703b60ba7afead36cfc4242782be5af484673fc500df12da5 \
+2026-09-28T19:33:54.1684091Z     --hash=sha256:04368edf83514385ffc3e1cfd4546e595f4f1272dd23ba437a93a9cc3741d47b \
+2026-09-28T19:33:54.1684601Z     --hash=sha256:09a7bba9f739468c8e78c36a75c33768e53cb1959fc638f510454c14683f00d5 \
+2026-09-28T19:33:54.1685113Z     --hash=sha256:0c6dfb5ca6723eeed15aa8e564a014d69fcb8812f94eef11fe3631e0508199f5 \
+2026-09-28T19:33:54.1685644Z     --hash=sha256:0d929fc574b4d6fd9e7c0f5c2ede8716a41911923aa7fa5fce38e0818aa4a1ac \
+2026-09-28T19:33:54.1686152Z     --hash=sha256:15f024313246a4ed976c60f440bb8d257815513a681d212ff74fd46f7d715a90 \
+2026-09-28T19:33:54.1686656Z     --hash=sha256:195ce897c6153c0700078142cf8efe3e6454ca4cf4357499e4078dfd83396626 \
+2026-09-28T19:33:54.1687165Z     --hash=sha256:19a3dd5aa73cef1c99687c4fc57db016a9c17104ae1185da88ba566a5d3bebe4 \
+2026-09-28T19:33:54.1687687Z     --hash=sha256:1d1c7a53a6c2103925cdd6d7229f8c567379f211c869793df679f2e9f738c369 \
+2026-09-28T19:33:54.1688308Z     --hash=sha256:1f5883d77fd409a261abb5dc8ccbe335720d798b1de4abb3b1d47ccbbc76b53b \
+2026-09-28T19:33:54.1688977Z     --hash=sha256:21b82d8082f6f5e7f456ef0bd16323d08de1266efbfeb476e64b2a91d1471a4e \
+2026-09-28T19:33:54.1689621Z     --hash=sha256:252d099029bcbea642f2a06c4ed5046bdf8b5a8150b64afa5e027e88b106e5ee \
+2026-09-28T19:33:54.1690131Z     --hash=sha256:256dd4d85d9e4dc595e2bc983c980e73f62ddeb3165c58b4c3dfe78c5c8548c1 \
+2026-09-28T19:33:54.1690643Z     --hash=sha256:26422d45fd13551cf564c58932f7d72b4f58b93b0fcf18c35ba6be12b46bb102 \
+2026-09-28T19:33:54.1691152Z     --hash=sha256:2679de311c7946dde5d3b6f44941844133ff5c7cb86099c0061ab1e8901c20a8 \
+2026-09-28T19:33:54.1691673Z     --hash=sha256:2bced4061f000f7187254a02ad3433ae17eaf991747ceea2f478422590a5bba9 \
+2026-09-28T19:33:54.1692195Z     --hash=sha256:2f06b7eae9dbe77fe1d644ca244dad508de8d302870a43f3c559b521270938a0 \
+2026-09-28T19:33:54.1692724Z     --hash=sha256:2f293479cce755c75f1697e87c409b7ae4c555c7dfecb6e988ad13abba943031 \
+2026-09-28T19:33:54.1693358Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+2026-09-28T19:33:54.1693837Z Creating virtual environment at: /home/runner/work/_temp/harnessix-installed-product/venv
+2026-09-28T19:33:54.1694398Z Activate with: /home/runner/work/_temp/harnessix-installed-product/venv/bin/activate
+2026-09-28T19:33:54.1694931Z     --hash=sha256:329fc3ccb63ad22d867d84c2adea759a64079a37ba4a343433b02c7a2816871e \
+2026-09-28T19:33:54.1695440Z     --hash=sha256:343fb4f2821043bd87095f7b08a1a181febc8e36ac64212143bbfd0a0e1bc235 \
+2026-09-28T19:33:54.1695950Z     --hash=sha256:3588e376b3ea2eea84976f67273d679f229e24c66dce7b82ae45aef04ff6e072 \
+2026-09-28T19:33:54.1696481Z     --hash=sha256:35aea775dc2bd5f54cd84a1cd2696cc3207c479cb9cf0bd346f0d343e4300ddb \
+2026-09-28T19:33:54.1696997Z     --hash=sha256:35fe081843b35aad20ffeccec3eeffbe637b15d14f3fb22cc1b59cd8ec17e93c \
+2026-09-28T19:33:54.1697504Z     --hash=sha256:36047af20e17097c3bb9476c2b7655f2f7aa51322c0ba58c07695bedf755a950 \
+2026-09-28T19:33:54.1698014Z     --hash=sha256:3617ac3cfd8b9888f145ad89dd6e692285834b0201c6074a5eeaad3fd4d668c2 \
+2026-09-28T19:33:54.1698637Z     --hash=sha256:394fea06235c8543390050ed5f529187074b029fb027213f6c46ac11ab5d950e \
+2026-09-28T19:33:54.1699231Z     --hash=sha256:41876ee62a3dddf48ff1121ad8f0798032aa03f2fd35f21f34a4cab14f18d8d2 \
+2026-09-28T19:33:54.1699820Z     --hash=sha256:4582c27e8c889d64811987b5967fbd3ae0c823fe1fd933b543d55ac20bb475fa \
+2026-09-28T19:33:54.1700323Z     --hash=sha256:485a0d363cafefcd2538a73c7c838daa2035f09b2c9f9b5e3133f80c6aeb84c2 \
+2026-09-28T19:33:54.1700827Z     --hash=sha256:496846868fea80e479324862fa877f02411f2fd0f83b79ccee2607aa68b2a032 \
+2026-09-28T19:33:54.1701412Z     --hash=sha256:4abdc5f9ad448c1ecbfae2974b820535d6bc6e7eef63babbab3d81cf46968c71 \
+2026-09-28T19:33:54.1701935Z     --hash=sha256:4b599739b93b2cbeded49645ae3c8d1405c29ddfbceac1545c87a3f9580a9e96 \
+2026-09-28T19:33:54.1702454Z     --hash=sha256:4bea7f8ebe90bbd7f0e4a2de42ca6924ba23e3e76418c408ff82f1d46fabd687 \
+2026-09-28T19:33:54.1702964Z     --hash=sha256:4c4fb141a727957c93edfe5c32a26ceb6b5f6461d67146e2d39f51e16170bea8 \
+2026-09-28T19:33:54.1703474Z     --hash=sha256:4c9548dc78002099910abaebc0a72ac58b7d30931869e0351c09b507dff4ece3 \
+2026-09-28T19:33:54.1703978Z     --hash=sha256:4d26f14f041e83dd8edfd61f4cd4fa7285d31798b5bf1f28e70c367ba6c41d61 \
+2026-09-28T19:33:54.1704483Z     --hash=sha256:4f298bdadb8f0b9e5672877f647d1be9373ef5320c9e2f049795e26cad28b6a9 \
+2026-09-28T19:33:54.1704980Z     --hash=sha256:52ec005752a56ae79547a05c0139ca2501a0c866390b6115008456b9f0e7cde1 \
+2026-09-28T19:33:54.1705488Z     --hash=sha256:58d3e12c88e0950bca850ae1f7c256055c097639c2edb9eb123af9807d8b15e4 \
+2026-09-28T19:33:54.1705994Z     --hash=sha256:58d4aa13a59c969dbfdf9e6a9560e242cbfd9e8a8f50c2747714df1a423adf65 \
+2026-09-28T19:33:54.1706495Z     --hash=sha256:59171c6e45bf07d0d5cab3b0bf81d945035530f6873398b3b531c31184d46663 \
+2026-09-28T19:33:54.1707001Z     --hash=sha256:5b6d1386bf0096d26d3a863dc0a487a5b4eb9aa93cf5ba69683d29dde6b9d60f \
+2026-09-28T19:33:54.1707519Z     --hash=sha256:5c0ea61a470e070686aa30892fed79e297d2c8d0ab46b8bcdf027d38c51da591 \
+2026-09-28T19:33:54.1708039Z     --hash=sha256:5c84bec0ab5ae0c64bfe73a7d2adcb5ce73b467523fc27fd6a28ab2aa6cbe35a \
+2026-09-28T19:33:54.1708544Z     --hash=sha256:5d8531a6569d025f68e2321e7638fb7978f23db58e5f69f56913837aae03816e \
+2026-09-28T19:33:54.1709051Z     --hash=sha256:5fc45d653ea8c9a20479167e11d4a0f8cb2fa3470737ab6f9c827532313187b7 \
+2026-09-28T19:33:54.1709717Z     --hash=sha256:6117b84ea48435e5356dc737f5121485c30920ba43375fa7b434fd753df0eac3 \
+2026-09-28T19:33:54.1710216Z     --hash=sha256:6199d5606e2bbf2b096cf64d03f8b6790c91081d5ac866b8e7bb6422738cc60c \
+2026-09-28T19:33:54.1710725Z     --hash=sha256:62b55f6722735a6c472f88361cde6640608773d9443cebdbb51abf436a1fcdd3 \
+2026-09-28T19:33:54.1711231Z     --hash=sha256:687c9ca3035544b113bea2055e180af96fb63c0c476e22a9180f51925186e7b7 \
+2026-09-28T19:33:54.1711731Z     --hash=sha256:6b7430cf5728e68f6c462254009a6ef4086e1bea43cf2f57aa9c55fb4f50ff96 \
+2026-09-28T19:33:54.1712242Z     --hash=sha256:6c9cdde8becb25a7fde49924511aa2644d6f8081cc8df8e9452724303348d8e3 \
+2026-09-28T19:33:54.1712763Z     --hash=sha256:6df0ec430f9a831772c23ca5a224cba36517a58a84bb32c32bb59a9fa67c47f6 \
+2026-09-28T19:33:54.1713291Z     --hash=sha256:70055ff39b97c99e7ae40ea3e393fb62aa2e44dbd9b29f8d14f42fb0025c3959 \
+2026-09-28T19:33:54.1713797Z     --hash=sha256:706bfd38730a5ac7a365793269a00f4e988178cec121391f4248d84ad8c972e9 \
+2026-09-28T19:33:54.1714302Z     --hash=sha256:7235dc28fc6dd9d832ac7c7bce95367dedb85929f17368a0c2bee1e080b9acbf \
+2026-09-28T19:33:54.1714809Z     --hash=sha256:774d157f112367ff4abd29019f38f023c24e00e56edc7829c20e358a5a913ad8 \
+2026-09-28T19:33:54.1715307Z     --hash=sha256:77efcff2b23071c349402ac1066667a3d011f62398d81408c9b88ad991747c9e \
+2026-09-28T19:33:54.1715873Z     --hash=sha256:7ac76cf9afd34929d76eb7fcb63be476a4853d8a96f0dcf2d0db68a0cbdf9885 \
+2026-09-28T19:33:54.1716388Z     --hash=sha256:7c0c10730342b0c9b35dd1d619beb8214e520bd96a1f870f452680b238aab3e0 \
+2026-09-28T19:33:54.1716890Z     --hash=sha256:823f82903d189af463d7df250ef1f7f696f3cee08cc8d91deb565e8d425f6506 \
+2026-09-28T19:33:54.1717505Z     --hash=sha256:838648accb3a7fd9803fd45c87bce8509648eb0c11bc34e216141300977244f2 \
+2026-09-28T19:33:54.1718022Z     --hash=sha256:854066be00447fa8de2ccbbe893e2ffc4b123ef16d897af794c1e18bd4a714b0 \
+2026-09-28T19:33:54.1718533Z     --hash=sha256:85d5855daafc240cc045c026d7a15fd198a09b0fc8ff6f5ecbb5297b509cb11e \
+2026-09-28T19:33:54.1719043Z     --hash=sha256:87e4f41d375c0b9be2fb5251aee4b8a689169e134535aed81bf085c3b647451e \
+2026-09-28T19:33:54.1719630Z     --hash=sha256:88ca277405c2d3b71c4e1c2ee0e7966e807bcba86a69d11e19ba199d18ae4491 \
+2026-09-28T19:33:54.1720197Z     --hash=sha256:88e85ab89cb822c1e635f51d6d32e488f94e002e70e2f492bdb8b945543f345a \
+2026-09-28T19:33:54.1720708Z     --hash=sha256:8ac8c94b6539074e0f40899301273ac8402b9b3e01c7b7ba269ff30340aaaf20 \
+2026-09-28T19:33:54.1721209Z     --hash=sha256:8fe532b3c966d1fb794e0698e4589d0444017ae77fc0b31edea13c0e35bcc449 \
+2026-09-28T19:33:54.1721710Z     --hash=sha256:9085f87b0e38a2b92b8923059b4e8789fe40d9279712d15dcc670048d77079af \
+2026-09-28T19:33:54.1722211Z     --hash=sha256:90b7481fb62fbe172c558bc6fd1c4c98d82004a54a7551f20e11ac9bf0b8708c \
+2026-09-28T19:33:54.1722714Z     --hash=sha256:92caef967d287a407085d61176fce4012b1dd62daed4eb6d5ceb26d3d2538712 \
+2026-09-28T19:33:54.1723221Z     --hash=sha256:9362dd90aa7dab48c0054a21187791ccf05473f7dba5d92b8033ae62164675e7 \
+2026-09-28T19:33:54.1723726Z     --hash=sha256:94d78ecec2605a8d0398b0f365d5f12a63248438516f5dac536a5eff7337df4a \
+2026-09-28T19:33:54.1724226Z     --hash=sha256:96fef3e886d6a9874b14f27fc193fbdc69d5d8035783d86aa4e1cea594e695f9 \
+2026-09-28T19:33:54.1724744Z     --hash=sha256:977cdbd483a9cff38179bea4fd754289a6f2195c7abd414aba85410b3e66cc5e \
+2026-09-28T19:33:54.1725264Z     --hash=sha256:978eab16f55b4ab2c2a745be9a0a840bf8f09a7f227d9c76eb30214d078865a5 \
+2026-09-28T19:33:54.1725773Z     --hash=sha256:9ac4444d8d4fd4c4bd08bf451ed3167aa9e7ec6cdb41b648794f1d1103652e36 \
+2026-09-28T19:33:54.1726282Z     --hash=sha256:9b5db6052055d34d41230fb78d7c439c23dc536a9896f6cb039e8dd92cfc1263 \
+2026-09-28T19:33:54.1726796Z     --hash=sha256:9d9a0dc7cbe9bec24c3f767c9122c41fe5a1bc43f47cd099d00d393e09769de4 \
+2026-09-28T19:33:54.1727314Z     --hash=sha256:9dbdd9205662134957cf0c324f639bdc5031c0ca056e2369e238db75187c0f11 \
+2026-09-28T19:33:54.1727810Z     --hash=sha256:9eea3ab2597a5e65fe65296e2d6a84570845a6b55532d90333d740d48bbc850a \
+2026-09-28T19:33:54.1728313Z     --hash=sha256:a2028475ba855475b8b4d3cfeb4994269c967aea8b9892dfba907f4263a863a3 \
+2026-09-28T19:33:54.1728818Z     --hash=sha256:a3a370082ce34d0612f421e15fe011c53bb1feff21a26d06ad4fb244dab5a375 \
+2026-09-28T19:33:54.1729400Z     --hash=sha256:a5cbd90ecf0fc62e64726917ad083b73001f0563657a87ec3c0b504e277dc90d \
+2026-09-28T19:33:54.1729905Z     --hash=sha256:a6dac12ff6b846103483683f60c5f8fee205121adc58ffd87e90a90a3af69e99 \
+2026-09-28T19:33:54.1730421Z     --hash=sha256:aae2ee51122d3ae968a3837d97dc24a0aeebb0dea23694422cd172bd30017cd6 \
+2026-09-28T19:33:54.1730932Z     --hash=sha256:ab743e9bc90c1f73552ec33e10e3331315acd2c397b36065b591b0181de533cc \
+2026-09-28T19:33:54.1731439Z     --hash=sha256:ac13b004224fb341e1e25a1ed5e19d32f57cdb2a403e01f003b46f051a550f6f \
+2026-09-28T19:33:54.1731948Z     --hash=sha256:acaf604462bf330b0d07e7a07c1d6e4adac79e5fb13e9c5140590542cafacc00 \
+2026-09-28T19:33:54.1732461Z     --hash=sha256:ae4a097991662cd4fff0ddc74e0fe7874f82e00042fa0ea00855645ed0c79598 \
+2026-09-28T19:33:54.1732977Z     --hash=sha256:aea996a6aba25260827c9ea511d1addfde2da9eb686ac961838509086188b7e6 \
+2026-09-28T19:33:54.1733495Z     --hash=sha256:b39b69b347e5e47a3b5b8cfc005c68c1ba347474e3960236c4944a8ecd174962 \
+2026-09-28T19:33:54.1734013Z     --hash=sha256:b9af956078716df40d985fb0dfeb2c2120c5ca92ba4ff4b388acfd01cdc14d08 \
+2026-09-28T19:33:54.1734515Z     --hash=sha256:ba501e667c17d8411f98e67a022d9604ef179aff0e459b7e292c796837c13573 \
+2026-09-28T19:33:54.1735022Z     --hash=sha256:baf3775a2635e5a11fbd5e4e64ee69c7e86875d224a5c72aca4c141064589a90 \
+2026-09-28T19:33:54.1735519Z     --hash=sha256:bb57753e36e4855b8ca375069482250a6246372331a3e4f3407eaebb007443f5 \
+2026-09-28T19:33:54.1736083Z     --hash=sha256:c010f5581d9c612804cc59fcf7b524b707fbcb72828551237ab545bb5c7034af \
+2026-09-28T19:33:54.1736597Z     --hash=sha256:c428c6c31eb5f4277d7f8eccaf767fbd548ddd5ce3c8b4f4cbbfab3d96b5904c \
+2026-09-28T19:33:54.1737115Z     --hash=sha256:c658c50ac0c98cd755a2dd50b7977d3bca7df401dcc47fbdfa87db53ef7d4e8b \
+2026-09-28T19:33:54.1737641Z     --hash=sha256:c71fb0d56c920c269cd3e2e3fe7c610e3f1fdb21a6ce60efa6430ff63676cea6 \
+2026-09-28T19:33:54.1738156Z     --hash=sha256:cc0329df4caaceb950d2f580b5ac716a377f7059624a0bafaeaf8a218c6ed774 \
+2026-09-28T19:33:54.1738733Z     --hash=sha256:cc5d36d96478aa9c60654bd932525bf32964c62a7281eafdf16d85003a8d6004 \
+2026-09-28T19:33:54.1739425Z     --hash=sha256:ced3fdd71aaa83ce593746c2edb42b7a59cb4c19c8b5c407781c72e493aae55a \
+2026-09-28T19:33:54.1739951Z     --hash=sha256:cee5dd7c6fb5dd52a0fe2a740f9bc6e3593f5f8b1788bde49de02086f30182b2 \
+2026-09-28T19:33:54.1740477Z     --hash=sha256:cfa1c0cc3a8f9f53f1243a5a99ac36fd003880199383b37672e86ddda9cb07e2 \
+2026-09-28T19:33:54.1740983Z     --hash=sha256:d59b75732e9b6f27388e10c14b0259cc5f2e48c78627d185e6a177b58ad3cffe \
+2026-09-28T19:33:54.1741483Z     --hash=sha256:d63600d620ad0064c3a748b950ac5ea38a80190e5498532efefa4b7b3f1da1f3 \
+2026-09-28T19:33:54.1741983Z     --hash=sha256:dd732602a7009217f658d5863d12d79d373a4de0eebc111094bcdd3bb8e0a6cc \
+2026-09-28T19:33:54.1742485Z     --hash=sha256:e199fb99720074809a7720f1c0b4d919eea8b87e88713e0f8f602f7bef543d9d \
+2026-09-28T19:33:54.1742986Z     --hash=sha256:e4b018dc5a0eee4676e38fe84a47a427816c590b93b55d9025274ec4d6ffc2dc \
+2026-09-28T19:33:54.1743491Z     --hash=sha256:e6621fb2a4988d6e53eedc455e5903e2679f3967b8acb3d639f1b63c14a2e893 \
+2026-09-28T19:33:54.1743997Z     --hash=sha256:e71c909f353863b2b89c83de2ebed71ea6d0df8a6ef65a128193c5e650766bef \
+2026-09-28T19:33:54.1744514Z     --hash=sha256:e90251c0c7bdd54a100a0dce3c07b7e637278c93af29dbf78ebb89a58c4bac7d \
+2026-09-28T19:33:54.1745023Z     --hash=sha256:f03ac127268b43ef4fe9e6ab6794a6794b49485a0cc0c1db79876d2f33f75bc7 \
+2026-09-28T19:33:54.1745547Z     --hash=sha256:f6f7deae3feb4edfa2efaf7c574fe88cbf055038a6abdb40188e4fff66d5699f \
+2026-09-28T19:33:54.1746071Z     --hash=sha256:f9f8405c2c758532c74fed975dbee57be1f31a6e865c031870c79a6ed3212ada \
+2026-09-28T19:33:54.1746579Z     --hash=sha256:fa48b1b63d639f9483e0633e092f5851e2348c352f1f9bb6c8182f87884ef876 \
+2026-09-28T19:33:54.1747085Z     --hash=sha256:fb78f6e7fcd8ad785d28cd577168bc1aaee827b25bb8755638f694794ea98f0a \
+2026-09-28T19:33:54.1747590Z     --hash=sha256:fbc597639158fd7c14d55e808718848319540f51b0e6746e3eefa59723a4a348 \
+2026-09-28T19:33:54.1748108Z     --hash=sha256:fce8cbd4997efeb450bd298b54f755dcdff18d496f7a5ddbb4867c6d7c88fdc3 \
+2026-09-28T19:33:54.1748623Z     --hash=sha256:fd0350afdc3aabd5576f60ea109228bd5538139713c7b094c5cd27c73a98bc6f \
+2026-09-28T19:33:54.1749251Z     --hash=sha256:fd0a274c0e5f9a21565cd9d3dd749b61f96b7aa1e20a93aa1ba4029518f2e5c0 \
+2026-09-28T19:33:54.1749788Z     --hash=sha256:fdb8a068947befafba9952162645dc2fecaeb400e64584829ed5e9b2fbe21a7f
+2026-09-28T19:33:54.1750190Z     # via requests
+2026-09-28T19:33:54.1750433Z click==8.5.0 ; sys_platform != 'emscripten' \
+2026-09-28T19:33:54.1750839Z     --hash=sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360 \
+2026-09-28T19:33:54.1751349Z     --hash=sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34
+2026-09-28T19:33:54.1751744Z     # via uvicorn
+2026-09-28T19:33:54.1751976Z colorama==0.4.6 ; sys_platform == 'win32' \
+2026-09-28T19:33:54.1752375Z     --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
+2026-09-28T19:33:54.1752875Z     --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
+2026-09-28T19:33:54.1753256Z     # via tqdm
+2026-09-28T19:33:54.1753458Z cryptography==50.0.1 \
+2026-09-28T19:33:54.1753799Z     --hash=sha256:01f41478cf33fc605a6a089cd56d28b45c6c0b45a1928b61797f2621a04bac71 \
+2026-09-28T19:33:54.1754299Z     --hash=sha256:05ba322c4da95b262a212c345af888ef2c37c88c0509756ea00a0e6d68850f23 \
+2026-09-28T19:33:54.1754923Z     --hash=sha256:16c5ecd954b3330ebfb6605eca4fd952da8bef376551d5cc264534e3770a9ee6 \
+2026-09-28T19:33:54.1755432Z     --hash=sha256:2a93d05e34d5f67fba6f891fe85d929999baa7195e853923ea6d7576c9e68c5e \
+2026-09-28T19:33:54.1755935Z     --hash=sha256:2b34d76a652ea2b6faf777c35df230c5637842cd904e04f16230c3f9f03e4361 \
+2026-09-28T19:33:54.1756453Z     --hash=sha256:2ebbfb0f1fed745e91796e3e1080a1440423fdae8ece1b995a1d80883a409054 \
+2026-09-28T19:33:54.1756958Z     --hash=sha256:30a125032e5642a21ff816e021152bd4e7e94f03eff3f4b7fca41cd22bc3110f \
+2026-09-28T19:33:54.1757532Z     --hash=sha256:330fbb252391c596f1ae42c5754449dc924e6ad012dca8efe0d703f9f2d12ec6 \
+2026-09-28T19:33:54.1758042Z     --hash=sha256:359e62deae718bce96170e223fdcb6357e4fbd3bb7a3a75f4430763532560e49 \
+2026-09-28T19:33:54.1758550Z     --hash=sha256:407fe2b6db00939c05c0e945e9914238f2f0a430974839429dafc82b1ee6bee5 \
+2026-09-28T19:33:54.1759055Z     --hash=sha256:42be3bb70596b3abe4ac097b75be223e8b3ab614a0e5de068e3dcc54d71d6149 \
+2026-09-28T19:33:54.1759651Z     --hash=sha256:4c4188f7c0cf655be5c06342b817ed0f9595b69ffa2b12026e5353eed29dea88 \
+2026-09-28T19:33:54.1760166Z     --hash=sha256:51593d180cf6d179bde5c5d065bed81386b1f381656ae7d042b7ffc87a9895ad \
+2026-09-28T19:33:54.1760677Z     --hash=sha256:51afcfceb15597cf2635068e4ac9a56b2abde622edde17f37d85fd7b5306497a \
+2026-09-28T19:33:54.1761194Z     --hash=sha256:53e279950892dc102c6b4e52af03ae5ea92fac572a1ddab78ca73a997f62b69f \
+2026-09-28T19:33:54.1761697Z     --hash=sha256:55d16b1ef3ee0958d893a977b19777887e546c9954ea81b200c3301a864013f2 \
+2026-09-28T19:33:54.1762217Z     --hash=sha256:5dd9bda1c12b4162f6ff568eeb5e0ff956c28d14406e875cfe8a63a2d414ff20 \
+2026-09-28T19:33:54.1762730Z     --hash=sha256:5fe002589592ed749ce77fe0695fcbd3500dd61d7d6db5858a7544c612fa8e45 \
+2026-09-28T19:33:54.1763245Z     --hash=sha256:76de83fbd91ac49c0feaaa983d0748fd7a53176afac5fb3bf7478d244f0eb527 \
+2026-09-28T19:33:54.1763763Z     --hash=sha256:79bf008d1f9af6071c797ad133e39915dfee7614f18f18f4db9072eb715064a3 \
+2026-09-28T19:33:54.1764277Z     --hash=sha256:8921d58f426793c5f1b47f0b59575780de9a095214958d0eb37d909593db8367 \
+2026-09-28T19:33:54.1764773Z     --hash=sha256:8df2de9102026855887e4587084f6eabd80ed0f345b8ad8a7ac27ab9bf4723e0 \
+2026-09-28T19:33:54.1765281Z     --hash=sha256:9dde0a357190eb3b1da1bb9ab750e9c85cba82ca5977aa0836cbb94e92611239 \
+2026-09-28T19:33:54.1765793Z     --hash=sha256:9ebcdd5519be9b652a46f507817a74591774fc3d6923ac364e4dfa64e36b291b \
+2026-09-28T19:33:54.1766291Z     --hash=sha256:a0b1a59e3a089064a0ec309e9428c8e3ae4e161419d20ac33600767e83fc658a \
+2026-09-28T19:33:54.1766791Z     --hash=sha256:a255449073358275b64b67d3f595f268bbef70e72b6edb65e0c70c735bf739c9 \
+2026-09-28T19:33:54.1767289Z     --hash=sha256:a8f40ea47330e71b594a7e246898f93177c259490c63183dbaf9e571d71ed9a5 \
+2026-09-28T19:33:54.1767805Z     --hash=sha256:ac02b07824d4d1001bd4367599f839c19cb171924c796e52c23508ac14c2c0cc \
+2026-09-28T19:33:54.1768309Z     --hash=sha256:aed8db4f6d71c51efb89530e12d9464e7bf2923d46c3205dc794a2a93f8c0648 \
+2026-09-28T19:33:54.1768818Z     --hash=sha256:b8f852c65863251b9e3a1b8c150ce21e59b522dbb6a7d4bc80e680d38388e986 \
+2026-09-28T19:33:54.1769503Z     --hash=sha256:be224a65493ec5b74a158ff22a5522ce4a5ca1e543c647a3a4730d4a09e5f959 \
+2026-09-28T19:33:54.1770038Z     --hash=sha256:ca83d00d9e69cd5eb63f2e69c3a5a59e0cecae5ae14c6ae0b35830fe3b37bad0 \
+2026-09-28T19:33:54.1770554Z     --hash=sha256:cbf74a81765ee67413503ca6e26dcc4f6f5a519822436cc0a1b97aab6c1b8a17 \
+2026-09-28T19:33:54.1771070Z     --hash=sha256:e22dfed744bd4002e909464cb23d2f0b05c6f3113a79ef2e9864a53db737c733 \
+2026-09-28T19:33:54.1771602Z     --hash=sha256:e2ca8fd1b6b4b82a1c4cb02841d0837e3c12336c2e24b520ab8ab3b969733d8f \
+2026-09-28T19:33:54.1772115Z     --hash=sha256:e74591e283fe6eb956416c929eb58262a719fe0311fd9054c62c3350ed8760d8 \
+2026-09-28T19:33:54.1772625Z     --hash=sha256:f74455bb086a85d5e81246412602aaa97ed095e504cd40dd261ef50be42205bf \
+2026-09-28T19:33:54.1773148Z     --hash=sha256:fc3ed7ebd2a8c96f5b166de0ab9b624996bef3b07bbeb19364dfb78222c22c80 \
+2026-09-28T19:33:54.1773775Z     --hash=sha256:fd3718b960d0b5dd213cdf03f3bcb7000e69dda0de8b956061947ff6bcff5558 \
+2026-09-28T19:33:54.1774293Z     --hash=sha256:ff838d62ec1bfce4f9ba7fa16f4a7b554cd8d0c299e6be37502161a660c84eef
+2026-09-28T19:33:54.1774685Z     # via pyjwt
+2026-09-28T19:33:54.1774892Z distro==1.9.0 \
+2026-09-28T19:33:54.1775242Z     --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed \
+2026-09-28T19:33:54.1775756Z     --hash=sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2
+2026-09-28T19:33:54.1776132Z     # via openai
+2026-09-28T19:33:54.1776416Z docstring-parser==0.18.0 \
+2026-09-28T19:33:54.1776783Z     --hash=sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015 \
+2026-09-28T19:33:54.1777276Z     --hash=sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b
+2026-09-28T19:33:54.1777650Z     # via anthropic
+2026-09-28T19:33:54.1777890Z googleapis-common-protos==1.75.2 \
+2026-09-28T19:33:54.1778289Z     --hash=sha256:6b83302f554ea93a0f48409c7fc2050f954bcbcddb7e3a9c76d4a823cb22920e \
+2026-09-28T19:33:54.1778787Z     --hash=sha256:8829a3d1e4508c5b7b9a6b9525f7fccff611f8531644579a76466c29295d4bb2
+2026-09-28T19:33:54.1779378Z     # via opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1779681Z h11==0.16.0 \
+2026-09-28T19:33:54.1780027Z     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
+2026-09-28T19:33:54.1780545Z     --hash=sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86
+2026-09-28T19:33:54.1780921Z     # via
+2026-09-28T19:33:54.1781124Z     #   httpcore
+2026-09-28T19:33:54.1781336Z     #   httpcore2
+2026-09-28T19:33:54.1781536Z     #   uvicorn
+2026-09-28T19:33:54.1781733Z httpcore==1.0.9 \
+2026-09-28T19:33:54.1782063Z     --hash=sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55 \
+2026-09-28T19:33:54.1782566Z     --hash=sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8
+2026-09-28T19:33:54.1782936Z     # via httpx
+2026-09-28T19:33:54.1783170Z httpcore2==2.12.0 ; sys_platform != 'emscripten' \
+2026-09-28T19:33:54.1783576Z     --hash=sha256:7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb \
+2026-09-28T19:33:54.1784073Z     --hash=sha256:9293522bba0aa7c4c8e9e3f040c16575bd8868e155a77fa30c7a9085a5eae648
+2026-09-28T19:33:54.1784436Z     # via httpx2
+2026-09-28T19:33:54.1784627Z httpx==0.28.1 \
+2026-09-28T19:33:54.1784967Z     --hash=sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc \
+2026-09-28T19:33:54.1785475Z     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
+2026-09-28T19:33:54.1785860Z     # via
+2026-09-28T19:33:54.1786042Z     #   harnessix
+2026-09-28T19:33:54.1786234Z     #   openai
+2026-09-28T19:33:54.1786428Z httpx2==2.12.0 \
+2026-09-28T19:33:54.1786757Z     --hash=sha256:7631fe9887a8a2275f4a2540e053aa670fcc50742864a9ae7c66e609fdcf12cf \
+2026-09-28T19:33:54.1787253Z     --hash=sha256:cc8b6eecb8661c146b8f89a60e97456ee086e91a784ed31ac450c3a9e613dd36
+2026-09-28T19:33:54.1787631Z     # via
+2026-09-28T19:33:54.1787811Z     #   anthropic
+2026-09-28T19:33:54.1788009Z     #   mcp
+2026-09-28T19:33:54.1788247Z httpx2-jsfetch==1.0 ; sys_platform == 'emscripten' \
+2026-09-28T19:33:54.1788678Z     --hash=sha256:70a0e3eabfef7cce5ad9c629f7d01ca05e418f586646f4ddf14782e4c1454c60 \
+2026-09-28T19:33:54.1789285Z     --hash=sha256:cb916b707601e69a07721aabc8f3f6659be3a6893bc1ff5c6f9e02241df2da32
+2026-09-28T19:33:54.1789659Z     # via httpx2
+2026-09-28T19:33:54.1789850Z idna==3.19 \
+2026-09-28T19:33:54.1790168Z     --hash=sha256:5e0811a4383b21dc5838069f801c4fb62113b7447663d2530d2bd6e77b49bf15 \
+2026-09-28T19:33:54.1790657Z     --hash=sha256:815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4
+2026-09-28T19:33:54.1791033Z     # via
+2026-09-28T19:33:54.1791214Z     #   anyio
+2026-09-28T19:33:54.1791399Z     #   httpx
+2026-09-28T19:33:54.1791580Z     #   httpx2
+2026-09-28T19:33:54.1791770Z     #   requests
+2026-09-28T19:33:54.1792079Z jiter==0.16.0 \
+2026-09-28T19:33:54.1792402Z     --hash=sha256:0542a7189c26920778658fc8fcf2af8bae05bae9924577f71804acef37996536 \
+2026-09-28T19:33:54.1792914Z     --hash=sha256:0df91907609837f33341b8e6fe73b95991fdaa57caf1a0fbd343dffe826f386f \
+2026-09-28T19:33:54.1793420Z     --hash=sha256:0e2e9efbe042210df657bade597f66d6d75723e3d8f45a12ea6d8167ff8bbce3 \
+2026-09-28T19:33:54.1793938Z     --hash=sha256:0fa25b09b13075c46f5bc174f2690525a925a4fc2f7c82969a2bbabff22386ce \
+2026-09-28T19:33:54.1794443Z     --hash=sha256:1878349266f8ee36ecb1375cc5ba2f115f35fd9f0a1a4119e725e379126647f7 \
+2026-09-28T19:33:54.1794998Z     --hash=sha256:2577196f4474ef3fc4779a088a23b0897bbf86f9ea3679c372d45b8383b43207 \
+2026-09-28T19:33:54.1795502Z     --hash=sha256:26798522707abb47d767db536e4148ceac1b14446bf028ee85e579a2e043cfe5 \
+2026-09-28T19:33:54.1796007Z     --hash=sha256:2ed5738ae4af18271a51a528b8811b0cbfa4a1858de9d83359e4169855d6a331 \
+2026-09-28T19:33:54.1796565Z     --hash=sha256:31aaee5b80f672c1dc21272bcfb9cbdcfc1ea04ff50f00ed5af500b80c44fa93 \
+2026-09-28T19:33:54.1797087Z     --hash=sha256:3a23f0e4f957e1be65752d2dfac9a5a06b1917af8dc85deb639c3b9d02e31290 \
+2026-09-28T19:33:54.1797610Z     --hash=sha256:3c1fd2dbe1b0af19e987f03fe66c5f5bd105a2229c1aff4ab14890b24f41d21a \
+2026-09-28T19:33:54.1798124Z     --hash=sha256:3f4d9e473a5ce7d27fef8b848df4dc16e283893d3f53b4a585e72c9595f3c284 \
+2026-09-28T19:33:54.1798631Z     --hash=sha256:41977aa5654023948c2dae2a81cbf9c43343954bef1cd59a154dd15a4d84c195 \
+2026-09-28T19:33:54.1799207Z     --hash=sha256:44d019fa8cdaf89bf29c71b39e3712143fdd0ac76725c6ef954f9957a5ea8730 \
+2026-09-28T19:33:54.1799728Z     --hash=sha256:46add52f4ad47a08bfb1219f3e673da972191489a33016edefdb5ea55bfa8c48 \
+2026-09-28T19:33:54.1800239Z     --hash=sha256:49060fd70737fad59d33ba9dcc0d83247dc9e77187de26053a19c16c9f32bd69 \
+2026-09-28T19:33:54.1800744Z     --hash=sha256:51d7b836acb0108d7c77df1742332cac2a1fa04a74d6dacec46e7091f0e91274 \
+2026-09-28T19:33:54.1801248Z     --hash=sha256:561926e0573ffe4a32498420a76d64b16c513e1ab413b9d28158a8764ac701e5 \
+2026-09-28T19:33:54.1801756Z     --hash=sha256:57b37fc887a32d44798e4d8ebfa7c9683ff3da1d5bf38f08d1bb3573ccb39106 \
+2026-09-28T19:33:54.1802262Z     --hash=sha256:5ab4f50ff971b611d656554ea10b75f80097392c827bc32923c6eeb6386c8b00 \
+2026-09-28T19:33:54.1802771Z     --hash=sha256:5af7780e4a26bd7d0d989592bf9ef12ebf806b74ab709223ecca37c749872ea9 \
+2026-09-28T19:33:54.1803285Z     --hash=sha256:616e89e008a93c01104161c75b4988e58716b01d62307ebfe161e52a56d2a818 \
+2026-09-28T19:33:54.1803786Z     --hash=sha256:63efadc657488f45db1c676d81e704cac2abf3fdb892def1faea61db053127e2 \
+2026-09-28T19:33:54.1804411Z     --hash=sha256:63ffdbdae7d4499f4cda14eadc12ddcabef0fc0c081191bdc2247489cb698077 \
+2026-09-28T19:33:54.1804932Z     --hash=sha256:64d613743df53199b1aa256a7d328340da6d7078aac7705a7db9d7a791e9cfd2 \
+2026-09-28T19:33:54.1805434Z     --hash=sha256:659039cc50b5addcc35fcc87ae2c1833b7c0a8e5326ef631a75e4478447bcf84 \
+2026-09-28T19:33:54.1805945Z     --hash=sha256:6722bcef4ffc86c835574b1b2fac6b33b9fb4a889c781e67950e891591f3c55a \
+2026-09-28T19:33:54.1806455Z     --hash=sha256:67c3bc1760f8c99d805dcab4e644027142a53b1d5d861f18780ebdbd5d40b72a \
+2026-09-28T19:33:54.1806977Z     --hash=sha256:6edb63a46e65a82c26800a868e49b2cac30dd5a4218b88d74bc2c848c8ad60bb \
+2026-09-28T19:33:54.1807489Z     --hash=sha256:710cc51d4ebdcd3c1f70b232c1db1ea1344a075770422bbd4bede5708335acbe \
+2026-09-28T19:33:54.1807995Z     --hash=sha256:7b24c3492c5f4f84a37946ad9cf504910cf6a782d6a4e0689b6673c5894b4a1c \
+2026-09-28T19:33:54.1808506Z     --hash=sha256:8d031aabecc4f1b6276adfb42e3aabb77c89d468bf616600e8d3a11328929053 \
+2026-09-28T19:33:54.1809020Z     --hash=sha256:8d30a4a1c87713060c8d1cc59a7b6c8fb6b8ef0a6900368014c76c87922a2929 \
+2026-09-28T19:33:54.1809701Z     --hash=sha256:8fb8de1e23a0cb2a7f53c335049c7b72b6db41aa6227cdcc0972a1de5cb39450 \
+2026-09-28T19:33:54.1810212Z     --hash=sha256:96e38eea538c8ddf853a35727c7be0741c76c13f04148ac5c116222f50ece3b3 \
+2026-09-28T19:33:54.1810731Z     --hash=sha256:9c8a956fd72c2cf1e730d01ea080341f13aa0a97a4a33b51abebe725b7ae9ca9 \
+2026-09-28T19:33:54.1811323Z     --hash=sha256:a111256a7193bea0759267b10385e5870949c239ed7b6ddbaaf57573edb38734 \
+2026-09-28T19:33:54.1811827Z     --hash=sha256:a32d2027a9fa67f109ff245a3252ece3ccc32cc56703e1deab6cc846a59e0585 \
+2026-09-28T19:33:54.1812343Z     --hash=sha256:adbb8edeadd431bc4477879d5d371ece7cb1334486584e0f252656dd7ffada29 \
+2026-09-28T19:33:54.1812854Z     --hash=sha256:b2c61484666ad42726029af0c00ef4541f0f3b5cdc550221f56c2343208018ee \
+2026-09-28T19:33:54.1813351Z     --hash=sha256:b72d0b2990ca754a9102779ac98d8597b7cb31678958562214a007f909eab78e \
+2026-09-28T19:33:54.1813900Z     --hash=sha256:b8a3f9a6008048fe9def7bf465180564a6e458047d2ce499149cfbe73c3ae9db \
+2026-09-28T19:33:54.1814406Z     --hash=sha256:baad945ed47f163ad833314f8e3288c396118934f94e7bbb9e243ce4b341a4fd \
+2026-09-28T19:33:54.1814908Z     --hash=sha256:bae96332410f866e5900d809298b1ed82735932986c672495f9701daacd80620 \
+2026-09-28T19:33:54.1815402Z     --hash=sha256:bc837c1b9631be10abfe0191537fe8009838204cec7e44827401ace390ddb567 \
+2026-09-28T19:33:54.1815917Z     --hash=sha256:bf3ea07d9bc8e7d03a9fbc051295462e6dbc295b894fd72457c3136e3e43d898 \
+2026-09-28T19:33:54.1816432Z     --hash=sha256:c22a488f7b9218e245a0025a9ba6b100e2e54700831cf4cf16833a27fba3ad01 \
+2026-09-28T19:33:54.1816941Z     --hash=sha256:c682bea068a90b764577bdb78a60a4c1d1606daf9cd4c893832a37c7cc9d9026 \
+2026-09-28T19:33:54.1817455Z     --hash=sha256:c9c53be232c2e206ef9cdbad81a48bfa74c3d3f08bcf8124630a8a748aad993e \
+2026-09-28T19:33:54.1817975Z     --hash=sha256:cbd18dd5e2df96b580487b5745adf57ef64ad89ba2d9662fc3c19386acce7db8 \
+2026-09-28T19:33:54.1818496Z     --hash=sha256:cf0d73f50e7b6935677854f6e8e31d499ca7064dd24734f703e060f5b237d883 \
+2026-09-28T19:33:54.1819001Z     --hash=sha256:d284fb8d94d5855d60c44fefcab4bf966f1da6fada73992b01f6f0c9bc0c6702 \
+2026-09-28T19:33:54.1819717Z     --hash=sha256:d28bb3c26762358dadf3e5bf0bccd29ae987d65e6988d2e6f49829c76b003c09 \
+2026-09-28T19:33:54.1820233Z     --hash=sha256:d5bf78d0e05e45cfdd66558893938d59afe3d1b1a824a202039b20e607d25a72 \
+2026-09-28T19:33:54.1820763Z     --hash=sha256:d5f91b1c27fc22a57993d5a5cb8a627cb8ed4b10502716fac1ffbfe1d19d84e8 \
+2026-09-28T19:33:54.1821282Z     --hash=sha256:da3d7ec75dc83bb18bca888b5edfae0656a26849056c59e05a7728badd17e7af \
+2026-09-28T19:33:54.1821801Z     --hash=sha256:de5ba8763e56b793561f43bed197c9ea55776daa5e9a6b91eed68a909bc9cdbf \
+2026-09-28T19:33:54.1822319Z     --hash=sha256:eab2cd170150e70153de16896a1774e3a1dca80154c56b54d7a812c479a7165e \
+2026-09-28T19:33:54.1822824Z     --hash=sha256:ee6162b77d49a9939229df666dfa8af3e656b6701b54c4c84966d740e189264e \
+2026-09-28T19:33:54.1823325Z     --hash=sha256:f17d61a28b4b3e0e3e2ba98490c70501403b4d196f78732439160e7fd3678127 \
+2026-09-28T19:33:54.1823815Z     --hash=sha256:f4444a83f946605990c98f625cdd3d2725bfb818158760c5748c653170a20e0e
+2026-09-28T19:33:54.1824180Z     # via
+2026-09-28T19:33:54.1824363Z     #   anthropic
+2026-09-28T19:33:54.1824559Z     #   openai
+2026-09-28T19:33:54.1824754Z jsonschema==4.26.0 \
+2026-09-28T19:33:54.1825118Z     --hash=sha256:0c26707e2efad8aa1bfc5b7ce170f3fccc2e4918ff85989ba9ffa9facb2be326 \
+2026-09-28T19:33:54.1825621Z     --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
+2026-09-28T19:33:54.1825982Z     # via mcp
+2026-09-28T19:33:54.1826205Z jsonschema-specifications==2025.9.1 \
+2026-09-28T19:33:54.1826605Z     --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe \
+2026-09-28T19:33:54.1827100Z     --hash=sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d
+2026-09-28T19:33:54.1827464Z     # via jsonschema
+2026-09-28T19:33:54.1827681Z linkify-it-py==2.2.0 \
+2026-09-28T19:33:54.1828033Z     --hash=sha256:3adc40eb5af300b2605fcfdb968c24e1d780a90f1f2221af7c15e5111e94d443 \
+2026-09-28T19:33:54.1828543Z     --hash=sha256:907acd2d17ac1fbb9ddb62c8957ccbd6158cac602231a15c3b0cd1e215f03cee
+2026-09-28T19:33:54.1828931Z     # via markdown-it-py
+2026-09-28T19:33:54.1829286Z markdown-it-py==4.2.0 \
+2026-09-28T19:33:54.1829744Z     --hash=sha256:04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49 \
+2026-09-28T19:33:54.1830247Z     --hash=sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a
+2026-09-28T19:33:54.1830619Z     # via
+2026-09-28T19:33:54.1830812Z     #   mdit-py-plugins
+2026-09-28T19:33:54.1831035Z     #   rich
+2026-09-28T19:33:54.1831224Z     #   textual
+2026-09-28T19:33:54.1831417Z mcp==2.2.0 \
+2026-09-28T19:33:54.1831749Z     --hash=sha256:2dc37ecb1974becdcebdbf7561e7c15a07dbbf20ba21ba16c3593b3038b3afbd \
+2026-09-28T19:33:54.1832358Z     --hash=sha256:bde982589473a060ae145e3406e9a5333fe538c97229ba841f5a7f92be004f81
+2026-09-28T19:33:54.1832730Z     # via harnessix
+2026-09-28T19:33:54.1833022Z mcp-types==2.2.0 \
+2026-09-28T19:33:54.1833358Z     --hash=sha256:d3ed53703ddd10d9c6399f29d322bb66f3f67ab41348ac8556ba23e07fedefad \
+2026-09-28T19:33:54.1833868Z     --hash=sha256:ea476b73ee86709ab5abc9452385ed36cc05907e582355622e294595c9a04f13
+2026-09-28T19:33:54.1834237Z     # via mcp
+2026-09-28T19:33:54.1834447Z mdit-py-plugins==0.6.1 \
+2026-09-28T19:33:54.1834808Z     --hash=sha256:214c82fb2ac524472ab6a5bcab1de80f73b50443e187f401bfd77efbc7c6481d \
+2026-09-28T19:33:54.1835325Z     --hash=sha256:a2bca0f039f39dbd35fb74ae1b5f998608c437463371f0ff7f49a19a17a114d0
+2026-09-28T19:33:54.1835693Z     # via textual
+2026-09-28T19:33:54.1835895Z mdurl==0.1.2 \
+2026-09-28T19:33:54.1836210Z     --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
+2026-09-28T19:33:54.1836705Z     --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba
+2026-09-28T19:33:54.1837089Z     # via markdown-it-py
+2026-09-28T19:33:54.1837310Z openai==2.54.0 \
+2026-09-28T19:33:54.1837629Z     --hash=sha256:89089789197ccdb87f173a03145ed1598d00795220c93e96cf712b1cbf5e5f2b \
+2026-09-28T19:33:54.1838142Z     --hash=sha256:e3e6f8bc1ba30ddf381ace1a14340eed381cb984a1a59bd0f34b5be3b5d49cfa
+2026-09-28T19:33:54.1838524Z     # via harnessix
+2026-09-28T19:33:54.1838738Z opentelemetry-api==1.44.0 \
+2026-09-28T19:33:54.1839095Z     --hash=sha256:67647e5e9566edcf421166fdf022b3537f818635daa852b289e34604dc6fb33a \
+2026-09-28T19:33:54.1839672Z     --hash=sha256:94b98c893a91b88657eaac1e3ba89618cdb85be6918196705354f34728b2cdef
+2026-09-28T19:33:54.1840030Z     # via
+2026-09-28T19:33:54.1840208Z     #   harnessix
+2026-09-28T19:33:54.1840398Z     #   mcp
+2026-09-28T19:33:54.1840641Z     #   opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1840931Z     #   opentelemetry-sdk
+2026-09-28T19:33:54.1841192Z     #   opentelemetry-semantic-conventions
+2026-09-28T19:33:54.1841530Z opentelemetry-exporter-otlp-proto-common==1.44.0 \
+2026-09-28T19:33:54.1841976Z     --hash=sha256:9a9fe61bba73d802904bc989f1d6b4a7b1ee40f06c40e98d6f85af65aaebb694 \
+2026-09-28T19:33:54.1842498Z     --hash=sha256:dc87a5a5bc58f149a56d1547e4691588fa12994cdc3bc039a694ccb3375862ac
+2026-09-28T19:33:54.1842921Z     # via opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1843266Z opentelemetry-exporter-otlp-proto-http==1.44.0 \
+2026-09-28T19:33:54.1843713Z     --hash=sha256:838592fce774c1c8bb7b9a0a7facbfa82e17be5a8a4e94cef10cb84ae026bae3 \
+2026-09-28T19:33:54.1844228Z     --hash=sha256:c633d7270ad6b57cd4cfbe8b0007a9e2e7c0cb50bd6c50fe2a7b245f721a09d8
+2026-09-28T19:33:54.1844607Z     # via harnessix
+2026-09-28T19:33:54.1844828Z opentelemetry-proto==1.44.0 \
+2026-09-28T19:33:54.1845210Z     --hash=sha256:898b155a0e1557afd867478fb6158e8122a46329ca0bb8dc53cc55e98f017f56 \
+2026-09-28T19:33:54.1845704Z     --hash=sha256:c547a79c2f8c0c515d31509154682e5921c7cfd5ca67b70e1f9266e2c3e103f3
+2026-09-28T19:33:54.1846065Z     # via
+2026-09-28T19:33:54.1846299Z     #   opentelemetry-exporter-otlp-proto-common
+2026-09-28T19:33:54.1846639Z     #   opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1846936Z opentelemetry-sdk==1.44.0 \
+2026-09-28T19:33:54.1847309Z     --hash=sha256:cebe7f65dc12f26ead75c6064de12fd2a9052e5060c0272d402cfa203aae123b \
+2026-09-28T19:33:54.1847811Z     --hash=sha256:df081c4c6bcfdb1211e3e86140376792643128a25f8d72d1d27675936e7e96ad
+2026-09-28T19:33:54.1848278Z     # via
+2026-09-28T19:33:54.1848460Z     #   harnessix
+2026-09-28T19:33:54.1848699Z     #   opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1849043Z opentelemetry-semantic-conventions==0.65b0 \
+2026-09-28T19:33:54.1849552Z     --hash=sha256:1cacde7b0ad306f84c5ef08c3dbe1bbaf20165bba6f8bff43b670e555a086bcb \
+2026-09-28T19:33:54.1850069Z     --hash=sha256:f9b2b81e9d5b64f11bc952075e7e9c7fb0aab075c7fd1c46d597f1b919852d60
+2026-09-28T19:33:54.1850451Z     # via opentelemetry-sdk
+2026-09-28T19:33:54.1850706Z platformdirs==4.11.8 \
+2026-09-28T19:33:54.1851156Z     --hash=sha256:52f2f181bbfde907966932cc8312d967d02976422d66d537ea16092b8e291081 \
+2026-09-28T19:33:54.1851659Z     --hash=sha256:f23abafea7dd4276d1f29104b83598d7dcc567cafd07c9c951e66665645437fc
+2026-09-28T19:33:54.1852028Z     # via textual
+2026-09-28T19:33:54.1852225Z protobuf==7.36.1 \
+2026-09-28T19:33:54.1852564Z     --hash=sha256:0b53ce95272aad50ad25d7ff03373743209822e8ba42ea7fad27d2bee1547d00 \
+2026-09-28T19:33:54.1853078Z     --hash=sha256:39c518c05586c016d7874ff6079ee115bcec1ea5fbb1d177fbf7867ef4c67e44 \
+2026-09-28T19:33:54.1853592Z     --hash=sha256:3cf2ee25d006cee57294a1196ea43b37feb78e0dcd1e8af5c1aeddb777655aca \
+2026-09-28T19:33:54.1854105Z     --hash=sha256:43d3d37b1eb24c113b9b7d02008cac44e423f00b611b7781ae998d7623972969 \
+2026-09-28T19:33:54.1854611Z     --hash=sha256:51139351435d9b43d88a55eaa49fb6f737fbb478fb0cbf2cf694d1a04a9d3363 \
+2026-09-28T19:33:54.1855116Z     --hash=sha256:7d951e46b3f963d6c264c367c437921de9d5aedd9c3f9612b9077736b4e3ad5c \
+2026-09-28T19:33:54.1855617Z     --hash=sha256:97198b77e369a0abd8e262b8f6c7266c55ddb796a3a12c76d7b8881188ed83aa \
+2026-09-28T19:33:54.1856114Z     --hash=sha256:d0f6470f0ce2b84e3feaea2d4b816378b37ba4d4aa08a274305373de93e2d524
+2026-09-28T19:33:54.1856485Z     # via
+2026-09-28T19:33:54.1856689Z     #   googleapis-common-protos
+2026-09-28T19:33:54.1856942Z     #   opentelemetry-proto
+2026-09-28T19:33:54.1857337Z pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy' \
+2026-09-28T19:33:54.1857884Z     --hash=sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29 \
+2026-09-28T19:33:54.1858374Z     --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
+2026-09-28T19:33:54.1858734Z     # via cffi
+2026-09-28T19:33:54.1858933Z pydantic==2.13.5 \
+2026-09-28T19:33:54.1859361Z     --hash=sha256:346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73 \
+2026-09-28T19:33:54.1859864Z     --hash=sha256:51a9c5f7b2f8e636f04c6cada605d9b6a3bf1348fdf945a3d8869b19bba0ee08
+2026-09-28T19:33:54.1860229Z     # via
+2026-09-28T19:33:54.1860414Z     #   anthropic
+2026-09-28T19:33:54.1860618Z     #   harnessix
+2026-09-28T19:33:54.1860812Z     #   mcp
+2026-09-28T19:33:54.1860997Z     #   mcp-types
+2026-09-28T19:33:54.1861192Z     #   openai
+2026-09-28T19:33:54.1861403Z pydantic-core==2.46.5 \
+2026-09-28T19:33:54.1861744Z     --hash=sha256:013d6f3483d81e02e7c328831808f336c8596ee33b4bd4026b9ffb1e960b8942 \
+2026-09-28T19:33:54.1862241Z     --hash=sha256:03b9666e41e35d8909852ba191a0607520f81b74eaf12ccf8737005dbb313821 \
+2026-09-28T19:33:54.1862744Z     --hash=sha256:045ab3b6d308439e32b81cc173bba5b9018bc6ed896afd0c65b3b009b1699af5 \
+2026-09-28T19:33:54.1863264Z     --hash=sha256:0cdbada856a1c69a7624a64d3d9aefe79300bd6ef827b43a4f265010b9b55184 \
+2026-09-28T19:33:54.1863777Z     --hash=sha256:0fc5be0abd4a407e200d844b404e33639a554e7bd0d448e7b9ae181be4789ac2 \
+2026-09-28T19:33:54.1864286Z     --hash=sha256:10416c15b8839ecc4ef4d0885da76da6fd0f67333a0eb8aff6d93c4b8f2910fc \
+2026-09-28T19:33:54.1864802Z     --hash=sha256:15f4a94963c95accac15b7b657bb177d3ad82bb90b0d0526d9a9b85079925db5 \
+2026-09-28T19:33:54.1865308Z     --hash=sha256:18a09e1e1011b462f2e32774f25859ef1223d5c2b0546a633cf56654710721e0 \
+2026-09-28T19:33:54.1865796Z     --hash=sha256:193375f3548919d3f0b60936ca113ada3e38f264f91b9b8e0508efaad57be931 \
+2026-09-28T19:33:54.1866298Z     --hash=sha256:1a353f84de772f423b5ffb11d7ae352fbbef0f446f3c0b0af0f8236d7233606e \
+2026-09-28T19:33:54.1866901Z     --hash=sha256:24922243639cbdac66c75fcb6fd6495a9cb52b213d62f9a0d16f0310b1ff8038 \
+2026-09-28T19:33:54.1867403Z     --hash=sha256:2bc9419666990c06d7397831f2126a1ecc3594aaa3ff7de5bf2d066802f4e07b \
+2026-09-28T19:33:54.1867903Z     --hash=sha256:2cbd9a5eff05e51c447c34dfa4632145b26b09120cf04bd0c871e44c1a5e1c9a \
+2026-09-28T19:33:54.1868416Z     --hash=sha256:2d5d76654becf5efd62c9e51c3756c67b49498b0c9a40884934c40807adbd074 \
+2026-09-28T19:33:54.1868920Z     --hash=sha256:347ec774390c87326a2e4929d58d3f7e8763a104d5d35f4cd595a4c952366433 \
+2026-09-28T19:33:54.1869643Z     --hash=sha256:37ae34309d7bd8c0d61ab839668058f2a7962ea1fc51d105d2db228fe0618034 \
+2026-09-28T19:33:54.1870150Z     --hash=sha256:37ea7b83c935e5b0d68c9449b82651accf78a10828b2c02b2f2d9e9496446c21 \
+2026-09-28T19:33:54.1870657Z     --hash=sha256:46c25dda9d092a06c08db76ffe0a197107904d0dfac653f7d5306bbcd6d6119c \
+2026-09-28T19:33:54.1871177Z     --hash=sha256:4fdc8b93a41521988916eeaa271173fcca7fa0803d62f87675aac8dcec1c8e29 \
+2026-09-28T19:33:54.1871681Z     --hash=sha256:5086029a57366b8cf81b130a43908738095c270c21a8d7f0e8bdfdb89718e2f3 \
+2026-09-28T19:33:54.1872179Z     --hash=sha256:52e24eacdb536cade636aa90fb851835222becff8484b7001fdc78cb0290f2aa \
+2026-09-28T19:33:54.1872692Z     --hash=sha256:545f26c504b27c3758439a5e6d9349931f0a04f855668d5fe323c89e82300a38 \
+2026-09-28T19:33:54.1873196Z     --hash=sha256:54d510bac3ee52247af28ed4bb18a1e799f040ac60fd2bf5ccd4c92f1fbe786f \
+2026-09-28T19:33:54.1873713Z     --hash=sha256:5cb482e9e84c851f4e623fe4acc1ced89168cf1fe18f7089db4548c8f5bbb65b \
+2026-09-28T19:33:54.1874220Z     --hash=sha256:5e81740c09e310f5aa5cbd3e434a01c154d4bef93241c7877b39f211d2b78ba8 \
+2026-09-28T19:33:54.1874734Z     --hash=sha256:5ee239d575f80b08eca11f6e20f90c4c695de7825c67eefe6091fbf20dda648e \
+2026-09-28T19:33:54.1875235Z     --hash=sha256:5f194189415698233dd1114a093a9b56e61e2c57e11b469be3b0506f46f0771c \
+2026-09-28T19:33:54.1875730Z     --hash=sha256:6f7b393a8b3da82f5c1fc0751e6d01ac6c55b93c18226a60bdfba4a724efafd1 \
+2026-09-28T19:33:54.1876249Z     --hash=sha256:79bdfa52f843137045b2d081cc05c120ba6665d29b7559c2c47690906f39279f \
+2026-09-28T19:33:54.1876754Z     --hash=sha256:7ac031912d54f3d83ef3b3eb98dfabc1608802e2202263d25957eeed40b94761 \
+2026-09-28T19:33:54.1877264Z     --hash=sha256:816ff0a6550ffc06c098ccd2e0698600f9aa7da192a79eaa6f9af504a35db869 \
+2026-09-28T19:33:54.1877774Z     --hash=sha256:82a36973cf8a2ef5406f4fe2edbf8ed0c99629535d959e0b100c76a32535a111 \
+2026-09-28T19:33:54.1878288Z     --hash=sha256:837b396ca3d7b74091ca623f6cbd8351bd42d670a79c2683e79fb089f06a2de5 \
+2026-09-28T19:33:54.1878793Z     --hash=sha256:8816f3d218beb4b787de5c9759c259b8fa61f9dec42dc7811f320a33771778b7 \
+2026-09-28T19:33:54.1879368Z     --hash=sha256:8e24d8f05fa2d28513d94e877e9c75ad66175376209b3977f916e240e623193c \
+2026-09-28T19:33:54.1879876Z     --hash=sha256:976e1128455aa595ea04c79ccfedff1aaeab96ee013fcc916bed120c4f0ad94f \
+2026-09-28T19:33:54.1880396Z     --hash=sha256:97bf8de4d541598c94a59344eeb988a94c08ff76b5723c41f6567ec18c7892ea \
+2026-09-28T19:33:54.1880909Z     --hash=sha256:97cf3eb53a8cccacf9d46686a0926186c9bfb5574f2ed66d3639d5fe117cd3a9 \
+2026-09-28T19:33:54.1881423Z     --hash=sha256:9c4b71f10dd532fb7a5cbc8f58707779e64f03a258c2bf8bfbaecfcd9970b519 \
+2026-09-28T19:33:54.1881945Z     --hash=sha256:a2a5e1d0ff29adddc9f6d6821a66302e4493f8ca898b715b6b1182c2c201ea0a \
+2026-09-28T19:33:54.1882462Z     --hash=sha256:a39ac25a9a2fa4072efdb429833c4a4c8009a51ff9eea3eeae131713cd27991e \
+2026-09-28T19:33:54.1882982Z     --hash=sha256:a91c17edf6eea2402cb5457b4c89e99bc5ed1004aa34c4adf1d4258c1a5c22c2 \
+2026-09-28T19:33:54.1883504Z     --hash=sha256:acf8a67ba51f4ca9ddbd0e6b3000a65ac51ab734661778b3e7ba64d99a710f2f \
+2026-09-28T19:33:54.1884026Z     --hash=sha256:b49924c73a235e969511bf2aabdff3beebf9820931f646c80274d5d780010c47 \
+2026-09-28T19:33:54.1884527Z     --hash=sha256:b7ca9034437b6022f941f4857459562ee00a560b97e7cce8a0ec5a74fc6766e0 \
+2026-09-28T19:33:54.1885034Z     --hash=sha256:b98134087d9de723658d17a42c7d0da8d6e2ef08015dee7dc93889047315f5e4 \
+2026-09-28T19:33:54.1885595Z     --hash=sha256:b9fe6fb92520e3fd61f2e49000b6911b188824f089b75973ea06d6267f0b476d \
+2026-09-28T19:33:54.1886107Z     --hash=sha256:bce57638e08ac148e5778cce7feb968307a727d66f8e2274a543d0cf0c9ad6a3 \
+2026-09-28T19:33:54.1886612Z     --hash=sha256:c1c43ad4339643d70ebb8124e1305a7dab423001eff58bb41a0f731adbc98355 \
+2026-09-28T19:33:54.1887122Z     --hash=sha256:c76fe65e607be28c7fd4d56fc3c42b1583aa058ce3408b7ad0fd540171d31f9f \
+2026-09-28T19:33:54.1887640Z     --hash=sha256:c7ea57fc63aa7da93a1bd2d644e6577befae10c52c4e36377635eea1056a74f5 \
+2026-09-28T19:33:54.1888207Z     --hash=sha256:cdbb78909f52b981d3b2d56b97328d71eb0b974c36bd77c920123a7ebb192829 \
+2026-09-28T19:33:54.1888717Z     --hash=sha256:d22a945598fb91236b4dd793a6e42e4f3dd7740bb5aace5ebd7d4c08d13bb575 \
+2026-09-28T19:33:54.1889296Z     --hash=sha256:d2f9fc07a8042a8f95925b35c4f04f469707c981fc33245b6ca187cf5d2dd290 \
+2026-09-28T19:33:54.1889813Z     --hash=sha256:d925f3d9afd05a8c0fb3a1031463a8d59ebe5e2afad297e29c78be19e13b4e62 \
+2026-09-28T19:33:54.1890325Z     --hash=sha256:e64e88d5585bea9ce95861079de72006c7fa6d3df4e3a3b65ba31eb979c15c9f \
+2026-09-28T19:33:54.1890823Z     --hash=sha256:e652ab17569c94bff5475520f907b7148b8c24036a8ebbe5cf7cf7493d28579a \
+2026-09-28T19:33:54.1891325Z     --hash=sha256:e7b891faeedeafba41b2983e5001a81b6a915b69544c7e7570d1989ce1c36ac7 \
+2026-09-28T19:33:54.1891829Z     --hash=sha256:e80675d75ae2cd14372cb65cad5400d9347a3d3f6c13000183f22dfd027283ed \
+2026-09-28T19:33:54.1892333Z     --hash=sha256:e9c134bb666dd54b778b9fc0d2b50cbb7f979b9e3716f26a88c9ab3b6fc1dd0f \
+2026-09-28T19:33:54.1892850Z     --hash=sha256:efd62a42486f1bda5d24cb4f63d15a3c7768375fe83d36f9417b4ad7a2fb20b3 \
+2026-09-28T19:33:54.1893366Z     --hash=sha256:f332f0e72a5a0400141f830744e141bf9f97917878dbe968669e8a7fefea78ff \
+2026-09-28T19:33:54.1893868Z     --hash=sha256:f7b0ec93a2893de856652154d73b7ba622f26fa97726487dcac373de5f4c6084 \
+2026-09-28T19:33:54.1894366Z     --hash=sha256:fa10ef4112775900e7a0661068635eb67b2ab824fbde764de6e0e21982a93db0 \
+2026-09-28T19:33:54.1894863Z     --hash=sha256:ff218293c9c806138dca139765e3b067621be52bcd93cdc14c7711be7ddc90a9
+2026-09-28T19:33:54.1895238Z     # via pydantic
+2026-09-28T19:33:54.1895445Z pygments==2.21.0 \
+2026-09-28T19:33:54.1895774Z     --hash=sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9 \
+2026-09-28T19:33:54.1896308Z     --hash=sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c
+2026-09-28T19:33:54.1896692Z     # via
+2026-09-28T19:33:54.1896874Z     #   rich
+2026-09-28T19:33:54.1897058Z     #   textual
+2026-09-28T19:33:54.1897251Z pyjwt==2.13.0 \
+2026-09-28T19:33:54.1897590Z     --hash=sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423 \
+2026-09-28T19:33:54.1898104Z     --hash=sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728
+2026-09-28T19:33:54.1898484Z     # via mcp
+2026-09-28T19:33:54.1898694Z python-multipart==0.0.32 \
+2026-09-28T19:33:54.1899080Z     --hash=sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e \
+2026-09-28T19:33:54.1899659Z     --hash=sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23
+2026-09-28T19:33:54.1900023Z     # via mcp
+2026-09-28T19:33:54.1900241Z pywin32==312 ; sys_platform == 'win32' \
+2026-09-28T19:33:54.1900638Z     --hash=sha256:59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831 \
+2026-09-28T19:33:54.1901140Z     --hash=sha256:5c1fbe4a937a73ae9297384a3da38518cbc694c68ad8a809b2e19acd350f03ed \
+2026-09-28T19:33:54.1901647Z     --hash=sha256:6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950 \
+2026-09-28T19:33:54.1902161Z     --hash=sha256:7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c \
+2026-09-28T19:33:54.1902686Z     --hash=sha256:9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa \
+2026-09-28T19:33:54.1903186Z     --hash=sha256:a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e \
+2026-09-28T19:33:54.1903681Z     --hash=sha256:a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b \
+2026-09-28T19:33:54.1904256Z     --hash=sha256:a8597d28f267b39074aef51fa593530082b39cbe5a074226096857b1fed2dfb9 \
+2026-09-28T19:33:54.1904769Z     --hash=sha256:b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc \
+2026-09-28T19:33:54.1905274Z     --hash=sha256:c2f03a0f73f804a13c2735b99392b0cd426bb4f2c4d0178e5ac966a0f21618d5 \
+2026-09-28T19:33:54.1905775Z     --hash=sha256:c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9 \
+2026-09-28T19:33:54.1906277Z     --hash=sha256:dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b
+2026-09-28T19:33:54.1906646Z     # via mcp
+2026-09-28T19:33:54.1906901Z pyyaml==6.0.3 \
+2026-09-28T19:33:54.1907238Z     --hash=sha256:00c4bdeba853cc34e7dd471f16b4114f4162dc03e6b7afcc2128711f0eca823c \
+2026-09-28T19:33:54.1907753Z     --hash=sha256:02893d100e99e03eda1c8fd5c441d8c60103fd175728e23e431db1b589cf5ab3 \
+2026-09-28T19:33:54.1908254Z     --hash=sha256:0f29edc409a6392443abf94b9cf89ce99889a1dd5376d94316ae5145dfedd5d6 \
+2026-09-28T19:33:54.1908756Z     --hash=sha256:16249ee61e95f858e83976573de0f5b2893b3677ba71c9dd36b9cf8be9ac6d65 \
+2026-09-28T19:33:54.1909319Z     --hash=sha256:2283a07e2c21a2aa78d9c4442724ec1eb15f5e42a723b99cb3d822d48f5f7ad1 \
+2026-09-28T19:33:54.1909826Z     --hash=sha256:34d5fcd24b8445fadc33f9cf348c1047101756fd760b4dacb5c3e99755703310 \
+2026-09-28T19:33:54.1910334Z     --hash=sha256:41715c910c881bc081f1e8872880d3c650acf13dfa8214bad49ed4cede7c34ea \
+2026-09-28T19:33:54.1910842Z     --hash=sha256:4a2e8cebe2ff6ab7d1050ecd59c25d4c8bd7e6f400f5f82b96557ac0abafd0ac \
+2026-09-28T19:33:54.1911362Z     --hash=sha256:4ad1906908f2f5ae4e5a8ddfce73c320c2a1429ec52eafd27138b7f1cbe341c9 \
+2026-09-28T19:33:54.1911869Z     --hash=sha256:501a031947e3a9025ed4405a168e6ef5ae3126c59f90ce0cd6f2bfc477be31b7 \
+2026-09-28T19:33:54.1912368Z     --hash=sha256:5190d403f121660ce8d1d2c1bb2ef1bd05b5f68533fc5c2ea899bd15f4399b35 \
+2026-09-28T19:33:54.1912875Z     --hash=sha256:5498cd1645aa724a7c71c8f378eb29ebe23da2fc0d7a08071d89469bf1d2defb \
+2026-09-28T19:33:54.1913401Z     --hash=sha256:5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b \
+2026-09-28T19:33:54.1913918Z     --hash=sha256:5fdec68f91a0c6739b380c83b951e2c72ac0197ace422360e6d5a959d8d97b2c \
+2026-09-28T19:33:54.1914420Z     --hash=sha256:64386e5e707d03a7e172c0701abfb7e10f0fb753ee1d773128192742712a98fd \
+2026-09-28T19:33:54.1914924Z     --hash=sha256:66e1674c3ef6f541c35191caae2d429b967b99e02040f5ba928632d9a7f0f065 \
+2026-09-28T19:33:54.1915435Z     --hash=sha256:6adc77889b628398debc7b65c073bcb99c4a0237b248cacaf3fe8a557563ef6c \
+2026-09-28T19:33:54.1915953Z     --hash=sha256:79005a0d97d5ddabfeeea4cf676af11e647e41d81c9a7722a193022accdb6b7c \
+2026-09-28T19:33:54.1916456Z     --hash=sha256:7c6610def4f163542a622a73fb39f534f8c101d690126992300bf3207eab9764 \
+2026-09-28T19:33:54.1916966Z     --hash=sha256:7f047e29dcae44602496db43be01ad42fc6f1cc0d8cd6c83d342306c32270196 \
+2026-09-28T19:33:54.1917477Z     --hash=sha256:8d1fab6bb153a416f9aeb4b8763bc0f22a5586065f86f7664fc23339fc1c1fac \
+2026-09-28T19:33:54.1917993Z     --hash=sha256:8da9669d359f02c0b91ccc01cac4a67f16afec0dac22c2ad09f46bee0697eba8 \
+2026-09-28T19:33:54.1918500Z     --hash=sha256:8dc52c23056b9ddd46818a57b78404882310fb473d63f17b07d5c40421e47f8e \
+2026-09-28T19:33:54.1919014Z     --hash=sha256:9149cad251584d5fb4981be1ecde53a1ca46c891a79788c0df828d2f166bda28 \
+2026-09-28T19:33:54.1919616Z     --hash=sha256:93dda82c9c22deb0a405ea4dc5f2d0cda384168e466364dec6255b293923b2f3 \
+2026-09-28T19:33:54.1920121Z     --hash=sha256:96b533f0e99f6579b3d4d4995707cf36df9100d67e0c8303a0c55b27b5f99bc5 \
+2026-09-28T19:33:54.1920626Z     --hash=sha256:a33284e20b78bd4a18c8c2282d549d10bc8408a2a7ff57653c0cf0b9be0afce5 \
+2026-09-28T19:33:54.1921152Z     --hash=sha256:a80cb027f6b349846a3bf6d73b5e95e782175e52f22108cfa17876aaeff93702 \
+2026-09-28T19:33:54.1921667Z     --hash=sha256:b3bc83488de33889877a0f2543ade9f70c67d66d9ebb4ac959502e12de895788 \
+2026-09-28T19:33:54.1922181Z     --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc \
+2026-09-28T19:33:54.1922762Z     --hash=sha256:c1ff362665ae507275af2853520967820d9124984e0f7466736aea23d8611fba \
+2026-09-28T19:33:54.1923255Z     --hash=sha256:c458b6d084f9b935061bc36216e8a69a7e293a2f1e68bf956dcd9e6cbcd143f5 \
+2026-09-28T19:33:54.1923763Z     --hash=sha256:d0eae10f8159e8fdad514efdc92d74fd8d682c933a6dd088030f3834bc8e6b26 \
+2026-09-28T19:33:54.1924269Z     --hash=sha256:d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f \
+2026-09-28T19:33:54.1924784Z     --hash=sha256:ebc55a14a21cb14062aa4162f906cd962b28e2e9ea38f9b4391244cd8de4ae0b \
+2026-09-28T19:33:54.1925346Z     --hash=sha256:eda16858a3cab07b80edaf74336ece1f986ba330fdb8ee0d6c0d68fe82bc96be \
+2026-09-28T19:33:54.1925861Z     --hash=sha256:ee2922902c45ae8ccada2c5b501ab86c36525b883eff4255313a253a3160861c \
+2026-09-28T19:33:54.1926361Z     --hash=sha256:f7057c9a337546edc7973c0d3ba84ddcdf0daa14533c2065749c9075001090e6 \
+2026-09-28T19:33:54.1926862Z     --hash=sha256:fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0
+2026-09-28T19:33:54.1927236Z     # via harnessix
+2026-09-28T19:33:54.1927444Z referencing==0.37.0 \
+2026-09-28T19:33:54.1927775Z     --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231 \
+2026-09-28T19:33:54.1928272Z     --hash=sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8
+2026-09-28T19:33:54.1928643Z     # via
+2026-09-28T19:33:54.1928827Z     #   jsonschema
+2026-09-28T19:33:54.1929045Z     #   jsonschema-specifications
+2026-09-28T19:33:54.1929369Z requests==2.34.2 \
+2026-09-28T19:33:54.1929706Z     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
+2026-09-28T19:33:54.1930206Z     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
+2026-09-28T19:33:54.1930629Z     # via opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1931029Z rich==15.0.0 \
+2026-09-28T19:33:54.1931490Z     --hash=sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb \
+2026-09-28T19:33:54.1932203Z     --hash=sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36
+2026-09-28T19:33:54.1932701Z     # via textual
+2026-09-28T19:33:54.1932980Z rpds-py==2026.6.3 \
+2026-09-28T19:33:54.1933439Z     --hash=sha256:0be972be84cfcaf46c8c6edf690ca0f154ac17babf1f6a955a51579b34ad2dc5 \
+2026-09-28T19:33:54.1934145Z     --hash=sha256:127565fead0a10943b282957bd5447804ff3160ad79f2ad2635e6d249e380680 \
+2026-09-28T19:33:54.1934839Z     --hash=sha256:166cf54d9f44fc6ceb53c7860258dde44a81406646de79f8ed3234fca3b6e538 \
+2026-09-28T19:33:54.1935917Z     --hash=sha256:1967debc37f64f2c4dc90a7f563aec558b471966e12adcac4e1c4240496b6ebf \
+2026-09-28T19:33:54.1936829Z     --hash=sha256:1cebd1337c242e4ec2293e541f712b2da849b29f48f0c293684b71c0632625d4 \
+2026-09-28T19:33:54.1937545Z     --hash=sha256:1cf01971c4f2c5553b772a542e4aaf191789cd331bc2cd4ff0e6e65ba49e1e97 \
+2026-09-28T19:33:54.1938361Z     --hash=sha256:22bffe6042b9bcb0822bcd1955ec00e245daf17b4344e4ed8e9551b976b63e96 \
+2026-09-28T19:33:54.1938994Z     --hash=sha256:23a439f31ccbeff1574e24889128821d1f7917470e830cf6544dced1c662262a \
+2026-09-28T19:33:54.1939643Z     --hash=sha256:24e9c5386e16669b674a69c156c8eeefcb578f3b3397b713b08e6d60f3c7b187 \
+2026-09-28T19:33:54.1940170Z     --hash=sha256:270b293dae9058fc9fcedab50f13cebf46fb8ed1d1d54e0521a9da5d6b211975 \
+2026-09-28T19:33:54.1940704Z     --hash=sha256:29dfa0533a5d4c94d4dfa1b694fcb56c9c63aad8330ffdd816fd225d0a7a162f \
+2026-09-28T19:33:54.1941225Z     --hash=sha256:2a9c6f195058cb45335e8cc3802745c603d716eb96bc9625950c1aac71c0c703 \
+2026-09-28T19:33:54.1941728Z     --hash=sha256:2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f \
+2026-09-28T19:33:54.1942269Z     --hash=sha256:2c99f7e8ccb3dd6e3e4bfeac657a7b208c9bac8075f4b078c02d7404c34107fa \
+2026-09-28T19:33:54.1942925Z     --hash=sha256:2f7c26fbc5acd2522b95d4177fe4710ffd8e9b20529e703ffbf8db4d93903f05 \
+2026-09-28T19:33:54.1943431Z     --hash=sha256:38a2fea2787428f811719ceb9114cb78964a3138838320c29ac39526c79c16ba \
+2026-09-28T19:33:54.1943926Z     --hash=sha256:3cfe765c1da0072636ca06628261e0ea05688e160d5c8a03e0217c3854037223 \
+2026-09-28T19:33:54.1944602Z     --hash=sha256:425560c6fa0415f27261727bb20bd097568485e5eb0c121f1949417d1c516885 \
+2026-09-28T19:33:54.1945090Z     --hash=sha256:4470ce197d4090875cf6affbf1f853338387428df97c4fb7b7106317b8214698 \
+2026-09-28T19:33:54.1945596Z     --hash=sha256:4f4bca01b63096f606e095734dd56e74e175f94cfbf24ff3d63281cec61f7bb7 \
+2026-09-28T19:33:54.1946101Z     --hash=sha256:501f9f04a588d6a09179368c57071301445191767c64e4b52a6aa9871f1ef5ed \
+2026-09-28T19:33:54.1946601Z     --hash=sha256:536bceea4fa4acf7e1c61da2b5786304367c816c8895be71b8f537c480b0ea1f \
+2026-09-28T19:33:54.1947170Z     --hash=sha256:538949e262e46caa31ac01bdb3c1e8f642622922cacbabbae6a8445d9dc33eaf \
+2026-09-28T19:33:54.1947679Z     --hash=sha256:539d75de9e0d536c84ff18dfeb805398e58227001ce09231a26a08b9aed1ee0e \
+2026-09-28T19:33:54.1948177Z     --hash=sha256:54f45a148e28767bf343d33a684693c70e451c6f4c0e9904709a723fafbdfc1f \
+2026-09-28T19:33:54.1948668Z     --hash=sha256:55927d532399c2c646100ff7feb48eaa940ad70f42cd68e1328f3ded9f81ca24 \
+2026-09-28T19:33:54.1949259Z     --hash=sha256:58eadac9cd119677b60e1cf8ac4052f35949d71b8a9e5556efccbe82533cf22a \
+2026-09-28T19:33:54.1949761Z     --hash=sha256:62698275682bf121181861295c9181e789030a2d516071f5b8f3c23c170cd0fc \
+2026-09-28T19:33:54.1950256Z     --hash=sha256:639c8929aa0afe81be836b04de888460d6bed38b9c54cfc18da8f6bfabf5af5d \
+2026-09-28T19:33:54.1950766Z     --hash=sha256:67e3a721ffc5d8d2210d3671872298c4a84e4b8035cfe42ffd7cde35d772b146 \
+2026-09-28T19:33:54.1951274Z     --hash=sha256:6de4744d05bd1aa1be4ed7ea1189e3979196808008113bbbf899a460966b925e \
+2026-09-28T19:33:54.1951790Z     --hash=sha256:6e84adbcf4bf841aed8116a8264b9f50b4cb3e7bd89b516122e616ac56ca269e \
+2026-09-28T19:33:54.1952300Z     --hash=sha256:7491ee23305ac3eb59e492b6945881f5cd77a6f731061a3f25b77fd40f9e99a4 \
+2026-09-28T19:33:54.1952815Z     --hash=sha256:79486287de1730dbaff3dbd124d0ca4d2ef7f9d29bf2544f1f93c09b5bcbbd12 \
+2026-09-28T19:33:54.1953324Z     --hash=sha256:8020133a74bd81b4572dd8e4be028a6b1ebcd70e6726edc3918008c08bee6ee6 \
+2026-09-28T19:33:54.1953831Z     --hash=sha256:808345f53cb952433ca2816f1604ff3515608a81784954f38d4452acfe8e61d5 \
+2026-09-28T19:33:54.1954328Z     --hash=sha256:842e7b070435622248c7a2c44ae53fa1440e073cc3023bc919fed570884097a7 \
+2026-09-28T19:33:54.1954832Z     --hash=sha256:847927daf4cffbd4e90e42bc890069897101edd015f956cb8721b3473372edda \
+2026-09-28T19:33:54.1955343Z     --hash=sha256:882076c00c0a608b131187055ddc5ae29f2e7eaf870d6168980420d58528a5c8 \
+2026-09-28T19:33:54.1955840Z     --hash=sha256:8b95977e7211527ab0ba576e286d023389fbeeb32a6b7b771665d333c60e5342 \
+2026-09-28T19:33:54.1956338Z     --hash=sha256:8c2642a7603ec0b16ed77da4555db3b4b472341904873788327c0b0d7b95f1bb \
+2026-09-28T19:33:54.1956840Z     --hash=sha256:8c3d1e9c15b9d51ca0391e13da1a25a0a4df3c58a37c9dc368e0736cf7f69df0 \
+2026-09-28T19:33:54.1957368Z     --hash=sha256:8c6e5a2f750cc71c3e3b11d71661f21d6f9bc6cebc6564b1466417a1ec03ec77 \
+2026-09-28T19:33:54.1957883Z     --hash=sha256:8e4320744c1ffdd95a603def63344bfab2d33edeab301c5007e7de9f9f5b3885 \
+2026-09-28T19:33:54.1958390Z     --hash=sha256:8f2e5c5ee828d42cb11760761c0af6507927bec42d0ad5458f97c9203b054617 \
+2026-09-28T19:33:54.1958887Z     --hash=sha256:900a67df3fd1660b035a4761c4ce73c382ea6b35f90f9863c36c6fd8bf8b09bb \
+2026-09-28T19:33:54.1959465Z     --hash=sha256:913ca42ccad3f8cc6e292b587ae8ae49c8c823e5dce51a736252fc7c7cdfa577 \
+2026-09-28T19:33:54.1959976Z     --hash=sha256:9250a9a0a6fd4648b3f868da8d91a4c52b5811a62df58e753d50ae4454a36f80 \
+2026-09-28T19:33:54.1960476Z     --hash=sha256:931908d9fc855d8f74783377822be318edb6dcb19e47169dc038f9a1bf60b06e \
+2026-09-28T19:33:54.1960981Z     --hash=sha256:9826217f048f620d9a712672818bf231442c1b35d96b227a07eabd11b4bb6945 \
+2026-09-28T19:33:54.1961474Z     --hash=sha256:a0811d33247c3d6128a3001d763f2aa056bb3425204335400ac54f89eec3a0d0 \
+2026-09-28T19:33:54.1961972Z     --hash=sha256:a136d453475ac0fcbda502ef1e6504bd28d6d904700915d278deeab0d00fe140 \
+2026-09-28T19:33:54.1962475Z     --hash=sha256:a214c993455f99a89aaeadc9b21241900037adc9d97203e374d75513c5911822 \
+2026-09-28T19:33:54.1963041Z     --hash=sha256:a3086b538543802f84c843911242db20447de00d8752dd0efc936dbcf02218ba \
+2026-09-28T19:33:54.1963540Z     --hash=sha256:a550fb4950a06dde3beb4721f5ad4b25bf4513784665b0a8522c792e2bd822a4 \
+2026-09-28T19:33:54.1964046Z     --hash=sha256:a9f4645593036b81bbdb36b9c8e0ea0d1c3fee968c4d59db0344c14087ef143a \
+2026-09-28T19:33:54.1964569Z     --hash=sha256:aca6c1ef08a82bfe327cc156da694660f599923e2e6665b6d81c9c2d0ac9ffc8 \
+2026-09-28T19:33:54.1965135Z     --hash=sha256:acac386b453c2516111b50985d60ce46e7fadb5ea71ae7b25f4c946935bf27cf \
+2026-09-28T19:33:54.1965646Z     --hash=sha256:ae3d4fe8c0b9213624fdce7279d70e3b148b682ca20719ebd193a23ebfa47324 \
+2026-09-28T19:33:54.1966143Z     --hash=sha256:ae50181a047c871561212bb97f7932a2d45fb53e947bd9b57ebad85b529cbc53 \
+2026-09-28T19:33:54.1966655Z     --hash=sha256:ae6dd8f10bd17aad820876d24caec9efdafd80a318d16c0a48edb5e136902c6b \
+2026-09-28T19:33:54.1967163Z     --hash=sha256:af05d726809bff6b141be124d4c7ce998f9c9c7f30edb1f46c07aa103d540b41 \
+2026-09-28T19:33:54.1967673Z     --hash=sha256:afd70d95892096cdb26f15a00c45907b17817577aa8d1c76b2dcc2788391f9e9 \
+2026-09-28T19:33:54.1968174Z     --hash=sha256:bc0011654b91cc4fb2ae701bec0a0ba1e552c0714247fa7af6c59e0ccfa3a4e1 \
+2026-09-28T19:33:54.1968698Z     --hash=sha256:bcfbcf66006befb9fd2aeaa9e01feaf881b4dc330a02ba07d2322b1c11be7b5d \
+2026-09-28T19:33:54.1969278Z     --hash=sha256:bdbd97738551fca3917c1bd7188bec1920bb520104f28e7e1007f9ceb17b7690 \
+2026-09-28T19:33:54.1969781Z     --hash=sha256:c60924535c75f1566b6eb75b5c31a48a43fef04fa2d0d201acbad8a9969c6107 \
+2026-09-28T19:33:54.1970300Z     --hash=sha256:c7b9a2f8f4d8e90af72571d3d495deebdd7e3c75451f5b41719aee166e940fc2 \
+2026-09-28T19:33:54.1970810Z     --hash=sha256:ccffae9a092a00deb7efd545fe5e2c33c33b88e7c054337e9a74c179347d0b7d \
+2026-09-28T19:33:54.1971322Z     --hash=sha256:cdc7e35386f3847df728fbcb5e887e2d79c19e2fa1eba9e51b6621d23e3243af \
+2026-09-28T19:33:54.1971828Z     --hash=sha256:d15fde0e6fb0d88a60d221204873743e5d9f0b7d29165e62cd86d0413ad74ba6 \
+2026-09-28T19:33:54.1972338Z     --hash=sha256:d34c20167764fbcf927194d532dd7e0c56772f0a5f943fa5ef9e9afbba8fb9db \
+2026-09-28T19:33:54.1972846Z     --hash=sha256:d483fe17f01ad64b7bf7cc38fcefff1ca9fb83f8c2b2542b68f97ffe0611b369 \
+2026-09-28T19:33:54.1973360Z     --hash=sha256:d7469697dce35be237db177d42e2a2ee26e6dcc5fc052078a6fefabd288c6edd \
+2026-09-28T19:33:54.1973875Z     --hash=sha256:dc319e5a1de4b6913aac94bf6a2f9e847371e0a140a43dd4991db1a09bc2d504 \
+2026-09-28T19:33:54.1974391Z     --hash=sha256:e059c5dde6452b44424bd1834557556c226b57781dee1227af23518459722b13 \
+2026-09-28T19:33:54.1974895Z     --hash=sha256:e4316bf32babbed84e691e352faf967ce2f0f024174a8643c37c94a1080374fc \
+2026-09-28T19:33:54.1975403Z     --hash=sha256:e55d236be29255554da47abe5c577637db7c24a02b8b46f0ca9524c855801868 \
+2026-09-28T19:33:54.1975918Z     --hash=sha256:ea7bb13b7c9a29791f87a0387ba7d3ad3a6d783d827e4d3f27b40a0ff44495e2 \
+2026-09-28T19:33:54.1976438Z     --hash=sha256:ea964164cc9afa72d4d9b23cc28dafae93693c0a53e0b42acbff15b22c3f9ddd \
+2026-09-28T19:33:54.1976952Z     --hash=sha256:ec829541c45bca16e61c7ae50c20501f213605beb75d1aba91a6ee37fbbb56a4 \
+2026-09-28T19:33:54.1977471Z     --hash=sha256:ecabd69db66de867690f9797f2f8fa27ba501bbc24540cbdbdc649cd15888ba6 \
+2026-09-28T19:33:54.1977992Z     --hash=sha256:ed0c1e5d10cdc7135537988c74a0188da68e2f3c30813ba3744ab1e42e0480f9 \
+2026-09-28T19:33:54.1978494Z     --hash=sha256:f0840b5b17057f7fd918b76183a4b5a0635f43e14eb2ce60dce1d4ee4707ea00 \
+2026-09-28T19:33:54.1978992Z     --hash=sha256:f4d78253f6996be4901669ad25319f842f740eccf4d58e3c7f3dd39e6dde1d8f \
+2026-09-28T19:33:54.1979562Z     --hash=sha256:f56f1695bc5c0871cbc33dc0130fcf503aab0c57dcc5a6700a4f49eba4f2652e \
+2026-09-28T19:33:54.1980078Z     --hash=sha256:f826877d462181e5eb1c26a0026b8d0cab05d99844ecb6d8bf3627a2ca0c0442 \
+2026-09-28T19:33:54.1980574Z     --hash=sha256:f90938e92afda60266da758ee7d363447f7f0138c9559f9e1811629580582d90 \
+2026-09-28T19:33:54.1981175Z     --hash=sha256:faa679d19a6696fd54259ad321251ad77a13e70e03dd834daa762a44fb6196ef
+2026-09-28T19:33:54.1981567Z     # via
+2026-09-28T19:33:54.1981770Z     #   jsonschema
+2026-09-28T19:33:54.1981987Z     #   referencing
+2026-09-28T19:33:54.1982198Z sniffio==1.3.1 \
+2026-09-28T19:33:54.1982539Z     --hash=sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2 \
+2026-09-28T19:33:54.1983061Z     --hash=sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc
+2026-09-28T19:33:54.1983433Z     # via
+2026-09-28T19:33:54.1983616Z     #   anthropic
+2026-09-28T19:33:54.1983809Z     #   openai
+2026-09-28T19:33:54.1984077Z sse-starlette==3.4.11 \
+2026-09-28T19:33:54.1984422Z     --hash=sha256:1bae716c02f3e6f294be41ff333220692dae7c3cbab077c900f159676719dade \
+2026-09-28T19:33:54.1984922Z     --hash=sha256:c7b2244bdff016fe7f64e10075e89a3e6bbf899649cc89b0fe884b5545042453
+2026-09-28T19:33:54.1985291Z     # via mcp
+2026-09-28T19:33:54.1985488Z starlette==1.6.0 \
+2026-09-28T19:33:54.1985818Z     --hash=sha256:a86dd39d14bb45f85a3d18525215a9ef0cfd1f192ac793220e72598c90335f0c \
+2026-09-28T19:33:54.1986319Z     --hash=sha256:d4e3ac5e546444960c710297a3c9fc3f7ebae1b7e963f3d36173b49da535be9b
+2026-09-28T19:33:54.1986676Z     # via
+2026-09-28T19:33:54.1986863Z     #   mcp
+2026-09-28T19:33:54.1987053Z     #   sse-starlette
+2026-09-28T19:33:54.1987262Z textual==8.2.8 \
+2026-09-28T19:33:54.1987588Z     --hash=sha256:267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a \
+2026-09-28T19:33:54.1988092Z     --hash=sha256:3f106a9fbc73e39dd266c9712432087de78a6d644084c7c241d6a25c3169115b
+2026-09-28T19:33:54.1988462Z     # via harnessix
+2026-09-28T19:33:54.1988668Z tqdm==4.70.0 \
+2026-09-28T19:33:54.1988997Z     --hash=sha256:55b0b0dbd97462d06ebee91e4dac24ed4d4702be82b24f07e6c1d27e08cea220 \
+2026-09-28T19:33:54.1989583Z     --hash=sha256:7f585706bfddbdebf89daac705b2dfcc16890130727d3197ca62c732b4310953
+2026-09-28T19:33:54.1989959Z     # via openai
+2026-09-28T19:33:54.1990207Z truststore==0.10.4 ; sys_platform != 'emscripten' \
+2026-09-28T19:33:54.1990629Z     --hash=sha256:9d91bd436463ad5e4ee4aba766628dd6cd7010cf3e2461756b3303710eebc301 \
+2026-09-28T19:33:54.1991154Z     --hash=sha256:adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981
+2026-09-28T19:33:54.1991543Z     # via
+2026-09-28T19:33:54.1991729Z     #   httpcore2
+2026-09-28T19:33:54.1991925Z     #   httpx2
+2026-09-28T19:33:54.1992143Z typing-extensions==4.16.0 \
+2026-09-28T19:33:54.1992508Z     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
+2026-09-28T19:33:54.1993019Z     --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
+2026-09-28T19:33:54.1993389Z     # via
+2026-09-28T19:33:54.1993583Z     #   anthropic
+2026-09-28T19:33:54.1993782Z     #   anyio
+2026-09-28T19:33:54.1993983Z     #   httpx2
+2026-09-28T19:33:54.1994171Z     #   mcp
+2026-09-28T19:33:54.1994361Z     #   mcp-types
+2026-09-28T19:33:54.1994559Z     #   openai
+2026-09-28T19:33:54.1994763Z     #   opentelemetry-api
+2026-09-28T19:33:54.1995038Z     #   opentelemetry-exporter-otlp-proto-http
+2026-09-28T19:33:54.1995329Z     #   opentelemetry-sdk
+2026-09-28T19:33:54.1995599Z     #   opentelemetry-semantic-conventions
+2026-09-28T19:33:54.1995869Z     #   pydantic
+2026-09-28T19:33:54.1996116Z     #   pydantic-core
+2026-09-28T19:33:54.1996325Z     #   referencing
+2026-09-28T19:33:54.1996529Z     #   starlette
+2026-09-28T19:33:54.1996718Z     #   textual
+2026-09-28T19:33:54.1996917Z     #   typing-inspection
+2026-09-28T19:33:54.1997153Z typing-inspection==0.4.4 \
+2026-09-28T19:33:54.1997513Z     --hash=sha256:547274fa6b0a561ccf549cc9524b999a578e737d015d8709d021f9d0d13bea47 \
+2026-09-28T19:33:54.1998030Z     --hash=sha256:65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147
+2026-09-28T19:33:54.1998403Z     # via
+2026-09-28T19:33:54.1998581Z     #   mcp
+2026-09-28T19:33:54.1998764Z     #   pydantic
+2026-09-28T19:33:54.1998968Z urllib3==2.7.0 \
+2026-09-28T19:33:54.1999372Z     --hash=sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c \
+2026-09-28T19:33:54.1999970Z     --hash=sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
+2026-09-28T19:33:54.2000356Z     # via requests
+2026-09-28T19:33:54.2000599Z uvicorn==0.52.4 ; sys_platform != 'emscripten' \
+2026-09-28T19:33:54.2001015Z     --hash=sha256:73acfee47a0b133c5de13d219492d62d8a31e935f4fe6e41a232451a15379f86 \
+2026-09-28T19:33:54.2001516Z     --hash=sha256:f86e41a149d7d05a9969337e3946a9c171c06a5d42680896daaba624aeac8da1
+2026-09-28T19:33:54.2001883Z     # via mcp
+2026-09-28T19:33:54.2062131Z ##[group]Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+2026-09-28T19:33:54.2062559Z with:
+2026-09-28T19:33:54.2062968Z   name: harnessix-canonical-wheel-753d6a82ec3fbd1f30f065703684a8e9869fe8f0-36472999447-1
+2026-09-28T19:33:54.2063518Z   path: /home/runner/work/_temp/harnessix-installed-product/wheel
+2026-09-28T19:33:54.2063875Z   merge-multiple: false
+2026-09-28T19:33:54.2064117Z   repository: carrie1988/Harnessix
+2026-09-28T19:33:54.2064376Z   run-id: 36472999447
+2026-09-28T19:33:54.2064592Z env:
+2026-09-28T19:33:54.2064857Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:54.2065178Z   UV_PYTHON: 3.12
+2026-09-28T19:33:54.2065423Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:54.2065711Z ##[endgroup]
+2026-09-28T19:33:54.3564671Z Downloading single artifact
+2026-09-28T19:33:54.3719240Z (node:2302) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-28T19:33:54.3719921Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-28T19:33:54.6296441Z Preparing to download the following artifacts:
+2026-09-28T19:33:54.6297689Z - harnessix-canonical-wheel-753d6a82ec3fbd1f30f065703684a8e9869fe8f0-36472999447-1 (ID: 10992542365, Size: 1033016, Expected Digest: sha256:e0465d0869656768599493ee0f9c61beba2b22aa62259c4f77ebe902f29a61bd)
+2026-09-28T19:33:54.8641650Z Redirecting to blob download url: https://productionresultssa15.blob.core.windows.net/actions-results/f7f0e48e-e798-4beb-8834-ef592fad9048/workflow-job-run-1e92f998-d57e-5972-ab7d-6836e122c902/artifacts/2eaff0118f9774dfb5b00c971442106ebc8721548367a404606bb2010eed8508.zip
+2026-09-28T19:33:54.8642949Z Starting download of artifact to: /home/runner/work/_temp/harnessix-installed-product/wheel
+2026-09-28T19:33:55.1028913Z (node:2302) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+2026-09-28T19:33:55.4155450Z SHA256 digest of downloaded artifact is e0465d0869656768599493ee0f9c61beba2b22aa62259c4f77ebe902f29a61bd
+2026-09-28T19:33:55.4156391Z Artifact download completed successfully.
+2026-09-28T19:33:55.4156898Z Total of 1 artifact(s) downloaded
+2026-09-28T19:33:55.4161626Z Download artifact has finished successfully
+2026-09-28T19:33:55.4278860Z ##[group]Run uv run python - <<'PY'
+2026-09-28T19:33:55.4279436Z [36;1muv run python - <<'PY'[0m
+2026-09-28T19:33:55.4279779Z [36;1mimport hashlib, os[0m
+2026-09-28T19:33:55.4280115Z [36;1mfrom pathlib import Path[0m
+2026-09-28T19:33:55.4280429Z [36;1mroot = Path(os.environ["ACCEPTANCE_ROOT"])[0m
+2026-09-28T19:33:55.4280774Z [36;1mwheels = list((root / "wheel").glob("*.whl"))[0m
+2026-09-28T19:33:55.4281088Z [36;1massert len(wheels) == 1[0m
+2026-09-28T19:33:55.4281351Z [36;1mwheel = wheels[0].resolve()[0m
+2026-09-28T19:33:55.4281692Z [36;1mexpected = os.environ["CANONICAL_WHEEL_SHA256"][0m
+2026-09-28T19:33:55.4282209Z [36;1massert hashlib.sha256(wheel.read_bytes()).hexdigest() == expected, "canonical_wheel_mismatch"[0m
+2026-09-28T19:33:55.4282703Z [36;1m(root / "wheel-requirement.txt").write_text([0m
+2026-09-28T19:33:55.4283076Z [36;1m    f"{wheel.as_uri()} --hash=sha256:{expected}\n",[0m
+2026-09-28T19:33:55.4283399Z [36;1m    encoding="utf-8",[0m
+2026-09-28T19:33:55.4283686Z [36;1m)[0m
+2026-09-28T19:33:55.4283880Z [36;1mPY[0m
+2026-09-28T19:33:55.4320534Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-28T19:33:55.4320893Z env:
+2026-09-28T19:33:55.4321186Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:55.4321517Z   UV_PYTHON: 3.12
+2026-09-28T19:33:55.4321784Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:55.4322197Z   ACCEPTANCE_ROOT: /home/runner/work/_temp/harnessix-installed-product
+2026-09-28T19:33:55.4322720Z   CANONICAL_WHEEL_SHA256: 9db72b51007045396bfee0f1e7d88675f6c13002a3c444698884d9fb01a8318a
+2026-09-28T19:33:55.4323144Z ##[endgroup]
+2026-09-28T19:33:55.4794189Z ##[group]Run INSTALLED_PYTHON=$(uv run python -c 'import os; from pathlib import Path; print((Path(os.environ["ACCEPTANCE_ROOT"]) / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")).as_posix())')
+2026-09-28T19:33:55.4795478Z [36;1mINSTALLED_PYTHON=$(uv run python -c 'import os; from pathlib import Path; print((Path(os.environ["ACCEPTANCE_ROOT"]) / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")).as_posix())')[0m
+2026-09-28T19:33:55.4796552Z [36;1mWHEEL=$(uv run python -c 'import os; from pathlib import Path; print(next((Path(os.environ["ACCEPTANCE_ROOT"]) / "wheel").glob("*.whl")).as_posix())')[0m
+2026-09-28T19:33:55.4797513Z [36;1muv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps -r "$ACCEPTANCE_ROOT/requirements.txt" > "$ACCEPTANCE_ROOT/dependencies.log" 2>&1[0m
+2026-09-28T19:33:55.4798600Z [36;1muv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps --offline -r "$ACCEPTANCE_ROOT/wheel-requirement.txt" > "$ACCEPTANCE_ROOT/wheel-install.log" 2>&1[0m
+2026-09-28T19:33:55.4799845Z [36;1mUV_EXECUTABLE=$(uv run python -c 'import shutil; from pathlib import Path; executable=shutil.which("uv"); assert executable; print(Path(executable).as_posix())')[0m
+2026-09-28T19:33:55.4800495Z [36;1mcd "$ACCEPTANCE_ROOT"[0m
+2026-09-28T19:33:55.4800911Z [36;1m"$INSTALLED_PYTHON" -I "$GITHUB_WORKSPACE/scripts/installed_product_acceptance.py" \[0m
+2026-09-28T19:33:55.4801487Z [36;1m  --environment-root "$ACCEPTANCE_ROOT" --source-root "$GITHUB_WORKSPACE" \[0m
+2026-09-28T19:33:55.4802007Z [36;1m  --source-revision "$GITHUB_SHA" --wheel "$WHEEL" --uv "$UV_EXECUTABLE" \[0m
+2026-09-28T19:33:55.4802545Z [36;1m  > "$ACCEPTANCE_ROOT/acceptance.log" 2> "$ACCEPTANCE_ROOT/acceptance.stderr.log"[0m
+2026-09-28T19:33:55.4838288Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-28T19:33:55.4838629Z env:
+2026-09-28T19:33:55.4838916Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:33:55.4839486Z   UV_PYTHON: 3.12
+2026-09-28T19:33:55.4839771Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:33:55.4840180Z   ACCEPTANCE_ROOT: /home/runner/work/_temp/harnessix-installed-product
+2026-09-28T19:33:55.4840543Z ##[endgroup]
+2026-09-28T19:34:09.5316498Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+2026-09-28T19:34:09.5316911Z with:
+2026-09-28T19:34:09.5317319Z   name: harnessix-installed-linux-753d6a82ec3fbd1f30f065703684a8e9869fe8f0-36472999447-1
+2026-09-28T19:34:09.5319500Z   path: /home/runner/work/_temp/harnessix-installed-product/result.json
+/home/runner/work/_temp/harnessix-installed-product/requirements.txt
+/home/runner/work/_temp/harnessix-installed-product/wheel-requirement.txt
+/home/runner/work/_temp/harnessix-installed-product/dependencies.log
+/home/runner/work/_temp/harnessix-installed-product/wheel-install.log
+/home/runner/work/_temp/harnessix-installed-product/acceptance.log
+/home/runner/work/_temp/harnessix-installed-product/acceptance.stderr.log
+
+2026-09-28T19:34:09.5321263Z   if-no-files-found: ignore
+2026-09-28T19:34:09.5321523Z   retention-days: 14
+2026-09-28T19:34:09.5321760Z   compression-level: 6
+2026-09-28T19:34:09.5321990Z   overwrite: false
+2026-09-28T19:34:09.5322250Z   include-hidden-files: false
+2026-09-28T19:34:09.5322489Z env:
+2026-09-28T19:34:09.5322764Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:34:09.5323109Z   UV_PYTHON: 3.12
+2026-09-28T19:34:09.5323545Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:34:09.5323882Z ##[endgroup]
+2026-09-28T19:34:09.6936633Z (node:2535) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-28T19:34:09.6937813Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-28T19:34:09.7018799Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-09-28T19:34:09.7022296Z The least common ancestor is /home/runner/work/_temp/harnessix-installed-product. This will be the root directory of the artifact
+2026-09-28T19:34:09.7023158Z With the provided path, there will be 7 files uploaded
+2026-09-28T19:34:09.7028292Z Artifact name is valid!
+2026-09-28T19:34:09.7029420Z Root directory input is valid!
+2026-09-28T19:34:10.0532400Z Beginning upload of artifact content to blob storage
+2026-09-28T19:34:10.0820468Z (node:2535) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-28T19:34:10.3583771Z Uploaded bytes 27204
+2026-09-28T19:34:10.4161299Z Finished uploading artifact content to blob storage!
+2026-09-28T19:34:10.4162196Z SHA256 digest of uploaded artifact zip is 3b4b272cc4708bab2c7909773b839f99a20a4cf2dd712b1c44331e19a1053c4e
+2026-09-28T19:34:10.4164066Z Finalizing artifact upload
+2026-09-28T19:34:10.6605526Z Artifact harnessix-installed-linux-753d6a82ec3fbd1f30f065703684a8e9869fe8f0-36472999447-1.zip successfully finalized. Artifact ID 10991718747
+2026-09-28T19:34:10.6607821Z Artifact harnessix-installed-linux-753d6a82ec3fbd1f30f065703684a8e9869fe8f0-36472999447-1 has been successfully uploaded! Final size is 27204 bytes. Artifact ID is 10991718747
+2026-09-28T19:34:10.6614053Z Artifact download URL: https://github.com/carrie1988/Harnessix/actions/runs/36472999447/artifacts/10991718747
+2026-09-28T19:34:10.6780710Z Post job cleanup.
+2026-09-28T19:34:10.7837098Z UV_CACHE_DIR is already set to /home/runner/work/_temp/setup-uv-cache
+2026-09-28T19:34:10.7841695Z UV_PYTHON_INSTALL_DIR is already set to /home/runner/work/_temp/uv-python-dir
+2026-09-28T19:34:10.7843481Z Cache hit occurred on key setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-b0cd87c0438933b3ae96592663af45678ba0a6ee964146b392f92e22c87b17b6, not saving cache.
+2026-09-28T19:34:10.8960905Z Post job cleanup.
+2026-09-28T19:34:10.9812291Z [command]/usr/bin/git version
+2026-09-28T19:34:10.9859406Z git version 2.55.0
+2026-09-28T19:34:10.9905215Z Temporarily overriding HOME='/home/runner/work/_temp/2c505908-5c17-44ce-8eba-50536b2fb6cb' before making global git config changes
+2026-09-28T19:34:10.9906087Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T19:34:10.9912641Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T19:34:10.9943988Z Removing SSH command configuration
+2026-09-28T19:34:10.9952595Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T19:34:10.9985897Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T19:34:11.0205386Z Removing HTTP extra header
+2026-09-28T19:34:11.0213299Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T19:34:11.0251250Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T19:34:11.0477112Z Removing includeIf entries pointing to credentials config files
+2026-09-28T19:34:11.0484073Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T19:34:11.0510901Z includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T19:34:11.0512286Z includeif.gitdir:/github/workspace/.git.path
+2026-09-28T19:34:11.0520369Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T19:34:11.0545437Z /home/runner/work/_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:34:11.0558254Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:34:11.0596356Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-28T19:34:11.0621393Z /github/runner_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:34:11.0631900Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config
+2026-09-28T19:34:11.0666965Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T19:34:11.0866945Z Removing credentials config '/home/runner/work/_temp/git-credentials-27b8b2da-1e05-4bb0-b4e1-7a90dc03cf2a.config'
+2026-09-28T19:34:11.1003958Z Cleaning up orphan processes
+2026-09-28T19:34:11.1221738Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

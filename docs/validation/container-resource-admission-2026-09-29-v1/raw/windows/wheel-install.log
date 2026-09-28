@@ -1,0 +1,5 @@
+Using Python 3.12.10 environment at: D:\a\_temp\harnessix-installed-product\venv
+Resolved 1 package in 2ms
+Prepared 1 package in 75ms
+Installed 1 package in 37ms
+ + harnessix==0.1.0 (from file:///D:/a/_temp/harnessix-installed-product/wheel/harnessix-0.1.0-py3-none-any.whl)

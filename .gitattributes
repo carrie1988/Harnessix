@@ -79,3 +79,9 @@ docs/validation/canonical-wheel-three-platform-2026-09-29-v1/** -text
 docs/validation/canonical-wheel-three-platform-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/**/*.log -diff -merge
 docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# 资源准入及同候选安装原件保留原字节，Windows行终止符不转换。
+docs/validation/container-resource-admission-2026-09-29-v1/** -text
+docs/validation/container-resource-admission-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/container-resource-admission-2026-09-29-v1/raw/**/*.log -diff -merge
+docs/validation/container-resource-admission-2026-09-29-v1/raw/windows/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -1,0 +1,16 @@
+flowchart TD
+    Config[固定Process Profile或显式Container宿主] --> Initial[Engine初次探测]
+    Initial --> Query[固定字段只读资源查询]
+    Query --> Validate[共享严格判定]
+    Validate -->|有效| Probe[原v1 Probe与原能力绑定]
+    Validate -->|无效| Reject[固定拒绝 不广告强能力]
+    Probe --> Builder[ContainerCommandBuilder.prepare]
+    Builder --> Fresh[启动前重新查询与判定]
+    Fresh -->|有效| Prepared[Prepared启动对象]
+    Fresh -->|无效| Reject
+    Prepared --> Owner[原Process Owner启动]
+    Prepared --> Connect[MCP连接前重新查询与判定]
+    Connect -->|有效| Client[原stdio Client]
+    Connect -->|无效| Reject
+    Owner --> Cleanup[原按身份清理]
+    Client --> Cleanup

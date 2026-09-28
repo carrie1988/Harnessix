@@ -2,7 +2,7 @@
 doc_type: threat-model
 status: current
 version: 13
-code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
+code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
 owners:
   - core
 modules:

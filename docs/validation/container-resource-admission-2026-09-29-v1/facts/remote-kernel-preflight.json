@@ -1,0 +1,17 @@
+{
+  "scenario": "remote-kernel-preflight",
+  "platform": "Linux",
+  "architecture": "aarch64",
+  "controllers": [
+    "cpuset",
+    "cpu",
+    "io",
+    "pids"
+  ],
+  "memory_controller_available": false,
+  "memory_max_exists": false,
+  "docker_cli_installed": false,
+  "kernel_or_boot_modified_by_validation": false,
+  "container_daemon_started_by_validation": false,
+  "model_requests": 0
+}

@@ -1,0 +1,27 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "753d6a82ec3fbd1f30f065703684a8e9869fe8f0",
+  "component": "Container资源准入及启动前复核",
+  "decision": "COMPONENT_PASS_COMMERCIAL_NO_GO",
+  "design": "../../changes/m09-r1-container-resource-admission.md",
+  "required_checks": [
+    "Docker四布尔严格true",
+    "Podman v2三个必需控制器",
+    "实时准入不能由旧Probe或MCP transport文字绕过",
+    "拒绝新启动不阻断原标签清理",
+    "父取消结算原只读Probe且不创建Client",
+    "实际Linux cgroup文件必须存在且值匹配",
+    "安装专项没有真实模型编码或版本升级声明"
+  ],
+  "still_open": [
+    "R1整体安全、复杂恢复与认证容量Profile",
+    "R3真实质量与原预算账本",
+    "Windows消费者环境及完整编码闭环",
+    "不同产品版本升级回退",
+    "独立开发者Beta",
+    "权利与最终封板"
+  ],
+  "original_failures_preserved": true,
+  "automatic_report_failure_resolution": "默认生成接口不携带额外source_revision；只重生成当前报告，不更改策略或测例",
+  "evidence": "verification.json"
+}

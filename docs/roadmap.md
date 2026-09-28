@@ -516,6 +516,9 @@ R2中的许可证、权利链和其他不直接改变功能的治理工作低优
 
 R1已补[Container资源能力准入](changes/m09-r1-container-resource-admission.md)，拒绝缺少内存、CPU CFS或
 PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整体或真实编码发布门禁。
+固定`753d6a8`的[专项验收](validation/container-resource-admission-2026-09-29-v1/README.md)保留
+修复前23失败、本地完整5724通过、真实Linux资源值核对及同一新Wheel三平台生命周期结果。
+Scripted 20/20不是新真实质量；消费者OS、版本升级、独立Beta与R1～R6整体仍开放。
 
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
 固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。

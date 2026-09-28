@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: eb73fc9193a24e86d0ffa8a03ec316b3c5dd2209
+version: 2
+code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
 owners: [core]
 modules: [sandbox, product_config, mcp]
 related_adrs:
@@ -71,9 +71,9 @@ flowchart TD
     Validate -->|无效| Reject[固定拒绝 不广告强能力]
     Probe --> Builder[ContainerCommandBuilder.prepare]
     Builder --> Fresh[启动前重新查询与判定]
-    Fresh -->|有效| Owner[原Process Owner启动]
+    Fresh -->|有效| Prepared[Prepared启动对象]
     Fresh -->|无效| Reject
-    Builder --> Prepared[既有MCP Prepared启动对象]
+    Prepared --> Owner[原Process Owner启动]
     Prepared --> Connect[MCP连接前重新查询与判定]
     Connect -->|有效| Client[原stdio Client]
     Connect -->|无效| Reject
@@ -149,7 +149,7 @@ sequenceDiagram
 原只读工作，随后按原连接失败流程记录取消和清理，不重连、不启动工作负载。
 
 ```mermaid
-flowchart LR
+flowchart TD
     Info[只读Engine固定字段] --> Bounded[返回码 类型和字节上限]
     Bounded --> JSON[严格JSON解析]
     JSON --> Support[全部必需能力]
@@ -157,7 +157,7 @@ flowchart LR
     Decision --> Existing[原Profile省略原因或MCP连接事件]
     Profile[原Profile资源请求] --> Plan[原Plan与Approval摘要]
     Plan --> Launch[原固定资源argv]
-    Decision --> Launch
+    Decision -->|仅准入| Launch
 ```
 
 **数据流说明：** 原始Engine正文仅驻当前调用；不持久化宿主路径、Daemon配置或整个info。准入结果只影响

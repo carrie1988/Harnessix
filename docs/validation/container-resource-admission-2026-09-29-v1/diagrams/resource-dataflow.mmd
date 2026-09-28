@@ -1,0 +1,9 @@
+flowchart TD
+    Info[只读Engine固定字段] --> Bounded[返回码 类型和字节上限]
+    Bounded --> JSON[严格JSON解析]
+    JSON --> Support[全部必需能力]
+    Support --> Decision[准入或固定拒绝]
+    Decision --> Existing[原Profile省略原因或MCP连接事件]
+    Profile[原Profile资源请求] --> Plan[原Plan与Approval摘要]
+    Plan --> Launch[原固定资源argv]
+    Decision -->|仅准入| Launch
