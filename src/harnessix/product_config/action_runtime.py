@@ -35,6 +35,7 @@ from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
 )
+from harnessix.product_config.state_owner import ProductStateOwner
 from harnessix.sandbox.process_runtime import ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
@@ -187,12 +188,12 @@ async def open_default_product_action_runtime(
     artifact_workspace_scope: str,
     recovery_config: ProductActionConfigV1 | None = None,
     output_redaction: OutputRedactionSource | None = None,
+    root_owner: ProductStateOwner | None = None,
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
     """持有全部Action资源，先初始化Session并结算旧Route，再发布候选目录。"""
 
-    with product_action_runtime_lock(state_root):
-        # 恢复扫描会读取Session与Artifact索引。调用方尚未打开AgentRuntime时，
-        # Session Schema可能仍不存在；在统一组合根内幂等初始化，避免启动顺序隐式耦合。
+    with product_action_runtime_lock(state_root, root_owner=root_owner):
+        # 独立宿主的Session可能尚未初始化；必须在全状态Owner内准备恢复所需索引。
         await artifacts.session.initialize()
         checked_config, checked_recovery = _validated_action_configs(action_config, recovery_config)
         environment = build_fixed_product_action_environment(workspace_root)

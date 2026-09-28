@@ -39,9 +39,11 @@ from harnessix.product_config.runtime import (
     select_profile,
 )
 from harnessix.product_config.session_key import open_product_session_binding
+from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.secrets.provider import SecretProvider
 from harnessix.secrets.publication import SecretPublicationScope
+from harnessix.session.maintenance_io import MaintenanceIOControl, run_maintenance_io
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 
@@ -57,6 +59,7 @@ class _ProductRuntimeStartup:
     state_root: Path
     git_path: Path | None
     secrets: SecretProvider
+    root_owner: ProductStateOwner
 
 
 def _is_link_or_junction(path: Path) -> bool:
@@ -190,13 +193,33 @@ async def _validated_runtime_paths(
         state_candidate
     ):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
-    state_root = await asyncio.to_thread(_private_root, state_directory)
+    state_root = await run_maintenance_io(
+        lambda control: _prepare_state_root(state_directory, control), budget_seconds=5.0
+    )
     if state_root.is_relative_to(workspace_root) or workspace_root.is_relative_to(state_root):
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
     git_path = (
         await asyncio.to_thread(_git_path, git_executable) if git_executable is not None else None
     )
     return state_root, git_path
+
+
+def _prepare_state_root(path: str | Path, control: MaintenanceIOControl) -> Path:
+    """只派发一次目录准备；父取消先结算原写入线程，随后才允许产品Owner释放。"""
+    control.checkpoint()
+    root = _private_root(path)
+    control.checkpoint()
+    return root
+
+
+def _check_state_overlap(state_directory: str | Path, workspace_root: Path) -> None:
+    """只读核对根地址及已存在的父目录别名，不向Workspace创建外部锁锚点。"""
+    try:
+        candidate = Path(state_directory).absolute().resolve(strict=False)
+    except (OSError, RuntimeError):
+        raise KernelError("product_state_invalid", "产品状态目录地址无效") from None
+    if candidate.is_relative_to(workspace_root) or workspace_root.is_relative_to(candidate):
+        raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
 
 
 async def _serve_product_stdio(
@@ -248,6 +271,7 @@ async def _serve_product_stdio(
                         artifact_workspace_scope=tools.workspace_scope,
                         recovery_config=recovery_action,
                         output_redaction=public_scope,
+                        root_owner=startup.root_owner,
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)
@@ -340,25 +364,30 @@ async def run_product_stdio(
     report = diagnose_configuration(loaded, selection, secrets)
     if not report.ready:
         raise KernelError("product_config_diagnostic_failed", "产品配置离线诊断未通过")
-    state_root, git_path = await _validated_runtime_paths(
-        workspace_root=workspace_root,
-        state_directory=state_directory,
-        git_executable=git_executable,
-    )
-    startup = _ProductRuntimeStartup(
-        config=loaded,
-        profile=selection,
-        actions=action_snapshot,
-        workspace_root=workspace_root,
-        state_root=state_root,
-        git_path=git_path,
-        secrets=secrets,
-    )
-    await _serve_product_stdio(
-        startup,
-        input_stream=input_stream,
-        output_stream=output_stream,
-        expected_active_sha256=expected_active_sha256,
-        expected_active_profile=expected_active_profile,
-        expected_active_action_sha256=expected_active_action_sha256,
-    )
+    # 只读路径预检先于创建根外锁，拒绝Workspace重叠时不向用户仓库写入锚点。
+    await asyncio.to_thread(_check_state_overlap, state_directory, workspace_root)
+    with product_state_owner(Path(state_directory)) as owner:
+        state_root, git_path = await _validated_runtime_paths(
+            workspace_root=workspace_root,
+            state_directory=owner.state_root,
+            git_executable=git_executable,
+        )
+        owner.require(state_root)
+        startup = _ProductRuntimeStartup(
+            config=loaded,
+            profile=selection,
+            actions=action_snapshot,
+            workspace_root=workspace_root,
+            state_root=state_root,
+            git_path=git_path,
+            secrets=secrets,
+            root_owner=owner,
+        )
+        await _serve_product_stdio(
+            startup,
+            input_stream=input_stream,
+            output_stream=output_stream,
+            expected_active_sha256=expected_active_sha256,
+            expected_active_profile=expected_active_profile,
+            expected_active_action_sha256=expected_active_action_sha256,
+        )

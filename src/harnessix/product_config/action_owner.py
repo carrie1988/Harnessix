@@ -1,43 +1,39 @@
-"""产品Action Runtime宿主锁：在打开任一Store或Process Owner前取得。"""
+"""产品Action Runtime复用全状态Owner；独立宿主在打开Store前取得同一根外锁。"""
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
-from harnessix.domain.file_lock import acquire_exclusive_file_lock
+from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
 
 
 @contextmanager
-def product_action_runtime_lock(state_root: Path) -> Iterator[None]:
-    """跨平台持有整个Action Runtime生命周期，进程退出时由OS自动释放。"""
-
-    path = state_root / "product-action-runtime.lock"
-    descriptor = -1
-    try:
-        state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        descriptor = os.open(
-            path,
-            os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0),
-            0o600,
-        )
-        if os.fstat(descriptor).st_size == 0:
-            os.write(descriptor, b"\0")
-            os.fsync(descriptor)
-        os.lseek(descriptor, 0, os.SEEK_SET)
-        acquire_exclusive_file_lock(descriptor)
-    except BlockingIOError as error:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise KernelError("action_runtime_busy", "产品Action Runtime已有活跃宿主") from error
-    except OSError:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise KernelError("action_runtime_owner_unavailable", "产品Action宿主锁不可用") from None
-    try:
+def product_action_runtime_lock(
+    state_root: Path, *, root_owner: ProductStateOwner | None = None
+) -> Iterator[None]:
+    """已有产品Owner时只借用；独立调用保留原竞争错误，不建立第二套锁。"""
+    if root_owner is not None:
+        root_owner.require(state_root)
         yield
-    finally:
-        os.close(descriptor)
+        return
+    with _standalone_owner(state_root):
+        yield
+
+
+@contextmanager
+def _standalone_owner(state_root: Path) -> Iterator[None]:
+    # 仅转换取得锁时的错误；不得把Action业务抛出的同名错误误认为启动失败。
+    with ExitStack() as resources:
+        try:
+            resources.enter_context(product_state_owner(state_root))
+        except KernelError as error:
+            code = (
+                "action_runtime_busy"
+                if error.code == "product_state_busy"
+                else "action_runtime_owner_unavailable"
+            )
+            raise KernelError(code, "产品Action宿主锁不可用") from None
+        yield
