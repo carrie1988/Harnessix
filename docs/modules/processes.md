@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 25
-code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
+version: 26
+code_revision: f3363f7c865dfadc7ef9876c18714aa61680cb2d
 owners:
   - core
 modules:
@@ -1683,3 +1683,8 @@ NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原
 [完整详设第20节](../changes/m09-r1-windows-private-state.md#20-原始字节持久化与windows回执并发发布)
 包含需求、数据流、时序、字段、伪代码及失败/部署边界；原快速退出与SDK完整恢复仍须原生验收。
 历史摘要不符只拒绝，不转换旧文件或补签。共享IO不引入Process到Delivery依赖，也不修改治理阈值。
+
+正式Windows Receipt读取使用同一共享端口的只读ShareRead/Delete模式，禁止Write共享；
+旧FD保留原MAC，名称切换后的新读者验证新MAC。外部不兼容CRT Reader仍拒绝，不自动绕过。
+原Key、锁及备份源共享不变；转换后的FD与转换前原Handle各有唯一关闭归属。
+详见[原生后继事实和读取合同](../changes/m09-r1-windows-private-state.md#208-后继原生事实与正式reader合同)。

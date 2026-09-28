@@ -874,3 +874,8 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 原生低层IO收敛到Workspace，旧Delivery导入保持，不新增依赖环或放宽安全校验。
 [详设第20节](changes/m09-r1-windows-private-state.md#20-原始字节持久化与windows回执并发发布)
 保留原失败、字节/共享负对照、实际Owner和原SDK完整恢复；新原生结果未通过前R1/R4继续开放。
+
+实现`f3363f7`原生焦点110通过、5跳过、1失败，前置写链60通过；新二进制实际Owner、
+原快速退出重复及默认SDK完整备份恢复均通过。剩余持有旧CRT Reader的共享拒绝保留，
+正式Receipt Reader后继改为只读ShareRead/Delete、无Write共享，以原MAC快照协调受控发布；
+外部不兼容共享继续拒绝且不自动重放。该增量未替代三平台完整门禁、真实编码及Beta验收。

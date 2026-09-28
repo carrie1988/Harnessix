@@ -359,7 +359,6 @@ def test_process_owner_receipt_retries_windows_crt_access_denied(
     )
     path = tmp_path / "receipt.json"
     write_owner_receipt(path, receipt)
-    read_once = owner_receipt_module._read_owner_receipt_once  # noqa: SLF001
     calls = 0
 
     def denied_then_read(candidate: Path):
@@ -367,7 +366,9 @@ def test_process_owner_receipt_retries_windows_crt_access_denied(
         calls += 1
         if calls < 3:
             raise PermissionError(errno.EACCES, "access denied")
-        return read_once(candidate)
+        # 此用例只验证CRT错误分类与有界重试；原生文件端口由独立真实文件用例验证。
+        assert candidate == path
+        return receipt
 
     monkeypatch.setattr(owner_receipt_module, "_read_owner_receipt_once", denied_then_read)
     monkeypatch.setattr(owner_receipt_module, "_WINDOWS_RECEIPT_READ_DELAYS", (0.0,) * 7)

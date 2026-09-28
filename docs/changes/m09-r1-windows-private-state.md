@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
+version: 8
+code_revision: f3363f7c865dfadc7ef9876c18714aa61680cb2d
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -577,7 +577,7 @@ Owner异常分支可因此转入`unknown`。这是源码可达的并发发布缺
 | WS-9 | `stdout.bin`/`stderr.bin`是脱敏后的原始字节，不接受CRT换行、Ctrl-Z或编码转换 |
 | WS-10 | `persisted_bytes`及`persisted_sha256`对应物理落盘前缀；公开读取必须校验原摘要 |
 | WS-11 | 输出先Flush，再签名、发布Receipt；原MAC、Process ID、Owner身份、序号及终态Schema不变 |
-| WS-12 | 新Receipt通过同目录原子名称替换发布；旧Reader只保留旧不可变MAC快照，不读取拼接的新旧正文 |
+| WS-12 | 正式只读Receipt Reader允许名称替换共享、禁止Write共享；旧MAC快照保持不变；外部不兼容共享只拒绝 |
 | WS-13 | 写入前失败只清理当前创建的临时Handle；Rename已尝试后不能自动删除或重放未确认效果 |
 | WS-14 | 复用单一原生IO实现，不增加`processes -> delivery`依赖或扩大既有依赖环 |
 
@@ -605,7 +605,7 @@ flowchart LR
   S[完整备份目录发布] --> W
   W --> N[原同目录NT名称切换]
   N --> C[新Reader验证新MAC]
-  Q[既有Reader持有旧Handle] --> V[旧MAC快照不变]
+  Q[正式旧Reader 只读 ShareRead和Delete 无Write] --> V[旧MAC快照不变]
 ```
 
 图中低层依赖向Workspace收敛，Owner与Delivery不互相依赖。字节流只走脱敏、限额、Flush和原MAC，
@@ -618,6 +618,7 @@ flowchart LR
 | `CapturedProcessOutput.__init__/feed/_publish` | `O_BINARY`只控制CRT模式；原`O_EXCL`、`O_NOFOLLOW`、0600、脱敏、部分写入与额度保持 |
 | `SupervisedProcess.output(stream)` | 按原`persisted_bytes`读取二进制前缀，原SHA不匹配固定拒绝；不得转换后接受 |
 | `write_owner_receipt(path, receipt)` | 原64KiB限长及MAC正文；Windows装配原生Publisher，POSIX仍原写入/fsync/replace/目录fsync |
+| `open_owner_receipt(path)` | 上下文内返回二进制只读FD；原父链、最终路径、普通单链接、ShareRead/Delete；转换后由CRT唯一关闭，转换前失败关闭原Handle |
 | `publish_owner_receipt(path, body)` | 接受调用方已限长的UTF-8回执；固定父链、本地NTFS、排他创建、Flush、同目录Replace；不返回新业务事实 |
 | `rename_attempted` | 只标记是否已经发出名称切换；`False`时可清理当前临时对象，`True`时错误/未决不得按Handle自动删除 |
 | `WindowsFileOperations.rename(..., replace=True)` | 原信息类65及标志3，不使用BypassAccessCheck，不忽略只读属性，不依赖路径重开父目录 |
@@ -634,7 +635,7 @@ sequenceDiagram
   participant S as 输出文件
   participant T as 新临时Receipt Handle
   participant N as NT名称切换
-  participant R as 已打开旧Receipt的Reader
+  participant R as 正式旧Receipt Reader 无Write共享
   O->>S: 二进制写入脱敏字节 完成部分写并Flush
   O->>T: 原MAC正文 二进制WriteFile并Flush
   R->>R: 保持原Handle及原序号快照
@@ -650,8 +651,9 @@ sequenceDiagram
 ```
 
 [微软同目录Rename语义](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information)
-允许替换名称而不使既有目标Handle失效；该端口仍执行用户态访问检查。
-旧Reader得到已签名的旧事实不是损坏；原Supervisor序号规则决定是否推进，不能强行改成新序号。
+规定替换名称后的原Handle快照规则；这不等于绕过CreateFile共享约束。正式Reader显式允许Delete共享、禁止Write共享，
+并保留原DACL及访问检查；外部无Delete共享的CRT Reader仍会阻断发布，不能自动绕过。
+正式旧Reader得到已签名的旧事实不是损坏；原Supervisor序号规则决定是否推进，不能强行改成新序号。
 
 ```text
 capture output:
@@ -687,9 +689,41 @@ Windows写入端口错误统一映射原`process_owner_receipt_write_failed`，�
 | [二进制输出合同](../../tests/processes/test_output_binary_contracts.py) | 显式标志负例；LF/CRLF、Ctrl-Z、NUL、无效UTF-8；0/1/4/128额度；部分写入；实际Owner双流物理字节及Lease摘要 |
 | 同文件原生CRT负对照 | 明确`O_TEXT`导致物理转换；不能以POSIX模拟宣称原生通过 |
 | [Receipt合同](../../tests/processes/test_windows_receipt_contracts.py) | NTFS/创建/写入/Rename/清理故障、一次发布、未决不删、所有Handle关闭 |
-| 同文件原生旧Reader正反例 | 普通路径替换确实拒绝；正式发布成功，旧MAC和新MAC分别可验；部分写入不破坏旧事实 |
+| 同文件原生旧Reader正反例 | 外部无Delete共享Reader拒绝且不绕过；正式Reader并发发布后旧/新MAC分别可验；部分写入不破坏旧事实 |
 | [原Delivery IO合同](../../tests/delivery/test_windows_io_contracts.py) | 共享类/结构/函数身份相同；原ABI、UTF-16、部分写入、完成状态和权限拒绝不变 |
 | [原快速退出](../../tests/processes/test_windows_supervisor.py)及默认SDK | 原0/17/128四次重复、原Git私有输出及完整备份恢复全部保留 |
 
 原生候选未通过前不关闭R1/R4，未得真实任务新成绩不关闭R3。
 本修复不是1.0发布证据；最终门禁要求同一候选的三平台、质量、安装和真实用户结果。
+
+### 20.8 后继原生事实与正式Reader合同
+
+实现`f3363f7`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36445077226/job/109005154753)
+为110通过、5跳过、1失败，前置写链60通过。CRT文本转换负对照、原始字节物理摘要、实际Owner双流、
+原0/17/128每组四次快速退出及默认SDK完整备份/恢复均通过。
+唯一失败是持续持有无Delete共享的旧CRT Reader时发布仍拒绝；因此不能从NT标志推导所有旧Reader都可共存。
+两个本地Python环境受影响回归各3381通过、85跳过。原失败日志和未通过声明均保留。
+
+正式读取新增`open_owner_receipt`有限端口，复用原共享IO `open_existing(..., replace=True)`：
+实际访问仍只读/READ_ATTRIBUTES/READ_CONTROL，ShareRead|ShareDelete=5，不共享Write、不请求DELETE访问权。
+该共享只协调原受控Publisher名称切换，不改变Root/Key/SQLite锁/备份源的原共享或权限保护。
+[CreateFile共享规则](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew)
+与[CRT Handle所有权转移](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/open-osfhandle?view=msvc-170)
+是对应API依据。源父链、最终路径、Reparse/目录/多硬链接和64KiB正文均验证；原MAC与序号仍最终判定事实。
+
+```text
+with original bound parents and local NTFS:
+    open Receipt read-only with ShareRead|ShareDelete and no Write sharing
+    missing -> original receipt_missing; nonordinary or unbound -> original receipt_invalid
+    before conversion, reject Reparse/directory/multiple links and validate final scope
+    transfer native Handle to binary CRT descriptor
+    read original fstat-sized bounded body, then validate original schema/MAC/sequence
+    close only CRT descriptor after transfer; close original Handle on pre-transfer failure
+    close every parent and Root on success and failure
+```
+
+原生IO数值码被投影为标准Win32/CRT异常，以便原七次有界共享重试识别；不扩大重试次数或错误范围。
+Publisher只附固定数值IO码，无错误正文、路径或Token。原外部CRT Reader负例保留为正式拒绝回归，
+另以实际正式Reader持有旧FD验证名称切换及双MAC快照，不能用删除负例获得通过。
+新增转换前/后关闭、缺失、Reparse、目录、Hardlink及消费正文异常模拟合同；模拟结果不代替原生共享验证。
+新增读取端口的原生验收未完成前，R1/R4继续开放。

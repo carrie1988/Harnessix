@@ -8,6 +8,7 @@ import hmac
 import json
 import os
 import time
+from contextlib import ExitStack
 from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
@@ -150,22 +151,29 @@ def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
-    descriptor = os.open(path, flags)
     try:
-        info = os.fstat(descriptor)
-        if info.st_size <= 0 or info.st_size > MAX_OWNER_RECEIPT_BYTES:
-            raise ValueError
-        chunks: list[bytes] = []
-        remaining = info.st_size
-        while remaining:
-            chunk = os.read(descriptor, remaining)
-            if not chunk:
+        with ExitStack() as resources:
+            if os.name == "nt":
+                from harnessix.processes.windows_receipt import open_owner_receipt
+
+                descriptor = resources.enter_context(open_owner_receipt(path))
+            else:
+                descriptor = os.open(path, flags)
+                resources.callback(os.close, descriptor)
+            info = os.fstat(descriptor)
+            if info.st_size <= 0 or info.st_size > MAX_OWNER_RECEIPT_BYTES:
                 raise ValueError
-            chunks.append(chunk)
-            remaining -= len(chunk)
-        body = b"".join(chunks)
-    finally:
-        os.close(descriptor)
+            chunks: list[bytes] = []
+            remaining = info.st_size
+            while remaining:
+                chunk = os.read(descriptor, remaining)
+                if not chunk:
+                    raise ValueError
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            body = b"".join(chunks)
+    except KernelError:
+        raise ValueError("Process owner回执文件绑定无效") from None
     if len(body) != info.st_size:
         raise ValueError
     return ProcessOwnerReceipt.model_validate_json(body)
@@ -227,10 +235,13 @@ def write_owner_receipt(path: Path, receipt: ProcessOwnerReceipt) -> None:
 
         try:
             publish_owner_receipt(path, body)
-        except (KernelError, OSError, ValueError):
-            raise KernelError(
-                "process_owner_receipt_write_failed", "Process owner回执写入失败"
-            ) from None
+        except (KernelError, OSError, ValueError) as error:
+            failure = KernelError("process_owner_receipt_write_failed", "Process owner回执写入失败")
+            if isinstance(error, OSError):
+                failure.add_note(
+                    f"receipt_publish_io={getattr(error, 'winerror', None) or 0}:{error.errno or 0}"
+                )
+            raise failure from None
         return
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     descriptor: int | None = None
