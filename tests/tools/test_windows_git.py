@@ -79,6 +79,24 @@ def _leases(state: Path) -> list[ProcessLease]:
     return [ProcessLease.model_validate_json(row[0]) for row in rows]
 
 
+def _owner_shutdown_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
+    """只在原生故障回归中输出无局部变量的Owner栈，不改变控制句柄与Job启动。"""
+    original = subprocess.Popen
+    diagnostic = (
+        "import faulthandler,runpy;"
+        "faulthandler.dump_traceback_later(3,repeat=True);"
+        "runpy.run_module('harnessix.processes.windows_owner',run_name='__main__')"
+    )
+
+    def traced_owner(arguments, *args, **kwargs):
+        if tuple(arguments[1:3]) == ("-m", "harnessix.processes.windows_owner"):
+            arguments = (arguments[0], "-c", diagnostic, *arguments[3:])
+            kwargs["stderr"] = None
+        return original(arguments, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", traced_owner)
+
+
 async def test_windows_git_unicode_status_staged_diff_and_persistent_receipts(
     tmp_path: Path,
 ) -> None:
@@ -128,7 +146,14 @@ async def test_windows_git_never_executes_repository_helpers(tmp_path: Path, key
     root, state = tmp_path / "repo", tmp_path / "state"
     _repository(root)
     marker = root / "unexpected-helper"
-    _command(root, "config", key, f"cmd.exe /d /c echo x > {marker.as_posix()}")
+    helper = f"cmd.exe /d /c echo x > {marker.as_posix()}"
+    if key == "include.path":
+        included = tmp_path / "included.cfg"
+        included.write_text('[filter "fixture"]\n\tclean = ' + helper + "\n", encoding="utf-8")
+        value = included.as_posix()
+    else:
+        value = helper
+    _command(root, "config", key, value)
     (root / ".gitattributes").write_bytes(b"main.py filter=fixture\n")
     (root / "main.py").write_bytes(b"after\n")
     async with CodingToolRuntime(root, git_executable=_git(), git_state_directory=state) as tools:
@@ -166,7 +191,9 @@ async def test_windows_git_diff_prefix_keeps_complete_observation(tmp_path: Path
 
 async def test_windows_git_recovery_reconciles_original_receipt_without_relaunch(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _owner_shutdown_diagnostics(monkeypatch)
     root, state = tmp_path / "workspace", tmp_path / "state"
     root.mkdir()
     executable = Path(sys.executable)
@@ -204,9 +231,16 @@ async def test_windows_git_recovery_reconciles_original_receipt_without_relaunch
             raise AssertionError("原Owner未发布签名终态")
         # 不刷新原Controller，SQLite仍保留真实running，模拟丢失最后一次观察。
         assert _leases(state)[0].state == "running"
-        # 原Owner已经退出；只丢弃Controller内存和控制FD，不改写任何持久事实。
+        # Owner必须独立退出，不能要求仍在线的Controller先刷新Receipt或关闭控制FD。
+        owner = handle._owner
+        assert owner is not None
+        try:
+            assert await asyncio.to_thread(owner.wait, timeout=8) == 0
+        finally:
+            # 即使退出断言失败，也关闭原控制写端并有界回收，避免测试自身无限挂起。
+            handle._close_control()
+            await asyncio.to_thread(owner.wait, timeout=5)
         await handle._reap_owner()
-        handle._close_control()
         supervisor._handles.pop(spec.process_id)
         await reconcile_windows_git_reads(state)
         assert _leases(state)[0].state == "exited"

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
 from typing import Self
+from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
@@ -32,10 +33,12 @@ from harnessix.processes.contracts import (
 from harnessix.processes.owner_protocol import OutputRedactionSource
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
+    ProcessLease,
     ProcessOutputObservation,
     ProcessSpec,
 )
 from harnessix.processes.supervision_planner import build_process_spec
+from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
 from harnessix.processes.supervisor import WindowsProcessSupervisor
 from harnessix.processes.supervisor_capabilities import probe_windows_process_capability
 from harnessix.tools.contracts import ReadToolError
@@ -281,23 +284,46 @@ def _git_read_plan(
     )
 
 
+def _git_read_lease(plan: ExecutionPlanV2, lease: ProcessLease) -> bool:
+    return (
+        plan.intent.source == "builtin"
+        and plan.intent.source_id == "harnessix.git_read"
+        and plan.intent.tool == "git.read"
+        and plan.intent.effect_class == EffectClass.READ_ONLY
+        and plan.fingerprint == lease.plan_fingerprint
+    )
+
+
+def _reject_uncertain_git_reads(state: Path, plans: SQLiteExecutionPlanStore) -> None:
+    # UNKNOWN不能因离开active集合而成为下一次启动的豁免。
+    with SQLiteProcessLeaseStore(
+        state / "process-owner/process-leases.db", read_only=True
+    ) as store:
+        rows = store._db.execute(  # noqa: SLF001 - 固定只读查询，随后由原Store验真全部合同
+            "SELECT process_id FROM process_leases WHERE state='unknown'"
+        )
+        for (identity,) in rows:
+            lease = store.load(UUID(identity))
+            plan = plans.load_plan(lease.plan_id)
+            if isinstance(plan, ExecutionPlanV2) and _git_read_lease(plan, lease):
+                raise KernelError("product_git_recovery_uncertain", "旧Git只读查询未能验真终结")
+
+
 async def reconcile_windows_git_reads(state: Path) -> None:
     """产品Root Owner持有后只收敛旧只读Receipt；不重放查询、不控制存储中的PID。"""
     if not (state / "process-owner/process-leases.db").exists():
         return
     with SQLiteExecutionPlanStore(state / "execution-plans.db", read_only=True) as plans:
+        _reject_uncertain_git_reads(state, plans)
         async with WindowsProcessSupervisor(state / "process-owner") as supervisor:
+            pending = []
             for lease in supervisor.active_leases():
                 plan = plans.load_plan(lease.plan_id)
-                if (
-                    plan.intent.source == "builtin"
-                    and plan.intent.source_id == "harnessix.git_read"
-                    and plan.intent.tool == "git.read"
-                    and plan.intent.effect_class == EffectClass.READ_ONLY
-                    and plan.fingerprint == lease.plan_fingerprint
-                ):
-                    observed = await supervisor.reconcile(lease.process_id)
-                    if observed.state != "exited":
-                        raise KernelError(
-                            "product_git_recovery_uncertain", "旧Git只读查询未能验真终结"
-                        )
+                if isinstance(plan, ExecutionPlanV2) and _git_read_lease(plan, lease):
+                    pending.append(lease.process_id)
+            if len(pending) > 16:
+                raise KernelError("product_git_recovery_limit", "旧Git只读查询超过启动恢复上限")
+            for identity in pending:
+                observed = await supervisor.reconcile(identity)
+                if observed.state != "exited":
+                    raise KernelError("product_git_recovery_uncertain", "旧Git只读查询未能验真终结")

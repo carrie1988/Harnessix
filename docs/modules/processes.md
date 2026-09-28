@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 21
+code_revision: 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
 owners:
   - core
 modules:
@@ -1651,4 +1651,6 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 取消包括启动线程期间取消，先通过私有Token请求停机并排空，再交付原取消信号。
 Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process-owner/`。
 启动只收敛source_id=`harnessix.git_read`的旧只读查询，不重放、不用历史数字PID控制进程。
+该类`UNKNOWN`在后继启动继续拒绝；单次启动最多收敛16件本类活动Lease，超过上限在收敛前拒绝。
+首轮原生焦点失败独立保留，冷Receipt退出回归增加Owner线程栈与有界回收，不能将CI中断计作完成。
 详见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

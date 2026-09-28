@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 2
+code_revision: 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
 owners: [core]
 modules: [tools, processes, workspace, context, product_config]
 related_adrs:
@@ -182,6 +182,8 @@ flowchart LR
 禁止生成第二个UUID重发命令来掩盖启动结果。超时沿用原Spec期限，不刷新为新的五秒。
 重启通过原source_id、tool、READ_ONLY及Plan指纹识别查询，只调用原`reconcile`，不调用`start/run`。
 签名或终态不确定时拒绝产品启动；该过程不是仓库副作用恢复或任意PID清理器。
+已经持久化的本类`UNKNOWN`在每次启动继续拒绝，不能因为不在active集合而在第二次启动绕过。
+单次启动最多收敛16件本类活动Lease，超过上限在恢复前拒绝；不通过丢弃或重发查询缩短恢复。
 
 ### 5.3 可观测性与错误分类
 
@@ -199,6 +201,7 @@ flowchart LR
 | 非零退出 / EOF不完整 | 固定失败 | 不将截断或不确定输出当成功 |
 | 配置/Status捕获截断 | `tool_limit_exceeded` | 不把前缀当完整列表 |
 | 旧查询恢复不确定 | `product_git_recovery_uncertain` | 不重放、无数字PID权限 |
+| 旧查询恢复超过16件 | `product_git_recovery_limit` | 恢复前拒绝，不删除旧事实 |
 
 ## 6. 数据流和核心逻辑伪代码
 
@@ -274,6 +277,22 @@ on_product_startup:
 
 Windows焦点CI先运行本切片，不等待许可证检查或全量回归完成才提供反馈。
 焦点期限三分钟；完整Windows模块回归三十分钟，并启用阻塞线程诊断。超时保留为失败，不能计作验收成功。
+
+### 8.1 首轮原生失败与诊断边界
+
+实现提交`1ed97e1`的[Windows Job](https://github.com/carrie1988/Harnessix/actions/runs/36425003451/job/108936671266)
+完成59项NTFS及审批写链测试；Git焦点在三分钟硬期限下返回1项失败、6项通过和中断，剩余用例未完成。
+这不是Git原生门禁通过，更不是全量Windows或R4发布验收。
+
+1. `include.path`夹具误将命令串写成文件路径，Git根发现提前失败，未触达预期的配置拒绝分支。
+   更正为真实存在、包含危险Filter键的配置文件，仍要求`tool_path_denied`且辅助程序标记不存在；不修改拒绝策略。
+2. Controller线程栈停在原`Popen.wait`，未获得Owner线程栈，不能直接归因于大Diff或Windows文件事务。
+   冷Receipt测试新增原Owner无局部变量栈诊断和8秒有界退出断言；失败收尾先关闭原写端，再在5秒内回收。
+   退出断言要求Owner在Controller尚未观察终态、尚未关闭控制写端时独立退出，避免通过夹具顺序掩盖生命周期缺陷。
+3. CI原生焦点输出完整用例名。诊断包装仅位于测试，保持原控制Handle白名单、环境、Job启动及Receipt逻辑；
+   不增加产品持久文件，不输出凭据、控制帧或局部变量。
+
+原失败与后继运行分别保留，不重跑旧Revision以替换失败结论。
 
 ## 9. 安全、部署、兼容与发布边界
 

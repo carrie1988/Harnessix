@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,22 +13,30 @@ import pytest
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.execution.store import SQLiteExecutionPlanStore
-from harnessix.processes.git_read_windows import _environment, _git_read_plan, _GitReadConfiguration
+from harnessix.processes.git_read_windows import (
+    _environment,
+    _git_read_plan,
+    _GitReadConfiguration,
+    reconcile_windows_git_reads,
+)
+from harnessix.processes.supervision_contracts import ProcessLease
 from harnessix.processes.supervision_planner import (
     build_host_process_binding,
     build_process_capability,
     build_process_spec,
+    prepare_process_lease,
 )
+from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
 from harnessix.tools.git import repository_root_matches
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.tools.test_files import call, execute
 from tests.tools.test_git import _command, _git, _repository
 
 
-def test_windows_read_plan_contract_with_simulated_snapshot(
+def _simulated_read_plan(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
+):
     # 只验证正式DTO和存储，不把模拟Snapshot计作原生Windows证明。
     observation = SimpleNamespace(
         kind="directory",
@@ -55,6 +64,15 @@ def test_windows_read_plan_contract_with_simulated_snapshot(
     spec = build_process_spec(invocation="argv", argv=(str(executable), "status"))
     environment = _environment(executable)
     plan = _git_read_plan(config, spec, environment)
+    return config, spec, plan, environment
+
+
+def test_windows_read_plan_contract_with_simulated_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, spec, plan, environment = _simulated_read_plan(tmp_path, monkeypatch)
+    capability = config.capability
     assert plan.intent.effect_class.value == "read_only"
     assert plan.intent.source_id == "harnessix.git_read"
     binding = build_host_process_binding(plan, spec, capability, environment, None)
@@ -62,6 +80,38 @@ def test_windows_read_plan_contract_with_simulated_snapshot(
     with SQLiteExecutionPlanStore(tmp_path / "plans.db") as plans:
         plans.save_plan(plan)
         assert plans.load_plan(plan.plan_id) == plan
+
+
+async def test_unknown_git_read_remains_rejected_on_repeated_startup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, spec, plan, _ = _simulated_read_plan(tmp_path, monkeypatch)
+    state = tmp_path / "state"
+    with SQLiteExecutionPlanStore(state / "execution-plans.db") as plans:
+        plans.save_plan(plan)
+    prepared = prepare_process_lease(plan, spec, config.capability)
+    unknown = ProcessLease.model_validate_json(
+        prepared.model_copy(
+            update={
+                "state": "unknown",
+                "sequence": 1,
+                "stop_reason": "host_lost",
+                "finished_at": datetime.now(UTC),
+            }
+        ).model_dump_json()
+    )
+    with SQLiteProcessLeaseStore(state / "process-owner/process-leases.db") as leases:
+        leases.create(prepared)
+        leases.transition(prepared, unknown)
+    for _ in range(2):
+        with pytest.raises(KernelError) as error:
+            await reconcile_windows_git_reads(state)
+        assert error.value.code == "product_git_recovery_uncertain"
+    with SQLiteProcessLeaseStore(
+        state / "process-owner/process-leases.db", read_only=True
+    ) as leases:
+        assert leases.load(spec.process_id) == unknown
 
 
 @pytest.mark.parametrize(
