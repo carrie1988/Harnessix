@@ -185,6 +185,11 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 已完成源码外安装、完整备份恢复、指定venv卸载与同Wheel重装；原Key、库、备份和Workspace保持。
 三平台各自构建，Windows摘要不同；规范单一发行Wheel及消费者目标OS、真实编码和版本升级仍需验收。
 
+后继[规范Wheel工作流](../../.github/workflows/installed-product-acceptance.yml)改为Ubuntu构建/扫描一次，
+同一Run的三个平台下载相同Artifact，安装前校验构建Job的原字节SHA256；消费者不重复构建。
+仍使用原隔离安装、正式CLI/SDK及七文件低敏证据路径，未修改产品、状态权限或恢复合同。
+源码实现不替代实际运行结果；规范制品跨平台通过与版本升级、Windows11及真实编码分别验收。
+
 ## 6. 开发命令镜像
 
 ```bash

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -116,6 +118,120 @@ def test_installed_acceptance_workflow_uploads_no_private_state() -> None:
     assert len(paths) == 7
     assert all(line.endswith((".json", ".txt", ".log")) for line in paths)
     assert not any("/case" in line or "*" in line for line in paths)
+
+
+def test_three_platform_jobs_consume_one_scanned_canonical_wheel() -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"
+    jobs = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]
+    builder = jobs["canonical-wheel"]
+    consumer = jobs["installed-product"]
+    assert builder["runs-on"] == "ubuntu-latest"
+    assert builder["outputs"]["wheel-sha256"] == "${{ steps.wheel-identity.outputs.sha256 }}"
+    assert sum("uv build" in step.get("run", "") for step in builder["steps"]) == 1
+    assert any(
+        "scripts/secret_scan.py --artifact-dir" in step.get("run", "") for step in builder["steps"]
+    )
+    assert consumer["needs"] == "canonical-wheel"
+    assert not any("uv build" in step.get("run", "") for step in consumer["steps"])
+    upload = next(step for step in builder["steps"] if "upload-artifact@" in step.get("uses", ""))
+    download = next(
+        step for step in consumer["steps"] if "download-artifact@" in step.get("uses", "")
+    )
+    assert upload["with"]["name"] == download["with"]["name"]
+    assert upload["with"]["path"] == "${{ runner.temp }}/harnessix-canonical-wheel/*.whl"
+    assert upload["with"]["if-no-files-found"] == "error"
+    assert download["uses"] == "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+    wheel_input = next(step for step in consumer["steps"] if step.get("id") == "wheel-input")
+    assert (
+        wheel_input["env"]["CANONICAL_WHEEL_SHA256"]
+        == "${{ needs.canonical-wheel.outputs.wheel-sha256 }}"
+    )
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_wheel_input_requires_the_builder_digest_before_installing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, changed: bool
+) -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"
+    steps = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["installed-product"]["steps"]
+    step = next(step for step in steps if step.get("id") == "wheel-input")
+    # 执行实际工作流中的输入生成代码；篡改时不能先生成可供pip安装的输入。
+    program = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    (tmp_path / "wheel").mkdir()
+    wheel = tmp_path / "wheel/fixture.whl"
+    original = b"canonical-wheel-fixture"
+    wheel.write_bytes(b"different-wheel-fixture" if changed else original)
+    expected = hashlib.sha256(original).hexdigest()
+    monkeypatch.setenv("ACCEPTANCE_ROOT", str(tmp_path))
+    monkeypatch.setenv("CANONICAL_WHEEL_SHA256", expected)
+    requirement = tmp_path / "wheel-requirement.txt"
+    if changed:
+        with pytest.raises(AssertionError, match="canonical_wheel_mismatch"):
+            exec(compile(program, "workflow-wheel-input", "exec"), {})
+        assert not requirement.exists()
+    else:
+        exec(compile(program, "workflow-wheel-input", "exec"), {})
+        assert (
+            requirement.read_text(encoding="utf-8")
+            == f"{wheel.as_uri()} --hash=sha256:{expected}\n"
+        )
+
+
+def test_canonical_checkout_overrides_crlf_only_for_the_checkout_process(tmp_path: Path) -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"
+    steps = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["installed-product"]["steps"]
+    checkout = next(step for step in steps if "checkout@" in step.get("uses", ""))
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "-q", str(source)], check=True, capture_output=True, timeout=30)
+    (source / ".gitattributes").write_bytes(b"* text=auto\n")
+    original = b"value = 1\n"
+    (source / "fixture.py").write_bytes(original)
+    subprocess.run(["git", "add", "."], cwd=source, check=True, capture_output=True, timeout=30)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Acceptance",
+            "-c",
+            "user.email=acceptance@example.invalid",
+            "commit",
+            "-qm",
+            "fixture",
+        ],
+        cwd=source,
+        check=True,
+        capture_output=True,
+        timeout=30,
+    )
+    config = tmp_path / "fixture.gitconfig"
+    settings = b"[core]\n\tautocrlf = true\n\teol = crlf\n"
+    config.write_bytes(settings)
+    # 使用自有配置夹具模拟Windows默认值，不改用户全局Git设置。
+    environment = {**os.environ, "GIT_CONFIG_GLOBAL": str(config), "GIT_CONFIG_NOSYSTEM": "1"}
+    common = ["git", "clone", "-q", "--no-hardlinks", str(source)]
+    control = tmp_path / "control"
+    subprocess.run(
+        [*common, str(control)], env=environment, check=True, capture_output=True, timeout=30
+    )
+    assert (control / "fixture.py").read_bytes() == original.replace(b"\n", b"\r\n")
+    canonical = tmp_path / "canonical"
+    subprocess.run(
+        [*common, str(canonical)],
+        env={**environment, **checkout["env"]},
+        check=True,
+        capture_output=True,
+        timeout=30,
+    )
+    assert (canonical / "fixture.py").read_bytes() == original
+    assert (control / "fixture.py").read_bytes() == original.replace(b"\n", b"\r\n")
+    assert config.read_bytes() == settings
 
 
 def test_frozen_diagnostic_is_data_but_active_source_formatting_and_secret_scan_remain(

@@ -7,8 +7,59 @@ permissions:
   contents: read
 
 jobs:
+  canonical-wheel:
+    name: 构建并扫描唯一发行Wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      wheel-sha256: ${{ steps.wheel-identity.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        env:
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "false"
+          GIT_CONFIG_KEY_1: core.eol
+          GIT_CONFIG_VALUE_1: lf
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 仅构建一次规范Wheel并扫描实际制品
+        shell: bash
+        env:
+          WHEEL_ROOT: ${{ runner.temp }}/harnessix-canonical-wheel
+        run: |
+          uv run python -c 'import os; from pathlib import Path; Path(os.environ["WHEEL_ROOT"]).mkdir(mode=0o700)'
+          uv build --offline --wheel --out-dir "$WHEEL_ROOT"
+          uv run python scripts/secret_scan.py --artifact-dir "$WHEEL_ROOT"
+      - name: 记录规范Wheel原字节身份
+        id: wheel-identity
+        shell: bash
+        env:
+          WHEEL_ROOT: ${{ runner.temp }}/harnessix-canonical-wheel
+        run: |
+          uv run python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          wheels = list(Path(os.environ["WHEEL_ROOT"]).glob("*.whl"))
+          assert len(wheels) == 1
+          digest = hashlib.sha256(wheels[0].read_bytes()).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"sha256={digest}\n")
+          PY
+      - name: 仅发布规范Wheel给同一Run的验收Job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-canonical-wheel-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harnessix-canonical-wheel/*.whl
+          if-no-files-found: error
+          retention-days: 14
   installed-product:
     name: 安装与恢复 ${{ matrix.platform }}
+    needs: canonical-wheel
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     strategy:
@@ -23,6 +74,13 @@ jobs:
             runner: windows-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        # 仅本Checkout使用Git规范LF；不改用户全局配置或冻结证据原字节。
+        env:
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "false"
+          GIT_CONFIG_KEY_1: core.eol
+          GIT_CONFIG_VALUE_1: lf
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -31,15 +89,26 @@ jobs:
       - run: uv sync --locked --all-extras --dev
       - name: 安装证据边界正反例
         run: uv run pytest tests/governance/test_installed_product_acceptance.py
-      - name: 新建独立环境并构建精确Wheel
+      - name: 新建独立环境并导出原锁依赖
         shell: bash
         env:
           ACCEPTANCE_ROOT: ${{ runner.temp }}/harnessix-installed-product
         run: |
           uv run python -c 'import os; from pathlib import Path; Path(os.environ["ACCEPTANCE_ROOT"]).mkdir(mode=0o700)'
           uv export --locked --no-dev --all-extras --no-emit-project --format requirements.txt --output-file "$ACCEPTANCE_ROOT/requirements.txt"
-          uv build --offline --wheel --out-dir "$ACCEPTANCE_ROOT/wheel"
           uv venv --python 3.12 "$ACCEPTANCE_ROOT/venv"
+      - name: 获取同一Run唯一规范Wheel
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: harnessix-canonical-wheel-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harnessix-installed-product/wheel
+      - name: 安装前校验构建Job的原Wheel摘要
+        id: wheel-input
+        shell: bash
+        env:
+          ACCEPTANCE_ROOT: ${{ runner.temp }}/harnessix-installed-product
+          CANONICAL_WHEEL_SHA256: ${{ needs.canonical-wheel.outputs.wheel-sha256 }}
+        run: |
           uv run python - <<'PY'
           import hashlib, os
           from pathlib import Path
@@ -47,8 +116,10 @@ jobs:
           wheels = list((root / "wheel").glob("*.whl"))
           assert len(wheels) == 1
           wheel = wheels[0].resolve()
+          expected = os.environ["CANONICAL_WHEEL_SHA256"]
+          assert hashlib.sha256(wheel.read_bytes()).hexdigest() == expected, "canonical_wheel_mismatch"
           (root / "wheel-requirement.txt").write_text(
-              f"{wheel.as_uri()} --hash=sha256:{hashlib.sha256(wheel.read_bytes()).hexdigest()}\n",
+              f"{wheel.as_uri()} --hash=sha256:{expected}\n",
               encoding="utf-8",
           )
           PY
