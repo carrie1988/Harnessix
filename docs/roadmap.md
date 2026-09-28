@@ -896,3 +896,7 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 增长主要来自新增认证证明表和索引，版本化认证基线或存储优化尚待正式处置；不得弱化认证或改旧失败。
 [统一交付](validation/product-restart-release-boundary-2026-09-29-v1/README.md)分别记录原生、制品、安装和性能边界，
 不把这些增量推导为三平台完整安装、真实质量、Beta或1.0完成；R1～R6仍开放。
+
+R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-acceptance.md)复用实际Wheel、
+原SDK/CLI及完整状态恢复，增加三平台独立入口和不丢状态的卸载/同Wheel重装。
+这是安装验收增量，不代替真实编码、版本升级、消费者OS验收及独立Beta。

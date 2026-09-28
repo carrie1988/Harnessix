@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 14
-code_revision: 1bc3794bfbdb9ce5fa58103d372c68de4401f90a
+version: 15
+code_revision: d6b32c4637e4099114f3a9fe56a999e87474d660
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/governance/test_installed_product_acceptance.py
   - tests/governance/test_distribution_artifact_boundary.py
   - tests/product_config/test_product_state_restore.py
   - tests/governance/test_repository_policy.py
@@ -174,6 +175,11 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 详见[安装与恢复原件](../validation/product-restart-release-boundary-2026-09-29-v1/README.md#6-脱离源码安装与完整状态恢复)。
 该结果没有真实模型Turn，不证明真实编码任务、Linux/Windows安装、版本升级、卸载或Beta。
 三平台消费者安装验收、正式来源证明和1.0发行仍开放；开发Wheel不可称为已发布商用包。
+
+后继[统一安装生命周期详设](../changes/m09-r4-installed-product-acceptance.md)将正式SDK/CLI恢复流程
+推广至三平台独立Job，并新增指定venv卸载、全新解释器导入消失、原Key/库/Workspace保持和同一Wheel重装读取。
+执行始终使用安装解释器`-I -m harnessix`，不把构建Checkout放入产品导入路径。
+三平台实际结果、版本升级及消费者目标OS未验收前仍不关闭R4。
 
 ## 6. 开发命令镜像
 

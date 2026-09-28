@@ -1,0 +1,84 @@
+name: 源码外安装与完整状态生命周期验收
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installed-product:
+    name: 安装与恢复 ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+          - platform: macos
+            runner: macos-latest
+          - platform: windows
+            runner: windows-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 安装证据边界正反例
+        run: uv run pytest tests/governance/test_installed_product_acceptance.py
+      - name: 新建独立环境并构建精确Wheel
+        shell: bash
+        env:
+          ACCEPTANCE_ROOT: ${{ runner.temp }}/harnessix-installed-product
+        run: |
+          uv run python -c 'import os; from pathlib import Path; Path(os.environ["ACCEPTANCE_ROOT"]).mkdir(mode=0o700)'
+          uv export --locked --no-dev --all-extras --no-emit-project --format requirements.txt --output-file "$ACCEPTANCE_ROOT/requirements.txt"
+          uv build --offline --wheel --out-dir "$ACCEPTANCE_ROOT/wheel"
+          uv venv --python 3.12 "$ACCEPTANCE_ROOT/venv"
+          uv run python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          root = Path(os.environ["ACCEPTANCE_ROOT"])
+          wheels = list((root / "wheel").glob("*.whl"))
+          assert len(wheels) == 1
+          wheel = wheels[0].resolve()
+          (root / "wheel-requirement.txt").write_text(
+              f"{wheel.as_uri()} --hash=sha256:{hashlib.sha256(wheel.read_bytes()).hexdigest()}\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: 脱离源码安装与实际恢复卸载重装
+        shell: bash
+        env:
+          ACCEPTANCE_ROOT: ${{ runner.temp }}/harnessix-installed-product
+        run: |
+          INSTALLED_PYTHON=$(uv run python -c 'import os; from pathlib import Path; print((Path(os.environ["ACCEPTANCE_ROOT"]) / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")).as_posix())')
+          WHEEL=$(uv run python -c 'import os; from pathlib import Path; print(next((Path(os.environ["ACCEPTANCE_ROOT"]) / "wheel").glob("*.whl")).as_posix())')
+          uv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps -r "$ACCEPTANCE_ROOT/requirements.txt" > "$ACCEPTANCE_ROOT/dependencies.log" 2>&1
+          uv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps --offline -r "$ACCEPTANCE_ROOT/wheel-requirement.txt" > "$ACCEPTANCE_ROOT/wheel-install.log" 2>&1
+          UV_EXECUTABLE=$(uv run python -c 'import shutil; from pathlib import Path; executable=shutil.which("uv"); assert executable; print(Path(executable).as_posix())')
+          cd "$ACCEPTANCE_ROOT"
+          "$INSTALLED_PYTHON" -I "$GITHUB_WORKSPACE/scripts/installed_product_acceptance.py" \
+            --environment-root "$ACCEPTANCE_ROOT" --source-root "$GITHUB_WORKSPACE" \
+            --source-revision "$GITHUB_SHA" --wheel "$WHEEL" --uv "$UV_EXECUTABLE" \
+            > "$ACCEPTANCE_ROOT/acceptance.log" 2> "$ACCEPTANCE_ROOT/acceptance.stderr.log"
+      - name: 仅保留低敏安装输入与结果
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-installed-${{ matrix.platform }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/harnessix-installed-product/result.json
+            ${{ runner.temp }}/harnessix-installed-product/requirements.txt
+            ${{ runner.temp }}/harnessix-installed-product/wheel-requirement.txt
+            ${{ runner.temp }}/harnessix-installed-product/dependencies.log
+            ${{ runner.temp }}/harnessix-installed-product/wheel-install.log
+            ${{ runner.temp }}/harnessix-installed-product/acceptance.log
+            ${{ runner.temp }}/harnessix-installed-product/acceptance.stderr.log
+          if-no-files-found: ignore
+          retention-days: 14
