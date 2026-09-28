@@ -1,0 +1,41 @@
+{
+  "source_revision": "a4f7f33449bb897d84fe3a8e8262307943233fb4",
+  "run_id": 36463822741,
+  "wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+  "bytes": 1073485,
+  "artifact_inventory": [
+    {
+      "digest": "sha256:704c3656a0137048fb788d12d5d8d6a0207c02b021e384a9b5e3d097f8dada6b",
+      "expired": false,
+      "id": 10989375521,
+      "name": "harnessix-installed-macos-a4f7f33449bb897d84fe3a8e8262307943233fb4-36463822741-1",
+      "size_in_bytes": 27209
+    },
+    {
+      "digest": "sha256:33f3e27b6767499dfe6e5e46f6a444089c7e6be1fbc815d2fec0479b6a7b344a",
+      "expired": false,
+      "id": 10989015604,
+      "name": "harnessix-installed-linux-a4f7f33449bb897d84fe3a8e8262307943233fb4-36463822741-1",
+      "size_in_bytes": 27200
+    },
+    {
+      "digest": "sha256:d5a02a0d6e3d95431c5fee3d785b5666831efd1113c203a7c58ddef4e4f0b37d",
+      "expired": false,
+      "id": 10988394291,
+      "name": "harnessix-canonical-wheel-a4f7f33449bb897d84fe3a8e8262307943233fb4-36463822741-1",
+      "size_in_bytes": 1031202
+    },
+    {
+      "digest": "sha256:0492f79e43a5413ebaf0da7644b1f32c62adef2e2174478108bd939656ad55da",
+      "expired": false,
+      "id": 10988294499,
+      "name": "harnessix-installed-windows-a4f7f33449bb897d84fe3a8e8262307943233fb4-36463822741-1",
+      "size_in_bytes": 27218
+    }
+  ],
+  "original_wheel_relative_path": "../windows-private-state-2026-09-28-v1/artifacts/harnessix-0.1.0-py3-none-any.whl",
+  "downloaded_wheel_matches_retained_original_byte_for_byte": true,
+  "all_three_results_match_builder_digest": true,
+  "all_three_requirements_use_builder_digest": true,
+  "artifact_zip_digest_is_not_wheel_digest": true
+}

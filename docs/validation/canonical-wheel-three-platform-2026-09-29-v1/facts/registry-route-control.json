@@ -1,0 +1,12 @@
+[
+  {
+    "case": "host_current_proxy",
+    "endpoint": "registry-1.docker.io/v2/",
+    "status": 401
+  },
+  {
+    "case": "host_no_proxy",
+    "endpoint": "registry-1.docker.io/v2/",
+    "status": 401
+  }
+]

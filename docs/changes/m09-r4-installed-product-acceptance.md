@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 3
-code_revision: e08d2480dfe42eeca0cf32f913890505d1dc34a0
+code_revision: a4f7f33449bb897d84fe3a8e8262307943233fb4
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -250,3 +250,7 @@ Windows使用专用`venv/Scripts/python.exe`，产品CLI仍走`-I -m harnessix`�
 三平台分别构建，Windows Wheel摘要与另两平台不同，不称为单一规范发行Wheel三平台验收或可复现构建；
 Windows Server CI也不替代消费者Windows11。后继格式边界源码为`101f71e`，活动Runner及产品源码未改变。
 规范工作流的实际跨平台结果须另行记录，旧三平台原件保持冻结；源码改为一次构建不等于实际验收已经通过。
+
+`a4f7f33`的[规范Wheel三平台实测](../validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
+已完成唯一构建、实际Secret扫描及三个消费者的完整生命周期；三份结果均为同一原字节摘要，专项通过。
+这不追认旧独立构建的差异归因，不承诺可复现构建，也不关闭版本升级、消费者Windows11、R3/R5或商用门禁。

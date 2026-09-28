@@ -1,0 +1,20 @@
+flowchart TD
+    Checkout[固定Git规范Checkout与原uv锁] --> Build[Ubuntu唯一构建并扫描Wheel]
+    Build --> Identity[构建Job发布Wheel SHA256]
+    Build --> Artifact[同一Run唯一Wheel Artifact]
+    Artifact --> Check[三平台下载并校验构建摘要]
+    Identity --> Check
+    Checkout --> Export[各平台导出生产依赖及哈希]
+    Check --> Install[各平台新专用venv精确安装]
+    Export --> Install
+    Install --> Gate[隔离解释器与逐成员字节验真]
+    Gate --> CLI[已安装正式CLI Configure Doctor State]
+    Gate --> SDK[已安装SDK与实际stdio Server]
+    SDK --> Owner[原全状态Owner及原Key]
+    Owner --> State[(独立case内六库状态)]
+    CLI --> Backup[原完整备份恢复]
+    Backup --> State
+    State --> Lifecycle[停机 卸载 验证导入消失 原Wheel重装]
+    Lifecycle --> Reopen[新产品进程读取原会话]
+    Reopen --> Result[低敏结果与安装输入]
+    Private[数据库 Key 备份 Workspace正文] -. 不进入上传 .-> Boundary[私有临时case]

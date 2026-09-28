@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant B as Ubuntu唯一构建Job
+    participant A as 同一Run的Wheel Artifact
+    participant G as 三平台固定Checkout
+    participant V as 源码外专用venv
+    participant C as 实际SDK与CLI
+    participant P as 已安装产品Server
+    participant S as 原状态和Key
+    B->>B: 离线构建 扫描实际Wheel 发布原摘要
+    B->>A: 仅上传唯一Wheel
+    A->>G: 当前Run按精确Artifact名下载
+    G->>G: 原字节摘要必须等于构建Job Output
+    G->>V: 原锁依赖及构建端Wheel哈希安装
+    V->>V: 检查隔离 Prefix sys.path Wheel与源码字节
+    C->>P: Configure Doctor Initialize 创建Thread A
+    P->>S: 原Owner创建并认证状态
+    C->>C: 活跃期间backup必须拒绝且无备份
+    C->>P: 正常关闭并确认Transport closed
+    C->>S: 原backup/verify完整六库及原Key
+    C->>P: 新进程创建快照后Thread B并关闭
+    C->>S: 显式确认备份ID执行整体restore
+    C->>P: 新进程确认A存在 B不存在 创建C并关闭
+    C->>S: 相同restore ID得到原终态 不回退C
+    V->>V: 卸载且新解释器确认harnessix不可导入
+    V->>S: 内存逐文件摘要确认私有case未变
+    G->>V: 同一Wheel按哈希离线重装
+    C->>P: 新产品进程确认A和C保持
+    V-->>G: 仅输出低敏实际结果

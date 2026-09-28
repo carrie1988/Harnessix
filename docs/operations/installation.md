@@ -190,6 +190,10 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 仍使用原隔离安装、正式CLI/SDK及七文件低敏证据路径，未修改产品、状态权限或恢复合同。
 源码实现不替代实际运行结果；规范制品跨平台通过与版本升级、Windows11及真实编码分别验收。
 
+[规范Wheel三平台实际结果](../validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
+绑定`a4f7f33`：唯一构建件在三个原生Job完成上述生命周期，三份安装摘要一致。
+当前验证包仍为`0.1.0`；未发布1.0，也未完成版本升级、消费者Windows11或真实编码验收。
+
 ## 6. 开发命令镜像
 
 ```bash

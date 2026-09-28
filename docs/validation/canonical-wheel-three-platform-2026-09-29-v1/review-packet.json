@@ -1,0 +1,38 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "a4f7f33449bb897d84fe3a8e8262307943233fb4",
+  "slice_decision": "GO-single-canonical-wheel-three-native-installed-state-lifecycles",
+  "overall_decision": "NO_GO_FOR_COMMERCIAL_RELEASE",
+  "requirements": {
+    "single_canonical_wheel_cross_platform": "three-native-jobs-passed-same-source-and-same-wheel-digest",
+    "full_state_restore_and_owner_refusal": "three-native-jobs-passed",
+    "uninstall_preserves_state": "three-native-jobs-passed",
+    "same_wheel_reinstall_reads_original_threads": "three-native-jobs-passed",
+    "version_upgrade_and_consumer_os": "not_proven",
+    "real_coding_quality": "not_completed",
+    "independent_beta": "not_completed",
+    "licenses": "12-archive-gate-remains-open"
+  },
+  "risks": [
+    {
+      "id": "R3-QUALITY",
+      "description": "旧严格0/20仍无新合格真实任务结果替代；固定镜像拉取和原费用账本待核验。"
+    },
+    {
+      "id": "R4-CONSUMER-UPGRADE",
+      "description": "Windows11、完整原生编码及认证候选版本升级/回退仍需验收。"
+    },
+    {
+      "id": "R1-AUTH-PROFILE",
+      "description": "正式安全收口及当前认证状态重启数据库增长FAIL仍开放。"
+    },
+    {
+      "id": "R5-BETA",
+      "description": "需独立开发者及至少15个任务，不以自动化Job替代。"
+    }
+  ],
+  "preserved_failures": true,
+  "old_frozen_deliveries_modified": false,
+  "private_keys_or_database_exported": false,
+  "provider_turn_requests": 0
+}

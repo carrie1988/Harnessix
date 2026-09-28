@@ -73,3 +73,9 @@ docs/validation/installed-product-three-platform-2026-09-29-v1/logs/*.log -diff 
 docs/validation/installed-product-three-platform-2026-09-29-v1/raw/**/*.log -diff -merge
 # Windows原件的CRLF属于行终止符；其余尾随空格/空行检查仍保留。
 docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# 规范Wheel三平台原件保持字节；日志不做文本Diff/合并。
+docs/validation/canonical-wheel-three-platform-2026-09-29-v1/** -text
+docs/validation/canonical-wheel-three-platform-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/**/*.log -diff -merge
+docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

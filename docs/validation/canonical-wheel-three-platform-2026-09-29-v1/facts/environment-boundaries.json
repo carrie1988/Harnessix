@@ -1,0 +1,15 @@
+{
+  "docker_client": "28.3.2",
+  "docker_go_version": "go1.24.5",
+  "running_container_count_observed": 8,
+  "daemon_pull_result": "network_eof",
+  "fixed_python_image_cached": false,
+  "fixed_node_image_cached": false,
+  "remote_existing_key_authentication": "not_usable",
+  "global_proxy_or_docker_config_modified": false,
+  "docker_restarted": false,
+  "provider_credentials_read": false,
+  "provider_turn_requests": 0,
+  "budget_ledger_created_or_reset": false,
+  "exclusive_network_root_cause_proven": false
+}

@@ -1,0 +1,599 @@
+﻿2026-09-28T18:14:41.3738117Z Current runner version: '2.337.0'
+2026-09-28T18:14:41.3762737Z ##[group]Runner Image Provisioner
+2026-09-28T18:14:41.3763600Z Hosted Compute Agent
+2026-09-28T18:14:41.3764152Z Version: 20260828.587
+2026-09-28T18:14:41.3764732Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-28T18:14:41.3765440Z Build Date: 2026-08-28T16:44:25Z
+2026-09-28T18:14:41.3766075Z Worker ID: {7fce7352-db5e-46bf-b3b2-1aa051f64f19}
+2026-09-28T18:14:41.3766733Z Azure Region: westus3
+2026-09-28T18:14:41.3767259Z ##[endgroup]
+2026-09-28T18:14:41.3768668Z ##[group]Operating System
+2026-09-28T18:14:41.3769271Z Ubuntu
+2026-09-28T18:14:41.3769764Z 24.04.5
+2026-09-28T18:14:41.3770381Z LTS
+2026-09-28T18:14:41.3770950Z ##[endgroup]
+2026-09-28T18:14:41.3771448Z ##[group]Runner Image
+2026-09-28T18:14:41.3772046Z Image: ubuntu-24.04
+2026-09-28T18:14:41.3772574Z Version: 20260920.314.1
+2026-09-28T18:14:41.3773787Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260920.314/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-28T18:14:41.3775132Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260920.314
+2026-09-28T18:14:41.3776036Z ##[endgroup]
+2026-09-28T18:14:41.3777053Z ##[group]GITHUB_TOKEN Permissions
+2026-09-28T18:14:41.3779020Z Contents: read
+2026-09-28T18:14:41.3779560Z Metadata: read
+2026-09-28T18:14:41.3780059Z ##[endgroup]
+2026-09-28T18:14:41.3782363Z Secret source: Actions
+2026-09-28T18:14:41.3783222Z Cache mode: write
+2026-09-28T18:14:41.3783945Z Prepare workflow directory
+2026-09-28T18:14:41.4104054Z Prepare all required actions
+2026-09-28T18:14:41.4154399Z Getting action download info
+2026-09-28T18:14:41.7717818Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+2026-09-28T18:14:41.8796079Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+2026-09-28T18:14:42.8737778Z Complete job name: python (3.13)
+2026-09-28T18:14:42.9716698Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+2026-09-28T18:14:42.9717893Z with:
+2026-09-28T18:14:42.9718387Z   fetch-depth: 0
+2026-09-28T18:14:42.9718907Z   repository: carrie1988/Harnessix
+2026-09-28T18:14:42.9723406Z   token: ***
+2026-09-28T18:14:42.9723896Z   ssh-strict: true
+2026-09-28T18:14:42.9724385Z   ssh-user: git
+2026-09-28T18:14:42.9724887Z   persist-credentials: true
+2026-09-28T18:14:42.9725434Z   clean: true
+2026-09-28T18:14:42.9725933Z   sparse-checkout-cone-mode: true
+2026-09-28T18:14:42.9726511Z   fetch-tags: false
+2026-09-28T18:14:42.9727017Z   show-progress: true
+2026-09-28T18:14:42.9727525Z   lfs: false
+2026-09-28T18:14:42.9728007Z   submodules: false
+2026-09-28T18:14:42.9728531Z   set-safe-directory: true
+2026-09-28T18:14:42.9729324Z ##[endgroup]
+2026-09-28T18:14:43.0744748Z Syncing repository: carrie1988/Harnessix
+2026-09-28T18:14:43.0750132Z ##[group]Getting Git version info
+2026-09-28T18:14:43.0751902Z Working directory is '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T18:14:43.0754164Z [command]/usr/bin/git version
+2026-09-28T18:14:43.0830834Z git version 2.55.0
+2026-09-28T18:14:43.0854798Z ##[endgroup]
+2026-09-28T18:14:43.0865487Z Temporarily overriding HOME='/home/runner/work/_temp/aea4846c-f8ef-4de2-8b1e-7ccc24298d93' before making global git config changes
+2026-09-28T18:14:43.0868683Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T18:14:43.0871388Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T18:14:43.0933460Z Deleting the contents of '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T18:14:43.0937851Z ##[group]Initializing the repository
+2026-09-28T18:14:43.0943729Z [command]/usr/bin/git init /home/runner/work/Harnessix/Harnessix
+2026-09-28T18:14:43.1055452Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-28T18:14:43.1056986Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-28T18:14:43.1058469Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-28T18:14:43.1059425Z hint: call:
+2026-09-28T18:14:43.1059996Z hint:
+2026-09-28T18:14:43.1061997Z hint: 	git config --global init.defaultBranch <name>
+2026-09-28T18:14:43.1063142Z hint:
+2026-09-28T18:14:43.1063908Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-28T18:14:43.1064940Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-28T18:14:43.1065749Z hint:
+2026-09-28T18:14:43.1066227Z hint: 	git branch -m <name>
+2026-09-28T18:14:43.1066754Z hint:
+2026-09-28T18:14:43.1067707Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-28T18:14:43.1069220Z Initialized empty Git repository in /home/runner/work/Harnessix/Harnessix/.git/
+2026-09-28T18:14:43.1071792Z [command]/usr/bin/git remote add origin https://github.com/carrie1988/Harnessix
+2026-09-28T18:14:43.1118317Z ##[endgroup]
+2026-09-28T18:14:43.1119263Z ##[group]Disabling automatic garbage collection
+2026-09-28T18:14:43.1123326Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-28T18:14:43.1151804Z ##[endgroup]
+2026-09-28T18:14:43.1153035Z ##[group]Setting up auth
+2026-09-28T18:14:43.1153770Z Removing SSH command configuration
+2026-09-28T18:14:43.1160767Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T18:14:43.1192873Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T18:14:43.1521342Z Removing HTTP extra header
+2026-09-28T18:14:43.1528142Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T18:14:43.1565780Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T18:14:43.1755963Z Removing includeIf entries pointing to credentials config files
+2026-09-28T18:14:43.1763115Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T18:14:43.1795305Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T18:14:43.1980667Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-28T18:14:43.2015868Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:14:43.2043484Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:14:43.2069196Z ##[endgroup]
+2026-09-28T18:14:43.2070049Z ##[group]Fetching the repository
+2026-09-28T18:14:43.2078590Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-28T18:14:45.8112954Z From https://github.com/carrie1988/Harnessix
+2026-09-28T18:14:45.8113832Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+2026-09-28T18:14:45.8114412Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+2026-09-28T18:14:45.8115084Z  * [new branch]      main                    -> origin/main
+2026-09-28T18:14:45.8128395Z [command]/usr/bin/git branch --list --remote origin/main
+2026-09-28T18:14:45.8160125Z   origin/main
+2026-09-28T18:14:45.8167798Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+2026-09-28T18:14:45.8188871Z a4f7f33449bb897d84fe3a8e8262307943233fb4
+2026-09-28T18:14:45.8192344Z ##[endgroup]
+2026-09-28T18:14:45.8193221Z ##[group]Determining the checkout info
+2026-09-28T18:14:45.8194603Z ##[endgroup]
+2026-09-28T18:14:45.8197404Z [command]/usr/bin/git sparse-checkout disable
+2026-09-28T18:14:45.8239572Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-28T18:14:45.8265327Z ##[group]Checking out the ref
+2026-09-28T18:14:45.8269520Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-28T18:14:46.0409234Z Switched to a new branch 'main'
+2026-09-28T18:14:46.0412637Z branch 'main' set up to track 'origin/main'.
+2026-09-28T18:14:46.0426671Z ##[endgroup]
+2026-09-28T18:14:46.0466656Z [command]/usr/bin/git log -1 --format=%H
+2026-09-28T18:14:46.0489380Z a4f7f33449bb897d84fe3a8e8262307943233fb4
+2026-09-28T18:14:46.0768540Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+2026-09-28T18:14:46.0769008Z with:
+2026-09-28T18:14:46.0769280Z   python-version: 3.13
+2026-09-28T18:14:46.0769599Z   activate-environment: false
+2026-09-28T18:14:46.0769911Z   no-project: false
+2026-09-28T18:14:46.0770496Z   working-directory: /home/runner/work/Harnessix/Harnessix
+2026-09-28T18:14:46.0773382Z   github-token: ***
+2026-09-28T18:14:46.0773666Z   enable-cache: auto
+2026-09-28T18:14:46.0774338Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+**/*.py.lock
+
+2026-09-28T18:14:46.0775065Z   restore-cache: true
+2026-09-28T18:14:46.0775373Z   save-cache: true
+2026-09-28T18:14:46.0775640Z   prune-cache: false
+2026-09-28T18:14:46.0775926Z   cache-python: false
+2026-09-28T18:14:46.0776230Z   ignore-nothing-to-cache: false
+2026-09-28T18:14:46.0776563Z   ignore-empty-workdir: false
+2026-09-28T18:14:46.0776949Z   download-from-astral-mirror: true
+2026-09-28T18:14:46.0777297Z   add-problem-matchers: true
+2026-09-28T18:14:46.0777595Z   quiet: false
+2026-09-28T18:14:46.0777876Z   resolution-strategy: highest
+2026-09-28T18:14:46.0778184Z ##[endgroup]
+2026-09-28T18:14:46.2528467Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T18:14:46.2530320Z Could not find file: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T18:14:46.2531501Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T18:14:46.2537437Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+2026-09-28T18:14:46.2541877Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+2026-09-28T18:14:46.3216394Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+2026-09-28T18:14:48.8408072Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/e34a7592-adce-496f-900e-772b9cc1803b -f /home/runner/work/_temp/4091efe2-fb60-4e3f-9f14-de1da67877f1
+2026-09-28T18:14:49.2187806Z Added /home/runner/.local/bin to the path
+2026-09-28T18:14:49.2190995Z Added /opt/hostedtoolcache/uv/0.12.19/x86_64 to the path
+2026-09-28T18:14:49.2192413Z Set UV_PYTHON_INSTALL_DIR to /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:14:49.2193156Z Added /home/runner/work/_temp/uv-python-dir to the path
+2026-09-28T18:14:49.2193676Z Set UV_PYTHON to 3.13
+2026-09-28T18:14:49.2243966Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:14:49.2244561Z Successfully installed uv version 0.12.19
+2026-09-28T18:14:49.2247324Z Searching files using cache dependency glob: /home/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/home/runner/work/Harnessix/Harnessix/**/*requirements*.in,/home/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/home/runner/work/Harnessix/Harnessix/**/*constraints*.in,/home/runner/work/Harnessix/Harnessix/**/pyproject.toml,/home/runner/work/Harnessix/Harnessix/**/uv.lock,/home/runner/work/Harnessix/Harnessix/**/*.py.lock
+2026-09-28T18:14:49.2912806Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T18:14:49.2944159Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-312/requirements.txt
+2026-09-28T18:14:49.2960636Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-313/requirements.txt
+2026-09-28T18:14:49.2975873Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T18:14:49.2991944Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T18:14:49.3095205Z /home/runner/work/Harnessix/Harnessix/docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/requirements.txt
+2026-09-28T18:14:49.4892871Z /home/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+2026-09-28T18:14:49.5129337Z /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T18:14:49.6122456Z /home/runner/work/Harnessix/Harnessix/uv.lock
+2026-09-28T18:14:49.6133935Z Found 9 files to hash.
+2026-09-28T18:14:49.6192017Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.13-4cb40fe32cf63df5b3de56ace402174de99b230ab3f31905726b3c956dc68853
+2026-09-28T18:14:49.8278987Z No GitHub Actions cache found for key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.13-4cb40fe32cf63df5b3de56ace402174de99b230ab3f31905726b3c956dc68853
+2026-09-28T18:14:49.9396491Z ##[group]Run uv sync --locked --all-extras --dev
+2026-09-28T18:14:49.9396975Z [36;1muv sync --locked --all-extras --dev[0m
+2026-09-28T18:14:49.9580654Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:14:49.9580925Z env:
+2026-09-28T18:14:49.9581208Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:14:49.9581537Z   UV_PYTHON: 3.13
+2026-09-28T18:14:49.9581790Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:14:49.9582110Z ##[endgroup]
+2026-09-28T18:14:50.5476261Z Downloading cpython-3.13.15-linux-x86_64-gnu (download) (33.4MiB)
+2026-09-28T18:14:54.9007863Z  Downloaded cpython-3.13.15-linux-x86_64-gnu (download)
+2026-09-28T18:14:55.0527123Z Using CPython 3.13.15
+2026-09-28T18:14:55.0527588Z Creating virtual environment at: .venv
+2026-09-28T18:14:55.0560478Z Resolved 74 packages in 1ms
+2026-09-28T18:14:55.0618380Z    Building harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T18:14:55.0994207Z Downloading pygments (1.2MiB)
+2026-09-28T18:14:55.0994727Z Downloading ruff (9.8MiB)
+2026-09-28T18:14:55.0995930Z Downloading anthropic (1.2MiB)
+2026-09-28T18:14:55.0998392Z Downloading pydantic-core (2.0MiB)
+2026-09-28T18:14:55.1004562Z Downloading openai (1.6MiB)
+2026-09-28T18:14:55.1010856Z Downloading cryptography (4.5MiB)
+2026-09-28T18:14:55.1012914Z Downloading mypy (14.0MiB)
+2026-09-28T18:14:55.2431146Z  Downloaded pydantic-core
+2026-09-28T18:14:55.2491321Z  Downloaded pygments
+2026-09-28T18:14:55.2850947Z  Downloaded openai
+2026-09-28T18:14:55.2865312Z  Downloaded anthropic
+2026-09-28T18:14:55.2881606Z  Downloaded cryptography
+2026-09-28T18:14:55.3171104Z  Downloaded ruff
+2026-09-28T18:14:55.3809842Z  Downloaded mypy
+2026-09-28T18:14:55.8425757Z       Built harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T18:14:55.8438477Z Prepared 71 packages in 786ms
+2026-09-28T18:14:55.8904382Z Installed 71 packages in 46ms
+2026-09-28T18:14:55.8904830Z  + aiosqlite==0.22.1
+2026-09-28T18:14:55.8911530Z  + annotated-types==0.8.0
+2026-09-28T18:14:55.8912083Z  + anthropic==1.3.0
+2026-09-28T18:14:55.8912509Z  + anyio==4.14.2
+2026-09-28T18:14:55.8912911Z  + attrs==26.1.0
+2026-09-28T18:14:55.8913340Z  + certifi==2026.7.22
+2026-09-28T18:14:55.8913800Z  + cffi==2.1.1
+2026-09-28T18:14:55.8914224Z  + charset-normalizer==3.5.1
+2026-09-28T18:14:55.8914737Z  + click==8.5.0
+2026-09-28T18:14:55.8915162Z  + cryptography==50.0.1
+2026-09-28T18:14:55.8915566Z  + distro==1.9.0
+2026-09-28T18:14:55.8915940Z  + docstring-parser==0.18.0
+2026-09-28T18:14:55.8916674Z  + googleapis-common-protos==1.75.2
+2026-09-28T18:14:55.8917126Z  + h11==0.16.0
+2026-09-28T18:14:55.8917763Z  + harnessix==0.1.0 (from file:///home/runner/work/Harnessix/Harnessix)
+2026-09-28T18:14:55.8918380Z  + httpcore==1.0.9
+2026-09-28T18:14:55.8918781Z  + httpcore2==2.12.0
+2026-09-28T18:14:55.8919167Z  + httpx==0.28.1
+2026-09-28T18:14:55.8919532Z  + httpx2==2.12.0
+2026-09-28T18:14:55.8919904Z  + idna==3.19
+2026-09-28T18:14:55.8920703Z  + iniconfig==2.3.0
+2026-09-28T18:14:55.8921081Z  + jiter==0.16.0
+2026-09-28T18:14:55.8921379Z  + jsonschema==4.26.0
+2026-09-28T18:14:55.8921757Z  + jsonschema-specifications==2025.9.1
+2026-09-28T18:14:55.8922173Z  + librt==0.15.0
+2026-09-28T18:14:55.8922512Z  + linkify-it-py==2.2.0
+2026-09-28T18:14:55.8922890Z  + markdown-it-py==4.2.0
+2026-09-28T18:14:55.8923252Z  + mcp==2.2.0
+2026-09-28T18:14:55.8923536Z  + mcp-types==2.2.0
+2026-09-28T18:14:55.8923816Z  + mdit-py-plugins==0.6.1
+2026-09-28T18:14:55.8924139Z  + mdurl==0.1.2
+2026-09-28T18:14:55.8924468Z  + mypy==1.20.2
+2026-09-28T18:14:55.8924806Z  + mypy-extensions==1.1.0
+2026-09-28T18:14:55.8925168Z  + openai==2.54.0
+2026-09-28T18:14:55.8925536Z  + opentelemetry-api==1.44.0
+2026-09-28T18:14:55.8926058Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+2026-09-28T18:14:55.8926692Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+2026-09-28T18:14:55.8927229Z  + opentelemetry-proto==1.44.0
+2026-09-28T18:14:55.8927660Z  + opentelemetry-sdk==1.44.0
+2026-09-28T18:14:55.8928360Z  + opentelemetry-semantic-conventions==0.65b0
+2026-09-28T18:14:55.8928862Z  + packaging==26.3
+2026-09-28T18:14:55.8929204Z  + pathspec==1.1.1
+2026-09-28T18:14:55.8929567Z  + platformdirs==4.11.8
+2026-09-28T18:14:55.8929937Z  + pluggy==1.6.0
+2026-09-28T18:14:55.8930410Z  + protobuf==7.36.1
+2026-09-28T18:14:55.8930762Z  + pycparser==3.0
+2026-09-28T18:14:55.8931031Z  + pydantic==2.13.5
+2026-09-28T18:14:55.8931310Z  + pydantic-core==2.46.5
+2026-09-28T18:14:55.8931627Z  + pygments==2.21.0
+2026-09-28T18:14:55.8931916Z  + pyjwt==2.13.0
+2026-09-28T18:14:55.8932222Z  + pytest==8.4.2
+2026-09-28T18:14:55.8932605Z  + pytest-asyncio==1.4.0
+2026-09-28T18:14:55.8932995Z  + python-multipart==0.0.32
+2026-09-28T18:14:55.8933363Z  + pyyaml==6.0.3
+2026-09-28T18:14:55.8933734Z  + referencing==0.37.0
+2026-09-28T18:14:55.8938517Z  + requests==2.34.2
+2026-09-28T18:14:55.8938775Z  + rich==15.0.0
+2026-09-28T18:14:55.8939069Z  + rpds-py==2026.6.3
+2026-09-28T18:14:55.8939404Z  + ruff==0.16.5
+2026-09-28T18:14:55.8939715Z  + sniffio==1.3.1
+2026-09-28T18:14:55.8940064Z  + sse-starlette==3.4.11
+2026-09-28T18:14:55.8940408Z  + starlette==1.6.0
+2026-09-28T18:14:55.8940861Z  + textual==8.2.8
+2026-09-28T18:14:55.8941215Z  + tqdm==4.70.0
+2026-09-28T18:14:55.8941536Z  + truststore==0.10.4
+2026-09-28T18:14:55.8941916Z  + types-jsonschema==4.26.0.20260518
+2026-09-28T18:14:55.8942350Z  + types-pyyaml==6.0.12.20260906
+2026-09-28T18:14:55.8942780Z  + typing-extensions==4.16.0
+2026-09-28T18:14:55.8943200Z  + typing-inspection==0.4.4
+2026-09-28T18:14:55.8943599Z  + urllib3==2.7.0
+2026-09-28T18:14:55.8943926Z  + uvicorn==0.52.4
+2026-09-28T18:14:55.9032253Z ##[group]Run uv run python scripts/readability_report.py --check --check-final-report --quiet
+2026-09-28T18:14:55.9032916Z [36;1muv run python scripts/readability_report.py --check --check-final-report --quiet[0m
+2026-09-28T18:14:55.9070061Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:14:55.9070547Z env:
+2026-09-28T18:14:55.9070829Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:14:55.9071159Z   UV_PYTHON: 3.13
+2026-09-28T18:14:55.9071428Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:14:55.9071713Z ##[endgroup]
+2026-09-28T18:14:58.1933536Z ##[group]Run uv run python scripts/documentation_check.py
+2026-09-28T18:14:58.1933965Z [36;1muv run python scripts/documentation_check.py[0m
+2026-09-28T18:14:58.1970817Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:14:58.1971085Z env:
+2026-09-28T18:14:58.1971358Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:14:58.1971828Z   UV_PYTHON: 3.13
+2026-09-28T18:14:58.1972087Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:14:58.1972390Z ##[endgroup]
+2026-09-28T18:15:00.5623577Z 文档门禁通过：369份文档、9393条链接、831幅Mermaid、26个源码包、0个变化路径
+2026-09-28T18:15:00.5775696Z ##[group]Run uv run python scripts/generate_specs.py --check
+2026-09-28T18:15:00.5776201Z [36;1muv run python scripts/generate_specs.py --check[0m
+2026-09-28T18:15:00.5815468Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:00.5815722Z env:
+2026-09-28T18:15:00.5815999Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:00.5816330Z   UV_PYTHON: 3.13
+2026-09-28T18:15:00.5816586Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:00.5816873Z ##[endgroup]
+2026-09-28T18:15:03.1816440Z 合同一致性检查通过
+2026-09-28T18:15:03.3862850Z ##[group]Run uv run python scripts/secret_scan.py --self-check
+2026-09-28T18:15:03.3863309Z [36;1muv run python scripts/secret_scan.py --self-check[0m
+2026-09-28T18:15:03.3899930Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:03.3900333Z env:
+2026-09-28T18:15:03.3900693Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:03.3901029Z   UV_PYTHON: 3.13
+2026-09-28T18:15:03.3901288Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:03.3901579Z ##[endgroup]
+2026-09-28T18:15:03.4520597Z Secret扫描自检通过：6条固定规则逐项验证
+2026-09-28T18:15:03.4642126Z ##[group]Run uv build --offline --out-dir dist/secret-gate
+2026-09-28T18:15:03.4642553Z [36;1muv build --offline --out-dir dist/secret-gate[0m
+2026-09-28T18:15:03.4678118Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:03.4678381Z env:
+2026-09-28T18:15:03.4678660Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:03.4678990Z   UV_PYTHON: 3.13
+2026-09-28T18:15:03.4679238Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:03.4679528Z ##[endgroup]
+2026-09-28T18:15:03.4808109Z Building source distribution...
+2026-09-28T18:15:06.7817266Z Building wheel from source distribution...
+2026-09-28T18:15:07.1777599Z Successfully built dist/secret-gate/harnessix-0.1.0.tar.gz
+2026-09-28T18:15:07.1778266Z Successfully built dist/secret-gate/harnessix-0.1.0-py3-none-any.whl
+2026-09-28T18:15:07.1857092Z ##[group]Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
+2026-09-28T18:15:07.1858030Z [36;1muv run python scripts/secret_scan.py --artifact-dir dist/secret-gate[0m
+2026-09-28T18:15:07.1911912Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:07.1912185Z env:
+2026-09-28T18:15:07.1912467Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:07.1912794Z   UV_PYTHON: 3.13
+2026-09-28T18:15:07.1913044Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:07.1913330Z ##[endgroup]
+2026-09-28T18:15:17.1229529Z Secret扫描通过（harnessix.secret-scan/v2）：2935个输入完整覆盖且固定规则零命中
+2026-09-28T18:15:17.1375860Z ##[group]Run uv run ruff format --check .
+2026-09-28T18:15:17.1376197Z [36;1muv run ruff format --check .[0m
+2026-09-28T18:15:17.1412655Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:17.1412917Z env:
+2026-09-28T18:15:17.1413198Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:17.1413528Z   UV_PYTHON: 3.13
+2026-09-28T18:15:17.1413779Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:17.1414068Z ##[endgroup]
+2026-09-28T18:15:17.3122249Z 1295 files already formatted
+2026-09-28T18:15:17.3164781Z ##[group]Run uv run ruff check .
+2026-09-28T18:15:17.3165096Z [36;1muv run ruff check .[0m
+2026-09-28T18:15:17.3201376Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:17.3201644Z env:
+2026-09-28T18:15:17.3201927Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:17.3202257Z   UV_PYTHON: 3.13
+2026-09-28T18:15:17.3202512Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:17.3202804Z ##[endgroup]
+2026-09-28T18:15:17.4869708Z All checks passed!
+2026-09-28T18:15:17.4912522Z ##[group]Run uv run mypy src
+2026-09-28T18:15:17.4912811Z [36;1muv run mypy src[0m
+2026-09-28T18:15:17.4949295Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:17.4949563Z env:
+2026-09-28T18:15:17.4949839Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:17.4950463Z   UV_PYTHON: 3.13
+2026-09-28T18:15:17.4950732Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:17.4951028Z ##[endgroup]
+2026-09-28T18:15:37.4189150Z Success: no issues found in 391 source files
+2026-09-28T18:15:37.4484290Z ##[group]Run uv run pytest
+2026-09-28T18:15:37.4484618Z [36;1muv run pytest[0m
+2026-09-28T18:15:37.4522808Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:15:37.4523079Z env:
+2026-09-28T18:15:37.4523362Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:15:37.4523696Z   UV_PYTHON: 3.13
+2026-09-28T18:15:37.4523954Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:15:37.4524243Z ##[endgroup]
+2026-09-28T18:16:03.8077117Z ........................................................................ [  1%]
+2026-09-28T18:16:13.0390111Z ........................................................................ [  2%]
+2026-09-28T18:16:18.0368077Z ........................................................................ [  3%]
+2026-09-28T18:16:24.3889405Z ........................................................................ [  4%]
+2026-09-28T18:16:32.7560337Z ........................................................................ [  6%]
+2026-09-28T18:16:37.5159878Z ........................................................................ [  7%]
+2026-09-28T18:16:39.0062358Z ........................................................................ [  8%]
+2026-09-28T18:16:42.9413610Z ........................................................................ [  9%]
+2026-09-28T18:16:45.6485346Z ........................................................................ [ 11%]
+2026-09-28T18:16:50.4149781Z ........................................................................ [ 12%]
+2026-09-28T18:17:12.6815698Z ........................................................................ [ 13%]
+2026-09-28T18:17:13.7449272Z ........................................................................ [ 14%]
+2026-09-28T18:17:30.0651568Z ........................................................................ [ 16%]
+2026-09-28T18:17:38.4333778Z ........................................................................ [ 17%]
+2026-09-28T18:17:47.3344701Z ........................................................................ [ 18%]
+2026-09-28T18:18:42.1765083Z ........................................................................ [ 19%]
+2026-09-28T18:19:01.1986550Z ..................s..................................................... [ 21%]
+2026-09-28T18:19:01.6189761Z ........................................................................ [ 22%]
+2026-09-28T18:19:14.8370099Z ........................................................................ [ 23%]
+2026-09-28T18:19:25.3220731Z ........................................................................ [ 24%]
+2026-09-28T18:19:29.6714413Z ..................................................s..................... [ 26%]
+2026-09-28T18:19:32.0141258Z ................................................sssssssssssssssssssssss. [ 27%]
+2026-09-28T18:19:32.1502280Z ........................................................................ [ 28%]
+2026-09-28T18:20:56.4872938Z ........................................................................ [ 29%]
+2026-09-28T18:21:06.3821610Z ........................................................................ [ 31%]
+2026-09-28T18:21:51.8104313Z ........................................................................ [ 32%]
+2026-09-28T18:22:06.3623840Z ........................................................................ [ 33%]
+2026-09-28T18:22:15.0964881Z ........................................................................ [ 34%]
+2026-09-28T18:22:21.9703290Z ........................................................................ [ 36%]
+2026-09-28T18:22:22.4302265Z ........................................................................ [ 37%]
+2026-09-28T18:22:35.9569161Z ..............................................................ss.sssssss [ 38%]
+2026-09-28T18:22:38.2982006Z ssssssss................................................................ [ 39%]
+2026-09-28T18:22:39.7666596Z ........................................................................ [ 41%]
+2026-09-28T18:23:00.8568748Z ........................................................................ [ 42%]
+2026-09-28T18:23:04.5309864Z ........................................................................ [ 43%]
+2026-09-28T18:23:06.5446112Z ........................................................................ [ 44%]
+2026-09-28T18:23:07.3577864Z ........................................................................ [ 46%]
+2026-09-28T18:23:07.8270969Z ........................................................................ [ 47%]
+2026-09-28T18:23:09.7622790Z ........................................................................ [ 48%]
+2026-09-28T18:23:13.3419270Z ........................................................................ [ 49%]
+2026-09-28T18:23:21.9877497Z ........................................................................ [ 51%]
+2026-09-28T18:23:35.8070972Z ........................................................................ [ 52%]
+2026-09-28T18:23:41.1061350Z ........................................................................ [ 53%]
+2026-09-28T18:23:47.2066027Z ........................................................................ [ 54%]
+2026-09-28T18:23:58.3742678Z ........................................................................ [ 55%]
+2026-09-28T18:24:04.7082746Z ........................................................................ [ 57%]
+2026-09-28T18:24:05.4191654Z ........................................................................ [ 58%]
+2026-09-28T18:24:11.3287045Z ........................................................................ [ 59%]
+2026-09-28T18:24:50.6239547Z ........................................................................ [ 60%]
+2026-09-28T18:25:11.0664973Z ........................................................................ [ 62%]
+2026-09-28T18:25:26.2885179Z ........................................................................ [ 63%]
+2026-09-28T18:25:28.1412333Z ........................................................................ [ 64%]
+2026-09-28T18:25:32.6522816Z ........................................................................ [ 65%]
+2026-09-28T18:25:32.7847974Z ........................................................................ [ 67%]
+2026-09-28T18:25:38.2586634Z ...........................................s............................ [ 68%]
+2026-09-28T18:25:43.9416574Z ........................................................................ [ 69%]
+2026-09-28T18:25:46.5266158Z ...sssssssssss.......................................................... [ 70%]
+2026-09-28T18:25:54.9270751Z ....................s...............ssssssssssssss...................... [ 72%]
+2026-09-28T18:26:12.0236916Z ...........................................sssssssss.................... [ 73%]
+2026-09-28T18:26:28.2309939Z ............................................................s........... [ 74%]
+2026-09-28T18:26:29.8736784Z ................ss.....................sss......ssssss.................. [ 75%]
+2026-09-28T18:26:45.3005373Z ........................................................................ [ 77%]
+2026-09-28T18:26:46.9659224Z ........................................................................ [ 78%]
+2026-09-28T18:26:47.2760718Z ........................................................................ [ 79%]
+2026-09-28T18:26:47.5681913Z ........................................................................ [ 80%]
+2026-09-28T18:26:56.2090526Z ........................................................................ [ 82%]
+2026-09-28T18:26:56.6658605Z ........................................................................ [ 83%]
+2026-09-28T18:27:16.9159137Z ........................................................................ [ 84%]
+2026-09-28T18:27:18.4110056Z ........................................................................ [ 85%]
+2026-09-28T18:27:20.5153530Z ........................ssssssssssssssssss.............................. [ 87%]
+2026-09-28T18:27:22.5251984Z ........................................................................ [ 88%]
+2026-09-28T18:27:26.2777985Z ........................................................................ [ 89%]
+2026-09-28T18:27:29.5529480Z ........................................................................ [ 90%]
+2026-09-28T18:27:32.2969796Z ........................................................................ [ 92%]
+2026-09-28T18:27:33.8138271Z ........................................................................ [ 93%]
+2026-09-28T18:27:35.7660081Z ........................................................................ [ 94%]
+2026-09-28T18:27:38.1074924Z ........................................................................ [ 95%]
+2026-09-28T18:27:42.0953780Z ........................................................................ [ 97%]
+2026-09-28T18:27:45.1261366Z ........................................................................ [ 98%]
+2026-09-28T18:27:45.3700674Z ...................................................ssss................. [ 99%]
+2026-09-28T18:27:47.0155521Z ..........................                                               [100%]
+2026-09-28T18:27:47.0156070Z 5674 passed, 112 skipped in 727.46s (0:12:07)
+2026-09-28T18:27:48.4944097Z ##[group]Run uv run python -m examples.kernel_search
+2026-09-28T18:27:48.4944552Z [36;1muv run python -m examples.kernel_search[0m
+2026-09-28T18:27:48.4985126Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:48.4985398Z env:
+2026-09-28T18:27:48.4985678Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:48.4986016Z   UV_PYTHON: 3.13
+2026-09-28T18:27:48.4986295Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:48.4986589Z ##[endgroup]
+2026-09-28T18:27:49.1357419Z glob → grep → revision 读取通过，SQLite 重开/Replay 一致；未调用模型 API 或写工具。
+2026-09-28T18:27:49.1928711Z ##[group]Run uv run python -m examples.kernel_artifacts
+2026-09-28T18:27:49.1929109Z [36;1muv run python -m examples.kernel_artifacts[0m
+2026-09-28T18:27:49.1967018Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:49.1967287Z env:
+2026-09-28T18:27:49.1967569Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:49.1967903Z   UV_PYTHON: 3.13
+2026-09-28T18:27:49.1968155Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:49.1968449Z ##[endgroup]
+2026-09-28T18:27:49.7605042Z 300 条记录事务归档、预览外分页及 Replay 通过；未调用模型 API 或写工具。
+2026-09-28T18:27:49.8172940Z ##[group]Run uv run python -m examples.patch_plan
+2026-09-28T18:27:49.8173563Z [36;1muv run python -m examples.patch_plan[0m
+2026-09-28T18:27:49.8230444Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:49.8230941Z env:
+2026-09-28T18:27:49.8231433Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:49.8232046Z   UV_PYTHON: 3.13
+2026-09-28T18:27:49.8232499Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:49.8233058Z ##[endgroup]
+2026-09-28T18:27:49.9793292Z Patch 完整镜像、CRLF 保留、只读复核和漂移拒绝通过；未应用 Patch 或调用模型。
+2026-09-28T18:27:50.0073356Z ##[group]Run uv run python -m examples.managed_patch
+2026-09-28T18:27:50.0073854Z [36;1muv run python -m examples.managed_patch[0m
+2026-09-28T18:27:50.0116627Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:50.0117013Z env:
+2026-09-28T18:27:50.0117445Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:50.0118001Z   UV_PYTHON: 3.13
+2026-09-28T18:27:50.0118425Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:50.0118911Z ##[endgroup]
+2026-09-28T18:27:50.2076343Z 受管副本真实修改、持久审批、重开不重写通过；源目录未变，未调用模型。
+2026-09-28T18:27:50.2391080Z ##[group]Run uv run python -m examples.patch_bridge
+2026-09-28T18:27:50.2391940Z [36;1muv run python -m examples.patch_bridge[0m
+2026-09-28T18:27:50.2448362Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:50.2448792Z env:
+2026-09-28T18:27:50.2449260Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:50.2449852Z   UV_PYTHON: 3.13
+2026-09-28T18:27:50.2450445Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:50.2450917Z ##[endgroup]
+2026-09-28T18:27:50.6418342Z 宿主 Patch 桥接验收通过：读取、计划绑定、批准、写入、读回、重开不重写；源文件不变。
+2026-09-28T18:27:50.6418918Z 本示例不是模型写工具或自主编码 Eval，Kernel 默认仍只读。
+2026-09-28T18:27:50.6966790Z ##[group]Run uv run python -m examples.kernel_patch
+2026-09-28T18:27:50.6967409Z [36;1muv run python -m examples.kernel_patch[0m
+2026-09-28T18:27:50.7004512Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:50.7004772Z env:
+2026-09-28T18:27:50.7005047Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:50.7005381Z   UV_PYTHON: 3.13
+2026-09-28T18:27:50.7005633Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:50.7005957Z ##[endgroup]
+2026-09-28T18:27:51.3832326Z 读取、持久写审批重开、一次受管写入、读回及 Replay 通过；无模型 API、无源目录写入。
+2026-09-28T18:27:51.4426664Z ##[group]Run uv run python -m examples.patch_batch
+2026-09-28T18:27:51.4427051Z [36;1muv run python -m examples.patch_batch[0m
+2026-09-28T18:27:51.4462755Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:51.4463026Z env:
+2026-09-28T18:27:51.4463301Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:51.4463624Z   UV_PYTHON: 3.13
+2026-09-28T18:27:51.4463875Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:51.4464164Z ##[endgroup]
+2026-09-28T18:27:51.6187677Z 多文件计划、字节坐标重建、有界 Diff、重开复核通过；没有批准、写入、模型 API 或 Artifact 发布。
+2026-09-28T18:27:51.6488187Z ##[group]Run uv run python -m examples.managed_batch_approval
+2026-09-28T18:27:51.6488622Z [36;1muv run python -m examples.managed_batch_approval[0m
+2026-09-28T18:27:51.6525085Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:51.6525351Z env:
+2026-09-28T18:27:51.6525654Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:51.6525984Z   UV_PYTHON: 3.13
+2026-09-28T18:27:51.6526236Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:51.6526532Z ##[endgroup]
+2026-09-28T18:27:51.8432977Z 整组预留、持久审批、重开及禁止拆分消费通过；源目录/副本均未写入补丁。
+2026-09-28T18:27:51.8721230Z ##[group]Run uv run python -m examples.managed_batch
+2026-09-28T18:27:51.8721636Z [36;1muv run python -m examples.managed_batch[0m
+2026-09-28T18:27:51.8757675Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:51.8757940Z env:
+2026-09-28T18:27:51.8758213Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:51.8758540Z   UV_PYTHON: 3.13
+2026-09-28T18:27:51.8758791Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:51.8759083Z ##[endgroup]
+2026-09-28T18:27:52.0916405Z 多文件真实写入、读回、重开只核对及禁止拆分消费通过；源目录未修改。
+2026-09-28T18:27:52.1205454Z ##[group]Run uv run python -m examples.batch_patch_bridge
+2026-09-28T18:27:52.1205855Z [36;1muv run python -m examples.batch_patch_bridge[0m
+2026-09-28T18:27:52.1241237Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:52.1241512Z env:
+2026-09-28T18:27:52.1241799Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:52.1242134Z   UV_PYTHON: 3.13
+2026-09-28T18:27:52.1242381Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:52.1242677Z ##[endgroup]
+2026-09-28T18:27:52.5494228Z 整组宿主桥接：完整调用批准、两文件顺序应用、重开只核对、源目录不变。
+2026-09-28T18:27:52.6047776Z ##[group]Run uv run python -m examples.kernel_batch
+2026-09-28T18:27:52.6048392Z [36;1muv run python -m examples.kernel_batch[0m
+2026-09-28T18:27:52.6089342Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:52.6089619Z env:
+2026-09-28T18:27:52.6089909Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:52.6090435Z   UV_PYTHON: 3.13
+2026-09-28T18:27:52.6090692Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:52.6090992Z ##[endgroup]
+2026-09-28T18:27:53.4890824Z 两文件读取、整组审批重开、一次顺序写、读回及 Replay 通过；源目录未写，无模型 API。
+2026-09-28T18:27:53.5522638Z ##[group]Run uv run python -m examples.batch_diff
+2026-09-28T18:27:53.5523204Z [36;1muv run python -m examples.batch_diff[0m
+2026-09-28T18:27:53.5579805Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:53.5580404Z env:
+2026-09-28T18:27:53.5580854Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:53.5581394Z   UV_PYTHON: 3.13
+2026-09-28T18:27:53.5581765Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:53.5582225Z ##[endgroup]
+2026-09-28T18:27:54.2021062Z 真实审批/两文件写入及计划、效果双引用事务归档通过；分页正文与原报告一致，源目录未改变。
+2026-09-28T18:27:54.2021770Z 重建会话与事件一致，公开组输出结构不变；未调用真实模型 API。
+2026-09-28T18:27:54.2606350Z ##[group]Run uv run python -m examples.host_process
+2026-09-28T18:27:54.2606726Z [36;1muv run python -m examples.host_process[0m
+2026-09-28T18:27:54.2642680Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:54.2642948Z env:
+2026-09-28T18:27:54.2643225Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:54.2643586Z   UV_PYTHON: 3.13
+2026-09-28T18:27:54.2643834Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:54.2644125Z ##[endgroup]
+2026-09-28T18:27:54.8735019Z 宿主进程：双流有界捕获/完整排水、超时终止与直接子进程回收通过。
+2026-09-28T18:27:54.8736318Z 没有启用模型Shell、持久命令审批或OS Sandbox；没有模型请求或中间件。
+2026-09-28T18:27:54.9315520Z ##[group]Run uv run python scripts/license_scan.py --check
+2026-09-28T18:27:54.9316021Z [36;1muv run python scripts/license_scan.py --check[0m
+2026-09-28T18:27:54.9356211Z shell: /usr/bin/bash -e {0}
+2026-09-28T18:27:54.9356475Z env:
+2026-09-28T18:27:54.9356754Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T18:27:54.9357085Z   UV_PYTHON: 3.13
+2026-09-28T18:27:54.9357334Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T18:27:54.9357621Z ##[endgroup]
+2026-09-28T18:27:55.4893781Z 许可证违规：12个Archive
+2026-09-28T18:27:55.5080767Z ##[error]Process completed with exit code 1.
+2026-09-28T18:27:55.5217442Z Post job cleanup.
+2026-09-28T18:27:55.6077397Z [command]/usr/bin/git version
+2026-09-28T18:27:55.6120880Z git version 2.55.0
+2026-09-28T18:27:55.6157113Z Temporarily overriding HOME='/home/runner/work/_temp/bc88d4b0-e1fd-4fa3-a1d6-ad1e28c43ead' before making global git config changes
+2026-09-28T18:27:55.6158613Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T18:27:55.6163557Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T18:27:55.6195628Z Removing SSH command configuration
+2026-09-28T18:27:55.6202433Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T18:27:55.6236521Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T18:27:55.6444881Z Removing HTTP extra header
+2026-09-28T18:27:55.6450655Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T18:27:55.6485214Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T18:27:55.6704974Z Removing includeIf entries pointing to credentials config files
+2026-09-28T18:27:55.6713286Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T18:27:55.6737023Z includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T18:27:55.6738253Z includeif.gitdir:/github/workspace/.git.path
+2026-09-28T18:27:55.6745845Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T18:27:55.6767025Z /home/runner/work/_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:27:55.6778309Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:27:55.6813247Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-28T18:27:55.6836351Z /github/runner_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:27:55.6846068Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config
+2026-09-28T18:27:55.6880115Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T18:27:55.7162235Z Removing credentials config '/home/runner/work/_temp/git-credentials-9d756571-8689-4937-8f3a-a64a42b92b2b.config'
+2026-09-28T18:27:55.7261014Z Cleaning up orphan processes

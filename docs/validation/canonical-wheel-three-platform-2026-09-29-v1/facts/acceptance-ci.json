@@ -1,0 +1,39 @@
+{
+  "run_id": 36463822741,
+  "source_revision": "a4f7f33449bb897d84fe3a8e8262307943233fb4",
+  "observed_at": "2026-09-28T18:23:46.964794+00:00",
+  "jobs": [
+    {
+      "id": 109068770784,
+      "name": "构建并扫描唯一发行Wheel",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T18:14:48Z",
+      "completed_at": "2026-09-28T18:15:03Z"
+    },
+    {
+      "id": 109068886110,
+      "name": "安装与恢复 macos",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T18:15:12Z",
+      "completed_at": "2026-09-28T18:15:57Z"
+    },
+    {
+      "id": 109068886127,
+      "name": "安装与恢复 linux",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T18:15:06Z",
+      "completed_at": "2026-09-28T18:15:34Z"
+    },
+    {
+      "id": 109068886317,
+      "name": "安装与恢复 windows",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-28T18:15:06Z",
+      "completed_at": "2026-09-28T18:16:02Z"
+    }
+  ]
+}

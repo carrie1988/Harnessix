@@ -494,8 +494,10 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 安全阶段仅在R1/R2必要门禁通过后关闭；延期能力不能标记为实现完成。
 
 [R1维护安全](changes/m09-r1-store-maintenance-safety.md)补认证容量原证明、认证Store旧式维护拒绝、
-候选恢复预检、有界工作线程及取消/确认丢失回归。认证产品完整状态与Key备份、实际三平台恢复仍开放；
-该有限整改不标记R1或0.9.4完成，不恢复已延期的通用维护平台。
+候选恢复预检、有界工作线程及取消/确认丢失回归。后继完整备份/恢复和
+[规范Wheel三平台实测](validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
+已证明空编码场景六库/原Key恢复及卸载重装；复杂业务引用和正式安全收口仍需验收。
+上述专项不标记R1或0.9.4完成，不恢复已延期的通用维护平台。
 
 ### 六个剩余发布工作包
 
@@ -516,6 +518,10 @@ R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m0
 固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
 该增量不关闭R4：Windows默认Git读取/交付、三平台脱离源码安装、升级恢复、独立Beta与最终同候选门禁仍需完成。
 该切片复用原审批、Lease和Transaction状态机；原生验证、Git产品装配及三平台发行退出条件仍分别验收。
+[规范发行Wheel详设](changes/m09-r4-installed-product-acceptance.md)及
+[固定源码实际验证](validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
+完成同一Run唯一Wheel三平台源码外安装、完整备份恢复、卸载及重装，制品摘要一致。
+Windows消费者环境、完整编码闭环、版本升级/回退、独立Beta和同候选全部发布门禁仍开放；不据此关闭R4。
 详细逐项处置、退出阈值、依赖及延期表见[发布范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)。
 
 
@@ -717,8 +723,8 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 原周期账本先预留后发送，未知费用停止整个Suite；默认执行路径兼容，恢复身份包含有限Guard范围。
 该机制仅保护受控验证请求，不恢复延期的通用计价平台、不降低原20 Trial门槛或关闭R3。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
-Action借用同一Owner，取消结算唯一目录线程后释放。完整跨Store/Artifact及原Key备份恢复、整体目录发布与三平台实际恢复仍开放；
-该前置实现不关闭R1或R4。
+Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
+复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。
 
 [R1完整停机备份与原来源验真](changes/m09-r1-product-state-backup.md)已交付六库、可选Process事实、
 事务Blob及独立Key的受管捕获；原MAC和跨Store引用先验真，再持久化根外本机回执并排他发布目录。
@@ -726,7 +732,8 @@ Action借用同一Owner，取消结算唯一目录线程后释放。完整跨Sto
 [后继完整停机恢复](changes/m09-r1-product-state-restore.md)实现整体Root替换、耐久Journal、
 启动前未决拒绝、显式继续/回退及稳定ID历史结果；原目录与原Key保留，不重放未知效果。
 [固定源码独立复验](validation/product-state-restore-2026-09-28-v1/README.md)完成双Python专项与受影响回归，
-三幅实际图示、Wheel与失败证据统一归档；这些macOS结果不替代三平台实际恢复，R1/R4整体继续开放。
+三幅实际图示、Wheel与失败证据统一归档；这些macOS结果不替代三平台实际恢复。
+后继规范Wheel专项已取得三平台实际状态恢复及卸载重装结果，R1/R4整体继续开放。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 
