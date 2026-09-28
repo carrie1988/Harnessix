@@ -83,7 +83,10 @@ def test_key_subtree_never_accepts_ordinary_state_acl(tmp_path, directory):
     assert not (root / "session-auth/key.v1").exists()
 
 
-def test_private_large_file_uses_native_handle_not_key_size_limit(tmp_path):
+def test_private_large_file_uses_native_handle_not_key_size_limit(tmp_path, monkeypatch):
+    from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics
+
+    install_backup_diagnostics(monkeypatch)
     root = tmp_path / "private"
     create_private_tree(root)
     body = b"bounded-contents\n" * 4096

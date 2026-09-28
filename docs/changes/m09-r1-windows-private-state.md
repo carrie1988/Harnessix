@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 2c285c0338f500004ac782444f80fa6f6bb25638
+version: 4
+code_revision: 8b5944d7c6f4f57369cef85f4df3151991497320
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_windows_backup_diagnostics.py
   - tests/product_config/test_state_windows_file_contracts.py
   - tests/product_config/test_state_windows_parent_contracts.py
   - tests/workspace/test_windows_private_security_contracts.py
@@ -397,3 +398,16 @@ original ExitStack closes FD, permission parents and metadata chain
 Windows的[硬链接共享规则](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createhardlinkw)
 使活跃句柄共享状态影响坏事实准备；准备阶段共享错误不能替代“已存在多链接必须拒绝”的断言。
 新资源释放测试防止因移动准备步骤而掩盖文件Handle泄漏。旧原生失败保留，修复候选须重新实际运行。
+
+### 17.5 原生后继结果与发布失败诊断
+
+实现`8b5944d`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36438408439/job/108982218858)
+为87通过、5跳过、2失败，前置写链59通过。SQLite及Journal读取、64KiB大文件读写、既有Hardlink拒绝、
+三种退出路径的原FD/Handle关闭均通过；大文件用例在最终目录发布失败，默认SDK在完整备份后继步骤失败。
+两套独立本地受影响回归各3344通过、81跳过，未执行用户未受管资料，也不代替Windows整体验收。
+
+[有限失败诊断](../../tests/product_config/windows_backup_diagnostics.py)只在两个原生用例中装配，
+在原异常映射之前记录固定位置、内部操作白名单、异常类别和数值Win32/SQLite错误码。
+不记录错误消息、绝对路径、账号、SID、Key、数据库内容或模型数据，不返回成功、不修复状态、不吞异常。
+[诊断回归](../../tests/product_config/test_windows_backup_diagnostics.py)验证原异常对象或原公开错误码保持，
+以及带正文和路径的Canary不进入输出。目录发布与完整备份仍为发布阻塞，不能以诊断完成关闭R1/R4。

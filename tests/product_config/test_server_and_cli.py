@@ -148,6 +148,9 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
     assert len(captures) == 3
     assert all(CANARY.encode() not in capture.read_bytes() for capture in captures)
     from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+    from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics
+
+    install_backup_diagnostics(monkeypatch)
 
     try:
         manifest = await backup_product_state(state, tmp_path / "backup")
