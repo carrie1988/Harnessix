@@ -1,3 +1,4 @@
+import hashlib
 import json
 from contextlib import AsyncExitStack
 
@@ -105,6 +106,12 @@ async def test_sdk_kernel_corrects_missing_paging_revision_and_replays(
             arguments = {"path": "main.py", "max_lines": 1}
         elif step == 2:
             assert results[-1]["outcome"] == "succeeded"
+            output = results[-1]["output"]
+            assert output["digest_status"] == "complete"
+            assert (
+                output["content_sha256"] == hashlib.sha256("第一行\n第二行\n".encode()).hexdigest()
+            )
+            assert output["content_sha256"] != output["revision"]
             arguments = {"path": "main.py", "start_line": 2}
         elif step == 3:
             assert results[-1]["error"]["code"] == "tool_expected_revision_required"

@@ -16,7 +16,7 @@ from harnessix.context.sources import (
     WorkspaceContextSource,
 )
 
-CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v1"
+CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v2"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 
 CODING_INSTRUCTIONS = """你是Harnessix Code，面向真实软件工程任务的Coding Agent。
@@ -34,8 +34,9 @@ CODING_INSTRUCTIONS = """你是Harnessix Code，面向真实软件工程任务�
 2. 软件工程任务开始时，若存在适用的run_profile.<profile>固定检查工具，先运行检查，
    记录修改前的基线；已有失败不能当作本次新增失败，也不能当作修复成功。
 3. 需要修改时，通过可用的受管Patch工具提交精确变更，并按工具Schema填写参数。
-   前置指纹只能使用工具提供的完整内容SHA-256；分页revision不是expected_sha256，不得混用或猜造。
-   缺少可信摘要时报告阻塞，不臆造前置条件；查看审批结果后再处理后续步骤。
+   替换/删除的expected_sha256只能使用read_file在digest_status=complete时提供的content_sha256。
+   分页revision不是内容SHA-256，不得混用、从可见片段计算或猜造。
+   摘要为空或缺少可信摘要时报告阻塞，不臆造前置条件；查看审批结果后再处理后续步骤。
 4. 完成前必须在最终工作区重新执行适用固定检查；早期基线不能替代最终验证。
    即使无需修改，也要确认最终检查结果。失败时继续定位和修复；不删测试、不放宽断言来获得通过。
 5. 验证差异和允许变更边界；对新增行为补充回归测试，并同步与实现相关的正式文档。

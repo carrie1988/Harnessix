@@ -34,6 +34,7 @@ from harnessix.tools.contracts import (
     ReadContract,
     ReadFileInput,
     ReadFileOutput,
+    ReadFileSnapshotOutput,
     ReadToolError,
 )
 from harnessix.tools.git_contracts import (
@@ -101,9 +102,11 @@ _BINDINGS = (
     ),
     _ReadBinding(
         "read_file",
-        "有界读取工作区 UTF-8 文件；后续页须携带 revision，不跟随链接",
+        "有界读取UTF-8文本页；后续页携带revision作为expected_revision。digest_status=complete时，"
+        "content_sha256是完整原始文件摘要，可用于Patch expected_sha256；"
+        "摘要超限时不提供，不跟随链接",
         ReadFileInput,
-        ReadFileOutput,
+        ReadFileSnapshotOutput,
     ),
     _ReadBinding(
         "glob",
@@ -205,7 +208,7 @@ def _descriptor(
 ) -> ToolDescriptor:
     return ToolDescriptor(
         name=binding.name,
-        version=f"1.{contract}",
+        version=f"{2 if binding.output_model is ReadFileSnapshotOutput else 1}.{contract}",
         description=binding.description,
         input_schema=binding.input_model.model_json_schema(),
         effect_class=EffectClass.READ_ONLY,
@@ -240,6 +243,14 @@ def _binding_rules(
         "max_result_bytes": MAX_RESULT_BYTES,
         "timeout": READ_TIMEOUT_SECONDS,
     }
+    if binding.output_model is ReadFileSnapshotOutput:
+        rules["snapshot"] = {
+            "spec_version": "harnessix.read-file-snapshot/v1",
+            "algorithm": "sha256",
+            "digest_input": "complete_raw_file",
+            "max_digest_bytes": MAX_SCAN_BYTES,
+            "oversize": "omitted_limit_or_platform_limit_exceeded",
+        }
     if issubclass(binding.input_model, SearchInput):
         rules["search"] = search.execution_contract()
         if artifacts is not None:
@@ -523,7 +534,7 @@ class CodingToolRuntime:
                     return search.glob(self._workspace, args, operation, capture=capture)
                 if isinstance(args, GrepInput):
                     return search.grep(self._workspace, args, operation, capture=capture)
-                return files.read_file(self._workspace, args, operation)
+                return files.read_file_snapshot(self._workspace, args, operation)
 
             return await run_read_operation(read)
 

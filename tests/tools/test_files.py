@@ -244,7 +244,7 @@ async def test_os_errors_are_sanitized(tmp_path, monkeypatch, number, code):
     def fail(*args):
         raise OSError(number, "SECRET-CANARY /private/data")
 
-    monkeypatch.setattr(files, "read_file", fail)
+    monkeypatch.setattr(files, "read_file_snapshot", fail)
     async with CodingToolRuntime(tmp_path) as tools:
         result = await execute(tools, path="x")
         assert result.error.code == f"tool_{code}"

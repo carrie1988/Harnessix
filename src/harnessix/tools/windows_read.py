@@ -12,9 +12,10 @@ from harnessix.tools.contracts import (
     ReadContract,
     ReadFileInput,
     ReadFileOutput,
+    ReadFileSnapshotOutput,
 )
 from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
-from harnessix.tools.windows_file_read import list_files, read_file
+from harnessix.tools.windows_file_read import list_files, read_file, read_file_snapshot
 from harnessix.tools.windows_read_port import WindowsReadPort, WindowsRoot
 from harnessix.tools.windows_search import glob_files, grep_files
 from harnessix.tools.workspace import ReadOperation
@@ -56,13 +57,18 @@ class WindowsReadRuntime:
             return self.glob(args, operation, capture=capture)
         if isinstance(args, GrepInput):
             return self.grep(args, operation, capture=capture)
-        return self.read_file(args, operation)
+        return self.read_file_snapshot(args, operation)
 
     def list_files(self, args: ListFilesInput, operation: ReadOperation) -> ListFilesOutput:
         return list_files(self._port, args, operation)
 
     def read_file(self, args: ReadFileInput, operation: ReadOperation) -> ReadFileOutput:
         return read_file(self._port, args, operation)
+
+    def read_file_snapshot(
+        self, args: ReadFileInput, operation: ReadOperation
+    ) -> ReadFileSnapshotOutput:
+        return read_file_snapshot(self._port, args, operation)
 
     def glob(
         self,

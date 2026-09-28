@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import subprocess
 from pathlib import Path
@@ -44,6 +45,10 @@ async def test_windows_runtime_executes_all_four_read_tools(tmp_path: Path) -> N
         assert [item["name"] for item in listed.output["entries"]] == ["src"]
         read = await execute(tools, path="src/a.py", max_lines=1)
         assert read.output["text"] == "first\n"
+        assert read.output["content_sha256"] == hashlib.sha256(b"first\nneedle = 1\n").hexdigest()
+        assert read.output["file_bytes"] == len(b"first\nneedle = 1\n")
+        assert read.output["digest_status"] == "complete"
+        assert read.output["revision"] != read.output["content_sha256"]
         found = await execute(tools, "glob", pattern="**/*.py")
         assert found.output["paths"] == ["src/a.py"]
         matched = await execute(tools, "grep", query="needle", include="**/*.py")

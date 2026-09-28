@@ -47,7 +47,7 @@ async def test_output_contract_bug_is_not_a_normal_failure(tmp_path, monkeypatch
     invalid = ListFilesOutput(
         path=".", entries=(), revision="0" * 64, truncated=False, next_offset=None
     )
-    monkeypatch.setattr(files, "read_file", lambda *args: invalid)
+    monkeypatch.setattr(files, "read_file_snapshot", lambda *args: invalid)
     async with CodingToolRuntime(tmp_path) as tools:
         with pytest.raises(KernelError) as error:
             await execute(tools, path="x")
@@ -62,7 +62,7 @@ async def test_cancel_waits_for_worker_and_closes_all_fds(tmp_path, monkeypatch,
     loop = asyncio.get_running_loop()
     opened = set()
     original_open = os.open
-    original_read = files.read_file
+    original_read = files.read_file_snapshot
     original_decode = files._decode
 
     def tracked_open(*args, **kwargs):
@@ -86,7 +86,7 @@ async def test_cancel_waits_for_worker_and_closes_all_fds(tmp_path, monkeypatch,
         return original_read(workspace, args, operation)
 
     monkeypatch.setattr(os, "open", tracked_open)
-    monkeypatch.setattr(files, "read_file", read)
+    monkeypatch.setattr(files, "read_file_snapshot", read)
     monkeypatch.setattr(files, "_decode", block)
     token = CancelToken()
     async with CodingToolRuntime(tmp_path) as tools:
@@ -117,7 +117,7 @@ async def test_cancel_queued_read_never_starts_second_worker(tmp_path, monkeypat
     release = Event()
     loop = asyncio.get_running_loop()
     calls = []
-    original = files.read_file
+    original = files.read_file_snapshot
     (tmp_path / "x").write_text("测试")
 
     def block(*args):
@@ -126,7 +126,7 @@ async def test_cancel_queued_read_never_starts_second_worker(tmp_path, monkeypat
         assert release.wait(10)
         return original(*args)
 
-    monkeypatch.setattr(files, "read_file", block)
+    monkeypatch.setattr(files, "read_file_snapshot", block)
     async with CodingToolRuntime(tmp_path, max_concurrent_reads=1) as tools:
         first = asyncio.create_task(execute(tools, path="x"))
         second = None
@@ -144,7 +144,7 @@ async def test_cancel_queued_read_never_starts_second_worker(tmp_path, monkeypat
 
 
 async def test_precancelled_token_does_not_execute(tmp_path, monkeypatch):
-    monkeypatch.setattr(files, "read_file", lambda *args: pytest.fail("不应执行"))
+    monkeypatch.setattr(files, "read_file_snapshot", lambda *args: pytest.fail("不应执行"))
     async with CodingToolRuntime(tmp_path) as tools:
         token = CancelToken()
         token.cancel()
@@ -161,7 +161,7 @@ async def test_bounded_reads_run_in_parallel_and_descriptor_declares_capability(
     loop = asyncio.get_running_loop()
     active = 0
     peak = 0
-    original = files.read_file
+    original = files.read_file_snapshot
 
     def block(*args):
         nonlocal active, peak
@@ -175,7 +175,7 @@ async def test_bounded_reads_run_in_parallel_and_descriptor_declares_capability(
         finally:
             active -= 1
 
-    monkeypatch.setattr(files, "read_file", block)
+    monkeypatch.setattr(files, "read_file_snapshot", block)
     async with CodingToolRuntime(tmp_path, max_concurrent_reads=2) as tools:
         assert all(definition.supports_parallel_calls for definition in tools.definitions())
         tasks = [asyncio.create_task(execute(tools, path="x")) for _ in range(3)]

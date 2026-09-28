@@ -11,7 +11,13 @@ import pytest
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.tools.contracts import ListFilesInput, ReadFileInput, ReadToolError
+from harnessix.tools.contracts import (
+    MAX_SCAN_BYTES,
+    ListFilesInput,
+    ReadFileInput,
+    ReadFileSnapshotOutput,
+    ReadToolError,
+)
 from harnessix.tools.search import SearchCapture
 from harnessix.tools.search_contracts import GlobInput, GrepInput
 from harnessix.tools.windows_read import WindowsReadRuntime
@@ -105,6 +111,31 @@ def runtime(tmp_path: Path) -> WindowsReadRuntime:
         denied_paths=("private",),
         root_factory=cast(Any, _FakeWindowsRoot),
     )
+
+
+@pytest.mark.parametrize("body", [b"", b"first\r\nsecond\n", "中文\n尾行".encode()])
+def test_windows_snapshot_and_page_share_one_complete_content_observation(
+    tmp_path: Path, runtime: WindowsReadRuntime, body: bytes
+) -> None:
+    (tmp_path / "app.py").write_bytes(body)
+    args = ReadFileInput(path="app.py", max_lines=1)
+    snapshot = runtime.execute(args, ReadOperation())
+    assert isinstance(snapshot, ReadFileSnapshotOutput)
+    assert snapshot.content_sha256 == hashlib.sha256(body).hexdigest()
+    assert snapshot.file_bytes == len(body) and snapshot.digest_status == "complete"
+    assert snapshot.revision != snapshot.content_sha256
+    legacy = runtime.read_file(args, ReadOperation())
+    assert legacy.revision == snapshot.revision and legacy.text == snapshot.text
+    assert "content_sha256" not in legacy.model_dump()
+
+
+def test_windows_snapshot_preserves_native_observation_size_limit(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    (tmp_path / "app.py").write_bytes(b"x\n" * (MAX_SCAN_BYTES // 2 + 1))
+    with pytest.raises(ReadToolError) as failed:
+        runtime.read_file_snapshot(ReadFileInput(path="app.py", max_lines=1), ReadOperation())
+    assert failed.value.code == "limit_exceeded"
 
 
 def test_list_and_read_preserve_public_contract_and_revision(

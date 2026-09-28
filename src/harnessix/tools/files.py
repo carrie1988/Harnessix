@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 from typing import Literal
@@ -16,6 +17,7 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadFileInput,
     ReadFileOutput,
+    ReadFileSnapshotOutput,
     ReadToolError,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, revision_state
@@ -97,44 +99,93 @@ def read_file(
     with workspace.open(args.path, operation, directory=False) as fd:
         revision = digest((workspace.scope, args.path, revision_state(os.fstat(fd))))
         _check_revision(args.expected_revision, revision)
-        lines: list[str] = []
-        scanned = returned = line_number = 0
-        reason: Literal["line_limit", "byte_limit"] | None = None
-        # 有界预读最多额外 8 KiB；closefd=False，FD 由 Workspace 统一回收。
-        with os.fdopen(fd, "rb", buffering=8192, closefd=False) as stream:
-            while True:
-                operation.checkpoint()
-                raw = stream.readline(min(MAX_LINE_BYTES + 1, MAX_SCAN_BYTES - scanned + 1))
-                scanned += len(raw)
-                if scanned > MAX_SCAN_BYTES:
-                    raise ReadToolError("limit_exceeded")
-                if not raw:
-                    break
-                line_number += 1
-                if line_number >= args.start_line and len(lines) >= args.max_lines:
-                    reason = "line_limit"
-                    break
-                if len(raw) > MAX_LINE_BYTES:
-                    raise ReadToolError("limit_exceeded")
-                text = _decode(raw)
-                if line_number < args.start_line:
-                    continue
-                if returned + len(raw) > MAX_TEXT_BYTES:
-                    reason = "byte_limit"
-                    break
-                returned += len(raw)
-                lines.append(text)
-        if not lines and (args.start_line > 1 or line_number > 0):
-            raise ReadToolError("offset_out_of_range")
-        result = ReadFileOutput(
-            path=args.path,
-            text="".join(lines),
-            start_line=args.start_line,
-            end_line=args.start_line + len(lines) - 1 if lines else None,
-            utf8_bytes=returned,
-            revision=revision,
-            truncated=reason is not None,
-            truncation_reason=reason,
-            next_line=args.start_line + len(lines) if reason else None,
+        result = _read_file_page(fd, args, revision, operation)
+    return result
+
+
+def _read_file_page(
+    fd: int, args: ReadFileInput, revision: str, operation: ReadOperation
+) -> ReadFileOutput:
+    """复用旧文本分页规则；FD仍由外层Workspace观察统一拥有和复核。"""
+
+    lines: list[str] = []
+    scanned = returned = line_number = 0
+    reason: Literal["line_limit", "byte_limit"] | None = None
+    # 有界预读最多额外8 KiB；closefd=False，不转移FD所有权。
+    with os.fdopen(fd, "rb", buffering=8192, closefd=False) as stream:
+        while True:
+            operation.checkpoint()
+            raw = stream.readline(min(MAX_LINE_BYTES + 1, MAX_SCAN_BYTES - scanned + 1))
+            scanned += len(raw)
+            if scanned > MAX_SCAN_BYTES:
+                raise ReadToolError("limit_exceeded")
+            if not raw:
+                break
+            line_number += 1
+            if line_number >= args.start_line and len(lines) >= args.max_lines:
+                reason = "line_limit"
+                break
+            if len(raw) > MAX_LINE_BYTES:
+                raise ReadToolError("limit_exceeded")
+            text = _decode(raw)
+            if line_number < args.start_line:
+                continue
+            if returned + len(raw) > MAX_TEXT_BYTES:
+                reason = "byte_limit"
+                break
+            returned += len(raw)
+            lines.append(text)
+    if not lines and (args.start_line > 1 or line_number > 0):
+        raise ReadToolError("offset_out_of_range")
+    return ReadFileOutput(
+        path=args.path,
+        text="".join(lines),
+        start_line=args.start_line,
+        end_line=args.start_line + len(lines) - 1 if lines else None,
+        utf8_bytes=returned,
+        revision=revision,
+        truncated=reason is not None,
+        truncation_reason=reason,
+        next_line=args.start_line + len(lines) if reason else None,
+    )
+
+
+def _complete_content_digest(fd: int, file_bytes: int, operation: ReadOperation) -> str:
+    """计算有界完整原始摘要；文件增长或缩小不能成为部分成功结果。"""
+
+    hasher = hashlib.sha256()
+    scanned = 0
+    while True:
+        operation.checkpoint()
+        chunk = os.read(fd, min(65536, file_bytes - scanned + 1))
+        scanned += len(chunk)
+        if scanned > file_bytes or (not chunk and scanned != file_bytes):
+            raise ReadToolError("workspace_changed")
+        if not chunk:
+            return hasher.hexdigest()
+        hasher.update(chunk)
+
+
+def read_file_snapshot(
+    workspace: Workspace,
+    args: ReadFileInput,
+    operation: ReadOperation,
+) -> ReadFileSnapshotOutput:
+    """在同一FD观察中取得分页与完整前镜像摘要，不改变旧读取API。"""
+
+    with workspace.open(args.path, operation, directory=False) as fd:
+        observed = os.fstat(fd)
+        revision = digest((workspace.scope, args.path, revision_state(observed)))
+        _check_revision(args.expected_revision, revision)
+        content_sha256 = None
+        if observed.st_size <= MAX_SCAN_BYTES:
+            content_sha256 = _complete_content_digest(fd, observed.st_size, operation)
+            os.lseek(fd, 0, os.SEEK_SET)
+        page = _read_file_page(fd, args, revision, operation)
+        result = ReadFileSnapshotOutput(
+            **page.model_dump(),
+            file_bytes=observed.st_size,
+            content_sha256=content_sha256,
+            digest_status="complete" if content_sha256 is not None else "omitted_limit",
         )
     return result

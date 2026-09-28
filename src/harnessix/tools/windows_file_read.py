@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 from typing import Literal
 
@@ -15,10 +16,12 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadFileInput,
     ReadFileOutput,
+    ReadFileSnapshotOutput,
     ReadToolError,
 )
 from harnessix.tools.files import _check_revision, _decode
 from harnessix.tools.windows_read_port import (
+    Observation,
     WindowsReadPort,
     file_revision,
     require_kind,
@@ -122,8 +125,18 @@ def read_file(
 
     path = port.path(args.path)
     observed = port.observe(path, operation, max_bytes=MAX_SCAN_BYTES)
+    return _read_file_page(port, path, args, observed, operation)
+
+
+def _read_file_page(
+    port: WindowsReadPort,
+    path: str,
+    args: ReadFileInput,
+    observed: Observation,
+    operation: ReadOperation,
+) -> ReadFileOutput:
     require_kind(observed, "file")
-    if observed.content is None:
+    if observed.content is None or len(observed.content) != observed.size:
         raise ReadToolError("io_failed")
     revision = file_revision(port, path, observed)
     _check_revision(args.expected_revision, revision)
@@ -140,4 +153,26 @@ def read_file(
         truncated=reason is not None,
         truncation_reason=reason,
         next_line=args.start_line + len(lines) if reason else None,
+    )
+
+
+def read_file_snapshot(
+    port: WindowsReadPort,
+    args: ReadFileInput,
+    operation: ReadOperation,
+) -> ReadFileSnapshotOutput:
+    """从同一原生稳定字节观察生成文本页及完整摘要，保留原快照上限。"""
+
+    path = port.path(args.path)
+    observed = port.observe(path, operation, max_bytes=MAX_SCAN_BYTES)
+    page = _read_file_page(port, path, args, observed, operation)
+    assert observed.content is not None
+    operation.checkpoint()
+    content_sha256 = hashlib.sha256(observed.content).hexdigest()
+    operation.checkpoint()
+    return ReadFileSnapshotOutput(
+        **page.model_dump(),
+        file_bytes=observed.size,
+        content_sha256=content_sha256,
+        digest_status="complete",
     )

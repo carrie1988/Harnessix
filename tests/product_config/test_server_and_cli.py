@@ -6,17 +6,25 @@ import io
 import json
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
+from harnessix.agent.models import ToolResultContent
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
-from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
+from harnessix.models.contracts import (
+    ModelRequest,
+    ProviderEvent,
+    ResponseCompleted,
+    ResponseStarted,
+    ToolCallCompleted,
+)
 from harnessix.models.scripted import FakeProvider, ScriptedProvider
 from harnessix.product_config.action_codec import (
     canonical_product_action_config_bytes,
@@ -349,10 +357,12 @@ async def test_product_server_catalog_includes_only_verified_process_profile(
 
 
 @pytest.mark.skipif(os.name != "posix", reason="安全Workspace写端口只在POSIX广告")
+@pytest.mark.parametrize("source_drift", [False, True])
 async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
     tmp_path: Path,
     config: ProductConfigV2,
     monkeypatch: pytest.MonkeyPatch,
+    source_drift: bool,
 ) -> None:
     _credentials(monkeypatch)
     workspace = tmp_path / "workspace"
@@ -361,34 +371,61 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
     target.write_text("old\n", encoding="utf-8")
     state = tmp_path / "state"
     path = write_config(tmp_path / "config.json", config)
-    action = [
-        ResponseStarted(response_id="patch-response"),
+    read = [
+        ResponseStarted(response_id="read-before-patch-response"),
         ToolCallCompleted(
-            call_id="patch-call",
-            tool="apply_patch_batch",
-            arguments={
-                "files": [
-                    {
-                        "operation": "replace",
-                        "path": "app.py",
-                        "expected_sha256": hashlib.sha256(b"old\n").hexdigest(),
-                        "content": "new\n",
-                        "mode": 0o644,
-                    }
-                ]
-            },
+            call_id="read-before-patch-call",
+            tool="read_file",
+            arguments={"path": "app.py"},
         ),
         ResponseCompleted(finish_reason="tool_calls"),
     ]
 
     class TrackingBundle(ScriptedProvider):
+        async def stream(
+            self, request: ModelRequest, cancel: CancelToken
+        ) -> AsyncGenerator[ProviderEvent, None]:
+            if request.step == 2:
+                result = next(
+                    item.content
+                    for item in reversed(request.history)
+                    if isinstance(item.content, ToolResultContent)
+                )
+                assert result.outcome == "succeeded" and isinstance(result.output, dict)
+                assert result.output["digest_status"] == "complete"
+                digest = result.output["content_sha256"]
+                assert isinstance(digest, str) and digest != result.output["revision"]
+                # 修改前置条件只能来自真实默认读工具结果，不在Provider夹具中预埋SHA答案。
+                action = (
+                    ResponseStarted(response_id="patch-response"),
+                    ToolCallCompleted(
+                        call_id="patch-call",
+                        tool="apply_patch_batch",
+                        arguments={
+                            "files": [
+                                {
+                                    "operation": "replace",
+                                    "path": "app.py",
+                                    "expected_sha256": digest,
+                                    "content": "new\n",
+                                    "mode": 0o644,
+                                }
+                            ]
+                        },
+                    ),
+                    ResponseCompleted(finish_reason="tool_calls"),
+                )
+                self.steps = (self.steps[0], action, self.steps[2])
+            async for event in super().stream(request, cancel):
+                yield event
+
         async def __aenter__(self):
             return self
 
         async def __aexit__(self, *_args: object) -> None:
             return None
 
-    bundle = TrackingBundle([action, answer("修改完成")])
+    bundle = TrackingBundle([read, (), answer("修改完成")])
 
     async def build(*_args: object, **_kwargs: object) -> TrackingBundle:
         return bundle
@@ -428,6 +465,8 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
             limit=200,
         )
         assert "app.py" in page.text and "old" in page.text and "new" in page.text
+        if source_drift:
+            target.write_bytes(b"external\n")
         await client.respond_approval(
             ApprovalRespondParams(
                 request_id="approve-patch",
@@ -440,11 +479,20 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
         )
         for _ in range(100):
             current = await client.get_thread(thread.thread_id)
-            if current.latest_turn is not None and current.latest_turn.status == "completed":
+            if current.latest_turn is not None and current.latest_turn.status in {
+                "completed",
+                "failed",
+                "interrupted",
+            }:
                 break
             await asyncio.sleep(0.01)
         else:
             raise AssertionError("默认产品Patch未在批准后完成")
+        assert current.latest_turn is not None
+        assert current.latest_turn.status == ("interrupted" if source_drift else "completed")
+        if source_drift:
+            assert current.latest_turn.error is not None
+            assert current.latest_turn.error.code == "uncertain_effect"
         await client.close()
 
     monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
@@ -458,8 +506,8 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
         output_stream=io.BytesIO(),
     )
 
-    assert target.read_text(encoding="utf-8") == "new\n"
-    assert len(bundle.requests) == 2
+    assert target.read_bytes() == (b"external\n" if source_drift else b"new\n")
+    assert len(bundle.requests) == (2 if source_drift else 3)
 
 
 async def test_product_server_advertises_default_scoped_artifact_reader(
@@ -723,7 +771,6 @@ def test_config_diagnose_and_migrate_commands_emit_bounded_json(
     legacy = tmp_path / "legacy.json"
     legacy.write_bytes(source)
     legacy.chmod(0o600)
-    import hashlib
 
     config_main(
         [

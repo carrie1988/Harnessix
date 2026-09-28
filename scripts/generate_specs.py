@@ -256,7 +256,13 @@ from harnessix.skills.contracts import (
     SkillSourceSnapshot,
 )
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
-from harnessix.tools.contracts import ListFilesInput, ListFilesOutput, ReadFileInput, ReadFileOutput
+from harnessix.tools.contracts import (
+    ListFilesInput,
+    ListFilesOutput,
+    ReadFileInput,
+    ReadFileOutput,
+    ReadFileSnapshotOutput,
+)
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
@@ -401,6 +407,7 @@ def generate_specs(output: Path) -> None:
         ("list-files-output", ListFilesOutput),
         ("read-file-input", ReadFileInput),
         ("read-file-output", ReadFileOutput),
+        ("read-file-snapshot-output", ReadFileSnapshotOutput),
         ("glob-input", GlobInput),
         ("glob-output", GlobOutput),
         ("grep-input", GrepInput),

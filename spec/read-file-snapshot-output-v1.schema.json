@@ -1,0 +1,123 @@
+{
+  "additionalProperties": false,
+  "description": "文本分页与完整前镜像摘要；摘要状态不等同于文本页完整状态。",
+  "properties": {
+    "path": {
+      "title": "Path",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "start_line": {
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "end_line": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End Line"
+    },
+    "utf8_bytes": {
+      "maximum": 24576,
+      "minimum": 0,
+      "title": "Utf8 Bytes",
+      "type": "integer"
+    },
+    "revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Revision",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    },
+    "truncation_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "line_limit",
+            "byte_limit"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Truncation Reason"
+    },
+    "next_line": {
+      "anyOf": [
+        {
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Line"
+    },
+    "spec_version": {
+      "const": "harnessix.read-file-snapshot/v1",
+      "default": "harnessix.read-file-snapshot/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "file_bytes": {
+      "description": "完整原始文件字节数，不是可见文本页字节数",
+      "minimum": 0,
+      "title": "File Bytes",
+      "type": "integer"
+    },
+    "content_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "完整原始文件SHA-256；超限时为null",
+      "title": "Content Sha256"
+    },
+    "digest_status": {
+      "description": "完整摘要状态，与文本页是否截断相互独立",
+      "enum": [
+        "complete",
+        "omitted_limit"
+      ],
+      "title": "Digest Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "text",
+    "start_line",
+    "end_line",
+    "utf8_bytes",
+    "revision",
+    "truncated",
+    "truncation_reason",
+    "next_line",
+    "file_bytes",
+    "content_sha256",
+    "digest_status"
+  ],
+  "title": "ReadFileSnapshotOutput",
+  "type": "object"
+}

@@ -96,6 +96,28 @@ class ReadFileOutput(ReadContract):
         return self
 
 
+class ReadFileSnapshotOutput(ReadFileOutput):
+    """文本分页与完整前镜像摘要；摘要状态不等同于文本页完整状态。"""
+
+    spec_version: Literal["harnessix.read-file-snapshot/v1"] = "harnessix.read-file-snapshot/v1"
+    file_bytes: int = Field(ge=0, description="完整原始文件字节数，不是可见文本页字节数")
+    content_sha256: Revision | None = Field(description="完整原始文件SHA-256；超限时为null")
+    digest_status: Literal["complete", "omitted_limit"] = Field(
+        description="完整摘要状态，与文本页是否截断相互独立"
+    )
+
+    @model_validator(mode="after")
+    def validate_digest(self) -> Self:
+        if self.digest_status == "complete":
+            if self.content_sha256 is None or self.file_bytes > MAX_SCAN_BYTES:
+                raise ValueError("完整摘要必须存在且文件未超限")
+        elif self.content_sha256 is not None or self.file_bytes <= MAX_SCAN_BYTES:
+            raise ValueError("仅完整文件超限时允许省略摘要")
+        if self.utf8_bytes > self.file_bytes:
+            raise ValueError("文本页不能大于完整文件")
+        return self
+
+
 ReadErrorCode = Literal[
     "path_denied",
     "not_found",
