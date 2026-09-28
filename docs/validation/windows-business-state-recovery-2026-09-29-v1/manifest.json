@@ -1,0 +1,294 @@
+{
+  "spec_version": "harnessix.delivery-manifest/v1",
+  "source_revision": "dc3692abb08ebe9e2e9bf4d971af9eee395cf590",
+  "self_excluded": "manifest.json",
+  "source_inputs": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 10365,
+      "sha256": "f2a97bcb05fa4dcc11a581828eb75fba827fe8bf6a6282ad27b2ee7d4115083a"
+    },
+    {
+      "path": "uv.lock",
+      "bytes": 264074,
+      "sha256": "9a64451b9b7d3140fd5baddc84e42f171feed3b66e93c8f92609596634d45083"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 2146,
+      "sha256": "68efb50ea517052624ccc777db013a698bc2916be8e6dc61fc96fb55974f4191"
+    },
+    {
+      "path": "governance/readability-policy-v1.json",
+      "bytes": 33887,
+      "sha256": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6"
+    },
+    {
+      "path": "governance/documentation-policy-v1.json",
+      "bytes": 4442,
+      "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+    },
+    {
+      "path": "scripts/provider_verification_budget.py",
+      "bytes": 12224,
+      "sha256": "d1c34e1cc7b90094e88c753c4698de893778bdefec8f343ab797372d2a1df715"
+    },
+    {
+      "path": "scripts/secret_scan.py",
+      "bytes": 11277,
+      "sha256": "826b35da6b942045e5fda1a9b9e38864b79b9a24942100060dbd900a0d6965a1"
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup.py",
+      "bytes": 17074,
+      "sha256": "9c353f024f235da324e84bac0a0f6182caac05c7a4bb01688a49cea3c460da66"
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_files.py",
+      "bytes": 18539,
+      "sha256": "b89da20ddbc5a067a0799314318cbe2dac079d2a024ec04b6f5ae8d62fe4f3d8"
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_windows.py",
+      "bytes": 2435,
+      "sha256": "42b1d33fbef2eec68c1c5192d9e8306a6b92062ada67b7c456e489f9a865cf7e"
+    },
+    {
+      "path": "src/harnessix/product_config/state_restore.py",
+      "bytes": 5387,
+      "sha256": "28315bcc167e4c94aa94fe80898f10c0cbfda500bc2210673ad5fa13b8813ec5"
+    },
+    {
+      "path": "src/harnessix/product_config/state_owner.py",
+      "bytes": 6467,
+      "sha256": "11f31507ae14fdfad6d5cc9ddacbf8ead84272884fa765fd87a0a6f13145b423"
+    },
+    {
+      "path": "src/harnessix/product_config/session_key.py",
+      "bytes": 1971,
+      "sha256": "e9a6e21fd37cf55f9490d808ff90fd5ecf67ef19116c03f2abf2b9dd69ee60b5"
+    },
+    {
+      "path": "src/harnessix/product_config/session_key_windows_files.py",
+      "bytes": 7265,
+      "sha256": "ee96eb6abccf0e12d7b72b2cbeb1c149f1470e70489b1b263d200c4864af7049"
+    },
+    {
+      "path": "src/harnessix/product_config/session_key_dpapi.py",
+      "bytes": 2472,
+      "sha256": "f5dae58b3d064892a4cd679abd0eda3cefac777ff45c8d222d9f33a09d6a8470"
+    },
+    {
+      "path": "src/harnessix/processes/supervisor.py",
+      "bytes": 29444,
+      "sha256": "034bb5a2a53ec7447e26ab00ba5da910554b85597fa8e854aba9316d91071d0f"
+    },
+    {
+      "path": "src/harnessix/workspace/windows.py",
+      "bytes": 17763,
+      "sha256": "0b417b36911bd77ca426e33f3f14d7a12e34072dbda9b38e06264920e44c0df0"
+    },
+    {
+      "path": "src/harnessix/workspace/windows_private_security.py",
+      "bytes": 8133,
+      "sha256": "6368428ea73a8cba9e04bbb1adc7271e8c687802f25b3cbec41b9fbb5ac1a60f"
+    },
+    {
+      "path": "tests/product_config/test_product_state_backup.py",
+      "bytes": 22829,
+      "sha256": "a608653fc35d62381a8fca5d03675e2009c7d7513107b746978ccab602db4abc"
+    },
+    {
+      "path": "tests/product_config/test_product_state_restore.py",
+      "bytes": 30222,
+      "sha256": "e35fa96c488633b4a07fbfe0dfd90c4c467e1faa68a32e184e867cf97bf0d6f6"
+    },
+    {
+      "path": "tests/product_config/test_windows_metadata_contracts.py",
+      "bytes": 2053,
+      "sha256": "88402fc20727df732feee55d1693b214388037ac0d374e4f8a582f54f942716a"
+    },
+    {
+      "path": "tests/product_config/windows_backup_diagnostics.py",
+      "bytes": 3267,
+      "sha256": "02e142ee1756b0e143471332724be9ad41dc27ebf1793b4f28aacaa12ee93835"
+    },
+    {
+      "path": "tests/product_config/test_windows_backup_diagnostics.py",
+      "bytes": 1840,
+      "sha256": "17e063baf8bb9b302884f712117a78671fb1277f274269fd6d200b7a4dbbd4b1"
+    }
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 12681,
+      "sha256": "586a513352f71f17c6b344ee775cf02f3ebe19fc166cbee31a56d17aeb700ee0"
+    },
+    {
+      "path": "diagrams/acceptance-sequence.mmd",
+      "bytes": 719,
+      "sha256": "cfc902aab582db5f2f371b34dd78825d1d60b4c15c7856bbaa6cc1e2ac4a6327"
+    },
+    {
+      "path": "diagrams/acceptance-sequence.png",
+      "bytes": 84860,
+      "sha256": "32ed813fb97cb8b054206349d686e3f8b6d5a879d9bfc7cee88c8ad34306c8ec"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 779,
+      "sha256": "843da49405bc7f47b4a6d38528ee52637382c18a679a332b571abb2be6854040"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 66097,
+      "sha256": "813b1a3a95938f912f573154991d7d0d25168e42ad246838ad18bc22145d706d"
+    },
+    {
+      "path": "diagrams/error-flow.mmd",
+      "bytes": 678,
+      "sha256": "5f6f954b74126a3a143dfc5263069221f2fc5fd3a807785caad12c59c4772d59"
+    },
+    {
+      "path": "diagrams/error-flow.png",
+      "bytes": 69665,
+      "sha256": "55b45fd0dc03ec25227ac05e161a23517c27611ec17afdcc11aa56e62fb54313"
+    },
+    {
+      "path": "facts/budget-preflight.json",
+      "bytes": 398,
+      "sha256": "ac7a8285adb53684005a7691dce586e797ccc96cd1f738bfb18a391bf675d2c7"
+    },
+    {
+      "path": "facts/ci-snapshot.json",
+      "bytes": 27745,
+      "sha256": "baa3a9a2dfc256d2aed44b50316aa52c1bf0adec2443b068ae665de64170786e"
+    },
+    {
+      "path": "facts/fixed-local-verification.json",
+      "bytes": 1093,
+      "sha256": "eb455eb6bb604f7facf8cc20dd3902e15a7aef09fd14eb278adab37e3da72617"
+    },
+    {
+      "path": "facts/historical-bundles-preserved.json",
+      "bytes": 701,
+      "sha256": "529ea054d9201b0b625b4010f2e1d46a9140ef958adb330e6386f3f823777d89"
+    },
+    {
+      "path": "facts/linux313-job.json",
+      "bytes": 6849,
+      "sha256": "866ca7a0dfa849eb2ecb33152ba8f5fd18564205aa785efcb8328f910cfc231f"
+    },
+    {
+      "path": "facts/official-registry-alias-diagnostic.json",
+      "bytes": 713,
+      "sha256": "ced3ddc494f4f5f8ea0486cb5d824703bb85cf37afaeac7b4aa4a4f211b236c3"
+    },
+    {
+      "path": "facts/windows-fixed-job-snapshot.json",
+      "bytes": 4608,
+      "sha256": "67374b8b46d2d967da5b3974f4f1d82e16a47c764f3b551f1c76374f5cfa788d"
+    },
+    {
+      "path": "facts/windows-original-job.json",
+      "bytes": 4933,
+      "sha256": "8f6dfdc83b80e70a1f5af49cecd9987e9386aae008cc823a7760f8811910beb2"
+    },
+    {
+      "path": "logs/delivery-documentation-missing-manifest.log",
+      "bytes": 161,
+      "sha256": "7b13a3e5ced92f0fbd1158db51770c2334d979b0b2152ed9fede00d52a92f284"
+    },
+    {
+      "path": "logs/delivery-documentation.log",
+      "bytes": 103,
+      "sha256": "ec2c78de29228359dbd55a3a1a4cd13563ea322539f99cd3346601225ec5670a"
+    },
+    {
+      "path": "logs/delivery-governance.log",
+      "bytes": 207,
+      "sha256": "1601d108bf07ac6d094d789ef5b1d29b612363873077ed9674ca53e2c7f08aea"
+    },
+    {
+      "path": "logs/delivery-governance.xml",
+      "bytes": 10590,
+      "sha256": "ad5e1cf9d558f717fbab17f445d2aee390ad4c132a631c78a8f54018f52d48d1"
+    },
+    {
+      "path": "logs/delivery-source-wheel-secret.log",
+      "bytes": 101,
+      "sha256": "eb8779b5debc2855b53019a4389ca56aeb3b95ef2c4477dce3cacdf3837bafe0"
+    },
+    {
+      "path": "logs/linux313-full-ci-job.log",
+      "bytes": 48213,
+      "sha256": "2376addc3d274233fb4fb678850b91cc9a07b86d9f5c7479d972d163fce06ab6"
+    },
+    {
+      "path": "logs/metadata-and-diagnostics.log",
+      "bytes": 99,
+      "sha256": "5c686d3f2431fc6fb1630983b9eae6fe73216537fdb9dd0586af69998e64e41c"
+    },
+    {
+      "path": "logs/metadata-contract-red.log",
+      "bytes": 9043,
+      "sha256": "9bff1fd04b810a0c0831187766de575e56f3bc1cef2b20eba8e6f6d7e6fb53be"
+    },
+    {
+      "path": "logs/mypy.log",
+      "bytes": 45,
+      "sha256": "11225d11c7e82153478757e18e79fa97b0ee848e565ecaa15d9b60903cb0a553"
+    },
+    {
+      "path": "logs/python312-affected.log",
+      "bytes": 771,
+      "sha256": "dea456b2927802fa50fa6d8a44a0c39803e1e203677f7f8585a5b5b52c251c07"
+    },
+    {
+      "path": "logs/python312-affected.xml",
+      "bytes": 100782,
+      "sha256": "756ddd42fefcbbcf7c1c91993583b7a641bf205508312dd5c35670000942bded"
+    },
+    {
+      "path": "logs/python313-affected.log",
+      "bytes": 771,
+      "sha256": "1f844504c2cb5cd564ebd64301d117e68cc95fcd0cc62258a5d8cb2dbb0e22d3"
+    },
+    {
+      "path": "logs/python313-affected.xml",
+      "bytes": 100782,
+      "sha256": "f10665f42a34b300ea36f5e29bb4d77f73989cb9f3e20b59062084c2edc148dd"
+    },
+    {
+      "path": "logs/readability.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/source-documentation-render.log",
+      "bytes": 103,
+      "sha256": "61681466350978a6241bba05444c7479bf15f0c01fbe3a6ad230571793fb6920"
+    },
+    {
+      "path": "logs/source-wheel-secret.log",
+      "bytes": 101,
+      "sha256": "850bd7e507cc5ec1f4e40366f14810b4af5260cabd52d0be53a10a564f93341a"
+    },
+    {
+      "path": "logs/windows-original-job.log",
+      "bytes": 79843,
+      "sha256": "8b8fefe3665f7398df9c96a1284e329b7a7f4fb10d6994a7a61a1b95ae3086f8"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 939,
+      "sha256": "9ab46beb6ec0317c8f93819c228909647ae43f6d881b9be7d5910499f29d5311"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 3947,
+      "sha256": "fab9d21ba5d180f5fd27efa96559767924b9582fa8a11bd9a6750b91c0617520"
+    }
+  ]
+}

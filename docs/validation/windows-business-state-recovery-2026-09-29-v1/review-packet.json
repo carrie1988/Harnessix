@@ -1,0 +1,25 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "dc3692abb08ebe9e2e9bf4d971af9eee395cf590",
+  "component": "原生复杂业务备份恢复与元数据错误分类",
+  "decision": "NATIVE_STEPS_PASS_COMMERCIAL_NO_GO",
+  "design": "../../changes/m09-r1-product-state-backup.md",
+  "original_failures_preserved": true,
+  "required_checks": [
+    "合法其他Root Key保持原错误断言与备份字节",
+    "只读元数据2/3保留缺失类型",
+    "5、32/33、87及普通Key读取不忽略",
+    "原生命周期谓词及身份ACL检查不变",
+    "原生Process Owner不是POSIX替代",
+    "固定源码四原生步骤真实success"
+  ],
+  "still_open": [
+    "完整Windows Job与全CI终态",
+    "正式R1安全及认证空间越限",
+    "原20次真实编码质量",
+    "Windows11与不同版本升级回退",
+    "独立Beta",
+    "许可处置和最终封板"
+  ],
+  "evidence": "verification.json"
+}

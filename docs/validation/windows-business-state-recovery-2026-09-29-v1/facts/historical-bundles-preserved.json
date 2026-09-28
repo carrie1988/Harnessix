@@ -1,0 +1,27 @@
+[
+  {
+    "directory": "windows-private-state-2026-09-28-v1",
+    "files": 57,
+    "original_manifest_and_bytes_unchanged": true
+  },
+  {
+    "directory": "product-restart-release-boundary-2026-09-29-v1",
+    "files": 76,
+    "original_manifest_and_bytes_unchanged": true
+  },
+  {
+    "directory": "installed-product-three-platform-2026-09-29-v1",
+    "files": 55,
+    "original_manifest_and_bytes_unchanged": true
+  },
+  {
+    "directory": "canonical-wheel-three-platform-2026-09-29-v1",
+    "files": 57,
+    "original_manifest_and_bytes_unchanged": true
+  },
+  {
+    "directory": "container-resource-admission-2026-09-29-v1",
+    "files": 59,
+    "original_manifest_and_bytes_unchanged": true
+  }
+]

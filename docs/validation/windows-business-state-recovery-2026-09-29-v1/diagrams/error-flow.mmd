@@ -1,0 +1,10 @@
+flowchart TD
+    Open["原 CreateFileW 失败"] --> Type{"只读既有元数据且错误2 / 3？"}
+    Type -->|是| Missing["FileNotFoundError，不携带私有路径"]
+    Missing --> Transient{"原 transient 谓词识别生命周期路径？"}
+    Transient -->|是| Continue["容忍合法消失，继续原布局验真"]
+    Transient -->|否| Invalid["缺库 / Key / Blob：原布局失败"]
+    Type -->|否| Exclusive{"原排他初始化且错误32 / 33？"}
+    Exclusive -->|是| Busy["原 publication_key_busy"]
+    Exclusive -->|否| Unavailable["原 publication_key_unavailable"]
+    Controls["普通Key读取 / 错误5、32、33、87均不忽略"] -.-> Unavailable

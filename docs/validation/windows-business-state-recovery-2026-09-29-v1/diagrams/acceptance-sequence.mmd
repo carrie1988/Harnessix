@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant O as 原候选 c38e806
+    participant L as 本地双Python
+    participant F as 修复候选 dc3692a
+    participant W as 原生Windows CI
+    participant E as 低敏交付与发布门禁
+    O->>W: 原84项业务恢复
+    W-->>E: 82通过 / 2失败，原件保留
+    O->>L: 元数据分类红例
+    L-->>E: 4失败 / 22通过
+    F->>L: 合法错Key与严格分类回归
+    L-->>E: 每解释器484通过 / 29跳过
+    F->>W: 原工作流，不改5分钟专项期限
+    W-->>E: 文件事务、Git、重启、业务恢复步骤成功
+    W->>W: 原Benchmark与广域回归继续
+    E->>E: 只记录实际终态，不继承旧Wheel成绩
+    E-->>E: R1至R6仍开放，商用NO_GO

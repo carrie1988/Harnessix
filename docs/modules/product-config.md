@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
+version: 39
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners:
   - core
 modules:
@@ -2131,6 +2131,9 @@ Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改
 完整备份和恢复共享原正式Runtime、认证Artifact及事务Blob用例，不再整体跳过Windows。
 可选Process回执采用实际Windows Job Object及原Windows Plan；CI在宽范围回归前执行84项业务状态用例与26项错误分类正反例。
 原生首轮82通过/2失败保持原判定，不能由本地通过或空会话恢复推导全部通过。
+固定修复`dc3692a`的实际Windows业务恢复、文件事务、Git和重启步骤均已成功，
+证据和完整Job的实际状态见[原生集中报告](../validation/windows-business-state-recovery-2026-09-29-v1/README.md)。
+步骤成功不继承旧Wheel安装成绩，不等于Windows11消费者发行或整体R1/R4通过。
 
 [`session_key_windows_files.py`](../../src/harnessix/product_config/session_key_windows_files.py)
 的`_raise_open_failure`只在元数据观察模式中将Win32 2/3保留为无私有路径的FileNotFoundError。

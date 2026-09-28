@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
+version: 4
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -314,7 +314,9 @@ R1整体及R4完整三平台恢复不得从本机专项推导完成。
 恢复结果只输出稳定请求/备份ID、状态、原目录保留布尔值和终态时间；CLI执行期失败输出固定code/message，退出码2。
 用户正文、原Key和私有日志不进入公开验证目录。只构建Wheel，不打包不受管测试或原用户状态。
 
-后继R4必须验证三平台实际私有权限、安装、手动升级、完整恢复及卸载；R3仍需完整真实任务结果。
+后继规范Wheel专项已验证三平台实际私有权限、源码外安装、空编码场景完整恢复及卸载重装；
+[原生复杂业务状态专项](../validation/windows-business-state-recovery-2026-09-29-v1/README.md)保留旧失败并取得修复后的原生业务步骤成功。
+R4仍需消费者环境、真实编码闭环和不同版本升级/回退；R3仍需完整真实任务结果。
 复用仍适用的既有Soak，受影响场景才重跑，不通过降低阈值或扩大支持声明关闭发布门禁。
 
 固定源码的双Python专项/受影响回归、实际Wheel、保留失败、三图渲染与Review Packet集中于

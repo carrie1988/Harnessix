@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 112
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 113
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners:
   - core
 modules:
@@ -496,7 +496,9 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 [R1维护安全](changes/m09-r1-store-maintenance-safety.md)补认证容量原证明、认证Store旧式维护拒绝、
 候选恢复预检、有界工作线程及取消/确认丢失回归。后继完整备份/恢复和
 [规范Wheel三平台实测](validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
-已证明空编码场景六库/原Key恢复及卸载重装；复杂业务引用和正式安全收口仍需验收。
+已证明空编码场景六库/原Key恢复及卸载重装；后继[原生复杂业务恢复专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)
+保留原Windows82通过/2失败，并在严格分类及合法错Key修复后取得原生业务步骤成功。
+整体安全、认证存储容量及消费者发布仍需验收。
 上述专项不标记R1或0.9.4完成，不恢复已延期的通用维护平台。
 
 ### 六个剩余发布工作包
@@ -519,6 +521,8 @@ PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整�
 固定`753d6a8`的[专项验收](validation/container-resource-admission-2026-09-29-v1/README.md)保留
 修复前23失败、本地完整5724通过、真实Linux资源值核对及同一新Wheel三平台生命周期结果。
 Scripted 20/20不是新真实质量；消费者OS、版本升级、独立Beta与R1～R6整体仍开放。
+R3原70元周期预算账本已定位并由原Owner预检，未重置周期；当前真实运行仍受固定镜像/可执行环境阻塞。
+预算可用不代表编码质量已验收；不以替换镜像、放宽资源机制或脚本成绩绕过真实20 Trial门禁。
 
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
 固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
@@ -740,6 +744,9 @@ Action借用同一Owner，取消结算唯一目录线程后释放。该前置由
 [固定源码独立复验](validation/product-state-restore-2026-09-28-v1/README.md)完成双Python专项与受影响回归，
 三幅实际图示、Wheel与失败证据统一归档；这些macOS结果不替代三平台实际恢复。
 后继规范Wheel专项已取得三平台实际状态恢复及卸载重装结果，R1/R4整体继续开放。
+[Windows复杂业务状态专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)已把原业务用例接入原生CI，
+元数据2/3缺失保持类型化、权限与共享错误仍拒绝；合法错Key负对照不破坏DPAPI格式。
+固定修复`dc3692a`的四个原生步骤成功，完整Job未终结部分及原失败均按实际记录；不据此关闭R1/R4或继承旧Wheel结论。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

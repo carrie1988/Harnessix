@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: c38e8062cc58bcaefc3c88d4e0088c36476e23c2
+version: 4
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners: [core]
 modules: [product_config, session, artifacts, execution, trusted_actions, delivery, processes]
 related_adrs:
@@ -336,8 +336,13 @@ flowchart TD
 [`test_windows_metadata_contracts.py`](../../tests/product_config/test_windows_metadata_contracts.py)
 覆盖两种无效Handle、缺失、普通密钥读取、权限/共享/参数错误和原排他冲突；适配器测试不替代Windows实机复验。
 
+固定修复`dc3692a`已取得实际Windows业务恢复步骤成功；旧82/2失败、双Python原件、
+实际CI步骤身份及严格结论边界见[原生集中验证](../validation/windows-business-state-recovery-2026-09-29-v1/README.md)。
+完整Job按终态证据判定，不从单步骤外推；原生消费者环境、真实编码和整体R1/R4仍开放。
+
 固定Source Revision、两种Python环境的精确结果、原RED、实际图示、Wheel字节证明、资料Manifest及评审包
 见[集中验证目录](../validation/product-state-backup-2026-09-28-v1/README.md)。
 
-后续必需：候选副本先验真、整体Root切换、原旧Root保留、Restore Journal、
-崩溃结算、默认启动拒绝未决恢复以及三平台实际恢复。**本切片不关闭R1、R4或1.0。**
+后继[完整恢复](m09-r1-product-state-restore.md)已经交付候选先验真、整体Root切换、旧Root保留、
+Restore Journal、崩溃结算及默认启动拒绝未决恢复；规范Wheel生命周期和本次业务状态专项分别记录实际证据。
+消费者环境、不同版本升级、正式安全和真实编码仍需验收。**本切片不关闭R1、R4或1.0。**

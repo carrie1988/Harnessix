@@ -1,0 +1,14 @@
+flowchart TB
+    CLI["正式 backup / verify / restore"] --> Owner["原 Product State Owner"]
+    Owner --> Tree["原 PrivateStateTree"]
+    Tree --> Files["WindowsKeyFiles.open"]
+    Files --> Win32["原 CreateFileW 与身份 / 私有ACL"]
+    Win32 --> Error["立即捕获原生错误"]
+    Win32 -->|成功观察| Inventory["完整布局 / 引用验真"]
+    Error --> Missing["仅元数据 2 / 3 类型化缺失"]
+    Missing --> Gate["原 SQLite 生命周期谓词"]
+    Gate --> Inventory
+    Inventory --> Private["私有六库 / Key / Blob / Process事实"]
+    Private --> Receipt["原来源回执 / 恢复Journal"]
+    Error --> Refuse["权限 / 共享 / 正文读取仍拒绝"]
+    Receipt -. "公开只输出摘要" .-> Public["低敏证据，不含状态或凭据"]

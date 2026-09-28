@@ -1,0 +1,140 @@
+{
+  "spec_version": "harnessix.windows-business-state-verification/v1",
+  "source_revision": "dc3692abb08ebe9e2e9bf4d971af9eee395cf590",
+  "original_windows": {
+    "run_id": 36477355105,
+    "job_id": 109114287056,
+    "head_sha": "c38e8062cc58bcaefc3c88d4e0088c36476e23c2",
+    "passed": 82,
+    "failed": 2,
+    "result": "FAIL"
+  },
+  "fixed_windows": {
+    "run_id": 36481128726,
+    "job_id": 109126756462,
+    "job_status_at_snapshot": "in_progress",
+    "job_conclusion_at_snapshot": null,
+    "native_steps": [
+      {
+        "name": "验证原生NTFS文件事务与审批编码写链",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5,
+        "started_at": "2026-09-28T20:43:06Z",
+        "completed_at": "2026-09-28T20:43:28Z"
+      },
+      {
+        "name": "验证原生Git读取与取消回收",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 6,
+        "started_at": "2026-09-28T20:43:28Z",
+        "completed_at": "2026-09-28T20:44:03Z"
+      },
+      {
+        "name": "验证原生产品重启与State创建边界",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 7,
+        "started_at": "2026-09-28T20:44:03Z",
+        "completed_at": "2026-09-28T20:44:28Z"
+      },
+      {
+        "name": "验证原生完整业务状态备份与恢复",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8,
+        "started_at": "2026-09-28T20:44:28Z",
+        "completed_at": "2026-09-28T20:48:12Z"
+      }
+    ],
+    "scope_from_source": {
+      "business_state": 84,
+      "metadata_contracts": 26
+    },
+    "test_count_from_native_log_proven": false,
+    "consumer_windows11_proven": false
+  },
+  "local": {
+    "spec_version": "harnessix.native-business-state-local/v1",
+    "source_revision": "dc3692abb08ebe9e2e9bf4d971af9eee395cf590",
+    "python": {
+      "312": {
+        "result": "PASS",
+        "tests": 513,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 29,
+        "passed": 484,
+        "business_and_error_contracts": 110,
+        "business_and_error_contracts_skipped": 0,
+        "sha256": "756ddd42fefcbbcf7c1c91993583b7a641bf205508312dd5c35670000942bded"
+      },
+      "313": {
+        "result": "PASS",
+        "tests": 513,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 29,
+        "passed": 484,
+        "business_and_error_contracts": 110,
+        "business_and_error_contracts_skipped": 0,
+        "sha256": "f10665f42a34b300ea36f5e29bb4d77f73989cb9f3e20b59062084c2edc148dd"
+      }
+    },
+    "wheel": {
+      "sha256": "0d4f2e2467255a06217e8e69d437010459f643900f7483dc5a31d9765b72f0d3",
+      "bytes": 1076002,
+      "source_equal_package_members": 433,
+      "actual_three_platform_installed_proven": false
+    },
+    "native_windows_proven": false,
+    "model_requests": 0,
+    "commercial_release": false
+  },
+  "full_ci_success_claimed": false,
+  "real_quality_trials": 0,
+  "model_requests": 0,
+  "commercial_release": false,
+  "release_gates": {
+    "R1": "OPEN",
+    "R2": "OPEN",
+    "R3": "OPEN",
+    "R4": "OPEN",
+    "R5": "OPEN",
+    "R6": "OPEN"
+  },
+  "linux313_full_ci": {
+    "job_id": 109126756532,
+    "passed": 5744,
+    "skipped": 112,
+    "seconds": 531.74,
+    "functional_step_result": "PASS",
+    "whole_job_result": "FAIL",
+    "failed_step": "license_scan",
+    "license_refusal_preserved": true
+  },
+  "mermaid": {
+    "rendered": 3,
+    "visually_reviewed": 3
+  },
+  "budget_preflight": "original_owner_pass_no_reset_no_new_request",
+  "delivery_governance": {
+    "result": "PASS",
+    "passed": 57,
+    "seconds": 7.52
+  },
+  "delivery_documentation": {
+    "result": "PASS",
+    "documents": 373,
+    "links": 9554,
+    "mermaid": 835,
+    "new_diagrams_rendered": 3
+  },
+  "delivery_secret_scan": {
+    "result": "PASS",
+    "inputs": 3092,
+    "complete_coverage": true,
+    "fixed_rule_matches": 0
+  }
+}

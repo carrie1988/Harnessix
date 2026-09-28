@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 13
-code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
+version: 14
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners:
   - core
 modules:
@@ -51,12 +51,12 @@ supersedes: []
 # Harnessix Code 威胁模型 v2
 
 - 状态：当前安全基线，已同步单一Coding Agent边界、Product Config、MCP、Skill、Hook与Smoke现行设计
-- 更新日期：2026-09-19
+- 更新日期：2026-09-29
 - 适用范围：本地优先CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store与Trusted Action Runtime
 
-实施说明：当前Kernel已实现单宿主锁、事件CAS/幂等、可信工具准入、输出边界、保守恢复、持久审批检查点、数据库文件权限、结构化存储错误、受管Patch/Process、Context来源控制和Runtime遥测字段隔离。0.7.1新增绑定文件内容、环境摘要、Secret版本、Policy和能力证据的完整Execution Plan；0.7.2新增固定摘要Container Profile/Command、实际后端探测、网络快照与受管出口、Secret Provider、流式Redactor和最终Guard；0.7.3以独立owner、POSIX Session/PTY、Windows Job/ConPTY、HMAC回执和有界持久输出替换单进程生命周期假设，并增加ContainerExecution/ProcessLaunch绑定、spawn前网络复核及标签化残留清理，六矩阵门禁已经通过。0.8.4和0.8.5分别把MCP及Skill/Hook接入受限`ExtensionActionPort`；0.8.6增加严格产品配置、安全读取/迁移、版本化Provider Secret引用、活动配置CAS和零响应暴露Fallback。上述新边界仍未接管全部0.5既有Tool，网络主体认证和发行物信任仍在0.9实施。目标控制与当前保证必须分开解读，参见[0.8设计](m08-product-runtime-and-extensions.md)和[0.7设计](m07-trusted-execution-and-delivery.md)。
+实施说明：当前产品复用单宿主Owner、事件CAS/幂等、可信工具准入、统一公开输出、持久审批、受管Patch/Process、Context来源和真实Sandbox能力检查。默认产品只有`CLI/TUI或SDK → stdio App Server → Agent Runtime → Trusted Action`主链；旧Action HTTP/Worker、Journal与专用Process桥接已退役，历史状态不自动执行。本地MCP、Skill和Hook经原受限扩展端口装配，远端MCP/OAuth及公网Git自动Push不属于首发范围。Session、Projection和Artifact原正文已接入原Key来源认证，完整停机备份/恢复沿原Owner、独立回执和耐久Journal执行。正式行为以[当前架构](architecture.md)、[产品模块](modules/product-config.md)及[发布范围](changes/m09-to-v1-release-scope-convergence.md)为准；下方里程碑补充保留历史，不覆盖当前装配或替代发布验收。
 
-Windows已进入1.0正式目标。0.7.1已经完成Windows原生Workspace句柄端口，0.7.2的Sandbox/Secret合同已在Windows CI运行；Windows strong Sandbox优先使用受管Docker Desktop或WSL2容器后端。0.7.3挂起启动、不可breakaway Job、ConPTY及Container统一生命周期、0.7.4受管Git worktree/checkpoint/commit和0.7.5平台中立Action入口均已通过综合门禁；普通Windows目录事务写仍失败关闭。0.7统一入口约束新Tool和未来扩展，0.5既有Patch/Process桥接继续由原不可变批准与专用账本治理，不改写历史事件；0.8已完成本地Agent Protocol与Provider配置产品接线，发行物尚未完成。在[ADR 0063](adr/0063-windows-v1-platform-support.md)规定的完整产品门禁完成前，Windows仍不属于当前产品支持范围。
+Windows属于1.0目标平台，已有原生Workspace Handle、Job/ConPTY、NTFS文件事务与默认审批写链、Git读取及产品状态恢复。原生业务恢复专项见[固定源码验证](validation/windows-business-state-recovery-2026-09-29-v1/README.md)，不是POSIX模拟或WSL替代。强Sandbox只保证后端实际提供的资源和隔离；已实现四布尔及实际cgroup检查，不能以Docker可连接冒充内存/CPU/PIDs限制生效。Windows Server CI专项不证明Windows 11消费者环境、完整真实编码、版本升级或独立Beta；在[ADR 0063](adr/0063-windows-v1-platform-support.md)及R4完整门禁完成前，不广告Windows全面支持。
 
 ## 1. 安全目标
 
@@ -200,7 +200,7 @@ Agent Runtime                │
 - 审批绑定 Workspace Revision；
 - 构造symlink/reparse/rename/file-sharing race测试。
 
-**剩余风险**：跨平台文件系统和第三方过滤驱动语义不同；Windows普通目录尚无抗Reparse Point竞态的事务写端口，受管Git候选仍需远端矩阵关闭；Host后端无法提供容器级隔离。
+**剩余风险**：跨平台文件系统和第三方过滤驱动语义不同；Windows普通NTFS文件事务已有原生端口及专项，但不扩大到共享文件系统、任意特殊元数据或消费者发行承诺。Windows 11完整编码及版本升级仍须验收；Host后端无法提供容器级隔离。
 
 ### TM-02A：Windows 命名与 Reparse 逃逸
 
@@ -388,8 +388,11 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 - Approval 绑定不可变 Effect；
 - DB 文件最小权限与备份；
 - 启动时 integrity 和 migration 检查。
+- 当前默认Session事件/投影及Artifact原正文沿原Key进行来源认证；未认证旧来源不补签，正文篡改或缺失拒绝；
+- 原Root外稳定Owner在Store/Provider之前获取；完整停机备份验证Schema、原MAC、Blob和跨Store引用，恢复不重放未知效果；
+- Windows仅元数据打开的原生2/3错误保留缺失类型，并由原SQLite生命周期谓词再次判定；错误5、32/33或普通Key读取失败不忽略。
 
-**剩余风险**：同用户恶意进程仍可直接修改本地文件；未来可选事件签名。
+**剩余风险**：认证不防御已取得原Key的同用户恶意进程或被攻陷操作系统，不是非对称签名、硬件证明或跨机迁移保证。旧来源未知的数据不会因持有新Key变成可信；真实用户恢复、认证存储空间上限及整体R1仍须单独验收。当前证据见[原生业务状态专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)。
 
 ### TM-11：重复或未知外部副作用
 

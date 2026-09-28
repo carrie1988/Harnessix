@@ -1,0 +1,20 @@
+{
+  "spec_version": "harnessix.public-registry-diagnostic/v1",
+  "image": "registry-1.docker.io/library/python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+  "fixed_original_digest_unchanged": true,
+  "purpose": "diagnostic_only_not_task_pack_input",
+  "image_present": false,
+  "official_repo_digest_present": false,
+  "global_configuration_changed": false,
+  "existing_containers_restarted": false,
+  "provider_credentials_read": false,
+  "model_requests": 0,
+  "seconds": 1.01,
+  "timed_out": false,
+  "exit_code": 1,
+  "eof_observed": true,
+  "access_denied_observed": false,
+  "tls_failure_observed": false,
+  "official_registry_mentioned": true,
+  "auth_host_mentioned": true
+}

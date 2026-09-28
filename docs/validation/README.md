@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 29
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 30
+code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-29 | [Windows复杂业务状态备份恢复与严格原生分类](windows-business-state-recovery-2026-09-29-v1/README.md) | `dc3692abb08ebe9e2e9bf4d971af9eee395cf590` | 原生Windows Runner；本地Python3.12/3.13；零模型请求 | 保留原生82通过/2失败；合法错Key及元数据2/3分类修复；四个原生步骤成功，全Job按实际状态登记 | 专项GO，R1/R4及商用仍未关闭；不替代真实编码、Win11或不同版本升级 |
 | 2026-09-28 | [Artifact原正文持久来源认证](authenticated-artifact-2026-09-28-v1/README.md) | `33a2fd25bf6f529d1019cf584e02673734369299` | macOS本机、独立Key与真实SQLite/Runtime、零模型费用 | Migration 0030新行来源认证与同Key跨重启、旧行拒绝；完整回归与发行物结论以目录原件为准 | 0.9.4a及整体0.9继续开放，不能据此宣称三平台或发布通过 |
 | 2026-09-27 | [Archive许可证据及Windows夹具整改](license-evidence-2026-09-27-v1/README.md) | `1f483ceb267fe2d15ca4d53f794184fd6aa76ecc` | macOS arm64、全部777件、203原字节Blob；Provider零请求 | 4055 passed/32 skipped及167交叠专项、独立缓存重采集、准确源码Wheel/sdist Secret通过；pywin32 12件许可门禁返回1，当前Windows终态待验证 | release_blocked；不追认旧失败，不标记0.9或商用发布完成 |
 | 2026-09-27 | [有界Secret扫描整改](secret-scan-2026-09-27-v1/README.md) | `ad2f8e226b674e4787ad0002f0d038a2a81ccfef` | macOS arm64、Python 3.13.8；精确Git归档，真实模型0请求 | 87专项、195有重叠回归、3996 passed/32 skipped；干净源码Wheel/sdist固定六规则零命中；前序0601ede六CI成功不外推到扫描候选 | 当前扫描CI未纳入终态；保留前序失败证据，0.9.4与后续发布门禁仍开放 |
