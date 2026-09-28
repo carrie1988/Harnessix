@@ -19,6 +19,8 @@ from harnessix.session.maintenance_contracts import (
     StoreCapacityReport,
     StoreCapacitySnapshot,
 )
+from harnessix.session.sqlite_publication import verify_snapshot, verify_store
+from harnessix.session.store_publication import MAX_PROJECTION_BYTES, SessionPublicationBinding
 
 _UNCERTAIN_EFFECT_STATES = frozenset(
     {
@@ -35,7 +37,7 @@ _UNCERTAIN_EFFECT_STATES = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class ThreadFact:
-    """经事件序号与快照摘要核验的内部Thread事实。"""
+    """经序号与原摘要核验的Thread；认证Store另验原投影Seal后才解析。"""
 
     thread: Thread
     snapshot_sha256: str
@@ -82,16 +84,36 @@ def thread_has_uncertain_effect(thread: Thread) -> bool:
     )
 
 
-async def load_thread_facts(database: aiosqlite.Connection) -> tuple[ThreadFact, ...]:
+async def load_thread_facts(
+    database: aiosqlite.Connection, publication: SessionPublicationBinding | None = None
+) -> tuple[ThreadFact, ...]:
+    await verify_store(database, publication)
+    orphans = await database.execute(
+        "SELECT 1 FROM agent_events e LEFT JOIN agent_threads t ON e.thread_id=t.thread_id "
+        "WHERE t.thread_id IS NULL LIMIT 1"
+    )
+    if await orphans.fetchone() is not None:
+        raise KernelError("projection_corrupt", "Session容量扫描发现事件缺少投影")
     cursor = await database.execute(
-        "SELECT t.thread_id,t.sequence,t.snapshot_json,t.snapshot_sha256,t.projection_version,"
+        "SELECT t.thread_id,t.sequence,"
+        + (
+            f"substr(t.snapshot_json,1,{MAX_PROJECTION_BYTES + 1}) AS snapshot_json,"
+            if publication is not None
+            else "t.snapshot_json,"
+        )
+        + "t.snapshot_sha256,t.projection_version,"
         "COUNT(e.sequence) AS event_count,COALESCE(MAX(e.sequence),0) AS event_last "
         "FROM agent_threads t LEFT JOIN agent_events e ON e.thread_id=t.thread_id "
         "GROUP BY t.thread_id,t.sequence,t.snapshot_json,t.snapshot_sha256,t.projection_version "
         "ORDER BY t.thread_id"
     )
     facts: list[ThreadFact] = []
-    for row in await cursor.fetchall():
+    async for row in cursor:
+        try:
+            identity = UUID(row["thread_id"])
+        except (ValueError, TypeError):
+            raise KernelError("projection_corrupt", "Session容量扫描发现投影身份不一致") from None
+        await verify_snapshot(database, publication, identity, row)
         encoded = row["snapshot_json"]
         if (
             not isinstance(encoded, str)
@@ -132,8 +154,10 @@ async def _schema_version(database: aiosqlite.Connection) -> int:
     return version
 
 
-async def _session_capacity(database: aiosqlite.Connection) -> StoreCapacitySnapshot:
-    threads = await load_thread_facts(database)
+async def _session_capacity(
+    database: aiosqlite.Connection, publication: SessionPublicationBinding | None
+) -> StoreCapacitySnapshot:
+    threads = await load_thread_facts(database, publication)
     cursor = await database.execute("SELECT COUNT(*) FROM agent_events")
     row = await cursor.fetchone()
     assert row is not None
@@ -235,11 +259,12 @@ async def capacity_report(
     path: Path,
     *,
     captured_at: datetime | None = None,
+    publication: SessionPublicationBinding | None = None,
 ) -> StoreCapacityReport:
     """在调用方读事务内重算三类Store逻辑容量。"""
 
     schema_version = await _schema_version(database)
-    session = await _session_capacity(database)
+    session = await _session_capacity(database, publication)
     protocol = await _protocol_capacity(database)
     artifacts = await _artifact_capacity(database)
     database_bytes, wal_bytes = await asyncio.to_thread(_physical_sizes, path)

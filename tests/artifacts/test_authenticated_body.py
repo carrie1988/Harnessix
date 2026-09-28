@@ -44,7 +44,7 @@ async def _published(tmp_path):
                     artifacts=artifacts,
                     public_output_protection=scope,
                 ) as runtime:
-                    thread = await runtime.create_thread(root.as_posix())
+                    thread = await runtime.create_thread(str(tools.workspace_root))
                     turn = await runtime.run_turn(thread.thread_id, "归档搜索", request_id="proof")
                     assert turn.status.value == "completed", turn.error
                 workspace_scope = tools.workspace_scope

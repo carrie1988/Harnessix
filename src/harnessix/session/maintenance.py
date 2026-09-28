@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -18,7 +17,6 @@ from harnessix.session.errors import storage_errors
 from harnessix.session.maintenance_backup import (
     create_or_reuse_backup,
     resolved_path,
-    restore_database,
     verify_backup,
 )
 from harnessix.session.maintenance_contracts import (
@@ -31,6 +29,7 @@ from harnessix.session.maintenance_contracts import (
     StoreRestoreReport,
 )
 from harnessix.session.maintenance_execution import run_batches
+from harnessix.session.maintenance_io import require_legacy_maintenance, run_maintenance_io
 from harnessix.session.maintenance_planning import build_candidates
 from harnessix.session.maintenance_records import (
     PlanItem,
@@ -42,6 +41,7 @@ from harnessix.session.maintenance_records import (
     request_rows,
     save_plan,
 )
+from harnessix.session.maintenance_restore import restore_session
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
@@ -64,12 +64,10 @@ async def _start_execution(
     fault: Callable[[str], None],
 ) -> None:
     plan_sha256 = digest(plan.model_dump_json(warnings="error"))
-    backup_sha256 = await asyncio.to_thread(
-        create_or_reuse_backup,
-        session.path,
-        backup,
-        plan.plan_id,
-        plan_sha256,
+    backup_sha256 = await run_maintenance_io(
+        lambda control: create_or_reuse_backup(
+            session.path, backup, plan.plan_id, plan_sha256, control=control
+        )
     )
     fault("maintenance.after_backup_created")
     async with session._connection() as database:
@@ -136,10 +134,13 @@ class SQLiteStoreMaintenance:
         with storage_errors():
             async with self._session._connection() as database:
                 await database.execute("BEGIN")
-                return await capacity_report(database, self._session.path)
+                return await capacity_report(
+                    database, self._session.path, publication=self._session._publication
+                )
 
     async def plan(self, policy: RetentionPolicy) -> MaintenancePlan:
         owner = self._require_owner()
+        require_legacy_maintenance(self._session._publication)
         with storage_errors():
             async with self._session._connection() as database:
                 await database.execute("BEGIN IMMEDIATE")
@@ -159,11 +160,13 @@ class SQLiteStoreMaintenance:
             return plan
 
     async def load_plan(self, plan_id: UUID) -> MaintenancePlan:
+        require_legacy_maintenance(self._session._publication)
         with storage_errors():
             plan, _, _ = await _current_plan(self._session, plan_id)
             return plan
 
     async def progress(self, plan_id: UUID) -> MaintenanceProgress:
+        require_legacy_maintenance(self._session._publication)
         with storage_errors():
             _, _, progress = await _current_plan(self._session, plan_id)
             return progress
@@ -178,7 +181,8 @@ class SQLiteStoreMaintenance:
         if type(batch_size) is not int or not 1 <= batch_size <= 1000:
             raise KernelError("maintenance_invalid", "维护事务批次大小无效")
         owner = self._require_owner()
-        backup = await asyncio.to_thread(resolved_path, backup_path)
+        require_legacy_maintenance(self._session._publication)
+        backup = await run_maintenance_io(lambda _: resolved_path(backup_path))
         if backup == self._session.path:
             raise KernelError("maintenance_invalid", "维护备份不能覆盖Session数据库")
         with storage_errors():
@@ -197,18 +201,8 @@ class SQLiteStoreMaintenance:
             return await _execution_result(self._session, plan_id)
 
     async def restore(self, backup_path: str | Path) -> StoreRestoreReport:
-        owner = self._require_owner()
-        backup = await asyncio.to_thread(resolved_path, backup_path)
-        if backup == self._session.path:
-            raise KernelError("maintenance_invalid", "恢复源不能是当前Session数据库")
-        digest_value = await asyncio.to_thread(restore_database, self._session.path, backup)
-        if self._session._runtime_owner_token is not owner:
-            raise KernelError("maintenance_runtime_required", "Store恢复期间宿主已关闭")
-        await self._session.initialize()
-        return StoreRestoreReport(
-            restored_at=datetime.now(UTC),
-            backup_sha256=digest_value,
-            capacity=await self.snapshot(),
+        return await restore_session(
+            self._session, backup_path, owner=self._require_owner(), fault=self._fault
         )
 
 
@@ -232,6 +226,6 @@ def _new_plan(
 
 
 async def _require_same_backup(backup: Path, progress: MaintenanceProgress) -> None:
-    backup_sha256 = await asyncio.to_thread(verify_backup, backup)
+    backup_sha256 = await run_maintenance_io(lambda control: verify_backup(backup, control=control))
     if backup_sha256 != progress.backup_sha256:
         raise KernelError("maintenance_backup_changed", "维护恢复使用了不同备份")

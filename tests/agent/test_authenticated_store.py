@@ -510,7 +510,7 @@ async def test_actual_runtime_artifact_transaction_shares_session_proofs(tmp_pat
                 artifacts=artifacts,
                 public_output_protection=scope,
             ) as runtime:
-                thread = await runtime.create_thread(root.as_posix())
+                thread = await runtime.create_thread(str(tools.workspace_root))
                 turn = await runtime.run_turn(
                     thread.thread_id, "归档搜索", request_id="auth-artifact"
                 )

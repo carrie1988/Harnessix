@@ -11,6 +11,7 @@ import aiosqlite
 from harnessix.agent.errors import KernelError
 from harnessix.session.capacity import ThreadFact, load_thread_facts, thread_has_uncertain_effect
 from harnessix.session.maintenance_contracts import MaintenancePlan
+from harnessix.session.maintenance_io import require_legacy_maintenance
 from harnessix.session.maintenance_records import (
     PlanItem,
     artifact_precondition,
@@ -31,6 +32,7 @@ async def run_batches(
     owner: object,
     fault: Callable[[str], None],
 ) -> None:
+    require_legacy_maintenance(session._publication)
     while True:
         completed = await _run_one_batch(session, plan_id, batch_size=batch_size, owner=owner)
         fault("maintenance.after_batch_commit")
