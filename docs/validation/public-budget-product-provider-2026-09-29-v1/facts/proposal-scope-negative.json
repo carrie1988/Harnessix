@@ -1,0 +1,9 @@
+{
+  "source_revision": "184fb125f6159de4202a64a525f6b5cc99f0ab97",
+  "result": "PASS",
+  "rejected_code": "unexpected_patch_file_set",
+  "original_file_unchanged": true,
+  "unapproved_file_absent": true,
+  "new_model_requests": 0,
+  "quality_trials_counted": 0
+}

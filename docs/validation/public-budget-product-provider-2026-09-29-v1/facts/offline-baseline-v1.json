@@ -1,0 +1,26 @@
+{
+  "spec_version": "harnessix.product-provider-certification-result/v1",
+  "source_revision": "cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1",
+  "cases": [
+    {
+      "case": "sdk-read-approve-patch",
+      "mode": "fixture_controller_only",
+      "source_revision": "cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1",
+      "quality_trials_counted": 0,
+      "commercial_release": false,
+      "result": "FAIL",
+      "failure_type": "AgentSDKError",
+      "transport_closed": true,
+      "child": {
+        "model_requests": 0,
+        "budget_guard_used": false,
+        "request_limit": 8
+      }
+    }
+  ],
+  "budget_before": null,
+  "budget_after": null,
+  "task_pack_grader_unchanged": true,
+  "quality_trials_counted": 0,
+  "commercial_release": false
+}

@@ -1,0 +1,199 @@
+{
+  "authenticated_original_store_read": true,
+  "raw_values_recorded": false,
+  "new_model_requests": 0,
+  "effects_executed_by_diagnostic": 0,
+  "fixture_unchanged": true,
+  "approval_items": 0,
+  "tool_metadata": [
+    {
+      "kind": "tool_call",
+      "tool": "read_file",
+      "path_matches_fixture": true,
+      "has_files_argument": false
+    },
+    {
+      "kind": "tool_result",
+      "tool": "read_file",
+      "outcome": "succeeded",
+      "error_code": null,
+      "digest_matches_fixture": true
+    },
+    {
+      "kind": "tool_call",
+      "tool": "apply_patch_batch",
+      "path_matches_fixture": false,
+      "has_files_argument": true
+    },
+    {
+      "kind": "tool_result",
+      "tool": "apply_patch_batch",
+      "outcome": "failed",
+      "error_code": "tool_invalid_arguments",
+      "digest_matches_fixture": false
+    },
+    {
+      "kind": "tool_call",
+      "tool": "read_file",
+      "path_matches_fixture": true,
+      "has_files_argument": false
+    },
+    {
+      "kind": "tool_result",
+      "tool": "read_file",
+      "outcome": "succeeded",
+      "error_code": null,
+      "digest_matches_fixture": true
+    },
+    {
+      "kind": "tool_call",
+      "tool": "apply_patch_batch",
+      "path_matches_fixture": false,
+      "has_files_argument": true
+    },
+    {
+      "kind": "tool_result",
+      "tool": "apply_patch_batch",
+      "outcome": "failed",
+      "error_code": "tool_invalid_arguments",
+      "digest_matches_fixture": false
+    },
+    {
+      "kind": "tool_call",
+      "tool": "read_file",
+      "path_matches_fixture": true,
+      "has_files_argument": false
+    },
+    {
+      "kind": "tool_result",
+      "tool": "read_file",
+      "outcome": "succeeded",
+      "error_code": null,
+      "digest_matches_fixture": true
+    },
+    {
+      "kind": "tool_call",
+      "tool": "apply_patch_batch",
+      "path_matches_fixture": false,
+      "has_files_argument": true
+    },
+    {
+      "kind": "tool_result",
+      "tool": "apply_patch_batch",
+      "outcome": "failed",
+      "error_code": "tool_invalid_arguments",
+      "digest_matches_fixture": false
+    },
+    {
+      "kind": "tool_call",
+      "tool": "read_file",
+      "path_matches_fixture": true,
+      "has_files_argument": false
+    },
+    {
+      "kind": "tool_result",
+      "tool": "read_file",
+      "outcome": "failed",
+      "error_code": "budget_exceeded",
+      "digest_matches_fixture": false
+    }
+  ],
+  "patch_calls": [
+    {
+      "file_count": 1,
+      "mode_present": [
+        false
+      ],
+      "mode_null": [
+        true
+      ],
+      "digest_matches_fixture": [
+        true
+      ],
+      "content_matches_expected_fixture": [
+        true
+      ],
+      "contract_result": "FAIL",
+      "errors": [
+        {
+          "location": [
+            "files",
+            0
+          ],
+          "type": "value_error"
+        },
+        {
+          "location": [
+            "files"
+          ],
+          "type": "too_short"
+        }
+      ],
+      "mode_only_counterfactual_decode": "PASS"
+    },
+    {
+      "file_count": 1,
+      "mode_present": [
+        false
+      ],
+      "mode_null": [
+        true
+      ],
+      "digest_matches_fixture": [
+        true
+      ],
+      "content_matches_expected_fixture": [
+        true
+      ],
+      "contract_result": "FAIL",
+      "errors": [
+        {
+          "location": [
+            "files",
+            0
+          ],
+          "type": "value_error"
+        },
+        {
+          "location": [
+            "files"
+          ],
+          "type": "too_short"
+        }
+      ],
+      "mode_only_counterfactual_decode": "PASS"
+    },
+    {
+      "file_count": 1,
+      "mode_present": [
+        false
+      ],
+      "mode_null": [
+        true
+      ],
+      "digest_matches_fixture": [
+        true
+      ],
+      "content_matches_expected_fixture": [
+        false
+      ],
+      "contract_result": "FAIL",
+      "errors": [
+        {
+          "location": [
+            "files",
+            0
+          ],
+          "type": "value_error"
+        },
+        {
+          "location": [
+            "files"
+          ],
+          "type": "too_short"
+        }
+      ],
+      "mode_only_counterfactual_decode": "PASS"
+    }
+  ]
+}

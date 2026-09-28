@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 8
-code_revision: cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners:
   - core
 modules:
@@ -38,7 +38,7 @@ supersedes: []
 | 连接模型 | 一个`AgentProtocolServer`对应一个逻辑客户端连接；当前正式传输为单客户端stdio JSONL |
 | 默认产品能力 | `run_product_stdio`装配固定Workspace、Provider Bundle、认证Session、共享Artifact Store、Coding Tool Runtime、受管Patch、Agent Runtime和Scoped Artifact Reader；Process/MCP/Skill/Hook按正式配置显式装配 |
 | 平台 | App Server逻辑平台中立；macOS/Linux使用POSIX端口，Windows使用原生Handle读取及NTFS文件事务；平台实现与专项通过不代表完整商用平台认证 |
-| 代码版本 | `cfcbe2a6aaaf0454b11f86b35ce12c75717b1da1`基线；预算转换修复身份由专项验证固定 |
+| 代码版本 | `184fb125f6159de4202a64a525f6b5cc99f0ab97` |
 | 当前完成度 | Headless本地闭环、断线恢复、并发长轮询、协商Pending/Outbox背压、Writer故障唤醒、有界关闭和Thread列表有界页读取已实现；Server侧Replay二次收紧、全局Delta内存上限、远程安全、可观测性和Replay大规模索引尚未完成 |
 
 原封套准入、完整响应UTF8协商限额和纯握手候选提交已实现，有限当前材料检查不构成历史授权。
@@ -1354,7 +1354,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 8 | `cfcbe2a`基线，修复身份由专项固定 | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |
+| 8 | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |
 | 7 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表委托Session有界索引页读取，保持游标与公开投影合同不变；跨平台候选与CI验收见专项详设 |
 | 6 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a改为守护Reader/Writer泵，贯穿协商Pending/Outbox限制，并让Writer故障与出站Timeout有界唤醒主循环 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 同步默认POSIX Patch的协议组合、Review分页、审批重放和Windows省略边界 |

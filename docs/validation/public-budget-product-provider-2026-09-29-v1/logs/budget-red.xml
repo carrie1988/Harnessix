@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="11" time="0.356" timestamp="2026-09-29T05:44:17.397876+08:00" hostname="MacBook-Pro.local"><testcase classname="tests.app_server.test_budget_mapping" name="test_public_budget_maps_all_fields_without_changing_wire_aliases[values0]" time="0.000"><failure message="pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget&#10;maxSteps&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxTokens&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;timeoutSeconds&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=0.5, input_type=float]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxOutputChars&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxToolCallsPerStep&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden">values = (1, 1, 0.5, 1, 1)
+
+    @pytest.mark.parametrize(
+        "values",
+        (
+            (1, 1, 0.5, 1, 1),
+            (8, 32000, 120.0, 32000, 1),
+            (1000, 1_000_000, 86400.0, 1_000_000, 128),
+        ),
+    )
+    def test_public_budget_maps_all_fields_without_changing_wire_aliases(values: tuple) -&gt; None:
+        public = PublicBudget(**dict(zip(PublicBudget.model_fields, values, strict=True)))
+        expected = public.model_dump(by_alias=False)
+        assert set(public.model_dump()) == {
+            "maxSteps",
+            "maxTokens",
+            "timeoutSeconds",
+            "maxOutputChars",
+            "maxToolCallsPerStep",
+        }
+&gt;       assert _budget(public) == Budget.model_validate(expected)
+               ^^^^^^^^^^^^^^^
+
+tests/app_server/test_budget_mapping.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = PublicBudget(max_steps=1, max_tokens=1, timeout_seconds=0.5, max_output_chars=1, max_tool_calls_per_step=1)
+
+    def _budget(value: object) -&gt; Budget | None:
+        if value is None:
+            return None
+        assert isinstance(value, ProtocolModel)
+&gt;       return Budget.model_validate(value.model_dump())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget
+E       maxSteps
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxTokens
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       timeoutSeconds
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=0.5, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxOutputChars
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxToolCallsPerStep
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+
+src/harnessix/app_server/service.py:54: ValidationError</failure></testcase><testcase classname="tests.app_server.test_budget_mapping" name="test_public_budget_maps_all_fields_without_changing_wire_aliases[values1]" time="0.000"><failure message="pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget&#10;maxSteps&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=8, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxTokens&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=32000, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;timeoutSeconds&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=120.0, input_type=float]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxOutputChars&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=32000, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxToolCallsPerStep&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden">values = (8, 32000, 120.0, 32000, 1)
+
+    @pytest.mark.parametrize(
+        "values",
+        (
+            (1, 1, 0.5, 1, 1),
+            (8, 32000, 120.0, 32000, 1),
+            (1000, 1_000_000, 86400.0, 1_000_000, 128),
+        ),
+    )
+    def test_public_budget_maps_all_fields_without_changing_wire_aliases(values: tuple) -&gt; None:
+        public = PublicBudget(**dict(zip(PublicBudget.model_fields, values, strict=True)))
+        expected = public.model_dump(by_alias=False)
+        assert set(public.model_dump()) == {
+            "maxSteps",
+            "maxTokens",
+            "timeoutSeconds",
+            "maxOutputChars",
+            "maxToolCallsPerStep",
+        }
+&gt;       assert _budget(public) == Budget.model_validate(expected)
+               ^^^^^^^^^^^^^^^
+
+tests/app_server/test_budget_mapping.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = PublicBudget(max_steps=8, max_tokens=32000, timeout_seconds=120.0, max_output_chars=32000, max_tool_calls_per_step=1)
+
+    def _budget(value: object) -&gt; Budget | None:
+        if value is None:
+            return None
+        assert isinstance(value, ProtocolModel)
+&gt;       return Budget.model_validate(value.model_dump())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget
+E       maxSteps
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=8, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxTokens
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=32000, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       timeoutSeconds
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=120.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxOutputChars
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=32000, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxToolCallsPerStep
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+
+src/harnessix/app_server/service.py:54: ValidationError</failure></testcase><testcase classname="tests.app_server.test_budget_mapping" name="test_public_budget_maps_all_fields_without_changing_wire_aliases[values2]" time="0.000"><failure message="pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget&#10;maxSteps&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1000, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxTokens&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1000000, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;timeoutSeconds&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=86400.0, input_type=float]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxOutputChars&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=1000000, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden&#10;maxToolCallsPerStep&#10;  Extra inputs are not permitted [type=extra_forbidden, input_value=128, input_type=int]&#10;    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden">values = (1000, 1000000, 86400.0, 1000000, 128)
+
+    @pytest.mark.parametrize(
+        "values",
+        (
+            (1, 1, 0.5, 1, 1),
+            (8, 32000, 120.0, 32000, 1),
+            (1000, 1_000_000, 86400.0, 1_000_000, 128),
+        ),
+    )
+    def test_public_budget_maps_all_fields_without_changing_wire_aliases(values: tuple) -&gt; None:
+        public = PublicBudget(**dict(zip(PublicBudget.model_fields, values, strict=True)))
+        expected = public.model_dump(by_alias=False)
+        assert set(public.model_dump()) == {
+            "maxSteps",
+            "maxTokens",
+            "timeoutSeconds",
+            "maxOutputChars",
+            "maxToolCallsPerStep",
+        }
+&gt;       assert _budget(public) == Budget.model_validate(expected)
+               ^^^^^^^^^^^^^^^
+
+tests/app_server/test_budget_mapping.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = PublicBudget(max_steps=1000, max_tokens=1000000, timeout_seconds=86400.0, max_output_chars=1000000, max_tool_calls_per_step=128)
+
+    def _budget(value: object) -&gt; Budget | None:
+        if value is None:
+            return None
+        assert isinstance(value, ProtocolModel)
+&gt;       return Budget.model_validate(value.model_dump())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 5 validation errors for Budget
+E       maxSteps
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1000, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxTokens
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1000000, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       timeoutSeconds
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=86400.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxOutputChars
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1000000, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E       maxToolCallsPerStep
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=128, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+
+src/harnessix/app_server/service.py:54: ValidationError</failure></testcase><testcase classname="tests.app_server.test_budget_mapping" name="test_absent_public_budget_preserves_domain_default_selection" time="0.000" /><testcase classname="tests.app_server.test_budget_mapping" name="test_sdk_explicit_budget_is_durable_and_duplicate_keeps_original_command" time="0.022"><failure message="harnessix.sdk.errors.AgentSDKError: internal_error: 服务端内部错误；原始异常未公开">tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-132/test_sdk_explicit_budget_is_du0')
+
+    async def test_sdk_explicit_budget_is_durable_and_duplicate_keeps_original_command(
+        tmp_path: Path,
+    ) -&gt; None:
+        store = SQLiteSessionStore(tmp_path / "session.db")
+        provider = FakeProvider("预算契约已验证")
+        limits = _limits()
+        client_id = uuid4()
+        async with AgentRuntime(store, provider) as runtime:
+            requests = SQLiteProtocolRequestStore(store.path)
+            service = AgentApplicationService(runtime, store, requests)
+            client = AgentClient(
+                InProcessAgentTransport(AgentProtocolServer(service)),
+                client_instance_id=client_id,
+            )
+            try:
+                await client.initialize()
+                thread = await client.create_thread(str(tmp_path), request_id="thread")
+&gt;               accepted = await client.start_turn(
+                    thread.thread_id, "检查预算", request_id="turn", budget=limits
+                )
+
+tests/app_server/test_budget_mapping.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/sdk/agent_client.py:243: in start_turn
+    await self._send("turn/start", params.model_dump(mode="json", by_alias=True)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/sdk/agent_client.py:110: in _send
+    return await exchange_agent_request(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+transport = &lt;harnessix.sdk.agent_client.InProcessAgentTransport object at 0x103687c80&gt;
+method = 'turn/start'
+params = {'budget': {'maxOutputChars': 32000, 'maxSteps': 8, 'maxTokens': 32000, 'maxToolCallsPerStep': 1, ...}, 'prompt': '检查预算', 'requestId': 'turn', 'threadId': '6b7252c0-64dd-5836-ad13-881114677a11'}
+request_id = 3
+initialized = InitializeResult(protocol_version='1.0', server_info=ServerInfo(name='harnessix-code', version='0.1.0'), capabilities=...s=ProtocolLimits(max_message_bytes=1048576, max_pending_requests=64, max_outbound_messages=256, max_replay_events=256))
+
+    async def exchange_agent_request(
+        transport: _ExchangeTransport,
+        method: str,
+        params: dict[str, JsonValue],
+        request_id: int,
+        initialized: InitializeResult | None,
+    ) -&gt; JsonValue:
+        """在Transport写入前执行协商门禁，并严格关联唯一Response。"""
+    
+        if (
+            method != "initialize"
+            and initialized is not None
+            and method not in initialized.capabilities.methods
+        ):
+            raise AgentSDKError("method_not_negotiated", "App Server未协商当前方法")
+        frame = _frame(JsonRpcRequest(id=request_id, method=method, params=params))
+        message_limit = (
+            ProtocolLimits().max_message_bytes
+            if initialized is None
+            else initialized.limits.max_message_bytes
+        )
+        if len(frame) &gt; message_limit:
+            raise AgentSDKError("negotiated_limit_exceeded", "Request超过协商消息字节上限")
+        responses = await transport.exchange(frame)
+        if len(responses) != 1:
+            raise AgentSDKError("invalid_response", "Request未收到唯一Response")
+        response = _decode_response(responses[0], max_message_bytes=message_limit)
+        if response.id != request_id:
+            raise AgentSDKError("invalid_response", "Response身份不匹配")
+        if isinstance(response, JsonRpcErrorResponse):
+            error = response.error
+&gt;           raise AgentSDKError(
+                error.data.code,
+                error.message,
+                retryable=error.data.retryable,
+                path=error.data.path,
+            )
+E           harnessix.sdk.errors.AgentSDKError: internal_error: 服务端内部错误；原始异常未公开
+
+src/harnessix/sdk/request.py:76: AgentSDKError</failure></testcase><testcase classname="tests.app_server.test_budget_mapping" name="test_sdk_explicit_retry_budget_keeps_source_terminal_and_retry_identity" time="0.035"><failure message="harnessix.sdk.errors.AgentSDKError: internal_error: 服务端内部错误；原始异常未公开">tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-132/test_sdk_explicit_retry_budget0')
+
+    async def test_sdk_explicit_retry_budget_keeps_source_terminal_and_retry_identity(
+        tmp_path: Path,
+    ) -&gt; None:
+        store = SQLiteSessionStore(tmp_path / "session.db")
+        failed_provider = ScriptedProvider([[ResponseFailed(code="authentication")]])
+        async with AgentRuntime(store, failed_provider) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            source = await runtime.run_turn(thread.thread_id, "固定失败", request_id="source")
+        assert source.status.value == "failed"
+    
+        provider = FakeProvider("显式重试已完成")
+        limits = _limits()
+        async with AgentRuntime(store, provider) as runtime:
+            service = AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
+            client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+            try:
+                await client.initialize()
+&gt;               retry = await client.retry_turn(
+                    thread.thread_id, source.turn_id, request_id="retry", budget=limits
+                )
+
+tests/app_server/test_budget_mapping.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/sdk/agent_client.py:263: in retry_turn
+    await self._send("turn/retry", params.model_dump(mode="json", by_alias=True)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/sdk/agent_client.py:110: in _send
+    return await exchange_agent_request(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+transport = &lt;harnessix.sdk.agent_client.InProcessAgentTransport object at 0x103772f00&gt;
+method = 'turn/retry'
+params = {'budget': {'maxOutputChars': 32000, 'maxSteps': 8, 'maxTokens': 32000, 'maxToolCallsPerStep': 1, ...}, 'requestId': 'retry', 'sourceTurnId': '01a0e9f9-cde4-79f4-9d86-61358d936228', 'threadId': '01a0e9f9-cde3-7aa9-81a7-3438551c15b5'}
+request_id = 2
+initialized = InitializeResult(protocol_version='1.0', server_info=ServerInfo(name='harnessix-code', version='0.1.0'), capabilities=...s=ProtocolLimits(max_message_bytes=1048576, max_pending_requests=64, max_outbound_messages=256, max_replay_events=256))
+
+    async def exchange_agent_request(
+        transport: _ExchangeTransport,
+        method: str,
+        params: dict[str, JsonValue],
+        request_id: int,
+        initialized: InitializeResult | None,
+    ) -&gt; JsonValue:
+        """在Transport写入前执行协商门禁，并严格关联唯一Response。"""
+    
+        if (
+            method != "initialize"
+            and initialized is not None
+            and method not in initialized.capabilities.methods
+        ):
+            raise AgentSDKError("method_not_negotiated", "App Server未协商当前方法")
+        frame = _frame(JsonRpcRequest(id=request_id, method=method, params=params))
+        message_limit = (
+            ProtocolLimits().max_message_bytes
+            if initialized is None
+            else initialized.limits.max_message_bytes
+        )
+        if len(frame) &gt; message_limit:
+            raise AgentSDKError("negotiated_limit_exceeded", "Request超过协商消息字节上限")
+        responses = await transport.exchange(frame)
+        if len(responses) != 1:
+            raise AgentSDKError("invalid_response", "Request未收到唯一Response")
+        response = _decode_response(responses[0], max_message_bytes=message_limit)
+        if response.id != request_id:
+            raise AgentSDKError("invalid_response", "Response身份不匹配")
+        if isinstance(response, JsonRpcErrorResponse):
+            error = response.error
+&gt;           raise AgentSDKError(
+                error.data.code,
+                error.message,
+                retryable=error.data.retryable,
+                path=error.data.path,
+            )
+E           harnessix.sdk.errors.AgentSDKError: internal_error: 服务端内部错误；原始异常未公开
+
+src/harnessix/sdk/request.py:76: AgentSDKError</failure></testcase><testcase classname="tests.app_server.test_budget_mapping" name="test_invalid_wire_budget_is_rejected_before_claim_or_turn[maxSteps-0]" time="0.017" /><testcase classname="tests.app_server.test_budget_mapping" name="test_invalid_wire_budget_is_rejected_before_claim_or_turn[maxTokens-True]" time="0.018" /><testcase classname="tests.app_server.test_budget_mapping" name="test_invalid_wire_budget_is_rejected_before_claim_or_turn[timeoutSeconds-0]" time="0.017" /><testcase classname="tests.app_server.test_budget_mapping" name="test_invalid_wire_budget_is_rejected_before_claim_or_turn[maxOutputChars-1000001]" time="0.017" /><testcase classname="tests.app_server.test_budget_mapping" name="test_invalid_wire_budget_is_rejected_before_claim_or_turn[maxToolCallsPerStep-129]" time="0.017" /></testsuite></testsuites>

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 113
-code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
+version: 114
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners:
   - core
 modules:
@@ -747,6 +747,11 @@ Action借用同一Owner，取消结算唯一目录线程后释放。该前置由
 [Windows复杂业务状态专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)已把原业务用例接入原生CI，
 元数据2/3缺失保持类型化、权限与共享错误仍拒绝；合法错Key负对照不破坏DPAPI格式。
 固定修复`dc3692a`的四个原生步骤成功，完整Job未终结部分及原失败均按实际记录；不据此关闭R1/R4或继承旧Wheel结论。
+[R3公开预算转换](changes/m09-r3-public-budget-domain-mapping.md)修复SDK显式启动及Retry预算被驼峰误送领域的缺陷。
+[固定源码真实stdio验证](validation/public-budget-product-provider-2026-09-29-v1/README.md)的离线两个场景通过；
+真实首场景在三次Patch缺少必需mode后失败，未进入审批，第二场景按原计划停止。
+7次请求Usage和原预算结算完整，新增估算0.149308元，无未知预留；历史20 Trial成绩不变，R3继续开放。
+下一质量整改需公开操作相关必填字段并保留严格解码，不在宿主补mode或改写模型提案以凑成功。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

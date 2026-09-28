@@ -1,0 +1,349 @@
+﻿2026-09-28T22:07:13.1389266Z Current runner version: '2.337.0'
+2026-09-28T22:07:13.1407063Z ##[group]Runner Image Provisioner
+2026-09-28T22:07:13.1407620Z Hosted Compute Agent
+2026-09-28T22:07:13.1408053Z Version: 20260828.587
+2026-09-28T22:07:13.1408442Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-28T22:07:13.1408915Z Build Date: 2026-08-28T16:44:25Z
+2026-09-28T22:07:13.1409336Z Worker ID: {a3cca717-77d6-4d94-b01f-ecc5123ffaf7}
+2026-09-28T22:07:13.1409805Z Azure Region: westus2
+2026-09-28T22:07:13.1410195Z ##[endgroup]
+2026-09-28T22:07:13.1411189Z ##[group]Operating System
+2026-09-28T22:07:13.1411592Z Ubuntu
+2026-09-28T22:07:13.1411952Z 24.04.5
+2026-09-28T22:07:13.1412263Z LTS
+2026-09-28T22:07:13.1412607Z ##[endgroup]
+2026-09-28T22:07:13.1412935Z ##[group]Runner Image
+2026-09-28T22:07:13.1413289Z Image: ubuntu-24.04
+2026-09-28T22:07:13.1413735Z Version: 20260920.314.1
+2026-09-28T22:07:13.1414445Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260920.314/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-28T22:07:13.1415366Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260920.314
+2026-09-28T22:07:13.1415915Z ##[endgroup]
+2026-09-28T22:07:13.1416659Z ##[group]GITHUB_TOKEN Permissions
+2026-09-28T22:07:13.1417999Z Contents: read
+2026-09-28T22:07:13.1418363Z Metadata: read
+2026-09-28T22:07:13.1418702Z ##[endgroup]
+2026-09-28T22:07:13.1420016Z Secret source: Actions
+2026-09-28T22:07:13.1420583Z Cache mode: write
+2026-09-28T22:07:13.1421262Z Prepare workflow directory
+2026-09-28T22:07:13.1620630Z Prepare all required actions
+2026-09-28T22:07:13.1651773Z Getting action download info
+2026-09-28T22:07:13.5273875Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+2026-09-28T22:07:13.6911756Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+2026-09-28T22:07:14.1593988Z Complete job name: python (3.12)
+2026-09-28T22:07:14.2108909Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+2026-09-28T22:07:14.2109431Z with:
+2026-09-28T22:07:14.2109663Z   fetch-depth: 0
+2026-09-28T22:07:14.2109919Z   repository: carrie1988/Harnessix
+2026-09-28T22:07:14.2112126Z   token: ***
+2026-09-28T22:07:14.2112361Z   ssh-strict: true
+2026-09-28T22:07:14.2112597Z   ssh-user: git
+2026-09-28T22:07:14.2112843Z   persist-credentials: true
+2026-09-28T22:07:14.2113111Z   clean: true
+2026-09-28T22:07:14.2113356Z   sparse-checkout-cone-mode: true
+2026-09-28T22:07:14.2113643Z   fetch-tags: false
+2026-09-28T22:07:14.2113883Z   show-progress: true
+2026-09-28T22:07:14.2114126Z   lfs: false
+2026-09-28T22:07:14.2114364Z   submodules: false
+2026-09-28T22:07:14.2114620Z   set-safe-directory: true
+2026-09-28T22:07:14.2114957Z ##[endgroup]
+2026-09-28T22:07:14.2750469Z Syncing repository: carrie1988/Harnessix
+2026-09-28T22:07:14.2751851Z ##[group]Getting Git version info
+2026-09-28T22:07:14.2752334Z Working directory is '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T22:07:14.2752949Z [command]/usr/bin/git version
+2026-09-28T22:07:14.2998630Z git version 2.55.0
+2026-09-28T22:07:14.3009121Z ##[endgroup]
+2026-09-28T22:07:14.3026609Z Temporarily overriding HOME='/home/runner/work/_temp/e8ca7508-780a-47a7-afb4-e932098cac0f' before making global git config changes
+2026-09-28T22:07:14.3028171Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T22:07:14.3030458Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:14.3088627Z Deleting the contents of '/home/runner/work/Harnessix/Harnessix'
+2026-09-28T22:07:14.3092480Z ##[group]Initializing the repository
+2026-09-28T22:07:14.3096407Z [command]/usr/bin/git init /home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:14.3553632Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-28T22:07:14.3556616Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-28T22:07:14.3557688Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-28T22:07:14.3558165Z hint: call:
+2026-09-28T22:07:14.3558387Z hint:
+2026-09-28T22:07:14.3559147Z hint: 	git config --global init.defaultBranch <name>
+2026-09-28T22:07:14.3559562Z hint:
+2026-09-28T22:07:14.3559878Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-28T22:07:14.3560401Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-28T22:07:14.3560934Z hint:
+2026-09-28T22:07:14.3561167Z hint: 	git branch -m <name>
+2026-09-28T22:07:14.3561428Z hint:
+2026-09-28T22:07:14.3561771Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-28T22:07:14.3562320Z Initialized empty Git repository in /home/runner/work/Harnessix/Harnessix/.git/
+2026-09-28T22:07:14.3563839Z [command]/usr/bin/git remote add origin https://github.com/carrie1988/Harnessix
+2026-09-28T22:07:14.3612646Z ##[endgroup]
+2026-09-28T22:07:14.3613334Z ##[group]Disabling automatic garbage collection
+2026-09-28T22:07:14.3616290Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-28T22:07:14.3645445Z ##[endgroup]
+2026-09-28T22:07:14.3646110Z ##[group]Setting up auth
+2026-09-28T22:07:14.3646576Z Removing SSH command configuration
+2026-09-28T22:07:14.3650544Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T22:07:14.3678159Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T22:07:14.4106773Z Removing HTTP extra header
+2026-09-28T22:07:14.4109876Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T22:07:14.4138984Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T22:07:14.4308993Z Removing includeIf entries pointing to credentials config files
+2026-09-28T22:07:14.4313536Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T22:07:14.4341925Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T22:07:14.4575135Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-28T22:07:14.4576691Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:14.4582173Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:14.4609751Z ##[endgroup]
+2026-09-28T22:07:14.4610222Z ##[group]Fetching the repository
+2026-09-28T22:07:14.4616279Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-28T22:07:16.4741808Z From https://github.com/carrie1988/Harnessix
+2026-09-28T22:07:16.4742431Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+2026-09-28T22:07:16.4742934Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+2026-09-28T22:07:16.4743370Z  * [new branch]      main                    -> origin/main
+2026-09-28T22:07:16.4751395Z [command]/usr/bin/git branch --list --remote origin/main
+2026-09-28T22:07:16.4778091Z   origin/main
+2026-09-28T22:07:16.4815196Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+2026-09-28T22:07:16.4835883Z 184fb125f6159de4202a64a525f6b5cc99f0ab97
+2026-09-28T22:07:16.4838836Z ##[endgroup]
+2026-09-28T22:07:16.4839286Z ##[group]Determining the checkout info
+2026-09-28T22:07:16.4840004Z ##[endgroup]
+2026-09-28T22:07:16.4842549Z [command]/usr/bin/git sparse-checkout disable
+2026-09-28T22:07:16.4894366Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-28T22:07:16.4919667Z ##[group]Checking out the ref
+2026-09-28T22:07:16.4921948Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-28T22:07:16.7057103Z Switched to a new branch 'main'
+2026-09-28T22:07:16.7160037Z branch 'main' set up to track 'origin/main'.
+2026-09-28T22:07:16.7184366Z ##[endgroup]
+2026-09-28T22:07:16.7225106Z [command]/usr/bin/git log -1 --format=%H
+2026-09-28T22:07:16.7249061Z 184fb125f6159de4202a64a525f6b5cc99f0ab97
+2026-09-28T22:07:16.7460983Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+2026-09-28T22:07:16.7461240Z with:
+2026-09-28T22:07:16.7461387Z   python-version: 3.12
+2026-09-28T22:07:16.7461556Z   activate-environment: false
+2026-09-28T22:07:16.7461729Z   no-project: false
+2026-09-28T22:07:16.7461939Z   working-directory: /home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:16.7463424Z   github-token: ***
+2026-09-28T22:07:16.7463575Z   enable-cache: auto
+2026-09-28T22:07:16.7463937Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+**/*.py.lock
+
+2026-09-28T22:07:16.7464354Z   restore-cache: true
+2026-09-28T22:07:16.7464521Z   save-cache: true
+2026-09-28T22:07:16.7464671Z   prune-cache: false
+2026-09-28T22:07:16.7464826Z   cache-python: false
+2026-09-28T22:07:16.7464989Z   ignore-nothing-to-cache: false
+2026-09-28T22:07:16.7465172Z   ignore-empty-workdir: false
+2026-09-28T22:07:16.7465377Z   download-from-astral-mirror: true
+2026-09-28T22:07:16.7465566Z   add-problem-matchers: true
+2026-09-28T22:07:16.7465729Z   quiet: false
+2026-09-28T22:07:16.7465880Z   resolution-strategy: highest
+2026-09-28T22:07:16.7466052Z ##[endgroup]
+2026-09-28T22:07:16.8717417Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T22:07:16.8718800Z Could not find file: /home/runner/work/Harnessix/Harnessix/uv.toml
+2026-09-28T22:07:16.8719664Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T22:07:16.8721898Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+2026-09-28T22:07:16.8742218Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+2026-09-28T22:07:16.9289574Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+2026-09-28T22:07:17.2848394Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/98a616b1-4aea-44bb-89ce-524a2889a70e -f /home/runner/work/_temp/8af4006f-fb7b-4e99-988e-dd4da38cad1e
+2026-09-28T22:07:17.7427015Z Added /home/runner/.local/bin to the path
+2026-09-28T22:07:17.7428936Z Added /opt/hostedtoolcache/uv/0.12.19/x86_64 to the path
+2026-09-28T22:07:17.7431519Z Set UV_PYTHON_INSTALL_DIR to /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:17.7432096Z Added /home/runner/work/_temp/uv-python-dir to the path
+2026-09-28T22:07:17.7432675Z Set UV_PYTHON to 3.12
+2026-09-28T22:07:17.7450982Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:17.7451335Z Successfully installed uv version 0.12.19
+2026-09-28T22:07:17.7452886Z Searching files using cache dependency glob: /home/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/home/runner/work/Harnessix/Harnessix/**/*requirements*.in,/home/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/home/runner/work/Harnessix/Harnessix/**/*constraints*.in,/home/runner/work/Harnessix/Harnessix/**/pyproject.toml,/home/runner/work/Harnessix/Harnessix/**/uv.lock,/home/runner/work/Harnessix/Harnessix/**/*.py.lock
+2026-09-28T22:07:17.7848888Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T22:07:17.7867341Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T22:07:17.7877230Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T22:07:17.7914258Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T22:07:17.7923825Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T22:07:17.7933837Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T22:07:17.7977913Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+2026-09-28T22:07:17.7987872Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-312/requirements.txt
+2026-09-28T22:07:17.7997155Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-313/requirements.txt
+2026-09-28T22:07:17.8006759Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+2026-09-28T22:07:17.8018517Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+2026-09-28T22:07:17.8074014Z /home/runner/work/Harnessix/Harnessix/docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/requirements.txt
+2026-09-28T22:07:17.9185448Z /home/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+2026-09-28T22:07:17.9317801Z /home/runner/work/Harnessix/Harnessix/pyproject.toml
+2026-09-28T22:07:17.9902707Z /home/runner/work/Harnessix/Harnessix/uv.lock
+2026-09-28T22:07:17.9910502Z Found 15 files to hash.
+2026-09-28T22:07:17.9966881Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+2026-09-28T22:07:18.2446888Z Cache hit for: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+2026-09-28T22:07:19.5396221Z Received 0 of 39621478 (0.0%), 0.0 MBs/sec
+2026-09-28T22:07:19.9158945Z Received 39621478 of 39621478 (100.0%), 27.5 MBs/sec
+2026-09-28T22:07:19.9159323Z Cache Size: ~38 MB (39621478 B)
+2026-09-28T22:07:19.9182528Z [command]/usr/bin/tar -xf /home/runner/work/_temp/b6b1f538-1a50-4026-89ae-3ec3d0cb9811/cache.tzst -P -C /home/runner/work/Harnessix/Harnessix --use-compress-program unzstd
+2026-09-28T22:07:20.2406447Z Cache restored successfully
+2026-09-28T22:07:20.2426124Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+2026-09-28T22:07:20.3564859Z ##[group]Run uv sync --locked --all-extras --dev
+2026-09-28T22:07:20.3565123Z [36;1muv sync --locked --all-extras --dev[0m
+2026-09-28T22:07:21.1058534Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:21.1058716Z env:
+2026-09-28T22:07:21.1058896Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:21.1059099Z   UV_PYTHON: 3.12
+2026-09-28T22:07:21.1059248Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:21.1059427Z ##[endgroup]
+2026-09-28T22:07:21.1210285Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+2026-09-28T22:07:21.1210516Z Creating virtual environment at: .venv
+2026-09-28T22:07:21.1233277Z Resolved 74 packages in 0.79ms
+2026-09-28T22:07:21.1312526Z    Building harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:21.5712118Z       Built harnessix @ file:///home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:21.5722373Z Prepared 1 package in 446ms
+2026-09-28T22:07:21.6112932Z Installed 71 packages in 38ms
+2026-09-28T22:07:21.6113275Z  + aiosqlite==0.22.1
+2026-09-28T22:07:21.6113508Z  + annotated-types==0.8.0
+2026-09-28T22:07:21.6113815Z  + anthropic==1.3.0
+2026-09-28T22:07:21.6114055Z  + anyio==4.14.2
+2026-09-28T22:07:21.6114242Z  + attrs==26.1.0
+2026-09-28T22:07:21.6114458Z  + certifi==2026.7.22
+2026-09-28T22:07:21.6114678Z  + cffi==2.1.1
+2026-09-28T22:07:21.6114878Z  + charset-normalizer==3.5.1
+2026-09-28T22:07:21.6115130Z  + click==8.5.0
+2026-09-28T22:07:21.6115325Z  + cryptography==50.0.1
+2026-09-28T22:07:21.6115559Z  + distro==1.9.0
+2026-09-28T22:07:21.6115785Z  + docstring-parser==0.18.0
+2026-09-28T22:07:21.6116104Z  + googleapis-common-protos==1.75.2
+2026-09-28T22:07:21.6116375Z  + h11==0.16.0
+2026-09-28T22:07:21.6116655Z  + harnessix==0.1.0 (from file:///home/runner/work/Harnessix/Harnessix)
+2026-09-28T22:07:21.6117024Z  + httpcore==1.0.9
+2026-09-28T22:07:21.6117219Z  + httpcore2==2.12.0
+2026-09-28T22:07:21.6117444Z  + httpx==0.28.1
+2026-09-28T22:07:21.6117644Z  + httpx2==2.12.0
+2026-09-28T22:07:21.6117822Z  + idna==3.19
+2026-09-28T22:07:21.6118043Z  + iniconfig==2.3.0
+2026-09-28T22:07:21.6118234Z  + jiter==0.16.0
+2026-09-28T22:07:21.6118444Z  + jsonschema==4.26.0
+2026-09-28T22:07:21.6118696Z  + jsonschema-specifications==2025.9.1
+2026-09-28T22:07:21.6118975Z  + librt==0.15.0
+2026-09-28T22:07:21.6119166Z  + linkify-it-py==2.2.0
+2026-09-28T22:07:21.6119409Z  + markdown-it-py==4.2.0
+2026-09-28T22:07:21.6119613Z  + mcp==2.2.0
+2026-09-28T22:07:21.6119822Z  + mcp-types==2.2.0
+2026-09-28T22:07:21.6120022Z  + mdit-py-plugins==0.6.1
+2026-09-28T22:07:21.6120257Z  + mdurl==0.1.2
+2026-09-28T22:07:21.6120439Z  + mypy==1.20.2
+2026-09-28T22:07:21.6120811Z  + mypy-extensions==1.1.0
+2026-09-28T22:07:21.6121225Z  + openai==2.54.0
+2026-09-28T22:07:21.6121590Z  + opentelemetry-api==1.44.0
+2026-09-28T22:07:21.6121994Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+2026-09-28T22:07:21.6122346Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+2026-09-28T22:07:21.6122667Z  + opentelemetry-proto==1.44.0
+2026-09-28T22:07:21.6122914Z  + opentelemetry-sdk==1.44.0
+2026-09-28T22:07:21.6123186Z  + opentelemetry-semantic-conventions==0.65b0
+2026-09-28T22:07:21.6123475Z  + packaging==26.3
+2026-09-28T22:07:21.6123672Z  + pathspec==1.1.1
+2026-09-28T22:07:21.6123872Z  + platformdirs==4.11.8
+2026-09-28T22:07:21.6124080Z  + pluggy==1.6.0
+2026-09-28T22:07:21.6124274Z  + protobuf==7.36.1
+2026-09-28T22:07:21.6124462Z  + pycparser==3.0
+2026-09-28T22:07:21.6124650Z  + pydantic==2.13.5
+2026-09-28T22:07:21.6124851Z  + pydantic-core==2.46.5
+2026-09-28T22:07:21.6125055Z  + pygments==2.21.0
+2026-09-28T22:07:21.6125247Z  + pyjwt==2.13.0
+2026-09-28T22:07:21.6125431Z  + pytest==8.4.2
+2026-09-28T22:07:21.6125638Z  + pytest-asyncio==1.4.0
+2026-09-28T22:07:21.6125884Z  + python-multipart==0.0.32
+2026-09-28T22:07:21.6126105Z  + pyyaml==6.0.3
+2026-09-28T22:07:21.6126299Z  + referencing==0.37.0
+2026-09-28T22:07:21.6126504Z  + requests==2.34.2
+2026-09-28T22:07:21.6126689Z  + rich==15.0.0
+2026-09-28T22:07:21.6126879Z  + rpds-py==2026.6.3
+2026-09-28T22:07:21.6127284Z  + ruff==0.16.5
+2026-09-28T22:07:21.6127470Z  + sniffio==1.3.1
+2026-09-28T22:07:21.6127650Z  + sse-starlette==3.4.11
+2026-09-28T22:07:21.6127843Z  + starlette==1.6.0
+2026-09-28T22:07:21.6128189Z  + textual==8.2.8
+2026-09-28T22:07:21.6128409Z  + tqdm==4.70.0
+2026-09-28T22:07:21.6128602Z  + truststore==0.10.4
+2026-09-28T22:07:21.6128822Z  + types-jsonschema==4.26.0.20260518
+2026-09-28T22:07:21.6129090Z  + types-pyyaml==6.0.12.20260906
+2026-09-28T22:07:21.6129313Z  + typing-extensions==4.16.0
+2026-09-28T22:07:21.6129531Z  + typing-inspection==0.4.4
+2026-09-28T22:07:21.6129745Z  + urllib3==2.7.0
+2026-09-28T22:07:21.6129920Z  + uvicorn==0.52.4
+2026-09-28T22:07:21.6272123Z ##[group]Run uv run python scripts/readability_report.py --check --check-final-report --quiet
+2026-09-28T22:07:21.6272518Z [36;1muv run python scripts/readability_report.py --check --check-final-report --quiet[0m
+2026-09-28T22:07:21.6325022Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:21.6325289Z env:
+2026-09-28T22:07:21.6325450Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:21.6325637Z   UV_PYTHON: 3.12
+2026-09-28T22:07:21.6325799Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:21.6325971Z ##[endgroup]
+2026-09-28T22:07:23.6328218Z ##[group]Run uv run python scripts/documentation_check.py
+2026-09-28T22:07:23.6328479Z [36;1muv run python scripts/documentation_check.py[0m
+2026-09-28T22:07:23.6379916Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:23.6380060Z env:
+2026-09-28T22:07:23.6380220Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:23.6380412Z   UV_PYTHON: 3.12
+2026-09-28T22:07:23.6380556Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:23.6380879Z ##[endgroup]
+2026-09-28T22:07:25.7368763Z 文档门禁通过：374份文档、9566条链接、838幅Mermaid、26个源码包、0个变化路径
+2026-09-28T22:07:25.7492058Z ##[group]Run uv run python scripts/generate_specs.py --check
+2026-09-28T22:07:25.7492344Z [36;1muv run python scripts/generate_specs.py --check[0m
+2026-09-28T22:07:25.7543827Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:25.7543973Z env:
+2026-09-28T22:07:25.7544131Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:25.7544318Z   UV_PYTHON: 3.12
+2026-09-28T22:07:25.7544460Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:25.7544636Z ##[endgroup]
+2026-09-28T22:07:27.6310389Z 合同一致性检查通过
+2026-09-28T22:07:27.7857285Z ##[group]Run uv run python scripts/secret_scan.py --self-check
+2026-09-28T22:07:27.7857581Z [36;1muv run python scripts/secret_scan.py --self-check[0m
+2026-09-28T22:07:27.7910882Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:27.7911074Z env:
+2026-09-28T22:07:27.7911234Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:27.7911424Z   UV_PYTHON: 3.12
+2026-09-28T22:07:27.7911570Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:27.7911745Z ##[endgroup]
+2026-09-28T22:07:27.8458214Z Secret扫描自检通过：6条固定规则逐项验证
+2026-09-28T22:07:27.8540037Z ##[group]Run uv build --offline --out-dir dist/secret-gate
+2026-09-28T22:07:27.8540291Z [36;1muv build --offline --out-dir dist/secret-gate[0m
+2026-09-28T22:07:27.8589997Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:27.8590142Z env:
+2026-09-28T22:07:27.8590302Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:27.8590493Z   UV_PYTHON: 3.12
+2026-09-28T22:07:27.8590637Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:27.8590977Z ##[endgroup]
+2026-09-28T22:07:27.9603606Z Building source distribution...
+2026-09-28T22:07:30.6334200Z Building wheel from source distribution...
+2026-09-28T22:07:31.0993616Z Successfully built dist/secret-gate/harnessix-0.1.0.tar.gz
+2026-09-28T22:07:31.0994399Z Successfully built dist/secret-gate/harnessix-0.1.0-py3-none-any.whl
+2026-09-28T22:07:31.1073445Z ##[group]Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
+2026-09-28T22:07:31.1073974Z [36;1muv run python scripts/secret_scan.py --artifact-dir dist/secret-gate[0m
+2026-09-28T22:07:31.1129369Z shell: /usr/bin/bash -e {0}
+2026-09-28T22:07:31.1129527Z env:
+2026-09-28T22:07:31.1129695Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+2026-09-28T22:07:31.1129890Z   UV_PYTHON: 3.12
+2026-09-28T22:07:31.1130039Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+2026-09-28T22:07:31.1130215Z ##[endgroup]
+2026-09-28T22:07:36.0209468Z Secret扫描未完成：scan_archive_limit
+2026-09-28T22:07:36.0326523Z ##[error]Process completed with exit code 2.
+2026-09-28T22:07:36.0438734Z Post job cleanup.
+2026-09-28T22:07:36.1003975Z [command]/usr/bin/git version
+2026-09-28T22:07:36.1035562Z git version 2.55.0
+2026-09-28T22:07:36.1058686Z Temporarily overriding HOME='/home/runner/work/_temp/4663a835-d262-4c9e-9db9-a240fadb1239' before making global git config changes
+2026-09-28T22:07:36.1059455Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T22:07:36.1062348Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+2026-09-28T22:07:36.1088773Z Removing SSH command configuration
+2026-09-28T22:07:36.1093353Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T22:07:36.1120295Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-28T22:07:36.1318304Z Removing HTTP extra header
+2026-09-28T22:07:36.1323603Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T22:07:36.1362114Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-28T22:07:36.1562211Z Removing includeIf entries pointing to credentials config files
+2026-09-28T22:07:36.1570090Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T22:07:36.1598936Z includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T22:07:36.1599339Z includeif.gitdir:/github/workspace/.git.path
+2026-09-28T22:07:36.1606725Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+2026-09-28T22:07:36.1628951Z /home/runner/work/_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:36.1637876Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:36.1671439Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-28T22:07:36.1693173Z /github/runner_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:36.1699636Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config
+2026-09-28T22:07:36.1730483Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-28T22:07:36.1903589Z Removing credentials config '/home/runner/work/_temp/git-credentials-0791a2eb-4f1f-416e-a06b-2889e7c19ef7.config'
+2026-09-28T22:07:36.2732571Z Cleaning up orphan processes

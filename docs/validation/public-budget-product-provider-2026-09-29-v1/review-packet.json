@@ -1,0 +1,29 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "184fb125f6159de4202a64a525f6b5cc99f0ab97",
+  "pipeline_revision": "bf03290e22748d0356b49839d5e264142282c492",
+  "component": "显式预算转换及默认产品真实Provider失败归因",
+  "decision": "BUDGET_FIX_PASS_PROVIDER_AND_COMMERCIAL_NO_GO",
+  "design": "../../changes/m09-r3-public-budget-domain-mapping.md",
+  "original_failures_preserved": true,
+  "required_checks": [
+    "公开与领域预算五字段无损",
+    "启动/Retry持久与原幂等",
+    "非法预算在Claim前拒绝",
+    "真实stdio离线审批和取消",
+    "额外文件提案严格拒绝",
+    "真实模型事件及原账本独立核对",
+    "实际缺mode失败保留，不补写参数",
+    "单一Wheel通道与原扫描上限"
+  ],
+  "still_open": [
+    "Patch操作相关必填字段模型可发现性",
+    "有限真实审批及取消认证",
+    "原20 Trial质量门槛",
+    "R1安全及认证存储空间越限",
+    "Windows11及不同版本升级回退",
+    "独立Beta与许可处置",
+    "最终同候选发布门禁"
+  ],
+  "evidence": "verification.json"
+}

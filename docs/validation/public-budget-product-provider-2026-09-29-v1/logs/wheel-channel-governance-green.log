@@ -1,0 +1,22 @@
+.................F...................................................... [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+____________ test_current_repository_satisfies_documentation_policy ____________
+
+    def test_current_repository_satisfies_documentation_policy() -> None:
+        module = _documentation_module()
+        report = module.check_repository(ROOT, _policy(module))
+    
+>       assert report.findings == ()
+E       AssertionError: assert (Finding(code...md', line=41)) == ()
+E         
+E         Left contains 3 more items, first extra item: Finding(code='link_target_missing', path='docs/changes/m09-r3-public-budget-domain-mapping.md', message='链接目标不存在：../validation/public-budget-product-provider-2026-09-29-v1/README.md', line=194)
+E         Use -v to get more diff
+
+tests/governance/test_documentation_policy.py:76: AssertionError
+- generated xml file: /private/tmp/harnessix-provider-product-20260929/regressions/wheel-channel-governance-green.xml -
+=========================== short test summary info ============================
+FAILED tests/governance/test_documentation_policy.py::test_current_repository_satisfies_documentation_policy
+1 failed, 275 passed in 23.03s

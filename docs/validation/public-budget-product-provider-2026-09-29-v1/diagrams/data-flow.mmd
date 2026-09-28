@@ -1,0 +1,11 @@
+flowchart TD
+    Wire[驼峰PublicBudget] --> Strict[原Protocol严格校验]
+    Strict --> Mapping[显式下划线字段转换]
+    Mapping --> Domain[(原领域预算与Session事实)]
+    Model[真实模型参数] --> Decode[原Workspace Patch解码]
+    Decode --> Missing[缺少操作必需mode]
+    Missing --> Refuse[原固定参数拒绝 不产生审批或写入]
+    Domain --> Evidence[低敏字段与固定错误事实]
+    Refuse --> Evidence
+    Usage[原Usage和账本结算] --> Evidence
+    Evidence --> Report[保留FAIL及商业NO_GO]

@@ -1,0 +1,12 @@
+flowchart TD
+    Client[原AgentClient] --> Transport[原子进程Transport与stdio]
+    Transport --> Server[原产品组合根与Server]
+    Server --> Budget[显式公开预算转换]
+    Budget --> Runtime[原Agent Runtime与Context]
+    Runtime --> Guard[验证工厂装饰器与原请求Guard]
+    Guard --> Ledger[(原70元周期账本)]
+    Guard --> Provider[原官方Adapter与北京快照]
+    Runtime --> Tools[原读取及Workspace Patch]
+    Tools --> Approval[原Policy与Approval]
+    Approval --> Workspace[独立夹具Workspace]
+    Runtime --> State[(原认证Session与Artifact)]

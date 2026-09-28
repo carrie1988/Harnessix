@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_gate_builds_real_artifacts_before_scanning ________________
+
+    def test_gate_builds_real_artifacts_before_scanning() -> None:
+        root = Path(__file__).resolve().parents[2]
+        makefile = (
+            (root / "Makefile")
+            .read_text(encoding="utf-8")
+            .split("supply-chain:\n", 1)[1]
+            .split("\n\n", 1)[0]
+        )
+>       assert makefile.index("uv build --offline --wheel") < makefile.index(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "--artifact-dir dist/secret-gate"
+        )
+E       ValueError: substring not found
+
+tests/governance/test_secret_scan.py:516: ValueError
+=========================== short test summary info ============================
+FAILED tests/governance/test_secret_scan.py::test_gate_builds_real_artifacts_before_scanning
+1 failed in 0.07s

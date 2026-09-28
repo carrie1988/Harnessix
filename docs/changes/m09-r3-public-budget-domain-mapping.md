@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: historical
 version: 1
-code_revision: pending
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners: [core]
 modules: [app_server, protocol, sdk, agent]
 related_adrs:
@@ -190,4 +190,6 @@ start_or_retry(params):
 ## 14. 实现偏差与结论
 
 方案只修改一个转换表达式，并增加说明性中文注释及回归。
-最终源码身份、实际结果、低敏证据和Review Packet在独立验证资料中冻结后登记；设计不作为验收结果替代。
+最终修复源码为`184fb125f6159de4202a64a525f6b5cc99f0ab97`。双Python相关回归各770通过/1跳过；固定源码的实际stdio离线两个场景通过。
+[线上验证与独立证据](../validation/public-budget-product-provider-2026-09-29-v1/README.md)保留首个真实场景失败：
+Patch缺少操作必需mode，第二场景停止。本预算修复完成，但有限Provider认证和R3整体仍未完成。

@@ -1,0 +1,59 @@
+........................................................F............... [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+_____ test_canonical_checkout_overrides_crlf_only_for_the_checkout_process _____
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-136/test_canonical_checkout_overri0')
+
+    def test_canonical_checkout_overrides_crlf_only_for_the_checkout_process(tmp_path: Path) -> None:
+        import yaml
+    
+        path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"
+        steps = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["installed-product"]["steps"]
+        checkout = next(step for step in steps if "checkout@" in step.get("uses", ""))
+        source = tmp_path / "source"
+        source.mkdir()
+        subprocess.run(["git", "init", "-q", str(source)], check=True, capture_output=True, timeout=30)
+        (source / ".gitattributes").write_bytes(b"* text=auto\n")
+        original = b"value = 1\n"
+        (source / "fixture.py").write_bytes(original)
+        subprocess.run(["git", "add", "."], cwd=source, check=True, capture_output=True, timeout=30)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Acceptance",
+                "-c",
+                "user.email=acceptance@example.invalid",
+                "commit",
+                "-qm",
+                "fixture",
+            ],
+            cwd=source,
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        config = tmp_path / "fixture.gitconfig"
+        settings = b"[core]\n\tautocrlf = true\n\teol = crlf\n"
+        config.write_bytes(settings)
+        # 使用自有配置夹具模拟Windows默认值，不改用户全局Git设置。
+        environment = {**os.environ, "GIT_CONFIG_GLOBAL": str(config), "GIT_CONFIG_NOSYSTEM": "1"}
+        common = ["git", "clone", "-q", "--no-hardlinks", str(source)]
+        control = tmp_path / "control"
+        subprocess.run(
+            [*common, str(control)], env=environment, check=True, capture_output=True, timeout=30
+        )
+>       assert (control / "fixture.py").read_bytes() == original.replace(b"\n", b"\r\n")
+E       AssertionError: assert b'value = 1\n' == b'value = 1\r\n'
+E         
+E         At index 9 diff: b'\n' != b'\r'
+E         Use -v to get more diff
+
+tests/governance/test_installed_product_acceptance.py:223: AssertionError
+- generated xml file: /private/tmp/harnessix-provider-product-20260929/regressions/budget-governance-green.xml -
+=========================== short test summary info ============================
+FAILED tests/governance/test_installed_product_acceptance.py::test_canonical_checkout_overrides_crlf_only_for_the_checkout_process
+1 failed, 275 passed in 22.76s

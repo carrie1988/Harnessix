@@ -1,0 +1,46 @@
+{
+  "error_type": "ValidationError",
+  "frames": [
+    {
+      "source": "<external>",
+      "function": "diagnosed_dispatch",
+      "line": 118
+    },
+    {
+      "source": "src/harnessix/app_server/server.py",
+      "function": "_dispatch",
+      "line": 162
+    },
+    {
+      "source": "src/harnessix/app_server/service.py",
+      "function": "start_turn",
+      "line": 274
+    },
+    {
+      "source": "src/harnessix/app_server/service.py",
+      "function": "_command",
+      "line": 144
+    },
+    {
+      "source": "src/harnessix/app_server/command_runtime.py",
+      "function": "execute_command",
+      "line": 75
+    },
+    {
+      "source": "src/harnessix/app_server/service.py",
+      "function": "operation",
+      "line": 266
+    },
+    {
+      "source": "src/harnessix/app_server/service.py",
+      "function": "_budget",
+      "line": 54
+    },
+    {
+      "source": ".venv/lib/python3.12/site-packages/pydantic/main.py",
+      "function": "model_validate",
+      "line": 732
+    }
+  ],
+  "raw_exception_recorded": false
+}

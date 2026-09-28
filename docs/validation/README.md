@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 30
-code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
+version: 31
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-29 | [显式预算修复与默认产品真实Provider诊断](public-budget-product-provider-2026-09-29-v1/README.md) | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 双Python；实际stdio；原70元周期和官方北京快照；7个已结算请求 | 原预算红例修复，离线审批/取消通过；真实首场景缺mode失败、第二场景停止；新增估算0.149308元 | 不关闭有限认证、20 Trial、Beta或商用门禁；原失败保留 |
 | 2026-09-29 | [Windows复杂业务状态备份恢复与严格原生分类](windows-business-state-recovery-2026-09-29-v1/README.md) | `dc3692abb08ebe9e2e9bf4d971af9eee395cf590` | 原生Windows Runner；本地Python3.12/3.13；零模型请求 | 保留原生82通过/2失败；合法错Key及元数据2/3分类修复；四个原生步骤成功，全Job按实际状态登记 | 专项GO，R1/R4及商用仍未关闭；不替代真实编码、Win11或不同版本升级 |
 | 2026-09-28 | [Artifact原正文持久来源认证](authenticated-artifact-2026-09-28-v1/README.md) | `33a2fd25bf6f529d1019cf584e02673734369299` | macOS本机、独立Key与真实SQLite/Runtime、零模型费用 | Migration 0030新行来源认证与同Key跨重启、旧行拒绝；完整回归与发行物结论以目录原件为准 | 0.9.4a及整体0.9继续开放，不能据此宣称三平台或发布通过 |
 | 2026-09-27 | [Archive许可证据及Windows夹具整改](license-evidence-2026-09-27-v1/README.md) | `1f483ceb267fe2d15ca4d53f794184fd6aa76ecc` | macOS arm64、全部777件、203原字节Blob；Provider零请求 | 4055 passed/32 skipped及167交叠专项、独立缓存重采集、准确源码Wheel/sdist Secret通过；pywin32 12件许可门禁返回1，当前Windows终态待验证 | release_blocked；不追认旧失败，不标记0.9或商用发布完成 |

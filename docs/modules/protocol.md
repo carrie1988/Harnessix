@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 2ae7caf3e2a6b53431ef352ff3520f3cf1358282
+version: 9
+code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
 owners:
   - core
 modules:
@@ -531,6 +531,12 @@ Provider尝试和内部请求指纹。完整用户可见过程通过Public Event
 | `PublicUsage` | 三个非负严格整数；`totalTokens == inputTokens + outputTokens` |
 | `PublicArtifactRef` | UUID、64位SHA-256、大小≤1 MiB、记录≤10000、`jsonl/v1`、完成标志和带时区过期时间 |
 | `ArtifactPageResult` | 文本≤24 Ki字符；Offset/Next Offset 0～10000；分页单位是记录位置，不是原始字节位置 |
+
+公共JSON的驼峰不是领域字段名。应用服务在`turn/start`及`turn/retry`中显式用
+`model_dump(by_alias=False)`把合法`PublicBudget`五字段转给原领域`Budget`；不能改用默认预算规避失败。
+请求指纹、公开响应及Session事件仍用各自原合同，非法预算仍在Claim前拒绝。
+[修复设计](../changes/m09-r3-public-budget-domain-mapping.md)和
+[启动、Retry、持久及拒绝回归](../../tests/app_server/test_budget_mapping.py)给出原失败与精确范围。
 
 ## 13. 内部事实的白名单投影
 

@@ -1,0 +1,14 @@
+{
+  "compressed_bytes": 10946433,
+  "tar_stream_bytes": 54087680,
+  "physical_tar_records": 4118,
+  "record_types": {
+    "0": 3054,
+    "x": 1064
+  },
+  "original_archive_entry_limit": 4096,
+  "entry_limit_exceeded": true,
+  "scanner_limit_changed": false,
+  "formal_v1_channel": "wheel_only",
+  "sdist_release_approved": false
+}

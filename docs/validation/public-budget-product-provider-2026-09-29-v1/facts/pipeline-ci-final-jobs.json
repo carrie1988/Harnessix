@@ -1,0 +1,706 @@
+{
+  "jobs": [
+    {
+      "name": "coding-tools-macos",
+      "status": "in_progress",
+      "conclusion": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/readability_report.py --check --check-final-report --quiet",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/documentation_check.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/generate_specs.py --check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build --offline --wheel --out-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/session tests/agent/test_authenticated_store.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/benchmarks",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_files",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_search",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_artifacts",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_plan",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch_approval",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_diff",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.host_process",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "pending",
+          "conclusion": null
+        }
+      ]
+    },
+    {
+      "name": "documentation",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm install --global @mermaid-js/mermaid-cli@11.6.0",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run chrome_path=\"$(command -v google-chrome)\"",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/documentation_check.py --changed-from \"$DOCS_BASE_REF\" --render-mermaid",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "python (3.12)",
+      "status": "in_progress",
+      "conclusion": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/readability_report.py --check --check-final-report --quiet",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/documentation_check.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/generate_specs.py --check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --self-check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build --offline --wheel --out-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run ruff format --check .",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run ruff check .",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run mypy src",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_search",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_artifacts",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_plan",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch_approval",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_diff",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.host_process",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python scripts/license_scan.py --check",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python scripts/sbom_generate.py --check",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "pending",
+          "conclusion": null
+        }
+      ]
+    },
+    {
+      "name": "windows-trusted-execution",
+      "status": "in_progress",
+      "conclusion": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "验证原生NTFS文件事务与审批编码写链",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "验证原生Git读取与取消回收",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "验证原生产品重启与State创建边界",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "验证原生完整业务状态备份与恢复",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/readability_report.py --check --check-final-report --quiet",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/documentation_check.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python -c \"import harnessix\"",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build --offline --wheel --out-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/session tests/agent/test_authenticated_store.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/benchmarks",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/tools/test_windows_native_runtime.py tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py -o faulthandler_timeout=120",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "pending",
+          "conclusion": null
+        }
+      ]
+    },
+    {
+      "name": "container-sandbox",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run docker pull \"$HARNESSIX_TEST_CONTAINER_IMAGE\"",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/integration/test_container_sandbox.py tests/integration/test_product_process_profile.py tests/integration/test_task_pack_profiles.py tests/integration/test_task_pack_execution.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "运行20 Trial完整离线Suite",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "上传脱敏离线Suite证据",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "python (3.13)",
+      "status": "in_progress",
+      "conclusion": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked --all-extras --dev",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/readability_report.py --check --check-final-report --quiet",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/documentation_check.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/generate_specs.py --check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --self-check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build --offline --wheel --out-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run ruff format --check .",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run ruff check .",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run mypy src",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_search",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_artifacts",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_plan",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_patch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.patch_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch_approval",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.managed_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_patch_bridge",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.kernel_batch",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.batch_diff",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python -m examples.host_process",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python scripts/license_scan.py --check",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Run uv run python scripts/sbom_generate.py --check",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+          "status": "pending",
+          "conclusion": null
+        }
+      ]
+    }
+  ]
+}

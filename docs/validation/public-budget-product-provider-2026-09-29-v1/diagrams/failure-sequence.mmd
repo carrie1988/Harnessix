@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant C as 原SDK与stdio
+    participant R as 原Runtime与Tool
+    participant G as 原请求Guard
+    participant P as 官方Provider
+    participant L as 原预算账本
+    C->>R: 合法显式预算启动
+    loop 7个已知结算请求
+        R->>G: 原模型请求
+        G->>L: 原周期持久预留
+        G->>P: 原官方Adapter 单次尝试
+        P-->>G: 原事件与完整Usage
+        G->>L: 原已知费用结算
+        G-->>R: 原完成响应
+        R->>R: 读取成功或Patch缺mode拒绝
+    end
+    R->>R: 最后读取因累计Token超限拒绝
+    C->>R: 原Transport关闭
+    C->>L: 原Owner核对 无未知预留
+    C->>C: 首场景FAIL 第二场景停止

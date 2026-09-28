@@ -1,0 +1,11 @@
+{
+  "original_period": "d973352f-0392-4d81-a324-8cb58f229a39",
+  "allocation_cny": "70.00",
+  "known_estimated_cny": "0.000068",
+  "reserved_cny": "0.00",
+  "requests": 1,
+  "unresolved": 0,
+  "owner_preflight": "PASS",
+  "new_requests": 0,
+  "original_guard_maximum_units": 20163840000000000000
+}

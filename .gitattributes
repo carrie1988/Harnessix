@@ -89,3 +89,7 @@ docs/validation/container-resource-admission-2026-09-29-v1/raw/windows/* whitesp
 # 原生复杂业务恢复证据保留CI原字节和换行，日志不参与文本合并。
 docs/validation/windows-business-state-recovery-2026-09-29-v1/** -text
 docs/validation/windows-business-state-recovery-2026-09-29-v1/logs/*.log -diff -merge
+
+docs/validation/public-budget-product-provider-2026-09-29-v1/** -text
+docs/validation/public-budget-product-provider-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/public-budget-product-provider-2026-09-29-v1/logs/*.xml -diff -merge

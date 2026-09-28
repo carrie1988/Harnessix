@@ -1,0 +1,115 @@
+{
+  "spec_version": "harnessix.public-budget-provider-verification/v1",
+  "source_revision": "184fb125f6159de4202a64a525f6b5cc99f0ab97",
+  "pipeline_revision": "bf03290e22748d0356b49839d5e264142282c492",
+  "product_version": "0.1.0",
+  "source_fix": "public DTO internal field names only",
+  "junit": {
+    "budget-red": {
+      "tests": 11,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "budget-broad-green-312": {
+      "tests": 771,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "budget-broad-green-313": {
+      "tests": 771,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "budget-governance-green": {
+      "tests": 276,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "budget-governance-bundled-git-green": {
+      "tests": 276,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wheel-channel-focused-green": {
+      "tests": 91,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wheel-channel-governance-green": {
+      "tests": 276,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "final-governance-312": {
+      "tests": 276,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "fixed_source_offline_stdio_cases": 2,
+  "scope_negative_passed": true,
+  "real_provider": {
+    "result": "FAIL",
+    "completed_certification_cases": 0,
+    "failed_cases": 1,
+    "not_run_cases": 1,
+    "requests": 7,
+    "input_tokens": 33275,
+    "output_tokens": 1013,
+    "new_estimated_cost_cny": "0.149308",
+    "known_period_estimate_cny": "0.149376",
+    "unresolved": 0,
+    "reserved_cny": "0",
+    "guard_unchanged": true,
+    "raw_responses_exported": false,
+    "credentials_exported": false,
+    "approval_items": 0
+  },
+  "root_cause": {
+    "patch_calls_without_mode": 3,
+    "sha_correct_in_all_proposals": true,
+    "exact_content_matches": [
+      true,
+      true,
+      false
+    ],
+    "mode_only_offline_decode_passed": 3,
+    "effects_executed_by_counterfactual": 0
+  },
+  "quality_trials_counted": 0,
+  "task_pack_grader_unchanged": true,
+  "commercial_release": false,
+  "diagrams_visually_reviewed": true,
+  "pipeline": {
+    "sdist_failure_preserved": true,
+    "physical_tar_records": 4118,
+    "original_limit": 4096,
+    "scanner_limits_changed": false,
+    "formal_channel": "wheel_only",
+    "all_tracked_source_scan_preserved": true,
+    "old_ci_run": 36490452432,
+    "old_ci_secret_scan_failure_verified_from_raw_log": true
+  },
+  "current_final_candidate_all_platform_ci_passed": false,
+  "windows11_passed": false,
+  "independent_beta_passed": false,
+  "final_checks": {
+    "governance": true,
+    "readability": true,
+    "specs": true,
+    "format": true,
+    "lint": true,
+    "documentation_render": true,
+    "relative_links": true,
+    "source_and_actual_wheel_secret_scan": true,
+    "independent_manifest_junit_cost_audit": true
+  }
+}
