@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 379,
-    "physical_lines": 81735,
-    "logical_lines": 72391,
-    "documented_modules": 379,
-    "classes": 873,
-    "documented_classes": 360,
-    "functions": 3301,
-    "documented_functions": 562,
+    "source_files": 382,
+    "physical_lines": 82345,
+    "logical_lines": 72908,
+    "documented_modules": 382,
+    "classes": 876,
+    "documented_classes": 362,
+    "functions": 3329,
+    "documented_functions": 585,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -706,10 +706,10 @@
       "path": "src/harnessix/delivery/planner.py",
       "qualname": "prepare_workspace_transaction",
       "kind": "function",
-      "line": 49,
-      "lines": 86,
+      "line": 50,
+      "lines": 78,
       "documented": false,
-      "decision_complexity": 26
+      "decision_complexity": 22
     },
     {
       "id": "harnessix.delivery.store:SQLiteWorkspaceTransactionStore",

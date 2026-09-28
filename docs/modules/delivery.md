@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 7519a8e69887ad32532bd45845597fd861445193
+version: 12
+code_revision: 01fa983ffcdcaf45f7604487a4852b3844a11dee
 owners:
   - core
 modules:
@@ -33,12 +33,12 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/delivery`](../../src/harnessix/delivery/) |
-| 当前职责 | 把多文件目标冻结为Workspace Transaction；私有保存before/after Blob；生成完整Diff；在POSIX普通目录中可恢复发布；在受管Git Worktree中生成Checkpoint和确定性Commit；把Push作为直接Trusted Action执行并对账 |
-| 非职责 | 不生成模型修改意图，不提供编辑器/TUI，不执行任意Shell，不实现Windows普通目录写端口，不自动Push/建PR，不管理公网凭据，不提供多租户远端服务或跨Store原子事务 |
-| 上游调用者 | 默认POSIX `agent-server`通过Trusted Workspace Patch消费文件Delivery；Git、Push及其他宿主仍为显式装配 |
+| 当前职责 | 把多文件目标冻结为Workspace Transaction；私有保存before/after Blob；生成完整Diff；共享状态机下分别提供POSIX与本地NTFS文件成员端口；在受管Git Worktree中生成Checkpoint和确定性Commit；把Push作为直接Trusted Action执行并对账 |
+| 非职责 | 不生成模型修改意图，不提供编辑器/TUI，不执行任意Shell，不迁移Windows特殊流或自定义安全元数据，不自动Push/建PR，不管理公网凭据，不提供多租户远端服务或跨Store原子事务 |
+| 上游调用者 | 默认`agent-server`在本机安全端口探测成立时通过Trusted Workspace Patch消费文件Delivery；Git、Push及其他宿主仍为显式装配 |
 | 下游依赖 | Workspace Snapshot/Lease、`tools.workspace.Workspace`、SQLite、宿主文件系统、固定Git可执行文件、Trusted Actions与Execution Plan |
 | 持久化 | Workspace Transaction DB与Blob目录、Git Delivery DB、Workspace Lease DB；Push使用Execution Plan与Action Audit，远端Ref作为效果对账权威 |
-| 平台 | Planner支持POSIX/Windows观察；普通Workspace发布仅POSIX；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
+| 平台 | POSIX与Windows本地固定NTFS普通文件发布共用FSM；Windows原生候选需独立执行证据，不等于R4完整产品支持；Git Worktree/Commit目标支持macOS/Linux/Windows；Push合同跨平台，当前真实验收使用本地bare remote |
 | 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
 | 当前完成度 | 核心库、恢复测试及默认POSIX Workspace Patch写链已实现；Git Push已直接接入Trusted Action Router，并通过本地bare remote、响应丢失、硬崩溃只对账及七任务CI；公网认证、清理、完整可观测性及若干竞态边界仍未闭环 |
 
@@ -105,7 +105,7 @@ Delivery把交付拆成四个可独立证明的层次：
 - 不阻止所有外部编辑器或同UID恶意进程；
 - 不把内容Hash、Snapshot或Lease描述为备份；
 - 不在普通文件系统上实现原子“比较旧inode后替换”原语；
-- 不在Windows普通目录中执行直接发布；
+- 不在Windows共享卷、非NTFS卷及特殊元数据文件上执行直接发布；
 - 不复用仓库Hook、Filter、LFS、Submodule或Sparse Checkout；
 - 不修改来源HEAD、来源Index或已有Branch；
 - 不清理受管Worktree、不可达Git对象、临时失败目录或未引用Blob；
@@ -139,7 +139,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | 私有Blob和事务账本 | 已实现 | `SQLiteWorkspaceTransactionStore` | 重开、幂等、篡改和版本测试 |
 | 完整Diff | 已实现 | `build_workspace_diff` | 文本、二进制、模式和重命名测试 |
 | POSIX普通目录发布 | 已实现/显式装配 | `WorkspaceTransactionRuntime.publish` | 创建、修改、删除、崩溃和Lease测试 |
-| Windows普通目录发布 | 未实现 | 明确失败`delivery_platform_unsupported` | 不得宣称原生可写 |
+| Windows本地NTFS普通文件发布 | 原生端口实现候选 | 同一`WorkspaceTransactionRuntime`选择`windows_filesystem` | 原生创建/替换/删除、硬退出、权限和Root身份验证；不以macOS跳过证明支持 |
 | Rollback新事务 | 已实现 | `build_rollback` | 正常恢复测试；并发第三内容语义未覆盖 |
 | Git Repository Binding | 已实现 | `bind_repository` | 干净状态与危险配置测试 |
 | Managed Worktree | 已实现 | `plan_worktree/create_worktree/reconcile_worktree` | 注册崩溃恢复测试 |
@@ -147,7 +147,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | 确定性Commit | 已实现 | `plan_commit/commit/reconcile_commit` | 对象写入/Ref更新硬退出测试 |
 | 单Ref Git Push | 已实现/显式装配 | Trusted Action Router → GitPushActionExecutor | 本地bare remote审批、响应丢失、硬崩溃重开和UNKNOWN只对账测试 |
 | 公网Git认证 | 未实现 | Runner不继承完整宿主凭据环境 | 无真实GitHub/GitLab证据 |
-| 产品CLI/TUI写链 | POSIX Workspace Patch已装配 | 完整Review后批准，Windows省略 | Process与启动恢复由0.9.1e4～e5实现 |
+| 产品CLI/TUI写链 | POSIX及Windows本地NTFS候选装配 | 同一Catalog/Review/Approval，不支持的卷省略 | 完整Windows编码、Git及发行仍由R4关闭 |
 | Worktree/Blob GC | 未实现 | 无 | 长期运行容量风险 |
 | Telemetry | 未实现 | 仅账本事实 | 无统一Metric/Trace |
 
@@ -162,7 +162,7 @@ flowchart LR
     Planner --> Plan[Transaction Plan]
     Planner --> Blobs[(Private Blob CAS)]
     Plan --> Approval[宿主Approval边界]
-    Approval --> FS[POSIX Publish Runtime]
+    Approval --> FS[共享Publish FSM与原生成员端口]
     Approval --> Git[Managed Git Delivery]
     Lease[(Workspace Lease)] --> FS
     Lease --> Git
@@ -294,7 +294,11 @@ sequenceDiagram
 
 Planner返回的`PreparedWorkspaceTransaction.blobs`仍位于内存；只有`store.save`成功后才具有持久恢复基础。
 本地批准机制不属于Delivery Store，调用方必须先将Plan/Diff送入正式审批系统，再把相同Fingerprint传给
-Runtime。默认POSIX产品已用Workspace Patch完成文件事务的这条装配；Git交付仍未进入默认产品。
+Runtime。默认产品通过同一Workspace Patch装配POSIX端口与Windows本地NTFS候选；Git交付仍未进入默认产品。
+
+Windows成员端口、Win32 ABI、数据流、类/接口、元数据边界、失败与恢复时序及源码/测试映射统一见
+[R4专项详细设计](../changes/m09-r4-windows-native-file-transactions.md)。
+该端口不增加第二FSM或Store；Windows模式仅逻辑0644，创建不覆盖，替换需权限一致，恢复只观察。
 
 ## 9. Workspace文件与Mutation合同
 
@@ -491,7 +495,7 @@ stateDiagram-v2
 `WorkspaceTransactionRuntime.publish`的入口顺序为：
 
 1. 加载Transaction并比较Approval Fingerprint；
-2. 要求Plan平台和宿主都是POSIX；
+2. 本节描述POSIX端口，要求Plan平台和宿主一致；Windows原生成员实现见R4专项设计；
 3. 已发布直接返回，风险终态拒绝；
 4. 校验Lease Workspace ID并调用`assert_current`；
 5. `prepared`时完整验证Snapshot，再进入`publishing`；

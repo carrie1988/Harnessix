@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
-status: current
-version: 135
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+status: reviewing
+version: 136
+code_revision: pending
 owners:
   - core
 modules:
@@ -77,6 +77,11 @@ supersedes: []
 以R1～R6为执行队列。远端MCP/OAuth、公网Push、全模型/计价矩阵、通用维护平台和自动更新后置；
 已实现功能的安全、原生三平台核心链、真实编码质量、权利和受控Beta不降低。
 本节是当前范围；下表及历史固定验证记录中的更广开放项不自动成为首发前置条件。
+
+功能主线优先处理真实编码质量、核心安全恢复、Windows原生编码和安装升级。
+许可证/权利链等治理工作低优先并行，不阻挡功能研发；必要发行处置仍在正式发布前完成。
+当前R4增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)，
+其中源码、数据结构、原生句柄时序、恢复伪代码及测试位置集中给出；候选实现不等于三平台商用验收。
 
 R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenance-safety.md)：
 原投影Seal先于解析，认证Store拒绝旧式GC/Restore，旧式候选恢复先预检并结算原工作线程。

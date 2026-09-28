@@ -70,6 +70,7 @@ def run_product_preflight(
         platform=platform,
         environment=environment,
         recorder=recorder,
+        workspace=request.workspace,
     )
     inspect_environment(
         workspace=request.workspace,

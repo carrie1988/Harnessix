@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.trusted_action import (
     WORKSPACE_PATCH_TOOL,
@@ -34,10 +37,11 @@ def diagnose_product_actions(
     *,
     platform: PlatformKind,
     secrets: SecretProvider,
+    workspace: Path | None = None,
 ) -> ProductActionCapabilityReport:
     """生成Doctor可公开的同源能力报告；Process探测只读且不创建Lease Store。"""
 
-    evidence: list[ProductActionCapabilityEvidence] = [_diagnose_patch(config, platform)]
+    evidence: list[ProductActionCapabilityEvidence] = [_diagnose_patch(config, platform, workspace)]
     owner_capability = None
     if config.process_profiles:
         try:
@@ -98,12 +102,14 @@ def diagnose_product_actions(
 def _diagnose_patch(
     config: ProductActionConfigV1,
     platform: PlatformKind,
+    workspace: Path | None,
 ) -> ProductActionCapabilityEvidence:
     reason = (
         "disabled"
         if not config.workspace_patch_enabled
         else "verified"
-        if platform == "posix" and workspace_patch_supported()
+        if platform == ("windows" if os.name == "nt" else "posix")
+        and workspace_patch_supported(workspace)
         else "platform_not_supported"
     )
     if reason != "verified":

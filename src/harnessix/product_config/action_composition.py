@@ -143,7 +143,8 @@ def _workspace_patch_component(
         "disabled"
         if not config.workspace_patch_enabled
         else "verified"
-        if environment.platform == "posix" and workspace_patch_supported()
+        if environment.platform == ("windows" if os.name == "nt" else "posix")
+        and workspace_patch_supported(environment.root)
         else "platform_not_supported"
     )
     if reason != "verified":

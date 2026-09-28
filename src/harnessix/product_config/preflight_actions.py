@@ -36,6 +36,7 @@ def inspect_product_actions(
     platform: PreflightPlatform,
     environment: Mapping[str, str] | None,
     recorder: PreflightRecorder,
+    workspace: Path | None = None,
 ) -> ActionPreflight:
     """安全加载Action配置并生成脱敏能力报告；不创建State Root。"""
 
@@ -52,6 +53,7 @@ def inspect_product_actions(
             snapshot.config,
             platform=platform,
             secrets=environment_secret_provider(product_snapshot.config, environment=environment),
+            workspace=workspace,
         )
     except Exception:
         recorder.record(

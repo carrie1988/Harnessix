@@ -24,8 +24,6 @@ jobs:
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python scripts/generate_specs.py --check
-      - run: uv run python scripts/license_scan.py --check
-      - run: uv run python scripts/sbom_generate.py --check
       - run: uv run python scripts/secret_scan.py --self-check
       - run: uv build --offline --out-dir dist/secret-gate
         timeout-minutes: 2
@@ -48,6 +46,9 @@ jobs:
       - run: uv run python -m examples.kernel_batch
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
+      # 功能验证先产出结果；发行治理仍为失败关闭门禁，不阻挡前序功能反馈。
+      - run: uv run python scripts/license_scan.py --check
+      - run: uv run python scripts/sbom_generate.py --check
 
   coding-tools-macos:
     runs-on: macos-latest
@@ -96,6 +97,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
+      - name: 验证原生NTFS文件事务与审批编码写链
+        run: >-
+          uv run pytest tests/delivery/test_windows_filesystem.py
+          tests/delivery/test_windows_io_contracts.py
+          tests/delivery/test_trusted_action_patch.py
+          tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
+        timeout-minutes: 3
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"

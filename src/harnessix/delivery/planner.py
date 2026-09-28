@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 from collections.abc import Mapping
@@ -59,15 +60,7 @@ def prepare_workspace_transaction(
     checked_now = now or datetime.now(UTC)
     if checked_now.tzinfo is None or not 1 <= len(request_id) <= 128 or not desired:
         raise KernelError("delivery_plan_invalid", "Workspace事务规划参数无效")
-    normalized: dict[str, DesiredWorkspaceFile] = {}
-    comparison: set[str] = set()
-    for supplied, target in desired.items():
-        path = normalize_workspace_path(supplied, selected_platform)
-        key = path_comparison_key(path, selected_platform)
-        if path == "." or key in comparison or _protected(path):
-            raise KernelError("delivery_path_denied", "Workspace事务路径不允许写入")
-        comparison.add(key)
-        normalized[path] = target
+    normalized = _normalized_targets(desired, selected_platform)
     resources: dict[tuple[str, str], WorkspaceResourceRequest] = {}
     for path in normalized:
         resources[(path, "write")] = WorkspaceResourceRequest(path=path, access="write")
@@ -134,9 +127,26 @@ def prepare_workspace_transaction(
     return PreparedWorkspaceTransaction(plan=plan, blobs=MappingProxyType(blobs))
 
 
-def _file_version(body: bytes, mode: FileMode | None) -> WorkspaceFileVersion:
-    import hashlib
+def _normalized_targets(
+    desired: Mapping[str, DesiredWorkspaceFile], platform: PlatformKind
+) -> dict[str, DesiredWorkspaceFile]:
+    """冻结平台路径与目标模式，拒绝保护路径、折叠冲突和Windows伪可执行模式。"""
 
+    normalized: dict[str, DesiredWorkspaceFile] = {}
+    comparison: set[str] = set()
+    for supplied, target in desired.items():
+        if platform == "windows" and target.mode == 0o755:
+            raise KernelError("delivery_metadata_unsupported", "Windows事务不模拟POSIX可执行模式")
+        path = normalize_workspace_path(supplied, platform)
+        key = path_comparison_key(path, platform)
+        if path == "." or key in comparison or _protected(path):
+            raise KernelError("delivery_path_denied", "Workspace事务路径不允许写入")
+        comparison.add(key)
+        normalized[path] = target
+    return normalized
+
+
+def _file_version(body: bytes, mode: FileMode | None) -> WorkspaceFileVersion:
     if (
         type(body) is not bytes
         or len(body) > MAX_TRANSACTION_FILE_BYTES
@@ -176,12 +186,19 @@ def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes
         except OSError:
             raise KernelError("delivery_source_changed", "Workspace事务来源读取失败") from None
     if platform == "windows" and os.name == "nt":
+        from harnessix.delivery.windows_filesystem import observe_windows_file
         from harnessix.workspace.windows import WindowsWorkspaceRoot
 
+        # 写计划先验证原生文件元数据边界，不能把只读或带ADS的文件当作普通0644文件。
+        version = observe_windows_file(root, path)
         native = WindowsWorkspaceRoot(root)
         try:
             observed = native.observe(path, access="write")
-            if observed.kind != "file" or observed.content is None:
+            if (
+                observed.kind != "file"
+                or observed.content is None
+                or version.sha256 != hashlib.sha256(observed.content).hexdigest()
+            ):
                 raise KernelError("delivery_source_changed", "Windows事务来源不再是普通文件")
             return observed.content, 0o644
         finally:

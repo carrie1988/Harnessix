@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners: [core]
 modules: [product, documentation]
@@ -159,7 +159,7 @@ flowchart TD
     R1 --> R3[R3 正式编码与Provider验证]
     Study --> R3
     R1 --> R4[R4 三平台发行验证]
-    R2 --> R4
+    R2 -. 正式发行前锁定安装输入 .-> R4
     R3 --> R5[R5 小批真实Beta]
     R4 --> R5
     R5 --> R6[R6 候选封板与1.0发布]
@@ -167,7 +167,9 @@ flowchart TD
     R6 --> Later[1.1后按真实需求扩展]
 ```
 
-先做R1已确认高风险缺口和R3失败归因，R2并行；不再先建设远端扩展，再等待真实编码质量。
+R1高风险缺口、R3真实编码质量和R4原生编码/安装升级是功能主线。
+许可证、权利链与不直接影响能力的治理工作低优先并行，不能成为功能开发或内部验证的串行前置；
+R2必要处置仍在正式发行前完成。治理工作复用现有实现，不建设额外平台。
 
 ## 6. 接口设计、领域契约、数据结构与源码映射
 

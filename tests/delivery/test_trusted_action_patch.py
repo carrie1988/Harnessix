@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import os
 import sqlite3
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -220,15 +219,14 @@ def test_workspace_patch_public_schemas_match_runtime_contracts() -> None:
     )
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全写端口只在POSIX广告")
 async def test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "workspace"
     (root / "src").mkdir(parents=True)
     (root / "tests").mkdir()
-    (root / "src/modified.py").write_text("old\n", encoding="utf-8")
-    (root / "tests/deleted.txt").write_text("remove\n", encoding="utf-8")
+    (root / "src/modified.py").write_bytes(b"old\n")
+    (root / "tests/deleted.txt").write_bytes(b"remove\n")
     proposal = _proposal()
     sessions = SQLiteSessionStore(tmp_path / "sessions.db")
     confirmation_lost = False
@@ -355,13 +353,12 @@ async def test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_c
     audit.close()
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全写端口只在POSIX广告")
 async def test_review_committed_before_session_approval_is_not_readable(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "workspace"
     root.mkdir()
-    (root / "app.py").write_text("old\n", encoding="utf-8")
+    (root / "app.py").write_bytes(b"old\n")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(
@@ -439,7 +436,7 @@ async def test_review_committed_before_session_approval_is_not_readable(
     audit.close()
 
 
-def test_windows_or_disabled_patch_is_omitted_without_router_binding(tmp_path: Path) -> None:
+def test_disabled_patch_is_omitted_without_router_binding(tmp_path: Path) -> None:
     root = tmp_path / "workspace"
     root.mkdir()
     sessions = SQLiteSessionStore(tmp_path / "sessions.db")
@@ -475,7 +472,6 @@ def test_windows_or_disabled_patch_is_omitted_without_router_binding(tmp_path: P
     audit.close()
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全写端口只在POSIX广告")
 async def test_workspace_lease_contention_never_starts_effect_and_reconciles_failed(
     tmp_path: Path,
 ) -> None:
@@ -513,7 +509,6 @@ async def test_workspace_lease_contention_never_starts_effect_and_reconciles_fai
     audit.close()
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全写端口只在POSIX广告")
 async def test_cancel_between_members_keeps_prefix_and_reconcile_never_replays(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -575,14 +570,13 @@ async def test_cancel_between_members_keeps_prefix_and_reconcile_never_replays(
     audit.close()
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全写端口只在POSIX广告")
 async def test_post_approval_source_drift_fails_before_router_claim_or_effect(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "workspace"
     root.mkdir()
     target = root / "target.txt"
-    target.write_text("before\n", encoding="utf-8")
+    target.write_bytes(b"before\n")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(

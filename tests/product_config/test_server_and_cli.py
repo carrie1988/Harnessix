@@ -18,6 +18,7 @@ from harnessix.agent.models import ToolResultContent
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
+from harnessix.delivery.trusted_action import workspace_patch_supported
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -258,7 +259,7 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
         for item in instructions["fragments"]
     )
     tool_names = {tool.name for tool in bundle.requests[0].tools}
-    if os.name == "posix":
+    if workspace_patch_supported(workspace):
         assert "apply_patch_batch" in tool_names
     else:
         assert "apply_patch_batch" not in tool_names
@@ -356,7 +357,6 @@ async def test_product_server_catalog_includes_only_verified_process_profile(
     assert (state / "process-owner/process-leases.db").is_file()
 
 
-@pytest.mark.skipif(os.name != "posix", reason="安全Workspace写端口只在POSIX广告")
 @pytest.mark.parametrize("source_drift", [False, True])
 async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
     tmp_path: Path,

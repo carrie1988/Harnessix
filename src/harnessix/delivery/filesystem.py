@@ -22,7 +22,7 @@ from harnessix.delivery.contracts import (
 )
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.tools.workspace import Workspace, identity, revision_state
-from harnessix.workspace.contracts import WorkspaceLease
+from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from harnessix.workspace.snapshot import verify_workspace_snapshot
 
@@ -45,7 +45,7 @@ def _fault(_: str) -> None:
 
 
 class WorkspaceTransactionRuntime:
-    """POSIX普通Workspace的可恢复多文件发布端口。"""
+    """共享可恢复发布状态机；文件成员由POSIX或本地NTFS原生端口提交。"""
 
     def __init__(
         self,
@@ -97,7 +97,7 @@ class WorkspaceTransactionRuntime:
         record = self._store.load(transaction_id)
         if record.state in {"published", "diverged", "unknown"}:
             return record
-        facts = tuple(_observe(Path(root), item.path) for item in record.plan.mutations)
+        facts = _observe_members(record, Path(root))
         after = tuple(
             index
             for index, (fact, item) in enumerate(zip(facts, record.plan.mutations, strict=True))
@@ -217,7 +217,13 @@ def _parent(workspace: Workspace, path: str) -> Iterator[tuple[int, str]]:
                 raise KernelError("delivery_source_changed", "Workspace事务父目录已经变化")
 
 
-def _observe(root: Path, path: str) -> WorkspaceFileVersion:
+def _observe(
+    root: Path, path: str, *, source: WorkspaceSnapshot | None = None
+) -> WorkspaceFileVersion:
+    if os.name == "nt":
+        from harnessix.delivery.windows_filesystem import observe_windows_file
+
+        return observe_windows_file(root, path, source=source)
     try:
         with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
             with _parent(workspace, path) as (parent, name):
@@ -226,6 +232,17 @@ def _observe(root: Path, path: str) -> WorkspaceFileVersion:
         raise
     except (OSError, ValueError):
         raise KernelError("delivery_observation_failed", "Workspace事务文件观察失败") from None
+
+
+def _observe_members(
+    record: WorkspaceTransactionRecord, root: Path
+) -> tuple[WorkspaceFileVersion, ...]:
+    """只观察原平台的全部成员；Windows逐成员绑定原Root，不执行恢复写入。"""
+
+    _assert_platform(record.plan.source)
+    return tuple(
+        _observe(root, item.path, source=record.plan.source) for item in record.plan.mutations
+    )
 
 
 def _observe_at(parent: int, name: str) -> WorkspaceFileVersion:
@@ -276,6 +293,19 @@ def _apply(
     index: int,
     mutation: WorkspaceMutation,
 ) -> None:
+    if os.name == "nt":
+        from harnessix.delivery.windows_filesystem import apply_windows_mutation
+
+        apply_windows_mutation(
+            store,
+            root,
+            transaction_id,
+            index,
+            mutation,
+            source=store.load(transaction_id).plan.source,
+            checkpoint=_fault,
+        )
+        return
     with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
         with _parent(workspace, mutation.path) as (parent, name):
             if _observe_at(parent, name) != mutation.before:
@@ -349,7 +379,7 @@ def _publish_next(
     index = record.cursor
     mutation = record.plan.mutations[index]
     runtime._assert_lease(record, lease)
-    current = _observe(Path(root), mutation.path)
+    current = _observe(Path(root), mutation.path, source=record.plan.source)
     if current == mutation.after:
         record = runtime._advance(record, "publishing", index + 1)
     elif current != mutation.before:
@@ -367,7 +397,7 @@ def _publish_next(
             if reconciled.state == "published":
                 return reconciled
             raise
-        if _observe(Path(root), mutation.path) != mutation.after:
+        if _observe(Path(root), mutation.path, source=record.plan.source) != mutation.after:
             unknown = runtime._advance(
                 record, "unknown", index, error_code="delivery_effect_unknown"
             )
@@ -395,10 +425,7 @@ def _prepare_publication(
     record = runtime._store.load(transaction_id)
     if approval_fingerprint != record.plan.fingerprint:
         raise KernelError("delivery_approval_mismatch", "Workspace事务批准指纹不匹配")
-    if record.plan.source.platform != "posix" or os.name != "posix":
-        raise KernelError(
-            "delivery_platform_unsupported", "普通Workspace事务当前只支持POSIX安全写端口"
-        )
+    _assert_platform(record.plan.source)
     if record.state == "published":
         return record
     if record.state in {"diverged", "unknown"}:
@@ -417,3 +444,13 @@ def _prepare_publication(
     if record.cursor == len(record.plan.mutations):
         return runtime._advance(record, "published", record.cursor)
     return record
+
+
+def _assert_platform(source: WorkspaceSnapshot) -> None:
+    """跨宿主历史不能落入另一平台的观察/执行端口，也不能据此追认效果。"""
+
+    native_platform = "windows" if os.name == "nt" else "posix"
+    if os.name not in {"posix", "nt"} or source.platform != native_platform:
+        raise KernelError(
+            "delivery_platform_unsupported", "Workspace事务来源平台与本机安全写端口不一致"
+        )

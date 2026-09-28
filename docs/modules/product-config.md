@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 28
+code_revision: 01fa983ffcdcaf45f7604487a4852b3844a11dee
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | 下游依赖 | Model Provider、Secret Provider、Session、Artifact、Coding Tool Runtime、Trusted Action、App Server、SQLite和安全文件读取 |
 | 正式输入 | 最大256 KiB的严格UTF-8 Product Config v2；Product Config v1只允许显式迁移；独立Product Action Config v1可显式加载 |
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链、Action恢复扫描及启动恢复报告 |
-| 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX只读端口并可安装Workspace Patch，Windows使用原生Handle只读端口并省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
+| 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX安全端口；Windows使用原生Handle读取及本地NTFS Patch候选，其他卷省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
 | 代码版本 | `8340ff1cbc6375ad4064b8be6bd4c7bd708c559d` |
 | 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复已由CI 35691402329六实例验收关闭 |
@@ -150,7 +150,7 @@ Product Config以一个独立控制面回答这些问题。它不接管Model Ada
 - 不把Hash链声明为抵御同用户恶意进程的密码学签名日志；
 - 不提供任意配置编辑器、配置热加载、集中式配置服务或多租户控制面；Configure只生成单Provider/单Profile安全起始配置；
 - 不默认装配任意Shell、Commit、Push、远端MCP或公网Git认证；
-- 不在Windows广告Git读取、普通Workspace写入或Delivery能力；固定Container Process只有能力证明成立才广告。
+- Windows Git读取仍未广告；Workspace Patch只在本地固定NTFS及原生端口检查成立时广告，详见[R4原生文件事务设计](../changes/m09-r4-windows-native-file-transactions.md)。固定Container Process只有能力证明成立才广告。
 
 ### 3.3 关键术语
 

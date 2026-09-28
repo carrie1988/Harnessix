@@ -80,7 +80,20 @@ def workspace_patch_descriptor() -> ToolDescriptor:
 
 
 def workspace_patch_executor_evidence() -> str:
-    """绑定当前POSIX执行、成员级取消和只观察恢复语义。"""
+    """绑定当前原生执行端口、成员级取消和只观察恢复语义。"""
+
+    if os.name == "nt":
+        return canonical_digest(
+            {
+                "implementation": "workspace-transaction-runtime/windows-ntfs-v1",
+                "action": WORKSPACE_PATCH_VERSION,
+                "platform": "windows",
+                "file_mode": "logical-0644",
+                "metadata": "ordinary-stream-default-security",
+                "member_checkpoint": True,
+                "reconcile_writes": False,
+            }
+        )
 
     return canonical_digest(
         {
@@ -330,6 +343,8 @@ def _normalized_files(
     normalized: list[tuple[str, WorkspacePatchFile]] = []
     keys: set[str] = set()
     for item in proposal.files:
+        if platform == "windows" and item.mode == 0o755:
+            raise KernelError("delivery_metadata_unsupported", "Windows事务不模拟POSIX可执行模式")
         path = normalize_workspace_path(item.path, platform)
         key = path_comparison_key(path, platform)
         if path == "." or key in keys or _protected(path):
@@ -452,8 +467,13 @@ def _protected(path: str) -> bool:
     )
 
 
-def workspace_patch_supported() -> bool:
-    """只有具备no-follow目录句柄语义的本机POSIX端口可以被广告。"""
+def workspace_patch_supported(root: Path | None = None) -> bool:
+    """广告本机安全端口；Windows还必须只读验证当前Workspace位于本地NTFS。"""
+
+    if os.name == "nt":
+        from harnessix.delivery.windows_filesystem import windows_workspace_transaction_supported
+
+        return root is not None and windows_workspace_transaction_supported(root)
 
     return os.name == "posix" and all(
         hasattr(os, name) for name in ("O_DIRECTORY", "O_NOFOLLOW", "O_CLOEXEC")
