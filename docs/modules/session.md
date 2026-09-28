@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 12
+code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
+  - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -27,6 +28,7 @@ related_tests:
   - tests/context/test_thread_lifecycle.py
   - tests/governance/test_product_runtime_convergence.py
   - tests/agent/test_store_maintenance.py
+  - tests/agent/test_store_maintenance_boundary.py
 supersedes: []
 ---
 
@@ -36,11 +38,11 @@ supersedes: []
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移/WAL，以及共库容量、Plan-first保留和备份恢复 |
+| 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移/WAL，以及认证共库容量；旧式库保留有限Plan-first和候选恢复 |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
+| 代码版本 | `7568eee82f78cb936717068f121ff32a4058b3be`；R1维护变更源码及回归定位见[详设](../changes/m09-r1-store-maintenance-safety.md) |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～27连续且校验和不可变 |
+| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～30连续且校验和不可变；认证状态不可降级为无Key旧式维护 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -503,7 +505,7 @@ rebuild(thread):
 | 损坏与I/O | Event/Snapshot/索引损坏、只读、磁盘满、错误脱敏 | `test_storage_failures.py` |
 | 生命周期 | Resume、Archive、Fork截止点、嵌套Fork和Artifact Owner | `test_thread_lifecycle.py` |
 | Runtime集成 | 接受后崩溃、审批/Process/Patch恢复 | Agent各崩溃测试 |
-| Store维护 | 低敏容量、Plan篡改、accepted保护、Backup故障、批次恢复、候选漂移和Restore | `test_store_maintenance.py` |
+| Store维护 | 认证容量、旧式拒绝、低敏容量、Plan篡改、Backup故障、候选验证、WAL静默、取消结算和Restore | `test_store_maintenance.py`、`test_store_maintenance_boundary.py` |
 
 验收命令至少包含上述合同和故障测试；新增`SessionStore`实现必须继承合同套件，并补充该数据库特有的
 事务、迁移、锁和真实故障测试。仅通过内存Fake不构成生产存储验收。
@@ -516,7 +518,7 @@ rebuild(thread):
 | Windows默认产品未验收 | Session宿主锁可跨平台不等于Windows Coding Tool链完整可用 | 0.9.1/0.9.5 |
 | 无字段级加密 | 本地文件泄漏会暴露会话和源码 | 0.9.4安全审查及OS存储策略 |
 | 内部离线保留已实现，但无用户导出、安全删除和自动Vacuum | 逻辑正文/终态可回收，物理空间和用户生命周期仍不完整 | 0.9.3d/0.9.5/1.0门禁 |
-| 有Plan绑定备份与内部Restore，但无产品维护命令 | 宿主可恢复；最终用户仍缺确认、空间Preflight和诊断UX | 0.9.5 |
+| 旧式Plan/Restore没有独立认证，认证Store固定拒绝 | 不以内部单库端口冒充完整产品/Key恢复；基本一致备份仍缺 | R1/R4；通用维护CLI延期1.1+ |
 | Migration无Downgrade | 版本回滚需兼容旧Schema的旧Reader或备份恢复 | 发布升级设计 |
 | Snapshot读取不自动重建 | 可用性让位于明确损坏诊断 | 运维命令应显式执行并留证据 |
 
@@ -578,6 +580,9 @@ Session中唯一终态Tool Result反向引用同一Artifact和Route效果摘要�
 [`SQLiteStoreMaintenance`](../../src/harnessix/session/maintenance.py)在Session包内组合三类共库事实：Session Event/Thread、
 Protocol Request和Artifact。它不扩展`SessionStore`业务端口，也不被Agent Runtime在Turn热路径自动调用。宿主必须先排空同进程
 业务操作并持有`runtime_owner()`；Snapshot只读例外。
+认证Store的Snapshot先校验原Store及投影Seal再解析；Plan、Load/Progress、Execute和Restore固定返回
+`maintenance_authenticated_unavailable`，不能用无KeyAdapter绕过认证库身份。
+本节的Plan-first状态机只适用于未绑定认证的旧式Store，不是默认产品的清理或完整状态/Key恢复能力。
 
 ```mermaid
 stateDiagram-v2
@@ -629,10 +634,14 @@ execute(plan_id, backup):
     return after capacity
 
 restore(backup):
-    verify application id, quick_check and sha256
-    checkpoint current WAL
-    copy backup to same-directory temporary file and fsync
-    atomically replace database and remove stale WAL/SHM
+    reject authenticated Store or authenticated Backup downgrade
+    owned single worker with original deadline and cancellation signal
+    verify bounded application id, quick_check and sha256
+    copy to exclusive temporary file; verify copied digest and fsync
+    initialize/migrate and validate candidate Session and capacity
+    recheck original Owner; require current WAL quiet
+    check cancellation/deadline; atomically replace once
+    finally clean only owned staging files after original worker settles
     initialize and rescan capacity
 ```
 
@@ -640,11 +649,14 @@ restore(backup):
 [0.9.3b详细设计](../changes/m09-3b-persistent-capacity-and-retention.md)与
 [ADR 0090](../adr/0090-plan-first-store-maintenance-and-backup.md)。逻辑删除不保证文件缩小；自动Checkpoint/Vacuum仍不属于本模块
 当前热路径。
+候选预检、大小/期限、重复父取消、真实WAL读者及发布确认丢失的完整流程见
+[R1维护安全详设](../changes/m09-r1-store-maintenance-safety.md)。它不关闭认证产品完整备份和三平台恢复门禁。
 
 ## 25. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | R1维护变更 | 2026-09-28 | 认证容量先验原Seal；认证Store拒绝旧式维护；候选预检、有界IO、取消结算和恢复故障回归 |
 | 9 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 增加Migration 27归档表达式索引、Thread有界分页和全库单事务恢复扫描；保留非活跃损坏启动失败语义 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26、三类共库容量、不可变Plan、保守禁删、批次崩溃恢复及Plan绑定备份/Restore |
 | 5 | `809ed2b1a10f5cb462989a12dddf44f83a9d01ab` | 2026-09-19 | 增加migration25与`action_output`用途，记录Trusted Process终态输出发布、授权与确认丢失边界 |

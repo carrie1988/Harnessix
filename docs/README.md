@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 130
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 131
+code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
 owners:
   - core
 modules:
@@ -76,6 +76,10 @@ supersedes: []
 以R1～R6为执行队列。远端MCP/OAuth、公网Push、全模型/计价矩阵、通用维护平台和自动更新后置；
 已实现功能的安全、原生三平台核心链、真实编码质量、权利和受控Beta不降低。
 本节是当前范围；下表及历史固定验证记录中的更广开放项不自动成为首发前置条件。
+
+R1已补[认证容量与旧式维护安全边界](changes/m09-r1-store-maintenance-safety.md)：
+原投影Seal先于解析，认证Store拒绝旧式GC/Restore，旧式候选恢复先预检并结算原工作线程。
+完整认证产品备份/Key、三平台恢复及其他R1门禁仍未关闭。
 
 ## 2. 推荐阅读路径
 

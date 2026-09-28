@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 107
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 108
+code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
 owners:
   - core
 modules:
@@ -488,6 +488,10 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 [认证SQLite](changes/m09-4a-authenticated-sqlite-session.md)、[Artifact原正文认证](changes/m09-4a-authenticated-artifact-body.md)、
 [安全/供应链详设](changes/m09-4-security-and-supply-chain.md)。既有固定验证目录不修改。
 安全阶段仅在R1/R2必要门禁通过后关闭；延期能力不能标记为实现完成。
+
+[R1维护安全](changes/m09-r1-store-maintenance-safety.md)补认证容量原证明、认证Store旧式维护拒绝、
+候选恢复预检、有界工作线程及取消/确认丢失回归。认证产品完整状态与Key备份、实际三平台恢复仍开放；
+该有限整改不标记R1或0.9.4完成，不恢复已延期的通用维护平台。
 
 ### 六个剩余发布工作包
 

@@ -30,6 +30,9 @@ Harnessix Code的目标是独立实现面向真实软件工程任务的生产级
 三平台原生核心编码、安全/恢复、许可证、真实质量和Beta仍是必要条件。延期不等于功能已完成或已从实现删除。
 详见[范围收敛与逐项处置](docs/changes/m09-to-v1-release-scope-convergence.md)及[路线图](docs/roadmap.md)。
 
+R1已增加[认证容量与旧式维护安全边界](docs/changes/m09-r1-store-maintenance-safety.md)；
+完整产品状态/Key备份、真实编码质量、权利及正式发行门禁仍未关闭。
+
 ## 项目边界
 
 Harnessix Code 自研 Coding Agent 的关键运行语义：

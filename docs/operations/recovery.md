@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: 9e593b739afd63a24a10825f23b9820a4ab7c966
+version: 9
+code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
 owners:
   - core
 modules:
@@ -33,6 +33,7 @@ related_tests:
   - tests/product_config/test_action_config_runtime.py
   - tests/product_config/test_action_runtime.py
   - tests/agent/test_store_maintenance.py
+  - tests/agent/test_store_maintenance_boundary.py
   - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
@@ -67,7 +68,17 @@ supersedes: []
 | Git Push响应丢失 | 远端ref可能已更新 | 使用固定ref和lease查询，禁止直接再Push |
 | 配置激活冲突 | 活动配置CAS不匹配 | 关闭新Runtime，重新读取活动指针后决策 |
 | SQLite损坏/迁移失败 | 初始化错误 | 停止服务，从一致备份恢复，不跳过检查 |
-| Store Maintenance中断 | Plan、Backup摘要和`next_ordinal`已持久化 | 使用同一Plan与Backup续跑；不重新选择候选 |
+| 旧式Store Maintenance中断 | 未绑定认证Store的Plan、Backup摘要和`next_ordinal`已持久化 | 静默Owner下使用同一Plan与Backup；认证Store拒绝旧式Plan/恢复，不补签授权 |
+
+### 2.1 旧式单库恢复与认证产品备份边界
+
+旧式单库Restore先在目标目录自有候选副本执行Migration、Session事实及容量验证，随后核对原Owner及WAL静默才发布。
+父取消必须等待原工作线程停止并清理候选；错误Key、坏备份、Schema漂移或活跃WAL读者拒绝时不能先替换当前库。
+发布确认丢失只读持久事实，不自动执行第二次Restore。详见[R1维护安全设计](../changes/m09-r1-store-maintenance-safety.md)。
+
+默认认证产品不使用该旧式入口。其恢复单元必须包含完整受管状态、相应私有Blob及原独立Key；
+仅复制`sessions.db`不能证明备份一致，也不能覆盖当前状态后再补Key。
+完整停机备份、候选到1.0升级及实际三平台恢复仍属于R1/R4未关闭项，通用维护CLI继续延期。
 
 ## 3. 恢复决策流程
 
