@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: b5a4b8adc388a0deb88ffb740c8e10375b7bc63a
+version: 4
+code_revision: 4b643f13fc54ae70050a9507ec29bf884ac9eda4
 owners: [core]
 modules: [tools, processes, workspace, context, product_config]
 related_adrs:
@@ -313,6 +313,25 @@ Windows焦点CI先运行本切片，不等待许可证检查或全量回归完�
 
 后继修复仍须通过新的原生用例和共享模块回归；旧失败不能被更新后的文档或新日志覆盖。
 
+### 8.3 修复后的原生反馈与开放功能阻塞
+
+修复提交`4b643f1`的[Windows Job](https://github.com/carrie1988/Harnessix/actions/runs/36428177892/job/108947255043)
+完成59项NTFS焦点测试；Git/Owner焦点为34项通过、5项跳过、1项失败，耗时26.83秒。
+冷Receipt下Owner独立退出、三类退出码各四次原生快速命令、四种超时/取消及Include拒绝均通过。
+这证明已定位退出窗口的修复有效，不等于整个Windows Job成功或R4关闭。
+
+唯一失败位于默认SDK测试的完整备份阶段：正式产品Turn、模型历史/Replay保护及三份私有输出捕获断言已执行，
+随后`backup_product_state`打开源Root时，`PrivateKeySecurity.verify`判定Owner或DACL不满足当前私有合同。
+未获得原Owner SID或完整ACL结构，不将该失败归为数据损坏，也不宣称备份及恢复通过。
+
+源码边界是[`server._private_root`](../../src/harnessix/product_config/server.py)创建Windows Root时未使用原
+`WindowsKeyFiles/PrivateKeySecurity`验权端口，而[`PrivateStateTree`](../../src/harnessix/product_config/state_backup_files.py)
+读取备份来源时按严格私有合同验权。新R1工作必须统一Root、各Store/Artifact/Process输出的实际创建和读取权限，
+在原全状态Owner内完成；不得只对Root修补后跳过子对象检查、放宽验证器、静默改变存量ACL或删除失败用例。
+该实际恢复能力缺口优先于许可证等发行材料处理。
+
+完整固定源码与失败原件见[验证报告](../validation/windows-native-git-read-2026-09-28-v1/README.md)。
+
 ## 9. 安全、部署、兼容与发布边界
 
 Windows宿主显式提供Git for Windows绝对普通EXE。stdio产品沿用现有`--git-executable`，
@@ -373,7 +392,7 @@ Job/Receipt/Lease状态模型、Schema版本、HMAC、CancelToken和POSIX Owner�
 ### 10.3 归属核验的前后顺序
 
 ```mermaid
-flowchart LR
+flowchart TD
   P[CREATE_SUSPENDED目标] --> H[打开原目标Handle]
   H --> A[AssignProcessToJobObject]
   A --> Q[原Handle IsProcessInJob]

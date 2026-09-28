@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant C as Controller
+  participant M as Owner主线程
+  participant R as 控制读线程
+  participant J as 原Job
+  C->>M: 原Start帧
+  M->>R: start成功后移交读FD关闭归属
+  R->>R: 等待控制输入或EOF
+  M->>J: 命令退出后停止原Job
+  M->>M: 输出EOF与签名终态发布
+  M->>J: 关闭Job Handle
+  M->>M: 关闭输出，退出Owner，不抢占控制读FD
+  Note over C,M: Controller不观察终态也不得阻止Owner退出
+  C->>C: 后续仅观察原Receipt，保留原Process ID

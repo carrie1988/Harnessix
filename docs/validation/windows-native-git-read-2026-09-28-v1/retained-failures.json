@@ -1,0 +1,43 @@
+{
+  "source_revision": "4b643f13fc54ae70050a9507ec29bf884ac9eda4",
+  "runs": [
+    {
+      "revision": "1ed97e100bbb978bbfd3c64317a41d53219ee7b5",
+      "run_id": 36425003451,
+      "job_id": 108936671266,
+      "failed": 1,
+      "passed": 6,
+      "skipped": null,
+      "interrupted": true,
+      "seconds": 179.12,
+      "log": "logs/1ed97e1-native-job.log"
+    },
+    {
+      "revision": "b5a4b8adc388a0deb88ffb740c8e10375b7bc63a",
+      "run_id": 36426925995,
+      "job_id": 108943062627,
+      "failed": 3,
+      "passed": 23,
+      "skipped": 5,
+      "interrupted": false,
+      "seconds": 51.47,
+      "log": "logs/b5a4b8a-native-job.log"
+    },
+    {
+      "revision": "4b643f13fc54ae70050a9507ec29bf884ac9eda4",
+      "run_id": 36428177892,
+      "job_id": 108947255043,
+      "failed": 1,
+      "passed": 34,
+      "skipped": 5,
+      "interrupted": false,
+      "seconds": 26.83,
+      "log": "logs/4b643f1-native-job.log"
+    }
+  ],
+  "cancelled_superseded_runs": [
+    36417499774,
+    36420004193
+  ],
+  "cancelled_runs_are_pass_evidence": false
+}

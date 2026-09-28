@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: b5a4b8adc388a0deb88ffb740c8e10375b7bc63a
+version: 23
+code_revision: 4b643f13fc54ae70050a9507ec29bf884ac9eda4
 owners:
   - core
 modules:
@@ -1656,4 +1656,6 @@ Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process
 有界诊断确认Windows主线程关闭阻塞读FD导致Owner不能独立退出；读线程成功启动后持有该FD关闭责任。
 快速命令归属核验前移到恢复挂起目标之前，并使用原已打开Handle，不在恢复后重新按PID判定启动结果。
 共享Lease/Receipt状态及POSIX Owner不变；原生冷Receipt、快速退出码、取消与产品备份仍由实际Windows运行验收。
+`4b643f1`原生焦点34通过、5跳过、1失败，Owner及固定读取回归已通过，完整备份来源Root权限仍失败；
+实际原件与Go/No-Go见[Git与Owner验证报告](../validation/windows-native-git-read-2026-09-28-v1/README.md)。
 详见[Windows Git读取设计](../changes/m09-r4-windows-native-git-read.md)。

@@ -1,0 +1,36 @@
+{
+  "source_revision": "4b643f13fc54ae70050a9507ec29bf884ac9eda4",
+  "result": "partial_functional_validation",
+  "windows_git_tools": [
+    "git_status",
+    "git_diff"
+  ],
+  "execution_runtime": "existing_windows_process_owner_job",
+  "state_topology": [
+    "execution-plans.db",
+    "process-owner/"
+  ],
+  "standalone_service_added": false,
+  "catalog_binding_rechecked": true,
+  "executable_helpers_rejected": [
+    "include.path",
+    "includeIf.*",
+    "filter.*.clean",
+    "filter.*.smudge",
+    "filter.*.process"
+  ],
+  "submodule_queries": false,
+  "configuration_values_captured": false,
+  "owner_control_fd_close_owner": "control_reader_after_successful_thread_start",
+  "job_membership_before_resume": true,
+  "unknown_rejected_on_repeated_startup": true,
+  "maximum_startup_git_reconciliations": 16,
+  "recovery_relaunch": false,
+  "recovery_pid_control": false,
+  "host_guarded_only": true,
+  "atomic_repository_config_cas": false,
+  "os_network_isolation_proven": false,
+  "open_functional_blocker": "Windows默认状态创建权限与完整备份私有Owner/DACL验真合同不一致",
+  "observed_owner_sid": null,
+  "observed_acl": null
+}

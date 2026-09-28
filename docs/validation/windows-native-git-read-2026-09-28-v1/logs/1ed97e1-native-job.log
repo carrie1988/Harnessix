@@ -1,0 +1,379 @@
+﻿2026-09-28T12:55:42.2666366Z Current runner version: '2.337.0'
+2026-09-28T12:55:42.2701656Z ##[group]Runner Image Provisioner
+2026-09-28T12:55:42.2702839Z Hosted Compute Agent
+2026-09-28T12:55:42.2703678Z Version: 20260828.587
+2026-09-28T12:55:42.2704590Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-28T12:55:42.2705778Z Build Date: 2026-08-28T16:44:25Z
+2026-09-28T12:55:42.2706780Z Worker ID: {2b856821-2a28-47c3-bcc8-1d1fb422e646}
+2026-09-28T12:55:42.2707873Z Azure Region: northcentralus
+2026-09-28T12:55:42.2708767Z ##[endgroup]
+2026-09-28T12:55:42.2712009Z ##[group]Operating System
+2026-09-28T12:55:42.2713529Z Microsoft Windows Server 2025
+2026-09-28T12:55:42.2714386Z 10.0.26100
+2026-09-28T12:55:42.2715516Z Datacenter
+2026-09-28T12:55:42.2716275Z ##[endgroup]
+2026-09-28T12:55:42.2717084Z ##[group]Runner Image
+2026-09-28T12:55:42.2717982Z Image: windows-2025-vs2026
+2026-09-28T12:55:42.2718891Z Version: 20260922.246.2
+2026-09-28T12:55:42.2721228Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260922.246/images/windows/Windows2025-VS2026-Readme.md
+2026-09-28T12:55:42.2725120Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260922.246
+2026-09-28T12:55:42.2726736Z ##[endgroup]
+2026-09-28T12:55:42.2728375Z ##[group]GITHUB_TOKEN Permissions
+2026-09-28T12:55:42.2731050Z Contents: read
+2026-09-28T12:55:42.2732251Z Metadata: read
+2026-09-28T12:55:42.2733016Z ##[endgroup]
+2026-09-28T12:55:42.2736269Z Secret source: Actions
+2026-09-28T12:55:42.2737520Z Cache mode: write
+2026-09-28T12:55:42.2738529Z Prepare workflow directory
+2026-09-28T12:55:42.3237199Z Prepare all required actions
+2026-09-28T12:55:42.3298581Z Getting action download info
+2026-09-28T12:55:42.5593788Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+2026-09-28T12:55:42.6985489Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+2026-09-28T12:55:43.2894992Z Complete job name: windows-trusted-execution
+2026-09-28T12:55:43.4895710Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+2026-09-28T12:55:43.4897197Z with:
+2026-09-28T12:55:43.4897633Z   fetch-depth: 0
+2026-09-28T12:55:43.4898246Z   repository: carrie1988/Harnessix
+2026-09-28T12:55:43.4903429Z   token: ***
+2026-09-28T12:55:43.4903909Z   ssh-strict: true
+2026-09-28T12:55:43.4904352Z   ssh-user: git
+2026-09-28T12:55:43.4904803Z   persist-credentials: true
+2026-09-28T12:55:43.4905294Z   clean: true
+2026-09-28T12:55:43.4905738Z   sparse-checkout-cone-mode: true
+2026-09-28T12:55:43.4906310Z   fetch-tags: false
+2026-09-28T12:55:43.4906756Z   show-progress: true
+2026-09-28T12:55:43.4907212Z   lfs: false
+2026-09-28T12:55:43.4907618Z   submodules: false
+2026-09-28T12:55:43.4908076Z   set-safe-directory: true
+2026-09-28T12:55:43.4909000Z ##[endgroup]
+2026-09-28T12:55:43.7221387Z Syncing repository: carrie1988/Harnessix
+2026-09-28T12:55:43.7224825Z ##[group]Getting Git version info
+2026-09-28T12:55:43.7226005Z Working directory is 'D:\a\Harnessix\Harnessix'
+2026-09-28T12:55:43.8268689Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-09-28T12:55:44.3513364Z git version 2.55.0.windows.5
+2026-09-28T12:55:44.3570752Z ##[endgroup]
+2026-09-28T12:55:44.3592805Z Temporarily overriding HOME='D:\a\_temp\847302bc-6f4f-4735-bbfc-b0b7795fa321' before making global git config changes
+2026-09-28T12:55:44.3596317Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T12:55:44.3607941Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+2026-09-28T12:55:44.5082871Z Deleting the contents of 'D:\a\Harnessix\Harnessix'
+2026-09-28T12:55:44.5090631Z ##[group]Initializing the repository
+2026-09-28T12:55:44.5100779Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Harnessix\Harnessix
+2026-09-28T12:55:44.6298140Z Initialized empty Git repository in D:/a/Harnessix/Harnessix/.git/
+2026-09-28T12:55:44.6371193Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/carrie1988/Harnessix
+2026-09-28T12:55:44.7535811Z ##[endgroup]
+2026-09-28T12:55:44.7538249Z ##[group]Disabling automatic garbage collection
+2026-09-28T12:55:44.7547330Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-09-28T12:55:44.8168812Z ##[endgroup]
+2026-09-28T12:55:44.8171154Z ##[group]Setting up auth
+2026-09-28T12:55:44.8172901Z Removing SSH command configuration
+2026-09-28T12:55:44.8183573Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T12:55:45.0032923Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-09-28T12:55:47.6655139Z Removing HTTP extra header
+2026-09-28T12:55:47.6670256Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T12:55:47.7868389Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-09-28T12:55:49.3350378Z Removing includeIf entries pointing to credentials config files
+2026-09-28T12:55:49.3352817Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T12:55:49.4511663Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-09-28T12:55:50.8204546Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-09-28T12:55:50.8624274Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:55:50.9009229Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:55:50.9439135Z ##[endgroup]
+2026-09-28T12:55:50.9439799Z ##[group]Fetching the repository
+2026-09-28T12:55:50.9460914Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-28T12:55:54.3663809Z From https://github.com/carrie1988/Harnessix
+2026-09-28T12:55:54.3664642Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+2026-09-28T12:55:54.3665493Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+2026-09-28T12:55:54.3666301Z  * [new branch]      main                    -> origin/main
+2026-09-28T12:55:54.3721562Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+2026-09-28T12:55:54.4097588Z   origin/main
+2026-09-28T12:55:54.4142391Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+2026-09-28T12:55:54.4400852Z 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
+2026-09-28T12:55:54.4432277Z ##[endgroup]
+2026-09-28T12:55:54.4432814Z ##[group]Determining the checkout info
+2026-09-28T12:55:54.4435015Z ##[endgroup]
+2026-09-28T12:55:54.4443970Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-09-28T12:55:54.4857231Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-09-28T12:55:54.5153307Z ##[group]Checking out the ref
+2026-09-28T12:55:54.5163085Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-09-28T12:55:55.3537033Z Switched to a new branch 'main'
+2026-09-28T12:55:55.3597538Z branch 'main' set up to track 'origin/main'.
+2026-09-28T12:55:55.3668117Z ##[endgroup]
+2026-09-28T12:55:55.4081446Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-09-28T12:55:55.4349224Z 1ed97e100bbb978bbfd3c64317a41d53219ee7b5
+2026-09-28T12:55:55.4882691Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+2026-09-28T12:55:55.4883479Z with:
+2026-09-28T12:55:55.4883789Z   python-version: 3.12
+2026-09-28T12:55:55.4884024Z   activate-environment: false
+2026-09-28T12:55:55.4884257Z   no-project: false
+2026-09-28T12:55:55.4884499Z   working-directory: D:\a\Harnessix\Harnessix
+2026-09-28T12:55:55.4887053Z   github-token: ***
+2026-09-28T12:55:55.4887270Z   enable-cache: auto
+2026-09-28T12:55:55.4887821Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+**/*.py.lock
+
+2026-09-28T12:55:55.4888413Z   restore-cache: true
+2026-09-28T12:55:55.4888632Z   save-cache: true
+2026-09-28T12:55:55.4888825Z   prune-cache: false
+2026-09-28T12:55:55.4889015Z   cache-python: false
+2026-09-28T12:55:55.4889221Z   ignore-nothing-to-cache: false
+2026-09-28T12:55:55.4889464Z   ignore-empty-workdir: false
+2026-09-28T12:55:55.4889757Z   download-from-astral-mirror: true
+2026-09-28T12:55:55.4890014Z   add-problem-matchers: true
+2026-09-28T12:55:55.4890228Z   quiet: false
+2026-09-28T12:55:55.4890421Z   resolution-strategy: highest
+2026-09-28T12:55:55.4890646Z ##[endgroup]
+2026-09-28T12:55:55.6850540Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\uv.toml
+2026-09-28T12:55:55.6851220Z Could not find file: D:\a\Harnessix\Harnessix\uv.toml
+2026-09-28T12:55:55.6851782Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\pyproject.toml
+2026-09-28T12:55:55.6857446Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+2026-09-28T12:55:55.6861975Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+2026-09-28T12:55:55.7405816Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.19/uv-x86_64-pc-windows-msvc.zip" ...
+2026-09-28T12:55:56.2364633Z [command]C:\Windows\system32\tar.exe x -C D:\a\_temp\262e6c04-d3a7-4456-b6d2-6ff42ea947f4 -f D:\a\_temp\c760c697-00ab-45fe-8a90-697a0e047111
+2026-09-28T12:55:56.4182397Z Set UV_TOOL_BIN_DIR to D:\a\_temp\uv-tool-bin-dir
+2026-09-28T12:55:56.4185747Z Added D:\a\_temp\uv-tool-bin-dir to the path
+2026-09-28T12:55:56.4194698Z Added C:\hostedtoolcache\windows\uv\0.12.19\x86_64 to the path
+2026-09-28T12:55:56.4197386Z Set UV_TOOL_DIR to D:\a\_temp\uv-tool-dir
+2026-09-28T12:55:56.4200126Z Set UV_PYTHON_INSTALL_DIR to D:\a\_temp\uv-python-dir
+2026-09-28T12:55:56.4204176Z Added D:\a\_temp\uv-python-dir to the path
+2026-09-28T12:55:56.4206743Z Set UV_PYTHON to 3.12
+2026-09-28T12:55:56.4229125Z Set UV_CACHE_DIR to D:\a\_temp\setup-uv-cache
+2026-09-28T12:55:56.4229504Z Successfully installed uv version 0.12.19
+2026-09-28T12:55:56.4230758Z Searching files using cache dependency glob: D:\a\Harnessix\Harnessix\**\*requirements*.txt,D:\a\Harnessix\Harnessix\**\*requirements*.in,D:\a\Harnessix\Harnessix\**\*constraints*.txt,D:\a\Harnessix\Harnessix\**\*constraints*.in,D:\a\Harnessix\Harnessix\**\pyproject.toml,D:\a\Harnessix\Harnessix\**\uv.lock,D:\a\Harnessix\Harnessix\**\*.py.lock
+2026-09-28T12:55:56.9052604Z D:\a\Harnessix\Harnessix\pyproject.toml
+2026-09-28T12:55:57.0808188Z D:\a\Harnessix\Harnessix\uv.lock
+2026-09-28T12:55:57.0823685Z Found 2 files to hash.
+2026-09-28T12:55:57.0834512Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T12:55:57.2883765Z Cache hit for: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T12:55:57.8040446Z Received 39670141 of 39670141 (100.0%), 90.9 MBs/sec
+2026-09-28T12:55:57.8042207Z Cache Size: ~38 MB (39670141 B)
+2026-09-28T12:55:57.8194420Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/ccf74f9e-bdb5-43d7-9e4f-4587b92da347/cache.tzst -P -C D:/a/Harnessix/Harnessix --force-local --use-compress-program "zstd -d"
+2026-09-28T12:56:00.7000763Z Cache restored successfully
+2026-09-28T12:56:00.7038198Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-baa721e76b7e39e8959d64852798734c3cad33cfcc22355e7a2e19da3571e17e
+2026-09-28T12:56:00.8522616Z ##[group]Run uv sync --locked --all-extras --dev
+2026-09-28T12:56:00.8523158Z [36;1muv sync --locked --all-extras --dev[0m
+2026-09-28T12:56:00.8910228Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T12:56:00.8910837Z env:
+2026-09-28T12:56:00.8911181Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T12:56:00.8911659Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T12:56:00.8912162Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T12:56:00.8912638Z   UV_PYTHON: 3.12
+2026-09-28T12:56:00.8912970Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T12:56:00.8913386Z ##[endgroup]
+2026-09-28T12:56:01.3070126Z Using CPython 3.12.10 interpreter at: C:\hostedtoolcache\windows\Python\3.12.10\x64\python3.exe
+2026-09-28T12:56:01.3070902Z Creating virtual environment at: .venv
+2026-09-28T12:56:01.3538011Z Resolved 74 packages in 2ms
+2026-09-28T12:56:01.3645616Z    Building harnessix @ file:///D:/a/Harnessix/Harnessix
+2026-09-28T12:56:03.6526400Z       Built harnessix @ file:///D:/a/Harnessix/Harnessix
+2026-09-28T12:56:03.6563964Z Prepared 1 package in 2.29s
+2026-09-28T12:56:04.1226912Z Installed 73 packages in 465ms
+2026-09-28T12:56:04.1229344Z  + aiosqlite==0.22.1
+2026-09-28T12:56:04.1230625Z  + annotated-types==0.8.0
+2026-09-28T12:56:04.1232640Z  + anthropic==1.3.0
+2026-09-28T12:56:04.1234909Z  + anyio==4.14.2
+2026-09-28T12:56:04.1236190Z  + attrs==26.1.0
+2026-09-28T12:56:04.1237568Z  + certifi==2026.7.22
+2026-09-28T12:56:04.1238710Z  + cffi==2.1.1
+2026-09-28T12:56:04.1239994Z  + charset-normalizer==3.5.1
+2026-09-28T12:56:04.1241226Z  + click==8.5.0
+2026-09-28T12:56:04.1242486Z  + colorama==0.4.6
+2026-09-28T12:56:04.1243729Z  + cryptography==50.0.1
+2026-09-28T12:56:04.1245531Z  + distro==1.9.0
+2026-09-28T12:56:04.1246926Z  + docstring-parser==0.18.0
+2026-09-28T12:56:04.1248231Z  + googleapis-common-protos==1.75.2
+2026-09-28T12:56:04.1249578Z  + h11==0.16.0
+2026-09-28T12:56:04.1251468Z  + harnessix==0.1.0 (from file:///D:/a/Harnessix/Harnessix)
+2026-09-28T12:56:04.1252822Z  + httpcore==1.0.9
+2026-09-28T12:56:04.1254038Z  + httpcore2==2.12.0
+2026-09-28T12:56:04.1255270Z  + httpx==0.28.1
+2026-09-28T12:56:04.1256506Z  + httpx2==2.12.0
+2026-09-28T12:56:04.1257583Z  + idna==3.19
+2026-09-28T12:56:04.1258826Z  + iniconfig==2.3.0
+2026-09-28T12:56:04.1260083Z  + jiter==0.16.0
+2026-09-28T12:56:04.1261314Z  + jsonschema==4.26.0
+2026-09-28T12:56:04.1262608Z  + jsonschema-specifications==2025.9.1
+2026-09-28T12:56:04.1263833Z  + librt==0.15.0
+2026-09-28T12:56:04.1265400Z  + linkify-it-py==2.2.0
+2026-09-28T12:56:04.1266621Z  + markdown-it-py==4.2.0
+2026-09-28T12:56:04.1267835Z  + mcp==2.2.0
+2026-09-28T12:56:04.1269084Z  + mcp-types==2.2.0
+2026-09-28T12:56:04.1270327Z  + mdit-py-plugins==0.6.1
+2026-09-28T12:56:04.1271527Z  + mdurl==0.1.2
+2026-09-28T12:56:04.1272825Z  + mypy==1.20.2
+2026-09-28T12:56:04.1274059Z  + mypy-extensions==1.1.0
+2026-09-28T12:56:04.1275282Z  + openai==2.54.0
+2026-09-28T12:56:04.1276550Z  + opentelemetry-api==1.44.0
+2026-09-28T12:56:04.1277836Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+2026-09-28T12:56:04.1279461Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+2026-09-28T12:56:04.1280667Z  + opentelemetry-proto==1.44.0
+2026-09-28T12:56:04.1282002Z  + opentelemetry-sdk==1.44.0
+2026-09-28T12:56:04.1283307Z  + opentelemetry-semantic-conventions==0.65b0
+2026-09-28T12:56:04.1284417Z  + packaging==26.3
+2026-09-28T12:56:04.1286104Z  + pathspec==1.1.1
+2026-09-28T12:56:04.1287372Z  + platformdirs==4.11.8
+2026-09-28T12:56:04.1288612Z  + pluggy==1.6.0
+2026-09-28T12:56:04.1290016Z  + protobuf==7.36.1
+2026-09-28T12:56:04.1290856Z  + pycparser==3.0
+2026-09-28T12:56:04.1292124Z  + pydantic==2.13.5
+2026-09-28T12:56:04.1293373Z  + pydantic-core==2.46.5
+2026-09-28T12:56:04.1294594Z  + pygments==2.21.0
+2026-09-28T12:56:04.1296432Z  + pyjwt==2.13.0
+2026-09-28T12:56:04.1297848Z  + pytest==8.4.2
+2026-09-28T12:56:04.1299060Z  + pytest-asyncio==1.4.0
+2026-09-28T12:56:04.1302494Z  + python-multipart==0.0.32
+2026-09-28T12:56:04.1302825Z  + pywin32==312
+2026-09-28T12:56:04.1303148Z  + pyyaml==6.0.3
+2026-09-28T12:56:04.1304424Z  + referencing==0.37.0
+2026-09-28T12:56:04.1305621Z  + requests==2.34.2
+2026-09-28T12:56:04.1306850Z  + rich==15.0.0
+2026-09-28T12:56:04.1308061Z  + rpds-py==2026.6.3
+2026-09-28T12:56:04.1309318Z  + ruff==0.16.5
+2026-09-28T12:56:04.1310669Z  + sniffio==1.3.1
+2026-09-28T12:56:04.1311949Z  + sse-starlette==3.4.11
+2026-09-28T12:56:04.1313204Z  + starlette==1.6.0
+2026-09-28T12:56:04.1314522Z  + textual==8.2.8
+2026-09-28T12:56:04.1315716Z  + tqdm==4.70.0
+2026-09-28T12:56:04.1316924Z  + truststore==0.10.4
+2026-09-28T12:56:04.1318379Z  + types-jsonschema==4.26.0.20260518
+2026-09-28T12:56:04.1319718Z  + types-pyyaml==6.0.12.20260906
+2026-09-28T12:56:04.1320966Z  + typing-extensions==4.16.0
+2026-09-28T12:56:04.1322290Z  + typing-inspection==0.4.4
+2026-09-28T12:56:04.1323687Z  + urllib3==2.7.0
+2026-09-28T12:56:04.1324796Z  + uvicorn==0.52.4
+2026-09-28T12:56:04.3027834Z ##[group]Run uv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
+2026-09-28T12:56:04.3030118Z [36;1muv run pytest tests/delivery/test_windows_filesystem.py tests/delivery/test_windows_io_contracts.py tests/delivery/test_trusted_action_patch.py tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch[0m
+2026-09-28T12:56:04.3096344Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T12:56:04.3096699Z env:
+2026-09-28T12:56:04.3096920Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T12:56:04.3097208Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T12:56:04.3097488Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T12:56:04.3097769Z   UV_PYTHON: 3.12
+2026-09-28T12:56:04.3098025Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T12:56:04.3098285Z ##[endgroup]
+2026-09-28T12:56:33.5658581Z ...........................................................              [100%]
+2026-09-28T12:56:33.5659135Z 59 passed in 26.08s
+2026-09-28T12:56:33.7774934Z ##[group]Run uv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -o faulthandler_timeout=60
+2026-09-28T12:56:33.7777375Z [36;1muv run pytest tests/tools/test_windows_git.py tests/tools/test_git_platform_contracts.py tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner -o faulthandler_timeout=60[0m
+2026-09-28T12:56:33.7844477Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-09-28T12:56:33.7844830Z env:
+2026-09-28T12:56:33.7845048Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+2026-09-28T12:56:33.7845346Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+2026-09-28T12:56:33.7845666Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+2026-09-28T12:56:33.7845955Z   UV_PYTHON: 3.12
+2026-09-28T12:56:33.7846166Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+2026-09-28T12:56:33.7847156Z ##[endgroup]
+2026-09-28T12:57:49.6947275Z Timeout (0:01:00)!
+2026-09-28T12:57:49.6947771Z Thread 0x00000a80 (most recent call first):
+2026-09-28T12:57:49.6951969Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\subprocess.py", line 1590 in _wait
+2026-09-28T12:57:49.6953127Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\subprocess.py", line 1264 in wait
+2026-09-28T12:57:49.6954269Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\concurrent\futures\thread.py", line 59 in run
+2026-09-28T12:57:49.6955473Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\concurrent\futures\thread.py", line 93 in _worker
+2026-09-28T12:57:49.6956581Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\threading.py", line 1012 in run
+2026-09-28T12:57:49.6957715Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\threading.py", line 1075 in _bootstrap_inner
+2026-09-28T12:57:49.6958825Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\threading.py", line 1032 in _bootstrap
+2026-09-28T12:57:49.6959439Z 
+2026-09-28T12:57:49.6959611Z Thread 0x00000f8c (most recent call first):
+2026-09-28T12:57:49.6960482Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\windows_events.py", line 774 in _poll
+2026-09-28T12:57:49.6961649Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\windows_events.py", line 445 in select
+2026-09-28T12:57:49.6962807Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\base_events.py", line 1961 in _run_once
+2026-09-28T12:57:49.7058940Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\base_events.py", line 645 in run_forever
+2026-09-28T12:57:49.7060282Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\windows_events.py", line 322 in run_forever
+2026-09-28T12:57:49.7061530Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\base_events.py", line 678 in run_until_complete
+2026-09-28T12:57:49.7062691Z   File "C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\runners.py", line 118 in run
+2026-09-28T12:57:49.7063810Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pytest_asyncio\plugin.py", line 905 in inner
+2026-09-28T12:57:49.7065001Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\python.py", line 157 in pytest_pyfunc_call
+2026-09-28T12:57:49.7066166Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+2026-09-28T12:57:49.7067255Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+2026-09-28T12:57:49.7068563Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+2026-09-28T12:57:49.7072236Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\python.py", line 1671 in runtest
+2026-09-28T12:57:49.7073471Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pytest_asyncio\plugin.py", line 569 in runtest
+2026-09-28T12:57:49.7074673Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 178 in pytest_runtest_call
+2026-09-28T12:57:49.7075837Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+2026-09-28T12:57:49.7076929Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+2026-09-28T12:57:49.7077989Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+2026-09-28T12:57:49.7079055Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 246 in <lambda>
+2026-09-28T12:57:49.7080171Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 344 in from_call
+2026-09-28T12:57:49.7081311Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 245 in call_and_report
+2026-09-28T12:57:49.7082475Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 136 in runtestprotocol
+2026-09-28T12:57:49.7083909Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\runner.py", line 117 in pytest_runtest_protocol
+2026-09-28T12:57:49.7085101Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+2026-09-28T12:57:49.7086186Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+2026-09-28T12:57:49.7087251Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+2026-09-28T12:57:49.7088686Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\main.py", line 367 in pytest_runtestloop
+2026-09-28T12:57:49.7089830Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+2026-09-28T12:57:49.7090912Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+2026-09-28T12:57:49.7091963Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+2026-09-28T12:57:49.7092986Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\main.py", line 343 in _main
+2026-09-28T12:57:49.7094032Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\main.py", line 289 in wrap_session
+2026-09-28T12:57:49.7095166Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\main.py", line 336 in pytest_cmdline_main
+2026-09-28T12:57:49.7096333Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+2026-09-28T12:57:49.7097412Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+2026-09-28T12:57:49.7098458Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+2026-09-28T12:57:49.7099540Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\config\__init__.py", line 175 in main
+2026-09-28T12:57:49.7100726Z   File "D:\a\Harnessix\Harnessix\.venv\Lib\site-packages\_pytest\config\__init__.py", line 201 in console_main
+2026-09-28T12:57:49.7101834Z   File "D:\a\Harnessix\Harnessix\.venv\Scripts\pytest.exe\__main__.py", line 10 in <module>
+2026-09-28T12:57:49.7102580Z   File "<frozen runpy>", line 88 in _run_code
+2026-09-28T12:57:49.7103140Z   File "<frozen runpy>", line 198 in _run_module_as_main
+2026-09-28T12:59:34.1976792Z ....F..
+2026-09-28T12:59:34.1977231Z ================================== FAILURES ===================================
+2026-09-28T12:59:34.1977976Z ______ test_windows_git_never_executes_repository_helpers[include.path] _______
+2026-09-28T12:59:34.1978461Z 
+2026-09-28T12:59:34.1979143Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-1/test_windows_git_never_execute2')
+2026-09-28T12:59:34.1981191Z key = 'include.path'
+2026-09-28T12:59:34.1981346Z 
+2026-09-28T12:59:34.1981698Z     @pytest.mark.parametrize("key", ["filter.fixture.clean", "filter.fixture.process", "include.path"])
+2026-09-28T12:59:34.1982384Z     async def test_windows_git_never_executes_repository_helpers(tmp_path: Path, key: str) -> None:
+2026-09-28T12:59:34.1982959Z         root, state = tmp_path / "repo", tmp_path / "state"
+2026-09-28T12:59:34.1983382Z         _repository(root)
+2026-09-28T12:59:34.1983701Z         marker = root / "unexpected-helper"
+2026-09-28T12:59:34.1984111Z         _command(root, "config", key, f"cmd.exe /d /c echo x > {marker.as_posix()}")
+2026-09-28T12:59:34.1984828Z         (root / ".gitattributes").write_bytes(b"main.py filter=fixture\n")
+2026-09-28T12:59:34.1985214Z         (root / "main.py").write_bytes(b"after\n")
+2026-09-28T12:59:34.1985677Z         async with CodingToolRuntime(root, git_executable=_git(), git_state_directory=state) as tools:
+2026-09-28T12:59:34.1986157Z             result = await execute(tools, "git_diff")
+2026-09-28T12:59:34.1986482Z >       assert result.error.code == "tool_path_denied"
+2026-09-28T12:59:34.1986886Z E       AssertionError: assert 'tool_not_found' == 'tool_path_denied'
+2026-09-28T12:59:34.1987484Z E         
+2026-09-28T12:59:34.1987793Z E         - tool_path_denied
+2026-09-28T12:59:34.1988031Z E         + tool_not_found
+2026-09-28T12:59:34.1988180Z 
+2026-09-28T12:59:34.1988319Z tests\tools\test_windows_git.py:136: AssertionError
+2026-09-28T12:59:34.1988676Z =========================== short test summary info ===========================
+2026-09-28T12:59:34.1989599Z FAILED tests/tools/test_windows_git.py::test_windows_git_never_executes_repository_helpers[include.path] - AssertionError: assert 'tool_not_found' == 'tool_path_denied'
+2026-09-28T12:59:34.1990292Z   
+2026-09-28T12:59:34.1990497Z   - tool_path_denied
+2026-09-28T12:59:34.1990704Z   + tool_not_found
+2026-09-28T12:59:34.1990964Z !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+2026-09-28T12:59:34.1991446Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\asyncio\runners.py:123: KeyboardInterrupt
+2026-09-28T12:59:34.1991963Z (to show a full traceback on KeyboardInterrupt use --full-trace)
+2026-09-28T12:59:34.1992312Z 1 failed, 6 passed in 179.12s (0:02:59)
+2026-09-28T12:59:34.3572671Z ##[error]The action '验证原生Git读取与取消回收' has timed out after 3 minutes.
+2026-09-28T12:59:34.5288034Z Post job cleanup.
+2026-09-28T12:59:34.9373094Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-09-28T12:59:34.9672793Z git version 2.55.0.windows.5
+2026-09-28T12:59:34.9742881Z Temporarily overriding HOME='D:\a\_temp\e68a011b-90dc-4ed8-a046-2ed75df0da63' before making global git config changes
+2026-09-28T12:59:34.9744683Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-28T12:59:34.9754376Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+2026-09-28T12:59:35.0050625Z Removing SSH command configuration
+2026-09-28T12:59:35.0062630Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-09-28T12:59:35.0358462Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-09-28T12:59:35.5869668Z Removing HTTP extra header
+2026-09-28T12:59:35.5880629Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-28T12:59:35.6170677Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-09-28T12:59:36.1299973Z Removing includeIf entries pointing to credentials config files
+2026-09-28T12:59:36.1312585Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-28T12:59:36.1566816Z includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+2026-09-28T12:59:36.1567241Z includeif.gitdir:/github/workspace/.git.path
+2026-09-28T12:59:36.1606571Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+2026-09-28T12:59:36.1856454Z D:\a\_temp\git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:59:36.1897030Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:59:36.2183585Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-28T12:59:36.2432670Z /github/runner_temp/git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:59:36.2471277Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config
+2026-09-28T12:59:36.2764386Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-09-28T12:59:36.7788225Z Removing credentials config 'D:\a\_temp\git-credentials-10453d63-4a2b-4183-b493-7348e725846f.config'
+2026-09-28T12:59:36.8104699Z Cleaning up orphan processes

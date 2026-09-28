@@ -1,0 +1,7 @@
+flowchart TD
+  P[CREATE_SUSPENDED目标] --> H[打开原目标Handle]
+  H --> A[AssignProcessToJobObject]
+  A --> Q[原Handle IsProcessInJob]
+  Q -->|确认归属| R[NtResumeProcess]
+  Q -->|失败或未归属| F[不恢复目标 / 原失败收尾]
+  R --> E[允许快速退出并保留原退出码]

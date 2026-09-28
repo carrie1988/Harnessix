@@ -1,0 +1,12 @@
+{
+  "source_revision": "4b643f13fc54ae70050a9507ec29bf884ac9eda4",
+  "filename": "harnessix-0.1.0-py3-none-any.whl",
+  "size": 1064671,
+  "sha256": "7890bc940af3dd282dc24d8a8a24070cce5065b806687ab505b49f8140e5f593",
+  "entries": 431,
+  "tests_included": false,
+  "package_version": "0.1.0",
+  "published": false,
+  "fresh_install_verified": false,
+  "secret_scan_log": "logs/wheel-secret-scan.log"
+}

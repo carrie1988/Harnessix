@@ -845,4 +845,9 @@ Key备份/维护CLI、Artifact持久正文、全Provider/Owner/SDK/MCP、12件�
 原Process Owner整树回收、完整Plan与原备份目录融合及启动只观察恢复。
 共享查询同时补齐可执行Filter/Include拒绝与Catalog后EXE绑定漂移拒绝。
 原生焦点回归先提供反馈，完整Windows回归保留期限和阻塞诊断；失败不能计作门禁关闭。
+实现`4b643f1`修复Windows Owner阻塞控制FD关闭及快速退出后的Job归属误判；
+原生焦点34通过、5跳过、1失败，唯一失败进入默认SDK的完整备份Root权限验真。
+同Revision两套独立Python环境各1084通过、50跳过，不能替代Windows实际完整备份恢复。
+[Git/Owner验证报告](validation/windows-native-git-read-2026-09-28-v1/README.md)保留三轮原生失败及修复证据。
+下一主线是R1 Windows默认状态创建与备份私有权限合同统一，随后推进R3真实质量和R4安装；不降低恢复安全契约。
 R1/R3/R4/R5仍按真实证据验收，许可证等不阻塞功能研发及内部验证。
