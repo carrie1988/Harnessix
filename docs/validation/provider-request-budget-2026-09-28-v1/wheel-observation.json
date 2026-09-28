@@ -1,0 +1,11 @@
+{
+  "artifact_name": "harnessix-0.1.0-py3-none-any.whl",
+  "artifact_sha256": "ab560e86ea80571fdf1328c2517f6a401363ef521e73bfb34072d70a3f4f6ea6",
+  "source_revision": "7b4219a15fe474c1721579fc30839a4206494036",
+  "production_bytes_equal_to_final_candidate": true,
+  "final_candidate_revision": "90de93f565ea88679e54242ee6f1771e9be721b7",
+  "verification_scripts_in_wheel": false,
+  "provider_suite_source_bytes_match": true,
+  "user_untracked_inputs_included": false,
+  "release_acceptance": false
+}

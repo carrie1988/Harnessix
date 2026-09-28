@@ -1,0 +1,14 @@
+flowchart TD
+    Old[原账本 原周期 已知金额] --> Validate[严格JSON 权限 ACL 身份 总额一致]
+    Price[官方价格核验 有限窗口] --> Bound[最高档最大输入及输出上限]
+    Validate --> Reserve[追加reserved并增加占用]
+    Bound --> Reserve
+    Reserve --> Disk[600临时文件 fsync 原字节重验 replace 目录fsync]
+    Disk --> Attempt[唯一官方Adapter尝试]
+    Attempt --> Usage[完整同Attempt用量和actual_model]
+    Usage --> Known[completed 定点已知估算 释放差额]
+    Attempt --> Unknown[unknown 保留全部占用 停止Suite]
+    Known --> Disk
+    Unknown --> Disk
+    Old --> Binding[周期 额度 账本位置摘要 价格窗口 输出上限]
+    Binding --> Scope[配置指纹合成 同时绑定Case和Suite]

@@ -1,0 +1,16 @@
+{
+  "source_revision": "7b4219a15fe474c1721579fc30839a4206494036",
+  "environment": "macOS ARM64 Python3.12.7 clean independent checkout",
+  "configuration_generation_exit": 0,
+  "host_exit": 1,
+  "host_result": {
+    "reason": "verification_image_unavailable"
+  },
+  "budget_file_created": false,
+  "budget_owner_lock_created": false,
+  "original_budget_accessed": false,
+  "model_requests": 0,
+  "additional_provider_cost": "0",
+  "automatic_pull_or_docker_configuration_change": false,
+  "conclusion": "fixed image prerequisite remains unavailable; no suite quality result"
+}

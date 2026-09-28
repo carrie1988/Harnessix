@@ -90,6 +90,10 @@ R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/
 [统一验证目录](validation/trusted-file-snapshot-2026-09-28-v1/README.md)保留原独立FAIL、目录观察确定性复现、
 后继固定源码984通过/13跳过、结构化资料与实际渲染图；不宣称真实质量或商用发布已通过。
 
+[R3有限真实评测请求预算详设](changes/m09-r3-verification-request-budget.md)说明原预算Owner、
+发送前预留、费用未知停止、双层恢复绑定及正式Adapter/Runner接线；验证宿主保护不等于账户硬上限，
+不扩大首发计价范围，也不替代完整真实任务结果。
+
 ## 2. 推荐阅读路径
 
 ### 2.1 首次了解项目

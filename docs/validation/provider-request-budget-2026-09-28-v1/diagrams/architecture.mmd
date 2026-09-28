@@ -1,0 +1,13 @@
+flowchart LR
+    Config[私有固定Suite配置] --> Host[验证宿主]
+    Key[环境或钥匙串凭据] --> Host
+    Host --> Runner[正式Suite和Case Runner]
+    Host --> Ledger[原周期账本Owner]
+    Runner -->|构造Factory| Guard[受托Provider Guard]
+    Guard --> Ledger
+    Guard --> Adapter[官方OpenAI Chat Adapter]
+    Adapter --> HTTP[固定北京端点]
+    Runner --> Agent[唯一Agent Runtime]
+    Agent -->|模型请求| Guard
+    Agent --> Tools[正式Tool与Trusted Action]
+    Tools --> Profiles[原Pack固定Container检查]

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 24
-code_revision: 4ec6fffafb553b5e09852cb91bb126c311e0b134
+version: 25
+code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
 owners:
   - core
 modules:
@@ -46,6 +46,8 @@ related_tests:
   - tests/evals/test_offline_suite_runner.py
   - tests/evals/test_provider_suite_contracts.py
   - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_verification_budget.py
+  - tests/evals/test_provider_verification_host.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
 supersedes: []
@@ -1096,6 +1098,29 @@ CNY 1.46828完整已知成本；20个Turn均正常终结，但任务成功与测
 
 完整背景、字段、失败恢复和运维步骤见[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](../operations/provider-suite-baseline.md)。
+
+### 23.7 有限验证宿主的持久请求预算
+
+[`run_engineering_provider_suite_budgeted.py`](../../scripts/run_engineering_provider_suite_budgeted.py)
+复用上述正式链，只在可信验证宿主增加原预算Owner及官方Adapter Guard；不进入产品Wheel CLI，
+不恢复已延期的通用计价平台。`provider_factory`与`provider_binding_sha256`必须成对，摘要同时绑定
+原Case和Suite恢复身份；未注入时原默认Factory及指纹保持不变。
+
+[`VerificationBudgetLedger`](../../scripts/provider_verification_budget.py)独占已有700/600私有账本，
+保留原周期、额度和历史，在发送前持久预留完整最高档单请求费用；已知完整用量可释放差额，
+未知用量保留占用且重开不自动退款。原字节漂移、权限/ACL、身份、同步或总额异常均失败关闭。
+
+[`GuardedVerificationProvider`](../../scripts/provider_verification_guard.py)仅托管已核验
+Started-before-IO语义的官方Adapter。唯一Attempt、单调完整Usage、原模型与响应终态必须一致；
+可靠结算先于成功发布。Suite取消通过现有`CancelToken.run`托管每次迭代，父Task退出关闭源及回收子任务，
+不会仅取消下一Case而继续等待本次请求。用途元数据不含Key、Prompt、工具参数或响应正文。
+
+验证宿主限定北京精确Coder快照和有限价格窗口；最高档预留及分档估算不是账户硬停止或最终账单。
+原Campaign的32k认证价格范围不扩大。镜像只观察原Pack Digest，不自动拉取或更换；
+凭据采用显式短生命周期注入，macOS可使用宿主指定钥匙串服务/账户，不硬编码个人凭据标识。
+完整架构、流程/时序/数据流、字段、伪代码、安全与故障矩阵见
+[专项总体与详细设计](../changes/m09-r3-verification-request-budget.md)。
+离线线协议和预算回归不替代新的20 Trial真实质量成绩，历史0/20及R3仍开放。
 
 ## 24. Campaign执行配置与默认禁网
 
@@ -2189,6 +2214,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 25 | `90de93f565ea88679e54242ee6f1771e9be721b7` | 2026-09-28 | 增加有限验证宿主持久请求预留、官方Adapter Guard与Case/Suite双层绑定；未知不退款，原0/20和R3门禁保留 |
 | 22 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定实际导入隔离实现Revision、16/214/107有重叠专项和阶段证据；前序CI失败保留，最新候选真实Windows终态未外推 |
 | 21 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 分离平台无关合同与九个POSIX执行导出，保留原对象、类型和公共dir；修复候选等待真实Windows治理验收，0.9.6执行门禁保留 |
 | 20 | `fb4a0ea8f7ffcd14113212fb77b2028143af9914` | 2026-09-20 | CI 35491527318关闭三项状态/分母修正；固定北京模型完成20 Trial，冻结81请求、318,478/12,148输入/输出Token、CNY 1.46828及任务/测试0/20的低敏证据，关闭0.9.2e和0.9.2 |

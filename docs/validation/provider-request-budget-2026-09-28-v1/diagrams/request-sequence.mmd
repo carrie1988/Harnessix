@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant H as 验证宿主
+    participant L as 持久账本
+    participant G as Provider Guard
+    participant P as 官方Adapter
+    participant A as Agent
+    H->>H: 禁网/配置/Revision/固定镜像/价格预检
+    H->>L: 独占原周期并校验原字节及金额
+    H->>H: 凭据短生命周期读取
+    A->>G: 请求模型
+    G->>L: reserve 最高档单请求预留
+    L-->>G: 文件fsync replace 目录fsync完成
+    G->>P: 消费stream
+    P-->>G: AttemptStarted后执行HTTP
+    P-->>G: Usage AttemptFinished Completion EOF
+    alt 完整用量和原模型一致
+        G->>L: settle 已知估算并释放差额
+        L-->>G: 结算可靠持久化
+        G-->>A: ResponseCompleted
+    else 已发送但费用未知或结算失败
+        G->>H: 取消整个Suite并回收迭代子任务
+        G->>L: 保留未决预留或实际可读结算事实
+        G-->>A: 不发布成功终态
+        H->>L: 重启拒绝未决请求 不自动退款
+    end

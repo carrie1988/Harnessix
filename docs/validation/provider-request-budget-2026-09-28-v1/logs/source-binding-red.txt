@@ -1,0 +1,4 @@
+FAILED tests/evals/test_provider_suite_execution.py::test_custom_provider_factory_requires_explicit_binding[<lambda>-None]
+FAILED tests/evals/test_provider_suite_execution.py::test_custom_provider_factory_requires_explicit_binding[None-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+FAILED tests/evals/test_provider_suite_execution.py::test_guarded_factory_is_bound_to_both_scope_and_suite
+3 failed, 3 deselected in 0.67s

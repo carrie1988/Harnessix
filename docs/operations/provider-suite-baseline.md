@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 5
+code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
 related_tests:
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_execution.py
+  - tests/evals/test_provider_verification_budget.py
+  - tests/evals/test_provider_verification_host.py
   - tests/evals/test_provider_suite_evidence.py
   - tests/evals/test_suite.py
   - tests/evals/test_task_pack_execution.py
@@ -34,11 +36,12 @@ supersedes: []
 
 1. 源码树已同步到目标Revision，工作区干净；
 2. `uv sync --locked --all-extras --dev`已经完成；
-3. Git和Docker Engine可执行，固定检查镜像已经可拉取或存在；
+3. Git和Docker Engine可执行，原Pack固定检查镜像全部已存在且RepoDigest一致；验证宿主不自动拉取；
 4. 宿主可通过HTTPS访问北京百炼OpenAI兼容端点；
-5. API Key由Secret Manager或当前受控Shell临时注入，不写入仓库、配置、命令历史或日志；
+5. API Key由宿主Secret Manager、macOS launchctl或显式钥匙串配置读取，不写入仓库、配置、命令历史或日志；
 6. 私有配置、私有运行根和公开证据根位于三个独立目录；
 7. 执行前已核对官方模型价格，配置生成时间处于新价格快照窗口。
+8. 已有私有验证预算账本及唯一active周期，已知费用加占用不超过原额度，没有未决请求；不能自动新建或重置预算。
 
 ## 3. 目录规划
 
@@ -48,6 +51,8 @@ supersedes: []
 export HX_PROVIDER_CONFIG=/secure/harnessix/provider-suite.json
 export HX_PROVIDER_WORK=/secure/harnessix/provider-suite-work
 export HX_PROVIDER_EVIDENCE=/secure/harnessix/provider-suite-evidence
+export HX_PROVIDER_BUDGET=/secure/harnessix/provider-budget.json
+export HX_PROVIDER_PERIOD=00000000-0000-0000-0000-000000000001
 ```
 
 要求：
@@ -56,6 +61,8 @@ export HX_PROVIDER_EVIDENCE=/secure/harnessix/provider-suite-evidence
 - Work Root在首次运行前可以不存在；
 - Evidence Root必须是新的独立目录，不能位于Work Root内部或包含Work Root；
 - 不要把上述私有目录放入Git工作树、共享临时目录或自动上传目录。
+- Budget父目录须为原700私有目录，文件为600、当前Owner、单硬链接；Period值替换为原唯一active周期UUID。
+- 原预算由授权宿主提供；本工具不提供创建、加额、清零或未决请求自动退款操作。
 
 ## 4. 执行前检查
 
@@ -93,42 +100,53 @@ test "$(stat -f '%Lp' "$HX_PROVIDER_CONFIG" 2>/dev/null || stat -c '%a' "$HX_PRO
 
 配置目标已存在时脚本会拒绝覆盖。恢复必须复用原文件，不能重新生成同名配置。
 
-## 6. 注入凭据并首次运行
+## 6. 预检凭据并首次运行
 
-从Secret Manager把值导入当前进程环境，环境变量名默认是`DASHSCOPE_API_KEY`。不要在文档、脚本参数、JSON或Shell命令行中写明文值。
+受控验证使用[持久请求预算宿主](../changes/m09-r3-verification-request-budget.md)，
+仍调用原正式Suite、Case、Agent和Grader，不增加旁路执行或模型重试。
+macOS无钥匙串参数时优先读取launchctl中的配置环境引用，随后才读取父进程环境；
+Linux由已有Secret Manager向受控进程提供环境引用。不得全局修改、清理或回显用户凭据。
 
 ```bash
-export DASHSCOPE_API_KEY="$(secret-manager read harnessix/bailian-beijing)"
-uv run harnessix coding-eval-suite \
+uv run python -m scripts.run_engineering_provider_suite_budgeted \
   --config "$HX_PROVIDER_CONFIG" \
+  --budget-ledger "$HX_PROVIDER_BUDGET" \
+  --period-id "$HX_PROVIDER_PERIOD" \
   --allow-network
-unset DASHSCOPE_API_KEY
 ```
 
-CLI输出是单行JSON，只包含稳定原因、Suite身份、计数和已知成本。退出码：
+macOS也可显式增加`--keychain-service com.example.bailian --keychain-account agent-eval`，
+用真实服务名和账户替换示例；只传名称，不把Key值放入参数。显式钥匙串读取失败不回退到其他Key。
+实际SDK通过`api_key=`注入短生命周期凭据，Key不写入Suite配置或预算账本。
+
+宿主输出是单行JSON，只包含有限原因或原Suite低敏结果，不输出配置、路径、第三方错误或正文。退出码：
 
 | 退出码 | 含义 |
 |---|---|
 | `0` | 全部Case完成且Suite Report已发布 |
 | `1` | 已识别运行失败或稳定停止 |
-| `2` | 参数、网络授权或配置错误 |
+| `2` | 参数或网络授权缺失；其他预检失败返回1和有限原因 |
 | `130` | 操作者中断 |
 
-缺少`--allow-network`时CLI不会读取配置或环境Key，并返回`network_not_enabled`。
-发生已识别的`runtime_failed`或`cancelled`时，CLI会尝试从Suite、Plan和执行绑定身份一致的私有Suite State恢复连续Case进度、当前Case和
-已知成本。状态缺失、损坏、权限错误、Plan不一致或Case前缀不连续时回退为零，不输出读取异常、路径或状态正文。
+缺少`--allow-network`时宿主不会读取配置、预算或Key，返回`network_not_enabled`。
+镜像不在原Digest范围时先返回`verification_image_unavailable`，不读Key、不发送请求、不自动拉取。
+价格窗口失效、原预算未决或原身份不符均失败关闭。不能确认费用时不输出零费用或自动退款。
+
+通用`harnessix coding-eval-suite`保留既有默认禁网及CLI进度合同，原Factory恢复指纹不变；
+它本身不提供此处的累计请求预留保护。受有限验证预算约束的运行不得改用通用CLI绕过Guard，
+通用CLI也不能恢复采用Guard指纹的原Suite。
 
 ## 7. 恢复运行
 
 只有在确认停止原因允许继续、代码Revision和全部宿主绑定未变化时，才使用原配置显式恢复：
 
 ```bash
-export DASHSCOPE_API_KEY="$(secret-manager read harnessix/bailian-beijing)"
-uv run harnessix coding-eval-suite \
+uv run python -m scripts.run_engineering_provider_suite_budgeted \
   --config "$HX_PROVIDER_CONFIG" \
+  --budget-ledger "$HX_PROVIDER_BUDGET" \
+  --period-id "$HX_PROVIDER_PERIOD" \
   --allow-network \
   --resume
-unset DASHSCOPE_API_KEY
 ```
 
 禁止操作：
@@ -138,6 +156,10 @@ unset DASHSCOPE_API_KEY
 - 复制已完成Case报告到另一Suite；
 - 通过增加重试次数“提高通过率”；
 - 在`cost_unknown`时未核对原因便继续产生请求。
+- 清除预算中的`reserved/unknown`、改周期或原额度，或用账本副本增加可用预算。
+
+请求前持久预留完整最高档费用；完整原模型用量结算后才发布成功。Suite取消、父Task退出及费用未知会关闭源并停止后续Case。
+未知金额保留全部占用，重启不会自动退款；通过外部受控费用核对处理。过期窗口也不能重新定价后恢复旧身份。
 
 若配置摘要、Pack、源码Revision或程序绑定漂移，运行必须失败关闭。需要采用新范围时创建新的Suite ID、配置和Work Root。
 
@@ -155,6 +177,8 @@ unset DASHSCOPE_API_KEY
 8. 没有通过修改Task Pack、评分器或安全策略换取通过。
 
 真实模型可以出现任务失败。任务失败是质量证据，不应通过重跑挑选最佳结果或改变评分标准来隐藏。
+R3首发质量还要求原完整20 Trial的严格任务及必需测试均至少12/20、每个仓库有严格成功，
+并满足预注册安全限制；`reason=completed`只表示Suite执行和报告完成，不等于质量达标。
 模型未调用固定Profile同样属于质量证据：报告应保留空Baseline/Final并由严格Grader判定失败，不允许人工补造测试结果或
 在Agent终态后旁路执行检查。工程Pack中的检查均为Task声明的必需检查，因此空Final在Suite中必须计为
 `failed`且进入测试通过率分母，不能解释为`not_applicable`。
