@@ -113,9 +113,57 @@ def test_private_reader_rejects_hardlink(tmp_path):
     create_private_tree(root)
     with PrivateStateTree(root) as tree:
         write_new(tree, "original.bin", b"keep")
-        os.link(root / "original.bin", root / "alias.bin")
+    # 先构造既有多链接事实；避免活跃树拒绝DELETE共享干扰坏事实的准备。
+    os.link(root / "original.bin", root / "alias.bin")
+    with PrivateStateTree(root) as tree:
         with pytest.raises(KernelError):
             read_small(tree, "original.bin", 16)
+
+
+@pytest.mark.parametrize("fault", ["none", "body", "verification"])
+def test_native_fd_and_file_handles_close_before_tree_exit(tmp_path, monkeypatch, fault):
+    from harnessix.product_config import state_backup_files as backup
+
+    root = tmp_path / "private"
+    create_private_tree(root)
+    with PrivateStateTree(root) as tree:
+        handles = []
+        original = tree._windows.open
+
+        def observe_open(path, **arguments):
+            handle = original(path, **arguments)
+            if not arguments.get("directory", False):
+                handles.append(handle)
+            return handle
+
+        def refuse(*args):
+            raise backup.file_error()
+
+        monkeypatch.setattr(tree._windows, "open", observe_open)
+        if fault == "verification":
+            monkeypatch.setattr(backup, "_verify_windows_file", refuse)
+
+        def write():
+            with tree.open_file("original.bin", create=True) as descriptor:
+                os.write(descriptor, b"keep")
+                os.fsync(descriptor)
+                if fault == "body":
+                    raise backup.file_error()
+                return descriptor
+
+        if fault == "none":
+            descriptor = write()
+            with pytest.raises(OSError):
+                os.fstat(descriptor)
+        else:
+            with pytest.raises(KernelError, match="产品备份文件"):
+                write()
+        assert handles
+        # GetFileInformationByHandle只观察原句柄；不能靠重开Path掩盖仍存活的原Handle。
+        for handle in handles:
+            with pytest.raises(OSError) as closed:
+                tree._windows.root._information(handle)
+            assert closed.value.args[0] == 6  # ERROR_INVALID_HANDLE
 
 
 def test_private_reader_rejects_junction_before_reading(tmp_path):

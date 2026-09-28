@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: a894055986bc41a10621c3002684dcc757769da3
+version: 3
+code_revision: 2c285c0338f500004ac782444f80fa6f6bb25638
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_state_windows_file_contracts.py
   - tests/product_config/test_state_windows_parent_contracts.py
   - tests/workspace/test_windows_private_security_contracts.py
   - tests/product_config/test_product_backup_files_windows.py
@@ -313,3 +314,86 @@ for each managed parent in original metadata chain:
     register permission_handle closure with original ExitStack
 identity mismatch -> refuse, without ACL repair or Workspace permission widening
 ```
+
+## 17. Windows叶文件修订语义与资源回收
+
+### 17.1 失败证据与源码根因
+
+实现`2c285c0`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36436407837/job/108975370540)
+为82通过、5跳过、4失败，前置NTFS事务与审批写链59通过。普通状态的Owner及私有双ACE创建已生效，
+默认SDK已完成Git Turn，但在完整备份的叶文件读后检查失败；另三项为SQLite读取、大文件写入及硬链接准备。
+两套本地Python环境各1216通过、79跳过，不能替代该原生失败。
+
+旧叶检查直接比较`fstat(fd)`与`lstat(path)`的七项修订。CPython 3.12.10的
+[FD转换](https://github.com/python/cpython/blob/v3.12.10/Python/fileutils.c#L1108-L1123)
+将`st_ctime`取自`FILE_BASIC_INFO.ChangeTime`，而
+[路径转换](https://github.com/python/cpython/blob/v3.12.10/Modules/posixmodule.c#L2143-L2149)
+又将`st_ctime`覆写为创建时间。因此两者不是同一字段语义，不能以该比较证明对象发生变化。
+该根因由实际失败位置与上游实现共同定位，不等于原生修复已经通过。
+
+### 17.2 设计合同、字段与接口
+
+Windows叶检查复用原`WindowsWorkspaceRoot._information/_revision_identity`：
+
+| 字段组 | 含义与校验要求 |
+|---|---|
+| Volume Serial、File Index高/低位 | 同一原生API下的对象身份；禁止路径替换 |
+| Attributes、Link Count | 文件形态与链接状态；Reparse、目录和多链接仍由原端口拒绝 |
+| Size高/低位、LastWriteTime高/低位 | 内容长度及原生写入修订，不混用Python兼容字段 |
+| CreationTime高/低位 | 补充原生创建修订；不与ChangeTime互相替代 |
+| Owner/DACL | 每个观察句柄仍使用原Key或状态精确验证器；时间不是权限证明 |
+
+内部接口`WindowsKeyFiles.open(path, metadata_only=True)`仅用于既有普通文件，
+不允许创建、写入、排他或目录模式。访问权为READ_CONTROL|FILE_READ_ATTRIBUTES，
+共享READ|WRITE且无DELETE；不取得正文读写权限，也不扩大原数据Handle的共享权。
+[CreateFile共享合同](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew)
+允许元数据观察与原数据Handle同时存在。其他调用默认行为、Key保护、公开协议及POSIX检查不变。
+
+### 17.3 时序、伪代码与失败语义
+
+```mermaid
+sequenceDiagram
+  participant C as 备份或恢复调用者
+  participant D as 原数据Handle与CRT FD
+  participant M as 独立元数据Handle
+  participant V as 原Key或状态权限端口
+  C->>D: 完成原有界读写与FD前后修订检查
+  C->>D: 原生修订before
+  C->>M: 既有叶对象 仅元数据访问 无DELETE共享
+  M->>V: 原Owner DACL 链接及Reparse验真
+  C->>M: 原生修订observed
+  C->>D: 原生修订after
+  C->>C: before等于observed且等于after
+  C->>V: 再验原数据Handle权限
+  C->>M: finally关闭元数据Handle
+  C->>D: 原ExitStack关闭CRT FD及底层Handle
+```
+
+```text
+before = native_revision(original_data_handle)
+metadata_handle = original_private_port.open(path, metadata_only=True)
+try:
+    observed = native_revision(metadata_handle)
+    after = native_revision(original_data_handle)
+    require before == observed == after
+    original_private_port.security.verify(original_data_handle)
+finally:
+    close(metadata_handle)
+original ExitStack closes FD, permission parents and metadata chain
+```
+
+原数据流的`copy_file/file_digest/read_small/file_revisions`继续比较同一FD的修改修订，
+包括ChangeTime，不删除读前后漂移保护。叶路径比较仅改为同一原生语义；错误仍为原固定错误码。
+调用正文异常、路径变化、权限拒绝及最后验真异常均须释放原FD与原生Handle，不能持有句柄等待Root切换。
+
+### 17.4 验证与硬链接准备边界
+
+[平台合同测试](../../tests/product_config/test_state_windows_file_contracts.py)覆盖原路径及原Handle后继观察
+分别发生十一种字段漂移、正常通过、权限拒绝，均检查独立元数据Handle关闭。
+[原生端口测试](../../tests/product_config/test_product_backup_files_windows.py)补正文异常、正常关闭、验真异常
+三条路径，并直接用GetFileInformationByHandle确认原文件Handle已失效，不以Path重开替代资源释放证据。
+
+硬链接反例在关闭构造用受管树后建立既有多链接，再用新树拒绝读取。
+Windows的[硬链接共享规则](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createhardlinkw)
+使活跃句柄共享状态影响坏事实准备；准备阶段共享错误不能替代“已存在多链接必须拒绝”的断言。
+新资源释放测试防止因移动准备步骤而掩盖文件Handle泄漏。旧原生失败保留，修复候选须重新实际运行。

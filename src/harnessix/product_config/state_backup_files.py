@@ -348,15 +348,39 @@ def _open_private_file(
             resources.callback(os.close, descriptor)
         yield descriptor
         tree.checkpoint()
-        if _revision(os.fstat(descriptor)) != _revision((tree.path / relative).lstat()):
-            raise file_error()
         if os.name == "posix":
+            if _revision(os.fstat(descriptor)) != _revision((tree.path / relative).lstat()):
+                raise file_error()
             _private(os.fstat(descriptor))
             _private_acl(descriptor)
             os.fsync(parent) if create else None
         else:
-            # Windows元数据时间不替代DACL证明，读后独立复核原生句柄权限。
-            files.security.verify(handle)
+            _verify_windows_file(tree, relative, handle)
+
+
+def _verify_windows_file(tree: PrivateStateTree, relative: str, handle: int) -> None:
+    """不用语义不同的fstat/lstat时间比较；以原生修订绑定叶路径与原读写Handle。"""
+    files = tree._windows_port(relative)
+    native = files.root
+
+    def revision(value: Any) -> tuple[object, ...]:
+        return (
+            *native._revision_identity(value),
+            value.creation_time.high,
+            value.creation_time.low,
+        )
+
+    before = revision(native._information(handle))
+    # 仅READ_CONTROL/READ_ATTRIBUTES，兼容原排他写Handle；不共享DELETE、不读取正文。
+    checked = files.open(tree.path / relative, metadata_only=True)
+    try:
+        observed = revision(native._information(checked))
+        after = revision(native._information(handle))
+        if before != observed or before != after:
+            raise file_error()
+        files.security.verify(handle)
+    finally:
+        files.kernel.CloseHandle(checked)
 
 
 def _verify_windows_parent_chain(

@@ -59,14 +59,17 @@ class WindowsKeyFiles:
         writable: bool = False,
         directory: bool = False,
         exclusive: bool = False,
+        metadata_only: bool = False,
     ) -> int:
-        access = 0x20000 | (0x80 if directory else 0x80000000)
+        if metadata_only and (create, writable, directory, exclusive) != (3, False, False, False):
+            raise ValueError("元数据句柄只能观察既有文件")
+        access = 0x20000 | (0x80 if directory or metadata_only else 0x80000000)
         if writable:
             access |= 0x40000000
         handle = self.kernel.CreateFileW(
             _api_path(path),
             access,
-            0 if exclusive else self._read_share,
+            0 if exclusive else (3 if metadata_only else self._read_share),
             ctypes.byref(self.security.attributes) if create != 3 else None,
             create,
             0x00200000 | (0x02000000 if directory else 0),

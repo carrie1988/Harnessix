@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 32
-code_revision: a894055986bc41a10621c3002684dcc757769da3
+version: 33
+code_revision: 2c285c0338f500004ac782444f80fa6f6bb25638
 owners:
   - core
 modules:
@@ -2116,3 +2116,6 @@ Windows原生安装、升级、完整恢复和R1整体保持开放。
 备份父链的原Workspace元数据Handle不具有READ_CONTROL；私有端口另开权限Handle，
 执行精确DACL验证并逐一绑定原链身份，不扩大模型Workspace读取权限。
 原生候选失败和父链修复边界见同一详设第16节。
+Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改为原数据Handle与独立元数据Handle
+使用同一原生修订API比较，仍检查原权限、链接、身份及FD读前后变化。
+元数据观察无正文读写及DELETE共享，正常或异常退出均关闭；接口、字段和测试见同一详设第17节。
