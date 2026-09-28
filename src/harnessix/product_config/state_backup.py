@@ -165,7 +165,9 @@ def _copy_database(
             reader.backup(writer, pages=128, progress=progress, sleep=0.01)
             writer.execute("PRAGMA journal_mode=DELETE")
             writer.commit()
-        with target.open_file(path) as descriptor:
+        # Windows的FlushFileBuffers需要可写Handle；只读CRT FD上的fsync会返回EBADF。
+        # SQLite读写连接已关闭，再独占原私有文件，不扩大读端口写权限。
+        with target.open_file(path, writable=os.name == "nt") as descriptor:
             os.fsync(descriptor)
 
 

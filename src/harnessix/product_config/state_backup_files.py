@@ -233,16 +233,9 @@ def write_new(tree: PrivateStateTree, relative: str, body: bytes) -> None:
 def publish_tree(source: Path, target: Path) -> None:
     """平台原生不可覆盖目录Rename；不以exists检查加普通rename替代原子排他发布。"""
     if os.name == "nt":
-        from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
-        from harnessix.workspace.windows import WindowsWorkspaceRoot
+        from harnessix.product_config.state_backup_windows import publish_private_object
 
-        root = WindowsWorkspaceRoot(target.parent)
-        files = WindowsKeyFiles(root)
-        try:
-            files.publish(source, target)
-        finally:
-            files.close()
-            root.close()
+        publish_private_object(source, target)
         return
     library = ctypes.CDLL(None, use_errno=True)
     if sys.platform == "darwin":

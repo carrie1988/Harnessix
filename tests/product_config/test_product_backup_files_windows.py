@@ -130,6 +130,7 @@ def test_native_fd_and_file_handles_close_before_tree_exit(tmp_path, monkeypatch
     root = tmp_path / "private"
     create_private_tree(root)
     with PrivateStateTree(root) as tree:
+        root_handles = (tree._windows.root._root_handle, tree._windows_root_handle)
         handles = []
         original = tree._windows.open
 
@@ -167,6 +168,11 @@ def test_native_fd_and_file_handles_close_before_tree_exit(tmp_path, monkeypatch
             with pytest.raises(OSError) as closed:
                 tree._windows.root._information(handle)
             assert closed.value.args[0] == 6  # ERROR_INVALID_HANDLE
+    for handle in root_handles:
+        assert handle is not None
+        with pytest.raises(OSError) as closed:
+            tree._windows.root._information(handle)
+        assert closed.value.args[0] == 6
 
 
 def test_private_reader_rejects_junction_before_reading(tmp_path):

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 33
-code_revision: 2c285c0338f500004ac782444f80fa6f6bb25638
+version: 34
+code_revision: c4f062abbbfc7725a3f7385d28216b6021e88d2f
 owners:
   - core
 modules:
@@ -2119,3 +2119,7 @@ Windows原生安装、升级、完整恢复和R1整体保持开放。
 Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改为原数据Handle与独立元数据Handle
 使用同一原生修订API比较，仍检查原权限、链接、身份及FD读前后变化。
 元数据观察无正文读写及DELETE共享，正常或异常退出均关闭；接口、字段和测试见同一详设第17节。
+数据库复制关闭全部SQLite连接后，Windows才独占打开可写私有FD同步；原只读端口和POSIX行为不变。
+备份目录、Root切换与Restore Journal发布由[state_backup_windows](../../src/harnessix/product_config/state_backup_windows.py)
+复用原同目录NT句柄Rename；flags=0，不覆盖、不重试、不绕过权限，资源归原ExitStack回收。
+完整字段、流程、失败及测试映射见同一详设第18节；原生未通过前仍是实现候选。

@@ -6,6 +6,7 @@ import ctypes
 import json
 from contextlib import contextmanager
 
+from harnessix.delivery.windows_io import WindowsFileOperations
 from harnessix.product_config import state_backup as backup
 from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
 
@@ -13,12 +14,28 @@ from harnessix.product_config.session_key_windows_files import WindowsKeyFiles
 def install_backup_diagnostics(monkeypatch):
     original_publish = WindowsKeyFiles.publish
     original_errors = backup._backup_errors
+    original_open = WindowsFileOperations.open_existing
+    original_rename = WindowsFileOperations.rename
 
     def publish(self, source, target):
         try:
             original_publish(self, source, target)
         except Exception as error:
             _emit("directory-publication", error, ctypes.__dict__["get_last_error"]())
+            raise
+
+    def open_private(self, path, **arguments):
+        try:
+            return original_open(self, path, **arguments)
+        except Exception as error:
+            _emit("private-object-open", error)
+            raise
+
+    def rename_private(self, handle, name, **arguments):
+        try:
+            original_rename(self, handle, name, **arguments)
+        except Exception as error:
+            _emit("private-native-rename", error)
             raise
 
     @contextmanager
@@ -32,6 +49,8 @@ def install_backup_diagnostics(monkeypatch):
 
     monkeypatch.setattr(WindowsKeyFiles, "publish", publish)
     monkeypatch.setattr(backup, "_backup_errors", errors)
+    monkeypatch.setattr(WindowsFileOperations, "open_existing", open_private)
+    monkeypatch.setattr(WindowsFileOperations, "rename", rename_private)
 
 
 def _emit(location, error, native_error=None):

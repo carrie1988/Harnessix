@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 8b5944d7c6f4f57369cef85f4df3151991497320
+version: 5
+code_revision: c4f062abbbfc7725a3f7385d28216b6021e88d2f
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,8 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_state_database_flush_contracts.py
+  - tests/product_config/test_state_windows_publication_contracts.py
   - tests/product_config/test_windows_backup_diagnostics.py
   - tests/product_config/test_state_windows_file_contracts.py
   - tests/product_config/test_state_windows_parent_contracts.py
@@ -411,3 +413,86 @@ Windows的[硬链接共享规则](https://learn.microsoft.com/en-us/windows/win3
 不记录错误消息、绝对路径、账号、SID、Key、数据库内容或模型数据，不返回成功、不修复状态、不吞异常。
 [诊断回归](../../tests/product_config/test_windows_backup_diagnostics.py)验证原异常对象或原公开错误码保持，
 以及带正文和路径的Canary不进入输出。目录发布与完整备份仍为发布阻塞，不能以诊断完成关闭R1/R4。
+
+## 18. 同目录句柄发布与数据库同步修复
+
+### 18.1 原生失败事实和修复范围
+
+诊断实现`c4f062a`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36439318231/job/108985371132)
+仍为87通过、5跳过、2失败。目录发布在MoveFileEx返回Win32 32（共享冲突）；完整备份的原异常为
+`_copy_database`内部OSError/errno=9，而不是SQLite错误或Key丢失。原公开拒绝和两个失败保留。
+
+数据库复制后的最后同步原来重新打开只读FD；Windows
+[FlushFileBuffers明确需要GENERIC_WRITE](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers)。
+修复仅在SQLite reader/writer连接全部关闭后，以原私有端口独占打开可写文件并fsync。
+不删除同步、不将其改为best-effort、不升级原只读接口权限，也不将原错误解释为已关闭FD。
+POSIX继续原只读FD同步行为。
+
+目录发布改用已经通过受管事务验证的同目录NT句柄Rename，避免路径式移动再次打开已锚定父目录。
+原始共享错误只能证明冲突存在，不能单独证明每个存活Handle的归属；新原生资源断言同时确认
+数据FD、文件Handle、Workspace Root Handle和私有Root Handle均关闭。实际发布结果仍需原生后继验收。
+
+### 18.2 模块、接口和关键字段
+
+[`state_backup_windows.publish_private_object(source, target)`](../../src/harnessix/product_config/state_backup_windows.py)
+是内部私有状态发布端口，复用
+[`WindowsFileOperations`](../../src/harnessix/delivery/windows_io.py)，不复制WinAPI结构、NT ABI或Workspace路径解析。
+Windows调用必须是同一绝对父目录；当前备份临时目录、Root恢复切换及Restore Journal均满足此合同。
+支持既有私有文件和目录，不把Journal文件误当目录，不授予跨目录、跨卷或覆盖能力。
+
+| 字段/参数 | 用途与不变量 |
+|---|---|
+| 原Workspace父链 | 所有祖先及原父目录保持原生身份绑定，拒绝Reparse |
+| 原源Handle | 取得READ_CONTROL/READ_ATTRIBUTES/DELETE等有限权，拒绝Reparse、多链接普通文件及宽权限 |
+| 目录安全策略 | 原当前用户Owner、protected私有双ACE；普通文件复用原状态精确策略 |
+| 本地固定NTFS卷 | 与首发受管Windows写端口一致，不自动回退网络盘或其他文件系统 |
+| NT RootDirectory=0，FileName=目标叶名 | 只在原源对象同目录改名，不以另一个路径重定位父对象 |
+| Rename flags=0 | 不覆盖、不启用POSIX替换、不忽略只读、不绕过访问检查 |
+| NT调用和IO完成状态 | 同时确认；未知提交不重复执行，由原Intent/观察恢复处理 |
+
+原生字段语义见
+[FILE_RENAME_INFORMATION](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information)。
+既有Key的独立发布实现不变；本端口只用于产品备份/恢复的私有对象。
+
+### 18.3 顺序、伪代码与异常
+
+```mermaid
+flowchart TD
+  Q[原SQLite Backup与提交] --> C[关闭原reader和writer连接]
+  C --> W[Windows独占可写私有Handle同步]
+  W --> V[原清单 MAC 跨Store及来源验真]
+  V --> R[先耐久原根外回执或恢复Intent]
+  R --> P[锚定原父链 本地NTFS]
+  P --> H[原源Handle 权限 链接及Reparse验证]
+  H --> N[原同目录NT Rename flags=0]
+  N --> E[原恢复观察与确认 / 无重放]
+```
+
+```text
+close(original SQLite reader and writer)
+open original target private file writable only on Windows
+fsync(original target FD); close it
+after original validation and trusted receipt/Intent:
+    bind original ancestor chain and parent
+    require original local NTFS
+    open original source Handle with DELETE and permission observation
+    require original private Owner/DACL and ordinary shape
+    rename source Handle to target leaf, replace=False
+    close source, security resources, parent chain and root on every exit
+```
+
+访问拒绝、源不存在、目标冲突、Reparse、多链接、异常/未决NT状态均继续失败关闭。
+不执行路径fallback、不对共享冲突自动重试、不覆盖用户目标或删除未确认发布物。
+原Backup Receipt和Restore Journal的提交/恢复算法不变；未决发布保持原观察语义。
+文件Flush及NT完成不等于硬件掉电实验或全卷同步保证。
+
+### 18.4 测试映射与部署边界
+
+[数据库同步合同](../../tests/product_config/test_state_database_flush_contracts.py)验证Windows可写、POSIX只读及连接关闭顺序；
+[同目录发布合同](../../tests/product_config/test_state_windows_publication_contracts.py)验证文件/目录、同父范围、
+本地NTFS、原权限、Reparse/Hardlink拒绝、缺失源、Rename异常和所有资源关闭。
+原生大文件发布、已有目标不替换、Key精确保护及默认SDK完整备份恢复断言全部保留。
+新增原生Root Handle关闭断言；诊断只记录固定位置和数值码，不保存源/目标路径。
+
+没有数据Schema、依赖、公开协议或安装参数变化。原Windows 11本地NTFS首发边界不扩大；
+其他平台、卷和跨机迁移不得按模拟测试宣传支持。原生候选通过前仍不关闭R1/R4。
