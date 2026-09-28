@@ -173,6 +173,17 @@ CLI阶段日志仅记录固定phase/status，不展开子进程正文。失败�
 上传仅允许结果、requirements、Wheel输入及四份安装阶段日志，不上传整个环境目录。
 失败公开`AcceptanceFailure`固定错误码或通用`installed_acceptance_failed`，不公开异常正文、路径和子进程stderr。
 
+### 8.1 冻结诊断原件与活动源码格式边界
+
+`e08d248`的三平台安装Job全部通过，常规Linux Job却在格式检查拒绝先前已冻结的
+`diagnostics/session_storage_probe.py`。该原件保留当次观察器字节与Manifest，不为通过格式检查改写证据。
+[`pyproject.toml`](../../pyproject.toml)仅将`docs/validation/**/diagnostics/*.py`及
+`docs/validation/**/installation/*.py`界定为已封存诊断/安装执行原件，
+不纳入自动源码格式/静态Lint；实际Runner、产品源码、测试及活动安装脚本继续原检查。
+仓库Secret扫描仍以Git输入覆盖同一原件，源码制品也保留可读诊断；不是Secret或发行扫描白名单。
+新增实际Ruff正反例证明活动未格式化源码仍拒绝、诊断原字节不改、Git/Secret扫描仍发现同一诊断文件内的合成规则命中。
+原CI FAIL保持，只在后继固定候选重新执行门禁；不改写旧Manifest、旧Profile或许可判定。
+
 ## 9. 部署、兼容、回退、风险与取舍
 
 本工具是离线发行验收脚本，未进入产品Wheel或默认Runtime。使用新建私有运行根，

@@ -71,6 +71,11 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# 已冻结的诊断脚本是原始证据，不自动改写；活动源码与Secret扫描仍完整覆盖。
+extend-exclude = [
+    "docs/validation/**/diagnostics/*.py",
+    "docs/validation/**/installation/*.py",
+]
 
 [tool.ruff.lint]
 select = ["ASYNC", "B", "E", "F", "I", "UP"]
